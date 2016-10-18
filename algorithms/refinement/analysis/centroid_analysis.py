@@ -57,7 +57,7 @@ class CentroidAnalyser(object):
     # create empty results list
     self._results = []
 
-    # first, just determine a suitable blocksize for analysis
+    # first, just determine a suitable block size for analysis
     for iexp in range(self._nexp):
       ref_this_exp = reflections.select(reflections['id'] == iexp)
       if len(ref_this_exp) == 0:
@@ -124,9 +124,7 @@ class CentroidAnalyser(object):
         block_size = results_this_exp.get('block_size')
         if block_size is None: continue
         phi_range = results_this_exp['phi_range']
-        phi_width = phi_range[1] - phi_range[0]
         nblocks = results_this_exp['nblocks']
-        block_size = phi_width / nblocks
         ref_this_exp = self._reflections.select(self._reflections['id'] == iexp)
         x_resid = ref_this_exp['x_resid']
         y_resid = ref_this_exp['y_resid']
@@ -149,6 +147,17 @@ class CentroidAnalyser(object):
         xr_per_blk.append(self._av_callback(x_resid.select(sel)))
         yr_per_blk.append(self._av_callback(y_resid.select(sel)))
         pr_per_blk.append(self._av_callback(phi_resid.select(sel)))
+        # the first and last block of average residuals (especially those in
+        # phi) are usually bad because rocking curves are truncated at the
+        # edges of the scan. When we have enough blocks and they are narrow,
+        # just replace the extreme values with their neighbours
+        if nblocks > 2 and block_size < 3.0:
+          xr_per_blk[0] = xr_per_blk[1]
+          xr_per_blk[-1] = xr_per_blk[-2]
+          yr_per_blk[0] = yr_per_blk[1]
+          yr_per_blk[-1] = yr_per_blk[-2]
+          pr_per_blk[0] = pr_per_blk[1]
+          pr_per_blk[-1] = pr_per_blk[-2]
 
         results_this_exp['av_x_resid_per_block'] = xr_per_blk
         results_this_exp['av_y_resid_per_block'] = yr_per_blk
