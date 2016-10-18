@@ -65,6 +65,7 @@ class Test(object):
   def test_xds_ascii(self):
     from libtbx import easy_run
     from os.path import exists
+    from libtbx.test_utils import approx_equal
 
     # Call dials.export
     easy_run.fully_buffered([
@@ -77,13 +78,29 @@ class Test(object):
 
     assert exists("DIALS.HKL")
 
-    # FIXME add test that psi is calculated correctly
+    psi_values = {
+      (-9, 7, -10):153.430361,
+      (-5, 11, -26):175.559441,
+      (-4, 23, 24):129.468070,
+      (2, 10, 20):147.947274
+      }
+
+    for record in open('DIALS.HKL', 'r'):
+      if record.startswith('!'):
+        continue
+      tokens = record.split()
+      hkl = tuple(map(int, tokens[:3]))
+      if not hkl in psi_values:
+        continue
+      psi = float(tokens[-1])
+      assert approx_equal(psi, psi_values[hkl], eps=0.1)
 
     print 'OK'
 
   def test_sadabs(self):
     from libtbx import easy_run
     from os.path import exists
+    from libtbx.test_utils import approx_equal
 
     # Call dials.export
     easy_run.fully_buffered([
@@ -96,7 +113,21 @@ class Test(object):
 
     assert exists("integrated.sad")
 
-    # fixme add test that direction cosine etc. are calculated correctly
+    direction_cosines = {
+      (-9, 7, -10):(0.51253, -0.72107, 0.84696, -0.68476, -0.14130, -0.10561),
+      (-5, 11, -26):(0.51310, -0.62895, 0.84711, -0.59223, -0.13830, -0.50366),
+      (-4, 23, 24):(0.51308, -0.60578, 0.84711, -0.31416, -0.13840, 0.73099),
+      (2, 10, 20):(0.51239, -0.46605, 0.84693, -0.61521, -0.14204, 0.63586)
+      }
+
+    for record in open('integrated.sad', 'r'):
+      record = record.replace('-', ' -')
+      tokens = record.split()
+      hkl = tuple(map(int, tokens[:3]))
+      cosines = tuple(map(float, tokens[6:12]))
+      if not hkl in direction_cosines:
+        continue
+      assert approx_equal(cosines, direction_cosines[hkl], eps=0.001)
 
     print 'OK'
 
