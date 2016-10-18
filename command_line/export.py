@@ -30,6 +30,14 @@ experiments.json file and an integrated.pickle file.
 NXS format exports the files as an NXmx file. The required input is an
 experiments.json file and an integrated.pickle file.
 
+XDS_ASCII format exports intensity data and the experiment metadata in the
+same format as used by the output of XDS in the CORRECT step - output can
+be scaled with XSCALE.
+
+SADABS format exports intensity data (and geometry by direction cosines)
+as an ersatz-SADABS format reverse engineered from the file format used by
+EvalCCD for input to SADABS.
+
 MOSFLM format exports the files as an index.mat mosflm-format matrix file and a
 mosflm.in file containing basic instructions for input to mosflm. The required
 input is an experiments.json file.
