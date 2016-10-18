@@ -185,6 +185,8 @@ class CentroidAnalyser(object):
 def save_plots(exp_data, suffix=''):
   """Create plots for the centroid analysis results for a single experiment"""
 
+  import matplotlib
+  matplotlib.use('Agg')
   import matplotlib.pyplot as plt
 
   nblocks = exp_data['nblocks']
