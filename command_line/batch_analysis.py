@@ -20,12 +20,12 @@ def work(args):
   filename = args[0]
   cl = args[1]
   from dials.command_line import find_spots_server
-  
+
   d = {'image': filename}
   d.update(find_spots_server.work(filename, cl=cl))
-  
+
   return d
-  
+
 def work_all(filenames, args, nproc):
   from libtbx import easy_mp
 
@@ -42,7 +42,7 @@ def work_all(filenames, args, nproc):
     preserve_order=True,
     asynchronous=True,
     preserve_exception_message=True)
-  
+
   return results
 
 
@@ -69,7 +69,7 @@ def run(args):
   print 'nproc: %i' %params.nproc
   results = work_all(filenames, args, nproc=params.nproc)
   print results
-  
+
   if params.json is not None:
     import json
     with open(params.json, 'wb') as f:
@@ -79,4 +79,3 @@ def run(args):
 if __name__ == '__main__':
   import sys
   run(sys.argv[1:])
-
