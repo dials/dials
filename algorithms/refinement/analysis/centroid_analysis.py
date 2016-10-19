@@ -266,6 +266,7 @@ if __name__ == "__main__":
   ref = sys.argv[1]
   refs = flex.reflection_table.from_pickle(ref)
 
+  # smoothed periodograms
   ca = CentroidAnalyser(refs)
   results = ca()
 
@@ -274,5 +275,16 @@ if __name__ == "__main__":
   else:
     for i, result in enumerate(results):
       suffix = 'exp_{0}'.format(i)
+      save_plots(result, suffix)
+
+  # also record raw periodograms
+  ca = CentroidAnalyser(refs)
+  results = ca(spans=None)
+
+  if len(results) == 1:
+    save_plots(results[0], suffix='raw')
+  else:
+    for i, result in enumerate(results):
+      suffix = 'exp_{0}_raw'.format(i)
       save_plots(result, suffix)
 
