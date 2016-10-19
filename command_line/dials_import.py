@@ -697,6 +697,11 @@ class Script(object):
       logger.info('The following parameters have been modified:\n')
       logger.info(diff_phil)
 
+    # Print help if no input
+    if len(params.input.datablock) == 0:
+      self.parser.print_help()
+      return
+
     # Setup the datablock importer
     datablock_importer = DataBlockImporter(params)
 
