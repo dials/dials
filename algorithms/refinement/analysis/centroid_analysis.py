@@ -282,7 +282,7 @@ if __name__ == "__main__":
   results = ca(spans=None)
 
   if len(results) == 1:
-    save_plots(results[0], suffix='raw')
+    save_plots(results[0], suffix='_raw')
   else:
     for i, result in enumerate(results):
       suffix = 'exp_{0}_raw'.format(i)
