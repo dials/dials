@@ -29,6 +29,10 @@ Examples::
   dials.check_indexing_symmetry experiment.json indexed.pickle \\
     grid_search_scope=1 symop_threshold=0.7
 
+
+  dials.check_indexing_symmetry experiment.json indexed.pickle \\
+    grid_l=3 symop_threshold=0.7
+
 '''
 
 phil_scope = iotbx.phil.parse("""
@@ -44,6 +48,15 @@ symop_threshold = 0
 grid_search_scope = 0
   .type = int
   .help = "Search scope for testing misindexing on h, k, l."
+grid_h = 0
+  .type = int
+  .help = "Search scope for testing misindexing on h."
+grid_k = 0
+  .type = int
+  .help = "Search scope for testing misindexing on k."
+grid_l = 0
+  .type = int
+  .help = "Search scope for testing misindexing on l."
 asu = False
   .type = bool
   .help = "Perform search comparing within ASU (assumes input symm)"
@@ -166,11 +179,10 @@ def offset_miller_indices(miller_indices, offset):
 
 def get_indexing_offset_correlation_coefficients(
     reflections, crystal, grid_search_scope, d_min=None, d_max=None,
-    map_to_asu=False):
+    map_to_asu=False, grid_h=0, grid_k=0, grid_l=0):
 
   from copy import deepcopy
   from dials.array_family import flex
-
 
   space_group = crystal.get_space_group()
   unit_cell = crystal.get_unit_cell()
@@ -196,26 +208,21 @@ def get_indexing_offset_correlation_coefficients(
   if map_to_asu:
     ms = ms.map_to_asu()
 
-  g = grid_search_scope
+  gh = gk = gl = grid_search_scope
+  if grid_h: gh = grid_h
+  if grid_k: gk = grid_k
+  if grid_l: gl = grid_l
 
-  for h in range(-g, g + 1):
-    for k in range(-g, g + 1):
-      for l in range(-g, g + 1):
+  for h in range(-gh, gh + 1):
+    for k in range(-gk, gk + 1):
+      for l in range(-gl, gl + 1):
         for smx in ['-x,-y,-z']:
-          #reindexed = deepcopy(reflections)
-          # hkl offset doubled as equivalent of h0 + 1, hI - 1
           miller_indices = offset_miller_indices(
             ms.indices(), (2 * h, 2 * k, 2* l))
           reindexed_miller_indices = sgtbx.change_of_basis_op(smx).apply(
             miller_indices)
           rms = miller_set(cs, reindexed_miller_indices)
           rms = rms.array(data)
-          #if params.d_min or params.d_max:
-            #rms = rms.resolution_filter(d_min=params.d_min, d_max=params.d_max)
-
-          #if map_to_asu:
-            #rms = rms.map_to_asu()
-
           intensity, intensity_rdx = rms.common_sets(ms)
           cc = intensity.correlation(intensity_rdx).coefficient()
 
@@ -225,9 +232,9 @@ def get_indexing_offset_correlation_coefficients(
 
   return offsets, ccs, nref
 
-
 def test_P1_crystal_indexing(reflections, experiment, params):
-  if params.grid_search_scope == 0:
+  if not (params.grid_search_scope or params.grid_h or \
+    params.grid_k or params.grid_l):
     return
 
   print 'Checking HKL origin:'
@@ -237,9 +244,8 @@ def test_P1_crystal_indexing(reflections, experiment, params):
   offsets, ccs, nref = get_indexing_offset_correlation_coefficients(
     reflections, experiment.crystal,
     grid_search_scope=params.grid_search_scope,
-    d_min=params.d_min,
-    d_max=params.d_max,
-    map_to_asu=params.asu)
+    d_min=params.d_min, d_max=params.d_max, map_to_asu=params.asu,
+    grid_h=params.grid_h, grid_k=params.grid_k, grid_l=params.grid_l)
 
   for (h, k, l), cc, n in zip(offsets, ccs, nref):
     if cc > params.symop_threshold or (h == k == l == 0):
