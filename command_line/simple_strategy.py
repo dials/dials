@@ -2,7 +2,10 @@
 
 from __future__ import division
 from dials.array_family import flex
+from scitbx import matrix
 import iotbx.phil
+import copy
+import math
 
 help_message = '''
 
@@ -66,15 +69,76 @@ def run(args):
                         unit_cell_scale=params.unit_cell_scale,
                         degrees_per_bin=params.degrees_per_bin,
                         min_frac_new=params.minimum_fraction_new)
-    strategy.plot()
+    strategy.plot(prefix='strategy1_')
+
+    expt2 = copy.deepcopy(expt)
+    scan = expt2.scan
+    gonio = expt2.goniometer
+    angles = gonio.get_angles()
+    theta_max = strategy.theta_max
+    fixed_rotation = matrix.sqr(gonio.get_fixed_rotation())
+    setting_rotation = matrix.sqr(gonio.get_setting_rotation())
+    rotation_axis = matrix.col(gonio.get_rotation_axis())
+    rotation_matrix = rotation_axis.axis_and_angle_as_r3_rotation_matrix(
+      scan.get_oscillation()[0], deg=True)
+    D_p = (setting_rotation * rotation_matrix * fixed_rotation)
+
+    beam = expt2.beam
+    s0 = matrix.col(beam.get_unit_s0())
+
+    # rotate crystal by at least 2 * theta_max around axis perpendicular to
+    # goniometer rotation axis
+    n = rotation_axis.cross(s0)
+
+    i = 0
+    while True:
+      for sign in (1, -1):
+        rot_angle = 2 * theta_max + i
+        i += 1
+
+        R = n.axis_and_angle_as_r3_rotation_matrix(rot_angle, deg=True)
+
+        axes = gonio.get_axes()
+        assert len(axes) == 3
+        e1, e2, e3 = (matrix.col(e) for e in axes)
+
+        from dials.algorithms.refinement import rotation_decomposition
+        solutions = rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
+          R * D_p, e1, e2, e3, return_both_solutions=True, deg=True)
+        if solutions is not None:
+          break
+      if solutions is not None:
+        break
+
+    angles = solutions[0]
+    gonio.set_angles(angles)
+
+    print
+    print "Goniometer settings to rotate crystal by %.2f degrees:" %rot_angle,
+    print "(%.2f, %.2f, %.2f)" %angles
+    print
+
+    strategy2 = Strategy(expt2, d_min=params.d_min,
+                         unit_cell_scale=params.unit_cell_scale,
+                         degrees_per_bin=params.degrees_per_bin,
+                         min_frac_new=params.minimum_fraction_new)
+    strategy2.plot(prefix='strategy2_')
+
+    stats = ComputeStats([strategy, strategy2])
+    stats.show()
+    plot_statistics(stats, prefix='multi_strategy_')
+
     return
 
 
 class Strategy(object):
 
-  def __init__(self, experiment, d_min=None, unit_cell_scale=1, degrees_per_bin=5,
+  def __init__(self, experiment, other=None, d_min=None, unit_cell_scale=1, degrees_per_bin=5,
                min_frac_new=0.001):
-    self.experiment = experiment
+    print experiment.goniometer
+    print experiment.scan
+    self.experiment = copy.deepcopy(experiment)
+    self.other = other
     self.unit_cell_scale = unit_cell_scale
     self.degrees_per_bin = degrees_per_bin
     self.min_frac_new = min_frac_new
@@ -85,7 +149,6 @@ class Strategy(object):
     crystal = self.experiment.crystal
 
     from cctbx import uctbx
-    from scitbx import matrix
     s = self.unit_cell_scale
     assert s > 0
     uc = crystal.get_unit_cell()
@@ -99,10 +162,17 @@ class Strategy(object):
 
     import math
     # bragg's law
-    theta_max = math.asin(0.5 * beam.get_wavelength()/self.d_min) * 180/math.pi
+    sin_theta = 0.5 * beam.get_wavelength()/self.d_min
+    theta_max_rad = math.asin(sin_theta)
+    self.theta_max = theta_max_rad * 180/math.pi
+
+    print "theta_max (degrees): %.2f" %self.theta_max
+
+    Btot = 1 - 3 * (4 * theta_max_rad - math.sin(4 * theta_max_rad))/(32 * (math.sin(theta_max_rad)**3))
+    print Btot
 
     # Section 2.9, Dauter Acta Cryst. (1999). D55, 1703-1717
-    #max_rotation = 360 + 2 * theta_max
+    #max_rotation = 360 + 2 * self.theta_max
     max_rotation = 360
 
     image_range = scan.get_image_range()
@@ -113,7 +183,11 @@ class Strategy(object):
     x, y, z = self.predicted['xyzcal.px'].parts()
     self.predicted['dose'] = flex.size_t(
       list(flex.ceil(z * oscillation[1]/self.degrees_per_bin).iround()))
-    self.compute_stats()
+    self.stats = ComputeStats([self], degrees_per_bin=self.degrees_per_bin)
+    self.ieither_completeness = self.stats.ieither_completeness
+    self.iboth_completeness = self.stats.iboth_completeness
+    self.frac_new_ref = self.stats.frac_new_ref
+    self.frac_new_pairs = self.stats.frac_new_pairs
     self.determine_cutoffs(self.min_frac_new)
     self.show()
 
@@ -125,18 +199,58 @@ class Strategy(object):
       dmin=self.d_min)
     self.predicted['id'] = flex.int(len(self.predicted), 0)
 
-  def compute_stats(self, n_bins=8):
-    from cctbx import crystal, miller
+  def determine_fraction_new_cutoff(self, fraction_new, cutoff):
+    imax = flex.max_index(fraction_new)
+    isel = (fraction_new < cutoff).iselection()
+    return isel[(isel > imax).iselection()[0]]
 
-    sg = self.experiment.crystal.get_space_group() \
+  def determine_cutoffs(self, min_frac_new=None):
+    if min_frac_new is None:
+      self.min_frac_new = min_frac_new
+    self.cutoff_non_anom = self.degrees_per_bin * self.determine_fraction_new_cutoff(
+      self.frac_new_ref, min_frac_new)
+    self.cutoff_anom = self.degrees_per_bin * self.determine_fraction_new_cutoff(
+      self.frac_new_pairs, min_frac_new)
+
+  def show(self):
+    self.stats.show()
+    print "Suggested cutoff (non-anom): %.2f degrees" %self.cutoff_non_anom
+    print "  (completeness: %.2f %%)" %(
+      100 * self.ieither_completeness[int(self.cutoff_non_anom/self.degrees_per_bin)])
+    print "Suggested cutoff (anom): %.2f degrees" %self.cutoff_anom
+    print "  (completeness: %.2f %%)" %(
+      100 * self.iboth_completeness[int(self.cutoff_anom/self.degrees_per_bin)])
+
+  def plot(self, prefix=''):
+    plot_statistics(self.stats, prefix=prefix, degrees_per_bin=self.degrees_per_bin,
+                    cutoff_anom=self.cutoff_anom,
+                    cutoff_non_anom=self.cutoff_non_anom)
+
+class ComputeStats(object):
+
+  def __init__(self, strategies, n_bins=8, degrees_per_bin=5):
+    from cctbx import crystal, miller
+    import copy
+
+    sg = strategies[0].experiment.crystal.get_space_group() \
       .build_derived_reflection_intensity_group(anomalous_flag=True)
     cs = crystal.symmetry(
-      unit_cell=self.experiment.crystal.get_unit_cell(), space_group=sg)
-    ms = miller.set(cs, indices=self.predicted['miller_index'], anomalous_flag=True)
-    ma = miller.array(ms, data=flex.double(ms.size(), 1),
+      unit_cell=strategies[0].experiment.crystal.get_unit_cell(), space_group=sg)
+
+    for i, strategy in enumerate(strategies):
+      if i == 0:
+        predicted = copy.deepcopy(strategy.predicted)
+      else:
+        predicted_ = copy.deepcopy(strategy.predicted)
+        predicted_['dose'] += (flex.max(predicted['dose']) + 1)
+        predicted.extend(predicted_)
+    ms = miller.set(cs, indices=predicted['miller_index'], anomalous_flag=True)
+    ma = miller.array(ms, data=flex.double(ms.size(),1),
                       sigmas=flex.double(ms.size(), 1))
     if 1:
-      o = ma.merge_equivalents().array().as_mtz_dataset('I').mtz_object()
+      merging = ma.merge_equivalents()
+      o = merging.array().customized_copy(
+        data=merging.redundancies().data().as_double()).as_mtz_dataset('I').mtz_object()
       o.write('predicted.mtz')
 
     d_star_sq = ma.d_star_sq().data()
@@ -144,7 +258,7 @@ class Strategy(object):
     binner = ma.setup_binner_d_star_sq_step(
       d_star_sq_step=(flex.max(d_star_sq)-flex.min(d_star_sq)+1e-8)/n_bins)
 
-    dose = self.predicted['dose']
+    dose = predicted['dose']
     range_width = 1
     range_min = flex.min(dose) - range_width
     range_max = flex.max(dose)
@@ -168,90 +282,62 @@ class Strategy(object):
       # Fraction of unique reflections observed for the first time on each image
       return completeness_end - completeness_start
 
+    self.dose = dose
     self.ieither_completeness = chef_stats.ieither_completeness()
     self.iboth_completeness = chef_stats.iboth_completeness()
-    self.frac_new_ref = fraction_new(self.ieither_completeness) / self.degrees_per_bin
-    self.frac_new_pairs = fraction_new(self.iboth_completeness) / self.degrees_per_bin
-
-  def determine_fraction_new_cutoff(self, fraction_new, cutoff):
-    imax = flex.max_index(fraction_new)
-    isel = (fraction_new < cutoff).iselection()
-    return isel[(isel > imax).iselection()[0]]
-
-  def determine_cutoffs(self, min_frac_new=None):
-    if min_frac_new is None:
-      self.min_frac_new = min_frac_new
-    self.cutoff_non_anom = self.degrees_per_bin * self.determine_fraction_new_cutoff(
-      self.frac_new_ref, min_frac_new)
-    self.cutoff_anom = self.degrees_per_bin * self.determine_fraction_new_cutoff(
-      self.frac_new_pairs, min_frac_new)
+    self.frac_new_ref = fraction_new(self.ieither_completeness) / degrees_per_bin
+    self.frac_new_pairs = fraction_new(self.iboth_completeness) / degrees_per_bin
 
   def show(self):
     print "Max. completeness (non-anom): %.2f %%" %(100 * flex.max(self.ieither_completeness))
     print "Max. completeness (anom): %.2f %%" %(100 * flex.max(self.iboth_completeness))
-    print "Suggested cutoff (non-anom): %.2f degrees" %self.cutoff_non_anom
-    print "  (completeness: %.2f %%)" %(
-      100 * self.ieither_completeness[int(self.cutoff_non_anom/self.degrees_per_bin)])
-    print "Suggested cutoff (anom): %.2f degrees" %self.cutoff_anom
-    print "  (completeness: %.2f %%)" %(
-      100 * self.iboth_completeness[int(self.cutoff_anom/self.degrees_per_bin)])
 
-  def plot(self, prefix=''):
 
-    dose = self.predicted['dose']
-    range_width = 1
-    range_min = flex.min(dose) - range_width
-    range_max = flex.max(dose)
-    n_steps = 2 + int((range_max - range_min) - range_width)
-    x = flex.double_range(n_steps) * range_width + range_min
-    x *= self.degrees_per_bin
+def plot_statistics(statistics, prefix='', degrees_per_bin=5,
+                    cutoff_anom=None, cutoff_non_anom=None):
 
-    dpi = 300
-    import matplotlib
-    matplotlib.use('Agg')
-    from matplotlib import pyplot as plt
-    if hasattr(plt, 'style'):
-      plt.style.use('ggplot')
-    line,  = plt.plot(x, self.ieither_completeness, label='Unique reflections')
-    plt.plot([self.cutoff_non_anom, self.cutoff_non_anom], plt.ylim(), c=line.get_color(), linestyle='dashed')
-    line,  = plt.plot(x, self.iboth_completeness, label='Bijvoet pairs')
-    plt.plot([self.cutoff_anom, self.cutoff_anom], plt.ylim(), c=line.get_color(), linestyle='dotted')
-    plt.xlim(0, plt.xlim()[1])
-    plt.xlabel('Scan angle (degrees)')
-    plt.ylabel('Completeness (%)')
-    plt.ylim(0, 1)
-    plt.legend(loc='lower right', fontsize='small')
-    plt.savefig('%scompleteness_vs_scan_angle.png' %prefix, dpi=dpi)
-    plt.clf()
+  range_width = 1
+  range_min = flex.min(statistics.dose) - range_width
+  range_max = flex.max(statistics.dose)
+  n_steps = 2 + int((range_max - range_min) - range_width)
+  x = flex.double_range(n_steps) * range_width + range_min
+  x *= degrees_per_bin
 
-    scale = self.unit_cell_scale**3
-    line1, = plt.plot(
-      x[1:], scale * self.frac_new_ref*flex.sum(self.n_complete),
-      label='Unique reflections')
-    line2, = plt.plot(
-      x[1:], scale * self.frac_new_pairs*flex.sum(self.n_complete),
-      label='Bijvoet pairs')
-    plt.plot([self.cutoff_non_anom, self.cutoff_non_anom], plt.ylim(), c=line1.get_color(), linestyle='dashed')
-    plt.plot([self.cutoff_anom, self.cutoff_anom], plt.ylim(), c=line2.get_color(), linestyle='dotted')
-    plt.xlim(0, plt.xlim()[1])
-    plt.xlabel('Scan angle (degrees)')
-    plt.ylabel('# new reflections')
-    plt.legend(loc='upper right', fontsize='small')
-    plt.savefig('%sn_new_reflections_vs_scan_angle.png' %prefix, dpi=dpi)
-    plt.clf()
+  dpi = 300
+  import matplotlib
+  matplotlib.use('Agg')
+  from matplotlib import pyplot as plt
+  try: plt.style.use('ggplot')
+  except AttributeError: pass
+  line1,  = plt.plot(x, statistics.ieither_completeness, label='Unique reflections')
+  line2,  = plt.plot(x, statistics.iboth_completeness, label='Bijvoet pairs')
+  if cutoff_non_anom is not None:
+    plt.plot([cutoff_non_anom, cutoff_non_anom], plt.ylim(), c=line1.get_color(), linestyle='dashed')
+  if cutoff_anom is not None:
+    plt.plot([cutoff_anom, cutoff_anom], plt.ylim(), c=line2.get_color(), linestyle='dotted')
+  plt.xlim(0, plt.xlim()[1])
+  plt.xlabel('Scan angle (degrees)')
+  plt.ylabel('Completeness (%)')
+  plt.ylim(0, 1)
+  plt.legend(loc='lower right', fontsize='small')
+  plt.savefig('%scompleteness_vs_scan_angle.png' %prefix, dpi=dpi)
+  plt.clf()
 
-    line1, = plt.plot(x[1:], 100 * self.frac_new_ref, label='Unique reflections')
-    line2, = plt.plot(x[1:], 100 * self.frac_new_pairs, label='Bijvoet pairs')
-    ylim = plt.ylim()
-    plt.plot([self.cutoff_non_anom, self.cutoff_non_anom], ylim, c=line1.get_color(), linestyle='dashed')
-    plt.plot([self.cutoff_anom, self.cutoff_anom], ylim, c=line2.get_color(), linestyle='dotted')
-    plt.ylim(ylim)
-    plt.xlim(0, plt.xlim()[1])
-    plt.xlabel('Scan angle (degrees)')
-    plt.ylabel('% new reflections per degree')
-    plt.legend(loc='upper right', fontsize='small')
-    plt.savefig('%spercent_new_reflections_vs_scan_angle.png' %prefix, dpi=dpi)
-    plt.clf()
+  line1, = plt.plot(x[1:], 100 * statistics.frac_new_ref, label='Unique reflections')
+  line2, = plt.plot(x[1:], 100 * statistics.frac_new_pairs, label='Bijvoet pairs')
+  ylim = plt.ylim()
+  if cutoff_non_anom is not None:
+    plt.plot([cutoff_non_anom, cutoff_non_anom], ylim, c=line1.get_color(), linestyle='dashed')
+  if cutoff_anom is not None:
+    plt.plot([cutoff_anom, cutoff_anom], ylim, c=line2.get_color(), linestyle='dotted')
+  plt.ylim(ylim)
+  plt.xlim(0, plt.xlim()[1])
+  plt.xlabel('Scan angle (degrees)')
+  plt.ylabel('% new reflections per degree')
+  plt.legend(loc='upper right', fontsize='small')
+  plt.savefig('%spercent_new_reflections_vs_scan_angle.png' %prefix, dpi=dpi)
+  plt.clf()
+
 
 
 if __name__ == '__main__':
