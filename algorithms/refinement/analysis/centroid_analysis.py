@@ -182,8 +182,14 @@ class CentroidAnalyser(object):
 
     return self._results
 
-def save_plots(exp_data, suffix=''):
-  """Create plots for the centroid analysis results for a single experiment"""
+def save_plots(*args, **kwargs):
+  """Create plots for the centroid analysis results for a single experiment."""
+
+  suffix = kwargs.get('suffix', '')
+  vlines = kwargs.get('vlines', [])
+
+  # first set of results
+  exp_data = args[0]
 
   import matplotlib
   matplotlib.use('Agg')
@@ -191,7 +197,7 @@ def save_plots(exp_data, suffix=''):
 
   nblocks = exp_data['nblocks']
   block_size = exp_data['block_size']
-  sample_freq = 1./block_size
+  #sample_freq = 1./block_size
   phistart = exp_data['phi_range'][0]
   block_centres = block_size * flex.double_range(nblocks) + phistart + block_size/2.0
 
@@ -204,9 +210,13 @@ def save_plots(exp_data, suffix=''):
 
   # X periodogram
   plt.subplot(212)
-  px = exp_data['x_periodogram']
-  freq = px.freq * sample_freq
-  line, = plt.semilogy(freq, px.spec)
+  for dat in args: # allow overlay of periodogram plots e.g. raw and smoothed
+    px = dat['x_periodogram']
+    sample_freq = 1./dat['block_size']
+    freq = px.freq * sample_freq
+    line, = plt.semilogy(freq, px.spec)
+  for vline in vlines:
+    plt.axvline(x=vline, color='r')
   plt.xlabel('frequency')
   plt.ylabel('spectrum')
 
@@ -224,9 +234,13 @@ def save_plots(exp_data, suffix=''):
 
   # Y periodogram
   plt.subplot(212)
-  py = exp_data['y_periodogram']
-  freq = py.freq * sample_freq
-  line, = plt.semilogy(freq, py.spec)
+  for dat in args: # allow overlay of periodogram plots e.g. raw and smoothed
+    py = dat['y_periodogram']
+    sample_freq = 1./dat['block_size']
+    freq = py.freq * sample_freq
+    line, = plt.semilogy(freq, py.spec)
+  for vline in vlines:
+    plt.axvline(x=vline, color='r')
   plt.xlabel('frequency')
   plt.ylabel('spectrum')
 
@@ -244,10 +258,13 @@ def save_plots(exp_data, suffix=''):
 
   # phi periodogram
   plt.subplot(212)
-  pz = exp_data['phi_periodogram']
-
-  freq = pz.freq * sample_freq
-  line, = plt.semilogy(freq, pz.spec)
+  for dat in args: # allow overlay of periodogram plots e.g. raw and smoothed
+    pz = dat['phi_periodogram']
+    sample_freq = 1./dat['block_size']
+    freq = pz.freq * sample_freq
+    line, = plt.semilogy(freq, pz.spec)
+  for vline in vlines:
+    plt.axvline(x=vline, color='r')
   plt.xlabel('frequency')
   plt.ylabel('spectrum')
 
@@ -266,25 +283,23 @@ if __name__ == "__main__":
   ref = sys.argv[1]
   refs = flex.reflection_table.from_pickle(ref)
 
+  # raw periodograms
+  ca = CentroidAnalyser(refs)
+  results_r = ca(spans=None)
+
   # smoothed periodograms
   ca = CentroidAnalyser(refs)
-  results = ca()
+  results_s = ca()
 
-  if len(results) == 1:
-    save_plots(results[0])
+  # draw vertical lines at frequencies corresponding to periods of 54, 36 and 18
+  # degrees
+  vlines = [1./54, 1./36, 1./18]
+
+  if len(results_r) == 1:
+    save_plots(results_r[0], results_s[0], vlines=vlines)
   else:
-    for i, result in enumerate(results):
+    for i, (r_r, r_s) in enumerate(zip(results_r, results_s)):
       suffix = 'exp_{0}'.format(i)
-      save_plots(result, suffix)
+      save_plots(r_r, r_s, suffix=suffix, vlines=vlines)
 
-  # also record raw periodograms
-  ca = CentroidAnalyser(refs)
-  results = ca(spans=None)
-
-  if len(results) == 1:
-    save_plots(results[0], suffix='_raw')
-  else:
-    for i, result in enumerate(results):
-      suffix = 'exp_{0}_raw'.format(i)
-      save_plots(result, suffix)
 
