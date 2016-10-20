@@ -258,6 +258,7 @@ def test_P1_crystal_indexing(reflections, experiment, params):
 
 def run(args):
   import libtbx.load_env
+  from dials.array_family import flex
   usage = "%s [options] experiment.json indexed.pickle" % \
     libtbx.env.dispatcher_name
 
@@ -280,6 +281,16 @@ def run(args):
   assert(len(experiments) == 1)
   experiment = experiments[0]
   reflections = reflections[0]
+
+  h, k, l = reflections['miller_index'].as_vec3_double().parts()
+
+  h = h.iround()
+  k = k.iround()
+  l = l.iround()
+
+  print 'Range on h: %d to %d' % (flex.min(h), flex.max(h))
+  print 'Range on k: %d to %d' % (flex.min(k), flex.max(k))
+  print 'Range on l: %d to %d' % (flex.min(l), flex.max(l))
 
   test_P1_crystal_indexing(reflections, experiment, params)
   test_crystal_pointgroup_symmetry(reflections, experiment, params)
