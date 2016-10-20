@@ -299,7 +299,7 @@ def run(args):
 
   # remove reflections with 0, 0, 0 index
   zero = (reflections['miller_index'] == (0, 0, 0))
-  logger.info('Removing %d unindexed reflections' % zero.iselection().size())
+  logger.info('Removing %d unindexed reflections' % zero.count(True))
   reflections = reflections.select(~zero)
 
   h, k, l = reflections['miller_index'].as_vec3_double().parts()
