@@ -508,18 +508,19 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   I_sum = None
   V_sum = None
   # FIXME errors in e.g. LP correction need to be propogated here
-  scl = lp / dqe
+  Iscl = lp / dqe
+  Vscl = lp * lp / dqe
   if 'intensity.prf.value' in integrated_data:
-    I_profile = integrated_data['intensity.prf.value'] * scl
-    V_profile = integrated_data['intensity.prf.variance'] * scl * scl
+    I_profile = integrated_data['intensity.prf.value'] * Iscl
+    V_profile = integrated_data['intensity.prf.variance'] * Vscl
     # Trap negative variances
     assert V_profile.all_gt(0)
     d.add_column('IPR', type_table['I']).set_values(I_profile.as_float())
     d.add_column('SIGIPR', type_table['SIGI']).set_values(
       flex.sqrt(V_profile).as_float())
   if 'intensity.sum.value' in integrated_data:
-    I_sum = integrated_data['intensity.sum.value'] * scl
-    V_sum = integrated_data['intensity.sum.variance'] * scl * scl
+    I_sum = integrated_data['intensity.sum.value'] * Iscl
+    V_sum = integrated_data['intensity.sum.variance'] * Vscl
     # Trap negative variances
     assert V_sum.all_gt(0)
     d.add_column('I', type_table['I']).set_values(I_sum.as_float())
