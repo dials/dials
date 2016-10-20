@@ -11,6 +11,9 @@
 
 from __future__ import division
 
+import libtbx.load_env
+import logging
+logger = logging.getLogger(libtbx.env.dispatcher_name)
 from libtbx.phil import command_line
 import iotbx.phil
 from cctbx import sgtbx
@@ -66,6 +69,12 @@ normalise = False
 normalise_bins = 0
   .type = int
   .help = "Number of resolution bins for normalisation"
+output {
+  log = dials.check_indexing_symmetry.log
+    .type = str
+  debug_log = dials.check_indexing_symmetry.debug.log
+    .type = str
+}
 """, process_includes=True)
 
 def dump_text(filename, set0, set1):
@@ -141,9 +150,9 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
     else:
       ms = normalise_intensities(ms)
 
-  print 'Check symmetry operations on %d reflections:' % ms.size()
-  print ''
-  print '%20s %6s %5s' % ('Symop', 'Nref', 'CC')
+  logger.info('Check symmetry operations on %d reflections:' % ms.size())
+  logger.info('')
+  logger.info('%20s %6s %5s' % ('Symop', 'Nref', 'CC'))
 
   true_symops = []
 
@@ -155,7 +164,7 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
       if cc > params.symop_threshold:
         true_symops.append(smx)
         accept = '***'
-    print '%20s %6d %.3f %s' % (smx, n_ref, cc, accept)
+    logger.info('%20s %6d %.3f %s' % (smx, n_ref, cc, accept))
 
   if params.symop_threshold:
     from cctbx.sgtbx import space_group as sgtbx_space_group
@@ -165,10 +174,10 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
     for ltr in space_group.ltr():
       sg = sg.expand_ltr(ltr)
     sg_symbols = sg.match_tabulated_settings()
-    print ''
-    print 'Derived point group from symmetry operations: %s' % \
-      sg_symbols.hermann_mauguin()
-    print ''
+    logger.info('')
+    logger.info('Derived point group from symmetry operations: %s' % \
+      sg_symbols.hermann_mauguin())
+    logger.info('')
 
   return
 
@@ -237,9 +246,9 @@ def test_P1_crystal_indexing(reflections, experiment, params):
     params.grid_k or params.grid_l):
     return
 
-  print 'Checking HKL origin:'
-  print ''
-  print 'dH dK dL %6s %5s' % ('Nref', 'CC')
+  logger.info('Checking HKL origin:')
+  logger.info('')
+  logger.info('dH dK dL %6s %5s' % ('Nref', 'CC'))
 
   offsets, ccs, nref = get_indexing_offset_correlation_coefficients(
     reflections, experiment.crystal,
@@ -249,16 +258,18 @@ def test_P1_crystal_indexing(reflections, experiment, params):
 
   for (h, k, l), cc, n in zip(offsets, ccs, nref):
     if cc > params.symop_threshold or (h == k == l == 0):
-      print '%2d %2d %2d %6d %.3f' % \
-            (h, k, l, n, cc)
+      logger.info('%2d %2d %2d %6d %.3f' % (h, k, l, n, cc))
 
-  print ''
+  logger.info('')
 
   return
 
 def run(args):
   import libtbx.load_env
   from dials.array_family import flex
+  from dials.util import log
+  from dials.util.version import dials_version
+
   usage = "%s [options] experiment.json indexed.pickle" % \
     libtbx.env.dispatcher_name
 
@@ -271,6 +282,10 @@ def run(args):
     epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
+
+  # Configure the logging
+  log.config(info=params.output.log, debug=params.output.debug_log)
+  logger.info(dials_version())
 
   reflections = flatten_reflections(params.input.reflections)
   experiments = flatten_experiments(params.input.experiments)
@@ -288,9 +303,9 @@ def run(args):
   k = k.iround()
   l = l.iround()
 
-  print 'Range on h: %d to %d' % (flex.min(h), flex.max(h))
-  print 'Range on k: %d to %d' % (flex.min(k), flex.max(k))
-  print 'Range on l: %d to %d' % (flex.min(l), flex.max(l))
+  logger.info('Range on h: %d to %d' % (flex.min(h), flex.max(h)))
+  logger.info('Range on k: %d to %d' % (flex.min(k), flex.max(k)))
+  logger.info('Range on l: %d to %d' % (flex.min(l), flex.max(l)))
 
   test_P1_crystal_indexing(reflections, experiment, params)
   test_crystal_pointgroup_symmetry(reflections, experiment, params)
