@@ -94,9 +94,12 @@ class Test(object):
     result.show_stdout()
 
     import cPickle as pickle
-    for result, n_refls in zip(["idx-run266702-0-subset_00000_integrated.pickle",
-                                "idx-run266702-0-subset_00001_integrated.pickle"],
-                                [range(109,114), range(80,85)]): # large ranges to handle platform-specific differences
+    # Frame 1 no longer indexing after cctbx r25607 which made wavelengths be on a per-image basis
+    #for result, n_refls in zip(["idx-run266702-0-subset_00000_integrated.pickle",
+    #                            "idx-run266702-0-subset_00001_integrated.pickle"],
+    #                            [range(109,114), range(80,85)]): # large ranges to handle platform-specific differences
+    for result, n_refls in zip(["idx-run266702-0-subset_00000_integrated.pickle"],
+                                [range(109,114)]): # large ranges to handle platform-specific differences
       table = pickle.load(open(result, 'rb'))
       assert len(table) in n_refls, len(table)
       assert 'id' in table
