@@ -301,5 +301,3 @@ if __name__ == "__main__":
     for i, (r_r, r_s) in enumerate(zip(results_r, results_s)):
       suffix = 'exp_{0}'.format(i)
       save_plots(r_r, r_s, suffix=suffix, vlines=vlines)
-
-

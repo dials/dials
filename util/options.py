@@ -561,7 +561,7 @@ class PhilCommandParser(object):
         fixed_rotation_tolerance=params.input.tolerance.goniometer.fixed_rotation,
         setting_rotation_tolerance=params.input.tolerance.goniometer.setting_rotation)
       scan_tolerance = params.input.tolerance.scan.oscillation
-     
+
       # FIXME Should probably make this smarter since it requires editing here
       # and in dials.import phil scope
       try:

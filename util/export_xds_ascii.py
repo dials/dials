@@ -230,7 +230,7 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
       psi *= -1
 
     fout.write('%d %d %d %f %f %f %f %f %f %.1f %.1f %f\n' %
-               (h, k, l, I[j], sigI[j], x, y, z, lp[j], 
+               (h, k, l, I[j], sigI[j], x, y, z, lp[j],
                 partiality[j], prof_corr[j], psi))
 
   fout.write('!END_OF_DATA\n')
