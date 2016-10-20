@@ -698,7 +698,7 @@ class Script(object):
       logger.info(diff_phil)
 
     # Print help if no input
-    if len(params.input.datablock) == 0:
+    if len(params.input.datablock) == 0 and not params.input.template:
       self.parser.print_help()
       return
 
