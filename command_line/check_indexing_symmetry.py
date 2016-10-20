@@ -69,6 +69,9 @@ normalise = False
 normalise_bins = 0
   .type = int
   .help = "Number of resolution bins for normalisation"
+reference = None
+  .type = path
+  .help = "Correctly indexed reference set for comparison"
 output {
   log = dials.check_indexing_symmetry.log
     .type = str
@@ -188,7 +191,7 @@ def offset_miller_indices(miller_indices, offset):
 
 def get_indexing_offset_correlation_coefficients(
     reflections, crystal, grid, d_min=None, d_max=None,
-    map_to_asu=False, grid_h=0, grid_k=0, grid_l=0):
+    map_to_asu=False, grid_h=0, grid_k=0, grid_l=0, reference=None):
 
   from copy import deepcopy
   from dials.array_family import flex
@@ -203,13 +206,21 @@ def get_indexing_offset_correlation_coefficients(
   data = reflections['intensity.sum.value'] / \
          flex.sqrt(reflections['intensity.sum.variance'])
 
+  if reference:
+    reference = reference.select(reference['intensity.sum.variance'] > 0)
+    reference_data = reference['intensity.sum.value'] / \
+         flex.sqrt(reference['intensity.sum.variance'])
+    reference_ms = miller_set(cs, reference['miller_index']).array(
+      reference_data)
+  else:
+    reference_ms = None
+
   ccs = flex.double()
   offsets = flex.vec3_int()
   nref = flex.size_t()
 
   original_miller_indices = reflections['miller_index']
-  ms = miller_set(cs, original_miller_indices)
-  ms = ms.array(data)
+  ms = miller_set(cs, original_miller_indices).array(data)
 
   if d_min is not None or d_max is not None:
     ms = ms.resolution_filter(d_min=d_min, d_max=d_max)
@@ -222,19 +233,27 @@ def get_indexing_offset_correlation_coefficients(
   if grid_k: gk = grid_k
   if grid_l: gl = grid_l
 
-  # essentially just inversion operation - this *should* have good CC
-  cb_op = sgtbx.change_of_basis_op('-x,-y,-z')
+  # essentially just inversion operation - this *should* have good CC - unless
+  # we are working on a reference set where we don't reindex
+  if reference:
+    cb_op = sgtbx.change_of_basis_op('x,y,z')
+  else:
+    cb_op = sgtbx.change_of_basis_op('-x,-y,-z')
 
   for h in range(-gh, gh + 1):
     for k in range(-gk, gk + 1):
       for l in range(-gl, gl + 1):
-        offset = (2*h, 2*k, 2*l)
-        miller_indices = offset_miller_indices(ms.indices(), offset)
+        miller_indices = offset_miller_indices(ms.indices(), (h, k, l))
         reindexed_miller_indices = cb_op.apply(miller_indices)
         rms = miller_set(cs, reindexed_miller_indices).array(data)
+        if reference_ms:
+          _ms = reference_ms
+        else:
+          _ms = miller_set(cs, miller_indices).array(data)
         if map_to_asu:
           rms = rms.map_to_asu()
-        intensity, intensity_rdx = rms.common_sets(ms)
+          _ms = _ms.map_to_asu()
+        intensity, intensity_rdx = rms.common_sets(_ms)
         cc = intensity.correlation(intensity_rdx).coefficient()
         ccs.append(cc)
         offsets.append((h, k, l))
@@ -250,11 +269,19 @@ def test_P1_crystal_indexing(reflections, experiment, params):
   logger.info('')
   logger.info('dH dK dL %6s %5s' % ('Nref', 'CC'))
 
+  if params.reference:
+    from dials.array_family import flex # implicit dependency
+    import cPickle as pickle
+    reference = pickle.load(open(params.reference))
+  else:
+    reference = None
+
   offsets, ccs, nref = get_indexing_offset_correlation_coefficients(
     reflections, experiment.crystal,
     grid=params.grid,
     d_min=params.d_min, d_max=params.d_max, map_to_asu=params.asu,
-    grid_h=params.grid_h, grid_k=params.grid_k, grid_l=params.grid_l)
+    grid_h=params.grid_h, grid_k=params.grid_k, grid_l=params.grid_l,
+    reference=reference)
 
   for (h, k, l), cc, n in zip(offsets, ccs, nref):
     if cc > params.symop_threshold or (h == k == l == 0):
