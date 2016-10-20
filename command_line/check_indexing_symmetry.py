@@ -30,7 +30,7 @@ the diffraction pattern, possibly as a result of an incorrect beam centre.
 Examples::
 
   dials.check_indexing_symmetry experiment.json indexed.pickle \\
-    grid_search_scope=1 symop_threshold=0.7
+    grid=1 symop_threshold=0.7
 
 
   dials.check_indexing_symmetry experiment.json indexed.pickle \\
@@ -48,7 +48,7 @@ d_max = 0
 symop_threshold = 0
   .type = float
   .help = "Threshold above which we consider a symmetry operator true."
-grid_search_scope = 0
+grid = 0
   .type = int
   .help = "Search scope for testing misindexing on h, k, l."
 grid_h = 0
@@ -187,7 +187,7 @@ def offset_miller_indices(miller_indices, offset):
     *[mi.iround() for mi in (miller_indices.as_vec3_double() + offset).parts()])
 
 def get_indexing_offset_correlation_coefficients(
-    reflections, crystal, grid_search_scope, d_min=None, d_max=None,
+    reflections, crystal, grid, d_min=None, d_max=None,
     map_to_asu=False, grid_h=0, grid_k=0, grid_l=0):
 
   from copy import deepcopy
@@ -217,33 +217,33 @@ def get_indexing_offset_correlation_coefficients(
   if map_to_asu:
     ms = ms.map_to_asu()
 
-  gh = gk = gl = grid_search_scope
+  gh = gk = gl = grid
   if grid_h: gh = grid_h
   if grid_k: gk = grid_k
   if grid_l: gl = grid_l
 
+  # essentially just inversion operation - this *should* have good CC
+  cb_op = sgtbx.change_of_basis_op('-x,-y,-z')
+
   for h in range(-gh, gh + 1):
     for k in range(-gk, gk + 1):
       for l in range(-gl, gl + 1):
-        for smx in ['-x,-y,-z']:
-          miller_indices = offset_miller_indices(
-            ms.indices(), (2 * h, 2 * k, 2* l))
-          reindexed_miller_indices = sgtbx.change_of_basis_op(smx).apply(
-            miller_indices)
-          rms = miller_set(cs, reindexed_miller_indices)
-          rms = rms.array(data)
-          intensity, intensity_rdx = rms.common_sets(ms)
-          cc = intensity.correlation(intensity_rdx).coefficient()
-
-          ccs.append(cc)
-          offsets.append((h, k, l))
-          nref.append(intensity.size())
+        offset = (2*h, 2*k, 2*l)
+        miller_indices = offset_miller_indices(ms.indices(), offset)
+        reindexed_miller_indices = cb_op.apply(miller_indices)
+        rms = miller_set(cs, reindexed_miller_indices).array(data)
+        if map_to_asu:
+          rms = rms.map_to_asu()
+        intensity, intensity_rdx = rms.common_sets(ms)
+        cc = intensity.correlation(intensity_rdx).coefficient()
+        ccs.append(cc)
+        offsets.append((h, k, l))
+        nref.append(intensity.size())
 
   return offsets, ccs, nref
 
 def test_P1_crystal_indexing(reflections, experiment, params):
-  if not (params.grid_search_scope or params.grid_h or \
-    params.grid_k or params.grid_l):
+  if not (params.grid or params.grid_h or params.grid_k or params.grid_l):
     return
 
   logger.info('Checking HKL origin:')
@@ -252,7 +252,7 @@ def test_P1_crystal_indexing(reflections, experiment, params):
 
   offsets, ccs, nref = get_indexing_offset_correlation_coefficients(
     reflections, experiment.crystal,
-    grid_search_scope=params.grid_search_scope,
+    grid=params.grid,
     d_min=params.d_min, d_max=params.d_max, map_to_asu=params.asu,
     grid_h=params.grid_h, grid_k=params.grid_k, grid_l=params.grid_l)
 
@@ -296,6 +296,11 @@ def run(args):
   assert(len(experiments) == 1)
   experiment = experiments[0]
   reflections = reflections[0]
+
+  # remove reflections with 0, 0, 0 index
+  zero = (reflections['miller_index'] == (0, 0, 0))
+  logger.info('Removing %d unindexed reflections' % zero.iselection().size())
+  reflections = reflections.select(~zero)
 
   h, k, l = reflections['miller_index'].as_vec3_double().parts()
 

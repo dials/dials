@@ -298,7 +298,7 @@ the beam centre latching onto some very low resolution Bragg reflection rather
 than the direct beam :math:`hkl = (0,0,0)`. DIALS offers a tool to check this.
 If we run::
 
-  dials.check_indexing_symmetry experiments.json indexed.pickle grid_search_scope=1
+  dials.check_indexing_symmetry experiments.json indexed.pickle grid=1
 
 then all combinations of off-by-one offsets in :math:`h`, :math:`k` and :math:`l`
 will be checked by testing correlation coefficients between sets of reflections
