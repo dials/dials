@@ -118,6 +118,12 @@ phil_scope = parse('''
       .help = "If importing as a grid scan set the size"
   }
 
+  format {
+    dynamic_shadowing = False
+      .type = bool
+      .help = "Enable dynamic shadowing"
+  }
+
   include scope dials.util.options.geometry_phil_scope
 
   lookup {
@@ -165,19 +171,25 @@ class DataBlockImporter(object):
     # Check we have some filenames
     if len(datablocks) == 0:
 
+      format_kwargs = {
+        'dynamic_shadowing' : self.params.format.dynamic_shadowing
+      }
+
       # Check if a template has been set and print help if not, otherwise try to
       # import the images based on the template input
       if len(self.params.input.template) > 0:
         importer = DataBlockTemplateImporter(
           self.params.input.template,
-          max(self.params.verbosity-1, 0))
+          max(self.params.verbosity-1, 0),
+          format_kwargs=format_kwargs)
         datablocks = importer.datablocks
         if len(datablocks) == 0:
           raise Sorry('No datablocks found matching template %s' % self.params.input.template)
       elif len(self.params.input.directory) > 0:
         datablocks = DataBlockFactory.from_filenames(
           self.params.input.directory,
-          max(self.params.verbosity-1, 0))
+          max(self.params.verbosity-1, 0),
+          format_kwargs=format_kwargs)
         if len(datablocks) == 0:
           raise Sorry('No datablocks found in directories %s' % self.params.input.directory)
       else:

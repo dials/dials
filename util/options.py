@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 #
 # options.py
 #
@@ -245,7 +245,8 @@ class Importer(object):
                compare_beam=None,
                compare_detector=None,
                compare_goniometer=None,
-               scan_tolerance=None):
+               scan_tolerance=None,
+               format_kwargs=None):
     '''
     Parse the arguments. Populates its instance attributes in an intelligent way
     from the arguments in args.
@@ -283,7 +284,8 @@ class Importer(object):
         compare_beam,
         compare_detector,
         compare_goniometer,
-        scan_tolerance)
+        scan_tolerance,
+        format_kwargs)
 
     # Second try to read data block files
     if read_datablocks:
@@ -306,7 +308,8 @@ class Importer(object):
                                       compare_beam,
                                       compare_detector,
                                       compare_goniometer,
-                                      scan_tolerance):
+                                      scan_tolerance,
+                                      format_kwargs):
     '''
     Try to import images.
 
@@ -336,7 +339,8 @@ class Importer(object):
       compare_beam=compare_beam,
       compare_detector=compare_detector,
       compare_goniometer=compare_goniometer,
-      scan_tolerance=scan_tolerance)
+      scan_tolerance=scan_tolerance,
+      format_kwargs=format_kwargs)
     if len(datablocks) > 0:
       filename = "<image files>"
       obj = FilenameDataWrapper(filename, datablocks)
@@ -557,11 +561,21 @@ class PhilCommandParser(object):
         fixed_rotation_tolerance=params.input.tolerance.goniometer.fixed_rotation,
         setting_rotation_tolerance=params.input.tolerance.goniometer.setting_rotation)
       scan_tolerance = params.input.tolerance.scan.oscillation
+     
+      # FIXME Should probably make this smarter since it requires editing here
+      # and in dials.import phil scope
+      try:
+        format_kwargs = {
+          'dynamic_shadowing' : params.format.dynamic_shadowing
+        }
+      except Exception:
+        format_kwargs = None
     else:
       compare_beam = None
       compare_detector = None
       compare_goniometer = None
-      scan_tolerance=None
+      scan_tolerance = None
+      format_kwargs = None
 
     # Try to import everything
     importer = Importer(
@@ -575,7 +589,8 @@ class PhilCommandParser(object):
       compare_beam=compare_beam,
       compare_detector=compare_detector,
       compare_goniometer=compare_goniometer,
-      scan_tolerance=scan_tolerance)
+      scan_tolerance=scan_tolerance,
+      format_kwargs=format_kwargs)
 
     # Add the cached arguments
     for obj in importer.datablocks:
