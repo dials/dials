@@ -164,10 +164,10 @@ class ExtractPixelsFromImage(object):
     if self.compute_mean_background:
       logger.info("Found %d strong pixels on image %d with average background %f"
            % (num_strong,
-              index + 1,
+              frame+1,
               average_background))
     else:
-      logger.info("Found %d strong pixels on image %d" % (num_strong, index + 1))
+      logger.info("Found %d strong pixels on image %d" % (num_strong, frame+1))
 
     # Return the result
     return Result(pixel_list)
