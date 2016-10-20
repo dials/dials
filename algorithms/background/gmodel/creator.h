@@ -48,18 +48,22 @@ namespace dials { namespace algorithms {
      * Initialise the creator
      * @param tuning_constant The robust tuning constant
      * @param max_iter The maximum number of iterations
+     * @param min_pixels The minimum number of pixels needed
      */
     Creator(
           boost::shared_ptr<BackgroundModel> model,
           bool robust,
           double tuning_constant,
-          std::size_t max_iter)
+          std::size_t max_iter,
+          std::size_t min_pixels)
       : model_(model),
         robust_(robust),
         tuning_constant_(tuning_constant),
-        max_iter_(max_iter) {
+        max_iter_(max_iter),
+        min_pixels_(min_pixels) {
       DIALS_ASSERT(tuning_constant > 0);
       DIALS_ASSERT(max_iter > 0);
+      DIALS_ASSERT(min_pixels > 0);
     }
 
     /**
@@ -175,13 +179,16 @@ namespace dials { namespace algorithms {
       af::versa< double, af::c_grid<3> > model = model_->extract(panel, bbox);
       double sum1 = 0;
       double sum2 = 0;
+      double count = 0;
       int mask_code = Valid | Background;
       for (std::size_t i = 0; i < data.size(); ++i) {
         if ((mask[i] & mask_code) == mask_code) {
           sum1 += data[i];
           sum2 += model[i];
+          count += 1;
         }
       }
+      DIALS_ASSERT(count >= min_pixels_);
       DIALS_ASSERT(sum1 >= 0);
       DIALS_ASSERT(sum2 > 0);
       double scale = sum1 / sum2;
@@ -218,7 +225,7 @@ namespace dials { namespace algorithms {
         }
       }
       DIALS_ASSERT(sum_model > 0);
-      DIALS_ASSERT(num_background > 0);
+      DIALS_ASSERT(num_background >= min_pixels_);
 
       // Allocate some arrays
       af::shared<double> X(num_background, 0);
@@ -303,6 +310,7 @@ namespace dials { namespace algorithms {
     bool robust_;
     double tuning_constant_;
     std::size_t max_iter_;
+    std::size_t min_pixels_;
 
   };
 

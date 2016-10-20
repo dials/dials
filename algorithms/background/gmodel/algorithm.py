@@ -51,7 +51,8 @@ class BackgroundAlgorithm(object):
                experiments,
                model=None,
                robust=False,
-               tuning_constant=1.345):
+               tuning_constant=1.345,
+               min_pixels=10):
     '''
     Initialise the algorithm.
 
@@ -71,7 +72,8 @@ class BackgroundAlgorithm(object):
       model           = model,
       robust          = robust,
       tuning_constant = tuning_constant,
-      max_iter=100)
+      max_iter        = 100,
+      min_pixels      = min_pixels)
 
   def compute_background(self, reflections, image_volume=None):
     '''

@@ -100,6 +100,10 @@ class SimpleBackgroundExt(BackgroundIface):
           .type = choice
       }
 
+      min_pixels = 10
+        .type = int(value_min=1)
+        .help = "The minimum number of pixels to compute the background"
+
     ''')
     return phil
 
@@ -123,7 +127,8 @@ class SimpleBackgroundExt(BackgroundIface):
     # Create some keyword parameters
     kwargs = {
       'model' : params.model.algorithm,
-      'outlier' : params.outlier.algorithm
+      'outlier' : params.outlier.algorithm,
+      'min_pixels' : params.min_pixels
     }
 
     # Create all the keyword parameters

@@ -72,9 +72,12 @@ class BackgroundAlgorithm(object):
           kwargs.get("upper", 1.5))
       raise RuntimeError("Unexpected outlier rejector: %s" % outlier)
 
+    # Get the minimum number of pixels
+    min_pixels = kwargs.get("min_pixels", 10)
+
     modeller = select_modeller()
     rejector = select_rejector()
-    self._creator = Creator(modeller, rejector)
+    self._creator = Creator(modeller, rejector, min_pixels=min_pixels)
 
   def compute_background(self, reflections, image_volume=None):
     '''

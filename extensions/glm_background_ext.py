@@ -37,6 +37,10 @@ class SimpleBackgroundExt(BackgroundIface):
           .help = "The background model to fit"
       }
 
+      min_pixels = 10
+        .type = int(value_min=1)
+        .help = "The minimum number of pixels required"
+
     ''')
     return phil
 
@@ -61,7 +65,8 @@ class SimpleBackgroundExt(BackgroundIface):
     self._algorithm = BackgroundAlgorithm(
       experiments,
       tuning_constant=params.robust.tuning_constant,
-      model=params.model.algorithm)
+      model=params.model.algorithm,
+      min_pixels=params.min_pixels)
 
   def compute_background(self, reflections, image_volume=None):
     '''

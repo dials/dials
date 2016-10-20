@@ -43,10 +43,12 @@ namespace dials { namespace algorithms { namespace background {
       .def(init<
           Creator::Model,
           double,
+          std::size_t,
           std::size_t>((
               arg("model"),
               arg("tuning_constant"),
-              arg("max_iter"))))
+              arg("max_iter"),
+              arg("min_pixels")=10)))
       .def("__call__", &Creator::shoebox)
       .def("__call__", &Creator::volume)
       ;

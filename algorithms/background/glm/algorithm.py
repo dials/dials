@@ -16,7 +16,8 @@ class BackgroundAlgorithm(object):
 
   def __init__(self, experiments,
                model='constant3d',
-               tuning_constant=1.345):
+               tuning_constant=1.345,
+               min_pixels=10):
     '''
     Initialise the algorithm.
 
@@ -39,7 +40,8 @@ class BackgroundAlgorithm(object):
     self._create = Creator(
       model=model,
       tuning_constant=tuning_constant,
-      max_iter=100)
+      max_iter=100,
+      min_pixels=min_pixels)
 
   def compute_background(self, reflections, image_volume=None):
     '''

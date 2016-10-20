@@ -34,6 +34,10 @@ class GModelBackgroundExt(BackgroundIface):
           .help = "The tuning constant for robust estimation"
       }
 
+      min_pixels = 10
+        .type = int(value_min=1)
+        .help = "The minimum number of pixels required"
+
       model = None
         .type = str
         .help = "The model filename"
@@ -63,7 +67,8 @@ class GModelBackgroundExt(BackgroundIface):
       experiments,
       model           = params.model,
       robust          = params.robust.algorithm,
-      tuning_constant = params.robust.tuning_constant)
+      tuning_constant = params.robust.tuning_constant,
+      min_pixels      = params.min_pixels)
 
   def compute_background(self, reflections, image_volume=None):
     '''

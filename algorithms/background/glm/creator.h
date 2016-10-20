@@ -56,13 +56,16 @@ namespace dials { namespace algorithms {
      * Initialise the creator
      * @param tuning_constant The robust tuning constant
      * @param max_iter The maximum number of iterations
+     * @param min_pixels The minimum number of pixels needed
      */
-    Creator(Model model, double tuning_constant, std::size_t max_iter)
+    Creator(Model model, double tuning_constant, std::size_t max_iter, std::size_t min_pixels)
       : model_(model),
         tuning_constant_(tuning_constant),
-        max_iter_(max_iter) {
+        max_iter_(max_iter),
+        min_pixels_(min_pixels) {
       DIALS_ASSERT(tuning_constant > 0);
       DIALS_ASSERT(max_iter > 0);
+      DIALS_ASSERT(min_pixels > 0);
     }
 
     /**
@@ -186,7 +189,7 @@ namespace dials { namespace algorithms {
             }
           }
         }
-        DIALS_ASSERT(num_background > 0);
+        DIALS_ASSERT(num_background >= min_pixels_);
 
         // Allocate some arrays
         af::shared<double> Y(num_background, 0);
@@ -250,7 +253,7 @@ namespace dials { namespace algorithms {
           num_background++;
         }
       }
-      DIALS_ASSERT(num_background > 0);
+      DIALS_ASSERT(num_background >= min_pixels_);
 
       // Allocate some arrays
       af::shared<double> Y(num_background, 0);
@@ -313,7 +316,7 @@ namespace dials { namespace algorithms {
             }
           }
         }
-        DIALS_ASSERT(num_background > 0);
+        DIALS_ASSERT(num_background >= min_pixels_);
 
         // Allocate some arrays
         af::versa<double, af::c_grid<2> > X(af::c_grid<2>(num_background,3),0);
@@ -415,7 +418,7 @@ namespace dials { namespace algorithms {
           }
         }
       }
-      DIALS_ASSERT(num_background > 0);
+      DIALS_ASSERT(num_background >= min_pixels_);
 
       // Allocate some arrays
       af::versa<double, af::c_grid<2> > X(af::c_grid<2>(num_background,4),0);
@@ -508,6 +511,7 @@ namespace dials { namespace algorithms {
     Model model_;
     double tuning_constant_;
     std::size_t max_iter_;
+    std::size_t min_pixels_;
 
   };
 

@@ -63,13 +63,17 @@ namespace dials { namespace algorithms { namespace background {
 
     class_< Creator >("Creator", no_init)
       .def(init<
-          boost::shared_ptr<Modeller>
-        >((arg("modeller"))))
+          boost::shared_ptr<Modeller>,
+          std::size_t
+        >((arg("modeller"),
+           arg("min_pixels")=10)))
       .def(init<
           boost::shared_ptr<Modeller>,
-          boost::shared_ptr<OutlierRejector>
+          boost::shared_ptr<OutlierRejector>,
+          std::size_t
         >((arg("modeller"),
-           arg("rejector"))))
+           arg("rejector"),
+           arg("min_pixels")=10)))
       .def("__call__", &call_1<float>)
       .def("__call__", &call_2<float>)
       .def("__call__", &call_3<float>)

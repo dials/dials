@@ -42,9 +42,12 @@ namespace dials { namespace algorithms { namespace background {
      * Initialise with the desired modeller.
      * @param modeller The background modeller
      */
-    Creator(boost::shared_ptr<Modeller> modeller)
-      : modeller_(modeller) {
+    Creator(boost::shared_ptr<Modeller> modeller,
+            std::size_t min_pixels)
+      : modeller_(modeller),
+        min_pixels_(min_pixels) {
       DIALS_ASSERT(modeller != NULL);
+      DIALS_ASSERT(min_pixels > 0);
     }
 
     /**
@@ -54,10 +57,13 @@ namespace dials { namespace algorithms { namespace background {
      */
     Creator(
           boost::shared_ptr<Modeller> modeller,
-          boost::shared_ptr<OutlierRejector> rejector)
+          boost::shared_ptr<OutlierRejector> rejector,
+          std::size_t min_pixels)
       : modeller_(modeller),
-        rejector_(rejector) {
+        rejector_(rejector),
+        min_pixels_(min_pixels) {
       DIALS_ASSERT(modeller != NULL);
+      DIALS_ASSERT(min_pixels > 0);
     }
 
     /**
@@ -208,7 +214,7 @@ namespace dials { namespace algorithms { namespace background {
           }
         }
       }
-      DIALS_ASSERT(count > 0);
+      DIALS_ASSERT(count >= min_pixels_);
       double mean = sum1 / count;
       double var = sum2 / count - mean*mean;
       DIALS_ASSERT(mean >= 0);
@@ -222,6 +228,7 @@ namespace dials { namespace algorithms { namespace background {
 
     boost::shared_ptr<Modeller> modeller_;
     boost::shared_ptr<OutlierRejector> rejector_;
+    std::size_t min_pixels_;
   };
 
 }}} // namespace dials::algorithms::background
