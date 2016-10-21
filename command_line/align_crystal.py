@@ -140,7 +140,6 @@ class align_crystal(object):
 
     rows = []
     names = self.experiment.goniometer.get_names()
-    rows.append(['v1', 'v2', names[1], names[0]])
 
     def vector_as_str(v):
       v = v.elems
@@ -158,6 +157,8 @@ class align_crystal(object):
             (vector_as_str(v1), vector_as_str(v2),
              '% 7.2f' %angles[0], '% 7.2f' %angles[1],
              ))
+    rows = [('v1', 'v2', names[1], names[0])] + \
+           sorted(rows)
     print 'Independent solutions:'
     print table_utils.format(rows=rows, has_header=True)
 
