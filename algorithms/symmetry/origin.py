@@ -39,10 +39,14 @@ def compute_miller_set_correlation(ms_a, ms_b, map_to_asu=False,
   #observations, correlation.'''
 
   if map_to_asu:
+    # not obvious that this will help for the reasons stated below
     ms_a = ms_a.map_to_asu()
     ms_b = ms_b.map_to_asu()
 
   if merge_equivalents:
+    # only want to do this if we have essentially "scaled" the data - if not
+    # then we will get a smooth Wilson plot and about CC=1 (due to general
+    # fall off with resolution)
     ms_a = ms_a.merge_equivalents().array()
     ms_b = ms_b.merge_equivalents().array()
 
