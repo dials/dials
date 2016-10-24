@@ -56,8 +56,6 @@ saturation = 0
 show_mask = False
   .type = bool
 
-include scope dials.util.masking.shadowing_phil_scope
-
 """, process_includes=True)
 
 colour_schemes = {
@@ -124,8 +122,7 @@ def run(args):
         #image = [image]
 
       trange = [p.get_trusted_range() for p in detector]
-      mask = imageset.get_mask(
-        i_image-start, goniometer_shadow_mask=params.goniometer_shadow_mask)
+      mask = imageset.get_mask(i_image-start)
       if mask is None:
         mask = [p.get_trusted_range_mask(im) for im, p in zip(image, detector)]
 

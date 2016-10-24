@@ -26,8 +26,6 @@ def generate_phil_scope():
   {
     include scope dials.data.lookup.phil_scope
 
-    include scope dials.util.masking.shadowing_phil_scope
-
     write_hot_mask = False
       .type = bool
       .help = "Write the hot mask"
@@ -517,7 +515,6 @@ class SpotFinderFactory(object):
     return SpotFinder(
       threshold_function        = threshold_function,
       mask                      = params.spotfinder.lookup.mask,
-      goniometer_shadow_mask    = params.spotfinder.goniometer_shadow_mask,
       filter_spots              = filter_spots,
       scan_range                = params.spotfinder.scan_range,
       write_hot_mask            = params.spotfinder.write_hot_mask,

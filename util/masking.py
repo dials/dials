@@ -87,15 +87,6 @@ phil_scope = parse("""
 """, process_includes=True)
 
 
-shadowing_phil_scope = parse("""
-  goniometer_shadow_mask = False
-    .type = bool
-    .help = "Mask out any goniometer shadowing (requires a goniometer shadow"
-            "model to be specified in the dxtbx format class)."
-    .expert_level = 1
-""")
-
-
 def generate_ice_ring_resolution_ranges(beam, panel, params):
   '''
   Generate a set of resolution ranges from the ice ring parameters

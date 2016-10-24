@@ -92,8 +92,6 @@ image_viewer {
     .type = str
     .help = path to mask pickle file
 
-  include scope dials.util.masking.shadowing_phil_scope
-
 }
 """, process_includes=True)
 

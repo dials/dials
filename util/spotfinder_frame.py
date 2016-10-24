@@ -610,8 +610,7 @@ class SpotFrame(XrayFrame) :
 
       trange = [p.get_trusted_range() for p in detector]
       mask = []
-      mask = image.get_mask(
-        goniometer_shadow_mask=self.params.goniometer_shadow_mask)
+      mask = image.get_mask()
       if mask is None:
         mask = [p.get_trusted_range_mask(im) for im, p in zip(raw_data, detector)]
 
@@ -874,8 +873,7 @@ class SpotFrame(XrayFrame) :
     if self.mask is not None:
       mask = self.mask
     else:
-      mask = self.pyslip.tiles.raw_image.get_mask(
-        goniometer_shadow_mask=self.params.goniometer_shadow_mask)
+      mask = self.pyslip.tiles.raw_image.get_mask()
     for rd, m in zip(raw_data, mask):
       rd.set_selected(~m, -2)
 

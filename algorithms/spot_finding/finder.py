@@ -42,7 +42,6 @@ class ExtractPixelsFromImage(object):
                imageset,
                threshold_function,
                mask,
-               goniometer_shadow_mask,
                region_of_interest,
                max_strong_pixel_fraction,
                compute_mean_background):
@@ -59,7 +58,6 @@ class ExtractPixelsFromImage(object):
     self.threshold_function = threshold_function
     self.imageset = imageset
     self.mask = mask
-    self.goniometer_shadow_mask = goniometer_shadow_mask
     self.region_of_interest = region_of_interest
     self.max_strong_pixel_fraction = max_strong_pixel_fraction
     self.compute_mean_background = compute_mean_background
@@ -103,8 +101,7 @@ class ExtractPixelsFromImage(object):
 
     # Get the image and mask
     image = self.imageset.get_corrected_data(index)
-    mask = self.imageset.get_mask(
-      index, goniometer_shadow_mask=self.goniometer_shadow_mask)
+    mask = self.imageset.get_mask(index)
 
     # Set the mask
     if self.mask is not None:
@@ -183,7 +180,6 @@ class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
                imageset,
                threshold_function,
                mask,
-               goniometer_shadow_mask,
                region_of_interest,
                max_strong_pixel_fraction,
                compute_mean_background,
@@ -204,7 +200,6 @@ class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
       imageset,
       threshold_function,
       mask,
-      goniometer_shadow_mask,
       region_of_interest,
       max_strong_pixel_fraction,
       compute_mean_background)
@@ -427,7 +422,6 @@ class ExtractSpots(object):
   def __init__(self,
                threshold_function=None,
                mask=None,
-               goniometer_shadow_mask=False,
                region_of_interest=None,
                max_strong_pixel_fraction=0.1,
                compute_mean_background=False,
@@ -454,7 +448,6 @@ class ExtractSpots(object):
     # Set the required strategies
     self.threshold_function = threshold_function
     self.mask = mask
-    self.goniometer_shadow_mask = goniometer_shadow_mask
     self.mp_method = mp_method
     self.mp_chunksize = mp_chunksize
     self.mp_nproc = mp_nproc
@@ -554,7 +547,6 @@ class ExtractSpots(object):
         imageset                  = imageset,
         threshold_function        = self.threshold_function,
         mask                      = self.mask,
-        goniometer_shadow_mask    = self.goniometer_shadow_mask,
         max_strong_pixel_fraction = self.max_strong_pixel_fraction,
         compute_mean_background   = self.compute_mean_background,
         region_of_interest        = self.region_of_interest)
@@ -659,7 +651,6 @@ class ExtractSpots(object):
         imageset                  = imageset,
         threshold_function        = self.threshold_function,
         mask                      = self.mask,
-        goniometer_shadow_mask    = self.goniometer_shadow_mask,
         max_strong_pixel_fraction = self.max_strong_pixel_fraction,
         compute_mean_background   = self.compute_mean_background,
         region_of_interest        = self.region_of_interest,
@@ -710,7 +701,6 @@ class SpotFinder(object):
   def __init__(self,
                threshold_function=None,
                mask=None,
-               goniometer_shadow_mask=False,
                region_of_interest=None,
                max_strong_pixel_fraction=0.1,
                compute_mean_background=False,
@@ -738,7 +728,6 @@ class SpotFinder(object):
     # Set the filter and some other stuff
     self.threshold_function = threshold_function
     self.mask = mask
-    self.goniometer_shadow_mask = goniometer_shadow_mask
     self.region_of_interest = region_of_interest
     self.max_strong_pixel_fraction = max_strong_pixel_fraction
     self.compute_mean_background = compute_mean_background
@@ -827,7 +816,6 @@ class SpotFinder(object):
     extract_spots = ExtractSpots(
       threshold_function        = self.threshold_function,
       mask                      = mask,
-      goniometer_shadow_mask    = self.goniometer_shadow_mask,
       region_of_interest        = self.region_of_interest,
       max_strong_pixel_fraction = self.max_strong_pixel_fraction,
       compute_mean_background   = self.compute_mean_background,
