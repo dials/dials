@@ -1040,25 +1040,27 @@ class SpotFrame(XrayFrame) :
           frame_predictions_sel = (
             (frame_numbers >= (i_frame-n)) & (frame_numbers < (i_frame+1+n)))
           for reflection in ref_list.select(frame_predictions_sel & expt_sel):
-            if self.settings.show_predictions and \
-               'xyzcal.px' in reflection:
-              x, y = map_coords(reflection['xyzcal.px'][0] + 0.5,
-                                reflection['xyzcal.px'][1] + 0.5,
-                                reflection['panel'])
-              predictions_data.append(
-                (x, y, {'colour':self.prediction_colours[i_expt]}))
-            elif self.settings.show_predictions and \
-                 'xyzcal.mm' in reflection:
-              x, y = detector[reflection['panel']].millimeter_to_pixel(
-                reflection['xyzcal.mm'][:2])
-              x, y = map_coords(x+ 0.5, y + 0.5, reflection['panel'])
-              predictions_data.append(
-                (x, y, {'colour':self.prediction_colours[i_expt]}))
-            if (self.settings.show_miller_indices and
-                'miller_index' in reflection and
-                reflection['miller_index'] != (0,0,0)):
-              miller_indices_data.append((x, y, str(reflection['miller_index']),
-                                          {'placement':'ne'}))
+            if self.settings.show_predictions or self.settings.show_miller_indices:
+              x = None
+              if 'xyzcal.px' in reflection:
+                x, y = map_coords(reflection['xyzcal.px'][0] + 0.5,
+                                  reflection['xyzcal.px'][1] + 0.5,
+                                  reflection['panel'])
+              elif 'xyzcal.mm' in reflection:
+                x, y = detector[reflection['panel']].millimeter_to_pixel(
+                  reflection['xyzcal.mm'][:2])
+                x, y = map_coords(x+ 0.5, y + 0.5, reflection['panel'])
+              if x is None: next
+
+              if self.settings.show_predictions:
+                predictions_data.append(
+                  (x, y, {'colour':self.prediction_colours[i_expt]}))
+
+              if (self.settings.show_miller_indices and
+                  'miller_index' in reflection and
+                  reflection['miller_index'] != (0,0,0)):
+                miller_indices_data.append((x, y, str(reflection['miller_index']),
+                                            {'placement':'ne', 'radius':0}))
 
     if len(overlapped_data) > 0:
       #show overlapped pixels in a different color
