@@ -873,7 +873,8 @@ class SpotFrame(XrayFrame) :
     if self.mask is not None:
       mask = self.mask
     else:
-      mask = self.pyslip.tiles.raw_image.get_mask()
+      goniometer = self.pyslip.tiles.raw_image.image_set.get_goniometer()
+      mask = self.pyslip.tiles.raw_image.get_mask(goniometer=goniometer)
     for rd, m in zip(raw_data, mask):
       rd.set_selected(~m, -2)
 
