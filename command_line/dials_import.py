@@ -118,11 +118,7 @@ phil_scope = parse('''
       .help = "If importing as a grid scan set the size"
   }
 
-  format {
-    dynamic_shadowing = False
-      .type = bool
-      .help = "Enable dynamic shadowing"
-  }
+  include scope dials.util.options.format_phil_scope
 
   include scope dials.util.options.geometry_phil_scope
 

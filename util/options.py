@@ -201,6 +201,15 @@ geometry {
 ''')
 
 
+format_phil_scope = libtbx.phil.parse('''
+format {
+  dynamic_shadowing = False
+    .type = bool
+    .help = "Enable dynamic shadowing"
+}
+''')
+
+
 class ConfigWriter(object):
   '''Class to write configuration to file.'''
 
