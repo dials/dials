@@ -25,12 +25,30 @@ def cctbx_i_over_sigi_ms_from_dials_data(reflections, cctbx_crystal_symmetry):
   from cctbx.miller import set as miller_set
   refl = reflections.select(reflections['intensity.sum.variance'] > 0)
   return miller_set(cctbx_crystal_symmetry, refl['miller_index']).array(
-    refl['intensity.sum.value'] / flex.sqrt(refl['intensity.sum.variance']))
+    data=refl['intensity.sum.value'],
+    sigmas=flex.sqrt(refl['intensity.sum.variance']))
 
 def offset_miller_indices(indices, offset):
   from dials.array_family import flex
   return flex.miller_index(
     *[mi.iround() for mi in (indices.as_vec3_double() + offset).parts()])
+
+def compute_miller_set_correlation(ms_a, ms_b, map_to_asu=False,
+                                   merge_equivalents=False):
+  '''Compute correlation between data indexed in miller sets a, b, return
+  #observations, correlation.'''
+
+  if map_to_asu:
+    ms_a = ms_a.map_to_asu()
+    ms_b = ms_b.map_to_asu()
+
+  if merge_equivalents:
+    ms_a = ms_a.merge_equivalents().array()
+    ms_b = ms_b.merge_equivalents().array()
+
+  common_a, common_b = ms_a.common_sets(ms_b)
+
+  return common_a.size(), common_a.correlation(common_b).coefficient()
 
 def get_hkl_offset_correlation_coefficients(
   dials_reflections, dials_crystal, map_to_asu=False,
@@ -72,13 +90,9 @@ def get_hkl_offset_correlation_coefficients(
       _ms = reference_ms
     else:
       _ms = miller_set(cs, indices).array(ms.data())
-    if map_to_asu:
-      rms = rms.map_to_asu()
-      _ms = _ms.map_to_asu()
-    intensity, intensity_rdx = rms.common_sets(_ms)
-    cc = intensity.correlation(intensity_rdx).coefficient()
+    n, cc = compute_miller_set_correlation(_ms, rms, map_to_asu=map_to_asu)
     ccs.append(cc)
     offsets.append(hkl)
-    nref.append(intensity.size())
+    nref.append(n)
 
   return offsets, ccs, nref
