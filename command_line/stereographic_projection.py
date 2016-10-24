@@ -75,7 +75,10 @@ plot {
 def reference_poles_perpendicular_to_beam(beam, goniometer):
   # plane normal
   d0 = matrix.col(beam.get_s0()).normalize()
-  d1 = d0.cross(matrix.col(goniometer.get_rotation_axis())).normalize()
+  if goniometer is not None:
+    d1 = d0.cross(matrix.col(goniometer.get_rotation_axis())).normalize()
+  else:
+    d1 = d0.ortho()
   d2 = d1.cross(d0).normalize()
   return (d0, d1, d2)
 
