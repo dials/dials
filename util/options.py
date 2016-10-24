@@ -206,6 +206,10 @@ format {
   dynamic_shadowing = False
     .type = bool
     .help = "Enable dynamic shadowing"
+  multi_panel = False
+    .type = bool
+    .help = "Enable a multi-panel detector model."
+            "(Not supported by all detector formats)"
 }
 ''')
 
@@ -575,7 +579,8 @@ class PhilCommandParser(object):
       # and in dials.import phil scope
       try:
         format_kwargs = {
-          'dynamic_shadowing' : params.format.dynamic_shadowing
+          'dynamic_shadowing' : params.format.dynamic_shadowing,
+          'multi_panel' : params.format.multi_panel,
         }
       except Exception:
         format_kwargs = None
