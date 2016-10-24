@@ -193,6 +193,18 @@ def get_indexing_offset_correlation_coefficients(
     reflections, crystal, grid, d_min=None, d_max=None,
     map_to_asu=False, grid_h=0, grid_k=0, grid_l=0, reference=None):
 
+  from dials.algorithms.symmetry import origin
+
+  if grid:
+    if grid_h == 0: grid_h = grid
+    if grid_k == 0: grid_k = grid
+    if grid_l == 0: grid_l = grid
+
+  if True:
+    return origin.get_hkl_offset_correlation_coefficients(
+      reflections, crystal, map_to_asu=map_to_asu,
+      grid_h=grid_h, grid_k=grid_k, grid_l=grid_l, reference=reference)
+
   from copy import deepcopy
   from dials.array_family import flex
 
@@ -224,9 +236,6 @@ def get_indexing_offset_correlation_coefficients(
 
   if d_min is not None or d_max is not None:
     ms = ms.resolution_filter(d_min=d_min, d_max=d_max)
-
-  if map_to_asu:
-    ms = ms.map_to_asu()
 
   gh = gk = gl = grid
   if grid_h: gh = grid_h
