@@ -19,7 +19,7 @@ def run():
 
   new_expt_json = os.path.join(os.getcwd(), 'modified_experiments.json')
 
-  cmd = "dials.modify_geometry %s angle=10 angle=20 angle=30" %orig_expt_json
+  cmd = "dials.modify_geometry %s angles=10,20,30" %orig_expt_json
   result = easy_run.fully_buffered(cmd).raise_if_errors()
 
   from dxtbx.serialize import load

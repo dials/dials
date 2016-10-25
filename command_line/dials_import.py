@@ -476,23 +476,28 @@ class ManualGeometryUpdater(object):
 
     '''
     if goniometer is not None:
-      if len(params.axis) == 1:
-        goniometer.set_rotation_axis(params.axis[0])
-      elif len(params.axis) > 1:
+      if params.axes is not None:
+        if len(params.axes) % 3:
+          raise Sorry("Number of values for axes parameter must be multiple of 3.")
+        if len(params.axes) == 3:
+          goniometer.set_rotation_axis(params.axes)
+        elif len(params.axes) > 3:
+          from scitbx.array_family import flex
+          axes = flex.vec3_double(
+            params.axes[i*3:(i*3)+3] for i in range(len(params.axes) // 3))
+          if not hasattr(goniometer, 'get_axes'):
+            raise Sorry("Current goniometer is not a multi-axis goniometer")
+          if len(goniometer.get_axes()) != len(axes):
+            raise Sorry("Number of axes must match the current goniometer (%s)"
+               %len(goniometer.get_axes()))
+          goniometer.set_axes(axes)
+      if params.angles is not None:
         if not hasattr(goniometer, 'get_axes'):
           raise Sorry("Current goniometer is not a multi-axis goniometer")
-        if len(goniometer.get_axes()) != len(params.axis):
-          raise Sorry("Number of axes must match the current goniometer (%s)"
-             %len(goniometer.get_axes()))
-        from scitbx.array_family import flex
-        goniometer.set_axes(flex.vec3_double(params.axis))
-      if len(params.angle) > 1:
-        if not hasattr(goniometer, 'get_axes'):
-          raise Sorry("Current goniometer is not a multi-axis goniometer")
-        if len(goniometer.get_angles()) != len(params.angle):
+        if len(goniometer.get_angles()) != len(params.angles):
           raise Sorry("Number of angles must match the current goniometer (%s)"
              %len(goniometer.get_angles()))
-        goniometer.set_angles(params.angle)
+        goniometer.set_angles(params.angles)
       if params.fixed_rotation is not None:
         goniometer.set_fixed_rotation(params.fixed_rotation)
       if params.setting_rotation is not None:

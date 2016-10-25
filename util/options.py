@@ -153,15 +153,17 @@ geometry {
 
   goniometer {
 
-    axis = None
-      .type = floats(size=3)
-      .help = "Override the goniometer axes"
-      .multiple = True
+    axes = None
+      .type = floats
+      .help = "Override the goniometer axes. Axes must be provided in the"
+              "order crystal-to-goniometer, i.e. for a Kappa goniometer"
+              "phi,kappa,omega"
 
-    angle = None
-      .type = float
-      .help = "Override the goniometer angles"
-      .multiple = True
+    angles = None
+      .type = floats
+      .help = "Override the goniometer angles. Axes must be provided in the"
+              "order crystal-to-goniometer, i.e. for a Kappa goniometer"
+              "phi,kappa,omega"
 
     fixed_rotation = None
       .type = floats(size=9)
