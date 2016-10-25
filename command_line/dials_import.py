@@ -89,6 +89,11 @@ phil_scope = parse('''
     .help = "The verbosity level"
 
   input {
+
+    ignore_unhandled = False
+      .type = bool
+      .help = "Don't throw exception if some args are unhandled"
+
     template = None
       .type = str
       .help = "The image sweep template"
@@ -697,7 +702,13 @@ class Script(object):
     logger.info(dials_version())
 
     # Parse the command line arguments completely
-    params, options = self.parser.parse_args(show_diff_phil=False)
+    if params.input.ignore_unhandled:
+      params, options, unhandled = self.parser.parse_args(
+        show_diff_phil=False,
+        return_unhandled=True)
+    else:
+      params, options = self.parser.parse_args(show_diff_phil=False)
+      unhandled = None
 
     # Log the diff phil
     diff_phil = self.parser.diff_phil.as_str()
@@ -705,8 +716,16 @@ class Script(object):
       logger.info('The following parameters have been modified:\n')
       logger.info(diff_phil)
 
+    # Print a warning if something unhandled
+    if unhandled is not None and len(unhandled) > 0:
+      msg = 'Unable to handle the following arguments:\n'
+      msg += '\n'.join(['  %s' % a for a in unhandled])
+      msg += '\n'
+      logger.warn(msg)
+
     # Print help if no input
-    if len(params.input.datablock) == 0 and not params.input.template:
+    if (len(params.input.datablock) == 0 and not
+        (params.input.template or params.input.directory)):
       self.parser.print_help()
       return
 

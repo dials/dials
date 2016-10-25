@@ -824,13 +824,20 @@ class OptionParser(OptionParserBase):
       config_options=self.system_phil.as_str() != '',
       **kwargs)
 
-  def parse_args(self, args=None, show_diff_phil=False, return_unhandled=False, quick_parse=False):
+  def parse_args(self,
+                 args=None,
+                 show_diff_phil=False,
+                 return_unhandled=False,
+                 ignore_unhandled=False,
+                 quick_parse=False):
     '''
     Parse the command line arguments and get system configuration.
 
     :param args: The input arguments
     :param show_diff_phil: True/False Print the diff phil
     :param return_unhandled: True/False return unhandled arguments
+    :param ignore_unhandled: True/False ignore unhandled arguments
+                              if return_unhandled is False
     :param quick_parse: Return as fast as possible and without reading any data,
                         ignoring class constructor options
     :return: The options and phil parameters
@@ -881,7 +888,10 @@ class OptionParser(OptionParserBase):
     elif len(args) > 0 and not quick_parse:
       msg = 'Unable to handle the following arguments:\n'
       msg += '\n'.join(['  %s' % a for a in args])
-      raise Sorry(msg)
+      if ignore_unhandled:
+        print msg
+      else:
+        raise Sorry(msg)
     return params, options
 
   @property
