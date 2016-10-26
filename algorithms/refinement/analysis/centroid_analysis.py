@@ -178,45 +178,70 @@ class CentroidAnalyser(object):
         exp_data['phi_periodogram'] = pz
       self._spectral_analysis = True
 
-      # FIXME here extract further information from the power spectrum
+      # extract further information from the power spectrum
+      for exp_data in self._results:
+        exp_data['x_interval'] = self._analyse_periodogram(exp_data['x_periodogram'])
+        exp_data['y_interval'] = self._analyse_periodogram(exp_data['y_periodogram'])
+        exp_data['phi_interval'] = self._analyse_periodogram(exp_data['phi_periodogram'])
 
     return self._results
 
-def save_plots(*args, **kwargs):
-  """Create plots for the centroid analysis results for a single experiment."""
+  def _analyse_periodogram(self, pgram):
+    """Use the periodogram pgram to suggest a suitable interval width for
+    scan-varying refinement to account for the major variation in residuals"""
 
-  suffix = kwargs.get('suffix', '')
-  vlines = kwargs.get('vlines', [])
+    # determine a baseline from the high frequency noise
+    bl = flex.median(pgram.spec.select(pgram.freq > 0.25))
 
-  # first set of results
-  exp_data = args[0]
+    # look for peaks greater than 5 times this baseline
+    peaks = pgram.spec > 5 * bl
+
+    # find where this peak falls off below the cutoff and return the cycle
+    # period at that frequency
+    idx = flex.last_index(peaks, True)
+    if idx is not None:
+      period = 1./pgram.freq[idx]
+    else:
+      period = None
+    return period
+
+def save_plots(raw, smoothed, suffix='', vlines=None):
+  """Create plots for the centroid analysis results for a single experiment.
+  Overlay raw and smoothed periodograms"""
+
+  if vlines is None: vlines = []
 
   import matplotlib
   matplotlib.use('Agg')
   import matplotlib.pyplot as plt
 
-  nblocks = exp_data['nblocks']
-  block_size = exp_data['block_size']
-  #sample_freq = 1./block_size
-  phistart = exp_data['phi_range'][0]
+  nblocks = raw['nblocks']
+  block_size = raw['block_size']
+  phistart = raw['phi_range'][0]
   block_centres = block_size * flex.double_range(nblocks) + phistart + block_size/2.0
 
   # X residuals plot
   plt.figure(1)
   plt.subplot(211)
-  plt.plot(block_centres, 1000. * exp_data['av_x_resid_per_block'])
+  plt.plot(block_centres, 1000. * raw['av_x_resid_per_block'])
   plt.xlabel('phi (degrees)')
   plt.ylabel('x residuals per block (microns)')
 
   # X periodogram
   plt.subplot(212)
-  for dat in args: # allow overlay of periodogram plots e.g. raw and smoothed
+  for dat in [raw, smoothed]: # overlay raw and smoothed periodogram plots
     px = dat['x_periodogram']
     sample_freq = 1./dat['block_size']
     freq = px.freq * sample_freq
     line, = plt.semilogy(freq, px.spec)
   for vline in vlines:
     plt.axvline(x=vline, color='r')
+  x_interval = smoothed['x_interval']
+  if x_interval:
+    x_freq = 1./x_interval
+    plt.axvline(x=x_freq, color='c')
+    plt.text(0.2, 0.9, 'interval width: {0:.3f}'.format(x_interval),
+             transform=line.axes.transAxes, color='c')
   plt.xlabel('frequency')
   plt.ylabel('spectrum')
 
@@ -228,19 +253,25 @@ def save_plots(*args, **kwargs):
   # Y residuals plot
   plt.figure(2)
   plt.subplot(211)
-  plt.plot(block_centres, 1000. * exp_data['av_y_resid_per_block'])
+  plt.plot(block_centres, 1000. * raw['av_y_resid_per_block'])
   plt.xlabel('phi (degrees)')
   plt.ylabel('y residuals per block (microns)')
 
   # Y periodogram
   plt.subplot(212)
-  for dat in args: # allow overlay of periodogram plots e.g. raw and smoothed
+  for dat in [raw, smoothed]: # overlay raw and smoothed periodogram plots
     py = dat['y_periodogram']
     sample_freq = 1./dat['block_size']
     freq = py.freq * sample_freq
     line, = plt.semilogy(freq, py.spec)
   for vline in vlines:
     plt.axvline(x=vline, color='r')
+  y_interval = smoothed['y_interval']
+  if y_interval:
+    y_freq = 1./y_interval
+    plt.axvline(x=y_freq, color='c')
+    plt.text(0.2, 0.9, 'interval width: {0:.3f}'.format(y_interval),
+             transform=line.axes.transAxes, color='c')
   plt.xlabel('frequency')
   plt.ylabel('spectrum')
 
@@ -252,19 +283,25 @@ def save_plots(*args, **kwargs):
   # phi residuals plot
   plt.figure(3)
   plt.subplot(211)
-  plt.plot(block_centres, 1000. * exp_data['av_phi_resid_per_block'])
+  plt.plot(block_centres, 1000. * raw['av_phi_resid_per_block'])
   plt.xlabel('phi (degrees)')
   plt.ylabel('phi residuals per block (mrad)')
 
   # phi periodogram
   plt.subplot(212)
-  for dat in args: # allow overlay of periodogram plots e.g. raw and smoothed
+  for dat in [raw, smoothed]: # overlay raw and smoothed periodogram plots
     pz = dat['phi_periodogram']
     sample_freq = 1./dat['block_size']
     freq = pz.freq * sample_freq
     line, = plt.semilogy(freq, pz.spec)
   for vline in vlines:
     plt.axvline(x=vline, color='r')
+  phi_interval = smoothed['phi_interval']
+  if phi_interval:
+    phi_freq = 1./phi_interval
+    plt.axvline(x=phi_freq, color='c')
+    plt.text(0.2, 0.9, 'interval width: {0:.3f}'.format(phi_interval),
+             transform=line.axes.transAxes, color='c')
   plt.xlabel('frequency')
   plt.ylabel('spectrum')
 
