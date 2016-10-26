@@ -15,6 +15,23 @@ from libtbx.utils import Sorry
 from scitbx.array_family import flex # import dependency
 from dials_util_ext import *
 
+def debug_console():
+  '''Start python console at the current code point.'''
+  banner = '=' * 80
+  import code, sys
+
+  # use exception trick to pick up the current frame
+  try:
+    raise None
+  except:
+    frame = sys.exc_info()[2].tb_frame.f_back
+
+  # evaluate commands in current namespace
+  namespace = frame.f_globals.copy()
+  namespace.update(frame.f_locals)
+
+  code.interact(banner=banner, local=namespace)
+
 class UsefulError(RuntimeError):
   '''Error message to direct user to report to dials developers.'''
 
