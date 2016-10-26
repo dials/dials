@@ -206,7 +206,10 @@ class Script(object):
         from dxtbx.model import Detector
         for datablock in datablocks:
           for imageset in datablock.extract_imagesets():
-            imageset.set_detector(Detector.from_dict(self.reference_detector.to_dict()))
+            for i in range(len(imageset)):
+              imageset.set_detector(
+                Detector.from_dict(self.reference_detector.to_dict()),
+                index=i)
 
       for datablock in datablocks:
         for imageset in datablock.extract_imagesets():
