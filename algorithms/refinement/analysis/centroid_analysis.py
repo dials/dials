@@ -194,13 +194,24 @@ class CentroidAnalyser(object):
     bl = flex.median(pgram.spec.select(pgram.freq > 0.25))
 
     # look for peaks greater than 5 times this baseline
-    peaks = pgram.spec > 5 * bl
+    cutoff = 5 * bl
+    peaks = pgram.spec > cutoff
 
     # find where this peak falls off below the cutoff and return the cycle
     # period at that frequency
     idx = flex.last_index(peaks, True)
     if idx is not None:
-      period = 1./pgram.freq[idx]
+      f1 = pgram.freq[idx]
+      s1 = pgram.spec[idx]
+      try:
+        f2 = pgram.freq[idx + 1]
+        s2 = pgram.spec[idx + 1]
+        ds = cutoff - s1
+        df = (f2 - f1) * ds / (s2 - s1)
+        freq = f1 + df
+      except IndexError:
+        freq = f1
+      period = 1./freq
     else:
       period = None
     return period
