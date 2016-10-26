@@ -98,8 +98,11 @@ class Test(object):
     #for result, n_refls in zip(["idx-run266702-0-subset_00000_integrated.pickle",
     #                            "idx-run266702-0-subset_00001_integrated.pickle"],
     #                            [range(109,114), range(80,85)]): # large ranges to handle platform-specific differences
-    for result, n_refls in zip(["idx-run266702-0-subset_00000_integrated.pickle"],
-                                [range(109,114)]): # large ranges to handle platform-specific differences
+    #for result, n_refls in zip(["idx-run266702-0-subset_00000_integrated.pickle"],
+    #                            [range(109,114)]): # large ranges to handle platform-specific differences
+    # dxtbx r25668 and 25669 flip X axis in the SACLA format class and changed indexing results.
+    for result, n_refls in zip(["idx-run266702-0-subset_00001_integrated.pickle"],
+                                [range(90,96)]): # large ranges to handle platform-specific differences
       table = pickle.load(open(result, 'rb'))
       assert len(table) in n_refls, len(table)
       assert 'id' in table
