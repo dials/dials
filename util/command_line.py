@@ -9,6 +9,7 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+from dials.util import debug_console
 import time
 
 def parse_range_list_string(string):
@@ -29,19 +30,7 @@ def parse_range_list_string(string):
   items = [item for sublist in items for item in sublist]
   return set(items)
 
-def interactive_console():
-  """ Enter an interactive console session. """
-  try:
-    from IPython import embed
-    import inspect
-    frame = inspect.currentframe()
-    try:
-      embed(user_ns = frame.f_back.f_locals)
-    finally:
-        del frame
-  except ImportError:
-    print "IPython not available"
-
+interactive_console=debug_console
 
 class ProgressBarTimer:
   """ A simple timer for the progress bar. """

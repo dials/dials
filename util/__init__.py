@@ -17,8 +17,7 @@ from dials_util_ext import *
 
 def debug_console():
   '''Start python console at the current code point.'''
-  banner = '=' * 80
-  import code, sys
+  import sys
 
   # use exception trick to pick up the current frame
   try:
@@ -30,7 +29,14 @@ def debug_console():
   namespace = frame.f_globals.copy()
   namespace.update(frame.f_locals)
 
-  code.interact(banner=banner, local=namespace)
+  try:
+    # Start IPython console if IPython is available.
+    from IPython import embed
+    embed(user_ns=namespace)
+  except ImportError:
+    # Otherwise use basic python console
+    import code
+    code.interact(banner='='*80, local=namespace)
 
 class UsefulError(RuntimeError):
   '''Error message to direct user to report to dials developers.'''
@@ -42,7 +48,6 @@ class UsefulError(RuntimeError):
       text = 'An error has occurred with no message'
 
     RuntimeError.__init__(self, text)
-    return
 
 def usefulraiser(e):
   ''' Function to re-raise an exception with a useful message. '''
