@@ -107,8 +107,7 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
     dqe = integrated_data['dqe']
   else:
     dqe = flex.double(nref, 1.0)
-  Iscl = lp / dqe
-  Vscl = lp * lp / dqe
+  scl = lp / dqe
 
   # profile correlation
   if 'profile.correlation' in integrated_data:
@@ -123,14 +122,14 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
     prof_corr = flex.double(nref, 100.0)
 
   if summation:
-    I = integrated_data['intensity.sum.value'] * Iscl
-    V = integrated_data['intensity.sum.variance'] * Vscl
+    I = integrated_data['intensity.sum.value'] * scl
+    V = integrated_data['intensity.sum.variance'] * scl * scl
     assert V.all_gt(0)
     V = var_model[0] * (V + var_model[1] * I * I)
     sigI = flex.sqrt(V)
   else:
-    I = integrated_data['intensity.prf.value'] * Iscl
-    V = integrated_data['intensity.prf.variance'] * Vscl
+    I = integrated_data['intensity.prf.value'] * scl
+    V = integrated_data['intensity.prf.variance'] * scl * scl
     assert V.all_gt(0)
     V = var_model[0] * (V + var_model[1] * I * I)
     sigI = flex.sqrt(V)
@@ -230,8 +229,7 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
       psi *= -1
 
     fout.write('%d %d %d %f %f %f %f %f %f %.1f %.1f %f\n' %
-               (h, k, l, I[j], sigI[j], x, y, z, lp[j],
-                partiality[j], prof_corr[j], psi))
+               (h, k, l, I[j], sigI[j], x, y, z, scl[j], partiality[j], prof_corr[j], psi))
 
   fout.write('!END_OF_DATA\n')
   fout.close()

@@ -146,17 +146,16 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
     dqe = integrated_data['dqe']
   else:
     dqe = flex.double(nref, 1.0)
-  Iscl = lp / dqe
-  Vscl = lp * lp / dqe
+  scl = lp / dqe
 
   if summation:
-    I = integrated_data['intensity.sum.value'] * Iscl
-    V = integrated_data['intensity.sum.variance'] * Vscl
+    I = integrated_data['intensity.sum.value'] * scl
+    V = integrated_data['intensity.sum.variance'] * scl * scl
     assert V.all_gt(0)
     sigI = flex.sqrt(V)
   else:
-    I = integrated_data['intensity.prf.value'] * Iscl
-    V = integrated_data['intensity.prf.variance'] * Vscl
+    I = integrated_data['intensity.prf.value'] * scl
+    V = integrated_data['intensity.prf.variance'] * scl * scl
     assert V.all_gt(0)
     sigI = flex.sqrt(V)
 
