@@ -42,12 +42,14 @@ refinement
 {
 
   mp
-    .expert_level = 1
+    .expert_level = 2
   {
     nproc = 1
       .type = int(value_min=1)
-      .help = "The number of processes to use. Only applicable to certain"
-              "choices of refinement engine!"
+      .help = "The number of processes to use. Not all choices of refinement"
+              "engine support nproc > 1. Where multiprocessing is possible,"
+              "it is helpful only in certain circumstances, so this is not"
+              "recommended for typical use."
   }
 
   verbosity = 0

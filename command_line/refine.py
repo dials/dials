@@ -243,6 +243,12 @@ class Script(object):
     if params.output.correlation_plot.filename is not None:
       params.refinement.refinery.track_parameter_correlation = True
 
+    # Warn about potentially unhelpful options
+    if params.refinement.mp.nproc > 1:
+      logger.warning("WARNING: setting nproc > 1 is only helpful in rare "
+        "circumstances. It is not recommended for typical data processing "
+        "tasks.\n")
+
     # Get the refiner
     logger.info('Configuring refiner')
     refiner = RefinerFactory.from_parameters_data_experiments(params,
