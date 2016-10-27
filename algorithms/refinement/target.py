@@ -12,7 +12,7 @@ principally Target and ReflectionManager."""
 
 # python and cctbx imports
 from __future__ import division
-from math import pi, sqrt, ceil
+from math import pi, sqrt, floor
 from scitbx.array_family import flex
 from scitbx import sparse
 import abc
@@ -340,10 +340,10 @@ class Target(object):
 
     self.update_matches()
     if self._gradient_calculation_blocksize:
-      nblocks = int(ceil(len(self._matches) * nproc / self._gradient_calculation_blocksize))
+      nblocks = int(floor(len(self._matches) * nproc / self._gradient_calculation_blocksize))
     else:
       nblocks = nproc
-    blocksize = int(ceil(len(self._matches) / nblocks))
+    blocksize = int(floor(len(self._matches) / nblocks))
     blocks = []
     for block_num in range(nblocks - 1):
       start = block_num * blocksize
