@@ -343,6 +343,8 @@ class Target(object):
       nblocks = int(floor(len(self._matches) * nproc / self._gradient_calculation_blocksize))
     else:
       nblocks = nproc
+    # ensure at least 100 reflections per block
+    nblocks = min(nblocks, int(len(self._matches)/100))
     blocksize = int(floor(len(self._matches) / nblocks))
     blocks = []
     for block_num in range(nblocks - 1):
