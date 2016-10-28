@@ -97,6 +97,7 @@ class render_3d(object):
     line_i_seqs += (self.viewer.points.size(), self.viewer.points.size())
     for i_seqs in line_i_seqs:
       self.viewer.line_i_seqs.append([int(i_seq) for i_seq in i_seqs])
+      self.viewer.line_colors[(i_seqs)] = (100/255, 120/255, 255/255)
 
     self.viewer.points.extend(points)
 
