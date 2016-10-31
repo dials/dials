@@ -22,14 +22,10 @@ class spot_wrapper(object):
 
     from rstbx.slip_viewer.frame import chooser_wrapper
 
-    i = 0
     for imageset in imagesets:
-      for idx in imageset.indices():
-        i += 1
-        #print i
+      for idx in xrange(len(imageset.indices())):
         self.frame.add_file_name_or_data(chooser_wrapper(imageset, idx))
-    idx = imagesets[0].indices()[0]
-    self.frame.load_image(chooser_wrapper(imagesets[0],idx))
+    self.frame.load_image(chooser_wrapper(imagesets[0], 0))
 
     app.MainLoop()
 
