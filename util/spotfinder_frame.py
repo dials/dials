@@ -1094,8 +1094,9 @@ class SpotFrame(XrayFrame) :
           x, y = detector[0].millimeter_to_pixel(xy)
           x, y = map_coords(x + 0.5, y + 0.5, 0)
         else:
-          panel, xy = detector.get_ray_intersection(s1)
-          x, y = detector[panel].millimeter_to_pixel(xy)
+          panel = detector.get_panel_intersection(s1)
+          if panel < 0: continue
+          x, y = detector[panel].get_ray_intersection_px(s1)
           x, y = map_coords(x + 0.5, y + 0.5, panel)
         vector_data.append((((beam_x, beam_y), (x, y)), vector_dict))
 
