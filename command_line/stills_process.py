@@ -349,6 +349,14 @@ class Processor(object):
     # Find the strong spots
     observed = flex.reflection_table.from_observations(datablock, self.params)
 
+    # Reset z coordinates for dials.image_viewer; see Issues #226 for details
+    xyzobs = observed['xyzobs.px.value']
+    for i in xrange(len(xyzobs)):
+      xyzobs[i] = (xyzobs[i][0], xyzobs[i][1], 0)
+    bbox = observed['bbox']
+    for i in xrange(len(bbox)):
+      bbox[i] = (bbox[i][0], bbox[i][1], bbox[i][2], bbox[i][3], 0, 1)
+
     # Save the reflections to file
     logger.info('\n' + '-' * 80)
     if self.params.output.strong_filename:
