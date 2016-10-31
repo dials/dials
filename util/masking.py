@@ -296,8 +296,8 @@ class GoniometerShadowMaskGenerator(object):
       a = p.get_D_matrix() * coords
       x, y, z = a.parts()
       valid = z > 0
-      x.set_selected(valid, x/z)
-      y.set_selected(valid, y/z)
+      x.set_selected(valid, x.select(valid)/z.select(valid))
+      y.set_selected(valid, y.select(valid)/z.select(valid))
 
       if valid.count(True) < 3:
         # no shadow projected onto this panel
