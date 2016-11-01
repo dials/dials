@@ -16,7 +16,7 @@ except ImportError as e:
   print "This script requires the rpy2 package to be installed."
   raise
 from dials.array_family import flex
-from periodogram import Periodogram
+from scitbx.math.periodogram import Periodogram
 from libtbx.test_utils import approx_equal
 
 class rpgram(object):
@@ -78,7 +78,7 @@ def test3():
 
 def test4():
   # compare kernapply
-  from periodogram import Kernel, kernapply
+  from scitbx.math.periodogram import Kernel, kernapply
   spans = 4
   dat = flex.random_double(50)
   k1 = Kernel('modified.daniell', spans//2)

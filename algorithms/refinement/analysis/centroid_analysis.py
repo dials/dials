@@ -13,7 +13,7 @@ outlier rejection parameters automatically"""
 from __future__ import division
 from math import pi, floor, ceil
 from dials.array_family import flex
-from periodogram import Periodogram
+from scitbx.math.periodogram import Periodogram
 
 RAD2DEG = 180./pi
 

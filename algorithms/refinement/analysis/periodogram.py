@@ -10,7 +10,7 @@
 """Calculate the periodogram of real evenly-spaced data"""
 
 from __future__ import division
-from dials.array_family import flex
+from scitbx.array_family import flex
 from scitbx import fftpack
 
 class Kernel(object):
