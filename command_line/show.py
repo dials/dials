@@ -176,6 +176,8 @@ def run(args):
     ('intensity.prf.variance','%.1f'),
     ('intensity.sum.value','%.1f'),
     ('intensity.sum.variance','%.1f'),
+    ('intensity.cor.value','%.1f'),
+    ('intensity.cor.variance','%.1f'),
     ('lp','%.3f'),
     ('num_pixels.background','%i'),
     ('num_pixels.background_used','%i'),
