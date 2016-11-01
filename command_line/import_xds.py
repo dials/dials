@@ -101,7 +101,18 @@ class IntegrateHKLImporter(object):
     sigma  = flex.double(handle.sigma)
     rlp = flex.double(handle.rlp)
     peak = flex.double(handle.peak) * 0.01
+    if len(handle.iseg):
+      panel = flex.size_t(handle.iseg) - 1
+    else:
+      panel = flex.size_t(len(hkl), 0)
     Command.end('Read %d reflections from INTEGRATE.HKL file.' % len(hkl))
+
+    if len(self._experiment.detector) > 1:
+      for p_id, p in enumerate(self._experiment.detector):
+        sel = (panel == p_id)
+        offset = p.get_raw_image_offset()
+        xyzcal.set_selected(sel, xyzcal.select(sel) - (offset[0], offset[1], 0))
+        xyzobs.set_selected(sel, xyzobs.select(sel) - (offset[0], offset[1], 0))
 
     # Derive the reindex matrix
     rdx = self.derive_reindex_matrix(handle)
@@ -117,7 +128,7 @@ class IntegrateHKLImporter(object):
     Command.start('Creating reflection table')
     table = flex.reflection_table()
     table['id'] = flex.int(len(hkl), 0)
-    table['panel'] = flex.size_t(len(hkl), 0)
+    table['panel'] = panel
     table['miller_index'] = hkl
     table['xyzcal.px'] = xyzcal
     table['xyzobs.px.value'] = xyzobs
