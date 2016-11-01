@@ -382,7 +382,7 @@ class MosflmExporter(object):
 
 class XDSExporter(object):
   '''
-  A class to export stuff in mosflm format
+  A class to export stuff in xds format
 
   '''
 
