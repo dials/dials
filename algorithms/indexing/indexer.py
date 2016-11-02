@@ -1503,9 +1503,6 @@ class indexer_base(object):
   def index_reflections(self, experiments, reflections):
     if self.params.index_assignment.method == 'local':
       params_local = self.params.index_assignment.local
-      if len(reflections) < params_local.nearest_neighbours:
-        raise Sorry("index_assignment.local.nearest_neighbour is larger than the number of accepted reflections (%d)"
-                    % len(reflections))
       from dials.algorithms.indexing import index_reflections_local
       index_reflections_local(
         reflections,
