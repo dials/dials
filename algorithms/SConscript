@@ -17,4 +17,5 @@ env.SConscript('filtering/SConscript', exports={ 'env' : env })
 env.SConscript('statistics/SConscript', exports={ 'env' : env })
 env.SConscript('simulation/SConscript', exports={ 'env' : env })
 env.SConscript('rs_mapper/SConscript', exports={ 'env' : env })
+env.SConscript('scaling/SConscript', exports={ 'env' : env })
 
