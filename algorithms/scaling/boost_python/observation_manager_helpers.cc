@@ -35,12 +35,21 @@ namespace dials { namespace scaling { namespace boost_python {
                  af::shared<double>,
                  af::shared<double>,
                  af::shared<double> >((
-         arg("group_index"),
-         arg("intensity"),
-         arg("weight"),
-         arg("phi"),
-         arg("scale"))))
-      .def("get_intensities", &GroupedObservations::get_intensities)
+        arg("group_index"),
+        arg("intensity"),
+        arg("weight"),
+        arg("phi"),
+        arg("scale"))))
+      .def("get_intensity", &GroupedObservations::get_intensity)
+      .def("set_intensity", &GroupedObservations::set_intensity,
+        arg("intensity"))
+      .def("get_weight", &GroupedObservations::get_weight)
+      .def("set_weight", &GroupedObservations::set_weight,
+        arg("weight"))
+      .def("get_scale", &GroupedObservations::get_scale)
+      .def("set_scale", &GroupedObservations::set_scale,
+        arg("scale"))
+      .def("get_average_intensity", &GroupedObservations::get_average_intensity)
       .def("get_groups_size", &GroupedObservations::get_group_size)
       ;
   }

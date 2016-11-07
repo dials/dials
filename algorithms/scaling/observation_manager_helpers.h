@@ -127,13 +127,71 @@ namespace dials { namespace scaling {
       ngroups_ = group_size_.size();
     }
 
-    // other public methods
-    af::shared<double> get_intensities() const {
+    // intensity accessors
+    af::shared<double> get_intensity() const {
       return intensity_;
+    }
+
+    void set_intensity(af::shared<double> intensity) {
+      DIALS_ASSERT(intensity.size() == nobs_);
+      intensity_ = intensity;
+    }
+
+    // weight accessors
+    af::shared<double> get_weight() const {
+      return weight_;
+    }
+
+    void set_weight(af::shared<double> weight) {
+      DIALS_ASSERT(weight.size() == nobs_);
+      weight_ = weight;
+    }
+
+    // scale accessors
+    af::shared<double> get_scale() const {
+      return scale_;
+    }
+
+    void set_scale(af::shared<double> scale) {
+      DIALS_ASSERT(scale.size() == nobs_);
+      scale_ = scale;
     }
 
     af::shared<std::size_t> get_group_size() const {
       return group_size_;
+    }
+
+    af::shared<double> get_average_intensity() {
+
+      af::shared<double> avI(nobs_);
+      af::ref<double> r = avI.ref();
+
+      // loop over the groups
+      std::size_t gp_start = 0;
+      for (std::size_t i = 0; i < ngroups_; ++i){
+        std::size_t sz = group_size_[i];
+
+        double u = 0;
+        double v = 0;
+
+        // loop over obs in the group
+        for (std::size_t j = gp_start; j < gp_start + sz; ++j){
+          u += weight_[j] * scale_[j] * intensity_[j];
+          v += weight_[j] * scale_[j] * scale_[j];
+        }
+        DIALS_ASSERT(v > 0);
+        double gp_avI = u / v;
+
+        // assign elements
+        for (std::size_t j = gp_start; j < gp_start + sz; ++j){
+          r[j] = gp_avI;
+        }
+
+        // update group start index
+        gp_start += sz;
+      }
+
+      return avI;
     }
 
   private:
