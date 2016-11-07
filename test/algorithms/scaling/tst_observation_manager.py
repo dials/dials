@@ -72,7 +72,7 @@ def test_grouped_observations():
                            scale)
 
   # ensure there are two groups, the first of size 3, the second of size 2
-  assert list(go.get_groups_size()) == [3,2]
+  assert list(go.get_group_size()) == [3,2]
 
   # the first group has an average intensity given by the HRS formula expanded:
   avI = (w1*g1*I1 + w2*g2*I2 + w3*g3*I3) / (w1*g1*g1 + w2*g2*g2 + w3*g3*g3)

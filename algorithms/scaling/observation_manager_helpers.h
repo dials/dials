@@ -157,10 +157,17 @@ namespace dials { namespace scaling {
       scale_ = scale;
     }
 
+    // phi getter
+    af::shared<double> get_phi() const {
+      return phi_;
+    }
+
+    // group size getter
     af::shared<std::size_t> get_group_size() const {
       return group_size_;
     }
 
+    // calculate and return average intensity in groups
     af::shared<double> get_average_intensity() {
 
       af::shared<double> avI(nobs_);
