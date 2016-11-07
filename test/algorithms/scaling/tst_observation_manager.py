@@ -12,7 +12,7 @@
 """Tests for ObservationManager and related objects."""
 
 from __future__ import division
-#from libtbx.test_utils import approx_equal
+from libtbx.test_utils import approx_equal
 
 from cctbx.array_family import flex
 from dials_scaling_helpers_ext import (GroupedObservations,
@@ -50,6 +50,38 @@ def test_minimum_multiplicity_selection():
 
   print "OK"
 
+def test_grouped_observations():
+
+  # some dummy observations for one reflection
+  I1, I2, I3 = 101, 100, 99
+  w1, w2, w3 = 0.9, 1.0, 0.8
+  g1, g2, g3 = 1.01, 1.0, 0.99
+
+  # combine with observations from some other group to make a dataset
+  hkl = flex.miller_index([(0,0,1)] * 3 + [(0,0,2)] * 2)
+  intensity = flex.double([I1, I2, I3, 10, 10])
+  weight = flex.double([w1, w2, w3, 1.0, 1.0])
+  phi = flex.double(len(hkl), 0) # dummy
+  scale = flex.double([g1, g2, g3, 1.0, 1.0])
+
+  # group the observations by Miller index
+  go = GroupedObservations(hkl,
+                           intensity,
+                           weight,
+                           phi,
+                           scale)
+
+  # ensure there are two groups, the first of size 3, the second of size 2
+  assert list(go.get_groups_size()) == [3,2]
+
+  # the first group has an average intensity given by the HRS formula expanded:
+  avI = (w1*g1*I1 + w2*g2*I2 + w3*g3*I3) / (w1*g1*g1 + w2*g2*g2 + w3*g3*g3)
+  assert approx_equal(avI, go.get_average_intensity()[0])
+
+  print "OK"
+
+
 if __name__ == '__main__':
 
   test_minimum_multiplicity_selection()
+  test_grouped_observations()
