@@ -157,6 +157,11 @@ namespace dials { namespace scaling {
       scale_ = scale;
     }
 
+    // group index getter
+    af::const_ref<miller_index> get_group_index() const {
+      return group_index_;
+    };
+
     // phi getter
     af::shared<double> get_phi() const {
       return phi_;

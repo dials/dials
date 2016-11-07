@@ -89,6 +89,51 @@ class ObservationManager(object):
 
     return
 
+  @property
+  def intensity(self):
+    return self._go.get_intensity()
+
+  @intensity.setter
+  def intensity(self, intensity):
+    self._go.set_intensity(intensity)
+
+  @property
+  def weight(self):
+    return self._go.get_weight()
+
+  @weight.setter
+  def weight(self, weight):
+    self._go.set_weight(weight)
+
+  @property
+  def scale(self):
+    return self._go.get_scale()
+
+  @scale.setter
+  def scale(self, scale):
+    self._go.set_scale(scale)
+
+  @property
+  def group_index(self):
+    return self._go.get_group_index()
+
+  @property
+  def phi(self):
+    return self._go.get_phi()
+
+  @property
+  def group_size(self):
+    return self._go.get_group_size()
+
+  def get_average_intensity(self):
+    '''Calculate the weighted average intensity in reflection groups at the
+    current scales using the formula of Hamilton, Rollett and Sparks (1965).
+    Return as a vector for each observation'''
+
+    # delegate to the GroupedObservations object
+    return self._go.get_average_intensity()
+
+
 class Script(object):
   '''A class for running the script.'''
 
@@ -148,6 +193,8 @@ class Script(object):
     experiment = experiments[0]
 
     om = ObservationManager(reflections, experiment)
+
+    om.group_index
 
 # For testing, instantiate from reflections passed at the command line.
 if __name__ == '__main__':

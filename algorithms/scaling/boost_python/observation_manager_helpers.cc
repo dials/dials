@@ -49,6 +49,7 @@ namespace dials { namespace scaling { namespace boost_python {
       .def("get_scale", &GroupedObservations::get_scale)
       .def("set_scale", &GroupedObservations::set_scale,
         arg("scale"))
+      .def("get_group_index", &GroupedObservations::get_group_index)
       .def("get_phi", &GroupedObservations::get_phi)
       .def("get_group_size", &GroupedObservations::get_group_size)
       .def("get_average_intensity", &GroupedObservations::get_average_intensity)
