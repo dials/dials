@@ -26,10 +26,11 @@ namespace dials { namespace scaling {
   typedef cctbx::miller::index<> miller_index;
 
   /**
-   *
-   *
+   * Create a selection that keeps only Miller indices with at least the
+   * specified number of occurrences. This function is designed to be simple
+   * and fast. It assumes that the input array of Miller indices is sorted,
+   * so that indices are already grouped in runs of adjacent equal values.
    */
-
   af::shared<bool>
   minimum_multiplicity_selection(af::const_ref< miller_index > group_index,
                                  const std::size_t multiplicity) {
