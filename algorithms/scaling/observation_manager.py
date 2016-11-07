@@ -194,6 +194,8 @@ class Script(object):
 
     om = ObservationManager(reflections, experiment)
 
+    # This currently does not work :-(
+    # TypeError: Please report this error to dials-support@lists.sourceforge.net: No to_python (by-value) converter found for C++ type: scitbx::af::const_ref<cctbx::miller::index<int>, scitbx::af::trivial_accessor>
     om.group_index
 
 # For testing, instantiate from reflections passed at the command line.
