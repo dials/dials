@@ -16,11 +16,6 @@
 #include <dials/error.h>
 #include <cctbx/miller.h>
 
-// For debugging
-// #include <scitbx/array_family/simple_io.h>
-// then can do things like this:
-// std::cout << something.const_ref() << "\n";
-
 namespace dials { namespace scaling {
 
   typedef cctbx::miller::index<> miller_index;
@@ -219,6 +214,6 @@ namespace dials { namespace scaling {
     std::size_t ngroups_;
   };
 
-}} // namespace dials::algorithms
+}} // namespace dials::scaling
 
 #endif // DIALS_ALGORITHMS_SCALING_GROUPED_OBS_H
