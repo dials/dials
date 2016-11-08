@@ -7,7 +7,7 @@ import libtbx.load_env
 import logging
 logger = logging.getLogger(libtbx.env.dispatcher_name)
 
-from libtbx.utils import Sorry
+from libtbx.utils import Abort, Sorry
 from dxtbx.datablock import DataBlockFactory
 import os
 
@@ -159,7 +159,6 @@ class Script(object):
     '''Execute the script.'''
     from dials.util import log
     from time import time
-    from libtbx.utils import Abort
     from libtbx import easy_mp
     import copy
 
