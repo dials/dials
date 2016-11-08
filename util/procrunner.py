@@ -24,7 +24,7 @@ class _NonBlockingStreamReader:
 
     def _thread_write_stream_to_buffer():
       line = True
-      while line:
+      while line and not self._stream.closed:
         line = self._stream.readline()
         if line:
           self._buffer.write(line)
@@ -162,7 +162,7 @@ def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=Tru
       # which could indicate that the process has terminated.
       event = thread_communication.get(True, 0.5)
       if event and debug:
-        print "Event received from stream tread"
+        print "Event received from stream thread"
     except KeyboardInterrupt:
       p.kill() # if user pressed Ctrl+C we won't be able to produce a proper report anyway
                # but at least make sure the child process dies with us
