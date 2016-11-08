@@ -94,7 +94,7 @@ namespace dials { namespace scaling {
                         af::shared<double> weight,
                         af::shared<double> phi,
                         af::shared<double> scale)
-      : group_index_(group_index), // initialisation lists
+      : group_index_(group_index.begin(), group_index.end()), // initialisation lists
         intensity_(intensity),
         weight_(weight),
         phi_(phi),
@@ -158,8 +158,8 @@ namespace dials { namespace scaling {
     }
 
     // group index getter
-    af::const_ref<miller_index> get_group_index() const {
-      return group_index_;
+    af::shared<miller_index> get_group_index() const {
+      return af::shared<miller_index>(group_index_.begin(), group_index_.end());
     };
 
     // phi getter
@@ -207,7 +207,7 @@ namespace dials { namespace scaling {
     }
 
   private:
-    af::const_ref<miller_index> group_index_;
+    af::shared<miller_index> group_index_;
     af::shared<double> intensity_;
     af::shared<double> weight_;
     af::shared<double> phi_;
