@@ -108,6 +108,9 @@ class ExtractPixelsFromImage(object):
       assert(len(self.mask) == len(mask))
       mask = tuple(m1 & m2 for m1, m2 in zip(mask, self.mask))
 
+    logger.debug("Number of masked pixels for image %i: %i",
+                 index, sum(m.count(False) for m in mask))
+
     # Add the images to the pixel lists
     num_strong = 0
     average_background = 0
