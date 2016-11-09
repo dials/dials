@@ -24,7 +24,7 @@ class _NonBlockingStreamReader:
 
     def _thread_write_stream_to_buffer():
       line = True
-      while line and not self._stream.closed:
+      while line:
         line = self._stream.readline()
         if line:
           self._buffer.write(line)
