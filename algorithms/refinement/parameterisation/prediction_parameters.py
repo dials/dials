@@ -691,7 +691,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
     # All of the derivatives of phi have a common denominator, given by
     # (e X r).s0, where e is the rotation axis. Calculate this once, here.
-    self._e_X_r = self._axis.cross(self._r)
+    self._e_X_r = (self._setting_rotation * self._axis).cross(self._r)
     self._e_r_s0 = (self._e_X_r).dot(self._s0)
 
     # Note that e_r_s0 -> 0 when the rotation axis, beam vector and
