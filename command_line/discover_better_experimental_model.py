@@ -298,10 +298,11 @@ def run_dps(args):
   from scitbx import matrix
   DPS.S0_vector = matrix.col(beam.get_s0())
   DPS.inv_wave = 1./beam.get_wavelength()
+  setting_rotation = matrix.sqr(goniometer.get_setting_rotation())
   if goniometer is None:
     DPS.axis = matrix.col((1,0,0))
   else:
-    DPS.axis = matrix.col(goniometer.get_rotation_axis())
+    DPS.axis = setting_rotation * matrix.col(goniometer.get_rotation_axis())
   DPS.set_detector(detector)
 
   # transform input into what Nick needs
