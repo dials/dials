@@ -594,7 +594,7 @@ def exercise_17():
     for i in range(3)]
   extra_args = ["filter_ice=False"]
   expected_unit_cell = uctbx.unit_cell(
-    (9.385, 15.219, 17.019, 90.076, 89.980, 100.816))
+    (9.440, 15.313, 17.126, 90.073, 90.106, 79.248))
   expected_rmsds = (0.32, 0.34, 0.005 )
   expected_hall_symbol = ' P 1'
 
