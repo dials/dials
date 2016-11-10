@@ -69,7 +69,7 @@ def run():
     )
 
   result_new = run_one_indexing(
-    pickle_path=strong_pickle, sweep_path=datablock_old,
+    pickle_path=strong_pickle, sweep_path=datablock_new,
     extra_args=[],
     expected_unit_cell=expected_unit_cell,
     expected_rmsds=expected_rmsds,
