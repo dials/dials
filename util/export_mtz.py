@@ -360,6 +360,12 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
     # apply the fixed rotation to this to unify matrix definitions - F * U
     # was what was used in the actual prediction: U appears to be stored
     # as the transpose?! At least is for Mosflm...
+    #
+    # FIXME Do we need to apply the setting rotation here somehow? i.e. we have
+    # the U.B. matrix assuming that the axis is equal to S * axis_datum but
+    # here we are just giving the effective axis so at scan angle 0 this will
+    # not be correct... FIXME 2 not even sure we can express the stack of
+    # matrices S * R * F * U * B in MTZ format?...
     _U = dials_u_to_mosflm(F * _U, _unit_cell)
 
     # FIXME need to get what was refined and what was constrained from the
