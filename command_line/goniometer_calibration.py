@@ -56,7 +56,7 @@ def run(args):
     scan = experiment.scan
     fixed_rotation = matrix.sqr(gonio.get_fixed_rotation())
     setting_rotation = matrix.sqr(gonio.get_setting_rotation())
-    rotation_axis = matrix.col(gonio.get_rotation_axis())
+    rotation_axis = matrix.col(gonio.get_rotation_axis_datum())
     rotation_matrix = rotation_axis.axis_and_angle_as_r3_rotation_matrix(
       scan.get_oscillation()[0], deg=True)
     U = matrix.sqr(crystal.get_U())
