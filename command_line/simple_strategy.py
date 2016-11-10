@@ -78,7 +78,7 @@ def run(args):
     theta_max = strategy.theta_max
     fixed_rotation = matrix.sqr(gonio.get_fixed_rotation())
     setting_rotation = matrix.sqr(gonio.get_setting_rotation())
-    rotation_axis = matrix.col(gonio.get_rotation_axis())
+    rotation_axis = matrix.col(gonio.get_rotation_axis_datum())
     rotation_matrix = rotation_axis.axis_and_angle_as_r3_rotation_matrix(
       scan.get_oscillation()[0], deg=True)
     D_p = (setting_rotation * rotation_matrix * fixed_rotation)

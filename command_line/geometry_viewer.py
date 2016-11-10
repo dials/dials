@@ -47,8 +47,7 @@ class render_3d(object):
     if self.imageset.get_goniometer() is not None:
       from scitbx import matrix
       gonio = self.imageset.get_goniometer()
-      setting_rotation = matrix.sqr(gonio.get_setting_rotation())
-      axis = setting_rotation * matrix.col(gonio.get_rotation_axis()).elems
+      axis = matrix.col(gonio.get_rotation_axis()).elems
       self.viewer.set_rotation_axis(axis)
     self.viewer.set_beam_vector(self.imageset.get_beam().get_s0())
 
