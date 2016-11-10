@@ -138,7 +138,7 @@ class Test(object):
     assert detector[0].get_fast_axis() == (-1,0,0)
     assert detector[0].get_slow_axis() == (0,-1,0)
     assert detector[0].get_origin() == (100,100,100)
-    assert goniometer.get_rotation_axis() == (0,0,-1)
+    assert goniometer.get_rotation_axis_datum() == (0,0,-1)
     assert goniometer.get_fixed_rotation() == (0,1,2,3,4,5,6,7,8)
     assert goniometer.get_setting_rotation() == (8,7,6,5,4,3,2,1,0)
     assert scan.get_image_range() == (1,4)

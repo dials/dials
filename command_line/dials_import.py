@@ -480,7 +480,7 @@ class ManualGeometryUpdater(object):
         if len(params.axes) % 3:
           raise Sorry("Number of values for axes parameter must be multiple of 3.")
         if len(params.axes) == 3:
-          goniometer.set_rotation_axis(params.axes)
+          goniometer.set_rotation_axis_datum(params.axes)
         elif len(params.axes) > 3:
           from scitbx.array_family import flex
           axes = flex.vec3_double(

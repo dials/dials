@@ -106,7 +106,7 @@ namespace dials { namespace algorithms {
         dmin_(dmin),
         predict_rays_(
             beam.get_s0(),
-            goniometer.get_rotation_axis(),
+            goniometer.get_rotation_axis_datum(),
             goniometer.get_fixed_rotation(),
             goniometer.get_setting_rotation(),
             vec2<double>(0.0, two_pi)){}
@@ -343,7 +343,7 @@ namespace dials { namespace algorithms {
         margin_(margin),
         predict_rays_(
             beam.get_s0(),
-            goniometer.get_rotation_axis(),
+            goniometer.get_rotation_axis_datum(),
             scan.get_array_range()[0],
             scan.get_oscillation(),
             dmin) {}
@@ -477,7 +477,7 @@ namespace dials { namespace algorithms {
         int frame) const {
 
       // Get the rotation axis and beam vector
-      vec3<double> m2 = goniometer_.get_rotation_axis();
+      vec3<double> m2 = goniometer_.get_rotation_axis_datum();
 
       // Calculate the setting matrix at the beginning and end
       double phi_beg = scan_.get_angle_from_array_index(frame);
@@ -501,7 +501,7 @@ namespace dials { namespace algorithms {
         mat3<double> A2) const {
 
       // Get the rotation axis and beam vector
-      vec3<double> m2 = goniometer_.get_rotation_axis();
+      vec3<double> m2 = goniometer_.get_rotation_axis_datum();
       vec3<double> s0 = beam_.get_s0();
       compute_setting_matrices(A1, A2, frame);
 
@@ -589,7 +589,7 @@ namespace dials { namespace algorithms {
       // Need a local ray predictor for just this reflection's s0
       ScanStaticRayPredictor local_predict_rays_(
         s0,
-        goniometer_.get_rotation_axis(),
+        goniometer_.get_rotation_axis_datum(),
         goniometer_.get_fixed_rotation(),
         goniometer_.get_setting_rotation(),
         vec2<double>(0.0, two_pi));

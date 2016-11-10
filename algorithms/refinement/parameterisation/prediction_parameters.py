@@ -324,7 +324,7 @@ class PredictionParameterisation(object):
       self._U.set_selected(sel, states['U'])
       self._B.set_selected(sel, states['B'])
       if exp.goniometer:
-        self._axis.set_selected(sel, exp.goniometer.get_rotation_axis())
+        self._axis.set_selected(sel, exp.goniometer.get_rotation_axis_datum())
         self._fixed_rotation.set_selected(sel, exp.goniometer.get_fixed_rotation())
         self._setting_rotation.set_selected(sel, exp.goniometer.get_setting_rotation())
 

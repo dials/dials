@@ -51,7 +51,7 @@ class ScansRayPredictor(object):
     e = self._experiments[experiment_id]
     ray_predictor = ScanStaticRayPredictor(
       e.beam.get_s0(),
-      e.goniometer.get_rotation_axis(),
+      e.goniometer.get_rotation_axis_datum(),
       e.goniometer.get_fixed_rotation(),
       e.goniometer.get_setting_rotation(),
       self._sweep_range)

@@ -47,7 +47,7 @@ def calculate_entering_flags(reflections, experiments):
     # points to the hemisphere in which reflections cross from inside to outside
     # of the sphere (reflections are exiting). NB this vector is in +ve Y
     # direction when using imgCIF coordinate frame.
-    vec = s0.cross(matrix.sqr(gonio.get_setting_rotation()) * axis)
+    vec = s0.cross(axis)
     sel = reflections['id'] == iexp
     to_update = reflections['s1'].select(sel).dot(vec) < 0.
     enterings.set_selected(sel, to_update)
@@ -170,8 +170,6 @@ class ReflectionManager(object):
     goniometers = [e.goniometer for e in self._experiments]
     self._axes = [matrix.col(g.get_rotation_axis()) if g else None for g in goniometers]
     self._s0vecs = [matrix.col(e.beam.get_s0()) for e in self._experiments]
-    self._setting_rotation = [
-      matrix.sqr(g.get_setting_rotation()) if g else None for g in goniometers]
 
     # unset the refinement flags (creates flags field if needed)
     reflections.unset_flags(flex.size_t_range(len(reflections)),
@@ -317,7 +315,6 @@ class ReflectionManager(object):
       axis = self._axes[iexp]
       if not axis or exp.scan is None: continue
       if exp.scan.get_oscillation()[1] == 0.0: continue
-      setting_rotation = self._setting_rotation[iexp]
       sel = obs_data['id'] == iexp
       s0 = self._s0vecs[iexp]
       s1 = obs_data['s1'].select(sel)
@@ -328,8 +325,7 @@ class ReflectionManager(object):
       # Those reflections are by definition closer to the spindle-beam
       # plane and for low values of the cutoff are troublesome to
       # integrate anyway.
-      p_vol = flex.abs(s1.cross(flex.vec3_double(s1.size(), s0)).dot(
-        setting_rotation * axis))
+      p_vol = flex.abs(s1.cross(flex.vec3_double(s1.size(), s0)).dot(axis))
       passed1 = p_vol > self._close_to_spindle_cutoff
 
       # second test: reject reflections that lie outside the scan range

@@ -26,9 +26,8 @@ class BeamMixin(object):
 
     # Set up the parameters
     if goniometer:
-      setting_rotation = matrix.sqr(goniometer.get_setting_rotation())
       spindle = matrix.col(goniometer.get_rotation_axis())
-      s0_plane_dir2 = s0.cross(setting_rotation * spindle).normalize()
+      s0_plane_dir2 = s0.cross(spindle).normalize()
       s0_plane_dir1 = s0_plane_dir2.cross(s0).normalize()
     else:
       s0_plane_dir1 = s0.ortho().normalize()

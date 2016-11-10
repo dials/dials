@@ -137,9 +137,40 @@ def exercise_2():
     os.path.join(curdir, 'optimized_datablock.json'), [],
     expected_unit_cell, expected_rmsds, expected_hall_symbol)
 
+def exercise_3():
+  if not have_dials_regression:
+    print "Skipping exercise(): dials_regression not available."
+    return
+
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "phi_scan")
+  pickle_path = os.path.join(data_dir, "strong.pickle")
+  datablock_path = os.path.join(data_dir, "datablock.json")
+
+  args = ["dials.discover_better_experimental_model",
+          datablock_path, pickle_path]
+
+  command = " ".join(args)
+  print command
+  cwd = os.path.abspath(os.curdir)
+  tmp_dir = open_tmp_directory()
+  os.chdir(tmp_dir)
+  result = easy_run.fully_buffered(command=command).raise_if_errors()
+  assert os.path.exists('optimized_datablock.json')
+  from dxtbx.serialize import load
+  datablocks = load.datablock(datablock_path, check_format=False)
+  original_imageset = datablocks[0].extract_imagesets()[0]
+  optimized_datablock = load.datablock('optimized_datablock.json',
+                                       check_format=False)
+  detector_1 = original_imageset.get_detector()
+  detector_2 = optimized_datablock[0].unique_detectors()[0]
+  shift = (matrix.col(detector_1[0].get_origin()) -
+           matrix.col(detector_2[0].get_origin()))
+  assert approx_equal(shift.elems, (-1.039, 2.427, 0.0), eps=1e-2)
+  os.chdir(cwd)
+
 
 def run(args):
-  exercises = (exercise_1, exercise_2)
+  exercises = (exercise_1, exercise_2, exercise_3)
   if len(args):
     args = [int(arg) for arg in args]
     for arg in args: assert arg > 0

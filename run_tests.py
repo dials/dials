@@ -152,6 +152,7 @@ tst_list = (
     "$D/test/command_line/tst_refine_bravais_settings.py",
     #["$D/test/command_line/tst_discover_better_experimental_model.py", "1"],
     ["$D/test/command_line/tst_discover_better_experimental_model.py", "2"],
+    ["$D/test/command_line/tst_discover_better_experimental_model.py", "3"],
     "$D/test/algorithms/indexing/tst_compare_orientation_matrices.py",
     "$D/test/algorithms/indexing/tst_symmetry.py",
     #"$D/scratch/rjg/unit_cell_refinement.py",

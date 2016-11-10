@@ -49,8 +49,8 @@ def run():
      0.3652098435171313, 0.9221092836691605, 0.12781329809272568))
 
   assert approx_equal(
-    gonio_new.get_rotation_axis(),
-    (1,0,0))
+    gonio_new.get_rotation_axis(), gonio_old.get_rotation_axis())
+  assert approx_equal(gonio_new.get_rotation_axis_datum(), (1,0,0))
   assert approx_equal(
     gonio_new.get_setting_rotation(),
     (0.7497646259807705, -0.20997265900532142, -0.6275065641873,

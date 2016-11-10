@@ -319,7 +319,7 @@ def dump_goniometer(entry, goniometer, scan):
   nx_transformations['phi'].attrs['transformation_type'] = 'rotation'
   nx_transformations['phi'].attrs['offset_units'] = 'mm'
   nx_transformations['phi'].attrs['offset'] = (0.0, 0.0, 0.0)
-  nx_transformations['phi'].attrs['vector'] = goniometer.get_rotation_axis()
+  nx_transformations['phi'].attrs['vector'] = goniometer.get_rotation_axis_datum()
 
 def dump_crystal(entry, crystal, scan):
   ''' Export the crystal model. '''

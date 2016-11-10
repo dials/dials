@@ -997,7 +997,7 @@ class indexer_base(object):
     # points to the hemisphere in which reflections cross from inside to outside
     # of the sphere (reflections are exiting). NB this vector is in +ve Y
     # direction when using imgCIF coordinate frame.
-    vec = s0.cross(matrix.sqr(goniometer.get_setting_rotation()) * axis)
+    vec = s0.cross(axis)
     entering = reflections['s1'].dot(vec) < 0.
     return entering
 
@@ -1080,7 +1080,7 @@ class indexer_base(object):
       S = s1 - beam.get_s0()
       if goniometer is not None:
         setting_rotation = matrix.sqr(goniometer.get_setting_rotation())
-        rotation_axis = goniometer.get_rotation_axis()
+        rotation_axis = goniometer.get_rotation_axis_datum()
         fixed_rotation = matrix.sqr(goniometer.get_fixed_rotation())
         spots_mm['rlp'].set_selected(
           sel, tuple(setting_rotation.inverse()) * S)
