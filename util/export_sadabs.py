@@ -77,7 +77,7 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
 
   assert (not experiment.goniometer is None)
 
-  axis = matrix.col(experiment.goniometer.get_rotation_axis())
+  axis = matrix.col(experiment.goniometer.get_rotation_axis_datum())
 
   beam = matrix.col(experiment.beam.get_direction())
   s0 = matrix.col(experiment.beam.get_s0())
@@ -204,14 +204,12 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
       UB = experiment.crystal.get_A()
       phi = phi_start + z0 * phi_range
       R = axis.axis_and_angle_as_r3_rotation_matrix(phi, deg=True)
-      # XXX is this correct? Is setting matrix not being applied twice here?
       RUB = S * R * F * UB
     else:
       # properly compute RUB for every reflection
       UB = experiment.crystal.get_A_at_scan_point(int(round(z0)))
       phi = phi_start + z0 * phi_range
       R = axis.axis_and_angle_as_r3_rotation_matrix(phi, deg=True)
-      # XXX is this correct? Is setting matrix not being applied twice here?
       RUB = S * R * F * UB
 
     x = RUB * (h, k, l)
