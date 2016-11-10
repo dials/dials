@@ -4,15 +4,14 @@ import libtbx.load_env
 from libtbx.test_utils import approx_equal
 from cctbx import uctbx
 
-
-have_dials_regression = libtbx.env.has_module("dials_regression")
-if have_dials_regression:
+def run():
+  have_dials_regression = libtbx.env.has_module("dials_regression")
+  if not have_dials_regression:
+    print "Skipped: dials_regression not available"
+    return
   dials_regression = libtbx.env.find_in_repositories(
     relative_path="dials_regression",
     test=os.path.isdir)
-
-
-def run():
 
   from dials.test.algorithms.indexing.tst_index import run_one_indexing
 
