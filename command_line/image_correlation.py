@@ -23,10 +23,31 @@ def main():
   import sys
   run(sys.argv[1:])
 
+def extract_signal_mask(data):
+  from dials.algorithms.spot_finding.factory import SpotFinderFactory
+  from dials.algorithms.spot_finding.factory import phil_scope
+
+  data = data.as_double()
+
+  from dxtbx import datablock
+
+  spot_params = phil_scope.fetch(source=iotbx.phil.parse(
+    "spotfinder.threshold.xds.gain=1")).extract()
+  threshold_function = SpotFinderFactory.configure_threshold(
+    spot_params, None)
+  negative = (data < 0)
+  signal = threshold_function.compute_threshold(data, ~negative)
+
+  return signal
+
 def image_correlation(a, b):
+
+  sig_a = extract_signal_mask(a)
+  sig_b = extract_signal_mask(b)
+
   a = a.as_1d().as_double()
   b = b.as_1d().as_double()
-  sel = (a > 0) & (b > 0)
+  sel = (a > 0) & (b > 0) & sig_a & sig_b
   _a = a.select(sel)
   _b = b.select(sel)
   return sel.count(True), flex.linear_correlation(x=a, y=b).coefficient()

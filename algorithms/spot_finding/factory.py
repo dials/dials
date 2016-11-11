@@ -502,7 +502,8 @@ class SpotFinderFactory(object):
     filter_spots = SpotFinderFactory.configure_filter(params)
 
     # Create the threshold strategy
-    threshold_function = SpotFinderFactory.configure_threshold(params, datablock)
+    threshold_function = SpotFinderFactory.configure_threshold(params,
+                                                               datablock)
 
     # Configure the mask generator
     mask_generator = MaskGenerator(params.spotfinder.filter)
@@ -542,8 +543,9 @@ class SpotFinderFactory(object):
     '''
     from dials.interfaces import SpotFinderThresholdIface
 
-    # Set the gain if necessary
+    # Set the gain if necessary - requires datablock
     if params.spotfinder.threshold.xds.gain is None:
+      assert(datablock)
       gain = None
       for imageset in datablock.extract_imagesets():
         for panel in imageset.get_detector():
