@@ -1009,6 +1009,7 @@ class RefinerFactory(object):
     if options.auto_reduction.detector_reduce:
       reduce_list = options.auto_reduction.detector_reduce_list
       for i, dp in enumerate(det_params):
+        to_fix = flex.bool(dp.get_fixed())
         try: # test for hierarchical detector parameterisation
           pnl_groups = dp.get_panel_ids_by_group()
           for igp, gp in enumerate(pnl_groups):
@@ -1020,19 +1021,18 @@ class RefinerFactory(object):
               names = filter_parameter_names(dp)
               prefix = 'Group{0}'.format(igp + 1)
               reduce_this_group = [prefix + e for e in reduce_list]
-              to_fix = string_sel(reduce_this_group, names)
-              dp.set_fixed(to_fix)
+              to_fix |= flex.bool(string_sel(reduce_this_group, names))
               # try again, and fail if still unsuccessful
               surplus = panel_gp_nparam_minus_nref(dp, gp, igp, reflections, verbose=True)
               if surplus < 0:
                 msg = msg.format(-1*surplus, i + 1, igp + 1)
                 raise Sorry(msg + '\nFailing.')
-
         except AttributeError:
           if model_nparam_minus_nref(dp, reflections) < 0:
             mdl = 'Detector{0}'.format(i + 1)
             msg = failmsg.format(mdl)
             raise Sorry(msg)
+        dp.set_fixed(to_fix)
 
     if options.auto_reduction.action == 'fail':
       failmsg = 'Too few reflections to parameterise {0}'
