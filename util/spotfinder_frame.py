@@ -1073,22 +1073,36 @@ class SpotFrame(XrayFrame) :
       A = crystal_model.get_A()
       scan = imageset.get_scan()
       beam = imageset.get_beam()
-      phi = scan.get_angle_from_array_index(
-        i_frame-imageset.get_array_range()[0], deg=True)
-      axis = matrix.col(imageset.get_goniometer().get_rotation_axis())
+      gonio = imageset.get_goniometer()
+      still = scan is None or gonio is None
+      if not still:
+        phi = scan.get_angle_from_array_index(
+          i_frame-imageset.get_array_range()[0], deg=True)
+        axis = matrix.col(imageset.get_goniometer().get_rotation_axis())
       if len(detector) == 1:
         beam_centre = detector[0].get_ray_intersection(beam.get_s0())
         beam_x, beam_y = detector[0].millimeter_to_pixel(beam_centre)
         beam_x, beam_y = map_coords(beam_x+ 0.5, beam_y + 0.5, 0)
       else:
-        panel, beam_centre = detector.get_ray_intersection(beam.get_s0())
+        try:
+          panel, beam_centre = detector.get_ray_intersection(beam.get_s0())
+        except RuntimeError, e:
+          if "DXTBX_ASSERT(w_max > 0)" in str(e):
+            # direct beam didn't hit a panel
+            panel = 0
+            beam_centre = detector[panel].get_ray_intersection(beam.get_s0())
+          else:
+            raise e
         beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
         beam_x, beam_y = map_coords(beam_x+ 0.5, beam_y + 0.5, panel)
       lines = []
       for i, h in enumerate(((10,0,0), (0,10,0), (0,0,10))):
         r = A * matrix.col(h)
-        r_phi = r.rotate_around_origin(axis, phi, deg=True)
-        s1 = matrix.col(beam.get_s0()) + r_phi
+        if still:
+          s1 = matrix.col(beam.get_s0()) + r
+        else:
+          r_phi = r.rotate_around_origin(axis, phi, deg=True)
+          s1 = matrix.col(beam.get_s0()) + r_phi
         if len(detector) == 1:
           xy = detector[0].get_ray_intersection(s1)
           x, y = detector[0].millimeter_to_pixel(xy)
