@@ -261,6 +261,35 @@ class Script(object):
         logger.info('')
       rubbish.extend(unmatched)
 
+      if len(experiments) > 1:
+        # filter out any experiments without matched reference reflections
+        # f_: filtered
+        from dxtbx.model.experiment.experiment_list import ExperimentList
+        f_reference = flex.reflection_table()
+        f_predicted = flex.reflection_table()
+        f_rubbish = flex.reflection_table()
+        f_experiments = ExperimentList()
+        good_expt_count = 0
+        def refl_extend(src, dest, eid):
+          tmp = src.select(src['id'] == eid)
+          tmp['id'] = flex.int(len(tmp), good_expt_count)
+          dest.extend(tmp)
+
+        for expt_id, experiment in enumerate(experiments):
+          if len(reference.select(reference['id'] == expt_id)) != 0:
+            refl_extend(reference, f_reference, expt_id)
+            refl_extend(predicted, f_predicted, expt_id)
+            refl_extend(rubbish, f_rubbish, expt_id)
+            f_experiments.append(experiment)
+            good_expt_count += 1
+          else:
+            logger.info("Removing experiment %d: no reference reflections matched to predictions"%expt_id)
+
+        reference = f_reference
+        predicted = f_predicted
+        experiments = f_experiments
+        rubbish = f_rubbish
+
     # Select a random sample of the predicted reflections
     if not params.sampling.integrate_all_reflections:
       predicted = self.sample_predictions(experiments, predicted, params)
