@@ -278,7 +278,7 @@ class Test(object):
           if verbose: print ("  {0} outliers rejected, leaving greatest " + \
             "normalised error: {1:9.6f}").format(n_outliers, tst_val)
           # largest normalied error now about -4. for dX/dp of Detector0Tau1
-          assert abs(tst_val) < 4.5
+          assert abs(tst_val) < 4.5, 'should be about 4 not %s' % tst_val
     if verbose: print
 
     return
