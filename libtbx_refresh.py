@@ -96,8 +96,7 @@ for cmd in [%s]:
           added_script = \
             '# DIALS_ENABLE_COMMAND_LINE_COMPLETION\n' \
             '[ -n "$BASH_VERSION" ] && {\n' \
-            ' source $(libtbx.find_in_repositories dials/util/autocomplete.sh)\n' \
-            ' source %s\n' \
+            ' source $(libtbx.find_in_repositories dials/util/autocomplete.sh) && source %s || echo dials command line completion not available\n' \
             '}\n' % (
               os.path.join('$LIBTBX_BUILD', 'dials', 'autocomplete', 'bash.sh'))
           with open(os.path.join(build_path, file), 'w') as script:
