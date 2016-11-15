@@ -13,6 +13,7 @@
 #include <dials/algorithms/image/centroid/centroid_points.h>
 #include <dials/algorithms/image/centroid/centroid_image.h>
 #include <dials/algorithms/image/centroid/centroid_masked_image.h>
+#include <dials/algorithms/image/centroid/bias.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
 
@@ -185,6 +186,8 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     centroid_suite<float>();
     centroid_suite<double>();
+
+    def("centroid_bias_sq", &centroid_bias_sq);
   }
 
 }}} // namespace = dials::algorithms::boost_python
