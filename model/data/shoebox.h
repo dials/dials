@@ -49,8 +49,7 @@ namespace dials { namespace model {
     result.px.position = algorithm.mean() + ioffset;
     try {
       result.px.variance = algorithm.unbiased_variance();
-      result.px.std_err_sq = algorithm.unbiased_standard_error_sq()
-                           + vec3<double>(1.0/12.0, 1.0/12.0, 1.0/12.0);
+      result.px.std_err_sq = algorithm.mean_sq_error();
     } catch(dials::error) {
       result.px.variance = vec3<double>(0.0, 0.0, 0.0);
       result.px.std_err_sq = vec3<double>(1.0/12.0, 1.0/12.0, 1.0/12.0);

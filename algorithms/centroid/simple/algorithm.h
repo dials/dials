@@ -65,15 +65,14 @@ namespace dials { namespace algorithms {
           foreground_mask.const_ref());
       result.px.position = algorithm.mean() + vec3<double>(bbox[0], bbox[2], bbox[4]);
       result.px.variance = algorithm.variance();
-      result.px.std_err_sq = algorithm.standard_error_sq()
-                           + vec3<double>(1.0/12.0, 1.0/12.0, 1.0/12.0);
+      result.px.std_err_sq = algorithm.mean_sq_error();
     } catch(dials::error) {
       double xmid = (bbox[1] + bbox[0]) / 2.0;
       double ymid = (bbox[3] + bbox[2]) / 2.0;
       double zmid = (bbox[5] + bbox[4]) / 2.0;
       result.px.position = vec3<double>(xmid, ymid, zmid);
       result.px.variance = vec3<double>(0, 0, 0);
-      result.px.std_err_sq = vec3<double>(0, 0, 0);
+      result.px.std_err_sq = vec3<double>(1.0/12.0, 1.0/12.0, 1.0/12.0);
     }
     return result;
   }
