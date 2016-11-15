@@ -17,6 +17,7 @@
 #include <scitbx/array_family/ref_reductions.h>
 #include <scitbx/array_family/misc_functions.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
+#include <dials/algorithms/image/centroid/bias.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
@@ -126,9 +127,11 @@ namespace dials { namespace algorithms {
 
     /** @returns The unbiased variance. */
     coord_type unbiased_variance() const {
-      DIALS_ASSERT(pow2(sum_pixels_) > sum_pixels_sq_);
-      return sum_pixels_delta_sq_ * sum_pixels_ /
-        (pow2(sum_pixels_) - sum_pixels_sq_);
+      DIALS_ASSERT(sum_pixels_ > 1);
+      return sum_pixels_delta_sq_ / (sum_pixels_ - 1);
+      /* DIALS_ASSERT(pow2(sum_pixels_) > sum_pixels_sq_); */
+      /* return sum_pixels_delta_sq_ * sum_pixels_ / */
+      /*   (pow2(sum_pixels_) - sum_pixels_sq_); */
     }
 
     /** @returns The biased standard error on the mean squared. */
@@ -139,6 +142,23 @@ namespace dials { namespace algorithms {
     /** @returns The unbiased standard error on the mean squared. */
     coord_type unbiased_standard_error_sq() const {
       return unbiased_variance() / sum_pixels_;
+    }
+
+    /** @returns the Estimate of the bias in the centroid algoritm */
+    coord_type average_bias_estimate() const {
+      coord_type variance = unbiased_variance();
+      coord_type bias;
+      for (std::size_t i = 0; i < variance.size(); ++i) {
+        bias[i] = centroid_bias_sq(variance[i]);
+      }
+      return bias;
+    }
+
+    /**
+     * @returns the variance + bias^2
+     */
+    coord_type mean_sq_error() const {
+      return unbiased_standard_error_sq() + average_bias_estimate();
     }
 
     /** @returns The covariance matrix. */

@@ -49,6 +49,10 @@ namespace dials { namespace algorithms { namespace boost_python {
         &CentroidPointsType::standard_error_sq)
       .def("unbiased_standard_error_sq",
         &CentroidPointsType::unbiased_standard_error_sq)
+      .def("average_bias_estimate",
+        &CentroidPointsType::average_bias_estimate)
+      .def("mean_sq_error",
+        &CentroidPointsType::mean_sq_error)
       .def("covariance_matrix",
         &CentroidPointsType::covariance_matrix);
   }

@@ -22,9 +22,9 @@ namespace dials { namespace algorithms {
    * Otherwise, we get the values from a lookup table generated from the
    * dev.dials.generate_bias_lookup_table command
    */
-  inline 
+  inline
   double centroid_bias_sq(double variance) {
-    
+
     DIALS_ASSERT(variance >= 0);
 
     // A lookup in 0.01 increments of sigma
