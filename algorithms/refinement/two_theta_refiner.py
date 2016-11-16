@@ -95,7 +95,7 @@ class TwoThetaReflectionManager(ReflectionManager):
       st = simple_table(rows, header)
     except IndexError:
       # zero length reflection list
-      warning("Unable to calculate summary statistics for zero observations")
+      logger.warning("Unable to calculate summary statistics for zero observations")
       return
     logger.info(msg)
     logger.info(st.format())

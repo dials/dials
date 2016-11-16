@@ -460,7 +460,7 @@ class ReflectionManager(object):
       st = simple_table(rows, header)
     except IndexError:
       # zero length reflection list
-      warning("Unable to calculate summary statistics for zero observations")
+      logger.warning("Unable to calculate summary statistics for zero observations")
       return
     logger.info(msg)
     logger.info(st.format())
@@ -581,7 +581,7 @@ class StillsReflectionManager(ReflectionManager):
       rows.append(["DeltaPsi weights"] + ["%.4g" % (e * DEG2RAD**2) for e in row_data])
     except IndexError:
       # zero length reflection list
-      warning("Unable to calculate summary statistics for zero observations")
+      logger.warning("Unable to calculate summary statistics for zero observations")
       return
     logger.info(msg)
     st = simple_table(rows, header)
