@@ -127,11 +127,11 @@ namespace dials { namespace algorithms {
 
     /** @returns The unbiased variance. */
     coord_type unbiased_variance() const {
-      DIALS_ASSERT(sum_pixels_ > 1);
-      return sum_pixels_delta_sq_ / (sum_pixels_ - 1);
-      /* DIALS_ASSERT(pow2(sum_pixels_) > sum_pixels_sq_); */
-      /* return sum_pixels_delta_sq_ * sum_pixels_ / */
-      /*   (pow2(sum_pixels_) - sum_pixels_sq_); */
+      /* DIALS_ASSERT(sum_pixels_ > 1); */
+      /* return sum_pixels_delta_sq_ / (sum_pixels_ - 1); */
+      DIALS_ASSERT(pow2(sum_pixels_) > sum_pixels_sq_);
+      return sum_pixels_delta_sq_ * sum_pixels_ /
+        (pow2(sum_pixels_) - sum_pixels_sq_);
     }
 
     /** @returns The biased standard error on the mean squared. */
@@ -158,7 +158,12 @@ namespace dials { namespace algorithms {
      * @returns the variance + bias^2
      */
     coord_type mean_sq_error() const {
-      return unbiased_standard_error_sq() + average_bias_estimate();
+      // FIXME Mathematically we should use the bias estimate but this weights
+      // refinement to a handful of very strong reflections. Having the addition
+      // of 1/12 seems to make refinement work better because there are more
+      // uniform weights. Until we figure this out, I'm changing this to add
+      // 1/12 again.
+      return unbiased_standard_error_sq() + 1.0/12.0;//average_bias_estimate();
     }
 
     /** @returns The covariance matrix. */
