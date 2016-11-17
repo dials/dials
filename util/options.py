@@ -199,6 +199,10 @@ geometry {
     .type = floats(size=2)
     .help = "Override the beam centre from the image headers, following "
             "the mosflm convention."
+
+  translate_detector = None
+    .type = floats(size=3)
+    .help = "Translate the detector by the specified amount"
 }
 ''')
 

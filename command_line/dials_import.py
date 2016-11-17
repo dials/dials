@@ -283,6 +283,36 @@ class MosflmBeamCenterUpdater(object):
     return imageset
 
 
+class TranslateDetectorUpdater(object):
+  '''
+  A class to translate the detector
+
+  '''
+  def __init__(self, params):
+    '''
+    Set the params
+
+    '''
+    self.params = params
+
+  def __call__(self, imageset):
+    '''
+    Replace the geometry
+
+    '''
+    translation = self.params.geometry.translate_detector
+    detector = imageset.get_detector()
+    origin = detector.hierarchy().get_origin()
+    fast_axis = detector.hierarchy().get_fast_axis()
+    slow_axis = detector.hierarchy().get_slow_axis()
+    origin = (
+      origin[0] + translation[0],
+      origin[1] + translation[1],
+      origin[2] + translation[2])
+    detector.hierarchy().set_frame(fast_axis, slow_axis, origin)
+    return imageset
+
+
 class ManualGeometryUpdater(object):
   '''
   A class to update the geometry manually
@@ -546,6 +576,8 @@ class MetaDataUpdater(object):
       self.update_geometry = ReferenceGeometryUpdater(self.params)
     elif self.params.geometry.mosflm_beam_centre is not None:
       self.update_geometry = MosflmBeamCenterUpdater(self.params)
+    elif self.params.geometry.translate_detector is not None:
+      self.update_geometry = TranslateDetectorUpdater(self.params)
     else:
       self.update_geometry = ManualGeometryUpdater(self.params)
 
