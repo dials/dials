@@ -158,7 +158,9 @@ def generate_phil_scope():
                   "overlapping reflections are predicted at high resolution"
                   "causing memory issues."
 
-        include scope dials.algorithms.integration.filtering.phil_scope
+        ice_rings = False
+          .help = "Set the ice ring flags"
+          .type = bool
       }
     }
   ''', process_includes=True)
@@ -297,7 +299,7 @@ class Parameters(object):
 
     '''
     from dials.algorithms.integration import processor
-    from dials.algorithms.integration.filtering import MultiPowderRingFilter
+    from dials.algorithms.integration.filtering import IceRingFilter
 
     # Init the parameters
     result = Parameters()
@@ -342,8 +344,8 @@ class Parameters(object):
 
     # Get the min zeta filter
     result.filter.min_zeta = params.filter.min_zeta
-    result.filter.powder_filter = MultiPowderRingFilter.from_params(
-      params.filter)
+    if params.filter.ice_rings == True:
+      result.filter.powder_filter = IceRingFilter()
 
     # Set the profile fitting parameters
     result.profile.fitting = params.profile.fitting
@@ -417,7 +419,6 @@ class InitializerStills(object):
     Do some pre-processing.
 
     '''
-    from dials.algorithms.integration.filtering import MultiPowderRingFilter
     from dials.array_family import flex
 
     # Compute some reflection properties
@@ -1228,7 +1229,7 @@ class IntegratorFactory(object):
     :return: The integrator class
 
     '''
-    from dials.algorithms.integration.filtering import MultiPowderRingFilter
+    from dials.algorithms.integration.filtering import IceRingFilter
     from dials.interfaces import BackgroundIface
     from dials.interfaces import CentroidIface
     from dials.array_family import flex

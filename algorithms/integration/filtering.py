@@ -173,3 +173,50 @@ class MultiPowderRingFilter:
       if params.powder.apply[i] == 'water_ice':
         filters.append(PowderRingFilter.from_params(params.powder.water_ice))
     return filters
+
+
+class IceRingFilter:
+  '''
+  A class to do ice ring filtering
+
+  '''
+
+  def __init__(self):
+    '''
+    Initialise the filter.
+
+    :param width: The resolution width to filter around
+
+    '''
+    # Hexagonal ice ring resolution ranges in 1/d^2
+    self.ice_rings = [
+      (0.0640, 0.0690),
+      (0.0710, 0.0780),
+      (0.0825, 0.0880),
+      ( 0.138,  0.144),
+      ( 0.190,  0.205),
+      ( 0.228,  0.240),
+      ( 0.262,  0.266),
+      ( 0.267,  0.278),
+      ( 0.280,  0.288),
+      ( 0.337,  0.341),
+      ( 0.429,  0.435),
+      ( 0.459,  0.466),
+      ( 0.478,  0.486),
+      ( 0.531,  0.537),
+    ]
+
+  def __call__(self, d):
+    '''
+    True if within powder ring.
+
+    :param d: The resolution
+    :return: True/False in powder ring
+
+    '''
+    from dials.array_family import flex
+    result = flex.bool(len(d), False)
+    d2 = 1.0 / d**2
+    for ice_ring in self.ice_rings:
+      result = result | (d2 >= ice_ring[0]) & (d2 <= ice_ring[1])
+    return result

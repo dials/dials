@@ -102,6 +102,10 @@ phil_scope = parse('''
       .type = bool
       .help = "Force program to use static model even if scan varying is present"
 
+    filter_ice_rings = False
+      .type = bool
+      .help = "Filter reflections at ice ring resolutions"
+
     hklout = integrated.mtz
       .type = path
       .help = "The output MTZ file"
@@ -221,7 +225,8 @@ class MTZExporter(object):
       include_partials=params.mtz.include_partials,
       keep_partials=params.mtz.keep_partials,
       min_isigi=params.mtz.min_isigi,
-      force_static_model=params.mtz.force_static_model)
+      force_static_model=params.mtz.force_static_model,
+      filter_ice_rings=params.mtz.filter_ice_rings)
     from cStringIO import StringIO
     summary = StringIO()
     m.show_summary(out=summary)

@@ -188,7 +188,7 @@ def dials_u_to_mosflm(dials_U, uc):
 
 def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
                include_partials=False, keep_partials=False, min_isigi=None,
-               force_static_model=False):
+               force_static_model=False, filter_ice_rings=False):
   '''Export data from integrated_data corresponding to experiment_list to an
   MTZ file hklout.'''
 
@@ -231,6 +231,12 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
       integrated_data.del_selected(selection)
       logger.info('Removing %d profile reflections with negative variance' % \
             selection.count(True))
+
+  if filter_ice_rings:
+    selection = integrated_data.get_flags(integrated_data.flags.in_powder_ring)
+    integrated_data.del_selected(selection)
+    logger.info("Removing %d reflections in ice ring resolutions" %
+                selection.count(True))
 
   if min_isigi is not None:
 
