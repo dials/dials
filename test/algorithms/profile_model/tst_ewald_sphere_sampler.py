@@ -9,6 +9,7 @@ class Test(object):
     from libtbx import easy_run
     import os
     from uuid import uuid4
+    import dials
     import libtbx.load_env
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
@@ -25,7 +26,6 @@ class Test(object):
     self.experiments = ExperimentListFactory.from_json_file(self.experiments_filename)
 
   def run(self):
-
     from dials.algorithms.profile_model.modeller import EwaldSphereSampler
     from dials.array_family import flex
 
