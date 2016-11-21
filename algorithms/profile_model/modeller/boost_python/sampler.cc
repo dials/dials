@@ -15,6 +15,7 @@
 #include <dials/algorithms/profile_model/modeller/single_sampler.h>
 #include <dials/algorithms/profile_model/modeller/grid_sampler.h>
 #include <dials/algorithms/profile_model/modeller/circle_sampler.h>
+#include <dials/algorithms/profile_model/modeller/ewald_sphere_sampler.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
 
@@ -124,6 +125,20 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("r1", &CircleSampler::r1)
       .def("r2", &CircleSampler::r2)
       .def_pickle(CircleSamplerPickleSuite());
+
+    class_<EwaldSphereSampler, bases<SamplerIface> >("EwaldSphereSampler", no_init)
+      .def(init<
+          const Beam&,
+          const Detector&,
+          const Goniometer&,
+          const Scan &,
+          std::size_t>())
+      .def("max_angle", &EwaldSphereSampler::max_angle)
+      .def("num_phi", &EwaldSphereSampler::num_phi)
+      .def("step_phi", &EwaldSphereSampler::step_phi)
+      .def("profile_coord", &EwaldSphereSampler::profile_coord)
+      .def("nearest_n", &EwaldSphereSampler::nearest_n_index)
+      ;
   }
 
 }}} // namespace = dials::algorithms::boost_python

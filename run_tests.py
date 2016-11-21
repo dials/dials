@@ -35,6 +35,7 @@ tst_list = (
     "$D/test/algorithms/polygon/clip/tst_clipping.py",
     "$D/test/algorithms/polygon/tst_spatial_interpolation.py",
     "$D/test/algorithms/profile_model/tst_profile_model.py",
+    "$D/test/algorithms/profile_model/tst_ewald_sphere_sampler.py",
     "$D/test/algorithms/refinement/tst_beam_parameters.py",
     "$D/test/algorithms/refinement/tst_crystal_parameters.py",
     "$D/test/algorithms/refinement/tst_detector_parameters.py",
