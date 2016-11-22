@@ -166,13 +166,13 @@ namespace dials { namespace algorithms {
               temp.push_back(index(2,2*iy,iz));
               temp.push_back(index(2,2*iy+1,iz));
             } else if (ix == 2) {
-              temp.push_back(index(1,(int)std::floor(iy/2),iz));
+              temp.push_back(index(1,(int)std::floor((double)iy/2),iz));
               temp.push_back(index(2,(iy+1)%num1_[2],iz));
               temp.push_back(index(2,(iy-1)%num1_[2],iz));
               temp.push_back(index(3,2*iy,iz));
               temp.push_back(index(3,2*iy+1,iz));
             } else if (ix == 3) {
-              temp.push_back(index(2,(int)std::floor(iy/2),iz));
+              temp.push_back(index(2,(int)std::floor((double)iy/2),iz));
               temp.push_back(index(3,(iy+1)%num1_[3],iz));
               temp.push_back(index(3,(iy-1)%num1_[3],iz));
             } else {
