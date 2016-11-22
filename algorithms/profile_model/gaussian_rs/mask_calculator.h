@@ -236,22 +236,22 @@ namespace gaussian_rs {
 
       // Get the divergence and mosaicity for this point
       double delta_b_r2 = 0.0;
-      double delta_m_r2 = 0.0;
+      //double delta_m_r2 = 0.0;
       if (delta_b_r_.size() == 1) {
         delta_b_r2 = delta_b_r_[0]*delta_b_r_[0];
-        delta_m_r2 = delta_m_r_[0]*delta_m_r_[0];
+        //delta_m_r2 = delta_m_r_[0]*delta_m_r_[0];
       } else {
         int frame0 = index0_;
         int index = (int)std::floor(frame) - frame0;
         if (index < 0) {
           delta_b_r2 = delta_b_r_.front()*delta_b_r_.front();
-          delta_m_r2 = delta_m_r_.front()*delta_m_r_.front();
+          //delta_m_r2 = delta_m_r_.front()*delta_m_r_.front();
         } else if (index >= delta_b_r_.size()) {
           delta_b_r2 = delta_b_r_.back()*delta_b_r_.back();
-          delta_m_r2 = delta_m_r_.back()*delta_m_r_.back();
+          //delta_m_r2 = delta_m_r_.back()*delta_m_r_.back();
         } else {
           delta_b_r2 = delta_b_r_[index]*delta_b_r_[index];
-          delta_m_r2 = delta_m_r_[index]*delta_m_r_[index];
+          //delta_m_r2 = delta_m_r_[index]*delta_m_r_[index];
         }
       }
 
@@ -331,22 +331,22 @@ namespace gaussian_rs {
 
       // Get the divergence and mosaicity for this point
       double delta_b_r2 = 0.0;
-      double delta_m_r2 = 0.0;
+      //double delta_m_r2 = 0.0;
       if (delta_b_r_.size() == 1) {
         delta_b_r2 = delta_b_r_[0]*delta_b_r_[0];
-        delta_m_r2 = delta_m_r_[0]*delta_m_r_[0];
+        //delta_m_r2 = delta_m_r_[0]*delta_m_r_[0];
       } else {
         int frame0 = index0_;
         int index = (int)std::floor(frame) - frame0;
         if (index < 0) {
           delta_b_r2 = delta_b_r_.front()*delta_b_r_.front();
-          delta_m_r2 = delta_m_r_.front()*delta_m_r_.front();
+          //delta_m_r2 = delta_m_r_.front()*delta_m_r_.front();
         } else if (index >= delta_b_r_.size()) {
           delta_b_r2 = delta_b_r_.back()*delta_b_r_.back();
-          delta_m_r2 = delta_m_r_.back()*delta_m_r_.back();
+          //delta_m_r2 = delta_m_r_.back()*delta_m_r_.back();
         } else {
           delta_b_r2 = delta_b_r_[index]*delta_b_r_[index];
-          delta_m_r2 = delta_m_r_[index]*delta_m_r_[index];
+          //delta_m_r2 = delta_m_r_[index]*delta_m_r_[index];
         }
       }
 
@@ -426,22 +426,22 @@ namespace gaussian_rs {
 
       // Get the divergence and mosaicity for this point
       double delta_b_r2 = 0.0;
-      double delta_m_r2 = 0.0;
+      //double delta_m_r2 = 0.0;
       if (delta_b_r_.size() == 1) {
         delta_b_r2 = delta_b_r_[0]*delta_b_r_[0];
-        delta_m_r2 = delta_m_r_[0]*delta_m_r_[0];
+        //delta_m_r2 = delta_m_r_[0]*delta_m_r_[0];
       } else {
         int frame0 = index0_;
         int index = (int)std::floor(frame) - frame0;
         if (index < 0) {
           delta_b_r2 = delta_b_r_.front()*delta_b_r_.front();
-          delta_m_r2 = delta_m_r_.front()*delta_m_r_.front();
+          //delta_m_r2 = delta_m_r_.front()*delta_m_r_.front();
         } else if (index >= delta_b_r_.size()) {
           delta_b_r2 = delta_b_r_.back()*delta_b_r_.back();
-          delta_m_r2 = delta_m_r_.back()*delta_m_r_.back();
+          //delta_m_r2 = delta_m_r_.back()*delta_m_r_.back();
         } else {
           delta_b_r2 = delta_b_r_[index]*delta_b_r_[index];
-          delta_m_r2 = delta_m_r_[index]*delta_m_r_[index];
+          //delta_m_r2 = delta_m_r_[index]*delta_m_r_[index];
         }
       }
 
