@@ -77,7 +77,7 @@ class Test(object):
       if k >= nz:
         k = nz - 1
       index0 = k
-      index1 = sampler.nearest((x, y, z))
+      index1 = sampler.nearest(0, (x, y, z))
       assert(index0 == index1)
 
     print 'OK'
@@ -101,7 +101,7 @@ class Test(object):
       if k >= nz:
         k = nz - 1
       index0 = k
-      index1 = sampler.nearest_n((x, y, z))
+      index1 = sampler.nearest_n(0, (x, y, z))
       assert(len(set(index1)) == len(index1))
       assert(index0 == index1[-1])
       for ind in index1:
@@ -124,7 +124,7 @@ class Test(object):
     eps = 1e-7
     for i in range(len(sampler)):
       coord = sampler.coord(i)
-      weight = sampler.weight(i, coord)
+      weight = sampler.weight(i, 0, coord)
       assert(abs(weight - 1.0) < eps)
 
     # Ensure we get the expected weight at the next grid point at half way
@@ -134,15 +134,15 @@ class Test(object):
       coord1 = matrix.col(sampler.coord(k))
       if k > 0:
         coord = matrix.col(sampler.coord(k-1))
-        weight = sampler.weight(k, coord)
+        weight = sampler.weight(k, 0, coord)
         assert(abs(weight - expected) < eps)
-        weight = sampler.weight(k, (coord + coord1)/2.0)
+        weight = sampler.weight(k, 0, (coord + coord1)/2.0)
         assert(abs(weight - 0.5) < eps)
       if k < nz-1:
         coord = matrix.col(sampler.coord(k+1))
-        weight = sampler.weight(k, coord)
+        weight = sampler.weight(k, 0, coord)
         assert(abs(weight - expected) < eps)
-        weight = sampler.weight(k, (coord + coord1)/2.0)
+        weight = sampler.weight(k, 0, (coord + coord1)/2.0)
         assert(abs(weight - 0.5) < eps)
 
     print 'OK'
@@ -158,7 +158,7 @@ class Test(object):
 
     for i in range(len(sampler)):
       coord = sampler.coord(i)
-      index = sampler.nearest(coord)
+      index = sampler.nearest(0, coord)
       assert(index == i)
 
     print 'OK'

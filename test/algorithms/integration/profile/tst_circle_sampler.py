@@ -55,7 +55,7 @@ class Test(object):
     im = flex.int(flex.grid(height, width))
     for j in range(height):
       for i in range(width):
-        im[j,i] = sampler.nearest((i, j, 0))
+        im[j,i] = sampler.nearest(0, (i, j, 0))
 
     assert(im[height//2, width//2] == 0)
     assert(im[height//2, width-1] == 1)
@@ -135,7 +135,7 @@ class Test(object):
         index01 = 1
 
       index0 = index00 + index01 * 9
-      index1 = sampler.nearest((x, y, z))
+      index1 = sampler.nearest(0, (x, y, z))
       assert(index0 == index1)
 
     print 'OK'
@@ -173,7 +173,7 @@ class Test(object):
         index01 = 1
 
       index0 = index00 + index01 * 9
-      index1 = sampler.nearest_n((x, y, z))
+      index1 = sampler.nearest_n(0, (x, y, z))
       assert(index0 == index1[0])
       if index0 % 9 == 0:
         assert(len(index1) == 9)
@@ -209,7 +209,7 @@ class Test(object):
     eps = 1e-7
     for i in range(len(sampler)):
       coord = sampler.coord(i)
-      weight = sampler.weight(i, coord)
+      weight = sampler.weight(i, 0, coord)
       assert(abs(weight - 1.0) < eps)
 
     r0 = sampler.r0()
@@ -219,23 +219,23 @@ class Test(object):
     expected = exp(-4.0*r*r*log(2.0))
     for i in range(1, 9):
       coord = sampler.coord(i)
-      weight = sampler.weight(0, coord)
+      weight = sampler.weight(0, 0, coord)
       assert(abs(weight - expected) < eps)
 
     r = r2 / (2.0*(r2 - r1))
     expected = exp(-4.0*r*r*log(2.0))
     for i in range(1, 9):
       coord = sampler.coord(0)
-      weight = sampler.weight(i, coord)
+      weight = sampler.weight(i, 0, coord)
       assert(abs(weight - expected) < eps)
 
     for i in range(1, 9):
       coord1 = matrix.col(sampler.coord(0))
       coord2 = matrix.col(sampler.coord(i))
       coord = coord1 + r1 * (coord2 - coord1) / r2
-      weight = sampler.weight(0, coord)
+      weight = sampler.weight(0, 0, coord)
       assert(abs(weight - 0.5) < eps)
-      weight = sampler.weight(i, coord)
+      weight = sampler.weight(i, 0, coord)
       assert(abs(weight - 0.5) < eps)
 
     print 'OK'
@@ -251,7 +251,7 @@ class Test(object):
 
     for i in range(len(sampler)):
       coord = sampler.coord(i)
-      index = sampler.nearest(coord)
+      index = sampler.nearest(0, coord)
       assert(index == i)
 
     print 'OK'
@@ -264,19 +264,19 @@ class Test(object):
     depth = scan_range[1] - scan_range[0]
     nz = 2
     sampler = CircleSampler((width, height), scan_range, nz)
-    assert((sampler.nearest((500, 500, 2.0)) / 9) == 0)
-    assert((sampler.nearest((500, 500, 3.0)) / 9) == 0)
-    assert((sampler.nearest((500, 500, 4.0)) / 9) == 0)
-    assert((sampler.nearest((500, 500, 5.0)) / 9) == 0)
-    assert((sampler.nearest((500, 500, 6.0)) / 9) == 0)
-    assert((sampler.nearest((500, 500, 6.5)) / 9) == 0)
-    assert((sampler.nearest((500, 500, 7.0)) / 9) == 1)
-    assert((sampler.nearest((500, 500, 7.5)) / 9) == 1)
-    assert((sampler.nearest((500, 500, 8.0)) / 9) == 1)
-    assert((sampler.nearest((500, 500, 9.0)) / 9) == 1)
-    assert((sampler.nearest((500, 500, 10.0)) / 9) == 1)
-    assert((sampler.nearest((500, 500, 11.0)) / 9) == 1)
-    assert((sampler.nearest((500, 500, 12.0)) / 9) == 1)
+    assert((sampler.nearest(0, (500, 500, 2.0)) / 9) == 0)
+    assert((sampler.nearest(0, (500, 500, 3.0)) / 9) == 0)
+    assert((sampler.nearest(0, (500, 500, 4.0)) / 9) == 0)
+    assert((sampler.nearest(0, (500, 500, 5.0)) / 9) == 0)
+    assert((sampler.nearest(0, (500, 500, 6.0)) / 9) == 0)
+    assert((sampler.nearest(0, (500, 500, 6.5)) / 9) == 0)
+    assert((sampler.nearest(0, (500, 500, 7.0)) / 9) == 1)
+    assert((sampler.nearest(0, (500, 500, 7.5)) / 9) == 1)
+    assert((sampler.nearest(0, (500, 500, 8.0)) / 9) == 1)
+    assert((sampler.nearest(0, (500, 500, 9.0)) / 9) == 1)
+    assert((sampler.nearest(0, (500, 500, 10.0)) / 9) == 1)
+    assert((sampler.nearest(0, (500, 500, 11.0)) / 9) == 1)
+    assert((sampler.nearest(0, (500, 500, 12.0)) / 9) == 1)
 
     print 'OK'
 
