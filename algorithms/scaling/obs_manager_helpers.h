@@ -1,5 +1,5 @@
 /*
- * grouped_obs.h
+ * obs_manager_helpers.h
  *
  *  Copyright (C) (2016) STFC Rutherford Appleton Laboratory, UK.
  *
@@ -9,8 +9,8 @@
  *  included in the root directory of this package.
  */
 
-#ifndef DIALS_ALGORITHMS_SCALING_GROUPED_OBS_H
-#define DIALS_ALGORITHMS_SCALING_GROUPED_OBS_H
+#ifndef DIALS_ALGORITHMS_SCALING_OBS_MANAGER_HELPERS_H
+#define DIALS_ALGORITHMS_SCALING_OBS_MANAGER_HELPERS_H
 
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
@@ -216,4 +216,4 @@ namespace dials { namespace scaling {
 
 }} // namespace dials::scaling
 
-#endif // DIALS_ALGORITHMS_SCALING_GROUPED_OBS_H
+#endif // DIALS_ALGORITHMS_SCALING_OBS_MANAGER_HELPERS_H

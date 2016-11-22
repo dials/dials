@@ -11,7 +11,7 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <cctbx/miller.h>
-#include <dials/algorithms/scaling/observation_manager_helpers.h>
+#include <dials/algorithms/scaling/obs_manager_helpers.h>
 
 namespace dials { namespace scaling { namespace boost_python {
 
