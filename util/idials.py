@@ -737,6 +737,7 @@ class Command(object):
       command.append('input.experiments=%s' % self.state.experiments)
     command.append('input.reflections=%s' % self.state.reflections)
     command.append('output.html=%s' % self.state.report)
+    command.append('output.external_dependencies=local')
     run_external_command(command, stdout=stdout, stderr=stderr)
 
   def check_files_exist(self, filenames=None):
