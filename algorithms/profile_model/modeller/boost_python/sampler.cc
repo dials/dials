@@ -50,6 +50,18 @@ namespace dials { namespace algorithms { namespace boost_python {
     }
   };
 
+  struct EwaldSphereSamplerPickleSuite : boost::python::pickle_suite {
+    static
+    boost::python::tuple getinitargs(const EwaldSphereSampler &obj) {
+      return boost::python::make_tuple(
+          obj.beam(),
+          obj.detector(),
+          obj.goniometer(),
+          obj.scan(),
+          obj.num_phi());
+    }
+  };
+
   struct SamplerIfaceWrapper
       : SamplerIface,
         wrapper<SamplerIface> {
@@ -58,16 +70,16 @@ namespace dials { namespace algorithms { namespace boost_python {
       return this->get_override("size")();
     }
 
-    std::size_t nearest(double3 xyz) const {
-      return this->get_override("nearest")(xyz);
+    std::size_t nearest(std::size_t panel, double3 xyz) const {
+      return this->get_override("nearest")(panel, xyz);
     }
 
-    af::shared<std::size_t> nearest_n(double3 xyz) const {
-      return this->get_override("nearest_n")(xyz);
+    af::shared<std::size_t> nearest_n(std::size_t panel, double3 xyz) const {
+      return this->get_override("nearest_n")(panel, xyz);
     }
 
-    double weight(std::size_t index, double3 xyz) const {
-      return this->get_override("weight")(index, xyz);
+    double weight(std::size_t index, std::size_t panel, double3 xyz) const {
+      return this->get_override("weight")(index, panel, xyz);
     }
 
     double3 coord(std::size_t index) const {
@@ -133,12 +145,16 @@ namespace dials { namespace algorithms { namespace boost_python {
           const Goniometer&,
           const Scan &,
           std::size_t>())
+      .def("beam", &EwaldSphereSampler::beam)
+      .def("detector", &EwaldSphereSampler::detector)
+      .def("goniometer", &EwaldSphereSampler::goniometer)
+      .def("scan", &EwaldSphereSampler::scan)
       .def("max_angle", &EwaldSphereSampler::max_angle)
       .def("num_phi", &EwaldSphereSampler::num_phi)
       .def("step_phi", &EwaldSphereSampler::step_phi)
       .def("profile_coord", &EwaldSphereSampler::profile_coord)
       .def("nearest_n", &EwaldSphereSampler::nearest_n_index)
-      ;
+      .def_pickle(EwaldSphereSamplerPickleSuite());
   }
 
 }}} // namespace = dials::algorithms::boost_python

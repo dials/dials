@@ -166,6 +166,7 @@ namespace boost_python {
       .value("single", GaussianRSProfileModeller::Single)
       .value("regular_grid", GaussianRSProfileModeller::RegularGrid)
       .value("circular_grid", GaussianRSProfileModeller::CircularGrid)
+      .value("spherical_grid", GaussianRSProfileModeller::SphericalGrid)
       ;
 
     enum_<GaussianRSProfileModeller::FitMethod>("FitMethod")

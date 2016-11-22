@@ -17,6 +17,7 @@
 #include <dials/algorithms/profile_model/modeller/single_sampler.h>
 #include <dials/algorithms/profile_model/modeller/grid_sampler.h>
 #include <dials/algorithms/profile_model/modeller/circle_sampler.h>
+#include <dials/algorithms/profile_model/modeller/ewald_sphere_sampler.h>
 #include <dials/algorithms/integration/fit/fitting.h>
 
 namespace dials { namespace algorithms {
@@ -38,14 +39,15 @@ namespace dials { namespace algorithms {
   public:
 
     enum GridMethod {
-      Single = 1,
-      RegularGrid = 2,
-      CircularGrid = 3
+      Single        = 1,
+      RegularGrid   = 2,
+      CircularGrid  = 3,
+      SphericalGrid = 4,
     };
 
     enum FitMethod {
       ReciprocalSpace = 1,
-      DetectorSpace = 2
+      DetectorSpace   = 2
     };
 
     GaussianRSProfileModellerBase(
@@ -73,7 +75,9 @@ namespace dials { namespace algorithms {
         fit_method_(fit_method),
         sampler_(
           init_sampler(
+            beam,
             detector,
+            goniometer,
             scan,
             num_scan_points,
             grid_method)) {}
@@ -81,7 +85,9 @@ namespace dials { namespace algorithms {
   protected:
 
     boost::shared_ptr<SamplerIface> init_sampler(
+        const Beam &beam,
         const Detector &detector,
+        const Goniometer &goniometer,
         const Scan &scan,
         std::size_t num_scan_points,
         int grid_method) {
@@ -110,6 +116,13 @@ namespace dials { namespace algorithms {
             scan_range,
             num_scan_points);
         break;
+      case SphericalGrid:
+        sampler = boost::make_shared<EwaldSphereSampler>(
+            beam,
+            detector,
+            goniometer,
+            scan,
+            num_scan_points);
       default:
         DIALS_ERROR("Unknown grid method");
       };
@@ -322,10 +335,10 @@ namespace dials { namespace algorithms {
               mask.const_ref());
 
           // Get the indices and weights of the profiles
-          af::shared<std::size_t> indices = sampler_->nearest_n(xyzpx[i]);
+          af::shared<std::size_t> indices = sampler_->nearest_n(sbox[i].panel, xyzpx[i]);
           af::shared<double> weights(indices.size());
           for (std::size_t j = 0; j < indices.size(); ++j) {
-            weights[j] = sampler_->weight(indices[j], xyzpx[i]);
+            weights[j] = sampler_->weight(indices[j], sbox[i].panel, xyzpx[i]);
           }
 
           // Add the profile
@@ -419,7 +432,7 @@ namespace dials { namespace algorithms {
           try {
 
             // Get the reference profiles
-            std::size_t index = sampler_->nearest(xyzpx[i]);
+            std::size_t index = sampler_->nearest(sbox[i].panel, xyzpx[i]);
             data_const_reference p = data(index).const_ref();
             mask_const_reference m = mask(index).const_ref();
 
@@ -528,7 +541,7 @@ namespace dials { namespace algorithms {
           try {
 
             // Get the reference profiles
-            std::size_t index = sampler_->nearest(xyzpx[i]);
+            std::size_t index = sampler_->nearest(sbox[i].panel, xyzpx[i]);
             data_const_reference d = data(index).const_ref();
 
             // Create the coordinate system

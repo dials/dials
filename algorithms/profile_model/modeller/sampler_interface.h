@@ -36,29 +36,32 @@ namespace dials { namespace algorithms {
 
     /**
      * Find the nearest reference profile to the given point.
+     * @param panel The panel
      * @param xyz The coordinate
      * @returns The index of the reference profile
      */
     virtual
-    std::size_t nearest(double3 xyz) const = 0;
+    std::size_t nearest(std::size_t panel, double3 xyz) const = 0;
 
     /**
      * Find the nearest n reference profiles to the given point.
      * This is mostly used during learning to get the neighbouring profiles.
+     * @param panel The panel
      * @param xyz The coordinate
      * @returns A list of reference profile indices
      */
     virtual
-    af::shared<std::size_t> nearest_n(double3 xyz) const = 0;
+    af::shared<std::size_t> nearest_n(std::size_t panel, double3 xyz) const = 0;
 
     /**
      * Get the weight for the given profile at the given coordinate.
      * @param index The profile index
+     * @param panel The panel
      * @param xyz The coordinate
      * @returns The weight (between 1.0 and 0.0)
      */
     virtual
-    double weight(std::size_t index, double3 xyz) const = 0;
+    double weight(std::size_t index, std::size_t panel, double3 xyz) const = 0;
 
     /**
      * Get the x, y, z coordinate of the reference profile at the given index.

@@ -52,7 +52,10 @@ namespace dials { namespace algorithms {
           const Goniometer &goniometer,
           const Scan &scan,
           std::size_t num_phi)
-        : detector_(detector),
+        : beam_(beam),
+          detector_(detector),
+          goniometer_(goniometer),
+          scan_(scan),
           num_phi_(num_phi) {
 
       // Check input
@@ -216,8 +219,8 @@ namespace dials { namespace algorithms {
      * @param xyz The coordinate
      * @returns The index of the reference profile
      */
-    std::size_t nearest(double3 xyz) const {
-      vec3<double> s1 = detector_[0].get_pixel_lab_coord(
+    std::size_t nearest(std::size_t panel, double3 xyz) const {
+      vec3<double> s1 = detector_[panel].get_pixel_lab_coord(
           vec2<double>(xyz[0], xyz[1])).normalize();
       xyz[2] -= scan_range_[0];
       double z = s1 * zaxis_;
@@ -250,8 +253,8 @@ namespace dials { namespace algorithms {
      * @param xyz The coordinate
      * @returns A list of reference profile indices
      */
-    af::shared<std::size_t> nearest_n(double3 xyz) const {
-      std::size_t main_index = nearest(xyz);
+    af::shared<std::size_t> nearest_n(std::size_t panel, double3 xyz) const {
+      std::size_t main_index = nearest(panel, xyz);
       return nearest_n_index(main_index);
     }
 
@@ -269,8 +272,8 @@ namespace dials { namespace algorithms {
      * @param xyz The coordinate
      * @returns The weight (between 1.0 and 0.0)
      */
-    double weight(std::size_t index, double3 xyz) const {
-      vec3<double> s1 = detector_[0].get_pixel_lab_coord(
+    double weight(std::size_t index, std::size_t panel, double3 xyz) const {
+      vec3<double> s1 = detector_[panel].get_pixel_lab_coord(
           vec2<double>(xyz[0], xyz[1])).normalize();
       xyz[2] -= scan_range_[0];
       double z = s1 * zaxis_;
@@ -316,6 +319,23 @@ namespace dials { namespace algorithms {
       return coord_[index];
     }
 
+    Beam beam() const {
+      return beam_;
+    }
+
+    Detector detector() const {
+      return detector_;
+    }
+
+    Goniometer goniometer() const {
+      return goniometer_;
+    }
+
+    Scan scan() const {
+      return scan_;
+    }
+
+
   private:
 
     std::size_t index(std::size_t ix, std::size_t iy,  std::size_t iz) const {
@@ -327,13 +347,16 @@ namespace dials { namespace algorithms {
       return par_sum + iy + iz * tot_sum;
     }
 
+    Beam beam_;
     Detector detector_;
+    Goniometer goniometer_;
+    Scan scan_;
+    std::size_t num_phi_;
     vec3<double> xaxis_;
     vec3<double> yaxis_;
     vec3<double> zaxis_;
     double max_angle_;
     af::shared<std::size_t> num1_;
-    std::size_t num_phi_;
     af::shared<double> step1_;
     af::shared<double> step2_;
     af::shared<double3> coord_;

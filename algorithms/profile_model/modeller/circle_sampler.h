@@ -116,7 +116,8 @@ namespace dials { namespace algorithms {
      * @param xyz The coordinate
      * @returns The index of the reference profile
      */
-    std::size_t nearest(double3 xyz) const {
+    std::size_t nearest(std::size_t panel, double3 xyz) const {
+      DIALS_ASSERT(panel == 0);
 
       // Get the index at the image coordinate
       std::size_t ij = index_at_image_coord(double2(xyz[0], xyz[1]));
@@ -137,10 +138,12 @@ namespace dials { namespace algorithms {
      * @param xyz The coordinate
      * @returns A list of reference profile indices
      */
-    af::shared<std::size_t> nearest_n(double3 xyz) const {
+    af::shared<std::size_t> nearest_n(std::size_t panel, double3 xyz) const {
+
+      DIALS_ASSERT(panel == 0);
 
       // Get the main index
-      std::size_t main_index = nearest(xyz);
+      std::size_t main_index = nearest(panel, xyz);
       std::size_t image_index = main_index % 9;
       std::size_t zero_index = (main_index / 9) * 9;
 
@@ -165,7 +168,8 @@ namespace dials { namespace algorithms {
      * @param xyz The coordinate
      * @returns The weight (between 1.0 and 0.0)
      */
-    double weight(std::size_t index, double3 xyz) const {
+    double weight(std::size_t index, std::size_t panel, double3 xyz) const {
+      DIALS_ASSERT(panel == 0);
       double3 c = coord(index);
       double dx = (c[0] - xyz[0]);
       double dy = (c[1] - xyz[1]);

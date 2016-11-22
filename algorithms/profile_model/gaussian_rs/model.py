@@ -64,7 +64,7 @@ phil_scope = parse('''
         .type = float
         .help = "The threshold to use in reference profile"
 
-      grid_method = single *regular_grid circular_grid
+      grid_method = single *regular_grid circular_grid spherical_grid
         .type = choice
         .help = "Select the profile grid method"
 
