@@ -166,7 +166,6 @@ class GaussianSmoother(object):
   # Return interpolated value of param at point, original unnormalised
   # coordinate. Also return the weights at each position.
   def value_weight(self, x, param):
-    pass
 
     # use sparse storage as only self._naverage (default 3) values are non-zero
     weight = sparse.vector(self._nvalues)
