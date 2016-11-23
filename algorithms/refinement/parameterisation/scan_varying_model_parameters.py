@@ -125,7 +125,7 @@ class GaussianSmoother(object):
     # we need the positions
     if self._nvalues == 2:
       self._positions = [0.0, 1.0]
-    if self._nvalues == 3:
+    elif self._nvalues == 3:
       self._positions = [0.0, 1.0, 2.0]
     else:
       self._positions = [e - 0.5 for e in range(self._nvalues)]
