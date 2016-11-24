@@ -17,6 +17,8 @@
 #include <dials/algorithms/statistics/kolmogorov_smirnov_test.h>
 #include <dials/algorithms/statistics/poisson_test.h>
 #include <dials/algorithms/statistics/correlation.h>
+#include <dials/algorithms/statistics/binned_gmm.h>
+
 
 namespace dials { namespace algorithms { namespace boost_python {
 
@@ -81,6 +83,38 @@ namespace dials { namespace algorithms { namespace boost_python {
        &spearman_correlation_coefficient<double>);
     def("pearson_correlation_coefficient",
        &pearson_correlation_coefficient<double>);
+
+    class_<BinnedGMMSingle1DFixedMean>("BinnedGMMSingle1DFixedMean", no_init)
+      .def(init<
+          const af::const_ref<double>&,
+          const af::const_ref<double>&,
+          const af::const_ref<double>&,
+          double,
+          double,
+          double,
+          std::size_t>())
+      .def("max_iter", &BinnedGMMSingle1DFixedMean::max_iter)
+      .def("num_iter", &BinnedGMMSingle1DFixedMean::num_iter)
+      .def("epsilon", &BinnedGMMSingle1DFixedMean::epsilon)
+      .def("mu",  &BinnedGMMSingle1DFixedMean::mu)
+      .def("sigma", &BinnedGMMSingle1DFixedMean::sigma)
+      ;
+
+    class_<BinnedGMMSingle1D>("BinnedGMMSingle1D", no_init)
+      .def(init<
+          const af::const_ref<double>&,
+          const af::const_ref<double>&,
+          const af::const_ref<double>&,
+          double,
+          double,
+          double,
+          std::size_t>())
+      .def("max_iter", &BinnedGMMSingle1D::max_iter)
+      .def("num_iter", &BinnedGMMSingle1D::num_iter)
+      .def("epsilon", &BinnedGMMSingle1D::epsilon)
+      .def("mu", &BinnedGMMSingle1D::mu)
+      .def("sigma", &BinnedGMMSingle1D::sigma)
+      ;
   }
 
 }}} // namespace = dials::algorithms::boost_python
