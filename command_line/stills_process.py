@@ -113,7 +113,19 @@ def do_import(filename):
     raise Abort("Could not load %s"%filename)
   if len(datablocks) > 1:
     raise Abort("Got multiple datablocks from file %s"%filename)
-  return datablocks[0]
+
+  # Ensure the indexer and downstream applications treat this as set of stills
+  from dxtbx.imageset import ImageSet
+  reset_sets = []
+
+  for imageset in datablocks[0].extract_imagesets():
+    imageset = ImageSet(imageset.reader(), imageset.indices())
+    imageset._models = imageset._models
+    imageset.set_scan(None)
+    imageset.set_goniometer(None)
+    reset_sets.append(imageset)
+
+  return DataBlockFactory.from_imageset(reset_sets)[0]
 
 class Script(object):
   '''A class for running the script.'''
@@ -219,11 +231,12 @@ class Script(object):
       split_datablocks = []
       for datablock in datablocks:
         for imageset in datablock.extract_imagesets():
+          paths = imageset.paths()
           for i in xrange(len(imageset)):
             subset = imageset[i:i+1]
             split_datablocks.append(DataBlockFactory.from_imageset(subset)[0])
             indices.append(i)
-            basenames.append(os.path.splitext(os.path.basename(subset.paths()[0]))[0])
+            basenames.append(os.path.splitext(os.path.basename(paths[i]))[0])
       tags = []
       for i, basename in zip(indices, basenames):
         if basenames.count(basename) > 1:
