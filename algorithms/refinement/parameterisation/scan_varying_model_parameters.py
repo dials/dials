@@ -10,9 +10,10 @@
 from __future__ import division
 from dials.algorithms.refinement.parameterisation.model_parameters \
         import Parameter, ModelParameterisation
-from math import exp
 import abc
+from scitbx.array_family import flex
 from scitbx import sparse
+from dials_refinement_helpers_ext import GaussianSmoother as GS
 
 # reusable PHIL string for options affecting scan-varying parameterisation
 phil_str = '''
@@ -99,131 +100,18 @@ class ScanVaryingParameterSet(Parameter):
 
     return msg
 
-class GaussianSmoother(object):
+# wrap the C++ GaussianSmoother, modifying return values to emulate the
+# old Python version.
+class GaussianSmoother(GS):
   """A Gaussian smoother for ScanVaryingModelParameterisations"""
 
-  # Based largely on class SmoothedValue from Aimless.
-
-  # Construct from range of raw unnormalised coordinate & number of sample
-  # intervals. Set smoothing values to defaults, Nav = 3
-  def __init__(self, x_range, num_intervals):
-
-    self._x0 = x_range[0] # coordinate of z = 0
-    self._nsample = num_intervals # number of intervals
-    assert self._nsample > 0
-    if self._nsample == 1:
-      self._nvalues = 2
-    elif self._nsample == 2:
-      self._nvalues = 3
-    else:
-      self._nvalues = self._nsample + 2
-
-    # smoothing spacing
-    self._spacing = (x_range[1] - x_range[0]) / float(self._nsample)
-
-    # the values are actually held by ScanVaryingParameterSet classes, but
-    # we need the positions
-    if self._nvalues == 2:
-      self._positions = [0.0, 1.0]
-    elif self._nvalues == 3:
-      self._positions = [0.0, 1.0, 2.0]
-    else:
-      self._positions = [e - 0.5 for e in range(self._nvalues)]
-
-    # set default smoothing parameters
-    self.set_smoothing(3, -1.0)
-
-  def set_smoothing(self, num_average, sigma):
-    """Set smoothing values:
-
-    naverage: number of points included in each calculation
-    sigma: width of the Gaussian used for smoothing.
-
-    If sigma < 0, set to "optimum" (!) (or at least suitable) value from
-    num_average """
-
-    self._naverage = num_average
-    if self._naverage > self._nvalues:
-      self._naverage = self._nvalues
-    self._half_naverage = self._naverage / 2.0
-    self._sigma = sigma
-
-    if self._naverage < 1 or self._naverage > 5:
-      raise ValueError("num_average must be between 1 & 5")
-
-    if sigma < 0.0:
-      #Default values 0.65, 0.7, 0.75, 0.8 for nav = 2,3,4,5
-      self._sigma = 0.65 + 0.05 * (self._naverage - 2)
-
-  # Return number of values
-  def num_values(self):
-    return self._nvalues
-
-  # Return number of sample intervals
-  def num_samples(self):
-    return self._nsample
-
-  # Return interpolated value of param at point, original unnormalised
-  # coordinate. Also return the weights at each position.
   def value_weight(self, x, param):
+    result = super(GaussianSmoother, self).value_weight(x,
+      flex.double(param.value))
+    return (result.get_value(), result.get_weight(), result.get_sumweight())
 
-    # use sparse storage as only self._naverage (default 3) values are non-zero
-    weight = sparse.vector(self._nvalues)
-
-    # normalised coordinate
-    z = (x - self._x0) / self._spacing
-    sumwv = 0.0
-    sumweight = 0.0
-
-    # get values
-    values = param.value
-
-    if self._nvalues <= 3:
-      i1 = 0
-      i2 = self._nvalues
-    else: # in this case, 1st point in array (index 0) is at position -0.5
-      # find the nearest naverage points that bracket z
-      i1 = int(round(z - self._half_naverage)) + 1
-      i2 = i1 + self._naverage
-      if i1 < 0: # beginning of range
-        i1 = 0
-        i2 = max(2, i2) # ensure a separation of at least 2
-      if i2 > self._nvalues:
-        i2 = self._nvalues
-        i1 = min(i1, self._nvalues - 2) # ensure separation of >= 2
-
-    # now do stuff
-    for i in range(i1, i2):
-
-      ds = (z - self._positions[i]) / self._sigma
-      w = exp(-ds*ds)
-      sumwv += w * values[i]
-      sumweight  += w
-      weight[i] = w
-
-    if sumweight > 0.0:
-      value = sumwv / sumweight;
-    else:
-      value = 0
-
-    return value, weight, sumweight
-
-  # Return number of points averaged
-  def num_average(self):
-    return self._naverage
-
-  # Return sigma smoothing factor
-  def sigma(self):
-    return self._sigma
-
-  # Return spacing
-  def spacing(self):
-    return self._spacing
-
-  # Return positions
   def positions(self):
-    return self._positions
-
+    return list(super(GaussianSmoother, self).positions())
 
 class ScanVaryingModelParameterisation(ModelParameterisation):
   """Extending ModelParameterisation to deal with ScanVaryingParameterSets.
