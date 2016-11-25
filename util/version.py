@@ -40,7 +40,10 @@ def get_git_version(dials_path, treat_merges_as_single_commit=False):
         # Now find the first-parent-path
         depth = subprocess.check_output(["git", "rev-list", "%s..HEAD" % tag, "--first-parent"],
           cwd=dials_path, stderr=devnull).rstrip()
-        depth = depth.strip().count("\n") + 1
+        if depth:
+          depth = depth.strip().count("\n") + 1
+        else:
+          depth = 0
         version = "%s-%d-%s" % (tag, depth, commit)
 
     # Turn descriptive version string into proper version number
