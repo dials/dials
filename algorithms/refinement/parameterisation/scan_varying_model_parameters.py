@@ -110,6 +110,12 @@ class GaussianSmoother(GS):
       flex.double(param.value))
     return (result.get_value(), result.get_weight(), result.get_sumweight())
 
+  def multi_value_weight(self, x, param):
+    result = super(GaussianSmoother, self).multi_value_weight(
+      flex.double(x),
+      flex.double(param.value))
+    return (result.get_value(), result.get_weight(), result.get_sumweight())
+
   def positions(self):
     return list(super(GaussianSmoother, self).positions())
 

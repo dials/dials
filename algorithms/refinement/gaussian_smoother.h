@@ -16,6 +16,7 @@
 #include <algorithm> // for std::min, std::max
 #include <scitbx/vec2.h>
 #include <scitbx/sparse/vector.h>
+#include <scitbx/sparse/matrix.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 #include <boost/math/special_functions/round.hpp> // for iround
@@ -24,6 +25,7 @@ namespace dials { namespace refinement {
 
   using scitbx::vec2;
   using scitbx::sparse::vector;
+  using scitbx::sparse::matrix;
 
   // A return type for GaussianSmoother::value_weight
   struct SingleValueWeights {
@@ -45,6 +47,32 @@ namespace dials { namespace refinement {
     }
 
     double get_sumweight() const {
+      return sumweight;
+    }
+  };
+
+  // A return type for GaussianSmoother::multi_value_weight
+  struct MultiValueWeights {
+    af::shared<double> value;
+    matrix<double> weight;
+    af::shared<double> sumweight;
+
+    MultiValueWeights(af::shared<double> value_,
+                      matrix<double> weight_,
+                      af::shared<double> sumweight_)
+      : value(value_),
+        weight(weight_),
+        sumweight(sumweight_){}
+
+    af::shared<double> get_value() const {
+      return value;
+    }
+
+    matrix<double> get_weight() const {
+      return weight;
+    }
+
+    af::shared<double> get_sumweight() const {
       return sumweight;
     }
   };
@@ -165,6 +193,83 @@ namespace dials { namespace refinement {
       double sumwv = 0.0;
       double sumweight = 0.0;
 
+      vec2<int> irange = idx_range(z);
+
+      for (int i = irange[0]; i < irange[1]; ++i) {
+        double ds = (z - positions_[i]) / sigma_;
+        weight[i] = exp(-ds*ds);
+        sumwv += weight[i] * values[i];
+        sumweight  += weight[i];
+      }
+
+      double value;
+      if (sumweight > 0.0) {
+        value = sumwv / sumweight;
+      } else {
+        value = 0.0;
+      }
+
+      return SingleValueWeights(value, weight, sumweight);
+    }
+
+    /**
+     * Calculate multiple interpolated values of the parameters at points using
+     * the original unnormalised coordinate. Return this along with the matrix
+     * of weights at each position, and their sums. The matrix of weights is
+     * arranged such that each row contains the weights for a single point
+     * taken from x.
+     * @param x The array of points to interpolate at
+     * @param param The parameter values
+     */
+    MultiValueWeights multi_value_weight(const af::const_ref<double> x,
+                                         const af::const_ref<double> values) {
+
+      // Use sparse storage as only naverage (default 3) values per row are
+      // non-zero
+      std::size_t npoints = x.size();
+      DIALS_ASSERT(npoints > 1);
+      matrix<double> weight(npoints, nvalues);
+
+      // Allocate space for the interpolated values and sumweights, with raw
+      // refs for fastest access (See Michael Hohn's notes)
+      af::shared<double> value(npoints, af::init_functor_null<double>());
+      af::ref<double> value_ref = value.ref();
+      af::shared<double> sumweight(npoints, af::init_functor_null<double>());
+      af::ref<double> sumweight_ref = sumweight.ref();
+
+      for (std::size_t irow = 0; irow < npoints; ++irow){
+
+        // normalised coordinate
+        double z = (x[irow] - x0) / spacing_;
+        double sumw = 0.0;
+        double sumwv = 0.0;
+
+        vec2<int> irange = idx_range(z);
+
+        for (int icol = irange[0]; icol < irange[1]; ++icol) {
+          double ds = (z - positions_[icol]) / sigma_;
+          double w = exp(-ds*ds);
+          weight(irow, icol) = w;
+          sumw += w;
+          sumwv += w * values[icol];
+        }
+        sumweight_ref[irow] = sumw;
+
+        if (sumw > 0.0) {
+          value_ref[irow] = sumwv / sumw;
+        } else {
+          value_ref[irow] = 0.0;
+        }
+
+      }
+
+      return MultiValueWeights(value, weight, sumweight);
+    }
+
+  private:
+
+    vec2<int> idx_range(double z){
+
       int i1, i2;
       if (nvalues <= 3){
         i1 = 0;
@@ -181,36 +286,8 @@ namespace dials { namespace refinement {
           i1 = std::min(i1, (int)nvalues - 2); // ensure separation of >= 2
         }
       }
-
-      for (int i = i1; i < i2; ++i) {
-        double ds = (z - positions_[i]) / sigma_;
-        weight[i] = exp(-ds*ds);
-        sumwv += weight[i] * values[i];
-        sumweight  += weight[i];
-      }
-
-      double value;
-      if (sumweight > 0.0) {
-        value = sumwv / sumweight;
-      } else {
-        value = 0.0;
-      }
-
-      return SingleValueWeights(value, weight, sumweight);
-
+      return vec2<int>(i1, i2);
     }
-
-    /**
-     * Calculate multiple interpolated values of the parameters at points using
-     * the original unnormalised coordinate. Return this along with the matrix
-     * of weights at each position, and their sums.
-     * @param x The points to interpolate at
-     * @param param The parameter values
-     */
-
-     // FIXME TODO
-
-  private:
 
     double x0;
     double spacing_;

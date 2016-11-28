@@ -15,6 +15,7 @@ import random
 # CCTBX imports
 from libtbx.test_utils import approx_equal
 from scitbx import matrix
+from scitbx.array_family import flex
 from dxtbx.model.crystal import crystal_model
 from dxtbx.model.beam import Beam
 from dxtbx.model.goniometer import Goniometer
@@ -64,10 +65,20 @@ class SmootherTest(object):
     # coordinate
     assert self.smoother.spacing() == 19.8
 
+    # Use the single value smoother multiple times...
     smooth_at = [e for e in range(1, 101)]
     data = [self.smoother.value_weight(e, self.myparam) for e in smooth_at]
-    vals = [v for v, w, sw in data]
+    vals, weights, sumweights = zip(*data)
     assert len(smooth_at) == len(vals)
+
+    # ...and the multi value smoother once
+    mvals, mweights, msumweights = self.smoother.multi_value_weight(smooth_at, self.myparam)
+
+    # the results should be identical.
+    assert (flex.double(vals) == mvals).all_eq(True)
+    assert (flex.double(sumweights) == msumweights).all_eq(True)
+    for v1, v2 in zip(weights, mweights.transpose().cols()):
+      assert (v1.as_dense_vector() == v2.as_dense_vector()).all_eq(True)
 
     if self.do_plots:
       try:

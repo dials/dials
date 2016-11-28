@@ -30,12 +30,19 @@ namespace dials { namespace refinement { namespace boost_python {
       .def("spacing", &GaussianSmoother::spacing)
       .def("positions", &GaussianSmoother::positions)
       .def("value_weight", &GaussianSmoother::value_weight)
+      .def("multi_value_weight", &GaussianSmoother::multi_value_weight)
     ;
 
     class_<SingleValueWeights>("SingleValueWeights", no_init)
       .def("get_value", &SingleValueWeights::get_value)
       .def("get_weight", &SingleValueWeights::get_weight)
       .def("get_sumweight", &SingleValueWeights::get_sumweight)
+    ;
+
+    class_<MultiValueWeights>("MultiValueWeights", no_init)
+      .def("get_value", &MultiValueWeights::get_value)
+      .def("get_weight", &MultiValueWeights::get_weight)
+      .def("get_sumweight", &MultiValueWeights::get_sumweight)
     ;
   }
 
