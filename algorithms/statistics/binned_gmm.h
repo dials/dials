@@ -40,8 +40,8 @@ namespace dials { namespace algorithms {
       Expectation(double a, double b, double mu, double sigma) {
         double e1 = erf((b-mu)/(std::sqrt(2.0)*sigma));
         double e2 = erf((a-mu)/(std::sqrt(2.0)*sigma));
-        double e3 = std::exp(-(a-mu)*(a-mu) / (std::sqrt(2*pi) * sigma*sigma)) / (std::sqrt(2.0*pi)*sigma);
-        double e4 = std::exp(-(b-mu)*(b-mu) / (std::sqrt(2*pi) * sigma*sigma)) / (std::sqrt(2.0*pi)*sigma);
+        double e3 = std::exp(-(a-mu)*(a-mu) / (2 * sigma*sigma)) / (std::sqrt(2.0*pi)*sigma);
+        double e4 = std::exp(-(b-mu)*(b-mu) / (2 * sigma*sigma)) / (std::sqrt(2.0*pi)*sigma);
         expectation0_ = 0.5 * (e1 - e2);
         expectation1_ = 0.5*mu*(e1 - e2) + (sigma*sigma / std::sqrt(2*pi))*(e3 - e4);
         expectation2_ = (sigma*sigma / 2.0)*(e1 - e2) + sigma*sigma * ((a-mu)*e3 - (b-mu)*e4);
@@ -122,22 +122,51 @@ namespace dials { namespace algorithms {
       double c = af::sum(m);
       double logL0 = 0.0;
 
+      af::shared<bool> use(a.size(), true);
+      for (std::size_t i = 0; i < m.size(); ++i) {
+        detail::Expectation e(a[i], b[i], mu_, sigma_);
+        double P = e.expectation0();
+        if (m[i] < 1) {
+          use[i] = false;
+        }
+      }
+
       // Do the iterations
       for (num_iter_ = 0; num_iter_ < max_iter; ++num_iter_) {
         double sum_n_log_p = 0;
         double sum_n = 0;
         double sum_log_p = 0;
         double va_new = 0;
+        double min_P = 1;
+
+        double sum_P = 0;
+        double sum_E2 = 0;
+
         for (std::size_t i = 0; i < m.size(); ++i) {
           detail::Expectation e(a[i], b[i], mu_, sigma_);
           double P = e.expectation0();
-          if (n[i] > 0 && P > 1e-10) {
-            va_new += m[i] * e.expectation2() / P;
-            sum_n_log_p += n[i] * std::log(P);
+          double E2 = e.expectation2();
+          if (use[i]) {
+            if (P > 1e-100) {
+              va_new += m[i] * E2 / P;
+            } else {
+            }
+            sum_n_log_p += n[i] * (P > 1e-100 ? std::log(P) : std::log(1e-100));
             sum_n += n[i];
-            sum_log_p += std::log(P);
+            sum_log_p += (P > 1e-100 ? std::log(P) : std::log(1e-100));
+            if (P < min_P) min_P = P;
+            sum_P += P;
+            sum_E2 += E2;
           }
+
         }
+
+        /* double Pr = (1.0 - sum_P); */
+        /* double mr = sum_n * Pr; */
+        /* double E2r = (sigma_*sigma_ - sum_E2); */
+        /* double XX = mr * E2r / Pr; */
+        /* va_new += XX; */
+
         sigma_ = std::sqrt(va_new / c);
 
         // Check if we've converged
