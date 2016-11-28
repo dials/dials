@@ -1575,6 +1575,7 @@ class Refiner(object):
 
     # the experimental models
     self._experiments = experiments
+    self.copy_experiments = copy_experiments
 
     # refinement module main objects
     self._pred_param = pred_param
