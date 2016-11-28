@@ -428,7 +428,8 @@ class RefinerFactory(object):
                                        params,
                                        reflections,
                                        experiments,
-                                       verbosity=None):
+                                       verbosity=None,
+                                       copy_experiments=True):
 
     #TODO Checks on the input
     #E.g. does every experiment contain at least one overlapping model with at
@@ -439,9 +440,10 @@ class RefinerFactory(object):
     if verbosity is None:
       verbosity = params.refinement.verbosity
 
-    # copy the experiments
-    import copy
-    experiments = copy.deepcopy(experiments)
+    if copy_experiments:
+      # copy the experiments
+      import copy
+      experiments = copy.deepcopy(experiments)
 
     # copy and filter the reflections
     reflections = cls._filter_reflections(reflections)
@@ -449,11 +451,12 @@ class RefinerFactory(object):
     return cls._build_components(params,
                                  reflections,
                                  experiments,
-                                 verbosity=verbosity)
+                                 verbosity=verbosity,
+                                 copy_experiments=copy_experiments)
 
   @classmethod
   def _build_components(cls, params, reflections, experiments,
-                        verbosity):
+                        verbosity, copy_experiments=True):
     """low level build"""
 
     # Currently a refinement job can only have one parameterisation of the
@@ -542,7 +545,7 @@ class RefinerFactory(object):
     # build refiner interface and return
     return Refiner(reflections, experiments,
                     pred_param, param_reporter, refman, target, refinery,
-                    verbosity=verbosity)
+                    verbosity=verbosity, copy_experiments=copy_experiments)
 
   @staticmethod
   def config_sparse(params, experiments):
@@ -1554,7 +1557,7 @@ class Refiner(object):
 
   def __init__(self, reflections, experiments,
                pred_param, param_reporter, refman, target, refinery,
-               verbosity=0):
+               verbosity=0, copy_experiments=True):
     """
     Mandatory arguments:
       reflections - Input ReflectionList data
@@ -1588,8 +1591,11 @@ class Refiner(object):
 
   def get_experiments(self):
 
-    from copy import deepcopy
-    return deepcopy(self._experiments)
+    if self.copy_experiments:
+      from copy import deepcopy
+      return deepcopy(self._experiments)
+    else:
+      return self._experiments
 
   def rmsds(self):
     """Return rmsds of the current model"""
