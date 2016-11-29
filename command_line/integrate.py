@@ -351,7 +351,7 @@ class Script(object):
     rubbish = reference.select(mask == False)
     if mask.count(False) > 0:
       reference.del_selected(mask == False)
-      logger.info(' removing %d unindexed reflections' %  mask.count(True))
+      logger.info(' removing %d unindexed reflections' %  mask.count(False))
     if len(reference) == 0:
       raise Sorry('''
         Invalid input for reference reflections.
