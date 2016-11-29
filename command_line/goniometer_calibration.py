@@ -4,10 +4,20 @@ from cctbx.array_family import flex
 import iotbx.phil
 
 help_message = '''
+dials.goniometer_calibration is a tool to aid calibration of multi-axis
+goniometers.
+
+The tool takes as input exeriments.json files for datasets recorded at the
+goniometer datum setting and for each goniometer axis incremented in turn. It
+outputs the axes and angles relating each consecutive pair of crystal setting
+matrices in imgCIF and MOSFLM coordinate systems, and the CIF loop describing
+the goniometer axes. Optionally it can also output an XOalign configuration file.
 
 Examples::
 
-  dials.goniometer_calibration experiments_1.json experiments_2.json axis.name=GONIO_PHI axis.name=GONIO_OMEGA
+dials.goniometer_calibration space_group=P422 \
+  experiments_o0_k0_p0.json experiments_o0_k0_p48.json \
+  experiments_o0_k48_p48.json experiments_o48_k48_p48.json
 
 '''
 
