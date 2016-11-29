@@ -45,6 +45,10 @@ align {
       .type = choice
   }
 }
+output {
+  json = align_crystal.json
+    .type = path
+}
 """)
 
 
@@ -154,6 +158,16 @@ class align_crystal(object):
           self.unique_solutions.setdefault(k, set())
           self.unique_solutions[k].add((v1, v2))
 
+  def _vector_as_str(self, v):
+    v = v.elems
+    if v in self.vector_names:
+      vstr = self.vector_names[v]
+      if self.frame == 'reciprocal':
+        vstr += '*'
+    else:
+      vstr = str(v)
+    return vstr
+
   def show(self):
     from libtbx import table_utils
     self.info()
@@ -161,26 +175,35 @@ class align_crystal(object):
     rows = []
     names = self.experiment.goniometer.get_names()
 
-    def vector_as_str(v):
-      v = v.elems
-      if v in self.vector_names:
-        vstr = self.vector_names[v]
-        if self.frame == 'reciprocal':
-          vstr += '*'
-      else:
-        vstr = str(v)
-      return vstr
-
     for angles, solutions in self.unique_solutions.iteritems():
-        for (v1, v2) in solutions:
-          rows.append(
-            (vector_as_str(v1), vector_as_str(v2),
-             '% 7.2f' %angles[0], '% 7.2f' %angles[1],
-             ))
+      for (v1, v2) in solutions:
+        rows.append(
+          (self._vector_as_str(v1), self._vector_as_str(v2),
+           '% 7.2f' %angles[0], '% 7.2f' %angles[1],
+           ))
     rows = [('v1', 'v2', names[1], names[0])] + \
            sorted(rows)
     print 'Independent solutions:'
     print table_utils.format(rows=rows, has_header=True)
+
+  def as_json(self, filename=None):
+    names = self.experiment.goniometer.get_names()
+    solutions = []
+    for angles, solns in self.unique_solutions.iteritems():
+      for (v1, v2) in solns:
+        solutions.append(
+          {'v1': self._vector_as_str(v1),
+           'v2': self._vector_as_str(v2),
+           names[1]: angles[0],
+           names[0]: angles[1]
+          })
+    d = {'solutions': solutions,
+         'goniometer': self.experiment.goniometer.to_dict()}
+    import json
+    if filename is not None:
+      return json.dump(d, open(filename, 'wb'), indent=2)
+    else:
+      return json.dumps(d, indent=2)
 
   def info(self):
     from libtbx import table_utils
@@ -303,6 +326,8 @@ def run(args):
 
   result = align_crystal(expt, vectors, frame=frame, mode=params.align.mode)
   result.show()
+  if params.output.json is not None:
+    result.as_json(filename=params.output.json)
 
 
 if __name__ == '__main__':
