@@ -409,7 +409,7 @@ class Processor(object):
     return experiments, indexed
 
   def refine(self, experiments, centroids):
-    print "Skipping refinement because the crystal orientation is refined during indexing"
+    print "Not refining here because the crystal orientation is refined during indexing"
 # TODO add dispatch.refine as option and use this code
 #    from dials.algorithms.refinement import RefinerFactory
 #    from time import time
