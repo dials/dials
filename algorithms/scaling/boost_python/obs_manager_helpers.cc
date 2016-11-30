@@ -1,5 +1,5 @@
 /*
- * grouped_obs.cc
+ * obs_manager_helpers.cc
  *
  *  Copyright (C) (2016) STFC Rutherford Appleton Laboratory, UK.
  *
