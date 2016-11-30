@@ -17,6 +17,7 @@ from libtbx import phil
 from libtbx.utils import Sorry
 from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \
         import GaussianSmoother, ScanVaryingParameterSet
+from dials_scaling_helpers_ext import row_multiply
 
 class ScaleFactor(object):
   """Base class for parameterisation of a component of the overall scale"""
@@ -46,35 +47,20 @@ class ScaleFactor(object):
     may be the phi rotation angle values for a scale factor component that is
     a function of phi."""
 
-    # The Python version of the smoother is used like this for a single smoothed
-    # value:
-    #
-    # val, weights, sumweight = self._smoother.value_weight(phi, param_set)
-    #
-    # Where val and sumweight are both single values, val being the smoothed
-    # value at position 'phi', and sumweight is the sum of weights. Weights
-    # is a sparse vector typically with 3 non-zero values.
-    #
-    # The gradient of the smoothed value with respect to the parameters,
-    # d[val]/d[p], is given by
-    #
-    # dvp_dp = weights * (1. / sumweight)
-    #
-    # We can start by looping over the reflection data (values in 'seq') and
-    # performing these calculations, but it will be very slow. Ultimately it
-    # would be better for the smoother to move to C++ and for these calculations
-    # to be available in a 'vectorised' way so that from Python a single call
-    # is made to the smoother and the loop over seq is in C++. In that case,
-    # val and sumweight become vectors of length seq, while dv_dp is a matrix.
-    # This matrix is sparse, so better to use the sparse matrix type. A decision
-    # is required as to whether the weights for a single reflection span the
-    # rows or columns of this matrix.
-    #
-    # I think that eventually the derivatives of the overall scale factor are
-    # needed in such a way that each row is a single reflection, so arrange it
-    # this way.
+    # Obtain data from the smoother, where value and sumweight are arrays with
+    # the same length as seq. Weight is a sparse matrix with one row per
+    # element of seq. Each row has some (typically 3) non-zero values
+    # corresponding to the positions nearest the element of seq.
+    value, weight, sumweight = self._smoother.multi_value_weight(seq,
+      self._param.value)
 
-    pass
+    # The gradient of a single smoothed value with respect to the parameters,
+    # d[v]/d[p] = w_i * (1. / sum(w_i)), where the sum is over the parameters.
+    # Calculate this for all values v.
+    inv_sw = 1. / sumweight
+    dv_dp = row_multiply(weight, inv_sw)
+
+    return value, dv_dp
 
 class IncidentBeamFactor(ScaleFactor):
   """Smoothly varying scale factor combining incident beam flux variation
