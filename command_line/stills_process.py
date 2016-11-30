@@ -285,6 +285,11 @@ class Script(object):
 
     # Process the data
     if params.mp.method == 'mpi':
+      from mpi4py import MPI
+      comm = MPI.COMM_WORLD
+      rank = comm.Get_rank() # each process in MPI has a unique id, 0-indexed
+      size = comm.Get_size() # size: number of processes running in this job
+
       for i, item in enumerate(iterable):
         if (i+rank)%size == 0:
           do_work(item)
