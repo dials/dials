@@ -10,6 +10,10 @@ and build. Then download these bootstrap modules::
 
   wget https://raw.githubusercontent.com/cctbx/cctbx_project/master/libtbx/auto_build/bootstrap.py
 
+or if wget is not available::
+
+  curl https://raw.githubusercontent.com/cctbx/cctbx_project/master/libtbx/auto_build/bootstrap.py > bootstrap.py
+
 Then::
 
   python bootstrap.py --builder=dials
