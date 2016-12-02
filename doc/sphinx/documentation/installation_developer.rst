@@ -8,7 +8,7 @@ Setting up a Development Environment on Linux or Mac
 Prerequisites:  make and change to a working directory to contain the new source code
 and build. Then download these bootstrap modules::
 
-  svn export svn://svn.code.sf.net/p/cctbx/code/trunk/libtbx/auto_build/bootstrap.py
+  wget https://raw.githubusercontent.com/cctbx/cctbx_project/master/libtbx/auto_build/bootstrap.py
 
 Then::
 
