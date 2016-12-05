@@ -1,4 +1,11 @@
 from __future__ import division
+
+# this import required early to avoid seg fault on some systems
+try:
+  import scipy.linalg # import dependency
+except ImportError, e:
+  pass
+
 import os
 import libtbx.load_env
 from libtbx.test_utils import approx_equal
