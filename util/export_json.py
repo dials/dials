@@ -19,6 +19,7 @@ class ReciprocalLatticeJson(render_3d):
     if settings is not None:
       self.settings = settings
     else:
+      from dials.command_line.reciprocal_lattice_viewer import settings
       self.settings = settings()
 
   def load_models(self, imagesets, reflections):
@@ -38,7 +39,6 @@ class ReciprocalLatticeJson(render_3d):
       imageset_id = list(self.reflections['id'])
       expt_id = None
 
-    indexed = self.reflections.get_flags(self.reflections.flags.indexed)
     d = {
       'rlp': list(rlp),
       'imageset_id': imageset_id,
