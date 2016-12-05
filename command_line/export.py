@@ -487,7 +487,7 @@ class JsonExporter(object):
 
   '''
 
-  def __init__(self, params, reflections, datablock=None, experiments=None):
+  def __init__(self, params, reflections, datablocks=None, experiments=None):
     '''
     Initialise the exporter
 
@@ -498,14 +498,14 @@ class JsonExporter(object):
     '''
 
     # Check the input
-    if datablock is None and experiments is None:
+    if datablocks is None and experiments is None:
       raise Sorry('json exporter requires a datablock or an experiment list')
     if len(reflections) == 0:
       raise Sorry('json exporter require a reflection table')
 
     # Save the stuff
     self.params = params
-    self.datablock = datablock
+    self.datablocks = datablocks
     self.experiments = experiments
     self.reflections = reflections
 
@@ -515,20 +515,30 @@ class JsonExporter(object):
 
     '''
     from dials.util import export_json
+    from scitbx.array_family import flex
 
     if self.experiments is not None and len(self.experiments) > 0:
-      experiment = self.experiments[0]
-      imageset = experiment.imageset
+      imagesets = [expt.imageset for expt in self.experiments]
     else:
-      imageset = datablock.extract_imagesets()[0]
-    reflections = self.reflections[0]
+      imagesets = []
+      for datablock in self.datablocks:
+        imagesets.extend(datablock.extract_imagesets())
+
+    reflections = None
+    assert len(self.reflections) == len(imagesets), (len(self.reflections), len(imagesets))
+    for i, (refl, imgset) in enumerate(zip(self.reflections, imagesets)):
+      refl['imageset_id'] = flex.size_t(refl.size(), i)
+      if reflections is None:
+        reflections = refl
+      else:
+        reflections.extend(refl)
 
     settings = self.params
     settings.__inject__('beam_centre', None)
     settings.__inject__('reverse_phi', None)
 
     exporter = export_json.ReciprocalLatticeJson(settings=self.params)
-    exporter.load_models([imageset], reflections)
+    exporter.load_models(imagesets, reflections)
     exporter.as_json(
       filename=params.json.filename, compact=params.json.compact,
       n_digits=params.json.n_digits)
@@ -574,18 +584,13 @@ if __name__ == '__main__':
     logger.info(diff_phil)
 
   # Get the experiments and reflections
-  datablock = flatten_datablocks(params.input.datablock)
+  datablocks = flatten_datablocks(params.input.datablock)
 
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
-  if len(reflections) == 0 and len(experiments) == 0 and len(datablock) == 0:
+  if len(reflections) == 0 and len(experiments) == 0 and len(datablocks) == 0:
     parser.print_help()
     exit(0)
-
-  if len(datablock):
-    datablock = datablock[0]
-  else:
-    datablock = None
 
   # Choose the exporter
   if params.format == 'mtz':
@@ -604,7 +609,7 @@ if __name__ == '__main__':
     exporter = BestExporter(params, experiments, reflections)
   elif params.format == 'json':
     exporter = JsonExporter(
-      params, reflections, datablock=datablock, experiments=experiments)
+      params, reflections, datablocks=datablocks, experiments=experiments)
   else:
     raise Sorry('Unknown format: %s' % params.format)
 
