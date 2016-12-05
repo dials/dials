@@ -17,7 +17,8 @@ from libtbx.test_utils import approx_equal
 from scitbx.array_family import flex
 from scitbx import sparse
 from dials_scaling_helpers_ext import row_multiply
-from dials.algorithms.scaling.scale_parameterisation import ScaleParameterisation
+#from dials.algorithms.scaling.scale_parameterisation import ScaleParameterisation
+from dials.algorithms.scaling.scale_parameterisation import IncidentBeamFactor
 
 def test_row_multiply():
 
@@ -35,6 +36,58 @@ def test_row_multiply():
     [3.0, 6.0, 0.0, 6.0, 4.0, 0.0]).all_eq(True)
   print "OK"
 
+class TestIncidentBeamFactor(object):
+
+  def __init__(self):
+
+    self.ibf = IncidentBeamFactor([0,180])
+    assert self.ibf.get_param_vals() == [1] * 38
+
+    # set the smoother parameters to something other than unity throughout
+    import random
+    v2 = [random.uniform(0.8, 1.2) for v in self.ibf.get_param_vals()]
+    self.ibf.set_param_vals(v2)
+
+    # request values at 3 phi positions, one of them randomly chosen
+    self.phi = [0, random.uniform(0, 180), 180]
+
+    v, dv_dp = self.ibf.get_factors_and_derivatives(self.phi)
+
+    # calculate finite diff gradients. This comes back as a list of flex.doubles
+    fd_dv_dp = self._calc_fd_grad()
+
+    # convert to list of lists and construct 2D matrix
+    fd_dv_dp = flex.double([list(e) for e in fd_dv_dp]).transpose()
+
+    # compare with the analytical calculation, converted to dense
+    assert approx_equal(dv_dp.as_dense_matrix(), fd_dv_dp)
+
+    print "OK"
+
+  def _calc_fd_grad(self):
+    delta = 1.e-7
+    fd_grad = []
+    p_vals = self.ibf.get_param_vals()
+
+    for i, p in enumerate(p_vals):
+      p_vals[i] = p - delta/2
+      self.ibf.set_param_vals(p_vals)
+      rev_state = self.ibf.get_factors_and_derivatives(self.phi)[0]
+
+      p_vals[i] = p + delta/2
+      self.ibf.set_param_vals(p_vals)
+      fwd_state = self.ibf.get_factors_and_derivatives(self.phi)[0]
+
+      p_vals[i] = p
+      self.ibf.set_param_vals(p_vals)
+
+      fd_grad.append((fwd_state - rev_state)/delta)
+
+    return fd_grad
+
+
 if __name__ == '__main__':
 
   test_row_multiply()
+
+  TestIncidentBeamFactor()

@@ -27,16 +27,16 @@ class ScaleFactor(object):
     sequence of floats."""
 
     # In this case, trivial as there is only one parameter set and it is not
-    # fixed, but always free
-    return self._param.value
+    # fixed, but always free. Make sure there is a copy
+    return list(self._param.value)
 
   def set_param_vals(self, vals):
     """set the values of the internal list of parameters from a
     sequence of floats."""
 
     # In this case, trivial as there is only one parameter set and it is not
-    # fixed, but always free
-    self._param.value = vals
+    # fixed, but always free. Make sure there is a copy
+    self._param.value = list(vals)
 
     return
 
@@ -52,7 +52,7 @@ class ScaleFactor(object):
     # element of seq. Each row has some (typically 3) non-zero values
     # corresponding to the positions nearest the element of seq.
     value, weight, sumweight = self._smoother.multi_value_weight(seq,
-      self._param.value)
+      self._param)
 
     # The gradient of a single smoothed value with respect to the parameters,
     # d[v]/d[p] = w_i * (1. / sum(w_i)), where the sum is over the parameters.
