@@ -56,10 +56,10 @@ DIALS West
 
 Development of DIALS at `Lawrence Berkeley National Laboratory`_, USA is led by
 `Dr Nicholas Sauter`_ and supported by `National Institutes of Health`_ /
-`National Institute of General Medical Sciences`_ grant R01-GM095887: *Realizing
-new horizons in X-ray crystallography data processing*. Work at LBNL is
-performed under `Department of Energy`_ contract DE-AC02-05CH11231.
-Developers include Aaron Brewster, Tara Michels-Clark and Iris Young.
+`National Institute of General Medical Sciences`_ grant R01-GM117126: *DIALS:
+New Computational Methods to Enable Challenging Crystallographic Experiments*.
+Work at LBNL is performed under `Department of Energy`_ contract
+DE-AC02-05CH11231. Developers include Aaron Brewster and Iris Young.
 
 Acknowledgements
 ================
@@ -75,6 +75,7 @@ Phil Evans,
 Nat Echols,
 Johan Hattne,
 Andrew Leslie,
+Tara Michels-Clark,
 Nigel Moriarty,
 Garib Murshadov,
 Takanori Nakane,
