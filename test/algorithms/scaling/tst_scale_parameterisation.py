@@ -57,7 +57,7 @@ class TestIncidentBeamFactor(object):
     fd_dv_dp = self._calc_fd_grad()
 
     # convert to list of lists and construct 2D matrix
-    fd_dv_dp = flex.double([list(e) for e in fd_dv_dp]).transpose()
+    fd_dv_dp = flex.double([list(e) for e in fd_dv_dp]).matrix_transpose()
 
     # compare with the analytical calculation, converted to dense
     assert approx_equal(dv_dp.as_dense_matrix(), fd_dv_dp)
