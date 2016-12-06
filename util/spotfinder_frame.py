@@ -166,7 +166,6 @@ class SpotFrame(XrayFrame) :
     if (self.image_chooser.GetSelection() != (phil_value - 1)):
       self.jump_to_image.SetMax(self.image_chooser.GetCount())
       self.load_image(self.image_chooser.GetClientData(phil_value - 1))
-    event.Skip()
 
   # consolidate initialization of PySlip object into a single function
   def init_pyslip(self):
