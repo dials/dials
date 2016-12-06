@@ -154,7 +154,7 @@ class Test(object):
       assert d.keys() == ['imageset_id', 'rlp', 'experiment_id']
       assert d['rlp'][0] == [0.123, 0.577, 0.186]
       assert d['imageset_id'][0] == 0
-      assert d['experiment_id'] is None
+      assert d['experiment_id'][0] == 0
 
     # Call dials.export
     easy_run.fully_buffered([
