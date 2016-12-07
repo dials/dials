@@ -87,8 +87,9 @@ def run(args):
   angles = []
 
   for i in range(len(experiments) - 1):
+    target_angle = experiments[i+1].goniometer.get_angles()[i]
     R_ij, axis, angle, cb_op = difference_rotation_matrix_axis_angle(
-      experiments[i].crystal, experiments[i+1].crystal)
+      experiments[i].crystal, experiments[i+1].crystal, target_angle=target_angle)
     gonio = experiments[i+1].goniometer
     axis_names = gonio.get_names()
     axes.append(axis)

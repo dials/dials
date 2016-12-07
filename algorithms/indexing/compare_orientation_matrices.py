@@ -5,7 +5,7 @@ from scitbx import matrix
 import math
 
 
-def difference_rotation_matrix_axis_angle(crystal_a, crystal_b):
+def difference_rotation_matrix_axis_angle(crystal_a, crystal_b, target_angle=0):
   from cctbx import sgtbx
   #assert crystal_a.get_space_group() == crystal_b.get_space_group()
   space_group = crystal_b.get_space_group()
@@ -30,11 +30,12 @@ def difference_rotation_matrix_axis_angle(crystal_a, crystal_b):
     axis_angle = r3_rotation_axis_and_angle_from_matrix(R_ab)
     axis = axis_angle.axis
     angle = axis_angle.angle() * 180.0 / math.pi
-    if abs(angle) < abs(best_angle):
-      best_angle = angle
-      best_axis = axis
-      best_R_ab = R_ab
-      best_cb_op = cb_op
+    for sign in (+1, -1):
+      if abs(sign*angle-target_angle) < abs(best_angle-target_angle):
+        best_angle = sign*angle
+        best_axis = tuple(sign * a for a in axis)
+        best_R_ab = R_ab if sign > 0 else R_ab.inverse()
+        best_cb_op = cb_op if sign > 0 else cb_op.inverse()
 
   return best_R_ab, best_axis, best_angle, best_cb_op
 

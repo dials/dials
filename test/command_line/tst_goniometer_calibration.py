@@ -32,12 +32,12 @@ def run(args):
   expected_output = '''
 Goniometer axes and angles (ImgCIF coordinate system):
 GON_PHI:  rotation of 157.741 degrees about axis (-0.44164, -0.59119, 0.67487)
-GON_KAPPA:  rotation of -143.755 degrees about axis (0.51623, 0.85046, -0.10111)
+GON_KAPPA:  rotation of 143.755 degrees about axis (-0.51623, -0.85046, 0.10111)
 GON_OMEGA:  rotation of 48.006 degrees about axis (1.00000, 0.00002, -0.00049)
 
 Goniometer axes and angles (MOSFLM coordinate system):
 GON_PHI:  rotation of 157.741 degrees about axis (-0.67446, -0.59119, -0.44226)
-GON_KAPPA:  rotation of -143.755 degrees about axis (0.10064, 0.85046, 0.51633)
+GON_KAPPA:  rotation of 143.755 degrees about axis (-0.10064, -0.85046, -0.51633)
 GON_OMEGA:  rotation of 48.006 degrees about axis (-0.00043, 0.00002, 1.00000)
 
 ImgCIF _axis loop template:
@@ -53,12 +53,12 @@ loop_
   _axis.offset[2]
   _axis.offset[3]
   GON_PHI    rotation  goniometer  GON_KAPPA  -0.4416  -0.5912   0.6749  .  .  .
-  GON_KAPPA  rotation  goniometer  GON_OMEGA   0.5162   0.8505  -0.1011  .  .  .
+  GON_KAPPA  rotation  goniometer  GON_OMEGA  -0.5162  -0.8505   0.1011  .  .  .
   GON_OMEGA  rotation  goniometer  .           1.0000   0.0000  -0.0005  .  .  .
 '''
   for line in expected_output.splitlines():
     if not line: continue
-    assert line in result.stdout_lines
+    assert line in result.stdout_lines, line
 
   print "OK"
 
