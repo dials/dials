@@ -181,7 +181,6 @@ class render_3d(object):
     if self.settings.imageset_ids and 'imageset_id' in reflections:
       sel = flex.bool(len(reflections), False)
       for i in self.settings.imageset_ids:
-        print i
         sel.set_selected(reflections['imageset_id'] == i, True)
       reflections = reflections.select(sel)
 
@@ -228,7 +227,6 @@ class render_3d(object):
       n = palette.size() - 1
       if reflections.get_flags(reflections.flags.indexed).count(True) == 0:
         for i in range(0, flex.max(reflections['imageset_id'])+1):
-          print i, palette[(i%n)+1]
           colors.set_selected(reflections['imageset_id'] == i, palette[(i%n)+1])
       else:
         colors.set_selected(reflections['id'] == -1, palette[0])
