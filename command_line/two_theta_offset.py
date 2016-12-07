@@ -53,32 +53,34 @@ class Script(object):
 
     # Check the number of experiments
     experiments = flatten_experiments(params.input.experiments)
-    if len(experiments) != 2:
+    if len(experiments) < 2:
       self.parser.print_help()
       return
-
 
     detectors = [experiment.detector[0] for experiment in experiments]
 
     from scitbx import matrix
 
-    for other in [100]:
+    # FIXME make this a phil parameter in x, y
+    offset = 100
 
-      # pick two positions, at nominal origin offset in fast, slow
+    # FIXME iterate over pairs of experiments, if close in two-theta discard
 
-      x1 = matrix.col(detectors[0].get_origin())
-      y1 = matrix.col(detectors[0].get_origin()) + \
-        other * matrix.col(detectors[0].get_fast_axis()) + \
-        other * matrix.col(detectors[0].get_slow_axis())
+    # pick two positions, at nominal origin offset in fast, slow
 
-      x2 = matrix.col(detectors[1].get_origin())
-      y2 = matrix.col(detectors[1].get_origin()) + \
-        other * matrix.col(detectors[1].get_fast_axis()) + \
-        other * matrix.col(detectors[1].get_slow_axis())
+    x1 = matrix.col(detectors[0].get_origin())
+    y1 = matrix.col(detectors[0].get_origin()) + \
+      offset * matrix.col(detectors[0].get_fast_axis()) + \
+      offset * matrix.col(detectors[0].get_slow_axis())
 
-      centre, axis = find_centre_of_rotation(x1, x2, y1, y2)
-      print 'Centre of axis: %7.4f %7.4f %7.4f' % centre.elems, \
-        '  axis:  %7.4f %7.4f %7.4f' % axis.elems
+    x2 = matrix.col(detectors[1].get_origin())
+    y2 = matrix.col(detectors[1].get_origin()) + \
+      offset * matrix.col(detectors[1].get_fast_axis()) + \
+      offset * matrix.col(detectors[1].get_slow_axis())
+
+    centre, axis = find_centre_of_rotation(x1, x2, y1, y2)
+    print 'Centre of axis: %7.4f %7.4f %7.4f' % centre.elems, \
+      '  axis:  %7.4f %7.4f %7.4f' % axis.elems
 
 def component(a, n):
   return a - a.dot(n) * n
