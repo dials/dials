@@ -79,8 +79,14 @@ class Script(object):
       offset * matrix.col(detectors[1].get_slow_axis())
 
     centre, axis = find_centre_of_rotation(x1, x2, y1, y2)
-    print 'Centre of axis: %7.4f %7.4f %7.4f' % centre.elems, \
-      '  axis:  %7.4f %7.4f %7.4f' % axis.elems
+
+    # compute "true" two-theta from these
+
+    two_theta = component(x2 - centre, axis).angle(
+      component(x1 - centre, axis), deg=True)
+
+    print 'Centre: %7.4f %7.4f %7.4f' % centre.elems, \
+      '  axis: %7.4f %7.4f %7.4f' % axis.elems, 'angle: %.2f' % two_theta
 
 def component(a, n):
   return a - a.dot(n) * n
@@ -95,26 +101,26 @@ def find_centre_of_rotation(x1, x2, y1, y2):
 
   # know axis is perpendicular to both of these -> is cross product
 
-  ncx = cx.normalize()
-  ncy = cy.normalize()
-
   axis = cx.cross(cy).normalize()
 
-  # normal vectors
+  # normal vector to y chord
 
-  nx = component(cx, axis).normalize().cross(axis)
   ny = component(cy, axis).normalize().cross(axis)
 
-  # origin of normal vectors
+  # origin of normal vectors, centre of x, y chords
 
   ox = component(x1 + 0.5 * cx, axis)
   oy = component(y1 + 0.5 * cy, axis)
 
-  import math
+  # determine true origin of rotation - normal vector of x chord, construct
+  # right-angle-triangle with hypotenuse from unknown origin of rotation
+  # to central point of y chord oy, and adjacent the vector parallel to
+  # reversed x chord => opposite is on vector from unknown origin of rotation
+  # to ox
 
+  ncx = cx.normalize()
   h = (oy - ox).dot(ncx)
-  a = (-ny).angle(ncx)
-  d = h / math.cos(a)
+  d = h / (ny).dot(-ncx)
   return oy + d * ny, axis
 
 if __name__ == '__main__':
