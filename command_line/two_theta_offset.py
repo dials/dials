@@ -19,6 +19,15 @@ dials.two_theta_offset experiment_one.json experiment_two.json
 '''
 
 phil_scope = parse('''
+offset_fast = 100.0
+  .type = float
+  .help = 'How far to move in the detector plane (fast direction)'
+offset_slow = 100.0
+  .type = float
+  .help = 'How far to move in the detector plane (slow direction)'
+min_distance = 10.0
+  .type = float
+  .help = 'Minimum shift in detector position'
 ''', process_includes=True)
 
 class Script(object):
@@ -51,7 +60,7 @@ class Script(object):
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
 
-    # Check the number of experiments
+    # Check the number of experiments is at least 2
     experiments = flatten_experiments(params.input.experiments)
     if len(experiments) < 2:
       self.parser.print_help()
@@ -59,34 +68,45 @@ class Script(object):
 
     detectors = [experiment.detector[0] for experiment in experiments]
 
-    from scitbx import matrix
+    from itertools import combinations
 
-    # FIXME make this a phil parameter in x, y
-    offset = 100
+    for pair in combinations(detectors, 2):
+      determine_axis(pair, params)
 
-    # FIXME iterate over pairs of experiments, if close in two-theta discard
+def determine_axis(detectors, params):
+  from scitbx import matrix
 
-    # pick two positions, at nominal origin offset in fast, slow
+  offset_fast = params.offset_fast
+  offset_slow = params.offset_slow
+  min_distance = params.min_distance
 
-    x1 = matrix.col(detectors[0].get_origin())
-    y1 = matrix.col(detectors[0].get_origin()) + \
-      offset * matrix.col(detectors[0].get_fast_axis()) + \
-      offset * matrix.col(detectors[0].get_slow_axis())
+  # pick two positions, at nominal origin offset in fast, slow
 
-    x2 = matrix.col(detectors[1].get_origin())
-    y2 = matrix.col(detectors[1].get_origin()) + \
-      offset * matrix.col(detectors[1].get_fast_axis()) + \
-      offset * matrix.col(detectors[1].get_slow_axis())
+  x1 = matrix.col(detectors[0].get_origin())
+  y1 = matrix.col(detectors[0].get_origin()) + \
+    offset_fast * matrix.col(detectors[0].get_fast_axis()) + \
+    offset_slow * matrix.col(detectors[0].get_slow_axis())
 
-    centre, axis = find_centre_of_rotation(x1, x2, y1, y2)
+  x2 = matrix.col(detectors[1].get_origin())
+  y2 = matrix.col(detectors[1].get_origin()) + \
+    offset_fast * matrix.col(detectors[1].get_fast_axis()) + \
+    offset_slow * matrix.col(detectors[1].get_slow_axis())
 
-    # compute "true" two-theta from these
+  # only allow this calculation if the detector has been moved a "significant"
+  # amount
 
-    two_theta = component(x2 - centre, axis).angle(
-      component(x1 - centre, axis), deg=True)
+  if (x2 - x1).length() < min_distance:
+    return
 
-    print 'Centre: %7.4f %7.4f %7.4f' % centre.elems, \
-      '  axis: %7.4f %7.4f %7.4f' % axis.elems, 'angle: %.2f' % two_theta
+  centre, axis = find_centre_of_rotation(x1, x2, y1, y2)
+
+  # compute "true" two-theta from these
+
+  two_theta = component(x2 - centre, axis).angle(
+    component(x1 - centre, axis), deg=True)
+
+  print 'Centre: %7.4f %7.4f %7.4f' % centre.elems, \
+    '  axis: %7.4f %7.4f %7.4f' % axis.elems, 'angle: %.2f' % two_theta
 
 def component(a, n):
   return a - a.dot(n) * n
