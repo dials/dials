@@ -61,6 +61,13 @@ phil_scope = parse('''
               "reference_from_experiment.detector"
       .type = bool
 
+    compare_models = True
+      .help = "Whether to compare a model with the reference model before"
+              "replacing it. If the comparison falls outside the tolerance,"
+              "the combination will not be allowed. Disable comparison to force"
+              "overwriting of models with the reference"
+      .type = bool
+
     average_hierarchy_level = None
       .help = "For hierarchical detectors, optionally provide a single level"
               "to do averaging at."
@@ -91,10 +98,10 @@ class CombineWithReference(object):
     self.ref_scan = scan
     self.ref_crystal = crystal
     self.ref_detector = detector
+    self.tolerance = None
     if params:
-      self.tolerance = params.reference_from_experiment.tolerance
-    else:
-      self.tolerance = None
+      if params.reference_from_experiment.compare_models:
+        self.tolerance = params.reference_from_experiment.tolerance
 
     return
 
