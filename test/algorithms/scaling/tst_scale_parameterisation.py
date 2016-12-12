@@ -12,12 +12,14 @@
 """Tests for ScaleParameterisation and related objects."""
 
 from __future__ import division
-from libtbx.test_utils import approx_equal
+import random
 
 from scitbx.array_family import flex
 from scitbx import sparse
+from libtbx.test_utils import approx_equal
+
 from dials_scaling_helpers_ext import row_multiply
-#from dials.algorithms.scaling.scale_parameterisation import ScaleParameterisation
+from dials.algorithms.scaling.scale_parameterisation import ScaleParameterisation
 from dials.algorithms.scaling.scale_parameterisation import IncidentBeamFactor
 
 def test_row_multiply():
@@ -44,7 +46,6 @@ class TestIncidentBeamFactor(object):
     assert self.ibf.get_param_vals() == [1] * 38
 
     # set the smoother parameters to something other than unity throughout
-    import random
     v2 = [random.uniform(0.8, 1.2) for v in self.ibf.get_param_vals()]
     self.ibf.set_param_vals(v2)
 
@@ -85,9 +86,26 @@ class TestIncidentBeamFactor(object):
 
     return fd_grad
 
+def test_scale_parameterisation():
+
+  ibf = IncidentBeamFactor([0,180])
+  sf = ScaleParameterisation(factors_list=[ibf])
+
+  # test getting and setting parameter values
+  p = sf.get_param_vals()
+  p2 = [random.uniform(0.8, 1.2) * e for e in p]
+  sf.set_param_vals(p2)
+  p3 = sf.get_param_vals()
+  for e1, e2 in zip(p2, p3): assert e1 == e2
+
+  print "OK"
+  return
+
 
 if __name__ == '__main__':
 
   test_row_multiply()
 
   TestIncidentBeamFactor()
+
+  test_scale_parameterisation()

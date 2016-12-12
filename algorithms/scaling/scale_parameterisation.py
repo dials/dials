@@ -80,6 +80,11 @@ class IncidentBeamFactor(ScaleFactor):
     self._param = ScanVaryingParameterSet(value, self._set_len,
       name = "IncidentBeam")
 
+  def __len__(self):
+    # There is only one parameter set, so the total number of parameters is
+    # equal to the set length
+    return self._set_len
+
 class BFactor(ScaleFactor):
   """Smoothly varying B-factor describing falloff with resolution as a function
   of rotation angle (and hence addressing bulk radiation damage to some extent)
@@ -88,9 +93,45 @@ class BFactor(ScaleFactor):
   pass
 
 class ScaleParameterisation(object):
-  """Parameterisation of the overall scale, combining an incident beam factor
-  with a B-factor correction and potentially other factors."""
-  pass
+  """Parameterisation of the overall scale, combining various separate factors,
+  such as an incident beam factor, a B-factor correction and potentially other
+  factors."""
+
+  def __init__(self, factors_list):
+    """Initialise with a list of component factors for the overall scale"""
+
+    self._factors = factors_list
+
+    # Check there are free parameters to refine
+    self._length = sum(len(f) for f in self._factors)
+    if self._length == 0:
+      raise RuntimeError("There are no free parameters for refinement")
+
+  def __len__(self):
+    return self._length
+
+  def get_param_vals(self):
+    """Return a concatenated list of parameters from each of the components
+    in the global model"""
+
+    global_p_list = []
+    for f in self._factors:
+      global_p_list.extend(f.get_param_vals())
+
+    return global_p_list
+
+  def set_param_vals(self, vals):
+    """Set the parameter values of the contained models to the values in
+    vals. This list must be of the same length as the result of get_param_vals
+    and must contain the parameter values in the same order."""
+
+    assert len(vals) == len(self)
+    it = iter(vals)
+
+    for f in self._factors:
+      f.set_param_vals([it.next() for i in xrange(len(f))])
+
+    return
 
 if __name__ == '__main__':
 
