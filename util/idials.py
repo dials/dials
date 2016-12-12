@@ -36,7 +36,7 @@ class ExternalCommand(object):
   '''
 
   def __init__(self):
-      print "\n ExternalCommand(object) \n"
+      pass
 
   def __call__(self,
                command,
@@ -122,7 +122,6 @@ class RunExternalCommand(object):
 
     '''
     def __init__(self):
-        print "\n RunExternalCommand(object) \n"
         self.command_run = ExternalCommand()
 
     def __call__(self, command,
@@ -1831,15 +1830,6 @@ class Controller(object):
         '''
         return self.finished
 
-    failed_attempt = '''
-    # Create the command and return
-    self.asnc_command = AsyncCommand(
-      self,
-      stdout=stdout,
-      stderr=stderr)
-    self.asnc_command.start()
-    return self.asnc_command
-    '''
 
     # Create the command and return
     command = AsyncCommand(
@@ -1848,5 +1838,4 @@ class Controller(object):
       stderr=stderr)
     command.start()
     return command
-
 
