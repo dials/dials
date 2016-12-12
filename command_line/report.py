@@ -840,6 +840,7 @@ class CentroidAnalyser(object):
     I_sig = flex.sqrt(rlist['intensity.sum.variance'])
     I_over_S = I / I_sig
     mask = I_over_S > threshold
+    if mask.count(True) == 0: return {}
     rlist = rlist.select(mask)
     assert(len(rlist) > 0)
     xc, yc, zc = rlist['xyzcal.px'].parts()
@@ -877,6 +878,7 @@ class CentroidAnalyser(object):
     I_sig = flex.sqrt(rlist['intensity.sum.variance'])
     I_over_S = I / I_sig
     mask = I_over_S > threshold
+    if mask.count(True) == 0: return {}
     rlist = rlist.select(mask)
     assert(len(rlist) > 0)
 
@@ -982,6 +984,7 @@ class CentroidAnalyser(object):
     I_sig = flex.sqrt(rlist['intensity.sum.variance'])
     I_over_S = I / I_sig
     mask = I_over_S > threshold
+    if mask.count(True) == 0: return {}
     rlist = rlist.select(mask)
     assert(len(rlist) > 0)
     xc, yc, zc = rlist['xyzcal.px'].parts()
@@ -1030,6 +1033,7 @@ class CentroidAnalyser(object):
     I_sig = flex.sqrt(rlist['intensity.sum.variance'])
     I_over_S = I / I_sig
     mask = I_over_S > threshold
+    if mask.count(True) == 0: return {}
     rlist = rlist.select(mask)
     assert(len(rlist) > 0)
 
@@ -1148,6 +1152,7 @@ class CentroidAnalyser(object):
     I_sig = flex.sqrt(rlist['intensity.sum.variance'])
     I_over_S = I / I_sig
     mask = I_over_S > threshold
+    if mask.count(True) == 0: return {}
     rlist = rlist.select(mask)
     assert(len(rlist) > 0)
 
