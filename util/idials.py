@@ -110,7 +110,7 @@ class ExternalCommand(object):
     self.result = self.process.wait()
 
 
-class run_external_command(object):
+class RunExternalCommand(object):
     '''
     Helper function to run command
 
@@ -122,7 +122,7 @@ class run_external_command(object):
 
     '''
     def __init__(self):
-        print "\n run_external_command(object) \n"
+        print "\n RunExternalCommand(object) \n"
         self.command_run = ExternalCommand()
 
     def __call__(self, command,
@@ -135,19 +135,6 @@ class run_external_command(object):
         if self.command_run.result != 0:
             raise RuntimeError('Error: external command failed')
 
-
-old_james_way = '''
-def run_external_command(command,
-                         stdout=sys.stdout,
-                         stderr=sys.stderr,
-                         stdout_filename=None,
-                         stderr_filename=None):
-
-  command = ExternalCommand(command, stdout, stderr, stdout_filename, stderr_filename)
-  if command.result != 0:
-    raise RuntimeError('Error: external command failed')
-
-'''
 
 class UndoStack(object):
   '''
@@ -759,7 +746,7 @@ class Command(object):
     command.append('input.reflections=%s' % self.state.reflections)
     command.append('output.html=%s' % self.state.report)
     command.append('output.external_dependencies=local')
-    self.external_command = run_external_command()
+    self.external_command = RunExternalCommand()
     self.external_command(command, stdout=stdout, stderr=stderr)
 
   def check_files_exist(self, filenames=None):
@@ -907,7 +894,7 @@ class Import(Command):
     outfile.close()
 
     # Run the command
-    self.external_command = run_external_command()
+    self.external_command = RunExternalCommand()
     self.external_command(
       ['dials.import', self.state.parameters],
       stdout=stdout,
@@ -958,7 +945,7 @@ class FindSpots(Command):
     outfile.close()
 
     # Run find spots
-    self.external_command = run_external_command()
+    self.external_command = RunExternalCommand()
     self.external_command(
       ['dials.find_spots', self.state.parameters],
       stdout=stdout,
@@ -1012,7 +999,7 @@ class DiscoverBetterExperimentalModel(Command):
     outfile.close()
 
     # Run the command
-    self.external_command = run_external_command()
+    self.external_command = RunExternalCommand()
     self.external_command(
       ['dials.discover_better_experimental_model', self.state.parameters],
       stdout=stdout,
@@ -1078,7 +1065,7 @@ class Index(Command):
     outfile.close()
 
     # Run the command
-    self.external_command = run_external_command()
+    self.external_command = RunExternalCommand()
     self.external_command(
       ['dials.index', self.state.parameters],
       stdout=stdout,
@@ -1132,7 +1119,7 @@ class RefineBravaisSettings(Command):
     outfile.close()
 
     # Run the command
-    self.external_command = run_external_command()
+    self.external_command = RunExternalCommand()
     self.external_command(
       ['dials.refine_bravais_settings', self.state.parameters],
       stdout=stdout,
@@ -1220,7 +1207,7 @@ class Reindex(Command):
     outfile.close()
 
     # Run the command
-    self.external_command = run_external_command()
+    self.external_command = RunExternalCommand()
     self.external_command(
       ['dials.reindex', self.state.parameters],
       stdout=stdout,
@@ -1283,7 +1270,7 @@ class Refine(Command):
     outfile.close()
 
     # Run the command
-    self.external_command = run_external_command()
+    self.external_command = RunExternalCommand()
     self.external_command(
       ['dials.refine', self.state.parameters],
       stdout=stdout,
@@ -1345,7 +1332,7 @@ class Integrate(Command):
     outfile.close()
 
     # Run the command
-    self.external_command = run_external_command()
+    self.external_command = RunExternalCommand()
     self.external_command(
       ['dials.integrate', self.state.parameters],
       stdout=stdout,
@@ -1402,7 +1389,7 @@ class Export(Command):
     outfile.close()
 
     # Run the command
-    self.external_command = run_external_command()
+    self.external_command = RunExternalCommand()
     self.external_command(
       ['dials.export', self.state.parameters],
       stdout=stdout,
