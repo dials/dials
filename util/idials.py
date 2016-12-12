@@ -35,7 +35,10 @@ class ExternalCommand(object):
 
   '''
 
-  def __init__(self,
+  def __init__(self):
+      print "\n ExternalCommand(object) \n"
+
+  def __call__(self,
                command,
                stdout=sys.stdout,
                stderr=sys.stderr,
@@ -74,7 +77,7 @@ class ExternalCommand(object):
       command = subprocess.list2cmdline(command)
 
     # Run the command
-    process = subprocess.Popen(
+    self.cli_process = subprocess.Popen(
       command,
       shell=True,
       universal_newlines=True,
@@ -96,37 +99,55 @@ class ExternalCommand(object):
       stderr.append(stderr_file)
 
     # Create the stream thread and wait until the threads exit
-    stdout_thread = StreamThread(process.stdout, stdout)
-    stderr_thread = StreamThread(process.stderr, stderr)
+    stdout_thread = StreamThread(self.cli_process.stdout, stdout)
+    stderr_thread = StreamThread(self.cli_process.stderr, stderr)
     stdout_thread.start()
     stderr_thread.start()
     stdout_thread.join()
     stderr_thread.join()
 
     # Get the result
-    self.result = process.wait()
+    self.result = self.cli_process.wait()
 
 
+class run_external_command(object):
+    '''
+    Helper function to run command
+
+    :param command: The command to run
+    :param stdout: File object to write stdout
+    :param stderr: File object to write stderr
+    :param stdout_filename The filename to log stdout
+    :param stderr_filename The filename to log stderr
+
+    '''
+    def __init__(self):
+        print "\n run_external_command(object) \n"
+        self.my_ext_cmd = ExternalCommand()
+
+    def __call__(self, command,
+                 stdout=sys.stdout,
+                 stderr=sys.stderr,
+                 stdout_filename=None,
+                 stderr_filename=None):
+
+        self.my_ext_cmd(command, stdout, stderr, stdout_filename, stderr_filename)
+        if self.my_ext_cmd.result != 0:
+            raise RuntimeError('Error: external command failed')
+
+
+old_james_way = '''
 def run_external_command(command,
                          stdout=sys.stdout,
                          stderr=sys.stderr,
                          stdout_filename=None,
                          stderr_filename=None):
-  '''
-  Helper function to run command
 
-  :param command: The command to run
-  :param stdout: File object to write stdout
-  :param stderr: File object to write stderr
-  :param stdout_filename The filename to log stdout
-  :param stderr_filename The filename to log stderr
-
-  '''
   command = ExternalCommand(command, stdout, stderr, stdout_filename, stderr_filename)
   if command.result != 0:
     raise RuntimeError('Error: external command failed')
 
-
+'''
 
 class UndoStack(object):
   '''
@@ -738,7 +759,8 @@ class Command(object):
     command.append('input.reflections=%s' % self.state.reflections)
     command.append('output.html=%s' % self.state.report)
     command.append('output.external_dependencies=local')
-    run_external_command(command, stdout=stdout, stderr=stderr)
+    self.extr_comm_run = run_external_command()
+    self.extr_comm_run(command, stdout=stdout, stderr=stderr)
 
   def check_files_exist(self, filenames=None):
     '''
@@ -885,7 +907,8 @@ class Import(Command):
     outfile.close()
 
     # Run the command
-    run_external_command(
+    self.extr_comm_run = run_external_command()
+    self.extr_comm_run(
       ['dials.import', self.state.parameters],
       stdout=stdout,
       stderr=stderr,
@@ -935,7 +958,8 @@ class FindSpots(Command):
     outfile.close()
 
     # Run find spots
-    run_external_command(
+    self.extr_comm_run = run_external_command()
+    self.extr_comm_run(
       ['dials.find_spots', self.state.parameters],
       stdout=stdout,
       stderr=stderr,
@@ -988,7 +1012,8 @@ class DiscoverBetterExperimentalModel(Command):
     outfile.close()
 
     # Run the command
-    run_external_command(
+    self.extr_comm_run = run_external_command()
+    self.extr_comm_run(
       ['dials.discover_better_experimental_model', self.state.parameters],
       stdout=stdout,
       stderr=stderr,
@@ -1053,7 +1078,8 @@ class Index(Command):
     outfile.close()
 
     # Run the command
-    run_external_command(
+    self.extr_comm_run = run_external_command()
+    self.extr_comm_run(
       ['dials.index', self.state.parameters],
       stdout=stdout,
       stderr=stderr,
@@ -1106,7 +1132,8 @@ class RefineBravaisSettings(Command):
     outfile.close()
 
     # Run the command
-    run_external_command(
+    self.extr_comm_run = run_external_command()
+    self.extr_comm_run(
       ['dials.refine_bravais_settings', self.state.parameters],
       stdout=stdout,
       stderr=stderr,
@@ -1193,7 +1220,8 @@ class Reindex(Command):
     outfile.close()
 
     # Run the command
-    run_external_command(
+    self.extr_comm_run = run_external_command()
+    self.extr_comm_run(
       ['dials.reindex', self.state.parameters],
       stdout=stdout,
       stderr=stderr,
@@ -1255,7 +1283,8 @@ class Refine(Command):
     outfile.close()
 
     # Run the command
-    run_external_command(
+    self.extr_comm_run = run_external_command()
+    self.extr_comm_run(
       ['dials.refine', self.state.parameters],
       stdout=stdout,
       stderr=stderr,
@@ -1316,7 +1345,8 @@ class Integrate(Command):
     outfile.close()
 
     # Run the command
-    run_external_command(
+    self.extr_comm_run = run_external_command()
+    self.extr_comm_run(
       ['dials.integrate', self.state.parameters],
       stdout=stdout,
       stderr=stderr,
@@ -1372,7 +1402,8 @@ class Export(Command):
     outfile.close()
 
     # Run the command
-    run_external_command(
+    self.extr_comm_run = run_external_command()
+    self.extr_comm_run(
       ['dials.export', self.state.parameters],
       stdout=stdout,
       stderr=stderr,
@@ -1453,7 +1484,7 @@ class ApplicationState(object):
 
     '''
     # Create the command
-    command = self.CommandClass[self.mode](
+    self.my_command = self.CommandClass[self.mode](
       parent     = self.current,
       index      = self.counter.current(),
       phil_scope = self.parameters[self.mode],
@@ -1463,7 +1494,7 @@ class ApplicationState(object):
     self.counter.incr()
 
     # Apply the command
-    self.current = command.apply(stdout=stdout, stderr=stderr)
+    self.current = self.my_command.apply(stdout=stdout, stderr=stderr)
 
   def goto(self, index):
     '''
@@ -1813,6 +1844,16 @@ class Controller(object):
         '''
         return self.finished
 
+    failed_attempt = '''
+    # Create the command and return
+    self.asnc_command = AsyncCommand(
+      self,
+      stdout=stdout,
+      stderr=stderr)
+    self.asnc_command.start()
+    return self.asnc_command
+    '''
+
     # Create the command and return
     command = AsyncCommand(
       self,
@@ -1820,3 +1861,5 @@ class Controller(object):
       stderr=stderr)
     command.start()
     return command
+
+
