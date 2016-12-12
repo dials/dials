@@ -922,8 +922,9 @@ class SpotFrame(XrayFrame) :
                                "#999999"] * 10
     for ref_list in self.reflections:
       if self.settings.show_integrated:
-        integrated_sel = ref_list.get_flags(ref_list.flags.integrated)
+        integrated_sel = ref_list.get_flags(ref_list.flags.integrated, all=False)
         ref_list = ref_list.select(integrated_sel)
+      if ref_list.size() == 0: continue
       if 'bbox' in ref_list:
         bbox = ref_list['bbox']
         x0, x1, y0, y1, z0, z1 = bbox.parts()
