@@ -12,12 +12,14 @@
 and the overall scale."""
 
 from __future__ import division
-from dials.array_family import flex
 from libtbx import phil
 from libtbx.utils import Sorry
+from scitbx import sparse
+from dials.array_family import flex
 from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \
         import GaussianSmoother, ScanVaryingParameterSet
 from dials_scaling_helpers_ext import row_multiply
+from dials.algorithms.scaling.scaling_helpers import products_omitting_one_item
 
 class ScaleFactor(object):
   """Base class for parameterisation of a component of the overall scale"""
@@ -143,15 +145,28 @@ class ScaleParameterisation(object):
     # FIXME only using phi at the moment. In future will need other information
     # such as s1 directions or central impacts, and will have to pass the right
     # bits of information to the right ScaleFactor components contained here
-
     scale_components, grad_components = zip(*data)
 
     # the overall scale is the product of the separate scale components
     overall_scale = reduce(lambda fac1, fac2: fac1 * fac2, scale_components)
 
-    # calculate all products of scale factors omitting one factor
+    # to convert derivatives of each scale component to derivatives of the
+    # overall scale we multiply by the product of the other scale components,
+    # omitting the factor that has been differentiated
+    if len(scale_components) > 1:
+      omit_one_prods = products_omitting_one_item(scale_components)
 
-    # the derivatives of each scale component
+      grad_components = [row_multiply(g, coeff) for g, coeff in \
+                         zip(grad_components, omit_one_prods)]
 
-    return scale_components, grad_components
+    # Now combine the gradient components by columns to produce a single
+    # gradient matrix for the overall scale
+    each_ncol = [g.n_cols for g in grad_components]
+    tot_ncol = sum(each_ncol)
+    grad = sparse.matrix(len(overall_scale), tot_ncol)
+    col_start = [0] + each_ncol[:-1]
+    for icol, g in zip(col_start, grad_components):
+      grad.assign_block(g, 0, icol)
+
+    return overall_scale, grad
 
