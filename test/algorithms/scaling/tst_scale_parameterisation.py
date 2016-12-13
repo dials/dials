@@ -97,6 +97,11 @@ def test_scale_parameterisation():
   sf.set_param_vals(p2)
   p3 = sf.get_param_vals()
   for e1, e2 in zip(p2, p3): assert e1 == e2
+  print "OK"
+
+  # test getting overall scale and its derivatives
+  phi = [0, random.uniform(0, 180), 180]
+  a, b = sf.scales_and_derivatives(phi)
 
   print "OK"
   return

@@ -133,8 +133,25 @@ class ScaleParameterisation(object):
 
     return
 
-if __name__ == '__main__':
+  def scales_and_derivatives(self, phi):
+    """Calculate the overall scale factor at each position in 'phi' and the
+    derivatives of that scale factor wrt all parameters of the model"""
 
-  ibf = IncidentBeamFactor([0,180])
-  assert ibf.get_param_vals() == [1] * 38
+    # obtain data from all scale factor components
+    data = [f.get_factors_and_derivatives(phi) for f in self._factors]
+
+    # FIXME only using phi at the moment. In future will need other information
+    # such as s1 directions or central impacts, and will have to pass the right
+    # bits of information to the right ScaleFactor components contained here
+
+    scale_components, grad_components = zip(*data)
+
+    # the overall scale is the product of the separate scale components
+    overall_scale = reduce(lambda fac1, fac2: fac1 * fac2, scale_components)
+
+    # calculate all products of scale factors omitting one factor
+
+    # the derivatives of each scale component
+
+    return scale_components, grad_components
 
