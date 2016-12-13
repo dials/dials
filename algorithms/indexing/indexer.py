@@ -978,7 +978,7 @@ class indexer_base(object):
           nearest_neighbor_percentile=params.nearest_neighbor_percentile,
           filter_ice=params.filter_ice,
           filter_overlaps=params.filter_overlaps,
-          overlaps_border=params.overlaps_border)
+          overlaps_border=params.overlaps_border).max_cell
         logger.info("Found max_cell: %.1f Angstrom" %(self.params.max_cell))
 
   def filter_reflections_by_scan_range(self):
@@ -1960,9 +1960,8 @@ def find_max_cell(reflections, max_cell_multiplier, step_size,
                          step_size=step_size,
                          tolerance=max_cell_multiplier,
                          percentile=nearest_neighbor_percentile)
-  max_cell = NN.max_cell
 
-  return max_cell
+  return NN
 
 
 def optimise_basis_vectors(reciprocal_lattice_points, vectors):

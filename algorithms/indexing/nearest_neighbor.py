@@ -86,18 +86,19 @@ class neighbor_analysis(object):
     #self.max_cell = max(MAXTOL * most_probable_neighbor,
                          #MAXTOL * self.percentile)
 
-    if False:
-      self.plot(direct)
+    self.direct = direct
+    self.histogram = hst
 
-  def plot(self,val):
-    import numpy as np
-
-    hist,bins = np.histogram(val,bins=int(len(val)/self.NNBIN))
-    width = 0.7*(bins[1]-bins[0])
-    center = (bins[:-1]+bins[1:])/2
+  def plot_histogram(self, filename='nn_hist.png'):
     import matplotlib.pyplot as plt
-    plt.bar(center, hist, align="center", width=width)
+    plt.style.use('ggplot')
+    hist = self.histogram
+    plt.bar(hist.slot_centers(), hist.slots(), align="center",
+            width=hist.slot_width())
     ymin, ymax = plt.ylim()
-    plt.vlines(self.percentile, ymin, ymax, colors='r')
-    plt.vlines(self.max_cell/self.tolerance, ymin, ymax, colors='g')
-    plt.savefig('nn_hist.png')
+    #plt.vlines(self.percentile, ymin, ymax, colors='r')
+    plt.vlines(self.max_cell/self.tolerance, ymin, ymax, colors='g', label='estimated max cell')
+    plt.xlabel('Direct space distance (A)')
+    plt.ylabel('Frequency')
+    plt.legend(loc='best')
+    plt.savefig(filename)
