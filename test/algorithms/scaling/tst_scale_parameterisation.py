@@ -22,6 +22,8 @@ from dials_scaling_helpers_ext import row_multiply
 from dials.algorithms.scaling.scale_parameterisation import ScaleParameterisation
 from dials.algorithms.scaling.scale_parameterisation import IncidentBeamFactor
 
+from dials.algorithms.scaling.scaling_helpers import products_omitting_one_item
+
 def test_row_multiply():
 
   m = sparse.matrix(3, 2)
@@ -106,6 +108,28 @@ def test_scale_parameterisation():
   print "OK"
   return
 
+def test_products_omitting_one_item():
+
+  def explicit_method(items, omit_idx=0):
+    """Do the explicit (slow) calculation for comparison with the
+    products_omitting_one_item function"""
+
+    items = list(items)
+    del items[omit_idx]
+
+    return reduce(lambda x, y: x*y, items)
+
+  # test various random sequences of lengths between 2 and 10
+  for l in range(2, 10):
+
+    vals = [random.randrange(100) for i in range(l)]
+    prods = products_omitting_one_item(vals)
+    tst = [explicit_method(vals, i) for i in range(len(vals))]
+
+    for a, b in zip(prods, tst):
+      assert a == b
+
+  print "OK"
 
 if __name__ == '__main__':
 
@@ -114,3 +138,5 @@ if __name__ == '__main__':
   TestIncidentBeamFactor()
 
   test_scale_parameterisation()
+
+  test_products_omitting_one_item()
