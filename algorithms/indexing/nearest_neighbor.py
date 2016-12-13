@@ -91,12 +91,10 @@ class neighbor_analysis(object):
 
   def plot_histogram(self, filename='nn_hist.png'):
     import matplotlib.pyplot as plt
-    plt.style.use('ggplot')
     hist = self.histogram
     plt.bar(hist.slot_centers(), hist.slots(), align="center",
-            width=hist.slot_width())
+            width=hist.slot_width(), color='black', edgecolor=None)
     ymin, ymax = plt.ylim()
-    #plt.vlines(self.percentile, ymin, ymax, colors='r')
     plt.vlines(self.max_cell/self.tolerance, ymin, ymax, colors='g', label='estimated max cell')
     plt.xlabel('Direct space distance (A)')
     plt.ylabel('Frequency')
