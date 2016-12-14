@@ -90,8 +90,11 @@ class TestIncidentBeamFactor(object):
 
 def test_scale_parameterisation():
 
-  ibf = IncidentBeamFactor([0,180])
-  sf = ScaleParameterisation(factors_list=[ibf])
+  # FIXME we want multiple scale components to test how derivatives of the
+  # overall scale are affected, but at the moment only IncidentBeamFactor is
+  # available. So we can use two of them...
+  sf = ScaleParameterisation(factors_list=[IncidentBeamFactor([0,180]),
+                                           IncidentBeamFactor([0,180])])
 
   # test getting and setting parameter values
   p = sf.get_param_vals()
@@ -103,7 +106,32 @@ def test_scale_parameterisation():
 
   # test getting overall scale and its derivatives
   phi = [0, random.uniform(0, 180), 180]
-  a, b = sf.scales_and_derivatives(phi)
+  scale, dscale_dp = sf.scales_and_derivatives(phi)
+
+  # calculate finite difference derivatives
+  delta = 1.e-7
+  fd_grad = []
+  p_vals = sf.get_param_vals()
+
+  for i, p in enumerate(p_vals):
+    p_vals[i] = p - delta/2
+    sf.set_param_vals(p_vals)
+    rev_state = sf.scales_and_derivatives(phi)[0]
+
+    p_vals[i] = p + delta/2
+    sf.set_param_vals(p_vals)
+    fwd_state = sf.scales_and_derivatives(phi)[0]
+
+    p_vals[i] = p
+    sf.set_param_vals(p_vals)
+
+    fd_grad.append((fwd_state - rev_state)/delta)
+
+  # convert to list of lists and construct 2D matrix
+  fd_grad = flex.double([list(e) for e in fd_grad]).matrix_transpose()
+
+  # compare with the analytical calculation, converted to dense
+  assert approx_equal(dscale_dp.as_dense_matrix(), fd_grad)
 
   print "OK"
   return
