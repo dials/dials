@@ -1,6 +1,8 @@
 Correcting poor initial geometry
 ================================
 
+.. highlight:: none
+
 Introduction
 ------------
 

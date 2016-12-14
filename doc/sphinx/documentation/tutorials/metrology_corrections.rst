@@ -1,6 +1,8 @@
 Refining multi-tile detector metrology with DIALS
 =================================================
 
+.. highlight:: none
+
 .. warning::
    This tutorial is out of date! Default parameters and output have changed.
 

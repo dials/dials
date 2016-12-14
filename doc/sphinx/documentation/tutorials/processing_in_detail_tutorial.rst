@@ -1,6 +1,8 @@
 Processing in Detail
 ====================
 
+.. highlight:: none
+
 Introduction
 ------------
 

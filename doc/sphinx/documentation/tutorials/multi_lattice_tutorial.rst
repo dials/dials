@@ -1,6 +1,8 @@
 Multi-lattice Tutorial
 ======================
 
+.. highlight:: none
+
 Introduction
 ------------
 
