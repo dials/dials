@@ -3,11 +3,13 @@ import math
 
 class neighbor_analysis(object):
   def __init__(self, reflections, step_size=45, tolerance=1.5,
-               max_height_fraction=0.25, percentile=0.05):
+               max_height_fraction=0.25, percentile=0.05,
+               histogram_binning='linear'):
     self.tolerance = tolerance # Margin of error for max unit cell estimate
     from scitbx.array_family import flex
     NEAR = 10
     self.NNBIN = 5 # target number of neighbors per histogram bin
+    self.histogram_binning = histogram_binning
 
     direct = flex.double()
 
@@ -61,11 +63,14 @@ class neighbor_analysis(object):
     d_spacings = d_spacings[:n]
 
     # determine the most probable nearest neighbor distance (direct space)
-    hst = flex.histogram(direct, n_slots=int(len(direct)/self.NNBIN))
+    if self.histogram_binning == 'log':
+      hst = flex.histogram(
+        flex.log10(direct), n_slots=int(len(direct)/self.NNBIN))
+    else:
+      hst = flex.histogram(direct, n_slots=int(len(direct)/self.NNBIN))
     centers = hst.slot_centers()
     islot = hst.slots()
     highest_bin_height = flex.max(islot)
-    most_probable_neighbor = centers[list(islot).index(highest_bin_height)]
 
     if False:  # to print out the histogramming analysis
       smin, smax = flex.min(direct), flex.max(direct)
@@ -82,16 +87,16 @@ class neighbor_analysis(object):
     # given multiple
     isel = (islot.as_double() > (
       max_height_fraction * highest_bin_height)).iselection()
-    self.max_cell = (
-      self.tolerance * centers[int(flex.max(isel.as_double()))]+0.5*hst.slot_width())
+    if self.histogram_binning == 'log':
+      self.max_cell = (
+        self.tolerance * 10**(centers[int(flex.max(isel.as_double()))]+0.5*hst.slot_width()))
+    else:
+      self.max_cell = (
+        self.tolerance * centers[int(flex.max(isel.as_double()))]+0.5*hst.slot_width())
 
     # determine the 5th-percentile direct-space distance
     perm = flex.sort_permutation(direct, reverse=True)
     self.percentile = direct[perm[int(percentile * len(direct))]]
-
-    #MAXTOL = 1.5 # Margin of error for max unit cell estimate
-    #self.max_cell = max(MAXTOL * most_probable_neighbor,
-                         #MAXTOL * self.percentile)
 
     self.reciprocal_lattice_vectors = rs_vectors
     self.d_spacings = d_spacings
@@ -105,7 +110,14 @@ class neighbor_analysis(object):
     plt.bar(hist.slot_centers(), hist.slots(), align="center",
             width=hist.slot_width(), color='black', edgecolor=None)
     ymin, ymax = plt.ylim()
-    plt.vlines(self.max_cell/self.tolerance, ymin, ymax, colors='g', label='estimated max cell')
+    if self.histogram_binning == 'log':
+      ax = plt.gca()
+      xticks_log_d = ax.get_xticks()
+      xticks_d = [10**x for x in xticks_log_d]
+      ax.set_xticklabels(['%.2f' %x for x in xticks_d])
+      plt.vlines(math.log10(self.max_cell/self.tolerance), ymin, ymax, colors='g', label='estimated max cell')
+    else:
+      plt.vlines(self.max_cell/self.tolerance, ymin, ymax, colors='g', label='estimated max cell')
     plt.xlabel('Direct space distance (A)')
     plt.ylabel('Frequency')
     plt.legend(loc='best')
