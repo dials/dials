@@ -31,7 +31,43 @@ from cctbx import crystal, sgtbx, xray
 from dxtbx.model.crystal import crystal_model as Crystal
 from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 
-index_only_phil_str = """\
+max_cell_phil_str = '''\
+max_cell_estimation
+  .expert_level = 1
+{
+  filter_ice = True
+    .type = bool
+    .help = "Filter out reflections at typical ice ring resolutions"
+            "before max_cell estimation."
+  filter_overlaps = True
+    .type = bool
+    .help = "Filter out reflections with overlapping bounding boxes before"
+            "max_cell estimation."
+  overlaps_border = 0
+    .type = int(value_min=0)
+    .help = "Optionally add a border around the bounding boxes before finding"
+            "overlaps."
+  multiplier = 1.3
+    .type = float(value_min=0)
+    .help = "Multiply the estimated maximum basis vector length by this value."
+    .expert_level = 2
+  step_size = 45
+    .type = float(value_min=0)
+    .help = "Step size, in degrees, of the blocks used to peform the max_cell "
+            "estimation."
+    .expert_level = 2
+  nearest_neighbor_percentile = 0.05
+    .type = float(value_min=0)
+    .help = "Percentile of NN histogram to use for max cell determination."
+    .expert_level = 2
+  histogram_binning = *linear log
+    .type = choice
+    .help = "Choose between linear or logarithmic bins for nearest neighbour"
+            "histogram analysis."
+}
+'''
+
+index_only_phil_str = '''\
 indexing {
   nproc = 1
     .type = int(value_min=1)
@@ -56,35 +92,7 @@ indexing {
     .type = float(value_min=0)
     .help = "Maximum length of candidate unit cell basis vectors (in Angstrom)."
     .expert_level = 1
-  max_cell_estimation
-    .expert_level = 1
-  {
-    filter_ice = True
-      .type = bool
-      .help = "Filter out reflections at typical ice ring resolutions"
-              "before max_cell estimation."
-    filter_overlaps = True
-      .type = bool
-      .help = "Filter out reflections with overlapping bounding boxes before"
-              "max_cell estimation."
-    overlaps_border = 0
-      .type = int(value_min=0)
-      .help = "Optionally add a border around the bounding boxes before finding"
-              "overlaps."
-    multiplier = 1.3
-      .type = float(value_min=0)
-      .help = "Multiply the estimated maximum basis vector length by this value."
-      .expert_level = 2
-    step_size = 45
-      .type = float(value_min=0)
-      .help = "Step size, in degrees, of the blocks used to peform the max_cell "
-              "estimation."
-      .expert_level = 2
-    nearest_neighbor_percentile = 0.05
-      .type = float(value_min=0)
-      .help = "Percentile of NN histogram to use for max cell determination."
-      .expert_level = 2
-  }
+  %s
   fft3d {
     peak_search = *flood_fill clean
       .type = choice
@@ -337,7 +345,7 @@ indexing {
     }
   }
 }
-"""
+''' %max_cell_phil_str
 
 index_only_phil_scope = iotbx.phil.parse(index_only_phil_str, process_includes=True)
 
@@ -976,6 +984,7 @@ class indexer_base(object):
           self.reflections, max_cell_multiplier=params.multiplier,
           step_size=params.step_size,
           nearest_neighbor_percentile=params.nearest_neighbor_percentile,
+          histogram_binning=params.histogram_binning,
           filter_ice=params.filter_ice,
           filter_overlaps=params.filter_overlaps,
           overlaps_border=params.overlaps_border).max_cell
@@ -1889,8 +1898,8 @@ def detect_non_primitive_basis(miller_indices, threshold=0.9):
 
 
 def find_max_cell(reflections, max_cell_multiplier, step_size,
-                  nearest_neighbor_percentile, filter_ice=True,
-                  filter_overlaps=True, overlaps_border=0):
+                  nearest_neighbor_percentile, histogram_binning='linear',
+                  filter_ice=True, filter_overlaps=True, overlaps_border=0):
   logger.debug('Finding suitable max_cell based on %i reflections' % len(reflections))
   # Exclude potential ice-ring spots from nearest neighbour analysis if needed
   if filter_ice:
@@ -1959,7 +1968,8 @@ def find_max_cell(reflections, max_cell_multiplier, step_size,
   NN = neighbor_analysis(reflections,
                          step_size=step_size,
                          tolerance=max_cell_multiplier,
-                         percentile=nearest_neighbor_percentile)
+                         percentile=nearest_neighbor_percentile,
+                         histogram_binning=histogram_binning)
 
   return NN
 
