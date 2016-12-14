@@ -49,24 +49,9 @@ class Script(object):
     from dials.util.options import flatten_reflections
     from dials.viewer.viewer_interface import extract_n_show
 
-    in_case_there_is_given_more_than_one_table = '''
-    # Parse the command line
-    params, options = self.parser.parse_args(show_diff_phil=True)
-    reflections = flatten_reflections(params.input.reflections)
-    if len(reflections) == 0:
-      self.parser.print_help()
-      return
-
-    #opens and closes the viewer for each new reflection table
-    for table in reflections:
-      print "table =", table
-      extract_n_show(table)
-    #'''
-
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
     table = flatten_reflections(params.input.reflections)
-    print "params, options =", params, options
     if len(table) == 0:
       self.parser.print_help()
       return
