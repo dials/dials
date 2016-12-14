@@ -98,9 +98,10 @@ class neighbor_analysis(object):
     self.direct = direct
     self.histogram = hst
 
-  def plot_histogram(self, filename='nn_hist.png'):
+  def plot_histogram(self, filename='nn_hist.png', figsize=(12,8)):
     import matplotlib.pyplot as plt
     hist = self.histogram
+    fig = plt.figure(figsize=figsize)
     plt.bar(hist.slot_centers(), hist.slots(), align="center",
             width=hist.slot_width(), color='black', edgecolor=None)
     ymin, ymax = plt.ylim()
