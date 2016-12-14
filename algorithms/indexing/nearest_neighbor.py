@@ -18,6 +18,7 @@ class neighbor_analysis(object):
     rs_vectors = reflections['rlp']
     phi_deg = reflections['xyzobs.mm.value'].parts()[2] * (180/math.pi)
 
+    d_spacings = flex.double()
     # nearest neighbor analysis
     from annlib_ext import AnnAdaptor
     for imageset_id in range(flex.max(reflections['imageset_id'])+1):
@@ -45,13 +46,19 @@ class neighbor_analysis(object):
           IS_adapt.query(query)
 
           direct.extend(1/flex.sqrt(IS_adapt.distances))
+          d_spacings.extend(1/rs_vectors.norms())
 
     assert len(direct)>NEAR, (
       "Too few spots (%d) for nearest neighbour analysis." %len(direct))
 
+    perm = flex.sort_permutation(direct)
+    direct = direct.select(perm)
+    d_spacings = d_spacings.select(perm)
+
     # reject top 1% of longest distances to hopefully get rid of any outliers
-    direct = direct.select(
-      flex.sort_permutation(direct)[:int(math.floor(0.99*len(direct)))])
+    n = int(math.floor(0.99*len(direct)))
+    direct = direct[:n]
+    d_spacings = d_spacings[:n]
 
     # determine the most probable nearest neighbor distance (direct space)
     hst = flex.histogram(direct, n_slots=int(len(direct)/self.NNBIN))
@@ -86,6 +93,8 @@ class neighbor_analysis(object):
     #self.max_cell = max(MAXTOL * most_probable_neighbor,
                          #MAXTOL * self.percentile)
 
+    self.reciprocal_lattice_vectors = rs_vectors
+    self.d_spacings = d_spacings
     self.direct = direct
     self.histogram = hst
 
@@ -100,3 +109,4 @@ class neighbor_analysis(object):
     plt.ylabel('Frequency')
     plt.legend(loc='best')
     plt.savefig(filename)
+    plt.clf()
