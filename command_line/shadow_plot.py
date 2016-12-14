@@ -8,6 +8,13 @@ from libtbx.utils import Sorry
 import libtbx
 
 help_message = '''
+Generate a 1d or 2d goniometer detector shadow plot for a given datablock.
+
+Examples::
+
+  dials.shadow_plot datablock.json
+
+  dials.shadow_plot datablock.json mode=2d
 
 '''
 
@@ -62,6 +69,8 @@ def run(args):
   detector = imageset.get_detector()
   scan = imageset.get_scan()
   masker = imageset.reader().get_format().get_goniometer_shadow_masker()
+  if masker is None:
+    raise Sorry('Goniometer model does not support shadowing.')
   angles = goniometer.get_angles()
   names = goniometer.get_names()
   scan_axis = goniometer.get_scan_axis()
@@ -147,6 +156,8 @@ def run(args):
       plt.imshow(fraction_shadowed.as_numpy_array() * 100, interpolation='bicubic')
       plt.xlabel('%s angle (degrees)' %names[2])
       plt.ylabel('%s angle (degrees)' %names[1])
+      plt.xlim(0, 360/step)
+      plt.ylim(0, 360/step)
       plt.axes().set_xticklabels(["%.0f" %(step * t) for t in plt.xticks()[0]])
       plt.axes().set_yticklabels(["%.0f" %(step * t) for t in plt.yticks()[0]])
       cbar = plt.colorbar()
