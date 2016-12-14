@@ -85,6 +85,11 @@ phil_scope = parse('''
     reflections_filename = combined_reflections.pickle
       .type = str
       .help = "The filename for combined reflections"
+
+    n_subset = None
+      .type = int
+      .help = "If not None, keep a random subset of size n_subset when"
+              "saving the combined experiments"
   }
 ''', process_includes=True)
 
@@ -323,6 +328,23 @@ class Script(object):
     rows = [(str(i), str(n)) for (i, n) in enumerate(nrefs_per_exp)]
     st = simple_table(rows, header)
     print st.format()
+
+    # save a random subset if requested
+    if params.output.n_subset is not None and len(experiments) > params.output.n_subset:
+      import random
+      subset_exp = ExperimentList()
+      subset_refls = flex.reflection_table()
+      n_picked = 0
+      indices = range(len(experiments))
+      while n_picked < params.output.n_subset:
+        idx = indices.pop(random.randint(0, len(indices)-1))
+        subset_exp.append(experiments[idx])
+        refls = reflections.select(reflections['id'] == idx)
+        refls['id'] = flex.int(len(refls), n_picked)
+        subset_refls.extend(refls)
+        n_picked += 1
+      experiments = subset_exp
+      reflections = subset_refls
 
     # save output
     from dxtbx.model.experiment.experiment_list import ExperimentListDumper
