@@ -24,7 +24,7 @@ def run():
 
   expected_unit_cell = uctbx.unit_cell(
     (11.624, 13.550, 30.103, 89.964, 93.721, 90.132))
-  expected_rmsds = (0.028, 0.031, 0.094)
+  expected_rmsds = (0.039, 0.035, 0.002)
 
   datablock_old = os.path.join(
     dials_regression, "indexing_test_data/phi_scan/datablock_old.json")
