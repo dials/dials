@@ -606,6 +606,24 @@ def exercise_17():
   for i in range(3):
     assert (result.indexed_reflections['id'] == i).count(True) > 2000
 
+def exercise_18():
+  # test for small molecule indexing: presence of ice rings makes max-cell
+  # estimation tricky
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "MXSW-904")
+  import glob
+  pickle_path = os.path.join(data_dir, "1_SWEEP1_strong.pickle")
+  datablock = os.path.join(data_dir, "1_SWEEP1_datablock.json")
+  extra_args = ["filter_ice=False"]
+  expected_unit_cell = uctbx.unit_cell(
+    (11.72, 11.72, 11.74, 109.08, 109.24, 108.99))
+  expected_rmsds = (0.06, 0.05, 0.04  )
+  expected_hall_symbol = ' P 1'
+
+  result = run_one_indexing(pickle_path, datablock,
+                            extra_args, expected_unit_cell,
+                            expected_rmsds, expected_hall_symbol)
+  assert len(result.indexed_reflections) > 1300, len(result.indexed_reflections)
+
 def run(args):
   if not libtbx.env.has_module("dials_regression"):
     print "Skipping exercise_index_3D_FFT_simple: dials_regression not present"
@@ -614,7 +632,7 @@ def run(args):
   exercises = (exercise_1, exercise_2, exercise_3, exercise_4, exercise_5,
                exercise_6, exercise_7, exercise_8, exercise_9, exercise_10,
                exercise_11, exercise_12, exercise_13, exercise_14, exercise_15,
-               exercise_16, exercise_17)
+               exercise_16, exercise_17, exercise_18)
   if len(args):
     args = [int(arg) for arg in args]
     for arg in args: assert arg > 0
