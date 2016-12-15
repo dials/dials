@@ -60,7 +60,7 @@ max_cell_estimation
     .type = float(value_min=0)
     .help = "Percentile of NN histogram to use for max cell determination."
     .expert_level = 2
-  histogram_binning = *linear log
+  histogram_binning = linear *log
     .type = choice
     .help = "Choose between linear or logarithmic bins for nearest neighbour"
             "histogram analysis."
