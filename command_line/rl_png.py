@@ -4,7 +4,10 @@
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 from __future__ import division
 
-import matplotlib
+try:
+  import matplotlib
+except ImportError,e:
+  exit() # To pass through the "make" step, for graphics-free HPC build
 
 # Offline backend
 matplotlib.use("Agg")
