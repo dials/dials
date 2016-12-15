@@ -91,6 +91,19 @@ def run(args):
       expt.detector.get_max_resolution(expt.beam.get_s0()))
     print 'Max resolution (inscribed):  %f' % (
       expt.detector.get_max_inscribed_resolution(expt.beam.get_s0()))
+    if params.show_panel_distance:
+      for ipanel, panel in enumerate(expt.detector):
+        from scitbx import matrix
+        fast = matrix.col(panel.get_fast_axis())
+        slow = matrix.col(panel.get_slow_axis())
+        normal = fast.cross(slow)
+        origin = matrix.col(panel.get_origin())
+        distance = origin.dot(normal)
+        fast_origin = - (origin - distance * normal).dot(fast)
+        slow_origin = - (origin - distance * normal).dot(slow)
+        print 'Panel %d: distance %.2f origin %.2f %.2f' % \
+          (ipanel, distance, fast_origin, slow_origin)
+      print ''
     print ''
     panel_id, (x, y) = beam_centre(expt.detector, expt.beam)
     if panel_id >= 0 and x is not None and y is not None:
