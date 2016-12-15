@@ -234,151 +234,151 @@ class stills_indexer(indexer_base):
                 self.reflections['miller_index'].set_selected(
                   self.reflections['id'] == i_expt, miller_indices)
 
-        self.indexed_reflections = (self.reflections['id'] > -1)
-        sel = flex.bool(len(self.reflections), False)
-        lengths = 1/self.reflections['rlp'].norms()
-        isel = (lengths >= self.d_min).iselection()
-        sel.set_selected(isel, True)
-        sel.set_selected(self.reflections['id'] > -1, False)
-        self.unindexed_reflections = self.reflections.select(sel)
+      self.indexed_reflections = (self.reflections['id'] > -1)
+      sel = flex.bool(len(self.reflections), False)
+      lengths = 1/self.reflections['rlp'].norms()
+      isel = (lengths >= self.d_min).iselection()
+      sel.set_selected(isel, True)
+      sel.set_selected(self.reflections['id'] > -1, False)
+      self.unindexed_reflections = self.reflections.select(sel)
 
-        if len(self.params.stills.isoforms) == 0:
-          refined_experiments = experiments
-          refined_reflections = self.reflections
-        else:
-          logger.info("")
-          logger.info("#" * 80)
-          logger.info("Starting refinement")
-          logger.info("#" * 80)
-          logger.info("")
+      if len(self.params.stills.isoforms) == 0:
+        refined_experiments = experiments
+        refined_reflections = self.reflections
+      else:
+        logger.info("")
+        logger.info("#" * 80)
+        logger.info("Starting refinement")
+        logger.info("#" * 80)
+        logger.info("")
 
-          reflections_for_refinement = self.reflections.select(
-            self.indexed_reflections)
+        reflections_for_refinement = self.reflections.select(
+          self.indexed_reflections)
 
-          import copy
-          isoform_experiments = ExperimentList()
-          isoform_reflections = flex.reflection_table()
-          # Note, changes to params after initial indexing. Cannot use tie to target when fixing the unit cell.
-          self.all_params.refinement.reflections.outlier.algorithm = "null"
-          self.all_params.refinement.parameterisation.crystal.fix = "cell"
-          self.all_params.refinement.parameterisation.crystal.unit_cell.restraints.tie_to_target = []
+        import copy
+        isoform_experiments = ExperimentList()
+        isoform_reflections = flex.reflection_table()
+        # Note, changes to params after initial indexing. Cannot use tie to target when fixing the unit cell.
+        self.all_params.refinement.reflections.outlier.algorithm = "null"
+        self.all_params.refinement.parameterisation.crystal.fix = "cell"
+        self.all_params.refinement.parameterisation.crystal.unit_cell.restraints.tie_to_target = []
 
-          for expt_id, experiment in enumerate(experiments):
-            reflections = reflections_for_refinement.select(reflections_for_refinement['id'] == expt_id)
-            reflections['id'] = flex.int(len(reflections),0)
-            refiners = []
-            for isoform in self.params.stills.isoforms:
-              iso_experiment = copy.deepcopy(experiment)
-              crystal = iso_experiment.crystal
-              if isoform.lookup_symbol != crystal.get_space_group().type().lookup_symbol():
-                logger.info("Crystal isoform lookup_symbol %s does not match isoform %s lookup_symbol %s"%(crystal.get_space_group().type().lookup_symbol(), isoform.name, isoform.lookup_symbol))
-                continue
-              crystal.set_B(isoform.cell.fractionalization_matrix())
+        for expt_id, experiment in enumerate(experiments):
+          reflections = reflections_for_refinement.select(reflections_for_refinement['id'] == expt_id)
+          reflections['id'] = flex.int(len(reflections),0)
+          refiners = []
+          for isoform in self.params.stills.isoforms:
+            iso_experiment = copy.deepcopy(experiment)
+            crystal = iso_experiment.crystal
+            if isoform.lookup_symbol != crystal.get_space_group().type().lookup_symbol():
+              logger.info("Crystal isoform lookup_symbol %s does not match isoform %s lookup_symbol %s"%(crystal.get_space_group().type().lookup_symbol(), isoform.name, isoform.lookup_symbol))
+              continue
+            crystal.set_B(isoform.cell.fractionalization_matrix())
 
-              logger.info("Refining isoform %s"%isoform.name)
-              refiners.append(e_refine(params=self.all_params, experiments=ExperimentList([iso_experiment]), reflections=reflections, graph_verbose=False))
+            logger.info("Refining isoform %s"%isoform.name)
+            refiners.append(e_refine(params=self.all_params, experiments=ExperimentList([iso_experiment]), reflections=reflections, graph_verbose=False))
 
-            positional_rmsds = [math.sqrt(P.rmsds()[0] ** 2 + P.rmsds()[1] ** 2) for P in refiners]
-            logger.info("Positional rmsds for all isoforms:" + str(positional_rmsds))
-            minrmsd_mm = min(positional_rmsds)
-            minindex = positional_rmsds.index(minrmsd_mm)
-            logger.info("The smallest rmsd is %5.1f um from isoform %s" % (
-              1000. * minrmsd_mm, self.params.stills.isoforms[minindex].name))
-            if self.params.stills.isoforms[minindex].rmsd_target_mm is not None:
-              logger.info("Asserting %f < %f"%(minrmsd_mm, self.params.stills.isoforms[minindex].rmsd_target_mm))
-              assert minrmsd_mm < self.params.stills.isoforms[minindex].rmsd_target_mm
-            logger.info("Acceptable rmsd for isoform %s." % (self.params.stills.isoforms[minindex].name))
-            if len(self.params.stills.isoforms) == 2:
-              logger.info("Rmsd gain over the other isoform %5.1f um." % (
-              1000. * abs(positional_rmsds[0] - positional_rmsds[1])))
-            R = refiners[minindex]
-            # Now one last check to see if direct beam is out of bounds
-            if self.params.stills.isoforms[minindex].beam_restraint is not None:
-              from scitbx import matrix
-              refined_beam = matrix.col(
-                R.get_experiments()[0].detector[0].get_beam_centre_lab(experiments[0].beam.get_s0())[0:2])
-              known_beam = matrix.col(self.params.stills.isoforms[minindex].beam_restraint)
-              logger.info("Asserting difference in refined beam center and expected beam center %f < %f"%((refined_beam - known_beam).length(), self.params.stills.isoforms[
-                minindex].rmsd_target_mm))
-              assert (refined_beam - known_beam).length() < self.params.stills.isoforms[minindex].rmsd_target_mm
-              # future--circle of confusion could be given as a separate length in mm instead of reusing rmsd_target
+          positional_rmsds = [math.sqrt(P.rmsds()[0] ** 2 + P.rmsds()[1] ** 2) for P in refiners]
+          logger.info("Positional rmsds for all isoforms:" + str(positional_rmsds))
+          minrmsd_mm = min(positional_rmsds)
+          minindex = positional_rmsds.index(minrmsd_mm)
+          logger.info("The smallest rmsd is %5.1f um from isoform %s" % (
+            1000. * minrmsd_mm, self.params.stills.isoforms[minindex].name))
+          if self.params.stills.isoforms[minindex].rmsd_target_mm is not None:
+            logger.info("Asserting %f < %f"%(minrmsd_mm, self.params.stills.isoforms[minindex].rmsd_target_mm))
+            assert minrmsd_mm < self.params.stills.isoforms[minindex].rmsd_target_mm
+          logger.info("Acceptable rmsd for isoform %s." % (self.params.stills.isoforms[minindex].name))
+          if len(self.params.stills.isoforms) == 2:
+            logger.info("Rmsd gain over the other isoform %5.1f um." % (
+            1000. * abs(positional_rmsds[0] - positional_rmsds[1])))
+          R = refiners[minindex]
+          # Now one last check to see if direct beam is out of bounds
+          if self.params.stills.isoforms[minindex].beam_restraint is not None:
+            from scitbx import matrix
+            refined_beam = matrix.col(
+              R.get_experiments()[0].detector[0].get_beam_centre_lab(experiments[0].beam.get_s0())[0:2])
+            known_beam = matrix.col(self.params.stills.isoforms[minindex].beam_restraint)
+            logger.info("Asserting difference in refined beam center and expected beam center %f < %f"%((refined_beam - known_beam).length(), self.params.stills.isoforms[
+              minindex].rmsd_target_mm))
+            assert (refined_beam - known_beam).length() < self.params.stills.isoforms[minindex].rmsd_target_mm
+            # future--circle of confusion could be given as a separate length in mm instead of reusing rmsd_target
 
-            experiment = R.get_experiments()[0]
-            experiment.crystal.identified_isoform = self.params.stills.isoforms[minindex].name
+          experiment = R.get_experiments()[0]
+          experiment.crystal.identified_isoform = self.params.stills.isoforms[minindex].name
 
-            isoform_experiments.append(experiment)
-            reflections['id'] = flex.int(len(reflections),expt_id)
-            isoform_reflections.extend(reflections)
-          experiments = isoform_experiments
-          reflections_for_refinement = isoform_reflections
+          isoform_experiments.append(experiment)
+          reflections['id'] = flex.int(len(reflections),expt_id)
+          isoform_reflections.extend(reflections)
+        experiments = isoform_experiments
+        reflections_for_refinement = isoform_reflections
 
-          try:
-            refined_experiments, refined_reflections = self.refine(
-              experiments, reflections_for_refinement)
-          except RuntimeError, e:
-            s = str(e)
-            if ("below the configured limit" in s or
-                "Insufficient matches for crystal" in s):
-              if len(experiments) == 1:
-                raise Sorry(e)
-              had_refinement_error = True
-              logger.info("Refinement failed:")
-              logger.info(s)
-              del experiments[-1]
-              break
-            raise
+        try:
+          refined_experiments, refined_reflections = self.refine(
+            experiments, reflections_for_refinement)
+        except RuntimeError, e:
+          s = str(e)
+          if ("below the configured limit" in s or
+              "Insufficient matches for crystal" in s):
+            if len(experiments) == 1:
+              raise Sorry(e)
+            had_refinement_error = True
+            logger.info("Refinement failed:")
+            logger.info(s)
+            del experiments[-1]
+            break
+          raise
 
-        # sanity check for unrealistic unit cell volume increase during refinement
-        # usually this indicates too many parameters are being refined given the
-        # number of observations provided.
-        if not self.params.refinement_protocol.disable_unit_cell_volume_sanity_check:
-          for orig_expt, refined_expt in zip(experiments, refined_experiments):
-            uc1 = orig_expt.crystal.get_unit_cell()
-            uc2 = refined_expt.crystal.get_unit_cell()
-            volume_change = abs(uc1.volume()-uc2.volume())/uc1.volume()
-            cutoff = 0.5
-            if volume_change > cutoff:
-              msg = "\n".join((
-                "Unrealistic unit cell volume increase during refinement of %.1f%%.",
-                "Please try refining fewer parameters, either by enforcing symmetry",
-                "constraints (space_group=) and/or disabling experimental geometry",
-                "refinement (detector.fix=all and beam.fix=all). To disable this",
-                "sanity check set disable_unit_cell_volume_sanity_check=True.")) %(
-                100*volume_change)
-              raise Sorry(msg)
+      # sanity check for unrealistic unit cell volume increase during refinement
+      # usually this indicates too many parameters are being refined given the
+      # number of observations provided.
+      if not self.params.refinement_protocol.disable_unit_cell_volume_sanity_check:
+        for orig_expt, refined_expt in zip(experiments, refined_experiments):
+          uc1 = orig_expt.crystal.get_unit_cell()
+          uc2 = refined_expt.crystal.get_unit_cell()
+          volume_change = abs(uc1.volume()-uc2.volume())/uc1.volume()
+          cutoff = 0.5
+          if volume_change > cutoff:
+            msg = "\n".join((
+              "Unrealistic unit cell volume increase during refinement of %.1f%%.",
+              "Please try refining fewer parameters, either by enforcing symmetry",
+              "constraints (space_group=) and/or disabling experimental geometry",
+              "refinement (detector.fix=all and beam.fix=all). To disable this",
+              "sanity check set disable_unit_cell_volume_sanity_check=True.")) %(
+              100*volume_change)
+            raise Sorry(msg)
 
-        self.refined_reflections = refined_reflections.select(
-          refined_reflections['id'] > -1)
+      self.refined_reflections = refined_reflections.select(
+        refined_reflections['id'] > -1)
 
+      for i, imageset in enumerate(self.imagesets):
+        ref_sel = self.refined_reflections.select(
+          self.refined_reflections['imageset_id'] == i)
+        ref_sel = ref_sel.select(ref_sel['id'] >= 0)
+        for i_expt in set(ref_sel['id']):
+          expt = refined_experiments[i_expt]
+          imageset.set_detector(expt.detector)
+          imageset.set_beam(expt.beam)
+          imageset.set_goniometer(expt.goniometer)
+          imageset.set_scan(expt.scan)
+          expt.imageset = imageset
+
+      if not (self.all_params.refinement.parameterisation.beam.fix == 'all'
+              and self.all_params.refinement.parameterisation.detector.fix == 'all'):
+        # Experimental geometry may have changed - re-map centroids to
+        # reciprocal space
+
+        spots_mm = self.reflections
+        self.reflections = flex.reflection_table()
         for i, imageset in enumerate(self.imagesets):
-          ref_sel = self.refined_reflections.select(
-            self.refined_reflections['imageset_id'] == i)
-          ref_sel = ref_sel.select(ref_sel['id'] >= 0)
-          for i_expt in set(ref_sel['id']):
-            expt = refined_experiments[i_expt]
-            imageset.set_detector(expt.detector)
-            imageset.set_beam(expt.beam)
-            imageset.set_goniometer(expt.goniometer)
-            imageset.set_scan(expt.scan)
-            expt.imageset = imageset
+          spots_sel = spots_mm.select(spots_mm['imageset_id'] == i)
+          self.map_centroids_to_reciprocal_space(
+            spots_sel, imageset.get_detector(), imageset.get_beam(),
+            imageset.get_goniometer())
+          self.reflections.extend(spots_sel)
 
-        if not (self.all_params.refinement.parameterisation.beam.fix == 'all'
-                and self.all_params.refinement.parameterisation.detector.fix == 'all'):
-          # Experimental geometry may have changed - re-map centroids to
-          # reciprocal space
-
-          spots_mm = self.reflections
-          self.reflections = flex.reflection_table()
-          for i, imageset in enumerate(self.imagesets):
-            spots_sel = spots_mm.select(spots_mm['imageset_id'] == i)
-            self.map_centroids_to_reciprocal_space(
-              spots_sel, imageset.get_detector(), imageset.get_beam(),
-              imageset.get_goniometer())
-            self.reflections.extend(spots_sel)
-
-        # update for next cycle
-        experiments = refined_experiments
-        self.refined_experiments = refined_experiments
+      # update for next cycle
+      experiments = refined_experiments
+      self.refined_experiments = refined_experiments
 
     if not 'refined_experiments' in locals():
       raise Sorry("None of the experiments could refine.")
@@ -464,49 +464,52 @@ class stills_indexer(indexer_base):
       indexed = indexed.select(indexed.get_flags(indexed.flags.indexed))
 
       if params.indexing.stills.refine_all_candidates:
-        print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d initial outlier identification"%(icm, n_cand)
-        acceptance_flags = self.identify_outliers(params, experiments, indexed)
-        #create a new "indexed" list with outliers thrown out:
-        indexed = indexed.select(acceptance_flags)
+        try:
+          print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d initial outlier identification"%(icm, n_cand)
+          acceptance_flags = self.identify_outliers(params, experiments, indexed)
+          #create a new "indexed" list with outliers thrown out:
+          indexed = indexed.select(acceptance_flags)
 
-        print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d refinement before outlier rejection"%(icm, n_cand)
-        R = e_refine(params = params, experiments=experiments, reflections=indexed, graph_verbose=False)
-        ref_experiments = R.get_experiments()
+          print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d refinement before outlier rejection"%(icm, n_cand)
+          R = e_refine(params = params, experiments=experiments, reflections=indexed, graph_verbose=False)
+          ref_experiments = R.get_experiments()
 
-        # try to improve the outcome with a second round of outlier rejection post-initial refinement:
-        acceptance_flags = self.identify_outliers(params, ref_experiments, indexed)
+          # try to improve the outcome with a second round of outlier rejection post-initial refinement:
+          acceptance_flags = self.identify_outliers(params, ref_experiments, indexed)
 
-        # insert a round of Nave-outlier rejection on top of the r.m.s.d. rejection
-        nv0 = nave_parameters(params = params, experiments=ref_experiments, reflections=indexed, refinery=R, graph_verbose=False)
-        crystal_model_nv0 = nv0()
-        acceptance_flags_nv0 = nv0.nv_acceptance_flags
-        indexed = indexed.select(acceptance_flags & acceptance_flags_nv0)
+          # insert a round of Nave-outlier rejection on top of the r.m.s.d. rejection
+          nv0 = nave_parameters(params = params, experiments=ref_experiments, reflections=indexed, refinery=R, graph_verbose=False)
+          crystal_model_nv0 = nv0()
+          acceptance_flags_nv0 = nv0.nv_acceptance_flags
+          indexed = indexed.select(acceptance_flags & acceptance_flags_nv0)
 
-        print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d after positional and delta-psi outlier rejection"%(icm, n_cand)
-        R = e_refine(params = params, experiments=ref_experiments, reflections=indexed, graph_verbose=False)
-        ref_experiments = R.get_experiments()
+          print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d after positional and delta-psi outlier rejection"%(icm, n_cand)
+          R = e_refine(params = params, experiments=ref_experiments, reflections=indexed, graph_verbose=False)
+          ref_experiments = R.get_experiments()
 
-        nv = nave_parameters(params = params, experiments=ref_experiments, reflections=indexed, refinery=R, graph_verbose=False)
-        crystal_model = nv()
+          nv = nave_parameters(params = params, experiments=ref_experiments, reflections=indexed, refinery=R, graph_verbose=False)
+          crystal_model = nv()
 
-        # Drop candidates that after refinement can no longer be converted to the known target space group
-        if self.params.known_symmetry.space_group is not None:
-          target_space_group = self.target_symmetry_primitive.space_group()
-          new_crystal, cb_op_to_primitive = self.apply_symmetry(crystal_model, target_space_group)
-          if new_crystal is None:
-            print "P1 refinement yielded model diverged from target, candidate %d/%d"%(icm, n_cand)
-            continue
+          # Drop candidates that after refinement can no longer be converted to the known target space group
+          if self.params.known_symmetry.space_group is not None:
+            target_space_group = self.target_symmetry_primitive.space_group()
+            new_crystal, cb_op_to_primitive = self.apply_symmetry(crystal_model, target_space_group)
+            if new_crystal is None:
+              print "P1 refinement yielded model diverged from target, candidate %d/%d"%(icm, n_cand)
+              continue
 
-        rmsd, _ = calc_2D_rmsd_and_displacements(R.predict_for_reflection_table(indexed))
-
-        print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d done"%(icm, n_cand)
-        candidates.append(candidate_info(crystal = crystal_model,
-                                         green_curve_area = nv.green_curve_area,
-                                         ewald_proximal_volume = nv.ewald_proximal_volume(),
-                                         n_indexed = len(indexed),
-                                         rmsd = rmsd,
-                                         indexed = indexed,
-                                         experiments = ref_experiments))
+          rmsd, _ = calc_2D_rmsd_and_displacements(R.predict_for_reflection_table(indexed))
+        except Exception, e:
+          print "Couldn't refine candiate %d/%d, %s"%(icm, n_cand, str(e))
+        else:
+          print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d done"%(icm, n_cand)
+          candidates.append(candidate_info(crystal = crystal_model,
+                                           green_curve_area = nv.green_curve_area,
+                                           ewald_proximal_volume = nv.ewald_proximal_volume(),
+                                           n_indexed = len(indexed),
+                                           rmsd = rmsd,
+                                           indexed = indexed,
+                                           experiments = ref_experiments))
       else:
         from dials.algorithms.refinement.prediction import ExperimentsPredictor
         ref_predictor = ExperimentsPredictor(experiments, force_stills=True,

@@ -92,6 +92,15 @@ dials_phil_str = '''
   include scope dials.algorithms.profile_model.factory.phil_scope
   include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
 
+  indexing {
+    stills {
+      method_list = None
+        .type = strings
+        .help = List of indexing methods. If indexing fails with first method, indexing will be \
+                attempted with the next, and so forth
+    }
+  }
+
   integration {
     summation {
       detector_gain = 1
@@ -384,6 +393,7 @@ class Processor(object):
     return observed
 
   def index(self, datablock, reflections):
+    from dials.algorithms.indexing.indexer import indexer_base
     from time import time
     import copy
     st = time()
@@ -398,10 +408,29 @@ class Processor(object):
     # don't do scan-varying refinement during indexing
     params.refinement.parameterisation.scan_varying = False
 
-    from dials.algorithms.indexing.indexer import indexer_base
-    idxr = indexer_base.from_parameters(
-      reflections, imagesets,
-      params=params)
+    if params.indexing.stills.method_list is None:
+      idxr = indexer_base.from_parameters(
+        reflections, imagesets,
+        params=params)
+    else:
+      indexing_error = None
+      for method in params.indexing.stills.method_list:
+        params.indexing.method = method
+        try:
+          idxr = indexer_base.from_parameters(
+            reflections, imagesets,
+            params=params)
+        except Exception, e:
+          logger.info("Couldn't index using method %s"%method)
+          if indexing_error is None:
+            if e is None:
+              e = Exception("Couldn't index using method %s"%method)
+            indexing_error = e
+        else:
+          indexing_error = None
+          break
+      if indexing_error is not None:
+        raise indexing_error
 
     indexed = idxr.refined_reflections
     experiments = idxr.refined_experiments
