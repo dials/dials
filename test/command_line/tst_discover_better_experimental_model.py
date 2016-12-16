@@ -165,7 +165,7 @@ def exercise_3():
   detector_2 = optimized_datablock[0].unique_detectors()[0]
   shift = (matrix.col(detector_1[0].get_origin()) -
            matrix.col(detector_2[0].get_origin()))
-  assert approx_equal(shift.elems, (-1.039, 2.427, 0.0), eps=1e-2)
+  assert approx_equal(shift.elems, (-1.1091, 2.1695, 0.0), eps=1e-1)
   os.chdir(cwd)
 
 
