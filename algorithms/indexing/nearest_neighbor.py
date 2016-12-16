@@ -25,6 +25,8 @@ class neighbor_analysis(object):
     from annlib_ext import AnnAdaptor
     for imageset_id in range(flex.max(reflections['imageset_id'])+1):
       sel = reflections['imageset_id'] == imageset_id
+      if sel.count(True) == 0:
+        continue
       phi_min = flex.min(phi_deg.select(sel))
       phi_max = flex.max(phi_deg.select(sel))
       d_phi = phi_max - phi_min
