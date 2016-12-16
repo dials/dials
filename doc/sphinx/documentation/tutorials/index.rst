@@ -8,7 +8,6 @@ Tutorials
 .. toctree::
    :maxdepth: 1
 
-   ../getting_started
    processing_in_detail_tutorial
    correcting_poor_initial_geometry_tutorial
    multi_lattice_tutorial
