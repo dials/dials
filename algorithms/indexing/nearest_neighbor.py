@@ -71,8 +71,18 @@ class neighbor_analysis(object):
     else:
       hst = flex.histogram(direct, n_slots=int(len(direct)/self.NNBIN))
     centers = hst.slot_centers()
-    islot = hst.slots()
-    highest_bin_height = flex.max(islot)
+    if self.histogram_binning == 'log':
+      self.slot_start = flex.double(
+        [10**s for s in hst.slot_centers() - 0.5 * hst.slot_width()])
+      self.slot_end = flex.double(
+        [10**s for s in hst.slot_centers() + 0.5 * hst.slot_width()])
+      self.slot_width = self.slot_end - self.slot_start
+    else:
+      self.slot_start = hst.slot_centers() - 0.5 * hst.slot_width()
+      self.slot_end = hst.slot_centers() + 0.5 * hst.slot_width()
+      self.slot_width = hst.slot_width()
+    self.relative_frequency = hst.slots().as_double()/self.slot_width
+    highest_bin_height = flex.max(self.relative_frequency)
 
     if False:  # to print out the histogramming analysis
       smin, smax = flex.min(direct), flex.max(direct)
@@ -87,14 +97,10 @@ class neighbor_analysis(object):
 
     # choose a max cell based on bins above a given fraction of the highest bin height
     # given multiple
-    isel = (islot.as_double() > (
+    isel = (self.relative_frequency.as_double() > (
       max_height_fraction * highest_bin_height)).iselection()
-    if self.histogram_binning == 'log':
-      self.max_cell = (
-        self.tolerance * 10**(centers[int(flex.max(isel.as_double()))]+0.5*hst.slot_width()))
-    else:
-      self.max_cell = (
-        self.tolerance * centers[int(flex.max(isel.as_double()))]+0.5*hst.slot_width())
+    self.max_cell = (
+      self.tolerance * self.slot_end[int(flex.max(isel.as_double()))])
 
     # determine the 5th-percentile direct-space distance
     perm = flex.sort_permutation(direct, reverse=True)
@@ -107,19 +113,14 @@ class neighbor_analysis(object):
 
   def plot_histogram(self, filename='nn_hist.png', figsize=(12,8)):
     import matplotlib.pyplot as plt
-    hist = self.histogram
     fig = plt.figure(figsize=figsize)
-    plt.bar(hist.slot_centers(), hist.slots(), align="center",
-            width=hist.slot_width(), color='black', edgecolor=None)
+    plt.bar(self.slot_start, self.relative_frequency, align="center",
+            width=self.slot_width, color='black', edgecolor=None)
     ymin, ymax = plt.ylim()
     if self.histogram_binning == 'log':
       ax = plt.gca()
-      xticks_log_d = ax.get_xticks()
-      xticks_d = [10**x for x in xticks_log_d]
-      ax.set_xticklabels(['%.2f' %x for x in xticks_d])
-      plt.vlines(math.log10(self.max_cell/self.tolerance), ymin, ymax, colors='g', label='estimated max cell')
-    else:
-      plt.vlines(self.max_cell/self.tolerance, ymin, ymax, colors='g', label='estimated max cell')
+      ax.set_xscale('log')
+    plt.vlines(self.max_cell/self.tolerance, ymin, ymax, colors='g', label='estimated max cell')
     plt.xlabel('Direct space distance (A)')
     plt.ylabel('Frequency')
     plt.legend(loc='best')
