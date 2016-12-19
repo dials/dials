@@ -9,6 +9,7 @@ _*.nb
 *~
 *.swp
 .git-notifier*
+git-notifier.log
 .gitversion
 
 doc/sphinx/build
