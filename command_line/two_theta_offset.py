@@ -73,6 +73,28 @@ class Script(object):
     for pair in combinations(detectors, 2):
       determine_axis(pair, params)
 
+    from scitbx import matrix
+    from scitbx.math import r3_rotation_axis_and_angle_from_matrix
+
+    crystals = [experiment.crystal for experiment in experiments]
+    goniometers = [experiment.goniometer for experiment in experiments]
+
+    FUs = []
+
+    for c, g in zip(crystals, goniometers):
+      u = matrix.sqr(c.get_U())
+      f = matrix.sqr(g.get_fixed_rotation())
+      FUs.append(f * u)
+
+    for pair in combinations(FUs, 2):
+      R = pair[1] * pair[0].inverse()
+      rot = r3_rotation_axis_and_angle_from_matrix(R)
+      angle = rot.angle(deg=True)
+      axis = matrix.col(rot.axis)
+      if abs(angle) < 10:
+        continue
+      print 'Axis: %7.4f %7.4f %7.3f' % axis.elems, 'angle: %7.4f' % angle
+
 def determine_axis(detectors, params):
   from scitbx import matrix
 
