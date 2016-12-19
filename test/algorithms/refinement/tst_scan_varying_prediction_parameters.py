@@ -190,13 +190,14 @@ geometry.parameters.crystal.c.length.range = 10 50"""
 
       try:
         for n, (a,b) in enumerate(zip(x_grads, an_grads[i]["dX_dp"])):
-          assert approx_equal(a, b, eps=1.e-6)
+          assert approx_equal(a, b, eps=1.e-5)
         for n, (a,b) in enumerate(zip(y_grads, an_grads[i]["dY_dp"])):
-          assert approx_equal(a, b, eps=1.e-6)
+          assert approx_equal(a, b, eps=1.e-5)
         for n, (a,b) in enumerate(zip(phi_grads, an_grads[i]["dphi_dp"])):
-          assert approx_equal(a, b, eps=1.e-6)
+          assert approx_equal(a, b, eps=1.e-5)
       except AssertionError:
         print "Failure for {0}".format(p_names[i])
+        raise
 
     # return to the initial state
     pred_param.set_param_vals(p_vals)
