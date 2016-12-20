@@ -169,9 +169,16 @@ class Script(object):
       try:
         ref_experiments = ExperimentListFactory.from_json_file(self.params.input.reference_geometry, check_format=False)
       except Exception:
-        raise Sorry("Couldn't load geometry file %s"%self.params.input.reference_geometry)
-      assert len(ref_experiments.detectors()) == 1
-      self.reference_detector = ref_experiments.detectors()[0]
+        try:
+          import dxtbx
+          img = dxtbx.load(self.params.input.reference_geometry)
+        except Exception:
+          raise Sorry("Couldn't load geometry file %s"%self.params.input.reference_geometry)
+        else:
+          self.reference_detector = img.get_detector()
+      else:
+        assert len(ref_experiments.detectors()) == 1
+        self.reference_detector = ref_experiments.detectors()[0]
     else:
       assert len(ref_datablocks) == 1 and len(ref_datablocks[0].unique_detectors()) == 1
       self.reference_detector = ref_datablocks[0].unique_detectors()[0]
