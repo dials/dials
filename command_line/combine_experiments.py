@@ -107,6 +107,9 @@ class CombineWithReference(object):
     if params:
       if params.reference_from_experiment.compare_models:
         self.tolerance = params.reference_from_experiment.tolerance
+      self.average_detector = params.reference_from_experiment.average_detector
+    else:
+      self.average_detector = False
 
     return
 
@@ -142,7 +145,9 @@ class CombineWithReference(object):
     else:
       beam = experiment.beam
 
-    if self.ref_detector:
+    if self.ref_detector and self.average_detector:
+      detector = self.ref_detector
+    elif self.ref_detector and not self.average_detector:
       if compare_detector:
         assert(compare_detector(self.ref_detector, experiment.detector))
       detector = self.ref_detector
