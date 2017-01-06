@@ -894,6 +894,9 @@ class OptionParser(OptionParserBase):
     elif len(args) > 0 and not quick_parse:
       msg = 'Unable to handle the following arguments:\n'
       msg += '\n'.join(['  %s' % a for a in args])
+      if any(a.endswith(".json") for a in args):
+        msg += "\n"
+        msg += "\nPlease check that your image data is accessible"
       if ignore_unhandled:
         print msg
       else:
