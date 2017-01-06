@@ -572,14 +572,33 @@ class MetaDataUpdater(object):
     self.params = params
 
     # Create the geometry updater
+    self.update_geometry = []
+    update_order = []
+
+    # First add reference geometry is present
     if self.params.input.reference_geometry is not None:
-      self.update_geometry = ReferenceGeometryUpdater(self.params)
-    elif self.params.geometry.mosflm_beam_centre is not None:
-      self.update_geometry = MosflmBeamCenterUpdater(self.params)
-    elif self.params.geometry.translate_detector is not None:
-      self.update_geometry = TranslateDetectorUpdater(self.params)
-    else:
-      self.update_geometry = ManualGeometryUpdater(self.params)
+      self.update_geometry.append(ReferenceGeometryUpdater(self.params))
+      update_order.append("Reference geometry")
+
+    # Then add manual geometry
+    self.update_geometry.append(ManualGeometryUpdater(self.params))
+    update_order.append("Manual geometry")
+
+    # Then add mosflm beam centre
+    if self.params.geometry.mosflm_beam_centre is not None:
+      self.update_geometry.append(MosflmBeamCenterUpdater(self.params))
+      update_order.append("Mosflm beam centre")
+
+    # Then add translation of detector
+    if self.params.geometry.translate_detector is not None:
+      self.update_geometry.append(TranslateDetectorUpdater(self.params))
+      update_order.append("Detector translation")
+
+    logger.info("")
+    logger.info("Applying input geometry in the following order:")
+    for i, item in enumerate(update_order, start=1):
+      logger.info("  %d. %s" % (i, item))
+    logger.info("")
 
   def __call__(self, datablock):
     '''
@@ -616,7 +635,8 @@ class MetaDataUpdater(object):
       imageset = self.update_lookup(imageset, lookup)
 
       # Update the geometry
-      imageset = self.update_geometry(imageset)
+      for updater in self.update_geometry:
+        imageset = updater(imageset)
 
       # Append to new imageset list
       imageset_list.append(imageset)
