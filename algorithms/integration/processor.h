@@ -210,8 +210,11 @@ namespace dials { namespace algorithms {
           int yb = y0 >= 0 ? 0 : std::abs(y0);
           int xe = x1 <= xi ? xs : xs-(x1-(int)xi);
           int ye = y1 <= yi ? ys : ys-(y1-(int)yi);
-          DIALS_ASSERT(ye > yb && yb >= 0 && ye <= ys);
-          DIALS_ASSERT(xe > xb && xb >= 0 && xe <= xs);
+          if (yb >= ye || xb >= xe) {
+            continue;
+          }
+          DIALS_ASSERT(yb >= 0 && ye <= ys);
+          DIALS_ASSERT(xb >= 0 && xe <= xs);
           DIALS_ASSERT(yb + y0 >= 0 && ye + y0 <= yi);
           DIALS_ASSERT(xb + x0 >= 0 && xe + x0 <= xi);
           DIALS_ASSERT(sbox.is_consistent());
