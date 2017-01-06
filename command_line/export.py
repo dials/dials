@@ -106,6 +106,12 @@ phil_scope = parse('''
       .type = bool
       .help = "Filter reflections at ice ring resolutions"
 
+    ignore_profile_fitting = False
+      .type = bool
+      .help = "Ignore profile fitted intensities. Sometimes necessary for narrow"
+              "wedges or other situations where profile fitting has failed for"
+              "all reflections and we only have summation intensities."
+
     hklout = integrated.mtz
       .type = path
       .help = "The output MTZ file"
@@ -237,7 +243,8 @@ class MTZExporter(object):
       keep_partials=params.mtz.keep_partials,
       min_isigi=params.mtz.min_isigi,
       force_static_model=params.mtz.force_static_model,
-      filter_ice_rings=params.mtz.filter_ice_rings)
+      filter_ice_rings=params.mtz.filter_ice_rings,
+      ignore_profile_fitting=params.mtz.ignore_profile_fitting)
     from cStringIO import StringIO
     summary = StringIO()
     m.show_summary(out=summary)

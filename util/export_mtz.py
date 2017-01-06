@@ -188,7 +188,8 @@ def dials_u_to_mosflm(dials_U, uc):
 
 def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
                include_partials=False, keep_partials=False, min_isigi=None,
-               force_static_model=False, filter_ice_rings=False):
+               force_static_model=False, filter_ice_rings=False,
+               ignore_profile_fitting=False):
   '''Export data from integrated_data corresponding to experiment_list to an
   MTZ file hklout.'''
 
@@ -205,6 +206,12 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   # select reflections that are assigned to an experiment (i.e. non-negative id)
   integrated_data = integrated_data.select(integrated_data['id'] >= 0)
   assert max(integrated_data['id']) == 0
+  logger.info('Read %s predicted reflections' % len(integrated_data))
+
+  # Ignore profile fitted
+  if ignore_profile_fitting:
+    del integrated_data['intensity.prf.value']
+    del integrated_data['intensity.prf.variance']
 
   # strip out negative variance reflections: these should not really be there
   # FIXME Doing select on summation results. Should do on profile result if
@@ -218,6 +225,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
     selection = integrated_data.get_flags(
       integrated_data.flags.integrated_sum)
   integrated_data = integrated_data.select(selection)
+  logger.info("Selected %d integrated reflections" % len(integrated_data))
 
   selection = integrated_data['intensity.sum.variance'] <= 0
   if selection.count(True) > 0:
