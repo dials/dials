@@ -282,6 +282,38 @@ class MosflmBeamCenterUpdater(object):
       self.params.geometry.mosflm_beam_centre)
     return imageset
 
+class PixelBeamCenterUpdater(object):
+  '''
+  A class to replace geometry with the beam centre in slow/fast pixels
+
+  '''
+  def __init__(self, params):
+    '''
+    Set the params
+
+    '''
+    self.params = params
+
+  def __call__(self, imageset):
+    '''
+    Replace the geometry
+
+    '''
+    beam_s, beam_f = self.params.geometry.slow_fast_beam_centre[0:2]
+    pnl = 0
+    if len(self.params.geometry.slow_fast_beam_centre) > 2:
+      pnl = self.params.geometry.slow_fast_beam_centre[2]
+
+    detector = imageset.get_detector()
+    try:
+      p = detector[pnl]
+    except RuntimeError:
+      raise Sorry('Detector does not have panel index {0}'.format(pnl))
+
+    beam = imageset.get_beam()
+    beam.set_unit_s0(p.get_pixel_lab_coord((beam_f, beam_s)))
+
+    return imageset
 
 class TranslateDetectorUpdater(object):
   '''
@@ -588,6 +620,11 @@ class MetaDataUpdater(object):
     if self.params.geometry.mosflm_beam_centre is not None:
       self.update_geometry.append(MosflmBeamCenterUpdater(self.params))
       update_order.append("Mosflm beam centre")
+
+    # Then add slow/fast pixel beam centre
+    if self.params.geometry.slow_fast_beam_centre is not None:
+      self.update_geometry.append(PixelBeamCenterUpdater(self.params))
+      update_order.append("Slow/Fast pixel beam centre")
 
     # Then add translation of detector
     if self.params.geometry.translate_detector is not None:

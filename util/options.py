@@ -200,6 +200,13 @@ geometry {
     .help = "Override the beam centre from the image headers, following "
             "the mosflm convention."
 
+  slow_fast_beam_centre = None
+    .type = ints(size_min=2, size_max=3)
+    .help = "Override the beam centre from the image headers, following "
+            "the slow/fast pixel convention used by dials.image_viewer."
+            "The first two values are the slow and fast pixel coordinate."
+            "If the third is supplied it specifies a panel number."
+
   translate_detector = None
     .type = floats(size=3)
     .help = "Translate the detector by the specified amount"
