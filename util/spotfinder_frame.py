@@ -1009,9 +1009,7 @@ class SpotFrame(XrayFrame) :
             self.show_ctr_mass_timer.start()
             centroid = reflection['xyzobs.px.value']
             # ticket #107
-            n = self.params.sum_images - 1
-            if math.floor(centroid[2]) >= i_frame and \
-              math.ceil(centroid[2]) < (i_frame + n):
+            if centroid[2] >= i_frame and centroid[2] <= (i_frame + self.params.sum_images):
               x,y = map_coords(
                 centroid[0], centroid[1], reflection['panel'])
               xm1,ym1 = map_coords(
