@@ -93,7 +93,7 @@ class Script(object):
       axis = matrix.col(rot.axis)
       if abs(angle) < 10:
         continue
-      print 'Axis: %7.4f %7.4f %7.3f' % axis.elems, 'angle: %7.4f' % angle
+      print 'Axis: %8.5f %8.5f %8.5f' % axis.elems, 'angle: %7.4f' % angle
 
 def determine_axis(detectors, params):
   from scitbx import matrix
