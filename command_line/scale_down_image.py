@@ -2,8 +2,6 @@
 
 from __future__ import division
 
-# LIBTBX_SET_DISPATCHER_NAME dev.dials.scale_down_image
-
 # FIXME set a random seed here to allow results to be exactly reproduced.
 
 if __name__ == '__main__':
