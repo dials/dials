@@ -90,6 +90,15 @@ phil_scope = parse('''
       .type = int
       .help = "If not None, keep a random subset of size n_subset when"
               "saving the combined experiments"
+
+    max_batch_size = None
+      .type = int
+      .expert_level = 2
+      .help = "If not None, split the resultant combined set of experiments"
+              "into seperate files, each at most max_batch_size number of"
+              "experiments. Example, if there were 5500 experiments and"
+              "max_batch_size is 1000, 6 experiment lists will be created,"
+              "of sizes 917, 917, 917, 917, 916, 916"
   }
 ''', process_includes=True)
 
@@ -351,16 +360,31 @@ class Script(object):
       experiments = subset_exp
       reflections = subset_refls
 
-    # save output
-    from dxtbx.model.experiment.experiment_list import ExperimentListDumper
-    print 'Saving combined experiments to {0}'.format(
-      params.output.experiments_filename)
-    dump = ExperimentListDumper(experiments)
-    dump.as_json(params.output.experiments_filename)
-    print 'Saving combined reflections to {0}'.format(
-      params.output.reflections_filename)
-    reflections.as_pickle(params.output.reflections_filename)
+    def save_output(experiments, reflections, exp_name, refl_name):
+      # save output
+      from dxtbx.model.experiment.experiment_list import ExperimentListDumper
+      print 'Saving combined experiments to {0}'.format(exp_name)
+      dump = ExperimentListDumper(experiments)
+      dump.as_json(exp_name)
+      print 'Saving combined reflections to {0}'.format(refl_name)
+      reflections.as_pickle(refl_name)
 
+    if params.output.max_batch_size is None:
+      save_output(experiments, reflections, params.output.experiments_filename, params.output.reflections_filename)
+    else:
+      from dxtbx.command_line.image_average import splitit
+      import os
+      for i, indices in enumerate(splitit(range(len(experiments)), (len(experiments)//params.output.max_batch_size)+1)):
+        batch_expts = ExperimentList()
+        batch_refls = flex.reflection_table()
+        for sub_id, sub_idx in enumerate(indices):
+          batch_expts.append(experiments[sub_idx])
+          sub_refls = reflections.select(reflections['id'] == sub_idx)
+          sub_refls['id'] = flex.int(len(sub_refls), sub_id)
+          batch_refls.extend(sub_refls)
+        exp_filename = os.path.splitext(params.output.experiments_filename)[0] + "_%03d.json"%i
+        ref_filename = os.path.splitext(params.output.reflections_filename)[0] + "_%03d.pickle"%i
+        save_output(batch_expts, batch_refls, exp_filename, ref_filename)
     return
 
 if __name__ == "__main__":
