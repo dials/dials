@@ -10,41 +10,36 @@ def spot_counts_per_image_plot(reflections, char='*', width=60, height=10):
   assert len(char) == 1
 
   x,y,z = reflections['xyzobs.px.value'].parts()
-
   min_z = flex.min(z)
   max_z = flex.max(z)
 
   # image numbers to display on x-axis label
-  xlab = (int(round(min_z + 0.5)), int(round(max_z + 0.5)))
+  xmin = int(round(min_z + 1e-16))
+  xmax = int(round(max_z))
+
   # estimate the total number of images
-  image_count = xlab[1] - xlab[0] + 1
+  image_count = xmax - xmin + 1
+  if image_count <= 1:
+    return '%i spots found on 1 image' % len(reflections)
 
-  z_range = max_z - min_z + 1
-  if z_range <= 1:
-    return '%i spots found on 1 image' %len(reflections)
+  # determine histogram width
+  width = min(image_count, width)
+  z_step = (max_z - min_z) / width
 
-  width = int(min(z_range, width))
-  z_step = z_range / width
-  z_bound = min_z + z_step - 0.5
-# print [round(i * 10) / 10 for i in sorted(z)]
-
+  # bin all spots
   counts = flex.double()
-
-  sel = (z < z_bound)
-  counts.append(sel.count(True))
-# print 0, ('-', z_bound), sel.count(True)
-  for i in range(1, width-1):
-    sel = ((z >= z_bound) & (z < (z_bound + z_step)))
-    counts.append(sel.count(True))
-#   print i, (z_bound, z_bound + z_step), sel.count(True)
-    z_bound += z_step
-  sel = (z >= z_bound)
-# print i + 1, (z_bound, '-'), sel.count(True)
-  counts.append(sel.count(True))
+  seen_spots = 0
+  for i in range(1, width):
+    z_bound = min_z + (i * z_step)
+    spots = (z < z_bound).count(True)
+    counts.append(spots - seen_spots)
+    seen_spots = spots
+  spots = (z >= z_bound).count(True)
+  counts.append(spots)
 
   max_count = flex.max(counts)
   total_counts = flex.sum(counts)
-  assert total_counts == len(z)
+  assert total_counts == len(z), "Only found %d out of %d reflections for histogram" % (total_counts, len(z))
   counts *= (height/max_count)
   counts = counts.iround()
 
@@ -61,10 +56,10 @@ def spot_counts_per_image_plot(reflections, char='*', width=60, height=10):
         row.append(' ')
     rows.append(''.join(row))
 
-  padding = width - len(str(xlab[0])) - len(str(xlab[1]))
-  rows.append('%i%s%i' % (xlab[0],
-    (' ' if padding < 7 else 'image').center(padding),
-    xlab[1]))
+  padding = width - len(str(xmin)) - len(str(xmax))
+  rows.append('%i%s%i' % (xmin,
+    (' ' if padding < 7 else 'image').center(padding) if padding > 0 else '',
+    xmax))
   return '\n'.join(rows)
 
 if __name__ == '__main__':
