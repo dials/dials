@@ -1,5 +1,5 @@
 /*
- * simulation_ext.cc
+ * reciprocal_space_helpers.h
  *
  *  Copyright (C) 2014 Diamond Light Source
  *
