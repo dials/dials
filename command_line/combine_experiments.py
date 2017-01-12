@@ -99,6 +99,12 @@ phil_scope = parse('''
               "experiments. Example, if there were 5500 experiments and"
               "max_batch_size is 1000, 6 experiment lists will be created,"
               "of sizes 917, 917, 917, 917, 916, 916"
+
+    delete_shoeboxes = False
+      .type = bool
+      .expert_level = 2
+      .help = "If true, delete shoeboxes from reflection tables while comb-"
+              "ining them to save on memory."
   }
 ''', process_includes=True)
 
@@ -332,6 +338,8 @@ class Script(object):
         sub_ref = refs.select(sel)
         nrefs_per_exp.append(len(sub_ref))
         sub_ref['id'] = flex.int(len(sub_ref), global_id)
+        if params.output.delete_shoeboxes and 'shoebox' in sub_ref:
+          del sub_ref['shoebox']
         reflections.extend(sub_ref)
         experiments.append(combine(exp))
         global_id += 1
