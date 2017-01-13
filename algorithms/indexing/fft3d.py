@@ -35,40 +35,6 @@ class indexer_fft3d(indexer_base):
     super(indexer_fft3d, self).__init__(reflections, imagesets, params)
 
   def find_lattices(self):
-    if self.params.fft3d.reciprocal_space_grid.d_min is libtbx.Auto:
-      # rough calculation of suitable d_min based on max cell
-      # see also Campbell, J. (1998). J. Appl. Cryst., 31(3), 407-413.
-      # fft_cell should be greater than twice max_cell, so say:
-      #   fft_cell = 2.5 * max_cell
-      # then:
-      #   fft_cell = n_points * d_min/2
-      #   2.5 * max_cell = n_points * d_min/2
-      # a little bit of rearrangement:
-      #   d_min = 5 * max_cell/n_points
-
-      max_cell = self.params.max_cell
-      d_min = (
-        5 * max_cell / self.params.fft3d.reciprocal_space_grid.n_points)
-      d_spacings = 1/self.reflections['rlp'].norms()
-      self.params.fft3d.reciprocal_space_grid.d_min = max(
-        d_min, min(d_spacings))
-      logger.info("Setting d_min: %.2f" %self.params.fft3d.reciprocal_space_grid.d_min)
-    n_points = self.params.fft3d.reciprocal_space_grid.n_points
-    self.gridding = fftpack.adjust_gridding_triple(
-      (n_points,n_points,n_points), max_prime=5)
-    n_points = self.gridding[0]
-    self.map_centroids_to_reciprocal_space_grid()
-    self.d_min = self.params.fft3d.reciprocal_space_grid.d_min
-
-    logger.info("Number of centroids used: %i" %(
-      (self.reciprocal_space_grid>0).count(True)))
-    self.fft()
-    if self.params.debug:
-      self.debug_write_ccp4_map(map_data=self.grid_real, file_name="fft3d.map")
-    if self.params.fft3d.peak_search == 'flood_fill':
-      self.find_peaks()
-    elif self.params.fft3d.peak_search == 'clean':
-      self.find_peaks_clean()
     if self.params.multiple_lattice_search.cluster_analysis_search:
       self.find_basis_vector_combinations_cluster_analysis()
       self.debug_show_candidate_basis_vectors()
@@ -134,6 +100,34 @@ class indexer_fft3d(indexer_base):
     self.reflections_used_for_indexing = reflections_used_for_indexing
 
   def fft(self):
+    if self.params.fft3d.reciprocal_space_grid.d_min is libtbx.Auto:
+      # rough calculation of suitable d_min based on max cell
+      # see also Campbell, J. (1998). J. Appl. Cryst., 31(3), 407-413.
+      # fft_cell should be greater than twice max_cell, so say:
+      #   fft_cell = 2.5 * max_cell
+      # then:
+      #   fft_cell = n_points * d_min/2
+      #   2.5 * max_cell = n_points * d_min/2
+      # a little bit of rearrangement:
+      #   d_min = 5 * max_cell/n_points
+
+      max_cell = self.params.max_cell
+      d_min = (
+        5 * max_cell / self.params.fft3d.reciprocal_space_grid.n_points)
+      d_spacings = 1/self.reflections['rlp'].norms()
+      self.params.fft3d.reciprocal_space_grid.d_min = max(
+        d_min, min(d_spacings))
+      logger.info("Setting d_min: %.2f" %self.params.fft3d.reciprocal_space_grid.d_min)
+    n_points = self.params.fft3d.reciprocal_space_grid.n_points
+    self.gridding = fftpack.adjust_gridding_triple(
+      (n_points,n_points,n_points), max_prime=5)
+    n_points = self.gridding[0]
+    self.map_centroids_to_reciprocal_space_grid()
+    self.d_min = self.params.fft3d.reciprocal_space_grid.d_min
+
+    logger.info("Number of centroids used: %i" %(
+      (self.reciprocal_space_grid>0).count(True)))
+
     #gb_to_bytes = 1073741824
     #bytes_to_gb = 1/gb_to_bytes
     #(128**3)*8*2*bytes_to_gb
@@ -152,6 +146,13 @@ class indexer_fft3d(indexer_base):
     self.grid_real = flex.pow2(flex.real(grid_transformed))
     #self.grid_real = flex.pow2(flex.imag(self.grid_transformed))
     del grid_transformed
+
+    if self.params.debug:
+      self.debug_write_ccp4_map(map_data=self.grid_real, file_name="fft3d.map")
+    if self.params.fft3d.peak_search == 'flood_fill':
+      self.find_peaks()
+    elif self.params.fft3d.peak_search == 'clean':
+      self.find_peaks_clean()
 
   def find_peaks(self):
     grid_real_binary = self.grid_real.deep_copy()
@@ -199,6 +200,8 @@ class indexer_fft3d(indexer_base):
       self.volumes = flood_fill.grid_points_per_void().select(isel)
 
   def find_candidate_basis_vectors(self):
+    self.fft()
+
     # hijack the xray.structure class to facilitate calculation of distances
     xs = xray.structure(crystal_symmetry=self.crystal_symmetry)
     for i, site in enumerate(self.sites):
@@ -297,8 +300,11 @@ class indexer_fft3d(indexer_base):
       #logger.debug("%s %s %s" %(i, v.length(), volume))
 
     self.candidate_basis_vectors = vectors
+    return self.candidate_basis_vectors
 
   def find_basis_vector_combinations_cluster_analysis(self):
+    self.fft()
+
     # hijack the xray.structure class to facilitate calculation of distances
     xs = xray.structure(crystal_symmetry=self.crystal_symmetry)
     for i, site in enumerate(self.sites):

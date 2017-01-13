@@ -22,7 +22,7 @@ class indexer_fft1d(indexer_base):
   def __init__(self, reflections, imagesets, params):
     super(indexer_fft1d, self).__init__(reflections, imagesets, params)
 
-  def find_lattices(self):
+  def find_candidate_basis_vectors(self):
     self.d_min = self.params.refinement_protocol.d_min_start
 
     from rstbx.phil.phil_preferences import indexing_api_defs
@@ -40,6 +40,11 @@ class indexer_fft1d(indexer_base):
     self.debug_show_candidate_basis_vectors()
     if self.params.debug_plots:
       self.debug_plot_candidate_basis_vectors()
+
+    return self.candidate_basis_vectors
+
+  def find_lattices(self):
+    self.find_candidate_basis_vectors()
     self.candidate_crystal_models = self.find_candidate_orientation_matrices(
       self.candidate_basis_vectors,
       max_combinations=self.params.basis_vector_combinations.max_try)

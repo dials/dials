@@ -154,6 +154,7 @@ def run(args):
     reflections, imagesets,
     known_crystal_models=known_crystal_models,
     params=params)
+  idxr.index()
   refined_experiments = idxr.refined_experiments
   reflections = copy.deepcopy(idxr.refined_reflections)
   reflections.extend(idxr.unindexed_reflections)

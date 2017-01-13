@@ -479,8 +479,7 @@ class indexer_base(object):
     self._setup_symmetry()
     self.d_min = None
 
-    # now actually do the indexing
-    self.index()
+    self.setup_indexing()
 
   @staticmethod
   def from_parameters(reflections, imagesets,
@@ -660,7 +659,7 @@ class indexer_base(object):
       logger.debug("cb_op reference->primitive: " + str(self.cb_op_reference_to_primitive))
       logger.debug("cb_op primitive->input: " + str(self.cb_op_primitive_inp))
 
-  def index(self):
+  def setup_indexing(self):
     self.reflections_input = self.reflections
     self.reflections = flex.reflection_table()
     for i, imageset in enumerate(self.imagesets):
@@ -704,6 +703,8 @@ class indexer_base(object):
       self.debug_write_reciprocal_lattice_points_as_pdb()
 
     self.reflections['id'] = flex.int(len(self.reflections), -1)
+
+  def index(self):
 
     experiments = ExperimentList()
 
