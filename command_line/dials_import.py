@@ -223,7 +223,7 @@ class ReferenceGeometryUpdater(object):
     # Check static detector items are the same
     assert self.reference.detector.is_similar_to(
       imageset.get_detector(),
-      static_only=True)
+      static_only=True), "Reference detector model does not match input detector model"
 
     # Set beam and detector
     imageset.set_beam(self.reference.beam)
