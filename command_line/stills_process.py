@@ -419,6 +419,7 @@ class Processor(object):
       idxr = indexer_base.from_parameters(
         reflections, imagesets,
         params=params)
+      idxr.index()
     else:
       indexing_error = None
       for method in params.indexing.stills.method_list:
@@ -427,6 +428,7 @@ class Processor(object):
           idxr = indexer_base.from_parameters(
             reflections, imagesets,
             params=params)
+          idxr.index()
         except Exception, e:
           logger.info("Couldn't index using method %s"%method)
           if indexing_error is None:

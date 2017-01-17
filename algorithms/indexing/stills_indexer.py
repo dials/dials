@@ -119,50 +119,6 @@ class stills_indexer(indexer_base):
     if self.params.refinement_protocol.n_macro_cycles > 1:
       raise Sorry("For stills, please set refinement_protocol.n_macro_cycles = 1")
 
-    self.reflections_input = self.reflections
-    self.reflections = flex.reflection_table()
-    for i, imageset in enumerate(self.imagesets):
-      if 'imageset_id' in self.reflections_input:
-        sel = (self.reflections_input['imageset_id'] == i)
-      else:
-        sel = (self.reflections_input['id'] == i)
-      self.reflections.extend(self.map_spots_pixel_to_mm_rad(
-        self.reflections_input.select(sel),
-        imageset.get_detector(), imageset.get_scan()))
-    self.filter_reflections_by_scan_range()
-    if len(self.reflections) == 0:
-      raise Sorry("No reflections left to index!")
-
-    spots_mm = self.reflections
-    self.reflections = flex.reflection_table()
-
-    if 'imageset_id' not in spots_mm:
-      spots_mm['imageset_id'] = spots_mm['id']
-    for i, imageset in enumerate(self.imagesets):
-      spots_sel = spots_mm.select(spots_mm['imageset_id'] == i)
-      self.map_centroids_to_reciprocal_space(
-        spots_sel, imageset.get_detector(), imageset.get_beam(),
-        imageset.get_goniometer())
-      self.reflections.extend(spots_sel)
-
-    try:
-      self.find_max_cell()
-    except AssertionError, e:
-      if "too few spots" in str(e).lower():
-        raise Sorry(e)
-
-    if self.params.sigma_phi_deg is not None:
-      var_x, var_y, _ = self.reflections['xyzobs.mm.variance'].parts()
-      var_phi_rad = flex.double(
-        var_x.size(), (math.pi/180 * self.params.sigma_phi_deg)**2)
-      self.reflections['xyzobs.mm.variance'] = flex.vec3_double(
-        var_x, var_y, var_phi_rad)
-
-    if self.params.debug:
-      self.debug_write_reciprocal_lattice_points_as_pdb()
-
-    self.reflections['id'] = flex.int(len(self.reflections), -1)
-
     experiments = ExperimentList()
 
     had_refinement_error = False
