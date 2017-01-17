@@ -217,7 +217,7 @@ class better_experimental_model_discovery(object):
         plt.axes().set_aspect("equal")
         plt.xlabel("offset (mm) along beamr1 vector")
         plt.ylabel("offset (mm) along beamr2 vector")
-        plt.show()
+        plt.savefig("search_scope.png")
 
         #changing value
         trial_origin_offset =  (idxs[idx_max%widegrid])*beamr1 + (idxs[idx_max//widegrid])*beamr2
