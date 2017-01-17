@@ -24,19 +24,19 @@ class neighbor_analysis(object):
     # nearest neighbor analysis
     from annlib_ext import AnnAdaptor
     for imageset_id in range(flex.max(reflections['imageset_id'])+1):
-      sel = reflections['imageset_id'] == imageset_id
-      if sel.count(True) == 0:
+      sel_imageset = reflections['imageset_id'] == imageset_id
+      if sel_imageset.count(True) == 0:
         continue
-      phi_min = flex.min(phi_deg.select(sel))
-      phi_max = flex.max(phi_deg.select(sel))
+      phi_min = flex.min(phi_deg.select(sel_imageset))
+      phi_max = flex.max(phi_deg.select(sel_imageset))
       d_phi = phi_max - phi_min
       n_steps = max(int(math.ceil(d_phi / step_size)), 1)
 
       for n in range(n_steps):
-        sel &= (phi_deg >= (phi_min+n*step_size)) & (phi_deg < (phi_min+(n+1)*step_size))
+        sel_step = sel_imageset & (phi_deg >= (phi_min+n*step_size)) & (phi_deg < (phi_min+(n+1)*step_size))
 
         for entering in (True, False):
-          sel_entering = sel & (entering_flags == entering)
+          sel_entering = sel_step & (entering_flags == entering)
           if sel_entering.count(True) == 0:
             continue
 
