@@ -265,7 +265,7 @@ class Test(object):
 
     import cPickle as pickle
     table = pickle.load(open('integrated.pickle', 'rb'))
-    assert len(table) == 5604
+    assert len(table) == 5605, "%d, %d" % (len(table), 5605)
 
     # Check output contains from two lattices
     exp_id = list(set(table['id']))
