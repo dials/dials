@@ -36,12 +36,12 @@ class neighbor_analysis(object):
         sel &= (phi_deg >= (phi_min+n*step_size)) & (phi_deg < (phi_min+(n+1)*step_size))
 
         for entering in (True, False):
-          sel  &= entering_flags == entering
-          if sel.count(True) == 0:
+          sel_entering = sel & (entering_flags == entering)
+          if sel_entering.count(True) == 0:
             continue
 
           query = flex.double()
-          query.extend(rs_vectors.select(sel).as_double())
+          query.extend(rs_vectors.select(sel_entering).as_double())
 
           if query.size() == 0:
             continue
