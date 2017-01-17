@@ -59,6 +59,11 @@ class neighbor_analysis(object):
     direct = direct.select(perm)
     d_spacings = d_spacings.select(perm)
 
+    # eliminate nonsensical direct space distances
+    sel = direct > 1
+    direct = direct.select(sel)
+    d_spacings = d_spacings.select(sel)
+
     # reject top 1% of longest distances to hopefully get rid of any outliers
     n = int(math.floor(0.99*len(direct)))
     direct = direct[:n]
@@ -73,9 +78,9 @@ class neighbor_analysis(object):
     centers = hst.slot_centers()
     if self.histogram_binning == 'log':
       self.slot_start = flex.double(
-        [10**s for s in hst.slot_centers() - 0.5 * hst.slot_width()])
+        [10**(s - 0.5 * hst.slot_width()) for s in hst.slot_centers()])
       self.slot_end = flex.double(
-        [10**s for s in hst.slot_centers() + 0.5 * hst.slot_width()])
+        [10**(s + 0.5 * hst.slot_width()) for s in hst.slot_centers()])
       self.slot_width = self.slot_end - self.slot_start
     else:
       self.slot_start = hst.slot_centers() - 0.5 * hst.slot_width()
