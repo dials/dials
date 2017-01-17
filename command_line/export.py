@@ -30,6 +30,9 @@ experiments.json file and an integrated.pickle file.
 NXS format exports the files as an NXmx file. The required input is an
 experiments.json file and an integrated.pickle file.
 
+CIF format exports the files as an mmcif file. The required input is an
+experiments.json file and an integrated.pickle file.
+
 XDS_ASCII format exports intensity data and the experiment metadata in the
 same format as used by the output of XDS in the CORRECT step - output can
 be scaled with XSCALE.
@@ -55,6 +58,10 @@ Examples::
   dials.export experiments.json integrated.pickle format=nxs
   dials.export experiments.json integrated.pickle format=nxs nxs.hklout=integrated.nxs
 
+  # Export to cif
+  dials.export experiments.json integrated.pickle format=cif
+  dials.export experiments.json integrated.pickle format=cif cif.hklout=integrated.nxs
+
   # Export to mosflm
   dials.export experiments.json integrated.pickle format=mosflm
 
@@ -68,7 +75,7 @@ Examples::
 
 phil_scope = parse('''
 
-  format = *mtz sadabs nxs mosflm xds best xds_ascii json
+  format = *mtz sadabs nxs cif mosflm xds best xds_ascii json
     .type = choice
     .help = "The output file format"
 
@@ -144,6 +151,14 @@ phil_scope = parse('''
     hklout = integrated.nxs
       .type = path
       .help = "The output Nexus file"
+
+  }
+
+  cif {
+
+    hklout = integrated.cif
+      .type = path
+      .help = "The output CIF file"
 
   }
 
@@ -364,6 +379,42 @@ class NexusExporter(object):
       self.experiments,
       self.reflections,
       self.params.nxs.hklout)
+
+class CIFExporter(object):
+  '''
+  A class to export stuff in CIF format
+
+  '''
+
+  def __init__(self, params, experiments, reflections):
+    '''
+    Initialise the exporter
+
+    :param params: The phil parameters
+    :param experiments: The experiment list
+    :param reflections: The reflection tables
+
+    '''
+
+    # Check the input
+    if len(experiments) == 0:
+      raise Sorry('CIF exporter requires an experiment list')
+    if len(reflections) != 1:
+      raise Sorry('CIF exporter requires 1 reflection table')
+
+    # Save the stuff
+    self.params = params
+    self.experiments = experiments
+    self.reflections = reflections[0]
+
+  def export(self):
+    '''
+    Export the files
+
+    '''
+    from dials.util.export_cif import CIFOutputFile
+    outfile = CIFOutputFile(self.params.cif.hklout)
+    outfile.write(self.experiments, self.reflections)
 
 
 class MosflmExporter(object):
@@ -608,6 +659,8 @@ if __name__ == '__main__':
     exporter = XDSASCIIExporter(params, experiments, reflections)
   elif params.format == 'nxs':
     exporter = NexusExporter(params, experiments, reflections)
+  elif params.format == 'cif':
+    exporter = CIFExporter(params, experiments, reflections)
   elif params.format == 'mosflm':
     exporter = MosflmExporter(params, experiments, reflections)
   elif params.format == 'xds':
