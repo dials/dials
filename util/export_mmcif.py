@@ -42,96 +42,97 @@ class MMCIFOutputFile(object):
     # Get the cif block
     cif_block = iotbx.cif.model.block()
 
-    # FIXME not sure where to put data_block_<NAME>
-
     # Hard coding X-ray
-    cif_block["_pdbx_data_section.type_scattering"] = "x-ray"
-    cif_block["_pdbx_data_section.type_merged"] = False
-    cif_block["_pdbx_data_section.type_scaled"] = False
+    cif_block["_pdbx_diffrn_data_section.id"] = 'dials'
+    cif_block["_pdbx_diffrn_data_section.type_scattering"] = "x-ray"
+    cif_block["_pdbx_diffrn_data_section.type_merged"] = False
+    cif_block["_pdbx_diffrn_data_section.type_scaled"] = False
+
+    # FIXME Haven't put in any of these bits yet
+    #
+    #  Facility/beamline proposal tracking details
+    #
+    # cif_block["_pdbx_diffrn_data_section_experiment.ordinal"] = 1
+    # cif_block["_pdbx_diffrn_data_section_experiment.data_section_id"] = "dials"
+    # cif_block["_pdbx_diffrn_data_section_experiment.proposal_id"] = "<PROPOSAL ID>
+
+    # Facility/beamline details for this data collection
+    #
+    # cif_block["_pdbx_diffrn_data_section_site.data_section_id"] = 'dials'
+    # cif_block["_pdbx_diffrn_data_section_site.facility"] = "DIAMOND"
+    # cif_block["_pdbx_diffrn_data_section_site.beamline"] = "VMX-M"
+    # cif_block["_pdbx_diffrn_data_section_site.collection_date"] = scan.epochs()[0]
+    # cif_block["_pdbx_diffrn_data_section_site.detector"] = detector[0].name()
+    # cif_block["_pdbx_diffrn_data_section_site.detector_type"] = detector[0].type()
 
     # Write the crystal information
-    #   <crystal id> <a> <b> <c> <alpha> <beta> <gamma> <wavelength>
     cif_loop = iotbx.cif.model.loop(
-      header=("_crystal.crystal_id",
-              "_crystal.a",
-              "_crystal.b",
-              "_crystal.c",
-              "_crystal.alpha",
-              "_crystal.beta",
-              "_crystal.gamma",
-              "_crystal.wavelength"))
+      header=("_pdbx_diffrn_unmerged_cell.ordinal",
+              "_pdbx_diffrn_unmerged_cell.crystal_id",
+              "_pdbx_diffrn_unmerged_cell.wavelength",
+              "_pdbx_diffrn_unmerged_cell.cell_length_a",
+              "_pdbx_diffrn_unmerged_cell.cell_length_b",
+              "_pdbx_diffrn_unmerged_cell.cell_length_c",
+              "_pdbx_diffrn_unmerged_cell.cell_angle_alpha",
+              "_pdbx_diffrn_unmerged_cell.cell_angle_beta",
+              "_pdbx_diffrn_unmerged_cell.cell_angle_gamma"))
     crystal = experiments[0].crystal
     wavelength = experiments[0].beam.get_wavelength()
+    a, b, c, alpha, beta, gamma = crystal.get_unit_cell().parameters()
+    cif_loop.add_row((1, 1, wavelength, a, b, c, alpha, beta, gamma))
+    cif_block.add_loop(cif_loop)
+
+    # Make a dict of unit_cell parameters
     unit_cell_parameters = {}
     if crystal.num_scan_points > 1:
       for i in range(crystal.num_scan_points):
         a, b, c, alpha, beta, gamma = crystal.get_unit_cell_at_scan_point(i).parameters()
         unit_cell_parameters[i] = (a, b, c, alpha, beta, gamma)
-        cif_loop.add_row((i, a, b, c, alpha, beta, gamma, wavelength))
     else:
-      a, b, c, alpha, beta, gamma = crystal.get_unit_cell().parameters()
       unit_cell_parameters[0] = (a, b, c, alpha, beta, gamma)
-      cif_loop.add_row((0, a, b, c, alpha, beta, gamma, wavelength))
-    cif_block.add_loop(cif_loop)
-
 
     # Write the image data
-    #  <image id> <image number> <crystal id> <a> <b> <c> <alpha> <beta> <gamma> <phi-image>
     scan = experiments[0].scan
     z0 = scan.get_image_range()[0]
     cif_loop = iotbx.cif.model.loop(
-      header=("_image.image_id",
-              "_image.image_number",
-              "_image.crystal_id",
-              "_image.a",
-              "_image.b",
-              "_image.c",
-              "_image.alpha",
-              "_image.beta",
-              "_image.gamma",
-              "_image.phi_image"))
+      header=("_pdbx_diffrn_image_proc.image_id",
+              "_pdbx_diffrn_image_proc.crystal_id",
+              "_pdbx_diffrn_image_proc.image_number",
+              "_pdbx_diffrn_image_proc.phi_image",
+              "_pdbx_diffrn_image_proc.wavelength",
+              "_pdbx_diffrn_image_proc.cell_length_a",
+              "_pdbx_diffrn_image_proc.cell_length_b",
+              "_pdbx_diffrn_image_proc.cell_length_c",
+              "_pdbx_diffrn_image_proc.cell_angle_alpha",
+              "_pdbx_diffrn_image_proc.cell_angle_beta",
+              "_pdbx_diffrn_image_proc.cell_angle_gamma"))
     for i in range(len(scan)):
       z = z0 + i
       if crystal.num_scan_points > 1:
-        crystal_id = i
+        a, b, c, alpha, beta, gamma = unit_cell_parameters[i]
       else:
-        crystal_id = 0
-      a, b, c, alpha, beta, gamma = unit_cell_parameters[crystal_id]
+        a, b, c, alpha, beta, gamma = unit_cell_parameters[0]
       phi = scan.get_angle_from_image_index(z)
-      cif_loop.add_row((i, z, crystal_id, a, b, c, alpha, beta, gamma, phi))
+      cif_loop.add_row((i+1, 1, z, phi, wavelength, a, b, c, alpha, beta, gamma))
     cif_block.add_loop(cif_loop)
 
     # Write reflection data
     # FIXME there are three intensiry fields. I've put summation in I and Isum
-    #   <reflection id>
-    #   <image id start>
-    #   <image id end>
-    #   <h-original>
-    #   <k-original>
-    #   <l-original>
-    #   <I>
-    #   <sigI>
-    #   <I-sum>
-    #   <sigI-sum>
-    #   <I-profile>
-    #   <sigI-profile>
-    #   <phi-reflection>
-    #   <partiality>
     cif_loop = iotbx.cif.model.loop(
-      header=("_refln.reflection_id",
-              "_refln.image_id_start",
-              "_refln.image_id_end",
-              "_refln.h_original",
-              "_refln.k_original",
-              "_refln.l_original",
-              "_refln.I",
-              "_refln.sigI",
-              "_refln.I_sum",
-              "_refln.sigI_sum",
-              "_refln.I_profile",
-              "_refln.sigI_profile",
-              "_refln.phi_reflection",
-              "_refln.partiality"))
+      header=("_pdbx_diffrn_unmerged_refln.reflection_id",
+              "_pdbx_diffrn_unmerged_refln.image_id_start",
+              "_pdbx_diffrn_unmerged_refln.image_id_end",
+              "_pdbx_diffrn_unmerged_refln.index_h",
+              "_pdbx_diffrn_unmerged_refln.index_k",
+              "_pdbx_diffrn_unmerged_refln.index_l",
+              "_pdbx_diffrn_unmerged_refln.intensity_meas",
+              "_pdbx_diffrn_unmerged_refln.intensity_sigma",
+              "_pdbx_diffrn_unmerged_refln.intensity_sum",
+              "_pdbx_diffrn_unmerged_refln.intensity_sum_sigma",
+              "_pdbx_diffrn_unmerged_refln.intensity_profile",
+              "_pdbx_diffrn_unmerged_refln.intensity_profile_sigma",
+              "_pdbx_diffrn_unmerged_refln.phi_reflection",
+              "_pdbx_diffrn_unmerged_refln.partiality"))
     for i, r in enumerate(reflections):
       _,_,_,_,z0,z1 = r['bbox']
       h, k, l       = r['miller_index']
@@ -143,7 +144,7 @@ class MMCIFOutputFile(object):
       sigIprf       = r['intensity.prf.variance']
       phi           = r['xyzcal.mm'][2]
       partiality    = r['partiality']
-      cif_loop.add_row((i, z0, z1, h, k, l, I, sigI, Isum, sigIsum, Iprf, sigIprf, phi, partiality))
+      cif_loop.add_row((i+1, z0, z1, h, k, l, I, sigI, Isum, sigIsum, Iprf, sigIprf, phi, partiality))
     cif_block.add_loop(cif_loop)
 
     # Add the block
