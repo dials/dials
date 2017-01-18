@@ -30,7 +30,7 @@ experiments.json file and an integrated.pickle file.
 NXS format exports the files as an NXmx file. The required input is an
 experiments.json file and an integrated.pickle file.
 
-CIF format exports the files as an mmcif file. The required input is an
+MMCIF format exports the files as an mmcif file. The required input is an
 experiments.json file and an integrated.pickle file.
 
 XDS_ASCII format exports intensity data and the experiment metadata in the
@@ -58,9 +58,9 @@ Examples::
   dials.export experiments.json integrated.pickle format=nxs
   dials.export experiments.json integrated.pickle format=nxs nxs.hklout=integrated.nxs
 
-  # Export to cif
-  dials.export experiments.json integrated.pickle format=cif
-  dials.export experiments.json integrated.pickle format=cif cif.hklout=integrated.nxs
+  # Export to mmcif
+  dials.export experiments.json integrated.pickle format=mmcif
+  dials.export experiments.json integrated.pickle format=mmcif mmcif.hklout=integrated.mmcif
 
   # Export to mosflm
   dials.export experiments.json integrated.pickle format=mosflm
@@ -75,7 +75,7 @@ Examples::
 
 phil_scope = parse('''
 
-  format = *mtz sadabs nxs cif mosflm xds best xds_ascii json
+  format = *mtz sadabs nxs mmcif mosflm xds best xds_ascii json
     .type = choice
     .help = "The output file format"
 
@@ -154,9 +154,9 @@ phil_scope = parse('''
 
   }
 
-  cif {
+  mmcif {
 
-    hklout = integrated.cif
+    hklout = integrated.mmcif
       .type = path
       .help = "The output CIF file"
 
@@ -380,7 +380,7 @@ class NexusExporter(object):
       self.reflections,
       self.params.nxs.hklout)
 
-class CIFExporter(object):
+class MMCIFExporter(object):
   '''
   A class to export stuff in CIF format
 
@@ -412,8 +412,8 @@ class CIFExporter(object):
     Export the files
 
     '''
-    from dials.util.export_cif import CIFOutputFile
-    outfile = CIFOutputFile(self.params.cif.hklout)
+    from dials.util.export_mmcif import MMCIFOutputFile
+    outfile = MMCIFOutputFile(self.params.mmcif.hklout)
     outfile.write(self.experiments, self.reflections)
 
 
@@ -659,8 +659,8 @@ if __name__ == '__main__':
     exporter = XDSASCIIExporter(params, experiments, reflections)
   elif params.format == 'nxs':
     exporter = NexusExporter(params, experiments, reflections)
-  elif params.format == 'cif':
-    exporter = CIFExporter(params, experiments, reflections)
+  elif params.format == 'mmcif':
+    exporter = MMCIFExporter(params, experiments, reflections)
   elif params.format == 'mosflm':
     exporter = MosflmExporter(params, experiments, reflections)
   elif params.format == 'xds':
