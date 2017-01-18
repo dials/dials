@@ -23,7 +23,17 @@ env_etc.include_registry.append(
 
 sources = [
     'boost_python/fft3d.cc',
-    'boost_python/indexing_ext.cc']
+    'boost_python/indexing_ext.cc'
+    ]
+
+# Since this code is not using OpenMP a bug in the Microsoft VS2008 compiler means that
+# any /openmp flag must be removed in order to avoid creating a broken library
+if env_etc.compiler == "win32_cl" and "/openmp" in env["SHCCFLAGS"]:
+  ccflags_without_omp = []
+  for f in env["SHCCFLAGS"]:
+    if "/openmp" != f:
+      ccflags_without_omp.append( f )
+  env["SHCCFLAGS"] = ccflags_without_omp
 
 env.SharedLibrary(target='#/lib/dials_algorithms_indexing_ext',
     source=sources,
