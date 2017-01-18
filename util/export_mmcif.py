@@ -62,9 +62,15 @@ class MMCIFOutputFile(object):
 
     # Write the crystal information
     #   <crystal id> <a> <b> <c> <alpha> <beta> <gamma> <wavelength>
-    cif_loop = iotbx.cif.model.loop(header=("_crystal_id", "_a", "_b", "_c",
-                                            "_alpha", "_beta", "_gamma",
-                                            "_wavelength"))
+    cif_loop = iotbx.cif.model.loop(
+      header=("_crystal.crystal_id",
+              "_crystal.a",
+              "_crystal.b",
+              "_crystal.c",
+              "_crystal.alpha",
+              "_crystal.beta",
+              "_crystal.gamma",
+              "_crystal.wavelength"))
     crystal = experiments[0].crystal
     wavelength = experiments[0].beam.get_wavelength()
     unit_cell_parameters = {}
@@ -77,17 +83,24 @@ class MMCIFOutputFile(object):
       a, b, c, alpha, beta, gamma = crystal.get_unit_cell().parameters()
       unit_cell_parameters[0] = (a, b, c, alpha, beta, gamma)
       cif_loop.add_row((0, a, b, c, alpha, beta, gamma, wavelength))
-    #cif_block.add_loop(cif_loop)
+    cif_block.add_loop(cif_loop)
 
 
     # Write the image data
     #  <image id> <image number> <crystal id> <a> <b> <c> <alpha> <beta> <gamma> <phi-image>
     scan = experiments[0].scan
     z0 = scan.get_image_range()[0]
-    cif_loop = iotbx.cif.model.loop(header=("_image_id", "_image_number",
-                                        "_crystal_id", "_a", "_b", "_c",
-                                        "_alpha", "_beta", "_gamma",
-                                        "_phi_image"))
+    cif_loop = iotbx.cif.model.loop(
+      header=("_image.image_id",
+              "_image.image_number",
+              "_image.crystal_id",
+              "_image.a",
+              "_image.b",
+              "_image.c",
+              "_image.alpha",
+              "_image.beta",
+              "_image.gamma",
+              "_image.phi_image"))
     for i in range(len(scan)):
       z = z0 + i
       if crystal.num_scan_points > 1:
@@ -115,12 +128,21 @@ class MMCIFOutputFile(object):
     #   <sigI-profile>
     #   <phi-reflection>
     #   <partiality>
-    cif_loop = iotbx.cif.model.loop(header=("_reflection_id", "_image_id_start",
-                                            "_image_id_end", "_h_original",
-                                            "_k_original", "_l_original", "_I",
-                                            "_sigI", "_I_sum", "_sigI_sum",
-                                            "_I_profile", "_sigI_profile",
-                                            "_phi_reflection", "_partiality"))
+    cif_loop = iotbx.cif.model.loop(
+      header=("_refln.reflection_id",
+              "_refln.image_id_start",
+              "_refln.image_id_end",
+              "_refln.h_original",
+              "_refln.k_original",
+              "_refln.l_original",
+              "_refln.I",
+              "_refln.sigI",
+              "_refln.I_sum",
+              "_refln.sigI_sum",
+              "_refln.I_profile",
+              "_refln.sigI_profile",
+              "_refln.phi_reflection",
+              "_refln.partiality"))
     for i, r in enumerate(reflections):
       _,_,_,_,z0,z1 = r['bbox']
       h, k, l       = r['miller_index']
