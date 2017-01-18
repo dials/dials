@@ -336,6 +336,7 @@ class PredictionParameterisation(object):
 
     # Quantities derived from pv, precalculated for efficiency
     u, v, w = self._pv.parts()
+    assert w.all_ne(0)
     self._w_inv = 1./w
     self._u_w_inv = u * self._w_inv
     self._v_w_inv = v * self._w_inv
