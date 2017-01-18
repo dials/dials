@@ -42,17 +42,6 @@ class MMCIFOutputFile(object):
     # Get the cif block
     cif_block = iotbx.cif.model.block()
 
-    # Write out data block relationships
-    # FIXME not sure what correct thing to put in for <dataset name> and <parent dataset name>
-    #   data_block_relationships
-    #   loop
-    #   <dataset name> <parent dataset name>
-    # FIXME where to input "data_block_relationships"?
-    cif_loop = iotbx.cif.model.loop(header=("_dataset_name",
-                                            "_parent_dataset_name"))
-    cif_loop.add_row(("dataset", "None"))
-    cif_block.add_loop(cif_loop)
-
     # FIXME not sure where to put data_block_<NAME>
 
     # Hard coding X-ray
