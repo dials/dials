@@ -449,7 +449,7 @@ class ScanVaryingPredictionParameterisationFast(ScanVaryingPredictionParameteris
         if B is None: B = exp.crystal.get_B()
 
         s0 = self._get_state_from_parameterisation(bp, frame)
-        if s0 is None: s0 = exp.beam.get_s0()
+        if s0 is None: s0 = matrix.col(exp.beam.get_s0())
 
         # set states for crystal and beam
         reflections['u_matrix'].set_selected(subsel, U.elems)
