@@ -83,14 +83,12 @@ class Target(object):
   def _predict_core(self, reflections, skip_derivatives=False):
     """perform prediction for the specified reflections"""
 
-    # duck-typing for ScanVaryingPredictionParameterisation. Only this
-    # class has a compose(reflections) method. Sets ub_matrix (and caches
-    # derivatives).
-    try:
+    # If the prediction parameterisation has a compose method (true for the scan
+    # varying case) then call it. Prefer hasattr to try-except duck typing to
+    # avoid masking AttributeErrors that could be raised within the method.
+    if hasattr(self._prediction_parameterisation, 'compose'):
       self._prediction_parameterisation.compose(
           reflections, skip_derivatives)
-    except AttributeError:
-      pass
 
     # do prediction (updates reflection table in situ). Scan-varying prediction
     # is done automatically if the crystal has scan-points (assuming reflections
