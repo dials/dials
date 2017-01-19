@@ -134,7 +134,7 @@ def background(imageset, indx, n_bins):
   # print some summary information
   print 'Mean background: %.3f' % (flex.sum(background) / background.size())
   print 'Max/total signal pixels: %.0f / %.0f' % (flex.max(signal),
-                                                 flex.sum(signal))
+                                                  flex.sum(signal))
   print 'Peak/background/hot pixels: %d / %d / %d' % (peak_pixels.count(True),
                                                       background.size(),
                                                       hot.count(True))
