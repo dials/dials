@@ -130,6 +130,10 @@ class Script(object):
       panel = reflections['panel']
       for i in range(len(reflections)):
         width, height = detector[panel[i]].get_image_size()
+        if x0[i] < 0: x0[i] = 0
+        if x1[i] > width: x1[i] = width
+        if y0[i] < 0: y0[i] = 0
+        if y1[i] > height: y1[i] = height
         if z0[i] < frame0: z0[i] = frame0
         if z1[i] > frame1: z1[i] = frame1
       reflections['bbox'] = flex.int6(x0, x1, y0, y1, z0, z1)
