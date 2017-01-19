@@ -540,7 +540,6 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     self.settings.d_min = self.d_min_ctrl.GetValue()
     self.settings.z_min = self.z_min_ctrl.GetValue()
     self.settings.z_max = self.z_max_ctrl.GetValue()
-    print self.settings.beam_centre
     self.settings.beam_centre = (
       self.beam_fast_ctrl.GetValue(), self.beam_slow_ctrl.GetValue())
     self.settings.reverse_phi = self.reverse_phi_ctrl.GetValue()
