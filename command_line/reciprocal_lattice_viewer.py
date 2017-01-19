@@ -345,8 +345,8 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
     s0 = beam.get_s0()
     try:
       panel_id, beam_centre = detector.get_ray_intersection(beam.get_s0())
-    except RuntimeError:
-      pass
+    except RuntimeError, e:
+      print "Error calculating beam centre:", str(e)
     else:
       if self.settings.beam_centre != beam_centre:
         from dxtbx.model.detector_helpers import set_mosflm_beam_centre
@@ -540,6 +540,7 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     self.settings.d_min = self.d_min_ctrl.GetValue()
     self.settings.z_min = self.z_min_ctrl.GetValue()
     self.settings.z_max = self.z_max_ctrl.GetValue()
+    print self.settings.beam_centre
     self.settings.beam_centre = (
       self.beam_fast_ctrl.GetValue(), self.beam_slow_ctrl.GetValue())
     self.settings.reverse_phi = self.reverse_phi_ctrl.GetValue()
