@@ -225,7 +225,7 @@ class render_3d(object):
           bkg.append(tuple(self.viewer.settings.background_rgb))
         palette = bkg - palette
       n = palette.size() - 1
-      if reflections.get_flags(reflections.flags.indexed).count(True) == 0:
+      if self.reflections.get_flags(self.reflections.flags.indexed).count(True) == 0:
         if 'imageset_id' in reflections:
           imageset_id = reflections['imageset_id']
         else:
