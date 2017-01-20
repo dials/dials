@@ -53,6 +53,9 @@ mm_search_scope = 4.0
 wide_search_binning = 2
   .help = "Modify the coarseness of the wide grid search for the beam centre."
   .type = float(value_min=0)
+n_macro_cycles = 1
+  .type = int
+  .help = "Number of macro cycles for an iterative beam centre search."
 output {
   datablock = optimized_datablock.json
     .type = path
@@ -474,13 +477,19 @@ def run(args):
   dps_params.indexing.plot_search_scope = params.plot_search_scope
   dps_params.indexing.mm_search_scope = params.mm_search_scope
 
-  new_detector, new_beam = discover_better_experimental_model(
-    imagesets, reflections, params, dps_params, nproc=params.nproc,
-    wide_search_binning=params.wide_search_binning)
-  for imageset in imagesets:
-    imageset.set_detector(new_detector)
-    imageset.set_beam(new_beam)
+  for i in range(params.n_macro_cycles):
+    if params.n_macro_cycles > 1:
+      logger.info('Starting macro cycle %i' %(i+1))
+    new_detector, new_beam = discover_better_experimental_model(
+      imagesets, reflections, params, dps_params, nproc=params.nproc,
+      wide_search_binning=params.wide_search_binning)
+    for imageset in imagesets:
+      imageset.set_detector(new_detector)
+      imageset.set_beam(new_beam)
+    logger.info('')
+
   from dxtbx.serialize import dump
+  logger.info("Saving optimized datablock to %s" %params.output.datablock)
   dump.datablock(datablock, params.output.datablock)
 
 
