@@ -34,6 +34,10 @@ phil_scope = parse('''
     .type = int(value_min=0)
     .help = "Add padding around shoebox"
 
+  padding_is_background = False
+    .type = bool
+    .help = "Pad the reflection as background"
+
   output {
     reflections = 'shoeboxes.pickle'
       .type = str
@@ -125,8 +129,8 @@ class Script(object):
       x1 += params.padding
       y0 -= params.padding
       y1 += params.padding
-      z0 -= params.padding
-      z1 += params.padding
+      # z0 -= params.padding
+      # z1 += params.padding
       panel = reflections['panel']
       for i in range(len(reflections)):
         width, height = detector[panel[i]].get_image_size()
@@ -155,6 +159,7 @@ class Script(object):
 
     # Preserve masking
     if old_shoebox is not None:
+      from dials.algorithms.shoebox import MaskCode
       logger.info("Applying old shoebox mask")
       new_shoebox = reflections['shoebox']
       for i in range(len(reflections)):
@@ -171,6 +176,10 @@ class Script(object):
         z1 = bbox0[5] - bbox0[4] + z0
         mask2[z0:z1,y0:y1,x0:x1] = mask0
         mask1 = mask1.as_1d() | mask2.as_1d()
+        if params.padding_is_background:
+          selection = flex.size_t(range(len(mask1))).select(mask1 == MaskCode.Valid)
+          values = flex.int(len(selection), MaskCode.Valid | MaskCode.Background)
+          mask1.set_selected(selection, values)
         mask1.reshape(new_shoebox[i].mask.accessor())
         new_shoebox[i].mask = mask1
 
