@@ -23,6 +23,10 @@ dials.estimate_gain datablock.json
 phil_scope = iotbx.phil.parse("""\
   kernel_size = 10,10
     .type = ints(size=2, value_min=1)
+  max_images = 1
+    .type = int
+    .help = "For multi-file images (NeXus for example), report a gain for each"
+            "image, up to max_images, and then report an average gain"
   output {
     gain_map = None
       .type = str
@@ -30,56 +34,71 @@ phil_scope = iotbx.phil.parse("""\
   }
 """, process_includes=True)
 
-def estimate_gain(imageset, kernel_size=(10,10), output_gain_map=None):
+def estimate_gain(imageset, kernel_size=(10,10), output_gain_map=None, max_images = 1):
   detector = imageset.get_detector()
 
   from dials.algorithms.image.threshold import KabschDebug
+  gains = flex.double()
 
-  raw_data = imageset.get_raw_data(0)
+  for image_no in xrange(len(imageset)):
+    raw_data = imageset.get_raw_data(image_no)
 
-  gain_value = 1
-  gain_map = [flex.double(raw_data[i].accessor(), gain_value)
-              for i in range(len(detector))]
+    gain_value = 1
+    gain_map = [flex.double(raw_data[i].accessor(), gain_value)
+                for i in range(len(detector))]
 
-  mask = imageset.get_mask(0)
+    mask = imageset.get_mask(image_no)
 
-  min_local = 0
+    min_local = 0
 
-  # dummy values, shouldn't affect results
-  nsigma_b = 6
-  nsigma_s = 3
-  global_threshold = 0
+    # dummy values, shouldn't affect results
+    nsigma_b = 6
+    nsigma_s = 3
+    global_threshold = 0
 
-  kabsch_debug_list = []
-  for i_panel in range(len(detector)):
-    kabsch_debug_list.append(
-      KabschDebug(
-        raw_data[i_panel].as_double(), mask[i_panel], gain_map[i_panel],
-        kernel_size, nsigma_b, nsigma_s, global_threshold, min_local))
+    kabsch_debug_list = []
+    for i_panel in range(len(detector)):
+      kabsch_debug_list.append(
+        KabschDebug(
+          raw_data[i_panel].as_double(), mask[i_panel], gain_map[i_panel],
+          kernel_size, nsigma_b, nsigma_s, global_threshold, min_local))
 
-  dispersion = flex.double()
-  for kabsch in kabsch_debug_list:
-    dispersion.extend(kabsch.coefficient_of_variation().as_1d())
+    dispersion = flex.double()
+    for kabsch in kabsch_debug_list:
+      dispersion.extend(kabsch.coefficient_of_variation().as_1d())
 
-  sorted_dispersion = flex.sorted(dispersion)
-  from libtbx.math_utils import nearest_integer as nint
+    sorted_dispersion = flex.sorted(dispersion)
+    from libtbx.math_utils import nearest_integer as nint
 
-  q1 = sorted_dispersion[nint(len(sorted_dispersion)/4)]
-  q2 = sorted_dispersion[nint(len(sorted_dispersion)/2)]
-  q3 = sorted_dispersion[nint(len(sorted_dispersion)*3/4)]
-  iqr = q3-q1
+    q1 = sorted_dispersion[nint(len(sorted_dispersion)/4)]
+    q2 = sorted_dispersion[nint(len(sorted_dispersion)/2)]
+    q3 = sorted_dispersion[nint(len(sorted_dispersion)*3/4)]
+    iqr = q3-q1
 
-  print "q1, q2, q3: %.2f, %.2f, %.2f" %(q1, q2, q3)
+    print "q1, q2, q3: %.2f, %.2f, %.2f" %(q1, q2, q3)
 
-  inlier_sel = (sorted_dispersion > (q1 - 1.5*iqr)) & (sorted_dispersion < (q3 + 1.5*iqr))
-  sorted_dispersion = sorted_dispersion.select(inlier_sel)
-  gain = sorted_dispersion[nint(len(sorted_dispersion)/2)]
-  print "Estimated gain: %.2f" % gain
+    inlier_sel = (sorted_dispersion > (q1 - 1.5*iqr)) & (sorted_dispersion < (q3 + 1.5*iqr))
+    sorted_dispersion = sorted_dispersion.select(inlier_sel)
+    gain = sorted_dispersion[nint(len(sorted_dispersion)/2)]
+    print "Estimated gain: %.2f" % gain
+    gains.append(gain)
+
+    if image_no == 0:
+      gain0 = gain
+    if image_no+1 >= max_images:
+      break
+
+  if len(gains) > 1:
+    stats = flex.mean_and_variance(gains)
+    print "Average gain: %.2f +/- %.2f"%(stats.mean(),
+      stats.unweighted_sample_standard_deviation())
 
   if output_gain_map:
+    if len(gains) > 1:
+      raw_data = imageset.get_raw_data(0)
     # write the gain map
     import cPickle as pickle
-    gain_map = flex.double(flex.grid(raw_data[0].all()), gain)
+    gain_map = flex.double(flex.grid(raw_data[0].all()), gain0)
     pickle.dump(gain_map, open(output_gain_map, "w"),
                 protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -92,7 +111,7 @@ def estimate_gain(imageset, kernel_size=(10,10), output_gain_map=None):
     pyplot.ylim(0, 10)
     pyplot.show()
 
-  return gain
+  return gain0
 
 
 def run(args):
@@ -134,7 +153,7 @@ def run(args):
 
   assert len(imagesets) == 1
   imageset = imagesets[0]
-  estimate_gain(imageset, params.kernel_size, params.output.gain_map)
+  estimate_gain(imageset, params.kernel_size, params.output.gain_map, params.max_images)
 
   return
 
