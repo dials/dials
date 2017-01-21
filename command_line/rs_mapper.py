@@ -111,7 +111,12 @@ class Script(object):
                 self.process_imageset(imageset)
 
         recviewer.normalize_voxels(self.grid, self.cnts)
-        uc = uctbx.unit_cell((self.grid_size, self.grid_size, self.grid_size, 90, 90, 90))
+        # Let's use 1/(100A) as the unit so that the absolute numbers in the
+        # "cell dimensions" field of the ccp4 map are typical for normal
+        # MX maps. The values in 1/A would give the "cell dimensions" around
+        # or below 1 and some MX programs would not handle it well.
+        box_size = 100 * 2.0 / self.max_resolution
+        uc = uctbx.unit_cell((box_size, box_size, box_size, 90, 90, 90))
         ccp4_map.write_ccp4_map(self.map_file, uc, sgtbx.space_group("P1"),
                                 (0, 0, 0), self.grid.all(), self.grid,
                                 flex.std_string(["cctbx.miller.fft_map"]))
