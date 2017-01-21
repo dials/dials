@@ -31,6 +31,9 @@ class ReciprocalLatticeJson(render_3d):
     rlp = self.reflections['rlp']
     if n_digits is not None:
       rlp = rlp.round(n_digits)
+    flat_rlp = []
+    for r in rlp:
+        flat_rlp.extend(r)
 
     if 'imageset_id' in self.reflections:
       imageset_id = list(self.reflections['imageset_id'])
@@ -40,7 +43,7 @@ class ReciprocalLatticeJson(render_3d):
       expt_id = None
 
     d = {
-      'rlp': list(rlp),
+      'rlp': flat_rlp,
       'imageset_id': imageset_id,
       'experiment_id': expt_id,
     }
