@@ -196,7 +196,7 @@ phil_scope = parse('''
       .type = path
     compact = True
       .type = bool
-    n_digits = 3
+    n_digits = 6
       .type = int(value_min=1)
       .help = "Number of decimal places to be used for representing the"
               "reciprocal lattice points."
