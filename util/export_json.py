@@ -52,7 +52,7 @@ class ReciprocalLatticeJson(render_3d):
     if compact:
       text = json.dumps(d, separators=(',',':'), ensure_ascii=True)
     else:
-      text = json.dumps(d, indent=2, ensure_ascii=True)
+      text = json.dumps(d, separators=(',',': '), indent=1, ensure_ascii=True)
 
     if filename is not None:
       from libtbx import smart_open
