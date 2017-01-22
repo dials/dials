@@ -541,7 +541,7 @@ class JsonExporter(object):
     exporter.load_models(imagesets, reflections)
     exporter.as_json(
       filename=params.json.filename, compact=params.json.compact,
-      n_digits=params.json.n_digits)
+      n_digits=params.json.n_digits, datablocks=datablocks)
 
 
 if __name__ == '__main__':
