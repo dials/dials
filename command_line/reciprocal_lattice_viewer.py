@@ -659,6 +659,8 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
       self.draw_axis(self.beam_vector, "beam")
     if self.recip_latt_vectors is not None and self.settings.show_reciprocal_cell:
       for i, axes in enumerate(self.recip_latt_vectors):
+        if self.settings.experiment_ids:
+          if i not in self.settings.experiment_ids: continue
         j = (i + 1) % self.palette.size()
         color = self.palette[j]
         self.draw_cell(axes, color)
