@@ -226,6 +226,11 @@ geometry
       .help = "When overriding the scan, convert stills into sweeps"
       .short_caption = "Convert stills into sweeps"
 
+    convert_sweeps_to_stills = False
+      .type = bool
+      .help = "When overriding the scan, convert sweeps into stills"
+      .short_caption = "Convert sweeps into stills"
+
   }
 
   mosflm_beam_centre = None
