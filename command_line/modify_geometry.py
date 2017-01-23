@@ -1,5 +1,4 @@
 from __future__ import division
-from dials.array_family import flex
 import libtbx.phil
 
 help_message = '''

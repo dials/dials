@@ -1,10 +1,7 @@
 from __future__ import division
 
 def run():
-
   import os
-  import shutil
-  import fileinput
   import libtbx.load_env
   from libtbx import easy_run
   from libtbx.test_utils import show_diff

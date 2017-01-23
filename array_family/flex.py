@@ -391,7 +391,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     :return: The matches
 
     '''
-    from math import pi
     from collections import defaultdict
     import __builtin__
     logger.info("Matching reference spots with predicted reflections")
@@ -836,7 +835,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     '''
     from dials.algorithms.shoebox import OverlapFinder
     from itertools import groupby
-    from scitbx.array_family import shared
 
     # Expand the bbox if necessary
     if border > 0:

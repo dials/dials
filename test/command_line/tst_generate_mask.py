@@ -17,8 +17,6 @@ class Test(object):
   def run(self):
     from os.path import join, exists
     from libtbx import easy_run
-    from dials.array_family import flex
-
 
     assert(exists(join(self.path, "datablock.json")))
 

@@ -3,7 +3,6 @@ from __future__ import division
 def run():
   import os
   import libtbx.load_env
-  from libtbx.test_utils import show_diff
   from libtbx import easy_run
   from glob import glob
   try:

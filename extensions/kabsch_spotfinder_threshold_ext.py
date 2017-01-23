@@ -10,7 +10,6 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from libtbx.utils import Sorry
 from dials.interfaces import SpotFinderThresholdIface
 
 import logging

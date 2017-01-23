@@ -16,14 +16,11 @@ def dump_mtz_orientation(mtz_file):
   from iotbx import mtz
   from scitbx import matrix
   from scitbx.math.euler_angles import xyz_angles
-  import os.path
 
   m = mtz.object(mtz_file)
   for b in m.batches():
     rxyz = tuple(xyz_angles(matrix.sqr(b.umat())))
     print b.num(), '%7.4f %7.4f %7.4f' % rxyz
-
-  return
 
 if __name__ == '__main__':
   import sys

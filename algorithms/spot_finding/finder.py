@@ -267,7 +267,6 @@ class ExtractSpotsParallelTask(object):
     Call the function with th task and save the IO
 
     '''
-    from cStringIO import StringIO
     from dials.util import log
     import logging
     log.config_simple_cached()
@@ -503,7 +502,6 @@ class ExtractSpots(object):
     :return: The list of spot shoeboxes
 
     '''
-    from dials.util.command_line import Command
     from dials.array_family import flex
     from dxtbx.imageset import ImageSweep
     from dials.model.data import PixelListLabeller
@@ -607,7 +605,6 @@ class ExtractSpots(object):
     :return: The list of spot shoeboxes
 
     '''
-    from dials.util.command_line import Command
     from dials.array_family import flex
     from dxtbx.imageset import ImageSweep
     from dials.model.data import PixelListLabeller
@@ -805,9 +802,7 @@ class SpotFinder(object):
     :return: The observed spots
 
     '''
-    from dials.util.masking import MaskGenerator
     from dials.array_family import flex
-    from dials.util.command_line import Command
     from dxtbx.imageset import ImageSweep
 
     # The input mask

@@ -18,9 +18,8 @@ class Test(object):
 
   def run(self):
 
-    from os.path import join, exists
+    from os.path import join
     from libtbx import easy_run
-    import os
 
     input_filename = join(self.path, "datablock.json")
     output_filename = "output_datablock.json"

@@ -13,8 +13,6 @@ from __future__ import division
 import wx
 import numpy as np
 
-from dials.algorithms.shoebox import MaskCode
-
 from dials.array_family import flex
 from dials_viewer_ext import rgb_img
 

@@ -230,7 +230,6 @@ class Processor(object):
         result[0].reflections = None
         result[0].data = None
       def execute_task(task):
-        from cStringIO import StringIO
         from dials.util import log
         import logging
         log.config_simple_cached()
@@ -650,7 +649,7 @@ class Manager(object):
     Compute the processing block size.
 
     '''
-    from math import ceil, pi
+    from math import ceil
     if self.params.block.size == libtbx.Auto:
       if self.params.mp.nproc == 1 \
           and not self.params.debug.output \

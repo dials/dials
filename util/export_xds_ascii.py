@@ -12,7 +12,6 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
   an XDS_ASCII.HKL formatted text file.'''
 
   from dials.array_family import flex
-  import math
 
   # for the moment assume (and assert) that we will convert data from exactly
   # one lattice...
@@ -81,7 +80,7 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
   unit_cell = experiment.crystal.get_unit_cell()
 
   from scitbx.array_family import flex
-  from math import floor, sqrt
+  from math import sqrt
 
   assert(not experiment.scan is None)
   image_range = experiment.scan.get_image_range()

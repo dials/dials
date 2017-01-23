@@ -112,7 +112,6 @@ class ProcessorImageBase(object):
         result[0].reflections = None
         result[0].data = None
       def execute_task(task):
-        from cStringIO import StringIO
         from dials.util import log
         import logging
         log.config_simple_cached()
@@ -499,7 +498,6 @@ class InitializerRot(object):
 
     '''
     from dials.array_family import flex
-    from scitbx.array_family import shared
 
     # Compute some reflection properties
     reflections.compute_zeta_multi(self.experiments)

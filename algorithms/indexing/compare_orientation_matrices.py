@@ -1,5 +1,4 @@
 from __future__ import division
-from scitbx.math import euler_angles as euler
 from scitbx.math import r3_rotation_axis_and_angle_from_matrix
 from scitbx import matrix
 import math

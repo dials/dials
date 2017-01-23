@@ -15,8 +15,8 @@ from __future__ import division
 from libtbx.test_utils import approx_equal
 
 from cctbx.array_family import flex
-from dials_scaling_helpers_ext import (GroupedObservations,
-  minimum_multiplicity_selection)
+from dials_scaling_helpers_ext import GroupedObservations, \
+  minimum_multiplicity_selection
 from dials.algorithms.scaling.observation_manager import ObservationManager
 
 def test_minimum_multiplicity_selection():

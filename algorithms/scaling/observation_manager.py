@@ -15,8 +15,7 @@ from __future__ import division
 from dials.array_family import flex
 import cctbx.crystal
 import cctbx.miller
-from dials_scaling_helpers_ext import (GroupedObservations,
-  minimum_multiplicity_selection)
+from dials_scaling_helpers_ext import GroupedObservations, minimum_multiplicity_selection
 from libtbx import phil
 from libtbx.utils import Sorry
 

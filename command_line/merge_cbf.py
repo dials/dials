@@ -141,7 +141,6 @@ def merge_cbf(imageset, n_images, out_prefix="sum_"):
   return
 
 def run():
-  import sys
   import libtbx.load_env
 
   from dials.util.options import OptionParser

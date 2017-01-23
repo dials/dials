@@ -532,7 +532,6 @@ def main(reflections, experiment, params):
 def run(args):
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments
-  from dials.util.options import flatten_datablocks
   from dials.util.options import flatten_reflections
   import libtbx.load_env
 

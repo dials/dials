@@ -75,12 +75,8 @@ class Script(object):
 
   def run(self):
     ''' Perform the integration. '''
-    from dials.util.command_line import heading
     from dials.util.options import flatten_datablocks, flatten_experiments
     from dials.util import log
-    from time import time
-    from libtbx.utils import Sorry
-    from dials.array_family import flex
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=False)

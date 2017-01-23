@@ -217,9 +217,9 @@ class Script(object):
         CrystalUnitCellParameterisation
     from dials.algorithms.refinement.parameterisation.parameter_report import \
         ParameterReporter
-    from dials.algorithms.refinement.two_theta_refiner import (
-      TwoThetaReflectionManager, TwoThetaTarget, TwoThetaExperimentsPredictor,
-      TwoThetaPredictionParameterisation)
+    from dials.algorithms.refinement.two_theta_refiner import \
+      TwoThetaReflectionManager, TwoThetaTarget, TwoThetaExperimentsPredictor, \
+      TwoThetaPredictionParameterisation
 
     verb = params.refinement.verbosity
 

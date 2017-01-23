@@ -9,7 +9,6 @@
 
 from __future__ import division
 
-from iotbx.detectors import ImageFactory
 from scitbx.array_family import flex
 from cctbx import uctbx, sgtbx
 from iotbx import ccp4_map, phil
@@ -75,7 +74,6 @@ class Script(object):
             read_datablocks_from_images=True)
 
     def run(self):
-        from dials.util.command_line import Command
         from dials.util.options import flatten_datablocks
 
         # Parse the command line

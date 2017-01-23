@@ -53,8 +53,6 @@ class Script(object):
 
   def run(self):
     '''Execute the script.'''
-    from dials.util.command_line import Command
-    from dials.array_family import flex
     from dials.util.options import flatten_experiments
 
     # Parse the command line

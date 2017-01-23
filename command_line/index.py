@@ -15,7 +15,6 @@ except ImportError, e:
 
 import copy
 
-from libtbx.phil import command_line
 import iotbx.phil
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections

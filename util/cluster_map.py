@@ -41,7 +41,6 @@ def cluster_map(function, iterable, callback=None):
   from os.path import join
   import os
   import drmaa
-  import shelve
 
   # Set the working directory and make sure it exists
   cwd = join(os.getcwd(), "cluster_io_data")

@@ -18,7 +18,6 @@ certain flags
 # python imports
 from __future__ import division
 import os
-import shutil
 from libtbx import easy_run
 from libtbx.test_utils import open_tmp_directory
 import cPickle as pickle

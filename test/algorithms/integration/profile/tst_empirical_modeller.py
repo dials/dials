@@ -56,8 +56,6 @@ class Test(object):
     print 'OK'
 
   def tst_with_systematically_offset_profiles(self):
-    from dials.algorithms.image.centroid import centroid_image
-    from scitbx import matrix
     from scitbx.array_family import flex
 
     # Generate identical non-negative profiles

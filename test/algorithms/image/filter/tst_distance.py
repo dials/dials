@@ -9,9 +9,7 @@ class Test:
   def run(self):
     from dials.algorithms.image.filter import manhatten_distance
     from scitbx.array_family import flex
-    from random import randint
     from math import sqrt
-    import sys
 
     data = flex.bool(flex.grid(100, 100), True)
 

@@ -1409,7 +1409,6 @@ class Script(object):
   def run(self):
     ''' Run the script. '''
     from dials.util.command_line import Command
-    from libtbx.utils import Sorry
 
     # Parse the command line arguments
     params, options = self.parser.parse_args(show_diff_phil=True)

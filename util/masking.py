@@ -136,9 +136,7 @@ class MaskGenerator(object):
     from dials.util import mask_untrusted_rectangle
     from dials.util import mask_untrusted_circle
     from dials.util import mask_untrusted_polygon
-    from dials.util import mask_untrusted_resolution_range
     from dials.array_family import flex
-    from math import floor, ceil
 
     # Get the detector and beam
     detector = imageset.get_detector()

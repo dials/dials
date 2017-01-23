@@ -1,3 +1,4 @@
+from __future__ import division
 
 class html_report(object):
 

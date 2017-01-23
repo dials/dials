@@ -20,7 +20,6 @@ class Test(object):
 
     from os.path import join, exists
     from libtbx import easy_run
-    import os
 
     # Run a few commands from stdin
     stdin_lines = [

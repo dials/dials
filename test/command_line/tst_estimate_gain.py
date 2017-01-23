@@ -1,10 +1,7 @@
-
 from __future__ import division
 from dials.array_family import flex # import dependency
 
-
 class Test(object):
-
   def __init__(self):
     from os.path import join
     import libtbx.load_env
@@ -17,10 +14,8 @@ class Test(object):
     self.path = join(dials_regression, "centroid_test_data")
 
   def run(self):
-
-    from os.path import join, exists
+    from os.path import join
     from libtbx import easy_run
-    import os
 
     input_filename = join(self.path, "datablock.json")
 

@@ -19,7 +19,6 @@ from dials.algorithms.integration.processor import ProcessorBuilder
 from dials.algorithms.integration.processor import job
 from dials.algorithms.integration.image_integrator import ImageIntegrator
 from dials import phil
-import libtbx
 
 import logging
 logger = logging.getLogger(__name__)
@@ -185,7 +184,7 @@ def hist(data, width=80, symbol='#', prefix=''):
   :return: The histogram string
 
   '''
-  from collections import defaultdict, Counter
+  from collections import Counter
   from math import log10, floor
   assert len(data) > 0, "Need > 0 reflections"
   assert width > 0, "Width should be > 0"
@@ -380,7 +379,6 @@ class InitializerRot(object):
 
     '''
     from dials.array_family import flex
-    from scitbx.array_family import shared
 
     # Compute some reflection properties
     reflections.compute_zeta_multi(self.experiments)

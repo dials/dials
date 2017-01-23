@@ -69,7 +69,6 @@ class Script(object):
 
   def run(self):
     '''Execute the script.'''
-    from dials.array_family import flex
     from dials.util.options import flatten_datablocks
     from time import time
     from dials.util import log

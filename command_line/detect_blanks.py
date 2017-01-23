@@ -6,10 +6,9 @@ import libtbx.load_env
 import logging
 logger = logging.getLogger(libtbx.env.dispatcher_name)
 
-from libtbx.math_utils import iceil, ifloor
+from libtbx.math_utils import iceil
 import libtbx.phil
 from libtbx.utils import Sorry
-from scitbx import matrix
 from scitbx.array_family import flex
 
 

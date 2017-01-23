@@ -2,7 +2,6 @@ from __future__ import division
 
 import os
 
-from cctbx.array_family import flex
 import iotbx.phil
 
 

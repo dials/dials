@@ -11,9 +11,6 @@
 
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 from __future__ import division
-from copy import deepcopy
-from libtbx.utils import Sorry
-from dials.array_family import flex
 
 import libtbx.load_env
 import logging
@@ -40,7 +37,6 @@ def run(args):
   from dials.util.options import OptionParser
   from dials.util.options import flatten_reflections
   from dials.util.options import flatten_experiments
-  from dials.array_family import flex
 
   parser = OptionParser(
     usage=usage,

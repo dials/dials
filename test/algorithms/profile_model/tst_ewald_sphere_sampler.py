@@ -4,11 +4,7 @@ from __future__ import division
 class Test(object):
 
   def __init__(self):
-    from os.path import join
     from os.path import join, exists
-    from libtbx import easy_run
-    import os
-    from uuid import uuid4
     import dials
     import libtbx.load_env
     try:

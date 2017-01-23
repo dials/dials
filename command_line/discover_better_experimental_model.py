@@ -3,7 +3,6 @@ from __future__ import division
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 import math
-from libtbx.phil import command_line
 import iotbx.phil
 from scitbx import matrix
 from cctbx.array_family import flex

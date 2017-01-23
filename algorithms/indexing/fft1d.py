@@ -12,7 +12,6 @@
 
 from __future__ import division
 
-import math
 from scitbx.array_family import flex
 from dials.algorithms.indexing.indexer import indexer_base
 from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList

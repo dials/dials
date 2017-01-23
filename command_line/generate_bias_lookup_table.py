@@ -1,5 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.generate_bias_lookup_table
 
+from __future__ import division
+
 def sum_of_erf(mu, sigma, N=1000):
   '''
   Compute the sum of erf term

@@ -12,7 +12,6 @@ from dials.algorithms.refinement.parameterisation.model_parameters \
         import Parameter, ModelParameterisation
 import abc
 from scitbx.array_family import flex
-from scitbx import sparse
 from dials_refinement_helpers_ext import GaussianSmoother as GS
 
 # reusable PHIL string for options affecting scan-varying parameterisation

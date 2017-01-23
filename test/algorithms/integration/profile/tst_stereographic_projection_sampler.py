@@ -20,7 +20,7 @@ class Test(object):
   def run(self):
 
     from dials.array_family import flex
-    from math import acos, atan2, sqrt, atan, pi, sin, cos
+    from math import acos, sqrt, atan, pi, sin, cos
     from scitbx import  matrix
     from dials.algorithms.spot_prediction import ScanStaticRayPredictor
 

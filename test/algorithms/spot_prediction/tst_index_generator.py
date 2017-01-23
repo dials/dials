@@ -1,7 +1,7 @@
 from __future__ import division
 
 import libtbx.load_env
-from os.path import realpath, dirname, join, isdir
+from os.path import join, isdir
 have_dials_regression = libtbx.env.has_module("dials_regression")
 if have_dials_regression:
   dials_regression = libtbx.env.find_in_repositories(

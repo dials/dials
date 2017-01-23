@@ -38,7 +38,6 @@ def run(args):
 
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments
-  from libtbx.utils import Sorry
   import libtbx.load_env
 
   usage = "%s [options] experiments.json" %libtbx.env.dispatcher_name

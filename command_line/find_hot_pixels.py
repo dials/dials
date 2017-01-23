@@ -1,11 +1,9 @@
 from __future__ import division
 
-from libtbx.phil import command_line
 import iotbx.phil
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections
 from dials.util.options import flatten_datablocks
-from dials.util.options import flatten_experiments
 
 import libtbx.load_env
 import logging

@@ -39,7 +39,6 @@ def run(args):
   from dials.util.options import flatten_reflections
   from scitbx.array_family import flex
   from scitbx import matrix
-  from libtbx.phil import command_line
   from libtbx.utils import Sorry
   parser = OptionParser(
     usage=usage,

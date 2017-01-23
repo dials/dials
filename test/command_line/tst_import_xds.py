@@ -89,7 +89,7 @@ class Test(object):
 
 
   def tst_from_xds_files(self):
-    from os.path import abspath, exists, join
+    from os.path import exists, join
     from libtbx import easy_run
 
     # Import from the image files

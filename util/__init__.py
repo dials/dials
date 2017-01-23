@@ -22,7 +22,7 @@ def debug_console():
   # use exception trick to pick up the current frame
   try:
     raise None
-  except:
+  except: # intentional
     frame = sys.exc_info()[2].tb_frame.f_back
 
   # evaluate commands in current namespace

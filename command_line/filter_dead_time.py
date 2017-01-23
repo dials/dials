@@ -26,7 +26,6 @@ def run(args):
 
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments
-  from dials.util.options import flatten_datablocks
   from dials.util.options import flatten_reflections
   import libtbx.load_env
 
@@ -51,8 +50,6 @@ def run(args):
 
   experiment = experiments[0]
   reflections = reflections[0]
-
-  from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
 
   sel = reflections.get_flags(reflections.flags.integrated)
   reflections = reflections.select(sel)

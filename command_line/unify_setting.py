@@ -14,7 +14,6 @@ from __future__ import division
 
 from libtbx.phil import command_line
 import iotbx.phil
-from cctbx import sgtbx
 from dials.util.options import OptionParser
 
 help_message = '''

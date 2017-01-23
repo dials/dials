@@ -18,7 +18,6 @@ class Test(object):
     from os.path import join, exists
     from libtbx import easy_run
     import os
-    from uuid import uuid4
 
     os.mkdir('simple')
     os.mkdir('robust')

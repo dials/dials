@@ -9,9 +9,7 @@ class Test:
   def run(self):
     from dials.algorithms.image.fill_holes import simple_fill
     from scitbx.array_family import flex
-    from random import randint
     from math import sqrt
-    import sys
 
     mask = flex.bool(flex.grid(100, 100), True)
     data = flex.double(flex.grid(100, 100), True)

@@ -2465,7 +2465,6 @@ class Script(object):
   def run(self):
     ''' Run the script. '''
     from dials.util.command_line import Command
-    from libtbx.utils import Sorry
     from dials.util.options import flatten_reflections, flatten_experiments
 
     # Parse the command line arguments

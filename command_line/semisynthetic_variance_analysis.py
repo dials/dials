@@ -27,7 +27,7 @@ def semisynthetic_variance_analysis(semisynthetic_integrated_data_files,
   import cPickle as pickle
   import math
   from dials.array_family import flex
-  from dials.util.add_hash import add_hash, dehash
+  from dials.util.add_hash import add_hash
 
   integrated_data_sets = [pickle.load(open(data_file, 'rb')) for
                           data_file in semisynthetic_integrated_data_files]

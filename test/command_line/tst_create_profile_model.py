@@ -17,8 +17,6 @@ class Test(object):
   def run(self):
     from os.path import join
     from libtbx import easy_run
-    from dials.algorithms.profile_model.factory import phil_scope
-    from libtbx.phil import parse
     from dxtbx.model.experiment.experiment_list import ExperimentListFactory
 
     # Call dials.create_profile_model

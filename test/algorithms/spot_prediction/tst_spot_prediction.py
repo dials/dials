@@ -1,5 +1,5 @@
 from __future__ import division
-from os.path import realpath, dirname, join, isdir
+from os.path import join, isdir
 import libtbx.load_env
 
 

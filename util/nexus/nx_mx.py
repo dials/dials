@@ -12,7 +12,6 @@ schema_url = 'https://github.com/nexusformat/definitions/blob/master/application
 def convert_to_nexus_beam_direction(experiments):
   from collections import defaultdict
   from scitbx import matrix
-  from math import acos
   from copy import deepcopy
 
   EPS = 1e-7
@@ -157,7 +156,7 @@ def get_nx_dials(handle, path):
 def dump_beam(entry, beam):
   ''' Export the beam model. '''
   from scitbx import matrix
-  from math import sin, cos, acos, pi
+  from math import sin, cos, pi
 
   EPS = 1e-7
 
@@ -433,7 +432,7 @@ def dump_details(entry):
 
 def load_beam(entry):
   from dxtbx.model import Beam
-  from math import sqrt, atan, cos, sin, pi, acos
+  from math import sqrt, cos, sin, pi
   from scitbx import matrix
 
   EPS = 1e-7
@@ -650,7 +649,7 @@ def load_crystal(entry):
 
 def dump(entry, experiments):
   from dials.array_family import flex
-  from dxtbx.imageset import ImageSet, ImageSweep
+  from dxtbx.imageset import ImageSweep
 
   print "Dumping NXmx"
 

@@ -12,10 +12,7 @@
 and the overall scale."""
 
 from __future__ import division
-from libtbx import phil
-from libtbx.utils import Sorry
 from scitbx import sparse
-from dials.array_family import flex
 from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \
         import GaussianSmoother, ScanVaryingParameterSet
 from dials_scaling_helpers_ext import row_multiply

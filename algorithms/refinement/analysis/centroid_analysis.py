@@ -11,7 +11,7 @@
 outlier rejection parameters automatically"""
 
 from __future__ import division
-from math import pi, floor, ceil
+from math import pi
 from dials.array_family import flex
 from scitbx.math.periodogram import Periodogram
 

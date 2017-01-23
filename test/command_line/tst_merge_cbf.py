@@ -2,8 +2,7 @@ from __future__ import division
 import glob
 import os
 from libtbx import easy_run
-from libtbx.test_utils import approx_equal, open_tmp_directory
-from cctbx import uctbx
+from libtbx.test_utils import open_tmp_directory
 
 import libtbx.load_env
 have_dials_regression = libtbx.env.has_module("dials_regression")

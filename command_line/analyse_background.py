@@ -44,10 +44,7 @@ class Script(object):
 
   def run(self):
     ''' Analyse the background '''
-    from dials.util.command_line import heading
     from dials.util.options import flatten_experiments
-    from time import time
-    from libtbx.utils import Sorry
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=False)

@@ -1,4 +1,3 @@
-
 from __future__ import division
 
 def test_polarization_conversion():
@@ -6,7 +5,7 @@ def test_polarization_conversion():
   from scitbx import matrix
   from dials.util.nexus.nx_mx import polarization_normal_to_stokes
   from dials.util.nexus.nx_mx import polarization_stokes_to_normal
-  from math import acos, pi, fmod
+  from math import pi
 
   EPS = 1e-7
 

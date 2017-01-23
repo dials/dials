@@ -11,7 +11,6 @@ from __future__ import division
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from libtbx.utils import plural_s
 from cctbx.array_family import flex
 import math
 

@@ -89,9 +89,7 @@ def dump_text(filename, set0, set1):
       fout.write('%f %f\n' % (_0[1], _1[1]))
 
 def get_symop_correlation_coefficients(miller_array, use_binning=False):
-  from copy import deepcopy
   from scitbx.array_family import flex
-  from cctbx import miller
   corr_coeffs = flex.double()
   n_refs = flex.int()
   space_group = miller_array.space_group()
@@ -205,7 +203,6 @@ def get_indexing_offset_correlation_coefficients(
       reflections, crystal, map_to_asu=map_to_asu,
       grid_h=grid_h, grid_k=grid_k, grid_l=grid_l, reference=reference)
 
-  from copy import deepcopy
   from dials.array_family import flex
 
   space_group = crystal.get_space_group()

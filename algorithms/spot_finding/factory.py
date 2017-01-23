@@ -570,7 +570,6 @@ class SpotFinderFactory(object):
 
     '''
     from dials.algorithms import shoebox
-    from cctbx import crystal
 
     # Initialise an empty list of filters
     filters = []

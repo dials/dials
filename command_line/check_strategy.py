@@ -94,7 +94,6 @@ def run(args):
 
 
 def filter_shadowed_reflections(experiments, reflections):
-  from dials.util import mask_untrusted_polygon
   from dials.util import is_inside_polygon
   shadowed = flex.bool(reflections.size(), False)
   for expt_id in range(len(experiments)):

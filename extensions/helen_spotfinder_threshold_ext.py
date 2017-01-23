@@ -10,9 +10,7 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from libtbx.utils import Sorry
 from dials.interfaces import SpotFinderThresholdIface
-
 
 class HelenSpotFinderThresholdExt(SpotFinderThresholdIface):
   ''' Extensions to do spot finding threshold. '''

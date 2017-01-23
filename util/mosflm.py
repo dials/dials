@@ -10,9 +10,7 @@
 #  included in the root directory of this package.
 from __future__ import division
 
-import math
 import os
-from scitbx import matrix
 from dxtbx.model.crystal import crystal_model
 
 
