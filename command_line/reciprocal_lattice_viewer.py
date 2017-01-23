@@ -719,7 +719,6 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     glVertex3f(*farpoint.elems)
     glVertex3f(*(farpoint - bstar).elems)
     glVertex3f(*(farpoint - bstar - cstar).elems)
-    glVertex3f(*(farpoint - bstar - cstar).elems)
     glVertex3f(*(farpoint - cstar).elems)
     glEnd()
     # b* face
@@ -727,14 +726,12 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     glVertex3f(*farpoint.elems)
     glVertex3f(*(farpoint - astar).elems)
     glVertex3f(*(farpoint - astar - cstar).elems)
-    glVertex3f(*(farpoint - astar - cstar).elems)
     glVertex3f(*(farpoint - cstar).elems)
     glEnd()
     # c* face
     glBegin(GL_LINE_LOOP)
     glVertex3f(*farpoint.elems)
     glVertex3f(*(farpoint - bstar).elems)
-    glVertex3f(*(farpoint - bstar - astar).elems)
     glVertex3f(*(farpoint - bstar - astar).elems)
     glVertex3f(*(farpoint - astar).elems)
     glEnd()
