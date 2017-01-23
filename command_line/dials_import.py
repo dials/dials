@@ -362,6 +362,9 @@ class ManualGeometryUpdater(object):
     Override the parameters
 
     '''
+    if self.params.geometry.scan.convert_sweeps_to_stills:
+      from dxtbx.imageset import ImageSet
+      imageset = ImageSet(reader=imageset.reader())
     from dxtbx.imageset import ImageSweep
     if isinstance(imageset, ImageSweep):
       self.override_beam(
