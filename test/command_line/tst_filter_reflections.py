@@ -16,7 +16,7 @@ certain flags
 """
 
 # python imports
-from __future__ import division
+from __future__ import absolute_import, division
 import os
 from libtbx import easy_run
 from libtbx.test_utils import open_tmp_directory

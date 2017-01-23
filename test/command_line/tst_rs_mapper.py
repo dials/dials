@@ -15,7 +15,7 @@ Test dials.rs_mapper on images if dials_regression is present.
 """
 
 # python imports
-from __future__ import division
+from __future__ import absolute_import, division
 import os
 import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx import easy_run

@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 
 def exercise_polygon():
   from dials.util import is_inside_polygon

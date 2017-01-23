@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 
 class cd(object):
   def __init__(self, path):
