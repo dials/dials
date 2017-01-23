@@ -36,6 +36,8 @@ phil_scope= libtbx.phil.parse("""
     .type = bool
   show_beam_vector = False
     .type = bool
+  show_reciprocal_cell = False
+    .type = bool
   d_min = None
     .type = float(value_min=0.0)
   z_min = None
@@ -226,6 +228,7 @@ class render_3d(object):
         for j in range(len(palette)):
           bkg.append(tuple(self.viewer.settings.background_rgb))
         palette = bkg - palette
+      self.viewer.set_palette(palette)
       n = palette.size() - 1
       if self.reflections.get_flags(self.reflections.flags.indexed).count(True) == 0:
         if 'imageset_id' in reflections:
@@ -418,6 +421,10 @@ class settings_window (wxtbx.utils.SettingsPanel) :
       setting="show_beam_vector",
       label="Show beam vector")
     self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
+    ctrls = self.create_controls(
+      setting="show_reciprocal_cell",
+      label="Show reciprocal cell")
+    self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
     self.reverse_phi_ctrl = self.create_controls(
       setting="reverse_phi",
       label="Invert rotation axis")[0]
@@ -580,6 +587,7 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     self.settings = settings
     self.points = flex.vec3_double()
     self.colors = None
+    self.palette = None
     self.rotation_axis = None
     self.beam_vector = None
     self.recip_latt_vectors = None
@@ -601,6 +609,9 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
   def set_colors(self, colors):
     assert len(colors) == len(self.points)
     self.colors = colors
+
+  def set_palette(self, palette):
+    self.palette = palette
 
   def draw_points(self):
     if self.points_display_list is None:
@@ -646,6 +657,11 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
       self.draw_axis(self.rotation_axis, "phi")
     if self.beam_vector is not None and self.settings.show_beam_vector:
       self.draw_axis(self.beam_vector, "beam")
+    if self.recip_latt_vectors is not None and self.settings.show_reciprocal_cell:
+      for i, axes in enumerate(self.recip_latt_vectors):
+        j = (i + 1) % self.palette.size()
+        color = self.palette[j]
+        self.draw_cell(axes, color)
     self.GetParent().update_statusbar()
 
   def draw_axis(self, axis, label):
@@ -668,6 +684,59 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     glBegin(GL_LINES)
     glVertex3f(0.,0.,0.)
     glVertex3f(-axis[0]*scale, -axis[1]*scale, -axis[2]*scale)
+    glEnd()
+    glDisable(GL_LINE_STIPPLE)
+
+  def draw_cell(self, axes, color):
+    from scitbx import matrix
+    # the points are scaled by 100 so must do that here too
+    astar = 100.* matrix.col(axes[0])
+    bstar = 100.* matrix.col(axes[1])
+    cstar = 100.* matrix.col(axes[2])
+    gltbx.fonts.ucs_bitmap_8x13.setup_call_lists()
+    glDisable(GL_LIGHTING)
+    glColor3f(*color)
+    glLineWidth(2.0)
+    glBegin(GL_LINES)
+    glVertex3f(0.,0.,0.)
+    glVertex3f(*astar.elems)
+    glVertex3f(0.,0.,0.)
+    glVertex3f(*bstar.elems)
+    glVertex3f(0.,0.,0.)
+    glVertex3f(*cstar.elems)
+    glEnd()
+    glRasterPos3f(*(1.01 * astar).elems)
+    gltbx.fonts.ucs_bitmap_8x13.render_string("a*")
+    glRasterPos3f(*(1.01 * bstar).elems)
+    gltbx.fonts.ucs_bitmap_8x13.render_string("b*")
+    glRasterPos3f(*(1.01 * cstar).elems)
+    gltbx.fonts.ucs_bitmap_8x13.render_string("c*")
+    glEnable(GL_LINE_STIPPLE)
+    glLineStipple(4, 0xAAAA)
+    farpoint = astar + bstar + cstar
+    # a* face
+    glBegin(GL_LINE_LOOP)
+    glVertex3f(*farpoint.elems)
+    glVertex3f(*(farpoint - bstar).elems)
+    glVertex3f(*(farpoint - bstar - cstar).elems)
+    glVertex3f(*(farpoint - bstar - cstar).elems)
+    glVertex3f(*(farpoint - cstar).elems)
+    glEnd()
+    # b* face
+    glBegin(GL_LINE_LOOP)
+    glVertex3f(*farpoint.elems)
+    glVertex3f(*(farpoint - astar).elems)
+    glVertex3f(*(farpoint - astar - cstar).elems)
+    glVertex3f(*(farpoint - astar - cstar).elems)
+    glVertex3f(*(farpoint - cstar).elems)
+    glEnd()
+    # c* face
+    glBegin(GL_LINE_LOOP)
+    glVertex3f(*farpoint.elems)
+    glVertex3f(*(farpoint - bstar).elems)
+    glVertex3f(*(farpoint - bstar - astar).elems)
+    glVertex3f(*(farpoint - bstar - astar).elems)
+    glVertex3f(*(farpoint - astar).elems)
     glEnd()
     glDisable(GL_LINE_STIPPLE)
 
