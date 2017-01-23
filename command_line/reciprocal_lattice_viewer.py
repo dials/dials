@@ -70,14 +70,13 @@ class render_3d(object):
     self.reflections = None
     self.goniometer_orig = None
 
-  def load_models(self, imagesets, reflections):
+  def load_models(self, imagesets, reflections, crystals):
     self.imagesets = imagesets
     self.reflections_input = reflections
     if self.imagesets[0].get_goniometer() is not None:
       self.viewer.set_rotation_axis(
         self.imagesets[0].get_goniometer().get_rotation_axis())
     self.viewer.set_beam_vector(self.imagesets[0].get_beam().get_s0())
-
     detector = self.imagesets[0].get_detector()
     beam = self.imagesets[0].get_beam()
     if self.settings.beam_centre is None:
@@ -90,6 +89,9 @@ class render_3d(object):
       from dxtbx.model.detector_helpers import set_mosflm_beam_centre
       set_mosflm_beam_centre(detector, beam, tuple(reversed(
         self.settings.beam_centre)))
+    if crystals is not None:
+      vecs = [c.get_A().transpose().as_list_of_lists() for c in crystals]
+      self.viewer.set_reciprocal_lattice_vectors(vecs)
     self.map_points_to_reciprocal_space()
     self.set_points()
 
@@ -267,8 +269,8 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
     self.viewer.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
     self.viewer.SetFocus()
 
-  def load_models(self, imagesets, reflections):
-    render_3d.load_models(self, imagesets, reflections)
+  def load_models(self, imagesets, reflections, crystals):
+    render_3d.load_models(self, imagesets, reflections, crystals)
     if self.settings.beam_centre is not None:
       self.settings_panel.beam_fast_ctrl.SetValue(self.settings.beam_centre[0])
       self.settings_panel.beam_slow_ctrl.SetValue(self.settings.beam_centre[1])
@@ -580,6 +582,7 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     self.colors = None
     self.rotation_axis = None
     self.beam_vector = None
+    self.recip_latt_vectors = None
     self.flag_show_minimum_covering_sphere = False
     self.minimum_covering_sphere = None
     self.field_of_view_y = 0.001
@@ -616,6 +619,9 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
 
   def set_beam_vector(self, beam):
     self.beam_vector = beam
+
+  def set_reciprocal_lattice_vectors(self, vectors_per_crystal):
+    self.recip_latt_vectors = vectors_per_crystal
 
   #--- user input and settings
   def update_settings (self) :
@@ -712,8 +718,10 @@ def run(args):
 
   if len(datablocks) == 0 and len(experiments) > 0:
     imagesets = experiments.imagesets()
+    crystals = experiments.crystals()
   else:
     imagesets = []
+    crystals = None
     for datablock in datablocks:
       imagesets.extend(datablock.extract_imagesets())
 
@@ -732,7 +740,7 @@ def run(args):
   a.settings = params
   f = ReciprocalLatticeViewer(
     None, -1, "Reflection data viewer", size=(1024,768))
-  f.load_models(imagesets, reflections)
+  f.load_models(imagesets, reflections, crystals)
   f.Show()
   a.SetTopWindow(f)
   #a.Bind(wx.EVT_WINDOW_DESTROY, lambda evt: tb_icon.Destroy(), f)
