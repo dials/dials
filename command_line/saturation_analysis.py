@@ -34,6 +34,16 @@ def saturation_analysis(data_files, value_column):
   # construct XYZ pixel position search target
 
   reference_data = strip_not_integrated(reference_data)
+
+  # keep only data with I/sig(I) > 3 for reference
+  strong = (reference_data[value_column] > 3 * flex.sqrt(
+    reference_data[variance_column]))
+
+  print 'Keeping %d strong reflections of %d' % (strong.count(True),
+                                                 len(reference_data))
+
+  reference_data = reference_data.select(strong)
+
   xyz = reference_data['xyzcal.px'].as_double()
   ann = ann_adaptor(data=xyz, dim=3, k=1)
 
