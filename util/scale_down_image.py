@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 
 from dials.util import scale_down_array
 
@@ -84,4 +84,3 @@ def scale_down_image(in_image, out_image, scale_factor):
   sum_image = flex.sum(image.as_1d().select(image.as_1d() > 0))
   sum_scaled_image = flex.sum(scaled_image.select(scaled_image > 0))
   write_image_from_flex_array(out_image, scaled_image, header)
-  return

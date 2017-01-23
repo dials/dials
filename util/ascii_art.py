@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 
 def spot_counts_per_image_plot(reflections, char='*', width=60, height=10):
   from dials.array_family import flex

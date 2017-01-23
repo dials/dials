@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 import rstbx.viewer.display
 import wx
 from rstbx.slip_viewer.frame import XrayFrame

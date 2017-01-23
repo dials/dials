@@ -1,5 +1,5 @@
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 schema_url = 'https://github.com/nexusformat/definitions/blob/master/contributed_definitions/NXdiffraction.nxdl.xml'
 

@@ -9,7 +9,7 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import division
+from __future__ import absolute_import, division
 import logging
 
 def config(verbosity=1, info='', debug=''):
@@ -217,8 +217,7 @@ def info_handle(logger):
   :return: A handle to an INFO logger file object
 
   '''
-  from logging import INFO
-  return LoggerIO(logger, INFO)
+  return LoggerIO(logger, logging.INFO)
 
 
 def debug_handle(logger):
@@ -226,5 +225,4 @@ def debug_handle(logger):
   :return: A handle to an DEBUG logger file object
 
   '''
-  from logging import DEBUG
-  return LoggerIO(logger, DEBUG)
+  return LoggerIO(logger, logging.DEBUG)

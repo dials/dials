@@ -1,6 +1,6 @@
 
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 def profile2d(p, vmin=None, vmax=None):
   from dials.array_family import flex

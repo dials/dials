@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 
 # DIALS version numbers are constructed from
 #  1. a common prefix

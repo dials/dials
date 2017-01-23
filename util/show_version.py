@@ -7,7 +7,7 @@
 Echo the current DIALS version and build number.
 """
 
-from __future__ import division
+from __future__ import absolute_import, division
 import datetime
 # XXX TO CHANGE THE DIALS VERSION NAME, EDIT BASE_VERSION
 BASE_VERSION = "dev"

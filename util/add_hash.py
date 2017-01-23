@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 
 def enhash(e, h, k, l):
   return e * (2 ** 30) + (h+512) * (2 ** 20) + (k+512) * (2 ** 10) + (l+512)

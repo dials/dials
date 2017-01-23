@@ -1,10 +1,10 @@
-from __future__ import division
+from __future__ import absolute_import, division
 
 import logging
 logger = logging.getLogger(__name__)
 
-from export_mtz import sum_partial_reflections
-from export_mtz import scale_partial_reflections
+from dials.util.export_mtz import sum_partial_reflections
+from dials.util.export_mtz import scale_partial_reflections
 
 def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
                      include_partials=False, keep_partials=False, var_model=(1,0)):
@@ -233,4 +233,3 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
   fout.write('!END_OF_DATA\n')
   fout.close()
   logger.info('Output %d reflections to %s' % (nref, hklout))
-  return

@@ -1,3 +1,5 @@
+from __future__ import absolute_import, division
+
 needs_sphinx = '1.1'
 
 extensions = [

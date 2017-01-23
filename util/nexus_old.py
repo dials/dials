@@ -10,7 +10,7 @@
 #  included in the root directory of this package.
 #
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 class H5PYEncoder(object):
   '''Encoder base class.'''

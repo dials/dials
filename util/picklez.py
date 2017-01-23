@@ -14,7 +14,7 @@
 # major use case: list of many (objects) which we want to store; to be pushed
 #                 into one file as pickled strings of chunks of the list.
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 def chunkify_list(lst, chunk_size):
   '''Return as an iterator chunks of the list, of length chunk_size (as

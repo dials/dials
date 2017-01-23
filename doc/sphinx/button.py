@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, division
 from docutils import nodes
 import jinja2
 from sphinx.util.compat import Directive

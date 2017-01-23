@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 
 from rstbx.slip_viewer.frame import chooser_wrapper as _chooser_wrapper
 class chooser_wrapper(_chooser_wrapper):
