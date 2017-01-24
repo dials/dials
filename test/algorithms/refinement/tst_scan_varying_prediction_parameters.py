@@ -9,14 +9,14 @@
 #  included in the root directory of this package.
 #
 
-from __future__ import division
+from __future__ import absolute_import, division
 import sys
 from cctbx.sgtbx import space_group, space_group_symbols
 from libtbx.test_utils import approx_equal
 from libtbx.phil import parse
 from math import pi
 from scitbx.array_family import flex
-from setup_geometry import Extract
+from dials.test.algorithms.refinement.setup_geometry import Extract
 from dxtbx.model.scan import scan_factory
 from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
 from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment

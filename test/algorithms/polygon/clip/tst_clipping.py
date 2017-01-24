@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 
 def point_in_polygon(point, poly):
   inside = False

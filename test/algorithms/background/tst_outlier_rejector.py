@@ -1,5 +1,5 @@
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 def generate_shoebox(size, mean, nforeground, ninvalid):
   from dials.algorithms.simulation.generate_test_reflections \

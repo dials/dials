@@ -22,7 +22,7 @@ cctbx.python tst_orientation_refinement.py \
 """
 
 # Python and cctbx imports
-from __future__ import division
+from __future__ import absolute_import, division
 import sys
 from math import pi
 from scitbx import matrix
@@ -31,8 +31,8 @@ from libtbx.phil import parse
 from libtbx.test_utils import approx_equal
 
 # Get modules to build models and minimiser using PHIL
-import setup_geometry
-import setup_minimiser
+import dials.test.algorithms.refinement.setup_geometry as setup_geometry
+import dials.test.algorithms.refinement.setup_minimiser as setup_minimiser
 
 # We will set up a mock scan and a mock experiment list
 from dxtbx.model.scan import scan_factory

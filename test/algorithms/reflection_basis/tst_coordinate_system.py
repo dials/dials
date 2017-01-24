@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 from dials.algorithms.profile_model.gaussian_rs import *
 
 class TestCoordinateSystem(object):

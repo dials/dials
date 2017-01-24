@@ -1,4 +1,5 @@
-from __future__ import division
+from __future__ import absolute_import, division
+from dials.test.algorithms.integration.profile.tst_profile_helpers import gaussian
 
 class Test(object):
 
@@ -19,7 +20,6 @@ class Test(object):
 
     from dials.algorithms.integration.fit import fit_profile
     from scitbx.array_family import flex
-    from tst_profile_helpers import gaussian
 
     # Create profile
     p = gaussian((9, 9, 9), 1, (4, 4, 4), (2, 2, 2))
@@ -47,7 +47,6 @@ class Test(object):
 
     from dials.algorithms.integration.fit import fit_profile
     from scitbx.array_family import flex
-    from tst_profile_helpers import gaussian
 
     # Create profile
     p = gaussian((9, 9, 9), 1, (4, 4, 4), (2, 2, 2))
@@ -75,7 +74,6 @@ class Test(object):
 
     from dials.algorithms.integration.fit import fit_profile
     from scitbx.array_family import flex
-    from tst_profile_helpers import gaussian
 
     # Create profile
     p = gaussian((9, 9, 9), 1, (4, 4, 4), (2, 2, 2))
@@ -104,7 +102,6 @@ class Test(object):
 
     from dials.algorithms.integration.fit import fit_profile
     from scitbx.array_family import flex
-    from tst_profile_helpers import gaussian
 
     # Create profile
     p = gaussian((9, 9, 9), 1, (4, 4, 4), (2, 2, 2))
@@ -134,7 +131,6 @@ class Test(object):
 
     from dials.algorithms.integration.fit import fit_profile
     from scitbx.array_family import flex
-    from tst_profile_helpers import gaussian
 
     # Create profile
     p = gaussian((9, 9, 9), 1, (4, 4, 4), (2, 2, 2))
@@ -168,7 +164,6 @@ class Test(object):
 
     from dials.algorithms.integration.fit import fit_profile
     from scitbx.array_family import flex
-    from tst_profile_helpers import gaussian
 
     # Create profile
     p = gaussian((9, 9, 9), 1, (4, 4, 4), (2, 2, 2))
@@ -202,7 +197,6 @@ class Test(object):
 
     from dials.algorithms.integration.fit import fit_profile
     from scitbx.array_family import flex
-    from tst_profile_helpers import gaussian
 
     # Create profile
     p = gaussian((9, 9, 9), 1, (4, 4, 4), (2, 2, 2))
@@ -238,7 +232,6 @@ class Test(object):
 
     from dials.algorithms.integration.fit import fit_profile
     from scitbx.array_family import flex
-    from tst_profile_helpers import gaussian
 
     # Create profile
     p = gaussian((9, 9, 9), 1, (4, 4, 4), (2, 2, 2))

@@ -11,7 +11,7 @@
 
 """Test decomposition of rotation matrices around arbitrary axes"""
 
-from __future__ import division
+from __future__ import absolute_import, division
 import math
 import random
 from scitbx import matrix

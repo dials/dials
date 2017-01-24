@@ -13,7 +13,7 @@
 entering the Ewald sphere is done the right way round"""
 
 # Python and cctbx imports
-from __future__ import division
+from __future__ import absolute_import, division
 import sys
 from math import pi
 from libtbx.phil import parse
@@ -22,7 +22,7 @@ from libtbx.test_utils import approx_equal
 from scitbx.array_family import flex
 
 # Building experimental models
-from setup_geometry import Extract
+from dials.test.algorithms.refinement.setup_geometry import Extract
 from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 
 # Reflection prediction

@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 
 def exercise_find_matching_symmetry():
   from cctbx import crystal, sgtbx, uctbx

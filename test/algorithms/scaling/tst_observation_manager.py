@@ -11,7 +11,7 @@
 
 """Tests for ObservationManager and related objects."""
 
-from __future__ import division
+from __future__ import absolute_import, division
 from libtbx.test_utils import approx_equal
 
 from cctbx.array_family import flex

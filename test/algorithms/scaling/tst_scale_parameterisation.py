@@ -11,7 +11,7 @@
 
 """Tests for ScaleParameterisation and related objects."""
 
-from __future__ import division
+from __future__ import absolute_import, division
 import random
 
 from scitbx.array_family import flex

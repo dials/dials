@@ -12,7 +12,7 @@
 """Setup experimental geometry for refinement test cases"""
 
 # Python and cctbx imports
-from __future__ import division
+from __future__ import absolute_import, division
 import sys
 import random
 from scitbx import matrix

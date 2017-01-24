@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 
 # FIXME
 # Currently looking at % difference between predicted background in foreground

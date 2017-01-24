@@ -15,7 +15,7 @@ Test refinement of a crystal unit cell using a two theta target.
 """
 
 # python imports
-from __future__ import division
+from __future__ import absolute_import, division
 import os
 import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx.test_utils import approx_equal
@@ -79,7 +79,7 @@ def test_fd_derivatives():
   from libtbx.phil import parse
 
   # Import model builder
-  from setup_geometry import Extract
+  from dials.test.algorithms.refinement.setup_geometry import Extract
 
   # Imports for reflection prediction
   from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection

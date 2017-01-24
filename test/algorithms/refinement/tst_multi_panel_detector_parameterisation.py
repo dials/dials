@@ -23,7 +23,7 @@ cctbx.python tst_multi_panel_detector_parameterisation.py "random_seed=3"
 """
 
 # Python and cctbx imports
-from __future__ import division
+from __future__ import absolute_import, division
 import sys
 from math import pi
 from scitbx import matrix
@@ -32,8 +32,8 @@ from libtbx.phil import parse
 from libtbx.test_utils import approx_equal
 
 # Get modules to build models and minimiser using PHIL
-import setup_geometry
-import setup_minimiser
+import dials.test.algorithms.refinement.setup_geometry as setup_geometry
+import dials.test.algorithms.refinement.setup_minimiser as setup_minimiser
 
 # Get the models to build the multi panel detector
 from dxtbx.model.experiment import Panel, Detector

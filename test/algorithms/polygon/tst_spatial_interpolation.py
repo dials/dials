@@ -1,5 +1,5 @@
 
-from __future__ import division
+from __future__ import absolute_import, division
 from dials.algorithms.polygon.spatial_interpolation import *
 
 class TestRegridIrregularToRegular(object):

@@ -15,7 +15,7 @@ Tests for RestraintsParameterisation and associated classes used in refinement
 """
 
 # Python and cctbx imports
-from __future__ import division
+from __future__ import absolute_import, division
 import os
 from libtbx.phil import parse
 import libtbx.load_env # required for libtbx.env.find_in_repositories

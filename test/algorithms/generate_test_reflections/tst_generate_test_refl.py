@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 def tst_generate_test_reflections():
   from dials.algorithms.simulation.generate_test_reflections import main
   from dials.algorithms.simulation.generate_test_reflections import \

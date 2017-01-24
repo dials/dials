@@ -1,5 +1,6 @@
-from __future__ import division
+from __future__ import absolute_import, division
 from dials.algorithms.profile_model.modeller import EmpiricalProfileModeller
+from dials.test.algorithms.integration.profile.tst_profile_helpers import gaussian
 
 class Modeller(EmpiricalProfileModeller):
 
@@ -105,7 +106,6 @@ class Test(object):
 
   def generate_single_central_non_negative_profiles(self):
     from dials.array_family import flex
-    from tst_profile_helpers import gaussian
     rlist = flex.reflection_table(1)
 
     profile = gaussian(self.grid_size, 1000, (4, 4, 4), (1.5, 1.5, 1.5))
@@ -124,7 +124,6 @@ class Test(object):
   def generate_identical_non_negative_profiles(self):
     from dials.array_family import flex
     from random import uniform
-    from tst_profile_helpers import gaussian
     rlist = flex.reflection_table(1000)
 
     profile = gaussian(self.grid_size, 1000, (4, 4, 4), (1.5, 1.5, 1.5))
@@ -144,7 +143,6 @@ class Test(object):
   def generate_systematically_offset_profiles(self):
     from dials.array_family import flex
     from random import uniform
-    from tst_profile_helpers import gaussian
     rlist = flex.reflection_table(1000)
 
     xyz = flex.vec3_double(1000)

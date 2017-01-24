@@ -13,7 +13,7 @@
 difference calculations"""
 
 # Python and cctbx imports
-from __future__ import division
+from __future__ import absolute_import, division
 import sys
 from math import pi
 import random
@@ -23,7 +23,7 @@ from libtbx.phil import parse
 from libtbx.test_utils import approx_equal
 
 # Experimental model builder
-from setup_geometry import Extract
+from dials.test.algorithms.refinement.setup_geometry import Extract
 
 # We will set up a mock scan and a mock experiment list
 from dxtbx.model.scan import scan_factory

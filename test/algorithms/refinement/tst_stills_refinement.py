@@ -16,7 +16,7 @@ Only the crystal is perturbed while the beam and detector are known.
 """
 
 # Python and cctbx imports
-from __future__ import division
+from __future__ import absolute_import, division
 import sys
 from math import pi
 from scitbx import matrix
@@ -27,7 +27,7 @@ from libtbx.test_utils import approx_equal
 from dials.array_family import flex
 
 # Get module to build models using PHIL
-import setup_geometry
+import dials.test.algorithms.refinement.setup_geometry as setup_geometry
 
 # We will set up a mock scan and a mock experiment list
 from dxtbx.model.scan import scan_factory

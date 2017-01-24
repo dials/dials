@@ -15,7 +15,7 @@ Test hierarchical detector refinement.
 """
 
 # python imports
-from __future__ import division
+from __future__ import absolute_import, division
 import os
 import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx.test_utils import approx_equal

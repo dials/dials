@@ -9,7 +9,7 @@
 #  included in the root directory of this package.
 #
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 #### Python and general cctbx imports
 
@@ -22,7 +22,7 @@ from scitbx.array_family import flex
 
 ##### Import model builder
 
-from setup_geometry import Extract
+from dials.test.algorithms.refinement.setup_geometry import Extract
 
 ##### Imports for reflection prediction
 
