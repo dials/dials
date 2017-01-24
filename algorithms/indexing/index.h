@@ -94,7 +94,7 @@ namespace dials { namespace algorithms {
           continue;
         }
         cctbx::miller::index<> hkl = potential_hkls[i_best_lattice];
-        if (hkl == (0,0,0)) {
+        if (hkl[0] == 0 && hkl[1] == 0 && hkl[2] == 0) {
           continue;
         }
         miller_indices_[i_ref] = hkl;
