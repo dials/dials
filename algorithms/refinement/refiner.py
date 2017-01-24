@@ -1983,7 +1983,6 @@ class Refiner(object):
   def predict_for_reflection_table(self, reflections, skip_derivatives=False):
     """perform prediction for all reflections in the supplied table"""
 
-    assert (reflections['miller_index'] == (0,0,0)).count(True) == 0
     # delegate to the target object, which has access to the predictor
     return self._target.predict_for_reflection_table(reflections, skip_derivatives)
 
