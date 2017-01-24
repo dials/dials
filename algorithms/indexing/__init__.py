@@ -44,6 +44,7 @@ def index_reflections(reflections, experiments, d_min=None, tolerance=0.3):
     reflections['id'].set_selected(isel.select(sel_imgset), expt_ids)
     reflections.set_flags(
       reflections['miller_index'] != (0,0,0), reflections.flags.indexed)
+    reflections['id'].set_selected(reflections['miller_index'] == (0,0,0), -1)
 
 
 def index_reflections_local(

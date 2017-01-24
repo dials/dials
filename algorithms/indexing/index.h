@@ -94,6 +94,9 @@ namespace dials { namespace algorithms {
           continue;
         }
         cctbx::miller::index<> hkl = potential_hkls[i_best_lattice];
+        if (hkl == (0,0,0)) {
+          continue;
+        }
         miller_indices_[i_ref] = hkl;
         hkl_to_rlp_map.insert(pair_t(hkl, i_ref));
         crystal_ids_[i_ref] = i_best_lattice;
