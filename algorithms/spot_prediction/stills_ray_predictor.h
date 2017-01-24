@@ -56,6 +56,7 @@ namespace dials { namespace algorithms {
 
       // Calculate the reciprocal space vector and required unit vectors
       vec3<double> q = ub * h;
+      DIALS_ASSERT(q.length() > 0);
       vec3<double> e1 = q.cross(unit_s0_).normalize();
       vec3<double> c0 = unit_s0_.cross(e1).normalize();
 
