@@ -735,7 +735,15 @@ class indexer_base(object):
       if self.d_min is None:
         self.d_min = self.params.refinement_protocol.d_min_start
 
-      experiments.extend(self.find_lattices())
+      # here
+      if len(experiments) == 0:
+        experiments.extend(self.find_lattices())
+      else:
+        try:
+          new = self.find_lattices()
+          experiments.extend(new)
+        except Sorry:
+          logger.info("Indexing remaining reflections failed")
 
       if self.params.refinement_protocol.d_min_step is libtbx.Auto:
         n_cycles = self.params.refinement_protocol.n_macro_cycles
