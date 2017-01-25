@@ -11,6 +11,7 @@ from gltbx.gl import *
 import gltbx
 from scitbx.math import minimum_covering_sphere
 from scitbx.array_family import flex
+from scitbx import matrix
 import libtbx.phil
 
 help_message = '''
@@ -632,7 +633,11 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     self.beam_vector = beam
 
   def set_reciprocal_lattice_vectors(self, vectors_per_crystal):
-    self.recip_latt_vectors = vectors_per_crystal
+    self.recip_latt_vectors = []
+    # the points are scaled by 100 so must do that here too
+    for vec_set in vectors_per_crystal:
+      self.recip_latt_vectors.append([
+        100. * matrix.col(vec) for vec in vec_set])
 
   #--- user input and settings
   def update_settings (self) :
@@ -690,11 +695,7 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     glDisable(GL_LINE_STIPPLE)
 
   def draw_cell(self, axes, color):
-    from scitbx import matrix
-    # the points are scaled by 100 so must do that here too
-    astar = 100.* matrix.col(axes[0])
-    bstar = 100.* matrix.col(axes[1])
-    cstar = 100.* matrix.col(axes[2])
+    astar, bstar, cstar = axes[0], axes[1], axes[2]
     gltbx.fonts.ucs_bitmap_8x13.setup_call_lists()
     glDisable(GL_LIGHTING)
     glColor3f(*color)
