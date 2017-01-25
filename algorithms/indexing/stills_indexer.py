@@ -2,7 +2,7 @@
 # -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 2 -*-
 #
 
-from __future__ import division
+from __future__ import absolute_import, division
 import logging
 logger = logging.getLogger(__name__)
 

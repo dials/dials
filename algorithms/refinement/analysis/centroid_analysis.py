@@ -10,7 +10,7 @@
 """Analysis of centroid residuals for determining suitable refinement and
 outlier rejection parameters automatically"""
 
-from __future__ import division
+from __future__ import absolute_import, division
 from math import pi
 from dials.array_family import flex
 from scitbx.math.periodogram import Periodogram

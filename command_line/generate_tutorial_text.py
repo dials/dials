@@ -1,6 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.generate_tutorial_text
 
-from __future__ import division
+from __future__ import absolute_import, division
 import os
 import shutil
 import libtbx.load_env # required for libtbx.env.find_in_repositories

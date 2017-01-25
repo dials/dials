@@ -9,7 +9,7 @@
 #
 """Compare Periodogram with R's spec.pgram"""
 
-from __future__ import division
+from __future__ import absolute_import, division
 try:
   import rpy2.robjects as robjects
 except ImportError as e:

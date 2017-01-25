@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.hot_pixel_mask_to_xy
 
 def hot_pixel_mask_to_xy(hot_pixel_mask):

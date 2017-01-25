@@ -1,6 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.scale_down_images
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 def nproc():
   from libtbx.introspection import number_of_processors

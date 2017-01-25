@@ -1,5 +1,5 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.export_text
-from __future__ import division
+from __future__ import absolute_import, division
 from dials.util.export_text import export_text
 
 if __name__ == '__main__':

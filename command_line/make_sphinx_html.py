@@ -1,6 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.make_sphinx_html
 
-from __future__ import division
+from __future__ import absolute_import, division
 from dials.util.procrunner import run_process
 import libtbx.load_env
 import shutil

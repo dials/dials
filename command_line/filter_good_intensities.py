@@ -1,6 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.filter_good_intensities
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 def filter_good_reflections(integrated_data):
   assert(min(integrated_data['id']) == max(integrated_data['id']) == 0)

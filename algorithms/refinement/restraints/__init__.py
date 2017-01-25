@@ -10,5 +10,5 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import division
-from restraints_parameterisation import RestraintsParameterisation # import dependency
+from __future__ import absolute_import, division
+from dials.algorithms.refinement.restraints.restraints_parameterisation import RestraintsParameterisation # import dependency

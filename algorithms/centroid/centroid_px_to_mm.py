@@ -8,7 +8,7 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 def centroid_px_to_mm(detector, scan, position, variance, sd_error):
   '''Convenience function to calculate centroid in mm/rad from px'''

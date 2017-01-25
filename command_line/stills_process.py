@@ -2,7 +2,7 @@
 #
 # LIBTBX_SET_DISPATCHER_NAME dials.stills_process
 
-from __future__ import division
+from __future__ import absolute_import, division
 import libtbx.load_env
 import logging
 logger = logging.getLogger(libtbx.env.dispatcher_name)

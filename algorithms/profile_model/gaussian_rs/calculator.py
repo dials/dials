@@ -16,7 +16,7 @@
 # FIXME Should maybe be scan varying
 # FIXME Don't know how XDS calculated the n_sigma
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 import logging
 logger = logging.getLogger(__name__)

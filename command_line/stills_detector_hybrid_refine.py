@@ -17,7 +17,7 @@ minimiser'. Rather than a single joint refinement job of all crystals and the
 detector, only the detector parameters are refined at first (using all data)
 then each crystal is refined individually. This forms one macrocycle."""
 
-from __future__ import division
+from __future__ import absolute_import, division
 from math import sqrt
 
 from libtbx.phil import parse

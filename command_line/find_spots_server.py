@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 import time
 import BaseHTTPServer as server_base
 from multiprocessing import Process

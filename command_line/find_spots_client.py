@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 
 def work(host, port, filename, params):
   import httplib

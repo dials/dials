@@ -9,11 +9,11 @@
 #  included in the root directory of this package.
 #
 
-from __future__ import division
+from __future__ import absolute_import, division
 import logging
 logger = logging.getLogger(__name__)
 
-from model_parameters import Parameter, ModelParameterisation
+from dials.algorithms.refinement.parameterisation.model_parameters import Parameter, ModelParameterisation
 from dxtbx.model.crystal import crystal_model # implicit import
 from scitbx import matrix
 from rstbx.symmetry.constraints.parameter_reduction \

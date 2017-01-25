@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 from libtbx.phil import parse
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.export_nxms_to_mtz

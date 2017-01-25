@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 #from scipy.interpolate import griddata
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.compare_xds_dials2

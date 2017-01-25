@@ -1,6 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.show_spots
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 def show_spots(strong_spots):
 

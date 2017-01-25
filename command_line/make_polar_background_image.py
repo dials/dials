@@ -11,7 +11,7 @@
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.make_polar_background_image
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 import libtbx.load_env
 import logging

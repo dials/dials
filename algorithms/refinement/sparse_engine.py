@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 #
 #  Copyright (C) (2016) Lawrence Berkeley National Laboratory
 #
@@ -12,7 +12,7 @@ from libtbx.utils import Sorry
 from scitbx.array_family import flex
 import logging
 logger = logging.getLogger(__name__)
-from engine import DisableMPmixin
+from dials.algorithms.refinement.engine import DisableMPmixin
 
 try:
   from scitbx.examples.bevington import non_linear_ls_eigen_wrapper
@@ -22,7 +22,7 @@ except ImportError,e:
      the modules directory of your developer install; then recompile.
 """)
 
-from engine import AdaptLstbx as AdaptLstbxBase
+from dials.algorithms.refinement.engine import AdaptLstbx as AdaptLstbxBase
 
 class AdaptLstbxSparse(DisableMPmixin, AdaptLstbxBase, non_linear_ls_eigen_wrapper):
   """Adapt the base class for Eigen"""
@@ -41,7 +41,7 @@ class AdaptLstbxSparse(DisableMPmixin, AdaptLstbxBase, non_linear_ls_eigen_wrapp
 
     non_linear_ls_eigen_wrapper.__init__(self, n_parameters = len(self._parameters))
 
-from engine import GaussNewtonIterations as GaussNewtonIterationsBase
+from dials.algorithms.refinement.engine import GaussNewtonIterations as GaussNewtonIterationsBase
 class GaussNewtonIterations(AdaptLstbxSparse, GaussNewtonIterationsBase):
   """Refinery implementation, using lstbx Gauss Newton iterations"""
 
@@ -64,7 +64,7 @@ class GaussNewtonIterations(AdaptLstbxSparse, GaussNewtonIterationsBase):
     # adopt any overrides of the defaults above
     libtbx.adopt_optional_init_args(self, kwds)
 
-from engine import LevenbergMarquardtIterations
+from dials.algorithms.refinement.engine import LevenbergMarquardtIterations
 class SparseLevenbergMarquardtIterations(GaussNewtonIterations,LevenbergMarquardtIterations):
   """Levenberg Marquardt with Sparse matrix algebra"""
 

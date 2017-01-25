@@ -1,3 +1,2 @@
-from __future__ import division
-from managed_predictors import ScansRayPredictor # import dependency
-from managed_predictors import ExperimentsPredictor # import dependency
+from __future__ import absolute_import, division
+from dials.algorithms.refinement.prediction.managed_predictors import ExperimentsPredictor, ScansRayPredictor # import dependency

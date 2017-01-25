@@ -1,6 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.best_out
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 import iotbx.phil
 

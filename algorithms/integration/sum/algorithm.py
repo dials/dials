@@ -8,7 +8,7 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 class IntegrationAlgorithm(object):
   '''A class to perform 3D summation integration'''

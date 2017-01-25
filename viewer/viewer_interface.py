@@ -9,10 +9,8 @@
 #  included in the root directory of this package."
 #
 #
-from __future__ import division
+from __future__ import absolute_import, division
 
-
-import sys
 from dials.array_family import flex
 from dials.viewer.slice_viewer import show_reflections
 
@@ -21,7 +19,7 @@ def extract_n_show(table):
 
 
 if __name__ == "__main__":
-
+  import sys
   pick_name = sys.argv[1]
 
   table = flex.reflection_table.from_pickle(pick_name)

@@ -1,5 +1,5 @@
 #!/usr/bin/env dials.python
-from __future__ import division
+from __future__ import absolute_import, division
 from libtbx.phil import parse
 from scitbx import matrix
 from libtbx.table_utils import simple_table

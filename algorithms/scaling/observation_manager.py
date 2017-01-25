@@ -11,7 +11,7 @@
 """Contains classes used to manage the reflections used during scaling,
 principally ObservationManager."""
 
-from __future__ import division
+from __future__ import absolute_import, division
 from dials.array_family import flex
 import cctbx.crystal
 import cctbx.miller

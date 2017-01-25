@@ -9,10 +9,10 @@
 #  included in the root directory of this package.
 #
 
-from __future__ import division
+from __future__ import absolute_import, division
 from scitbx import matrix
 
-from model_parameters import Parameter, ModelParameterisation
+from dials.algorithms.refinement.parameterisation.model_parameters import Parameter, ModelParameterisation
 from dials.algorithms.refinement.refinement_helpers import \
     dR_from_axis_and_angle, get_panel_groups_at_depth, get_panel_ids_at_root
 

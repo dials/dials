@@ -11,7 +11,7 @@
 
 """Special versions of classes optimised to do detector refinement from multiple
 stills in the case where the crystals and beam are fixed."""
-from __future__ import division
+from __future__ import absolute_import, division
 
 from dials.algorithms.refinement.refiner import RefinerFactory
 from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \

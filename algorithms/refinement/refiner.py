@@ -13,7 +13,7 @@
 """Refiner is the refinement module public interface. RefinerFactory is
 what should usually be used to construct a Refiner."""
 
-from __future__ import division
+from __future__ import absolute_import, division
 import logging
 logger = logging.getLogger(__name__)
 
@@ -1323,18 +1323,16 @@ class RefinerFactory(object):
     # Shorten parameter path
     options = params.refinement.refinery
 
-    import dials.algorithms.refinement.engine as engine # implicit import
-
     if options.engine == "SimpleLBFGS":
-      from engine import SimpleLBFGS as refinery
+      from dials.algorithms.refinement.engine import SimpleLBFGS as refinery
     elif options.engine == "LBFGScurvs":
-      from engine import LBFGScurvs as refinery
+      from dials.algorithms.refinement.engine import LBFGScurvs as refinery
     elif options.engine == "GaussNewton":
-      from engine import GaussNewtonIterations as refinery
+      from dials.algorithms.refinement.engine import GaussNewtonIterations as refinery
     elif options.engine == "LevMar":
-      from engine import LevenbergMarquardtIterations as refinery
+      from dials.algorithms.refinement.engine import LevenbergMarquardtIterations as refinery
     elif options.engine == "SparseLevMar":
-      from sparse_engine import SparseLevenbergMarquardtIterations as refinery
+      from dials.algorithms.refinement.sparse_engine import SparseLevenbergMarquardtIterations as refinery
     else:
       raise RuntimeError("Refinement engine " + options.engine +
                          " not recognised")

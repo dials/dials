@@ -7,7 +7,7 @@
 #  included in the root directory of this package.
 #
 
-from __future__ import division
+from __future__ import absolute_import, division
 from dials.array_family import flex
 from dials.algorithms.refinement.parameterisation.prediction_parameters \
   import PredictionParameterisation, SparseGradientVectorMixin

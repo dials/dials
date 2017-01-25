@@ -11,7 +11,7 @@
 #
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
-from __future__ import division
+from __future__ import absolute_import, division
 import math
 import matplotlib
 

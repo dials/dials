@@ -9,8 +9,8 @@
 #  included in the root directory of this package.
 #
 
-from __future__ import division
-from model_parameters import Parameter, ModelParameterisation
+from __future__ import absolute_import, division
+from dials.algorithms.refinement.parameterisation.model_parameters import Parameter, ModelParameterisation
 from scitbx import matrix
 from dials.algorithms.refinement.refinement_helpers \
     import dR_from_axis_and_angle

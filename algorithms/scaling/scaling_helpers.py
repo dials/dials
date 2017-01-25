@@ -10,7 +10,7 @@
 
 """Auxiliary functions for the scaling package"""
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 def products_omitting_one_item(items):
   """For n items, efficiently calculate every product of n-1 items. That is

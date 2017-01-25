@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 from libtbx.phil import parse
 from libtbx.table_utils import simple_table
 from dials.array_family import flex
@@ -377,13 +377,13 @@ class CentroidOutlierFactory(object):
     method = params.outlier.algorithm
     if method == "null": return None
     elif method == "tukey":
-      from tukey import Tukey as outlier_detector
+      from dials.algorithms.refinement.outlier_detection.tukey import Tukey as outlier_detector
       algo_params = params.outlier.tukey
     elif method == "mcd":
-      from mcd import MCD as outlier_detector
+      from dials.algorithms.refinement.outlier_detection.mcd import MCD as outlier_detector
       algo_params = params.outlier.mcd
     elif method == "sauter_poon":
-      from sauter_poon import SauterPoon as outlier_detector
+      from dials.algorithms.refinement.outlier_detection.sauter_poon import SauterPoon as outlier_detector
       algo_params = params.outlier.sauter_poon
     else:
       raise RuntimeError("outlier.algorithm not recognised")

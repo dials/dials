@@ -1,6 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.remove_absent_reflections
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 from iotbx import mtz
 

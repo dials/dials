@@ -1,6 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.image_correlation
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 import iotbx.phil
 from dials.array_family import flex

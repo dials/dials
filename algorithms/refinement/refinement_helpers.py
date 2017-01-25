@@ -9,7 +9,7 @@
 
 """Auxiliary functions for the refinement package"""
 
-from __future__ import division
+from __future__ import absolute_import, division
 from math import sin, cos
 from scitbx import matrix
 from scitbx.array_family import flex # import dependency

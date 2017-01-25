@@ -1,3 +1,2 @@
-from __future__ import division
-from refiner import Refiner # import dependency
-from refiner import RefinerFactory # import dependency
+from __future__ import absolute_import, division
+from dials.algorithms.refinement.refiner import Refiner, RefinerFactory # import dependency

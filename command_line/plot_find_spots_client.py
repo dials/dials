@@ -1,5 +1,5 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.plot_find_spots_client
-from __future__ import division
+from __future__ import absolute_import, division
 
 from cctbx.array_family import flex
 import iotbx.phil

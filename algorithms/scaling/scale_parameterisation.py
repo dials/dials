@@ -11,7 +11,7 @@
 """Contains classes required for parameterising the scale factor components
 and the overall scale."""
 
-from __future__ import division
+from __future__ import absolute_import, division
 from scitbx import sparse
 from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \
         import GaussianSmoother, ScanVaryingParameterSet

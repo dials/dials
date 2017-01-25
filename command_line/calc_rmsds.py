@@ -10,7 +10,7 @@
 #  included in the root directory of this package.
 
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
-from __future__ import division
+from __future__ import absolute_import, division
 
 import libtbx.load_env
 import logging

@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 def build_prediction_matrix(hkl, mhkl, phkl, hmkl, hpkl, hkml, hkpl, tst=False):
   '''Build a prediction matrix around reflection hkl, coomputing dx / dh etc.'''
 

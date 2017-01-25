@@ -10,7 +10,7 @@
 #
 """Versions of refinement classes for two theta refinement of the unit cell"""
 
-from __future__ import division
+from __future__ import absolute_import, division
 import logging
 logger = logging.getLogger(__name__)
 

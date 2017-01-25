@@ -8,9 +8,9 @@
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
-from __future__ import division
+from __future__ import absolute_import, division
 from dials.array_family import flex
-from from_flex_to_wxbitmap import wxbitmap_convert
+from dials.viewer.from_flex_to_wxbitmap import wxbitmap_convert
 
 import wx
 import wx.lib.scrolledpanel as scroll_pan

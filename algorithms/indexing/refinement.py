@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 #!/usr/bin/env python
 # -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 2 -*-
 #

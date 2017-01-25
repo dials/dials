@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 from cctbx import sgtbx # import dependency
 from dials.array_family import flex # import dependency
 from dials_algorithms_spot_prediction_ext import *

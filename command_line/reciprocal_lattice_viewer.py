@@ -2,7 +2,7 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
-from __future__ import division
+from __future__ import absolute_import, division
 from gltbx import wx_viewer
 import copy
 import wx

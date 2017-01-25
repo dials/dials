@@ -1,6 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.filter_dead_time
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 import iotbx.phil
 

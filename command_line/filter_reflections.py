@@ -11,7 +11,7 @@
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.filter_reflections
 
-from __future__ import division
+from __future__ import absolute_import, division
 from dials.array_family import flex
 
 help_message = '''

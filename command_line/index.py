@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import absolute_import, division
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 import libtbx.load_env

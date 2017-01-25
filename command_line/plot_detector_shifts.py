@@ -17,7 +17,7 @@ at hierarchy_level=1), plot shifts in the fast, slow and normal directions on
 each panel that take the first detector model to the second one as a heatmap
 
 """
-from __future__ import division
+from __future__ import absolute_import, division
 
 from dxtbx.model.experiment.experiment_list import Experiment
 from scitbx.array_family import flex

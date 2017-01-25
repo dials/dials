@@ -11,7 +11,7 @@
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.make_radial_average
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 help_message = '''
 

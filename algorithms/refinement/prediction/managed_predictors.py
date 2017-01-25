@@ -16,7 +16,7 @@
 
 """
 
-from __future__ import division
+from __future__ import absolute_import, division
 
 from math import pi
 from dials.algorithms.spot_prediction import ScanStaticRayPredictor
