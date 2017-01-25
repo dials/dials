@@ -69,6 +69,8 @@ plot {
     .type = int(value_min=1)
   font_size = 6
     .type = float(value_min=0)
+  gridsize = None
+    .type = int
 }
 json {
   filename = None
@@ -280,14 +282,15 @@ def run(args):
     plot_projections(
       projections_all, filename=params.plot.filename, show=params.plot.show,
       colours=params.plot.colours, marker_size=params.plot.marker_size,
-      font_size=params.plot.font_size, label_indices=params.plot.label_indices)
+      font_size=params.plot.font_size, gridsize=params.plot.gridsize,
+      label_indices=params.plot.label_indices)
 
   if params.json.filename:
     projections_as_json(projections_all, filename=params.json.filename)
 
 def plot_projections(projections, filename=None, show=None,
                      colours=None, marker_size=3, font_size=6,
-                     label_indices=False):
+                     gridsize=None, label_indices=False):
   assert [filename, show].count(None) < 2
   projections_all = projections
 
@@ -313,17 +316,27 @@ def plot_projections(projections, filename=None, show=None,
   cir = pylab.Circle((0,0), radius=1.0, fill=False, color='0.75')
   pylab.gca().add_patch(cir)
 
-  for i, projections in enumerate(projections_all):
-    x, y = projections.parts()
-    pyplot.scatter(x.as_numpy_array(), y.as_numpy_array(),
-                   c=colours[i], s=marker_size, edgecolors='none')
-    if label_indices:
-      for j, (hkl, proj) in enumerate(zip(miller_indices, projections)):
-        # hack to not write two labels on top of each other
-        p1, p2 = (projections - proj).parts()
-        if (flex.sqrt(flex.pow2(p1)+flex.pow2(p2)) < 1e-3).iselection()[0] != j:
-          continue
-        pyplot.text(proj[0], proj[1], str(hkl), fontsize=font_size)
+  if gridsize is not None:
+    x = flex.double()
+    y = flex.double()
+    for i, projections in enumerate(projections_all):
+      x_, y_ = projections.parts()
+      x.extend(x_)
+      y.extend(y_)
+    hb = pyplot.hexbin(x, y, gridsize=gridsize, linewidths=0.2)
+    cb = pyplot.colorbar(hb)
+  else:
+    for i, projections in enumerate(projections_all):
+      x, y = projections.parts()
+      pyplot.scatter(x.as_numpy_array(), y.as_numpy_array(),
+                     c=colours[i], s=marker_size, edgecolors='none')
+      if label_indices:
+        for j, (hkl, proj) in enumerate(zip(miller_indices, projections)):
+          # hack to not write two labels on top of each other
+          p1, p2 = (projections - proj).parts()
+          if (flex.sqrt(flex.pow2(p1)+flex.pow2(p2)) < 1e-3).iselection()[0] != j:
+            continue
+          pyplot.text(proj[0], proj[1], str(hkl), fontsize=font_size)
   pyplot.axes().set_aspect('equal')
   pyplot.xlim(-1.1,1.1)
   pyplot.ylim(-1.1,1.1)
