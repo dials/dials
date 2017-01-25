@@ -15,7 +15,6 @@
 #define DST_BTW_LIN 14
 #include <iostream>
 #include <string>
-#include <cmath>
 #include <scitbx/array_family/flex_types.h>
 
 using scitbx::af::flex_double;
