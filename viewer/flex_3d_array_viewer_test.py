@@ -45,7 +45,6 @@ if __name__ == "__main__":
           if row > 1 and row < size_xyz - 2 and col > 1 and col < size_x - 2:
             data_flex_mask[frm, row, col] = MaskCode.Foreground
 
-
             different_mask_values = '''
             MaskCode.Valid           =  "\\\\\\"
             MaskCode.Foreground      =  "//////"
@@ -54,12 +53,10 @@ if __name__ == "__main__":
             '''
 
 
-
     for frm in range(size_xyz):
       for row in range(size_xyz):
         for col in range(size_x):
           data_flex_norm[frm, row, col] += data_xyz_flex[frm, row, col] / tot
-
 
 
     lst_flex.append(data_xyz_flex)
@@ -69,3 +66,4 @@ if __name__ == "__main__":
   show_3d(data_xyz_flex)
   show_3d(lst_flex)
   show_3d(lst_flex_norm)
+  print "Test Done"
