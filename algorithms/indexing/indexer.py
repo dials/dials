@@ -735,7 +735,6 @@ class indexer_base(object):
       if self.d_min is None:
         self.d_min = self.params.refinement_protocol.d_min_start
 
-      # here
       if len(experiments) == 0:
         experiments.extend(self.find_lattices())
       else:
