@@ -86,6 +86,88 @@ def run():
   assert approx_equal(result_old.crystal_model.get_unit_cell().parameters(),
                       result_new.crystal_model.get_unit_cell().parameters())
 
+  # Now test refinement gradients are correct
+  from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
+  old_exps=ExperimentList([Experiment(beam=imageset_old.get_beam(),
+                                     detector=imageset_old.get_detector(),
+                                     goniometer=gonio_old,
+                                     scan=imageset_old.get_scan(),
+                                     crystal=result_old.crystal_model,
+                                     imageset=None)])
+  new_exps=ExperimentList([Experiment(beam=imageset_new.get_beam(),
+                                     detector=imageset_new.get_detector(),
+                                     goniometer=gonio_new,
+                                     scan=imageset_new.get_scan(),
+                                     crystal=result_new.crystal_model,
+                                     imageset=None)])
+
+  from libtbx.phil import parse
+  from dials.algorithms.refinement.refiner import phil_scope
+  params = phil_scope.fetch(source=parse('')).extract()
+  from dials.algorithms.refinement.refiner import RefinerFactory
+  refiner_old = RefinerFactory.from_parameters_data_experiments(params,
+    result_old.indexed_reflections, old_exps, verbosity=0)
+  refiner_new = RefinerFactory.from_parameters_data_experiments(params,
+    result_new.indexed_reflections, new_exps, verbosity=0)
+
+  # Analytical gradients should be approximately the same in either case
+  an_grads_old = refiner_old._pred_param.get_gradients(refiner_old.get_matches())
+  an_grads_new = refiner_new._pred_param.get_gradients(refiner_new.get_matches())
+  for g1, g2 in zip(an_grads_old, an_grads_new):
+    assert approx_equal(g1["dX_dp"], g2["dX_dp"], eps=1.e-6)
+    assert approx_equal(g1["dY_dp"], g2["dY_dp"], eps=1.e-6)
+    assert approx_equal(g1["dphi_dp"], g2["dphi_dp"], eps=1.e-6)
+
+  # Analytical gradients should be approximately equal to finite difference
+  # gradients in either case
+  fd_grads_old = calc_fd_grads(refiner_old)
+  for g1, g2 in zip(fd_grads_old, an_grads_old):
+    assert approx_equal(g1["dX_dp"], g2["dX_dp"], eps=5.e-6)
+    assert approx_equal(g1["dY_dp"], g2["dY_dp"], eps=5.e-6)
+    assert approx_equal(g1["dphi_dp"], g2["dphi_dp"], eps=5.e-6)
+  fd_grads_new = calc_fd_grads(refiner_new)
+  for g1, g2 in zip(fd_grads_new, an_grads_new):
+    assert approx_equal(g1["dX_dp"], g2["dX_dp"], eps=5.e-6)
+    assert approx_equal(g1["dY_dp"], g2["dY_dp"], eps=5.e-6)
+    assert approx_equal(g1["dphi_dp"], g2["dphi_dp"], eps=5.e-6)
+
+def calc_fd_grads(refiner):
+
+  p_vals = refiner._pred_param.get_param_vals()
+  deltas = [1.e-7] * len(p_vals)
+
+  fd_grads=[]
+  for i in range(len(deltas)):
+
+    val = p_vals[i]
+
+    p_vals[i] -= deltas[i] / 2.
+    refiner._pred_param.set_param_vals(p_vals)
+
+    refiner._target.predict()
+
+    rev_state = refiner.get_matches()['xyzcal.mm'].deep_copy()
+
+    p_vals[i] += deltas[i]
+    refiner._pred_param.set_param_vals(p_vals)
+
+    refiner._target.predict()
+
+    fwd_state = refiner.get_matches()['xyzcal.mm'].deep_copy()
+    p_vals[i] = val
+
+    fd = (fwd_state - rev_state)
+    x_grads, y_grads, phi_grads = fd.parts()
+    x_grads /= deltas[i]
+    y_grads /= deltas[i]
+    phi_grads /= deltas[i]
+
+    fd_grads.append({'dX_dp':x_grads, 'dY_dp':y_grads, 'dphi_dp':phi_grads})
+
+  # return to the initial state
+  refiner._pred_param.set_param_vals(p_vals)
+
+  return fd_grads
 
 if __name__ == '__main__':
   from dials.test import cd_auto
