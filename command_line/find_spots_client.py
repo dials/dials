@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+import socket as pysocket
 
 def work(host, port, filename, params):
   import httplib
@@ -120,18 +121,22 @@ def work_all(host, port, filenames, params, plot=False, table=False,
   return
 
 def stop(host, port, nproc):
-  import httplib
-  from socket import error as socket_error
+  import urllib2
+  stopped = 0
   for j in range(nproc):
     try:
-      conn = httplib.HTTPConnection(host, port)
-      path = '/Ctrl-C'
-      conn.request('GET', path)
-      response = conn.getresponse()
-    except socket_error, e:
-      # run out of procs
-      break
-  return j
+      url_request = urllib2.Request("http://%s:%s/Ctrl-C" % (host, port))
+      socket = urllib2.urlopen(url_request, None, 3)
+      if socket.getcode() == '200':
+        stopped = stopped + 1
+      else:
+        print "socket returned code", socket.getcode()
+    except (pysocket.timeout, urllib2.URLError, urllib2.HTTPError), e:
+      print "error on stopping server:", e
+    except pysocket.error:
+      # Assuming this means the server killed itself before the reply left the send buffer.
+      stopped = stopped + 1
+  return stopped
 
 import libtbx.phil
 phil_scope = libtbx.phil.parse("""\
