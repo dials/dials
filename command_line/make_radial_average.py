@@ -13,6 +13,9 @@
 
 from __future__ import absolute_import, division
 
+import logging
+logger = logging.getLogger(__name__)
+
 help_message = '''
 
 This program averages images and makes a radial average over resolution shells
