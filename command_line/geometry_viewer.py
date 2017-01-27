@@ -12,6 +12,7 @@ import gltbx
 from scitbx.math import minimum_covering_sphere
 from scitbx.array_family import flex
 import libtbx.phil
+from dxtbx_model_ext import MultiAxisGoniometer
 
 help_message = '''
 
@@ -273,23 +274,24 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.distance_ctrl)
 
-    self.rotation_angle_ctrls = []
-    names = goniometer.get_names()
-    axes = goniometer.get_axes()
-    angles = goniometer.get_angles()
-    for name, axis, angle in zip(names, axes, angles):
-      ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=1)
-      ctrl.SetValue(angle)
-      ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
-      if wx.VERSION >= (2,9): # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
-        ctrl.SetBackgroundColour(self.GetBackgroundColour())
-      box = wx.BoxSizer(wx.HORIZONTAL)
-      self.panel_sizer.Add(box)
-      label = wx.StaticText(self,-1,"%s angle" %name)
-      box.Add(ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
-      box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
-      self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, ctrl)
-      self.rotation_angle_ctrls.append(ctrl)
+    if isinstance(goniometer, MultiAxisGoniometer):
+      self.rotation_angle_ctrls = []
+      names = goniometer.get_names()
+      axes = goniometer.get_axes()
+      angles = goniometer.get_angles()
+      for name, axis, angle in zip(names, axes, angles):
+        ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=1)
+        ctrl.SetValue(angle)
+        ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
+        if wx.VERSION >= (2,9): # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
+          ctrl.SetBackgroundColour(self.GetBackgroundColour())
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.panel_sizer.Add(box)
+        label = wx.StaticText(self,-1,"%s angle" %name)
+        box.Add(ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+        box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+        self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, ctrl)
+        self.rotation_angle_ctrls.append(ctrl)
 
   def OnChangeSettings(self, event):
     self.settings.detector_distance = self.distance_ctrl.GetValue()
@@ -374,14 +376,18 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     gonio = self.parent.imageset.get_goniometer()
     beam = self.parent.imageset.get_beam()
     from scitbx import matrix
-    R = matrix.identity(3)
-    names = reversed(gonio.get_names())
-    axes = reversed(gonio.get_axes())
-    angles = reversed(gonio.get_angles())
-    for name, axis, angle in zip(names, axes, angles):
-      axis = R * matrix.col(axis)
-      self.draw_axis(axis.elems, name)
-      R = axis.axis_and_angle_as_r3_rotation_matrix(angle, deg=True) * R
+    if isinstance(gonio, MultiAxisGoniometer):
+      R = matrix.identity(3)
+      names = reversed(gonio.get_names())
+      axes = reversed(gonio.get_axes())
+      angles = reversed(gonio.get_angles())
+      for name, axis, angle in zip(names, axes, angles):
+        axis = R * matrix.col(axis)
+        self.draw_axis(axis.elems, name)
+        R = axis.axis_and_angle_as_r3_rotation_matrix(angle, deg=True) * R
+    elif gonio is not None:
+      axis = matrix.col(gonio.get_rotation_axis())
+      self.draw_axis(axis.elems, "phi")
     self.draw_axis(beam.get_s0(), "beam")
 
   def draw_axis(self, axis, label):
@@ -454,7 +460,7 @@ def run(args):
     for datablock in datablocks:
       imagesets.extend(datablock.extract_imagesets())
 
-  assert len(imagesets) == 1
+  assert len(imagesets) == 1, len(imagesets)
   imageset = imagesets[0]
   gonio = imageset.get_goniometer()
   if not params.detector_distance:
@@ -463,11 +469,12 @@ def run(args):
       params.detector_distance = detector.hierarchy().get_directed_distance()
     else:
       params.detector_distance = detector[0].get_directed_distance()
-  if params.angle:
-    assert len(params.angle) == len(gonio.get_angles())
-  else:
-    for angle in gonio.get_angles():
-      params.angle.append(angle)
+  if isinstance(gonio, MultiAxisGoniometer):
+    if params.angle:
+      assert len(params.angle) == len(gonio.get_angles())
+    else:
+      for angle in gonio.get_angles():
+        params.angle.append(angle)
 
   import wxtbx.app
   a = wxtbx.app.CCTBXApp(0)
