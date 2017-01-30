@@ -191,11 +191,14 @@ class stills_indexer(indexer_base):
                   self.reflections['id'] == i_expt, miller_indices)
 
       self.indexed_reflections = (self.reflections['id'] > -1)
-      sel = flex.bool(len(self.reflections), False)
-      lengths = 1/self.reflections['rlp'].norms()
-      isel = (lengths >= self.d_min).iselection()
-      sel.set_selected(isel, True)
-      sel.set_selected(self.reflections['id'] > -1, False)
+      if self.d_min is None:
+        sel = self.reflections['id'] <= -1
+      else:
+        sel = flex.bool(len(self.reflections), False)
+        lengths = 1/self.reflections['rlp'].norms()
+        isel = (lengths >= self.d_min).iselection()
+        sel.set_selected(isel, True)
+        sel.set_selected(self.reflections['id'] > -1, False)
       self.unindexed_reflections = self.reflections.select(sel)
 
       if len(self.params.stills.isoforms) == 0:
