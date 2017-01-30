@@ -156,7 +156,7 @@ class Script(object):
     from dials.algorithms.background import RadialAverage
     radial_average = RadialAverage(beam, detector, vmin, vmax, num_bins)
     for d, m in zip(summed_data, summed_mask):
-      radial_average.add(d.as_double(), m)
+      radial_average.add(d.as_double() / (scan_range[1] - scan_range[0]), m)
     mean = radial_average.mean()
     reso = radial_average.inv_d2()
 
