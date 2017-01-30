@@ -139,6 +139,7 @@ class Test(object):
     from libtbx import easy_run
     from os.path import exists
     from libtbx.test_utils import approx_equal
+    from dxtbx.datablock import DataBlockFactory
 
     # Call dials.export
     easy_run.fully_buffered([
@@ -148,13 +149,18 @@ class Test(object):
       self.strong
     ]).raise_if_errors()
 
+
     assert exists('rlp.json')
     with open('rlp.json', 'rb') as f:
       d = json.load(f)
-      assert d.keys() == ['imageset_id', 'rlp', 'experiment_id']
-      assert d['rlp'][0] == [0.123, 0.577, 0.186]
+      assert d.keys() == ['imageset_id', 'datablocks', 'rlp', 'experiment_id'], d.keys()
+      assert d['rlp'][:3] == [0.123454, 0.57687, 0.186465]
       assert d['imageset_id'][0] == 0
       assert d['experiment_id'][0] == 0
+      assert len(d['datablocks']) == 1
+      db = DataBlockFactory.from_dict(d['datablocks'])
+      imgset = db[0].extract_imagesets()
+      assert len(imgset) == 1
 
     # Call dials.export
     easy_run.fully_buffered([
@@ -170,7 +176,7 @@ class Test(object):
     assert exists('integrated.json')
     with open('integrated.json', 'rb') as f:
       d = json.load(f)
-      assert d.keys() == ['imageset_id', 'rlp', 'experiment_id']
+      assert d.keys() == ['imageset_id', 'rlp', 'experiment_id'], d.keys()
       assert d['rlp'][0] == [-0.5975, -0.6141, 0.4702]
       assert d['imageset_id'][0] == 0
       assert d['experiment_id'][0] == 0
