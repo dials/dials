@@ -121,6 +121,7 @@ def work_all(host, port, filenames, params, plot=False, table=False,
   return
 
 def stop(host, port, nproc):
+  import httplib
   import urllib2
   stopped = 0
   for j in range(nproc):
@@ -135,6 +136,9 @@ def stop(host, port, nproc):
       print "error on stopping server:", e
     except pysocket.error:
       # Assuming this means the server killed itself before the reply left the send buffer.
+      stopped = stopped + 1
+    except httplib.BadStatusLine:
+      # Regular occurrence. Probably means the server stopped anyway.
       stopped = stopped + 1
   return stopped
 
