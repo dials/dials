@@ -151,8 +151,9 @@ class Test(object):
     assert exists('rlp.json')
     with open('rlp.json', 'rb') as f:
       d = json.load(f)
-      assert d.keys() == ['imageset_id', 'rlp', 'experiment_id']
-      assert d['rlp'][0] == [0.123, 0.577, 0.186]
+      for key in ['imageset_id', 'rlp', 'experiment_id']:
+        assert key in d
+        assert d['rlp'][0:3] == [0.123454, 0.57687, 0.186465]
       assert d['imageset_id'][0] == 0
       assert d['experiment_id'][0] == 0
 
@@ -170,8 +171,9 @@ class Test(object):
     assert exists('integrated.json')
     with open('integrated.json', 'rb') as f:
       d = json.load(f)
-      assert d.keys() == ['imageset_id', 'rlp', 'experiment_id']
-      assert d['rlp'][0] == [-0.5975, -0.6141, 0.4702]
+      for key in ['imageset_id', 'rlp', 'experiment_id']:
+        assert key in d
+        assert d['rlp'][0:3] == [-0.5975, -0.6141, 0.4702]
       assert d['imageset_id'][0] == 0
       assert d['experiment_id'][0] == 0
 
