@@ -18,10 +18,13 @@ class neighbor_analysis(object):
     rs_vectors = reflections['rlp']
     phi_deg = reflections['xyzobs.mm.value'].parts()[2] * (180/math.pi)
 
+    d_spacings = flex.double()
     # nearest neighbor analysis
     from annlib_ext import AnnAdaptor
     for imageset_id in range(flex.max(reflections['imageset_id'])+1):
       sel = reflections['imageset_id'] == imageset_id
+      if sel.count(True) == 0:
+        continue
       phi_min = flex.min(phi_deg.select(sel))
       phi_max = flex.max(phi_deg.select(sel))
       d_phi = phi_max - phi_min
@@ -45,13 +48,19 @@ class neighbor_analysis(object):
           IS_adapt.query(query)
 
           direct.extend(1/flex.sqrt(IS_adapt.distances))
+          d_spacings.extend(1/rs_vectors.norms())
 
     assert len(direct)>NEAR, (
       "Too few spots (%d) for nearest neighbour analysis." %len(direct))
 
+    perm = flex.sort_permutation(direct)
+    direct = direct.select(perm)
+    d_spacings = d_spacings.select(perm)
+
     # reject top 1% of longest distances to hopefully get rid of any outliers
-    direct = direct.select(
-      flex.sort_permutation(direct)[:int(math.floor(0.99*len(direct)))])
+    n = int(math.floor(0.99*len(direct)))
+    direct = direct[:n]
+    d_spacings = d_spacings[:n]
 
     # determine the most probable nearest neighbor distance (direct space)
     hst = flex.histogram(direct, n_slots=int(len(direct)/self.NNBIN))
@@ -86,18 +95,21 @@ class neighbor_analysis(object):
     #self.max_cell = max(MAXTOL * most_probable_neighbor,
                          #MAXTOL * self.percentile)
 
-    if False:
-      self.plot(direct)
+    self.reciprocal_lattice_vectors = rs_vectors
+    self.d_spacings = d_spacings
+    self.direct = direct
+    self.histogram = hst
 
-  def plot(self,val):
-    import numpy as np
-
-    hist,bins = np.histogram(val,bins=int(len(val)/self.NNBIN))
-    width = 0.7*(bins[1]-bins[0])
-    center = (bins[:-1]+bins[1:])/2
+  def plot_histogram(self, filename='nn_hist.png', figsize=(12,8)):
     import matplotlib.pyplot as plt
-    plt.bar(center, hist, align="center", width=width)
+    hist = self.histogram
+    fig = plt.figure(figsize=figsize)
+    plt.bar(hist.slot_centers(), hist.slots(), align="center",
+            width=hist.slot_width(), color='black', edgecolor=None)
     ymin, ymax = plt.ylim()
-    plt.vlines(self.percentile, ymin, ymax, colors='r')
-    plt.vlines(self.max_cell/self.tolerance, ymin, ymax, colors='g')
-    plt.savefig('nn_hist.png')
+    plt.vlines(self.max_cell/self.tolerance, ymin, ymax, colors='g', label='estimated max cell')
+    plt.xlabel('Direct space distance (A)')
+    plt.ylabel('Frequency')
+    plt.legend(loc='best')
+    plt.savefig(filename)
+    plt.clf()

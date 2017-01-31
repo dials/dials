@@ -50,6 +50,8 @@ phil_scope= libtbx.phil.parse("""
     .type = int(value_min=1)
   experiment_ids = None
     .type = ints(value_min=-1)
+  imageset_ids = None
+    .type = ints(value_min=0)
   autospin = False
     .type = bool
   model_view_matrix = None
@@ -176,6 +178,12 @@ class render_3d(object):
           sel.set_selected(reflections['id'] == i, True)
         reflections = reflections.select(sel)
 
+    if self.settings.imageset_ids and 'imageset_id' in reflections:
+      sel = flex.bool(len(reflections), False)
+      for i in self.settings.imageset_ids:
+        sel.set_selected(reflections['imageset_id'] == i, True)
+      reflections = reflections.select(sel)
+
     d_spacings = 1/reflections['rlp'].norms()
 
     # 155 handle data from predictions *only* if that is what we have
@@ -217,9 +225,13 @@ class render_3d(object):
           bkg.append(tuple(self.viewer.settings.background_rgb))
         palette = bkg - palette
       n = palette.size() - 1
-      colors.set_selected(reflections['id'] == -1, palette[0])
-      for i in range(0, flex.max(reflections['id'])+1):
-        colors.set_selected(reflections['id'] == i, palette[(i%n)+1])
+      if reflections.get_flags(reflections.flags.indexed).count(True) == 0:
+        for i in range(0, flex.max(reflections['imageset_id'])+1):
+          colors.set_selected(reflections['imageset_id'] == i, palette[(i%n)+1])
+      else:
+        colors.set_selected(reflections['id'] == -1, palette[0])
+        for i in range(0, flex.max(reflections['id'])+1):
+          colors.set_selected(reflections['id'] == i, palette[(i%n)+1])
     self.viewer.set_colors(colors)
 
 
@@ -258,6 +270,7 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
       self.settings_panel.beam_slow_ctrl.SetValue(self.settings.beam_centre[1])
     self.settings_panel.marker_size_ctrl.SetValue(self.settings.marker_size)
     self.settings_panel.add_experiments_buttons()
+    self.settings_panel.add_imagesets_buttons()
 
   def OnActive (self, event) :
     if self.IsShown() and type(self.viewer).__name__ != "_wxPyDeadObject":
@@ -493,6 +506,29 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     self.Bind(wx.EVT_TOGGLEBUTTON, self.OnChangeSettings, self.expt_btn)
     box.Add(self.expt_btn, 0, wx.ALL, 5)
 
+  def add_imagesets_buttons(self):
+    n = flex.max(self.parent.reflections_input['imageset_id'])
+    if n <= 0:
+      self.imgset_btn = None
+      return
+
+    box = wx.BoxSizer(wx.VERTICAL)
+    self.panel_sizer.Add(box)
+    label = wx.StaticText(self,-1,"Imageset ids:")
+    box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+
+    from wxtbx.segmentedctrl import SegmentedToggleControl, SEGBTN_HORIZONTAL
+    self.imgset_btn = SegmentedToggleControl(self, style=SEGBTN_HORIZONTAL)
+    for i in range(n+1):
+      self.imgset_btn.AddSegment(str(i))
+      if (self.settings.imageset_ids is not None and
+          i in self.settings.imageset_ids):
+        self.imgset_btn.SetValue(i+1, True)
+
+    self.imgset_btn.Realize()
+    self.Bind(wx.EVT_TOGGLEBUTTON, self.OnChangeSettings, self.imgset_btn)
+    box.Add(self.imgset_btn, 0, wx.ALL, 5)
+
   def OnChangeSettings(self, event):
     self.settings.d_min = self.d_min_ctrl.GetValue()
     self.settings.z_min = self.z_min_ctrl.GetValue()
@@ -517,6 +553,13 @@ class settings_window (wxtbx.utils.SettingsPanel) :
         if self.expt_btn.GetValue(i):
           expt_ids.append(i-1)
       self.settings.experiment_ids = expt_ids
+
+    if self.imgset_btn is not None:
+      imgset_ids = []
+      for i in range(len(self.imgset_btn.segments)):
+        if self.imgset_btn.GetValue(i):
+          imgset_ids.append(i)
+      self.settings.imageset_ids = imgset_ids
 
     self.parent.update_settings()
 

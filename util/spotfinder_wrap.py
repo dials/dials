@@ -1,5 +1,10 @@
 from __future__ import division
 
+from rstbx.slip_viewer.frame import chooser_wrapper as _chooser_wrapper
+class chooser_wrapper(_chooser_wrapper):
+  def show_header(self):
+    pass
+
 class spot_wrapper(object):
   def __init__(self, params):
     self.params = params
@@ -19,8 +24,6 @@ class spot_wrapper(object):
       crystals=crystals)
     self.frame.SetSize((1024,780))
     self.frame.Show()
-
-    from rstbx.slip_viewer.frame import chooser_wrapper
 
     for imageset in imagesets:
       for idx in xrange(len(imageset.indices())):

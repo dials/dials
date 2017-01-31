@@ -40,7 +40,7 @@ def write_par_file(file_name, experiment):
   from scitbx import matrix
   from dxtbx.model.crystal import crystal_model
   from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
-  from dials.command_line.refine_bravais_settings import short_space_group_name
+  from iotbx.mtz.extract_from_symmetry_lib import ccp4_symbol
 
   imageset = experiment.imageset
   detector = imageset.get_detector()
@@ -102,10 +102,12 @@ def write_par_file(file_name, experiment):
     print >> f, 'DISTANCE        %7.2f' %distance
     print >> f, 'WAVELENGTH      %.5f' %beam.get_wavelength()
     print >> f, 'POLARISATION    %7.5f' %beam.get_polarization_fraction()
-    print >> f, 'SYMMETRY       %s' %short_space_group_name(cryst.get_space_group())
-    print >> f, 'UB             %9.2f %9.2f %9.2f' %UB_mosflm[:3]
-    print >> f, '               %9.2f %9.2f %9.2f' %UB_mosflm[3:6]
-    print >> f, '               %9.2f %9.2f %9.2f' %UB_mosflm[6:]
+    print >> f, 'SYMMETRY       %s' %ccp4_symbol(
+      cryst.get_space_group().info(), lib_name='syminfo.lib',
+       require_at_least_one_lib=False).replace(' ', '')
+    print >> f, 'UB             %9.6f %9.6f %9.6f' %UB_mosflm[:3]
+    print >> f, '               %9.6f %9.6f %9.6f' %UB_mosflm[3:6]
+    print >> f, '               %9.6f %9.6f %9.6f' %UB_mosflm[6:]
     print >> f, 'CELL           %8.2f %8.2f %8.2f %6.2f %6.2f %6.2f' %uc_params
     print >> f, 'RASTER           13  13   7   3   4'
     print >> f, 'SEPARATION      2.960  2.960'

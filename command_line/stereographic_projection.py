@@ -70,6 +70,10 @@ plot {
   font_size = 6
     .type = float(value_min=0)
 }
+json {
+  filename = None
+    .type = path
+}
 ''')
 
 def reference_poles_perpendicular_to_beam(beam, goniometer):
@@ -278,6 +282,9 @@ def run(args):
       colours=params.plot.colours, marker_size=params.plot.marker_size,
       font_size=params.plot.font_size, label_indices=params.plot.label_indices)
 
+  if params.json.filename:
+    projections_as_json(projections_all, filename=params.json.filename)
+
 def plot_projections(projections, filename=None, show=None,
                      colours=None, marker_size=3, font_size=6,
                      label_indices=False):
@@ -327,6 +334,53 @@ def plot_projections(projections, filename=None, show=None,
   if show:
     pyplot.show()
 
+def projections_as_dict(projections):
+  projections_all = flex.vec2_double()
+  for proj in projections:
+    projections_all.extend(proj)
+
+  data = []
+  x, y = projections_all.parts()
+  data.append({
+    'x': list(x),
+    'y': list(y),
+    'mode': 'markers',
+    'type': 'scatter',
+    'name': 'stereographic_projections',
+  })
+
+  d = {
+    'data': data,
+    'layout': {
+      'title': 'Stereographic projections',
+      'xaxis': {'range': [-1.0, 1.0]},
+      'yaxis': {'range': [-1.0, 1.0]},
+      'shapes': [
+        {
+          'type': 'circle',
+          'xref': 'x',
+          'yref': 'y',
+          'x0': -1,
+          'y0': -1,
+          'x1': 1,
+          'y1': 1,
+          'line': {
+            'color': 'black',
+          }
+        }
+      ]
+    },
+  }
+  return d
+
+def projections_as_json(projections, filename=None):
+  d = projections_as_dict(projections)
+  import json
+  json_str = json.dumps(d)
+  if filename is not None:
+    with open(filename, 'wb') as f:
+      print >> f, json_str
+  return json_str
 
 if __name__ == '__main__':
   import sys
