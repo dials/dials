@@ -729,9 +729,9 @@ separate files
 
 ::
 
-  Saving experiment 0 to integrated_experiments.json_0.json
+  Saving experiment 0 to integrated_experiments_0.json
   Saving reflections for experiment 0 to integrated_0.pickle
-  Saving experiment 1 to integrated_experiments.json_1.json
+  Saving experiment 1 to integrated_experiments_1.json
   Saving reflections for experiment 1 to integrated_1.pickle
 
 Now we are ready to run dials.export on the individual .pickle and .json
@@ -739,8 +739,8 @@ files output for each experiment.
 
 ::
 
-  dials.export integrated_0.pickle integrated_experiments.json_0.json mtz.hklout=integrated_0.mtz
-  dials.export integrated_1.pickle integrated_experiments.json_1.json mtz.hklout=integrated_1.mtz
+  dials.export integrated_0.pickle integrated_experiments_0.json mtz.hklout=integrated_0.mtz
+  dials.export integrated_1.pickle integrated_experiments_1.json mtz.hklout=integrated_1.mtz
 
 And this is the output, showing the reflection file statistics.
 
