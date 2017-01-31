@@ -154,7 +154,7 @@ class Test(object):
     with open('rlp.json', 'rb') as f:
       d = json.load(f)
       assert d.keys() == ['imageset_id', 'datablocks', 'rlp', 'experiment_id'], d.keys()
-      assert d['rlp'][:3] == [0.123454, 0.57687, 0.186465]
+      assert d['rlp'][:3] == [0.123454, 0.57687, 0.186465], d['rlp'][:3]
       assert d['imageset_id'][0] == 0
       assert d['experiment_id'][0] == 0
       assert len(d['datablocks']) == 1
@@ -177,7 +177,7 @@ class Test(object):
     with open('integrated.json', 'rb') as f:
       d = json.load(f)
       assert d.keys() == ['imageset_id', 'rlp', 'experiment_id'], d.keys()
-      assert d['rlp'][0] == [-0.5975, -0.6141, 0.4702]
+      assert d['rlp'][:3] == [-0.5975, -0.6141, 0.4702], d['rlp'][0]
       assert d['imageset_id'][0] == 0
       assert d['experiment_id'][0] == 0
 
