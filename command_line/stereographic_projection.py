@@ -360,14 +360,41 @@ def projections_as_dict(projections):
     'mode': 'markers',
     'type': 'scatter',
     'name': 'stereographic_projections',
+    'showlegend': False,
+  })
+  data.append({
+    'x': [0],
+    'y': [0],
+    'mode': 'markers',
+    'marker': {
+      'color': 'black',
+      'size': 25,
+      'symbol': 'cross-thin',
+      'line': { 'width': 1 }
+    },
+    'showlegend': False,
   })
 
   d = {
     'data': data,
     'layout': {
       'title': 'Stereographic projections',
-      'xaxis': {'range': [-1.0, 1.0]},
-      'yaxis': {'range': [-1.0, 1.0]},
+      'xaxis': {
+        'range': [-1.0, 1.0],
+        'showgrid': False,
+        'zeroline': False,
+        'showline': False,
+        'ticks': '',
+        'showticklabels': False,
+      },
+      'yaxis': {
+        'range': [-1.0, 1.0],
+        'showgrid': False,
+        'zeroline': False,
+        'showline': False,
+        'ticks': '',
+        'showticklabels': False,
+      },
       'shapes': [
         {
           'type': 'circle',
