@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division
 from multiprocessing import Pipe
+import select
 from cStringIO import StringIO
 import subprocess
 import time
@@ -11,25 +12,47 @@ from threading import Thread
 
 dummy = False
 
+class _LinePrinter:
+  '''Buffer that can be filled with stream data and will aggregate and print
+     complete lines.'''
+  def __init__(self):
+    self._buffer = ''
+  def add(self, data):
+    self._buffer += data
+    if "\n" in data:
+      to_print, remainder = self._buffer.rsplit('\n')
+      print to_print
+      self._buffer = remainder
+  def flush(self):
+    if self._buffer:
+      print self._buffer
+    self._buffer = ''
+
 class _NonBlockingStreamReader:
   '''Reads a stream in a thread to avoid blocking/deadlocks'''
   def __init__(self, stream, output=True, debug=False, notify=None):
     '''Creates and starts a thread which reads from a stream.'''
     self._buffer = StringIO()
     self._closed = False
+    self._closing = False
     self._debug = debug
     self._stream = stream
     self._terminated = False
 
     def _thread_write_stream_to_buffer():
-      line = True
-      while line:
-        line = self._stream.readline()
-        if line:
-          self._buffer.write(line)
-          if output:
-            print line,
+      lp = _LinePrinter()
+      char = True
+      while char:
+        if select.select([self._stream], [], [], 0.1)[0]:
+          char = self._stream.read(1)
+          if char:
+            self._buffer.write(char)
+            if output:
+              lp.add(char)
+        else:
+          if self._closing: break
       self._terminated = True
+      lp.flush()
       if self._debug:
         print "Stream reader terminated"
       if notify:
@@ -46,6 +69,7 @@ class _NonBlockingStreamReader:
   def get_output(self):
     '''Retrieve the stored data in full.
        This call may block if the reading thread has not yet terminated.'''
+    self._closing = True
     if not self.has_finished():
       if self._debug:
         underrun_debug_timer = timeit.default_timer()
