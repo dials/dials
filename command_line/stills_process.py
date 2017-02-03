@@ -91,6 +91,7 @@ dials_phil_str = '''
   include scope dials.algorithms.integration.integrator.phil_scope
   include scope dials.algorithms.profile_model.factory.phil_scope
   include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
+  include scope dials.algorithms.integration.stills_significance_filter.phil_scope
 
   indexing {
     stills {
@@ -452,21 +453,26 @@ class Processor(object):
     return experiments, indexed
 
   def refine(self, experiments, centroids):
-    print "Not refining here because the crystal orientation is refined during indexing"
-# TODO add dispatch.refine as option and use this code
-#    from dials.algorithms.refinement import RefinerFactory
-#    from time import time
-#    st = time()
-#
-#    logger.info('*' * 80)
-#    logger.info('Refining Model')
-#    logger.info('*' * 80)
-#
-#    refiner = RefinerFactory.from_parameters_data_experiments(
-#      self.params, centroids, experiments)
-#
-#    refiner.run()
-#    experiments = refiner.get_experiments()
+    from dials.algorithms.refinement import RefinerFactory
+    from time import time
+    st = time()
+
+    logger.info('*' * 80)
+    logger.info('Refining Model')
+    logger.info('*' * 80)
+
+    refiner = RefinerFactory.from_parameters_data_experiments(
+      self.params, centroids, experiments)
+
+    refiner.run()
+    experiments = refiner.get_experiments()
+
+    # Re-estimate mosaic estimates
+    from dials.algorithms.indexing.nave_parameters import nave_parameters
+    nv = nave_parameters(params = self.params, experiments=experiments, reflections=centroids, refinery=refiner, graph_verbose=False)
+    nv()
+    #acceptance_flags_nv = nv.nv_acceptance_flags
+    #centroids = centroids.select(acceptance_flags_nv)
 
     # Dump experiments to disk
     if self.params.output.refined_experiments_filename:
@@ -474,8 +480,8 @@ class Processor(object):
       dump = ExperimentListDumper(experiments)
       dump.as_json(self.params.output.refined_experiments_filename)
 
-#    logger.info('')
-#    logger.info('Time Taken = %f seconds' % (time() - st))
+    logger.info('')
+    logger.info('Time Taken = %f seconds' % (time() - st))
 
     return experiments
 
@@ -551,6 +557,15 @@ class Processor(object):
         integrated = integrated.select(integrated['background.sum.variance'] > 0)
       # apply detector gain to background summation variances
       integrated['background.sum.variance'] *= self.params.integration.summation.detector_gain
+
+    if self.params.significance_filter.enable:
+      from dials.algorithms.integration.stills_significance_filter import SignificanceFilter
+      sig_filter = SignificanceFilter(self.params)
+      refls = sig_filter(experiments, integrated)
+      logger.info("Removed %d reflections out of %d when applying significance filter"%(len(integrated)-len(refls), len(integrated)))
+      if len(refls) == 0:
+        raise Sorry("No reflections left after applying significance filter")
+      integrated = refls
 
     if self.params.output.integrated_filename:
       # Save the reflections
