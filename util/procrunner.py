@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division
-import cStringIO as StringIO
-import Queue
+from multiprocessing import Pipe
+from cStringIO import StringIO
 import subprocess
 import time
 import timeit
@@ -15,10 +15,9 @@ class _NonBlockingStreamReader:
   '''Reads a stream in a thread to avoid blocking/deadlocks'''
   def __init__(self, stream, output=True, debug=False, notify=None):
     '''Creates and starts a thread which reads from a stream.'''
-    self._buffer = StringIO.StringIO()
+    self._buffer = StringIO()
     self._closed = False
     self._debug = debug
-    self._notify_queue = notify
     self._stream = stream
     self._terminated = False
 
@@ -33,8 +32,8 @@ class _NonBlockingStreamReader:
       self._terminated = True
       if self._debug:
         print "Stream reader terminated"
-      if self._notify_queue:
-        self._notify_queue.put_nowait(True)
+      if notify:
+        notify()
 
     self._thread = Thread(target = _thread_write_stream_to_buffer)
     self._thread.daemon = True
@@ -74,7 +73,6 @@ class _NonBlockingStreamWriter:
     self._buffer_pos = 0
     self._debug = debug
     self._max_block_len = 4096
-    self._notify_queue = notify
     self._stream = stream
     self._terminated = False
 
@@ -90,6 +88,8 @@ class _NonBlockingStreamWriter:
           if e.errno == 32: # broken pipe, ie. process terminated without reading entire stdin
             self._stream.close()
             self._terminated = True
+            if notify:
+              notify()
             return
           raise
         self._buffer_pos += len(block)
@@ -97,8 +97,8 @@ class _NonBlockingStreamWriter:
           print "wrote %d bytes to stream" % len(block)
       self._stream.close()
       self._terminated = True
-      if self._notify_queue:
-        self._notify_queue.put_nowait(True)
+      if notify:
+        notify()
 
     self._thread = Thread(target = _thread_write_buffer_to_stream)
     self._thread.daemon = True
@@ -137,17 +137,23 @@ def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=Tru
              'timeout': False, 'runtime': 0,
              'time_start': time_start, 'time_end': time_start }
 
-  thread_communication = Queue.Queue()
-
   start_time = timeit.default_timer()
   if timeout is not None:
     max_time = start_time + timeout
 
   p = subprocess.Popen(command, shell=False, stdin=stdin_pipe, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  stdout = _NonBlockingStreamReader(p.stdout, output=print_stdout, debug=debug, notify=thread_communication)
-  stderr = _NonBlockingStreamReader(p.stderr, output=print_stderr, debug=debug, notify=thread_communication)
+
+  thread_pipe_pool = []
+  notifyee, notifier = Pipe(False)
+  thread_pipe_pool.append(notifyee)
+  stdout = _NonBlockingStreamReader(p.stdout, output=print_stdout, debug=debug, notify=notifier.close)
+  notifyee, notifier = Pipe(False)
+  thread_pipe_pool.append(notifyee)
+  stderr = _NonBlockingStreamReader(p.stderr, output=print_stderr, debug=debug, notify=notifier.close)
   if stdin is not None:
-    stdin = _NonBlockingStreamWriter(p.stdin, data=stdin, debug=debug, notify=thread_communication)
+    notifyee, notifier = Pipe(False)
+    thread_pipe_pool.append(notifyee)
+    stdin = _NonBlockingStreamWriter(p.stdin, data=stdin, debug=debug, notify=notifier.close)
 
   timeout_encountered = False
 
@@ -158,17 +164,21 @@ def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=Tru
 
     # wait for some time or until a stream is closed
     try:
-      # Wait for up to 0.5 seconds or for any signal from the stdin/out streams,
-      # which could indicate that the process has terminated.
-      event = thread_communication.get(True, 0.5)
-      if event and debug:
-        print "Event received from stream thread"
+      if thread_pipe_pool:
+        # Wait for up to 0.5 seconds or for a signal on a remaining stream,
+        # which could indicate that the process has terminated.
+        event = thread_pipe_pool[0].poll(0.5)
+        if event:
+          # One-shot, so remove stream and watch remaining streams
+          thread_pipe_pool.pop(0)
+          if debug:
+            print "Event received from stream thread"
+      else:
+        time.sleep(0.5)
     except KeyboardInterrupt:
       p.kill() # if user pressed Ctrl+C we won't be able to produce a proper report anyway
                # but at least make sure the child process dies with us
       raise
-    except Queue.Empty:
-      pass # expected exception, nothing happened for the timeout period
 
     # check if process is still running
     p.poll()
@@ -181,10 +191,8 @@ def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=Tru
 
     # send terminate signal and wait some time for buffers to be read
     p.terminate()
-    try:
-      thread_communication.get(True, 0.5)
-    except Queue.Empty:
-      pass # expected exception, nothing happened for the timeout period
+    if thread_pipe_pool:
+      thread_pipe_pool[0].poll(0.5)
     if not stdout.has_finished() or not stderr.has_finished():
       time.sleep(2)
     p.poll()
@@ -193,10 +201,8 @@ def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=Tru
     # thread still alive
     # send kill signal and wait some more time for buffers to be read
     p.kill()
-    try:
-      thread_communication.get(True, 0.5)
-    except Queue.Empty:
-      pass # expected exception, nothing happened for the timeout period
+    if thread_pipe_pool:
+      thread_pipe_pool[0].poll(0.5)
     if not stdout.has_finished() or not stderr.has_finished():
       time.sleep(5)
     p.poll()
