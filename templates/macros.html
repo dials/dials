@@ -20,15 +20,19 @@
     </div>
 {%- endmacro %}
 
-{% macro plotly_graph(div_id, json_data) -%}
-    <div class="col-xs-6 col-sm-6 col-md-4 plot" id="{{ div_id }}"></div>
+{% macro plotly_graph(div_id, json_data, style=None) -%}
+    {% if style != None %}
+        <div class="col-xs-6 col-sm-6 col-md-4 {{ style }}" id="{{ div_id }}"></div>
+    {% else %}
+        <div class="col-xs-6 col-sm-6 col-md-4 plot" id="{{ div_id }}"></div>
+    {% endif %}
     <script>
         var graphs_{{ div_id }} = {{ json_data }};
         Plotly.newPlot({{ div_id }}, graphs_{{ div_id }}.data, graphs_{{ div_id }}.layout);
     </script>
 {%- endmacro %}
 
-{% macro panel(panel_title, panel_id, graphs) -%}
+{% macro panel(panel_title, panel_id, graphs, styles=None) -%}
 <div class="panel panel-default">
     <div class="panel-heading" data-toggle="collapse" href="#collapse_{{ panel_id }}">
         <h4 class="panel-title">
@@ -39,7 +43,11 @@
         <div class="panel-body">
             <div class="container-fluid">
                 {% for div_id, json_data in graphs.iteritems() %}
-                    {{ plotly_graph(div_id, json_data) }}
+                    {% if styles != None %}
+                        {{ plotly_graph(div_id, json_data, style=styles.get(div_id)) }}
+                    {% else %}
+                        {{ plotly_graph(div_id, json_data) }}
+                    {% endif %}
                 {% endfor %}
             </div>
         </div>
