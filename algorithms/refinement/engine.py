@@ -754,6 +754,13 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
     nu = 2
     self.build_up()
 
+    # early test for linear independence, require all right hand side elements to be non-zero
+    RHS = self.step_equations().right_hand_side()
+    if RHS.count(0.0) > 0:
+      raise Exception(r"""Sorry, there is at least one normal equation with a right hand side of zero, meaning
+      that the parameters are not all independent, and there is no unique solution.  Mathematically, some
+      kind of row reduction needs to be performed before this can be solved.""")
+
     # return early if refinement is not possible
     if self.dof < 1:
       self.history.reason_for_termination = DOF_TOO_LOW
