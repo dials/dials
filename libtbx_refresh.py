@@ -90,9 +90,10 @@ for cmd in [%s]:
       original_file = open(os.path.join(build_path, file)).read()
       if not 'DIALS_ENABLE_COMMAND_LINE_COMPLETION' in original_file:
         marker = "\nexport PATH\n"
-        insert_position = original_file.find(marker) + len(marker)
-        if insert_position >= 0:
+        original_position = original_file.find(marker)
+        if original_position >= 0:
           print file,
+          insert_position = original_position + len(marker)
           added_script = \
             '# DIALS_ENABLE_COMMAND_LINE_COMPLETION\n' \
             '[ -n "$BASH_VERSION" ] && {\n' \
