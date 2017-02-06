@@ -284,7 +284,137 @@ class ComputeEsdReflectingRange(object):
       # Return the list of tau and zeta
       return flex.double(tau), flex.double(zeta2)
 
-  def __init__(self, crystal, beam, detector, goniometer, scan, reflections):
+  class ExtendedEstimator(object):
+    ''' Try to estimate using knowledge of intensities '''
+    def __init__(self, crystal, beam, detector, goniometer, scan, reflections,
+                 n_macro_cycles=10):
+
+      from dials.array_family import flex
+      from math import sqrt, pi, exp, log
+      from scitbx import simplex
+
+      # Get the oscillation width
+      dphi2 = scan.get_oscillation(deg=False)[1] / 2.0
+
+      # Calculate a list of angles and zeta's
+      tau, zeta, n, indices = self._calculate_tau_and_zeta(
+        crystal, beam, detector,  goniometer, scan, reflections)
+
+      # Calculate zeta * (tau +- dphi / 2) / sqrt(2)
+      self.e1 = (tau + dphi2) * flex.abs(zeta) / sqrt(2.0)
+      self.e2 = (tau - dphi2) * flex.abs(zeta) / sqrt(2.0)
+      self.n = n
+      self.indices = indices
+
+      # Compute intensity
+      self.K = flex.double()
+      for i0, i1 in zip(self.indices[:-1], self.indices[1:]):
+        selection = flex.size_t(range(i0, i1))
+        self.K.append(flex.sum(self.n.select(selection)))
+
+      # Set the starting values to try 1, 3 degrees seems sensible for
+      # crystal mosaic spread
+      start = log(0.1 * pi / 180)
+      stop = log(1 * pi / 180)
+      starting_simplex = [flex.double([start]), flex.double([stop])]
+
+      # Initialise the optimizer
+      optimizer = simplex.simplex_opt(
+        1,
+        matrix=starting_simplex,
+        evaluator=self,
+        tolerance=1e-3)
+
+      # Get the solution
+      sigma = exp(optimizer.get_solution()[0])
+
+      # Save the result
+      self.sigma = sigma
+
+    def target(self, log_sigma):
+      ''' The target for minimization. '''
+      from math import sqrt, exp, pi
+      from scitbx.array_family import flex
+      import scitbx.math
+
+      sigma_m = exp(log_sigma[0])
+
+      # Tiny value
+      TINY = 1e-10
+      assert(sigma_m > TINY)
+
+      # Calculate the two components to the fraction
+      a = scitbx.math.erf(self.e1 / sigma_m)
+      b = scitbx.math.erf(self.e2 / sigma_m)
+      n = self.n
+      K = self.K
+
+      # Calculate the fraction of observed reflection intensity
+      zi = (a - b) / 2.0
+
+      # Set any points <= 0 to 1e-10 (otherwise will get a floating
+      # point error in log calculation below).
+      assert(zi.all_ge(0))
+      mask = zi < TINY
+      assert(mask.count(True) < len(mask))
+      zi.set_selected(mask, TINY)
+
+      # Compute the likelihood
+      L = 0
+      for j, (i0, i1) in enumerate(zip(self.indices[:-1], self.indices[1:])):
+        selection = flex.size_t(range(i0, i1))
+        zj = zi.select(selection)
+        nj = n.select(selection)
+        kj = K[j]
+        Z = flex.sum(zj)
+        L += flex.sum(nj * flex.log(kj*zj)) - kj * Z
+      print "Sigma M: %f, log(L): %f" % (sigma_m * 180/pi, L)
+
+      # Return the logarithm of r
+      return -L
+
+
+    def _calculate_tau_and_zeta(self, crystal, beam, detector, goniometer, scan, reflections):
+      '''Calculate the list of tau and zeta needed for the calculation.
+
+      Params:
+          reflections The list of reflections
+          experiment The experiment object.
+
+      Returns:
+          (list of tau, list of zeta)
+
+      '''
+      from scitbx.array_family import flex
+
+      # Calculate the list of frames and z coords
+      sbox = reflections['shoebox']
+      phi = reflections['xyzcal.mm'].parts()[2]
+
+      # Calculate the zeta list
+      zeta = reflections['zeta']
+
+      # Calculate the list of tau values
+      tau = []
+      zeta2 = []
+      num = []
+      indices = [0]
+      scan = scan
+      for s, p, z in zip(sbox, phi, zeta):
+        b = s.bbox
+        for z0, f in enumerate(range(b[4], b[5])):
+          phi0 = scan.get_angle_from_array_index(int(f), deg=False)
+          phi1 = scan.get_angle_from_array_index(int(f)+1, deg=False)
+          tau.append((phi1 + phi0) / 2.0 - p)
+          zeta2.append(z)
+          num.append(flex.sum(s.data[z0:z0+1,:,:]))
+        indices.append(len(zeta2))
+
+      # Return the list of tau and zeta
+      return flex.double(tau), flex.double(zeta2), flex.double(num), flex.size_t(indices)
+
+  def __init__(self, crystal, beam, detector, goniometer, scan, reflections,
+               algorithm="basic"):
     '''initialise the algorithm with the scan.
 
     params:
@@ -292,13 +422,19 @@ class ComputeEsdReflectingRange(object):
 
     '''
 
-    # Calculate sigma_m
-    try:
-      estimator = ComputeEsdReflectingRange.Estimator(
-        crystal, beam, detector, goniometer, scan, reflections)
-    except Exception:
-      estimator = ComputeEsdReflectingRange.CrudeEstimator(
-        crystal, beam, detector, goniometer, scan, reflections)
+    if algorithm == "basic":
+
+      # Calculate sigma_m
+      try:
+        estimator = ComputeEsdReflectingRange.Estimator(
+          crystal, beam, detector, goniometer, scan, reflections)
+      except Exception:
+        estimator = ComputeEsdReflectingRange.CrudeEstimator(
+          crystal, beam, detector, goniometer, scan, reflections)
+
+    elif algorithm == "extended":
+      estimator = ComputeEsdReflectingRange.ExtendedEstimator(
+          crystal, beam, detector, goniometer, scan, reflections)
 
     # Save the solution
     self._sigma = estimator.sigma
@@ -311,7 +447,8 @@ class ComputeEsdReflectingRange(object):
 class ProfileModelCalculator(object):
   ''' Class to help calculate the profile model. '''
 
-  def __init__(self, reflections, crystal, beam, detector, goniometer, scan, min_zeta=0.05):
+  def __init__(self, reflections, crystal, beam, detector, goniometer, scan,
+               min_zeta=0.05, algorithm="basic"):
     ''' Calculate the profile model. '''
     from dxtbx.model.experiment.experiment_list import Experiment
     from dials.array_family import flex
@@ -350,8 +487,14 @@ class ProfileModelCalculator(object):
 
       # Calculate the E.S.D of the reflecting range
       logger.info('Calculating E.S.D Reflecting Range.')
-      reflecting_range = ComputeEsdReflectingRange(crystal, beam, detector,
-                                                   goniometer, scan, reflections)
+      reflecting_range = ComputeEsdReflectingRange(
+        crystal,
+        beam,
+        detector,
+        goniometer,
+        scan,
+        reflections,
+        algorithm=algorithm)
 
       # Set the sigmas
       self._sigma_m = reflecting_range.sigma()
@@ -371,7 +514,8 @@ class ProfileModelCalculator(object):
 class ScanVaryingProfileModelCalculator(object):
   ''' Class to help calculate the profile model. '''
 
-  def __init__(self, reflections, crystal, beam, detector, goniometer, scan, min_zeta=0.05):
+  def __init__(self, reflections, crystal, beam, detector, goniometer, scan,
+               min_zeta=0.05, algorithm="basic"):
     ''' Calculate the profile model. '''
     from copy import deepcopy
     from collections import defaultdict

@@ -33,6 +33,10 @@ phil_scope = parse('''
         .help = "The minimum number of spots needed to do the profile modelling"
     }
 
+    sigma_m_algorithm = *basic extended
+      .type = choice
+      .help = "The algorithm to compute mosaicity"
+
     parameters {
       sigma_b = None
         .type = float(value_min=0)
@@ -259,7 +263,8 @@ class Model(ProfileModelIface):
       detector,
       goniometer,
       scan,
-      params.gaussian_rs.filter.min_zeta)
+      params.gaussian_rs.filter.min_zeta,
+      algorithm=params.gaussian_rs.sigma_m_algorithm)
     return cls(
       params=params,
       n_sigma=3.0,
