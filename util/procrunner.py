@@ -12,25 +12,37 @@ from threading import Thread
 
 dummy = False
 
-class _LinePrinter:
-  '''Buffer that can be filled with stream data and will aggregate and print
-     complete lines.'''
-  def __init__(self):
+class _LineAggregator:
+  '''Buffer that can be filled with stream data and will aggregate complete
+     lines. Lines can be printed or passed to an arbitrary callback function.'''
+  def __init__(self, print_line=False, callback=None):
+    '''Create aggregator object.'''
     self._buffer = ''
+    self._print = print_line
+    self._callback = callback
   def add(self, data):
+    '''Add a single character to buffer. If one or more full lines are found,
+       print them (if desired) and pass to callback function.'''
     self._buffer += data
     if "\n" in data:
       to_print, remainder = self._buffer.rsplit('\n')
-      print to_print
+      if self._print:
+        print to_print
+      if self._callback:
+        self._callback(to_print)
       self._buffer = remainder
   def flush(self):
+    '''Print/send any remaining data to callback function.'''
     if self._buffer:
-      print self._buffer
+      if self._print:
+        print self._buffer
+      if self._callback:
+        self._callback(self._buffer)
     self._buffer = ''
 
 class _NonBlockingStreamReader:
   '''Reads a stream in a thread to avoid blocking/deadlocks'''
-  def __init__(self, stream, output=True, debug=False, notify=None):
+  def __init__(self, stream, output=True, debug=False, notify=None, callback=None):
     '''Creates and starts a thread which reads from a stream.'''
     self._buffer = StringIO()
     self._closed = False
@@ -40,19 +52,18 @@ class _NonBlockingStreamReader:
     self._terminated = False
 
     def _thread_write_stream_to_buffer():
-      lp = _LinePrinter()
+      la = _LineAggregator(print_line=output, callback=callback)
       char = True
       while char:
         if select.select([self._stream], [], [], 0.1)[0]:
           char = self._stream.read(1)
           if char:
             self._buffer.write(char)
-            if output:
-              lp.add(char)
+            la.add(char)
         else:
           if self._closing: break
       self._terminated = True
-      lp.flush()
+      la.flush()
       if self._debug:
         print "Stream reader terminated"
       if notify:
@@ -140,7 +151,7 @@ class _NonBlockingStreamWriter:
     '''Return the number of bytes still to be written.'''
     return self._buffer_len - self._buffer_pos
 
-def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=True, print_stderr=True):
+def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=True, print_stderr=True, callback_stdout=None, callback_stderr=None):
   ''' run an external process, command line specified as array,
       optionally enforces a timeout specified in seconds,
       obtains STDOUT, STDERR and exit code
@@ -170,10 +181,10 @@ def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=Tru
   thread_pipe_pool = []
   notifyee, notifier = Pipe(False)
   thread_pipe_pool.append(notifyee)
-  stdout = _NonBlockingStreamReader(p.stdout, output=print_stdout, debug=debug, notify=notifier.close)
+  stdout = _NonBlockingStreamReader(p.stdout, output=print_stdout, debug=debug, notify=notifier.close, callback=callback_stdout)
   notifyee, notifier = Pipe(False)
   thread_pipe_pool.append(notifyee)
-  stderr = _NonBlockingStreamReader(p.stderr, output=print_stderr, debug=debug, notify=notifier.close)
+  stderr = _NonBlockingStreamReader(p.stderr, output=print_stderr, debug=debug, notify=notifier.close, callback=callback_stderr)
   if stdin is not None:
     notifyee, notifier = Pipe(False)
     thread_pipe_pool.append(notifyee)
