@@ -71,7 +71,8 @@ def dials_version():
 
     # 1. Try to access information in .git directory
     #    Regenerate .gitversion if possible
-    if os.path.exists(os.path.join(dials_path, '.git')):
+    if not os.environ.get('DIALS_SKIP_GIT_VERSIONING') \
+       and os.path.exists(os.path.join(dials_path, '.git')):
       try:
         version = get_git_version(dials_path)
         with open(version_file, 'w') as gv:
