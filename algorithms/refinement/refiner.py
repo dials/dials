@@ -937,6 +937,35 @@ class RefinerFactory(object):
       nref = len(isel)
       return nref - cutoff
 
+    def unit_cell_nparam_minus_nref(p, reflections):
+      '''Special version of model_nparam_minus_nref for crystal unit cell
+      parameterisations. In some cases certain parameters of a unit cell
+      parameterisation may affect only some subset of the total number of
+      reflections. For example, for an orthorhombic cell the g_param_0 parameter
+      has no effect on predictions in the plane (0,k,l). Here, take the number
+      of affected reflections for each parameter into account.'''
+      exp_ids = p.get_experiment_ids()
+      isel = flex.size_t()
+      for exp_id in exp_ids:
+        isel.extend((reflections['id'] == exp_id).iselection())
+      ref = reflections.select(isel)
+      h = ref['miller_index'].as_vec3_double()
+      dB_dp = p.get_ds_dp()
+      # if no free parameters, do as model_nparam_minus_nref
+      if len(dB_dp) == 0: return len(isel)
+      nref_each_param = []
+      min_nref = options.auto_reduction.min_nref_per_parameter
+      for der in dB_dp:
+        der_mat = flex.mat3_double(len(h), der.elems)
+        tst = (der_mat * h).norms()
+        nref_each_param.append((tst > 0.0).count(True))
+      return min([nref - min_nref for nref in nref_each_param])
+
+    # In the scan-varying case we can't calculate dB_dp before composing the
+    # model, so revert to the original function
+    if options.scan_varying:
+      unit_cell_nparam_minus_nref = model_nparam_minus_nref
+
     def panel_gp_nparam_minus_nref(p, pnl_ids, group, reflections, verbose=False):
       exp_ids = p.get_experiment_ids()
       # Do we have enough reflections to support this parameterisation?
@@ -977,7 +1006,7 @@ class RefinerFactory(object):
           weak = p
           name = 'Crystal{0} orientation'.format(i + 1)
       for i, p in enumerate(xl_uc_params):
-        net_nref = model_nparam_minus_nref(p, reflections)
+        net_nref = unit_cell_nparam_minus_nref(p, reflections)
         if net_nref < nref_deficit:
           nref_deficit = net_nref
           weak = p
@@ -1053,7 +1082,7 @@ class RefinerFactory(object):
           raise Sorry(msg)
 
       for i, xluc in enumerate(xl_uc_params):
-        if model_nparam_minus_nref(xluc, reflections) < 0:
+        if unit_cell_nparam_minus_nref(xluc, reflections) < 0:
           mdl = 'Crystal{0} unit cell'.format(i + 1)
           msg = failmsg.format(mdl)
           raise Sorry(msg)
@@ -1097,7 +1126,7 @@ class RefinerFactory(object):
 
       tmp = []
       for i, xluc in enumerate(xl_uc_params):
-        if model_nparam_minus_nref(xluc, reflections) >= 0:
+        if unit_cell_nparam_minus_nref(xluc, reflections) >= 0:
           tmp.append(xluc)
         else:
           mdl = 'Crystal{0} unit cell'.format(i + 1)
