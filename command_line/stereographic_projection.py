@@ -379,6 +379,7 @@ def projections_as_dict(projections):
     'data': data,
     'layout': {
       'title': 'Stereographic projections',
+      'hovermode': False,
       'xaxis': {
         'range': [-1.0, 1.0],
         'showgrid': False,
