@@ -119,7 +119,6 @@ phil_scope = parse(
   include scope dials.algorithms.integration.integrator.phil_scope
   include scope dials.algorithms.profile_model.factory.phil_scope
   include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
-  include scope dials.algorithms.integration.stills_significance_filter.phil_scope
 
 ''', process_includes=True)
 
@@ -324,13 +323,6 @@ class Script(object):
       rubbish.unset_flags(mask, rubbish.flags.integrated_prf)
       rubbish.set_flags(mask, rubbish.flags.bad_reference)
       reflections.extend(rubbish)
-
-    if params.significance_filter.enable:
-      from dials.algorithms.integration.stills_significance_filter import SignificanceFilter
-      sig_filter = SignificanceFilter(params)
-      refls = sig_filter(experiments, reflections)
-      logger.info("Removed %d reflections out of %d when applying significance filter"%(len(reflections)-len(refls), len(reflections)))
-      reflections = refls
 
     # Save the reflections
     self.save_reflections(reflections, params.output.reflections)
