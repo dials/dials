@@ -1507,7 +1507,7 @@ class BackgroundAnalyser(object):
     MEAN = MEAN.select(mask)
     fig = pyplot.figure()
     pyplot.title("Background Model mean vs Log I/Sigma")
-    cax = pyplot.hexbin(flex.log(I_over_S), MEAN, gridsize=100)
+    cax = pyplot.hexbin(flex.log10(I_over_S), MEAN, gridsize=100)
     cbar = pyplot.colorbar(cax)
     cax.axes.set_xlabel("Log I/Sigma")
     cax.axes.set_ylabel("Background Model mean")
@@ -1585,7 +1585,7 @@ class BackgroundAnalyser(object):
     RMSD = RMSD.select(mask)
     fig = pyplot.figure()
     pyplot.title("Background Model CVRMSD vs Log I/Sigma")
-    cax = pyplot.hexbin(flex.log(I_over_S), RMSD, gridsize=100)
+    cax = pyplot.hexbin(flex.log10(I_over_S), RMSD, gridsize=100)
     cbar = pyplot.colorbar(cax)
     cax.axes.set_xlabel("Log I/Sigma")
     cax.axes.set_ylabel("Background Model CVRMSD")
@@ -1672,7 +1672,7 @@ class IntensityAnalyser(object):
     I = rlist['intensity.sum.value']
     I_sig = flex.sqrt(rlist['intensity.sum.variance'])
     I_over_S = I / I_sig
-    log_I_over_S = flex.log(I_over_S)
+    log_I_over_S = flex.log10(I_over_S)
     hist = flex.histogram(log_I_over_S, n_slots=20)
 
     return {
@@ -1710,7 +1710,7 @@ class IntensityAnalyser(object):
     H1, xedges, yedges = np.histogram2d(
       x.as_numpy_array(), y.as_numpy_array(),
       bins=(self.nbinsx, self.nbinsy),
-      weights=flex.log(I_over_S).as_numpy_array())
+      weights=flex.log10(I_over_S).as_numpy_array())
 
     nonzeros = np.nonzero(H)
     z = np.empty(H.shape)
@@ -1759,7 +1759,7 @@ class IntensityAnalyser(object):
 
     import numpy as np
     H, xedges, yedges = np.histogram2d(
-      z.as_numpy_array(), flex.log(I_over_S).as_numpy_array(), bins=(100, 100))
+      z.as_numpy_array(), flex.log10(I_over_S).as_numpy_array(), bins=(100, 100))
 
     return {
       'i_over_sigma_vs_z': {
@@ -2168,7 +2168,7 @@ class ReferenceProfileAnalyser(object):
 
     import numpy as np
     H, xedges, yedges = np.histogram2d(
-      flex.log(I_over_S).as_numpy_array(),
+      flex.log10(I_over_S).as_numpy_array(),
       corr.as_numpy_array(), bins=(100, 100))
 
     return {
@@ -2257,7 +2257,7 @@ class ReferenceProfileAnalyser(object):
       I_over_S = I_over_S.select(mask)
       corr = corr.select(mask)
       pyplot.title("Reflection correlations vs Log I/Sigma")
-      cax = pyplot.hexbin(flex.log(I_over_S), corr, gridsize=100)
+      cax = pyplot.hexbin(flex.log10(I_over_S), corr, gridsize=100)
       cbar = pyplot.colorbar(cax)
       pyplot.xlabel("Log I/Sigma")
       pyplot.ylabel("Correlation with reference profile")
