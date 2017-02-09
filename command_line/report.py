@@ -1723,6 +1723,8 @@ class IntensityAnalyser(object):
           'x': xedges.tolist(),
           'y': xedges.tolist(),
           'z': z.transpose().tolist(),
+          'zmin': -1,
+          'zauto': False,
           'type': 'heatmap',
           'name': 'i_over_sigma_%s' %intensity_type,
           'colorbar': {
