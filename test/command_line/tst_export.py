@@ -21,6 +21,8 @@ class Test(object):
       exit(0)
 
     self.path = join(dials_regression, "centroid_test_data")
+    self.datablock = join(self.path, "datablock.json")
+    self.strong = join(self.path, "strong.pickle")
     self.experiments = join(self.path, "experiments.json")
     self.reflections = join(self.path, "integrated.pickle")
 
@@ -29,6 +31,7 @@ class Test(object):
     self.test_nxs()
     self.test_xds_ascii()
     self.test_sadabs()
+    self.test_json()
 
   def test_nxs(self):
     from libtbx import easy_run
@@ -128,6 +131,55 @@ class Test(object):
       if not hkl in direction_cosines:
         continue
       assert approx_equal(cosines, direction_cosines[hkl], eps=0.001)
+
+    print 'OK'
+
+  def test_json(self):
+    import json
+    from libtbx import easy_run
+    from os.path import exists
+    from libtbx.test_utils import approx_equal
+    from dxtbx.datablock import DataBlockFactory
+
+    # Call dials.export
+    easy_run.fully_buffered([
+      'dials.export',
+      'format=json',
+      self.datablock,
+      self.strong
+    ]).raise_if_errors()
+
+
+    assert exists('rlp.json')
+    with open('rlp.json', 'rb') as f:
+      d = json.load(f)
+      assert d.keys() == ['imageset_id', 'datablocks', 'rlp', 'experiment_id'], d.keys()
+      assert d['rlp'][:3] == [0.123454, 0.57687, 0.186465], d['rlp'][:3]
+      assert d['imageset_id'][0] == 0
+      assert d['experiment_id'][0] == 0
+      assert len(d['datablocks']) == 1
+      db = DataBlockFactory.from_dict(d['datablocks'])
+      imgset = db[0].extract_imagesets()
+      assert len(imgset) == 1
+
+    # Call dials.export
+    easy_run.fully_buffered([
+      'dials.export',
+      'format=json',
+      self.experiments,
+      self.reflections,
+      'json.filename=integrated.json',
+      'n_digits=4',
+      'compact=False',
+    ]).raise_if_errors()
+
+    assert exists('integrated.json')
+    with open('integrated.json', 'rb') as f:
+      d = json.load(f)
+      assert d.keys() == ['imageset_id', 'rlp', 'experiment_id'], d.keys()
+      assert d['rlp'][:3] == [-0.5975, -0.6141, 0.4702], d['rlp'][:3]
+      assert d['imageset_id'][0] == 0
+      assert d['experiment_id'][0] == 0
 
     print 'OK'
 

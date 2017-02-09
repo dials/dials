@@ -68,7 +68,7 @@ Examples::
 
 phil_scope = parse('''
 
-  format = *mtz sadabs nxs mosflm xds best xds_ascii
+  format = *mtz sadabs nxs mosflm xds best xds_ascii json
     .type = choice
     .help = "The output file format"
 
@@ -168,6 +168,17 @@ phil_scope = parse('''
       .type = int(value_min=1)
       .help = "Number of resolution bins for background estimation"
 
+  }
+
+  json {
+    filename = rlp.json
+      .type = path
+    compact = True
+      .type = bool
+    n_digits = 6
+      .type = int(value_min=1)
+      .help = "Number of decimal places to be used for representing the"
+              "reciprocal lattice points."
   }
 
   output {
@@ -470,9 +481,73 @@ class BestExporter(object):
     best.write_par_file('%s.par' %prefix, experiment)
 
 
+class JsonExporter(object):
+  '''
+  A class to export reflections in json format
+
+  '''
+
+  def __init__(self, params, reflections, datablocks=None, experiments=None):
+    '''
+    Initialise the exporter
+
+    :param params: The phil parameters
+    :param experiments: The experiment list
+    :param reflections: The reflection tables
+
+    '''
+
+    # Check the input
+    if datablocks is None and experiments is None:
+      raise Sorry('json exporter requires a datablock or an experiment list')
+    if len(reflections) == 0:
+      raise Sorry('json exporter require a reflection table')
+
+    # Save the stuff
+    self.params = params
+    self.datablocks = datablocks
+    self.experiments = experiments
+    self.reflections = reflections
+
+  def export(self):
+    '''
+    Export the files
+
+    '''
+    from dials.util import export_json
+    from scitbx.array_family import flex
+
+    if self.experiments is not None and len(self.experiments) > 0:
+      imagesets = [expt.imageset for expt in self.experiments]
+    else:
+      imagesets = []
+      for datablock in self.datablocks:
+        imagesets.extend(datablock.extract_imagesets())
+
+    reflections = None
+    assert len(self.reflections) == len(imagesets), (len(self.reflections), len(imagesets))
+    for i, (refl, imgset) in enumerate(zip(self.reflections, imagesets)):
+      refl['imageset_id'] = flex.size_t(refl.size(), i)
+      if reflections is None:
+        reflections = refl
+      else:
+        reflections.extend(refl)
+
+    settings = self.params
+    settings.__inject__('beam_centre', None)
+    settings.__inject__('reverse_phi', None)
+
+    exporter = export_json.ReciprocalLatticeJson(settings=self.params)
+    exporter.load_models(imagesets, reflections)
+    exporter.as_json(
+      filename=params.json.filename, compact=params.json.compact,
+      n_digits=params.json.n_digits, datablocks=datablocks)
+
+
 if __name__ == '__main__':
   import libtbx.load_env
   from dials.util.options import OptionParser
+  from dials.util.options import flatten_datablocks
   from dials.util.options import flatten_experiments
   from dials.util.options import flatten_reflections
   from dials.util.version import dials_version
@@ -487,6 +562,7 @@ if __name__ == '__main__':
     usage=usage,
     read_experiments=True,
     read_reflections=True,
+    read_datablocks=True,
     phil=phil_scope,
     epilog=help_message)
 
@@ -508,9 +584,11 @@ if __name__ == '__main__':
     logger.info(diff_phil)
 
   # Get the experiments and reflections
+  datablocks = flatten_datablocks(params.input.datablock)
+
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
-  if len(reflections) == 0 and len(experiments) == 0:
+  if len(reflections) == 0 and len(experiments) == 0 and len(datablocks) == 0:
     parser.print_help()
     exit(0)
 
@@ -529,6 +607,9 @@ if __name__ == '__main__':
     exporter = XDSExporter(params, experiments, reflections)
   elif params.format == 'best':
     exporter = BestExporter(params, experiments, reflections)
+  elif params.format == 'json':
+    exporter = JsonExporter(
+      params, reflections, datablocks=datablocks, experiments=experiments)
   else:
     raise Sorry('Unknown format: %s' % params.format)
 
