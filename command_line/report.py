@@ -1767,7 +1767,7 @@ class IntensityAnalyser(object):
       'i_over_sigma_vs_z': {
         'data': [{
           'x': xedges.tolist(),
-          'y': xedges.tolist(),
+          'y': yedges.tolist(),
           'z': H.transpose().tolist(),
           'type': 'heatmap',
           'name': 'i_over_sigma',
