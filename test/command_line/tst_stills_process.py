@@ -43,6 +43,12 @@ class Test(object):
 
       spotfinder {
         filter.min_spot_size = 2
+        threshold {
+          xds {
+            gain = 5.46 # from dials.estimate_gain run266702-0-subset.h5 max_images=4
+            global_threshold = 50
+          }
+        }
       }
 
       refinement {
@@ -101,8 +107,13 @@ class Test(object):
     #for result, n_refls in zip(["idx-run266702-0-subset_00000_integrated.pickle"],
     #                            [range(109,114)]): # large ranges to handle platform-specific differences
     # dxtbx r25668 and 25669 flip X axis in the SACLA format class and changed indexing results.
-    for result, n_refls in zip(["idx-run266702-0-subset_00001_integrated.pickle"],
-                                [range(90,96)]): # large ranges to handle platform-specific differences
+    #for result, n_refls in zip(["idx-run266702-0-subset_00001_integrated.pickle"],
+    #                            [range(90,96)]): # large ranges to handle platform-specific differences
+    # 02/12/17 Handle change to stills_process refining after indexing plus new spotfinding params
+    for result, n_refls in zip(["idx-run266702-0-subset_00000_integrated.pickle",
+                                "idx-run266702-0-subset_00001_integrated.pickle",
+                                "idx-run266702-0-subset_00003_integrated.pickle"],
+                                [range(75,90),range(220,230),range(285,295)]): # large ranges to handle platform-specific differences
       table = pickle.load(open(result, 'rb'))
       assert len(table) in n_refls, len(table)
       assert 'id' in table

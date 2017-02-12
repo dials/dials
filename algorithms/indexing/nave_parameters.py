@@ -21,7 +21,10 @@ class nave_parameters(object):
 
   def __call__(self):
     """Determine optimal mosaicity and domain size model (monochromatic)"""
-    RR = self.refinery.predict_for_reflection_table(self.reflections)
+    if self.refinery is None:
+      RR = self.reflections
+    else:
+      RR = self.refinery.predict_for_reflection_table(self.reflections)
     excursion_rad = RR["delpsical.rad"]
     delta_psi_deg = excursion_rad * 180./math.pi
     print
