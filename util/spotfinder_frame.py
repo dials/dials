@@ -75,8 +75,8 @@ class SpotFrame(XrayFrame) :
         and self.params_all.predict_reflections):
       self.reflections = self.predict()
 
-    from dials.algorithms.indexing import indexer
-    if self.params.d_min is not None:
+    if self.params.d_min is not None and len(self.reflections):
+      from dials.algorithms.indexing import indexer
       reflections = [flex.reflection_table() for i in range(len(self.reflections))]
       for i_ref_list in range(len(self.reflections)):
         if 'rlp' in self.reflections[i_ref_list]:
