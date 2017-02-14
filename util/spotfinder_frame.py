@@ -920,8 +920,14 @@ class SpotFrame(XrayFrame) :
                                "#ff7f00", "#ffff33", "#a65628", "#f781bf",
                                "#999999"] * 10
     for ref_list in self.reflections:
+      if self.settings.show_indexed:
+        indexed_sel = ref_list.get_flags(ref_list.flags.indexed,
+                                            all=False)
+        ref_list = ref_list.select(indexed_sel)
+
       if self.settings.show_integrated:
-        integrated_sel = ref_list.get_flags(ref_list.flags.integrated, all=False)
+        integrated_sel = ref_list.get_flags(ref_list.flags.integrated,
+                                            all=False)
         ref_list = ref_list.select(integrated_sel)
       if ref_list.size() == 0: continue
       if 'bbox' in ref_list:
@@ -1167,6 +1173,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.settings.show_max_pix = self.params.show_max_pix
     self.settings.show_all_pix = self.params.show_all_pix
     self.settings.show_shoebox = self.params.show_shoebox
+    self.settings.show_indexed = self.params.show_indexed
     self.settings.show_integrated = self.params.show_integrated
     self.settings.show_predictions = self.params.show_predictions
     self.settings.show_miller_indices = self.params.show_miller_indices
@@ -1283,6 +1290,11 @@ class SpotSettingsPanel (SettingsPanel) :
     grid.Add(self.show_mask, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
     # Integration shoeboxes only
+    self.indexed = wx.CheckBox(self, -1, "Indexed only")
+    self.indexed.SetValue(self.settings.show_indexed)
+    grid.Add(self.indexed, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+
+    # Integration shoeboxes only
     self.integrated = wx.CheckBox(self, -1, "Integrated only")
     self.integrated.SetValue(self.settings.show_integrated)
     grid.Add(self.integrated, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
@@ -1394,6 +1406,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.shoebox)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.predictions)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.miller_indices)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.indexed)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.integrated)
     #self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.minspotarea_ctrl)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateShowMask, self.show_mask)
@@ -1430,6 +1443,7 @@ class SpotSettingsPanel (SettingsPanel) :
       self.settings.show_max_pix = self.max_pix.GetValue()
       self.settings.show_all_pix = self.all_pix.GetValue()
       self.settings.show_shoebox = self.shoebox.GetValue()
+      self.settings.show_indexed = self.indexed.GetValue()
       self.settings.show_integrated = self.integrated.GetValue()
       self.settings.show_predictions = self.predictions.GetValue()
       self.settings.show_miller_indices = self.miller_indices.GetValue()

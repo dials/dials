@@ -59,6 +59,8 @@ image_viewer {
     .type = bool
   show_miller_indices = False
     .type = bool
+  show_indexed = False
+    .type = bool
   show_integrated = False
     .type = bool
   show_mask = False
