@@ -28,6 +28,9 @@ control_phil_str = '''
       .expert_level = 2
       .help = If True, before processing import all the data. Needed only if processing \
               multiple multi-image files at once (not a recommended use case)
+    refine = True
+      .type = bool
+      .help = If True, after indexing, refine the experimental models
   }
 
   output {
@@ -361,7 +364,7 @@ class Processor(object):
       print "Couldn't index", tag, str(e)
       return
     try:
-      experiments = self.refine(experiments, indexed)
+      experiments, indexed = self.refine(experiments, indexed)
     except Exception, e:
       print "Error refining", tag, str(e)
       return
@@ -453,26 +456,31 @@ class Processor(object):
     return experiments, indexed
 
   def refine(self, experiments, centroids):
-    from dials.algorithms.refinement import RefinerFactory
-    from time import time
-    st = time()
+    if self.params.dispatch.refine:
+      from dials.algorithms.refinement import RefinerFactory
+      from time import time
+      st = time()
 
-    logger.info('*' * 80)
-    logger.info('Refining Model')
-    logger.info('*' * 80)
+      logger.info('*' * 80)
+      logger.info('Refining Model')
+      logger.info('*' * 80)
 
-    refiner = RefinerFactory.from_parameters_data_experiments(
-      self.params, centroids, experiments)
+      refiner = RefinerFactory.from_parameters_data_experiments(
+        self.params, centroids, experiments)
 
-    refiner.run()
-    experiments = refiner.get_experiments()
+      refiner.run()
+      experiments = refiner.get_experiments()
+      predicted = refiner.predict_for_indexed()
+      centroids['xyzcal.mm'] = predicted['xyzcal.mm']
+      centroids['entering'] = predicted['entering']
+      centroids = centroids.select(refiner.selection_used_for_refinement())
 
-    # Re-estimate mosaic estimates
-    from dials.algorithms.indexing.nave_parameters import nave_parameters
-    nv = nave_parameters(params = self.params, experiments=experiments, reflections=centroids, refinery=refiner, graph_verbose=False)
-    nv()
-    #acceptance_flags_nv = nv.nv_acceptance_flags
-    #centroids = centroids.select(acceptance_flags_nv)
+      # Re-estimate mosaic estimates
+      from dials.algorithms.indexing.nave_parameters import nave_parameters
+      nv = nave_parameters(params = self.params, experiments=experiments, reflections=centroids, refinery=refiner, graph_verbose=False)
+      nv()
+      acceptance_flags_nv = nv.nv_acceptance_flags
+      centroids = centroids.select(acceptance_flags_nv)
 
     # Dump experiments to disk
     if self.params.output.refined_experiments_filename:
@@ -480,10 +488,14 @@ class Processor(object):
       dump = ExperimentListDumper(experiments)
       dump.as_json(self.params.output.refined_experiments_filename)
 
-    logger.info('')
-    logger.info('Time Taken = %f seconds' % (time() - st))
+    if self.params.dispatch.refine:
+      if self.params.output.indexed_filename:
+        self.save_reflections(centroids, self.params.output.indexed_filename)
 
-    return experiments
+      logger.info('')
+      logger.info('Time Taken = %f seconds' % (time() - st))
+
+    return experiments, centroids
 
   def integrate(self, experiments, indexed):
     from time import time

@@ -110,10 +110,15 @@ class Test(object):
     #for result, n_refls in zip(["idx-run266702-0-subset_00001_integrated.pickle"],
     #                            [range(90,96)]): # large ranges to handle platform-specific differences
     # 02/12/17 Handle change to stills_process refining after indexing plus new spotfinding params
+    #for result, n_refls in zip(["idx-run266702-0-subset_00000_integrated.pickle",
+    #                            "idx-run266702-0-subset_00001_integrated.pickle",
+    #                            "idx-run266702-0-subset_00003_integrated.pickle"],
+    #                            [range(75,90),range(220,230),range(285,295)]): # large ranges to handle platform-specific differences
+    # 02/14/17 Further changes to stills_process: resetting rejected reflections before re-refinement
     for result, n_refls in zip(["idx-run266702-0-subset_00000_integrated.pickle",
                                 "idx-run266702-0-subset_00001_integrated.pickle",
                                 "idx-run266702-0-subset_00003_integrated.pickle"],
-                                [range(75,90),range(220,230),range(285,295)]): # large ranges to handle platform-specific differences
+                                [range(80,95),range(225,235),range(235,245)]): # large ranges to handle platform-specific differences
       table = pickle.load(open(result, 'rb'))
       assert len(table) in n_refls, len(table)
       assert 'id' in table

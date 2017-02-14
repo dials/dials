@@ -150,11 +150,8 @@ class stills_indexer(indexer_base):
       if len(experiments) == 0:
         raise Sorry("No suitable lattice could be found.")
 
-      if hasattr(self, '_best_indexed'):
-        self.reflections = self._best_indexed
-      else:
-        self.index_reflections(
-          experiments, self.reflections)
+      self.index_reflections(
+        experiments, self.reflections)
 
       if len(experiments) == n_lattices_previous_cycle:
         # no more lattices found
@@ -511,7 +508,6 @@ class stills_indexer(indexer_base):
 
     best.indexed['entering'] = flex.bool(best.n_indexed, False)
 
-    self._best_indexed = best.indexed
     return best.crystal, best.n_indexed
 
   def identify_outliers(self, params, experiments, indexed):
