@@ -169,7 +169,7 @@ if __name__ == '__main__':
 
   if len(datablocks) > 0:
     assert len(datablocks) == 1
-    datablock = datablock[0]
+    datablock = datablocks[0]
   else:
     datablock = None
 
