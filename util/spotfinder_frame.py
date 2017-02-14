@@ -24,12 +24,23 @@ def create_load_image_event(destination, filename):
 
 class SpotFrame(XrayFrame) :
   def __init__ (self, *args, **kwds) :
-    self.imagesets = kwds["imagesets"]
+    self.datablock = kwds["datablock"]
+    self.experiments = kwds["experiments"]
+    if self.datablock is not None:
+      self.imagesets = self.datablock.extract_imagesets()
+      self.crystals = None
+    elif len(self.experiments.imagesets()) > 0:
+      assert(len(self.experiments.imagesets()) == 1)
+      self.imagesets = self.experiments.imagesets()
+      self.crystals = self.experiments.crystals()
+    else:
+      raise RuntimeError("No imageset could be constructed")
+
     self.reflections = kwds["reflections"]
-    self.crystals = kwds["crystals"]
-    del kwds["imagesets"]; del kwds["reflections"] #otherwise wx complains
-    del kwds["crystals"] #otherwise wx complains
+    del kwds["datablock"]; del kwds["experiments"]; del kwds["reflections"] #otherwise wx complains
     super(SpotFrame, self).__init__(*args, **kwds)
+    self.params_all = self.params
+    self.params = self.params.image_viewer
     self.viewer.reflections = self.reflections
     self.viewer.frames = self.imagesets
     self.dials_spotfinder_layers = []
@@ -58,6 +69,11 @@ class SpotFrame(XrayFrame) :
     self._image_chooser_tmp_key = []
     self._image_chooser_tmp_clientdata = []
     self.display_foreground_circles_patch = False #hard code this option, for now
+
+    if (self.experiments is not None
+        and not self.reflections
+        and self.params_all.predict_reflections):
+      self.reflections = self.predict()
 
     from dials.algorithms.indexing import indexer
     if self.params.d_min is not None:
@@ -1138,6 +1154,30 @@ class SpotFrame(XrayFrame) :
 
   def get_beam(self):
     return self.imagesets[0].get_beam()
+
+  def predict(self):
+    from dxtbx.model.experiment.experiment_list import ExperimentList
+    predicted_all = []
+    for i_expt, expt in enumerate(self.experiments):
+      imageset = self.imagesets[0]
+
+      # Populate the reflection table with predictions
+      params = self.params_all.prediction
+      predicted = flex.reflection_table.from_predictions(
+        expt,
+        force_static=params.force_static,
+        dmin=params.d_min
+      )
+      predicted['id'] = flex.int(len(predicted), i_expt)
+      if expt.profile is not None:
+        expt.profile.params = self.params_all.profile
+      try:
+        predicted.compute_bbox(ExperimentList([expt]))
+      except Exception:
+        pass
+      predicted_all.append(predicted)
+
+    return predicted_all
 
 
 class SpotSettingsFrame (SettingsFrame) :

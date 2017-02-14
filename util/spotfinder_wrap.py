@@ -10,7 +10,7 @@ class spot_wrapper(object):
     self.params = params
     self.frame = None
 
-  def display(self, imagesets, reflections, crystals=None):
+  def display(self, datablock, experiments, reflections):
     import wx
     from dials.util.spotfinder_frame import SpotFrame
 
@@ -19,12 +19,13 @@ class spot_wrapper(object):
     self.frame = SpotFrame(None, -1, "X-ray image display", size=(800,720),
       pos=(100,100),
       params=self.params,
-      imagesets=imagesets,
-      reflections=reflections,
-      crystals=crystals)
+      datablock=datablock,
+      experiments=experiments,
+      reflections=reflections)
     self.frame.SetSize((1024,780))
     self.frame.Show()
 
+    imagesets = self.frame.imagesets
     for imageset in imagesets:
       for idx in xrange(len(imageset.indices())):
         self.frame.add_file_name_or_data(chooser_wrapper(imageset, idx))

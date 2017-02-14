@@ -95,19 +95,27 @@ image_viewer {
     .help = path to mask pickle file
 
 }
+
+predict_reflections = False
+  .type = bool
+  .help = Predict reflections if no reflections provided in input
+
+include scope dials.algorithms.profile_model.factory.phil_scope
+include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
+
 """, process_includes=True)
 
 class Script(object):
   '''Class to run script.'''
 
-  def __init__(self, params, imagesets, reflections, crystals=None):
+  def __init__(self, params, datablock, experiments, reflections):
     '''Setup the script.'''
 
     # Filename data
     self.params = params
-    self.imagesets = imagesets
+    self.datablock = datablock
+    self.experiments = experiments
     self.reflections = reflections
-    self.crystals = crystals
     self.wrapper = None
 
   def __call__(self):
@@ -120,8 +128,9 @@ class Script(object):
     from dials.util.spotfinder_wrap import spot_wrapper
     self.wrapper = spot_wrapper(params=self.params)
     self.wrapper.display(
-      imagesets=self.imagesets, reflections=self.reflections,
-      crystals=self.crystals)
+      datablock=self.datablock,
+      experiments=self.experiments,
+      reflections=self.reflections)
 
 if __name__ == '__main__':
   import wx # It is unclear why, but it is crucial that wx
@@ -159,25 +168,21 @@ if __name__ == '__main__':
     exit(0)
 
   if len(datablocks) > 0:
-    assert(len(datablocks) == 1)
-    imagesets = datablocks[0].extract_imagesets()
-    crystals = None
-  elif len(experiments.imagesets()) > 0:
-    assert(len(experiments.imagesets()) == 1)
-    imagesets = experiments.imagesets()
-    crystals = experiments.crystals()
+    assert len(datablocks) == 1
+    datablock = datablock[0]
   else:
-    raise RuntimeError("No imageset could be constructed")
+    datablock = None
 
   if params.image_viewer.mask is not None:
     from libtbx import easy_pickle
     params.image_viewer.mask = easy_pickle.load(params.image_viewer.mask)
 
   runner = Script(
-    params=params.image_viewer,
+    params=params,
     reflections=reflections,
-    imagesets=imagesets,
-    crystals=crystals)
+    datablock=datablock,
+    experiments=experiments
+  )
 
   # Run the script
   runner()
