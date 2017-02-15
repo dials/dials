@@ -860,7 +860,7 @@ class SpotFrame(XrayFrame) :
           show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
           selectable=False,
           name='<vector_text_layer>',
-          colour='#F62817')
+          colour='#F62817', update=False)
 
     self.sum_images()
     #if self.params.sum_images == 1:
