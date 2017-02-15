@@ -61,25 +61,49 @@ class EqualShiftConstraint(object):
     return self.constrained_value + self._shifts
 
 class ConstraintManager(object):
-  def __init__(self, constraints):
+  def __init__(self, constraints, n_full_params):
 
     self._constraints = constraints
 
     # constraints should be a list of EqualShiftConstraint objects
     assert len(self._constraints) > 0
 
+    self._n_full_params = n_full_params
+    full_idx = flex.size_t_range(n_full_params)
+    self._constrained_idx = flex.size_t([i for c in self._constraints for i in c.indices])
+    keep = flex.bool(self._n_full_params, True)
+    keep.set_selected(self._constrained_idx, False)
+    self._unconstrained_idx = full_idx.select(keep)
+    self._n_unconstrained_params = len(self._unconstrained_idx)
+
   def constrain_parameters(self, x):
 
-    n_full_params = len(x)
-    full_idx = flex.size_t_range(n_full_params)
-    constrained_vals = flex.double([c.constrained_value for c in self._constraints])
-    remove_idx = flex.size_t([i for c in self._constraints for i in c.indices])
+    assert len(x) == self._n_full_params
 
-    # unconstrained parameters only
-    keep = flex.bool(n_full_params, True)
-    keep.set_selected(remove_idx, False)
-    unconstrained_x = x.select(keep)
+    constrained_vals = flex.double([c.constrained_value for c in self._constraints])
+
+    # select unconstrained parameters only
+    unconstrained_x = x.select(self._unconstrained_idx)
 
     constrained_x = flex.double.concatenate(unconstrained_x, constrained_vals)
 
     return constrained_x
+
+  def expand_parameters(self, constrained_x):
+
+    unconstrained_part = constrained_x[0:self._n_unconstrained_params]
+    constrained_part = constrained_x[self._n_unconstrained_params:]
+
+    # update constrained parameter values
+    for v, c in zip(constrained_part, self._constraints):
+      c.set_constrained_value(v)
+
+    expanded = flex.double([v for c in self._constraints for v in c.get_expanded_values()])
+
+    full_x = flex.double(self._n_full_params)
+    full_x.set_selected(self._unconstrained_idx, unconstrained_part)
+    full_x.set_selected(self._constrained_idx, expanded)
+
+    return full_x
+
+

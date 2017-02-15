@@ -27,12 +27,20 @@ def test1():
   c1 = EqualShiftConstraint([1, 3], x)
   c2 = EqualShiftConstraint([5, 6, 7], x)
 
-  cm = ConstraintManager([c1, c2])
+  cm = ConstraintManager([c1, c2], len(x))
   constrained_x = cm.constrain_parameters(x)
 
+  # check the constrained parameters are as expected
   assert len(constrained_x) == 7
   assert constrained_x[5] == flex.mean(x.select([1, 3]))
   assert constrained_x[6] == flex.mean(x[5:8])
+
+  # minimiser would modify the constrained parameters
+  mod_constrained_x = constrained_x + 10.
+
+  # check the expanded parameters are as expected
+  expanded = cm.expand_parameters(mod_constrained_x)
+  assert x + 10. == expanded
 
 if __name__ == '__main__':
 
