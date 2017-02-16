@@ -70,7 +70,8 @@ class ConstraintManager(object):
 
     self._n_full_params = n_full_params
     full_idx = flex.size_t_range(n_full_params)
-    self._constrained_idx = flex.size_t([i for c in self._constraints for i in c.indices])
+    self._constrained_gps = [c.indices for c in self._constraints]
+    self._constrained_idx = flex.size_t([i for c in self._constrained_gps for i in c])
     keep = flex.bool(self._n_full_params, True)
     keep.set_selected(self._constrained_idx, False)
     self._unconstrained_idx = full_idx.select(keep)
@@ -106,4 +107,53 @@ class ConstraintManager(object):
 
     return full_x
 
+  def constrain_jacobian(self, jacobian):
 
+    # set up result matrix
+    nrow = jacobian.all()[0]
+    ncol = self._n_unconstrained_params + len(self._constraints)
+    constrained_jacobian = flex.double(flex.grid(nrow, ncol))
+
+    # create constrained columns
+    constr_block = flex.double(flex.grid(nrow, len(self._constraints)))
+    for i, gp in enumerate(self._constrained_gps):
+      cols = [jacobian.matrix_copy_column(j) for j in gp]
+      sum_col = reduce(lambda x, y: x + y, cols)
+      constr_block.matrix_paste_column_in_place(sum_col, i)
+
+    # copy unconstrained columns into the result
+    for i, j in enumerate(self._unconstrained_idx):
+      col = jacobian.matrix_copy_column(j)
+      constrained_jacobian.matrix_paste_column_in_place(col, i)
+
+    # copy the constrained block into the result
+    constrained_jacobian.matrix_paste_block_in_place(
+      constr_block, 0, self._n_unconstrained_params)
+
+    return constrained_jacobian
+
+class SparseConstraintManager(ConstraintManager):
+
+  def constrain_jacobian(self, jacobian):
+    '''sparse matrix version of constrain_jacobian'''
+
+    # select unconstrained columns only
+    unconstr_block = jacobian.select_columns(self._unconstrained_idx)
+
+    # create constrained columns
+    constr_block = sparse.matrix(jacobian.n_rows, len(self._constraints))
+
+    mask = flex.bool(jacobian.n_rows, True)
+    for i, (gp, c) in enumerate(zip(self._constrained_gps, constr_block.cols())):
+      # this copies, so c is no longer the matrix column but a new vector
+      for j in gp: c += jacobian.col(j)
+      # so assign back into the matrix directly
+      constr_block[:,i] = c
+
+    # construct the constrained Jacobian
+    constrained_jacobian = sparse.matrix(jacobian.n_rows,
+      unconstr_block.n_cols + constr_block.n_cols)
+    constrained_jacobian.assign_block(unconstr_block, 0, 0)
+    constrained_jacobian.assign_block(constr_block, 0, unconstr_block.n_cols)
+
+    return constrained_jacobian
