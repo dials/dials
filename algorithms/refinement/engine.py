@@ -230,7 +230,7 @@ class Refinery(object):
     except IndexError:
       return None
     if packed is None: return None
-    nparam = len(self.x)
+    nparam = len(self._parameters)
     corr_mat = flex.double(flex.grid(nparam, nparam))
     i = 0
     for row in range(nparam):
@@ -470,7 +470,7 @@ class AdaptLstbx(
     # keep attribute for the Cholesky factor required for ESD calculation
     self.cf = None
 
-    normal_eqns.non_linear_ls.__init__(self, n_parameters = len(self._parameters))
+    normal_eqns.non_linear_ls.__init__(self, n_parameters = len(self.x))
 
   def restart(self):
     self.x = self.x_0.deep_copy()
