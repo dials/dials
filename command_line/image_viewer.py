@@ -36,64 +36,68 @@ Examples::
 '''
 
 phil_scope = iotbx.phil.parse("""\
-image_viewer {
-  brightness = 100
-    .type = int
-  color_scheme = *grayscale rainbow heatmap invert
-    .type = choice
-  show_beam_center = True
-    .type = bool
-  show_resolution_rings = False
-    .type = bool
-  show_ice_rings = False
-    .type = bool
-  show_ctr_mass = True
-    .type = bool
-  show_max_pix = True
-    .type = bool
-  show_all_pix = True
-    .type = bool
-  show_shoebox = True
-    .type = bool
-  show_predictions = True
-    .type = bool
-  show_miller_indices = False
-    .type = bool
-  show_indexed = False
-    .type = bool
-  show_integrated = False
-    .type = bool
-  show_mask = False
-    .type = bool
-  show_mask2 = False
-    .type = bool
-  display = *image mean variance dispersion sigma_b \
-            sigma_s threshold global_threshold
-    .type = choice
-  nsigma_b = 6
-    .type = float(value_min=0)
-  nsigma_s = 3
-    .type = float(value_min=0)
-  global_threshold = 0
-    .type = float(value_min=0)
-  kernel_size = 3,3
-    .type = ints(size=2, value_min=1)
-  min_local = 2
-    .type = int
-  gain = 1
-    .type = float(value_min=0)
-  sum_images = 1
-    .type = int(value_min=1)
-    .expert_level = 2
-  untrusted_polygon = None
-    .multiple = True
-    .type = ints(value_min=0)
-  d_min = None
-    .type = float(value_min=0)
-  mask = None
-    .type = str
-    .help = path to mask pickle file
+brightness = 100
+  .type = int
+color_scheme = *grayscale rainbow heatmap invert
+  .type = choice
+show_beam_center = True
+  .type = bool
+show_resolution_rings = False
+  .type = bool
+show_ice_rings = False
+  .type = bool
+show_ctr_mass = True
+  .type = bool
+show_max_pix = True
+  .type = bool
+show_all_pix = True
+  .type = bool
+show_shoebox = True
+  .type = bool
+show_predictions = True
+  .type = bool
+show_miller_indices = False
+  .type = bool
+show_indexed = False
+  .type = bool
+show_integrated = False
+  .type = bool
+show_mask = False
+  .type = bool
+show_mask2 = False
+  .type = bool
+display = *image mean variance dispersion sigma_b \
+          sigma_s threshold global_threshold
+  .type = choice
+nsigma_b = 6
+  .type = float(value_min=0)
+nsigma_s = 3
+  .type = float(value_min=0)
+global_threshold = 0
+  .type = float(value_min=0)
+kernel_size = 3,3
+  .type = ints(size=2, value_min=1)
+min_local = 2
+  .type = int
+gain = 1
+  .type = float(value_min=0)
+sum_images = 1
+  .type = int(value_min=1)
+  .expert_level = 2
+d_min = None
+  .type = float(value_min=0)
+mask = None
+  .type = str
+  .help = path to mask pickle file
 
+masking {
+  include scope dials.util.masking.phil_scope
+}
+
+output {
+  mask = mask.pickle
+    .type = str
+    .help = "Name of output mask file"
 }
 
 predict_reflections = False
@@ -173,9 +177,9 @@ if __name__ == '__main__':
   else:
     datablock = None
 
-  if params.image_viewer.mask is not None:
+  if params.mask is not None:
     from libtbx import easy_pickle
-    params.image_viewer.mask = easy_pickle.load(params.image_viewer.mask)
+    params.mask = easy_pickle.load(params.mask)
 
   runner = Script(
     params=params,

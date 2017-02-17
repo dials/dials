@@ -39,8 +39,6 @@ class SpotFrame(XrayFrame) :
     self.reflections = kwds["reflections"]
     del kwds["datablock"]; del kwds["experiments"]; del kwds["reflections"] #otherwise wx complains
     super(SpotFrame, self).__init__(*args, **kwds)
-    self.params_all = self.params
-    self.params = self.params.image_viewer
     self.viewer.reflections = self.reflections
     self.viewer.frames = self.imagesets
     self.dials_spotfinder_layers = []
@@ -72,7 +70,7 @@ class SpotFrame(XrayFrame) :
 
     if (self.experiments is not None
         and not self.reflections
-        and self.params_all.predict_reflections):
+        and self.params.predict_reflections):
       self.reflections = self.predict()
 
     if self.params.d_min is not None and len(self.reflections):
@@ -244,19 +242,40 @@ class SpotFrame(XrayFrame) :
     if point:
       assert len(point) == 4
 
+      x0, y0 = point[0]
+      x1, y1 = point[2]
+
+      assert point == [(x0, y0), (x0,y1), (x1, y1), (x1, y0)]
+
       point = [
         self.pyslip.tiles.map_relative_to_picture_fast_slow(*p)
         for p in point]
 
-      if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
-        point = [
-          tuple(self.pyslip.tiles.flex_image.picture_to_readout(p[1], p[0]))
-          for p in point]
-        point = [(p[1],p[0],p[2]) for p in point]
-        for p in point: assert p[2] >= 0
+      detector = self.pyslip.tiles.raw_image.get_detector()
+      if len(detector) > 1:
 
+        point_ = []
+        panel_id = None
+        for p in point:
+          p1, p0, p_id = self.pyslip.tiles.flex_image.picture_to_readout(
+            p[1], p[0])
+          assert p_id >= 0, "Point must be within a panel"
+          if panel_id is not None:
+            assert panel_id == p_id, "All points must be contained within a single panel"
+          panel_id = p_id
+          point_.append((p0, p1))
+        point = point_
+
+      else:
+        panel_id = 0
+
+      from dials.util import masking
       from libtbx.utils import flat_list
-      self.settings.untrusted_polygon.append(flat_list(point))
+      region = masking.phil_scope.extract().untrusted[0]
+      region.polygon = flat_list(point)
+      region.panel = panel_id
+
+      self.settings.untrusted.append(region)
 
     self.drawUntrustedPolygons()
 
@@ -269,28 +288,34 @@ class SpotFrame(XrayFrame) :
       self.pyslip.DeleteLayer(self.sel_image_layer)
       self.sel_image_layer = None
 
-    untrusted_polygons = self.settings.untrusted_polygon
-    if not len(untrusted_polygons):
+    if not len(self.settings.untrusted):
       return
 
     data = []
     d = {}
-    for polygon in untrusted_polygons:
+    for region in self.settings.untrusted:
+
+      if region.rectangle is not None:
+        x0, x1, y0, y1 = region.rectangle
+        polygon = [x0, y0, x1, y0, x1, y1, x0, y1]
+      elif region.polygon is not None:
+        polygon = region.polygon
+      assert len(polygon) % 2 == 0, "Polygon must contain 2D coords"
+      vertices = []
+      for i in range(int(len(polygon)/2)):
+        x = polygon[2*i]
+        y = polygon[2*i+1]
+        vertices.append((x,y))
 
       if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
-        assert len(polygon) % 3 == 0
-        polygon = [polygon[i*3:i*3+3] for i in range(len(polygon)//3)]
-        polygon = [
-          self.pyslip.tiles.flex_image.tile_readout_to_picture(int(p[2]), p[1], p[0])
-          for p in polygon]
-        polygon = [(p[1], p[0]) for p in polygon]
+        vertices = [
+          self.pyslip.tiles.flex_image.tile_readout_to_picture(
+            int(region.panel), v[1], v[0])
+          for v in vertices]
+        vertices = [(v[1], v[0]) for v in vertices]
 
-      else:
-        assert len(polygon) % 2 == 0
-        polygon = [polygon[i*2:i*2+2] for i in range(len(polygon)//2)]
-
-      points_rel = [self.pyslip.tiles.picture_fast_slow_to_map_relative(*p)
-                    for p in polygon]
+      points_rel = [self.pyslip.tiles.picture_fast_slow_to_map_relative(*v)
+                    for v in vertices]
 
       points_rel.append(points_rel[0])
       for i in range(len(points_rel)-1):
@@ -1181,7 +1206,7 @@ class SpotFrame(XrayFrame) :
       imageset = self.imagesets[0]
 
       # Populate the reflection table with predictions
-      params = self.params_all.prediction
+      params = self.params.prediction
       predicted = flex.reflection_table.from_predictions(
         expt,
         force_static=params.force_static,
@@ -1189,7 +1214,7 @@ class SpotFrame(XrayFrame) :
       )
       predicted['id'] = flex.int(len(predicted), i_expt)
       if expt.profile is not None:
-        expt.profile.params = self.params_all.profile
+        expt.profile.params = self.params.profile
       try:
         predicted.compute_bbox(ExperimentList([expt]))
       except Exception:
@@ -1226,7 +1251,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.settings.show_spotfinder_spots = False
     self.settings.show_dials_spotfinder_spots = True
     self.settings.show_resolution_rings = self.params.show_resolution_rings
-    self.settings.untrusted_polygon = self.params.untrusted_polygon
+    self.settings.untrusted = self.params.masking.untrusted
     self.settings.show_ice_rings = self.params.show_ice_rings
     self.settings.show_ctr_mass = self.params.show_ctr_mass
     self.settings.show_max_pix = self.params.show_max_pix
@@ -1548,64 +1573,31 @@ class SpotSettingsPanel (SettingsPanel) :
     pyslip.GotoPosition(center)
 
   def OnSaveMask(self, event):
-    print "Saving mask"
 
-    imagesets = self.GetParent().GetParent().imagesets # XXX
-    detector = imagesets[0].get_detector()
-
-    from dials.algorithms.polygon import polygon
-    polygons = self.settings.untrusted_polygon
-
-    if len(detector) > 1:
-      polygons = [[vertices[i*3:i*3+3] for i in range(len(vertices)//3)] for vertices in polygons]
-      panel_ids = [poly[0][2] for poly in polygons]
-      polygons = [polygon([p[:2] for p in poly]) for poly in polygons]
-
-    else:
-      panel_ids = None
-      polygons = [
-        polygon([vertices[i*2:i*2+2] for i in range(len(vertices)//2)]) for vertices in polygons]
-
-    # Create the mask for each image
-    masks = []
-    # Get the first image
-    image = imagesets[0][0]
-    if not isinstance(image, tuple):
-      image = (image,)
-
-    for i_panel, (im, panel) in enumerate(zip(image, detector)):
-      mask = flex.bool(flex.grid(im.all()), True)
-
-      import math
-      for i, poly in enumerate(polygons):
-        if panel_ids is not None and panel_ids[i] != i_panel:
-          continue
-        min_x = int(math.floor(min(v[0] for v in poly.vertices)))
-        max_x = int(math.ceil(max(v[0] for v in poly.vertices)))
-        min_y = int(math.floor(min(v[1] for v in poly.vertices)))
-        max_y = int(math.ceil(max(v[1] for v in poly.vertices)))
-
-        for i in range(min_x, max_x+1):
-          for j in range(min_y, max_y+1):
-            if poly.is_inside(i,j):
-              mask[j,i] = False
-
-      # Add to the list
-      masks.append(mask)
-      #print mask.count(True), mask.count(False)
+    # Generate the mask
+    from dials.util.masking import MaskGenerator
+    generator = MaskGenerator(self.params.masking)
+    imageset = self.GetParent().GetParent().imagesets[0] # XXX
+    mask = generator.generate(imageset)
 
     # Combine with an existing mask, if specified
     if self.GetParent().GetParent().mask is not None:
-      for p1, p2 in zip(self.GetParent().GetParent().mask, masks):
+      for p1, p2 in zip(self.GetParent().GetParent().mask, mask):
         p2 &= p1
-      self.GetParent().GetParent().mask = tuple(masks)
+      self.GetParent().GetParent().mask = mask
       self.collect_values()
       self.GetParent().GetParent().update_settings(layout=False)
 
+    # Save the mask to file
     from libtbx import easy_pickle
-    easy_pickle.dump('mask.pickle', tuple(masks))
+    print "Writing mask to %s" % self.params.output.mask
+    easy_pickle.dump(self.params.output.mask, mask)
 
-    print "Saved mask.pickle"
+    self.GetParent().GetParent().mask = mask
+
+    if self.settings.show_mask:
+      # Force re-drawing of mask
+      self.OnUpdateShowMask(event)
 
   def OnUpdateKabschDebug(self, event):
     if self.settings.nsigma_b != self.nsigma_b_ctrl.GetPhilValue() \
