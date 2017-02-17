@@ -51,7 +51,8 @@ class SpotFrame(XrayFrame) :
     self.vector_text_layer = None
     self._ring_layer = None
     self._resolution_text_layer = None
-    self.sel_image_layer = None
+    self.sel_image_polygon_layer = None
+    self.sel_image_circle_layer = None
     self.mask = self.params.mask
 
     from libtbx.utils import time_log
@@ -284,49 +285,85 @@ class SpotFrame(XrayFrame) :
   def drawUntrustedPolygons(self):
 
     # remove any previous selection
-    if self.sel_image_layer:
-      self.pyslip.DeleteLayer(self.sel_image_layer)
-      self.sel_image_layer = None
+    if self.sel_image_polygon_layer:
+      self.pyslip.DeleteLayer(self.sel_image_polygon_layer)
+      self.sel_image_polygon_layer = None
+    if self.sel_image_circle_layer:
+      self.pyslip.DeleteLayer(self.sel_image_circle_layer)
+      self.sel_image_circle_layer = None
 
     if not len(self.settings.untrusted):
       return
 
-    data = []
+    polygon_data = []
+    circle_data = []
     d = {}
     for region in self.settings.untrusted:
-
+      polygon = None
+      circle = None
       if region.rectangle is not None:
         x0, x1, y0, y1 = region.rectangle
         polygon = [x0, y0, x1, y0, x1, y1, x0, y1]
       elif region.polygon is not None:
         polygon = region.polygon
-      assert len(polygon) % 2 == 0, "Polygon must contain 2D coords"
-      vertices = []
-      for i in range(int(len(polygon)/2)):
-        x = polygon[2*i]
-        y = polygon[2*i+1]
-        vertices.append((x,y))
+      elif region.circle is not None:
+        circle = region.circle
 
-      if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
-        vertices = [
-          self.pyslip.tiles.flex_image.tile_readout_to_picture(
-            int(region.panel), v[1], v[0])
-          for v in vertices]
-        vertices = [(v[1], v[0]) for v in vertices]
+      if polygon is not None:
 
-      points_rel = [self.pyslip.tiles.picture_fast_slow_to_map_relative(*v)
-                    for v in vertices]
+        assert len(polygon) % 2 == 0, "Polygon must contain 2D coords"
+        vertices = []
+        for i in range(int(len(polygon)/2)):
+          x = polygon[2*i]
+          y = polygon[2*i+1]
+          vertices.append((x,y))
 
-      points_rel.append(points_rel[0])
-      for i in range(len(points_rel)-1):
-        data.append(((points_rel[i], points_rel[i+1]), d))
+        if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
+          vertices = [
+            self.pyslip.tiles.flex_image.tile_readout_to_picture(
+              int(region.panel), v[1], v[0])
+            for v in vertices]
+          vertices = [(v[1], v[0]) for v in vertices]
 
-    self.sel_image_layer = \
-      self.pyslip.AddPolygonLayer(data, map_rel=True,
-                                  color='#00ffff',
-                                  radius=5, visible=True,
-                                  #show_levels=[3,4],
-                                  name='<boxsel_pt_layer>')
+        points_rel = [self.pyslip.tiles.picture_fast_slow_to_map_relative(*v)
+                      for v in vertices]
+
+        points_rel.append(points_rel[0])
+        for i in range(len(points_rel)-1):
+          polygon_data.append(((points_rel[i], points_rel[i+1]), d))
+
+      if circle is not None:
+        x, y, r = circle
+        if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
+          y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+            int(region.panel), y, x)
+        x, y = self.pyslip.tiles.picture_fast_slow_to_map_relative(x, y)
+        center = matrix.col((x, y))
+        e1 = matrix.col((1, 0))
+        e2 = matrix.col((0, 1))
+        circle_data.append((
+          center + r * (e1 + e2),
+          center + r * (e1 - e2),
+          center + r * (-e1 - e2),
+          center + r * (-e1 + e2),
+          center + r * (e1 + e2),
+        ))
+
+    if polygon_data:
+      self.sel_image_polygon_layer = \
+        self.pyslip.AddPolygonLayer(polygon_data, map_rel=True,
+                                    color='#00ffff',
+                                    radius=5, visible=True,
+                                    #show_levels=[3,4],
+                                    name='<boxsel_pt_layer>')
+    if circle_data:
+      for circle in circle_data:
+        self.sel_image_circle_layer = \
+          self.pyslip.AddEllipseLayer(circle, map_rel=True,
+                                      color='#00ffff',
+                                      radius=5, visible=True,
+                                      #show_levels=[3,4],
+                                      name='<boxsel_pt_layer>')
 
 
 
