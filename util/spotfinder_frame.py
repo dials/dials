@@ -625,6 +625,9 @@ class SpotFrame(XrayFrame) :
       trange = [p.get_trusted_range() for p in detector]
       mask = []
       mask = image.get_mask()
+      if self.mask is not None:
+        for p1, p2 in zip(self.mask, mask):
+          p2 &= p1
       if mask is None:
         mask = [p.get_trusted_range_mask(im) for im, p in zip(raw_data, detector)]
 
