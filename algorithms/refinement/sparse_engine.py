@@ -41,7 +41,7 @@ class AdaptLstbxSparse(DisableMPmixin, AdaptLstbxBase, non_linear_ls_eigen_wrapp
             track_out_of_sample_rmsd=track_out_of_sample_rmsd,
             max_iterations=max_iterations)
 
-    non_linear_ls_eigen_wrapper.__init__(self, n_parameters = len(self._parameters))
+    non_linear_ls_eigen_wrapper.__init__(self, n_parameters = len(self.x))
 
 from dials.algorithms.refinement.engine import GaussNewtonIterations as GaussNewtonIterationsBase
 class GaussNewtonIterations(AdaptLstbxSparse, GaussNewtonIterationsBase):
