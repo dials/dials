@@ -140,15 +140,15 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
       experiment_ids, is_multi_state)
 
     self._num_sets = len(self._param)
-    self._set_len = len(param_sets[0])
-    self._total_len = self._set_len * self._num_sets
+    self._num_samples = len(param_sets[0])
+    self._total_len = self._num_samples * self._num_sets
 
     # ensure all internal parameter sets have the same number of parameters
-    for param in self._param[1:]: assert len(param) == self._set_len
+    for param in self._param[1:]: assert len(param) == self._num_samples
 
     # Link up with an object that will perform the smoothing.
     self._smoother = smoother
-    assert self._smoother.num_values() == self._set_len
+    assert self._smoother.num_values() == self._num_samples
 
     # define an attribute for caching the variance-covariance matrix of
     # parameters
@@ -156,11 +156,15 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
 
     return
 
+  def num_samples(self):
+    """the number of samples of each parameter"""
+    return self._num_samples
+
   def num_free(self):
     """the number of free parameters"""
 
     if self._num_free is None:
-      self._num_free = sum(not x.get_fixed() for x in self._param) * self._set_len
+      self._num_free = sum(not x.get_fixed() for x in self._param) * self._num_samples
     return self._num_free
 
   # def num_total(self): inherited unchanged from ModelParameterisation
@@ -214,7 +218,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
     sequence of floats.
 
     First break the sequence into sub sequences of the same length
-    as the _set_len.
+    as the _num_samples.
 
     Only free parameter sets can have values assigned, therefore the
     length of vals must equal the value of num_free"""
@@ -223,9 +227,9 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
     i = 0
     for p in self._param:
       if not p.get_fixed(): # only set the free parameter sets
-        new_vals = vals[i:i+self._set_len]
+        new_vals = vals[i:i+self._num_samples]
         p.value = new_vals
-        i += self._set_len
+        i += self._num_samples
 
     # compose with the new parameter values
     #self.compose()
@@ -237,7 +241,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
     from a sequence of floats.
 
     First break the sequence into sub sequences of the same length
-    as the _set_len.
+    as the _num_samples.
 
     Only free parameters can be set, therefore the length of esds must equal
     the value of num_free"""
@@ -246,9 +250,9 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
     i = 0
     for p in self._param:
       if not p.get_fixed(): # only set the free parameter sets
-        new_esds = esds[i:i+self._set_len]
+        new_esds = esds[i:i+self._num_samples]
         p.esd = new_esds
-        i += self._set_len
+        i += self._num_samples
 
     return
 

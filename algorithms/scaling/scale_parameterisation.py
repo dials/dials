@@ -72,17 +72,17 @@ class IncidentBeamFactor(ScaleFactor):
 
     # Set up the smoother
     self._smoother = GaussianSmoother(phi_range_deg, n_intervals)
-    self._set_len = self._smoother.num_values()
+    self._num_samples = self._smoother.num_values()
 
     # initial value of scale factors is 1
     value = 1
-    self._param = ScanVaryingParameterSet(value, self._set_len,
+    self._param = ScanVaryingParameterSet(value, self._num_samples,
       name = "IncidentBeam")
 
   def __len__(self):
     # There is only one parameter set, so the total number of parameters is
-    # equal to the set length
-    return self._set_len
+    # equal to the number of samples
+    return self._num_samples
 
 class BFactor(ScaleFactor):
   """Smoothly varying B-factor describing falloff with resolution as a function
