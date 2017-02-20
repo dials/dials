@@ -15,11 +15,18 @@ Tests for the constraints system used in refinement
 """
 
 from __future__ import absolute_import, division
+import os
+from copy import deepcopy
+import libtbx.load_env # required for libtbx.env.find_in_repositories
+from libtbx.test_utils import open_tmp_directory, approx_equal
+from libtbx import easy_run
+from scitbx import sparse
 from dials.array_family import flex
+from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+from dxtbx.model.experiment.experiment_list import ExperimentListDumper
 from dials.algorithms.refinement.constraints import EqualShiftConstraint
 from dials.algorithms.refinement.constraints import ConstraintManager
 from dials.algorithms.refinement.constraints import SparseConstraintManager
-from scitbx import sparse
 
 def test1():
 
@@ -110,7 +117,107 @@ def test1():
 
   print "OK"
 
+def test2():
+  """Test joint refinement where two detectors are constrained to enforce a
+  differential distance (along the shared initial normal vector) of 1 mm.
+  This test can be constructed on the fly from data already in
+  dials_regression"""
+
+  if not libtbx.env.has_module("dials_regression"):
+    print "Skipping test2 in " + __file__ + " as dials_regression not present"
+
+  dials_regression = libtbx.env.find_in_repositories(
+    relative_path="dials_regression",
+    test=os.path.isdir)
+
+  # use the 'centroid' data for this test. The 'regularized' experiments are
+  # useful because the detector has fast and slow exactly aligned with X, -Y
+  # so the distance is exactly along the normal vector and can be altered
+  # directly by changing the Z component of the orgin vector
+  data_dir = os.path.join(dials_regression, "refinement_test_data", "centroid")
+  experiments_path = os.path.join(data_dir, "experiments_XPARM_REGULARIZED.json")
+  pickle_path = os.path.join(data_dir, "spot_1000_xds.pickle")
+
+  # work in a temporary directory
+  cwd = os.path.abspath(os.curdir)
+  tmp_dir = open_tmp_directory(suffix="test_dials_constraints")
+  os.chdir(tmp_dir)
+
+  # load the experiments and spots
+  el = ExperimentListFactory.from_json_file(experiments_path, check_format=False)
+  rt = flex.reflection_table.from_pickle(pickle_path)
+
+  # adjust the detector distance by -0.5 mm
+  detector = el[0].detector
+  panel = detector[0]
+  fast = panel.get_fast_axis()
+  slow = panel.get_slow_axis()
+  origin = panel.get_origin()
+  panel.set_frame(fast, slow, origin[0:2] + (origin[2] + 0.5,))
+
+  # duplicate the experiment and adjust distance by +1 mm
+  e2 = deepcopy(el[0])
+  detector = e2.detector
+  panel = detector[0]
+  fast = panel.get_fast_axis()
+  slow = panel.get_slow_axis()
+  origin = panel.get_origin()
+  panel.set_frame(fast, slow, origin[0:2] + (origin[2] - 1.0,))
+
+  # append to the experiment list and write out
+  el.append(e2)
+  dump = ExperimentListDumper(el)
+  dump.as_json('foo_experiments.json')
+
+  # duplicate the reflections and increment the experiment id
+  rt2 = deepcopy(rt)
+  rt2['id'] = rt2['id'] + 1
+
+  # concatenate reflections and write out
+  rt.extend(rt2)
+  rt.as_pickle('foo_reflections.pickle')
+
+  # set up refinement, constraining the distance parameter
+  cmd = ("dials.refine foo_experiments.json foo_reflections.pickle "
+         "history=history.pickle refinement.parameterisation.detector."
+         "constraints.parameters=Dist")
+  try:
+    result = easy_run.fully_buffered(command=cmd).raise_if_errors()
+    # load refinement history
+    import cPickle as pickle
+    with open('history.pickle') as f:
+      history = pickle.load(f)
+    ref_exp = ExperimentListFactory.from_json_file('refined_experiments.json',
+      check_format=False)
+  finally:
+    os.chdir(cwd)
+
+  # we expect 8 steps of constrained refinement
+  assert history.get_nrows()  == 8
+
+  # get parameter vector from the final step
+  pvec = history['parameter_vector'][-1]
+
+  # the constrained parameters have indices 0 and 6 in this case. Check they
+  # are still exactly 1 mm apart
+  assert pvec[0] == pvec[6] - 1.0
+
+  # NB because the other detector parameters were not also constrained, the
+  # refined lab frame distances may not in fact differ by 1 mm. The constraint
+  # acts along the initial detector normal vector during composition of a new
+  # detector position. After refinement of tilt/twist type rotations,
+  # the final distances along the new normal vectors will change
+  det1, det2 = ref_exp.detectors()
+  p1 = det1[0]
+  p2 = det2[0]
+  assert approx_equal(p2.get_distance() - p1.get_distance(), 0.9987655)
+
+  print "OK"
+
 if __name__ == '__main__':
 
   # simple test of constraint manager
   test1()
+
+  # test constrained refinement
+  test2()
