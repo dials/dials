@@ -116,10 +116,12 @@ class Refinery(object):
     # objects
     self._parameters = prediction_parameterisation
     self._target = target
-    self_constr_manager = constraints_manager
+    self._constr_manager = constraints_manager
 
     # initial parameter values
     self.x = flex.double(self._parameters.get_param_vals())
+    if self._constr_manager is not None:
+      self.x = self._constr_manager.constrain_parameters(self.x)
     self.old_x = None
 
     # undefined initial functional and gradients values
@@ -166,8 +168,12 @@ class Refinery(object):
   def prepare_for_step(self):
     """Update the parameterisation and prepare the target function"""
 
+    x = self.x
+    if self._constr_manager is not None:
+      x = self._constr_manager.expand_parameters(x)
+
     # set current parameter values
-    self._parameters.set_param_vals(self.x)
+    self._parameters.set_param_vals(x)
 
     # do reflection prediction
     self._target.predict()
@@ -516,9 +522,10 @@ class AdaptLstbx(
                       jacobian=jacobian,
                       weights=weights)
         def callback_wrapper(result):
-          self.add_equations(result['residuals'],
-                             result['jacobian'],
-                             result['weights'])
+          j = result['jacobian']
+          if self._constr_manager is not None:
+            j = self._constr_manager.constrain_jacobian(j)
+          self.add_equations(result['residuals'], j, result['weights'])
           # no longer need the result
           result['residuals'] = None
           result['jacobian'] = None
@@ -538,7 +545,10 @@ class AdaptLstbx(
         for block in blocks:
           residuals, self._jacobian, weights = \
             self._target.compute_residuals_and_gradients(block)
-          self.add_equations(residuals, self._jacobian, weights)
+          j = self._jacobian
+          if self._constr_manager is not None:
+            j = self._constr_manager.constrain_jacobian(j)
+          self.add_equations(residuals, j, weights)
 
     # restraints terms
     restraints = self._target.compute_restraints_residuals_and_gradients()
@@ -546,7 +556,10 @@ class AdaptLstbx(
       if objective_only:
         self.add_residuals(restraints[0], restraints[2])
       else:
-        self.add_equations(restraints[0], restraints[1], restraints[2])
+        j = restraints[1]
+        if self._constr_manager is not None:
+          j = self._constr_manager.constrain_jacobian(j)
+        self.add_equations(restraints[0], j, restraints[2])
     return
 
   def step_forward(self):
@@ -576,6 +589,11 @@ class AdaptLstbx(
     if self.history.get_nrows() == 0: return None
 
     if self.cf is None: return None
+
+    # if constraints were used then the normal matrix has fewer rows/columns
+    # than the number of expanded parameters. At the moment, do not support
+    # this calculation when constraints were used
+    if self._constr_manager is not None: return None
 
     # invert normal matrix from N^-1 = (U^-1)(U^-1)^T
     cf_inv = self.cf.matrix_packed_u_as_upper_triangle().\
