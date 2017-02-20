@@ -100,6 +100,19 @@ class PredictionParameterisation(object):
     self._exp_to_param = {i: ParamSet(e2bp.get(i), e2xop.get(i),
         e2xucp.get(i), e2dp.get(i)) for i, _ in enumerate(experiments)}
 
+  # accessors for the lists of parameterisations of different types
+  def get_detector_parameterisations(self):
+    return self._detector_parameterisations
+
+  def get_beam_parameterisations(self):
+    return self._beam_parameterisations
+
+  def get_crystal_orientation_parameterisations(self):
+    return self._xl_orientation_parameterisations
+
+  def get_crystal_unit_cell_parameterisations(self):
+    return self._xl_unit_cell_parameterisations
+
   def _len(self):
 
     length = 0
