@@ -30,10 +30,12 @@ from dials.algorithms.refinement.outlier_detection.outlier_base \
   import phil_str as outlier_phil_str
 from dials.algorithms.refinement.restraints.restraints_parameterisation \
   import uc_phil_str as uc_restraints_phil_str
+from dials.algorithms.refinement.constraints import phil_str as constr_phil_str
 from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \
   import phil_str as sv_phil_str
 format_data = {'outlier_phil':outlier_phil_str,
                'uc_restraints_phil':uc_restraints_phil_str,
+               'constr_phil':constr_phil_str,
                'sv_phil_str':sv_phil_str}
 phil_scope = parse('''
 
@@ -143,6 +145,8 @@ refinement
                 "partial names to match"
         .expert_level = 1
 
+      %(constr_phil)s
+
       force_static = True
         .type = bool
         .help = "Force a static parameterisation for the beam when doing"
@@ -170,6 +174,8 @@ refinement
 
         %(uc_restraints_phil)s
 
+        %(constr_phil)s
+
         force_static = False
           .type = bool
           .help = "Force a static parameterisation for the crystal unit cell"
@@ -187,6 +193,8 @@ refinement
           .help = "Fix specified parameters by a list of 0-based indices or"
                   "partial names to match"
           .expert_level = 1
+
+        %(constr_phil)s
 
         force_static = False
           .type = bool
@@ -225,6 +233,8 @@ refinement
         .help = "Fix specified parameters by a list of 0-based indices or"
                 "partial names to match"
         .expert_level = 1
+
+      %(constr_phil)s
 
       force_static = True
         .type = bool
@@ -535,10 +545,14 @@ class RefinerFactory(object):
     target.set_prediction_parameterisation(pred_param)
     target.set_restraints_parameterisation(restraints_parameterisation)
 
+    # Build a constraints manager, if requested
+    constraints_manager = cls.config_constraints(params, pred_param, verbosity)
+
     if verbosity > 0: logger.debug("Building refinement engine")
 
     # create refinery
-    refinery = cls.config_refinery(params, target, pred_param, verbosity)
+    refinery = cls.config_refinery(params, target, pred_param,
+      constraints_manager, verbosity)
 
     if verbosity > 0: logger.debug("Refinement engine built")
 
@@ -1338,9 +1352,97 @@ class RefinerFactory(object):
     return rp
 
   @staticmethod
-  def config_refinery(params, target, pred_param, verbosity):
-    """Given a set of parameters, a target class, and a prediction
-    parameterisation class, build a refinery
+  def config_constraints(params, pred_param, verbosity=0):
+    """If equal shift constraints are requested, build them and package into
+    a constraints manager to be linked to the Refinery"""
+
+    # shorten options path
+    options = params.refinement.parameterisation
+
+    # shorten options paths further for individual parameterisation types
+    detector_c = options.detector.constraints
+    beam_c = options.beam.constraints
+    orientation_c = options.crystal.orientation.constraints
+    cell_c = options.crystal.unit_cell.constraints
+
+    # quit early if there are no constraints to apply
+    n_constraints = sum([len(e) for e in [detector_c, beam_c, orientation_c,
+      cell_c]])
+    if n_constraints == 0: return None
+
+    if verbosity > 0: logger.debug("\nConfiguring constraints")
+
+    if options.sparse:
+      from dials.algorithms.refinement.constraints \
+        import SparseConstraintManager as ConstraintManager
+    else:
+      from dials.algorithms.refinement.constraints import ConstraintManager
+    from dials.algorithms.refinement.constraints import EqualShiftConstraint
+
+    # get full parameter names and values
+    all_names = pred_param.get_param_names()
+    all_vals = pred_param.get_param_vals()
+
+    # list of constraint objects to build up
+    constraints = []
+
+    detector_p = pred_param.get_detector_parameterisations()
+    beam_p = pred_param.get_beam_parameterisations()
+    orientation_p = pred_param.get_crystal_orientation_parameterisations()
+    cell_p = pred_param.get_crystal_unit_cell_parameterisations()
+
+    def build_constraints(constraint_scope, parameterisation, model_type):
+      import re
+      if constraint_scope.apply_to_all:
+        # get one experiment id for each parameterisation
+        constraint_scope.id = [e.get_experiment_ids()[0] for e in parameterisation]
+      if len(constraint_scope.id) < 2:
+        raise Sorry("At least two experiment ids must be provided to create "
+                    "a constraint between {0} models".format(model_type))
+
+      # find which parameterisations are involved
+      prefixes = []
+      for i, p in enumerate(parameterisation):
+        for j in p.get_experiment_ids():
+          if j in constraint_scope.id:
+            prefixes.append(model_type + '{0}'.format(i+1))
+            break
+      # if fewer than 2 parameterisations match the supplied ids then there are
+      # no constraints to return for this constraint scope
+      if len(prefixes) < 2:
+        return []
+
+      # set up constraints for each type of parameter
+      constraints = []
+      patt1 = re.compile("^" + model_type + "[0-9]+")
+      for pname in constraint_scope.parameters:
+        # ignore model name prefixes
+        pname = patt1.sub('', pname)
+
+        # TODO check this works in all cases we want
+        patt2 = re.compile("^(" + "|".join(prefixes) + "){1}(?![0-9])(\w*" + pname + ")")
+        indices = [i for i, s in enumerate(all_names) if patt2.match(s)]
+        constraints.append(EqualShiftConstraint(indices, all_vals))
+      return constraints
+
+    for constr in detector_c:
+      constraints.extend(build_constraints(constr, detector_p, 'Detector'))
+    for constr in beam_c:
+      constraints.extend(build_constraints(constr, beam_p, 'Beam'))
+    for constr in orientation_c:
+      constraints.extend(build_constraints(constr, orientation_p, 'Crystal'))
+    for constr in cell_c:
+      constraints.extend(build_constraints(constr, cell_p, 'Crystal'))
+
+    # return constraints manager
+    return ConstraintManager(constraints, len(all_vals))
+
+  @staticmethod
+  def config_refinery(params, target, pred_param, constraints_manager,
+    verbosity):
+    """Given a set of parameters, a target class, a prediction
+    parameterisation class and a constraints_manager (which could be None),
+    build a refinery
 
     Params:
         params The input parameters
@@ -1370,6 +1472,7 @@ class RefinerFactory(object):
 
     engine = refinery(target = target,
             prediction_parameterisation = pred_param,
+            constraints_manager=constraints_manager,
             log = options.log,
             verbosity = verbosity,
             track_step = options.track_step,
