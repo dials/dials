@@ -1327,12 +1327,9 @@ class RefinerFactory(object):
         raise Sorry("6 sigmas must be provided as the tie_to_target.sigmas. "
                     "Note that individual sigmas of 0.0 will remove "
                     "the restraint for the corresponding cell parameter.")
-      if tie.apply_to_all:
-        # get one experiment id for each parameterisation
+      if tie.id is None:
+        # get one experiment id for each parameterisation to apply to all
         tie.id = [e.get_experiment_ids()[0] for e in xl_uc_params]
-      if not tie.id:
-        raise Sorry("At least one experiment id must be provided as the "
-                    "tie_to_target.id")
       for exp_id in tie.id:
         rp.add_restraints_to_target_xl_unit_cell(exp_id, tie.values, tie.sigmas)
 
@@ -1341,12 +1338,9 @@ class RefinerFactory(object):
         raise Sorry("6 sigmas must be provided as the tie_to_group.sigmas. "
                     "Note that individual sigmas of 0.0 will remove "
                     "the restraint for the corresponding cell parameter.")
-      if tie.apply_to_all:
+      if tie.id is None:
         rp.add_restraints_to_group_xl_unit_cell(tie.target, "all", tie.sigmas)
       else:
-        if not tie.id:
-          raise Sorry("At least one experiment id must be provided as the "
-                      "tie_to_group.id, or use apply_to_all")
         rp.add_restraints_to_group_xl_unit_cell(tie.target, tie.id, tie.sigmas)
 
     return rp
@@ -1393,8 +1387,8 @@ class RefinerFactory(object):
 
     def build_constraints(constraint_scope, parameterisation, model_type):
       import re
-      if constraint_scope.apply_to_all:
-        # get one experiment id for each parameterisation
+      if constraint_scope.id is None:
+        # get one experiment id for each parameterisation to apply to all
         constraint_scope.id = [e.get_experiment_ids()[0] for e in parameterisation]
       if len(constraint_scope.id) < 2:
         raise Sorry("At least two experiment ids must be provided to create "

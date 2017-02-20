@@ -65,7 +65,6 @@ class Test(object):
                 tie_to_target {
                   values = 78.9,78.9,38.1,90,90,90
                   sigmas = 1,1,1,0,0,0
-                  apply_to_all = True
                 }
               }
             }

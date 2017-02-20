@@ -392,7 +392,6 @@ def test4():
             tie_to_group
             {
               sigmas=1,0,2,0,0,0
-              apply_to_all=true
             }
           }
         }

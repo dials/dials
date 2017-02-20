@@ -24,11 +24,12 @@ constraints
   .multiple = True
 {
   id = None
-    .help = "Index of experiments affected by this constraint to look up which"
+    .help = "Select only the specified experiments when looking up which"
             "parameterisations to apply the constraint to. If an identified"
             "parameterisation affects multiple experiments then the index"
             "of any one of those experiments suffices to identify that"
-            "parameterisation."
+            "parameterisation. If None (the default) then constraints will be"
+            "applied to all parameterisations of this type."
     .type = ints(value_min=0,size_min=2)
 
   parameters = None
@@ -37,10 +38,6 @@ constraints
             "of parameter names to match. Model name prefixes such as"
             "'Detector1' will be ignored as parameterisations are identified"
             "by experiment id"
-
-  apply_to_all = False
-    .help = "Shorthand to constrain the parameterisations across all experiments"
-    .type = bool
 }
 
 '''

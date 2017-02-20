@@ -44,16 +44,13 @@ restraints
       .type = floats(size=6, value_min=0.)
 
     id = None
-      .help = "Index of experiments affected by this restraint to look up which"
-              "parameterisations to apply the restraint to. If an identified"
+      .help = "Select only the specified experiments when looking up which"
+              "parameterisations to apply these restraints to. If an identified"
               "parameterisation affects multiple experiments then the index"
               "of any one of those experiments suffices to restrain that"
-              "parameterisation."
+              "parameterisation. If None (the default) then the restraints"
+              "will be applied to all experiments."
       .type = ints(value_min=0)
-
-    apply_to_all = False
-      .help = "Shorthand to restrain the unit cells across all experiments"
-      .type = bool
   }
 
   tie_to_group
@@ -70,14 +67,12 @@ restraints
       .type = floats(size=6, value_min=0.)
 
     id = None
-      .help = "Indices of experiments affected by this restraint. For every"
+      .help = "Select only the specified experiments when looking up which "
+              "parameterisations to apply these restraints to. For every"
               "parameterisation that requires a restraint at least one"
-              "experiment index must be supplied, unless using apply_to_all"
+              "experiment index must be supplied. If None (the default) the"
+              "restraints will be applied to all experiments."
       .type = ints(value_min=0)
-
-    apply_to_all = False
-      .help = "Shorthand to restrain the unit cells across all experiments"
-      .type = bool
   }
 }
 
