@@ -27,17 +27,19 @@ from dials.algorithms.refinement.engine import AdaptLstbx as AdaptLstbxBase
 class AdaptLstbxSparse(DisableMPmixin, AdaptLstbxBase, non_linear_ls_eigen_wrapper):
   """Adapt the base class for Eigen"""
 
-  def __init__(self, target, prediction_parameterisation, log=None,
-               verbosity = 0, track_step = False, track_gradient = False,
-               track_parameter_correlation = False,
-               track_out_of_sample_rmsd = False, max_iterations = None):
+  def __init__(self, target, prediction_parameterisation, constraints_manager=None,
+            log=None, verbosity = 0, track_step = False, track_gradient = False,
+            track_parameter_correlation = False,
+            track_out_of_sample_rmsd = False, max_iterations = None):
 
-    AdaptLstbxBase.__init__(self, target, prediction_parameterisation,
-             log=log, verbosity=verbosity, track_step=track_step,
-             track_gradient=track_gradient,
-             track_parameter_correlation=track_parameter_correlation,
-             track_out_of_sample_rmsd=track_out_of_sample_rmsd,
-             max_iterations=max_iterations)
+    AdaptLstbxBase.__init__(
+            self, target, prediction_parameterisation,
+            constraints_manager=constraints_manager,
+            log=log, verbosity=verbosity, track_step=track_step,
+            track_gradient=track_gradient,
+            track_parameter_correlation=track_parameter_correlation,
+            track_out_of_sample_rmsd=track_out_of_sample_rmsd,
+            max_iterations=max_iterations)
 
     non_linear_ls_eigen_wrapper.__init__(self, n_parameters = len(self._parameters))
 
@@ -45,13 +47,15 @@ from dials.algorithms.refinement.engine import GaussNewtonIterations as GaussNew
 class GaussNewtonIterations(AdaptLstbxSparse, GaussNewtonIterationsBase):
   """Refinery implementation, using lstbx Gauss Newton iterations"""
 
-  def __init__(self, target, prediction_parameterisation, log=None,
-               verbosity=0, track_step=False, track_gradient=False,
+  def __init__(self, target, prediction_parameterisation,
+               constraints_manager=None,
+               log=None, verbosity=0, track_step=False, track_gradient=False,
                track_parameter_correlation=False,
                track_out_of_sample_rmsd=False,
                max_iterations=20, **kwds):
 
     AdaptLstbxSparse.__init__(self, target, prediction_parameterisation,
+             constraints_manager=constraints_manager,
              log=log, verbosity=verbosity, track_step=track_step,
              track_gradient=track_gradient,
              track_parameter_correlation=track_parameter_correlation,

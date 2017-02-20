@@ -52,25 +52,25 @@ class Extract(object):
 
     if self._params.engine == "SimpleLBFGS":
       refiner = SimpleLBFGS(
-          self._target,
-          self._prediction_parameterisation,
-          self._params.logfile,
-          self._params.verbosity)
+          target=self._target,
+          prediction_parameterisation=self._prediction_parameterisation,
+          log=self._params.logfile,
+          verbosity=self._params.verbosity)
       return refiner
 
     if self._params.engine == "LBFGScurvs":
       refiner = LBFGScurvs(
-          self._target,
-          self._prediction_parameterisation,
-          self._params.logfile,
-          self._params.verbosity)
+          target=self._target,
+          prediction_parameterisation=self._prediction_parameterisation,
+          log=self._params.logfile,
+          verbosity=self._params.verbosity)
       return refiner
 
     if self._params.engine == "GaussNewton":
 
       refiner = GaussNewtonIterations(
-          self._target,
-          self._prediction_parameterisation,
-          self._params.logfile,
-          self._params.verbosity)
+          target=self._target,
+          prediction_parameterisation=self._prediction_parameterisation,
+          log=self._params.logfile,
+          verbosity=self._params.verbosity)
       return refiner

@@ -106,15 +106,17 @@ class Refinery(object):
   # Refinery to be able to refer to it directly. So refinery should keep a
   # separate link to its PredictionParameterisation.
 
-  def __init__(self, target, prediction_parameterisation, log = None,
-               verbosity = 0, track_step = False,
+  def __init__(self, target, prediction_parameterisation, constraints_manager=None,
+               log = None, verbosity = 0, track_step = False,
                track_gradient = False, track_parameter_correlation = False,
                track_out_of_sample_rmsd = False,
                max_iterations = None):
 
-    # reference to PredictionParameterisation and Target objects
+    # reference to PredictionParameterisation, Target and ConstraintsManager
+    # objects
     self._parameters = prediction_parameterisation
     self._target = target
+    self_constr_manager = constraints_manager
 
     # initial parameter values
     self.x = flex.double(self._parameters.get_param_vals())
@@ -452,12 +454,12 @@ class AdaptLstbx(
     normal_eqns.non_linear_ls_mixin):
   """Adapt Refinery for lstbx"""
 
-  def __init__(self, target, prediction_parameterisation, log=None,
-               verbosity = 0, track_step = False, track_gradient = False,
+  def __init__(self, target, prediction_parameterisation, constraints_manager=None,
+               log=None, verbosity = 0, track_step = False, track_gradient = False,
                track_parameter_correlation = False,
                track_out_of_sample_rmsd = False, max_iterations = None):
 
-    Refinery.__init__(self, target, prediction_parameterisation,
+    Refinery.__init__(self, target, prediction_parameterisation, constraints_manager,
              log=log, verbosity=verbosity, track_step=track_step,
              track_gradient=track_gradient,
              track_parameter_correlation=track_parameter_correlation,
@@ -616,13 +618,14 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
   max_shift_over_esd = 15
   convergence_as_shift_over_esd = 1e-5
 
-  def __init__(self, target, prediction_parameterisation, log=None,
-               verbosity=0, track_step=False, track_gradient=False,
+  def __init__(self, target, prediction_parameterisation, constraints_manager=None,
+               log=None, verbosity=0, track_step=False, track_gradient=False,
                track_parameter_correlation=False,
                track_out_of_sample_rmsd=False,
                max_iterations=20, **kwds):
 
-    AdaptLstbx.__init__(self, target, prediction_parameterisation,
+    AdaptLstbx.__init__(
+             self, target, prediction_parameterisation, constraints_manager,
              log=log, verbosity=verbosity, track_step=track_step,
              track_gradient=track_gradient,
              track_parameter_correlation=track_parameter_correlation,
