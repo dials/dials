@@ -21,19 +21,22 @@ phil_str = '''
 constraints
   .help = "Parameter equal shift constraints to use in refinement."
   .expert_level = 2
+  .multiple = True
 {
   id = None
     .help = "Index of experiments affected by this constraint to look up which"
-            "parameterisations to apply the restraint to. If an identified"
+            "parameterisations to apply the constraint to. If an identified"
             "parameterisation affects multiple experiments then the index"
             "of any one of those experiments suffices to identify that"
             "parameterisation."
-    .type = ints(value_min=0)
+    .type = ints(value_min=0,size_min=2)
 
   parameters = None
     .type = strings
     .help = "Constrain specified parameters of each parameterisation by a list"
-            "of 0-based indices or partial names to match"
+            "of parameter names to match. Model name prefixes such as"
+            "'Detector1' will be ignored as parameterisations are identified"
+            "by experiment id"
 
   apply_to_all = False
     .help = "Shorthand to constrain the parameterisations across all experiments"
@@ -51,6 +54,7 @@ class EqualShiftConstraint(object):
   def __init__(self, indices, parameter_vector):
 
     self.indices = indices
+    parameter_vector = flex.double(parameter_vector)
     self.constrained_value = flex.mean(parameter_vector.select(indices))
     self._shifts = parameter_vector.select(indices) - self.constrained_value
 
