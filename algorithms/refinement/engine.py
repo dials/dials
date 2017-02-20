@@ -370,6 +370,11 @@ class AdaptLbfgs(Refinery):
       g = [a + b for a,b in zip(g, restraints[1])]
       c = [a + b for a,b in zip(c, restraints[2])]
 
+    # compact and reorder according to the constraints
+    if self._constr_manager is not None:
+      g = self._constr_manager.constrain_gradient_vector(g)
+      c = self._constr_manager.constrain_gradient_vector(c)
+
     return f, flex.double(g), flex.double(c)
 
   def callback_after_step(self, minimizer):

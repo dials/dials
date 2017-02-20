@@ -85,7 +85,7 @@ def test1():
   tmp = j.matrix_copy_column(5) + j.matrix_copy_column(6) + j.matrix_copy_column(7)
   assert (cj.matrix_copy_column(6) == tmp).all_eq(True)
 
-  # convert to a sparse matrix to exercise the sparse jacobian compaction
+  # convert to a sparse matrix to exercise the sparse Jacobian compaction
   j2 = sparse.matrix(20,10)
   mask = flex.bool(20, True)
   for i, c in enumerate(j2.cols()):
@@ -97,6 +97,16 @@ def test1():
 
   # ensure dense and sparse calculations give the same result
   assert (cj2.as_dense_matrix() == cj).all_eq(True)
+
+  # construct derivatives of the objective dL/dp from the Jacobian to test
+  # constrain_gradient_vector. Here assume unit weights
+  dL_dp = [sum(col.as_dense_vector()) for col in j2.cols()]
+  constr_dL_dp = cm.constrain_gradient_vector(dL_dp)
+
+  # check constrained values are equal to sums of relevant elements in the
+  # original gradient vector
+  assert constr_dL_dp[5] == dL_dp[1] + dL_dp[3]
+  assert constr_dL_dp[6] == dL_dp[5] + dL_dp[6] + dL_dp[7]
 
   print "OK"
 
