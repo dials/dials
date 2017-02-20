@@ -133,6 +133,19 @@ class ConstraintManager(object):
 
     return constrained_jacobian
 
+  def constrain_gradient_vector(self, grad):
+
+    # extract unconstrained gradients into the result
+    result = []
+    result = list(flex.double(grad).select(self._unconstrained_idx))
+
+    # append constrained gradients
+    for i, gp in enumerate(self._constrained_gps):
+      vals = [grad[j] for j in gp]
+      result.append(sum(vals))
+
+    return result
+
 class SparseConstraintManager(ConstraintManager):
 
   def constrain_jacobian(self, jacobian):
