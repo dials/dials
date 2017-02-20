@@ -1394,9 +1394,18 @@ class RefinerFactory(object):
         raise Sorry("At least two experiment ids must be provided to create "
                     "a constraint between {0} models".format(model_type))
 
-      # find which parameterisations are involved
+      # find which parameterisations are involved, and if any are scan-varying
+      # how many sample points there are
       prefixes = []
+      n_samples = 0
       for i, p in enumerate(parameterisation):
+        if hasattr(p, 'num_samples'):
+          ns = p.num_samples()
+          if n_samples == 0: n_samples = ns
+          if ns != n_samples:
+            raise Sorry("Constraints cannot be created between scan-varying "
+              "parameterisations when these have a different number of "
+              "sample points.")
         for j in p.get_experiment_ids():
           if j in constraint_scope.id:
             prefixes.append(model_type + '{0}'.format(i+1))
@@ -1413,10 +1422,24 @@ class RefinerFactory(object):
         # ignore model name prefixes
         pname = patt1.sub('', pname)
 
-        # TODO check this works in all cases we want
-        patt2 = re.compile("^(" + "|".join(prefixes) + "){1}(?![0-9])(\w*" + pname + ")")
-        indices = [i for i, s in enumerate(all_names) if patt2.match(s)]
-        constraints.append(EqualShiftConstraint(indices, all_vals))
+        # Use a regex to find parameters to constrain from a list of all the
+        # parameter names. There are multiple parts to this. The first part
+        # identifies the relevant model type and parameterisation ordinal index,
+        # accepting those that were chosen according to the supplied experiment
+        # ids. The next part allows for additional text, like 'Group1' that may
+        # be used by a multi-panel detector parameterisation. Then the parameter
+        # name itself, like 'Dist'. Finally, to accommodate scan-varying
+        # parameterisations, suffixes like '_sample0' and '_sample1' are
+        # distinguished so that these are constrained separately.
+        for i in range(max(n_samples, 1)):
+          patt2 = re.compile("^(" + "|".join(prefixes) + "){1}(?![0-9])(\w*" + \
+            pname + ")(_sample{0})?$".format(i))
+          indices = [j for j, s in enumerate(all_names) if patt2.match(s)]
+          if verbosity > 1:
+            logger.debug('\nThe following parameters will be constrained '
+              'to enforce equal shifts at each step of refinement:')
+            for k in indices: logger.debug(all_names[k])
+          constraints.append(EqualShiftConstraint(indices, all_vals))
       return constraints
 
     for constr in detector_c:
