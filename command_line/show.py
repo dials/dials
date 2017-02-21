@@ -221,6 +221,10 @@ def run(args):
     from cctbx.array_family import flex
     print
     print "Reflection list contains %i reflections" %(len(rlist))
+
+    if len(rlist) == 0:
+      continue
+
     rows = [["Column", "min", "max", "mean"]]
     for k, col in rlist.cols():
       if type(col) in (flex.double, flex.int, flex.size_t):
