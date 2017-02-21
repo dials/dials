@@ -30,14 +30,18 @@ class Test(object):
 
     assert exists(join(self.path, 'run266702-0-subset.h5'))
 
+    geometry_path = join(self.path, 'refined_experiments_level1.json')
+    assert exists(geometry_path)
+
     f = open("process.phil", 'w')
     f.write("""
+      input.reference_geometry=%s
       indexing {
         known_symmetry {
           space_group = P43212
           unit_cell = 78.9 78.9 38.1 90 90 90
         }
-        method = real_space_grid_search
+        method = fft1d
         refinement_protocol.d_min_start = 2.2
       }
 
@@ -87,7 +91,7 @@ class Test(object):
           min_spots.overall = 0
         }
       }
-      """)
+      """%geometry_path)
     f.close()
 
     # Call dials.stills_process
@@ -114,10 +118,14 @@ class Test(object):
     #                            "idx-run266702-0-subset_00003_integrated.pickle"],
     #                            [range(75,90),range(220,230),range(285,295)]): # large ranges to handle platform-specific differences
     # 02/14/17 Further changes to stills_process: resetting rejected reflections before re-refinement
-    for result, n_refls in zip(["idx-run266702-0-subset_00000_integrated.pickle",
-                                "idx-run266702-0-subset_00001_integrated.pickle",
+    #for result, n_refls in zip(["idx-run266702-0-subset_00000_integrated.pickle",
+    #                            "idx-run266702-0-subset_00001_integrated.pickle",
+    #                            "idx-run266702-0-subset_00003_integrated.pickle"],
+    #                            [range(80,95),range(225,235),range(235,245)]): # large ranges to handle platform-specific differences
+    # 02/21/17 Changes to stills_process: refine during indexing instead of after. Also used refined metrology from Rahel
+    for result, n_refls in zip(["idx-run266702-0-subset_00001_integrated.pickle",
                                 "idx-run266702-0-subset_00003_integrated.pickle"],
-                                [range(80,95),range(225,235),range(235,245)]): # large ranges to handle platform-specific differences
+                                [range(600,610),range(505,520)]): # large ranges to handle platform-specific differences
       table = pickle.load(open(result, 'rb'))
       assert len(table) in n_refls, len(table)
       assert 'id' in table

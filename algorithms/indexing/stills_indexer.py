@@ -198,18 +198,15 @@ class stills_indexer(indexer_base):
         sel.set_selected(self.reflections['id'] > -1, False)
       self.unindexed_reflections = self.reflections.select(sel)
 
-      if len(self.params.stills.isoforms) == 0:
-        refined_experiments = experiments
-        refined_reflections = self.reflections
-      else:
+      reflections_for_refinement = self.reflections.select(
+        self.indexed_reflections)
+
+      if len(self.params.stills.isoforms) > 0:
         logger.info("")
         logger.info("#" * 80)
         logger.info("Starting refinement")
         logger.info("#" * 80)
         logger.info("")
-
-        reflections_for_refinement = self.reflections.select(
-          self.indexed_reflections)
 
         import copy
         isoform_experiments = ExperimentList()
@@ -268,21 +265,21 @@ class stills_indexer(indexer_base):
         experiments = isoform_experiments
         reflections_for_refinement = isoform_reflections
 
-        try:
-          refined_experiments, refined_reflections = self.refine(
-            experiments, reflections_for_refinement)
-        except RuntimeError, e:
-          s = str(e)
-          if ("below the configured limit" in s or
-              "Insufficient matches for crystal" in s):
-            if len(experiments) == 1:
-              raise Sorry(e)
-            had_refinement_error = True
-            logger.info("Refinement failed:")
-            logger.info(s)
-            del experiments[-1]
-            break
-          raise
+      try:
+        refined_experiments, refined_reflections = self.refine(
+          experiments, reflections_for_refinement)
+      except RuntimeError, e:
+        s = str(e)
+        if ("below the configured limit" in s or
+            "Insufficient matches for crystal" in s):
+          if len(experiments) == 1:
+            raise Sorry(e)
+          had_refinement_error = True
+          logger.info("Refinement failed:")
+          logger.info(s)
+          del experiments[-1]
+          break
+        raise
 
       # sanity check for unrealistic unit cell volume increase during refinement
       # usually this indicates too many parameters are being refined given the
@@ -557,37 +554,36 @@ class stills_indexer(indexer_base):
       return od.get_cache_status()
 
   def refine(self, experiments, reflections):
+    acceptance_flags = self.identify_outliers(self.all_params, experiments, reflections)
+    #create a new "reflections" list with outliers thrown out:
+    reflections = reflections.select(acceptance_flags)
 
-    sel = ((reflections['id'] >= -1))
-    refl = reflections.select(sel)
-
-    acceptance_flags = self.identify_outliers(self.all_params, experiments, refl)
-    #create a new "indexed" list with outliers thrown out:
-    refl = refl.select(acceptance_flags)
-
-    print "$$$ stills_indexer::refine"
-    R = e_refine(params = self.all_params, experiments=experiments, reflections=refl, graph_verbose=False)
+    R = e_refine(params = self.all_params, experiments=experiments, reflections=reflections, graph_verbose=False)
     ref_experiments = R.get_experiments()
 
     # try to improve the outcome with a second round of outlier rejection post-initial refinement:
-    acceptance_flags = self.identify_outliers(self.all_params, ref_experiments, refl)
+    acceptance_flags = self.identify_outliers(self.all_params, ref_experiments, reflections)
 
     # insert a round of Nave-outlier rejection on top of the r.m.s.d. rejection
-    nv0 = nave_parameters(params = self.all_params, experiments=ref_experiments, reflections=refl, refinery=R, graph_verbose=False)
+    nv0 = nave_parameters(params = self.all_params, experiments=ref_experiments, reflections=reflections, refinery=R, graph_verbose=False)
     crystal_model_nv0 = nv0()
     acceptance_flags_nv0 = nv0.nv_acceptance_flags
-    refl = refl.select(acceptance_flags & acceptance_flags_nv0)
+    reflections = reflections.select(acceptance_flags & acceptance_flags_nv0)
 
-    print "$$$ stills_indexer::refine after positional and delta-psi outlier rejection"
-    refiner = e_refine(params = self.all_params, experiments=ref_experiments, reflections=refl, graph_verbose=False)
+    R = e_refine(params = self.all_params, experiments=ref_experiments, reflections=reflections, graph_verbose=False)
+    ref_experiments = R.get_experiments()
 
-    matches = refiner.get_matches()
-    xyzcal_mm = flex.vec3_double(len(refl))
+    nv = nave_parameters(params = self.all_params, experiments=ref_experiments, reflections=reflections, refinery=R, graph_verbose=False)
+    nv()
+    rmsd, _ = calc_2D_rmsd_and_displacements(R.predict_for_reflection_table(reflections))
+
+    matches = R.get_matches()
+    xyzcal_mm = flex.vec3_double(len(reflections))
     xyzcal_mm.set_selected(matches['iobs'], matches['xyzcal.mm'])
-    refl['xyzcal.mm'] = xyzcal_mm
-    refl.set_flags(matches['iobs'], refl.flags.used_in_refinement)
-    refl['entering'] = flex.bool(len(refl), False)
-    return refiner.get_experiments(), refl
+    reflections['xyzcal.mm'] = xyzcal_mm
+    reflections.set_flags(matches['iobs'], reflections.flags.used_in_refinement)
+    reflections['entering'] = flex.bool(len(reflections), False)
+    return ref_experiments, reflections
 
 """ Mixin class definitions that override the dials indexing class methods specific to stills """
 class stills_indexer_known_orientation(indexer_known_orientation, stills_indexer):

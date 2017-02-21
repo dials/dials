@@ -28,7 +28,8 @@ control_phil_str = '''
       .expert_level = 2
       .help = If True, before processing import all the data. Needed only if processing \
               multiple multi-image files at once (not a recommended use case)
-    refine = True
+    refine = False
+      .expert_level = 2
       .type = bool
       .help = If True, after indexing, refine the experimental models
   }
