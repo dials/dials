@@ -30,7 +30,7 @@ constraints
             "of any one of those experiments suffices to identify that"
             "parameterisation. If None (the default) then constraints will be"
             "applied to all parameterisations of this type."
-    .type = ints(value_min=0,size_min=2)
+    .type = ints(value_min=0)
 
   parameters = None
     .type = strings

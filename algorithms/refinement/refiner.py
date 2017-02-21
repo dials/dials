@@ -1390,9 +1390,6 @@ class RefinerFactory(object):
       if constraint_scope.id is None:
         # get one experiment id for each parameterisation to apply to all
         constraint_scope.id = [e.get_experiment_ids()[0] for e in parameterisation]
-      if len(constraint_scope.id) < 2:
-        raise Sorry("At least two experiment ids must be provided to create "
-                    "a constraint between {0} models".format(model_type))
 
       # find which parameterisations are involved, and if any are scan-varying
       # how many sample points there are
@@ -1410,10 +1407,6 @@ class RefinerFactory(object):
           if j in constraint_scope.id:
             prefixes.append(model_type + '{0}'.format(i+1))
             break
-      # if fewer than 2 parameterisations match the supplied ids then there are
-      # no constraints to return for this constraint scope
-      if len(prefixes) < 2:
-        return []
 
       # set up constraints for each type of parameter
       constraints = []
@@ -1435,6 +1428,7 @@ class RefinerFactory(object):
           patt2 = re.compile("^(" + "|".join(prefixes) + "){1}(?![0-9])(\w*" + \
             pname + ")(_sample{0})?$".format(i))
           indices = [j for j, s in enumerate(all_names) if patt2.match(s)]
+          if len(indices) == 1: continue
           if verbosity > 1:
             logger.debug('\nThe following parameters will be constrained '
               'to enforce equal shifts at each step of refinement:')
@@ -1450,6 +1444,8 @@ class RefinerFactory(object):
       constraints.extend(build_constraints(constr, orientation_p, 'Crystal'))
     for constr in cell_c:
       constraints.extend(build_constraints(constr, cell_p, 'Crystal'))
+
+    if len(constraints) == 0: return None
 
     # return constraints manager
     return ConstraintManager(constraints, len(all_vals))
