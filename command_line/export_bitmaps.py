@@ -55,6 +55,17 @@ saturation = 0
   .type = int
 show_mask = False
   .type = bool
+png {
+  compress_level = 1
+    .type = int(value_min=0, value_max=9)
+    .help = "ZLIB compression level, a number between 0 and 9: 1 gives best "
+            "speed, 9 gives best compression, 0 gives no compression at all."
+}
+jpeg {
+  quality = 75
+    .type = int(value_min=1, value_max=95)
+    .help = "The image quality, on a scale from 1 (worst) to 95 (best)"
+}
 
 """, process_includes=True)
 
@@ -181,7 +192,9 @@ def run(args):
 
       print "Exporting %s" %path
       with open(path, 'wb') as tmp_stream:
-        pil_img.save(tmp_stream, format=params.format)
+        pil_img.save(tmp_stream, format=params.format,
+                     compress_level=params.png.compress_level,
+                     quality=params.jpeg.quality)
 
 def image_filter(raw_data, mask, display,
                  gain_value, nsigma_b, nsigma_s, global_threshold,
