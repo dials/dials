@@ -125,6 +125,7 @@ def test2():
 
   if not libtbx.env.has_module("dials_regression"):
     print "Skipping test2 in " + __file__ + " as dials_regression not present"
+    return
 
   dials_regression = libtbx.env.find_in_repositories(
     relative_path="dials_regression",
