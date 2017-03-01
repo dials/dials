@@ -817,13 +817,8 @@ class OptionParserBase(optparse.OptionParser, object):
     options, args = super(OptionParserBase, self).parse_args(args=args)
 
     # Read stdin if data is available
-    if not quick_parse and os.name is not 'nt':
-      while sys.stdin in select.select([sys.stdin], [], [], 0.1)[0]:
-        l = sys.stdin.readline()
-        if l:
-          args.append(l.strip())
-        else:
-          break
+    if not quick_parse and not sys.stdin.isatty():
+      args.extend(l.strip() for l in sys.stdin.readlines())
 
     # Maybe sort the data
     if hasattr(options, "sort") and options.sort:
