@@ -226,8 +226,12 @@ class render_3d(object):
         palette = bkg - palette
       n = palette.size() - 1
       if reflections.get_flags(reflections.flags.indexed).count(True) == 0:
-        for i in range(0, flex.max(reflections['imageset_id'])+1):
-          colors.set_selected(reflections['imageset_id'] == i, palette[(i%n)+1])
+        if 'imageset_id' in reflections:
+          imageset_id = reflections['imageset_id']
+        else:
+          imageset_id = reflections['id']
+        for i in range(0, flex.max(imageset_id)+1):
+          colors.set_selected(imageset_id == i, palette[(i%n)+1])
       else:
         colors.set_selected(reflections['id'] == -1, palette[0])
         for i in range(0, flex.max(reflections['id'])+1):
@@ -507,6 +511,9 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     box.Add(self.expt_btn, 0, wx.ALL, 5)
 
   def add_imagesets_buttons(self):
+    if 'imageset_id' not in self.parent.reflections_input:
+      self.imgset_btn = None
+      return
     n = flex.max(self.parent.reflections_input['imageset_id'])
     if n <= 0:
       self.imgset_btn = None
