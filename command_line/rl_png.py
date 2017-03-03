@@ -156,7 +156,7 @@ def run(args):
       imagesets.extend(datablock.extract_imagesets())
 
   f = ReciprocalLatticePng(settings=params)
-  f.load_models(imagesets, reflections)
+  f.load_models(imagesets, reflections, None)
 
   imageset = imagesets[0]
   rotation_axis = matrix.col(imageset.get_goniometer().get_rotation_axis())
