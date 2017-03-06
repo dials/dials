@@ -548,7 +548,7 @@ def exercise_15():
   data_dir = os.path.join(dials_regression, "indexing_test_data", "4rotation")
   pickle_path = os.path.join(data_dir, "strong.pickle")
   sweep_path = os.path.join(data_dir, "datablock_import.json")
-  extra_args = ["max_try=10", "reflections_per_degree=50",
+  extra_args = ["max_refine=10", "reflections_per_degree=50",
                 "known_symmetry.space_group=R3",
                 "n_macro_cycles=3"]
   expected_unit_cell = uctbx.unit_cell((48.397, 48.397, 284.767, 90, 90, 120))

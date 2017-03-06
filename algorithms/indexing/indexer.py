@@ -152,9 +152,13 @@ indexing {
   basis_vector_combinations
     .expert_level = 1
   {
-    max_try = Auto
+    max_combinations = None
       .type = int(value_min=1)
-      .help = "Number of putative basis vector combinations to try. Default"
+      .help = "Maximum number of basis vector combinations to test for agreement"
+              "with input symmetry."
+    max_refine = Auto
+      .type = int(value_min=1)
+      .help = "Maximum number of putative crystal models to test. Default"
               "for rotation sweeps: 50, for still images: 5"
       .expert_level = 1
     sys_absent_threshold = 0.9
@@ -517,11 +521,11 @@ class indexer_base(object):
         else:
           assert False
 
-      if params.indexing.basis_vector_combinations.max_try is libtbx.Auto:
+      if params.indexing.basis_vector_combinations.max_refine is libtbx.Auto:
         if use_stills_indexer:
-          params.indexing.basis_vector_combinations.max_try = 5
+          params.indexing.basis_vector_combinations.max_refine = 5
         else:
-          params.indexing.basis_vector_combinations.max_try = 50
+          params.indexing.basis_vector_combinations.max_refine = 50
 
       if use_stills_indexer:
         # Ensure the indexer and downstream applications treat this as set of stills
@@ -1109,8 +1113,7 @@ class indexer_base(object):
       else:
         spots_mm['rlp'].set_selected(sel, S)
 
-  def find_candidate_orientation_matrices(self, candidate_basis_vectors,
-                                          max_combinations=1):
+  def find_candidate_orientation_matrices(self, candidate_basis_vectors):
     candidate_crystal_models = []
     vectors = candidate_basis_vectors
     if (self.target_symmetry_primitive is not None and
@@ -1146,6 +1149,10 @@ class indexer_base(object):
     sel &= j > i
     sel &= k > j
     combinations = combinations.select(sel)
+
+    max_combinations = self.params.basis_vector_combinations.max_combinations
+    if max_combinations is not None and max_combinations < len(combinations):
+      combinations = combinations[:max_combinations]
 
     half_pi = 0.5 * math.pi
     min_angle = 20/180 * math.pi # 20 degrees, arbitrary cutoff
@@ -1249,7 +1256,7 @@ class indexer_base(object):
       if uc.volume() > (params[0]*params[1]*params[2]/100):
         # unit cell volume cutoff from labelit 2004 paper
         candidate_crystal_models.append(best_model)
-        if len(candidate_crystal_models) == max_combinations:
+        if len(candidate_crystal_models) == self.params.basis_vector_combinations.max_refine:
           return candidate_crystal_models
     return candidate_crystal_models
 

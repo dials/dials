@@ -50,8 +50,7 @@ class indexer_fft3d(indexer_base):
       if self.params.debug_plots:
         self.debug_plot_candidate_basis_vectors()
       self.candidate_crystal_models = self.find_candidate_orientation_matrices(
-        self.candidate_basis_vectors,
-        max_combinations=self.params.basis_vector_combinations.max_try)
+        self.candidate_basis_vectors)
       crystal_model, n_indexed = self.choose_best_orientation_matrix(
         self.candidate_crystal_models)
       if crystal_model is not None:
@@ -458,9 +457,7 @@ class indexer_fft3d(indexer_base):
 
       self.candidate_basis_vectors.extend(vectors)
       candidate_orientation_matrices \
-        = self.find_candidate_orientation_matrices(
-          vectors,
-          max_combinations=self.params.basis_vector_combinations.max_try)
+        = self.find_candidate_orientation_matrices(vectors)
       if len(candidate_orientation_matrices) == 0:
         continue
       crystal_model, n_indexed = self.choose_best_orientation_matrix(
