@@ -434,6 +434,7 @@ class ScanVaryingCrystalAnalyser(object):
   def plot_orientation(self, experiments):
     from dials.algorithms.refinement.rotation_decomposition import \
       solve_r3_rotation_for_angles_given_axes
+    from scitbx import matrix
 
     # orientation plot
     dat = []
@@ -448,10 +449,10 @@ class ScanVaryingCrystalAnalyser(object):
 
       scan_pts = range(crystal.num_scan_points)
       phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
-      Umats = [crystal.get_U_at_scan_point(t) for t in scan_pts]
+      Umats = [matrix.sqr(crystal.get_U_at_scan_point(t)) for t in scan_pts]
       if self._relative_to_static_orientation:
         # factor out static U
-        Uinv = crystal.get_U().inverse()
+        Uinv = matrix.sqr(crystal.get_U()).inverse()
         Umats = [U*Uinv for U in Umats]
       # NB e3 and e1 definitions for the crystal are swapped compared
       # with those used inside the solve_r3_rotation_for_angles_given_axes
