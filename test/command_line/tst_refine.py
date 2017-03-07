@@ -67,6 +67,11 @@ def test1():
   assert reg_exp.detector == ref_exp.detector
   assert reg_exp.beam == ref_exp.beam
 
+  # test cell parameter esds
+  assert approx_equal(ref_exp.crystal.get_cell_parameter_sd(),
+    (0.0009903, 0.0009903, 0.0021227, 0.0, 0.0, 0.0))
+  assert approx_equal(ref_exp.crystal.get_cell_volume_sd(), 23.8063382)
+
   print "OK"
   return
 
