@@ -12,7 +12,7 @@ import gltbx
 from scitbx.math import minimum_covering_sphere
 from scitbx.array_family import flex
 import libtbx.phil
-from dxtbx_model_ext import MultiAxisGoniometer
+from dxtbx.model import MultiAxisGoniometer
 
 help_message = '''
 

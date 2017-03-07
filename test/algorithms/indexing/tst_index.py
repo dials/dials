@@ -203,7 +203,7 @@ def exercise_3():
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
                             expected_rmsds, expected_hall_symbol)
 
-  a, b, c = result.crystal_model.get_real_space_vectors()
+  a, b, c = map(matrix.col, result.crystal_model.get_real_space_vectors())
   assert approx_equal(a.length(), b.length())
   assert c.length() > b.length()
   assert approx_equal(a.angle(b, deg=True), 90)
