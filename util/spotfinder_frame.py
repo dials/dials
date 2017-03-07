@@ -778,7 +778,7 @@ class SpotFrame(XrayFrame) :
       if self.beam_layer is None and hasattr(self, 'beam_center_cross_data'):
         self.beam_layer = self.pyslip.AddPolygonLayer(
           self.beam_center_cross_data, name="<beam_layer>",
-          show_levels=[-2, -1, 0, 1, 2, 3, 4, 5], update=False)
+          show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5], update=False)
     elif self.beam_layer is not None:
       self.pyslip.DeleteLayer(self.beam_layer, update=False)
       self.beam_layer = None
@@ -829,7 +829,7 @@ class SpotFrame(XrayFrame) :
       if self.settings.show_miller_indices and len(miller_indices_data):
         self.miller_indices_layer = self.pyslip.AddTextLayer(
           miller_indices_data, map_rel=True, visible=True,
-          show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
+          show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
           selectable=False,
           name='<miller_indices_layer>', update=False)
       if self.settings.show_predictions and len(predictions_data):
@@ -837,7 +837,7 @@ class SpotFrame(XrayFrame) :
           predictions_data, name="<predictions_layer>",
           radius=3,
           renderer = self.pyslip.DrawPointLayer,
-          show_levels=[-2, -1, 0, 1, 2, 3, 4, 5], update=False)
+          show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5], update=False)
       if self.settings.show_all_pix:
         self.draw_all_pix_timer.start()
         if len(all_pix_data) > 1:
@@ -854,7 +854,7 @@ class SpotFrame(XrayFrame) :
                 value, color=color, name="<all_pix_layer_%d>"%key,
                 radius=2,
                 renderer = self.pyslip.LightweightDrawPointLayer2,
-                show_levels=[-2, -1, 0, 1, 2, 3, 4, 5], update=False))
+                show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5], update=False))
           else:
             e1 = matrix.col((1.,0.))
             e2 = matrix.col((0.,1.))
@@ -875,12 +875,12 @@ class SpotFrame(XrayFrame) :
                 positions, color="#%s"%base_color, name="<all_pix_layer_%d>"%key,
                 radius=2,
                 renderer = self.pyslip.LightweightDrawPointLayer2,
-                show_levels=[-2, -1, 0, 1, 2, 3, 4, 5]))
+                show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5]))
               if True:
                 self.dials_spotfinder_layers.append(self.pyslip.AddEllipseLayer(
                     vertices, color="#%s"%base_color, name="<all_foreground_circles_%d>"%key,
                     width=2,
-                    show_levels=[-2, -1, 0, 1, 2, 3, 4, 5], update=False))
+                    show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5], update=False))
                 print "Circles: center of foreground masks for the %d spots actually integrated"%(len(vertices)//5)
         else:
           if len(all_pix_data) > 0:
@@ -888,13 +888,13 @@ class SpotFrame(XrayFrame) :
               all_pix_data[all_pix_data.keys()[0]], color="green", name="<all_pix_layer>",
               radius=2,
               renderer = self.pyslip.LightweightDrawPointLayer2,
-              show_levels=[-2, -1, 0, 1, 2, 3, 4, 5], update=False))
+              show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5], update=False))
         self.draw_all_pix_timer.stop()
       if self.settings.show_shoebox and len(shoebox_data):
         self.draw_shoebox_timer.start()
         self.shoebox_layer = self.pyslip.AddPolygonLayer(
           shoebox_data, map_rel=True, visible=True,
-          show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
+          show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
           selectable=False,
           name='<shoebox_layer>', update=False)
         self.draw_shoebox_timer.stop()
@@ -902,7 +902,7 @@ class SpotFrame(XrayFrame) :
         self.draw_ctr_mass_timer.start()
         self.ctr_mass_layer = self.pyslip.AddPolygonLayer(
           ctr_mass_data, map_rel=True, visible=True,
-          show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
+          show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
           selectable=False,
           name='<ctr_mass_layer>', update=False)
         self.draw_ctr_mass_timer.stop()
@@ -912,17 +912,17 @@ class SpotFrame(XrayFrame) :
           max_pix_data, color="pink", name="<max_pix_layer>",
           radius=2,
           renderer = self.pyslip.LightweightDrawPointLayer,
-          show_levels=[-2, -1, 0, 1, 2, 3, 4, 5], update=False)
+          show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5], update=False)
         self.draw_max_pix_timer.stop()
       if len(vector_data) and len(vector_text_data):
         self.vector_layer = self.pyslip.AddPolygonLayer(
           vector_data, map_rel=True, visible=True,
-          show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
+          show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
           selectable=False,
           name='<vector_layer>', update=False)
         self.vector_text_layer = self.pyslip.AddTextLayer(
           vector_text_data, map_rel=True, visible=True,
-          show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
+          show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
           selectable=False,
           name='<vector_text_layer>',
           colour='#F62817', update=False)
