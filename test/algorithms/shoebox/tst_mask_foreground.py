@@ -37,7 +37,7 @@ class Test(object):
       None,
       self.nsigma,
       self.beam.get_sigma_divergence(deg=False),
-      self.crystal.get_mosaicity(deg=False)
+      self.crystal.get_mosaicity(deg=False))
     self.experiment = ExperimentList()
     self.experiment.append(Experiment(
       imageset = self.sweep,
