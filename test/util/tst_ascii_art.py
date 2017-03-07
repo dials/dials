@@ -24,8 +24,8 @@ def exercise_spot_counts_per_image_plot():
   output = ascii_art.spot_counts_per_image_plot(refl)
 
   expected_output = '''\
-116082 spots found on 540 images (max 2072 / bin)
-* *      *                     *    * * *  * **    *       *
+116082 spots found on 540 images (max 2075 / bin)
+* *      *        *                 * * *  * **            *
 ************************************************************
 ************************************************************
 ************************************************************
@@ -44,9 +44,9 @@ def exercise_spot_counts_per_image_plot():
     refl, char='o', width=80, height=15)
 
   expected_output = '''\
-116082 spots found on 540 images (max 1556 / bin)
-o o         o o                           o o   o  o  o  oo                   oo
-ooooooooooo o o ooo o oooo ooooooo ooo oo ooo ooo ooo oooooooooo ooooooo ooo ooo
+116082 spots found on 540 images (max 1627 / bin)
+                                                         o
+o oo   o  o o o       o o o o o  o  o     o o   o  o oo  oo o o   o o   o o   oo
 oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
 oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
 oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
@@ -68,7 +68,7 @@ oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
     refl, char='#', width=7, height=10)
 
   expected_output = '''\
-116082 spots found on 540 images (max 16736 / bin)
+116082 spots found on 540 images (max 16752 / bin)
 #######
 #######
 #######
@@ -86,15 +86,15 @@ oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
   output = ascii_art.spot_counts_per_image_plot(
     refl.select(refl['xyzobs.px.value'].parts()[2] <= 9.5), char='#', width=10, height=15)
   expected_output = '''\
-2065 spots found on 10 images (max 342 / bin)
+2065 spots found on 10 images (max 361 / bin)
 #
 #
 #
 #
 #
-# #
-# # #  ###
-# #### ###
+#        #
+#   #    #
+## ##   ##
 ##########
 ##########
 ##########
