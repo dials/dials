@@ -179,6 +179,7 @@ def exercise_2():
                             expected_rmsds, expected_hall_symbol)
 
 def exercise_3():
+  from scitbx import matrix
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
     print ("Skipping exercise_3: missing dependencies" +
