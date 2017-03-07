@@ -1,17 +1,35 @@
 from __future__ import absolute_import, division
 
-def spot_counts_per_image_plot(reflections, char='*', width=60, height=10):
-  from dials.array_family import flex
-
+def spot_counts_per_image_plot(reflections, **kwargs):
   if len(reflections) == 0:
     return '\n'
+
+  x,y,z = reflections['xyzobs.px.value'].parts()
+  return flex_histogram(z, **kwargs)
+
+def histogram_from_json(filename):
+  from dials.array_family import flex
+  import json
+  with open(filename, 'r') as fh:
+    z = json.load(fh)
+  return flex_histogram(flex.double(z))
+
+def flex_histogram(z, char='*', width=60, height=10):
+  from dials.array_family import flex
 
   assert isinstance(char, basestring)
   assert len(char) == 1
 
-  x,y,z = reflections['xyzobs.px.value'].parts()
+# import json
+# with open('list.json', 'w') as fh:
+#   json.dump(sorted(list(z)), fh)
+
   min_z = flex.min(z)
   max_z = flex.max(z)
+
+  epsilon = flex.double(n % 2 for n in xrange(len(z)))
+  epsilon = (epsilon / 2) - 0.25
+  z += epsilon
 
   # image numbers to display on x-axis label
   xmin = int(round(min_z + 1e-16))
@@ -20,7 +38,7 @@ def spot_counts_per_image_plot(reflections, char='*', width=60, height=10):
   # estimate the total number of images
   image_count = xmax - xmin + 1
   if image_count <= 1:
-    return '%i spots found on 1 image' % len(reflections)
+    return '%i spots found on 1 image' % len(z)
 
   # determine histogram width
   width = min(image_count, width)
