@@ -206,8 +206,8 @@ def test_refinement():
   beam = im_set.get_beam()
 
   # Invent a crystal, goniometer and scan for this test
-  from dxtbx.model.crystal import crystal_model
-  crystal = crystal_model((40.,0.,0.) ,(0.,40.,0.), (0.,0.,40.),
+  from dxtbx.model import Crystal
+  crystal = Crystal((40.,0.,0.) ,(0.,40.,0.), (0.,0.,40.),
                           space_group_symbol = "P1")
   orig_xl = deepcopy(crystal)
 

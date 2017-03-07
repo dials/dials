@@ -105,16 +105,15 @@ def generate_spots(crystal_model, detector, beam, goniometer=None, scan=None,
 
 
 def generate_crystal(unit_cell, space_group):
-  from dxtbx.model.crystal import crystal_model
-
+  from dxtbx.model import Crystal
   B = matrix.sqr(unit_cell.fractionalization_matrix()).transpose()
   U = random_rotation()
   A = U * B
   direct_matrix = A.inverse()
-  return crystal_model(direct_matrix[0:3],
-                       direct_matrix[3:6],
-                       direct_matrix[6:9],
-                       space_group=space_group)
+  return Crystal(direct_matrix[0:3],
+                 direct_matrix[3:6],
+                 direct_matrix[6:9],
+                 space_group=space_group)
 
 
 def run_indexing(datablock, strong_spots, crystal_model, rmsds):

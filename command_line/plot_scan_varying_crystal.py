@@ -87,6 +87,7 @@ class Script(object):
   def run(self):
     '''Run the script.'''
     from dials.util.options import flatten_experiments
+    from scitbx import matrix
 
     params, options = self.parser.parse_args()
     if len(params.input.experiments) == 0:
@@ -156,10 +157,10 @@ class Script(object):
 
       scan_pts = range(crystal.num_scan_points)
       phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
-      Umats = [crystal.get_U_at_scan_point(t) for t in scan_pts]
+      Umats = [matrix.sqr(crystal.get_U_at_scan_point(t)) for t in scan_pts]
       if params.orientation_decomposition.relative_to_static_orientation:
         # factor out static U
-        Uinv = crystal.get_U().inverse()
+        Uinv = matrix.sqr(crystal.get_U()).inverse()
         Umats = [U*Uinv for U in Umats]
       # NB e3 and e1 definitions for the crystal are swapped compared
       # with those used inside the solve_r3_rotation_for_angles_given_axes

@@ -24,7 +24,7 @@ from dxtbx.model.experiment import goniometer_factory
 from dxtbx.model.experiment import detector_factory
 
 # crystal model
-from dxtbx.model.crystal import crystal_model
+from dxtbx.model import Crystal
 
 # Local functions
 def random_vector_close_to(vector, sd = 0.5):
@@ -205,4 +205,4 @@ class Extract(object):
 
     sg = self._params.crystal.space_group_symbol
 
-    self.crystal = crystal_model(*vecs, space_group_symbol = sg)
+    self.crystal = Crystal(*vecs, space_group_symbol = sg)

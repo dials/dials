@@ -112,13 +112,13 @@ class align_crystal(object):
 
         # The setting matrix [U] will vary with the datum setting according to
         # [U] = [D] [U0]
-        U = crystal.get_U()
+        U = matrix.sqr(crystal.get_U())
 
         # XXX In DIALS recorded U is equivalent to U0 - D is applied to U inside
         # prediction
         U0 = U
 
-        B = crystal.get_B()
+        B = matrix.sqr(crystal.get_B())
 
         if self.frame == 'direct':
           B = B.inverse().transpose()
@@ -213,8 +213,8 @@ class align_crystal(object):
   def info(self):
     from libtbx import table_utils
 
-    U = self.experiment.crystal.get_U()
-    B = self.experiment.crystal.get_B()
+    U = matrix.sqr(self.experiment.crystal.get_U())
+    B = matrix.sqr(self.experiment.crystal.get_B())
 
     a_star_ = U * B * a_star
     b_star_ = U * B * b_star

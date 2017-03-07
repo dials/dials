@@ -3,7 +3,7 @@ from libtbx.test_utils import approx_equal
 
 def exercise():
   from dials.algorithms.indexing import compare_orientation_matrices
-  from dxtbx.model.crystal import crystal_model
+  from dxtbx.model import Crystal
   from cctbx import sgtbx
   from scitbx import matrix
   from scitbx.math import euler_angles as euler
@@ -15,15 +15,16 @@ def exercise():
   euler_angles = (1.3, 5.6, 7.8)
   R = matrix.sqr(
     euler.xyz_matrix(euler_angles[0], euler_angles[1], euler_angles[2]))
-  crystal_a = crystal_model(real_space_a,
-                            real_space_b,
-                            real_space_c,
-                            space_group=sgtbx.space_group('P 1'))
-  crystal_b = crystal_model(R * real_space_a,
-                            R * real_space_b,
-                            R * real_space_c,
-                            space_group=sgtbx.space_group('P 1'))
-  assert approx_equal(crystal_b.get_U() * crystal_a.get_U().transpose(), R)
+  crystal_a = Crystal(real_space_a,
+                      real_space_b,
+                      real_space_c,
+                      space_group=sgtbx.space_group('P 1'))
+  crystal_b = Crystal(R * real_space_a,
+                      R * real_space_b,
+                      R * real_space_c,
+                      space_group=sgtbx.space_group('P 1'))
+  assert approx_equal(matrix.sqr(crystal_b.get_U()) *
+                      matrix.sqr(crystal_a.get_U()).transpose(), R)
   best_R_ab, best_axis, best_angle, best_cb_op = \
     compare_orientation_matrices.difference_rotation_matrix_axis_angle(
       crystal_a,
@@ -35,14 +36,14 @@ def exercise():
 
   # now see if we can deconvolute the original euler angles after applying
   # a change of basis to one of the crystals
-  crystal_a = crystal_model(real_space_a,
-                            real_space_b,
-                            real_space_c,
-                            space_group=sgtbx.space_group('I 2 3'))
-  crystal_b = crystal_model(R * real_space_a,
-                            R * real_space_b,
-                            R * real_space_c,
-                            space_group=sgtbx.space_group('I 2 3'))
+  crystal_a = Crystal(real_space_a,
+                      real_space_b,
+                      real_space_c,
+                      space_group=sgtbx.space_group('I 2 3'))
+  crystal_b = Crystal(R * real_space_a,
+                      R * real_space_b,
+                      R * real_space_c,
+                      space_group=sgtbx.space_group('I 2 3'))
   cb_op = sgtbx.change_of_basis_op('z,x,y')
   crystal_b = crystal_b.change_basis(cb_op)
   best_R_ab, best_axis, best_angle, best_cb_op = \

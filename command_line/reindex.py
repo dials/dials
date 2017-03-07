@@ -18,7 +18,7 @@ from libtbx.phil import command_line
 from libtbx import easy_pickle
 import iotbx.phil
 from cctbx import sgtbx
-from dxtbx.model.crystal import crystal_model
+from dxtbx.model import Crystal
 from dxtbx.serialize import dump
 # from dials.util.command_line import Importer
 from dials.array_family import flex
@@ -197,7 +197,7 @@ def run(args):
     cryst_reindexed = cryst_orig.change_basis(change_of_basis_op)
     if params.space_group is not None:
       a, b, c = cryst_reindexed.get_real_space_vectors()
-      cryst_reindexed = crystal_model(
+      cryst_reindexed = Crystal(
         a, b, c, space_group=params.space_group.group())
     experiment.crystal.update(cryst_reindexed)
 

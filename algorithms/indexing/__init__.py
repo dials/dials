@@ -89,7 +89,7 @@ def index_reflections_local(
   for i_cryst in set(crystal_ids):
     if i_cryst < 0: continue
 
-    A = experiments[i_cryst].crystal.get_A()
+    A = matrix.sqr(experiments[i_cryst].crystal.get_A())
     A_inv = A.inverse()
 
     cryst_sel = crystal_ids == i_cryst

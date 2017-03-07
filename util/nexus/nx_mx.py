@@ -573,7 +573,7 @@ def load_scan(entry):
   return Scan(image_range, oscillation, exposure_time, epochs, deg=True)
 
 def load_crystal(entry):
-  from dxtbx.model.crystal import crystal_model as Crystal
+  from dxtbx.model import Crystal
   from scitbx.array_family import flex
   from scitbx import matrix
   from cctbx import uctbx

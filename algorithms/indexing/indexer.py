@@ -28,7 +28,7 @@ from scitbx import matrix
 from dials.array_family import flex
 from cctbx import crystal, sgtbx, xray
 
-from dxtbx.model.crystal import crystal_model as Crystal
+from dxtbx.model import Crystal
 from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 
 max_cell_phil_str = '''\
@@ -1461,7 +1461,7 @@ class indexer_base(object):
         break
 
       crystal_model = experiments.crystals()[0]
-      direct_matrix = crystal_model.get_A().inverse()
+      direct_matrix = matrix.sqr(crystal_model.get_A()).inverse()
       M = T.inverse().transpose()
       new_direct_matrix = M * direct_matrix
       crystal_model.set_A(new_direct_matrix.inverse())

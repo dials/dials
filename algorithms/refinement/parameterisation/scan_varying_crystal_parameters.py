@@ -45,7 +45,7 @@ class ScanVaryingCrystalOrientationParameterisation(
     nv = smoother.num_values()
 
     # Set up the initial state
-    istate = crystal.get_U()
+    istate = matrix.sqr(crystal.get_U())
     self._U_at_t = istate
 
     # Factory function to provide to _build_p_list
@@ -118,6 +118,7 @@ class ScanVaryingCrystalUnitCellParameterisation(
   """Scan-varying parameterisation for the crystal unit cell"""
 
   def __init__(self, crystal, t_range, num_intervals, experiment_ids=None):
+    from scitbx import matrix
     if experiment_ids is None:
       experiment_ids = [0]
 
@@ -133,7 +134,7 @@ class ScanVaryingCrystalUnitCellParameterisation(
 
     # Set up the initial state
     istate = None
-    self._B_at_t = crystal.get_B()
+    self._B_at_t = matrix.sqr(crystal.get_B())
 
     # Factory function to provide to _build_p_list
     def parameter_type(value, name):

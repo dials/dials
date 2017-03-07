@@ -201,7 +201,7 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
     if predict or static:
       # work from a scan static model & assume perfect goniometer
       # FIXME maybe should work back in the option to predict spot positions
-      UB = experiment.crystal.get_A()
+      UB = matrix.sqr(experiment.crystal.get_A())
       phi = phi_start + z0 * phi_range
       R = axis.axis_and_angle_as_r3_rotation_matrix(phi, deg=True)
       RUB = S * R * F * UB

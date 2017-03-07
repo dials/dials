@@ -152,7 +152,7 @@ class IntegrateHKLImporter(object):
     for XDS integration to the one used for DIALS integration.'''
     from scitbx import matrix
 
-    dA = self._experiment.crystal.get_A()
+    dA = matrix.sqr(self._experiment.crystal.get_A())
     dbeam = matrix.col(self._experiment.beam.get_direction())
     daxis = matrix.col(self._experiment.goniometer.get_rotation_axis())
     xbeam = matrix.col(handle.beam_vector).normalize()
@@ -351,14 +351,14 @@ class XDSFileImporter(object):
     R = align_reference_frame(- xbeam, dbeam, xaxis, daxis)
 
     # Make a static crystal for each block
-    from dxtbx.model.crystal import crystal_model
+    from dxtbx.model import Crystal
     crystals = []
     sg = experiment.crystal.get_space_group()
     for a, b, c in zip(a_axis, b_axis, c_axis):
       a = R * matrix.col(a)
       b = R * matrix.col(b)
       c = R * matrix.col(c)
-      crystals.append(crystal_model(a, b, c, space_group=sg))
+      crystals.append(Crystal(a, b, c, space_group=sg))
 
     # construct a list of scan points
     A_list = []

@@ -81,7 +81,7 @@ experiments.append(Experiment(
         scan=myscan, crystal=mycrystal, imageset=None))
 
 # Select those that are excited in a 30 degree sweep and get angles
-UB = mycrystal.get_U() * mycrystal.get_B()
+UB = mycrystal.get_A()
 ray_predictor = ScansRayPredictor(experiments, sweep_range)
 obs_refs = ray_predictor(indices)
 

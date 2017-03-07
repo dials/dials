@@ -11,7 +11,7 @@
 from __future__ import absolute_import, division
 
 import os
-from dxtbx.model.crystal import crystal_model
+from dxtbx.model import Crystal
 
 
 def dump(experiments, directory):
@@ -22,6 +22,7 @@ def dump(experiments, directory):
   :param directory: The directory to write to
 
   '''
+  from scitbx import matrix
   for i, experiment in enumerate(experiments):
     suffix = ""
     if len(experiments) > 1:
@@ -49,19 +50,18 @@ def dump(experiments, directory):
     cryst = cryst.change_basis(
       cryst.get_space_group().info()\
         .change_of_basis_op_to_reference_setting())
-    A = cryst.get_A()
+    A = matrix.sqr(cryst.get_A())
     A_inv = A.inverse()
 
     real_space_a = R_to_mosflm * A_inv.elems[:3]
     real_space_b = R_to_mosflm * A_inv.elems[3:6]
     real_space_c = R_to_mosflm * A_inv.elems[6:9]
 
-    cryst_mosflm = crystal_model(
+    cryst_mosflm = Crystal(
       real_space_a, real_space_b, real_space_c,
-      space_group=cryst.get_space_group(),
-      mosaicity=cryst.get_mosaicity())
-    A_mosflm = cryst_mosflm.get_A()
-    U_mosflm = cryst_mosflm.get_U()
+      space_group=cryst.get_space_group())
+    A_mosflm = matrix.sqr(cryst_mosflm.get_A())
+    U_mosflm = matrix.sqr(cryst_mosflm.get_U())
     assert U_mosflm.is_r3_rotation_matrix(), U_mosflm
     w = beam.get_wavelength()
 

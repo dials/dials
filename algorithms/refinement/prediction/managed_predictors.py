@@ -85,7 +85,7 @@ class ExperimentsPredictor(object):
     else:
       predictors = [sc(e) if e.goniometer else st(e,
         spherical_relp=self._spherical_relp) for e in self._experiments]
-    self._UBs = [e.crystal.get_U() * e.crystal.get_B() for e in self._experiments]
+    self._UBs = [e.crystal.get_A() for e in self._experiments]
 
     for iexp, e in enumerate(self._experiments):
 

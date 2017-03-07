@@ -16,7 +16,7 @@ import random
 from libtbx.test_utils import approx_equal
 from scitbx import matrix
 from scitbx.array_family import flex
-from dxtbx.model.crystal import crystal_model
+from dxtbx.model.crystal import Crystal
 from dxtbx.model.beam import Beam
 from dxtbx.model.goniometer import Goniometer
 
@@ -231,7 +231,7 @@ class TestScanVaryingModelParameterisation(object):
         self.random_direction_close_to(matrix.col((0, 1, 0)))
     c = random.uniform(10,50) * \
         self.random_direction_close_to(matrix.col((0, 0, 1)))
-    self.xl = crystal_model(a, b, c, space_group_symbol = "P 1")
+    self.xl = Crystal(a, b, c, space_group_symbol = "P 1")
 
     # Make a beam with wavelength in the range 0.8--1.2 and s0 direction close
     # to 0,0,1
@@ -373,7 +373,7 @@ class TestScanVaryingCrystalOrientationParameterisation(TestScanVaryingModelPara
               self.random_direction_close_to(matrix.col((0, 1, 0)))
       c = random.uniform(10,50) * \
               self.random_direction_close_to(matrix.col((0, 0, 1)))
-      xl = crystal_model(a, b, c, space_group_symbol="P 1")
+      xl = Crystal(a, b, c, space_group_symbol="P 1")
 
       xl_op = TestOrientationModel(50, xl, self.image_range, 5)
 

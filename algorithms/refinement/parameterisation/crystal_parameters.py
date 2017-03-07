@@ -14,7 +14,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from dials.algorithms.refinement.parameterisation.model_parameters import Parameter, ModelParameterisation
-from dxtbx.model.crystal import crystal_model # implicit import
+from dxtbx.model import Crystal # implicit import
 from scitbx import matrix
 from rstbx.symmetry.constraints.parameter_reduction \
     import symmetrize_reduce_enlarge
@@ -144,7 +144,7 @@ class CrystalUnitCellMixin(object):
     self._S.forward_independent_parameters()
 
     # get the derivatives of state wrt metrical matrix parameters on the
-    # adjusted scale
+    # adjusted sale
     dB_dval = [matrix.sqr(e) * 1.e-5 \
                        for e in self._S.forward_gradients()]
 

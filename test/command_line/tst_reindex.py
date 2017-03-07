@@ -75,8 +75,8 @@ def run():
   new_experiments1 = load.experiment_list(
     'P4_reindexed.json', check_format=False)
   assert approx_equal(
-    new_experiments1[0].crystal.get_A().elems,
-    old_experiments[0].crystal.change_basis(cb_op).get_A().elems)
+    new_experiments1[0].crystal.get_A(),
+    old_experiments[0].crystal.change_basis(cb_op).get_A())
   #
   cb_op = sgtbx.change_of_basis_op('-x,-y,z')
   commands = ["dials.reindex",
@@ -90,8 +90,8 @@ def run():
   new_experiments2 = load.experiment_list(
     'P4_reindexed2.json', check_format=False)
   assert approx_equal(
-    new_experiments1[0].crystal.get_A().elems,
-    new_experiments2[0].crystal.get_A().elems)
+    new_experiments1[0].crystal.get_A(),
+    new_experiments2[0].crystal.get_A())
 
 
 

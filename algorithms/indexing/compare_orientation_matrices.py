@@ -20,8 +20,8 @@ def difference_rotation_matrix_axis_angle(crystal_a, crystal_b, target_angle=0):
       continue
     cb_op = sgtbx.change_of_basis_op(op.inverse())
     crystal_b_sym = crystal_b.change_basis(cb_op)
-    U_a = crystal_a.get_U()
-    U_b = crystal_b_sym.get_U()
+    U_a = matrix.sqr(crystal_a.get_U())
+    U_b = matrix.sqr(crystal_b_sym.get_U())
     assert U_a.is_r3_rotation_matrix()
     assert U_b.is_r3_rotation_matrix()
     # the rotation matrix to transform from U_a to U_b

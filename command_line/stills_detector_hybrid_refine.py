@@ -55,7 +55,7 @@ def check_experiment(experiment, reflections):
   # predict reflections in place
   from dials.algorithms.spot_prediction import StillsReflectionPredictor
   sp = StillsReflectionPredictor(experiment)
-  UB = experiment.crystal.get_U() * experiment.crystal.get_B()
+  UB = experiment.crystal.get_A()
   try:
     sp.for_reflection_table(reflections, UB)
   except RuntimeError:

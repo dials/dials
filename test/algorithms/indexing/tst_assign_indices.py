@@ -6,7 +6,7 @@ from cctbx import crystal, miller, sgtbx
 from scitbx import matrix
 from dxtbx.serialize import load
 from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
-from dxtbx.model.crystal import crystal_model
+from dxtbx.model import Crystal
 from dials.array_family import flex
 
 # set random seeds so tests more reliable
@@ -57,10 +57,10 @@ def run(space_group_info):
   A = U * B
 
   direct_matrix = A.inverse()
-  cryst_model = crystal_model(direct_matrix[0:3],
-                              direct_matrix[3:6],
-                              direct_matrix[6:9],
-                              space_group=space_group)
+  cryst_model = Crystal(direct_matrix[0:3],
+                        direct_matrix[3:6],
+                        direct_matrix[6:9],
+                        space_group=space_group)
   experiment = Experiment(imageset=sweep,
                           beam=sweep.get_beam(),
                           detector=sweep.get_detector(),
@@ -90,13 +90,13 @@ def run(space_group_info):
   assert result.misindexed_local == 0
   assert result.misindexed_global == 0
 
-  a, b, c = cryst_model.get_real_space_vectors()
+  a, b, c = map(matrix.col, cryst_model.get_real_space_vectors())
   relative_error = 0.02
   a *= (1+relative_error)
   b *= (1+relative_error)
   c *= (1+relative_error)
 
-  cryst_model2 = crystal_model(a, b, c, space_group=space_group)
+  cryst_model2 = Crystal(a, b, c, space_group=space_group)
   experiment.crystal = cryst_model2
 
   result = compare_global_local(experiment, predicted_reflections,
@@ -110,11 +110,11 @@ def run(space_group_info):
   assert result.misindexed_local < (0.001 * len(result.reflections_local))
 
   # the reciprocal matrix
-  A = cryst_model.get_A()
+  A = matrix.sqr(cryst_model.get_A())
   A = random_rotation(angle_max=0.03) * A
 
   direct_matrix = A.inverse()
-  cryst_model2 = crystal_model(direct_matrix[0:3],
+  cryst_model2 = Crystal(direct_matrix[0:3],
                                direct_matrix[3:6],
                                direct_matrix[6:9],
                                space_group=space_group)

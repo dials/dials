@@ -21,7 +21,7 @@ class Test(object):
     from dxtbx.model.experiment import goniometer_factory
     from dxtbx.model.experiment import detector_factory
 
-    from dxtbx.model.crystal import crystal_model
+    from dxtbx.model import Crystal
 
     # Beam along the Z axis
     self.beam = beam_factory.make_beam(unit_s0 = matrix.col((0, 0, 1)),
@@ -49,7 +49,7 @@ class Test(object):
     a = matrix.col((100, 0, 0))
     b = matrix.col((0, 100, 0))
     c = matrix.col((0, 0, 100))
-    self.crystal = crystal_model(a, b, c, space_group_symbol = "P 1")
+    self.crystal = Crystal(a, b, c, space_group_symbol = "P 1")
 
     if test_nave_model:
       self.crystal._ML_half_mosaicity_deg = 500
@@ -74,7 +74,7 @@ class Test(object):
     space_group_type = space_group_info("P 1").group().type()
 
     # create a ReekeIndexGenerator
-    UB = self.crystal.get_U() * self.crystal.get_B()
+    UB = self.crystal.get_A()
     axis = self.goniometer.get_rotation_axis()
     s0 = self.beam.get_s0()
     dmin = 1.5
@@ -104,7 +104,7 @@ class Test(object):
   def run(self):
 
     # cache objects from the model
-    UB = self.crystal.get_U() * self.crystal.get_B()
+    UB = matrix.sqr(self.crystal.get_A())
     s0 = matrix.col(self.beam.get_s0())
     es_radius = s0.length()
 
@@ -130,7 +130,7 @@ class Test(object):
   def spherical_relp(self):
 
     # cache objects from the model
-    UB = self.crystal.get_U() * self.crystal.get_B()
+    UB = matrix.sqr(self.crystal.get_A())
     s0 = matrix.col(self.beam.get_s0())
     es_radius = s0.length()
 

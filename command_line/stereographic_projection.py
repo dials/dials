@@ -211,9 +211,9 @@ def run(args):
   miller_indices = flex.miller_index(list(set(miller_indices)))
 
   ref_crystal = crystals[0]
-  A = ref_crystal.get_A()
-  U = ref_crystal.get_U()
-  B = ref_crystal.get_B()
+  A = matrix.sqr(ref_crystal.get_A())
+  U = matrix.sqr(ref_crystal.get_U())
+  B = matrix.sqr(ref_crystal.get_B())
   R = matrix.identity(3)
 
   if params.frame == 'laboratory':

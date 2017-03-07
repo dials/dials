@@ -11,7 +11,7 @@
 
 from __future__ import absolute_import, division
 
-from dxtbx.model.crystal import crystal_model
+from dxtbx.model import Crystal
 from scitbx import matrix
 from dials.algorithms.refinement.refinement_helpers \
     import get_fd_gradients, random_param_shift
@@ -37,7 +37,7 @@ if __name__ == '__main__':
   a = random.uniform(10,50) * random_direction_close_to(matrix.col((1, 0, 0)))
   b = random.uniform(10,50) * random_direction_close_to(matrix.col((0, 1, 0)))
   c = random.uniform(10,50) * random_direction_close_to(matrix.col((0, 0, 1)))
-  xl = crystal_model(a, b, c, space_group_symbol="P 1")
+  xl = Crystal(a, b, c, space_group_symbol="P 1")
 
   xl_op = CrystalOrientationParameterisation(xl)
   xl_ucp = CrystalUnitCellParameterisation(xl)
@@ -64,7 +64,7 @@ if __name__ == '__main__':
     a = random.uniform(10,50) * random_direction_close_to(matrix.col((1, 0, 0)))
     b = random.uniform(10,50) * random_direction_close_to(matrix.col((0, 1, 0)))
     c = random.uniform(10,50) * random_direction_close_to(matrix.col((0, 0, 1)))
-    xl = crystal_model(a, b, c, space_group_symbol="P 1")
+    xl = Crystal(a, b, c, space_group_symbol="P 1")
     xl_op = CrystalOrientationParameterisation(xl)
     xl_uc = CrystalUnitCellParameterisation(xl)
 

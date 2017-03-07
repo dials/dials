@@ -38,7 +38,7 @@ def write_integrated_hkl(prefix, reflections):
 
 def write_par_file(file_name, experiment):
   from scitbx import matrix
-  from dxtbx.model.crystal import crystal_model
+  from dxtbx.model import Crystal
   from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
   from iotbx.mtz.extract_from_symmetry_lib import ccp4_symbol
 
@@ -56,20 +56,19 @@ def write_par_file(file_name, experiment):
   cryst = cryst.change_basis(
     cryst.get_space_group().info()\
       .change_of_basis_op_to_reference_setting())
-  A = cryst.get_A()
+  A = matrix.sqr(cryst.get_A())
   A_inv = A.inverse()
 
   real_space_a = R_to_mosflm * A_inv.elems[:3]
   real_space_b = R_to_mosflm * A_inv.elems[3:6]
   real_space_c = R_to_mosflm * A_inv.elems[6:9]
 
-  cryst_mosflm = crystal_model(
+  cryst_mosflm = Crystal(
     real_space_a, real_space_b, real_space_c,
-    space_group=cryst.get_space_group(),
-    mosaicity=cryst.get_mosaicity())
-  A_mosflm = cryst_mosflm.get_A()
-  U_mosflm = cryst_mosflm.get_U()
-  B_mosflm = cryst_mosflm.get_B()
+    space_group=cryst.get_space_group())
+  A_mosflm = matrix.sqr(cryst_mosflm.get_A())
+  U_mosflm = matrix.sqr(cryst_mosflm.get_U())
+  B_mosflm = matrix.sqr(cryst_mosflm.get_B())
   UB_mosflm = U_mosflm * B_mosflm
   uc_params = cryst_mosflm.get_unit_cell().parameters()
   assert U_mosflm.is_r3_rotation_matrix(), U_mosflm

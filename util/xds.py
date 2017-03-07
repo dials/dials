@@ -17,6 +17,7 @@ def dump(experiments, reflections, directory):
   '''
   import os
   from dxtbx.serialize import xds
+  from scitbx import matrix
   if len(experiments) > 0:
 
     for i, experiment in enumerate(experiments):
@@ -38,7 +39,7 @@ def dump(experiments, reflections, directory):
       crystal_model = crystal_model.change_basis(
         crystal_model.get_space_group().info()\
           .change_of_basis_op_to_reference_setting())
-      A = crystal_model.get_A()
+      A = matrix.sqr(crystal_model.get_A())
       A_inv = A.inverse()
       real_space_a = A_inv.elems[:3]
       real_space_b = A_inv.elems[3:6]

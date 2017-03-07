@@ -2415,9 +2415,9 @@ class Analyser(object):
 
       uc = expt.crystal.get_unit_cell().parameters()
       sgi = expt.crystal.get_space_group().info()
-      umat = latex_matrix_template %expt.crystal.get_U().elems
-      bmat = latex_matrix_template %expt.crystal.get_B().elems
-      amat = latex_matrix_template %expt.crystal.get_A().elems
+      umat = latex_matrix_template %expt.crystal.get_U()
+      bmat = latex_matrix_template %expt.crystal.get_B()
+      amat = latex_matrix_template %expt.crystal.get_A()
       crystal_table.append(('<strong>Crystal:</strong>', 'Space group:', sgi.symbol_and_number(),
                     'Unit cell:', latex_unit_cell_template %uc))
       crystal_table.append(('', 'U matrix:', '%s' %umat, 'B matrix:', '%s' %bmat))

@@ -194,6 +194,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   MTZ file hklout.'''
 
   from dials.array_family import flex
+  from scitbx import matrix
 
   # for the moment assume (and assert) that we will convert data from exactly
   # one lattice...
@@ -320,7 +321,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
 
   experiment.crystal = experiment.crystal.change_basis(cb_op_to_ref)
 
-  U = experiment.crystal.get_U()
+  U = matrix.sqr(experiment.crystal.get_U())
   if experiment.goniometer is not None:
     F = matrix.sqr(experiment.goniometer.get_fixed_rotation())
   else:
@@ -366,7 +367,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
     # was used
     if not force_static_model and experiment.crystal.num_scan_points > 0:
       _unit_cell = experiment.crystal.get_unit_cell_at_scan_point(b-image_range[0])
-      _U = experiment.crystal.get_U_at_scan_point(b-image_range[0])
+      _U = matrix.sqr(experiment.crystal.get_U_at_scan_point(b-image_range[0]))
     else:
       _unit_cell = unit_cell
       _U = U
