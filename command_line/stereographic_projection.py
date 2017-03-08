@@ -89,8 +89,8 @@ def reference_poles_perpendicular_to_beam(beam, goniometer):
   return (d0, d1, d2)
 
 def reference_poles_crystal(crystal_model, plane_normal=(0,0,1)):
-  A = crystal_model.get_A()
-  B = crystal_model.get_B()
+  A = matrix.sqr(crystal_model.get_A())
+  B = matrix.sqr(crystal_model.get_B())
   A_inv = A.inverse()
   G = A_inv * A_inv.transpose()
   G_star = A.transpose() * A
@@ -263,8 +263,8 @@ def run(args):
           R = rotation_axis.axis_and_angle_as_r3_rotation_matrix(
             expt.scan.get_oscillation()[0], deg=True)
       else:
-        U = cryst.get_U()
-      reciprocal_space_points = list(R * U * cryst.get_B()) * miller_indices.as_vec3_double()
+        U = matrix.sqr(cryst.get_U())
+      reciprocal_space_points = list(R * U * matrix.sqr(cryst.get_B())) * miller_indices.as_vec3_double()
       projections = stereographic_projection(
         reciprocal_space_points, reference_poles)
       projections_all.append(projections)
