@@ -93,7 +93,7 @@ class render_3d(object):
       set_mosflm_beam_centre(detector, beam, tuple(reversed(
         self.settings.beam_centre)))
     if crystals is not None:
-      vecs = [c.get_A().transpose().as_list_of_lists() for c in crystals]
+      vecs = [matrix.sqr(c.get_A()).transpose().as_list_of_lists() for c in crystals]
       self.viewer.set_reciprocal_lattice_vectors(vecs)
     self.map_points_to_reciprocal_space()
     self.set_points()
