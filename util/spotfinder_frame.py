@@ -1170,7 +1170,7 @@ class SpotFrame(XrayFrame) :
       cs = crystal.symmetry(unit_cell=crystal_model.get_unit_cell(), space_group=crystal_model.get_space_group())
       cb_op = cs.change_of_basis_op_to_reference_setting()
       crystal_model = crystal_model.change_basis(cb_op)
-      A = crystal_model.get_A()
+      A = matrix.sqr(crystal_model.get_A())
       scan = imageset.get_scan()
       beam = imageset.get_beam()
       gonio = imageset.get_goniometer()
