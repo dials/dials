@@ -40,7 +40,7 @@ show_panel_distance = False
 """, process_includes=True)
 
 
-def beam_centre(detector, beam):
+def beam_centre_mm(detector, beam):
   s0 = beam.get_s0()
   x, y = (None, None)
   for panel_id, panel in enumerate(detector):
@@ -53,6 +53,22 @@ def beam_centre(detector, beam):
         break
   return panel_id, (x, y)
 
+
+def show_beam(detector, beam):
+  panel_id, (x, y) = beam_centre_mm(detector, beam)
+  if panel_id >= 0 and x is not None and y is not None:
+    x_px, y_px = detector[panel_id].millimeter_to_pixel((x, y))
+    if len(detector) > 1:
+      beam_centre_mm_str = "Beam centre (mm): panel %i, (%.2f,%.2f)" %(
+        panel_id, x, y)
+      beam_centre_px_str = "Beam centre (px): panel %i, (%.2f,%.2f)" %(
+        panel_id, x_px, y_px)
+    else:
+      beam_centre_mm_str = "Beam centre (mm): (%.2f,%.2f)" %(x, y)
+      beam_centre_px_str = "Beam centre (px): (%.2f,%.2f)" %(x_px, y_px)
+  else:
+    beam_centre_mm_str = ""
+  return str(beam) + beam_centre_mm_str + '\n' + beam_centre_px_str + '\n'
 
 def run(args):
 
@@ -105,15 +121,7 @@ def run(args):
           (ipanel, distance, fast_origin, slow_origin)
       print ''
     print ''
-    panel_id, (x, y) = beam_centre(expt.detector, expt.beam)
-    if panel_id >= 0 and x is not None and y is not None:
-      if len(expt.detector) > 1:
-        beam_centre_str = "Beam centre: panel %i, (%.2f,%.2f)" %(panel_id, x, y)
-      else:
-        beam_centre_str = "Beam centre: (%.2f,%.2f)" %(x, y)
-    else:
-      beam_centre_str = ""
-    print str(expt.beam) + beam_centre_str + '\n'
+    print show_beam(expt.detector, expt.beam)
     if expt.scan is not None:
       print expt.scan
     if expt.goniometer is not None:
@@ -157,15 +165,7 @@ def run(args):
           print 'Panel %d: distance %.2f origin %.2f %.2f' % \
             (ipanel, distance, fast_origin, slow_origin)
         print ''
-      panel_id, (x, y) = beam_centre(detector, imageset.get_beam())
-      if panel_id >= 0 and x is not None and y is not None:
-        if len(detector) > 1:
-          beam_centre_str = "Beam centre: panel %i, (%.2f,%.2f)" %(panel_id, x, y)
-        else:
-          beam_centre_str = "Beam centre: (%.2f,%.2f)" %(x, y)
-      else:
-        beam_centre_str = ""
-      print str(imageset.get_beam()) + beam_centre_str + '\n'
+      print show_beam(detector, imageset.get_beam())
       if imageset.get_scan() is not None:
         print imageset.get_scan()
       if imageset.get_goniometer() is not None:
