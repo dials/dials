@@ -66,6 +66,8 @@ show_mask = False
   .type = bool
 show_mask2 = False
   .type = bool
+show_basis_vectors = True
+  .type = bool
 display = *image mean variance dispersion sigma_b \
           sigma_s threshold global_threshold
   .type = choice

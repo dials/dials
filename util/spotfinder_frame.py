@@ -1164,7 +1164,7 @@ class SpotFrame(XrayFrame) :
       #show overlapped pixels in a different color
       all_pix_data[max(all_pix_data.keys())+1] = overlapped_data
 
-    if self.crystals is not None:
+    if self.settings.show_basis_vectors and self.crystals is not None:
       from cctbx import crystal
       crystal_model = self.crystals[0]
       cs = crystal.symmetry(unit_cell=crystal_model.get_unit_cell(), space_group=crystal_model.get_space_group())
@@ -1299,6 +1299,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.settings.show_predictions = self.params.show_predictions
     self.settings.show_miller_indices = self.params.show_miller_indices
     self.settings.show_mask = self.params.show_mask
+    self.settings.show_basis_vectors = self.params.show_basis_vectors
     self.settings.show_mean_filter = self.params.display == "mean"
     self.settings.show_variance_filter = self.params.display == "variance"
     self.settings.show_dispersion = self.params.display == "dispersion"
@@ -1409,6 +1410,11 @@ class SpotSettingsPanel (SettingsPanel) :
     self.show_mask = wx.CheckBox(self, -1, "Show mask")
     self.show_mask.SetValue(self.settings.show_mask)
     grid.Add(self.show_mask, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+
+    # Toggle basis vector display
+    self.show_basis_vectors = wx.CheckBox(self, -1, "Basis vectors")
+    self.show_basis_vectors.SetValue(self.settings.show_basis_vectors)
+    grid.Add(self.show_basis_vectors, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
     # Integration shoeboxes only
     self.indexed = wx.CheckBox(self, -1, "Indexed only")
@@ -1569,6 +1575,7 @@ class SpotSettingsPanel (SettingsPanel) :
       self.settings.show_predictions = self.predictions.GetValue()
       self.settings.show_miller_indices = self.miller_indices.GetValue()
       self.settings.show_mask = self.show_mask.GetValue()
+      self.settings.show_basis_vectors = self.show_basis_vectors.GetValue()
       self.settings.color_scheme = self.color_ctrl.GetSelection()
       self.settings.nsigma_b = self.nsigma_b_ctrl.GetPhilValue()
       self.settings.nsigma_s = self.nsigma_s_ctrl.GetPhilValue()
@@ -1594,7 +1601,8 @@ class SpotSettingsPanel (SettingsPanel) :
   def OnClearAll(self, event):
     for btn in (self.center_ctrl, self.ctr_mass, self.max_pix, self.all_pix,
                 self.shoebox, self.predictions, self.miller_indices,
-                self.show_mask, self.ice_rings_ctrl, self.resolution_rings_ctrl):
+                self.show_mask, self.show_basis_vectors,
+                self.ice_rings_ctrl, self.resolution_rings_ctrl):
       btn.SetValue(False)
     self.OnUpdateCM(event)
 
