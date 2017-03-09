@@ -85,6 +85,10 @@ def write_par_file(file_name, experiment):
     direction = 'SLOW'
   rotation = R_to_mosflm * rotation
 
+  def space_group_symbol(space_group):
+    return ccp4_symbol(space_group.info(), lib_name='syminfo.lib',
+       require_at_least_one_lib=False).replace(' 1', '').replace(' ', '')
+
   with open(file_name, 'wb') as f:#
     print >> f, '# parameter file for BEST'
     print >> f, 'TITLE          From DIALS'
@@ -101,9 +105,7 @@ def write_par_file(file_name, experiment):
     print >> f, 'DISTANCE        %7.2f' %distance
     print >> f, 'WAVELENGTH      %.5f' %beam.get_wavelength()
     print >> f, 'POLARISATION    %7.5f' %beam.get_polarization_fraction()
-    print >> f, 'SYMMETRY       %s' %ccp4_symbol(
-      cryst.get_space_group().info(), lib_name='syminfo.lib',
-       require_at_least_one_lib=False).replace(' ', '')
+    print >> f, 'SYMMETRY       %s' %space_group_symbol(cryst.get_space_group())
     print >> f, 'UB             %9.6f %9.6f %9.6f' %UB_mosflm[:3]
     print >> f, '               %9.6f %9.6f %9.6f' %UB_mosflm[3:6]
     print >> f, '               %9.6f %9.6f %9.6f' %UB_mosflm[6:]
