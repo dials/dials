@@ -19,9 +19,9 @@ from scitbx import matrix
 from libtbx.phil import parse, command_line
 
 # dxtbx experimental models
-from dxtbx.model.experiment import beam_factory
-from dxtbx.model.experiment import goniometer_factory
-from dxtbx.model.experiment import detector_factory
+from dxtbx.model import beam_factory
+from dxtbx.model import goniometer_factory
+from dxtbx.model import detector_factory
 
 # crystal model
 from dxtbx.model import Crystal

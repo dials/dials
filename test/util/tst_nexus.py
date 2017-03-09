@@ -4,7 +4,7 @@ from __future__ import absolute_import, division
 def run():
 
   from dials.util.nexus import dump, load
-  from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+  from dxtbx.model.experiment_list import ExperimentListFactory
   from dials.array_family import flex
   from os.path import join
   import libtbx.load_env

@@ -67,7 +67,7 @@ class Script(object):
     from dials.util.command_line import Command
     from dials.array_family import flex
     from dials.util.options import flatten_reflections, flatten_experiments
-    from dxtbx.model.experiment.experiment_list import ExperimentListDumper
+    from dxtbx.model.experiment_list import ExperimentListDumper
     from libtbx.utils import Sorry
     from dials.util import log
 

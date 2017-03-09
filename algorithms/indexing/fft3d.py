@@ -23,7 +23,7 @@ from dials.algorithms.indexing.indexer \
      import indexer_base, optimise_basis_vectors
 from dials.algorithms.indexing.indexer \
      import vector_group, is_approximate_integer_multiple
-from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
+from dxtbx.model.experiment_list import Experiment, ExperimentList
 
 import logging
 logger = logging.getLogger(__name__)

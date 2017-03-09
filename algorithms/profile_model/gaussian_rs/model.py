@@ -293,7 +293,7 @@ class Model(ProfileModelIface):
     :param scan: The scan model
 
     '''
-    from dxtbx.model.experiment.experiment_list import Experiment
+    from dxtbx.model.experiment_list import Experiment
     from dials.algorithms.spot_prediction.reflection_predictor \
       import ReflectionPredictor
     predict = ReflectionPredictor(

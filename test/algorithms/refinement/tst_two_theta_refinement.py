@@ -83,7 +83,7 @@ def test_fd_derivatives():
 
   # Imports for reflection prediction
   from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
-  from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
+  from dxtbx.model.experiment_list import ExperimentList, Experiment
   from dials.algorithms.refinement.prediction import ScansRayPredictor, \
     ExperimentsPredictor
 
@@ -211,7 +211,7 @@ def test_refinement():
                           space_group_symbol = "P1")
   orig_xl = deepcopy(crystal)
 
-  from dxtbx.model.experiment import goniometer_factory
+  from dxtbx.model import goniometer_factory
   goniometer = goniometer_factory.known_axis((1., 0., 0.))
 
   # Build a mock scan for a 180 degree sweep
@@ -227,7 +227,7 @@ def test_refinement():
   assert sweep_range == (0., pi)
   assert approx_equal(im_width, 0.1 * pi / 180.)
 
-  from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
+  from dxtbx.model.experiment_list import ExperimentList, Experiment
 
   # Build an experiment list
   experiments = ExperimentList()

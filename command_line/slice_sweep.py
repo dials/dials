@@ -14,7 +14,7 @@ from __future__ import absolute_import, division
 from os.path import splitext, basename
 from scitbx.array_family import flex
 from libtbx.utils import Sorry
-from dxtbx.model.experiment.experiment_list import ExperimentList
+from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.datablock import DataBlock
 from dials.algorithms.refinement.refinement_helpers import \
   calculate_frame_numbers
@@ -109,7 +109,7 @@ def slice_experiments(experiments, scan_ranges):
   '''
 
   :param experiments
-  :type experiments: dxtbx.model.experiment.experiment_list.ExperimentList
+  :type experiments: dxtbx.model.experiment_list.ExperimentList
   :param scan_range:
   :type scan_range: list of 2-tuples defining scan range for each experiment'''
 
@@ -334,7 +334,7 @@ class Script(object):
       print 'Saving sliced experiments to {0}'.format(
         output_experiments_filename)
 
-      from dxtbx.model.experiment.experiment_list import ExperimentListDumper
+      from dxtbx.model.experiment_list import ExperimentListDumper
       dump = ExperimentListDumper(sliced_experiments)
       dump.as_json(output_experiments_filename)
 

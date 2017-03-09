@@ -179,7 +179,7 @@ def run_single(experiments1, filename):
   print 'OK'
 
 def run():
-  from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+  from dxtbx.model.experiment_list import ExperimentListFactory
   from os.path import join
   import libtbx.load_env
   try:

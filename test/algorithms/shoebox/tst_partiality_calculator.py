@@ -17,8 +17,8 @@ class Test(object):
     filename = os.path.join(dials_regression,
         'centroid_test_data', 'fake_long_experiments.json')
 
-    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
-    from dxtbx.model.experiment.experiment_list import ExperimentList
+    from dxtbx.model.experiment_list import ExperimentListFactory
+    from dxtbx.model.experiment_list import ExperimentList
     exlist = ExperimentListFactory.from_json_file(filename)
     assert(len(exlist) == 1)
     self.experiment = exlist[0]

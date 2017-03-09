@@ -1237,7 +1237,7 @@ class SpotFrame(XrayFrame) :
     return self.imagesets[0].get_beam()
 
   def predict(self):
-    from dxtbx.model.experiment.experiment_list import ExperimentList
+    from dxtbx.model.experiment_list import ExperimentList
     predicted_all = []
     for i_expt, expt in enumerate(self.experiments):
       imageset = self.imagesets[0]

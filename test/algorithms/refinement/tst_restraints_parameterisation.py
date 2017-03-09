@@ -19,7 +19,7 @@ from __future__ import absolute_import, division
 import os
 from libtbx.phil import parse
 import libtbx.load_env # required for libtbx.env.find_in_repositories
-from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+from dxtbx.model.experiment_list import ExperimentListFactory
 from libtbx.test_utils import approx_equal
 from dials.algorithms.refinement import RefinerFactory
 from dials.array_family import flex
@@ -31,7 +31,7 @@ def test1():
   from math import pi
   from random import gauss
   from dials.test.algorithms.refinement.setup_geometry import Extract
-  from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
+  from dxtbx.model.experiment_list import ExperimentList, Experiment
 
   #### Import model parameterisations
 
@@ -149,7 +149,7 @@ def test2():
   from math import pi
   from random import gauss
   from dials.test.algorithms.refinement.setup_geometry import Extract
-  from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
+  from dxtbx.model.experiment_list import ExperimentList, Experiment
 
   #### Import model parameterisations
 

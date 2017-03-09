@@ -86,7 +86,7 @@ class Script(object):
       int(math.floor(math.log10(len(experiments))) + 1))
 
     for i, experiment in enumerate(experiments):
-      from dxtbx.model.experiment.experiment_list import ExperimentList
+      from dxtbx.model.experiment_list import ExperimentList
       from dxtbx.serialize import dump
       experiment_filename = experiments_template %i
       print 'Saving experiment %d to %s' %(i, experiment_filename)

@@ -43,12 +43,12 @@ def pull_reference(integrate_hkl, d_min = 0.0):
   return hkl, i, sigi, xyz, lp
 
 def get_dials_matrix(experiments_json):
-  from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+  from dxtbx.model.experiment_list import ExperimentListFactory
   experiments = ExperimentListFactory.from_json_file(experiments_json)
   return experiments[0].crystal.get_A()
 
 def get_dials_coordinate_frame(experiments_json):
-  from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+  from dxtbx.model.experiment_list import ExperimentListFactory
   experiments = ExperimentListFactory.from_json_file(experiments_json)
   return experiments[0].beam.get_direction(), \
     experiments[0].goniometer.get_rotation_axis()

@@ -27,7 +27,7 @@ from dials.test.algorithms.refinement.setup_geometry import Extract
 ##### Imports for reflection prediction
 
 from dials.algorithms.spot_prediction import IndexGenerator
-from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
+from dxtbx.model.experiment_list import ExperimentList, Experiment
 from dials.algorithms.refinement.prediction import ScansRayPredictor
 
 #### Import model parameterisations

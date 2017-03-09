@@ -29,7 +29,7 @@ from dials.array_family import flex
 from cctbx import crystal, sgtbx, xray
 
 from dxtbx.model import Crystal
-from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
+from dxtbx.model.experiment_list import Experiment, ExperimentList
 
 max_cell_phil_str = '''\
 max_cell_estimation

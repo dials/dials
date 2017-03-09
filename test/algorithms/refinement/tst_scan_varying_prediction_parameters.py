@@ -19,7 +19,7 @@ from scitbx.array_family import flex
 from dials.test.algorithms.refinement.setup_geometry import Extract
 from dxtbx.model.scan import scan_factory
 from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
-from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
+from dxtbx.model.experiment_list import ExperimentList, Experiment
 from dials.algorithms.refinement.prediction import ScansRayPredictor, \
   ExperimentsPredictor
 from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters import \

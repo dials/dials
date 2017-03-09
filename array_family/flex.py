@@ -782,7 +782,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     :return: True/False overloaded for each reflection
 
     '''
-    from dxtbx.model.experiment.experiment_list import ExperimentList
+    from dxtbx.model.experiment_list import ExperimentList
     from dials.algorithms.shoebox import OverloadChecker
     assert('shoebox' in self)
     assert('id' in self)

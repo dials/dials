@@ -87,7 +87,7 @@ def run():
                       result_new.crystal_model.get_unit_cell().parameters())
 
   # Now test refinement gradients are correct
-  from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
+  from dxtbx.model.experiment_list import ExperimentList, Experiment
   old_exps=ExperimentList([Experiment(beam=imageset_old.get_beam(),
                                      detector=imageset_old.get_detector(),
                                      goniometer=gonio_old,

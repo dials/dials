@@ -17,7 +17,7 @@ from __future__ import absolute_import, division
 import logging
 logger = logging.getLogger(__name__)
 
-from dxtbx.model.experiment.experiment_list import ExperimentList
+from dxtbx.model.experiment_list import ExperimentList
 from dials.array_family import flex
 from dials.algorithms.refinement.refinement_helpers import ordinal_number
 from libtbx.phil import parse

@@ -186,7 +186,7 @@ class CombineWithReference(object):
     else:
       crystal = experiment.crystal
 
-    from dxtbx.model.experiment.experiment_list import Experiment
+    from dxtbx.model.experiment_list import Experiment
     return Experiment(beam=beam,
                       detector=detector,
                       scan=scan,
@@ -324,7 +324,7 @@ class Script(object):
     from dials.array_family import flex
     reflections = flex.reflection_table()
     global_id = 0
-    from dxtbx.model.experiment.experiment_list import ExperimentList
+    from dxtbx.model.experiment_list import ExperimentList
     experiments=ExperimentList()
 
     # loop through the input, building up the global lists
@@ -370,7 +370,7 @@ class Script(object):
 
     def save_output(experiments, reflections, exp_name, refl_name):
       # save output
-      from dxtbx.model.experiment.experiment_list import ExperimentListDumper
+      from dxtbx.model.experiment_list import ExperimentListDumper
       print 'Saving combined experiments to {0}'.format(exp_name)
       dump = ExperimentListDumper(experiments)
       dump.as_json(exp_name)

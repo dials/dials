@@ -19,7 +19,7 @@ each panel that take the first detector model to the second one as a heatmap
 """
 from __future__ import absolute_import, division
 
-from dxtbx.model.experiment.experiment_list import Experiment
+from dxtbx.model.experiment_list import Experiment
 from scitbx.array_family import flex
 from libtbx import phil, Auto
 from libtbx.utils import Sorry

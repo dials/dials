@@ -9,7 +9,7 @@ class Test(object):
     from dials.model.serialize import load
     from dials.algorithms.profile_model.gaussian_rs import Model
     from dials.algorithms.profile_model.gaussian_rs import MaskCalculator3D
-    from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
+    from dxtbx.model.experiment_list import Experiment, ExperimentList
 
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')

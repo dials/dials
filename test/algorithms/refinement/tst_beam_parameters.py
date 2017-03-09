@@ -7,7 +7,7 @@ import random
 from libtbx.test_utils import approx_equal
 from scitbx import matrix
 
-from dxtbx.model.experiment import beam_factory
+from dxtbx.model import beam_factory
 from dials.algorithms.refinement.parameterisation.beam_parameters import \
     BeamParameterisation
 from dials.algorithms.refinement.refinement_helpers \

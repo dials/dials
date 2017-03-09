@@ -181,8 +181,8 @@ class XDSFileImporter(object):
     self.args = args
 
   def __call__(self, params, options):
-    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
-    from dxtbx.model.experiment.experiment_list import ExperimentListDumper
+    from dxtbx.model.experiment_list import ExperimentListFactory
+    from dxtbx.model.experiment_list import ExperimentListDumper
     import os
     # Get the XDS.INP file
     xds_inp = os.path.join(self.args[0], 'XDS.INP')
@@ -449,7 +449,7 @@ class Script(object):
 
   def select_importer(self, args):
     from os.path import split
-    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+    from dxtbx.model.experiment_list import ExperimentListFactory
     import libtbx.load_env
     path, filename = split(args[0])
     if filename == 'SPOT.XDS':

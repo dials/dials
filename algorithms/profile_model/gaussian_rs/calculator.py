@@ -450,7 +450,7 @@ class ProfileModelCalculator(object):
   def __init__(self, reflections, crystal, beam, detector, goniometer, scan,
                min_zeta=0.05, algorithm="basic"):
     ''' Calculate the profile model. '''
-    from dxtbx.model.experiment.experiment_list import Experiment
+    from dxtbx.model.experiment_list import Experiment
     from dials.array_family import flex
     from math import pi
 
@@ -521,7 +521,7 @@ class ScanVaryingProfileModelCalculator(object):
     from collections import defaultdict
     from dials.array_family import flex
     from math import pi
-    from dxtbx.model.experiment.experiment_list import Experiment
+    from dxtbx.model.experiment_list import Experiment
 
     # Check input has what we want
     assert(reflections is not None)

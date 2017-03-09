@@ -265,7 +265,7 @@ class Script(object):
       if len(experiments) > 1:
         # filter out any experiments without matched reference reflections
         # f_: filtered
-        from dxtbx.model.experiment.experiment_list import ExperimentList
+        from dxtbx.model.experiment_list import ExperimentList
         f_reference = flex.reflection_table()
         f_predicted = flex.reflection_table()
         f_rubbish = flex.reflection_table()
@@ -397,7 +397,7 @@ class Script(object):
   def save_experiments(self, experiments, filename):
     ''' Save the profile model parameters. '''
     from time import time
-    from dxtbx.model.experiment.experiment_list import ExperimentListDumper
+    from dxtbx.model.experiment_list import ExperimentListDumper
     st = time()
     logger.info('Saving the experiments to %s' % filename)
     dump = ExperimentListDumper(experiments)
@@ -452,8 +452,8 @@ class Script(object):
 
   def split_for_scan_range(self, experiments, reference, scan_range):
     ''' Update experiments when scan range is set. '''
-    from dxtbx.model.experiment.experiment_list import ExperimentList
-    from dxtbx.model.experiment.experiment_list import Experiment
+    from dxtbx.model.experiment_list import ExperimentList
+    from dxtbx.model.experiment_list import Experiment
     from dials.array_family import flex
 
     # Only do anything is the scan range is set

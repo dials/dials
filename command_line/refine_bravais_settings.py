@@ -160,7 +160,7 @@ def run(args):
     if params.crystal_id is not None:
       assert params.crystal_id < len(experiments.crystals())
       experiment_ids = experiments.where(crystal=experiments.crystals()[params.crystal_id])
-      from dxtbx.model.experiment.experiment_list import ExperimentList
+      from dxtbx.model.experiment_list import ExperimentList
       experiments = ExperimentList([experiments[i] for i in experiment_ids])
       refl_selections = [reflections['id'] == i for i in experiment_ids]
       reflections['id'] = flex.int(len(reflections), -1)

@@ -1138,7 +1138,7 @@ def flatten_experiments(filename_object_list):
   :return: The flattened experiment lists
 
   '''
-  from dxtbx.model.experiment.experiment_list import ExperimentList
+  from dxtbx.model.experiment_list import ExperimentList
   result = ExperimentList()
   for i in range(len(filename_object_list)):
     result.extend(filename_object_list[i].data)

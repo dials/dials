@@ -22,8 +22,8 @@ from libtbx.test_utils import open_tmp_directory, approx_equal
 from libtbx import easy_run
 from scitbx import sparse
 from dials.array_family import flex
-from dxtbx.model.experiment.experiment_list import ExperimentListFactory
-from dxtbx.model.experiment.experiment_list import ExperimentListDumper
+from dxtbx.model.experiment_list import ExperimentListFactory
+from dxtbx.model.experiment_list import ExperimentListDumper
 from dials.algorithms.refinement.constraints import EqualShiftConstraint
 from dials.algorithms.refinement.constraints import ConstraintManager
 from dials.algorithms.refinement.constraints import SparseConstraintManager

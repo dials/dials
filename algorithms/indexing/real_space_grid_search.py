@@ -21,7 +21,7 @@ from dials.algorithms.indexing.indexer import \
      indexer_base, optimise_basis_vectors
 from dials.algorithms.indexing.indexer import \
      is_approximate_integer_multiple
-from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
+from dxtbx.model.experiment_list import Experiment, ExperimentList
 
 
 class indexer_real_space_grid_search(indexer_base):

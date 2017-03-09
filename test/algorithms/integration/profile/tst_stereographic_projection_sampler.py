@@ -4,7 +4,7 @@ from __future__ import absolute_import, division
 class Test(object):
 
   def __init__(self):
-    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+    from dxtbx.model.experiment_list import ExperimentListFactory
     import libtbx.load_env
     from os.path import join
     try:

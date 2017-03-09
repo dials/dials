@@ -17,7 +17,7 @@ class Test(object):
     self.experiments_filename = join(self.path, "experiments.json")
     assert exists(join(self.path, 'experiments.json'))
 
-    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+    from dxtbx.model.experiment_list import ExperimentListFactory
 
     self.experiments = ExperimentListFactory.from_json_file(self.experiments_filename)
 

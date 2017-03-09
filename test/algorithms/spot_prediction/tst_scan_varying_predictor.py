@@ -28,7 +28,7 @@ from dials.test.algorithms.refinement import setup_geometry
 
 # We will set up a mock scan and a mock experiment list
 from dxtbx.model.scan import scan_factory
-from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
+from dxtbx.model.experiment_list import ExperimentList, Experiment
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator

@@ -300,7 +300,7 @@ class Script(object):
     # Save the refined experiments to file
     output_experiments_filename = params.output.experiments
     logger.info('Saving refined experiments to {0}'.format(output_experiments_filename))
-    from dxtbx.model.experiment.experiment_list import ExperimentListDumper
+    from dxtbx.model.experiment_list import ExperimentListDumper
     dump = ExperimentListDumper(experiments)
     dump.as_json(output_experiments_filename)
 

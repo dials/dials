@@ -153,8 +153,8 @@ class Test(object):
   def predict_reflections(self):
     from dials.algorithms import shoebox
     from dials.array_family import flex
-    from dxtbx.model.experiment.experiment_list import ExperimentList
-    from dxtbx.model.experiment.experiment_list import Experiment
+    from dxtbx.model.experiment_list import ExperimentList
+    from dxtbx.model.experiment_list import Experiment
     from dials.algorithms.profile_model.gaussian_rs import Model
 
     # Get models from the sweep

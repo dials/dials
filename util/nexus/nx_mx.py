@@ -757,8 +757,8 @@ def find_nx_mx_entries(nx_file, entry):
   return hits
 
 def load(entry, exp_index):
-  from dxtbx.model.experiment.experiment_list import ExperimentList
-  from dxtbx.model.experiment.experiment_list import Experiment
+  from dxtbx.model.experiment_list import ExperimentList
+  from dxtbx.model.experiment_list import Experiment
 
   print "Loading NXmx"
 

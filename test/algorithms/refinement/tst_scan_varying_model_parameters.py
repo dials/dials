@@ -248,7 +248,7 @@ class TestScanVaryingModelParameterisation(object):
     npx_fast = 1475
     npx_slow = 1679
     pix_size_f = pix_size_s = 0.172
-    from dxtbx.model.experiment import detector_factory
+    from dxtbx.model import detector_factory
     self.detector = detector_factory.make_detector("PAD", d1, d2,
       matrix.col((0, 0, -110)), (pix_size_f, pix_size_s),
       (npx_fast, npx_slow), (0, 2e20))

@@ -36,7 +36,7 @@ class Test(object):
     params = phil_scope.extract()
     from dials.array_family import flex
     from dxtbx.datablock import DataBlock
-    from dxtbx.model.experiment.experiment_list import ExperimentList
+    from dxtbx.model.experiment_list import ExperimentList
     assert(params.input.reflections.filename == self.reflections_path)
     assert(params.input.datablock.filename == self.datablock_path)
     assert(params.input.experiments.filename == self.experiments_path)

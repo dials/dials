@@ -5,7 +5,7 @@ import libtbx.load_env
 from cctbx import crystal, miller, sgtbx
 from scitbx import matrix
 from dxtbx.serialize import load
-from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
+from dxtbx.model.experiment_list import Experiment, ExperimentList
 from dxtbx.model import Crystal
 from dials.array_family import flex
 

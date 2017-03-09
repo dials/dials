@@ -21,7 +21,7 @@ from __future__ import absolute_import, division
 from math import sqrt
 
 from libtbx.phil import parse
-from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
+from dxtbx.model.experiment_list import ExperimentList, Experiment
 from dials.algorithms.indexing.indexer import indexer_base
 
 from dials.array_family import flex
@@ -385,7 +385,7 @@ class Script(object):
     from dials.array_family import flex
     reflections = flex.reflection_table()
     global_id = 0
-    from dxtbx.model.experiment.experiment_list import ExperimentList
+    from dxtbx.model.experiment_list import ExperimentList
     experiments=ExperimentList()
 
     if params.reference_detector == "first":
@@ -507,7 +507,7 @@ class Script(object):
     # Save the refined experiments to file
     output_experiments_filename = params.output.experiments_filename
     print 'Saving refined experiments to {0}'.format(output_experiments_filename)
-    from dxtbx.model.experiment.experiment_list import ExperimentListDumper
+    from dxtbx.model.experiment_list import ExperimentListDumper
     dump = ExperimentListDumper(experiments)
     dump.as_json(output_experiments_filename)
 

@@ -57,7 +57,7 @@ class Test(object):
         exit(0)
 
     # Load the experiments
-    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+    from dxtbx.model.experiment_list import ExperimentListFactory
     experiments = ExperimentListFactory.from_json_file(expr_filename,
                                                        check_format=False)
     assert(len(experiments) == 1)

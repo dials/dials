@@ -11,7 +11,7 @@ class Test(object):
       exit(0)
 
     import os
-    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+    from dxtbx.model.experiment_list import ExperimentListFactory
     path = os.path.join(
       dials_regression,
       'centroid_test_data',

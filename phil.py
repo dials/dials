@@ -72,7 +72,7 @@ class ExperimentListConverters(object):
     return self.phil_type
 
   def from_string(self, s):
-    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+    from dxtbx.model.experiment_list import ExperimentListFactory
     from os.path import exists
     from libtbx.utils import Sorry
     if s is None:

@@ -16,7 +16,7 @@ class Test(object):
       'prediction_test_data',
       'experiments_scan_varying_crystal.json')
 
-    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+    from dxtbx.model.experiment_list import ExperimentListFactory
     self.experiments = ExperimentListFactory.from_json_file(path)
     assert(len(self.experiments) == 1)
     assert(self.experiments[0].crystal.num_scan_points ==

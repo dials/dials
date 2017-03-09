@@ -20,7 +20,7 @@ import os
 import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx import easy_run
 from libtbx.test_utils import open_tmp_directory
-from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+from dxtbx.model.experiment_list import ExperimentListFactory
 from dials.array_family import flex
 
 phil_input = """

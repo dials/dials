@@ -17,7 +17,7 @@ from dials.algorithms.indexing.known_orientation import indexer_known_orientatio
 from dials.algorithms.indexing.real_space_grid_search import indexer_real_space_grid_search
 from dials.algorithms.indexing.fft3d import indexer_fft3d
 from dials.algorithms.indexing.fft1d import indexer_fft1d
-from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
+from dxtbx.model.experiment_list import Experiment, ExperimentList
 from dials.algorithms.indexing.nave_parameters import nave_parameters
 import math
 from dials.algorithms.indexing.indexer import master_params
@@ -391,7 +391,7 @@ class stills_indexer(indexer_base):
     return experiments
 
   def choose_best_orientation_matrix(self, candidate_orientation_matrices):
-    from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
+    from dxtbx.model.experiment_list import Experiment, ExperimentList
     import copy
 
     logger.info('*' * 80)

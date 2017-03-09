@@ -9,7 +9,7 @@ from libtbx.test_utils import open_tmp_directory
 from scitbx import matrix
 from cctbx import crystal, sgtbx, uctbx
 
-from dxtbx.model.experiment.experiment_list import Experiment
+from dxtbx.model.experiment_list import Experiment
 from dxtbx.serialize import dump, load
 
 from dials.array_family import flex

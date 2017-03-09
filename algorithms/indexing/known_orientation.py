@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division
 
 from dials.algorithms.indexing.indexer import indexer_base
-from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
+from dxtbx.model.experiment_list import Experiment, ExperimentList
 
 class indexer_known_orientation(indexer_base):
 

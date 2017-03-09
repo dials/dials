@@ -23,7 +23,7 @@ from scitbx.array_family import flex
 
 # Building experimental models
 from dials.test.algorithms.refinement.setup_geometry import Extract
-from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
+from dxtbx.model.experiment_list import ExperimentList, Experiment
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator

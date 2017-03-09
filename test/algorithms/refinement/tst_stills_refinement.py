@@ -31,7 +31,7 @@ import dials.test.algorithms.refinement.setup_geometry as setup_geometry
 
 # We will set up a mock scan and a mock experiment list
 from dxtbx.model.scan import scan_factory
-from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
+from dxtbx.model.experiment_list import ExperimentList, Experiment
 
 # Crystal parameterisations
 from dials.algorithms.refinement.parameterisation.crystal_parameters import \

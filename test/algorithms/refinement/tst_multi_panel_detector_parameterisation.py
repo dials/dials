@@ -36,11 +36,11 @@ import dials.test.algorithms.refinement.setup_geometry as setup_geometry
 import dials.test.algorithms.refinement.setup_minimiser as setup_minimiser
 
 # Get the models to build the multi panel detector
-from dxtbx.model.experiment import Panel, Detector
+from dxtbx.model import Panel, Detector
 
 # We will set up a mock scan and a mock experiment list
 from dxtbx.model.scan import scan_factory
-from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
+from dxtbx.model.experiment_list import ExperimentList, Experiment
 
 # Model parameterisations
 from dials.algorithms.refinement.parameterisation.detector_parameters import \

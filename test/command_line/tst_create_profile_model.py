@@ -17,7 +17,7 @@ class Test(object):
   def run(self):
     from os.path import join
     from libtbx import easy_run
-    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+    from dxtbx.model.experiment_list import ExperimentListFactory
 
     # Call dials.create_profile_model
     easy_run.fully_buffered([

@@ -233,7 +233,7 @@ class Simulator(object):
 if __name__ == '__main__':
 
   from math import pi
-  from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+  from dxtbx.model.experiment_list import ExperimentListFactory
   experiments = ExperimentListFactory.from_json_file(
     "/home/upc86896/Projects/cctbx/sources/dials_regression/centroid_test_data/experiments.json",
   check_format=False)

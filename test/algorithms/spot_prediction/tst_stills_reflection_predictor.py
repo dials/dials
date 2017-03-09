@@ -17,9 +17,9 @@ class Test(object):
   def __init__(self, test_nave_model = False):
 
     # Set up experimental models with regular geometry
-    from dxtbx.model.experiment import beam_factory
-    from dxtbx.model.experiment import goniometer_factory
-    from dxtbx.model.experiment import detector_factory
+    from dxtbx.model import beam_factory
+    from dxtbx.model import goniometer_factory
+    from dxtbx.model import detector_factory
 
     from dxtbx.model import Crystal
 
@@ -56,7 +56,7 @@ class Test(object):
       self.crystal._ML_domain_size_ang = 0.2
 
     # Collect these models in an Experiment (ignoring the goniometer)
-    from dxtbx.model.experiment.experiment_list import Experiment
+    from dxtbx.model.experiment_list import Experiment
     self.experiment = Experiment(beam=self.beam, detector=self.detector,
       goniometer=None, scan=None, crystal=self.crystal, imageset=None)
 

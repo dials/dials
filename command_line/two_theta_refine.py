@@ -165,7 +165,7 @@ class Script(object):
   def combine_crystals(experiments):
     '''Replace all crystals in the experiments list with the first crystal'''
 
-    from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
+    from dxtbx.model.experiment_list import Experiment, ExperimentList
     new_experiments=ExperimentList()
     ref_crystal = experiments[0].crystal
     for exp in experiments:
@@ -414,7 +414,7 @@ class Script(object):
     from dials.array_family import flex
     reflections = flex.reflection_table()
     global_id = 0
-    from dxtbx.model.experiment.experiment_list import ExperimentList
+    from dxtbx.model.experiment_list import ExperimentList
     experiments=ExperimentList()
 
     # loop through the input, building up the global lists
@@ -496,7 +496,7 @@ class Script(object):
     # Save the refined experiments to file
     output_experiments_filename = params.output.experiments
     logger.info('Saving refined experiments to {0}'.format(output_experiments_filename))
-    from dxtbx.model.experiment.experiment_list import ExperimentListDumper
+    from dxtbx.model.experiment_list import ExperimentListDumper
     dump = ExperimentListDumper(experiments)
     dump.as_json(output_experiments_filename)
 

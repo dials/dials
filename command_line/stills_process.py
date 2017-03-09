@@ -170,7 +170,7 @@ class Script(object):
     except Exception:
       ref_datablocks = None
     if ref_datablocks is None:
-      from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+      from dxtbx.model.experiment_list import ExperimentListFactory
       try:
         ref_experiments = ExperimentListFactory.from_json_file(self.params.input.reference_geometry, check_format=False)
       except Exception:
@@ -486,7 +486,7 @@ class Processor(object):
 
     # Dump experiments to disk
     if self.params.output.refined_experiments_filename:
-      from dxtbx.model.experiment.experiment_list import ExperimentListDumper
+      from dxtbx.model.experiment_list import ExperimentListDumper
       dump = ExperimentListDumper(experiments)
       dump.as_json(self.params.output.refined_experiments_filename)
 
