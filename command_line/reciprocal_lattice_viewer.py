@@ -89,9 +89,7 @@ class render_3d(object):
       except RuntimeError:
         pass
     else:
-      from dxtbx.model.detector_helpers import set_mosflm_beam_centre
-      set_mosflm_beam_centre(detector, beam, tuple(reversed(
-        self.settings.beam_centre)))
+      self.set_beam_centre(self.settings.beam_centre)
     if crystals is not None:
       vecs = [matrix.sqr(c.get_A()).transpose().as_list_of_lists() for c in crystals]
       self.viewer.set_reciprocal_lattice_vectors(vecs)
@@ -346,23 +344,45 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
     self.settings_panel.z_max_ctrl.SetValue(self.settings.z_max)
 
   def update_settings(self, *args, **kwds):
-    detector = self.imagesets[0].get_detector()
-    beam = self.imagesets[0].get_beam()
-    s0 = beam.get_s0()
+
+    imageset = self.imagesets[0]
+    detector = imageset.get_detector()
+    beam = imageset.get_beam()
+
     try:
       panel_id, beam_centre = detector.get_ray_intersection(beam.get_s0())
     except RuntimeError, e:
       print "Error calculating beam centre:", str(e)
     else:
       if self.settings.beam_centre != beam_centre:
-        from dxtbx.model.detector_helpers import set_mosflm_beam_centre
-        set_mosflm_beam_centre(detector, beam, tuple(reversed(
-          self.settings.beam_centre)))
-        self.imagesets[0].set_detector(detector)
-        self.imagesets[0].set_beam(beam)
+        self.set_beam_centre(beam_centre)
+
     self.map_points_to_reciprocal_space()
     self.set_points()
     self.viewer.update_settings(*args, **kwds)
+
+  def set_beam_centre(self, beam_centre):
+
+    imageset = self.imagesets[0]
+    detector = imageset.get_detector()
+    beam = imageset.get_beam()
+
+    try:
+      panel_id, beam_centre = detector.get_ray_intersection(beam.get_s0())
+    except RuntimeError, e:
+      print "Error calculating beam centre:", str(e)
+    else:
+      # code copied from: dials.command_line.dials_import.PixelBeamCenterUpdater
+
+      beam_f, beam_s = self.settings.beam_centre
+
+      try:
+        p = detector[panel_id]
+      except RuntimeError:
+        raise Sorry('Detector does not have panel index {0}'.format(panel_id))
+
+      beam_f, beam_s = p.millimeter_to_pixel((beam_f, beam_s))
+      beam.set_unit_s0(p.get_pixel_lab_coord((beam_f, beam_s)))
 
   def update_statusbar (self) :
     model_view_matrix = gltbx.util.get_gl_modelview_matrix()
