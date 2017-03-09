@@ -58,6 +58,7 @@ class PngScene(object):
     self.beam_vector = None
     self.points = None
     self.colors = None
+    self.palette = None
 
   def set_rotation_axis(self, axis):
     self.rotation_axis = axis
@@ -73,6 +74,9 @@ class PngScene(object):
     # convert whites to black (background is white)
     colors.set_selected((colors.norms() == math.sqrt(3)), (0,0,0))
     self.colors = colors
+
+  def set_palette(self, palette):
+    self.palette = palette
 
   def project_2d(self, n):
     d = self.points.dot(n.elems)
@@ -177,7 +181,7 @@ def run(args):
 
   if len(experiments):
     for i, c in enumerate(experiments.crystals()):
-      A = c.get_A()
+      A = matrix.sqr(c.get_A())
       astar = A[:3]
       bstar = A[3:6]
       cstar = A[6:9]
@@ -201,7 +205,33 @@ def run(args):
 
     hardcoded_phil = dps_phil_scope.extract()
     hardcoded_phil.d_min = params.d_min
-    result = run_dps((imagesets[0], reflections, hardcoded_phil))
+
+    imageset = imagesets[0]
+    from dials.algorithms.indexing.indexer import indexer_base
+
+    if 'imageset_id' not in reflections:
+      reflections['imageset_id'] = reflections['id']
+
+    spots_mm = indexer_base.map_spots_pixel_to_mm_rad(
+      spots=reflections, detector=imageset.get_detector(), scan=imageset.get_scan())
+
+    indexer_base.map_centroids_to_reciprocal_space(
+      spots_mm, detector=imageset.get_detector(), beam=imageset.get_beam(),
+      goniometer=imageset.get_goniometer())
+
+    if params.d_min is not None:
+      d_spacings = 1/spots_mm['rlp'].norms()
+      sel = d_spacings > params.d_min
+      spots_mm = spots_mm.select(sel)
+
+    # derive a max_cell from mm spots
+
+    from dials.algorithms.indexing.indexer import find_max_cell
+    max_cell = find_max_cell(spots_mm, max_cell_multiplier=1.3,
+                             step_size=45,
+                             nearest_neighbor_percentile=0.05).max_cell
+
+    result = run_dps((imageset, spots_mm, max_cell, hardcoded_phil))
     solutions = [matrix.col(v) for v in result['solutions']]
     for i in range(min(n_solutions, len(solutions))):
       v = solutions[i]
