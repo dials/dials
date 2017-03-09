@@ -981,8 +981,16 @@ class indexer_base(object):
         i_expt+1, (reflections['id'] == i_expt).count(True)))
       logger.info(expt.crystal)
 
-    indexed = reflections.get_flags(reflections.flags.indexed)
-    logger.info("%i unindexed reflections" %indexed.count(False))
+    indexed_flags = reflections.get_flags(reflections.flags.indexed)
+    imageset_id = reflections['imageset_id']
+    rows = [['Imageset', '#indexed', '#unindexed']]
+    for i in range(flex.max(imageset_id)+1):
+      imageset_indexed_flags = indexed_flags.select(imageset_id == i)
+      rows.append([str(i), str(imageset_indexed_flags.count(True)),
+                   str(imageset_indexed_flags.count(False))])
+    from libtbx import table_utils
+    logger.info(
+      table_utils.format(rows, has_header=True, prefix='| ', postfix=' |'))
 
   def find_max_cell(self):
     params = self.params.max_cell_estimation
