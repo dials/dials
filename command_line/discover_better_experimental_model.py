@@ -416,12 +416,20 @@ def discover_better_experimental_model(
       imagesets, spot_lists_mm, solution_lists, amax_list, dps_params,
       wide_search_binning=wide_search_binning)
     new_detector = discoverer.optimize_origin_offset_local_scope()
-    old_beam_centre = detector.get_ray_intersection(beam.get_s0())[1]
-    new_beam_centre = new_detector.get_ray_intersection(beam.get_s0())[1]
-    logger.info("Old beam centre: %.2f mm, %.2f mm" %old_beam_centre)
-    logger.info("New beam centre: %.2f mm, %.2f mm" %new_beam_centre)
-    logger.info("Shift: %.2f mm, %.2f mm" %(
-      matrix.col(old_beam_centre)-matrix.col(new_beam_centre)).elems)
+    old_panel, old_beam_centre = detector.get_ray_intersection(beam.get_s0())
+    new_panel, new_beam_centre = new_detector.get_ray_intersection(beam.get_s0())
+
+    old_beam_centre_px = detector[old_panel].millimeter_to_pixel(old_beam_centre)
+    new_beam_centre_px = new_detector[new_panel].millimeter_to_pixel(new_beam_centre)
+
+    logger.info("Old beam centre: %.2f, %.2f mm" %old_beam_centre +
+                " (%.1f, %.1f px)" %old_beam_centre_px)
+    logger.info("New beam centre: %.2f, %.2f mm" %new_beam_centre +
+                " (%.1f, %.1f px)" %new_beam_centre_px)
+    logger.info("Shift: %.2f, %.2f mm" %(
+      matrix.col(old_beam_centre)-matrix.col(new_beam_centre)).elems +
+                " (%.1f, %.1f px)" %(
+      matrix.col(old_beam_centre_px)-matrix.col(new_beam_centre_px)).elems)
     return new_detector, beam
   elif dps_params.indexing.improve_local_scope=="S0_vector":
     raise NotImplementedError()
