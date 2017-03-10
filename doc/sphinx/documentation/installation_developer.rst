@@ -120,7 +120,7 @@ and unpack into the directory "cctbx\modules".
 Now checkout the cctbx sources into the "cctbx\modules\cctbx_project" directory::
 
   cd modules
-  svn checkout svn://svn.code.sf.net/p/cctbx/code/trunk cctbx_project
+  git clone https://github.com/cctbx/cctbx_project.git cctbx_project
 
 In the "modules" directory of your cctbx installation, checkout the dials source
 in the following way::

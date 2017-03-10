@@ -19,7 +19,7 @@ Detailed instructions:
 * cd $project_root
 * mkdir -p apache/project_src
 * cd $project_root/apache
-* svn export http://svn.code.sf.net/p/cctbx/code/trunk/spotfinder/servers/apache_install_dials.csh
+* wget https://raw.githubusercontent.com/cctbx/cctbx_project/master/spotfinder/servers/apache_install_dials.csh
 * cd $project_root/apache/project_src
 * wget https://www.apache.org/dist/httpd/httpd-2.4.20.tar.gz
 * wget http://dist.modpython.org/dist/mod_python-3.5.0.tgz
