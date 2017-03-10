@@ -62,10 +62,12 @@ cc_n_bins = None
   .help = "Number of resolution bins to use for calculation of correlation coefficients"
 output {
   directory = "."
-    .type = str
+    .type = path
   log = dials.refine_bravais_settings.log
-    .type = str
+    .type = path
   debug_log = dials.refine_bravais_settings.debug.log
+    .type = path
+  prefix = None
     .type = str
 }
 
@@ -202,7 +204,13 @@ def run(args):
   logger.info(s.getvalue())
   from json import dumps
   from os.path import join
-  open(join(params.output.directory, 'bravais_summary.json'), 'wb').write(dumps(Lfat.as_dict()))
+  prefix = params.output.prefix
+  if prefix is None:
+    prefix = ''
+  summary_file = '%sbravais_summary.json' %prefix
+  logger.info('Saving summary as %s' %summary_file)
+  open(join(params.output.directory, summary_file), 'wb').write(
+    dumps(Lfat.as_dict()))
   from dxtbx.serialize import dump
   import copy
   for subgroup in Lfat:
@@ -211,8 +219,10 @@ def run(args):
       expt.crystal.update(subgroup.refined_crystal)
       expt.detector = subgroup.detector
       expt.beam = subgroup.beam
-    dump.experiment_list(
-      expts, join(params.output.directory, 'bravais_setting_%i.json' % (int(subgroup.setting_number))))
+    soln = int(subgroup.setting_number)
+    bs_json = '%sbravais_setting_%i.json' % (prefix, soln)
+    logger.info('Saving solution %i as %s' %(soln, bs_json))
+    dump.experiment_list(expts, join(params.output.directory, bs_json))
   return
 
 if __name__ == '__main__':

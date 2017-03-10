@@ -28,7 +28,8 @@ def exercise_refine_bravais_settings():
               "reflections_per_degree=5",
               "minimum_sample_size=500",
               "beam.fix=all",
-              "detector.fix=all"]
+              "detector.fix=all",
+              "prefix=tst_"]
   command = " ".join(commands)
   print command
   cwd = os.path.abspath(os.curdir)
@@ -36,19 +37,19 @@ def exercise_refine_bravais_settings():
   os.chdir(tmp_dir)
   result = easy_run.fully_buffered(command=command).raise_if_errors()
   for i in range(1, 10):
-    assert os.path.exists("bravais_setting_%i.json" %i)
+    assert os.path.exists("tst_bravais_setting_%i.json" %i)
   from dxtbx.serialize import load
   experiments_list = load.experiment_list(
-    "bravais_setting_9.json", check_format=False)
+    "tst_bravais_setting_9.json", check_format=False)
   assert len(experiments_list) == 1
   assert experiments_list[0].crystal.get_unit_cell().is_similar_to(
     uctbx.unit_cell((57.782, 57.782, 150.011, 90, 90, 90)))
   assert experiments_list[0].crystal.get_space_group().type().hall_symbol() \
          == ' P 4'
 
-  assert os.path.exists("bravais_summary.json")
+  assert os.path.exists("tst_bravais_summary.json")
   from json import load
-  bravais_summary = load(open("bravais_summary.json", "rb"))
+  bravais_summary = load(open("tst_bravais_summary.json", "rb"))
   assert bravais_summary.keys() == [
     '1', '3', '2', '5', '4', '7', '6', '9', '8']
   bravais_summary['9'].keys() == [
