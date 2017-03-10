@@ -1313,6 +1313,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.settings.kernel_size = self.params.kernel_size
     self.settings.min_local = self.params.min_local
     self.settings.gain = self.params.gain
+    self.settings.find_spots_phil = "find_spots.phil"
     self._sizer = wx.BoxSizer(wx.VERTICAL)
     s = self._sizer
     self.SetSizer(self._sizer)
@@ -1426,6 +1427,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.integrated.SetValue(self.settings.show_integrated)
     grid.Add(self.integrated, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
+    grid = wx.FlexGridSizer(cols=2, rows=1)
     self.clear_all_button = wx.Button(self, -1, "Clear all")
     grid.Add(self.clear_all_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self.Bind(wx.EVT_BUTTON, self.OnClearAll, self.clear_all_button)
@@ -1433,6 +1435,8 @@ class SpotSettingsPanel (SettingsPanel) :
     self.save_mask_button = wx.Button(self, -1, "Save mask")
     grid.Add(self.save_mask_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self.Bind(wx.EVT_BUTTON, self.OnSaveMask, self.save_mask_button)
+
+    s.Add(grid)
 
     # Minimum spot area control
     box = wx.BoxSizer(wx.HORIZONTAL)
@@ -1446,7 +1450,7 @@ class SpotSettingsPanel (SettingsPanel) :
     #s.Add(box)
 
     # Kabsch thresholding parameters
-    grid1 = wx.FlexGridSizer(cols=2, rows=6)
+    grid1 = wx.FlexGridSizer(cols=2, rows=7)
     s.Add(grid1)
 
     from wxtbx.phil_controls.floatctrl import FloatCtrl
@@ -1503,6 +1507,18 @@ class SpotSettingsPanel (SettingsPanel) :
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.kernel_size_ctrl)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.min_local_ctrl)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.gain_ctrl)
+
+    from wxtbx.phil_controls.strctrl import StrCtrl
+
+    self.save_params_txt_ctrl = StrCtrl(
+      self, value=self.settings.find_spots_phil,
+      name="find_spots_phil")
+    grid1.Add(self.save_params_txt_ctrl, 0, wx.ALL, 5)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.save_params_txt_ctrl)
+
+    self.save_params_button = wx.Button(self, -1, "Save")
+    grid1.Add(self.save_params_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(wx.EVT_BUTTON, self.OnSaveFindSpotsParams, self.save_params_button)
 
     grid2 = wx.FlexGridSizer(cols=4, rows=2)
     s.Add(grid2)
@@ -1583,6 +1599,7 @@ class SpotSettingsPanel (SettingsPanel) :
       self.settings.kernel_size = self.kernel_size_ctrl.GetPhilValue()
       self.settings.min_local = self.min_local_ctrl.GetPhilValue()
       self.settings.gain = self.gain_ctrl.GetPhilValue()
+      self.settings.find_spots_phil = self.save_params_txt_ctrl.GetPhilValue()
 
   def UpdateZoomCtrl(self, event):
     self.settings.zoom_level = self.levels.index(
@@ -1643,6 +1660,20 @@ class SpotSettingsPanel (SettingsPanel) :
     if self.settings.show_mask:
       # Force re-drawing of mask
       self.OnUpdateShowMask(event)
+
+  def OnSaveFindSpotsParams(self, event):
+    from dials.command_line.find_spots import phil_scope
+    params = phil_scope.extract()
+    xds = params.spotfinder.threshold.xds
+    xds.gain = self.settings.gain
+    xds.global_threshold = self.settings.global_threshold
+    xds.kernel_size = self.settings.kernel_size
+    xds.min_local = self.settings.min_local
+    xds.sigma_background = self.settings.nsigma_b
+    xds.sigma_strong = self.settings.nsigma_s
+    with open(self.settings.find_spots_phil, 'wb') as f:
+      print "Saving parameters to %s" % self.settings.find_spots_phil
+      phil_scope.fetch_diff(phil_scope.format(params)).show(f)
 
   def OnUpdateKabschDebug(self, event):
     if self.settings.nsigma_b != self.nsigma_b_ctrl.GetPhilValue() \
