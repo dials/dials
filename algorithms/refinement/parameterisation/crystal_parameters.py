@@ -58,7 +58,7 @@ class CrystalOrientationParameterisation(ModelParameterisation,
     # set up the initial state
     if experiment_ids is None:
       experiment_ids = [0]
-    istate = crystal.get_U()
+    istate = matrix.sqr(crystal.get_U())
 
     # build the parameter list
     p_list = self._build_p_list()

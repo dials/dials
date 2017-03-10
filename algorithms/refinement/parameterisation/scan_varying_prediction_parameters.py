@@ -193,10 +193,10 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
 
         # model states at current frame
         U = self._get_state_from_parameterisation(xl_op, frame)
-        if U is None: U = exp.crystal.get_U()
+        if U is None: U = matrix.sqr(exp.crystal.get_U())
 
         B = self._get_state_from_parameterisation(xl_ucp, frame)
-        if B is None: B = exp.crystal.get_B()
+        if B is None: B = matrix.sqr(exp.crystal.get_B())
 
         s0 = self._get_state_from_parameterisation(bp, frame)
         if s0 is None: s0 = exp.beam.get_s0()
@@ -254,9 +254,9 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
 
     # model states at current frame
     U = self._get_state_from_parameterisation(xl_op, obs_image_number)
-    if U is None: U = self._experiments[experiment_id].crystal.get_U()
+    if U is None: U = matrix.sqr(self._experiments[experiment_id].crystal.get_U())
     B = self._get_state_from_parameterisation(xl_ucp, obs_image_number)
-    if B is None: B = self._experiments[experiment_id].crystal.get_B()
+    if B is None: B = matrix.sqr(self._experiments[experiment_id].crystal.get_B())
 
     return U*B
 
@@ -443,10 +443,10 @@ class ScanVaryingPredictionParameterisationFast(ScanVaryingPredictionParameteris
 
         # model states at current frame
         U = self._get_state_from_parameterisation(xl_op, frame)
-        if U is None: U = exp.crystal.get_U()
+        if U is None: U = matrix.sqr(exp.crystal.get_U())
 
         B = self._get_state_from_parameterisation(xl_ucp, frame)
-        if B is None: B = exp.crystal.get_B()
+        if B is None: B = matrix.sqr(exp.crystal.get_B())
 
         s0 = self._get_state_from_parameterisation(bp, frame)
         if s0 is None: s0 = matrix.col(exp.beam.get_s0())

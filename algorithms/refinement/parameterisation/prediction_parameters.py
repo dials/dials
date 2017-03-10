@@ -409,8 +409,8 @@ class PredictionParameterisation(object):
       D.set_selected(sel, D_mat)
 
     return {'s0':experiment.beam.get_s0(),
-            'U':experiment.crystal.get_U(),
-            'B':experiment.crystal.get_B(),
+            'U':matrix.sqr(experiment.crystal.get_U()),
+            'B':matrix.sqr(experiment.crystal.get_B()),
             'D':D}
 
   # The detector derivatives calculation is shared by scans and stills type
