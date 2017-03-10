@@ -767,7 +767,8 @@ class indexer_base(object):
         break
 
       for i_cycle in range(self.params.refinement_protocol.n_macro_cycles):
-        if i_cycle > 0 and self.params.refinement_protocol.d_min_step > 0:
+        if (i_cycle > 0 and self.d_min is not None and
+            self.params.refinement_protocol.d_min_step > 0):
           d_min = self.d_min - self.params.refinement_protocol.d_min_step
           d_min = max(d_min, 0)
           d_min = max(d_min, self.params.refinement_protocol.d_min_final)
