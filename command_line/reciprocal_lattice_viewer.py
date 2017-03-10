@@ -59,9 +59,9 @@ phil_scope= libtbx.phil.parse("""
     .type = bool
   model_view_matrix = None
     .type = floats(size=16)
-  background_rgb = None
-    .type = floats(size=3, value_min=0, value_max=1)
-    .help = "Set background RGB (0-1) x 3"
+  black_background = True
+    .type = bool
+    .help = "Switch between black or white background"
 """)
 
 def settings():
@@ -222,10 +222,10 @@ class render_3d(object):
         (255,255,255), (230,159,0), (86,180,233), (0,158,115),
         (240,228,66), (0,114,178), (213,94,0), (204,121,167)))
       palette *= (1/255)
-      if self.viewer.settings.background_rgb:
+      if not self.viewer.settings.black_background:
         bkg = flex.vec3_double()
         for j in range(len(palette)):
-          bkg.append(tuple(self.viewer.settings.background_rgb))
+          bkg.append((1,1,1))
         palette = bkg - palette
       self.viewer.set_palette(palette)
       n = palette.size() - 1
@@ -326,13 +326,13 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
     v.OnRedraw()
 
   def create_viewer_panel (self) :
-    if self.settings.background_rgb is None:
-      self.viewer = RLVWindow(settings=self.settings, parent=self, size=(800,600),
-        #orthographic=True
-        )
+    if self.settings.black_background:
+      background_rgb = (0,0,0)
     else:
-      self.viewer = RLVWindow(settings=self.settings, parent=self, size=(800,600), background_rgb=self.settings.background_rgb)
-
+      background_rgb = (255,255,255)
+    self.viewer = RLVWindow(
+      settings=self.settings, parent=self, size=(800,600),
+      background_rgb=background_rgb)
 
   def create_settings_panel (self) :
     self.settings_panel = settings_window(self, -1, style=wx.RAISED_BORDER)
