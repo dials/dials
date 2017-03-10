@@ -357,17 +357,19 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     # compose at the requested image number and calculate using the cached
     # varcov matrices. Take the first elt of the list becase the crystal
     # parameterisations are not multi-state
-    try:
-      xl_op.compose(obs_image_number)
-      result['U_cov'] = xl_op.calculate_state_uncertainties(var_cov=None)[0]
-    except TypeError:
-      pass
+    if xl_op is not None:
+      try:
+        xl_op.compose(obs_image_number)
+        result['U_cov'] = xl_op.calculate_state_uncertainties(var_cov=None)[0]
+      except TypeError:
+        pass
 
-    try:
-      xl_ucp.compose(obs_image_number)
-      result['B_cov'] = xl_ucp.calculate_state_uncertainties(var_cov=None)[0]
-    except TypeError:
-      pass
+    if xl_ucp is not None:
+      try:
+        xl_ucp.compose(obs_image_number)
+        result['B_cov'] = xl_ucp.calculate_state_uncertainties(var_cov=None)[0]
+      except TypeError:
+        pass
 
     return result
 
