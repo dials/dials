@@ -62,8 +62,8 @@ def test1():
 
   # Build a mock scan for a 72 degree sweep
   sweep_range = (0., pi/5.)
-  from dxtbx.model.scan import scan_factory
-  sf = scan_factory()
+  from dxtbx.model import ScanFactory
+  sf = ScanFactory()
   myscan = sf.make_scan(image_range = (1,720),
                         exposure_times = 0.1,
                         oscillation = (0, 0.1),
@@ -183,8 +183,8 @@ def test2():
 
   # Build a mock scan for a 72 degree sweep
   sweep_range = (0., pi/5.)
-  from dxtbx.model.scan import scan_factory
-  sf = scan_factory()
+  from dxtbx.model import ScanFactory
+  sf = ScanFactory()
   myscan = sf.make_scan(image_range = (1,720),
                         exposure_times = 0.1,
                         oscillation = (0, 0.1),

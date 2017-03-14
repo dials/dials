@@ -32,7 +32,7 @@ from dials.algorithms.refinement.prediction import ScansRayPredictor, \
 from cctbx.sgtbx import space_group, space_group_symbols
 
 # We will set up a mock scan
-from dxtbx.model.scan import scan_factory
+from dxtbx.model import ScanFactory
 
 args = sys.argv[1:]
 
@@ -63,7 +63,7 @@ index_generator = IndexGenerator(mycrystal.get_unit_cell(),
 indices = index_generator.to_array()
 
 # Build a mock scan for a 30 degree sweep
-sf = scan_factory()
+sf = ScanFactory()
 myscan = sf.make_scan(image_range = (1,300),
                       exposure_times = 0.1,
                       oscillation = (0, 0.1),

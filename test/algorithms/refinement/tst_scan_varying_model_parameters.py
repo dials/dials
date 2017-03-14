@@ -16,9 +16,9 @@ import random
 from libtbx.test_utils import approx_equal
 from scitbx import matrix
 from scitbx.array_family import flex
-from dxtbx.model.crystal import Crystal
-from dxtbx.model.beam import Beam
-from dxtbx.model.goniometer import Goniometer
+from dxtbx.model import Crystal
+from dxtbx.model import Beam
+from dxtbx.model import Goniometer
 
 # DIALS imports
 from dials.algorithms.refinement.refinement_helpers \
@@ -248,8 +248,8 @@ class TestScanVaryingModelParameterisation(object):
     npx_fast = 1475
     npx_slow = 1679
     pix_size_f = pix_size_s = 0.172
-    from dxtbx.model import detector_factory
-    self.detector = detector_factory.make_detector("PAD", d1, d2,
+    from dxtbx.model import DetectorFactory
+    self.detector = DetectorFactory.make_detector("PAD", d1, d2,
       matrix.col((0, 0, -110)), (pix_size_f, pix_size_s),
       (npx_fast, npx_slow), (0, 2e20))
 

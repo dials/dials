@@ -27,7 +27,7 @@ from libtbx.test_utils import approx_equal
 from dials.test.algorithms.refinement import setup_geometry
 
 # We will set up a mock scan and a mock experiment list
-from dxtbx.model.scan import scan_factory
+from dxtbx.model import ScanFactory
 from dxtbx.model.experiment_list import ExperimentList, Experiment
 
 # Reflection prediction
@@ -53,7 +53,7 @@ def setup_models(args):
   beam = models.beam
 
   # Build a mock scan for a 180 degree sweep
-  sf = scan_factory()
+  sf = ScanFactory()
   scan = sf.make_scan(image_range = (1,180),
                         exposure_times = 0.1,
                         oscillation = (0, 1.0),

@@ -17,7 +17,7 @@ from libtbx.phil import parse
 from math import pi
 from scitbx.array_family import flex
 from dials.test.algorithms.refinement.setup_geometry import Extract
-from dxtbx.model.scan import scan_factory
+from dxtbx.model import ScanFactory
 from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
 from dxtbx.model.experiment_list import ExperimentList, Experiment
 from dials.algorithms.refinement.prediction import ScansRayPredictor, \
@@ -60,7 +60,7 @@ geometry.parameters.crystal.c.length.range = 10 50"""
     self.beam = models.beam
 
     # Make a scan of 1-360 * 0.5 deg images
-    sf = scan_factory()
+    sf = ScanFactory()
     self.scan = sf.make_scan((1,360), 0.5, (0, 0.5), range(360))
 
     # Generate an ExperimentList

@@ -1399,9 +1399,9 @@ class indexer_base(object):
           continue
         except RuntimeError, e:
           if 'Krivy-Gruber iteration limit exceeded' in str(e):
-	    logger.debug("correct_non_primitive_basis Krivy-Gruber iteration limit exceeded error for unit cell %s:"
-	                 %experiments[0].crystal.get_unit_cell())
-	    continue
+            logger.debug("correct_non_primitive_basis Krivy-Gruber iteration limit exceeded error for unit cell %s:"
+                         %experiments[0].crystal.get_unit_cell())
+            continue
           raise
         if experiments[0].crystal.get_unit_cell().volume() < self.params.min_cell_volume:
           continue

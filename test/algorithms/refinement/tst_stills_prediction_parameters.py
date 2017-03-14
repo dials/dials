@@ -90,8 +90,8 @@ class Test(object):
   def generate_reflections(self):
 
     # Build a mock scan for a 3 degree sweep
-    from dxtbx.model.scan import scan_factory
-    sf = scan_factory()
+    from dxtbx.model import ScanFactory
+    sf = ScanFactory()
     self.scan = sf.make_scan(image_range = (1,1),
                           exposure_times = 0.1,
                           oscillation = (0, 3.0),

@@ -7,7 +7,7 @@ import random
 from libtbx.test_utils import approx_equal
 from scitbx import matrix
 
-from dxtbx.model import beam_factory
+from dxtbx.model import BeamFactory
 from dials.algorithms.refinement.parameterisation.beam_parameters import \
     BeamParameterisation
 from dials.algorithms.refinement.refinement_helpers \
@@ -16,7 +16,7 @@ from dials.algorithms.refinement.refinement_helpers \
 if __name__ == '__main__':
 
   # make a random beam vector and parameterise it
-  bf = beam_factory()
+  bf = BeamFactory()
   s0 = bf.make_beam(matrix.col.random(3, 0.5, 1.5), wavelength=1.2)
   s0p = BeamParameterisation(s0)
 

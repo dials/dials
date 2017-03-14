@@ -17,8 +17,8 @@ from scitbx import matrix
 from libtbx.test_utils import approx_equal
 
 from dxtbx.model import Panel, Detector
-from dxtbx.model import detector_factory
-from dxtbx.model import beam_factory
+from dxtbx.model import DetectorFactory
+from dxtbx.model import BeamFactory
 
 from dials.algorithms.refinement.refinement_helpers \
     import get_fd_gradients, random_param_shift
@@ -104,12 +104,12 @@ if __name__ == '__main__':
   npx_fast = 1475
   npx_slow = 1679
   pix_size_f = pix_size_s = 0.172
-  detector = detector_factory.make_detector("PAD", d1, d2,
+  detector = DetectorFactory.make_detector("PAD", d1, d2,
       matrix.col((0, 0, -110)), (pix_size_f, pix_size_s),
       (npx_fast, npx_slow), (0, 2e20))
 
   dp = DetectorParameterisationSinglePanel(detector)
-  beam = beam_factory().make_beam(
+  beam = BeamFactory().make_beam(
           sample_to_source=-1*(matrix.col((0, 0, -110)) + 10 * d1 + 10 * d2),
           wavelength=1.0)
 
@@ -244,7 +244,7 @@ if __name__ == '__main__':
   beam_centre = matrix.col(det[0].get_origin()) + \
                 shift1 * matrix.col(det[0].get_fast_axis()) + \
                 shift2 * matrix.col(det[0].get_slow_axis())
-  beam = beam_factory().make_beam(sample_to_source=-1.*beam_centre,
+  beam = BeamFactory().make_beam(sample_to_source=-1.*beam_centre,
                                   wavelength=1.0)
 
   multi_panel_detector = make_multi_panel(det)

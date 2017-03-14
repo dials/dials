@@ -27,7 +27,7 @@ from libtbx.test_utils import approx_equal
 import dials.test.algorithms.refinement.setup_geometry as setup_geometry
 
 # We will set up a mock scan and a mock experiment list
-from dxtbx.model.scan import scan_factory
+from dxtbx.model import ScanFactory
 from dxtbx.model.experiment_list import ExperimentList, Experiment
 
 # Model parameterisations
@@ -82,7 +82,7 @@ crystal2 = models.crystal
 mybeam = models.beam
 
 # Build a mock scan for a 180 degree sweep
-sf = scan_factory()
+sf = ScanFactory()
 myscan = sf.make_scan(image_range = (1,1800),
                       exposure_times = 0.1,
                       oscillation = (0, 0.1),

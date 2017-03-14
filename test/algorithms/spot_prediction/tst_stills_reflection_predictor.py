@@ -17,18 +17,18 @@ class Test(object):
   def __init__(self, test_nave_model = False):
 
     # Set up experimental models with regular geometry
-    from dxtbx.model import beam_factory
-    from dxtbx.model import goniometer_factory
-    from dxtbx.model import detector_factory
+    from dxtbx.model import BeamFactory
+    from dxtbx.model import GoniometerFactory
+    from dxtbx.model import DetectorFactory
 
     from dxtbx.model import Crystal
 
     # Beam along the Z axis
-    self.beam = beam_factory.make_beam(unit_s0 = matrix.col((0, 0, 1)),
+    self.beam = BeamFactory.make_beam(unit_s0 = matrix.col((0, 0, 1)),
                                        wavelength = 1.0)
 
     # Goniometer (used only for index generation) along X axis
-    self.goniometer = goniometer_factory.known_axis(matrix.col((1, 0, 0)))
+    self.goniometer = GoniometerFactory.known_axis(matrix.col((1, 0, 0)))
 
     # Detector fast, slow along X, -Y; beam in the centre, 200 mm distance
     dir1 = matrix.col((1, 0, 0))
@@ -39,7 +39,7 @@ class Test(object):
     pix_size = 0.2
     origin = centre - (0.5 * npx_fast * pix_size * dir1 +
                        0.5 * npx_slow * pix_size * dir2)
-    self.detector = detector_factory.make_detector("PAD",
+    self.detector = DetectorFactory.make_detector("PAD",
                         dir1, dir2, origin,
                         (pix_size, pix_size),
                         (npx_fast, npx_slow),

@@ -30,7 +30,7 @@ from dials.array_family import flex
 import dials.test.algorithms.refinement.setup_geometry as setup_geometry
 
 # We will set up a mock scan and a mock experiment list
-from dxtbx.model.scan import scan_factory
+from dxtbx.model import ScanFactory
 from dxtbx.model.experiment_list import ExperimentList, Experiment
 
 # Crystal parameterisations
@@ -76,7 +76,7 @@ mybeam = models.beam
 
 # Build a mock scan for a 1.5 degree wedge. Only used for generating indices near
 # the Ewald sphere
-sf = scan_factory()
+sf = ScanFactory()
 myscan = sf.make_scan(image_range = (1,1),
                       exposure_times = 0.1,
                       oscillation = (0, 1.5),

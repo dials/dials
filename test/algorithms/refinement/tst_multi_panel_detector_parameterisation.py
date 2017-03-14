@@ -39,7 +39,7 @@ import dials.test.algorithms.refinement.setup_minimiser as setup_minimiser
 from dxtbx.model import Panel, Detector
 
 # We will set up a mock scan and a mock experiment list
-from dxtbx.model.scan import scan_factory
+from dxtbx.model import ScanFactory
 from dxtbx.model.experiment_list import ExperimentList, Experiment
 
 # Model parameterisations
@@ -126,7 +126,7 @@ if __name__ == '__main__':
       multi_panel_detector.add_panel(new_panel)
 
   # Build a mock scan for a 180 degree sweep
-  sf = scan_factory()
+  sf = ScanFactory()
   myscan = sf.make_scan(image_range = (1,1800),
                         exposure_times = 0.1,
                         oscillation = (0, 0.1),

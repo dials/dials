@@ -103,8 +103,8 @@ def test_fd_derivatives():
 
   # Build a mock scan for a 72 degree sweep
   sweep_range = (0., pi/5.)
-  from dxtbx.model.scan import scan_factory
-  sf = scan_factory()
+  from dxtbx.model import ScanFactory
+  sf = ScanFactory()
   myscan = sf.make_scan(image_range = (1,720),
                         exposure_times = 0.1,
                         oscillation = (0, 0.1),
@@ -211,12 +211,12 @@ def test_refinement():
                           space_group_symbol = "P1")
   orig_xl = deepcopy(crystal)
 
-  from dxtbx.model import goniometer_factory
-  goniometer = goniometer_factory.known_axis((1., 0., 0.))
+  from dxtbx.model import GoniometerFactory
+  goniometer = GoniometerFactory.known_axis((1., 0., 0.))
 
   # Build a mock scan for a 180 degree sweep
-  from dxtbx.model.scan import scan_factory
-  sf = scan_factory()
+  from dxtbx.model import ScanFactory
+  sf = ScanFactory()
   scan = sf.make_scan(image_range = (1,1800),
                       exposure_times = 0.1,
                       oscillation = (0, 0.1),

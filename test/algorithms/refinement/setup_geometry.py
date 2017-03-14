@@ -19,9 +19,9 @@ from scitbx import matrix
 from libtbx.phil import parse, command_line
 
 # dxtbx experimental models
-from dxtbx.model import beam_factory
-from dxtbx.model import goniometer_factory
-from dxtbx.model import detector_factory
+from dxtbx.model import BeamFactory
+from dxtbx.model import GoniometerFactory
+from dxtbx.model import DetectorFactory
 
 # crystal model
 from dxtbx.model import Crystal
@@ -85,7 +85,7 @@ class Extract(object):
 
   def build_goniometer(self):
 
-    self.goniometer = goniometer_factory.known_axis(
+    self.goniometer = GoniometerFactory.known_axis(
                             self._params.goniometer.axis)
 
   def build_beam(self):
@@ -120,7 +120,7 @@ class Extract(object):
 
       beam_dir = matrix.col(self._params.beam.direction.exactly)
 
-    self.beam = beam_factory.make_beam(unit_s0 = beam_dir,
+    self.beam = BeamFactory.make_beam(unit_s0 = beam_dir,
                                        wavelength = wavelength)
 
   def build_detector(self):
@@ -166,7 +166,7 @@ class Extract(object):
                        self._params.detector.pix_size * dir1 +
                        0.5 * self._params.detector.npx_slow *
                        self._params.detector.pix_size * dir2)
-    self.detector = detector_factory.make_detector("PAD",
+    self.detector = DetectorFactory.make_detector("PAD",
                         dir1, dir2, origin,
                         (self._params.detector.pix_size,
                         self._params.detector.pix_size),

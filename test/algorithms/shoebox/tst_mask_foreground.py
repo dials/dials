@@ -5,8 +5,7 @@ class Test(object):
   def __init__(self):
     import os
     import libtbx.load_env
-    from dxtbx.serialize.load import crystal as load_crystal
-    from dials.model.serialize import load
+    from dxtbx.serialize import load
     from dials.algorithms.profile_model.gaussian_rs import Model
     from dials.algorithms.profile_model.gaussian_rs import MaskCalculator3D
     from dxtbx.model.experiment_list import Experiment, ExperimentList
@@ -24,8 +23,8 @@ class Test(object):
         'crystal.json')
 
     # Load the sweep
-    self.sweep = load.sweep(sweep_filename)
-    self.crystal = load_crystal(crystal_filename)
+    self.sweep = load.imageset(sweep_filename)
+    self.crystal = load.crystal(crystal_filename)
     self.beam = self.sweep.get_beam()
     self.detector = self.sweep.get_detector()
     self.goniometer = self.sweep.get_goniometer()
