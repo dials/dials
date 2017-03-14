@@ -12,7 +12,7 @@ from libtbx.test_utils import approx_equal
 from dials.array_family import flex
 from dials.test.algorithms.refinement.setup_geometry import Extract
 from dials.algorithms.spot_prediction import IndexGenerator
-from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
+from dxtbx.model.experiment_list import ExperimentList, Experiment
 from dials.algorithms.refinement.prediction import ScansRayPredictor
 from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
   import StillsPredictionParameterisation

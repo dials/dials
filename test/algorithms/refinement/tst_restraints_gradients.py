@@ -42,7 +42,7 @@ crystal = models.crystal
 do_hexagonal = True
 if do_hexagonal:
   import libtbx.load_env, os
-  from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+  from dxtbx.model.experiment_list import ExperimentListFactory
   dials_regression = libtbx.env.find_in_repositories(
     relative_path="dials_regression", test=os.path.isdir)
   data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
