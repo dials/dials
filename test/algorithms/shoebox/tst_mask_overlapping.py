@@ -20,12 +20,12 @@ class Test(object):
 
 
   def run(self):
-    from dials.model.serialize import load
+    from dxtbx.serialize import load
     from dials.algorithms import shoebox
     from dials.array_family import flex
 
     # Load the sweep and crystal
-    self.sweep = load.sweep(self.sweep_filename)
+    self.sweep = load.imageset(self.sweep_filename)
     self.crystal = load.crystal(self.crystal_filename)
 
     # Get the reflections and overlaps
