@@ -133,7 +133,7 @@ class Script(object):
     self.view()
 
   def view(self):
-    from dials.util.spotfinder_wrap import spot_wrapper
+    from dials.util.image_viewer.spotfinder_wrap import spot_wrapper
     self.wrapper = spot_wrapper(params=self.params)
     self.wrapper.display(
       datablock=self.datablock,

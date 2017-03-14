@@ -54,6 +54,7 @@ class SpotFrame(XrayFrame) :
     self.sel_image_polygon_layer = None
     self.sel_image_circle_layer = None
     self.mask = self.params.mask
+    self._mask_frame = None
 
     from libtbx.utils import time_log
     self.show_all_pix_timer = time_log("show_all_pix")
@@ -107,6 +108,9 @@ class SpotFrame(XrayFrame) :
         reflections[i_ref_list] = reflections[i_ref_list].select(d_spacings > self.params.d_min)
       self.reflections = reflections
     self.Bind(EVT_LOADIMG, self.load_file_event)
+
+    self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateUIMask,
+              id=self._id_mask)
 
   def setup_toolbar(self) :
     from wxtbx import bitmaps
@@ -163,6 +167,35 @@ class SpotFrame(XrayFrame) :
     self.jump_to_image.SetValue(1)
     self.toolbar.AddControl(self.jump_to_image)
     self.Bind(EVT_PHIL_CONTROL, self.OnJumpToImage, self.jump_to_image)
+
+  def setup_menus(self):
+    super(SpotFrame, self).setup_menus()
+
+    # XXX Placement
+    self._id_mask = wx.NewId()
+    item = self._actions_menu.Append(self._id_mask, " ")
+    self.Bind(wx.EVT_MENU, self.OnMask, source=item)
+
+  def OnMask(self, event):
+    from rstbx.slip_viewer.score_frame import ScoreSettingsFrame
+    from dials.util.image_viewer.mask_frame import MaskSettingsFrame
+
+    if not self._mask_frame:
+      self._mask_frame = MaskSettingsFrame(
+        self, wx.ID_ANY, "Mask tool",
+        style=wx.CAPTION | wx.CLOSE_BOX | wx.RESIZE_BORDER)
+      self._mask_frame.Show()
+      self._mask_frame.Raise()
+    else:
+      self._mask_frame.Destroy()
+
+  def OnUpdateUIMask(self, event):
+    # Toggle the menu item text depending on the state of the tool.
+
+    if self._mask_frame:
+      event.SetText("Hide mask tool")
+    else:
+      event.SetText("Show mask tool")
 
   def OnChooseImage (self, event) :
     super(SpotFrame, self).OnChooseImage(event)
