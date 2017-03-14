@@ -85,6 +85,7 @@ tst_list = (
     "$D/test/algorithms/statistics/tst_fast_mcd.py",
     "$D/test/algorithms/scaling/tst_observation_manager.py",
     "$D/test/algorithms/scaling/tst_scale_parameterisation.py",
+    "$D/test/algorithms/scaling/tst_HRS_derivatives.py",
     "$D/test/array_family/tst_flex_shoebox.py",
     "$D/test/array_family/tst_reflection_table.py",
     "$D/test/command_line/tst_modify_geometry.py",
