@@ -367,6 +367,7 @@ class MaskSettingsPanel(wx.Panel):
         self.AddUntrustedRectangle(x0, y0, x1, y1)
         self._pyslip.DeleteLayer(self._mode_rectangle_layer)
         self._mode_rectangle_layer = None
+        self.mode_rectangle_button.SetValue(False)
         self.OnUpdate(event)
         return
 
@@ -377,6 +378,7 @@ class MaskSettingsPanel(wx.Panel):
         self.AddUntrustedCircle(xc, yc, xedge, yedge)
         self._pyslip.DeleteLayer(self._mode_circle_layer)
         self._mode_circle_layer = None
+        self.mode_circle_button.SetValue(False)
         self.OnUpdate(event)
         return
 
