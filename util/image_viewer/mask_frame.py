@@ -364,7 +364,7 @@ class MaskSettingsPanel(wx.Panel):
         self._rectangle_x1y1 = click_posn
         x0, y0 = self._rectangle_x0y0
         x1, y1 = self._rectangle_x1y1
-        self.AddUntrustedRectangle(points_view=((x0, y0), (x1, y1)))
+        self.AddUntrustedRectangle(x0, y0, x1, y1)
         self._pyslip.DeleteLayer(self._mode_rectangle_layer)
         self._mode_rectangle_layer = None
         self.OnUpdate(event)
@@ -449,25 +449,23 @@ class MaskSettingsPanel(wx.Panel):
                                   #show_levels=[3,4],
                                   name='<mode_circle_layer>')
 
-  def AddUntrustedRectangle(self, points_view=None):
-    (x0, y0), (x1, y1) = points_view
+  def AddUntrustedRectangle(self, x0, y0, x1, y1):
     x0, y0 = self._pyslip.ConvertView2Geo((x0, y0))
     x1, y1 = self._pyslip.ConvertView2Geo((x1, y1))
 
     if x0 == x1 or y0 == y1:
       return
 
-    point = [(x0, y0), (x0,y1), (x1, y1), (x1, y0)]
-    point = [
-      self._pyslip.tiles.map_relative_to_picture_fast_slow(*p)
-      for p in point]
+    points = [(x0, y0), (x1, y1)]
+    points = [
+      self._pyslip.tiles.map_relative_to_picture_fast_slow(*p) for p in points]
 
     detector = self._pyslip.tiles.raw_image.get_detector()
     if len(detector) > 1:
 
       point_ = []
       panel_id = None
-      for p in point:
+      for p in points:
         p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(
           p[1], p[0])
         assert p_id >= 0, "Point must be within a panel"
@@ -475,18 +473,27 @@ class MaskSettingsPanel(wx.Panel):
           assert panel_id == p_id, "All points must be contained within a single panel"
         panel_id = p_id
         point_.append((p0, p1))
-      point = point_
+      points = point_
 
     else:
       panel_id = 0
 
-    x0, y0 = point[0]
-    x1, y1 = point[2]
+    (x0, y0), (x1, y1) = points
 
     if x0 > x1:
       x1, x0 = x0, x1
     if y0 > y1:
       y1, y0 = y0, y1
+
+    panel = detector[panel_id]
+    if (x1 < 0 or y1 < 0 or
+        x0 > panel.get_image_size()[0] or y0 > panel.get_image_size()[1]):
+      return
+
+    x0 = max(0, x0)
+    y0 = max(0, y0)
+    x1 = min(panel.get_image_size()[0], x1)
+    y1 = min(panel.get_image_size()[1], y1)
 
     from dials.util import masking
     from libtbx.utils import flat_list
