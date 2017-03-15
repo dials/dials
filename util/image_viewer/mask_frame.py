@@ -30,8 +30,30 @@ class MaskSettingsPanel(wx.Panel):
     self.border_ctrl = None
     self.d_min_ctrl = None
     self.d_max_ctrl = None
+    self._mode_rectangle_layer = None
+    self._mode_circle_layer = None
+    self._rectangle_x0y0 = None
+    self._rectangle_x1y1 = None
+    self._mode_rectangle = False
+    self._mode_circle = False
+
+    self._pyslip.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
+    self._pyslip.Bind(wx.EVT_LEFT_UP, self.OnLeftUp)
+    self._pyslip.Bind(wx.EVT_MOTION, self.OnMove)
     self.draw_settings()
     self.UpdateMask()
+
+  def __del__(self):
+    if (hasattr(self, "_ring_layer") and self._ring_layer is not None):
+      self._pyslip.DeleteLayer(self._ring_layer)
+    if self._mode_rectangle_layer:
+      self._pyslip.DeleteLayer(self._mode_rectangle_layer)
+    if self._mode_circle_layer:
+      self._pyslip.DeleteLayer(self._mode_circle_layer)
+
+    self._pyslip.Unbind(wx.EVT_LEFT_DOWN, handler=self.OnLeftDown)
+    self._pyslip.Unbind(wx.EVT_LEFT_UP, handler=self.OnLeftUp)
+    self._pyslip.Unbind(wx.EVT_MOTION, handler=self.OnMove)
 
   def draw_settings(self):
 
@@ -115,7 +137,7 @@ class MaskSettingsPanel(wx.Panel):
     text = wx.StaticText(self, -1, "Panel:")
     text.GetFont().SetWeight(wx.BOLD)
     grid.Add(text)
-    text = wx.StaticText(self, -1, "Rectangle (x0, x1, y0, x1):")
+    text = wx.StaticText(self, -1, "Rectangle (x0, x1, y0, y1):")
     text.GetFont().SetWeight(wx.BOLD)
     grid.Add(text)
     for panel, rectangle in untrusted_rectangles:
@@ -171,10 +193,25 @@ class MaskSettingsPanel(wx.Panel):
     grid.Add(self.untrusted_circle_ctrl, 0, wx.ALL, 5)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdate, self.untrusted_circle_ctrl)
 
+    # Draw rectangle/circle mode buttons
     grid = wx.FlexGridSizer(cols=3, rows=1)
     sizer.Add(grid)
 
-    # show mask control
+    grid.Add( wx.StaticText(self, label='Mode:'))
+    self.mode_rectangle_button = wx.ToggleButton(self, -1, "Rectangle")
+    self.mode_rectangle_button.SetValue(self._mode_rectangle)
+    grid.Add(self.mode_rectangle_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(wx.EVT_TOGGLEBUTTON, self.OnUpdate, self.mode_rectangle_button)
+
+    self.mode_circle_button = wx.ToggleButton(self, -1, "Circle")
+    self.mode_circle_button.SetValue(self._mode_circle)
+    grid.Add(self.mode_circle_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(wx.EVT_TOGGLEBUTTON, self.OnUpdate, self.mode_circle_button)
+
+    # show/save mask controls
+    grid = wx.FlexGridSizer(cols=3, rows=1)
+    sizer.Add(grid)
+
     self.show_mask_ctrl = wx.CheckBox(self, -1, "Show mask")
     self.show_mask_ctrl.SetValue(self.params.show_mask)
     grid.Add(self.show_mask_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
@@ -192,13 +229,28 @@ class MaskSettingsPanel(wx.Panel):
     sizer.Layout()
     sizer.Fit(self)
 
-  def __del__(self):
-    if (hasattr(self, "_ring_layer") and self._ring_layer is not None):
-      self._pyslip.DeleteLayer(self._ring_layer)
-
   def OnUpdate(self, event):
     self.params.show_mask = self.show_mask_ctrl.GetValue()
     self.params.output.mask = self.save_mask_txt_ctrl.GetValue()
+
+    if self.mode_rectangle_button.GetValue():
+      if not self._mode_rectangle:
+        # mode wasn't set but button has been pressed, so set mode
+        self._mode_rectangle = True
+        # set other modes and buttons to False
+        self._mode_circle = False
+        self.mode_circle_button.SetValue(False)
+
+    if self.mode_circle_button.GetValue():
+      if not self._mode_circle:
+        # mode wasn't set but button has been pressed, so set mode
+        self._mode_circle = True
+        # set other modes and buttons to False
+        self._mode_rectangle = False
+        self.mode_rectangle_button.SetValue(False)
+    if not(self.mode_circle_button.GetValue() or self.mode_rectangle_button.GetValue()):
+      self._mode_circle = False
+      self._mode_rectangle = False
 
     if self.d_min_ctrl.GetValue() > 0:
       self.params.masking.d_min = self.d_min_ctrl.GetValue()
@@ -291,3 +343,207 @@ class MaskSettingsPanel(wx.Panel):
       image_viewer_frame.update_settings(layout=False)
 
     image_viewer_frame.mask = mask
+
+  def OnLeftDown(self, event):
+    if not event.ShiftDown():
+      click_posn = event.GetPositionTuple()
+      if self._mode_rectangle:
+        self._rectangle_x0y0 = click_posn
+        self._rectangle_x1y1 = None
+        return
+      elif self._mode_circle:
+        self._circle_xy = click_posn
+        self._circle_radius = None
+    event.Skip()
+
+  def OnLeftUp(self, event):
+    if not event.ShiftDown():
+      click_posn = event.GetPositionTuple()
+
+      if self._mode_rectangle and self._rectangle_x0y0 is not None:
+        self._rectangle_x1y1 = click_posn
+        x0, y0 = self._rectangle_x0y0
+        x1, y1 = self._rectangle_x1y1
+        self.AddUntrustedRectangle(points_view=((x0, y0), (x1, y1)))
+        self._pyslip.DeleteLayer(self._mode_rectangle_layer)
+        self._mode_rectangle_layer = None
+        self.OnUpdate(event)
+        return
+
+      elif self._mode_circle and self._circle_xy is not None:
+        xc, yc = self._circle_xy
+        xedge, yedge = click_posn
+        self.DrawCircle(xc, yc, xedge, yedge)
+        self.AddUntrustedCircle(xc, yc, xedge, yedge)
+        self._pyslip.DeleteLayer(self._mode_circle_layer)
+        self._mode_circle_layer = None
+        self.OnUpdate(event)
+        return
+
+    event.Skip()
+
+  def OnMove(self, event):
+    if (event.Dragging() and event.LeftIsDown() and not event.ShiftDown()):
+      if self._mode_rectangle:
+        if self._rectangle_x0y0 is not None:
+          x0, y0 = self._rectangle_x0y0
+          x1, y1 = event.GetPositionTuple()
+          self.DrawRectangle(x0, y0, x1, y1)
+          return
+
+      elif self._mode_circle:
+        if self._circle_xy is not None:
+          xc, yc = self._circle_xy
+          xedge, yedge = event.GetPositionTuple()
+          self.DrawCircle(xc, yc, xedge, yedge)
+          return
+    event.Skip()
+
+  def DrawRectangle(self, x0, y0, x1, y1):
+    if self._mode_rectangle_layer:
+      self._pyslip.DeleteLayer(self._mode_rectangle_layer)
+      self._mode_rectangle_layer = None
+
+    polygon = [(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)]
+    d = {}
+    polygon_data = []
+    points = [self._pyslip.ConvertView2Geo(p) for p in polygon]
+    for i in range(len(points)-1):
+      polygon_data.append(((points[i], points[i+1]), d))
+
+    self._mode_rectangle_layer = self._pyslip.AddPolygonLayer(
+      polygon_data,
+      map_rel=True,
+      color='#00ffff', radius=5, visible=True,
+      name='<mode_rectangle_layer>')
+
+  def DrawCircle(self, xc, yc, xedge, yedge):
+    if self._mode_circle_layer:
+      self._pyslip.DeleteLayer(self._mode_circle_layer)
+      self._mode_circle_layer = None
+
+    xc, yc = self._pyslip.ConvertView2Geo((xc, yc))
+    xedge, yedge = self._pyslip.ConvertView2Geo((xedge, yedge))
+
+    from scitbx import matrix
+    center = matrix.col((xc, yc))
+    edge = matrix.col((xedge, yedge))
+    r = (center - edge).length()
+    if r == 0:
+      return
+
+    e1 = matrix.col((1, 0))
+    e2 = matrix.col((0, 1))
+    circle_data = ((
+      center + r * (e1 + e2),
+      center + r * (e1 - e2),
+      center + r * (-e1 - e2),
+      center + r * (-e1 + e2),
+      center + r * (e1 + e2),
+    ))
+
+    self._mode_circle_layer = \
+      self._pyslip.AddEllipseLayer(circle_data, map_rel=True,
+                                  color='#00ffff',
+                                  radius=5, visible=True,
+                                  #show_levels=[3,4],
+                                  name='<mode_circle_layer>')
+
+  def AddUntrustedRectangle(self, points_view=None):
+    (x0, y0), (x1, y1) = points_view
+    x0, y0 = self._pyslip.ConvertView2Geo((x0, y0))
+    x1, y1 = self._pyslip.ConvertView2Geo((x1, y1))
+
+    if x0 == x1 or y0 == y1:
+      return
+
+    point = [(x0, y0), (x0,y1), (x1, y1), (x1, y0)]
+    point = [
+      self._pyslip.tiles.map_relative_to_picture_fast_slow(*p)
+      for p in point]
+
+    detector = self._pyslip.tiles.raw_image.get_detector()
+    if len(detector) > 1:
+
+      point_ = []
+      panel_id = None
+      for p in point:
+        p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(
+          p[1], p[0])
+        assert p_id >= 0, "Point must be within a panel"
+        if panel_id is not None:
+          assert panel_id == p_id, "All points must be contained within a single panel"
+        panel_id = p_id
+        point_.append((p0, p1))
+      point = point_
+
+    else:
+      panel_id = 0
+
+    x0, y0 = point[0]
+    x1, y1 = point[2]
+
+    if x0 > x1:
+      x1, x0 = x0, x1
+    if y0 > y1:
+      y1, y0 = y0, y1
+
+    from dials.util import masking
+    from libtbx.utils import flat_list
+    region = masking.phil_scope.extract().untrusted[0]
+    region.rectangle = [int(x0), int(x1), int(y0), int(y1)]
+    region.panel = panel_id
+
+    self.params.masking.untrusted.append(region)
+
+  def AddUntrustedCircle(self, xc, yc, xedge, yedge):
+
+    points = [(xc, yc), (xedge, yedge)]
+
+    points = [self._pyslip.ConvertView2Geo(p) for p in points]
+    points = [self._pyslip.tiles.map_relative_to_picture_fast_slow(*p) for p in points]
+
+    detector = self._pyslip.tiles.raw_image.get_detector()
+    if len(detector) > 1:
+
+      point_ = []
+      panel_id = None
+      for p in point:
+        p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(
+          p[1], p[0])
+        assert p_id >= 0, "Point must be within a panel"
+        if panel_id is not None:
+          assert panel_id == p_id, "All points must be contained within a single panel"
+        panel_id = p_id
+        point_.append((p0, p1))
+      point = point_
+
+    else:
+      panel_id = 0
+
+    (xc, yc), (xedge, yedge) = points
+
+    from scitbx import matrix
+    center = matrix.col((xc, yc))
+    edge = matrix.col((xedge, yedge))
+    r = (center - edge).length()
+    if r == 0:
+      return
+
+    e1 = matrix.col((1, 0))
+    e2 = matrix.col((0, 1))
+    circle_data = ((
+      center + r * (e1 + e2),
+      center + r * (e1 - e2),
+      center + r * (-e1 - e2),
+      center + r * (-e1 + e2),
+      center + r * (e1 + e2),
+    ))
+
+    from dials.util import masking
+    from libtbx.utils import flat_list
+    region = masking.phil_scope.extract().untrusted[0]
+    region.circle = [int(xc), int(yc), int(r)]
+    region.panel = panel_id
+
+    self.params.masking.untrusted.append(region)
