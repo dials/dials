@@ -30,7 +30,7 @@ class ProfileModelFactory(object):
   '''
 
   @classmethod
-  def create(cls, params, experiments, reflections):
+  def create(cls, params, experiments, reflections=None):
     '''
     Compute or load the profile model.
 
@@ -43,13 +43,27 @@ class ProfileModelFactory(object):
     from dials.interfaces import ProfileModelIface
     Extension = ProfileModelIface.extension(params.profile.algorithm)
     Algorithm = Extension().algorithm()
-    for expr, indices in reflections.iterate_experiments_and_indices(experiments):
-      expr.profile = Algorithm.create(
-        params.profile,
-        reflections.select(indices),
-        expr.crystal,
-        expr.beam,
-        expr.detector,
-        expr.goniometer,
-        expr.scan)
+    if (params.create_profile_model and
+        reflections is not None and
+        "shoebox" in reflections):
+      for expr, indices in reflections.iterate_experiments_and_indices(experiments):
+        expr.profile = Algorithm.create(
+          params.profile,
+          reflections.select(indices),
+          expr.crystal,
+          expr.beam,
+          expr.detector,
+          expr.goniometer,
+          expr.scan)
+    else:
+      for expr in experiments:
+        expr.profile = Algorithm.create(
+          params.profile,
+          None,
+          expr.crystal,
+          expr.beam,
+          expr.detector,
+          expr.goniometer,
+          expr.scan,
+          expr.profile)
     return experiments

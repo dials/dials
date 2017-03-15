@@ -11,6 +11,8 @@
 from __future__ import absolute_import, division
 from libtbx.phil import parse
 from dials.model.experiment.profile import ProfileModelIface
+import logging
+logger = logging.getLogger(__name__)
 
 phil_scope = parse('''
 
@@ -198,7 +200,100 @@ class Model(ProfileModelIface):
              beam,
              detector,
              goniometer=None,
-             scan=None):
+             scan=None,
+             profile=None):
+    '''
+    Create the profile model from data.
+
+    :param params: The phil parameters
+    :param reflections: The reflections
+    :param crystal: The crystal model
+    :param beam: The beam model
+    :param detector: The detector model
+    :param goniometer: The goniometer model
+    :param scan: The scan model
+    :return: An instance of the profile model
+
+    '''
+    if reflections is not None:
+      model = cls.create_from_reflections(
+        params,
+        reflections,
+        crystal,
+        beam,
+        detector,
+        goniometer,
+        scan,
+        profile)
+    else:
+      model = cls.create_from_parameters(
+        params,
+        reflections,
+        crystal,
+        beam,
+        detector,
+        goniometer,
+        scan,
+        profile)
+    return model
+
+
+  @classmethod
+  def create_from_parameters(cls,
+             params,
+             reflections,
+             crystal,
+             beam,
+             detector,
+             goniometer=None,
+             scan=None,
+             profile=None):
+    '''
+    Create the profile model from parameters.
+
+    :param params: The phil parameters
+    :param reflections: The reflections
+    :param crystal: The crystal model
+    :param beam: The beam model
+    :param detector: The detector model
+    :param goniometer: The goniometer model
+    :param scan: The scan model
+    :return: An instance of the profile model
+
+    '''
+    if profile is not None:
+      sigma_b = profile.sigma_b()
+      sigma_m = profile.sigma_m()
+    else:
+      sigma_b = None
+      sigma_m = None
+    if params.gaussian_rs.parameters.sigma_b is not None:
+      sigma_b = params.gaussian_rs.parameters.sigma_b
+    if params.gaussian_rs.parameters.sigma_m is not None:
+      sigma_m = params.gaussian_rs.parameters.sigma_m
+    if sigma_m is None or sigma_b is None:
+      raise RuntimeError('Not enough information to set profile parameters')
+    logger.info("Creating profile model with parameters:")
+    logger.info("  sigma_b: %f" % sigma_b)
+    logger.info("  sigma_m: %f" % sigma_m)
+    return cls(
+      params=params,
+      n_sigma=3.0,
+      sigma_b=sigma_b,
+      sigma_m=sigma_m)
+
+
+
+  @classmethod
+  def create_from_reflections(cls,
+             params,
+             reflections,
+             crystal,
+             beam,
+             detector,
+             goniometer=None,
+             scan=None,
+             profile=None):
     '''
     Create the profile model from data.
 

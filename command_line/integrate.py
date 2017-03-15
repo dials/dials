@@ -301,10 +301,10 @@ class Script(object):
         "shoebox" in reference):
       experiments = ProfileModelFactory.create(params, experiments, reference)
     else:
+      experiments = ProfileModelFactory.create(params, experiments)
       for expr in experiments:
         if expr.profile is None:
           raise Sorry('No profile information in experiment list')
-        expr.profile.params = params.profile
     del reference
 
     # Compute the bounding box
