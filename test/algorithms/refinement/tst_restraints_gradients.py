@@ -43,8 +43,11 @@ do_hexagonal = True
 if do_hexagonal:
   import libtbx.load_env, os
   from dxtbx.model.experiment_list import ExperimentListFactory
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression", test=os.path.isdir)
+  try:
+    dials_regression = libtbx.env.dist_path('dials_regression')
+  except KeyError, e:
+    print 'Skipped: dials_regression not configured'
+    exit(0)
   data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
   experiments_path = os.path.join(data_dir, "combined_experiments.json")
   experiments = ExperimentListFactory.from_json_file(experiments_path,
