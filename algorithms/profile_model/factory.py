@@ -43,7 +43,10 @@ class ProfileModelFactory(object):
     from dials.interfaces import ProfileModelIface
     Extension = ProfileModelIface.extension(params.profile.algorithm)
     Algorithm = Extension().algorithm()
-    if (params.create_profile_model and
+    create_profile_model = True
+    if hasattr(params, 'create_profile_model'):
+      create_profile_model = params.create_profile_model
+    if (create_profile_model and
         reflections is not None and
         "shoebox" in reflections):
       for expr, indices in reflections.iterate_experiments_and_indices(experiments):

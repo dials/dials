@@ -280,7 +280,8 @@ class Model(ProfileModelIface):
       params=params,
       n_sigma=3.0,
       sigma_b=sigma_b,
-      sigma_m=sigma_m)
+      sigma_m=sigma_m,
+      deg=True)
 
 
 
