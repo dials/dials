@@ -230,7 +230,15 @@ class MaskSettingsPanel(wx.Panel):
     sizer.Fit(self)
 
   def OnUpdate(self, event):
+    image_viewer_frame = self.GetParent().GetParent()
+
     self.params.show_mask = self.show_mask_ctrl.GetValue()
+    # untidy
+    image_viewer_frame.settings.show_mask = self.params.show_mask
+    image_viewer_frame.params.show_mask = self.params.show_mask
+    image_viewer_frame.settings_frame.panel.show_mask.SetValue(
+      self.params.show_mask)
+
     self.params.output.mask = self.save_mask_txt_ctrl.GetValue()
 
     if self.mode_rectangle_button.GetValue():
@@ -309,7 +317,6 @@ class MaskSettingsPanel(wx.Panel):
 
     self.draw_settings()
     self.UpdateMask()
-    image_viewer_frame = self.GetParent().GetParent()
     if image_viewer_frame.settings.show_mask:
       # Force re-drawing of mask
       image_viewer_frame.OnChooseImage(event)
