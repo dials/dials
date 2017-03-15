@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''
-Test derivatives typed up in bpcx_regression/doc/prediction/stills_prediction_nave3.pdf
+Test derivatives typed up in dials_regression/doc/notes/prediction/stills_prediction_nave3.pdf
 '''
 
 from __future__ import division
