@@ -398,8 +398,12 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
       fixed_rotation = matrix.sqr(gonio.get_fixed_rotation())
       setting_rotation = matrix.sqr(gonio.get_setting_rotation())
       rotation_axis = matrix.col(gonio.get_rotation_axis_datum())
+      if isinstance(gonio, MultiAxisGoniometer):
+        angle = gonio.get_angles()[gonio.get_scan_axis()]
+      else:
+        angle = scan.get_oscillation()[0]
       rotation_matrix = rotation_axis.axis_and_angle_as_r3_rotation_matrix(
-        scan.get_oscillation()[0], deg=True)
+        angle, deg=True)
       U = matrix.sqr(crystal.get_U())
       U = setting_rotation * rotation_matrix * fixed_rotation * U
       crystal.set_U(U)
