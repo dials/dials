@@ -40,11 +40,13 @@ def settings():
 class render_3d(object):
 
   def __init__(self):
-    self.reflections = None
     self.goniometer_orig = None
+    self.crystal = None
 
-  def load_imageset(self, imageset):
+  def load_imageset(self, imageset, crystal=None):
     self.imageset = imageset
+    if crystal is not None:
+      self.crystal = crystal
     if self.imageset.get_goniometer() is not None:
       from scitbx import matrix
       gonio = self.imageset.get_goniometer()
@@ -181,8 +183,8 @@ class ExperimentViewer(wx.Frame, render_3d):
     self.viewer.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
     self.viewer.SetFocus()
 
-  def load_imageset(self, imageset):
-    render_3d.load_imageset(self, imageset)
+  def load_imageset(self, imageset, crystal=None):
+    render_3d.load_imageset(self, imageset, crystal=crystal)
     self.settings_panel.add_goniometer_controls(imageset.get_goniometer())
 
   def OnActive (self, event) :
@@ -389,6 +391,25 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
       axis = matrix.col(gonio.get_rotation_axis())
       self.draw_axis(axis.elems, "phi")
     self.draw_axis(beam.get_s0(), "beam")
+    crystal = self.parent.crystal
+    if crystal is not None:
+      crystal = copy.deepcopy(crystal)
+      scan = self.parent.imageset.get_scan()
+      fixed_rotation = matrix.sqr(gonio.get_fixed_rotation())
+      setting_rotation = matrix.sqr(gonio.get_setting_rotation())
+      rotation_axis = matrix.col(gonio.get_rotation_axis_datum())
+      rotation_matrix = rotation_axis.axis_and_angle_as_r3_rotation_matrix(
+        scan.get_oscillation()[0], deg=True)
+      U = matrix.sqr(crystal.get_U())
+      U = setting_rotation * rotation_matrix * fixed_rotation * U
+      crystal.set_U(U)
+      A = matrix.sqr(crystal.get_A())
+      a_star = A[:3]
+      b_star = A[3:6]
+      c_star = A[6:]
+      self.draw_axis(a_star, "a*")
+      self.draw_axis(b_star, "b*")
+      self.draw_axis(c_star, "c*")
 
   def draw_axis(self, axis, label):
     if self.minimum_covering_sphere is None:
@@ -455,8 +476,10 @@ def run(args):
 
   if len(datablocks) == 0 and len(experiments) > 0:
     imagesets = experiments.imagesets()
+    crystal = experiments[0].crystal
   else:
     imagesets = []
+    crystal = None
     for datablock in datablocks:
       imagesets.extend(datablock.extract_imagesets())
 
@@ -481,7 +504,7 @@ def run(args):
   a.settings = params
   f = ExperimentViewer(
     None, -1, "Experiment viewer", size=(1024,768))
-  f.load_imageset(imageset)
+  f.load_imageset(imageset, crystal=crystal)
   f.Show()
   a.SetTopWindow(f)
   #a.Bind(wx.EVT_WINDOW_DESTROY, lambda evt: tb_icon.Destroy(), f)
