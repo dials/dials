@@ -60,6 +60,17 @@ loop_
     if not line: continue
     assert line in result.stdout_lines, line
 
+  assert os.path.exists('xoalign_config.py')
+  expected_xoalign_config = '''\
+GONIOMETER_AXES_NAMES = ('GON_PHI', 'GON_KAPPA', 'GON_OMEGA')
+GONIOMETER_AXES = [(-0.67446, -0.59119, -0.44226), (-0.10064, -0.85046, -0.51633), (-0.00043, 0.00002, 1.00000)]
+GONIOMETER_DATUM = (0,0,0) # in degrees
+'''
+  with open('xoalign_config.py', 'rb') as f:
+    text = f.read()
+    from libtbx.test_utils import show_diff
+    assert not show_diff(text, expected_xoalign_config)
+
   print "OK"
 
 if __name__ == '__main__':
