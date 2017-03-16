@@ -404,10 +404,14 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
         angle = scan.get_oscillation()[0]
       rotation_matrix = rotation_axis.axis_and_angle_as_r3_rotation_matrix(
         angle, deg=True)
-      U = matrix.sqr(crystal.get_U())
-      U = setting_rotation * rotation_matrix * fixed_rotation * U
+      U0 = matrix.sqr(crystal.get_U())
+
+      # Goniometer datum setting [D] at which the orientation was determined
+      D = (setting_rotation * rotation_matrix * fixed_rotation).inverse()
+
+      U = D * U0
       crystal.set_U(U)
-      A = matrix.sqr(crystal.get_A())
+      A = matrix.sqr(crystal.get_A()).transpose()
       a_star = A[:3]
       b_star = A[3:6]
       c_star = A[6:]
