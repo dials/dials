@@ -44,8 +44,6 @@ class MaskSettingsPanel(wx.Panel):
     self.UpdateMask()
 
   def __del__(self):
-    if (hasattr(self, "_ring_layer") and self._ring_layer is not None):
-      self._pyslip.DeleteLayer(self._ring_layer)
     if self._mode_rectangle_layer:
       self._pyslip.DeleteLayer(self._mode_rectangle_layer)
     if self._mode_circle_layer:
@@ -119,20 +117,31 @@ class MaskSettingsPanel(wx.Panel):
     untrusted_polygons = []
     untrusted_circles = []
 
-    for untrusted in self.params.masking.untrusted:
+    # map index in self.params.masking.untrusted to index in above arrays
+    self._rectangle_to_untrusted_id = []
+    self._polygon_to_untrusted_id = []
+    self._circle_to_untrusted_id = []
+
+    for i, untrusted in enumerate(self.params.masking.untrusted):
       if untrusted.rectangle is not None:
         untrusted_rectangles.append((untrusted.panel, untrusted.rectangle))
+        self._rectangle_to_untrusted_id.append(i)
       elif untrusted.polygon is not None:
         untrusted_polygons.append((untrusted.panel, untrusted.polygon))
+        self._polygon_to_untrusted_id.append(i)
       elif untrusted.circle is not None:
         untrusted_circles.append((untrusted.panel, untrusted.circle))
+        self._circle_to_untrusted_id.append(i)
 
     from wxtbx.phil_controls.intctrl import IntCtrl
     from wxtbx.phil_controls.strctrl import StrCtrl
     from wxtbx.phil_controls import EVT_PHIL_CONTROL
 
+    from wxtbx import metallicbutton
+    import wxtbx
+
     # untrusted rectangles
-    grid = wx.FlexGridSizer(cols=2, rows=len(untrusted_rectangles)+2)
+    grid = wx.FlexGridSizer(cols=3, rows=len(untrusted_rectangles)+2)
     sizer.Add(grid)
     text = wx.StaticText(self, -1, "Panel:")
     text.GetFont().SetWeight(wx.BOLD)
@@ -140,19 +149,37 @@ class MaskSettingsPanel(wx.Panel):
     text = wx.StaticText(self, -1, "Rectangle (x0, x1, y0, y1):")
     text.GetFont().SetWeight(wx.BOLD)
     grid.Add(text)
-    for panel, rectangle in untrusted_rectangles:
+    # empty cell
+    grid.Add(wx.StaticText(self, -1, ''), 0, wx.EXPAND)
+
+    for rect_id, (panel, rectangle) in enumerate(untrusted_rectangles):
       grid.Add(wx.StaticText(self, -1, "%i" %(panel)))
       grid.Add(wx.StaticText(self, -1, "%i %i %i %i" %tuple(rectangle)))
+      btn = metallicbutton.MetallicButton(
+      parent=self,
+      label='delete',
+      bmp=wxtbx.bitmaps.fetch_icon_bitmap("actions", "cancel", 16),)
+      grid.Add(btn)
+      untrusted_id = self._rectangle_to_untrusted_id[rect_id]
+      self.Bind(
+        wx.EVT_BUTTON,
+        lambda evt,
+        untrusted_id=untrusted_id: self.OnDeleteUntrustedRegion(
+          evt, untrusted_id=untrusted_id),
+        source=btn)
+
     self.untrusted_rectangle_panel_ctrl = IntCtrl(
       self, value=0, name="untrusted_rectangle_panel")
     grid.Add(self.untrusted_rectangle_panel_ctrl, 0, wx.ALL, 5)
     self.untrusted_rectangle_ctrl = StrCtrl(
       self, value='', name="untrusted_rectangle")
     grid.Add(self.untrusted_rectangle_ctrl, 0, wx.ALL, 5)
+    # empty cell
+    grid.Add(wx.StaticText(self, -1, ''), 0, wx.EXPAND)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdate, self.untrusted_rectangle_ctrl)
 
     # untrusted polygons
-    grid = wx.FlexGridSizer(cols=2, rows=len(untrusted_polygons)+2)
+    grid = wx.FlexGridSizer(cols=3, rows=len(untrusted_polygons)+2)
     sizer.Add(grid)
     text = wx.StaticText(self, -1, "Panel:")
     text.GetFont().SetWeight(wx.BOLD)
@@ -160,21 +187,39 @@ class MaskSettingsPanel(wx.Panel):
     text = wx.StaticText(self, -1, "Polygons (x1, y1, ..., xn, yn):")
     text.GetFont().SetWeight(wx.BOLD)
     grid.Add(text)
-    for panel, polygon in untrusted_polygons:
+    # empty cell
+    grid.Add(wx.StaticText(self, -1, ''), 0, wx.EXPAND)
+
+    for polygon_id, (panel, polygon) in enumerate(untrusted_polygons):
       grid.Add(StrCtrl(self, value="%i" %(panel), style=wx.TE_READONLY), 0, wx.ALL, 5)
       grid.Add(StrCtrl(
         self, value=" ".join(["%i"]*len(polygon)) %tuple(polygon),
         style=wx.TE_READONLY), 0, wx.ALL, 5)
+      btn = metallicbutton.MetallicButton(
+      parent=self,
+      label='delete',
+      bmp=wxtbx.bitmaps.fetch_icon_bitmap("actions", "cancel", 16),)
+      grid.Add(btn)
+      untrusted_id = self._polygon_to_untrusted_id[polygon_id]
+      self.Bind(
+        wx.EVT_BUTTON,
+        lambda evt,
+        untrusted_id=untrusted_id: self.OnDeleteUntrustedRegion(
+          evt, untrusted_id=untrusted_id),
+        source=btn)
+
     self.untrusted_polygon_panel_ctrl = IntCtrl(
       self, value=0, name="untrusted_polygon_panel")
     grid.Add(self.untrusted_polygon_panel_ctrl, 0, wx.ALL, 5)
     self.untrusted_polygon_ctrl = StrCtrl(
       self, value='', name="untrusted_polygon")
     grid.Add(self.untrusted_polygon_ctrl, 0, wx.ALL, 5)
+    # empty cell
+    grid.Add(wx.StaticText(self, -1, ''), 0, wx.EXPAND)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdate, self.untrusted_polygon_ctrl)
 
     # untrusted circles
-    grid = wx.FlexGridSizer(cols=2, rows=len(untrusted_circles)+2)
+    grid = wx.FlexGridSizer(cols=3, rows=len(untrusted_circles)+2)
     sizer.Add(grid)
     text = wx.StaticText(self, -1, "Panel:")
     text.GetFont().SetWeight(wx.BOLD)
@@ -182,15 +227,33 @@ class MaskSettingsPanel(wx.Panel):
     text = wx.StaticText(self, -1, "Circle (x, y, r):")
     text.GetFont().SetWeight(wx.BOLD)
     grid.Add(text)
-    for panel, circle in untrusted_circles:
+    # empty cell
+    grid.Add(wx.StaticText(self, -1, ''), 0, wx.EXPAND)
+
+    for circle_id, (panel, circle) in enumerate(untrusted_circles):
       grid.Add(wx.StaticText(self, -1, "%i" %(panel)))
       grid.Add(wx.StaticText(self, -1, "%i %i %i" %tuple(circle)))
+      btn = metallicbutton.MetallicButton(
+      parent=self,
+      label='delete',
+      bmp=wxtbx.bitmaps.fetch_icon_bitmap("actions", "cancel", 16),)
+      grid.Add(btn)
+      untrusted_id = self._circle_to_untrusted_id[circle_id]
+      self.Bind(
+        wx.EVT_BUTTON,
+        lambda evt,
+        untrusted_id=untrusted_id: self.OnDeleteUntrustedRegion(
+          evt, untrusted_id=untrusted_id),
+        source=btn)
+
     self.untrusted_circle_panel_ctrl = IntCtrl(
       self, value=0, name="untrusted_circle_panel")
     grid.Add(self.untrusted_circle_panel_ctrl, 0, wx.ALL, 5)
     self.untrusted_circle_ctrl = StrCtrl(
       self, value='', name="untrusted_circle")
     grid.Add(self.untrusted_circle_ctrl, 0, wx.ALL, 5)
+    # empty cell
+    grid.Add(wx.StaticText(self, -1, ''), 0, wx.EXPAND)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdate, self.untrusted_circle_ctrl)
 
     # Draw rectangle/circle mode buttons
@@ -228,6 +291,11 @@ class MaskSettingsPanel(wx.Panel):
 
     sizer.Layout()
     sizer.Fit(self)
+
+  def OnDeleteUntrustedRegion(self, event, untrusted_id):
+    if untrusted_id is not None:
+      del self.params.masking.untrusted[untrusted_id]
+    self.OnUpdate(event)
 
   def OnUpdate(self, event):
     image_viewer_frame = self.GetParent().GetParent()
@@ -317,9 +385,9 @@ class MaskSettingsPanel(wx.Panel):
 
     self.draw_settings()
     self.UpdateMask()
-    if image_viewer_frame.settings.show_mask:
-      # Force re-drawing of mask
-      image_viewer_frame.OnChooseImage(event)
+
+    # Force re-drawing of mask
+    image_viewer_frame.OnChooseImage(event)
 
   def OnSaveMask(self, event):
     self.UpdateMask()
@@ -341,15 +409,18 @@ class MaskSettingsPanel(wx.Panel):
     imageset = image_viewer_frame.imagesets[0] # XXX
     mask = generator.generate(imageset)
 
-    # Combine with an existing mask, if specified
-    if image_viewer_frame.mask is not None:
-      for p1, p2 in zip(image_viewer_frame.mask, mask):
-        p2 &= p1
-      image_viewer_frame.mask = mask
-      #self.collect_values()
-      image_viewer_frame.update_settings(layout=False)
+    image_viewer_frame.mask_image_viewer = mask
+    image_viewer_frame.update_settings(layout=False)
 
-    image_viewer_frame.mask = mask
+    ## Combine with an existing mask, if specified
+    #if image_viewer_frame.mask is not None:
+      #for p1, p2 in zip(image_viewer_frame.mask, mask):
+        #p2 &= p1
+      #image_viewer_frame.mask = mask
+      ##self.collect_values()
+      #image_viewer_frame.update_settings(layout=False)
+
+    #image_viewer_frame.mask = mask
 
   def OnLeftDown(self, event):
     if not event.ShiftDown():

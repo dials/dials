@@ -52,8 +52,9 @@ class SpotFrame(XrayFrame) :
     self._ring_layer = None
     self._resolution_text_layer = None
     self.sel_image_polygon_layer = None
-    self.sel_image_circle_layer = None
-    self.mask = self.params.mask
+    self.sel_image_circle_layers = []
+    self.mask_input = self.params.mask
+    self.mask_image_viewer = None
     self._mask_frame = None
 
     from libtbx.utils import time_log
@@ -224,22 +225,22 @@ class SpotFrame(XrayFrame) :
     from rstbx.slip_viewer import pyslip
     #self.pyslip.Bind(pyslip.EVT_PYSLIP_SELECT, self.handle_select_event)
 
-    self.TypeMask = 100
-    self._xxx_layer = self.pyslip.AddLayer(
-      render=self._draw_rings_layer,
-      data=[],
-      map_rel=True,
-      visible=True,
-      show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
-      selectable=True,
-      name="<xxx_layer>",
-      type=self.TypeMask, update=False)
-    self.image_layer = self._xxx_layer
+    #self.TypeMask = 100
+    #self._xxx_layer = self.pyslip.AddLayer(
+      #render=self._draw_rings_layer,
+      #data=[],
+      #map_rel=True,
+      #visible=True,
+      #show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
+      #selectable=True,
+      #name="<xxx_layer>",
+      #type=self.TypeMask, update=False)
+    #self.image_layer = self._xxx_layer
 
-    self.add_select_handler(self._xxx_layer, self.boxSelect)
-    self.pyslip.SetLayerSelectable(self._xxx_layer, True)
+    #self.add_select_handler(self._xxx_layer, self.boxSelect)
+    #self.pyslip.SetLayerSelectable(self._xxx_layer, True)
 
-    self.pyslip.layerBSelHandler[self.TypeMask] = self.GetBoxCorners
+    #self.pyslip.layerBSelHandler[self.TypeMask] = self.GetBoxCorners
 
   def GetBoxCorners(self, layer, p1, p2):
     """Get list of points inside box.
@@ -321,9 +322,9 @@ class SpotFrame(XrayFrame) :
     if self.sel_image_polygon_layer:
       self.pyslip.DeleteLayer(self.sel_image_polygon_layer)
       self.sel_image_polygon_layer = None
-    if self.sel_image_circle_layer:
-      self.pyslip.DeleteLayer(self.sel_image_circle_layer)
-      self.sel_image_circle_layer = None
+    for layer in self.sel_image_circle_layers:
+      self.pyslip.DeleteLayer(layer)
+    self.sel_image_circle_layers = []
 
     if not len(self.settings.untrusted):
       return
@@ -391,12 +392,12 @@ class SpotFrame(XrayFrame) :
                                     name='<boxsel_pt_layer>')
     if circle_data:
       for circle in circle_data:
-        self.sel_image_circle_layer = \
+        self.sel_image_circle_layers.append(
           self.pyslip.AddEllipseLayer(circle, map_rel=True,
                                       color='#00ffff',
                                       radius=5, visible=True,
                                       #show_levels=[3,4],
-                                      name='<boxsel_pt_layer>')
+                                      name='<boxsel_pt_layer>'))
 
 
 
@@ -717,15 +718,7 @@ class SpotFrame(XrayFrame) :
         self.settings.show_global_threshold_filter or
         self.settings.show_threshold_map):
 
-      trange = [p.get_trusted_range() for p in detector]
-      mask = []
-      mask = image.get_mask()
-      if self.mask is not None:
-        for p1, p2 in zip(self.mask, mask):
-          p2 &= p1
-      if mask is None:
-        mask = [p.get_trusted_range_mask(im) for im, p in zip(raw_data, detector)]
-
+      mask = self.get_mask(image)
       gain_value = self.settings.gain
       assert gain_value > 0
       gain_map = [flex.double(raw_data[i].accessor(), gain_value)
@@ -973,35 +966,23 @@ class SpotFrame(XrayFrame) :
     self.drawUntrustedPolygons()
     self.pyslip.Update()
 
-  def get_mask_data(self):
-    from scitbx.array_family import flex
-    import math
-
-    if self.mask is not None:
-      mask = self.mask
-    else:
-      mask = self.pyslip.tiles.raw_image.get_mask()
-
-    def map_coords(x, y, p):
-      if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
-        y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-          p, y - 0.5, x - 0.5)
-      return self.pyslip.tiles.picture_fast_slow_to_map_relative(
-        x, y)
-
-    all_mask_data = []
-    for p, mask_p in enumerate(mask):
-      for i in (~mask_p).iselection():
-        y, x = i//mask_p.focus()[1],i%mask_p.focus()[1]
-        assert not mask_p[y,x]
-        all_mask_data.append(map_coords(x + 0.5, y + 0.5, p))
-    return all_mask_data
+  def get_mask(self, image):
+    detector = image.get_detector()
+    trange = [p.get_trusted_range() for p in detector]
+    mask = []
+    mask = image.get_mask()
+    if self.mask_input is not None:
+      for p1, p2 in zip(self.mask_input, mask):
+        p2 &= p1
+    if self.mask_image_viewer is not None:
+      for p1, p2 in zip(self.mask_image_viewer, mask):
+        p2 &= p1
+    if mask is None:
+      mask = [p.get_trusted_range_mask(im) for im, p in zip(raw_data, detector)]
+    return mask
 
   def mask_raw_data(self, raw_data):
-    if self.mask is not None:
-      mask = self.mask
-    else:
-      mask = self.pyslip.tiles.raw_image.get_mask()
+    mask = self.get_mask(self.pyslip.tiles.raw_image)
     for rd, m in zip(raw_data, mask):
       rd.set_selected(~m, -2)
 
