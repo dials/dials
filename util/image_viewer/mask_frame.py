@@ -89,7 +89,8 @@ class MaskSettingsPanel(wx.Panel):
     box = wx.BoxSizer(wx.HORIZONTAL)
     if self.d_min_ctrl is None:
       self.d_min_ctrl = FloatSpin(
-            self, digits=2, name='d_min', value=self.d_min, min_val=0)
+            self, digits=2, name='d_min', value=self.d_min, min_val=0,
+            increment=0.05)
     txtd = wx.StaticText(self, label='d_min')
     box.Add(txtd, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     box.Add(self.d_min_ctrl,
@@ -105,7 +106,8 @@ class MaskSettingsPanel(wx.Panel):
     box = wx.BoxSizer(wx.HORIZONTAL)
     if self.d_max_ctrl is None:
       self.d_max_ctrl = FloatSpin(
-            self, digits=2, name='d_max', value=self.d_max, min_val=0)
+            self, digits=2, name='d_max', value=self.d_max, min_val=0,
+            increment=0.05)
     txtd = wx.StaticText(self, label='d_max')
     box.Add(txtd, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     box.Add(self.d_max_ctrl,
