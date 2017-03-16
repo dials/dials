@@ -392,7 +392,20 @@ class MaskSettingsPanel(wx.Panel):
   def OnSaveMask(self, event):
     self.UpdateMask()
     image_viewer_frame = self.GetParent().GetParent()
-    mask = image_viewer_frame.mask
+
+    m1 = image_viewer_frame.mask_input
+    m2 = image_viewer_frame.mask_image_viewer
+
+    if m1 is not None and m2 is not None:
+      mask = []
+      for p1, p2 in zip(m1, m2):
+        mask.append(p2 & p1)
+    elif m1 is not None:
+      mask = m1
+    elif m2 is not None:
+      mask = m2
+    else:
+      return
 
     # Save the mask to file
     from libtbx import easy_pickle

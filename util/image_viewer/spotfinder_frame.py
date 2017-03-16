@@ -1446,10 +1446,6 @@ class SpotSettingsPanel (SettingsPanel) :
     grid.Add(self.clear_all_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self.Bind(wx.EVT_BUTTON, self.OnClearAll, self.clear_all_button)
 
-    self.save_mask_button = wx.Button(self, -1, "Save mask")
-    grid.Add(self.save_mask_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
-    self.Bind(wx.EVT_BUTTON, self.OnSaveMask, self.save_mask_button)
-
     s.Add(grid)
 
     # Minimum spot area control
@@ -1647,33 +1643,6 @@ class SpotSettingsPanel (SettingsPanel) :
     pyslip.ZoomToLevel(self.settings.zoom_level)
     pyslip.ZoomIn((x,y), update=False)
     pyslip.GotoPosition(center)
-
-  def OnSaveMask(self, event):
-
-    # Generate the mask
-    from dials.util.masking import MaskGenerator
-    generator = MaskGenerator(self.params.masking)
-    imageset = self.GetParent().GetParent().imagesets[0] # XXX
-    mask = generator.generate(imageset)
-
-    # Combine with an existing mask, if specified
-    if self.GetParent().GetParent().mask is not None:
-      for p1, p2 in zip(self.GetParent().GetParent().mask, mask):
-        p2 &= p1
-      self.GetParent().GetParent().mask = mask
-      self.collect_values()
-      self.GetParent().GetParent().update_settings(layout=False)
-
-    # Save the mask to file
-    from libtbx import easy_pickle
-    print "Writing mask to %s" % self.params.output.mask
-    easy_pickle.dump(self.params.output.mask, mask)
-
-    self.GetParent().GetParent().mask = mask
-
-    if self.settings.show_mask:
-      # Force re-drawing of mask
-      self.OnUpdateShowMask(event)
 
   def OnSaveFindSpotsParams(self, event):
     from dials.command_line.find_spots import phil_scope
