@@ -54,8 +54,8 @@ class render_3d(object):
       self.viewer.set_rotation_axis(axis)
     self.viewer.set_beam_vector(self.imageset.get_beam().get_s0())
 
-    detector = self.imageset.get_detector()
-    beam = self.imageset.get_beam()
+    #detector = self.imageset.get_detector()
+    #beam = self.imageset.get_beam()
     self.set_points()
 
   def set_goniometer_points(self):
@@ -119,8 +119,6 @@ class render_3d(object):
       self.viewer.line_colors.update(line_colors)
       self.viewer.line_i_seqs.extend(line_i_seqs)
       self.viewer.points.extend(p.get_lab_coord(shadow_points *p.get_pixel_size()[0]))
-
-    #self.viewer.points.extend(projected_points)
 
   def set_detector_points(self):
     detector = self.imageset.get_detector()
@@ -377,6 +375,15 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     wx_viewer.show_points_and_lines_mixin.DrawGL(self)
     gonio = self.parent.imageset.get_goniometer()
     beam = self.parent.imageset.get_beam()
+    detector = self.parent.imageset.get_detector()
+    if detector is not None:
+      for p in detector:
+        image_size = p.get_image_size_mm()
+        self.draw_lab_axis(
+          p.get_lab_coord((0,0)), p.get_lab_coord((image_size[0],0)), 'FAST')
+        self.draw_lab_axis(
+          p.get_lab_coord((0,0)), p.get_lab_coord((0,image_size[1])), 'SLOW')
+
     from scitbx import matrix
     if isinstance(gonio, MultiAxisGoniometer):
       R = matrix.identity(3)
@@ -441,6 +448,19 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     glVertex3f(-axis[0]*scale, -axis[1]*scale, -axis[2]*scale)
     glEnd()
     glDisable(GL_LINE_STIPPLE)
+
+  def draw_lab_axis(self, start, end, label):
+    mid = tuple([0.5 * (s+e) for s, e in zip(start, end)])
+    gltbx.fonts.ucs_bitmap_8x13.setup_call_lists()
+    glDisable(GL_LIGHTING)
+    glColor3f(1.0, 1.0, 0.0)
+    glLineWidth(1.0)
+    glBegin(GL_LINES)
+    glVertex3f(*start)
+    glVertex3f(*end)
+    glEnd()
+    glRasterPos3f(*mid)
+    gltbx.fonts.ucs_bitmap_8x13.render_string(label)
 
   def rotate_view(self, x1, y1, x2, y2, shift_down=False, scale=0.1):
     super(RLVWindow, self).rotate_view(
@@ -515,7 +535,6 @@ def run(args):
   f.load_imageset(imageset, crystal=crystal)
   f.Show()
   a.SetTopWindow(f)
-  #a.Bind(wx.EVT_WINDOW_DESTROY, lambda evt: tb_icon.Destroy(), f)
   a.MainLoop()
 
 
