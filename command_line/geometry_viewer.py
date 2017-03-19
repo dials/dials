@@ -187,16 +187,16 @@ class ExperimentViewer(wx.Frame, render_3d):
     render_3d.load_imageset(self, imageset, crystal=crystal)
     self.settings_panel.add_goniometer_controls(imageset.get_goniometer())
 
-  def OnActive (self, event) :
+  def OnActive(self, event) :
     if self.IsShown() and type(self.viewer).__name__ != "_wxPyDeadObject":
       self.viewer.Refresh()
 
-  def OnClose (self, event) :
+  def OnClose(self, event) :
     self.Unbind(wx.EVT_ACTIVATE)
     self.Destroy()
     event.Skip()
 
-  def OnDestroy (self, event) :
+  def OnDestroy(self, event) :
     if self.parent is not None:
       self.parent.viewer = None
     event.Skip()
@@ -232,12 +232,12 @@ class ExperimentViewer(wx.Frame, render_3d):
       dx, dy, 0, 0)
     v.OnRedraw()
 
-  def create_viewer_panel (self) :
+  def create_viewer_panel(self) :
     self.viewer = RLVWindow(settings=self.settings, parent=self, size=(800,600),
       #orthographic=True
       )
 
-  def create_settings_panel (self) :
+  def create_settings_panel(self) :
     self.settings_panel = settings_window(self, -1, style=wx.RAISED_BORDER)
 
   def set_points(self):
@@ -248,15 +248,15 @@ class ExperimentViewer(wx.Frame, render_3d):
     self.viewer.update_settings(*args, **kwds)
 
 
-class settings_window (wxtbx.utils.SettingsPanel) :
-  def __init__ (self, *args, **kwds) :
+class settings_window(wxtbx.utils.SettingsPanel) :
+  def __init__(self, *args, **kwds) :
     wxtbx.utils.SettingsPanel.__init__(self, *args, **kwds)
     self.Bind(wx.EVT_CHAR, self.OnChar)
 
-  def OnChar (self, event) :
+  def OnChar(self, event) :
     self.GetParent().viewer.OnChar(event)
 
-  def add_controls (self) :
+  def add_controls(self) :
     pass
     # d_min control
     #from wx.lib.agw import floatspin
@@ -359,7 +359,7 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     self.beam_vector = beam
 
   #--- user input and settings
-  def update_settings (self) :
+  def update_settings(self) :
     self.points_display_list = None
     self.Refresh()
 
