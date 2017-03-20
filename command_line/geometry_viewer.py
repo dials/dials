@@ -54,8 +54,6 @@ class render_3d(object):
       self.viewer.set_rotation_axis(axis)
     self.viewer.set_beam_vector(self.imageset.get_beam().get_s0())
 
-    #detector = self.imageset.get_detector()
-    #beam = self.imageset.get_beam()
     self.set_points()
 
   def set_goniometer_points(self):
@@ -379,10 +377,17 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     if detector is not None:
       for p in detector:
         image_size = p.get_image_size_mm()
-        self.draw_lab_axis(
-          p.get_lab_coord((0,0)), p.get_lab_coord((image_size[0],0)), 'FAST')
-        self.draw_lab_axis(
-          p.get_lab_coord((0,0)), p.get_lab_coord((0,image_size[1])), 'SLOW')
+        from scitbx import matrix
+        o = matrix.col(p.get_lab_coord((0,0)))
+        f = matrix.col(p.get_lab_coord((image_size[0],0)))
+        _f = (f - o).normalize()
+        s = matrix.col(p.get_lab_coord((0,image_size[1])))
+        _s = (s - o).normalize()
+        _n = _f.cross(_s)
+        n = _n * (0.25 * (f.length() + s.length())) + o
+        self.draw_lab_axis(o.elems, f.elems, 'FAST')
+        self.draw_lab_axis(o.elems, s.elems, 'SLOW')
+        self.draw_lab_axis(o.elems, n.elems, 'NORM')
 
     from scitbx import matrix
     if isinstance(gonio, MultiAxisGoniometer):
