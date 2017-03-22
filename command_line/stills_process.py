@@ -421,9 +421,14 @@ class Processor(object):
     # don't do scan-varying refinement during indexing
     params.refinement.parameterisation.scan_varying = False
 
+    if hasattr(self, 'known_crystal_models'):
+      known_crystal_models = self.known_crystal_models
+    else:
+      known_crystal_models = None
+
     if params.indexing.stills.method_list is None:
       idxr = indexer_base.from_parameters(
-        reflections, imagesets,
+        reflections, imagesets, known_crystal_models=known_crystal_models,
         params=params)
       idxr.index()
     else:
@@ -450,7 +455,18 @@ class Processor(object):
     indexed = idxr.refined_reflections
     experiments = idxr.refined_experiments
 
-    if self.params.output.indexed_filename:
+    if known_crystal_models is not None:
+      from dials.array_family import flex
+      filtered = flex.reflection_table()
+      for idx in set(indexed['miller_index']):
+        sel = indexed['miller_index'] == idx
+        if sel.count(True) == 1:
+          filtered.extend(indexed.select(sel))
+      logger.info("Filtered duplicate reflections, %d out of %d remaining"%(len(filtered),len(indexed)))
+      print "Filtered duplicate reflections, %d out of %d remaining"%(len(filtered),len(indexed))
+      indexed = filtered
+
+    if self.params.output.indexed_filename and len(indexed) > 0:
       self.save_reflections(indexed, self.params.output.indexed_filename)
 
     logger.info('')
