@@ -337,6 +337,11 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   m.set_title('from dials.export_mtz')
   m.set_space_group_info(experiment.crystal.get_space_group().info())
 
+  from dials.util.version import dials_version
+  import time
+  date_str = time.strftime('%d/%m/%Y at %H:%M:%S', time.gmtime())
+  m.add_history('From %s, run on %s' %(dials_version(), date_str))
+
   if experiment.scan:
     image_range = experiment.scan.get_image_range()
   else:
