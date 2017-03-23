@@ -436,7 +436,7 @@ namespace dials { namespace af {
     }
 
     /** @returns Does the table contain the key. */
-    bool contains(const key_type &key) {
+    bool contains(const key_type &key) const {
       const_iterator it = find(key);
       return it != end();
     }
