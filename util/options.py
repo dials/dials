@@ -817,8 +817,12 @@ class OptionParserBase(optparse.OptionParser, object):
     options, args = super(OptionParserBase, self).parse_args(args=args)
 
     # Read stdin if data is available
-    if not quick_parse and not sys.stdin.isatty():
-      args.extend(l.strip() for l in sys.stdin.readlines())
+    try:
+      if not quick_parse and not sys.stdin.isatty():
+        args.extend(l.strip() for l in sys.stdin.readlines())
+    except IOError as e:
+      if e.errno != 9:
+        raise # Ignore 'bad file descriptor' errors, which may be caused by nohup et al.
 
     # Maybe sort the data
     if hasattr(options, "sort") and options.sort:
