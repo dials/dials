@@ -391,6 +391,9 @@ namespace dials { namespace algorithms {
         const af::const_ref< T, af::c_grid<2> > &src,
         const af::const_ref< bool, af::c_grid<2> > &mask) {
 
+      // Largest value to consider
+      const T BIG = (1 << 24); // About 16m counts
+
       // Get the size of the image
       std::size_t ysize = src.accessor()[0];
       std::size_t xsize = src.accessor()[1];
@@ -401,7 +404,7 @@ namespace dials { namespace algorithms {
         T   x = 0;
         T   y = 0;
         for (std::size_t i = 0; i < xsize; ++i, ++k) {
-          int mm = mask[k] ? 1 : 0;
+          int mm = (mask[k] && src[k] < BIG) ? 1 : 0;
           m += mm;
           x += mm * src[k];
           y += mm * src[k] * src[k];

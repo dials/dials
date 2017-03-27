@@ -232,6 +232,8 @@ namespace dials { namespace algorithms {
         int2 size, int min_count)
       : min_count_(min_count), mask_(mask.accessor()) {
 
+      const FloatType BIG = (1 << 24); // About 1.6m counts
+
       // Check the input is valid
       DIALS_ASSERT(size.all_gt(0));
       DIALS_ASSERT(image.accessor().all_gt(0));
@@ -239,7 +241,7 @@ namespace dials { namespace algorithms {
 
       // Copy the mask array
       for (std::size_t i = 0; i < mask.size(); ++i) {
-        mask_[i] = mask[i];
+        mask_[i] = mask[i] && image[i] < BIG;
       }
 
       // Ensure the min counts are valid
