@@ -284,7 +284,7 @@ class MaskSettingsPanel(wx.Panel):
     self.Bind(wx.EVT_TOGGLEBUTTON, self.OnUpdate, self.mode_polygon_button)
 
     # show/save mask controls
-    grid = wx.FlexGridSizer(cols=3, rows=1)
+    grid = wx.FlexGridSizer(cols=3, rows=2)
     sizer.Add(grid)
 
     self.show_mask_ctrl = wx.CheckBox(self, -1, "Show mask")
@@ -300,6 +300,19 @@ class MaskSettingsPanel(wx.Panel):
       self, value=self.params.output.mask, name="mask_pickle")
     grid.Add(self.save_mask_txt_ctrl, 0, wx.ALL, 5)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdate, self.save_mask_txt_ctrl)
+
+    # empty cell
+    grid.Add(wx.StaticText(self, -1, ''), 0, wx.EXPAND)
+
+    self.save_params_button = wx.Button(self, -1, "Save")
+    grid.Add(self.save_params_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(wx.EVT_BUTTON, self.OnSaveMaskParams, self.save_params_button)
+
+    self.save_params_txt_ctrl = StrCtrl(
+      self, value=self.params.output.mask_params,
+      name="mask_phil")
+    grid.Add(self.save_params_txt_ctrl, 0, wx.ALL, 5)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdate, self.save_params_txt_ctrl)
 
     sizer.Layout()
     sizer.Fit(self)
@@ -320,6 +333,7 @@ class MaskSettingsPanel(wx.Panel):
       self.params.show_mask)
 
     self.params.output.mask = self.save_mask_txt_ctrl.GetValue()
+    self.params.output.mask_params = self.save_params_txt_ctrl.GetValue()
 
     if self._mode_polygon and (
       not self.mode_polygon_button.GetValue() or
@@ -450,6 +464,14 @@ class MaskSettingsPanel(wx.Panel):
     from libtbx import easy_pickle
     print "Writing mask to %s" % self.params.output.mask
     easy_pickle.dump(self.params.output.mask, mask)
+
+  def OnSaveMaskParams(self, event):
+    from dials.util.masking import phil_scope
+    params = phil_scope.extract()
+    file_name = self.params.output.mask_params
+    with open(file_name, 'wb') as f:
+      print "Saving parameters to %s" % file_name
+      phil_scope.fetch_diff(phil_scope.format(self.params.masking)).show(f)
 
   def UpdateMask(self):
 

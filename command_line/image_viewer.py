@@ -89,7 +89,7 @@ sum_images = 1
 d_min = None
   .type = float(value_min=0)
 mask = None
-  .type = str
+  .type = path
   .help = path to mask pickle file
 
 include scope rstbx.phil.phil_preferences.iotbx_defs_viewer_detail
@@ -100,8 +100,12 @@ masking {
 
 output {
   mask = mask.pickle
-    .type = str
+    .type = path
     .help = "Name of output mask file"
+
+  mask_params = mask.phil
+    .type = path
+    .help = "Name of output mask parameter file"
 }
 
 predict_reflections = False
