@@ -30,6 +30,7 @@ class MaskSettingsPanel(wx.Panel):
     self.border_ctrl = None
     self.d_min_ctrl = None
     self.d_max_ctrl = None
+    self.ice_rings_d_min_ctrl = None
     self._mode_rectangle_layer = None
     self._mode_polygon_layer = None
     self._mode_circle_layer = None
@@ -116,6 +117,31 @@ class MaskSettingsPanel(wx.Panel):
     box.Add(self.d_max_ctrl,
             0, wx.RIGHT | wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL, 5)
     self.Bind(EVT_FLOATSPIN, self.OnUpdate, self.d_max_ctrl)
+    sizer.Add(box)
+
+    # ice rings control
+    box = wx.BoxSizer(wx.HORIZONTAL)
+
+    self.ice_rings_ctrl = wx.CheckBox(self, -1, "Ice rings")
+    self.ice_rings_ctrl.SetValue(self.params.masking.ice_rings.filter)
+    box.Add(self.ice_rings_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.ice_rings_ctrl)
+
+    # ice rings d_min control
+    if self.params.masking.ice_rings.d_min is not None:
+      self.ice_rings_d_min = self.params.masking.ice_rings.d_min
+    else:
+      self.ice_rings_d_min = 0
+    if self.ice_rings_d_min_ctrl is None:
+      self.ice_rings_d_min_ctrl = FloatSpin(
+            self, digits=2, name='ice_rings_d_min',
+            value=self.ice_rings_d_min, min_val=0,
+            increment=0.05)
+    txtd = wx.StaticText(self, label='d_min')
+    box.Add(txtd, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    box.Add(self.ice_rings_d_min_ctrl,
+            0, wx.RIGHT | wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(EVT_FLOATSPIN, self.OnUpdate, self.ice_rings_d_min_ctrl)
     sizer.Add(box)
 
     untrusted_rectangles = []
@@ -381,9 +407,19 @@ class MaskSettingsPanel(wx.Panel):
 
     if self.d_min_ctrl.GetValue() > 0:
       self.params.masking.d_min = self.d_min_ctrl.GetValue()
+    else:
+      self.params.masking.d_min = None
     if self.d_max_ctrl.GetValue() > 0:
       self.params.masking.d_max = self.d_max_ctrl.GetValue()
+    else:
+      self.params.masking.d_max = None
     self.params.masking.border = int(self.border_ctrl.GetValue())
+
+    if self.ice_rings_d_min_ctrl.GetValue() > 0:
+      self.params.masking.ice_rings.d_min = self.ice_rings_d_min_ctrl.GetValue()
+    else:
+      self.params.masking.ice_rings.d_min = None
+    self.params.masking.ice_rings.filter = self.ice_rings_ctrl.GetValue()
 
     from dials.util import masking
     from libtbx.utils import flat_list
