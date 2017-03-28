@@ -101,14 +101,12 @@ class MaskSettingsPanel(wx.Panel):
     box.Add(self.d_min_ctrl,
             0, wx.RIGHT | wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL, 5)
     self.Bind(EVT_FLOATSPIN, self.OnUpdate, self.d_min_ctrl)
-    sizer.Add(box)
 
     # d_max control
     if self.params.masking.d_max is not None:
       self.d_max = self.params.masking.d_max
     else:
       self.d_max = 0
-    box = wx.BoxSizer(wx.HORIZONTAL)
     if self.d_max_ctrl is None:
       self.d_max_ctrl = FloatSpin(
             self, digits=2, name='d_max', value=self.d_max, min_val=0,
