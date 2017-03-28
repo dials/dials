@@ -23,7 +23,7 @@ def exercise_1():
 
   commands = [
     "dials.import %s" %" ".join(g),
-    "dials.slice_sweep datablock.json scan_range=80,90",
+    "dials.slice_sweep datablock.json image_range=80,90",
     "dials.find_spots datablock_80_90.json",
     "dials.index datablock_80_90.json strong.pickle space_group=P41212",
     "dials.refine experiments.json indexed.pickle scan_varying=True",

@@ -39,7 +39,7 @@ def test1():
     assert os.path.exists(pth)
 
   cmd = "dials.slice_sweep " + experiments_path + " " + pickle_path + \
-  ' "scan_range=1 20"'
+  ' "image_range=1 20"'
   print cmd
 
   # work in a temporary directory
