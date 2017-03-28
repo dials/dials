@@ -31,10 +31,13 @@ class MaskSettingsPanel(wx.Panel):
     self.d_min_ctrl = None
     self.d_max_ctrl = None
     self._mode_rectangle_layer = None
+    self._mode_polygon_layer = None
     self._mode_circle_layer = None
     self._rectangle_x0y0 = None
     self._rectangle_x1y1 = None
     self._mode_rectangle = False
+    self._mode_polygon = False
+    self._mode_polygon_points = []
     self._mode_circle = False
 
     self._pyslip.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
@@ -46,6 +49,8 @@ class MaskSettingsPanel(wx.Panel):
   def __del__(self):
     if self._mode_rectangle_layer:
       self._pyslip.DeleteLayer(self._mode_rectangle_layer)
+    if self._mode_polygon_layer:
+      self._pyslip.DeleteLayer(self._mode_polygon_layer)
     if self._mode_circle_layer:
       self._pyslip.DeleteLayer(self._mode_circle_layer)
 
@@ -259,7 +264,7 @@ class MaskSettingsPanel(wx.Panel):
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdate, self.untrusted_circle_ctrl)
 
     # Draw rectangle/circle mode buttons
-    grid = wx.FlexGridSizer(cols=3, rows=1)
+    grid = wx.FlexGridSizer(cols=4, rows=1)
     sizer.Add(grid)
 
     grid.Add( wx.StaticText(self, label='Mode:'))
@@ -272,6 +277,11 @@ class MaskSettingsPanel(wx.Panel):
     self.mode_circle_button.SetValue(self._mode_circle)
     grid.Add(self.mode_circle_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self.Bind(wx.EVT_TOGGLEBUTTON, self.OnUpdate, self.mode_circle_button)
+
+    self.mode_polygon_button = wx.ToggleButton(self, -1, "Polygon")
+    self.mode_polygon_button.SetValue(self._mode_polygon)
+    grid.Add(self.mode_polygon_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(wx.EVT_TOGGLEBUTTON, self.OnUpdate, self.mode_polygon_button)
 
     # show/save mask controls
     grid = wx.FlexGridSizer(cols=3, rows=1)
@@ -311,6 +321,15 @@ class MaskSettingsPanel(wx.Panel):
 
     self.params.output.mask = self.save_mask_txt_ctrl.GetValue()
 
+    if self._mode_polygon and (
+      not self.mode_polygon_button.GetValue() or
+      self.mode_circle_button.GetValue() or
+      self.mode_rectangle_button.GetValue()):
+      self.AddUntrustedPolygon(self._mode_polygon_points)
+      self._mode_polygon_points = []
+      self._pyslip.DeleteLayer(self._mode_polygon_layer)
+      self._mode_polygon_layer = None
+
     if self.mode_rectangle_button.GetValue():
       if not self._mode_rectangle:
         # mode wasn't set but button has been pressed, so set mode
@@ -318,6 +337,8 @@ class MaskSettingsPanel(wx.Panel):
         # set other modes and buttons to False
         self._mode_circle = False
         self.mode_circle_button.SetValue(False)
+        self._mode_polygon = False
+        self.mode_polygon_button.SetValue(False)
 
     if self.mode_circle_button.GetValue():
       if not self._mode_circle:
@@ -326,9 +347,25 @@ class MaskSettingsPanel(wx.Panel):
         # set other modes and buttons to False
         self._mode_rectangle = False
         self.mode_rectangle_button.SetValue(False)
-    if not(self.mode_circle_button.GetValue() or self.mode_rectangle_button.GetValue()):
+        self._mode_polygon = False
+        self.mode_polygon_button.SetValue(False)
+
+    if self.mode_polygon_button.GetValue():
+      if not self._mode_polygon:
+        # mode wasn't set but button has been pressed, so set mode
+        self._mode_polygon = True
+        # set other modes and buttons to False
+        self._mode_rectangle = False
+        self.mode_rectangle_button.SetValue(False)
+        self._mode_circle = False
+        self.mode_circle_button.SetValue(False)
+
+    if not(self.mode_circle_button.GetValue() or
+           self.mode_rectangle_button.GetValue() or
+           self.mode_polygon_button.GetValue()):
       self._mode_circle = False
       self._mode_rectangle = False
+      self._mode_polygon = False
 
     if self.d_min_ctrl.GetValue() > 0:
       self.params.masking.d_min = self.d_min_ctrl.GetValue()
@@ -447,6 +484,10 @@ class MaskSettingsPanel(wx.Panel):
       elif self._mode_circle:
         self._circle_xy = click_posn
         self._circle_radius = None
+        return
+      elif self._mode_polygon:
+        self._mode_polygon_points.append(click_posn)
+        self.DrawPolygon(self._mode_polygon_points)
     event.Skip()
 
   def OnLeftUp(self, event):
@@ -543,6 +584,61 @@ class MaskSettingsPanel(wx.Panel):
                                   radius=5, visible=True,
                                   #show_levels=[3,4],
                                   name='<mode_circle_layer>')
+
+  def DrawPolygon(self, vertices):
+
+    if self._mode_polygon_layer:
+      self._pyslip.DeleteLayer(self._mode_polygon_layer)
+      self._mode_polygon_layer = None
+
+    polygon_data = []
+    d = {}
+
+    for i in range(len(vertices)-1):
+      polygon_data.append(((self._pyslip.ConvertView2Geo(vertices[i]),
+                            self._pyslip.ConvertView2Geo(vertices[i+1])), d))
+
+    if polygon_data:
+      self._mode_polygon_layer = \
+        self._pyslip.AddPolygonLayer(polygon_data, map_rel=True,
+                                     color='#00ffff',
+                                     radius=5, visible=True,
+                                     name='<boxsel_pt_layer>')
+
+  def AddUntrustedPolygon(self, vertices):
+    if len(vertices) < 4:
+      return
+    vertices.append(vertices[0])
+    vertices = [self._pyslip.ConvertView2Geo(v) for v in vertices]
+    vertices = [
+      self._pyslip.tiles.map_relative_to_picture_fast_slow(*v) for v in vertices]
+
+    detector = self._pyslip.tiles.raw_image.get_detector()
+    if len(detector) > 1:
+
+      point_ = []
+      panel_id = None
+      for p in vertices:
+        p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(
+          p[1], p[0])
+        assert p_id >= 0, "Point must be within a panel"
+        if panel_id is not None:
+          assert panel_id == p_id, "All points must be contained within a single panel"
+        panel_id = p_id
+        point_.append((p0, p1))
+      vertices = point_
+
+    else:
+      panel_id = 0
+
+    from dials.util import masking
+    from libtbx.utils import flat_list
+    region = masking.phil_scope.extract().untrusted[0]
+    points = flat_list(vertices)
+    region.polygon = [int(p) for p in points]
+    region.panel = panel_id
+
+    self.params.masking.untrusted.append(region)
 
   def AddUntrustedRectangle(self, x0, y0, x1, y1):
     x0, y0 = self._pyslip.ConvertView2Geo((x0, y0))
