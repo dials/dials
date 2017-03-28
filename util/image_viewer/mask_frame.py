@@ -30,6 +30,8 @@ class MaskSettingsPanel(wx.Panel):
     self.border_ctrl = None
     self.d_min_ctrl = None
     self.d_max_ctrl = None
+    self.resolution_range_d_min_ctrl = None
+    self.resolution_range_d_max_ctrl = None
     self.ice_rings_d_min_ctrl = None
     self._mode_rectangle_layer = None
     self._mode_polygon_layer = None
@@ -40,6 +42,8 @@ class MaskSettingsPanel(wx.Panel):
     self._mode_polygon = False
     self._mode_polygon_points = []
     self._mode_circle = False
+    self._resolution_range_d_min = 0
+    self._resolution_range_d_max = 0
 
     self._pyslip.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
     self._pyslip.Bind(wx.EVT_LEFT_UP, self.OnLeftUp)
@@ -62,6 +66,12 @@ class MaskSettingsPanel(wx.Panel):
   def draw_settings(self):
 
     from wx.lib.agw.floatspin import EVT_FLOATSPIN, FloatSpin
+    from wxtbx.phil_controls import EVT_PHIL_CONTROL
+    from wxtbx.phil_controls.intctrl import IntCtrl
+    from wxtbx.phil_controls.floatctrl import FloatCtrl
+    from wxtbx.phil_controls.strctrl import StrCtrl
+    from wxtbx import metallicbutton
+    import wxtbx
 
     for child in self.GetChildren():
       if not isinstance(child, FloatSpin):
@@ -119,6 +129,43 @@ class MaskSettingsPanel(wx.Panel):
     self.Bind(EVT_FLOATSPIN, self.OnUpdate, self.d_max_ctrl)
     sizer.Add(box)
 
+    # resolution rings control
+
+    grid = wx.FlexGridSizer(cols=2, rows=len(self.params.masking.resolution_range)+2)
+    sizer.Add(grid)
+    text = wx.StaticText(self, -1, "Resolution range:")
+    grid.Add(text)
+    # empty cell
+    grid.Add(wx.StaticText(self, -1, ''), 0, wx.EXPAND)
+
+    for range_id, (d_min, d_max) in enumerate(self.params.masking.resolution_range):
+      grid.Add(wx.StaticText(self, -1, "%.2f-%.2f" %(d_min, d_max)))
+      btn = metallicbutton.MetallicButton(
+      parent=self,
+      label='delete',
+      bmp=wxtbx.bitmaps.fetch_icon_bitmap("actions", "cancel", 16),)
+      grid.Add(btn)
+      self.Bind(
+        wx.EVT_BUTTON,
+        lambda evt,
+        range_id=range_id: self.OnDeleteResolutionRange(evt, range_id=range_id),
+        source=btn)
+
+    self.resolution_range_d_min_ctrl = FloatCtrl(
+      self, value=self._resolution_range_d_min, name='resolution_range_d_min')
+    self.resolution_range_d_min_ctrl.SetMin(0)
+    grid.Add(self.resolution_range_d_min_ctrl,
+            0, wx.RIGHT | wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL, 5)
+    self.resolution_range_d_max_ctrl = FloatCtrl(
+      self, value=self._resolution_range_d_max, name='resolution_range_d_max')
+    self.resolution_range_d_max_ctrl.SetMin(0)
+    grid.Add(self.resolution_range_d_max_ctrl,
+            0, wx.RIGHT | wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL, 5)
+    # empty cell
+    #grid.Add(wx.StaticText(self, -1, ''), 0, wx.EXPAND)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdate, self.resolution_range_d_min_ctrl)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdate, self.resolution_range_d_max_ctrl)
+
     # ice rings control
     box = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -163,13 +210,6 @@ class MaskSettingsPanel(wx.Panel):
       elif untrusted.circle is not None:
         untrusted_circles.append((untrusted.panel, untrusted.circle))
         self._circle_to_untrusted_id.append(i)
-
-    from wxtbx.phil_controls.intctrl import IntCtrl
-    from wxtbx.phil_controls.strctrl import StrCtrl
-    from wxtbx.phil_controls import EVT_PHIL_CONTROL
-
-    from wxtbx import metallicbutton
-    import wxtbx
 
     # untrusted rectangles
     grid = wx.FlexGridSizer(cols=3, rows=len(untrusted_rectangles)+2)
@@ -420,6 +460,18 @@ class MaskSettingsPanel(wx.Panel):
     else:
       self.params.masking.ice_rings.d_min = None
     self.params.masking.ice_rings.filter = self.ice_rings_ctrl.GetValue()
+
+    self._resolution_range_d_min = float(
+      self.resolution_range_d_min_ctrl.GetValue())
+    self._resolution_range_d_max = float(
+      self.resolution_range_d_max_ctrl.GetValue())
+
+    if (self._resolution_range_d_min > 0 and self._resolution_range_d_max > 0):
+
+      self.params.masking.resolution_range.append(
+        (self._resolution_range_d_min, self._resolution_range_d_max))
+      self._resolution_range_d_min = 0
+      self._resolution_range_d_max = 0
 
     from dials.util import masking
     from libtbx.utils import flat_list
