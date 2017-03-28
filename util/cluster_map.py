@@ -35,14 +35,14 @@ def cluster_map(
     function,
     iterable,
     callback=None,
-    processes_per_node=1):
+    nslots=1):
   '''
   A function to map stuff on cluster using drmaa
 
   :param function: The function to call
   :param iterable: The iterable to pass to each function call
   :param callback: A callback function when each job completes
-  :param processes_per_node: The number of processes to request per cluster node
+  :param nslots: The number of processes to request per cluster node
 
   '''
   import multiprocessing
@@ -54,6 +54,12 @@ def cluster_map(
   import drmaa
 
   # Set the working directory and make sure it exists
+  # This will be where all the input/output files associated with the cluster
+  # submission will go. For each job there will be a file:
+  #  - ${INDEX}.input     The pickled input to the job
+  #  - ${INDEX}.output    The pickled output from the job
+  #  - ${INDEX}.stdout    The stdout from the job
+  #  - ${INDEX}.stderr    The stderr from the job
   cwd = tempfile.mkdtemp(prefix="dials_cluster_map_", dir=os.getcwd())
 
   # Start outputting the input files in a separate process
@@ -82,7 +88,8 @@ def cluster_map(
     # In order to select a cluster node with N cores
     # we have to use the native specification. This will work
     # on SGE but may not work for other queuing systems
-    jt.nativeSpecification = '-pe smp %d' % processes_per_node
+    # This will set the NSLOTS environment variable
+    jt.nativeSpecification = '-pe smp %d' % nslots
 
     N = len(iterable)
     try:
@@ -135,5 +142,6 @@ if __name__ == '__main__':
   print cluster_map(
     func,
     list(range(100)),
+    nslots=4
    # callback=callback,
     )

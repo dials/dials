@@ -27,6 +27,11 @@ def get_tid():
 
   '''
   import os
+
+  # FIXME At the moment, there is no portable way to know the task id through
+  # drmaa. This is really annoying. So we have to use the SGE_TASK_ID.
+  # Therefore, this will only work for SGE. We can probably add support for
+  # other systems as and when needed.
   if "SGE_TASK_ID" in os.environ:
     return os.environ['SGE_TASK_ID']
   else:
