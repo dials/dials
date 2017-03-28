@@ -23,20 +23,20 @@ help_message = '''
 
 Slice a sweep to produce a smaller sweep within the bounds of the original. If
 experiments or datablocks are provided, modify the scan objects within these. If
-reflections are provided, remove reflections outside the provided scan ranges.
-Each scan_range parameter refers to a single experiment ID, counting up from
-zero. Any reflections with experiment ID not matched by a scan_range parameter
+reflections are provided, remove reflections outside the provided image ranges.
+Each image_range parameter refers to a single experiment ID, counting up from
+zero. Any reflections with experiment ID not matched by a image_range parameter
 are removed.
 
 Examples::
 
-  dials.slice_sweep experiments.json reflections.pickle "scan_range=1 20"
+  dials.slice_sweep experiments.json reflections.pickle "image_range=1 20"
 
-  dials.slice_sweep datablock.json "scan_range=1 20"
+  dials.slice_sweep datablock.json "image_range=1 20"
 
   # two experiments and reflections with IDs '0' and '1'
   dials.slice_sweep experiments.json reflections.pickle \
-    "scan_range=1 20" "scan_range=5 30"
+    "image_range=1 20" "image_range=5 30"
 
 '''
 
@@ -53,7 +53,7 @@ phil_scope = parse('''
     reflections_filename = None
       .type = str
       .help = "The filename for output reflections sliced to remove those"
-              "outside the reduced scan range. By default generated"
+              "outside the reduced image range. By default generated"
               "automatically from the input name"
 
     datablocks_filename = None
@@ -63,17 +63,17 @@ phil_scope = parse('''
 
   }
 
-  scan_range = None
-    .help = "Scan range in images to slice a sweep. Number of arguments"
-            "must be a factor of two. Specifying \"0 0\" will use all images"
-            "by default. The given range follows C conventions"
-            "(e.g. j0 <= j < j1)."
+  image_range = None
+    .help = "Range in images to slice a sweep. The number of arguments"
+            "must be a factor of two. Each pair of arguments gives a range"
+            "that follows C conventions (e.g. j0 <= j < j1) when slicing the"
+            "reflections by observed centroid."
     .type = ints(size=2)
     .multiple = True
 
   block_size = None
     .type = float
-    .help = "Overrides scan_range if present. This option splits each sweep"
+    .help = "Overrides image_range if present. This option splits each sweep"
             "into the nearest integer number of equal size blocks close to"
             "block_size degrees in width"
 
@@ -88,7 +88,7 @@ def calculate_block_ranges(scan, block_size):
   :param block_size:
   :type block_size: target block size in degrees'''
 
-  scan_ranges = []
+  image_ranges = []
   nimages = scan.get_num_images()
   osc_range = scan.get_oscillation_range(deg=True)
   osc_width = abs(osc_range[1] - osc_range[0])
@@ -100,27 +100,27 @@ def calculate_block_ranges(scan, block_size):
     [nimages // nblocks + nimages % nblocks]
   start = scan.get_image_range()[0]
   for nim in nimages_per_block:
-    scan_ranges.append((start, start + nim - 1))
+    image_ranges.append((start, start + nim - 1))
     start += nim
 
-  return scan_ranges
+  return image_ranges
 
-def slice_experiments(experiments, scan_ranges):
+def slice_experiments(experiments, image_ranges):
   '''
 
   :param experiments
   :type experiments: dxtbx.model.experiment_list.ExperimentList
-  :param scan_range:
-  :type scan_range: list of 2-tuples defining scan range for each experiment'''
+  :param image_range:
+  :type image_range: list of 2-tuples defining scan range for each experiment'''
 
   # copy the experiments
   import copy
   experiments = copy.deepcopy(experiments)
 
-  if len(experiments) != len(scan_ranges):
-    raise Sorry("Input experiment list and scan_ranges are not of the same length")
+  if len(experiments) != len(image_ranges):
+    raise Sorry("Input experiment list and image_ranges are not of the same length")
 
-  for exp, sr in zip(experiments, scan_ranges):
+  for exp, sr in zip(experiments, image_ranges):
     if sr is None: continue
     im_range = exp.scan.get_image_range()
     if sr[0] < im_range[0] or sr[1] > im_range[1]:
@@ -133,21 +133,21 @@ def slice_experiments(experiments, scan_ranges):
 
   return experiments
 
-def slice_reflections(reflections, scan_ranges):
+def slice_reflections(reflections, image_ranges):
   '''
 
   :param reflections: reflection table of input reflections
   :type reflections: dials.array_family.flex.reflection_table
-  :param scan_range: list of 2-tuples defining scan range for each experiment
+  :param image_range: list of 2-tuples defining scan range for each experiment
                      id contained within the reflections
-  :type scan_range: list of 2-tuples defining scan range for each experiment'''
+  :type image_range: list of 2-tuples defining scan range for each experiment'''
 
   # copy the reflections
   import copy
   reflections = copy.deepcopy(reflections)
 
   to_keep = flex.size_t()
-  for iexp, sr in enumerate(scan_ranges):
+  for iexp, sr in enumerate(image_ranges):
 
     if sr is None: continue
     isel = (reflections['id'] == iexp).iselection()
@@ -162,16 +162,16 @@ def slice_reflections(reflections, scan_ranges):
     to_keep.extend(sub_isel)
 
   # implictly also removes any reflections with ID outside the range of the
-  # length of scan_ranges
+  # length of image_ranges
   return reflections.select(to_keep)
 
-def slice_datablocks(datablocks, scan_ranges):
+def slice_datablocks(datablocks, image_ranges):
   '''
 
   :param datablocks:
   :type datablocks: list of dxtbx.datablock.DataBlocks
-  :param scan_range:
-  :type scan_range: list of 2-tuples defining scan range for each unique scan'''
+  :param image_range:
+  :type image_range: list of 2-tuples defining scan range for each unique scan'''
 
   # copy the experiments
   import copy
@@ -181,10 +181,10 @@ def slice_datablocks(datablocks, scan_ranges):
   for db in datablocks:
     scans.extend(db.unique_scans())
 
-  if len(scans) != len(scan_ranges):
-    raise Sorry("Unique scans in the input datablock list and supplied scan_ranges are not of the same length")
+  if len(scans) != len(image_ranges):
+    raise Sorry("Unique scans in the input datablock list and supplied image_ranges are not of the same length")
 
-  for scan, sr in zip(scans, scan_ranges):
+  for scan, sr in zip(scans, image_ranges):
     if sr is None: continue
 
     im_range = scan.get_image_range()
@@ -260,8 +260,8 @@ class Script(object):
           "there are no experiments provided to calculate these.")
 
     # set trivial case where no scan range is provided at all
-    if not params.scan_range:
-      params.scan_range = [None]
+    if not params.image_range:
+      params.image_range = [None]
 
     # check if slicing into blocks
     if params.block_size is not None:
@@ -284,26 +284,26 @@ class Script(object):
         scan = scans[0]
 
       # Having extracted the scan, calculate the blocks
-      params.scan_range = calculate_block_ranges(scan, params.block_size)
+      params.image_range = calculate_block_ranges(scan, params.block_size)
 
       # Do the slicing then recombine
       if slice_exps:
         sliced = [slice_experiments(experiments, [sr])[0] \
-          for sr in params.scan_range]
+          for sr in params.image_range]
         sliced_experiments = ExperimentList()
         for exp in sliced:
           sliced_experiments.append(exp)
 
       if slice_dbs:
         sliced = [slice_datablocks(datablocks, [sr])[0] \
-          for sr in params.scan_range]
+          for sr in params.image_range]
         imagesets = [db.extract_imagesets()[0] for db in sliced]
         sliced_datablocks = DataBlock(imagesets)
 
       # slice reflections if present
       if slice_refs:
         sliced = [slice_reflections(reflections, [sr]) \
-          for sr in params.scan_range]
+          for sr in params.image_range]
         sliced_reflections = sliced[0]
         for i, rt in enumerate(sliced[1:]):
           rt['id'] += (i + 1) # set id
@@ -312,11 +312,11 @@ class Script(object):
     else:
       # slice each dataset into the requested subset
       if slice_exps:
-        sliced_experiments = slice_experiments(experiments, params.scan_range)
+        sliced_experiments = slice_experiments(experiments, params.image_range)
       if slice_refs:
-        sliced_reflections = slice_reflections(reflections, params.scan_range)
+        sliced_reflections = slice_reflections(reflections, params.image_range)
       if slice_dbs:
-        sliced_datablocks = slice_datablocks(datablocks, params.scan_range)
+        sliced_datablocks = slice_datablocks(datablocks, params.image_range)
 
     # Save sliced experiments
     if slice_exps:
@@ -326,8 +326,8 @@ class Script(object):
         bname = basename(params.input.experiments[0].filename)
         bname = splitext(bname)[0]
         if not bname: bname = "experiments"
-        if len(params.scan_range) == 1 and params.scan_range[0] is not None:
-          ext = "_{0}_{1}.json".format(*params.scan_range[0])
+        if len(params.image_range) == 1 and params.image_range[0] is not None:
+          ext = "_{0}_{1}.json".format(*params.image_range[0])
         else:
           ext = "_sliced.json"
         output_experiments_filename = bname + ext
@@ -346,8 +346,8 @@ class Script(object):
         bname = basename(params.input.reflections[0].filename)
         bname = splitext(bname)[0]
         if not bname: bname = "reflections"
-        if len(params.scan_range) == 1 and params.scan_range[0] is not None:
-          ext = "_{0}_{1}.pickle".format(*params.scan_range[0])
+        if len(params.image_range) == 1 and params.image_range[0] is not None:
+          ext = "_{0}_{1}.pickle".format(*params.image_range[0])
         else:
           ext = "_sliced.pickle"
         output_reflections_filename = bname + ext
@@ -364,8 +364,8 @@ class Script(object):
         bname = basename(params.input.datablock[0].filename)
         bname = splitext(bname)[0]
         if not bname: bname = "datablock"
-        if len(params.scan_range) == 1 and params.scan_range[0] is not None:
-          ext = "_{0}_{1}.json".format(*params.scan_range[0])
+        if len(params.image_range) == 1 and params.image_range[0] is not None:
+          ext = "_{0}_{1}.json".format(*params.image_range[0])
         else:
           ext = "_sliced.json"
         output_datablocks_filename = bname + ext
