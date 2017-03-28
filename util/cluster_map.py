@@ -31,25 +31,30 @@ class InputWriter(object):
           protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def cluster_map(function, iterable, callback=None):
+def cluster_map(
+    function,
+    iterable,
+    callback=None,
+    processes_per_node=1):
   '''
   A function to map stuff on cluster using drmaa
+
+  :param function: The function to call
+  :param iterable: The iterable to pass to each function call
+  :param callback: A callback function when each job completes
+  :param processes_per_node: The number of processes to request per cluster node
 
   '''
   import multiprocessing
   import cPickle as pickle
   from os.path import join
   import os
+  import sys
+  import tempfile
   import drmaa
 
   # Set the working directory and make sure it exists
-  cwd = join(os.getcwd(), "cluster_io_data")
-  try:
-    os.mkdir(cwd)
-  except OSError as exc:
-    import errno
-    if exc.errno != errno.EEXIST:
-      raise exc
+  cwd = tempfile.mkdtemp(prefix="dials_cluster_map_", dir=os.getcwd())
 
   # Start outputting the input files in a separate process
   process = multiprocessing.Process(
@@ -70,16 +75,27 @@ def cluster_map(function, iterable, callback=None):
     jt.joinFiles        = True
     jt.jobEnvironment   = os.environ
     jt.workingDirectory = cwd
-    #jt.nativeSpecification = '-pe smp %d' % 10
+    jt.outputPath       = ":" + os.path.join(cwd, "%s.stdout" % drmaa.JobTemplate.PARAMETRIC_INDEX)
+    jt.errorPath        = ":" + os.path.join(cwd, "%s.stderr" % drmaa.JobTemplate.PARAMETRIC_INDEX)
+
+    # FIXME Currently no portable way of specifying this
+    # In order to select a cluster node with N cores
+    # we have to use the native specification. This will work
+    # on SGE but may not work for other queuing systems
+    jt.nativeSpecification = '-pe smp %d' % processes_per_node
 
     N = len(iterable)
     try:
+
+      # Submit the array job
       joblist = s.runBulkJobs(jt, 1, N, 1)
 
       # For each item, load the result and process
       result = []
       for i, jobid in enumerate(joblist, start=1):
         s.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
+        with open(join(cwd, "%d.stdout" % i), "r") as infile:
+          sys.stdout.write("".join(infile.readlines()))
         with open(join(cwd, "%d.output" % i), "rb") as infile:
           r = pickle.load(infile)
         if isinstance(r, Exception):
@@ -116,4 +132,8 @@ if __name__ == '__main__':
     print x
 
   from dials.util.cluster_func_test import func
-  print cluster_map(func, list(range(10000)), callback=callback)
+  print cluster_map(
+    func,
+    list(range(100)),
+   # callback=callback,
+    )
