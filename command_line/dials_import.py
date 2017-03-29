@@ -300,6 +300,8 @@ class ManualGeometryUpdater(object):
       scan = ScanFactory.from_phil(
         self.params.geometry,
         imageset.get_scan())
+      i0, i1 = scan.get_array_range()
+      imageset = imageset[i0:i1]
       imageset.set_beam(beam)
       imageset.set_detector(detector)
       imageset.set_goniometer(goniometer)
