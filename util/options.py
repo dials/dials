@@ -87,173 +87,22 @@ geometry_phil_scope = libtbx.phil.parse('''
 geometry
   .help = "Allow overrides of experimental geometry"
 {
+  include scope dxtbx.model.beam.beam_phil_scope
+  include scope dxtbx.model.detector.detector_phil_scope
+  include scope dxtbx.model.goniometer.goniometer_phil_scope
+  include scope dxtbx.model.scan.scan_phil_scope
 
-  beam
-    .expert_level = 1
-    .short_caption = "Beam overrides"
-  {
+  convert_stills_to_sweeps = False
+    .type = bool
+    .help = "When overriding the scan, convert stills into sweeps"
+    .short_caption = "Convert stills into sweeps"
 
-    wavelength = None
-      .type = float
-      .help = "Override the beam wavelength"
-
-    direction = None
-      .type = floats(size=3)
-      .help = "Override the sample to source direction"
-      .short_caption = "Sample to source direction"
-
-  }
-
-  detector
-    .expert_level = 1
-    .short_caption = "Detector overrides"
-  {
-    panel
-      .multiple = True
-    {
-      id = 0
-        .type = int
-        .help = "The panel number"
-        .short_caption = "Panel ID"
-
-      name = None
-        .type = str
-        .help = "Override the panel name"
-        .short_caption = "Panel name"
-
-      type = None
-        .type = str
-        .help = "Override the panel type"
-        .short_caption = "Panel type"
-
-      pixel_size = None
-        .type = floats(size=2)
-        .help = "Override the panel pixel size"
-        .short_caption = "Panel pixel size"
-
-      image_size = None
-        .type = ints(size=2)
-        .help = "Override the panel image size"
-        .short_caption= "Panel image size"
-
-      trusted_range = None
-        .type = floats(size=2)
-        .help = "Override the panel trusted range"
-        .short_caption = "Panel trusted range"
-
-      thickness = None
-        .type = float
-        .help = "Override the panel thickness"
-        .short_caption = "Panel thickness"
-
-      material = None
-        .type = str
-        .help = "Override the panel material"
-        .short_caption = "Panel material"
-
-      fast_axis = None
-        .type = floats(size=3)
-        .help = "Override the panel fast axis. Requires slow_axis and origin."
-        .short_caption = "Panel fast axis direction"
-
-      slow_axis = None
-        .type = floats(size=3)
-        .help = "Override the panel slow axis. Requires fast_axis and origin."
-        .short_caption = "Panel slow axis direction"
-
-      origin = None
-        .type = floats(size=3)
-        .help = "Override the panel origin. Requires fast_axis and slow_axis."
-        .short_caption = "Panel origin vector"
-
-    }
-
-  }
-
-  goniometer
-    .expert_level = 1
-    .short_caption = "Goniometer overrides"
-  {
-
-    axes = None
-      .type = floats
-      .help = "Override the goniometer axes. Axes must be provided in the"
-              "order crystal-to-goniometer, i.e. for a Kappa goniometer"
-              "phi,kappa,omega"
-      .short_caption="Goniometer axes"
-
-    angles = None
-      .type = floats
-      .help = "Override the goniometer angles. Axes must be provided in the"
-              "order crystal-to-goniometer, i.e. for a Kappa goniometer"
-              "phi,kappa,omega"
-      .short_caption = "Goniometer angles"
-
-    fixed_rotation = None
-      .type = floats(size=9)
-      .help = "Override the fixed rotation matrix"
-      .short_caption = "Fixed rotation matrix"
-
-    setting_rotation = None
-      .type = floats(size=9)
-      .help = "Override the setting rotation matrix"
-      .short_caption = "Setting rotation matrix"
-
-  }
-
-  scan
-    .expert_level = 1
-    .short_caption = "Scan overrides"
-  {
-
-    image_range = None
-      .type = ints(size=2)
-      .help = "Override the image range"
-      .short_caption = "Image range"
-
-    extrapolate_scan = False
-      .type = bool
-      .help = "When overriding the image range, extrapolate exposure and epoch information from existing images"
-      .short_caption = "Extrapolate scan"
-
-    oscillation = None
-      .type = floats(size=2)
-      .help = "Override the image oscillation"
-      .short_caption = "Oscillation"
-
-    convert_stills_to_sweeps = False
-      .type = bool
-      .help = "When overriding the scan, convert stills into sweeps"
-      .short_caption = "Convert stills into sweeps"
-
-    convert_sweeps_to_stills = False
-      .type = bool
-      .help = "When overriding the scan, convert sweeps into stills"
-      .short_caption = "Convert sweeps into stills"
-
-  }
-
-  mosflm_beam_centre = None
-    .type = floats(size=2)
-    .help = "Override the beam centre from the image headers, following "
-            "the mosflm convention."
-    .short_caption = "Beam centre coordinates (mm, mm) using the Mosflm convention"
-
-  slow_fast_beam_centre = None
-    .type = ints(size_min=2, size_max=3)
-    .help = "Override the beam centre from the image headers, following "
-            "the slow/fast pixel convention used by dials.image_viewer."
-            "The first two values are the slow and fast pixel coordinate."
-            "If the third is supplied it specifies a panel number."
-    .short_caption = "Beam centre coordinates (px slow, px fast, [panel id])"
-
-  translate_detector = None
-    .type = floats(size=3)
-    .help = "Translate the detector by the specified amount"
-    .expert_level = 1
-    .short_caption = "Vector to translate detector by"
+  convert_sweeps_to_stills = False
+    .type = bool
+    .help = "When overriding the scan, convert sweeps into stills"
+    .short_caption = "Convert sweeps into stills"
 }
-''')
+''', process_includes=True)
 
 
 format_phil_scope = libtbx.phil.parse('''

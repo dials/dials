@@ -258,93 +258,6 @@ class ReferenceGeometryUpdater(object):
     return Reference(detector=reference_detector, beam=reference_beam)
 
 
-class MosflmBeamCenterUpdater(object):
-  '''
-  A class to replace geometry with mosflm beam centre
-
-  '''
-  def __init__(self, params):
-    '''
-    Set the params
-
-    '''
-    self.params = params
-
-  def __call__(self, imageset):
-    '''
-    Replace the geometry
-
-    '''
-    from dxtbx.model.detector_helpers import set_mosflm_beam_centre
-    set_mosflm_beam_centre(
-      imageset.get_detector(),
-      imageset.get_beam(),
-      self.params.geometry.mosflm_beam_centre)
-    return imageset
-
-class PixelBeamCenterUpdater(object):
-  '''
-  A class to replace geometry with the beam centre in slow/fast pixels
-
-  '''
-  def __init__(self, params):
-    '''
-    Set the params
-
-    '''
-    self.params = params
-
-  def __call__(self, imageset):
-    '''
-    Replace the geometry
-
-    '''
-    beam_s, beam_f = self.params.geometry.slow_fast_beam_centre[0:2]
-    pnl = 0
-    if len(self.params.geometry.slow_fast_beam_centre) > 2:
-      pnl = self.params.geometry.slow_fast_beam_centre[2]
-
-    detector = imageset.get_detector()
-    try:
-      p = detector[pnl]
-    except RuntimeError:
-      raise Sorry('Detector does not have panel index {0}'.format(pnl))
-
-    beam = imageset.get_beam()
-    beam.set_unit_s0(p.get_pixel_lab_coord((beam_f, beam_s)))
-
-    return imageset
-
-class TranslateDetectorUpdater(object):
-  '''
-  A class to translate the detector
-
-  '''
-  def __init__(self, params):
-    '''
-    Set the params
-
-    '''
-    self.params = params
-
-  def __call__(self, imageset):
-    '''
-    Replace the geometry
-
-    '''
-    translation = self.params.geometry.translate_detector
-    detector = imageset.get_detector()
-    origin = detector.hierarchy().get_origin()
-    fast_axis = detector.hierarchy().get_fast_axis()
-    slow_axis = detector.hierarchy().get_slow_axis()
-    origin = (
-      origin[0] + translation[0],
-      origin[1] + translation[1],
-      origin[2] + translation[2])
-    detector.hierarchy().set_frame(fast_axis, slow_axis, origin)
-    return imageset
-
-
 class ManualGeometryUpdater(object):
   '''
   A class to update the geometry manually
@@ -362,91 +275,89 @@ class ManualGeometryUpdater(object):
     Override the parameters
 
     '''
-    if self.params.geometry.scan.convert_sweeps_to_stills:
-      from dxtbx.imageset import ImageSet
-      imageset = ImageSet(reader=imageset.reader())
+    from dxtbx.imageset import ImageSet
     from dxtbx.imageset import ImageSweep
+    from dxtbx.model import BeamFactory
+    from dxtbx.model import DetectorFactory
+    from dxtbx.model import GoniometerFactory
+    from dxtbx.model import ScanFactory
+    if self.params.geometry.convert_sweeps_to_stills:
+      imageset = ImageSet(reader=imageset.reader())
+    if not isinstance(imageset, ImageSweep):
+      if self.params.geometry.convert_stills_to_sweeps:
+        imageset = self.convert_stills_to_sweep(imageset)
     if isinstance(imageset, ImageSweep):
-      self.override_beam(
-        imageset.get_beam(),
-        self.params.geometry.beam)
-      self.override_detector(
+      beam = BeamFactory.from_phil(
+        self.params.geometry,
+        imageset.get_beam())
+      detector = DetectorFactory.from_phil(
+        self.params.geometry,
         imageset.get_detector(),
-        self.params.geometry.detector,
-        imageset.get_beam(),
-        self.params.geometry.beam)
-      self.override_goniometer(
-        imageset.get_goniometer(),
-        self.params.geometry.goniometer)
-      self.override_scan(
-        imageset.get_scan(),
-        self.params.geometry.scan)
-    elif not self.params.geometry.scan.convert_stills_to_sweeps:
-      for i in range(len(imageset)):
-        self.override_beam(
-          imageset.get_beam(index=i),
-          self.params.geometry.beam)
-        self.override_detector(
-          imageset.get_detector(index=i),
-          self.params.geometry.detector,
-          imageset.get_beam(index=i),
-          self.params.geometry.beam)
-        self.override_goniometer(
-          imageset.get_goniometer(index=i),
-          self.params.geometry.goniometer)
-        self.override_scan(
-          imageset.get_scan(index=i),
-          self.params.geometry.scan)
+        beam)
+      goniometer = GoniometerFactory.from_phil(
+        self.params.geometry,
+        imageset.get_goniometer())
+      scan = ScanFactory.from_phil(
+        self.params.geometry,
+        imageset.get_scan())
+      imageset.set_beam(beam)
+      imageset.set_detector(detector)
+      imageset.set_goniometer(goniometer)
+      imageset.set_scan(scan)
     else:
-      imageset = self.convert_stills_to_sweep(imageset)
+      for i in range(len(imageset)):
+        beam = BeamFactory.from_phil(
+          self.params.geometry,
+          imageset.get_beam(i))
+        detector = DetectorFactory.from_phil(
+          self.params.geometry,
+          imageset.get_detector(i),
+          beam)
+        goniometer = GoniometerFactory.from_phil(
+          self.params.geometry,
+          imageset.get_goniometer(i))
+        scan = ScanFactory.from_phil(
+          self.params.geometry,
+          imageset.get_scan(i))
+        imageset.set_beam(beam, i)
+        imageset.set_detector(detector, i)
+        imageset.set_goniometer(goniometer, i)
+        imageset.set_scan(scan, i)
     return imageset
 
   def convert_stills_to_sweep(self, imageset):
     from dxtbx.model import Scan
     assert self.params.geometry.scan.oscillation is not None
-    for i in range(len(imageset)):
-      self.override_beam(
-        imageset.get_beam(index=i),
-        self.params.geometry.beam)
-      self.override_detector(
-        imageset.get_detector(index=i),
-        self.params.geometry.detector)
-      self.override_goniometer(
-        imageset.get_goniometer(index=i),
-        self.params.geometry.goniometer)
     beam = imageset.get_beam(index=0)
     detector = imageset.get_detector(index=0)
     goniometer = imageset.get_goniometer(index=0)
     for i in range(1, len(imageset)):
-      assert beam.is_similar_to(
+      b_i = imageset.get_beam(i)
+      d_i = imageset.get_detector(i)
+      g_i = imageset.get_goniometer(i)
+      assert (beam is None and b_i is None) or beam.is_similar_to(
         imageset.get_beam(index=i),
         wavelength_tolerance            = self.params.input.tolerance.beam.wavelength,
         direction_tolerance             = self.params.input.tolerance.beam.direction,
         polarization_normal_tolerance   = self.params.input.tolerance.beam.polarization_normal,
         polarization_fraction_tolerance = self.params.input.tolerance.beam.polarization_fraction)
-      assert detector.is_similar_to(
+      assert (detector is None and d_i is None) or detector.is_similar_to(
         imageset.get_detector(index=i),
         fast_axis_tolerance = self.params.input.tolerance.detector.fast_axis,
         slow_axis_tolerance = self.params.input.tolerance.detector.slow_axis,
         origin_tolerance    = self.params.input.tolerance.detector.origin)
-      assert goniometer.is_similar_to(
+      assert (goniometer is None and g_i is None) or goniometer.is_similar_to(
         imageset.get_goniometer(index=i),
         rotation_axis_tolerance    = self.params.input.tolerance.goniometer.rotation_axis,
         fixed_rotation_tolerance   = self.params.input.tolerance.goniometer.fixed_rotation,
         setting_rotation_tolerance = self.params.input.tolerance.goniometer.setting_rotation)
-    assert beam is not None
-    assert detector is not None
-    assert goniometer is not None
-    if self.params.geometry.scan.image_range is not None:
-      image_range = self.params.geometry.scan.image_range
-    else:
-      image_range = (1, len(imageset))
     oscillation = self.params.geometry.scan.oscillation
-    scan = Scan(image_range=image_range, oscillation=oscillation)
-    from dxtbx.sweep_filenames import template_regex
+    from dxtbx.sweep_filenames import template_regex_from_list
     from dxtbx.imageset import ImageSetFactory
-    indices      = list(range(image_range[0], image_range[1]+1))
-    template = template_regex(imageset.get_path(0))[0]
+    template, indices = template_regex_from_list(imageset.paths())
+    image_range = (min(indices), max(indices))
+    assert (image_range[1]+1 - image_range[0]) == len(indices)
+    scan = Scan(image_range=image_range, oscillation=oscillation)
     if template is None:
       paths = [imageset.get_path(i) for i in range(len(imageset))]
       assert len(set(paths)) == 1
@@ -461,138 +372,6 @@ class ManualGeometryUpdater(object):
       scan         = scan)
     return new_sweep
 
-  def override_beam(self, beam, params):
-    '''
-    Override the beam parameters
-
-    '''
-    if params.wavelength is not None:
-      beam.set_wavelength(params.wavelength)
-    if params.direction is not None:
-      beam.set_direction(params.direction)
-
-  def override_detector(self, detector, params, beam, beam_params):
-    '''
-    Override the detector parameters
-
-    '''
-
-    # need to gather material from multiple phil parameters to set
-    frame_hash = { }
-    for panel_params in params.panel:
-      panel_id = panel_params.id
-      panel = detector[panel_params.id]
-
-      if not panel_id in frame_hash:
-        frame_hash[panel_id] = {'fast_axis':None,
-                                'slow_axis':None,
-                                'origin':None}
-
-      if panel_params.fast_axis is not None:
-        frame_hash[panel_id]['fast_axis'] = panel_params.fast_axis
-      if panel_params.slow_axis is not None:
-        frame_hash[panel_id]['slow_axis'] = panel_params.slow_axis
-      if panel_params.origin is not None:
-        frame_hash[panel_id]['origin'] = panel_params.origin
-
-      if panel_params.name is not None:
-        panel.set_name(panel_params.name)
-      if panel_params.type is not None:
-        panel.set_type(panel_params.type)
-      if panel_params.pixel_size is not None:
-        panel.set_pixel_size(panel_params.pixel_size)
-      if panel_params.image_size is not None:
-        panel.set_image_size(panel_params.image_size)
-      if panel_params.trusted_range is not None:
-        panel.set_trusted_range(panel_params.trusted_range)
-      if panel_params.thickness is not None:
-        panel.set_thickness(panel_params.thickness)
-      if panel_params.material is not None:
-        panel.set_material(panel_params.material)
-
-      # Update the parallax correction
-      if (panel_params.material is not None or
-          panel_params.thickness is not None or
-          beam_params.wavelength is not None):
-        from dxtbx.model import ParallaxCorrectedPxMmStrategy
-        from cctbx.eltbx import attenuation_coefficient
-        table = attenuation_coefficient.get_table(panel.get_material())
-        mu = table.mu_at_angstrom(beam.get_wavelength()) / 10.0
-        t0 = panel.get_thickness()
-        px_mm = ParallaxCorrectedPxMmStrategy(mu, t0)
-        panel.set_px_mm_strategy(px_mm)
-        panel.set_mu(mu)
-
-
-
-    for panel_id in frame_hash:
-      fast_axis = frame_hash[panel_id]['fast_axis']
-      slow_axis = frame_hash[panel_id]['slow_axis']
-      origin = frame_hash[panel_id]['origin']
-      if [fast_axis, slow_axis, origin].count(None) == 0:
-        panel = detector[panel_id]
-        panel.set_frame(fast_axis, slow_axis, origin)
-      elif [fast_axis, slow_axis, origin].count(None) != 3:
-        raise Sorry("fast_axis, slow_axis and origin must be set together")
-
-  def override_goniometer(self, goniometer, params):
-    '''
-    Override the goniometer parameters
-
-    '''
-    if goniometer is not None:
-      if params.axes is not None:
-        if len(params.axes) % 3:
-          raise Sorry("Number of values for axes parameter must be multiple of 3.")
-        if len(params.axes) == 3:
-          goniometer.set_rotation_axis_datum(params.axes)
-        elif len(params.axes) > 3:
-          from scitbx.array_family import flex
-          axes = flex.vec3_double(
-            params.axes[i*3:(i*3)+3] for i in range(len(params.axes) // 3))
-          if not hasattr(goniometer, 'get_axes'):
-            raise Sorry("Current goniometer is not a multi-axis goniometer")
-          if len(goniometer.get_axes()) != len(axes):
-            raise Sorry("Number of axes must match the current goniometer (%s)"
-               %len(goniometer.get_axes()))
-          goniometer.set_axes(axes)
-      if params.angles is not None:
-        if not hasattr(goniometer, 'get_axes'):
-          raise Sorry("Current goniometer is not a multi-axis goniometer")
-        if len(goniometer.get_angles()) != len(params.angles):
-          raise Sorry("Number of angles must match the current goniometer (%s)"
-             %len(goniometer.get_angles()))
-        goniometer.set_angles(params.angles)
-      if params.fixed_rotation is not None:
-        goniometer.set_fixed_rotation(params.fixed_rotation)
-      if params.setting_rotation is not None:
-        goniometer.set_setting_rotation(params.setting_rotation)
-
-  def override_scan(self, scan, params):
-    '''
-    Override the scan parameters
-
-    '''
-    if scan is not None:
-      if params.image_range is not None:
-        most_recent_image_index = scan.get_image_range()[1] - scan.get_image_range()[0]
-        scan.set_image_range(params.image_range)
-        if params.extrapolate_scan and \
-            (params.image_range[1] - params.image_range[0]) > most_recent_image_index:
-          exposure_times = scan.get_exposure_times()
-          epochs = scan.get_epochs()
-          exposure_time = exposure_times[most_recent_image_index]
-          epoch_correction = epochs[most_recent_image_index]
-          for i in range(most_recent_image_index + 1, \
-              params.image_range[1] - params.image_range[0] + 1):
-            exposure_times[i] = exposure_time
-            epoch_correction += exposure_time
-            epochs[i] = epoch_correction
-          scan.set_epochs(epochs)
-          scan.set_exposure_times(exposure_times)
-      if params.oscillation is not None:
-        scan.set_oscillation(params.oscillation)
-
 
 class MetaDataUpdater(object):
   '''
@@ -604,6 +383,8 @@ class MetaDataUpdater(object):
     Init the class
 
     '''
+    from dials.util.options import geometry_phil_scope
+
     self.params = params
 
     # Create the geometry updater
@@ -616,29 +397,18 @@ class MetaDataUpdater(object):
       update_order.append("Reference geometry")
 
     # Then add manual geometry
-    self.update_geometry.append(ManualGeometryUpdater(self.params))
-    update_order.append("Manual geometry")
+    working_phil = geometry_phil_scope.format(self.params)
+    diff_phil = geometry_phil_scope.fetch_diff(source=working_phil)
+    if diff_phil.as_str() != "":
+      self.update_geometry.append(ManualGeometryUpdater(self.params))
+      update_order.append("Manual geometry")
 
-    # Then add mosflm beam centre
-    if self.params.geometry.mosflm_beam_centre is not None:
-      self.update_geometry.append(MosflmBeamCenterUpdater(self.params))
-      update_order.append("Mosflm beam centre")
-
-    # Then add slow/fast pixel beam centre
-    if self.params.geometry.slow_fast_beam_centre is not None:
-      self.update_geometry.append(PixelBeamCenterUpdater(self.params))
-      update_order.append("Slow/Fast pixel beam centre")
-
-    # Then add translation of detector
-    if self.params.geometry.translate_detector is not None:
-      self.update_geometry.append(TranslateDetectorUpdater(self.params))
-      update_order.append("Detector translation")
-
-    logger.info("")
-    logger.info("Applying input geometry in the following order:")
-    for i, item in enumerate(update_order, start=1):
-      logger.info("  %d. %s" % (i, item))
-    logger.info("")
+    if len(update_order) > 0:
+      logger.info("")
+      logger.info("Applying input geometry in the following order:")
+      for i, item in enumerate(update_order, start=1):
+        logger.info("  %d. %s" % (i, item))
+      logger.info("")
 
   def __call__(self, datablock):
     '''
@@ -660,6 +430,13 @@ class MetaDataUpdater(object):
     # Loop through imagesets
     for imageset in datablock.extract_imagesets():
 
+      # Set the external lookups
+      imageset = self.update_lookup(imageset, lookup)
+
+      # Update the geometry
+      for updater in self.update_geometry:
+        imageset = updater(imageset)
+
       # Check beam and detector are present
       if imageset.get_beam() == None or imageset.get_detector() == None:
         raise Sorry('''
@@ -669,14 +446,9 @@ class MetaDataUpdater(object):
           Possible causes of this error are:
              - A problem reading the images with one of the dxtbx format classes
              - A lack of header information in the file itself.
+
+          You can override this by specifying the metadata as geometry parameters
         ''')
-
-      # Set the external lookups
-      imageset = self.update_lookup(imageset, lookup)
-
-      # Update the geometry
-      for updater in self.update_geometry:
-        imageset = updater(imageset)
 
       # Append to new imageset list
       imageset_list.append(imageset)
