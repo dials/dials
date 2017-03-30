@@ -553,7 +553,11 @@ class SpotFrame(XrayFrame) :
     ring_data = []
 
     # FIXME Currently assuming that all panels are in same plane
-    pan = detector[0]
+    p_id = detector.get_panel_intersection(beam.get_s0())
+    if p_id == -1:
+      p_id = 0 # XXX beam doesn't intersect with any panels - is there a better solution?
+    pan = detector[p_id]
+
     for tt, d, pxl in zip(twotheta, spacings, L_pixels):
       try:
         # Find 4 rays for given d spacing / two theta angle
@@ -601,8 +605,22 @@ class SpotFrame(XrayFrame) :
         cx = (xs1 + t1 * yd1) / 2
         assert abs(cx - (xs2 + t2 * yd2) / 2) < 0.1
 
+      centre = (cx, cy)
+
+      if len(detector) > 1:
+        centre = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+          p_id, centre[1], centre[0])[::-1]
+        dp1 = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+            p_id, dp1[1], dp1[0])[::-1]
+        dp2 = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+          p_id, dp2[1], dp2[0])[::-1]
+        dp3 = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+          p_id, dp3[1], dp3[0])[::-1]
+        dp4 = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+          p_id, dp4[1], dp4[0])[::-1]
+
       # translate ellipse centre and four points to map coordinates
-      centre = self.pyslip.tiles.picture_fast_slow_to_map_relative(cx, cy)
+      centre = self.pyslip.tiles.picture_fast_slow_to_map_relative(*centre)
       dp1 = self.pyslip.tiles.picture_fast_slow_to_map_relative(dp1[0], dp1[1])
       dp2 = self.pyslip.tiles.picture_fast_slow_to_map_relative(dp2[0], dp2[1])
       dp3 = self.pyslip.tiles.picture_fast_slow_to_map_relative(dp3[0], dp3[1])
@@ -640,6 +658,9 @@ class SpotFrame(XrayFrame) :
         for angle in (45, 135, 225, 315):
           txtvec = cb1.rotate_around_origin(axis=beamvec, angle=angle/180*3.14159)
           txtpos = pan.get_ray_intersection_px(txtvec)
+          if len(detector) > 1:
+            txtpos = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+              p_id, txtpos[1], txtpos[0])[::-1]
           x, y = self.pyslip.tiles.picture_fast_slow_to_map_relative(txtpos[0], txtpos[1])
           resolution_text_data.append(
             (x, y, "%.2f" %d, {
