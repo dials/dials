@@ -32,14 +32,14 @@ class InputWriter(object):
 
 
 def cluster_map(
-    function,
+    func,
     iterable,
     callback=None,
     nslots=1):
   '''
   A function to map stuff on cluster using drmaa
 
-  :param function: The function to call
+  :param func: The function to call
   :param iterable: The iterable to pass to each function call
   :param callback: A callback function when each job completes
   :param nslots: The number of processes to request per cluster node
@@ -66,7 +66,7 @@ def cluster_map(
   process = multiprocessing.Process(
     target = InputWriter(
       cwd,
-      function,
+      func,
       iterable))
   process.start()
 
@@ -81,8 +81,8 @@ def cluster_map(
     jt.joinFiles        = True
     jt.jobEnvironment   = os.environ
     jt.workingDirectory = cwd
-    jt.outputPath       = ":" + os.path.join(cwd, "%s.stdout" % drmaa.JobTemplate.PARAMETRIC_INDEX)
-    jt.errorPath        = ":" + os.path.join(cwd, "%s.stderr" % drmaa.JobTemplate.PARAMETRIC_INDEX)
+    jt.outputPath       = ":" + join(cwd, "%s.stdout" % drmaa.JobTemplate.PARAMETRIC_INDEX)
+    jt.errorPath        = ":" + join(cwd, "%s.stderr" % drmaa.JobTemplate.PARAMETRIC_INDEX)
 
     # FIXME Currently no portable way of specifying this
     # In order to select a cluster node with N cores
@@ -133,12 +133,19 @@ def cluster_map(
   # Return the result
   return result
 
+
+
+
 if __name__ == '__main__':
 
   def callback(x):
     print x
 
   from dials.util.cluster_func_test import func
+  from dials.util.mp import MultiNodeClusterFunction
+
+
+
   print cluster_map(
     func,
     list(range(100)),
