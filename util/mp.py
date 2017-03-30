@@ -12,6 +12,44 @@
 from __future__ import absolute_import, division
 
 
+def parallel_map(
+    func,
+    iterable,
+    processes                  = 1,
+    nslots                     = 1,
+    method                     = None,
+    asynchronous               = True,
+    callback                   = None,
+    preserve_order             = True,
+    preserve_exception_message = False):
+  '''
+  A wrapper function to call either drmaa or easy_mp to do a parallel map
+  calculation. This function is setup so that in each case we can select
+  the number of cores on a machine
+
+  '''
+  from dials.util.cluster_map import cluster_map as drmaa_parallel_map
+  from libtbx.easy_mp import parallel_map as easy_mp_parallel_map
+  if method == "drmaa":
+    return drmaa_parallel_map(
+      func     = func,
+      iterable = iterable,
+      callback = callback,
+      nslots   = nslots)
+  else:
+    qsub_command = 'qsub -pe smp %d' % nslots
+    return easy_mp_parallel_map(
+      func                       = func,
+      iterable                   = iterable,
+      callback                   = callback,
+      method                     = method,
+      processes                  = processes,
+      qsub_command               = qsub_command,
+      asynchronous               = asynchronous,
+      preserve_order             = preserve_order,
+      preserve_exception_message = preserve_exception_message)
+
+
 class MultiNodeClusterFunction(object):
   '''
   A function called by the multi node parallel map. On each cluster node, a
@@ -39,8 +77,8 @@ class MultiNodeClusterFunction(object):
     Call the function
 
     '''
-    from libtbx.easy_mp import parallel_map
-    return parallel_map(
+    from libtbx.easy_mp import parallel_map as easy_mp_parallel_map
+    return easy_mp_parallel_map(
       func                       = self.func,
       iterable                   = iterable,
       processes                  = self.nproc,
@@ -99,7 +137,6 @@ def multi_node_parallel_map(
   multiple processors on each node
 
   '''
-  from libtbx.easy_mp import parallel_map
 
   # The function to all on the cluster
   cluster_func = MultiNodeClusterFunction(
@@ -118,20 +155,20 @@ def multi_node_parallel_map(
   else:
     cluster_callback = None
 
-  # Set the command
-  qsub_command = 'qsub -pe smp %d' % nproc
-
   # Do the parallel map on the cluster
-  parallel_map(
+  result = parallel_map(
     func                       = cluster_func,
     iterable                   = cluster_iterable,
     callback                   = cluster_callback,
     method                     = cluster_method,
+    nslots                     = nproc,
     processes                  = njobs,
-    qsub_command               = qsub_command,
     asynchronous               = asynchronous,
     preserve_order             = preserve_order,
     preserve_exception_message = preserve_exception_message)
+
+  # return result
+  return [item for rlist in result for item in rlist]
 
 
 class BatchFunc(object):

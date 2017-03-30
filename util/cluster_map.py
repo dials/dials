@@ -91,7 +91,7 @@ def cluster_map(
     # This will set the NSLOTS environment variable
     jt.nativeSpecification = '-pe smp %d' % nslots
 
-    N = len(iterable)
+    N = len(list(iterable))
     try:
 
       # Submit the array job

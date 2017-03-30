@@ -104,7 +104,7 @@ def generate_phil_scope():
     }
 
     mp {
-      method = *none sge lsf pbs
+      method = *none drmaa sge lsf pbs
         .type = choice
         .help = "The cluster method to use"
 
