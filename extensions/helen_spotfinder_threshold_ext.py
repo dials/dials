@@ -24,22 +24,27 @@ class HelenSpotFinderThresholdExt(SpotFinderThresholdIface):
 
       exp_spot_dimension = 3
         .type = int
+        .expert_level = 2
         .help = "The expected spot dimensions"
 
       global_threshold = 100
         .type = float
+        .expert_level = 2
         .help = "The global threshold value."
 
       min_blob_score = 0.7
         .type = float
+        .expert_level = 2
         .help = "The minimum score for a blob"
 
       num_passes = 0
         .type = int
+        .expert_level = 2
         .help = "Number of passes after updating ideal spot"
 
       debug = False
         .type = bool
+        .expert_level = 2
         .help = "Write out correlation"
 
     ''')
