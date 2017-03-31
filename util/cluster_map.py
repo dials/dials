@@ -35,7 +35,9 @@ def cluster_map(
     func,
     iterable,
     callback=None,
-    nslots=1):
+    nslots=1,
+    njobs=1,
+    job_category="low"):
   '''
   A function to map stuff on cluster using drmaa
 
@@ -83,13 +85,14 @@ def cluster_map(
     jt.workingDirectory = cwd
     jt.outputPath       = ":" + join(cwd, "%s.stdout" % drmaa.JobTemplate.PARAMETRIC_INDEX)
     jt.errorPath        = ":" + join(cwd, "%s.stderr" % drmaa.JobTemplate.PARAMETRIC_INDEX)
+    jt.jobCategory      = job_category
 
     # FIXME Currently no portable way of specifying this
     # In order to select a cluster node with N cores
     # we have to use the native specification. This will work
     # on SGE but may not work for other queuing systems
     # This will set the NSLOTS environment variable
-    jt.nativeSpecification = '-pe smp %d' % nslots
+    jt.nativeSpecification = '-pe smp %d -tc %d' % (nslots, njobs)
 
     N = len(list(iterable))
     try:

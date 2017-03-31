@@ -21,7 +21,8 @@ def parallel_map(
     asynchronous               = True,
     callback                   = None,
     preserve_order             = True,
-    preserve_exception_message = False):
+    preserve_exception_message = False,
+    job_category               = "low"):
   '''
   A wrapper function to call either drmaa or easy_mp to do a parallel map
   calculation. This function is setup so that in each case we can select
@@ -32,10 +33,12 @@ def parallel_map(
   from libtbx.easy_mp import parallel_map as easy_mp_parallel_map
   if method == "drmaa":
     return drmaa_parallel_map(
-      func     = func,
-      iterable = iterable,
-      callback = callback,
-      nslots   = nslots)
+      func         = func,
+      iterable     = iterable,
+      callback     = callback,
+      nslots       = nslots,
+      njobs        = processes,
+      job_category = job_category)
   else:
     qsub_command = 'qsub -pe smp %d' % nslots
     return easy_mp_parallel_map(
