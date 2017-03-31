@@ -272,8 +272,8 @@ class settings_window(wxtbx.utils.SettingsPanel) :
     box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.distance_ctrl)
 
+    self.rotation_angle_ctrls = []
     if isinstance(goniometer, MultiAxisGoniometer):
-      self.rotation_angle_ctrls = []
       names = goniometer.get_names()
       axes = goniometer.get_axes()
       angles = goniometer.get_angles()
