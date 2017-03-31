@@ -421,12 +421,11 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
       # Goniometer datum setting [D] at which the orientation was determined
       D = (setting_rotation * rotation_matrix * fixed_rotation).inverse()
 
-      U = D * U0
-      crystal.set_U(U)
-      A = matrix.sqr(crystal.get_A()).transpose()
-      a_star = A[:3]
-      b_star = A[3:6]
-      c_star = A[6:]
+      U = D.inverse() * U0
+      B = matrix.sqr(crystal.get_B())
+      a_star = U * B * matrix.col((1,0,0))
+      b_star = U * B * matrix.col((0,1,0))
+      c_star = U * B * matrix.col((0,0,1))
       self.draw_axis(a_star, "a*")
       self.draw_axis(b_star, "b*")
       self.draw_axis(c_star, "c*")
