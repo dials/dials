@@ -5,6 +5,17 @@ from __future__ import division
 
 import wx
 
+
+from wxtbx.phil_controls.floatctrl import FloatCtrl as _FloatCtrl
+
+class FloatCtrl(_FloatCtrl):
+
+  # override OnFocusLostMethod since calling event.Skip() causes bad things to
+  # happen (for reasons I don't understand)
+  def OnFocusLost(self, event):
+    self.DoSendEvent()
+    #event.Skip()
+
 class MaskSettingsFrame(wx.MiniFrame):
   def __init__ (self, *args, **kwds) :
     super(MaskSettingsFrame, self).__init__(*args, **kwds)
@@ -68,7 +79,6 @@ class MaskSettingsPanel(wx.Panel):
     from wx.lib.agw.floatspin import EVT_FLOATSPIN, FloatSpin
     from wxtbx.phil_controls import EVT_PHIL_CONTROL
     from wxtbx.phil_controls.intctrl import IntCtrl
-    from wxtbx.phil_controls.floatctrl import FloatCtrl
     from wxtbx.phil_controls.strctrl import StrCtrl
     from wxtbx import metallicbutton
     import wxtbx
@@ -386,6 +396,11 @@ class MaskSettingsPanel(wx.Panel):
       del self.params.masking.untrusted[untrusted_id]
     self.OnUpdate(event)
 
+  def OnDeleteResolutionRange(self, event, range_id):
+    if range_id is not None:
+      del self.params.masking.resolution_range[range_id]
+    self.OnUpdate(event)
+
   def OnUpdate(self, event):
     image_viewer_frame = self.GetParent().GetParent()
 
@@ -572,16 +587,6 @@ class MaskSettingsPanel(wx.Panel):
     image_viewer_frame.mask_image_viewer = mask
     image_viewer_frame.update_settings(layout=False)
 
-    ## Combine with an existing mask, if specified
-    #if image_viewer_frame.mask is not None:
-      #for p1, p2 in zip(image_viewer_frame.mask, mask):
-        #p2 &= p1
-      #image_viewer_frame.mask = mask
-      ##self.collect_values()
-      #image_viewer_frame.update_settings(layout=False)
-
-    #image_viewer_frame.mask = mask
-
   def OnLeftDown(self, event):
     if not event.ShiftDown():
       click_posn = event.GetPositionTuple()
@@ -617,12 +622,16 @@ class MaskSettingsPanel(wx.Panel):
         xc, yc = self._circle_xy
         xedge, yedge = click_posn
         self.DrawCircle(xc, yc, xedge, yedge)
-        self.AddUntrustedCircle(xc, yc, xedge, yedge)
-        self._pyslip.DeleteLayer(self._mode_circle_layer)
-        self._mode_circle_layer = None
-        self.mode_circle_button.SetValue(False)
-        self.OnUpdate(event)
-        return
+        try:
+          self.AddUntrustedCircle(xc, yc, xedge, yedge)
+        except Exception(e):
+          print e
+        finally:
+          self._pyslip.DeleteLayer(self._mode_circle_layer)
+          self._mode_circle_layer = None
+          self.mode_circle_button.SetValue(False)
+          self.OnUpdate(event)
+          return
 
     event.Skip()
 
@@ -812,17 +821,17 @@ class MaskSettingsPanel(wx.Panel):
     detector = self._pyslip.tiles.raw_image.get_detector()
     if len(detector) > 1:
 
-      point_ = []
+      points_ = []
       panel_id = None
-      for p in point:
+      for p in points:
         p1, p0, p_id = self._pyslip.tiles.flex_image.picture_to_readout(
           p[1], p[0])
         assert p_id >= 0, "Point must be within a panel"
         if panel_id is not None:
           assert panel_id == p_id, "All points must be contained within a single panel"
         panel_id = p_id
-        point_.append((p0, p1))
-      point = point_
+        points_.append((p0, p1))
+      points = points_
 
     else:
       panel_id = 0
