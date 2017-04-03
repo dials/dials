@@ -111,8 +111,9 @@ class align_crystal(object):
 
     for (v1_, v2_) in self.vectors:
       results[(v1_, v2_)] = {}
-      crystal = copy.deepcopy(self.experiment.crystal)
-      for smx in list(crystal.get_space_group().smx())[:]:
+      space_group = self.experiment.crystal.get_space_group()
+      for smx in list(space_group.smx())[:]:
+        crystal = copy.deepcopy(self.experiment.crystal)
         cb_op = sgtbx.change_of_basis_op(smx)
         crystal = crystal.change_basis(cb_op)
 
