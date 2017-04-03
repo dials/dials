@@ -426,18 +426,19 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
       a_star = U * B * matrix.col((1,0,0))
       b_star = U * B * matrix.col((0,1,0))
       c_star = U * B * matrix.col((0,0,1))
-      self.draw_axis(a_star, "a*")
-      self.draw_axis(b_star, "b*")
-      self.draw_axis(c_star, "c*")
+      color = (1.0, 0.0, 0.0) # red
+      self.draw_axis(a_star.normalize() * 0.5, "a*", color=color)
+      self.draw_axis(b_star.normalize() * 0.5, "b*", color=color)
+      self.draw_axis(c_star.normalize() * 0.5, "c*", color=color)
 
-  def draw_axis(self, axis, label):
+  def draw_axis(self, axis, label, color=(1.0, 1.0, 1.0)):
     if self.minimum_covering_sphere is None:
       self.update_minimum_covering_sphere()
     s = self.minimum_covering_sphere
     scale = max(max(s.box_max()), abs(min(s.box_min())))
     gltbx.fonts.ucs_bitmap_8x13.setup_call_lists()
     glDisable(GL_LIGHTING)
-    glColor3f(1.0, 1.0, 1.0)
+    glColor3f(*color)
     glLineWidth(1.0)
     glBegin(GL_LINES)
     glVertex3f(0.,0.,0.)
