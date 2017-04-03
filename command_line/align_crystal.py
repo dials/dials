@@ -63,13 +63,6 @@ c = matrix.col((0.,0.,1.))
 def smallest_angle(angle):
   return min(abs(angle), abs(180-angle))
 
-def positive_angle(angle):
-  while angle < 0:
-    angle += 180
-  while angle > 180:
-    angle -= 180
-  return angle
-
 class align_crystal(object):
 
   vector_names = {
@@ -169,7 +162,7 @@ class align_crystal(object):
     for (v1, v2), result in results.iteritems():
       for solutions in result.itervalues():
         for solution in solutions:
-          k = tuple(round(positive_angle(a), 2) for a in solution[1:])
+          k = tuple(round(a, 2) for a in solution[1:])
           self.unique_solutions.setdefault(k, set())
           self.unique_solutions[k].add((v1, v2))
 
