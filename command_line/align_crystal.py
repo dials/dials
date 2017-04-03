@@ -293,6 +293,9 @@ def run(args):
 
   expt = experiments[0]
 
+  if params.space_group is not None:
+    expt.crystal.set_space_group(params.space_group.group())
+
   frame = None
 
   if len(params.align.crystal.vector):
