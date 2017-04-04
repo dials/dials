@@ -538,6 +538,8 @@ class ExtractSpots(object):
     len_by_nproc = int(floor(len(imageset) / (mp_njobs * mp_nproc)))
     if mp_chunksize > len_by_nproc:
       mp_chunksize = len_by_nproc
+    if mp_chunksize == 0:
+      mp_chunksize = 1
     assert mp_nproc > 0, "Invalid number of processors"
     assert mp_njobs > 0, "Invalid number of jobs"
     assert mp_njobs == 1 or mp_method is not None, "Invalid cluster method"
