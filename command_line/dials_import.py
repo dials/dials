@@ -228,6 +228,7 @@ class ReferenceGeometryUpdater(object):
     # Set beam and detector
     imageset.set_beam(self.reference.beam)
     imageset.set_detector(self.reference.detector)
+    imageset.set_goniometer(self.reference.goniometer)
     return imageset
 
   def load_reference_geometry(self, params):
@@ -248,14 +249,19 @@ class ReferenceGeometryUpdater(object):
         assert len(experiments.beams()) == 1
         reference_detector = experiments.detectors()[0]
         reference_beam = experiments.beams()[0]
+        reference_goniometer = experiments.goniometers()[0]
       except Exception, e:
         datablock = load.datablock(params.input.reference_geometry)
         assert len(datablock) == 1
         imageset = datablock[0].extract_imagesets()[0]
         reference_detector = imageset.get_detector()
         reference_beam = imageset.get_beam()
-    Reference = namedtuple("Reference", ["detector", "beam"])
-    return Reference(detector=reference_detector, beam=reference_beam)
+        reference_goniometer = imageset.get_goniometer()
+    Reference = namedtuple("Reference", ["detector", "beam", "goniometer"])
+    return Reference(
+      detector=reference_detector,
+      beam=reference_beam,
+      goniometer=reference_goniometer)
 
 
 class ManualGeometryUpdater(object):
