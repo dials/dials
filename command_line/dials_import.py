@@ -281,6 +281,7 @@ class ManualGeometryUpdater(object):
     from dxtbx.model import DetectorFactory
     from dxtbx.model import GoniometerFactory
     from dxtbx.model import ScanFactory
+    from copy import deepcopy
     if self.params.geometry.convert_sweeps_to_stills:
       imageset = ImageSet(reader=imageset.reader())
     if not isinstance(imageset, ImageSweep):
@@ -299,7 +300,7 @@ class ManualGeometryUpdater(object):
         imageset.get_goniometer())
       scan = ScanFactory.from_phil(
         self.params.geometry,
-        imageset.get_scan())
+        deepcopy(imageset.get_scan()))
       i0, i1 = scan.get_array_range()
       imageset = imageset[i0:i1]
       imageset.set_beam(beam)
