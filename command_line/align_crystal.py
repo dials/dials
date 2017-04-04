@@ -201,13 +201,12 @@ class align_crystal(object):
     names = self.experiment.goniometer.get_names()
     solutions = []
     for angles, solns in self.unique_solutions.iteritems():
-      for (v1, v2) in solns:
-        solutions.append(
-          {'v1': self._vector_as_str(v1),
-           'v2': self._vector_as_str(v2),
-           names[1]: angles[0],
-           names[0]: angles[1]
-          })
+      solutions.append({
+        'settings': [(self._vector_as_str(v1), self._vector_as_str(v2))
+                     for v1, v2 in solns],
+        names[1]: angles[0],
+        names[0]: angles[1]
+      })
     d = {'solutions': solutions,
          'goniometer': self.experiment.goniometer.to_dict()}
     import json
