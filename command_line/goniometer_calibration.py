@@ -102,12 +102,12 @@ def run(args):
   axis_names = experiments[0].goniometer.get_names()
   print "Goniometer axes and angles (ImgCIF coordinate system):"
   for axis, angle, name in zip(axes, angles, axis_names):
-    print "%s: " %name, "rotation of %.3f degrees" %angle, "about axis (%.5f, %.5f, %.5f)" %axis
+    print "%s: " %name, "rotation of %.3f degrees" %angle, "about axis (%.5f,%.5f,%.5f)" %axis
 
   print
   print "Goniometer axes and angles (MOSFLM coordinate system):"
   for axis, angle, name in zip(axes, angles, axis_names):
-    print "%s: " %name, "rotation of %.3f degrees" %angle, "about axis (%.5f, %.5f, %.5f)" %(
+    print "%s: " %name, "rotation of %.3f degrees" %angle, "about axis (%.5f,%.5f,%.5f)" %(
       R_to_mosflm * matrix.col(axis)).elems
 
   print
