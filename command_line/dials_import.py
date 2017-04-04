@@ -195,11 +195,11 @@ class DataBlockImporter(object):
           raise Sorry('No datablocks found in directories %s' % self.params.input.directory)
       else:
         raise Sorry('No datablocks found')
-    if len(datablocks) > 1:
-      raise Sorry("More than 1 datablock found")
+    # if len(datablocks) > 1:
+    #   raise Sorry("More than 1 datablock found")
 
     # Return the datablocks
-    return datablocks[0]
+    return datablocks
 
 
 class ReferenceGeometryUpdater(object):
@@ -618,48 +618,49 @@ class Script(object):
     # Setup the metadata updater
     metadata_updater = MetaDataUpdater(params)
 
-    # Get the datablocks
-    datablock = metadata_updater(datablock_importer())
+    # Extract the datablocks and loop through
+    datablocks = map(metadata_updater, datablock_importer())
+    for datablock in datablocks:
 
-    # Extract any sweeps
-    sweeps = datablock.extract_sweeps()
+      # Extract any sweeps
+      sweeps = datablock.extract_sweeps()
 
-    # Extract any stills
-    stills = datablock.extract_stills()
-    if not stills:
-      num_stills = 0
-    else:
-      num_stills = sum([len(s) for s in stills])
+      # Extract any stills
+      stills = datablock.extract_stills()
+      if not stills:
+        num_stills = 0
+      else:
+        num_stills = sum([len(s) for s in stills])
 
-    # Print some data block info - override the output of image range
-    # if appropriate
-    image_range = params.geometry.scan.image_range
+      # Print some data block info - override the output of image range
+      # if appropriate
+      image_range = params.geometry.scan.image_range
 
-    logger.info("-" * 80)
-    logger.info("  format: %s" % str(datablock.format_class()))
-    if image_range is None:
-      logger.info("  num images: %d" % datablock.num_images())
-    else:
-      logger.info("  num images: %d" % (image_range[1] - image_range[0] + 1))
-    logger.info("  num sweeps: %d" % len(sweeps))
-    logger.info("  num stills: %d" % num_stills)
+      logger.info("-" * 80)
+      logger.info("  format: %s" % str(datablock.format_class()))
+      if image_range is None:
+        logger.info("  num images: %d" % datablock.num_images())
+      else:
+        logger.info("  num images: %d" % (image_range[1] - image_range[0] + 1))
+      logger.info("  num sweeps: %d" % len(sweeps))
+      logger.info("  num stills: %d" % num_stills)
 
-    # Loop through all the sweeps
-    for j, sweep in enumerate(sweeps):
-      logger.debug("")
-      logger.debug("Sweep %d" % j)
-      logger.debug("  Length %d" % len(sweep))
-      logger.debug(sweep.get_beam())
-      logger.debug(sweep.get_goniometer())
-      logger.debug(sweep.get_detector())
-      logger.debug(sweep.get_scan())
+      # Loop through all the sweeps
+      for j, sweep in enumerate(sweeps):
+        logger.debug("")
+        logger.debug("Sweep %d" % j)
+        logger.debug("  Length %d" % len(sweep))
+        logger.debug(sweep.get_beam())
+        logger.debug(sweep.get_goniometer())
+        logger.debug(sweep.get_detector())
+        logger.debug(sweep.get_scan())
 
-    # Only allow a single sweep
-    if params.input.allow_multiple_sweeps is False:
-      self.assert_single_sweep(sweeps, params)
+      # Only allow a single sweep
+      if params.input.allow_multiple_sweeps is False:
+        self.assert_single_sweep(sweeps, params)
 
     # Write the datablocks to file
-    self.write_datablocks([datablock], params)
+    self.write_datablocks(datablocks, params)
 
   def write_datablocks(self, datablocks, params):
     '''
