@@ -90,7 +90,7 @@ class align_crystal(object):
     axes = gonio.get_axes()
     if len(axes) != 3:
       raise Sorry('Only 3-axis goniometers supported')
-    e1, e2, e3 = (matrix.col(e) for e in axes)
+    e1, e2, e3 = (matrix.col(e) for e in reversed(axes))
 
     fixed_rotation = matrix.sqr(gonio.get_fixed_rotation())
     setting_rotation = matrix.sqr(gonio.get_setting_rotation())
