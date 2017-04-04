@@ -138,7 +138,7 @@ class align_crystal(object):
         #c l1 & e1 (ie l1 = e1 x s0, l2 = e1).
 
         if self.mode == 'cusp':
-          l1 = self.rotation_axis.cross(s0)
+          l1 = self.rotation_axis.cross(self.s0)
           l2 = self.rotation_axis
         else:
           l1 = self.rotation_axis.normalize()
