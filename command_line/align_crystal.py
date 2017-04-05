@@ -102,10 +102,27 @@ class align_crystal(object):
 
     results = {}
 
+    # from https://github.com/legrandp/xdsme/blob/master/XOalign/XOalign.py#L427
+
+    #  referential_permutations sign permutations for four permutations of
+    #        parallel/antiparallel (rotation axis & beam)
+    #    y1 // e1, y2 // beamVector;  y1 anti// e1, y2 // beamVector
+    #    y1 // e1, y2 anti// beamVector;  y1 anti// e1, y2 anti// beamVector
+
+    ex = matrix.col((1, 0, 0))
+    ey = matrix.col((0, 1, 0))
+    ez = matrix.col((0, 0, 1))
+
+    referential_permutations = ([ ex,  ey,  ez],
+                                [-ex, -ey,  ez],
+                                [ ex, -ey, -ez],
+                                [-ex,  ey, -ez])
+
     for (v1_, v2_) in self.vectors:
       results[(v1_, v2_)] = {}
       space_group = self.experiment.crystal.get_space_group()
       for smx in list(space_group.smx())[:]:
+        results[(v1_, v2_)][smx] = []
         crystal = copy.deepcopy(self.experiment.crystal)
         cb_op = sgtbx.change_of_basis_op(smx)
         crystal = crystal.change_basis(cb_op)
@@ -145,16 +162,18 @@ class align_crystal(object):
           l3 = l1.cross(self.s0).normalize()
           l2 = l1.cross(l3)
 
-        from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
-        R = align_reference_frame(v1_0, l1, v2_0, l2)
+        for perm in referential_permutations:
+          S = matrix.sqr(perm[0].elems + perm[1].elems + perm[2].elems)
+          from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
+          R = align_reference_frame(v1_0, S * l1, v2_0, S * l2)
 
-        solutions = rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
-          R, e1, e2, e3, return_both_solutions=True, deg=True)
+          solutions = rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
+            R, e1, e2, e3, return_both_solutions=True, deg=True)
 
-        if solutions is None:
-          continue
+          if solutions is None:
+            continue
 
-        results[(v1_, v2_)][smx] = solutions
+          results[(v1_, v2_)][smx].extend(solutions)
 
     self.all_solutions = results
 
