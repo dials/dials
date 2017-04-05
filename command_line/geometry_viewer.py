@@ -34,6 +34,9 @@ phil_scope= libtbx.phil.parse("""
     .type = bool
   predict = False
     .type = bool
+  prediction_width = None
+    .type = float(value_min=0)
+    .help = "Width of prediction window (degrees)"
 """)
 
 def settings():
@@ -177,8 +180,12 @@ class render_3d(object):
     imageset = self.imageset
     scan = copy.deepcopy(imageset.get_scan())
     gonio = imageset.get_goniometer()
+    prediction_width = self.settings.prediction_width
+    if prediction_width is None:
+      prediction_width = scan.get_oscillation()[1]
     scan.set_oscillation(
-      (gonio.get_angles()[gonio.get_scan_axis()], scan.get_oscillation()[1]))
+      (gonio.get_angles()[gonio.get_scan_axis()],
+       prediction_width))
     expt = Experiment(
       imageset=imageset,
       crystal=self.crystal,
