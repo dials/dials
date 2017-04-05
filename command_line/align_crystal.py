@@ -3,7 +3,7 @@
 
 from __future__ import absolute_import, division
 import copy
-from collections import OrderedDict
+from libtbx.containers import OrderedDict, OrderedSet
 from scitbx import matrix
 import iotbx.phil
 from cctbx import sgtbx
@@ -182,7 +182,7 @@ class align_crystal(object):
       for solutions in result.itervalues():
         for solution in solutions:
           k = tuple(round(a, 2) for a in solution[1:])
-          self.unique_solutions.setdefault(k, set())
+          self.unique_solutions.setdefault(k, OrderedSet())
           self.unique_solutions[k].add((v1, v2))
 
   def _vector_as_str(self, v):
