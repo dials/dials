@@ -229,7 +229,7 @@ class ExperimentViewer(wx.Frame, render_3d):
     v.OnRedraw()
 
   def create_viewer_panel(self) :
-    self.viewer = RLVWindow(settings=self.settings, parent=self, size=(800,600),
+    self.viewer = GeometryWindow(settings=self.settings, parent=self, size=(800,600),
       #orthographic=True
       )
 
@@ -298,10 +298,10 @@ class settings_window(wxtbx.utils.SettingsPanel) :
     self.parent.update_settings()
 
 
-class RLVWindow(wx_viewer.show_points_and_lines_mixin):
+class GeometryWindow(wx_viewer.show_points_and_lines_mixin):
 
   def __init__(self, settings, *args, **kwds):
-    super(RLVWindow, self).__init__(*args, **kwds)
+    super(GeometryWindow, self).__init__(*args, **kwds)
     self.settings = settings
     self.points = flex.vec3_double()
     self.colors = None
@@ -468,16 +468,16 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     gltbx.fonts.ucs_bitmap_8x13.render_string(label)
 
   def rotate_view(self, x1, y1, x2, y2, shift_down=False, scale=0.1):
-    super(RLVWindow, self).rotate_view(
+    super(GeometryWindow, self).rotate_view(
       x1, y1, x2, y2, shift_down=shift_down, scale=scale)
 
   def OnLeftUp(self,event):
     self.was_dragged = True
-    super(RLVWindow, self).OnLeftUp(event)
+    super(GeometryWindow, self).OnLeftUp(event)
 
 
   def initialize_modelview(self, eye_vector=None, angle=None):
-    super(RLVWindow, self).initialize_modelview(eye_vector=eye_vector, angle=angle)
+    super(GeometryWindow, self).initialize_modelview(eye_vector=eye_vector, angle=angle)
     self.rotation_center = (0,0,0)
     self.move_to_center_of_viewport(self.rotation_center)
 
