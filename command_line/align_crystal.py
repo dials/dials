@@ -3,6 +3,7 @@
 
 from __future__ import absolute_import, division
 import copy
+from collections import OrderedDict
 from scitbx import matrix
 import iotbx.phil
 from cctbx import sgtbx
@@ -100,10 +101,9 @@ class align_crystal(object):
 
     from dials.algorithms.refinement import rotation_decomposition
 
-    results = {}
+    results = OrderedDict()
 
     # from https://github.com/legrandp/xdsme/blob/master/XOalign/XOalign.py#L427
-
     #  referential_permutations sign permutations for four permutations of
     #        parallel/antiparallel (rotation axis & beam)
     #    y1 // e1, y2 // beamVector;  y1 anti// e1, y2 // beamVector
@@ -119,7 +119,7 @@ class align_crystal(object):
                                 [-ex,  ey, -ez])
 
     for (v1_, v2_) in self.vectors:
-      results[(v1_, v2_)] = {}
+      results[(v1_, v2_)] = OrderedDict()
       space_group = self.experiment.crystal.get_space_group()
       for smx in list(space_group.smx())[:]:
         results[(v1_, v2_)][smx] = []
@@ -177,7 +177,7 @@ class align_crystal(object):
 
     self.all_solutions = results
 
-    self.unique_solutions = {}
+    self.unique_solutions = OrderedDict()
     for (v1, v2), result in results.iteritems():
       for solutions in result.itervalues():
         for solution in solutions:
