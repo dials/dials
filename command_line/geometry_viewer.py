@@ -163,6 +163,8 @@ class render_3d(object):
     import time
     t0 = time.time()
     predicted = self.predict()
+    if predicted is None:
+      return
     t1 = time.time()
     print "Predicted %i reflections in %.2f s" %(predicted.size(), (t1-t0))
     xyzcal_mm = predicted['xyzcal.mm']
@@ -183,9 +185,12 @@ class render_3d(object):
     prediction_width = self.settings.prediction_width
     if prediction_width is None:
       prediction_width = scan.get_oscillation()[1]
+    if isinstance(gonio, MultiAxisGoniometer):
+      scan_angle = gonio.get_angles()[gonio.get_scan_axis()]
+    else:
+      return
     scan.set_oscillation(
-      (gonio.get_angles()[gonio.get_scan_axis()],
-       prediction_width))
+      (scan_angle, prediction_width))
     expt = Experiment(
       imageset=imageset,
       crystal=self.crystal,
