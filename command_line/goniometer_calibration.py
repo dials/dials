@@ -124,7 +124,7 @@ def run(args):
 
   if params.output.xoalign is not None:
     axes_mosflm = [(R_to_mosflm * matrix.col(axis)).elems for axis in axes]
-    write_xoalign_config(params.output.xoalign, axes_mosflm, axis_names)
+    write_xoalign_config(params.output.xoalign, reversed(axes_mosflm), reversed(axis_names))
 
 def write_xoalign_config(file_name, axes, names):
   with open(file_name, 'wb') as f:
