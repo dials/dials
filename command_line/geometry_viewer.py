@@ -32,6 +32,8 @@ phil_scope= libtbx.phil.parse("""
     .type = int(value_min=1)
   autospin = False
     .type = bool
+  predict = False
+    .type = bool
 """)
 
 def settings():
@@ -151,7 +153,48 @@ class render_3d(object):
       pass
     self.set_detector_points()
     self.viewer.update_minimum_covering_sphere()
+    if self.settings.predict and self.crystal is not None:
+      self.set_reflection_points()
 
+  def set_reflection_points(self):
+    import time
+    t0 = time.time()
+    predicted = self.predict()
+    t1 = time.time()
+    print "Predicted %i reflections in %.2f s" %(predicted.size(), (t1-t0))
+    xyzcal_mm = predicted['xyzcal.mm']
+    xc, yc, zc = predicted['xyzcal.mm'].parts()
+    xycal = flex.vec2_double(xc, yc)
+    panel = predicted['panel']
+    detector = self.imageset.get_detector()
+    for pid, p in enumerate(detector):
+      self.viewer.points.extend(
+        p.get_lab_coord(xycal.select(panel == pid)))
+
+  def predict(self):
+    assert self.crystal is not None
+    from dxtbx.model.experiment_list import Experiment, ExperimentList
+    imageset = self.imageset
+    scan = copy.deepcopy(imageset.get_scan())
+    gonio = imageset.get_goniometer()
+    scan.set_oscillation(
+      (gonio.get_angles()[gonio.get_scan_axis()], scan.get_oscillation()[1]))
+    expt = Experiment(
+      imageset=imageset,
+      crystal=self.crystal,
+      detector=imageset.get_detector(),
+      beam=imageset.get_beam(),
+      scan=scan[:1],
+      goniometer=imageset.get_goniometer())
+
+    # Populate the reflection table with predictions
+    from dials.array_family import flex
+    predicted = flex.reflection_table.from_predictions(
+      expt,
+      force_static=True,
+    )
+    predicted['id'] = flex.int(len(predicted), 0)
+    return predicted
 
 class ExperimentViewer(wx.Frame, render_3d):
   def __init__(self, *args, **kwds):
