@@ -582,6 +582,16 @@ def run(args):
       params.detector_distance = detector.hierarchy().get_directed_distance()
     else:
       params.detector_distance = detector[0].get_directed_distance()
+
+  if gonio is not None and not isinstance(gonio, MultiAxisGoniometer):
+    from dxtbx.model.goniometer import GoniometerFactory
+    gonio = GoniometerFactory.multi_axis(
+      axes=flex.vec3_double((gonio.get_rotation_axis(),)),
+      angles=flex.double((0,)),
+      names=flex.std_string(('GON_OMEGA',)),
+      scan_axis=0)
+    imageset.set_goniometer(gonio)
+
   if isinstance(gonio, MultiAxisGoniometer):
     if params.angle:
       assert len(params.angle) == len(gonio.get_angles())
