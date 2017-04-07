@@ -30,6 +30,10 @@ def generate_phil_scope():
       .type = bool
       .help = "Write the hot mask"
 
+    hot_mask_prefix = 'hot_mask'
+      .type = str
+      .help = "Prefix for the hot mask pickle file"
+
     force_2d = False
       .type = bool
       .help = "Do spot finding in 2D"
@@ -519,6 +523,7 @@ class SpotFinderFactory(object):
       filter_spots              = filter_spots,
       scan_range                = params.spotfinder.scan_range,
       write_hot_mask            = params.spotfinder.write_hot_mask,
+      hot_mask_prefix           = params.spotfinder.hot_mask_prefix,
       mp_method                 = params.spotfinder.mp.method,
       mp_nproc                  = params.spotfinder.mp.nproc,
       mp_njobs                  = params.spotfinder.mp.njobs,
