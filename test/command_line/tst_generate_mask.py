@@ -37,9 +37,17 @@ class Test(object):
       'dials.generate_mask',
       input_filename,
       'output.mask=mask2.pickle',
+      'output.datablock=masked_datablock.json',
       'untrusted.rectangle=100,200,100,200'
-    ]).raise_if_errors()
+    ]).raise_if_errors().show_stdout()
     assert(exists("mask2.pickle"))
+    assert(exists("masked_datablock.json"))
+    from dxtbx.serialize import load
+    datablocks = load.datablock("masked_datablock.json")
+    imageset = datablocks[0].extract_imagesets()[0]
+    import os
+    assert imageset.external_lookup.mask.filename == os.path.join(
+      os.path.abspath(os.getcwd()), 'mask2.pickle')
 
     print 'OK'
 
