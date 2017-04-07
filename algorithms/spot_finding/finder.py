@@ -771,10 +771,9 @@ class SpotFinder(object):
       # Write a hot pixel mask
       if self.write_hot_mask:
         if imageset.external_lookup.mask.data is not None:
-          and_mask = []
-          for m1, m2 in zip(imageset.external_lookup.mask.data, hot_mask):
-            and_mask.append(m1 & m2)
-          imageset.external_lookup.mask.data = tuple(and_mask)
+          for m1, m2 in zip(hot_mask, imageset.external_lookup.mask.data):
+            m1 &= m2
+          imageset.external_lookup.mask.data = hot_mask
         else:
           imageset.external_lookup.mask.data = hot_mask
         imageset.external_lookup.mask.filename = "hot_mask_%d.pickle" % i
