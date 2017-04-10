@@ -233,7 +233,7 @@ class ReferenceGeometryUpdater(object):
 
   def load_reference_geometry(self, params):
     '''
-    Load a reference geoetry file
+    Load a reference geometry file
 
     '''
     from collections import namedtuple
@@ -242,16 +242,20 @@ class ReferenceGeometryUpdater(object):
     reference_beam = None
     if params.input.reference_geometry is not None:
       from dxtbx.serialize import load
+      experiments, datablock = None, None
       try:
         experiments = load.experiment_list(
           params.input.reference_geometry, check_format=False)
+      except Exception, e:
+        datablock = load.datablock(params.input.reference_geometry)
+      assert experiments or datablock, 'Could not import reference geometry'
+      if experiments:
         assert len(experiments.detectors()) == 1
         assert len(experiments.beams()) == 1
         reference_detector = experiments.detectors()[0]
         reference_beam = experiments.beams()[0]
         reference_goniometer = experiments.goniometers()[0]
-      except Exception, e:
-        datablock = load.datablock(params.input.reference_geometry)
+      else:
         assert len(datablock) == 1
         imageset = datablock[0].extract_imagesets()[0]
         reference_detector = imageset.get_detector()
