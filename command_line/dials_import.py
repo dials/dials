@@ -250,8 +250,12 @@ class ReferenceGeometryUpdater(object):
         datablock = load.datablock(params.input.reference_geometry)
       assert experiments or datablock, 'Could not import reference geometry'
       if experiments:
-        assert len(experiments.detectors()) == 1
-        assert len(experiments.beams()) == 1
+        assert len(experiments.detectors()) >= 1
+        assert len(experiments.beams()) >= 1
+        if len(experiments.detectors()) > 1:
+          raise Sorry('The reference geometry file contains %d detector definitions, but only a single definition is allowed.' % len(experiments.detectors()))
+        if len(experiments.beams()) > 1:
+          raise Sorry('The reference geometry file contains %d beam definitions, but only a single definition is allowed.' % len(experiments.beams()))
         reference_detector = experiments.detectors()[0]
         reference_beam = experiments.beams()[0]
         reference_goniometer = experiments.goniometers()[0]
