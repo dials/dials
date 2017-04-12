@@ -578,6 +578,14 @@ class ProfileModellerExecutor(Executor):
 
     '''
     return self.profile_fitter
+  
+  def __getinitargs__(self):
+    '''
+    Support for pickling
+
+    '''
+    return (self.experiments, self.profile_fitter)
+
 
 
 class ProfileValidatorExecutor(Executor):
@@ -681,6 +689,13 @@ class ProfileValidatorExecutor(Executor):
 
     '''
     return self.results
+  
+  def __getinitargs__(self):
+    '''
+    Support for pickling
+
+    '''
+    return (self.experiments, self.profile_fitter)
 
 
 class IntegratorExecutor(Executor):
@@ -825,6 +840,13 @@ class IntegratorExecutor(Executor):
 
     '''
     return None
+
+  def __getinitargs__(self):
+    '''
+    Support for pickling
+
+    '''
+    return (self.experiments, self.profile_fitter)
 
 
 class Integrator(object):

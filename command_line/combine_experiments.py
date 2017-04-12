@@ -77,6 +77,31 @@ phil_scope = parse('''
 
   }
 
+  clustering {
+    use = False
+      .type = bool
+      .help = "Separate experiments into subsets using the clustering"
+              "toolkit. One json per cluster will be saved."
+
+    dendrogram = False
+      .type = bool
+      .help = "Display dendrogram of the clustering results. Should not"
+              "be used with parallel processing."
+
+    threshold = 1000
+      .type = int
+      .help = "Threshold used in the dendrogram to separate into clusters."
+
+    max_clusters = None
+      .type = int
+      .help = "Maximum number of clusters to save as jsons."
+
+    max_crystals = None
+      .type = int
+      .help = "Maximum number of crystals to cluster."
+
+  }
+
   output {
     experiments_filename = combined_experiments.json
       .type = str
@@ -193,6 +218,33 @@ class CombineWithReference(object):
                       goniometer=goniometer,
                       crystal=crystal,
                       imageset=experiment.imageset)
+
+class Cluster(object):
+
+  def __init__(self, experiments, reflections,
+    dendrogram=False, threshold=1000, n_max=None):
+    try:
+      from xfel.clustering.cluster import Cluster
+      from xfel.clustering.cluster_groups import unit_cell_info
+    except ImportError:
+      raise Sorry, "clustering is not configured"
+    import matplotlib.pyplot as plt
+    ucs = Cluster.from_expts(
+      refl_table=reflections,
+      expts_list=experiments,
+      n_images=n_max)
+    self.clusters, axes = ucs.ab_cluster(
+      threshold=threshold,
+      log=True, # log scale
+      ax=plt.gca() if dendrogram else None,
+      write_file_lists=False,
+      schnell=False,
+      doplot=dendrogram)
+    print unit_cell_info(self.clusters)
+    self.clustered_frames = {int(c.cname.split("_")[1]):c.members for c in self.clusters}
+    if dendrogram:
+      plt.tight_layout()
+      plt.show()
 
 class Script(object):
 
@@ -377,12 +429,11 @@ class Script(object):
       print 'Saving combined reflections to {0}'.format(refl_name)
       reflections.as_pickle(refl_name)
 
-    if params.output.max_batch_size is None:
-      save_output(experiments, reflections, params.output.experiments_filename, params.output.reflections_filename)
-    else:
+    def save_in_batches(experiments, reflections, exp_name, refl_name, batch_size=1000):
       from dxtbx.command_line.image_average import splitit
       import os
-      for i, indices in enumerate(splitit(range(len(experiments)), (len(experiments)//params.output.max_batch_size)+1)):
+      result = []
+      for i, indices in enumerate(splitit(range(len(experiments)), (len(experiments)//batch_size)+1)):
         batch_expts = ExperimentList()
         batch_refls = flex.reflection_table()
         for sub_id, sub_idx in enumerate(indices):
@@ -390,9 +441,56 @@ class Script(object):
           sub_refls = reflections.select(reflections['id'] == sub_idx)
           sub_refls['id'] = flex.int(len(sub_refls), sub_id)
           batch_refls.extend(sub_refls)
-        exp_filename = os.path.splitext(params.output.experiments_filename)[0] + "_%03d.json"%i
-        ref_filename = os.path.splitext(params.output.reflections_filename)[0] + "_%03d.pickle"%i
+        exp_filename = os.path.splitext(exp_name)[0] + "_%03d.json"%i
+        ref_filename = os.path.splitext(refl_name)[0] + "_%03d.pickle"%i
         save_output(batch_expts, batch_refls, exp_filename, ref_filename)
+
+    def combine_in_clusters(experiments_l, reflections_l, exp_name, refl_name, end_count):
+      import os
+      result = []
+      for cluster in xrange(len(experiments_l)):
+        cluster_expts = ExperimentList()
+        cluster_refls = flex.reflection_table()
+        for i in xrange(len(experiments_l[cluster])):
+          cluster_expts.append(experiments_l[cluster][i])
+          cluster_refls.extend(reflections_l[cluster][i])
+        exp_filename = os.path.splitext(exp_name)[0] + ("_cluster%d.json" % (end_count - cluster))
+        ref_filename = os.path.splitext(refl_name)[0] + ("_cluster%d.pickle" % (end_count - cluster))
+        result.append((cluster_expts, cluster_refls, exp_filename, ref_filename))
+      return result
+
+    # cluster the resulting experiments if requested
+    if params.clustering.use:
+      clustered = Cluster(
+        experiments, reflections,
+        dendrogram=params.clustering.dendrogram,
+        threshold=params.clustering.threshold,
+        n_max=params.clustering.max_crystals)
+      n_clusters = len(clustered.clustered_frames)
+      if params.clustering.max_clusters is not None:
+        not_too_many = lambda keeps: len(keeps) < params.clustering.max_clusters
+      else:
+        not_too_many = lambda keeps: True
+      keep_frames = []
+      sorted_keys = sorted(clustered.clustered_frames.keys())
+      while len(clustered.clustered_frames) > 0 and not_too_many(keep_frames):
+        keep_frames.append(clustered.clustered_frames.pop(sorted_keys.pop(-1)))
+      clustered_experiments = [[f.experiment for f in frame_cluster] for frame_cluster in keep_frames]
+      clustered_reflections = [[f.reflections for f in frame_cluster] for frame_cluster in keep_frames]
+      list_of_combined = combine_in_clusters(clustered_experiments, clustered_reflections,
+        params.output.experiments_filename, params.output.reflections_filename, n_clusters)
+      for i in xrange(len(list_of_combined)):
+        savable_tuple = list_of_combined[i]
+        if params.output.max_batch_size is None:
+          save_output(*savable_tuple)
+        else:
+          save_in_batches(*savable_tuple, batch_size=params.output.max_batch_size)
+    else:
+      if params.output.max_batch_size is None:
+        save_output(experiments, reflections, params.output.experiments_filename, params.output.reflections_filename)
+      else:
+        save_in_batches(experiments, reflections, params.output.experiments_filename, params.output.reflections_filename,
+          batch_size=params.output.max_batch_size)
     return
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@
 
 from __future__ import absolute_import, division
 import copy
+from libtbx.containers import OrderedDict, OrderedSet
 from scitbx import matrix
 import iotbx.phil
 from cctbx import sgtbx
@@ -100,12 +101,28 @@ class align_crystal(object):
 
     from dials.algorithms.refinement import rotation_decomposition
 
-    results = {}
+    results = OrderedDict()
+
+    # from https://github.com/legrandp/xdsme/blob/master/XOalign/XOalign.py#L427
+    #  referential_permutations sign permutations for four permutations of
+    #        parallel/antiparallel (rotation axis & beam)
+    #    y1 // e1, y2 // beamVector;  y1 anti// e1, y2 // beamVector
+    #    y1 // e1, y2 anti// beamVector;  y1 anti// e1, y2 anti// beamVector
+
+    ex = matrix.col((1, 0, 0))
+    ey = matrix.col((0, 1, 0))
+    ez = matrix.col((0, 0, 1))
+
+    referential_permutations = ([ ex,  ey,  ez],
+                                [-ex, -ey,  ez],
+                                [ ex, -ey, -ez],
+                                [-ex,  ey, -ez])
 
     for (v1_, v2_) in self.vectors:
-      results[(v1_, v2_)] = {}
+      results[(v1_, v2_)] = OrderedDict()
       space_group = self.experiment.crystal.get_space_group()
       for smx in list(space_group.smx())[:]:
+        results[(v1_, v2_)][smx] = []
         crystal = copy.deepcopy(self.experiment.crystal)
         cb_op = sgtbx.change_of_basis_op(smx)
         crystal = crystal.change_basis(cb_op)
@@ -138,32 +155,34 @@ class align_crystal(object):
         #c l1 & e1 (ie l1 = e1 x s0, l2 = e1).
 
         if self.mode == 'cusp':
-          l1 = self.rotation_axis.cross(s0)
+          l1 = self.rotation_axis.cross(self.s0)
           l2 = self.rotation_axis
         else:
           l1 = self.rotation_axis.normalize()
           l3 = l1.cross(self.s0).normalize()
           l2 = l1.cross(l3)
 
-        from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
-        R = align_reference_frame(v1_0, l1, v2_0, l2)
+        for perm in referential_permutations:
+          S = matrix.sqr(perm[0].elems + perm[1].elems + perm[2].elems)
+          from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
+          R = align_reference_frame(v1_0, S * l1, v2_0, S * l2)
 
-        solutions = rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
-          R, e1, e2, e3, return_both_solutions=True, deg=True)
+          solutions = rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
+            R, e1, e2, e3, return_both_solutions=True, deg=True)
 
-        if solutions is None:
-          continue
+          if solutions is None:
+            continue
 
-        results[(v1_, v2_)][smx] = solutions
+          results[(v1_, v2_)][smx].extend(solutions)
 
     self.all_solutions = results
 
-    self.unique_solutions = {}
+    self.unique_solutions = OrderedDict()
     for (v1, v2), result in results.iteritems():
       for solutions in result.itervalues():
         for solution in solutions:
           k = tuple(round(a, 2) for a in solution[1:])
-          self.unique_solutions.setdefault(k, set())
+          self.unique_solutions.setdefault(k, OrderedSet())
           self.unique_solutions[k].add((v1, v2))
 
   def _vector_as_str(self, v):
@@ -183,13 +202,16 @@ class align_crystal(object):
     rows = []
     names = self.experiment.goniometer.get_names()
 
-    for angles, solutions in self.unique_solutions.iteritems():
-      for (v1, v2) in solutions:
-        rows.append(
-          (self._vector_as_str(v1), self._vector_as_str(v2),
-           '% 7.2f' %angles[0], '% 7.2f' %angles[1],
-           ))
-    rows = [('v1', 'v2', names[1], names[0])] + \
+    for angles, vector_pairs in self.unique_solutions.iteritems():
+      settings_str = '[%s]' %(
+        ', '.join(
+          '(%s, %s)' %(self._vector_as_str(v1), self._vector_as_str(v2))
+          for v1, v2 in vector_pairs))
+      rows.append((
+        settings_str,
+        '% 7.2f' %angles[0], '% 7.2f' %angles[1],
+      ))
+    rows = [('Settings', names[1], names[0])] + \
            sorted(rows)
     print 'Independent solutions:'
     print table_utils.format(rows=rows, has_header=True)
@@ -198,13 +220,12 @@ class align_crystal(object):
     names = self.experiment.goniometer.get_names()
     solutions = []
     for angles, solns in self.unique_solutions.iteritems():
-      for (v1, v2) in solns:
-        solutions.append(
-          {'v1': self._vector_as_str(v1),
-           'v2': self._vector_as_str(v2),
-           names[1]: angles[0],
-           names[0]: angles[1]
-          })
+      solutions.append({
+        'settings': [(self._vector_as_str(v1), self._vector_as_str(v2))
+                     for v1, v2 in solns],
+        names[1]: angles[0],
+        names[0]: angles[1]
+      })
     d = {'solutions': solutions,
          'goniometer': self.experiment.goniometer.to_dict()}
     import json

@@ -34,8 +34,12 @@ Examples::
 phil_scope = parse("""
   output {
     mask = mask.pickle
-      .type = str
+      .type = path
       .help = "Name of output mask file"
+    datablock = None
+      .type = path
+      .help = "Save the modified datablock. (usually only modified with the"
+              "generated pixel mask)"
   }
 
   include scope dials.util.masking.phil_scope
@@ -93,6 +97,16 @@ class Script(object):
     # Save the mask to file
     print "Writing mask to %s" % params.output.mask
     pickle.dump(mask, open(params.output.mask, "w"))
+
+    # Save the datablock
+    if params.output.datablock is not None:
+      imageset.external_lookup.mask.data = mask
+      imageset.external_lookup.mask.filename = params.output.mask
+      from dxtbx.datablock import DataBlockDumper
+      print 'Saving datablocks to {0}'.format(
+        params.output.datablock)
+      dump = DataBlockDumper(datablocks)
+      dump.as_file(params.output.datablock)
 
 if __name__ == '__main__':
   from dials.util import halraiser

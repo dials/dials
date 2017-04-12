@@ -32,6 +32,11 @@ phil_scope= libtbx.phil.parse("""
     .type = int(value_min=1)
   autospin = False
     .type = bool
+  predict = False
+    .type = bool
+  prediction_width = None
+    .type = float(value_min=0)
+    .help = "Width of prediction window (degrees)"
 """)
 
 def settings():
@@ -87,8 +92,10 @@ class render_3d(object):
         assert d_distance < 0.001, d_distance
         p.set_frame(p.get_fast_axis(), p.get_slow_axis(), new_origin.elems)
 
-
     gonio_masker = self.imageset.reader().get_format().get_goniometer_shadow_masker(gonio)
+    if gonio_masker is None:
+      return
+
     points = gonio_masker.extrema_at_scan_angle(
       gonio.get_angles()[gonio.get_scan_axis()])
     points.insert(0, (0,0,0))
@@ -149,7 +156,57 @@ class render_3d(object):
       pass
     self.set_detector_points()
     self.viewer.update_minimum_covering_sphere()
+    if self.settings.predict and self.crystal is not None:
+      self.set_reflection_points()
 
+  def set_reflection_points(self):
+    import time
+    t0 = time.time()
+    predicted = self.predict()
+    if predicted is None:
+      return
+    t1 = time.time()
+    print "Predicted %i reflections in %.2f s" %(predicted.size(), (t1-t0))
+    xyzcal_mm = predicted['xyzcal.mm']
+    xc, yc, zc = predicted['xyzcal.mm'].parts()
+    xycal = flex.vec2_double(xc, yc)
+    panel = predicted['panel']
+    detector = self.imageset.get_detector()
+    for pid, p in enumerate(detector):
+      self.viewer.points.extend(
+        p.get_lab_coord(xycal.select(panel == pid)))
+
+  def predict(self):
+    assert self.crystal is not None
+    from dxtbx.model.experiment_list import Experiment, ExperimentList
+    imageset = self.imageset
+    scan = copy.deepcopy(imageset.get_scan())
+    gonio = imageset.get_goniometer()
+    prediction_width = self.settings.prediction_width
+    if prediction_width is None:
+      prediction_width = scan.get_oscillation()[1]
+    if isinstance(gonio, MultiAxisGoniometer):
+      scan_angle = gonio.get_angles()[gonio.get_scan_axis()]
+    else:
+      return
+    scan.set_oscillation(
+      (scan_angle, prediction_width))
+    expt = Experiment(
+      imageset=imageset,
+      crystal=self.crystal,
+      detector=imageset.get_detector(),
+      beam=imageset.get_beam(),
+      scan=scan[:1],
+      goniometer=imageset.get_goniometer())
+
+    # Populate the reflection table with predictions
+    from dials.array_family import flex
+    predicted = flex.reflection_table.from_predictions(
+      expt,
+      force_static=True,
+    )
+    predicted['id'] = flex.int(len(predicted), 0)
+    return predicted
 
 class ExperimentViewer(wx.Frame, render_3d):
   def __init__(self, *args, **kwds):
@@ -229,7 +286,7 @@ class ExperimentViewer(wx.Frame, render_3d):
     v.OnRedraw()
 
   def create_viewer_panel(self) :
-    self.viewer = RLVWindow(settings=self.settings, parent=self, size=(800,600),
+    self.viewer = GeometryWindow(settings=self.settings, parent=self, size=(800,600),
       #orthographic=True
       )
 
@@ -298,10 +355,10 @@ class settings_window(wxtbx.utils.SettingsPanel) :
     self.parent.update_settings()
 
 
-class RLVWindow(wx_viewer.show_points_and_lines_mixin):
+class GeometryWindow(wx_viewer.show_points_and_lines_mixin):
 
   def __init__(self, settings, *args, **kwds):
-    super(RLVWindow, self).__init__(*args, **kwds)
+    super(GeometryWindow, self).__init__(*args, **kwds)
     self.settings = settings
     self.points = flex.vec3_double()
     self.colors = None
@@ -468,16 +525,16 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
     gltbx.fonts.ucs_bitmap_8x13.render_string(label)
 
   def rotate_view(self, x1, y1, x2, y2, shift_down=False, scale=0.1):
-    super(RLVWindow, self).rotate_view(
+    super(GeometryWindow, self).rotate_view(
       x1, y1, x2, y2, shift_down=shift_down, scale=scale)
 
   def OnLeftUp(self,event):
     self.was_dragged = True
-    super(RLVWindow, self).OnLeftUp(event)
+    super(GeometryWindow, self).OnLeftUp(event)
 
 
   def initialize_modelview(self, eye_vector=None, angle=None):
-    super(RLVWindow, self).initialize_modelview(eye_vector=eye_vector, angle=angle)
+    super(GeometryWindow, self).initialize_modelview(eye_vector=eye_vector, angle=angle)
     self.rotation_center = (0,0,0)
     self.move_to_center_of_viewport(self.rotation_center)
 
@@ -525,6 +582,16 @@ def run(args):
       params.detector_distance = detector.hierarchy().get_directed_distance()
     else:
       params.detector_distance = detector[0].get_directed_distance()
+
+  if gonio is not None and not isinstance(gonio, MultiAxisGoniometer):
+    from dxtbx.model.goniometer import GoniometerFactory
+    gonio = GoniometerFactory.multi_axis(
+      axes=flex.vec3_double((gonio.get_rotation_axis(),)),
+      angles=flex.double((0,)),
+      names=flex.std_string(('GON_OMEGA',)),
+      scan_axis=0)
+    imageset.set_goniometer(gonio)
+
   if isinstance(gonio, MultiAxisGoniometer):
     if params.angle:
       assert len(params.angle) == len(gonio.get_angles())

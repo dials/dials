@@ -294,6 +294,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_<ExecutorWrapper, boost::noncopyable>("Executor")
       .def("process", pure_virtual(&Executor::process))
+      .enable_pickling()
       ;
 
     class_<ShoeboxProcessor>("ShoeboxProcessor", no_init)

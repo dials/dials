@@ -42,6 +42,38 @@ def exercise_spotfinder():
     assert "shoebox" not in reflections
   print 'OK'
 
+  # now write a hot mask
+  args = ["dials.find_spots", "write_hot_mask=True",
+          ' '.join(template), "output.reflections=spotfinder.pickle", "output.shoeboxes=False"]
+  result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
+  assert os.path.exists("spotfinder.pickle")
+  with open("spotfinder.pickle", "rb") as f:
+    reflections = pickle.load(f)
+    assert len(reflections) == 653, len(reflections)
+    assert "shoebox" not in reflections
+  assert os.path.exists("hot_mask_0.pickle")
+  with open("hot_mask_0.pickle", "rb") as f:
+    mask = pickle.load(f)
+    assert len(mask) == 1, len(mask)
+    assert mask[0].count(False) == 12, mask[0].count(False)
+  print 'OK'
+
+  # now write a hot mask
+  args = ["dials.find_spots", "write_hot_mask=True", "hot_mask_prefix=my_hot_mask",
+          ' '.join(template), "output.reflections=spotfinder.pickle", "output.shoeboxes=False"]
+  result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
+  assert os.path.exists("spotfinder.pickle")
+  with open("spotfinder.pickle", "rb") as f:
+    reflections = pickle.load(f)
+    assert len(reflections) == 653, len(reflections)
+    assert "shoebox" not in reflections
+  assert os.path.exists("my_hot_mask_0.pickle")
+  with open("my_hot_mask_0.pickle", "rb") as f:
+    mask = pickle.load(f)
+    assert len(mask) == 1, len(mask)
+    assert mask[0].count(False) == 12, mask[0].count(False)
+  print 'OK'
+
   # now with more generous parameters
   args = ["dials.find_spots", "min_spot_size=3",
           "max_separation=3",

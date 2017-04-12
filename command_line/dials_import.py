@@ -195,11 +195,11 @@ class DataBlockImporter(object):
           raise Sorry('No datablocks found in directories %s' % self.params.input.directory)
       else:
         raise Sorry('No datablocks found')
-    if len(datablocks) > 1:
-      raise Sorry("More than 1 datablock found")
+    # if len(datablocks) > 1:
+    #   raise Sorry("More than 1 datablock found")
 
     # Return the datablocks
-    return datablocks[0]
+    return datablocks
 
 
 class ReferenceGeometryUpdater(object):
@@ -228,11 +228,12 @@ class ReferenceGeometryUpdater(object):
     # Set beam and detector
     imageset.set_beam(self.reference.beam)
     imageset.set_detector(self.reference.detector)
+    imageset.set_goniometer(self.reference.goniometer)
     return imageset
 
   def load_reference_geometry(self, params):
     '''
-    Load a reference geoetry file
+    Load a reference geometry file
 
     '''
     from collections import namedtuple
@@ -241,21 +242,34 @@ class ReferenceGeometryUpdater(object):
     reference_beam = None
     if params.input.reference_geometry is not None:
       from dxtbx.serialize import load
+      experiments, datablock = None, None
       try:
         experiments = load.experiment_list(
           params.input.reference_geometry, check_format=False)
-        assert len(experiments.detectors()) == 1
-        assert len(experiments.beams()) == 1
-        reference_detector = experiments.detectors()[0]
-        reference_beam = experiments.beams()[0]
       except Exception, e:
         datablock = load.datablock(params.input.reference_geometry)
+      assert experiments or datablock, 'Could not import reference geometry'
+      if experiments:
+        assert len(experiments.detectors()) >= 1
+        assert len(experiments.beams()) >= 1
+        if len(experiments.detectors()) > 1:
+          raise Sorry('The reference geometry file contains %d detector definitions, but only a single definition is allowed.' % len(experiments.detectors()))
+        if len(experiments.beams()) > 1:
+          raise Sorry('The reference geometry file contains %d beam definitions, but only a single definition is allowed.' % len(experiments.beams()))
+        reference_detector = experiments.detectors()[0]
+        reference_beam = experiments.beams()[0]
+        reference_goniometer = experiments.goniometers()[0]
+      else:
         assert len(datablock) == 1
         imageset = datablock[0].extract_imagesets()[0]
         reference_detector = imageset.get_detector()
         reference_beam = imageset.get_beam()
-    Reference = namedtuple("Reference", ["detector", "beam"])
-    return Reference(detector=reference_detector, beam=reference_beam)
+        reference_goniometer = imageset.get_goniometer()
+    Reference = namedtuple("Reference", ["detector", "beam", "goniometer"])
+    return Reference(
+      detector=reference_detector,
+      beam=reference_beam,
+      goniometer=reference_goniometer)
 
 
 class ManualGeometryUpdater(object):
@@ -612,48 +626,49 @@ class Script(object):
     # Setup the metadata updater
     metadata_updater = MetaDataUpdater(params)
 
-    # Get the datablocks
-    datablock = metadata_updater(datablock_importer())
+    # Extract the datablocks and loop through
+    datablocks = map(metadata_updater, datablock_importer())
+    for datablock in datablocks:
 
-    # Extract any sweeps
-    sweeps = datablock.extract_sweeps()
+      # Extract any sweeps
+      sweeps = datablock.extract_sweeps()
 
-    # Extract any stills
-    stills = datablock.extract_stills()
-    if not stills:
-      num_stills = 0
-    else:
-      num_stills = sum([len(s) for s in stills])
+      # Extract any stills
+      stills = datablock.extract_stills()
+      if not stills:
+        num_stills = 0
+      else:
+        num_stills = sum([len(s) for s in stills])
 
-    # Print some data block info - override the output of image range
-    # if appropriate
-    image_range = params.geometry.scan.image_range
+      # Print some data block info - override the output of image range
+      # if appropriate
+      image_range = params.geometry.scan.image_range
 
-    logger.info("-" * 80)
-    logger.info("  format: %s" % str(datablock.format_class()))
-    if image_range is None:
-      logger.info("  num images: %d" % datablock.num_images())
-    else:
-      logger.info("  num images: %d" % (image_range[1] - image_range[0] + 1))
-    logger.info("  num sweeps: %d" % len(sweeps))
-    logger.info("  num stills: %d" % num_stills)
+      logger.info("-" * 80)
+      logger.info("  format: %s" % str(datablock.format_class()))
+      if image_range is None:
+        logger.info("  num images: %d" % datablock.num_images())
+      else:
+        logger.info("  num images: %d" % (image_range[1] - image_range[0] + 1))
+      logger.info("  num sweeps: %d" % len(sweeps))
+      logger.info("  num stills: %d" % num_stills)
 
-    # Loop through all the sweeps
-    for j, sweep in enumerate(sweeps):
-      logger.debug("")
-      logger.debug("Sweep %d" % j)
-      logger.debug("  Length %d" % len(sweep))
-      logger.debug(sweep.get_beam())
-      logger.debug(sweep.get_goniometer())
-      logger.debug(sweep.get_detector())
-      logger.debug(sweep.get_scan())
+      # Loop through all the sweeps
+      for j, sweep in enumerate(sweeps):
+        logger.debug("")
+        logger.debug("Sweep %d" % j)
+        logger.debug("  Length %d" % len(sweep))
+        logger.debug(sweep.get_beam())
+        logger.debug(sweep.get_goniometer())
+        logger.debug(sweep.get_detector())
+        logger.debug(sweep.get_scan())
 
-    # Only allow a single sweep
-    if params.input.allow_multiple_sweeps is False:
-      self.assert_single_sweep(sweeps, params)
+      # Only allow a single sweep
+      if params.input.allow_multiple_sweeps is False:
+        self.assert_single_sweep(sweeps, params)
 
     # Write the datablocks to file
-    self.write_datablocks([datablock], params)
+    self.write_datablocks(datablocks, params)
 
   def write_datablocks(self, datablocks, params):
     '''
