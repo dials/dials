@@ -9,11 +9,17 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+import boost.python
 import logging
 logger = logging.getLogger(__name__)
 from dials_algorithms_integration_integrator_ext import *
 from dials import phil
 import libtbx
+
+class ExecutorAux(Executor, boost.python.injector):
+
+  def __getinitargs__(self):
+    return ()
 
 
 class _Job(object):
@@ -25,97 +31,99 @@ class _Job(object):
 job = _Job()
 
 
+
+class MultiProcessing(object):
+  '''
+  Multi processing parameters
+
+  '''
+  def __init__(self):
+    self.method = "multiprocessing"
+    self.nproc = 1
+    self.njobs = 1
+    self.nthreads = 1
+
+  def update(self, other):
+    self.method = other.method
+    self.nproc = other.nproc
+    self.njobs = other.njobs
+    self.nthreads = other.nthreads
+
+class Lookup(object):
+  '''
+  Lookup parameters
+
+  '''
+  def __init__(self):
+    self.mask = None
+
+  def update(self, other):
+    self.mask = other.mask
+
+class Block(object):
+  '''
+  Block parameters
+
+  '''
+  def __init__(self):
+    self.size = libtbx.Auto
+    self.units = 'degrees'
+    self.threshold = 0.99
+    self.force = False
+    self.max_memory_usage = 0.75
+
+  def update(self, other):
+    self.size = other.size
+    self.units = other.units
+    self.threshold = other.threshold
+    self.force = other.force
+    self.max_memory_usage = other.max_memory_usage
+
+class Shoebox(object):
+  '''
+  Shoebox parameters
+
+  '''
+  def __init__(self):
+    self.flatten = False
+    self.partials = False
+
+  def update(self, other):
+    self.flatten = other.flatten
+    self.partials = other.partials
+
+class Debug(object):
+  '''
+  Debug parameters
+
+  '''
+  def __init__(self):
+    self.output = False
+    self.select = None
+    self.split_experiments = True
+    self.separate_files = True
+
+  def update(self, other):
+    self.output = other.output
+    self.select = other.select
+    self.split_experiments = other.split_experiments
+    self.separate_files = other.separate_files
+
 class Parameters(object):
   '''
   Class to handle parameters for the processor
 
   '''
-
-  class MultiProcessing(object):
-    '''
-    Multi processing parameters
-
-    '''
-    def __init__(self):
-      self.method = "multiprocessing"
-      self.nproc = 1
-      self.nthreads = 1
-
-    def update(self, other):
-      self.method = other.method
-      self.nproc = other.nproc
-      self.nthreads = other.nthreads
-
-  class Lookup(object):
-    '''
-    Lookup parameters
-
-    '''
-    def __init__(self):
-      self.mask = None
-
-    def update(self, other):
-      self.mask = other.mask
-
-  class Block(object):
-    '''
-    Block parameters
-
-    '''
-    def __init__(self):
-      self.size = libtbx.Auto
-      self.units = 'degrees'
-      self.threshold = 0.99
-      self.force = False
-      self.max_memory_usage = 0.75
-
-    def update(self, other):
-      self.size = other.size
-      self.units = other.units
-      self.threshold = other.threshold
-      self.force = other.force
-      self.max_memory_usage = other.max_memory_usage
-
-  class Shoebox(object):
-    '''
-    Shoebox parameters
-
-    '''
-    def __init__(self):
-      self.flatten = False
-      self.partials = False
-
-    def update(self, other):
-      self.flatten = other.flatten
-      self.partials = other.partials
-
-  class Debug(object):
-    '''
-    Debug parameters
-
-    '''
-    def __init__(self):
-      self.output = False
-      self.select = None
-      self.split_experiments = True
-      self.separate_files = True
-
-    def update(self, other):
-      self.output = other.output
-      self.select = other.select
-      self.split_experiments = other.split_experiments
-      self.separate_files = other.separate_files
-
   def __init__(self):
     '''
     Initialize the parameters
 
     '''
-    self.mp = Parameters.MultiProcessing()
-    self.lookup = Parameters.Lookup()
-    self.block = Parameters.Block()
-    self.shoebox = Parameters.Shoebox()
-    self.debug = Parameters.Debug()
+    self.mp = MultiProcessing()
+    self.lookup = Lookup()
+    self.block = Block()
+    self.shoebox = Shoebox()
+    self.debug = Debug()
 
   def update(self, other):
     '''
@@ -156,6 +164,22 @@ class TimingInfo(object):
       ["User time"        , "%.2f seconds" % (self.user)       ],
     ]
     return table(rows, justify='right', prefix=' ')
+
+
+class ExecuteParallelTask(object):
+  '''
+  Helper class to run things on cluster
+
+  '''
+
+  def __call__(self, task):
+    from dials.util import log
+    import logging
+    log.config_simple_cached()
+    result = task()
+    handlers = logging.getLogger('dials').handlers
+    assert len(handlers) == 1, "Invalid number of logging handlers"
+    return result, handlers[0].messages()
 
 
 class Processor(object):
@@ -203,48 +227,48 @@ class Processor(object):
 
     '''
     from time import time
-    from libtbx import easy_mp
+    from dials.util.mp import multi_node_parallel_map
     import platform
+    from math import ceil
     start_time = time()
     self.manager.initialize()
     mp_method = self.manager.params.mp.method
-    mp_nproc = min(len(self.manager), self.manager.params.mp.nproc)
-    mp_nthreads = self.manager.params.mp.nthreads
-    if mp_nproc > 1 and platform.system() == "Windows": # platform.system() forks which is bad for MPI, so don't use it unless nproc > 1
+    mp_njobs = self.manager.params.mp.njobs
+    mp_nproc = self.manager.params.mp.nproc
+    if (mp_njobs * mp_nproc) > 1 and platform.system() == "Windows": # platform.system() forks which is bad for MPI, so don't use it unless nproc > 1
       logger.warn("")
       logger.warn("*" * 80)
       logger.warn("Multiprocessing is not available on windows. Setting nproc = 1")
       logger.warn("*" * 80)
       logger.warn("")
       mp_nproc = 1
+      mp_njobs = 1
     assert mp_nproc > 0, "Invalid number of processors"
-    job.nthreads = mp_nthreads
+    if mp_nproc * mp_njobs > len(self.manager):
+      mp_nproc = min(mp_nproc, len(self.manager))
+      mp_njobs = int(ceil(len(self.manager) / mp_nproc))
     logger.info(self.manager.summary())
-    logger.info(' Using %s with %d parallel job(s) and %d thread(s) per job\n' % (
-      mp_method, mp_nproc, mp_nthreads))
-    if mp_nproc > 1:
+    if mp_njobs > 1:
+      assert mp_method is not 'none' and mp_method is not None
+      logger.info(' Using %s with %d parallel job(s) and %d processes per node\n' % (mp_method, mp_njobs, mp_nproc))
+    else:
+      logger.info(' Using multiprocessing with %d parallel job(s)\n' % (mp_nproc))
+    if mp_njobs * mp_nproc > 1:
       def process_output(result):
         for message in result[1]:
           logger.log(message.levelno, message.msg)
         self.manager.accumulate(result[0])
         result[0].reflections = None
         result[0].data = None
-      def execute_task(task):
-        from dials.util import log
-        import logging
-        log.config_simple_cached()
-        result = task()
-        handlers = logging.getLogger('dials').handlers
-        assert len(handlers) == 1, "Invalid number of logging handlers"
-        return result, handlers[0].messages()
-      easy_mp.parallel_map(
-        func=execute_task,
-        iterable=list(self.manager.tasks()),
-        processes=mp_nproc,
-        callback=process_output,
-        method=mp_method,
-        preserve_order=True,
-        preserve_exception_message=True)
+      multi_node_parallel_map(
+        func                       = ExecuteParallelTask(),
+        iterable                   = list(self.manager.tasks()),
+        njobs                      = mp_njobs,
+        nproc                      = mp_nproc,
+        callback                   = process_output,
+        cluster_method             = mp_method,
+        preserve_order             = True,
+        preserve_exception_message = True)
     else:
       for task in self.manager.tasks():
         self.manager.accumulate(task())
@@ -651,7 +675,7 @@ class Manager(object):
     '''
     from math import ceil
     if self.params.block.size == libtbx.Auto:
-      if self.params.mp.nproc == 1 \
+      if self.params.mp.nproc*self.params.mp.njobs == 1 \
           and not self.params.debug.output \
           and not self.params.block.force:
         self.params.block.size = None

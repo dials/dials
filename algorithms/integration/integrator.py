@@ -38,7 +38,6 @@ def generate_phil_scope():
 
     integration {
 
-      include scope dials.data.multiprocessing.phil_scope
       include scope dials.data.lookup.phil_scope
 
       block {
@@ -161,6 +160,21 @@ def generate_phil_scope():
           .help = "Set the ice ring flags"
           .type = bool
       }
+
+      mp {
+        method = *none drmaa sge lsf pbs
+          .type = choice
+          .help = "The cluster method to use"
+
+        njobs = 1
+          .type = int(value_min=1)
+          .help = "The number of cluster jobs to use"
+
+        nproc = 1
+          .type = int(value_min=1)
+          .help = "The number of processes to use per cluster job"
+      }
+
     }
   ''', process_includes=True)
   main_scope = phil_scope.get_without_substitution("integration")
@@ -304,17 +318,17 @@ class Parameters(object):
     result = Parameters()
 
     # Create the multi processing parameters
-    mp = processor.Parameters.MultiProcessing()
+    mp = processor.MultiProcessing()
     mp.method = params.mp.method
     mp.nproc = params.mp.nproc
-    mp.nthreads = params.mp.nthreads
+    mp.njobs = params.mp.njobs
 
     # Set the lookup parameters
-    lookup = processor.Parameters.Lookup()
+    lookup = processor.Lookup()
     lookup.mask = params.lookup.mask
 
     # Set the block parameters
-    block = processor.Parameters.Block()
+    block = processor.Block()
     block.size = params.block.size
     block.units = params.block.units
     block.threshold = params.block.threshold
@@ -578,7 +592,7 @@ class ProfileModellerExecutor(Executor):
 
     '''
     return self.profile_fitter
-  
+
   def __getinitargs__(self):
     '''
     Support for pickling
@@ -689,7 +703,7 @@ class ProfileValidatorExecutor(Executor):
 
     '''
     return self.results
-  
+
   def __getinitargs__(self):
     '''
     Support for pickling

@@ -71,6 +71,7 @@ def cluster_map(
       func,
       iterable))
   process.start()
+  process.join()
 
   # Start the drmaa session
   with drmaa.Session() as s:
@@ -115,7 +116,7 @@ def cluster_map(
         result.append(r)
 
       # Make sure the process has finished
-      process.join()
+      #process.join()
 
       # Delete job template
       s.deleteJobTemplate(jt)

@@ -87,7 +87,7 @@ class ProcessorImageBase(object):
 
     '''
     from time import time
-    from libtbx import easy_mp
+    from dials.util.mp import multi_node_parallel_map
     import platform
     start_time = time()
     self.manager.initialize()
@@ -119,14 +119,15 @@ class ProcessorImageBase(object):
         handlers = logging.getLogger('dials').handlers
         assert len(handlers) == 1, "Invalid number of logging handlers"
         return result, handlers[0].messages()
-      easy_mp.parallel_map(
-        func=execute_task,
-        iterable=list(self.manager.tasks()),
-        processes=mp_nproc,
-        callback=process_output,
-        method=mp_method,
-        preserve_order=True,
-        preserve_exception_message=True)
+      multi_node_parallel_map(
+        func                       = execute_task,
+        iterable                   = list(self.manager.tasks()),
+        njobs                      = mp_njobs,
+        nproc                      = mp_nproc,
+        callback                   = process_output,
+        method                     = mp_method,
+        preserve_order             = True,
+        preserve_exception_message = True)
     else:
       for task in self.manager.tasks():
         self.manager.accumulate(task())

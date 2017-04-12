@@ -56,12 +56,11 @@ if __name__ == '__main__':
   while not exists(input_fn):
     sleep(1)
 
-  # Unpickle the function and the input
-  with open(input_fn, "rb") as infile:
-    function, element = pickle.load(open(input_fn))
-
   # Try to run the function, otherwise return an exception
   try:
+    with open(input_fn, "rb") as infile:
+      function, element = pickle.load(open(input_fn))
+
     result = function(element)
   except Exception, exception:
     exception.args = [traceback.format_exc()]
