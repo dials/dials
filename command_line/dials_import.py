@@ -317,8 +317,8 @@ class ManualGeometryUpdater(object):
         deepcopy(imageset.get_scan()))
       i0, i1 = scan.get_array_range()
       j0, j1 = imageset.get_scan().get_array_range()
-      assert i0 >= j0
-      assert i1 <= j1
+      assert i0 >= j0, "%d should be >= %d" % (i0, j0)
+      assert i1 <= j1, "%d should be <= %d" % (i1, j1)
       k0 = i0 - j0
       k1 = i1 - j0
       imageset = imageset[k0:k1]
