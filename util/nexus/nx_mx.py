@@ -446,7 +446,7 @@ def load_beam(entry):
   assert(n.dot(matrix.col((0, 0, -1))) < EPS)
 
   # Return the beam model
-  return Beam((0, 0, -1), wavelength, 0, 0, n, p)
+  return Beam((0, 0, -1), wavelength, 0, 0, n, p, 0, 1)
 
 def load_detector(entry):
   from dxtbx.model import Detector
