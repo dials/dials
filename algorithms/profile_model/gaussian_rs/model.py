@@ -321,11 +321,12 @@ class Model(ProfileModelIface):
         if not spots_per_degree > params.gaussian_rs.min_spots.per_degree:
           raise RuntimeError('''
             Too few reflections for profile modelling:
-              expected > %d per degree, got %d or > %d in total, got %d
+              need %d per degree or  %d in total
+              got  %d per degree and %d in total
             ''' % (
               params.gaussian_rs.min_spots.per_degree,
-              spots_per_degree,
               params.gaussian_rs.min_spots.overall,
+              spots_per_degree,
               len(reflections)))
       else:
         raise RuntimeError('''
