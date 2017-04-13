@@ -75,9 +75,9 @@ phil_scope = parse("""
       .type = space_group
       .help = "The space group used to generate d_spacings for powder rings."
       .expert_level = 1
-    width = 0.06
+    width = 0.002
       .type = float(value_min=0.0)
-      .help = "The width of an ice ring (in d-spacing)."
+      .help = "The width of an ice ring (in 1/d^2)."
       .expert_level = 1
     d_min = None
       .type = float(value_min=0.0)
@@ -93,6 +93,7 @@ def generate_ice_ring_resolution_ranges(beam, panel, params):
 
   '''
   from cctbx import crystal
+  from math import sqrt
 
   if params.filter is True:
 
@@ -118,8 +119,11 @@ def generate_ice_ring_resolution_ranges(beam, panel, params):
 
     # Yield all the d ranges
     for j, d in enumerate(ms.d_spacings().data()):
-      d_min = d - half_width
-      d_max = d + half_width
+      d_sq_inv = 1.0 / (d**2)
+      d_sq_inv_min = d_sq_inv - half_width
+      d_sq_inv_max = d_sq_inv + half_width
+      d_min = sqrt(1.0 / d_sq_inv_min)
+      d_max = sqrt(1.0 / d_sq_inv_max)
       yield (d_min, d_max)
 
 
