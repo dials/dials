@@ -61,10 +61,10 @@ class installer(install_distribution.installer):
     self._cleaned_size, self._cleaned_files = 0, 0
     def rmdir(subdir):
       fullpath = os.path.join(directory, subdir)
-      num_files, total_size = 0, 0
       if not os.path.exists(fullpath):
         print "Skipping", " " * 26, subdir
         return
+      num_files, total_size = 0, 0
       for dirpath, dirnames, filenames in os.walk(fullpath):
         for f in filenames:
           fp = os.path.join(dirpath, f)
@@ -75,6 +75,17 @@ class installer(install_distribution.installer):
       shutil.rmtree(fullpath)
       self._cleaned_size = self._cleaned_size + total_size
       self._cleaned_files = self._cleaned_files + num_files
+    def rmfile(filename):
+      fullpath = os.path.join(directory, filename)
+      if not os.path.exists(fullpath):
+        print "Skipping", " " * 26, filename
+        return
+      filesize = os.path.getsize(fullpath)
+      print "Removing %9s, file %s" % \
+          (humansize(filesize), filename)
+      os.remove(fullpath)
+      self._cleaned_size = self._cleaned_size + filesize
+      self._cleaned_files = self._cleaned_files + 1
 
     # Deduce matplotlib path
     # (base/lib/python2.??/site-packages/matplotlib-????/matplotlib)
@@ -112,16 +123,18 @@ class installer(install_distribution.installer):
     rmdir('base/share/gtk-doc')
     rmdir('base/share/hdf5_examples')
     rmdir('base/share/man')
-    for p in ['date_time', 'filesystem', 'program_options', 'python', 'thread']:
+    for p in ['date_time', 'detail', 'filesystem', 'program_options', 'python', 'system', 'thread']:
       rmdir(os.path.join('modules/boost/libs', p, 'example'))
       rmdir(os.path.join('modules/boost/libs', p, 'doc'))
       rmdir(os.path.join('modules/boost/libs', p, 'test'))
       rmdir(os.path.join('modules/boost/libs', p, 'tutorial'))
+    rmdir('modules/boost/libs/date_time/xmldoc')
     rmdir('modules/cbflib/doc')
     rmdir('modules/cbflib/examples')
     rmdir('modules/cbflib/ply-3.2/doc')
     rmdir('modules/cbflib/ply-3.2/example')
     rmdir('modules/cbflib/ply-3.2/test')
+    rmfile('modules/cbflib/idx-s00-20131106040304531.cbf')
     rmdir('modules/clipper/examples')
     print "-" * 60
     print "Deleted %d files, decrufting installation by %s\n" % \
