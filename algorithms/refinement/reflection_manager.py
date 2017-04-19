@@ -329,7 +329,7 @@ class ReflectionManager(object):
       passed1 = p_vol > self._close_to_spindle_cutoff
 
       # second test: reject reflections that lie outside the scan range
-      passed2 = exp.scan.is_angle_valid(phi)
+      passed2 = exp.scan.is_angle_valid(phi, deg=False)
 
       # combine tests
       to_update = passed1 & passed2
