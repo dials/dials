@@ -119,6 +119,11 @@ def run(args):
 
   for imageset in imagesets:
     detector = imageset.get_detector()
+
+    if len(detector) > 1:
+      raise Sorry('Currently only single panel detectors are supported by %s'
+                  %libtbx.env.dispatcher_name)
+
     panel = detector[0]
     scan = imageset.get_scan()
     # XXX is this inclusive or exclusive?
