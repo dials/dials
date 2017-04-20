@@ -125,7 +125,10 @@ def run(args):
     saturation = panel.get_trusted_range()[1]
     if params.saturation:
       saturation = params.saturation
-    start, end = scan.get_image_range()
+    if scan is not None:
+      start, end = scan.get_image_range()
+    else:
+      start, end = 0, 0
     for i_image in range(start, end+1):
       image = imageset.get_raw_data(i_image-start)
 
