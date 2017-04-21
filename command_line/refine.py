@@ -360,20 +360,24 @@ class Script(object):
       for step in steps:
         fname_base = root
         if len(steps) > 1: fname_base += "_step%02d" % step
-        plot_fname = fname_base + ext
-        corrmat, labels = refiner.get_parameter_correlation_matrix(step, col_select)
-        if [corrmat, labels].count(None) == 0:
+
+        corrmats, labels = refiner.get_parameter_correlation_matrix(step, col_select)
+        if [corrmats, labels].count(None) == 0:
           from dials.algorithms.refinement.refinement_helpers import corrgram
-          plt = corrgram(corrmat, labels)
-          if plt is not None:
-            logger.info('Saving parameter correlation plot to {}'.format(plot_fname))
-            plt.savefig(plot_fname)
-            num_plots += 1
+          for resid_name, corrmat in corrmats.items():
+            plot_fname = fname_base + "_" + resid_name + ext
+            plt = corrgram(corrmat, labels)
+            if plt is not None:
+              logger.info('Saving parameter correlation plot to {}'.format(plot_fname))
+              plt.savefig(plot_fname)
+              plt.close()
+              num_plots += 1
           mat_fname = fname_base + ".pickle"
           with open(mat_fname, 'wb') as handle:
-            py_mat = corrmat.as_scitbx_matrix() #convert to pickle-friendly form
-            logger.info('Saving parameter correlation matrix to {0}'.format(mat_fname))
-            pickle.dump({'corrmat':py_mat, 'labels':labels}, handle)
+            for k, corrmat in corrmats.items():
+              corrmats[k] = corrmat.as_scitbx_matrix()
+            logger.info('Saving parameter correlation matrices to {0}'.format(mat_fname))
+            pickle.dump({'corrmats':corrmats, 'labels':labels}, handle)
 
       if num_plots == 0:
         msg = "Sorry, no parameter correlation plots were produced. Please set " \

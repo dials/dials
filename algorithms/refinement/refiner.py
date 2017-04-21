@@ -1781,29 +1781,33 @@ class Refiner(object):
     to select subsets of the full number of columns. The column labels
     are also returned as a list of strings"""
 
-    corrmat = self._refinery.get_correlation_matrix_for_step(step)
-    if corrmat is None: return None
-    assert corrmat.is_square_matrix()
-
-    if col_select is None:
-      col_select = range(corrmat.all()[0])
+    corrmats = self._refinery.get_correlation_matrix_for_step(step)
+    if corrmats is None: return None, None
 
     all_labels = self._pred_param.get_param_names()
     from dials.algorithms.refinement.refinement_helpers import string_sel
+    if col_select is None:
+      col_select = range(len(all_labels))
     sel = string_sel(col_select, all_labels)
     labels = [e for e, s in zip(all_labels, sel) if s]
     num_cols = num_rows = len(labels)
     if num_cols == 0: return None, None
 
-    from scitbx.array_family import flex
-    idx = flex.bool(sel).iselection()
-    sub_corrmat = flex.double(flex.grid(num_cols, num_cols))
+    for k, corrmat in corrmats.items():
 
-    for (i, x) in enumerate(idx):
-      for (j, y) in enumerate(idx):
-        sub_corrmat[i,j] = corrmat[x, y]
+      assert corrmat.is_square_matrix()
 
-    return (sub_corrmat, labels)
+      from scitbx.array_family import flex
+      idx = flex.bool(sel).iselection()
+      sub_corrmat = flex.double(flex.grid(num_cols, num_cols))
+
+      for (i, x) in enumerate(idx):
+        for (j, y) in enumerate(idx):
+          sub_corrmat[i,j] = corrmat[x, y]
+
+      corrmats[k] = sub_corrmat
+
+    return (corrmats, labels)
 
   def print_step_table(self):
     """print useful output about refinement steps in the form of a simple table"""

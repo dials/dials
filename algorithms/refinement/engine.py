@@ -193,18 +193,44 @@ class Refinery(object):
       self.history.set_last_cell("gradient", self._g)
     if "parameter_correlation" in self.history:
       if self._jacobian is not None:
-        self.history.set_last_cell("parameter_correlation",
-          self._packed_corr_mat(self._jacobian))
+        resid_names = [s.replace('RMSD_', '') for s in self._target.rmsd_names]
+        # split Jacobian into dense matrix blocks corresponding to each residual
+        jblocks = self.split_jacobian_into_blocks()
+        corrmats = {}
+        for r, j  in zip(resid_names, jblocks):
+          corrmats[r]=self._packed_corr_mat(j)
+        self.history.set_last_cell("parameter_correlation", corrmats)
     if "out_of_sample_rmsd" in self.history:
       preds = self._target.predict_for_free_reflections()
       self.history.set_last_cell("out_of_sample_rmsd",
         self._target.rmsds_for_reflection_table(preds))
     return
 
+  def split_jacobian_into_blocks(self):
+    """Split the Jacobian into blocks each corresponding to a separate
+    residual"""
+
+    nblocks = len(self._target.rmsd_names)
+
+    try:
+      # The Jacobian might be a sparse matrix
+      j = self._jacobian.as_dense_matrix()
+    except AttributeError:
+      j = self._jacobian
+
+    nr, nc = j.all()
+    nr_block = int(nr/nblocks)
+    row_start = [e * nr_block for e in range(nblocks)]
+    blocks = [j.matrix_copy_block(rs, 0, nr_block, nc) for rs in row_start]
+
+    return blocks
+
   @staticmethod
   def _packed_corr_mat(m):
     """Return a 1D flex array containing the upper diagonal values of the
     correlation matrix calculated between columns of 2D matrix m"""
+
+    nr, nc = m.all()
 
     try: # convert a flex.double matrix to sparse
       nr, nc = m.all()
@@ -228,25 +254,33 @@ class Refinery(object):
     return tmp
 
   def get_correlation_matrix_for_step(self, step):
-    """Decompress and return the full 2D correlation matrix between columns of
-    the Jacobian that was stored in the journal at the given step number. If
-    not available, return None"""
+    """For each type of residual (e.g. X, Y, Phi), decompress and return the
+    full 2D correlation matrix between columns of the Jacobian that was
+    stored in the journal at the given step number. If not available, return
+    None"""
 
     if "parameter_correlation" not in self.history: return None
     try:
-      packed = self.history["parameter_correlation"][step]
+      packed_mats = self.history["parameter_correlation"][step]
     except IndexError:
       return None
-    if packed is None: return None
+    if packed_mats is None: return None
+
+    from copy import deepcopy
+    packed_mats = deepcopy(packed_mats)
+
     nparam = len(self._parameters)
-    corr_mat = flex.double(flex.grid(nparam, nparam))
-    i = 0
-    for row in range(nparam):
-      for col in range(row, nparam):
-        corr_mat[row, col] = packed[i]
-        i += 1
-    corr_mat.matrix_copy_upper_to_lower_triangle_in_place()
-    return corr_mat
+
+    for k, v in packed_mats.items():
+      corr_mat = flex.double(flex.grid(nparam, nparam))
+      i = 0
+      for row in range(nparam):
+        for col in range(row, nparam):
+          corr_mat[row, col] = v[i]
+          i += 1
+      corr_mat.matrix_copy_upper_to_lower_triangle_in_place()
+      packed_mats[k] = corr_mat
+    return packed_mats
 
   def test_for_termination(self):
     """Return True if refinement should be terminated"""
