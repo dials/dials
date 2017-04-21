@@ -40,7 +40,10 @@ def test1():
   for pth in exp_path + pkl_path:
     assert os.path.exists(pth), "%s missing" % pth
 
-  cmd = "dials.two_theta_refine " + " ".join(exp_path) + " " + " ".join(pkl_path) + " cif=refined_cell.cif"
+  cmd = "dials.two_theta_refine " + " ".join(exp_path) + " " + \
+    " ".join(pkl_path) + " cif=refined_cell.cif" + " " \
+    "output.correlation_plot.filename=corrplot.png"
+
   print cmd
 
   # work in a temporary directory
