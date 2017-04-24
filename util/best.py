@@ -86,8 +86,12 @@ def write_par_file(file_name, experiment):
   rotation = R_to_mosflm * rotation
 
   def space_group_symbol(space_group):
-    return ccp4_symbol(space_group.info(), lib_name='syminfo.lib',
-       require_at_least_one_lib=False).replace(' 1', '').replace(' ', '')
+    symbol = ccp4_symbol(space_group.info(), lib_name='syminfo.lib',
+                         require_at_least_one_lib=False)
+    if symbol != 'P 1':
+      symbol = symbol.replace(' 1', '')
+    symbol = symbol.replace(' ', '')
+    return symbol
 
   with open(file_name, 'wb') as f:#
     print >> f, '# parameter file for BEST'

@@ -712,6 +712,7 @@ class SpotFinder(object):
                filter_spots=None,
                scan_range=None,
                write_hot_mask=True,
+               hot_mask_prefix='hot_mask',
                min_spot_size=1,
                max_spot_size=20,
                no_shoeboxes_2d=False,
@@ -735,6 +736,7 @@ class SpotFinder(object):
     self.filter_spots = filter_spots
     self.scan_range = scan_range
     self.write_hot_mask = write_hot_mask
+    self.hot_mask_prefix = hot_mask_prefix
     self.min_spot_size = min_spot_size
     self.max_spot_size = max_spot_size
     self.mp_method = mp_method
@@ -771,13 +773,13 @@ class SpotFinder(object):
       # Write a hot pixel mask
       if self.write_hot_mask:
         if imageset.external_lookup.mask.data is not None:
-          and_mask = []
-          for m1, m2 in zip(imageset.external_lookup.mask.data, hot_mask):
-            and_mask.append(m1 & m2)
-          imageset.external_lookup.mask.data = tuple(and_mask)
+          for m1, m2 in zip(hot_mask, imageset.external_lookup.mask.data):
+            m1 &= m2
+          imageset.external_lookup.mask.data = hot_mask
         else:
           imageset.external_lookup.mask.data = hot_mask
-        imageset.external_lookup.mask.filename = "hot_mask_%d.pickle" % i
+        imageset.external_lookup.mask.filename = "%s_%d.pickle" % (
+          self.hot_mask_prefix, i)
 
         # Write the hot mask
         with open(imageset.external_lookup.mask.filename, "wb") as outfile:

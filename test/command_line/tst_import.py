@@ -18,6 +18,7 @@ class Test(object):
     self.tst_import_beam_centre()
     self.tst_with_mask()
     self.tst_override_geometry()
+    self.tst_extrapolate_scan()
     self.tst_multiple_sweeps()
 
   def tst_multiple_sweeps(self):
@@ -206,6 +207,21 @@ class Test(object):
            template, shell=True, stdout=PIPE)
 
     assert(exists("import_datablock.json"))
+
+    print 'OK'
+
+  def tst_extrapolate_scan(self):
+    from subprocess import call, PIPE
+    from os.path import join, exists
+
+    # First image file
+    image = join(self.path, "centroid_0001.cbf")
+
+    # Import from the image file
+    call('dials.import %s output.datablock=import_extrapolate.json geometry.scan.image_range=1,900 geometry.scan.extrapolate_scan=True' % \
+           image, shell=True, stdout=PIPE)
+
+    assert(exists("import_extrapolate.json"))
 
     print 'OK'
 

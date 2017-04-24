@@ -233,7 +233,7 @@ class ReferenceGeometryUpdater(object):
 
   def load_reference_geometry(self, params):
     '''
-    Load a reference geoetry file
+    Load a reference geometry file
 
     '''
     from collections import namedtuple
@@ -242,16 +242,24 @@ class ReferenceGeometryUpdater(object):
     reference_beam = None
     if params.input.reference_geometry is not None:
       from dxtbx.serialize import load
+      experiments, datablock = None, None
       try:
         experiments = load.experiment_list(
           params.input.reference_geometry, check_format=False)
-        assert len(experiments.detectors()) == 1
-        assert len(experiments.beams()) == 1
+      except Exception, e:
+        datablock = load.datablock(params.input.reference_geometry)
+      assert experiments or datablock, 'Could not import reference geometry'
+      if experiments:
+        assert len(experiments.detectors()) >= 1
+        assert len(experiments.beams()) >= 1
+        if len(experiments.detectors()) > 1:
+          raise Sorry('The reference geometry file contains %d detector definitions, but only a single definition is allowed.' % len(experiments.detectors()))
+        if len(experiments.beams()) > 1:
+          raise Sorry('The reference geometry file contains %d beam definitions, but only a single definition is allowed.' % len(experiments.beams()))
         reference_detector = experiments.detectors()[0]
         reference_beam = experiments.beams()[0]
         reference_goniometer = experiments.goniometers()[0]
-      except Exception, e:
-        datablock = load.datablock(params.input.reference_geometry)
+      else:
         assert len(datablock) == 1
         imageset = datablock[0].extract_imagesets()[0]
         reference_detector = imageset.get_detector()
@@ -309,11 +317,8 @@ class ManualGeometryUpdater(object):
         deepcopy(imageset.get_scan()))
       i0, i1 = scan.get_array_range()
       j0, j1 = imageset.get_scan().get_array_range()
-      assert i0 >= j0
-      assert i1 <= j1
-      k0 = i0 - j0
-      k1 = i1 - j0
-      imageset = imageset[k0:k1]
+      if i0 >= j0 and i1 <= j1:
+        imageset = imageset[i0:i1]
       imageset.set_beam(beam)
       imageset.set_detector(detector)
       imageset.set_goniometer(goniometer)
