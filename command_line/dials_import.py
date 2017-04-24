@@ -317,6 +317,8 @@ class ManualGeometryUpdater(object):
         deepcopy(imageset.get_scan()))
       i0, i1 = scan.get_array_range()
       j0, j1 = imageset.get_scan().get_array_range()
+      if i0 >= j0 and i1 <= j1:
+        imageset = imageset[i0:i1]
       imageset.set_beam(beam)
       imageset.set_detector(detector)
       imageset.set_goniometer(goniometer)
