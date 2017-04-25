@@ -123,9 +123,13 @@ class Test(object):
     #                            "idx-run266702-0-subset_00003_integrated.pickle"],
     #                            [range(80,95),range(225,235),range(235,245)]): # large ranges to handle platform-specific differences
     # 02/21/17 Changes to stills_process: refine during indexing instead of after. Also used refined metrology from Rahel
+    #for result, n_refls in zip(["idx-run266702-0-subset_00001_integrated.pickle",
+    #                            "idx-run266702-0-subset_00003_integrated.pickle"],
+    #                            [range(600,610),range(505,520)]): # large ranges to handle platform-specific differences
+    # 04/25/17 Changes after reverting sign_error_27Feb2014_through_15Feb2017 in xfel/mono_simulation/max_like.py
     for result, n_refls in zip(["idx-run266702-0-subset_00001_integrated.pickle",
                                 "idx-run266702-0-subset_00003_integrated.pickle"],
-                                [range(600,610),range(505,520)]): # large ranges to handle platform-specific differences
+                                [range(565,580),range(495,510)]): # large ranges to handle platform-specific differences
       table = pickle.load(open(result, 'rb'))
       assert len(table) in n_refls, len(table)
       assert 'id' in table
