@@ -125,9 +125,10 @@ class neighbor_analysis(object):
     if self.histogram_binning == 'log':
       ax = plt.gca()
       ax.set_xscale('log')
-    plt.vlines(self.max_cell/self.tolerance, ymin, ymax, colors='g', label='estimated max cell')
+    plt.vlines(self.max_cell/self.tolerance, ymin, ymax, linestyles='--', colors='g', label='estimated max cell')
+    plt.vlines(self.max_cell, ymin, ymax, colors='g', label='estimated max cell (including tolerance)')
     plt.xlabel('Direct space distance (A)')
     plt.ylabel('Frequency')
-    plt.legend(loc='best')
+    plt.legend(loc='upper left')
     plt.savefig(filename)
     plt.clf()
