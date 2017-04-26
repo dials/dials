@@ -102,19 +102,13 @@ def exercise_client(port):
   assert len(xmldoc.getElementsByTagName('n_indexed')) == 1
   assert len(xmldoc.getElementsByTagName('fraction_indexed')) == 1
 
-  fraction_indexed = float(
-    xmldoc.getElementsByTagName('fraction_indexed')[0].childNodes[0].data)
-  n_indexed = int(
-    xmldoc.getElementsByTagName('n_indexed')[0].childNodes[0].data)
   unit_cell = [
     float(f) for f in
     xmldoc.getElementsByTagName('unit_cell')[0].childNodes[0].data.split()]
 
   from libtbx.test_utils import approx_equal
-  assert approx_equal(fraction_indexed, 0.82)
-  assert approx_equal(n_indexed, 167)
   assert approx_equal(
-    unit_cell, [39.814, 42.669, 42.3074, 89.6946, 89.9012, 89.8521])
+    unit_cell, [39.814, 42.669, 42.3074, 89.6946, 89.9012, 89.8521], eps=1e-1)
 
   client_command = " ".join([client_command] + filenames[1:])
   result = easy_run.fully_buffered(command=client_command).raise_if_errors()
