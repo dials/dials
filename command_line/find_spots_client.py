@@ -32,9 +32,9 @@ def response_to_xml(d):
     return '<response>\n%s\n</response>' %d['error']
 
   if 'lattices' in d:
-    from dxtbx.serialize.crystal import from_dict
+    from dxtbx.model.crystal import CrystalFactory
     for lattice in d['lattices']:
-      crystal = from_dict(lattice['crystal'])
+      crystal = CrystalFactory.from_dict(lattice['crystal'])
       response = '\n'.join([
         response,
         '<unit_cell>%.6g %.6g %.6g %.6g %.6g %.6g</unit_cell>' %(

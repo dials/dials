@@ -115,7 +115,6 @@ indexing_min_spots = 10
     import logging
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     from dials.algorithms.indexing import indexer
-    from dxtbx.serialize.crystal import to_dict
     interp = indexer.master_phil_scope.command_line_argument_interpreter()
     phil_scope, unhandled = interp.process_and_fetch(
       unhandled, custom_processor='collect_remaining')
@@ -135,6 +134,7 @@ indexing_min_spots = 10
       idxr = indexer.indexer_base.from_parameters(
         reflections, imagesets, params=params)
       indexing_results = []
+      idxr.index()
       indexed_sel = idxr.refined_reflections.get_flags(
         idxr.refined_reflections.flags.indexed)
       indexed_sel &= ~(idxr.refined_reflections.get_flags(
@@ -143,7 +143,7 @@ indexing_min_spots = 10
         sel = idxr.refined_reflections['id'] == i_expt
         sel &= indexed_sel
         indexing_results.append({
-          'crystal': to_dict(expt.crystal),
+          'crystal': expt.crystal.to_dict(),
           'n_indexed': sel.count(True),
           'fraction_indexed': sel.count(True)/sel.size()})
       stats['lattices'] = indexing_results
