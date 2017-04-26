@@ -42,13 +42,18 @@ def update_dials_download_links():
 
   with open(release_file, 'w') as release:
     caption = "Stable Release"
-    if 'name' in release_info: caption = caption + ": " + release_info['name']
+    if 'name' in release_info:
+      caption = caption + ": " + release_info['name']
+      print "Most recent major DIALS release is:", release_info['name']
+    else:
+      print "Could not determine most recent major DIALS release"
     release.write(caption + "\n" + '=' * len(caption) + "\n\n")
 
     release.write('The current stable release can be downloaded from `Github <https://github.com/dials/dials/releases/latest>`_,\n')
     release.write('where you can also find further `release notes <https://github.com/dials/dials/releases/latest>`_.\n\n')
 
     def download_button(text, version, link):
+      print "  %s %s -> %s" % (version, text, link)
       return ".. button::\n   :text: DIALS %s %s\n   :link: %s\n\n" % (version, text, link)
 
     assets = {}
