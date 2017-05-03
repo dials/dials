@@ -1582,6 +1582,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.miller_indices)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.indexed)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.integrated)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.show_basis_vectors)
     #self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.minspotarea_ctrl)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateShowMask, self.show_mask)
 
