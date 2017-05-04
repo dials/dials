@@ -6,53 +6,6 @@ Correcting poor initial geometry
 Introduction
 ------------
 
-One of the most common problems faced by users of any data processing program
-is incorrect information about the experimental geometry in the input. This
-will often cause outright failures in indexing, but sometimes more subtle
-effects are possible, such as misindexing. In such cases, it may be possible
-to index and refine a lattice that on the face of it looks reasonable but is
-actually shifted so that :math:`h`, :math:`k` or :math:`l` (or some
-combination of these) are off by some integer value (often +/- 1).
-
-DIALS uses the information written to the image headers to form its initial
-model for the experiment geometry. That is, we trust that the beamline has been
-set up correctly and the files produced at the beamline are a good
-description of the experiment that was performed. Using the
-:program:`dxtbx` library within :program:`cctbx` means we even recognise
-specific beamlines in many cases, and interpret the files according to
-custom format readers that are appropriate for those beamlines.
-
-Unfortunately it is not always possible to be this trusting. Beamlines are
-often changing and sometimes the metadata recorded with your diffraction images
-are out of date. Sometimes values for things like the beam centre depend on
-other factors such as the wavelength and detector distance, and your experiment
-might have been performed outside the range that was used during beamline
-calibration. Another possibility is that the image headers are correct, but
-the wrong convention is used during interpretation of the headers. Not only
-are there 8 different ways that a detector's 'fast' and 'slow' axes could
-be aligned with the vertical and horizontal directions of the detector's
-housing, but processing packages have their own coordinate conventions that
-map these to 'X' and 'Y' directions, either in pixels or millimetres. It is
-not surprising that sometimes meaning gets lost in translation here.
-Whatever the cause, incorrect or wrongly interpreted image headers are a
-reality that we have to be aware of. Some programs go as far as to ignore
-the image headers entirely and pass the responsiblity on to the supposed
-existence of an accurate 'site file' describing the experimental set up.
-Although it may be easier for a user to edit an incorrect site file rather
-than broken image headers, the problem still remains that if the experiment
-description is sufficiently wrong, the processing will not be straightforward.
-
-In this tutorial we describe some of the ways in which bad geometry
-derived from image headers can be worked around within DIALS, and we
-use an example in which the initially incorrect geometry tricks the indexing
-program into misindexing, which, if we were being careless, could have lead
-to the integration of a useless data set. This tutorial is a cautionary tale,
-the moral of which is that the user is still required to read the output of
-the programs they run!
-
-Tutorial data
--------------
-
 The following example uses a dataset kindly provided by Wolfram Tempel, which
 was collected at beamline 19-ID at the APS. This dataset is available for
 download from |DPF3|.
@@ -60,106 +13,91 @@ download from |DPF3|.
 .. |DPF3| image:: https://zenodo.org/badge/doi/10.5281/zenodo.45756.svg
           :target: http://dx.doi.org/10.5281/zenodo.45756
 
-The dataset consists of a tar archive of bz2-compressed images. Very recent
-versions of DIALS can read these directly, however here we shall be using
-DIALS 1.1, as included in CCP4 7.0. In that case, we need to uncompress the
-image files first. To do that, we first extract the archive::
+This is a challenging dataset to process. There are a combination of problems,
+including:
 
-  tar xvf DPF3_247398.tar
+* A 'reversed' rotation axis
+* Incorrect beam centre recorded in the image headers
+* Multiple lattices confounding lattice symmetry determination
 
-then uncompress each of the 200 images. This will probably take a couple of
-minutes if the files are on a local hard drive::
+Despite these issues, the diffraction data is of reasonable quality and was
+used to `solve the structure`_ after processing by XDS.
 
-  bunzip2 *.bz2
+.._solve the structure: https://doi.org/10.2210/pdb5i3l/pdb
+
+In this tutorial we will look at how to use the DIALS toolkit to address these
+issues. The first problem, namely the inverted rotation axis, is trivially dealt
+with. However the following issues are particularly pernicious in this case.
+Rather than resulting in outright failures to process, we instead may obtain
+incorrect indexing solutions, which, if we were being careless, could have
+lead to the integration of a useless data set. This tutorial is a cautionary
+tale, the moral of which is that the user is still required to read the
+output of the programs they run and to make use of the diagnostic tools!
 
 Import
 ------
 
+The dataset consists of a tar archive of bz2-compressed images. DIALS can read
+the compressed images directly, however we need to extract the archive first::
+
+  tar xvf DPF3_247398.tar
+
 At this point we have no reason not to trust the image headers. We shall just
 go ahead and import the whole sweep as normal::
 
-  dials.import x247398/t1.0*.img
+  dials.import x247398/t1.0*.img.bz2
 
-From the output we can see that beamline 19-ID at the APS is one that is
-specifically recognised by DIALS. As expected we found a single sweep of
-data. So all looks good so far.::
-
-  --------------------------------------------------------------------------------
-  DataBlock 0
-    format: <class 'dxtbx.format.FormatSMVADSCSNAPSID19.FormatSMVADSCSNAPSID19'>
-    num images: 200
-    num sweeps: 1
-    num stills: 0
-  --------------------------------------------------------------------------------
-
-We can get some more information about the expected experiment details using
-:program:`dials.show`::
+This produces the file :file:`datablock.json`, containing an initial model for
+the beamline geometry. You can inspect this model using :program:`dials.show`::
 
   dials.show datablock.json
 
-which produces output including the experimental geometry::
+Note how the goniometer rotation axis is given by ``{-1,0,0}`` rather than
+``{1,0,0}`. This is because DIALS recognises that these images as being
+from beamline 19-ID at the APS, which is known to have an inverted axis of
+rotation compared with the more common direction. Settings such as inverse
+:math:`\phi`, or vertical goniometers, can be the cause of problems with
+processing data from currently unrecognised beamlines. As an aside, in such
+a case we could force the rotation axis to be whatever we want like this::
 
-  Detector:
-  Panel:
-    pixel_size:{0.1024,0.1024}
-    image_size: {3072,3072}
-    trusted_range: {1,65535}
-    thickness: 0
-    material:
-    mu: 0
-    fast_axis: {1,0,0}
-    slow_axis: {0,-1,0}
-    origin: {-159.98,154.501,-150}
-  Max resolution: 1.355231
+  dials.import x247398/t1.0*.img.bz2 geometry.goniometer.rotation_axis=-1,0,0
 
-  Beam:
-      wavelength: 1.28215
-      sample to source direction : {0,0,1}
-      divergence: 0
-      sigma divergence: 0
-      polarization normal: {0,1,0}
-      polarization fraction: 0.999
-  Beam centre: (159.98,154.50)
+Now that we have imported the data we should look at the images::
 
-  Scan:
-      image range:   {1,200}
-      oscillation:   {-100,1}
+  dials.image_viewer datablock.json
 
-  Goniometer:
-      Rotation axis:   {-1,0,0}
-      Fixed rotation:  {1,0,0,0,1,0,0,0,1}
-      Setting rotation:{1,0,0,0,1,0,0,0,1}
-
-At the moment we don't know that any of this is wrong. Happily, the
-19-ID-specific format has recognised the 'inverse :math:`\phi`' rotation of
-the goniometer at this beamline, and thus produced a rotation axis of
-``{-1,0,0}`` rather than ``{1,0,0}``. These inverse :math:`\phi` settings
-can be the cause of problems with processing data from currently
-unrecognised beamlines. As an aside, in such a case we could force the
-rotation axis to be whatever we want like this::
-
-  dials.import x247398/t1.0*.img geometry.goniometer.rotation_axis=-1,0,0
-
-We can fix any aspect of the experimental geometry in this way, as long as we
-know in advance what it should be. This information could all be included in
-a file, say :file:`site.phil` and passed to :program:`dials.import` thus
-combining the freedom of a site file with the ability to read image headers.
-However, in general we would prefer to produce a new format in such cases.
-More information about this is available in the :program:`dxtbx`
-`paper <http://dx.doi.org/10.1107/S1600576714011996>`_
+Keen-eyed observers may already suspect that the beam centre is not correct,
+however we shall continue through spot-finding as this is not affected by
+the experimental geometry.
 
 Find Spots
 ----------
 
-Spot-finding in DIALS usually works well for Pilatus detectors, where default
-assumptions about Poisson statistics of pixel counts, unity gain and no point
-spread are accurate. These assumptions are not correct for CCD detectors and
-this can be another source of problems with data processing. This may be the
-subject of a future tutorial! In this case though, the defaults do a
-reasonable, though possibly non-optimal job. We continue on regardless,
-requesting only a larger number of processes to speed the job up::
+Spot-finding in DIALS usually works well for Pilatus detectors, where
+default assumptions about Poisson statistics of pixel counts, unity gain and
+no point spread are accurate. These assumptions are not correct for CCD
+detectors and this can be another source of problems with data processing.
+To see the positions of strong pixels identified by the spot finding
+algorithm, select the ``threshold`` button at the bottom of the image
+viewer's ``Settings`` window. In this case, the default settings are not too
+bad: the strong pixels clearly follow the diffraction pattern. However there
+is a little bit of noise between the diffraction spots and along some of the
+detector module edges. We can try altering the spot finding settings to
+improve the threshold map. In this case, setting the ``Gain`` to ``2.0``
+seems sufficient to clean up some of the spurious peak positions. The gain
+setting we select here will only affect spot finding and not other stages of
+processing. Our focus here is empirical. We want to produce a good spot list
+for indexing, we are not worried about setting the detector gain to its true
+value (for an ADSC Q315r detector this is expected to be about 2.4 ADU per
+12 keV X-ray).
 
-  dials.find_spots datablock.json nproc=4
+Once we are satisfied with the spot-finding settings we can write them out
+to :file:`find_spots.phil` by clicking the ``Save`` button on the
+``Settings`` window. Then we can pass this directly to
+:program:`dials.find_spots`, where we also request more than one process
+to speed the job up::
+
+  dials.find_spots datablock.json find_spots.phil nproc=4
 
 After finding strong spots it is *always* worth viewing them using
 :program:`dials.reciprocal_lattice_viewer`::
@@ -175,7 +113,7 @@ spiral tracks. Extreme cases of this may indicate something grossly wrong,
 like an inverted :math:`\phi` direction. In this instance the lattice is
 still detectable, just distorted. We understand this as inaccurate mapping
 from detector to reciprocal space. If the diffraction geometry model is
-wrong, then :program:`dials.reciprocal_lattice_viewer` can't calculate the
+wrong, then :program:`dials.reciprocal_lattice_viewer` cannot calculate the
 reciprocal lattice position for each centroid properly. This can cause
 problems with indexing because that requires exactly the same step of
 mapping centroid positions from detector to reciprocal space.
@@ -199,27 +137,23 @@ distorted lattice from the centre outwards until a regular grid is formed.
 Here's some output from the end of the indexing log::
 
   RMSDs by experiment:
-  ---------------------------------------------
-  | Exp | Nref  | RMSD_X  | RMSD_Y | RMSD_Z   |
-  | id  |       | (px)    | (px)   | (images) |
-  ---------------------------------------------
-  | 0   | 20000 | 0.75141 | 1.458  | 0.41705  |
-  ---------------------------------------------
-  Final refined crystal models:
-  model 1 (25903 reflections):
+  --------------------------------------------
+  | Exp | Nref  | RMSD_X | RMSD_Y | RMSD_Z   |
+  | id  |       | (px)   | (px)   | (images) |
+  --------------------------------------------
+  | 0   | 13301 | 0.7553 | 1.0663 | 0.50806  |
+  --------------------------------------------
+
+  Refined crystal models:
+  model 1 (16384 reflections):
   Crystal:
-      Unit cell: (112.716, 114.899, 122.710, 90.812, 90.347, 118.944)
+      Unit cell: (113.857, 115.036, 122.851, 89.645, 89.771, 60.615)
       Space group: P 1
 
-The experienced user may also pause for thought here. Positional
-RMSDs of 0.75 and 1.5 pixels are really rather bad. The keen-eyed user might
-compare the number of indexed reflections: ``25903`` with the total number of
-found spots in :file:`strong.pickle`, which was reported at the end of the
-:program:`dials.find_spots` run: ``Saved 89810 reflections to strong.pickle``.
-Indexing less than one third of the centroids is also a cause for concern.
-
-Looking at the results in :program:`dials.reciprocal_lattice_viewer` is
-instructive again::
+This is another point at which the experienced user may pause for thought.
+Positional RMSDs of 0.76 and 1.1 pixels are really rather bad. Looking at
+the results in :program:`dials.reciprocal_lattice_viewer` is instructive
+again::
 
   dials.reciprocal_lattice_viewer experiments.json indexed.pickle
 
@@ -232,7 +166,7 @@ these are messier still.
 .. image:: /figures/dpf3_bad_unindexed.png
 
 At this point we should definitely heed the warnings and try to figure out
-what happened and how to fix it. However, unfortunately the careless user could
+what happened and how to fix it. However, unfortunately a careless user could
 go ahead and integrate with this model. Let's see what happens if we try
 to refine compatible Bravais lattices::
 
@@ -243,18 +177,18 @@ to refine compatible Bravais lattices::
   -------------------------------------------------------------------------------------------------------------------
   Solution Metric fit  rmsd    min/max cc #spots lattice                                 unit_cell  volume      cb_op
   -------------------------------------------------------------------------------------------------------------------
-        12     1.8848 0.593   0.034/0.037  24310      hP 113.31 113.31 121.65  90.00  90.00 120.00 1352671      a,b,c
-        11     1.8848 0.596  -0.037/0.048  24413      oC 113.68 196.41 121.92  90.00  90.00  90.00 2722112 -b,2*a+b,c
-        10     1.8848 0.531   0.042/0.042  23262      mC 115.88 199.28 124.38  90.00  89.14  90.00 2871998 -b,2*a+b,c
-         9     1.8590 0.517   0.048/0.048  23655      mC 199.69 115.46 124.28  90.00  90.77  90.00 2865004  2*a+b,b,c
-         8     1.6960 0.520  -0.037/0.060  24876      oC 112.42 191.42 119.53  90.00  90.00  90.00 2572210 a+b,-a+b,c
-         7     1.6960 0.518   0.040/0.040  25046      mC 191.13 112.31 119.35  90.00  90.21  90.00 2561782  a-b,a+b,c
-         6     1.2805 0.378   0.060/0.060  22834      mC 115.36 196.09 122.77  90.00  90.95  90.00 2776966 a+b,-a+b,c
-         5     1.1998 0.476  -0.037/0.106  24751      oC 110.36 195.43 119.64  90.00  90.00  90.00 2580248  a,a+2*b,c
-         4     1.1998 0.449   0.106/0.106  24735      mC 111.13 196.81 120.35  90.00  90.48  90.00 2632244  a,a+2*b,c
-         3     1.1732 0.445 -0.037/-0.037  24859      mP 109.73 118.84 111.23  90.00 119.07  90.00 1267874   -a,-c,-b
-         2     0.5467 0.222 -0.034/-0.034  21263      mC 201.88 113.14 123.52  90.00  91.34  90.00 2820480 a+2*b,-a,c
-         1     0.0000 0.169           -/-  20646      aP 112.59 114.79 122.65  90.84  90.35 118.95 1386685      a,b,c
+        12     1.0172 0.337   0.031/0.038  14877      hP 116.62 116.62 125.44  90.00  90.00 120.00 1477363    -a,b,-c
+        11     1.0172 0.336  -0.031/0.065  14887      oC 116.48 201.29 125.13  90.00  90.00  90.00 2933803 b,-2*a+b,c
+        10     1.0172 0.322   0.034/0.034  14679      mC 200.78 116.29 124.73  90.00  90.33  90.00 2912345  2*a-b,b,c
+         9     0.9551 0.309   0.065/0.065  14825      mC 115.76 200.29 124.16  90.00  89.53  90.00 2878506 b,-2*a+b,c
+  *      8     0.7564 0.271  -0.031/0.036  14684      oC 117.61 201.64 125.75  90.00  90.00  90.00 2982056  a-b,a+b,c
+  *      7     0.7564 0.265   0.030/0.030  14684      mC 117.37 201.62 125.40  90.00  90.31  90.00 2967360  a-b,a+b,c
+  *      6     0.6886 0.236   0.036/0.036  14241      mC 200.29 117.01 124.89  90.00  89.60  90.00 2926811 a+b,-a+b,c
+  *      5     0.3916 0.159  -0.034/0.081  13499      oC 113.77 200.60 122.99  90.00  90.00  90.00 2807091 a,-a+2*b,c
+  *      4     0.3916 0.157   0.081/0.081  13435      mC 113.59 200.37 122.80  90.00  89.89  90.00 2794850 a,-a+2*b,c
+  *      3     0.3591 0.161 -0.034/-0.034  13869      mC 200.23 113.73 122.70  90.00  90.26  90.00 2794208  a-2*b,a,c
+  *      2     0.3600 0.155 -0.031/-0.031  13903      mP 114.25 123.57 115.62  90.00 119.43  90.00 1421681     -a,c,b
+  *      1     0.0000 0.137           -/-  13723      aP 114.04 115.23 123.07  89.68  89.79  60.61 1409032      a,b,c
   -------------------------------------------------------------------------------------------------------------------
 
 It turns out that quite a few lattices can be forced to fit the putative
@@ -278,27 +212,11 @@ numbers than these, say >0.5 or so.
 Check indexing symmetry
 -----------------------
 
-What can we do in a case like this? Certainly the best solution would be to
-fix the :file:`datablock.json`. The most common problem with the experimental
-geometry is with the beam centre, so we might look to this first as the
-culprit. If we can figure out a better beam centre in the
-`Mosflm convention <http://www.mrc-lmb.cam.ac.uk/harry/mosflm/mosflm_user_guide.html#a3>`_
-then we could use that to override the image headers on import::
-
-  dials.import x247398/t1.0*.img geometry.mosflm_beam_centre=XCEN,YCEN
-
-where ``XCEN`` and ``YCEN`` are replaced by the beam coordinates in
-millimetres using Mosflm's convention.
-
-What if we don't have any information about the beam centre at all? Well, short
-of just guessing values in :program:`dials.reciprocal_lattice_viewer` to
-improve the appearance of the lattice, we still have some tricks we can try.
-First, we are lucky enough in this situation to have *an* indexing solution,
-despite the fact it is a *wrong* one. The spots we indexed may indeed be real,
-but perhaps the indices are shifted by some value. This would be equivalent to
-the beam centre latching onto some very low resolution Bragg reflection rather
-than the direct beam :math:`hkl = (0,0,0)`. DIALS offers a tool to check this.
-If we run::
+The fact that none of the correlation coefficients is high is a hint that
+although the spots we indexed may indeed be real, perhaps the indices are
+shifted by some value. This would be equivalent to the beam centre latching
+onto some very low resolution Bragg reflection rather than the direct beam
+:math:`hkl = (0,0,0)`. DIALS offers a tool to check this. If we run::
 
   dials.check_indexing_symmetry experiments.json indexed.pickle grid=1
 
@@ -311,293 +229,315 @@ output::
   Checking HKL origin:
 
   dH dK dL   Nref    CC
-  -1 -1 -1   5638 0.357
-  -1 -1  0   5634 0.352
-  -1 -1  1   5656 0.345
-  -1  0 -1   5432 0.338
-  -1  0  0   5488 0.322
-  -1  0  1   5554 0.358
-  -1  1 -1   5209 0.328
-  -1  1  0   5301 0.358
-  -1  1  1   5333 0.360
-   0  0  0  66463 -0.045
-   1 -1 -1   5632 0.394
-   1 -1  0   5952 0.445
-   1 -1  1   6086 0.442
-   1  0 -1   5542 0.382
-   1  0  0   5988 0.470
-   1  0  1   7392 0.941
-   1  1 -1   5112 0.320
-   1  1  0   5374 0.359
-   1  1  1   5554 0.394
+  -1 -1 -1   3834 0.255
+  -1 -1  0   3808 0.288
+  -1 -1  1   3624 0.306
+  -1  0 -1   3932 0.261
+  -1  0  0   3952 0.291
+  -1  0  1   3829 0.310
+  -1  1 -1   3800 0.171
+  -1  1  0   3925 0.230
+  -1  1  1   4011 0.316
+   0  0  0   1538 -0.127
+   1 -1 -1   4028 0.357
+   1 -1  0   3966 0.323
+   1 -1  1   3916 0.247
+   1  0 -1   4086 0.292
+   1  0  0   4246 0.387
+   1  0  1   4210 0.356
+   1  1 -1   4090 0.339
+   1  1  0   4474 0.389
+   1  1  1   5616 0.948
 
-  Check symmetry operations on 89810 reflections:
+  Check symmetry operations on 16384 reflections:
 
                  Symop   Nref    CC
-                 x,y,z  89810 0.529
-
+                 x,y,z  16384 0.999
 
 In this case there is a much greater correlation coefficient for the shift
-:math:`\delta h=1`, :math:`\delta k=0` and :math:`\delta l=1` than for all
-others. In fact with 94% correlation even in the unscaled, rough found spots
+:math:`\delta h=1`, :math:`\delta k=1` and :math:`\delta l=1` than for all
+others. In fact with 95% correlation even in the unscaled, rough found spots
 intensity values we can be very sure we have found the right solution.
 
-Applying the hkl offset
------------------------
+Although it is possible to apply the correction using :program:`dials.reindex`
+like this::
 
-We can apply that correction using :program:`dials.reindex`, and then refine
-the result::
+  dials.reindex indexed.pickle hkl_offset=1,1,1
 
-  dials.reindex indexed.pickle hkl_offset=1,0,1
-  dials.refine experiments.json reindexed_reflections.pickle
-
-Checking the table at the end of the log file, this seems to be even worse!
-
-::
-
-  --------------------------------------------
-  | Exp | Nref  | RMSD_X | RMSD_Y | RMSD_Z   |
-  | id  |       | (px)   | (px)   | (images) |
-  --------------------------------------------
-  | 0   | 15810 | 1.0097 | 1.6246 | 0.51472  |
-  --------------------------------------------
-
-However, the tables earlier in the log provide a clue as to why::
-
-  Summary statistics for 25662 observations matched to predictions:
-  ------------------------------------------------------------------
-  |                   | Min    | Q1      | Med    | Q3     | Max   |
-  ------------------------------------------------------------------
-  | Xc - Xo (mm)      | -8.18  | -2.583  | -2.434 | -2.338 | -1.75 |
-  | Yc - Yo (mm)      | -8.63  | 0.4125  | 1.097  | 1.274  | 9.171 |
-  | Phic - Phio (deg) | -20.02 | -0.5833 | 0.2352 | 1.001  | 22.87 |
-  | X weights         | 1117   | 1141    | 1142   | 1143   | 1144  |
-  | Y weights         | 1112   | 1140    | 1142   | 1143   | 1144  |
-  | Phi weights       | 11.38  | 12      | 12     | 12     | 12    |
-  ------------------------------------------------------------------
-
-  9852 reflections have been flagged as outliers
-
-  Summary statistics for 15810 observations matched to predictions:
-  -------------------------------------------------------------------
-  |                   | Min    | Q1      | Med    | Q3     | Max    |
-  -------------------------------------------------------------------
-  | Xc - Xo (mm)      | -2.942 | -2.523  | -2.418 | -2.337 | -1.902 |
-  | Yc - Yo (mm)      | 0.5957 | 1.099   | 1.224  | 1.315  | 1.785  |
-  | Phic - Phio (deg) | -3.031 | -0.4447 | 0.1153 | 0.6547 | 3.326  |
-  | X weights         | 1122   | 1141    | 1143   | 1144   | 1144   |
-  | Y weights         | 1117   | 1141    | 1142   | 1143   | 1144   |
-  | Phi weights       | 11.88  | 12      | 12     | 12     | 12     |
-  -------------------------------------------------------------------
-
-The initial model is so bad that outlier rejection cannot cope. Even after
-rejection, reflections with residuals as high as 3 mm or 3 degrees remain. It
-is likely that some real outliers remain in the working set. However the results
-of :program:`dials.check_indexing_symmetry` do give us confidence that many
-of the reflections are correctly indexed, so we believe there is a correct
-core subset of the reflections. If refinement is being confused by the presence
-of outliers, then we can try tightening up the outlier rejection so that it
-is extremely intolerant::
-
-  dials.refine experiments.json reindexed_reflections.pickle mcd.threshold_probability=0.2
-
-The default outlier detection algorithm in :program:`dials.refine` is called
-``mcd``. Normally, ``mcd.threshold_probability=0.975``, which means that with
-ideal normally-distributed centroid residuals we should expect to reject 2.5%
-of the data. Here we are requesting that with ideal data, 80% of it should
-be thrown away and we refine only using the core, smallest residuals. The
-summary tables show the effect of outlier rejection::
-
-  Summary statistics for 25662 observations matched to predictions:
-  ------------------------------------------------------------------
-  |                   | Min    | Q1      | Med    | Q3     | Max   |
-  ------------------------------------------------------------------
-  | Xc - Xo (mm)      | -8.18  | -2.583  | -2.434 | -2.338 | -1.75 |
-  | Yc - Yo (mm)      | -8.63  | 0.4125  | 1.097  | 1.274  | 9.171 |
-  | Phic - Phio (deg) | -20.02 | -0.5833 | 0.2352 | 1.001  | 22.87 |
-  | X weights         | 1117   | 1141    | 1142   | 1143   | 1144  |
-  | Y weights         | 1112   | 1140    | 1142   | 1143   | 1144  |
-  | Phi weights       | 11.38  | 12      | 12     | 12     | 12    |
-  ------------------------------------------------------------------
-
-  18730 reflections have been flagged as outliers
-
-  Summary statistics for 6932 observations matched to predictions:
-  ---------------------------------------------------------------------
-  |                   | Min     | Q1      | Med     | Q3     | Max    |
-  ---------------------------------------------------------------------
-  | Xc - Xo (mm)      | -2.592  | -2.441  | -2.387  | -2.332 | -2.239 |
-  | Yc - Yo (mm)      | 1.02    | 1.201   | 1.252   | 1.309  | 1.433  |
-  | Phic - Phio (deg) | -0.9988 | -0.2513 | 0.08528 | 0.4251 | 1.21   |
-  | X weights         | 1124    | 1142    | 1143    | 1144   | 1144   |
-  | Y weights         | 1127    | 1142    | 1143    | 1144   | 1144   |
-  | Phi weights       | 11.9    | 12      | 12      | 12     | 12     |
-  ---------------------------------------------------------------------
-
-Outlier rejection has removed a large part of the scatter around the median.
-The median values are not much changed by outlier rejection, which is what
-we expect as it is performed in an unbiased way. The large deviation of the
-median values from zero are indicative of the large shift implied by the
-misindexing. Refinement continues on to correct the model using the core
-of about 7000 best-matched reflections::
-
-  Refinement steps:
-  ------------------------------------------------
-  | Step | Nref | RMSD_X   | RMSD_Y   | RMSD_Phi |
-  |      |      | (mm)     | (mm)     | (deg)    |
-  ------------------------------------------------
-  | 0    | 6932 | 2.3905   | 1.2535   | 0.46787  |
-  | 1    | 6932 | 0.077469 | 0.079508 | 0.41841  |
-  | 2    | 6932 | 0.067829 | 0.076808 | 0.4016   |
-  | 3    | 6932 | 0.066999 | 0.07525  | 0.38685  |
-  | 4    | 6932 | 0.064802 | 0.072023 | 0.3614   |
-  | 5    | 6932 | 0.059714 | 0.065338 | 0.32359  |
-  | 6    | 6932 | 0.051521 | 0.054877 | 0.2707   |
-  | 7    | 6932 | 0.045618 | 0.047833 | 0.22112  |
-  | 8    | 6932 | 0.044251 | 0.046662 | 0.19914  |
-  | 9    | 6932 | 0.043968 | 0.046553 | 0.19386  |
-  | 10   | 6932 | 0.043936 | 0.046514 | 0.1933   |
-  | 11   | 6932 | 0.043939 | 0.046508 | 0.19331  |
-  | 12   | 6932 | 0.043939 | 0.046508 | 0.19331  |
-  ------------------------------------------------
-  RMSD no longer decreasing
-
-  RMSDs by experiment:
-  ---------------------------------------------
-  | Exp | Nref | RMSD_X  | RMSD_Y  | RMSD_Z   |
-  | id  |      | (px)    | (px)    | (images) |
-  ---------------------------------------------
-  | 0   | 6932 | 0.42909 | 0.45418 | 0.19331  |
-  ---------------------------------------------
-
-The final result is not too bad. Let's do a second macrocycle of refinement,
-giving the outlier rejection a second chance starting from the improved model::
-
-  dials.refine refined_experiments.json refined.pickle
-
-::
-
-  RMSDs by experiment:
-  ----------------------------------------------
-  | Exp | Nref  | RMSD_X  | RMSD_Y  | RMSD_Z   |
-  | id  |       | (px)    | (px)    | (images) |
-  ----------------------------------------------
-  | 0   | 14760 | 0.53932 | 0.60676 | 0.22887  |
-  ----------------------------------------------
-
-Now we see many more reflections survived outlier rejection, and the RMSDs
-remain passably okay. Remember though that this model was ultimately derived
-from an indexing job in which fewer than one third of the found spots were
-indexed, using bad geometry. Some areas of reciprocal space are poorly
-sampled with indexed reflections, which means we won't be doing the best job
-in refinement, especially if fitting a scan-varying crystal model.
-Furthermore, we won't have the best reference profiles for spots in these
-regions during integration.
-
-Bootstrap indexing
-------------------
-
-What we would like to do is take the refined geometry as a better starting
-point for indexing. We do that like this::
-
-  dials.import input.datablock=datablock.json output.datablock=recycled.json reference_geometry=refined_experiments.json
-  dials.index recycled.json strong.pickle output.experiments=corrected_experiments.json output.reflections=corrected_indexed.pickle
-
-This looks much better::
-
-  RMSDs by experiment:
-  ----------------------------------------------
-  | Exp | Nref  | RMSD_X  | RMSD_Y  | RMSD_Z   |
-  | id  |       | (px)    | (px)    | (images) |
-  ----------------------------------------------
-  | 0   | 20000 | 0.59591 | 0.65089 | 0.2226   |
-  ----------------------------------------------
-  Final refined crystal models:
-  model 1 (72275 reflections):
-  Crystal:
-      Unit cell: (56.370, 99.824, 121.482, 90.025, 89.958, 89.996)
-      Space group: P 1
-
-Many more reflections were indexed this time, while the RMSDs remain acceptable.
-Inspecting the result with :program:`dials.reciprocal_lattice_viewer`::
-
-  dials.reciprocal_lattice_viewer corrected_experiments.json corrected_indexed.pickle
-
-.. image:: /figures/dpf3_good_indexed.png
-
-We have succeeded in indexing the major lattice, however there are hints of at
-least one other minor lattice within the unindexed reflections, which we could
-either choose to ignore or attempt to index by using the ``max_lattices``
-parameter of :program:`dials.index`.
-
-We leave it here as an exercise for the reader to go on and process this
-dataset, but before finishing with the tutorial, we should introduce the
-preferred approach to dealing with bad geometry.
+it will be very difficult to take the result and continue to process the data.
+There is a much better way to proceed.
 
 Discover better experimental model
 ----------------------------------
 
-Having now gone through the instructive process of rescuing a wrong indexing
-solution, it is time to reveal a simpler, more general solution that existed
-all along, namely the program
-:program:`dials.discover_better_experimental_model`. This is a more general
-solution because this may work even if indexing from the initial geometry
-failed outright so that we had nothing to bootstrap from. It performs a grid
-search to improve the direct beam position using the
-`methods <http://dx.doi.org/10.1107%2FS0021889804005874>`_ also implemented
-in LABELIT.
+We have determined that there is a problem with indexing, which gives us a
+mis-indexed solution. The typical culprit in such cases is a badly wrong
+beam centre. DIALS provides the
+:program:`dials.discover_better_experimental_model`, which can help out
+here. This performs a grid search to improve the direct beam position using
+the `methods <http://dx.doi.org/10.1107%2FS0021889804005874>`_ also
+implemented in LABELIT.
 
 This sits in between the spot finding and the indexing operations, so that
 we could have done::
 
-  dials.discover_better_experimental_model strong.pickle datablock.json
+  dials.discover_better_experimental_model strong.pickle datablock.json n_macro_cycles=2
 
-The output is very concise, yet informative::
+In particularly bad cases it may useful to perform this search iteratively.
+Here we requested two macrocyles, though we see from the concise, yet
+informative output that most of the shift occurred in the the first of
+these (and in fact only the first was necessary)::
 
-  Running DPS
-  Found 6 solutions with max unit cell 167.55 Angstroms.
-  Old beam centre: 159.98 mm, 154.50 mm
-  New beam centre: 162.30 mm, 153.44 mm
-  Shift: -2.32 mm, 1.06 mm
+  Starting macro cycle 1
+  Selecting subset of 10000 reflections for analysis
+  Running DPS using 10000 reflections
+  Found 9 solutions with max unit cell 164.81 Angstroms.
+  Old beam centre: 159.98, 154.50 mm (1562.3, 1508.8 px)
+  New beam centre: 162.31, 153.39 mm (1585.0, 1498.0 px)
+  Shift: -2.33, 1.11 mm (-22.7, 10.8 px)
 
+  Starting macro cycle 2
+  Selecting subset of 10000 reflections for analysis
+  Running DPS using 10000 reflections
+  Found 5 solutions with max unit cell 104.76 Angstroms.
+  Old beam centre: 162.31, 153.39 mm (1585.0, 1498.0 px)
+  New beam centre: 162.31, 153.32 mm (1585.0, 1497.3 px)
+  Shift: 0.00, 0.07 mm (0.0, 0.7 px)
 
-We should not be surprised to see the size of the beam centre shifts being
-about the same as the median residuals after we reindexed the reflections
-before. This time, with the shift applied *before* any indexing took place
-we get the right result straight away::
-
-  dials.index optimized_datablock.json strong.pickle corrected_experiments2.json output.reflections=corrected_indexed2.pickle
+Indexing with the corrected beam centre
+---------------------------------------
 
 ::
 
+  dials.index optimized_datablock.json strong.pickle
+
+We now have a much more convincing solution, which also indexes many more
+reflections::
+
   RMSDs by experiment:
-  ----------------------------------------------
-  | Exp | Nref  | RMSD_X  | RMSD_Y  | RMSD_Z   |
-  | id  |       | (px)    | (px)    | (images) |
-  ----------------------------------------------
-  | 0   | 20000 | 0.55848 | 0.62759 | 0.21564  |
-  ----------------------------------------------
-  Final refined crystal models:
-  model 1 (72441 reflections):
+  ---------------------------------------------
+  | Exp | Nref  | RMSD_X | RMSD_Y  | RMSD_Z   |
+  | id  |       | (px)   | (px)    | (images) |
+  ---------------------------------------------
+  | 0   | 20000 | 0.6645 | 0.68846 | 0.21845  |
+  ---------------------------------------------
+
+  Refined crystal models:
+  model 1 (59317 reflections):
   Crystal:
-      Unit cell: (56.339, 99.748, 121.412, 89.980, 89.966, 89.993)
+      Unit cell: (56.245, 99.563, 121.221, 89.968, 89.987, 90.013)
       Space group: P 1
+
+The lattice looks orthorhombic, and indeed the top solution in the table
+from :program:`dials.refine_bravais_settings` looks reasonable::
+
+  dials.refine_bravais_settings experiments.json indexed.pickle
+
+::
+
+  --------------------------------------------------------------------------------------------------------------
+  Solution Metric fit  rmsd  min/max cc #spots lattice                                 unit_cell volume    cb_op
+  --------------------------------------------------------------------------------------------------------------
+  *      5     0.0346 0.097 0.765/0.861  20000      oP  56.31  99.66 121.36  90.00  90.00  90.00 681094    a,b,c
+  *      4     0.0344 0.097 0.765/0.765  20000      mP  56.32  99.67 121.38  90.00  90.00  90.00 681353    a,b,c
+  *      3     0.0346 0.096 0.773/0.773  20000      mP  56.29 121.32  99.63  90.00  90.01  90.00 680434 -a,-c,-b
+  *      2     0.0184 0.097 0.861/0.861  20000      mP  99.60  56.27 121.28  90.00  89.97  90.00 679739 -b,-a,-c
+  *      1     0.0000 0.098         -/-  20000      aP  56.28  99.60 121.29  89.97  89.99  90.01 679943    a,b,c
+  --------------------------------------------------------------------------------------------------------------
+
+Questioning the lattice symmetry
+--------------------------------
+
+The solution we obtained in the last section looks reasonable, and we might
+be forgiven for taking it further into refinement and integration. However,
+it is always good advice to spend some time looking at the images and the
+reciprocal lattice before committing to that course of action. If we did so,
+we may notice some subtle features that indicate a problem with our chosen
+lattice.
+
+First the reciprocal lattice::
+
+  dials.reciprocal_lattice_viewer bravais_setting_5.json indexed.pickle
+
+.. image:: /figures/dpf3_oP_lo_res.png
+
+Here the view has been aligned almost down the long axis of the reciprocal
+cell, which is :math:`a^\star` for this basis. We see the columns of
+reciprocal lattice points with Miller indices differing by :math:`\h` as
+lines of closely-spaced points. However, we can also see that the lengths of
+the lines alternate between long and short as we move, for example, in the
+:math:`c^\star` direction. At this point we might start to suspect
+a pseudocentred lattice.
+
+However, if we align the view almost along a diagonal across the A face then
+we see that alternating lines of reciprocal lattice points are not exactly
+parallel. This would suggest that rather than pseudocentring, the weak
+interstitial spots are the result of diffraction from a separate lattice.
+
+.. image:: /figures/dpf3_oP_lo_res2.png
+
+Now the image viewer::
+
+  dials.image_viewer bravais_setting_5.json indexed.pickle
+
+.. image:: /figures/dpf3_oP_im5.png
+
+Here we have zoomed in on a region of the central module on the 5th image. The
+line of indexed spots have Miller indices in :math:`(3,-13,l)`. Looking closely
+we see that spots with even :math:`l` are systematically weaker than spots with
+odd :math:`l`. This fits the theory of a pseudocentred lattice, however we
+also see that the spot profile differs between the two sets. That fact is rather
+more supportive of the hypothesis that these spots result from diffraction of a
+different component of the sample.
+
+To investigate these possibilites we can enforce the centred lattice and see
+where that takes us...
+
+Converting to a centred lattice
+-------------------------------
+
+Although :program:`dials.refine_bravais_settings` did not give us a centred
+lattice as an option, it is easy to convert the current primitive solution.
+First, note that for the currently chosen basis, the centring operation should
+be on the A face, not the conventional C face::
+
+  dials.reindex bravais_setting_5.json space_group=A222
+
+Here is part of the output::
+
+  New crystal:
+  Crystal:
+      Unit cell: (56.312, 99.662, 121.361, 90.000, 90.000, 90.000)
+      Space group: A 2 2 2
+
+We now have a face centred space group, but the indexed reflections still
+include those disallowed by the centring operation. An easy way to fix this
+is simply to reindex the spot list using the new model. We also request
+output of the unindexed reflections to explore later::
+
+  dials.index reindexed_experiments.json strong.pickle output.unindexed_reflections=unindexed.pickle
+
+This produces a properly indexed spot list, but the space group is in an
+unconventional setting. We can fix this as follows::
+
+  dials.refine_bravais_settings experiments.json indexed.pickle
+
+Solution 5 is what we want::
+
+  ----------------------------------------------------------------------------------------------------------------
+  Solution Metric fit  rmsd  min/max cc #spots lattice                                 unit_cell volume      cb_op
+  ----------------------------------------------------------------------------------------------------------------
+  *      5     0.0000 0.096 0.760/0.855  20000      oC  99.64 121.38  56.32  90.00  90.00  90.00 681108  b-c,b+c,a
+  *      4     0.0000 0.095 0.768/0.768  20000      mC  99.64 121.38  56.32  90.00  90.01  90.00 681106  b-c,b+c,a
+  *      3     0.0000 0.095 0.760/0.760  20000      mC 121.35  99.61  56.30  90.00  89.98  90.00 680582 b+c,-b+c,a
+  *      2     0.0000 0.095 0.855/0.855  20000      mP  78.43  56.27  78.48  90.00 101.23  90.00 339743     -b,a,c
+  *      1     0.0000 0.096         -/-  20000      aP  56.26  78.41  78.46  78.77  89.99  90.00 339502      a,b,c
+  ----------------------------------------------------------------------------------------------------------------
+
+The table tells us that the indexed spots need a change of basis to be
+consistent with the conventional oC lattice::
+
+  dials.reindex indexed.pickle change_of_basis_op=b-c,b+c,a
+
+This gives us :file:`reindexed_reflections.pickle`. Before passing this along with
+:file:`bravais_setting_5.json` to refinement and then to integration it is worth
+exploring this result with :program:`dials.image_viewer` and
+:program:`dials.reciprocal_lattice_viewer`.
+
+Here is a view of the same region of image 5 as we saw before, but now with only
+the spots allowed by centring being indexed:
+
+.. image:: /figures/dpf3_oC_im5.png
+
+Now a view of the reciprocal lattice, aligned down the :math:`c^\star` axis to
+show off the systematic absences.
+
+We'll leave further processing as an exercise for the reader. What does
+Pointless choose as the space group?
+
+Exploring the minor lattices
+----------------------------
+
+When we indexed with the oC lattice we wrote out the unindexed reflections
+as a separate file. We know that the spots in the positions disallowed by the
+oC lattice do themselves form an orthorhombic lattice. In views from the
+:program:`dials.reciprocal_lattice_viewer` you may also have seen hints of a
+third lattice in some parts of reciprocal space. We might try to index these
+lattices now::
+
+  dials.index optimized_datablock.json unindexed.pickle output.experiments=minor.json output.reflections=minor.pickle unit_cell="99 121 56 90 90 90" space_group=P222 max_lattices=2
+
+Here is some output::
+
+  model 1 (12265 reflections):
+  Crystal:
+      Unit cell: (100.027, 121.370, 56.258, 90.000, 90.000, 90.000)
+      Space group: P 2 2 2
+
+  model 2 (2969 reflections):
+  Crystal:
+      Unit cell: (99.735, 121.858, 56.487, 90.000, 90.000, 90.000)
+      Space group: P 2 2 2
+
+Note there is a rotation about 11 degrees to transform crystal 1 to crystal
+2. We can combine this result with the previous one::
+
+  dials.combine_experiments bravais_setting_5.json reindexed_reflections.pickle minor.json minor.pickle beam=0 detector=0 scan=0 goniometer=0 compare_models=False
+
+Here, the `beam=0` etc. specify that the combined result should have all
+experimental models apart from the crystal taken from the first experiment,
+which is the one described by :file:`bravais_setting_5.json`. The option
+`compare_models=False` is required in order to force this. The result is
+about 65000 indexed reflections, split between three lattices::
+
+  ----------------------
+  | Experiment | Nref  |
+  ----------------------
+  | 0          | 50384 |
+  | 1          | 12265 |
+  | 2          | 2969  |
+  ----------------------
+
+Here is a view of reciprocal space, aligned down the :math:`c^\star` axis of
+the first experiment::
+
+  dials.reciprocal_lattice_viewer combined_experiments.json combined_reflections.pickle
+
+.. image:: /figures/dpf3_3lattices.png
+
+We can create an HTML report for the combined experiments::
+
+  dials.report combined_experiments.json combined_reflections.pickle
+
+This includes a useful plot of the number of indexed reflections for each
+lattice versus the image number. This shows how the first lattice dominates
+throughout the data collection. The second lattice, which is aligned well with
+the first causing the apparent breaking of the oC reflection conditions, is
+present from the start but becomes more prominent in the second half of the
+data collection. This could be a result of a different region of the sample
+coming into the beam. The third lattice, which is misaligned from the others
+by about 11 degrees is present only on images in the first quarter of the
+dataset.
+
+.. image:: /figures/dpf3_indexed_count_3lattices.png
 
 Conclusions
 -----------
 
 * Incorrect or wrongly-interpreted image headers are a fact of life. You will
   encounter these.
-* :program:`dials.reciprocal_lattice_viewer` is an excellent troubleshooting
-  tool for all sorts of spot finding and indexing problems.
+* When beam centre problems are suspected, try
+  :program:`dials.discover_better_experimental_model`.
+* :program:`dials.reciprocal_lattice_viewer` and
+  :program:`dials.image_viewer` are excellent troubleshooting tools for all
+  sorts of spot finding and indexing problems.
 * Some issues manifest as outright failures in indexing, others are more
   insidious and may result in a misindexed solution.
 * Look out for CCs to detect misindexed data, and remember
   :program:`dials.check_indexing_symmetry`.
-* Bootstrap indexing might be possible, but is not really recommended. It makes
-  for a nice tutorial though!
-* When beam centre problems are suspected, try
-  :program:`dials.discover_better_experimental_model`.
+* Determination of lattice symmetry may be complicated by the presence of
+  multiple lattices.
+* Always use the diagnostic tools!
 
 Acknowledgements
 ^^^^^^^^^^^^^^^^
