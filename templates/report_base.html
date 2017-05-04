@@ -4,94 +4,87 @@
 
 {% block header %}
 <head>
-
-    <!-- Definitions for compatibility with the ccp4i2 browser -->
-    <script>
-        if (!Function.prototype.bind) {
-            Function.prototype.bind = function(oThis) {
-                if (typeof this !== 'function') {
-                    // closest thing possible to the ECMAScript 5
-                    // internal IsCallable function
-                    throw new TypeError('Function.prototype.bind - what is trying to be bound is not callable');
-                }
-
-                var aArgs   = Array.prototype.slice.call(arguments, 1),
-                fToBind = this,
-                fNOP    = function() {},
-                fBound  = function() {
-                    return fToBind.apply(this instanceof fNOP
-                                         ? this
-                                         : oThis,
-                                         aArgs.concat(Array.prototype.slice.call(arguments)));
-                };
-
-                if (this.prototype) {
-                    // Function.prototype doesn't have a prototype property
-                    fNOP.prototype = this.prototype;
-                }
-                fBound.prototype = new fNOP();
-
-                return fBound;
-            };
-        }
-        if (typeof Float64Array === 'undefined') Float64Array = Float32Array;
-    </script>
-
-    <bl>
-
-    {% block external_dependencies %}
-    <script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/contrib/auto-render.min.js"></script>
-    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.css">
-    {% endblock external_dependencies %}
-
-    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
-
-    {% block css %}
-    <style type="text/css">
-        body {
-          /*font-family: Helmet, Freesans, Helvetica, Arial, sans-serif;*/
-          margin: 8px;
-          min-width: 240px;
-          margin-left: 5%;
-          margin-right: 5%;
+  <!-- Definitions for compatibility with the ccp4i2 browser -->
+  <script>
+    if (!Function.prototype.bind) {
+      Function.prototype.bind = function(oThis) {
+        if (typeof this !== 'function') {
+          // closest thing possible to the ECMAScript 5
+          // internal IsCallable function
+          throw new TypeError('Function.prototype.bind - what is trying to be bound is not callable');
         }
 
-        .plot {
-          float: left;
-          width: 600px;
-          height: 400px;
-          margin-bottom: 20px;
-        }
+        var aArgs   = Array.prototype.slice.call(arguments, 1),
+        fToBind = this,
+        fNOP    = function() {},
+        fBound  = function() {
+          return fToBind.apply(this instanceof fNOP
+                               ? this
+                               : oThis,
+                               aArgs.concat(Array.prototype.slice.call(arguments)));
+          };
 
-        .square-plot {
-          float: left;
-          width: 800px;
-          height: 800px;
-          margin-bottom: 20px;
+        if (this.prototype) {
+          // Function.prototype doesn't have a prototype property
+          fNOP.prototype = this.prototype;
         }
+        fBound.prototype = new fNOP();
 
-        .katex-display {
-          text-align: left;
-        }
+        return fBound;
+      }
+    }
+  if (typeof Float64Array === 'undefined') Float64Array = Float32Array;
+  </script>
 
-        }
-    </style>
-    {% endblock css %}
+  {% block external_dependencies %}
+  <script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.css"/>
+  {% endblock external_dependencies %}
 
+  <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8"/>
+
+  {% block css %}
+  <style type="text/css">
+    body {
+      /*font-family: Helmet, Freesans, Helvetica, Arial, sans-serif;*/
+      margin: 8px;
+      min-width: 240px;
+      margin-left: 5%;
+      margin-right: 5%;
+    }
+
+    .plot {
+      float: left;
+      width: 600px;
+      height: 400px;
+      margin-bottom: 20px;
+    }
+
+    .square-plot {
+      float: left;
+      width: 800px;
+      height: 800px;
+      margin-bottom: 20px;
+    }
+
+    .katex-display {
+      text-align: left;
+    }
+  </style>
+  {% endblock css %}
 </head>
 {% endblock header %}
 
 {% block body %}
 <body>
-    {% block content %}{% endblock content%}
-    <script>
-      renderMathInElement(
-          document.body);
-    </script>
+  {% block content %}{% endblock content %}
+  <script>
+    renderMathInElement(document.body);
+  </script>
 </body>
 {% endblock body %}
