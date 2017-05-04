@@ -4,6 +4,8 @@
 
 {% block header %}
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8"/>
+
   <!-- Definitions for compatibility with the ccp4i2 browser -->
   <script>
     if (!Function.prototype.bind) {
@@ -45,8 +47,6 @@
   <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.css"/>
   {% endblock external_dependencies %}
-
-  <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8"/>
 
   {% block css %}
   <style type="text/css">
