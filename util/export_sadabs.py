@@ -207,7 +207,7 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
       RUB = S * R * F * UB
     else:
       # properly compute RUB for every reflection
-      UB = experiment.crystal.get_A_at_scan_point(int(round(z0)))
+      UB = matrix.sqr(experiment.crystal.get_A_at_scan_point(int(round(z0))))
       phi = phi_start + z0 * phi_range
       R = axis.axis_and_angle_as_r3_rotation_matrix(phi, deg=True)
       RUB = S * R * F * UB
