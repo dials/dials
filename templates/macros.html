@@ -7,8 +7,8 @@
             {% set outer_loop = loop %}
             <tr>
             {% for item in row %}
-                {% if (outer_loop.first and has_row_header) or
-                      (loop.first and has_column_header) %}
+                {% if (outer_loop.first and has_column_header) or
+                      (loop.first and has_row_header) %}
                     <th>{{ item }}</th>
                 {% else %}
                     <td>{{ item }}</td>
