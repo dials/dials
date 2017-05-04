@@ -23,7 +23,7 @@ including:
 Despite these issues, the diffraction data is of reasonable quality and was
 used to `solve the structure`_ after processing by XDS.
 
-.._solve the structure: https://doi.org/10.2210/pdb5i3l/pdb
+.._solve the structure: http://www.rcsb.org/pdb/explore/explore.do?structureId=5I3L
 
 In this tutorial we will look at how to use the DIALS toolkit to address these
 issues. The first problem, namely the inverted rotation axis, is trivially dealt
