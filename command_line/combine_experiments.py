@@ -100,6 +100,10 @@ phil_scope = parse('''
       .type = int
       .help = "Maximum number of crystals to cluster."
 
+    exclude_single_crystal_clusters = True
+      .type = bool
+      .help = "Don't produce a 'cluster' containing only one crystal."
+
   }
 
   output {
@@ -475,6 +479,8 @@ class Script(object):
       sorted_keys = sorted(clustered.clustered_frames.keys())
       while len(clustered.clustered_frames) > 0 and not_too_many(keep_frames):
         keep_frames.append(clustered.clustered_frames.pop(sorted_keys.pop(-1)))
+      if params.clustering.exclude_single_crystal_clusters:
+        keep_frames = [k for k in keep_frames if len(k) > 1]
       clustered_experiments = [[f.experiment for f in frame_cluster] for frame_cluster in keep_frames]
       clustered_reflections = [[f.reflections for f in frame_cluster] for frame_cluster in keep_frames]
       list_of_combined = combine_in_clusters(clustered_experiments, clustered_reflections,
