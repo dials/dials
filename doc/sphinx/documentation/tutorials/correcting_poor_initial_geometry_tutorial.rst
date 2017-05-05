@@ -1,5 +1,5 @@
-Correcting poor initial geometry
-================================
+DPF3 Part 1: Correcting poor initial geometry
+=============================================
 
 .. highlight:: none
 
@@ -27,24 +27,18 @@ used to `solve the structure`_ after processing by XDS.
 
 .. _solve the structure: http://www.rcsb.org/pdb/explore/explore.do?structureId=5I3L
 
-In this tutorial we will look at how to use the DIALS toolkit to address these
-issues. The first problem, namely the inverted rotation axis, is trivially dealt
-with. However the incorrect beam centre is particularly pernicious in this case.
-Rather than resulting in an outright failure to process, we instead may obtain
-an incorrect indexing solution, which, if we were being careless, could have
-lead to the integration of a useless data set.
+In the first part of this tutorial we will look at how to use the DIALS toolkit
+to address the poor initial model for the experimental geometry, which leads to
+problems with indexing. The first listed problem, namely the inverted rotation
+axis, is trivially dealt with. However the incorrect beam centre is
+particularly pernicious in this case. Rather than resulting in an outright
+failure to process, we instead may obtain an incorrect indexing solution,
+which, if we were being careless, could have lead to the integration of a
+useless data set.
 
-The presence of split spots and minor lattices indicate some disorder in the
-sample. However, these do not cause great difficulties in processing. More
-thought is required when considering the issue of possible pseudocentring.
-The structure can be solved in more than one space group. In cases such as
-this, the true symmetry may not be known until late stages of refinement. Even
-then, it might not be completely clear. Here we will investigate some features
-of the images that warn us of the challenges that lie ahead.
-
-This tutorial is a cautionary tale, the moral of which is that the user is
-still required to read the output of the programs they run and to make use
-of the diagnostic tools!
+This tutorial is a cautionary tale, the moral of which is that the user should
+employ the diagnostic tools at their disposal and to think about the output of
+the programs they run.
 
 Import
 ------
@@ -89,6 +83,7 @@ Spot-finding in DIALS usually works well for Pilatus detectors, where
 default assumptions about Poisson statistics of pixel counts, unity gain and
 no point spread are accurate. These assumptions are not correct for CCD
 detectors and this can be another source of problems with data processing.
+
 To see the positions of strong pixels identified by the spot finding
 algorithm, select the ``threshold`` button at the bottom of the image
 viewer's ``Settings`` window. In this case, the default settings are not too
@@ -107,7 +102,7 @@ Once we are satisfied with the spot-finding settings we can write them out
 to :file:`find_spots.phil` by clicking the ``Save`` button on the
 ``Settings`` window. Then we can pass this directly to
 :program:`dials.find_spots`, where we also request more than one process
-to speed the job up::
+to speed the job up (feel free to set this greater than 4, if appropriate)::
 
   dials.find_spots datablock.json find_spots.phil nproc=4
 
@@ -123,14 +118,14 @@ not quite right. Instead of neat columns of points corresponding to a
 regular reciprocal lattice grid, the points are aligned in curved or even
 spiral tracks. Extreme cases of this may indicate something grossly wrong,
 like an inverted :math:`\phi` direction. In this instance the lattice is
-still detectable, just distorted. We understand this as inaccurate mapping
+still detectable, but distorted. We understand this as inaccurate mapping
 from detector to reciprocal space. If the diffraction geometry model is
 wrong, then :program:`dials.reciprocal_lattice_viewer` cannot calculate the
 reciprocal lattice position for each centroid properly. This can cause
 problems with indexing because that requires exactly the same step of
 mapping centroid positions from detector to reciprocal space.
 
-Notwithstanding these concerns, we press on into indexing anyway.
+Notwithstanding these concerns, we press on into indexing.
 
 Indexing
 --------
@@ -163,9 +158,9 @@ Here's some output from the end of the indexing log::
       Space group: P 1
 
 This is another point at which the experienced user may pause for thought.
-Positional RMSDs of 0.76 and 1.1 pixels are really rather bad. Looking at
+Positional RMSDs of 0.76 and 1.1 pixels are rather bad. Looking at
 the results in :program:`dials.reciprocal_lattice_viewer` is instructive
-again::
+as ever::
 
   dials.reciprocal_lattice_viewer experiments.json indexed.pickle
 
@@ -289,7 +284,7 @@ beam centre. DIALS provides the
 :program:`dials.discover_better_experimental_model`, which can help out
 here. This performs a grid search to improve the direct beam position using
 the `methods <http://dx.doi.org/10.1107%2FS0021889804005874>`_ also
-implemented in LABELIT.
+implemented in :program:`LABELIT`.
 
 This sits in between the spot finding and the indexing operations, so that
 we could have done::
@@ -324,7 +319,7 @@ Indexing with the corrected beam centre
 
   dials.index optimized_datablock.json strong.pickle
 
-We now have a much more convincing solution, which also indexes many more
+We now have a more convincing solution, which also indexes many more
 reflections::
 
   RMSDs by experiment:
@@ -360,223 +355,9 @@ from :program:`dials.refine_bravais_settings` looks reasonable::
 
 We may now go on to refine the solution and integrate, following the steps
 outlined in the :doc:`processing_in_detail_tutorial` tutorial. This is left
-as an exercise for the reader. If you do this, note that
-:program:`Pointless` chooses the space group :math:`P 2_1 2_1 2_1` but warns
-that the `data were integrated on a primitive lattice, but may belong to a
-centered lattice`. Furthermore, :program:`cTruncate` finds strong evidence
-for translational NCS, for this basis along a vector of :math:`(0.0, 0.5, 0.5)`.
-The fact that this vector corresponds to a half integral step along a face
-diagonal should lead us to question the space group assignment.
-
-Questioning the lattice symmetry
---------------------------------
-
-It is always good advice to spend some time looking at the images and the
-reciprocal lattice before integrating a dataset. If we did so, we may notice the
-subtle features in the diffraction pattern that are the cause of the warnings
-from :program:`Pointless` and :program:`cTruncate`.
-
-First the reciprocal lattice::
-
-  dials.reciprocal_lattice_viewer bravais_setting_5.json indexed.pickle
-
-.. image:: /figures/dpf3_oP_lo_res.png
-
-Here the view has been aligned almost down the long axis of the reciprocal
-cell, which is :math:`a^\star` for this basis. We see the columns of
-reciprocal lattice points with Miller indices differing by :math:`h` as
-lines of closely-spaced points. However, we can also see that the lengths of
-the lines alternate between long and short as we move, for example, in the
-:math:`c^\star` direction. At this point we might start to suspect
-a pseudocentred lattice.
-
-Now the image viewer::
-
-  dials.image_viewer bravais_setting_5.json indexed.pickle
-
-.. image:: /figures/dpf3_oP_im5.png
-
-Here we have zoomed in on a region of the central module on the 5th image. The
-line of indexed spots have Miller indices in :math:`(3,-13,l)`. Looking closely
-we see that spots with even :math:`l` are systematically weaker than spots with
-odd :math:`l`. This fits the theory of a pseudocentred lattice, however we
-also see that the spot profile differs between the two sets.
-
-To investigate further we can enforce the centred lattice and see where that
-takes us...
-
-Converting to a centred lattice
--------------------------------
-
-Although :program:`dials.refine_bravais_settings` did not give us a centred
-lattice as an option, it is easy to convert the current primitive solution.
-First, note that for the currently chosen basis, the centring operation should
-be on the A face, not the conventional C face::
-
-  dials.reindex bravais_setting_5.json space_group=A222
-
-Here is part of the output::
-
-  New crystal:
-  Crystal:
-      Unit cell: (56.312, 99.662, 121.361, 90.000, 90.000, 90.000)
-      Space group: A 2 2 2
-
-We now have a face centred space group, but the indexed reflections still
-include those disallowed by the centring operation. An easy way to fix this
-is simply to reindex the spot list using the new model. We also request
-output of the unindexed reflections to explore later::
-
-  dials.index reindexed_experiments.json strong.pickle output.unindexed_reflections=unindexed.pickle
-
-This produces a properly indexed spot list, but the space group is in an
-unconventional setting. We can fix this as follows::
-
-  dials.refine_bravais_settings experiments.json indexed.pickle
-
-Solution 5 is what we want::
-
-  ----------------------------------------------------------------------------------------------------------------
-  Solution Metric fit  rmsd  min/max cc #spots lattice                                 unit_cell volume      cb_op
-  ----------------------------------------------------------------------------------------------------------------
-  *      5     0.0000 0.096 0.760/0.855  20000      oC  99.64 121.38  56.32  90.00  90.00  90.00 681108  b-c,b+c,a
-  *      4     0.0000 0.095 0.768/0.768  20000      mC  99.64 121.38  56.32  90.00  90.01  90.00 681106  b-c,b+c,a
-  *      3     0.0000 0.095 0.760/0.760  20000      mC 121.35  99.61  56.30  90.00  89.98  90.00 680582 b+c,-b+c,a
-  *      2     0.0000 0.095 0.855/0.855  20000      mP  78.43  56.27  78.48  90.00 101.23  90.00 339743     -b,a,c
-  *      1     0.0000 0.096         -/-  20000      aP  56.26  78.41  78.46  78.77  89.99  90.00 339502      a,b,c
-  ----------------------------------------------------------------------------------------------------------------
-
-The table tells us that the indexed spots need a change of basis to be
-consistent with the conventional oC lattice::
-
-  dials.reindex indexed.pickle change_of_basis_op=b-c,b+c,a
-
-This gives us :file:`reindexed_reflections.pickle`. Before passing this along with
-:file:`bravais_setting_5.json` to refinement and then to integration it is worth
-exploring this result with :program:`dials.image_viewer` and
-:program:`dials.reciprocal_lattice_viewer`.
-
-Here is a view of the same region of image 5 as we saw before, but now with only
-the spots allowed by centring being indexed:
-
-.. image:: /figures/dpf3_oC_im5.png
-
-Now a view of the reciprocal lattice, aligned down the :math:`c^\star` axis to
-show off the systematic absences.
-
-.. image:: /figures/dpf3_oC_lo_res.png
-
-Exploring the unindexed reflections
------------------------------------
-
-When we indexed with the oC lattice we wrote out the unindexed reflections
-as a separate file. We know that the spots in the positions disallowed by the
-oC lattice do themselves form an orthorhombic lattice. In views from the
-:program:`dials.reciprocal_lattice_viewer` you may also have seen hints of a
-third lattice in some parts of reciprocal space. We might try to index these
-lattices now::
-
-  dials.index optimized_datablock.json unindexed.pickle output.experiments=minor.json output.reflections=minor.pickle unit_cell="99 121 56 90 90 90" space_group=P222 max_lattices=2
-
-Here is some output::
-
-  model 1 (12265 reflections):
-  Crystal:
-      Unit cell: (100.027, 121.370, 56.258, 90.000, 90.000, 90.000)
-      Space group: P 2 2 2
-
-  model 2 (2969 reflections):
-  Crystal:
-      Unit cell: (99.735, 121.858, 56.487, 90.000, 90.000, 90.000)
-      Space group: P 2 2 2
-
-The first lattice is the same as our original primitive solution, however
-because we have now excluded all the reflections that were indexed by the
-centred lattice, this model now *only* indexes the spots that should be
-systematically absent with an oC lattice. The second lattice comes from a
-separate crystallite, rotated about 11 degrees from the first and therefore
-easily disentangled from the others. We can combine this result with the
-previous one::
-
-  dials.combine_experiments bravais_setting_5.json reindexed_reflections.pickle minor.json minor.pickle beam=0 detector=0 scan=0 goniometer=0 compare_models=False
-
-Here, the `beam=0` etc. specify that the combined result should have all
-experimental models apart from the crystal taken from the first experiment,
-which is the one described by :file:`bravais_setting_5.json`. The option
-`compare_models=False` is required in order to force this. The result is
-about 65000 indexed reflections, split between three lattices::
-
-  ----------------------
-  | Experiment | Nref  |
-  ----------------------
-  | 0          | 50384 |
-  | 1          | 12265 |
-  | 2          | 2969  |
-  ----------------------
-
-Here is a view of reciprocal space, aligned down the shared :math:`c^\star`
-axes of the oC lattice, and its complement, the oP lattice that indexes the
-disallowed reflections::
-
-  dials.reciprocal_lattice_viewer combined_experiments.json combined_reflections.pickle
-
-.. image:: /figures/dpf3_3lattices.png
-
-It is worth spending some time with the
-:program:`dials.reciprocal_lattice_viewer` at different zoom levels and
-orientations, and with different `Min Z` and `Max Z` limits. See how the
-lattice of `disallowed` reflections is stronger (more sufficiently strong
-spots found) in latter half of the dataset (images 100 onwards).
-
-We can see this more directly if we create an HTML report for the combined
-experiments::
-
-  dials.report combined_experiments.json combined_reflections.pickle
-
-Load the resulting :file:`dials-report.html` in a web browser. This includes
-a useful plot of the number of indexed reflections for each lattice versus
-the image number. Unfortunately the colours of curves on this plot do not
-match the colours in the :program:`dials.reciprocal_lattice_viewer`!
-Nevertheless, the plot shows how the first lattice dominates throughout the
-data collection. The second lattice, which is aligned well with the first
-causing the apparent breaking of the oC reflection conditions, is present
-from the start but becomes more prominent in the second half of the data
-collection. The third lattice, which is misaligned from the others
-by about 11 degrees, is present only on images in the first quarter of the
-dataset.
-
-.. image:: /figures/dpf3_indexed_count_3lattices.png
-
-Intriguingly, the pattern of number of found strong spots for lattice 2
-(which roughly corresponds to the intensity of those spots) follows a
-sinusoidal pattern, which is weakest around image 60 and strongest around
-image 150 (after a 90 degrees rotation of the crystal). Using the image
-viewer with the ``Basis vectors`` button ticked you can see how this
-corresponds to being weaker when the beam is approximately parallel to the
-plane of the pseudocentred C face, and stronger when the beam is orthogonal
-to that face, that is when the suggested tNCS vector is orthogonal to the
-beam:
-
-.. image:: /figures/dpf3_im60_vs_150.png
-
-Centred or pseudocentred?
--------------------------
-
-We have two ways we can model this crystal:
-
-* Primitive orthorhombic (:math:`P 21 21 21`) with translational NCS mimicking
-  centring on the C face
-* C-centred orthorhombic (:math:`C 2 2 21`), ignoring the systematically weak
-  intensities
-
-If we choose the oP lattice we have twice the number of integrated intensities,
-but the asymmetric unit is twice as large, and the additional reflections are
-weak and have poorer signal to noise. The important question is whether it makes
-a difference to the final model for the structure. To discover this, we will
-have to solve and refine the structure in each case.
-
-FIXME. More to add here
-
+as an exercise for the reader. However, before doing so, it is worth working
+through the second part of this tutorial at :doc:`centring_vs_pseudocentring`,
+in which questions about the lattice symmetry are explored using DIALS tools.
 
 Conclusions
 -----------
