@@ -32,7 +32,7 @@
 
 {% macro panel(panel_title, panel_id, graphs, styles=None) -%}
 <div class="panel panel-default">
-    <div class="panel-heading" data-toggle="collapse" href="#collapse_{{ panel_id }}">
+    <div class="panel-heading" data-toggle="collapse" data-target="#collapse_{{ panel_id }}">
         <h4 class="panel-title">
             <a>{{ panel_title }}</a>
         </h4>
