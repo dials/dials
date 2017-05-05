@@ -547,20 +547,35 @@ dataset.
 
 .. image:: /figures/dpf3_indexed_count_3lattices.png
 
-Intriguingly, the pattern of number of found strong spots for lattice 2 (which
-roughly corresponds to the intensity of those spots) follows a sinusoidal pattern,
-which is weakest around image 60 and strongest around image 150 (after a 90
-degrees rotation of the crystal). Using the image viewer with the `Basis vectors`
-button ticked you can see how this corresponds to being weaker when the beam
-is approximately parallel to the plane of the pseudocentred C face, and stronger
-when the beam is orthogonal to that face, that is when the suggested tNCS vector
-is orthogonal to the beam:
+Intriguingly, the pattern of number of found strong spots for lattice 2
+(which roughly corresponds to the intensity of those spots) follows a
+sinusoidal pattern, which is weakest around image 60 and strongest around
+image 150 (after a 90 degrees rotation of the crystal). Using the image
+viewer with the ``Basis vectors`` button ticked you can see how this
+corresponds to being weaker when the beam is approximately parallel to the
+plane of the pseudocentred C face, and stronger when the beam is orthogonal
+to that face, that is when the suggested tNCS vector is orthogonal to the
+beam:
 
 .. image:: /figures/dpf3_im60_vs_150.png
 
-What is correct?
-----------------
+Centred or pseudocentred?
+-------------------------
 
+We have two ways we can model this crystal:
+
+* Primitive orthorhombic (:math:`P 21 21 21`) with translational NCS mimicking
+  centring on the C face
+* C-centred orthorhombic (:math:`C 2 2 21`), ignoring the systematically weak
+  intensities
+
+If we choose the oP lattice we have twice the number of integrated intensities,
+but the asymmetric unit is twice as large, and the additional reflections are
+weak and have poorer signal to noise. The important question is whether it makes
+a difference to the final model for the structure. To discover this, we will
+have to solve and refine the structure in each case.
+
+FIXME. More to add here
 
 
 Conclusions
