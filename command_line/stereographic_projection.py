@@ -69,6 +69,8 @@ plot {
     .type = int(value_min=1)
   font_size = 6
     .type = float(value_min=0)
+  colour_map = None
+    .type = str
   gridsize = None
     .type = int
 }
@@ -279,18 +281,26 @@ def run(args):
           print >> f, "%f %f" %proj
 
   if params.plot.show or params.plot.filename:
+    epochs = None
+    if params.plot.colour_map is not None:
+      if experiments[0].scan is not None:
+        epochs = [expt.scan.get_epochs()[0] for expt in experiments]
+      else:
+        epochs = [i for i, expt in enumerate(experiments)]
     plot_projections(
       projections_all, filename=params.plot.filename, show=params.plot.show,
       colours=params.plot.colours, marker_size=params.plot.marker_size,
       font_size=params.plot.font_size, gridsize=params.plot.gridsize,
-      label_indices=params.plot.label_indices)
+      label_indices=params.plot.label_indices,
+      epochs=epochs, colour_map=params.plot.colour_map)
 
   if params.json.filename:
     projections_as_json(projections_all, filename=params.json.filename)
 
 def plot_projections(projections, filename=None, show=None,
                      colours=None, marker_size=3, font_size=6,
-                     gridsize=None, label_indices=False):
+                     gridsize=None, label_indices=False,
+                     epochs=None, colour_map=None):
   assert [filename, show].count(None) < 2
   projections_all = projections
 
@@ -305,7 +315,13 @@ def plot_projections(projections, filename=None, show=None,
   except ImportError:
     raise Sorry("matplotlib must be installed to generate a plot.")
 
-  if colours is None or len(colours) == 0:
+  if epochs is not None and colour_map is not None:
+    epochs = flex.double(epochs)
+    epochs -= flex.min(epochs)
+    epochs /= flex.max(epochs)
+    cmap = matplotlib.cm.get_cmap(colour_map)
+    colours = [cmap(e) for e in epochs]
+  elif colours is None or len(colours) == 0:
     colours = ['b'] * len(projections_all)
   elif len(colours) < len(projections_all):
     colours = colours * len(projections_all)
