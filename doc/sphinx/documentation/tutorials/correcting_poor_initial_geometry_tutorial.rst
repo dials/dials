@@ -32,9 +32,9 @@ to address the poor initial model for the experimental geometry, which leads to
 problems with indexing. The first listed problem, namely the inverted rotation
 axis, is trivially dealt with. However the incorrect beam centre is
 particularly pernicious in this case. Rather than resulting in an outright
-failure to process, we instead may obtain an incorrect indexing solution,
-which, if we were being careless, could have lead to the integration of a
-useless data set.
+failure to process, we instead obtain an incorrect indexing solution. If we
+were being careless, this could have lead to the integration of a useless
+data set.
 
 This tutorial is a cautionary tale, the moral of which is that the user should
 employ the diagnostic tools at their disposal and to think about the output of
@@ -66,7 +66,7 @@ rotation compared with the more common direction. Settings such as inverse
 processing data from currently unrecognised beamlines. As an aside, in such
 a case we could force the rotation axis to be whatever we want like this::
 
-  dials.import x247398/t1.0*.img.bz2 geometry.goniometer.rotation_axis=-1,0,0
+  dials.import x247398/t1.0*.img.bz2 geometry.goniometer.axes=-1,0,0
 
 Now that we have imported the data we should look at the images::
 
@@ -158,9 +158,11 @@ Here's some output from the end of the indexing log::
       Space group: P 1
 
 This is another point at which the experienced user may pause for thought.
-Positional RMSDs of 0.76 and 1.1 pixels are rather bad. Looking at
-the results in :program:`dials.reciprocal_lattice_viewer` is instructive
-as ever::
+Positional RMSDs of 0.76 and 1.1 pixels are rather bad. Good models
+typically have values around 0.3 pixels or less. Split spots or other issues
+with spot profiles may result in higher RMSDs for a solution that is still
+correct, however we should always remain sceptical. Looking at the results
+in :program:`dials.reciprocal_lattice_viewer` is instructive as ever::
 
   dials.reciprocal_lattice_viewer experiments.json indexed.pickle
 
@@ -214,7 +216,7 @@ cc`` column. This reports the lowest and highest correlation coefficients
 between the rough spot-finding intensities of subsets of reflections related
 by symmetry elements of the ``lattice``. For a real solution without rather
 extreme radiation damage or other scaling issues we would expect much larger
-numbers than these, say >0.5 or so.
+numbers than these, say >0.5 or so for both the ``min`` and ``max`` values.
 
 Check indexing symmetry
 -----------------------
@@ -355,9 +357,14 @@ from :program:`dials.refine_bravais_settings` looks reasonable::
 
 We may now go on to refine the solution and integrate, following the steps
 outlined in the :doc:`processing_in_detail_tutorial` tutorial. This is left
-as an exercise for the reader. However, before doing so, it is worth working
-through the second part of this tutorial at :doc:`centring_vs_pseudocentring`,
-in which questions about the lattice symmetry are explored using DIALS tools.
+as an exercise for the reader. If you do so, you will notice warnings from
+both :program:`Pointless` and :program:`cTruncate`. You can continue to solve
+the structure in the primitive orthorhombic lattice, however model refinement
+will present difficulties.
+
+Could we have foreseen this difficulties as early as the indexing step in DIALS?
+Can we circumvent them? These are the topics explored in the second part of this
+tutorial at :doc:`centring_vs_pseudocentring`.
 
 Conclusions
 -----------

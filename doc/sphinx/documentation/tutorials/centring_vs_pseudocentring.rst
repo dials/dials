@@ -9,23 +9,28 @@ Introduction
 The second part of this tutorial continues from the results obtained in the
 :doc:`correcting_poor_initial_geometry_tutorial` tutorial. You should work
 through that first to fix the incorrect beam centre recorded in the image
-headers and produce a correct indexing solution.
+headers and produce a correct indexing solution. Following those steps to the
+end, you will have two files:
 
-Viewing the images using the :program:`dials.image_viewer` and the reciprocal
+* :file:`bravais_setting_5.json` - the experimental geometry including a crystal
+  model with a primitive orthorhombic lattice
+* :file:`indexed.pickle` - the spot list from indexing
+
+Viewing these files using the :program:`dials.image_viewer` and the reciprocal
 lattice points in the :program:`dials.reciprocal_lattice_viewer` reveals the
-presence of split spots and minor lattices. This indicates some disorder in the
-sample. Nevertheless, these do not cause great difficulties in processing. More
-thought is required when considering the issue of possible pseudocentring.
-The structure can be solved in more than one space group. In cases such as
-this, the true symmetry may not be known until late stages of refinement. Even
-then, it might not be completely clear. Here we will investigate some features
-of the images that warn us of the challenges that lie ahead.
+presence of split spots and minor lattices. Nevertheless, these do not cause
+great difficulties in processing. More thought is required when considering
+the issue of possible pseudocentring. The structure can be solved in more
+than one space group. In cases such as this, the true symmetry may not be
+known until late stages of refinement. Even then, it might not be completely
+clear. Here we will investigate some features of the images that warn us of
+the challenges that lie ahead.
 
 If we were to integrate this dataset using the oP solution from the first part
 and continue on to the :program:`CCP4` data reduction pipeline, we would see
 that :program:`Pointless` chooses the space group :math:`P 2_1 2_1 2_1` but
 warns that the ``data were integrated on a primitive lattice, but may belong to
-a centered lattice``. Furthermore, :program:`cTruncate` finds strong evidence
+a centered lattice``. Accordingly, :program:`cTruncate` finds strong evidence
 for translational NCS, for this basis along a vector of :math:`(0.0, 0.5,
 0.5)`. The fact that this vector corresponds to a half integral step along a
 face diagonal should lead us to question the space group assignment.
@@ -45,12 +50,12 @@ First the reciprocal lattice::
 .. image:: /figures/dpf3_oP_lo_res.png
 
 Here the view has been aligned almost down the long axis of the reciprocal
-cell, which is :math:`a^\star` for this basis. We see the columns of
-reciprocal lattice points with Miller indices differing by :math:`h` as
-lines of closely-spaced points. However, we can also see that the lengths of
-the lines alternate between long and short as we move, for example, in the
-:math:`c^\star` direction. At this point we might start to suspect
-a pseudocentred lattice.
+cell, which is :math:`a^\star` for this choice of basis vectors. We see the
+columns of reciprocal lattice points with Miller indices differing by
+:math:`h` as lines of closely-spaced points. However, we can also see that
+the lengths of the lines alternate between long and short as we move, for
+example, in the :math:`c^\star` direction. At this point should suspect a
+pseudocentred lattice.
 
 Now the image viewer::
 
@@ -85,9 +90,9 @@ Here is part of the output::
       Space group: A 2 2 2
 
 We now have a face centred space group, but the indexed reflections still
-include those disallowed by the centring operation. An easy way to fix this
-is simply to reindex the spot list using the new model. We also request
-output of the unindexed reflections to explore later::
+include those which are now disallowed by the centring operation. An easy
+way to fix this is simply to reindex the spot list using the new model. We
+also request output of the unindexed reflections to explore later::
 
   dials.index reindexed_experiments.json strong.pickle output.unindexed_reflections=unindexed.pickle
 
@@ -162,7 +167,7 @@ previous one::
 
   dials.combine_experiments bravais_setting_5.json reindexed_reflections.pickle minor.json minor.pickle beam=0 detector=0 scan=0 goniometer=0 compare_models=False
 
-Here, the `beam=0` etc. specify that the combined result should have all
+Here, the ``beam=0`` etc. specify that the combined result should have all
 experimental models apart from the crystal taken from the first experiment,
 which is the one described by :file:`bravais_setting_5.json`. The option
 ``compare_models=False`` is required in order to force this. The result is
@@ -199,13 +204,13 @@ Load the resulting :file:`dials-report.html` in a web browser. This includes
 a useful plot of the number of indexed reflections for each lattice versus
 the image number. Unfortunately the colours of curves on this plot do not
 match the colours in the :program:`dials.reciprocal_lattice_viewer`!
-Nevertheless, the plot shows how the first lattice dominates throughout the
-data collection. The second lattice, which is aligned well with the first,
-causing the apparent breaking of the oC reflection conditions, is present
-from the start but becomes more prominent in the second half of the data
-collection. The third lattice, which is misaligned from the others
-by about 11 degrees, is present only on images in the first quarter of the
-dataset.
+Nevertheless, the plot shows how the reflections allowed for the oC lattice
+dominate throughout the data collection. The second 'lattice', which
+consists only of the reflections of the oP solution that are disallowed by
+the oC reflection conditions, is present from the start but becomes more
+prominent in the second half of the data collection. The third lattice is a
+genuinely separate component, misaligned from the frst by about 11 degrees,
+and is present only on images in the first quarter of the dataset.
 
 .. image:: /figures/dpf3_indexed_count_3lattices.png
 
