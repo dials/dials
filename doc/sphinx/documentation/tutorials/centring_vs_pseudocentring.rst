@@ -265,15 +265,15 @@ crystallographic translation :math:`(a+b)/2` in :math:`C 2 2 2_1`). We did
 not try to rebuild the :math:`P 2_1 2_1 2_1` solution but instead superposed
 two copies of the entire PDB entry 5I3L onto the two dimers forming its
 asymmetric unit. We ended up with R-cryst of 0.27 and R-free of 0.29, which
-are considerably worse than the ones for the :math:`C 2 2 2_1` structure.
+are considerably worse than the values for the :math:`C 2 2 2_1` structure.
 
 There could be several reasons for poor refinement statistics in :math:`P
-2_1 2_1 2_1`:. the space group assignment was incorrect, the refinement
+2_1 2_1 2_1`: the space group assignment was incorrect, the refinement
 program had problems with the weak structure amplitudes, or the crystal was
 partially disordered or has undergone a phase transition during data
 collection and it was not possible in the first place to describe the weak
 reflections with a single crystal structure. In any case, the 'thorough'
-:math:`P 2_1 2_1 2_1`: model gives no improvement in density or refinement
+:math:`P 2_1 2_1 2_1` model gives no improvement in density or refinement
 statistics and provides no new structural information and we conclude that
 it should not be used for structural analysis. Ultimately it is true that
 for a real crystal any space group assignment is only an approximation.
