@@ -834,18 +834,18 @@ namespace dials { namespace af { namespace boost_python {
     std::size_t xsize = self.xsize();
     std::size_t ysize = self.ysize();
     std::size_t zsize = self.zsize();
-    for (std::size_t k = 0; k < zsize; ++k) {
-      for (std::size_t j = 0; j < ysize; ++j) {
-        for (std::size_t i = 0;i < xsize; ++i) {
-          double z = z0 + k + 0.5;
-          double y = y0 + j + 0.5;
-          double x = x0 + i + 0.5;
-          vec3<double> pixel_hkl = compute_miller_index.h(self.panel, x, y, z);
+    for (std::size_t z = 0; z < zsize; ++z) {
+      for (std::size_t y = 0; y < ysize; ++y) {
+        for (std::size_t x = 0; x < xsize; ++x) {
+          double z1 = z0 + z + 0.5;
+          double y1 = y0 + y + 0.5;
+          double x1 = x0 + x + 0.5;
+          vec3<double> pixel_hkl = compute_miller_index.h(self.panel, x1, y1, z1);
           int h = std::floor(pixel_hkl[0]+0.5);
           int k = std::floor(pixel_hkl[1]+0.5);
           int l = std::floor(pixel_hkl[2]+0.5);
           if (h != hkl[0] || k != hkl[1] || l != hkl[2]) {
-            self.mask(k,j,i) = mask_code;
+            self.mask(z,y,x) = mask_code;
             modified = true;
           }
         }
