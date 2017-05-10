@@ -15,10 +15,12 @@
 #include <scitbx/array_family/ref_reductions.h>
 #include <scitbx/array_family/boost_python/ref_pickle_double_buffered.h>
 #include <scitbx/array_family/boost_python/flex_pickle_double_buffered.h>
+#include <cctbx/miller.h>
 #include <dials/model/data/shoebox.h>
 #include <dials/model/data/pixel_list.h>
 #include <dials/model/data/observation.h>
 #include <dials/algorithms/image/connected_components/connected_components.h>
+#include <dials/algorithms/spot_prediction/pixel_to_miller_index.h>
 #include <dials/config.h>
 
 namespace dials { namespace af { namespace boost_python {
@@ -30,6 +32,11 @@ namespace dials { namespace af { namespace boost_python {
   using af::int6;
   using af::small;
   using scitbx::vec3;
+  using dxtbx::model::Beam;
+  using dxtbx::model::Detector;
+  using dxtbx::model::Goniometer;
+  using dxtbx::model::Scan;
+  using dxtbx::model::Crystal;
   using dials::model::Shoebox;
   using dials::model::Centroid;
   using dials::model::Intensity;
@@ -41,6 +48,7 @@ namespace dials { namespace af { namespace boost_python {
   using dials::model::BackgroundUsed;
   using dials::algorithms::LabelImageStack;
   using dials::algorithms::LabelPixels;
+  using dials::algorithms::PixelToMillerIndex;
 
   /**
    * Construct from an array of panels and bounding boxes.
@@ -801,6 +809,77 @@ namespace dials { namespace af { namespace boost_python {
     }
   }
 
+
+  /**
+   * Do a pixel labelling filter to set any pixel closer to another pixel to
+   * background
+   */
+  template <typename FloatType>
+  bool mask_neighbouring_single(
+      Shoebox< FloatType > &self,
+      cctbx::miller::index<> hkl,
+      const PixelToMillerIndex &compute_miller_index) {
+    bool modified = false;
+    int mask_code = Valid | Background;
+    int x0 = self.bbox[0];
+    int x1 = self.bbox[1];
+    int y0 = self.bbox[2];
+    int y1 = self.bbox[3];
+    int z0 = self.bbox[4];
+    int z1 = self.bbox[5];
+    DIALS_ASSERT(x0 < x1);
+    DIALS_ASSERT(y0 < y1);
+    DIALS_ASSERT(z0 < z1);
+    DIALS_ASSERT(self.is_consistent());
+    std::size_t xsize = self.xsize();
+    std::size_t ysize = self.ysize();
+    std::size_t zsize = self.zsize();
+    for (std::size_t k = 0; k < zsize; ++k) {
+      for (std::size_t j = 0; j < ysize; ++j) {
+        for (std::size_t i = 0;i < xsize; ++i) {
+          double z = z0 + k + 0.5;
+          double y = y0 + j + 0.5;
+          double x = x0 + i + 0.5;
+          vec3<double> pixel_hkl = compute_miller_index.h(self.panel, x, y, z);
+          int h = std::floor(pixel_hkl[0]+0.5);
+          int k = std::floor(pixel_hkl[1]+0.5);
+          int l = std::floor(pixel_hkl[2]+0.5);
+          if (h != hkl[0] || k != hkl[1] || l != hkl[2]) {
+            self.mask(k,j,i) = mask_code;
+            modified = true;
+          }
+        }
+      }
+    }
+    return modified;
+  }
+
+  /**
+   * Do a pixel labelling filter to set any pixel closer to another pixel to
+   * background
+   */
+  template <typename FloatType>
+  af::shared<bool> mask_neighbouring(
+      af::ref< Shoebox< FloatType > > self,
+      af::const_ref< cctbx::miller::index<> > hkl,
+      const Beam &beam,
+      const Detector &detector,
+      const Goniometer &goniometer,
+      const Scan &scan,
+      const Crystal &crystal) {
+    af::shared<bool> modified(self.size());
+    PixelToMillerIndex compute_miller_index(
+        beam,
+        detector,
+        goniometer,
+        scan,
+        crystal);
+    for (std::size_t i = 0; i < self.size(); ++i) {
+      modified[i] = mask_neighbouring_single(self[i], hkl[i], compute_miller_index);
+    }
+    return modified;
+  }
+
   /**
    * A class to convert the shoebox class to a string for pickling
    */
@@ -997,6 +1076,7 @@ namespace dials { namespace af { namespace boost_python {
         .def("flatten", &flatten<FloatType>)
         .def("apply_background_mask", &apply_background_mask<FloatType>)
         .def("apply_pixel_data", &apply_pixel_data<FloatType>)
+        .def("mask_neighbouring", &mask_neighbouring<FloatType>)
         .def_pickle(flex_pickle_double_buffered<shoebox_type,
           shoebox_to_string<FloatType>,
           shoebox_from_string<FloatType> >());

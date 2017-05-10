@@ -12,6 +12,7 @@ sources = [
     'boost_python/ray_intersection.cc',
     'boost_python/reflection_predictor.cc',
     'boost_python/pixel_labeller.cc',
+    'boost_python/pixel_to_miller_index.cc',
     'boost_python/spot_prediction_ext.cc']
 
 env.SharedLibrary(

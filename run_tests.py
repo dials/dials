@@ -73,6 +73,7 @@ tst_list = (
     "$D/test/algorithms/shoebox/tst_partiality_calculator.py",
     "$D/test/algorithms/spatial_indexing/tst_spatial_index.py",
     "$D/test/algorithms/spot_prediction/tst_index_generator.py",
+    "$D/test/algorithms/spot_prediction/tst_pixel_to_miller_index.py",
     "$D/test/algorithms/spot_prediction/tst_ray_predictor.py",
     "$D/test/algorithms/spot_prediction/tst_reeke.py",
     "$D/test/algorithms/spot_prediction/tst_reeke_index_generator.py",
