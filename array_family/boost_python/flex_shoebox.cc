@@ -837,14 +837,19 @@ namespace dials { namespace af { namespace boost_python {
     for (std::size_t z = 0; z < zsize; ++z) {
       for (std::size_t y = 0; y < ysize; ++y) {
         for (std::size_t x = 0; x < xsize; ++x) {
-          double z1 = z0 + z + 0.5;
+          double z1 = z0 + z;
           double y1 = y0 + y + 0.5;
           double x1 = x0 + x + 0.5;
-          vec3<double> pixel_hkl = compute_miller_index.h(self.panel, x1, y1, z1);
-          int h = std::floor(pixel_hkl[0]+0.5);
-          int k = std::floor(pixel_hkl[1]+0.5);
-          int l = std::floor(pixel_hkl[2]+0.5);
-          if (h != hkl[0] || k != hkl[1] || l != hkl[2]) {
+          vec3<double> pixel_hkl1 = compute_miller_index.h(self.panel, x1, y1, z1);
+          vec3<double> pixel_hkl2 = compute_miller_index.h(self.panel, x1, y1, z1+1);
+          int h1 = std::floor(pixel_hkl1[0]+0.5);
+          int k1 = std::floor(pixel_hkl1[1]+0.5);
+          int l1 = std::floor(pixel_hkl1[2]+0.5);
+          int h2 = std::floor(pixel_hkl2[0]+0.5);
+          int k2 = std::floor(pixel_hkl2[1]+0.5);
+          int l2 = std::floor(pixel_hkl2[2]+0.5);
+          if (h1 != hkl[0] || k1 != hkl[1] || l1 != hkl[2] ||
+              h2 != hkl[0] || k2 != hkl[1] || l2 != hkl[2]) {
             self.mask(z,y,x) = mask_code;
             modified = true;
           }

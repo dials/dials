@@ -386,6 +386,9 @@ class ComputeEsdReflectingRange(object):
 
       '''
       from scitbx.array_family import flex
+      from dials.algorithms.shoebox import MaskCode
+
+      mask_code = MaskCode.Valid | MaskCode.Foreground
 
       # Calculate the list of frames and z coords
       sbox = reflections['shoebox']
@@ -405,9 +408,13 @@ class ComputeEsdReflectingRange(object):
         for z0, f in enumerate(range(b[4], b[5])):
           phi0 = scan.get_angle_from_array_index(int(f), deg=False)
           phi1 = scan.get_angle_from_array_index(int(f)+1, deg=False)
-          tau.append((phi1 + phi0) / 2.0 - p)
-          zeta2.append(z)
-          num.append(flex.sum(s.data[z0:z0+1,:,:]))
+          d = s.data[z0:z0+1,:,:]
+          m = s.mask[z0:z0+1,:,:]
+          d = flex.sum(d.as_1d().select(m.as_1d() == mask_code))
+          if d > 0:
+            tau.append((phi1 + phi0) / 2.0 - p)
+            zeta2.append(z)
+            num.append(d)
         indices.append(len(zeta2))
 
       # Return the list of tau and zeta
