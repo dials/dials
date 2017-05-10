@@ -72,6 +72,8 @@ also see that the spot profile differs between the two sets.
 To investigate further we can enforce the centred lattice and see where that
 takes us...
 
+.. _section-label-converting-to-centred:
+
 Converting to a centred lattice
 -------------------------------
 
@@ -231,27 +233,71 @@ Centred or pseudocentred?
 
 We have two ways we can model this crystal:
 
-* Primitive orthorhombic (:math:`P 2_1 2_1 2_1`) with translational NCS mimicking
-  centring on the C face
+* Primitive orthorhombic (:math:`P 2_1 2_1 2_1`) with translational NCS
+  mimicking centring on the C face
 * C-centred orthorhombic (:math:`C 2 2 2_1`), ignoring the systematically weak
   intensities
 
-If we choose the oP lattice we have twice the number of integrated intensities,
-but the asymmetric unit is twice as large, and the additional reflections are
-weak and have poorer signal to noise. The important question is whether it makes
-a difference to the final model for the structure. To discover this, we will
-have to solve and refine the structure in each case.
+The purpose of this exercise was mainly to demonstrate the use of DIALS
+viewers as diagnostic tools and some of the less commonly used options that
+allowed us to isolate the sub-lattice of strong reflections before integration.
 
-FIXME. More to add here
+If we continued with integration of the :math:`C 2 2 2_1` data and proceeded
+onwards to structure solution, model rebuilding and refinement, then we
+would have reproduced the structure presented by `PDB entry 5I3L`_. Refinement
+of this structure with isotropic B-factors against the :math:`C 2 2 2_1` data
+integrated with DIALS results in an R-cryst of 0.18 and an R-free of 0.21.
 
+.. _PDB entry 5I3L: http://www.rcsb.org/pdb/explore/explore.do?structureId=5I3L
+
+On the contrary, if we had chosen the primitive lattice and included the
+systematically weak reflections in integration, the structure solution
+process would not have been straightforward and the results would be
+ambiguous, even if we would have used e.g. chain A of the PDB entry 5I3L as
+the search model for molecular replacement. Firstly, there would have been
+several different molecular replacement solutions with almost equal scores
+and subsequent refinement would favour :math:`P 2_1 2_1 2_1` with a small
+margin of only a few percent in R factors compared to other solutions in
+space groups  :math:`P 2 2 2_1` and  :math:`P 2_1 2_1 2`. In all these
+solutions the pseudo-translation vector relating two dimers would deviate by
+no more than 0.2 Angstroms from :math:`(b+c)/2` (this corresponds to the
+crystallographic translation :math:`(a+b)/2` in :math:`C 2 2 2_1`). We did
+not try to rebuild the :math:`P 2_1 2_1 2_1` solution but instead superposed
+two copies of the entire PDB entry 5I3L onto the two dimers forming its
+asymmetric unit. We ended up with R-cryst of 0.27 and R-free of 0.29, which
+are considerably worse than the ones for the :math:`C 2 2 2_1` structure.
+
+There could be several reasons for poor refinement statistics in :math:`P
+2_1 2_1 2_1`:. the space group assignment was incorrect, the refinement
+program had problems with the weak structure amplitudes, or the crystal was
+partially disordered or has undergone a phase transition during data
+collection and it was not possible in the first place to describe the weak
+reflections with a single crystal structure. In any case, the 'thorough'
+:math:`P 2_1 2_1 2_1`: model gives no improvement in density or refinement
+statistics and provides no new structural information and we conclude that
+it should not be used for structural analysis. Ultimately it is true that
+for a real crystal any space group assignment is only an approximation.
 
 Conclusions
 -----------
 
-FIXME
+* Diffraction data may display a sub-lattice of weak spots (pseudocentring)
+  indicating pseudo-translation in the crystal structure and, possibly, some
+  degree of crystal disorder.
+* In many cases the weak reflections are not as weak as in this example and
+  their intensities grow or oscillate with resolution. In those cases, good
+  maps and refinement statistics can only be obtained by refinement against
+  all the available data. It is important then to make sure that indexing
+  picks up all the spots, strong and weak.
+* In many other cases, similar to the current example, the weak spots have no
+  practical meaning and should be excluded. Ideally this should be done
+  before the integration, which we did here in the section
+  :ref:`section-label-converting-to-centred`.
+* Use the DIALS viewers to make sure you know what to expect from your data!
 
 Acknowledgements
 ^^^^^^^^^^^^^^^^
 
 Thanks to Wolfram Tempel for making this dataset available and inspiring
-the writing of this tutorial.
+the writing of this tutorial. Thanks also to Andrey Lebedev for detailed
+analysis of the primitive versus the centred lattice structures.
