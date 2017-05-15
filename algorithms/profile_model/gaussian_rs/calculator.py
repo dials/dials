@@ -121,8 +121,12 @@ class FractionOfObservedIntensity(object):
 
     '''
     from scitbx.array_family import flex
+    from dials.algorithms.shoebox import MaskCode
+
+    mask_code = MaskCode.Valid | MaskCode.Foreground
 
     # Calculate the list of frames and z coords
+    sbox = reflections['shoebox']
     bbox = reflections['bbox']
     phi = reflections['xyzcal.mm'].parts()[2]
 
@@ -133,12 +137,14 @@ class FractionOfObservedIntensity(object):
     tau = []
     zeta2 = []
     scan = scan
-    for b, p, z in zip(bbox, phi, zeta):
-      for f in range(b[4], b[5]):
+    for s, b, p, z in zip(sbox, bbox, phi, zeta):
+      for z0, f in enumerate(range(b[4], b[5])):
         phi0 = scan.get_angle_from_array_index(int(f), deg=False)
         phi1 = scan.get_angle_from_array_index(int(f)+1, deg=False)
-        tau.append((phi1 + phi0) / 2.0 - p)
-        zeta2.append(z)
+        m = s.mask[z0:z0+1,:,:]
+        if m.count(mask_code) > 0:
+          tau.append((phi1 + phi0) / 2.0 - p)
+          zeta2.append(z)
 
     # Return the list of tau and zeta
     return flex.double(tau), flex.double(zeta2)
@@ -262,8 +268,12 @@ class ComputeEsdReflectingRange(object):
 
       '''
       from scitbx.array_family import flex
+      from dials.algorithms.shoebox import MaskCode
+
+      mask_code = MaskCode.Valid | MaskCode.Foreground
 
       # Calculate the list of frames and z coords
+      sbox = reflections['shoebox']
       bbox = reflections['bbox']
       phi = reflections['xyzcal.mm'].parts()[2]
 
@@ -274,12 +284,14 @@ class ComputeEsdReflectingRange(object):
       tau = []
       zeta2 = []
       scan = scan
-      for b, p, z in zip(bbox, phi, zeta):
-        for f in range(b[4], b[5]):
+      for s, b, p, z in zip(sbox, bbox, phi, zeta):
+        for z0, f in enumerate(range(b[4], b[5])):
           phi0 = scan.get_angle_from_array_index(int(f), deg=False)
           phi1 = scan.get_angle_from_array_index(int(f)+1, deg=False)
-          tau.append((phi1 + phi0) / 2.0 - p)
-          zeta2.append(z)
+          m = s.mask[z0:z0+1,:,:]
+          if m.count(mask_code) > 0:
+            tau.append((phi1 + phi0) / 2.0 - p)
+            zeta2.append(z)
 
       # Return the list of tau and zeta
       return flex.double(tau), flex.double(zeta2)
@@ -333,7 +345,7 @@ class ComputeEsdReflectingRange(object):
 
     def target(self, log_sigma):
       ''' The target for minimization. '''
-      from math import sqrt, exp, pi
+      from math import sqrt, exp, pi, log
       from scitbx.array_family import flex
       import scitbx.math
 
@@ -367,7 +379,8 @@ class ComputeEsdReflectingRange(object):
         nj = n.select(selection)
         kj = K[j]
         Z = flex.sum(zj)
-        L += flex.sum(nj * flex.log(kj*zj)) - kj * Z
+        #L += flex.sum(nj * flex.log(kj*zj)) - kj * Z
+        L += flex.sum(nj * flex.log(kj*zj)) - kj * log(Z)
       print "Sigma M: %f, log(L): %f" % (sigma_m * 180/pi, L)
 
       # Return the logarithm of r
@@ -415,7 +428,8 @@ class ComputeEsdReflectingRange(object):
             tau.append((phi1 + phi0) / 2.0 - p)
             zeta2.append(z)
             num.append(d)
-        indices.append(len(zeta2))
+        if len(zeta2) > indices[-1]:
+          indices.append(len(zeta2))
 
       # Return the list of tau and zeta
       return flex.double(tau), flex.double(zeta2), flex.double(num), flex.size_t(indices)

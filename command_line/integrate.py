@@ -217,6 +217,9 @@ class Script(object):
 
     # Load the data
     reference, rubbish = self.process_reference(reference)
+    
+    # Check pixels don't belong to neighbours
+    self.filter_reference_pixels(reflections, experiments)
     logger.info("")
 
     # Initialise the integrator
@@ -385,6 +388,26 @@ class Script(object):
     logger.info(' found %d junk reflections' % len(rubbish))
     logger.info(' time taken: %g' % (time() - st))
     return reference, rubbish
+  
+  def filter_reference_pixels(self, reference, experiments):
+    '''
+    Set any pixel closer to other reflections to background
+
+    '''
+    modified_count = 0
+    for experiment, indices in reference.iterate_experiments_and_indices(experiments):
+      subset = reference.select(indices)
+      modified = subset['shoebox'].mask_neighbouring(
+        subset['miller_index'],
+        experiment.beam,
+        experiment.detector,
+        experiment.goniometer,
+        experiment.scan,
+        experiment.crystal)
+      modified_count += modified.count(True)
+      reference.set_selected(indices, subset)
+    logger.info(" masked neighbouring pixels in %d shoeboxes" % modified_count)
+    return reference
 
   def save_reflections(self, reflections, filename):
     ''' Save the reflections to file. '''
