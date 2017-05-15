@@ -217,9 +217,10 @@ class Script(object):
 
     # Load the data
     reference, rubbish = self.process_reference(reference)
-    
+
     # Check pixels don't belong to neighbours
-    self.filter_reference_pixels(reflections, experiments)
+    if reference is not None:
+      self.filter_reference_pixels(reference, experiments)
     logger.info("")
 
     # Initialise the integrator
@@ -388,7 +389,7 @@ class Script(object):
     logger.info(' found %d junk reflections' % len(rubbish))
     logger.info(' time taken: %g' % (time() - st))
     return reference, rubbish
-  
+
   def filter_reference_pixels(self, reference, experiments):
     '''
     Set any pixel closer to other reflections to background
