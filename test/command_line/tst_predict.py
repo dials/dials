@@ -52,6 +52,7 @@ class Test(object):
     from libtbx import easy_run
 
     # Call dials.predict
+    print join(self.path, 'experiments_scan_varying_crystal.json')
     easy_run.fully_buffered([
       'dials.predict',
       join(self.path, 'experiments_scan_varying_crystal.json'),

@@ -368,7 +368,7 @@ namespace dials { namespace algorithms {
       double a0 = scan_.get_oscillation_range()[0];
       double a1 = scan_.get_oscillation_range()[1];
       int z0 = std::floor(scan_.get_array_index_from_angle(a0-padding_*pi/180.0) + 0.5);
-      int z1 = std::ceil(scan_.get_array_index_from_angle(a1+padding_*pi/180.0) + 0.5);
+      int z1 = std::floor(scan_.get_array_index_from_angle(a1+padding_*pi/180.0) + 0.5);
       const int offset = array_range[0];
       for (int frame = z0; frame < z1; ++frame) {
         int i = frame - offset;
