@@ -365,10 +365,10 @@ class ComputeEsdReflectingRange(object):
       #   aa, bb = min(aa, bb), max(aa, bb)
       #   assert aa < 0 and bb > 0
 
-      assert self.indices[1:] - self.indices[:-1] == 1
-      with open("profile.txt", "w") as outfile:
-        for i in range(len(a)):
-          print >>outfile, self.e1[i], self.e2[i], n[i], K[i]
+      # assert self.indices[1:] - self.indices[:-1] == 1
+      # with open("profile.txt", "w") as outfile:
+      #   for i in range(len(a)):
+      #     print >>outfile, self.e1[i], self.e2[i], n[i], K[i]
 
       # Calculate the fraction of observed reflection intensity
       zi = (a - b) / 2.0
