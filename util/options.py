@@ -635,10 +635,10 @@ class OptionParserBase(optparse.OptionParser, object):
     if sort_options:
       self.add_option(
         '-s', '--sort',
-        action='store_false',
+        action='store_true',
         dest='sort',
-        default=True,
-        help='Don\'t sort the arguments')
+        default=False,
+        help='Sort the arguments')
 
     # Set a verbosity parameter
     self.add_option(
