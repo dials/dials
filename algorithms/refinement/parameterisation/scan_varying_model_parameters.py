@@ -20,18 +20,14 @@ smoother
   .help = "Options that affect scan-varying parameterisation"
   .expert_level = 1
 {
-  num_intervals = *fixed_width absolute
-    .help = "Choose the way to determine the number of intervals for scan-"
-            "varying refinement"
-    .type = choice
-
   interval_width_degrees = 36.0
-    .help = "Width of scan between checkpoints in degrees"
+    .help = "Width of scan between checkpoints in degrees. Can be set to Auto."
     .type = float(value_min=0.)
 
-  absolute_num_intervals = 5
+  absolute_num_intervals = None
     .help = "Number of intervals between checkpoints if scan_varying"
-            "refinement is requested"
+            "refinement is requested. If set, this overrides"
+            "interval_width_degrees"
     .type = int(value_min=1)
 }
 '''

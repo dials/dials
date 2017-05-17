@@ -520,19 +520,21 @@ class RefinerFactory(object):
 
     if verbosity > 0: logger.debug("Target function built")
 
-    # Now predictions are available, so we can finalise the reflection manager.
-    # Do we need centroid analysis for doing outlier rejection?
+    # determine whether to do basic centroid analysis to automatically
+    # determine outlier rejection block
     if params.refinement.reflections.outlier.block_width is libtbx.Auto:
       ca = refman.get_centroid_analyser()
-      # just get the basic data here
       analysis = ca(calc_average_residuals=False, calc_periodograms=False)
     else:
       analysis = None
+
+    # Now predictions and centroid analysis are available, so we can finalise
+    # the reflection manager
     refman.finalise(analysis)
 
     # create parameterisations
     pred_param, param_reporter, restraints_parameterisation = \
-            cls.config_parameterisation(params, experiments, refman, do_stills)
+      cls.config_parameterisation(params, experiments, refman, do_stills, verbosity)
 
     if verbosity > 0:
       logger.debug("Prediction equation parameterisation built")
@@ -588,7 +590,8 @@ class RefinerFactory(object):
     return params
 
   @classmethod
-  def config_parameterisation(cls, params, experiments, refman, do_stills):
+  def config_parameterisation(cls, params, experiments, refman, do_stills,
+    verbosity):
     """Given a set of parameters, create a parameterisation from a set of
     experimental models.
 
@@ -625,6 +628,24 @@ class RefinerFactory(object):
         if name not in filtered_names: filtered_names.append(name)
       return filtered_names
 
+    # If required, do full centroid analysis (now on the outlier-rejected
+    # reflections) to determine suitable interval widths for scan-varying
+    # refinement
+    analysis = None
+    if options.scan_varying:
+      tst = [options.beam.smoother,
+             options.crystal.orientation.smoother,
+             options.crystal.unit_cell.smoother,
+             options.detector.smoother]
+      for e in tst:
+        if (e.absolute_num_intervals is None and
+            e.interval_width_degrees is libtbx.Auto):
+          if verbosity > 0: logger.debug('Doing centroid analysis to '
+            'automatically determine scan-varying interval widths')
+          ca = refman.get_centroid_analyser()
+          analysis = ca()
+          break
+
     # Parameterise unique Beams
     beam_params = []
     for ibeam, beam in enumerate(experiments.beams()):
@@ -649,12 +670,29 @@ class RefinerFactory(object):
         array_range = scan.get_array_range()
 
         if not options.beam.force_static:
-          if options.beam.smoother.num_intervals == "fixed_width":
+          n_intervals = options.beam.smoother.absolute_num_intervals
+          if n_intervals is None:
             deg_per_interval = options.beam.smoother.interval_width_degrees
+            if deg_per_interval is libtbx.Auto and analysis is not None:
+              # extract the smallest suggested interval for experiments this
+              # beam appears in and use the maximum of that or 9 degrees
+              intervals = []
+              for i in exp_ids:
+                a = analysis[i]
+                intervals.extend([a.get('x_interval'),
+                                  a.get('y_interval'),
+                                  a.get('phi_interval')])
+              intervals = [e for e in intervals if e is not None]
+              deg_per_interval = max([min(intervals), 9.0])
+              if verbosity > 0:
+                for i in exp_ids:
+                  logger.debug(('Beam interval_width_degrees for experiment id'
+                    ' {0} set to {1:.1f}').format(i, deg_per_interval))
+            else:
+              deg_per_interval = 36.0
             n_intervals = max(int(
               abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
-          else:
-            n_intervals = options.beam.smoother.absolute_num_intervals
+
           beam_param = par.ScanVaryingBeamParameterisation(
                                               beam,
                                               array_range,
@@ -732,12 +770,29 @@ class RefinerFactory(object):
 
         # orientation parameterisation
         if not options.crystal.orientation.force_static:
-          if options.crystal.orientation.smoother.num_intervals == "fixed_width":
+          n_intervals = options.crystal.orientation.smoother.absolute_num_intervals
+          if n_intervals is None:
             deg_per_interval = options.crystal.orientation.smoother.interval_width_degrees
+            if deg_per_interval is libtbx.Auto and analysis is not None:
+              # extract the smallest suggested interval for experiments this
+              # crystal appears in and use the maximum of that or 9 degrees
+              intervals = []
+              for i in exp_ids:
+                a = analysis[i]
+                intervals.extend([a.get('x_interval'),
+                                  a.get('y_interval'),
+                                  a.get('phi_interval')])
+              intervals = [e for e in intervals if e is not None]
+              deg_per_interval = max([min(intervals), 9.0])
+              if verbosity > 0:
+                for i in exp_ids:
+                  logger.debug(('Crystal orientation interval_width_degrees for experiment id'
+                    ' {0} set to {1:.1f}').format(i, deg_per_interval))
+            else:
+              deg_per_interval = 36.0
             n_intervals = max(int(
               abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
-          else:
-            n_intervals = options.crystal.orientation.smoother.absolute_num_intervals
+
           xl_ori_param = par.ScanVaryingCrystalOrientationParameterisation(
                                               crystal,
                                               array_range,
@@ -749,12 +804,29 @@ class RefinerFactory(object):
 
         # unit cell parameterisation
         if not options.crystal.unit_cell.force_static:
-          if options.crystal.unit_cell.smoother.num_intervals == "fixed_width":
+          n_intervals = options.crystal.unit_cell.smoother.absolute_num_intervals
+          if n_intervals is None:
             deg_per_interval = options.crystal.unit_cell.smoother.interval_width_degrees
+            if deg_per_interval is libtbx.Auto and analysis is not None:
+              # extract the smallest suggested interval for experiments this
+              # crystal appears in and use the maximum of that or 9 degrees
+              intervals = []
+              for i in exp_ids:
+                a = analysis[i]
+                intervals.extend([a.get('x_interval'),
+                                  a.get('y_interval'),
+                                  a.get('phi_interval')])
+              intervals = [e for e in intervals if e is not None]
+              deg_per_interval = max([min(intervals), 9.0])
+              if verbosity > 0:
+                for i in exp_ids:
+                  logger.debug(('Crystal unit cell interval_width_degrees for experiment id'
+                    ' {0} set to {1:.1f}').format(i, deg_per_interval))
+            else:
+              deg_per_interval = 36.0
             n_intervals = max(int(
               abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
-          else:
-            n_intervals = options.crystal.unit_cell.smoother.absolute_num_intervals
+
           xl_uc_param = par.ScanVaryingCrystalUnitCellParameterisation(
                                               crystal,
                                               array_range,
@@ -852,12 +924,30 @@ class RefinerFactory(object):
               'refined when associated with more than one scan or goniometer')
           sweep_range_deg = scan.get_oscillation_range(deg=True)
           array_range = scan.get_array_range()
-          if options.detector.smoother.num_intervals == "fixed_width":
+
+          n_intervals = options.detector.smoother.absolute_num_intervals
+          if n_intervals is None:
             deg_per_interval = options.detector.smoother.interval_width_degrees
+            if deg_per_interval is libtbx.Auto and analysis is not None:
+              # extract the smallest suggested interval for experiments this
+              # detector appears in and use the maximum of that or 9 degrees
+              intervals = []
+              for i in exp_ids:
+                a = analysis[i]
+                intervals.extend([a.get('x_interval'),
+                                  a.get('y_interval'),
+                                  a.get('phi_interval')])
+              intervals = [e for e in intervals if e is not None]
+              deg_per_interval = max([min(intervals), 9.0])
+              if verbosity > 0:
+                for i in exp_ids:
+                  logger.debug(('Detector interval_width_degrees for experiment id'
+                    ' {0} set to {1:.1f}').format(i, deg_per_interval))
+            else:
+              deg_per_interval = 36.0
             n_intervals = max(int(
               abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
-          else:
-            n_intervals = options.detector.smoother.absolute_num_intervals
+
           det_param = par.ScanVaryingDetectorParameterisationSinglePanel(
               detector,
               array_range,
@@ -878,12 +968,30 @@ class RefinerFactory(object):
               'refined when associated with more than one scan or goniometer')
           sweep_range_deg = scan.get_oscillation_range(deg=True)
           array_range = scan.get_array_range()
-          if options.detector.smoother.num_intervals == "fixed_width":
+
+          n_intervals = options.detector.smoother.absolute_num_intervals
+          if n_intervals is None:
             deg_per_interval = options.detector.smoother.interval_width_degrees
+            if deg_per_interval is libtbx.Auto and analysis is not None:
+              # extract the smallest suggested interval for experiments this
+              # detector appears in and use the maximum of that or 9 degrees
+              intervals = []
+              for i in exp_ids:
+                a = analysis[i]
+                intervals.extend([a.get('x_interval'),
+                                  a.get('y_interval'),
+                                  a.get('phi_interval')])
+              intervals = [e for e in intervals if e is not None]
+              deg_per_interval = max([min(intervals), 9.0])
+              if verbosity > 0:
+                for i in exp_ids:
+                  logger.debug(('Detector interval_width_degrees for experiment id'
+                    ' {0} set to {1:.1f}').format(i, deg_per_interval))
+            else:
+              deg_per_interval = 36.0
             n_intervals = max(int(
               abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
-          else:
-            n_intervals = options.detector.smoother.absolute_num_intervals
+
           det_param = par.ScanVaryingDetectorParameterisationSinglePanel(
               detector,
               array_range,

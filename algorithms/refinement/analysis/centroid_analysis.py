@@ -197,8 +197,9 @@ class CentroidAnalyser(object):
     cutoff = 5 * bl
     peaks = pgram.spec > cutoff
 
-    # find where this peak falls off below the cutoff and return the cycle
-    # period at that frequency
+    # find where this peak falls off below the cutoff and return twice the cycle
+    # period at that frequency (this is a heuristic that often seems to give
+    # sensible results)
     idx = flex.last_index(peaks, True)
     if idx is not None:
       f1 = pgram.freq[idx]
@@ -211,7 +212,7 @@ class CentroidAnalyser(object):
         freq = f1 + df
       except IndexError:
         freq = f1
-      period = 1./freq
+      period = 1./freq * 2
     else:
       period = None
     return period

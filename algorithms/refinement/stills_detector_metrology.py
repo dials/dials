@@ -28,7 +28,7 @@ from dials.algorithms.spot_prediction import ray_intersection
 class StillsDetectorRefinerFactory(RefinerFactory):
 
   @staticmethod
-  def config_parameterisation(params, experiments, refman, do_stills):
+  def config_parameterisation(params, experiments, refman, do_stills, verbosity):
     """Given a set of parameters, create a parameterisation from a set of
     experimental models.
 
