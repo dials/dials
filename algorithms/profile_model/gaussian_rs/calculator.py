@@ -361,15 +361,6 @@ class ComputeEsdReflectingRange(object):
       n = self.n
       K = self.K
 
-      # for aa, bb in zip(a, b):
-      #   aa, bb = min(aa, bb), max(aa, bb)
-      #   assert aa < 0 and bb > 0
-
-      # assert self.indices[1:] - self.indices[:-1] == 1
-      # with open("profile.txt", "w") as outfile:
-      #   for i in range(len(a)):
-      #     print >>outfile, self.e1[i], self.e2[i], n[i], K[i]
-
       # Calculate the fraction of observed reflection intensity
       zi = (a - b) / 2.0
 
@@ -388,8 +379,8 @@ class ComputeEsdReflectingRange(object):
         nj = n.select(selection)
         kj = K[j]
         Z = flex.sum(zj)
-        #L += flex.sum(nj * flex.log(zj)) - kj * Z
-        L += flex.sum(nj * flex.log(zj)) - kj * log(Z)
+        #L += flex.sum(nj * flex.log(kj*zj)) - kj * Z
+        L += flex.sum(nj * flex.log(kj*zj)) - kj * log(Z)
       print "Sigma M: %f, log(L): %f" % (sigma_m * 180/pi, L)
 
       # Return the logarithm of r
@@ -459,7 +450,6 @@ class ComputeEsdReflectingRange(object):
         estimator = ComputeEsdReflectingRange.Estimator(
           crystal, beam, detector, goniometer, scan, reflections)
       except Exception:
-        logger.info("Using Crude Mosaicity estimator")
         estimator = ComputeEsdReflectingRange.CrudeEstimator(
           crystal, beam, detector, goniometer, scan, reflections)
 

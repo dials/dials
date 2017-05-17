@@ -29,7 +29,6 @@ namespace dials { namespace algorithms { namespace boost_python {
           const Scan&,
           const cctbx::uctbx::unit_cell&,
           const cctbx::sgtbx::space_group_type&,
-          double,
           double>())
       .def("for_ub", &Predictor::for_ub)
       .def("for_hkl", &Predictor::for_hkl)
@@ -53,8 +52,7 @@ namespace dials { namespace algorithms { namespace boost_python {
           const Scan&,
           const cctbx::sgtbx::space_group_type&,
           double,
-          std::size_t,
-          double>())
+          std::size_t>())
       .def("for_ub", &Predictor::for_ub)
       .def("for_ub_on_single_image", &Predictor::for_ub_on_single_image)
       .def("for_reflection_table", &Predictor::for_reflection_table)

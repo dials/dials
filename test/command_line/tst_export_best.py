@@ -22,7 +22,7 @@ def run():
   result = easy_run.fully_buffered(cmd).raise_if_errors()
   cmd = "dials.index datablock.json strong.pickle space_group=P422"
   result = easy_run.fully_buffered(cmd).raise_if_errors()
-  cmd = "dials.integrate experiments.json indexed.pickle prediction.padding=0"
+  cmd = "dials.integrate experiments.json indexed.pickle"
   result = easy_run.fully_buffered(cmd).raise_if_errors()
   cmd = "dials.export integrated_experiments.json integrated.pickle format=best"
   result = easy_run.fully_buffered(cmd).raise_if_errors()

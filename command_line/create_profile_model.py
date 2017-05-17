@@ -103,8 +103,7 @@ class Script(object):
       dmin=params.prediction.d_min,
       dmax=params.prediction.d_max,
       margin=params.prediction.margin,
-      force_static=params.prediction.force_static,
-      padding=params.prediction.padding)
+      force_static=params.prediction.force_static)
 
     # Match with predicted
     matched, reflections, unmatched = predicted.match_with_reference(reflections)

@@ -32,7 +32,6 @@ namespace dials { namespace algorithms {
 
   using boost::shared_ptr;
   using scitbx::math::r3_rotation::axis_and_angle_as_matrix;
-  using scitbx::constants::pi;
   using scitbx::constants::two_pi;
   using scitbx::constants::pi_180;
   using dxtbx::model::Beam;
@@ -97,8 +96,7 @@ namespace dials { namespace algorithms {
           const Scan &scan,
           const cctbx::uctbx::unit_cell &unit_cell,
           const cctbx::sgtbx::space_group_type &space_group_type,
-          double dmin,
-          double padding)
+          double dmin)
       : beam_(beam),
         detector_(detector),
         goniometer_(goniometer),
@@ -106,15 +104,12 @@ namespace dials { namespace algorithms {
         unit_cell_(unit_cell),
         space_group_type_(space_group_type),
         dmin_(dmin),
-        padding_(padding),
         predict_rays_(
             beam.get_s0(),
             goniometer.get_rotation_axis_datum(),
             goniometer.get_fixed_rotation(),
             goniometer.get_setting_rotation(),
-            vec2<double>(0.0, two_pi)){
-      DIALS_ASSERT(padding >= 0);
-    }
+            vec2<double>(0.0, two_pi)){}
 
 
     /**
@@ -235,14 +230,18 @@ namespace dials { namespace algorithms {
         const mat3<double> ub,
         const miller_index &h) const {
       af::small<Ray, 2> rays = predict_rays_(h, ub);
+      vec2<double> phi_range = scan_.get_oscillation_range();
       for (std::size_t i = 0; i < rays.size(); ++i) {
+        if (!is_angle_in_range(phi_range, rays[i].angle)) {
+          continue;
+        }
         try {
           Detector::coord_type impact = detector_.get_ray_intersection(rays[i].s1);
           std::size_t panel = impact.first;
           vec2<double> mm = impact.second;
           vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
           af::shared< vec2<double> > frames =
-            scan_.get_array_indices_with_angle(rays[i].angle, padding_, true);
+            scan_.get_array_indices_with_angle(rays[i].angle);
           for (std::size_t j = 0; j < frames.size(); ++j) {
             p.hkl.push_back(h);
             p.enter.push_back(rays[i].entering);
@@ -299,7 +298,6 @@ namespace dials { namespace algorithms {
     cctbx::uctbx::unit_cell unit_cell_;
     cctbx::sgtbx::space_group_type space_group_type_;
     double dmin_;
-    double padding_;
     ScanStaticRayPredictor predict_rays_;
   };
 
@@ -335,8 +333,7 @@ namespace dials { namespace algorithms {
         const Scan &scan,
         const cctbx::sgtbx::space_group_type &space_group_type,
         double dmin,
-        std::size_t margin,
-        double padding)
+        std::size_t margin)
       : beam_(beam),
         detector_(detector),
         goniometer_(goniometer),
@@ -344,7 +341,6 @@ namespace dials { namespace algorithms {
         space_group_type_(space_group_type),
         dmin_(dmin),
         margin_(margin),
-        padding_(padding),
         predict_rays_(
             beam.get_s0(),
             goniometer.get_rotation_axis_datum(),
@@ -365,16 +361,11 @@ namespace dials { namespace algorithms {
 
       // Get the array range and loop through all the images
       vec2<int> array_range = scan_.get_array_range();
-      double a0 = scan_.get_oscillation_range()[0];
-      double a1 = scan_.get_oscillation_range()[1];
-      int z0 = std::floor(scan_.get_array_index_from_angle(a0-padding_*pi/180.0) + 0.5);
-      int z1 = std::floor(scan_.get_array_index_from_angle(a1+padding_*pi/180.0) + 0.5);
       const int offset = array_range[0];
-      for (int frame = z0; frame < z1; ++frame) {
-        int i = frame - offset;
-        if (i < 0) i = 0;
-        if (i >= A.size()-1) i = A.size() - 2;
-        append_for_image(predictions, frame, A[i], A[i+1]);
+      for (int frame = array_range[0]; frame < array_range[1]; ++frame) {
+        DIALS_ASSERT(frame-offset < A.size()-1);
+        append_for_image(
+          predictions, frame, A[frame-offset], A[frame-offset+1]);
       }
 
       // Return the reflection table
@@ -637,7 +628,6 @@ namespace dials { namespace algorithms {
     cctbx::sgtbx::space_group_type space_group_type_;
     double dmin_;
     std::size_t margin_;
-    double padding_;
     ScanVaryingRayPredictor predict_rays_;
   };
 

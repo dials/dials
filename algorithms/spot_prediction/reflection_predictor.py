@@ -37,9 +37,6 @@ phil_scope = parse('''
       .type = bool
       .help = "For scan-varying prediction for scan-static"
 
-    padding = 1.0
-      .type = float(value_min=0)
-      .help = "The padding in degrees"
   }
 
 ''')
@@ -57,8 +54,7 @@ class ReflectionPredictor(object):
                dmin=None,
                dmax=None,
                margin=1,
-               force_static=False,
-               padding=0):
+               force_static=False):
     '''
     Initialise a predictor for each experiment.
 
@@ -102,8 +98,7 @@ class ReflectionPredictor(object):
         predictor = ScanVaryingReflectionPredictor(
           experiment,
           dmin=dmin,
-          margin=margin,
-          padding=padding)
+          margin=margin)
         A = [experiment.crystal.get_A_at_scan_point(i) for i in
                range(experiment.crystal.num_scan_points)]
         predict = Predictor(
@@ -112,8 +107,7 @@ class ReflectionPredictor(object):
       else:
         predictor = ScanStaticReflectionPredictor(
           experiment,
-          dmin=dmin,
-          padding=padding)
+          dmin=dmin)
         predict = Predictor(
           "scan static prediction",
           lambda: predictor.for_ub(experiment.crystal.get_A()))

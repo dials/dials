@@ -43,7 +43,6 @@ class Test(object):
       'dials.integrate',
       join(self.path, 'experiments.json'),
       'profile.fitting=False',
-      'prediction.padding=0',
     ]).raise_if_errors()
 
     import cPickle as pickle
@@ -69,7 +68,6 @@ class Test(object):
       join(self.path, 'experiments.json'),
       'profile.fitting=False',
       'integration.integrator=3d',
-      'prediction.padding=0',
     ]).raise_if_errors()
 
     import cPickle as pickle
@@ -140,7 +138,6 @@ class Test(object):
       'experiments.json',
       'profile.fitting=False',
       'integration.integrator=3d',
-      'prediction.padding=0',
     ]).raise_if_errors()
 
     from math import pi
@@ -189,7 +186,6 @@ class Test(object):
       join(self.path, 'experiments.json'),
       'profile.fitting=False',
       'sampling.integrate_all_reflections=False',
-      'prediction.padding=0',
     ]).raise_if_errors()
 
     import cPickle as pickle
@@ -203,7 +199,6 @@ class Test(object):
       'profile.fitting=False',
       'sampling.integrate_all_reflections=False',
       'sampling.minimum_sample_size=500',
-      'prediction.padding=0',
     ]).raise_if_errors()
 
     import cPickle as pickle
@@ -225,8 +220,7 @@ class Test(object):
     easy_run.fully_buffered([
       'dials.integrate',
       join(self.integration_test_data, 'multi_sweep', 'experiments.json'),
-      join(self.integration_test_data, 'multi_sweep', 'indexed.pickle'),
-      'prediction.padding=0',
+      join(self.integration_test_data, 'multi_sweep', 'indexed.pickle')
     ]).raise_if_errors()
 
     import cPickle as pickle
@@ -266,8 +260,7 @@ class Test(object):
     easy_run.fully_buffered([
       'dials.integrate',
       join(self.integration_test_data, 'multi_lattice', 'experiments.json'),
-      join(self.integration_test_data, 'multi_lattice', 'indexed.pickle'),
-      'prediction.padding=0',
+      join(self.integration_test_data, 'multi_lattice', 'indexed.pickle')
     ]).raise_if_errors()
 
     import cPickle as pickle
@@ -316,7 +309,6 @@ class Test(object):
       'experiments.json',
       'indexed.pickle',
       'profile.fitting=False',
-      'prediction.padding=0',
     ]).raise_if_errors()
 
     import cPickle as pickle
