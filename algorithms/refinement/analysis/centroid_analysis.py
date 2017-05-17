@@ -193,14 +193,18 @@ class CentroidAnalyser(object):
     # determine a baseline from the high frequency noise
     bl = flex.median(pgram.spec.select(pgram.freq > 0.25))
 
-    # look for peaks greater than 5 times this baseline
+    # look for peaks greater than 5 times this baseline. We expect one at
+    # low frequency
     cutoff = 5 * bl
     peaks = pgram.spec > cutoff
 
-    # find where this peak falls off below the cutoff and return twice the cycle
+    # find where this peak falls off below the cutoff and return the cycle
     # period at that frequency (this is a heuristic that often seems to give
     # sensible results)
-    idx = flex.last_index(peaks, True)
+    pk_start = flex.first_index(peaks, True)
+    if pk_start is None: return None
+    peaks = peaks[pk_start:]
+    idx = pk_start + flex.first_index(peaks, False) - 1
     if idx is not None:
       f1 = pgram.freq[idx]
       s1 = pgram.spec[idx]
@@ -212,7 +216,7 @@ class CentroidAnalyser(object):
         freq = f1 + df
       except IndexError:
         freq = f1
-      period = 1./freq * 2
+      period = 1./freq
     else:
       period = None
     return period
