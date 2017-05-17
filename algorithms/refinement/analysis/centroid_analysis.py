@@ -109,7 +109,7 @@ class CentroidAnalyser(object):
     self._reflections = reflections
 
   def __call__(self, calc_average_residuals=True,
-                     calc_periodograms=True, spans=[4,4]):
+                     calc_periodograms=True, spans=(4,4)):
     """Perform analysis and return the results as a list of dictionaries (one
     for each experiment)"""
 
