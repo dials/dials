@@ -637,14 +637,36 @@ class RefinerFactory(object):
              options.crystal.orientation.smoother,
              options.crystal.unit_cell.smoother,
              options.detector.smoother]
-      for e in tst:
-        if (e.absolute_num_intervals is None and
-            e.interval_width_degrees is libtbx.Auto):
-          if verbosity > 0: logger.debug('Doing centroid analysis to '
-            'automatically determine scan-varying interval widths')
-          ca = refman.get_centroid_analyser()
-          analysis = ca()
-          break
+      tst = [(e.absolute_num_intervals is None and
+              e.interval_width_degrees is libtbx.Auto) for e in tst]
+      if any(tst):
+        if verbosity > 0: logger.info('Doing centroid analysis to '
+          'automatically determine scan-varying interval widths')
+        ca = refman.get_centroid_analyser()
+        analysis = ca()
+
+    # Use the results of centroid analysis to suggest suitable interval widths
+    # for each experiment. This will be the smallest of the proposed intervals
+    # for each of the residuals in x, y and phi, as long as this is not smaller
+    # than either the outlier rejection block width, or 9.0 degrees.
+    if analysis is not None:
+      for i, a in enumerate(analysis):
+        intervals = [a.get('x_interval'),
+                     a.get('y_interval'),
+                     a.get('phi_interval')]
+        try:
+          min_interval = min([e for e in intervals if e is not None])
+        except ValueError: # empty list
+          a['interval_width'] = 9.0
+          continue
+        min_interval = max(min_interval, 9.0)
+        block_size = a.get('block_size')
+        if block_size is not None:
+          min_interval = max(min_interval, block_size)
+        a['interval_width'] = min_interval
+        if verbosity > 0:
+          logger.info('Exp id {0} suggested interval width = {1:.1f} degrees'.format(
+            i, min_interval))
 
     # Parameterise unique Beams
     beam_params = []
@@ -674,20 +696,8 @@ class RefinerFactory(object):
           if n_intervals is None:
             deg_per_interval = options.beam.smoother.interval_width_degrees
             if deg_per_interval is libtbx.Auto and analysis is not None:
-              # extract the smallest suggested interval for experiments this
-              # beam appears in and use the maximum of that or 9 degrees
-              intervals = []
-              for i in exp_ids:
-                a = analysis[i]
-                intervals.extend([a.get('x_interval'),
-                                  a.get('y_interval'),
-                                  a.get('phi_interval')])
-              intervals = [e for e in intervals if e is not None]
-              deg_per_interval = max([min(intervals), 9.0])
-              if verbosity > 0:
-                for i in exp_ids:
-                  logger.debug(('Beam interval_width_degrees for experiment id'
-                    ' {0} set to {1:.1f}').format(i, deg_per_interval))
+              intervals = [analysis[i]['interval_width'] for i in exp_ids]
+              deg_per_interval = min(intervals)
             else:
               deg_per_interval = 36.0
             n_intervals = max(int(
@@ -774,20 +784,8 @@ class RefinerFactory(object):
           if n_intervals is None:
             deg_per_interval = options.crystal.orientation.smoother.interval_width_degrees
             if deg_per_interval is libtbx.Auto and analysis is not None:
-              # extract the smallest suggested interval for experiments this
-              # crystal appears in and use the maximum of that or 9 degrees
-              intervals = []
-              for i in exp_ids:
-                a = analysis[i]
-                intervals.extend([a.get('x_interval'),
-                                  a.get('y_interval'),
-                                  a.get('phi_interval')])
-              intervals = [e for e in intervals if e is not None]
-              deg_per_interval = max([min(intervals), 9.0])
-              if verbosity > 0:
-                for i in exp_ids:
-                  logger.debug(('Crystal orientation interval_width_degrees for experiment id'
-                    ' {0} set to {1:.1f}').format(i, deg_per_interval))
+              intervals = [analysis[i]['interval_width'] for i in exp_ids]
+              deg_per_interval = min(intervals)
             else:
               deg_per_interval = 36.0
             n_intervals = max(int(
@@ -808,20 +806,8 @@ class RefinerFactory(object):
           if n_intervals is None:
             deg_per_interval = options.crystal.unit_cell.smoother.interval_width_degrees
             if deg_per_interval is libtbx.Auto and analysis is not None:
-              # extract the smallest suggested interval for experiments this
-              # crystal appears in and use the maximum of that or 9 degrees
-              intervals = []
-              for i in exp_ids:
-                a = analysis[i]
-                intervals.extend([a.get('x_interval'),
-                                  a.get('y_interval'),
-                                  a.get('phi_interval')])
-              intervals = [e for e in intervals if e is not None]
-              deg_per_interval = max([min(intervals), 9.0])
-              if verbosity > 0:
-                for i in exp_ids:
-                  logger.debug(('Crystal unit cell interval_width_degrees for experiment id'
-                    ' {0} set to {1:.1f}').format(i, deg_per_interval))
+              intervals = [analysis[i]['interval_width'] for i in exp_ids]
+              deg_per_interval = min(intervals)
             else:
               deg_per_interval = 36.0
             n_intervals = max(int(
@@ -929,20 +915,8 @@ class RefinerFactory(object):
           if n_intervals is None:
             deg_per_interval = options.detector.smoother.interval_width_degrees
             if deg_per_interval is libtbx.Auto and analysis is not None:
-              # extract the smallest suggested interval for experiments this
-              # detector appears in and use the maximum of that or 9 degrees
-              intervals = []
-              for i in exp_ids:
-                a = analysis[i]
-                intervals.extend([a.get('x_interval'),
-                                  a.get('y_interval'),
-                                  a.get('phi_interval')])
-              intervals = [e for e in intervals if e is not None]
-              deg_per_interval = max([min(intervals), 9.0])
-              if verbosity > 0:
-                for i in exp_ids:
-                  logger.debug(('Detector interval_width_degrees for experiment id'
-                    ' {0} set to {1:.1f}').format(i, deg_per_interval))
+              intervals = [analysis[i]['interval_width'] for i in exp_ids]
+              deg_per_interval = min(intervals)
             else:
               deg_per_interval = 36.0
             n_intervals = max(int(
@@ -973,16 +947,8 @@ class RefinerFactory(object):
           if n_intervals is None:
             deg_per_interval = options.detector.smoother.interval_width_degrees
             if deg_per_interval is libtbx.Auto and analysis is not None:
-              # extract the smallest suggested interval for experiments this
-              # detector appears in and use the maximum of that or 9 degrees
-              intervals = []
-              for i in exp_ids:
-                a = analysis[i]
-                intervals.extend([a.get('x_interval'),
-                                  a.get('y_interval'),
-                                  a.get('phi_interval')])
-              intervals = [e for e in intervals if e is not None]
-              deg_per_interval = max([min(intervals), 9.0])
+              intervals = [analysis[i]['interval_width'] for i in exp_ids]
+              deg_per_interval = min(intervals)
               if verbosity > 0:
                 for i in exp_ids:
                   logger.debug(('Detector interval_width_degrees for experiment id'
