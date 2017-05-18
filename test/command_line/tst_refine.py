@@ -140,6 +140,59 @@ def test2():
   print "OK"
   return
 
+def test3():
+  """Strict check for scan-varying refinement using automated outlier rejection
+  block width and interval width setting"""
+
+  dials_regression = libtbx.env.find_in_repositories(
+    relative_path="dials_regression",
+    test=os.path.isdir)
+
+  # use the i04_weak_data for this test
+  data_dir = os.path.join(dials_regression, "refinement_test_data", "centroid")
+  experiments_path = os.path.join(data_dir, "experiments_XPARM_REGULARIZED.json")
+  pickle_path = os.path.join(data_dir, "spot_all_xds.pickle")
+
+  for pth in (experiments_path, pickle_path):
+    assert os.path.exists(pth)
+
+  cmd1 = ("dials.refine " + experiments_path + " " + pickle_path +
+          " scan_varying=true max_iterations=5 output.history=history.pickle "
+          "crystal.orientation.smoother.interval_width_degrees=auto "
+          "crystal.unit_cell.smoother.interval_width_degrees=auto")
+
+  # work in a temporary directory
+  cwd = os.path.abspath(os.curdir)
+  tmp_dir = open_tmp_directory(suffix="test_dials_refine")
+  os.chdir(tmp_dir)
+  try:
+    print cmd1
+    result1 = easy_run.fully_buffered(command=cmd1).raise_if_errors()
+
+    # load and check results
+    import cPickle as pickle
+    history=pickle.load(open("history.pickle", "r"))
+
+    expected_rmsds = [(0.619507828, 0.351326044, 0.006955398),
+                      (0.195054987, 0.124671476, 0.005162800),
+                      (0.119042404, 0.093039686, 0.003422774),
+                      (0.073603005, 0.075126973, 0.001786530),
+                      (0.062429714, 0.071707552, 0.001128415),
+                      (0.061049775, 0.071016496, 0.001047454)]
+
+    assert approx_equal(history['rmsd'], expected_rmsds)
+
+    # check the refined unit cell
+    ref_exp = ExperimentListFactory.from_json_file("refined_experiments.json",
+      check_format=False)[0]
+    unit_cell = ref_exp.crystal.get_unit_cell().parameters()
+    assert approx_equal(
+      unit_cell, [42.27481, 42.27481, 39.66892, 90.00000, 90.00000, 90.00000],
+      eps=1e-3)
+
+  finally:
+    os.chdir(cwd)
+
 
 def run():
   if not libtbx.env.has_module("dials_regression"):
@@ -148,6 +201,7 @@ def run():
 
   test1()
   test2()
+  test3()
 
 if __name__ == '__main__':
   from dials.test import cd_auto
