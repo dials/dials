@@ -6,7 +6,7 @@ from dials_algorithms_spot_prediction_ext import *
 # Override constructor with factory
 _ScanStaticReflectionPredictor = ScanStaticReflectionPredictor
 
-def ScanStaticReflectionPredictor(experiment, dmin=None, **kwargs):
+def ScanStaticReflectionPredictor(experiment, dmin=None, padding=0, **kwargs):
   '''
   A constructor for the reflection predictor.
 
@@ -32,13 +32,14 @@ def ScanStaticReflectionPredictor(experiment, dmin=None, **kwargs):
     experiment.scan,
     experiment.crystal.get_unit_cell(),
     space_group.type(),
-    dmin)
+    dmin,
+    padding)
 
 
 # Override constructor with factory
 _ScanVaryingReflectionPredictor = ScanVaryingReflectionPredictor
 
-def ScanVaryingReflectionPredictor(experiment, dmin=None, margin=1, **kwargs):
+def ScanVaryingReflectionPredictor(experiment, dmin=None, margin=1, padding=0, **kwargs):
   '''
   A constructor for the reflection predictor.
 
@@ -65,7 +66,8 @@ def ScanVaryingReflectionPredictor(experiment, dmin=None, margin=1, **kwargs):
     experiment.scan,
     space_group.type(),
     dmin,
-    margin)
+    margin,
+    padding)
 
 
 def StillsReflectionPredictor(experiment, dmin=None, spherical_relp=False,

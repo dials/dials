@@ -379,6 +379,7 @@ class Model(ProfileModelIface):
                           dmax=None,
                           margin=1,
                           force_static=False,
+                          padding=0,
                           **kwargs):
     '''
     Given an experiment, predict the reflections.
@@ -404,7 +405,8 @@ class Model(ProfileModelIface):
       dmin=dmin,
       dmax=dmax,
       margin=margin,
-      force_static=force_static)
+      force_static=force_static,
+      padding=padding)
     return predict()
 
   def compute_partiality(self,
