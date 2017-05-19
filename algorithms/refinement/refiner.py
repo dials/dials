@@ -657,8 +657,15 @@ class RefinerFactory(object):
                      a.get('phi_interval')]
         try:
           min_interval = min([e for e in intervals if e is not None])
-        except ValueError: # empty list
-          a['interval_width'] = 9.0
+        except ValueError:
+          # empty list - analysis was unable to suggest a suitable interval
+          # width. Default to the safest case
+          phi_min, phi_max  = experiments[i].scan.get_oscillation_range(deg=True)
+          a['interval_width'] = abs(phi_max - phi_min)
+          if verbosity > 0:
+            logger.info('Exp id {0} suggested interval width could not be '
+              'determined and will be reset to the scan width of '
+              '{1:.1f} degrees'.format(i, a['interval_width']))
           continue
         min_interval = max(min_interval, 9.0)
         block_size = a.get('block_size')
