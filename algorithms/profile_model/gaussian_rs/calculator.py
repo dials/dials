@@ -361,15 +361,6 @@ class ComputeEsdReflectingRange(object):
       n = self.n
       K = self.K
 
-      # for aa, bb in zip(a, b):
-      #   aa, bb = min(aa, bb), max(aa, bb)
-      #   assert aa < 0 and bb > 0
-
-      # assert self.indices[1:] - self.indices[:-1] == 1
-      # with open("profile.txt", "w") as outfile:
-      #   for i in range(len(a)):
-      #     print >>outfile, self.e1[i], self.e2[i], n[i], K[i]
-
       # Calculate the fraction of observed reflection intensity
       zi = (a - b) / 2.0
 
@@ -381,6 +372,22 @@ class ComputeEsdReflectingRange(object):
       zi.set_selected(mask, TINY)
 
       # Compute the likelihood
+      #
+      # The likelihood here is a result of the sum of two log likelihood
+      # functions:
+      #
+      # The first is the same as the one in Kabsch2010 as applied to the
+      # reflection as a whole. This results in the term log(Z)
+      #
+      # The second is the likelihood for each reflection modelling as a Poisson
+      # distribtution with shape given by sigma M. This gives sum(ci log(zi)) -
+      # sum(ci)*log(sum(zi))
+      #
+      # If the reflection is recorded on 1 frame, the second component is zero
+      # and so the likelihood is dominated by the first term which can be seen
+      # as a prior for sigma, which accounts for which reflections were actually
+      # recorded.
+      #
       L = 0
       for j, (i0, i1) in enumerate(zip(self.indices[:-1], self.indices[1:])):
         selection = flex.size_t(range(i0, i1))
@@ -389,7 +396,8 @@ class ComputeEsdReflectingRange(object):
         kj = K[j]
         Z = flex.sum(zj)
         #L += flex.sum(nj * flex.log(zj)) - kj * Z
-        L += flex.sum(nj * flex.log(zj)) - kj * log(Z)
+        #L += flex.sum(nj * flex.log(zj)) - kj * log(Z)
+        L += flex.sum(nj * flex.log(zj)) - kj * log(Z) + log(Z)
       print "Sigma M: %f, log(L): %f" % (sigma_m * 180/pi, L)
 
       # Return the logarithm of r
