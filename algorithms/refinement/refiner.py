@@ -421,8 +421,9 @@ class RefinerFactory(object):
 
     cols = ['id', 'miller_index', 'panel', 's1', 'xyzobs.mm.value',
             "xyzobs.px.value", "xyzcal.px",
-            'xyzobs.mm.variance', 'flags']
+            'xyzobs.mm.variance', 'flags', 'delpsical.weights']
     # NB xyzobs.px.value & xyzcal.px required by SauterPoon outlier rejector
+    # NB delpsical.weights is used by ExternalDelPsiWeightingStrategy
     rt = flex.reflection_table()
 
     # copy columns to the new table. Could use the select method

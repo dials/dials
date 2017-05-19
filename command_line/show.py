@@ -204,6 +204,7 @@ def run(args):
     ('xyzcal.px','%.2f, %.2f, %.2f'),
     ('delpsical.rad','%.3f'),
     ('delpsical2','%.3f'),
+    ('delpsical.weights','%.3f'),
     ('xyzobs.mm.value','%.2f, %.2f, %.2f'),
     ('xyzobs.mm.variance','%.4e, %.4e, %.4e'),
     ('xyzobs.px.value','%.2f, %.2f, %.2f'),
