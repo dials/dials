@@ -85,7 +85,7 @@ class Script(object):
 
     missing = all.lone_set(other=obs)
 
-    print '%d reflections in blind region' % len(missing.indices())
+    print '%d unique reflections in blind region' % len(missing.indices())
 
     e1 = matrix.col(axes[0])
     e2 = matrix.col(axes[1])
@@ -119,9 +119,7 @@ class Script(object):
     print 'Maximum two theta: %.3f,' % (two_theta * 180.0 / math.pi),
     print '%d solutions found' % len(solutions)
 
-    # FIXME work out extent to which this one will be shadowed...
-
-    print '  Kappa     Phi'
+    print '  Kappa     Phi    #new'
     for s in solutions:
       F = e2.axis_and_angle_as_r3_rotation_matrix(s[1]) * \
         e3.axis_and_angle_as_r3_rotation_matrix(s[2])
@@ -175,27 +173,14 @@ class Script(object):
     from dials.command_line.check_strategy import filter_shadowed_reflections
     masker = expt.imageset.reader().get_format().get_goniometer_shadow_masker()
     predicted = flex.reflection_table.from_predictions(expt, dmin=resolution)
-    shadowed = flex.bool(predicted.size(), False)
 
-    x,y,z = predicted['xyzcal.px'].parts()
-    start, end = expt.scan.get_array_range()
-    
-    for i in range(start, end):
-      shadow = masker.project_extrema(
-        expt.detector, expt.scan.get_angle_from_array_index(i))
-      frame = (z >= i) & (z < (i+1))
-      iframe = frame.iselection()
-      for panel_id in range(len(expt.detector)):
-        if shadow[panel_id].size() < 4:
-          continue
-        print 'moo'
-        ipanel = iframe.select(panel==panel_id)
-        xy = flex.vec2_double(x.select(ipanel), y.select(ipanel))
-        inside = is_inside_polygon(shadow[panel_id], xy)
-        shadowed.set_selected(ipanel, inside)
-        
-    print 'Shadows affect %d of %d reflections' % (shadowed.count(True),
-                                                   shadowed.size())
+    # transmogrify this to an ExperimentList from an Experiment
+    from dxtbx.model import ExperimentList
+    experiments = ExperimentList()
+    experiments.append(expt)
+    predicted['id'] = flex.int(predicted.size(), 0)
+
+    shadowed = filter_shadowed_reflections(experiments, predicted)
     predicted = predicted.select(~shadowed)
 
     hkl = predicted['miller_index']
@@ -211,7 +196,7 @@ class Script(object):
 
     return obs
 
-  
+
 if __name__ == '__main__':
   from dials.util import halraiser
   try:
