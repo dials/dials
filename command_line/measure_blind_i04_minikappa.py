@@ -78,7 +78,7 @@ class Script(object):
       unit_cell=expt.crystal.get_unit_cell()), anomalous_flag=True,
       d_min=resolution)
 
-    obs = self.predict_to_miller_set_with_shadow(expt, resolution)
+    obs, shadow = self.predict_to_miller_set_with_shadow(expt, resolution)
 
     print 'Fraction of unique observations at datum: %.3f' % \
       (len(obs.indices()) / len(all.indices()))
@@ -100,10 +100,10 @@ class Script(object):
 
     # now decompose to kappa, phi
     sol_plus = rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
-      R_ptt, e1, e2, e3, return_both_solutions=True, deg=False)
+      R_ptt, e1, e2, e3, return_both_solutions=True, deg=True)
 
     sol_minus = rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
-      R_ntt, e1, e2, e3, return_both_solutions=True, deg=False)
+      R_ntt, e1, e2, e3, return_both_solutions=True, deg=True)
 
     solutions = []
     if sol_plus:
@@ -119,14 +119,15 @@ class Script(object):
     print 'Maximum two theta: %.3f,' % (two_theta * 180.0 / math.pi),
     print '%d solutions found' % len(solutions)
 
-    print '  Kappa     Phi    #new'
+    print '  Kappa     Phi    #new   (scan total/in shadow)'
     for s in solutions:
-      expt.goniometer.set_angles((0, s[1], s[2]))
-      obs = self.predict_to_miller_set_with_shadow(expt, resolution)
+      # looks like it has to be set in degrees not radians?
+      expt.goniometer.set_angles(s)
+      obs, shadow = self.predict_to_miller_set_with_shadow(expt, resolution)
       new = missing.common_set(obs)
 
-      print '%8.3f %8.3f %d' % (s[1] * 180. / math.pi, s[2] * 180. / math.pi, \
-                                len(new.indices()))
+      print '%8.3f %8.3f %d (%d/%d)' % (s[1], s[2], len(new.indices()),
+                                        len(shadow), shadow.count(True))
 
   def make_scan_360(self, scan):
     epochs = scan.get_epochs()
@@ -167,9 +168,6 @@ class Script(object):
 
   def predict_to_miller_set_with_shadow(self, expt, resolution):
     from dials.array_family import flex
-    from dials.util import is_inside_polygon
-    from dials.command_line.check_strategy import filter_shadowed_reflections
-    masker = expt.imageset.reader().get_format().get_goniometer_shadow_masker()
     predicted = flex.reflection_table.from_predictions(expt, dmin=resolution)
 
     # transmogrify this to an ExperimentList from an Experiment
@@ -177,8 +175,7 @@ class Script(object):
     experiments = ExperimentList()
     experiments.append(expt)
     predicted['id'] = flex.int(predicted.size(), 0)
-
-    shadowed = filter_shadowed_reflections(experiments, predicted)
+    shadowed = self.filter_shadowed_reflections(experiments, predicted)
     predicted = predicted.select(~shadowed)
 
     hkl = predicted['miller_index']
@@ -192,7 +189,39 @@ class Script(object):
       unit_cell=expt.crystal.get_unit_cell()), anomalous_flag=True,
       indices=hkl).unique_under_symmetry()
 
-    return obs
+    return obs, shadowed
+
+  def filter_shadowed_reflections(self, experiments, reflections):
+    from dials.util import is_inside_polygon
+    from dials.array_family import flex
+    shadowed = flex.bool(reflections.size(), False)
+    for expt_id in range(len(experiments)):
+      expt = experiments[expt_id]
+      imgset = expt.imageset
+      masker = imgset.reader().get_format().get_goniometer_shadow_masker(
+        goniometer=expt.goniometer)
+      detector = expt.detector
+      sel = reflections['id'] == expt_id
+      isel = sel.iselection()
+      x,y,z = reflections['xyzcal.px'].select(isel).parts()
+      start, end = expt.scan.get_array_range()
+      for i in range(start, end):
+        shadow = masker.project_extrema(
+          detector, expt.scan.get_angle_from_array_index(i))
+        img_sel = (z >= i) & (z < (i+1))
+        img_isel = img_sel.iselection()
+        for p_id in range(len(detector)):
+          panel = reflections['panel'].select(img_isel)
+          if shadow[p_id].size() < 4:
+            continue
+          panel_isel = img_isel.select(panel == p_id)
+          inside = is_inside_polygon(
+            shadow[p_id],
+            flex.vec2_double(x.select(isel.select(panel_isel)),
+                             y.select(isel.select(panel_isel))))
+          shadowed.set_selected(panel_isel, inside)
+
+    return shadowed
 
 
 if __name__ == '__main__':
