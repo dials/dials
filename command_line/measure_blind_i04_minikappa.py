@@ -76,6 +76,12 @@ class Script(object):
     if sol_minus:
       solutions.extend(sol_minus)
 
+    if not solutions:
+      print 'Maximum two theta: %.3f,' % (two_theta * 180.0 / math.pi),
+      print 'sorry, this is impossible with this goniometer'
+      return
+
+    print 'Maximum two theta: %.3f,' % (two_theta * 180.0 / math.pi),
     print '%d solutions found, any one should do' % len(solutions)
 
     # FIXME work out extent to which this one will be shadowed... add **
