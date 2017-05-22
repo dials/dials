@@ -46,6 +46,7 @@ class Script(object):
     from scitbx import matrix
     from dials.algorithms.refinement import rotation_decomposition
     from dials.util.options import flatten_experiments
+    from dials.array_family import flex
 
     experiments = flatten_experiments(params.input.experiments)
     if len(experiments) != 1:
@@ -62,6 +63,30 @@ class Script(object):
       resolution = params.resolution
     else:
       resolution = det.get_max_inscribed_resolution(expt.beam.get_s0())
+
+    # at this point, predict all of the reflections in the scan possible (i.e.
+    # extend scan to 360 degrees) - this points back to expt
+
+    scan = self.make_scan_360(expt.scan)
+    predicted = flex.reflection_table.from_predictions(expt, dmin=resolution)
+    hkl = predicted['miller_index']
+
+    # now get a full set of all unique miller indices
+    from cctbx import miller
+    from cctbx import crystal
+
+    ms = miller.build_set(crystal_symmetry=crystal.symmetry(
+      space_group=expt.crystal.get_space_group(),
+      unit_cell=expt.crystal.get_unit_cell()), anomalous_flag=True,
+      d_min=resolution)
+
+    obs = miller.set(crystal_symmetry=crystal.symmetry(
+      space_group=expt.crystal.get_space_group(),
+      unit_cell=expt.crystal.get_unit_cell()), anomalous_flag=True,
+      indices=hkl).unique_under_symmetry()
+
+    print 'Fraction of unique observations at datum: %.3f' % \
+      (len(obs.indices()) / len(ms.indices()))
 
     e1 = matrix.col(axes[0])
     e2 = matrix.col(axes[1])
@@ -101,6 +126,26 @@ class Script(object):
     print '  Kappa     Phi'
     for s in solutions:
       print '%8.3f %8.3f' % (s[1], s[2])
+
+  def make_scan_360(self, scan):
+    epochs = scan.get_epochs()
+    exposure_times = scan.get_exposure_times()
+    image_range = scan.get_image_range()
+    oscillation = scan.get_oscillation()
+
+    current = 1 + image_range[1] - image_range[0]
+    turn = int(round(360./oscillation[1]))
+    extra = turn - current
+
+    for j in range(extra):
+      epochs.append(0.0)
+      exposure_times.append(0.0)
+    image_range = image_range[0], image_range[1]+extra
+
+    scan.set_image_range(image_range)
+    scan.set_epochs(epochs)
+    scan.set_exposure_times(exposure_times)
+    return scan
 
 if __name__ == '__main__':
   from dials.util import halraiser
