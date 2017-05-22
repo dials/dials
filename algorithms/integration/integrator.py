@@ -161,6 +161,8 @@ def generate_phil_scope():
           .type = bool
       }
 
+      include scope dials.algorithms.integration.overlaps_filter.phil_scope
+
       mp {
         method = *none drmaa sge lsf pbs
           .type = choice
@@ -360,6 +362,9 @@ class Parameters(object):
     if params.filter.ice_rings == True:
       result.filter.powder_filter = IceRingFilter()
 
+    # Get post-integration overlap filtering parameters
+    result.integration.overlaps_filter = params.overlaps_filter
+
     # Set the profile fitting parameters
     result.profile.fitting = params.profile.fitting
     result.profile.validation.number_of_partitions = \
@@ -447,50 +452,60 @@ class InitializerStills(object):
       reflections.set_flags(mask, reflections.flags.in_powder_ring)
 
 
-class FinalizerRot(object):
+class FinalizerBase(object):
+
+  def __init__(self, reflections, experiments, params):
+    '''
+    Initialise the post processor.
+
+    '''
+    self.reflections = reflections
+    self.experiments = experiments
+    self.params = params
+
+  def __call__(self):
+    overlaps_scope = self.params.integration.overlaps_filter
+    if True in [
+      overlaps_scope.foreground_foreground.enable,
+      overlaps_scope.foreground_background.enable,
+      ]:
+      from dials.algorithms.integration.overlaps_filter import OverlapsFilterMultiExpt
+      overlaps_filter = OverlapsFilterMultiExpt(self.reflections, self.experiments)
+      if overlaps_scope.foreground_foreground.enable:
+        overlaps_filter.remove_foreground_foreground_overlaps()
+      if overlaps_scope.foreground_background.enable:
+        overlaps_filter.remove_foreground_background_overlaps()
+      self.reflections = overlaps_filter.refl
+
+class FinalizerRot(FinalizerBase):
   '''
   A post-processing class for oscillation data.
 
   '''
 
-  def __init__(self, experiments, params):
-    '''
-    Initialise the post processor.
-
-    '''
-    self.experiments = experiments
-    self.params = params
-
-  def __call__(self, reflections):
+  def __call__(self):
     '''
     Do some post processing.
 
     '''
+    super(FinalizerRot, self).__call__()
 
     # Compute the corrections
-    reflections.compute_corrections(self.experiments)
+    self.reflections.compute_corrections(self.experiments)
 
 
-class FinalizerStills(object):
+class FinalizerStills(FinalizerBase):
   '''
   A post-processing class for stills data.
 
   '''
 
-  def __init__(self, experiments, params):
-    '''
-    Initialise the post processor.
-
-    '''
-    self.experiments = experiments
-    self.params = params
-
-  def __call__(self, reflections):
+  def __call__(self):
     '''
     Do some post processing.
 
     '''
-    pass
+    super(FinalizerStills, self).__call__()
 
 
 class ProfileModellerExecutor(Executor):
@@ -1129,9 +1144,12 @@ class Integrator(object):
 
     # Finalize the reflections
     finalize = self.FinalizerClass(
+      self.reflections,
       self.experiments,
       self.params)
-    finalize(self.reflections)
+    finalize()
+    self.reflections = finalize.reflections
+    self.experiments = finalize.experiments
 
     # Create the integration report
     self.integration_report = IntegrationReport(
