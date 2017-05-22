@@ -98,7 +98,7 @@ class Script(object):
     R_ptt = s0n.axis_and_angle_as_r3_rotation_matrix(two_theta)
     R_ntt = s0n.axis_and_angle_as_r3_rotation_matrix(-two_theta)
 
-    # now decompose to kappa, phi
+    # now decompose to e1, e2, e3
     sol_plus = rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
       R_ptt, e1, e2, e3, return_both_solutions=True, deg=True)
 
@@ -119,15 +119,22 @@ class Script(object):
     print 'Maximum two theta: %.3f,' % (two_theta * 180.0 / math.pi),
     print '%d solutions found' % len(solutions)
 
-    print '  Kappa     Phi    #new   (scan total/in shadow)'
-    for s in solutions:
+    names = tuple([n.replace('GON_', '').lower() for n in \
+                   expt.goniometer.get_names()])
+
+    print ' %8s %8s %8s  coverage expt.json' % names
+    self.write_expt(experiments, 'solution_0.json')
+    for j, s in enumerate(solutions):
       # looks like it has to be set in degrees not radians?
       expt.goniometer.set_angles(s)
       obs, shadow = self.predict_to_miller_set_with_shadow(expt, resolution)
       new = missing.common_set(obs)
+      fout = 'solution_%d.json' % (j + 1)
+      f = len(new.indices()) / len(missing.indices())
 
-      print '%8.3f %8.3f %d (%d/%d)' % (s[1], s[2], len(new.indices()),
-                                        len(shadow), shadow.count(True))
+      print '%8.3f %8.3f %8.3f %4.2f %s' % \
+        (s[0], s[1], s[2], f, fout)
+      self.write_expt(experiments, fout)
 
   def make_scan_360(self, scan):
     epochs = scan.get_epochs()
@@ -223,6 +230,11 @@ class Script(object):
 
     return shadowed
 
+  def write_expt(self, experiments, filename):
+    from dxtbx.model.experiment_list import ExperimentListDumper
+    dump = ExperimentListDumper(experiments)
+    dump.as_json(filename)
+    return
 
 if __name__ == '__main__':
   from dials.util import halraiser
