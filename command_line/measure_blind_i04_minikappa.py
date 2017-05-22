@@ -34,7 +34,7 @@ class Script(object):
       usage=usage,
       phil=phil_scope,
       epilog=help_message,
-      check_format=False,
+      check_format=True,
       read_experiments=True)
 
   def run(self):
@@ -78,7 +78,7 @@ class Script(object):
       unit_cell=expt.crystal.get_unit_cell()), anomalous_flag=True,
       d_min=resolution)
 
-    obs = self.predict_to_miller_set(expt, resolution)
+    obs = self.predict_to_miller_set_with_shadow(expt, resolution)
 
     print 'Fraction of unique observations at datum: %.3f' % \
       (len(obs.indices()) / len(all.indices()))
@@ -126,7 +126,7 @@ class Script(object):
       F = e2.axis_and_angle_as_r3_rotation_matrix(s[1]) * \
         e3.axis_and_angle_as_r3_rotation_matrix(s[2])
       expt.goniometer.set_fixed_rotation(F.elems)
-      obs = self.predict_to_miller_set(expt, resolution)
+      obs = self.predict_to_miller_set_with_shadow(expt, resolution)
       new = missing.common_set(obs)
 
       print '%8.3f %8.3f %d' % (s[1] * 180. / math.pi, s[2] * 180. / math.pi, \
@@ -169,6 +169,49 @@ class Script(object):
 
     return obs
 
+  def predict_to_miller_set_with_shadow(self, expt, resolution):
+    from dials.array_family import flex
+    from dials.util import is_inside_polygon
+    from dials.command_line.check_strategy import filter_shadowed_reflections
+    masker = expt.imageset.reader().get_format().get_goniometer_shadow_masker()
+    predicted = flex.reflection_table.from_predictions(expt, dmin=resolution)
+    shadowed = flex.bool(predicted.size(), False)
+
+    x,y,z = predicted['xyzcal.px'].parts()
+    start, end = expt.scan.get_array_range()
+    
+    for i in range(start, end):
+      shadow = masker.project_extrema(
+        expt.detector, expt.scan.get_angle_from_array_index(i))
+      frame = (z >= i) & (z < (i+1))
+      iframe = frame.iselection()
+      for panel_id in range(len(expt.detector)):
+        if shadow[panel_id].size() < 4:
+          continue
+        print 'moo'
+        ipanel = iframe.select(panel==panel_id)
+        xy = flex.vec2_double(x.select(ipanel), y.select(ipanel))
+        inside = is_inside_polygon(shadow[panel_id], xy)
+        shadowed.set_selected(ipanel, inside)
+        
+    print 'Shadows affect %d of %d reflections' % (shadowed.count(True),
+                                                   shadowed.size())
+    predicted = predicted.select(~shadowed)
+
+    hkl = predicted['miller_index']
+
+    # now get a full set of all unique miller indices
+    from cctbx import miller
+    from cctbx import crystal
+
+    obs = miller.set(crystal_symmetry=crystal.symmetry(
+      space_group=expt.crystal.get_space_group(),
+      unit_cell=expt.crystal.get_unit_cell()), anomalous_flag=True,
+      indices=hkl).unique_under_symmetry()
+
+    return obs
+
+  
 if __name__ == '__main__':
   from dials.util import halraiser
   try:
