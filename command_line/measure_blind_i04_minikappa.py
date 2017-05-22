@@ -68,25 +68,24 @@ class Script(object):
     # extend scan to 360 degrees) - this points back to expt
 
     scan = self.make_scan_360(expt.scan)
-    predicted = flex.reflection_table.from_predictions(expt, dmin=resolution)
-    hkl = predicted['miller_index']
 
     # now get a full set of all unique miller indices
     from cctbx import miller
     from cctbx import crystal
 
-    ms = miller.build_set(crystal_symmetry=crystal.symmetry(
+    all = miller.build_set(crystal_symmetry=crystal.symmetry(
       space_group=expt.crystal.get_space_group(),
       unit_cell=expt.crystal.get_unit_cell()), anomalous_flag=True,
       d_min=resolution)
 
-    obs = miller.set(crystal_symmetry=crystal.symmetry(
-      space_group=expt.crystal.get_space_group(),
-      unit_cell=expt.crystal.get_unit_cell()), anomalous_flag=True,
-      indices=hkl).unique_under_symmetry()
+    obs = self.predict_to_miller_set(expt, resolution)
 
     print 'Fraction of unique observations at datum: %.3f' % \
-      (len(obs.indices()) / len(ms.indices()))
+      (len(obs.indices()) / len(all.indices()))
+
+    missing = all.lone_set(other=obs)
+
+    print '%d reflections in blind region' % len(missing.indices())
 
     e1 = matrix.col(axes[0])
     e2 = matrix.col(axes[1])
@@ -101,10 +100,10 @@ class Script(object):
 
     # now decompose to kappa, phi
     sol_plus = rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
-      R_ptt, e1, e2, e3, return_both_solutions=True, deg=True)
+      R_ptt, e1, e2, e3, return_both_solutions=True, deg=False)
 
     sol_minus = rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
-      R_ntt, e1, e2, e3, return_both_solutions=True, deg=True)
+      R_ntt, e1, e2, e3, return_both_solutions=True, deg=False)
 
     solutions = []
     if sol_plus:
@@ -118,14 +117,20 @@ class Script(object):
       return
 
     print 'Maximum two theta: %.3f,' % (two_theta * 180.0 / math.pi),
-    print '%d solutions found, any one should do' % len(solutions)
+    print '%d solutions found' % len(solutions)
 
-    # FIXME work out extent to which this one will be shadowed... add **
-    # if so...
+    # FIXME work out extent to which this one will be shadowed...
 
     print '  Kappa     Phi'
     for s in solutions:
-      print '%8.3f %8.3f' % (s[1], s[2])
+      F = e2.axis_and_angle_as_r3_rotation_matrix(s[1]) * \
+        e3.axis_and_angle_as_r3_rotation_matrix(s[2])
+      expt.goniometer.set_fixed_rotation(F.elems)
+      obs = self.predict_to_miller_set(expt, resolution)
+      new = missing.common_set(obs)
+
+      print '%8.3f %8.3f %d' % (s[1] * 180. / math.pi, s[2] * 180. / math.pi, \
+                                len(new.indices()))
 
   def make_scan_360(self, scan):
     epochs = scan.get_epochs()
@@ -146,6 +151,23 @@ class Script(object):
     scan.set_epochs(epochs)
     scan.set_exposure_times(exposure_times)
     return scan
+
+  def predict_to_miller_set(self, expt, resolution):
+    from dials.array_family import flex
+
+    predicted = flex.reflection_table.from_predictions(expt, dmin=resolution)
+    hkl = predicted['miller_index']
+
+    # now get a full set of all unique miller indices
+    from cctbx import miller
+    from cctbx import crystal
+
+    obs = miller.set(crystal_symmetry=crystal.symmetry(
+      space_group=expt.crystal.get_space_group(),
+      unit_cell=expt.crystal.get_unit_cell()), anomalous_flag=True,
+      indices=hkl).unique_under_symmetry()
+
+    return obs
 
 if __name__ == '__main__':
   from dials.util import halraiser
