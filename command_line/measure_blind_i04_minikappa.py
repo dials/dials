@@ -121,9 +121,7 @@ class Script(object):
 
     print '  Kappa     Phi    #new'
     for s in solutions:
-      F = e2.axis_and_angle_as_r3_rotation_matrix(s[1]) * \
-        e3.axis_and_angle_as_r3_rotation_matrix(s[2])
-      expt.goniometer.set_fixed_rotation(F.elems)
+      expt.goniometer.set_angles((0, s[1], s[2]))
       obs = self.predict_to_miller_set_with_shadow(expt, resolution)
       new = missing.common_set(obs)
 
