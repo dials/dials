@@ -6,15 +6,12 @@ from libtbx.phil import parse
 
 help_message = '''
 
-dev.dials.measure_blind_i04_minikappa wavelength=0.979 resolution=1.6
+dev.dials.measure_blind_i04_minikappa resolution=1.6 experiments.json
 
 '''
 
 phil_scope = parse('''
-wavelength = 0.979
-  .type = float
-  .help = 'wavelength (for two-theta calculation)'
-resolution = 1.6
+resolution = 0.0
   .type = float
   .help = 'resolution of diffraction'
 ''')
@@ -38,7 +35,7 @@ class Script(object):
       phil=phil_scope,
       epilog=help_message,
       check_format=False,
-      read_experiments=False)
+      read_experiments=True)
 
   def run(self):
     '''Execute the script.'''
@@ -48,22 +45,36 @@ class Script(object):
     import math
     from scitbx import matrix
     from dials.algorithms.refinement import rotation_decomposition
+    from dials.util.options import flatten_experiments
 
-    # FIXME get this from experiments.json
-    e1 = matrix.col((1, 0, 0))
-    e2 = matrix.col((0.914, 0.279, -0.297))
-    e3 = matrix.col((1, 0, 0))
+    experiments = flatten_experiments(params.input.experiments)
+    if len(experiments) != 1:
+      self.parser.print_help()
+      return
 
-    # FIXME get this from experiments.json
-    s0n = matrix.col((0, 0, -1))
+    expt = experiments[0]
+
+    axes = expt.goniometer.get_axes()
+    beam = expt.beam
+    det = expt.detector
+
+    if params.resolution:
+      resolution = params.resolution
+    else:
+      resolution = det.get_max_inscribed_resolution(expt.beam.get_s0())
+
+    e1 = matrix.col(axes[0])
+    e2 = matrix.col(axes[1])
+    e3 = matrix.col(axes[2])
+
+    s0n = matrix.col(beam.get_s0()).normalize()
 
     # rotate blind region about beam by +/- two theta
-    two_theta = 2.0 * math.asin(0.5 * params.wavelength / params.resolution)
+    two_theta = 2.0 * math.asin(0.5 * beam.get_wavelength() / resolution)
     R_ptt = s0n.axis_and_angle_as_r3_rotation_matrix(two_theta)
     R_ntt = s0n.axis_and_angle_as_r3_rotation_matrix(-two_theta)
 
     # now decompose to kappa, phi
-
     sol_plus = rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
       R_ptt, e1, e2, e3, return_both_solutions=True, deg=True)
 
