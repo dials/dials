@@ -75,6 +75,7 @@ class Script(object):
       raise Sorry("This will only work with 3-axis goniometers")
 
     if not expt.imageset.reader().get_format():
+      from libtbx.utils import Sorry
       raise Sorry("This will only work with images available")
 
     if not expt.imageset.reader().get_format().get_goniometer_shadow_masker():
@@ -126,12 +127,12 @@ class Script(object):
     R_ptt = s0n.axis_and_angle_as_r3_rotation_matrix(two_theta)
     R_ntt = s0n.axis_and_angle_as_r3_rotation_matrix(-two_theta)
 
-    # now decompose to e1, e2, e3
+    # now decompose to e3, e2, e1
     sol_plus = rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
-      R_ptt, e1, e2, e3, return_both_solutions=True, deg=True)
+      R_ptt, e3, e2, e1, return_both_solutions=True, deg=True)
 
     sol_minus = rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
-      R_ntt, e1, e2, e3, return_both_solutions=True, deg=True)
+      R_ntt, e3, e2, e1, return_both_solutions=True, deg=True)
 
     solutions = []
     if sol_plus:
@@ -140,6 +141,7 @@ class Script(object):
       solutions.extend(sol_minus)
 
     if not solutions:
+      from libtbx.utils import Sorry
       raise Sorry('Impossible two theta: %.3f,' % (two_theta * 180.0 / math.pi))
 
     logger.info('Maximum two theta: %.3f,' % (two_theta * 180.0 / math.pi))
