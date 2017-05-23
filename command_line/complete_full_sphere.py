@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-# LIBTBX_SET_DISPATCHER_NAME dev.dials.measure_blind_i04_minikappa
+# LIBTBX_SET_DISPATCHER_NAME dials.complete_full_sphere
 
 from __future__ import absolute_import, division
 from libtbx.phil import parse
 
 help_message = '''
 
-dev.dials.measure_blind_i04_minikappa resolution=1.6 experiments.json
+dials.complete_full_sphere [resolution=1.6] experiments.json
 
 '''
 
@@ -38,8 +38,6 @@ class Script(object):
       read_experiments=True)
 
   def run(self):
-    '''Execute the script.'''
-    # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
 
     import math
@@ -56,6 +54,14 @@ class Script(object):
     expt = experiments[0]
 
     axes = expt.goniometer.get_axes()
+
+    if len(axes) != 3:
+      from libtbx.utils import Sorry
+      raise Sorry("This will only work with 3-axis goniometers")
+
+    # FIXME check shadow asking tool available here; if not then use
+    # non-shadow version of prediction code...
+
     beam = expt.beam
     det = expt.detector
 
@@ -80,8 +86,8 @@ class Script(object):
 
     obs, shadow = self.predict_to_miller_set_with_shadow(expt, resolution)
 
-    print 'Fraction of unique observations at datum: %.3f' % \
-      (len(obs.indices()) / len(all.indices()))
+    print 'Fraction of unique observations at datum: %.1f%%' % \
+      (100. * len(obs.indices()) / len(all.indices()))
 
     missing = all.lone_set(other=obs)
 
