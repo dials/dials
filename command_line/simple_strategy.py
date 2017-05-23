@@ -90,10 +90,12 @@ def run(args):
     # goniometer rotation axis
     n = rotation_axis.cross(s0)
 
-    i = 0
-    while True:
-      for sign in (1, -1):
-        rot_angle = 2 * theta_max + i
+    solutions = flex.vec3_double()
+    rotation_angles = flex.double()
+    for sign in (1, -1):
+      i = 0
+      while True:
+        rot_angle = 2 * sign * (theta_max + i)
         i += 1
 
         R = n.axis_and_angle_as_r3_rotation_matrix(rot_angle, deg=True)
@@ -103,14 +105,15 @@ def run(args):
         e1, e2, e3 = (matrix.col(e) for e in reversed(axes))
 
         from dials.algorithms.refinement import rotation_decomposition
-        solutions = rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
+        solns = rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
           R * D_p, e1, e2, e3, return_both_solutions=True, deg=True)
-        if solutions is not None:
+        if solns is not None:
+          solutions.extend(flex.vec3_double(solns))
+          for i in range(len(solns)):
+            rotation_angles.append(rot_angle)
           break
-      if solutions is not None:
-        break
 
-    for solution in solutions:
+    for rot_angle, solution in zip(rotation_angles, solutions):
       angles = reversed(solution)
       gonio.set_angles(angles)
 
