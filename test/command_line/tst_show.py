@@ -34,7 +34,7 @@ Panel:
   origin: {-212.478,220.002,-190.18}
 
 Max resolution (at corners): 1.008178
-Max resolution (inscribed):  1.361923
+Max resolution (inscribed):  1.204283
 
 Beam:
     wavelength: 0.9795
