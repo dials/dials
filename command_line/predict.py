@@ -36,6 +36,10 @@ phil_scope = parse('''
     .type = bool
     .help = "For a scan varying model, force static prediction"
 
+  ignore_shadows = True
+    .type = bool
+    .help = "Ignore dynamic shadowing"
+
   buffer_size = 0
     .type = int
     .help = "Calculate predictions within a buffer zone of n images either"
@@ -68,7 +72,7 @@ class Script(object):
       usage=usage,
       phil=phil_scope,
       epilog=help_message,
-      check_format=False,
+      check_format=True,
       read_experiments=True)
 
   def run(self):
@@ -107,6 +111,15 @@ class Script(object):
         dmin=params.d_min)
       predicted['id'] = flex.int(len(predicted), i_expt)
       predicted_all.extend(predicted)
+
+    # if we are not ignoring shadows, look for reflections in the masked
+    # region, see https://github.com/dials/dials/issues/349
+
+    if not params.ignore_shadows:
+      from check_strategy import filter_shadowed_reflections
+
+      shadowed = filter_shadowed_reflections(experiments, predicted_all)
+      predicted_all = predicted_all.select(~shadowed)
 
     try:
       predicted_all.compute_bbox(experiments)
