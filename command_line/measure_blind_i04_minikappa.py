@@ -175,6 +175,7 @@ class Script(object):
 
   def predict_to_miller_set_with_shadow(self, expt, resolution):
     from dials.array_family import flex
+    from dials.algorithms.shadowing.filter import filter_shadowed_reflections
     predicted = flex.reflection_table.from_predictions(expt, dmin=resolution)
 
     # transmogrify this to an ExperimentList from an Experiment
@@ -182,7 +183,8 @@ class Script(object):
     experiments = ExperimentList()
     experiments.append(expt)
     predicted['id'] = flex.int(predicted.size(), 0)
-    shadowed = self.filter_shadowed_reflections(experiments, predicted)
+    shadowed = filter_shadowed_reflections(experiments, predicted,
+                                           experiment_goniometer=True)
     predicted = predicted.select(~shadowed)
 
     hkl = predicted['miller_index']
@@ -197,38 +199,6 @@ class Script(object):
       indices=hkl).unique_under_symmetry()
 
     return obs, shadowed
-
-  def filter_shadowed_reflections(self, experiments, reflections):
-    from dials.util import is_inside_polygon
-    from dials.array_family import flex
-    shadowed = flex.bool(reflections.size(), False)
-    for expt_id in range(len(experiments)):
-      expt = experiments[expt_id]
-      imgset = expt.imageset
-      masker = imgset.reader().get_format().get_goniometer_shadow_masker(
-        goniometer=expt.goniometer)
-      detector = expt.detector
-      sel = reflections['id'] == expt_id
-      isel = sel.iselection()
-      x,y,z = reflections['xyzcal.px'].select(isel).parts()
-      start, end = expt.scan.get_array_range()
-      for i in range(start, end):
-        shadow = masker.project_extrema(
-          detector, expt.scan.get_angle_from_array_index(i))
-        img_sel = (z >= i) & (z < (i+1))
-        img_isel = img_sel.iselection()
-        for p_id in range(len(detector)):
-          panel = reflections['panel'].select(img_isel)
-          if shadow[p_id].size() < 4:
-            continue
-          panel_isel = img_isel.select(panel == p_id)
-          inside = is_inside_polygon(
-            shadow[p_id],
-            flex.vec2_double(x.select(isel.select(panel_isel)),
-                             y.select(isel.select(panel_isel))))
-          shadowed.set_selected(panel_isel, inside)
-
-    return shadowed
 
   def write_expt(self, experiments, filename):
     from dxtbx.model.experiment_list import ExperimentListDumper

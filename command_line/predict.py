@@ -116,9 +116,10 @@ class Script(object):
     # region, see https://github.com/dials/dials/issues/349
 
     if not params.ignore_shadows:
-      from check_strategy import filter_shadowed_reflections
+      from dials.algorithms.shadowing.filter import filter_shadowed_reflections
 
-      shadowed = filter_shadowed_reflections(experiments, predicted_all)
+      shadowed = filter_shadowed_reflections(experiments, predicted_all,
+                                             experiment_goniometer=True)
       predicted_all = predicted_all.select(~shadowed)
 
     try:
