@@ -4,6 +4,10 @@
 from __future__ import absolute_import, division
 from libtbx.phil import parse
 
+import libtbx.load_env
+import logging
+logger = logging.getLogger(libtbx.env.dispatcher_name)
+
 help_message = '''
 
 dials.complete_full_sphere [resolution=1.6] experiments.json
@@ -13,7 +17,11 @@ dials.complete_full_sphere [resolution=1.6] experiments.json
 phil_scope = parse('''
 resolution = 0.0
   .type = float
-  .help = 'resolution of diffraction'
+  .help = "Resolution of diffraction for blind region calculation"
+shadow = True
+  .type = bool
+  .help = "Consider shadowing in calculating overall completeness"
+
 ''')
 
 class Script(object):
@@ -39,6 +47,10 @@ class Script(object):
 
   def run(self):
     params, options = self.parser.parse_args(show_diff_phil=True)
+    from dials.util import log
+
+    log.config(info="dials.complete_full_sphere.log",
+               debug="dials.complete_full_sphere.debug.log")
 
     import math
     from scitbx import matrix
@@ -46,7 +58,10 @@ class Script(object):
     from dials.util.options import flatten_experiments
     from dials.array_family import flex
 
+    model_shadow = params.shadow
+
     experiments = flatten_experiments(params.input.experiments)
+
     if len(experiments) != 1:
       self.parser.print_help()
       return
@@ -59,8 +74,11 @@ class Script(object):
       from libtbx.utils import Sorry
       raise Sorry("This will only work with 3-axis goniometers")
 
-    # FIXME check shadow asking tool available here; if not then use
-    # non-shadow version of prediction code...
+    if not expt.imageset.reader().get_format():
+      raise Sorry("This will only work with images available")
+
+    if not expt.imageset.reader().get_format().get_goniometer_shadow_masker():
+      model_shadow = False
 
     beam = expt.beam
     det = expt.detector
@@ -84,14 +102,18 @@ class Script(object):
       unit_cell=expt.crystal.get_unit_cell()), anomalous_flag=True,
       d_min=resolution)
 
-    obs, shadow = self.predict_to_miller_set_with_shadow(expt, resolution)
+    if model_shadow:
+      obs, shadow = self.predict_to_miller_set_with_shadow(expt, resolution)
+    else:
+      obs = self.predict_to_miller_set(expt, resolution)
 
-    print 'Fraction of unique observations at datum: %.1f%%' % \
-      (100. * len(obs.indices()) / len(all.indices()))
+    logger.info('Fraction of unique observations at datum: %.1f%%' %
+                (100. * len(obs.indices()) / len(all.indices())))
 
     missing = all.lone_set(other=obs)
 
-    print '%d unique reflections in blind region' % len(missing.indices())
+    logger.info('%d unique reflections in blind region' %
+                len(missing.indices()))
 
     e1 = matrix.col(axes[0])
     e2 = matrix.col(axes[1])
@@ -118,28 +140,27 @@ class Script(object):
       solutions.extend(sol_minus)
 
     if not solutions:
-      print 'Maximum two theta: %.3f,' % (two_theta * 180.0 / math.pi),
-      print 'sorry, this is impossible with this goniometer'
-      return
+      raise Sorry('Impossible two theta: %.3f,' % (two_theta * 180.0 / math.pi))
 
-    print 'Maximum two theta: %.3f,' % (two_theta * 180.0 / math.pi),
-    print '%d solutions found' % len(solutions)
+    logger.info('Maximum two theta: %.3f,' % (two_theta * 180.0 / math.pi))
+    logger.info('%d solutions found' % len(solutions))
 
     names = tuple([n.replace('GON_', '').lower() for n in \
                    expt.goniometer.get_names()])
 
-    print ' %8s %8s %8s  coverage expt.json' % names
+    logger.info(' %8s %8s %8s  coverage expt.json' % names)
     self.write_expt(experiments, 'solution_0.json')
     for j, s in enumerate(solutions):
-      # looks like it has to be set in degrees not radians?
       expt.goniometer.set_angles(s)
-      obs, shadow = self.predict_to_miller_set_with_shadow(expt, resolution)
+      if model_shadow:
+        obs, shadow = self.predict_to_miller_set_with_shadow(expt, resolution)
+      else:
+        obs = self.predict_to_miller_set(expt, resolution)
       new = missing.common_set(obs)
       fout = 'solution_%d.json' % (j + 1)
       f = len(new.indices()) / len(missing.indices())
 
-      print '%8.3f %8.3f %8.3f %4.2f %s' % \
-        (s[0], s[1], s[2], f, fout)
+      logger.info('%8.3f %8.3f %8.3f %4.2f %s' % (s[0], s[1], s[2], f, fout))
       self.write_expt(experiments, fout)
 
   def make_scan_360(self, scan):
