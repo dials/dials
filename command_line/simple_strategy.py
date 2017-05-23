@@ -100,7 +100,7 @@ def run(args):
 
         axes = gonio.get_axes()
         assert len(axes) == 3
-        e1, e2, e3 = (matrix.col(e) for e in axes)
+        e1, e2, e3 = (matrix.col(e) for e in reversed(axes))
 
         from dials.algorithms.refinement import rotation_decomposition
         solutions = rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
@@ -110,13 +110,15 @@ def run(args):
       if solutions is not None:
         break
 
-    angles = solutions[0]
-    gonio.set_angles(angles)
+    for solution in solutions:
+      angles = reversed(solution)
+      gonio.set_angles(angles)
 
-    print
-    print "Goniometer settings to rotate crystal by %.2f degrees:" %rot_angle,
-    print "(%.2f, %.2f, %.2f)" %angles
-    print
+      print
+      print "Goniometer settings to rotate crystal by %.2f degrees:" %rot_angle
+      for name, angle in zip(gonio.get_names(), gonio.get_angles()):
+        print "%s: %.2f degrees" %(name, angle)
+      print
 
     strategy2 = Strategy(expt2, d_min=params.d_min,
                          unit_cell_scale=params.unit_cell_scale,
