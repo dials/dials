@@ -323,18 +323,32 @@ class Model(ProfileModelIface):
             Too few reflections for profile modelling:
               need %d per degree or  %d in total
               got  %d per degree and %d in total
+
+            The default values may be conservative. Using fewer spots may still work.
+            A solution may be to try changing parameters:
+              profile.gaussian_rs.min_spots.per_degree=%d
+              profile.gaussian_rs.min_spots.overall=%d
             ''' % (
               params.gaussian_rs.min_spots.per_degree,
               params.gaussian_rs.min_spots.overall,
               spots_per_degree,
-              len(reflections)))
+              len(reflections),
+              params.gaussian_rs.min_spots.per_degree,
+              params.gaussian_rs.min_spots.overall))
       else:
         raise RuntimeError('''
           Too few reflections for profile modelling:
             expected > %d, got %d
+
+          The default values may be conservative. Using fewer spots may still work.
+          A solution may be to try changing parameters:
+            profile.gaussian_rs.min_spots.per_degree=%d
+            profile.gaussian_rs.min_spots.overall=%d
           ''' % (
             params.gaussian_rs.min_spots.overall,
-            len(reflections)))
+            len(reflections),
+            params.gaussian_rs.min_spots.per_degree,
+            params.gaussian_rs.min_spots.overall))
 
     # Check the override parameters
     if [params.gaussian_rs.parameters.sigma_b,
