@@ -26,11 +26,11 @@ phil_scope = parse('''
       .help = "if (total_reflections > overall or reflections_per_degree >"
               "per_degree) then do the profile modelling."
     {
-      overall = 100
+      overall = 50
         .type = int(value_min=0)
         .help = "The minimum number of spots needed to do the profile modelling"
 
-      per_degree = 50
+      per_degree = 20
         .type = int(value_min=0)
         .help = "The minimum number of spots needed to do the profile modelling"
     }
