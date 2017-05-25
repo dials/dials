@@ -72,7 +72,7 @@ PIXEL          0.172
 ROTAXIS        -0.01 0.00 1.00 FAST
 POLAXIS        0.00 1.00 0.00
 GAIN               1.00
-CMOSAIC            0.23
+CMOSAIC            0.54
 PHISTART           0.00
 PHIWIDTH           0.20
 DISTANCE         191.01
