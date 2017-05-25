@@ -103,7 +103,10 @@ def write_par_file(file_name, experiment):
     print >> f, 'ROTAXIS        %4.2f %4.2f %4.2f' %rotation.elems, direction
     print >> f, 'POLAXIS        %4.2f %4.2f %4.2f' %polarization.elems
     print >> f, 'GAIN               1.00' # correct for Pilatus images
-    print >> f, 'CMOSAIC            %.2f' %experiment.profile.sigma_m()
+    # http://strucbio.biologie.uni-konstanz.de/xdswiki/index.php/FAQ#You_said_that_the_XDS_deals_with_high_mosaicity._How_high_mosaicity_is_still_manageable.3F
+    # http://journals.iucr.org/d/issues/2012/01/00/wd5161/index.html
+    # Transform from XDS defintion of sigma_m to FWHM (MOSFLM mosaicity definition)
+    print >> f, 'CMOSAIC            %.2f' %(experiment.profile.sigma_m() * 2.355)
     print >> f, 'PHISTART           %.2f' %scan.get_oscillation_range()[0]
     print >> f, 'PHIWIDTH           %.2f' %scan.get_oscillation()[1]
     print >> f, 'DISTANCE        %7.2f' %distance
