@@ -67,8 +67,8 @@ def run(args):
       n_indexed.append(r['n_indexed'])
       n_lattices.append(len(r['lattices']))
       for d in r['lattices']:
-        from dxtbx.serialize.crystal import from_dict
-        crystals.append(from_dict(d['crystal']))
+        from dxtbx.model.crystal import CrystalFactory
+        crystals.append(CrystalFactory.from_dict(d['crystal']))
     else:
       n_indexed.append(0)
       n_lattices.append(0)
