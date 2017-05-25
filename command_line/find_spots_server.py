@@ -4,7 +4,7 @@ import BaseHTTPServer as server_base
 from multiprocessing import Process
 from multiprocessing import current_process
 import os
-import signal
+import sys
 
 import libtbx.load_env
 import logging
@@ -276,10 +276,7 @@ port = 1701
 def main(nproc, port):
   server_class = server_base.HTTPServer
   httpd = server_class(('', port), handler)
-  print time.asctime(), 'start'
-
-  # catch TERM signal to allow finalizers to run and reap daemonic children
-  signal.signal(signal.SIGTERM, lambda *args: sys.exit(-signal.SIGTERM))
+  print time.asctime(), 'Serving %d processes on port %d' % (nproc, port)
 
   for j in range(nproc - 1):
     proc = Process(target=serve, args=(httpd,))
@@ -290,9 +287,6 @@ def main(nproc, port):
   print time.asctime(), 'done'
 
 if __name__ == '__main__':
-  import sys
-  import libtbx.load_env
-
   usage = '%s [options]' % libtbx.env.dispatcher_name
 
   from dials.util.options import OptionParser
