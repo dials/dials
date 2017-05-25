@@ -6,6 +6,10 @@ import libtbx.load_env
 import shutil
 import os
 
+# Disable all HTTPS verification. This is to work around an issue
+# in biopython, possibly biopython relying on unreliable servers.
+os.environ["PYTHONHTTPSVERIFY"] = "0"
+
 def recursive_overwrite(src, dest, ignore=None):
   if os.path.isdir(src):
     if not os.path.isdir(dest):
