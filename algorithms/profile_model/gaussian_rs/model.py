@@ -35,7 +35,7 @@ phil_scope = parse('''
         .help = "The minimum number of spots needed to do the profile modelling"
     }
 
-    sigma_m_algorithm = *basic extended
+    sigma_m_algorithm = basic *extended
       .type = choice
       .help = "The algorithm to compute mosaicity"
 

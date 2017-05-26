@@ -398,7 +398,7 @@ class ComputeEsdReflectingRange(object):
         #L += flex.sum(nj * flex.log(zj)) - kj * Z
         #L += flex.sum(nj * flex.log(zj)) - kj * log(Z)
         L += flex.sum(nj * flex.log(zj)) - kj * log(Z) + log(Z)
-      print "Sigma M: %f, log(L): %f" % (sigma_m * 180/pi, L)
+      logger.debug("Sigma M: %f, log(L): %f" % (sigma_m * 180/pi, L))
 
       # Return the logarithm of r
       return -L
