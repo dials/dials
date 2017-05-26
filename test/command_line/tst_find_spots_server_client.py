@@ -70,7 +70,7 @@ def wait_for_server(port, max_wait=3):
 def exercise_client(port):
   import glob
   data_dir = os.path.join(dials_regression, "centroid_test_data")
-  filenames = glob.glob(os.path.join(data_dir, "*.cbf"))
+  filenames = sorted(glob.glob(os.path.join(data_dir, "*.cbf")))
   assert len(filenames) > 0
   client_command = " ".join(
     ["dials.find_spots_client",
