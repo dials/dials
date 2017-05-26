@@ -41,7 +41,9 @@
         <div class="panel-body">
             <div class="container-fluid">
                 {% for div_id, json_data in graphs.iteritems() %}
-                    {% if styles != None %}
+                    {% if "img" in json_data %}
+                        <img src="data:image/png;base64,{{ json_data['img'] }}">
+                    {% elif styles != None %}
                         {{ plotly_graph(div_id, json_data, style=styles.get(div_id)) }}
                     {% else %}
                         {{ plotly_graph(div_id, json_data) }}
