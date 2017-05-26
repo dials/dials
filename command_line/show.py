@@ -51,6 +51,8 @@ def beam_centre_mm(detector, beam):
     else:
       if panel.is_coord_valid_mm((x, y)):
         break
+      else:
+        x, y = (None, None)
   return panel_id, (x, y)
 
 
@@ -66,9 +68,9 @@ def show_beam(detector, beam):
     else:
       beam_centre_mm_str = "Beam centre (mm): (%.2f,%.2f)" %(x, y)
       beam_centre_px_str = "Beam centre (px): (%.2f,%.2f)" %(x_px, y_px)
+    return str(beam) + beam_centre_mm_str + '\n' + beam_centre_px_str + '\n'
   else:
-    beam_centre_mm_str = ""
-  return str(beam) + beam_centre_mm_str + '\n' + beam_centre_px_str + '\n'
+    return str(beam)
 
 def run(args):
 
