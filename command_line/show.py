@@ -152,8 +152,11 @@ def run(args):
       try: print imageset.get_template()
       except Exception: pass
       detector = imageset.get_detector()
-      print str(detector) + 'Max resolution: %f\n' %(
+      print str(detector)
+      print 'Max resolution (at corners): %f' % (
         detector.get_max_resolution(imageset.get_beam().get_s0()))
+      print 'Max resolution (inscribed):  %f' % (
+        detector.get_max_inscribed_resolution(imageset.get_beam().get_s0()))
       if params.show_panel_distance:
         for ipanel, panel in enumerate(detector):
           from scitbx import matrix
@@ -167,6 +170,7 @@ def run(args):
           print 'Panel %d: distance %.2f origin %.2f %.2f' % \
             (ipanel, distance, fast_origin, slow_origin)
         print ''
+      print ''
       print show_beam(detector, imageset.get_beam())
       if imageset.get_scan() is not None:
         print imageset.get_scan()
