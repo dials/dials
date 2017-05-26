@@ -323,10 +323,16 @@ def run_dps(args):
 
   DPS.index(raw_spot_input=data,
             panel_addresses=flex.int([s['panel'] for s in spots_mm]))
-  logger.info("Found %i solutions with max unit cell %.2f Angstroms." %(
-    len(DPS.getSolutions()), DPS.amax))
+  solutions = DPS.getSolutions()
+  from libtbx.utils import plural_s
+  logger.info("Found %i solution%s with max unit cell %.2f Angstroms." %(
+    len(solutions), plural_s(len(solutions))[1], DPS.amax))
+  if len(solutions) < 3:
+    from libtbx.utils import Sorry
+    raise Sorry("Not enough solutions: found %i, need at least 3" %(
+      len(solutions)))
   return dict(solutions=flex.vec3_double(
-    [s.dvec for s in DPS.getSolutions()]), amax=DPS.amax)
+    [s.dvec for s in solutions]), amax=DPS.amax)
 
 
 def discover_better_experimental_model(
