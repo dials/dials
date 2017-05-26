@@ -73,6 +73,11 @@ def generate_phil_scope():
       debug {
 
         reference {
+
+          filename = "reference_profiles.pickle"
+            .type = str
+            .help = "The filename for the reference profiles"
+
           output = False
             .type = bool
             .help = "Save the reference profiles"
@@ -305,6 +310,7 @@ class Parameters(object):
     self.integration = processor.Parameters()
     self.filter = Parameters.Filter()
     self.profile = Parameters.Profile()
+    self.debug_reference_filename = "reference_profiles.pickle"
     self.debug_reference_output = False
 
   @staticmethod
@@ -355,6 +361,7 @@ class Parameters(object):
     result.integration.debug.select = params.debug.select
     result.integration.debug.separate_files = params.debug.separate_files
 
+    result.debug_reference_filename = params.debug.reference.filename
     result.debug_reference_output = params.debug.reference.output
 
     # Get the min zeta filter
@@ -1061,7 +1068,7 @@ class Integrator(object):
               except Exception:
                 p.append(None)
           reference_debug.append(p)
-          with open("reference_profiles.pickle", "wb") as outfile:
+          with open(self.params.debug_reference_filename, "wb") as outfile:
             import cPickle as pickle
             pickle.dump(reference_debug, outfile)
 
