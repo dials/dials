@@ -349,7 +349,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   from dials.util.version import dials_version
   import time
   date_str = time.strftime('%d/%m/%Y at %H:%M:%S', time.gmtime())
-  m.add_history('From %s, run on %s' %(dials_version(), date_str))
+  m.add_history('From %s, run on %s' % (dials_version(), date_str))
 
   if experiment.scan:
     image_range = experiment.scan.get_image_range()
@@ -358,6 +358,9 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
 
   # pointless (at least) doesn't like batches starting from zero
   b_incr = max(image_range[0], 1)
+
+  logger.info('Mosflm U matrix:')
+  logger.info(str(R_to_mosflm * dials_u_to_mosflm(F * U, unit_cell)))
 
   for b in range(image_range[0], image_range[1] + 1):
     o = m.add_batch().set_num(b+b_incr).set_nbsetid(1).set_ncryst(1)
