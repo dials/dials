@@ -611,18 +611,29 @@ if __name__ == '__main__':
   from dials.util.version import dials_version
   from dials.util import log
   from libtbx.utils import Sorry
+  import os
 
   usage = '%s experiments.json reflections.pickle [options]' % (
               libtbx.env.dispatcher_name)
 
   # Create the option parser
-  parser = OptionParser(
-    usage=usage,
-    read_experiments=True,
-    read_reflections=True,
-    read_datablocks=True,
-    phil=phil_scope,
-    epilog=help_message)
+  if 'DIALS_EXPORT_DO_NOT_CHECK_FORMAT' in os.environ:
+    parser = OptionParser(
+      usage=usage,
+      read_experiments=True,
+      read_reflections=True,
+      read_datablocks=True,
+      check_format=False,
+      phil=phil_scope,
+      epilog=help_message)
+  else:
+    parser = OptionParser(
+      usage=usage,
+      read_experiments=True,
+      read_reflections=True,
+      read_datablocks=True,
+      phil=phil_scope,
+      epilog=help_message)
 
   # Get the parameters
   params, options = parser.parse_args(show_diff_phil=False)
