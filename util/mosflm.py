@@ -44,7 +44,6 @@ def dump(experiments, directory):
     R_to_mosflm = align_reference_frame(
       beam.get_s0(), (1.0, 0.0, 0.0),
       goniometer.get_rotation_axis(), (0.0, 0.0, 1.0))
-    #print R_to_mosflm
 
     cryst = experiment.crystal
     cryst = cryst.change_basis(
