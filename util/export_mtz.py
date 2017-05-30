@@ -360,7 +360,11 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   b_incr = max(image_range[0], 1)
 
   logger.info('Mosflm U matrix:')
-  logger.info(str(R_to_mosflm * dials_u_to_mosflm(F * U, unit_cell)))
+  logger.info(str(dials_u_to_mosflm(F * U, unit_cell)))
+
+  s0n = matrix.col(s0).normalize().elems
+
+  logger.info('Beam vector: %.4f %.4f %.4f' % s0n)
 
   for b in range(image_range[0], image_range[1] + 1):
     o = m.add_batch().set_num(b+b_incr).set_nbsetid(1).set_ncryst(1)
@@ -371,7 +375,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
 
     # FIXME hard-coded assumption on indealized beam vector below... this may be
     # broken when we come to process data from a non-imgCIF frame
-    o.set_so(flex.float(s0)).set_source(flex.float((0, 0, -1)))
+    o.set_so(flex.float(s0n)).set_source(flex.float((0, 0, -1)))
 
     # these are probably 0, 1 respectively, also flags for how many are set, sd
     o.set_bbfac(0.0).set_bscale(1.0)
