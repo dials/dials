@@ -731,13 +731,7 @@ class SpotFrame(XrayFrame) :
     if not isinstance(raw_data, tuple):
       raw_data = (raw_data,)
 
-    if (self.settings.show_mean_filter or
-        self.settings.show_variance_filter or
-        self.settings.show_dispersion or
-        self.settings.show_sigma_b_filter or
-        self.settings.show_sigma_s_filter or
-        self.settings.show_global_threshold_filter or
-        self.settings.show_threshold_map):
+    if self.settings.display != 'image':
 
       mask = self.get_mask(image)
       gain_value = self.settings.gain
@@ -757,37 +751,37 @@ class SpotFrame(XrayFrame) :
             raw_data[i_panel].as_double(), mask[i_panel], gain_map[i_panel],
             size, nsigma_b, nsigma_s, global_threshold, min_local))
 
-      if self.settings.show_mean_filter:
+      if self.settings.display == 'mean':
         mean = [kabsch.mean() for kabsch in kabsch_debug_list]
         raw_data = mean
-      elif self.settings.show_variance_filter:
+      elif self.settings.display == 'variance':
         variance = [kabsch.variance() for kabsch in kabsch_debug_list]
         raw_data = variance
-      elif self.settings.show_dispersion:
+      elif self.settings.display == 'dispersion':
         cv = [kabsch.coefficient_of_variation() for kabsch in kabsch_debug_list]
         raw_data = cv
-      elif self.settings.show_sigma_b_filter:
+      elif self.settings.display == 'sigma_b':
         cv = [kabsch.coefficient_of_variation() for kabsch in kabsch_debug_list]
         cv_mask = [kabsch.cv_mask() for kabsch in kabsch_debug_list]
         cv_mask = [mask.as_1d().as_double() for mask in cv_mask]
         for i, mask in enumerate(cv_mask):
           mask.reshape(cv[i].accessor())
         raw_data = cv_mask
-      elif self.settings.show_sigma_s_filter:
+      elif self.settings.display == 'sigma_s':
         cv = [kabsch.coefficient_of_variation() for kabsch in kabsch_debug_list]
         value_mask = [kabsch.value_mask() for kabsch in kabsch_debug_list]
         value_mask = [mask.as_1d().as_double() for mask in value_mask]
         for i, mask in enumerate(value_mask):
           mask.reshape(cv[i].accessor())
         raw_data = value_mask
-      elif self.settings.show_global_threshold_filter:
+      elif self.settings.display == 'global':
         cv = [kabsch.coefficient_of_variation() for kabsch in kabsch_debug_list]
         global_mask = [kabsch.global_mask() for kabsch in kabsch_debug_list]
         global_mask = [mask.as_1d().as_double() for mask in global_mask]
         for i, mask in enumerate(global_mask):
           mask.reshape(cv[i].accessor())
         raw_data = global_mask
-      elif self.settings.show_threshold_map:
+      elif self.settings.display == 'threshold':
         cv = [kabsch.coefficient_of_variation() for kabsch in kabsch_debug_list]
         final_mask = [kabsch.final_mask() for kabsch in kabsch_debug_list]
         final_mask = [mask.as_1d().as_double() for mask in final_mask]
@@ -795,10 +789,8 @@ class SpotFrame(XrayFrame) :
           mask.reshape(cv[i].accessor())
         raw_data = final_mask
 
-      if (self.settings.show_sigma_b_filter or
-          self.settings.show_sigma_s_filter or
-          self.settings.show_global_threshold_filter or
-          self.settings.show_threshold_map):
+      if self.settings.display in (
+        'sigma_b', 'sigma_s', 'global', 'threshold'):
         raw_data = (500 * d for d in raw_data)
 
     raw_data = tuple(raw_data)
@@ -1335,13 +1327,9 @@ class SpotSettingsPanel (SettingsPanel) :
     self.settings.show_miller_indices = self.params.show_miller_indices
     self.settings.show_mask = self.params.show_mask
     self.settings.show_basis_vectors = self.params.show_basis_vectors
-    self.settings.show_mean_filter = self.params.display == "mean"
-    self.settings.show_variance_filter = self.params.display == "variance"
-    self.settings.show_dispersion = self.params.display == "dispersion"
-    self.settings.show_sigma_b_filter = self.params.display == "sigma_b"
-    self.settings.show_sigma_s_filter = self.params.display == "sigma_s"
-    self.settings.show_threshold_map = self.params.display == "threshold"
-    self.settings.show_global_threshold_filter = self.params.display == "global_threshold"
+    self.settings.display = self.params.display
+    if self.settings.display == 'global_threshold':
+      self.settings.display = 'global'
     self.settings.nsigma_b = self.params.nsigma_b
     self.settings.nsigma_s = self.params.nsigma_s
     self.settings.global_threshold = self.params.global_threshold
@@ -1563,7 +1551,10 @@ class SpotSettingsPanel (SettingsPanel) :
       grid2.Add(btn, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
       self.Bind(wx.EVT_TOGGLEBUTTON, self.OnKabschDebug, btn)
 
-    self.kabsch_buttons[0].SetValue(True)
+    for button in self.kabsch_buttons:
+      if button.GetLabelText() == self.settings.display:
+        button.SetValue(True)
+        break
 
     self.collect_values()
 
@@ -1694,29 +1685,7 @@ class SpotSettingsPanel (SettingsPanel) :
     button = event.GetEventObject()
     selected = button.GetLabelText()
 
-    # reset flags
-    self.settings.show_mean_filter = False
-    self.settings.show_variance_filter = False
-    self.settings.show_dispersion = False
-    self.settings.show_global_threshold_filter = False
-    self.settings.show_sigma_b_filter = False
-    self.settings.show_sigma_s_filter = False
-    self.settings.show_threshold_map = False
-
-    if selected == 'mean':
-      self.settings.show_mean_filter = True
-    elif selected == 'variance':
-      self.settings.show_variance_filter = True
-    elif selected == 'dispersion':
-      self.settings.show_dispersion = True
-    elif selected == 'global':
-      self.settings.show_global_threshold_filter = True
-    elif selected == 'sigma_b':
-      self.settings.show_sigma_b_filter = True
-    elif selected == 'sigma_s':
-      self.settings.show_sigma_s_filter = True
-    elif selected == 'threshold':
-      self.settings.show_threshold_map = True
+    self.settings.display = selected
 
     # reset buttons
     for btn in self.kabsch_buttons:
