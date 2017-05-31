@@ -779,7 +779,7 @@ class MaskSettingsPanel(wx.Panel):
         assert p_id >= 0, "Point must be within a panel"
         if panel_id is not None:
           assert panel_id == p_id, "All points must be contained within a single panel"
-        panel_id = p_id
+        panel_id = int(p_id)
         point_.append((p0, p1))
       points = point_
 
