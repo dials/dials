@@ -42,10 +42,10 @@ class Test(object):
     stdin_lines = [
       "refine",
       "integrate",
-      "export",
+      "export ignore_profile_fitting=True",
       "goto 7",
       "integrate profile.fitting=False",
-      "export",
+      "export ignore_profile_fitting=True",
     ]
 
     easy_run.fully_buffered('idials',
