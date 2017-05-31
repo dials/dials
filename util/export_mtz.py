@@ -228,6 +228,11 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   integrated_data = integrated_data.select(selection)
   logger.info("Selected %d integrated reflections" % len(integrated_data))
 
+  # check we have reflections left - see #357
+  if len(integrated_data) == 0:
+    from libtbx.utils import Sorry
+    raise Sorry("All reflections excluded based on flags.integrated")
+
   selection = integrated_data['intensity.sum.variance'] <= 0
   if selection.count(True) > 0:
     integrated_data.del_selected(selection)
