@@ -151,11 +151,11 @@ class _NonBlockingStreamWriter:
     '''Return the number of bytes still to be written.'''
     return self._buffer_len - self._buffer_pos
 
-def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=True, print_stderr=True, callback_stdout=None, callback_stderr=None):
+def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=True, print_stderr=True, callback_stdout=None, callback_stderr=None, environ=None):
   ''' run an external process, command line specified as array,
-      optionally enforces a timeout specified in seconds,
-      obtains STDOUT, STDERR and exit code
-      and returns summary dictionary. '''
+  optionally enforces a timeout specified in seconds, obtains STDOUT, STDERR 
+  and exit code and returns summary dictionary. Optionally can overload 
+  environment variables in the subprocess, in addition to os.environ. '''
 
   time_start = time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime())
   if debug:
@@ -176,7 +176,15 @@ def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=Tru
   if timeout is not None:
     max_time = start_time + timeout
 
-  p = subprocess.Popen(command, shell=False, stdin=stdin_pipe, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+  if environ:
+    import os, copy
+    env = copy.copy(os.environ)
+    env.update(environ)
+  else:
+    env = environ
+
+  p = subprocess.Popen(command, shell=False, stdin=stdin_pipe, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
 
   thread_pipe_pool = []
   notifyee, notifier = Pipe(False)
