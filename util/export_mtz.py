@@ -214,10 +214,6 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
     del integrated_data['intensity.prf.value']
     del integrated_data['intensity.prf.variance']
 
-  # strip out negative variance reflections: these should not really be there
-  # FIXME Doing select on summation results. Should do on profile result if
-  # present? Yes
-
   if 'intensity.prf.variance' in integrated_data:
     selection = integrated_data.get_flags(
       integrated_data.flags.integrated,
@@ -401,16 +397,17 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
     # the U.B. matrix assuming that the axis is equal to S * axis_datum but
     # here we are just giving the effective axis so at scan angle 0 this will
     # not be correct... FIXME 2 not even sure we can express the stack of
-    # matrices S * R * F * U * B in MTZ format?...
+    # matrices S * R * F * U * B in MTZ format?... see [=A=] below
     _U = dials_u_to_mosflm(F * _U, _unit_cell)
 
     # FIXME need to get what was refined and what was constrained from the
-    # crystal model
+    # crystal model - see https://github.com/dials/dials/issues/355
     o.set_cell(flex.float(_unit_cell.parameters()))
     o.set_lbcell(flex.int((-1, -1, -1, -1, -1, -1)))
     o.set_umat(flex.float(_U.transpose().elems))
 
-    # get the mosaic spread though today it may not actually be set
+    # get the mosaic spread though today it may not actually be set - should
+    # this be in the BATCH headers?
     mosaic = experiment.crystal.get_mosaicity()
     o.set_crydat(flex.float([mosaic, 0.0, 0.0, 0.0, 0.0, 0.0,
                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
@@ -424,7 +421,8 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
                             0, 0, 0, 0]))
     o.set_dx(flex.float([panel.get_directed_distance(), 0.0]))
 
-    # goniometer axes and names, and scan axis number, and number of axes, missets
+    # goniometer axes and names, and scan axis number, and num axes, missets
+    # [=A=] should we be using this to unroll the setting matrix etc?
     o.set_e1(flex.float(axis))
     o.set_e2(flex.float((0.0, 0.0, 0.0)))
     o.set_e3(flex.float((0.0, 0.0, 0.0)))
@@ -438,6 +436,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
       phi_start, phi_range = experiment.scan.get_image_oscillation(b)
     else:
       phi_start, phi_range = 0.0, 0.0
+
     o.set_phistt(phi_start)
     o.set_phirange(phi_range)
     o.set_phiend(phi_start + phi_range)
