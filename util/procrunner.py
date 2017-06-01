@@ -153,8 +153,8 @@ class _NonBlockingStreamWriter:
 
 def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=True, print_stderr=True, callback_stdout=None, callback_stderr=None, environ=None):
   ''' run an external process, command line specified as array,
-  optionally enforces a timeout specified in seconds, obtains STDOUT, STDERR 
-  and exit code and returns summary dictionary. Optionally can overload 
+  optionally enforces a timeout specified in seconds, obtains STDOUT, STDERR
+  and exit code and returns summary dictionary. Optionally can overload
   environment variables in the subprocess, in addition to os.environ. '''
 
   time_start = time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime())
