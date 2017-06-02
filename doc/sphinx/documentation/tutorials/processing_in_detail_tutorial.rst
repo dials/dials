@@ -323,7 +323,7 @@ factor are filtered out. This essentially removes reflections that are too
 close to the spindle axis. In general these reflections require significant
 Lorentz corrections and as a result have less trustworthy intensities anyway.
 From the remaining reflection shoeboxes, the average beam divergence and
-reflecting range is calculated, providing the two Guassian width parameters
+reflecting range is calculated, providing the two Gaussian width parameters
 :math:`\sigma_D` and :math:`\sigma_M` used in the 3D profile model.
 
 Following this, independent integration jobs are set up. These jobs
