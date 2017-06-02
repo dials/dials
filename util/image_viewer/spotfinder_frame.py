@@ -1513,7 +1513,7 @@ class SpotSettingsPanel (SettingsPanel) :
     txt3 = wx.StaticText(self, -1, "Kernel size")
     grid1.Add(txt3, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self.kernel_size_ctrl = IntsCtrl(
-      self, value=[3, 3],
+      self, value=self.settings.kernel_size,
       name="kernel_size")
     self.kernel_size_ctrl.SetSize(2)
     self.kernel_size_ctrl.SetMin(1)
