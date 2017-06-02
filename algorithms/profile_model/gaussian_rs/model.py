@@ -314,11 +314,11 @@ class Model(ProfileModelIface):
       import ScanVaryingProfileModelCalculator
 
     # Check the number of spots
-    if not len(reflections) > params.gaussian_rs.min_spots.overall:
+    if not len(reflections) >= params.gaussian_rs.min_spots.overall:
       if scan is not None:
         num_degrees = scan.get_num_images() * scan.get_oscillation()[1]
         spots_per_degree = len(reflections) / num_degrees
-        if not spots_per_degree > params.gaussian_rs.min_spots.per_degree:
+        if not spots_per_degree >= params.gaussian_rs.min_spots.per_degree:
           raise RuntimeError('''
             Too few reflections for profile modelling:
               need %d per degree or  %d in total
@@ -338,7 +338,7 @@ class Model(ProfileModelIface):
       else:
         raise RuntimeError('''
           Too few reflections for profile modelling:
-            expected > %d, got %d
+            expected >= %d, got %d
 
           The default values may be conservative. Using fewer spots may still work.
           A solution may be to try changing parameters:
@@ -349,6 +349,10 @@ class Model(ProfileModelIface):
             len(reflections),
             params.gaussian_rs.min_spots.per_degree,
             params.gaussian_rs.min_spots.overall))
+    if not len(reflections) > 0:
+      raise RuntimeError('''
+        No reflections remaining for profile modelling.
+      ''')
 
     # Check the override parameters
     if [params.gaussian_rs.parameters.sigma_b,

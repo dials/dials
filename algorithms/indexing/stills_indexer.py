@@ -336,6 +336,19 @@ class stills_indexer(indexer_base):
     if not 'refined_experiments' in locals():
       raise Sorry("None of the experiments could refine.")
 
+    # discard experiments with zero reflections after refinement
+    id_set = set(self.refined_reflections['id'])
+    if len(id_set) < len(self.refined_experiments):
+      filtered_refined_reflections = flex.reflection_table()
+      for i in xrange(len(self.refined_experiments)):
+        if i not in id_set:
+          del self.refined_experiments[i]
+      for old, new in zip(sorted(id_set), range(len(id_set))):
+        subset = self.refined_reflections.select(self.refined_reflections['id'] == old)
+        subset['id'] = flex.int(len(subset), new)
+        filtered_refined_reflections.extend(subset)
+      self.refined_reflections = filtered_refined_reflections
+
     if len(self.refined_experiments) > 1:
       from dials.algorithms.indexing.compare_orientation_matrices \
            import show_rotation_matrix_differences
