@@ -114,8 +114,8 @@ class stills_indexer(indexer_base):
   def index(self):
     # most of this is the same as dials.algorithms.indexing.indexer.indexer_base.index(), with some stills
     # specific modifications (don't re-index after choose best orientation matrix, but use the indexing from
-    # choose best orientation matrix, also don't use macrocycles)
-    # of refinement after indexing).
+    # choose best orientation matrix, also don't use macrocycles) of refinement after indexing.
+    # 2017 update: do accept multiple lattices per shot
     if self.params.refinement_protocol.n_macro_cycles > 1:
       raise Sorry("For stills, please set refinement_protocol.n_macro_cycles = 1")
 
@@ -146,12 +146,19 @@ class stills_indexer(indexer_base):
 
       n_lattices_previous_cycle = len(experiments)
 
-      experiments.extend(self.find_lattices())
+      # index multiple lattices per shot
       if len(experiments) == 0:
-        raise Sorry("No suitable lattice could be found.")
+        experiments.extend(self.find_lattices())
+        if len(experiments) == 0:
+          raise Sorry("No suitable lattice could be found.")
+      else:
+        try:
+          new = self.find_lattices()
+          experiments.extend(new)
+        except Sorry:
+          logger.info("Indexing remaining reflections failed")
 
-      self.index_reflections(
-        experiments, self.reflections)
+      self.index_reflections(experiments, self.reflections)
 
       if len(experiments) == n_lattices_previous_cycle:
         # no more lattices found
@@ -186,6 +193,30 @@ class stills_indexer(indexer_base):
                 miller_indices = self.cb_op_primitive_inp.apply(miller_indices)
                 self.reflections['miller_index'].set_selected(
                   self.reflections['id'] == i_expt, miller_indices)
+
+      # discard nearly overlapping lattices on the same shot
+      if len(experiments) > 1:
+        from dials.algorithms.indexing.compare_orientation_matrices \
+             import difference_rotation_matrix_axis_angle
+        cryst_b = experiments.crystals()[-1]
+        have_similar_crystal_models = False
+        for i_a, cryst_a in enumerate(experiments.crystals()[:-1]):
+          R_ab, axis, angle, cb_op_ab = \
+            difference_rotation_matrix_axis_angle(cryst_a, cryst_b)
+          min_angle = self.params.multiple_lattice_search.minimum_angular_separation
+          if abs(angle) < min_angle: # degrees
+            logger.info("Crystal models too similar, rejecting crystal %i:" %(
+              len(experiments)))
+            logger.info("Rotation matrix to transform crystal %i to crystal %i" %(
+              i_a+1, len(experiments)))
+            logger.info(R_ab)
+            logger.info("Rotation of %.3f degrees" %angle + " about axis (%.3f, %.3f, %.3f)" %axis)
+            #show_rotation_matrix_differences([cryst_a, cryst_b])
+            have_similar_crystal_models = True
+            del experiments[-1]
+            break
+        if have_similar_crystal_models:
+          break
 
       self.indexed_reflections = (self.reflections['id'] > -1)
       if self.d_min is None:
