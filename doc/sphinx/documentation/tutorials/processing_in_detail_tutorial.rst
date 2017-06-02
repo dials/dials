@@ -205,7 +205,8 @@ symmetry operators.
 .. literalinclude:: logs/dials.refine_bravais_settings.log
 
 In this example we would continue processing (i.e. proceed to the refinement
-step, perhaps) with :samp:`bravais_setting_9.json`. Sometimes it may be
+step, perhaps) with :samp:`bravais_setting_9.json`. Sometimes (that is, when
+the change of basis operator is not equal to :samp:`a,b,c` it is
 necessary to reindex the :ref:`indexed.pickle <reflection_pickle>` file output
 by :doc:`dials.index<../programs/dials_index>`.
 In this case as the change of basis operator to the chosen setting
