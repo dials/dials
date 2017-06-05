@@ -868,7 +868,7 @@ class RefinerFactory(object):
       if cell_fix_list:
         names = filter_parameter_names(xl_uc_param)
         assert len(names) == num_uc
-        to_fix = string_sel(fix_list,
+        to_fix = string_sel(cell_fix_list,
                             names,
                             "Crystal{0}".format(icrystal + 1))
         xl_uc_param.set_fixed(to_fix)
@@ -876,7 +876,7 @@ class RefinerFactory(object):
       if ori_fix_list:
         names = filter_parameter_names(xl_ori_param)
         assert len(names) == num_ori
-        to_fix = string_sel(fix_list,
+        to_fix = string_sel(ori_fix_list,
                             names,
                             "Crystal{0}".format(icrystal + 1))
         xl_ori_param.set_fixed(to_fix)
