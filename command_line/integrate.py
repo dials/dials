@@ -120,6 +120,7 @@ phil_scope = parse(
   include scope dials.algorithms.profile_model.factory.phil_scope
   include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
   include scope dials.algorithms.integration.stills_significance_filter.phil_scope
+  include scope dials.algorithms.integration.kapton_correction.absorption_phil_scope
 
 ''', process_includes=True)
 
@@ -220,7 +221,8 @@ class Script(object):
 
     # Check pixels don't belong to neighbours
     if reference is not None:
-      self.filter_reference_pixels(reference, experiments)
+      if exp.goniometer is not None and exp.scan is not None:
+        self.filter_reference_pixels(reference, experiments)
     logger.info("")
 
     # Initialise the integrator
@@ -329,6 +331,13 @@ class Script(object):
       rubbish.unset_flags(mask, rubbish.flags.integrated_prf)
       rubbish.set_flags(mask, rubbish.flags.bad_reference)
       reflections.extend(rubbish)
+
+    # Correct integrated intensities for absorption correction, if necessary
+    for abs_params in params.absorption_correction:
+      if abs_params.apply and abs_params.algorithm == "fuller_kapton":
+        from dials.algorithms.integration.kapton_correction import multi_kapton_correction
+        experiments, reflections = multi_kapton_correction(experiments, reflections,
+          abs_params.fuller_kapton, logger=logger)()
 
     if params.significance_filter.enable:
       from dials.algorithms.integration.stills_significance_filter import SignificanceFilter

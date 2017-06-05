@@ -112,6 +112,8 @@ dials_phil_str = '''
         .type = float
         .help = Multiplier for variances after integration. See Leslie 1999.
     }
+
+    include scope dials.algorithms.integration.kapton_correction.absorption_phil_scope
   }
 '''
 
@@ -587,6 +589,13 @@ class Processor(object):
         integrated = integrated.select(integrated['background.sum.variance'] > 0)
       # apply detector gain to background summation variances
       integrated['background.sum.variance'] *= self.params.integration.summation.detector_gain
+
+    # correct integrated intensities for absorption correction, if necessary
+    for abs_params in self.params.integration.absorption_correction:
+      if abs_params.apply and abs_params.algorithm == "fuller_kapton":
+        from dials.algorithms.integration.kapton_correction import multi_kapton_correction
+        experiments, integrated = multi_kapton_correction(experiments, integrated,
+          abs_params.fuller_kapton, logger=logger)()
 
     if self.params.significance_filter.enable:
       from dials.algorithms.integration.stills_significance_filter import SignificanceFilter
