@@ -165,6 +165,7 @@ def run(args):
           brightness=brightness,
           panels=detector,
           raw_data=image,
+          beam=imageset.get_beam(),
           show_untrusted=show_untrusted)
       else:
         flex_image = _get_flex_image(
