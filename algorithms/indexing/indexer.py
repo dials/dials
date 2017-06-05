@@ -238,6 +238,12 @@ indexing {
     .type = bool
     .expert_level = 1
   refinement_protocol {
+    mode = *refine_shells repredict_only
+      .type = choice
+      .expert_level = 1
+      .help = "refine_shells: refine in increasing resolution cutoffs after indexing."
+              "repredict_only: do not refine after indexing, just update spot"
+              "predictions."
     n_macro_cycles = Auto
       .type = int(value_min=1)
     d_min_step = Auto
@@ -855,21 +861,28 @@ class indexer_base(object):
 
         reflections_for_refinement = self.reflections.select(
           self.indexed_reflections)
-        try:
-          refined_experiments, refined_reflections = self.refine(
-            experiments, reflections_for_refinement)
-        except RuntimeError, e:
-          s = str(e)
-          if ("below the configured limit" in s or
-              "Insufficient matches for crystal" in s):
-            if len(experiments) == 1:
-              raise Sorry(e)
-            had_refinement_error = True
-            logger.info("Refinement failed:")
-            logger.info(s)
-            del experiments[-1]
-            break
-          raise
+        if self.params.refinement_protocol.mode == 'repredict_only':
+          refined_experiments, refined_reflections = experiments, reflections_for_refinement
+          from dials.algorithms.refinement.prediction import ExperimentsPredictor
+          ref_predictor = ExperimentsPredictor(experiments,
+                                               spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
+          ref_predictor(refined_reflections)
+        else:
+          try:
+            refined_experiments, refined_reflections = self.refine(
+              experiments, reflections_for_refinement)
+          except RuntimeError, e:
+            s = str(e)
+            if ("below the configured limit" in s or
+                "Insufficient matches for crystal" in s):
+              if len(experiments) == 1:
+                raise Sorry(e)
+              had_refinement_error = True
+              logger.info("Refinement failed:")
+              logger.info(s)
+              del experiments[-1]
+              break
+            raise
 
         # sanity check for unrealistic unit cell volume increase during refinement
         # usually this indicates too many parameters are being refined given the
