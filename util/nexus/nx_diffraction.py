@@ -1,7 +1,7 @@
 
 from __future__ import absolute_import, division
 
-schema_url = 'https://github.com/nexusformat/definitions/blob/master/contributed_definitions/NXdiffraction.nxdl.xml'
+schema_url = 'https://github.com/nexusformat/definitions/blob/master/contributed_definitions/NXreflections.nxdl.xml'
 
 def make_dataset(handle, name, dtype, data, description):
   dset = handle.create_dataset(
@@ -279,7 +279,7 @@ def read(handle, key):
 def dump(entry, reflections, experiments):
   from dials.array_family import flex
 
-  print "Dumping NXdiffraction"
+  print "Dumping NXreflections"
 
   # Add the feature
   if "features" in entry:
@@ -297,16 +297,16 @@ def dump(entry, reflections, experiments):
     features[0] = 7
 
   # Create the entry
-  assert("diffraction" not in entry)
-  diffraction = entry.create_group("diffraction")
-  diffraction.attrs['NX_class'] = 'NXsubentry'
+  assert("reflections" not in entry)
+  refls = entry.create_group("reflections")
+  refls.attrs['NX_class'] = 'NXsubentry'
 
   # Create the definition
-  definition = diffraction.create_dataset('definition', data='NXdiffraction')
+  definition = refls.create_dataset('definition', data='NXreflections')
   definition.attrs['version'] = 1
   definition.attrs['URL'] = schema_url
 
-  diffraction['experiments'] = experiments
+  refls['experiments'] = experiments
 
   if reflections is None:
     return
@@ -314,7 +314,7 @@ def dump(entry, reflections, experiments):
   # For each column in the reflection table dump to file
   for key, data in reflections.cols():
     try:
-      write(diffraction, key, data)
+      write(refls, key, data)
     except KeyError, e:
       print e
 
@@ -325,28 +325,28 @@ def dump(entry, reflections, experiments):
   overlaps[2] = [0, 3]
   overlaps[3] = [0, 2]
   overlaps[4] = [1]
-  make_vlen_uint(diffraction, "overlaps", overlaps, 'Reflection overlap list')
+  make_vlen_uint(refls, "overlaps", overlaps, 'Reflection overlap list')
 
 def load(entry):
   from dials.array_family import flex
 
-  print "Loading NXdiffraction"
+  print "Loading NXreflections"
 
   # Check the feature is present
   assert("features" in entry)
   assert(7 in entry["features"])
 
   # Get the entry
-  diffraction = entry['diffraction']
-  assert(diffraction.attrs['NX_class'] == 'NXsubentry')
+  refls = entry['reflections']
+  assert(refls.attrs['NX_class'] == 'NXsubentry')
 
   # Get the definition
-  definition = diffraction['definition']
-  assert(definition.value == 'NXdiffraction')
+  definition = refls['definition']
+  assert(definition.value == 'NXreflections')
   assert(definition.attrs['version'] == 1)
 
   # The paths to the experiments
-  experiments = list(diffraction['experiments'])
+  experiments = list(refls['experiments'])
 
   # The columns to try
   columns = [
@@ -385,7 +385,7 @@ def load(entry):
   # For each column in the reflection table dump to file
   for key in columns:
     try:
-      col = read(diffraction, key)
+      col = read(refls, key)
       if table is None:
         table = flex.reflection_table()
       table[key] = col
