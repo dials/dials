@@ -86,6 +86,7 @@ tolerance
 geometry_phil_scope = libtbx.phil.parse('''
 geometry
   .help = "Allow overrides of experimental geometry"
+  .expert_level = 2
 {
   include scope dxtbx.model.beam.beam_phil_scope
   include scope dxtbx.model.detector.detector_phil_scope
