@@ -300,7 +300,11 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   # also only work with one panel(for the moment)
 
   if not ignore_panels:
-    assert(len(experiment.detector) == 1)
+    if len(experiment.detector) != 1:
+      from libtbx.utils import Sorry
+      raise Sorry('Only a single panel will be considered. To ignore panels '
+                  'other than the first for a multi-panel detector, set '
+                  'mtz.ignore_panels=true')
 
   from scitbx import matrix
 
