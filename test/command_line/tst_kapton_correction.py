@@ -95,7 +95,6 @@ class Test(object):
       result = easy_run.fully_buffered([
         'dials.integrate', pickle_name, json_name, phil
       ]).raise_if_errors()
-      result.show_stdout()
 
     import cPickle as pickle
     results = []
