@@ -111,6 +111,7 @@ tst_list = (
     "$D/test/command_line/tst_import.py",
     "$D/test/command_line/tst_import_xds.py",
     "$D/test/command_line/tst_integrate.py",
+    "$D/test/command_line/tst_kapton_correction.py",
     "$D/test/command_line/tst_merge_cbf.py",
     "$D/test/command_line/tst_merge_reflection_lists.py",
     "$D/test/command_line/tst_plot_scan_varying_crystal.py",
