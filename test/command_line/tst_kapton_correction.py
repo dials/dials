@@ -13,7 +13,7 @@ class Test(object):
       print 'SKIP: dials_regression not configured'
       exit(0)
 
-    self.path = join(dials_regression, "integration_test_data/stills_PSII")
+    self.path = join(dials_regression, "integration_test_data", "stills_PSII")
 
   def run(self):
     self.test_integrate_with_kapton()
@@ -27,11 +27,26 @@ class Test(object):
     dirname ='tmp_%s' % uuid4().hex
     os.mkdir(dirname)
     os.chdir(dirname)
+    loc = os.getcwd()
 
-    pickle_path = join(self.path, 'idx-20161021225550223_indexed.pickle')
-    json_path = join(self.path, 'idx-20161021225550223_refined_experiments.json')
+    pickle_name = 'idx-20161021225550223_indexed.pickle'
+    json_name = 'idx-20161021225550223_refined_experiments.json'
+    image_name = '20161021225550223.pickle'
+    pickle_path = join(self.path, pickle_name)
+    json_path = join(self.path, json_name)
+    image_path = join(self.path, image_name)
     assert os.path.exists(pickle_path)
     assert os.path.exists(json_path)
+
+    import shutil
+    shutil.copy(pickle_path, loc)
+    shutil.copy(image_path, loc)
+
+    w = open(json_name, 'wb')
+    r = open(json_path, 'rb')
+    w.write(r.read() % loc)
+    r.close()
+    w.close()
 
     templ_phil = """
       output {
@@ -39,7 +54,7 @@ class Test(object):
         reflections = 'idx-20161021225550223_integrated_%s.pickle'
       }
       integration {
-        lookup.mask = '/Users/idyoung/xfel_dev/modules/dials_regression/integration_test_data/stills_PSII/mask.pickle'
+        lookup.mask = '%s'
         integrator = stills
         profile.fitting = False
         background.algorithm = simple
@@ -60,8 +75,10 @@ class Test(object):
         }
       }
 """
-    without_kapton_phil = templ_phil % ("nokapton", "nokapton", "False")
-    with_kapton_phil = templ_phil % ("kapton", "kapton", "True")
+    without_kapton_phil = templ_phil % ("nokapton", "nokapton",
+      os.path.join(self.path, "mask.pickle"), "False")
+    with_kapton_phil = templ_phil % ("kapton", "kapton",
+      os.path.join(self.path, "mask.pickle"), "True")
 
     f = open("integrate_without_kapton.phil", 'wb')
     f.write(without_kapton_phil)
@@ -71,12 +88,12 @@ class Test(object):
     f.write(with_kapton_phil)
     f.close()
 
-    loc = os.getcwd()
+
 
     # Call dials.integrate with and without kapton correction
     for phil in "integrate_without_kapton.phil", "integrate_with_kapton.phil":
       result = easy_run.fully_buffered([
-        'dials.integrate', pickle_path, json_path, phil
+        'dials.integrate', pickle_name, json_name, phil
       ]).raise_if_errors()
       result.show_stdout()
 
