@@ -14,6 +14,7 @@ DIALS: Diffraction Integration for Advanced Light Sources
    installation
    documentation/index
    documentation/tutorials/index
+   howto
    workshops
    publications
    links
