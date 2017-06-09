@@ -2,20 +2,41 @@
 Processing Sweeps with Missing Images
 +++++
 
-Most of DIALS assumes you have a single sweep of data, and in some circumstances deviations from this will cause problems. A clear example of this is having one or more "bad" images in your data set - simply removing them *will not* give the expected outcome i.e. processing proceeding otherwise smoothly.
+DIALS treats sweeps as a contiguous set of rotation images, and in some circumstances deviations from this will cause problems. A clear example of this is having one or more "bad" images in your data set - simply removing them *will not* be enough to allow processing to complete smoothly.
 
 Importing
 =====
 
-Importing the images with ``template=blah_####.cbf`` will not work, as this checks for continuous images, and it will be necessary to use ``allow_multiple_sweeps=true``. After this, finding spots and indexing work as usual.
+Importing the images with ``template=blah_####.cbf`` will not work, as this checks for continuous images, and it will be necessary to use ``allow_multiple_sweeps=true``. After this, finding spots and indexing work as usual, but with multiple imagesets.
 
 Refinement
 =====
 
-Refinement *without* ``scan_varying=true`` will work fine, but with scan varying an error will occur - you therefore need to split the experiment into a number of blocks i.e.
+Refinement *without* ``scan_varying=true`` will work fine, but following that, scan varying refinement will fail with an error::
+
+  Sorry: A single scan-varying crystal model cannot be refined when associated with more than one scan or goniometer
+
+The issue here is that scan-varying refinement requires that each crystal being refined is associated with a single scan. In our case, we have a single crystal model from indexing, but this is associated with multiple scans. To proceed, we can split the experiment list into individual files. This breaks the sharing of models between experiments by making copies of each model for each file.
 
 ``
 dials.split_experiments indexed.pickle experiments.json
 ``
 
-Then (ideally in a new directory) process each block as per the usual tutorial instructions. Finally, sort together all exported MTZ files with POINTLESS.
+From this point, we could process each block as per the usual tutorial instructions (ideally in separate directories). However, this will refine the beam and the detector, which _should_ be shared, separately for each process. A better way to proceed would be to recombine the experiments as follows::
+
+  dials.combine_experiments experiments_*.json reflections_*.pickle \
+    reference_from_experiment.goniometer=0 \
+    reference_from_experiment.detector=0 \
+    reference_from_experiment.beam=0
+
+The ``reference_from_experiment`` options tells ``dials.combine_experiments`` to take the goniometer, detector and beam models only from the first experiment (although any would have done as these are merely copies of each other). The resulting ``combined_experiments.json`` file has a separate (but identical) crystal model for each scan, alongside shared goniometer, detector and beam models. Scan-varying refinement and integration can now proceed as usual::
+
+  dials.refine combined_experiments.json combined_reflections.pickle scan_varying=true
+  dials.integrate refined_experiments.json refined.pickle nproc=4
+
+Currently, ``dials.export`` will not allow MTZ export of the multiple-experiment integration, but we can rely on ``dials.split_experiments`` again::
+
+  for i in {0..5}
+  do
+    dials.export experiments_$i.json reflections_$i.pickle mtz.hklout=integrated_$i.mtz
+  done
