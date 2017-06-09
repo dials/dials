@@ -9,16 +9,16 @@ DIALS: Diffraction Integration for Advanced Light Sources
    :hidden:
    :maxdepth: 1
 
-   home <index>
+   Home <index>
    about
    installation
    documentation/index
    documentation/tutorials/index
-   how-to <howto>
+   How-to <howto>
    workshops
    publications
    links
-   license <license>
+   License <license>
 
 X-ray crystallography for structural biology has benefited greatly
 from a number of advances in recent years including high performance
