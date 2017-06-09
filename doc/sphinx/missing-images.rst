@@ -16,11 +16,9 @@ Refinement *without* ``scan_varying=true`` will work fine, but following that, s
 
   Sorry: A single scan-varying crystal model cannot be refined when associated with more than one scan or goniometer
 
-The issue here is that scan-varying refinement requires that each crystal being refined is associated with a single scan. In our case, we have a single crystal model from indexing, but this is associated with multiple scans. To proceed, we can split the experiment list into individual files. This breaks the sharing of models between experiments by making copies of each model for each file.
+The issue here is that scan-varying refinement requires that each crystal being refined is associated with a single scan. In our case, we have a single crystal model from indexing, but this is associated with multiple scans. To proceed, we can split the experiment list into individual files. This breaks the sharing of models between experiments by making copies of each model for each file::
 
-``
-dials.split_experiments indexed.pickle experiments.json
-``
+  dials.split_experiments indexed.pickle experiments.json
 
 From this point, we could process each block as per the usual tutorial instructions (ideally in separate directories). However, this will refine the beam and the detector, which _should_ be shared, separately for each process. A better way to proceed would be to recombine the experiments as follows::
 
