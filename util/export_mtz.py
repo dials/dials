@@ -355,9 +355,6 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   # pointless (at least) doesn't like batches starting from zero
   b_incr = max(image_range[0], 1)
 
-  logger.info('Mosflm U matrix:')
-  logger.info(str(dials_u_to_mosflm(F * U, unit_cell)))
-
   s0n = matrix.col(s0).normalize().elems
 
   logger.info('Beam vector: %.4f %.4f %.4f' % s0n)
