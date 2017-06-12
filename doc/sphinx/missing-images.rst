@@ -20,7 +20,7 @@ The issue here is that scan-varying refinement requires that each crystal being 
 
   dials.split_experiments indexed.pickle experiments.json
 
-From this point, we could process each block as per the usual tutorial instructions (ideally in separate directories). However, this will refine the beam and the detector, which _should_ be shared, separately for each process. A better way to proceed would be to recombine the experiments as follows::
+From this point, we could process each block as per the usual tutorial instructions (ideally in separate directories). However, this will refine the beam and the detector, which *should* be shared, separately for each process. A better way to proceed would be to recombine the experiments as follows::
 
   dials.combine_experiments experiments_*.json reflections_*.pickle \
     reference_from_experiment.goniometer=0 \
@@ -34,7 +34,11 @@ The ``reference_from_experiment`` options tells ``dials.combine_experiments`` to
 
 Currently, ``dials.export`` will not allow MTZ export of the multiple-experiment integration, but we can rely on ``dials.split_experiments`` again::
 
-  for i in {0..5}
+  dials.split_experiments integrated_experiments.json integrated.pickle
+  i=0
+  for e in $(ls experiments_*.json)
   do
-    dials.export experiments_$i.json reflections_$i.pickle mtz.hklout=integrated_$i.mtz
+    r=reflections_$i.pickle
+    echo "dials.export $e $r mtz.hklout=integrated_$e.mtz"
+    ((i++))
   done

@@ -1,5 +1,5 @@
 +++++
-DIALS How-To's
+DIALS How-To guides
 +++++
 
 
@@ -8,4 +8,4 @@ DIALS How-To's
    :maxdepth: 0
 
   Sweeps missing images <missing-images>
-  
+
