@@ -16,6 +16,7 @@
 #include <dxtbx/model/goniometer.h>
 #include <dxtbx/model/scan.h>
 #include <dxtbx/model/crystal.h>
+#include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
@@ -52,9 +53,25 @@ namespace dials { namespace algorithms {
         A_inv_(crystal.get_A().inverse()) {}
 
     /**
+     * Initialize with models
+     */
+    PixelToMillerIndex(
+          const Beam &beam,
+          const Detector &detector,
+          const Crystal &crystal)
+      : detector_(detector),
+        s0_(beam.get_s0()),
+        m2_(0, 0, 0),
+        S_inv_(0, 0, 0, 0, 0, 0, 0, 0, 0),
+        F_inv_(0, 0, 0, 0, 0, 0, 0, 0, 0),
+        A_inv_(crystal.get_A().inverse()) {}
+
+    /**
      * Compute the miller index
      */
     vec3<double> h(std::size_t panel, double x, double y, double z) const {
+
+      DIALS_ASSERT(!(m2_[0] == 0 && m2_[1] == 0 && m2_[2] == 0));
 
       // Compute the diffracted beam vector
       vec3<double> s1 = detector_[panel].get_pixel_lab_coord(
@@ -77,6 +94,28 @@ namespace dials { namespace algorithms {
       //   F = fixed rotation
       //   A = UB
       return A_inv_ * F_inv_ * R.transpose() * S_inv_ * r;
+    }
+
+    /**
+     * Compute the miller index
+     */
+    vec3<double> h(std::size_t panel, double x, double y) const {
+
+      // Compute the diffracted beam vector
+      vec3<double> s1 = detector_[panel].get_pixel_lab_coord(
+          vec2<double>(x, y)).normalize() * s0_.length();
+
+      // Compute the reciprocal lattice vector
+      vec3<double> r = s1 - s0_;
+
+      // Compue the miller index
+      //  r = S R F A h
+      //  where:
+      //   S = setting rotation
+      //   R = rotation
+      //   F = fixed rotation
+      //   A = UB
+      return A_inv_ * r;
     }
 
   protected:

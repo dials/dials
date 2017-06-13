@@ -16,6 +16,25 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
+  static
+  vec3<double> PixelToMillerIndex_h_rotation(
+      const PixelToMillerIndex &self,
+      std::size_t panel,
+      double x,
+      double y,
+      double z) {
+    return self.h(panel, x, y, z);
+  }
+
+  static
+  vec3<double> PixelToMillerIndex_h_stills(
+      const PixelToMillerIndex &self,
+      std::size_t panel,
+      double x,
+      double y) {
+    return self.h(panel, x, y);
+  }
+
   void export_pixel_to_miller_index()
   {
     class_ <PixelToMillerIndex> ("PixelToMillerIndex", no_init)
@@ -25,7 +44,12 @@ namespace dials { namespace algorithms { namespace boost_python {
           const Goniometer&,
           const Scan&,
           const Crystal&>())
-      .def("h", &PixelToMillerIndex::h)
+      .def(init <
+          const Beam&,
+          const Detector&,
+          const Crystal&>())
+      .def("h", &PixelToMillerIndex_h_rotation)
+      .def("h", &PixelToMillerIndex_h_stills)
       ;
   }
 

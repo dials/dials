@@ -629,6 +629,19 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Get a list of intensities
+   */
+  template <typename FloatType>
+  af::shared<Intensity> bayesian_intensity(
+      const const_ref< Shoebox<FloatType> > &a) {
+    af::shared<Intensity> result(a.size(), Intensity());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = a[i].bayesian_intensity();
+    }
+    return result;
+  }
+
+  /**
    * Get the mean background.
    */
   template <typename FloatType>
@@ -1072,6 +1085,8 @@ namespace dials { namespace af { namespace boost_python {
           &centroid_foreground_minus_background<FloatType>)
         .def("centroid_strong_minus_background",
           &centroid_strong_minus_background<FloatType>)
+        .def("bayesian_intensity",
+          &bayesian_intensity<FloatType>)
         .def("summed_intensity",
           &summed_intensity<FloatType>)
         .def("mean_background",

@@ -18,6 +18,7 @@
 #include <dials/algorithms/image/centroid/centroid_image.h>
 #include <dials/algorithms/image/centroid/centroid_masked_image.h>
 #include <dials/algorithms/integration/sum/summation.h>
+#include <dials/algorithms/integration/bayes/bayesian_integrator.h>
 #include <dials/model/data/mask_code.h>
 #include <dials/config.h>
 #include <dials/error.h>
@@ -33,6 +34,7 @@ namespace dials { namespace model {
   using dials::algorithms::CentroidImage3d;
   using dials::algorithms::CentroidMaskedImage3d;
   using dials::algorithms::Summation;
+  using dials::algorithms::BayesianIntegrator;
   using dials::model::Foreground;
   using dials::model::Valid;
 
@@ -445,6 +447,28 @@ namespace dials { namespace model {
      */
     Centroid centroid_strong_minus_background() const {
       return centroid_masked_minus_background(Valid | Strong);
+    }
+
+    /**
+     * Get the summed intensity of all pixels
+     * @returns The intensity
+     */
+    Intensity bayesian_intensity() const {
+
+      // Do the intengration
+      BayesianIntegrator<FloatType> summation(
+        data.const_ref(),
+        background.const_ref(),
+        mask.const_ref());
+
+      // Return the intensity struct
+      Intensity result;
+      result.observed.value = summation.intensity();
+      result.observed.variance = summation.variance();
+      result.background.value = summation.background();
+      result.background.variance = summation.background_variance();
+      result.observed.success = summation.success();
+      return result;
     }
 
     /**

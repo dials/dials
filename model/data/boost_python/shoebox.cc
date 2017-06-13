@@ -235,6 +235,8 @@ namespace dials { namespace model { namespace boost_python {
         &shoebox_type::centroid_foreground_minus_background)
       .def("centroid_strong_minus_background",
         &shoebox_type::centroid_strong_minus_background)
+      .def("bayesian_intensity",
+        &shoebox_type::bayesian_intensity)
       .def("summed_intensity",
         &shoebox_type::summed_intensity)
       .def("flatten", &shoebox_type::flatten)
