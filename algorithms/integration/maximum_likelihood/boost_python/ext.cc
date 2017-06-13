@@ -1,5 +1,5 @@
 /*
- * fitting.cc
+ * ext.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -11,7 +11,7 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/iterator.hpp>
-#include <dials/algorithms/integration/fit/fitting.h>
+#include <dials/algorithms/integration/maximum_likelihood/fitting.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
 
@@ -20,7 +20,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   template <typename FloatType>
   void profile_fitting_wrapper(const char *name) {
 
-    typedef ProfileFitting<FloatType> ProfileFittingType;
+    typedef MLProfileFitting<FloatType> ProfileFittingType;
 
     class_<ProfileFittingType>(name, no_init)
       .def(init<const af::const_ref<FloatType, af::c_grid<3> >&,
@@ -43,14 +43,14 @@ namespace dials { namespace algorithms { namespace boost_python {
   }
 
   template <typename FloatType>
-  ProfileFitting<FloatType> make_profile_fitting(
+  MLProfileFitting<FloatType> make_profile_fitting(
       const af::const_ref<FloatType, af::c_grid<3> > &p,
       const af::const_ref<bool, af::c_grid<3> > &m,
       const af::const_ref<FloatType, af::c_grid<3> > &c,
       const af::const_ref<FloatType, af::c_grid<3> > &b,
       double eps,
       std::size_t max_iter) {
-    return ProfileFitting<FloatType>(p, m, c, b, eps, max_iter);
+    return MLProfileFitting<FloatType>(p, m, c, b, eps, max_iter);
   }
 
   template <typename FloatType>
@@ -64,7 +64,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       arg("max_iter") = 10));
   }
 
-  BOOST_PYTHON_MODULE(dials_algorithms_integration_fit_ext)
+  BOOST_PYTHON_MODULE(dials_algorithms_integration_maximum_likelihood_ext)
   {
     profile_fitting_wrapper<float>("ProfileFittingFloat");
     profile_fitting_wrapper<double>("ProfileFittingDouble");

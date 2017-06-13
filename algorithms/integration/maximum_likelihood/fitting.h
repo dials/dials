@@ -8,10 +8,11 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_ALGORITHMS_INTEGRATION_FIT_FITTING_H
-#define DIALS_ALGORITHMS_INTEGRATION_FIT_FITTING_H
+#ifndef DIALS_ALGORITHMS_INTEGRATION_MAXIMUM_LIKELIHOOD_FITTING_H
+#define DIALS_ALGORITHMS_INTEGRATION_MAXIMUM_LIKELIHOOD_FITTING_H
 
 #include <algorithm>
+#include <vector>
 #include <scitbx/vec2.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/tiny_algebra.h>
@@ -28,7 +29,7 @@ namespace dials { namespace algorithms {
    * Class to fit the observed with the reference profile
    */
   template <typename FloatType = double>
-  class ProfileFitting {
+  class MLProfileFitting {
   public:
 
     typedef FloatType float_type;
@@ -39,7 +40,7 @@ namespace dials { namespace algorithms {
      * @param c The contents of the pixels
      * @param b The background of the pixels
      */
-    ProfileFitting(const af::const_ref<FloatType, af::c_grid<3> > &p,
+    MLProfileFitting(const af::const_ref<FloatType, af::c_grid<3> > &s,
                    const af::const_ref<bool, af::c_grid<3> > &m,
                    const af::const_ref<FloatType, af::c_grid<3> > &c,
                    const af::const_ref<FloatType, af::c_grid<3> > &b,
@@ -47,30 +48,39 @@ namespace dials { namespace algorithms {
                    std::size_t max_iter = 10)
     {
       // Check the input
-      DIALS_ASSERT(p.size() == m.size());
-      DIALS_ASSERT(p.size() == c.size());
-      DIALS_ASSERT(p.size() == b.size());
+      DIALS_ASSERT(s.size() == m.size());
+      DIALS_ASSERT(s.size() == c.size());
+      DIALS_ASSERT(s.size() == b.size());
       DIALS_ASSERT(eps > 0.0);
       DIALS_ASSERT(max_iter >= 1);
 
+      // Normalize input array
+      std::vector <FloatType> bb(b.size());
+      std::vector <FloatType> ss(s.size());
+      double sum_b = af::sum(b);
+      double sum_s = af::sum(s);
+      DIALS_ASSERT(sum_b > 0 && sum_s > 0);
+      for (std::size_t i = 0; i < s.size(); ++i) {
+        bb[i] = b[i] / sum_b;
+        ss[i] = s[i] / sum_s;
+      }
+
       // Iterate to calculate the intensity. Exit if intensity goes less
       // than zero or if the tolerance or number of iteration is reached.
-      double I0 = sum(c) - sum(b);
-      vec2<double> I(0.0, 0.0);
-      for (niter_ = 0; niter_ < max_iter; ++niter_) {
-        I = estimate_intensity(p, m, c, b, I0);
-        if ((error_ = std::abs(I[0] - I0)) < eps) {
-          break;
-        }
-        I0 = I[0];
-      }
-      DIALS_ASSERT(I[1] >= 0);
+      estimate_intensity(
+          af::const_ref<FloatType, af::c_grid<3> >(&ss[0], s.accessor()),
+          m,
+          c,
+          af::const_ref<FloatType, af::c_grid<3> >(&bb[0], b.accessor()),
+          eps,
+          max_iter);
 
       // Set the intensity and variance
-      intensity_ = I[0];
-      variance_ = I[1];
-      correlation_ = compute_correlation(p, m, c, b);
-      //rmsd_ = compute_rmsd(I[0], p, m, c, b);
+      correlation_ = compute_correlation(
+          af::const_ref<FloatType, af::c_grid<3> >(&ss[0], s.accessor()),
+          m,
+          c,
+          af::const_ref<FloatType, af::c_grid<3> >(&bb[0], b.accessor()));
     }
 
     /**
@@ -78,6 +88,13 @@ namespace dials { namespace algorithms {
      */
     double intensity() const {
       return intensity_;
+    }
+
+    /**
+     * @returns The total background counts
+     */
+    double background() const {
+      return background_;
     }
 
     /**
@@ -108,54 +125,64 @@ namespace dials { namespace algorithms {
       return error_;
     }
 
-    /**
-     * @returns The rmsd in the fit
-     */
-    /* double rmsd() const { */
-    /*   return rmsd_; */
-    /* } */
-
   private:
 
     /**
      * Evaluate the next intensity iteration.
      * @ returns The estimate of the intensity
      */
-    vec2<double>
-    estimate_intensity(const af::const_ref<FloatType, af::c_grid<3> > &p,
+    void estimate_intensity(const af::const_ref<FloatType, af::c_grid<3> > &s,
                        const af::const_ref<bool, af::c_grid<3> > &m,
                        const af::const_ref<FloatType, af::c_grid<3> > &c,
                        const af::const_ref<FloatType, af::c_grid<3> > &b,
-                       double I) const {
-      double sum1 = 0.0;
-      double sum2 = 0.0;
-      double sumv = 0.0;
-      for (std::size_t i = 0; i < p.size(); ++i) {
-        if (m[i]) {
-          double v = std::abs(b[i]) + std::abs(I * p[i]);
-          sumv += v;
-          if (v > 0) {
-            sum1 += (c[i] - b[i]) * p[i] / v;
-            sum2 += p[i] * p[i] / v;
+                       double eps,
+                       std::size_t max_iter) {
+      double sum_c = af::sum(c);
+      double S = sum_c / 2;
+      double B = sum_c / 2;
+      double V = 0;
+      for (niter_ = 0; niter_ < max_iter; ++niter_) {
+        double sum1 = 0.0;
+        double sum2 = 0.0;
+        double sumv = 0.0;
+        for (std::size_t i = 0; i < s.size(); ++i) {
+          if (m[i]) {
+            double v = B*b[i] + S*s[i];
+            if (v > 0) {
+              sum1 += b[i] * c[i] / v;
+              sum2 += s[i] * c[i] / v;
+              sumv += v;
+            }
           }
         }
+        DIALS_ASSERT(sum1 >= 0 && sum2 >= 0);
+        double Bold = B;
+        double Sold = S;
+        B = B * sum1;
+        S = S * sum2;
+        V = sumv;
+        if ((Bold-B)*(Bold-B) + (Sold-S)*(Sold-S) < eps*eps) {
+          break;
+        }
       }
-      return vec2<double>(sum2 != 0 ? sum1 / sum2 : 0.0, sumv);
+      intensity_ = S;
+      background_ = B;
+      variance_ = V;
     }
 
     /**
      * Compute the correlation coefficient between the profile and reference
      */
     double
-    compute_correlation(const af::const_ref<FloatType, af::c_grid<3> > &p,
+    compute_correlation(const af::const_ref<FloatType, af::c_grid<3> > &s,
                         const af::const_ref<bool, af::c_grid<3> > &m,
                         const af::const_ref<FloatType, af::c_grid<3> > &c,
                         const af::const_ref<FloatType, af::c_grid<3> > &b) const {
       double xb = 0.0, yb = 0.0;
       std::size_t count = 0;
-      for (std::size_t i = 0; i < p.size(); ++i) {
+      for (std::size_t i = 0; i < s.size(); ++i) {
         if (m[i]) {
-          xb += intensity_*p[i] + b[i];
+          xb += intensity_*s[i] + background_*b[i];
           yb += c[i];
           count++;
         }
@@ -164,9 +191,9 @@ namespace dials { namespace algorithms {
       xb /= count;
       yb /= count;
       double sdxdy = 0.0, sdx2 = 0.0, sdy2 = 0.0;
-      for (std::size_t i = 0; i < p.size(); ++i) {
+      for (std::size_t i = 0; i < s.size(); ++i) {
         if (m[i]) {
-          double dx = (intensity_*p[i] + b[i]) - xb;
+          double dx = (intensity_*s[i] + background_*b[i]) - xb;
           double dy = c[i] - yb;
           sdxdy += dx*dy;
           sdx2 += dx*dx;
@@ -180,48 +207,14 @@ namespace dials { namespace algorithms {
       return result;
     }
 
-    /**
-     * Compute the rmsd between the profile and reference
-     */
-    /* double */
-    /* compute_rmsd(double I, */
-    /*              const af::const_ref<FloatType, af::c_grid<3> > &p, */
-    /*              const af::const_ref<bool, af::c_grid<3> > &m, */
-    /*              const af::const_ref<FloatType, af::c_grid<3> > &c, */
-    /*              const af::const_ref<FloatType, af::c_grid<3> > &b) const { */
-    /*   double sum = 0.0; */
-    /*   double ymax = 0.0; */
-    /*   double ymin = 0.0; */
-    /*   std::size_t count = 0; */
-    /*   for (std::size_t i = 0; i < p.size(); ++i) { */
-    /*     if (m[i]) { */
-    /*       double y = (c[i] - b[i]); */
-    /*       if (count == 0) { */
-    /*         ymax = y; */
-    /*         ymin = y; */
-    /*       } else { */
-    /*         if (ymax < y) ymax = y; */
-    /*         if (ymin > y) ymin = y; */
-    /*       } */
-    /*       double x = I * p[i] - y; */
-    /*       sum += x * x; */
-    /*       count++; */
-    /*     } */
-    /*   } */
-    /*   DIALS_ASSERT(count > 0); */
-    /*   DIALS_ASSERT(ymax > ymin); */
-    /*   sum /= count; */
-    /*   return std::sqrt(sum) / (ymax - ymin); */
-    /* } */
-
     double intensity_;
     double variance_;
+    double background_;
     double correlation_;
     std::size_t niter_;
     double error_;
-    /* double rmsd_; */
   };
 
 }}
 
-#endif /* DIALS_ALGORITHMS_INTEGRATION_FIT_FITTING_H */
+#endif /* DIALS_ALGORITHMS_INTEGRATION_MAXIMUM_LIKELIHOOD_FITTING_H */
