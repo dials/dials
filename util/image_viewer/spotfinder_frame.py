@@ -450,10 +450,17 @@ class SpotFrame(XrayFrame) :
       self._image_chooser_tmp_key = []
       self._image_chooser_tmp_clientdata = []
     elif isinstance(file_name_or_data, basestring):
-      self.image_chooser.AppendItems([file_name_or_data])
-      key = self.get_key(file_name_or_data)
-      self.image_chooser.SetClientData(
-        self.image_chooser.GetCount() - 1, key)
+      from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
+      from dxtbx.datablock import DataBlockFilenameImporter
+
+      importer = DataBlockFilenameImporter([file_name_or_data])
+      assert len(importer.datablocks) == 1
+      imagesets = importer.datablocks[0].extract_imagesets()
+      imageset = imagesets[0]
+      file_name_or_data = chooser_wrapper(imageset, imageset.indices()[0])
+      self.add_file_name_or_data(file_name_or_data)
+      self.load_image(file_name_or_data)
+      return
 
     show_untrusted = False
     if self.params.show_mask:
@@ -1513,7 +1520,7 @@ class SpotSettingsPanel (SettingsPanel) :
     txt3 = wx.StaticText(self, -1, "Kernel size")
     grid1.Add(txt3, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self.kernel_size_ctrl = IntsCtrl(
-      self, value=[3, 3],
+      self, value=self.settings.kernel_size,
       name="kernel_size")
     self.kernel_size_ctrl.SetSize(2)
     self.kernel_size_ctrl.SetMin(1)
