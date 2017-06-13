@@ -3,28 +3,30 @@ from __future__ import absolute_import, division
 
 schema_url = 'https://github.com/nexusformat/definitions/blob/master/contributed_definitions/NXreflections.nxdl.xml'
 
-def make_dataset(handle, name, dtype, data, description):
+def make_dataset(handle, name, dtype, data, description, units=None):
   dset = handle.create_dataset(
     name,
-    (len(data),),
+    data.focus(),
     dtype=dtype,
     data=data.as_numpy_array().astype(dtype))
   dset.attrs['description'] = description
+  if units is not None:
+    dset.attrs['units'] = units
   return dset
 
-def make_uint(handle, name, data, description):
-  return make_dataset(handle, name, "uint64", data, description)
+def make_uint(handle, name, data, description, units=None):
+  return make_dataset(handle, name, "uint64", data, description, units)
 
-def make_int(handle, name, data, description):
-  return make_dataset(handle, name, "int64", data, description)
+def make_int(handle, name, data, description, units=None):
+  return make_dataset(handle, name, "int64", data, description, units)
 
-def make_bool(handle, name, data, description):
-  return make_dataset(handle, name, "bool", data, description)
+def make_bool(handle, name, data, description, units=None):
+  return make_dataset(handle, name, "bool", data, description, units)
 
-def make_float(handle, name, data, description):
-  return make_dataset(handle, name, "float64", data, description)
+def make_float(handle, name, data, description, units=None):
+  return make_dataset(handle, name, "float64", data, description, units)
 
-def make_vlen_uint(handle, name, data, description):
+def make_vlen_uint(handle, name, data, description, units=None):
   import h5py
   import numpy as np
   dtype = h5py.special_dtype(vlen=np.dtype("uint64"))
@@ -33,6 +35,8 @@ def make_vlen_uint(handle, name, data, description):
     if len(d) > 0:
       dset[i] = d
   dset.attrs['description'] = description
+  if units is not None:
+    dset.attrs['units'] = units
   return dset
 
 def write(handle, key, data):
@@ -81,71 +85,61 @@ def write(handle, key, data):
     dsc1 = 'The predicted bragg peak fast pixel location'
     dsc2 = 'The predicted bragg peak slow pixel location'
     dsc3 = 'The predicted bragg peak frame number'
-    make_float(handle, 'prd_px_x',  col1, dsc1)
-    make_float(handle, 'prd_px_y',  col2, dsc2)
-    make_float(handle, 'prd_frame', col3, dsc3)
+    make_float(handle, 'predicted_px_x',  col1, dsc1)
+    make_float(handle, 'predicted_px_y',  col2, dsc2)
+    make_float(handle, 'predicted_frame', col3, dsc3)
   elif key == 'xyzcal.mm':
     col1, col2, col3 = data.parts()
     dsc1 = 'The predicted bragg peak fast millimeter location'
     dsc2 = 'The predicted bragg peak slow millimeter location'
     dsc3 = 'The predicted bragg peak rotation angle number'
-    make_float(handle, 'prd_mm_x', col1, dsc1)
-    make_float(handle, 'prd_mm_y', col2, dsc2)
-    make_float(handle, 'prd_phi',  col3, dsc3)
+    make_float(handle, 'predicted_x', col1, dsc1, units='mm')
+    make_float(handle, 'predicted_y', col2, dsc2, units='mm')
+    make_float(handle, 'predicted_phi',  col3, dsc3, units='rad')
   elif key == 'bbox':
-    col1, col2, col3, col4, col5, col6 = data.parts()
-    dsc1 = 'The bounding box lower x bound'
-    dsc2 = 'The bounding box upper x bound'
-    dsc3 = 'The bounding box lower y bound'
-    dsc4 = 'The bounding box upper y bound'
-    dsc5 = 'The bounding box lower z bound'
-    dsc6 = 'The bounding box upper z bound'
-    make_int(handle, 'bbx0', col1, dsc1)
-    make_int(handle, 'bbx1', col2, dsc2)
-    make_int(handle, 'bby0', col3, dsc3)
-    make_int(handle, 'bby1', col4, dsc4)
-    make_int(handle, 'bbz0', col5, dsc5)
-    make_int(handle, 'bbz1', col6, dsc6)
+    d = data.as_int()
+    d.reshape(flex.grid((len(data)),6))
+    make_int(handle, 'bounding_box', d, 'The reflection bounding box')
   elif key == 'xyzobs.px.value':
     col1, col2, col3 = data.parts()
     dsc1 = 'The observed centroid fast pixel value'
     dsc2 = 'The observed centroid slow pixel value'
     dsc3 = 'The observed centroid frame value'
-    make_float(handle, 'obs_px_x_val',  col1, dsc1)
-    make_float(handle, 'obs_px_y_val',  col2, dsc2)
-    make_float(handle, 'obs_frame_val', col3, dsc3)
+    make_float(handle, 'observed_px_x',  col1, dsc1)
+    make_float(handle, 'observed_px_y',  col2, dsc2)
+    make_float(handle, 'observed_frame', col3, dsc3)
   elif key == 'xyzobs.px.variance':
     col1, col2, col3 = data.parts()
     dsc1 = 'The observed centroid fast pixel variance'
     dsc2 = 'The observed centroid slow pixel variance'
     dsc3 = 'The observed centroid frame variance'
-    make_float(handle, 'obs_px_x_var',  col1, dsc1)
-    make_float(handle, 'obs_px_y_var',  col2, dsc2)
-    make_float(handle, 'obs_frame_var', col3, dsc3)
+    make_float(handle, 'observed_px_x_var',  col1, dsc1)
+    make_float(handle, 'observed_px_y_var',  col2, dsc2)
+    make_float(handle, 'observed_frame_var', col3, dsc3)
   elif key == 'xyzobs.mm.value':
     col1, col2, col3 = data.parts()
     dsc1 = 'The observed centroid fast pixel value'
     dsc2 = 'The observed centroid slow pixel value'
     dsc3 = 'The observed centroid phi value'
-    make_float(handle, 'obs_mm_x_val', col1, dsc1)
-    make_float(handle, 'obs_mm_y_val', col2, dsc2)
-    make_float(handle, 'obs_phi_val',  col3, dsc3)
+    make_float(handle, 'observed_x', col1, dsc1, units='mm')
+    make_float(handle, 'observed_y', col2, dsc2, units='mm')
+    make_float(handle, 'observed_phi',  col3, dsc3, units='rad')
   elif key == 'xyzobs.mm.variance':
     col1, col2, col3 = data.parts()
     dsc1 = 'The observed centroid fast pixel variance'
     dsc2 = 'The observed centroid slow pixel variance'
     dsc3 = 'The observed centroid phi variance'
-    make_float(handle, 'obs_mm_x_var',  col1, dsc1)
-    make_float(handle, 'obs_mm_y_var',  col2, dsc2)
-    make_float(handle, 'obs_phi_var', col3, dsc3)
+    make_float(handle, 'observed_x_var',  col1, dsc1, units='mm')
+    make_float(handle, 'observed_y_var',  col2, dsc2, units='mm')
+    make_float(handle, 'observed_phi_var', col3, dsc3, units='rad')
   elif key == 'background.mean':
     col = data
     dsc = 'The mean background value'
-    make_float(handle, 'bkg_mean', col, dsc)
+    make_float(handle, 'background_mean', col, dsc)
   elif key == 'intensity.sum.value':
     col = data
     dsc = 'The value of the summed intensity'
-    make_float(handle, 'int_sum_val', col, dsc)
+    make_float(handle, 'int_sum', col, dsc)
   elif key == 'intensity.sum.variance':
     col = data
     dsc = 'The variance of the summed intensity'
@@ -153,7 +147,7 @@ def write(handle, key, data):
   elif key == 'intensity.prf.value':
     col = data
     dsc = 'The value of the profile fitted intensity'
-    make_float(handle, 'int_prf_val', col, dsc)
+    make_float(handle, 'int_prf', col, dsc)
   elif key == 'intensity.prf.variance':
     col = data
     dsc = 'The variance of the profile fitted intensity'
@@ -212,51 +206,46 @@ def read(handle, key):
   elif key == 'partiality':
     return flex.double(handle['partiality'][:])
   elif key == 'xyzcal.px':
-    x = flex.double(handle['prd_px_x'][:])
-    y = flex.double(handle['prd_px_y'][:])
-    z = flex.double(handle['prd_frame'][:])
+    x = flex.double(handle['predicted_px_x'][:])
+    y = flex.double(handle['predicted_px_y'][:])
+    z = flex.double(handle['predicted_frame'][:])
     return flex.vec3_double(x, y, z)
   elif key == 'xyzcal.mm':
-    x = flex.double(handle['prd_mm_x'][:])
-    y = flex.double(handle['prd_mm_y'][:])
-    z = flex.double(handle['prd_phi'][:])
+    x = flex.double(handle['predicted_x'][:])
+    y = flex.double(handle['predicted_y'][:])
+    z = flex.double(handle['predicted_phi'][:])
     return flex.vec3_double(x, y, z)
   elif key == 'bbox':
-    x0 = flex.int(handle['bbx0'][:].astype(np.int32))
-    x1 = flex.int(handle['bbx1'][:].astype(np.int32))
-    y0 = flex.int(handle['bby0'][:].astype(np.int32))
-    y1 = flex.int(handle['bby1'][:].astype(np.int32))
-    z0 = flex.int(handle['bbz0'][:].astype(np.int32))
-    z1 = flex.int(handle['bbz1'][:].astype(np.int32))
-    return flex.int6(x0, x1, y0, y1, z0, z1)
+    b = flex.int(handle['bounding_box'][:].astype(np.int32))
+    return flex.int6(b.as_1d())
   elif key == 'xyzobs.px.value':
-    x = flex.double(handle['obs_px_x_val'][:])
-    y = flex.double(handle['obs_px_y_val'][:])
-    z = flex.double(handle['obs_frame_val'][:])
+    x = flex.double(handle['observed_px_x'][:])
+    y = flex.double(handle['observed_px_y'][:])
+    z = flex.double(handle['observed_frame'][:])
     return flex.vec3_double(x, y, z)
   elif key == 'xyzobs.px.variance':
-    x = flex.double(handle['obs_px_x_var'][:])
-    y = flex.double(handle['obs_px_y_var'][:])
-    z = flex.double(handle['obs_frame_var'][:])
+    x = flex.double(handle['observed_px_x_var'][:])
+    y = flex.double(handle['observed_px_y_var'][:])
+    z = flex.double(handle['observed_frame_var'][:])
     return flex.vec3_double(x, y, z)
   elif key == 'xyzobs.mm.value':
-    x = flex.double(handle['obs_mm_x_val'][:])
-    y = flex.double(handle['obs_mm_y_val'][:])
-    z = flex.double(handle['obs_phi_val'][:])
+    x = flex.double(handle['observed_x'][:])
+    y = flex.double(handle['observed_y'][:])
+    z = flex.double(handle['observed_phi'][:])
     return flex.vec3_double(x, y, z)
   elif key == 'xyzobs.mm.variance':
-    x = flex.double(handle['obs_mm_x_var'][:])
-    y = flex.double(handle['obs_mm_y_var'][:])
-    z = flex.double(handle['obs_phi_var'][:])
+    x = flex.double(handle['observed_x_var'][:])
+    y = flex.double(handle['observed_y_var'][:])
+    z = flex.double(handle['observed_phi_var'][:])
     return flex.vec3_double(x, y, z)
   elif key == 'background.mean':
-    return flex.double(handle['bkg_mean'][:])
+    return flex.double(handle['background_mean'][:])
   elif key == 'intensity.sum.value':
-    return flex.double(handle['int_sum_val'][:])
+    return flex.double(handle['int_sum'][:])
   elif key == 'intensity.sum.variance':
     return flex.double(handle['int_sum_var'][:])
   elif key == 'intensity.prf.value':
-    return flex.double(handle['int_prf_val'][:])
+    return flex.double(handle['int_prf'][:])
   elif key == 'intensity.prf.variance':
     return flex.double(handle['int_prf_var'][:])
   elif key == 'profile.correlation':
