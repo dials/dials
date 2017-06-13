@@ -39,6 +39,6 @@ Currently, ``dials.export`` will not allow MTZ export of the multiple-experiment
   for e in $(ls experiments_*.json)
   do
     r=reflections_$i.pickle
-    echo "dials.export $e $r mtz.hklout=integrated_$e.mtz"
+    echo "dials.export $e $r mtz.hklout=integrated_$i.mtz"
     ((i++))
   done
