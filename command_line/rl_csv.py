@@ -50,12 +50,19 @@ def run(args):
   for db in datablocks:
     imagesets.extend(db.extract_imagesets())
 
-  assert len(imagesets) == len(reflections)
+  spots = []
+
+  for reflection in reflections:
+    unique_ids = set(reflection['id'])
+    for unique_id in sorted(unique_ids):
+      spots.append(reflection.select(reflection['id'] == unique_id))
+
+  assert len(imagesets) == len(spots)
 
   fout = open(params.output.csv, 'w')
   fout.write('# x,y,z,experiment_id,imageset_id\n')
 
-  for k, (imageset, refl) in enumerate(zip(imagesets, reflections)):
+  for k, (imageset, refl) in enumerate(zip(imagesets, spots)):
     if 'imageset_id' not in refl:
       refl['imageset_id'] = refl['id']
 
@@ -71,7 +78,7 @@ def run(args):
     for _rlp in rlp:
       fout.write('%f,%f,%f,%d,%d\n' % (_rlp[0], _rlp[1], _rlp[2], k, k))
 
-    print 'Appended %d reflections to %s' % (len(rlp), params.output.csv)
+    print 'Appended %d spots to %s' % (len(rlp), params.output.csv)
 
   fout.close()
 
