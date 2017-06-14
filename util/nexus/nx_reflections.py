@@ -123,7 +123,7 @@ def write(handle, key, data):
     dsc3 = 'The observed centroid phi value'
     make_float(handle, 'observed_x', col1, dsc1, units='mm')
     make_float(handle, 'observed_y', col2, dsc2, units='mm')
-    make_float(handle, 'observed_phi',  col3, dsc3, units='rad')
+    make_float(handle, 'observed_phi', col3, dsc3, units='rad')
   elif key == 'xyzobs.mm.variance':
     col1, col2, col3 = data.parts()
     dsc1 = 'The observed centroid fast pixel variance'
@@ -185,6 +185,7 @@ def write(handle, key, data):
 
 def read(handle, key):
   from dials.array_family import flex
+  from dxtbx.format.nexus import convert_units
   import numpy as np
   if   key == 'miller_index':
     h = flex.int(handle['h'][:].astype(np.int32))
@@ -211,9 +212,9 @@ def read(handle, key):
     z = flex.double(handle['predicted_frame'][:])
     return flex.vec3_double(x, y, z)
   elif key == 'xyzcal.mm':
-    x = flex.double(handle['predicted_x'][:])
-    y = flex.double(handle['predicted_y'][:])
-    z = flex.double(handle['predicted_phi'][:])
+    x = convert_units(flex.double(handle['predicted_x'][:]), handle['predicted_x'].attrs['units'], 'mm')
+    y = convert_units(flex.double(handle['predicted_y'][:]), handle['predicted_y'].attrs['units'], 'mm')
+    z = convert_units(flex.double(handle['predicted_phi'][:]), handle['predicted_phi'].attrs['units'], 'rad')
     return flex.vec3_double(x, y, z)
   elif key == 'bbox':
     b = flex.int(handle['bounding_box'][:].astype(np.int32))
@@ -229,14 +230,14 @@ def read(handle, key):
     z = flex.double(handle['observed_frame_var'][:])
     return flex.vec3_double(x, y, z)
   elif key == 'xyzobs.mm.value':
-    x = flex.double(handle['observed_x'][:])
-    y = flex.double(handle['observed_y'][:])
-    z = flex.double(handle['observed_phi'][:])
+    x = convert_units(flex.double(handle['observed_x'][:]), handle['observed_x'].attrs['units'], 'mm')
+    y = convert_units(flex.double(handle['observed_y'][:]), handle['observed_y'].attrs['units'], 'mm')
+    z = convert_units(flex.double(handle['observed_phi'][:]), handle['observed_phi'].attrs['units'], 'rad')
     return flex.vec3_double(x, y, z)
   elif key == 'xyzobs.mm.variance':
-    x = flex.double(handle['observed_x_var'][:])
-    y = flex.double(handle['observed_y_var'][:])
-    z = flex.double(handle['observed_phi_var'][:])
+    x = convert_units(flex.double(handle['observed_x_var'][:]), handle['observed_x_var'].attrs['units'], 'mm')
+    y = convert_units(flex.double(handle['observed_y_var'][:]), handle['observed_y_var'].attrs['units'], 'mm')
+    z = convert_units(flex.double(handle['observed_phi_var'][:]), handle['observed_phi_var'].attrs['units'], 'rad')
     return flex.vec3_double(x, y, z)
   elif key == 'background.mean':
     return flex.double(handle['background_mean'][:])
