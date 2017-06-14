@@ -1,7 +1,0 @@
-The following parameters have been modified:
-
-input {
-  reflections = indexed.pickle
-}
-
-Saving reindexed reflections to reindexed_reflections.pickle

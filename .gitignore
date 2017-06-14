@@ -13,4 +13,6 @@ git-notifier.log
 .gitversion
 
 doc/sphinx/build
+doc/sphinx/documentation/tutorials/logs/*.html
+doc/sphinx/documentation/tutorials/logs/*.log
 doc/sphinx/installation.stable_release.json
