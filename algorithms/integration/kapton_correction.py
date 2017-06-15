@@ -274,8 +274,8 @@ class KaptonAbsorption(object):
       # get some intermediate values (see LaTeX documentation)
       min_det_dot = self.min_normal - self.det_normal
       max_det_dot = self.max_normal - self.det_normal
-      ctr1_det_dot = self.center_normal_1 - self.det_normal # crosshairs part 1
-      ctr2_det_dot = self.center_normal_2 - self.det_normal # crosshairs part 2
+      # ctr1_det_dot = self.center_normal_1 - self.det_normal # crosshairs part 1
+      # ctr2_det_dot = self.center_normal_2 - self.det_normal # crosshairs part 2
       min_max_det_add = self.det_zero_mm.dot(self.det_normal)
       # get the distances along the detector edges to the minimum and maximum absorption edges
       def get_intersection(offset, direction, min_or_max_det_dot, dimension):
@@ -295,8 +295,8 @@ class KaptonAbsorption(object):
           return None
       zero = matrix.col((0, 0, 0))
       self.segments = []
-      # for edge in [min_det_dot, max_det_dot]:
-      for edge in [min_det_dot, max_det_dot, ctr1_det_dot, ctr2_det_dot]: # crosshairs
+      for edge in [min_det_dot, max_det_dot]:
+      # for edge in [min_det_dot, max_det_dot, ctr1_det_dot, ctr2_det_dot]: # crosshairs
         # calculate all the possible intersections on the detector edges
         d_top_fast = get_intersection(zero, self.fast, edge, self.size_fast)
         d_bottom_fast = get_intersection(self.size_slow * self.slow, self.fast, edge, self.size_fast)
