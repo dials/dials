@@ -16,6 +16,9 @@ output {
   csv = rl.csv
     .type = path
     .help = 'Output filename for reciprocal mapped reflections'
+  compress = False
+    .type = bool
+    .help = 'Compress file with gzip as written'
 }
 """)
 
@@ -59,7 +62,12 @@ def run(args):
 
   assert len(imagesets) == len(spots)
 
-  fout = open(params.output.csv, 'w')
+  if params.output.compress:
+    import gzip
+    fout = gzip.GzipFile(params.output.csv, 'w')
+  else:
+    fout = open(params.output.csv, 'w')
+
   fout.write('# x,y,z,experiment_id,imageset_id\n')
 
   for k, (imageset, refl) in enumerate(zip(imagesets, spots)):
