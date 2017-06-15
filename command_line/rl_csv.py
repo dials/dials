@@ -19,6 +19,9 @@ output {
   compress = False
     .type = bool
     .help = 'Compress file with gzip as written'
+  dp = 0
+    .type = int
+    .help = 'Decimal places for output, 0 => %f'
 }
 """)
 
@@ -70,6 +73,15 @@ def run(args):
 
   fout.write('# x,y,z,experiment_id,imageset_id\n')
 
+  dp = params.output.dp
+
+  if dp <= 0:
+    fmt = '%f,%f,%f,%d,%d\n'
+  else:
+    fmt = '%%.%df,%%.%df,%%.%df,%%d,%%d\n' % (dp, dp, dp)
+
+  print 'Using format:', fmt.strip()
+
   for k, (imageset, refl) in enumerate(zip(imagesets, spots)):
     if 'imageset_id' not in refl:
       refl['imageset_id'] = refl['id']
@@ -84,7 +96,7 @@ def run(args):
     rlp = reflmm['rlp']
 
     for _rlp in rlp:
-      fout.write('%f,%f,%f,%d,%d\n' % (_rlp[0], _rlp[1], _rlp[2], k, k))
+      fout.write(fmt % (_rlp[0], _rlp[1], _rlp[2], k, k))
 
     print 'Appended %d spots to %s' % (len(rlp), params.output.csv)
 
