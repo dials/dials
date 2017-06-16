@@ -440,6 +440,8 @@ class image_kapton_correction(object):
         return absorption_corrections, absorption_sigmas
       else:
         s1_flex = self.reflections_sele['s1'].each_normalize()
+        x, y, z = s1_flex.parts()
+        s1_flex = flex.vec3_double(-y, x, z)
         absorption_corrections = absorption.abs_correction_flex(s1_flex)
         return absorption_corrections, None
 
