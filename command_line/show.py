@@ -222,6 +222,8 @@ def run(args):
     ('x_resid2','%.3f'),
     ('y_resid','%.3f'),
     ('y_resid2','%.3f'),
+    ('kapton_absorption_correction','%.3f'),
+    ('kapton_absorption_correction_sigmas','%.3f'),
     ])
 
   for rlist in reflections:
