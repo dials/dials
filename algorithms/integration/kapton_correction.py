@@ -250,16 +250,17 @@ class KaptonAbsorption(object):
     except ZeroDivisionError:
       return 0
 
-  def abs_correction_vector(self, s1):
-    surface_norm = flex.vec3_double(len(s1), self.surface_normal)
-    eot_norm = flex.vec3_double(len(s1), self.edge_of_tape_normal)
+  def abs_correction_flex(self, s1_flex):
+    s1_flex_length = len(s1_flex)
+    surface_normal = flex.vec3_double(s1_flex_length, self.surface_normal)
+    edge_of_tape_normal = flex.vec3_double(s1_flex_length, self.edge_of_tape_normal)
 
-    dsurf1 = self.sn1 / (s1.dot(surface_norm))
-    dsurf2 = self.sn2 / (s1.dot(surface_norm))
-    dsurf3 = self.sn3 / (s1.dot(eot_norm))
+    dsurf1 = self.sn1 / (s1_flex.dot(surface_normal))
+    dsurf2 = self.sn2 / (s1_flex.dot(surface_normal))
+    dsurf3 = self.sn3 / (s1_flex.dot(edge_of_tape_normal))
 
     # determine path length through kapton tape
-    kapton_path_mm = flex.double(len(s1), 0)
+    kapton_path_mm = flex.double(s1_flex_length, 0)
     unshadowed_sel = (dsurf3 < dsurf1) | (dsurf1 < 0)
     nearsel = ~unshadowed_sel & (dsurf3 < dsurf2)
     kapton_path_mm.set_selected(nearsel, (dsurf3 - dsurf1).select(nearsel))
@@ -267,9 +268,7 @@ class KaptonAbsorption(object):
     kapton_path_mm.set_selected(farsel, (dsurf2 - dsurf1).select(farsel))
 
     # determine absorption correction
-    absorption_correction = flex.exp(-self.abs_coeff * kapton_path_mm)
-    nonzero_sel = absorption_correction != 0
-    absorption_correction.set_selected(nonzero_sel, 1/absorption_correction.select(nonzero_sel)) # unitless, >=1
+    absorption_correction = 1/flex.exp(-self.abs_coeff * kapton_path_mm) # unitless, >=1
     return absorption_correction
 
   def abs_bounding_lines(self, as_xy_ints=False):
@@ -395,8 +394,7 @@ class image_kapton_correction(object):
                             for i in xrange(3)] + [a] for j in xrange(3)] + \
                             [[self.kapton_params[i] for i in xrange(3)] + [a - sig_a]]
 
-  def __call__(self,
-               plot=False):
+  def __call__(self, plot=False):
     def correction_and_within_spot_sigma(params_version, variance_within_spot=True):
       absorption = KaptonAbsorption(params_version[0],
                                     params_version[1],
@@ -414,10 +412,10 @@ class image_kapton_correction(object):
       absorption_corrections = flex.double()
       absorption_sigmas = flex.double() # std dev of corrections for pixels within a spot, default sigma
 
-      mask_code = MaskCode.Foreground | MaskCode.Valid
-      for iref in xrange(len(self.reflections_sele)):
-        kapton_correction_vector = flex.double()
-        if variance_within_spot:
+      if variance_within_spot:
+        mask_code = MaskCode.Foreground | MaskCode.Valid
+        for iref in xrange(len(self.reflections_sele)):
+          kapton_correction_vector = flex.double()
           # foreground: integration mask
           shoebox = self.reflections_sele[iref]['shoebox']
           foreground = ((shoebox.mask.as_1d() & mask_code) == mask_code).iselection()
@@ -426,20 +424,21 @@ class image_kapton_correction(object):
           slow_coords = (foreground / width).as_int() # within spot
           f_absolute = fast_coords + shoebox.bbox[0] # relative to detector
           s_absolute = slow_coords + shoebox.bbox[2] # relative to detector
-          lab_coords = detector[0].get_lab_coord(detector[0].pixel_to_millimeter( \
+          lab_coords = detector[0].get_lab_coord(detector[0].pixel_to_millimeter(
             flex.vec2_double(f_absolute.as_double(), (2*s0_slow - s_absolute).as_double())))
-          a, b, c = lab_coords.parts()
-          s1 = flex.vec3_double(b, a, c).each_normalize()
-          kapton_correction_vector.extend(absorption.abs_correction_vector(s1))
+          x, y, z = lab_coords.parts()
+          s1 = flex.vec3_double(y, x, z).each_normalize()
+          kapton_correction_vector.extend(absorption.abs_correction_flex(s1))
           average_kapton_correction = flex.mean(kapton_correction_vector)
           absorption_corrections.append(average_kapton_correction)
           spot_px_stddev = flex.mean_and_variance(kapton_correction_vector).unweighted_sample_standard_deviation()
           absorption_sigmas.append(spot_px_stddev)
-        else:
-          s1 = matrix.col(self.reflections_sele[iref]['s1']).normalize()
-          spot_correction = absorption.abs_correction(s1)
-          absorption_corrections.append(spot_correction)
-      return absorption_corrections, absorption_sigmas
+        return absorption_corrections, absorption_sigmas
+      else:
+        s1_flex = self.reflections_sele['s1'].each_normalize()
+        absorption_corrections = absorption.abs_correction_flex(s1_flex)
+        return absorption_corrections, None
+
     # loop through modified Kapton parameters to get alternative corrections and estimate sigmas as
     # maximum variation between these versions of the corrections, on a per-spot basis, or the standard
     # deviation within a single spot, whichever is larger.
@@ -450,7 +449,6 @@ class image_kapton_correction(object):
         self.logger.info("Calculating smart sigmas...")
         modif_corrections, _ = correction_and_within_spot_sigma(p, variance_within_spot=False)
         sigmas = max(abs(corrections - modif_corrections), sigmas)
-        print "Fuller_kapton correction for", len(modif_corrections), "input masks"
     if plot:
       from matplotlib import pyplot as plt
       for (title, data) in [("corrections", corrections), ("sigmas", sigmas)]:
