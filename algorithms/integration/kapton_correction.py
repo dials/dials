@@ -46,6 +46,10 @@ absorption_defs = """
       smart_sigmas = False
         .type = bool
         .help = apply spot-specific sigma corrections using kapton param sigmas
+      within_spot_sigmas = True
+        .type = bool
+        .help = calculate initial per-spot sigmas based on variance across pixels in the spot.
+        .help = turn this off to get a major speed-up
     }
   }"""
 
@@ -443,12 +447,18 @@ class image_kapton_correction(object):
     # maximum variation between these versions of the corrections, on a per-spot basis, or the standard
     # deviation within a single spot, whichever is larger.
     self.logger.info("Calculating kapton corrections to integrated intensities...")
-    corrections, sigmas = correction_and_within_spot_sigma(self.kapton_params, variance_within_spot=True)
+    corrections, sigmas = correction_and_within_spot_sigma(
+      self.kapton_params, variance_within_spot=self.params.within_spot_sigmas)
     if self.smart_sigmas:
       for p in self.kapton_params_mins + self.kapton_params_maxes:
         self.logger.info("Calculating smart sigmas...")
         modif_corrections, _ = correction_and_within_spot_sigma(p, variance_within_spot=False)
-        sigmas = max(abs(corrections - modif_corrections), sigmas)
+        perturbed = flex.abs(corrections - modif_corrections)
+        if sigmas is None:
+          sigmas = perturbed
+        else:
+          replace_sel = perturbed > sigmas
+          sigmas.set_selected(replace_sel, perturbed.select(replace_sel))
     if plot:
       from matplotlib import pyplot as plt
       for (title, data) in [("corrections", corrections), ("sigmas", sigmas)]:
