@@ -208,8 +208,8 @@ class KaptonAbsorption(object):
       self.slow = matrix.col(self.detector[0].get_slow_axis())
       print "fast and slow detector axes:", tuple(self.fast), tuple(self.slow)
     else:
-      self.fast = matrix.col((0, 1, 0))
-      self.slow = matrix.col((1, 0, 0))
+      self.fast = matrix.col((1, 0, 0))
+      self.slow = matrix.col((0, -1, 0))
     if self.beam is not None:
       self.beam_direction = matrix.col(self.beam.get_s0()).normalize()
     else:
@@ -221,7 +221,7 @@ class KaptonAbsorption(object):
     self.abs_coeff = 1/attenuation_length_mm
 
     # determine zones of different absorption behavior
-    self.surface_normal = matrix.col((0,-1,0)).rotate_around_origin(
+    self.surface_normal = matrix.col((-1, 0, 0)).rotate_around_origin(
           axis=self.beam_direction,angle=-self.angle_rad)
 
     # ray tracing
@@ -429,9 +429,8 @@ class image_kapton_correction(object):
           f_absolute = fast_coords + shoebox.bbox[0] # relative to detector
           s_absolute = slow_coords + shoebox.bbox[2] # relative to detector
           lab_coords = detector[0].get_lab_coord(detector[0].pixel_to_millimeter(
-            flex.vec2_double(f_absolute.as_double(), (2*s0_slow - s_absolute).as_double())))
-          x, y, z = lab_coords.parts()
-          s1 = flex.vec3_double(y, x, z).each_normalize()
+            flex.vec2_double(f_absolute.as_double(), s_absolute.as_double())))
+          s1 = lab_coords.each_normalize()
           kapton_correction_vector.extend(absorption.abs_correction_flex(s1))
           average_kapton_correction = flex.mean(kapton_correction_vector)
           absorption_corrections.append(average_kapton_correction)
@@ -440,8 +439,6 @@ class image_kapton_correction(object):
         return absorption_corrections, absorption_sigmas
       else:
         s1_flex = self.reflections_sele['s1'].each_normalize()
-        x, y, z = s1_flex.parts()
-        s1_flex = flex.vec3_double(-y, x, z)
         absorption_corrections = absorption.abs_correction_flex(s1_flex)
         return absorption_corrections, None
 
