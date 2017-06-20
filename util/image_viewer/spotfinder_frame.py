@@ -1,10 +1,15 @@
 from __future__ import absolute_import, division
 import rstbx.viewer.display
 import wx
+from wx.lib.intctrl import IntCtrl
 from rstbx.slip_viewer.frame import XrayFrame
 from rstbx.viewer.frame import SettingsFrame, SettingsPanel
 from scitbx import matrix
 from dials.array_family import flex
+
+from wxtbx.phil_controls.intctrl import IntCtrl as PhilIntCtrl
+from wxtbx.phil_controls import EVT_PHIL_CONTROL
+
 
 myEVT_LOADIMG = wx.NewEventType()
 EVT_LOADIMG = wx.PyEventBinder(myEVT_LOADIMG, 1)
@@ -161,9 +166,7 @@ class SpotFrame(XrayFrame) :
     txt = wx.StaticText(self.toolbar, -1, "Jump to image:")
     self.toolbar.AddControl(txt)
 
-    from wxtbx.phil_controls.intctrl import IntCtrl
-    from wxtbx.phil_controls import EVT_PHIL_CONTROL
-    self.jump_to_image = IntCtrl(self.toolbar, -1, name="image", size=(50,-1))
+    self.jump_to_image = PhilIntCtrl(self.toolbar, -1, name="image", size=(50,-1))
     self.jump_to_image.SetMin(1)
     self.jump_to_image.SetValue(1)
     self.toolbar.AddControl(self.jump_to_image)
@@ -1374,20 +1377,18 @@ class SpotSettingsPanel (SettingsPanel) :
     grid.Add(self.color_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self._sizer.Fit(self)
 
-    from wxtbx.phil_controls.intctrl import IntCtrl
-    from wxtbx.phil_controls import EVT_PHIL_CONTROL
-
     box = wx.BoxSizer(wx.HORIZONTAL)
     s.Add(box)
     grid = wx.FlexGridSizer(cols=1, rows=2)
     box.Add(grid)
     txt2 = wx.StaticText(self, -1, "Brightness:")
     grid.Add(txt2, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
-    self.brightness_txt_ctrl = IntCtrl(
-      self, value=self.settings.brightness, name="brightness")
+    # Add a textual brightness control
+    self.brightness_txt_ctrl = IntCtrl(self, 
+      value=self.settings.brightness, min=1, max=500,
+      name="brightness")
     grid.Add(self.brightness_txt_ctrl, 0, wx.ALL, 5)
-    self.brightness_txt_ctrl.SetMin(1)
-    self.brightness_txt_ctrl.SetMax(500)
+    # Add a slider brightness control
     self.brightness_ctrl = wx.Slider(self, -1, size=(150,-1),
       style=wx.SL_AUTOTICKS|wx.SL_LABELS)
     self.brightness_ctrl.SetMin(1)
@@ -1473,7 +1474,7 @@ class SpotSettingsPanel (SettingsPanel) :
 
     # Minimum spot area control
     box = wx.BoxSizer(wx.HORIZONTAL)
-    #self.minspotarea_ctrl = IntCtrl(self, -1, pos=(300,180), size=(80,-1),
+    #self.minspotarea_ctrl = PhilIntCtrl(self, -1, pos=(300,180), size=(80,-1),
       #value=self.GetParent().GetParent().horizons_phil.distl.minimum_spot_area,
       #name="Minimum spot area (pxls)")
     #self.minspotarea_ctrl.SetOptional(False)
@@ -1508,10 +1509,9 @@ class SpotSettingsPanel (SettingsPanel) :
     self.global_threshold_ctrl.SetMin(0)
     grid1.Add(self.global_threshold_ctrl, 0, wx.ALL, 5)
 
-    from wxtbx.phil_controls.intctrl import IntCtrl
     txt4 = wx.StaticText(self, -1, "Min. local")
     grid1.Add(txt4, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
-    self.min_local_ctrl = IntCtrl(
+    self.min_local_ctrl = PhilIntCtrl(
       self, value=self.settings.min_local, name="min_local")
     self.min_local_ctrl.SetMin(0)
     grid1.Add(self.min_local_ctrl, 0, wx.ALL, 5)
@@ -1533,7 +1533,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.kernel_size_ctrl.SetMin(1)
     grid1.Add(self.kernel_size_ctrl, 0, wx.ALL, 5)
 
-    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.brightness_txt_ctrl)
+    self.Bind(wx.EVT_TEXT, self.OnUpdateBrightness, self.brightness_txt_ctrl)    
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.nsigma_b_ctrl)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.nsigma_s_ctrl)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.global_threshold_ctrl)
@@ -1609,15 +1609,13 @@ class SpotSettingsPanel (SettingsPanel) :
       self.settings.show_resolution_rings = self.resolution_rings_ctrl.GetValue()
       self.settings.show_ice_rings = self.ice_rings_ctrl.GetValue()
       self.settings.zoom_level = self.levels[self.zoom_ctrl.GetSelection()]
-      # get brightness from slider or text box, whichever is different from
-      # the current value, then update the other input field so that both
-      # display the current value
+
+      # Brightness has it's own handler, so just make sure the controls are synced
+      if self.brightness_txt_ctrl.GetValue() != self.settings.brightness:
+        self.brightness_txt_ctrl.ChangeValue(self.settings.brightness)
       if self.brightness_ctrl.GetValue() != self.settings.brightness:
-        self.settings.brightness = self.brightness_ctrl.GetValue()
-        self.brightness_txt_ctrl.SetValue(self.settings.brightness)
-      else:
-        self.settings.brightness = int(self.brightness_txt_ctrl.GetValue())
         self.brightness_ctrl.SetValue(self.settings.brightness)
+
       self.settings.show_beam_center = self.center_ctrl.GetValue()
       self.settings.show_ctr_mass = self.ctr_mass.GetValue()
       self.settings.show_max_pix = self.max_pix.GetValue()
@@ -1646,6 +1644,21 @@ class SpotSettingsPanel (SettingsPanel) :
   def OnUpdateCM (self, event) :
     self.collect_values()
     self.GetParent().GetParent().update_settings(layout=False)
+
+  def OnUpdateBrightness(self, event):
+    """Handle updates from the brightness-related controls"""
+    if event.EventObject is self.brightness_ctrl:
+      # Don't update whilst dragging the slider
+      mouse = wx.GetMouseState()
+      if mouse.LeftDown():
+        return
+    else:
+      # Don't use out-of-bounds text values
+      if not self.brightness_txt_ctrl.IsInBounds():
+        return
+    # Read the new value then update everything
+    self.settings.brightness = event.EventObject.GetValue()
+    self.OnUpdateCM(event)
 
   def OnUpdateShowMask(self, event):
     self.OnUpdateCM(event)
