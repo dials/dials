@@ -1470,7 +1470,8 @@ class indexer_base(object):
       solutions.append(soln)
 
     if len(solutions):
-      logger.debug(str(solutions))
+      logger.info("Candidate solutions:")
+      logger.info(str(solutions))
       best_solution = solutions.best_solution()
       logger.debug("best model_likelihood: %.2f" %best_solution.model_likelihood)
       logger.debug("best n_indexed: %i" %best_solution.n_indexed)
