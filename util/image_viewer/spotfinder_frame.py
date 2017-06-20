@@ -469,6 +469,13 @@ class SpotFrame(XrayFrame) :
       file_name_or_data, get_raw_data=self.get_raw_data,
       show_untrusted=show_untrusted)
 
+    # Now we've loaded the new image, destroy the caches for all the old images.
+    # This is okay as at the moment we don't use the cached data (another bug)
+    for image in map(self.image_chooser.GetClientData, range(self.image_chooser.GetCount())):
+      if image is file_name_or_data:
+        image.set_raw_data(None)
+
+
   def OnShowSettings (self, event) :
     if self.settings_frame is None:
       frame_rect = self.GetRect()
