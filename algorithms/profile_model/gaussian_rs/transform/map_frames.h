@@ -244,7 +244,7 @@ namespace transform {
    * @param zeta The lorentz correction factor
    *
    * @returns An array containing the count fractions. The fraction of counts
-   *          given by grid point v3 to data frame v3 can be found in the array
+   *          given by grid point v3 to data frame j can be found in the array
    *          by fv3j[v3-v30, j-j0]
    *
    * @throws std::runtime_error if the supplied values are bad
