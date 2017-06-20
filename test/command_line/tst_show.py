@@ -32,6 +32,8 @@ Panel:
   fast_axis: {1,0,0}
   slow_axis: {0,-1,0}
   origin: {-212.478,220.002,-190.18}
+  pixel to millimeter strategy: PxMmStrategy
+
 
 Max resolution (at corners): 1.008178
 Max resolution (inscribed):  1.204283
@@ -90,6 +92,8 @@ Panel:
   fast_axis: {1,0,0}
   slow_axis: {0,-1,0}
   origin: {-210.76,205.277,-265.27}
+  pixel to millimeter strategy: PxMmStrategy
+
 
 Max resolution (at corners): 1.161261
 Max resolution (inscribed):  1.509475
@@ -142,6 +146,8 @@ Panel:
   fast_axis: {1,0,0}
   slow_axis: {0,-1,0}
   origin: {-212.478,220.002,-190.18}
+  pixel to millimeter strategy: PxMmStrategy
+
 
 Max resolution (at corners): 1.008375
 Max resolution (inscribed):  1.204621
