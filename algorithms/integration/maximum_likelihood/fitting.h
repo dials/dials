@@ -62,8 +62,13 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(sum_b > 0 && sum_s > 0);
       for (std::size_t i = 0; i < s.size(); ++i) {
         bb[i] = b[i] / sum_b;
-        ss[i] = s[i] / sum_s;
+        if (sum_s > 1) {
+          ss[i] = s[i] / sum_s;
+        } else {
+          ss[i] = s[i];
+        }
       }
+      background_ = sum_b;
 
       // Iterate to calculate the intensity. Exit if intensity goes less
       // than zero or if the tolerance or number of iteration is reached.
@@ -137,9 +142,23 @@ namespace dials { namespace algorithms {
                        const af::const_ref<FloatType, af::c_grid<3> > &b,
                        double eps,
                        std::size_t max_iter) {
-      double sum_c = af::sum(c);
-      double S = sum_c / 2;
-      double B = sum_c / 2;
+      double TOL = 1e-7;
+      double sum_c = 0;
+      double sum_s = 0;
+      double sum_b = 0;
+      for (std::size_t i = 0; i < c.size(); ++i) {
+        if (m[i]) {
+          sum_c += c[i];
+          sum_s += s[i];
+          sum_b += b[i];
+        }
+      }
+      DIALS_ASSERT(sum_s > 0.1);
+      DIALS_ASSERT(sum_b > 0.1);
+      DIALS_ASSERT(sum_s <= (1.0+TOL));
+      DIALS_ASSERT(sum_b <= (1.0+TOL));
+      double S = std::max(sum_c - background_, 1.0) / sum_s; //sum_c / 2;
+      double B = background_ / sum_b;//sum_c / 2;
       double V = 0;
       for (niter_ = 0; niter_ < max_iter; ++niter_) {
         double sum1 = 0.0;
@@ -151,15 +170,17 @@ namespace dials { namespace algorithms {
             if (v > 0) {
               sum1 += b[i] * c[i] / v;
               sum2 += s[i] * c[i] / v;
-              sumv += v;
+              if (s[i] > 0) {
+                sumv += v;
+              }
             }
           }
         }
         DIALS_ASSERT(sum1 >= 0 && sum2 >= 0);
         double Bold = B;
         double Sold = S;
-        B = B * sum1;
-        S = S * sum2;
+        B = B * sum1 / sum_b;
+        S = S * sum2 / sum_s;
         V = sumv;
         if ((Bold-B)*(Bold-B) + (Sold-S)*(Sold-S) < eps*eps) {
           break;
@@ -192,7 +213,7 @@ namespace dials { namespace algorithms {
       yb /= count;
       double sdxdy = 0.0, sdx2 = 0.0, sdy2 = 0.0;
       for (std::size_t i = 0; i < s.size(); ++i) {
-        if (m[i]) {
+        if (m[i] && s[i] > 0) {
           double dx = (intensity_*s[i] + background_*b[i]) - xb;
           double dy = c[i] - yb;
           sdxdy += dx*dy;

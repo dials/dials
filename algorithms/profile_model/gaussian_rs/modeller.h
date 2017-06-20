@@ -12,6 +12,7 @@
 #ifndef DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_MODELLER_H
 #define DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_MODELLER_H
 
+#include <fstream>
 #include <dials/algorithms/profile_model/gaussian_rs/transform/transform.h>
 #include <dials/algorithms/profile_model/modeller/empirical_modeller.h>
 #include <dials/algorithms/profile_model/modeller/single_sampler.h>
@@ -31,7 +32,7 @@ namespace dials { namespace algorithms {
   using dials::algorithms::profile_model::gaussian_rs::CoordinateSystem;
   using dials::algorithms::profile_model::gaussian_rs::transform::TransformSpec;
   using dials::algorithms::profile_model::gaussian_rs::transform::TransformForward;
-  using dials::algorithms::profile_model::gaussian_rs::transform::TransformReverseNoModel;
+  using dials::algorithms::profile_model::gaussian_rs::transform::TransformReverse;
 
   /**
    * A base class to initialize the sampler
@@ -579,7 +580,7 @@ namespace dials { namespace algorithms {
             CoordinateSystem cs(m2, s0, s1[i], xyzmm[i][2]);
 
             // Compute the transform
-            TransformReverseNoModel transform(
+            TransformReverse transform(
                 spec_,
                 cs,
                 sbox[i].bbox,
@@ -612,7 +613,7 @@ namespace dials { namespace algorithms {
                 sbox[i].mask.end(),
                 m.begin(),
                 detail::check_mask_code(Valid | Foreground));
-
+              
 
               // Do the profile fitting
               ProfileFitting<double> fit(
@@ -646,8 +647,8 @@ namespace dials { namespace algorithms {
                   m.const_ref(),
                   c.const_ref(),
                   b.const_ref(),
-                  1e-3, 100);
-              DIALS_ASSERT(fit.niter() < 100);
+                  1e-3, 1000);
+              DIALS_ASSERT(fit.niter() < 1000);
 
               // Set the data in the reflection
               intensity_val[i] = fit.intensity();
@@ -659,7 +660,7 @@ namespace dials { namespace algorithms {
             flags[i] |= af::IntegratedPrf;
             success[i] = true;
 
-          } catch (dials::error) {
+          } catch (dials::error e) { 
             continue;
           }
         }
@@ -739,7 +740,7 @@ namespace dials { namespace algorithms {
       // Return whether to use or not
       return full && integrated && bbox_valid && pixels_valid;
     }
-
+    
     /**
      * Do we want to use the reflection in profile fitting
      * @param flags The reflection flags
@@ -770,6 +771,29 @@ namespace dials { namespace algorithms {
 
       // Return whether to use or not
       return integrate && bbox_valid && pixels_valid;
+    }
+
+    /**
+     * Do we want to use the reflection in profile fitting
+     * @param flags The reflection flags
+     * @param sbox The reflection shoebox
+     * @return True/False
+     */
+    bool check3(std::size_t flags,
+               const Shoebox<> &sbox) const {
+
+      // Check if we want to integrate
+      bool integrate = !(flags & af::DontIntegrate);
+
+      // Check if the bounding box is in the image
+      bool bbox_valid =
+        sbox.bbox[0] >= 0 &&
+        sbox.bbox[2] >= 0 &&
+        sbox.bbox[1] <= spec_.detector()[sbox.panel].get_image_size()[0] &&
+        sbox.bbox[3] <= spec_.detector()[sbox.panel].get_image_size()[1];
+
+      // Return whether to use or not
+      return integrate && bbox_valid;
     }
 
     TransformSpec spec_;
