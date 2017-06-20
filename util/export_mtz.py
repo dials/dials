@@ -231,7 +231,11 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   # check we have reflections left - see #357
   if len(integrated_data) == 0:
     from libtbx.utils import Sorry
-    raise Sorry("All reflections excluded based on flags.integrated")
+    if ignore_profile_fitting:
+      raise Sorry("All reflections excluded based on flags.integrated")
+    else:
+      raise Sorry("No profile fitted reflections, "
+                  "please try ignore_profile_fitting=True")
 
   selection = integrated_data['intensity.sum.variance'] <= 0
   if selection.count(True) > 0:
