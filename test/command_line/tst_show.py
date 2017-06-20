@@ -32,7 +32,7 @@ Panel:
   fast_axis: {1,0,0}
   slow_axis: {0,-1,0}
   origin: {-212.478,220.002,-190.18}
-  pixel to millimeter strategy: PxMmStrategy
+  pixel to millimeter strategy: SimplePxMmStrategy
 
 
 Max resolution (at corners): 1.008178
@@ -92,7 +92,7 @@ Panel:
   fast_axis: {1,0,0}
   slow_axis: {0,-1,0}
   origin: {-210.76,205.277,-265.27}
-  pixel to millimeter strategy: PxMmStrategy
+  pixel to millimeter strategy: SimplePxMmStrategy
 
 
 Max resolution (at corners): 1.161261
@@ -126,7 +126,6 @@ Goniometer:
   assert len(g) > 0, path
   cmd = "dials.show %s" %(' '.join(g))
   result = easy_run.fully_buffered(cmd).raise_if_errors()
-
   assert (
     "Format: <class 'dxtbx.format.FormatCBFMiniPilatus.FormatCBFMiniPilatus'>"
     in result.stdout_lines), result.show_stdout()
@@ -146,7 +145,9 @@ Panel:
   fast_axis: {1,0,0}
   slow_axis: {0,-1,0}
   origin: {-212.478,220.002,-190.18}
-  pixel to millimeter strategy: PxMmStrategy
+  pixel to millimeter strategy: ParallaxCorrectedPxMmStrategy
+    mu: 3.960382
+    t0: 0.320000
 
 
 Max resolution (at corners): 1.008375
