@@ -613,7 +613,7 @@ namespace dials { namespace algorithms {
                 sbox[i].mask.end(),
                 m.begin(),
                 detail::check_mask_code(Valid | Foreground));
-              
+
 
               // Do the profile fitting
               ProfileFitting<double> fit(
@@ -660,7 +660,7 @@ namespace dials { namespace algorithms {
             flags[i] |= af::IntegratedPrf;
             success[i] = true;
 
-          } catch (dials::error e) { 
+          } catch (dials::error e) {
             continue;
           }
         }
@@ -740,7 +740,7 @@ namespace dials { namespace algorithms {
       // Return whether to use or not
       return full && integrated && bbox_valid && pixels_valid;
     }
-    
+
     /**
      * Do we want to use the reflection in profile fitting
      * @param flags The reflection flags

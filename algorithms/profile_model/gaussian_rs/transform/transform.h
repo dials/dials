@@ -744,7 +744,7 @@ namespace transform {
 
     af::versa<double, af::c_grid<3> > profile_;
   };
-  
+
   /**
    * A class to do a reverse transform with no phi model
    */
@@ -826,7 +826,7 @@ namespace transform {
         double phip = cs.to_rotation_angle_fast(c3);
         z[k] = spec.scan().get_array_index_from_angle(phip) - bbox[4];
       }
-      
+
       // Create the frame mapper
       vec2<int> zrange(bbox[4], bbox[5]);
       MapFramesReverse<double> map_frames(
@@ -837,8 +837,8 @@ namespace transform {
           spec.n_sigma(),
           spec.grid_size()[2] / 2);
       af::versa< double, af::c_grid<2> > zfraction_arr = map_frames(
-          zrange, 
-          cs.phi(), 
+          zrange,
+          cs.phi(),
           cs.zeta());
       af::const_ref< double, af::c_grid<2> > zfraction = zfraction_arr.const_ref();
 
