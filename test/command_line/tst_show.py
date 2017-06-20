@@ -146,8 +146,8 @@ Panel:
   slow_axis: {0,-1,0}
   origin: {-212.478,220.002,-190.18}
   pixel to millimeter strategy: ParallaxCorrectedPxMmStrategy
-    mu: 3.960382
-    t0: 0.320000
+    mu: 3.96038
+    t0: 0.32
 
 
 Max resolution (at corners): 1.008375
