@@ -1,23 +1,11 @@
 from __future__ import absolute_import, division
 
 from rstbx.slip_viewer.frame import chooser_wrapper as _chooser_wrapper
-import gc
-from libtbx.introspection import virtual_memory_info
 import resource
-
-try:
-  import guppy
-  hp = guppy.hpy()
-except ImportError:
-  hp = None
 
 class chooser_wrapper(_chooser_wrapper):
   def show_header(self):
-    gc.collect()  # don't care about stuff that would be garbage collected properly
-    virtual_memory_info().show()
     print 'Memory usage: %.1f MB' % (int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) / 1024)
-    if hp:
-      print hp.heap().bysize
     pass
 
 class spot_wrapper(object):
@@ -44,11 +32,8 @@ class spot_wrapper(object):
     for imageset in imagesets:
       for idx in xrange(len(imageset.indices())):
         self.frame.add_file_name_or_data(chooser_wrapper(imageset, idx))
-
-    if hp:
-      hp.setrelheap()
-
     self.frame.load_image(chooser_wrapper(imagesets[0], 0))
+    print 'Memory usage: %.1f MB' % (int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) / 1024)
     app.MainLoop()
 
   def load_image(self, filename):
