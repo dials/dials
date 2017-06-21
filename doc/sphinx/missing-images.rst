@@ -32,6 +32,9 @@ The ``reference_from_experiment`` options tells ``dials.combine_experiments`` to
   dials.refine combined_experiments.json combined_reflections.pickle scan_varying=true
   dials.integrate refined_experiments.json refined.pickle nproc=4
 
+Export
+======
+
 Currently, ``dials.export`` will not allow MTZ export of the multiple-experiment integration, but we can rely on ``dials.split_experiments`` again::
 
   dials.split_experiments integrated_experiments.json integrated.pickle
