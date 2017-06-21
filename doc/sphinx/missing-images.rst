@@ -1,16 +1,16 @@
-+++++
++++++++++++++++++++++++++++++++++++++
 Processing Sweeps with Missing Images
-+++++
++++++++++++++++++++++++++++++++++++++
 
 DIALS treats sweeps as a contiguous set of rotation images, and in some circumstances deviations from this will cause problems. A clear example of this is having one or more "bad" images in your data set - simply removing them *will not* be enough to allow processing to complete smoothly.
 
 Importing
-=====
+=========
 
 Importing the images with ``template=blah_####.cbf`` will not work, as this checks for continuous images, and it will be necessary to use ``allow_multiple_sweeps=true``. After this, finding spots and indexing work as usual, but with multiple imagesets.
 
 Refinement
-=====
+==========
 
 Refinement *without* ``scan_varying=true`` will work fine, but following that, scan varying refinement will fail with an error::
 

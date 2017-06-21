@@ -4,7 +4,7 @@ needs_sphinx = '1.1'
 
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.pngmath',
+    'sphinx.ext.imgmath',
     'numpydoc',
     'sphinx.ext.intersphinx',
     'sphinx.ext.coverage',
