@@ -191,6 +191,12 @@ class Script(object):
       logger.info('The following parameters have been modified:\n')
       logger.info(diff_phil)
 
+    for abs_params in params.absorption_correction:
+      if abs_params.apply:
+        if not (params.integration.debug.output and not params.integration.debug.separate_files):
+          raise Sorry('Shoeboxes must be saved to integration intermediates to apply an absorption correction. '\
+            +'Set integration.debug.output=True and integration.debug.separate_files=False to save shoeboxes.')
+
     # Print if we're using a mask
     for i, exp in enumerate(experiments):
       mask = exp.imageset.external_lookup.mask

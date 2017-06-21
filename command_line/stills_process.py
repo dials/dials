@@ -223,6 +223,12 @@ class Script(object):
       logger.info('The following parameters have been modified:\n')
       logger.info(diff_phil)
 
+    for abs_params in self.params.integration.absorption_correction:
+      if abs_params.apply:
+        if not (self.params.integration.debug.output and not self.params.integration.debug.separate_files):
+          raise Sorry('Shoeboxes must be saved to integration intermediates to apply an absorption correction. '\
+            +'Set integration.debug.output=True and integration.debug.separate_files=False to save shoeboxes.')
+
     self.load_reference_geometry()
     from dials.command_line.dials_import import ManualGeometryUpdater
     update_geometry = ManualGeometryUpdater(params)
