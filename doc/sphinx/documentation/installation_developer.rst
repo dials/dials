@@ -115,14 +115,14 @@ To get this started, create a directory to contain the cctbx build::
   cd cctbx
 
 Download http://cci.lbl.gov/cctbx_build/results/current/cctbx_bundle_for_installer.tar.gz
-and unpack into the directory "cctbx\modules".
+and unpack into the directory ``cctbx\modules``.
 
-Now checkout the cctbx sources into the "cctbx\modules\cctbx_project" directory::
+Now checkout the cctbx sources into the ``cctbx\modules\cctbx_project`` directory::
 
   cd modules
   git clone https://github.com/cctbx/cctbx_project.git cctbx_project
 
-In the "modules" directory of your cctbx installation, checkout the dials source
+In the ``modules`` directory of your cctbx installation, checkout the dials source
 in the following way::
 
   git clone https://github.com/dials/dials.git dials
@@ -130,7 +130,7 @@ in the following way::
 This may take some time, but will fetch all the dials source code and deposit in
 in a folder called dials within the cctbx source directory.
 
-Now, create a build directory in "cctbx\build". and configure the cctbx
+Now, create a build directory in ``cctbx\build``. and configure the cctbx
 installation and build the c++ libraries as follows::
 
   cd ..
