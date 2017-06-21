@@ -1,24 +1,28 @@
-
 from __future__ import absolute_import, division
 
+import os
+from dials.util.phil import parse
+
+from mock import Mock, patch
+
+# Modules the phil parser uses, that we want to mock
+import dials.array_family.flex
+import dxtbx.model.experiment_list
+import dxtbx.datablock
+
 class Test(object):
-
   def __init__(self):
-    from os.path import join
-    import libtbx.load_env
-    try:
-      dials_regression = libtbx.env.dist_path('dials_regression')
-    except KeyError, e:
-      print 'FAIL: dials_regression not configured'
-      exit(0)
+    # Only use these filenames for verification
+    self.path = "centroid_test_data"
+    self.datablock_path = os.path.join(self.path, "datablock.json")
+    self.experiments_path = os.path.join(self.path, "experiments.json")
+    self.reflections_path = os.path.join(self.path, "integrated.pickle")
 
-    self.path = join(dials_regression, "centroid_test_data")
-    self.datablock_path = join(self.path, "datablock.json")
-    self.experiments_path = join(self.path, "experiments.json")
-    self.reflections_path = join(self.path, "integrated.pickle")
-
-  def run(self):
-    from dials.phil import parse
+  @patch("os.path.exists", Mock(return_value=True))
+  @patch("dials.array_family.flex")
+  @patch("dxtbx.model.experiment_list.ExperimentListFactory")
+  @patch("dxtbx.datablock.DataBlockFactory")
+  def run(self, DataBlockFactory, ExperimentListFactory, flex, *args):
 
     phil_scope = parse('''
       input {
@@ -34,16 +38,19 @@ class Test(object):
            self.experiments_path))
 
     params = phil_scope.extract()
-    from dials.array_family import flex
-    from dxtbx.datablock import DataBlock
-    from dxtbx.model.experiment_list import ExperimentList
+    # Check the right filenames were parsed
     assert(params.input.reflections.filename == self.reflections_path)
     assert(params.input.datablock.filename == self.datablock_path)
     assert(params.input.experiments.filename == self.experiments_path)
-    assert(isinstance(params.input.reflections.data, flex.reflection_table))
-    assert(len(params.input.datablock.data) == 1)
-    assert(isinstance(params.input.datablock.data[0], DataBlock))
-    assert(isinstance(params.input.experiments.data, ExperimentList))
+    # Check that we got the expected objects back
+    assert isinstance(params.input.reflections.data, Mock)
+    assert isinstance(params.input.datablock.data, Mock)
+    assert isinstance(params.input.experiments.data, Mock)
+    # Check we had the correct calls made
+    flex.reflection_table.from_pickle.assert_called_once_with(self.reflections_path)
+    assert DataBlockFactory.from_json_file.call_args[0] == (self.datablock_path,)
+    assert ExperimentListFactory.from_json_file.call_args[0] == (self.experiments_path,)
+
     print 'OK'
 
 if __name__ == '__main__':

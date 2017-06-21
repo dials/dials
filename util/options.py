@@ -240,7 +240,7 @@ class Importer(object):
 
     '''
     from dxtbx.datablock import DataBlockFactory
-    from dials.phil import FilenameDataWrapper, DataBlockConverters
+    from dials.util.phil import FilenameDataWrapper, DataBlockConverters
     from glob import glob
 
     # If filenames contain wildcards, expand
@@ -279,7 +279,7 @@ class Importer(object):
     :returns: Unhandled arguments
 
     '''
-    from dials.phil import DataBlockConverters
+    from dials.util.phil import DataBlockConverters
     converter = DataBlockConverters(check_format)
     unhandled = []
     for argument in args:
@@ -299,7 +299,7 @@ class Importer(object):
     :returns: Unhandled arguments
 
     '''
-    from dials.phil import ExperimentListConverters
+    from dials.util.phil import ExperimentListConverters
     converter = ExperimentListConverters(check_format)
     unhandled = []
     for argument in args:
@@ -317,7 +317,7 @@ class Importer(object):
     :returns: Unhandled arguments
 
     '''
-    from dials.phil import ReflectionTableConverters
+    from dials.util.phil import ReflectionTableConverters
     converter = ReflectionTableConverters()
     unhandled = []
     for argument in args:
@@ -349,7 +349,7 @@ class PhilCommandParser(object):
     :param check_format: Check the format when reading images
 
     '''
-    from dials.phil import parse
+    from dials.util.phil import parse
 
     # Set the system phil scope
     if phil is None:
@@ -418,7 +418,7 @@ class PhilCommandParser(object):
     from dxtbx.datablock import BeamComparison
     from dxtbx.datablock import DetectorComparison
     from dxtbx.datablock import GoniometerComparison
-    from dials.phil import parse
+    from dials.util.phil import parse
 
     # Parse the command line phil parameters
     user_phils = []
@@ -534,7 +534,7 @@ class PhilCommandParser(object):
     :return: The input phil scope
 
     '''
-    from dials.phil import parse
+    from dials.util.phil import parse
 
     # Create the input scope
     require_input_scope = (
@@ -714,7 +714,7 @@ class OptionParser(OptionParserBase):
     :param sort_options: Show argument sorting options
 
     '''
-    from dials.phil import parse
+    from dials.util.phil import parse
 
     # Create the phil parser
     self._phil_parser = PhilCommandParser(
