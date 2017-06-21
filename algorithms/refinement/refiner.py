@@ -126,6 +126,14 @@ refinement
       .type = choice
       .expert_level = 1
 
+    debug_centroid_analysis = False
+      .help = "Set True to write out a file containing the reflections used"
+              "for centroid analysis for automatic setting of the  scan-varying"
+              "interval width. This can then be analysed with"
+              "dev.dials.plot_centroid_analysis"
+      .type = bool
+      .expert_level = 2
+
     beam
       .help = "beam parameters"
     {
@@ -407,6 +415,7 @@ refinement
     #
     # instead just paste the string in directly here.
     %(outlier_phil)s
+
   }
 }
 '''%format_data, process_includes=True)
@@ -643,7 +652,7 @@ class RefinerFactory(object):
       if any(tst):
         if verbosity > 0: logger.info('Doing centroid analysis to '
           'automatically determine scan-varying interval widths')
-        ca = refman.get_centroid_analyser()
+        ca = refman.get_centroid_analyser(debug=options.debug_centroid_analysis)
         analysis = ca()
 
     # Use the results of centroid analysis to suggest suitable interval widths

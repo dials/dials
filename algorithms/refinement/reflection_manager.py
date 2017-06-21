@@ -219,10 +219,10 @@ class ReflectionManager(object):
 
     return
 
-  def get_centroid_analyser(self):
+  def get_centroid_analyser(self, debug=False):
     """Create a CentroidAnalysis object for the current reflections"""
 
-    return CentroidAnalyser(self._reflections)
+    return CentroidAnalyser(self._reflections, debug=debug)
 
   def finalise(self, analysis=None):
     """Complete initialisation by performing outlier rejection and any

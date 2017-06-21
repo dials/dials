@@ -19,7 +19,7 @@ RAD2DEG = 180./pi
 
 class CentroidAnalyser(object):
 
-  def __init__(self, reflections, av_callback=flex.mean):
+  def __init__(self, reflections, av_callback=flex.mean, debug=False):
 
     # flags to indicate at what level the analysis has been performed
     self._average_residuals = False
@@ -107,6 +107,10 @@ class CentroidAnalyser(object):
 
     # keep reflections for analysis
     self._reflections = reflections
+
+    # for debugging, write out reflections used
+    if debug:
+      self._reflections.as_pickle('centroid_analysis_reflections.pickle')
 
   def __call__(self, calc_average_residuals=True,
                      calc_periodograms=True, spans=(4,4)):
@@ -199,8 +203,8 @@ class CentroidAnalyser(object):
     peaks = pgram.spec > cutoff
 
     # find where this peak falls off below the cutoff and return the cycle
-    # period at that frequency (this is a heuristic that often seems to give
-    # sensible results)
+    # period at half that frequency (this is a heuristic that often seems to
+    # give sensible results)
     pk_start = flex.first_index(peaks, True)
     if pk_start is None: return None
     peaks = peaks[pk_start:]
@@ -216,7 +220,7 @@ class CentroidAnalyser(object):
         freq = f1 + df
       except IndexError:
         freq = f1
-      period = 1./freq
+      period = 2.0 * 1./freq
     else:
       period = None
     return period
