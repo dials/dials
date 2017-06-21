@@ -38,7 +38,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.imgmath',
     'sphinx.ext.viewcode',
-    'numpydoc',
+    'sphinx.ext.napoleon',
     'libtbx.sphinx.phil',
     'libtbx.sphinx.python_string',
     'libtbx.sphinx.pubmed',
