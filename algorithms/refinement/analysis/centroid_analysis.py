@@ -174,6 +174,11 @@ class CentroidAnalyser(object):
       if self._spectral_analysis: return self._results
 
       for exp_data in self._results:
+        exp_data['x_periodogram'] = None
+        exp_data['y_periodogram'] = None
+        exp_data['phi_periodogram'] = None
+        if exp_data['nblocks'] < 5: continue
+
         px = Periodogram(1000. * exp_data['av_x_resid_per_block'], spans=spans)
         exp_data['x_periodogram'] = px
         py = Periodogram(1000. * exp_data['av_y_resid_per_block'], spans=spans)
@@ -193,6 +198,8 @@ class CentroidAnalyser(object):
   def _analyse_periodogram(self, pgram):
     """Use the periodogram pgram to suggest a suitable interval width for
     scan-varying refinement to account for the major variation in residuals"""
+
+    if pgram is None: return None
 
     # determine a baseline from the high frequency noise
     bl = flex.median(pgram.spec.select(pgram.freq > 0.25))

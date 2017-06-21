@@ -76,6 +76,7 @@ def save_plots(params, raw, smoothed, suffix=''):
   plt.subplot(212)
   for dat in [raw, smoothed]: # overlay raw and smoothed periodogram plots
     px = dat['x_periodogram']
+    if px is None: continue
     sample_freq = 1./dat['block_size']
     freq = px.freq * sample_freq
     line, = plt.semilogy(freq, px.spec)
@@ -106,6 +107,7 @@ def save_plots(params, raw, smoothed, suffix=''):
   plt.subplot(212)
   for dat in [raw, smoothed]: # overlay raw and smoothed periodogram plots
     py = dat['y_periodogram']
+    if py is None: continue
     sample_freq = 1./dat['block_size']
     freq = py.freq * sample_freq
     line, = plt.semilogy(freq, py.spec)
@@ -136,6 +138,7 @@ def save_plots(params, raw, smoothed, suffix=''):
   plt.subplot(212)
   for dat in [raw, smoothed]: # overlay raw and smoothed periodogram plots
     pz = dat['phi_periodogram']
+    if pz is None: continue
     sample_freq = 1./dat['block_size']
     freq = pz.freq * sample_freq
     line, = plt.semilogy(freq, pz.spec)
@@ -192,7 +195,7 @@ def run(args):
     save_plots(params, results_r[0], results_s[0])
   else:
     for i, (r_r, r_s) in enumerate(zip(results_r, results_s)):
-      suffix = 'exp_{0}'.format(i)
+      suffix = '_exp_{0}'.format(i)
       save_plots(params, r_r, r_s, suffix=suffix)
 
   # TODO: print tables of data from the analysis
