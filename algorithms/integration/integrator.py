@@ -18,7 +18,7 @@ from dials.algorithms.integration.processor import ProcessorStills
 from dials.algorithms.integration.processor import ProcessorBuilder
 from dials.algorithms.integration.processor import job
 from dials.algorithms.integration.image_integrator import ImageIntegrator
-from dials import phil
+from dials.util import phil
 
 import logging
 logger = logging.getLogger(__name__)

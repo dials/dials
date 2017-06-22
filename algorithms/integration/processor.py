@@ -13,7 +13,7 @@ import boost.python
 import logging
 logger = logging.getLogger(__name__)
 from dials_algorithms_integration_integrator_ext import *
-from dials import phil
+from dials.util import phil
 import libtbx
 
 class ExecutorAux(Executor, boost.python.injector):
