@@ -179,12 +179,12 @@ class CentroidAnalyser(object):
         exp_data['phi_periodogram'] = None
         if exp_data['nblocks'] < 5: continue
 
-        px = Periodogram(1000. * exp_data['av_x_resid_per_block'], spans=spans)
-        exp_data['x_periodogram'] = px
-        py = Periodogram(1000. * exp_data['av_y_resid_per_block'], spans=spans)
-        exp_data['y_periodogram'] = py
-        pz = Periodogram(1000. * exp_data['av_phi_resid_per_block'], spans=spans)
-        exp_data['phi_periodogram'] = pz
+        for pname, data in zip(
+          ['x_periodogram', 'y_periodogram', 'phi_periodogram'],
+          [exp_data['av_x_resid_per_block'], exp_data['av_y_resid_per_block'],
+           exp_data['av_phi_resid_per_block']]):
+          if (flex.max(data) - flex.min(data)) > 1.e-8:
+            exp_data[pname] = Periodogram(1000. * data, spans=spans)
       self._spectral_analysis = True
 
       # extract further information from the power spectrum
