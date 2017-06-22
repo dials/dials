@@ -24,7 +24,7 @@ class Test(object):
   def run(self):
     from libtbx import easy_run
 
-    # Call dials.integrate
+    # Call dials.plot_scan_varying_crystal
     easy_run.fully_buffered([
       'dials.plot_scan_varying_crystal',
       self.path
