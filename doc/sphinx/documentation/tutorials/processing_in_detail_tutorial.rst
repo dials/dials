@@ -269,22 +269,8 @@ fitting noise in the data. Figuring out the optimum number of points to use
 is challenging. Here we are happy with the default interval width of 36 degrees
 (this is a parameter at ``expert_level=1``).
 
-To view the smoothly varying crystal cell parameters use the following command::
-
-  dials.plot_scan_varying_crystal refined_experiments.json
-
-This program creates a directory :file:`scan-varying_crystal` containing
-plots :file:`orientation.png` and :file:`unit_cell.png`. The latter of these
-is useful to check that changes to the cell during processing appear reasonable.
-
-.. image:: /figures/unit_cell.png
-
-We see an overall increase in all three cell parameters, however the greatest
-change, in lengths *a* and *b*, is only about 0.02 Angstroms. If
-significant cell volume increases had been observed that might be indicative of
-radiation damage. However we can't yet conclude that there is *no* radiation
-damage from the *lack* of considerable change observed. We can at least see from
-this and the low final refined RMSDs that this is a very well-behaved dataset.
+See :ref:`html-report` for further information on how to view the smoothly
+varying crystal cell parameters using :samp:`dials.report`.
 
 Integration
 ^^^^^^^^^^^
@@ -336,92 +322,67 @@ includes the application of the LP correction to the intensities. Then
 summary tables are printed giving quality statistics first by frame, and
 then by resolution bin.
 
-Graphical analysis of the output
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Much more information is available from the integration output in graphical form
-using the command::
+.. _html-report:
 
-  dials.analyse_output integrated.pickle
+HTML report
+^^^^^^^^^^^
 
-By default the plots will be written into a new directory :file:`analysis` with
-subdirectories for different types of analysis::
+Much more information from the various steps of data processing can be found
+within an HTML report generated using the program
+:doc:`dials.report <../programs/dials_report>`.
+This is run simply with:
 
-  analysis
-  ├── background
-  ├── centroid
-  ├── intensity
-  ├── reference
-  └── strong
+.. literalinclude:: logs/dials.report.cmd
+
+which produces the file `dials-report.html <logs/dials-report.html>`_.
+
+This report includes plots showing the scan-varying crystal orientation and
+unit cell parameters. The latter of these
+is useful to check that changes to the cell during processing appear reasonable.
+In this tutorial, we see an overall increase in all three cell parameters,
+however the greatest change, in lengths *a* and *b*, is only about 0.02 Angstroms. If
+significant cell volume increases had been observed that might be indicative of
+radiation damage. However we can't yet conclude that there is *no* radiation
+damage from the *lack* of considerable change observed. We can at least see from
+this and the low final refined RMSDs that this is a very well-behaved dataset.
 
 Some of the most useful plots are
 
-* :file:`background/background_model_mean_vs_xy.png`, which shows the mean
-  background value as a function of detector position.
-
-* :file:`centroid/centroid_mean_diff_vs_phi.png`, which shows how the average
+* **Difference between observed and calculated centroids vs phi**,
+  which shows how the average
   residuals in each of X, Y, and :math:`\phi` vary as a fuction of :math:`\phi`.
   If scan-varying refinement has been successful in capturing the real changes
   during the scan then we would expect these plots to be straight lines.
 
-  .. image:: /figures/centroid_mean_diff_vs_phi.png
+* **Centroid residuals in X and Y**, in which the X, Y residuals are shown
+  directly. The key point here is to look for a globular shape centred at the origin.
 
-* :file:`centroid/centroid_xy_residuals.png`, on which the X, Y residuals are shown
-  directly. The key point here is to look for a globular shape centred at 0.0.
-
-  .. image:: /figures/centroid_xy_residuals.png
-
-* :file:`centroid/centroid_diff_x.png` and :file:`centroid/centroid_diff_y.png`,
+* **Difference between observed and calculated centroids in X and Y**,
   which show the difference between predicted and observed reflection positions
   in either X or Y as functions of detector position. From these plots it is very
-  easy to see whole tiles that are worse than their neighbours, and either whether
+  easy to see whole tiles that are worse than their neighbours, and whether
   those tiles might be simply shifted or slightly rotated compared to the model
   detector.
 
-  .. image:: /figures/centroid_diff_x.png
-
-  .. image:: /figures/centroid_diff_y.png
-
-* :file:`reference/reflection_corr_vs_xy.png` and
-  :file:`reference/reference_corr_vs_xy.png`. These are useful companions to the
-  plots of centroid residual as a function of detector position displayed above.
-  Whereas the earlier plots show systematic errors in the positions and
+* **Reflection and reference correlations binned in X/Y**.
+  These are useful companions to the
+  plots of centroid residual as a function of detector position above.
+  Whereas the above plots show systematic errors in the positions and
   orientations of tiles of a multi-panel detector, these plots indicate what
   effect that (and any other position-specific systematic error) has on the
   integrated data quality. The first of these plots shows the correlation
   between reflections and their reference profiles for all reflections in the
   dataset. The second shows only the correlations between the strong reference
   reflections and their profiles (thus these are expected to be higher and do
-  not extend to such high resolution). The first plot is probably the most
-  useful, and that is reproduced here.
+  not extend to such high resolution).
 
-  .. image:: /figures/reflection_corr_vs_xy.png
-
-* :file:`intensity/ioversigma_vs_z.png`. This reproduces the
+* **Distribution of I/Sigma vs Z**. This reproduces the
   :math:`\frac{I}{\sigma_I}` information versus frame number given in the log
   file in a graphical form. Here we see that :math:`\frac{I}{\sigma_I}` is fairly
   flat over the whole dataset, which we might use as an indication that there
   were no bad frames, not much radiation damage occurred and that scale factors
   are likely to be fairly uniform.
-
-  .. image:: /figures/ioversigma_vs_z.png
-
-
-HTML report
-^^^^^^^^^^^
-
-The most important information provided by :doc:`dials.show <../programs/dials_show>`,
-:doc:`dials.plot_scan_varying_crystal <../programs/dials_plot_scan_varying_crystal>`
-and :samp:`dials.analyse_output` can
-now be combined in one place within an HTML report generated using the program
-:doc:`dials.report <../programs/dials_report>`.
-This is run simply with:
-
-.. literalinclude:: logs/dials.report.cmd
-
-which produces the file :file:`dials-report.html`. The report generated for
-this dataset can be seen at the following link:
-:download:`dials-report.html <logs/dials-report.html>`.
 
 Exporting as MTZ
 ^^^^^^^^^^^^^^^^
