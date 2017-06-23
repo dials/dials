@@ -580,6 +580,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   d.add_column('LP', type_table['LP']).set_values(lp.as_float())
   d.add_column('DQE', type_table['DQE']).set_values(dqe.as_float())
 
+  logger.info("Saving integrated reflections to %s" %hklout)
   m.write(hklout)
 
   return m

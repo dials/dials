@@ -263,6 +263,7 @@ class MTZExporter(object):
     from cStringIO import StringIO
     summary = StringIO()
     m.show_summary(out=summary)
+    logger.info('')
     logger.info(summary.getvalue())
 
 class SadabsExporter(object):
