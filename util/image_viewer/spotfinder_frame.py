@@ -1384,7 +1384,7 @@ class SpotSettingsPanel (SettingsPanel) :
     txt2 = wx.StaticText(self, -1, "Brightness:")
     grid.Add(txt2, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     # Add a textual brightness control
-    self.brightness_txt_ctrl = IntCtrl(self, 
+    self.brightness_txt_ctrl = IntCtrl(self,
       value=self.settings.brightness, min=1, max=500,
       name="brightness")
     grid.Add(self.brightness_txt_ctrl, 0, wx.ALL, 5)
@@ -1533,7 +1533,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.kernel_size_ctrl.SetMin(1)
     grid1.Add(self.kernel_size_ctrl, 0, wx.ALL, 5)
 
-    self.Bind(wx.EVT_TEXT, self.OnUpdateBrightness, self.brightness_txt_ctrl)    
+    self.Bind(wx.EVT_TEXT, self.OnUpdateBrightness, self.brightness_txt_ctrl)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.nsigma_b_ctrl)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.nsigma_s_ctrl)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.global_threshold_ctrl)
