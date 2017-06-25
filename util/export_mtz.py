@@ -263,7 +263,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
 
     if 'intensity.prf.variance' in integrated_data:
       selection = (
-        integrated_data['intensity.prf.value']/
+        integrated_data['intensity.prf.value'] /
         flex.sqrt(integrated_data['intensity.prf.variance'])) < min_isigi
       integrated_data.del_selected(selection)
       logger.info('Removing %d profile reflections with I/Sig(I) < %s' %(
@@ -462,6 +462,12 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   # gather the required information for the reflection file
 
   nref = len(integrated_data['miller_index'])
+
+  # check reflections remain
+  if nref == 0:
+    from libtbx.utils import Sorry
+    raise Sorry('no reflections for export')
+
   x_px, y_px, z_px = integrated_data['xyzcal.px'].parts()
 
   xdet = flex.double(x_px)
@@ -583,7 +589,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   d.add_column('LP', type_table['LP']).set_values(lp.as_float())
   d.add_column('DQE', type_table['DQE']).set_values(dqe.as_float())
 
-  logger.info("Saving integrated reflections to %s" %hklout)
+  logger.info("Saving %d integrated reflections to %s" % (len(scl), hklout))
   m.write(hklout)
 
   return m
