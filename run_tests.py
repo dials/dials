@@ -1,8 +1,9 @@
 from __future__ import absolute_import, division
 from libtbx import test_utils
+from libtbx.test_utils.pytest import discover
 import libtbx.load_env
 
-tst_list = (
+tst_list = [
     "$B/test/algorithms/spatial_indexing/tst_collision_detection",
     "$B/test/algorithms/spatial_indexing/tst_octree",
     "$B/test/algorithms/spatial_indexing/tst_quadtree",
@@ -169,9 +170,9 @@ tst_list = (
     "$D/test/algorithms/indexing/tst_compare_orientation_matrices.py",
     "$D/test/algorithms/indexing/tst_symmetry.py",
     #"$D/scratch/rjg/unit_cell_refinement.py",
-    )
+    ] + discover("dials")
 
-def run () :
+def run():
   build_dir = libtbx.env.under_build("dials")
   dist_dir = libtbx.env.dist_path("dials")
   test_utils.run_tests(build_dir, dist_dir, tst_list)
