@@ -4,6 +4,7 @@ import iotbx.phil
 from scitbx.array_family import flex
 from dials.util.options import OptionParser
 from dials.util.options import flatten_datablocks
+from libtbx.utils import Sorry
 
 help_message = '''
 
@@ -76,6 +77,8 @@ def estimate_gain(imageset, kernel_size=(10,10), output_gain_map=None, max_image
     iqr = q3-q1
 
     print "q1, q2, q3: %.2f, %.2f, %.2f" %(q1, q2, q3)
+    if iqr == 0.0:
+      raise Sorry('Unable to robustly estimate the variation of pixel values.')
 
     inlier_sel = (sorted_dispersion > (q1 - 1.5*iqr)) & (sorted_dispersion < (q3 + 1.5*iqr))
     sorted_dispersion = sorted_dispersion.select(inlier_sel)
