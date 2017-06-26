@@ -101,6 +101,10 @@ phil_scope = parse('''
       .type = bool
       .help = "Keep low partiality reflections"
 
+    scale_partials = True
+      .type = bool
+      .help = "Scale partial reflections to 100% (unreliable if partiality low)"
+
     min_isigi = -5
       .type = float
       .help = "Exclude reflections with unfeasible values of I/Sig(I)"
@@ -256,6 +260,7 @@ class MTZExporter(object):
       ignore_panels=params.mtz.ignore_panels,
       include_partials=params.mtz.include_partials,
       keep_partials=params.mtz.keep_partials,
+      scale_partials=params.mtz.scale_partials,
       min_isigi=params.mtz.min_isigi,
       force_static_model=params.mtz.force_static_model,
       filter_ice_rings=params.mtz.filter_ice_rings,
