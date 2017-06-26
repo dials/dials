@@ -259,8 +259,12 @@ class KaptonAbsorption(object):
     surface_normal = flex.vec3_double(s1_flex_length, self.surface_normal)
     edge_of_tape_normal = flex.vec3_double(s1_flex_length, self.edge_of_tape_normal)
 
-    dsurf1 = self.sn1 / (s1_flex.dot(surface_normal))
-    dsurf2 = self.sn2 / (s1_flex.dot(surface_normal))
+    dsurf1 = flex.double(len(s1_flex), 0)
+    dsurf2 = flex.double(len(s1_flex), 0)
+    dot_product = s1_flex.dot(surface_normal)
+    sel = dot_product != 0
+    dsurf1.set_selected(sel, self.sn1 / dot_product.select(sel))
+    dsurf2.set_selected(sel, self.sn2 / dot_product.select(sel))
     dsurf3 = self.sn3 / (s1_flex.dot(edge_of_tape_normal))
 
     # determine path length through kapton tape
