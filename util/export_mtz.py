@@ -187,8 +187,8 @@ def dials_u_to_mosflm(dials_U, uc):
   return mosflm_U
 
 def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
-               include_partials=False, keep_partials=False, min_isigi=None,
-               force_static_model=False, filter_ice_rings=False,
+               include_partials=False, keep_partials=False, scale_partials=True,
+               min_isigi=None, force_static_model=False, filter_ice_rings=False,
                ignore_profile_fitting=False):
   '''Export data from integrated_data corresponding to experiment_list to an
   MTZ file hklout.'''
@@ -280,7 +280,8 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
 
   if include_partials:
     integrated_data = sum_partial_reflections(integrated_data)
-    integrated_data = scale_partial_reflections(integrated_data)
+    if scale_partials:
+      integrated_data = scale_partial_reflections(integrated_data)
 
   if 'partiality' in integrated_data:
     selection = integrated_data['partiality'] < 0.99
@@ -475,8 +476,11 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   # compute BATCH values
   batch = flex.floor(zdet).iround() + 1 + b_incr
 
-  # we're working with full reflections so...
-  fractioncalc = flex.double(nref, 1.0)
+  # we're working with full reflections so... #388 no longer guaranteed
+  if scale_partials:
+    fractioncalc = flex.double(nref, 1.0)
+  else:
+    fractioncalc = integrated_data['partiality']
 
   # now go for it and make an MTZ file...
 
