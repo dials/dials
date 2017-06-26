@@ -14,7 +14,9 @@ dummy = False
 
 class _LineAggregator:
   '''Buffer that can be filled with stream data and will aggregate complete
-     lines. Lines can be printed or passed to an arbitrary callback function.'''
+     lines. Lines can be printed or passed to an arbitrary callback function.
+     The lines passed to the callback function do not contain a trailing
+     newline character.'''
   def __init__(self, print_line=False, callback=None):
     '''Create aggregator object.'''
     self._buffer = ''
@@ -152,10 +154,11 @@ class _NonBlockingStreamWriter:
     return self._buffer_len - self._buffer_pos
 
 def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=True, print_stderr=True, callback_stdout=None, callback_stderr=None, environ=None):
-  ''' run an external process, command line specified as array,
-  optionally enforces a timeout specified in seconds, obtains STDOUT, STDERR
-  and exit code and returns summary dictionary. Optionally can overload
-  environment variables in the subprocess, in addition to os.environ. '''
+  '''run an external process, command line specified as array,
+     optionally enforces a timeout specified in seconds, obtains STDOUT,
+     STDERR and exit code and returns summary dictionary. Optionally can
+     overload environment variables in the subprocess, in addition to
+     os.environ.'''
 
   time_start = time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime())
   if debug:
@@ -175,7 +178,6 @@ def run_process(command, timeout=None, debug=False, stdin=None, print_stdout=Tru
   start_time = timeit.default_timer()
   if timeout is not None:
     max_time = start_time + timeout
-
 
   if environ:
     import os, copy
