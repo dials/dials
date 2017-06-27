@@ -106,7 +106,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   }
 
 
-  BOOST_PYTHON_MODULE(dials_algorithms_integration_sum_ext)
+  BOOST_PYTHON_MODULE(dials_algorithms_integration_bayes_ext)
   {
     bayesian_integrator_wrapper<float>("BayesianIntegratorFloat");
     bayesian_integrator_wrapper<double>("BayesianIntegratorDouble");
