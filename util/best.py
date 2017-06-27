@@ -10,10 +10,14 @@
 #  included in the root directory of this package.
 from __future__ import absolute_import, division
 
+import logging
+logger = logging.getLogger(__name__)
+
 def write_background_file(file_name, imageset, n_bins):
   from dials.command_line.background import background
   d, I, sig = background(imageset, imageset.indices()[0], n_bins=n_bins)
 
+  logger.info('Saving background file to %s' %file_name)
   with open(file_name, 'wb') as f:
     for d_, I_, sig_ in zip(d, I, sig):
       print >> f, '%10.4f %10.2f %10.2f' %(d_, I_, sig_)
@@ -32,7 +36,9 @@ def write_integrated_hkl(prefix, reflections):
     suffix = ''
     if flex.max(expt_ids) > 0:
       suffix = '%i' %(i_expt+1)
-    with open('%s%s.hkl' %(prefix, suffix), 'wb') as f:
+    file_name = '%s%s.hkl' %(prefix, suffix)
+    logger.info('Saving reflections to %s' %file_name)
+    with open(file_name, 'wb') as f:
       for i in range(len(integrated)):
         print >> f, '%4.0f %4.0f %4.0f %10.2f %10.2f' %(h[i], k[i], l[i], I[i], sigI[i])
 
@@ -93,6 +99,7 @@ def write_par_file(file_name, experiment):
     symbol = symbol.replace(' ', '')
     return symbol
 
+  logger.info('Saving BEST parameter file to %s' %file_name)
   with open(file_name, 'wb') as f:#
     print >> f, '# parameter file for BEST'
     print >> f, 'TITLE          From DIALS'
