@@ -193,6 +193,10 @@ phil_scope = parse('''
       .type = int(value_min=1)
       .help = "Number of resolution bins for background estimation"
 
+    min_partiality = 0.1
+      .type = float(value_min=0, value_max=1)
+      .help = "Minimum partiality of reflections to export"
+
   }
 
   json {
@@ -536,6 +540,16 @@ class BestExporter(object):
 
     experiment = self.experiments[0]
     reflections = self.reflections[0]
+    partiality = reflections['partiality']
+    sel = partiality >= self.params.best.min_partiality
+    logger.info('Selecting %s/%s reflections with partiality >= %s' %(
+      sel.count(True), sel.size(), self.params.best.min_partiality))
+    if sel.count(True) == 0:
+      raise Sorry(
+      "No reflections remaining after filtering for minimum partiality (min_partiality=%f)"
+       %(self.params.best.min_partiality))
+    reflections = reflections.select(sel)
+
     imageset = experiment.imageset
     prefix = self.params.best.prefix
 
