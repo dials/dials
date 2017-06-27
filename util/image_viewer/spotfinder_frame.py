@@ -1628,7 +1628,10 @@ class SpotSettingsPanel (wx.Panel) :
 
       # Brightness has it's own handler, so just make sure the controls are synced
       if self.brightness_txt_ctrl.GetValue() != self.settings.brightness:
-        self.brightness_txt_ctrl.ChangeValue(self.settings.brightness)
+        try:
+          self.brightness_txt_ctrl.ChangeValue(self.settings.brightness)
+        except Exception: # workaround for wxPython 2.8
+          self.brightness_txt_ctrl.ChangeValue(str(self.settings.brightness))
       if self.brightness_ctrl.GetValue() != self.settings.brightness:
         self.brightness_ctrl.SetValue(self.settings.brightness)
 
