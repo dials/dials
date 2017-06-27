@@ -41,11 +41,11 @@ class Test(object):
     # Check that state works
     stdin_lines = [
       "refine",
-      "integrate",
-      "export ignore_profile_fitting=True",
+      "integrate profile.fitting=False",
+      "export ignore_profile_fitting=True keep_partials=True include_partials=True",
       "goto 7",
       "integrate profile.fitting=False",
-      "export ignore_profile_fitting=True",
+      "export ignore_profile_fitting=True keep_partials=True include_partials=True",
     ]
 
     easy_run.fully_buffered('idials',
