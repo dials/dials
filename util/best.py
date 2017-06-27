@@ -91,6 +91,14 @@ def write_par_file(file_name, experiment):
     direction = 'SLOW'
   rotation = R_to_mosflm * rotation
 
+  # Calculate average spot diameter for SEPARATION parameter
+  # http://xds.mpimf-heidelberg.mpg.de/html_doc/xds_parameters.html
+  # BEAM_DIVERGENCE=
+  # This value is approximately arctan(spot diameter/DETECTOR_DISTANCE)
+  import math
+  profile = experiment.profile
+  spot_diameter = math.tan(profile.delta_b() * math.pi/180) * distance
+
   def space_group_symbol(space_group):
     symbol = ccp4_symbol(space_group.info(), lib_name='syminfo.lib',
                          require_at_least_one_lib=False)
@@ -125,7 +133,7 @@ def write_par_file(file_name, experiment):
     print >> f, '               %9.6f %9.6f %9.6f' %UB_mosflm[6:]
     print >> f, 'CELL           %8.2f %8.2f %8.2f %6.2f %6.2f %6.2f' %uc_params
     print >> f, 'RASTER           13  13   7   3   4'
-    print >> f, 'SEPARATION      2.960  2.960'
+    print >> f, 'SEPARATION      %.3f  %.3f' %(spot_diameter, spot_diameter)
     print >> f, 'BEAM           %8.3f %8.3f' %beam_centre
     print >> f, '# end of parameter file for BEST'
 
