@@ -822,7 +822,7 @@ class SpotFrame(XrayFrame) :
     self.update_statusbar() # XXX Not always working?
     self.Layout()
 
-  def update_settings(self, layout=True):
+  def update_settings(self):
     #super(SpotFrame, self).update_settings(layout=layout)
     new_brightness = self.settings.brightness
     new_color_scheme = self.settings.color_scheme
@@ -1321,9 +1321,11 @@ class SpotSettingsFrame (SettingsFrame) :
     self.Bind(wx.EVT_CLOSE, lambda evt : self.Destroy(), self)
     self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
 
-class SpotSettingsPanel (SettingsPanel) :
-  def __init__ (self, *args, **kwds) :
-    wx.Panel.__init__(self, *args, **kwds)
+
+class SpotSettingsPanel (wx.Panel) :
+  def __init__ (self, * args, **kwargs) :
+    super(SpotSettingsPanel, self).__init__(*args, **kwargs)
+
     self.settings = self.GetParent().settings
     self.params = self.GetParent().params
     # CONTROLS 4: additional settings for derived class
@@ -1547,7 +1549,7 @@ class SpotSettingsPanel (SettingsPanel) :
       self, value=self.settings.find_spots_phil,
       name="find_spots_phil")
     grid1.Add(self.save_params_txt_ctrl, 0, wx.ALL, 5)
-    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.save_params_txt_ctrl)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdate, self.save_params_txt_ctrl)
 
     self.save_params_button = wx.Button(self, -1, "Save")
     grid1.Add(self.save_params_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
@@ -1576,19 +1578,18 @@ class SpotSettingsPanel (SettingsPanel) :
     self.Bind(wx.EVT_CHOICE, self.OnUpdateZoomLevel, self.zoom_ctrl)
     self.Bind(wx.EVT_CHOICE, self.OnUpdate, self.color_ctrl)
     self.Bind(wx.EVT_SLIDER, self.OnUpdateBrightness, self.brightness_ctrl)
-    self.Bind(wx.EVT_CHECKBOX, self.OnUpdate2, self.resolution_rings_ctrl)
-    self.Bind(wx.EVT_CHECKBOX, self.OnUpdate2, self.ice_rings_ctrl)
-    self.Bind(wx.EVT_CHECKBOX, self.OnUpdate2, self.center_ctrl)
-    self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.ctr_mass)
-    self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.max_pix)
-    self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.all_pix)
-    self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.shoebox)
-    self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.predictions)
-    self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.miller_indices)
-    self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.indexed)
-    self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.integrated)
-    self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.show_basis_vectors)
-    #self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.minspotarea_ctrl)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.resolution_rings_ctrl)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.ice_rings_ctrl)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.center_ctrl)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.ctr_mass)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.max_pix)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.all_pix)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.shoebox)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.predictions)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.miller_indices)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.indexed)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.integrated)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.show_basis_vectors)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateShowMask, self.show_mask)
 
     self.Bind(wx.EVT_UPDATE_UI, self.UpdateZoomCtrl)
@@ -1641,9 +1642,10 @@ class SpotSettingsPanel (SettingsPanel) :
       self.GetParent().GetParent().pyslip.level)
     self.zoom_ctrl.SetSelection(self.settings.zoom_level)
 
-  def OnUpdateCM (self, event) :
+  def OnUpdate(self, event):
+    """Collects all settings from the GUI and forwards to the viewer"""
     self.collect_values()
-    self.GetParent().GetParent().update_settings(layout=False)
+    self.GetParent().GetParent().update_settings()
 
   def OnUpdateBrightness(self, event):
     """Handle updates from the brightness-related controls"""
@@ -1661,7 +1663,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.OnUpdateCM(event)
 
   def OnUpdateShowMask(self, event):
-    self.OnUpdateCM(event)
+    self.OnUpdate(event)
     self.params.show_mask = self.settings.show_mask
     self.GetParent().GetParent().OnChooseImage(event)
 
@@ -1671,7 +1673,7 @@ class SpotSettingsPanel (SettingsPanel) :
                 self.show_mask, self.show_basis_vectors,
                 self.ice_rings_ctrl, self.resolution_rings_ctrl):
       btn.SetValue(False)
-    self.OnUpdateCM(event)
+    self.OnUpdate(event)
 
   def OnUpdateZoomLevel(self, event):
     self.collect_values()
@@ -1705,7 +1707,7 @@ class SpotSettingsPanel (SettingsPanel) :
     or self.settings.kernel_size != self.kernel_size_ctrl.GetPhilValue() \
     or self.settings.min_local != self.min_local_ctrl.GetPhilValue() \
     or self.settings.gain != self.gain_ctrl.GetPhilValue():
-      self.OnUpdateCM(event)
+      self.OnUpdate(event)
       self.GetParent().GetParent().show_filters()
 
   def OnKabschDebug(self, event):
