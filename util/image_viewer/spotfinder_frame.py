@@ -1318,8 +1318,12 @@ class SpotSettingsFrame (SettingsFrame) :
     self.panel = panel
     self.sizer = szr
     self.Fit()
-    self.Bind(wx.EVT_CLOSE, lambda evt : self.Destroy(), self)
+
     self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
+
+  def OnDestroy(self, event):
+    # Allow the panel to cleanup when destroying the Frame
+    self.panel.OnDestroy(event)
 
 
 class SpotSettingsPanel (wx.Panel) :
@@ -1328,6 +1332,7 @@ class SpotSettingsPanel (wx.Panel) :
 
     self.settings = self.GetParent().settings
     self.params = self.GetParent().params
+
     # CONTROLS 4: additional settings for derived class
     self.settings.brightness = self.params.brightness
     self.settings.color_scheme = self.params.color_scheme
@@ -1388,7 +1393,8 @@ class SpotSettingsPanel (wx.Panel) :
     # Add a textual brightness control
     self.brightness_txt_ctrl = IntCtrl(self,
       value=self.settings.brightness, min=1, max=500,
-      name="brightness")
+      name="brightness",
+      style=wx.TE_PROCESS_ENTER)
     grid.Add(self.brightness_txt_ctrl, 0, wx.ALL, 5)
     # Add a slider brightness control
     self.brightness_ctrl = wx.Slider(self, -1, size=(150,-1),
@@ -1535,7 +1541,6 @@ class SpotSettingsPanel (wx.Panel) :
     self.kernel_size_ctrl.SetMin(1)
     grid1.Add(self.kernel_size_ctrl, 0, wx.ALL, 5)
 
-    self.Bind(wx.EVT_TEXT, self.OnUpdateBrightness, self.brightness_txt_ctrl)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.nsigma_b_ctrl)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.nsigma_s_ctrl)
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.global_threshold_ctrl)
@@ -1575,9 +1580,14 @@ class SpotSettingsPanel (wx.Panel) :
     self.collect_values()
 
     # CONTROLS 3:  Bind events to actions
+
+    # Brightness-related events
+    self.Bind(wx.EVT_SCROLL_CHANGED, self.OnUpdateBrightness, self.brightness_ctrl)
+    self.Bind(wx.EVT_TEXT_ENTER, self.OnUpdateBrightness, self.brightness_txt_ctrl)
+    self.brightness_txt_ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnUpdateBrightness)
+
     self.Bind(wx.EVT_CHOICE, self.OnUpdateZoomLevel, self.zoom_ctrl)
     self.Bind(wx.EVT_CHOICE, self.OnUpdate, self.color_ctrl)
-    self.Bind(wx.EVT_SLIDER, self.OnUpdateBrightness, self.brightness_ctrl)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.resolution_rings_ctrl)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.ice_rings_ctrl)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.center_ctrl)
@@ -1603,6 +1613,11 @@ class SpotSettingsPanel (wx.Panel) :
         size=(256,256),
         style=wx.SUNKEN_BORDER)
       s.Add(self.thumb_panel, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+
+  def OnDestroy(self, event):
+    "Handle any cleanup when the windows is being destroyed. Manually Called."
+    # If we don't remove this here, then we can get called after destroy
+    self.brightness_txt_ctrl.Unbind(wx.EVT_KILL_FOCUS)
 
   # CONTROLS 2:  Fetch values from widgets
   def collect_values (self) :
@@ -1649,18 +1664,16 @@ class SpotSettingsPanel (wx.Panel) :
 
   def OnUpdateBrightness(self, event):
     """Handle updates from the brightness-related controls"""
-    if event.EventObject is self.brightness_ctrl:
-      # Don't update whilst dragging the slider
-      mouse = wx.GetMouseState()
-      if mouse.LeftDown():
+
+    # For e.g. IntCtrl check the value is valid
+    if hasattr(event.EventObject, "IsInBounds"):
+      if not event.EventObject.IsInBounds():
         return
-    else:
-      # Don't use out-of-bounds text values
-      if not self.brightness_txt_ctrl.IsInBounds():
-        return
-    # Read the new value then update everything
-    self.settings.brightness = event.EventObject.GetValue()
-    self.OnUpdateCM(event)
+
+    # Read the new value then update everything if we need to
+    if self.settings.brightness != event.EventObject.GetValue():
+      self.settings.brightness = event.EventObject.GetValue()
+      self.OnUpdate(event)
 
   def OnUpdateShowMask(self, event):
     self.OnUpdate(event)
