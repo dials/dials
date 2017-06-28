@@ -822,7 +822,7 @@ class SpotFrame(XrayFrame) :
     self.update_statusbar() # XXX Not always working?
     self.Layout()
 
-  def update_settings(self):
+  def update_settings(self, layout=True):
     #super(SpotFrame, self).update_settings(layout=layout)
     new_brightness = self.settings.brightness
     new_color_scheme = self.settings.color_scheme
