@@ -1,7 +1,9 @@
-from __future__ import absolute_import, division
+# coding: utf-8
+
+from __future__ import absolute_import, division, print_function
 
 from collections import defaultdict
-from math import floor, ceil, sqrt, sin, cos, pi
+from math import floor, ceil, sqrt, sin, cos, pi, log
 import time
 
 from iotbx import mtz
@@ -10,6 +12,13 @@ from scitbx import matrix
 
 from dials.array_family import flex
 from dials.util.version import dials_version
+
+try:
+  from math import isclose
+except ImportError:
+  # Python 3 backport
+  def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+      return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -201,7 +210,6 @@ def _apply_data_filters(integrated_data,
 
   # select reflections that are assigned to an experiment (i.e. non-negative id)
   integrated_data = integrated_data.select(integrated_data['id'] >= 0)
-  assert max(integrated_data['id']) == 0, "More reflection assignations than experiments"
   assert len(integrated_data), "No experiment-assigned reflections"
   logger.info('Read %s predicted reflections' % len(integrated_data))
 
@@ -528,6 +536,69 @@ def _write_columns(mtz_file, dataset, integrated_data, scale_partials):
   dataset.add_column('DQE', type_table['DQE']).set_values(dqe.as_float())
 
 
+def _next_epoch(val):
+  """Find a reasonably round epoch a small number above an existing one.
+
+  Examples: 130-138     => 140
+            139         => 150
+            1234        => 1300
+            19999-20998 => 21000
+  """
+
+  # Find the order of magnitude-1 (minimum: 1 as want no fractional values)
+  small_magnitude = 10**max(1, int(floor(log(val, 10))-1))
+  # How many units of this we have (float cast for __division__ insensitivity)
+  mag_multiple = int(ceil(val / float(small_magnitude)))
+  epoch = small_magnitude * mag_multiple
+  # If this would give a consecutive number then offset it by a magnitude step
+  if epoch <= val + 1:
+    epoch = small_magnitude * (mag_multiple+1)
+  return epoch
+
+
+def _calculate_batch_offsets(experiments):
+  """Take a list of experiments and resolve and return the batch offsets.
+
+  This is the number added to the image number to give the
+  batch number, such that:
+  - Each experiment has a unique, nonoverlapping, nonconsecutive range
+  - None are zero
+  - Image number ranges are kept if at all possible
+  """
+
+  experiments_to_shift = []
+  existing_ranges = set()
+  maximum_batch_number = 0
+  batch_offsets = [0]*len(experiments)
+
+  # Handle zeroth shifts and kept ranges
+  for i, experiment in enumerate(experiments):
+    ilow, ihigh = experiment.image_range
+    # Check assumptions
+    assert ilow <= ihigh, "Inverted image order!?"
+    assert ilow >= 0, "Negative image indices are not expected"
+    # Don't emit zero: comments indicate that pointless does not like it
+    if ilow == 0:
+      ilow, ihigh = ilow+1, ihigh+1
+    # If we overlap with anything, then process later
+    if any( ilow <= high+1 and ihigh >= low-1 for low, high in existing_ranges):
+      experiments_to_shift.append((i, experiment))
+    else:
+      batch_offsets[i] = experiment.image_range[0] - ilow
+      existing_ranges.add((ilow, ihigh))
+      maximum_batch_number = max(maximum_batch_number, ihigh)
+  
+  # Now handle all the experiments that overlapped by pushing them higher
+  for i, experiment in experiments_to_shift:
+    start_number = _next_epoch(maximum_batch_number)
+    range_width = experiment.image_range[1]-experiment.image_range[0]+1
+    end_number = start_number + range_width - 1
+    batch_offsets[i] = start_number - experiment.image_range[0]
+    maximum_batch_number = end_number
+
+  return batch_offsets
+
+
 def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
                include_partials=False, keep_partials=False, scale_partials=True,
                min_isigi=None, force_static_model=False, filter_ice_rings=False,
@@ -535,14 +606,29 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   '''Export data from integrated_data corresponding to experiment_list to an
   MTZ file hklout.'''
 
-  # for the moment assume (and assert) that we will convert data from exactly
-  # one lattice...
+  # Convert experiment_list to a real python list or else identity assumptions
+  # fail like:
+  #   assert experiment_list[0] is experiment_list[0]
+  # And assumptions about added attributes break
+  experiment_list = list(experiment_list)
 
-  # FIXME allow for more than one experiment in here: this is fine just add
-  # multiple MTZ data sets (DIALS1...DIALSN) and multiple batch headers: one
-  # range of batches for each experiment
+  # Validate multi-experiment assumptions
+  if len(experiment_list) > 1:
+    # All experiments should match crystals, or else we need multiple crystals/datasets
+    if not all(x.crystal == experiment_list[0].crystal for x in experiment_list[1:]):
+      print("Warning: Experiment crystals differ. Using first experiment crystal for file-level data.")
 
-  assert(len(experiment_list) == 1)
+    # We must match wavelengths (until multiple datasets supported)
+    if not all(isclose(x.beam.get_wavelength(), experiment_list[0].beam.get_wavelength(), rel_tol=1e-9) for x in experiment_list[1:]):
+      data = [x.beam.get_wavelength() for x in experiment_list]
+      raise Sorry("Cannot export multiple experiments with different beam wavelengths ({})".format(data))
+  
+  # also only work with one panel(for the moment)
+  if not ignore_panels:
+    if any(len(experiment.detector) != 1 for experiment in experiment_list):
+      raise Sorry('Only a single panel will be considered. To ignore panels '
+                  'other than the first for a multi-panel detector, set '
+                  'mtz.ignore_panels=true')
 
   # Clean up the data with the passed in options
   integrated_data = _apply_data_filters(integrated_data,
@@ -553,18 +639,20 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
       keep_partials=keep_partials,
       scale_partials=scale_partials)
 
+  # Calculate and store the image range for each image
+  for experiment in experiment_list:
+    # Calculate this once so that we don't have to again
+    if experiment.scan:
+      experiment.image_range = experiment.scan.get_image_range()
+    else:
+      experiment.image_range = 1, 1
 
-  experiment = experiment_list[0]
+  # Calculate any offset to the image numbers 
+  batch_offsets = _calculate_batch_offsets(experiment_list)
 
-  # Calculate the image range for this experiment
-  if experiment.scan:
-    experiment.image_range = experiment.scan.get_image_range()
-  else:
-    experiment.image_range = 1, 1
-
-  # Calculate an offset for the batch number
-  # pointless (at least) doesn't like batches starting from zero
-  b_incr = max(experiment.image_range[0], 1)
+  # Explicitly match the legacy batch offset calculation for single experiments
+  if len(experiment_list) == 1:
+    batch_offsets = [max(1, experiment_list[0].image_range[0])]
 
   # Create the mtz file
   mtz_file = mtz.object()
@@ -577,60 +665,63 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   # - add an epoch (or recover an epoch) from the scan and add this as an extra
   #   column to the MTZ file for scaling, so we know that the two lattices were
   #   integrated at the same time
-  # - decide a sensible BATCH increment to apply to the BATCH value between
+  # ✓ decide a sensible BATCH increment to apply to the BATCH value between
   #   experiments and add this
-  #
-  # At the moment this is probably enough to be working on.
 
-  # Split integrated_data up into columns so we can add new ones
-  integrated_data = dict(integrated_data)
+  for experiment_index, experiment in enumerate(experiment_list):
+    # Grab our subset of the data
+    experiment.data = dict(integrated_data.select(integrated_data["id"] == experiment_index))
+    experiment.batch_offset = batch_offsets[experiment_index]
 
-  cb_op_to_ref = experiment.crystal.get_space_group().info(
-    ).change_of_basis_op_to_reference_setting()
-  experiment.crystal = experiment.crystal.change_basis(cb_op_to_ref)
-  integrated_data["miller_index_rebase"] = cb_op_to_ref.apply(integrated_data["miller_index"])
-  
-  # also only work with one panel(for the moment)
-  if not ignore_panels:
-    if len(experiment.detector) != 1:
-      raise Sorry('Only a single panel will be considered. To ignore panels '
-                  'other than the first for a multi-panel detector, set '
-                  'mtz.ignore_panels=true')
+    # Do any crystal transformations for the experiment
+    cb_op_to_ref = experiment.crystal.get_space_group().info(
+        ).change_of_basis_op_to_reference_setting()
+    experiment.crystal = experiment.crystal.change_basis(cb_op_to_ref)
+    experiment.data["miller_index_rebase"] = cb_op_to_ref.apply(experiment.data["miller_index"])
 
+    s0 = experiment.beam.get_s0()
+    s0n = matrix.col(s0).normalize().elems
+    logger.info('Beam vector: %.4f %.4f %.4f' % s0n)
 
-  s0 = experiment.beam.get_s0()
-  s0n = matrix.col(s0).normalize().elems
-  logger.info('Beam vector: %.4f %.4f %.4f' % s0n)
+    for i in range(experiment.image_range[0], experiment.image_range[1]+1):
+      _add_batch(mtz_file, experiment, 
+        batch_number=i+experiment.batch_offset,
+        image_number=i, 
+        force_static_model=force_static_model)
 
-  for b in range(experiment.image_range[0], experiment.image_range[1] + 1):
-    _add_batch(mtz_file, experiment, 
-      batch_number=b+b_incr,
-      image_number=b, 
-      force_static_model=force_static_model)
+    # Create the batch offset array. This gives us an experiment (id)-dependent 
+    # batch offset to calculate the correct batch from image number.
+    experiment.data["batch_offset"] = flex.int(len(experiment.data["id"]), experiment.batch_offset)
 
-  # Set the mtz file general properties
-  unit_cell = experiment.crystal.get_unit_cell()
-  wavelength = experiment.beam.get_wavelength()
-  mtz_file.set_space_group_info(experiment.crystal.get_space_group().info())
+    # Calculate whether we have a ROT value for this experiment, and set the column
+    _, _, frac_image_id = integrated_data['xyzcal.px'].parts()
+    frac_image_id = flex.double(frac_image_id)
+    if experiment.scan:
+      # When getting angle, z_px counts from 0; image_index from 1
+      experiment.data["ROT"] = flex.double([experiment.scan.get_angle_from_image_index(z+1) for z in frac_image_id])
+    else:
+      experiment.data["ROT"] = frac_image_id
+
+  # Update the mtz general information now we've processed the experiments
+  mtz_file.set_space_group_info(experiment_list[0].crystal.get_space_group().info())
+  unit_cell = experiment_list[0].crystal.get_unit_cell()
   mtz_crystal = mtz_file.add_crystal('XTAL', 'DIALS', unit_cell.parameters())
-  dataset = mtz_crystal.add_dataset('FROMDIALS', wavelength)
+  mtz_dataset = mtz_crystal.add_dataset('FROMDIALS', experiment_list[0].beam.get_wavelength())
 
-  # Calculate whether we have a ROT value for this experiment, and set the column
-  _, _, frac_image_id = integrated_data['xyzcal.px'].parts()
-  frac_image_id = flex.double(frac_image_id)
-  if experiment.scan:
-    # When getting angle, z_px counts from 0; image_index from 1
-    integrated_data["ROT"] = flex.double([experiment.scan.get_angle_from_image_index(z+1) for z in frac_image_id])
-  else:
-    integrated_data["ROT"] = frac_image_id
-
-  integrated_data["batch_offset"] = b_incr
+  # Combine all of the experiment data columns before writing
+  merged_data = {k: v.deep_copy() for k, v in experiment_list[0].data.items()}
+  for experiment in experiment_list[1:]:
+    for k, v in experiment.data.items():
+      merged_data[k].extend(v)
+  # ALL columns must be the same length
+  assert len(set(len(v) for v in merged_data.values())) == 1, "Column length mismatch"
+  assert len(merged_data["id"] == len(integrated_data["id"])), "Lost rows in split/combine"
 
   # Write all the data and columns to the mtz file
-  _write_columns(mtz_file, dataset, integrated_data,
+  _write_columns(mtz_file, mtz_dataset, merged_data,
     scale_partials=scale_partials)
 
-  logger.info("Saving {} integrated reflections to {}".format(len(integrated_data['id']), hklout))
+  logger.info("Saving {} integrated reflections to {}".format(len(merged_data['id']), hklout))
   mtz_file.write(hklout)
 
   return mtz_file
