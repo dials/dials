@@ -13,7 +13,7 @@ from __future__ import absolute_import, division
 from dials.interfaces import SpotFinderThresholdIface
 
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("dials.extensions.kabsch_spotfinder_threshold_ext")
 
 
 class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
