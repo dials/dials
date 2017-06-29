@@ -173,6 +173,8 @@ def estimate_global_threshold(image, mask=None, plot=False):
       [threshold[p_m], threshold[-1]], [n_above_threshold[p_m], n_above_threshold[-1]])
     pyplot.plot(
       [x_g_, threshold[-1]], [y_g_, n_above_threshold[-1]])
+    pyplot.xlabel("Threshold")
+    pyplot.ylabel("Number of pixels above threshold")
     pyplot.savefig("global_threshold.png")
     pyplot.clf()
 
