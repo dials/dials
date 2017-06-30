@@ -143,6 +143,8 @@ def run(args):
       mean_unit_cell = uctbx.unit_cell((a, b, c, alpha, beta, gamma))
       print "  Average unit cell: %s" %mean_unit_cell
     print
+    if expt.profile is not None:
+      print expt.profile
 
   for datablock in datablocks:
     if datablock.format_class() is not None:
