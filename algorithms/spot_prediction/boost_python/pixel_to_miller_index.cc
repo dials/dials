@@ -50,6 +50,7 @@ namespace dials { namespace algorithms { namespace boost_python {
           const Crystal&>())
       .def("h", &PixelToMillerIndex_h_rotation)
       .def("h", &PixelToMillerIndex_h_stills)
+      .def("q", &PixelToMillerIndex::q)
       ;
   }
 

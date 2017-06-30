@@ -118,6 +118,19 @@ namespace dials { namespace algorithms {
       return A_inv_ * r;
     }
 
+    /**
+     * Compute the miller index
+     */
+    vec3<double> q(std::size_t panel, double x, double y) const {
+
+      // Compute the diffracted beam vector
+      vec3<double> s1 = detector_[panel].get_pixel_lab_coord(
+          vec2<double>(x, y)).normalize() * s0_.length();
+
+      // Compute the reciprocal lattice vector
+      return s1 - s0_;
+    }
+
   protected:
 
     Detector detector_;
