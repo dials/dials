@@ -58,6 +58,8 @@ include scope dials.algorithms.indexing.indexer.master_phil_scope
 output {
   experiments = experiments.json
     .type = path
+  split_experiments = False
+    .type = bool
   reflections = indexed.pickle
     .type = path
   unindexed_reflections = None
@@ -158,10 +160,15 @@ def run(args):
   reflections = copy.deepcopy(idxr.refined_reflections)
   reflections.extend(idxr.unindexed_reflections)
   if len(refined_experiments):
-    logger.info("Saving refined experiments to %s" %params.output.experiments)
+    if params.output.split_experiments:
+      logger.info("Splitting experiments before output")
+      from dxtbx.model.experiment_list import ExperimentList
+      refined_experiments = ExperimentList(
+        [copy.deepcopy(re) for re in refined_experiments])
+    logger.info("Saving refined experiments to %s" % params.output.experiments)
     idxr.export_as_json(refined_experiments,
                         file_name=params.output.experiments)
-    logger.info("Saving refined reflections to %s" %params.output.reflections)
+    logger.info("Saving refined reflections to %s" % params.output.reflections)
     idxr.export_reflections(
       reflections, file_name=params.output.reflections)
 
