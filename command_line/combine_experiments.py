@@ -456,8 +456,11 @@ class Script(object):
         cluster_expts = ExperimentList()
         cluster_refls = flex.reflection_table()
         for i in xrange(len(experiments_l[cluster])):
-          cluster_expts.append(experiments_l[cluster][i])
-          cluster_refls.extend(reflections_l[cluster][i])
+          refls = reflections_l[cluster][i]
+          expts = experiments_l[cluster][i]
+          refls['id'] = flex.int(len(refls), i)
+          cluster_expts.append(expts)
+          cluster_refls.extend(refls)
         exp_filename = os.path.splitext(exp_name)[0] + ("_cluster%d.json" % (end_count - cluster))
         ref_filename = os.path.splitext(refl_name)[0] + ("_cluster%d.pickle" % (end_count - cluster))
         result.append((cluster_expts, cluster_refls, exp_filename, ref_filename))
