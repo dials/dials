@@ -64,6 +64,9 @@ max_cell_estimation
     .type = choice
     .help = "Choose between linear or logarithmic bins for nearest neighbour"
             "histogram analysis."
+  nn_per_bin = 5
+    .type = int(value_min=1)
+    .help = "Target number of nearest neighbours per histogram bin."
   max_height_fraction = 0.25
     .type = float(value_min=0, value_max=1)
     .expert_level=2
@@ -1022,6 +1025,7 @@ class indexer_base(object):
           step_size=params.step_size,
           nearest_neighbor_percentile=params.nearest_neighbor_percentile,
           histogram_binning=params.histogram_binning,
+          nn_per_bin=params.nn_per_bin,
           max_height_fraction=params.max_height_fraction,
           filter_ice=params.filter_ice,
           filter_overlaps=params.filter_overlaps,
@@ -1949,7 +1953,7 @@ def detect_non_primitive_basis(miller_indices, threshold=0.9):
 
 def find_max_cell(reflections, max_cell_multiplier, step_size,
                   nearest_neighbor_percentile, histogram_binning='linear',
-                  max_height_fraction=0.25,
+                  nn_per_bin=5, max_height_fraction=0.25,
                   filter_ice=True, filter_overlaps=True, overlaps_border=0):
   logger.debug('Finding suitable max_cell based on %i reflections' % len(reflections))
   # Exclude potential ice-ring spots from nearest neighbour analysis if needed
@@ -2021,7 +2025,8 @@ def find_max_cell(reflections, max_cell_multiplier, step_size,
                          max_height_fraction=max_height_fraction,
                          tolerance=max_cell_multiplier,
                          percentile=nearest_neighbor_percentile,
-                         histogram_binning=histogram_binning)
+                         histogram_binning=histogram_binning,
+                         nn_per_bin=nn_per_bin)
 
   return NN
 
