@@ -10,10 +10,14 @@
 #  included in the root directory of this package.
 from __future__ import absolute_import, division
 
+import logging
+logger = logging.getLogger(__name__)
+
 def write_background_file(file_name, imageset, n_bins):
   from dials.command_line.background import background
   d, I, sig = background(imageset, imageset.indices()[0], n_bins=n_bins)
 
+  logger.info('Saving background file to %s' %file_name)
   with open(file_name, 'wb') as f:
     for d_, I_, sig_ in zip(d, I, sig):
       print >> f, '%10.4f %10.2f %10.2f' %(d_, I_, sig_)
@@ -32,7 +36,9 @@ def write_integrated_hkl(prefix, reflections):
     suffix = ''
     if flex.max(expt_ids) > 0:
       suffix = '%i' %(i_expt+1)
-    with open('%s%s.hkl' %(prefix, suffix), 'wb') as f:
+    file_name = '%s%s.hkl' %(prefix, suffix)
+    logger.info('Saving reflections to %s' %file_name)
+    with open(file_name, 'wb') as f:
       for i in range(len(integrated)):
         print >> f, '%4.0f %4.0f %4.0f %10.2f %10.2f' %(h[i], k[i], l[i], I[i], sigI[i])
 
@@ -85,6 +91,32 @@ def write_par_file(file_name, experiment):
     direction = 'SLOW'
   rotation = R_to_mosflm * rotation
 
+  # Calculate average spot diameter for SEPARATION parameter
+  # http://xds.mpimf-heidelberg.mpg.de/html_doc/xds_parameters.html
+  # BEAM_DIVERGENCE=
+  # This value is approximately arctan(spot diameter/DETECTOR_DISTANCE)
+  import math
+  profile = experiment.profile
+  spot_diameter = math.tan(profile.delta_b() * math.pi/180) * distance
+  spot_diameter_px = spot_diameter * detector[0].get_pixel_size()[0]
+
+  # determine parameters for RASTER keyword
+  # http://www.mrc-lmb.cam.ac.uk/harry/cgi-bin/keyword2.cgi?RASTER
+
+  # NXS, NYS (odd integers) define the overall dimensions of the rectangular array of pixels for each spot
+  # NXS and NYS are set to twice the spot size plus 5 pixels
+  nxs = 2 * int(math.ceil(spot_diameter_px)) + 5
+  nys = nxs
+
+  # NRX, NRY are the number of columns or rows of points in the background rim
+  # NRX and NRY are set to half the spot size plus 2 pixels
+  nrx = int(math.ceil(0.5 * spot_diameter_px)) + 2
+  nry = nrx
+
+  # NC the corner background cut-off which corresponds to a half-square of side NC points
+  # NC is set to the mean of the spot size in X and Y plus 4
+  nc = int(math.ceil(spot_diameter_px)) + 4
+
   def space_group_symbol(space_group):
     symbol = ccp4_symbol(space_group.info(), lib_name='syminfo.lib',
                          require_at_least_one_lib=False)
@@ -93,6 +125,7 @@ def write_par_file(file_name, experiment):
     symbol = symbol.replace(' ', '')
     return symbol
 
+  logger.info('Saving BEST parameter file to %s' %file_name)
   with open(file_name, 'wb') as f:#
     print >> f, '# parameter file for BEST'
     print >> f, 'TITLE          From DIALS'
@@ -117,8 +150,8 @@ def write_par_file(file_name, experiment):
     print >> f, '               %9.6f %9.6f %9.6f' %UB_mosflm[3:6]
     print >> f, '               %9.6f %9.6f %9.6f' %UB_mosflm[6:]
     print >> f, 'CELL           %8.2f %8.2f %8.2f %6.2f %6.2f %6.2f' %uc_params
-    print >> f, 'RASTER           13  13   7   3   4'
-    print >> f, 'SEPARATION      2.960  2.960'
+    print >> f, 'RASTER           %i %i %i %i %i' %(nxs, nys, nc, nrx, nry)
+    print >> f, 'SEPARATION      %.3f  %.3f' %(spot_diameter, spot_diameter)
     print >> f, 'BEAM           %8.3f %8.3f' %beam_centre
     print >> f, '# end of parameter file for BEST'
 

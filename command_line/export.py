@@ -101,6 +101,10 @@ phil_scope = parse('''
       .type = bool
       .help = "Keep low partiality reflections"
 
+    scale_partials = True
+      .type = bool
+      .help = "Scale partial reflections to 100% (unreliable if partiality low)"
+
     min_isigi = -5
       .type = float
       .help = "Exclude reflections with unfeasible values of I/Sig(I)"
@@ -189,6 +193,10 @@ phil_scope = parse('''
       .type = int(value_min=1)
       .help = "Number of resolution bins for background estimation"
 
+    min_partiality = 0.1
+      .type = float(value_min=0, value_max=1)
+      .help = "Minimum partiality of reflections to export"
+
   }
 
   json {
@@ -256,6 +264,7 @@ class MTZExporter(object):
       ignore_panels=params.mtz.ignore_panels,
       include_partials=params.mtz.include_partials,
       keep_partials=params.mtz.keep_partials,
+      scale_partials=params.mtz.scale_partials,
       min_isigi=params.mtz.min_isigi,
       force_static_model=params.mtz.force_static_model,
       filter_ice_rings=params.mtz.filter_ice_rings,
@@ -263,6 +272,7 @@ class MTZExporter(object):
     from cStringIO import StringIO
     summary = StringIO()
     m.show_summary(out=summary)
+    logger.info('')
     logger.info(summary.getvalue())
 
 class SadabsExporter(object):
@@ -530,6 +540,16 @@ class BestExporter(object):
 
     experiment = self.experiments[0]
     reflections = self.reflections[0]
+    partiality = reflections['partiality']
+    sel = partiality >= self.params.best.min_partiality
+    logger.info('Selecting %s/%s reflections with partiality >= %s' %(
+      sel.count(True), sel.size(), self.params.best.min_partiality))
+    if sel.count(True) == 0:
+      raise Sorry(
+      "No reflections remaining after filtering for minimum partiality (min_partiality=%f)"
+       %(self.params.best.min_partiality))
+    reflections = reflections.select(sel)
+
     imageset = experiment.imageset
     prefix = self.params.best.prefix
 

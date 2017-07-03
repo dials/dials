@@ -13,7 +13,7 @@ from __future__ import absolute_import, division
 from dials.interfaces import SpotFinderThresholdIface
 
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("dials.extensions.kabsch_spotfinder_threshold_ext")
 
 
 class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
@@ -113,7 +113,7 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
 
     return self._algorithm(image, mask)
 
-def estimate_global_threshold(image, mask=None):
+def estimate_global_threshold(image, mask=None, plot=False):
 
   from scitbx.array_family import flex
   from scitbx import matrix
@@ -147,35 +147,35 @@ def estimate_global_threshold(image, mask=None):
     g = abs(v.dot(r))
     gaps.append(g)
 
-  mv = flex.mean_and_variance(gaps)
-  s = mv.unweighted_sample_standard_deviation()
-
   p_k = flex.max_index(gaps)
   g_k = gaps[p_k]
   p_g = p_k
 
-  #x_g = x[p_g + p_m]
-  #y_g = y[p_g + p_m]
-
-  #x_g = x[p_g + p_m -1]
-  #y_g = y[p_g + p_m -1]
+  x_g_ = x[p_g + p_m]
+  y_g_ = y[p_g + p_m]
 
   # more conservative, choose point 2 left of the elbow point
   x_g = x[p_g + p_m -2]
   y_g = y[p_g + p_m -2]
 
-  #from matplotlib import pyplot
-  #pyplot.scatter(threshold, n_above_threshold)
-  ##for i in range(len(threshold)-1):
-    ##pyplot.plot([threshold[i], threshold[-1]],
-                ##[n_above_threshold[i], n_above_threshold[-1]])
-  ##for i in range(1, len(threshold)):
-    ##pyplot.plot([threshold[0], threshold[i]],
-                ##[n_above_threshold[0], n_above_threshold[i]])
-  #pyplot.plot(
-    #[threshold[p_m], threshold[-1]], [n_above_threshold[p_m], n_above_threshold[-1]])
-  #pyplot.plot(
-    #[x_g, threshold[-1]], [y_g, n_above_threshold[-1]])
-  #pyplot.show()
+  if plot:
+    from matplotlib import pyplot
+    f = pyplot.figure(figsize=(16,12))
+    pyplot.scatter(threshold, n_above_threshold, marker='+')
+    #for i in range(len(threshold)-1):
+    #  pyplot.plot([threshold[i], threshold[-1]],
+    #              [n_above_threshold[i], n_above_threshold[-1]])
+    #for i in range(1, len(threshold)):
+    #  pyplot.plot([threshold[0], threshold[i]],
+    #              [n_above_threshold[0], n_above_threshold[i]])
+    pyplot.plot([x_g, x_g], pyplot.ylim())
+    pyplot.plot(
+      [threshold[p_m], threshold[-1]], [n_above_threshold[p_m], n_above_threshold[-1]])
+    pyplot.plot(
+      [x_g_, threshold[-1]], [y_g_, n_above_threshold[-1]])
+    pyplot.xlabel("Threshold")
+    pyplot.ylabel("Number of pixels above threshold")
+    pyplot.savefig("global_threshold.png")
+    pyplot.clf()
 
   return x_g
