@@ -642,3 +642,20 @@ class Model(ProfileModelIface):
 
     # Return the wrapper function
     return wrapper
+
+  def show(self, out=None):
+    if out is None:
+      import sys
+      out = sys.stdout
+    print >> out, "Profile model:"
+    print >> out, "    type: gaussian_rs"
+    print >> out, "    delta_b (sigma_b): %f (%f)" %(
+      self.delta_b(), self.sigma_b())
+    print >> out, "    delta_m (sigma_m): %f (%f)" %(
+      self.delta_m(), self.sigma_m())
+
+  def __str__(self):
+    from cStringIO import StringIO
+    s = StringIO()
+    self.show(out=s)
+    return s.getvalue()
