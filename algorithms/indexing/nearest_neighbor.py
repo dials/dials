@@ -4,11 +4,11 @@ import math
 class neighbor_analysis(object):
   def __init__(self, reflections, step_size=45, tolerance=1.5,
                max_height_fraction=0.25, percentile=0.05,
-               histogram_binning='linear'):
+               histogram_binning='linear', nn_per_bin=5):
     self.tolerance = tolerance # Margin of error for max unit cell estimate
     from scitbx.array_family import flex
     NEAR = 10
-    self.NNBIN = 5 # target number of neighbors per histogram bin
+    self.NNBIN = nn_per_bin # target number of neighbors per histogram bin
     self.histogram_binning = histogram_binning
 
     direct = flex.double()
