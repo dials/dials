@@ -10,7 +10,7 @@ import wxtbx.utils
 from gltbx.gl import *
 import gltbx
 from scitbx.math import minimum_covering_sphere
-from scitbx.array_family import flex
+from dials.array_family import flex
 from scitbx import matrix
 import libtbx.phil
 
@@ -99,7 +99,6 @@ class render_3d(object):
   def map_points_to_reciprocal_space(self):
 
     from dials.algorithms.indexing import indexer
-    from dials.array_family import flex
     import copy
 
     reflections = flex.reflection_table()
@@ -814,11 +813,13 @@ def run(args):
 
   if len(reflections) > 1:
     assert len(reflections) == len(imagesets)
-    from scitbx.array_family import flex
     for i in range(len(reflections)):
       reflections[i]['imageset_id'] = flex.int(len(reflections[i]), i)
       if i > 0:
         reflections[0].extend(reflections[i])
+  elif 'imageset_id' not in reflections[0]:
+    reflections[0]['imageset_id'] = reflections[0]['id']
+    reflections[0]['id'] = flex.int(reflections[0].size(), -1)
 
   reflections = reflections[0]
 
