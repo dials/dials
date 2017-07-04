@@ -114,7 +114,7 @@ def run(args):
         from scitbx import matrix
         fast = matrix.col(panel.get_fast_axis())
         slow = matrix.col(panel.get_slow_axis())
-        normal = fast.cross(slow)
+        normal = fast.cross(slow).normalize()
         origin = matrix.col(panel.get_origin())
         distance = origin.dot(normal)
         fast_origin = - (origin - distance * normal).dot(fast)
