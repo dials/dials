@@ -365,8 +365,8 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   logger.info('Beam vector: %.4f %.4f %.4f' % s0n)
 
   for b in range(image_range[0], image_range[1] + 1):
-    o = m.add_batch().set_num(b+b_incr).set_nbsetid(1).set_ncryst(1)
-    o.set_time1(0.0).set_time2(0.0).set_title('Batch %d' % (b+b_incr))
+    o = m.add_batch().set_num(b-b_incr+1).set_nbsetid(1).set_ncryst(1)
+    o.set_time1(0.0).set_time2(0.0).set_title('Batch %d' % (b-b_incr+1))
     o.set_ndet(1).set_theta(flex.float((0.0, 0.0))).set_lbmflg(0)
     o.set_alambd(wavelength).set_delamb(0.0).set_delcor(0.0)
     o.set_divhd(0.0).set_divvd(0.0)
@@ -483,7 +483,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
     rot = zdet
 
   # compute BATCH values
-  batch = flex.floor(zdet).iround() + 1 + b_incr
+  batch = flex.ceil(zdet).iround() - b_incr + 1
 
   # we're working with full reflections so... #388 no longer guaranteed
   if scale_partials:
