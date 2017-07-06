@@ -478,12 +478,12 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   # compute ROT values
   if experiment.scan:
     rot = flex.double([experiment.scan.get_angle_from_image_index(z)
-                      for z in zdet])
+                       for z in zdet])
   else:
     rot = zdet
 
   # compute BATCH values
-  batch = flex.ceil(zdet).iround() - b_incr + 1
+  batch = flex.floor(zdet).iround() - b_incr + 1
 
   # we're working with full reflections so... #388 no longer guaranteed
   if scale_partials:
