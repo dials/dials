@@ -380,13 +380,13 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
     o.set_sdbfac(0.0).set_sdbscale(0.0).set_nbscal(0)
 
     # unit cell (this is fine) and the what-was-refined-flags FIXME hardcoded
-
     # take time-varying parameters from the *end of the frame* unlikely to
-    # be much different at the end - however only exist if time-varying refinement
-    # was used
+    # be much different at the end - however only exist if scan-varying
+    # refinement was used
     if not force_static_model and experiment.crystal.num_scan_points > 0:
-      _unit_cell = experiment.crystal.get_unit_cell_at_scan_point(b-image_range[0])
-      _U = matrix.sqr(experiment.crystal.get_U_at_scan_point(b-image_range[0]))
+      offset = b - image_range[0]
+      _unit_cell = experiment.crystal.get_unit_cell_at_scan_point(offset)
+      _U = matrix.sqr(experiment.crystal.get_U_at_scan_point(offset))
     else:
       _unit_cell = unit_cell
       _U = U
@@ -475,14 +475,14 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   ydet = flex.double(y_px)
   zdet = flex.double(z_px)
 
-  # compute ROT values
+  # compute ROT values - z_px counts from 0; image_index from 1
   if experiment.scan:
-    rot = flex.double([experiment.scan.get_angle_from_image_index(z)
+    rot = flex.double([experiment.scan.get_angle_from_image_index(z+1)
                        for z in zdet])
   else:
     rot = zdet
 
-  # compute BATCH values
+  # compute BATCH values - ceil() because FORTRAN counting
   batch = flex.ceil(zdet).iround() - b_incr + 1
 
   # we're working with full reflections so... #388 no longer guaranteed
