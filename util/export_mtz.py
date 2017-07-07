@@ -650,10 +650,6 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   # Calculate any offset to the image numbers 
   batch_offsets = _calculate_batch_offsets(experiment_list)
 
-  # Explicitly match the legacy batch offset calculation for single experiments
-  if len(experiment_list) == 1:
-    batch_offsets = [max(1, experiment_list[0].image_range[0])]
-
   # Create the mtz file
   mtz_file = mtz.object()
   mtz_file.set_title('from dials.export_mtz')
