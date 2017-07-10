@@ -103,7 +103,7 @@ def hot_pixel_mask(imageset, reflections):
 
   from dials.array_family import flex
 
-  mask = flex.bool(flex.grid(reversed(imageset.get_image_size())), True)
+  mask = flex.bool(flex.grid(reversed(imageset.get_detector()[0].get_image_size())), True)
 
   for x, y in xylist:
     mask[y, x] = False

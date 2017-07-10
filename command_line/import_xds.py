@@ -225,7 +225,7 @@ class XDSFileImporter(object):
       # Print some experiment info
       print "-" * 80
       print "Experiment %d" % i
-      print "  format: %s" % str(exp.imageset.reader().get_format_class())
+      print "  format: %s" % str(exp.imageset.get_format_class())
       print "  type: %s" % type(exp.imageset)
       print "  num images: %d" % len(exp.imageset)
 

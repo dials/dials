@@ -82,8 +82,7 @@ class ExtractPixelsFromImage(object):
     # multiprocessing is a bit messed up and used fork on linux so need to
     # close and reopen file.
     if self.first:
-      from dxtbx.imageset import SingleFileReader
-      if isinstance(self.imageset.reader(), SingleFileReader):
+      if self.imageset.reader().is_single_file_reader():
         self.imageset.reader().nullify_format_instance()
       self.first = False
 

@@ -40,7 +40,7 @@ output {
 def merge_cbf(imageset, n_images, out_prefix="sum_"):
 
   from dxtbx.format.FormatCBF import FormatCBF
-  assert issubclass(imageset.reader().get_format_class(), FormatCBF), (
+  assert issubclass(imageset.get_format_class(), FormatCBF), (
     "Only CBF format images supported")
 
   from cbflib_adaptbx import compress

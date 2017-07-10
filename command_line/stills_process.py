@@ -135,8 +135,7 @@ def do_import(filename):
   reset_sets = []
 
   for imageset in datablocks[0].extract_imagesets():
-    imageset = ImageSet(imageset.reader(), imageset.indices())
-    imageset._models = imageset._models
+    imageset = ImageSet(imageset.data(), imageset.indices())
     imageset.set_scan(None)
     imageset.set_goniometer(None)
     reset_sets.append(imageset)

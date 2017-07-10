@@ -40,8 +40,7 @@ def run(space_group_info):
   datablock = load.datablock(datablock_json, check_format=False)[0]
   sweep = datablock.extract_imagesets()[0]
 
-  sweep._indices = sweep._indices[:20]
-  sweep.set_scan(sweep.get_scan()[:20])
+  sweep = sweep[:20]
 
   import random
   space_group = space_group_info.group()
