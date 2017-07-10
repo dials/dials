@@ -2316,13 +2316,7 @@ class Analyser(object):
                              PackageLoader('dials', 'static', encoding='utf-8')])
       env = Environment(loader=loader)
 
-      import json
-      graphs = OrderedDict()
-      for k, v in json_data.iteritems():
-        graph_group = OrderedDict()
-        for kk, vv in v.iteritems():
-          graph_group[kk] = json.dumps(vv)
-        graphs[k] = graph_group
+      graphs = json_data
 
       import libtbx.load_env
       static_dir = libtbx.env.find_in_repositories('dials/static')
