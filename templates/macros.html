@@ -18,12 +18,55 @@
     </div>
 {%- endmacro %}
 
+
+{% macro modal(header, content, id) -%}
+
+<!-- Modal -->
+<div id="{{ id }}" class="modal fade" role="dialog">
+  <div class="modal-dialog modal-lg">
+
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">{{ header }}</h4>
+      </div>
+      <div class="modal-body">
+        <pre> {{ content }} </pre>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{%- endmacro %}
+
 {% macro plotly_graph(div_id, json_data, style=None) -%}
-    {% if style != None %}
-        <div class="col-xs-6 col-sm-6 col-md-4 {{ style }}" id="{{ div_id }}"></div>
-    {% else %}
-        <div class="col-xs-6 col-sm-6 col-md-4 plot" id="{{ div_id }}"></div>
-    {% endif %}
+    <div class="plot_wrapper">
+
+        {% if style != None %}
+            <div class="col-xs-6 col-sm-6 col-md-4 {{ style }}" id="{{ div_id }}">
+        {% else %}
+            <div class="col-xs-6 col-sm-6 col-md-4 plot" id="{{ div_id }}">
+        {% endif %}
+
+        </div>
+
+        {% if "help" in json_data %}
+            <div>
+                <button type="button" class="btn btn-info" style="text-align:left; padding-left:6px" data-toggle="modal" data-target="#{{ div_id }}_help">
+                    <span class="glyphicon glyphicon-question-sign"></span>
+                    <!--Help-->
+                </button>
+                {{ modal(json_data["layout"]["title"], json_data["help"], div_id+"_help")}}
+            </div>
+
+        {% endif %}
+
+    </div>
     <script>
         var graphs_{{ div_id }} = {{ json_data | tojson }};
         Plotly.newPlot({{ div_id }}, graphs_{{ div_id }}.data, graphs_{{ div_id }}.layout);
