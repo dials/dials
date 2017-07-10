@@ -357,9 +357,8 @@ class ManagerImage(object):
     # Parallel reading of HDF5 from the same handle is not allowed. Python
     # multiprocessing is a bit messed up and used fork on linux so need to
     # close and reopen file.
-    from dxtbx.imageset import SingleFileReader
     for exp in self.experiments:
-      if isinstance(exp.imageset.reader(), SingleFileReader):
+      if exp.imageset.reader().is_single_file_reader():
         exp.imageset.reader().nullify_format_instance()
 
     # Set the initialization time

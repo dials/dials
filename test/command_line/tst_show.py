@@ -76,7 +76,7 @@ Crystal:
     dials_regression, "indexing_test_data", "i04_weak_data")
   cmd = "dials.show %s/datablock_orig.json" %path
   result = easy_run.fully_buffered(cmd).raise_if_errors()
-  assert not show_diff("\n".join(result.stdout_lines[7:]), """\
+  assert not show_diff("\n".join(result.stdout_lines[8:]), """\
 Detector:
 Panel:
   name: Panel

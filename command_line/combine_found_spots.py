@@ -155,7 +155,7 @@ def combine(datablock_list, reflections_list, params):
   scan_tolerance = params.input.tolerance.scan.oscillation
 
   # The initial models
-  format_class = imageset_list[0].reader().get_format_class()
+  format_class = imageset_list[0].get_format_class()
   beam = imageset_list[0].get_beam()
   detector = imageset_list[0].get_detector()
   goniometer = imageset_list[0].get_goniometer()
@@ -168,7 +168,7 @@ def combine(datablock_list, reflections_list, params):
     d = imageset.get_detector()
     g = imageset.get_goniometer()
     s = imageset.get_scan()
-    if not imageset.reader().get_format_class() == format_class:
+    if not imageset.get_format_class() == format_class:
       raise RuntimeError('Format classes do not match')
     if not imageset.get_template() == template:
       raise RuntimeError('Templates do not match')
