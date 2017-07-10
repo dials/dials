@@ -164,7 +164,8 @@ class stills_indexer(indexer_base):
         # no more lattices found
         break
 
-      if self.params.known_symmetry.space_group is not None:
+      ### TODO verify things don't need to be re-indexed if a target is provided
+      if False: #self.params.known_symmetry.space_group is not None:
         # now apply the space group symmetry only after the first indexing
         # need to make sure that the symmetrized orientation is similar to the P1 model
         target_space_group = self.target_symmetry_primitive.space_group()
@@ -454,6 +455,17 @@ class stills_indexer(indexer_base):
     n_cand = len(candidate_orientation_matrices)
 
     for icm,cm in enumerate(candidate_orientation_matrices):
+      # Drop candidates that after refinement can no longer be converted to the known target space group
+      if self.params.known_symmetry.space_group is not None:
+        target_space_group = self.target_symmetry_primitive.space_group()
+        new_crystal, cb_op_to_primitive = self.apply_symmetry(cm, target_space_group)
+        if new_crystal is None:
+          print "P1 refinement yielded model diverged from target, candidate %d/%d"%(icm, n_cand)
+          continue
+        new_crystal = new_crystal.change_basis(self.cb_op_primitive_inp)
+        cm = candidate_orientation_matrices[icm] = new_crystal
+
+
       sel = ((self.reflections['id'] == -1))
              #(1/self.reflections['rlp'].norms() > self.d_min))
       refl = self.reflections.select(sel)
@@ -488,14 +500,6 @@ class stills_indexer(indexer_base):
 
           nv = nave_parameters(params = params, experiments=ref_experiments, reflections=indexed, refinery=R, graph_verbose=False)
           crystal_model = nv()
-
-          # Drop candidates that after refinement can no longer be converted to the known target space group
-          if self.params.known_symmetry.space_group is not None:
-            target_space_group = self.target_symmetry_primitive.space_group()
-            new_crystal, cb_op_to_primitive = self.apply_symmetry(crystal_model, target_space_group)
-            if new_crystal is None:
-              print "P1 refinement yielded model diverged from target, candidate %d/%d"%(icm, n_cand)
-              continue
 
           rmsd, _ = calc_2D_rmsd_and_displacements(R.predict_for_reflection_table(indexed))
         except Exception, e:
