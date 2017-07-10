@@ -1559,6 +1559,7 @@ class indexer_base(object):
     c = matrix.col(direct_matrix[6:9])
     model = Crystal(
       a, b, c, space_group=target_sg_best)
+    assert target_sg_best.is_compatible_unit_cell(model.get_unit_cell())
 
     model = model.change_basis(cb_op_best_primitive)
     return model, cb_op_inp_primitive
