@@ -262,6 +262,8 @@ class stills_indexer(indexer_base):
             logger.info("Refining isoform %s"%isoform.name)
             refiners.append(e_refine(params=self.all_params, experiments=ExperimentList([iso_experiment]), reflections=reflections, graph_verbose=False))
 
+          if len(refiners) == 0:
+            raise Sorry("No isoforms had a lookup symbol that matched")
           positional_rmsds = [math.sqrt(P.rmsds()[0] ** 2 + P.rmsds()[1] ** 2) for P in refiners]
           logger.info("Positional rmsds for all isoforms:" + str(positional_rmsds))
           minrmsd_mm = min(positional_rmsds)
