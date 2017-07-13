@@ -18,6 +18,11 @@ def in_ranges(value, ranges):
   """Check if a value is in a list of ranges"""
   return all( low <= value <= high for low, high in ranges)
 
+
+def range_to_set(ranges):
+  """Convert a list of ranges to a set of numbers"""
+  return set().union(*[set(range(l,h+1)) for l,h in ranges])
+
 def has_consecutive_ranges(ranges):
   """Check that a set of ranges is non-consecutive"""
   total_entries = sum(h-l+1+1 for l, h in ranges)
@@ -36,14 +41,19 @@ class TestBatchRangeCalculations(object):
       self.image_range = tuple(image_range)
 
   def _run_ranges(self, ranges):
-    """Convenience method to run the routine with a minimal experiment, and return the result as ranges"""
+    """Convenience method to run the routine with a minimal experiment, and return the result as ranges of batch number"""
     input = [self.MockExperiment(x) for x in ranges]
     return offset_ranges(export_mtz._calculate_batch_offsets(input), ranges)
 
+  def _run_ranges_to_set(self, ranges):
+    """Runs a list of ranges and returns a set of individual batch numbers"""
+    return range_to_set(self._run_ranges(ranges))
+
   def test_calculate_batch_ranges(self):
     assert self._run_ranges([(1,1)]) == [(1,1)]
+    
     # Zero is shifted
-    assert not in_ranges(0, self._run_ranges([(0,0)])), "Should be no zeroth batch"
+    assert all([x > 0 for x in self._run_ranges_to_set([(0,0)])]), "Should be no zeroth/negative batch"
     
     input = [self.MockExperiment(x) for x in [(1,1), (1,1)]]
     assert not set(self._run_ranges([(1,1), (1,1)])) == {(1,1)}, "Overlapping simple ranges"
@@ -51,13 +61,14 @@ class TestBatchRangeCalculations(object):
     data_tests = [
       [(1,1), (1,1)],
       [(1,1), (8,8), (9,9)],
-      [(23,24), (70, 100), (1,1), (1,4), (1,1)]
+      [(23,24), (70, 100), (1,1), (1,4), (1,1)],
+      [(0,98),]
     ]
     for data in data_tests:
       print("Running ", data)
       print("  ", self._run_ranges(data))
       assert all([float(x).is_integer() for x in itertools.chain(*self._run_ranges(data))]), "Fractional epochs"
       assert all(isinstance(x, int) for x in itertools.chain(*self._run_ranges(data))), "Not all true integers"
+      assert all([x > 0 for x in self._run_ranges_to_set([(0,0)])]), "Should be no zeroth/negative batch"
       assert not has_consecutive_ranges(self._run_ranges(data))
-
 
