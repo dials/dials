@@ -1988,21 +1988,22 @@ def find_max_cell(reflections, max_cell_multiplier, step_size,
   perm = flex.sort_permutation(bin_counts)
   sorted_bin_counts = bin_counts.select(perm)
   sorted_bin_counts = sorted_bin_counts.select(sorted_bin_counts > 0)
-  from libtbx.math_utils import nearest_integer as nint
-  q1 = sorted_bin_counts[nint(len(sorted_bin_counts)/4)]
-  q2 = sorted_bin_counts[nint(len(sorted_bin_counts)/2)]
-  q3 = sorted_bin_counts[nint(len(sorted_bin_counts)*3/4)]
-  iqr = q3-q1
-  inlier_sel = (bin_counts > (q1 - 1.5*iqr)) & (bin_counts < (q3 + 1.5*iqr))
+  if sorted_bin_counts.size() >=4:
+    from libtbx.math_utils import nearest_integer as nint
+    q1 = sorted_bin_counts[nint(len(sorted_bin_counts)/4)]
+    q2 = sorted_bin_counts[nint(len(sorted_bin_counts)/2)]
+    q3 = sorted_bin_counts[nint(len(sorted_bin_counts)*3/4)]
+    iqr = q3-q1
+    inlier_sel = (bin_counts > (q1 - 1.5*iqr)) & (bin_counts < (q3 + 1.5*iqr))
 
-  sel = flex.bool(d_star_sq.size(), True)
-  for i_slot in range(hist.slots().size()):
-    if not inlier_sel[i_slot]:
-      sel.set_selected(
-        (d_star_sq > (hist.slot_centers()[i_slot] - 0.5*hist.slot_width())) &
-        (d_star_sq <= (hist.slot_centers()[i_slot] + 0.5*hist.slot_width())), False)
+    sel = flex.bool(d_star_sq.size(), True)
+    for i_slot in range(hist.slots().size()):
+      if not inlier_sel[i_slot]:
+        sel.set_selected(
+          (d_star_sq > (hist.slot_centers()[i_slot] - 0.5*hist.slot_width())) &
+          (d_star_sq <= (hist.slot_centers()[i_slot] + 0.5*hist.slot_width())), False)
 
-  reflections = reflections.select(sel)
+    reflections = reflections.select(sel)
   #from libtbx import easy_pickle
   #easy_pickle.dump('filtered.pickle', reflections)
 
