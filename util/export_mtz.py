@@ -297,6 +297,7 @@ def _add_batch(mtz, experiment, batch_number, image_number, force_static_model):
 
   Returns the batch object.
   """
+  assert batch_number > 0
 
   # Recalculate useful numbers and references here
   wavelength = experiment.beam.get_wavelength()
@@ -577,14 +578,14 @@ def _calculate_batch_offsets(experiments):
     # Check assumptions
     assert ilow <= ihigh, "Inverted image order!?"
     assert ilow >= 0, "Negative image indices are not expected"
-    # Don't emit zero: comments indicate that pointless does not like it
+    # Don't emit zero: Causes problems with C/fortran number conversion
     if ilow == 0:
       ilow, ihigh = ilow+1, ihigh+1
     # If we overlap with anything, then process later
     if any( ilow <= high+1 and ihigh >= low-1 for low, high in existing_ranges):
       experiments_to_shift.append((i, experiment))
     else:
-      batch_offsets[i] = experiment.image_range[0] - ilow
+      batch_offsets[i] = ilow-experiment.image_range[0]
       existing_ranges.add((ilow, ihigh))
       maximum_batch_number = max(maximum_batch_number, ihigh)
   
