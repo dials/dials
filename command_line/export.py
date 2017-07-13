@@ -447,7 +447,7 @@ class MosflmExporter(object):
     if len(experiments) == 0:
       raise Sorry('Mosflm exporter requires an experiment list')
     if len(reflections) != 0:
-      raise Sorry('Mosflm exporter does need reflection table')
+      raise Sorry('Mosflm exporter does not need a reflection table')
 
     # Save the stuff
     self.params = params
