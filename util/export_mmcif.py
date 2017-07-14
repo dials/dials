@@ -45,8 +45,8 @@ class MMCIFOutputFile(object):
     # Hard coding X-ray
     cif_block["_pdbx_diffrn_data_section.id"] = 'dials'
     cif_block["_pdbx_diffrn_data_section.type_scattering"] = "x-ray"
-    cif_block["_pdbx_diffrn_data_section.type_merged"] = False
-    cif_block["_pdbx_diffrn_data_section.type_scaled"] = False
+    cif_block["_pdbx_diffrn_data_section.type_merged"] = "false"
+    cif_block["_pdbx_diffrn_data_section.type_scaled"] = "false"
 
     # FIXME Haven't put in any of these bits yet
     #
@@ -98,7 +98,7 @@ class MMCIFOutputFile(object):
       header=("_pdbx_diffrn_image_proc.image_id",
               "_pdbx_diffrn_image_proc.crystal_id",
               "_pdbx_diffrn_image_proc.image_number",
-              "_pdbx_diffrn_image_proc.phi_image",
+              "_pdbx_diffrn_image_proc.phi_value",
               "_pdbx_diffrn_image_proc.wavelength",
               "_pdbx_diffrn_image_proc.cell_length_a",
               "_pdbx_diffrn_image_proc.cell_length_b",
@@ -113,14 +113,15 @@ class MMCIFOutputFile(object):
       else:
         a, b, c, alpha, beta, gamma = unit_cell_parameters[0]
       phi = scan.get_angle_from_image_index(z)
-      cif_loop.add_row((i+1, 1, z, phi, wavelength, a, b, c, alpha, beta, gamma))
+      cif_loop.add_row((i+1, 1, z, phi, wavelength,
+                        a, b, c, alpha, beta, gamma))
     cif_block.add_loop(cif_loop)
 
     # Write reflection data
     # FIXME there are three intensiry fields. I've put summation in I and Isum
     cif_loop = iotbx.cif.model.loop(
       header=("_pdbx_diffrn_unmerged_refln.reflection_id",
-              "_pdbx_diffrn_unmerged_refln.image_id_start",
+              "_pdbx_diffrn_unmerged_refln.image_id_begin",
               "_pdbx_diffrn_unmerged_refln.image_id_end",
               "_pdbx_diffrn_unmerged_refln.index_h",
               "_pdbx_diffrn_unmerged_refln.index_k",
@@ -144,7 +145,8 @@ class MMCIFOutputFile(object):
       sigIprf       = r['intensity.prf.variance']
       phi           = r['xyzcal.mm'][2]
       partiality    = r['partiality']
-      cif_loop.add_row((i+1, z0, z1, h, k, l, I, sigI, Isum, sigIsum, Iprf, sigIprf, phi, partiality))
+      cif_loop.add_row((i+1, z0, z1, h, k, l, I, sigI, Isum, sigIsum, Iprf,
+          sigIprf, phi, partiality))
     cif_block.add_loop(cif_loop)
 
     # Add the block
