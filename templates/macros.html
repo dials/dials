@@ -32,7 +32,7 @@
         <h4 class="modal-title">{{ header }}</h4>
       </div>
       <div class="modal-body">
-        <pre> {{ content }} </pre>
+        <pre>{{ content }}</pre>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
@@ -45,25 +45,25 @@
 {%- endmacro %}
 
 {% macro plotly_graph(div_id, json_data, style=None) -%}
+
     <div class="plot_wrapper">
 
         {% if style != None %}
-            <div class="col-xs-6 col-sm-6 col-md-4 {{ style }}" id="{{ div_id }}">
+        <div class="col-xs-6 col-sm-6 col-md-4 {{ style }}" id="{{ div_id }}">
         {% else %}
-            <div class="col-xs-6 col-sm-6 col-md-4 plot" id="{{ div_id }}">
+        <div class="col-xs-6 col-sm-6 col-md-4 plot" id="{{ div_id }}">
         {% endif %}
 
         </div>
 
         {% if "help" in json_data %}
-            <div>
-                <button type="button" class="btn btn-info" style="text-align:left; padding-left:6px" data-toggle="modal" data-target="#{{ div_id }}_help">
-                    <span class="glyphicon glyphicon-question-sign"></span>
-                    <!--Help-->
-                </button>
-                {{ modal(json_data["layout"]["title"], json_data["help"], div_id+"_help")}}
-            </div>
-
+        <div class="col-xs-1 col-sm-1 col-md-1">
+            <button type="button" class="btn btn-info" style="text-align:center" data-toggle="modal" data-target="#{{ div_id }}_help">
+                <span class="glyphicon glyphicon-question-sign"></span>
+                <!--Help-->
+            </button>
+            {{ modal(json_data["layout"]["title"], json_data["help"], div_id+"_help")}}
+        </div>
         {% endif %}
 
     </div>
