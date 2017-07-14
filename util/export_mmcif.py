@@ -94,6 +94,14 @@ class MMCIFOutputFile(object):
     # Write the image data
     scan = experiments[0].scan
     z0 = scan.get_image_range()[0]
+
+    # Work around phi_value >= 0 specification in the draft dictionary
+    min_phi = min(scan.get_oscillation_range())
+    d_phi = 0.0
+    if min_phi < 0:
+      add_full_turns = (min_phi // -360.0) + 1
+      d_phi = add_full_turns * 360.0
+
     cif_loop = iotbx.cif.model.loop(
       header=("_pdbx_diffrn_image_proc.image_id",
               "_pdbx_diffrn_image_proc.crystal_id",
@@ -112,7 +120,7 @@ class MMCIFOutputFile(object):
         a, b, c, alpha, beta, gamma = unit_cell_parameters[i]
       else:
         a, b, c, alpha, beta, gamma = unit_cell_parameters[0]
-      phi = scan.get_angle_from_image_index(z)
+      phi = scan.get_angle_from_image_index(z) + d_phi
       cif_loop.add_row((i+1, 1, z, phi, wavelength,
                         a, b, c, alpha, beta, gamma))
     cif_block.add_loop(cif_loop)
