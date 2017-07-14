@@ -631,6 +631,18 @@ class StrongSpotsAnalyser(object):
             'rangemode': 'tozero'
           },
         },
+        'help': '''\
+A plot of the distribution of total and indexed spot count with respect to image
+number. A drop off in spot count towards zero at the end of the scan may be
+indicative of radiation damage, whereas a sudden fall followed by a sudden rise
+in spot count may suggest that the crystal has moved out of the beam. Systematic
+variations in spot count with image number may be a result of unit cell
+dimensions, variations in volume of crystal intersecting the beam, or
+diffraction anisotropy. Large separation between the total and indexed spot
+count shows a significant number of unindexed reflections, which may be the
+result of further, unidentified lattices, split reflections, reflections due to
+ice rings, or poor spot-finding parameters.
+'''
       },
     }
     for j in range(flex.max(ids)+1):
