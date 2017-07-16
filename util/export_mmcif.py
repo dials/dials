@@ -111,12 +111,13 @@ class MMCIFOutputFile(object):
               "_pdbx_diffrn_image_proc.cell_angle_beta",
               "_pdbx_diffrn_image_proc.cell_angle_gamma"))
     for i in range(len(scan)):
-      z = z0 + i + 0.5 # z is the image index for the centre of the image
+      z = z0 + i
       if crystal.num_scan_points > 1:
         a, b, c, alpha, beta, gamma = unit_cell_parameters[i]
       else:
         a, b, c, alpha, beta, gamma = unit_cell_parameters[0]
-      phi = scan.get_angle_from_image_index(z, deg=True)
+      # phi is the angle at the image centre
+      phi = scan.get_angle_from_image_index(z + 0.5, deg=True)
       cif_loop.add_row((i+1, 1, z, phi, wavelength,
                         a, b, c, alpha, beta, gamma))
     cif_block.add_loop(cif_loop)
