@@ -12,6 +12,7 @@ from __future__ import absolute_import, division
 import logging
 logger = logging.getLogger(__name__)
 from math import pi
+from cctbx.sgtbx import bravais_types
 
 RAD2DEG = 180.0/pi
 
@@ -78,11 +79,13 @@ class MMCIFOutputFile(object):
               "_pdbx_diffrn_unmerged_cell.cell_length_c",
               "_pdbx_diffrn_unmerged_cell.cell_angle_alpha",
               "_pdbx_diffrn_unmerged_cell.cell_angle_beta",
-              "_pdbx_diffrn_unmerged_cell.cell_angle_gamma"))
+              "_pdbx_diffrn_unmerged_cell.cell_angle_gamma",
+              "_pdbx_diffrn_unmerged_cell.Bravais_lattice"))
     crystal = experiments[0].crystal
     wavelength = experiments[0].beam.get_wavelength()
     a, b, c, alpha, beta, gamma = crystal.get_unit_cell().parameters()
-    cif_loop.add_row((1, 1, wavelength, a, b, c, alpha, beta, gamma))
+    latt_type = str(bravais_types.bravais_lattice(group=crystal.get_space_group()))
+    cif_loop.add_row((1, 1, wavelength, a, b, c, alpha, beta, gamma, latt_type))
     cif_block.add_loop(cif_loop)
 
     # Make a dict of unit_cell parameters
@@ -123,7 +126,7 @@ class MMCIFOutputFile(object):
     cif_block.add_loop(cif_loop)
 
     # Write reflection data
-    # FIXME there are three intensiry fields. I've put summation in I and Isum
+    # FIXME there are three intensity fields. I've put summation in I and Isum
     cif_loop = iotbx.cif.model.loop(
       header=("_pdbx_diffrn_unmerged_refln.reflection_id",
               "_pdbx_diffrn_unmerged_refln.image_id_begin",
