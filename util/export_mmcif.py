@@ -111,33 +111,37 @@ class MMCIFOutputFile(object):
     else:
       unit_cell_parameters[0] = (a, b, c, alpha, beta, gamma)
 
+    ### _pdbx_diffrn_image_proc has been removed from the dictionary extension.
+    ### Keeping this section commented out as it may be added back in some
+    ### form in future
+    #
     # Write the image data
-    scan = experiments[0].scan
-    z0 = scan.get_image_range()[0]
-
-    cif_loop = iotbx.cif.model.loop(
-      header=("_pdbx_diffrn_image_proc.image_id",
-              "_pdbx_diffrn_image_proc.crystal_id",
-              "_pdbx_diffrn_image_proc.image_number",
-              "_pdbx_diffrn_image_proc.phi_value",
-              "_pdbx_diffrn_image_proc.wavelength",
-              "_pdbx_diffrn_image_proc.cell_length_a",
-              "_pdbx_diffrn_image_proc.cell_length_b",
-              "_pdbx_diffrn_image_proc.cell_length_c",
-              "_pdbx_diffrn_image_proc.cell_angle_alpha",
-              "_pdbx_diffrn_image_proc.cell_angle_beta",
-              "_pdbx_diffrn_image_proc.cell_angle_gamma"))
-    for i in range(len(scan)):
-      z = z0 + i
-      if crystal.num_scan_points > 1:
-        a, b, c, alpha, beta, gamma = unit_cell_parameters[i]
-      else:
-        a, b, c, alpha, beta, gamma = unit_cell_parameters[0]
-      # phi is the angle at the image centre
-      phi = scan.get_angle_from_image_index(z + 0.5, deg=True)
-      cif_loop.add_row((i+1, 1, z, phi, wavelength,
-                        a, b, c, alpha, beta, gamma))
-    cif_block.add_loop(cif_loop)
+    #scan = experiments[0].scan
+    #z0 = scan.get_image_range()[0]
+    #
+    #cif_loop = iotbx.cif.model.loop(
+    #  header=("_pdbx_diffrn_image_proc.image_id",
+    #          "_pdbx_diffrn_image_proc.crystal_id",
+    #          "_pdbx_diffrn_image_proc.image_number",
+    #          "_pdbx_diffrn_image_proc.phi_value",
+    #          "_pdbx_diffrn_image_proc.wavelength",
+    #          "_pdbx_diffrn_image_proc.cell_length_a",
+    #          "_pdbx_diffrn_image_proc.cell_length_b",
+    #          "_pdbx_diffrn_image_proc.cell_length_c",
+    #          "_pdbx_diffrn_image_proc.cell_angle_alpha",
+    #          "_pdbx_diffrn_image_proc.cell_angle_beta",
+    #          "_pdbx_diffrn_image_proc.cell_angle_gamma"))
+    #for i in range(len(scan)):
+    #  z = z0 + i
+    #  if crystal.num_scan_points > 1:
+    #    a, b, c, alpha, beta, gamma = unit_cell_parameters[i]
+    #  else:
+    #    a, b, c, alpha, beta, gamma = unit_cell_parameters[0]
+    #  # phi is the angle at the image centre
+    #  phi = scan.get_angle_from_image_index(z + 0.5, deg=True)
+    #  cif_loop.add_row((i+1, 1, z, phi, wavelength,
+    #                    a, b, c, alpha, beta, gamma))
+    #cif_block.add_loop(cif_loop)
 
     # Write reflection data
     # FIXME there are three intensity fields. I've put summation in I and Isum
