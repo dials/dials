@@ -88,6 +88,20 @@ class MMCIFOutputFile(object):
     cif_loop.add_row((1, 1, wavelength, a, b, c, alpha, beta, gamma, latt_type))
     cif_block.add_loop(cif_loop)
 
+    # Write the scan information
+    cif_loop = iotbx.cif.model.loop(
+      header=("_pdbx_diffrn_scan.scan_id",
+              "_pdbx_diffrn_scan.crystal_id",
+              "_pdbx_diffrn_scan.image_id_begin",
+              "_pdbx_diffrn_scan.image_id_end",
+              "_pdbx_diffrn_scan.scan_angle_begin",
+              "_pdbx_diffrn_scan.scan_angle_end"))
+    scan = experiments[0].scan
+    image_range = scan.get_image_range()
+    osc_range = scan.get_oscillation_range(deg=True)
+    cif_loop.add_row((1, 1, image_range[0], image_range[1], osc_range[0], osc_range[1]))
+    cif_block.add_loop(cif_loop)
+
     # Make a dict of unit_cell parameters
     unit_cell_parameters = {}
     if crystal.num_scan_points > 1:
