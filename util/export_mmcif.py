@@ -143,6 +143,7 @@ class MMCIFOutputFile(object):
     # FIXME there are three intensity fields. I've put summation in I and Isum
     cif_loop = iotbx.cif.model.loop(
       header=("_pdbx_diffrn_unmerged_refln.reflection_id",
+              "_pdbx_diffrn_unmerged_refln.scan_id",
               "_pdbx_diffrn_unmerged_refln.image_id_begin",
               "_pdbx_diffrn_unmerged_refln.image_id_end",
               "_pdbx_diffrn_unmerged_refln.index_h",
@@ -154,8 +155,9 @@ class MMCIFOutputFile(object):
               "_pdbx_diffrn_unmerged_refln.intensity_sum_sigma",
               "_pdbx_diffrn_unmerged_refln.intensity_profile",
               "_pdbx_diffrn_unmerged_refln.intensity_profile_sigma",
-              "_pdbx_diffrn_unmerged_refln.phi_reflection",
-              "_pdbx_diffrn_unmerged_refln.partiality"))
+              "_pdbx_diffrn_unmerged_refln.scan_angle_reflection",
+              "_pdbx_diffrn_unmerged_refln.partiality",
+              "_pdbx_diffrn_unmerged_refln.scale_value"))
     for i, r in enumerate(reflections):
       _,_,_,_,z0,z1 = r['bbox']
       h, k, l       = r['miller_index']
@@ -167,8 +169,9 @@ class MMCIFOutputFile(object):
       sigIprf       = r['intensity.prf.variance']
       phi           = r['xyzcal.mm'][2] * RAD2DEG
       partiality    = r['partiality']
-      cif_loop.add_row((i+1, z0, z1, h, k, l, I, sigI, Isum, sigIsum, Iprf,
-          sigIprf, phi, partiality))
+      scale         = 1.0
+      cif_loop.add_row((i+1, 1, z0, z1, h, k, l, I, sigI, Isum, sigIsum, Iprf,
+          sigIprf, phi, partiality, scale))
     cif_block.add_loop(cif_loop)
 
     # Add the block
