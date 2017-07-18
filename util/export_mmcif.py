@@ -37,7 +37,6 @@ class MMCIFOutputFile(object):
 
     '''
     import iotbx.cif.model
-    assert len(experiments) == 1, "Only 1 experiment is handled at the moment"
 
     # Select reflections
     selection = reflections.get_flags(reflections.flags.integrated, all=True)
@@ -81,12 +80,16 @@ class MMCIFOutputFile(object):
               "_pdbx_diffrn_unmerged_cell.cell_angle_beta",
               "_pdbx_diffrn_unmerged_cell.cell_angle_gamma",
               "_pdbx_diffrn_unmerged_cell.Bravais_lattice"))
-    crystal = experiments[0].crystal
-    wavelength = experiments[0].beam.get_wavelength()
-    a, b, c, alpha, beta, gamma = crystal.get_unit_cell().parameters()
-    latt_type = str(bravais_types.bravais_lattice(group=crystal.get_space_group()))
-    cif_loop.add_row((1, 1, wavelength, a, b, c, alpha, beta, gamma, latt_type))
-    cif_block.add_loop(cif_loop)
+    crystals = experiments.crystals()
+    crystal_to_id = {crystal: i+1 for i, crystal in enumerate(crystals)}
+    for i, exp in enumerate(experiments):
+      crystal = exp.crystal
+      crystal_id = crystal_to_id[crystal]
+      wavelength = exp.beam.get_wavelength()
+      a, b, c, alpha, beta, gamma = crystal.get_unit_cell().parameters()
+      latt_type = str(bravais_types.bravais_lattice(group=crystal.get_space_group()))
+      cif_loop.add_row((i+1, crystal_id, wavelength, a, b, c, alpha, beta, gamma, latt_type))
+      cif_block.add_loop(cif_loop)
 
     # Write the scan information
     cif_loop = iotbx.cif.model.loop(
@@ -96,11 +99,13 @@ class MMCIFOutputFile(object):
               "_pdbx_diffrn_scan.image_id_end",
               "_pdbx_diffrn_scan.scan_angle_begin",
               "_pdbx_diffrn_scan.scan_angle_end"))
-    scan = experiments[0].scan
-    image_range = scan.get_image_range()
-    osc_range = scan.get_oscillation_range(deg=True)
-    cif_loop.add_row((1, 1, image_range[0], image_range[1], osc_range[0], osc_range[1]))
-    cif_block.add_loop(cif_loop)
+    for i, exp in enumerate(experiments):
+      scan = exp.scan
+      crystal_id = crystal_to_id[exp.crystal]
+      image_range = scan.get_image_range()
+      osc_range = scan.get_oscillation_range(deg=True)
+      cif_loop.add_row((i+1, crystal_id, image_range[0], image_range[1], osc_range[0], osc_range[1]))
+      cif_block.add_loop(cif_loop)
 
     # Make a dict of unit_cell parameters
     unit_cell_parameters = {}
@@ -163,6 +168,8 @@ class MMCIFOutputFile(object):
               "_pdbx_diffrn_unmerged_refln.partiality",
               "_pdbx_diffrn_unmerged_refln.scale_value"))
     for i, r in enumerate(reflections):
+      refl_id       = i + 1
+      scan_id       = r['id'] + 1
       _,_,_,_,z0,z1 = r['bbox']
       h, k, l       = r['miller_index']
       I             = r['intensity.sum.value']
@@ -174,8 +181,8 @@ class MMCIFOutputFile(object):
       phi           = r['xyzcal.mm'][2] * RAD2DEG
       partiality    = r['partiality']
       scale         = 1.0
-      cif_loop.add_row((i+1, 1, z0, z1, h, k, l, I, sigI, Isum, sigIsum, Iprf,
-          sigIprf, phi, partiality, scale))
+      cif_loop.add_row((refl_id, scan_id, z0, z1, h, k, l, I, sigI, Isum,
+          sigIsum, Iprf, sigIprf, phi, partiality, scale))
     cif_block.add_loop(cif_loop)
 
     # Add the block
