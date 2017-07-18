@@ -160,7 +160,7 @@ phil_scope = parse('''
 
   mmcif {
 
-    hklout = integrated.mmcif
+    hklout = integrated.cif
       .type = path
       .help = "The output CIF file"
 
