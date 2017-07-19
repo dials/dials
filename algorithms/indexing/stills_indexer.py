@@ -455,24 +455,29 @@ class stills_indexer(indexer_base):
     n_cand = len(candidate_orientation_matrices)
 
     for icm,cm in enumerate(candidate_orientation_matrices):
-      # Drop candidates that after refinement can no longer be converted to the known target space group
-      if self.params.known_symmetry.space_group is not None:
-        target_space_group = self.target_symmetry_primitive.space_group()
-        new_crystal, cb_op_to_primitive = self.apply_symmetry(cm, target_space_group)
-        if new_crystal is None:
-          print "P1 refinement yielded model diverged from target, candidate %d/%d"%(icm, n_cand)
-          continue
-        new_crystal = new_crystal.change_basis(self.cb_op_primitive_inp)
-        cm = candidate_orientation_matrices[icm] = new_crystal
-
-
+      # Index reflections in P1
       sel = ((self.reflections['id'] == -1))
-             #(1/self.reflections['rlp'].norms() > self.d_min))
       refl = self.reflections.select(sel)
       experiments = self.experiment_list_for_crystal(cm)
       self.index_reflections(experiments, refl)
       indexed = refl.select(refl['id'] >= 0)
       indexed = indexed.select(indexed.get_flags(indexed.flags.indexed))
+
+      # If target symmetry applied, try to apply it.  Then, apply the change of basis to the reflections
+      # indexed in P1 to the target setting
+      if self.params.known_symmetry.space_group is not None:
+        target_space_group = self.target_symmetry_primitive.space_group()
+        new_crystal, cb_op_to_primitive = self.apply_symmetry(cm, target_space_group)
+        if new_crystal is None:
+          print "Cannot convert to target symmetry, candidate %d/%d"%(icm, n_cand)
+          continue
+        new_crystal = new_crystal.change_basis(self.cb_op_primitive_inp)
+        cm = candidate_orientation_matrices[icm] = new_crystal
+
+        if not cb_op_to_primitive.is_identity_op():
+          indexed['miller_index'] = cb_op_to_primitive.apply(indexed['miller_index'])
+        if self.cb_op_primitive_inp is not None:
+          indexed['miller_index'] = self.cb_op_primitive_inp.apply(indexed['miller_index'])
 
       if params.indexing.stills.refine_all_candidates:
         try:
