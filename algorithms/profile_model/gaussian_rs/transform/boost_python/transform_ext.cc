@@ -89,6 +89,17 @@ namespace boost_python {
       .def("background", &TransformForwardType::background)
       ;
   }
+  
+  template <typename FloatType>
+  void transform_reverse_wrapper(const char *name) {
+
+    class_<TransformReverse>(name, no_init)
+      .def(init<const TransformSpec&,
+                const CoordinateSystem&, int6, std::size_t,
+                const af::const_ref< double, af::c_grid<3> >&>())
+      .def("profile", &TransformReverse::profile)
+      ;
+  }
 
   void transform_forward_no_model_wrapper(const char *name) {
 
@@ -214,6 +225,7 @@ namespace boost_python {
       ;
 
     transform_forward_wrapper<double>("TransformForward");
+    transform_reverse_wrapper<double>("TransformReverse");
     transform_forward_no_model_wrapper("TransformForwardNoModel");
     transform_reverse_no_model_wrapper("TransformReverseNoModel");
   }
