@@ -432,7 +432,7 @@ class stills_indexer(indexer_base):
       indexed = refl.select(refl['id'] >= 0)
       indexed = indexed.select(indexed.get_flags(indexed.flags.indexed))
 
-      # If target symmetry applied, try to apply it.  Then, apply the change of basis to the reflections
+      # If target symmetry supplied, try to apply it.  Then, apply the change of basis to the reflections
       # indexed in P1 to the target setting
       if self.params.known_symmetry.space_group is not None:
         target_space_group = self.target_symmetry_primitive.space_group()
