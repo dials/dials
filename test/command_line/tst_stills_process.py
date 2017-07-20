@@ -13,12 +13,94 @@ class Test(object):
       print 'SKIP: dials_regression not configured'
       exit(0)
 
-    self.path = join(dials_regression, "image_examples/SACLA_MPCCD_Cheetah")
+    self.lcls_path = join(dials_regression, "image_examples/LCLS_cspad_nexus")
+    self.sacla_path = join(dials_regression, "image_examples/SACLA_MPCCD_Cheetah")
 
   def run(self):
+    self.test_cspad_cbf_in_memory()
     self.test_sacla_h5()
 
-  def test_sacla_h5(self):
+  def test_cspad_cbf_in_memory(self):
+    from os.path import join, exists
+    import os, dxtbx
+    from uuid import uuid4
+    from dials.command_line.stills_process import phil_scope, Processor
+    from libtbx.phil import parse
+    from dxtbx.imageset import MemImageSet
+    from dxtbx.datablock import DataBlockFactory
+    from dxtbx.format.FormatCBFCspad import FormatCBFCspadInMemory
+    import cPickle as pickle
+
+    dirname ='tmp_%s' % uuid4().hex
+    os.mkdir(dirname)
+    os.chdir(dirname)
+
+    assert exists(join(self.lcls_path, 'idx-20130301060858801.cbf'))
+
+    f = open("process_lcls.phil", 'w')
+    f.write("""
+      spotfinder {
+        filter.min_spot_size=2
+        threshold.xds.gain=25
+        threshold.xds.global_threshold=100
+      }
+      indexing {
+        known_symmetry {
+          space_group = P6122
+          unit_cell = 92.9 92.9 130.4 90 90 120
+        }
+        method=fft1d
+        refinement_protocol.d_min_start=1.7
+      }
+      integration {
+        integrator=stills
+        profile.fitting=False
+        background {
+          algorithm = simple
+          simple {
+            model.algorithm = linear2d
+            outlier.algorithm = plane
+          }
+        }
+      }
+      refinement {
+        parameterisation {
+          beam.fix=all
+          detector.fix=all
+        }
+        reflections {
+          outlier.algorithm=null
+          weighting_strategy.override=stills
+        }
+      }
+      profile {
+        gaussian_rs {
+          min_spots.overall = 0
+        }
+      }
+      """)
+    f.close()
+    params = phil_scope.fetch(parse(file_name="process_lcls.phil")).extract()
+    params.output.datablock_filename = None
+    processor = Processor(params)
+    mem_img = dxtbx.load(join(self.lcls_path, 'idx-20130301060858801.cbf'))
+    raw_data = mem_img.get_raw_data() # cache the raw data to prevent swig errors
+    mem_img = FormatCBFCspadInMemory(mem_img._cbf_handle)
+    mem_img._raw_data = raw_data
+    mem_img._cbf_handle = None # drop the file handle to prevent swig errors
+    imgset = MemImageSet([mem_img])
+    datablock = DataBlockFactory.from_imageset(imgset)[0]
+    processor.process_datablock("20130301060858801", datablock) # index/integrate the image
+    result = "idx-20130301060858801_integrated.pickle"
+    n_refls = range(140,152) # large ranges to handle platform-specific differences
+    table = pickle.load(open(result, 'rb'))
+    assert len(table) in n_refls, len(table)
+    assert 'id' in table
+    assert (table['id'] == 0).count(False) == 0
+
+    print 'OK'
+
+  def test_sacla_h5(self, in_memory=False):
     from os.path import join, exists
     from libtbx import easy_run
     import os
@@ -28,12 +110,12 @@ class Test(object):
     os.mkdir(dirname)
     os.chdir(dirname)
 
-    assert exists(join(self.path, 'run266702-0-subset.h5'))
+    assert exists(join(self.sacla_path, 'run266702-0-subset.h5'))
 
-    geometry_path = join(self.path, 'refined_experiments_level1.json')
+    geometry_path = join(self.sacla_path, 'refined_experiments_level1.json')
     assert exists(geometry_path)
 
-    f = open("process.phil", 'w')
+    f = open("process_sacla.phil", 'w')
     f.write("""
       input.reference_geometry=%s
       indexing {
@@ -97,8 +179,8 @@ class Test(object):
     # Call dials.stills_process
     result = easy_run.fully_buffered([
       'dials.stills_process',
-      join(self.path, 'run266702-0-subset.h5'),
-      'process.phil',
+      join(self.sacla_path, 'run266702-0-subset.h5'),
+      'process_sacla.phil',
     ]).raise_if_errors()
     result.show_stdout()
 
