@@ -164,37 +164,6 @@ class stills_indexer(indexer_base):
         # no more lattices found
         break
 
-      ### TODO verify things don't need to be re-indexed if a target is provided
-      if False: #self.params.known_symmetry.space_group is not None:
-        # now apply the space group symmetry only after the first indexing
-        # need to make sure that the symmetrized orientation is similar to the P1 model
-        target_space_group = self.target_symmetry_primitive.space_group()
-        for i_cryst, cryst in enumerate(experiments.crystals()):
-          if i_cryst >= n_lattices_previous_cycle:
-            new_cryst, cb_op_to_primitive = self.apply_symmetry(
-              cryst, target_space_group)
-            if self.cb_op_primitive_inp is not None:
-              new_cryst = new_cryst.change_basis(self.cb_op_primitive_inp)
-              logger.info(new_cryst.get_space_group().info())
-            cryst.update(new_cryst)
-            cryst.set_space_group(
-              self.params.known_symmetry.space_group.group())
-            for i_expt, expt in enumerate(experiments):
-              if expt.crystal is not cryst:
-                continue
-              if not cb_op_to_primitive.is_identity_op():
-                miller_indices = self.reflections['miller_index'].select(
-                  self.reflections['id'] == i_expt)
-                miller_indices = cb_op_to_primitive.apply(miller_indices)
-                self.reflections['miller_index'].set_selected(
-                  self.reflections['id'] == i_expt, miller_indices)
-              if self.cb_op_primitive_inp is not None:
-                miller_indices = self.reflections['miller_index'].select(
-                  self.reflections['id'] == i_expt)
-                miller_indices = self.cb_op_primitive_inp.apply(miller_indices)
-                self.reflections['miller_index'].set_selected(
-                  self.reflections['id'] == i_expt, miller_indices)
-
       # discard nearly overlapping lattices on the same shot
       if len(experiments) > 1:
         from dials.algorithms.indexing.compare_orientation_matrices \
