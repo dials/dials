@@ -32,6 +32,11 @@ control_phil_str = '''
       .expert_level = 2
       .type = bool
       .help = If True, after indexing, refine the experimental models
+    squash_errors = True
+      .expert_level = 2
+      .type = bool
+      .help = If True, if an image fails to process, continue to the next image. \
+              otherwise, halt processing and show the error.
   }
 
   output {
@@ -365,22 +370,26 @@ class Processor(object):
       observed = self.find_spots(datablock)
     except Exception, e:
       print "Error spotfinding", tag, str(e)
+      if not self.params.dispatch.squash_errors: raise
       return
     try:
       experiments, indexed = self.index(datablock, observed)
     except Exception, e:
       print "Couldn't index", tag, str(e)
+      if not self.params.dispatch.squash_errors: raise
       return
     try:
       experiments, indexed = self.refine(experiments, indexed)
     except Exception, e:
       print "Error refining", tag, str(e)
+      if not self.params.dispatch.squash_errors: raise
       return
     try:
       integrated = self.integrate(experiments, indexed)
     except Exception, e:
       raise
       print "Error integrating", tag, str(e)
+      if not self.params.dispatch.squash_errors: raise
       return
 
   def find_spots(self, datablock):

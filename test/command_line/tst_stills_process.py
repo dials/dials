@@ -39,6 +39,7 @@ class Test(object):
 
     f = open("process_lcls.phil", 'w')
     f.write("""
+      dispatch.squash_errors = False
       spotfinder {
         filter.min_spot_size=2
         threshold.xds.gain=25
@@ -117,6 +118,7 @@ class Test(object):
 
     f = open("process_sacla.phil", 'w')
     f.write("""
+      dispatch.squash_errors = False
       input.reference_geometry=%s
       indexing {
         known_symmetry {
