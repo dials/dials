@@ -1349,10 +1349,12 @@ class indexer_base(object):
               indexed_reflections['miller_index'], best_offset)
 
       from dials.algorithms.refinement import RefinerFactory
+      logger = logging.getLogger('dials.algorithms.refinement.refiner')
+      level = logger.getEffectiveLevel()
+      logger.setLevel(logging.ERROR)
+      disabled = logger.disabled
+      logger.disabled = True
       try:
-        logger = logging.getLogger()
-        disabled = logger.disabled
-        logger.disabled = True
         refiner = RefinerFactory.from_parameters_data_experiments(
           params, indexed_reflections, experiments,
           verbosity=0)
@@ -1372,6 +1374,7 @@ class indexer_base(object):
         return soln
       finally:
         logger.disabled = disabled
+        logger.setLevel(level)
 
     import copy
     params = copy.deepcopy(self.all_params)
