@@ -1375,6 +1375,7 @@ class indexer_base(object):
 
     import copy
     params = copy.deepcopy(self.all_params)
+    params.refinement.parameterisation.auto_reduction.action = "fix"
     params.refinement.parameterisation.scan_varying = False
     params.refinement.refinery.max_iterations = 4
     params.refinement.reflections.reflections_per_degree = min(
