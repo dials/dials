@@ -396,6 +396,8 @@ class Processor(object):
       self.all_indexed_reflections = flex.reflection_table()
       self.all_integrated_experiments = ExperimentList()
       self.all_integrated_reflections = flex.reflection_table()
+      self.all_int_pickle_filenames = []
+      self.all_int_pickles = []
 
   def process_datablock(self, tag, datablock):
     import os
@@ -788,7 +790,11 @@ class Processor(object):
         if callback is not None:
           callback(self.params, outfile, frame)
 
-        easy_pickle.dump(outfile, frame)
+        if self.params.output.composite_output:
+          self.all_int_pickle_filenames.append(outfile)
+          self.all_int_pickles.append(frame)
+        else:
+          easy_pickle.dump(outfile, frame)
 
   def process_reference(self, reference):
     ''' Load the reference spots. '''
@@ -854,6 +860,19 @@ class Processor(object):
 
       if len(self.all_integrated_reflections) > 0 and self.params.output.integrated_filename:
         self.save_reflections(self.all_integrated_reflections, self.params.output.integrated_filename)
+
+      # Create a tar archive of the integration dictionary pickles
+      if len(self.all_int_pickles) > 0 and self.params.output.integration_pickle:
+        import tarfile, StringIO, time, cPickle as pickle
+        outfile = os.path.join(self.params.output.output_dir, self.params.output.integration_pickle%(0,self.composite_tag)) + ".tar"
+        tar = tarfile.TarFile(outfile,"w")
+        for i, (fname, d) in enumerate(zip(self.all_int_pickle_filenames, self.all_int_pickles)):
+          string = StringIO.StringIO(pickle.dumps(d, protocol=2))
+          info = tarfile.TarInfo(name=fname)
+          info.size=len(string.buf)
+          info.mtime = time.time()
+          tar.addfile(tarinfo=info, fileobj=string)
+        tar.close()
 
 if __name__ == '__main__':
   from dials.util import halraiser
