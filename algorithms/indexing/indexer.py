@@ -1838,7 +1838,8 @@ class SolutionTrackerFilter(object):
     for i, s in enumerate(self.all_solutions):
       s = self.all_solutions[i]
       rows.append(
-        [str(s.crystal.get_unit_cell()), "%.0f" %s.crystal.get_unit_cell().volume(),
+        [format(s.crystal.get_unit_cell(), '{:.2f} {:.2f} {:.2f} {:.1f} {:.1f} {:.1f}'),
+         "%.0f" %s.crystal.get_unit_cell().volume(),
          str(s.n_indexed), "%.0f" %(s.fraction_indexed*100), "%.2f" %s.model_likelihood])
 
     from libtbx import table_utils
@@ -1927,7 +1928,7 @@ class SolutionTrackerWeighted(object):
     for i in perm:
       s = self.all_solutions[i]
       rows.append(
-        [str(s.crystal.get_unit_cell()),
+        [format(s.crystal.get_unit_cell(), '{:.2f} {:.2f} {:.2f} {:.1f} {:.1f} {:.1f}'),
          "%.0f" %s.crystal.get_unit_cell().volume(), "%.2f" %score_by_volume[i],
          str(s.n_indexed), "%.0f" %(s.fraction_indexed*100),
          "%.2f" %score_by_fraction_indexed[i],
