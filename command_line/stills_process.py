@@ -245,9 +245,6 @@ class Script(object):
     # Parse the command line
     params, options, all_paths = self.parser.parse_args(show_diff_phil=False, return_unhandled=True)
 
-    if params.output.composite_output:
-      raise NotImplementedError("dials.stills_process composite output not yet available")
-
     # Check we have some filenames
     if not all_paths:
       self.parser.print_help()
@@ -322,8 +319,12 @@ class Script(object):
           tags.append(basename)
 
       # Wrapper function
-      def do_work(item):
-        Processor(copy.deepcopy(params)).process_datablock(item[0], item[1])
+      def do_work(item_set):
+        i, item_list = item_set
+        processor = Processor(copy.deepcopy(params), composite_tag = "%04d"%i)
+        for item in item_list:
+          processor.process_datablock(item[0], item[1])
+        processor.finalize()
 
       iterable = zip(tags, split_datablocks)
 
@@ -337,26 +338,30 @@ class Script(object):
           tags.append(basename)
 
       # Wrapper function
-      def do_work(item):
-        tag, filename = item
+      def do_work(item_set):
+        i, item_list = item_set
+        processor = Processor(copy.deepcopy(params), composite_tag = "%04d"%i)
+        for item in item_list:
+          tag, filename = item
 
-        datablock = do_import(filename)
-        imagesets = datablock.extract_imagesets()
-        if len(imagesets) == 0 or len(imagesets[0]) == 0:
-          logger.info("Zero length imageset in file: %s"%filename)
-          return
-        if len(imagesets) > 1:
-          raise Abort("Found more than one imageset in file: %s"%filename)
-        if len(imagesets[0]) > 1:
-          raise Abort("Found a multi-image file. Run again with pre_import=True")
+          datablock = do_import(filename)
+          imagesets = datablock.extract_imagesets()
+          if len(imagesets) == 0 or len(imagesets[0]) == 0:
+            logger.info("Zero length imageset in file: %s"%filename)
+            return
+          if len(imagesets) > 1:
+            raise Abort("Found more than one imageset in file: %s"%filename)
+          if len(imagesets[0]) > 1:
+            raise Abort("Found a multi-image file. Run again with pre_import=True")
 
-        if self.reference_detector is not None:
-          from dxtbx.model import Detector
-          imagesets[0].set_detector(Detector.from_dict(self.reference_detector.to_dict()))
+          if self.reference_detector is not None:
+            from dxtbx.model import Detector
+            imagesets[0].set_detector(Detector.from_dict(self.reference_detector.to_dict()))
 
-        update_geometry(imagesets[0])
+          update_geometry(imagesets[0])
 
-        Processor(copy.deepcopy(params)).process_datablock(tag, datablock)
+          processor.process_datablock(tag, datablock)
+        processor.finalize()
 
       iterable = zip(tags, all_paths)
 
@@ -367,19 +372,19 @@ class Script(object):
       rank = comm.Get_rank() # each process in MPI has a unique id, 0-indexed
       size = comm.Get_size() # size: number of processes running in this job
 
-      for i, item in enumerate(iterable):
-        if (i+rank)%size == 0:
-          do_work(item)
+      subset = [item for i, item in enumerate(iterable) if (i+rank)%size == 0]
+      do_work((rank, subset))
     else:
+      from dxtbx.command_line.image_average import splitit
       easy_mp.parallel_map(
         func=do_work,
-        iterable=iterable,
+        iterable=enumerate(splitit(iterable, params.mp.nproc)),
         processes=params.mp.nproc,
         method=params.mp.method,
         preserve_order=True,
         preserve_exception_message=True)
 
-     # Total Time
+    # Total Time
     logger.info("")
     logger.info("Total Time Taken = %f seconds" % (time() - st))
 
