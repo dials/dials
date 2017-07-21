@@ -203,7 +203,7 @@ def dials_u_to_mosflm(dials_U, uc):
   return mosflm_U
 
 
-def _apply_data_filters(integrated_data, 
+def _apply_data_filters(integrated_data,
                         ignore_profile_fitting, filter_ice_rings, min_isigi,
                         include_partials, keep_partials, scale_partials):
   """Apply filters to reflection data"""
@@ -427,7 +427,7 @@ def _write_columns(mtz_file, dataset, integrated_data, scale_partials):
     raise Sorry('no reflections for export')
 
   xdet, ydet, zdet = [flex.double(x) for x in integrated_data['xyzcal.px'].parts()]
-  
+
   # compute BATCH values - floor() to get (fortran) image captured within
   #                        +1     because FORTRAN counting; zdet+1=image_index
   #                        +off   because            image_index+o=batch
@@ -588,7 +588,7 @@ def _calculate_batch_offsets(experiments):
       batch_offsets[i] = ilow-experiment.image_range[0]
       existing_ranges.add((ilow, ihigh))
       maximum_batch_number = max(maximum_batch_number, ihigh)
-  
+
   # Now handle all the experiments that overlapped by pushing them higher
   for i, experiment in experiments_to_shift:
     start_number = _next_epoch(maximum_batch_number)
@@ -623,7 +623,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
     if not all(isclose(x.beam.get_wavelength(), experiment_list[0].beam.get_wavelength(), rel_tol=1e-9) for x in experiment_list[1:]):
       data = [x.beam.get_wavelength() for x in experiment_list]
       raise Sorry("Cannot export multiple experiments with different beam wavelengths ({})".format(data))
-  
+
   # also only work with one panel(for the moment)
   if not ignore_panels:
     if any(len(experiment.detector) != 1 for experiment in experiment_list):
@@ -648,7 +648,7 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
     else:
       experiment.image_range = 1, 1
 
-  # Calculate any offset to the image numbers 
+  # Calculate any offset to the image numbers
   batch_offsets = _calculate_batch_offsets(experiment_list)
 
   # Create the mtz file
@@ -681,12 +681,12 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
     logger.info('Beam vector: %.4f %.4f %.4f' % s0n)
 
     for i in range(experiment.image_range[0], experiment.image_range[1]+1):
-      _add_batch(mtz_file, experiment, 
+      _add_batch(mtz_file, experiment,
         batch_number=i+experiment.batch_offset,
-        image_number=i, 
+        image_number=i,
         force_static_model=force_static_model)
 
-    # Create the batch offset array. This gives us an experiment (id)-dependent 
+    # Create the batch offset array. This gives us an experiment (id)-dependent
     # batch offset to calculate the correct batch from image number.
     experiment.data["batch_offset"] = flex.int(len(experiment.data["id"]), experiment.batch_offset)
 
