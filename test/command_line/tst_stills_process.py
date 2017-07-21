@@ -92,7 +92,9 @@ class Test(object):
     datablock = DataBlockFactory.from_imageset(imgset)[0]
     processor.process_datablock("20130301060858801", datablock) # index/integrate the image
     result = "idx-20130301060858801_integrated.pickle"
-    n_refls = range(140,152) # large ranges to handle platform-specific differences
+    #n_refls = range(140,152) # large ranges to handle platform-specific differences
+    # 09/20/17 Changes to still indexer: refine candidate basis vectors in target symmetry if supplied
+    n_refls = range(128,140) # large ranges to handle platform-specific differences
     table = pickle.load(open(result, 'rb'))
     assert len(table) in n_refls, len(table)
     assert 'id' in table
