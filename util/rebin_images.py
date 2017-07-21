@@ -97,3 +97,24 @@ def main(in_images, out_images):
   for o, pixel, header in zip(out_images, rebin_images, in_image_headers):
     print "Writing %s" % o
     write_image(o, pixel, header)
+
+def main_sum(in_images, out_image):
+  n = len(in_images)
+  import os
+  for i in in_images:
+    assert(os.path.exists(i))
+  assert(not os.path.exists(out_image))
+
+  in_image_data = []
+  in_image_headers = []
+
+  for i in in_images:
+    print "Reading %s" % i
+    pixel, header = read_image(i)
+    in_image_data.append(pixel)
+    in_image_headers.append(header)
+
+  sum_image = merge_counts(in_image_data)
+
+  print "Writing %s" % out_image
+  write_image(out_image, sum_image, in_image_headers[0])
