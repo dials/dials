@@ -43,6 +43,12 @@ control_phil_str = '''
     output_dir = .
       .type = str
       .help = Directory output files will be placed
+    composite_output = False
+      .type = bool
+      .help = If True, save one set of json/pickle files per process, where each is a \
+              concatenated list of all the successful events examined by that process. \
+              If False, output a separate json/pickle file per image (generates a \
+              lot of files).
     logging_dir = None
       .type = str
       .help = Directory output log files will be placed
@@ -61,6 +67,9 @@ control_phil_str = '''
     integrated_filename = %s_integrated.pickle
       .type = str
       .help = The filename for final integrated reflections.
+    integrated_experiments_filename = %s_integrated_experiments.json
+      .type = str
+      .help = The filename for saving final experimental models.
     profile_filename = None
       .type = str
       .help = The filename for output reflection profile parameters
@@ -236,6 +245,9 @@ class Script(object):
     # Parse the command line
     params, options, all_paths = self.parser.parse_args(show_diff_phil=False, return_unhandled=True)
 
+    if params.output.composite_output:
+      raise NotImplementedError("dials.stills_process composite output not yet available")
+
     # Check we have some filenames
     if not all_paths:
       self.parser.print_help()
@@ -372,13 +384,26 @@ class Script(object):
     logger.info("Total Time Taken = %f seconds" % (time() - st))
 
 class Processor(object):
-  def __init__(self, params):
+  def __init__(self, params, composite_tag = None):
     self.params = params
+    self.composite_tag = composite_tag
+    if params.output.composite_output:
+      assert composite_tag is not None
+      from dxtbx.model.experiment_list import ExperimentList
+      from dials.array_family import flex
+      #self.all_strong_reflections = flex.reflection_table() # no composite strong pickles yet
+      self.all_indexed_experiments = ExperimentList()
+      self.all_indexed_reflections = flex.reflection_table()
+      self.all_integrated_experiments = ExperimentList()
+      self.all_integrated_reflections = flex.reflection_table()
 
   def process_datablock(self, tag, datablock):
     import os
-    s = tag
 
+    if self.params.output.composite_output:
+      s = self.composite_tag
+    else:
+      s = tag
     # before processing, set output paths according to the templates
     if self.params.output.datablock_filename is not None and "%s" in self.params.output.datablock_filename:
       self.params.output.datablock_filename = os.path.join(self.params.output.output_dir, self.params.output.datablock_filename%("idx-" + s))
@@ -386,10 +411,12 @@ class Processor(object):
       self.params.output.strong_filename = os.path.join(self.params.output.output_dir, self.params.output.strong_filename%("idx-" + s))
     if self.params.output.indexed_filename is not None and "%s" in self.params.output.indexed_filename:
       self.params.output.indexed_filename = os.path.join(self.params.output.output_dir, self.params.output.indexed_filename%("idx-" + s))
-    if "%s" in self.params.output.refined_experiments_filename:
+    if self.params.output.refined_experiments_filename is not None and "%s" in self.params.output.refined_experiments_filename:
       self.params.output.refined_experiments_filename = os.path.join(self.params.output.output_dir, self.params.output.refined_experiments_filename%("idx-" + s))
-    if "%s" in self.params.output.integrated_filename:
+    if self.params.output.integrated_filename is not None and "%s" in self.params.output.integrated_filename:
       self.params.output.integrated_filename = os.path.join(self.params.output.output_dir, self.params.output.integrated_filename%("idx-" + s))
+    if self.params.output.integrated_experiments_filename is not None and "%s" in self.params.output.integrated_experiments_filename:
+      self.params.output.integrated_experiments_filename = os.path.join(self.params.output.output_dir, self.params.output.integrated_experiments_filename%("idx-" + s))
     self.tag = tag
 
     if self.params.output.datablock_filename:
@@ -444,10 +471,13 @@ class Processor(object):
     for i in xrange(len(bbox)):
       bbox[i] = (bbox[i][0], bbox[i][1], bbox[i][2], bbox[i][3], 0, 1)
 
-    # Save the reflections to file
-    logger.info('\n' + '-' * 80)
-    if self.params.output.strong_filename:
-      self.save_reflections(observed, self.params.output.strong_filename)
+    if self.params.output.composite_output:
+      pass # no composite strong pickles yet
+    else:
+      # Save the reflections to file
+      logger.info('\n' + '-' * 80)
+      if self.params.output.strong_filename:
+        self.save_reflections(observed, self.params.output.strong_filename)
 
     logger.info('')
     logger.info('Time Taken = %f seconds' % (time() - st))
@@ -514,9 +544,6 @@ class Processor(object):
       print "Filtered duplicate reflections, %d out of %d remaining"%(len(filtered),len(indexed))
       indexed = filtered
 
-    if self.params.output.indexed_filename and len(indexed) > 0:
-      self.save_reflections(indexed, self.params.output.indexed_filename)
-
     logger.info('')
     logger.info('Time Taken = %f seconds' % (time() - st))
     return experiments, indexed
@@ -548,16 +575,28 @@ class Processor(object):
       acceptance_flags_nv = nv.nv_acceptance_flags
       centroids = centroids.select(acceptance_flags_nv)
 
-    # Dump experiments to disk
-    if self.params.output.refined_experiments_filename:
-      from dxtbx.model.experiment_list import ExperimentListDumper
-      dump = ExperimentListDumper(experiments)
-      dump.as_json(self.params.output.refined_experiments_filename)
+    if self.params.output.composite_output:
+      if self.params.output.refined_experiments_filename or self.params.output.indexed_filename:
+        assert self.params.output.refined_experiments_filename is not None and self.params.output.indexed_filename is not None
+        from dials.array_family import flex
+        n = len(self.all_indexed_experiments)
+        self.all_indexed_experiments.extend(experiments)
+        for i, experiment in enumerate(experiments):
+          refls = centroids.select(centroids['id'] == i)
+          refls['id'] = flex.int(len(refls), n)
+          self.all_indexed_reflections.extend(refls)
+          n += 1
+    else:
+      # Dump experiments to disk
+      if self.params.output.refined_experiments_filename:
+        from dxtbx.model.experiment_list import ExperimentListDumper
+        dump = ExperimentListDumper(experiments)
+        dump.as_json(self.params.output.refined_experiments_filename)
 
-    if self.params.dispatch.refine:
       if self.params.output.indexed_filename:
         self.save_reflections(centroids, self.params.output.indexed_filename)
 
+    if self.params.dispatch.refine:
       logger.info('')
       logger.info('Time Taken = %f seconds' % (time() - st))
 
@@ -652,9 +691,27 @@ class Processor(object):
         raise Sorry("No reflections left after applying significance filter")
       integrated = refls
 
-    if self.params.output.integrated_filename:
-      # Save the reflections
-      self.save_reflections(integrated, self.params.output.integrated_filename)
+    if self.params.output.composite_output:
+      if self.params.output.integrated_experiments_filename or self.params.output.integrated_filename:
+        assert self.params.output.integrated_experiments_filename is not None and self.params.output.integrated_filename is not None
+        from dials.array_family import flex
+        n = len(self.all_integrated_experiments)
+        self.all_integrated_experiments.extend(experiments)
+        for i, experiment in enumerate(experiments):
+          refls = integrated.select(integrated['id'] == i)
+          refls['id'] = flex.int(len(refls), n)
+          self.all_integrated_reflections.extend(refls)
+          n += 1
+    else:
+      # Dump experiments to disk
+      if self.params.output.integrated_experiments_filename:
+        from dxtbx.model.experiment_list import ExperimentListDumper
+        dump = ExperimentListDumper(experiments)
+        dump.as_json(self.params.output.integrated_experiments_filename)
+
+      if self.params.output.integrated_filename:
+        # Save the reflections
+        self.save_reflections(integrated, self.params.output.integrated_filename)
 
     self.write_integration_pickles(integrated, experiments)
     from dials.algorithms.indexing.stills_indexer import calc_2D_rmsd_and_displacements
@@ -777,6 +834,26 @@ class Processor(object):
     logger.info('Saving %d reflections to %s' % (len(reflections), filename))
     reflections.as_pickle(filename)
     logger.info(' time taken: %g' % (time() - st))
+
+  def finalize(self):
+    ''' Perform any final operations '''
+    if self.params.output.composite_output:
+      # Dump composite files to disk
+      if len(self.all_indexed_experiments) > 0 and self.params.output.refined_experiments_filename:
+        from dxtbx.model.experiment_list import ExperimentListDumper
+        dump = ExperimentListDumper(self.all_indexed_experiments)
+        dump.as_json(self.params.output.refined_experiments_filename)
+
+      if len(self.all_indexed_reflections) > 0 and self.params.output.indexed_filename:
+        self.save_reflections(self.all_indexed_reflections, self.params.output.indexed_filename)
+
+      if len(self.all_integrated_experiments) > 0 and self.params.output.integrated_experiments_filename:
+        from dxtbx.model.experiment_list import ExperimentListDumper
+        dump = ExperimentListDumper(self.all_integrated_experiments)
+        dump.as_json(self.params.output.integrated_experiments_filename)
+
+      if len(self.all_integrated_reflections) > 0 and self.params.output.integrated_filename:
+        self.save_reflections(self.all_integrated_reflections, self.params.output.integrated_filename)
 
 if __name__ == '__main__':
   from dials.util import halraiser
