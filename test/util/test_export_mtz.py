@@ -51,13 +51,13 @@ class TestBatchRangeCalculations(object):
 
   def test_calculate_batch_ranges(self):
     assert self._run_ranges([(1,1)]) == [(1,1)]
-    
+
     # Zero is shifted
     assert all([x > 0 for x in self._run_ranges_to_set([(0,0)])]), "Should be no zeroth/negative batch"
-    
+
     input = [self.MockExperiment(x) for x in [(1,1), (1,1)]]
     assert not set(self._run_ranges([(1,1), (1,1)])) == {(1,1)}, "Overlapping simple ranges"
-    
+
     data_tests = [
       [(1,1), (1,1)],
       [(1,1), (8,8), (9,9)],
@@ -71,4 +71,3 @@ class TestBatchRangeCalculations(object):
       assert all(isinstance(x, int) for x in itertools.chain(*self._run_ranges(data))), "Not all true integers"
       assert all([x > 0 for x in self._run_ranges_to_set([(0,0)])]), "Should be no zeroth/negative batch"
       assert not has_consecutive_ranges(self._run_ranges(data))
-
