@@ -392,6 +392,16 @@ class Processor(object):
   def __init__(self, params, composite_tag = None):
     self.params = params
     self.composite_tag = composite_tag
+
+    # The convention is to put %s in the phil parameter to add a tag to
+    # each output datafile. Save the initial templates here.
+    self.datablock_filename_template              = params.output.datablock_filename
+    self.strong_filename_template                 = params.output.strong_filename
+    self.indexed_filename_template                = params.output.indexed_filename
+    self.refined_experiments_filename_template    = params.output.refined_experiments_filename
+    self.integrated_filename_template             = params.output.integrated_filename
+    self.integrated_experiments_filename_template = params.output.integrated_experiments_filename
+
     if params.output.composite_output:
       assert composite_tag is not None
       from dxtbx.model.experiment_list import ExperimentList
@@ -404,26 +414,28 @@ class Processor(object):
       self.all_int_pickle_filenames = []
       self.all_int_pickles = []
 
+      self.setup_filenames(composite_tag)
+
+  def setup_filenames(self, tag):
+    # before processing, set output paths according to the templates
+    if self.datablock_filename_template is not None and "%s" in self.datablock_filename_template:
+      self.params.output.datablock_filename = os.path.join(self.params.output.output_dir, self.datablock_filename_template%("idx-" + tag))
+    if self.strong_filename_template is not None and "%s" in self.strong_filename_template:
+      self.params.output.strong_filename = os.path.join(self.params.output.output_dir, self.strong_filename_template%("idx-" + tag))
+    if self.indexed_filename_template is not None and "%s" in self.indexed_filename_template:
+      self.params.output.indexed_filename = os.path.join(self.params.output.output_dir, self.indexed_filename_template%("idx-" + tag))
+    if self.refined_experiments_filename_template is not None and "%s" in self.refined_experiments_filename_template:
+      self.params.output.refined_experiments_filename = os.path.join(self.params.output.output_dir, self.refined_experiments_filename_template%("idx-" + tag))
+    if self.integrated_filename_template is not None and "%s" in self.integrated_filename_template:
+      self.params.output.integrated_filename = os.path.join(self.params.output.output_dir, self.integrated_filename_template%("idx-" + tag))
+    if self.integrated_experiments_filename_template is not None and "%s" in self.integrated_experiments_filename_template:
+      self.params.output.integrated_experiments_filename = os.path.join(self.params.output.output_dir, self.integrated_experiments_filename_template%("idx-" + tag))
+
   def process_datablock(self, tag, datablock):
     import os
 
-    if self.params.output.composite_output:
-      s = self.composite_tag
-    else:
-      s = tag
-    # before processing, set output paths according to the templates
-    if self.params.output.datablock_filename is not None and "%s" in self.params.output.datablock_filename:
-      self.params.output.datablock_filename = os.path.join(self.params.output.output_dir, self.params.output.datablock_filename%("idx-" + s))
-    if self.params.output.strong_filename is not None and "%s" in self.params.output.strong_filename:
-      self.params.output.strong_filename = os.path.join(self.params.output.output_dir, self.params.output.strong_filename%("idx-" + s))
-    if self.params.output.indexed_filename is not None and "%s" in self.params.output.indexed_filename:
-      self.params.output.indexed_filename = os.path.join(self.params.output.output_dir, self.params.output.indexed_filename%("idx-" + s))
-    if self.params.output.refined_experiments_filename is not None and "%s" in self.params.output.refined_experiments_filename:
-      self.params.output.refined_experiments_filename = os.path.join(self.params.output.output_dir, self.params.output.refined_experiments_filename%("idx-" + s))
-    if self.params.output.integrated_filename is not None and "%s" in self.params.output.integrated_filename:
-      self.params.output.integrated_filename = os.path.join(self.params.output.output_dir, self.params.output.integrated_filename%("idx-" + s))
-    if self.params.output.integrated_experiments_filename is not None and "%s" in self.params.output.integrated_experiments_filename:
-      self.params.output.integrated_experiments_filename = os.path.join(self.params.output.output_dir, self.params.output.integrated_experiments_filename%("idx-" + s))
+    if not self.params.output.composite_output:
+      self.setup_filenames(tag)
     self.tag = tag
 
     if self.params.output.datablock_filename:
