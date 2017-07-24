@@ -225,6 +225,10 @@ namespace transform {
       return background_;
     }
 
+    af::versa< bool, af::c_grid<3> > mask() const {
+      return mask_;
+    }
+
   private:
 
     /** Initialise using a coordinate system struct */
@@ -254,14 +258,23 @@ namespace transform {
       vec2<int> zrange(bbox[4], bbox[5]);
 
       // Create the frame mapper
-      MapFramesForward<FloatType> map_frames(
+      MapFramesForward<FloatType> map_frames_forward(
           spec.scan().get_array_range()[0],
           spec.scan().get_oscillation()[0],
           spec.scan().get_oscillation()[1],
           spec.sigma_m(),
           spec.n_sigma(),
           spec.grid_size()[2] / 2);
-      zfraction_arr_ = map_frames(zrange, cs.phi(), cs.zeta());
+      zfraction_arr_ = map_frames_forward(zrange, cs.phi(), cs.zeta());
+
+      MapFramesReverse<FloatType> map_frames_backward(
+          spec.scan().get_array_range()[0],
+          spec.scan().get_oscillation()[0],
+          spec.scan().get_oscillation()[1],
+          spec.sigma_m(),
+          spec.n_sigma(),
+          spec.grid_size()[2] / 2);
+      efraction_arr_ = map_frames_backward(zrange, cs.phi(), cs.zeta());
     }
 
     /**
@@ -278,10 +291,27 @@ namespace transform {
       DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
 
       af::const_ref< FloatType, af::c_grid<2> > zfraction = zfraction_arr_.const_ref();
+      af::const_ref< FloatType, af::c_grid<2> > efraction = efraction_arr_.const_ref();
 
       // Initialise the profile arrays
       af::c_grid<3> accessor(grid_size_);
       profile_ = af::versa< FloatType, af::c_grid<3> >(accessor, 0.0);
+      mask_ = af::versa<bool, af::c_grid<3> >(accessor, 0.0);
+
+      // Compute the mask
+      for (std::size_t kk = 0; kk < grid_size_[0]; ++kk) {
+        double sumk = 0;
+        for (std::size_t k = 0 ; k < shoebox_size_[0]; ++k) {
+          sumk += efraction(kk, k);
+        }
+        if (sumk > 0.99) {
+          for (std::size_t j = 0; j < grid_size_[1]; ++j) {
+            for (std::size_t i = 0; i < grid_size_[2]; ++i) {
+              mask_(kk,j,i) = true;
+            }
+          }
+        }
+      }
 
       // Loop through all the points in the shoebox. Calculate the polygon
       // formed by the pixel in the local coordinate system. Find the points
@@ -332,11 +362,28 @@ namespace transform {
       DIALS_ASSERT(image.accessor().all_eq(bkgrd.accessor()));
 
       af::const_ref< FloatType, af::c_grid<2> > zfraction = zfraction_arr_.const_ref();
+      af::const_ref< FloatType, af::c_grid<2> > efraction = efraction_arr_.const_ref();
 
       // Initialise the profile arrays
       af::c_grid<3> accessor(grid_size_);
       profile_ = af::versa< FloatType, af::c_grid<3> >(accessor, 0.0);
       background_ = af::versa< FloatType, af::c_grid<3> >(accessor, 0.0);
+      mask_ = af::versa<bool, af::c_grid<3> >(accessor, 0.0);
+
+      // Compute the mask
+      for (std::size_t kk = 0; kk < grid_size_[0]; ++kk) {
+        double sumk = 0;
+        for (std::size_t k = 0 ; k < shoebox_size_[0]; ++k) {
+          sumk += efraction(kk, k);
+        }
+        if (sumk > 0.99) {
+          for (std::size_t j = 0; j < grid_size_[1]; ++j) {
+            for (std::size_t i = 0; i < grid_size_[2]; ++i) {
+              mask_(kk,j,i) = true;
+            }
+          }
+        }
+      }
 
       // Loop through all the points in the shoebox. Calculate the polygon
       // formed by the pixel in the local coordinate system. Find the points
@@ -394,9 +441,11 @@ namespace transform {
     double3 step_size_;
     double3 grid_cent_;
     vec3<double> s1_, e1_, e2_;
+    af::versa< bool, af::c_grid<3> > mask_;
     af::versa< FloatType, af::c_grid<3> > profile_;
     af::versa< FloatType, af::c_grid<3> > background_;
     af::versa< FloatType, af::c_grid<2> > zfraction_arr_;
+    af::versa< FloatType, af::c_grid<2> > efraction_arr_;
   };
 
 

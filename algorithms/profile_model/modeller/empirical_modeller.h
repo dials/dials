@@ -240,7 +240,7 @@ namespace dials { namespace algorithms {
       // Get the sum of signal pixels
       double signal_sum = 0.0;
       for (std::size_t i = 0; i < data.size(); ++i) {
-        if (data[i] >= threshold) {
+        if (data[i] >= 0.0){//threshold) {
           signal_sum += data[i];
         } else {
           data[i] = 0.0;
