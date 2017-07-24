@@ -26,7 +26,7 @@ class Test(object):
     from uuid import uuid4
     from dials.command_line.stills_process import phil_scope, Processor
     from libtbx.phil import parse
-    from dxtbx.imageset import ImageSet, ImageSetData, MemReader
+    from dxtbx.imageset import ImageSet, ImageSetData, MemReader, MemMasker
     from dxtbx.datablock import DataBlockFactory
     from dxtbx.format.FormatCBFCspad import FormatCBFCspadInMemory
     import cPickle as pickle
@@ -90,7 +90,10 @@ class Test(object):
     mem_img = FormatCBFCspadInMemory(mem_img._cbf_handle)
     mem_img._raw_data = raw_data
     mem_img._cbf_handle = None # drop the file handle to prevent swig errors
-    imgset = ImageSet(ImageSetData(MemReader([mem_img])))
+    imgset = ImageSet(
+      ImageSetData(
+        MemReader([mem_img]),
+        MemMasker([mem_img])))
     imgset.set_beam(mem_img.get_beam())
     imgset.set_detector(mem_img.get_detector())
     datablock = DataBlockFactory.from_imageset(imgset)[0]
