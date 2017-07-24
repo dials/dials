@@ -125,7 +125,7 @@ class Test(object):
 
     f = open("process_sacla.phil", 'w')
     f.write("""
-      dispatch.squash_errors = False
+      dispatch.squash_errors = True
       input.reference_geometry=%s
       indexing {
         known_symmetry {
