@@ -423,7 +423,7 @@ class CentroidAnalyser(object):
     fig = pyplot.figure()
     pyplot.title("Difference between observed and calculated")
     pyplot.hist(diff, bins=20)
-    pyplot.xlabel("Difference in position")
+    pyplot.xlabel("Difference in position (pixels)")
     pyplot.ylabel("# reflections")
     fig.savefig(join(self.directory, "centroid_diff_hist.png"))
     pyplot.close()
@@ -444,7 +444,7 @@ class CentroidAnalyser(object):
 
         self.title = "Difference between observed and calculated in X"
         self.filename = "centroid_diff_x.png"
-        self.cbar_ylabel = "Difference in x position"
+        self.cbar_ylabel = "Difference in x position (pixels)"
         self.centroid_diff_max = kwargs.pop('centroid_diff_max', None)
         super(diff_x_plot, self).__init__(*args, **kwargs)
 
@@ -469,7 +469,7 @@ class CentroidAnalyser(object):
 
         self.title = "Difference between observed and calculated in Y"
         self.filename = "centroid_diff_y.png"
-        self.cbar_ylabel = "Difference in y position"
+        self.cbar_ylabel = "Difference in y position (pixels)"
         self.centroid_diff_max = kwargs.pop('centroid_diff_max', None)
         super(diff_y_plot, self).__init__(*args, **kwargs)
 
@@ -510,7 +510,7 @@ class CentroidAnalyser(object):
     fig = pyplot.figure()
     pyplot.title("Difference between observed and calculated in Z")
     cax = pyplot.hexbin(zc, zd, gridsize=100)
-    cax.axes.set_xlabel("z")
+    cax.axes.set_xlabel("z (images)")
     cax.axes.set_ylabel("Difference in z position")
     cbar = pyplot.colorbar(cax)
     cbar.ax.set_ylabel("# Reflections")
@@ -614,8 +614,8 @@ class CentroidAnalyser(object):
       title = "Centroid residuals in X and Y"
       filename = "centroid_xy_residuals.png"
       cbar_ylabel = None
-      xlabel = 'X'
-      ylabel = 'Y'
+      xlabel = 'X (pixels)'
+      ylabel = 'Y (pixels)'
 
       def plot_one_panel(self, ax, rlist):
         xc, yc, zc = rlist['xyzcal.px'].parts()
@@ -647,8 +647,8 @@ class CentroidAnalyser(object):
       title = "Centroid residuals in Z and Y"
       filename = "centroid_zy_residuals.png"
       cbar_ylabel = None
-      xlabel = 'Z'
-      ylabel = 'Y'
+      xlabel = 'Z (images)'
+      ylabel = 'Y (pixels)'
 
       def plot_one_panel(self, ax, rlist):
         xc, yc, zc = rlist['xyzcal.px'].parts()
@@ -682,8 +682,8 @@ class CentroidAnalyser(object):
       title = "Centroid residuals in X and Z"
       filename = "centroid_xz_residuals.png"
       cbar_ylabel = None
-      xlabel = 'X'
-      ylabel = 'Z'
+      xlabel = 'X (pixels)'
+      ylabel = 'Z (images)'
 
       def plot_one_panel(self, ax, rlist):
         xc, yc, zc = rlist['xyzcal.px'].parts()
@@ -835,7 +835,7 @@ class BackgroundAnalyser(object):
     fig = pyplot.figure()
     pyplot.title("Distribution of Background Model mean vs Z")
     cax = pyplot.hexbin(z, MEAN, gridsize=100)
-    cax.axes.set_xlabel("z")
+    cax.axes.set_xlabel("z (images)")
     cax.axes.set_ylabel("Background Model mean")
     cbar = pyplot.colorbar(cax)
     cbar.ax.set_ylabel("# reflections")
@@ -911,7 +911,7 @@ class BackgroundAnalyser(object):
     fig = pyplot.figure()
     pyplot.title("Distribution of Background Model CVRMSD vs Z")
     cax = pyplot.hexbin(z, RMSD, gridsize=100)
-    cax.axes.set_xlabel("z")
+    cax.axes.set_xlabel("z (images)")
     cax.axes.set_ylabel("Background Model CVRMSD")
     cbar = pyplot.colorbar(cax)
     cbar.ax.set_ylabel("# reflections")
@@ -1058,7 +1058,7 @@ class IntensityAnalyser(object):
     fig = pyplot.figure()
     pyplot.title("Distribution of I/Sigma vs Z")
     cax = pyplot.hexbin(z, flex.log(I_over_S), gridsize=100)
-    cax.axes.set_xlabel("z")
+    cax.axes.set_xlabel("z (images)")
     cax.axes.set_ylabel("Log I/Sigma")
     cbar = pyplot.colorbar(cax)
     cbar.ax.set_ylabel("# reflections")
@@ -1206,7 +1206,7 @@ class ReferenceProfileAnalyser(object):
     fig = pyplot.figure()
     pyplot.title("Reference profiles binned in Z")
     pyplot.hist(z, bins=20)
-    pyplot.xlabel("z")
+    pyplot.xlabel("z (images)")
     pyplot.ylabel("# reflections")
     fig.savefig(join(self.directory, "reference_z.png"))
     pyplot.close()
@@ -1258,7 +1258,7 @@ class ReferenceProfileAnalyser(object):
     pyplot.title("Reflection correlations vs Z")
     cax = pyplot.hexbin(z, corr, gridsize=100)
     cbar = pyplot.colorbar(cax)
-    cax.axes.set_xlabel("z")
+    cax.axes.set_xlabel("z (images)")
     cax.axes.set_ylabel("Correlation with reference profile")
     cbar.ax.set_ylabel("# reflections")
     fig.savefig(join(self.directory, "%s_corr_vs_z.png" % filename))
@@ -1309,8 +1309,8 @@ class ReferenceProfileAnalyser(object):
       pyplot.title("Reflection correlations binned in X/Y")
       cax = pyplot.hexbin(x, y, C=corr, gridsize=100, vmin=0.0, vmax=1.0)
       cbar = pyplot.colorbar(cax)
-      pyplot.xlabel("x")
-      pyplot.ylabel("y")
+      pyplot.xlabel("x (pixels)")
+      pyplot.ylabel("y (pixels)")
       cbar.ax.set_ylabel("Correlation with reference profile")
       pyplot.savefig(join(self.directory, "ideal_%s_corr_vs_xy.png" % filename))
       pyplot.close()
@@ -1324,7 +1324,7 @@ class ReferenceProfileAnalyser(object):
       pyplot.title("Reflection correlations vs Z")
       cax = pyplot.hexbin(z, corr, gridsize=100)
       cbar = pyplot.colorbar(cax)
-      pyplot.xlabel("z")
+      pyplot.xlabel("z (images)")
       pyplot.ylabel("Correlation with reference profile")
       cbar.ax.set_ylabel("# reflections")
       pyplot.savefig(join(self.directory, "ideal_%s_corr_vs_z.png" % filename))
