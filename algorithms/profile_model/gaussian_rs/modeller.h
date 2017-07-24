@@ -464,7 +464,7 @@ namespace dials { namespace algorithms {
             // Get the reference profiles
             std::size_t index = sampler_->nearest(sbox[i].panel, xyzpx[i]);
             data_const_reference p = data(index).const_ref();
-            mask_const_reference m = mask(index).const_ref();
+            mask_const_reference mask1 = mask(index).const_ref();
 
             // Create the coordinate system
             vec3<double> m2 = spec_.goniometer().get_rotation_axis();
@@ -506,9 +506,15 @@ namespace dials { namespace algorithms {
             // Get the transformed shoebox
             data_const_reference c = transform.profile().const_ref();
             data_const_reference b = transform.background().const_ref();
+            mask_const_reference mask2 = transform.mask().const_ref();
+            af::versa< bool, af::c_grid<3> > m(mask2.accessor());
+            DIALS_ASSERT(mask1.size() == mask2.size());
+            for (std::size_t i = 0; i < m.size(); ++i) {
+              m[i] = mask1[i] && mask2[i];
+            }
 
             // Do the profile fitting
-            ProfileFitting<double> fit(p, m, c, b, 1e-3, 100);
+            ProfileFitting<double> fit(p, m.const_ref(), c, b, 1e-3, 100);
             DIALS_ASSERT(fit.niter() < 100);
 
             // Set the data in the reflection
@@ -521,7 +527,8 @@ namespace dials { namespace algorithms {
             flags[i] |= af::IntegratedPrf;
             success[i] = true;
 
-          } catch (dials::error) {
+          } catch (dials::error e) {
+            /* std::cout << e.what() << std::endl; */
             continue;
           }
         }

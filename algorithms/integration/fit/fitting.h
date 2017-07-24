@@ -53,18 +53,72 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(eps > 0.0);
       DIALS_ASSERT(max_iter >= 1);
 
+      double sumc = 0;
+      double sumb = 0;
+      double sums = 0;
+      double minc = -1;
+      double minI = 9999;
+      for (std::size_t i = 0; i < m.size(); ++i) {
+        DIALS_ASSERT(p[i] >= 0);
+        DIALS_ASSERT(b[i] >= 0);
+        DIALS_ASSERT(c[i] >= 0);
+        if (m[i]) {
+          sumc += c[i];
+          sumb += b[i];
+          sums += p[i];
+          if (minc < 0 || c[i] < minc) minc = c[i];
+          if (p[i] > 0 && b[i] / p[i] < minI) minI = b[i] / p[i];
+        }
+      }
+      minI = -minI;
+      DIALS_ASSERT(sumb >= 0);
+      DIALS_ASSERT(sumc >= 0);
+      DIALS_ASSERT(sums > 0);
+      DIALS_ASSERT(minI <= 0);
+
       // Iterate to calculate the intensity. Exit if intensity goes less
       // than zero or if the tolerance or number of iteration is reached.
-      double I0 = sum(c) - sum(b);
+      double I0 = sumc - sumb;
+      if (I0 < minI) {
+        I0 = minI+1e-3;
+      }
       vec2<double> I(0.0, 0.0);
       for (niter_ = 0; niter_ < max_iter; ++niter_) {
-        I = estimate_intensity(p, m, c, b, I0);
+        double sum1 = 0.0;
+        double sum2 = 0.0;
+        double sumv = 0.0;
+        for (std::size_t i = 0; i < p.size(); ++i) {
+          if (m[i] && p[i] > 0) {
+            double v = b[i] + I0 * p[i];
+            DIALS_ASSERT(v > 0);
+            sumv += v;
+            if (v > 0) {
+              sum1 += (c[i] - b[i]) * p[i] / v;
+              sum2 += p[i] * p[i] / v;
+            }
+          }
+        }
+        DIALS_ASSERT(sum2 > 0);
+        I[0] = sum1 / sum2;
+        I[1] = sumv;
         if ((error_ = std::abs(I[0] - I0)) < eps) {
           break;
+        }
+        if (I[0] < minI+1e-3) {
+          I[0] = minI+1e-3;
         }
         I0 = I[0];
       }
       DIALS_ASSERT(I[1] >= 0);
+
+      if (niter_ >= max_iter-1) {
+        niter_ = 0;
+        error_ = 0;
+        intensity_ = (sumc - sumb) / sums;
+        variance_ = std::abs(intensity_ * sums) + sumb;
+        correlation_ = 0;
+        return;
+      }
 
       // Set the intensity and variance
       intensity_ = I[0];

@@ -87,9 +87,10 @@ namespace boost_python {
                 const af::const_ref< bool, af::c_grid<3> >& >())
       .def("profile", &TransformForwardType::profile)
       .def("background", &TransformForwardType::background)
+      .def("mask", &TransformForwardType::mask)
       ;
   }
-  
+
   template <typename FloatType>
   void transform_reverse_wrapper(const char *name) {
 
