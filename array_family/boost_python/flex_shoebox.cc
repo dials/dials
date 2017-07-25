@@ -855,12 +855,12 @@ namespace dials { namespace af { namespace boost_python {
           double x1 = x0 + x + 0.5;
           vec3<double> pixel_hkl1 = compute_miller_index.h(self.panel, x1, y1, z1);
           vec3<double> pixel_hkl2 = compute_miller_index.h(self.panel, x1, y1, z1+1);
-          int h1 = std::floor(pixel_hkl1[0]+0.5);
-          int k1 = std::floor(pixel_hkl1[1]+0.5);
-          int l1 = std::floor(pixel_hkl1[2]+0.5);
-          int h2 = std::floor(pixel_hkl2[0]+0.5);
-          int k2 = std::floor(pixel_hkl2[1]+0.5);
-          int l2 = std::floor(pixel_hkl2[2]+0.5);
+          int h1 = (int)std::floor(pixel_hkl1[0]+0.5);
+          int k1 = (int)std::floor(pixel_hkl1[1]+0.5);
+          int l1 = (int)std::floor(pixel_hkl1[2]+0.5);
+          int h2 = (int)std::floor(pixel_hkl2[0]+0.5);
+          int k2 = (int)std::floor(pixel_hkl2[1]+0.5);
+          int l2 = (int)std::floor(pixel_hkl2[2]+0.5);
           if (h1 != hkl[0] || k1 != hkl[1] || l1 != hkl[2] ||
               h2 != hkl[0] || k2 != hkl[1] || l2 != hkl[2]) {
             self.mask(z,y,x) = mask_code;
@@ -885,6 +885,7 @@ namespace dials { namespace af { namespace boost_python {
       const Goniometer &goniometer,
       const Scan &scan,
       const Crystal &crystal) {
+    DIALS_ASSERT(self.size() == hkl.size());
     af::shared<bool> modified(self.size());
     PixelToMillerIndex compute_miller_index(
         beam,
