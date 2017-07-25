@@ -891,7 +891,7 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
       centroid = reduce(lambda a,b: a+b, panel_centres_in_lab_frame) / len(
         panel_centres_in_lab_frame)
       try:
-        gp_centroid = matrix.col(self._groups[igp].get_ray_intersection(centroid))
+        gp_centroid = matrix.col(self._groups[igp].get_bidirectional_ray_intersection(centroid))
         dorg = go + gp_centroid[0] * d1 + gp_centroid[1] * d2
       except RuntimeError: # workaround for a group frame that passes through
         # the origin
