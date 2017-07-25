@@ -632,7 +632,7 @@ class Model(ProfileModelIface):
         experiment.scan,
         sigma_b,
         sigma_m,
-        5.0,# self.n_sigma(),
+        self.n_sigma() * 1.5,
         self.params.gaussian_rs.fitting.grid_size,
         num_scan_points,
         self.params.gaussian_rs.fitting.threshold,
