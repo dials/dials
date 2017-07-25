@@ -332,6 +332,13 @@ indexing {
       .type = bool
       .help = If False, no attempt is made to refine the model from initial basis \
               vector selection. The indexing solution with the best RMSD is chosen.
+    refine_candidates_with_known_symmetry = False
+      .type = bool
+      .expert_level = 2
+      .help = If False, when choosing the best set of candidate basis solutions, \
+              refine the candidates in the P1 setting. If True, after indexing \
+              in P1, convert the candidates to the known symmetry and apply the \
+              corresponding change of basis to the indexed reflections.
     rmsd_min_px = 1.5
       .type = float
       .help = Minimum acceptable RMSD for choosing candidate basis solutions \

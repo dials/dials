@@ -51,6 +51,7 @@ class Test(object):
         }
         method=fft1d
         refinement_protocol.d_min_start=1.7
+        stills.refine_candidates_with_known_symmetry=True
       }
       integration {
         integrator=stills
@@ -127,6 +128,7 @@ class Test(object):
         }
         method = fft1d
         refinement_protocol.d_min_start = 2.2
+        stills.refine_candidates_with_known_symmetry=True
       }
 
       spotfinder {
