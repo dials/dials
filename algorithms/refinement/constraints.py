@@ -35,12 +35,12 @@ constraints
             "applied to all parameterisations of this type."
     .type = ints(value_min=0)
 
-  parameters = None
-    .type = strings
-    .help = "Constrain specified parameters of each parameterisation by a list"
-            "of parameter names to match. Model name prefixes such as"
-            "'Detector1' will be ignored as parameterisations are identified"
-            "by experiment id"
+  parameter = None
+    .type = str
+    .help = "Identify which parameter of each parameterisation to constrain by"
+            "a (partial) parameter name to match. Model name prefixes such as"
+            "'Detector1' will be ignored as parameterisations are already"
+            "identified by experiment id"
 }
 
 '''
@@ -193,7 +193,9 @@ class ConstraintManagerFactory(object):
 
     return
 
-  def build_constraints(self, constraint_scope, parameterisation, model_type):
+  def build_constraint(self, constraint_scope, parameterisation, model_type):
+    """Create a constraint for a single parameter specified by
+    constraint_scope"""
 
     if constraint_scope.id is None:
       # get one experiment id for each parameterisation to apply to all
@@ -216,34 +218,30 @@ class ConstraintManagerFactory(object):
           prefixes.append(model_type + '{0}'.format(i+1))
           break
 
-    # set up constraints for each type of parameter
-    constraints = []
+    # ignore model name prefixes
     import re
     patt1 = re.compile("^" + model_type + "[0-9]+")
-    for pname in constraint_scope.parameters:
-      # ignore model name prefixes
-      pname = patt1.sub('', pname)
+    pname = patt1.sub('', constraint_scope.parameter)
 
-      # Use a regex to find parameters to constrain from a list of all the
-      # parameter names. There are multiple parts to this. The first part
-      # identifies the relevant model type and parameterisation ordinal index,
-      # accepting those that were chosen according to the supplied experiment
-      # ids. The next part allows for additional text, like 'Group1' that may
-      # be used by a multi-panel detector parameterisation. Then the parameter
-      # name itself, like 'Dist'. Finally, to accommodate scan-varying
-      # parameterisations, suffixes like '_sample0' and '_sample1' are
-      # distinguished so that these are constrained separately.
-      for i in range(max(n_samples, 1)):
-        patt2 = re.compile("^(" + "|".join(prefixes) + "){1}(?![0-9])(\w*" + \
-          pname + ")(_sample{0})?$".format(i))
-        indices = [j for j, s in enumerate(self._all_names) if patt2.match(s)]
-        if len(indices) == 1: continue
-        if self._verbosity > 1:
-          logger.debug('\nThe following parameters will be constrained '
-            'to enforce equal shifts at each step of refinement:')
-          for k in indices: logger.debug(self._all_names[k])
-        constraints.append(EqualShiftConstraint(indices, self._all_vals))
-    return constraints
+    # Use a regex to find the parameters to constrain from a list of all the
+    # parameter names. There are multiple parts to this. The first part
+    # identifies the relevant model type and parameterisation ordinal index,
+    # accepting those that were chosen according to the supplied experiment
+    # ids. The next part allows for additional text, like 'Group1' that may
+    # be used by a multi-panel detector parameterisation. Then the parameter
+    # name itself, like 'Dist'. Finally, to accommodate scan-varying
+    # parameterisations, suffixes like '_sample0' and '_sample1' are
+    # distinguished so that these are constrained separately.
+    for i in range(max(n_samples, 1)):
+      patt2 = re.compile("^(" + "|".join(prefixes) + "){1}(?![0-9])(\w*" + \
+        pname + ")(_sample{0})?$".format(i))
+      indices = [j for j, s in enumerate(self._all_names) if patt2.match(s)]
+      if len(indices) == 1: continue
+      if self._verbosity > 1:
+        logger.debug('\nThe following parameters will be constrained '
+          'to enforce equal shifts at each step of refinement:')
+        for k in indices: logger.debug(self._all_names[k])
+    return EqualShiftConstraint(indices, self._all_vals)
 
   def __call__(self):
 
@@ -272,13 +270,13 @@ class ConstraintManagerFactory(object):
     cell_p = self._pred_param.get_crystal_unit_cell_parameterisations()
 
     for constr in detector_c:
-      constraints.extend(self.build_constraints(constr, detector_p, 'Detector'))
+      constraints.append(self.build_constraint(constr, detector_p, 'Detector'))
     for constr in beam_c:
-      constraints.extend(self.build_constraints(constr, beam_p, 'Beam'))
+      constraints.append(self.build_constraint(constr, beam_p, 'Beam'))
     for constr in orientation_c:
-      constraints.extend(self.build_constraints(constr, orientation_p, 'Crystal'))
+      constraints.append(self.build_constraint(constr, orientation_p, 'Crystal'))
     for constr in cell_c:
-      constraints.extend(self.build_constraints(constr, cell_p, 'Crystal'))
+      constraints.append(self.build_constraint(constr, cell_p, 'Crystal'))
 
     if len(constraints) == 0: return None
 
