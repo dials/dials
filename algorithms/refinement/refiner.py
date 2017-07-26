@@ -545,7 +545,7 @@ class RefinerFactory(object):
 
     # create parameterisations
     pred_param, param_reporter, restraints_parameterisation = \
-      cls.config_parameterisation(params, experiments, refman, do_stills, verbosity)
+      cls.config_parameterisation(params, experiments, refman, do_stills)
 
     logger.debug("Prediction equation parameterisation built")
     logger.debug("Parameter order : name mapping")
@@ -600,8 +600,7 @@ class RefinerFactory(object):
     return params
 
   @classmethod
-  def config_parameterisation(cls, params, experiments, refman, do_stills,
-    verbosity):
+  def config_parameterisation(cls, params, experiments, refman, do_stills):
     """Given a set of parameters, create a parameterisation from a set of
     experimental models.
 
