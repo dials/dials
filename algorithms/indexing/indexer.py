@@ -332,11 +332,23 @@ indexing {
       .type = bool
       .help = If False, no attempt is made to refine the model from initial basis \
               vector selection. The indexing solution with the best RMSD is chosen.
-    rmsd_min_px = 1.5
+    candidate_outlier_rejection = True
+      .type = bool
+      .expert_level = 1
+      .help = If True, while refining candiate basis solutions, also apply Sauter/ \
+              Poon (2010) outlier rejection
+    refine_candidates_with_known_symmetry = False
+      .type = bool
+      .expert_level = 2
+      .help = If False, when choosing the best set of candidate basis solutions, \
+              refine the candidates in the P1 setting. If True, after indexing \
+              in P1, convert the candidates to the known symmetry and apply the \
+              corresponding change of basis to the indexed reflections.
+    rmsd_min_px = 2
       .type = float
       .help = Minimum acceptable RMSD for choosing candidate basis solutions \
               (in pixels)
-    ewald_proximal_volume_max = 0.0015
+    ewald_proximal_volume_max = 0.0025
       .type = float
       .help = Maximum acceptable ewald proximal volume when choosing candidate \
               basis solutions
