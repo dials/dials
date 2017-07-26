@@ -132,6 +132,8 @@ class Refinery(object):
     # filename for an optional log file
     self._log = log
 
+    if verbosity == 0:
+      logger.disabled = True
     self._verbosity = verbosity
 
     self._target_achieved = False
@@ -418,8 +420,7 @@ class AdaptLbfgs(Refinery):
     """
 
     self.update_journal()
-    if self._verbosity > 0:
-      logger.debug("Step %d", self.history.get_nrows() - 1)
+    logger.debug("Step %d", self.history.get_nrows() - 1)
 
     if self.test_for_termination():
       self.history.reason_for_termination = TARGET_ACHIEVED
@@ -721,8 +722,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
 
       # standard journalling
       self.update_journal()
-      if self._verbosity > 0:
-        logger.debug("Step %d", self.history.get_nrows() - 1)
+      logger.debug("Step %d", self.history.get_nrows() - 1)
 
       # add cached items to the journal
       self.history.set_last_cell("parameter_vector_norm", pvn)
@@ -850,8 +850,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
 
       # standard journalling
       self.update_journal()
-      if self._verbosity > 0:
-        logger.debug("Step %d", self.history.get_nrows() - 1)
+      logger.debug("Step %d", self.history.get_nrows() - 1)
 
       # add cached items to the journal
       self.history.set_last_cell("parameter_vector_norm", pvn)

@@ -479,6 +479,9 @@ class RefinerFactory(object):
                         verbosity, copy_experiments=True):
     """low level build"""
 
+    if verbosity == 0:
+      logger.disabled = True
+
     # Currently a refinement job can only have one parameterisation of the
     # prediction equation. This can either be of the XYDelPsi (stills) type, the
     # XYPhi (scans) type or the scan-varying XYPhi type with a varying crystal
@@ -505,30 +508,28 @@ class RefinerFactory(object):
       raise Sorry('Cannot refine a mixture of stills and scans')
     do_stills = exps_are_stills[0]
 
-    if verbosity > 0:
-      logger.debug("\nBuilding reflection manager")
-      logger.debug("Input reflection list size = %d observations", len(reflections))
+    logger.debug("\nBuilding reflection manager")
+    logger.debug("Input reflection list size = %d observations", len(reflections))
 
     # create reflection manager
     refman = cls.config_refman(params, reflections, experiments, do_stills, verbosity)
 
-    if verbosity > 0:
-      logger.debug("Number of observations that pass initial inclusion criteria = %d",
-            refman.get_accepted_refs_size())
+    logger.debug("Number of observations that pass initial inclusion criteria = %d",
+          refman.get_accepted_refs_size())
     sample_size = refman.get_sample_size()
-    if sample_size and verbosity > 0:
+    if sample_size > 0:
       logger.debug("Working set size = %d observations", sample_size)
-    if verbosity > 0: logger.debug("Reflection manager built\n")
+    logger.debug("Reflection manager built\n")
 
     # configure use of sparse data types
     params = cls.config_sparse(params, experiments)
 
-    if verbosity > 0: logger.debug("Building target function")
+    logger.debug("Building target function")
 
     # create target function
     target = cls.config_target(params, experiments, refman, do_stills)
 
-    if verbosity > 0: logger.debug("Target function built")
+    logger.debug("Target function built")
 
     # determine whether to do basic centroid analysis to automatically
     # determine outlier rejection block
@@ -546,11 +547,10 @@ class RefinerFactory(object):
     pred_param, param_reporter, restraints_parameterisation = \
       cls.config_parameterisation(params, experiments, refman, do_stills, verbosity)
 
-    if verbosity > 0:
-      logger.debug("Prediction equation parameterisation built")
-      logger.debug("Parameter order : name mapping")
-      for i, e in enumerate(pred_param.get_param_names()):
-        logger.debug("Parameter %03d : %s", i + 1, e)
+    logger.debug("Prediction equation parameterisation built")
+    logger.debug("Parameter order : name mapping")
+    for i, e in enumerate(pred_param.get_param_names()):
+      logger.debug("Parameter %03d : %s", i + 1, e)
 
     # Set the prediction equation and restraints parameterisations
     # in the target object
@@ -560,13 +560,13 @@ class RefinerFactory(object):
     # Build a constraints manager, if requested
     constraints_manager = cls.config_constraints(params, pred_param, verbosity)
 
-    if verbosity > 0: logger.debug("Building refinement engine")
+    logger.debug("Building refinement engine")
 
     # create refinery
     refinery = cls.config_refinery(params, target, pred_param,
       constraints_manager, verbosity)
 
-    if verbosity > 0: logger.debug("Refinement engine built")
+    logger.debug("Refinement engine built")
 
     # build refiner interface and return
     return Refiner(reflections, experiments,
@@ -650,7 +650,7 @@ class RefinerFactory(object):
       tst = [(e.absolute_num_intervals is None and
               e.interval_width_degrees is libtbx.Auto) for e in tst]
       if any(tst):
-        if verbosity > 0: logger.info('Doing centroid analysis to '
+        logger.info('Doing centroid analysis to '
           'automatically determine scan-varying interval widths')
         ca = refman.get_centroid_analyser(debug=options.debug_centroid_analysis)
         analysis = ca()
@@ -671,8 +671,7 @@ class RefinerFactory(object):
           # width. Default to the safest case
           phi_min, phi_max  = experiments[i].scan.get_oscillation_range(deg=True)
           a['interval_width'] = abs(phi_max - phi_min)
-          if verbosity > 0:
-            logger.info('Exp id {0} suggested interval width could not be '
+          logger.info('Exp id {0} suggested interval width could not be '
               'determined and will be reset to the scan width of '
               '{1:.1f} degrees'.format(i, a['interval_width']))
           continue
@@ -681,8 +680,7 @@ class RefinerFactory(object):
         if block_size is not None:
           min_interval = max(min_interval, block_size)
         a['interval_width'] = min_interval
-        if verbosity > 0:
-          logger.info('Exp id {0} suggested interval width = {1:.1f} degrees'.format(
+        logger.info('Exp id {0} suggested interval width = {1:.1f} degrees'.format(
             i, min_interval))
 
     # Parameterise unique Beams
@@ -966,9 +964,8 @@ class RefinerFactory(object):
             if deg_per_interval is libtbx.Auto and analysis is not None:
               intervals = [analysis[i]['interval_width'] for i in exp_ids]
               deg_per_interval = min(intervals)
-              if verbosity > 0:
-                for i in exp_ids:
-                  logger.debug(('Detector interval_width_degrees for experiment id'
+              for i in exp_ids:
+                logger.debug(('Detector interval_width_degrees for experiment id'
                     ' {0} set to {1:.1f}').format(i, deg_per_interval))
             else:
               deg_per_interval = 36.0
@@ -1455,7 +1452,7 @@ class RefinerFactory(object):
       cell_c]])
     if n_constraints == 0: return None
 
-    if verbosity > 0: logger.debug("\nConfiguring constraints")
+    logger.debug("\nConfiguring constraints")
 
     if options.sparse:
       from dials.algorithms.refinement.constraints \
@@ -1572,7 +1569,7 @@ class RefinerFactory(object):
       raise RuntimeError("Refinement engine " + options.engine +
                          " not recognised")
 
-    if verbosity > 0: logger.debug("Selected refinement engine type: %s", options.engine)
+    logger.debug("Selected refinement engine type: %s", options.engine)
 
     engine = refinery(target = target,
             prediction_parameterisation = pred_param,
@@ -1615,7 +1612,7 @@ class RefinerFactory(object):
       import random
       random.seed(options.random_seed)
       flex.set_random_seed(options.random_seed)
-      if verbosity > 0: logger.debug("Random seed set to %d", options.random_seed)
+      logger.debug("Random seed set to %d", options.random_seed)
 
     # check whether we deal with stills or scans
     if do_stills:
@@ -1821,6 +1818,8 @@ class Refiner(object):
     self._param_report = param_reporter
 
     self._verbosity = verbosity
+    if verbosity == 0:
+      logger.disabled = True
 
     return
 
@@ -2124,13 +2123,15 @@ class Refiner(object):
 
     self._refinery.run()
 
+    # These involve calculation, so skip them when verbosity is zero, even
+    # though the logger is disabled
     if self._verbosity > 0:
       self.print_step_table()
       self.print_out_of_sample_rmsd_table()
       self.print_exp_rmsd_table()
 
     det_npanels = [len(d) for d in self._experiments.detectors()]
-    if any(n > 1 for n in det_npanels) and self._verbosity > 0:
+    if any(n > 1 for n in det_npanels):
       self.print_panel_rmsd_table()
 
     # write scan varying setting matrices back to crystal models
