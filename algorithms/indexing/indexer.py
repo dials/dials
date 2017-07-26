@@ -344,11 +344,11 @@ indexing {
               refine the candidates in the P1 setting. If True, after indexing \
               in P1, convert the candidates to the known symmetry and apply the \
               corresponding change of basis to the indexed reflections.
-    rmsd_min_px = 1.5
+    rmsd_min_px = 2
       .type = float
       .help = Minimum acceptable RMSD for choosing candidate basis solutions \
               (in pixels)
-    ewald_proximal_volume_max = 0.0015
+    ewald_proximal_volume_max = 0.0025
       .type = float
       .help = Maximum acceptable ewald proximal volume when choosing candidate \
               basis solutions
