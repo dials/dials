@@ -165,8 +165,8 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
 
   def _prepare_for_compose(self, reflections, skip_derivatives=False):
     """Add columns to the reflection table to hold the varying state matrices
-    or vectors for the experimental models, if required. Also add columns for
-    the derivatives of states that are scan-varying"""
+    or vectors for the experimental models, if required. Also prepare the cache
+    for the derivatives of states that are scan-varying"""
 
     nref = len(reflections)
     # set columns if needed
@@ -180,6 +180,9 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
       reflections['d_matrix'] = flex.mat3_double(nref)
     if 'D_matrix' not in reflections:
       reflections['D_matrix'] = flex.mat3_double(nref)
+
+    # Clear the state derivative cache
+    self._derivative_cache.clear()
 
     # set columns in the reflection table to store the derivative of state for
     # each reflection, if needed
@@ -290,6 +293,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
               for j, dd in enumerate(dp.get_ds_dp(multi_state_elt=panel_id,
                                                   use_none_as_null=True)):
                 if dd is None: continue
+                self._derivative_cache.append(dp, j, dd, subsel)
                 colname = "dd_dp{0}".format(j)
                 reflections[colname].set_selected(subsel, dd)
 
@@ -304,6 +308,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
           if dp is not None and self._varying_detectors and not skip_derivatives:
             for j, dd in enumerate(dp.get_ds_dp(use_none_as_null=True)):
               if dd is None: continue
+              self._derivative_cache.append(dp, j, dd, subsel)
               colname = "dd_dp{0}".format(j)
               reflections[colname].set_selected(subsel, dd)
 
@@ -312,16 +317,19 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
           if xl_op is not None and self._varying_xl_orientations:
             for j, dU in enumerate(xl_op.get_ds_dp(use_none_as_null=True)):
               if dU is None: continue
+              self._derivative_cache.append(xl_op, j, dU, subsel)
               colname = "dU_dp{0}".format(j)
               reflections[colname].set_selected(subsel, dU)
           if xl_ucp is not None and self._varying_xl_unit_cells:
             for j, dB in enumerate(xl_ucp.get_ds_dp(use_none_as_null=True)):
               if dB is None: continue
+              self._derivative_cache.append(xl_ucp, j, dB, subsel)
               colname = "dB_dp{0}".format(j)
               reflections[colname].set_selected(subsel, dB)
           if bp is not None and self._varying_beams:
             for j, ds0 in enumerate(bp.get_ds_dp(use_none_as_null=True)):
               if ds0 is None: continue
+              self._derivative_cache.append(bp, j, ds0, subsel)
               colname = "ds0_dp{0}".format(j)
               reflections[colname].set_selected(subsel, ds0)
 
@@ -368,6 +376,13 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     else:
       ds0_dxluc_p = None
 
+    ###### FIXME temporary function
+    if ds0_dxluc_p is not None:
+      print self.debug_check_derivatives(ds0_dxluc_p,
+        self._derivative_cache[parameterisation],
+        flex.vec3_double(len(reflections)),
+        isel)
+
     return super(ScanVaryingPredictionParameterisation,
       self)._beam_derivatives(isel, parameterisation, ds0_dxluc_p)
 
@@ -380,6 +395,13 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
         for i in range(parameterisation.num_free())]
     else:
       dU_dxlo_p = None
+
+    ###### FIXME temporary function
+    if dU_dxlo_p is not None:
+      print self.debug_check_derivatives(dU_dxlo_p,
+        self._derivative_cache[parameterisation],
+        flex.mat3_double(len(reflections)),
+        isel)
 
     return super(ScanVaryingPredictionParameterisation,
       self)._xl_orientation_derivatives(isel, parameterisation, dU_dxlo_p)
@@ -394,6 +416,13 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     else:
       dB_dxluc_p = None
 
+    ###### FIXME temporary function
+    if dB_dxluc_p is not None:
+      print self.debug_check_derivatives(dB_dxluc_p,
+        self._derivative_cache[parameterisation],
+        flex.mat3_double(len(reflections)),
+        isel)
+
     return super(ScanVaryingPredictionParameterisation,
       self)._xl_unit_cell_derivatives(isel, parameterisation, dB_dxluc_p)
 
@@ -407,8 +436,34 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     else:
       dd_ddet_p = None
 
+    ###### FIXME temporary function
+    if dd_ddet_p is not None:
+      print self.debug_check_derivatives(dd_ddet_p,
+        self._derivative_cache[parameterisation],
+        flex.mat3_double(len(reflections)),
+        isel)
+
     return super(ScanVaryingPredictionParameterisation,
       self)._detector_derivatives(isel, panel_id, parameterisation, dd_ddet_p)
+
+  ###### FIXME FIXME FIXME temporary function to remove after development
+  ###### of the derivative cache is complete
+  def debug_check_derivatives(self, from_table, from_cache, empty, isel):
+
+    for d1, d2 in zip(from_table, from_cache):
+
+      # reconstitute array from the cache
+      arr = empty.deep_copy()
+      for pair in d2:
+        arr.set_selected(pair.iselection, pair.derivative)
+      arr = arr.select(isel)
+
+      # test they are the same
+      check_equal = flex.bool([a == b for a, b in zip(d1, arr)])
+      if not check_equal.all_eq(True):
+        from dials.util.command_line import interactive_console; interactive_console(); 1/0 #XXXXX DEBUG
+
+    return True
 
   def calculate_model_state_uncertainties(self, var_cov=None,
                                           obs_image_number=None,
