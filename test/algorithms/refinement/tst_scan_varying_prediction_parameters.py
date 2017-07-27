@@ -23,7 +23,7 @@ from dxtbx.model.experiment_list import ExperimentList, Experiment
 from dials.algorithms.refinement.prediction import ScansRayPredictor, \
   ExperimentsPredictor
 from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters import \
-    ScanVaryingPredictionParameterisation, ScanVaryingPredictionParameterisationFast
+    ScanVaryingPredictionParameterisation
 from dials.algorithms.refinement.parameterisation.scan_varying_crystal_parameters \
     import ScanVaryingCrystalOrientationParameterisation, \
            ScanVaryingCrystalUnitCellParameterisation
@@ -33,12 +33,6 @@ from dials.algorithms.refinement.parameterisation.scan_varying_detector_paramete
     import ScanVaryingDetectorParameterisationSinglePanel
 
 class Test(object):
-
-  def __init__(self, fast_pred_param=False):
-    if fast_pred_param:
-      self._pred_param_type = ScanVaryingPredictionParameterisationFast
-    else:
-      self._pred_param_type = ScanVaryingPredictionParameterisation
 
   def create_models(self, cmdline_overrides=None):
 
@@ -140,8 +134,8 @@ geometry.parameters.crystal.c.length.range = 10 50"""
       outlier_detector=None)
 
     # create prediction parameterisation of the requested type
-    pred_param = self._pred_param_type(self.experiments, [self.det_param],
-                          [self.s0_param], [self.xlo_param], [self.xluc_param])
+    pred_param = ScanVaryingPredictionParameterisation(self.experiments,
+        [self.det_param], [self.s0_param], [self.xlo_param], [self.xluc_param])
 
     # make a target to ensure reflections are predicted and refman is finalised
     from dials.algorithms.refinement.target import \
@@ -215,9 +209,6 @@ if __name__ == "__main__":
 
   test1 = Test()
   test1(cmdline_overrides)
-
-  test2 = Test(fast_pred_param=True)
-  test2(cmdline_overrides)
 
   finish_time = time()
   print "Time Taken: ",finish_time - start_time
