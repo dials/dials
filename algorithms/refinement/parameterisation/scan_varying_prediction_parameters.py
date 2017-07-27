@@ -10,10 +10,46 @@
 from __future__ import absolute_import, division
 from math import floor
 from scitbx import matrix
+from dials.array_family import flex
 from dials.algorithms.refinement.parameterisation.prediction_parameters import \
     XYPhiPredictionParameterisation, SparseGradientVectorMixin
+from collections import namedtuple
 
-from dials.array_family import flex
+class StateDerivativeCache(object):
+  """Keep derivatives of the model states in a memory-efficient format
+  by storing each derivative once alongside the indices of reflections affected
+  by that derivative"""
+
+  def __init__(self, parameterisations=None):
+
+    if parameterisations == None: parameterisations = []
+    self._cache = dict.fromkeys(parameterisations)
+
+    self.Pair = namedtuple('Pair', ['derivative', 'iselection'])
+
+    # set up lists with the right number of elements
+    self.clear()
+
+  def __getitem__(self, key):
+
+    return self._cache[key]
+
+  def clear(self):
+    """Clear all cached values"""
+
+    for p in self._cache:
+      self._cache[p] = [[] for i in range(p.num_free())]
+    return
+
+  def append(self, parameterisation, iparam, derivative, iselection):
+    """For a particular parameterisation and parameter number of the free
+    parameters of that parameterisation, append a state derivative and the
+    iselection of reflections it affects to the cache"""
+
+    l1 = self._cache[parameterisation]
+    l2 = l1[iparam]
+    l2.append(self.Pair(derivative, iselection))
+    return
 
 class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
   """An extension of the rotation scans version of the
@@ -45,6 +81,17 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
       for p in xl_orientation_parameterisations)
     self._varying_xl_unit_cells = any(hasattr(p, 'num_sets')
       for p in xl_unit_cell_parameterisations)
+
+    to_cache = []
+    if self._varying_detectors:
+      to_cache.extend(detector_parameterisations)
+    if self._varying_beams:
+      to_cache.extend(beam_parameterisations)
+    if self._varying_xl_orientations:
+      to_cache.extend(xl_orientation_parameterisations)
+    if self._varying_xl_unit_cells:
+      to_cache.extend(xl_unit_cell_parameterisations)
+    self._derivative_cache = StateDerivativeCache(to_cache)
 
     # set up base class
     super(ScanVaryingPredictionParameterisation, self).__init__(
