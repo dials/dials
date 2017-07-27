@@ -570,6 +570,9 @@ class stills_indexer(indexer_base):
     return best.crystal, best.n_indexed
 
   def identify_outliers(self, params, experiments, indexed):
+      if not params.indexing.stills.candidate_outlier_rejection:
+        return flex.bool(len(indexed), True)
+
       print "$$$ stills_indexer::identify_outliers"
       refiner = e_refine(params, experiments, indexed, graph_verbose=False)
 

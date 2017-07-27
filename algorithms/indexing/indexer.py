@@ -332,6 +332,11 @@ indexing {
       .type = bool
       .help = If False, no attempt is made to refine the model from initial basis \
               vector selection. The indexing solution with the best RMSD is chosen.
+    candidate_outlier_rejection = True
+      .type = bool
+      .expert_level = 1
+      .help = If True, while refining candiate basis solutions, also apply Sauter/ \
+              Poon (2010) outlier rejection
     refine_candidates_with_known_symmetry = False
       .type = bool
       .expert_level = 2
