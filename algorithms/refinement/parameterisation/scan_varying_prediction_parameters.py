@@ -163,9 +163,9 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     return
 
   def compose(self, reflections, skip_derivatives=False):
-    """Compose scan-varying crystal parameterisations at each observed image
-    number, for each experiment, for all reflections. Put the U, B and UB
-    matrices in the reflection table, and cache the derivatives if requested"""
+    """Compose scan-varying crystal parameterisations at the specified image
+    number, for the specified experiment, for each image. Put the U, B and
+    UB matrices in the reflection table, and cache the derivatives."""
 
     self._prepare_for_compose(reflections, skip_derivatives)
 
@@ -175,9 +175,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
       sel = reflections['id'] == iexp
       isel = sel.iselection()
 
-      # get their frame numbers and intersecting panels
-      obs_image_numbers = (reflections['xyzobs.px.value'].parts()[2]).select(isel)
-      panels = reflections['panel'].select(isel)
+      blocks = reflections['block'].select(isel)
 
       # identify which parameterisations to use for this experiment
       xl_op = self._get_xl_orientation_parameterisation(iexp)
@@ -188,8 +186,24 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
       # reset current frame cache for scan-varying parameterisations
       self._current_frame = {}
 
-      # get state and derivatives for each reflection
-      for i, frame, pnl in zip(isel, obs_image_numbers, panels):
+      # get state and derivatives for each block
+      for block in xrange(flex.min(blocks),
+                          flex.max(blocks) + 1):
+
+        # determine the subset of reflections this affects
+        subsel = isel.select(blocks == block)
+        if len(subsel) == 0: continue
+
+        # get the panels hit by these reflections
+        panels = reflections['panel'].select(subsel)
+
+        # get the integer frame number nearest the centre of that block
+        frames = reflections['block_centre'].select(subsel)
+
+        # can only be false if original block assignment has gone wrong
+        assert frames.all_eq(frames[0]), \
+            "Failing: a block contains reflections that shouldn't be there"
+        frame = int(floor(frames[0]))
 
         # model states at current frame
         U = self._get_state_from_parameterisation(xl_op, frame)
@@ -199,44 +213,70 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
         if B is None: B = matrix.sqr(exp.crystal.get_B())
 
         s0 = self._get_state_from_parameterisation(bp, frame)
-        if s0 is None: s0 = exp.beam.get_s0()
+        if s0 is None: s0 = matrix.col(exp.beam.get_s0())
 
+        # set states for crystal and beam
+        reflections['u_matrix'].set_selected(subsel, U.elems)
+        reflections['b_matrix'].set_selected(subsel, B.elems)
+        reflections['s0_vector'].set_selected(subsel, s0.elems)
+
+        # set states and derivatives for multi-panel detector
         if dp is not None and dp.is_multi_state():
-          dmat  = self._get_state_from_parameterisation(dp, frame, multi_state_elt = panel)
-        else:
-          dmat  = self._get_state_from_parameterisation(dp, frame)
-        if dmat is None: dmat = exp.detector[panel].get_d_matrix()
-        Dmat = exp.detector[pnl].get_D_matrix() # actually need D, but need
-        # the above to compose at the right frame
 
-        # set states and their derivatives into reflections
-        row = {'u_matrix':U.elems,
-               'b_matrix':B.elems,
-               's0_vector':s0,
-               'd_matrix':dmat,
-               'D_matrix':Dmat}
+          # loop through the panels in this detector
+          for panel_id, _ in enumerate(exp.detector):
+
+            # get the right subset of array indices to set for this panel
+            subsel2 = subsel.select(panels == panel_id)
+            if len(subsel2) == 0:
+              # if no reflections intersect this panel, skip calculation
+              continue
+
+            dmat  = self._get_state_from_parameterisation(dp,
+              frame, multi_state_elt=panel_id)
+            if dmat is None: dmat = exp.detector[panel_id].get_d_matrix()
+            Dmat = exp.detector[panel_id].get_D_matrix()
+            reflections['d_matrix'].set_selected(subsel2, dmat)
+            reflections['D_matrix'].set_selected(subsel2, Dmat)
+
+            if dp is not None and self._varying_detectors and not skip_derivatives:
+              for j, dd in enumerate(dp.get_ds_dp(multi_state_elt=panel_id,
+                                                  use_none_as_null=True)):
+                if dd is None: continue
+                colname = "dd_dp{0}".format(j)
+                reflections[colname].set_selected(subsel, dd)
+
+        else: # set states and derivatives for single panel detector
+
+          dmat  = self._get_state_from_parameterisation(dp, frame)
+          if dmat is None: dmat = exp.detector[0].get_d_matrix()
+          Dmat = exp.detector[0].get_D_matrix()
+          reflections['d_matrix'].set_selected(subsel, dmat)
+          reflections['D_matrix'].set_selected(subsel, Dmat)
+
+          if dp is not None and self._varying_detectors and not skip_derivatives:
+            for j, dd in enumerate(dp.get_ds_dp(use_none_as_null=True)):
+              if dd is None: continue
+              colname = "dd_dp{0}".format(j)
+              reflections[colname].set_selected(subsel, dd)
+
+        # set derivatives of the states for crystal and beam
         if not skip_derivatives:
           if xl_op is not None and self._varying_xl_orientations:
-            for j, dU in enumerate(xl_op.get_ds_dp()):
+            for j, dU in enumerate(xl_op.get_ds_dp(use_none_as_null=True)):
+              if dU is None: continue
               colname = "dU_dp{0}".format(j)
-              row[colname] = dU
+              reflections[colname].set_selected(subsel, dU)
           if xl_ucp is not None and self._varying_xl_unit_cells:
-            for j, dB in enumerate(xl_ucp.get_ds_dp()):
+            for j, dB in enumerate(xl_ucp.get_ds_dp(use_none_as_null=True)):
+              if dB is None: continue
               colname = "dB_dp{0}".format(j)
-              row[colname] = dB
+              reflections[colname].set_selected(subsel, dB)
           if bp is not None and self._varying_beams:
-            for j, ds0 in enumerate(bp.get_ds_dp()):
+            for j, ds0 in enumerate(bp.get_ds_dp(use_none_as_null=True)):
+              if ds0 is None: continue
               colname = "ds0_dp{0}".format(j)
-              row[colname] = ds0
-          if dp is not None and self._varying_detectors:
-            if dp.is_multi_state():
-              dds = dp.get_ds_dp(multi_state_elt=pnl)
-            else:
-              dds = dp.get_ds_dp()
-            for j, dd in enumerate(dds):
-              colname = "dd_dp{0}".format(j)
-              row[colname] = dd
-        reflections[i] = row
+              reflections[colname].set_selected(subsel, ds0)
 
     # set the UB matrices for prediction
     reflections['ub_matrix'] = reflections['u_matrix'] * reflections['b_matrix']
@@ -396,135 +436,9 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
 
     return
 
-class ScanVaryingPredictionParameterisationFast(ScanVaryingPredictionParameterisation):
-  """Overloads compose to calculate model states per block rather than per
-  reflection"""
-
-  def compose(self, reflections, skip_derivatives=False):
-    """Compose scan-varying crystal parameterisations at the specified image
-    number, for the specified experiment, for each image. Put the U, B and
-    UB matrices in the reflection table, and cache the derivatives."""
-
-    self._prepare_for_compose(reflections, skip_derivatives)
-
-    for iexp, exp in enumerate(self._experiments):
-
-      # select the reflections of interest
-      sel = reflections['id'] == iexp
-      isel = sel.iselection()
-
-      blocks = reflections['block'].select(isel)
-
-      # identify which parameterisations to use for this experiment
-      xl_op = self._get_xl_orientation_parameterisation(iexp)
-      xl_ucp = self._get_xl_unit_cell_parameterisation(iexp)
-      bp = self._get_beam_parameterisation(iexp)
-      dp = self._get_detector_parameterisation(iexp)
-
-      # reset current frame cache for scan-varying parameterisations
-      self._current_frame = {}
-
-      # get state and derivatives for each block
-      for block in xrange(flex.min(blocks),
-                          flex.max(blocks) + 1):
-
-        # determine the subset of reflections this affects
-        subsel = isel.select(blocks == block)
-        if len(subsel) == 0: continue
-
-        # get the panels hit by these reflections
-        panels = reflections['panel'].select(subsel)
-
-        # get the integer frame number nearest the centre of that block
-        frames = reflections['block_centre'].select(subsel)
-
-        # can only be false if original block assignment has gone wrong
-        assert frames.all_eq(frames[0]), \
-            "Failing: a block contains reflections that shouldn't be there"
-        frame = int(floor(frames[0]))
-
-        # model states at current frame
-        U = self._get_state_from_parameterisation(xl_op, frame)
-        if U is None: U = matrix.sqr(exp.crystal.get_U())
-
-        B = self._get_state_from_parameterisation(xl_ucp, frame)
-        if B is None: B = matrix.sqr(exp.crystal.get_B())
-
-        s0 = self._get_state_from_parameterisation(bp, frame)
-        if s0 is None: s0 = matrix.col(exp.beam.get_s0())
-
-        # set states for crystal and beam
-        reflections['u_matrix'].set_selected(subsel, U.elems)
-        reflections['b_matrix'].set_selected(subsel, B.elems)
-        reflections['s0_vector'].set_selected(subsel, s0.elems)
-
-        # set states and derivatives for multi-panel detector
-        if dp is not None and dp.is_multi_state():
-
-          # loop through the panels in this detector
-          for panel_id, _ in enumerate(exp.detector):
-
-            # get the right subset of array indices to set for this panel
-            subsel2 = subsel.select(panels == panel_id)
-            if len(subsel2) == 0:
-              # if no reflections intersect this panel, skip calculation
-              continue
-
-            dmat  = self._get_state_from_parameterisation(dp,
-              frame, multi_state_elt=panel_id)
-            if dmat is None: dmat = exp.detector[panel_id].get_d_matrix()
-            Dmat = exp.detector[panel_id].get_D_matrix()
-            reflections['d_matrix'].set_selected(subsel2, dmat)
-            reflections['D_matrix'].set_selected(subsel2, Dmat)
-
-            if dp is not None and self._varying_detectors and not skip_derivatives:
-              for j, dd in enumerate(dp.get_ds_dp(multi_state_elt=panel_id,
-                                                  use_none_as_null=True)):
-                if dd is None: continue
-                colname = "dd_dp{0}".format(j)
-                reflections[colname].set_selected(subsel, dd)
-
-        else: # set states and derivatives for single panel detector
-
-          dmat  = self._get_state_from_parameterisation(dp, frame)
-          if dmat is None: dmat = exp.detector[0].get_d_matrix()
-          Dmat = exp.detector[0].get_D_matrix()
-          reflections['d_matrix'].set_selected(subsel, dmat)
-          reflections['D_matrix'].set_selected(subsel, Dmat)
-
-          if dp is not None and self._varying_detectors and not skip_derivatives:
-            for j, dd in enumerate(dp.get_ds_dp(use_none_as_null=True)):
-              if dd is None: continue
-              colname = "dd_dp{0}".format(j)
-              reflections[colname].set_selected(subsel, dd)
-
-        # set derivatives of the states for crystal and beam
-        if not skip_derivatives:
-          if xl_op is not None and self._varying_xl_orientations:
-            for j, dU in enumerate(xl_op.get_ds_dp(use_none_as_null=True)):
-              if dU is None: continue
-              colname = "dU_dp{0}".format(j)
-              reflections[colname].set_selected(subsel, dU)
-          if xl_ucp is not None and self._varying_xl_unit_cells:
-            for j, dB in enumerate(xl_ucp.get_ds_dp(use_none_as_null=True)):
-              if dB is None: continue
-              colname = "dB_dp{0}".format(j)
-              reflections[colname].set_selected(subsel, dB)
-          if bp is not None and self._varying_beams:
-            for j, ds0 in enumerate(bp.get_ds_dp(use_none_as_null=True)):
-              if ds0 is None: continue
-              colname = "ds0_dp{0}".format(j)
-              reflections[colname].set_selected(subsel, ds0)
-
-    # set the UB matrices for prediction
-    reflections['ub_matrix'] = reflections['u_matrix'] * reflections['b_matrix']
-
-    return
 
 class ScanVaryingPredictionParameterisationSparse(
     SparseGradientVectorMixin, ScanVaryingPredictionParameterisation):
   pass
 
-class ScanVaryingPredictionParameterisationFastSparse(
-    SparseGradientVectorMixin, ScanVaryingPredictionParameterisationFast):
-  pass
+

@@ -117,12 +117,11 @@ refinement
                scan"
       .type = bool
 
-    compose_model_per = reflection image *block
+    compose_model_per = image *block
       .help = "For scan-varying parameterisations, compose a new model either"
-              "every reflection (slow), every image (faster, less accurate) or"
-              "within blocks of a width specified in the reflections"
-              "parameters. When this block width is larger than the image width"
-              "the result is faster again, with another trade-off in accuracy"
+              "every image or within blocks of a width specified in the"
+              "reflections parameters. When this block width is larger than the"
+              "image width the result is faster, with a trade-off in accuracy"
       .type = choice
       .expert_level = 1
 
@@ -1344,23 +1343,12 @@ class RefinerFactory(object):
 
     else: # doing scans
       if options.scan_varying:
-        if options.compose_model_per == "reflection":
-          if options.sparse:
-            from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
-              import ScanVaryingPredictionParameterisationSparse as PredParam
-          else:
-            from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
-              import ScanVaryingPredictionParameterisation as PredParam
-        elif options.compose_model_per == "image" or options.compose_model_per == "block":
-          if options.sparse:
-            from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
-              import ScanVaryingPredictionParameterisationFastSparse as PredParam
-          else:
-            from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
-              import ScanVaryingPredictionParameterisationFast as PredParam
+        if options.sparse:
+          from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
+            import ScanVaryingPredictionParameterisationSparse as PredParam
         else:
-          raise RuntimeError("UB_model_per=" + options.scan_varying +
-                             " is not a recognised option")
+          from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
+            import ScanVaryingPredictionParameterisation as PredParam
         pred_param = PredParam(
               experiments,
               det_params, beam_params, xl_ori_params, xl_uc_params)
@@ -2137,10 +2125,7 @@ class Refiner(object):
     #FIXME tidy up
     from dials.algorithms.refinement.parameterisation import \
       ScanVaryingPredictionParameterisation
-    from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
-      import ScanVaryingPredictionParameterisationFast
-    if isinstance(self._pred_param, ScanVaryingPredictionParameterisation) or \
-       isinstance(self._pred_param, ScanVaryingPredictionParameterisationFast):
+    if isinstance(self._pred_param, ScanVaryingPredictionParameterisation):
       for iexp, exp in enumerate(self._experiments):
         ar_range = exp.scan.get_array_range()
         A_list = [self._pred_param.get_UB(t, iexp) for t in range(ar_range[0],
