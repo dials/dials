@@ -117,8 +117,19 @@ phil_scope = parse('''
 
     n_subset = None
       .type = int
-      .help = "If not None, keep a random subset of size n_subset when"
+      .help = "If not None, keep a subset of size n_subset when"
               "saving the combined experiments"
+
+    n_subset_method = *random n_refl
+      .type = choice
+      .help = "Algorithm to be used for choosing the n_subset images/"
+              "experiments for refinement.  n_refl chooses the set with the"
+              "largest numbers of reflections listed in the pickle files"
+
+    n_refl_panel_list = None
+      .type = ints
+      .help = "If n_subset_method is n_refl, specify which panels to search"
+              "on."
 
     max_batch_size = None
       .type = int
@@ -409,18 +420,41 @@ class Script(object):
 
     # save a random subset if requested
     if params.output.n_subset is not None and len(experiments) > params.output.n_subset:
-      import random
       subset_exp = ExperimentList()
       subset_refls = flex.reflection_table()
-      n_picked = 0
-      indices = range(len(experiments))
-      while n_picked < params.output.n_subset:
-        idx = indices.pop(random.randint(0, len(indices)-1))
-        subset_exp.append(experiments[idx])
-        refls = reflections.select(reflections['id'] == idx)
-        refls['id'] = flex.int(len(refls), n_picked)
-        subset_refls.extend(refls)
-        n_picked += 1
+      if params.output.n_subset_method == "random":
+        import random
+        n_picked = 0
+        indices = range(len(experiments))
+        while n_picked < params.output.n_subset:
+          idx = indices.pop(random.randint(0, len(indices)-1))
+          subset_exp.append(experiments[idx])
+          refls = reflections.select(reflections['id'] == idx)
+          refls['id'] = flex.int(len(refls), n_picked)
+          subset_refls.extend(refls)
+          n_picked += 1
+        print "Selecting a random subset of {0} experiments out of {1} total.".format(
+          params.output.n_subset, len(experiments))
+      elif params.output.n_subset_method == "n_refl":
+        if params.output.n_refl_panel_list is None:
+          refls_subset = reflections
+        else:
+          sel = flex.bool(len(reflections), False)
+          for p in params.output.n_refl_panel_list:
+            sel |= reflections['panel'] == p
+          refls_subset = reflections.select(sel)
+        refl_counts = flex.int()
+        for expt_id in xrange(len(experiments)):
+          refl_counts.append(len(refls_subset.select(refls_subset['id'] == expt_id)))
+        sort_order = flex.sort_permutation(refl_counts,reverse=True)
+        for expt_id, idx in enumerate(sort_order[:params.output.n_subset]):
+          subset_exp.append(experiments[idx])
+          refls = reflections.select(reflections['id'] == idx)
+          refls['id'] = flex.int(len(refls), expt_id)
+          subset_refls.extend(refls)
+        print "Selecting a subset of {0} experiments with highest number of reflections out of {1} total.".format(
+          params.output.n_subset, len(experiments))
+
       experiments = subset_exp
       reflections = subset_refls
 
