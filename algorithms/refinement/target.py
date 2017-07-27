@@ -493,8 +493,13 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
                absolute_cutoffs=None,
                gradient_calculation_blocksize=None):
 
-    Target.__init__(self, experiments, reflection_predictor, ref_man,
-                    prediction_parameterisation, gradient_calculation_blocksize)
+    Target.__init__(self,
+                    experiments=experiments,
+                    reflection_predictor=reflection_predictor,
+                    ref_manager=ref_man,
+                    prediction_parameterisation=prediction_parameterisation,
+                    restraints_parameterisation=restraints_parameterisation,
+                    gradient_calculation_blocksize=gradient_calculation_blocksize)
 
     # Set up the RMSD achieved criterion. For simplicity, we take models from
     # the first Experiment only. If this is not appropriate for refinement over
