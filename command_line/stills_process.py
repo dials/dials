@@ -122,7 +122,39 @@ dials_phil_str = '''
   }
 '''
 
-phil_scope = parse(control_phil_str + dials_phil_str, process_includes=True)
+program_defaults_phil_str = '''
+indexing {
+  method = fft1d
+}
+refinement {
+  parameterisation {
+    auto_reduction {
+      min_nref_per_parameter = 1
+      action = fix
+    }
+    beam.fix = all
+    detector.fix = all
+  }
+  reflections {
+    weighting_strategy.override = stills
+    outlier.algorithm = null
+  }
+}
+integration {
+  integrator = stills
+  profile.fitting = False
+  background {
+    algorithm = simple
+    simple {
+      outlier.algorithm = plane
+      model.algorithm = linear2d
+    }
+  }
+}
+profile.gaussian_rs.min_spots.overall = 0
+'''
+
+phil_scope = parse(control_phil_str + dials_phil_str, process_includes=True).fetch(parse(program_defaults_phil_str))
 
 def do_import(filename):
   logger.info("Loading %s"%os.path.basename(filename))

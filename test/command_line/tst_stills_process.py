@@ -50,35 +50,8 @@ class Test(object):
           space_group = P6122
           unit_cell = 92.9 92.9 130.4 90 90 120
         }
-        method=fft1d
         refinement_protocol.d_min_start=1.7
         stills.refine_candidates_with_known_symmetry=True
-      }
-      integration {
-        integrator=stills
-        profile.fitting=False
-        background {
-          algorithm = simple
-          simple {
-            model.algorithm = linear2d
-            outlier.algorithm = plane
-          }
-        }
-      }
-      refinement {
-        parameterisation {
-          beam.fix=all
-          detector.fix=all
-        }
-        reflections {
-          outlier.algorithm=null
-          weighting_strategy.override=stills
-        }
-      }
-      profile {
-        gaussian_rs {
-          min_spots.overall = 0
-        }
       }
       """)
     f.close()
@@ -135,13 +108,9 @@ class Test(object):
           space_group = P43212
           unit_cell = 78.9 78.9 38.1 90 90 90
         }
-        method = fft1d
         refinement_protocol.d_min_start = 2.2
         stills.refine_candidates_with_known_symmetry=True
-        stills.rmsd_min_px = 2
-        stills.ewald_proximal_volume_max = 0.0025
       }
-
       spotfinder {
         filter.min_spot_size = 2
         threshold {
@@ -151,41 +120,9 @@ class Test(object):
           }
         }
       }
-
       refinement {
         parameterisation {
-          beam.fix = all
           detector.fix_list = Dist,Tau1
-          auto_reduction {
-            action = fix
-            min_nref_per_parameter = 1
-          }
-          crystal {
-            unit_cell {
-              restraints {
-                tie_to_target {
-                  values = 78.9,78.9,38.1,90,90,90
-                  sigmas = 1,1,1,0,0,0
-                }
-              }
-            }
-          }
-        }
-      }
-      integration {
-        integrator = stills
-        profile.fitting = False
-        background {
-          algorithm = simple
-          simple {
-            model.algorithm = linear2d
-            outlier.algorithm = tukey
-          }
-        }
-      }
-      profile {
-        gaussian_rs {
-          min_spots.overall = 0
         }
       }
       """%geometry_path)
@@ -232,9 +169,10 @@ class Test(object):
     #                            "idx-run266702-0-subset_00003_integrated.pickle"],
     #                            [range(100,115),range(155,165)]): # large ranges to handle platform-specific differences
     # 09/27/17 Bugfix for refine_candidates_with_known_symmetry
-    for result, n_refls in zip(["idx-run266702-0-subset_00001_integrated.pickle",
+    for result, n_refls in zip(["idx-run266702-0-subset_00000_integrated.pickle",
+                                "idx-run266702-0-subset_00001_integrated.pickle",
                                 "idx-run266702-0-subset_00003_integrated.pickle"],
-                                [range(565,580),range(475,500)]): # large ranges to handle platform-specific differences
+                                [range(212,225),range(565,580),range(475,500)]): # large ranges to handle platform-specific differences
       table = pickle.load(open(result, 'rb'))
       assert len(table) in n_refls, (result, len(table))
       assert 'id' in table
