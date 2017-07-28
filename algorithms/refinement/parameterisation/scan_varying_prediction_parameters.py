@@ -242,32 +242,6 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     self._derivative_cache.clear()
     self._derivative_cache.nref = nref
 
-    # set columns in the reflection table to store the derivative of state for
-    # each reflection, if needed
-    if not skip_derivatives:
-      null9 = (0., 0., 0., 0., 0., 0., 0., 0., 0.)
-      null3 = (0., 0., 0.)
-      if self._varying_xl_orientations and "dU_dp0" not in reflections:
-        max_free_params = max([e.num_free() for e in self._xl_orientation_parameterisations])
-        for i in range(max_free_params):
-          colname = "dU_dp{0}".format(i)
-          reflections[colname] = flex.mat3_double(nref, null9)
-      if self._varying_xl_unit_cells and "dB_dp0" not in reflections:
-        max_free_params = max([e.num_free() for e in self._xl_unit_cell_parameterisations])
-        for i in range(max_free_params):
-          colname = "dB_dp{0}".format(i)
-          reflections[colname] = flex.mat3_double(nref, null9)
-      if self._varying_detectors and "dd_dp0" not in reflections:
-        max_free_params = max([e.num_free() for e in self._detector_parameterisations])
-        for i in range(max_free_params):
-          colname = "dd_dp{0}".format(i)
-          reflections[colname] = flex.mat3_double(nref, null9)
-      if self._varying_beams and "ds0_dp0" not in reflections:
-        max_free_params = max([e.num_free() for e in self._beam_parameterisations])
-        for i in range(max_free_params):
-          colname = "ds0_dp{0}".format(i)
-          reflections[colname] = flex.vec3_double(nref, null3)
-
     return
 
   def compose(self, reflections, skip_derivatives=False):
@@ -352,8 +326,6 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
                                                   use_none_as_null=True)):
                 if dd is None: continue
                 self._derivative_cache.append(dp, j, dd, subsel)
-                colname = "dd_dp{0}".format(j)
-                reflections[colname].set_selected(subsel, dd)
 
         else: # set states and derivatives for single panel detector
 
@@ -367,8 +339,6 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
             for j, dd in enumerate(dp.get_ds_dp(use_none_as_null=True)):
               if dd is None: continue
               self._derivative_cache.append(dp, j, dd, subsel)
-              colname = "dd_dp{0}".format(j)
-              reflections[colname].set_selected(subsel, dd)
 
         # set derivatives of the states for crystal and beam
         if not skip_derivatives:
@@ -376,20 +346,14 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
             for j, dU in enumerate(xl_op.get_ds_dp(use_none_as_null=True)):
               if dU is None: continue
               self._derivative_cache.append(xl_op, j, dU, subsel)
-              colname = "dU_dp{0}".format(j)
-              reflections[colname].set_selected(subsel, dU)
           if xl_ucp is not None and self._varying_xl_unit_cells:
             for j, dB in enumerate(xl_ucp.get_ds_dp(use_none_as_null=True)):
               if dB is None: continue
               self._derivative_cache.append(xl_ucp, j, dB, subsel)
-              colname = "dB_dp{0}".format(j)
-              reflections[colname].set_selected(subsel, dB)
           if bp is not None and self._varying_beams:
             for j, ds0 in enumerate(bp.get_ds_dp(use_none_as_null=True)):
               if ds0 is None: continue
               self._derivative_cache.append(bp, j, ds0, subsel)
-              colname = "ds0_dp{0}".format(j)
-              reflections[colname].set_selected(subsel, ds0)
 
     # set the UB matrices for prediction
     reflections['ub_matrix'] = reflections['u_matrix'] * reflections['b_matrix']
