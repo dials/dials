@@ -25,14 +25,56 @@ class StateDerivativeCache(object):
     if parameterisations == None: parameterisations = []
     self._cache = dict.fromkeys(parameterisations)
 
-    self.Pair = namedtuple('Pair', ['derivative', 'iselection'])
+    self._Pair = namedtuple('Pair', ['derivative', 'iselection'])
 
     # set up lists with the right number of elements
     self.clear()
 
-  def __getitem__(self, key):
+    self._nref = 0
 
-    return self._cache[key]
+  def build_gradients(self, parameterisation, isel=None, imatch=None):
+    """Return an object mimicking a list of flex arrays containing state
+    gradients wrt each parameter of the parameterisation. In fact this is a
+    generator so that iterating over the elements of the list will return
+    control here so that the gradient array for a single parameter can be
+    reconstructed on the fly"""
+
+    # Get the data from the cache
+    entry = self._cache[parameterisation]
+
+    # Figure out the right flex array type
+    shape = entry[0][0].derivative.n
+    if shape == (3, 1):
+      arr_type = flex.vec3_double
+      null = (0, 0, 0)
+    elif shape == (3, 3):
+      arr_type = flex.mat3_double
+      null = (0, 0, 0, 0, 0, 0, 0, 0, 0)
+    else:
+      raise TypeError("Unrecognised model state derivative type")
+
+    # Loop over the data for each parameter
+    for p_data in entry:
+
+      # Build an empty array of the same length as the original reflection
+      # list used when the cache was filled
+      ds_dp = arr_type(self._nref, null)
+
+      # Reconstitute full array from the cache
+      for pair in p_data:
+        ds_dp.set_selected(pair.iselection, pair.derivative)
+
+      # First select only elements relevant to the current gradient calculation
+      # block (i.e. if nproc > 1 or gradient_calculation_blocksize was set)
+      if imatch is not None:
+        ds_dp = ds_dp.select(imatch)
+
+      # Now select only those reflections from the full list that are affected
+      # by this parameterisation
+      if isel is not None:
+        ds_dp = ds_dp.select(isel)
+
+      yield ds_dp
 
   def clear(self):
     """Clear all cached values"""
@@ -48,8 +90,22 @@ class StateDerivativeCache(object):
 
     l1 = self._cache[parameterisation]
     l2 = l1[iparam]
-    l2.append(self.Pair(derivative, iselection))
+    l2.append(self._Pair(derivative, iselection))
     return
+
+  @property
+  def nref(self):
+    """Get the length of the reflection list to which indices in the iselections
+    refer"""
+
+    return self._nref
+
+  @nref.setter
+  def nref(self, value):
+    """Set the length of the reflection list to which indices in the iselections
+    refer"""
+
+    self._nref = value
 
 class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
   """An extension of the rotation scans version of the
@@ -181,8 +237,10 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     if 'D_matrix' not in reflections:
       reflections['D_matrix'] = flex.mat3_double(nref)
 
-    # Clear the state derivative cache
+    # Clear the state derivative cache and set the number of reflections needed
+    # to reconstruct the derivative arrays later
     self._derivative_cache.clear()
+    self._derivative_cache.nref = nref
 
     # set columns in the reflection table to store the derivative of state for
     # each reflection, if needed
@@ -378,10 +436,13 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
 
     ###### FIXME temporary function
     if ds0_dxluc_p is not None:
-      print self.debug_check_derivatives(ds0_dxluc_p,
-        self._derivative_cache[parameterisation],
-        flex.vec3_double(len(reflections)),
-        isel)
+      if reflections.has_key('imatch'):
+        imatch = reflections['imatch']
+      else:
+        imatch = None
+      ds0_dxluc_p_from_cache = self._derivative_cache.build_gradients(
+        parameterisation=parameterisation, isel=isel, imatch=imatch)
+      print self.debug_check_derivatives(ds0_dxluc_p, ds0_dxluc_p_from_cache)
 
     return super(ScanVaryingPredictionParameterisation,
       self)._beam_derivatives(isel, parameterisation, ds0_dxluc_p)
@@ -398,10 +459,13 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
 
     ###### FIXME temporary function
     if dU_dxlo_p is not None:
-      print self.debug_check_derivatives(dU_dxlo_p,
-        self._derivative_cache[parameterisation],
-        flex.mat3_double(len(reflections)),
-        isel)
+      if reflections.has_key('imatch'):
+        imatch = reflections['imatch']
+      else:
+        imatch = None
+      dU_dxlo_p_from_cache = self._derivative_cache.build_gradients(
+        parameterisation=parameterisation, isel=isel, imatch=imatch)
+      print self.debug_check_derivatives(dU_dxlo_p, dU_dxlo_p_from_cache)
 
     return super(ScanVaryingPredictionParameterisation,
       self)._xl_orientation_derivatives(isel, parameterisation, dU_dxlo_p)
@@ -418,10 +482,13 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
 
     ###### FIXME temporary function
     if dB_dxluc_p is not None:
-      print self.debug_check_derivatives(dB_dxluc_p,
-        self._derivative_cache[parameterisation],
-        flex.mat3_double(len(reflections)),
-        isel)
+      if reflections.has_key('imatch'):
+        imatch = reflections['imatch']
+      else:
+        imatch = None
+      dB_dxluc_p_from_cache = self._derivative_cache.build_gradients(
+        parameterisation=parameterisation, isel=isel, imatch=imatch)
+      print self.debug_check_derivatives(dB_dxluc_p, dB_dxluc_p_from_cache)
 
     return super(ScanVaryingPredictionParameterisation,
       self)._xl_unit_cell_derivatives(isel, parameterisation, dB_dxluc_p)
@@ -438,31 +505,25 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
 
     ###### FIXME temporary function
     if dd_ddet_p is not None:
-      print self.debug_check_derivatives(dd_ddet_p,
-        self._derivative_cache[parameterisation],
-        flex.mat3_double(len(reflections)),
-        isel)
+      if reflections.has_key('imatch'):
+        imatch = reflections['imatch']
+      else:
+        imatch = None
+      dd_ddet_p_from_cache = self._derivative_cache.build_gradients(
+        parameterisation=parameterisation, isel=isel, imatch=imatch)
+      print self.debug_check_derivatives(dd_ddet_p, dd_ddet_p_from_cache)
 
     return super(ScanVaryingPredictionParameterisation,
       self)._detector_derivatives(isel, panel_id, parameterisation, dd_ddet_p)
 
   ###### FIXME FIXME FIXME temporary function to remove after development
   ###### of the derivative cache is complete
-  def debug_check_derivatives(self, from_table, from_cache, empty, isel):
+  def debug_check_derivatives(self, ds_dp1, ds_dp2):
 
-    for d1, d2 in zip(from_table, from_cache):
-
-      # reconstitute array from the cache
-      arr = empty.deep_copy()
-      for pair in d2:
-        arr.set_selected(pair.iselection, pair.derivative)
-      arr = arr.select(isel)
-
-      # test they are the same
-      check_equal = flex.bool([a == b for a, b in zip(d1, arr)])
+    for d1, d2 in zip(ds_dp1, ds_dp2):
+      check_equal = flex.bool([a == b for a, b in zip(d1, d2)])
       if not check_equal.all_eq(True):
         from dials.util.command_line import interactive_console; interactive_console(); 1/0 #XXXXX DEBUG
-
     return True
 
   def calculate_model_state_uncertainties(self, var_cov=None,
