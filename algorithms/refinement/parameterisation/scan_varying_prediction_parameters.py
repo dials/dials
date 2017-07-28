@@ -429,20 +429,14 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     method"""
 
     if self._varying_beams:
-      ds0_dxluc_p = [reflections["ds0_dp{0}".format(i)].select(isel) \
-        for i in range(parameterisation.num_free())]
-    else:
-      ds0_dxluc_p = None
-
-    ###### FIXME temporary function
-    if ds0_dxluc_p is not None:
       if reflections.has_key('imatch'):
         imatch = reflections['imatch']
       else:
         imatch = None
-      ds0_dxluc_p_from_cache = self._derivative_cache.build_gradients(
+      ds0_dxluc_p = self._derivative_cache.build_gradients(
         parameterisation=parameterisation, isel=isel, imatch=imatch)
-      print self.debug_check_derivatives(ds0_dxluc_p, ds0_dxluc_p_from_cache)
+    else:
+      ds0_dxluc_p = None
 
     return super(ScanVaryingPredictionParameterisation,
       self)._beam_derivatives(isel, parameterisation, ds0_dxluc_p)
@@ -452,20 +446,14 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     method"""
 
     if self._varying_xl_orientations:
-      dU_dxlo_p = [reflections["dU_dp{0}".format(i)].select(isel) \
-        for i in range(parameterisation.num_free())]
-    else:
-      dU_dxlo_p = None
-
-    ###### FIXME temporary function
-    if dU_dxlo_p is not None:
       if reflections.has_key('imatch'):
         imatch = reflections['imatch']
       else:
         imatch = None
-      dU_dxlo_p_from_cache = self._derivative_cache.build_gradients(
+      dU_dxlo_p = self._derivative_cache.build_gradients(
         parameterisation=parameterisation, isel=isel, imatch=imatch)
-      print self.debug_check_derivatives(dU_dxlo_p, dU_dxlo_p_from_cache)
+    else:
+      dU_dxlo_p = None
 
     return super(ScanVaryingPredictionParameterisation,
       self)._xl_orientation_derivatives(isel, parameterisation, dU_dxlo_p)
@@ -475,20 +463,14 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     method"""
 
     if self._varying_xl_unit_cells:
-      dB_dxluc_p = [reflections["dB_dp{0}".format(i)].select(isel) \
-        for i in range(parameterisation.num_free())]
-    else:
-      dB_dxluc_p = None
-
-    ###### FIXME temporary function
-    if dB_dxluc_p is not None:
       if reflections.has_key('imatch'):
         imatch = reflections['imatch']
       else:
         imatch = None
-      dB_dxluc_p_from_cache = self._derivative_cache.build_gradients(
+      dB_dxluc_p = self._derivative_cache.build_gradients(
         parameterisation=parameterisation, isel=isel, imatch=imatch)
-      print self.debug_check_derivatives(dB_dxluc_p, dB_dxluc_p_from_cache)
+    else:
+      dB_dxluc_p = None
 
     return super(ScanVaryingPredictionParameterisation,
       self)._xl_unit_cell_derivatives(isel, parameterisation, dB_dxluc_p)
@@ -498,33 +480,17 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     method"""
 
     if self._varying_detectors:
-      dd_ddet_p = [reflections["dd_dp{0}".format(i)].select(isel) \
-        for i in range(parameterisation.num_free())]
-    else:
-      dd_ddet_p = None
-
-    ###### FIXME temporary function
-    if dd_ddet_p is not None:
       if reflections.has_key('imatch'):
         imatch = reflections['imatch']
       else:
         imatch = None
-      dd_ddet_p_from_cache = self._derivative_cache.build_gradients(
+      dd_ddet_p = self._derivative_cache.build_gradients(
         parameterisation=parameterisation, isel=isel, imatch=imatch)
-      print self.debug_check_derivatives(dd_ddet_p, dd_ddet_p_from_cache)
+    else:
+      dd_ddet_p = None
 
     return super(ScanVaryingPredictionParameterisation,
       self)._detector_derivatives(isel, panel_id, parameterisation, dd_ddet_p)
-
-  ###### FIXME FIXME FIXME temporary function to remove after development
-  ###### of the derivative cache is complete
-  def debug_check_derivatives(self, ds_dp1, ds_dp2):
-
-    for d1, d2 in zip(ds_dp1, ds_dp2):
-      check_equal = flex.bool([a == b for a, b in zip(d1, d2)])
-      if not check_equal.all_eq(True):
-        from dials.util.command_line import interactive_console; interactive_console(); 1/0 #XXXXX DEBUG
-    return True
 
   def calculate_model_state_uncertainties(self, var_cov=None,
                                           obs_image_number=None,
