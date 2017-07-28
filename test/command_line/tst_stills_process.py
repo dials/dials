@@ -227,9 +227,9 @@ class Test(object):
     # 09/27/17 Bugfix for refine_candidates_with_known_symmetry
     for result, n_refls in zip(["idx-run266702-0-subset_00001_integrated.pickle",
                                 "idx-run266702-0-subset_00003_integrated.pickle"],
-                                [range(565,580),range(475,488)]): # large ranges to handle platform-specific differences
+                                [range(565,580),range(475,500)]): # large ranges to handle platform-specific differences
       table = pickle.load(open(result, 'rb'))
-      assert len(table) in n_refls, len(table)
+      assert len(table) in n_refls, (result, len(table))
       assert 'id' in table
       assert (table['id'] == 0).count(False) == 0
     print 'OK'
