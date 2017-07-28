@@ -337,6 +337,12 @@ class Target(object):
     being processed by concurrent processes does not exceed gradient_calculation_blocksize"""
 
     self.update_matches()
+
+    # Need to be able to track the indices of the original matches table for
+    # scan-varying gradient calculations. A simple and robust (but slightly
+    # expensive) way to do this is to add an index column to the matches table
+    self._matches['imatch'] = flex.size_t_range(len(self._matches))
+
     if self._gradient_calculation_blocksize:
       nblocks = int(floor(len(self._matches) * nproc / self._gradient_calculation_blocksize))
     else:
