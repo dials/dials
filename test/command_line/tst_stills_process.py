@@ -95,7 +95,9 @@ class Test(object):
     result = "idx-20130301060858801_integrated.pickle"
     #n_refls = range(140,152) # large ranges to handle platform-specific differences
     # 09/20/17 Changes to still indexer: refine candidate basis vectors in target symmetry if supplied
-    n_refls = range(128,140) # large ranges to handle platform-specific differences
+    #n_refls = range(128,140) # large ranges to handle platform-specific differences
+    # 09/27/17 Bugfix for refine_candidates_with_known_symmetry
+    n_refls = range(140,152) # large ranges to handle platform-specific differences
     table = pickle.load(open(result, 'rb'))
     assert len(table) in n_refls, len(table)
     assert 'id' in table
@@ -129,6 +131,8 @@ class Test(object):
         method = fft1d
         refinement_protocol.d_min_start = 2.2
         stills.refine_candidates_with_known_symmetry=True
+        stills.rmsd_min_px = 2
+        stills.ewald_proximal_volume_max = 0.0025
       }
 
       spotfinder {
@@ -217,9 +221,13 @@ class Test(object):
     #                            "idx-run266702-0-subset_00003_integrated.pickle"],
     #                            [range(565,580),range(495,510)]): # large ranges to handle platform-specific differences
     # 09/20/17 Changes to still indexer: refine candidate basis vectors in target symmetry if supplied
+    #for result, n_refls in zip(["idx-run266702-0-subset_00001_integrated.pickle",
+    #                            "idx-run266702-0-subset_00003_integrated.pickle"],
+    #                            [range(100,115),range(155,165)]): # large ranges to handle platform-specific differences
+    # 09/27/17 Bugfix for refine_candidates_with_known_symmetry
     for result, n_refls in zip(["idx-run266702-0-subset_00001_integrated.pickle",
                                 "idx-run266702-0-subset_00003_integrated.pickle"],
-                                [range(100,115),range(155,165)]): # large ranges to handle platform-specific differences
+                                [range(565,580),range(475,488)]): # large ranges to handle platform-specific differences
       table = pickle.load(open(result, 'rb'))
       assert len(table) in n_refls, len(table)
       assert 'id' in table

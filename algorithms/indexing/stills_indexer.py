@@ -472,6 +472,7 @@ class stills_indexer(indexer_base):
           continue
         new_crystal = new_crystal.change_basis(self.cb_op_primitive_inp)
         cm = candidate_orientation_matrices[icm] = new_crystal
+        experiments = self.experiment_list_for_crystal(cm)
 
         if not cb_op_to_primitive.is_identity_op():
           indexed['miller_index'] = cb_op_to_primitive.apply(indexed['miller_index'])
