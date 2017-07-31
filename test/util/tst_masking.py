@@ -1,5 +1,13 @@
 from __future__ import absolute_import, division
 
+import os
+import libtbx.load_env
+try:
+  dials_regression = libtbx.env.dist_path('dials_regression')
+except KeyError, e:
+  dials_regression = None
+
+
 def exercise_polygon():
   from dials.util import is_inside_polygon
   from scitbx.array_family import flex
@@ -13,13 +21,9 @@ def exercise_polygon():
   assert list(is_inside_polygon(poly, points)) == [True, False, False, True]
 
 def exercise_dynamic_shadowing():
-  import os
-  import libtbx.load_env
-  try:
-    dials_regression = libtbx.env.dist_path('dials_regression')
-  except KeyError, e:
+  if dials_regression is None:
     print 'SKIP: dials_regression not configured'
-    exit(0)
+    return
 
   path = os.path.join(
     dials_regression, "shadow_test_data/DLS_I04_SmarGon/Th_3_O45_C45_P48_1_0500.cbf")
@@ -48,13 +52,9 @@ def exercise_dynamic_shadowing():
       assert (mask[0].count(True), mask[0].count(False)) == (5695969, 528032)
 
 def exercise_shadow_plot():
-  import os
-  import libtbx.load_env
-  try:
-    dials_regression = libtbx.env.dist_path('dials_regression')
-  except KeyError, e:
+  if dials_regression is None:
     print 'SKIP: dials_regression not configured'
-    exit(0)
+    return
 
   path = os.path.join(
     dials_regression, "shadow_test_data/DLS_I04_SmarGon/Th_3_O45_C45_P48_1_0500.cbf")
@@ -78,10 +78,34 @@ def exercise_shadow_plot():
     'dials.shadow_plot datablock.json mode=2d plot=shadow_2d.png').raise_if_errors()
   assert os.path.exists('shadow_2d.png')
 
+def exercise_filter_shadowed_reflections():
+  if dials_regression is None:
+    print 'SKIP: dials_regression not configured'
+    return
+
+  experiments_json = os.path.join(
+    dials_regression, "shadow_test_data/DLS_I04_SmarGon/experiments.json")
+
+  predicted_pickle = os.path.join(
+    dials_regression, "shadow_test_data/DLS_I04_SmarGon/predicted.pickle")
+
+  from dxtbx.serialize import load
+  experiments = load.experiment_list(experiments_json, check_format=True)
+
+  from libtbx import easy_pickle
+  predicted = easy_pickle.load(predicted_pickle)
+  from dials.algorithms.shadowing.filter import filter_shadowed_reflections
+  for experiment_goniometer in (True, False):
+    shadowed = filter_shadowed_reflections(
+      experiments, predicted, experiment_goniometer=experiment_goniometer)
+    assert shadowed.count(True) == 17
+    assert shadowed.count(False) == 674
+
 def run():
   exercise_polygon()
   exercise_dynamic_shadowing()
   exercise_shadow_plot()
+  exercise_filter_shadowed_reflections()
   print 'OK'
 
 
