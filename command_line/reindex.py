@@ -18,7 +18,6 @@ from libtbx.phil import command_line
 from libtbx import easy_pickle
 import iotbx.phil
 from cctbx import sgtbx
-from dxtbx.model import Crystal
 from dxtbx.serialize import dump
 # from dials.util.command_line import Importer
 from dials.array_family import flex
@@ -53,6 +52,10 @@ space_group = None
   .type = space_group
   .help = "The space group to be applied AFTER applying the change of basis "
            "operator."
+apply_space_group_constraints = False
+  .type = bool
+  .help = "If True, attempt to apply an appropiate change basis that includes"
+          "appropiate symmetry constraints given the input space group"
 reference = None
   .type = path
   .help = "Reference experiment for determination of change of basis operator."
@@ -194,11 +197,22 @@ def run(args):
   if len(experiments):
     experiment = experiments[0]
     cryst_orig = copy.deepcopy(experiment.crystal)
-    cryst_reindexed = cryst_orig.change_basis(change_of_basis_op)
-    if params.space_group is not None:
-      a, b, c = cryst_reindexed.get_real_space_vectors()
-      cryst_reindexed = Crystal(
-        a, b, c, space_group=params.space_group.group())
+    if params.space_group is None:
+      cryst_reindexed = cryst_orig.change_basis(change_of_basis_op)
+    else:
+      if params.apply_space_group_constraints:
+        assert params.change_of_basis_op == 'a,b,c', "Do not specify change of basis as it will be determined from the space group"
+        from dials.algorithms.indexing import apply_symmetry
+        cryst_reindexed, cb_op_to_primitive = apply_symmetry(cryst_orig, params.space_group.primitive_setting().group())
+        change_of_basis_op = params.space_group.change_of_basis_op_to_primitive_setting().inverse()
+        reflections[0]['miller_index'] = cb_op_to_primitive.apply(reflections[0]['miller_index'])
+        cryst_reindexed = cryst_reindexed.change_basis(change_of_basis_op)
+      else:
+        from dxtbx.model import Crystal
+        cryst_reindexed = cryst_orig.change_basis(change_of_basis_op)
+        a, b, c = cryst_reindexed.get_real_space_vectors()
+        cryst_reindexed = Crystal(
+          a, b, c, space_group=params.space_group.group())
     experiment.crystal.update(cryst_reindexed)
 
     print "Old crystal:"

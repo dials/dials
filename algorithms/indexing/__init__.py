@@ -119,3 +119,55 @@ def index_reflections_local(
   reflections['id'].set_selected(isel, refs['id'])
   reflections.set_flags(
     reflections['miller_index'] != (0,0,0), reflections.flags.indexed)
+
+def apply_symmetry(crystal_model, target_space_group, max_delta = 5):
+  A = crystal_model.get_A()
+
+  from cctbx.crystal_orientation import crystal_orientation
+  from cctbx.sgtbx.bravais_types import bravais_lattice
+  from rstbx import dps_core # import dependency
+  from rstbx.dps_core.lepage import iotbx_converter
+  from scitbx import matrix
+  from dxtbx.model import Crystal
+
+  items = iotbx_converter(crystal_model.get_unit_cell(), max_delta=max_delta)
+  target_sg_ref = target_space_group.info().reference_setting().group()
+  best_angular_difference = 1e8
+  best_subgroup = None
+  for item in items:
+    if (bravais_lattice(group=target_sg_ref) !=
+        bravais_lattice(group=item['ref_subsym'].space_group())):
+      continue
+    if item['max_angular_difference'] < best_angular_difference:
+      best_angular_difference = item['max_angular_difference']
+      best_subgroup = item
+
+  if best_subgroup is None:
+    return None, None
+
+  cb_op_inp_best = best_subgroup['cb_op_inp_best']
+  orient = crystal_orientation(A, True)
+  orient_best = orient.change_basis(
+    matrix.sqr(cb_op_inp_best.c().as_double_array()[0:9]).transpose())
+  constrain_orient = orient_best.constrain(best_subgroup['system'])
+
+  best_subsym = best_subgroup['best_subsym']
+  cb_op_best_ref = best_subsym.change_of_basis_op_to_reference_setting()
+  target_sg_best = target_sg_ref.change_basis(cb_op_best_ref.inverse())
+  ref_subsym = best_subsym.change_basis(cb_op_best_ref)
+  cb_op_ref_primitive = ref_subsym.change_of_basis_op_to_primitive_setting()
+  primitive_subsym = ref_subsym.change_basis(cb_op_ref_primitive)
+  cb_op_best_primitive = cb_op_ref_primitive * cb_op_best_ref
+  cb_op_inp_primitive = cb_op_ref_primitive * cb_op_best_ref * cb_op_inp_best
+
+  direct_matrix = constrain_orient.direct_matrix()
+
+  a = matrix.col(direct_matrix[:3])
+  b = matrix.col(direct_matrix[3:6])
+  c = matrix.col(direct_matrix[6:9])
+  model = Crystal(
+    a, b, c, space_group=target_sg_best)
+  assert target_sg_best.is_compatible_unit_cell(model.get_unit_cell())
+
+  model = model.change_basis(cb_op_best_primitive)
+  return model, cb_op_inp_primitive

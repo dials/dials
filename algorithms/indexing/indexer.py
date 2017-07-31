@@ -553,7 +553,7 @@ class indexer_base(object):
 
       if use_stills_indexer:
         # Ensure the indexer and downstream applications treat this as set of stills
-        from dxtbx.imageset import ImageSet#, MemImageSet
+        from dxtbx.imageset import ImageSet #, MemImageSet
         reset_sets = []
         for i in xrange(len(imagesets)):
           imagesweep = imagesets.pop(0)
@@ -1531,55 +1531,9 @@ class indexer_base(object):
       self.index_reflections(experiments, reflections)
 
   def apply_symmetry(self, crystal_model, target_space_group):
-    A = crystal_model.get_A()
-
-    from cctbx.crystal_orientation import crystal_orientation
-    from cctbx.sgtbx.bravais_types import bravais_lattice
-    from rstbx import dps_core # import dependency
-    from rstbx.dps_core.lepage import iotbx_converter
-
-    max_delta = self.params.known_symmetry.max_delta
-    items = iotbx_converter(crystal_model.get_unit_cell(), max_delta=max_delta)
-    target_sg_ref = target_space_group.info().reference_setting().group()
-    best_angular_difference = 1e8
-    best_subgroup = None
-    for item in items:
-      if (bravais_lattice(group=target_sg_ref) !=
-          bravais_lattice(group=item['ref_subsym'].space_group())):
-        continue
-      if item['max_angular_difference'] < best_angular_difference:
-        best_angular_difference = item['max_angular_difference']
-        best_subgroup = item
-
-    if best_subgroup is None:
-      return None, None
-
-    cb_op_inp_best = best_subgroup['cb_op_inp_best']
-    orient = crystal_orientation(A, True)
-    orient_best = orient.change_basis(
-      matrix.sqr(cb_op_inp_best.c().as_double_array()[0:9]).transpose())
-    constrain_orient = orient_best.constrain(best_subgroup['system'])
-
-    best_subsym = best_subgroup['best_subsym']
-    cb_op_best_ref = best_subsym.change_of_basis_op_to_reference_setting()
-    target_sg_best = target_sg_ref.change_basis(cb_op_best_ref.inverse())
-    ref_subsym = best_subsym.change_basis(cb_op_best_ref)
-    cb_op_ref_primitive = ref_subsym.change_of_basis_op_to_primitive_setting()
-    primitive_subsym = ref_subsym.change_basis(cb_op_ref_primitive)
-    cb_op_best_primitive = cb_op_ref_primitive * cb_op_best_ref
-    cb_op_inp_primitive = cb_op_ref_primitive * cb_op_best_ref * cb_op_inp_best
-
-    direct_matrix = constrain_orient.direct_matrix()
-
-    a = matrix.col(direct_matrix[:3])
-    b = matrix.col(direct_matrix[3:6])
-    c = matrix.col(direct_matrix[6:9])
-    model = Crystal(
-      a, b, c, space_group=target_sg_best)
-    assert target_sg_best.is_compatible_unit_cell(model.get_unit_cell())
-
-    model = model.change_basis(cb_op_best_primitive)
-    return model, cb_op_inp_primitive
+    from dials.algorithms.indexing import apply_symmetry
+    return apply_symmetry(crystal_model, target_space_group,
+      self.params.known_symmetry.max_delta)
 
   def index_reflections(self, experiments, reflections):
     if self.params.index_assignment.method == 'local':
