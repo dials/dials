@@ -47,10 +47,45 @@ def exercise_dynamic_shadowing():
     else:
       assert (mask[0].count(True), mask[0].count(False)) == (5695969, 528032)
 
+def exercise_shadow_plot():
+  import os
+  import libtbx.load_env
+  try:
+    dials_regression = libtbx.env.dist_path('dials_regression')
+  except KeyError, e:
+    print 'SKIP: dials_regression not configured'
+    exit(0)
+
+  path = os.path.join(
+    dials_regression, "shadow_test_data/DLS_I04_SmarGon/Th_3_O45_C45_P48_1_0500.cbf")
+
+  from libtbx.easy_run import fully_buffered
+  from libtbx.test_utils import approx_equal
+
+  result = fully_buffered('dials.import %s' %path).raise_if_errors()
+  result = fully_buffered(
+    'dials.shadow_plot datablock.json json=shadow.json').raise_if_errors()
+  assert os.path.exists('scan_shadow_plot.png')
+  assert os.path.exists('shadow.json')
+  with open('shadow.json', 'rb') as f:
+    import json
+    d = json.load(f)
+    assert d.keys() == ['fraction_shadowed', 'scan_points']
+    assert approx_equal(d['fraction_shadowed'], [0.06856597327776767])
+    assert approx_equal(d['scan_points'], [94.9])
+
+  result = fully_buffered(
+    'dials.shadow_plot datablock.json mode=2d plot=shadow_2d.png').raise_if_errors()
+  assert os.path.exists('shadow_2d.png')
+
 def run():
   exercise_polygon()
   exercise_dynamic_shadowing()
+  exercise_shadow_plot()
   print 'OK'
 
+
 if __name__ == '__main__':
-  run()
+  from dials.test import cd_auto
+  with cd_auto(__file__):
+    run()
