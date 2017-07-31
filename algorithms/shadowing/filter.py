@@ -7,12 +7,14 @@ def filter_shadowed_reflections(experiments, reflections,
   shadowed = flex.bool(reflections.size(), False)
   for expt_id in range(len(experiments)):
     expt = experiments[expt_id]
-    imgset = expt.imageset
+    imageset = expt.imageset
     if experiment_goniometer:
-      masker = imgset.reader().get_format().get_goniometer_shadow_masker(
-        goniometer=expt.goniometer)
+      masker = imageset.masker().format_class(
+        imageset.paths()[0]).get_goniometer_shadow_masker(
+          goniometer=expt.goniometer)
     else:
-      masker = imgset.reader().get_format().get_goniometer_shadow_masker()
+      masker = imageset.masker().format_class(
+        imageset.paths()[0]).get_goniometer_shadow_masker()
     detector = expt.detector
     sel = reflections['id'] == expt_id
     isel = sel.iselection()
