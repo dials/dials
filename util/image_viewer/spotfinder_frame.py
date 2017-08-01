@@ -1668,6 +1668,11 @@ class SpotSettingsPanel (wx.Panel) :
   def OnUpdateBrightness(self, event):
     """Handle updates from the brightness-related controls"""
 
+    # Don't update whilst dragging the slider
+    if (event.GetEventType() == wx.EVT_SLIDER.typeId):
+      if wx.GetMouseState().LeftDown():
+        return
+
     # For e.g. IntCtrl check the value is valid
     if hasattr(event.EventObject, "IsInBounds"):
       if not event.EventObject.IsInBounds():
