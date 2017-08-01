@@ -708,7 +708,7 @@ class Manager(object):
       imgs = expr.imageset
       array_range = (0, len(imgs))
       if scan is not None:
-        assert len(imgs) == len(scan), "Invalid scan range"
+        assert len(imgs) >= len(scan), "Invalid scan range"
         array_range = scan.get_array_range()
       if self.params.block.size is None:
         block_size_frames = array_range[1] - array_range[0]
