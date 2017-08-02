@@ -71,13 +71,13 @@ def dump(experiments, directory):
     with open(index_mat, "wb") as f:
       print >> f, format_mosflm_mat(w*A_mosflm, U_mosflm, cryst.get_unit_cell())
 
-    directory, template = os.path.split(imageset.get_template())
+    img_dir, template = os.path.split(imageset.get_template())
     symmetry = cryst_mosflm.get_space_group().type().number()
     beam_centre = tuple(reversed(detector[0].get_beam_centre(beam.get_s0())))
     distance = detector[0].get_directed_distance()
 
     with open(mosflm_in, "wb") as f:
-      print >> f, write_mosflm_input(directory=directory,
+      print >> f, write_mosflm_input(directory=img_dir,
                                      template=template,
                                      symmetry=symmetry,
                                      beam_centre=beam_centre,
