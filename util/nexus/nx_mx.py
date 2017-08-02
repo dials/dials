@@ -13,6 +13,7 @@ def convert_to_nexus_beam_direction(experiments):
   from collections import defaultdict
   from scitbx import matrix
   from copy import deepcopy
+  from math import pi
 
   EPS = 1e-7
 
@@ -52,10 +53,13 @@ def convert_to_nexus_beam_direction(experiments):
   for exp in experiments:
     d = matrix.col(exp.beam.get_direction()).normalize()
     angle = d.angle(zaxis, deg=False)
-    if abs(angle) < EPS:
+    if abs(angle-pi) < EPS:
+      axis = (1, 0, 0)
+    elif abs(angle) < EPS:
       rotations.append(((0, 0, 0), 0))
       continue
-    axis = d.cross(zaxis).normalize()
+    else:
+      axis = d.cross(zaxis).normalize()
     exp.beam.rotate_around_origin(axis, angle, deg=False)
     exp.detector.rotate_around_origin(axis, angle, deg=False)
     if exp.goniometer:
