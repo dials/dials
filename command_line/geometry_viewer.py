@@ -92,7 +92,8 @@ class render_3d(object):
         assert d_distance < 0.001, d_distance
         p.set_frame(p.get_fast_axis(), p.get_slow_axis(), new_origin.elems)
 
-    gonio_masker = self.imageset.reader().get_format().get_goniometer_shadow_masker(gonio)
+    gonio_masker = self.imageset.masker().format_class(
+      self.imageset.paths()[0]).get_goniometer_shadow_masker(goniometer=gonio)
     if gonio_masker is None:
       return
 
