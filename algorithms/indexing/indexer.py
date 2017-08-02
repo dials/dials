@@ -1412,15 +1412,23 @@ class indexer_base(object):
       sel = (self.reflections['id'] == -1)
       if self.d_min is not None:
         sel &= (1/self.reflections['rlp'].norms() > self.d_min)
-      refl = self.reflections.select(sel)
+      xo, yo, zo = self.reflections['xyzobs.mm.value'].parts()
+      imageset_id = self.reflections['imageset_id']
       experiments = ExperimentList()
-      for imageset in self.imagesets:
+      for i_imageset, imageset in enumerate(self.imagesets):
+        scan = imageset.get_scan()
+        start, end = scan.get_oscillation_range()
+        if (end - start) > 360:
+          # only use reflections from the first 360 degrees of the scan
+          sel.set_selected(
+            (imageset_id == i_imageset) & (zo > ((start + 360) + 2 * math.pi)), False)
         experiments.append(Experiment(imageset=imageset,
                                       beam=imageset.get_beam(),
                                       detector=imageset.get_detector(),
                                       goniometer=imageset.get_goniometer(),
                                       scan=imageset.get_scan(),
                                       crystal=cm))
+      refl = self.reflections.select(sel)
       self.index_reflections(experiments, refl)
       if refl.get_flags(refl.flags.indexed).count(True) == 0:
         continue
