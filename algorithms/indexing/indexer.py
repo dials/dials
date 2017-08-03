@@ -689,14 +689,14 @@ class indexer_base(object):
       logger.debug("cb_op primitive->input: " + str(self.cb_op_primitive_inp))
 
   def setup_indexing(self):
-    self.reflections_input = self.reflections
+    reflections_input = self.reflections
     self.reflections = flex.reflection_table()
     for i, imageset in enumerate(self.imagesets):
-      if 'imageset_id' not in self.reflections_input:
-        self.reflections_input['imageset_id'] = self.reflections_input['id']
-      sel = (self.reflections_input['imageset_id'] == i)
+      if 'imageset_id' not in reflections_input:
+        reflections_input['imageset_id'] = reflections_input['id']
+      sel = (reflections_input['imageset_id'] == i)
       self.reflections.extend(self.map_spots_pixel_to_mm_rad(
-        self.reflections_input.select(sel),
+        reflections_input.select(sel),
         imageset.get_detector(), imageset.get_scan()))
     self.filter_reflections_by_scan_range()
     if len(self.reflections) == 0:
