@@ -515,7 +515,7 @@ class stills_indexer(indexer_base):
 
     if params.indexing.stills.refine_all_candidates:
       if best.rmsd > params.indexing.stills.rmsd_min_px:
-        raise Sorry ("RMSD too high, %f" %rmsd)
+        raise Sorry ("RMSD too high, %f" %best.rmsd)
 
       if best.ewald_proximal_volume > params.indexing.stills.ewald_proximal_volume_max:
         raise Sorry ("Ewald proximity volume too high, %f"%best.ewald_proximal_volume)
