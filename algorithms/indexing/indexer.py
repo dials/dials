@@ -1421,7 +1421,7 @@ class indexer_base(object):
         if (end - start) > 360:
           # only use reflections from the first 360 degrees of the scan
           sel.set_selected(
-            (imageset_id == i_imageset) & (zo > ((start + 360) + 2 * math.pi)), False)
+            (imageset_id == i_imageset) & (zo > ((start * math.pi/180) + 2 * math.pi)), False)
         experiments.append(Experiment(imageset=imageset,
                                       beam=imageset.get_beam(),
                                       detector=imageset.get_detector(),
