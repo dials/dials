@@ -713,7 +713,7 @@ class Processor(object):
         raise Sorry("No reflections left after applying significance filter")
       integrated = refls
 
-    if self.params.output.delete_shoeboxes and 'shoebox' in integrated:
+    if self.params.output.delete_integration_shoeboxes and 'shoebox' in integrated:
       del integrated['shoebox']
 
     if self.params.output.composite_output:
