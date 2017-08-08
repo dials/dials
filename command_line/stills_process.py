@@ -808,7 +808,7 @@ class Processor(object):
           callback(self.params, outfile, frame)
 
         if self.params.output.composite_output:
-          self.all_int_pickle_filenames.append(outfile)
+          self.all_int_pickle_filenames.append(os.path.basename(outfile))
           self.all_int_pickles.append(frame)
         else:
           easy_pickle.dump(outfile, frame)
@@ -881,7 +881,8 @@ class Processor(object):
       # Create a tar archive of the integration dictionary pickles
       if len(self.all_int_pickles) > 0 and self.params.output.integration_pickle:
         import tarfile, StringIO, time, cPickle as pickle
-        outfile = os.path.join(self.params.output.output_dir, self.params.output.integration_pickle%(0,self.composite_tag)) + ".tar"
+        tar_template_integration_pickle = self.params.output.integration_pickle.replace('%d', '%s')
+        outfile = os.path.join(self.params.output.output_dir, tar_template_integration_pickle%('x',self.composite_tag)) + ".tar"
         tar = tarfile.TarFile(outfile,"w")
         for i, (fname, d) in enumerate(zip(self.all_int_pickle_filenames, self.all_int_pickles)):
           string = StringIO.StringIO(pickle.dumps(d, protocol=2))
