@@ -99,7 +99,10 @@ dials_phil_str = '''
   output {
     shoeboxes = True
       .type = bool
-      .help = Save the raw pixel values inside the reflection shoeboxes.
+      .help = Save the raw pixel values inside the reflection shoeboxes during spotfinding.
+    delete_integration_shoeboxes = False
+      .type = bool
+      .help = Delete integration shoeboxes when finished with each image.
   }
 
   include scope dials.util.options.geometry_phil_scope
@@ -709,6 +712,9 @@ class Processor(object):
       if len(refls) == 0:
         raise Sorry("No reflections left after applying significance filter")
       integrated = refls
+
+    if self.params.output.delete_shoeboxes and 'shoebox' in integrated:
+      del integrated['shoebox']
 
     if self.params.output.composite_output:
       if self.params.output.integrated_experiments_filename or self.params.output.integrated_filename:
