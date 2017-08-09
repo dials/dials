@@ -81,7 +81,7 @@ kernel_size = 3,3
   .type = ints(size=2, value_min=1)
 min_local = 2
   .type = int
-gain = Auto
+gain = 1
   .type = float(value_min=0)
 sum_images = 1
   .type = int(value_min=1)
@@ -188,14 +188,6 @@ if __name__ == '__main__':
   if params.mask is not None:
     from libtbx import easy_pickle
     params.mask = easy_pickle.load(params.mask)
-
-  from libtbx import Auto
-  if params.gain is Auto:
-    if datablock is not None:
-      detector = datablock.unique_detectors()[0]
-    else:
-      detector = experiments.detectors()[0]
-    params.gain = detector[0].get_gain()
 
   runner = Script(
     params=params,
