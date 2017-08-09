@@ -29,7 +29,8 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
     phil = parse('''
       gain = None
         .type = float(value_min=0.0)
-        .help = "Use a flat gain map for the entire detector. Cannot be used"
+        .help = "Use a flat gain map for the entire detector to act as a"
+                "multiplier for the gain set by the format. Cannot be used"
                 "in conjunction with lookup.gain_map parameter."
 
       kernel_size = 3 3
