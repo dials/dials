@@ -249,9 +249,15 @@ class Refinery(object):
         if col1 == col2:
           tmp[i] = 1.0
         else:
-          tmp[i] = flex.linear_correlation(
-                      m.col(col1).as_dense_vector(),
-                      m.col(col2).as_dense_vector()).coefficient()
+          # Avoid spuriously high correlation between a column that should be
+          # zero (such as the gradient of X residuals wrt the Shift2 parameter)
+          # and another column (such as the gradient of X residuals wrt the
+          # Dist parameter) by rounding values to 15 places. It seems that such
+          # spurious correlations may occur in cases where gradients are
+          # calculated to be zero by matrix operations, rather than set to zero.
+          v1 = m.col(col1).as_dense_vector().round(15)
+          v2 = m.col(col2).as_dense_vector().round(15)
+          tmp[i] = flex.linear_correlation(v1, v2).coefficient()
         i += 1
 
     return tmp
