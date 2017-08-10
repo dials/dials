@@ -246,9 +246,12 @@ class Refinery(object):
     tmp = flex.double(packed_len)
     for col1 in range(m.n_cols):
       for col2 in range(col1, m.n_cols):
-        tmp[i] = flex.linear_correlation(
-                    m.col(col1).as_dense_vector(),
-                    m.col(col2).as_dense_vector()).coefficient()
+        if col1 == col2:
+          tmp[i] = 1.0
+        else:
+          tmp[i] = flex.linear_correlation(
+                      m.col(col1).as_dense_vector(),
+                      m.col(col2).as_dense_vector()).coefficient()
         i += 1
 
     return tmp
