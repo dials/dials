@@ -1,7 +1,8 @@
 from __future__ import absolute_import, division
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
-
+# LIBTBX_SET_DISPATCHER_NAME dials.discover_better_experimental_model
+# LIBTBX_SET_DISPATCHER_NAME dials.beam_position_search
 import math
 import iotbx.phil
 from scitbx import matrix
@@ -22,9 +23,9 @@ method of Sauter et al., J. Appl. Cryst. 37, 399-409 (2004).
 
 Examples::
 
-  dials.discover_better_experimental_model datablock.json strong.pickle
+  %s datablock.json strong.pickle
 
-'''
+''' % libtbx.env.dispatcher_name
 
 phil_scope = iotbx.phil.parse("""
 nproc = Auto
@@ -444,7 +445,7 @@ def discover_better_experimental_model(
 def run(args):
   import libtbx.load_env
   from dials.util import log
-  usage = "%s [options] datablock.json strong.pickle" %libtbx.env.dispatcher_name
+  usage = "%s [options] datablock.json strong.pickle" % libtbx.env.dispatcher_name
 
   parser = OptionParser(
     usage=usage,
