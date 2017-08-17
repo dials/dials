@@ -30,7 +30,7 @@ def exercise_dynamic_shadowing():
 
   from dxtbx.datablock import DataBlockFactory
   assert os.path.exists(path), path
-  for shadowing in (True, False):
+  for shadowing in (libtbx.Auto, True, False):
     format_kwargs = {'dynamic_shadowing': shadowing}
     datablock = DataBlockFactory.from_filenames([path], format_kwargs=format_kwargs)[0]
     imageset = datablock.extract_imagesets()[0]
@@ -46,7 +46,7 @@ def exercise_dynamic_shadowing():
     assert (mask[0].count(True), mask[0].count(False)) == (5797243, 426758)
     mask = imageset.get_mask(0)
     # dead pixels, pixels in gaps, etc also masked
-    if shadowing:
+    if shadowing is libtbx.Auto or shadowing is True:
       assert (mask[0].count(True), mask[0].count(False)) == (5306061, 917940)
     else:
       assert (mask[0].count(True), mask[0].count(False)) == (5695969, 528032)

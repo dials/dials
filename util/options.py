@@ -111,7 +111,7 @@ format
   .help = "Options to pass to the Format class"
   .expert_level = 2
 {
-  dynamic_shadowing = True
+  dynamic_shadowing = auto
     .type = bool
     .help = "Enable dynamic shadowing"
   multi_panel = False
