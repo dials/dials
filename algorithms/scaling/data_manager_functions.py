@@ -1,91 +1,100 @@
+import copy
 from dials_array_family_flex_ext import *
 from cctbx.array_family.flex import *
 from cctbx.array_family import flex
 from cctbx import miller
 from cctbx import crystal
-import copy
-from dials.util.options import (Importer, flatten_experiments, 
-                                flatten_reflections, OptionParser)
-import numpy as np
+
+from dials.util.options import (flatten_experiments, flatten_reflections)
 
 
-class Data_Manager:
-    '''Data Manager takes a params parsestring 
-       containing the parsed integrated.pickle 
+
+class Data_Manager(object):
+    '''Data Manager takes a params parsestring
+       containing the parsed integrated.pickle
        and integrated_experiments.json files'''
-    def __init__(self,params):
+    def __init__(self, params):
         self.experiments = flatten_experiments(params.input.experiments)
         self.reflection_table = flatten_reflections(params.input.reflections)[0]
         n_entries = len(self.reflection_table['xyzobs.px.value'])
-        zvalues = flex.double([self.reflection_table['xyzobs.px.value'][i][2] 
+        zvalues = flex.double([self.reflection_table['xyzobs.px.value'][i][2]
                                for i in range(n_entries)])
         self.reflection_table['z_value'] = zvalues
         self.reflection_table['resolution'] = flex.double(
-             [1.0/(x**2) if x != 0 else 0 for x in self.reflection_table['d']])
+            [1.0/(x**2) if x != 0 else 0 for x in self.reflection_table['d']])
         self.filtered_reflections = copy.deepcopy(self.reflection_table)
         self.sorted_by_miller_index = False
-        
-    def filter_data(self,reflection_table_key,lower,upper):
+        self.sorted_reflections = None
+        self.l_bin_index = None
+        self.bin_boundaries = None
+        self.g_values = None
+        self.n_bins = None
+        self.h_index_counter_array = None
+        self.h_index_cumulative_array = None
+        self.n_unique_indices = None
+        self.Ih_array = None
+        #repackage some of these attributes for conciseness
+
+    def filter_data(self, reflection_table_key, lower, upper):
         '''Filter reflection data for a given measurement variable and limits'''
-        bad_data = select_variables_in_range(
-                 self.filtered_reflections[reflection_table_key],lower,upper)
+        bad_data = select_variables_in_range(self.filtered_reflections[reflection_table_key],
+                                             lower, upper)
         inv_sel = ~bad_data
         self.filtered_reflections = self.filtered_reflections.select(inv_sel)
 
     def map_indices_to_asu(self):
-        '''Create a miller_set object, map to the asu and create a sorted 
+        '''Create a miller_set object, map to the asu and create a sorted
            reflection table, sorted by asu miller index'''
         u_c = self.experiments.crystals()[0].get_unit_cell().parameters()
         s_g = self.experiments.crystals()[0].get_space_group()
-        crystal_symmetry = crystal.symmetry(unit_cell = u_c, space_group = s_g)
-        miller_set = miller.set(crystal_symmetry = crystal_symmetry, 
-                                indices = self.filtered_reflections['miller_index'])
+        crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
+        miller_set = miller.set(crystal_symmetry=crystal_symmetry,
+                                indices=self.filtered_reflections['miller_index'])
         self.filtered_reflections["asu_miller_index"] = miller_set.map_to_asu().indices()
-        permuted = (miller_set.map_to_asu()).sort_permutation(
-                                             by_value='packed_indices')
+        permuted = (miller_set.map_to_asu()).sort_permutation(by_value='packed_indices')
         self.sorted_reflections = self.filtered_reflections.select(permuted)
         self.sorted_by_miller_index = True
 
     def bin_reflections(self, bin_parameters):
-        '''Takes a bin_parameters dict consisting of 
+        '''Takes a bin_parameters dict consisting of
         [[[data to bin],[list of bin boundaries]],....]'''
-        self.firstbin_index = flex.int([0]*len(self.sorted_reflections[bin_parameters[0][0]]))
-        self.secondbin_index = flex.int([0]*len(self.sorted_reflections[bin_parameters[1][0]]))
+        firstbin_index = flex.int([0]*len(self.sorted_reflections[bin_parameters[0][0]]))
+        secondbin_index = flex.int([0]*len(self.sorted_reflections[bin_parameters[1][0]]))
         for i in range(len(bin_parameters[0][1])-1):
             selection = select_variables_in_range(
-                      self.sorted_reflections[bin_parameters[0][0]],
-                      bin_parameters[0][1][i],bin_parameters[0][1][i+1])
-            self.firstbin_index.set_selected(selection,i)
+                self.sorted_reflections[bin_parameters[0][0]],
+                bin_parameters[0][1][i], bin_parameters[0][1][i+1])
+            firstbin_index.set_selected(selection, i)
         for i in range(len(bin_parameters[1][1])-1):
             selection = select_variables_in_range(
-                      self.sorted_reflections[bin_parameters[1][0]],
-                      bin_parameters[1][1][i],bin_parameters[1][1][i+1])
-            self.secondbin_index.set_selected(selection,i)
-        self.l_bin_index = (self.firstbin_index 
-                            + (((self.secondbin_index))
+                self.sorted_reflections[bin_parameters[1][0]],
+                bin_parameters[1][1][i], bin_parameters[1][1][i+1])
+            secondbin_index.set_selected(selection, i)
+        self.l_bin_index = (firstbin_index
+                            + (((secondbin_index))
                                * (len(bin_parameters[0][1])-1)))
         self.sorted_reflections['l_bin_index'] = self.l_bin_index
         self.bin_boundaries = {bin_parameters[0][0] : bin_parameters[0][1],
                                bin_parameters[1][0] : bin_parameters[1][1]}
-        
+
     def set_g_values(self, gvalues):
         self.g_values = gvalues
         self.n_bins = len(gvalues)
 
     def assign_h_index(self):
-        '''assign an index to the sorted reflection table that 
+        '''assign an index to the sorted reflection table that
            labels each group of unique miller indices'''
         s = len(self.sorted_reflections['d'])
-        if self.sorted_by_miller_index == False:
+        if self.sorted_by_miller_index is False:
             raise ValueError('Data not yet sorted by miller index')
         else:
             self.sorted_reflections['h_index'] = flex.int([0]*s)
             self.h_index_counter_array = []
             h_index = 0
             h_index_counter = 1
-            for i in range(1,s):
-                if  (self.sorted_reflections['asu_miller_index'][i] == 
-                    self.sorted_reflections['asu_miller_index'][i-1]):
+            for i in range(1, s):
+                if  (self.sorted_reflections['asu_miller_index'][i] ==
+                     self.sorted_reflections['asu_miller_index'][i-1]):
                     self.sorted_reflections['h_index'][i] = h_index
                     h_index_counter += 1
                 else:
@@ -122,24 +131,24 @@ class Data_Manager:
 
 
 def select_variables_in_range(variable_array, lower_limit, upper_limit):
-	sel = flex.bool()
-	for j in range(len(variable_array)):
-		if lower_limit < variable_array[j] <= upper_limit:
-			sel.append(True)
-		else:
-			sel.append(False)
-	return sel
+    sel = flex.bool()
+    for j in range(len(variable_array)):
+        if lower_limit < variable_array[j] <= upper_limit:
+            sel.append(True)
+        else:
+            sel.append(False)
+    return sel
 
-def calculate_evenly_populated_resolution_bins(Loaded_reflections,ndbins):
+def calculate_evenly_populated_resolution_bins(Loaded_reflections, ndbins):
     permuted = Loaded_reflections.millerset.map_to_asu().sort_permutation(
-             by_value = 'resolution',reverse = True)
+        by_value='resolution', reverse=True)
     print list(permuted)
     number_of_entries = len(Loaded_reflections.filtered_reflections['d'])
     sorted_by_d = (Loaded_reflections.filtered_reflections).select(permuted)
     print list(sorted_by_d['d'])[0:10]
     resolution_bins = flex.double([0]*(ndbins+1))
     for i in range(ndbins):
-		n = (i*number_of_entries//ndbins)
-		resolution_bins[i] = sorted_by_d['d'][n]
+        n = (i*number_of_entries//ndbins)
+        resolution_bins[i] = sorted_by_d['d'][n]
     resolution_bins[ndbins] = sorted_by_d['d'][-1]
     return resolution_bins

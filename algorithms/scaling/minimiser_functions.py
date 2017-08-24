@@ -2,28 +2,25 @@ from dials_array_family_flex_ext import *
 from cctbx.array_family.flex import *
 from cctbx.array_family import flex
 from scitbx import lbfgs
-import time
 
-class optimiser:
+
+class optimiser(object):
     '''Class that takes in Data_Manager object and runs
     an LBFGS minimisation in a Kabsch approach '''
-    def __init__(self,Data_Manager_object, sigma):
+    def __init__(self, Data_Manager_object, sigma):
         self.data_manager = Data_Manager_object
-    	self.x = self.data_manager.g_values
+        self.x = self.data_manager.g_values
         self.sigma = sigma
         self.residuals = []
         lbfgs.run(target_evaluator=self)
 
     def compute_functional_and_gradients(self):
         self.data_manager.calc_Ih()
-    	f = self.residual()
-    	g = self.gradient()
+        f = self.residual()
+        g = self.gradient()
         self.residuals.append(f)
-        print "functional: %12.6g" % f, "gradient norm: %12.6g" % g.norm() 
-        return f,g
-
-	def callback_after_step(self,minimizer):
-		print "LBFGS step"
+        print "functional: %12.6g" % f, "gradient norm: %12.6g" % g.norm()
+        return f, g
 
     def residual(self):
         intensities = self.data_manager.sorted_reflections['intensity.sum.value']
@@ -37,7 +34,6 @@ class optimiser:
             R += (((intensities[n]-(g_values[l]*Ih_array[h]))**2)/variances[n])
         for l in range(len(g_values)):
             R += (((g_values[l]-1)**2)/(self.sigma**2))
-        #print "R = " + str(R) 
         return R
 
     def gradient(self):
@@ -65,11 +61,11 @@ class optimiser:
                 #if l%20 != l1%20:
                 #    print h, l
                 #if l != 0 and h != 0:
-                dIhdg = (intensities[indexer]/variances[indexer] 
-                        - Ih_array[h]*2.0*g_values[l]/variances[indexer])/sumgsq
+                dIhdg = (intensities[indexer]/variances[indexer]
+                         - Ih_array[h]*2.0*g_values[l]/variances[indexer])/sumgsq
                 rhl = (intensities[indexer]-(g_values[l]*Ih_array[h]))/(variances[indexer]**0.5)
-                G[l] += 2.0*rhl*((-1.0*Ih_array[h]/(variances[indexer]**0.5)) 
-                                    -((g_values[l]/(variances[indexer]**0.5)) * dIhdg )
+                G[l] += 2.0*rhl*((-1.0*Ih_array[h]/(variances[indexer]**0.5))
+                                 -((g_values[l]/(variances[indexer]**0.5)) * dIhdg)
                                 )
                 #else:
                 #    print l,h
