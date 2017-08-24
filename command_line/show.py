@@ -218,6 +218,7 @@ def run(args):
     ('xyzobs.px.value','%.2f, %.2f, %.2f'),
     ('xyzobs.px.variance','%.4f, %.4f, %.4f'),
     ('s1','%.4f, %.4f, %.4f'),
+    ('shoebox','%.1f'),
     ('rlp','%.4f, %.4f, %.4f'),
     ('zeta','%.3f'),
     ('x_resid','%.3f'),
@@ -229,7 +230,9 @@ def run(args):
     ])
 
   for rlist in reflections:
-    from cctbx.array_family import flex
+    from dials.array_family import flex
+    from dials.algorithms.shoebox import MaskCode
+    foreground_valid = MaskCode.Valid | MaskCode.Foreground
     print
     print "Reflection list contains %i reflections" %(len(rlist))
 
@@ -248,6 +251,18 @@ def run(args):
           col = col.as_vec3_double()
         rows.append([k, formats[k] %col.min(), formats[k] %col.max(),
                      formats[k]%col.mean()])
+      elif type(col) == flex.shoebox:
+        rows.append([k, "", "", ""])
+        si = col.summed_intensity().observed_value()
+        rows.append(["  summed I", formats[k] %flex.min(si), formats[k] %flex.max(si),
+                     formats[k]%flex.mean(si)])
+        x1, x2, y1, y2, z1, z2 = col.bounding_boxes().parts()
+        bbox_sizes = ((z2-z1)*(y2-y1)*(x2-x1)).as_double()
+        rows.append(["  N pix", formats[k] %flex.min(bbox_sizes), formats[k] %flex.max(bbox_sizes),
+                     formats[k]%flex.mean(bbox_sizes)])
+        fore_valid = col.count_mask_values(foreground_valid).as_double()
+        rows.append(["  N valid foreground pix", formats[k] %flex.min(fore_valid), formats[k] %flex.max(fore_valid),
+                     formats[k]%flex.mean(fore_valid)])
 
     from libtbx import table_utils
     print table_utils.format(rows, has_header=True, prefix="| ", postfix=" |")
