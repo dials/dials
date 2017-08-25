@@ -36,7 +36,7 @@ namespace dials { namespace af { namespace boost_python {
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
-  using dxtbx::model::Crystal;
+  using dxtbx::model::CrystalBase;
   using dials::model::Shoebox;
   using dials::model::Centroid;
   using dials::model::Intensity;
@@ -884,7 +884,7 @@ namespace dials { namespace af { namespace boost_python {
       const Detector &detector,
       const Goniometer &goniometer,
       const Scan &scan,
-      const Crystal &crystal) {
+      const CrystalBase &crystal) {
     DIALS_ASSERT(self.size() == hkl.size());
     af::shared<bool> modified(self.size());
     PixelToMillerIndex compute_miller_index(
