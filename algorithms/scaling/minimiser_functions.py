@@ -44,11 +44,9 @@ class optimiser(object):
         variances = self.data_manager.sorted_reflections['intensity.sum.variance']
         Ih_array = self.data_manager.Ih_array
         G = flex.double([0.0]*len(g_values))
-        #dIhdg = calc_dIhdg(data_manager, Ih_array)
         for n in range(len(h_index_counter_array)):
             lsum = h_index_counter_array[n]
             sumgsq = 0.0
-            #l1 = data_manager.sorted_reflections['l_bin_index'][h_index_cumulative_array[n]]
             for i in range(lsum):
                 indexer = i + h_index_cumulative_array[n]
                 l = self.data_manager.sorted_reflections['l_bin_index'][indexer]
@@ -58,17 +56,12 @@ class optimiser(object):
                 indexer = i + h_index_cumulative_array[n]
                 l = self.data_manager.sorted_reflections['l_bin_index'][indexer]
                 h = self.data_manager.sorted_reflections['h_index'][indexer]
-                #if l%20 != l1%20:
-                #    print h, l
-                #if l != 0 and h != 0:
-                dIhdg = (intensities[indexer]/variances[indexer]
-                         - Ih_array[h]*2.0*g_values[l]/variances[indexer])/sumgsq
+                dIhdg = ((intensities[indexer]/variances[indexer])
+                         - (Ih_array[h]*2.0*g_values[l]/variances[indexer]))/sumgsq
                 rhl = (intensities[indexer]-(g_values[l]*Ih_array[h]))/(variances[indexer]**0.5)
                 G[l] += 2.0*rhl*((-1.0*Ih_array[h]/(variances[indexer]**0.5))
                                  -((g_values[l]/(variances[indexer]**0.5)) * dIhdg)
                                 )
-                #else:
-                #    print l,h
         for l in range(len(G)):
             G[l] += (2.0*(g_values[l]-1.0))/(self.sigma**2.0)
         return G

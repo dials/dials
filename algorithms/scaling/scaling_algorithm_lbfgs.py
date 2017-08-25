@@ -3,8 +3,9 @@ from dials.util.options import OptionParser
 import minimiser_functions as mf
 import data_manager_functions as dmf
 from data_plotter import plot_data, save_data
+from data_quality_assessment import R_meas, R_pim
 
-def scaling_lbfgs(inputparams, ndbins, nzbins):
+def scaling_lbfgs(inputparams, ndbins, nzbins, sigma):
     """This algorithm loads a reflection table and json file and
     performs a Kabsch-scaling parameterisation using an lbfgs minimiser
     """
@@ -40,7 +41,6 @@ def scaling_lbfgs(inputparams, ndbins, nzbins):
     loaded_reflections.bin_reflections(bin_parameters=[["d", d_bins],
                                                        ["z_value", z_bins]])
 
-
     '''assign a unique reflection index to each group of reflections'''
     loaded_reflections.assign_h_index()
 
@@ -49,7 +49,7 @@ def scaling_lbfgs(inputparams, ndbins, nzbins):
     loaded_reflections.set_g_values(initial_g_values)
 
     '''call the optimiser on the Data Manager object'''
-    minimised = mf.optimiser(loaded_reflections, sigma=0.05)
+    minimised = mf.optimiser(loaded_reflections, sigma)
 
     return minimised
 
@@ -61,10 +61,16 @@ if __name__ == "__main__":
     params, options = parsestring.parse_args([json_filepath, filepath])
 
     '''do minimisation of g-factors'''
-    minimised_gvalues = scaling_lbfgs(params, ndbins=20, nzbins=20)
+    minimised_gvalues = scaling_lbfgs(params, ndbins=20, nzbins=20, sigma=0.05)
 
     '''save data and plot g-factors'''
     filename = "/Users/whi10850/Documents/test_data/integrate/13_integrated_scaled.txt"
     save_data(minimised_gvalues, filename)
+
+    Rmeas = R_meas(minimised_gvalues.data_manager)
+    Rpim = R_pim(minimised_gvalues.data_manager)
+    print "R_meas of the (unmerged) data is %s" % (Rmeas)
+    print "R_pim of the merged data is %s" % (Rpim)
+
 
     plot_data(datafile=filename)

@@ -33,6 +33,7 @@ class Data_Manager(object):
         self.h_index_cumulative_array = None
         self.n_unique_indices = None
         self.Ih_array = None
+        self.nzbins = None
         #repackage some of these attributes for conciseness
 
     def filter_data(self, reflection_table_key, lower, upper):
@@ -50,6 +51,7 @@ class Data_Manager(object):
         crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
         miller_set = miller.set(crystal_symmetry=crystal_symmetry,
                                 indices=self.filtered_reflections['miller_index'])
+        miller_array = miller.array(miller_set)
         self.filtered_reflections["asu_miller_index"] = miller_set.map_to_asu().indices()
         permuted = (miller_set.map_to_asu()).sort_permutation(by_value='packed_indices')
         self.sorted_reflections = self.filtered_reflections.select(permuted)
@@ -76,6 +78,8 @@ class Data_Manager(object):
         self.sorted_reflections['l_bin_index'] = self.l_bin_index
         self.bin_boundaries = {bin_parameters[0][0] : bin_parameters[0][1],
                                bin_parameters[1][0] : bin_parameters[1][1]}
+        self.nzbins = len(bin_parameters[1][1]) - 1
+        self.ndbins = len(bin_parameters[0][1]) - 1
 
     def set_g_values(self, gvalues):
         self.g_values = gvalues
