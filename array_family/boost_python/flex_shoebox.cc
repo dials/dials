@@ -32,7 +32,7 @@ namespace dials { namespace af { namespace boost_python {
   using af::int6;
   using af::small;
   using scitbx::vec3;
-  using dxtbx::model::Beam;
+  using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
@@ -880,7 +880,7 @@ namespace dials { namespace af { namespace boost_python {
   af::shared<bool> mask_neighbouring(
       af::ref< Shoebox< FloatType > > self,
       af::const_ref< cctbx::miller::index<> > hkl,
-      const Beam &beam,
+      const BeamBase &beam,
       const Detector &detector,
       const Goniometer &goniometer,
       const Scan &scan,

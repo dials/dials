@@ -17,7 +17,7 @@
 
 namespace dials { namespace algorithms {
 
-  using dxtbx::model::Beam;
+  using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Panel;
 
@@ -25,7 +25,7 @@ namespace dials { namespace algorithms {
   public:
 
     RadialAverage(
-        const Beam &beam,
+        boost::shared_ptr<BeamBase> beam,
         const Detector &detector,
         double vmin,
         double vmax,
@@ -50,7 +50,7 @@ namespace dials { namespace algorithms {
         const af::const_ref< double, af::c_grid<2> > &data,
         const af::const_ref< bool, af::c_grid<2> > &mask) {
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
-      vec3<double> s0 = beam_.get_s0();
+      vec3<double> s0 = beam_->get_s0();
       const Panel& panel = detector_[current_++];
       std::size_t height = panel.get_image_size()[1];
       std::size_t width = panel.get_image_size()[0];
@@ -96,7 +96,7 @@ namespace dials { namespace algorithms {
 
   private:
 
-    Beam beam_;
+    boost::shared_ptr<BeamBase> beam_;
     Detector detector_;
     af::shared<double> sum_;
     af::shared<double> weight_;

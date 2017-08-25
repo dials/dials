@@ -27,7 +27,7 @@ namespace dials { namespace af { namespace boost_python {
 
   using scitbx::vec2;
   using scitbx::vec3;
-  using dxtbx::model::Beam;
+  using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Scan;
   using dials::model::Centroid;
@@ -162,7 +162,7 @@ namespace dials { namespace af { namespace boost_python {
 
   /** @returns The resolution of each observation */
   af::shared<double> centroid_resolution(af::ref<Centroid> &obj,
-      std::size_t panel, const Beam &b, const Detector &d) {
+      std::size_t panel, const BeamBase &b, const Detector &d) {
     af::shared<double> result(obj.size(), af::init_functor_null<double>());
     for (std::size_t i = 0; i < obj.size(); ++i) {
       result[i] = obj[i].resolution(panel, b, d);

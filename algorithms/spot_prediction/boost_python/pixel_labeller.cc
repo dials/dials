@@ -30,7 +30,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   {
     class_ <PixelLabeller> ("PixelLabeller", no_init)
       .def(init <
-          Beam,
+          BeamBase&,
           Detector>())
       .def("label", &PixelLabeller::label)
       .def("label", label);

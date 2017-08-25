@@ -27,7 +27,7 @@ namespace dials { namespace af { namespace boost_python {
 
   using scitbx::vec2;
   using scitbx::vec3;
-  using dxtbx::model::Beam;
+  using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Scan;
   using dials::model::Observation;
@@ -256,7 +256,7 @@ namespace dials { namespace af { namespace boost_python {
   /** @returns The resolution of each observation */
   af::shared<double> observation_resolution(
       const af::const_ref<Observation> &obj,
-      const Beam &b, const Detector &d) {
+      const BeamBase &b, const Detector &d) {
     af::shared<double> result(obj.size(), af::init_functor_null<double>());
     for (std::size_t i = 0; i < obj.size(); ++i) {
       result[i] = obj[i].resolution(b, d);

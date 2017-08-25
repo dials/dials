@@ -21,7 +21,7 @@
 
 namespace dials { namespace algorithms {
 
-  using dxtbx::model::Beam;
+  using dxtbx::model::BeamBase;
   using dxtbx::model::Panel;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
@@ -74,7 +74,7 @@ namespace dials { namespace algorithms {
      * @param goniometer The goniometer model
      */
     PolarTransform(
-        const Beam &beam,
+        const BeamBase &beam,
         const Panel &panel,
         const Goniometer &goniometer) {
 

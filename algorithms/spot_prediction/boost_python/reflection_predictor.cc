@@ -23,7 +23,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_<Predictor>("ScanStaticReflectionPredictor", no_init)
       .def(init<
-          const Beam&,
+          const boost::shared_ptr<BeamBase>,
           const Detector&,
           const Goniometer&,
           const Scan&,
@@ -47,7 +47,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_<Predictor>("ScanVaryingReflectionPredictor", no_init)
       .def(init<
-          const Beam&,
+          const boost::shared_ptr<BeamBase>,
           const Detector&,
           const Goniometer&,
           const Scan&,
@@ -82,7 +82,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_<Predictor>("StillsDeltaPsiReflectionPredictor", no_init)
       .def(init<
-          const Beam&,
+          const boost::shared_ptr<BeamBase>,
           const Detector&,
           mat3<double>,
           const cctbx::uctbx::unit_cell&,
@@ -121,7 +121,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_<Predictor>("NaveStillsReflectionPredictor", no_init)
       .def(init<
-          const Beam&,
+          const boost::shared_ptr<BeamBase>,
           const Detector&,
           mat3<double>,
           const cctbx::uctbx::unit_cell&,
@@ -162,7 +162,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_<Predictor>("SphericalRelpStillsReflectionPredictor", no_init)
       .def(init<
-          const Beam&,
+          const boost::shared_ptr<BeamBase>,
           const Detector&,
           mat3<double>,
           const cctbx::uctbx::unit_cell&,

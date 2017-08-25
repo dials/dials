@@ -28,7 +28,7 @@ namespace dials { namespace algorithms {
      * Initialise the sampler
      */
     StereographicProjectionSampler(
-          const Beam &beam,
+          const boost::shared_ptr<BeamBase> beam,
           const Detector &detector,
           const Goniometer &goniometer,
           const Scan &scan,

@@ -32,7 +32,7 @@ namespace gaussian_rs {
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::af::int6;
-  using dxtbx::model::Beam;
+  using dxtbx::model::BeamBase;
   using dxtbx::model::Panel;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
@@ -88,7 +88,7 @@ namespace gaussian_rs {
      * @param delta_b nsigma * sigma_divergence
      * @param delta_m nsigma * mosaicity
      */
-    MaskCalculator3D(const Beam &beam,
+    MaskCalculator3D(const BeamBase &beam,
                      const Detector &detector,
                      const Goniometer &gonio,
                      const Scan &scan,
@@ -118,7 +118,7 @@ namespace gaussian_rs {
      * @param delta_b nsigma * sigma_divergence
      * @param delta_m nsigma * mosaicity
      */
-    MaskCalculator3D(const Beam &beam,
+    MaskCalculator3D(const BeamBase &beam,
                      const Detector &detector,
                      const Goniometer &gonio,
                      const Scan &scan,
@@ -513,7 +513,7 @@ namespace gaussian_rs {
      * @param delta_b nsigma * sigma_divergence
      * @param delta_m nsigma * mosaicity
      */
-    MaskCalculator2D(const Beam &beam,
+    MaskCalculator2D(const BeamBase &beam,
                      const Detector &detector,
                      double delta_b,
                      double delta_m)

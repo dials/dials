@@ -140,7 +140,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_<EwaldSphereSampler, bases<SamplerIface> >("EwaldSphereSampler", no_init)
       .def(init<
-          const Beam&,
+          const boost::shared_ptr<BeamBase>,
           const Detector&,
           const Goniometer&,
           const Scan &,

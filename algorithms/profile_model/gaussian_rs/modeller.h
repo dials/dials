@@ -24,7 +24,7 @@
 
 namespace dials { namespace algorithms {
 
-  using dxtbx::model::Beam;
+  using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
@@ -58,7 +58,7 @@ namespace dials { namespace algorithms {
     };
 
     GaussianRSProfileModellerBase(
-        const Beam &beam,
+        const boost::shared_ptr<BeamBase> beam,
         const Detector &detector,
         const Goniometer &goniometer,
         const Scan &scan,
@@ -94,7 +94,7 @@ namespace dials { namespace algorithms {
   protected:
 
     boost::shared_ptr<SamplerIface> init_sampler(
-        const Beam &beam,
+        boost::shared_ptr<BeamBase> beam,
         const Detector &detector,
         const Goniometer &goniometer,
         const Scan &scan,
@@ -140,7 +140,7 @@ namespace dials { namespace algorithms {
       return sampler;
     }
 
-    Beam beam_;
+    boost::shared_ptr<BeamBase> beam_;
     Detector detector_;
     Goniometer goniometer_;
     Scan scan_;
@@ -199,7 +199,7 @@ namespace dials { namespace algorithms {
      * @param grid_method The gridding method
      */
     GaussianRSProfileModeller(
-            const Beam &beam,
+            boost::shared_ptr<BeamBase> beam,
             const Detector &detector,
             const Goniometer &goniometer,
             const Scan &scan,
@@ -244,7 +244,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(sampler_ != 0);
     }
 
-    Beam beam() const {
+    boost::shared_ptr<BeamBase> beam() const {
       return beam_;
     }
 
@@ -332,7 +332,7 @@ namespace dials { namespace algorithms {
 
           // Create the coordinate system
           vec3<double> m2 = spec_.goniometer().get_rotation_axis();
-          vec3<double> s0 = spec_.beam().get_s0();
+          vec3<double> s0 = spec_.beam()->get_s0();
           CoordinateSystem cs(m2, s0, s1[i], xyzmm[i][2]);
 
           // Create the data array
@@ -468,7 +468,7 @@ namespace dials { namespace algorithms {
 
             // Create the coordinate system
             vec3<double> m2 = spec_.goniometer().get_rotation_axis();
-            vec3<double> s0 = spec_.beam().get_s0();
+            vec3<double> s0 = spec_.beam()->get_s0();
             CoordinateSystem cs(m2, s0, s1[i], xyzmm[i][2]);
 
             // Create the data array
@@ -583,7 +583,7 @@ namespace dials { namespace algorithms {
 
             // Create the coordinate system
             vec3<double> m2 = spec_.goniometer().get_rotation_axis();
-            vec3<double> s0 = spec_.beam().get_s0();
+            vec3<double> s0 = spec_.beam()->get_s0();
             CoordinateSystem cs(m2, s0, s1[i], xyzmm[i][2]);
 
             // Compute the transform

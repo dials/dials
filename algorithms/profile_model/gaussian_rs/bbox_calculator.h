@@ -40,7 +40,7 @@ namespace gaussian_rs {
   using scitbx::af::double2;
   using scitbx::af::double3;
   using scitbx::af::double4;
-  using dxtbx::model::Beam;
+  using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
@@ -80,7 +80,7 @@ namespace gaussian_rs {
      * @param delta_divergence The xds delta_divergence parameter
      * @param delta_mosaicity The xds delta_mosaicity parameter
      */
-    BBoxCalculator3D(const Beam &beam,
+    BBoxCalculator3D(const BeamBase &beam,
                      const Detector &detector,
                      const Goniometer &gonio,
                      const Scan &scan,
@@ -104,7 +104,7 @@ namespace gaussian_rs {
      * @param delta_divergence The xds delta_divergence parameter
      * @param delta_mosaicity The xds delta_mosaicity parameter
      */
-    BBoxCalculator3D(const Beam &beam,
+    BBoxCalculator3D(const BeamBase &beam,
                      const Detector &detector,
                      const Goniometer &gonio,
                      const Scan &scan,
@@ -267,7 +267,7 @@ namespace gaussian_rs {
      * @param delta_divergence The xds delta_divergence parameter
      * @param delta_mosaicity The xds delta_mosaicity parameter
      */
-    BBoxCalculator2D(const Beam &beam,
+    BBoxCalculator2D(const BeamBase &beam,
                      const Detector &detector,
                      double delta_divergence,
                      double delta_mosaicity)
