@@ -15,7 +15,7 @@ def load_data(filename):
 
 def plot_data(datafile):
     data = load_data(filename = datafile)
-    G_fin =  list(data.x)
+    
 
     y_label = 'd bin boundaries'
     y_ticks = ['%.3f' % x for x in data.data_manager.bin_boundaries['d']]
@@ -26,20 +26,8 @@ def plot_data(datafile):
     ndbins = len(data.data_manager.bin_boundaries['d'])-1
     nzbins = len(data.data_manager.bin_boundaries['z_value'])-1
 
-    def plot_d_slices(G_fin):
-        for i in range(0,ndbins):
-            G_cut = G_fin[i:(nzbins*(ndbins-1))+i:ndbins]
-            plt.plot(G_cut)
-        plt.show()
-
-    def plot_z_slices(G_fin):
-        for i in range(0,nzbins):
-            G_cut = G_fin[(ndbins*i):((i+1)*(ndbins))]
-            plt.plot(G_cut)
-        plt.show()
-
     '''generate a plot of the result'''
-
+    G_fin =  list(data.x)
     G_fin_2d=np.reshape(G_fin,(nzbins,ndbins)).T
 
     plt.figure(1)
@@ -58,14 +46,5 @@ def plot_data(datafile):
 
 if __name__ == "__main__":
     filename="/Users/whi10850/Documents/test_data/integrate/13_integrated_scaled.txt"
-
-    #print 'Intensity, G_l, h, I_h'
-    #data = load_data(filename)
-    #for n, val in enumerate(data.data_manager.sorted_reflections['l_bin_index']):
-    #    h = data.data_manager.sorted_reflections['h_index'][n]
-    #    if h == 4554:
-    #        h = data.data_manager.sorted_reflections['h_index'][n]
-    #        print data.data_manager.sorted_reflections['intensity.sum.value'][n], data.x[val], val, data.data_manager.Ih_array[h]
-    #exit()
 
     plot_data(datafile=filename)

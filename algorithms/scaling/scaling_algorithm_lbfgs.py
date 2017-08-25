@@ -61,7 +61,7 @@ if __name__ == "__main__":
     params, options = parsestring.parse_args([json_filepath, filepath])
 
     '''do minimisation of g-factors'''
-    minimised_gvalues = scaling_lbfgs(params, ndbins=20, nzbins=20, sigma=0.05)
+    minimised_gvalues = scaling_lbfgs(params, ndbins=10, nzbins=10, sigma=0.02)
 
     '''save data and plot g-factors'''
     filename = "/Users/whi10850/Documents/test_data/integrate/13_integrated_scaled.txt"

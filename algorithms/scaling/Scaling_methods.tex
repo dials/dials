@@ -1,0 +1,108 @@
+
+\documentclass[11pt, oneside]{article}   	% use "amsart" instead of "article" for AMSLaTeX format
+\usepackage{geometry}                		% See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   		% ... or a4paper or a5paper or ... 
+%\geometry{landscape}                		% Activate for rotated page geometry
+%\usepackage[parfill]{parskip}    		% Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}				% Use pdf, png, jpg, or eps§ with pdflatex; use eps in DVI mode
+								% TeX will automatically convert eps --> pdf in pdflatex		
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{color}
+
+%SetFonts
+
+%SetFonts
+
+
+\title{Summary of current scaling methods}
+\author{James Beilsten-Edmands}
+%\date{}							% Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+%\section{}
+%\subsection{}
+
+\section{General procedure}
+
+Evans (Acta D 62 pt 1, 72-82 (2006)) describes the general procedure for scaling symmetry-related observations. The inverse scaling factors $g_{hl}$ are determined by minimising the function
+\begin{equation}
+\Phi = \sum_h \sum_l \frac{1}{\sigma^2_{hl}} (I_{hl} - g_{hl} \langle I_h \rangle)^2 + \text{parameter restraint terms}.
+\end{equation}
+$I_{hl}$ is the $l^{\text{th}}$ observation of unique reflection $h$ and $\langle I_h \rangle$ is the weighted average intensity for all observations of unique reflection $h$;
+\begin{equation}
+\langle I_h \rangle = (\sum_l g_{hl} I_{hl}/\sigma^2_{hl}) /  (\sum_l g^2_{hl} /\sigma^2_{hl}).
+\end{equation}
+
+\subsection{Calculation of gradient}
+For a minimisation procedure, one needs to consider the derivative of the cost function with respect to model parameters $p_i$;
+\begin{equation}
+\frac{\partial \Phi}{\partial p_i} = \sum_h \sum_l 2 r_{hl} \frac{\partial r_{hl}}{\partial p_i},
+\end{equation}
+where
+\begin{equation}
+r_{hl} = \frac{1}{\sigma_{hl}} (I_{hl} - g_{hl} \langle I_h \rangle).
+\end{equation}
+Calculating the derivative gives
+\begin{equation}
+\frac{\partial r_{hl}}{\partial p_i} = -\frac{1}{\sigma_{hl}}( \langle I_{h} \rangle \frac{\partial g_{hl}}{\partial p_i} 
++  g_{hl} \frac{\partial \langle I_{h} \rangle}{\partial p_i} ).
+\end{equation}
+The partial derivative of $\langle I_h \rangle$ can be calculated by the quotient rule
+\begin{equation}
+\frac{\partial \langle I_{h} \rangle}{\partial p_i} = \frac{\partial}{\partial p_i}(\frac{u}{v}) = \frac{v u' - u v'}{v^2},
+\end{equation}
+hence
+\begin{equation}
+\frac{\partial \langle I_{h} \rangle}{\partial p_i} = \frac{(\sum_l g^2_{hl} /\sigma^2_{hl}) (\sum_l  \frac{I_{hl}}{\sigma^2_{hl} }\frac{\partial g_{hl}}{\partial p_i})  -  (\sum_l g_{hl} I_{hl}/\sigma^2_{hl})  (\sum_l \frac{2g_{hl}}{\sigma^2_{hl}} \frac{\partial g_{hl}}{\partial p_i} )        }{ (\sum_l g^2_{hl} /\sigma^2_{hl})^2 } 
+\end{equation}
+which can be simplified by factoring out `$v$' to
+\begin{equation}
+\frac{\partial \langle I_{h} \rangle}{\partial p_i}  = \frac{ (\sum_l  \frac{I_{hl}}{\sigma^2_{hl} }\frac{\partial g_{hl}}{\partial p_i})  -   \langle I_{h} \rangle  (\sum_l \frac{2g_{hl}}{\sigma^2_{hl}} \frac{\partial g_{hl}}{\partial p_i} )        }{ (\sum_l g^2_{hl} /\sigma^2_{hl}) }.
+\end{equation}
+hence the derivative of the residual is given by
+\begin{equation}
+\frac{\partial r_{hl}}{\partial p_i} = - \frac{\langle I_{h} \rangle}{\sigma_{hl}} \frac{\partial g_{hl}}{\partial p_i} 
+-  \frac{g_{hl}}{\sigma_{hl}}     \frac{ (\sum_l  \frac{I_{hl}}{\sigma^2_{hl} }\frac{\partial g_{hl}}{\partial p_i})  -   \langle I_{h} \rangle  (\sum_l \frac{2g_{hl}}{\sigma^2_{hl}} \frac{\partial g_{hl}}{\partial p_i} )        }{ (\sum_l g^2_{hl} /\sigma^2_{hl}) } .
+\end{equation}
+{\color{red} N.B. i think this is slightly different than the expression derived by D. Waterman in `scaling rotation datasets', where the standard deviations are only given through the weightings $w_{hl}$ which appear to be inconsistent in the equation.}
+Proceeding further is then dependent on the parameterisation of the scaling parameters.
+
+In the Kabsch parameterisation, one determines a set of $g$ values $g_j$ that are the scale factors assigned to a given resolution or phi `bin', hence the model parameters $p_i$ are just the $g_{j}$ factors. Therefore $\frac{\partial g_{hl}}{\partial p_i}$ = $\frac{\partial g_{hl}}{\partial g_j}$  = $\delta(g_{hl},g_{j})$ i.e. the gradient is only non-zero if the g-parameter assigned to reflection $hl$ is $g_j$ ({\color{red} N.B. is this definitely true, is there some further dependence through $\langle I_h \rangle$ ?}).
+
+In a `physical' scaling model (Evans 2006), the inverse scale factor is given by the multiplication of several factors, such as a scale factor for a given phi, a B factor, an absorption factor etc which are themselves determined by a set of model parameters. Hence one will have to calculate how $g_{hl}$ varies with these parameters, which will be more complex than in the Kabsch parameterisation.
+
+%Note that the g-factor for each reflection $g_{hl}$ will be mapped onto a certain $g_j$ determined by the gridding of the $g$ parameters
+
+\subsection{Problem of zero eigenvalues}
+The residual $\Phi$ is unchanged if one multiplies all of the scale factors by a constant, or by adding a constant to all of the B-factors. As multiplying $\Phi$ by a constant is just changing the global scale parameter, this can easily be dealt with, for example by normalising the average $g$ to 1. It is less obvious how to deal with the B-factor term, as this changes the relative scale of reflections at different resolutions. 
+Note that this B-factor dependence is in addition to the standard B-factor that causes a decrease in spot intensity for increasing resolution; at the start of the measurement, the standard B-factor already exists, as such one might expect that (if the true intensities were measured) the g-values as a function of resolution for the first time bin are all 1 - i.e. there is no further resolution-dependent correction encapsulated within the $g$ factors due to radiation damage. Then, during the course of the measurement, if radiation damage is present one would expect a resolution dependence to become apparent for increasing time bins. 
+Therefore, after a minimum solution is found for the $g$ values, one should rescale all the $g$ values by a factor exp$(B/d^2)$, where $B$ is chosen/fitted to bring the $g$ values of the first few time bins as close as possible to a constant, and $d$ is a representative $d$ value for each resolution bin. Then one can the divide out by this constant to normalise to one. This has the effect of setting the first scale factor to 1 and the first relative 'B' factor to zero, similar to that described by Evans (Evans 2006). 
+
+In a paper where Kabsch describes the methodology behind the XDS algorithms (Acta D 66 pt 2, 133-144 (2010)), a parameter restraint term is used to weakly constrain the $g$-values to one. However, based on tests of my algorithm, including a weak parameter restraint does not find quite the same solution, and the solution depends on how tightly the values are constrained to one. Intuitively, one is imposing additional constraints on the solution, however I do not see that this is particularly necessary if one can use the `invariant' scaling methods to bring the $g$-values back to physically reasonable values after they have been freely determined, even if this gives $g$-values that deviate significantly from one at first.
+
+\subsection{Implementation of Kabsch scaling}
+
+
+\section{Aside: assessment of data quality}
+
+The traditional $R_{\text{merge}}$ was replaced by the multiplicity-independent $R$-factor $R_{\text{meas}}$, which gives an indication of the agreement between symmetry equivalent reflections (i.e. is a precision indicator of the unmerged data). $R_{\text{p.i.m.}}$ indicates the quality of the data after averaging symmetry equivalent reflections (i.e. is a precision indicator of the merged data). 
+\begin{equation}
+R_{\text{meas}} = \left( \sum_{h} \sqrt{\frac{n_h}{(n_h - 1)}} \sum_l \left| I_{hl} - \langle I_h \rangle \right| \right) / \sum_h \sum_l \langle I_h \rangle
+\end{equation}
+\begin{equation}
+R_{\text{p.i.m.}} = \left( \sum_{h} \sqrt{\frac{1}{(n_h - 1)}} \sum_l \left| I_{hl} - \langle I_h \rangle \right| \right) / \sum_h \sum_l \langle I_h \rangle
+\end{equation}
+$R_{\text{meas}}$ is useful for deciding between space groups, investigating radiation damage during measurement, whereas precision of merged intensities is useful for assessing quality for downstream calculations. In these calculations, $\langle I_h \rangle$ is the averaged (unscaled) intensity for each unique reflection.
+For scaled data, one presumably should take the scaled intensities and the best estimate of the weighted `true' average intensity. As a scaling algorithm minimises the residuals between the scaled and weighted average, the improvement in the R-factors before and after scaling give an indication of the improvement in the precision due to scaling.
+
+More recently, Karplus and Diederichs (Science 336 6084 (2012)) suggested that the use of Pearson correlation coefficients should be used to estimate the correlation of the observed dataset with the `true' signal. Specifically, the dataset is split randomly into two parts, where each part contains half of the measurements of each unique reflection. The correlation coefficient (CC$_{1/2}$) is calculated between the average intensities in each subset for each unique reflection. This can be converted to the correlation of the dataset with the `true' intensities CC* by the relation
+\begin{equation}
+CC* = \sqrt{\frac{2 CC_{1/2}}{1 + CC_{1/2}}}.
+\end{equation}
+This can be calculated for resolution bins and gives a statistical measure of the usefulness of the data for correct structural determination - the value of CC* is one at high $d$ and drops off at low $d$ as the intensity becomes weaker. This is suggested as being more useful than the $R$-metrics and cutoffs based on $I/\sigma$. Furthermore, this can be directly compared to CCs that assess crystallographic model quality (e.g CC$_{\text{work}}$, CC$_{\text{free}}$) and hence can be used to determine where data quality is limiting the model or if over/under-fitting is present.
+
+
+
+\end{document}  
