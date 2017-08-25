@@ -25,7 +25,7 @@ namespace dials { namespace algorithms { namespace background {
         arg("reflections"), arg("value")));
 
     class_<RadialAverage>("RadialAverage", no_init)
-      .def(init<const Beam&,
+      .def(init<boost::shared_ptr<BeamBase>,
                 const Detector&,
                 double,
                 double,

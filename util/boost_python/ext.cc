@@ -44,7 +44,7 @@ namespace dials { namespace util { namespace boost_python {
         &is_inside_polygon_a);
 
     class_<ResolutionMaskGenerator>("ResolutionMaskGenerator", no_init)
-      .def(init<const Beam&,const Panel&>())
+      .def(init<const BeamBase&,const Panel&>())
       .def("apply", &ResolutionMaskGenerator::apply)
       ;
   }

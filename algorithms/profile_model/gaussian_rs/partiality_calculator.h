@@ -42,7 +42,7 @@ namespace gaussian_rs {
   using scitbx::af::double2;
   using scitbx::af::double3;
   using scitbx::af::double4;
-  using dxtbx::model::Beam;
+  using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
@@ -82,7 +82,7 @@ namespace gaussian_rs {
      * @param sigma_mosaicity The xds sigma_mosaicity parameter
      */
     PartialityCalculator3D(
-          const Beam &beam,
+          const BeamBase &beam,
           const Goniometer &gonio,
           const Scan &scan,
           double sigma_m)
@@ -101,7 +101,7 @@ namespace gaussian_rs {
      * @param sigma_mosaicity The xds sigma_mosaicity parameter
      */
     PartialityCalculator3D(
-          const Beam &beam,
+          const BeamBase &beam,
           const Goniometer &gonio,
           const Scan &scan,
           const af::const_ref<double> &sigma_m)
@@ -198,7 +198,7 @@ namespace gaussian_rs {
      * @param sigma_mosaicity The xds sigma_mosaicity parameter
      */
     PartialityCalculator2D(
-          const Beam &beam,
+          const BeamBase &beam,
           double sigma_m)
       : s0_(beam.get_s0()),
         sigma_m_(sigma_m) {

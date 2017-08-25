@@ -34,7 +34,7 @@ namespace dials { namespace algorithms { namespace boost_python {
           arg("n")));
 
     class_<Corrections>("Corrections", no_init)
-      .def(init< const Beam&,
+      .def(init< const BeamBase&,
                  const Goniometer&,
                  const Detector& >())
       .def("lp", &Corrections::lp, (

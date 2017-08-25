@@ -29,7 +29,7 @@ namespace dials { namespace algorithms {
   using scitbx::af::double3;
   using scitbx::vec2;
   using scitbx::vec3;
-  using dxtbx::model::Beam;
+  using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
@@ -47,7 +47,7 @@ namespace dials { namespace algorithms {
      * Initialise the sampler
      */
     EwaldSphereSampler(
-          const Beam &beam,
+          const boost::shared_ptr<BeamBase> beam,
           const Detector &detector,
           const Goniometer &goniometer,
           const Scan &scan,
@@ -62,7 +62,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(num_phi > 0);
 
       // Compute the axes around s0
-      vec3<double> s0 = beam.get_s0().normalize();
+      vec3<double> s0 = beam->get_s0().normalize();
       vec3<double> m2 = goniometer.get_rotation_axis().normalize();
       zaxis_ = s0;
       yaxis_ = zaxis_.cross(m2);
@@ -319,7 +319,7 @@ namespace dials { namespace algorithms {
       return coord_[index];
     }
 
-    Beam beam() const {
+    boost::shared_ptr<BeamBase> beam() const {
       return beam_;
     }
 
@@ -347,7 +347,7 @@ namespace dials { namespace algorithms {
       return par_sum + iy + iz * tot_sum;
     }
 
-    Beam beam_;
+    boost::shared_ptr<BeamBase> beam_;
     Detector detector_;
     Goniometer goniometer_;
     Scan scan_;

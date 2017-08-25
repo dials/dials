@@ -50,7 +50,7 @@ namespace boost_python {
       std::size_t grid_size) {
     return boost::shared_ptr<TransformSpec>(
       new TransformSpec(
-        extract<Beam>(experiment.attr("beam")),
+        extract<boost::shared_ptr<BeamBase> >(experiment.attr("beam")),
         extract<Detector>(experiment.attr("detector")),
         extract<Goniometer>(experiment.attr("goniometer")),
         extract<Scan>(experiment.attr("scan")),
@@ -132,11 +132,11 @@ namespace boost_python {
   BOOST_PYTHON_MODULE(dials_algorithms_profile_model_gaussian_rs_transform_ext)
   {
     af::versa< vec3<double>, af::c_grid<2> > (*overload1)(const Panel&,
-      const Beam&, std::size_t, bool) = &beam_vector_map;
+      const BeamBase&, std::size_t, bool) = &beam_vector_map;
     af::versa< vec3<double>, af::c_grid<2> > (*overload2)(const Panel&,
-      const Beam&, bool) = &beam_vector_map;
+      const BeamBase&, bool) = &beam_vector_map;
     af::versa< vec3<double>, af::c_grid<2> > (*overload3)(const Panel&,
-      const Beam&) = &beam_vector_map;
+      const BeamBase&) = &beam_vector_map;
 
     def("beam_vector_map", overload1, (
       arg("detector"),
@@ -207,7 +207,7 @@ namespace boost_python {
           arg("zeta")));
 
     class_<TransformSpec>("TransformSpec", no_init)
-      .def(init<const Beam&,
+      .def(init<boost::shared_ptr<BeamBase>,
                 const Detector&,
                 const Goniometer&,
                 const Scan&,

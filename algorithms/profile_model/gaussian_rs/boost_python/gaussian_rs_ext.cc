@@ -145,7 +145,7 @@ namespace boost_python {
         GaussianRSProfileModeller>("GaussianRSProfileModeller");
     result
       .def(init<
-          const Beam&,
+          boost::shared_ptr<BeamBase>,
           const Detector&,
           const Goniometer&,
           const Scan&,
@@ -205,7 +205,7 @@ namespace boost_python {
 
     class_ <BBoxCalculator3D, bases<BBoxCalculatorIface> >(
         "BBoxCalculator3D", no_init)
-      .def(init <const Beam&,
+      .def(init <const BeamBase&,
                  const Detector&,
                  const Goniometer&,
                  const Scan&,
@@ -217,7 +217,7 @@ namespace boost_python {
         arg("scan"),
         arg("delta_divergence"),
         arg("delta_mosaicity"))))
-      .def(init <const Beam&,
+      .def(init <const BeamBase&,
                  const Detector&,
                  const Goniometer&,
                  const Scan&,
@@ -233,7 +233,7 @@ namespace boost_python {
 
     class_ <BBoxCalculator2D, bases<BBoxCalculatorIface> >(
         "BBoxCalculator2D", no_init)
-      .def(init <const Beam&,
+      .def(init <const BeamBase&,
                  const Detector&,
                  double,
                  double > ((
@@ -283,7 +283,7 @@ namespace boost_python {
 
     class_ <PartialityCalculator3D, bases<PartialityCalculatorIface> >(
         "PartialityCalculator3D", no_init)
-      .def(init <const Beam&,
+      .def(init <const BeamBase&,
                  const Goniometer&,
                  const Scan&,
                  double > ((
@@ -291,7 +291,7 @@ namespace boost_python {
         arg("goniometer"),
         arg("scan"),
         arg("delta_m"))))
-      .def(init <const Beam&,
+      .def(init <const BeamBase&,
                  const Goniometer&,
                  const Scan&,
                  const af::const_ref<double>& > ((
@@ -303,7 +303,7 @@ namespace boost_python {
 
     class_ <PartialityCalculator2D, bases<PartialityCalculatorIface> >(
         "PartialityCalculator2D", no_init)
-      .def(init <const Beam&,
+      .def(init <const BeamBase&,
                  double > ((
         arg("beam"),
         arg("delta_m"))))
@@ -317,7 +317,7 @@ namespace boost_python {
 
     class_ <MaskCalculator3D, bases<MaskCalculatorIface> >(
         "MaskCalculator3D", no_init)
-      .def(init <const Beam&,
+      .def(init <const BeamBase&,
                  const Detector&,
                  const Goniometer&,
                  const Scan&,
@@ -329,7 +329,7 @@ namespace boost_python {
         arg("scan"),
         arg("delta_divergence"),
         arg("delta_mosaicity"))))
-      .def(init <const Beam&,
+      .def(init <const BeamBase&,
                  const Detector&,
                  const Goniometer&,
                  const Scan&,
@@ -345,7 +345,7 @@ namespace boost_python {
 
     class_ <MaskCalculator2D, bases<MaskCalculatorIface> >(
         "MaskCalculator2D", no_init)
-      .def(init <const Beam&,
+      .def(init <const BeamBase&,
                  const Detector&,
                  double,
                  double > ((

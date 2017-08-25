@@ -26,7 +26,7 @@ namespace dials { namespace algorithms {
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::mat3;
-  using dxtbx::model::Beam;
+  using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Panel;
 
@@ -45,7 +45,7 @@ namespace dials { namespace algorithms {
      * @param detector The detector model
      */
     PixelLabeller(
-        Beam beam,
+        BeamBase &beam,
         Detector detector) {
       p_star_.resize(detector.size());
       vec3<double> s0 = beam.get_s0();

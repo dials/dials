@@ -22,7 +22,7 @@ namespace dials { namespace model {
 
   using scitbx::vec2;
   using scitbx::vec3;
-  using dxtbx::model::Beam;
+  using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Scan;
 
@@ -274,7 +274,7 @@ namespace dials { namespace model {
      * @returns The resolution
      */
     double resolution(std::size_t panel,
-        const Beam &b, const Detector &d) const {
+        const BeamBase &b, const Detector &d) const {
       return d[panel].get_resolution_at_pixel(
         b.get_s0(), vec2<double>(px.position[0], px.position[1]));
     }
@@ -284,7 +284,7 @@ namespace dials { namespace model {
      * @param d The detector model
      * @returns The resolution
      */
-    double resolution(const Beam &b, const Detector &d) const {
+    double resolution(const BeamBase &b, const Detector &d) const {
       return resolution(0, b, d);
     }
   };
@@ -354,7 +354,7 @@ namespace dials { namespace model {
      * @param d The detector model
      * @returns The resolution
      */
-    double resolution(const Beam &b, const Detector &d) const {
+    double resolution(const BeamBase &b, const Detector &d) const {
       return centroid.resolution(panel, b, d);
     }
 

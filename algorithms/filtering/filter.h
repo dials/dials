@@ -32,7 +32,7 @@ namespace dials { namespace algorithms { namespace filter {
   using scitbx::af::small;
   using scitbx::af::int6;
   using dxtbx::model::Goniometer;
-  using dxtbx::model::Beam;
+  using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dials::algorithms::profile_model::gaussian_rs::CoordinateSystem;
   using dials::algorithms::profile_model::gaussian_rs::zeta_factor;
@@ -77,7 +77,7 @@ namespace dials { namespace algorithms { namespace filter {
    * @returns True/False, zeta is valid
    */
   inline
-  bool is_zeta_valid(const Goniometer &g, const Beam &b, vec3<double> s1,
+  bool is_zeta_valid(const Goniometer &g, const BeamBase &b, vec3<double> s1,
       double zeta_min) {
     return is_zeta_valid(g.get_rotation_axis(), b.get_s0(), s1, zeta_min);
   }
@@ -146,7 +146,7 @@ namespace dials { namespace algorithms { namespace filter {
    * @returns True/False, the small angle approximation is valid
    */
   inline
-  bool is_xds_small_angle_valid(const Goniometer &g, const Beam &b,
+  bool is_xds_small_angle_valid(const Goniometer &g, const BeamBase &b,
       vec3<double> s1, double delta_m) {
     return is_xds_small_angle_valid(g.get_rotation_axis(), b.get_s0(),
       s1, delta_m);
@@ -228,7 +228,7 @@ namespace dials { namespace algorithms { namespace filter {
    * @returns True/False, the angle is valid
    */
   inline
-  bool is_xds_angle_valid(const Goniometer &g, const Beam &b,
+  bool is_xds_angle_valid(const Goniometer &g, const BeamBase &b,
       vec3<double> s1, double delta_m) {
     return is_xds_angle_valid(g.get_rotation_axis(), b.get_s0(), s1, delta_m);
   }
@@ -242,7 +242,7 @@ namespace dials { namespace algorithms { namespace filter {
    * @param min_zeta The minimum zeta value
    */
   inline
-  af::shared<bool> by_zeta(const Goniometer &g, const Beam &b,
+  af::shared<bool> by_zeta(const Goniometer &g, const BeamBase &b,
       const af::const_ref< vec3<double> > &s1,
       double min_zeta) {
     af::shared<bool> result(s1.size(), true);
@@ -263,7 +263,7 @@ namespace dials { namespace algorithms { namespace filter {
    * @param delta_m The mosaicity * n_sigma
    */
   inline
-  af::shared<bool> by_xds_small_angle(const Goniometer &g, const Beam &b,
+  af::shared<bool> by_xds_small_angle(const Goniometer &g, const BeamBase &b,
       const af::const_ref< vec3<double> > s1, double delta_m) {
     af::shared<bool> result(s1.size(), true);
     for (std::size_t i = 0; i < result.size(); ++i) {
@@ -283,7 +283,7 @@ namespace dials { namespace algorithms { namespace filter {
    * @param delta_m The mosaicity * n_sigma
    */
   inline
-  af::shared<bool> by_xds_angle(const Goniometer &g, const Beam &b,
+  af::shared<bool> by_xds_angle(const Goniometer &g, const BeamBase &b,
       const af::const_ref< vec3<double> > s1, double delta_m) {
     af::shared<bool> result(s1.size(), true);
     for (std::size_t i = 0; i < result.size(); ++i) {
@@ -477,7 +477,7 @@ namespace dials { namespace algorithms { namespace filter {
   af::shared<bool> by_resolution_at_centroid(
       const af::const_ref<std::size_t> &panel,
       const af::const_ref< vec3<double> > &xyz,
-      const Beam &beam, const Detector &detector,
+      const BeamBase &beam, const Detector &detector,
       double d_min, double d_max) {
     DIALS_ASSERT(panel.size() == xyz.size());
     vec3<double> s0 = beam.get_s0();

@@ -175,12 +175,12 @@ namespace dials { namespace model { namespace boost_python {
           arg("detector"),
           arg("scan")))
       .def("resolution",
-        (double(Centroid::*)(const Beam &, const Detector&)const)
+        (double(Centroid::*)(const BeamBase &, const Detector&)const)
         &Centroid::resolution, (
           arg("beam"),
           arg("detector")))
       .def("resolution",
-        (double(Centroid::*)(std::size_t,const Beam&,const Detector&)const)
+        (double(Centroid::*)(std::size_t,const BeamBase&,const Detector&)const)
         &Centroid::resolution, (
           arg("panel"),
           arg("beam"),

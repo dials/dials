@@ -26,7 +26,7 @@ namespace transform {
 
   using scitbx::vec2;
   using scitbx::vec3;
-  using dxtbx::model::Beam;
+  using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Panel;
 
@@ -43,7 +43,7 @@ namespace transform {
    */
   inline
   af::versa< vec3<double>, af::c_grid<2> > beam_vector_map(
-      const Panel &panel, const Beam &beam,
+      const Panel &panel, const BeamBase &beam,
       std::size_t n_div, bool corner)
   {
     // check the input
@@ -97,7 +97,7 @@ namespace transform {
    */
   inline
   af::versa< vec3<double>, af::c_grid<2> > beam_vector_map(
-      const Panel &panel, const Beam &beam, bool corner) {
+      const Panel &panel, const BeamBase &beam, bool corner) {
     return beam_vector_map(panel, beam, 1, corner);
   }
 
@@ -109,7 +109,7 @@ namespace transform {
    */
   inline
   af::versa< vec3<double>, af::c_grid<2> > beam_vector_map(
-      const Panel &panel, const Beam &beam) {
+      const Panel &panel, const BeamBase &beam) {
     return beam_vector_map(panel, beam, 1, false);
   }
 

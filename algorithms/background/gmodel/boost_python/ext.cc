@@ -53,7 +53,7 @@ namespace dials { namespace algorithms { namespace background {
 
     class_<PolarTransform>("PolarTransform", no_init)
       .def(init<
-          const Beam&,
+          const BeamBase&,
           const Panel&,
           const Goniometer&>())
       .def("image_xmap", &PolarTransform::image_xmap)

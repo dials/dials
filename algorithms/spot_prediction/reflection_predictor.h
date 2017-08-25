@@ -35,7 +35,7 @@ namespace dials { namespace algorithms {
   using scitbx::constants::pi;
   using scitbx::constants::two_pi;
   using scitbx::constants::pi_180;
-  using dxtbx::model::Beam;
+  using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Panel;
   using dxtbx::model::Goniometer;
@@ -91,7 +91,7 @@ namespace dials { namespace algorithms {
      * Keep a reference to all the models.
      */
     ScanStaticReflectionPredictor(
-          const Beam &beam,
+          const boost::shared_ptr<BeamBase> beam,
           const Detector &detector,
           const Goniometer &goniometer,
           const Scan &scan,
@@ -108,7 +108,7 @@ namespace dials { namespace algorithms {
         dmin_(dmin),
         padding_(padding),
         predict_rays_(
-            beam.get_s0(),
+            beam->get_s0(),
             goniometer.get_rotation_axis_datum(),
             goniometer.get_fixed_rotation(),
             goniometer.get_setting_rotation(),
@@ -292,7 +292,7 @@ namespace dials { namespace algorithms {
       p.flags.push_back(0);
     }
 
-    Beam beam_;
+    boost::shared_ptr<BeamBase> beam_;
     Detector detector_;
     Goniometer goniometer_;
     Scan scan_;
@@ -329,7 +329,7 @@ namespace dials { namespace algorithms {
      * Initialise the predictor
      */
     ScanVaryingReflectionPredictor(
-        const Beam &beam,
+        const boost::shared_ptr<BeamBase> beam,
         const Detector &detector,
         const Goniometer &goniometer,
         const Scan &scan,
@@ -346,7 +346,7 @@ namespace dials { namespace algorithms {
         margin_(margin),
         padding_(padding),
         predict_rays_(
-            beam.get_s0(),
+            beam->get_s0(),
             goniometer.get_rotation_axis_datum(),
             scan.get_array_range()[0],
             scan.get_oscillation(),
@@ -511,7 +511,7 @@ namespace dials { namespace algorithms {
 
       // Get the rotation axis and beam vector
       vec3<double> m2 = goniometer_.get_rotation_axis_datum();
-      vec3<double> s0 = beam_.get_s0();
+      vec3<double> s0 = beam_->get_s0();
       compute_setting_matrices(A1, A2, frame);
 
       // Construct the index generator and do the predictions for each index
@@ -630,7 +630,7 @@ namespace dials { namespace algorithms {
       p.flags.push_back(0);
     }
 
-    Beam beam_;
+    boost::shared_ptr<BeamBase> beam_;
     Detector detector_;
     Goniometer goniometer_;
     Scan scan_;
@@ -653,7 +653,7 @@ namespace dials { namespace algorithms {
      * Initialise the predictor
      */
     StillsDeltaPsiReflectionPredictor(
-        const Beam &beam,
+        const boost::shared_ptr<BeamBase> beam,
         const Detector &detector,
         mat3<double> ub,
         const cctbx::uctbx::unit_cell &unit_cell,
@@ -665,7 +665,7 @@ namespace dials { namespace algorithms {
         unit_cell_(unit_cell),
         space_group_type_(space_group_type),
         dmin_(dmin),
-        predict_ray_(beam.get_s0()) {}
+        predict_ray_(beam->get_s0()) {}
 
     /**
      * Predict all reflection.
@@ -890,7 +890,7 @@ namespace dials { namespace algorithms {
 
   protected:
 
-    Beam beam_;
+    boost::shared_ptr<BeamBase> beam_;
     Detector detector_;
     mat3<double> ub_;
     cctbx::uctbx::unit_cell unit_cell_;
@@ -908,7 +908,7 @@ namespace dials { namespace algorithms {
   public:
 
     NaveStillsReflectionPredictor(
-        const Beam &beam,
+        const boost::shared_ptr<BeamBase> beam,
         const Detector &detector,
         mat3<double> ub,
         const cctbx::uctbx::unit_cell &unit_cell,
@@ -973,7 +973,7 @@ namespace dials { namespace algorithms {
       * Initialise the predictor
       */
     SphericalRelpStillsReflectionPredictor(
-        const Beam &beam,
+        const boost::shared_ptr<BeamBase> beam,
         const Detector &detector,
         mat3<double> ub,
         const cctbx::uctbx::unit_cell &unit_cell,
@@ -981,7 +981,7 @@ namespace dials { namespace algorithms {
         const double &dmin)
       : StillsDeltaPsiReflectionPredictor(beam,
         detector, ub, unit_cell, space_group_type, dmin),
-        spherical_relp_predict_ray_(beam.get_s0()) {}
+        spherical_relp_predict_ray_(beam->get_s0()) {}
 
     /**
      * Predict reflections for UB. Also filters based on ewald sphere proximity.

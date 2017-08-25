@@ -36,7 +36,7 @@ namespace transform {
   using scitbx::af::int3;
   using scitbx::af::double3;
   using scitbx::af::int6;
-  using dxtbx::model::Beam;
+  using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
@@ -79,7 +79,7 @@ namespace transform {
      * @param n_sigma The number of standard deviations
      * @param grid_size The size of the reflection basis grid
      */
-    TransformSpec(const Beam &beam,
+    TransformSpec(const boost::shared_ptr<BeamBase> beam,
                   const Detector &detector,
                   const Goniometer &gonio,
                   const Scan &scan,
@@ -108,7 +108,7 @@ namespace transform {
     }
 
     /** @returns the beam */
-    const Beam& beam() const {
+    const boost::shared_ptr<BeamBase> beam() const {
       return beam_;
     }
 
@@ -158,7 +158,7 @@ namespace transform {
     }
 
   private:
-    Beam beam_;
+    boost::shared_ptr<BeamBase> beam_;
     Detector detector_;
     Goniometer goniometer_;
     Scan scan_;

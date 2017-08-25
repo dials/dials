@@ -29,7 +29,7 @@ namespace dials { namespace algorithms {
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::af::int6;
-  using dxtbx::model::Beam;
+  using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
@@ -41,7 +41,7 @@ namespace dials { namespace algorithms {
    * space.
    */
   int simulate_reciprocal_space_gaussian(
-      const Beam &beam,
+      const BeamBase &beam,
       const Detector &detector,
       const Goniometer &goniometer,
       const Scan &scan,
@@ -111,7 +111,7 @@ namespace dials { namespace algorithms {
    * space. Estimate the expected intensity within the masked region.
    */
   int integrate_reciprocal_space_gaussian(
-      const Beam &beam,
+      const BeamBase &beam,
       const Detector &detector,
       const Goniometer &goniometer,
       const Scan &scan,
