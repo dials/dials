@@ -43,11 +43,11 @@ namespace dials { namespace algorithms { namespace boost_python {
           const Detector&,
           const Goniometer&,
           const Scan&,
-          const Crystal&>())
+          const CrystalBase&>())
       .def(init <
           const BeamBase&,
           const Detector&,
-          const Crystal&>())
+          const CrystalBase&>())
       .def("h", &PixelToMillerIndex_h_rotation)
       .def("h", &PixelToMillerIndex_h_stills)
       .def("q", &PixelToMillerIndex::q)
