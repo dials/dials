@@ -33,6 +33,30 @@ def plot_data(data_man):
     plt.yticks(np.arange(-0.5, ndbins), y_ticks)
     plt.xticks(np.arange(-0.5, nzbins, 2), x_ticks)
     plt.title('$G_l$ correction factors using Kabsch method')
+    plt.savefig('Scaling_output_figure_lbfgs.png')
+    plt.show()
+
+def plot_data_absorption(data_man):
+    "takes in a data manager object"
+    #y_ticks = ['%.3f' % x for x in data_man.bin_boundaries['d']]
+    x_ticks = data_man.bin_boundaries['z_value'][::2]
+    x_ticks = ['%.0f' % x for x in x_ticks]
+
+    
+    nzbins = len(data_man.bin_boundaries['z_value'])-1
+    nabsbins = len(data_man.g2_values)//nzbins
+    '''generate a plot of the result'''
+    G_fin = list(data_man.g2_values)
+    G_fin_2d = np.reshape(G_fin, (nzbins, nabsbins)).T
+
+    plt.figure(1)
+    im = plt.imshow(G_fin_2d, cmap='viridis', origin='lower')
+    plt.colorbar(im)
+    plt.ylabel('detector position')
+    plt.xlabel('time (z)')
+    #plt.yticks(np.arange(-0.5, ndbins), y_ticks)
+    plt.xticks(np.arange(-0.5, nzbins, 2), x_ticks)
+    plt.title('$G_l$ correction factors using Kabsch method - \n detector position vs time')
     #plt.savefig('Scaling_output_figure_lbfgs.png')
     plt.show()
 

@@ -17,8 +17,14 @@ class Data_Manager(object):
         self.experiments = flatten_experiments(params.input.experiments)
         self.reflection_table = flatten_reflections(params.input.reflections)[0]
         n_entries = len(self.reflection_table['xyzobs.px.value'])
+        xvalues = flex.double([self.reflection_table['xyzobs.px.value'][i][0]
+                               for i in range(n_entries)])
+        yvalues = flex.double([self.reflection_table['xyzobs.px.value'][i][1]
+                               for i in range(n_entries)])
         zvalues = flex.double([self.reflection_table['xyzobs.px.value'][i][2]
                                for i in range(n_entries)])
+        self.reflection_table['x_value'] = xvalues
+        self.reflection_table['y_value'] = yvalues
         self.reflection_table['z_value'] = zvalues
         self.reflection_table['resolution'] = flex.double(
             [1.0/(x**2) if x != 0 else 0 for x in self.reflection_table['d']])
@@ -57,33 +63,66 @@ class Data_Manager(object):
         self.sorted_reflections = self.filtered_reflections.select(permuted)
         self.sorted_by_miller_index = True
 
-    def bin_reflections(self, bin_parameters):
-        '''Takes a bin_parameters dict consisting of
-        [[[data to bin],[list of bin boundaries]],....]'''
-        firstbin_index = flex.int([0]*len(self.sorted_reflections[bin_parameters[0][0]]))
-        secondbin_index = flex.int([0]*len(self.sorted_reflections[bin_parameters[1][0]]))
-        for i in range(len(bin_parameters[0][1])-1):
+    def bin_reflections_dz(self, ndbins, nzbins):
+        '''Bin the data into resolution and time 'z' bins'''
+        zmax = max(self.filtered_reflections['z_value'])
+        zmin = min(self.filtered_reflections['z_value'])
+        resmax = (1.0 / (min(self.filtered_reflections['d'])**2))
+        resmin = (1.0 / (max(self.filtered_reflections['d'])**2))
+        resolution_bins = (flex.double(range(0, ndbins + 1)) * ((resmax - resmin)/ndbins)
+                        + flex.double([resmin] * (ndbins + 1)))
+        d_bins = (1.0/(resolution_bins[::-1]**0.5))
+        z_bins = flex.double(range(0, nzbins + 1)) * zmax/nzbins
+        firstbin_index = flex.int([-1]*len(self.sorted_reflections['d']))
+        secondbin_index = flex.int([-1]*len(self.sorted_reflections['z_value']))
+        for i in range(ndbins):
             selection = select_variables_in_range(
-                self.sorted_reflections[bin_parameters[0][0]],
-                bin_parameters[0][1][i], bin_parameters[0][1][i+1])
+                self.sorted_reflections['d'], d_bins[i], d_bins[i+1])
             firstbin_index.set_selected(selection, i)
-        for i in range(len(bin_parameters[1][1])-1):
+        for i in range(nzbins):
             selection = select_variables_in_range(
-                self.sorted_reflections[bin_parameters[1][0]],
-                bin_parameters[1][1][i], bin_parameters[1][1][i+1])
+                self.sorted_reflections['z_value'], z_bins[i], z_bins[i+1])
             secondbin_index.set_selected(selection, i)
-        self.l_bin_index = (firstbin_index
-                            + (((secondbin_index))
-                               * (len(bin_parameters[0][1])-1)))
+        self.l_bin_index = firstbin_index + (secondbin_index * ndbins)
         self.sorted_reflections['l_bin_index'] = self.l_bin_index
-        self.bin_boundaries = {bin_parameters[0][0] : bin_parameters[0][1],
-                               bin_parameters[1][0] : bin_parameters[1][1]}
-        self.nzbins = len(bin_parameters[1][1]) - 1
-        self.ndbins = len(bin_parameters[0][1]) - 1
+        self.bin_boundaries = {'d' : d_bins, 'z_value' : z_bins}
+        self.nzbins = nzbins
+        self.ndbins = ndbins
+        self.g_values = flex.double([1.0] * (ndbins * nzbins))
+
+    def bin_reflections_absorption(self, npos):
+        nxbins = nybins = npos
+        '''Bin the data into detector position and time 'z' bins'''
+        z_bins = self.bin_boundaries['z_value']
+        #define simple detector area map#
+        xvalues = self.sorted_reflections['x_value']
+        xmax = max(xvalues); xmin = min(xvalues)
+        yvalues = self.sorted_reflections['y_value']
+        ymax = max(yvalues); ymin = min(yvalues)
+        print xmin,xmax,ymin,ymax
+        x_bins = (flex.double(range(0, nxbins + 1)) * (xmax - xmin)/(nxbins)) + flex.double([xmin] * (nxbins + 1))
+        x_bins[0] = x_bins[0]-0.001
+        y_bins = (flex.double(range(0, nybins + 1)) * (ymax - ymin)/(nybins)) + flex.double([ymin] * (nybins + 1))
+        y_bins[0] = y_bins[0]-0.001
+        firstbin_index = flex.int([-1]*len(self.sorted_reflections['z_value']))
+        secondbin_index = flex.int([-1]*len(self.sorted_reflections['z_value']))
+        for i in range(nxbins):
+            selection1 = select_variables_in_range(
+                self.sorted_reflections['x_value'], x_bins[i], x_bins[i+1])
+            for j in range(nybins):
+                selection2 = select_variables_in_range(
+                    self.sorted_reflections['y_value'], y_bins[j], y_bins[j+1]) 
+                firstbin_index.set_selected(selection1 & selection2, ((i*nybins) + j))
+        for i in range(self.nzbins):
+            selection = select_variables_in_range(
+                self.sorted_reflections['z_value'], z_bins[i], z_bins[i+1])
+            secondbin_index.set_selected(selection, i)
+        self.a_bin_index = firstbin_index + (secondbin_index * nxbins * nybins)
+        self.sorted_reflections['a_bin_index'] = self.a_bin_index
+        self.g2_values = flex.double([1.0] * (nxbins * nybins * self.nzbins))
 
     def set_g_values(self, gvalues):
         self.g_values = gvalues
-        self.n_bins = len(gvalues)
 
     def assign_h_index(self):
         '''assign an index to the sorted reflection table that
@@ -133,7 +172,7 @@ class Data_Manager(object):
 
     def scale_gvalues(self):
         Optimal_rescale_values = mf.B_optimiser(self, flex.double([0.7, 10.0]))
-        print list(Optimal_rescale_values.x)
+        print "Brel, 1/global scale = "+str(list(Optimal_rescale_values.x))
 
         scaling_factors = []
         for i in range(0, self.nzbins):
@@ -143,7 +182,7 @@ class Data_Manager(object):
         self.g_values = self.g_values * scaling_factors
         self.g_values = self.g_values * (1.0/Optimal_rescale_values.x[1])
         self.calc_Ih()
-        print "scaled by Brel and global scale parameter"
+        print "scaled by B_rel and global scale parameter"
 
 
 def select_variables_in_range(variable_array, lower_limit, upper_limit):
