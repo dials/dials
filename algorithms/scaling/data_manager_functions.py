@@ -4,7 +4,7 @@ from cctbx.array_family.flex import *
 from cctbx.array_family import flex
 from cctbx import miller
 from cctbx import crystal
-
+import minimiser_functions as mf
 from dials.util.options import (flatten_experiments, flatten_reflections)
 
 
@@ -131,7 +131,19 @@ class Data_Manager(object):
                 b1 += ((g_values[l]**2)/variances[indexer])
             self.Ih_array.append(a1/b1)
 
+    def scale_gvalues(self):
+        Optimal_rescale_values = mf.B_optimiser(self, flex.double([0.7, 10.0]))
+        print list(Optimal_rescale_values.x)
 
+        scaling_factors = []
+        for i in range(0, self.nzbins):
+            scaling_factors += flex.exp(Optimal_rescale_values.x[0]*Optimal_rescale_values.res_values)
+        scaling_factors = flex.double(scaling_factors)
+
+        self.g_values = self.g_values * scaling_factors
+        self.g_values = self.g_values * (1.0/Optimal_rescale_values.x[1])
+        self.calc_Ih()
+        print "scaled by Brel and global scale parameter"
 
 
 def select_variables_in_range(variable_array, lower_limit, upper_limit):

@@ -51,6 +51,9 @@ def scaling_lbfgs(inputparams, ndbins, nzbins, sigma):
     '''call the optimiser on the Data Manager object'''
     minimised = mf.optimiser(loaded_reflections, sigma)
 
+    '''do invariant rescaling to physical B value'''
+    minimised.data_manager.scale_gvalues()
+
     return minimised
 
 if __name__ == "__main__":
@@ -61,7 +64,7 @@ if __name__ == "__main__":
     params, options = parsestring.parse_args([json_filepath, filepath])
 
     '''do minimisation of g-factors'''
-    minimised_gvalues = scaling_lbfgs(params, ndbins=10, nzbins=10, sigma=0.02)
+    minimised_gvalues = scaling_lbfgs(params, ndbins=10, nzbins=10, sigma=10000.0)
 
     '''save data and plot g-factors'''
     filename = "/Users/whi10850/Documents/test_data/integrate/13_integrated_scaled.txt"
@@ -72,5 +75,4 @@ if __name__ == "__main__":
     print "R_meas of the (unmerged) data is %s" % (Rmeas)
     print "R_pim of the merged data is %s" % (Rpim)
 
-
-    plot_data(datafile=filename)
+    plot_data(minimised_gvalues.data_manager)

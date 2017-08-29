@@ -2,6 +2,7 @@ from dials_array_family_flex_ext import *
 from cctbx.array_family.flex import *
 from cctbx.array_family import flex
 from scitbx import lbfgs
+from math import exp
 
 
 class optimiser(object):
@@ -74,38 +75,39 @@ class optimiser(object):
 
 
 
+class B_optimiser(object):
+    '''Class that takes in Data_Manager object and runs
+    an LBFGS minimisation in a Kabsch approach '''
+    def __init__(self, Data_Manager_object, initial_values):
+        self.data_manager = Data_Manager_object
+        d_bin_boundaries = self.data_manager.bin_boundaries['d']
+        self.res_values = flex.double([])
+        for i in range(0, len(d_bin_boundaries)-1):
+            self.res_values.append(((1.0/(d_bin_boundaries[i]**2))
+                                    +(1.0/(d_bin_boundaries[i+1]**2)))/2.0)
+        self.x = initial_values
+        lbfgs.run(target_evaluator=self)
 
+    def compute_functional_and_gradients(self):
+        f = self.residual()
+        g = self.gradient()
+        print "functional: %12.6g" % f, "gradient norm: %12.6g" % g.norm()
+        return f, g
 
-def calc_dIhdg(data_manager, Ih_array):
-    n_bins = data_manager.n_bins
-    n_unique_indices = data_manager.n_unique_indices
-    intensities = data_manager.sorted_reflections['intensity.sum.value']
-    g_values = data_manager.g_values
-    variances = data_manager.sorted_reflections['intensity.sum.variance']
+    def residual(self):
+        gvalues = self.data_manager.g_values[0:self.data_manager.ndbins]
+        resolution = self.res_values
+        R = 0.0
+        for i, val in enumerate(resolution):
+            R += ((gvalues[i] * exp((self.x[0])*val)) - self.x[1])**2
+        return R
 
-    dIh_array = flex.double([0.0] * n_bins * n_unique_indices)
-    dIh_array.reshape(flex.grid(n_bins, n_unique_indices))
-    numerator = flex.double([0.0] * n_bins * n_unique_indices)
-    numerator.reshape(flex.grid(n_bins, n_unique_indices))
-    denominator = flex.double([0.0] * n_unique_indices)
-    for n in range(n_unique_indices):
-        a1 = 0.0
-        b1 = 0.0
-        lsum = data_manager.h_index_counter_array[n]
-        for i in range(0,lsum):
-            indexer = i + data_manager.h_index_cumulative_array[n]
-            l = data_manager.sorted_reflections['l_bin_index'][indexer]
-            h = data_manager.sorted_reflections['h_index'][indexer]
-            #if l != 0 and h != 0:
-            numerator[l,h] += ((intensities[indexer]/(variances[indexer])) 
-                                   -(2.0*g_values[l]*Ih_array[h]/(variances[indexer])))
-            denominator[h] += ((g_values[l]**2)/variances[indexer])    
-    for h in range(n_unique_indices):
-        #if denominator[h] != 0.0:
-        for l in range(n_bins):
-            dIh_array[l,h] = numerator[l,h] / denominator[h]
-        #else:
-        #    print "zero denominator"
-    #print len(dIh_array)
-    #print dIh_array.count(0)
-    return dIh_array
+    def gradient(self):
+        gvalues = self.data_manager.g_values[0:self.data_manager.ndbins]
+        resolution = self.res_values
+        G = flex.double([0.0, 0.0])
+        for i, val in enumerate(resolution):
+            G[0] += (2.0 * ((gvalues[i] * exp((self.x[0])*val)) - self.x[1])
+                     * resolution[i]*gvalues[i]*exp((self.x[0])*resolution[i]))
+            G[1] += -2.0 * ((gvalues[i] * exp((self.x[0])*val)) - self.x[1])
+        return G

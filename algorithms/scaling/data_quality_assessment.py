@@ -18,7 +18,7 @@ def R_meas(Data_Manager_object):
                 l = l_array[indexer]
                 h = h_array[indexer]
                 a1 += abs((Ihl[indexer]/g_values[l]) - Ih_array[h])
-                Rmeas_lower += Ihl[indexer]
+                Rmeas_lower += (Ihl[indexer]/g_values[l])
             Rmeas_upper += (((float(lsum)/(float(lsum)-1.0))**0.5) * a1)
     
     Rmeas = Rmeas_upper/Rmeas_lower
@@ -43,7 +43,7 @@ def R_pim(Data_Manager_object):
                 l = l_array[indexer]
                 h = h_array[indexer]
                 a1 += abs((Ihl[indexer]/g_values[l]) - Ih_array[h])
-                Rpim_lower += Ihl[indexer]
+                Rpim_lower += (Ihl[indexer]/g_values[l])
             Rpim_upper += (((1.0/(float(lsum)-1.0))**0.5) * a1)
     
     Rpim = Rpim_upper/Rpim_lower
