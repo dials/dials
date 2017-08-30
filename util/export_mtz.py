@@ -364,7 +364,10 @@ def _add_batch(mtz, experiment, batch_number, image_number, force_static_model):
 
   # get the mosaic spread though today it may not actually be set - should
   # this be in the BATCH headers?
-  mosaic = experiment.crystal.get_mosaicity()
+  try:
+    mosaic = experiment.crystal.get_mosaicity()
+  except AttributeError, e:
+    mosaic = 0
   o.set_crydat(flex.float([mosaic, 0.0, 0.0, 0.0, 0.0, 0.0,
                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
 

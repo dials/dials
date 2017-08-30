@@ -70,6 +70,7 @@ Crystal:
     A = UB:    {{ 0.0197, -0.0127, -0.0034},
                 {-0.0043, -0.0008, -0.0248},
                 { 0.0124,  0.0200, -0.0032}}
+    Mosaicity:  0.157000
 """, strip_trailing_whitespace=True)
 
   path = os.path.join(
