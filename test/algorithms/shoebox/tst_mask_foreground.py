@@ -30,13 +30,17 @@ class Test(object):
     self.goniometer = self.sweep.get_goniometer()
     self.scan = self.sweep.get_scan()
     self.delta_d = 3 * self.beam.get_sigma_divergence(deg=False)
-    self.delta_m = 3 * self.crystal.get_mosaicity(deg=False)
+    try:
+      mosaicity = self.crystal.get_mosaicity(deg=False)
+    except AttributeError, e:
+      mosaicity = 0
+    self.delta_m = 3 * mosaicity
     self.nsigma = 3
     self.profile_model = Model(
       None,
       self.nsigma,
       self.beam.get_sigma_divergence(deg=False),
-      self.crystal.get_mosaicity(deg=False))
+      mosaicity)
     self.experiment = ExperimentList()
     self.experiment.append(Experiment(
       imageset = self.sweep,
@@ -176,7 +180,10 @@ class Test(object):
       panel[i] = 0
 
     sigma_b = self.experiment[0].beam.get_sigma_divergence(deg=False)
-    sigma_m = self.experiment[0].crystal.get_mosaicity(deg=False)
+    try:
+      sigma_m = self.experiment[0].crystal.get_mosaicity(deg=False)
+    except AttributeError, e:
+      sigma_m = 0
 
     rlist = flex.reflection_table()
     rlist['id'] = flex.int(len(beam_vector), 0)
