@@ -102,14 +102,37 @@ def run(args):
     parser.print_help()
     exit()
 
+  if len(experiments):
+    print show_experiments(
+      experiments, show_panel_distance=params.show_panel_distance,
+      show_scan_varying=params.show_scan_varying)
+
+  if len(datablocks):
+    print show_datablocks(
+      datablocks, show_panel_distance=params.show_panel_distance)
+
+  if len(reflections):
+    print show_reflections(
+      reflections, show_intensities=params.show_intensities,
+      show_profile_fit=params.show_profile_fit,
+      show_centroids=params.show_centroids,
+      show_all_reflection_data=params.show_all_reflection_data,
+      max_reflections=params.max_reflections)
+
+
+def show_experiments(experiments, show_panel_distance=False,
+                     show_scan_varying=False):
+
+  text = []
+
   for i_expt, expt in enumerate(experiments):
-    print "Experiment %i:" %i_expt
-    print str(expt.detector)
-    print 'Max resolution (at corners): %f' % (
-      expt.detector.get_max_resolution(expt.beam.get_s0()))
-    print 'Max resolution (inscribed):  %f' % (
-      expt.detector.get_max_inscribed_resolution(expt.beam.get_s0()))
-    if params.show_panel_distance:
+    text.append("Experiment %i:" %i_expt)
+    text.append(str(expt.detector))
+    text.append('Max resolution (at corners): %f' % (
+      expt.detector.get_max_resolution(expt.beam.get_s0())))
+    text.append('Max resolution (inscribed):  %f' % (
+      expt.detector.get_max_inscribed_resolution(expt.beam.get_s0())))
+    if show_panel_distance:
       for ipanel, panel in enumerate(expt.detector):
         from scitbx import matrix
         fast = matrix.col(panel.get_fast_axis())
@@ -119,16 +142,19 @@ def run(args):
         distance = origin.dot(normal)
         fast_origin = - (origin - distance * normal).dot(fast)
         slow_origin = - (origin - distance * normal).dot(slow)
-        print 'Panel %d: distance %.2f origin %.2f %.2f' % \
-          (ipanel, distance, fast_origin, slow_origin)
-      print ''
-    print ''
-    print show_beam(expt.detector, expt.beam)
+        text.append('Panel %d: distance %.2f origin %.2f %.2f' % \
+          (ipanel, distance, fast_origin, slow_origin))
+      text.append('')
+    text.append('')
+    text.append(show_beam(expt.detector, expt.beam))
     if expt.scan is not None:
-      print expt.scan
+      text.append(str(expt.scan))
     if expt.goniometer is not None:
-      print expt.goniometer
-    expt.crystal.show(show_scan_varying=params.show_scan_varying)
+      text.append(str(expt.goniometer))
+    from cStringIO import StringIO
+    s = StringIO()
+    expt.crystal.show(show_scan_varying=show_scan_varying, out=s)
+    text.append(s.getvalue())
     if expt.crystal.num_scan_points:
       from scitbx.array_family import flex
       from cctbx import uctbx
@@ -141,25 +167,29 @@ def run(args):
       a, b, c = abc.mean()
       alpha, beta, gamma = angles.mean()
       mean_unit_cell = uctbx.unit_cell((a, b, c, alpha, beta, gamma))
-      print "  Average unit cell: %s" %mean_unit_cell
-    print
+      text.append('  Average unit cell: %s' %mean_unit_cell)
+    #text.append('')
     if expt.profile is not None:
-      print expt.profile
+      text.append(str(expt.profile))
+  return '\n'.join(text)
 
+
+def show_datablocks(datablocks, show_panel_distance=False):
+  text = []
   for datablock in datablocks:
     if datablock.format_class() is not None:
-      print 'Format: %s' %datablock.format_class()
+      text.append('Format: %s' %datablock.format_class())
     imagesets = datablock.extract_imagesets()
     for imageset in imagesets:
-      try: print imageset.get_template()
+      try: text.append(imageset.get_template())
       except Exception: pass
       detector = imageset.get_detector()
-      print str(detector)
-      print 'Max resolution (at corners): %f' % (
-        detector.get_max_resolution(imageset.get_beam().get_s0()))
-      print 'Max resolution (inscribed):  %f' % (
-        detector.get_max_inscribed_resolution(imageset.get_beam().get_s0()))
-      if params.show_panel_distance:
+      text.append(str(detector))
+      text.append('Max resolution (at corners): %f' % (
+        detector.get_max_resolution(imageset.get_beam().get_s0())))
+      text.append('Max resolution (inscribed):  %f' % (
+        detector.get_max_inscribed_resolution(imageset.get_beam().get_s0())))
+      if show_panel_distance:
         for ipanel, panel in enumerate(detector):
           from scitbx import matrix
           fast = matrix.col(panel.get_fast_axis())
@@ -169,15 +199,23 @@ def run(args):
           distance = origin.dot(normal)
           fast_origin = - (origin - distance * normal).dot(fast)
           slow_origin = - (origin - distance * normal).dot(slow)
-          print 'Panel %d: distance %.2f origin %.2f %.2f' % \
-            (ipanel, distance, fast_origin, slow_origin)
-        print ''
-      print ''
-      print show_beam(detector, imageset.get_beam())
+          text.append('Panel %d: distance %.2f origin %.2f %.2f' % \
+            (ipanel, distance, fast_origin, slow_origin))
+        text.append('')
+      text.append('')
+      text.append(show_beam(detector, imageset.get_beam()))
       if imageset.get_scan() is not None:
-        print imageset.get_scan()
+        text.append(str(imageset.get_scan()))
       if imageset.get_goniometer() is not None:
-        print imageset.get_goniometer()
+        text.append(str(imageset.get_goniometer()))
+  return '\n'.join(text)
+
+
+def show_reflections(reflections, show_intensities=False, show_profile_fit=False,
+                     show_centroids=False, show_all_reflection_data=False,
+                     max_reflections=None):
+
+  text = []
 
   from libtbx.containers import OrderedDict, OrderedSet
   formats = OrderedDict([
@@ -233,8 +271,8 @@ def run(args):
     from dials.array_family import flex
     from dials.algorithms.shoebox import MaskCode
     foreground_valid = MaskCode.Valid | MaskCode.Foreground
-    print
-    print "Reflection list contains %i reflections" %(len(rlist))
+    text.append('')
+    text.append('Reflection list contains %i reflections' %(len(rlist)))
 
     if len(rlist) == 0:
       continue
@@ -265,7 +303,8 @@ def run(args):
                      formats[k]%flex.mean(fore_valid)])
 
     from libtbx import table_utils
-    print table_utils.format(rows, has_header=True, prefix="| ", postfix=" |")
+    text.append(
+      table_utils.format(rows, has_header=True, prefix="| ", postfix=" |"))
 
   intensity_keys = (
     'miller_index', 'd', 'intensity.prf.value', 'intensity.prf.variance',
@@ -282,13 +321,13 @@ def run(args):
 
   keys_to_print = OrderedSet()
 
-  if params.show_intensities:
+  if show_intensities:
     for k in intensity_keys: keys_to_print.add(k)
-  if params.show_profile_fit:
+  if show_profile_fit:
     for k in profile_fit_keys: keys_to_print.add(k)
-  if params.show_centroids:
+  if show_centroids:
     for k in centroid_keys: keys_to_print.add(k)
-  if params.show_all_reflection_data:
+  if show_all_reflection_data:
     for k in formats: keys_to_print.add(k)
 
   def format_column(key, data, format_strings=None):
@@ -315,27 +354,29 @@ def run(args):
     keys = [k for k in keys_to_print if k in rlist]
     rows = [keys]
     max_reflections = len(rlist)
-    if params.max_reflections is not None:
-      max_reflections = min(len(rlist), params.max_reflections)
+    if max_reflections is not None:
+      max_reflections = min(len(rlist), max_reflections)
 
     columns = []
 
     for k in keys:
       columns.append(format_column(k, rlist[k], format_strings=formats[k].split(',')))
 
-    print
-    print "Printing %i of %i reflections:" %(max_reflections, len(rlist))
+    text.append('')
+    text.append('Printing %i of %i reflections:' %(max_reflections, len(rlist)))
+    line = []
     for j in range(len(columns)):
       key = keys[j]
       width = max(len(key), columns[j].max_element_length())
-      print ("%%%is" %width) %key,
-    print
+      line.append('%%%is' %width %key)
+    text.append(' '.join(line))
     for i in range(max_reflections):
+      line = []
       for j in range(len(columns)):
-        print columns[j][i],
-      print
+        line.append(columns[j][i])
+      text.append(' '.join(line))
 
-  return
+  return '\n'.join(text)
 
 if __name__ == '__main__':
   import sys
