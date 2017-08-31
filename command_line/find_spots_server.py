@@ -66,6 +66,8 @@ def work(filename, cl=None):
     cl = []
   import libtbx.phil
   phil_scope = libtbx.phil.parse('''\
+filter_ice = True
+  .type = bool
 index = False
   .type = bool
 integrate = False
@@ -78,6 +80,7 @@ indexing_min_spots = 10
   interp = phil_scope.command_line_argument_interpreter()
   params, unhandled = interp.process_and_fetch(
     cl, custom_processor='collect_remaining')
+  filter_ice = params.extract().filter_ice
   index = params.extract().index
   integrate = params.extract().integrate
   indexing_min_spots = params.extract().indexing_min_spots
@@ -106,7 +109,7 @@ indexing_min_spots = 10
   else:
     i = 0
   stats = per_image_analysis.stats_single_image(
-    imageset, reflections, i=i, plot=False)
+    imageset, reflections, i=i, plot=False, filter_ice=filter_ice)
   stats = stats.__dict__
   t2 = time.time()
   logger.info('Resolution analysis took %.2f seconds' %(t2-t1))
