@@ -213,6 +213,8 @@ class Refinery(object):
     self.history.add_column("parameter_vector")
     self.history.add_column("parameter_vector_norm")#flex.double()
     self.history.add_column("rmsd")
+    if tracking.track_condition_number:
+      self.history.add_column("condition_number")
 
     # number of processes to use, for engines that support multiprocessing
     self._nproc = 1
@@ -248,15 +250,17 @@ class Refinery(object):
     self.history.set_last_cell("objective", self._f)
     if "gradient" in self.history:
       self.history.set_last_cell("gradient", self._g)
-    if "parameter_correlation" in self.history:
-      if self._jacobian is not None:
-        resid_names = [s.replace('RMSD_', '') for s in self._target.rmsd_names]
-        # split Jacobian into dense matrix blocks corresponding to each residual
-        jblocks = self.split_jacobian_into_blocks()
-        corrmats = {}
-        for r, j  in zip(resid_names, jblocks):
-          corrmats[r]=self._packed_corr_mat(j)
-        self.history.set_last_cell("parameter_correlation", corrmats)
+    if "parameter_correlation" in self.history and self._jacobian is not None:
+      resid_names = [s.replace('RMSD_', '') for s in self._target.rmsd_names]
+      # split Jacobian into dense matrix blocks corresponding to each residual
+      jblocks = self.split_jacobian_into_blocks()
+      corrmats = {}
+      for r, j  in zip(resid_names, jblocks):
+        corrmats[r]=self._packed_corr_mat(j)
+      self.history.set_last_cell("parameter_correlation", corrmats)
+    if "condition_number" in  self.history and self._jacobian is not None:
+      self.history.set_last_cell("condition_number",
+        self.jacobian_condition_number())
     if "out_of_sample_rmsd" in self.history:
       preds = self._target.predict_for_free_reflections()
       self.history.set_last_cell("out_of_sample_rmsd",
@@ -347,6 +351,31 @@ class Refinery(object):
       corr_mat.matrix_copy_upper_to_lower_triangle_in_place()
       packed_mats[k] = corr_mat
     return packed_mats
+
+  def jacobian_condition_number(self):
+    """Calculate the condition number of the Jacobian, for tracking in the
+    refinement journal, if requested. This is an expensive operation. Note,
+    the Jacobian used here does not include any additional rows due to
+    restraints terms that might be applied, or any parameter reduction due to
+    constraints. Therefore this condition number relates to the pure linearised
+    (Gauss-Newton) step, which might not actually be what the refinement engine
+    uses. It can be indicative of issues in the fundamental set up of the least
+    squares problem, even if these issues are avoided in practice (e.g. by
+    use of an algorithm like Levenberg-Marquardt, inclusion of restraints or
+    parameter reduction.
+    """
+    try:
+      # The Jacobian might be a sparse matrix
+      j = self._jacobian.as_dense_matrix().deep_copy()
+    except AttributeError:
+      j = self._jacobian.deep_copy()
+
+    from scitbx.linalg.svd import real as svd_real
+    svd = svd_real(j, False, False)
+
+    # The condition number is the ratio of the largest to the smallest singular
+    # values of the matrix
+    return max(svd.sigma) / min(svd.sigma)
 
   def test_for_termination(self):
     """Return True if refinement should be terminated"""
