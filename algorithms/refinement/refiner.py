@@ -24,8 +24,15 @@ from libtbx.phil import parse
 from libtbx.utils import Sorry
 import libtbx
 
-# Include external phil scopes as strings to avoid problems
-# with the include scope directive
+# The include scope directive does not work here. For example:
+#
+#   include scope dials.algorithms.refinement.outlier_detection.phil_scope
+#
+# results in:
+#
+#   AttributeError: 'module' object has no attribute 'refinement'
+#
+# to work around this, just include external phil scopes as strings
 from dials.algorithms.refinement.outlier_detection.outlier_base \
   import phil_str as outlier_phil_str
 from dials.algorithms.refinement.restraints.restraints_parameterisation \
@@ -33,10 +40,12 @@ from dials.algorithms.refinement.restraints.restraints_parameterisation \
 from dials.algorithms.refinement.constraints import phil_str as constr_phil_str
 from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \
   import phil_str as sv_phil_str
+from dials.algorithms.refinement.engine import refinery_phil_str
 format_data = {'outlier_phil':outlier_phil_str,
                'uc_restraints_phil':uc_restraints_phil_str,
                'constr_phil':constr_phil_str,
-               'sv_phil_str':sv_phil_str}
+               'sv_phil_str':sv_phil_str,
+               'refinery_phil':refinery_phil_str}
 phil_scope = parse('''
 
 refinement
@@ -270,45 +279,7 @@ refinement
       .expert_level = 1
   }
 
-  refinery
-    .help = "Parameters to configure the refinery"
-    .expert_level = 1
-  {
-    engine = SimpleLBFGS LBFGScurvs GaussNewton *LevMar SparseLevMar
-      .help = "The minimisation engine to use"
-      .type = choice
-
-    track_step = False
-      .help = "Record parameter shifts history in the refinement journal, if"
-              "the engine supports it."
-      .type = bool
-
-    track_gradient = False
-      .help = "Record parameter gradients history in the refinement journal, if"
-              "the engine supports it."
-      .type = bool
-
-    track_parameter_correlation = False
-      .help = "Record correlation matrix between columns of the Jacobian for"
-              "each step of refinement."
-      .type = bool
-
-    track_out_of_sample_rmsd = False
-      .type = bool
-      .help = "Record RMSDs calculated using the refined experiments with"
-              "reflections not used in refinement at each step. Only valid if a"
-              "subset of input reflections was taken for refinement"
-
-    log = None
-      .help = "Filename for an optional log that a minimisation engine may use"
-              "to write additional information"
-      .type = path
-
-    max_iterations = None
-      .help = "Maximum number of iterations in refinement before termination."
-              "None implies the engine supplies its own default."
-      .type = int(value_min=1)
-  }
+  %(refinery_phil)s
 
   target
     .help = "Parameters to configure the target function"
@@ -408,11 +379,6 @@ refinement
         .type = floats(size = 3, value_min = 0)
     }
 
-    # Does not work:
-    #
-    # include scope dials.algorithms.refinement.outlier_detection.phil_scope
-    #
-    # instead just paste the string in directly here.
     %(outlier_phil)s
 
   }
@@ -1460,10 +1426,7 @@ class RefinerFactory(object):
             constraints_manager=constraints_manager,
             log = options.log,
             verbosity = verbosity,
-            track_step = options.track_step,
-            track_gradient = options.track_gradient,
-            track_parameter_correlation = options.track_parameter_correlation,
-            track_out_of_sample_rmsd = options.track_out_of_sample_rmsd,
+            tracking = options.journal,
             max_iterations = options.max_iterations)
 
     if params.refinement.mp.nproc > 1:

@@ -19,6 +19,7 @@ from scitbx import lbfgs
 from scitbx.array_family import flex
 import libtbx
 from libtbx import easy_mp
+from libtbx.phil import parse
 
 # use lstbx classes
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
@@ -31,6 +32,59 @@ OBJECTIVE_INCREASE = "Refinement failure: objective increased"
 MAX_ITERATIONS = "Reached maximum number of iterations"
 MAX_TRIAL_ITERATIONS = "Reached maximum number of consecutive unsuccessful trial steps"
 DOF_TOO_LOW = "Not enough degrees of freedom to refine"
+
+refinery_phil_str = '''
+refinery
+  .help = "Parameters to configure the refinery"
+  .expert_level = 1
+{
+  engine = SimpleLBFGS LBFGScurvs GaussNewton *LevMar SparseLevMar
+    .help = "The minimisation engine to use"
+    .type = choice
+
+  max_iterations = None
+    .help = "Maximum number of iterations in refinement before termination."
+            "None implies the engine supplies its own default."
+    .type = int(value_min=1)
+
+  log = None
+    .help = "Filename for an optional log that a minimisation engine may use"
+            "to write additional information"
+    .type = path
+
+  journal
+    .help = "Extra items to track in the refinement history"
+  {
+    track_step = False
+      .help = "Record parameter shifts history in the refinement journal, if"
+              "the engine supports it."
+      .type = bool
+
+    track_gradient = False
+      .help = "Record parameter gradients history in the refinement journal, if"
+              "the engine supports it."
+      .type = bool
+
+    track_parameter_correlation = False
+      .help = "Record correlation matrix between columns of the Jacobian for"
+              "each step of refinement."
+      .type = bool
+
+    track_condition_number = False
+      .help = "Record condition number of the Jacobian for each step of "
+              "refinement."
+      .type = bool
+
+    track_out_of_sample_rmsd = False
+      .type = bool
+      .help = "Record RMSDs calculated using the refined experiments with"
+              "reflections not used in refinement at each step. Only valid if a"
+              "subset of input reflections was taken for refinement"
+  }
+}
+'''
+refinery_phil_scope = parse(refinery_phil_str)
+
 
 class Journal(dict):
   """Container in which to store information about refinement history.
@@ -107,9 +161,7 @@ class Refinery(object):
   # separate link to its PredictionParameterisation.
 
   def __init__(self, target, prediction_parameterisation, constraints_manager=None,
-               log = None, verbosity = 0, track_step = False,
-               track_gradient = False, track_parameter_correlation = False,
-               track_out_of_sample_rmsd = False,
+               log = None, verbosity = 0, tracking=None,
                max_iterations = None):
 
     # reference to PredictionParameterisation, Target and ConstraintsManager
@@ -142,17 +194,20 @@ class Refinery(object):
 
     # attributes for journalling functionality, based on lstbx's
     # journaled_non_linear_ls class
+    if tracking is None:
+      # set default tracking
+      tracking = refinery_phil_scope.extract().refinery.journal
     self.history = Journal()
     self.history.add_column("num_reflections")
     self.history.add_column("objective")#flex.double()
-    if track_gradient:
+    if tracking.track_gradient:
       self.history.add_column("gradient")
     self.history.add_column("gradient_norm")#flex.double()
-    if track_parameter_correlation:
+    if tracking.track_parameter_correlation:
       self.history.add_column("parameter_correlation")
-    if track_step:
+    if tracking.track_step:
       self.history.add_column("solution")
-    if track_out_of_sample_rmsd:
+    if tracking.track_out_of_sample_rmsd:
       self.history.add_column("out_of_sample_rmsd")
     self.history.add_column("solution_norm")#flex.double()
     self.history.add_column("parameter_vector")
@@ -510,15 +565,10 @@ class AdaptLstbx(
   """Adapt Refinery for lstbx"""
 
   def __init__(self, target, prediction_parameterisation, constraints_manager=None,
-               log=None, verbosity = 0, track_step = False, track_gradient = False,
-               track_parameter_correlation = False,
-               track_out_of_sample_rmsd = False, max_iterations = None):
+               log=None, verbosity=0, tracking=None, max_iterations=None):
 
     Refinery.__init__(self, target, prediction_parameterisation, constraints_manager,
-             log=log, verbosity=verbosity, track_step=track_step,
-             track_gradient=track_gradient,
-             track_parameter_correlation=track_parameter_correlation,
-             track_out_of_sample_rmsd=track_out_of_sample_rmsd,
+             log=log, verbosity=verbosity, tracking=tracking,
              max_iterations=max_iterations)
 
     # required for restart to work (do I need that method?)
@@ -686,17 +736,12 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
   convergence_as_shift_over_esd = 1e-5
 
   def __init__(self, target, prediction_parameterisation, constraints_manager=None,
-               log=None, verbosity=0, track_step=False, track_gradient=False,
-               track_parameter_correlation=False,
-               track_out_of_sample_rmsd=False,
+               log=None, verbosity=0, tracking=None,
                max_iterations=20, **kwds):
 
     AdaptLstbx.__init__(
              self, target, prediction_parameterisation, constraints_manager,
-             log=log, verbosity=verbosity, track_step=track_step,
-             track_gradient=track_gradient,
-             track_parameter_correlation=track_parameter_correlation,
-             track_out_of_sample_rmsd=track_out_of_sample_rmsd,
+             log=log, verbosity=verbosity, tracking=tracking,
              max_iterations=max_iterations)
 
     # add an attribute to the journal

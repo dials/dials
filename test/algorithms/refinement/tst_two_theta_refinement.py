@@ -291,9 +291,6 @@ def test_refinement():
                       prediction_parameterisation = pred_param,
                       log = None,
                       verbosity = 0,
-                      track_step = False,
-                      track_gradient = False,
-                      track_parameter_correlation = False,
                       max_iterations = 20)
 
   # Refiner

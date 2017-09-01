@@ -184,7 +184,7 @@ params = phil_scope.fetch(source=parse('')).extract()
 
 # Change this to get a plot
 do_plot = False
-if do_plot: params.refinement.refinery.track_parameter_correlation=True
+if do_plot: params.refinement.refinery.journal.track_parameter_correlation=True
 
 from dials.algorithms.refinement.refiner import RefinerFactory
 # decrease bin_size_fraction to terminate on RMSD convergence
