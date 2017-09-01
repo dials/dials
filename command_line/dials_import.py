@@ -474,17 +474,21 @@ class MetaDataUpdater(object):
     return DataBlock(imageset_list)
 
   def update_lookup(self, imageset, lookup):
+    from dxtbx.format.image import ImageBool, ImageDouble
     if lookup.size is not None:
       d = imageset.get_detector()
       assert len(lookup.size) == len(d), "Incompatible size"
       for s, p in zip(lookup.size, d):
         assert s == p.get_image_size()[::-1], "Incompatible size"
       if lookup.mask.filename is not None:
-        imageset.external_lookup.mask = lookup.mask
+        imageset.external_lookup.mask.filename = lookup.mask.filename
+        imageset.external_lookup.mask.data = ImageBool(lookup.mask.data)
       if lookup.gain.filename is not None:
-        imageset.external_lookup.gain = lookup.gain
+        imageset.external_lookup.gain.filename = lookup.gain.filename
+        imageset.external_lookup.gain.data = ImageDouble(lookup.gain.data)
       if lookup.dark.filename is not None:
-        imageset.external_lookup.pedestal = lookup.dark
+        imageset.external_lookup.pedestal.filename = lookup.dark.filename
+        imageset.external_lookup.pedestal.data = ImageDouble(lookup.dark.data)
     return imageset
 
   def import_lookup_data(self, params):
@@ -493,7 +497,6 @@ class MetaDataUpdater(object):
 
     '''
     from collections import namedtuple
-    from dxtbx.imageset import ExternalLookupItem
     import cPickle as pickle
     # Check the lookup inputs
     mask_filename = None
@@ -532,11 +535,12 @@ class MetaDataUpdater(object):
         for s, d in zip(lookup_size, dark):
           assert s == d.all(), "Incompatible size"
     Lookup = namedtuple("Lookup", ['size', 'mask', 'gain', 'dark'])
+    Item = namedtuple("Item", ["data", "filename"])
     return Lookup(
       size=lookup_size,
-      mask=ExternalLookupItem(data=mask, filename=mask_filename),
-      gain=ExternalLookupItem(data=gain, filename=gain_filename),
-      dark=ExternalLookupItem(data=dark, filename=dark_filename))
+      mask=Item(data=mask, filename=mask_filename),
+      gain=Item(data=gain, filename=gain_filename),
+      dark=Item(data=dark, filename=dark_filename))
 
   def convert_to_grid_scan(self, datablock, params):
     '''

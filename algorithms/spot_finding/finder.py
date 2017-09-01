@@ -757,6 +757,7 @@ class SpotFinder(object):
     '''
     from dials.array_family import flex
     import cPickle as pickle
+    from dxtbx.format.image import ImageBool
 
     # Loop through all the imagesets and find the strong spots
     reflections = flex.reflection_table()
@@ -773,12 +774,12 @@ class SpotFinder(object):
 
       # Write a hot pixel mask
       if self.write_hot_mask:
-        if imageset.external_lookup.mask.data is not None:
+        if not imageset.external_lookup.mask.data.empty():
           for m1, m2 in zip(hot_mask, imageset.external_lookup.mask.data):
             m1 &= m2
-          imageset.external_lookup.mask.data = hot_mask
+          imageset.external_lookup.mask.data = ImageBool(hot_mask)
         else:
-          imageset.external_lookup.mask.data = hot_mask
+          imageset.external_lookup.mask.data = ImageBool(hot_mask)
         imageset.external_lookup.mask.filename = "%s_%d.pickle" % (
           self.hot_mask_prefix, i)
 
