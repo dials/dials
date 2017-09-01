@@ -13,7 +13,7 @@ class Data_Manager(object):
     '''Data Manager takes a params parsestring
        containing the parsed integrated.pickle
        and integrated_experiments.json files'''
-    def __init__(self, params):
+    def __init__(self, params, int_str, var_str):
         self.experiments = flatten_experiments(params.input.experiments)
         self.reflection_table = flatten_reflections(params.input.reflections)[0]
         n_entries = len(self.reflection_table['xyzobs.px.value'])
@@ -29,6 +29,8 @@ class Data_Manager(object):
         self.reflection_table['resolution'] = flex.double(
             [1.0/(x**2) if x != 0 else 0 for x in self.reflection_table['d']])
         self.filtered_reflections = copy.deepcopy(self.reflection_table)
+        self.int_str = int_str
+        self.var_str = var_str
         self.sorted_by_miller_index = False
         self.sorted_reflections = None
         self.l_bin_index = None
@@ -44,8 +46,8 @@ class Data_Manager(object):
 
     def filter_data(self, reflection_table_key, lower, upper):
         '''Filter reflection data for a given measurement variable and limits'''
-        bad_data = select_variables_in_range(self.filtered_reflections[reflection_table_key],
-                                             lower, upper)
+        bad_data = select_variables_in_range(
+                   self.filtered_reflections[reflection_table_key],lower, upper)
         inv_sel = ~bad_data
         self.filtered_reflections = self.filtered_reflections.select(inv_sel)
 
@@ -64,9 +66,9 @@ class Data_Manager(object):
         self.sorted_by_miller_index = True
 
     def scale_by_LP_and_dqe(self):
-        self.sorted_reflections['intensity.sum.value'] = (self.sorted_reflections['intensity.sum.value']
+        self.sorted_reflections[self.int_str] = (self.sorted_reflections[self.int_str]
             * self.sorted_reflections['lp'] * self.sorted_reflections['dqe'])
-        self.sorted_reflections['intensity.sum.variance'] = (self.sorted_reflections['intensity.sum.variance']
+        self.sorted_reflections[self.var_str] = (self.sorted_reflections[self.var_str]
             * self.sorted_reflections['lp'] * self.sorted_reflections['dqe'])
 
     def bin_reflections_dz(self, ndbins, nzbins):
@@ -75,8 +77,9 @@ class Data_Manager(object):
         zmin = min(self.filtered_reflections['z_value'])
         resmax = (1.0 / (min(self.filtered_reflections['d'])**2))
         resmin = (1.0 / (max(self.filtered_reflections['d'])**2))
-        resolution_bins = (flex.double(range(0, ndbins + 1)) * ((resmax - resmin)/ndbins)
-                        + flex.double([resmin] * (ndbins + 1)))
+        resolution_bins = ((flex.double(range(0, ndbins + 1))
+                            *((resmax - resmin)/ndbins))
+                           +flex.double([resmin] * (ndbins + 1)))
         d_bins = (1.0/(resolution_bins[::-1]**0.5))
         z_bins = flex.double(range(0, nzbins + 1)) * zmax/nzbins
         firstbin_index = flex.int([-1]*len(self.sorted_reflections['d']))
@@ -102,9 +105,11 @@ class Data_Manager(object):
         xmax = max(xvalues); xmin = min(xvalues)
         yvalues = self.sorted_reflections['y_value']
         ymax = max(yvalues); ymin = min(yvalues)
-        x_bins = (flex.double(range(0, nxbins + 1)) * (xmax - xmin)/(nxbins)) + flex.double([xmin] * (nxbins + 1))
+        x_bins = (((flex.double(range(0, nxbins + 1)) * (xmax - xmin)/(nxbins)))
+                  + flex.double([xmin] * (nxbins + 1)))
         x_bins[0] = x_bins[0]-0.001
-        y_bins = (flex.double(range(0, nybins + 1)) * (ymax - ymin)/(nybins)) + flex.double([ymin] * (nybins + 1))
+        y_bins = ((flex.double(range(0, nybins + 1)) * (ymax - ymin)/(nybins)) 
+                  + flex.double([ymin] * (nybins + 1)))
         y_bins[0] = y_bins[0]-0.001
         firstbin_index = flex.int([-1]*len(self.sorted_reflections['z_value']))
         secondbin_index = flex.int([-1]*len(self.sorted_reflections['z_value']))
@@ -131,9 +136,11 @@ class Data_Manager(object):
         yvalues = self.sorted_reflections['y_value']
         ymax = max(yvalues); ymin = min(yvalues)
 
-        x_bins = (flex.double(range(0, nxbins + 1)) * (xmax - xmin)/(nxbins)) + flex.double([xmin] * (nxbins + 1))
+        x_bins = ((flex.double(range(0, nxbins + 1)) * (xmax - xmin)/(nxbins))
+                  + flex.double([xmin] * (nxbins + 1)))
         x_bins[0] = x_bins[0]-0.001
-        y_bins = (flex.double(range(0, nybins + 1)) * (ymax - ymin)/(nybins)) + flex.double([ymin] * (nybins + 1))
+        y_bins = ((flex.double(range(0, nybins + 1)) * (ymax - ymin)/(nybins))
+                  + flex.double([ymin] * (nybins + 1)))
         y_bins[0] = y_bins[0]-0.001
         firstbin_index = flex.int([-1]*len(self.sorted_reflections['z_value']))
         secondbin_index = flex.int([-1]*len(self.sorted_reflections['z_value']))
@@ -142,8 +149,9 @@ class Data_Manager(object):
                 self.sorted_reflections['x_value'], x_bins[i], x_bins[i+1])
             for j in range(nybins):
                 selection2 = select_variables_in_range(
-                    self.sorted_reflections['y_value'], y_bins[j], y_bins[j+1]) 
-                firstbin_index.set_selected(selection1 & selection2, ((i*nybins) + j))
+                    self.sorted_reflections['y_value'], y_bins[j], y_bins[j+1])
+                firstbin_index.set_selected(selection1 & selection2,
+                                            ((i*nybins) + j))
         for i in range(self.nzbins):
             selection = select_variables_in_range(
                 self.sorted_reflections['z_value'], z_bins[i], z_bins[i+1])
@@ -158,9 +166,7 @@ class Data_Manager(object):
         l_array = self.sorted_reflections['l_bin_index']
         a_array = self.sorted_reflections['a_bin_index']
         xy_array = self.sorted_reflections['xy_bin_index']
-        ziplist = zip(h_array, l_array, a_array, xy_array)
-        self.bin_index = ziplist
-        
+        self.bin_index_array = zip(h_array, l_array, a_array, xy_array)
 
     def set_g_values(self, gvalues):
         self.g_values = gvalues
@@ -196,8 +202,8 @@ class Data_Manager(object):
             self.n_unique_indices = len(self.h_index_counter_array)
 
     def calc_Ih(self):
-        intensities = self.sorted_reflections['intensity.sum.value']
-        variances = self.sorted_reflections['intensity.sum.variance']
+        intensities = self.sorted_reflections[self.int_str]
+        variances = self.sorted_reflections[self.var_str]
         self.Ih_array = []
         for h in range(self.n_unique_indices):
             a1 = 0.0
@@ -208,8 +214,10 @@ class Data_Manager(object):
                 l = self.sorted_reflections['l_bin_index'][indexer]
                 a = self.sorted_reflections['a_bin_index'][indexer]
                 xy = self.sorted_reflections['xy_bin_index'][indexer]
-                a1 += (self.g_values[l]*self.g2_values[a]*self.g3_values[xy]*intensities[indexer]/variances[indexer])
-                b1 += (((self.g_values[l]*self.g2_values[a]*self.g3_values[xy])**2)/variances[indexer])
+                a1 += (self.g_values[l]*self.g2_values[a]*self.g3_values[xy]
+                       *intensities[indexer]/variances[indexer])
+                b1 += (((self.g_values[l]*self.g2_values[a]*self.g3_values[xy])**2)
+                       /variances[indexer])
             self.Ih_array.append(a1/b1)
 
     def scale_gvalues(self):
@@ -218,7 +226,8 @@ class Data_Manager(object):
 
         scaling_factors = []
         for i in range(0, self.nzbins):
-            scaling_factors += flex.exp(Optimal_rescale_values.x[0]*Optimal_rescale_values.res_values)
+            scaling_factors += flex.exp(Optimal_rescale_values.x[0]
+                                        *Optimal_rescale_values.res_values)
         scaling_factors = flex.double(scaling_factors)
 
         self.g_values = self.g_values * scaling_factors
