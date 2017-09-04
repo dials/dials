@@ -354,8 +354,24 @@ class Refinery(object):
 
   def jacobian_condition_number(self):
     """Calculate the condition number of the Jacobian, for tracking in the
-    refinement journal, if requested. This is an expensive operation. Note,
-    the Jacobian used here does not include any additional rows due to
+    refinement journal, if requested. The condition number of a matrix A is
+    defined as cond(A) = ||A|| ||inv(A)||. For a rectangular matrix the inverse
+    operation refers to the Moore-Penrose pseudoinverse. Various matrix norms
+    can be used, resulting in numerically different condition numbers, however
+    the 2-norm is commonly used. In that case, the definition is equivalent
+    to the ratio of the largest to smallest singular values of the matrix:
+    cond(A) = sig_(A) / sig_min(A). That is the calculation that is performed
+    here.
+
+    The condition number is a measure of how accurate the solution x to the
+    equation Ax = b will be. Essentially it measures how errors are amplified
+    through the linear equation. The condition number is large in the case that
+    the columns of A are nearly linearly-dependent (and infinite for a singular
+    matrix). We use it here then to detect situations where the correlation
+    between effects of different parameter shifts becomes large and therefore
+    refinement is problematic.
+
+    Note, the Jacobian used here does not include any additional rows due to
     restraints terms that might be applied, or any parameter reduction due to
     constraints. Therefore this condition number relates to the pure linearised
     (Gauss-Newton) step, which might not actually be what the refinement engine
