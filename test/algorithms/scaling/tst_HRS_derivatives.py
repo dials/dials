@@ -83,7 +83,7 @@ def residual(I, w, g, iparam):
   Il = I[iparam]
   mrgI = av_I(I, w, g)
 
-  return wl * (Il - gl * mrgI)
+  return Il - gl * mrgI
 
 def grad_r(I, w, g, iparam):
   '''Calculate the first derivative of the residual of the HRS target with
@@ -95,12 +95,12 @@ def grad_r(I, w, g, iparam):
   gl = g[iparam]
   mrgI = av_I(I, w, g)
 
-  term1 = -1. * wl * mrgI * dgl
+  term1 = -1. * mrgI * dgl
   term2a = sum([2.*a*b*c for (a,b,c) in zip(w, g, dg)]) * mrgI
   term2b = sum([a*b*c for (a,b,c) in zip(w, dg, I)])
   term2c = sum([a*b*b for (a,b) in zip(w, g)])
 
-  result = term1 + wl * gl * (term2a - term2b) / term2c
+  result = term1 + gl * (term2a - term2b) / term2c
   return result
 
 def fd_grad_r(I, w, g, iparam):
