@@ -18,7 +18,8 @@ class optimiser(object):
         if correction == 'decay':
             print "performing decay correction"
             self.bin_index = 'l_bin_index'
-            self.size = (self.data_manager.nzbins * self.data_manager.ndbins)
+            self.size = (self.data_manager.binning_parameters['nzbins'] * 
+                         self.data_manager.binning_parameters['ndbins'])
             self.x = self.data_manager.g_values
             self.gvalues_stat1 = flex.double([self.data_manager.g2_values[i]
                 for i in self.data_manager.sorted_reflections['a_bin_index']])
@@ -27,7 +28,7 @@ class optimiser(object):
         elif correction == 'absorption':
             print "performing absorption correction"
             self.bin_index = 'a_bin_index'
-            self.size = (self.data_manager.npos)**2
+            self.size = (self.data_manager.binning_parameters['n_absorption_positions'])**2
             self.x = self.data_manager.g2_values
             self.gvalues_stat1 = flex.double([self.data_manager.g_values[i]
                 for i in self.data_manager.sorted_reflections['l_bin_index']])  
@@ -36,7 +37,7 @@ class optimiser(object):
         elif correction == 'modulation':
             print "performing modulation correction"
             self.bin_index = 'xy_bin_index'
-            self.size = (self.data_manager.ngridpoints)**2
+            self.size = (self.data_manager.binning_parameters['n_detector_bins'])**2
             self.x = self.data_manager.g3_values
             self.gvalues_stat1 = flex.double([self.data_manager.g_values[i]
                 for i in self.data_manager.sorted_reflections['l_bin_index']])
@@ -49,18 +50,16 @@ class optimiser(object):
         lbfgs.run(target_evaluator=self, termination_params=self.termination_params,
                   core_params=self.core_parameters)
         if correction == 'decay':
-            if decay_correction_rescaling == True:
+            if decay_correction_rescaling:
                 self.data_manager.scale_gvalues()
 
 
     def compute_functional_and_gradients(self):
         '''first calculate the updated values of the necessary arrays'''
-        self.data_manager.calc_Ih()
         gxvalues = flex.double([self.x[i] for i in
                    self.data_manager.sorted_reflections[self.bin_index]])
-        self.Ihvalues = flex.double([self.data_manager.Ih_array[i] for i in
-                        self.data_manager.sorted_reflections['h_index']])
-        self.gproduct = gxvalues * self.gvalues_stat1 * self.gvalues_stat2
+        self.data_manager.scale_factors = gxvalues * self.gvalues_stat1 * self.gvalues_stat2
+        self.data_manager.calc_Ih()
         f = self.residual()
         g = self.gradient()
         self.residuals.append(f)
@@ -68,28 +67,39 @@ class optimiser(object):
         return f, g
 
     def residual(self):
-        intensities = self.data_manager.sorted_reflections[self.data_manager.int_str]
-        variances = self.data_manager.sorted_reflections[self.data_manager.var_str]
-        R = (((intensities - (self.gproduct * self.Ihvalues))**2)/variances)
-        R = np.sum(R)/1000.0
+        intensities = self.data_manager.sorted_reflections[self.data_manager.int_method[0]]
+        variances = self.data_manager.sorted_reflections[self.data_manager.int_method[1]]
+        R = (((intensities - (self.data_manager.scale_factors * self.data_manager.Ih_values))**2)/variances)
+        R = flex.sum(R)#/1000.0
         return R
 
     def gradient(self):
-        h_index_counter_array = self.data_manager.h_index_counter_array
-        intensities = self.data_manager.sorted_reflections[self.data_manager.int_str]
-        variances = self.data_manager.sorted_reflections[self.data_manager.var_str]
-
-        gsq = ((self.gproduct)**2)/variances
+        intensities = self.data_manager.sorted_reflections[self.data_manager.int_method[0]]
+        variances = self.data_manager.sorted_reflections[self.data_manager.int_method[1]]
+        gsq = ((self.data_manager.scale_factors)**2)/variances
         sumgsq = np.bincount(self.data_manager.sorted_reflections['h_index'], gsq)
-        sumgsq = np.repeat(sumgsq, h_index_counter_array)
-
-        dIhdg = ((intensities/variances) -
-                 (self.Ihvalues * 2.0 * self.gproduct/variances))/sumgsq
-        rhl = (intensities - (self.Ihvalues * self.gproduct))/(variances**0.5)
-        grad = 2.0*rhl*((-1.0*self.Ihvalues/(variances**0.5))
-                        -((self.gproduct/(variances**0.5))*dIhdg))
-        return flex.double(np.bincount(self.data_manager.sorted_reflections[self.bin_index], 
+        sumgsq = flex.double(np.repeat(sumgsq, self.data_manager.h_index_counter_array))
+        dIhdg = flex.double(((intensities/variances) -
+                 (self.data_manager.Ih_values * 2.0 * self.data_manager.scale_factors/variances))/sumgsq)
+        rhl = flex.double((intensities - (self.data_manager.Ih_values * self.data_manager.scale_factors))/(variances**0.5))
+        grad = 2.0*rhl*((-1.0*self.data_manager.Ih_values/(variances**0.5))
+                        -((self.data_manager.scale_factors/(variances**0.5))*dIhdg))
+        return flex.double(np.bincount(self.data_manager.sorted_reflections[self.bin_index],
                                        weights=grad, minlength=self.size))
+
+    '''def sort_data_for_output(self):
+        this function fills out the reflection table with the results of the
+        minimisation procedure
+        self.data_manager.sorted_reflections['Ih'] = self.data_manager.Ih_values
+        self.data_manager.sorted_reflections['g_decay'] = flex.double([self.data_manager.g_values[i]
+            for i in self.data_manager.sorted_reflections['l_bin_index']])
+        self.data_manager.sorted_reflections['g_absorption'] = flex.double([self.data_manager.g2_values[i]
+            for i in self.data_manager.sorted_reflections['a_bin_index']])
+        self.data_manager.sorted_reflections['g_modulation'] = flex.double([self.data_manager.g3_values[i]
+            for i in self.data_manager.sorted_reflections['xy_bin_index']])
+        self.data_manager.sorted_reflections['g_final'] = (self.data_manager.sorted_reflections['g_absorption'] *
+            self.data_manager.sorted_reflections['g_decay'] * self.data_manager.sorted_reflections['g_modulation'])'''
+
 
 
 class B_optimiser(object):
@@ -111,7 +121,7 @@ class B_optimiser(object):
         return f, g
 
     def residual(self):
-        gvalues = self.data_manager.g_values[0:self.data_manager.ndbins]
+        gvalues = self.data_manager.g_values[0:self.data_manager.binning_parameters['ndbins']]
         resolution = self.res_values
         R = 0.0
         for i, val in enumerate(resolution):
@@ -119,7 +129,7 @@ class B_optimiser(object):
         return R
 
     def gradient(self):
-        gvalues = self.data_manager.g_values[0:self.data_manager.ndbins]
+        gvalues = self.data_manager.g_values[0:self.data_manager.binning_parameters['ndbins']]
         resolution = self.res_values
         G = flex.double([0.0, 0.0])
         for i, val in enumerate(resolution):

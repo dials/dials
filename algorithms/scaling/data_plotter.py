@@ -62,7 +62,7 @@ def plot_data_modulation(data_man):
     "takes in a data manager object"
     #x_ticks = data_man.bin_boundaries['z_value'][::2]
     #x_ticks = ['%.0f' % x for x in x_ticks]
-    nbins = data_man.ngridpoints
+    nbins = data_man.binning_parameters['n_detector_bins']
     
     '''generate a plot of the result'''
     G_fin = list(data_man.g3_values)
@@ -81,7 +81,7 @@ def plot_data_modulation(data_man):
 
 def plot_correction_at_detector_area(data_man, position):
     G_fin = list(data_man.g2_values)
-    npos = data_man.npos
+    npos = data_man.binning_parameters['n_absorption_positions']
     G_slice = G_fin[position::npos**2]
     plt.figure(1)
     plt.plot(G_slice)
@@ -93,7 +93,7 @@ def plot_correction_at_detector_area(data_man, position):
 
 def plot_correction_at_resolution(data_man, position):
     G_fin = list(data_man.g_values)
-    nzbins = data_man.nzbins
+    nzbins = data_man.binning_parameters['nzbins']
     G_slice = G_fin[position::nzbins]
     plt.figure(1)
     plt.plot(G_slice)
@@ -102,8 +102,8 @@ def plot_correction_at_resolution(data_man, position):
 
 def plot_absorption_correction_at_zbin(data_man, position):
     G_fin = list(data_man.g2_values)
-    npos = data_man.npos
-    nzbins = data_man.nzbins
+    npos = data_man.binning_parameters['n_absorption_positions']
+    nzbins = data_man.binning_parameters['nzbins']
     G_slice = G_fin[position*npos*npos:(position+1)*npos*npos]
     G_slice_2d = np.reshape(G_slice, (npos, npos)).T
     plt.figure(1)

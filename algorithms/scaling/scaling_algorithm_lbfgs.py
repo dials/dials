@@ -8,68 +8,50 @@ from data_quality_assessment import R_meas, R_pim
 import matplotlib.pyplot as plt
 import time
 
-def scaling_lbfgs(inputparams, ndbins, nzbins, n_absorption_positions, 
-                  n_detector_bins, niter=2,integration_method='summation_integration',
+def scaling_lbfgs(inputparams, gridding_parameters, niter=2,
+                  integration_method='summation_integration',
                   decay_correction_rescaling=False,
                   correction_order=['absorption','modulation','decay']):
     """This algorithm loads a reflection table and json file and
     performs a Kabsch-scaling parameterisation using an lbfgs minimiser
     """
     if integration_method == 'profile_fitting':
-        int_str = str('intensity.prf.value')
-        var_str = str('intensity.prf.variance')
+        int_method = (str('intensity.prf.value'), str('intensity.prf.variance'))
     elif integration_method == 'summation_integration':
-        int_str = str('intensity.sum.value')
-        var_str = str('intensity.sum.variance')
+        int_method = (str('intensity.sum.value'), str('intensity.sum.variance'))
     else:
         raise ValueError('Incorrect choice of integration_method')
 
-    loaded_reflections = dmf.Data_Manager(inputparams,int_str,var_str)
+    loaded_reflections = dmf.Kabsch_Data_Manager(inputparams, int_method, gridding_parameters)
 
     """Filter out zero/negative values of d, variance, etc"""
-    #loaded_reflections.filter_data(int_str, -10.0, 0.0)
-    loaded_reflections.filter_data(var_str, -10.0, 0.0)
+    loaded_reflections.filter_data(int_method[1], -10.0, 0.0)
     loaded_reflections.filter_data('d', -1.0, 0.0)
 
     '''Map the indices to the asu and also sort the reflection table by miller index'''
     loaded_reflections.map_indices_to_asu()
 
     '''determine gridding index for scale parameters '''
-    loaded_reflections.bin_reflections_dz(ndbins=ndbins, nzbins=nzbins)
-    loaded_reflections.bin_reflections_absorption(npos=n_absorption_positions)
-    loaded_reflections.bin_reflections_modulation(ngridpoints=n_detector_bins)
-    
+    loaded_reflections.initialise_scale_factors()
+
     '''assign a unique reflection index to each group of reflections'''
     loaded_reflections.assign_h_index()
-    loaded_reflections.create_index_tuple()
     loaded_reflections.scale_by_LP_and_dqe()
 
-    '''call the optimiser on the Data Manager object''' 
+    '''call the optimiser on the Data Manager object'''
     minimised = mf.optimiser(loaded_reflections, correction=correction_order[0],
                              decay_correction_rescaling=decay_correction_rescaling)
     minimised = mf.optimiser(minimised.data_manager, correction=correction_order[1],
                              decay_correction_rescaling=decay_correction_rescaling)
     minimised = mf.optimiser(minimised.data_manager, correction=correction_order[2],
                              decay_correction_rescaling=decay_correction_rescaling)
-    
+
     '''repeat n times - replace with convergence criteria and max iter instead?'''
     for i in range(0,niter):
-        minimised = mf.optimiser(minimised.data_manager, correction=correction_order[0],
-                             decay_correction_rescaling=decay_correction_rescaling)
-        minimised = mf.optimiser(minimised.data_manager, correction=correction_order[1],
-                             decay_correction_rescaling=decay_correction_rescaling)
-        minimised = mf.optimiser(minimised.data_manager, correction=correction_order[2],
-                             decay_correction_rescaling=decay_correction_rescaling)
-    'fill in gvalues, Ih_values to reflection table'
-    minimised.data_manager.sorted_reflections['Ih'] = flex.double([minimised.data_manager.Ih_array[i] for i in
-        minimised.data_manager.sorted_reflections['h_index']])
-    minimised.data_manager.sorted_reflections['g_decay'] = flex.double([minimised.data_manager.g_values[i] for i in
-        minimised.data_manager.sorted_reflections['l_bin_index']])
-    minimised.data_manager.sorted_reflections['g_absorption'] = flex.double([minimised.data_manager.g2_values[i] for i in
-        minimised.data_manager.sorted_reflections['a_bin_index']])
-    minimised.data_manager.sorted_reflections['g_modulation'] = flex.double([minimised.data_manager.g3_values[i] for i in
-        minimised.data_manager.sorted_reflections['xy_bin_index']])
-    
+        for correction in correction_order:
+            minimised = mf.optimiser(minimised.data_manager, correction=correction)
+
+    #minimised.sort_data_for_output()
     return minimised
 
 
@@ -83,13 +65,13 @@ if __name__ == "__main__":
 
     '''do minimisation of g-factors'''
     start_time = time.time()
-    minimised_gvalues = scaling_lbfgs(params, ndbins=15, nzbins=15, niter=2,
-                                      n_absorption_positions=5, n_detector_bins=29,
+    gridding_parameters = {'ndbins':15,'nzbins':15,'n_absorption_positions':5,
+                           'n_detector_bins':29}
+    minimised_gvalues = scaling_lbfgs(params, gridding_parameters,  niter=2,
                                       integration_method='summation_integration',
                                       decay_correction_rescaling=True,
                                       correction_order=['absorption', 'modulation', 'decay'])
-    
-                                
+
     total_time = time.time() - start_time
     print "algorithm execution time is " + str(total_time)
 
