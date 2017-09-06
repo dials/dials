@@ -41,7 +41,8 @@ sources = [
     'boost_python/restraints_helpers.cc',
     'boost_python/rtmats.cc',
     'boost_python/gaussian_smoother.cc',
-    'boost_python/refinement_ext.cc']
+    'boost_python/refinement_ext.cc',
+    'boost_python/pgnmr_iter.cc']
 
 env.SharedLibrary(
   target='#/lib/dials_refinement_helpers_ext',
