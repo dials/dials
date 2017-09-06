@@ -21,8 +21,6 @@ class Test(object):
     from dxtbx.model import GoniometerFactory
     from dxtbx.model import DetectorFactory
 
-    from dxtbx.model import Crystal
-
     # Beam along the Z axis
     self.beam = BeamFactory.make_beam(unit_s0 = matrix.col((0, 0, 1)),
                                        wavelength = 1.0)
@@ -49,11 +47,15 @@ class Test(object):
     a = matrix.col((100, 0, 0))
     b = matrix.col((0, 100, 0))
     c = matrix.col((0, 0, 100))
-    self.crystal = Crystal(a, b, c, space_group_symbol = "P 1")
 
     if test_nave_model:
-      self.crystal._ML_half_mosaicity_deg = 500
-      self.crystal._ML_domain_size_ang = 0.2
+      from dxtbx.model import MosaicCrystalSauter2014
+      self.crystal = MosaicCrystalSauter2014(a, b, c, space_group_symbol = "P 1")
+      self.crystal.set_half_mosaicity_deg(500)
+      self.crystal.set_domain_size_ang(0.2)
+    else:
+      from dxtbx.model import Crystal
+      self.crystal = Crystal(a, b, c, space_group_symbol = "P 1")
 
     # Collect these models in an Experiment (ignoring the goniometer)
     from dxtbx.model.experiment_list import Experiment

@@ -32,7 +32,9 @@ class nave_parameters(object):
     mean_excursion = flex.mean(delta_psi_deg)
     print "The mean excursion is %7.3f degrees, r.m.s.d %7.3f"%(mean_excursion, math.sqrt(flex.mean(RR["delpsical2"])))
 
-    crystal = self.experiments[0].crystal
+    from dxtbx.model import MosaicCrystalSauter2014
+    crystal = MosaicCrystalSauter2014(self.experiments[0].crystal)
+    self.experiments[0].crystal = crystal
     beam = self.experiments[0].beam
     miller_indices = self.reflections["miller_index"]
 
@@ -116,8 +118,8 @@ class nave_parameters(object):
     self.green_curve_area = green_curve_area(two_thetas, tan_outer_deg_ML)
     print "The green curve area is ", self.green_curve_area
 
-    crystal._ML_half_mosaicity_deg = M.x[1]*180./(2.*math.pi)
-    crystal._ML_domain_size_ang = 2./M.x[0]
+    crystal.set_half_mosaicity_deg(M.x[1]*180./(2.*math.pi))
+    crystal.set_domain_size_ang(2./M.x[0])
     self._ML_full_mosaicity_rad = M.x[1]
     self._ML_domain_size_ang = 2./M.x[0]
 
@@ -127,8 +129,8 @@ class nave_parameters(object):
     inspecting the output log file interactively.  Do not exceed the bare minimum threshold needed.
     The intention is to find an optimal value, global for a given dataset."""
     model_expansion_factor = 1.4
-    crystal._ML_half_mosaicity_deg *= model_expansion_factor
-    crystal._ML_domain_size_ang /= model_expansion_factor
+    crystal.set_half_mosaicity_deg(crystal.get_half_mosaicity_deg() * model_expansion_factor)
+    crystal.set_domain_size_ang(crystal.get_domain_size_ang() / model_expansion_factor)
 
     return crystal
 
