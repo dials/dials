@@ -84,7 +84,7 @@ if __name__ == "__main__":
     print "R_meas of the (unmerged) data is %s" % (Rmeas)
     print "R_pim of the merged data is %s" % (Rpim)
 
-    plot_data(minimised_gvalues.data_manager)
-    plot_data_absorption(minimised_gvalues.data_manager)
-    plot_data_modulation(minimised_gvalues.data_manager)
+    #plot_data(minimised_gvalues.data_manager)
+    #plot_data_absorption(minimised_gvalues.data_manager)
+    #plot_data_modulation(minimised_gvalues.data_manager)
     

@@ -77,7 +77,7 @@ class optimiser(object):
         intensities = self.data_manager.sorted_reflections[self.data_manager.int_method[0]]
         variances = self.data_manager.sorted_reflections[self.data_manager.int_method[1]]
         gsq = ((self.data_manager.scale_factors)**2)/variances
-        sumgsq = np.bincount(self.data_manager.sorted_reflections['h_index'], gsq)
+        sumgsq = np.add.reduceat(gsq, self.data_manager.h_index_cumulative_array[:-1])
         sumgsq = flex.double(np.repeat(sumgsq, self.data_manager.h_index_counter_array))
         dIhdg = flex.double(((intensities/variances) -
                  (self.data_manager.Ih_values * 2.0 * self.data_manager.scale_factors/variances))/sumgsq)
@@ -86,21 +86,6 @@ class optimiser(object):
                         -((self.data_manager.scale_factors/(variances**0.5))*dIhdg))
         return flex.double(np.bincount(self.data_manager.sorted_reflections[self.bin_index],
                                        weights=grad, minlength=self.size))
-
-    '''def sort_data_for_output(self):
-        this function fills out the reflection table with the results of the
-        minimisation procedure
-        self.data_manager.sorted_reflections['Ih'] = self.data_manager.Ih_values
-        self.data_manager.sorted_reflections['g_decay'] = flex.double([self.data_manager.g_values[i]
-            for i in self.data_manager.sorted_reflections['l_bin_index']])
-        self.data_manager.sorted_reflections['g_absorption'] = flex.double([self.data_manager.g2_values[i]
-            for i in self.data_manager.sorted_reflections['a_bin_index']])
-        self.data_manager.sorted_reflections['g_modulation'] = flex.double([self.data_manager.g3_values[i]
-            for i in self.data_manager.sorted_reflections['xy_bin_index']])
-        self.data_manager.sorted_reflections['g_final'] = (self.data_manager.sorted_reflections['g_absorption'] *
-            self.data_manager.sorted_reflections['g_decay'] * self.data_manager.sorted_reflections['g_modulation'])'''
-
-
 
 class B_optimiser(object):
     '''Class that takes in Data_Manager object and runs

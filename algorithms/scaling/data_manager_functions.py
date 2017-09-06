@@ -219,9 +219,9 @@ class Kabsch_Data_Manager(Data_Manager):
         intensities = self.sorted_reflections[self.int_method[0]]
         variances = self.sorted_reflections[self.int_method[1]]
         gsq = (((self.scale_factors)**2)/variances)
-        sumgsq = flex.double(np.bincount(self.sorted_reflections['h_index'], gsq))
+        sumgsq = flex.double(np.add.reduceat(gsq, self.h_index_cumulative_array[:-1]))
         gI = ((self.scale_factors*intensities)/variances)
-        sumgI = flex.double(np.bincount(self.sorted_reflections['h_index'], gI))
+        sumgI = flex.double(np.add.reduceat(gI, self.h_index_cumulative_array[:-1]))
         self.Ih_array = sumgI/sumgsq
         self.Ih_values = flex.double(np.repeat(self.Ih_array, self.h_index_counter_array))
 
@@ -239,10 +239,7 @@ class Kabsch_Data_Manager(Data_Manager):
 
         self.g_values = self.g_values * scaling_factors
         self.g_values = self.g_values * (1.0/Optimal_rescale_values.x[1])
-        #self.calc_Ih()
         print "scaled by B_rel and global scale parameter"
-
-    
 
     
 def select_variables_in_range(variable_array, lower_limit, upper_limit):
