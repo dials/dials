@@ -752,8 +752,8 @@ class Processor(object):
       log_str += "N reflections integrated at I/sigI >= %d: % 4d, RMSD (px): %f\n"%(i, len(bright_integrated), rmsd_integrated)
 
     for crystal_model in experiments.crystals():
-      if hasattr(crystal_model, '_ML_domain_size_ang'):
-        log_str += ". Final ML model: domain size angstroms: %f, half mosaicity degrees: %f"%(crystal_model._ML_domain_size_ang, crystal_model._ML_half_mosaicity_deg)
+      if hasattr(crystal_model, 'get_domain_size_ang'):
+        log_str += ". Final ML model: domain size angstroms: %f, half mosaicity degrees: %f"%(crystal_model.get_domain_size_ang(), crystal_model.get_half_mosaicity_deg())
 
     logger.info(log_str)
 

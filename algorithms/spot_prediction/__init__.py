@@ -101,7 +101,7 @@ def StillsReflectionPredictor(experiment, dmin=None, spherical_relp=False,
 
   # Create the reflection predictor
   try:
-    if experiment.crystal._ML_half_mosaicity_deg is not None and experiment.crystal._ML_domain_size_ang is not None:
+    if experiment.crystal.get_half_mosaicity_deg() is not None and experiment.crystal.get_domain_size_ang() is not None:
       return NaveStillsReflectionPredictor(
         experiment.beam,
         experiment.detector,
@@ -109,8 +109,8 @@ def StillsReflectionPredictor(experiment, dmin=None, spherical_relp=False,
         experiment.crystal.get_unit_cell(),
         experiment.crystal.get_space_group().type(),
         dmin,
-        experiment.crystal._ML_half_mosaicity_deg,
-        experiment.crystal._ML_domain_size_ang)
+        experiment.crystal.get_half_mosaicity_deg(),
+        experiment.crystal.get_domain_size_ang())
   except AttributeError:
     pass
 

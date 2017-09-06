@@ -543,9 +543,9 @@ class stills_indexer(indexer_base):
     for i,XX in enumerate(candidates):
       print "\n****Candidate %d"%i,XX
       cc = XX.crystal
-      if hasattr(cc, '_ML_half_mosaicity_deg'):
-        print "  half mosaicity %5.2f deg."%(cc._ML_half_mosaicity_deg)
-        print "  domain size %.0f Ang."%(cc._ML_domain_size_ang)
+      if hasattr(cc, 'get_half_mosaicity_deg'):
+        print "  half mosaicity %5.2f deg."%(cc.get_half_mosaicity_deg())
+        print "  domain size %.0f Ang."%(cc.get_domain_size_ang())
     print "\n**** BEST CANDIDATE:"
 
     results = flex.double([c.rmsd for c in candidates])
