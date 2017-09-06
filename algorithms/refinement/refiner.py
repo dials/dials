@@ -24,6 +24,8 @@ from libtbx.phil import parse
 from libtbx.utils import Sorry
 import libtbx
 
+from dials_refinement_helpers_ext import pgnmr_iter as pgnmr
+
 # The include scope directive does not work here. For example:
 #
 #   include scope dials.algorithms.refinement.outlier_detection.phil_scope
@@ -1035,21 +1037,33 @@ class RefinerFactory(object):
       unit_cell_nparam_minus_nref = model_nparam_minus_nref
 
     def panel_gp_nparam_minus_nref(p, pnl_ids, group, reflections, verbose=False):
-      exp_ids = p.get_experiment_ids()
+      """
+      :param p: ModelParameterisation; parameters in model
+      :param pnl_ids: panel IDs
+      :param group: group ID
+      :panel reflections: flex table of reflections
+      :panel verbose:
+      :return: returns surplus {int}
+      """
+      exp_ids = p.get_experiment_ids() #Experiments parameterised by this ModelParameterisation
       # Do we have enough reflections to support this parameterisation?
-      gp_params = [gp == group for gp in p.get_param_panel_groups()]
-      fixlist = p.get_fixed()
-      free_gp_params = [a and not b for a,b in zip(gp_params, fixlist)]
+      gp_params = [gp == group for gp in p.get_param_panel_groups()] #select the group ids for each param that matches the arg 'group'
+      fixlist = p.get_fixed() # Get the fixed parameters; list says yes or no over all
+      free_gp_params = [a and not b for a,b in zip(gp_params, fixlist)] #Free params is the total less the fixed
       nparam = free_gp_params.count(True)
       cutoff = options.auto_reduction.min_nref_per_parameter * nparam
       isel = flex.size_t()
+      #Use Boost.Python extension module to replace below code
+      surplus = pgnmr(reflections, pnl_ids, exp_ids, cutoff).result
+      '''
       for exp_id in exp_ids:
-        subsel = (reflections['id'] == exp_id).iselection()
-        panels = reflections['panel'].select(subsel)
+        sub_expID = (reflections['id'] == exp_id).iselection()
+        sub_panels_expID = reflections['panel'].select(sub_expID)
         for pnl in pnl_ids:
-          isel.extend(subsel.select(panels == pnl))
+          isel.extend(sub_expID.select(sub_panels_expID == pnl))
       nref = len(isel)
       surplus = nref - cutoff
+      '''
       if surplus < 0 and verbose:
         logger.warning('{0} reflections on panels {1} with a cutoff of {2}'.format(nref, pnl_ids, cutoff))
       return surplus
