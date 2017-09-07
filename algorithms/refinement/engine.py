@@ -19,6 +19,7 @@ from scitbx import lbfgs
 from scitbx.array_family import flex
 import libtbx
 from libtbx import easy_mp
+from libtbx.phil import parse
 
 # use lstbx classes
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
@@ -31,6 +32,59 @@ OBJECTIVE_INCREASE = "Refinement failure: objective increased"
 MAX_ITERATIONS = "Reached maximum number of iterations"
 MAX_TRIAL_ITERATIONS = "Reached maximum number of consecutive unsuccessful trial steps"
 DOF_TOO_LOW = "Not enough degrees of freedom to refine"
+
+refinery_phil_str = '''
+refinery
+  .help = "Parameters to configure the refinery"
+  .expert_level = 1
+{
+  engine = SimpleLBFGS LBFGScurvs GaussNewton *LevMar SparseLevMar
+    .help = "The minimisation engine to use"
+    .type = choice
+
+  max_iterations = None
+    .help = "Maximum number of iterations in refinement before termination."
+            "None implies the engine supplies its own default."
+    .type = int(value_min=1)
+
+  log = None
+    .help = "Filename for an optional log that a minimisation engine may use"
+            "to write additional information"
+    .type = path
+
+  journal
+    .help = "Extra items to track in the refinement history"
+  {
+    track_step = False
+      .help = "Record parameter shifts history in the refinement journal, if"
+              "the engine supports it."
+      .type = bool
+
+    track_gradient = False
+      .help = "Record parameter gradients history in the refinement journal, if"
+              "the engine supports it."
+      .type = bool
+
+    track_parameter_correlation = False
+      .help = "Record correlation matrix between columns of the Jacobian for"
+              "each step of refinement."
+      .type = bool
+
+    track_condition_number = False
+      .help = "Record condition number of the Jacobian for each step of "
+              "refinement."
+      .type = bool
+
+    track_out_of_sample_rmsd = False
+      .type = bool
+      .help = "Record RMSDs calculated using the refined experiments with"
+              "reflections not used in refinement at each step. Only valid if a"
+              "subset of input reflections was taken for refinement"
+  }
+}
+'''
+refinery_phil_scope = parse(refinery_phil_str)
+
 
 class Journal(dict):
   """Container in which to store information about refinement history.
@@ -107,9 +161,7 @@ class Refinery(object):
   # separate link to its PredictionParameterisation.
 
   def __init__(self, target, prediction_parameterisation, constraints_manager=None,
-               log = None, verbosity = 0, track_step = False,
-               track_gradient = False, track_parameter_correlation = False,
-               track_out_of_sample_rmsd = False,
+               log = None, verbosity = 0, tracking=None,
                max_iterations = None):
 
     # reference to PredictionParameterisation, Target and ConstraintsManager
@@ -132,6 +184,8 @@ class Refinery(object):
     # filename for an optional log file
     self._log = log
 
+    if verbosity == 0:
+      logger.disabled = True
     self._verbosity = verbosity
 
     self._target_achieved = False
@@ -140,22 +194,27 @@ class Refinery(object):
 
     # attributes for journalling functionality, based on lstbx's
     # journaled_non_linear_ls class
+    if tracking is None:
+      # set default tracking
+      tracking = refinery_phil_scope.extract().refinery.journal
     self.history = Journal()
     self.history.add_column("num_reflections")
     self.history.add_column("objective")#flex.double()
-    if track_gradient:
+    if tracking.track_gradient:
       self.history.add_column("gradient")
     self.history.add_column("gradient_norm")#flex.double()
-    if track_parameter_correlation:
+    if tracking.track_parameter_correlation:
       self.history.add_column("parameter_correlation")
-    if track_step:
+    if tracking.track_step:
       self.history.add_column("solution")
-    if track_out_of_sample_rmsd:
+    if tracking.track_out_of_sample_rmsd:
       self.history.add_column("out_of_sample_rmsd")
     self.history.add_column("solution_norm")#flex.double()
     self.history.add_column("parameter_vector")
     self.history.add_column("parameter_vector_norm")#flex.double()
     self.history.add_column("rmsd")
+    if tracking.track_condition_number:
+      self.history.add_column("condition_number")
 
     # number of processes to use, for engines that support multiprocessing
     self._nproc = 1
@@ -191,15 +250,17 @@ class Refinery(object):
     self.history.set_last_cell("objective", self._f)
     if "gradient" in self.history:
       self.history.set_last_cell("gradient", self._g)
-    if "parameter_correlation" in self.history:
-      if self._jacobian is not None:
-        resid_names = [s.replace('RMSD_', '') for s in self._target.rmsd_names]
-        # split Jacobian into dense matrix blocks corresponding to each residual
-        jblocks = self.split_jacobian_into_blocks()
-        corrmats = {}
-        for r, j  in zip(resid_names, jblocks):
-          corrmats[r]=self._packed_corr_mat(j)
-        self.history.set_last_cell("parameter_correlation", corrmats)
+    if "parameter_correlation" in self.history and self._jacobian is not None:
+      resid_names = [s.replace('RMSD_', '') for s in self._target.rmsd_names]
+      # split Jacobian into dense matrix blocks corresponding to each residual
+      jblocks = self.split_jacobian_into_blocks()
+      corrmats = {}
+      for r, j  in zip(resid_names, jblocks):
+        corrmats[r]=self._packed_corr_mat(j)
+      self.history.set_last_cell("parameter_correlation", corrmats)
+    if "condition_number" in  self.history and self._jacobian is not None:
+      self.history.set_last_cell("condition_number",
+        self.jacobian_condition_number())
     if "out_of_sample_rmsd" in self.history:
       preds = self._target.predict_for_free_reflections()
       self.history.set_last_cell("out_of_sample_rmsd",
@@ -290,6 +351,47 @@ class Refinery(object):
       corr_mat.matrix_copy_upper_to_lower_triangle_in_place()
       packed_mats[k] = corr_mat
     return packed_mats
+
+  def jacobian_condition_number(self):
+    """Calculate the condition number of the Jacobian, for tracking in the
+    refinement journal, if requested. The condition number of a matrix A is
+    defined as cond(A) = ||A|| ||inv(A)||. For a rectangular matrix the inverse
+    operation refers to the Moore-Penrose pseudoinverse. Various matrix norms
+    can be used, resulting in numerically different condition numbers, however
+    the 2-norm is commonly used. In that case, the definition is equivalent
+    to the ratio of the largest to smallest singular values of the matrix:
+    cond(A) = sig_(A) / sig_min(A). That is the calculation that is performed
+    here.
+
+    The condition number is a measure of how accurate the solution x to the
+    equation Ax = b will be. Essentially it measures how errors are amplified
+    through the linear equation. The condition number is large in the case that
+    the columns of A are nearly linearly-dependent (and infinite for a singular
+    matrix). We use it here then to detect situations where the correlation
+    between effects of different parameter shifts becomes large and therefore
+    refinement is problematic.
+
+    Note, the Jacobian used here does not include any additional rows due to
+    restraints terms that might be applied, or any parameter reduction due to
+    constraints. Therefore this condition number relates to the pure linearised
+    (Gauss-Newton) step, which might not actually be what the refinement engine
+    uses. It can be indicative of issues in the fundamental set up of the least
+    squares problem, even if these issues are avoided in practice (e.g. by
+    use of an algorithm like Levenberg-Marquardt, inclusion of restraints or
+    parameter reduction.
+    """
+    try:
+      # The Jacobian might be a sparse matrix
+      j = self._jacobian.as_dense_matrix().deep_copy()
+    except AttributeError:
+      j = self._jacobian.deep_copy()
+
+    from scitbx.linalg.svd import real as svd_real
+    svd = svd_real(j, False, False)
+
+    # The condition number is the ratio of the largest to the smallest singular
+    # values of the matrix
+    return max(svd.sigma) / min(svd.sigma)
 
   def test_for_termination(self):
     """Return True if refinement should be terminated"""
@@ -427,8 +529,7 @@ class AdaptLbfgs(Refinery):
     """
 
     self.update_journal()
-    if self._verbosity > 0:
-      logger.debug("Step %d", self.history.get_nrows() - 1)
+    logger.debug("Step %d", self.history.get_nrows() - 1)
 
     if self.test_for_termination():
       self.history.reason_for_termination = TARGET_ACHIEVED
@@ -509,15 +610,10 @@ class AdaptLstbx(
   """Adapt Refinery for lstbx"""
 
   def __init__(self, target, prediction_parameterisation, constraints_manager=None,
-               log=None, verbosity = 0, track_step = False, track_gradient = False,
-               track_parameter_correlation = False,
-               track_out_of_sample_rmsd = False, max_iterations = None):
+               log=None, verbosity=0, tracking=None, max_iterations=None):
 
     Refinery.__init__(self, target, prediction_parameterisation, constraints_manager,
-             log=log, verbosity=verbosity, track_step=track_step,
-             track_gradient=track_gradient,
-             track_parameter_correlation=track_parameter_correlation,
-             track_out_of_sample_rmsd=track_out_of_sample_rmsd,
+             log=log, verbosity=verbosity, tracking=tracking,
              max_iterations=max_iterations)
 
     # required for restart to work (do I need that method?)
@@ -685,17 +781,12 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
   convergence_as_shift_over_esd = 1e-5
 
   def __init__(self, target, prediction_parameterisation, constraints_manager=None,
-               log=None, verbosity=0, track_step=False, track_gradient=False,
-               track_parameter_correlation=False,
-               track_out_of_sample_rmsd=False,
+               log=None, verbosity=0, tracking=None,
                max_iterations=20, **kwds):
 
     AdaptLstbx.__init__(
              self, target, prediction_parameterisation, constraints_manager,
-             log=log, verbosity=verbosity, track_step=track_step,
-             track_gradient=track_gradient,
-             track_parameter_correlation=track_parameter_correlation,
-             track_out_of_sample_rmsd=track_out_of_sample_rmsd,
+             log=log, verbosity=verbosity, tracking=tracking,
              max_iterations=max_iterations)
 
     # add an attribute to the journal
@@ -730,8 +821,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
 
       # standard journalling
       self.update_journal()
-      if self._verbosity > 0:
-        logger.debug("Step %d", self.history.get_nrows() - 1)
+      logger.debug("Step %d", self.history.get_nrows() - 1)
 
       # add cached items to the journal
       self.history.set_last_cell("parameter_vector_norm", pvn)
@@ -859,8 +949,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
 
       # standard journalling
       self.update_journal()
-      if self._verbosity > 0:
-        logger.debug("Step %d", self.history.get_nrows() - 1)
+      logger.debug("Step %d", self.history.get_nrows() - 1)
 
       # add cached items to the journal
       self.history.set_last_cell("parameter_vector_norm", pvn)

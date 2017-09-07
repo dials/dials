@@ -163,6 +163,8 @@ class ReflectionManager(object):
                      verbosity=0):
 
     # set verbosity
+    if verbosity == 0:
+      logger.disabled = True
     self._verbosity = verbosity
 
     # keep track of models
@@ -177,7 +179,7 @@ class ReflectionManager(object):
 
     # check that the observed beam vectors are stored: if not, compute them
     n_s1_set = set_obs_s1(reflections, experiments)
-    if n_s1_set > 0 and verbosity > 0:
+    if n_s1_set > 0:
       logger.debug("Set scattering vectors for %d reflections", n_s1_set)
 
     # keep track of the original indices of the reflections
@@ -230,7 +232,7 @@ class ReflectionManager(object):
     object is provided, these may be used to determine outlier rejection
     block widths"""
 
-    if self._verbosity > 0: logger.debug("Finalising the Reflection Manager")
+    logger.debug("Finalising the Reflection Manager")
 
     # print summary before outlier rejection
     if self._verbosity > 1: self.print_stats_on_matches()
@@ -263,10 +265,9 @@ class ReflectionManager(object):
     ioutliers = self._reflections['iobs'].select(ioutliers)
     self._indexed.set_flags(ioutliers, self._indexed.flags.centroid_outlier)
 
-    if self._verbosity > 0:
-      msg = "Removing reflections not matched to predictions"
-      if rejection_occurred: msg += " or marked as outliers"
-      logger.debug(msg)
+    msg = "Removing reflections not matched to predictions"
+    if rejection_occurred: msg += " or marked as outliers"
+    logger.debug(msg)
 
     # delete all reflections from the manager that do not have a prediction
     # or were flagged as outliers
@@ -274,8 +275,7 @@ class ReflectionManager(object):
     inlier = ~self._reflections.get_flags(self._reflections.flags.centroid_outlier)
     self._reflections = self._reflections.select(has_pred & inlier)
 
-    if self._verbosity > 0:
-      logger.debug("%d reflections remain in the manager", len(self._reflections))
+    logger.debug("%d reflections remain in the manager", len(self._reflections))
 
     # print summary after outlier rejection
     if rejection_occurred and self._verbosity > 1: self.print_stats_on_matches()
@@ -283,8 +283,7 @@ class ReflectionManager(object):
     # form working and free subsets
     self._create_working_set()
 
-    if self._verbosity > 0:
-      logger.debug("Working set size = %d observations", self.get_sample_size())
+    logger.debug("Working set size = %d observations", self.get_sample_size())
 
     return
 

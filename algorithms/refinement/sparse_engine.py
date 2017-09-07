@@ -28,17 +28,12 @@ class AdaptLstbxSparse(DisableMPmixin, AdaptLstbxBase, non_linear_ls_eigen_wrapp
   """Adapt the base class for Eigen"""
 
   def __init__(self, target, prediction_parameterisation, constraints_manager=None,
-            log=None, verbosity = 0, track_step = False, track_gradient = False,
-            track_parameter_correlation = False,
-            track_out_of_sample_rmsd = False, max_iterations = None):
+            log=None, verbosity = 0, tracking=None, max_iterations = None):
 
     AdaptLstbxBase.__init__(
             self, target, prediction_parameterisation,
             constraints_manager=constraints_manager,
-            log=log, verbosity=verbosity, track_step=track_step,
-            track_gradient=track_gradient,
-            track_parameter_correlation=track_parameter_correlation,
-            track_out_of_sample_rmsd=track_out_of_sample_rmsd,
+            log=log, verbosity=verbosity, tracking=tracking,
             max_iterations=max_iterations)
 
     non_linear_ls_eigen_wrapper.__init__(self, n_parameters = len(self.x))
@@ -49,17 +44,12 @@ class GaussNewtonIterations(AdaptLstbxSparse, GaussNewtonIterationsBase):
 
   def __init__(self, target, prediction_parameterisation,
                constraints_manager=None,
-               log=None, verbosity=0, track_step=False, track_gradient=False,
-               track_parameter_correlation=False,
-               track_out_of_sample_rmsd=False,
+               log=None, verbosity=0, tracking=None,
                max_iterations=20, **kwds):
 
     AdaptLstbxSparse.__init__(self, target, prediction_parameterisation,
              constraints_manager=constraints_manager,
-             log=log, verbosity=verbosity, track_step=track_step,
-             track_gradient=track_gradient,
-             track_parameter_correlation=track_parameter_correlation,
-             track_out_of_sample_rmsd=track_out_of_sample_rmsd,
+             log=log, verbosity=verbosity, tracking=tracking,
              max_iterations=max_iterations)
 
     # add an attribute to the journal

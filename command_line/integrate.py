@@ -401,6 +401,8 @@ class Script(object):
         Invalid input for reference reflections.
         %d reference spots have an invalid experiment id
       ''' % mask.count(True))
+    if (reference['panel'] == reference['shoebox'].panels()).count(False) > 0:
+      raise RuntimeError('reflection table "panel" column does not match "shoebox" panel')
     logger.info(' using %d indexed reflections' % len(reference))
     logger.info(' found %d junk reflections' % len(rubbish))
     logger.info(' time taken: %g' % (time() - st))

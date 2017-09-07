@@ -255,8 +255,7 @@ from dials.algorithms.refinement.refiner import phil_scope
 params = phil_scope.fetch(source=parse('')).extract()
 
 # in case we want a plot
-params.refinement.refinery.track_parameter_correlation=True
-
+params.refinement.refinery.journal.track_parameter_correlation=True
 
 # scan static first
 from dials.algorithms.refinement.refiner import RefinerFactory

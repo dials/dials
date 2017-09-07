@@ -1583,6 +1583,7 @@ class SpotSettingsPanel (wx.Panel) :
 
     # Brightness-related events
     self.Bind(wx.EVT_SCROLL_CHANGED, self.OnUpdateBrightness, self.brightness_ctrl)
+    self.Bind(wx.EVT_SLIDER,         self.OnUpdateBrightness, self.brightness_ctrl)
     self.Bind(wx.EVT_TEXT_ENTER, self.OnUpdateBrightness, self.brightness_txt_ctrl)
     self.brightness_txt_ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnUpdateBrightness)
 

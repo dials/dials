@@ -373,10 +373,14 @@ class GoniometerShadowMaskGenerator(object):
   def get_mask(self, detector, scan_angle):
     shadow_boundary = self.project_extrema(detector, scan_angle)
     from dials.util import mask_untrusted_polygon
-    mask = [flex.bool(flex.grid(reversed(p.get_image_size())), True) for p in detector]
+    mask = []
     for panel_id in range(len(detector)):
+      m = None
       if shadow_boundary[panel_id].size() > 3:
-        mask_untrusted_polygon(mask[panel_id], shadow_boundary[panel_id])
+        m = flex.bool(
+          flex.grid(reversed(detector[panel_id].get_image_size())), True)
+        mask_untrusted_polygon(m, shadow_boundary[panel_id])
+      mask.append(m)
     return mask
 
 

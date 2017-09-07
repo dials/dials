@@ -251,20 +251,21 @@ class Script(object):
     # Two theta target
     target = TwoThetaTarget(experiments, ref_predictor, refman, pred_param)
 
-    # Do a correlation plot?
-    tpc = params.output.correlation_plot.filename is not None
+    # Switch on correlation matrix tracking if a correlation plot is requested
+    journal = None
+    if params.output.correlation_plot.filename is not None:
+      from dials.algorithms.refinement.engine import refinery_phil_scope
+      journal = refinery_phil_scope.extract().refinery.journal
+      journal.track_parameter_correlation = True
 
-    # Minimisation engine - FIXME not many choices exposed yet. Do we want
-    # more cowbell?
+    # Minimisation engine - hardcoded to LevMar for now.
     from dials.algorithms.refinement.engine \
       import LevenbergMarquardtIterations as Refinery
     refinery = Refinery(target = target,
                         prediction_parameterisation = pred_param,
                         log = None,
                         verbosity = verb,
-                        track_step = False,
-                        track_gradient = False,
-                        track_parameter_correlation = tpc,
+                        tracking = journal,
                         max_iterations = 20)
 
     # Refiner

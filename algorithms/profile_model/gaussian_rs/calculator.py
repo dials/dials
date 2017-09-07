@@ -317,6 +317,8 @@ class ComputeEsdReflectingRange(object):
       self.e2 = (tau - dphi2) * flex.abs(zeta) / sqrt(2.0)
       self.n = n
       self.indices = indices
+      if (len(self.e1) == 0):
+        raise RuntimeError("Something went wrong. Zero pixels selected for estimation of profile parameters.")
 
       # Compute intensity
       self.K = flex.double()

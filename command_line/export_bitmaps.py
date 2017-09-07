@@ -191,7 +191,7 @@ def run(args):
                         (flex_image.size2()//binning,
                          flex_image.size1()//binning),
                          flex_image.export_string)
-      except Exception:
+      except NotImplementedError:
         pil_img = Image.frombytes('RGB',
                         (flex_image.size2()//binning,
                          flex_image.size1()//binning),

@@ -24,8 +24,15 @@ from libtbx.phil import parse
 from libtbx.utils import Sorry
 import libtbx
 
-# Include external phil scopes as strings to avoid problems
-# with the include scope directive
+# The include scope directive does not work here. For example:
+#
+#   include scope dials.algorithms.refinement.outlier_detection.phil_scope
+#
+# results in:
+#
+#   AttributeError: 'module' object has no attribute 'refinement'
+#
+# to work around this, just include external phil scopes as strings
 from dials.algorithms.refinement.outlier_detection.outlier_base \
   import phil_str as outlier_phil_str
 from dials.algorithms.refinement.restraints.restraints_parameterisation \
@@ -33,10 +40,12 @@ from dials.algorithms.refinement.restraints.restraints_parameterisation \
 from dials.algorithms.refinement.constraints import phil_str as constr_phil_str
 from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \
   import phil_str as sv_phil_str
+from dials.algorithms.refinement.engine import refinery_phil_str
 format_data = {'outlier_phil':outlier_phil_str,
                'uc_restraints_phil':uc_restraints_phil_str,
                'constr_phil':constr_phil_str,
-               'sv_phil_str':sv_phil_str}
+               'sv_phil_str':sv_phil_str,
+               'refinery_phil':refinery_phil_str}
 phil_scope = parse('''
 
 refinement
@@ -270,45 +279,7 @@ refinement
       .expert_level = 1
   }
 
-  refinery
-    .help = "Parameters to configure the refinery"
-    .expert_level = 1
-  {
-    engine = SimpleLBFGS LBFGScurvs GaussNewton *LevMar SparseLevMar
-      .help = "The minimisation engine to use"
-      .type = choice
-
-    track_step = False
-      .help = "Record parameter shifts history in the refinement journal, if"
-              "the engine supports it."
-      .type = bool
-
-    track_gradient = False
-      .help = "Record parameter gradients history in the refinement journal, if"
-              "the engine supports it."
-      .type = bool
-
-    track_parameter_correlation = False
-      .help = "Record correlation matrix between columns of the Jacobian for"
-              "each step of refinement."
-      .type = bool
-
-    track_out_of_sample_rmsd = False
-      .type = bool
-      .help = "Record RMSDs calculated using the refined experiments with"
-              "reflections not used in refinement at each step. Only valid if a"
-              "subset of input reflections was taken for refinement"
-
-    log = None
-      .help = "Filename for an optional log that a minimisation engine may use"
-              "to write additional information"
-      .type = path
-
-    max_iterations = None
-      .help = "Maximum number of iterations in refinement before termination."
-              "None implies the engine supplies its own default."
-      .type = int(value_min=1)
-  }
+  %(refinery_phil)s
 
   target
     .help = "Parameters to configure the target function"
@@ -408,11 +379,6 @@ refinement
         .type = floats(size = 3, value_min = 0)
     }
 
-    # Does not work:
-    #
-    # include scope dials.algorithms.refinement.outlier_detection.phil_scope
-    #
-    # instead just paste the string in directly here.
     %(outlier_phil)s
 
   }
@@ -478,6 +444,9 @@ class RefinerFactory(object):
                         verbosity, copy_experiments=True):
     """low level build"""
 
+    if verbosity == 0:
+      logger.disabled = True
+
     # Currently a refinement job can only have one parameterisation of the
     # prediction equation. This can either be of the XYDelPsi (stills) type, the
     # XYPhi (scans) type or the scan-varying XYPhi type with a varying crystal
@@ -504,30 +473,28 @@ class RefinerFactory(object):
       raise Sorry('Cannot refine a mixture of stills and scans')
     do_stills = exps_are_stills[0]
 
-    if verbosity > 0:
-      logger.debug("\nBuilding reflection manager")
-      logger.debug("Input reflection list size = %d observations", len(reflections))
+    logger.debug("\nBuilding reflection manager")
+    logger.debug("Input reflection list size = %d observations", len(reflections))
 
     # create reflection manager
     refman = cls.config_refman(params, reflections, experiments, do_stills, verbosity)
 
-    if verbosity > 0:
-      logger.debug("Number of observations that pass initial inclusion criteria = %d",
-            refman.get_accepted_refs_size())
+    logger.debug("Number of observations that pass initial inclusion criteria = %d",
+          refman.get_accepted_refs_size())
     sample_size = refman.get_sample_size()
-    if sample_size and verbosity > 0:
+    if sample_size > 0:
       logger.debug("Working set size = %d observations", sample_size)
-    if verbosity > 0: logger.debug("Reflection manager built\n")
+    logger.debug("Reflection manager built\n")
 
     # configure use of sparse data types
     params = cls.config_sparse(params, experiments)
 
-    if verbosity > 0: logger.debug("Building target function")
+    logger.debug("Building target function")
 
     # create target function
     target = cls.config_target(params, experiments, refman, do_stills)
 
-    if verbosity > 0: logger.debug("Target function built")
+    logger.debug("Target function built")
 
     # determine whether to do basic centroid analysis to automatically
     # determine outlier rejection block
@@ -543,13 +510,12 @@ class RefinerFactory(object):
 
     # create parameterisations
     pred_param, param_reporter, restraints_parameterisation = \
-      cls.config_parameterisation(params, experiments, refman, do_stills, verbosity)
+      cls.config_parameterisation(params, experiments, refman, do_stills)
 
-    if verbosity > 0:
-      logger.debug("Prediction equation parameterisation built")
-      logger.debug("Parameter order : name mapping")
-      for i, e in enumerate(pred_param.get_param_names()):
-        logger.debug("Parameter %03d : %s", i + 1, e)
+    logger.debug("Prediction equation parameterisation built")
+    logger.debug("Parameter order : name mapping")
+    for i, e in enumerate(pred_param.get_param_names()):
+      logger.debug("Parameter %03d : %s", i + 1, e)
 
     # Set the prediction equation and restraints parameterisations
     # in the target object
@@ -557,15 +523,17 @@ class RefinerFactory(object):
     target.set_restraints_parameterisation(restraints_parameterisation)
 
     # Build a constraints manager, if requested
-    constraints_manager = cls.config_constraints(params, pred_param, verbosity)
+    from dials.algorithms.refinement.constraints import ConstraintManagerFactory
+    cmf = ConstraintManagerFactory(params, pred_param, verbosity)
+    constraints_manager = cmf()
 
-    if verbosity > 0: logger.debug("Building refinement engine")
+    logger.debug("Building refinement engine")
 
     # create refinery
     refinery = cls.config_refinery(params, target, pred_param,
       constraints_manager, verbosity)
 
-    if verbosity > 0: logger.debug("Refinement engine built")
+    logger.debug("Refinement engine built")
 
     # build refiner interface and return
     return Refiner(reflections, experiments,
@@ -599,8 +567,7 @@ class RefinerFactory(object):
     return params
 
   @classmethod
-  def config_parameterisation(cls, params, experiments, refman, do_stills,
-    verbosity):
+  def config_parameterisation(cls, params, experiments, refman, do_stills):
     """Given a set of parameters, create a parameterisation from a set of
     experimental models.
 
@@ -649,7 +616,7 @@ class RefinerFactory(object):
       tst = [(e.absolute_num_intervals is None and
               e.interval_width_degrees is libtbx.Auto) for e in tst]
       if any(tst):
-        if verbosity > 0: logger.info('Doing centroid analysis to '
+        logger.info('Doing centroid analysis to '
           'automatically determine scan-varying interval widths')
         ca = refman.get_centroid_analyser(debug=options.debug_centroid_analysis)
         analysis = ca()
@@ -670,8 +637,7 @@ class RefinerFactory(object):
           # width. Default to the safest case
           phi_min, phi_max  = experiments[i].scan.get_oscillation_range(deg=True)
           a['interval_width'] = abs(phi_max - phi_min)
-          if verbosity > 0:
-            logger.info('Exp id {0} suggested interval width could not be '
+          logger.info('Exp id {0} suggested interval width could not be '
               'determined and will be reset to the scan width of '
               '{1:.1f} degrees'.format(i, a['interval_width']))
           continue
@@ -680,8 +646,7 @@ class RefinerFactory(object):
         if block_size is not None:
           min_interval = max(min_interval, block_size)
         a['interval_width'] = min_interval
-        if verbosity > 0:
-          logger.info('Exp id {0} suggested interval width = {1:.1f} degrees'.format(
+        logger.info('Exp id {0} suggested interval width = {1:.1f} degrees'.format(
             i, min_interval))
 
     # Parameterise unique Beams
@@ -965,9 +930,8 @@ class RefinerFactory(object):
             if deg_per_interval is libtbx.Auto and analysis is not None:
               intervals = [analysis[i]['interval_width'] for i in exp_ids]
               deg_per_interval = min(intervals)
-              if verbosity > 0:
-                for i in exp_ids:
-                  logger.debug(('Detector interval_width_degrees for experiment id'
+              for i in exp_ids:
+                logger.debug(('Detector interval_width_degrees for experiment id'
                     ' {0} set to {1:.1f}').format(i, deg_per_interval))
             else:
               deg_per_interval = 36.0
@@ -1425,111 +1389,6 @@ class RefinerFactory(object):
     return rp
 
   @staticmethod
-  def config_constraints(params, pred_param, verbosity=0):
-    """If equal shift constraints are requested, build them and package into
-    a constraints manager to be linked to the Refinery"""
-
-    # shorten options path
-    options = params.refinement.parameterisation
-
-    # shorten options paths further for individual parameterisation types
-    detector_c = options.detector.constraints
-    beam_c = options.beam.constraints
-    orientation_c = options.crystal.orientation.constraints
-    cell_c = options.crystal.unit_cell.constraints
-
-    # quit early if there are no constraints to apply
-    n_constraints = sum([len(e) for e in [detector_c, beam_c, orientation_c,
-      cell_c]])
-    if n_constraints == 0: return None
-
-    if verbosity > 0: logger.debug("\nConfiguring constraints")
-
-    if options.sparse:
-      from dials.algorithms.refinement.constraints \
-        import SparseConstraintManager as ConstraintManager
-    else:
-      from dials.algorithms.refinement.constraints import ConstraintManager
-    from dials.algorithms.refinement.constraints import EqualShiftConstraint
-
-    # get full parameter names and values
-    all_names = pred_param.get_param_names()
-    all_vals = pred_param.get_param_vals()
-
-    # list of constraint objects to build up
-    constraints = []
-
-    detector_p = pred_param.get_detector_parameterisations()
-    beam_p = pred_param.get_beam_parameterisations()
-    orientation_p = pred_param.get_crystal_orientation_parameterisations()
-    cell_p = pred_param.get_crystal_unit_cell_parameterisations()
-
-    def build_constraints(constraint_scope, parameterisation, model_type):
-      import re
-      if constraint_scope.id is None:
-        # get one experiment id for each parameterisation to apply to all
-        constraint_scope.id = [e.get_experiment_ids()[0] for e in parameterisation]
-
-      # find which parameterisations are involved, and if any are scan-varying
-      # how many sample points there are
-      prefixes = []
-      n_samples = 0
-      for i, p in enumerate(parameterisation):
-        if hasattr(p, 'num_samples'):
-          ns = p.num_samples()
-          if n_samples == 0: n_samples = ns
-          if ns != n_samples:
-            raise Sorry("Constraints cannot be created between scan-varying "
-              "parameterisations when these have a different number of "
-              "sample points.")
-        for j in p.get_experiment_ids():
-          if j in constraint_scope.id:
-            prefixes.append(model_type + '{0}'.format(i+1))
-            break
-
-      # set up constraints for each type of parameter
-      constraints = []
-      patt1 = re.compile("^" + model_type + "[0-9]+")
-      for pname in constraint_scope.parameters:
-        # ignore model name prefixes
-        pname = patt1.sub('', pname)
-
-        # Use a regex to find parameters to constrain from a list of all the
-        # parameter names. There are multiple parts to this. The first part
-        # identifies the relevant model type and parameterisation ordinal index,
-        # accepting those that were chosen according to the supplied experiment
-        # ids. The next part allows for additional text, like 'Group1' that may
-        # be used by a multi-panel detector parameterisation. Then the parameter
-        # name itself, like 'Dist'. Finally, to accommodate scan-varying
-        # parameterisations, suffixes like '_sample0' and '_sample1' are
-        # distinguished so that these are constrained separately.
-        for i in range(max(n_samples, 1)):
-          patt2 = re.compile("^(" + "|".join(prefixes) + "){1}(?![0-9])(\w*" + \
-            pname + ")(_sample{0})?$".format(i))
-          indices = [j for j, s in enumerate(all_names) if patt2.match(s)]
-          if len(indices) == 1: continue
-          if verbosity > 1:
-            logger.debug('\nThe following parameters will be constrained '
-              'to enforce equal shifts at each step of refinement:')
-            for k in indices: logger.debug(all_names[k])
-          constraints.append(EqualShiftConstraint(indices, all_vals))
-      return constraints
-
-    for constr in detector_c:
-      constraints.extend(build_constraints(constr, detector_p, 'Detector'))
-    for constr in beam_c:
-      constraints.extend(build_constraints(constr, beam_p, 'Beam'))
-    for constr in orientation_c:
-      constraints.extend(build_constraints(constr, orientation_p, 'Crystal'))
-    for constr in cell_c:
-      constraints.extend(build_constraints(constr, cell_p, 'Crystal'))
-
-    if len(constraints) == 0: return None
-
-    # return constraints manager
-    return ConstraintManager(constraints, len(all_vals))
-
-  @staticmethod
   def config_refinery(params, target, pred_param, constraints_manager,
     verbosity):
     """Given a set of parameters, a target class, a prediction
@@ -1560,17 +1419,14 @@ class RefinerFactory(object):
       raise RuntimeError("Refinement engine " + options.engine +
                          " not recognised")
 
-    if verbosity > 0: logger.debug("Selected refinement engine type: %s", options.engine)
+    logger.debug("Selected refinement engine type: %s", options.engine)
 
     engine = refinery(target = target,
             prediction_parameterisation = pred_param,
             constraints_manager=constraints_manager,
             log = options.log,
             verbosity = verbosity,
-            track_step = options.track_step,
-            track_gradient = options.track_gradient,
-            track_parameter_correlation = options.track_parameter_correlation,
-            track_out_of_sample_rmsd = options.track_out_of_sample_rmsd,
+            tracking = options.journal,
             max_iterations = options.max_iterations)
 
     if params.refinement.mp.nproc > 1:
@@ -1603,7 +1459,7 @@ class RefinerFactory(object):
       import random
       random.seed(options.random_seed)
       flex.set_random_seed(options.random_seed)
-      if verbosity > 0: logger.debug("Random seed set to %d", options.random_seed)
+      logger.debug("Random seed set to %d", options.random_seed)
 
     # check whether we deal with stills or scans
     if do_stills:
@@ -1809,6 +1665,8 @@ class Refiner(object):
     self._param_report = param_reporter
 
     self._verbosity = verbosity
+    if verbosity == 0:
+      logger.disabled = True
 
     return
 
@@ -2112,13 +1970,15 @@ class Refiner(object):
 
     self._refinery.run()
 
+    # These involve calculation, so skip them when verbosity is zero, even
+    # though the logger is disabled
     if self._verbosity > 0:
       self.print_step_table()
       self.print_out_of_sample_rmsd_table()
       self.print_exp_rmsd_table()
 
     det_npanels = [len(d) for d in self._experiments.detectors()]
-    if any(n > 1 for n in det_npanels) and self._verbosity > 0:
+    if any(n > 1 for n in det_npanels):
       self.print_panel_rmsd_table()
 
     # write scan varying setting matrices back to crystal models

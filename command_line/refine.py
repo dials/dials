@@ -241,7 +241,7 @@ class Script(object):
 
     # Modify options if necessary
     if params.output.correlation_plot.filename is not None:
-      params.refinement.refinery.track_parameter_correlation = True
+      params.refinement.refinery.journal.track_parameter_correlation = True
 
     # Warn about potentially unhelpful options
     if params.refinement.mp.nproc > 1:

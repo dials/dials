@@ -51,6 +51,7 @@ class Test(object):
           unit_cell = 92.9 92.9 130.4 90 90 120
         }
         refinement_protocol.d_min_start=1.7
+        stills.refine_candidates_with_known_symmetry=True
       }
       """)
     f.close()
@@ -73,7 +74,9 @@ class Test(object):
     result = "idx-20130301060858801_integrated.pickle"
     #n_refls = range(140,152) # large ranges to handle platform-specific differences
     # 09/20/17 Changes to still indexer: refine candidate basis vectors in target symmetry if supplied
-    n_refls = range(128,140) # large ranges to handle platform-specific differences
+    #n_refls = range(128,140) # large ranges to handle platform-specific differences
+    # 09/27/17 Bugfix for refine_candidates_with_known_symmetry
+    n_refls = range(140,152) # large ranges to handle platform-specific differences
     table = pickle.load(open(result, 'rb'))
     assert len(table) in n_refls, len(table)
     assert 'id' in table
@@ -171,7 +174,7 @@ class Test(object):
                                 "idx-run266702-0-subset_00003_integrated.pickle"],
                                 [range(212,225),range(565,580),range(475,500)]): # large ranges to handle platform-specific differences
       table = pickle.load(open(result, 'rb'))
-      assert len(table) in n_refls, len(table)
+      assert len(table) in n_refls, (result, len(table))
       assert 'id' in table
       assert (table['id'] == 0).count(False) == 0
     print 'OK'

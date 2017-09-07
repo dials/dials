@@ -36,7 +36,9 @@ def exercise_dynamic_shadowing():
     imageset = datablock.extract_imagesets()[0]
     detector = imageset.get_detector()
     scan = imageset.get_scan()
-    masker = imageset.reader().get_format().get_goniometer_shadow_masker()
+    filename = imageset.get_path(0)
+    masker = imageset.masker().format_class(filename, **format_kwargs).get_goniometer_shadow_masker()
+    #masker = imageset.reader().get_format().get_goniometer_shadow_masker()
     assert masker is not None
     mask = masker.get_mask(detector, scan_angle=scan.get_oscillation()[0])
     assert len(mask) == len(detector)

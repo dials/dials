@@ -181,7 +181,7 @@ def test2():
   # set up refinement, constraining the distance parameter
   cmd = ("dials.refine foo_experiments.json foo_reflections.pickle "
          "history=history.pickle refinement.parameterisation.detector."
-         "constraints.parameters=Dist")
+         "constraints.parameter=Dist")
   try:
     result = easy_run.fully_buffered(command=cmd).raise_if_errors()
     # load refinement history

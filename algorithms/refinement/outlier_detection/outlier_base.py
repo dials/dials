@@ -59,6 +59,7 @@ class CentroidOutlier(object):
     self._block_width = block_width
 
   def set_verbosity(self, verbosity):
+    logger.disabled = (verbosity == 0)
     self._verbosity = verbosity
 
   def _detect_outliers(cols):
@@ -73,9 +74,8 @@ class CentroidOutlier(object):
     """Identify outliers in the input and set the centroid_outlier flag.
     Return True if any outliers were detected, otherwise False"""
 
-    if self._verbosity > 0:
-      logger.info("Detecting centroid outliers using the {0} algorithm".format(
-        type(self).__name__))
+    logger.info("Detecting centroid outliers using the {0} algorithm".format(
+      type(self).__name__))
 
     # check the columns are present
     for col in self._cols: assert col in reflections
@@ -162,13 +162,12 @@ class CentroidOutlier(object):
       jobs3 = jobs2
 
     # Work out the format of the jobs table
-    if self._verbosity > 0:
-      header = ['Job']
-      if self._separate_experiments: header.append('Exp\nid')
-      if self._separate_panels: header.append('Panel\nid')
-      if self.get_block_width() is not None: header.append('Block range\n(deg)')
-      header.extend(['Nref', 'Nout', '%out'])
-      rows = []
+    header = ['Job']
+    if self._separate_experiments: header.append('Exp\nid')
+    if self._separate_panels: header.append('Panel\nid')
+    if self.get_block_width() is not None: header.append('Block range\n(deg)')
+    header.extend(['Nref', 'Nout', '%out'])
+    rows = []
 
     # now loop over the lowest level of splits
     for i, job in enumerate(jobs3):
@@ -195,7 +194,7 @@ class CentroidOutlier(object):
         msg = "For job {0}, fewer than {1} reflections are present.".format(
           i + 1, self._min_num_obs)
         msg += " All reflections flagged as possible outliers."
-        if self._verbosity > 0: logger.debug(msg)
+        logger.debug(msg)
         ioutliers = indices
 
       else:
@@ -210,31 +209,29 @@ class CentroidOutlier(object):
         self.nreject += nout
 
       # Add job data to the table
-      if self._verbosity > 0:
-        row = [str(i + 1)]
-        if self._separate_experiments: row.append(str(iexp))
-        if self._separate_panels: row.append(str(ipanel))
-        if self.get_block_width() is not None:
-          try:
-            row.append('{phi_start:.2f} - {phi_end:.2f}'.format(**job))
-          except KeyError:
-            row.append('{0:.2f} - {1:.2f}'.format(0.0,0.0))
-        if nref == 0:
-          p100 = 0
-        else:
-          p100 = nout / nref * 100.0
-          if p100 > 30.0:
-            msg = ("{0:3.1f}% of reflections were flagged as outliers from job"
-                   " {1}").format(p100, i + 1)
-        row.extend([str(nref), str(nout), '%3.1f' % p100])
-        rows.append(row)
+      row = [str(i + 1)]
+      if self._separate_experiments: row.append(str(iexp))
+      if self._separate_panels: row.append(str(ipanel))
+      if self.get_block_width() is not None:
+        try:
+          row.append('{phi_start:.2f} - {phi_end:.2f}'.format(**job))
+        except KeyError:
+          row.append('{0:.2f} - {1:.2f}'.format(0.0,0.0))
+      if nref == 0:
+        p100 = 0
+      else:
+        p100 = nout / nref * 100.0
+        if p100 > 30.0:
+          msg = ("{0:3.1f}% of reflections were flagged as outliers from job"
+                 " {1}").format(p100, i + 1)
+      row.extend([str(nref), str(nout), '%3.1f' % p100])
+      rows.append(row)
 
     if self.nreject == 0: return False
-    if self._verbosity > 0:
-      logger.info("{0} reflections have been flagged as outliers".format(self.nreject))
-      logger.debug("Outlier rejections per job:")
-      st = simple_table(rows, header)
-      logger.debug(st.format())
+    logger.info("{0} reflections have been flagged as outliers".format(self.nreject))
+    logger.debug("Outlier rejections per job:")
+    st = simple_table(rows, header)
+    logger.debug(st.format())
 
     return True
 
