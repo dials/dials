@@ -776,7 +776,7 @@ class SpotFinder(object):
       if self.write_hot_mask:
         if not imageset.external_lookup.mask.data.empty():
           for m1, m2 in zip(hot_mask, imageset.external_lookup.mask.data):
-            m1 &= m2
+            m1 &= m2.data()
           imageset.external_lookup.mask.data = ImageBool(hot_mask)
         else:
           imageset.external_lookup.mask.data = ImageBool(hot_mask)
