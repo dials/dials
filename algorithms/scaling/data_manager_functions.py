@@ -43,6 +43,16 @@ class Data_Manager(object):
         inv_sel = ~bad_data
         self.filtered_reflections = self.filtered_reflections.select(inv_sel)
 
+    def filter_I_sigma(self, ratio):
+        sel = flex.bool()
+        for index, intensity in enumerate(self.filtered_reflections[self.int_method[0]]):
+            if intensity/(self.filtered_reflections[self.int_method[1]][index]**0.5) > ratio:
+                sel.append(True)
+            else:
+                sel.append(False)
+        self.filtered_reflections = self.filtered_reflections.select(sel)
+
+
     def map_indices_to_asu(self):
         '''Create a miller_set object, map to the asu and create a sorted
            reflection table, sorted by asu miller index'''
@@ -60,9 +70,18 @@ class Data_Manager(object):
         '''Apply Lorenz polarisation and dqe correction to intensities
         and variances'''
         for q in self.int_method:
-            self.sorted_reflections[q] = (self.sorted_reflections[q]
-                                          * self.sorted_reflections['lp']
-                                          * self.sorted_reflections['dqe'])
+            if q.split('.')[2] == 'value':
+                self.sorted_reflections[q+'.LPscaled'] = (self.sorted_reflections[q]
+                                                          * self.sorted_reflections['lp']
+                                                          / self.sorted_reflections['dqe'])
+            elif q.split('.')[2] == 'variance':
+                self.sorted_reflections[q+'.LPscaled'] = (self.sorted_reflections[q]
+                                                          * (self.sorted_reflections['lp']**2)
+                                                          / (self.sorted_reflections['dqe']**2))
+        new_int_method = ['.', '.']
+        for i, val in enumerate(self.int_method):
+            new_int_method[i] = val+'.LPscaled'
+        self.int_method = new_int_method
 
     def assign_h_index(self):
         '''assign an index to the sorted reflection table that
@@ -71,7 +90,7 @@ class Data_Manager(object):
         if self.sorted_by_miller_index is False:
             raise ValueError('Data not yet sorted by miller index')
         else:
-            self.sorted_reflections['h_index'] = flex.int([0]*s)
+            self.sorted_reflections['h_index'] = flex.int([0] * s)
             self.h_index_counter_array = []
             h_index = 0
             h_index_counter = 1
@@ -93,7 +112,9 @@ class Data_Manager(object):
                 hsum += n
                 self.h_index_cumulative_array.append(hsum)
 
-
+    def save_sorted_reflections(self, filename):
+        ''' Save the reflections to file. '''
+        self.sorted_reflections.as_pickle(filename)
 
 
 class Kabsch_Data_Manager(Data_Manager):
@@ -103,7 +124,7 @@ class Kabsch_Data_Manager(Data_Manager):
         'Attributes specific to kabsch parameterisation'
         '''set bin parameters'''
         self.binning_parameters = {'ndbins':None, 'nzbins':None,
-                                   'n_absorption_positions':None,
+                                   'n_absorption_positions':5,
                                    'n_detector_bins':None}
         self.bin_boundaries = None
         for key, value in gridding_parameters.iteritems():
@@ -124,14 +145,14 @@ class Kabsch_Data_Manager(Data_Manager):
         resmax = (1.0 / (min(self.filtered_reflections['d'])**2))
         resmin = (1.0 / (max(self.filtered_reflections['d'])**2))
         resolution_bins = ((flex.double(range(0, ndbins + 1))
-                            *((resmax - resmin)/ndbins))
+                            * ((resmax - resmin)/ndbins))
                            + flex.double([resmin] * (ndbins + 1)))
         d_bins = (1.0/(resolution_bins[::-1]**0.5))
         z_bins = ((flex.double(range(0, nzbins + 1)) * ((zmax - zmin)/nzbins))
                   + flex.double([zmin] * (nzbins + 1)))
         z_bins[0] = z_bins[0]-0.001
-        firstbin_index = flex.int([-1]*len(self.sorted_reflections['d']))
-        secondbin_index = flex.int([-1]*len(self.sorted_reflections['z_value']))
+        firstbin_index = flex.int([-1] * len(self.sorted_reflections['d']))
+        secondbin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
         for i in range(ndbins):
             selection = select_variables_in_range(
                 self.sorted_reflections['d'], d_bins[i], d_bins[i+1])
@@ -241,7 +262,18 @@ class Kabsch_Data_Manager(Data_Manager):
         self.g_values = self.g_values * (1.0/Optimal_rescale_values.x[1])
         print "scaled by B_rel and global scale parameter"
 
-    
+    '''def clean_sorted_reflections(self):
+        keylist_reflection_table = ['inverse_scale_factor']
+        keylist_sorted_reflections = []
+        self.sorted_reflections['inverse_scale_factor'] = self.scale_factors
+        print list(self.sorted_reflections)[0]
+        for key in self.reflection_table.keys():
+            keylist_reflection_table.append(key)
+        self.sorted_reflections = self.sorted_reflections[keylist_reflection_table]
+        print list(self.sorted_reflections)[0]
+        exit()'''
+
+
 def select_variables_in_range(variable_array, lower_limit, upper_limit):
     '''return boolean selection of a given variable range'''
     sel = flex.bool()

@@ -69,21 +69,26 @@ class optimiser(object):
     def residual(self):
         intensities = self.data_manager.sorted_reflections[self.data_manager.int_method[0]]
         variances = self.data_manager.sorted_reflections[self.data_manager.int_method[1]]
-        R = (((intensities - (self.data_manager.scale_factors * self.data_manager.Ih_values))**2)/variances)
+        R = (((intensities - (self.data_manager.scale_factors * self.data_manager.Ih_values))**2
+             ) / variances)
         R = flex.sum(R)#/1000.0
         return R
 
     def gradient(self):
         intensities = self.data_manager.sorted_reflections[self.data_manager.int_method[0]]
         variances = self.data_manager.sorted_reflections[self.data_manager.int_method[1]]
-        gsq = ((self.data_manager.scale_factors)**2)/variances
+        gsq = ((self.data_manager.scale_factors)**2) / variances
         sumgsq = np.add.reduceat(gsq, self.data_manager.h_index_cumulative_array[:-1])
         sumgsq = flex.double(np.repeat(sumgsq, self.data_manager.h_index_counter_array))
-        dIhdg = flex.double(((intensities/variances) -
-                 (self.data_manager.Ih_values * 2.0 * self.data_manager.scale_factors/variances))/sumgsq)
-        rhl = flex.double((intensities - (self.data_manager.Ih_values * self.data_manager.scale_factors))/(variances**0.5))
-        grad = 2.0*rhl*((-1.0*self.data_manager.Ih_values/(variances**0.5))
-                        -((self.data_manager.scale_factors/(variances**0.5))*dIhdg))
+        dIhdg = flex.double(((intensities / variances)
+                             - (self.data_manager.Ih_values * 2.0
+                                * self.data_manager.scale_factors / variances)
+                            ) / sumgsq)
+        rhl = flex.double((intensities - (self.data_manager.Ih_values
+                                          * self.data_manager.scale_factors)
+                          ) / (variances**0.5))
+        grad = 2.0 * rhl * ((-1.0 * self.data_manager.Ih_values / (variances**0.5))
+                            - ((self.data_manager.scale_factors / (variances**0.5)) * dIhdg))
         return flex.double(np.bincount(self.data_manager.sorted_reflections[self.bin_index],
                                        weights=grad, minlength=self.size))
 
@@ -94,9 +99,9 @@ class B_optimiser(object):
         self.data_manager = Data_Manager_object
         d_bin_boundaries = self.data_manager.bin_boundaries['d']
         self.res_values = flex.double([])
-        for i in range(0, len(d_bin_boundaries)-1):
-            self.res_values.append(((1.0/(d_bin_boundaries[i]**2))
-                                    +(1.0/(d_bin_boundaries[i+1]**2)))/2.0)
+        for i in range(0, len(d_bin_boundaries) - 1):
+            self.res_values.append(((1.0 / (d_bin_boundaries[i]**2))
+                                    +(1.0 / (d_bin_boundaries[i+1]**2))) / 2.0)
         self.x = initial_values
         lbfgs.run(target_evaluator=self)
 
@@ -110,7 +115,7 @@ class B_optimiser(object):
         resolution = self.res_values
         R = 0.0
         for i, val in enumerate(resolution):
-            R += ((gvalues[i] * exp(self.x[0]*val)) - self.x[1])**2
+            R += ((gvalues[i] * exp(self.x[0] * val)) - self.x[1])**2
         return R
 
     def gradient(self):
@@ -118,7 +123,7 @@ class B_optimiser(object):
         resolution = self.res_values
         G = flex.double([0.0, 0.0])
         for i, val in enumerate(resolution):
-            G[0] += (2.0 * ((gvalues[i] * exp((self.x[0])*val)) - self.x[1])
+            G[0] += (2.0 * ((gvalues[i] * exp((self.x[0]) * val)) - self.x[1])
                      * resolution[i]*gvalues[i]*exp((self.x[0])*resolution[i]))
-            G[1] += -2.0 * ((gvalues[i] * exp((self.x[0])*val)) - self.x[1])
+            G[1] += -2.0 * ((gvalues[i] * exp((self.x[0]) * val)) - self.x[1])
         return G

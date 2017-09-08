@@ -35,10 +35,10 @@ def R_meas(Data_Manager_object):
                 l = Data_Manager_object.sorted_reflections['l_bin_index'][indexer]
                 a = Data_Manager_object.sorted_reflections['a_bin_index'][indexer]
                 xy = Data_Manager_object.sorted_reflections['xy_bin_index'][indexer]
-                a1 += abs((Ihl[indexer]/(g_values[l]*g2_values[a]*g3_values[xy])) - Ih[indexer])
-                Rmeas_lower += (Ihl[indexer]/(g_values[l]*g2_values[a]*g3_values[xy]))
-            Rmeas_upper += (((float(lsum)/(float(lsum)-1.0))**0.5) * a1)
-    Rmeas = Rmeas_upper/Rmeas_lower
+                a1 += abs((Ihl[indexer] / (g_values[l] * g2_values[a] * g3_values[xy])) - Ih[indexer])
+                Rmeas_lower += (Ihl[indexer] / (g_values[l] * g2_values[a] * g3_values[xy]))
+            Rmeas_upper += (((float(lsum) / (float(lsum) - 1.0))**0.5) * a1)
+    Rmeas = Rmeas_upper / Rmeas_lower
     return Rmeas
 
 def R_pim(Data_Manager_object):
@@ -60,8 +60,8 @@ def R_pim(Data_Manager_object):
                 a = Data_Manager_object.sorted_reflections['a_bin_index'][indexer]
                 xy = Data_Manager_object.sorted_reflections['xy_bin_index'][indexer]
 
-                a1 += abs((Ihl[indexer]/(g_values[l]*g2_values[a]*g3_values[xy]))- Ih[indexer])
-                Rpim_lower += (Ihl[indexer]/(g_values[l]*g2_values[a]*g3_values[xy]))
-            Rpim_upper += (((1.0/(float(lsum)-1.0))**0.5) * a1)
-    Rpim = Rpim_upper/Rpim_lower
+                a1 += abs((Ihl[indexer] / (g_values[l] * g2_values[a] * g3_values[xy])) - Ih[indexer])
+                Rpim_lower += (Ihl[indexer] / (g_values[l] * g2_values[a] * g3_values[xy]))
+            Rpim_upper += (((1.0 / (float(lsum) - 1.0))**0.5) * a1)
+    Rpim = Rpim_upper / Rpim_lower
     return Rpim
