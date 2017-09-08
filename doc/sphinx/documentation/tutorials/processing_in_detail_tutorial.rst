@@ -335,7 +335,7 @@ This is run simply with:
 
 .. literalinclude:: logs/dials.report.cmd
 
-which produces the file `dials-report.html <logs/dials-report.html>`_.
+which produces the file :download:`dials-report.html <logs/dials-report.html>`.
 
 This report includes plots showing the scan-varying crystal orientation and
 unit cell parameters. The latter of these
