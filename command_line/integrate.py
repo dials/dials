@@ -203,7 +203,8 @@ class Script(object):
       if mask.filename is not None:
         if mask.data:
           logger.info('Using external mask: %s' % mask.filename)
-          logger.info(' Mask has %d pixels masked' % mask.data.count(False))
+          for tile in mask.data:
+            logger.info(' Mask has %d pixels masked' % tile.data().count(False))
 
     # Print the experimental models
     for i, exp in enumerate(experiments):

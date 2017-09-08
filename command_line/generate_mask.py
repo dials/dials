@@ -69,6 +69,7 @@ class Script(object):
     from libtbx.utils import Sorry
     import cPickle as pickle
     from dials.util import log
+    from dxtbx.format.image import ImageBool
 
     # Parse the command line arguments
     params, options = self.parser.parse_args(show_diff_phil=True)
@@ -100,7 +101,7 @@ class Script(object):
 
     # Save the datablock
     if params.output.datablock is not None:
-      imageset.external_lookup.mask.data = mask
+      imageset.external_lookup.mask.data = ImageBool(mask)
       imageset.external_lookup.mask.filename = params.output.mask
       from dxtbx.datablock import DataBlockDumper
       print 'Saving datablocks to {0}'.format(
