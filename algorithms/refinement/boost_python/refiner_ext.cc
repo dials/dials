@@ -6,13 +6,10 @@
 #include <scitbx/vec3.h>
 #include <scitbx/mat3.h>
 
-#include <scitbx/matrix/transpose_multiply.h>
-
 using namespace boost::python;
 using namespace dials::af;
 
 namespace dials { namespace refinement { namespace boost_python {
-
   /*
     Class used to replace functionality from panel_gp_nparam_minus_nref(p, pnl_ids, group, reflections, verbose=False) function in refiner.py
   */
@@ -38,13 +35,13 @@ namespace dials { namespace refinement { namespace boost_python {
       const std::size_t* ptr_panel_id = panel_id.begin();
 
       //Predefine loop variables to allow for OpenMP use;
-      std::size_t exp_it, pnl; //ref_id; 
+      std::size_t exp_it, pnl; //ref_id;
 
-      std::pair< const int * ,        const int*         > refIDRange;
-      std::pair< const std::size_t *, const std::size_t* > panelIDRange;
+      std::pair<const int* ,const int*> refIDRange;
+      std::pair<const std::size_t *,const std::size_t*> panelIDRange;
       unsigned int data_offset = 0;
       unsigned int data_range = 0;
-      
+
       //Search for the beginning and end indices for the index values and track their pointers. Use these pointers to narow the next search margin and count the range of elements that match. These values indicate the count and can be added to a running total.
       for(exp_it = 0; exp_it < exp_ids.size(); ++exp_it){ //Iterate through experiment IDs
         //Get the pointer indices to the beginning and end of the values with the requested experimental ID. Performs search in ~2logN
@@ -53,11 +50,11 @@ namespace dials { namespace refinement { namespace boost_python {
         //Calculate pointer offset for start and end of the data to examine.
         data_range = refIDRange.second - refIDRange.first;
         data_offset = refIDRange.first - ref_ids.begin();
-        
+
         //Taking the previous pointer positions, and perfoming a search within this range for the matching panel IDs, we then counti the pointer range as all valid entries and add to the accumlator.
         for(pnl = 0; pnl < pnl_ids_flex.size(); ++pnl){ //Iterate through panel IDs
-          panelIDRange = std::equal_range( ptr_panel_id + data_offset, 
-                                           ptr_panel_id + data_offset + data_range, 
+          panelIDRange = std::equal_range( ptr_panel_id + data_offset,
+                                           ptr_panel_id + data_offset + data_range,
                                            pnl_ids_flex[pnl] );
           count += (unsigned int)(panelIDRange.second - panelIDRange.first);
         }
@@ -72,7 +69,7 @@ namespace dials { namespace refinement { namespace boost_python {
   */
   struct ucnmn_iter{
     ucnmn_iter( const reflection_table ref_table,
-                const scitbx::af::shared<std::size_t> exp_ids, 
+                const scitbx::af::shared<std::size_t> exp_ids,
                 const scitbx::af::shared<mat3<double> > F_dbdp
               )
     {
@@ -81,14 +78,13 @@ namespace dials { namespace refinement { namespace boost_python {
       const scitbx::af::shared<int> &ref_ids = ref_table.get<int>("id");
 
       const scitbx::af::shared<cctbx::miller::index<> > &ref_miller = ref_table.get<cctbx::miller::index<> >("miller_index");
-      
-      std::size_t exp_it; //ref_id; 
-      
-      std::pair< const int * ,const int * > refIDRange;
+
+      std::size_t exp_it; //ref_id;
+      std::pair<const int* ,const int* > refIDRange;
 
       unsigned int data_range = 0;
       unsigned int data_offset = 0;
-      
+
       //Perform subselection of data ranges
       for( exp_it = 0; exp_it < exp_ids.size(); ++exp_it ){
         refIDRange = std::equal_range( ref_ids.begin(),
@@ -114,9 +110,8 @@ namespace dials { namespace refinement { namespace boost_python {
       scitbx::af::shared<int> nref_each_param;
       for (ii=0; ii < F_dbdp.size(); ++ii){
         nref_each_param.push_back(
-          std::count_if (mul_norm.begin() + ii*data_range, 
-                         mul_norm.begin() + (ii+1)*data_range, 
-                         gtZero) 
+          std::count_if (mul_norm.begin() + ii*data_range,
+                         mul_norm.begin() + (ii+1)*data_range, gtZero)
           );
       }
 
@@ -154,7 +149,7 @@ namespace dials { namespace refinement { namespace boost_python {
     class_<dials::refinement::boost_python::ucnmn_iter>
     ("ucnmn_iter", init<
       const reflection_table,
-      const scitbx::af::shared<std::size_t>, 
+      const scitbx::af::shared<std::size_t>,
       const scitbx::af::shared<mat3<double> > >
       ((
         boost::python::arg("ref_table"),

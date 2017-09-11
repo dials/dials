@@ -24,7 +24,8 @@ from libtbx.phil import parse
 from libtbx.utils import Sorry
 import libtbx
 
-from dials_refinement_helpers_ext import pgnmr_iter as pgnmr
+from dials_refinement_helpers_ext import pgnmn_iter as pgnmn
+from dials_refinement_helpers_ext import ucnmn_iter as ucnmn
 
 # The include scope directive does not work here. For example:
 #
@@ -1014,6 +1015,16 @@ class RefinerFactory(object):
       reflections. For example, for an orthorhombic cell the g_param_0 parameter
       has no effect on predictions in the plane (0,k,l). Here, take the number
       of affected reflections for each parameter into account.'''
+
+      F_dbdp=flex.mat3_double( p.get_ds_dp() )
+      min_nref = options.auto_reduction.min_nref_per_parameter
+      # if no free parameters, do as model_nparam_minus_nref
+      if len(F_dbdp) == 0:
+        return len(isel)
+      return ucnmn(reflections, p.get_experiment_ids(), F_dbdp).result - min_nref
+
+      #Replaced Python code
+      '''
       exp_ids = p.get_experiment_ids()
       isel = flex.size_t()
       for exp_id in exp_ids:
@@ -1021,15 +1032,17 @@ class RefinerFactory(object):
       ref = reflections.select(isel)
       h = ref['miller_index'].as_vec3_double()
       dB_dp = p.get_ds_dp()
-      # if no free parameters, do as model_nparam_minus_nref
-      if len(dB_dp) == 0: return len(isel)
+      if len(dB_dp) == 0:
+        return len(isel)
+
       nref_each_param = []
-      min_nref = options.auto_reduction.min_nref_per_parameter
       for der in dB_dp:
         der_mat = flex.mat3_double(len(h), der.elems)
         tst = (der_mat * h).norms()
         nref_each_param.append((tst > 0.0).count(True))
+
       return min([nref - min_nref for nref in nref_each_param])
+      '''
 
     # In the scan-varying case we can't calculate dB_dp before composing the
     # model, so revert to the original function
@@ -1054,7 +1067,7 @@ class RefinerFactory(object):
       cutoff = options.auto_reduction.min_nref_per_parameter * nparam
       isel = flex.size_t()
       #Use Boost.Python extension module to replace below code
-      surplus = pgnmr(reflections, pnl_ids, exp_ids, cutoff).result
+      surplus = pgnmn(reflections, pnl_ids, exp_ids, cutoff).result
       '''
       for exp_id in exp_ids:
         sub_expID = (reflections['id'] == exp_id).iselection()
@@ -1981,6 +1994,7 @@ class Refiner(object):
         logger.debug(ordinal_number(i) + ' ' + str(scan))
       for i, crystal in enumerate(self._experiments.crystals()):
         logger.debug(ordinal_number(i) + ' ' + str(crystal))
+
 
     self._refinery.run()
 
