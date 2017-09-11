@@ -2,7 +2,7 @@ from __future__ import absolute_import, division
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 # LIBTBX_SET_DISPATCHER_NAME dials.discover_better_experimental_model
-# LIBTBX_SET_DISPATCHER_NAME dials.beam_position_search
+# LIBTBX_SET_DISPATCHER_NAME dials.search_beam_position
 import math
 import iotbx.phil
 from scitbx import matrix
