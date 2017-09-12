@@ -2,13 +2,16 @@
 Define a Data_Manager object used for calculating scaling factors
 '''
 import copy
-from dials_array_family_flex_ext import *
-from cctbx.array_family.flex import *
-from cctbx.array_family import flex
+#from dials_array_family_flex_ext import *
+#from cctbx.array_family.flex import *
+#from cctbx.array_family import flex
+from dials.array_family import flex
 from cctbx import miller, crystal
 import minimiser_functions as mf
 from dials.util.options import (flatten_experiments, flatten_reflections)
 import numpy as np
+from target_function import *
+from basis_functions import *
 
 class Data_Manager(object):
     '''Data Manager takes a params parsestring
@@ -19,14 +22,11 @@ class Data_Manager(object):
         self.experiments = flatten_experiments(params.input.experiments)
         self.reflection_table = flatten_reflections(params.input.reflections)[0]
         n_entries = range(len(self.reflection_table['xyzobs.px.value']))
-        self.reflection_table['x_value'] = flex.double(
-            [self.reflection_table['xyzobs.px.value'][i][0] for i in n_entries])
-        self.reflection_table['y_value'] = flex.double(
-            [self.reflection_table['xyzobs.px.value'][i][1] for i in n_entries])
-        self.reflection_table['z_value'] = flex.double(
-            [self.reflection_table['xyzobs.px.value'][i][2] for i in n_entries])
+        self.reflection_table['x_value'] = self.reflection_table['xyzobs.px.value'].parts()[0]
+        self.reflection_table['y_value'] = self.reflection_table['xyzobs.px.value'].parts()[1]
+        self.reflection_table['z_value'] = self.reflection_table['xyzobs.px.value'].parts()[2]
         self.reflection_table['resolution'] = flex.double(
-            [1.0/(x**2) if x != 0 else 0 for x in self.reflection_table['d']])
+            [1.0 / (x**2) if x != 0 else 0 for x in self.reflection_table['d']])
         self.filtered_reflections = copy.deepcopy(self.reflection_table)
         self.int_method = int_method
         self.sorted_by_miller_index = False
@@ -46,12 +46,11 @@ class Data_Manager(object):
     def filter_I_sigma(self, ratio):
         sel = flex.bool()
         for index, intensity in enumerate(self.filtered_reflections[self.int_method[0]]):
-            if intensity/(self.filtered_reflections[self.int_method[1]][index]**0.5) > ratio:
+            if intensity / (self.filtered_reflections[self.int_method[1]][index]**0.5) > ratio:
                 sel.append(True)
             else:
                 sel.append(False)
         self.filtered_reflections = self.filtered_reflections.select(sel)
-
 
     def map_indices_to_asu(self):
         '''Create a miller_set object, map to the asu and create a sorted
@@ -135,6 +134,19 @@ class Kabsch_Data_Manager(Data_Manager):
         self.g2_values = None
         self.g3_values = None
 
+    def get_target_function(self):
+        '''call the xds target function method'''
+        return xds_target_function(self).return_targets()
+
+    def get_basis_function(self, parameters):
+        '''call the xds basis function method'''
+        return xds_basis_function(self, parameters).return_basis()
+
+    def update_for_minimisation(self, parameters):
+        '''update the scale factors and Ih for the next iteration of minimisation'''
+        self.scale_factors = self.get_basis_function(parameters)[0]
+        self.calc_Ih()
+
     def bin_reflections_decay(self):
         '''bin reflections for decay correction'''
         ndbins = self.binning_parameters['ndbins']
@@ -145,10 +157,10 @@ class Kabsch_Data_Manager(Data_Manager):
         resmax = (1.0 / (min(self.filtered_reflections['d'])**2))
         resmin = (1.0 / (max(self.filtered_reflections['d'])**2))
         resolution_bins = ((flex.double(range(0, ndbins + 1))
-                            * ((resmax - resmin)/ndbins))
+                            * ((resmax - resmin) / ndbins))
                            + flex.double([resmin] * (ndbins + 1)))
-        d_bins = (1.0/(resolution_bins[::-1]**0.5))
-        z_bins = ((flex.double(range(0, nzbins + 1)) * ((zmax - zmin)/nzbins))
+        d_bins = (1.0 /(resolution_bins[::-1]**0.5))
+        z_bins = ((flex.double(range(0, nzbins + 1)) * ((zmax - zmin) / nzbins))
                   + flex.double([zmin] * (nzbins + 1)))
         z_bins[0] = z_bins[0]-0.001
         firstbin_index = flex.int([-1] * len(self.sorted_reflections['d']))
@@ -174,14 +186,14 @@ class Kabsch_Data_Manager(Data_Manager):
         (xmax, xmin) = (max(xvalues), min(xvalues))
         yvalues = self.sorted_reflections['y_value']
         (ymax, ymin) = (max(yvalues), min(yvalues))
-        x_bins = (((flex.double(range(0, nxbins + 1)) * (xmax - xmin)/(nxbins)))
+        x_bins = (((flex.double(range(0, nxbins + 1)) * (xmax - xmin) / (nxbins)))
                   + flex.double([xmin] * (nxbins + 1)))
         x_bins[0] = x_bins[0]-0.001
-        y_bins = ((flex.double(range(0, nybins + 1)) * (ymax - ymin)/(nybins))
+        y_bins = ((flex.double(range(0, nybins + 1)) * (ymax - ymin) /(nybins))
                   + flex.double([ymin] * (nybins + 1)))
         y_bins[0] = y_bins[0]-0.001
-        firstbin_index = flex.int([-1]*len(self.sorted_reflections['z_value']))
-        secondbin_index = flex.int([-1]*len(self.sorted_reflections['z_value']))
+        firstbin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
+        secondbin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
         for i in range(nxbins):
             selection = select_variables_in_range(
                 self.sorted_reflections['x_value'], x_bins[i], x_bins[i+1])
@@ -205,14 +217,14 @@ class Kabsch_Data_Manager(Data_Manager):
         (xmax, xmin) = (max(xvalues), min(xvalues))
         yvalues = self.sorted_reflections['y_value']
         (ymax, ymin) = (max(yvalues), min(yvalues))
-        x_bins = ((flex.double(range(0, nxbins + 1)) * (xmax - xmin)/(nxbins))
+        x_bins = ((flex.double(range(0, nxbins + 1)) * (xmax - xmin) / (nxbins))
                   + flex.double([xmin] * (nxbins + 1)))
         x_bins[0] = x_bins[0]-0.001
-        y_bins = ((flex.double(range(0, nybins + 1)) * (ymax - ymin)/(nybins))
+        y_bins = ((flex.double(range(0, nybins + 1)) * (ymax - ymin) / (nybins))
                   + flex.double([ymin] * (nybins + 1)))
         y_bins[0] = y_bins[0]-0.001
-        firstbin_index = flex.int([-1]*len(self.sorted_reflections['z_value']))
-        secondbin_index = flex.int([-1]*len(self.sorted_reflections['z_value']))
+        firstbin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
+        secondbin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
         for i in range(nxbins):
             selection1 = select_variables_in_range(
                 self.sorted_reflections['x_value'], x_bins[i], x_bins[i+1])
@@ -220,7 +232,7 @@ class Kabsch_Data_Manager(Data_Manager):
                 selection2 = select_variables_in_range(
                     self.sorted_reflections['y_value'], y_bins[j], y_bins[j+1])
                 firstbin_index.set_selected(selection1 & selection2,
-                                            ((i*nybins) + j))
+                                            ((i * nybins) + j))
         for i in range(nzbins):
             selection = select_variables_in_range(
                 self.sorted_reflections['z_value'], z_bins[i], z_bins[i+1])
@@ -239,11 +251,11 @@ class Kabsch_Data_Manager(Data_Manager):
         '''calculate the current best estimate for I for each reflection group'''
         intensities = self.sorted_reflections[self.int_method[0]]
         variances = self.sorted_reflections[self.int_method[1]]
-        gsq = (((self.scale_factors)**2)/variances)
+        gsq = (((self.scale_factors)**2) / variances)
         sumgsq = flex.double(np.add.reduceat(gsq, self.h_index_cumulative_array[:-1]))
-        gI = ((self.scale_factors*intensities)/variances)
+        gI = ((self.scale_factors * intensities) / variances)
         sumgI = flex.double(np.add.reduceat(gI, self.h_index_cumulative_array[:-1]))
-        self.Ih_array = sumgI/sumgsq
+        self.Ih_array = sumgI / sumgsq
         self.Ih_values = flex.double(np.repeat(self.Ih_array, self.h_index_counter_array))
 
     def scale_gvalues(self):
@@ -259,8 +271,12 @@ class Kabsch_Data_Manager(Data_Manager):
         scaling_factors = flex.double(scaling_factors)
 
         self.g_values = self.g_values * scaling_factors
-        self.g_values = self.g_values * (1.0/Optimal_rescale_values.x[1])
+        self.g_values = self.g_values * (1.0 / Optimal_rescale_values.x[1])
         print "scaled by B_rel and global scale parameter"
+
+    def create_fake_dataset(self):
+        self.sorted_reflections['intensity.sum.value'] = (self.Ih_values *
+            self.sorted_reflections['inverse_scale_factor'] * self.sorted_reflections['dqe'] / self.sorted_reflections['lp'])
 
     '''def clean_sorted_reflections(self):
         keylist_reflection_table = ['inverse_scale_factor']
@@ -272,6 +288,86 @@ class Kabsch_Data_Manager(Data_Manager):
         self.sorted_reflections = self.sorted_reflections[keylist_reflection_table]
         print list(self.sorted_reflections)[0]
         exit()'''
+
+    def reject_outliers(self, tolerance, niter):
+        '''Identify outliers using the method of aimless'''
+        for _ in range(niter):
+            Ihl = self.sorted_reflections[self.int_method[0]]
+            variances = self.sorted_reflections[self.int_method[1]]
+            Good_reflections = flex.bool([True]*len(self.sorted_reflections['d']))
+            print len(Good_reflections)
+            for h in range(len(self.h_index_counter_array)):     
+                lsum = self.h_index_counter_array[h]
+                if lsum == 2:
+                    indexer = self.h_index_cumulative_array[h]
+                    delta1 = (Ihl[indexer] - (self.scale_factors[indexer] * Ihl[indexer + 1])
+                            / ((variances[indexer] + ((self.scale_factors[indexer]**2)
+                                                        * variances[indexer + 1]))**0.5))
+                    delta2 = (Ihl[indexer + 1] - (self.scale_factors[indexer + 1] * Ihl[indexer])
+                            / ((variances[indexer + 1] + ((self.scale_factors[indexer + 1]**2)
+                                                            * variances[indexer]))**0.5))
+                    if abs(delta1/Ihl[indexer + 1]) > tolerance or abs(delta2/Ihl[indexer])  > tolerance:
+                        #if delta1 > 5.0:
+                        #    print (delta1, Ihl[indexer + 1])
+                        #if delta2 > 5.0:
+                        #    print (delta2, Ihl[indexer])
+                        Good_reflections[indexer] = False
+                        Good_reflections[indexer+1] = False
+                        #outlier_list.append(indexer)
+                        #outlier_list.append(indexer + 1) #reject both if large difference
+                if lsum > 2:
+                    delta_list=[]
+                    for i in range(lsum):
+                        sumgI = 0.0
+                        sumgsq = 0.0
+                        I_others_list = np.array([])
+                        for j in range(lsum):
+                            if j != i:
+                                indexer = j + self.h_index_cumulative_array[h]
+                                sumgI += (Ihl[indexer]*self.scale_factors[indexer] / variances[indexer])
+                                sumgsq += (self.scale_factors[indexer]**2 / variances[indexer])
+                                I_others_list = np.append(I_others_list,Ihl[indexer])
+                        Ih_others = sumgI / sumgsq
+                        indexer = i + self.h_index_cumulative_array[h]
+                        #print list(I_others_list)
+                        others_std = np.std(I_others_list, ddof=1)
+                        delta = ((Ihl[indexer] - (self.scale_factors[indexer] * Ih_others))
+                                / ((variances[indexer] + ((self.scale_factors * others_std)**2))**0.5))
+                        delta_list.append(delta) 
+                    max_delta = max([abs(x[0]) for x in delta_list])
+                    if max_delta/Ih_others > tolerance:
+                        #if max_delta  > 5.0:
+                        #    print (max_delta, Ih_others)
+                        ngreater = len([i for i in delta_list if i > 0])
+                        nless = len([i for i in delta_list if i < 0])
+                        if ngreater == 1:
+                            for n, m in enumerate(delta_list):
+                                if m > 0:
+                                    Good_reflections[n + self.h_index_cumulative_array[h]] = False
+                        if nless == 1:
+                            for n, m in enumerate(delta_list):
+                                if m < 0:
+                                    Good_reflections[n + self.h_index_cumulative_array[h]] = False
+                        else:
+                            n = delta_list.index(max_delta)
+                            Good_reflections[n + self.h_index_cumulative_array[h]] = False
+
+
+            #print outlier_list  
+            print "number of outliers = "+ str(Good_reflections.count(False))
+            self.sorted_reflections = self.sorted_reflections.select(Good_reflections)
+            self.assign_h_index()
+            g1values = flex.double([self.g_values[i]
+                for i in self.sorted_reflections['l_bin_index']])
+            g2values = flex.double([self.g2_values[i]
+                for i in self.sorted_reflections['a_bin_index']])
+            g3values = flex.double([self.g3_values[i]
+                for i in self.sorted_reflections['xy_bin_index']])
+            self.scale_factors = g1values * g2values * g3values
+            if Good_reflections.count(False) == 0:
+                break
+        
+        #return Good_reflections
 
 
 def select_variables_in_range(variable_array, lower_limit, upper_limit):

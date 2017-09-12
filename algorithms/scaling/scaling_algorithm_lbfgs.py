@@ -29,7 +29,7 @@ def scaling_lbfgs(inputparams, gridding_parameters, scaling_options):
     """Filter out zero/negative values of d, variance, etc"""
     loaded_reflections.filter_data(int_method[1], -10.0, 0.0)
     loaded_reflections.filter_data('d', -1.0, 0.0)
-    #loaded_reflections.filter_I_sigma(2.0)
+    #loaded_reflections.filter_I_sigma(1.0)
 
     '''Map the indices to the asu and also sort the reflection table by miller index'''
     loaded_reflections.map_indices_to_asu()
@@ -50,13 +50,19 @@ def scaling_lbfgs(inputparams, gridding_parameters, scaling_options):
                              decay_correction_rescaling=decay_correction_rescaling)
     minimised = mf.optimiser(minimised.data_manager, correction=correction_order[2],
                              decay_correction_rescaling=decay_correction_rescaling)
-
+    
+    #minimised.data_manager.reject_outliers(tolerance=6.0,niter=4)
+    #minimised.data_manager.assign_h_index()
     '''repeat n times - replace with convergence criteria and max iter instead?'''
     for _ in range(0, scaling_options['n_cycles'] - 1):
         for correction in correction_order:
             minimised = mf.optimiser(minimised.data_manager, correction=correction)
+        #minimised.data_manager.reject_outliers(tolerance=6.0,niter=1)
+        #minimised.data_manager.assign_h_index()
     minimised.data_manager.sorted_reflections['inverse_scale_factor'] = minimised.data_manager.scale_factors
+    
     return minimised
+
 
 
 if __name__ == "__main__":
@@ -82,10 +88,10 @@ if __name__ == "__main__":
     start_time = time.time()
 
     #default parameters
-    gridding_parameters = {'ndbins':15, 'nzbins':15, 'n_detector_bins':29}
-    scaling_options = {'n_cycles':1, 'integration_method':'summation_integration',
+    gridding_parameters = {'ndbins':20, 'nzbins':20, 'n_detector_bins':37}
+    scaling_options = {'n_cycles':1, 'integration_method':'profile_fitting',
                        'decay_correction_rescaling':True,
-                       'correction_order':['absorption', 'modulation', 'decay']}
+                       'correction_order':['absorption', 'decay', 'modulation']}
     #hacky overload of default parameters from command line input
     for parameter, value in scaling_options_dict.iteritems():
         if parameter in gridding_parameters:
@@ -107,6 +113,7 @@ if __name__ == "__main__":
     #minimised_optimiser.data_manager.clean_sorted_reflections()
     #save_data(minimised_optimiser.data_manager, filename)
     filename = sys.argv[1].strip('.pickle')+str('_scaled.pickle')
+    #minimised_optimiser.data_manager.create_fake_dataset()
     minimised_optimiser.data_manager.save_sorted_reflections(filename)
 
     Rmeas = R_meas(minimised_optimiser.data_manager)

@@ -116,9 +116,9 @@ def plot_absorption_correction_at_zbin(data_man, position):
     plt.show()
 
 if __name__ == "__main__":
-    datafile="/Users/whi10850/Documents/test_data/integrate/13_integrated_scaled.txt"
-    data = load_data(filename = datafile)
-    data_man = data.data_manager
+    datafile="/Users/whi10850/Documents/dials_scratch/jbe/scaling_code/test_data/13_integrated_scaled.pickle"
+    data_man = load_data(filename = datafile)
+    #data_man = data.data_manager
     
     Rmeas = R_meas(data_man)
     print "R_meas of the (unmerged) data is %s" % (Rmeas)
