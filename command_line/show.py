@@ -337,6 +337,11 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
       c_strings = [c.as_string(format_strings[i].strip()) for i, c in enumerate(data.as_vec3_double().parts())]
     elif isinstance(data, flex.size_t):
       c_strings = [data.as_int().as_string(format_strings[0].strip())]
+    elif isinstance(data, flex.shoebox):
+      x1, x2, y1, y2, z1, z2 = data.bounding_boxes().parts()
+      bbox_sizes = ((z2-z1)*(y2-y1)*(x2-x1)).as_double()
+      c_strings = [bbox_sizes.as_string(format_strings[0].strip())]
+      key += " (N pix)"
     else:
       c_strings = [data.as_string(format_strings[0].strip())]
 
@@ -367,6 +372,7 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
     line = []
     for j in range(len(columns)):
       key = keys[j]
+      if key == 'shoebox': key += " (N pix)"
       width = max(len(key), columns[j].max_element_length())
       line.append('%%%is' %width %key)
     text.append(' '.join(line))
