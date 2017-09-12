@@ -26,6 +26,7 @@ import libtbx
 
 from dials_refinement_helpers_ext import pgnmn_iter as pgnmn
 from dials_refinement_helpers_ext import ucnmn_iter as ucnmn
+from dials_refinement_helpers_ext import mnmn_iter as mnmn
 
 # The include scope directive does not work here. For example:
 #
@@ -998,6 +999,10 @@ class RefinerFactory(object):
 
     # Parameter auto reduction options
     def model_nparam_minus_nref(p, reflections):
+      cutoff = options.auto_reduction.min_nref_per_parameter * p.num_free()
+      return mnmn(reflections,p.get_experiment_ids()).result - cutoff
+      #Replaced Python code
+      '''
       exp_ids = p.get_experiment_ids()
       # Do we have enough reflections to support this parameterisation?
       nparam = p.num_free()
@@ -1007,6 +1012,7 @@ class RefinerFactory(object):
         isel.extend((reflections['id'] == exp_id).iselection())
       nref = len(isel)
       return nref - cutoff
+      '''
 
     def unit_cell_nparam_minus_nref(p, reflections):
       '''Special version of model_nparam_minus_nref for crystal unit cell
