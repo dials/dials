@@ -123,6 +123,34 @@ namespace dials { namespace refinement { namespace boost_python {
     static bool gtZero (double x) { return ( (x > 0.0) ==1 ); } //Used for comparison operation
   };
 
+  struct mnmn_iter{
+    mnmn_iter( const reflection_table ref_table,
+      const scitbx::af::shared<std::size_t> exp_ids
+    )
+    {
+      //Expose pointers for experiment flex arrays
+      const std::size_t* ptr_exp_ids = exp_ids.begin();
+      const scitbx::af::shared<int> &ref_ids = ref_table.get<int>("id");
+
+      std::size_t exp_it; //ref_id;
+      std::pair<const int* ,const int* > refIDRange;
+
+      unsigned int data_count = 0;
+      result=0;
+
+      //Perform subselection of data ranges
+      for( exp_it = 0; exp_it < exp_ids.size(); ++exp_it ){
+        refIDRange = std::equal_range( ref_ids.begin(),
+                                       ref_ids.end(),
+                                       ptr_exp_ids[exp_it] );
+        data_count = refIDRange.second - refIDRange.first;
+        result += data_count;
+      }
+    }
+    int result;
+};
+
+
   void export_pgnmn_iter()
   {
     typedef return_value_policy<return_by_value> rbv;
@@ -159,5 +187,19 @@ namespace dials { namespace refinement { namespace boost_python {
       ))
     ).add_property("result",make_getter(&dials::refinement::boost_python::ucnmn_iter::result, rbv()))
     ;
+  }
+
+  void export_mnmn_iter()
+  {
+    typedef return_value_policy<return_by_value> rbv;
+    class_<dials::refinement::boost_python::mnmn_iter>
+    ("mnmn_iter", init<reflection_table,
+      const scitbx::af::shared<std::size_t> >
+      ((
+        boost::python::arg("ref_table"),
+        boost::python::arg("exp_ids")
+      ))
+    ).add_property("result",make_getter(&dials::refinement::boost_python::mnmn_iter::result, rbv()))
+  ;
   }
 }}} // namespace dials::refinement::boost_python
