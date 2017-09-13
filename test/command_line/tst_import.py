@@ -216,13 +216,16 @@ class Test(object):
 
     # First image file
     image = join(self.path, "centroid_0001.cbf")
-    
+
     cmd = 'dials.import %s output.datablock=import_extrapolate.json geometry.scan.image_range=1,900 geometry.scan.extrapolate_scan=True' % image
-    
+
     # Import from the image file
     call(cmd, shell=True, stdout=PIPE)
-    
-    assert exists("import_extrapolate.json"), "Command %s failed" % cmd
+    try:
+      assert(exists("import_extrapolate.json"))
+    except Exception:
+      print cmd
+      raise
 
     print 'OK'
 

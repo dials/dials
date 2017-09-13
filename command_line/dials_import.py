@@ -317,10 +317,18 @@ class ManualGeometryUpdater(object):
         deepcopy(imageset.get_scan()))
       i0, i1 = scan.get_array_range()
       j0, j1 = imageset.get_scan().get_array_range()
-      imageset.set_beam(beam)
-      imageset.set_detector(detector)
-      imageset.set_goniometer(goniometer)
-      imageset.set_scan(scan)
+      if i0 < j0 or i1 > j1:
+        imageset = self.extrapolate_imageset(
+          imageset   = imageset,
+          beam       = beam,
+          detector   = detector,
+          goniometer = goniometer,
+          scan       = scan)
+      else:
+        imageset.set_beam(beam)
+        imageset.set_detector(detector)
+        imageset.set_goniometer(goniometer)
+        imageset.set_scan(scan)
     else:
       for i in range(len(imageset)):
         beam = BeamFactory.from_phil(
@@ -341,6 +349,25 @@ class ManualGeometryUpdater(object):
         imageset.set_goniometer(goniometer, i)
         imageset.set_scan(scan, i)
     return imageset
+
+  def extrapolate_imageset(self,
+                           imageset=None,
+                           beam = None,
+                           detector = None,
+                           goniometer = None,
+                           scan = None):
+    from dxtbx.imageset import ImageSetFactory
+    first, last = scan.get_image_range()
+    sweep = ImageSetFactory.make_sweep(
+      template      = imageset.get_template(),
+      indices       = range(first, last+1),
+      format_class  = imageset.get_format_class(),
+      beam          = beam,
+      detector      = detector,
+      goniometer    = goniometer,
+      scan          = scan,
+      format_kwargs = imageset.params())
+    return sweep
 
   def convert_stills_to_sweep(self, imageset):
     from dxtbx.model import Scan
