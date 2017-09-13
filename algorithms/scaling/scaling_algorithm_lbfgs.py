@@ -67,7 +67,6 @@ if __name__ == "__main__":
     '''load datafiles - can be replaced with sys.argv commands'''
     parsestring = OptionParser(read_experiments=True, read_reflections=True,
                                check_format=False)
-
     '''hack to 'overload' the phil_scope methods and extract my own parameters
     into a dict'''
     scaling_options_dict = {}

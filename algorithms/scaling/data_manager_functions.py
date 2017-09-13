@@ -288,17 +288,6 @@ class XDS_Data_Manager(Data_Manager):
         self.sorted_reflections['intensity.sum.value'] = (self.Ih_values *
             self.sorted_reflections['inverse_scale_factor'] * self.sorted_reflections['dqe'] / self.sorted_reflections['lp'])
 
-    '''def clean_sorted_reflections(self):
-        keylist_reflection_table = ['inverse_scale_factor']
-        keylist_sorted_reflections = []
-        self.sorted_reflections['inverse_scale_factor'] = self.scale_factors
-        print list(self.sorted_reflections)[0]
-        for key in self.reflection_table.keys():
-            keylist_reflection_table.append(key)
-        self.sorted_reflections = self.sorted_reflections[keylist_reflection_table]
-        print list(self.sorted_reflections)[0]
-        exit()'''
-
     def reject_outliers(self, tolerance, niter):
         '''Identify outliers using the method of aimless'''
         for _ in range(niter):
@@ -378,7 +367,6 @@ class XDS_Data_Manager(Data_Manager):
                 break
         
         #return Good_reflections
-
 
 def select_variables_in_range(variable_array, lower_limit, upper_limit):
     '''return boolean selection of a given variable range'''
