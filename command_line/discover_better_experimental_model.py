@@ -380,8 +380,7 @@ def discover_better_experimental_model(
     if params.max_cell is None:
       from dials.algorithms.indexing.indexer import find_max_cell
       max_cell = find_max_cell(spots_mm, max_cell_multiplier=1.3,
-                               step_size=45,
-                               nearest_neighbor_percentile=0.05).max_cell
+                               step_size=45).max_cell
       max_cell_list.append(max_cell)
 
     if (params.max_reflections is not None and

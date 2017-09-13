@@ -228,8 +228,7 @@ def run(args):
 
     from dials.algorithms.indexing.indexer import find_max_cell
     max_cell = find_max_cell(spots_mm, max_cell_multiplier=1.3,
-                             step_size=45,
-                             nearest_neighbor_percentile=0.05).max_cell
+                             step_size=45).max_cell
 
     result = run_dps((imageset, spots_mm, max_cell, hardcoded_phil))
     solutions = [matrix.col(v) for v in result['solutions']]
