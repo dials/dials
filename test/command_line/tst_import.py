@@ -18,7 +18,7 @@ class Test(object):
     self.tst_import_beam_centre()
     self.tst_with_mask()
     self.tst_override_geometry()
-    #self.tst_extrapolate_scan()
+    self.tst_extrapolate_scan()
     self.tst_multiple_sweeps()
 
   def tst_multiple_sweeps(self):
@@ -222,11 +222,7 @@ class Test(object):
     # Import from the image file
     call(cmd, shell=True, stdout=PIPE)
     
-    try:
-      assert(exists("import_extrapolate.json"))
-    except Exception:
-      print cmd
-      raise
+    assert exists("import_extrapolate.json"), "Command %s failed" % cmd
 
     print 'OK'
 
