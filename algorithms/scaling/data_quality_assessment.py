@@ -37,7 +37,6 @@ def R_meas(Data_Manager_object):
                 Ih_average.append(average)
         else:
             Ih_average.append(0.0)
-    print (len(Ih_average), len(Ihl))
     for h in range(len(Data_Manager_object.h_index_counter_array)):
         a1 = 0.0
         lsum = Data_Manager_object.h_index_counter_array[h]
@@ -71,7 +70,6 @@ def R_pim(Data_Manager_object):
                 Ih_average.append(average)
         else:
             Ih_average.append(0.0)
-    print (len(Ih_average), len(Ihl))
     for h in range(len(Data_Manager_object.h_index_counter_array)):
         a1 = 0.0
         lsum = Data_Manager_object.h_index_counter_array[h]

@@ -8,7 +8,7 @@ import copy
 from dials.array_family import flex
 from cctbx import miller, crystal
 import minimiser_functions as mf
-from dials.util.options import (flatten_experiments, flatten_reflections)
+from dials.util.options import flatten_experiments, flatten_reflections
 import numpy as np
 from target_function import *
 from basis_functions import *
@@ -17,11 +17,13 @@ class Data_Manager(object):
     '''Data Manager takes a params parsestring
        containing the parsed integrated.pickle
        and integrated_experiments.json files'''
-    def __init__(self, params, int_method):
+    def __init__(self, reflections, experiments, int_method):
         'General attributes relevant for all parameterisations'
-        self.experiments = flatten_experiments(params.input.experiments)
-        self.reflection_table = flatten_reflections(params.input.reflections)[0]
-        n_entries = range(len(self.reflection_table['xyzobs.px.value']))
+        #self.experiments = flatten_experiments(params.input.experiments)
+        #self.reflection_table = flatten_reflections(params.input.reflections)[0]
+        self.experiments = experiments
+        self.reflection_table = reflections[0]
+        self.initial_keys = [key for key in self.reflection_table.keys()]
         self.reflection_table['x_value'] = self.reflection_table['xyzobs.px.value'].parts()[0]
         self.reflection_table['y_value'] = self.reflection_table['xyzobs.px.value'].parts()[1]
         self.reflection_table['z_value'] = self.reflection_table['xyzobs.px.value'].parts()[2]
@@ -116,11 +118,11 @@ class Data_Manager(object):
         self.sorted_reflections.as_pickle(filename)
 
 
-class Kabsch_Data_Manager(Data_Manager):
-    '''Data Manager subclass for implementing Kabsch parameterisation'''
-    def __init__(self, params, int_method, gridding_parameters):
-        Data_Manager.__init__(self, params, int_method)
-        'Attributes specific to kabsch parameterisation'
+class XDS_Data_Manager(Data_Manager):
+    '''Data Manager subclass for implementing XDS parameterisation'''
+    def __init__(self, reflections, experiments, int_method, gridding_parameters):
+        Data_Manager.__init__(self, reflections, experiments, int_method)
+        'Attributes specific to XDS parameterisation'
         '''set bin parameters'''
         self.binning_parameters = {'ndbins':None, 'nzbins':None,
                                    'n_absorption_positions':5,
@@ -130,9 +132,14 @@ class Kabsch_Data_Manager(Data_Manager):
             self.binning_parameters[key] = value
         '''initialise g parameters'''
         self.scale_factors = None
-        self.g_values = None
-        self.g2_values = None
-        self.g3_values = None
+        #initialise g-value arrays
+        self.g_absorption = None
+        self.g_modulation = None
+        self.g_decay = None
+        self.g_parameterisation = None
+        self.sf_parameterisations = None
+        self.bin_indices = None
+        
 
     def get_target_function(self):
         '''call the xds target function method'''
@@ -176,7 +183,7 @@ class Kabsch_Data_Manager(Data_Manager):
         self.sorted_reflections['l_bin_index'] = (firstbin_index
                                                   + (secondbin_index * ndbins))
         self.bin_boundaries = {'d' : d_bins, 'z_value' : z_bins}
-        self.g_values = flex.double([1.0] * (ndbins * nzbins))
+        self.g_decay = flex.double([1.0] * (ndbins * nzbins))
 
     def bin_reflections_modulation(self):
         '''bin reflections for modulation correction'''
@@ -204,7 +211,7 @@ class Kabsch_Data_Manager(Data_Manager):
             secondbin_index.set_selected(selection, i)
         self.sorted_reflections['xy_bin_index'] = (firstbin_index
                                                    + (secondbin_index * ngridpoints))
-        self.g3_values = flex.double([1.0] * (ngridpoints ** 2))
+        self.g_modulation = flex.double([1.0] * (ngridpoints ** 2))
 
     def bin_reflections_absorption(self):
         '''bin reflections for absorption correction'''
@@ -239,13 +246,16 @@ class Kabsch_Data_Manager(Data_Manager):
             secondbin_index.set_selected(selection, i)
         self.sorted_reflections['a_bin_index'] = (firstbin_index
                                                   + (secondbin_index * nxbins * nybins))
-        self.g2_values = flex.double([1.0] * (nxbins * nybins * nzbins))
+        self.g_absorption = flex.double([1.0] * (nxbins * nybins * nzbins))
 
     def initialise_scale_factors(self):
         self.bin_reflections_decay()
         self.bin_reflections_absorption()
         self.bin_reflections_modulation()
         self.scale_factors = flex.double([1.0]*len(self.sorted_reflections['d']))
+        self.g_parameterisation = [self.g_absorption, self.g_modulation, self.g_decay]
+        self.sf_parameterisations = ['g_absorption','g_modulation','g_decay']
+        self.bin_indices = ['a_bin_index','xy_bin_index','l_bin_index']
 
     def calc_Ih(self):
         '''calculate the current best estimate for I for each reflection group'''
@@ -270,8 +280,8 @@ class Kabsch_Data_Manager(Data_Manager):
                                         *Optimal_rescale_values.res_values)
         scaling_factors = flex.double(scaling_factors)
 
-        self.g_values = self.g_values * scaling_factors
-        self.g_values = self.g_values * (1.0 / Optimal_rescale_values.x[1])
+        self.g_decay = self.g_decay * scaling_factors
+        self.g_decay = self.g_decay * (1.0 / Optimal_rescale_values.x[1])
         print "scaled by B_rel and global scale parameter"
 
     def create_fake_dataset(self):
@@ -357,11 +367,11 @@ class Kabsch_Data_Manager(Data_Manager):
             print "number of outliers = "+ str(Good_reflections.count(False))
             self.sorted_reflections = self.sorted_reflections.select(Good_reflections)
             self.assign_h_index()
-            g1values = flex.double([self.g_values[i]
+            g1values = flex.double([self.g_decay[i]
                 for i in self.sorted_reflections['l_bin_index']])
-            g2values = flex.double([self.g2_values[i]
+            g2values = flex.double([self.g_absorption[i]
                 for i in self.sorted_reflections['a_bin_index']])
-            g3values = flex.double([self.g3_values[i]
+            g3values = flex.double([self.g_modulation[i]
                 for i in self.sorted_reflections['xy_bin_index']])
             self.scale_factors = g1values * g2values * g3values
             if Good_reflections.count(False) == 0:

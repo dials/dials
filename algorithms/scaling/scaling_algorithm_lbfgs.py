@@ -40,38 +40,34 @@ def scaling_lbfgs(inputparams, gridding_parameters, scaling_options):
     '''assign a unique reflection index to each group of reflections'''
     loaded_reflections.assign_h_index()
     loaded_reflections.scale_by_LP_and_dqe()
+    
 
     '''call the optimiser on the Data Manager object'''
-    correction_order = scaling_options['correction_order']
     decay_correction_rescaling = scaling_options['decay_correction_rescaling']
-    minimised = mf.optimiser(loaded_reflections, correction=correction_order[0],
-                             decay_correction_rescaling=decay_correction_rescaling)
-    minimised = mf.optimiser(minimised.data_manager, correction=correction_order[1],
-                             decay_correction_rescaling=decay_correction_rescaling)
-    minimised = mf.optimiser(minimised.data_manager, correction=correction_order[2],
-                             decay_correction_rescaling=decay_correction_rescaling)
-    
+
+    minimised = mf.LBFGS_optimiser(loaded_reflections, parameters=loaded_reflections.g_absorption, 
+                             param_name = 'g_absorption')
+    minimised = mf.LBFGS_optimiser(minimised.data_manager, parameters=minimised.data_manager.g_decay, 
+                             param_name = 'g_decay', decay_correction_rescaling=decay_correction_rescaling)
+    minimised = mf.LBFGS_optimiser(minimised.data_manager, parameters=minimised.data_manager.g_modulation, 
+                             param_name = 'g_modulation')
+
     #minimised.data_manager.reject_outliers(tolerance=6.0,niter=4)
     #minimised.data_manager.assign_h_index()
     '''repeat n times - replace with convergence criteria and max iter instead?'''
-    for _ in range(0, scaling_options['n_cycles'] - 1):
+    '''for _ in range(0, scaling_options['n_cycles'] - 1):
         for correction in correction_order:
             minimised = mf.optimiser(minimised.data_manager, correction=correction)
         #minimised.data_manager.reject_outliers(tolerance=6.0,niter=1)
-        #minimised.data_manager.assign_h_index()
-    minimised.data_manager.sorted_reflections['inverse_scale_factor'] = minimised.data_manager.scale_factors
-    
+        #minimised.data_manager.assign_h_index()'''
     return minimised
-
 
 
 if __name__ == "__main__":
     '''load datafiles - can be replaced with sys.argv commands'''
     parsestring = OptionParser(read_experiments=True, read_reflections=True,
                                check_format=False)
-    #filepath = "/Users/whi10850/Documents/test_data/integrate/13_integrated.pickle"
-    #json_filepath = "/Users/whi10850/Documents/test_data/integrate/13_integrated_experiments.json"
-    #params, options = parsestring.parse_args([json_filepath, filepath])
+
     '''hack to 'overload' the phil_scope methods and extract my own parameters
     into a dict'''
     scaling_options_dict = {}
@@ -89,38 +85,39 @@ if __name__ == "__main__":
 
     #default parameters
     gridding_parameters = {'ndbins':20, 'nzbins':20, 'n_detector_bins':37}
-    scaling_options = {'n_cycles':1, 'integration_method':'profile_fitting',
-                       'decay_correction_rescaling':True,
-                       'correction_order':['absorption', 'decay', 'modulation']}
+    scaling_options = {'integration_method':'profile_fitting',
+                       'decay_correction_rescaling':True}
     #hacky overload of default parameters from command line input
     for parameter, value in scaling_options_dict.iteritems():
         if parameter in gridding_parameters:
             gridding_parameters[parameter] = value
-        elif parameter in scaling_options:
-            scaling_options[parameter] = value
         else:
             print "parameter " +str(parameter) +" not recognised, skipping assignment"
 
     '''do minimisation of g-factors'''
-    minimised_optimiser = scaling_lbfgs(params, gridding_parameters, scaling_options)
+    minimised = scaling_lbfgs(params, gridding_parameters, scaling_options)
 
     total_time = time.time() - start_time
     print "algorithm execution time is " + str(total_time)
 
-    '''save data and plot g-factors'''
-    #filename = sys.argv[1].strip('.pickle')+str('_scaled.pickle')
-    #save_data(minimised_optimiser, filename)
-    #minimised_optimiser.data_manager.clean_sorted_reflections()
-    #save_data(minimised_optimiser.data_manager, filename)
-    filename = sys.argv[1].strip('.pickle')+str('_scaled.pickle')
-    #minimised_optimiser.data_manager.create_fake_dataset()
-    minimised_optimiser.data_manager.save_sorted_reflections(filename)
+    '''clean up reflection table for outputting'''
+    minimised.data_manager.sorted_reflections['inverse_scale_factor'] = minimised.data_manager.scale_factors
+    minimised.data_manager.initial_keys.append('inverse_scale_factor')
+    for key in minimised.data_manager.reflection_table.keys():
+        if not key in minimised.data_manager.initial_keys:
+            del minimised.data_manager.sorted_reflections[key]
 
-    Rmeas = R_meas(minimised_optimiser.data_manager)
-    Rpim = R_pim(minimised_optimiser.data_manager)
+    '''save data and plot g-factors'''
+    filename = sys.argv[1].strip('.pickle')+str('_scaled.pickle')
+    #minimised.data_manager.create_fake_dataset()
+    minimised.data_manager.save_sorted_reflections(filename)
+    print "Saved reflection table to " + str(filename)
+
+    Rmeas = R_meas(minimised.data_manager)
+    Rpim = R_pim(minimised.data_manager)
     print "R_meas is %s" % (Rmeas)
     print "R_pim is %s" % (Rpim)
 
-    plot_data(minimised_optimiser.data_manager)
-    plot_data_absorption(minimised_optimiser.data_manager)
-    plot_data_modulation(minimised_optimiser.data_manager)
+    #plot_data(minimised.data_manager)
+    #plot_data_absorption(minimised.data_manager)
+    #plot_data_modulation(minimised.data_manager)

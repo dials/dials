@@ -30,7 +30,7 @@ class xds_basis_function(basis_function):
     def calculate_scale_factors(self):
         gxvalues = flex.double([self.parameters[i] for i in
                    self.data_manager.sorted_reflections[self.data_manager.bin_index]])
-        scale_factors = gxvalues * self.data_manager.gvalues_stat1 * self.data_manager.gvalues_stat2
+        scale_factors = gxvalues * self.data_manager.constant_g_values
         return scale_factors
 
     def calculate_derivatives(self):

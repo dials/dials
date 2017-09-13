@@ -1,3 +1,7 @@
+'''
+Classes to create minimiser objects.
+'''
+
 import numpy as np
 from dials_array_family_flex_ext import *
 from cctbx.array_family.flex import *
@@ -7,53 +11,35 @@ from math import exp
 from target_function import *
 #note: include math exp import after flex imports to avoid exp conflicts
 
-class optimiser(object):
+class LBFGS_optimiser(object):
     '''Class that takes in Data_Manager object and runs
     an LBFGS minimisation in a Kabsch approach '''
-    def __init__(self, Data_Manager_object, correction,
+    def __init__(self, Data_Manager_object, parameters, param_name, 
                  decay_correction_rescaling=False):
         self.data_manager = Data_Manager_object
+        self.x = parameters
+        self.parameter_name = param_name
+        self.set_up_parameterisation()
         self.residuals = []
-        self.correction = correction
-        '''This next part could be condensed using class inheritance'''
-        if correction == 'decay':
-            print "performing decay correction"
-            self.data_manager.bin_index = 'l_bin_index'
-            self.data_manager.param_size = (self.data_manager.binning_parameters['nzbins'] * 
-                         self.data_manager.binning_parameters['ndbins'])
-            self.x = self.data_manager.g_values
-            self.data_manager.gvalues_stat1 = flex.double([self.data_manager.g2_values[i]
-                for i in self.data_manager.sorted_reflections['a_bin_index']])
-            self.data_manager.gvalues_stat2 = flex.double([self.data_manager.g3_values[i]
-                for i in self.data_manager.sorted_reflections['xy_bin_index']])  
-        elif correction == 'absorption':
-            print "performing absorption correction"
-            self.data_manager.bin_index = 'a_bin_index'
-            self.data_manager.param_size = (self.data_manager.binning_parameters['n_absorption_positions'])**2
-            self.x = self.data_manager.g2_values
-            self.data_manager.gvalues_stat1 = flex.double([self.data_manager.g_values[i]
-                for i in self.data_manager.sorted_reflections['l_bin_index']])  
-            self.data_manager.gvalues_stat2 = flex.double([self.data_manager.g3_values[i]
-                for i in self.data_manager.sorted_reflections['xy_bin_index']])
-        elif correction == 'modulation':
-            print "performing modulation correction"
-            self.data_manager.bin_index = 'xy_bin_index'
-            self.data_manager.param_size = (self.data_manager.binning_parameters['n_detector_bins'])**2
-            self.x = self.data_manager.g3_values
-            self.data_manager.gvalues_stat1 = flex.double([self.data_manager.g_values[i]
-                for i in self.data_manager.sorted_reflections['l_bin_index']])
-            self.data_manager.gvalues_stat2 = flex.double([self.data_manager.g2_values[i]
-                for i in self.data_manager.sorted_reflections['a_bin_index']])
-        else:
-            raise ValueError('Invalid bin index type')
-        #self.core_parameters = lbfgs.core_parameters(maxfev=10)
-        #self.termination_params = lbfgs.termination_parameters(max_iterations=10)
         lbfgs.run(target_evaluator=self)
-        #, termination_params=self.termination_params,core_params=self.core_parameters)
-        if correction == 'decay':
-            if decay_correction_rescaling:
-                self.data_manager.scale_gvalues()
+        if decay_correction_rescaling:
+            self.data_manager.scale_gvalues()
 
+    def set_up_parameterisation(self):
+        '''Set up the problem by indicating which g values are being minimised'''
+        constant_g_values = []
+        for parameterisation_type in self.data_manager.sf_parameterisations:
+            index = self.data_manager.sf_parameterisations.index(parameterisation_type)
+            bin_index = self.data_manager.bin_indices[index]
+            if self.parameter_name == parameterisation_type:
+                #change name to active bin index?
+                self.data_manager.bin_index = bin_index
+                self.data_manager.param_size = len(self.x)
+            else:
+                constant_g_values.append(
+                    flex.double([self.data_manager.g_parameterisation[index][i]
+                                 for i in self.data_manager.sorted_reflections[bin_index]]))
+        self.data_manager.constant_g_values = constant_g_values[0]*constant_g_values[1]
 
     def compute_functional_and_gradients(self):
         '''first calculate the updated values of the scale factors and Ih,
@@ -85,7 +71,7 @@ class B_optimiser(object):
         return f, g
 
     def residual(self):
-        gvalues = self.data_manager.g_values[0:self.data_manager.binning_parameters['ndbins']]
+        gvalues = self.data_manager.g_decay[0:self.data_manager.binning_parameters['ndbins']]
         resolution = self.res_values
         R = 0.0
         for i, val in enumerate(resolution):
@@ -93,7 +79,7 @@ class B_optimiser(object):
         return R
 
     def gradient(self):
-        gvalues = self.data_manager.g_values[0:self.data_manager.binning_parameters['ndbins']]
+        gvalues = self.data_manager.g_decay[0:self.data_manager.binning_parameters['ndbins']]
         resolution = self.res_values
         G = flex.double([0.0, 0.0])
         for i, val in enumerate(resolution):

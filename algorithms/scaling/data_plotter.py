@@ -23,7 +23,7 @@ def plot_data(data_man):
     ndbins = len(data_man.bin_boundaries['d'])-1
     nzbins = len(data_man.bin_boundaries['z_value'])-1
     '''generate a plot of the result'''
-    G_fin = list(data_man.g_values)
+    G_fin = list(data_man.g_decay)
     G_fin_2d = np.reshape(G_fin, (nzbins, ndbins)).T
 
     plt.figure(figsize=(7,7))
@@ -42,9 +42,9 @@ def plot_data_absorption(data_man):
     x_ticks = data_man.bin_boundaries['z_value'][::2]
     x_ticks = ['%.0f' % x for x in x_ticks]
     nzbins = len(data_man.bin_boundaries['z_value'])-1
-    nabsbins = len(data_man.g2_values)//nzbins
+    nabsbins = len(data_man.g_absorption)//nzbins
     '''generate a plot of the result'''
-    G_fin = list(data_man.g2_values)
+    G_fin = list(data_man.g_absorption)
     G_fin_2d = np.reshape(G_fin, (nzbins, nabsbins)).T
 
     plt.figure(figsize=(7,7))
@@ -65,7 +65,7 @@ def plot_data_modulation(data_man):
     nbins = data_man.binning_parameters['n_detector_bins']
     
     '''generate a plot of the result'''
-    G_fin = list(data_man.g3_values)
+    G_fin = list(data_man.g_modulation)
     G_fin_2d = np.reshape(G_fin, (nbins, nbins))
 
     plt.figure(figsize=(7,7))
@@ -80,7 +80,7 @@ def plot_data_modulation(data_man):
     plt.show()
 
 def plot_correction_at_detector_area(data_man, position):
-    G_fin = list(data_man.g2_values)
+    G_fin = list(data_man.g_absorption)
     npos = data_man.binning_parameters['n_absorption_positions']
     G_slice = G_fin[position::npos**2]
     plt.figure(1)
@@ -92,7 +92,7 @@ def plot_correction_at_detector_area(data_man, position):
     plt.show()
 
 def plot_correction_at_resolution(data_man, position):
-    G_fin = list(data_man.g_values)
+    G_fin = list(data_man.g_decay)
     nzbins = data_man.binning_parameters['nzbins']
     G_slice = G_fin[position::nzbins]
     plt.figure(1)
@@ -101,7 +101,7 @@ def plot_correction_at_resolution(data_man, position):
     plt.show()
 
 def plot_absorption_correction_at_zbin(data_man, position):
-    G_fin = list(data_man.g2_values)
+    G_fin = list(data_man.g_absorption)
     npos = data_man.binning_parameters['n_absorption_positions']
     nzbins = data_man.binning_parameters['nzbins']
     G_slice = G_fin[position*npos*npos:(position+1)*npos*npos]
