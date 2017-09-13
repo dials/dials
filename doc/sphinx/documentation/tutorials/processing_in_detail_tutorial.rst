@@ -194,7 +194,7 @@ the preferred solution.
 .. literalinclude:: logs/dials.refine_bravais_settings.cmd
 
 gives a table containing scoring data and unit cell for
-each Bravais setting. The scores include the the metric fit (in degrees),
+each Bravais setting. The scores include the metric fit (in degrees),
 RMSDs (in mm), and the best and worse correlation coefficients for data
 related by symmetry elements implied by the lowest symmetry space group from the
 Bravais setting. This uses the raw spot intensity measurement from the
