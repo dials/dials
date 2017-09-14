@@ -24,6 +24,9 @@ class LBFGS_optimiser(object):
     lbfgs.run(target_evaluator=self)
     if decay_correction_rescaling:
       self.data_manager.scale_gvalues()
+  
+  def return_data_manager(self):
+    return self.data_manager 
 
   def set_up_parameterisation(self):
     '''Set up the problem by indicating which g values are being minimised'''

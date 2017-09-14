@@ -10,6 +10,7 @@ from cctbx import miller, crystal
 import minimiser_functions as mf
 from dials.util.options import flatten_experiments, flatten_reflections
 import numpy as np
+import cPickle as pickle
 from target_function import *
 from basis_functions import *
 
@@ -40,6 +41,7 @@ class Data_Manager(object):
     self.Ih_values = None
     self.h_index_counter_array = None
     self.h_index_cumulative_array = None
+    self.scaled_by_LP = False
 
   def filter_data(self, reflection_table_key, lower, upper):
     '''Filter reflection data for a given measurement variable and limits'''
@@ -83,19 +85,23 @@ class Data_Manager(object):
   def scale_by_LP_and_dqe(self):
     '''Apply Lorenz polarisation and dqe correction to intensities
     and variances'''
-    for q in self.int_method:
-      if q.split('.')[2] == 'value':
-        self.sorted_reflections[q+'.LPscaled'] = (self.sorted_reflections[q]
-                              * self.sorted_reflections['lp']
-                              / self.sorted_reflections['dqe'])
-      elif q.split('.')[2] == 'variance':
-        self.sorted_reflections[q+'.LPscaled'] = (self.sorted_reflections[q]
-                              * (self.sorted_reflections['lp']**2)
-                              / (self.sorted_reflections['dqe']**2))
-    new_int_method = ['.', '.']
-    for i, val in enumerate(self.int_method):
-      new_int_method[i] = val+'.LPscaled'
-    self.int_method = new_int_method
+    if self.scaled_by_LP == False:
+      for q in self.int_method:
+        if q.split('.')[2] == 'value':
+          self.sorted_reflections[q+'.LPscaled'] = (self.sorted_reflections[q]
+                                * self.sorted_reflections['lp']
+                                / self.sorted_reflections['dqe'])
+        elif q.split('.')[2] == 'variance':
+          self.sorted_reflections[q+'.LPscaled'] = (self.sorted_reflections[q]
+                                * (self.sorted_reflections['lp']**2)
+                                / (self.sorted_reflections['dqe']**2))
+      new_int_method = ['.', '.']
+      for i, val in enumerate(self.int_method):
+        new_int_method[i] = val+'.LPscaled'
+      self.int_method = new_int_method
+      self.scaled_by_LP = True
+    else:
+      assert 0, ValueError('Data already scaled by LP and dqe correction')
 
   def assign_h_index(self):
     '''assign an index to the sorted reflection table that
@@ -129,6 +135,12 @@ class Data_Manager(object):
   def save_sorted_reflections(self, filename):
     ''' Save the reflections to file. '''
     self.sorted_reflections.as_pickle(filename)
+
+  def save_data_manager(self, filename):
+    ''' Save the data manager to file. '''
+    data_file = open(filename,'w')
+    pickle.dump(self, data_file)
+    data_file.close()
 
 
 class XDS_Data_Manager(Data_Manager):
@@ -313,19 +325,22 @@ class XDS_Data_Manager(Data_Manager):
     self.sorted_reflections['intensity.sum.value'] = (self.Ih_values *
       self.sorted_reflections['inverse_scale_factor'] * self.sorted_reflections['dqe'] / self.sorted_reflections['lp'])
 
-  '''def clean_sorted_reflections(self):
-    keylist_reflection_table = ['inverse_scale_factor']
-    keylist_sorted_reflections = []
-    self.sorted_reflections['inverse_scale_factor'] = self.scale_factors
-    print list(self.sorted_reflections)[0]
+  def clean_reflection_table(self):
     for key in self.reflection_table.keys():
-      keylist_reflection_table.append(key)
-    self.sorted_reflections = self.sorted_reflections[keylist_reflection_table]
-    print list(self.sorted_reflections)[0]
-    exit()'''
+      if not key in self.initial_keys:
+        del self.sorted_reflections[key]
+    added_columns=[]
+    if self.scaled_by_LP == True:
+      integ_method = self.int_method[0].rstrip('.value.LPscaled').lstrip('intensity.')
+      added_columns.append('intensity.'+str(integ_method)+'.value.LPscaled')
+      added_columns.append('intensity.'+str(integ_method)+'.variance.LPscaled')
+    added_columns += ['l_bin_index','a_bin_index', 'xy_bin_index', 'h_index', 
+                      'asu_miller_index']
+    for key in added_columns:
+      del self.sorted_reflections[key]  
 
   def reject_outliers(self, tolerance, niter):
-    '''Identify outliers using the method of aimless'''
+    '''Identify outliers using the method of aimless - needs some work'''
     for _ in range(niter):
       Ihl = self.sorted_reflections[self.int_method[0]]
       variances = self.sorted_reflections[self.int_method[1]]

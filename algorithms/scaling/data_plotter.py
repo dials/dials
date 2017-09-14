@@ -14,7 +14,7 @@ def load_data(filename):
   data_file.close()
   return data
 
-def plot_data(data_man):
+def plot_data_decay(data_man):
   "takes in a data manager object"
   y_ticks = ['%.3f' % x for x in data_man.bin_boundaries['d']]
   x_ticks = data_man.bin_boundaries['z_value'][::2]
@@ -33,9 +33,9 @@ def plot_data(data_man):
   plt.xlabel('time (z)')
   plt.yticks(np.arange(-0.5, ndbins), y_ticks)
   plt.xticks(np.arange(-0.5, nzbins, 2), x_ticks)
-  plt.title('$G_l$ correction factors using Kabsch method')
-  plt.savefig('Scaling_output_figure_lbfgs_resolution.png')
-  plt.show()
+  plt.title('Inverse scale factors for absorption correction')
+  plt.savefig('g_resolution.png')
+  #plt.show()
 
 def plot_data_absorption(data_man):
   "takes in a data manager object"
@@ -54,9 +54,9 @@ def plot_data_absorption(data_man):
   plt.xlabel('time (z)')
   #plt.yticks(np.arange(-0.5, ndbins), y_ticks)
   plt.xticks(np.arange(-0.5, nzbins, 2), x_ticks)
-  plt.title('$G_l$ correction factors using Kabsch method - \n detector position vs time')
-  plt.savefig('Scaling_output_figure_lbfgs_absorption.png')
-  plt.show()
+  plt.title('Inverse scale factors for absorption correction')
+  plt.savefig('g_absorption.png')
+  #plt.show()
 
 def plot_data_modulation(data_man):
   "takes in a data manager object"
@@ -75,9 +75,9 @@ def plot_data_modulation(data_man):
   plt.xlabel('x')
   #plt.yticks(np.arange(-0.5, ndbins), y_ticks)
   #plt.xticks(np.arange(-0.5, nzbins, 2), x_ticks)
-  plt.title('$G_l$ correction factors for modulation correction')
-  plt.savefig('Scaling_output_figure_lbfgs_modulation.png')
-  plt.show()
+  plt.title('Inverse scale factors for modulation correction')
+  plt.savefig('g_modulation.png')
+  #plt.show()
 
 def plot_correction_at_detector_area(data_man, position):
   G_fin = list(data_man.g_absorption)
@@ -116,14 +116,14 @@ def plot_absorption_correction_at_zbin(data_man, position):
   plt.show()
 
 if __name__ == "__main__":
-  datafile="/Users/whi10850/Documents/dials_scratch/jbe/scaling_code/test_data/13_integrated_scaled.pickle"
+  datafile="/Users/whi10850/Documents/dials_scratch/jbe/scaling_code/test_data/x4_wide_integrated_scaled.pickle"
   data_man = load_data(filename = datafile)
   #data_man = data.data_manager
   
-  Rmeas = R_meas(data_man)
-  print "R_meas of the (unmerged) data is %s" % (Rmeas)
-  Rpim = R_pim(data_man)
-  print "R_pim of the merged data is %s" % (Rpim)
+  #Rmeas = R_meas(data_man)
+  #print "R_meas of the (unmerged) data is %s" % (Rmeas)
+  #Rpim = R_pim(data_man)
+  #print "R_pim of the merged data is %s" % (Rpim)
   plot_data(data_man)
   plot_data_absorption(data_man)
   plot_data_modulation(data_man)
