@@ -713,7 +713,7 @@ class RefinerFactory(object):
             if deg_per_interval is libtbx.Auto and analysis is not None:
               intervals = [analysis[i]['interval_width'] for i in exp_ids]
               deg_per_interval = min(intervals)
-            else:
+            elif deg_per_interval is None:
               deg_per_interval = 36.0
             n_intervals = max(int(
               abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
@@ -801,7 +801,7 @@ class RefinerFactory(object):
             if deg_per_interval is libtbx.Auto and analysis is not None:
               intervals = [analysis[i]['interval_width'] for i in exp_ids]
               deg_per_interval = min(intervals)
-            else:
+            elif deg_per_interval is None:
               deg_per_interval = 36.0
             n_intervals = max(int(
               abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
@@ -823,7 +823,7 @@ class RefinerFactory(object):
             if deg_per_interval is libtbx.Auto and analysis is not None:
               intervals = [analysis[i]['interval_width'] for i in exp_ids]
               deg_per_interval = min(intervals)
-            else:
+            elif deg_per_interval is None:
               deg_per_interval = 36.0
             n_intervals = max(int(
               abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
@@ -932,7 +932,7 @@ class RefinerFactory(object):
             if deg_per_interval is libtbx.Auto and analysis is not None:
               intervals = [analysis[i]['interval_width'] for i in exp_ids]
               deg_per_interval = min(intervals)
-            else:
+            elif deg_per_interval is None:
               deg_per_interval = 36.0
             n_intervals = max(int(
               abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
@@ -967,7 +967,7 @@ class RefinerFactory(object):
               for i in exp_ids:
                 logger.debug(('Detector interval_width_degrees for experiment id'
                     ' {0} set to {1:.1f}').format(i, deg_per_interval))
-            else:
+            elif deg_per_interval is None:
               deg_per_interval = 36.0
             n_intervals = max(int(
               abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
