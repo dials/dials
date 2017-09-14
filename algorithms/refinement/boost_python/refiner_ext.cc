@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <scitbx/vec3.h>
 #include <scitbx/mat3.h>
+#include <iterator>
 
 using namespace boost::python;
 using namespace dials::af;
@@ -117,7 +118,7 @@ namespace dials { namespace refinement { namespace boost_python {
 
       //Return the value of the smallest element
       scitbx::af::shared<int>::iterator it = std::min_element(nref_each_param.begin(),nref_each_param.end());
-      result = *(nref_each_param.begin()+std::distance(std::begin(nref_each_param), it));
+      result = *(nref_each_param.begin()+std::distance( nref_each_param.begin(), it));
     }
     int result;
     static bool gtZero (double x) { return ( (x > 0.0) ==1 ); } //Used for comparison operation
