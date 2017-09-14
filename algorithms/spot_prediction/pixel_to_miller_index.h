@@ -47,7 +47,7 @@ namespace dials { namespace algorithms {
       : detector_(detector),
         scan_(scan),
         s0_(beam.get_s0()),
-        m2_(goniometer.get_rotation_axis()),
+        m2_(goniometer.get_rotation_axis_datum()),
         S_inv_(goniometer.get_setting_rotation().inverse()),
         F_inv_(goniometer.get_fixed_rotation().inverse()),
         A_inv_(crystal.get_A().inverse()) {}
