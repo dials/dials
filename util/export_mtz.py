@@ -603,7 +603,7 @@ def _calculate_batch_offsets(experiments):
   return batch_offsets
 
 
-def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
+def export_mtz(integrated_data, experiment_list, hklout,
                include_partials=False, keep_partials=False, scale_partials=True,
                min_isigi=None, force_static_model=False, filter_ice_rings=False,
                ignore_profile_fitting=False):
@@ -620,19 +620,16 @@ def export_mtz(integrated_data, experiment_list, hklout, ignore_panels=False,
   if len(experiment_list) > 1:
     # All experiments should match crystals, or else we need multiple crystals/datasets
     if not all(x.crystal == experiment_list[0].crystal for x in experiment_list[1:]):
-      print("Warning: Experiment crystals differ. Using first experiment crystal for file-level data.")
+      logger.warning("Warning: Experiment crystals differ. Using first experiment crystal for file-level data.")
 
     # We must match wavelengths (until multiple datasets supported)
     if not all(isclose(x.beam.get_wavelength(), experiment_list[0].beam.get_wavelength(), rel_tol=1e-9) for x in experiment_list[1:]):
       data = [x.beam.get_wavelength() for x in experiment_list]
       raise Sorry("Cannot export multiple experiments with different beam wavelengths ({})".format(data))
 
-  # also only work with one panel(for the moment)
-  if not ignore_panels:
-    if any(len(experiment.detector) != 1 for experiment in experiment_list):
-      raise Sorry('Only a single panel will be considered. To ignore panels '
-                  'other than the first for a multi-panel detector, set '
-                  'mtz.ignore_panels=true')
+  # also only work correctly with one panel (for the moment)
+  if any(len(experiment.detector) != 1 for experiment in experiment_list):
+    logger.warning('Warning: Ignoring multiple panels in output MTZ')
 
   # Clean up the data with the passed in options
   integrated_data = _apply_data_filters(integrated_data,

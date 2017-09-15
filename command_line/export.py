@@ -91,7 +91,7 @@ phil_scope = parse('''
 
     ignore_panels = False
       .type = bool
-      .help = "Ignore multiple panels / detectors in output"
+      .help = "Ignore multiple panels / detectors in output (deprecated)"
 
     include_partials = False
       .type = bool
@@ -261,7 +261,6 @@ class MTZExporter(object):
       self.reflections,
       self.experiments,
       self.params.mtz.hklout,
-      ignore_panels=params.mtz.ignore_panels,
       include_partials=params.mtz.include_partials,
       keep_partials=params.mtz.keep_partials,
       scale_partials=params.mtz.scale_partials,
