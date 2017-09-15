@@ -533,5 +533,3 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
 class ScanVaryingPredictionParameterisationSparse(
     SparseGradientVectorMixin, ScanVaryingPredictionParameterisation):
   pass
-
-
