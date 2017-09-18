@@ -52,16 +52,16 @@ def plot_data_absorption(data_man):
   plt.colorbar(im)
   plt.ylabel('detector position')
   plt.xlabel('time (z)')
-  #plt.yticks(np.arange(-0.5, ndbins), y_ticks)
-  plt.xticks(np.arange(-0.5, nzbins, 2), x_ticks)
+  #plt.yticks(np.arange(-0.5, nabsbins), y_ticks)
+  #plt.xticks(np.arange(-0.5, nzbins, 2), x_ticks)
   plt.title('Inverse scale factors for absorption correction')
   plt.savefig('g_absorption.png')
   #plt.show()
 
 def plot_data_modulation(data_man):
   "takes in a data manager object"
-  #x_ticks = data_man.bin_boundaries['z_value'][::2]
-  #x_ticks = ['%.0f' % x for x in x_ticks]
+  x_ticks = data_man.bin_boundaries['z_value'][::2]
+  x_ticks = ['%.0f' % x for x in x_ticks]
   nbins = data_man.binning_parameters['n_detector_bins']
   
   '''generate a plot of the result'''
@@ -73,8 +73,8 @@ def plot_data_modulation(data_man):
   plt.colorbar(im)
   plt.ylabel('y')
   plt.xlabel('x')
-  #plt.yticks(np.arange(-0.5, ndbins), y_ticks)
-  #plt.xticks(np.arange(-0.5, nzbins, 2), x_ticks)
+  #plt.yticks(np.arange(-0.5, nbins), x_ticks)
+  #plt.xticks(np.arange(-0.5, nbins), x_ticks)
   plt.title('Inverse scale factors for modulation correction')
   plt.savefig('g_modulation.png')
   #plt.show()

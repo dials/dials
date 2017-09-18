@@ -103,6 +103,9 @@ if __name__ == "__main__":
 
   '''clean up reflection table for outputting'''
   minimised.data_manager.sorted_reflections['inverse_scale_factor'] = minimised.data_manager.scale_factors
+  minimised.data_manager.sorted_reflections['g_decay'] = minimised.data_manager.scale_factors
+  minimised.data_manager.sorted_reflections['inverse_scale_factor'] = minimised.data_manager.scale_factors
+  minimised.data_manager.sorted_reflections['inverse_scale_factor'] = minimised.data_manager.scale_factors
   minimised.data_manager.initial_keys.append('inverse_scale_factor')
   for key in minimised.data_manager.reflection_table.keys():
     if not key in minimised.data_manager.initial_keys:

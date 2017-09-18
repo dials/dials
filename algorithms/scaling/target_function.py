@@ -18,8 +18,8 @@ class target_function(object):
     intensities = self.data_manager.sorted_reflections[self.data_manager.int_method[0]]
     variances = self.data_manager.sorted_reflections[self.data_manager.int_method[1]]
     R = (((intensities - (self.data_manager.scale_factors * self.data_manager.Ih_values))**2
-       ) / variances)
-    return R
+       ) / variances) * self.data_manager.scaling_weightings
+    return R 
 
   def calculate_gradient(self):
     assert 0, 'parameterization-specific gradient function must be defined in a subclass'
@@ -47,8 +47,10 @@ class xds_target_function(target_function):
               ) / (variances**0.5))
     grad = 2.0 * rhl * ((-1.0 * self.data_manager.Ih_values / (variances**0.5))
               - ((self.data_manager.scale_factors / (variances**0.5)) * dIhdg))
+
+    grad_selection = grad * self.data_manager.scaling_weightings
     return flex.double(np.bincount(self.data_manager.sorted_reflections[self.data_manager.bin_index],
-                     weights=grad, minlength=self.data_manager.param_size))
+                     weights=grad_selection, minlength=self.data_manager.param_size))
 
 class aimless_target_function(target_function):
   '''Class that takes a data manager object and returns a residual and

@@ -31,6 +31,7 @@ class Data_Manager(object):
     self.reflection_table['resolution'] = flex.double(
       [1.0 / (x**2) if x != 0 else 0 for x in self.reflection_table['d']])
     self.filtered_reflections = copy.deepcopy(self.reflection_table)
+    self.scaling_weightings = flex.double([1.0]*len(self.reflection_table))
     if scaling_options['integration_method'] == 'prf':
       self.int_method = (str('intensity.prf.value'), str('intensity.prf.variance'))
     elif scaling_options['integration_method'] == 'sum':
@@ -49,6 +50,7 @@ class Data_Manager(object):
       self.filtered_reflections[reflection_table_key], lower, upper)
     inv_sel = ~bad_data
     self.filtered_reflections = self.filtered_reflections.select(inv_sel)
+    self.scaling_weightings = flex.double([1.0]*len(self.filtered_reflections))
 
   def filter_I_sigma(self, ratio):
     sel = flex.bool()
@@ -58,6 +60,7 @@ class Data_Manager(object):
       else:
         sel.append(False)
     self.filtered_reflections = self.filtered_reflections.select(sel)
+    self.scaling_weightings = flex.double([1.0]*len(self.filtered_reflections))
 
   def filter_negative_intensities(self):
     '''return boolean selection of a given variable range'''
@@ -68,6 +71,18 @@ class Data_Manager(object):
       else:
         sel.append(True)
     self.filtered_reflections = self.filtered_reflections.select(sel)
+    self.scaling_weightings = flex.double([1.0]*len(self.filtered_reflections))
+
+  def filter_negative_variances(self):
+    '''return boolean selection of a given variable range'''
+    sel = flex.bool()
+    for intensity in self.filtered_reflections[self.int_method[1]]:
+      if intensity <= 0.0:
+        sel.append(False)
+      else:
+        sel.append(True)
+    self.filtered_reflections = self.filtered_reflections.select(sel)
+    self.scaling_weightings = flex.double([1.0]*len(self.filtered_reflections))
 
   def map_indices_to_asu(self):
     '''Create a miller_set object, map to the asu and create a sorted
@@ -102,6 +117,25 @@ class Data_Manager(object):
       self.scaled_by_LP = True
     else:
       assert 0, ValueError('Data already scaled by LP and dqe correction')
+
+  def scale_weight_Isigma(self, ratio):
+    print "Total number of reflections considered %s" % len(self.sorted_reflections['d'])
+    for i, intensity in enumerate(self.sorted_reflections[self.int_method[0]]):
+      if intensity/((self.sorted_reflections[self.int_method[1]][i])**0.5) > ratio:
+        self.scaling_weightings[i] = self.scaling_weightings[i]*1.0
+      else:
+        self.scaling_weightings[i] = self.scaling_weightings[i]*0.0
+    print "Number of reflections used for scale factor calculation %s" % self.scaling_weightings.count(1)
+
+  def scale_weight_dmin(self, dvalue):
+    print "Total number of reflections considered %s" % len(self.sorted_reflections['d'])
+    for i, dval in enumerate(self.sorted_reflections['d']):
+      if dval > dvalue:
+        self.scaling_weightings[i] = self.scaling_weightings[i]*1.0
+      else:
+        self.scaling_weightings[i] = self.scaling_weightings[i]*0.0
+    print "Number of reflections used for scale factor calculation %s" % self.scaling_weightings.count(1)
+  
 
   def assign_h_index(self):
     '''assign an index to the sorted reflection table that
@@ -285,9 +319,96 @@ class XDS_Data_Manager(Data_Manager):
                           + (secondbin_index * nxbins * nybins))
     self.g_absorption = flex.double([1.0] * (nxbins * nybins * nzbins))
 
+  def bin_reflections_absorption_radially(self):
+    '''bin reflections for absorption correction'''
+    from math import pi
+    nxbins = nybins = self.binning_parameters['n_absorption_positions']
+    nzbins = self.binning_parameters['n_z_bins']
+    '''Bin the data into detector position and time 'z' bins'''
+    z_bins = self.bin_boundaries['z_value']
+    #define simple detector area map#
+    xvalues = self.sorted_reflections['x_value']
+    (xmax, xmin) = (max(xvalues), min(xvalues))
+    yvalues = self.sorted_reflections['y_value']
+    (ymax, ymin) = (max(yvalues), min(yvalues))
+    xcenter = (xmax - xmin) / 2.0
+    ycenter = (ymax - ymin) / 2.0
+    xrelvalues = xvalues - xcenter
+    yrelvalues = yvalues - ycenter
+
+    radial_bins = [0.0, ymax / 6.0, 2.0*ymax / 6.0,  (2.0**0.5) * ymax / 2.0]
+    angular_bins = [0, pi/4.0, 2.0*pi/4.0, 3.0*pi/4.0, 5.0*pi/4.0, 6.0*pi/4.0, 7.0*pi/4.0, 2.0*pi ]
+
+    radial_values = ((xrelvalues**2) + (yrelvalues**2))**0.5
+    angular_values = np.arccos(yrelvalues/radial_values)
+    for i in range(0,len(angular_values)):
+      if xrelvalues[i]<0.0:
+        angular_values[i] = (2.0 * pi) - angular_values[i]
+
+    firstbin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
+    secondbin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
+    for i in range(len(angular_bins)-1):
+      selection1 = select_variables_in_range(
+        angular_values, angular_bins[i], angular_bins[i+1])
+      for j in range(len(radial_bins)-1):
+        selection2 = select_variables_in_range(
+          radial_values, radial_bins[j], radial_bins[j+1])
+        firstbin_index.set_selected(selection1 & selection2,
+                      ((i * (len(radial_bins)-1)) + j))
+    for i in range(nzbins):
+      selection = select_variables_in_range(
+        self.sorted_reflections['z_value'], z_bins[i], z_bins[i+1])
+      secondbin_index.set_selected(selection, i)
+    if firstbin_index.count(-1) > 0 or secondbin_index.count(-1) > 0:
+      raise ValueError('Unable to bin data for absorption in scaling initialisation')
+    self.sorted_reflections['a_bin_index'] = (firstbin_index
+                          + (secondbin_index * (len(angular_bins)-1) * (len(radial_bins)-1)))
+    self.g_absorption = flex.double([1.0] * ((len(angular_bins)-1) * (len(radial_bins)-1) * nzbins))
+
+  def bin_reflections_absorption_smartly(self):
+    import gridding_entropy_dm as gedm
+    min_in_each_abs_bin = 100
+    
+    nzbins = self.binning_parameters['n_z_bins']
+    '''Bin the data into detector position and time 'z' bins'''
+    z_bins = self.bin_boundaries['z_value']
+    #define simple detector area map#
+    xvalues = self.sorted_reflections['x_value']
+    (xmax, xmin) = (max(xvalues), min(xvalues))
+    yvalues = self.sorted_reflections['y_value']
+    (ymax, ymin) = (max(yvalues), min(yvalues))
+
+    xrelvalues = self.sorted_reflections['x_value']*6.0/(xmax+0.001)
+    yrelvalues = self.sorted_reflections['y_value']*6.0/(ymax+0.001)
+
+    secondbin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
+    for i in range(nzbins):
+      selection = select_variables_in_range(
+        self.sorted_reflections['z_value'], z_bins[i], z_bins[i+1])
+      secondbin_index.set_selected(selection, i)
+
+    bin_boundaries_x1 = [0,2,4,6]
+    bin_boundaries_y1 = [0,2,4,6]
+    reflections_for_gridding = gedm.refl_table(xrelvalues, yrelvalues, secondbin_index, nzbins, self.h_index_counter_array, self.h_index_cumulative_array )
+    print gedm.calc_entropy_2D(reflections_for_gridding, bin_boundaries_x1, bin_boundaries_y1)
+    optimal_boundaries = gedm.perform_optimal_divide(reflections_for_gridding, bin_boundaries_x1, bin_boundaries_y1, min_in_each_abs_bin)
+    print len(optimal_boundaries)
+    
+    firstbin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
+    for i in range(len(optimal_boundaries)):
+      selection1 = select_variables_in_range(xrelvalues, optimal_boundaries[i][0][0], optimal_boundaries[i][0][1])
+      selection2 = select_variables_in_range(yrelvalues, optimal_boundaries[i][1][0], optimal_boundaries[i][1][1])
+      firstbin_index.set_selected(selection1 & selection2, i)
+    
+    if firstbin_index.count(-1) > 0 or secondbin_index.count(-1) > 0:
+      raise ValueError('Unable to bin data for absorption in scaling initialisation')
+    self.sorted_reflections['a_bin_index'] = (firstbin_index
+                          + (secondbin_index * len(optimal_boundaries)))
+    self.g_absorption = flex.double([1.0] * (len(optimal_boundaries) * nzbins))
+
   def initialise_scale_factors(self):
     self.bin_reflections_decay()
-    self.bin_reflections_absorption()
+    self.bin_reflections_absorption_radially()
     self.bin_reflections_modulation()
     self.scale_factors = flex.double([1.0]*len(self.sorted_reflections['d']))
     self.g_parameterisation = [self.g_absorption, self.g_modulation, self.g_decay]
