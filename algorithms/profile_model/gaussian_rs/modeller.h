@@ -509,8 +509,8 @@ namespace dials { namespace algorithms {
             mask_const_reference mask2 = transform.mask().const_ref();
             af::versa< bool, af::c_grid<3> > m(mask2.accessor());
             DIALS_ASSERT(mask1.size() == mask2.size());
-            for (std::size_t i = 0; i < m.size(); ++i) {
-              m[i] = mask1[i] && mask2[i];
+            for (std::size_t j = 0; j < m.size(); ++j) {
+              m[j] = mask1[j] && mask2[j];
             }
 
             // Do the profile fitting
