@@ -14,10 +14,10 @@ from target_function import *
 class LBFGS_optimiser(object):
   '''Class that takes in Data_Manager object and runs
   an LBFGS minimisation in a Kabsch approach '''
-  def __init__(self, Data_Manager_object, parameters, param_name, 
+  def __init__(self, Data_Manager_object, param_name, 
          decay_correction_rescaling=False):
     self.data_manager = Data_Manager_object
-    self.x = parameters
+    self.x = None
     self.parameter_name = param_name
     self.set_up_parameterisation()
     self.residuals = []
@@ -31,16 +31,15 @@ class LBFGS_optimiser(object):
   def set_up_parameterisation(self):
     '''Set up the problem by indicating which g values are being minimised'''
     constant_g_values = []
-    for parameterisation_type in self.data_manager.sf_parameterisations:
-      index = self.data_manager.sf_parameterisations.index(parameterisation_type)
-      bin_index = self.data_manager.bin_indices[index]
+    for parameterisation_type, parameterisation in self.data_manager.g_parameterisation.iteritems():
+      bin_index = parameterisation['index']
       if self.parameter_name == parameterisation_type:
-        #change name to active bin index?
-        self.data_manager.bin_index = bin_index
-        self.data_manager.param_size = len(self.x)
+        self.data_manager.active_bin_index = bin_index
+        self.x = parameterisation['parameterisation']
+        self.data_manager.active_param_size = len(self.x)
       else:
         constant_g_values.append(
-          flex.double([self.data_manager.g_parameterisation[index][i]
+          flex.double([self.data_manager.g_parameterisation[parameterisation_type]['parameterisation'][i]
                  for i in self.data_manager.sorted_reflections[bin_index]]))
     self.data_manager.constant_g_values = constant_g_values[0]*constant_g_values[1]
 

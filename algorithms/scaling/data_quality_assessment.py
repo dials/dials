@@ -4,8 +4,8 @@ Simple functions for calculating R_meas, R_int from a Data_Manager_object
 
 def R_meas(Data_Manager_object):
   '''Calculate R_meas from a Data_Manager_object'''
-  Ihl = Data_Manager_object.sorted_reflections[Data_Manager_object.int_method[0]]
-  Ih = Data_Manager_object.Ih_values
+  Ihl = Data_Manager_object.sorted_reflections['intensity']
+  Ih = Data_Manager_object.sorted_reflections['Ih_values']
   '''gvalues1 = flex.double([Data_Manager_object.g_values[i]
         for i in Data_Manager_object.sorted_reflections['l_bin_index']])
   gvalues2 = flex.double([Data_Manager_object.g2_values[i]
@@ -51,8 +51,8 @@ def R_meas(Data_Manager_object):
 
 def R_pim(Data_Manager_object):
   '''Calculate R_pim from a Data_Manager_object'''
-  Ihl = Data_Manager_object.sorted_reflections[Data_Manager_object.int_method[0]]
-  Ih = Data_Manager_object.Ih_values
+  Ihl = Data_Manager_object.sorted_reflections['intensity']
+  Ih = Data_Manager_object.sorted_reflections['Ih_values']
   gvalues = Data_Manager_object.sorted_reflections['inverse_scale_factor']
   Rpim_upper = 0.0
   Rpim_lower = 0.0

@@ -29,7 +29,7 @@ class xds_basis_function(basis_function):
   '''Subclass of basis_function for xds parameterisation'''
   def calculate_scale_factors(self):
     gxvalues = flex.double([self.parameters[i] for i in
-           self.data_manager.sorted_reflections[self.data_manager.bin_index]])
+           self.data_manager.sorted_reflections[self.data_manager.active_bin_index]])
     scale_factors = gxvalues * self.data_manager.constant_g_values
     return scale_factors
 
