@@ -1185,13 +1185,13 @@ class SpotFrame(XrayFrame) :
             if self.settings.show_predictions or self.settings.show_miller_indices:
               x = None
               if 'xyzcal.px' in reflection:
-                x, y = map_coords(reflection['xyzcal.px'][0] + 0.5,
-                                  reflection['xyzcal.px'][1] + 0.5,
+                x, y = map_coords(reflection['xyzcal.px'][0],
+                                  reflection['xyzcal.px'][1],
                                   reflection['panel'])
               elif 'xyzcal.mm' in reflection:
                 x, y = detector[reflection['panel']].millimeter_to_pixel(
                   reflection['xyzcal.mm'][:2])
-                x, y = map_coords(x+ 0.5, y + 0.5, reflection['panel'])
+                x, y = map_coords(x, y, reflection['panel'])
               if x is None: next
 
               if self.settings.show_predictions:
@@ -1226,7 +1226,7 @@ class SpotFrame(XrayFrame) :
       if len(detector) == 1:
         beam_centre = detector[0].get_ray_intersection(beam.get_s0())
         beam_x, beam_y = detector[0].millimeter_to_pixel(beam_centre)
-        beam_x, beam_y = map_coords(beam_x+ 0.5, beam_y + 0.5, 0)
+        beam_x, beam_y = map_coords(beam_x, beam_y, 0)
       else:
         try:
           panel, beam_centre = detector.get_ray_intersection(beam.get_s0())
@@ -1238,7 +1238,7 @@ class SpotFrame(XrayFrame) :
           else:
             raise e
         beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
-        beam_x, beam_y = map_coords(beam_x+ 0.5, beam_y + 0.5, panel)
+        beam_x, beam_y = map_coords(beam_x, beam_y, panel)
       lines = []
       for i, h in enumerate(((10,0,0), (0,10,0), (0,0,10))):
         r = A * matrix.col(h)
@@ -1250,12 +1250,12 @@ class SpotFrame(XrayFrame) :
         if len(detector) == 1:
           xy = detector[0].get_ray_intersection(s1)
           x, y = detector[0].millimeter_to_pixel(xy)
-          x, y = map_coords(x + 0.5, y + 0.5, 0)
+          x, y = map_coords(x, y, 0)
         else:
           panel = detector.get_panel_intersection(s1)
           if panel < 0: continue
           x, y = detector[panel].get_ray_intersection_px(s1)
-          x, y = map_coords(x + 0.5, y + 0.5, panel)
+          x, y = map_coords(x, y, panel)
         vector_data.append((((beam_x, beam_y), (x, y)), vector_dict))
 
         vector_text_data.append((x, y, ('a*', 'b*', 'c*')[i],

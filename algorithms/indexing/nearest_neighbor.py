@@ -3,7 +3,7 @@ import math
 
 class neighbor_analysis(object):
   def __init__(self, reflections, step_size=45, tolerance=1.5,
-               max_height_fraction=0.25, percentile=0.05,
+               max_height_fraction=0.25, percentile=None,
                histogram_binning='linear', nn_per_bin=5):
     self.tolerance = tolerance # Margin of error for max unit cell estimate
     from scitbx.array_family import flex
@@ -64,10 +64,11 @@ class neighbor_analysis(object):
     direct = direct.select(sel)
     d_spacings = d_spacings.select(sel)
 
-    # reject top 1% of longest distances to hopefully get rid of any outliers
-    n = int(math.floor(0.99*len(direct)))
-    direct = direct[:n]
-    d_spacings = d_spacings[:n]
+    if percentile is None:
+      # reject top 1% of longest distances to hopefully get rid of any outliers
+      n = int(math.floor(0.99*len(direct)))
+      direct = direct[:n]
+      d_spacings = d_spacings[:n]
 
     # determine the most probable nearest neighbor distance (direct space)
     if self.histogram_binning == 'log':
@@ -100,16 +101,18 @@ class neighbor_analysis(object):
       hst.show(f=out, prefix="    ", format_cutoffs="%6.2f")
       print >> out, ""
 
-    # choose a max cell based on bins above a given fraction of the highest bin height
-    # given multiple
-    isel = (self.relative_frequency.as_double() > (
-      max_height_fraction * highest_bin_height)).iselection()
-    self.max_cell = (
-      self.tolerance * self.slot_end[int(flex.max(isel.as_double()))])
+    if percentile is not None:
+      # determine the nth-percentile direct-space distance
+      perm = flex.sort_permutation(direct, reverse=True)
+      self.max_cell = self.tolerance * direct[perm[int((1 - percentile) * len(direct))]]
 
-    # determine the 5th-percentile direct-space distance
-    perm = flex.sort_permutation(direct, reverse=True)
-    self.percentile = direct[perm[int(percentile * len(direct))]]
+    else:
+      # choose a max cell based on bins above a given fraction of the highest bin height
+      # given multiple
+      isel = (self.relative_frequency.as_double() > (
+        max_height_fraction * highest_bin_height)).iselection()
+      self.max_cell = (
+        self.tolerance * self.slot_end[int(flex.max(isel.as_double()))])
 
     self.reciprocal_lattice_vectors = rs_vectors
     self.d_spacings = d_spacings

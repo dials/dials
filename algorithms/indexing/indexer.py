@@ -56,8 +56,8 @@ max_cell_estimation
     .help = "Step size, in degrees, of the blocks used to peform the max_cell "
             "estimation."
     .expert_level = 2
-  nearest_neighbor_percentile = 0.05
-    .type = float(value_min=0)
+  nearest_neighbor_percentile = None
+    .type = float(value_min=0, value_max=1)
     .help = "Percentile of NN histogram to use for max cell determination."
     .expert_level = 2
   histogram_binning = linear *log
@@ -1979,7 +1979,7 @@ def detect_non_primitive_basis(miller_indices, threshold=0.9):
 
 
 def find_max_cell(reflections, max_cell_multiplier, step_size,
-                  nearest_neighbor_percentile, histogram_binning='linear',
+                  nearest_neighbor_percentile=None, histogram_binning='linear',
                   nn_per_bin=5, max_height_fraction=0.25,
                   filter_ice=True, filter_overlaps=True, overlaps_border=0):
   logger.debug('Finding suitable max_cell based on %i reflections' % len(reflections))
