@@ -274,7 +274,7 @@ namespace dials { namespace algorithms {
   /* }; */
 
   namespace detail {
-    
+
     template <typename T, std::size_t N>
     af::const_ref<T, af::c_grid<2> > as_2d(const af::const_ref< T, af::c_grid<N> > &src) {
       DIALS_ASSERT(N > 2);
@@ -313,7 +313,7 @@ namespace dials { namespace algorithms {
         std::size_t maxiter = 10) {
       fit(d, b, m, p, eps, maxiter);
     }
-    
+
     /**
      * Profile fit and deconvolve multiple reflections
      */
@@ -339,7 +339,7 @@ namespace dials { namespace algorithms {
         std::size_t maxiter = 10) {
       fit(d.as_1d(), b.as_1d(), m.as_1d(), p.as_1d(), eps, maxiter);
     }
-    
+
     /**
      * Profile fit and deconvolve multiple 2D reflections
      */
@@ -352,7 +352,7 @@ namespace dials { namespace algorithms {
         std::size_t maxiter = 10) {
       fit(d.as_1d(), b.as_1d(), m.as_1d(), p.as_1d(), eps, maxiter);
     }
-    
+
     /**
      * Profile fit a single 3D reflection
      */
@@ -365,7 +365,7 @@ namespace dials { namespace algorithms {
         std::size_t maxiter = 10) {
       fit(d.as_1d(), b.as_1d(), m.as_1d(), detail::as_2d(p), eps, maxiter);
     }
-    
+
     /**
      * Profile fit and deconvolve multiple 3D reflections
      */
@@ -422,7 +422,7 @@ namespace dials { namespace algorithms {
     }
 
   protected:
-    
+
     /**
      * Profile fit a single reflection
      *
@@ -572,12 +572,12 @@ namespace dials { namespace algorithms {
 
       // Iterate a number of times
       for (niter_ = 0; niter_ < maxiter; ++niter_) {
-       
+
         // Compute the variance for the given estimate
         std::copy(b.begin(), b.end(), v.begin());
         for (std::size_t j = 0; j < M; ++j) {
           for (std::size_t i = 0; i < N; ++i) {
-            v[i] += I[j] * p(j,i); 
+            v[i] += I[j] * p(j,i);
           }
         }
 
@@ -591,7 +591,7 @@ namespace dials { namespace algorithms {
             }
           }
         }
-        
+
         std::fill(A.begin(), A.end(), 0);
         for (std::size_t k = 0; k < M; ++k) {
           for (std::size_t i = 0; i < N; ++i) {
@@ -628,7 +628,7 @@ namespace dials { namespace algorithms {
 
       // Set the return values
       for (std::size_t j = 0; j < M; ++j) {
-         
+
         double V = 0;
         for (std::size_t i = 0; i < N; ++i) {
           if (m[i] && p(j,i) > 0) {
@@ -644,7 +644,7 @@ namespace dials { namespace algorithms {
       correlation_ = compute_correlation(d, b, m, p);
 
     }
-   
+
     /**
      * Compute the correlation for a single reflection
      */
@@ -653,7 +653,7 @@ namespace dials { namespace algorithms {
         const af::const_ref<T> &b,
         const af::const_ref<bool> &m,
         const af::const_ref<T> &p) const {
-      
+
       // Compute the mean observed and predicted
       double xb = 0.0, yb = 0.0;
       std::size_t count = 0;
@@ -667,7 +667,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(count > 0);
       xb /= count;
       yb /= count;
-      
+
       // Compute the variance
       double sdxdy = 0.0, sdx2 = 0.0, sdy2 = 0.0;
       for (std::size_t i = 0; i < p.size(); ++i) {
@@ -679,7 +679,7 @@ namespace dials { namespace algorithms {
           sdy2 += dy*dy;
         }
       }
-      
+
       // Compute the correlation
       double result = 0.0;
       if (sdx2 > 0.0 && sdy2 > 0.0) {
@@ -687,7 +687,7 @@ namespace dials { namespace algorithms {
       }
       return result;
     }
-    
+
     /**
      * Compute the correlation for multiple profiles
      */

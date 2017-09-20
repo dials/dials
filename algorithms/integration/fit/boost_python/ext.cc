@@ -66,7 +66,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   template <typename FloatType>
   void profile_fitter_wrapper(const char *name) {
-    
+
     typedef ProfileFitter<FloatType> ProfileFitterType;
 
     class_< ProfileFitterType >(name, no_init)
@@ -90,7 +90,7 @@ namespace dials { namespace algorithms { namespace boost_python {
           std::size_t maxiter) {
     return ProfileFitter<FloatType>(d, b, m, p, eps, maxiter);
   }
-  
+
   template <typename FloatType>
   ProfileFitter<FloatType> make_profile_fitter_2d_1(
           const af::const_ref< FloatType, af::c_grid<2> > &d,
@@ -101,7 +101,7 @@ namespace dials { namespace algorithms { namespace boost_python {
           std::size_t maxiter) {
     return ProfileFitter<FloatType>(d, b, m, p, eps, maxiter);
   }
-  
+
   template <typename FloatType>
   ProfileFitter<FloatType> make_profile_fitter_3d_1(
           const af::const_ref< FloatType, af::c_grid<3> > &d,
@@ -112,7 +112,7 @@ namespace dials { namespace algorithms { namespace boost_python {
           std::size_t maxiter) {
     return ProfileFitter<FloatType>(d, b, m, p, eps, maxiter);
   }
-  
+
   template <typename FloatType>
   ProfileFitter<FloatType> make_profile_fitter_1d_n(
           const af::const_ref< FloatType > &d,
@@ -123,7 +123,7 @@ namespace dials { namespace algorithms { namespace boost_python {
           std::size_t maxiter) {
     return ProfileFitter<FloatType>(d, b, m, p, eps, maxiter);
   }
-  
+
   template <typename FloatType>
   ProfileFitter<FloatType> make_profile_fitter_2d_n(
           const af::const_ref< FloatType, af::c_grid<2> > &d,
@@ -134,7 +134,7 @@ namespace dials { namespace algorithms { namespace boost_python {
           std::size_t maxiter) {
     return ProfileFitter<FloatType>(d, b, m, p, eps, maxiter);
   }
-  
+
   template <typename FloatType>
   ProfileFitter<FloatType> make_profile_fitter_3d_n(
           const af::const_ref< FloatType, af::c_grid<3> > &d,
@@ -145,10 +145,10 @@ namespace dials { namespace algorithms { namespace boost_python {
           std::size_t maxiter) {
     return ProfileFitter<FloatType>(d, b, m, p, eps, maxiter);
   }
- 
+
   template <typename Func>
   void def_make_profile_fitter(Func func) {
-    def("ProfileFitter", 
+    def("ProfileFitter",
         func, (
           arg("data"),
           arg("background"),
@@ -175,14 +175,14 @@ namespace dials { namespace algorithms { namespace boost_python {
     def_make_profile_fitter(&make_profile_fitter_1d_n<float>);
     def_make_profile_fitter(&make_profile_fitter_2d_n<float>);
     def_make_profile_fitter(&make_profile_fitter_3d_n<float>);
-    
+
     def_make_profile_fitter(&make_profile_fitter_1d_1<double>);
     def_make_profile_fitter(&make_profile_fitter_2d_1<double>);
     def_make_profile_fitter(&make_profile_fitter_3d_1<double>);
     def_make_profile_fitter(&make_profile_fitter_1d_n<double>);
     def_make_profile_fitter(&make_profile_fitter_2d_n<double>);
     def_make_profile_fitter(&make_profile_fitter_3d_n<double>);
-    /* def("ProfileFitter", */ 
+    /* def("ProfileFitter", */
     /*     &make_profile_fitter_1<float>, ( */
     /*       arg("data"), */
     /*       arg("background"), */
@@ -190,7 +190,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     /*       arg("profile"), */
     /*       arg("eps")=1e-3, */
     /*       arg("maxiter")=10)); */
-    /* def("ProfileFitter", */ 
+    /* def("ProfileFitter", */
     /*     &make_profile_fitter_n<float>, ( */
     /*       arg("data"), */
     /*       arg("background"), */
@@ -198,7 +198,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     /*       arg("profile"), */
     /*       arg("eps")=1e-3, */
     /*       arg("maxiter")=10)); */
-    /* def("ProfileFitter", */ 
+    /* def("ProfileFitter", */
     /*     &make_profile_fitter_1<double>, ( */
     /*       arg("data"), */
     /*       arg("background"), */
@@ -206,7 +206,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     /*       arg("profile"), */
     /*       arg("eps")=1e-3, */
     /*       arg("maxiter")=10)); */
-    /* def("ProfileFitter", */ 
+    /* def("ProfileFitter", */
     /*     &make_profile_fitter_n<double>, ( */
     /*       arg("data"), */
     /*       arg("background"), */

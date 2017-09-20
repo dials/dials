@@ -537,11 +537,11 @@ namespace dials { namespace algorithms {
             /* } */
             // Do the profile fitting
             ProfileFitter<double> fit(
-                c, 
-                b, 
-                m.const_ref(), 
-                p, 
-                1e-3, 
+                c,
+                b,
+                m.const_ref(),
+                p,
+                1e-3,
                 100);
             DIALS_ASSERT(fit.niter() < 100);
 

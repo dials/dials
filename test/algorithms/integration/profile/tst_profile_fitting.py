@@ -23,15 +23,15 @@ class Test(object):
     self.tst_identical_partial()
     self.tst_with_no_background_partial()
     self.tst_with_flat_background_partial()
-   
+
     self.tst_deconvolve_zero()
 
     self.tst_deconvolve_3_with_no_background()
     self.tst_deconvolve_3_with_flat_background()
-    
+
     self.tst_deconvolve_7_with_no_background()
     self.tst_deconvolve_7_with_flat_background()
-  
+
   def tst_zero(self):
 
     from dials.algorithms.integration.fit import ProfileFitter
@@ -61,7 +61,7 @@ class Test(object):
     assert(abs(V[0] - I[0]) < eps)
 
     print 'OK'
-  
+
   def tst_identical(self):
 
     from dials.algorithms.integration.fit import ProfileFitter
@@ -272,7 +272,7 @@ class Test(object):
     assert(abs(V[0] - Vknown) < eps)
 
     print 'OK'
-   
+
   def generate_3_profiles(self):
     from dials.array_family import flex
     p1 = gaussian((40, 9, 9), 1, (10.5, 4, 4), (2, 2, 2))
@@ -289,7 +289,7 @@ class Test(object):
     p[1:2,:,:,:] = p2
     p[2:3,:,:,:] = p3
     return p
-    
+
   def generate_7_profiles(self):
     from dials.array_family import flex
     p1 = gaussian((40, 40, 40), 1, (10.5, 20.5, 20.5), (2, 2, 2))
@@ -322,7 +322,7 @@ class Test(object):
     p[5:6,:,:,:] = p6
     p[6:7,:,:,:] = p7
     return p
-  
+
   def tst_deconvolve_zero(self):
     from dials.algorithms.integration.fit import ProfileFitter
     from scitbx.array_family import flex
@@ -383,7 +383,7 @@ class Test(object):
       I = fit.intensity()
       V = fit.variance()
       assert fit.niter() < fit.maxiter()
-      
+
       for i in range(3):
         Ical[i].append(I[i])
 
@@ -391,7 +391,7 @@ class Test(object):
       Ical[i] = sum(Ical[i]) / len(Ical[i])
 
     Iknown = [1048.3221116842406, 1920.9035376774107, 2938.7743506383745]
-    
+
     # Test intensity is the same
     eps = 1e-7
     for i in range(3):
@@ -430,7 +430,7 @@ class Test(object):
       I = fit.intensity()
       V = fit.variance()
       assert fit.niter() < fit.maxiter()
-      
+
       for i in range(3):
         Ical[i].append(I[i])
 
@@ -439,7 +439,7 @@ class Test(object):
 
     Iknown = [1030.7018033805357, 1948.7152700952695, 2972.983204218213]
     Vknown = [4270.701803380534, 5188.715270095279, 6212.983204218214]
-    
+
     # Test intensity is the same
     eps = 1e-7
     for i in range(3):
@@ -447,7 +447,7 @@ class Test(object):
       assert(abs(V[i] - Vknown[i]) < eps)
 
     print 'OK'
-    
+
   def tst_deconvolve_7_with_no_background(self):
     from dials.algorithms.integration.fit import ProfileFitter
     from scitbx.array_family import flex
@@ -477,7 +477,7 @@ class Test(object):
       I = fit.intensity()
       V = fit.variance()
       assert fit.niter() < fit.maxiter()
-      
+
       for i in range(7):
         Ical[i].append(I[i])
 
@@ -487,7 +487,7 @@ class Test(object):
     Iknown = [1012.4193633595916, 1472.3322059495797, 2072.136413825826,
               2486.4902438469253, 3012.6132119521126, 3409.2053517072773,
               3952.803209358826]
-    
+
     # Test intensity is the same
     eps = 1e-7
     for i in range(7):
@@ -495,7 +495,7 @@ class Test(object):
       assert(abs(V[i] - Iknown[i]) < eps)
 
     print 'OK'
-  
+
   def tst_deconvolve_7_with_flat_background(self):
     from dials.algorithms.integration.fit import ProfileFitter
     from scitbx.array_family import flex
@@ -526,7 +526,7 @@ class Test(object):
       I = fit.intensity()
       V = fit.variance()
       assert fit.niter() < fit.maxiter()
-      
+
       for i in range(7):
         Ical[i].append(I[i])
 
