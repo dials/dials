@@ -14,34 +14,36 @@ from target_function import *
 class LBFGS_optimiser(object):
   '''Class that takes in Data_Manager object and runs
   an LBFGS minimisation in a Kabsch approach '''
-  def __init__(self, Data_Manager_object, param_name, 
-         decay_correction_rescaling=False):
+  def __init__(self, Data_Manager_object, param_name):
     self.data_manager = Data_Manager_object
     self.x = None
     self.parameter_name = param_name
     self.set_up_parameterisation()
     self.residuals = []
     lbfgs.run(target_evaluator=self)
-    if decay_correction_rescaling:
-      self.data_manager.scale_gvalues()
-  
+    if param_name == 'g_decay':
+      if self.data_manager.scaling_options['decay_correction_rescaling']:
+        self.data_manager.scale_gvalues()
+
   def return_data_manager(self):
-    return self.data_manager 
+    '''return data_manager method'''
+    return self.data_manager
 
   def set_up_parameterisation(self):
     '''Set up the problem by indicating which g values are being minimised'''
     constant_g_values = []
-    for parameterisation_type, parameterisation in self.data_manager.g_parameterisation.iteritems():
+    for p_type, parameterisation in self.data_manager.g_parameterisation.iteritems():
       bin_index = parameterisation['index']
-      if self.parameter_name == parameterisation_type:
+      if self.parameter_name == p_type:
         self.data_manager.active_bin_index = bin_index
         self.x = parameterisation['parameterisation']
         self.data_manager.active_param_size = len(self.x)
       else:
-        constant_g_values.append(
-          flex.double([self.data_manager.g_parameterisation[parameterisation_type]['parameterisation'][i]
-                 for i in self.data_manager.sorted_reflections[bin_index]]))
-    self.data_manager.constant_g_values = constant_g_values[0]*constant_g_values[1]
+        constant_g_values.append(flex.double(
+          [self.data_manager.g_parameterisation[p_type]['parameterisation'][i]
+           for i in self.data_manager.sorted_reflections[bin_index]]))
+    constant_g_values = np.array(constant_g_values)
+    self.data_manager.constant_g_values = flex.double(np.prod(constant_g_values, axis=0))
 
   def compute_functional_and_gradients(self):
     '''first calculate the updated values of the scale factors and Ih,
@@ -62,7 +64,7 @@ class B_optimiser(object):
     self.res_values = flex.double([])
     for i in range(0, len(d_bin_boundaries) - 1):
       self.res_values.append(((1.0 / (d_bin_boundaries[i]**2))
-                  +(1.0 / (d_bin_boundaries[i+1]**2))) / 2.0)
+                              +(1.0 / (d_bin_boundaries[i+1]**2))) / 2.0)
     self.x = initial_values
     lbfgs.run(target_evaluator=self)
 
@@ -85,6 +87,6 @@ class B_optimiser(object):
     G = flex.double([0.0, 0.0])
     for i, val in enumerate(resolution):
       G[0] += (2.0 * ((gvalues[i] * exp((self.x[0]) * val)) - self.x[1])
-           * resolution[i]*gvalues[i]*exp((self.x[0])*resolution[i]))
+               * resolution[i]*gvalues[i]*exp((self.x[0])*resolution[i]))
       G[1] += -2.0 * ((gvalues[i] * exp((self.x[0]) * val)) - self.x[1])
     return G

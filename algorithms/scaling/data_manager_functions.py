@@ -25,18 +25,23 @@ class Data_Manager(object):
     self.reflection_table['z_value'] = self.reflection_table['xyzobs.px.value'].parts()[2]
     self.reflection_table['inverse_scale_factor'] = flex.double([1.0]*len(self.reflection_table))
     self.reflection_table['Ih_values'] = flex.double([0.0]*len(self.reflection_table))
-    self.reflection_table['scaling_weightings'] = flex.double([1.0]*len(self.reflection_table))
     self.sorted_by_miller_index = False
     self.sorted_reflections = None
     self.filtered_reflections = None
     self.Ih_array = None
     self.h_index_counter_array = None
     self.h_index_cumulative_array = None
+    self.scaling_options = scaling_options
     #set choice of intensity and filter out bad values of d, variance etc.
     #fltering methods could be replaced by use of reflection table flags?
     self.select_optimal_intensities(scaling_options)
     #sort the reflection table
     self.filter_and_sort_reflections()
+    self.weights_for_scaling = Weighting(self.sorted_reflections)
+    self.weights_for_scaling.apply_Isigma_cutoff(self.sorted_reflections,
+                                                 scaling_options['Isigma_min'])
+    self.weights_for_scaling.apply_dmin_cutoff(self.sorted_reflections, 
+                                               scaling_options['d_min'])
 
   def filter_and_sort_reflections(self):
     self.filtered_reflections = copy.deepcopy(self.reflection_table)
@@ -151,26 +156,6 @@ class Data_Manager(object):
         sel.append(True)
     self.filtered_reflections = self.filtered_reflections.select(sel)
 
-  '''define a number of ways to weight the data for determining the scale factors'''
-  def scale_weight_Isigma(self, ratio):
-    print "Total number of reflections considered %s" % len(self.sorted_reflections['d'])
-    for i, intensity in enumerate(self.sorted_reflections['intensity']):
-      if intensity/((self.sorted_reflections['variance'][i])**0.5) > ratio:
-        self.sorted_reflections['scaling_weightings'][i] *= 1.0
-      else:
-        self.sorted_reflections['scaling_weightings'][i] *= 0.0
-    print ("Number of reflections used for scale factor calculation %s" %
-           self.sorted_reflections['scaling_weightings'].count(1))
-
-  def scale_weight_dmin(self, dvalue):
-    print "Total number of reflections considered %s" % len(self.sorted_reflections['d'])
-    for i, dval in enumerate(self.sorted_reflections['d']):
-      if dval > dvalue:
-        self.sorted_reflections['scaling_weightings'][i] *= 1.0
-      else:
-        self.sorted_reflections['scaling_weightings'][i] *= 0.0
-    print ("Number of reflections used for scale factor calculation %s" %
-           self.sorted_reflections['scaling_weightings'].count(1))
 
   '''define a few methods for saving the data'''
   def save_sorted_reflections(self, filename):
@@ -193,8 +178,40 @@ class Data_Manager(object):
     gI = ((scale_factors * intensities) / variances)
     sumgI = flex.double(np.add.reduceat(gI, self.h_index_cumulative_array[:-1]))
     self.Ih_array = sumgI / sumgsq
-    self.sorted_reflections['Ih_values'] = flex.double(np.repeat(self.Ih_array,
-      self.h_index_counter_array))
+    self.sorted_reflections['Ih_values'] = flex.double(
+      np.repeat(self.Ih_array, self.h_index_counter_array))
+
+
+class Weighting(object):
+  def __init__(self, reflection_table):
+    '''set initial weighting to be a statistical weighting'''
+    self.scale_weighting = 1.0/reflection_table['variance']
+
+  def get_weights(self):
+    return self.scale_weighting
+
+  def set_unity_weighting(self, reflection_table):
+    self.scale_weighting = flex.double([1.0]*len(reflection_table['variance']))
+
+  def apply_Isigma_cutoff(self, reflection_table, ratio):
+    sel = flex.bool()
+    for i, intensity in enumerate(reflection_table['intensity']):
+      if ratio > intensity/(reflection_table['variance'][i]**0.5):
+        sel.append(True)
+      else:
+        sel.append(False)
+    self.scale_weighting.set_selected(sel, 0.0)
+
+  def apply_dmin_cutoff(self, reflection_table, d_cutoff_value):
+    sel = flex.bool()
+    for i, d in enumerate(reflection_table['d']):
+      if d_cutoff_value > d:
+        sel.append(True)
+      else:
+        sel.append(False)
+    self.scale_weighting.set_selected(sel, 0.0)
+    print len(self.scale_weighting) - self.scale_weighting.count(0.0)
+
 
 class XDS_Data_Manager(Data_Manager):
   '''Data Manager subclass for implementing XDS parameterisation'''
@@ -223,10 +240,17 @@ class XDS_Data_Manager(Data_Manager):
     self.bin_reflections_decay()
     self.bin_reflections_absorption_radially()
     self.bin_reflections_modulation()
-    self.g_parameterisation = {
-      'g_absorption' : {'index': 'a_bin_index', 'parameterisation' : self.g_absorption},
-      'g_modulation' : {'index': 'xy_bin_index', 'parameterisation' : self.g_modulation},
-      'g_decay' : {'index': 'l_bin_index', 'parameterisation' : self.g_decay}}
+    param_type = 'log'
+    if param_type == 'log':
+      self.g_parameterisation = {
+        'g_absorption' : {'index': 'a_bin_index', 'parameterisation' : self.g_absorption},
+        'g_modulation' : {'index': 'xy_bin_index', 'parameterisation' : self.g_modulation},
+        'g_decay' : {'index': 'l_bin_index', 'parameterisation' : self.g_decay}}
+    else:
+      self.g_parameterisation = {
+        'g_absorption' : {'index': 'a_bin_index', 'parameterisation' : self.g_absorption},
+        'g_modulation' : {'index': 'xy_bin_index', 'parameterisation' : self.g_modulation},
+        'g_decay' : {'index': 'l_bin_index', 'parameterisation' : self.g_decay}}
 
   def get_target_function(self):
     '''call the xds target function method'''
