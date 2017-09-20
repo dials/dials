@@ -434,6 +434,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(reflections.contains("xyzcal.mm"));
 
       // Get some data
+      af::const_ref< cctbx::miller::index<> > miller_index = reflections["miller_index"];
       af::const_ref< Shoebox<> > sbox = reflections["shoebox"];
       af::const_ref< vec3<double> > s1 = reflections["s1"];
       af::const_ref< vec3<double> > xyzpx = reflections["xyzcal.px"];
@@ -512,14 +513,41 @@ namespace dials { namespace algorithms {
             for (std::size_t j = 0; j < m.size(); ++j) {
               m[j] = mask1[j] && mask2[j];
             }
-
+            /* if (miller_index[i] == cctbx::miller::index<>(9, -25, 74)) { */
+            /*   std::cout << "Profile" << std::endl; */
+            /*   for (std::size_t iii = 0; iii < p.size(); ++iii) { */
+            /*     std::cout << p[iii] << ", "; */
+            /*   } */
+            /*   std::cout << std::endl; */
+            /*   std::cout << "Mask" << std::endl; */
+            /*   for (std::size_t iii = 0; iii < p.size(); ++iii) { */
+            /*     std::cout << m[iii] << ", "; */
+            /*   } */
+            /*   std::cout << std::endl; */
+            /*   std::cout << "Background" << std::endl; */
+            /*   for (std::size_t iii = 0; iii < p.size(); ++iii) { */
+            /*     std::cout << b[iii] << ", "; */
+            /*   } */
+            /*   std::cout << std::endl; */
+            /*   std::cout << "Data" << std::endl; */
+            /*   for (std::size_t iii = 0; iii < p.size(); ++iii) { */
+            /*     std::cout << c[iii] << ", "; */
+            /*   } */
+            /*   std::cout << std::endl; */
+            /* } */
             // Do the profile fitting
-            ProfileFitting<double> fit(p, m.const_ref(), c, b, 1e-3, 100);
+            ProfileFitter<double> fit(
+                c, 
+                b, 
+                m.const_ref(), 
+                p, 
+                1e-3, 
+                100);
             DIALS_ASSERT(fit.niter() < 100);
 
             // Set the data in the reflection
-            intensity_val[i] = fit.intensity();
-            intensity_var[i] = fit.variance();
+            intensity_val[i] = fit.intensity()[0];
+            intensity_var[i] = fit.variance()[0];
             reference_cor[i] = fit.correlation();
             //reference_rmsd[i] = fit.rmsd();
 
@@ -623,17 +651,17 @@ namespace dials { namespace algorithms {
 
 
               // Do the profile fitting
-              ProfileFitting<double> fit(
-                  p,
-                  m.const_ref(),
+              ProfileFitter<double> fit(
                   c.const_ref(),
                   b.const_ref(),
+                  m.const_ref(),
+                  p,
                   1e-3, 100);
               DIALS_ASSERT(fit.niter() < 100);
 
               // Set the data in the reflection
-              intensity_val[i] = fit.intensity();
-              intensity_var[i] = fit.variance();
+              intensity_val[i] = fit.intensity()[0];
+              intensity_var[i] = fit.variance()[0];
               reference_cor[i] = fit.correlation();
 
             } else {

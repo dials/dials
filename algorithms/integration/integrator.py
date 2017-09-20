@@ -1064,7 +1064,7 @@ class Integrator(object):
             p = []
             for j in range(len(m)):
               try:
-                p.append(m.data(j))
+                p.append((m.data(j), m.mask(j)))
               except Exception:
                 p.append(None)
           reference_debug.append(p)

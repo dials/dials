@@ -21,7 +21,7 @@ def gaussian(size, a, x0, sx):
 
   index = [0] * len(size)
   while True:
-    result[index[::-1]] = evaluate_gaussian(index, a, x0, sx)
+    result[index] = evaluate_gaussian(index, a, x0, sx)
     for j in range(len(size)):
       index[j] += 1
       if index[j] < size[j]:
