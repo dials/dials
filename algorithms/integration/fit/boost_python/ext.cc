@@ -17,53 +17,6 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  /* template <typename FloatType> */
-  /* void profile_fitting_wrapper(const char *name) { */
-
-  /*   typedef ProfileFitting<FloatType> ProfileFittingType; */
-
-  /*   class_<ProfileFittingType>(name, no_init) */
-  /*     .def(init<const af::const_ref<FloatType, af::c_grid<3> >&, */
-  /*               const af::const_ref<bool, af::c_grid<3> >&, */
-  /*               const af::const_ref<FloatType, af::c_grid<3> >&, */
-  /*               const af::const_ref<FloatType, af::c_grid<3> >&, */
-  /*               double, */
-  /*               std::size_t>(( */
-  /*       arg("profile"), */
-  /*       arg("mask"), */
-  /*       arg("contents"), */
-  /*       arg("background"), */
-  /*       arg("bits") = 1e-3, */
-  /*       arg("max_iter") = 10))) */
-  /*     .def("intensity", &ProfileFittingType::intensity) */
-  /*     .def("variance", &ProfileFittingType::variance) */
-  /*     .def("correlation", &ProfileFittingType::correlation) */
-  /*     .def("niter", &ProfileFittingType::niter) */
-  /*     .def("error", &ProfileFittingType::error); */
-  /* } */
-
-  /* template <typename FloatType> */
-  /* ProfileFitting<FloatType> make_profile_fitting( */
-  /*     const af::const_ref<FloatType, af::c_grid<3> > &p, */
-  /*     const af::const_ref<bool, af::c_grid<3> > &m, */
-  /*     const af::const_ref<FloatType, af::c_grid<3> > &c, */
-  /*     const af::const_ref<FloatType, af::c_grid<3> > &b, */
-  /*     double eps, */
-  /*     std::size_t max_iter) { */
-  /*   return ProfileFitting<FloatType>(p, m, c, b, eps, max_iter); */
-  /* } */
-
-  /* template <typename FloatType> */
-  /* void profile_fitting_suite() { */
-  /*   def("fit_profile", &make_profile_fitting<FloatType>, ( */
-  /*     arg("profile"), */
-  /*     arg("mask"), */
-  /*     arg("contents"), */
-  /*     arg("background"), */
-  /*     arg("bits") = 1e-3, */
-  /*     arg("max_iter") = 10)); */
-  /* } */
-
   template <typename FloatType>
   void profile_fitter_wrapper(const char *name) {
 
@@ -160,12 +113,6 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   BOOST_PYTHON_MODULE(dials_algorithms_integration_fit_ext)
   {
-    /* profile_fitting_wrapper<float>("ProfileFittingFloat"); */
-    /* profile_fitting_wrapper<double>("ProfileFittingDouble"); */
-
-    /* profile_fitting_suite<float>(); */
-    /* profile_fitting_suite<double>(); */
-
     profile_fitter_wrapper<float>("ProfileFitterFloat");
     profile_fitter_wrapper<double>("ProfileFitterDouble");
 
@@ -182,38 +129,6 @@ namespace dials { namespace algorithms { namespace boost_python {
     def_make_profile_fitter(&make_profile_fitter_1d_n<double>);
     def_make_profile_fitter(&make_profile_fitter_2d_n<double>);
     def_make_profile_fitter(&make_profile_fitter_3d_n<double>);
-    /* def("ProfileFitter", */
-    /*     &make_profile_fitter_1<float>, ( */
-    /*       arg("data"), */
-    /*       arg("background"), */
-    /*       arg("mask"), */
-    /*       arg("profile"), */
-    /*       arg("eps")=1e-3, */
-    /*       arg("maxiter")=10)); */
-    /* def("ProfileFitter", */
-    /*     &make_profile_fitter_n<float>, ( */
-    /*       arg("data"), */
-    /*       arg("background"), */
-    /*       arg("mask"), */
-    /*       arg("profile"), */
-    /*       arg("eps")=1e-3, */
-    /*       arg("maxiter")=10)); */
-    /* def("ProfileFitter", */
-    /*     &make_profile_fitter_1<double>, ( */
-    /*       arg("data"), */
-    /*       arg("background"), */
-    /*       arg("mask"), */
-    /*       arg("profile"), */
-    /*       arg("eps")=1e-3, */
-    /*       arg("maxiter")=10)); */
-    /* def("ProfileFitter", */
-    /*     &make_profile_fitter_n<double>, ( */
-    /*       arg("data"), */
-    /*       arg("background"), */
-    /*       arg("mask"), */
-    /*       arg("profile"), */
-    /*       arg("eps")=1e-3, */
-    /*       arg("maxiter")=10)); */
   }
 
 }}} // namespace = dials::algorithms::boost_python
