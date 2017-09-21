@@ -37,11 +37,14 @@ class Data_Manager(object):
     self.select_optimal_intensities(scaling_options)
     #sort the reflection table
     self.filter_and_sort_reflections()
+    self.update_weights_for_scaling()
+
+  def update_weights_for_scaling(self):
     self.weights_for_scaling = Weighting(self.sorted_reflections)
     self.weights_for_scaling.apply_Isigma_cutoff(self.sorted_reflections,
-                                                 scaling_options['Isigma_min'])
-    self.weights_for_scaling.apply_dmin_cutoff(self.sorted_reflections, 
-                                               scaling_options['d_min'])
+                                                 self.scaling_options['Isigma_min'])
+    self.weights_for_scaling.apply_dmin_cutoff(self.sorted_reflections,
+                                               self.scaling_options['d_min'])
 
   def filter_and_sort_reflections(self):
     self.filtered_reflections = copy.deepcopy(self.reflection_table)
@@ -240,12 +243,15 @@ class XDS_Data_Manager(Data_Manager):
     self.bin_reflections_decay()
     self.bin_reflections_absorption_radially()
     self.bin_reflections_modulation()
-    param_type = 'log'
-    if param_type == 'log':
+    if self.scaling_options['parameterization'] == 'log':
+      #initialise all log(g-value) arrays to 0.0 (i.e. ln(g) = 0.0)
       self.g_parameterisation = {
-        'g_absorption' : {'index': 'a_bin_index', 'parameterisation' : self.g_absorption},
-        'g_modulation' : {'index': 'xy_bin_index', 'parameterisation' : self.g_modulation},
-        'g_decay' : {'index': 'l_bin_index', 'parameterisation' : self.g_decay}}
+        'g_absorption' : {'index': 'a_bin_index', 
+                          'parameterisation' : self.g_absorption*0.0},
+        'g_modulation' : {'index': 'xy_bin_index', 
+                          'parameterisation' : self.g_modulation*0.0},
+        'g_decay' : {'index': 'l_bin_index', 
+                     'parameterisation' : self.g_decay*0.0}}
     else:
       self.g_parameterisation = {
         'g_absorption' : {'index': 'a_bin_index', 'parameterisation' : self.g_absorption},
@@ -254,11 +260,17 @@ class XDS_Data_Manager(Data_Manager):
 
   def get_target_function(self):
     '''call the xds target function method'''
-    return xds_target_function(self).return_targets()
+    if self.scaling_options['parameterization'] == 'log':
+      return xds_target_function_log(self).return_targets()
+    else:
+      return xds_target_function(self).return_targets()
 
   def get_basis_function(self, parameters):
     '''call the xds basis function method'''
-    return xds_basis_function(self, parameters).return_basis()
+    if self.scaling_options['parameterization'] == 'log':
+      return xds_basis_function_log(self, parameters).return_basis()
+    else:
+      return xds_basis_function(self, parameters).return_basis()
 
   def update_for_minimisation(self, parameters):
     '''update the scale factors and Ih for the next iteration of minimisation'''
@@ -566,9 +578,13 @@ class XDS_Data_Manager(Data_Manager):
       g3values = flex.double([self.g_modulation[i]
         for i in self.sorted_reflections['xy_bin_index']])
       self.sorted_reflections['inverse_scale_factor'] = (g1values 
-        * g2values * g3values)
+        + g2values + g3values)
+      self.update_weights_for_scaling()
+
+    
       if Good_reflections.count(False) == 0:
         break 
+
     #return Good_reflections
 
 

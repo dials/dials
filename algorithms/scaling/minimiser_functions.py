@@ -23,7 +23,8 @@ class LBFGS_optimiser(object):
     lbfgs.run(target_evaluator=self)
     if param_name == 'g_decay':
       if self.data_manager.scaling_options['decay_correction_rescaling']:
-        self.data_manager.scale_gvalues()
+        if self.data_manager.scaling_options['parameterization'] == 'standard':
+          self.data_manager.scale_gvalues()
 
   def return_data_manager(self):
     '''return data_manager method'''
@@ -39,11 +40,14 @@ class LBFGS_optimiser(object):
         self.x = parameterisation['parameterisation']
         self.data_manager.active_param_size = len(self.x)
       else:
-        constant_g_values.append(flex.double(
+        constant_g_values.append(
           [self.data_manager.g_parameterisation[p_type]['parameterisation'][i]
-           for i in self.data_manager.sorted_reflections[bin_index]]))
+           for i in self.data_manager.sorted_reflections[bin_index]])
     constant_g_values = np.array(constant_g_values)
-    self.data_manager.constant_g_values = flex.double(np.prod(constant_g_values, axis=0))
+    if self.data_manager.scaling_options['parameterization'] == 'standard':
+      self.data_manager.constant_g_values = flex.double(np.prod(constant_g_values, axis=0))
+    elif self.data_manager.scaling_options['parameterization'] == 'log':
+      self.data_manager.constant_g_values = flex.double(np.sum(constant_g_values, axis=0))
 
   def compute_functional_and_gradients(self):
     '''first calculate the updated values of the scale factors and Ih,
