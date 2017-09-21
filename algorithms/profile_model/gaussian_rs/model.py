@@ -401,6 +401,7 @@ class Model(ProfileModelIface):
                           dmax=None,
                           margin=1,
                           force_static=False,
+                          force_scan_varying=False,
                           padding=0,
                           **kwargs):
     '''
@@ -428,6 +429,7 @@ class Model(ProfileModelIface):
       dmax=dmax,
       margin=margin,
       force_static=force_static,
+      force_scan_varying=force_scan_varying,
       padding=padding)
     return predict()
 

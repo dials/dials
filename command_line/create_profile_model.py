@@ -104,6 +104,7 @@ class Script(object):
       dmax=params.prediction.d_max,
       margin=params.prediction.margin,
       force_static=params.prediction.force_static,
+      force_scan_varying=params.prediction.force_scan_varying,
       padding=params.prediction.padding)
 
     # Match with predicted

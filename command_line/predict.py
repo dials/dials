@@ -36,6 +36,10 @@ phil_scope = parse('''
     .type = bool
     .help = "For a scan varying model, force static prediction"
 
+  force_scan_varying = False
+    .type = bool
+    .help = "For a static model, force scan varying prediction"
+
   ignore_shadows = True
     .type = bool
     .help = "Ignore dynamic shadowing"
@@ -108,6 +112,7 @@ class Script(object):
       predicted = flex.reflection_table.from_predictions(
         expt,
         force_static=params.force_static,
+        force_scan_varying=params.force_scan_varying,
         dmin=params.d_min)
       predicted['id'] = flex.int(len(predicted), i_expt)
       predicted_all.extend(predicted)

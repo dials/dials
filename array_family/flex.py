@@ -80,6 +80,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                        dmax=None,
                        margin=1,
                        force_static=False,
+                       force_scan_varying=False,
                        padding=0):
     '''
     Construct a reflection table from predictions.
@@ -89,6 +90,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     :param dmax: The minimum resolution
     :param margin: The margin to predict around
     :param force_static: Do static prediction with a scan varying model
+    :param force_scan_varying: Do scan-varying prediction
     :param padding: Padding in degrees
     :return: The reflection table of predictions
 
@@ -105,6 +107,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         dmax=dmax,
         margin=margin,
         force_static=force_static,
+        force_scan_varying=force_scan_varying,
         padding=padding)
     from dials.algorithms.spot_prediction.reflection_predictor \
       import ReflectionPredictor
@@ -114,6 +117,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       dmax=dmax,
       margin=margin,
       force_static=force_static,
+      force_scan_varying=force_scan_varying,
       padding=padding)
     return predict()
 
@@ -123,6 +127,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                              dmax=None,
                              margin=1,
                              force_static=False,
+                             force_scan_varying=False,
                              padding=0):
     '''
     Construct a reflection table from predictions.
@@ -132,6 +137,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     :param dmax: The minimum resolution
     :param margin: The margin to predict around
     :param force_static: Do static prediction with a scan varying model
+    :param force_scan_varying: Do scan-varying prediction
     :param padding: Padding in degrees
     :return: The reflection table of predictions
 
@@ -145,6 +151,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         dmax=dmax,
         margin=margin,
         force_static=force_static,
+        force_scan_varying=force_scan_varying,
         padding=padding)
       rlist['id'] = flex.int(len(rlist), i)
       result.extend(rlist)

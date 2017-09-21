@@ -657,7 +657,8 @@ class Processor(object):
       dmin=self.params.prediction.d_min,
       dmax=self.params.prediction.d_max,
       margin=self.params.prediction.margin,
-      force_static=self.params.prediction.force_static)
+      force_static=self.params.prediction.force_static,
+      force_scan_varying=self.params.prediction.force_scan_varying)
     predicted.match_with_reference(indexed)
     logger.info("")
     integrator = IntegratorFactory.create(self.params, experiments, predicted)
