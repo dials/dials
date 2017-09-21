@@ -2,7 +2,10 @@
 
 from __future__ import absolute_import, division
 
+import numpy
+
 import iotbx.phil
+from libtbx import table_utils
 
 help_message = '''
 
@@ -31,6 +34,9 @@ show_centroids = False
   .type = bool
 show_profile_fit = False
   .type = bool
+show_flags = False
+  .type = bool
+  .help = "Show a summary table of reflection flags"
 max_reflections = None
   .type = int
   .help = "Limit the number of reflections in the output."
@@ -117,6 +123,7 @@ def run(args):
       show_profile_fit=params.show_profile_fit,
       show_centroids=params.show_centroids,
       show_all_reflection_data=params.show_all_reflection_data,
+      show_flags=params.show_flags,
       max_reflections=params.max_reflections)
 
 
@@ -211,9 +218,46 @@ def show_datablocks(datablocks, show_panel_distance=False):
   return '\n'.join(text)
 
 
+def _create_flag_count_table(table):
+  """Generate a summary table of flag values in a reflection table.
+
+  :param table: A reflection table
+  :returns:     A string of the formatted flags table
+  """
+  
+  # Calculate the counts of entries that match each flag
+  numpy_flags = table["flags"].as_numpy_array()
+  flag_count = {flag: numpy.sum(numpy_flags & value != 0) for value, flag in table.flags.values.items()}
+
+  # Work out the numeric-value order of the flags
+  flag_order = sorted(table.flags.values.values(), key=lambda x: x.real)
+
+  # Build the actual table
+  flag_rows = [["Flag", "Count", "%"]]
+  last_flag = None
+  for flag in flag_order:
+    indent = ""
+    # As a hint for reading, indent any 'summary' flags.
+    # A summary flag is any flag which overlaps with the previous one.
+    if last_flag and (last_flag.real & flag.real):
+      indent = "  "
+    last_flag = flag
+    # Add the row to the table we're building
+    flag_rows.append([indent + flag.name, 
+                      str(flag_count[flag]), 
+                      "{:5.01f}".format(100*flag_count[flag] / len(table))])
+
+  # Build the array of output strings
+  text = []
+  text.append("Reflection flags:")
+  text.append(
+    table_utils.format(flag_rows, has_header=True, prefix="| ", postfix=" |"))
+  return "\n".join(text)
+
+
 def show_reflections(reflections, show_intensities=False, show_profile_fit=False,
                      show_centroids=False, show_all_reflection_data=False,
-                     max_reflections=None):
+                     show_flags=False, max_reflections=None):
 
   text = []
 
@@ -225,7 +269,7 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
     ('id','%i'),
     ('imageset_id','%i'),
     ('panel','%i'),
-    ('flags', '%i'),
+    ('flags', '---'),
     ('background.mean', '%.1f'),
     ('background.dispersion','%.1f'),
     ('background.mse', '%.1f'),
@@ -279,7 +323,10 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
 
     rows = [["Column", "min", "max", "mean"]]
     for k, col in rlist.cols():
-      if type(col) in (flex.double, flex.int, flex.size_t):
+      if k in formats and not "%" in formats[k]:
+        # Allow blanking out of entries that wouldn't make sense
+        rows.append([k, formats[k], formats[k], formats[k]])
+      elif type(col) in (flex.double, flex.int, flex.size_t):
         if type(col) in (flex.int, flex.size_t):
           col = col.as_double()
         rows.append([k, formats[k] %flex.min(col), formats[k] %flex.max(col),
@@ -302,9 +349,11 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
         rows.append(["  N valid foreground pix", formats[k] %flex.min(fore_valid), formats[k] %flex.max(fore_valid),
                      formats[k]%flex.mean(fore_valid)])
 
-    from libtbx import table_utils
     text.append(
       table_utils.format(rows, has_header=True, prefix="| ", postfix=" |"))
+
+    if show_flags:
+      text.append(_create_flag_count_table(rlist))
 
   intensity_keys = (
     'miller_index', 'd', 'intensity.prf.value', 'intensity.prf.variance',
