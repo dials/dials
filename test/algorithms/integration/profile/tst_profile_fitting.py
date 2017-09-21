@@ -264,7 +264,7 @@ class Test(object):
     assert fit.niter() < fit.maxiter()
 
     Iknown = 99.06932141277105
-    Vknown = 464.6476711910275
+    Vknown = 464.64783975545555
 
     # Test intensity is the same
     eps = 1e-7

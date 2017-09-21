@@ -247,12 +247,10 @@ namespace dials { namespace algorithms {
       for (niter_ = 0; niter_ < maxiter; ++niter_) {
         double sum1 = 0.0;
         double sum2 = 0.0;
-        double sumv = 0.0;
         for (std::size_t i = 0; i < p.size(); ++i) {
           if (m[i] && p[i] > 0) {
             double v = b[i] + I0 * p[i];
             DIALS_ASSERT(v > 0);
-            sumv += v;
             if (v > 0) {
               sum1 += (d[i] - b[i]) * p[i] / v;
               sum2 += p[i] * p[i] / v;
@@ -261,7 +259,7 @@ namespace dials { namespace algorithms {
         }
         DIALS_ASSERT(sum2 > 0);
         I = sum1 / sum2;
-        V = sumv;
+        V = std::abs(I * sump) + sumb;
         if ((error_ = std::abs(I - I0)) < eps) {
           break;
         }
