@@ -35,6 +35,7 @@ def strategy(cls, params=None):
 
   '''
   class Strategy(cls):
+    algorithm = cls
     name = ''
     def __init__(self, *args):
       super(Strategy, self).__init__(params, *args)
@@ -47,8 +48,8 @@ def default_background_algorithm():
   :return: The default background algorithm
 
   '''
-  from dials.extensions import SimpleBackgroundExt
-  return strategy(SimpleBackgroundExt)
+  from dials.extensions import GLMBackgroundExt
+  return strategy(GLMBackgroundExt)
 
 def default_centroid_algorithm():
   '''

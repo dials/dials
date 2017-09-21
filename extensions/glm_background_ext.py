@@ -13,7 +13,7 @@ from __future__ import absolute_import, division
 from dials.interfaces import BackgroundIface
 
 
-class SimpleBackgroundExt(BackgroundIface):
+class GLMBackgroundExt(BackgroundIface):
   ''' An extension class implementing a robust GLM background algorithm. '''
 
   name = 'glm'
