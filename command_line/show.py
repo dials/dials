@@ -224,7 +224,7 @@ def _create_flag_count_table(table):
   :param table: A reflection table
   :returns:     A string of the formatted flags table
   """
-  
+
   # Calculate the counts of entries that match each flag
   numpy_flags = table["flags"].as_numpy_array()
   flag_count = {flag: numpy.sum(numpy_flags & value != 0) for value, flag in table.flags.values.items()}
@@ -234,6 +234,7 @@ def _create_flag_count_table(table):
 
   # Build the actual table
   flag_rows = [["Flag", "Count", "%"]]
+  max_count_len = max(5, len(str(max(flag_count.values()))))
   last_flag = None
   for flag in flag_order:
     indent = ""
@@ -243,8 +244,8 @@ def _create_flag_count_table(table):
       indent = "  "
     last_flag = flag
     # Add the row to the table we're building
-    flag_rows.append([indent + flag.name, 
-                      str(flag_count[flag]), 
+    flag_rows.append([indent + flag.name,
+                      "{:{:d}d}".format(flag_count[flag], max_count_len),
                       "{:5.01f}".format(100*flag_count[flag] / len(table))])
 
   # Build the array of output strings
