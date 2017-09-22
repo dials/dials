@@ -1417,16 +1417,17 @@ class indexer_base(object):
       experiments = ExperimentList()
       for i_imageset, imageset in enumerate(self.imagesets):
         scan = imageset.get_scan()
-        start, end = scan.get_oscillation_range()
-        if (end - start) > 360:
-          # only use reflections from the first 360 degrees of the scan
-          sel.set_selected(
-            (imageset_id == i_imageset) & (zo > ((start * math.pi/180) + 2 * math.pi)), False)
+        if scan is not None:
+          start, end = scan.get_oscillation_range()
+          if (end - start) > 360:
+            # only use reflections from the first 360 degrees of the scan
+            sel.set_selected(
+              (imageset_id == i_imageset) & (zo > ((start * math.pi/180) + 2 * math.pi)), False)
         experiments.append(Experiment(imageset=imageset,
                                       beam=imageset.get_beam(),
                                       detector=imageset.get_detector(),
                                       goniometer=imageset.get_goniometer(),
-                                      scan=imageset.get_scan(),
+                                      scan=scan,
                                       crystal=cm))
       refl = self.reflections.select(sel)
       self.index_reflections(experiments, refl)
