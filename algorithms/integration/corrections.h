@@ -28,12 +28,15 @@ namespace dials { namespace algorithms {
   using dxtbx::model::Goniometer;
 
   /**
-   * Compute the lp correction for a single reflection
+   * Compute the LP correction for a single reflection. Note that the
+   * polarization fraction follows XDS convention, in which a value of 0.5
+   * implies an unpolarized beam, rather than the MOSFLM definition in which
+   * an unpolarized beam has a polarization factor of 0.0.
    * @param s0 The incident beam vector
    * @param pn The polarization plane normal
    * @param pf The polarization plane fraction
    * @param m2 The rotation axis
-   * @param s1 The indicent beam vector
+   * @param s1 The incident beam vector
    * @returns L / P The correction factor
    */
   double lp_correction(
@@ -169,9 +172,9 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Perform the lp correction.
+     * Perform the LP correction.
      * @param id The list of experiments ids
-     * @param s1 The list of indcident beam vectors
+     * @param s1 The list of incident beam vectors
      */
     af::shared<double> lp(
         const af::const_ref<int> &id,
@@ -189,7 +192,7 @@ namespace dials { namespace algorithms {
     /**
      * Perform the DQE correction.
      * @param id The list of experiments ids
-     * @param s1 The list of indcident beam vectors
+     * @param s1 The list of incident beam vectors
      * @param p The list of panels
      */
     af::shared<double> dqe(
