@@ -10,11 +10,18 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
-import optparse
 
-from libtbx.utils import Sorry
+import itertools
+import optparse
+import pickle
+import cPickle
+import traceback
+
+from collections import defaultdict, namedtuple
 
 import libtbx.phil
+from libtbx.utils import Sorry
+
 tolerance_phil_scope = libtbx.phil.parse('''
 tolerance
     .help = "Tolerances used to determine shared models"
@@ -152,6 +159,8 @@ class ConfigWriter(object):
     with open(filename, 'w') as f:
       f.write(text)
 
+# Simple tuple to hold basic information on why an argument failed
+ArgumentHandlingErrorInfo = namedtuple("ArgumentHandlingErrorInfo", ["name", "validation", "message", "traceback", "type"])
 
 class Importer(object):
   ''' A class to import the command line arguments. '''
@@ -196,6 +205,8 @@ class Importer(object):
     self.experiments = []
     self.reflections = []
     self.unhandled = args
+    # Keep track of any errors whilst handling arguments
+    self.handling_errors =  defaultdict(list)
 
     # First try to read image files
     if read_datablocks_from_images:
@@ -222,6 +233,16 @@ class Importer(object):
     if read_reflections:
       self.unhandled = self.try_read_reflections(
         self.unhandled, verbose)
+
+  def _handle_converter_error(self, argument, exception, type, validation=False):
+    "Record information about errors that occured processing an argument"
+    self.handling_errors[argument].append(ArgumentHandlingErrorInfo(
+          name=argument,
+          validation=validation,
+          message=exception.message,
+          traceback=traceback.format_exc(),
+          type=type)
+    )
 
   def try_read_datablocks_from_images(self,
                                       args,
@@ -280,12 +301,18 @@ class Importer(object):
 
     '''
     from dials.util.phil import DataBlockConverters
+    from dxtbx.datablock import InvalidDataBlockError
+
     converter = DataBlockConverters(check_format)
     unhandled = []
     for argument in args:
       try:
         self.datablocks.append(converter.from_string(argument))
-      except Exception:
+      except InvalidDataBlockError as e:
+        unhandled.append(argument)
+        self._handle_converter_error(argument, e, type="DataBlock", validation=True)
+      except Exception as e:
+        self._handle_converter_error(argument, e, type="DataBlock")
         unhandled.append(argument)
     return unhandled
 
@@ -300,12 +327,19 @@ class Importer(object):
 
     '''
     from dials.util.phil import ExperimentListConverters
+    from dxtbx.model.experiment_list import InvalidExperimentListError
+
     converter = ExperimentListConverters(check_format)
     unhandled = []
     for argument in args:
       try:
         self.experiments.append(converter.from_string(argument))
-      except Exception:
+      except InvalidExperimentListError as e:
+        # This is a validation-related error: The file appears not to be in the correct format
+        self._handle_converter_error(argument, e, type="ExperimentList", validation=True)
+        unhandled.append(argument)
+      except Exception as e:
+        self._handle_converter_error(argument, e, type="ExperimentList")
         unhandled.append(argument)
     return unhandled
 
@@ -323,7 +357,12 @@ class Importer(object):
     for argument in args:
       try:
         self.reflections.append(converter.from_string(argument))
-      except Exception:
+      except (pickle.UnpicklingError, cPickle.UnpicklingError) as e:
+        self._handle_converter_error(argument, pickle.UnpicklingError("Appears to be an invalid pickle file"),
+            type="Reflections", validation=True)
+        unhandled.append(argument)
+      except Exception as e:
+        self._handle_converter_error(argument, e, type="Reflections")
         unhandled.append(argument)
     return unhandled
 
@@ -513,6 +552,9 @@ class PhilCommandParser(object):
       compare_goniometer=compare_goniometer,
       scan_tolerance=scan_tolerance,
       format_kwargs=format_kwargs)
+
+    # Grab a copy of the errors that occured in case the caller wants them
+    self.handling_errors = importer.handling_errors
 
     # Add the cached arguments
     for obj in importer.datablocks:
@@ -793,16 +835,59 @@ class OptionParser(OptionParserBase):
     if return_unhandled:
       return params, options, args
     elif len(args) > 0 and not quick_parse:
-      msg = 'Unable to handle the following arguments:\n'
-      msg += '\n'.join(['  %s' % a for a in args])
-      if any(a.endswith(".json") for a in args):
-        msg += "\n"
-        msg += "\nPlease check that your image data is accessible"
+      # Handle printing any messages to diagnose unhandled arguments
+      msg = self._warn_about_unhandled_args(args, verbosity=options.verbose)
+
       if ignore_unhandled:
         print msg
       else:
         raise Sorry(msg)
     return params, options
+
+  def _warn_about_unhandled_args(self, unhandled, verbosity=0):
+    """
+    Generate any messages about unhandled arguments.
+
+    This separates errors by validation/non-validation related, and only
+    gives the user validation information if there's no other reason (or
+    asked for verbose output).
+
+    :param unhandled: List of unhandled arguments
+    :param verbosity: The output verbosity determined during parsing
+    :returns:         A formatted information string
+    """
+    msg = []
+    msg.append('Unable to handle the following arguments:')
+
+    # If we have any detailed information about why any of the 
+    # arguments weren't processed, give this to the user
+    for arg in [x for x in unhandled if x in self._phil_parser.handling_errors]:
+      # Split the reasons for unhandling into validation, non-validation
+      non_valid = [x for x in self._phil_parser.handling_errors[arg] if not x.validation]
+      valid = [x for x in self._phil_parser.handling_errors[arg] if x.validation]
+
+      # If we have non-validation-related errors, these are more important
+      for _, err in itertools.groupby(non_valid, key=lambda x: x.message):
+        err = list(err)
+        # Grouping the errors by message lets us avoid repeating messages
+        if len(err) > 1:
+          msg.append("  {} failed repeatedly during processing:\n{}\n".format(
+            arg, "    " + err[0].message))
+        else:
+          msg.append("  {} failed during {} processing:\n{}\n".format(
+            arg, err[0].type,
+            "\n".join("    " + x for x in err[0].traceback.splitlines())))
+
+      # Otherwise (or if asked for verbosity), list the validation errors
+      if valid and (not non_valid or verbosity):
+        msg.append("  {} did not appear to conform to any{} expected format:".format(arg,
+          " other" if non_valid else " "))
+        slen = max(len(x.type) for x in valid)
+        for err in valid:
+          msg.append("    - {} {}".format("{}:".format(err.type).ljust(slen+1), err.message))
+
+    return "\n".join(msg)
+
 
   @property
   def phil(self):
