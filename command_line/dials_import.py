@@ -297,7 +297,7 @@ class ManualGeometryUpdater(object):
     from dxtbx.model import ScanFactory
     from copy import deepcopy
     if self.params.geometry.convert_sweeps_to_stills:
-      imageset = ImageSet(reader=imageset.reader())
+      imageset = ImageSet(data=imageset.data())
     if not isinstance(imageset, ImageSweep):
       if self.params.geometry.convert_stills_to_sweeps:
         imageset = self.convert_stills_to_sweep(imageset)
