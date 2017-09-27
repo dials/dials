@@ -22,7 +22,7 @@ class Test(object):
 
     input_filename = join(self.path, "datablock.json")
 
-    # Call dials.integrate
+    # Call dials.generate_mask
     easy_run.fully_buffered([
       'dials.generate_mask',
       input_filename,
@@ -32,7 +32,7 @@ class Test(object):
 
     print 'OK'
 
-    # Call dials.integrate
+    # Call dials.generate_mask
     easy_run.fully_buffered([
       'dials.generate_mask',
       input_filename,
@@ -51,7 +51,7 @@ class Test(object):
 
     print 'OK'
 
-    # Call dials.integrate
+    # Call dials.generate_mask
     easy_run.fully_buffered([
       'dials.generate_mask',
       input_filename,
@@ -62,7 +62,7 @@ class Test(object):
 
     print 'OK'
 
-    # Call dials.integrate
+    # Call dials.generate_mask
     easy_run.fully_buffered([
       'dials.generate_mask',
       input_filename,
@@ -73,7 +73,7 @@ class Test(object):
 
     print 'OK'
 
-    # Call dials.integrate
+    # Call dials.generate_mask
     easy_run.fully_buffered([
       'dials.generate_mask',
       input_filename,
@@ -85,7 +85,7 @@ class Test(object):
 
     print 'OK'
 
-    # Call dials.integrate
+    # Call dials.generate_mask
     easy_run.fully_buffered([
       'dials.generate_mask',
       input_filename,
@@ -96,14 +96,21 @@ class Test(object):
 
     print 'OK'
 
-    # Call dials.integrate
+    # Call dials.generate_mask
     easy_run.fully_buffered([
       'dials.generate_mask',
       input_filename,
       'output.mask=mask3.pickle',
-      'untrusted.polygon=100,100,100,200,200,200,200,100'
+      'untrusted.polygon=100,100,100,200,200,200,200,100',
+      'untrusted.pixel=0,0',
+      'untrusted.pixel=1,1'
     ]).raise_if_errors()
     assert(exists("mask3.pickle"))
+    from libtbx import easy_pickle
+    mask = easy_pickle.load("mask3.pickle")
+    assert not mask[0][0,0]
+    assert not mask[0][1,1]
+    assert mask[0][0,1]
 
     print 'OK'
 

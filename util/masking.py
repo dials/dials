@@ -62,6 +62,10 @@ phil_scope = parse("""
               "of the untrusted polygon. Spots whose centroids fall within "
               "the bounds of the untrusted polygon will be rejected."
 
+    pixel = None
+      .type = ints(2, value_min=0)
+      .help = "An untrusted pixel (x, y)"
+
   }
 
   ice_rings {
@@ -211,6 +215,8 @@ class MaskGenerator(object):
             for vertex in vertices:
               logger.info(" coord = (%d, %d)" % (vertex))
             mask_untrusted_polygon(mask, polygon)
+          if region.pixel is not None:
+            mask[region.pixel] = False
 
       # Create the resolution mask generator
       class ResolutionMaskGeneratorGetter(object):
