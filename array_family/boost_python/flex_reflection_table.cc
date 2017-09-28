@@ -575,6 +575,137 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * A visitor to convert an item to an object
+   */
+  struct item_to_object_visitor : public boost::static_visitor<object> {
+    template <typename T>
+    object operator () (T &data) {
+      return object(data);
+    }
+  };
+
+  /**
+   * Get an item from the reflection
+   * @param self The reflection
+   * @param name The item name
+   */
+  boost::python::object Reflection_get(const Reflection &self, std::string name) {
+    Reflection::mapped_type item = self[name];
+    item_to_object_visitor visitor;
+    return item.apply_visitor(visitor);
+  }
+
+  /**
+   * Set a bool item in the reflection
+   * @param self The reflection
+   * @param name The name of the item
+   * @param item The item
+   */
+  void Reflection_set_bool(Reflection &self, std::string name, bool item) {
+    self[name] = Reflection::data_type(item);
+  }
+
+  /**
+   * Set a int item in the reflection
+   * @param self The reflection
+   * @param name The name of the item
+   * @param item The item
+   */
+  void Reflection_set_int(Reflection &self, std::string name, int item) {
+    self[name] = Reflection::data_type(item);
+  }
+
+  /**
+   * Set a std::size_t item in the reflection
+   * @param self The reflection
+   * @param name The name of the item
+   * @param item The item
+   */
+  void Reflection_set_size_t(Reflection &self, std::string name, std::size_t item) {
+    self[name] = Reflection::data_type(item);
+  }
+
+  /**
+   * Set a double item in the reflection
+   * @param self The reflection
+   * @param name The name of the item
+   * @param item The item
+   */
+  void Reflection_set_double(Reflection &self, std::string name, double item) {
+    self[name] = Reflection::data_type(item);
+  }
+
+  /**
+   * Set a string item in the reflection
+   * @param self The reflection
+   * @param name The name of the item
+   * @param item The item
+   */
+  void Reflection_set_string(Reflection &self, std::string name, std::string item) {
+    self[name] = Reflection::data_type(item);
+  }
+
+  /**
+   * Set a vec2<double> item in the reflection
+   * @param self The reflection
+   * @param name The name of the item
+   * @param item The item
+   */
+  void Reflection_set_vec2_double(Reflection &self, std::string name, vec2<double> item) {
+    self[name] = Reflection::data_type(item);
+  }
+
+  /**
+   * Set a vec3<double> item in the reflection
+   * @param self The reflection
+   * @param name The name of the item
+   * @param item The item
+   */
+  void Reflection_set_vec3_double(Reflection &self, std::string name, vec3<double> item) {
+    self[name] = Reflection::data_type(item);
+  }
+
+  /**
+   * Set a mat3<double> item in the reflection
+   * @param self The reflection
+   * @param name The name of the item
+   * @param item The item
+   */
+  void Reflection_set_mat3_double(Reflection &self, std::string name, mat3<double> item) {
+    self[name] = Reflection::data_type(item);
+  }
+
+  /**
+   * Set a int6 item in the reflection
+   * @param self The reflection
+   * @param name The name of the item
+   * @param item The item
+   */
+  void Reflection_set_int6(Reflection &self, std::string name, int6 item) {
+    self[name] = Reflection::data_type(item);
+  }
+
+  /**
+   * Set a miller_index item in the reflection
+   * @param self The reflection
+   * @param name The name of the item
+   * @param item The item
+   */
+  void Reflection_set_miller_index(Reflection &self, std::string name, cctbx::miller::index<> item) {
+    self[name] = Reflection::data_type(item);
+  }
+
+  /**
+   * Set a Shoebox<> item in the reflection
+   * @param self The reflection
+   * @param name The name of the item
+   * @param item The item
+   */
+  void Reflection_set_shoebox(Reflection &self, std::string name, Shoebox<> item) {
+    self[name] = Reflection::data_type(item);
+  }
+
+  /**
    * Struct to facilitate wrapping reflection table type
    */
   template <typename T>
@@ -676,6 +807,34 @@ namespace dials { namespace af { namespace boost_python {
 
     // Export the reflection table
     flex_reflection_table_wrapper<flex_types>::wrap("reflection_table");
+
+    // Export the reflection object
+    class_<Reflection>("Reflection")
+      .def("get",
+          &Reflection_get)
+      .def("set_bool",
+          &Reflection_set_bool)
+      .def("set_int",
+          &Reflection_set_int)
+      .def("set_size_t",
+          &Reflection_set_size_t)
+      .def("set_double",
+          &Reflection_set_double)
+      .def("set_string",
+          &Reflection_set_string)
+      .def("set_vec2_double",
+          &Reflection_set_vec2_double)
+      .def("set_vec3_double",
+          &Reflection_set_vec3_double)
+      .def("set_mat3_double",
+          &Reflection_set_mat3_double)
+      .def("set_int6",
+          &Reflection_set_int6)
+      .def("set_miller_index",
+          &Reflection_set_miller_index)
+      .def("set_shoebox",
+          &Reflection_set_shoebox)
+      ;
   }
 
 }}} // namespace dials::af::boost_python
