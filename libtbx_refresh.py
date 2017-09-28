@@ -26,6 +26,13 @@ try:
 except Exception:
   pass
 
+try:
+  import libtbx.pkg_utils
+  libtbx.pkg_utils.require('mock', '>=2.0')
+  libtbx.pkg_utils.require('pytest', '>=2')
+except ImportError:
+  print "\n" * 10 + "Could not verify dependencies: cctbx sources out of date" + "\n" * 10
+
 def _install_dials_autocompletion():
   '''generate bash.sh and SConscript file in /build/dials/autocomplete'''
   import libtbx.load_env
