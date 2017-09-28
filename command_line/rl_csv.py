@@ -27,21 +27,17 @@ output {
 
 master_params = phil_scope.fetch().extract()
 
-help_message = "%s datablock.json strong.pickle output.csv=rl.csv" % \
-  libtbx.env.dispatcher_name
-
 def run(args):
   import libtbx.load_env
   from dials.util import log
-  usage = "%s [options] datablock.json strong.pickle" %libtbx.env.dispatcher_name
+  usage = "%s [options] datablock.json strong.pickle output.csv=rl.csv" % libtbx.env.dispatcher_name
 
   parser = OptionParser(
     usage=usage,
     phil=phil_scope,
     read_datablocks=True,
     read_reflections=True,
-    check_format=False,
-    epilog=help_message)
+    check_format=False)
 
   params, options = parser.parse_args(show_diff_phil=False)
   datablocks = flatten_datablocks(params.input.datablock)
