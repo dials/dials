@@ -306,7 +306,7 @@ namespace dials { namespace af {
     inline
     Reflection reflection_table_get_reflection(
         af::reflection_table table, std::size_t index) {
-      typedef typename af::reflection_table::const_iterator iterator;
+      typedef af::reflection_table::const_iterator iterator;
       DIALS_ASSERT(index < table.size());
       Reflection result;
       row_to_reflection_visitor visitor(index);
@@ -325,7 +325,7 @@ namespace dials { namespace af {
     inline
     void reflection_table_set_reflection(
         af::reflection_table table, std::size_t index, Reflection value) {
-      typedef typename Reflection::const_iterator iterator;
+      typedef Reflection::const_iterator iterator;
       DIALS_ASSERT(index < table.size());
       for (iterator it = value.begin(); it != value.end(); ++it) {
         reflection_to_row_visitor visitor(table, index, it->first);
