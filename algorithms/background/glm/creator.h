@@ -77,11 +77,7 @@ namespace dials { namespace algorithms {
       af::shared<bool> success(sbox.size(), true);
       for (std::size_t i = 0; i < sbox.size(); ++i) {
         try {
-          DIALS_ASSERT(sbox[i].is_consistent());
-          compute(
-              sbox[i].data.const_ref(),
-              sbox[i].background.ref(),
-              sbox[i].mask.ref());
+          single(sbox[i]);
         } catch(scitbx::error) {
           success[i] = false;
         } catch(dials::error) {
@@ -89,6 +85,19 @@ namespace dials { namespace algorithms {
         }
       }
       return success;
+    }
+
+    /**
+     * Compute the background values
+     * @param sbox The shoeboxes
+     * @returns Success True/False
+     */
+    void single(Shoebox<> &sbox) const {
+      DIALS_ASSERT(sbox.is_consistent());
+      compute(
+          sbox.data.const_ref(),
+          sbox.background.ref(),
+          sbox.mask.ref());
     }
 
     /**
