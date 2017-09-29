@@ -590,7 +590,7 @@ namespace dials { namespace af { namespace boost_python {
    * @param name The item name
    */
   boost::python::object Reflection_get(const Reflection &self, std::string name) {
-    typename Reflection::mapped_type item = self[name];
+    Reflection::mapped_type item = self[name];
     item_to_object_visitor visitor;
     return item.apply_visitor(visitor);
   }
