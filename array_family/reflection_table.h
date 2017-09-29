@@ -68,7 +68,7 @@ namespace dials { namespace af {
     Shoebox<>
   > reflection_table_type_generator;
 
-  typedef typename reflection_table_type_generator::type reflection_table_types;
+  typedef reflection_table_type_generator::type reflection_table_types;
   typedef flex_table<reflection_table_types> reflection_table;
 
   enum Flags {
@@ -125,15 +125,15 @@ namespace dials { namespace af {
   class Reflection {
   public:
 
-    typedef typename reflection_table_type_generator::data_type data_type;
+    typedef reflection_table_type_generator::data_type data_type;
     typedef std::map<std::string, data_type> map_type;
 
-    typedef typename map_type::key_type key_type;
-    typedef typename map_type::mapped_type mapped_type;
-    typedef typename map_type::value_type map_value_type;
-    typedef typename map_type::iterator iterator;
-    typedef typename map_type::const_iterator const_iterator;
-    typedef typename map_type::size_type size_type;
+    typedef map_type::key_type key_type;
+    typedef map_type::mapped_type mapped_type;
+    typedef map_type::value_type map_value_type;
+    typedef map_type::iterator iterator;
+    typedef map_type::const_iterator const_iterator;
+    typedef map_type::size_type size_type;
 
     /**
      * Instantiate
