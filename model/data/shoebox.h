@@ -319,7 +319,7 @@ namespace dials { namespace model {
       af::versa< bool, af::c_grid<3> > fg_mask_arr(mask.accessor());
       af::ref< bool, af::c_grid<3> > foreground_mask = fg_mask_arr.ref();
       for (std::size_t i = 0; i < mask.size(); ++i) {
-        foreground_mask[i] = (mask[i] & code) == code;
+        foreground_mask[i] = (mask[i] & code) == code && ((mask[i] & Overlapped) == 0);
       }
 
       // Calculate the centroid
@@ -404,7 +404,9 @@ namespace dials { namespace model {
       af::ref< bool, af::c_grid<3> > foreground_mask = fg_mask_arr.ref();
       for (std::size_t i = 0; i < mask.size(); ++i) {
         foreground_data[i] = data[i] - background[i];
-        foreground_mask[i] = ((mask[i] & code) == code) && (foreground_data[i] > 0);
+        foreground_mask[i] = ((mask[i] & code) == code)
+          && ((mask[i] & Overlapped) == 0)
+          && (foreground_data[i] > 0);
       }
 
       // Calculate the centroid
