@@ -102,6 +102,14 @@ namespace dials { namespace model {
       return edges_.size() / 2;
     }
 
+    std::size_t vertex_num_edges(std::size_t i) const {
+      DIALS_ASSERT(i < offset_.size() - 1);
+      std::size_t o1 = offset_[i];
+      std::size_t o2 = offset_[i+1];
+      DIALS_ASSERT(o2 >= o1);
+      return o2 - o1;
+    }
+
   private:
 
     edge_list edges_;
