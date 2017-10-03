@@ -13,6 +13,7 @@
 #include <numeric>
 #include <dials/array_family/boost_python/flex_table_suite.h>
 #include <dials/array_family/reflection_table.h>
+#include <dials/array_family/reflection.h>
 #include <dials/model/data/shoebox.h>
 #include <dials/model/data/observation.h>
 #include <dials/algorithms/profile_model/gaussian_rs/coordinate_system.h>
