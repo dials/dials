@@ -40,6 +40,10 @@ namespace gaussian_rs {
   using dials::model::Shoebox;
   using dials::model::ImageVolume;
   using dials::model::MultiPanelImageVolume;
+  using dials::model::Valid;
+  using dials::model::Foreground;
+  using dials::model::Background;
+  using dials::model::Overlapped;
 
 
   /**
@@ -54,7 +58,8 @@ namespace gaussian_rs {
         Shoebox<> &shoebox,
         vec3 <double> s1,
         double frame,
-        std::size_t panel) const  = 0;
+        std::size_t panel,
+        bool adjacent=false) const  = 0;
 
     virtual
     void array(
@@ -156,12 +161,13 @@ namespace gaussian_rs {
         Shoebox<> &shoebox,
         vec3<double> s1,
         double frame,
-        std::size_t panel) const {
+        std::size_t panel,
+        bool adjacent=false) const {
       DIALS_ASSERT(shoebox.is_consistent());
       if (shoebox.flat) {
         single_flat(shoebox, s1, frame, panel);
       } else {
-        single_normal(shoebox, s1, frame, panel);
+        single_normal(shoebox, s1, frame, panel, adjacent);
       }
     }
 
@@ -317,7 +323,8 @@ namespace gaussian_rs {
         Shoebox<> &shoebox,
         vec3<double> s1,
         double frame,
-        std::size_t panel_number) const {
+        std::size_t panel_number,
+        bool adjacent=false) const {
       // Get some bits from the shoebox
       af::ref< int, af::c_grid<3> > mask = shoebox.mask.ref();
       int6 bbox = shoebox.bbox;
@@ -392,8 +399,14 @@ namespace gaussian_rs {
               /* double gz = std::abs(gz1) < std::abs(gz2) ? gz1 : gz2; */
               /* double gzc2 = gz*gz*delta_m_r2; */
               /* int mask_value = (dxy + gzc2 <= 1.0) ? Foreground : Background; */
-              int mask_value = (dxy <= 1.0) ? Foreground : Background;
-              mask(k, j, i) |= mask_value;
+              if (!adjacent) {
+                int mask_value = (dxy <= 1.0) ? Foreground : Background;
+                mask(k, j, i) |= mask_value;
+              } else {
+                if (dxy <= 1.0) {
+                  mask(k,j,i) |= Overlapped;
+                }
+              }
             }
           }
         }
@@ -537,7 +550,8 @@ namespace gaussian_rs {
         Shoebox<> &shoebox,
         vec3<double> s1,
         double frame,
-        std::size_t panel_number) const {
+        std::size_t panel_number,
+        bool adjacent=false) const {
       DIALS_ASSERT(shoebox.is_consistent());
       // Get some bits from the shoebox
       af::ref< int, af::c_grid<3> > mask = shoebox.mask.ref();

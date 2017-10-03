@@ -24,6 +24,10 @@ namespace dials { namespace algorithms {
   using model::Shoebox;
   using model::ImageVolume;
   using model::MultiPanelImageVolume;
+  using model::Valid;
+  using model::Background;
+  using model::BackgroundUsed;
+  using model::Overlapped;
 
   namespace detail {
 
@@ -193,7 +197,7 @@ namespace dials { namespace algorithms {
         int mask_code = Valid | Background;
         for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
           for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
-            if ((mask(k,j,i) & mask_code) == mask_code) {
+            if ((mask(k,j,i) & mask_code) == mask_code && ((mask(k,j,i) & Overlapped) == 0)) {
               num_background++;
             }
           }
@@ -205,7 +209,7 @@ namespace dials { namespace algorithms {
         std::size_t l = 0;
         for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
           for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
-            if ((mask(k,j,i) & mask_code) == mask_code) {
+            if ((mask(k,j,i) & mask_code) == mask_code && ((mask(k,j,i) & Overlapped) == 0)) {
               DIALS_ASSERT(l < Y.size());
               DIALS_ASSERT(data(k,j,i) >= 0);
               Y[l++] = data(k,j,i);
@@ -236,7 +240,7 @@ namespace dials { namespace algorithms {
         for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
           for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
             background(k,j,i) = mean_background;
-            if ((mask(k,j,i) & mask_code) == mask_code) {
+            if ((mask(k,j,i) & mask_code) == mask_code && ((mask(k,j,i) & Overlapped) == 0)) {
               mask(k,j,i) |= BackgroundUsed;
             }
           }
@@ -258,7 +262,7 @@ namespace dials { namespace algorithms {
       std::size_t num_background = 0;
       int mask_code = Valid | Background;
       for (std::size_t i = 0; i < mask.size(); ++i) {
-        if ((mask[i] & mask_code) == mask_code) {
+        if ((mask[i] & mask_code) == mask_code && ((mask[i] & Overlapped) == 0)) {
           num_background++;
         }
       }
@@ -268,7 +272,7 @@ namespace dials { namespace algorithms {
       af::shared<double> Y(num_background, 0);
       std::size_t j = 0;
       for (std::size_t i = 0; i < mask.size(); ++i) {
-        if ((mask[i] & mask_code) == mask_code) {
+        if ((mask[i] & mask_code) == mask_code && ((mask[i] & Overlapped) == 0)) {
           DIALS_ASSERT(j < Y.size());
           DIALS_ASSERT(data[i] >= 0);
           Y[j++] = data[i];
@@ -297,7 +301,7 @@ namespace dials { namespace algorithms {
       // Fill in the background shoebox values
       for (std::size_t i = 0; i < background.size(); ++i) {
         background[i] = mean_background;
-        if ((mask[i] & mask_code) == mask_code) {
+        if ((mask[i] & mask_code) == mask_code && ((mask[i] & Overlapped) == 0)) {
           mask[i] |= BackgroundUsed;
         }
       }
@@ -320,7 +324,7 @@ namespace dials { namespace algorithms {
         int mask_code = Valid | Background;
         for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
           for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
-            if ((mask(k,j,i) & mask_code) == mask_code) {
+            if ((mask(k,j,i) & mask_code) == mask_code && ((mask(k,j,i) & Overlapped) == 0)) {
               num_background++;
             }
           }
@@ -333,7 +337,7 @@ namespace dials { namespace algorithms {
         std::size_t l = 0;
         for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
           for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
-            if ((mask(k,j,i) & mask_code) == mask_code) {
+            if ((mask(k,j,i) & mask_code) == mask_code && ((mask(k,j,i) & Overlapped) == 0)) {
               DIALS_ASSERT(l < Y.size());
               DIALS_ASSERT(data(k,j,i) >= 0);
               Y[l] = data(k,j,i);
@@ -397,7 +401,7 @@ namespace dials { namespace algorithms {
             double eta = b0 + b1 * (j+0.5) + b2*(i+0.5);
             double b = std::exp(eta);
             background(k,j,i) = b;
-            if ((mask(k,j,i) & mask_code) == mask_code) {
+            if ((mask(k,j,i) & mask_code) == mask_code && ((mask(k,j,i) & Overlapped) == 0)) {
               mask(k,j,i) |= BackgroundUsed;
             }
           }
@@ -421,7 +425,7 @@ namespace dials { namespace algorithms {
       for (std::size_t k = 0; k < data.accessor()[0]; ++k) {
         for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
           for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
-            if ((mask(k,j,i) & mask_code) == mask_code) {
+            if ((mask(k,j,i) & mask_code) == mask_code && ((mask(k,j,i) & Overlapped) == 0)) {
               num_background++;
             }
           }
@@ -436,7 +440,7 @@ namespace dials { namespace algorithms {
       for (std::size_t k = 0; k < data.accessor()[0]; ++k) {
         for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
           for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
-            if ((mask(k,j,i) & mask_code) == mask_code) {
+            if ((mask(k,j,i) & mask_code) == mask_code && ((mask(k,j,i) & Overlapped) == 0)) {
               DIALS_ASSERT(l < Y.size());
               DIALS_ASSERT(data(k,j,i) >= 0);
               Y[l] = data(k,j,i);
@@ -509,7 +513,7 @@ namespace dials { namespace algorithms {
           for (std::size_t i = 0; i < data.accessor()[2]; ++i) {
             double b = std::exp(b0 + b1*k + b2*j + b3*i);
             background(k,j,i) = b;
-            if ((mask(k,j,i) & mask_code) == mask_code) {
+            if ((mask(k,j,i) & mask_code) == mask_code && ((mask(k,j,i) & Overlapped) == 0)) {
               mask(k,j,i) |= BackgroundUsed;
             }
           }

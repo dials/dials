@@ -27,6 +27,7 @@ namespace dials { namespace algorithms {
   using dials::model::Background;
   using dials::model::BackgroundUsed;
   using dials::model::Foreground;
+  using dials::model::Overlapped;
 
   /**
    * Class to sum the intensity in 3D
@@ -151,7 +152,7 @@ namespace dials { namespace algorithms {
       sum_b_ = 0.0;
       for (std::size_t i = 0; i < signal.size(); ++i) {
         if ((mask[i] & Foreground) == Foreground) {
-          if ((mask[i] & Valid) == Valid) {
+          if ((mask[i] & Valid) == Valid && (mask[i] & Overlapped) == 0) {
             sum_p_ += signal[i];
             sum_b_ += background[i];
             n_signal_++;

@@ -29,6 +29,7 @@ namespace dials { namespace algorithms { namespace background {
   using dials::model::Valid;
   using dials::model::Background;
   using dials::model::BackgroundUsed;
+  using dials::model::Overlapped;
   using model::ImageVolume;
   using model::MultiPanelImageVolume;
 
@@ -176,8 +177,8 @@ namespace dials { namespace algorithms { namespace background {
         for (std::size_t k = 0; k < mask.accessor()[0]; ++k) {
           for (std::size_t j = 0; j < mask.accessor()[1]; ++j) {
             for (std::size_t i = 0; i < mask.accessor()[2]; ++i) {
-              const int maskcode = Valid | Background;
-              if ((mask(k,j,i) & maskcode) == maskcode) {
+              const int mask_code = Valid | Background;
+              if ((mask(k,j,i) & mask_code) == mask_code && ((mask(k,j,i) & Overlapped) == 0)) {
                 mask(k,j,i) |= BackgroundUsed;
               }
             }
