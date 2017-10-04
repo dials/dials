@@ -907,7 +907,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
     #inheritance
     # set max iterations if not already.
     if self._max_iterations is None:
-      self._max_iterations = 20
+      self._max_iterations = 100
 
     self.n_iterations = 0
     nu = 2
