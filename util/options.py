@@ -859,7 +859,7 @@ class OptionParser(OptionParserBase):
     msg = []
     msg.append('Unable to handle the following arguments:')
 
-    # If we have any detailed information about why any of the
+    # If we have any detailed information about why any of the 
     # arguments weren't processed, give this to the user
     for arg in [x for x in unhandled if x in self._phil_parser.handling_errors]:
       # Split the reasons for unhandling into validation, non-validation

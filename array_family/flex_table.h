@@ -508,9 +508,6 @@ namespace dials { namespace af {
 
     // Expose the variant type
     typedef typename boost::make_variant_over<flex_types>::type type;
-
-    // Expose the individual types
-    typedef typename boost::make_variant_over<valid_types>::type data_type;
   };
 
 }} // namespace dials::af
