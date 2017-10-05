@@ -44,7 +44,7 @@ class Data_Manager(object):
                                                  self.scaling_options['Isigma_min'])
     self.weights_for_scaling.apply_dmin_cutoff(self.sorted_reflections,
                                                self.scaling_options['d_min'])
-    #self.weights_for_scaling.remove_high_Isigma(self.sorted_reflections)
+    self.weights_for_scaling.remove_high_Isigma(self.sorted_reflections)
 
   def filter_and_sort_reflections(self):
     self.filtered_reflections = copy.deepcopy(self.reflection_table)

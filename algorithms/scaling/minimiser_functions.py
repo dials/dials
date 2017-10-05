@@ -21,8 +21,8 @@ class LBFGS_optimiser(object):
     self.data_manager.active_parameterisation = param_name
     self.set_up_parameterisation()
     self.residuals = []
-    core_params = lbfgs.core_parameters(maxfev=20)
-    termination_params = lbfgs.termination_parameters(max_iterations=20)
+    core_params = lbfgs.core_parameters(maxfev=15)
+    termination_params = lbfgs.termination_parameters(max_iterations=15)#, traditional_convergence_test_eps=1e2)
     lbfgs.run(target_evaluator=self, core_params=core_params, termination_params = termination_params)
     if self.data_manager.scaling_options['parameterization'] == 'standard':
       self.make_all_scales_positive()
