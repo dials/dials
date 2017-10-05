@@ -8,7 +8,7 @@ from cctbx.array_family.flex import *
 from cctbx.array_family import flex
 from scitbx import lbfgs
 from math import exp
-from target_function import *
+import time
 #note: include math exp import after flex imports to avoid exp conflicts
 
 class LBFGS_optimiser(object):
@@ -18,13 +18,38 @@ class LBFGS_optimiser(object):
     self.data_manager = Data_Manager_object
     self.x = None
     self.parameter_name = param_name
+    self.data_manager.active_parameterisation = param_name
     self.set_up_parameterisation()
     self.residuals = []
-    lbfgs.run(target_evaluator=self)
+    core_params = lbfgs.core_parameters(maxfev=20)
+    termination_params = lbfgs.termination_parameters(max_iterations=20)
+    lbfgs.run(target_evaluator=self, core_params=core_params, termination_params = termination_params)
+    if self.data_manager.scaling_options['parameterization'] == 'standard':
+      self.make_all_scales_positive()
     if param_name == 'g_decay':
       if self.data_manager.scaling_options['decay_correction_rescaling']:
         if self.data_manager.scaling_options['parameterization'] == 'standard':
           self.data_manager.scale_gvalues()
+
+  def make_all_scales_positive(self):
+    '''catcher that checks all the scale factors are positive in the standard
+    parameterization. If they are not, the assumption is that the algorithm
+    has got stuck in a local minimum, likely due to a few bad datapoints.
+    To cure, the absolute values of the scale factors are taken and the
+    minimizer is called again until only positive scale factors are obtained.'''
+    if (self.x < 0.0).count(True) > 0.0:
+      print (self.x < 0.0).count(True)
+      self.x = abs(self.x)
+      print (self.x < 0.0).count(True)
+      lbfgs.run(target_evaluator=self)
+      if (self.x < 0.0).count(True) > 0.0:
+        self.make_all_scales_positive()
+      else:
+        print "all scales should now be positive"
+        self.data_manager.g_parameterisation[self.parameter_name]['parameterisation'] = self.x
+    else:
+      print "all scales are positive"
+      self.data_manager.g_parameterisation[self.parameter_name]['parameterisation'] = self.x
 
   def return_data_manager(self):
     '''return data_manager method'''

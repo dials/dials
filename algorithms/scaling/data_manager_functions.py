@@ -23,8 +23,8 @@ class Data_Manager(object):
     self.reflection_table['x_value'] = self.reflection_table['xyzobs.px.value'].parts()[0]
     self.reflection_table['y_value'] = self.reflection_table['xyzobs.px.value'].parts()[1]
     self.reflection_table['z_value'] = self.reflection_table['xyzobs.px.value'].parts()[2]
-    self.reflection_table['inverse_scale_factor'] = flex.double([1.0]*len(self.reflection_table))
-    self.reflection_table['Ih_values'] = flex.double([0.0]*len(self.reflection_table))
+    self.reflection_table['inverse_scale_factor'] = flex.double([1.0] * len(self.reflection_table))
+    self.reflection_table['Ih_values'] = flex.double([0.0] * len(self.reflection_table))
     self.sorted_by_miller_index = False
     self.sorted_reflections = None
     self.filtered_reflections = None
@@ -35,7 +35,6 @@ class Data_Manager(object):
     #set choice of intensity and filter out bad values of d, variance etc.
     #fltering methods could be replaced by use of reflection table flags?
     self.select_optimal_intensities(scaling_options)
-    #sort the reflection table
     self.filter_and_sort_reflections()
     self.update_weights_for_scaling()
 
@@ -45,10 +44,12 @@ class Data_Manager(object):
                                                  self.scaling_options['Isigma_min'])
     self.weights_for_scaling.apply_dmin_cutoff(self.sorted_reflections,
                                                self.scaling_options['d_min'])
+    #self.weights_for_scaling.remove_high_Isigma(self.sorted_reflections)
 
   def filter_and_sort_reflections(self):
     self.filtered_reflections = copy.deepcopy(self.reflection_table)
     self.filter_negative_variances()
+    self.filter_very_negative_intensities()#this may not be needed if we do some outlier rejection.
     self.filter_data('d', -1.0, 0.0)
     self.map_indices_to_asu()
     self.assign_h_index()
@@ -76,6 +77,7 @@ class Data_Manager(object):
       self.reflection_table['variance'] = (self.reflection_table['intensity.'+intstr+'.variance']
                                            * (self.reflection_table['lp']**2)
                                            / (self.reflection_table['dqe']**2))
+    #option to add in future a combined prf/sum in a similar fashion to aimless
     elif scaling_options['integration_method'] == 'combine':
       scaling_options['integration_method'] = 'prf'
       self.select_optimal_intensities(scaling_options)
@@ -149,6 +151,18 @@ class Data_Manager(object):
         sel.append(True)
     self.filtered_reflections = self.filtered_reflections.select(sel)
 
+  def filter_very_negative_intensities(self):
+    '''return boolean selection of a given variable range'''
+    sel = flex.bool()
+    print len(self.filtered_reflections['intensity'])
+    for i, intensity in enumerate(self.filtered_reflections['intensity']):
+      if intensity/(self.filtered_reflections['variance'][i]**0.5) <= -2.0:
+        sel.append(False)
+      else:
+        sel.append(True)
+    self.filtered_reflections = self.filtered_reflections.select(sel)
+    print len(self.filtered_reflections['intensity'])
+
   def filter_negative_variances(self):
     '''return boolean selection of a given variable range'''
     sel = flex.bool()
@@ -158,7 +172,6 @@ class Data_Manager(object):
       else:
         sel.append(True)
     self.filtered_reflections = self.filtered_reflections.select(sel)
-
 
   '''define a few methods for saving the data'''
   def save_sorted_reflections(self, filename):
@@ -176,45 +189,19 @@ class Data_Manager(object):
     intensities = self.sorted_reflections['intensity']
     variances = self.sorted_reflections['variance']
     scale_factors = self.sorted_reflections['inverse_scale_factor']
-    gsq = (((scale_factors)**2) / variances)
+    scaleweights = self.weights_for_scaling.get_weights()
+    #gsq = (((scale_factors)**2) / variances)
+    gsq = (((scale_factors)**2) *scaleweights)
     sumgsq = flex.double(np.add.reduceat(gsq, self.h_index_cumulative_array[:-1]))
-    gI = ((scale_factors * intensities) / variances)
+    #gI = ((scale_factors * intensities) / variances)
+    gI = ((scale_factors * intensities) * scaleweights)
     sumgI = flex.double(np.add.reduceat(gI, self.h_index_cumulative_array[:-1]))
-    self.Ih_array = sumgI / sumgsq
+    sumweights = flex.double(np.add.reduceat(scaleweights, self.h_index_cumulative_array[:-1]))
+    #self.Ih_array = sumgI / sumgsq
+    self.Ih_array = flex.double([val/ sumgsq[i] if sumweights[i]> 0.0
+                                 else 0.0 for i, val in enumerate(sumgI)])
     self.sorted_reflections['Ih_values'] = flex.double(
       np.repeat(self.Ih_array, self.h_index_counter_array))
-
-
-class Weighting(object):
-  def __init__(self, reflection_table):
-    '''set initial weighting to be a statistical weighting'''
-    self.scale_weighting = 1.0/reflection_table['variance']
-
-  def get_weights(self):
-    return self.scale_weighting
-
-  def set_unity_weighting(self, reflection_table):
-    self.scale_weighting = flex.double([1.0]*len(reflection_table['variance']))
-
-  def apply_Isigma_cutoff(self, reflection_table, ratio):
-    sel = flex.bool()
-    for i, intensity in enumerate(reflection_table['intensity']):
-      if ratio > intensity/(reflection_table['variance'][i]**0.5):
-        sel.append(True)
-      else:
-        sel.append(False)
-    self.scale_weighting.set_selected(sel, 0.0)
-
-  def apply_dmin_cutoff(self, reflection_table, d_cutoff_value):
-    sel = flex.bool()
-    for i, d in enumerate(reflection_table['d']):
-      if d_cutoff_value > d:
-        sel.append(True)
-      else:
-        sel.append(False)
-    self.scale_weighting.set_selected(sel, 0.0)
-    print len(self.scale_weighting) - self.scale_weighting.count(0.0)
-
 
 class XDS_Data_Manager(Data_Manager):
   '''Data Manager subclass for implementing XDS parameterisation'''
@@ -234,6 +221,7 @@ class XDS_Data_Manager(Data_Manager):
     self.g_modulation = None
     self.g_decay = None
     self.g_parameterisation = None
+    self.active_parameterisation = None
     self.active_bin_index = None
     self.active_param_size = None
     self.constant_g_values = None
@@ -243,20 +231,10 @@ class XDS_Data_Manager(Data_Manager):
     self.bin_reflections_decay()
     self.bin_reflections_absorption_radially()
     self.bin_reflections_modulation()
-    if self.scaling_options['parameterization'] == 'log':
-      #initialise all log(g-value) arrays to 0.0 (i.e. ln(g) = 0.0)
-      self.g_parameterisation = {
-        'g_absorption' : {'index': 'a_bin_index', 
-                          'parameterisation' : self.g_absorption*0.0},
-        'g_modulation' : {'index': 'xy_bin_index', 
-                          'parameterisation' : self.g_modulation*0.0},
-        'g_decay' : {'index': 'l_bin_index', 
-                     'parameterisation' : self.g_decay*0.0}}
-    else:
-      self.g_parameterisation = {
-        'g_absorption' : {'index': 'a_bin_index', 'parameterisation' : self.g_absorption},
-        'g_modulation' : {'index': 'xy_bin_index', 'parameterisation' : self.g_modulation},
-        'g_decay' : {'index': 'l_bin_index', 'parameterisation' : self.g_decay}}
+    self.g_parameterisation = {
+      'g_absorption' : {'index': 'a_bin_index', 'parameterisation' : self.g_absorption, 'derivatives': self.g_absorption_derivatives},
+      'g_modulation' : {'index': 'xy_bin_index', 'parameterisation' : self.g_modulation, 'derivatives': self.g_modulation_derivatives},
+      'g_decay' : {'index': 'l_bin_index', 'parameterisation' : self.g_decay, 'derivatives': self.g_decay_derivatives}}
 
   def get_target_function(self):
     '''call the xds target function method'''
@@ -312,8 +290,15 @@ class XDS_Data_Manager(Data_Manager):
       raise ValueError('Unable to bin data for decay in scaling initialisation')
     self.sorted_reflections['l_bin_index'] = (firstbin_index
                           + (secondbin_index * ndbins))
+    self.g_decay_derivatives = flex.double([0.0] * len(self.sorted_reflections['d']) * ndbins * nzbins)
+    num = len(self.sorted_reflections['d'])
+    for i, l in enumerate(self.sorted_reflections['l_bin_index']):
+      self.g_decay_derivatives[(l*num)+i] = 1.0
     self.bin_boundaries = {'d' : d_bins, 'z_value' : z_bins}
-    self.g_decay = flex.double([1.0] * (ndbins * nzbins))
+    if self.scaling_options['parameterization'] == 'log':
+      self.g_decay = flex.double([0.0] * (ndbins * nzbins))
+    else:
+      self.g_decay = flex.double([1.0] * (ndbins * nzbins))
 
   def bin_reflections_modulation(self):
     '''bin reflections for modulation correction'''
@@ -342,7 +327,14 @@ class XDS_Data_Manager(Data_Manager):
       raise ValueError('Unable to bin data for modulation in scaling initialisation')
     self.sorted_reflections['xy_bin_index'] = (firstbin_index
                                                + (secondbin_index * nxbins))
-    self.g_modulation = flex.double([1.0] * (nxbins ** 2))
+    self.g_modulation_derivatives = flex.double([0.0] * len(self.sorted_reflections['d']) * nxbins * nybins)
+    num = len(self.sorted_reflections['d'])
+    for i, l in enumerate(self.sorted_reflections['xy_bin_index']):
+      self.g_modulation_derivatives[(l*num)+i] = 1.0
+    if self.scaling_options['parameterization'] == 'log':
+      self.g_modulation = flex.double([0.0] * (nxbins ** 2))
+    else:
+      self.g_modulation = flex.double([1.0] * (nxbins ** 2))
 
   def bin_reflections_absorption(self):
     '''bin reflections for absorption correction'''
@@ -379,7 +371,15 @@ class XDS_Data_Manager(Data_Manager):
       raise ValueError('Unable to bin data for absorption in scaling initialisation')
     self.sorted_reflections['a_bin_index'] = (firstbin_index
                                               + (secondbin_index * nxbins * nybins))
-    self.g_absorption = flex.double([1.0] * ((nxbins**2) * nzbins))
+    self.g_absorption_derivatives = flex.double([0.0] * len(self.sorted_reflections['d']) 
+      * nxbins * nybins * nzbins)
+    num = len(self.sorted_reflections['d'])
+    for i, a in enumerate(self.sorted_reflections['a_bin_index']):
+      self.g_absorption_derivatives[(a*num)+i] = 1.0                                         
+    if self.scaling_options['parameterization'] == 'log':
+      self.g_absorption = flex.double([0.0] * ((nxbins**2) * nzbins))
+    else:
+      self.g_absorption = flex.double([1.0] * ((nxbins**2) * nzbins))
 
   def bin_reflections_absorption_radially(self):
     '''bin reflections for absorption correction'''
@@ -423,8 +423,17 @@ class XDS_Data_Manager(Data_Manager):
     self.sorted_reflections['a_bin_index'] = (firstbin_index + (secondbin_index
                                               * (len(angular_bins) - 1)
                                               * (len(radial_bins) - 1)))
-    self.g_absorption = flex.double([1.0] * ((len(angular_bins)-1)
-                                             * (len(radial_bins)-1) * nzbins))
+    self.g_absorption_derivatives = flex.double([0.0] * len(self.sorted_reflections['d']) 
+      * (len(angular_bins) - 1) * (len(radial_bins) - 1) * nzbins)
+    num = len(self.sorted_reflections['d'])
+    for i, a in enumerate(self.sorted_reflections['a_bin_index']):
+      self.g_absorption_derivatives[(a*num)+i] = 1.0
+    if self.scaling_options['parameterization'] == 'log':
+      self.g_absorption = flex.double([0.0] * ((len(angular_bins)-1)
+                                              * (len(radial_bins)-1) * nzbins))
+    else:
+      self.g_absorption = flex.double([1.0] * ((len(angular_bins)-1)
+                                              * (len(radial_bins)-1) * nzbins))
 
   def bin_reflections_absorption_smartly(self):
     import gridding_entropy_dm as gedm
@@ -467,7 +476,10 @@ class XDS_Data_Manager(Data_Manager):
       raise ValueError('Unable to bin data for absorption in scaling initialisation')
     self.sorted_reflections['a_bin_index'] = (firstbin_index
                           + (secondbin_index * len(optimal_boundaries)))
-    self.g_absorption = flex.double([1.0] * (len(optimal_boundaries) * nzbins))
+    if self.scaling_options['parameterization'] == 'log':
+      self.g_absorption = flex.double([0.0] * (len(optimal_boundaries) * nzbins))
+    else:
+      self.g_absorption = flex.double([1.0] * (len(optimal_boundaries) * nzbins))
 
 
   def scale_gvalues(self):
@@ -488,8 +500,8 @@ class XDS_Data_Manager(Data_Manager):
 
   def create_fake_dataset(self):
     self.sorted_reflections['intensity.sum.value'] = (
-      self.sorted_reflections['Ih_values'] * 
-      self.sorted_reflections['inverse_scale_factor'] * 
+      self.sorted_reflections['Ih_values'] *
+      self.sorted_reflections['inverse_scale_factor'] *
       self.sorted_reflections['dqe'] / self.sorted_reflections['lp'])
 
   def clean_reflection_table(self):
@@ -498,8 +510,8 @@ class XDS_Data_Manager(Data_Manager):
     for key in self.reflection_table.keys():
       if not key in self.initial_keys:
         del self.sorted_reflections[key]
-    added_columns = ['l_bin_index','a_bin_index', 'xy_bin_index', 'h_index', 
-                      'asu_miller_index']
+    added_columns = ['l_bin_index','a_bin_index', 'xy_bin_index', 'h_index',
+                     'asu_miller_index']
     for key in added_columns:
       del self.sorted_reflections[key]  
 
@@ -586,6 +598,47 @@ class XDS_Data_Manager(Data_Manager):
         break 
 
     #return Good_reflections
+
+
+class Weighting(object):
+  def __init__(self, reflection_table):
+    '''set initial weighting to be a statistical weighting'''
+    self.scale_weighting = 1.0/reflection_table['variance']
+
+  def get_weights(self):
+    return self.scale_weighting
+
+  def set_unity_weighting(self, reflection_table):
+    self.scale_weighting = flex.double([1.0]*len(reflection_table['variance']))
+
+  def apply_Isigma_cutoff(self, reflection_table, ratio):
+    sel = flex.bool()
+    for i, intensity in enumerate(reflection_table['intensity']):
+      if ratio > intensity/(reflection_table['variance'][i]**0.5):
+        sel.append(True)
+      else:
+        sel.append(False)
+    self.scale_weighting.set_selected(sel, 0.0)
+    print len(self.scale_weighting) - self.scale_weighting.count(0.0)
+
+  def remove_high_Isigma(self, reflection_table):
+    sel = flex.bool()
+    for i, intensity in enumerate(reflection_table['intensity']):
+      if 230.0 < intensity/(reflection_table['variance'][i]**0.5):
+        sel.append(True)
+      else:
+        sel.append(False)
+    self.scale_weighting.set_selected(sel, 0.0)
+
+  def apply_dmin_cutoff(self, reflection_table, d_cutoff_value):
+    sel = flex.bool()
+    for i, d in enumerate(reflection_table['d']):
+      if d_cutoff_value > d:
+        sel.append(True)
+      else:
+        sel.append(False)
+    self.scale_weighting.set_selected(sel, 0.0)
+    print len(self.scale_weighting) - self.scale_weighting.count(0.0)
 
 
 def select_variables_in_range(variable_array, lower_limit, upper_limit):

@@ -2,6 +2,9 @@ import cPickle as pickle
 import matplotlib.pyplot as plt
 import numpy as np
 from data_quality_assessment import R_meas, R_pim
+import data_manager_functions as dmf
+import matplotlib.gridspec as gridspec
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 def save_data(minimised,filename):
   data_file = open(filename,'w')
@@ -16,24 +19,37 @@ def load_data(filename):
 
 def plot_data_decay(data_man):
   "takes in a data manager object"
-  y_ticks = ['%.3f' % x for x in data_man.bin_boundaries['d']]
+  y_ticks = data_man.bin_boundaries['d'][::2]
+  y_ticks = ['%.2f' % x for x in y_ticks]
   x_ticks = data_man.bin_boundaries['z_value'][::2]
   x_ticks = ['%.0f' % x for x in x_ticks]
-
   ndbins = len(data_man.bin_boundaries['d'])-1
   nzbins = len(data_man.bin_boundaries['z_value'])-1
   '''generate a plot of the result'''
   G_fin = list(data_man.g_decay)
   G_fin_2d = np.reshape(G_fin, (nzbins, ndbins)).T
 
-  plt.figure(figsize=(7,7))
-  im = plt.imshow(G_fin_2d, cmap='viridis', origin='lower')
-  plt.colorbar(im)
-  plt.ylabel('d-value')
-  plt.xlabel('time (z)')
-  plt.yticks(np.arange(-0.5, ndbins), y_ticks)
-  plt.xticks(np.arange(-0.5, nzbins, 2), x_ticks)
-  plt.title('Inverse scale factors for absorption correction')
+
+  plt.figure(figsize=(11,6))
+  gs = gridspec.GridSpec(1, 2)
+  ax1 = plt.subplot(gs[0, 0])
+  ax2 = plt.subplot(gs[0, 1])
+  ax2.hist(G_fin, 40, log=False)
+  ax2.set_xlabel('Inverse scale factor')
+  ax2.set_ylabel('Occurences')
+  
+  im = ax1.imshow(G_fin_2d, cmap='viridis', origin='lower')
+  divider = make_axes_locatable(ax1)
+  cax1 = divider.append_axes("right", size="5%", pad=0.05)
+  cbar = plt.colorbar(im, cax=cax1)
+  ax1.set_ylabel('d-value')
+  ax1.set_xlabel('time (z)')
+  ax1.set_yticks(np.arange(-0.5, ndbins, 2))
+  ax1.set_yticklabels(y_ticks)
+  ax1.set_xticks(np.arange(-0.5, nzbins, 2))
+  ax1.set_xticklabels(x_ticks)
+  ax1.set_title('Inverse scale factors for decay correction', fontsize=12)
+  plt.tight_layout()
   plt.savefig('g_resolution.png')
   #plt.show()
 
@@ -47,14 +63,25 @@ def plot_data_absorption(data_man):
   G_fin = list(data_man.g_absorption)
   G_fin_2d = np.reshape(G_fin, (nzbins, nabsbins)).T
 
-  plt.figure(figsize=(7,7))
-  im = plt.imshow(G_fin_2d, cmap='viridis', origin='lower')
-  plt.colorbar(im)
-  plt.ylabel('detector position')
-  plt.xlabel('time (z)')
-  #plt.yticks(np.arange(-0.5, nabsbins), y_ticks)
-  #plt.xticks(np.arange(-0.5, nzbins, 2), x_ticks)
-  plt.title('Inverse scale factors for absorption correction')
+  plt.figure(figsize=(11,6))
+  gs = gridspec.GridSpec(1, 2)
+  ax1 = plt.subplot(gs[0, 0])
+  ax2 = plt.subplot(gs[0, 1])
+  ax2.hist(G_fin, 40, log=False)
+  ax2.set_xlabel('Inverse scale factor')
+  ax2.set_ylabel('Occurences')
+  
+  im = ax1.imshow(G_fin_2d, cmap='viridis', origin='lower')
+  divider = make_axes_locatable(ax1)
+  cax1 = divider.append_axes("right", size="5%", pad=0.05)
+  cbar = plt.colorbar(im, cax=cax1)
+  ax1.set_ylabel('detector position')
+  ax1.set_xlabel('time (z)')
+  #ax1.yticks(np.arange(-0.5, nabsbins), y_ticks)
+  ax1.set_xticks(np.arange(-0.5, nzbins, 2))
+  ax1.set_xticklabels(x_ticks)
+  ax1.set_title('Inverse scale factors for absorption correction', fontsize=12)
+  plt.tight_layout()
   plt.savefig('g_absorption.png')
   #plt.show()
 
@@ -68,14 +95,24 @@ def plot_data_modulation(data_man):
   G_fin = list(data_man.g_modulation)
   G_fin_2d = np.reshape(G_fin, (nbins, nbins))
 
-  plt.figure(figsize=(7,7))
-  im = plt.imshow(G_fin_2d, cmap='viridis', origin='lower')
-  plt.colorbar(im)
-  plt.ylabel('y')
-  plt.xlabel('x')
+  plt.figure(figsize=(11,6))
+  gs = gridspec.GridSpec(1, 2)
+  ax1 = plt.subplot(gs[0, 0])
+  ax2 = plt.subplot(gs[0, 1])
+  ax2.hist(G_fin, 40, log=False)
+  ax2.set_xlabel('Inverse scale factor')
+  ax2.set_ylabel('Occurences')
+  
+  im = ax1.imshow(G_fin_2d, cmap='viridis', origin='lower')
+  divider = make_axes_locatable(ax1)
+  cax1 = divider.append_axes("right", size="5%", pad=0.05)
+  cbar = plt.colorbar(im, cax=cax1)
+  ax1.set_ylabel('y')
+  ax1.set_xlabel('x')
   #plt.yticks(np.arange(-0.5, nbins), x_ticks)
   #plt.xticks(np.arange(-0.5, nbins), x_ticks)
-  plt.title('Inverse scale factors for modulation correction')
+  ax1.set_title('Inverse scale factors for modulation correction', fontsize=12)
+  plt.tight_layout()
   plt.savefig('g_modulation.png')
   #plt.show()
 
@@ -118,15 +155,10 @@ def plot_absorption_correction_at_zbin(data_man, position):
 if __name__ == "__main__":
   datafile="/Users/whi10850/Documents/dials_scratch/jbe/scaling_code/test_data/x4_wide_integrated_scaled.pickle"
   data_man = load_data(filename = datafile)
-  #data_man = data.data_manager
   
-  #Rmeas = R_meas(data_man)
-  #print "R_meas of the (unmerged) data is %s" % (Rmeas)
-  #Rpim = R_pim(data_man)
-  #print "R_pim of the merged data is %s" % (Rpim)
-  plot_data(data_man)
+  plot_data_decay(data_man)
   plot_data_absorption(data_man)
   plot_data_modulation(data_man)
-  plot_absorption_correction_at_zbin(data_man, position=6)
-  plot_correction_at_resolution(data_man, position=5)
-  plot_correction_at_detector_area(data_man, position=13)
+  #plot_absorption_correction_at_zbin(data_man, position=6)
+  #plot_correction_at_resolution(data_man, position=5)
+  #plot_correction_at_detector_area(data_man, position=13)
