@@ -468,7 +468,6 @@ class Processor(object):
     try:
       integrated = self.integrate(experiments, indexed)
     except Exception, e:
-      raise
       print "Error integrating", tag, str(e)
       if not self.params.dispatch.squash_errors: raise
       return
