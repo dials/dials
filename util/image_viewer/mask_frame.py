@@ -44,6 +44,7 @@ class MaskSettingsPanel(wx.Panel):
     self.resolution_range_d_min_ctrl = None
     self.resolution_range_d_max_ctrl = None
     self.ice_rings_d_min_ctrl = None
+    self.ice_rings_width_ctrl = None
     self._mode_rectangle_layer = None
     self._mode_polygon_layer = None
     self._mode_circle_layer = None
@@ -199,6 +200,19 @@ class MaskSettingsPanel(wx.Panel):
     box.Add(self.ice_rings_d_min_ctrl,
             0, wx.RIGHT | wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL, 5)
     self.Bind(EVT_FLOATSPIN, self.OnUpdate, self.ice_rings_d_min_ctrl)
+
+    # ice rings width control
+    self.ice_rings_width = self.params.masking.ice_rings.width
+    if self.ice_rings_width_ctrl is None:
+      self.ice_rings_width_ctrl = FloatSpin(
+            self, digits=3, name='ice_rings_width',
+            value=self.ice_rings_width, min_val=0.001,
+            increment=0.001)
+    txtd = wx.StaticText(self, label='width')
+    box.Add(txtd, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    box.Add(self.ice_rings_width_ctrl,
+            0, wx.RIGHT | wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(EVT_FLOATSPIN, self.OnUpdate, self.ice_rings_width_ctrl)
     sizer.Add(box)
 
     untrusted_rectangles = []
@@ -474,6 +488,8 @@ class MaskSettingsPanel(wx.Panel):
       self.params.masking.ice_rings.d_min = self.ice_rings_d_min_ctrl.GetValue()
     else:
       self.params.masking.ice_rings.d_min = None
+    if self.ice_rings_width_ctrl.GetValue() > 0:
+      self.params.masking.ice_rings.width = self.ice_rings_width_ctrl.GetValue()
     self.params.masking.ice_rings.filter = self.ice_rings_ctrl.GetValue()
 
     self._resolution_range_d_min = float(
