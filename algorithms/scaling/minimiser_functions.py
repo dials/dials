@@ -84,6 +84,33 @@ class LBFGS_optimiser(object):
     print "Residual sum: %12.6g" % f
     return f, g
 
+class aimless_LBFGS_optimiser(object):
+  '''Class that takes in Data_Manager object and runs
+  an LBFGS minimisation in a Kabsch approach '''
+  def __init__(self, Data_Manager_object):
+    self.data_manager = Data_Manager_object
+    self.x = self.data_manager.active_parameters
+    #self.set_up_parameterisation()
+    self.residuals = []
+    core_params = lbfgs.core_parameters(maxfev=15)
+    termination_params = lbfgs.termination_parameters(max_iterations=15)#, traditional_convergence_test_eps=1e2)
+    lbfgs.run(target_evaluator=self, core_params=core_params, termination_params = termination_params)
+
+  def return_data_manager(self):
+    '''return data_manager method'''
+    return self.data_manager
+
+  def compute_functional_and_gradients(self):
+    '''first calculate the updated values of the scale factors and Ih,
+    before calculating the residual and gradient functions'''
+    self.data_manager.update_for_minimisation(parameters=self.x)
+    f, g = self.data_manager.get_target_function()
+    f = flex.sum(f)
+    self.residuals.append(f)
+    print "Residual sum: %12.6g" % f
+    return f, g
+
+
 class B_optimiser(object):
   '''Class that takes in minimised decay modulation array and fits a
   global scale and B-factor to the first time row '''

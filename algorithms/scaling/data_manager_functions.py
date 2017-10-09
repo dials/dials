@@ -27,6 +27,7 @@ class Data_Manager(object):
     self.reflection_table['Ih_values'] = flex.double([0.0] * len(self.reflection_table))
     self.sorted_by_miller_index = False
     self.sorted_reflections = None
+    self.reflections_for_scaling = None
     self.filtered_reflections = None
     self.Ih_array = None
     self.h_index_counter_array = None
@@ -44,7 +45,7 @@ class Data_Manager(object):
                                                  self.scaling_options['Isigma_min'])
     self.weights_for_scaling.apply_dmin_cutoff(self.sorted_reflections,
                                                self.scaling_options['d_min'])
-    self.weights_for_scaling.remove_high_Isigma(self.sorted_reflections)
+    #self.weights_for_scaling.remove_high_Isigma(self.sorted_reflections)
 
   def filter_and_sort_reflections(self):
     self.filtered_reflections = copy.deepcopy(self.reflection_table)
@@ -133,44 +134,24 @@ class Data_Manager(object):
     self.filtered_reflections = self.filtered_reflections.select(inv_sel)
 
   def filter_I_sigma(self, ratio):
-    sel = flex.bool()
-    for index, intensity in enumerate(self.filtered_reflections['intensity']):
-      if intensity/(self.filtered_reflections['variance'][index]**0.5) > ratio:
-        sel.append(True)
-      else:
-        sel.append(False)
+    Ioversigma = self.filtered_reflections['intensity']/(self.filtered_reflections['variance']**0.5)
+    sel = Ioversigma > ratio
     self.filtered_reflections = self.filtered_reflections.select(sel)
 
   def filter_negative_intensities(self):
     '''return boolean selection of a given variable range'''
-    sel = flex.bool()
-    for intensity in self.filtered_reflections['intensity']:
-      if intensity <= 0.0:
-        sel.append(False)
-      else:
-        sel.append(True)
+    sel = self.filtered_reflections['intensity'] > 0.0
     self.filtered_reflections = self.filtered_reflections.select(sel)
 
   def filter_very_negative_intensities(self):
     '''return boolean selection of a given variable range'''
-    sel = flex.bool()
-    print len(self.filtered_reflections['intensity'])
-    for i, intensity in enumerate(self.filtered_reflections['intensity']):
-      if intensity/(self.filtered_reflections['variance'][i]**0.5) <= -2.0:
-        sel.append(False)
-      else:
-        sel.append(True)
+    Ioversigma = self.filtered_reflections['intensity']/(self.filtered_reflections['variance']**0.5)
+    sel = Ioversigma > -2.0
     self.filtered_reflections = self.filtered_reflections.select(sel)
-    print len(self.filtered_reflections['intensity'])
 
   def filter_negative_variances(self):
     '''return boolean selection of a given variable range'''
-    sel = flex.bool()
-    for intensity in self.filtered_reflections['variance']:
-      if intensity <= 0.0:
-        sel.append(False)
-      else:
-        sel.append(True)
+    sel = self.filtered_reflections['variance'] > 0.0
     self.filtered_reflections = self.filtered_reflections.select(sel)
 
   '''define a few methods for saving the data'''
@@ -202,6 +183,117 @@ class Data_Manager(object):
                                  else 0.0 for i, val in enumerate(sumgI)])
     self.sorted_reflections['Ih_values'] = flex.double(
       np.repeat(self.Ih_array, self.h_index_counter_array))
+
+
+class aimless_Data_Manager(Data_Manager):
+  '''Data Manager subclass for implementing XDS parameterisation'''
+  def __init__(self, reflections, experiments, scaling_options):
+    Data_Manager.__init__(self, reflections, experiments, scaling_options)
+    'Attributes specific to aimless parameterisation'
+    '''set bin parameters'''
+    self.binning_parameters = {'n_scale_bins' : None, 'n_B_bins' : None, 'lmax' : 4}
+    self.bin_boundaries = None
+    for key, value in scaling_options.iteritems():
+      if key in self.binning_parameters:
+        self.binning_parameters[key] = value
+    #initialise g-value arrays
+    self.g_absorption = None
+    self.g_scale = None
+    self.g_decay = None
+    self.g_parameterisation = None
+    self.active_parameterisation = None
+    self.active_bin_index = None
+    self.active_param_size = None
+    self.n_active_params = 0
+    self.initialise_scale_factors()
+    
+
+  def initialise_scale_factors(self):
+    self.bin_reflections_scale()
+    self.bin_reflections_decay()
+    self.initialise_absorption_scales()
+    self.active_parameters = flex.double([])
+    self.active_parameters.extend(self.g_scale)
+    self.active_parameters.extend(self.g_decay)
+    self.active_parameters.extend(self.g_absorption)
+    '''self.g_parameterisation = {
+      'g_absorption' : {'index': None, 'parameterisation' : self.g_absorption, 'derivatives': self.g_absorption_derivatives},
+      'g_scale' : {'index': 't1_bin_index', 'parameterisation' : self.g_scale, 'derivatives': self.g_scale_derivatives},
+      'g_decay' : {'index': 't2_bin_index', 'parameterisation' : self.g_decay, 'derivatives': self.g_decay_derivatives}}'''
+
+  def get_target_function(self):
+    '''call the aimless target function method'''
+    return aimless_target_function(self).return_targets()
+
+  def get_basis_function(self):
+    '''call the aimless basis function method'''
+    return aimless_basis_function(self).return_basis()
+
+  def update_for_minimisation(self, parameters):
+    '''update the scale factors and Ih for the next iteration of minimisation'''
+    self.sorted_reflections['inverse_scale_factor'] = self.get_basis_function()[0]
+    self.active_derivatives = self.get_basis_function()[1]
+    self.calc_Ih()
+
+  def bin_reflections_decay(self):
+    '''bin reflections for decay correction'''
+    nBbins = self.binning_parameters['n_B_bins']
+    '''Bin the data into time 'z' bins'''
+    time_max = max(self.filtered_reflections['z_value'])
+    time_min = min(self.filtered_reflections['z_value'])
+    time_bins = ((flex.double(range(0, nBbins + 1)) * ((time_max - time_min) / nBbins))
+          + flex.double([time_min] * (nBbins + 1)))
+    #add a small tolerance to make sure no rounding errors cause extreme
+    #data to not be selected
+    time_bins[0] = time_bins[0] - 0.00001
+    time_bins[-1] = time_bins[-1] + 0.00001
+    bin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
+    for i in range(nBbins):
+      selection = select_variables_in_range(
+        self.sorted_reflections['z_value'], time_bins[i], time_bins[i+1])
+      bin_index.set_selected(selection, i)
+    if bin_index.count(-1) > 0:
+      raise ValueError('Unable to bin data for decay in scaling initialisation')
+    self.sorted_reflections['t2_bin_index'] = bin_index
+    self.bin_boundaries = {'t2_value' : time_bins}
+    self.g_decay = flex.double([0.0] * nBbins)
+    self.n_active_params += nBbins
+    self.n_g_decay_params = nBbins
+
+  def bin_reflections_scale(self):
+    '''bin reflections for decay correction'''
+    n_scale_bins = self.binning_parameters['n_scale_bins']
+    '''Bin the data into time 'z' bins'''
+    time_max = max(self.filtered_reflections['z_value'])
+    time_min = min(self.filtered_reflections['z_value'])
+    time_bins = ((flex.double(range(0, n_scale_bins + 1)) * ((time_max - time_min) / n_scale_bins))
+          + flex.double([time_min] * (n_scale_bins + 1)))
+    #add a small tolerance to make sure no rounding errors cause extreme
+    #data to not be selected
+    time_bins[0] = time_bins[0] - 0.00001
+    time_bins[-1] = time_bins[-1] + 0.00001
+    bin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
+    for i in range(n_scale_bins):
+      selection = select_variables_in_range(
+        self.sorted_reflections['z_value'], time_bins[i], time_bins[i+1])
+      bin_index.set_selected(selection, i)
+    if bin_index.count(-1) > 0:
+      raise ValueError('Unable to bin data for decay in scaling initialisation')
+    self.sorted_reflections['t1_bin_index'] = bin_index
+    self.bin_boundaries = {'t1_value' : time_bins}
+    self.g_scale = flex.double([1.0] * n_scale_bins)
+    self.n_active_params += n_scale_bins
+    self.n_g_scale_params = n_scale_bins
+
+  def initialise_absorption_scales(self):
+    n_abs_params = 0
+    for i in range(self.binning_parameters['lmax']):
+      n_abs_params += (2*(i+1))+1
+    self.g_absorption = flex.double([1.0] * n_abs_params)
+    self.n_active_params += n_abs_params
+    self.n_g_abs_params = n_abs_params
+
+
 
 class XDS_Data_Manager(Data_Manager):
   '''Data Manager subclass for implementing XDS parameterisation'''
@@ -253,6 +345,7 @@ class XDS_Data_Manager(Data_Manager):
   def update_for_minimisation(self, parameters):
     '''update the scale factors and Ih for the next iteration of minimisation'''
     self.sorted_reflections['inverse_scale_factor'] = self.get_basis_function(parameters)[0]
+    self.active_derivatives = self.get_basis_function(parameters)[1]
     self.calc_Ih()
 
   def bin_reflections_decay(self):
@@ -290,6 +383,7 @@ class XDS_Data_Manager(Data_Manager):
       raise ValueError('Unable to bin data for decay in scaling initialisation')
     self.sorted_reflections['l_bin_index'] = (firstbin_index
                           + (secondbin_index * ndbins))
+    self.sorted_reflections['res_bin_index'] = firstbin_index
     self.g_decay_derivatives = flex.double([0.0] * len(self.sorted_reflections['d']) * ndbins * nzbins)
     num = len(self.sorted_reflections['d'])
     for i, l in enumerate(self.sorted_reflections['l_bin_index']):
@@ -618,8 +712,8 @@ class Weighting(object):
         sel.append(True)
       else:
         sel.append(False)
-    self.scale_weighting.set_selected(sel, 0.0)
-    print len(self.scale_weighting) - self.scale_weighting.count(0.0)
+    self.scale_weighting.set_selected(sel, 1e-7)
+    print len(self.scale_weighting) - self.scale_weighting.count(1e-7)
 
   def remove_high_Isigma(self, reflection_table):
     sel = flex.bool()
@@ -628,7 +722,7 @@ class Weighting(object):
         sel.append(True)
       else:
         sel.append(False)
-    self.scale_weighting.set_selected(sel, 0.0)
+    self.scale_weighting.set_selected(sel, 1e-7)
 
   def apply_dmin_cutoff(self, reflection_table, d_cutoff_value):
     sel = flex.bool()
@@ -637,8 +731,8 @@ class Weighting(object):
         sel.append(True)
       else:
         sel.append(False)
-    self.scale_weighting.set_selected(sel, 0.0)
-    print len(self.scale_weighting) - self.scale_weighting.count(0.0)
+    self.scale_weighting.set_selected(sel, 1e-7)
+    print len(self.scale_weighting) - self.scale_weighting.count(1e-7)
 
 
 def select_variables_in_range(variable_array, lower_limit, upper_limit):
