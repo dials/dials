@@ -874,11 +874,13 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
 
   tau = 1e-3
 
-  class mu(libtbx.property):
-    def fget(self):
-      return self._mu
-    def fset(self, value):
-      self._mu = value
+  @property
+  def mu(self):
+    return self._mu
+
+  @mu.setter
+  def mu(self, value):
+    self._mu = value
 
   def setup_mu(self):
     '''Setup initial value for mu'''
