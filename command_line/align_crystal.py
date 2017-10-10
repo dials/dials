@@ -64,6 +64,40 @@ c = matrix.col((0.,0.,1.))
 def smallest_angle(angle):
   return min(abs(angle), abs(180-angle))
 
+def describe(vector, space_group, reciprocal=True):
+
+  vector_names = {
+    a.elems: 'a',
+    b.elems: 'b',
+    c.elems: 'c',
+  }
+
+  v = vector.elems
+  if v in vector_names:
+    vstr = vector_names[v]
+    if reciprocal:
+      vstr += '*'
+      t = axis_type(vector, space_group)
+      if t is not None:
+        vstr = '%s (%i-fold)' %(vstr, t)
+  else:
+    vstr = str(v)
+  return vstr
+
+def axis_type(vector, space_group):
+  v = vector.elems
+
+  axis_t = None
+  for op in space_group.smx():
+    info = op.r().info()
+    ev = info.ev()
+    if v == ev:
+      if axis_t is None or info.type() > axis_t:
+        axis_t = info.type()
+
+  return axis_t
+
+
 class align_crystal(object):
 
   vector_names = {
@@ -202,16 +236,16 @@ class align_crystal(object):
     rows = []
     names = self.experiment.goniometer.get_names()
 
+    space_group = self.experiment.crystal.get_space_group()
+    reciprocal = self.frame == 'reciprocal'
     for angles, vector_pairs in self.unique_solutions.iteritems():
-      settings_str = '[%s]' %(
-        ', '.join(
-          '(%s, %s)' %(self._vector_as_str(v1), self._vector_as_str(v2))
-          for v1, v2 in vector_pairs))
+      v1, v2 = list(vector_pairs)[0]
       rows.append((
-        settings_str,
+        describe(v1, space_group, reciprocal=reciprocal),
+        describe(v2, space_group, reciprocal=reciprocal),
         '% 7.2f' %angles[0], '% 7.2f' %angles[1],
       ))
-    rows = [('Settings', names[1], names[0])] + \
+    rows = [('Primary axis', 'Secondary axis', names[1], names[0])] + \
            sorted(rows)
     print 'Independent solutions:'
     print table_utils.format(rows=rows, has_header=True)
@@ -219,10 +253,14 @@ class align_crystal(object):
   def as_json(self, filename=None):
     names = self.experiment.goniometer.get_names()
     solutions = []
+    space_group = self.experiment.crystal.get_space_group()
+    reciprocal = self.frame == 'reciprocal'
     for angles, solns in self.unique_solutions.iteritems():
       solutions.append({
-        'settings': [(self._vector_as_str(v1), self._vector_as_str(v2))
-                     for v1, v2 in solns],
+        'primary_axis': [self._vector_as_str(v1) for v1, v2 in solns],
+        'secondary_axis': [self._vector_as_str(v2) for v1, v2 in solns],
+        'primary_axis_type': [axis_type(v1, space_group) for v1, v2 in solns],
+        'secondary_axis_type': [axis_type(v2, space_group) for v1, v2 in solns],
         names[1]: angles[0],
         names[0]: angles[1]
       })
@@ -311,9 +349,8 @@ def run(args):
   if params.space_group is not None:
     expt.crystal.set_space_group(params.space_group.group())
 
-  frame = None
-
   if len(params.align.crystal.vector):
+    frame = None
     assert len(params.align.crystal.vector) %2 == 0
     vectors = []
 
@@ -342,6 +379,16 @@ def run(args):
       vectors.append(v)
     vectors = [(vectors[2*i], vectors[2*i+1])
                for i in range(len(vectors)//2)]
+  elif params.align.crystal.frame == 'direct':
+    frame = params.align.crystal.frame
+    vectors = ((a, b),
+               (a, c),
+               (b, a),
+               (b, c),
+               (c, a),
+               (c, b),
+              )
+
   else:
     frame = 'reciprocal'
     vectors = ((a_star, b_star), # a*, b*
