@@ -63,11 +63,11 @@ class LBFGS_optimiser(object):
       if self.parameter_name == p_type:
         self.data_manager.active_bin_index = bin_index
         self.x = parameterisation['parameterisation']
-        self.data_manager.active_param_size = len(self.x)
+        self.data_manager.n_active_params = len(self.x)
       else:
         constant_g_values.append(
           [self.data_manager.g_parameterisation[p_type]['parameterisation'][i]
-           for i in self.data_manager.sorted_reflections[bin_index]])
+           for i in self.data_manager.reflections_for_scaling[bin_index]])
     constant_g_values = np.array(constant_g_values)
     if self.data_manager.scaling_options['parameterization'] == 'standard':
       self.data_manager.constant_g_values = flex.double(np.prod(constant_g_values, axis=0))
