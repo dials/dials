@@ -185,6 +185,35 @@ def test1():
   for i in range(len(exp)):
     assert os.path.exists("test_%03d.json" %i)
 
+  # Modify a copy of the detector
+  import copy
+  detector = copy.deepcopy(exp.detectors()[0])
+  panel = detector[0]
+  x, y, z = panel.get_origin()
+  panel.set_frame(panel.get_fast_axis(),
+                  panel.get_slow_axis(),
+                  (x, y, z+10))
+  # Set half of the experiments to the new detector
+  for i in xrange(len(exp)//2):
+    exp[i].detector = detector
+  from dxtbx.serialize import dump
+  dump.experiment_list(exp, "modded_experiments.json")
+
+  cmd = " ".join([
+    "dials.split_experiments",
+    "modded_experiments.json",
+    "combined_reflections.pickle",
+    "output.experiments_prefix=test_by_detector",
+    "output.reflections_prefix=test_by_detector",
+    "by_detector=True"])
+
+  result = easy_run.fully_buffered(command=cmd).raise_if_errors()
+  for i in range(2):
+    assert os.path.exists("test_by_detector_%03d.json" %i)
+    assert os.path.exists("test_by_detector_%03d.pickle" %i)
+  assert not os.path.exists("test_by_detector_%03d.json" %2)
+  assert not os.path.exists("test_by_detector_%03d.pickle" %2)
+
   return
 
 def run():

@@ -24,6 +24,14 @@ class Script(object):
 
     # The phil scope
     phil_scope = parse('''
+      by_detector = False
+        .type = bool
+        .help = "If True, instead of producing separate files for each"
+                "experiment, experiments are grouped by unique detector"
+                "model in the input set of experiments. For example, if"
+                "there are five detector models in the input data, five"
+                "sets of files will be produced, each containing"
+                "experiments that reference a single detector model."
 
       output {
         experiments_prefix = experiments
@@ -85,19 +93,52 @@ class Script(object):
       params.output.reflections_prefix,
       int(math.floor(math.log10(len(experiments))) + 1))
 
-    for i, experiment in enumerate(experiments):
-      from dxtbx.model.experiment_list import ExperimentList
-      from dxtbx.serialize import dump
-      experiment_filename = experiments_template %i
-      print 'Saving experiment %d to %s' %(i, experiment_filename)
-      dump.experiment_list(ExperimentList([experiment]), experiment_filename)
+    from dxtbx.model.experiment_list import ExperimentList
+    from dxtbx.serialize import dump
+    if params.by_detector:
+      if reflections is None:
+        split_data = {detector:{'experiments': ExperimentList()}
+                      for detector in experiments.detectors()}
+      else:
+        split_data = {detector:{'experiments': ExperimentList(),
+                                'reflections': flex.reflection_table()}
+                      for detector in experiments.detectors()}
 
-      if reflections is not None:
-        reflections_filename = reflections_template %i
-        print 'Saving reflections for experiment %d to %s' %(i, reflections_filename)
-        ref_sel = reflections.select(reflections['id'] == i)
-        ref_sel['id'] = flex.int(len(ref_sel), 0)
-        ref_sel.as_pickle(reflections_filename)
+      for i, experiment in enumerate(experiments):
+        split_expt_id = experiments.detectors().index(experiment.detector)
+        experiment_filename = experiments_template % split_expt_id
+        print 'Adding experiment %d to %s' %(i, experiment_filename)
+        split_data[experiment.detector]['experiments'].append(experiment)
+        if reflections is not None:
+          reflections_filename = reflections_template % split_expt_id
+          print 'Adding reflections for experiment %d to %s' %(i, reflections_filename)
+          ref_sel = reflections.select(reflections['id'] == i)
+          ref_sel['id'] = flex.int(len(ref_sel), len(split_data[experiment.detector]['experiments'])-1)
+          split_data[experiment.detector]['reflections'].extend(ref_sel)
+
+      for i, detector in enumerate(experiments.detectors()):
+        experiment_filename = experiments_template %i
+        print 'Saving experiment %d to %s' %(i, experiment_filename)
+        dump.experiment_list(split_data[detector]['experiments'], experiment_filename)
+
+        if reflections is not None:
+          reflections_filename = reflections_template %i
+          print 'Saving reflections for experiment %d to %s' %(i, reflections_filename)
+          split_data[detector]['reflections'].as_pickle(reflections_filename)
+    else:
+      for i, experiment in enumerate(experiments):
+        from dxtbx.model.experiment_list import ExperimentList
+        from dxtbx.serialize import dump
+        experiment_filename = experiments_template %i
+        print 'Saving experiment %d to %s' %(i, experiment_filename)
+        dump.experiment_list(ExperimentList([experiment]), experiment_filename)
+
+        if reflections is not None:
+          reflections_filename = reflections_template %i
+          print 'Saving reflections for experiment %d to %s' %(i, reflections_filename)
+          ref_sel = reflections.select(reflections['id'] == i)
+          ref_sel['id'] = flex.int(len(ref_sel), 0)
+          ref_sel.as_pickle(reflections_filename)
 
     return
 
@@ -108,4 +149,3 @@ if __name__ == "__main__":
     script.run()
   except Exception as e:
     halraiser(e)
-
