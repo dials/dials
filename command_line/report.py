@@ -1668,10 +1668,13 @@ class IntensityAnalyser(object):
     d.update(self.i_over_s_hist(rlist))
     print " Analysing distribution of I/Sigma vs xy"
     d.update(self.i_over_s_vs_xy(rlist, "sum"))
-    print " Analysing distribution of I/Sigma vs xy"
-    d.update(self.i_over_s_vs_xy(rlist, "prf"))
+    if 'intensity.prf.value' in rlist:
+      print " Analysing distribution of I/Sigma vs xy"
+      d.update(self.i_over_s_vs_xy(rlist, "prf"))
     print " Analysing distribution of I/Sigma vs z"
     d.update(self.i_over_s_vs_z(rlist))
+    print " Analysing distribution of partialities"
+    d.update(self.partiality_hist(rlist))
     #print " Analysing number of background pixels used"
     #self.num_background_hist(rlist)
     #print " Analysing number of foreground pixels used"
@@ -1802,6 +1805,29 @@ class IntensityAnalyser(object):
           },
         },
       }
+    }
+
+  def partiality_hist(self, rlist):
+    ''' Analyse the partialities. '''
+    from os.path import join
+    partiality = rlist['partiality']
+    hist = flex.histogram(partiality.select(partiality > 0), 0, 1, n_slots=20)
+
+    return {
+      'partiality_histogram': {
+        'data': [{
+          'x': list(hist.slot_centers()),
+          'y': list(hist.slots()),
+          'type': 'bar',
+          'name': 'partiality',
+        }],
+        'layout': {
+          'title': 'Partiality histogram',
+          'xaxis': {'title': 'Partiality', 'range': [0, 1]},
+          'yaxis': {'title': 'Number of reflections'},
+          'bargap': 0,
+        },
+      },
     }
 
   def num_background_hist(self, rlist):
