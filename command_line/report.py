@@ -819,7 +819,7 @@ class CentroidAnalyser(object):
           selection.count(True)
 
     # Select only integrated reflections
-    Command.start(" Selecting only summation-integated reflections")
+    Command.start(" Selecting only summation-integrated reflections")
     mask = rlist.get_flags(rlist.flags.integrated_sum)
     if mask.count(True) > 0:
       threshold = 10
@@ -1432,8 +1432,8 @@ class BackgroundAnalyser(object):
         selection.count(True)
 
     # Select only integrated reflections
-    Command.start(" Selecting only integated reflections")
-    mask = rlist.get_flags(rlist.flags.integrated)
+    Command.start(" Selecting only integrated reflections")
+    mask = rlist.get_flags(rlist.flags.integrated, all=False)
     if mask.count(True) == 0:
       return
 
@@ -1647,8 +1647,8 @@ class IntensityAnalyser(object):
         selection.count(True)
 
     # Select only integrated reflections
-    Command.start(" Selecting only integated reflections")
-    mask = rlist.get_flags(rlist.flags.integrated)
+    Command.start(" Selecting only integrated reflections")
+    mask = rlist.get_flags(rlist.flags.integrated, all=False)
     if mask.count(True) == 0:
       return {'intensity': {}}
 
@@ -1884,7 +1884,7 @@ class ReferenceProfileAnalyser(object):
       return {'reference': {}}
 
     # Select only integrated reflections
-    Command.start(" Selecting only integated reflections")
+    Command.start(" Selecting only integrated reflections")
     mask = rlist.get_flags(rlist.flags.integrated)
     if mask.count(True) == 0:
       return {'reference': {}}
