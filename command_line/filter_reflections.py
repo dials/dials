@@ -76,6 +76,15 @@ class Script(object):
         .type = float
         .help = "The minimum resolution"
 
+      partiality {
+        min = None
+          .type = float(value_min = 0, value_max = 1)
+          .help = "The minimum reflection partiality for inclusion."
+        max = None
+          .type = float(value_min = 0, value_max = 1)
+          .help = "The maximum reflection partiality for inclusion."
+      }
+
     ''' % tuple([' '.join(self.flag_names)] * 2)
 
     phil_scope = parse(phil_str)
@@ -133,11 +142,20 @@ class Script(object):
       if 'd' not in reflections:
         raise Sorry("Reflection table has no resolution information")
 
+    # Check params
+    if params.partiality.min is not None and params.partiality.max is not None:
+      if params.min > params.max:
+        raise Sorry("partiality.min must be less than partiality.d_max")
+    if params.partiality.min is not None or params.partiality.max is not None:
+      if 'partiality' not in reflections:
+        raise Sorry("Reflection table has no partiality information")
+
     print "{0} reflections loaded".format(len(reflections))
 
     if (len(params.inclusions.flag) == 0 and
         len(params.exclusions.flag) == 0 and
-        params.d_min is None and params.d_max is None):
+        params.d_min is None and params.d_max is None and
+        params.partiality.min is None and params.partiality.max is None):
       print "No filter specified. Performing analysis instead."
       return self.analysis(reflections)
 
@@ -172,6 +190,18 @@ class Script(object):
       selection = reflections['d'] <= params.d_max
       reflections = reflections.select(selection)
       print "Selected %d reflections with d <= %f" % (len(reflections), params.d_max)
+
+    # Filter based on partiality
+    if params.partiality.min is not None:
+      selection = reflections['partiality'] >= params.partiality.min
+      reflections = reflections.select(selection)
+      print "Selected %d reflections with partiality >= %f" % (len(reflections), params.partiality.min)
+
+    # Filter based on partiality
+    if params.partiality.max is not None:
+      selection = reflections['partiality'] <= params.partiality.max
+      reflections = reflections.select(selection)
+      print "Selected %d reflections with partiality <= %f" % (len(reflections), params.partiality.max)
 
     # Save filtered reflections to file
     if params.output.reflections:
