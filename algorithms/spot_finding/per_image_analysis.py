@@ -720,7 +720,7 @@ def stats_imageset(imageset, reflections, resolution_analysis=True, plot=False):
   try:
     start, end = imageset.get_array_range()
   except AttributeError:
-    start = 1
+    start = 0
   for i in range(len(imageset)):
     stats = stats_single_image(
       imageset[i:i+1],
