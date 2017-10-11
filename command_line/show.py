@@ -270,7 +270,7 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
     ('id','%i'),
     ('imageset_id','%i'),
     ('panel','%i'),
-    ('flags', '---'),
+    ('flags', '%i'),
     ('background.mean', '%.1f'),
     ('background.dispersion','%.1f'),
     ('background.mse', '%.1f'),
@@ -408,7 +408,6 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
   if keys_to_print:
     keys = [k for k in keys_to_print if k in rlist]
     rows = [keys]
-    max_reflections = len(rlist)
     if max_reflections is not None:
       max_reflections = min(len(rlist), max_reflections)
 
