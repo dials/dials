@@ -415,7 +415,7 @@ class XDS_Data_Manager(Data_Manager):
       else:
         average = 0.0
       centrics_average_list.append(average)
-    counter = 0.0
+    counter = 0
     for i, bin_index in enumerate(self.sorted_reflections['res_bin_index']):
       if self.sorted_reflections['centric_flag'][i] == False:
         if (self.sorted_reflections['intensity'][i] / acentrics_average_list[bin_index]) > 13.82:
@@ -585,21 +585,21 @@ class XDS_Data_Manager(Data_Manager):
     '''Bin the data into detector position and time 'z' bins'''
     z_bins = self.bin_boundaries['z_value']
     #define simple detector area map#
+    image_size = self.experiments.detectors()[0].to_dict()['panels'][0]['image_size']
     xvalues = self.sorted_reflections['x_value']
-    (xmax, xmin) = (max(xvalues), min(xvalues))
     yvalues = self.sorted_reflections['y_value']
-    (ymax, ymin) = (max(yvalues), min(yvalues))
-    xrelvalues = xvalues - ((xmax - xmin) / 2.0) #!may need better definition of centerpoint
-    yrelvalues = yvalues - ((ymax - ymin) / 2.0) #!may need better definition of centerpoint
-    radial_bins = [0.0, ymax / 6.0, 2.0 * ymax / 6.0, (2.0**0.5) * ymax / 2.0]
+    x_center = image_size[0]/2.0
+    y_center = image_size[0]/2.0
+    radial_divider = max(x_center, y_center)
+    xrelvalues = xvalues - x_center #!may need better definition of centerpoint
+    yrelvalues = yvalues - y_center #!may need better definition of centerpoint
+    radial_bins = [0.0, radial_divider / 3.0, 2.0 * radial_divider / 3.0, 
+                   ((((image_size[0]**2) + (image_size[1]**2))**0.5) / 2.0) + 5.0]
+                   # '''+5.0 to the last bin adds extra tolerance to catch any 
+                   # spots with centres outside the detector area'''
     angular_bins = [0, pi / 4.0, 2.0 * pi / 4.0, 3.0 * pi / 4.0, pi,
                     5.0 * pi / 4.0, 6.0 * pi / 4.0, 7.0 * pi / 4.0, 2.0 * pi]
     radial_values = ((xrelvalues**2) + (yrelvalues**2))**0.5
-    '''print radial_bins
-    import matplotlib.pyplot as plt
-    plt.hist(radial_values, 30)
-    plt.show()
-    exit()'''
     angular_values = np.arccos(yrelvalues/radial_values)
     for i in range(0, len(angular_values)):
       if xrelvalues[i] < 0.0:
@@ -619,10 +619,7 @@ class XDS_Data_Manager(Data_Manager):
       selection = select_variables_in_range(self.sorted_reflections['z_value'],
                                             z_bins[i], z_bins[i+1])
       secondbin_index.set_selected(selection, i)
-    '''import matplotlib.pyplot as plt
-    plt.hist(firstbin_index,24)
-    plt.show()
-    exit()'''
+
     if firstbin_index.count(-1) > 0 or secondbin_index.count(-1) > 0:
       raise ValueError('Unable to fully bin data for absorption in scaling initialisation')
     self.sorted_reflections['a_bin_index'] = (firstbin_index + (secondbin_index
