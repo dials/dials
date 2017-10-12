@@ -413,7 +413,8 @@ def _add_batch(mtz, experiment, batch_number, image_number, force_static_model):
   return o
 
 
-def _write_columns(mtz_file, dataset, integrated_data, scale_partials):
+def _write_columns(mtz_file, dataset, integrated_data, scale_partials,
+                   apply_scales):
   """Write the column definitions AND data for a single dataset."""
 
   # now create the actual data structures - first keep a track of the columns
@@ -505,6 +506,10 @@ def _write_columns(mtz_file, dataset, integrated_data, scale_partials):
   V_sum = None
   # FIXME errors in e.g. LP correction need to be propogated here
   scl = lp / dqe
+
+  if apply_scales:
+    scl = scl / integrated_data['inverse_scale_factor']
+
   if 'intensity.prf.value' in integrated_data:
     I_profile = integrated_data['intensity.prf.value'] * scl
     V_profile = integrated_data['intensity.prf.variance'] * scl * scl
@@ -606,7 +611,7 @@ def _calculate_batch_offsets(experiments):
 def export_mtz(integrated_data, experiment_list, hklout,
                include_partials=False, keep_partials=False, scale_partials=True,
                min_isigi=None, force_static_model=False, filter_ice_rings=False,
-               ignore_profile_fitting=False):
+               ignore_profile_fitting=False, apply_scales=False):
   '''Export data from integrated_data corresponding to experiment_list to an
   MTZ file hklout.'''
 
@@ -615,6 +620,9 @@ def export_mtz(integrated_data, experiment_list, hklout,
   #   assert experiment_list[0] is experiment_list[0]
   # And assumptions about added attributes break
   experiment_list = list(experiment_list)
+
+  if apply_scales:
+    assert('inverse_scale_factor' in integrated_data)
 
   # Validate multi-experiment assumptions
   if len(experiment_list) > 1:
@@ -639,6 +647,7 @@ def export_mtz(integrated_data, experiment_list, hklout,
       include_partials=include_partials,
       keep_partials=keep_partials,
       scale_partials=scale_partials)
+
 
   # Calculate and store the image range for each image
   for experiment in experiment_list:
@@ -716,7 +725,7 @@ def export_mtz(integrated_data, experiment_list, hklout,
 
   # Write all the data and columns to the mtz file
   _write_columns(mtz_file, mtz_dataset, merged_data,
-    scale_partials=scale_partials)
+    scale_partials=scale_partials, apply_scales=apply_scales)
 
   logger.info("Saving {} integrated reflections to {}".format(len(merged_data['id']), hklout))
   mtz_file.write(hklout)

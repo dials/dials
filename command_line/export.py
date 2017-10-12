@@ -105,6 +105,10 @@ phil_scope = parse('''
       .type = bool
       .help = "Scale partial reflections to 100% (unreliable if partiality low)"
 
+    apply_scales = False
+      .type = bool
+      .help = "Apply scale factors in inverse_scale_factor column if present"
+
     min_isigi = -5
       .type = float
       .help = "Exclude reflections with unfeasible values of I/Sig(I)"
@@ -267,7 +271,8 @@ class MTZExporter(object):
       min_isigi=params.mtz.min_isigi,
       force_static_model=params.mtz.force_static_model,
       filter_ice_rings=params.mtz.filter_ice_rings,
-      ignore_profile_fitting=params.mtz.ignore_profile_fitting)
+      ignore_profile_fitting=params.mtz.ignore_profile_fitting,
+      apply_scales=params.mtz.apply_scales)
     from cStringIO import StringIO
     summary = StringIO()
     m.show_summary(out=summary)
