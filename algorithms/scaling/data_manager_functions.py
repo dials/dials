@@ -410,7 +410,10 @@ class XDS_Data_Manager(Data_Manager):
     for table in data_binned_into_resolution:
       sel = table['intensity'] < 0.0
       table['intensity'].set_selected(sel, 0.0)
-      average = flex.mean(table['intensity'])
+      if len(table['intensity']):
+        average = flex.mean(table['intensity'])
+      else:
+        average = 0.0
       centrics_average_list.append(average)
     counter = 0.0
     for i, bin_index in enumerate(self.sorted_reflections['res_bin_index']):
