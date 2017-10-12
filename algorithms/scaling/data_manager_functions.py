@@ -20,11 +20,13 @@ class Data_Manager(object):
     self.experiments = experiments
     self.reflection_table = reflections[0]
     self.initial_keys = [key for key in self.reflection_table.keys()]
+    self.reflection_table['centric_flag'] = flex.bool([False] * len(self.reflection_table))
     self.reflection_table['x_value'] = self.reflection_table['xyzobs.px.value'].parts()[0]
     self.reflection_table['y_value'] = self.reflection_table['xyzobs.px.value'].parts()[1]
     self.reflection_table['z_value'] = self.reflection_table['xyzobs.px.value'].parts()[2]
     self.reflection_table['inverse_scale_factor'] = flex.double([1.0] * len(self.reflection_table))
     self.reflection_table['Ih_values'] = flex.double([0.0] * len(self.reflection_table))
+    self.reflection_table['wilson_outlier_flag'] = flex.bool([False] * len(self.reflection_table))
     self.sorted_by_miller_index = False
     self.sorted_reflections = None
     self.reflections_for_scaling = None
@@ -52,7 +54,8 @@ class Data_Manager(object):
                                                  self.scaling_options['Isigma_min'])
     self.weights_for_scaling.apply_dmin_cutoff(reflection_table,
                                                self.scaling_options['d_min'])
-    #self.weights_for_scaling.remove_high_Isigma(self.sorted_reflections)
+    self.weights_for_scaling.remove_wilson_outliers(reflection_table)
+    #self.weights_for_scaling.remove_high_Isigma(reflection_table)
 
   def filter_and_sort_reflections(self):
     self.filtered_reflections = copy.deepcopy(self.reflection_table)
@@ -305,6 +308,17 @@ class aimless_Data_Manager(Data_Manager):
     self.n_active_params += n_abs_params
     self.n_g_abs_params = n_abs_params
 
+  def clean_reflection_table(self):
+    #add keys for additional data that is to be exported
+    self.initial_keys.append('inverse_scale_factor')
+    for key in self.reflection_table.keys():
+      if not key in self.initial_keys:
+        del self.sorted_reflections[key]
+    added_columns = ['Ih_values','t1_bin_index', 't2_bin_index', 'h_index',
+                     'asu_miller_index', 'res_bin_index']
+    for key in added_columns:
+      del self.sorted_reflections[key] 
+
 
 
 class XDS_Data_Manager(Data_Manager):
@@ -330,6 +344,7 @@ class XDS_Data_Manager(Data_Manager):
     self.n_active_params = None
     self.constant_g_values = None
     self.initialise_scale_factors()
+    self.calculate_intensity_statistics()
     self.reflections_for_scaling = copy.deepcopy(self.sorted_reflections)
     self.extract_reflections_for_scaling(self.sorted_reflections)
     self.calculate_derivatives(self.reflections_for_scaling)
@@ -358,7 +373,59 @@ class XDS_Data_Manager(Data_Manager):
     self.bin_reflections_decay()
     self.bin_reflections_absorption_radially()
     self.bin_reflections_modulation()
-    
+
+  def calculate_intensity_statistics(self):
+    u_c = self.experiments.crystals()[0].get_unit_cell().parameters()
+    s_g = self.experiments.crystals()[0].get_space_group()
+    crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
+    miller_set = miller.set(crystal_symmetry=crystal_symmetry,
+                            indices=self.sorted_reflections['asu_miller_index'])
+    miller_array = miller.array(miller_set, data=self.sorted_reflections['intensity'])
+    centrics = miller_array.centric_flags()
+    centrics_list = list(centrics)
+    for i in range(centrics.size()):
+      self.sorted_reflections['centric_flag'][i] = centrics_list[i][1]
+    #now take data in res bins
+    data_binned_into_resolution = []
+    centrics_average_list = []
+    acentrics_average_list = []
+    for i in range(self.binning_parameters['n_d_bins']):
+      sel1 = self.sorted_reflections['res_bin_index'] == i
+      sel2 = self.sorted_reflections['centric_flag'] == False
+      #sel3 = self.sorted_reflections['intensity'] > 0.0
+      #just do the stats on the positive intensities for now
+      data_binned_into_resolution.append(self.sorted_reflections.select(sel1 & sel2))
+    for table in data_binned_into_resolution:
+      sel = table['intensity'] < 0.0
+      table['intensity'].set_selected(sel, 0.0)
+      average = flex.mean(table['intensity'])
+      acentrics_average_list.append(average)
+    data_binned_into_resolution = []
+    for i in range(self.binning_parameters['n_d_bins']):
+      sel1 = self.sorted_reflections['res_bin_index'] == i
+      sel2 = self.sorted_reflections['centric_flag'] == True
+      #sel3 = self.sorted_reflections['intensity'] > 0.0
+      #just do the stats on the positive intensities for now
+      data_binned_into_resolution.append(self.sorted_reflections.select(sel1 & sel2))
+    for table in data_binned_into_resolution:
+      sel = table['intensity'] < 0.0
+      table['intensity'].set_selected(sel, 0.0)
+      average = flex.mean(table['intensity'])
+      centrics_average_list.append(average)
+    counter = 0.0
+    for i, bin_index in enumerate(self.sorted_reflections['res_bin_index']):
+      if self.sorted_reflections['centric_flag'][i] == False:
+        if (self.sorted_reflections['intensity'][i] / acentrics_average_list[bin_index]) > 13.82:
+          self.sorted_reflections['wilson_outlier_flag'][i] = True
+          #self.weights_for_scaling[i] = 0.0
+          counter += 1
+      else:
+        if (self.sorted_reflections['intensity'][i] / centrics_average_list[bin_index]) > 23.91:
+          self.sorted_reflections['wilson_outlier_flag'][i] = True
+          counter += 1
+    self.update_weights_for_scaling(self.sorted_reflections)
+    print "found %s outliers from analysis of Wilson statistics" % (counter)
+  
   def get_target_function(self):
     '''call the xds target function method'''
     if self.scaling_options['parameterization'] == 'log':
@@ -381,12 +448,16 @@ class XDS_Data_Manager(Data_Manager):
 
   def calculate_scale_factors(self):
     gscalevalues = flex.double([self.g_modulation[i] for i in
-           self.sorted_reflections['xy_bin_index']])
+      self.sorted_reflections['xy_bin_index']])
     gdecayvalues = flex.double([self.g_decay[i] for i in
-           self.sorted_reflections['l_bin_index']])
+      self.sorted_reflections['l_bin_index']])
     gabsorptionvalues = flex.double([self.g_absorption[i] for i in
-           self.sorted_reflections['a_bin_index']])
-    self.sorted_reflections['inverse_scale_factor'] = gscalevalues * gdecayvalues * gabsorptionvalues
+      self.sorted_reflections['a_bin_index']])
+    if self.scaling_options['parameterization'] == 'log':
+      self.sorted_reflections['inverse_scale_factor'] = flex.double(
+        np.exp(gscalevalues + gdecayvalues + gabsorptionvalues))
+    else:
+      self.sorted_reflections['inverse_scale_factor'] = gscalevalues * gdecayvalues * gabsorptionvalues
 
   def bin_reflections_decay(self):
     '''bin reflections for decay correction'''
@@ -521,6 +592,11 @@ class XDS_Data_Manager(Data_Manager):
     angular_bins = [0, pi / 4.0, 2.0 * pi / 4.0, 3.0 * pi / 4.0, pi,
                     5.0 * pi / 4.0, 6.0 * pi / 4.0, 7.0 * pi / 4.0, 2.0 * pi]
     radial_values = ((xrelvalues**2) + (yrelvalues**2))**0.5
+    '''print radial_bins
+    import matplotlib.pyplot as plt
+    plt.hist(radial_values, 30)
+    plt.show()
+    exit()'''
     angular_values = np.arccos(yrelvalues/radial_values)
     for i in range(0, len(angular_values)):
       if xrelvalues[i] < 0.0:
@@ -540,6 +616,10 @@ class XDS_Data_Manager(Data_Manager):
       selection = select_variables_in_range(self.sorted_reflections['z_value'],
                                             z_bins[i], z_bins[i+1])
       secondbin_index.set_selected(selection, i)
+    '''import matplotlib.pyplot as plt
+    plt.hist(firstbin_index,24)
+    plt.show()
+    exit()'''
     if firstbin_index.count(-1) > 0 or secondbin_index.count(-1) > 0:
       raise ValueError('Unable to fully bin data for absorption in scaling initialisation')
     self.sorted_reflections['a_bin_index'] = (firstbin_index + (secondbin_index
@@ -627,7 +707,7 @@ class XDS_Data_Manager(Data_Manager):
       if not key in self.initial_keys:
         del self.sorted_reflections[key]
     added_columns = ['l_bin_index','a_bin_index', 'xy_bin_index', 'h_index',
-                     'asu_miller_index']
+                     'asu_miller_index', 'res_bin_index']
     for key in added_columns:
       del self.sorted_reflections[key]  
 
@@ -755,7 +835,10 @@ class Weighting(object):
         sel.append(False)
     self.scale_weighting.set_selected(sel, 0.0)
     #print len(self.scale_weighting) - self.scale_weighting.count(0.0)
-
+  
+  def remove_wilson_outliers(self, reflection_table):
+    sel = reflection_table['wilson_outlier_flag']
+    self.scale_weighting.set_selected(sel, 0.0)
 
 
 def select_variables_in_range(variable_array, lower_limit, upper_limit):

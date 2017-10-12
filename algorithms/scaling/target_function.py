@@ -55,18 +55,29 @@ class xds_target_function_log(target_function):
   '''Subclass that takes a data manager object and returns a residual and
   gradient function for a xds-like scaling parameterisation.'''
   def calculate_gradient(self):
+    gradient = flex.double([])
     intensities = self.data_manager.reflections_for_scaling['intensity']
     variances = self.data_manager.reflections_for_scaling['variance']
     scale_factors = self.data_manager.reflections_for_scaling['inverse_scale_factor']
     # list(scale_factors)[100:120]
     Ih_values = self.data_manager.reflections_for_scaling['Ih_values']
     scaleweights = self.data_manager.weights_for_scaling.get_weights()
-    gsq = ((scale_factors)**2) / variances
+    gsq = ((scale_factors)**2) *scaleweights
     sumgsq = np.add.reduceat(gsq, self.data_manager.h_index_cumulative_array[:-1])
-    sumgsq = flex.double(np.repeat(sumgsq, self.data_manager.h_index_counter_array))
-    dIhdg = ((scale_factors*intensities) - (Ih_values * 2.0 * scale_factors)) / (variances * sumgsq)
+    #sumgsq = flex.double(np.repeat(sumgsq, self.data_manager.h_index_counter_array))
+
     rhl = intensities - (Ih_values * scale_factors)
-    grad = ((-2.0 * rhl * ((Ih_values +  dIhdg)*scale_factors) * scaleweights))
-    return flex.double(np.bincount(self.data_manager.reflections_for_scaling[
-      self.data_manager.active_bin_index], weights=grad,
-      minlength=self.data_manager.n_active_params))
+    num = len(intensities)
+
+    dIh = ((scale_factors * intensities) - (Ih_values * 2.0 * scale_factors)) * scaleweights#/ (variances * sumgsq)
+
+    for i in range(self.data_manager.n_active_params):
+      dIh_g = (dIh * self.data_manager.active_derivatives[i*num:(i+1)*num])
+      dIh_g = np.add.reduceat(dIh_g, self.data_manager.h_index_cumulative_array[:-1])/sumgsq
+      dIh_g = flex.double(np.repeat(dIh_g, self.data_manager.h_index_counter_array))
+      drdp = -((Ih_values + dIh_g) * scale_factors 
+                * self.data_manager.active_derivatives[i*num:(i+1)*num])
+      grad = (2.0 * rhl * scaleweights * drdp)
+      gradient.append(flex.sum(grad))
+    return gradient
+

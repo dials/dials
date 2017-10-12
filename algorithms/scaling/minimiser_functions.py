@@ -21,9 +21,12 @@ class LBFGS_optimiser(object):
     self.data_manager.active_parameterisation = param_name
     self.set_up_parameterisation()
     self.residuals = []
-    core_params = lbfgs.core_parameters(maxfev=15)
-    termination_params = lbfgs.termination_parameters(max_iterations=15)#, traditional_convergence_test_eps=1e2)
-    lbfgs.run(target_evaluator=self, core_params=core_params, termination_params = termination_params)
+    print "performing scaling on %s reflections out of %s total reflections" % (
+      len(self.data_manager.reflections_for_scaling), len(self.data_manager.sorted_reflections))
+    self.core_params = lbfgs.core_parameters(maxfev=15)
+    self.termination_params = lbfgs.termination_parameters(max_iterations=15)
+    lbfgs.run(target_evaluator=self, core_params=self.core_params,
+              termination_params=self.termination_params)
     if self.data_manager.scaling_options['parameterization'] == 'standard':
       self.make_all_scales_positive()
     if param_name == 'g_decay':
@@ -38,10 +41,11 @@ class LBFGS_optimiser(object):
     To cure, the absolute values of the scale factors are taken and the
     minimizer is called again until only positive scale factors are obtained.'''
     if (self.x < 0.0).count(True) > 0.0:
-      print (self.x < 0.0).count(True)
+      print """%s of the scale factors is/are negative, taking the absolute 
+      values and trying again""" % ((self.x < 0.0).count(True))
       self.x = abs(self.x)
-      print (self.x < 0.0).count(True)
-      lbfgs.run(target_evaluator=self)
+      lbfgs.run(target_evaluator=self, core_params=self.core_params,
+                termination_params=self.termination_params)
       if (self.x < 0.0).count(True) > 0.0:
         self.make_all_scales_positive()
       else:

@@ -97,5 +97,7 @@ class xds_basis_function_log(basis_function):
     return flex.double(np.exp(scale_factors))
 
   def calculate_derivatives(self):
-    '''xds target function does not require derivatives, so None returned'''
-    return None
+    '''Derivatives are fixed by the parameterisation'''
+    derivatives = self.data_manager.g_parameterisation[
+      self.data_manager.active_parameterisation]['derivatives']
+    return derivatives
