@@ -1000,7 +1000,18 @@ class RefinerFactory(object):
     # Parameter auto reduction options
     def model_nparam_minus_nref(p, reflections):
       cutoff = options.auto_reduction.min_nref_per_parameter * p.num_free()
-      return mnmn(reflections,p.get_experiment_ids()).result - cutoff
+
+      #Potential test code for templated types
+      '''
+      print reflections["id"]
+      print "SIZE_T_MNMN="
+      print mnmn(reflections["id"],p.get_experiment_ids()).result - cutoff
+      a = flex.int(list(reflections["id"]))
+      print a
+      print "INT_MNMN="
+      print mnmn(a,p.get_experiment_ids()).result - cutoff
+      exit("OK")
+      '''
       #Replaced Python code
       '''
       exp_ids = p.get_experiment_ids()
@@ -1013,6 +1024,7 @@ class RefinerFactory(object):
       nref = len(isel)
       return nref - cutoff
       '''
+      return mnmn(reflections["id"],p.get_experiment_ids()).result - cutoff
 
     def unit_cell_nparam_minus_nref(p, reflections):
       '''Special version of model_nparam_minus_nref for crystal unit cell
@@ -1027,8 +1039,18 @@ class RefinerFactory(object):
       # if no free parameters, do as model_nparam_minus_nref
       if len(F_dbdp) == 0:
         return len(isel)
-      return ucnmn(reflections, p.get_experiment_ids(), F_dbdp).result - min_nref
 
+      #Potential test code for templated types
+      '''
+      print reflections["id"]
+      print "SIZE_T_MNMN="
+      print ucnmn(reflections["id"], reflections["miller_index"], p.get_experiment_ids(), F_dbdp).result - min_nref
+      a = flex.int(list(reflections["id"]))
+      print a
+      print "INT_MNMN="
+      print ucnmn(reflections["id"], reflections["miller_index"], p.get_experiment_ids(), F_dbdp).result - min_nref
+      exit("OK")
+      '''
       #Replaced Python code
       '''
       exp_ids = p.get_experiment_ids()
@@ -1049,6 +1071,7 @@ class RefinerFactory(object):
 
       return min([nref - min_nref for nref in nref_each_param])
       '''
+      return ucnmn(reflections["id"], reflections["miller_index"], p.get_experiment_ids(), F_dbdp).result - min_nref
 
     # In the scan-varying case we can't calculate dB_dp before composing the
     # model, so revert to the original function
@@ -1073,7 +1096,7 @@ class RefinerFactory(object):
       cutoff = options.auto_reduction.min_nref_per_parameter * nparam
       isel = flex.size_t()
       #Use Boost.Python extension module to replace below code
-      surplus = pgnmn(reflections, pnl_ids, exp_ids, cutoff).result
+      surplus = pgnmn(reflections["id"], reflections["panel"], pnl_ids, exp_ids, cutoff).result
       '''
       for exp_id in exp_ids:
         sub_expID = (reflections['id'] == exp_id).iselection()
@@ -2102,4 +2125,3 @@ class Refiner(object):
 
     # delegate to the target object, which has access to the predictor
     return self._target.predict_for_reflection_table(reflections, skip_derivatives)
-
