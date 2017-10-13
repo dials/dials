@@ -15,7 +15,9 @@ namespace dials { namespace refinement { namespace boost_python {
     Class used to replace functionality from panel_gp_nparam_minus_nref(p, pnl_ids, group, reflections, verbose=False) function in refiner.py
   */
   struct pgnmn_iter{
-    pgnmn_iter( const reflection_table ref_table,
+    template <typename IntType>
+    pgnmn_iter( const scitbx::af::shared<IntType> &ref_ids,
+                const scitbx::af::shared<std::size_t> &panel_id,
                 const boost::python::list pnl_ids,
                 const scitbx::af::shared<std::size_t> exp_ids,
                 const int cutoff){
@@ -29,16 +31,16 @@ namespace dials { namespace refinement { namespace boost_python {
       //Work with raw pointers instead of overloadable objects
       const std::size_t* ptr_exp_ids = exp_ids.begin();
 
-      const scitbx::af::shared<int> &ref_ids = ref_table.get<int>("id");
+      //const scitbx::af::shared<int> &ref_ids = ref_table.get<int>("id");
       //const int* ptr_ref_ids = ref_ids.begin();
 
-      const scitbx::af::shared<size_t> &panel_id = ref_table.get<size_t>("panel");
+      //const scitbx::af::shared<size_t> &panel_id = ref_table.get<size_t>("panel");
       const std::size_t* ptr_panel_id = panel_id.begin();
 
       //Predefine loop variables to allow for OpenMP use;
       std::size_t exp_it, pnl; //ref_id;
 
-      std::pair<const int* ,const int*> refIDRange;
+      std::pair<const IntType* ,const IntType*> refIDRange;
       std::pair<const std::size_t *,const std::size_t*> panelIDRange;
       unsigned int data_offset = 0;
       unsigned int data_range = 0;
@@ -69,19 +71,21 @@ namespace dials { namespace refinement { namespace boost_python {
     Class used to replace functionality from unit_cell_nparam_minus_nref(p, reflections) function in refiner.py
   */
   struct ucnmn_iter{
-    ucnmn_iter( const reflection_table ref_table,
-                const scitbx::af::shared<std::size_t> exp_ids,
+    template <typename IntType>
+    ucnmn_iter( const scitbx::af::shared<IntType> &ref_ids,
+                const scitbx::af::shared<cctbx::miller::index<> > &ref_miller,
+                const scitbx::af::shared<std::size_t> &exp_ids,
                 const scitbx::af::shared<mat3<double> > F_dbdp
               )
     {
       //Expose pointers for experiment flex arrays
       const std::size_t* ptr_exp_ids = exp_ids.begin();
-      const scitbx::af::shared<int> &ref_ids = ref_table.get<int>("id");
+      //const scitbx::af::shared<int> &ref_ids = ref_table.get<int>("id");
 
-      const scitbx::af::shared<cctbx::miller::index<> > &ref_miller = ref_table.get<cctbx::miller::index<> >("miller_index");
+      //const scitbx::af::shared<cctbx::miller::index<> > &ref_miller = ref_table.get<cctbx::miller::index<> >("miller_index");
 
       std::size_t exp_it; //ref_id;
-      std::pair<const int* ,const int* > refIDRange;
+      std::pair<const IntType* ,const IntType* > refIDRange;
 
       unsigned int data_range = 0;
       unsigned int data_offset = 0;
@@ -125,16 +129,16 @@ namespace dials { namespace refinement { namespace boost_python {
   };
 
   struct mnmn_iter{
-    mnmn_iter( const reflection_table ref_table,
+    template <typename IntType>
+    mnmn_iter( scitbx::af::shared<IntType> ref_ids,
       const scitbx::af::shared<std::size_t> exp_ids
     )
     {
       //Expose pointers for experiment flex arrays
       const std::size_t* ptr_exp_ids = exp_ids.begin();
-      const scitbx::af::shared<int> &ref_ids = ref_table.get<int>("id");
 
       std::size_t exp_it; //ref_id;
-      std::pair<const int* ,const int* > refIDRange;
+      std::pair<const IntType* ,const IntType* > refIDRange;
 
       unsigned int data_count = 0;
       result=0;
@@ -151,56 +155,90 @@ namespace dials { namespace refinement { namespace boost_python {
     int result;
 };
 
-
   void export_pgnmn_iter()
   {
     typedef return_value_policy<return_by_value> rbv;
 
-    class_<dials::refinement::boost_python::pgnmn_iter>
-    ("pgnmn_iter", init<reflection_table,
+    class_<dials::refinement::boost_python::pgnmn_iter>("pgnmn_iter", no_init)
+    .def( init< scitbx::af::shared<std::size_t>,
+      const scitbx::af::shared<std::size_t>,
       const boost::python::list,
       const scitbx::af::shared<std::size_t>,
       const int>
       ((
-        boost::python::arg("ref_table"),
+        boost::python::arg("ref_ids"),
+        boost::python::arg("panel_id"),
         boost::python::arg("pnl_ids"),
         boost::python::arg("exp_ids"),
         boost::python::arg("cutoff")
       ))
-    ).add_property("result",make_getter(&dials::refinement::boost_python::pgnmn_iter::result, rbv()))
+    )
+    .def( init< scitbx::af::shared<int>,
+      const scitbx::af::shared<std::size_t>,
+      const boost::python::list,
+      const scitbx::af::shared<std::size_t>,
+      const int>
+      ((
+        boost::python::arg("ref_ids"),
+        boost::python::arg("panel_id"),
+        boost::python::arg("pnl_ids"),
+        boost::python::arg("exp_ids"),
+        boost::python::arg("cutoff")
+      ))
+    )
+    .add_property("result",make_getter(&dials::refinement::boost_python::pgnmn_iter::result, rbv()))
   ;
   }
 
   void export_ucnmn_iter()
   {
     typedef return_value_policy<return_by_value> rbv;
-
-    class_<dials::refinement::boost_python::ucnmn_iter>
-    ("ucnmn_iter", init<
-      const reflection_table,
-      const scitbx::af::shared<std::size_t>,
-      const scitbx::af::shared<mat3<double> > >
-      ((
-        boost::python::arg("ref_table"),
-        boost::python::arg("exp_ids"),
-        boost::python::arg("dbdp"),
-        boost::python::arg("len_dbdp")
-      ))
-    ).add_property("result",make_getter(&dials::refinement::boost_python::ucnmn_iter::result, rbv()))
+    class_<dials::refinement::boost_python::ucnmn_iter> ("ucnmn_iter", no_init)
+      .def( init< const scitbx::af::shared<std::size_t>,
+        const scitbx::af::shared<cctbx::miller::index<> >,
+        const scitbx::af::shared<std::size_t>,
+        const scitbx::af::shared<mat3<double> > >
+        ((
+          boost::python::arg("ref_ids"),
+          boost::python::arg("ref_miller"),
+          boost::python::arg("exp_ids"),
+          boost::python::arg("F_dbdp")
+        ))
+      )
+      .def(init< const scitbx::af::shared<int>,
+        const scitbx::af::shared<cctbx::miller::index<> >,
+        const scitbx::af::shared<std::size_t>,
+        const scitbx::af::shared<mat3<double> > >
+        ((
+          boost::python::arg("ref_ids"),
+          boost::python::arg("ref_miller"),
+          boost::python::arg("exp_ids"),
+          boost::python::arg("F_dbdp")
+        ))
+      )
+      .add_property("result",make_getter(&dials::refinement::boost_python::ucnmn_iter::result, rbv()))
     ;
   }
 
   void export_mnmn_iter()
   {
     typedef return_value_policy<return_by_value> rbv;
-    class_<dials::refinement::boost_python::mnmn_iter>
-    ("mnmn_iter", init<reflection_table,
-      const scitbx::af::shared<std::size_t> >
-      ((
-        boost::python::arg("ref_table"),
-        boost::python::arg("exp_ids")
-      ))
-    ).add_property("result",make_getter(&dials::refinement::boost_python::mnmn_iter::result, rbv()))
-  ;
+    class_<dials::refinement::boost_python::mnmn_iter> ("mnmn_iter", no_init)
+      .def( init< scitbx::af::shared<std::size_t> ,
+        const scitbx::af::shared<std::size_t> >
+        ((
+          boost::python::arg("ref_ids"),
+          boost::python::arg("exp_ids")
+        ))
+        )
+      .def( init< scitbx::af::shared<int> ,
+        const scitbx::af::shared<std::size_t> >
+        ((
+          boost::python::arg("ref_ids"),
+          boost::python::arg("exp_ids")
+        ))
+        )
+      .add_property("result",make_getter(&dials::refinement::boost_python::mnmn_iter::result, rbv()))
+    ;
   }
 }}} // namespace dials::refinement::boost_python
