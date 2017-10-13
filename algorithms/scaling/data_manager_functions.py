@@ -40,7 +40,6 @@ class Data_Manager(object):
     self.select_optimal_intensities()
     self.filter_and_sort_reflections()
     self.update_weights_for_scaling(self.sorted_reflections)
-    
 
   def extract_reflections_for_scaling(self, reflection_table):
     sel = self.weights_for_scaling.get_weights() > 0.0
@@ -59,41 +58,22 @@ class Data_Manager(object):
 
   def filter_and_sort_reflections(self):
     self.filtered_reflections = copy.deepcopy(self.reflection_table)
-    self.filter_negative_variances()
+    self.filter_negative_values(self.filtered_reflections, 'd')
+    self.filter_negative_values(self.filtered_reflections, 'variance')
     self.filter_very_negative_intensities()#this may not be needed if we do some outlier rejection.
-    self.filter_data('d', -1.0, 0.0)
     self.map_indices_to_asu()
     self.assign_h_index(self.sorted_reflections)
 
   '''define a number of data filtering options'''
-  def filter_data(self, reflection_table_key, lower, upper):
-    '''Filter reflection data for a given measurement variable and limits'''
-    bad_data = select_variables_in_range(
-      self.filtered_reflections[reflection_table_key], lower, upper)
-    inv_sel = ~bad_data
-    self.filtered_reflections = self.filtered_reflections.select(inv_sel)
-
-  def filter_I_sigma(self, ratio):
-    Ioversigma = self.filtered_reflections['intensity']/(self.filtered_reflections['variance']**0.5)
-    sel = Ioversigma > ratio
-    self.filtered_reflections = self.filtered_reflections.select(sel)
-
-  def filter_negative_intensities(self):
-    '''return boolean selection of a given variable range'''
-    sel = self.filtered_reflections['intensity'] > 0.0
-    self.filtered_reflections = self.filtered_reflections.select(sel)
+  def filter_negative_values(self, reflection_table, column):
+    sel = reflection_table[column] > 0.0
+    reflection_table = reflection_table.select(sel)
 
   def filter_very_negative_intensities(self):
     '''return boolean selection of a given variable range'''
     Ioversigma = self.filtered_reflections['intensity']/(self.filtered_reflections['variance']**0.5)
     sel = Ioversigma > -2.0
     self.filtered_reflections = self.filtered_reflections.select(sel)
-
-  def filter_negative_variances(self):
-    '''return boolean selection of a given variable range'''
-    sel = self.filtered_reflections['variance'] > 0.0
-    self.filtered_reflections = self.filtered_reflections.select(sel)
-  
 
   def map_indices_to_asu(self):
     '''Create a miller_set object, map to the asu and create a sorted
@@ -177,12 +157,12 @@ class Data_Manager(object):
     sumgI = flex.double(np.add.reduceat(gI, self.h_index_cumulative_array[:-1]))
     sumweights = flex.double(np.add.reduceat(scaleweights, self.h_index_cumulative_array[:-1]))
     #self.Ih_array = sumgI / sumgsq
-    self.Ih_array = flex.double([val/ sumgsq[i] if sumweights[i]> 0.0
+    self.Ih_array = flex.double([val/ sumgsq[i] if sumweights[i] > 0.0
                                  else 0.0 for i, val in enumerate(sumgI)])
     reflection_table['Ih_values'] = flex.double(
       np.repeat(self.Ih_array, self.h_index_counter_array))
 
-  
+
 
 class aimless_Data_Manager(Data_Manager):
   '''Data Manager subclass for implementing XDS parameterisation'''
@@ -206,7 +186,7 @@ class aimless_Data_Manager(Data_Manager):
     self.initialise_scale_factors()
     self.reflections_for_scaling = copy.deepcopy(self.sorted_reflections)
     self.extract_reflections_for_scaling(self.sorted_reflections)
-    
+
 
   def initialise_scale_factors(self):
     self.bin_reflections_scale()
@@ -216,10 +196,6 @@ class aimless_Data_Manager(Data_Manager):
     self.active_parameters.extend(self.g_scale)
     self.active_parameters.extend(self.g_decay)
     self.active_parameters.extend(self.g_absorption)
-    '''self.g_parameterisation = {
-      'g_absorption' : {'index': None, 'parameterisation' : self.g_absorption, 'derivatives': self.g_absorption_derivatives},
-      'g_scale' : {'index': 't1_bin_index', 'parameterisation' : self.g_scale, 'derivatives': self.g_scale_derivatives},
-      'g_decay' : {'index': 't2_bin_index', 'parameterisation' : self.g_decay, 'derivatives': self.g_decay_derivatives}}'''
 
   def calculate_scale_factors(self):
     ngscale = self.n_g_scale_params
@@ -228,8 +204,10 @@ class aimless_Data_Manager(Data_Manager):
     B = self.active_parameters[ngscale:ngscale+ngdecay]
     scale = self.active_parameters[0:ngscale]
     t2 = self.sorted_reflections['t2_bin_index']
-    t1 = self.sorted_reflections['t1_bin_index']
-    B_factor = flex.double([np.exp(B[t]/(2*(d[i]**2))) for i,t in enumerate(t2)])
+    #t1 = self.sorted_reflections['t1_bin_index']
+    norm_rot = self.sorted_reflections['normalised_rotation_angle']
+    B_factor = flex.double([np.exp(B[t]/(2*(d[i]**2))) for i, t in enumerate(t2)])
+    scale_factor = GaussianSmoother(norm_rot, self.g_decay)
     scale_factor = flex.double([scale[i] for i in t1])
     #for absorption, will want to add a calculation of the scattering vector to the refl table
     absorption_factor = flex.double([1.0 for _ in d])
@@ -257,15 +235,15 @@ class aimless_Data_Manager(Data_Manager):
     time_max = max(self.filtered_reflections['z_value'])
     time_min = min(self.filtered_reflections['z_value'])
     time_bins = ((flex.double(range(0, nBbins + 1)) * ((time_max - time_min) / nBbins))
-          + flex.double([time_min] * (nBbins + 1)))
+                 + flex.double([time_min] * (nBbins + 1)))
     #add a small tolerance to make sure no rounding errors cause extreme
     #data to not be selected
     time_bins[0] = time_bins[0] - 0.00001
     time_bins[-1] = time_bins[-1] + 0.00001
     bin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
     for i in range(nBbins):
-      selection = select_variables_in_range(
-        self.sorted_reflections['z_value'], time_bins[i], time_bins[i+1])
+      selection = select_variables_in_range(self.sorted_reflections['z_value'],
+                                            time_bins[i], time_bins[i+1])
       bin_index.set_selected(selection, i)
     if bin_index.count(-1) > 0:
       raise ValueError('Unable to bin data for decay in scaling initialisation')
@@ -276,11 +254,35 @@ class aimless_Data_Manager(Data_Manager):
     self.n_g_decay_params = nBbins
 
   def bin_reflections_scale(self):
+    '''calculate the relative '''
+    rotation_interval = 10.0
+    osc_range = self.experiments.scans()[0].get_oscillation_range()
+    one_oscillation_width = self.experiments.scans()[0].get_oscillation()[1]
+    
+    initial_rotation_angle = osc_range[0]
+    final_rotation_angle = osc_range[1]
+    self.sorted_reflections['normalised_rotation_angle'] = ((self.sorted_reflections['z_value'] 
+      * one_oscillation_width) - initial_rotation_angle)/rotation_interval
+    #define the highest and lowest gridpoints: go out one further than the max/min int values
+    highest_parameter_value = int((max(self.sorted_reflections['normalised_rotation_angle'])//1)+2)
+    lowest_parameter_value = int((min(self.sorted_reflections['normalised_rotation_angle'])//1)-1)
+    n_scale_parameters =  highest_parameter_value - lowest_parameter_value + 1
+    normalised_rotation_values = range(lowest_parameter_value, (highest_parameter_value+1))
+
+    self.g_scale = SmoothScaleFactor(n_scale_parameters)
+    self.g_scale.set_normalised_values(normalised_rotation_values)
+    self.n_active_params += n_scale_parameters
+    self.n_g_scale_params = n_scale_parameters
+    exit()
+    """
     '''bin reflections for decay correction'''
     n_scale_bins = self.binning_parameters['n_scale_bins']
     '''Bin the data into time 'z' bins'''
     time_max = max(self.filtered_reflections['z_value'])
     time_min = min(self.filtered_reflections['z_value'])
+    print time_max, time_min
+    print max(self.filtered_reflections['zeta'])
+    exit()
     time_bins = ((flex.double(range(0, n_scale_bins + 1)) * ((time_max - time_min) / n_scale_bins))
           + flex.double([time_min] * (n_scale_bins + 1)))
     #add a small tolerance to make sure no rounding errors cause extreme
@@ -298,7 +300,7 @@ class aimless_Data_Manager(Data_Manager):
     self.bin_boundaries = {'t1_value' : time_bins}
     self.g_scale = flex.double([1.0] * n_scale_bins)
     self.n_active_params += n_scale_bins
-    self.n_g_scale_params = n_scale_bins
+    self.n_g_scale_params = n_scale_bins"""
 
   def initialise_absorption_scales(self):
     n_abs_params = 0
@@ -314,10 +316,10 @@ class aimless_Data_Manager(Data_Manager):
     for key in self.reflection_table.keys():
       if not key in self.initial_keys:
         del self.sorted_reflections[key]
-    added_columns = ['Ih_values','t1_bin_index', 't2_bin_index', 'h_index',
+    added_columns = ['Ih_values', 't1_bin_index', 't2_bin_index', 'h_index',
                      'asu_miller_index', 'res_bin_index']
     for key in added_columns:
-      del self.sorted_reflections[key] 
+      del self.sorted_reflections[key]
 
 
 
@@ -349,22 +351,25 @@ class XDS_Data_Manager(Data_Manager):
     self.extract_reflections_for_scaling(self.sorted_reflections)
     self.calculate_derivatives(self.reflections_for_scaling)
     self.g_parameterisation = {
-      'g_absorption' : {'index': 'a_bin_index', 'parameterisation' : self.g_absorption, 'derivatives': self.g_absorption_derivatives},
-      'g_modulation' : {'index': 'xy_bin_index', 'parameterisation' : self.g_modulation, 'derivatives': self.g_modulation_derivatives},
-      'g_decay' : {'index': 'l_bin_index', 'parameterisation' : self.g_decay, 'derivatives': self.g_decay_derivatives}}
+      'g_absorption' : {'index': 'a_bin_index', 'parameterisation' : self.g_absorption,
+                        'derivatives': self.g_absorption_derivatives},
+      'g_modulation' : {'index': 'xy_bin_index', 'parameterisation' : self.g_modulation,
+                        'derivatives': self.g_modulation_derivatives},
+      'g_decay' : {'index': 'l_bin_index', 'parameterisation' : self.g_decay,
+                   'derivatives': self.g_decay_derivatives}}
 
 
   def calculate_derivatives(self, reflection_table):
-    self.g_decay_derivatives = flex.double([0.0] * len(reflection_table['d']) 
+    self.g_decay_derivatives = flex.double([0.0] * len(reflection_table['d'])
       * self.binning_parameters['n_d_bins'] * self.binning_parameters['n_z_bins'])
     num = len(reflection_table['d'])
     for i, l in enumerate(reflection_table['l_bin_index']):
       self.g_decay_derivatives[(l*num)+i] = 1.0
-    self.g_modulation_derivatives = flex.double([0.0] * len(reflection_table['d']) 
+    self.g_modulation_derivatives = flex.double([0.0] * len(reflection_table['d'])
       * (self.binning_parameters['n_detector_bins']**2))
     for i, l in enumerate(reflection_table['xy_bin_index']):
       self.g_modulation_derivatives[(l*num)+i] = 1.0
-    self.g_absorption_derivatives = flex.double([0.0] * len(reflection_table['d']) 
+    self.g_absorption_derivatives = flex.double([0.0] * len(reflection_table['d'])
       * self.n_absorption_bins * self.binning_parameters['n_z_bins'])
     for i, a in enumerate(reflection_table['a_bin_index']):
       self.g_absorption_derivatives[(a*num)+i] = 1.0
@@ -428,7 +433,7 @@ class XDS_Data_Manager(Data_Manager):
           counter += 1
     self.update_weights_for_scaling(self.sorted_reflections)
     print "found %s outliers from analysis of Wilson statistics" % (counter)
-  
+
   def get_target_function(self):
     '''call the xds target function method'''
     if self.scaling_options['parameterization'] == 'log':
@@ -460,7 +465,8 @@ class XDS_Data_Manager(Data_Manager):
       self.sorted_reflections['inverse_scale_factor'] = flex.double(
         np.exp(gscalevalues + gdecayvalues + gabsorptionvalues))
     else:
-      self.sorted_reflections['inverse_scale_factor'] = gscalevalues * gdecayvalues * gabsorptionvalues
+      self.sorted_reflections['inverse_scale_factor'] = (gscalevalues * gdecayvalues
+                                                         * gabsorptionvalues)
 
   def bin_reflections_decay(self):
     '''bin reflections for decay correction'''
@@ -472,11 +478,11 @@ class XDS_Data_Manager(Data_Manager):
     resmax = (1.0 / (min(self.filtered_reflections['d'])**2))
     resmin = (1.0 / (max(self.filtered_reflections['d'])**2))
     resolution_bins = ((flex.double(range(0, ndbins + 1))
-              * ((resmax - resmin) / ndbins))
-               + flex.double([resmin] * (ndbins + 1)))
+                        * ((resmax - resmin) / ndbins))
+                       + flex.double([resmin] * (ndbins + 1)))
     d_bins = (1.0 /(resolution_bins[::-1]**0.5))
     z_bins = ((flex.double(range(0, nzbins + 1)) * ((zmax - zmin) / nzbins))
-          + flex.double([zmin] * (nzbins + 1)))
+              + flex.double([zmin] * (nzbins + 1)))
     #add a small tolerance to make sure no rounding errors cause extreme
     #data to not be selected
     d_bins[0] = d_bins[0] - 0.00001
@@ -496,7 +502,7 @@ class XDS_Data_Manager(Data_Manager):
     if firstbin_index.count(-1) > 0 or secondbin_index.count(-1) > 0:
       raise ValueError('Unable to bin data for decay in scaling initialisation')
     self.sorted_reflections['l_bin_index'] = (firstbin_index
-                          + (secondbin_index * ndbins))
+                                              + (secondbin_index * ndbins))
     self.sorted_reflections['res_bin_index'] = firstbin_index
     self.bin_boundaries = {'d' : d_bins, 'z_value' : z_bins}
     if self.scaling_options['parameterization'] == 'log':
@@ -571,7 +577,7 @@ class XDS_Data_Manager(Data_Manager):
       raise ValueError('Unable to bin data for absorption in scaling initialisation')
     self.sorted_reflections['a_bin_index'] = (firstbin_index
                                               + (secondbin_index * nxbins * nybins))
-    self.n_absorption_bins = nxbins * nybins                                        
+    self.n_absorption_bins = nxbins * nybins
     if self.scaling_options['parameterization'] == 'log':
       self.g_absorption = flex.double([0.0] * ((nxbins**2) * nzbins))
     else:
@@ -589,18 +595,18 @@ class XDS_Data_Manager(Data_Manager):
     xvalues = self.sorted_reflections['x_value']
     yvalues = self.sorted_reflections['y_value']
     x_center = image_size[0]/2.0
-    y_center = image_size[0]/2.0
+    y_center = image_size[1]/2.0
     radial_divider = max(x_center, y_center)
     xrelvalues = xvalues - x_center #!may need better definition of centerpoint
     yrelvalues = yvalues - y_center #!may need better definition of centerpoint
-    radial_bins = [0.0, radial_divider / 3.0, 2.0 * radial_divider / 3.0, 
+    radial_bins = [-0.0001, radial_divider / 3.0, 2.0 * radial_divider / 3.0,
                    ((((image_size[0]**2) + (image_size[1]**2))**0.5) / 2.0) + 5.0]
-                   # '''+5.0 to the last bin adds extra tolerance to catch any 
+                   # '''+5.0 to the last bin adds extra tolerance to catch any
                    # spots with centres outside the detector area'''
-    angular_bins = [0, pi / 4.0, 2.0 * pi / 4.0, 3.0 * pi / 4.0, pi,
+    angular_bins = [-0.0001, pi / 4.0, 2.0 * pi / 4.0, 3.0 * pi / 4.0, pi,
                     5.0 * pi / 4.0, 6.0 * pi / 4.0, 7.0 * pi / 4.0, 2.0 * pi]
     radial_values = ((xrelvalues**2) + (yrelvalues**2))**0.5
-    angular_values = np.arccos(yrelvalues/radial_values)
+    angular_values = flex.double(np.arccos(yrelvalues/radial_values))
     for i in range(0, len(angular_values)):
       if xrelvalues[i] < 0.0:
         angular_values[i] = (2.0 * pi) - angular_values[i]
@@ -622,10 +628,9 @@ class XDS_Data_Manager(Data_Manager):
 
     if firstbin_index.count(-1) > 0 or secondbin_index.count(-1) > 0:
       raise ValueError('Unable to fully bin data for absorption in scaling initialisation')
-    self.sorted_reflections['a_bin_index'] = (firstbin_index + (secondbin_index
-                                              * (len(angular_bins) - 1)
-                                              * (len(radial_bins) - 1)))
-    self.n_absorption_bins = (len(angular_bins) - 1) * (len(radial_bins) - 1)                                    
+    self.sorted_reflections['a_bin_index'] = (firstbin_index
+      + (secondbin_index * (len(angular_bins) - 1) * (len(radial_bins) - 1)))
+    self.n_absorption_bins = (len(angular_bins) - 1) * (len(radial_bins) - 1)
     if self.scaling_options['parameterization'] == 'log':
       self.g_absorption = flex.double([0.0] * self.n_absorption_bins * nzbins)
     else:
@@ -649,29 +654,31 @@ class XDS_Data_Manager(Data_Manager):
 
     secondbin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
     for i in range(nzbins):
-      selection = select_variables_in_range(
-        self.sorted_reflections['z_value'], z_bins[i], z_bins[i+1])
+      selection = select_variables_in_range(self.sorted_reflections['z_value'],
+                                            z_bins[i], z_bins[i+1])
       secondbin_index.set_selected(selection, i)
 
     bin_boundaries_x1 = [0, 2, 4, 6]
     bin_boundaries_y1 = [0, 2, 4, 6]
-    reflections_for_gridding = gedm.refl_table(xrelvalues, yrelvalues, 
+    reflections_for_gridding = gedm.refl_table(xrelvalues, yrelvalues,
       secondbin_index, nzbins, self.h_index_counter_array, self.h_index_cumulative_array )
     print gedm.calc_entropy_2D(reflections_for_gridding, bin_boundaries_x1, bin_boundaries_y1)
-    optimal_boundaries = gedm.perform_optimal_divide(reflections_for_gridding, 
+    optimal_boundaries = gedm.perform_optimal_divide(reflections_for_gridding,
       bin_boundaries_x1, bin_boundaries_y1, min_in_each_abs_bin)
     print len(optimal_boundaries)
-    
+
     firstbin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
     for i in range(len(optimal_boundaries)):
-      selection1 = select_variables_in_range(xrelvalues, optimal_boundaries[i][0][0], optimal_boundaries[i][0][1])
-      selection2 = select_variables_in_range(yrelvalues, optimal_boundaries[i][1][0], optimal_boundaries[i][1][1])
+      selection1 = select_variables_in_range(xrelvalues,
+        optimal_boundaries[i][0][0], optimal_boundaries[i][0][1])
+      selection2 = select_variables_in_range(yrelvalues,
+        optimal_boundaries[i][1][0], optimal_boundaries[i][1][1])
       firstbin_index.set_selected(selection1 & selection2, i)
-    
+
     if firstbin_index.count(-1) > 0 or secondbin_index.count(-1) > 0:
       raise ValueError('Unable to bin data for absorption in scaling initialisation')
     self.sorted_reflections['a_bin_index'] = (firstbin_index
-                          + (secondbin_index * len(optimal_boundaries)))
+      + (secondbin_index * len(optimal_boundaries)))
     if self.scaling_options['parameterization'] == 'log':
       self.g_absorption = flex.double([0.0] * (len(optimal_boundaries) * nzbins))
     else:
@@ -706,10 +713,10 @@ class XDS_Data_Manager(Data_Manager):
     for key in self.reflection_table.keys():
       if not key in self.initial_keys:
         del self.sorted_reflections[key]
-    added_columns = ['l_bin_index','a_bin_index', 'xy_bin_index', 'h_index',
+    added_columns = ['l_bin_index', 'a_bin_index', 'xy_bin_index', 'h_index',
                      'asu_miller_index', 'res_bin_index']
     for key in added_columns:
-      del self.sorted_reflections[key]  
+      del self.sorted_reflections[key]
 
   def reject_outliers(self, tolerance, niter):
     '''Identify outliers using the method of aimless - needs some work'''
@@ -719,18 +726,18 @@ class XDS_Data_Manager(Data_Manager):
       scale_factors = self.sorted_reflections['inverse_scale_factor']
       Good_reflections = flex.bool([True]*len(self.sorted_reflections['d']))
       print len(Good_reflections)
-      for h in range(len(self.h_index_counter_array)):     
+      for h in range(len(self.h_index_counter_array)):
         lsum = self.h_index_counter_array[h]
         if lsum == 2:
           indexer = self.h_index_cumulative_array[h]
           delta1 = (Ihl[indexer] - (scale_factors[indexer] * Ihl[indexer + 1])
-              / ((variances[indexer] + ((scale_factors[indexer]**2)
-                            * variances[indexer + 1]))**0.5))
+                    / ((variances[indexer] + ((scale_factors[indexer]**2)
+                                              * variances[indexer + 1]))**0.5))
           delta2 = (Ihl[indexer + 1] - (scale_factors[indexer + 1] * Ihl[indexer])
-              / ((variances[indexer + 1] + ((scale_factors[indexer + 1]**2)
-                              * variances[indexer]))**0.5))
-          if (abs(delta1/Ihl[indexer + 1]) > tolerance or 
-              abs(delta2/Ihl[indexer])  > tolerance):
+                    / ((variances[indexer + 1] + ((scale_factors[indexer + 1]**2)
+                                                  * variances[indexer]))**0.5))
+          if (abs(delta1/Ihl[indexer + 1]) > tolerance or
+              abs(delta2/Ihl[indexer]) > tolerance):
             #if delta1 > 5.0:
             #    print (delta1, Ihl[indexer + 1])
             #if delta2 > 5.0:
@@ -740,7 +747,7 @@ class XDS_Data_Manager(Data_Manager):
             #outlier_list.append(indexer)
             #outlier_list.append(indexer + 1) #reject both if large difference
         if lsum > 2:
-          delta_list=[]
+          delta_list = []
           for i in range(lsum):
             sumgI = 0.0
             sumgsq = 0.0
@@ -750,14 +757,14 @@ class XDS_Data_Manager(Data_Manager):
                 indexer = j + self.h_index_cumulative_array[h]
                 sumgI += (Ihl[indexer]*scale_factors[indexer] / variances[indexer])
                 sumgsq += (scale_factors[indexer]**2 / variances[indexer])
-                I_others_list = np.append(I_others_list,Ihl[indexer])
+                I_others_list = np.append(I_others_list, Ihl[indexer])
             Ih_others = sumgI / sumgsq
             indexer = i + self.h_index_cumulative_array[h]
             #print list(I_others_list)
             others_std = np.std(I_others_list, ddof=1)
             delta = ((Ihl[indexer] - (scale_factors[indexer] * Ih_others))
-                / ((variances[indexer] + ((scale_factors * others_std)**2))**0.5))
-            delta_list.append(delta) 
+                     / ((variances[indexer] + ((scale_factors * others_std)**2))**0.5))
+            delta_list.append(delta)
           max_delta = max([abs(x[0]) for x in delta_list])
           if max_delta/Ih_others > tolerance:
             #if max_delta  > 5.0:
@@ -775,7 +782,6 @@ class XDS_Data_Manager(Data_Manager):
             else:
               n = delta_list.index(max_delta)
               Good_reflections[n + self.h_index_cumulative_array[h]] = False
-      #print outlier_list  
       print "number of outliers = "+ str(Good_reflections.count(False))
       self.sorted_reflections = self.sorted_reflections.select(Good_reflections)
       self.assign_h_index(self.sorted_reflections)
@@ -850,3 +856,25 @@ def select_variables_in_range(variable_array, lower_limit, upper_limit):
     else:
       sel.append(False)
   return sel
+
+class ScaleFactor(object):
+  def __init__(self, n_parameters):
+    self.scale_factors = flex.double([1.0] * n_parameters)
+
+  def set_scales(self, scale_factors):
+    self.scale_factors = scale_factors
+
+  def get_scales(self):
+    return self.scale_factors
+
+
+class SmoothScaleFactor(ScaleFactor):
+  def __init__(self, n_parameters):
+    ScaleFactor.__init__(self, n_parameters)
+    self.normalised_values = None
+
+  def set_normalised_values(self, normalised_values):
+    self.set_normalised_values = normalised_values
+
+  def get_normalised_values(self):
+    return self.normalised_values
