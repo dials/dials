@@ -24,6 +24,11 @@ class Data_Manager(object):
     self.reflection_table['x_value'] = self.reflection_table['xyzobs.px.value'].parts()[0]
     self.reflection_table['y_value'] = self.reflection_table['xyzobs.px.value'].parts()[1]
     self.reflection_table['z_value'] = self.reflection_table['xyzobs.px.value'].parts()[2]
+    '''print "There were %s reflections"  % len(self.reflection_table)
+    z_max = max(self.reflection_table['z_value'])
+    sel = self.reflection_table['z_value'] < z_max / 8.0
+    self.reflection_table = self.reflection_table.select(sel)
+    print "There are now %s reflections"  % len(self.reflection_table)'''
     self.reflection_table['inverse_scale_factor'] = flex.double([1.0] * len(self.reflection_table))
     self.reflection_table['Ih_values'] = flex.double([0.0] * len(self.reflection_table))
     self.reflection_table['wilson_outlier_flag'] = flex.bool([False] * len(self.reflection_table))
@@ -186,19 +191,30 @@ class aimless_Data_Manager(Data_Manager):
     self.initialise_scale_factors()
     self.reflections_for_scaling = copy.deepcopy(self.sorted_reflections)
     self.extract_reflections_for_scaling(self.sorted_reflections)
+    self.g_scale.set_normalised_values(self.sorted_reflections['normalised_rotation_angle'])
 
 
   def initialise_scale_factors(self):
     self.bin_reflections_scale()
-    self.bin_reflections_decay()
-    self.initialise_absorption_scales()
+    #self.bin_reflections_decay()
+    #self.initialise_absorption_scales()
     self.active_parameters = flex.double([])
-    self.active_parameters.extend(self.g_scale)
-    self.active_parameters.extend(self.g_decay)
-    self.active_parameters.extend(self.g_absorption)
+    self.active_parameters.extend(self.g_scale.get_scale_factors())
+    #self.active_parameters.extend(self.g_decay)
+    #self.active_parameters.extend(self.g_absorption)
 
   def calculate_scale_factors(self):
-    ngscale = self.n_g_scale_params
+    scale_factors = self.g_scale.get_scale_factors()
+    print list(scale_factors)
+    sorted_refl_scale_factor = SmoothScaleFactor(1.0, self.n_g_scale_params)
+    sorted_refl_scale_factor.set_scale_factors(scale_factors)
+    sorted_refl_scale_factor.set_normalised_values(self.sorted_reflections['normalised_rotation_angle'])
+    self.sorted_reflections['inverse_scale_factor'] = sorted_refl_scale_factor.calculate_smooth_scales()
+    '''import matplotlib.pyplot as plt
+    plt.hist(self.sorted_reflections['inverse_scale_factor'], bins = 40)
+    plt.show()'''
+    
+    '''ngscale = self.n_g_scale_params
     ngdecay = self.n_g_decay_params
     d = self.sorted_reflections['d']
     B = self.active_parameters[ngscale:ngscale+ngdecay]
@@ -211,28 +227,49 @@ class aimless_Data_Manager(Data_Manager):
     scale_factor = flex.double([scale[i] for i in t1])
     #for absorption, will want to add a calculation of the scattering vector to the refl table
     absorption_factor = flex.double([1.0 for _ in d])
-    self.sorted_reflections['inverse_scale_factor'] = B_factor * scale_factor * absorption_factor
+    scale_factor = self.g_scale.get_scale_factors
+    self.sorted_reflections['inverse_scale_factor'] = B_factor * scale_factor * absorption_factor'''
+    #eturn None
 
 
   def get_target_function(self):
     '''call the aimless target function method'''
     return target_function(self).return_targets()
 
-  def get_basis_function(self):
+  def get_basis_function(self, parameters):
     '''call the aimless basis function method'''
-    return aimless_basis_function(self).return_basis()
+    return aimless_basis_function(self, parameters).return_basis()
 
   def update_for_minimisation(self, parameters):
     '''update the scale factors and Ih for the next iteration of minimisation'''
-    self.reflections_for_scaling['inverse_scale_factor'] = self.get_basis_function()[0]
-    self.active_derivatives = self.get_basis_function()[1]
+    basis_fn = self.get_basis_function(parameters)
+    self.reflections_for_scaling['inverse_scale_factor'] = basis_fn[0]
+    self.active_derivatives = basis_fn[1]
     self.calc_Ih(self.reflections_for_scaling)
 
   def bin_reflections_decay(self):
     '''bin reflections for decay correction'''
     nBbins = self.binning_parameters['n_B_bins']
+
+    rotation_interval = 20.0
+    osc_range = self.experiments.scans()[0].get_oscillation_range()
+    one_oscillation_width = self.experiments.scans()[0].get_oscillation()[1]
+    (initial_rotation_angle, final_rotation_angle) = (osc_range[0], osc_range[1])
+    self.sorted_reflections['normalised_time_value'] = ((self.sorted_reflections['z_value'] 
+      * one_oscillation_width) - initial_rotation_angle)/rotation_interval
+    #define the highest and lowest gridpoints: go out one further than the max/min int values
+    highest_parameter_value = int((max(self.sorted_reflections['normalised_time_value'])//1)+2)
+    lowest_parameter_value = int((min(self.sorted_reflections['normalised_time_value'])//1)-1)
+    n_scale_parameters =  highest_parameter_value - lowest_parameter_value + 1
+    normalised_time_values = range(lowest_parameter_value, (highest_parameter_value+1))
+
+    self.g_decay = SmoothScaleFactor(0.0, nBbins)
+    self.g_decay.set_normalised_values(normalised_time_values)
+    self.n_active_params += nBbins
+    self.n_g_decay_params = nBbins
+
     '''Bin the data into time 'z' bins'''
-    time_max = max(self.filtered_reflections['z_value'])
+    '''time_max = max(self.filtered_reflections['z_value'])
     time_min = min(self.filtered_reflections['z_value'])
     time_bins = ((flex.double(range(0, nBbins + 1)) * ((time_max - time_min) / nBbins))
                  + flex.double([time_min] * (nBbins + 1)))
@@ -249,9 +286,10 @@ class aimless_Data_Manager(Data_Manager):
       raise ValueError('Unable to bin data for decay in scaling initialisation')
     self.sorted_reflections['t2_bin_index'] = bin_index
     self.bin_boundaries = {'t2_value' : time_bins}
-    self.g_decay = flex.double([0.0] * nBbins)
+    self.g_decay = SmoothScaleFactor(0.0, nBbins)
+    self.g_decay.set_normalised_values
     self.n_active_params += nBbins
-    self.n_g_decay_params = nBbins
+    self.n_g_decay_params = nBbins'''
 
   def bin_reflections_scale(self):
     '''calculate the relative '''
@@ -269,11 +307,11 @@ class aimless_Data_Manager(Data_Manager):
     n_scale_parameters =  highest_parameter_value - lowest_parameter_value + 1
     normalised_rotation_values = range(lowest_parameter_value, (highest_parameter_value+1))
 
-    self.g_scale = SmoothScaleFactor(n_scale_parameters)
+    self.g_scale = SmoothScaleFactor(1.0, n_scale_parameters)
     self.g_scale.set_normalised_values(normalised_rotation_values)
     self.n_active_params += n_scale_parameters
     self.n_g_scale_params = n_scale_parameters
-    exit()
+    
     """
     '''bin reflections for decay correction'''
     n_scale_bins = self.binning_parameters['n_scale_bins']
@@ -306,7 +344,8 @@ class aimless_Data_Manager(Data_Manager):
     n_abs_params = 0
     for i in range(self.binning_parameters['lmax']):
       n_abs_params += (2*(i+1))+1
-    self.g_absorption = flex.double([1.0] * n_abs_params)
+    self.g_absorption = ScaleFactor(1.0, nabs_params)
+    #self.g_absorption = flex.double([1.0] * n_abs_params)
     self.n_active_params += n_abs_params
     self.n_g_abs_params = n_abs_params
 
@@ -857,24 +896,56 @@ def select_variables_in_range(variable_array, lower_limit, upper_limit):
       sel.append(False)
   return sel
 
-class ScaleFactor(object):
-  def __init__(self, n_parameters):
-    self.scale_factors = flex.double([1.0] * n_parameters)
 
-  def set_scales(self, scale_factors):
+class ScaleFactor(object):
+  def __init__(self, initial_value, n_parameters):
+    self.scale_factors = flex.double([initial_value] * n_parameters)
+
+  def set_scale_factors(self, scale_factors):
     self.scale_factors = scale_factors
 
-  def get_scales(self):
+  def get_scale_factors(self):
     return self.scale_factors
 
 
 class SmoothScaleFactor(ScaleFactor):
-  def __init__(self, n_parameters):
-    ScaleFactor.__init__(self, n_parameters)
+  def __init__(self, initial_value, n_parameters):
+    ScaleFactor.__init__(self, initial_value, n_parameters)
     self.normalised_values = None
 
   def set_normalised_values(self, normalised_values):
-    self.set_normalised_values = normalised_values
+    self.normalised_values = normalised_values
+    self.scales = flex.double([1.0]*len(self.normalised_values))
 
   def get_normalised_values(self):
     return self.normalised_values
+
+  def get_scales_of_reflections(self):
+    return self.scales
+
+  def calculate_smooth_scales(self):
+    Vr = 1.0
+    problim = 3.0
+    smoothing_window = (Vr*problim)**0.5
+    for i, relative_pos in enumerate(self.normalised_values):
+      max_scale_to_include = int(relative_pos + smoothing_window)
+      min_scale_to_include = int(relative_pos - smoothing_window) + 1
+      scale = 0.0
+      for j in range(min_scale_to_include, max_scale_to_include + 1):
+        scale += self.scale_factors[j+1] * np.exp(-((relative_pos - float(j))**2) / Vr)
+      self.scales[i] = scale
+    return self.scales
+
+  def calculate_smooth_derivatives(self):
+    n = len(self.normalised_values)
+    self.derivatives = flex.double([0.0] * len(self.scale_factors) * n)
+    Vr = 1.0
+    problim = 3.0
+    smoothing_window = (Vr*problim)**0.5
+    for i, relative_pos in enumerate(self.normalised_values):
+      max_scale_to_include = int(relative_pos + smoothing_window)
+      min_scale_to_include = int(relative_pos - smoothing_window) + 1
+      for j in range(min_scale_to_include, max_scale_to_include + 1):
+        self.derivatives[((j+1)*n)+i] += (self.scale_factors[j+1] * 
+          np.exp(-((relative_pos - float(j))**2) / Vr))
+    return self.derivatives

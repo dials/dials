@@ -41,8 +41,12 @@ class xds_basis_function(basis_function):
     return derivatives
 
 class aimless_basis_function(basis_function):
-  '''Subclass of basis_function for xds parameterisation'''
+  '''Subclass of basis_function for aimless parameterisation'''
   def calculate_scale_factors(self):
+    self.data_manager.g_scale.set_scale_factors(self.parameters)
+    return self.data_manager.g_scale.calculate_smooth_scales()
+
+  '''def calculate_scale_factors(self):
     ngscale = self.data_manager.n_g_scale_params
     ngdecay = self.data_manager.n_g_decay_params
     d = self.data_manager.reflections_for_scaling['d']
@@ -58,11 +62,11 @@ class aimless_basis_function(basis_function):
     self.data_manager.reflections_for_scaling['B_factor'] = B_factor
     self.data_manager.reflections_for_scaling['scale_factor'] = scale_factor
     self.data_manager.reflections_for_scaling['absorption_factor'] = absorption_factor
-    return inverse_scale_factors
+    return inverse_scale_factors'''
 
   def calculate_derivatives(self):
-    '''xds target function does not require derivatives, so None returned'''
-    total_derivatives = []
+    return self.data_manager.g_scale.calculate_smooth_derivatives()
+    '''total_derivatives = []
     ngscale = self.data_manager.n_g_scale_params
     ngdecay = self.data_manager.n_g_decay_params
     ngabs = self.data_manager.n_g_abs_params
@@ -85,7 +89,7 @@ class aimless_basis_function(basis_function):
     total_derivatives += (flex.double(np.repeat((self.data_manager.reflections_for_scaling['scale_factor'] 
                                                  * self.data_manager.reflections_for_scaling['B_factor']), 
                                                 ngabs)) * gabs_derivatives)
-    return flex.double(total_derivatives)
+    return flex.double(total_derivatives)'''
 
 class xds_basis_function_log(basis_function):
   '''Subclass of basis_function for xds parameterisation'''
