@@ -96,8 +96,8 @@ class aimless_LBFGS_optimiser(object):
     self.x = self.data_manager.active_parameters
     #self.set_up_parameterisation()
     self.residuals = []
-    core_params = lbfgs.core_parameters(maxfev=15)
-    termination_params = lbfgs.termination_parameters(max_iterations=15)#, traditional_convergence_test_eps=1e2)
+    core_params = lbfgs.core_parameters(maxfev=20)
+    termination_params = lbfgs.termination_parameters(max_iterations=20)#, traditional_convergence_test_eps=1e2)
     lbfgs.run(target_evaluator=self, core_params=core_params, termination_params = termination_params)
 
   def return_data_manager(self):

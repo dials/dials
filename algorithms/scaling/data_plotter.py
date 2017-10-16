@@ -152,6 +152,31 @@ def plot_absorption_correction_at_zbin(data_man, position):
   plt.savefig('Scaling_output_figure_lbfgs_detector.png')
   plt.show()
 
+def plot_smooth_scales(data_man):                                           
+  rel_values = np.arange(0, int(max(data_man.sorted_reflections['normalised_rotation_angle'])) + 1, 0.1)
+  test_scale_factor = dmf.SmoothScaleFactor(1.0, data_man.n_g_scale_params)
+  test_scale_factor.set_scale_factors(data_man.g_scale.get_scale_factors())
+  test_scale_factor.set_normalised_values(rel_values)
+  scales = test_scale_factor.calculate_smooth_scales()
+    
+  plt.subplot(2,1,1)
+  plt.title('Smooth scale factors')
+  plt.plot(rel_values, scales)
+  plt.ylabel('Scale term')
+  plt.xlabel('Normalised rotation angle')
+
+  rel_values = np.arange(0, int(max(data_man.sorted_reflections['normalised_time_values'])) + 1, 0.1)
+  test_decay_factor = dmf.SmoothScaleFactor(0.0, data_man.n_g_decay_params)
+  test_decay_factor.set_scale_factors(data_man.g_decay.get_scale_factors())
+  test_decay_factor.set_normalised_values(rel_values)
+  B_rel_values = test_decay_factor.calculate_smooth_scales()
+  plt.subplot(2,1,2)
+  plt.ylabel('Relative B factor')
+  plt.xlabel('Normalised time value')
+  plt.plot(rel_values, B_rel_values)
+  plt.tight_layout()
+  plt.savefig('Smooth_scale_factors')
+
 if __name__ == "__main__":
   datafile="/Users/whi10850/Documents/dials_scratch/jbe/scaling_code/test_data/x4_wide_integrated_scaled.pickle"
   data_man = load_data(filename = datafile)
@@ -159,6 +184,3 @@ if __name__ == "__main__":
   plot_data_decay(data_man)
   plot_data_absorption(data_man)
   plot_data_modulation(data_man)
-  #plot_absorption_correction_at_zbin(data_man, position=6)
-  #plot_correction_at_resolution(data_man, position=5)
-  #plot_correction_at_detector_area(data_man, position=13)

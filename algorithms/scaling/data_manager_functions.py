@@ -11,6 +11,7 @@ import cPickle as pickle
 from target_function import *
 from basis_functions import *
 from data_quality_assessment import R_meas, R_pim
+import matplotlib.pyplot as plt
 
 class Data_Manager(object):
   '''Data Manager takes a params parsestring containing the parsed
@@ -191,8 +192,9 @@ class aimless_Data_Manager(Data_Manager):
     self.initialise_scale_factors()
     self.reflections_for_scaling = copy.deepcopy(self.sorted_reflections)
     self.extract_reflections_for_scaling(self.sorted_reflections)
-    self.g_scale.set_normalised_values(self.sorted_reflections['normalised_rotation_angle'])
-    self.g_decay.set_normalised_values(self.sorted_reflections['normalised_time_values'])
+    #refactor the next two operations into extrac_reflections?
+    self.g_scale.set_normalised_values(self.reflections_for_scaling['normalised_rotation_angle'])
+    self.g_decay.set_normalised_values(self.reflections_for_scaling['normalised_time_values'])
 
 
   def initialise_scale_factors(self):
@@ -221,9 +223,7 @@ class aimless_Data_Manager(Data_Manager):
     self.sorted_reflections['decay_factor'] = B_factor_values
     self.sorted_reflections['inverse_scale_factor'] = (self.sorted_reflections['angular_scale_factor']
                                                        * self.sorted_reflections['decay_factor'])
-
-
-
+     
   def get_target_function(self):
     '''call the aimless target function method'''
     return target_function(self).return_targets()
@@ -241,18 +241,17 @@ class aimless_Data_Manager(Data_Manager):
 
   def bin_reflections_decay(self):
     '''bin reflections for decay correction'''
-    rotation_interval = 10.0
+    rotation_interval = 15.0
     osc_range = self.experiments.scans()[0].get_oscillation_range()
     one_oscillation_width = self.experiments.scans()[0].get_oscillation()[1]
     (initial_rotation_angle, final_rotation_angle) = (osc_range[0], osc_range[1])
     self.sorted_reflections['normalised_time_values'] = ((self.sorted_reflections['z_value'] 
       * one_oscillation_width) - initial_rotation_angle)/rotation_interval
     #define the highest and lowest gridpoints: go out one further than the max/min int values
-    highest_parameter_value = int((max(self.sorted_reflections['normalised_time_values'])//1)+2)
-    lowest_parameter_value = int((min(self.sorted_reflections['normalised_time_values'])//1)-1)
+    highest_parameter_value = int((max(self.sorted_reflections['normalised_time_values'])//1)+3)#was +2
+    lowest_parameter_value = int((min(self.sorted_reflections['normalised_time_values'])//1)-2)#was -1
     n_decay_parameters =  highest_parameter_value - lowest_parameter_value + 1
     normalised_time_values = range(lowest_parameter_value, (highest_parameter_value+1))
-
     self.g_decay = SmoothScaleFactor(0.0, n_decay_parameters)
     self.g_decay.set_normalised_values(normalised_time_values)
     self.n_active_params += n_decay_parameters
@@ -261,20 +260,17 @@ class aimless_Data_Manager(Data_Manager):
 
   def bin_reflections_scale(self):
     '''calculate the relative '''
-    rotation_interval = 10.0
+    rotation_interval = 15.0
     osc_range = self.experiments.scans()[0].get_oscillation_range()
     one_oscillation_width = self.experiments.scans()[0].get_oscillation()[1]
-    
-    initial_rotation_angle = osc_range[0]
-    final_rotation_angle = osc_range[1]
+    (initial_rotation_angle, final_rotation_angle) = (osc_range[0], osc_range[1])
     self.sorted_reflections['normalised_rotation_angle'] = ((self.sorted_reflections['z_value'] 
       * one_oscillation_width) - initial_rotation_angle)/rotation_interval
     #define the highest and lowest gridpoints: go out one further than the max/min int values
-    highest_parameter_value = int((max(self.sorted_reflections['normalised_rotation_angle'])//1)+2)
-    lowest_parameter_value = int((min(self.sorted_reflections['normalised_rotation_angle'])//1)-1)
+    highest_parameter_value = int((max(self.sorted_reflections['normalised_rotation_angle'])//1)+3)#was +2
+    lowest_parameter_value = int((min(self.sorted_reflections['normalised_rotation_angle'])//1)-2)#was -1
     n_scale_parameters =  highest_parameter_value - lowest_parameter_value + 1
     normalised_rotation_values = range(lowest_parameter_value, (highest_parameter_value+1))
-
     self.g_scale = SmoothScaleFactor(1.0, n_scale_parameters)
     self.g_scale.set_normalised_values(normalised_rotation_values)
     self.n_active_params += n_scale_parameters
@@ -296,8 +292,9 @@ class aimless_Data_Manager(Data_Manager):
     for key in self.reflection_table.keys():
       if not key in self.initial_keys:
         del self.sorted_reflections[key]
-    added_columns = ['Ih_values', 't1_bin_index', 't2_bin_index', 'h_index',
-                     'asu_miller_index', 'res_bin_index']
+    added_columns = ['Ih_values', 'h_index', 'asu_miller_index',
+                     'res_bin_index', 'decay_factor', 'angular_scale_factor',
+                     'normalised_rotation_angle', 'normalised_time_values']
     for key in added_columns:
       del self.sorted_reflections[key]
 
@@ -839,7 +836,7 @@ def select_variables_in_range(variable_array, lower_limit, upper_limit):
 
 
 class ScaleFactor(object):
-  def __init__(self, initial_value, n_parameters):
+  def __init__(self, initial_value, n_parameters, scaling_options=None):
     self.scale_factors = flex.double([initial_value] * n_parameters)
 
   def set_scale_factors(self, scale_factors):
@@ -850,9 +847,14 @@ class ScaleFactor(object):
 
 
 class SmoothScaleFactor(ScaleFactor):
-  def __init__(self, initial_value, n_parameters):
-    ScaleFactor.__init__(self, initial_value, n_parameters)
+  def __init__(self, initial_value, n_parameters, scaling_options=None):
+    ScaleFactor.__init__(self, initial_value, n_parameters, scaling_options)
     self.normalised_values = None
+    self.Vr = 1.2
+    self.problim = 4.0
+    if scaling_options:
+      self.Vr = scaling_options['Vr']
+      self.problim = scaling_options['problim']
 
   def set_normalised_values(self, normalised_values):
     self.normalised_values = normalised_values
@@ -865,29 +867,30 @@ class SmoothScaleFactor(ScaleFactor):
     return self.scales
 
   def calculate_smooth_scales(self):
-    Vr = 1.0
-    problim = 3.0
-    smoothing_window = (Vr*problim)**0.5
+    (Vr, problim) = (self.Vr, self.problim)
+    smoothing_window = 2.5#(Vr*problim)**0.5
+    self.weightsum = flex.double([0.0]*len(self.normalised_values))
     for i, relative_pos in enumerate(self.normalised_values):
       max_scale_to_include = int(relative_pos + smoothing_window)
       min_scale_to_include = int((relative_pos - smoothing_window)//1) + 1
       scale = 0.0
+      weightsum = 0.0
       for j in range(min_scale_to_include, max_scale_to_include + 1):
-        scale += self.scale_factors[j+1] * np.exp(-((relative_pos - float(j))**2) / Vr)
-      self.scales[i] = scale
+        scale += self.scale_factors[j+2] * np.exp(-((relative_pos - float(j))**2) / Vr)
+        weightsum += np.exp(-((relative_pos - float(j))**2) / Vr)
+      self.weightsum[i] = weightsum
+      self.scales[i] = scale/weightsum
     return self.scales
 
   def calculate_smooth_derivatives(self):
     n = len(self.normalised_values)
     self.derivatives = flex.double([0.0] * len(self.scale_factors) * n)
-    Vr = 1.0
-    problim = 3.0
-    smoothing_window = (Vr*problim)**0.5
+    (Vr, problim) = (self.Vr, self.problim)
+    smoothing_window = 2.5#(Vr*problim)**0.5
     for i, relative_pos in enumerate(self.normalised_values):
       max_scale_to_include = int(relative_pos + smoothing_window)
       min_scale_to_include = int((relative_pos - smoothing_window)//1) + 1
       for j in range(min_scale_to_include, max_scale_to_include + 1):
-        self.derivatives[((j+1)*n)+i] += (#self.scale_factors[j+1] * 
-          np.exp(-((relative_pos - float(j))**2) / Vr))
-        
+        self.derivatives[((j+2)*n)+i] += (#self.scale_factors[j+1] * 
+          np.exp(-((relative_pos - float(j))**2) / Vr))/self.weightsum[i]
     return self.derivatives
