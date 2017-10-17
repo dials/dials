@@ -154,7 +154,7 @@ def plot_absorption_correction_at_zbin(data_man, position):
 
 def plot_smooth_scales(data_man):                                           
   rel_values = np.arange(0, int(max(data_man.sorted_reflections['normalised_rotation_angle'])) + 1, 0.1)
-  test_scale_factor = dmf.SmoothScaleFactor(1.0, data_man.n_g_scale_params)
+  test_scale_factor = dmf.SmoothScaleFactor_1D(1.0, data_man.n_g_scale_params)
   test_scale_factor.set_scale_factors(data_man.g_scale.get_scale_factors())
   test_scale_factor.set_normalised_values(rel_values)
   scales = test_scale_factor.calculate_smooth_scales()
@@ -166,7 +166,7 @@ def plot_smooth_scales(data_man):
   plt.xlabel('Normalised rotation angle')
 
   rel_values = np.arange(0, int(max(data_man.sorted_reflections['normalised_time_values'])) + 1, 0.1)
-  test_decay_factor = dmf.SmoothScaleFactor(0.0, data_man.n_g_decay_params)
+  test_decay_factor = dmf.SmoothScaleFactor_1D(0.0, data_man.n_g_decay_params)
   test_decay_factor.set_scale_factors(data_man.g_decay.get_scale_factors())
   test_decay_factor.set_normalised_values(rel_values)
   B_rel_values = test_decay_factor.calculate_smooth_scales()
