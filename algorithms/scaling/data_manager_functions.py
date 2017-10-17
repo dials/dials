@@ -398,23 +398,26 @@ class XDS_Data_Manager(Data_Manager):
     self.n_active_params = None
     self.constant_g_values = None
     self.initialise_scale_factors()
-    self.calculate_intensity_statistics()
+    #self.calculate_intensity_statistics()
     self.reflections_for_scaling = copy.deepcopy(self.sorted_reflections)
     self.extract_reflections_for_scaling(self.sorted_reflections)
     self.calculate_derivatives(self.reflections_for_scaling)
     self.g_parameterisation = {
-      'g_absorption' : {'index': 'a_bin_index', 'parameterisation' : self.g_absorption.get_scale_factors(),
-                        'derivatives': self.g_absorption_derivatives},
+      ''''g_absorption' : {'index': 'a_bin_index', 'parameterisation' : self.g_absorption.get_scale_factors(),
+                        'derivatives': self.g_absorption_derivatives,
+                        'values' : self.g_absorption.get_scales_of_reflections()},'''
       'g_modulation' : {'index': 'xy_bin_index', 'parameterisation' : self.g_modulation.get_scale_factors(),
-                        'derivatives': self.g_modulation_derivatives},
+                        'derivatives': self.g_modulation_derivatives,
+                        'values' : self.g_modulation.get_scales_of_reflections()},
       'g_decay' : {'index': 'l_bin_index', 'parameterisation' : self.g_decay.get_scale_factors(),
-                   'derivatives': self.g_decay_derivatives}}
+                   'derivatives': self.g_decay_derivatives,
+                   'values' : self.g_decay.get_scales_of_reflections()}}
 
 
   def calculate_derivatives(self, reflection_table):
     self.g_decay_derivatives = self.g_decay.calculate_smooth_derivatives()
     self.g_modulation_derivatives = self.g_modulation.calculate_smooth_derivatives()
-    self.g_absorption_derivatives = self.g_absorption.calculate_smooth_derivatives()
+    #self.g_absorption_derivatives = self.g_absorption.calculate_smooth_derivatives()
 
     '''self.g_decay_derivatives = flex.double([0.0] * len(reflection_table['d'])
       * self.binning_parameters['n_d_bins'] * self.binning_parameters['n_z_bins'])
@@ -424,11 +427,12 @@ class XDS_Data_Manager(Data_Manager):
     self.g_modulation_derivatives = flex.double([0.0] * len(reflection_table['d'])
       * (self.binning_parameters['n_detector_bins']**2))
     for i, l in enumerate(reflection_table['xy_bin_index']):
-      self.g_modulation_derivatives[(l*num)+i] = 1.0
+      self.g_modulation_derivatives[(l*num)+i] = 1.0'''
+    num = len(reflection_table['d'])
     self.g_absorption_derivatives = flex.double([0.0] * len(reflection_table['d'])
       * self.n_absorption_bins * self.binning_parameters['n_z_bins'])
     for i, a in enumerate(reflection_table['a_bin_index']):
-      self.g_absorption_derivatives[(a*num)+i] = 1.0'''
+      self.g_absorption_derivatives[(a*num)+i] = 1.0
 
   def initialise_scale_factors(self):
     self.bin_reflections_decay()
@@ -459,18 +463,20 @@ class XDS_Data_Manager(Data_Manager):
     self.calc_Ih(self.reflections_for_scaling)
 
   def calculate_scale_factors(self):
-    gscalevalues = flex.double([self.g_modulation.get_scale_factors()[i] for i in
+    gscalevalues = self.g_modulation.get_scales_of_reflections()
+    gdecayvalues = self.g_decay.get_scales_of_reflections()
+    '''flex.double([self.g_modulation.get_scale_factors()[i] for i in
       self.sorted_reflections['xy_bin_index']])
     gdecayvalues = flex.double([self.g_decay.get_scale_factors()[i] for i in
       self.sorted_reflections['l_bin_index']])
     gabsorptionvalues = flex.double([self.g_absorption.get_scale_factors()[i] for i in
-      self.sorted_reflections['a_bin_index']])
+      self.sorted_reflections['a_bin_index']])'''
     if self.scaling_options['parameterization'] == 'log':
       self.sorted_reflections['inverse_scale_factor'] = flex.double(
-        np.exp(gscalevalues + gdecayvalues + gabsorptionvalues))
+        np.exp(gscalevalues + gdecayvalues))# + gabsorptionvalues))
     else:
-      self.sorted_reflections['inverse_scale_factor'] = (gscalevalues * gdecayvalues
-                                                         * gabsorptionvalues)
+      self.sorted_reflections['inverse_scale_factor'] = (gscalevalues * gdecayvalues)
+    #                                                     * gabsorptionvalues)
 
   def bin_reflections_decay(self):
     '''bin reflections for decay correction'''
@@ -560,33 +566,27 @@ class XDS_Data_Manager(Data_Manager):
     (xmax, xmin) = (max(xvalues), min(xvalues))
     yvalues = self.sorted_reflections['y_value']
     (ymax, ymin) = (max(yvalues), min(yvalues))
-    x_bins = (((flex.double(range(0, nxbins + 1)) * (xmax - xmin) / (nxbins)))
-              + flex.double([xmin] * (nxbins + 1)))
-    x_bins[0] = x_bins[0] - 0.001
-    y_bins = ((flex.double(range(0, nybins + 1)) * (ymax - ymin) /(nybins))
-              + flex.double([ymin] * (nybins + 1)))
-    y_bins[0] = y_bins[0] - 0.001
-    firstbin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
-    secondbin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
-    for i in range(nxbins):
-      selection = select_variables_in_range(self.sorted_reflections['x_value'],
-                                            x_bins[i], x_bins[i+1])
-      firstbin_index.set_selected(selection, i)
-    for i in range(nybins):
-      selection = select_variables_in_range(self.sorted_reflections['y_value'],
-                                            y_bins[i], y_bins[i+1])
-      secondbin_index.set_selected(selection, i)
-    if firstbin_index.count(-1) > 0 or secondbin_index.count(-1) > 0:
-      raise ValueError('Unable to bin data for modulation in scaling initialisation')
-    self.sorted_reflections['xy_bin_index'] = (firstbin_index
-                                               + (secondbin_index * nxbins))
+
+    one_x_width = (xmax - xmin) / float(nxbins)
+    one_y_width = (ymax - ymin) / float(nybins)
+
+    self.sorted_reflections['normalised_x_values'] = ((xvalues - xmin) / one_x_width)
+    self.sorted_reflections['normalised_y_values'] = ((yvalues - ymin) / one_y_width)
+    #define the highest and lowest gridpoints: go out one further than the max/min int values
+    highest_x_parameter_value = int((max(self.sorted_reflections['normalised_x_values'])//1)+2)
+    lowest_x_parameter_value = int((min(self.sorted_reflections['normalised_x_values'])//1)-1)
+    n_x_parameters =  highest_x_parameter_value - lowest_x_parameter_value + 1
+    highest_y_parameter_value = int((max(self.sorted_reflections['normalised_y_values'])//1)+2)
+    lowest_y_parameter_value = int((min(self.sorted_reflections['normalised_y_values'])//1)-1)
+    n_y_parameters =  highest_y_parameter_value - lowest_y_parameter_value + 1
+
     if self.scaling_options['parameterization'] == 'log':
       #self.g_modulation = flex.double([0.0] * (nxbins ** 2))
-      self.g_modulation = SmoothScaleFactor_2D(0.0, nxbins, nxbins)
+      self.g_modulation = SmoothScaleFactor_2D(0.0, n_x_parameters, n_y_parameters)
     else:
       #self.g_modulation = flex.double([1.0] * (nxbins ** 2))
-      self.g_modulation = SmoothScaleFactor_2D(1.0, nxbins, nxbins)
-    self.g_modulation.set_normalised_values(firstbin_index, secondbin_index)
+      self.g_modulation = SmoothScaleFactor_2D(1.0, n_x_parameters, n_y_parameters)
+    self.g_modulation.set_normalised_values(self.sorted_reflections['normalised_x_values'], self.sorted_reflections['normalised_y_values'])
 
   def bin_reflections_absorption(self):
     '''bin reflections for absorption correction'''
@@ -594,6 +594,29 @@ class XDS_Data_Manager(Data_Manager):
     nzbins = self.binning_parameters['n_z_bins']
     '''Bin the data into detector position and time 'z' bins'''
     z_bins = self.bin_boundaries['z_value']
+
+
+
+    one_xy_width = (xmax - xmin) / float(nxbins)
+    one_z_width = (ymax - ymin) / float(nybins)
+
+    self.sorted_reflections['normalised_x_values'] = ((xvalues - xmin) / one_x_width)
+    self.sorted_reflections['normalised_y_values'] = ((yvalues - ymin) / one_y_width)
+    #define the highest and lowest gridpoints: go out one further than the max/min int values
+    highest_x_parameter_value = int((max(self.sorted_reflections['normalised_x_values'])//1)+2)
+    lowest_x_parameter_value = int((min(self.sorted_reflections['normalised_x_values'])//1)-1)
+    n_x_parameters =  highest_x_parameter_value - lowest_x_parameter_value + 1
+    highest_y_parameter_value = int((max(self.sorted_reflections['normalised_y_values'])//1)+2)
+    lowest_y_parameter_value = int((min(self.sorted_reflections['normalised_y_values'])//1)-1)
+    n_y_parameters =  highest_y_parameter_value - lowest_y_parameter_value + 1
+
+
+
+
+
+
+
+
     #define simple detector area map#
     xvalues = self.sorted_reflections['x_value']
     (xmax, xmin) = (max(xvalues), min(xvalues))
@@ -854,7 +877,7 @@ class SmoothScaleFactor_2D(SmoothScaleFactor):
 
   def calculate_smooth_scales(self):
     (Vr, problim) = (self.Vr, self.problim)
-    smoothing_window = 1.05#(Vr*problim)**0.5
+    smoothing_window = 1.5#(Vr*problim)**0.5
     self.weightsum = flex.double([0.0]*len(self.normalised_values[0]))
     for i, relative_pos_1 in enumerate(self.normalised_values[0]):
       relative_pos_2 = self.normalised_values[1][i]
@@ -881,19 +904,19 @@ class SmoothScaleFactor_2D(SmoothScaleFactor):
     n = len(self.get_normalised_values()[0])
     self.derivatives = flex.double([0.0] * len(self.scale_factors) * n)
     (Vr, problim) = (self.Vr, self.problim)
-    smoothing_window = 1.05#(Vr*problim)**0.5
+    smoothing_window = 1.5#(Vr*problim)**0.5
     for i, relative_pos_1 in enumerate(self.normalised_values[0]):
       relative_pos_2 = self.normalised_values[1][i]
       max_range_1_to_include = int(relative_pos_1 + smoothing_window)
       max_range_2_to_include = int(relative_pos_2 + smoothing_window)
       min_range_2_to_include = int((relative_pos_2 - smoothing_window)//1) + 1
       min_range_1_to_include = int((relative_pos_1 - smoothing_window)//1) + 1
-    for j in range(min_range_1_to_include, max_range_1_to_include + 1):
-        for k in range(min_range_2_to_include, max_range_2_to_include + 1):
-          square_distance_to_point = ((float(k) - relative_pos_2)**2 + (float(j) - relative_pos_1)**2)
-          if square_distance_to_point < (smoothing_window**2) :
-            self.derivatives[(((j+1) + ((k+1)*self.n2_parameters))*n) + i] += (
-              np.exp(- square_distance_to_point / Vr))/self.weightsum[i]
+      for j in range(min_range_1_to_include, max_range_1_to_include + 1):
+          for k in range(min_range_2_to_include, max_range_2_to_include + 1):
+            square_distance_to_point = ((float(k) - relative_pos_2)**2 + (float(j) - relative_pos_1)**2)
+            if square_distance_to_point < (smoothing_window**2) :
+              self.derivatives[(((j+1) + ((k+1)*self.n2_parameters))*n) + i] += (
+                np.exp(- square_distance_to_point / Vr))/self.weightsum[i]
     return self.derivatives
 
 

@@ -19,12 +19,16 @@ def load_data(filename):
 
 def plot_data_decay(data_man):
   "takes in a data manager object"
-  y_ticks = data_man.bin_boundaries['d'][::2]
+
+  ndbins = data_man.g_decay.n1_parameters
+  nzbins = data_man.g_decay.n2_parameters
+
+  '''y_ticks = data_man.bin_boundaries['d'][::2]
   y_ticks = ['%.2f' % x for x in y_ticks]
   x_ticks = data_man.bin_boundaries['z_value'][::2]
   x_ticks = ['%.0f' % x for x in x_ticks]
   ndbins = len(data_man.bin_boundaries['d'])-1
-  nzbins = len(data_man.bin_boundaries['z_value'])-1
+  nzbins = len(data_man.bin_boundaries['z_value'])-1'''
   '''generate a plot of the result'''
   G_fin = list(data_man.g_decay.get_scale_factors())
   G_fin_2d = np.reshape(G_fin, (nzbins, ndbins)).T
@@ -44,10 +48,10 @@ def plot_data_decay(data_man):
   cbar = plt.colorbar(im, cax=cax1)
   ax1.set_ylabel('d-value')
   ax1.set_xlabel('time (z)')
-  ax1.set_yticks(np.arange(-0.5, ndbins, 2))
-  ax1.set_yticklabels(y_ticks)
-  ax1.set_xticks(np.arange(-0.5, nzbins, 2))
-  ax1.set_xticklabels(x_ticks)
+  #ax1.set_yticks(np.arange(-0.5, ndbins, 2))
+  #ax1.set_yticklabels(y_ticks)
+  #ax1.set_xticks(np.arange(-0.5, nzbins, 2))
+  #ax1.set_xticklabels(x_ticks)
   ax1.set_title('Inverse scale factors for decay correction', fontsize=12)
   plt.tight_layout()
   plt.savefig('g_resolution.png')
@@ -87,10 +91,10 @@ def plot_data_absorption(data_man):
 
 def plot_data_modulation(data_man):
   "takes in a data manager object"
-  x_ticks = data_man.bin_boundaries['z_value'][::2]
-  x_ticks = ['%.0f' % x for x in x_ticks]
-  nbins = data_man.binning_parameters['n_detector_bins']
-  
+  #x_ticks = data_man.bin_boundaries['z_value'][::2]
+  #x_ticks = ['%.0f' % x for x in x_ticks]
+  #nbins = data_man.binning_parameters['n_detector_bins']
+  nbins = data_man.g_modulation.n1_parameters
   '''generate a plot of the result'''
   G_fin = list(data_man.g_modulation.get_scale_factors())
   G_fin_2d = np.reshape(G_fin, (nbins, nbins))

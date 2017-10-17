@@ -29,13 +29,17 @@ class basis_function(object):
 class xds_basis_function(basis_function):
   '''Subclass of basis_function for xds parameterisation'''
   def calculate_scale_factors(self):
-    gxvalues = flex.double([self.parameters[i] for i in
-           self.data_manager.reflections_for_scaling[self.data_manager.active_bin_index]])
+    ##just do it for the case of g_decay for now
+    self.data_manager.g_decay.set_scale_factors(self.parameters)
+    gxvalues = self.data_manager.g_decay.calculate_smooth_scales()
+    '''gxvalues = flex.double([self.parameters[i] for i in
+           self.data_manager.reflections_for_scaling[self.data_manager.active_bin_index]])'''
     scale_factors = gxvalues * self.data_manager.constant_g_values
     return scale_factors
 
   def calculate_derivatives(self):
     '''Derivatives are fixed by the parameterisation'''
+    #derivatives = self.data_manager.g_decay.calculate_smooth_derivatives()
     derivatives = self.data_manager.g_parameterisation[
       self.data_manager.active_parameterisation]['derivatives']
     return derivatives
