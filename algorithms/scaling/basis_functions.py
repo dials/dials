@@ -29,19 +29,16 @@ class basis_function(object):
 class xds_basis_function(basis_function):
   '''Subclass of basis_function for xds parameterisation'''
   def calculate_scale_factors(self):
-    ##just do it for the case of g_decay for now
-    self.data_manager.g_decay.set_scale_factors(self.parameters)
-    gxvalues = self.data_manager.g_decay.calculate_smooth_scales()
-    '''gxvalues = flex.double([self.parameters[i] for i in
-           self.data_manager.reflections_for_scaling[self.data_manager.active_bin_index]])'''
+    SF_object = self.data_manager.g_parameterisation[self.data_manager.active_parameterisation]['object']
+    SF_object.set_scale_factors(self.parameters)
+    gxvalues = SF_object.calculate_smooth_scales()
     scale_factors = gxvalues * self.data_manager.constant_g_values
     return scale_factors
 
   def calculate_derivatives(self):
     '''Derivatives are fixed by the parameterisation'''
-    #derivatives = self.data_manager.g_decay.calculate_smooth_derivatives()
     derivatives = self.data_manager.g_parameterisation[
-      self.data_manager.active_parameterisation]['derivatives']
+      self.data_manager.active_parameterisation]['object'].calculate_smooth_derivatives()
     return derivatives
 
 class aimless_basis_function(basis_function):
@@ -81,7 +78,6 @@ class xds_basis_function_log(basis_function):
     gxvalues = flex.double([self.parameters[i] for i in
            self.data_manager.reflections_for_scaling[self.data_manager.active_bin_index]])
     scale_factors = gxvalues + self.data_manager.constant_g_values
-    #print list(scale_factors)[100:120]
     return flex.double(np.exp(scale_factors))
 
   def calculate_derivatives(self):

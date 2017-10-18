@@ -59,7 +59,6 @@ class xds_target_function_log(target_function):
     intensities = self.data_manager.reflections_for_scaling['intensity']
     variances = self.data_manager.reflections_for_scaling['variance']
     scale_factors = self.data_manager.reflections_for_scaling['inverse_scale_factor']
-    # list(scale_factors)[100:120]
     Ih_values = self.data_manager.reflections_for_scaling['Ih_values']
     scaleweights = self.data_manager.weights_for_scaling.get_weights()
     gsq = ((scale_factors)**2) *scaleweights
@@ -68,9 +67,7 @@ class xds_target_function_log(target_function):
 
     rhl = intensities - (Ih_values * scale_factors)
     num = len(intensities)
-
-    dIh = ((scale_factors * intensities) - (Ih_values * 2.0 * scale_factors)) * scaleweights#/ (variances * sumgsq)
-
+    dIh = ((scale_factors * intensities) - (Ih_values * 2.0 * scale_factors)) * scaleweights
     for i in range(self.data_manager.n_active_params):
       dIh_g = (dIh * self.data_manager.active_derivatives[i*num:(i+1)*num])
       dIh_g = np.add.reduceat(dIh_g, self.data_manager.h_index_cumulative_array[:-1])/sumgsq

@@ -25,11 +25,6 @@ class Data_Manager(object):
     self.reflection_table['x_value'] = self.reflection_table['xyzobs.px.value'].parts()[0]
     self.reflection_table['y_value'] = self.reflection_table['xyzobs.px.value'].parts()[1]
     self.reflection_table['z_value'] = self.reflection_table['xyzobs.px.value'].parts()[2]
-    '''print "There were %s reflections"  % len(self.reflection_table)
-    z_max = max(self.reflection_table['z_value'])
-    sel = self.reflection_table['z_value'] < z_max / 8.0
-    self.reflection_table = self.reflection_table.select(sel)
-    print "There are now %s reflections"  % len(self.reflection_table)'''
     self.reflection_table['inverse_scale_factor'] = flex.double([1.0] * len(self.reflection_table))
     self.reflection_table['Ih_values'] = flex.double([0.0] * len(self.reflection_table))
     self.reflection_table['wilson_outlier_flag'] = flex.bool([False] * len(self.reflection_table))
@@ -60,7 +55,6 @@ class Data_Manager(object):
     self.weights_for_scaling.apply_dmin_cutoff(reflection_table,
                                                self.scaling_options['d_min'])
     self.weights_for_scaling.remove_wilson_outliers(reflection_table)
-    #self.weights_for_scaling.remove_high_Isigma(reflection_table)
 
   def filter_and_sort_reflections(self):
     self.filtered_reflections = copy.deepcopy(self.reflection_table)
@@ -224,7 +218,6 @@ class Data_Manager(object):
     print "found %s outliers from analysis of Wilson statistics" % (counter)
 
 
-
 class aimless_Data_Manager(Data_Manager):
   '''Data Manager subclass for implementing XDS parameterisation'''
   def __init__(self, reflections, experiments, scaling_options):
@@ -249,7 +242,7 @@ class aimless_Data_Manager(Data_Manager):
     self.calculate_intensity_statistics()
     self.reflections_for_scaling = copy.deepcopy(self.sorted_reflections)
     self.extract_reflections_for_scaling(self.sorted_reflections)
-    #refactor the next two operations into extrac_reflections?
+    #refactor the next two operations into extract_reflections?
     self.g_scale.set_normalised_values(self.reflections_for_scaling['normalised_rotation_angle'])
     self.g_decay.set_normalised_values(self.reflections_for_scaling['normalised_time_values'])
 
@@ -265,13 +258,11 @@ class aimless_Data_Manager(Data_Manager):
 
   def calculate_scale_factors(self):
     scale_factors = self.g_scale.get_scale_factors()
-    #print list(scale_factors)
     sorted_refl_scale_factor = SmoothScaleFactor_1D(1.0, self.n_g_scale_params)
     sorted_refl_scale_factor.set_scale_factors(scale_factors)
     sorted_refl_scale_factor.set_normalised_values(self.sorted_reflections['normalised_rotation_angle'])
     self.sorted_reflections['angular_scale_factor'] = sorted_refl_scale_factor.calculate_smooth_scales()
     b_factors = self.g_decay.get_scale_factors()
-    #print list(b_factors)
     sorted_refl_decay_factor = SmoothScaleFactor_1D(0.0, self.n_g_decay_params)
     sorted_refl_decay_factor.set_scale_factors(b_factors)
     sorted_refl_decay_factor.set_normalised_values(self.sorted_reflections['normalised_time_values'])
@@ -320,14 +311,14 @@ class aimless_Data_Manager(Data_Manager):
     rotation_interval = 15.0
     osc_range = self.experiments.scans()[0].get_oscillation_range()
     one_oscillation_width = self.experiments.scans()[0].get_oscillation()[1]
-    (initial_rotation_angle, final_rotation_angle) = (osc_range[0], osc_range[1])
+    #extend range by 0.001 to make sure all datapoints are within the min/max range
+    (initial_rotation_angle, final_rotation_angle) = (osc_range[0] - 0.001, osc_range[1] + 0.001)
     self.sorted_reflections['normalised_time_values'] = ((self.sorted_reflections['z_value'] 
       * one_oscillation_width) - initial_rotation_angle)/rotation_interval
     #define the highest and lowest gridpoints: go out one further than the max/min int values
     highest_parameter_value = int((max(self.sorted_reflections['normalised_time_values'])//1)+3)#was +2
     lowest_parameter_value = int((min(self.sorted_reflections['normalised_time_values'])//1)-2)#was -1
     n_decay_parameters =  highest_parameter_value - lowest_parameter_value + 1
-    #normalised_time_values = range(lowest_parameter_value, (highest_parameter_value+1))
     self.g_decay = SmoothScaleFactor_1D(0.0, n_decay_parameters)
     #self.g_decay.set_normalised_values(normalised_time_values)
     self.n_active_params += n_decay_parameters
@@ -338,7 +329,8 @@ class aimless_Data_Manager(Data_Manager):
     rotation_interval = 15.0
     osc_range = self.experiments.scans()[0].get_oscillation_range()
     one_oscillation_width = self.experiments.scans()[0].get_oscillation()[1]
-    (initial_rotation_angle, final_rotation_angle) = (osc_range[0], osc_range[1])
+    #extend range by 0.001 to make sure all datapoints are within the min/max range
+    (initial_rotation_angle, final_rotation_angle) = (osc_range[0] - 0.001, osc_range[1] + 0.001)
     self.sorted_reflections['normalised_rotation_angle'] = ((self.sorted_reflections['z_value'] 
       * one_oscillation_width) - initial_rotation_angle)/rotation_interval
     #define the highest and lowest gridpoints: go out one further than the max/min int values
@@ -398,48 +390,41 @@ class XDS_Data_Manager(Data_Manager):
     self.n_active_params = None
     self.constant_g_values = None
     self.initialise_scale_factors()
-    #self.calculate_intensity_statistics()
+    self.calculate_intensity_statistics()
     self.reflections_for_scaling = copy.deepcopy(self.sorted_reflections)
     self.extract_reflections_for_scaling(self.sorted_reflections)
-    self.calculate_derivatives(self.reflections_for_scaling)
+    self.g_modulation.set_normalised_values(self.reflections_for_scaling['normalised_x_values'],
+      self.reflections_for_scaling['normalised_y_values'])
+    self.g_decay.set_normalised_values(self.reflections_for_scaling['normalised_res_values'],
+      self.reflections_for_scaling['normalised_time_values'])
+    self.g_absorption.set_normalised_values(self.reflections_for_scaling['normalised_x_abs_values'],
+      self.reflections_for_scaling['normalised_y_abs_values'], 
+      self.reflections_for_scaling['normalised_time_values'])
+    self.calculate_derivatives(self.reflections_for_scaling)  
     self.g_parameterisation = {
-      ''''g_absorption' : {'index': 'a_bin_index', 'parameterisation' : self.g_absorption.get_scale_factors(),
-                        'derivatives': self.g_absorption_derivatives,
-                        'values' : self.g_absorption.get_scales_of_reflections()},'''
+      'g_absorption' : {'index': 'a_bin_index', 'parameterisation' : self.g_absorption.get_scale_factors(),
+                        'derivatives': self.g_absorption.calculate_smooth_derivatives(),
+                        'values' : self.g_absorption.get_scales_of_reflections(),
+                        'object' : self.g_absorption},
       'g_modulation' : {'index': 'xy_bin_index', 'parameterisation' : self.g_modulation.get_scale_factors(),
-                        'derivatives': self.g_modulation_derivatives,
-                        'values' : self.g_modulation.get_scales_of_reflections()},
+                        'derivatives': self.g_modulation.calculate_smooth_derivatives(),
+                        'values' : self.g_modulation.get_scales_of_reflections(),
+                        'object' : self.g_modulation},
       'g_decay' : {'index': 'l_bin_index', 'parameterisation' : self.g_decay.get_scale_factors(),
-                   'derivatives': self.g_decay_derivatives,
-                   'values' : self.g_decay.get_scales_of_reflections()}}
+                   'derivatives': self.g_decay.calculate_smooth_derivatives(),
+                   'values' : self.g_decay.get_scales_of_reflections(),
+                   'object' : self.g_decay}}
 
 
   def calculate_derivatives(self, reflection_table):
     self.g_decay_derivatives = self.g_decay.calculate_smooth_derivatives()
     self.g_modulation_derivatives = self.g_modulation.calculate_smooth_derivatives()
-    #self.g_absorption_derivatives = self.g_absorption.calculate_smooth_derivatives()
-
-    '''self.g_decay_derivatives = flex.double([0.0] * len(reflection_table['d'])
-      * self.binning_parameters['n_d_bins'] * self.binning_parameters['n_z_bins'])
-    num = len(reflection_table['d'])
-    for i, l in enumerate(reflection_table['l_bin_index']):
-      self.g_decay_derivatives[(l*num)+i] = 1.0
-    self.g_modulation_derivatives = flex.double([0.0] * len(reflection_table['d'])
-      * (self.binning_parameters['n_detector_bins']**2))
-    for i, l in enumerate(reflection_table['xy_bin_index']):
-      self.g_modulation_derivatives[(l*num)+i] = 1.0'''
-    num = len(reflection_table['d'])
-    self.g_absorption_derivatives = flex.double([0.0] * len(reflection_table['d'])
-      * self.n_absorption_bins * self.binning_parameters['n_z_bins'])
-    for i, a in enumerate(reflection_table['a_bin_index']):
-      self.g_absorption_derivatives[(a*num)+i] = 1.0
+    self.g_absorption_derivatives = self.g_absorption.calculate_smooth_derivatives()
 
   def initialise_scale_factors(self):
     self.bin_reflections_decay()
-    self.bin_reflections_absorption_radially()
+    self.bin_reflections_absorption()
     self.bin_reflections_modulation()
-
-  
 
   def get_target_function(self):
     '''call the xds target function method'''
@@ -463,31 +448,52 @@ class XDS_Data_Manager(Data_Manager):
     self.calc_Ih(self.reflections_for_scaling)
 
   def calculate_scale_factors(self):
-    gscalevalues = self.g_modulation.get_scales_of_reflections()
-    gdecayvalues = self.g_decay.get_scales_of_reflections()
-    '''flex.double([self.g_modulation.get_scale_factors()[i] for i in
-      self.sorted_reflections['xy_bin_index']])
-    gdecayvalues = flex.double([self.g_decay.get_scale_factors()[i] for i in
-      self.sorted_reflections['l_bin_index']])
-    gabsorptionvalues = flex.double([self.g_absorption.get_scale_factors()[i] for i in
-      self.sorted_reflections['a_bin_index']])'''
+    modulation_factors = self.g_modulation.get_scale_factors()
+    #print list(scale_factors)
+    sorted_refl_mod_factor = SmoothScaleFactor_2D(1.0, 
+      self.g_modulation.n1_parameters, self.g_modulation.n2_parameters)
+    sorted_refl_mod_factor.set_scale_factors(modulation_factors)
+    sorted_refl_mod_factor.set_normalised_values(self.sorted_reflections['normalised_x_values'],
+      self.sorted_reflections['normalised_y_values'])
+    gscalevalues = sorted_refl_mod_factor.calculate_smooth_scales()
+
+    decay_factors = self.g_decay.get_scale_factors()
+    #print list(scale_factors)
+    sorted_refl_decay_factor = SmoothScaleFactor_2D(1.0, 
+      self.g_decay.n1_parameters, self.g_decay.n2_parameters)
+    sorted_refl_decay_factor.set_scale_factors(decay_factors)
+    sorted_refl_decay_factor.set_normalised_values(self.sorted_reflections['normalised_res_values'],
+      self.sorted_reflections['normalised_time_values'])
+    gdecayvalues = sorted_refl_decay_factor.calculate_smooth_scales()
+
+    abs_factors = self.g_absorption.get_scale_factors()
+    #print list(scale_factors)
+    sorted_refl_abs_factor = SmoothScaleFactor_GridAbsorption(1.0, 
+      self.g_absorption.nx_parameters, self.g_absorption.ny_parameters, 
+      self.g_absorption.ntime_parameters)
+    sorted_refl_abs_factor.set_scale_factors(abs_factors)
+    sorted_refl_abs_factor.set_normalised_values(self.sorted_reflections['normalised_x_abs_values'],
+      self.sorted_reflections['normalised_y_abs_values'], 
+      self.sorted_reflections['normalised_time_values'])
+    gabsvalues = sorted_refl_abs_factor.calculate_smooth_scales()
+
     if self.scaling_options['parameterization'] == 'log':
       self.sorted_reflections['inverse_scale_factor'] = flex.double(
-        np.exp(gscalevalues + gdecayvalues))# + gabsorptionvalues))
+        np.exp(gscalevalues + gdecayvalues + gabsvalues))
     else:
-      self.sorted_reflections['inverse_scale_factor'] = (gscalevalues * gdecayvalues)
-    #                                                     * gabsorptionvalues)
+      self.sorted_reflections['inverse_scale_factor'] = (gscalevalues * gdecayvalues
+                                                         * gabsvalues)
 
   def bin_reflections_decay(self):
     '''bin reflections for decay correction'''
     ndbins = self.binning_parameters['n_d_bins']
     nzbins = self.binning_parameters['n_z_bins']
     '''Bin the data into resolution and time 'z' bins'''
-    zmax = max(self.filtered_reflections['z_value'])
-    zmin = min(self.filtered_reflections['z_value'])
+    zmax = max(self.filtered_reflections['z_value']) + 0.001
+    zmin = min(self.filtered_reflections['z_value']) - 0.001
 
-    resmax = (1.0 / (min(self.filtered_reflections['d'])**2))
-    resmin = (1.0 / (max(self.filtered_reflections['d'])**2))
+    resmax = (1.0 / (min(self.filtered_reflections['d'])**2)) + 0.001
+    resmin = (1.0 / (max(self.filtered_reflections['d'])**2)) - 0.001
 
     one_resbin_width = (resmax - resmin) / ndbins
     one_time_width = (zmax - zmin) / nzbins
@@ -536,36 +542,14 @@ class XDS_Data_Manager(Data_Manager):
       firstbin_index.set_selected(selection, i)
     self.sorted_reflections['res_bin_index'] = firstbin_index
 
-    '''firstbin_index = flex.int([-1] * len(self.sorted_reflections['d']))
-    secondbin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
-    for i in range(ndbins):
-      selection = select_variables_in_range(
-        self.sorted_reflections['d'], d_bins[i], d_bins[i+1])
-      firstbin_index.set_selected(selection, i)
-    for i in range(nzbins):
-      selection = select_variables_in_range(
-        self.sorted_reflections['z_value'], z_bins[i], z_bins[i+1])
-      secondbin_index.set_selected(selection, i)
-    if firstbin_index.count(-1) > 0 or secondbin_index.count(-1) > 0:
-      raise ValueError('Unable to bin data for decay in scaling initialisation')
-    self.sorted_reflections['l_bin_index'] = (firstbin_index
-                                              + (secondbin_index * ndbins))
-    self.sorted_reflections['res_bin_index'] = firstbin_index
-    self.bin_boundaries = {'d' : d_bins, 'z_value' : z_bins}
-    if self.scaling_options['parameterization'] == 'log':
-      #self.g_decay = flex.double([0.0] * (ndbins * nzbins))
-      self.g_decay = ScaleFactor(0.0, (ndbins * nzbins))
-    else:
-      #self.g_decay = flex.double([1.0] * (ndbins * nzbins))
-      self.g_decay = ScaleFactor(1.0, (ndbins * nzbins))'''
 
   def bin_reflections_modulation(self):
     '''bin reflections for modulation correction'''
     nxbins = nybins = self.binning_parameters['n_detector_bins']
     xvalues = self.sorted_reflections['x_value']
-    (xmax, xmin) = (max(xvalues), min(xvalues))
+    (xmax, xmin) = (max(xvalues) + 0.001, min(xvalues) - 0.001)
     yvalues = self.sorted_reflections['y_value']
-    (ymax, ymin) = (max(yvalues), min(yvalues))
+    (ymax, ymin) = (max(yvalues) + 0.001, min(yvalues) - 0.001)
 
     one_x_width = (xmax - xmin) / float(nxbins)
     one_y_width = (ymax - ymin) / float(nybins)
@@ -586,73 +570,41 @@ class XDS_Data_Manager(Data_Manager):
     else:
       #self.g_modulation = flex.double([1.0] * (nxbins ** 2))
       self.g_modulation = SmoothScaleFactor_2D(1.0, n_x_parameters, n_y_parameters)
-    self.g_modulation.set_normalised_values(self.sorted_reflections['normalised_x_values'], self.sorted_reflections['normalised_y_values'])
+    self.g_modulation.set_normalised_values(self.sorted_reflections['normalised_x_values'], 
+      self.sorted_reflections['normalised_y_values'])
 
   def bin_reflections_absorption(self):
     '''bin reflections for absorption correction'''
-    nxbins = nybins = self.binning_parameters['n_absorption_positions']
+    nxbins = nybins = 4.0#self.binning_parameters['n_absorption_positions']
     nzbins = self.binning_parameters['n_z_bins']
-    '''Bin the data into detector position and time 'z' bins'''
-    z_bins = self.bin_boundaries['z_value']
 
+    xvalues = self.sorted_reflections['x_value']
+    (xmax, xmin) = (max(xvalues) + 0.001, min(xvalues) - 0.001)
+    yvalues = self.sorted_reflections['y_value']
+    (ymax, ymin) = (max(yvalues) + 0.001, min(yvalues) - 0.001)
 
+    one_x_width = (xmax - xmin) / float(nxbins)
+    one_y_width = (ymax - ymin) / float(nybins)
 
-    one_xy_width = (xmax - xmin) / float(nxbins)
-    one_z_width = (ymax - ymin) / float(nybins)
-
-    self.sorted_reflections['normalised_x_values'] = ((xvalues - xmin) / one_x_width)
-    self.sorted_reflections['normalised_y_values'] = ((yvalues - ymin) / one_y_width)
+    self.sorted_reflections['normalised_x_abs_values'] = ((xvalues - xmin) / one_x_width)
+    self.sorted_reflections['normalised_y_abs_values'] = ((yvalues - ymin) / one_y_width)
     #define the highest and lowest gridpoints: go out one further than the max/min int values
-    highest_x_parameter_value = int((max(self.sorted_reflections['normalised_x_values'])//1)+2)
-    lowest_x_parameter_value = int((min(self.sorted_reflections['normalised_x_values'])//1)-1)
+    highest_x_parameter_value = int((max(self.sorted_reflections['normalised_x_abs_values'])//1)+1)
+    lowest_x_parameter_value = int((min(self.sorted_reflections['normalised_x_abs_values'])//1))
     n_x_parameters =  highest_x_parameter_value - lowest_x_parameter_value + 1
-    highest_y_parameter_value = int((max(self.sorted_reflections['normalised_y_values'])//1)+2)
-    lowest_y_parameter_value = int((min(self.sorted_reflections['normalised_y_values'])//1)-1)
+    highest_y_parameter_value = int((max(self.sorted_reflections['normalised_y_abs_values'])//1)+1)
+    lowest_y_parameter_value = int((min(self.sorted_reflections['normalised_y_abs_values'])//1))
     n_y_parameters =  highest_y_parameter_value - lowest_y_parameter_value + 1
 
+    n_time_bins = int((max(self.sorted_reflections['normalised_time_values'])//1)+1)
 
-
-
-
-
-
-
-    #define simple detector area map#
-    xvalues = self.sorted_reflections['x_value']
-    (xmax, xmin) = (max(xvalues), min(xvalues))
-    yvalues = self.sorted_reflections['y_value']
-    (ymax, ymin) = (max(yvalues), min(yvalues))
-    x_bins = ((flex.double(range(0, nxbins + 1)) * (xmax - xmin) / (nxbins))
-              + flex.double([xmin] * (nxbins + 1)))
-    x_bins[0] = x_bins[0]-0.001
-    y_bins = ((flex.double(range(0, nybins + 1)) * (ymax - ymin) / (nybins))
-              + flex.double([ymin] * (nybins + 1)))
-    y_bins[0] = y_bins[0]-0.001
-    firstbin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
-    secondbin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
-    for i in range(nxbins):
-      selection1 = select_variables_in_range(self.sorted_reflections['x_value'],
-                                             x_bins[i], x_bins[i+1])
-      for j in range(nybins):
-        selection2 = select_variables_in_range(self.sorted_reflections['y_value'],
-                                               y_bins[j], y_bins[j+1])
-        firstbin_index.set_selected(selection1 & selection2,
-                                    ((i * nybins) + j))
-    for i in range(nzbins):
-      selection = select_variables_in_range(self.sorted_reflections['z_value'],
-                                            z_bins[i], z_bins[i+1])
-      secondbin_index.set_selected(selection, i)
-    if firstbin_index.count(-1) > 0 or secondbin_index.count(-1) > 0:
-      raise ValueError('Unable to bin data for absorption in scaling initialisation')
-    self.sorted_reflections['a_bin_index'] = (firstbin_index
-                                              + (secondbin_index * nxbins * nybins))
-    self.n_absorption_bins = nxbins * nybins
     if self.scaling_options['parameterization'] == 'log':
-      #self.g_absorption = flex.double([0.0] * ((nxbins**2) * nzbins))
-      self.g_absorption = ScaleFactor(1.0, ((nxbins**2) * nzbins))
+      self.g_absorption = SmoothScaleFactor_GridAbsorption(0.0, n_x_parameters, n_y_parameters, n_time_bins)
     else:
-      #self.g_absorption = flex.double([1.0] * ((nxbins**2) * nzbins))
-      self.g_absorption = ScaleFactor(1.0, ((nxbins**2) * nzbins))
+      self.g_absorption = SmoothScaleFactor_GridAbsorption(1.0, n_x_parameters, n_y_parameters, n_time_bins)
+    self.g_absorption.set_normalised_values(self.sorted_reflections['normalised_x_abs_values'], 
+      self.sorted_reflections['normalised_y_abs_values'], self.sorted_reflections['normalised_time_values'])
+
 
   def bin_reflections_absorption_radially(self):
     '''bin reflections for absorption correction'''
@@ -739,7 +691,10 @@ class XDS_Data_Manager(Data_Manager):
       if not key in self.initial_keys:
         del self.sorted_reflections[key]
     added_columns = ['l_bin_index', 'a_bin_index', 'xy_bin_index', 'h_index',
-                     'asu_miller_index', 'res_bin_index']
+                     'asu_miller_index', 'res_bin_index', 'normalised_y_values',
+                     'normalised_x_values', 'normalised_y_abs_values',
+                     'normalised_x_abs_values', 'normalised_time_values', 
+                     'normalised_res_values']
     for key in added_columns:
       del self.sorted_reflections[key]
 
@@ -830,7 +785,7 @@ class SmoothScaleFactor_1D(SmoothScaleFactor):
 
   def calculate_smooth_scales(self):
     (Vr, problim) = (self.Vr, self.problim)
-    smoothing_window = 2.5#(Vr*problim)**0.5
+    smoothing_window = 2.5#must be less than 3 to avoid indexing errors
     self.weightsum = flex.double([0.0]*len(self.normalised_values))
     for i, relative_pos in enumerate(self.normalised_values):
       max_scale_to_include = int(relative_pos + smoothing_window)
@@ -848,7 +803,7 @@ class SmoothScaleFactor_1D(SmoothScaleFactor):
     n = len(self.normalised_values)
     self.derivatives = flex.double([0.0] * len(self.scale_factors) * n)
     (Vr, problim) = (self.Vr, self.problim)
-    smoothing_window = 2.5#(Vr*problim)**0.5
+    smoothing_window = 2.5#must be less than 3 to avoid indexing errors
     for i, relative_pos in enumerate(self.normalised_values):
       max_scale_to_include = int(relative_pos + smoothing_window)
       min_scale_to_include = int((relative_pos - smoothing_window)//1) + 1
@@ -866,7 +821,7 @@ class SmoothScaleFactor_2D(SmoothScaleFactor):
     if scaling_options:
       self.Vr = scaling_options['Vr']
       self.problim = scaling_options['problim']
-    self.Vr = 1.2
+    self.Vr = 1.0
     self.weightsum = None
 
   def set_normalised_values(self, normalised_values1, normalised_values2):
@@ -877,7 +832,7 @@ class SmoothScaleFactor_2D(SmoothScaleFactor):
 
   def calculate_smooth_scales(self):
     (Vr, problim) = (self.Vr, self.problim)
-    smoothing_window = 1.5#(Vr*problim)**0.5
+    smoothing_window = 1.5#must be less than 2 to avoid indexing errors
     self.weightsum = flex.double([0.0]*len(self.normalised_values[0]))
     for i, relative_pos_1 in enumerate(self.normalised_values[0]):
       relative_pos_2 = self.normalised_values[1][i]
@@ -891,7 +846,7 @@ class SmoothScaleFactor_2D(SmoothScaleFactor):
         for k in range(min_range_2_to_include, max_range_2_to_include + 1):
           square_distance_to_point = ((float(k) - relative_pos_2)**2 + (float(j) - relative_pos_1)**2)
           if square_distance_to_point < (smoothing_window**2) :
-            scale += (self.scale_factors[(j+1) + ((k+1)*self.n2_parameters)] * 
+            scale += (self.scale_factors[(j+1) + ((k+1)*self.n1_parameters)] *  #should this be self.n1_params?
               np.exp(- square_distance_to_point / Vr))
             weightsum += np.exp(-square_distance_to_point/ Vr)
       self.weightsum[i] = weightsum
@@ -904,7 +859,7 @@ class SmoothScaleFactor_2D(SmoothScaleFactor):
     n = len(self.get_normalised_values()[0])
     self.derivatives = flex.double([0.0] * len(self.scale_factors) * n)
     (Vr, problim) = (self.Vr, self.problim)
-    smoothing_window = 1.5#(Vr*problim)**0.5
+    smoothing_window = 1.5#must be less than 2 to avoid indexing errors
     for i, relative_pos_1 in enumerate(self.normalised_values[0]):
       relative_pos_2 = self.normalised_values[1][i]
       max_range_1_to_include = int(relative_pos_1 + smoothing_window)
@@ -915,8 +870,83 @@ class SmoothScaleFactor_2D(SmoothScaleFactor):
           for k in range(min_range_2_to_include, max_range_2_to_include + 1):
             square_distance_to_point = ((float(k) - relative_pos_2)**2 + (float(j) - relative_pos_1)**2)
             if square_distance_to_point < (smoothing_window**2) :
-              self.derivatives[(((j+1) + ((k+1)*self.n2_parameters))*n) + i] += (
+              self.derivatives[(((j+1) + ((k+1)*self.n1_parameters))*n) + i] += (
                 np.exp(- square_distance_to_point / Vr))/self.weightsum[i]
+    return self.derivatives
+
+class SmoothScaleFactor_GridAbsorption(SmoothScaleFactor):
+  def __init__(self, initial_value, n1_parameters, n2_parameters, n3_parameters, scaling_options=None):
+    n_parameters = n1_parameters * n2_parameters * n3_parameters
+    SmoothScaleFactor.__init__(self, initial_value, n_parameters, scaling_options)
+    self.nx_parameters = n1_parameters
+    self.ny_parameters = n2_parameters
+    self.ntime_parameters = n3_parameters
+    if scaling_options:
+      self.Vr = scaling_options['Vr']
+      self.problim = scaling_options['problim']
+    self.Vr = 1.0
+    self.weightsum = None
+
+  def set_normalised_values(self, normalised_values1, normalised_values2, normalised_values3):
+    '''normalised_values is the column from the reflection table 
+    of the normalised time/resolution etc'''
+    self.normalised_values = [normalised_values1, normalised_values2, normalised_values3]
+    self.scales = flex.double([1.0]*len(self.normalised_values[0]))
+
+  def calculate_smooth_scales(self):
+    (Vr, problim) = (self.Vr, self.problim)
+    smoothing_window = 1.0#must be less than 2 to avoid indexing errors
+    self.weightsum = flex.double([0.0]*len(self.normalised_values[0]))
+    '''loop through time bins, calculating smooth scales at each point'''
+    for time in range(self.ntime_parameters):
+      sel = ((time <= self.normalised_values[2]) &  (self.normalised_values[2] < time+1))
+      indices = sel.iselection()
+      for datapoint_idx in indices:
+        relative_pos_1 = self.normalised_values[0][datapoint_idx]
+        relative_pos_2 = self.normalised_values[1][datapoint_idx]
+        max_range_1_to_include = int(relative_pos_1 + smoothing_window)
+        max_range_2_to_include = int(relative_pos_2 + smoothing_window)
+        min_range_2_to_include = int((relative_pos_2 - smoothing_window)//1) + 1
+        min_range_1_to_include = int((relative_pos_1 - smoothing_window)//1) + 1
+        scale = 0.0
+        weightsum = 0.0
+        for j in range(min_range_1_to_include, max_range_1_to_include + 1):
+          for k in range(min_range_2_to_include, max_range_2_to_include + 1):
+            square_distance_to_point = ((float(k) - relative_pos_2)**2 + (float(j) - relative_pos_1)**2)
+            if square_distance_to_point < (smoothing_window**2) :
+              scale_idx = (j + (k*self.nx_parameters)) + (time*self.nx_parameters*self.ny_parameters)
+              scale += (self.scale_factors[scale_idx] * 
+                np.exp(- square_distance_to_point / Vr))
+              weightsum += np.exp(-square_distance_to_point/ Vr)
+        self.weightsum[datapoint_idx] = weightsum
+        self.scales[datapoint_idx] = scale/weightsum
+    return self.scales
+
+
+  def calculate_smooth_derivatives(self):
+    if not self.weightsum:
+      self.calculate_smooth_scales()
+    n = len(self.get_normalised_values()[0])
+    self.derivatives = flex.double([0.0] * len(self.scale_factors) * n)
+    (Vr, problim) = (self.Vr, self.problim)
+    smoothing_window = 1.0#must be 1 .0 or less to avoid indexing problems later
+    for time in range(self.ntime_parameters):
+      sel = ((time <= self.normalised_values[2]) &  (self.normalised_values[2] < time+1))
+      indices = sel.iselection()
+      for datapoint_idx in indices:
+        relative_pos_1 = self.normalised_values[0][datapoint_idx]
+        relative_pos_2 = self.normalised_values[1][datapoint_idx]
+        max_range_1_to_include = int(relative_pos_1 + smoothing_window)
+        max_range_2_to_include = int(relative_pos_2 + smoothing_window)
+        min_range_2_to_include = int((relative_pos_2 - smoothing_window)//1) + 1
+        min_range_1_to_include = int((relative_pos_1 - smoothing_window)//1) + 1
+        for j in range(min_range_1_to_include, max_range_1_to_include + 1):
+          for k in range(min_range_2_to_include, max_range_2_to_include + 1):
+            square_distance_to_point = ((float(k) - relative_pos_2)**2 + (float(j) - relative_pos_1)**2)
+            if square_distance_to_point < (smoothing_window**2) :
+              deriv_idx = (j + (k*self.nx_parameters)) + (time*self.nx_parameters*self.ny_parameters)
+              self.derivatives[(deriv_idx * n) + datapoint_idx] += (
+                np.exp(- square_distance_to_point / Vr))/self.weightsum[datapoint_idx]
     return self.derivatives
 
 
