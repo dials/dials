@@ -20,7 +20,7 @@ class SmoothScaleFactor(ScaleFactor):
   def __init__(self, initial_value, n_parameters, scaling_options=None):
     ScaleFactor.__init__(self, initial_value, n_parameters, scaling_options)
     self.normalised_values = None
-    self.Vr = 1.2
+    self.Vr = 0.7
     self.problim = 4.0
     if scaling_options:
       self.Vr = scaling_options['Vr']

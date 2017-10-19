@@ -11,6 +11,10 @@ from data_quality_assessment import R_meas, R_pim
 import matplotlib.pyplot as plt
 
 def calculate_wilson_outliers(reflection_table, experiments):
+    '''function that takes in a reflection table and experiments object and
+    looks at the wilson distribution of intensities in reflection shells to
+    look for the presence of outliers with high intensities. Returns a bool
+    flex array indicating any outliers.'''
     #first create a miller_array object to get the centric flags.
     u_c = experiments.crystals()[0].get_unit_cell().parameters()
     s_g = experiments.crystals()[0].get_space_group()
@@ -19,7 +23,7 @@ def calculate_wilson_outliers(reflection_table, experiments):
                             indices=reflection_table['asu_miller_index'])
     miller_array = miller.array(miller_set, data=reflection_table['intensity'])
     centrics = miller_array.centric_flags()
-    #neater way to do the next step - 
+    #neater way to do the next step -
     #problem is that one needs to extract just flags from centrics_list
     centrics_list = list(centrics)
     reflection_table['centric_flag'] = flex.bool([False] * len(reflection_table))
@@ -29,9 +33,9 @@ def calculate_wilson_outliers(reflection_table, experiments):
 
     #want each reflection 'shell' to contain at least 500 reflections.
     n_centrics = reflection_table['centric_flag'].count(True)
-    n_acentrics = reflection_table['centric_flag'].count(False) 
-    print "Number of centric/acentric reflections is %s, %s" % (n_centrics, n_acentrics)
-
+    n_acentrics = reflection_table['centric_flag'].count(False)
+    #print """Number of centric/acentric reflections is
+    #         %s, %s""" % (n_centrics, n_acentrics)
     if n_acentrics > 20000 or n_centrics > 20000:
       n_refl_shells = 20
     elif n_acentrics > 15000 or n_centrics > 15000:
@@ -93,14 +97,15 @@ def calculate_wilson_outliers(reflection_table, experiments):
     for i, bin_index in enumerate(resbin_index):
       if reflection_table['centric_flag'][i] == False:
         if acentrics_average_list[bin_index] > 0.0:
-          if (reflection_table['intensity'][i] / acentrics_average_list[bin_index]) > 13.82:
+          if (reflection_table['intensity'][i]
+              / acentrics_average_list[bin_index]) > 13.82: #probability <10^-6
             reflection_table['wilson_outlier_flag'][i] = True
             counter += 1
       else:
         if centrics_average_list[bin_index] > 0.0:
-          if (reflection_table['intensity'][i] / centrics_average_list[bin_index]) > 23.91:
+          if (reflection_table['intensity'][i]
+              / centrics_average_list[bin_index]) > 23.91: #probability <10^-6
             reflection_table['wilson_outlier_flag'][i] = True
             counter += 1
-    #self.update_weights_for_scaling(self.sorted_reflections)
     print "found %s outliers from analysis of Wilson statistics" % (counter)
     return reflection_table['wilson_outlier_flag']

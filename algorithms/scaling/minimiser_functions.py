@@ -93,6 +93,8 @@ class aimless_LBFGS_optimiser(object):
     self.data_manager = Data_Manager_object
     self.x = self.data_manager.active_parameters
     self.residuals = []
+    print "performing scaling on %s reflections out of %s total reflections" % (
+      len(self.data_manager.reflections_for_scaling), len(self.data_manager.sorted_reflections))
     core_params = lbfgs.core_parameters(maxfev=15)
     termination_params = lbfgs.termination_parameters(max_iterations=15)#, traditional_convergence_test_eps=1e2)
     lbfgs.run(target_evaluator=self, core_params=core_params, termination_params = termination_params)
