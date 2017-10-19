@@ -27,8 +27,8 @@ class LBFGS_optimiser(object):
     self.termination_params = lbfgs.termination_parameters(max_iterations=15)
     lbfgs.run(target_evaluator=self, core_params=self.core_params,
               termination_params=self.termination_params)
-    if self.data_manager.scaling_options['parameterization'] == 'standard':
-      self.make_all_scales_positive()
+    #if self.data_manager.scaling_options['parameterization'] == 'standard':
+    #  self.make_all_scales_positive()
     if param_name == 'g_decay':
       if self.data_manager.scaling_options['decay_correction_rescaling']:
         if self.data_manager.scaling_options['parameterization'] == 'standard':

@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from data_quality_assessment import R_meas, R_pim
 import data_manager_functions as dmf
+import scale_factor as SF
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from cctbx.array_family import flex
@@ -27,7 +28,7 @@ def plot_data_decay(data_man):
   (n1, n2) = (len(rel_values_1), len(rel_values_2))
   rel_values_1 = np.tile(rel_values_1, n2)
   rel_values_2 = np.repeat(rel_values_2, n1)
-  test_scale_factor = dmf.SmoothScaleFactor_2D(1.0, ndbins, nzbins)
+  test_scale_factor = SF.SmoothScaleFactor_2D(1.0, ndbins, nzbins)
   test_scale_factor.set_scale_factors(data_man.g_decay.get_scale_factors())
   test_scale_factor.set_normalised_values(rel_values_1, rel_values_2)
   scales = test_scale_factor.calculate_smooth_scales()
@@ -100,7 +101,7 @@ def plot_data_modulation(data_man):
   (n1, n2) = (len(rel_values_1), len(rel_values_2))
   rel_values_1 = np.tile(rel_values_1, n2)
   rel_values_2 = np.repeat(rel_values_2, n1)
-  test_scale_factor = dmf.SmoothScaleFactor_2D(1.0, nxbins, nybins)
+  test_scale_factor = SF.SmoothScaleFactor_2D(1.0, nxbins, nybins)
   test_scale_factor.set_scale_factors(data_man.g_modulation.get_scale_factors())
   test_scale_factor.set_normalised_values(rel_values_1, rel_values_2)
   scales = test_scale_factor.calculate_smooth_scales()
@@ -160,7 +161,7 @@ def calc_correction_at_detector_area(data_man, position):
   rel_values_2 = np.repeat(rel_values_2, n1)
   rel_values_3 = flex.double([0.0]*len(rel_values_2))
 
-  test_scale_factor = dmf.SmoothScaleFactor_GridAbsorption(1.0, nxbins, nybins, 1)
+  test_scale_factor = SF.SmoothScaleFactor_GridAbsorption(1.0, nxbins, nybins, 1)
   test_scale_factor.set_scale_factors(data_man.g_absorption.get_scale_factors()[
     position*nxbins*nybins:(position+1)*nxbins*nybins])
   test_scale_factor.set_normalised_values(rel_values_1, rel_values_2, rel_values_3)
@@ -196,7 +197,7 @@ def plot_absorption_correction_at_zbin(data_man, position):
 
 def plot_smooth_scales(data_man):                                           
   rel_values = np.arange(0, int(max(data_man.sorted_reflections['normalised_rotation_angle'])) + 1, 0.1)
-  test_scale_factor = dmf.SmoothScaleFactor_1D(1.0, data_man.n_g_scale_params)
+  test_scale_factor = SF.SmoothScaleFactor_1D(1.0, data_man.n_g_scale_params)
   test_scale_factor.set_scale_factors(data_man.g_scale.get_scale_factors())
   test_scale_factor.set_normalised_values(rel_values)
   scales = test_scale_factor.calculate_smooth_scales()
@@ -208,7 +209,7 @@ def plot_smooth_scales(data_man):
   plt.xlabel('Normalised rotation angle')
 
   rel_values = np.arange(0, int(max(data_man.sorted_reflections['normalised_time_values'])) + 1, 0.1)
-  test_decay_factor = dmf.SmoothScaleFactor_1D(0.0, data_man.n_g_decay_params)
+  test_decay_factor = SF.SmoothScaleFactor_1D(0.0, data_man.n_g_decay_params)
   test_decay_factor.set_scale_factors(data_man.g_decay.get_scale_factors())
   test_decay_factor.set_normalised_values(rel_values)
   B_rel_values = test_decay_factor.calculate_smooth_scales()
