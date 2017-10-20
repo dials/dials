@@ -133,13 +133,13 @@ class Script(object):
     params, options = self.parser.parse_args(show_diff_phil=True)
     reflections = flatten_reflections(params.input.reflections)
 
-    if params.input.datablock is not None:
+    if params.input.datablock is not None and len(params.input.datablock):
       datablocks = flatten_datablocks(params.input.datablock)
       assert len(datablocks) == 1
       imagesets = datablocks[0].extract_imagesets()
       assert len(imagesets) == 1
       imageset = imagesets[0]
-    elif params.input.experiments is not None:
+    elif params.input.experiments is not None and len(params.input.experiments):
       experiments = flatten_experiments(params.input.experiments)
       assert len(datablocks) == 1
       imageset = experiments[0].imageset
