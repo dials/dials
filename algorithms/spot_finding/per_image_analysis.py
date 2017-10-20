@@ -533,7 +533,7 @@ def points_inside_envelope(d_star_sq, log_i_over_sigi,
           ~points_below_line(d_star_sq, log_i_over_sigi, m_lower, c_lower))
 
 
-def ice_rings_selection(reflections):
+def ice_rings_selection(reflections, width=0.004):
   d_star_sq = flex.pow2(reflections['rlp'].norms())
   d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
 
@@ -541,11 +541,10 @@ def ice_rings_selection(reflections):
 
   unit_cell = uctbx.unit_cell((4.498,4.498,7.338,90,90,120))
   space_group = sgtbx.space_group_info(number=194).group()
-  width = 0.06
 
   if d_spacings:
     ice_filter = filtering.PowderRingFilter(
-      unit_cell, space_group, flex.min(d_spacings)-width, width)
+      unit_cell, space_group, flex.min(d_spacings), width)
 
     ice_sel = ice_filter(d_spacings)
 

@@ -65,7 +65,7 @@ class PowderRingFilter:
     indices = generator.to_array()
 
     # Compute d spacings and sort by resolution
-    self.d_spacings = flex.sorted(unit_cell.d(indices))
+    self.d_star_sq = flex.sorted(unit_cell.d_star_sq(indices))
     self.half_width = width / 2.0
 
   def __call__(self, d):
@@ -77,9 +77,11 @@ class PowderRingFilter:
 
     '''
     from dials.array_family import flex
+    from cctbx import uctbx
     result = flex.bool(len(d), False)
-    for d_spacing in self.d_spacings:
-      result = result | (flex.abs(d - d_spacing) < self.half_width)
+    d_star_sq = uctbx.d_as_d_star_sq(d)
+    for ds2 in self.d_star_sq:
+      result = result | (flex.abs(d_star_sq - ds2) < self.half_width)
     return result
 
   @classmethod
