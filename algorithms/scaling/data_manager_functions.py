@@ -225,7 +225,7 @@ class aimless_Data_Manager(Data_Manager):
     rotation_interval = 15.0
     osc_range = self.experiments.scans()[0].get_oscillation_range()
     if (osc_range[1] / rotation_interval) % 1 < 0.33: #if last bin less than 33% filled'
-      n_phi_bins = int(osc_range / rotation_interval)
+      n_phi_bins = int(osc_range[1] / rotation_interval)
       'increase rotation interval slightly'
       rotation_interval = float(n_phi_bins)/osc_range[1] + 0.001
     rotation_interval = 15.0 + 0.001
@@ -248,7 +248,7 @@ class aimless_Data_Manager(Data_Manager):
     rotation_interval = 15.0
     osc_range = self.experiments.scans()[0].get_oscillation_range()
     if (osc_range[1] / rotation_interval) % 1 < 0.33: #if last bin less than 33% filled
-      n_phi_bins = int(osc_range / rotation_interval)
+      n_phi_bins = int(osc_range[1] / rotation_interval)
       'increase rotation interval slightly'
       rotation_interval = float(n_phi_bins)/osc_range[1] + 0.001
     rotation_interval = 15.0 + 0.001
