@@ -157,7 +157,7 @@ class SmoothScaleFactor_GridAbsorption(SmoothScaleFactor):
 
   def calculate_smooth_scales(self):
     (Vr, problim) = (self.Vr, self.problim)
-    smoothing_window = 1.0#must be less than 2 to avoid indexing errors
+    smoothing_window = 1.0#must be 1.0 or less to avoid indexing errors
     self.weightsum = flex.double([0.0]*len(self.normalised_values[0]))
     '''loop through time bins, calculating smooth scales at each point'''
     for time in range(self.ntime_parameters):

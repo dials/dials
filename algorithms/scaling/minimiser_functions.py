@@ -9,17 +9,13 @@ from cctbx.array_family import flex
 from scitbx import lbfgs
 from math import exp
 import time
-#note: include math exp import after flex imports to avoid exp conflicts
+#note: include math exp import after flex imports to avoid exp conflicts?
 
 class LBFGS_optimiser(object):
-  '''Class that takes in Data_Manager object and runs
-  an LBFGS minimisation in a Kabsch approach '''
+  '''Class that takes in Data_Manager object and runs an LBFGS minimisation'''
   def __init__(self, Data_Manager_object, param_name):
     self.data_manager = Data_Manager_object
-    self.x = None
-    self.parameter_name = param_name
-    self.data_manager.active_parameterisation = param_name
-    self.set_up_parameterisation()
+    self.x = self.data_manager.set_up_minimisation(param_name)
     self.residuals = []
     print "performing scaling on %s reflections out of %s total reflections" % (
       len(self.data_manager.reflections_for_scaling), len(self.data_manager.sorted_reflections))
@@ -27,14 +23,30 @@ class LBFGS_optimiser(object):
     self.termination_params = lbfgs.termination_parameters(max_iterations=15)
     lbfgs.run(target_evaluator=self, core_params=self.core_params,
               termination_params=self.termination_params)
-    #if self.data_manager.scaling_options['parameterization'] == 'standard':
-    #  self.make_all_scales_positive()
+    #a few extra options for xds_scaling
+    if self.data_manager.scaling_options['parameterization'] == 'standard':
+      if param_name:
+        self.make_all_scales_positive(param_name)
     if param_name == 'g_decay':
       if self.data_manager.scaling_options['decay_correction_rescaling']:
         if self.data_manager.scaling_options['parameterization'] == 'standard':
           self.data_manager.scale_gvalues()
 
-  def make_all_scales_positive(self):
+  def compute_functional_and_gradients(self):
+    '''first calculate the updated values of the scale factors and Ih,
+    before calculating the residual and gradient functions'''
+    self.data_manager.update_for_minimisation(parameters=self.x)
+    f, g = self.data_manager.get_target_function()
+    f = flex.sum(f)
+    self.residuals.append(f)
+    print "Residual sum: %12.6g" % f
+    return f, g
+
+  def return_data_manager(self):
+    '''return data_manager method'''
+    return self.data_manager
+
+  def make_all_scales_positive(self, param_name):
     '''catcher that checks all the scale factors are positive in the standard
     parameterization. If they are not, the assumption is that the algorithm
     has got stuck in a local minimum, likely due to a few bad datapoints.
@@ -47,71 +59,11 @@ class LBFGS_optimiser(object):
       lbfgs.run(target_evaluator=self, core_params=self.core_params,
                 termination_params=self.termination_params)
       if (self.x < 0.0).count(True) > 0.0:
-        self.make_all_scales_positive()
+        self.make_all_scales_positive(param_name)
       else:
         print "all scales should now be positive"
-        self.data_manager.g_parameterisation[self.parameter_name]['parameterisation'] = self.x
     else:
       print "all scales are positive"
-      self.data_manager.g_parameterisation[self.parameter_name]['parameterisation'] = self.x
-
-  def return_data_manager(self):
-    '''return data_manager method'''
-    return self.data_manager
-
-  def set_up_parameterisation(self):
-    '''Set up the problem by indicating which g values are being minimised'''
-    constant_g_values = []
-    for p_type, parameterisation in self.data_manager.g_parameterisation.iteritems():
-      bin_index = parameterisation['index']
-      if self.parameter_name == p_type:
-        self.data_manager.active_bin_index = bin_index
-        self.x = parameterisation['parameterisation']
-        self.data_manager.n_active_params = len(self.x)
-      else:
-        constant_g_values.append(self.data_manager.g_parameterisation[p_type]['values'])
-    constant_g_values = np.array(constant_g_values)
-    if self.data_manager.scaling_options['parameterization'] == 'standard':
-      self.data_manager.constant_g_values = flex.double(np.prod(constant_g_values, axis=0))
-    elif self.data_manager.scaling_options['parameterization'] == 'log':
-      self.data_manager.constant_g_values = flex.double(np.sum(constant_g_values, axis=0))
-
-  def compute_functional_and_gradients(self):
-    '''first calculate the updated values of the scale factors and Ih,
-    before calculating the residual and gradient functions'''
-    self.data_manager.update_for_minimisation(parameters=self.x)
-    f, g = self.data_manager.get_target_function()
-    f = flex.sum(f)
-    self.residuals.append(f)
-    print "Residual sum: %12.6g" % f
-    return f, g
-
-class aimless_LBFGS_optimiser(object):
-  '''Class that takes in Data_Manager object and runs
-  an LBFGS minimisation in a Kabsch approach '''
-  def __init__(self, Data_Manager_object):
-    self.data_manager = Data_Manager_object
-    self.x = self.data_manager.active_parameters
-    self.residuals = []
-    print "performing scaling on %s reflections out of %s total reflections" % (
-      len(self.data_manager.reflections_for_scaling), len(self.data_manager.sorted_reflections))
-    core_params = lbfgs.core_parameters(maxfev=15)
-    termination_params = lbfgs.termination_parameters(max_iterations=15)#, traditional_convergence_test_eps=1e2)
-    lbfgs.run(target_evaluator=self, core_params=core_params, termination_params = termination_params)
-
-  def return_data_manager(self):
-    '''return data_manager method'''
-    return self.data_manager
-
-  def compute_functional_and_gradients(self):
-    '''first calculate the updated values of the scale factors and Ih,
-    before calculating the residual and gradient functions'''
-    self.data_manager.update_for_minimisation(parameters=self.x)
-    f, g = self.data_manager.get_target_function()
-    f = flex.sum(f)
-    self.residuals.append(f)
-    print "Residual sum: %12.6g" % f
-    return f, g
 
 
 class B_optimiser(object):
@@ -119,6 +71,7 @@ class B_optimiser(object):
   global scale and B-factor to the first time row '''
   def __init__(self, Data_Manager_object, initial_values):
     self.data_manager = Data_Manager_object
+    #replace reference to bin_boundaries with an extraction of values from SF
     d_bin_boundaries = self.data_manager.bin_boundaries['d']
     self.res_values = flex.double([])
     for i in range(0, len(d_bin_boundaries) - 1):

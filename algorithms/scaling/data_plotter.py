@@ -64,6 +64,10 @@ def plot_data_absorption(data_man):
   x_ticks = ['%.0f' % x for x in x_ticks]
   nzbins = len(data_man.bin_boundaries['z_value'])-1
   nabsbins = len(data_man.g_absorption.get_scale_factors())//nzbins
+
+  n_time_bins = data_man.g_absorption.n1_parameters
+  relative_time_values = data_man.g_absorption.get_normalised_values()
+
   '''generate a plot of the result'''
   G_fin = list(data_man.g_absorption.get_scale_factors())
   G_fin_2d = np.reshape(G_fin, (nzbins, nabsbins)).T

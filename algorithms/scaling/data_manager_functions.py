@@ -23,7 +23,7 @@ class Data_Manager(object):
     'General attributes relevant for all parameterisations'
     self.experiments = experiments
     self.reflection_table = reflections[0]
-    #initial filter to select integrated refelctions
+    'initial filter to select integrated reflections'
     self.reflection_table = self.reflection_table.select(
       self.reflection_table.get_flags(self.reflection_table.flags.integrated))
     self.initial_keys = [key for key in self.reflection_table.keys()]
@@ -32,20 +32,20 @@ class Data_Manager(object):
     self.reflection_table['z_value'] = self.reflection_table['xyzobs.px.value'].parts()[2]
     self.reflection_table['inverse_scale_factor'] = flex.double([1.0] * len(self.reflection_table))
     self.reflection_table['Ih_values'] = flex.double([0.0] * len(self.reflection_table))
-    '''z_max = max(self.reflection_table['z_value'])
+    z_max = max(self.reflection_table['z_value'])
     sel = self.reflection_table['z_value'] < z_max/8.0
-    self.reflection_table = self.reflection_table.select(sel)'''
+    self.reflection_table = self.reflection_table.select(sel)
     self.sorted_by_miller_index = False
     self.sorted_reflections = None
     self.reflections_for_scaling = None
     self.Ih_array = None
     self.scaling_options = scaling_options
-    #choose intensities, map to asu, assign unique refl. index
+    'choose intensities, map to asu, assign unique refl. index'
     self.select_optimal_intensities()
     self.sorted_reflections = self.map_indices_to_asu(self.reflection_table)
     (self.h_index_counter_array, self.h_index_cumulative_array) = (
       self.assign_h_index(self.sorted_reflections))
-    #assign initial weights (will be statistical weights at this point)
+    'assign initial weights (will be statistical weights at this point)'
     self.weights_for_scaling = self.update_weights_for_scaling(self.sorted_reflections)
 
   'define a few methods required upon initialisation to set up the data manager'
@@ -56,7 +56,7 @@ class Data_Manager(object):
     weights_for_scaling = self.update_weights_for_scaling(reflection_table)
     sel = weights_for_scaling.get_weights() > 0.0
     reflections_for_scaling = reflection_table.select(sel)
-    #update h_index arrays
+    'update h_index arrays'
     (self.h_index_counter_array, self.h_index_cumulative_array) = (
       self.assign_h_index(reflections_for_scaling))
     weights_for_scaling = self.update_weights_for_scaling(reflections_for_scaling)
@@ -138,14 +138,12 @@ class Data_Manager(object):
     intensities = reflection_table['intensity']
     variances = reflection_table['variance']
     scale_factors = reflection_table['inverse_scale_factor']
-    #print list(scale_factors)
     scaleweights = self.weights_for_scaling.get_weights()
     gsq = (((scale_factors)**2) * scaleweights)
     sumgsq = flex.double(np.add.reduceat(gsq, self.h_index_cumulative_array[:-1]))
     gI = ((scale_factors * intensities) * scaleweights)
     sumgI = flex.double(np.add.reduceat(gI, self.h_index_cumulative_array[:-1]))
     sumweights = flex.double(np.add.reduceat(scaleweights, self.h_index_cumulative_array[:-1]))
-    #self.Ih_array = sumgI / sumgsq
     self.Ih_array = flex.double([val/ sumgsq[i] if sumweights[i] > 0.0
                                  else 0.0 for i, val in enumerate(sumgI)])
     reflection_table['Ih_values'] = flex.double(
@@ -168,28 +166,26 @@ class aimless_Data_Manager(Data_Manager):
   def __init__(self, reflections, experiments, scaling_options):
     Data_Manager.__init__(self, reflections, experiments, scaling_options)
     'Attributes specific to aimless parameterisation'
-    #set bin parameters
     self.binning_parameters = {'n_scale_bins' : None, 'n_B_bins' : None,
                                'lmax' : 4, 'n_d_bins' : None}
-    self.bin_boundaries = None
     for key, value in scaling_options.iteritems():
       if key in self.binning_parameters:
         self.binning_parameters[key] = value
-    #initialise g-value objects
+    'initialise g-value objects'
     self.g_absorption = None
     self.g_scale = None
     self.g_decay = None
     self.n_active_params = 0
     self.active_parameters = flex.double([])
-    #bin reflections, determine outliers, extract reflections and weights for
-    # scaling and set normalised values.
+    '''bin reflections, determine outliers, extract reflections and weights for
+    scaling and set normalised values.'''
     self.initialise_scale_factors(self.sorted_reflections)
     self.sorted_reflections['wilson_outlier_flag'] = calculate_wilson_outliers(
       self.sorted_reflections, self.experiments)
     (self.reflections_for_scaling, self.weights_for_scaling) = (
       self.extract_reflections_for_scaling(self.sorted_reflections))
-    #refactor the next two operations into extract_reflections?
-    #reset the normalised values within the scale_factor object to current 
+    '''refactor the next two operations into extract_reflections?
+    reset the normalised values within the scale_factor object to current'''
     self.g_scale.set_normalised_values(self.reflections_for_scaling[
       'normalised_rotation_angle'])
     self.g_decay.set_normalised_values(self.reflections_for_scaling[
@@ -212,6 +208,9 @@ class aimless_Data_Manager(Data_Manager):
     '''call the aimless basis function method'''
     return aimless_basis_function(self, parameters).return_basis()
 
+  def set_up_minimisation(self, param_name):
+    return self.active_parameters
+
   def update_for_minimisation(self, parameters):
     '''update the scale factors and Ih for the next iteration of minimisation'''
     basis_fn = self.get_basis_function(parameters)
@@ -225,16 +224,16 @@ class aimless_Data_Manager(Data_Manager):
     correction. A SmoothScaleFactor_1D object is then initialised'''
     rotation_interval = 15.0
     osc_range = self.experiments.scans()[0].get_oscillation_range()
-    if (osc_range[1] / rotation_interval) % 1 < 0.33: #if last bin less than 33% filled
+    if (osc_range[1] / rotation_interval) % 1 < 0.33: #if last bin less than 33% filled'
       n_phi_bins = int(osc_range / rotation_interval)
-      #increase rotation interval slightly
+      'increase rotation interval slightly'
       rotation_interval = float(n_phi_bins)/osc_range[1] + 0.001
     rotation_interval = 15.0 + 0.001
-    #extend by 0.001 to make sure all datapoints within min/max
+    'extend by 0.001 to make sure all datapoints within min/max'
     one_oscillation_width = self.experiments.scans()[0].get_oscillation()[1]
     reflection_table['normalised_time_values'] = ((reflection_table['z_value']
       * one_oscillation_width) - (osc_range[0] - 0.001))/rotation_interval
-    #define the highest and lowest gridpoints: go out two further than the max/min int values
+    'define the highest and lowest gridpoints: go out two further than the max/min int values'
     highest_parameter_value = int((max(reflection_table['normalised_time_values'])//1)+3)#was +2
     lowest_parameter_value = int((min(reflection_table['normalised_time_values'])//1)-2)#was -1
     n_decay_parameters =  highest_parameter_value - lowest_parameter_value + 1
@@ -250,14 +249,14 @@ class aimless_Data_Manager(Data_Manager):
     osc_range = self.experiments.scans()[0].get_oscillation_range()
     if (osc_range[1] / rotation_interval) % 1 < 0.33: #if last bin less than 33% filled
       n_phi_bins = int(osc_range / rotation_interval)
-      #increase rotation interval slightly
+      'increase rotation interval slightly'
       rotation_interval = float(n_phi_bins)/osc_range[1] + 0.001
     rotation_interval = 15.0 + 0.001
-    #extend by 0.001 to make sure all datapoints within min/max
+    'extend by 0.001 to make sure all datapoints within min/max'
     one_oscillation_width = self.experiments.scans()[0].get_oscillation()[1]
     reflection_table['normalised_rotation_angle'] = ((reflection_table['z_value']
       * one_oscillation_width) - (osc_range[0] - 0.001))/rotation_interval
-    #define the highest and lowest gridpoints: go out two further than the max/min int values
+    'define the highest and lowest gridpoints: go out two further than the max/min int values'
     highest_parameter_value = int((max(reflection_table['normalised_rotation_angle'])//1)+3)#was +2
     lowest_parameter_value = int((min(reflection_table['normalised_rotation_angle'])//1)-2)#was -1
     n_scale_parameters =  highest_parameter_value - lowest_parameter_value + 1
@@ -291,7 +290,6 @@ class aimless_Data_Manager(Data_Manager):
     self.calc_Ih(self.sorted_reflections)
 
   def clean_reflection_table(self):
-    #add keys for additional data that is to be exported
     self.initial_keys.append('inverse_scale_factor')
     for key in self.reflection_table.keys():
       if not key in self.initial_keys:
@@ -313,7 +311,7 @@ class XDS_Data_Manager(Data_Manager):
     self.binning_parameters = {'n_d_bins' : None, 'n_z_bins' : None,
                                'n_absorption_positions' : 5,
                                'n_detector_bins' : None}
-    self.bin_boundaries = None
+    #self.bin_boundaries = None
     for key, value in scaling_options.iteritems():
       if key in self.binning_parameters:
         self.binning_parameters[key] = value
@@ -321,19 +319,16 @@ class XDS_Data_Manager(Data_Manager):
     self.g_absorption = None
     self.g_modulation = None
     self.g_decay = None
-    self.g_parameterisation = None
-    #self.active_parameterisation = None
-    self.active_bin_index = None
+    #items to keep track of active parameterisation
+    self.active_parameterisation = None
     self.n_active_params = None
     self.constant_g_values = None
     self.initialise_scale_factors()
     self.sorted_reflections['wilson_outlier_flag'] = calculate_wilson_outliers(
       self.sorted_reflections, self.experiments)
-    #self.weights_for_scaling = self.update_weights_for_scaling(self.sorted_reflections)
-    #self.reflections_for_scaling = copy.deepcopy(self.sorted_reflections)
     (self.reflections_for_scaling, self.weights_for_scaling) = (
       self.extract_reflections_for_scaling(self.sorted_reflections))
-    #self.extract_reflections_for_scaling(self.sorted_reflections)
+    #update normalised values after extracting reflections for scaling
     self.g_modulation.set_normalised_values(self.reflections_for_scaling['normalised_x_values'],
       self.reflections_for_scaling['normalised_y_values'])
     self.g_decay.set_normalised_values(self.reflections_for_scaling['normalised_res_values'],
@@ -341,26 +336,9 @@ class XDS_Data_Manager(Data_Manager):
     self.g_absorption.set_normalised_values(self.reflections_for_scaling['normalised_x_abs_values'],
       self.reflections_for_scaling['normalised_y_abs_values'], 
       self.reflections_for_scaling['normalised_time_values'])
-    self.calculate_derivatives(self.reflections_for_scaling)  
-    self.g_parameterisation = {
-      'g_absorption' : {'index': 'a_bin_index', 'parameterisation' : self.g_absorption.get_scale_factors(),
-                        'derivatives': self.g_absorption.calculate_smooth_derivatives(),
-                        'values' : self.g_absorption.get_scales_of_reflections(),
-                        'object' : self.g_absorption},
-      'g_modulation' : {'index': 'xy_bin_index', 'parameterisation' : self.g_modulation.get_scale_factors(),
-                        'derivatives': self.g_modulation.calculate_smooth_derivatives(),
-                        'values' : self.g_modulation.get_scales_of_reflections(),
-                        'object' : self.g_modulation},
-      'g_decay' : {'index': 'l_bin_index', 'parameterisation' : self.g_decay.get_scale_factors(),
-                   'derivatives': self.g_decay.calculate_smooth_derivatives(),
-                   'values' : self.g_decay.get_scales_of_reflections(),
-                   'object' : self.g_decay}}
-
-
-  def calculate_derivatives(self, reflection_table):
-    self.g_decay_derivatives = self.g_decay.calculate_smooth_derivatives()
-    self.g_modulation_derivatives = self.g_modulation.calculate_smooth_derivatives()
-    self.g_absorption_derivatives = self.g_absorption.calculate_smooth_derivatives()
+    #create a dict to allow easy access to the relevant parameters during minimisation
+    self.g_parameterisation = {'g_absorption' : self.g_absorption, 'g_modulation':
+                                self.g_modulation, 'g_decay': self.g_decay}
 
   def initialise_scale_factors(self):
     self.bin_reflections_decay()
@@ -381,14 +359,31 @@ class XDS_Data_Manager(Data_Manager):
     else:
       return xds_basis_function(self, parameters).return_basis()
 
+  def set_up_minimisation(self, param_name):
+    '''Set up the problem by indicating which g values are being minimised'''
+    '''This functions sets x to relevant self.SF.get_scale_factors() to return
+    to a minimiser. For XDS-like scaling, the factors that are not minimised
+    are kept constant, so calculate this here as well before minimisation.'''
+    constant_g_values = []
+    for p_type, scalefactor in self.g_parameterisation.iteritems():
+      if param_name == p_type:
+        x = scalefactor.get_scale_factors()
+        self.n_active_params = len(x)
+        self.active_parameterisation = param_name
+      else:
+        constant_g_values.append(scalefactor.get_scales_of_reflections())
+    if self.scaling_options['parameterization'] == 'standard':
+      self.constant_g_values = flex.double(np.prod(np.array(constant_g_values), axis=0))
+    elif self.scaling_options['parameterization'] == 'log':
+      self.constant_g_values = flex.double(np.sum(np.array(constant_g_values), axis=0))
+    return x
+
   def update_for_minimisation(self, parameters):
     '''update the scale factors and Ih for the next iteration of minimisation'''
     basis_fn = self.get_basis_function(parameters)
     self.reflections_for_scaling['inverse_scale_factor'] = basis_fn[0]
     self.active_derivatives = basis_fn[1]
     self.calc_Ih(self.reflections_for_scaling)
-
-  
 
   def bin_reflections_decay(self):
     '''bin reflections for decay correction'''
@@ -397,38 +392,29 @@ class XDS_Data_Manager(Data_Manager):
     '''Bin the data into resolution and time 'z' bins'''
     zmax = max(self.sorted_reflections['z_value']) + 0.001
     zmin = min(self.sorted_reflections['z_value']) - 0.001
-
     resmax = (1.0 / (min(self.sorted_reflections['d'])**2)) + 0.001
     resmin = (1.0 / (max(self.sorted_reflections['d'])**2)) - 0.001
-
     one_resbin_width = (resmax - resmin) / ndbins
     one_time_width = (zmax - zmin) / nzbins
-
-    self.sorted_reflections['normalised_res_values'] = (((1.0 / (self.sorted_reflections['d']**2)) 
+    self.sorted_reflections['normalised_res_values'] = (((1.0 / (self.sorted_reflections['d']**2))
       - resmin) / one_resbin_width)
     #define the highest and lowest gridpoints: go out one further than the max/min int values
     highest_parameter_value = int((max(self.sorted_reflections['normalised_res_values'])//1)+2)
     lowest_parameter_value = int((min(self.sorted_reflections['normalised_res_values'])//1)-1)
-    n_res_parameters =  highest_parameter_value - lowest_parameter_value + 1
-    #normalised_res_values = range(lowest_parameter_value, (highest_parameter_value+1))
-
-    self.sorted_reflections['normalised_time_values'] = ((self.sorted_reflections['z_value'] 
+    n_res_parameters = highest_parameter_value - lowest_parameter_value + 1
+    self.sorted_reflections['normalised_time_values'] = ((self.sorted_reflections['z_value']
       - zmin) / one_time_width)
     #define the highest and lowest gridpoints: go out one further than the max/min int values
     highest_parameter_value = int((max(self.sorted_reflections['normalised_time_values'])//1)+2)
     lowest_parameter_value = int((min(self.sorted_reflections['normalised_time_values'])//1)-1)
-    n_time_parameters =  highest_parameter_value - lowest_parameter_value + 1
-    #normalised_time_values = range(lowest_parameter_value, (highest_parameter_value+1))
-
+    n_time_parameters = highest_parameter_value - lowest_parameter_value + 1
     if self.scaling_options['parameterization'] == 'log':
       self.g_decay = SF.SmoothScaleFactor_2D(0.0, n_res_parameters, n_time_parameters)
     else:
       self.g_decay = SF.SmoothScaleFactor_2D(1.0, n_res_parameters, n_time_parameters)
-    self.g_decay.set_normalised_values(self.sorted_reflections['normalised_res_values'], 
+    self.g_decay.set_normalised_values(self.sorted_reflections['normalised_res_values'],
       self.sorted_reflections['normalised_time_values'])
   
-
-
   def bin_reflections_modulation(self):
     '''bin reflections for modulation correction'''
     nxbins = nybins = self.binning_parameters['n_detector_bins']
@@ -436,10 +422,8 @@ class XDS_Data_Manager(Data_Manager):
     (xmax, xmin) = (max(xvalues) + 0.001, min(xvalues) - 0.001)
     yvalues = self.sorted_reflections['y_value']
     (ymax, ymin) = (max(yvalues) + 0.001, min(yvalues) - 0.001)
-
     one_x_width = (xmax - xmin) / float(nxbins)
     one_y_width = (ymax - ymin) / float(nybins)
-
     self.sorted_reflections['normalised_x_values'] = ((xvalues - xmin) / one_x_width)
     self.sorted_reflections['normalised_y_values'] = ((yvalues - ymin) / one_y_width)
     #define the highest and lowest gridpoints: go out one further than the max/min int values
@@ -449,29 +433,22 @@ class XDS_Data_Manager(Data_Manager):
     highest_y_parameter_value = int((max(self.sorted_reflections['normalised_y_values'])//1)+2)
     lowest_y_parameter_value = int((min(self.sorted_reflections['normalised_y_values'])//1)-1)
     n_y_parameters =  highest_y_parameter_value - lowest_y_parameter_value + 1
-
     if self.scaling_options['parameterization'] == 'log':
-      #self.g_modulation = flex.double([0.0] * (nxbins ** 2))
       self.g_modulation = SF.SmoothScaleFactor_2D(0.0, n_x_parameters, n_y_parameters)
     else:
-      #self.g_modulation = flex.double([1.0] * (nxbins ** 2))
       self.g_modulation = SF.SmoothScaleFactor_2D(1.0, n_x_parameters, n_y_parameters)
     self.g_modulation.set_normalised_values(self.sorted_reflections['normalised_x_values'], 
       self.sorted_reflections['normalised_y_values'])
 
   def bin_reflections_absorption(self):
     '''bin reflections for absorption correction'''
-    nxbins = nybins = 4.0#self.binning_parameters['n_absorption_positions']
-    nzbins = self.binning_parameters['n_z_bins']
-
+    nxbins = nybins = 4.0
     xvalues = self.sorted_reflections['x_value']
     (xmax, xmin) = (max(xvalues) + 0.001, min(xvalues) - 0.001)
     yvalues = self.sorted_reflections['y_value']
     (ymax, ymin) = (max(yvalues) + 0.001, min(yvalues) - 0.001)
-
     one_x_width = (xmax - xmin) / float(nxbins)
     one_y_width = (ymax - ymin) / float(nybins)
-
     self.sorted_reflections['normalised_x_abs_values'] = ((xvalues - xmin) / one_x_width)
     self.sorted_reflections['normalised_y_abs_values'] = ((yvalues - ymin) / one_y_width)
     #define the highest and lowest gridpoints: go out one further than the max/min int values
@@ -481,15 +458,20 @@ class XDS_Data_Manager(Data_Manager):
     highest_y_parameter_value = int((max(self.sorted_reflections['normalised_y_abs_values'])//1)+1)
     lowest_y_parameter_value = int((min(self.sorted_reflections['normalised_y_abs_values'])//1))
     n_y_parameters =  highest_y_parameter_value - lowest_y_parameter_value + 1
-
+    #new code to change time binning to smooth parameters
+    #highest_parameter_value = int((max(self.sorted_reflections['normalised_time_values'])//1)+1)
+    #lowest_parameter_value = int((min(self.sorted_reflections['normalised_time_values'])//1)-0)
+    #n_time_parameters = highest_parameter_value - lowest_parameter_value + 1
     n_time_bins = int((max(self.sorted_reflections['normalised_time_values'])//1)+1)
-
     if self.scaling_options['parameterization'] == 'log':
-      self.g_absorption = SF.SmoothScaleFactor_GridAbsorption(0.0, n_x_parameters, n_y_parameters, n_time_bins)
+      self.g_absorption = SF.SmoothScaleFactor_GridAbsorption(0.0,
+        n_x_parameters, n_y_parameters, n_time_bins)
     else:
-      self.g_absorption = SF.SmoothScaleFactor_GridAbsorption(1.0, n_x_parameters, n_y_parameters, n_time_bins)
+      self.g_absorption = SF.SmoothScaleFactor_GridAbsorption(1.0,
+        n_x_parameters, n_y_parameters, n_time_bins)
     self.g_absorption.set_normalised_values(self.sorted_reflections['normalised_x_abs_values'], 
-      self.sorted_reflections['normalised_y_abs_values'], self.sorted_reflections['normalised_time_values'])
+      self.sorted_reflections['normalised_y_abs_values'],
+      self.sorted_reflections['normalised_time_values'])
 
 
   def bin_reflections_absorption_radially(self):
@@ -541,10 +523,8 @@ class XDS_Data_Manager(Data_Manager):
       + (secondbin_index * (len(angular_bins) - 1) * (len(radial_bins) - 1)))
     self.n_absorption_bins = (len(angular_bins) - 1) * (len(radial_bins) - 1)
     if self.scaling_options['parameterization'] == 'log':
-      #self.g_absorption = flex.double([0.0] * self.n_absorption_bins * nzbins)
       self.g_absorption = SF.ScaleFactor(0.0, (self.n_absorption_bins * nzbins))
     else:
-      #self.g_absorption = flex.double([1.0] * self.n_absorption_bins * nzbins)
       self.g_absorption = SF.ScaleFactor(1.0, (self.n_absorption_bins * nzbins))
 
   def scale_gvalues(self):
@@ -552,7 +532,6 @@ class XDS_Data_Manager(Data_Manager):
     factor. '''
     Optimal_rescale_values = mf.B_optimiser(self, flex.double([0.0, 1.0]))
     print "Brel, 1/global scale = "+str(list(Optimal_rescale_values.x))
-
     scaling_factors = []
     for _ in range(self.binning_parameters['n_z_bins']):
       scaling_factors += flex.exp(Optimal_rescale_values.x[0]
@@ -563,34 +542,17 @@ class XDS_Data_Manager(Data_Manager):
     self.g_decay = self.g_decay * (1.0 / Optimal_rescale_values.x[1])
     print "scaled by B_rel and global scale parameter"
 
-
   def expand_scales_to_all_reflections(self):
-    modulation_factors = self.g_modulation.get_scale_factors()
-    sorted_refl_mod_factor = SF.SmoothScaleFactor_2D(1.0, 
-      self.g_modulation.n1_parameters, self.g_modulation.n2_parameters)
-    sorted_refl_mod_factor.set_scale_factors(modulation_factors)
-    sorted_refl_mod_factor.set_normalised_values(self.sorted_reflections['normalised_x_values'],
+    self.g_modulation.set_normalised_values(self.sorted_reflections['normalised_x_values'],
       self.sorted_reflections['normalised_y_values'])
-    gscalevalues = sorted_refl_mod_factor.calculate_smooth_scales()
-
-    decay_factors = self.g_decay.get_scale_factors()
-    sorted_refl_decay_factor = SF.SmoothScaleFactor_2D(1.0, 
-      self.g_decay.n1_parameters, self.g_decay.n2_parameters)
-    sorted_refl_decay_factor.set_scale_factors(decay_factors)
-    sorted_refl_decay_factor.set_normalised_values(self.sorted_reflections['normalised_res_values'],
+    gscalevalues = self.g_modulation.calculate_smooth_scales()
+    self.g_decay.set_normalised_values(self.sorted_reflections['normalised_res_values'],
       self.sorted_reflections['normalised_time_values'])
-    gdecayvalues = sorted_refl_decay_factor.calculate_smooth_scales()
-
-    abs_factors = self.g_absorption.get_scale_factors()
-    sorted_refl_abs_factor = SF.SmoothScaleFactor_GridAbsorption(1.0, 
-      self.g_absorption.nx_parameters, self.g_absorption.ny_parameters, 
-      self.g_absorption.ntime_parameters)
-    sorted_refl_abs_factor.set_scale_factors(abs_factors)
-    sorted_refl_abs_factor.set_normalised_values(self.sorted_reflections['normalised_x_abs_values'],
+    gdecayvalues = self.g_decay.calculate_smooth_scales()
+    self.g_absorption.set_normalised_values(self.sorted_reflections['normalised_x_abs_values'],
       self.sorted_reflections['normalised_y_abs_values'], 
       self.sorted_reflections['normalised_time_values'])
-    gabsvalues = sorted_refl_abs_factor.calculate_smooth_scales()
-
+    gabsvalues = self.g_absorption.calculate_smooth_scales()
     if self.scaling_options['parameterization'] == 'log':
       self.sorted_reflections['inverse_scale_factor'] = flex.double(
         np.exp(gscalevalues + gdecayvalues + gabsvalues))
@@ -616,6 +578,7 @@ class XDS_Data_Manager(Data_Manager):
                      'centric_flag']
     for key in added_columns:
       del self.sorted_reflections[key]
+
 
 def select_variables_in_range(variable_array, lower_limit, upper_limit):
   '''return boolean selection of a given variable range'''

@@ -11,7 +11,6 @@ class target_function(object):
   and gradient function for minimisation.'''
   def __init__(self, data_manager_object):
     self.data_manager = data_manager_object
-    #self.parameters = parameters
 
   def calculate_residual(self):
     '''returns a residual vector'''
@@ -47,7 +46,6 @@ class target_function(object):
 
   def return_targets(self):
     '''return residual and gradient arrays'''
-    #self.data_manager.update_for_minimisation(self.parameters)
     return self.calculate_residual(), self.calculate_gradient()
 
   
