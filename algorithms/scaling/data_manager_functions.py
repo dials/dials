@@ -32,9 +32,9 @@ class Data_Manager(object):
     self.reflection_table['z_value'] = self.reflection_table['xyzobs.px.value'].parts()[2]
     self.reflection_table['inverse_scale_factor'] = flex.double([1.0] * len(self.reflection_table))
     self.reflection_table['Ih_values'] = flex.double([0.0] * len(self.reflection_table))
-    z_max = max(self.reflection_table['z_value'])
+    '''z_max = max(self.reflection_table['z_value'])
     sel = self.reflection_table['z_value'] < z_max/8.0
-    self.reflection_table = self.reflection_table.select(sel)
+    self.reflection_table = self.reflection_table.select(sel)'''
     self.sorted_by_miller_index = False
     self.sorted_reflections = None
     self.reflections_for_scaling = None
@@ -459,20 +459,19 @@ class XDS_Data_Manager(Data_Manager):
     lowest_y_parameter_value = int((min(self.sorted_reflections['normalised_y_abs_values'])//1))
     n_y_parameters =  highest_y_parameter_value - lowest_y_parameter_value + 1
     #new code to change time binning to smooth parameters
-    #highest_parameter_value = int((max(self.sorted_reflections['normalised_time_values'])//1)+1)
-    #lowest_parameter_value = int((min(self.sorted_reflections['normalised_time_values'])//1)-0)
-    #n_time_parameters = highest_parameter_value - lowest_parameter_value + 1
-    n_time_bins = int((max(self.sorted_reflections['normalised_time_values'])//1)+1)
+    highest_parameter_value = int((max(self.sorted_reflections['normalised_time_values'])//1)+1)
+    lowest_parameter_value = int((min(self.sorted_reflections['normalised_time_values'])//1)-0)
+    n_time_parameters = highest_parameter_value - lowest_parameter_value + 1
+    #n_time_bins = int((max(self.sorted_reflections['normalised_time_values'])//1)+1)
     if self.scaling_options['parameterization'] == 'log':
       self.g_absorption = SF.SmoothScaleFactor_GridAbsorption(0.0,
-        n_x_parameters, n_y_parameters, n_time_bins)
+        n_x_parameters, n_y_parameters, n_time_parameters)
     else:
       self.g_absorption = SF.SmoothScaleFactor_GridAbsorption(1.0,
-        n_x_parameters, n_y_parameters, n_time_bins)
+        n_x_parameters, n_y_parameters, n_time_parameters)
     self.g_absorption.set_normalised_values(self.sorted_reflections['normalised_x_abs_values'], 
       self.sorted_reflections['normalised_y_abs_values'],
       self.sorted_reflections['normalised_time_values'])
-
 
   def bin_reflections_absorption_radially(self):
     '''bin reflections for absorption correction'''

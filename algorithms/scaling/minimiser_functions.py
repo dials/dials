@@ -24,9 +24,9 @@ class LBFGS_optimiser(object):
     lbfgs.run(target_evaluator=self, core_params=self.core_params,
               termination_params=self.termination_params)
     #a few extra options for xds_scaling
-    if self.data_manager.scaling_options['parameterization'] == 'standard':
-      if param_name:
-        self.make_all_scales_positive(param_name)
+    #if self.data_manager.scaling_options['parameterization'] == 'standard':
+    #  if param_name:
+    #    self.make_all_scales_positive(param_name)
     if param_name == 'g_decay':
       if self.data_manager.scaling_options['decay_correction_rescaling']:
         if self.data_manager.scaling_options['parameterization'] == 'standard':

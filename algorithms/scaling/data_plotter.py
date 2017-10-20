@@ -7,6 +7,7 @@ import scale_factor as SF
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from cctbx.array_family import flex
+import copy as copy
 
 def save_data(minimised,filename):
   data_file = open(filename,'w')
@@ -60,13 +61,9 @@ def plot_data_decay(data_man):
 
 def plot_data_absorption(data_man):
   "takes in a data manager object"
-  x_ticks = data_man.bin_boundaries['z_value'][::2]
-  x_ticks = ['%.0f' % x for x in x_ticks]
-  nzbins = len(data_man.bin_boundaries['z_value'])-1
-  nabsbins = len(data_man.g_absorption.get_scale_factors())//nzbins
 
-  n_time_bins = data_man.g_absorption.n1_parameters
-  relative_time_values = data_man.g_absorption.get_normalised_values()
+  nzbins = data_man.g_absorption.ntime_parameters
+  nabsbins = data_man.g_absorption.nx_parameters * data_man.g_absorption.ny_parameters
 
   '''generate a plot of the result'''
   G_fin = list(data_man.g_absorption.get_scale_factors())
@@ -87,8 +84,8 @@ def plot_data_absorption(data_man):
   ax1.set_ylabel('detector position')
   ax1.set_xlabel('time (z)')
   #ax1.yticks(np.arange(-0.5, nabsbins), y_ticks)
-  ax1.set_xticks(np.arange(-0.5, nzbins, 2))
-  ax1.set_xticklabels(x_ticks)
+  #ax1.set_xticks(np.arange(-0.5, nzbins, 2))
+  #ax1.set_xticklabels(x_ticks)
   ax1.set_title('Inverse scale factors for absorption correction', fontsize=12)
   plt.tight_layout()
   plt.savefig('g_absorption.png')
@@ -150,6 +147,7 @@ def plot_correction_at_multiple_detector_areas(data_man, positions):
     #ax.set_xticks(np.arange(data_man.g_absorption.nx_parameters*10, 10), 
     #  np.arange(data_man.g_absorption.nx_parameters))
     ax.set_title('Absorption correction factor surface at time bin %s' % (position), fontsize=7)
+    print "successfully plotted positon %s" % position
   plt.tight_layout()
   plt.savefig('g_absorption_surfaces.png')
 
@@ -157,21 +155,18 @@ def plot_correction_at_multiple_detector_areas(data_man, positions):
 def calc_correction_at_detector_area(data_man, position):
   nxbins = data_man.g_absorption.nx_parameters
   nybins = data_man.g_absorption.ny_parameters
-  #form an xy grid
+  ntimebins = data_man.g_absorption.ntime_parameters
+  #form an xyz grid, for two planes - going to plot at z = int + 0.5 between params
   rel_values_1 = np.arange(0, int(max(data_man.sorted_reflections['normalised_x_abs_values'])) + 1, 0.1)
   rel_values_2 = np.arange(0, int(max(data_man.sorted_reflections['normalised_y_abs_values'])) + 1, 0.1)
   (n1, n2) = (len(rel_values_1), len(rel_values_2))
   rel_values_1 = np.tile(rel_values_1, n2)
   rel_values_2 = np.repeat(rel_values_2, n1)
-  rel_values_3 = flex.double([0.0]*len(rel_values_2))
-
-  test_scale_factor = SF.SmoothScaleFactor_GridAbsorption(1.0, nxbins, nybins, 1)
-  test_scale_factor.set_scale_factors(data_man.g_absorption.get_scale_factors()[
-    position*nxbins*nybins:(position+1)*nxbins*nybins])
+  rel_values_3 = flex.double([float(position)-0.5]*len(rel_values_2)) #why -0.5 - check.
+  test_scale_factor = copy.deepcopy(data_man.g_absorption)
   test_scale_factor.set_normalised_values(rel_values_1, rel_values_2, rel_values_3)
   scales = test_scale_factor.calculate_smooth_scales()
   G_fin_2d = np.reshape(list(scales), (n2, n1))
-
   return G_fin_2d
 
 

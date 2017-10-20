@@ -150,38 +150,39 @@ class SmoothScaleFactor_GridAbsorption(SmoothScaleFactor):
     self.weightsum = None
 
   def set_normalised_values(self, normalised_values1, normalised_values2, normalised_values3):
-    '''normalised_values is the column from the reflection table 
+    '''normalised_values is the column from the reflection table
     of the normalised time/resolution etc'''
     self.normalised_values = [normalised_values1, normalised_values2, normalised_values3]
     self.scales = flex.double([1.0]*len(self.normalised_values[0]))
 
   def calculate_smooth_scales(self):
     (Vr, problim) = (self.Vr, self.problim)
-    smoothing_window = 1.0#must be 1.0 or less to avoid indexing errors
+    smoothing_window = 1.0#must be 1.0 or less to avoid indexing errors,
+    #should probably be fixed or tightly constrained
     self.weightsum = flex.double([0.0]*len(self.normalised_values[0]))
-    '''loop through time bins, calculating smooth scales at each point'''
-    for time in range(self.ntime_parameters):
-      sel = ((time <= self.normalised_values[2]) &  (self.normalised_values[2] < time+1))
-      indices = sel.iselection()
-      for datapoint_idx in indices:
-        relative_pos_1 = self.normalised_values[0][datapoint_idx]
-        relative_pos_2 = self.normalised_values[1][datapoint_idx]
-        max_range_1_to_include = int(relative_pos_1 + smoothing_window)
-        max_range_2_to_include = int(relative_pos_2 + smoothing_window)
-        min_range_2_to_include = int((relative_pos_2 - smoothing_window)//1) + 1
-        min_range_1_to_include = int((relative_pos_1 - smoothing_window)//1) + 1
-        scale = 0.0
-        weightsum = 0.0
+    for datapoint_idx, relative_pos_1 in enumerate(self.normalised_values[0]):
+      relative_pos_2 = self.normalised_values[1][datapoint_idx]
+      relative_pos_3 = self.normalised_values[2][datapoint_idx]
+      max_range_1_to_include = int(relative_pos_1 + smoothing_window)
+      max_range_2_to_include = int(relative_pos_2 + smoothing_window)
+      max_range_3_to_include = int(relative_pos_3 + smoothing_window)
+      min_range_1_to_include = int((relative_pos_1 - smoothing_window)//1) + 1
+      min_range_2_to_include = int((relative_pos_2 - smoothing_window)//1) + 1
+      min_range_3_to_include = int((relative_pos_3 - smoothing_window)//1) + 1
+      scale = 0.0
+      weightsum = 0.0
+      for i in range(min_range_3_to_include, max_range_3_to_include + 1):
         for j in range(min_range_1_to_include, max_range_1_to_include + 1):
           for k in range(min_range_2_to_include, max_range_2_to_include + 1):
-            square_distance_to_point = ((float(k) - relative_pos_2)**2 + (float(j) - relative_pos_1)**2)
-            if square_distance_to_point < (smoothing_window**2) :
-              scale_idx = (j + (k*self.nx_parameters)) + (time*self.nx_parameters*self.ny_parameters)
-              scale += (self.scale_factors[scale_idx] * 
+            square_distance_to_point = ((float(k) - relative_pos_2)**2
+              + (float(j) - relative_pos_1)**2 + (float(i) - relative_pos_3)**2)
+            if square_distance_to_point < (smoothing_window**2):
+              scale_idx = (j + (k*self.nx_parameters)) + (i*self.nx_parameters*self.ny_parameters)
+              scale += (self.scale_factors[scale_idx] *
                 np.exp(- square_distance_to_point / Vr))
               weightsum += np.exp(-square_distance_to_point/ Vr)
-        self.weightsum[datapoint_idx] = weightsum
-        self.scales[datapoint_idx] = scale/weightsum
+      self.weightsum[datapoint_idx] = weightsum
+      self.scales[datapoint_idx] = scale/weightsum
     return self.scales
 
 
@@ -191,22 +192,23 @@ class SmoothScaleFactor_GridAbsorption(SmoothScaleFactor):
     n = len(self.get_normalised_values()[0])
     self.derivatives = flex.double([0.0] * len(self.scale_factors) * n)
     (Vr, problim) = (self.Vr, self.problim)
-    smoothing_window = 1.0#must be 1 .0 or less to avoid indexing problems later
-    for time in range(self.ntime_parameters):
-      sel = ((time <= self.normalised_values[2]) &  (self.normalised_values[2] < time+1))
-      indices = sel.iselection()
-      for datapoint_idx in indices:
-        relative_pos_1 = self.normalised_values[0][datapoint_idx]
-        relative_pos_2 = self.normalised_values[1][datapoint_idx]
-        max_range_1_to_include = int(relative_pos_1 + smoothing_window)
-        max_range_2_to_include = int(relative_pos_2 + smoothing_window)
-        min_range_2_to_include = int((relative_pos_2 - smoothing_window)//1) + 1
-        min_range_1_to_include = int((relative_pos_1 - smoothing_window)//1) + 1
+    smoothing_window = 1.0#must be 1.0 or less to avoid indexing problems later
+    for datapoint_idx, relative_pos_1 in enumerate(self.normalised_values[0]):
+      relative_pos_2 = self.normalised_values[1][datapoint_idx]
+      relative_pos_3 = self.normalised_values[2][datapoint_idx]
+      max_range_1_to_include = int(relative_pos_1 + smoothing_window)
+      max_range_2_to_include = int(relative_pos_2 + smoothing_window)
+      max_range_3_to_include = int(relative_pos_3 + smoothing_window)
+      min_range_1_to_include = int((relative_pos_1 - smoothing_window)//1) + 1
+      min_range_2_to_include = int((relative_pos_2 - smoothing_window)//1) + 1
+      min_range_3_to_include = int((relative_pos_3 - smoothing_window)//1) + 1
+      for i in range(min_range_3_to_include, max_range_3_to_include + 1):
         for j in range(min_range_1_to_include, max_range_1_to_include + 1):
           for k in range(min_range_2_to_include, max_range_2_to_include + 1):
-            square_distance_to_point = ((float(k) - relative_pos_2)**2 + (float(j) - relative_pos_1)**2)
-            if square_distance_to_point < (smoothing_window**2) :
-              deriv_idx = (j + (k*self.nx_parameters)) + (time*self.nx_parameters*self.ny_parameters)
+            square_distance_to_point = ((float(k) - relative_pos_2)**2
+              + (float(j) - relative_pos_1)**2 + (float(i) - relative_pos_3)**2)
+            if square_distance_to_point < (smoothing_window**2):
+              deriv_idx = (j + (k*self.nx_parameters)) + (i*self.nx_parameters*self.ny_parameters)
               self.derivatives[(deriv_idx * n) + datapoint_idx] += (
                 np.exp(- square_distance_to_point / Vr))/self.weightsum[datapoint_idx]
     return self.derivatives
