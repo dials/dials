@@ -45,14 +45,13 @@ def run(args):
   from dials.command_line.dials_import import ManualGeometryUpdater
   update_geometry = ManualGeometryUpdater(params)
 
-
   if len(experiments):
     imagesets = experiments.imagesets()
 
   elif len(datablocks):
 
     assert len(datablocks) == 1
-    imagesets = datablocks[0].extract_imageset()
+    imagesets = datablocks[0].extract_imagesets()
 
   for imageset in imagesets:
     imageset_new = update_geometry(imageset)
@@ -66,8 +65,8 @@ def run(args):
     print "Saving modified experiments to %s" %params.output.experiments
     dump.experiment_list(experiments, params.output.experiments)
   elif len(datablocks):
-    raise NotImplemented
-
+    print "Saving modified datablock to %s" %params.output.datablock
+    dump.datablock(datablocks, params.output.datablock)
 
 if __name__ == '__main__':
   import sys
