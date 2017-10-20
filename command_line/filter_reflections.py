@@ -85,9 +85,11 @@ class Script(object):
           .help = "The maximum reflection partiality for inclusion."
       }
 
+      include scope dials.util.masking.ice_rings_phil_scope
+
     ''' % tuple([' '.join(self.flag_names)] * 2)
 
-    phil_scope = parse(phil_str)
+    phil_scope = parse(phil_str, process_includes=True)
 
 
     # The script usage
@@ -98,7 +100,9 @@ class Script(object):
       usage=usage,
       phil=phil_scope,
       epilog=help_message,
-      read_reflections=True)
+      read_reflections=True,
+      read_experiments=True,
+      read_datablocks=True)
 
   def analysis(self, reflections):
     '''Print a table of flags present in the reflections file'''
@@ -121,11 +125,27 @@ class Script(object):
     '''Execute the script.'''
     from dials.array_family import flex
     from dials.util.options import flatten_reflections
+    from dials.util.options import flatten_datablocks
+    from dials.util.options import flatten_experiments
     from libtbx.utils import Sorry
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
     reflections = flatten_reflections(params.input.reflections)
+
+    if params.input.datablock is not None:
+      datablocks = flatten_datablocks(params.input.datablock)
+      assert len(datablocks) == 1
+      imagesets = datablocks[0].extract_imagesets()
+      assert len(imagesets) == 1
+      imageset = imagesets[0]
+    elif params.input.experiments is not None:
+      experiments = flatten_experiments(params.input.experiments)
+      assert len(datablocks) == 1
+      imageset = experiments[0].imageset
+    else:
+      imageset = None
+
     if len(reflections) == 0:
       self.parser.print_help()
       raise Sorry('No valid reflection file given')
@@ -155,7 +175,8 @@ class Script(object):
     if (len(params.inclusions.flag) == 0 and
         len(params.exclusions.flag) == 0 and
         params.d_min is None and params.d_max is None and
-        params.partiality.min is None and params.partiality.max is None):
+        params.partiality.min is None and params.partiality.max is None and
+        not params.ice_rings.filter):
       print "No filter specified. Performing analysis instead."
       return self.analysis(reflections)
 
@@ -202,6 +223,36 @@ class Script(object):
       selection = reflections['partiality'] <= params.partiality.max
       reflections = reflections.select(selection)
       print "Selected %d reflections with partiality <= %f" % (len(reflections), params.partiality.max)
+
+    # Filter powder rings
+
+    if params.ice_rings.filter:
+      from dials.algorithms.integration import filtering
+      if 'd' in reflections:
+        d_spacings = reflections['d']
+      else:
+        from cctbx import uctbx
+        if 'rlp' not in reflections:
+          assert imageset is not None
+          from dials.algorithms.spot_finding.per_image_analysis import map_to_reciprocal_space
+          reflections = map_to_reciprocal_space(reflections, imageset)
+        d_star_sq = flex.pow2(reflections['rlp'].norms())
+        d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
+
+      d_min = params.ice_rings.d_min
+      width = params.ice_rings.width
+
+      if d_min is None:
+        d_min = flex.min(d_spacings)
+
+      ice_filter = filtering.PowderRingFilter(
+        params.ice_rings.unit_cell, params.ice_rings.space_group.group(), d_min, width)
+
+      ice_sel = ice_filter(d_spacings)
+
+      print "Rejecting %i reflections at ice ring resolution" %ice_sel.count(True)
+      reflections = reflections.select(~ice_sel)
+      #reflections = reflections.select(ice_sel)
 
     # Save filtered reflections to file
     if params.output.reflections:
