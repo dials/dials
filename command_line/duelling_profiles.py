@@ -248,7 +248,7 @@ def model_reflection_predict(reflection, experiment, params):
   angle = angles[0] if reflection['entering'] else angles[1]
 
   if abs_angle(angle, xyz_mm[2]) > 1.0e-3:
-    raise RuntimeError, '%f %f' % (angle, xyz_mm[2])
+    raise RuntimeError('%f %f' % (angle, xyz_mm[2]))
 
   return
 
@@ -493,7 +493,7 @@ def main(reflections, experiment, params):
     reflections = reflections.select(selection)
 
   if params.num > len(reflections):
-    raise RuntimeError, 'you asked for too many reflections sorry'
+    raise RuntimeError('you asked for too many reflections sorry')
 
   if params.seed > 0 and params.num > 0:
     import random

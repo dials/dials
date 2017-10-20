@@ -97,7 +97,7 @@ if __name__ == '__main__':
     with cd_auto(__file__):
       test = Test()
       test.run()
-  except Exception, e:
+  except Exception as e:
 
     message = '''
     ====================================================

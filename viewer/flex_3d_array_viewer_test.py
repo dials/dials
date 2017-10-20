@@ -20,7 +20,7 @@ from dials.algorithms.shoebox import MaskCode
 attempt_to_fix_a_crash = '''
 try:
   import scipy.linalg # import dependency
-except ImportError, e:
+except ImportError as e:
   pass
 '''
 

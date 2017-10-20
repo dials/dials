@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division
 try:
   import scipy.linalg # import dependency
-except ImportError, e:
+except ImportError:
   pass
 
 import os

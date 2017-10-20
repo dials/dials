@@ -76,7 +76,7 @@ if __name__ == '__main__':
       #centroid = CentroidImage3d(shoebox.as_double())
       try:
         centroid = CentroidMaskedImage3d(shoebox.as_double(), mask)
-      except:
+      except Exception:
         continue
 
       bbox = r.bounding_box

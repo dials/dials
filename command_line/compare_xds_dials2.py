@@ -73,7 +73,7 @@ def get_xds_coordinate_frame(integrate_hkl):
       axis = matrix.col(map(float, record.split()[-3:])).normalize()
 
   if not beam or not axis:
-    raise RuntimeError, 'coordinate frame information not found'
+    raise RuntimeError('coordinate frame information not found')
 
   return beam, axis
 
@@ -91,7 +91,7 @@ def integrate_hkl_to_A_matrix(integrate_hkl):
       c = tuple(map(float, record.split()[-3:]))
 
   if not a or not b or not c:
-    raise RuntimeError, 'unit cell vectors not found'
+    raise RuntimeError('unit cell vectors not found')
 
   from scitbx import matrix
   return matrix.sqr(a + b + c).inverse()
@@ -107,7 +107,7 @@ def integrate_hkl_to_unit_cell(integrate_hkl):
     if record.startswith('!UNIT_CELL_CONSTANTS='):
       return unit_cell(tuple(map(float, record.split()[-6:])))
 
-  raise RuntimeError, 'unit cell not found'
+  raise RuntimeError('unit cell not found')
 
 def pull_calculated(integrate_pkl):
   from dials.array_family import flex # import dependency
@@ -643,9 +643,9 @@ class CompareIntensity(object):
 if __name__ == '__main__':
   import sys
   if len(sys.argv) < 5:
-    raise RuntimeError, \
+    raise RuntimeError( \
       '%s INTEGRATE.HKL integrate.pickle crystal.json sweep.json [dmin]' % \
-      sys.argv[0]
+      sys.argv[0])
 
   if len(sys.argv) == 5:
     compare_chunks(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])

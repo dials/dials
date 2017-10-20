@@ -9,7 +9,7 @@ def run():
   from os.path import join
   try:
     dials_regression = libtbx.env.dist_path('dials_regression')
-  except KeyError, e:
+  except KeyError:
     print 'SKIP: dials_regression not configured'
     exit(0)
 

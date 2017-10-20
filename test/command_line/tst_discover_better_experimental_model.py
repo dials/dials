@@ -9,7 +9,7 @@ from scitbx import matrix
 # this import required early to avoid seg fault on some systems
 try:
   import scipy.linalg # import dependency
-except ImportError, e:
+except ImportError:
   pass
 
 # apply a random seed to avoid this randomly crashing... I hope

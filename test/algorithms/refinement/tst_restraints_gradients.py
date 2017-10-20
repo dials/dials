@@ -45,7 +45,7 @@ if do_hexagonal:
   from dxtbx.model.experiment_list import ExperimentListFactory
   try:
     dials_regression = libtbx.env.dist_path('dials_regression')
-  except KeyError, e:
+  except KeyError:
     print 'Skipped: dials_regression not configured'
     exit(0)
   data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")

@@ -366,7 +366,7 @@ def _add_batch(mtz, experiment, batch_number, image_number, force_static_model):
   # this be in the BATCH headers?
   try:
     mosaic = experiment.crystal.get_mosaicity()
-  except AttributeError, e:
+  except AttributeError:
     mosaic = 0
   o.set_crydat(flex.float([mosaic, 0.0, 0.0, 0.0, 0.0, 0.0,
                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))

@@ -8,7 +8,7 @@ def run():
   from libtbx.test_utils import approx_equal
   try:
     dials_regression = libtbx.env.dist_path('dials_regression')
-  except KeyError, e:
+  except KeyError:
     print 'FAIL: dials_regression not configured'
     exit(0)
 

@@ -14,7 +14,7 @@ class Test(object):
 
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
-    except KeyError, e:
+    except KeyError:
       print 'FAIL: dials_regression not configured'
       exit(0)
 
@@ -94,9 +94,9 @@ class Test(object):
         try:
           assert(abs(gj_1 - gj_2) <= eps)
           assert(abs(gi_1 - gi_2) <= eps)
-        except Exception, e:
+        except Exception:
           print gi_1, gi_2, gj_1, gj_2
-          raise e
+          raise
 
     # Test passed
     print 'OK'

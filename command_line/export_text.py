@@ -5,7 +5,7 @@ from dials.util.export_text import export_text
 if __name__ == '__main__':
   import sys
   if len(sys.argv) != 2:
-    raise RuntimeError, '%s integrated.pickle'
+    raise RuntimeError('%s integrated.pickle')
 
   import cPickle as pickle
 

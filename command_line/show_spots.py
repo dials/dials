@@ -38,7 +38,7 @@ if __name__ == '__main__':
   import sys
   from libtbx.utils import Sorry
   if len(sys.argv) != 2:
-    raise RuntimeError, '%s strong.pickle'
+    raise RuntimeError('%s strong.pickle')
 
   import cPickle as pickle
   from dials.array_family import flex

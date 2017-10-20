@@ -109,7 +109,7 @@ class Test(object):
         assert(not shoebox.is_consistent())
         shoebox.deallocate()
         assert(not shoebox.is_consistent())
-      except Exception, e:
+      except Exception:
         print x0, y0, z0, x1, y1, z1
         raise
 

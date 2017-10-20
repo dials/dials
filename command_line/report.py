@@ -2422,7 +2422,7 @@ class Analyser(object):
           try:
             # does the beam intersect with the panel?
             panel.get_beam_centre(expt.beam.get_s0())
-          except RuntimeError, e:
+          except RuntimeError:
             continue
           else:
             expt_geom_table.append((

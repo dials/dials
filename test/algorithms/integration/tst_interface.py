@@ -410,7 +410,7 @@ class TestIntegrator3D(object):
     from math import pi
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
-    except KeyError, e:
+    except KeyError:
       print 'FAIL: dials_regression not configured'
       exit(0)
 
@@ -475,7 +475,7 @@ class TestSummation(object):
     from math import pi
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
-    except KeyError, e:
+    except KeyError:
       print 'FAIL: dials_regression not configured'
       exit(0)
 

@@ -6,7 +6,7 @@ from __future__ import absolute_import, division
 
 try:
   import matplotlib
-except ImportError,e:
+except ImportError:
   exit() # To pass through the "make" step, for graphics-free HPC build
 
 # Offline backend

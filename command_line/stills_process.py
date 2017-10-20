@@ -449,25 +449,25 @@ class Processor(object):
     # Do the processing
     try:
       observed = self.find_spots(datablock)
-    except Exception, e:
+    except Exception as e:
       print "Error spotfinding", tag, str(e)
       if not self.params.dispatch.squash_errors: raise
       return
     try:
       experiments, indexed = self.index(datablock, observed)
-    except Exception, e:
+    except Exception as e:
       print "Couldn't index", tag, str(e)
       if not self.params.dispatch.squash_errors: raise
       return
     try:
       experiments, indexed = self.refine(experiments, indexed)
-    except Exception, e:
+    except Exception as e:
       print "Error refining", tag, str(e)
       if not self.params.dispatch.squash_errors: raise
       return
     try:
       integrated = self.integrate(experiments, indexed)
-    except Exception, e:
+    except Exception as e:
       print "Error integrating", tag, str(e)
       if not self.params.dispatch.squash_errors: raise
       return
@@ -539,7 +539,7 @@ class Processor(object):
             reflections, imagesets,
             params=params)
           idxr.index()
-        except Exception, e:
+        except Exception as e:
           logger.info("Couldn't index using method %s"%method)
           if indexing_error is None:
             if e is None:

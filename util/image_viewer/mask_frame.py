@@ -514,7 +514,7 @@ class MaskSettingsPanel(wx.Panel):
         rectangle = [int(s) for s in rectangle]
         assert len(rectangle) == 4
         panel = int(self.untrusted_rectangle_panel_ctrl.GetValue())
-      except Exception, e:
+      except Exception:
         pass
       else:
         untrusted = masking.phil_scope.extract().untrusted[0]
@@ -530,7 +530,7 @@ class MaskSettingsPanel(wx.Panel):
         assert len(polygon) % 2 == 0
         assert len(polygon) // 2 > 3
         panel = int(self.untrusted_polygon_panel_ctrl.GetValue())
-      except Exception, e:
+      except Exception:
         pass
       else:
         untrusted = masking.phil_scope.extract().untrusted[0]
@@ -545,7 +545,7 @@ class MaskSettingsPanel(wx.Panel):
         circle = [int(s) for s in circle]
         assert len(circle) == 3
         panel = int(self.untrusted_circle_panel_ctrl.GetValue())
-      except Exception, e:
+      except Exception:
         pass
       else:
         untrusted = masking.phil_scope.extract().untrusted[0]

@@ -3,7 +3,7 @@ from __future__ import absolute_import, division
 # this import required early to avoid seg fault on some systems
 try:
   import scipy.linalg # import dependency
-except ImportError, e:
+except ImportError:
   pass
 
 import os

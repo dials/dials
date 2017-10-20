@@ -2,6 +2,12 @@ from __future__ import absolute_import, division
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.compare_mosflm_xds
 
+import math
+
+from iotbx import mtz
+from cctbx.uctbx import unit_cell
+from scitbx import matrix
+
 def pull_reference_xds(integrate_hkl, d_min = 0.0):
   '''Generate reference data set from integrate.hkl, check out the calculated
   x, y and z centroids as well as the Miller indices as coordinates in some
@@ -58,8 +64,6 @@ def pull_reference(integrate_mtz):
   # sdcorrection noadjust norefine both 1 0 0
   # eof
 
-  from iotbx import mtz
-
   m = mtz.object(integrate_mtz)
 
   hkl = m.extract_original_index_miller_indices()
@@ -103,17 +107,15 @@ def pull_reference(integrate_mtz):
 def integrate_mtz_to_unit_cell(integrate_mtz):
   '''Generate a cctbx unit_cell from an integrate_mtz file.'''
 
-  from iotbx import mtz
   m = mtz.object(integrate_mtz)
   for c in m.crystals():
     return c.unit_cell()
 
-  raise RuntimeError, 'unit cell not found'
+  raise RuntimeError('unit cell not found')
 
 def pull_calculated(integrate_pkl):
   from dials.array_family import flex # import dependency
   import cPickle as pickle
-  import math
 
   r_list = pickle.load(open(integrate_pkl, 'rb'))
 
@@ -144,8 +146,6 @@ def pull_calculated(integrate_pkl):
   return hkl, i, sigi, xyz
 
 def meansd(values):
-  import math
-
   assert(len(values) > 3)
 
   mean = sum(values) / len(values)
@@ -154,7 +154,6 @@ def meansd(values):
   return mean, math.sqrt(var)
 
 def cc(a, b):
-
   assert(len(a) == len(b))
 
   ma, sa = meansd(a)
@@ -166,9 +165,6 @@ def cc(a, b):
   return r
 
 def R(calc, obs, scale = None):
-
-  import math
-
   assert(len(calc) == len(obs))
 
   if not scale:
@@ -179,7 +175,6 @@ def R(calc, obs, scale = None):
               sum([math.fabs(o) for o in obs]), scale
 
 def compare_chunks(integrate_mtz, integrate_hkl):
-
   from cctbx.array_family import flex
   from annlib_ext import AnnAdaptor as ann_adaptor
 
@@ -306,20 +301,16 @@ def integrate_hkl_to_A_matrix(integrate_hkl):
       c = tuple(map(float, record.split()[-3:]))
 
   if not a or not b or not c:
-    raise RuntimeError, 'unit cell vectors not found'
+    raise RuntimeError('unit cell vectors not found')
 
-  from scitbx import matrix
   return matrix.sqr(a + b + c).inverse()
 
 def get_mosflm_coordinate_frame(integrate_mtz):
-  from iotbx import mtz
-  from scitbx import matrix
   m = mtz.object(integrate_mtz)
   b = m.batches()[0]
   return matrix.col(b.source()), matrix.col(b.e1())
 
 def get_xds_coordinate_frame(integrate_hkl):
-  from scitbx import matrix
   beam = axis = None
 
   for record in open(integrate_hkl):
@@ -331,14 +322,11 @@ def get_xds_coordinate_frame(integrate_hkl):
       axis = matrix.col(map(float, record.split()[-3:])).normalize()
 
   if not beam or not axis:
-    raise RuntimeError, 'coordinate frame information not found'
+    raise RuntimeError('coordinate frame information not found')
 
   return beam, axis
 
 def integrate_mtz_to_A_matrix(integrate_mtz):
-  from iotbx import mtz
-  from cctbx.uctbx import unit_cell
-  from scitbx import matrix
   m = mtz.object(integrate_mtz)
   b = m.batches()[0]
   u = matrix.sqr(b.umat()).transpose()
@@ -349,15 +337,13 @@ def integrate_mtz_to_A_matrix(integrate_mtz):
 def integrate_hkl_to_unit_cell(integrate_hkl):
   '''Generate a cctbx unit_cell from an integrate_hkl file.'''
 
-  from cctbx.uctbx import unit_cell
-
   for record in open(integrate_hkl):
     if not record.startswith('!'):
       break
     if record.startswith('!UNIT_CELL_CONSTANTS='):
       return unit_cell(tuple(map(float, record.split()[-6:])))
 
-  raise RuntimeError, 'unit cell not found'
+  raise RuntimeError('unit cell not found')
 
 def derive_reindex_matrix(integrate_hkl, integrate_mtz):
   '''Derive a reindexing matrix to go from the orientation matrix used
@@ -374,7 +360,6 @@ def derive_reindex_matrix(integrate_hkl, integrate_mtz):
   # assert that this should just be a simple integer rotation matrix
   # i.e. reassignment of a, b, c so...
 
-  from scitbx import matrix
   return matrix.sqr(map(int, map(round, (dA.inverse() * mA).elems)))
 
 if __name__ == '__main__':

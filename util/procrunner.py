@@ -121,7 +121,7 @@ class _NonBlockingStreamWriter:
           block = self._buffer[self._buffer_pos:]
         try:
           self._stream.write(block)
-        except IOError, e:
+        except IOError as e:
           if e.errno == 32: # broken pipe, ie. process terminated without reading entire stdin
             self._stream.close()
             self._terminated = True

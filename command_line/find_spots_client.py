@@ -132,9 +132,9 @@ def stop(host, port, nproc):
         stopped = stopped + 1
       else:
         print "socket returned code", socket.getcode()
-    except (pysocket.timeout, urllib2.HTTPError), e:
+    except (pysocket.timeout, urllib2.HTTPError) as e:
       print "error on stopping server:", e
-    except urllib2.URLError, e:
+    except urllib2.URLError as e:
       if e.reason.errno != 111:
         print "error on stopping server:", e
     except pysocket.error:

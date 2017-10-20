@@ -17,7 +17,7 @@ try:
   # try importing scipy.linalg before any cctbx modules to avoid segfault on
   # some platforms
   import scipy.linalg # import dependency
-except ImportError, e:
+except ImportError:
   pass
 
 from cmd import Cmd
@@ -160,7 +160,7 @@ class Console(Cmd):
     try:
       self.controller.set_mode(mode)
       self.prompt = "%s >> " % self.controller.get_mode()
-    except Exception, e:
+    except Exception as e:
       print_error(e)
 
   def do_models(self, line):
@@ -171,7 +171,7 @@ class Console(Cmd):
       if filename is None:
         raise RuntimeError('No models to show')
       subprocess.call('dials.show %s' % filename, shell=True)
-    except Exception, e:
+    except Exception as e:
       print_error(e)
 
   def do_summary(self, line):
@@ -181,7 +181,7 @@ class Console(Cmd):
       if filename is None:
         raise RuntimeError('No result to show')
       print 'For report, see: %s' % filename
-    except Exception, e:
+    except Exception as e:
       print_error(e)
 
   def do_report(self, line):
@@ -192,21 +192,21 @@ class Console(Cmd):
       if filename is None:
         raise RuntimeError('No result to show')
       webbrowser.open('file://%s' % filename)
-    except Exception, e:
+    except Exception as e:
       print_error(e)
 
   def do_set(self, parameter):
     ''' Set a phil parameter '''
     try:
       self.controller.set_parameters(parameter, short_syntax=True)
-    except Exception, e:
+    except Exception as e:
       print_error(e)
 
   def do_reset(self, line):
     ''' Reset parameters to default. '''
     try:
       self.controller.reset_parameters()
-    except Exception, e:
+    except Exception as e:
       print_error(e)
 
   def do_undo(self, line):
@@ -214,7 +214,7 @@ class Console(Cmd):
     try:
       self.controller.undo_parameters()
       print self.controller.get_parameters(diff=True).as_str()
-    except Exception, e:
+    except Exception as e:
       print_error(e)
 
   def do_redo(self, line):
@@ -222,7 +222,7 @@ class Console(Cmd):
     try:
       self.controller.redo_parameters()
       print self.controller.get_parameters(diff=True).as_str()
-    except Exception, e:
+    except Exception as e:
       print_error(e)
 
   def do_load(self, filename):
@@ -230,7 +230,7 @@ class Console(Cmd):
     try:
       with open(filename) as infile:
         self.controller.set_parameters(infile.read())
-    except Exception, e:
+    except Exception as e:
       print_error(e)
 
   def do_run(self, line):
@@ -238,7 +238,7 @@ class Console(Cmd):
     try:
       self.controller.run().wait()
       self.print_history()
-    except Exception, e:
+    except Exception as e:
       print_error(e)
 
   def do_goto(self, line):
@@ -246,7 +246,7 @@ class Console(Cmd):
     try:
       self.controller.goto(int(line))
       self.print_history()
-    except Exception, e:
+    except Exception as e:
       print_error(e)
 
   def do_get(self, line):
@@ -311,7 +311,7 @@ class Console(Cmd):
     import subprocess
     try:
       subprocess.call(line, shell=True)
-    except Exception, e:
+    except Exception as e:
       print_error(e)
 
   def run_import_as_imperative(self, line):
@@ -333,7 +333,7 @@ class Console(Cmd):
       self.controller.run().wait()
       self.controller.undo_parameters()
       self.print_history()
-    except Exception, e:
+    except Exception as e:
       print_error(e)
 
   def parse_import_line(self, line):

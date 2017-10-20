@@ -246,7 +246,7 @@ class ReferenceGeometryUpdater(object):
       try:
         experiments = load.experiment_list(
           params.input.reference_geometry, check_format=False)
-      except Exception, e:
+      except Exception:
         datablock = load.datablock(params.input.reference_geometry)
       assert experiments or datablock, 'Could not import reference geometry'
       if experiments:

@@ -19,7 +19,7 @@ def find_column(miller_array_dict, name):
   for k in miller_array_dict:
     if k[-1] == name:
       return miller_array_dict[k]
-  raise RuntimeError, 'Could not find column %s' % name
+  raise RuntimeError('Could not find column %s' % name)
 
 def main(args):
   work = scope

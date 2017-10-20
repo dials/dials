@@ -305,7 +305,7 @@ def dump(entry, reflections, experiments):
   for key, data in reflections.cols():
     try:
       write(refls, key, data)
-    except KeyError, e:
+    except KeyError as e:
       print e
 
   # FIXME Write the overlaps (for testing at the moment)
@@ -379,7 +379,7 @@ def load(entry):
       if table is None:
         table = flex.reflection_table()
       table[key] = col
-    except KeyError, e:
+    except KeyError:
       pass
 
   # Return the table

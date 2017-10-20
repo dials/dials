@@ -66,7 +66,7 @@ def get_xds_coordinate_frame(integrate_hkl):
       axis = matrix.col(map(float, record.split()[-3:])).normalize()
 
   if not beam or not axis:
-    raise RuntimeError, 'coordinate frame information not found'
+    raise RuntimeError('coordinate frame information not found')
 
   return beam, axis
 
@@ -84,7 +84,7 @@ def integrate_hkl_to_A_matrix(integrate_hkl):
       c = tuple(map(float, record.split()[-3:]))
 
   if not a or not b or not c:
-    raise RuntimeError, 'unit cell vectors not found'
+    raise RuntimeError('unit cell vectors not found')
 
   from scitbx import matrix
   return matrix.sqr(a + b + c).inverse()
@@ -100,7 +100,7 @@ def integrate_hkl_to_unit_cell(integrate_hkl):
     if record.startswith('!UNIT_CELL_CONSTANTS='):
       return unit_cell(tuple(map(float, record.split()[-6:])))
 
-  raise RuntimeError, 'unit cell not found'
+  raise RuntimeError('unit cell not found')
 
 def pull_calculated(integrate_pkl):
   from dials.array_family import flex # import dependency
@@ -289,8 +289,6 @@ def compare_chunks(integrate_hkl, integrate_pkl, experiments_json, d_min = 0.0):
   pyplot.savefig('plot-vs-xds.png')
   pyplot.close()
 
-  return
-
 def derive_reindex_matrix(experiments_json, integrate_hkl):
   '''Derive a reindexing matrix to go from the orientation matrix used
   for XDS integration to the one used for DIALS integration.'''
@@ -313,9 +311,9 @@ def derive_reindex_matrix(experiments_json, integrate_hkl):
 if __name__ == '__main__':
   import sys
   if len(sys.argv) < 4:
-    raise RuntimeError, \
+    raise RuntimeError( \
       '%s INTEGRATE.HKL integrate.pickle experiments.json [dmin]' % \
-      sys.argv[0]
+      sys.argv[0])
 
   if len(sys.argv) == 4:
     compare_chunks(sys.argv[1], sys.argv[2], sys.argv[3])

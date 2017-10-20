@@ -18,12 +18,9 @@ def test_polarization_conversion():
     n1 = matrix.col((uniform(-1,1), uniform(-1,1), 0)).normalize()
     p1 = uniform(0,1)
     n2, p2 = conv(n1, p1)
-    try:
-      angle = n2.angle(n1)
-      assert(abs(angle) < EPS or abs(angle - pi) < EPS or abs(angle-2*pi) < EPS)
-      assert(abs(p1 - p2) < EPS)
-    except AssertionError, e:
-      raise
+    angle = n2.angle(n1)
+    assert(abs(angle) < EPS or abs(angle - pi) < EPS or abs(angle-2*pi) < EPS)
+    assert(abs(p1 - p2) < EPS)
   print 'OK'
 
 
@@ -184,7 +181,7 @@ def run():
   import libtbx.load_env
   try:
     dials_regression = libtbx.env.dist_path('dials_regression')
-  except KeyError, e:
+  except KeyError:
     print 'FAIL: dials_regression not configured'
     exit(0)
   path = join(dials_regression, "nexus_test_data", "shared_models")

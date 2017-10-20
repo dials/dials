@@ -357,7 +357,7 @@ def discover_better_experimental_model(
 
   if beam_panel == -1:
     from libtbx.utils import Sorry
-    raise Sorry, 'input beam does not intersect detector'
+    raise Sorry('input beam does not intersect detector')
 
   for imageset, spots in zip(imagesets, spot_lists):
     if 'imageset_id' not in spots:

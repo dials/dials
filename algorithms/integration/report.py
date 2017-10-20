@@ -260,7 +260,7 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
   # Create the frame binner object
   try:
     array_range = experiment.imageset.get_array_range()
-  except:
+  except Exception:
     array_range = (0, len(experiment.imageset))
   frame_binner = Binner(flex.int(range(
     array_range[0],

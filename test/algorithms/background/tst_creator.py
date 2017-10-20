@@ -12,7 +12,7 @@ class TestConstant2d(object):
     import libtbx.load_env
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
-    except KeyError, e:
+    except KeyError:
       print 'SKIP: dials_regression not configured'
       exit(0)
 
@@ -106,7 +106,7 @@ class TestConstant3d(object):
     import libtbx.load_env
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
-    except KeyError, e:
+    except KeyError:
       print 'SKIP: dials_regression not configured'
       exit(0)
 
@@ -201,7 +201,7 @@ class TestLinear2d(object):
     import libtbx.load_env
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
-    except KeyError, e:
+    except KeyError:
       print 'SKIP: dials_regression not configured'
       exit(0)
 
@@ -296,7 +296,7 @@ class TestLinear3d(object):
     import libtbx.load_env
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
-    except KeyError, e:
+    except KeyError:
       print 'SKIP: dials_regression not configured'
       exit(0)
 

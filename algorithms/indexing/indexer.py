@@ -717,7 +717,7 @@ class indexer_base(object):
 
     try:
       self.find_max_cell()
-    except AssertionError, e:
+    except AssertionError as e:
       if "too few spots" in str(e).lower():
         raise Sorry(e)
 
@@ -890,7 +890,7 @@ class indexer_base(object):
           try:
             refined_experiments, refined_reflections = self.refine(
               experiments, reflections_for_refinement)
-          except RuntimeError, e:
+          except RuntimeError as e:
             s = str(e)
             if ("below the configured limit" in s or
                 "Insufficient matches for crystal" in s):
@@ -1440,11 +1440,11 @@ class indexer_base(object):
                          self.target_symmetry_primitive.unit_cell() is None)):
         try:
           self.correct_non_primitive_basis(experiments, refl, threshold)
-        except SmallUnitCellVolume, e:
+        except SmallUnitCellVolume:
           logger.debug("correct_non_primitive_basis SmallUnitCellVolume error for unit cell %s:"
                        %experiments[0].crystal.get_unit_cell())
           continue
-        except RuntimeError, e:
+        except RuntimeError as e:
           if 'Krivy-Gruber iteration limit exceeded' in str(e):
             logger.debug("correct_non_primitive_basis Krivy-Gruber iteration limit exceeded error for unit cell %s:"
                          %experiments[0].crystal.get_unit_cell())

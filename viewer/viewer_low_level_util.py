@@ -194,12 +194,12 @@ class MyGrid(gridlib.Grid):
                         reverse = self.sorted_flags[col_to_sort])
       print "using key=lambda x: int(x[col_to_sort])"
 
-    except:
+    except Exception:
       try:
         tupldata = sorted(self.data, key=lambda x: float(x[col_to_sort]),
                           reverse = self.sorted_flags[col_to_sort])
         print "using key=lambda x: float(x[col_to_sort])"
-      except:
+      except Exception:
         tupldata = sorted(self.data, key=lambda x:
                           tuple(eval(str(x[col_to_sort]))),
                           reverse = self.sorted_flags[col_to_sort])
@@ -270,7 +270,7 @@ class flex_arr_img_panel(wx.Panel):
       self.local_bbox = self.table[self.row_pos]['bbox']
 
 
-    except:
+    except Exception:
       self.first_lst_in, self.segn_lst_in = None, None
 
   def _mi_list_of_wxbitmaps(self, re_scaling = False):

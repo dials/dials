@@ -242,7 +242,7 @@ class Cluster(object):
       from xfel.clustering.cluster import Cluster
       from xfel.clustering.cluster_groups import unit_cell_info
     except ImportError:
-      raise Sorry, "clustering is not configured"
+      raise Sorry("clustering is not configured")
     import matplotlib.pyplot as plt
     ucs = Cluster.from_expts(
       refl_table=reflections,

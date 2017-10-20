@@ -301,7 +301,7 @@ class stills_indexer(indexer_base):
       try:
         refined_experiments, refined_reflections = self.refine(
           experiments, reflections_for_refinement)
-      except RuntimeError, e:
+      except RuntimeError as e:
         s = str(e)
         if ("below the configured limit" in s or
             "Insufficient matches for crystal" in s):
@@ -515,7 +515,7 @@ class stills_indexer(indexer_base):
               continue
 
           rmsd, _ = calc_2D_rmsd_and_displacements(R.predict_for_reflection_table(indexed))
-        except Exception, e:
+        except Exception as e:
           print "Couldn't refine candiate %d/%d, %s"%(icm, n_cand, str(e))
         else:
           print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d done"%(icm, n_cand)

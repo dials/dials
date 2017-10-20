@@ -98,15 +98,15 @@ class Script(object):
       try:
         for _h in h - 1, h + 1:
           if not indexer[(_h, k, l)]:
-            raise ValueError, 'missing'
+            raise ValueError('missing')
         for _k in k - 1, k + 1:
           if not indexer[(h, _k, l)]:
-            raise ValueError, 'missing'
+            raise ValueError('missing')
         for _l in l - 1, l + 1:
           if not indexer[(h, k, _l)]:
-            raise ValueError, 'missing'
+            raise ValueError('missing')
         candidates.append((h, k, l))
-      except ValueError, e:
+      except ValueError:
         continue
 
     from dials.algorithms.simulation.utils import build_prediction_matrix
@@ -183,7 +183,7 @@ class Script(object):
       try:
         counts = counts_database[hkl.miller_index]
         useful.append(hkl)
-      except KeyError, e:
+      except KeyError:
         continue
 
     from dials.algorithms import shoebox

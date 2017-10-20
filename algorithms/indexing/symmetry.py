@@ -205,7 +205,7 @@ def refine_subgroup(args):
     params.refinement.reflections.outlier.tukey.iqr_multiplier = iqr_multiplier
     refinery, refined, outliers = refine(
       params, used_reflections, refinery.get_experiments(), verbosity=refiner_verbosity)
-  except RuntimeError, e:
+  except RuntimeError as e:
     if (str(e) == "scitbx Error: g0 - astry*astry -astrz*astrz <= 0." or
         str(e) == "scitbx Error: g1-bstrz*bstrz <= 0."):
       subgroup.refined_crystal = None
@@ -343,7 +343,7 @@ def find_matching_symmetry(unit_cell, target_space_group, max_delta=5):
       cb_op_corr = cb_op_inp_best.inverse()
       try:
         best_subsym_corr = best_subsym.change_basis(cb_op_corr)
-      except RuntimeError, e:
+      except RuntimeError as e:
         if str(e).find("Unsuitable value for rational rotation matrix.") < 0:
           raise
       else:

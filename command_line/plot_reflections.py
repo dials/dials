@@ -71,7 +71,7 @@ def run(args):
   panel_origin_shifts = {0: (0,0,0)}
   try:
     hierarchy = detector.hierarchy()
-  except AttributeError, e:
+  except AttributeError:
     hierarchy = None
   for i_panel in range(1, len(detector)):
     origin_shift = matrix.col(detector[0].get_origin()) \

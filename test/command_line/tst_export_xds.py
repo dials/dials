@@ -63,7 +63,7 @@ def export_xds():
 
   try:
     dials_regression = libtbx.env.dist_path('dials_regression')
-  except KeyError, e:
+  except KeyError:
     print "skipping exercise_export_xds: dials_regression not available"
     return
 

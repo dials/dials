@@ -152,7 +152,7 @@ indexing_min_spots = 10
       stats['lattices'] = indexing_results
       stats['n_indexed'] = indexed_sel.count(True)
       stats['fraction_indexed'] = indexed_sel.count(True)/len(reflections)
-    except Exception, e:
+    except Exception as e:
       logger.error(e)
       stats['error'] = str(e)
       #stats.crystal = None
@@ -220,7 +220,7 @@ indexing_min_spots = 10
         #print len(reflections)
 
         stats['integrated_intensity'] = flex.sum(reflections['intensity.sum.value'])
-      except Exception, e:
+      except Exception as e:
         logger.error(e)
         stats['error'] = str(e)
       finally:
@@ -249,7 +249,7 @@ class handler(server_base.BaseHTTPRequestHandler):
       stats = work(filename, params)
       d.update(stats)
 
-    except Exception, e:
+    except Exception as e:
       d['error'] = str(e)
 
     import json

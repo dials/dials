@@ -10,7 +10,7 @@ try:
   # sometimes get a segmentation fault/core dump if it is imported after
   # scipy.linalg is a dependency of sklearn.cluster.DBSCAN
   import scipy.linalg # import dependency
-except ImportError, e:
+except ImportError:
   pass
 
 import copy

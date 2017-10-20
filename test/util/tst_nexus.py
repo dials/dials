@@ -10,7 +10,7 @@ def run():
   import libtbx.load_env
   try:
     dials_regression = libtbx.env.dist_path('dials_regression')
-  except KeyError, e:
+  except KeyError:
     print 'Skipped: dials_regression not configured'
     exit(0)
   path = join(dials_regression, "nexus_test_data")

@@ -58,7 +58,7 @@ def wait_for_server(port, max_wait=3):
       s.connect(('127.0.0.1', port))
       s.close()
       server_ok = True
-    except socket.error, e:
+    except socket.error as e:
       if (e.errno != 111) and (e.errno != 61):
         raise
       # ignore connection failures (111 connection refused on linux; 61 connection refused on mac)

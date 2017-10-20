@@ -70,7 +70,7 @@ def integrate_mtz_to_unit_cell(integrate_mtz):
   for c in m.crystals():
     return c.unit_cell()
 
-  raise RuntimeError, 'unit cell not found'
+  raise RuntimeError('unit cell not found')
 
 def pull_calculated(integrate_pkl):
   from dials.array_family import flex # import dependency

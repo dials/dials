@@ -62,9 +62,9 @@ if __name__ == '__main__':
       function, element = pickle.load(open(input_fn))
 
     result = function(element)
-  except Exception, exception:
-    exception.args = [traceback.format_exc()]
-    result = exception
+  except Exception as e:
+    e.args = [traceback.format_exc()]
+    result = e
 
   # Dump the result
   with open(output_fn, "wb") as outfile:

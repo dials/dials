@@ -12,7 +12,7 @@ class Test(object):
 
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
-    except KeyError, e:
+    except KeyError:
       print 'FAIL: dials_regression not configured'
       exit(0)
 
@@ -32,7 +32,7 @@ class Test(object):
     self.delta_d = 3 * self.beam.get_sigma_divergence(deg=False)
     try:
       mosaicity = self.crystal.get_mosaicity(deg=False)
-    except AttributeError, e:
+    except AttributeError:
       mosaicity = 0
     self.delta_m = 3 * mosaicity
     self.nsigma = 3
@@ -182,7 +182,7 @@ class Test(object):
     sigma_b = self.experiment[0].beam.get_sigma_divergence(deg=False)
     try:
       sigma_m = self.experiment[0].crystal.get_mosaicity(deg=False)
-    except AttributeError, e:
+    except AttributeError:
       sigma_m = 0
 
     rlist = flex.reflection_table()

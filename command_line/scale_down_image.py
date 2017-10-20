@@ -7,8 +7,8 @@ from __future__ import absolute_import, division
 if __name__ == '__main__':
   import sys
   if len(sys.argv) != 4:
-    raise RuntimeError, '%s in_image.cbf out_image.cbf scale_factor' % \
-      sys.argv[0]
+    raise RuntimeError('%s in_image.cbf out_image.cbf scale_factor' % \
+      sys.argv[0])
   in_image = sys.argv[1]
   out_image = sys.argv[2]
   scale_factor = float(sys.argv[3])

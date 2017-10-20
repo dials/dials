@@ -36,7 +36,7 @@ if __name__ == '__main__':
   from dials.array_family import flex # import dependency
   import sys
   if len(sys.argv) != 2:
-    raise RuntimeError, '%s indexed.pickle' % sys.argv[0]
+    raise RuntimeError('%s indexed.pickle' % sys.argv[0])
 
   import cPickle as pickle
 

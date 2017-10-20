@@ -368,7 +368,7 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
 
     try:
       panel_id, beam_centre = detector.get_ray_intersection(beam.get_s0())
-    except RuntimeError, e:
+    except RuntimeError:
       # beam centre calculation fails if the beam falls between panels
       pass
     else:
@@ -387,7 +387,7 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
 
     try:
       panel_id, beam_centre = detector.get_ray_intersection(beam.get_s0())
-    except RuntimeError, e:
+    except RuntimeError:
       # beam centre calculation fails if the beam falls between panels
       pass
     else:

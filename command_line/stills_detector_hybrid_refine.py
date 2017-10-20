@@ -254,7 +254,7 @@ def crystals_refiner(params, experiments, reflections):
         params, refs, exps)
       # do refinement
       refiner.run()
-    except Exception, e:
+    except Exception as e:
       print "Error,", str(e)
       return
 
