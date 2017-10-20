@@ -60,15 +60,7 @@ def exercise_1():
   detector_2 = optimized_datablock[0].unique_detectors()[0]
   shift = (matrix.col(detector_1[0].get_origin()) -
            matrix.col(detector_2[0].get_origin()))
-  assert approx_equal(shift.elems, (-0.242, -0.125, 0.0), eps=1e-2)
-  # This produces these two different solutions.
-  # The two corresponding origin vectors are:
-  # "origin": [ -208.507324496093,   209.20518907699287, -266.11 ]
-  # "origin": [ -208.50831812992388, 209.20211805759828, -266.11 ]
-  # The remainder of the optimized_datablock.json is identical.
-  #
-  # TODO: I don't know if both of these are legitimate, or if
-  # this is a bug in discover_better_experimental_model.
+  assert approx_equal(shift.elems, (0.037, 0.061, 0.0), eps=1e-1)
   os.chdir(cwd)
 
 def exercise_2():
@@ -165,7 +157,7 @@ def exercise_3():
   detector_2 = optimized_datablock[0].unique_detectors()[0]
   shift = (matrix.col(detector_1[0].get_origin()) -
            matrix.col(detector_2[0].get_origin()))
-  assert approx_equal(shift.elems, (-1.04661289838, 2.36670867594, 0.0), eps=1e-1)
+  assert approx_equal(shift.elems, (-0.976, 2.497, 0.0), eps=1e-1)
   os.chdir(cwd)
 
 
