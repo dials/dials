@@ -108,7 +108,7 @@ def exercise_client(port):
 
   from libtbx.test_utils import approx_equal
   assert approx_equal(
-    unit_cell, [39.814, 42.669, 42.3074, 89.6946, 89.9012, 89.8521], eps=1e-1)
+    unit_cell, [40.04, 42.92, 42.56, 89.81, 90.15, 90.19], eps=1e-1)
 
   client_command = " ".join([client_command] + filenames[1:])
   result = easy_run.fully_buffered(command=client_command).raise_if_errors()
@@ -125,10 +125,10 @@ def exercise_client(port):
     int(node.childNodes[0].data)
     for node in xmldoc.getElementsByTagName('spot_count_no_ice')])
   assert spot_counts_no_ice \
-         == sorted([150, 142, 151, 161, 151, 167, 164, 161, 146]), spot_counts_no_ice
+         == sorted([169, 171, 175, 176, 177, 184, 193, 195, 196]), spot_counts_no_ice
   d_min = sorted([float(node.childNodes[0].data)
                   for node in xmldoc.getElementsByTagName('d_min')])
-  assert d_min == sorted([1.47, 1.55, 1.59, 1.61, 1.61, 1.61, 1.61, 1.62, 1.64]), d_min
+  assert d_min == sorted([1.45, 1.47, 1.55, 1.55, 1.56, 1.59, 1.61, 1.61, 1.64]), d_min
 
 
 if __name__ == '__main__':
