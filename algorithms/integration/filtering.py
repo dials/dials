@@ -24,9 +24,9 @@ phil_scope = parse('''
       d_min = 1
         .type = float(value_min=0.0)
         .help = "The minimum resolution to filter ice rings"
-      width = 0.06
+      width = 0.002
         .type = float(value_min=0.0)
-        .help = "The width of an ice ring (in d-spacing)."
+        .help = "The width of an ice ring (in 1/d^2)."
     }
 
     apply = *none water_ice
