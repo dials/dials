@@ -397,7 +397,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     '''
     import copy
     uniq_values = self[key0]
-    from IPython import embed; embed()
     for ii in set(uniq_values):
       val = (uniq_values == ii).iselection()
       ref_tmp = copy.deepcopy(self[min(val):(max(val)+1)])
