@@ -104,6 +104,14 @@ class Data_Manager(object):
       self.scaling_options['integration_method'] = 'prf'
       self.select_optimal_intensities()
 
+  def update_for_minimisation(self, parameters):
+    '''update the scale factors and Ih for the next iteration of minimisation'''
+    basis_fn = self.get_basis_function(parameters)
+    self.reflections_for_scaling['inverse_scale_factor'] = basis_fn[0]
+    self.active_derivatives = basis_fn[1]
+    self.Ih_table.update_scale_factors(self.reflections_for_scaling['inverse_scale_factor'])
+    self.Ih_table.calc_Ih()
+
   '''def assign_h_index(self, reflection_table):
     #assign an index to the sorted reflection table that
        labels each group of unique miller indices
@@ -212,14 +220,6 @@ class aimless_Data_Manager(Data_Manager):
 
   def set_up_minimisation(self, param_name):
     return self.active_parameters
-
-  def update_for_minimisation(self, parameters):
-    '''update the scale factors and Ih for the next iteration of minimisation'''
-    basis_fn = self.get_basis_function(parameters)
-    self.reflections_for_scaling['inverse_scale_factor'] = basis_fn[0]
-    self.active_derivatives = basis_fn[1]
-    self.Ih_table.calc_Ih()
-    #self.calc_Ih(self.reflections_for_scaling)
 
   def initialise_decay_term(self, reflection_table):
     '''calculate the relative, normalised rotation angle. Here this is called
@@ -382,14 +382,6 @@ class XDS_Data_Manager(Data_Manager):
     elif self.scaling_options['parameterization'] == 'log':
       self.constant_g_values = flex.double(np.sum(np.array(constant_g_values), axis=0))
     return x
-
-  def update_for_minimisation(self, parameters):
-    '''update the scale factors and Ih for the next iteration of minimisation'''
-    basis_fn = self.get_basis_function(parameters)
-    self.reflections_for_scaling['inverse_scale_factor'] = basis_fn[0]
-    self.active_derivatives = basis_fn[1]
-    self.Ih_table.calc_Ih()
-    #self.calc_Ih(self.reflections_for_scaling)
 
   def bin_reflections_decay(self):
     '''bin reflections for decay correction'''
