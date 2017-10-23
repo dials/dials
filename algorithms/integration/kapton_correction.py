@@ -438,7 +438,11 @@ class image_kapton_correction(object):
           kapton_correction_vector.extend(absorption.abs_correction_flex(s1))
           average_kapton_correction = flex.mean(kapton_correction_vector)
           absorption_corrections.append(average_kapton_correction)
-          spot_px_stddev = flex.mean_and_variance(kapton_correction_vector).unweighted_sample_standard_deviation()
+          try:
+            spot_px_stddev = flex.mean_and_variance(kapton_correction_vector).unweighted_sample_standard_deviation()
+          except Exception:
+            assert len(kapton_correction_vector) == 1, "stddev could not be calculated"
+            spot_px_stddev = 0
           absorption_sigmas.append(spot_px_stddev)
         return absorption_corrections, absorption_sigmas
       else:
