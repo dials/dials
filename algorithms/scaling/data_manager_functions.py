@@ -44,12 +44,9 @@ class Data_Manager(object):
     'choose intensities, map to asu, assign unique refl. index'
     self.select_optimal_intensities()
     self.sorted_reflections = self.map_indices_to_asu(self.reflection_table)
-    #(self.h_index_counter_array, self.h_index_cumulative_array) = (
-    #  self.assign_h_index(self.sorted_reflections))
     'assign initial weights (will be statistical weights at this point)'
     self.weights_for_scaling = self.update_weights_for_scaling(self.sorted_reflections)
     
-
   'define a few methods required upon initialisation to set up the data manager'
   def extract_reflections_for_scaling(self, reflection_table):
     '''select the reflections with non-zero weight, assign them to
@@ -58,9 +55,6 @@ class Data_Manager(object):
     weights_for_scaling = self.update_weights_for_scaling(reflection_table)
     sel = weights_for_scaling.get_weights() > 0.0
     reflections_for_scaling = reflection_table.select(sel)
-    'update h_index arrays'
-    #(self.h_index_counter_array, self.h_index_cumulative_array) = (
-    #  self.assign_h_index(reflections_for_scaling))
     weights_for_scaling = self.update_weights_for_scaling(reflections_for_scaling)
     return reflections_for_scaling, weights_for_scaling
 
@@ -112,53 +106,6 @@ class Data_Manager(object):
     self.Ih_table.update_scale_factors(self.reflections_for_scaling['inverse_scale_factor'])
     self.Ih_table.calc_Ih()
 
-  '''def assign_h_index(self, reflection_table):
-    #assign an index to the sorted reflection table that
-       labels each group of unique miller indices
-    s = len(reflection_table['d'])
-    if self.sorted_by_miller_index is False:
-      raise ValueError('Data not yet sorted by miller index')
-    else:
-      reflection_table['h_index'] = flex.int([0] * s)
-      h_index_counter_array = []
-      h_index = 0
-      h_index_counter = 1
-      for i in range(1, s):
-        if (reflection_table['asu_miller_index'][i] ==
-            reflection_table['asu_miller_index'][i-1]):
-          reflection_table['h_index'][i] = h_index
-          h_index_counter += 1
-        else:
-          h_index += 1
-          reflection_table['h_index'][i] = h_index
-          h_index_counter_array.append(h_index_counter)
-          h_index_counter = 1
-      h_index_counter_array.append(h_index_counter)
-      #calculate the cumulative sum after each h_index group
-      hsum = 0
-      h_index_cumulative_array = [0]
-      for n in h_index_counter_array:
-        hsum += n
-        h_index_cumulative_array.append(hsum)
-    return h_index_counter_array, h_index_cumulative_array'''
-
-  '''define a method to calculate Ih from a reflection_table'''
-  '''def calc_Ih(self, reflection_table):
-    #calculate the current best estimate for I for each reflection group
-    intensities = reflection_table['intensity']
-    variances = reflection_table['variance']
-    scale_factors = reflection_table['inverse_scale_factor']
-    scaleweights = self.weights_for_scaling.get_weights()
-    gsq = (((scale_factors)**2) * scaleweights)
-    sumgsq = flex.double(np.add.reduceat(gsq, self.h_index_cumulative_array[:-1]))
-    gI = ((scale_factors * intensities) * scaleweights)
-    sumgI = flex.double(np.add.reduceat(gI, self.h_index_cumulative_array[:-1]))
-    sumweights = flex.double(np.add.reduceat(scaleweights, self.h_index_cumulative_array[:-1]))
-    self.Ih_array = flex.double([val/ sumgsq[i] if sumweights[i] > 0.0
-                                 else 0.0 for i, val in enumerate(sumgI)])
-    reflection_table['Ih_values'] = flex.double(
-      np.repeat(self.Ih_array, self.h_index_counter_array))'''
-
   '''define a few methods for saving the data'''
   def save_sorted_reflections(self, filename):
     ''' Save the reflections to file. '''
@@ -194,6 +141,7 @@ class aimless_Data_Manager(Data_Manager):
       self.sorted_reflections, self.experiments)
     (self.reflections_for_scaling, self.weights_for_scaling) = (
       self.extract_reflections_for_scaling(self.sorted_reflections))
+    self.Ih_table = single_Ih_table(self.reflections_for_scaling, self.weights_for_scaling)
     '''refactor the next two operations into extract_reflections?
     reset the normalised values within the scale_factor object to current'''
     self.g_scale.set_normalised_values(self.reflections_for_scaling[
@@ -288,9 +236,10 @@ class aimless_Data_Manager(Data_Manager):
     self.sorted_reflections['inverse_scale_factor'] = (
       self.sorted_reflections['angular_scale_factor'] * self.sorted_reflections['decay_factor'])
     self.weights_for_scaling = self.update_weights_for_scaling(self.sorted_reflections)
-    (self.h_index_counter_array, self.h_index_cumulative_array) = (
-      self.assign_h_index(self.sorted_reflections))
-    self.Ih_table.calc_Ih()
+    Ih_table_sorted_refl = single_Ih_table(self.sorted_reflections, self.weights_for_scaling)
+    (self.h_index_counter_array, self.h_index_cumulative_array) = Ih_table_sorted_refl.assign_h_index()
+    Ih_table_sorted_refl.calc_Ih()
+    self.sorted_reflections['Ih_values'] = Ih_table_sorted_refl.Ih_table['Ih_values']
     #self.calc_Ih(self.sorted_reflections)
 
   def clean_reflection_table(self):

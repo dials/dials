@@ -1,41 +1,30 @@
 import numpy as np
 from dials.array_family import flex
+from cctbx import miller, crystal
 
-class single_Ih_table(object):
+class basic_Ih_table(object):
   def __init__(self, refl_table, weighting):
     #first create a minimal reflection table object
     self.Ih_table = flex.reflection_table()
     self.Ih_table['asu_miller_index'] = refl_table['asu_miller_index']
     self.Ih_table['intensity'] = refl_table['intensity']
+    self.Ih_table['Ih_values'] = None
     #bring in weights and initial scale factors
     self.weights_for_scaling = weighting.get_weights()
     self.scale_factors = refl_table['inverse_scale_factor']
     #calculate the indexing arrays
     (self.h_index_counter_array, self.h_index_cumulative_array) = self.assign_h_index()
     self.Ih_array = None
-    #calculate a first estimate of Ih
-    self.calc_Ih()
+    #no calc_Ih method here, as for basic_Ih_table the Ih is calculated by the target_Ih
 
   def update_scale_factors(self, scalefactors):
     self.scale_factors = scalefactors
 
+  def set_Ih_values(self, Ih_values):
+    self.Ih_table['Ih_values'] = Ih_values
+
   def get_Ih_values(self):
     return self.Ih_table['Ih_values']
-
-  def calc_Ih(self):
-    '''calculate the current best estimate for I for each reflection group'''
-    intensities = self.Ih_table['intensity']
-    scale_factors = self.scale_factors
-    scaleweights = self.weights_for_scaling
-    gsq = (((scale_factors)**2) * scaleweights)
-    sumgsq = flex.double(np.add.reduceat(gsq, self.h_index_cumulative_array[:-1]))
-    gI = ((scale_factors * intensities) * scaleweights)
-    sumgI = flex.double(np.add.reduceat(gI, self.h_index_cumulative_array[:-1]))
-    sumweights = flex.double(np.add.reduceat(scaleweights, self.h_index_cumulative_array[:-1]))
-    self.Ih_array = flex.double([val/ sumgsq[i] if sumweights[i] > 0.0
-                                 else 0.0 for i, val in enumerate(sumgI)])
-    self.Ih_table['Ih_values'] = flex.double(
-      np.repeat(self.Ih_array, self.h_index_counter_array))
 
   def assign_h_index(self):
     '''assign an index to the sorted reflection table that
@@ -65,12 +54,86 @@ class single_Ih_table(object):
     return h_index_counter_array, h_index_cumulative_array
 
 
-'''class target_Ih(object):
-  def __init__(self, data_man):
-    self.Ih_table = flex.reflection_table()
-    self.Ih_table['asu_miller_index'] = data_man.sorted_reflections['asu_miller_index']
-    self.Ih_table['intensity'] = data_man.sorted_reflections['intensity']
-    self.Ih_table['variance'] = data_man.sorted_reflections['variance']
+class single_Ih_table(basic_Ih_table):
+  def __init__(self, refl_table, weighting):
+    basic_Ih_table.__init__(self, refl_table, weighting)
+    #calculate a first estimate of Ih
+    self.calc_Ih()
 
-  def '''
+  def calc_Ih(self):
+    '''calculate the current best estimate for I for each reflection group'''
+    intensities = self.Ih_table['intensity']
+    scale_factors = self.scale_factors
+    scaleweights = self.weights_for_scaling
+    gsq = (((scale_factors)**2) * scaleweights)
+    sumgsq = flex.double(np.add.reduceat(gsq, self.h_index_cumulative_array[:-1]))
+    gI = ((scale_factors * intensities) * scaleweights)
+    sumgI = flex.double(np.add.reduceat(gI, self.h_index_cumulative_array[:-1]))
+    sumweights = flex.double(np.add.reduceat(scaleweights, self.h_index_cumulative_array[:-1]))
+    self.Ih_array = flex.double([val/ sumgsq[i] if sumweights[i] > 0.0
+                                 else 0.0 for i, val in enumerate(sumgI)])
+    self.Ih_table['Ih_values'] = flex.double(
+      np.repeat(self.Ih_array, self.h_index_counter_array))
+
+
+class target_Ih(object):
+  def __init__(self, Ih_table_1, Ih_table_2, experiments):
+    self.experiments = experiments
+    self.Ih_table_1 = Ih_table_1
+    self.Ih_table_2 = Ih_table_2
+    self.Ih_table = flex.reflection_table()
+    self.determine_all_unique_indices()#fill in a unique index column
+    self.assign_hjoin_index()
+    self.calc_Ih()
+
+  def determine_all_unique_indices(self):
+    u_c = self.experiments.crystals()[0].get_unit_cell().parameters()
+    s_g = self.experiments.crystals()[0].get_space_group()
+    crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
+    set1 = list(set(self.Ih_table_1.Ih_table['asu_miller_index']))
+    set2 = list(set(self.Ih_table_2.Ih_table['asu_miller_index']))
+    all_miller_indices = flex.miller_index(set(set1+set2))
+    miller_set = miller.set(crystal_symmetry=crystal_symmetry,
+                            indices=all_miller_indices)
+    permuted = miller_set.sort_permutation(by_value='packed_indices')
+    self.Ih_table['unique_indices'] = all_miller_indices.select(permuted)
+
+  def assign_hjoin_index(self):
+    #looks at sorted miller indices and counts instances relative to the target
+    miller_index_1 = list(self.Ih_table_1['asu_miller_index'])
+    miller_index_2 = list(self.Ih_table_2['asu_miller_index'])
+    self.h_idx_count_1 = []
+    self.h_idx_count_2 = []
+    for unique_index in self.Ih_table['unique_indices']:
+      self.h_idx_count_1.append(miller_index_1.count(unique_index))
+      self.h_idx_count_2.append(miller_index_2.count(unique_index))
+    hsum_1 = 0
+    hsum_2 = 0
+    self.h_index_cumulative_array_1 = [0]
+    self.h_index_cumulative_array_2 = [0]
+    for n in self.h_idx_count_1:
+      hsum_1 += n
+      self.h_index_cumulative_array_1.append(hsum_1)
+    for n in self.h_idx_count_2:
+      hsum_2 += n
+      self.h_index_cumulative_array_2.append(hsum_2)
+
+  def calc_Ih(self):
+    self.Ih_table['Ih_values'] = flex.double([0.0]*len(self.Ih_table))
+    for i, _ in enumerate(self.Ih_table):
+      (s1, f1) = (self.h_index_cumulative_array_1[i], self.h_index_cumulative_array_1[i+1])
+      (s2, f2) = (self.h_index_cumulative_array_2[i], self.h_index_cumulative_array_2[i+1])
+      weights = self.Ih_table_1.weights_for_scaling[s1:f1]
+      weights.extend(self.Ih_table_2.weights_for_scaling[s2:f2])
+      intensities = self.Ih_table_1.Ih_table['intensity'][s1:f1]
+      intensities.extend(self.Ih_table_2.Ih_table['intensity'][s2:f2])
+      scales = self.Ih_table_1.scale_factors[s1:f1]
+      scales.extend(self.Ih_table_2.scale_factors[s2:f2])
+      self.Ih_table['Ih_values'][i] = (sum(scales*weights*intensities)
+                                       / sum(weights*(scales**2)))
+
+  def return_Ih_values(self):
+    Ih1_values = flex.double(np.repeat(self.Ih_table['Ih_values'], self.h_idx_count_1))
+    Ih2_values = flex.double(np.repeat(self.Ih_table['Ih_values'], self.h_idx_count_2))
+    return Ih1_values, Ih2_values
   
