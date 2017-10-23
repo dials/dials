@@ -16,7 +16,7 @@ class target_function(object):
     '''returns a residual vector'''
     intensities = self.data_manager.reflections_for_scaling['intensity']
     scale_factors = self.data_manager.reflections_for_scaling['inverse_scale_factor']
-    Ih_values = self.data_manager.reflections_for_scaling['Ih_values']
+    Ih_values = self.data_manager.Ih_table.get_Ih_values()#   self.data_manager.reflections_for_scaling['Ih_values']
     weights = self.data_manager.weights_for_scaling.get_weights()
     R = ((((intensities - (scale_factors * Ih_values))**2) * weights))
     return R
@@ -26,18 +26,18 @@ class target_function(object):
     gradient = flex.double([])
     intensities = self.data_manager.reflections_for_scaling['intensity']
     scale_factors = self.data_manager.reflections_for_scaling['inverse_scale_factor']
-    Ih_values = self.data_manager.reflections_for_scaling['Ih_values']
+    Ih_values = self.data_manager.Ih_table.get_Ih_values()# Ih_values = self.data_manager.reflections_for_scaling['Ih_values']
     scaleweights = self.data_manager.weights_for_scaling.get_weights()
     gsq = ((scale_factors)**2) * scaleweights#/ variances
-    sumgsq = np.add.reduceat(gsq, self.data_manager.h_index_cumulative_array[:-1])
+    sumgsq = np.add.reduceat(gsq, self.data_manager.Ih_table.h_index_cumulative_array[:-1])
     rhl = intensities - (Ih_values * scale_factors)
     num = len(intensities)
     dIh = ((intensities * scaleweights) - (Ih_values * 2.0 * scale_factors * scaleweights))
 
     for i in range(self.data_manager.n_active_params):
       dIh_g = (dIh * self.data_manager.active_derivatives[i*num:(i+1)*num])
-      dIh_g = np.add.reduceat(dIh_g, self.data_manager.h_index_cumulative_array[:-1])/sumgsq
-      dIh_g = flex.double(np.repeat(dIh_g, self.data_manager.h_index_counter_array))
+      dIh_g = np.add.reduceat(dIh_g, self.data_manager.Ih_table.h_index_cumulative_array[:-1])/sumgsq
+      dIh_g = flex.double(np.repeat(dIh_g, self.data_manager.Ih_table.h_index_counter_array))
       drdp = -((Ih_values * self.data_manager.active_derivatives[i*num:(i+1)*num])
                + (scale_factors * dIh_g))
       grad = (2.0 * rhl * scaleweights * drdp)
@@ -57,10 +57,11 @@ class xds_target_function_log(target_function):
     intensities = self.data_manager.reflections_for_scaling['intensity']
     variances = self.data_manager.reflections_for_scaling['variance']
     scale_factors = self.data_manager.reflections_for_scaling['inverse_scale_factor']
-    Ih_values = self.data_manager.reflections_for_scaling['Ih_values']
+    Ih_values = self.data_manager.Ih_table.get_Ih_values()
+    #Ih_values = self.data_manager.reflections_for_scaling['Ih_values']
     scaleweights = self.data_manager.weights_for_scaling.get_weights()
     gsq = ((scale_factors)**2) *scaleweights
-    sumgsq = np.add.reduceat(gsq, self.data_manager.h_index_cumulative_array[:-1])
+    sumgsq = np.add.reduceat(gsq, self.data_manager.Ih_table.h_index_cumulative_array[:-1])
     #sumgsq = flex.double(np.repeat(sumgsq, self.data_manager.h_index_counter_array))
 
     rhl = intensities - (Ih_values * scale_factors)
@@ -68,8 +69,8 @@ class xds_target_function_log(target_function):
     dIh = ((scale_factors * intensities) - (Ih_values * 2.0 * scale_factors)) * scaleweights
     for i in range(self.data_manager.n_active_params):
       dIh_g = (dIh * self.data_manager.active_derivatives[i*num:(i+1)*num])
-      dIh_g = np.add.reduceat(dIh_g, self.data_manager.h_index_cumulative_array[:-1])/sumgsq
-      dIh_g = flex.double(np.repeat(dIh_g, self.data_manager.h_index_counter_array))
+      dIh_g = np.add.reduceat(dIh_g, self.data_manager.Ih_table.h_index_cumulative_array[:-1])/sumgsq
+      dIh_g = flex.double(np.repeat(dIh_g, self.data_manager.Ih_table.h_index_counter_array))
       drdp = -((Ih_values + dIh_g) * scale_factors 
                 * self.data_manager.active_derivatives[i*num:(i+1)*num])
       grad = (2.0 * rhl * scaleweights * drdp)
