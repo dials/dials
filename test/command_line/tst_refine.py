@@ -194,6 +194,91 @@ def test3():
   finally:
     os.chdir(cwd)
 
+def test4():
+  """Test to verify compatibility with int and size_t flex arrays"""
+
+  dials_regression = libtbx.env.find_in_repositories(
+    relative_path="dials_regression",
+    test=os.path.isdir)
+
+  # use the i04_weak_data for this test
+  data_dir = os.path.join(dials_regression, "refinement_test_data", "i04_weak_data")
+  experiments_path = os.path.join(data_dir, "experiments.json")
+  pickle_path_orig = os.path.join(data_dir, "indexed_strong.pickle")
+
+  for pth in (experiments_path, pickle_path_orig):
+    assert os.path.exists(pth)
+
+  # set some old defaults
+  cmd1 = ("dials.refine close_to_spindle_cutoff=0.05 reflections_per_degree=100 " +
+        "outlier.separate_blocks=False output.experiments=refined_experiments_sizet.json output.reflections=refined_sizet.pickle " +
+        "output.log=dials.refine_sizet.log output.debug_log=dials.refine_sizet.debug.log " + experiments_path + " " + pickle_path_orig )
+  print cmd1
+
+  # work in a temporary directory
+  cwd = os.path.abspath(os.curdir)
+  tmp_dir = open_tmp_directory(suffix="test_dials_refine")
+  os.chdir(tmp_dir)
+
+  #Load pickle file, modify type, then save copy locally for re-run of test
+  import pickle
+  size_t_to_int = pickle.load(open(data_dir + "/indexed_strong.pickle","rb"))
+  id_size_t = size_t_to_int["id"]
+  size_t_to_int["id"] = flex.int(list(id_size_t))
+  pickle.dump( size_t_to_int, open( "indexed_strong_int.pickle", "wb" ) )
+  pickle_path_mod = os.path.join("indexed_strong_int.pickle")
+
+  cmd2 = ("dials.refine close_to_spindle_cutoff=0.05 reflections_per_degree=100 " +
+        "outlier.separate_blocks=False output.experiments=refined_experiments_int.json output.reflections=refined_int.pickle " +
+        "output.log=dials.refine_int.log output.debug_log=dials.refine_int.debug.log " + experiments_path + " " + pickle_path_mod)
+  print cmd2
+
+  #from IPython import embed; embed()
+  try:
+
+    '''
+    print reflections["id"]
+    print "SIZE_T_MNMN="
+    print ucnmn(reflections["id"], reflections["miller_index"], p.get_experiment_ids(), F_dbdp).result - min_nref
+    a = flex.int(list(reflections["id"]))
+    print a
+    print "INT_MNMN="
+    print ucnmn(reflections["id"], reflections["miller_index"], p.get_experiment_ids(), F_dbdp).result - min_nref
+    exit("OK")
+    '''
+
+    result1 = easy_run.fully_buffered(command=cmd1).raise_if_errors()
+    result2 = easy_run.fully_buffered(command=cmd2).raise_if_errors()
+    # load results
+    reg_exp = ExperimentListFactory.from_json_file(
+                os.path.join(data_dir, "regression_experiments.json"),
+                check_format=False)[0]
+    ref_exp_1 = ExperimentListFactory.from_json_file("refined_experiments_sizet.json",
+                check_format=False)[0]
+    ref_exp_2 = ExperimentListFactory.from_json_file("refined_experiments_int.json",
+                check_format=False)[0]
+  finally:
+    os.chdir(cwd)
+
+  # test refined models against expected
+  assert reg_exp.crystal == ref_exp_1.crystal
+  assert reg_exp.detector == ref_exp_1.detector
+  assert reg_exp.beam == ref_exp_1.beam
+  assert reg_exp.crystal == ref_exp_2.crystal
+  assert reg_exp.detector == ref_exp_2.detector
+  assert reg_exp.beam == ref_exp_2.beam
+
+
+  # test cell parameter esds
+  assert approx_equal(ref_exp_1.crystal.get_cell_parameter_sd(),
+    (0.0009903, 0.0009903, 0.0021227, 0.0, 0.0, 0.0))
+  assert approx_equal(ref_exp_2.crystal.get_cell_parameter_sd(),
+    (0.0009903, 0.0009903, 0.0021227, 0.0, 0.0, 0.0))
+  assert approx_equal(ref_exp_1.crystal.get_cell_volume_sd(), 23.8063382)
+  assert approx_equal(ref_exp_2.crystal.get_cell_volume_sd(), 23.8063382)
+
+  print "OK"
+  return
 
 def run():
   if not libtbx.env.has_module("dials_regression"):
@@ -203,6 +288,7 @@ def run():
   test1()
   test2()
   test3()
+  test4()
 
 if __name__ == '__main__':
   from dials.test import cd_auto
