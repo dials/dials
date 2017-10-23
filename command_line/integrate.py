@@ -195,7 +195,8 @@ class Script(object):
       if abs_params.apply:
         if not (params.integration.debug.output and not params.integration.debug.separate_files):
           raise Sorry('Shoeboxes must be saved to integration intermediates to apply an absorption correction. '\
-            +'Set integration.debug.output=True and integration.debug.separate_files=False to save shoeboxes.')
+            +'Set integration.debug.output=True, integration.debug.separate_files=False and '\
+            +'integration.debug.delete_shoeboxes=True to temporarily store shoeboxes.')
 
     # Print if we're using a mask
     for i, exp in enumerate(experiments):
@@ -353,6 +354,10 @@ class Script(object):
       refls = sig_filter(experiments, reflections)
       logger.info("Removed %d reflections out of %d when applying significance filter"%(len(reflections)-len(refls), len(reflections)))
       reflections = refls
+
+    # Delete the shoeboxes used for intermediate calculations, if requested
+    if params.integration.debug.delete_shoeboxes and 'shoebox' in reflections:
+      del reflections['shoebox']
 
     # Save the reflections
     self.save_reflections(reflections, params.output.reflections)

@@ -102,6 +102,12 @@ def generate_phil_scope():
                   "by setting this option to False. This only works if the debug"
                   "output is during integrated and not modelling."
 
+        delete_shoeboxes = False
+          .type = bool
+          .help = "Delete shoeboxes immediately before saving files. This option"
+                  "in combination with debug.output=True enables intermediate"
+                  "processing steps to make use of shoeboxes."
+
         select = None
           .type = reflection_table_selector
           .help = "A string specifying the selection. The string should be of the"

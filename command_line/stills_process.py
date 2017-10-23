@@ -100,9 +100,6 @@ dials_phil_str = '''
     shoeboxes = True
       .type = bool
       .help = Save the raw pixel values inside the reflection shoeboxes during spotfinding.
-    delete_integration_shoeboxes = False
-      .type = bool
-      .help = Delete integration shoeboxes when finished with each image.
   }
 
   include scope dials.util.options.geometry_phil_scope
@@ -275,7 +272,8 @@ class Script(object):
       if abs_params.apply:
         if not (self.params.integration.debug.output and not self.params.integration.debug.separate_files):
           raise Sorry('Shoeboxes must be saved to integration intermediates to apply an absorption correction. '\
-            +'Set integration.debug.output=True and integration.debug.separate_files=False to save shoeboxes.')
+            +'Set integration.debug.output=True, integration.debug.separate_files=False and '\
+            +'integration.debug.delete_shoeboxes=True to temporarily store shoeboxes.')
 
     self.load_reference_geometry()
     from dials.command_line.dials_import import ManualGeometryUpdater
@@ -713,7 +711,8 @@ class Processor(object):
         raise Sorry("No reflections left after applying significance filter")
       integrated = refls
 
-    if self.params.output.delete_integration_shoeboxes and 'shoebox' in integrated:
+    # Delete the shoeboxes used for intermediate calculations, if requested
+    if self.params.integration.debug.delete_shoeboxes and 'shoebox' in integrated:
       del integrated['shoebox']
 
     if self.params.output.composite_output:
