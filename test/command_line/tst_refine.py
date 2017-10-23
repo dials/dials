@@ -194,6 +194,9 @@ def test3():
   finally:
     os.chdir(cwd)
 
+  print "OK"
+  return
+
 def test4():
   """Test to verify compatibility with int and size_t flex arrays"""
 
@@ -236,17 +239,6 @@ def test4():
   #from IPython import embed; embed()
   try:
 
-    '''
-    print reflections["id"]
-    print "SIZE_T_MNMN="
-    print ucnmn(reflections["id"], reflections["miller_index"], p.get_experiment_ids(), F_dbdp).result - min_nref
-    a = flex.int(list(reflections["id"]))
-    print a
-    print "INT_MNMN="
-    print ucnmn(reflections["id"], reflections["miller_index"], p.get_experiment_ids(), F_dbdp).result - min_nref
-    exit("OK")
-    '''
-
     result1 = easy_run.fully_buffered(command=cmd1).raise_if_errors()
     result2 = easy_run.fully_buffered(command=cmd2).raise_if_errors()
     # load results
@@ -280,6 +272,63 @@ def test4():
   print "OK"
   return
 
+def test5():
+  """Test to verify out of order reflection table (unsorted by id,panel) gets sorted before refining"""
+
+  dials_regression = libtbx.env.find_in_repositories(
+    relative_path="dials_regression",
+    test=os.path.isdir)
+
+  # use the multi_stills for this test to have multiple exp id values
+  data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
+  experiments_path = os.path.join(data_dir, "combined_experiments.json")
+  pickle_path_orig = os.path.join(data_dir, "combined_reflections.pickle")
+
+  for pth in (experiments_path, pickle_path_orig):
+    assert os.path.exists(pth)
+
+  # work in a temporary directory
+  cwd = os.path.abspath(os.curdir)
+  tmp_dir = open_tmp_directory(suffix="test_dials_refine")
+  os.chdir(tmp_dir)
+
+  #Load pickle file, modify type, then save copy locally for re-run of test
+  import pickle
+  ref_tbl_shuffled = pickle.load(open(pickle_path_orig,"rb"))
+  from random import shuffle
+  shuffle(ref_tbl_shuffled)
+  
+  pickle.dump( ref_tbl_shuffled, open( "combined_reflections_shuffled.pickle", "wb" ) )
+  pickle_path_mod = os.path.join("combined_reflections_shuffled.pickle")
+
+  cmd1 = ("dials.refine close_to_spindle_cutoff=0.05 reflections_per_degree=100 " +
+        "outlier.separate_blocks=False output.experiments=refined_experiments_orig.json output.reflections=refined_orig.pickle " +
+        "output.log=dials.refine_orig.log output.debug_log=dials.refine_orig.debug.log " + experiments_path + " " + pickle_path_orig )
+  print cmd1
+  cmd2 = ("dials.refine close_to_spindle_cutoff=0.05 reflections_per_degree=100 " +
+        "outlier.separate_blocks=False output.experiments=refined_experiments_shuffsort.json output.reflections=refined_shuffsort.pickle " +
+        "output.log=dials.refine_shuffsort.log output.debug_log=dials.refine_shuffsort.debug.log " + experiments_path + " " + pickle_path_mod )
+  print cmd2
+
+  try:
+
+    result1 = easy_run.fully_buffered(command=cmd1).raise_if_errors()
+    result2 = easy_run.fully_buffered(command=cmd2).raise_if_errors()
+    # load results
+    ref_exp_1 = ExperimentListFactory.from_json_file("refined_experiments_orig.json", check_format=False)[0]
+    ref_exp_2 = ExperimentListFactory.from_json_file("refined_experiments_shuffsort.json", check_format=False)[0]
+
+  finally:
+    os.chdir(cwd)
+
+  #Compare the resulting U,B, and A values between the unmodified and shuffled reflection table
+  assert approx_equal(ref_exp_1.crystal.get_B(), ref_exp_2.crystal.get_B())
+  assert approx_equal(ref_exp_1.crystal.get_U(), ref_exp_2.crystal.get_U())
+  assert approx_equal(ref_exp_1.crystal.get_A(), ref_exp_2.crystal.get_A())
+
+  print "OK"
+  return
+
 def run():
   if not libtbx.env.has_module("dials_regression"):
     print "Skipping tests in " + __file__ + " as dials_regression not present"
@@ -289,6 +338,7 @@ def run():
   test2()
   test3()
   test4()
+  test5()
 
 if __name__ == '__main__':
   from dials.test import cd_auto
