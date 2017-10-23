@@ -410,6 +410,19 @@ class RefinerFactory(object):
     for k in cols:
       if k in reflections.keys():
         rt[k] = reflections[k]
+
+    #Check for monotonically increasing value range. If not, ref_table isn't sorted, and proceed to sort iby id and panel
+    l_id = list(rt["id"])
+    id0 = l_id[0]
+    for ii in range(1,len(l_id)):
+      if id0 <= l_id[ii]:
+        id0 = l_id[ii]
+      else:
+        print "Reflection table not sorted; sorting by 'id' and 'panel'"
+        rt.sort("id") #Ensuring the ref_table is sorted by id
+        rt.subsort("id","panel") #Ensuring that within each sorted id block, sorting is next performed by panel
+        break
+
     return rt
 
   @classmethod

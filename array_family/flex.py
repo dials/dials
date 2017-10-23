@@ -384,6 +384,26 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       perm = flex.sort_permutation(self[name], reverse=reverse)
     self.reorder(perm)
 
+  """
+  Sorting the reflection table within an already sorted column
+  """
+  def subsort(self, key0, key1, reverse=False):
+    '''
+    Sort the reflection based on key1 within a constant key0.
+
+    :param key0: The name of the column values to sort within
+    :param key1: The sorting key name within the selected column
+
+    '''
+    import copy
+    uniq_values = self[key0]
+    from IPython import embed; embed()
+    for ii in set(uniq_values):
+      val = (uniq_values == ii).iselection()
+      ref_tmp = copy.deepcopy(self[min(val):(max(val)+1)])
+      ref_tmp.sort(key1,reverse)
+      self[min(val):(max(val)+1)] = ref_tmp
+
   def match(self, other):
     '''
     Match reflections with another set of reflections.
@@ -1061,3 +1081,4 @@ class reflection_table_selector(object):
     else:
       mask1 = mask2
     return mask1
+
