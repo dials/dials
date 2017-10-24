@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 try:
   from glob import glob
@@ -7,9 +7,9 @@ try:
   dials_path = libtbx.env.dist_path('dials')
   filenames = glob(os.path.join(dials_path, "extensions", "*.pyc"))
   if filenames:
-    print "Cleaning up 'dials/extensions':"
+    print("Cleaning up 'dials/extensions':")
     for filename in filenames:
-      print " Deleting %s" % filename
+      print(" Deleting %s" % filename)
       os.remove(filename)
 except Exception:
   pass
@@ -22,7 +22,7 @@ except Exception:
 
 try:
   from dials.util.version import dials_version
-  print dials_version()
+  print(dials_version())
 except Exception:
   pass
 
@@ -31,7 +31,7 @@ try:
   libtbx.pkg_utils.require('mock', '>=2.0')
   libtbx.pkg_utils.require('pytest', '>=3.1')
 except ImportError:
-  print "\n" * 10 + "Could not verify dependencies: cctbx sources out of date" + "\n" * 10
+  print("\n" * 10 + "Could not verify dependencies: cctbx sources out of date" + "\n" * 10)
 
 def _install_dials_autocompletion():
   '''generate bash.sh and SConscript file in /build/dials/autocomplete'''
@@ -50,14 +50,14 @@ def _install_dials_autocompletion():
 
   commands_dir = os.path.join(dist_path, 'command_line')
   command_list = []
-  print 'Identifying autocompletable commands:',
+  print('Identifying autocompletable commands:', end=' ')
   for file in sorted(os.listdir(commands_dir)):
     if not file.startswith('_') and file.endswith('.py'):
       if 'DIALS_ENABLE_COMMAND_LINE_COMPLETION' in open(os.path.join(commands_dir, file)).read():
         command_name = 'dials.%s' % file[:-3]
-        print command_name,
+        print(command_name, end=' ')
         command_list.append(command_name)
-  print
+  print()
 
   # Generate the autocompletion SConscript.
   with open(os.path.join(output_directory, 'SConscript'), 'w') as builder:
@@ -91,7 +91,7 @@ for cmd in [%s]:
   build_path = abs(libtbx.env.build_path)
 
   # Permanently install the autocompletion script into setpaths-scripts.
-  print "Installing autocompletion script into:",
+  print("Installing autocompletion script into:", end=' ')
   for file in os.listdir(build_path):
     if file.startswith('setpath') and file.endswith('.sh'):
       original_file = open(os.path.join(build_path, file)).read()
@@ -99,7 +99,7 @@ for cmd in [%s]:
         marker = "\nexport PATH\n"
         original_position = original_file.find(marker)
         if original_position >= 0:
-          print file,
+          print(file, end=' ')
           insert_position = original_position + len(marker)
           added_script = \
             '# DIALS_ENABLE_COMMAND_LINE_COMPLETION\n' \
@@ -111,6 +111,6 @@ for cmd in [%s]:
             script.write(original_file[:insert_position] +
                          added_script +
                          original_file[insert_position:])
-  print
+  print()
 
 _install_dials_autocompletion()
