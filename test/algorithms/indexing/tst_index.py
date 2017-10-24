@@ -1,4 +1,5 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
+
 try:
   import scipy.linalg # import dependency
 except ImportError:
@@ -61,7 +62,7 @@ def unit_cells_are_similar(uc1, uc2, relative_length_tolerance=0.01,
       if abs(l1[i]-(180-l2[i])) > absolute_angle_tolerance:
         return False
       #else:
-        #print uc1, uc2
+        #print(uc1, uc2)
   return True
 
 class run_one_indexing(object):
@@ -82,7 +83,7 @@ class run_one_indexing(object):
     tmp_dir = open_tmp_directory(suffix="test_dials_index")
     os.chdir(tmp_dir)
     command = " ".join(args)
-    print command
+    print(command)
     result = easy_run.fully_buffered(command=command).raise_if_errors()
     os.chdir(cwd)
     assert os.path.exists(os.path.join(tmp_dir, "experiments.json"))
@@ -124,9 +125,9 @@ class run_one_indexing(object):
       for actual, expected in zip(self.rmsds, expected_rmsds):
         assert actual <= expected, "%s %s" %(self.rmsds, expected_rmsds)
     if 0:
-      print self.calc_rmsds_timer.legend
-      print unpickling_timer.report()
-      print self.calc_rmsds_timer.report()
+      print(self.calc_rmsds_timer.legend)
+      print(unpickling_timer.report())
+      print(self.calc_rmsds_timer.report())
 
   def get_rmsds_obs_pred(self, observations, experiment):
     reflections = observations.select(observations.get_flags(
@@ -139,7 +140,7 @@ class run_one_indexing(object):
     rmsd_z = flex.mean(flex.pow2(obs_z-calc_z))**0.5
     return (rmsd_x, rmsd_y, rmsd_z)
 
-def exercise_1():
+def test_exercise_1(dials_regression):
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
@@ -156,10 +157,10 @@ def exercise_1():
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
                             expected_rmsds, expected_hall_symbol)
 
-def exercise_2():
+def test_exercise_2(dials_regression):
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
-    print ("Skipping exercise_2: missing dependencies" +
+    print ("Skipping test_exercise_2: missing dependencies" +
            " %s" * len(missing)) %(tuple(missing))
     return
   # thaumatin
@@ -178,11 +179,11 @@ def exercise_2():
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
                             expected_rmsds, expected_hall_symbol)
 
-def exercise_3():
+def test_exercise_3(dials_regression):
   from scitbx import matrix
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
-    print ("Skipping exercise_3: missing dependencies" +
+    print ("Skipping test_exercise_3: missing dependencies" +
            " %s" * len(missing)) %(tuple(missing))
     return
   # thaumatin
@@ -211,10 +212,10 @@ def exercise_3():
   assert approx_equal(b.angle(c, deg=True), 90)
   assert approx_equal(c.angle(a, deg=True), 90)
 
-def exercise_4():
+def test_exercise_4(dials_regression):
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
-    print ("Skipping exercise_4: missing dependencies" +
+    print ("Skipping test_exercise_4: missing dependencies" +
            " %s" * len(missing)) %(tuple(missing))
     return
   # trypsin
@@ -236,10 +237,10 @@ def exercise_4():
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
                             expected_rmsds, expected_hall_symbol)
 
-def exercise_5():
+def test_exercise_5(dials_regression):
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
-    print ("Skipping exercise_5: missing dependencies" +
+    print ("Skipping test_exercise_5: missing dependencies" +
            " %s" * len(missing)) %(tuple(missing))
     return
   # synthetic trypsin multi-lattice dataset (2 lattices)
@@ -266,10 +267,10 @@ def exercise_5():
                             relative_length_tolerance=0.02,
                             absolute_angle_tolerance=1)
 
-def exercise_6():
+def test_exercise_6(dials_regression):
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
-    print ("Skipping exercise_6: missing dependencies" +
+    print ("Skipping test_exercise_6: missing dependencies" +
            " %s" * len(missing)) %(tuple(missing))
     return
   # synthetic trypsin multi-lattice dataset (3 lattices)
@@ -294,10 +295,10 @@ def exercise_6():
                             relative_length_tolerance=0.01,
                             absolute_angle_tolerance=1)
 
-def exercise_7():
+def test_exercise_7(dials_regression):
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
-    print ("Skipping exercise_7: missing dependencies" +
+    print ("Skipping test_exercise_7: missing dependencies" +
            " %s" * len(missing)) %(tuple(missing))
     return
   # synthetic trypsin multi-lattice dataset (4 lattices)
@@ -323,7 +324,7 @@ def exercise_7():
                             relative_length_tolerance=0.01,
                             absolute_angle_tolerance=1)
 
-def exercise_8():
+def test_exercise_8(dials_regression):
   # synthetic trypsin multi-lattice dataset (4 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3_4.pickle")
@@ -349,7 +350,7 @@ def exercise_8():
                             relative_length_tolerance=0.02,
                             absolute_angle_tolerance=1)
 
-def exercise_9():
+def test_exercise_9(dials_regression):
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
@@ -368,7 +369,7 @@ def exercise_9():
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
                      expected_rmsds, expected_hall_symbol)
 
-def exercise_10():
+def test_exercise_10(dials_regression):
   # synthetic trypsin multi-lattice dataset (3 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3.pickle")
@@ -397,19 +398,19 @@ def exercise_10():
                             relative_length_tolerance=0.02,
                             absolute_angle_tolerance=1)
 
-def exercise_11():
+def test_exercise_11(dials_regression):
   return # disable test until a better image and/or parameters are available
 #  image_path = os.path.join(dials_regression, "spotfinding_test_data",
 #                            "idx-s00-20131106040304531.cbf")
 #  cwd = os.path.abspath(os.curdir)
 #  tmp_dir = os.path.abspath(open_tmp_directory(suffix="test_dials_index"))
 #  os.chdir(tmp_dir)
-#  print tmp_dir
+#  print(tmp_dir)
 #
 #  args = ["dials.import", image_path,
 #          "output.datablock=datablock.json"]
 #  command = " ".join(args)
-#  #print command
+#  #print(command)
 #  result = easy_run.fully_buffered(command=command).raise_if_errors()
 #
 #  datablock_json = os.path.join(tmp_dir, "datablock.json")
@@ -421,7 +422,7 @@ def exercise_11():
 #          ]
 #
 #  command = " ".join(args)
-#  #print command
+#  #print(command)
 #  result = easy_run.fully_buffered(command=command).raise_if_errors()
 #  pickle_path = os.path.join(tmp_dir, "strong.pickle")
 #  assert os.path.exists(pickle_path)
@@ -446,10 +447,10 @@ def exercise_11():
 #                            relative_length_tolerance=0.05,
 #                            absolute_angle_tolerance=1)
 
-def exercise_12():
+def test_exercise_12(dials_regression):
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
-    print ("Skipping exercise_12: missing dependencies" +
+    print ("Skipping test_exercise_12: missing dependencies" +
            " %s" * len(missing)) %(tuple(missing))
     return
   # test indexing from single image of i04_weak_data
@@ -473,7 +474,7 @@ def exercise_12():
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
                             expected_rmsds, expected_hall_symbol)
 
-def exercise_13():
+def test_exercise_13(dials_regression):
   # test on spots derived from imosflm tutorial data:
   # http://www.ccp4.ac.uk/courses/BCA2005/tutorials/dataproc-tutorial.html
   data_dir = os.path.join(dials_regression, "indexing_test_data", "imosflm_hg_mar")
@@ -500,14 +501,14 @@ def exercise_13():
     result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
                               expected_rmsds, expected_hall_symbol)
 
-def exercise_14():
+def test_exercise_14(dials_regression):
   from glob import glob
   data_dir = os.path.join(dials_regression, "xia2_demo_data")
 
   cwd = os.path.abspath(os.curdir)
   tmp_dir = os.path.abspath(open_tmp_directory())
   os.chdir(tmp_dir)
-  print tmp_dir
+  print(tmp_dir)
 
   import shutil
   for i, image_path in enumerate(("insulin_1_001.img", "insulin_1_045.img")):
@@ -517,7 +518,7 @@ def exercise_14():
   args = ["dials.import", ' '.join(glob(os.path.join(tmp_dir, "image_00*.img"))),
           "output.datablock=datablock.json", "allow_multiple_sweeps=True"]
   command = " ".join(args)
-  #print command
+  #print(command)
   result = easy_run.fully_buffered(command=command).raise_if_errors()
 
   datablock_json = os.path.join(tmp_dir, "datablock.json")
@@ -525,7 +526,7 @@ def exercise_14():
   args = ["dials.find_spots", datablock_json]
 
   command = " ".join(args)
-  print command
+  print(command)
   result = easy_run.fully_buffered(command=command).raise_if_errors()
   pickle_path = os.path.join(tmp_dir, "strong.pickle")
   assert os.path.exists(pickle_path)
@@ -545,7 +546,7 @@ def exercise_14():
     result = run_one_indexing(pickle_path, datablock_json, extra_args, expected_unit_cell,
                               expected_rmsds, expected_hall_symbol)
 
-def exercise_15():
+def test_exercise_15(dials_regression):
   data_dir = os.path.join(dials_regression, "indexing_test_data", "4rotation")
   pickle_path = os.path.join(data_dir, "strong.pickle")
   sweep_path = os.path.join(data_dir, "datablock_import.json")
@@ -560,7 +561,7 @@ def exercise_15():
                             expected_rmsds, expected_hall_symbol)
   assert len(result.indexed_reflections) > 276800, len(result.indexed_reflections)
 
-def exercise_16():
+def test_exercise_16(dials_regression):
   # test for small molecule multi-sweep indexing, 4 sweeps with different values
   # of goniometer.fixed_rotation()
   data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
@@ -582,7 +583,7 @@ def exercise_16():
                             expected_rmsds, expected_hall_symbol)
   assert len(result.indexed_reflections) > 1250, len(result.indexed_reflections)
 
-def exercise_17():
+def test_exercise_17(dials_regression):
   # test for small molecule multi-sweep indexing, 3 sweeps with different values
   # of goniometer setting rotation (i.e. phi scans)
   data_dir = os.path.join(dials_regression, "dials-191")
@@ -607,7 +608,7 @@ def exercise_17():
   for i in range(3):
     assert (result.indexed_reflections['id'] == i).count(True) > 2000
 
-def exercise_18():
+def test_exercise_18(dials_regression):
   # test for small molecule indexing: presence of ice rings makes max-cell
   # estimation tricky
   data_dir = os.path.join(dials_regression, "indexing_test_data", "MXSW-904")
@@ -627,13 +628,13 @@ def exercise_18():
 
 def run(args):
   if not libtbx.env.has_module("dials_regression"):
-    print "Skipping exercise_index_3D_FFT_simple: dials_regression not present"
+    print("Skipping exercise_index_3D_FFT_simple: dials_regression not present")
     return
 
-  exercises = (exercise_1, exercise_2, exercise_3, exercise_4, exercise_5,
-               exercise_6, exercise_7, exercise_8, exercise_9, exercise_10,
-               exercise_11, exercise_12, exercise_13, exercise_14, exercise_15,
-               exercise_16, exercise_17, exercise_18)
+  exercises = (test_exercise_1, test_exercise_2, test_exercise_3, test_exercise_4, test_exercise_5,
+               test_exercise_6, test_exercise_7, test_exercise_8, test_exercise_9, test_exercise_10,
+               test_exercise_11, test_exercise_12, test_exercise_13, test_exercise_14, test_exercise_15,
+               test_exercise_16, test_exercise_17, test_exercise_18)
   if len(args):
     args = [int(arg) for arg in args]
     for arg in args: assert arg > 0
@@ -647,7 +648,7 @@ def run(args):
   def run_parallel(args):
     assert len(args) == 1
     exercise = args[0]
-    exercise()
+    exercise(dials_regression)
 
   easy_mp.parallel_map(
     func=run_parallel,
