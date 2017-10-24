@@ -145,6 +145,12 @@ phil_scope = parse('''
       .expert_level = 2
       .help = "If true, delete shoeboxes from reflection tables while comb-"
               "ining them to save on memory."
+
+    min_reflections_per_experiment = None
+      .type = int
+      .expert_level = 2
+      .help = "If not None, throw out any experiment with fewer than this"
+              "many reflections"
   }
 ''', process_includes=True)
 
@@ -391,6 +397,7 @@ class Script(object):
     from dials.array_family import flex
     reflections = flex.reflection_table()
     global_id = 0
+    skipped_expts = 0
     from dxtbx.model.experiment_list import ExperimentList
     experiments=ExperimentList()
 
@@ -403,13 +410,24 @@ class Script(object):
       for i, exp in enumerate(exps):
         sel = refs['id'] == i
         sub_ref = refs.select(sel)
-        nrefs_per_exp.append(len(sub_ref))
+        n_sub_ref = len(sub_ref)
+        if params.output.min_reflections_per_experiment is not None and \
+            n_sub_ref < params.output.min_reflections_per_experiment:
+          skipped_expts += 1
+          continue
+
+        nrefs_per_exp.append(n_sub_ref)
         sub_ref['id'] = flex.int(len(sub_ref), global_id)
         if params.output.delete_shoeboxes and 'shoebox' in sub_ref:
           del sub_ref['shoebox']
         reflections.extend(sub_ref)
         experiments.append(combine(exp))
         global_id += 1
+
+    if params.output.min_reflections_per_experiment is not None and \
+        skipped_expts > 0:
+      print "Removed {0} experiments with fewer than {1} reflections".format(
+        skipped_expts, params.output.min_reflections_per_experiment)
 
     # print number of reflections per experiment
     from libtbx.table_utils import simple_table
