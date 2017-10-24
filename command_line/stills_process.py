@@ -121,12 +121,6 @@ dials_phil_str = '''
   }
 
   integration {
-    summation {
-      detector_gain = 1
-        .type = float
-        .help = Multiplier for variances after integration. See Leslie 1999.
-    }
-
     include scope dials.algorithms.integration.kapton_correction.absorption_phil_scope
   }
 '''
@@ -662,38 +656,6 @@ class Processor(object):
 
     # Integrate the reflections
     integrated = integrator.integrate()
-
-    # Select only those reflections which were integrated
-    if 'intensity.prf.variance' in integrated:
-      selection = integrated.get_flags(
-        integrated.flags.integrated,
-        all=True)
-    else:
-      selection = integrated.get_flags(
-        integrated.flags.integrated_sum)
-    integrated = integrated.select(selection)
-
-    len_all = len(integrated)
-    integrated = integrated.select(~integrated.get_flags(integrated.flags.foreground_includes_bad_pixels))
-    print "Filtering %d reflections with at least one bad foreground pixel out of %d"%(len_all-len(integrated), len_all)
-
-    # verify sigmas are sensible
-    if 'intensity.prf.value' in integrated:
-      if (integrated['intensity.prf.variance'] <= 0).count(True) > 0:
-        raise Sorry("Found negative variances")
-    if 'intensity.sum.value' in integrated:
-      if (integrated['intensity.sum.variance'] <= 0).count(True) > 0:
-        raise Sorry("Found negative variances")
-      # apply detector gain to summation variances
-      integrated['intensity.sum.variance'] *= self.params.integration.summation.detector_gain
-    if 'background.sum.value' in integrated:
-      if (integrated['background.sum.variance'] < 0).count(True) > 0:
-        raise Sorry("Found negative variances")
-      if (integrated['background.sum.variance'] == 0).count(True) > 0:
-        print "Filtering %d reflections with zero background variance" % ((integrated['background.sum.variance'] == 0).count(True))
-        integrated = integrated.select(integrated['background.sum.variance'] > 0)
-      # apply detector gain to background summation variances
-      integrated['background.sum.variance'] *= self.params.integration.summation.detector_gain
 
     # correct integrated intensities for absorption correction, if necessary
     for abs_params in self.params.integration.absorption_correction:
