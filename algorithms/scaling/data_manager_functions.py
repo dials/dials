@@ -529,7 +529,41 @@ class XDS_Data_Manager(Data_Manager):
     for key in added_columns:
       del self.sorted_reflections[key]
 
+class multicrystal_datamanager(object):
+  def __init__(self, reflections1, experiments1, reflections2, experiments2, scaling_options):
+    self.dm1 = XDS_Data_Manager(reflections1, experiments1, scaling_options)
+    self.dm2 = XDS_Data_Manager(reflections2, experiments2, scaling_options)
+    self.Ih_table = target_Ih(self.dm1.Ih_table_1, self.dm2.Ih_table_2, experiments1)
+    self.n_active_params = None
+    print "successfully initialised multicrystal_datamanager"
 
+  def get_target_function(self):
+    '''call the xds target function method'''
+    return multi_target_function(self).return_targets()
+
+  def set_up_minimisation(self, param_name):
+    #return self.active_parameters
+    x = flex.double([])
+    x1 = self.dm1.set_up_minimisation(param_name)
+    x2 = self.dm2.set_up_minimisation(param_name)
+    self.n_active_params = len(x1) + len(x2)
+    x.extend(x1)
+    x.extend(x2)
+    return x
+
+  def update_for_minimisation(self, parameters):
+    '''update the scale factors and Ih for the next iteration of minimisation'''
+    self.dm1.update_for_minimisation(parameters[:int(self.n_active_params/2)])
+    self.dm2.update_for_minimisation(parameters[int(self.n_active_params/2):])
+    self.Ih_table.calc_Ih()
+    (Ih1, Ih2) = self.Ih_table.return_Ih_values()
+    self.dm1.Ih_table.set_Ih_values(Ih1)
+    self.dm2.Ih_table.set_Ih_values(Ih2)
+
+  def expand_scales_to_all_reflections(self):
+    self.dm1.expand_scales_to_all_reflections()
+    self.dm2.expand_scales_to_all_reflections()
+  
 def select_variables_in_range(variable_array, lower_limit, upper_limit):
   '''return boolean selection of a given variable range'''
   sel = flex.bool()

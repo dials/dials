@@ -48,7 +48,31 @@ class target_function(object):
     '''return residual and gradient arrays'''
     return self.calculate_residual(), self.calculate_gradient()
 
-  
+class multi_target_function(target_function):
+  def __init__(self, data_manager):
+    self.dm = data_manager
+
+  def calculate_residual(self):
+    R = flex.double([])
+    R1 = self.dm.dm1.get_target_function()[0]
+    R2 = self.dm.dm2.get_target_function()[0]
+    R.extend(R1)
+    R.extend(R2)
+    return R
+
+  def calculate_gradient(self):
+    G = flex.double([])
+    G1 = self.dm.dm1.get_target_function()[1]
+    G2 = self.dm.dm2.get_target_function()[1]
+    G.extend(G1)
+    G.extend(G2)
+    return G
+
+  def return_targets(self):
+    '''return residual and gradient arrays'''
+    return self.calculate_residual(), self.calculate_gradient()
+
+
 class xds_target_function_log(target_function):
   '''Subclass that takes a data manager object and returns a residual and
   gradient function for a xds-like scaling parameterisation.'''

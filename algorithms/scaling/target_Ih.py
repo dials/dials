@@ -1,6 +1,7 @@
 import numpy as np
 from dials.array_family import flex
 from cctbx import miller, crystal
+import time as time
 
 class basic_Ih_table(object):
   def __init__(self, refl_table, weighting):
@@ -8,7 +9,7 @@ class basic_Ih_table(object):
     self.Ih_table = flex.reflection_table()
     self.Ih_table['asu_miller_index'] = refl_table['asu_miller_index']
     self.Ih_table['intensity'] = refl_table['intensity']
-    self.Ih_table['Ih_values'] = None
+    self.Ih_table['Ih_values'] = flex.double([0.0]*len(refl_table))
     #bring in weights and initial scale factors
     self.weights_for_scaling = weighting.get_weights()
     self.scale_factors = refl_table['inverse_scale_factor']
@@ -92,7 +93,7 @@ class target_Ih(object):
     crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
     set1 = list(set(self.Ih_table_1.Ih_table['asu_miller_index']))
     set2 = list(set(self.Ih_table_2.Ih_table['asu_miller_index']))
-    all_miller_indices = flex.miller_index(set(set1+set2))
+    all_miller_indices = flex.miller_index(list(set(set1+set2)))
     miller_set = miller.set(crystal_symmetry=crystal_symmetry,
                             indices=all_miller_indices)
     permuted = miller_set.sort_permutation(by_value='packed_indices')
@@ -100,8 +101,8 @@ class target_Ih(object):
 
   def assign_hjoin_index(self):
     #looks at sorted miller indices and counts instances relative to the target
-    miller_index_1 = list(self.Ih_table_1['asu_miller_index'])
-    miller_index_2 = list(self.Ih_table_2['asu_miller_index'])
+    miller_index_1 = list(self.Ih_table_1.Ih_table['asu_miller_index'])
+    miller_index_2 = list(self.Ih_table_2.Ih_table['asu_miller_index'])
     self.h_idx_count_1 = []
     self.h_idx_count_2 = []
     for unique_index in self.Ih_table['unique_indices']:
@@ -129,8 +130,8 @@ class target_Ih(object):
       intensities.extend(self.Ih_table_2.Ih_table['intensity'][s2:f2])
       scales = self.Ih_table_1.scale_factors[s1:f1]
       scales.extend(self.Ih_table_2.scale_factors[s2:f2])
-      self.Ih_table['Ih_values'][i] = (sum(scales*weights*intensities)
-                                       / sum(weights*(scales**2)))
+      self.Ih_table['Ih_values'][i] = (flex.sum(scales*weights*intensities)
+                                       / flex.sum(weights*(scales**2)))
 
   def return_Ih_values(self):
     Ih1_values = flex.double(np.repeat(self.Ih_table['Ih_values'], self.h_idx_count_1))

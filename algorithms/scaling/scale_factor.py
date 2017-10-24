@@ -11,6 +11,10 @@ class ScaleFactor(object):
     self.scale_factors = flex.double([initial_value] * n_parameters)
 
   def set_scale_factors(self, scale_factors):
+    if len(scale_factors) != len(self.scale_factors):
+      assert 0, '''attempting to set a new set of scale factors of different 
+      length than previous assignment: was %s, attempting %s''' % (
+      len(self.scale_factors), len(scale_factors))
     self.scale_factors = scale_factors
 
   def get_scale_factors(self):
