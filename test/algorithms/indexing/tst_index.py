@@ -5,6 +5,7 @@ try:
 except ImportError:
   pass
 
+import glob
 import os
 
 import libtbx.load_env
@@ -92,12 +93,18 @@ class run_one_indexing(object):
     assert len(experiments_list.crystals()) == n_expected_lattices, (
       len(experiments_list.crystals()), n_expected_lattices)
     assert os.path.exists(os.path.join(tmp_dir, "indexed.pickle"))
-    from libtbx.utils import time_log
-    unpickling_timer = time_log("unpickling")
-    self.calc_rmsds_timer = time_log("calc_rmsds")
-    unpickling_timer.start()
+
+    report_timings = False
+    if report_timings:
+      from libtbx.utils import time_log
+      unpickling_timer = time_log("unpickling")
+      calc_rmsds_timer = time_log("calc_rmsds")
+      unpickling_timer.start()
+
     self.indexed_reflections = load.reflections(os.path.join(tmp_dir, "indexed.pickle"))
-    unpickling_timer.stop()
+    if report_timings:
+      unpickling_timer.stop()
+
     for i in range(len(experiments_list)):
       experiment = experiments_list[i]
       self.crystal_model = experiment.crystal
@@ -124,10 +131,10 @@ class run_one_indexing(object):
       self.rmsds = self.get_rmsds_obs_pred(reflections, experiment)
       for actual, expected in zip(self.rmsds, expected_rmsds):
         assert actual <= expected, "%s %s" %(self.rmsds, expected_rmsds)
-    if 0:
-      print(self.calc_rmsds_timer.legend)
+    if report_timings:
+      print(calc_rmsds_timer.legend)
       print(unpickling_timer.report())
-      print(self.calc_rmsds_timer.report())
+      print(calc_rmsds_timer.report())
 
   def get_rmsds_obs_pred(self, observations, experiment):
     reflections = observations.select(observations.get_flags(
@@ -160,8 +167,8 @@ def test_exercise_1(dials_regression):
 def test_exercise_2(dials_regression):
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
-    print ("Skipping test_exercise_2: missing dependencies" +
-           " %s" * len(missing)) %(tuple(missing))
+    print ("Skipping test_exercise_2: missing dependencies " +
+           ", ".join(missing))
     return
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
@@ -183,8 +190,8 @@ def test_exercise_3(dials_regression):
   from scitbx import matrix
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
-    print ("Skipping test_exercise_3: missing dependencies" +
-           " %s" * len(missing)) %(tuple(missing))
+    print ("Skipping test_exercise_3: missing dependencies " +
+           ", ".join(missing))
     return
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
@@ -215,8 +222,8 @@ def test_exercise_3(dials_regression):
 def test_exercise_4(dials_regression):
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
-    print ("Skipping test_exercise_4: missing dependencies" +
-           " %s" * len(missing)) %(tuple(missing))
+    print ("Skipping test_exercise_4: missing dependencies " +
+           ", ".join(missing))
     return
   # trypsin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
@@ -240,8 +247,8 @@ def test_exercise_4(dials_regression):
 def test_exercise_5(dials_regression):
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
-    print ("Skipping test_exercise_5: missing dependencies" +
-           " %s" * len(missing)) %(tuple(missing))
+    print ("Skipping test_exercise_5: missing dependencies " +
+           ", ".join(missing))
     return
   # synthetic trypsin multi-lattice dataset (2 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
@@ -270,8 +277,8 @@ def test_exercise_5(dials_regression):
 def test_exercise_6(dials_regression):
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
-    print ("Skipping test_exercise_6: missing dependencies" +
-           " %s" * len(missing)) %(tuple(missing))
+    print ("Skipping test_exercise_6: missing dependencies " +
+           ", ".join(missing))
     return
   # synthetic trypsin multi-lattice dataset (3 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
@@ -298,8 +305,8 @@ def test_exercise_6(dials_regression):
 def test_exercise_7(dials_regression):
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
-    print ("Skipping test_exercise_7: missing dependencies" +
-           " %s" * len(missing)) %(tuple(missing))
+    print ("Skipping test_exercise_7: missing dependencies " +
+           ", ".join(missing))
     return
   # synthetic trypsin multi-lattice dataset (4 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
@@ -450,8 +457,8 @@ def test_exercise_11(dials_regression):
 def test_exercise_12(dials_regression):
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
-    print ("Skipping test_exercise_12: missing dependencies" +
-           " %s" * len(missing)) %(tuple(missing))
+    print ("Skipping test_exercise_12: missing dependencies " +
+           ", ".join(missing))
     return
   # test indexing from single image of i04_weak_data
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
@@ -502,7 +509,6 @@ def test_exercise_13(dials_regression):
                               expected_rmsds, expected_hall_symbol)
 
 def test_exercise_14(dials_regression):
-  from glob import glob
   data_dir = os.path.join(dials_regression, "xia2_demo_data")
 
   cwd = os.path.abspath(os.curdir)
@@ -515,7 +521,7 @@ def test_exercise_14(dials_regression):
     shutil.copyfile(
       os.path.join(data_dir, image_path), "image_00%i.img" %(i+1))
 
-  args = ["dials.import", ' '.join(glob(os.path.join(tmp_dir, "image_00*.img"))),
+  args = ["dials.import", ' '.join(glob.glob(os.path.join(tmp_dir, "image_00*.img"))),
           "output.datablock=datablock.json", "allow_multiple_sweeps=True"]
   command = " ".join(args)
   #print(command)
@@ -565,7 +571,6 @@ def test_exercise_16(dials_regression):
   # test for small molecule multi-sweep indexing, 4 sweeps with different values
   # of goniometer.fixed_rotation()
   data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
-  import glob
   pickle_paths = [
     glob.glob(os.path.join(data_dir, "SWEEP%i" %(i+1), "index", "*_strong.pickle"))[0]
     for i in range(4)]
@@ -587,7 +592,6 @@ def test_exercise_17(dials_regression):
   # test for small molecule multi-sweep indexing, 3 sweeps with different values
   # of goniometer setting rotation (i.e. phi scans)
   data_dir = os.path.join(dials_regression, "dials-191")
-  import glob
   pickle_paths = [
     glob.glob(os.path.join(data_dir, "*SWEEP%i*_strong.pickle" %(i+1)))[0]
     for i in range(3)]
@@ -612,7 +616,6 @@ def test_exercise_18(dials_regression):
   # test for small molecule indexing: presence of ice rings makes max-cell
   # estimation tricky
   data_dir = os.path.join(dials_regression, "indexing_test_data", "MXSW-904")
-  import glob
   pickle_path = os.path.join(data_dir, "1_SWEEP1_strong.pickle")
   datablock = os.path.join(data_dir, "1_SWEEP1_datablock.json")
   extra_args = ["filter_ice=False"]
