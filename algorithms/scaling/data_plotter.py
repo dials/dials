@@ -43,7 +43,7 @@ def plot_data_decay(data_man):
   ax2.hist(scales, 40, log=False)
   ax2.set_xlabel('Inverse scale factor')
   ax2.set_ylabel('Occurences')
-  
+
   im = ax1.imshow(G_fin_2d, cmap='viridis', origin='lower')
   divider = make_axes_locatable(ax1)
   cax1 = divider.append_axes("right", size="5%", pad=0.05)
@@ -76,7 +76,7 @@ def plot_data_absorption(data_man):
   ax2.hist(G_fin, 40, log=False)
   ax2.set_xlabel('Inverse scale factor')
   ax2.set_ylabel('Occurences')
-  
+
   im = ax1.imshow(G_fin_2d, cmap='viridis', origin='lower')
   divider = make_axes_locatable(ax1)
   cax1 = divider.append_axes("right", size="5%", pad=0.05)
@@ -116,7 +116,7 @@ def plot_data_modulation(data_man):
   ax2.hist(scales, 40, log=False)
   ax2.set_xlabel('Inverse scale factor')
   ax2.set_ylabel('Occurences')
-  
+
   im = ax1.imshow(G_fin_2d, cmap='viridis', origin='lower')
   divider = make_axes_locatable(ax1)
   cax1 = divider.append_axes("right", size="5%", pad=0.05)
@@ -142,9 +142,9 @@ def plot_correction_at_multiple_detector_areas(data_man, positions):
     cbar = plt.colorbar(im, cax=cax1)
     ax.set_ylabel('y')
     ax.set_xlabel('x')
-    #ax.set_yticks(np.arange(data_man.g_absorption.ny_parameters*10, 10), 
+    #ax.set_yticks(np.arange(data_man.g_absorption.ny_parameters*10, 10),
     #  np.arange(data_man.g_absorption.ny_parameters))
-    #ax.set_xticks(np.arange(data_man.g_absorption.nx_parameters*10, 10), 
+    #ax.set_xticks(np.arange(data_man.g_absorption.nx_parameters*10, 10),
     #  np.arange(data_man.g_absorption.nx_parameters))
     ax.set_title('Absorption correction factor surface at time bin %s' % (position), fontsize=7)
     print "successfully plotted positon %s" % position
@@ -194,13 +194,13 @@ def plot_absorption_correction_at_zbin(data_man, position):
   plt.savefig('Scaling_output_figure_lbfgs_detector.png')
   plt.show()
 
-def plot_smooth_scales(data_man):                                           
+def plot_smooth_scales(data_man):
   rel_values = np.arange(0, int(max(data_man.sorted_reflections['normalised_rotation_angle'])) + 1, 0.1)
   test_scale_factor = SF.SmoothScaleFactor_1D(1.0, data_man.n_g_scale_params)
   test_scale_factor.set_scale_factors(data_man.g_scale.get_scale_factors())
   test_scale_factor.set_normalised_values(rel_values)
   scales = test_scale_factor.calculate_smooth_scales()
-    
+
   plt.subplot(2,1,1)
   plt.title('Smooth scale factors')
   plt.plot(rel_values, scales)
@@ -222,7 +222,7 @@ def plot_smooth_scales(data_man):
 if __name__ == "__main__":
   datafile="/Users/whi10850/Documents/dials_scratch/jbe/scaling_code/test_data/x4_wide_integrated_scaled.pickle"
   data_man = load_data(filename = datafile)
-  
+
   plot_data_decay(data_man)
   plot_data_absorption(data_man)
   plot_data_modulation(data_man)

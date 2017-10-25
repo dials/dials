@@ -53,7 +53,7 @@ class LBFGS_optimiser(object):
     To cure, the absolute values of the scale factors are taken and the
     minimizer is called again until only positive scale factors are obtained.'''
     if (self.x < 0.0).count(True) > 0.0:
-      print """%s of the scale factors is/are negative, taking the absolute 
+      print """%s of the scale factors is/are negative, taking the absolute
       values and trying again""" % ((self.x < 0.0).count(True))
       self.x = abs(self.x)
       lbfgs.run(target_evaluator=self, core_params=self.core_params,

@@ -40,16 +40,16 @@ def scaling_lbfgs(inputparams, gridding_parameters, scaling_options):
   '''assign a unique reflection index to each group of reflections'''
   loaded_reflections.assign_h_index()
   loaded_reflections.scale_by_LP_and_dqe()
-  
+
 
   '''call the optimiser on the Data Manager object'''
   decay_correction_rescaling = scaling_options['decay_correction_rescaling']
 
-  minimised = mf.LBFGS_optimiser(loaded_reflections, parameters=loaded_reflections.g_absorption, 
+  minimised = mf.LBFGS_optimiser(loaded_reflections, parameters=loaded_reflections.g_absorption,
                param_name = 'g_absorption')
-  minimised = mf.LBFGS_optimiser(minimised.data_manager, parameters=minimised.data_manager.g_decay, 
+  minimised = mf.LBFGS_optimiser(minimised.data_manager, parameters=minimised.data_manager.g_decay,
                param_name = 'g_decay', decay_correction_rescaling=decay_correction_rescaling)
-  minimised = mf.LBFGS_optimiser(minimised.data_manager, parameters=minimised.data_manager.g_modulation, 
+  minimised = mf.LBFGS_optimiser(minimised.data_manager, parameters=minimised.data_manager.g_modulation,
                param_name = 'g_modulation')
 
   #minimised.data_manager.reject_outliers(tolerance=6.0,niter=4)

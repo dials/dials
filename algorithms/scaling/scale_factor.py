@@ -12,7 +12,7 @@ class ScaleFactor(object):
 
   def set_scale_factors(self, scale_factors):
     if len(scale_factors) != len(self.scale_factors):
-      assert 0, '''attempting to set a new set of scale factors of different 
+      assert 0, '''attempting to set a new set of scale factors of different
       length than previous assignment: was %s, attempting %s''' % (
       len(self.scale_factors), len(scale_factors))
     self.scale_factors = scale_factors
@@ -31,7 +31,7 @@ class SmoothScaleFactor(ScaleFactor):
       self.problim = scaling_options['problim']
 
   def set_normalised_values(self, normalised_values):
-    '''normalised_values is the column from the reflection table 
+    '''normalised_values is the column from the reflection table
     of the normalised time/resolution etc'''
     self.normalised_values = normalised_values
     self.scales = flex.double([1.0]*len(self.normalised_values))
@@ -74,7 +74,7 @@ class SmoothScaleFactor_1D(SmoothScaleFactor):
       max_scale_to_include = int(relative_pos + smoothing_window)
       min_scale_to_include = int((relative_pos - smoothing_window)//1) + 1
       for j in range(min_scale_to_include, max_scale_to_include + 1):
-        self.derivatives[((j+2)*n)+i] += (#self.scale_factors[j+1] * 
+        self.derivatives[((j+2)*n)+i] += (#self.scale_factors[j+1] *
           np.exp(-((relative_pos - float(j))**2) / Vr))/self.weightsum[i]
     return self.derivatives
 
@@ -91,7 +91,7 @@ class SmoothScaleFactor_2D(SmoothScaleFactor):
     self.weightsum = None
 
   def set_normalised_values(self, normalised_values1, normalised_values2):
-    '''normalised_values is the column from the reflection table 
+    '''normalised_values is the column from the reflection table
     of the normalised time/resolution etc'''
     self.normalised_values = [normalised_values1, normalised_values2]
     self.scales = flex.double([1.0]*len(self.normalised_values[0]))

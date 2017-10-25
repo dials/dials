@@ -48,7 +48,7 @@ class refl_table(object):
     self.dataset_y = dataset_y
     self.z_bins = z_bins
     self.nzbins = nzbins
-    self.h_index_counter = h_index_counter 
+    self.h_index_counter = h_index_counter
     self.h_index_cumulative = h_index_cumulative
 
 def count_members_in_child(reflection_table, bin_object):
@@ -89,7 +89,7 @@ def try_a_divide(reflection_table, bin_obj, axis, min_in_each_bin):
       else:
         print "good divide in %s for bin %s" % (axis, bin_obj.number)
 
-  
+
 
 class detector_bin(object):
   def __init__(self, number, bin_boundaries_x1, bin_boundaries_y1):

@@ -95,9 +95,8 @@ class xds_target_function_log(target_function):
       dIh_g = (dIh * self.data_manager.active_derivatives[i*num:(i+1)*num])
       dIh_g = np.add.reduceat(dIh_g, self.data_manager.Ih_table.h_index_cumulative_array[:-1])/sumgsq
       dIh_g = flex.double(np.repeat(dIh_g, self.data_manager.Ih_table.h_index_counter_array))
-      drdp = -((Ih_values + dIh_g) * scale_factors 
+      drdp = -((Ih_values + dIh_g) * scale_factors
                 * self.data_manager.active_derivatives[i*num:(i+1)*num])
       grad = (2.0 * rhl * scaleweights * drdp)
       gradient.append(flex.sum(grad))
     return gradient
-

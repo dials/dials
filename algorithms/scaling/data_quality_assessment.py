@@ -6,7 +6,7 @@ def R_meas(Data_Manager_object):
   '''Calculate R_meas from a Data_Manager_object'''
   Ihl = Data_Manager_object.sorted_reflections['intensity']
   Ih = Data_Manager_object.sorted_reflections['Ih_values']
-  
+
   gvalues = Data_Manager_object.sorted_reflections['inverse_scale_factor']
 
   Rmeas_upper = 0.0

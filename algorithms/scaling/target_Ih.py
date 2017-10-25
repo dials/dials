@@ -20,14 +20,14 @@ class basic_Ih_table(object):
 
   def update_scale_factors(self, scalefactors):
     if len(scalefactors) != len(self.scale_factors):
-      assert 0, '''attempting to set a new set of scale factors of different 
+      assert 0, '''attempting to set a new set of scale factors of different
       length than previous assignment: was %s, attempting %s''' % (
       len(self.scale_factors), len(scalefactors))
     self.scale_factors = scalefactors
 
   def set_Ih_values(self, Ih_values):
     if len(Ih_values) != len(self.Ih_table['Ih_values']):
-      assert 0, '''attempting to set a new set of Ih_values of different 
+      assert 0, '''attempting to set a new set of Ih_values of different
       length than previous assignment: was %s, attempting %s''' % (
       len(self.Ih_table['Ih_values']), len(Ih_values))
     self.Ih_table['Ih_values'] = Ih_values
@@ -145,4 +145,3 @@ class target_Ih(object):
     Ih1_values = flex.double(np.repeat(self.Ih_table['Ih_values'], self.h_idx_count_1))
     Ih2_values = flex.double(np.repeat(self.Ih_table['Ih_values'], self.h_idx_count_2))
     return Ih1_values, Ih2_values
-  
