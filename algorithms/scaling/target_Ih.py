@@ -93,7 +93,7 @@ class target_Ih(object):
     self.Ih_table = flex.reflection_table()
     self.determine_all_unique_indices()#fill in a unique index column
     self.assign_hjoin_index()
-    self.calc_Ih()
+    #self.calc_Ih()
 
   def determine_all_unique_indices(self):
     u_c = self.experiments.crystals()[0].get_unit_cell().parameters()

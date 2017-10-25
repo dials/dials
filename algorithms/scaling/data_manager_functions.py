@@ -33,9 +33,6 @@ class Data_Manager(object):
     self.reflection_table['z_value'] = self.reflection_table['xyzobs.px.value'].parts()[2]
     self.reflection_table['inverse_scale_factor'] = flex.double([1.0] * len(self.reflection_table))
     self.reflection_table['Ih_values'] = flex.double([0.0] * len(self.reflection_table))
-    '''z_max = max(self.reflection_table['z_value'])
-    sel = self.reflection_table['z_value'] > z_max/2.0
-    self.reflection_table = self.reflection_table.select(sel)'''
     self.sorted_by_miller_index = False
     self.sorted_reflections = None
     self.reflections_for_scaling = None
@@ -58,13 +55,14 @@ class Data_Manager(object):
     weights_for_scaling = self.update_weights_for_scaling(reflections_for_scaling)
     return reflections_for_scaling, weights_for_scaling
 
-  def update_weights_for_scaling(self, reflection_table):
+  def update_weights_for_scaling(self, reflection_table, weights_filter=True):
     '''set the weights of each reflection to be used in scaling'''
     weights_for_scaling = Weighting(reflection_table)
-    weights_for_scaling.apply_Isigma_cutoff(reflection_table,
-                                            self.scaling_options['Isigma_min'])
-    weights_for_scaling.apply_dmin_cutoff(reflection_table,
-                                          self.scaling_options['d_min'])
+    if weights_filter:
+      weights_for_scaling.apply_Isigma_cutoff(reflection_table,
+                                              self.scaling_options['Isigma_min'])
+      weights_for_scaling.apply_dmin_cutoff(reflection_table,
+                                           self.scaling_options['d_min'])
     weights_for_scaling.remove_wilson_outliers(reflection_table)
     return weights_for_scaling
 
@@ -235,11 +233,12 @@ class aimless_Data_Manager(Data_Manager):
       np.exp(b_factors / (2.0 * (self.sorted_reflections['d']**2))))
     self.sorted_reflections['inverse_scale_factor'] = (
       self.sorted_reflections['angular_scale_factor'] * self.sorted_reflections['decay_factor'])
-    self.weights_for_scaling = self.update_weights_for_scaling(self.sorted_reflections)
+    self.sorted_reflections['wilson_outlier_flag'] = calculate_wilson_outliers(self.sorted_reflections, self.experiments)
+    self.weights_for_scaling = self.update_weights_for_scaling(self.sorted_reflections, weights_filter=False)
     Ih_table_sorted_refl = single_Ih_table(self.sorted_reflections, self.weights_for_scaling)
     (self.h_index_counter_array, self.h_index_cumulative_array) = Ih_table_sorted_refl.assign_h_index()
-    #Ih_table_sorted_refl.calc_Ih() #this should be removed for multicrystal mode?
-    #self.sorted_reflections['Ih_values'] = Ih_table_sorted_refl.Ih_table['Ih_values'] #this should be removed for multicrystal mode?
+    Ih_table_sorted_refl.calc_Ih() #this should be removed for multicrystal mode?
+    self.sorted_reflections['Ih_values'] = Ih_table_sorted_refl.Ih_table['Ih_values'] #this should be removed for multicrystal mode?
 
   def clean_reflection_table(self):
     self.initial_keys.append('inverse_scale_factor')
@@ -488,6 +487,8 @@ class XDS_Data_Manager(Data_Manager):
     print "scaled by B_rel and global scale parameter"
 
   def expand_scales_to_all_reflections(self):
+    #currently we have Ih, scales and weights for reflections_for_scaling
+    #first calculate the scales for all reflections (Sorted reflections)
     self.g_modulation.set_normalised_values(self.sorted_reflections['normalised_x_values'],
       self.sorted_reflections['normalised_y_values'])
     gscalevalues = self.g_modulation.calculate_smooth_scales()
@@ -504,17 +505,13 @@ class XDS_Data_Manager(Data_Manager):
     else:
       self.sorted_reflections['inverse_scale_factor'] = (gscalevalues * gdecayvalues
                                                          * gabsvalues)
-    self.weights_for_scaling = self.update_weights_for_scaling(self.sorted_reflections)
-    Ih_table_sorted_refl = single_Ih_table(self.sorted_reflections, self.weights_for_scaling)
-    (self.h_index_counter_array, self.h_index_cumulative_array) = Ih_table_sorted_refl.assign_h_index()
-    #Ih_table_sorted_refl.calc_Ih()
-    #self.sorted_reflections['Ih_values'] = Ih_table_sorted_refl.Ih_table['Ih_values']
-    #print list(Ih_table_sorted_refl.Ih_table)[0:10]
-    #print list(self.h_index_counter_array )[0:10]
-    #print list(self.h_index_cumulative_array)[0:10]
-    #  self.assign_h_index(self.sorted_reflections))
-    #self.Ih_table.calc_Ih()
-    #self.calc_Ih(self.sorted_reflections)
+    #the update weights - use statistical weights and just filter outliers, not on Isigma. dmin etc
+    #self.sorted_reflections['wilson_outlier_flag'] = calculate_wilson_outliers(self.sorted_reflections, self.experiments)
+    self.weights_for_scaling = self.update_weights_for_scaling(self.sorted_reflections, weights_filter=False)
+    #now calculate Ih for all reflections.
+    self.Ih_table = single_Ih_table(self.sorted_reflections, self.weights_for_scaling)
+    (self.h_index_counter_array, self.h_index_cumulative_array) = self.Ih_table.assign_h_index()
+    self.sorted_reflections['Ih_values'] = self.Ih_table.Ih_table['Ih_values'] #this should be removed for multicrystal mode?
 
   def clean_reflection_table(self):
     #add keys for additional data that is to be exported
@@ -535,18 +532,11 @@ class multicrystal_datamanager(Data_Manager):
   def __init__(self, reflections1, experiments1, reflections2, experiments2, scaling_options):
     self.dm1 = XDS_Data_Manager(reflections1, experiments1, scaling_options)
     self.dm2 = XDS_Data_Manager(reflections2, experiments2, scaling_options)
-    self.dm1.reflections_for_scaling['dataset'] = flex.int([1]*len(self.dm1.reflections_for_scaling))
-    self.dm2.reflections_for_scaling['dataset'] = flex.int([2]*len(self.dm2.reflections_for_scaling))
-    '''self.dm1.reflections_for_scaling['weights'] = self.dm1.weights_for_scaling
-    self.dm2.reflections_for_scaling['weights'] = self.dm2.weights_for_scaling
-    self.joined_reflections = flex.reflection_table()
-    self.joined_reflections.extend(self.dm1.reflections_for_scaling)
-    self.joined_reflections.extend(self.dm2.reflections_for_scaling)'''
-    self.experiments = experiments1
-    '''self.sorted_reflections = self.map_indices_to_asu(self.joined_reflections)
-    self.Ih_table = single_Ih_table(self.sorted_reflections, self.sorted_reflections['weights'])'''
+    self.experiments = experiments1 #assume same space group from two json files.
     self.joined_Ih_table = target_Ih(self.dm1.Ih_table, self.dm2.Ih_table, experiments1)
     self.n_active_params = None
+    self.n_active_params_dataset1 = None
+    self.n_active_params_dataset2 = None
     self.scaling_options = scaling_options
     self.reflections_for_scaling, self.weights_for_scaling = self.zip_data_together()
     self.Ih_table = single_Ih_table(self.reflections_for_scaling, self.weights_for_scaling)
@@ -557,10 +547,11 @@ class multicrystal_datamanager(Data_Manager):
     return target_function(self).return_targets()
 
   def set_up_minimisation(self, param_name):
-    #return self.active_parameters
     x = flex.double([])
     x1 = self.dm1.set_up_minimisation(param_name)
     x2 = self.dm2.set_up_minimisation(param_name)
+    self.n_active_params_dataset1 = len(x1)
+    self.n_active_params_dataset2 = len(x2)
     self.n_active_params = len(x1) + len(x2)
     x.extend(x1)
     x.extend(x2)
@@ -568,12 +559,13 @@ class multicrystal_datamanager(Data_Manager):
 
   def zip_data_together(self):
     joined_reflections = flex.reflection_table()
-    #joined_weights = flex.double([])
     h_idx_cumulative_1 = self.joined_Ih_table.h_index_cumulative_array_1
     h_idx_cumulative_2 = self.joined_Ih_table.h_index_cumulative_array_2
     for i in range(len(h_idx_cumulative_1)-1):
-      joined_reflections.extend(self.dm1.reflections_for_scaling[h_idx_cumulative_1[i]:h_idx_cumulative_1[i+1]])
-      joined_reflections.extend(self.dm2.reflections_for_scaling[h_idx_cumulative_2[i]:h_idx_cumulative_2[i+1]])
+      joined_reflections.extend(self.dm1.reflections_for_scaling[h_idx_cumulative_1[i]:
+                                                                 h_idx_cumulative_1[i+1]])
+      joined_reflections.extend(self.dm2.reflections_for_scaling[h_idx_cumulative_2[i]:
+                                                                 h_idx_cumulative_2[i+1]])
     joined_weights = Weighting(joined_reflections)
     return joined_reflections, joined_weights
 
@@ -591,79 +583,52 @@ class multicrystal_datamanager(Data_Manager):
     active_derivatives_2 = flex.double([])
     n_refl_1 = len(self.dm1.reflections_for_scaling)
     n_refl_2 = len(self.dm2.reflections_for_scaling)
-    n_param_1 = n_param_2 = int(self.n_active_params/2)
-
+    n_param_1 = self.n_active_params_dataset1
+    n_param_2 = self.n_active_params_dataset2
     active_derivatives_1.extend(derivs1)
     active_derivatives_1.extend(flex.double([0.0]*n_refl_1*n_param_2))
     active_derivatives_2.extend(flex.double([0.0]*n_refl_2*n_param_1))
     active_derivatives_2.extend(derivs2)
-
     joined_derivatives = flex.double([])
     for i in range(0, self.n_active_params):
-      joined_derivatives.extend(self.zip_together_scales(active_derivatives_1[i*n_refl_1:(i+1)*n_refl_1],
-                                                         active_derivatives_2[i*n_refl_2:(i+1)*n_refl_2]))
+      joined_derivatives.extend(self.zip_together_scales(
+        active_derivatives_1[i*n_refl_1:(i+1)*n_refl_1],
+        active_derivatives_2[i*n_refl_2:(i+1)*n_refl_2]))
     return joined_derivatives
-
 
   def update_for_minimisation(self, parameters):
     '''update the scale factors and Ih for the next iteration of minimisation'''
-    basis_fn_1 = self.dm1.get_basis_function(parameters[:int(self.n_active_params/2)])
-    basis_fn_2 = self.dm2.get_basis_function(parameters[int(self.n_active_params/2):])
+    basis_fn_1 = self.dm1.get_basis_function(parameters[:self.n_active_params_dataset1])
+    basis_fn_2 = self.dm2.get_basis_function(parameters[self.n_active_params_dataset1:])
+    self.dm1.reflections_for_scaling['inverse_scale_factor'] = basis_fn_1[0]
+    self.dm2.reflections_for_scaling['inverse_scale_factor'] = basis_fn_2[0]
     self.reflections_for_scaling['inverse_scale_factor'] = self.zip_together_scales(
       basis_fn_1[0], basis_fn_2[0])
-    
-    active_derivatives_1 = basis_fn_1[1]
-    active_derivatives_2 = basis_fn_2[1]
-    self.active_derivatives = self.zip_together_derivatives(active_derivatives_1, 
-                                                            active_derivatives_2)
-
+    self.active_derivatives = self.zip_together_derivatives(basis_fn_1[1], basis_fn_2[1])
     self.Ih_table.update_scale_factors(self.reflections_for_scaling['inverse_scale_factor'])
     self.Ih_table.calc_Ih()
-
-    '''self.dm1.update_for_minimisation(parameters[:int(self.n_active_params/2)])
-    self.dm2.update_for_minimisation(parameters[int(self.n_active_params/2):])
-    self.Ih_table.calc_Ih()
-    (Ih1, Ih2) = self.Ih_table.return_Ih_values()
-    self.dm1.Ih_table.set_Ih_values(Ih1)
-    self.dm2.Ih_table.set_Ih_values(Ih2)'''
 
   def expand_scales_to_all_reflections(self):
     self.dm1.expand_scales_to_all_reflections()
     self.dm2.expand_scales_to_all_reflections()
 
   def join_multiple_datasets(self):
-    (Ih1, Ih2) = self.Ih_table.return_Ih_values()
-    self.dm1.Ih_table.set_Ih_values(Ih1)
-    self.dm2.Ih_table.set_Ih_values(Ih2)
+    self.joined_Ih_table = target_Ih(self.dm1.Ih_table, self.dm2.Ih_table, self.experiments)
     joined_reflections = flex.reflection_table()
-    joined_reflections.extend(self.dm1.sorted_reflections)
-    joined_reflections.extend(self.dm2.sorted_reflections)
-
-    u_c = self.experiments.crystals()[0].get_unit_cell().parameters()
-    s_g = self.experiments.crystals()[0].get_space_group()
-    crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
-    miller_set = miller.set(crystal_symmetry=crystal_symmetry,
-                            indices=joined_reflections['miller_index'])
-    joined_reflections["asu_miller_index"] = miller_set.map_to_asu().indices()
-    permuted = (miller_set.map_to_asu()).sort_permutation(by_value='packed_indices')
-    self.sorted_reflections = joined_reflections.select(permuted)
-    self.weights_for_scaling = Weighting(self.sorted_reflections) 
-    self.weights_for_scaling.apply_Isigma_cutoff(self.sorted_reflections,
-                                            self.scaling_options['Isigma_min'])
-    self.weights_for_scaling.apply_dmin_cutoff(self.sorted_reflections,
-                                          self.scaling_options['d_min'])
-    self.weights_for_scaling.remove_wilson_outliers(self.sorted_reflections)
-    self.Ih_table_sorted_refl = single_Ih_table(self.sorted_reflections, self.weights_for_scaling)
-    #self.sorted_reflections['Ih_values'] = self.Ih_table_sorted_refl.Ih_table['Ih_values']
-    self.h_index_counter_array = self.Ih_table_sorted_refl.h_index_counter_array 
-    self.h_index_cumulative_array = self.Ih_table_sorted_refl.h_index_cumulative_array
-
-    #print self.dm
-    #print list(self.Ih_table_sorted_refl.Ih_table)[0:10]
-    #print list(self.h_index_counter_array )[0:10]
-    #print list(self.h_index_cumulative_array)[0:10]
-    #self.sorted_reflections['Ih_values'] = Ih_table_sorted_refl.Ih_table['Ih_values']
-
+    h_idx_cumulative_1 = self.joined_Ih_table.h_index_cumulative_array_1
+    h_idx_cumulative_2 = self.joined_Ih_table.h_index_cumulative_array_2
+    for i in range(len(h_idx_cumulative_1)-1):
+      joined_reflections.extend(self.dm1.sorted_reflections[h_idx_cumulative_1[i]:h_idx_cumulative_1[i+1]])
+      joined_reflections.extend(self.dm2.sorted_reflections[h_idx_cumulative_2[i]:h_idx_cumulative_2[i+1]])
+    self.sorted_reflections = joined_reflections
+    self.weights_for_scaling = Weighting(self.sorted_reflections)
+    #self.sorted_reflections['wilson_outlier_flag'] = (
+    #calculate_wilson_outliers(self.sorted_reflections, self.experiments))
+    #self.weights_for_scaling.remove_wilson_outliers(self.sorted_reflections)
+    self.Ih_table = single_Ih_table(self.sorted_reflections, self.weights_for_scaling)
+    self.sorted_reflections['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
+    self.h_index_counter_array = self.Ih_table.h_index_counter_array 
+    self.h_index_cumulative_array = self.Ih_table.h_index_cumulative_array
 
   
 def select_variables_in_range(variable_array, lower_limit, upper_limit):

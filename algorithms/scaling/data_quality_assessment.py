@@ -6,19 +6,6 @@ def R_meas(Data_Manager_object):
   '''Calculate R_meas from a Data_Manager_object'''
   Ihl = Data_Manager_object.sorted_reflections['intensity']
   Ih = Data_Manager_object.sorted_reflections['Ih_values']
-  '''gvalues1 = flex.double([Data_Manager_object.g_values[i]
-        for i in Data_Manager_object.sorted_reflections['l_bin_index']])
-  gvalues2 = flex.double([Data_Manager_object.g2_values[i]
-        for i in Data_Manager_object.sorted_reflections['a_bin_index']])
-  gvalues3 = flex.double([Data_Manager_object.g3_values[i]
-        for i in Data_Manager_object.sorted_reflections['xy_bin_index']])
-
-  res = abs((Ihl/(gvalues1*gvalues2*gvalues3))- Ih)
-  sumres = np.bincount(self.data_manager.sorted_reflections['h_index'], res)
-  nh = Data_Manager_object.h_index_counter_array
-  prefactor = (nh/(nh-1.0))**0.5
-  gsq = (((self.gproduct)**2)/variances)
-    sumgsq = np.bincount(self.data_manager.sorted_reflections['h_index'], gsq)'''
   
   gvalues = Data_Manager_object.sorted_reflections['inverse_scale_factor']
 
