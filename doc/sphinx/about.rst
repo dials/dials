@@ -47,8 +47,12 @@ DIALS East
 
 Development of DIALS in the UK is funded by the `BioStruct-X`_ EU grant,
 `Diamond Light Source`_ and `CCP4`_, and led by `Dr Gwyndaf Evans`_.
-Developers include Luis Fuentes-Montero, Markus Gerstel, Richard
-Gildea, Nick Devenish,
+Developers include
+James Beilsten-Edmands,
+Nick Devenish,
+Luis Fuentes-Montero,
+Markus Gerstel,
+Richard Gildea,
 James Parkhurst and Graeme Winter at `Diamond Light Source`_, and David Waterman
 at `CCP4`_.
 
