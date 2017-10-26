@@ -553,8 +553,14 @@ class XDS_Data_Manager(Data_Manager):
 
 class multicrystal_datamanager(Data_Manager):
   def __init__(self, reflections1, experiments1, reflections2, experiments2, scaling_options):
-    self.dm1 = XDS_Data_Manager(reflections1, experiments1, scaling_options)
-    self.dm2 = XDS_Data_Manager(reflections2, experiments2, scaling_options)
+    if scaling_options['scaling_method'] == 'xds':
+      self.dm1 = XDS_Data_Manager(reflections1, experiments1, scaling_options)
+      self.dm2 = XDS_Data_Manager(reflections2, experiments2, scaling_options)
+    elif scaling_options['scaling_method'] == 'aimless':
+      self.dm1 = aimless_Data_Manager(reflections1, experiments1, scaling_options)
+      self.dm2 = aimless_Data_Manager(reflections2, experiments2, scaling_options)
+    else:
+      assert 0, "Incorrect scaling method passed to multicrystal datamanager (not 'xds' or 'aimless')"
     self.experiments = experiments1 #assume same space group from two json files.?
     self.joined_Ih_table = target_Ih(self.dm1.Ih_table, self.dm2.Ih_table, experiments1)
     self.n_active_params = None
