@@ -155,7 +155,7 @@ def plot_correction_at_multiple_detector_areas(data_man, positions, outputfile=N
     #  np.arange(data_man.g_absorption.ny_parameters))
     #ax.set_xticks(np.arange(data_man.g_absorption.nx_parameters*10, 10),
     #  np.arange(data_man.g_absorption.nx_parameters))
-    ax.set_title('Absorption correction factor surface at time bin %s' % (position), fontsize=7)
+    ax.set_title('Absorption correction factor surface at normalised time %s' % (float(position)+0.5), fontsize=7)
     print "successfully plotted positon %s" % position
   plt.tight_layout()
   if outputfile:
@@ -174,7 +174,7 @@ def calc_correction_at_detector_area(data_man, position):
   (n1, n2) = (len(rel_values_1), len(rel_values_2))
   rel_values_1 = np.tile(rel_values_1, n2)
   rel_values_2 = np.repeat(rel_values_2, n1)
-  rel_values_3 = flex.double([float(position)-0.5]*len(rel_values_2)) #why -0.5 - check.
+  rel_values_3 = flex.double([float(position)+0.5]*len(rel_values_2)) #why -0.5 - check.
   test_scale_factor = copy.deepcopy(data_man.g_absorption)
   test_scale_factor.set_normalised_values(rel_values_1, rel_values_2, rel_values_3)
   scales = test_scale_factor.calculate_smooth_scales()
