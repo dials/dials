@@ -96,8 +96,8 @@ class target_Ih(object):
     #self.calc_Ih()
 
   def determine_all_unique_indices(self):
-    u_c = self.experiments.crystals()[0].get_unit_cell().parameters()
-    s_g = self.experiments.crystals()[0].get_space_group()
+    u_c = self.experiments.crystal.get_unit_cell().parameters()
+    s_g = self.experiments.crystal.get_space_group()
     crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
     set1 = list(set(self.Ih_table_1.Ih_table['asu_miller_index']))
     set2 = list(set(self.Ih_table_2.Ih_table['asu_miller_index']))

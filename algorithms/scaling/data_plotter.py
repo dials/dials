@@ -20,7 +20,7 @@ def load_data(filename):
   data_file.close()
   return data
 
-def plot_data_decay(data_man):
+def plot_data_decay(data_man, outputfile=None):
   ndbins = data_man.g_decay.n1_parameters
   nzbins = data_man.g_decay.n2_parameters
   '''create a grid of x and y points and use these to generate scale factors'''
@@ -56,10 +56,13 @@ def plot_data_decay(data_man):
   #ax1.set_xticklabels(x_ticks)
   ax1.set_title('Inverse scale factors for decay correction', fontsize=12)
   plt.tight_layout()
-  plt.savefig('g_resolution.png')
+  if outputfile:
+    plt.savefig(outputfile)
+  else:
+    plt.savefig('g_decay.png')
   #plt.show()
 
-def plot_data_absorption(data_man):
+def plot_data_absorption(data_man, outputfile=None):
   "takes in a data manager object"
 
   nzbins = data_man.g_absorption.ntime_parameters
@@ -88,10 +91,13 @@ def plot_data_absorption(data_man):
   #ax1.set_xticklabels(x_ticks)
   ax1.set_title('Inverse scale factors for absorption correction', fontsize=12)
   plt.tight_layout()
-  plt.savefig('g_absorption.png')
+  if outputfile:
+    plt.savefig(outputfile)
+  else:
+    plt.savefig('g_absorption.png')
   #plt.show()
 
-def plot_data_modulation(data_man):
+def plot_data_modulation(data_man, outputfile=None):
 
   nxbins = data_man.g_modulation.n1_parameters
   nybins = data_man.g_modulation.n2_parameters
@@ -125,9 +131,12 @@ def plot_data_modulation(data_man):
   ax1.set_xlabel('x')
   ax1.set_title('Inverse scale factors for modulation correction', fontsize=12)
   plt.tight_layout()
-  plt.savefig('g_modulation.png')
+  if outputfile:
+    plt.savefig(outputfile)
+  else:
+    plt.savefig('g_modulation.png')
 
-def plot_correction_at_multiple_detector_areas(data_man, positions):
+def plot_correction_at_multiple_detector_areas(data_man, positions, outputfile=None):
   n = len(positions)
   plt.figure(figsize=(12, 8))
   gs = gridspec.GridSpec(2, 3)
@@ -149,7 +158,10 @@ def plot_correction_at_multiple_detector_areas(data_man, positions):
     ax.set_title('Absorption correction factor surface at time bin %s' % (position), fontsize=7)
     print "successfully plotted positon %s" % position
   plt.tight_layout()
-  plt.savefig('g_absorption_surfaces.png')
+  if outputfile:
+    plt.savefig(outputfile)
+  else:
+    plt.savefig('g_absorption_surfaces.png')
 
 
 def calc_correction_at_detector_area(data_man, position):

@@ -20,8 +20,8 @@ class LBFGS_optimiser(object):
     print "performing minimisation for %s correction" % (param_name.lstrip('g_'))
     #print "performing scaling on %s reflections out of %s total reflections" % (
     #  len(self.data_manager.reflections_for_scaling), len(self.data_manager.sorted_reflections))
-    self.core_params = lbfgs.core_parameters(maxfev=15)
-    self.termination_params = lbfgs.termination_parameters(max_iterations=15)
+    self.core_params = lbfgs.core_parameters(maxfev=5)
+    self.termination_params = lbfgs.termination_parameters(max_iterations=5)
     lbfgs.run(target_evaluator=self, core_params=self.core_params,
               termination_params=self.termination_params)
     #a few extra options for xds_scaling

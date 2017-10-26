@@ -16,8 +16,8 @@ def calculate_wilson_outliers(reflection_table, experiments):
     look for the presence of outliers with high intensities. Returns a bool
     flex array indicating any outliers.'''
     #first create a miller_array object to get the centric flags.
-    u_c = experiments.crystals()[0].get_unit_cell().parameters()
-    s_g = experiments.crystals()[0].get_space_group()
+    u_c = experiments.crystal.get_unit_cell().parameters()
+    s_g = experiments.crystal.get_space_group()
     crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
     miller_set = miller.set(crystal_symmetry=crystal_symmetry,
                             indices=reflection_table['asu_miller_index'])

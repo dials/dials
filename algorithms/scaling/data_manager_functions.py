@@ -23,7 +23,7 @@ class Data_Manager(object):
   def __init__(self, reflections, experiments, scaling_options):
     'General attributes relevant for all parameterisations'
     self.experiments = experiments
-    self.reflection_table = reflections[0]
+    self.reflection_table = reflections
     'initial filter to select integrated reflections'
     self.reflection_table = self.reflection_table.select(
       self.reflection_table.get_flags(self.reflection_table.flags.integrated))
@@ -69,8 +69,8 @@ class Data_Manager(object):
   def map_indices_to_asu(self, reflection_table):
     '''Create a miller_set object, map to the asu and create a sorted
        reflection table, sorted by asu miller index'''
-    u_c = self.experiments.crystals()[0].get_unit_cell().parameters()
-    s_g = self.experiments.crystals()[0].get_space_group()
+    u_c = self.experiments.crystal.get_unit_cell().parameters()
+    s_g = self.experiments.crystal.get_space_group()
     crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
     miller_set = miller.set(crystal_symmetry=crystal_symmetry,
                             indices=reflection_table['miller_index'])
@@ -176,14 +176,14 @@ class aimless_Data_Manager(Data_Manager):
       rotation_interval = self.scaling_options['rotation_interval']
     else:
       rotation_interval = 15.0
-    osc_range = self.experiments.scans()[0].get_oscillation_range()
+    osc_range = self.experiments.scan.get_oscillation_range()
     if ((osc_range[1] - osc_range[0]) / rotation_interval) % 1 < 0.33: #if last bin less than 33% filled'
       n_phi_bins = int((osc_range[1] - osc_range[0]) / rotation_interval)
       'increase rotation interval slightly'
       rotation_interval = (osc_range[1] - osc_range[0])/float(n_phi_bins) + 0.001
     rotation_interval = 15.0 + 0.001
     'extend by 0.001 to make sure all datapoints within min/max'
-    one_oscillation_width = self.experiments.scans()[0].get_oscillation()[1]
+    one_oscillation_width = self.experiments.scan.get_oscillation()[1]
     reflection_table['normalised_time_values'] = ((reflection_table['z_value']
       * one_oscillation_width) - (osc_range[0] - 0.001))/rotation_interval
     'define the highest and lowest gridpoints: go out two further than the max/min int values'
@@ -202,14 +202,14 @@ class aimless_Data_Manager(Data_Manager):
       rotation_interval = self.scaling_options['rotation_interval']
     else:
       rotation_interval = 15.0
-    osc_range = self.experiments.scans()[0].get_oscillation_range()
+    osc_range = self.experiments.scan.get_oscillation_range()
     if ((osc_range[1] - osc_range[0])/ rotation_interval) % 1 < 0.33: #if last bin less than 33% filled
       n_phi_bins = int((osc_range[1] - osc_range[0])/ rotation_interval)
       'increase rotation interval slightly'
       rotation_interval = (osc_range[1] - osc_range[0])/float(n_phi_bins) + 0.001
     rotation_interval = 15.0 + 0.001
     'extend by 0.001 to make sure all datapoints within min/max'
-    one_oscillation_width = self.experiments.scans()[0].get_oscillation()[1]
+    one_oscillation_width = self.experiments.scan.get_oscillation()[1]
     reflection_table['normalised_rotation_angle'] = ((reflection_table['z_value']
       * one_oscillation_width) - (osc_range[0] - 0.001))/rotation_interval
     'define the highest and lowest gridpoints: go out two further than the max/min int values'
@@ -344,7 +344,7 @@ class XDS_Data_Manager(Data_Manager):
       rotation_interval = self.scaling_options['rotation_interval']
     else:
       rotation_interval = 15.0
-    osc_range = self.experiments.scans()[0].get_oscillation_range()
+    osc_range = self.experiments.scan.get_oscillation_range()
     if ((osc_range[1] - osc_range[0]) / rotation_interval) % 1 < 0.33: #if last bin less than 33% filled'
       n_phi_bins = int((osc_range[1] - osc_range[0])/ rotation_interval)
       'increase rotation interval slightly'
@@ -448,7 +448,7 @@ class XDS_Data_Manager(Data_Manager):
     '''Bin the data into detector position and time 'z' bins'''
     z_bins = self.bin_boundaries['z_value']
     #define simple detector area map#
-    image_size = self.experiments.detectors()[0].to_dict()['panels'][0]['image_size']
+    image_size = self.experiments.detector.to_dict()['panels'][0]['image_size']
     xvalues = self.sorted_reflections['x_value']
     yvalues = self.sorted_reflections['y_value']
     x_center = image_size[0]/2.0
@@ -555,7 +555,7 @@ class multicrystal_datamanager(Data_Manager):
   def __init__(self, reflections1, experiments1, reflections2, experiments2, scaling_options):
     self.dm1 = XDS_Data_Manager(reflections1, experiments1, scaling_options)
     self.dm2 = XDS_Data_Manager(reflections2, experiments2, scaling_options)
-    self.experiments = experiments1 #assume same space group from two json files.
+    self.experiments = experiments1 #assume same space group from two json files.?
     self.joined_Ih_table = target_Ih(self.dm1.Ih_table, self.dm2.Ih_table, experiments1)
     self.n_active_params = None
     self.n_active_params_dataset1 = None
