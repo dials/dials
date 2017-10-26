@@ -122,7 +122,8 @@ class aimless_Data_Manager(Data_Manager):
     Data_Manager.__init__(self, reflections, experiments, scaling_options)
     'Attributes specific to aimless parameterisation'
     self.binning_parameters = {'n_scale_bins' : None, 'n_B_bins' : None,
-                               'lmax' : 4, 'n_d_bins' : None}
+                               'lmax' : 4, 'n_d_bins' : None, 
+                               'rotation_interval' : None}
     for key, value in scaling_options.iteritems():
       if key in self.binning_parameters:
         self.binning_parameters[key] = value
@@ -171,12 +172,15 @@ class aimless_Data_Manager(Data_Manager):
     '''calculate the relative, normalised rotation angle. Here this is called
     normalised time to allow a different rotation interval compare to the scale
     correction. A SmoothScaleFactor_1D object is then initialised'''
-    rotation_interval = 15.0
+    if self.scaling_options['rotation_interval']:
+      rotation_interval = self.scaling_options['rotation_interval']
+    else:
+      rotation_interval = 15.0
     osc_range = self.experiments.scans()[0].get_oscillation_range()
-    if (osc_range[1] / rotation_interval) % 1 < 0.33: #if last bin less than 33% filled'
-      n_phi_bins = int(osc_range[1] / rotation_interval)
+    if ((osc_range[1] - osc_range[0]) / rotation_interval) % 1 < 0.33: #if last bin less than 33% filled'
+      n_phi_bins = int((osc_range[1] - osc_range[0]) / rotation_interval)
       'increase rotation interval slightly'
-      rotation_interval = float(n_phi_bins)/osc_range[1] + 0.001
+      rotation_interval = (osc_range[1] - osc_range[0])/float(n_phi_bins) + 0.001
     rotation_interval = 15.0 + 0.001
     'extend by 0.001 to make sure all datapoints within min/max'
     one_oscillation_width = self.experiments.scans()[0].get_oscillation()[1]
@@ -194,12 +198,15 @@ class aimless_Data_Manager(Data_Manager):
   def initialise_scale_term(self, reflection_table):
     '''calculate the relative, normalised rotation angle.
     A SmoothScaleFactor_1D object is then initialised'''
-    rotation_interval = 15.0
+    if self.scaling_options['rotation_interval']:
+      rotation_interval = self.scaling_options['rotation_interval']
+    else:
+      rotation_interval = 15.0
     osc_range = self.experiments.scans()[0].get_oscillation_range()
-    if (osc_range[1] / rotation_interval) % 1 < 0.33: #if last bin less than 33% filled
-      n_phi_bins = int(osc_range[1] / rotation_interval)
+    if ((osc_range[1] - osc_range[0])/ rotation_interval) % 1 < 0.33: #if last bin less than 33% filled
+      n_phi_bins = int((osc_range[1] - osc_range[0])/ rotation_interval)
       'increase rotation interval slightly'
-      rotation_interval = float(n_phi_bins)/osc_range[1] + 0.001
+      rotation_interval = (osc_range[1] - osc_range[0])/float(n_phi_bins) + 0.001
     rotation_interval = 15.0 + 0.001
     'extend by 0.001 to make sure all datapoints within min/max'
     one_oscillation_width = self.experiments.scans()[0].get_oscillation()[1]
@@ -233,12 +240,12 @@ class aimless_Data_Manager(Data_Manager):
       np.exp(b_factors / (2.0 * (self.sorted_reflections['d']**2))))
     self.sorted_reflections['inverse_scale_factor'] = (
       self.sorted_reflections['angular_scale_factor'] * self.sorted_reflections['decay_factor'])
-    self.sorted_reflections['wilson_outlier_flag'] = calculate_wilson_outliers(self.sorted_reflections, self.experiments)
+    #self.sorted_reflections['wilson_outlier_flag'] = calculate_wilson_outliers(self.sorted_reflections, self.experiments)
     self.weights_for_scaling = self.update_weights_for_scaling(self.sorted_reflections, weights_filter=False)
-    Ih_table_sorted_refl = single_Ih_table(self.sorted_reflections, self.weights_for_scaling)
-    (self.h_index_counter_array, self.h_index_cumulative_array) = Ih_table_sorted_refl.assign_h_index()
-    Ih_table_sorted_refl.calc_Ih() #this should be removed for multicrystal mode?
-    self.sorted_reflections['Ih_values'] = Ih_table_sorted_refl.Ih_table['Ih_values'] #this should be removed for multicrystal mode?
+    self.Ih_table = single_Ih_table(self.sorted_reflections, self.weights_for_scaling)
+    (self.h_index_counter_array, self.h_index_cumulative_array) = (
+      self.Ih_table.h_index_counter_array, self.Ih_table.h_index_cumulative_array)
+    self.sorted_reflections['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
 
   def clean_reflection_table(self):
     self.initial_keys.append('inverse_scale_factor')
@@ -259,7 +266,7 @@ class XDS_Data_Manager(Data_Manager):
     Data_Manager.__init__(self, reflections, experiments, scaling_options)
     'Attributes specific to XDS parameterisation'
     '''set bin parameters'''
-    self.binning_parameters = {'n_d_bins' : None, 'n_z_bins' : None,
+    self.binning_parameters = {'n_d_bins' : None, 'rotation_interval' : None,
                                'n_absorption_positions' : 5,
                                'n_detector_bins' : None}
     #self.bin_boundaries = None
@@ -333,7 +340,22 @@ class XDS_Data_Manager(Data_Manager):
   def bin_reflections_decay(self):
     '''bin reflections for decay correction'''
     ndbins = self.binning_parameters['n_d_bins']
-    nzbins = self.binning_parameters['n_z_bins']
+    if self.scaling_options['rotation_interval']:
+      rotation_interval = self.scaling_options['rotation_interval']
+    else:
+      rotation_interval = 15.0
+    osc_range = self.experiments.scans()[0].get_oscillation_range()
+    if ((osc_range[1] - osc_range[0]) / rotation_interval) % 1 < 0.33: #if last bin less than 33% filled'
+      n_phi_bins = int((osc_range[1] - osc_range[0])/ rotation_interval)
+      'increase rotation interval slightly'
+      rotation_interval = (osc_range[1] - osc_range[0])/float(n_phi_bins) + 0.001
+    else:
+      rotation_interval = 15.0 + 0.001
+      n_phi_bins = int((osc_range[1] - osc_range[0]) / rotation_interval) + 1
+    self.n_phi_bins = n_phi_bins
+    print "n_phi_bins = %s" % (n_phi_bins)
+    print "rotation interval = %s" % (rotation_interval)
+    nzbins = n_phi_bins
     '''Bin the data into resolution and time 'z' bins'''
     zmax = max(self.sorted_reflections['z_value']) + 0.001
     zmin = min(self.sorted_reflections['z_value']) - 0.001
@@ -510,8 +532,9 @@ class XDS_Data_Manager(Data_Manager):
     self.weights_for_scaling = self.update_weights_for_scaling(self.sorted_reflections, weights_filter=False)
     #now calculate Ih for all reflections.
     self.Ih_table = single_Ih_table(self.sorted_reflections, self.weights_for_scaling)
-    (self.h_index_counter_array, self.h_index_cumulative_array) = self.Ih_table.assign_h_index()
-    self.sorted_reflections['Ih_values'] = self.Ih_table.Ih_table['Ih_values'] #this should be removed for multicrystal mode?
+    (self.h_index_counter_array, self.h_index_cumulative_array) = (
+      self.Ih_table.h_index_counter_array, self.Ih_table.h_index_cumulative_array)
+    self.sorted_reflections['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
 
   def clean_reflection_table(self):
     #add keys for additional data that is to be exported

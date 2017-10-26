@@ -17,6 +17,7 @@ class LBFGS_optimiser(object):
     self.data_manager = Data_Manager_object
     self.x = self.data_manager.set_up_minimisation(param_name)
     self.residuals = []
+    print "performing minimisation for %s correction" % (param_name.lstrip('g_'))
     #print "performing scaling on %s reflections out of %s total reflections" % (
     #  len(self.data_manager.reflections_for_scaling), len(self.data_manager.sorted_reflections))
     self.core_params = lbfgs.core_parameters(maxfev=15)
@@ -31,6 +32,7 @@ class LBFGS_optimiser(object):
       if self.data_manager.scaling_options['decay_correction_rescaling']:
         if self.data_manager.scaling_options['parameterization'] == 'standard':
           self.data_manager.scale_gvalues()
+    print "completed minimisation for %s correction" % (param_name.lstrip('g_'))
 
   def compute_functional_and_gradients(self):
     '''first calculate the updated values of the scale factors and Ih,
