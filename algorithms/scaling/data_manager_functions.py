@@ -43,7 +43,7 @@ class Data_Manager(object):
     self.sorted_reflections = self.map_indices_to_asu(self.reflection_table)
     'assign initial weights (will be statistical weights at this point)'
     self.weights_for_scaling = self.update_weights_for_scaling(self.sorted_reflections)
-
+    
   'define a few methods required upon initialisation to set up the data manager'
   def extract_reflections_for_scaling(self, reflection_table):
     '''select the reflections with non-zero weight, assign them to
@@ -220,7 +220,7 @@ class aimless_Data_Manager(Data_Manager):
     self.g_scale.set_normalised_values(reflection_table['normalised_rotation_angle'])
     self.n_active_params += n_scale_parameters
     self.n_g_scale_params = n_scale_parameters
-
+    
   def initialise_absorption_term(self):
     n_abs_params = 0
     for i in range(self.binning_parameters['lmax']):
@@ -293,7 +293,7 @@ class XDS_Data_Manager(Data_Manager):
     self.g_decay.set_normalised_values(self.reflections_for_scaling['normalised_res_values'],
       self.reflections_for_scaling['normalised_time_values'])
     self.g_absorption.set_normalised_values(self.reflections_for_scaling['normalised_x_abs_values'],
-      self.reflections_for_scaling['normalised_y_abs_values'],
+      self.reflections_for_scaling['normalised_y_abs_values'], 
       self.reflections_for_scaling['normalised_time_values'])
     #create a dict to allow easy access to the relevant parameters during minimisation
     self.g_parameterisation = {'g_absorption' : self.g_absorption, 'g_modulation':
@@ -354,7 +354,7 @@ class XDS_Data_Manager(Data_Manager):
       n_phi_bins = int((osc_range[1] - osc_range[0]) / rotation_interval) + 1
     self.n_phi_bins = n_phi_bins
     print "n_phi_bins = %s" % (n_phi_bins)
-    print "rotation interval = %s" % (rotation_interval)
+    print "rotation interval = %s degrees" % (rotation_interval)
     nzbins = n_phi_bins
     '''Bin the data into resolution and time 'z' bins'''
     zmax = max(self.sorted_reflections['z_value']) + 0.001
@@ -381,7 +381,7 @@ class XDS_Data_Manager(Data_Manager):
       self.g_decay = SF.SmoothScaleFactor_2D(1.0, n_res_parameters, n_time_parameters)
     self.g_decay.set_normalised_values(self.sorted_reflections['normalised_res_values'],
       self.sorted_reflections['normalised_time_values'])
-
+  
   def bin_reflections_modulation(self):
     '''bin reflections for modulation correction'''
     nxbins = nybins = self.binning_parameters['n_detector_bins']
@@ -404,7 +404,7 @@ class XDS_Data_Manager(Data_Manager):
       self.g_modulation = SF.SmoothScaleFactor_2D(0.0, n_x_parameters, n_y_parameters)
     else:
       self.g_modulation = SF.SmoothScaleFactor_2D(1.0, n_x_parameters, n_y_parameters)
-    self.g_modulation.set_normalised_values(self.sorted_reflections['normalised_x_values'],
+    self.g_modulation.set_normalised_values(self.sorted_reflections['normalised_x_values'], 
       self.sorted_reflections['normalised_y_values'])
 
   def bin_reflections_absorption(self):
@@ -436,7 +436,7 @@ class XDS_Data_Manager(Data_Manager):
     else:
       self.g_absorption = SF.SmoothScaleFactor_GridAbsorption(1.0,
         n_x_parameters, n_y_parameters, n_time_parameters)
-    self.g_absorption.set_normalised_values(self.sorted_reflections['normalised_x_abs_values'],
+    self.g_absorption.set_normalised_values(self.sorted_reflections['normalised_x_abs_values'], 
       self.sorted_reflections['normalised_y_abs_values'],
       self.sorted_reflections['normalised_time_values'])
 
@@ -518,7 +518,7 @@ class XDS_Data_Manager(Data_Manager):
       self.sorted_reflections['normalised_time_values'])
     gdecayvalues = self.g_decay.calculate_smooth_scales()
     self.g_absorption.set_normalised_values(self.sorted_reflections['normalised_x_abs_values'],
-      self.sorted_reflections['normalised_y_abs_values'],
+      self.sorted_reflections['normalised_y_abs_values'], 
       self.sorted_reflections['normalised_time_values'])
     gabsvalues = self.g_absorption.calculate_smooth_scales()
     if self.scaling_options['parameterization'] == 'log':
@@ -545,7 +545,7 @@ class XDS_Data_Manager(Data_Manager):
     added_columns = ['l_bin_index', 'a_bin_index', 'xy_bin_index', 'h_index',
                      'asu_miller_index', 'normalised_y_values',
                      'normalised_x_values', 'normalised_y_abs_values',
-                     'normalised_x_abs_values', 'normalised_time_values',
+                     'normalised_x_abs_values', 'normalised_time_values', 
                      'normalised_res_values', 'wilson_outlier_flag',
                      'centric_flag']
     for key in added_columns:
@@ -650,10 +650,10 @@ class multicrystal_datamanager(Data_Manager):
     #self.weights_for_scaling.remove_wilson_outliers(self.sorted_reflections)
     self.Ih_table = single_Ih_table(self.sorted_reflections, self.weights_for_scaling)
     self.sorted_reflections['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
-    self.h_index_counter_array = self.Ih_table.h_index_counter_array
+    self.h_index_counter_array = self.Ih_table.h_index_counter_array 
     self.h_index_cumulative_array = self.Ih_table.h_index_cumulative_array
 
-
+  
 def select_variables_in_range(variable_array, lower_limit, upper_limit):
   '''return boolean selection of a given variable range'''
   sel = flex.bool()
