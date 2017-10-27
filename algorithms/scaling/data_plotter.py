@@ -235,6 +235,57 @@ def plot_smooth_scales(data_man, outputfile=None):
   else:
     plt.savefig('Smooth_scale_factors.png')
 
+def plot_absorption_surface(data_man, outputfile=None):
+  params = data_man.g_absorption.get_scale_factors()
+
+  from scitbx import math
+  from scitbx.array_family import flex
+  import math as pymath
+  STEPS = 100
+  theta = np.linspace(0, 2 * np.pi, 2*STEPS)
+  phi = np.linspace(0, np.pi, STEPS)
+  THETA, PHI = np.meshgrid(theta, phi)
+  lmax = data_man.binning_parameters['lmax']
+  Intensity = np.ones(THETA.shape)
+  counter = 0
+  sqrt2 = pymath.sqrt(2)
+  for l in range(1, lmax+1):
+    lfg = math.log_factorial_generator(2 * l + 1)
+    nsssphe = math.nss_spherical_harmonics(l, 50000, lfg)
+    for m in range(-l, l+1):
+      for it, t in enumerate(theta):
+        for ip, p in enumerate(phi):
+          Ylm = nsssphe.spherical_harmonic(l, abs(m), p, t)
+          if m < 0:
+            r = sqrt2 * ((-1) ** m) * Ylm.imag
+          elif m == 0:
+            assert Ylm.imag == 0.0
+            r = Ylm.real
+          else:
+            r = sqrt2 * ((-1) ** m) * Ylm.real
+          Intensity[ip, it] += params[counter] * r
+      counter += 1
+
+
+  X = Intensity * np.sin(PHI) * np.cos(THETA)
+  Y = Intensity * np.sin(PHI) * np.sin(THETA)
+  Z = Intensity * np.cos(PHI)
+  from matplotlib import cm
+  my_col = cm.jet(Intensity)
+
+  import mpl_toolkits.mplot3d.axes3d as axes3d
+  fig = plt.figure()
+  ax = fig.add_subplot(1, 1, 1, projection='3d')
+  plot = ax.plot_surface(
+      X, Y, Z, rstride=1, cstride=1, facecolors = my_col,
+      linewidth=0, antialiased=True, alpha=0.5)
+  if outputfile:
+    plt.savefig(outputfile)
+  else:
+    plt.savefig('absorption_surface')
+
+
+
 if __name__ == "__main__":
   datafile="/Users/whi10850/Documents/dials_scratch/jbe/scaling_code/test_data/x4_wide_integrated_scaled.pickle"
   data_man = load_data(filename = datafile)

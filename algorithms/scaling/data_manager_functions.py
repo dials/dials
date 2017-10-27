@@ -268,7 +268,7 @@ class aimless_Data_Manager(Data_Manager):
     for key in self.reflection_table.keys():
       if not key in self.initial_keys:
         del self.sorted_reflections[key]
-    added_columns = ['Ih_values', 'h_index', 'asu_miller_index', 'phi', 's2', 's2d'
+    added_columns = ['Ih_values', 'h_index', 'asu_miller_index', 'phi', 's2', 's2d',
                      'decay_factor', 'angular_scale_factor',
                      'normalised_rotation_angle', 'normalised_time_values',
                      'wilson_outlier_flag', 'centric_flag', 'absorption_factor']
