@@ -17,11 +17,12 @@ class LBFGS_optimiser(object):
     self.data_manager = Data_Manager_object
     self.x = self.data_manager.set_up_minimisation(param_name)
     self.residuals = []
-    print "performing minimisation for %s correction" % (param_name.lstrip('g_'))
+    if param_name:
+      print "performing minimisation for %s correction" % (param_name.lstrip('g_'))
     #print "performing scaling on %s reflections out of %s total reflections" % (
     #  len(self.data_manager.reflections_for_scaling), len(self.data_manager.sorted_reflections))
-    self.core_params = lbfgs.core_parameters(maxfev=10)
-    self.termination_params = lbfgs.termination_parameters(max_iterations=10)
+    self.core_params = lbfgs.core_parameters(maxfev=15)
+    self.termination_params = lbfgs.termination_parameters(max_iterations=15)
     lbfgs.run(target_evaluator=self, core_params=self.core_params,
               termination_params=self.termination_params)
     #a few extra options for xds_scaling
@@ -32,7 +33,8 @@ class LBFGS_optimiser(object):
       if self.data_manager.scaling_options['decay_correction_rescaling']:
         if self.data_manager.scaling_options['parameterization'] == 'standard':
           self.data_manager.scale_gvalues()
-    print "completed minimisation for %s correction" % (param_name.lstrip('g_'))
+    if param_name:
+      print "completed minimisation for %s correction" % (param_name.lstrip('g_'))
 
   def compute_functional_and_gradients(self):
     '''first calculate the updated values of the scale factors and Ih,

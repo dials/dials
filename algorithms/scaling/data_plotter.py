@@ -206,13 +206,14 @@ def plot_absorption_correction_at_zbin(data_man, position):
   plt.savefig('Scaling_output_figure_lbfgs_detector.png')
   plt.show()
 
-def plot_smooth_scales(data_man):
+def plot_smooth_scales(data_man, outputfile=None):
   rel_values = np.arange(0, int(max(data_man.sorted_reflections['normalised_rotation_angle'])) + 1, 0.1)
   test_scale_factor = SF.SmoothScaleFactor_1D(1.0, data_man.n_g_scale_params)
   test_scale_factor.set_scale_factors(data_man.g_scale.get_scale_factors())
   test_scale_factor.set_normalised_values(rel_values)
   scales = test_scale_factor.calculate_smooth_scales()
 
+  plt.figure(figsize=(14, 8))
   plt.subplot(2,1,1)
   plt.title('Smooth scale factors')
   plt.plot(rel_values, scales)
@@ -229,7 +230,10 @@ def plot_smooth_scales(data_man):
   plt.xlabel('Normalised time value')
   plt.plot(rel_values, B_rel_values)
   plt.tight_layout()
-  plt.savefig('Smooth_scale_factors')
+  if outputfile:
+    plt.savefig(outputfile)
+  else:
+    plt.savefig('Smooth_scale_factors.png')
 
 if __name__ == "__main__":
   datafile="/Users/whi10850/Documents/dials_scratch/jbe/scaling_code/test_data/x4_wide_integrated_scaled.pickle"
