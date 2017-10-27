@@ -19,6 +19,10 @@ class target_function(object):
     Ih_values = self.data_manager.Ih_table.get_Ih_values()#   self.data_manager.reflections_for_scaling['Ih_values']
     weights = self.data_manager.weights_for_scaling.get_weights()
     R = ((((intensities - (scale_factors * Ih_values))**2) * weights))
+    if self.data_manager.scaling_options['scaling_method'] == 'aimless':
+      n_g_scale = self.data_manager.n_g_scale_params
+      n_g_decay = self.data_manager.n_g_decay_params
+      R.extend(1e5 * (self.data_manager.active_parameters[n_g_scale + n_g_decay:])**2)
     return R
 
   def calculate_gradient(self):

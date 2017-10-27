@@ -14,7 +14,7 @@ class ScaleFactor(object):
     if len(scale_factors) != len(self.scale_factors):
       assert 0, '''attempting to set a new set of scale factors of different
       length than previous assignment: was %s, attempting %s''' % (
-      len(self.scale_factors), len(scale_factors))
+        len(self.scale_factors), len(scale_factors))
     self.scale_factors = scale_factors
 
   def get_scale_factors(self):
@@ -110,10 +110,11 @@ class SmoothScaleFactor_2D(SmoothScaleFactor):
       weightsum = 0.0
       for j in range(min_range_1_to_include, max_range_1_to_include + 1):
         for k in range(min_range_2_to_include, max_range_2_to_include + 1):
-          square_distance_to_point = ((float(k) - relative_pos_2)**2 + (float(j) - relative_pos_1)**2)
-          if square_distance_to_point < (smoothing_window**2) :
-            scale += (self.scale_factors[(j+1) + ((k+1)*self.n1_parameters)] *  #should this be self.n1_params?
-              np.exp(- square_distance_to_point / Vr))
+          square_distance_to_point = ((float(k) - relative_pos_2)**2
+                                      + (float(j) - relative_pos_1)**2)
+          if square_distance_to_point < (smoothing_window**2):
+            scale += (self.scale_factors[(j+1) + ((k+1)*self.n1_parameters)]
+                      * np.exp(- square_distance_to_point / Vr))
             weightsum += np.exp(-square_distance_to_point/ Vr)
       self.weightsum[i] = weightsum
       self.scales[i] = scale/weightsum
@@ -134,14 +135,16 @@ class SmoothScaleFactor_2D(SmoothScaleFactor):
       min_range_1_to_include = int((relative_pos_1 - smoothing_window)//1) + 1
       for j in range(min_range_1_to_include, max_range_1_to_include + 1):
           for k in range(min_range_2_to_include, max_range_2_to_include + 1):
-            square_distance_to_point = ((float(k) - relative_pos_2)**2 + (float(j) - relative_pos_1)**2)
-            if square_distance_to_point < (smoothing_window**2) :
+            square_distance_to_point = ((float(k) - relative_pos_2)**2
+                                        + (float(j) - relative_pos_1)**2)
+            if square_distance_to_point < (smoothing_window**2):
               self.derivatives[(((j+1) + ((k+1)*self.n1_parameters))*n) + i] += (
                 np.exp(- square_distance_to_point / Vr))/self.weightsum[i]
     return self.derivatives
 
 class SmoothScaleFactor_GridAbsorption(SmoothScaleFactor):
-  def __init__(self, initial_value, n1_parameters, n2_parameters, n3_parameters, scaling_options=None):
+  def __init__(self, initial_value, n1_parameters, n2_parameters, n3_parameters, 
+               scaling_options=None):
     n_parameters = n1_parameters * n2_parameters * n3_parameters
     SmoothScaleFactor.__init__(self, initial_value, n_parameters, scaling_options)
     self.nx_parameters = n1_parameters
@@ -216,3 +219,35 @@ class SmoothScaleFactor_GridAbsorption(SmoothScaleFactor):
               self.derivatives[(deriv_idx * n) + datapoint_idx] += (
                 np.exp(- square_distance_to_point / Vr))/self.weightsum[datapoint_idx]
     return self.derivatives
+
+class SphericalAbsorption_ScaleFactor(ScaleFactor):
+  def __init__(self, initial_value, n_parameters, values, scaling_options=None):
+    ScaleFactor.__init__(self, initial_value, n_parameters, scaling_options)
+    self.harmonic_values = values
+    self.scales = self.calculate_scales()
+    self.derivatives = self.calculate_derivatives()
+
+  def set_values(self, values):
+    self.harmonic_values = values
+    self.scales = self.calculate_scales()
+    self.derivatives = self.calculate_derivatives()
+
+  def get_values(self):
+    return self.harmonic_values
+
+  def get_scales_of_reflections(self):
+    return self.scales
+
+  def calculate_scales(self):
+    abs_scale = flex.double([1.0]*len(self.harmonic_values))
+    count = 0
+    for key in self.harmonic_values.keys():
+      abs_scale += self.harmonic_values[key] * self.scale_factors[count]
+      count += 1
+    return abs_scale
+
+  def calculate_derivatives(self):
+    derivatives = flex.double([])
+    for key in self.harmonic_values.keys():
+      derivatives.extend(self.harmonic_values[key])
+    return derivatives
