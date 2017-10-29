@@ -159,6 +159,11 @@ class stills_indexer(indexer_base):
           logger.info("Indexing remaining reflections failed")
           logger.debug("Indexing remaining reflections failed, exception:\n" + str(e))
 
+      # reset reflection lattice flags
+      # the lattice a given reflection belongs to: a value of -1 indicates
+      # that a reflection doesn't belong to any lattice so far
+      self.reflections['id'] = flex.int(len(self.reflections), -1)
+
       self.index_reflections(experiments, self.reflections)
 
       if len(experiments) == n_lattices_previous_cycle:
@@ -302,18 +307,15 @@ class stills_indexer(indexer_base):
       try:
         refined_experiments, refined_reflections = self.refine(
           experiments, reflections_for_refinement)
-      except RuntimeError as e:
+      except Exception as e:
         s = str(e)
-        if ("below the configured limit" in s or
-            "Insufficient matches for crystal" in s):
-          if len(experiments) == 1:
-            raise Sorry(e)
-          had_refinement_error = True
-          logger.info("Refinement failed:")
-          logger.info(s)
-          del experiments[-1]
-          break
-        raise
+	if len(experiments) == 1:
+	  raise Sorry(e)
+	had_refinement_error = True
+	logger.info("Refinement failed:")
+	logger.info(s)
+	del experiments[-1]
+	break
 
       # sanity check for unrealistic unit cell volume increase during refinement
       # usually this indicates too many parameters are being refined given the
