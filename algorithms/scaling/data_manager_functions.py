@@ -248,8 +248,8 @@ class aimless_Data_Manager(Data_Manager):
     self.g_absorption.set_values(sph_harm_table(self.sorted_reflections,
                                                 self.binning_parameters['lmax']))
     self.sorted_reflections['absorption_factor'] = self.g_absorption.calculate_scales()
-    print "Absorption_parameter_values are %s" % (list(self.active_parameters[
-      self.n_g_scale_params+self.n_g_decay_params:]))
+    #print "Absorption_parameter_values are %s" % (list(self.active_parameters[
+    #  self.n_g_scale_params+self.n_g_decay_params:]))
     self.sorted_reflections['inverse_scale_factor'] = (
       self.sorted_reflections['angular_scale_factor'] 
       * self.sorted_reflections['decay_factor']

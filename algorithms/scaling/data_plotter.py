@@ -266,19 +266,39 @@ def plot_absorption_surface(data_man, outputfile=None):
           Intensity[ip, it] += params[counter] * r
       counter += 1
 
-
   X = Intensity * np.sin(PHI) * np.cos(THETA)
   Y = Intensity * np.sin(PHI) * np.sin(THETA)
   Z = Intensity * np.cos(PHI)
   from matplotlib import cm
-  my_col = cm.jet(Intensity)
+
+  rel_Int = (Intensity - Intensity.min())/(Intensity.max() - Intensity.min())
+  #print "max, min absorption factors are (%s,%s)" % (Intensity.max(),Intensity.min())
+  #my_col = cm.jet(Intensity)
 
   import mpl_toolkits.mplot3d.axes3d as axes3d
-  fig = plt.figure()
-  ax = fig.add_subplot(1, 1, 1, projection='3d')
-  plot = ax.plot_surface(
-      X, Y, Z, rstride=1, cstride=1, facecolors = my_col,
-      linewidth=0, antialiased=True, alpha=0.5)
+  fig = plt.figure(figsize=(10, 8))
+  gs = gridspec.GridSpec(2, 2)
+  plt.suptitle('Absorption correction inverse scale factors', fontsize=14)
+  for i, azimuth in enumerate([45, 135, 225, 315]):
+    ax = plt.subplot(gs[i//2, i%2], projection='3d')
+    #ax = fig.add_subplot(1, 1, 1, projection='3d')
+    plot = ax.plot_surface(
+        X, Y, Z, rstride=1, cstride=1, facecolors=cm.viridis(rel_Int),
+        linewidth=0, antialiased=False, alpha=0.5)
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.view_init(elev=20., azim=azimuth)
+  m = cm.ScalarMappable(cmap=cm.viridis)
+  m.set_array(rel_Int)
+  fig.subplots_adjust(right=0.8)
+  cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
+  cbar = plt.colorbar(m, cax=cbar_ax, ticks=[0, 0.25, 0.5, 0.75, 1])
+  cbar.ax.set_yticklabels(['%.3f' % Intensity.min(), 
+                           '%.3f' % ((Intensity.min()*0.75) + (Intensity.max()*0.25)), 
+                           '%.3f' % ((Intensity.min()*0.5) + (Intensity.max()*0.5)),
+                           '%.3f' % ((Intensity.min()*0.25) + (Intensity.max()*0.75)),
+                           '%.3f' % Intensity.max()])
   if outputfile:
     plt.savefig(outputfile)
   else:
