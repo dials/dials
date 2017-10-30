@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 import os
 import socket
 import time
@@ -15,7 +15,7 @@ if have_dials_regression:
 
 def run():
   if not have_dials_regression:
-    print "Skipping tst_find_spots_server_client: dials_regression not available."
+    print("Skipping tst_find_spots_server_client: dials_regression not available.")
     return
 
   def start_server(server_command):
@@ -24,13 +24,12 @@ def run():
     result.show_stderr()
 
   import multiprocessing
-  import socket
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   s.bind(("",0))
   port = s.getsockname()[1]
   s.close()
   server_command = "dials.find_spots_server port=%i nproc=3" %port
-  print server_command
+  print(server_command)
 
   p = multiprocessing.Process(target=start_server, args=(server_command,))
   p.daemon = True
@@ -46,15 +45,14 @@ def run():
     #result.show_stdout()
     p.terminate()
 
-def wait_for_server(port, max_wait=3):
-  # Wait up to n seconds for server to start
+def wait_for_server(port, max_wait=20):
+  print("Waiting up to %d seconds for server to start" % max_wait)
   server_ok = False
   start_time = timeit.default_timer()
   max_time = start_time + max_wait
+  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   while (timeit.default_timer() < max_time) and not server_ok:
-    s = None
     try:
-      s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       s.connect(('127.0.0.1', port))
       s.close()
       server_ok = True
@@ -62,10 +60,10 @@ def wait_for_server(port, max_wait=3):
       if (e.errno != 111) and (e.errno != 61):
         raise
       # ignore connection failures (111 connection refused on linux; 61 connection refused on mac)
-      time.sleep(0.05)
+      time.sleep(0.1)
   if not server_ok:
     raise Exception("Server failed to start after %d seconds" % max_wait)
-#  print "dials.find_spots_server up after %f seconds" % (timeit.default_timer() - start_time)
+  print("dials.find_spots_server up after %f seconds" % (timeit.default_timer() - start_time))
 
 def exercise_client(port):
   import glob
@@ -85,7 +83,7 @@ def exercise_client(port):
      "index=True",
      "indexing.method=fft1d",
      "max_refine=10",])
-  print index_client_command
+  print(index_client_command)
   result = easy_run.fully_buffered(command=index_client_command).raise_if_errors()
   out = "<document>%s</document>" %"\n".join(result.stdout_lines)
   result.show_stdout()
