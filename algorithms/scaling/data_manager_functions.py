@@ -458,57 +458,35 @@ class XDS_Data_Manager(Data_Manager):
       self.sorted_reflections['normalised_time_values'])
 
   def bin_reflections_absorption_radially(self):
-    '''bin reflections for absorption correction'''
     from math import pi
-    nxbins = nybins = self.binning_parameters['n_absorption_positions']
-    nzbins = self.binning_parameters['n_z_bins']
-    '''Bin the data into detector position and time 'z' bins'''
-    z_bins = self.bin_boundaries['z_value']
-    #define simple detector area map#
+    n_rad_bins = 3.0
+    n_ang_bins = 8.0
     image_size = self.experiments.detector.to_dict()['panels'][0]['image_size']
     xvalues = self.sorted_reflections['x_value']
     yvalues = self.sorted_reflections['y_value']
     x_center = image_size[0]/2.0
     y_center = image_size[1]/2.0
-    radial_divider = max(x_center, y_center)
-    xrelvalues = xvalues - x_center #!may need better definition of centerpoint
-    yrelvalues = yvalues - y_center #!may need better definition of centerpoint
-    radial_bins = [-0.0001, radial_divider / 3.0, 2.0 * radial_divider / 3.0,
-                   ((((image_size[0]**2) + (image_size[1]**2))**0.5) / 2.0) + 5.0]
-                   # '''+5.0 to the last bin adds extra tolerance to catch any
-                   # spots with centres outside the detector area'''
-    angular_bins = [-0.0001, pi / 4.0, 2.0 * pi / 4.0, 3.0 * pi / 4.0, pi,
-                    5.0 * pi / 4.0, 6.0 * pi / 4.0, 7.0 * pi / 4.0, 2.0 * pi]
+    xrelvalues = xvalues - x_center
+    yrelvalues = yvalues - y_center
     radial_values = ((xrelvalues**2) + (yrelvalues**2))**0.5
-    angular_values = flex.double(np.arccos(yrelvalues/radial_values))
-    for i in range(0, len(angular_values)):
-      if xrelvalues[i] < 0.0:
-        angular_values[i] = (2.0 * pi) - angular_values[i]
+    angular_values = flex.double(np.arctan2(yrelvalues,xrelvalues))
+    
+    normalised_radial_values = n_rad_bins * radial_values / (max(radial_values) * 1.001)
+    normalised_angular_values = n_ang_bins * (angular_values + pi) / (2.0 * pi)
+    #catchers to stop values being exactly on the boundary and causing errors later.
+    sel = normalised_angular_values == 8.0
+    normalised_angular_values.set_selected(sel, 7.9999)
+    sel = normalised_angular_values == 0.0
+    normalised_angular_values.set_selected(sel, 0.0001)
 
-    firstbin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
-    secondbin_index = flex.int([-1] * len(self.sorted_reflections['z_value']))
-    for i in range(len(angular_bins) - 1):
-      selection1 = select_variables_in_range(angular_values, angular_bins[i],
-                                             angular_bins[i+1])
-      for j in range(len(radial_bins) - 1):
-        selection2 = select_variables_in_range(radial_values, radial_bins[j],
-                                               radial_bins[j+1])
-        firstbin_index.set_selected(selection1 & selection2,
-                                    ((i * (len(radial_bins) - 1)) + j))
-    for i in range(nzbins):
-      selection = select_variables_in_range(self.sorted_reflections['z_value'],
-                                            z_bins[i], z_bins[i+1])
-      secondbin_index.set_selected(selection, i)
-
-    if firstbin_index.count(-1) > 0 or secondbin_index.count(-1) > 0:
-      raise ValueError('Unable to fully bin data for absorption in scaling initialisation')
-    self.sorted_reflections['a_bin_index'] = (firstbin_index
-      + (secondbin_index * (len(angular_bins) - 1) * (len(radial_bins) - 1)))
-    self.n_absorption_bins = (len(angular_bins) - 1) * (len(radial_bins) - 1)
-    if self.scaling_options['parameterization'] == 'log':
-      self.g_absorption = SF.ScaleFactor(0.0, (self.n_absorption_bins * nzbins))
-    else:
-      self.g_absorption = SF.ScaleFactor(1.0, (self.n_absorption_bins * nzbins))
+    self.sorted_reflections['normalised_angle_values'] = normalised_angular_values
+    self.sorted_reflections['normalised_radial_values'] = normalised_radial_values
+    n_ang_parameters = n_rad_bins + 1
+    n_rad_parameters = n_rad_bins + 1
+    #new code to change time binning to smooth parameters
+    highest_parameter_value = int((max(self.sorted_reflections['normalised_time_values'])//1)+1)
+    lowest_parameter_value = int((min(self.sorted_reflections['normalised_time_values'])//1)-0)
+    n_time_parameters = highest_parameter_value - lowest_parameter_value + 1
 
   def scale_gvalues(self):
     '''Rescale the decay g-values by a relative B-factor and a global scale
