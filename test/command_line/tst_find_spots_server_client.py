@@ -50,9 +50,9 @@ def wait_for_server(port, max_wait=20):
   server_ok = False
   start_time = timeit.default_timer()
   max_time = start_time + max_wait
-  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   while (timeit.default_timer() < max_time) and not server_ok:
     try:
+      s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       s.connect(('127.0.0.1', port))
       s.close()
       server_ok = True
