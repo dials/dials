@@ -92,10 +92,24 @@ class Data_Manager(object):
       self.reflection_table['variance'] = (self.reflection_table['intensity.'+intstr+'.variance']
                                            * (self.reflection_table['lp']**2)
                                            / (self.reflection_table['dqe']**2))
-    #option to add in future a combined prf/sum in a similar fashion to aimless
+    #perform a combined prf/sum in a similar fashion to aimless
     elif self.scaling_options['integration_method'] == 'combine':
-      self.scaling_options['integration_method'] = 'prf'
-      self.select_optimal_intensities()
+      int_prf = (self.reflection_table['intensity.prf.value']
+                 * self.reflection_table['lp'] / self.reflection_table['dqe'])
+      int_sum = (self.reflection_table['intensity.sum.value']
+                 * self.reflection_table['lp'] / self.reflection_table['dqe'])
+      var_prf = (self.reflection_table['intensity.prf.variance']
+                 * (self.reflection_table['lp']**2) / (self.reflection_table['dqe']**2))
+      var_sum = (self.reflection_table['intensity.sum.variance']
+                 * (self.reflection_table['lp']**2) / (self.reflection_table['dqe']**2))
+      plt.scatter(var_sum, var_prf)
+      plt.show()
+      Imid = max(int_sum)/2.0
+      weight = 1.0/(1.0 + ((int_prf/Imid)**3))
+      self.reflection_table['intensity'] = ((weight * int_prf) + ((1.0 - weight) * int_sum))
+      self.reflection_table['variance'] = ((weight * var_prf) + ((1.0 - weight) * var_sum))
+      #self.scaling_options['integration_method'] = 'prf'
+      #self.select_optimal_intensities()
 
   def update_for_minimisation(self, parameters):
     '''update the scale factors and Ih for the next iteration of minimisation'''
@@ -177,15 +191,16 @@ class aimless_Data_Manager(Data_Manager):
     correction. A SmoothScaleFactor_1D object is then initialised'''
     if self.scaling_options['rotation_interval']:
       rotation_interval = self.scaling_options['rotation_interval']
+      print "set rotation interval to %s" % rotation_interval
     else:
       rotation_interval = 15.0
+    rotation_interval = rotation_interval + 0.001
     osc_range = self.experiments.scan.get_oscillation_range()
     if ((osc_range[1] - osc_range[0]) / rotation_interval) % 1 < 0.33:
       #if last bin less than 33% filled'
       n_phi_bins = int((osc_range[1] - osc_range[0]) / rotation_interval)
       'increase rotation interval slightly'
       rotation_interval = (osc_range[1] - osc_range[0])/float(n_phi_bins) + 0.001
-    rotation_interval = 15.0 + 0.001
     'extend by 0.001 to make sure all datapoints within min/max'
     one_oscillation_width = self.experiments.scan.get_oscillation()[1]
     reflection_table['normalised_time_values'] = ((reflection_table['z_value']
@@ -206,13 +221,13 @@ class aimless_Data_Manager(Data_Manager):
       rotation_interval = self.scaling_options['rotation_interval']
     else:
       rotation_interval = 15.0
+    rotation_interval = rotation_interval + 0.001
     osc_range = self.experiments.scan.get_oscillation_range()
     if ((osc_range[1] - osc_range[0])/ rotation_interval) % 1 < 0.33:
       #if last bin less than 33% filled
       n_phi_bins = int((osc_range[1] - osc_range[0])/ rotation_interval)
       'increase rotation interval slightly'
       rotation_interval = (osc_range[1] - osc_range[0])/float(n_phi_bins) + 0.001
-    rotation_interval = 15.0 + 0.001
     'extend by 0.001 to make sure all datapoints within min/max'
     one_oscillation_width = self.experiments.scan.get_oscillation()[1]
     reflection_table['normalised_rotation_angle'] = ((reflection_table['z_value']
@@ -251,13 +266,17 @@ class aimless_Data_Manager(Data_Manager):
     #print "Absorption_parameter_values are %s" % (list(self.active_parameters[
     #  self.n_g_scale_params+self.n_g_decay_params:]))
     self.sorted_reflections['inverse_scale_factor'] = (
-      self.sorted_reflections['angular_scale_factor'] 
+      self.sorted_reflections['angular_scale_factor']
       * self.sorted_reflections['decay_factor']
       * self.sorted_reflections['absorption_factor'])
     #self.sorted_reflections['wilson_outlier_flag'] =
     #calculate_wilson_outliers(self.sorted_reflections, self.experiments)
     self.weights_for_scaling = self.update_weights_for_scaling(self.sorted_reflections,
                                                                weights_filter=False)
+    #remove reflections that were determined as outliers
+    sel = self.weights_for_scaling.get_weights() != 0.0
+    self.sorted_reflections = self.sorted_reflections.select(sel)
+    self.weights_for_scaling = self.update_weights_for_scaling(self.sorted_reflections, weights_filter=False)                                                           
     self.Ih_table = single_Ih_table(self.sorted_reflections, self.weights_for_scaling)
     (self.h_index_counter_array, self.h_index_cumulative_array) = (
       self.Ih_table.h_index_counter_array, self.Ih_table.h_index_cumulative_array)
@@ -524,6 +543,10 @@ class XDS_Data_Manager(Data_Manager):
                                                          * gabsvalues)
     #the update weights - use statistical weights and just filter outliers, not on Isigma. dmin etc
     #self.sorted_reflections['wilson_outlier_flag'] = calculate_wilson_outliers(self.sorted_reflections, self.experiments)
+    self.weights_for_scaling = self.update_weights_for_scaling(self.sorted_reflections, weights_filter=False)
+    #remove reflections that were determined as outliers
+    sel = self.weights_for_scaling.get_weights() != 0.0
+    self.sorted_reflections = self.sorted_reflections.select(sel)
     self.weights_for_scaling = self.update_weights_for_scaling(self.sorted_reflections, weights_filter=False)
     #now calculate Ih for all reflections.
     self.Ih_table = single_Ih_table(self.sorted_reflections, self.weights_for_scaling)

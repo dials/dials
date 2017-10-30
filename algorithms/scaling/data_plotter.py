@@ -36,13 +36,15 @@ def plot_data_decay(data_man, outputfile=None):
   G_fin_2d = np.reshape(list(scales), (n2, n1)).T
   G_fin_2d = G_fin_2d[1:-1,1:-1]
 
+  G_fin = list(data_man.g_decay.calculate_smooth_scales())
+
   plt.figure(figsize=(11,6))
   gs = gridspec.GridSpec(1, 2)
   ax1 = plt.subplot(gs[0, 0])
   ax2 = plt.subplot(gs[0, 1])
-  ax2.hist(scales, 40, log=False)
+  ax2.hist(G_fin, 40, log=False)
   ax2.set_xlabel('Inverse scale factor')
-  ax2.set_ylabel('Occurences')
+  ax2.set_ylabel('Occurences in reflections_for_scaling')
 
   im = ax1.imshow(G_fin_2d, cmap='viridis', origin='lower')
   divider = make_axes_locatable(ax1)
@@ -71,6 +73,7 @@ def plot_data_absorption(data_man, outputfile=None):
   '''generate a plot of the result'''
   G_fin = list(data_man.g_absorption.get_scale_factors())
   G_fin_2d = np.reshape(G_fin, (nzbins, nabsbins)).T
+  G_fin = list(data_man.g_absorption.calculate_smooth_scales())
 
   plt.figure(figsize=(11,6))
   gs = gridspec.GridSpec(1, 2)
@@ -78,7 +81,7 @@ def plot_data_absorption(data_man, outputfile=None):
   ax2 = plt.subplot(gs[0, 1])
   ax2.hist(G_fin, 40, log=False)
   ax2.set_xlabel('Inverse scale factor')
-  ax2.set_ylabel('Occurences')
+  ax2.set_ylabel('Occurences in reflections_for_scaling')
 
   im = ax1.imshow(G_fin_2d, cmap='viridis', origin='lower')
   divider = make_axes_locatable(ax1)
@@ -114,6 +117,7 @@ def plot_data_modulation(data_man, outputfile=None):
   scales = test_scale_factor.calculate_smooth_scales()
   G_fin_2d = np.reshape(list(scales), (n2, n1))
   G_fin_2d = G_fin_2d[1:-1,1:-1]
+  G_fin = list(data_man.g_modulation.calculate_smooth_scales())
 
   plt.figure(figsize=(11,6))
   gs = gridspec.GridSpec(1, 2)
@@ -121,7 +125,7 @@ def plot_data_modulation(data_man, outputfile=None):
   ax2 = plt.subplot(gs[0, 1])
   ax2.hist(scales, 40, log=False)
   ax2.set_xlabel('Inverse scale factor')
-  ax2.set_ylabel('Occurences')
+  ax2.set_ylabel('Occurences in reflections_for_scaling')
 
   im = ax1.imshow(G_fin_2d, cmap='viridis', origin='lower')
   divider = make_axes_locatable(ax1)
