@@ -14,24 +14,23 @@ class target_function(object):
 
   def calculate_residual(self):
     '''returns a residual vector'''
-    intensities = self.data_manager.reflections_for_scaling['intensity']
-    scale_factors = self.data_manager.reflections_for_scaling['inverse_scale_factor']
-    Ih_values = self.data_manager.Ih_table.get_Ih_values()#   self.data_manager.reflections_for_scaling['Ih_values']
-    weights = self.data_manager.weights_for_scaling.get_weights()
+    intensities = self.data_manager.Ih_table.Ih_table['intensity']
+    scale_factors = self.data_manager.Ih_table.Ih_table['inverse_scale_factor']
+    Ih_values = self.data_manager.Ih_table.Ih_table['Ih_values']
+    weights = self.data_manager.Ih_table.Ih_table['weights']
     R = ((((intensities - (scale_factors * Ih_values))**2) * weights))
     if self.data_manager.scaling_options['scaling_method'] == 'aimless':
-      n_g_scale = self.data_manager.n_g_scale_params
-      n_g_decay = self.data_manager.n_g_decay_params
-      R.extend(1e5 * (self.data_manager.active_parameters[n_g_scale + n_g_decay:])**2)
+      constraint_values = self.data_manager.calc_absorption_constraint()
+      R.extend(constraint_values)
     return R
 
   def calculate_gradient(self):
     '''returns a gradient vector'''
     gradient = flex.double([])
-    intensities = self.data_manager.reflections_for_scaling['intensity']
-    scale_factors = self.data_manager.reflections_for_scaling['inverse_scale_factor']
-    Ih_values = self.data_manager.Ih_table.get_Ih_values()# Ih_values = self.data_manager.reflections_for_scaling['Ih_values']
-    scaleweights = self.data_manager.weights_for_scaling.get_weights()
+    intensities = self.data_manager.Ih_table.Ih_table['intensity']
+    scale_factors = self.data_manager.Ih_table.Ih_table['inverse_scale_factor']
+    Ih_values = self.data_manager.Ih_table.Ih_table['Ih_values']
+    scaleweights = self.data_manager.Ih_table.Ih_table['weights']
     gsq = ((scale_factors)**2) * scaleweights#/ variances
     sumgsq = np.add.reduceat(gsq, self.data_manager.Ih_table.h_index_cumulative_array[:-1])
     rhl = intensities - (Ih_values * scale_factors)
@@ -57,12 +56,10 @@ class xds_target_function_log(target_function):
   gradient function for a xds-like scaling parameterisation.'''
   def calculate_gradient(self):
     gradient = flex.double([])
-    intensities = self.data_manager.reflections_for_scaling['intensity']
-    variances = self.data_manager.reflections_for_scaling['variance']
-    scale_factors = self.data_manager.reflections_for_scaling['inverse_scale_factor']
-    Ih_values = self.data_manager.Ih_table.get_Ih_values()
-    #Ih_values = self.data_manager.reflections_for_scaling['Ih_values']
-    scaleweights = self.data_manager.weights_for_scaling.get_weights()
+    intensities = self.data_manager.Ih_table.Ih_table['intensity']
+    scale_factors = self.data_manager.Ih_table.Ih_table['inverse_scale_factor']
+    Ih_values = self.data_manager.Ih_table.Ih_table['Ih_values']
+    scaleweights = self.data_manager.Ih_table.Ih_table['weights']
     gsq = ((scale_factors)**2) *scaleweights
     sumgsq = np.add.reduceat(gsq, self.data_manager.Ih_table.h_index_cumulative_array[:-1])
     #sumgsq = flex.double(np.repeat(sumgsq, self.data_manager.h_index_counter_array))

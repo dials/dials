@@ -53,32 +53,28 @@ class aimless_basis_function(basis_function):
     self.data_manager.g_absorption.set_scale_factors(self.parameters[ngscale+ngdecay:])                                                          
     scale = self.data_manager.g_scale.calculate_smooth_scales()
     B = self.data_manager.g_decay.calculate_smooth_scales()
-    B_factor = flex.double(np.exp(B/(2.0 * (
-      self.data_manager.reflections_for_scaling['d'] **2))))
+    #B_factor = flex.double(np.exp(B/(2.0 * (
+    #  self.data_manager.reflections_for_scaling['d'] **2))))
     S = self.data_manager.g_absorption.calculate_scales()
-    self.data_manager.reflections_for_scaling['B_factor'] = B_factor
-    self.data_manager.reflections_for_scaling['scale_factor'] = scale
-    self.data_manager.reflections_for_scaling['absorption_factor'] = S
-    return scale * B_factor * S
+    return scale * B * S
 
   def calculate_derivatives(self):
     scale_derivatives = self.data_manager.g_scale.calculate_smooth_derivatives()
     B_derivatives = self.data_manager.g_decay.calculate_smooth_derivatives()
     abs_derivatives = self.data_manager.g_absorption.derivatives
-    d = self.data_manager.reflections_for_scaling['d']
+    d = self.data_manager.g_decay.d_values#reflections_for_scaling['d']
     B = self.data_manager.g_decay.get_scales_of_reflections()
     S = self.data_manager.g_absorption.get_scales_of_reflections()
     scale_term = self.data_manager.g_scale.get_scales_of_reflections()
-    B_factor = flex.double(np.exp(B/(2.0 * (d**2))))
-    dTdB = (flex.double(np.exp(B/(2.0 * (d**2)))) *
-            scale_term * S / (2.0 * (d**2)))
+    #B_factor = flex.double(np.exp(B/(2.0 * (d**2))))
+    dTdB = (B * scale_term * S / (2.0 * (d**2)))
     B_factor_derivatives = flex.double(np.tile(dTdB, self.data_manager.n_g_decay_params))
     derivatives = flex.double([])
     derivatives.extend(scale_derivatives * flex.double(
-      np.tile((B_factor * S), self.data_manager.n_g_scale_params)))
+      np.tile((B * S), self.data_manager.n_g_scale_params)))
     derivatives.extend(B_factor_derivatives * B_derivatives)
     derivatives.extend(abs_derivatives * flex.double(
-      np.tile((B_factor * scale_term), self.data_manager.n_g_abs_params)))
+      np.tile((B * scale_term), self.data_manager.n_g_abs_params)))
     return derivatives
 
 class xds_basis_function_log(basis_function):

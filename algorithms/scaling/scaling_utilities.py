@@ -2,7 +2,7 @@ from dials.array_family import flex
 import numpy as np
 
 def calc_s2d(data_man, reflection_table):
-  reflection_table['phi'] = (reflection_table['z_value']
+  reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
                              * data_man.experiments.scan.get_oscillation()[1])
   (s0x, s0y, s0z) = data_man.experiments.beam.get_s0()
   reflection_table['s2'] = reflection_table['s1'] - (s0x, s0y, s0z)

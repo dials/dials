@@ -24,8 +24,8 @@ def plot_data_decay(data_man, outputfile=None):
   ndbins = data_man.g_decay.n1_parameters
   nzbins = data_man.g_decay.n2_parameters
   '''create a grid of x and y points and use these to generate scale factors'''
-  rel_values_1 = np.arange(0, int(max(data_man.sorted_reflections['normalised_res_values'])) + 1, 0.1)
-  rel_values_2 = np.arange(0, int(max(data_man.sorted_reflections['normalised_time_values'])) + 1, 0.1)
+  rel_values_1 = np.arange(0, int(max(data_man.reflection_table['normalised_res_values'])) + 1, 0.1)
+  rel_values_2 = np.arange(0, int(max(data_man.reflection_table['normalised_time_values'])) + 1, 0.1)
   (n1, n2) = (len(rel_values_1), len(rel_values_2))
   rel_values_1 = np.tile(rel_values_1, n2)
   rel_values_2 = np.repeat(rel_values_2, n1)
@@ -106,8 +106,8 @@ def plot_data_modulation(data_man, outputfile=None):
   nybins = data_man.g_modulation.n2_parameters
 
   '''create a grid of x and y points and use these to generate scale factors'''
-  rel_values_1 = np.arange(0, int(max(data_man.sorted_reflections['normalised_x_values'])) + 1, 0.2)
-  rel_values_2 = np.arange(0, int(max(data_man.sorted_reflections['normalised_y_values'])) + 1, 0.2)
+  rel_values_1 = np.arange(0, int(max(data_man.reflection_table['normalised_x_values'])) + 1, 0.2)
+  rel_values_2 = np.arange(0, int(max(data_man.reflection_table['normalised_y_values'])) + 1, 0.2)
   (n1, n2) = (len(rel_values_1), len(rel_values_2))
   rel_values_1 = np.tile(rel_values_1, n2)
   rel_values_2 = np.repeat(rel_values_2, n1)
@@ -173,8 +173,8 @@ def calc_correction_at_detector_area(data_man, position):
   nybins = data_man.g_absorption.ny_parameters
   ntimebins = data_man.g_absorption.ntime_parameters
   #form an xyz grid, for two planes - going to plot at z = int + 0.5 between params
-  rel_values_1 = np.arange(0, int(max(data_man.sorted_reflections['normalised_x_abs_values'])) + 1, 0.1)
-  rel_values_2 = np.arange(0, int(max(data_man.sorted_reflections['normalised_y_abs_values'])) + 1, 0.1)
+  rel_values_1 = np.arange(0, int(max(data_man.reflection_table['normalised_x_abs_values'])) + 1, 0.1)
+  rel_values_2 = np.arange(0, int(max(data_man.reflection_table['normalised_y_abs_values'])) + 1, 0.1)
   (n1, n2) = (len(rel_values_1), len(rel_values_2))
   rel_values_1 = np.tile(rel_values_1, n2)
   rel_values_2 = np.repeat(rel_values_2, n1)
@@ -186,32 +186,8 @@ def calc_correction_at_detector_area(data_man, position):
   return G_fin_2d
 
 
-def plot_correction_at_resolution(data_man, position):
-  G_fin = list(data_man.g_decay.get_scale_factors())
-  nzbins = data_man.binning_parameters['n_z_bins']
-  G_slice = G_fin[position::nzbins]
-  plt.figure(1)
-  plt.plot(G_slice)
-  plt.xlabel('time (z)')
-  plt.show()
-
-def plot_absorption_correction_at_zbin(data_man, position):
-  G_fin = list(data_man.g_absorption.get_scale_factors())
-  npos = data_man.binning_parameters['n_absorption_positions']
-  nzbins = data_man.binning_parameters['n_z_bins']
-  G_slice = G_fin[position*npos*npos:(position+1)*npos*npos]
-  G_slice_2d = np.reshape(G_slice, (npos, npos)).T
-  plt.figure(1)
-  im = plt.imshow(G_slice_2d, cmap='viridis', origin='lower')
-  plt.colorbar(im)
-  plt.xlabel('x bin')
-  plt.ylabel('y bin')
-  plt.title('$G_l$ correction factors for a $z$ bin')
-  plt.savefig('Scaling_output_figure_lbfgs_detector.png')
-  plt.show()
-
 def plot_smooth_scales(data_man, outputfile=None):
-  rel_values = np.arange(0, int(max(data_man.sorted_reflections['normalised_rotation_angle'])) + 1, 0.1)
+  rel_values = np.arange(0, int(max(data_man.reflection_table['normalised_rotation_angle'])) + 1, 0.1)
   test_scale_factor = SF.SmoothScaleFactor_1D(1.0, data_man.n_g_scale_params)
   test_scale_factor.set_scale_factors(data_man.g_scale.get_scale_factors())
   test_scale_factor.set_normalised_values(rel_values)
@@ -224,7 +200,7 @@ def plot_smooth_scales(data_man, outputfile=None):
   plt.ylabel('Scale term')
   plt.xlabel('Normalised rotation angle')
 
-  rel_values = np.arange(0, int(max(data_man.sorted_reflections['normalised_time_values'])) + 1, 0.1)
+  rel_values = np.arange(0, int(max(data_man.reflection_table['normalised_time_values'])) + 1, 0.1)
   test_decay_factor = SF.SmoothScaleFactor_1D(0.0, data_man.n_g_decay_params)
   test_decay_factor.set_scale_factors(data_man.g_decay.get_scale_factors())
   test_decay_factor.set_normalised_values(rel_values)
@@ -249,7 +225,7 @@ def plot_absorption_surface(data_man, outputfile=None):
   theta = np.linspace(0, 2 * np.pi, 2*STEPS)
   phi = np.linspace(0, np.pi, STEPS)
   THETA, PHI = np.meshgrid(theta, phi)
-  lmax = data_man.binning_parameters['lmax']
+  lmax = data_man.scaling_options['lmax']
   Intensity = np.ones(THETA.shape)
   counter = 0
   sqrt2 = pymath.sqrt(2)

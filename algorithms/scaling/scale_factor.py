@@ -78,6 +78,36 @@ class SmoothScaleFactor_1D(SmoothScaleFactor):
           np.exp(-((relative_pos - float(j))**2) / Vr))/self.weightsum[i]
     return self.derivatives
 
+class SmoothScaleFactor_1D_Bfactor(SmoothScaleFactor_1D):
+  def __init__(self, initial_value, n_parameters, d_values, scaling_options=None):
+    SmoothScaleFactor_1D.__init__(self, initial_value, n_parameters, scaling_options)
+    self.d_values = d_values
+
+  def set_d_values(self, d_values):
+    if len(d_values) != len(self.normalised_values):
+      assert 0, '''attempting to set a new set of d factors of different
+      length to the data: %s vs %s''' % (
+        len(d_values), len(self.normalised_values))
+    self.d_values = d_values
+
+  def calculate_smooth_scales(self):
+    (Vr, problim) = (self.Vr, self.problim)
+    smoothing_window = 2.5#must be less than 3 to avoid indexing errors
+    self.scales = flex.double([0.0]*len(self.normalised_values))
+    self.weightsum = flex.double([0.0]*len(self.normalised_values))
+    for i, relative_pos in enumerate(self.normalised_values):
+      max_scale_to_include = int(relative_pos + smoothing_window)
+      min_scale_to_include = int((relative_pos - smoothing_window)//1) + 1
+      scale = 0.0
+      weightsum = 0.0
+      for j in range(min_scale_to_include, max_scale_to_include + 1):
+        scale += self.scale_factors[j+2] * np.exp(-((relative_pos - float(j))**2) / Vr)
+        weightsum += np.exp(-((relative_pos - float(j))**2) / Vr)
+      self.weightsum[i] = weightsum
+      self.scales[i] = scale/weightsum
+    self.scales = flex.double(np.exp(self.scales/(2.0 * (self.d_values**2))))
+    return self.scales
+
 class SmoothScaleFactor_2D(SmoothScaleFactor):
   def __init__(self, initial_value, n1_parameters, n2_parameters, scaling_options=None):
     n_parameters = n1_parameters * n2_parameters

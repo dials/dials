@@ -17,10 +17,14 @@ class LBFGS_optimiser(object):
     self.data_manager = Data_Manager_object
     self.x = self.data_manager.set_up_minimisation(param_name)
     self.residuals = []
-    if param_name:
-      print "performing minimisation for %s correction" % (param_name.lstrip('g_'))
-    #print "performing scaling on %s reflections out of %s total reflections" % (
-    #  len(self.data_manager.reflections_for_scaling), len(self.data_manager.sorted_reflections))
+    '''if param_name:
+      print """performing minimisation for %s correction, on %s reflections out
+        of %s total reflections""" % (param_name.lstrip('g_'),
+        len(self.data_manager.Ih_table.Ih_table), len(self.data_manager.reflection_table))
+    else:
+      print """performing minimisation on %s reflections out
+        of %s total reflections""" % (len(self.data_manager.Ih_table.Ih_table),
+        len(self.data_manager.reflection_table))'''
     self.core_params = lbfgs.core_parameters(maxfev=15)
     self.termination_params = lbfgs.termination_parameters(max_iterations=15)
     lbfgs.run(target_evaluator=self, core_params=self.core_params,
@@ -90,7 +94,7 @@ class B_optimiser(object):
     return f, g
 
   def residual(self):
-    gvalues = self.data_manager.g_decay[0:self.data_manager.binning_parameters['n_d_bins']]
+    gvalues = self.data_manager.g_decay[0:self.data_manager.scaling_options['n_d_bins']]
     resolution = self.res_values
     R = 0.0
     for i, val in enumerate(resolution):
@@ -98,7 +102,7 @@ class B_optimiser(object):
     return R
 
   def gradient(self):
-    gvalues = self.data_manager.g_decay[0:self.data_manager.binning_parameters['n_d_bins']]
+    gvalues = self.data_manager.g_decay[0:self.data_manager.scaling_options['n_d_bins']]
     resolution = self.res_values
     G = flex.double([0.0, 0.0])
     for i, val in enumerate(resolution):

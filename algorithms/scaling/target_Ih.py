@@ -4,26 +4,28 @@ from cctbx import miller, crystal
 import time as time
 
 class basic_Ih_table(object):
-  def __init__(self, refl_table, weighting):
+  def __init__(self, refl_table, weights):
     #first create a minimal reflection table object
     self.Ih_table = flex.reflection_table()
     self.Ih_table['asu_miller_index'] = refl_table['asu_miller_index']
     self.Ih_table['intensity'] = refl_table['intensity']
     self.Ih_table['Ih_values'] = flex.double([0.0]*len(refl_table))
+    self.Ih_table['weights'] = weights
+    self.Ih_table['inverse_scale_factor'] = refl_table['inverse_scale_factor']
     #bring in weights and initial scale factors
-    self.weights_for_scaling = weighting.get_weights()
-    self.scale_factors = refl_table['inverse_scale_factor']
+    #self.weights_for_scaling = weighting.get_weights()
+    #self.scale_factors = refl_table['inverse_scale_factor']
     #calculate the indexing arrays
     (self.h_index_counter_array, self.h_index_cumulative_array) = self.assign_h_index()
     self.Ih_array = None
     #no calc_Ih method here, as for basic_Ih_table the Ih is calculated by the target_Ih
 
   def update_scale_factors(self, scalefactors):
-    if len(scalefactors) != len(self.scale_factors):
+    if len(scalefactors) != len(self.Ih_table['inverse_scale_factor']):
       assert 0, '''attempting to set a new set of scale factors of different
       length than previous assignment: was %s, attempting %s''' % (
-      len(self.scale_factors), len(scalefactors))
-    self.scale_factors = scalefactors
+      len(self.self.Ih_table['inverse_scale_factor']), len(scalefactors))
+    self.Ih_table['inverse_scale_factor'] = scalefactors
 
   def set_Ih_values(self, Ih_values):
     if len(Ih_values) != len(self.Ih_table['Ih_values']):
@@ -72,8 +74,8 @@ class single_Ih_table(basic_Ih_table):
   def calc_Ih(self):
     '''calculate the current best estimate for I for each reflection group'''
     intensities = self.Ih_table['intensity']
-    scale_factors = self.scale_factors
-    scaleweights = self.weights_for_scaling
+    scale_factors = self.Ih_table['inverse_scale_factor']
+    scaleweights = self.Ih_table['weights']
     gsq = (((scale_factors)**2) * scaleweights)
     sumgsq = flex.double(np.add.reduceat(gsq, self.h_index_cumulative_array[:-1]))
     gI = ((scale_factors * intensities) * scaleweights)
