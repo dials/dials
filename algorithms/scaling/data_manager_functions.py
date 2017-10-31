@@ -689,12 +689,11 @@ class targeted_datamanager(Data_Manager):
     if osc_range[1]-osc_range[0]<10.0:
       #do single KB scaling#
       #adjust smoothing parameter to give constant value in interval?
-      scaling_options['rotation_interval'] = 
+      #scaling_options['rotation_interval'] = 
       self.dm1 = aimless_Data_Manager(reflections1, experiments1, scaling_options)
     else:
       #do full aimless/xds scaling of one dataset
-
-    self.target_refl_table = reflections2
+      self.target_refl_table = reflections2
   
 def select_variables_in_range(variable_array, lower_limit, upper_limit):
   '''return boolean selection of a given variable range'''
