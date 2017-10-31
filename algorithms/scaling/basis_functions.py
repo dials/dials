@@ -28,21 +28,23 @@ class basis_function(object):
 
 class KB_basis_function(basis_function):
   def calculate_scale_factors(self):
+    print "Current scale and B-factor are %s" % (list(self.parameters))
     scale_term = self.parameters[0:1]
     decay_term = self.parameters[1:2]
     self.data_manager.g_scale.set_scale_factors(scale_term)
     self.data_manager.g_decay.set_scale_factors(decay_term)
     d = self.data_manager.g_decay.d_values
-    return scale_term * flex.double(np.exp(decay_term/(2.0*(d**2))))
+    return (flex.double([scale_term[0]]*len(d)) * 
+            flex.double(np.exp(flex.double([decay_term[0]]*len(d))/(2.0*(d**2)))))
 
   def calculate_derivatives(self):
     d = self.data_manager.g_decay.d_values
     B = self.data_manager.g_decay.scale_factors
-    decay_term = flex.double(np.exp(B/(2.0*(d**2))))
+    decay_term = flex.double(np.exp(flex.double([B[0]]*len(d))/(2.0*(d**2))))
     scale_term = self.data_manager.g_scale.scale_factors
     derivatives = flex.double([])
     derivatives.extend(decay_term)
-    derivatives.extend(scale_term * decay_term / (2*(d**2)))
+    derivatives.extend(flex.double([scale_term[0]]*len(d)) * decay_term / (2*(d**2)))
     return derivatives
 
 class xds_basis_function(basis_function):

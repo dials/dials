@@ -263,10 +263,12 @@ class aimless_Data_Manager(Data_Manager):
 
   def clean_reflection_table(self):
     self.initial_keys.append('inverse_scale_factor')
+    self.initial_keys.append('Ih_values')
+    self.initial_keys.append('asu_miller_index')
     for key in self.reflection_table.keys():
       if not key in self.initial_keys:
         del self.reflection_table[key]
-    added_columns = ['Ih_values', 'h_index', 'asu_miller_index', 'phi', 's2', 's2d',
+    added_columns = ['h_index', 'phi', 's2', 's2d',
                      'decay_factor', 'angular_scale_factor',
                      'normalised_rotation_angle', 'normalised_time_values',
                      'wilson_outlier_flag', 'centric_flag', 'absorption_factor']
@@ -279,15 +281,15 @@ class KB_Data_Manager(Data_Manager):
     Data_Manager.__init__(self, reflections, experiments, scaling_options)
     self.active_parameters = flex.double([])
     self.Ih_table = basic_Ih_table(self.reflection_table, 1.0/self.reflection_table['variance'])
-    self.g_scale = ScaleFactor(1.0, 1)
-    self.g_decay = B_ScaleFactor(0.0, 1, self.reflection_table['d'])
-    self.active_parameters.extend(self.g_scale)
-    self.active_parameters.extend(self.g_decay)
+    self.g_scale = SF.ScaleFactor(1.0, 1)
+    self.g_decay = SF.B_ScaleFactor(0.0, 1, self.reflection_table['d'])
+    self.active_parameters.extend(self.g_scale.scale_factors)
+    self.active_parameters.extend(self.g_decay.scale_factors)
     self.n_active_params = 2
 
   def get_target_function(self):
     '''call the target function method'''
-    return target_function(self).return_targets()
+    return target_function_fixedIh(self).return_targets()
 
   def get_basis_function(self, parameters):
     '''call the KB basis function method'''
@@ -302,6 +304,12 @@ class KB_Data_Manager(Data_Manager):
     self.active_derivatives = basis_fn[1]
     self.Ih_table.update_scale_factors(basis_fn[0])
     #self.Ih_table.calc_Ih() #don't calculate Ih as using a target instead
+
+  def expand_scales_to_all_reflections(self):
+    scale_factor = self.g_scale.scale_factors[0]
+    B = self.g_decay.scale_factors[0]
+    self.reflection_table['inverse_scale_factor'] = scale_factor*flex.double(
+      np.exp(B/(2.0*(self.reflection_table['d']**2))))
 
 
 class XDS_Data_Manager(Data_Manager):
@@ -555,11 +563,13 @@ class XDS_Data_Manager(Data_Manager):
   def clean_reflection_table(self):
     #add keys for additional data that is to be exported
     self.initial_keys.append('inverse_scale_factor')
+    self.initial_keys.append('Ih_values')
+    self.initial_keys.append('asu_miller_index')
     for key in self.reflection_table.keys():
       if not key in self.initial_keys:
         del self.reflection_table[key]
     added_columns = ['l_bin_index', 'a_bin_index', 'xy_bin_index', 'h_index',
-                     'asu_miller_index', 'normalised_y_values',
+                     'normalised_y_values',
                      'normalised_x_values', 'normalised_y_abs_values',
                      'normalised_x_abs_values', 'normalised_time_values', 
                      'normalised_res_values', 'wilson_outlier_flag',
@@ -568,7 +578,7 @@ class XDS_Data_Manager(Data_Manager):
       del self.reflection_table[key]
 
 class multicrystal_datamanager(Data_Manager):
-  def __init__(self, reflections1, experiments1, reflections2, experiments2, scaling_options):
+  def __init__(self, reflections1, experiments1, reflections, experiments2, scaling_options):
     if scaling_options['scaling_method'] == 'xds':
       self.dm1 = XDS_Data_Manager(reflections1, experiments1, scaling_options)
       self.dm2 = XDS_Data_Manager(reflections2, experiments2, scaling_options)
@@ -683,17 +693,51 @@ class multicrystal_datamanager(Data_Manager):
     #self.h_index_cumulative_array = self.Ih_table.h_index_cumulative_array
 
 class targeted_datamanager(Data_Manager):
-  def __init__(self, reflections1, experiments1, reflections2, experiments2, scaling_options):
-    #first assume that the inverse scale factors of reflections2 are the best estimates
-    osc_range = self.experiments1.scan.get_oscillation_range()
-    if osc_range[1]-osc_range[0]<10.0:
+  def __init__(self, reflections1, experiments1, reflections_scaled, scaling_options):
+    #first assume that the Ih_values of reflections_scaled are the best estimates
+    osc_range = experiments1.scan.get_oscillation_range()
+    if osc_range[1]-osc_range[0]<1000.0:
       #do single KB scaling#
-      #adjust smoothing parameter to give constant value in interval?
-      #scaling_options['rotation_interval'] = 
-      self.dm1 = aimless_Data_Manager(reflections1, experiments1, scaling_options)
+      #first make a simple KB data manager
+      self.dm1 = KB_Data_Manager(reflections1, experiments1, scaling_options)
+      #now extract Ih values from reflections_scaled
+      self.scaled_refl_table = flex.reflection_table()
+      self.scaled_refl_table['asu_miller_index'] = reflections_scaled['asu_miller_index']
+      self.scaled_refl_table['Ih_values'] = reflections_scaled['Ih_values']
+      for i, miller_idx in enumerate(self.dm1.Ih_table.Ih_table['asu_miller_index']):
+        sel = self.scaled_refl_table['asu_miller_index'] == miller_idx
+        Ih_values = self.scaled_refl_table['Ih_values'].select(sel)
+        if Ih_values:
+          self.dm1.Ih_table.Ih_table['Ih_values'][i] = Ih_values[0] #all Ih values are the same for asu_miller_idx
+        else:
+          self.dm1.Ih_table.Ih_table['Ih_values'][i] = 0.0 #should already be zero but set again just in case
+      sel = self.dm1.Ih_table.Ih_table['Ih_values'] != 0.0
+      new_refl_table = self.dm1.Ih_table.Ih_table.select(sel)
+      new_Ih_values = new_refl_table['Ih_values']
+      self.dm1.Ih_table = basic_Ih_table(new_refl_table, new_refl_table['weights'])
+      self.dm1.Ih_table.Ih_table['Ih_values'] = new_Ih_values
+      self.dm1.g_decay.set_d_values(self.dm1.reflection_table['d'].select(sel))
     else:
-      #do full aimless/xds scaling of one dataset
+      #do full aimless/xds scaling of one dataset against the other?
       self.target_refl_table = reflections2
+
+  def get_target_function(self):
+    '''call the target function method'''
+    return self.dm1.get_target_function()
+
+  def get_basis_function(self, parameters):
+    '''call the KB basis function method'''
+    return self.dm1.get_basis_function()
+
+  def set_up_minimisation(self, param_name):
+    return self.dm1.set_up_minimisation(param_name)
+
+  def update_for_minimisation(self, parameters):
+    '''update the scale factors and Ih for the next iteration of minimisation'''
+    return self.dm1.update_for_minimisation(parameters)
+
+  def expand_scales_to_all_reflections(self):
+    return self.dm1.expand_scales_to_all_reflections()
   
 def select_variables_in_range(variable_array, lower_limit, upper_limit):
   '''return boolean selection of a given variable range'''

@@ -24,7 +24,7 @@ class basic_Ih_table(object):
     if len(scalefactors) != len(self.Ih_table['inverse_scale_factor']):
       assert 0, '''attempting to set a new set of scale factors of different
       length than previous assignment: was %s, attempting %s''' % (
-      len(self.self.Ih_table['inverse_scale_factor']), len(scalefactors))
+      len(self.Ih_table['inverse_scale_factor']), len(scalefactors))
     self.Ih_table['inverse_scale_factor'] = scalefactors
 
   def set_Ih_values(self, Ih_values):
