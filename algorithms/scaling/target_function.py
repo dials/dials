@@ -51,6 +51,22 @@ class target_function(object):
     '''return residual and gradient arrays'''
     return self.calculate_residual(), self.calculate_gradient()
 
+class target_function_fixedIh(target_function):
+  'subclass to calculate the gradient for KB scaling against a fixed Ih'
+  def calculate_gradient(self):
+    gradient = flex.double([])
+    intensities = self.data_manager.Ih_table.Ih_table['intensity']
+    scale_factors = self.data_manager.Ih_table.Ih_table['inverse_scale_factor']
+    Ih_values = self.data_manager.Ih_table.Ih_table['Ih_values']
+    scaleweights = self.data_manager.Ih_table.Ih_table['weights']
+    rhl = intensities - (Ih_values * scale_factors)
+    for i in range(self.data_manager.n_active_params):
+      drdp = -Ih_values * self.data_manager.active_derivatives[i*len(intensities):
+                                                               (i+1)*len(intensities)]
+      grad = (2.0 * rhl * scaleweights * drdp)
+      gradient.append(flex.sum(grad))
+    return gradient
+
 class xds_target_function_log(target_function):
   '''Subclass that takes a data manager object and returns a residual and
   gradient function for a xds-like scaling parameterisation.'''

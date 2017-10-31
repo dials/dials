@@ -221,7 +221,7 @@ def plot_absorption_surface(data_man, outputfile=None):
   from scitbx import math
   from scitbx.array_family import flex
   import math as pymath
-  STEPS = 100
+  STEPS = 50
   theta = np.linspace(0, 2 * np.pi, 2*STEPS)
   phi = np.linspace(0, np.pi, STEPS)
   THETA, PHI = np.meshgrid(theta, phi)
@@ -250,7 +250,7 @@ def plot_absorption_surface(data_man, outputfile=None):
   Y = Intensity * np.sin(PHI) * np.sin(THETA)
   Z = Intensity * np.cos(PHI)
   from matplotlib import cm
-
+ 
   rel_Int = (Intensity - Intensity.min())/(Intensity.max() - Intensity.min())
   #print "max, min absorption factors are (%s,%s)" % (Intensity.max(),Intensity.min())
   #my_col = cm.jet(Intensity)

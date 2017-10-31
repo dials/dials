@@ -26,6 +26,25 @@ class basis_function(object):
     in minimisation'''
     return self.calculate_scale_factors(), self.calculate_derivatives()
 
+class KB_basis_function(basis_function):
+  def calculate_scale_factors(self):
+    scale_term = self.parameters[0:1]
+    decay_term = self.parameters[1:2]
+    self.data_manager.g_scale.set_scale_factors(scale_term)
+    self.data_manager.g_decay.set_scale_factors(decay_term)
+    d = self.data_manager.g_decay.d_values
+    return scale_term * flex.double(np.exp(decay_term/(2.0*(d**2))))
+
+  def calculate_derivatives(self):
+    d = self.data_manager.g_decay.d_values
+    B = self.data_manager.g_decay.scale_factors
+    decay_term = flex.double(np.exp(B/(2.0*(d**2))))
+    scale_term = self.data_manager.g_scale.scale_factors
+    derivatives = flex.double([])
+    derivatives.extend(decay_term)
+    derivatives.extend(scale_term * decay_term / (2*(d**2)))
+    return derivatives
+
 class xds_basis_function(basis_function):
   '''Subclass of basis_function for xds parameterisation'''
   def calculate_scale_factors(self):
@@ -38,8 +57,10 @@ class xds_basis_function(basis_function):
   def calculate_derivatives(self):
     '''Derivatives are fixed by the parameterisation'''
     derivatives = self.data_manager.g_parameterisation[
-      self.data_manager.active_parameterisation].calculate_smooth_derivatives()
-    return derivatives
+      self.data_manager.active_parameterisation].calculate_smooth_derivatives() 
+    #should this be multiplied by constant_g_values?
+    return derivatives * flex.double(np.tile(self.data_manager.constant_g_values, 
+                                             self.data_manager.n_active_params))
 
 class aimless_basis_function(basis_function):
   '''Subclass of basis_function for aimless parameterisation'''

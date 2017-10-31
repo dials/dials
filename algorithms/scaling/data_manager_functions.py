@@ -274,6 +274,36 @@ class aimless_Data_Manager(Data_Manager):
       del self.reflection_table[key]
 
 
+class KB_Data_Manager(Data_Manager):
+  def __init__(self, reflections, experiments, scaling_options):
+    Data_Manager.__init__(self, reflections, experiments, scaling_options)
+    self.active_parameters = flex.double([])
+    self.Ih_table = basic_Ih_table(self.reflection_table, 1.0/self.reflection_table['variance'])
+    self.g_scale = ScaleFactor(1.0, 1)
+    self.g_decay = B_ScaleFactor(0.0, 1, self.reflection_table['d'])
+    self.active_parameters.extend(self.g_scale)
+    self.active_parameters.extend(self.g_decay)
+    self.n_active_params = 2
+
+  def get_target_function(self):
+    '''call the target function method'''
+    return target_function(self).return_targets()
+
+  def get_basis_function(self, parameters):
+    '''call the KB basis function method'''
+    return KB_basis_function(self, parameters).return_basis()
+
+  def set_up_minimisation(self, param_name):
+    return self.active_parameters
+
+  def update_for_minimisation(self, parameters):
+    '''update the scale factors and Ih for the next iteration of minimisation'''
+    basis_fn = self.get_basis_function(parameters)
+    self.active_derivatives = basis_fn[1]
+    self.Ih_table.update_scale_factors(basis_fn[0])
+    #self.Ih_table.calc_Ih() #don't calculate Ih as using a target instead
+
+
 class XDS_Data_Manager(Data_Manager):
   '''Data Manager subclass for implementing XDS parameterisation'''
   def __init__(self, reflections, experiments, scaling_options):
@@ -652,6 +682,19 @@ class multicrystal_datamanager(Data_Manager):
     #self.h_index_counter_array = self.Ih_table.h_index_counter_array 
     #self.h_index_cumulative_array = self.Ih_table.h_index_cumulative_array
 
+class targeted_datamanager(Data_Manager):
+  def __init__(self, reflections1, experiments1, reflections2, experiments2, scaling_options):
+    #first assume that the inverse scale factors of reflections2 are the best estimates
+    osc_range = self.experiments1.scan.get_oscillation_range()
+    if osc_range[1]-osc_range[0]<10.0:
+      #do single KB scaling#
+      #adjust smoothing parameter to give constant value in interval?
+      scaling_options['rotation_interval'] = 
+      self.dm1 = aimless_Data_Manager(reflections1, experiments1, scaling_options)
+    else:
+      #do full aimless/xds scaling of one dataset
+
+    self.target_refl_table = reflections2
   
 def select_variables_in_range(variable_array, lower_limit, upper_limit):
   '''return boolean selection of a given variable range'''

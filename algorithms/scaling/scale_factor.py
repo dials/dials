@@ -20,6 +20,16 @@ class ScaleFactor(object):
   def get_scale_factors(self):
     return self.scale_factors
 
+class B_ScaleFactor(ScaleFactor):
+  def __init__(self, initial_value, n_parameters, d_values, scaling_options=None):
+    ScaleFactor.__init__(self, initial_value, n_parameters, scaling_options)
+    self.d_values = d_values
+
+  def set_d_values(self, d_values):
+    self.d_values = d_values
+  
+      
+
 class SmoothScaleFactor(ScaleFactor):
   def __init__(self, initial_value, n_parameters, scaling_options=None):
     ScaleFactor.__init__(self, initial_value, n_parameters, scaling_options)
