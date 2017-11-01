@@ -25,6 +25,8 @@ class Data_Manager(object):
     'General attributes relevant for all parameterisations'
     self.experiments = experiments
     'initial filter to select integrated reflections'
+    reflections = reflections.select(reflections['intensity.prf.variance'] > 0)
+    reflections = reflections.select(reflections['intensity.sum.variance'] > 0)
     self.reflection_table = reflections.select(reflections.get_flags(
       reflections.flags.integrated))
     self.scaling_options = scaling_options
