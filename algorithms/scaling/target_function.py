@@ -22,8 +22,6 @@ class target_function(object):
     if self.data_manager.scaling_options['scaling_method'] == 'aimless':
       constraint_values = self.data_manager.calc_absorption_constraint()
       R.extend(constraint_values)
-    if self.data_manager.scaling_options['scaling_method'] == 'KB':
-      R.extend(1e6*(self.data_manager.active_parameters[1:2]**2))
     return R
 
   def calculate_gradient(self):

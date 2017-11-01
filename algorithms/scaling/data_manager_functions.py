@@ -280,9 +280,11 @@ class KB_Data_Manager(Data_Manager):
   def __init__(self, reflections, experiments, scaling_options):
     Data_Manager.__init__(self, reflections, experiments, scaling_options)
     self.active_parameters = flex.double([])
-    self.Ih_table = basic_Ih_table(self.reflection_table, 1.0/self.reflection_table['variance'])
+    (reflections_for_scaling, weights_for_scaling) = (
+      self.extract_reflections_for_scaling(self.reflection_table))
+    self.Ih_table = basic_Ih_table(reflections_for_scaling, weights_for_scaling.get_weights())
     self.g_scale = SF.ScaleFactor(1.0, 1)
-    self.g_decay = SF.B_ScaleFactor(0.0, 1, self.reflection_table['d'])
+    self.g_decay = SF.B_ScaleFactor(0.0, 1, reflections_for_scaling['d'])
     self.active_parameters.extend(self.g_scale.scale_factors)
     self.active_parameters.extend(self.g_decay.scale_factors)
     self.n_active_params = 2
@@ -303,7 +305,7 @@ class KB_Data_Manager(Data_Manager):
     basis_fn = self.get_basis_function(parameters)
     self.active_derivatives = basis_fn[1]
     self.Ih_table.update_scale_factors(basis_fn[0])
-    #self.Ih_table.calc_Ih() #don't calculate Ih as using a target instead
+    #self.Ih_table.calc_Ih() #don't calculate Ih here as using a target instead
 
   def expand_scales_to_all_reflections(self):
     scale_factor = self.g_scale.scale_factors[0]
@@ -696,7 +698,8 @@ class targeted_datamanager(Data_Manager):
   def __init__(self, reflections1, experiments1, reflections_scaled, scaling_options):
     #first assume that the Ih_values of reflections_scaled are the best estimates
     osc_range = experiments1.scan.get_oscillation_range()
-    if osc_range[1]-osc_range[0]<1000.0:
+    if osc_range[1]-osc_range[0]<1000.0: 
+      #usually would have it osc_range <10, big here just for testing on LCY dataset
       #do single KB scaling#
       #first make a simple KB data manager
       self.dm1 = KB_Data_Manager(reflections1, experiments1, scaling_options)
@@ -716,10 +719,11 @@ class targeted_datamanager(Data_Manager):
       new_Ih_values = new_refl_table['Ih_values']
       self.dm1.Ih_table = basic_Ih_table(new_refl_table, new_refl_table['weights'])
       self.dm1.Ih_table.Ih_table['Ih_values'] = new_Ih_values
-      self.dm1.g_decay.set_d_values(self.dm1.reflection_table['d'].select(sel))
+      self.dm1.g_decay.set_d_values(self.dm1.g_decay.d_values.select(sel))
     else:
       #do full aimless/xds scaling of one dataset against the other?
-      self.target_refl_table = reflections2
+      #self.target_refl_table = reflections_scaled
+      assert 0, "no methods specified yet for scaling a large dataset against another"
 
   def get_target_function(self):
     '''call the target function method'''
