@@ -5,6 +5,7 @@ from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections
 from dials.util.options import flatten_datablocks
 from dials.util.options import flatten_experiments
+from dials.array_family import flex
 
 help_message = '''
 Augment spot list with additional information - for example number of pixels
@@ -23,7 +24,6 @@ def add_max_pixels_to_reflections(reflections):
   '''Iterate through reflections, find max pixel in each shoebox and max
   valid, add columns thereof'''
 
-  from dials.array_family import flex
   from dials.algorithms.shoebox import MaskCode
 
   good = (MaskCode.Foreground | MaskCode.Valid)
@@ -42,6 +42,29 @@ def add_max_pixels_to_reflections(reflections):
   reflections['max_valid'] = max_valid
   return
 
+def add_resolution_to_reflections(reflections, datablock):
+  '''Add column d to reflection list'''
+
+  # will assume everything from the first detector at the moment - clearly this
+  # could be incorrect, will have to do something a little smarter, later
+
+  detector = datablock.unique_detectors()[0]
+  beam = datablock.unique_beams()[0]
+
+  resolutions = flex.double(reflections.size(), 0.0)
+
+  panel = reflections['panel']
+
+  for ipanel in range(len(detector)):
+    sel = (panel == ipanel)
+    refl_panel = reflections.select(sel)
+    x, y, z = refl_panel['xyzobs.px.value'].parts()
+    d = flex.double(refl_panel.size(), 0.0)
+    for j, (_x, _y) in enumerate(zip(x, y)):
+      d[j] = detector[ipanel].get_resolution_at_pixel(beam.get_s0(), (_x, _y))
+    resolutions.set_selected(sel, d)
+  reflections['d'] = resolutions
+
 def augment_reflections(reflections, params, datablock=None):
   '''Add extra columns of derived data.'''
 
@@ -52,6 +75,7 @@ def augment_reflections(reflections, params, datablock=None):
     add_max_pixels_to_reflections(reflections)
 
   x0, x1, y0, y1, z0, z2 = reflections['bbox'].parts()
+  x, y, z = reflections['xyzobs.px.value'].parts()
 
   dx = x1 - x0
   dy = y1 - y0
@@ -62,6 +86,10 @@ def augment_reflections(reflections, params, datablock=None):
   reflections['dx'] = dx
   reflections['dy'] = dy
   reflections['n_signal'] = n_signal
+
+  if datablock:
+    add_resolution_to_reflections(reflections, datablock)
+
 
   return reflections
 
