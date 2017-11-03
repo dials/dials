@@ -13,15 +13,43 @@ in peak region etc.'''
 phil_scope = iotbx.phil.parse('''
 output {
   reflections = stronger.pickle
-  .type = path
+    .type = path
 }
+find_max = False
+  .type = bool
 ''')
 
-def augment_reflections(reflections, datablock=None):
+def add_max_pixels_to_reflections(reflections):
+  '''Iterate through reflections, find max pixel in each shoebox and max
+  valid, add columns thereof'''
+
+  from dials.array_family import flex
+  from dials.algorithms.shoebox import MaskCode
+
+  good = (MaskCode.Foreground | MaskCode.Valid)
+
+  max_pixel = flex.double(reflections.size(), 0.0)
+  max_valid = flex.double(reflections.size(), 0.0)
+
+  shoeboxes = reflections['shoebox']
+
+  for j, s in enumerate(shoeboxes):
+    max_pixel[j] = flex.max(s.data)
+    valid = (s.mask.as_1d() == good)
+    max_valid[j] = flex.max(s.data.as_1d().select(valid))
+
+  reflections['max_pixel'] = max_pixel
+  reflections['max_valid'] = max_valid
+  return
+
+def augment_reflections(reflections, params, datablock=None):
   '''Add extra columns of derived data.'''
 
   from dials.algorithms.shoebox import MaskCode
   good = (MaskCode.Foreground | MaskCode.Valid)
+
+  if params.find_max:
+    add_max_pixels_to_reflections(reflections)
 
   x0, x1, y0, y1, z0, z2 = reflections['bbox'].parts()
 
@@ -66,7 +94,7 @@ def run(args):
   if len(datablocks) == 1:
     datablock = datablocks[0]
 
-  stronger = augment_reflections(reflections[0], datablock=datablock)
+  stronger = augment_reflections(reflections[0], params, datablock=datablock)
   stronger.as_pickle(params.output.reflections)
 
 if __name__ == '__main__':
