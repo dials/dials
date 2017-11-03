@@ -309,13 +309,13 @@ class stills_indexer(indexer_base):
           experiments, reflections_for_refinement)
       except Exception as e:
         s = str(e)
-	if len(experiments) == 1:
-	  raise Sorry(e)
-	had_refinement_error = True
-	logger.info("Refinement failed:")
-	logger.info(s)
-	del experiments[-1]
-	break
+        if len(experiments) == 1:
+          raise Sorry(e)
+        had_refinement_error = True
+        logger.info("Refinement failed:")
+        logger.info(s)
+        del experiments[-1]
+        break
 
       # sanity check for unrealistic unit cell volume increase during refinement
       # usually this indicates too many parameters are being refined given the
