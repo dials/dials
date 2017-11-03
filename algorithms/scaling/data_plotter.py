@@ -246,7 +246,30 @@ def plot_absorption_surface(data_man, outputfile=None):
           Intensity[ip, it] += params[counter] * r
       counter += 1
 
-  X = Intensity * np.sin(PHI) * np.cos(THETA)
+  if Intensity.max() - Intensity.min() != 0.0:
+    rel_Int = (Intensity - Intensity.min())/(Intensity.max() - Intensity.min())
+  else:
+    rel_Int = Intensity
+  print "max, min absorption factors are (%s,%s)" % (Intensity.max(),Intensity.min())
+  plt.figure(figsize=(8,6))
+  gs = gridspec.GridSpec(1, 1)
+  ax = plt.subplot(gs[0, 0])
+  im = ax.imshow(rel_Int, cmap='viridis', origin='lower')
+  divider = make_axes_locatable(ax)
+  cax1 = divider.append_axes("right", size="5%", pad=0.05)
+  cbar = plt.colorbar(im, cax=cax1,ticks=[0, 0.25, 0.5, 0.75, 1])
+  cbar.ax.set_yticklabels(['%.6f' % Intensity.min(), 
+                           '%.6f' % ((Intensity.min()*0.75) + (Intensity.max()*0.25)), 
+                           '%.6f' % ((Intensity.min()*0.5) + (Intensity.max()*0.5)),
+                           '%.6f' % ((Intensity.min()*0.25) + (Intensity.max()*0.75)),
+                           '%.6f' % Intensity.max()])
+  
+  if outputfile:
+    plt.savefig(outputfile)
+  else:
+    plt.savefig('absorption_surface')
+
+  '''X = Intensity * np.sin(PHI) * np.cos(THETA)
   Y = Intensity * np.sin(PHI) * np.sin(THETA)
   Z = Intensity * np.cos(PHI)
   from matplotlib import cm
@@ -282,7 +305,7 @@ def plot_absorption_surface(data_man, outputfile=None):
   if outputfile:
     plt.savefig(outputfile)
   else:
-    plt.savefig('absorption_surface')
+    plt.savefig('absorption_surface')'''
 
 
 

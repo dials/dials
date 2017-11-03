@@ -745,7 +745,7 @@ class targeted_datamanager(Data_Manager):
 
   def expand_scales_to_all_reflections(self):
     return self.dm1.expand_scales_to_all_reflections()
-  
+
 def select_variables_in_range(variable_array, lower_limit, upper_limit):
   '''return boolean selection of a given variable range'''
   sel = flex.bool()
