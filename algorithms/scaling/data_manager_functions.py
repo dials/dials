@@ -238,7 +238,7 @@ class aimless_Data_Manager(Data_Manager):
   def calc_absorption_constraint(self):
       n_g_scale = self.n_g_scale_params
       n_g_decay = self.n_g_decay_params
-      return (1e5 * (self.active_parameters[n_g_scale + n_g_decay:])**2)
+      return (1e7 * (self.active_parameters[n_g_scale + n_g_decay:])**2)
 
   def expand_scales_to_all_reflections(self):
     "recalculate scales for reflections in sorted_reflection table"
@@ -267,10 +267,11 @@ class aimless_Data_Manager(Data_Manager):
     self.initial_keys.append('inverse_scale_factor')
     self.initial_keys.append('Ih_values')
     self.initial_keys.append('asu_miller_index')
+    self.initial_keys.append('phi')
     for key in self.reflection_table.keys():
       if not key in self.initial_keys:
         del self.reflection_table[key]
-    added_columns = ['h_index', 'phi', 's2', 's2d',
+    added_columns = ['h_index', 's2', 's2d',
                      'decay_factor', 'angular_scale_factor',
                      'normalised_rotation_angle', 'normalised_time_values',
                      'wilson_outlier_flag', 'centric_flag', 'absorption_factor']
