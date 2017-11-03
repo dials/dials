@@ -48,22 +48,23 @@ def add_resolution_to_reflections(reflections, datablock):
   # will assume everything from the first detector at the moment - clearly this
   # could be incorrect, will have to do something a little smarter, later
 
-  detector = datablock.unique_detectors()[0]
-  beam = datablock.unique_beams()[0]
+  from dials.algorithms.indexing.indexer import indexer_base
+  imageset = datablock.extract_imagesets()[0]
 
-  resolutions = flex.double(reflections.size(), 0.0)
+  if 'imageset_id' not in reflections:
+    reflections['imageset_id'] = reflections['id']
 
-  panel = reflections['panel']
+  spots_mm = indexer_base.map_spots_pixel_to_mm_rad(
+    spots=reflections, detector=imageset.get_detector(),
+    scan=imageset.get_scan())
 
-  for ipanel in range(len(detector)):
-    sel = (panel == ipanel)
-    refl_panel = reflections.select(sel)
-    x, y, z = refl_panel['xyzobs.px.value'].parts()
-    d = flex.double(refl_panel.size(), 0.0)
-    for j, (_x, _y) in enumerate(zip(x, y)):
-      d[j] = detector[ipanel].get_resolution_at_pixel(beam.get_s0(), (_x, _y))
-    resolutions.set_selected(sel, d)
-  reflections['d'] = resolutions
+  indexer_base.map_centroids_to_reciprocal_space(
+    spots_mm, detector=imageset.get_detector(), beam=imageset.get_beam(),
+    goniometer=imageset.get_goniometer())
+
+  d_spacings = 1/spots_mm['rlp'].norms()
+
+  reflections['d'] = d_spacings
 
 def augment_reflections(reflections, params, datablock=None):
   '''Add extra columns of derived data.'''
