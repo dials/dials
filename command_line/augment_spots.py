@@ -75,7 +75,7 @@ def augment_reflections(reflections, params, datablock=None):
   if params.find_max:
     add_max_pixels_to_reflections(reflections)
 
-  x0, x1, y0, y1, z0, z2 = reflections['bbox'].parts()
+  x0, x1, y0, y1, z0, z1 = reflections['bbox'].parts()
   x, y, z = reflections['xyzobs.px.value'].parts()
 
   dx = x1 - x0
