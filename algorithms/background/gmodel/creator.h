@@ -9,8 +9,8 @@
  *  included in the root directory of this package.
  */
 
-#ifndef DIALS_ALGORITHMS_BACKGROUND_GLM_CREATOR_H
-#define DIALS_ALGORITHMS_BACKGROUND_GLM_CREATOR_H
+#ifndef DIALS_ALGORITHMS_BACKGROUND_GMODEL_CREATOR_H
+#define DIALS_ALGORITHMS_BACKGROUND_GMODEL_CREATOR_H
 
 #include <dials/array_family/reflection_table.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
@@ -27,21 +27,10 @@ namespace dials { namespace algorithms {
   using model::ImageVolume;
   using model::MultiPanelImageVolume;
 
-  namespace detail {
-
-    template <typename T>
-    T median(const af::const_ref<T> &x) {
-      af::shared<T> temp(x.begin(), x.end());
-      std::nth_element(temp.begin(), temp.begin() + temp.size() / 2, temp.end());
-      return temp[temp.size() / 2];
-    }
-
-  }
-
   /**
    * A class to create the background model
    */
-  class Creator {
+  class GModelBackgroundCreator {
   public:
 
     /**
@@ -50,7 +39,7 @@ namespace dials { namespace algorithms {
      * @param max_iter The maximum number of iterations
      * @param min_pixels The minimum number of pixels needed
      */
-    Creator(
+    GModelBackgroundCreator(
           boost::shared_ptr<BackgroundModel> model,
           bool robust,
           double tuning_constant,
@@ -64,6 +53,20 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(tuning_constant > 0);
       DIALS_ASSERT(max_iter > 0);
       DIALS_ASSERT(min_pixels > 0);
+    }
+    
+    /**
+     * Compute the background values
+     * @param sbox The shoeboxes
+     * @returns Success True/False
+     */
+    void single(Shoebox<> sbox) const {
+      compute(
+          sbox.panel,
+          sbox.bbox,
+          sbox.data.const_ref(),
+          sbox.background.ref(),
+          sbox.mask.ref());
     }
 
     /**
@@ -316,4 +319,4 @@ namespace dials { namespace algorithms {
 
 }} // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_BACKGROUND_GLM_CREATOR_H
+#endif // DIALS_ALGORITHMS_BACKGROUND_GMODEL_CREATOR_H

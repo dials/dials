@@ -36,14 +36,14 @@ namespace dials { namespace algorithms { namespace background {
   /**
    * Class to create background shoebox
    */
-  class Creator {
+  class SimpleBackgroundCreator {
   public:
 
     /**
      * Initialise with the desired modeller.
      * @param modeller The background modeller
      */
-    Creator(boost::shared_ptr<Modeller> modeller,
+    SimpleBackgroundCreator(boost::shared_ptr<Modeller> modeller,
             std::size_t min_pixels)
       : modeller_(modeller),
         min_pixels_(min_pixels) {
@@ -56,7 +56,7 @@ namespace dials { namespace algorithms { namespace background {
      * @param modeller The background modeller
      * @param rejector The outlier rejector
      */
-    Creator(
+    SimpleBackgroundCreator(
           boost::shared_ptr<Modeller> modeller,
           boost::shared_ptr<OutlierRejector> rejector,
           std::size_t min_pixels)

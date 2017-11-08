@@ -19,7 +19,7 @@ namespace dials { namespace algorithms { namespace background {
 
   template <typename FloatType>
   af::shared<bool> call_1(
-      const Creator &self,
+      const SimpleBackgroundCreator &self,
       const af::const_ref< Shoebox<FloatType> > &sbox) {
     af::shared<double> mse(sbox.size());
     af::shared<double> dispersion(sbox.size());
@@ -28,7 +28,7 @@ namespace dials { namespace algorithms { namespace background {
 
   template <typename FloatType>
   af::shared<bool> call_2(
-      const Creator &self,
+      const SimpleBackgroundCreator &self,
       const af::const_ref< Shoebox<FloatType> > &sbox,
       af::ref<double> mse,
       af::ref<double> dispersion) {
@@ -37,14 +37,14 @@ namespace dials { namespace algorithms { namespace background {
 
   template <typename FloatType>
   af::tiny<FloatType,2> call_3(
-      const Creator &self,
+      const SimpleBackgroundCreator &self,
       Shoebox<FloatType> shoebox) {
     return self(shoebox);
   }
 
   template <typename FloatType>
   af::tiny<FloatType,2> call_4(
-      const Creator &self,
+      const SimpleBackgroundCreator &self,
       const af::const_ref< FloatType, af::c_grid<3> > &data,
       af::ref< int, af::c_grid<3> > mask,
       af::ref< FloatType, af::c_grid<3> > background) {
@@ -53,7 +53,7 @@ namespace dials { namespace algorithms { namespace background {
 
   template <typename FloatType>
   af::shared<bool> call_5(
-      const Creator &self,
+      const SimpleBackgroundCreator &self,
       af::reflection_table reflections,
       MultiPanelImageVolume<FloatType> image_volume) {
     return self(reflections, image_volume);
@@ -61,7 +61,7 @@ namespace dials { namespace algorithms { namespace background {
 
   void creator_wrapper() {
 
-    class_< Creator >("Creator", no_init)
+    class_< SimpleBackgroundCreator >("Creator", no_init)
       .def(init<
           boost::shared_ptr<Modeller>,
           std::size_t

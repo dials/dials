@@ -13,6 +13,7 @@
 #define DIALS_ALGORITHMS_BACKGROUND_GLM_CREATOR_H
 
 #include <scitbx/glmtbx/robust_glm.h>
+#include <dials/algorithms/background/glm/robust_poisson_mean.h>
 #include <dials/array_family/reflection_table.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/model/data/shoebox.h>
@@ -43,7 +44,7 @@ namespace dials { namespace algorithms {
   /**
    * A class to create the background model
    */
-  class Creator {
+  class GLMBackgroundCreator {
   public:
 
     /**
@@ -62,7 +63,10 @@ namespace dials { namespace algorithms {
      * @param max_iter The maximum number of iterations
      * @param min_pixels The minimum number of pixels needed
      */
-    Creator(Model model, double tuning_constant, std::size_t max_iter, std::size_t min_pixels)
+    GLMBackgroundCreator(Model model, 
+                         double tuning_constant, 
+                         std::size_t max_iter, 
+                         std::size_t min_pixels)
       : model_(model),
         tuning_constant_(tuning_constant),
         max_iter_(max_iter),

@@ -38,10 +38,10 @@ namespace dials { namespace algorithms { namespace background {
       ;
 
 
-    class_<Creator> creator("Creator", no_init);
+    class_<GLMBackgroundCreator> creator("Creator", no_init);
     creator
       .def(init<
-          Creator::Model,
+          GLMBackgroundCreator::Model,
           double,
           std::size_t,
           std::size_t>((
@@ -49,17 +49,17 @@ namespace dials { namespace algorithms { namespace background {
               arg("tuning_constant"),
               arg("max_iter"),
               arg("min_pixels")=10)))
-      .def("__call__", &Creator::shoebox)
-      .def("__call__", &Creator::volume)
+      .def("__call__", &GLMBackgroundCreator::shoebox)
+      .def("__call__", &GLMBackgroundCreator::volume)
       ;
 
     scope in_creator = creator;
 
-    enum_<Creator::Model>("model")
-      .value("constant2d", Creator::Constant2d)
-      .value("constant3d", Creator::Constant3d)
-      .value("loglinear2d", Creator::LogLinear2d)
-      .value("loglinear3d", Creator::LogLinear3d)
+    enum_<GLMBackgroundCreator::Model>("model")
+      .value("constant2d", GLMBackgroundCreator::Constant2d)
+      .value("constant3d", GLMBackgroundCreator::Constant3d)
+      .value("loglinear2d", GLMBackgroundCreator::LogLinear2d)
+      .value("loglinear3d", GLMBackgroundCreator::LogLinear3d)
       ;
   }
 

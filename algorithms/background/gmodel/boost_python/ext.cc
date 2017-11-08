@@ -75,7 +75,7 @@ namespace dials { namespace algorithms { namespace background {
       .def_pickle(StaticBackgroundModelPickleSuite())
       ;
 
-    class_<Creator> creator("Creator", no_init);
+    class_<GModelBackgroundCreator> creator("Creator", no_init);
     creator
       .def(init<
           boost::shared_ptr<BackgroundModel>,
@@ -88,8 +88,8 @@ namespace dials { namespace algorithms { namespace background {
               arg("tuning_constant"),
               arg("max_iter"),
               arg("min_pixels")=10)))
-      .def("__call__", &Creator::shoebox)
-      .def("__call__", &Creator::volume)
+      .def("__call__", &GModelBackgroundCreator::shoebox)
+      .def("__call__", &GModelBackgroundCreator::volume)
       ;
   }
 
