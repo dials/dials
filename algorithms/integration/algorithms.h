@@ -17,11 +17,14 @@
 #include <dxtbx/model/scan.h>
 #include <dxtbx/model/crystal.h>
 #include <dials/algorithms/profile_model/gaussian_rs/mask_calculator.h>
-#include <dials/algorithms/background/glm/robust_poisson_mean.h>
+
+#include <dials/algorithms/background/simple/creator.h>
+#include <dials/algorithms/background/glm/creator.h>
+#include <dials/algorithms/background/gmodel/creator.h>
+
 #include <dials/algorithms/profile_model/modeller/circle_sampler.h>
 #include <dials/algorithms/profile_model/gaussian_rs/transform/transform.h>
 #include <dials/algorithms/integration/fit/fitting.h>
-#include <dials/algorithms/background/glm/creator.h>
 #include <dials/algorithms/integration/interfaces.h>
 #include <dials/algorithms/spot_prediction/pixel_to_miller_index.h>
 #include <dials/model/data/mask_code.h>
@@ -40,17 +43,32 @@ namespace dials { namespace algorithms {
   using dials::algorithms::profile_model::gaussian_rs::transform::TransformReverseNoModel;
   using dials::algorithms::profile_model::gaussian_rs::transform::TransformReverse;
   using dials::algorithms::profile_model::gaussian_rs::transform::TransformForward;
-  using dials::algorithms::Creator;
+  
+  using dials::algorithms::background::SimpleBackgroundCreator;
+  using dials::algorithms::GLMBackgroundCreator;
+  using dials::algorithms::GModelBackgroundCreator;
 
-  class MaskCalculator : public MaskCalculatorIface {
+  /**
+   * A class to calculate the reflection mask
+   */
+  class GaussianRSMaskCalculator : public MaskCalculatorIface {
   public:
 
-    MaskCalculator(const BeamBase &beam,
-                   const Detector &detector,
-                   const Goniometer &gonio,
-                   const Scan &scan,
-                   double delta_b,
-                   double delta_m)
+    /**
+     * Init the algorithm
+     * @param beam The beam model
+     * @param detector The detector model
+     * @param gonio The goniometer model
+     * @param scan The scan model
+     * @param delta_b The beam divergence
+     * @param delta_m The mosaicity
+     */
+    GaussianRSMaskCalculator(const BeamBase &beam,
+                             const Detector &detector,
+                             const Goniometer &gonio,
+                             const Scan &scan,
+                             double delta_b,
+                             double delta_m)
       : func_(beam,
               detector,
               gonio,
@@ -58,6 +76,11 @@ namespace dials { namespace algorithms {
               delta_b,
               delta_m) {}
 
+    /**
+     * Compute the mask for a single reflection
+     * @param reflection The reflection object
+     * @param adjacent Is this an adjacent relfection?
+     */
     virtual void operator()(af::Reflection &reflection, bool adjacent=false) const {
       func_.single(
         reflection.get< Shoebox<> >("shoebox"),
@@ -72,12 +95,59 @@ namespace dials { namespace algorithms {
     MaskCalculator3D func_;
 
   };
+  
 
-  class BackgroundCalculator : public BackgroundCalculatorIface {
+  /**
+   * A class to do simple background determination
+   */
+  class SimpleBackgroundCalculator : public BackgroundCalculatorIface {
   public:
 
-    BackgroundCalculator(
-          Creator::Model model,
+    /**
+     * Init the algorithm
+     * @param modeller The modeller algorithm
+     * @param rejector The outlier rejector
+     * @param min_pixels The min number of pixels
+     */
+    SimpleBackgroundCalculator(
+          boost::shared_ptr<background::Modeller> modeller,
+          boost::shared_ptr<background::OutlierRejector> rejector,
+          std::size_t min_pixels)
+      : creator_(
+          modeller,
+          rejector,
+          min_pixels) {}
+
+
+    /**
+     * Compute the background
+     * @param reflection The reflection object
+     */
+    virtual void operator()(af::Reflection &reflection) const {
+      creator_(reflection.get< Shoebox<> >("shoebox"));
+    }
+
+  protected:
+
+    SimpleBackgroundCreator creator_;
+  };
+
+  
+  /**
+   * A class to do GLM background determination
+   */
+  class GLMBackgroundCalculator : public BackgroundCalculatorIface {
+  public:
+
+    /**
+     * Init the algorithms
+     * @param model The model to use
+     * @param tuning_constant The robust tuning constant
+     * @param max_iter The maximum number of iterations
+     * @param min_pixels The minimum number of pixels
+     */
+    GLMBackgroundCalculator(
+          GLMBackgroundCreator::Model model,
           double tuning_constant,
           std::size_t max_iter,
           std::size_t min_pixels)
@@ -87,13 +157,57 @@ namespace dials { namespace algorithms {
           max_iter,
           min_pixels) {}
 
+    /**
+     * Compute the background
+     * @param reflection The reflection object
+     */
     virtual void operator()(af::Reflection &reflection) const {
       creator_.single(reflection.get< Shoebox<> >("shoebox"));
     }
 
   protected:
 
-    Creator creator_;
+    GLMBackgroundCreator creator_;
+  };
+  
+  /**
+   * A class to do global model background determination
+   */
+  class GModelBackgroundCalculator : public BackgroundCalculatorIface {
+  public:
+
+    /**
+     * Init the algorithms
+     * @param model The model to use
+     * @param robust Do robust estimation
+     * @param tuning_constant The robust tuning constant
+     * @param max_iter The maximum number of iterations
+     * @param min_pixels The minimum number of pixels
+     */
+    GModelBackgroundCalculator(
+          boost::shared_ptr<BackgroundModel> model,
+          bool robust,
+          double tuning_constant,
+          std::size_t max_iter,
+          std::size_t min_pixels)
+      : creator_(
+          model,
+          robust,
+          tuning_constant,
+          max_iter,
+          min_pixels) {}
+
+    /**
+     * Compute the background
+     * @param reflection The reflection object
+     */
+    virtual void operator()(af::Reflection &reflection) const {
+      creator_.single(reflection.get< Shoebox<> >("shoebox"));
+    }
+
+  protected:
+
+    GModelBackgroundCreator creator_;
   };
 
 

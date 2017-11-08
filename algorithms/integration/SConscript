@@ -17,6 +17,13 @@ env.SharedLibrary(
   LIBS=env["LIBS"])
 
 env.SharedLibrary(
+  target='#/lib/dials_algorithms_integration_parallel_integrator_ext', 
+  source=[
+    'boost_python/parallel_integrator_ext.cc'
+  ],
+  LIBS=env["LIBS"])
+
+env.SharedLibrary(
   target='#/lib/dials_algorithms_integration_sum_ext', 
   source=[
     'sum/boost_python/summation.cc',
