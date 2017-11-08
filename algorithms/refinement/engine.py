@@ -378,7 +378,7 @@ class Refinery(object):
     uses. It can be indicative of issues in the fundamental set up of the least
     squares problem, even if these issues are avoided in practice (e.g. by
     use of an algorithm like Levenberg-Marquardt, inclusion of restraints or
-    parameter reduction.
+    parameter reduction).
     """
     try:
       # The Jacobian might be a sparse matrix
