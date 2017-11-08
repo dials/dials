@@ -24,8 +24,10 @@ def plot_data_decay(data_man, outputfile=None):
   ndbins = data_man.g_decay.n1_parameters
   nzbins = data_man.g_decay.n2_parameters
   '''create a grid of x and y points and use these to generate scale factors'''
-  rel_values_1 = np.arange(0, int(max(data_man.reflection_table['normalised_res_values'])) + 1, 0.1)
-  rel_values_2 = np.arange(0, int(max(data_man.reflection_table['normalised_time_values'])) + 1, 0.1)
+  max_res = int(max(data_man.reflection_table['normalised_res_values'])) + 1
+  max_time = int(max(data_man.reflection_table['normalised_time_values'])) + 1
+  rel_values_1 = np.arange(0, max_res+0.1, 0.1)
+  rel_values_2 = np.arange(0, max_time+0.1, 0.1)
   (n1, n2) = (len(rel_values_1), len(rel_values_2))
   rel_values_1 = np.tile(rel_values_1, n2)
   rel_values_2 = np.repeat(rel_values_2, n1)
@@ -34,7 +36,7 @@ def plot_data_decay(data_man, outputfile=None):
   test_scale_factor.set_normalised_values(rel_values_1, rel_values_2)
   scales = test_scale_factor.calculate_smooth_scales()
   G_fin_2d = np.reshape(list(scales), (n2, n1)).T
-  G_fin_2d = G_fin_2d[1:-1,1:-1]
+  #G_fin_2d = G_fin_2d[1:-1,1:-1]
 
   G_fin = list(data_man.g_decay.calculate_smooth_scales())
 
@@ -46,16 +48,28 @@ def plot_data_decay(data_man, outputfile=None):
   ax2.set_xlabel('Inverse scale factor')
   ax2.set_ylabel('Occurences in reflections_for_scaling')
 
-  im = ax1.imshow(G_fin_2d, cmap='viridis', origin='lower')
+  resmax = (1.0 / (min(data_man.reflection_table['d'])**2))
+  resmin = (1.0 / (max(data_man.reflection_table['d'])**2))
+
+  print "dmin is %s" % (min(data_man.reflection_table['d']))
+  print "dmax is %s" % (max(data_man.reflection_table['d']))
+  #determine boundaries in res
+  resbin_boundaries = np.arange(resmin, resmax, 2*(resmax - resmin)/(ndbins-1))
+  print resbin_boundaries
+  dbin_boundaries = 1.0/(resbin_boundaries**0.5)
+  print dbin_boundaries
+  dbin_boundaries = ['%.3f' % x for x in dbin_boundaries]
+
+  im = ax1.imshow(G_fin_2d, cmap='viridis', origin='upper', aspect='auto')
   divider = make_axes_locatable(ax1)
   cax1 = divider.append_axes("right", size="5%", pad=0.05)
   cbar = plt.colorbar(im, cax=cax1)
   ax1.set_ylabel('d-value')
-  ax1.set_xlabel('time (z)')
-  #ax1.set_yticks(np.arange(-0.5, ndbins, 2))
-  #ax1.set_yticklabels(y_ticks)
-  #ax1.set_xticks(np.arange(-0.5, nzbins, 2))
-  #ax1.set_xticklabels(x_ticks)
+  ax1.set_xlabel('Normalised time value')
+  ax1.set_yticks(np.arange(0, (max_res * 10)+0.01, 20))
+  ax1.set_yticklabels(dbin_boundaries)
+  ax1.set_xticks(np.arange(0, (max_time * 10)+0.01, 20))
+  ax1.set_xticklabels(np.arange(0, max_time+0.01, 2))
   ax1.set_title('Inverse scale factors for decay correction', fontsize=12)
   plt.tight_layout()
   if outputfile:
@@ -87,8 +101,9 @@ def plot_data_absorption(data_man, outputfile=None):
   divider = make_axes_locatable(ax1)
   cax1 = divider.append_axes("right", size="5%", pad=0.05)
   cbar = plt.colorbar(im, cax=cax1)
-  ax1.set_ylabel('detector position')
-  ax1.set_xlabel('time (z)')
+  ax1.set_ylabel('Detector position')
+  ax1.set_xlabel('Normalised time value')
+  
   #ax1.yticks(np.arange(-0.5, nabsbins), y_ticks)
   #ax1.set_xticks(np.arange(-0.5, nzbins, 2))
   #ax1.set_xticklabels(x_ticks)
@@ -104,10 +119,11 @@ def plot_data_modulation(data_man, outputfile=None):
 
   nxbins = data_man.g_modulation.n1_parameters
   nybins = data_man.g_modulation.n2_parameters
-
+  max_x = int(max(data_man.reflection_table['normalised_x_values'])) + 1
+  max_y = int(max(data_man.reflection_table['normalised_y_values'])) + 1
   '''create a grid of x and y points and use these to generate scale factors'''
-  rel_values_1 = np.arange(0, int(max(data_man.reflection_table['normalised_x_values'])) + 1, 0.2)
-  rel_values_2 = np.arange(0, int(max(data_man.reflection_table['normalised_y_values'])) + 1, 0.2)
+  rel_values_1 = np.arange(0, max_x+0.2, 0.2)
+  rel_values_2 = np.arange(0, max_y+0.2, 0.2)
   (n1, n2) = (len(rel_values_1), len(rel_values_2))
   rel_values_1 = np.tile(rel_values_1, n2)
   rel_values_2 = np.repeat(rel_values_2, n1)
@@ -116,7 +132,7 @@ def plot_data_modulation(data_man, outputfile=None):
   test_scale_factor.set_normalised_values(rel_values_1, rel_values_2)
   scales = test_scale_factor.calculate_smooth_scales()
   G_fin_2d = np.reshape(list(scales), (n2, n1))
-  G_fin_2d = G_fin_2d[1:-1,1:-1]
+  #G_fin_2d = G_fin_2d[1:-1,1:-1]
   G_fin = list(data_man.g_modulation.calculate_smooth_scales())
 
   plt.figure(figsize=(11,6))
@@ -131,8 +147,12 @@ def plot_data_modulation(data_man, outputfile=None):
   divider = make_axes_locatable(ax1)
   cax1 = divider.append_axes("right", size="5%", pad=0.05)
   cbar = plt.colorbar(im, cax=cax1)
-  ax1.set_ylabel('y')
-  ax1.set_xlabel('x')
+  ax1.set_yticks(np.arange(0, (max_x * 5)+0.01, 10))
+  ax1.set_yticklabels(np.arange(0, max_x+0.01, 2))
+  ax1.set_xticks(np.arange(0, (max_y * 5)+0.01, 10))
+  ax1.set_xticklabels(np.arange(0, max_y+0.01, 2))
+  ax1.set_ylabel('Normalised y value')
+  ax1.set_xlabel('Normalised x value')
   ax1.set_title('Inverse scale factors for modulation correction', fontsize=12)
   plt.tight_layout()
   if outputfile:
@@ -153,12 +173,14 @@ def plot_correction_at_multiple_detector_areas(data_man, positions, outputfile=N
     divider = make_axes_locatable(ax)
     cax1 = divider.append_axes("right", size="5%", pad=0.05)
     cbar = plt.colorbar(im, cax=cax1)
-    ax.set_ylabel('y')
-    ax.set_xlabel('x')
-    #ax.set_yticks(np.arange(data_man.g_absorption.ny_parameters*10, 10),
-    #  np.arange(data_man.g_absorption.ny_parameters))
-    #ax.set_xticks(np.arange(data_man.g_absorption.nx_parameters*10, 10),
-    #  np.arange(data_man.g_absorption.nx_parameters))
+    nx = data_man.g_absorption.nx_parameters
+    ny = data_man.g_absorption.ny_parameters
+    ax.set_yticks(np.arange(-0.5, (ny * 10) - 0.5, 10))
+    ax.set_ylabel('Normalised y position')
+    ax.set_yticklabels(np.arange(0, ny))
+    ax.set_xticks(np.arange(-0.5, (nx * 10) - 0.5, 10))
+    ax.set_xlabel('Normalised x position')
+    ax.set_xticklabels(np.arange(0, nx))
     ax.set_title('Absorption correction factor surface at normalised time %s' % (float(position)+0.5), fontsize=7)
     print "successfully plotted positon %s" % position
   plt.tight_layout()
@@ -206,7 +228,7 @@ def plot_smooth_scales(data_man, outputfile=None):
   test_decay_factor.set_normalised_values(rel_values)
   B_rel_values = test_decay_factor.calculate_smooth_scales()
   plt.subplot(2,1,2)
-  plt.ylabel('Relative B factor')
+  plt.ylabel('Relative B factor (' + r'$\AA^{2}$'+')')
   plt.xlabel('Normalised time value')
   plt.plot(rel_values, B_rel_values)
   plt.tight_layout()
@@ -255,6 +277,12 @@ def plot_absorption_surface(data_man, outputfile=None):
   gs = gridspec.GridSpec(1, 1)
   ax = plt.subplot(gs[0, 0])
   im = ax.imshow(rel_Int, cmap='viridis', origin='lower')
+  ax.set_yticks([0,  (STEPS-1)/4.0, (STEPS-1)/2.0, 3.0*(STEPS-1)/4.0, STEPS-1])
+  ax.set_yticklabels([0, 45, 90, 135, 180])
+  ax.set_ylabel('Phi (degrees)')
+  ax.set_xticks([0.0, (2.0*STEPS-1)/4.0, (2.0*STEPS-1)/2.0, 3.0*(2.0*STEPS-1)/4.0, (2.0*STEPS-1)])
+  ax.set_xticklabels([0, 90, 180, 270, 360])
+  ax.set_xlabel('Theta (degrees)')
   divider = make_axes_locatable(ax)
   cax1 = divider.append_axes("right", size="5%", pad=0.05)
   cbar = plt.colorbar(im, cax=cax1,ticks=[0, 0.25, 0.5, 0.75, 1])
@@ -263,51 +291,10 @@ def plot_absorption_surface(data_man, outputfile=None):
                            '%.6f' % ((Intensity.min()*0.5) + (Intensity.max()*0.5)),
                            '%.6f' % ((Intensity.min()*0.25) + (Intensity.max()*0.75)),
                            '%.6f' % Intensity.max()])
-  
   if outputfile:
     plt.savefig(outputfile)
   else:
     plt.savefig('absorption_surface')
-
-  '''X = Intensity * np.sin(PHI) * np.cos(THETA)
-  Y = Intensity * np.sin(PHI) * np.sin(THETA)
-  Z = Intensity * np.cos(PHI)
-  from matplotlib import cm
- 
-  rel_Int = (Intensity - Intensity.min())/(Intensity.max() - Intensity.min())
-  #print "max, min absorption factors are (%s,%s)" % (Intensity.max(),Intensity.min())
-  #my_col = cm.jet(Intensity)
-
-  import mpl_toolkits.mplot3d.axes3d as axes3d
-  fig = plt.figure(figsize=(10, 8))
-  gs = gridspec.GridSpec(2, 2)
-  plt.suptitle('Absorption correction inverse scale factors', fontsize=14)
-  for i, azimuth in enumerate([45, 135, 225, 315]):
-    ax = plt.subplot(gs[i//2, i%2], projection='3d')
-    #ax = fig.add_subplot(1, 1, 1, projection='3d')
-    plot = ax.plot_surface(
-        X, Y, Z, rstride=1, cstride=1, facecolors=cm.viridis(rel_Int),
-        linewidth=0, antialiased=False, alpha=0.5)
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    ax.view_init(elev=20., azim=azimuth)
-  m = cm.ScalarMappable(cmap=cm.viridis)
-  m.set_array(rel_Int)
-  fig.subplots_adjust(right=0.8)
-  cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
-  cbar = plt.colorbar(m, cax=cbar_ax, ticks=[0, 0.25, 0.5, 0.75, 1])
-  cbar.ax.set_yticklabels(['%.3f' % Intensity.min(), 
-                           '%.3f' % ((Intensity.min()*0.75) + (Intensity.max()*0.25)), 
-                           '%.3f' % ((Intensity.min()*0.5) + (Intensity.max()*0.5)),
-                           '%.3f' % ((Intensity.min()*0.25) + (Intensity.max()*0.75)),
-                           '%.3f' % Intensity.max()])
-  if outputfile:
-    plt.savefig(outputfile)
-  else:
-    plt.savefig('absorption_surface')'''
-
-
 
 if __name__ == "__main__":
   datafile="/Users/whi10850/Documents/dials_scratch/jbe/scaling_code/test_data/x4_wide_integrated_scaled.pickle"
