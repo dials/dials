@@ -197,134 +197,86 @@ def test3():
   print "OK"
   return
 
+#Test the functionality of the refiner.py extension modules
 def test4():
-  """Test to verify compatibility with int and size_t flex arrays"""
+  from dials_refinement_helpers_ext import pgnmn_iter as pgnmn
+  from dials_refinement_helpers_ext import ucnmn_iter as ucnmn
+  from dials_refinement_helpers_ext import mnmn_iter as mnmn
+  #Borrowed from tst_reflection_table function tst_find_overlapping
+  from random import randint, uniform
+  N = 10000
+  r = flex.reflection_table.empty_standard(N)
+  r['panel'] = flex.size_t(N)
+  r['id'] = flex.int(N)
+  exp_ids = flex.size_t([0,1,2])
+  for i in xrange(N):
+    r['panel'][i] = randint(0,2)
+    r['id'][i] = randint(0,2)
+    r['miller_index'][i] = (int(i//1000) - 5, i%37-16, i%31-15) #A nice bunch of miller indices
 
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression",
-    test=os.path.isdir)
+  #Sorting reflection table during the filter step
+  from dials.algorithms.refinement import RefinerFactory as rf
+  r_sorted = rf._filter_reflections(r)
+  r_sorted2 = rf._filter_reflections(r_sorted)
 
-  # use the i04_weak_data for this test
-  data_dir = os.path.join(dials_regression, "refinement_test_data", "i04_weak_data")
-  experiments_path = os.path.join(data_dir, "experiments.json")
-  pickle_path_orig = os.path.join(data_dir, "indexed_strong.pickle")
+  assert(r['id'] != r_sorted['id'])
+  assert(r['miller_index'] != r_sorted['miller_index'])
+  assert(r['panel'] != r_sorted['panel'])
 
-  for pth in (experiments_path, pickle_path_orig):
-    assert os.path.exists(pth)
+  #Check that sorting a sorted reflection table does not further change ordering
+  assert(r_sorted['id'] == r_sorted2['id'])
+  assert(r_sorted['miller_index'] == r_sorted2['miller_index'])
+  assert(r_sorted['panel'] == r_sorted2['panel'])
 
-  # set some old defaults
-  cmd1 = ("dials.refine close_to_spindle_cutoff=0.05 reflections_per_degree=100 " +
-        "outlier.separate_blocks=False output.experiments=refined_experiments_sizet.json output.reflections=refined_sizet.pickle " +
-        "output.log=dials.refine_sizet.log output.debug_log=dials.refine_sizet.debug.log " + experiments_path + " " + pickle_path_orig )
-  print cmd1
+  ############################################################
+  #Cut-down original algorithm for model_nparam_minus_nref
+  ############################################################
+  isel = flex.size_t()
+  for exp_id in exp_ids:
+    isel.extend((r_sorted['id'] == exp_id).iselection())
+  res0 = len(isel)
 
-  # work in a temporary directory
-  cwd = os.path.abspath(os.curdir)
-  tmp_dir = open_tmp_directory(suffix="test_dials_refine")
-  os.chdir(tmp_dir)
+  #Updated algorithm for model_nparam_minus_nref, with templated id column for int and size_t
+  res1_int = mnmn(r_sorted["id"],exp_ids).result
+  res1_sizet = mnmn(flex.size_t(list(r_sorted["id"])),exp_ids).result
+  assert ( res0 == res1_int )
+  assert ( res0 == res1_sizet )
 
-  #Load pickle file, modify type, then save copy locally for re-run of test
-  import pickle
-  size_t_to_int = pickle.load(open(data_dir + "/indexed_strong.pickle","rb"))
-  id_size_t = size_t_to_int["id"]
-  size_t_to_int["id"] = flex.int(list(id_size_t))
-  pickle.dump( size_t_to_int, open( "indexed_strong_int.pickle", "wb" ) )
-  pickle_path_mod = os.path.join("indexed_strong_int.pickle")
+  ############################################################
+  #Cut-down original algorithm for unit_cell_nparam_minus_nref
+  ############################################################
+  ref = r_sorted.select(isel)
+  h = ref['miller_index'].as_vec3_double()
+  dB_dp = flex.mat3_double( [(1,2,3,4,5,6,7,8,9), (0,1,0,1,0,1,0,1,0) ] )
+  nref_each_param = []
+  for der in dB_dp:
+    tst = (der * h).norms()
+    nref_each_param.append((tst > 0.0).count(True))
+  res0 = min(nref_each_param)
 
-  cmd2 = ("dials.refine close_to_spindle_cutoff=0.05 reflections_per_degree=100 " +
-        "outlier.separate_blocks=False output.experiments=refined_experiments_int.json output.reflections=refined_int.pickle " +
-        "output.log=dials.refine_int.log output.debug_log=dials.refine_int.debug.log " + experiments_path + " " + pickle_path_mod)
-  print cmd2
+  #Updated algorithm for unit_cell_nparam_minus_nref
+  res1_int = ucnmn(r_sorted["id"], r_sorted["miller_index"], exp_ids, dB_dp).result
+  res1_sizet = ucnmn(flex.size_t(list(r_sorted["id"])), r_sorted["miller_index"], exp_ids, dB_dp).result
+  assert ( res0 == res1_int )
+  assert ( res0 == res1_sizet )
 
-  #from IPython import embed; embed()
-  try:
-
-    result1 = easy_run.fully_buffered(command=cmd1).raise_if_errors()
-    result2 = easy_run.fully_buffered(command=cmd2).raise_if_errors()
-    # load results
-    reg_exp = ExperimentListFactory.from_json_file(
-                os.path.join(data_dir, "regression_experiments.json"),
-                check_format=False)[0]
-    ref_exp_1 = ExperimentListFactory.from_json_file("refined_experiments_sizet.json",
-                check_format=False)[0]
-    ref_exp_2 = ExperimentListFactory.from_json_file("refined_experiments_int.json",
-                check_format=False)[0]
-  finally:
-    os.chdir(cwd)
-
-  # test refined models against expected
-  assert reg_exp.crystal == ref_exp_1.crystal
-  assert reg_exp.detector == ref_exp_1.detector
-  assert reg_exp.beam == ref_exp_1.beam
-  assert reg_exp.crystal == ref_exp_2.crystal
-  assert reg_exp.detector == ref_exp_2.detector
-  assert reg_exp.beam == ref_exp_2.beam
-
-
-  # test cell parameter esds
-  assert approx_equal(ref_exp_1.crystal.get_cell_parameter_sd(),
-    (0.0009903, 0.0009903, 0.0021227, 0.0, 0.0, 0.0))
-  assert approx_equal(ref_exp_2.crystal.get_cell_parameter_sd(),
-    (0.0009903, 0.0009903, 0.0021227, 0.0, 0.0, 0.0))
-  assert approx_equal(ref_exp_1.crystal.get_cell_volume_sd(), 23.8063382)
-  assert approx_equal(ref_exp_2.crystal.get_cell_volume_sd(), 23.8063382)
-
-  print "OK"
-  return
-
-def test5():
-  """Test to verify out of order reflection table (unsorted by id,panel) gets sorted before refining"""
-
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression",
-    test=os.path.isdir)
-
-  # use the multi_stills for this test to have multiple exp id values
-  data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
-  experiments_path = os.path.join(data_dir, "combined_experiments.json")
-  pickle_path_orig = os.path.join(data_dir, "combined_reflections.pickle")
-
-  for pth in (experiments_path, pickle_path_orig):
-    assert os.path.exists(pth)
-
-  # work in a temporary directory
-  cwd = os.path.abspath(os.curdir)
-  tmp_dir = open_tmp_directory(suffix="test_dials_refine")
-  os.chdir(tmp_dir)
-
-  #Load pickle file, modify type, then save copy locally for re-run of test
-  import pickle
-  ref_tbl_shuffled = pickle.load(open(pickle_path_orig,"rb"))
-  from random import shuffle
-  shuffle(ref_tbl_shuffled)
-  
-  pickle.dump( ref_tbl_shuffled, open( "combined_reflections_shuffled.pickle", "wb" ) )
-  pickle_path_mod = os.path.join("combined_reflections_shuffled.pickle")
-
-  cmd1 = ("dials.refine close_to_spindle_cutoff=0.05 reflections_per_degree=100 " +
-        "outlier.separate_blocks=False output.experiments=refined_experiments_orig.json output.reflections=refined_orig.pickle " +
-        "output.log=dials.refine_orig.log output.debug_log=dials.refine_orig.debug.log " + experiments_path + " " + pickle_path_orig )
-  print cmd1
-  cmd2 = ("dials.refine close_to_spindle_cutoff=0.05 reflections_per_degree=100 " +
-        "outlier.separate_blocks=False output.experiments=refined_experiments_shuffsort.json output.reflections=refined_shuffsort.pickle " +
-        "output.log=dials.refine_shuffsort.log output.debug_log=dials.refine_shuffsort.debug.log " + experiments_path + " " + pickle_path_mod )
-  print cmd2
-
-  try:
-
-    result1 = easy_run.fully_buffered(command=cmd1).raise_if_errors()
-    result2 = easy_run.fully_buffered(command=cmd2).raise_if_errors()
-    # load results
-    ref_exp_1 = ExperimentListFactory.from_json_file("refined_experiments_orig.json", check_format=False)[0]
-    ref_exp_2 = ExperimentListFactory.from_json_file("refined_experiments_shuffsort.json", check_format=False)[0]
-
-  finally:
-    os.chdir(cwd)
-
-  #Compare the resulting U,B, and A values between the unmodified and shuffled reflection table
-  assert approx_equal(ref_exp_1.crystal.get_B(), ref_exp_2.crystal.get_B())
-  assert approx_equal(ref_exp_1.crystal.get_U(), ref_exp_2.crystal.get_U())
-  assert approx_equal(ref_exp_1.crystal.get_A(), ref_exp_2.crystal.get_A())
+  ############################################################
+  #Cut-down original algorithm for panel_gp_nparam_minus_nref
+  ############################################################
+  isel = flex.size_t()
+  pnl_ids = [0,1]
+  for exp_id in exp_ids:
+    sub_expID = (r_sorted['id'] == exp_id).iselection()
+    sub_panels_expID = r_sorted['panel'].select(sub_expID)
+    for pnl in pnl_ids:
+      isel.extend(sub_expID.select(sub_panels_expID == pnl))
+  nref = len(isel)
+  res0 = nref
+  #Updated algorithm for panel_gp_nparam_minus_nref
+  res1_int = pgnmn(r_sorted["id"], r_sorted["panel"], pnl_ids, exp_ids, 0).result
+  res1_sizet = pgnmn(flex.size_t(list(r_sorted["id"])), r_sorted["panel"], pnl_ids, exp_ids, 0).result
+  assert ( res0 == res1_int )
+  assert ( res0 == res1_sizet )
 
   print "OK"
   return
@@ -338,7 +290,6 @@ def run():
   test2()
   test3()
   test4()
-  test5()
 
 if __name__ == '__main__':
   from dials.test import cd_auto

@@ -411,10 +411,10 @@ class RefinerFactory(object):
       if k in reflections.keys():
         rt[k] = reflections[k]
 
-    #Check for monotonically increasing value range. If not, ref_table isn't sorted, and proceed to sort iby id and panel
-    l_id = list(rt["id"])
+    #Check for monotonically increasing value range. If not, ref_table isn't sorted, and proceed to sort by id and panel
+    l_id = rt["id"]
     id0 = l_id[0]
-    for ii in range(1,len(l_id)):
+    for ii in xrange(1,len(l_id)):
       if id0 <= l_id[ii]:
         id0 = l_id[ii]
       else:
@@ -422,7 +422,6 @@ class RefinerFactory(object):
         rt.sort("id") #Ensuring the ref_table is sorted by id
         rt.subsort("id","panel") #Ensuring that within each sorted id block, sorting is next performed by panel
         break
-
     return rt
 
   @classmethod
@@ -1040,6 +1039,10 @@ class RefinerFactory(object):
       min_nref = options.auto_reduction.min_nref_per_parameter
       # if no free parameters, do as model_nparam_minus_nref
       if len(F_dbdp) == 0:
+        exp_ids = p.get_experiment_ids()
+        isel = flex.size_t()
+        for exp_id in exp_ids:
+          isel.extend((reflections['id'] == exp_id).iselection())
         return len(isel)
 
       #Replaced Python code
@@ -1051,10 +1054,10 @@ class RefinerFactory(object):
       ref = reflections.select(isel)
       h = ref['miller_index'].as_vec3_double()
       dB_dp = p.get_ds_dp()
-      if len(dB_dp) == 0:
-        return len(isel)
-
+      # if no free parameters, do as model_nparam_minus_nref
+      if len(dB_dp) == 0: return len(isel)
       nref_each_param = []
+      min_nref = options.auto_reduction.min_nref_per_parameter
       for der in dB_dp:
         der_mat = flex.mat3_double(len(h), der.elems)
         tst = (der_mat * h).norms()
@@ -1088,7 +1091,7 @@ class RefinerFactory(object):
       isel = flex.size_t()
       #Use Boost.Python extension module to replace below code
       surplus = pgnmn(reflections["id"], reflections["panel"], pnl_ids, exp_ids, cutoff).result
-      
+
       #Replaced Python code
       '''
       for exp_id in exp_ids:
@@ -2016,7 +2019,6 @@ class Refiner(object):
         logger.debug(ordinal_number(i) + ' ' + str(scan))
       for i, crystal in enumerate(self._experiments.crystals()):
         logger.debug(ordinal_number(i) + ' ' + str(crystal))
-
 
     self._refinery.run()
 
