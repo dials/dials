@@ -1080,4 +1080,3 @@ class reflection_table_selector(object):
     else:
       mask1 = mask2
     return mask1
-

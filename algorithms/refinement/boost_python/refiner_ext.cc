@@ -3,6 +3,7 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <algorithm>
+#include <numeric>
 #include <scitbx/vec3.h>
 #include <scitbx/mat3.h>
 #include <iterator>
@@ -23,22 +24,19 @@ namespace dials { namespace refinement { namespace boost_python {
                 const int cutoff){
       //Perform python list conversion once; improves read access
       scitbx::af::shared<std::size_t> pnl_ids_flex;
-      for (int ii=0; ii < len(pnl_ids); ++ii)
+      for (int ii=0; ii < len(pnl_ids); ++ii){
         pnl_ids_flex.push_back(boost::python::extract<std::size_t>(pnl_ids[ii]));
+      }
 
       std::size_t count = 0;
 
       //Work with raw pointers instead of overloadable objects
       const std::size_t* ptr_exp_ids = exp_ids.begin();
 
-      //const scitbx::af::shared<int> &ref_ids = ref_table.get<int>("id");
-      //const int* ptr_ref_ids = ref_ids.begin();
-
-      //const scitbx::af::shared<size_t> &panel_id = ref_table.get<size_t>("panel");
       const std::size_t* ptr_panel_id = panel_id.begin();
 
-      //Predefine loop variables to allow for OpenMP use;
-      std::size_t exp_it, pnl; //ref_id;
+      //Predefine loop variables
+      std::size_t exp_it, pnl; 
 
       std::pair<const IntType* ,const IntType*> refIDRange;
       std::pair<const std::size_t *,const std::size_t*> panelIDRange;
@@ -80,43 +78,44 @@ namespace dials { namespace refinement { namespace boost_python {
     {
       //Expose pointers for experiment flex arrays
       const std::size_t* ptr_exp_ids = exp_ids.begin();
-      //const scitbx::af::shared<int> &ref_ids = ref_table.get<int>("id");
-
-      //const scitbx::af::shared<cctbx::miller::index<> > &ref_miller = ref_table.get<cctbx::miller::index<> >("miller_index");
 
       std::size_t exp_it; //ref_id;
-      std::pair<const IntType* ,const IntType* > refIDRange;
+      std::vector<std::pair<const IntType* ,const IntType* > > refIDRange(exp_ids.size());
 
-      unsigned int data_range = 0;
-      unsigned int data_offset = 0;
+      std::vector<unsigned int> data_range(exp_ids.size());
+      std::vector<unsigned int> data_offset(exp_ids.size());
 
       //Perform subselection of data ranges
       for( exp_it = 0; exp_it < exp_ids.size(); ++exp_it ){
-        refIDRange = std::equal_range( ref_ids.begin(),
+        refIDRange[exp_it] = std::equal_range( ref_ids.begin(),
                                        ref_ids.end(),
                                        ptr_exp_ids[exp_it] );
-        data_range = refIDRange.second - refIDRange.first;
-        data_offset = refIDRange.first - ref_ids.begin();
+        data_range[exp_it] = refIDRange[exp_it].second - refIDRange[exp_it].first;
+        data_offset[exp_it] = refIDRange[exp_it].first - ref_ids.begin();
       }
 
       //Pre-initialise loop variables and array for storing norms
       int ii, jj;
       scitbx::af::shared< double > mul_norm;
 
-      //Calculate L-2 norm of Matrix*Vec operation
-      for( ii=0; ii< data_range; ++ii){
-        vec3<double> v3(ref_miller[ii+data_offset]);
-        for( jj=0; jj < F_dbdp.size(); ++jj){
-          mul_norm.push_back( (F_dbdp[jj]*v3).length() );
+      //Calculate L-2 norm of Matrix*Vec operation for each matrix in F_dbdp
+      for( jj = 0; jj < F_dbdp.size(); ++jj){
+        for (unsigned int exp_id_range = 0; exp_id_range < data_range.size(); ++exp_id_range){
+          for( ii = data_offset[exp_id_range]; ii < data_offset[exp_id_range]+data_range[exp_id_range]; ++ii ){
+            vec3<double> v3(ref_miller[ii]);
+            mul_norm.push_back( (F_dbdp[jj]*v3).length() );
+          }
         }
       }
 
-      //Count the number of elements greater than 0 from the L-2 norms.
+      //Sum the total offsets to determine each range for splitting of mul_norm to nref param values with F_dbdp.size() number of partitions
+      int sum_offsets = std::accumulate(data_range.begin(), data_range.end(), 0);
       scitbx::af::shared<int> nref_each_param;
       for (ii=0; ii < F_dbdp.size(); ++ii){
+        //Count the number of elements greater than 0 from the L-2 norms.
         nref_each_param.push_back(
-          std::count_if (mul_norm.begin() + ii*data_range,
-                         mul_norm.begin() + (ii+1)*data_range, gtZero)
+          std::count_if (mul_norm.begin() + ii*sum_offsets ,
+                         mul_norm.begin() + (ii+1)*sum_offsets , gtZero)
           );
       }
 
@@ -125,7 +124,7 @@ namespace dials { namespace refinement { namespace boost_python {
       result = *(nref_each_param.begin()+std::distance( nref_each_param.begin(), it));
     }
     int result;
-    static bool gtZero (double x) { return ( (x > 0.0) ==1 ); } //Used for comparison operation
+    static bool gtZero (double x) { return ( (x > 0.0) == 1 ); } //Used for comparison operation
   };
 
   struct mnmn_iter{
