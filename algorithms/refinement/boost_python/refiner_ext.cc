@@ -36,7 +36,7 @@ namespace dials { namespace refinement { namespace boost_python {
       const std::size_t* ptr_panel_id = panel_id.begin();
 
       //Predefine loop variables
-      std::size_t exp_it, pnl; 
+      std::size_t exp_it, pnl;
 
       std::pair<const IntType* ,const IntType*> refIDRange;
       std::pair<const std::size_t *,const std::size_t*> panelIDRange;

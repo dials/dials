@@ -1091,7 +1091,7 @@ class RefinerFactory(object):
       isel = flex.size_t()
       #Use Boost.Python extension module to replace below code
       surplus = pgnmn(reflections["id"], reflections["panel"], pnl_ids, exp_ids, cutoff).result
-      
+
       #Replaced Python code
       '''
       for exp_id in exp_ids:
@@ -2120,4 +2120,3 @@ class Refiner(object):
 
     # delegate to the target object, which has access to the predictor
     return self._target.predict_for_reflection_table(reflections, skip_derivatives)
-

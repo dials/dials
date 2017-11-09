@@ -213,7 +213,7 @@ def test4():
     r['panel'][i] = randint(0,2)
     r['id'][i] = randint(0,2)
     r['miller_index'][i] = (int(i//1000) - 5, i%37-16, i%31-15) #A nice bunch of miller indices
-  
+
   #Sorting reflection table during the filter step
   from dials.algorithms.refinement import RefinerFactory as rf
   r_sorted = rf._filter_reflections(r)
@@ -227,7 +227,7 @@ def test4():
   assert(r_sorted['id'] == r_sorted2['id'])
   assert(r_sorted['miller_index'] == r_sorted2['miller_index'])
   assert(r_sorted['panel'] == r_sorted2['panel'])
- 
+
   ############################################################
   #Cut-down original algorithm for model_nparam_minus_nref
   ############################################################
@@ -247,7 +247,7 @@ def test4():
   ############################################################
   ref = r_sorted.select(isel)
   h = ref['miller_index'].as_vec3_double()
-  dB_dp = flex.mat3_double( [(1,2,3,4,5,6,7,8,9), (0,1,0,1,0,1,0,1,0) ] ) 
+  dB_dp = flex.mat3_double( [(1,2,3,4,5,6,7,8,9), (0,1,0,1,0,1,0,1,0) ] )
   nref_each_param = []
   for der in dB_dp:
     tst = (der * h).norms()
@@ -255,8 +255,8 @@ def test4():
   res0 = min(nref_each_param)
 
   #Updated algorithm for unit_cell_nparam_minus_nref
-  res1_int = ucnmn(r_sorted["id"], r_sorted["miller_index"], exp_ids, dB_dp).result 
-  res1_sizet = ucnmn(flex.size_t(list(r_sorted["id"])), r_sorted["miller_index"], exp_ids, dB_dp).result 
+  res1_int = ucnmn(r_sorted["id"], r_sorted["miller_index"], exp_ids, dB_dp).result
+  res1_sizet = ucnmn(flex.size_t(list(r_sorted["id"])), r_sorted["miller_index"], exp_ids, dB_dp).result
   assert ( res0 == res1_int )
   assert ( res0 == res1_sizet )
 
