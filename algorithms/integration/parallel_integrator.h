@@ -694,11 +694,11 @@ namespace dials { namespace algorithms {
 
         // Get the reflections recorded at this point
         af::const_ref<std::size_t> indices = lookup.indices(i);
-        
-        std::cout << "Integrating " 
-                  << indices.size() 
-                  << " reflections on image " 
-                  << zstart + i 
+
+        std::cout << "Integrating "
+                  << indices.size()
+                  << " reflections on image "
+                  << zstart + i
                   << std::endl;
 
         // Iterate through the reflection indices

@@ -706,6 +706,23 @@ namespace dials { namespace af { namespace boost_python {
     self[name] = Reflection::data_type(item);
   }
 
+  
+  /**
+   * Convert reflection table to list of reflections
+   * @param self The reflection table
+   * @returns The list of reflections
+   */
+  boost::python::list reflection_table_to_list_of_reflections(
+      reflection_table self) {
+    af::shared<Reflection> array = reflection_table_to_array(self);
+    boost::python::list result;
+    for (std::size_t i = 0; i < array.size(); ++i) {
+      result.append(array[i]);
+    }
+    return result;
+  }
+
+
   /**
    * Struct to facilitate wrapping reflection table type
    */
@@ -836,6 +853,9 @@ namespace dials { namespace af { namespace boost_python {
       .def("set_shoebox",
           &Reflection_set_shoebox)
       ;
+
+    // Helper function
+    def("reflection_table_to_list_of_reflections", &reflection_table_to_list_of_reflections);
   }
 
 }}} // namespace dials::af::boost_python
