@@ -27,14 +27,12 @@ class B_ScaleFactor(ScaleFactor):
 
   def set_d_values(self, d_values):
     self.d_values = d_values
-  
-      
 
 class SmoothScaleFactor(ScaleFactor):
   def __init__(self, initial_value, n_parameters, scaling_options=None):
     ScaleFactor.__init__(self, initial_value, n_parameters, scaling_options)
     self.normalised_values = None
-    self.Vr = 0.7
+    self.Vr = 1.0# 0.7
     self.problim = 4.0
     if scaling_options:
       self.Vr = scaling_options['Vr']
@@ -92,6 +90,7 @@ class SmoothScaleFactor_1D_Bfactor(SmoothScaleFactor_1D):
   def __init__(self, initial_value, n_parameters, d_values, scaling_options=None):
     SmoothScaleFactor_1D.__init__(self, initial_value, n_parameters, scaling_options)
     self.d_values = d_values
+    self.Vr = 0.5
 
   def set_d_values(self, d_values):
     if len(d_values) != len(self.normalised_values):
@@ -117,6 +116,21 @@ class SmoothScaleFactor_1D_Bfactor(SmoothScaleFactor_1D):
       self.scales[i] = scale/weightsum
     self.scales = flex.double(np.exp(self.scales/(2.0 * (self.d_values**2))))
     return self.scales
+
+  def calculate_smooth_derivatives(self):
+    n = len(self.normalised_values)
+    self.derivatives = flex.double([0.0] * len(self.scale_factors) * n)
+    (Vr, problim) = (self.Vr, self.problim)
+    smoothing_window = 2.5#must be less than 3 to avoid indexing errors
+    for i, relative_pos in enumerate(self.normalised_values):
+      max_scale_to_include = int(relative_pos + smoothing_window)
+      min_scale_to_include = int((relative_pos - smoothing_window)//1) + 1
+      for j in range(min_scale_to_include, max_scale_to_include + 1):
+        self.derivatives[((j+2)*n)+i] += (#self.scale_factors[j+1] *
+          np.exp(-((relative_pos - float(j))**2) / Vr))/self.weightsum[i]
+    multiplicative_factor = (flex.double(np.exp(self.scales/(2.0 * (self.d_values**2))))
+                             / (2.0 * (self.d_values**2)))                      
+    return self.derivatives * flex.double(np.tile(multiplicative_factor, len(self.scale_factors)))
 
 class SmoothScaleFactor_2D(SmoothScaleFactor):
   def __init__(self, initial_value, n1_parameters, n2_parameters, scaling_options=None):
@@ -264,13 +278,13 @@ class SphericalAbsorption_ScaleFactor(ScaleFactor):
   def __init__(self, initial_value, n_parameters, values, scaling_options=None):
     ScaleFactor.__init__(self, initial_value, n_parameters, scaling_options)
     self.harmonic_values = values
-    self.scales = self.calculate_scales()
-    self.derivatives = self.calculate_derivatives()
+    self.scales = self.calculate_smooth_scales()
+    self.derivatives = self.calculate_smooth_derivatives()
 
   def set_values(self, values):
     self.harmonic_values = values
-    self.scales = self.calculate_scales()
-    self.derivatives = self.calculate_derivatives()
+    self.scales = self.calculate_smooth_scales()
+    self.derivatives = self.calculate_smooth_derivatives()
 
   def get_values(self):
     return self.harmonic_values
@@ -278,7 +292,9 @@ class SphericalAbsorption_ScaleFactor(ScaleFactor):
   def get_scales_of_reflections(self):
     return self.scales
 
-  def calculate_scales(self):
+  def calculate_smooth_scales(self):
+    '''name the methods the same as the rest of the aimless scale factors
+    to allow generic calling - should all the names just be the same, no smooth?'''
     abs_scale = flex.double([1.0]*len(self.harmonic_values))
     count = 0
     for key in self.harmonic_values.keys():
@@ -286,8 +302,27 @@ class SphericalAbsorption_ScaleFactor(ScaleFactor):
       count += 1
     return abs_scale
 
-  def calculate_derivatives(self):
+  def calculate_smooth_derivatives(self):
     derivatives = flex.double([])
     for key in self.harmonic_values.keys():
       derivatives.extend(self.harmonic_values[key])
     return derivatives
+
+class Null_ScaleFactor(SmoothScaleFactor):
+  def __init__(self, scaling_options=None):
+    SmoothScaleFactor.__init__(self, 1.0, 0, scaling_options)
+    #scale factors initialise to one when you set normalised values
+
+  def set_normalised_values(self, normalised_values):
+    '''normalised_values is the column from the reflection table
+    of the normalised time/resolution etc'''
+    self.normalised_values = normalised_values
+    self.scales = flex.double([1.0]*len(self.normalised_values))
+
+  def calculate_smooth_scales(self):
+    return self.scales
+
+  def set_d_values(self, d_values):
+    #method so the null scalefactor object can be used for b factors
+    self.d_values = d_values
+

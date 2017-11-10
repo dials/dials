@@ -59,7 +59,7 @@ class Data_Manager(object):
       weights_for_scaling.apply_Isigma_cutoff(reflection_table,
                                               self.scaling_options['Isigma_min'])
       weights_for_scaling.apply_dmin_cutoff(reflection_table,
-                                           self.scaling_options['d_min'])
+                                            self.scaling_options['d_min'])
     weights_for_scaling.remove_wilson_outliers(reflection_table)
     return weights_for_scaling
 
@@ -82,12 +82,11 @@ class Data_Manager(object):
         self.scaling_options['integration_method'] == 'prf'):
       intstr = self.scaling_options['integration_method']
       reflection_table['intensity'] = (reflection_table['intensity.'+intstr+'.value']
-                                            * reflection_table['lp']
-                                            / reflection_table['dqe'])
+                                       * reflection_table['lp']
+                                       / reflection_table['dqe'])
       reflection_table['variance'] = (reflection_table['intensity.'+intstr+'.variance']
-                                           * (reflection_table['lp']**2)
-                                           / (reflection_table['dqe']**2))
-      return reflection_table                                    
+                                      * (reflection_table['lp']**2)
+                                      / (reflection_table['dqe']**2))
     #perform a combined prf/sum in a similar fashion to aimless
     elif self.scaling_options['integration_method'] == 'combine':
       int_prf = (reflection_table['intensity.prf.value']
@@ -102,14 +101,14 @@ class Data_Manager(object):
       weight = 1.0/(1.0 + ((int_prf/Imid)**3))
       reflection_table['intensity'] = ((weight * int_prf) + ((1.0 - weight) * int_sum))
       reflection_table['variance'] = ((weight * var_prf) + ((1.0 - weight) * var_sum))
-      return reflection_table
+    return reflection_table
 
   def update_for_minimisation(self, parameters):
     '''update the scale factors and Ih for the next iteration of minimisation'''
     basis_fn = self.get_basis_function(parameters)
     self.active_derivatives = basis_fn[1]
     self.Ih_table.update_scale_factors(basis_fn[0])
-    self.Ih_table.calc_Ih() #this should be removed for multicrystal mode?
+    self.Ih_table.calc_Ih()
 
   '''define a few methods for saving the data'''
   def save_reflection_table(self, filename):
@@ -128,36 +127,45 @@ class aimless_Data_Manager(Data_Manager):
   def __init__(self, reflections, experiments, scaling_options):
     Data_Manager.__init__(self, reflections, experiments, scaling_options)
     'initialise g-value objects'
-    self.g_absorption = None
-    self.g_scale = None
-    self.g_decay = None
+    #(self.g_absorption, self.g_scale, self.g_decay) = (None, None, None)
+    self.SF_object_list = []
+    self.SF_object_sizes = []
     self.n_active_params = 0
     self.active_parameters = flex.double([])
     '''bin reflections, determine outliers, extract reflections and weights for
     scaling and set normalised values.'''
-    self.initialise_scale_factors(self.reflection_table)
+    self.initialise_scale_factors()
     (reflections_for_scaling, weights_for_scaling) = (
       self.extract_reflections_for_scaling(self.reflection_table))
-    self.Ih_table = single_Ih_table(reflections_for_scaling, weights_for_scaling.get_weights())
+    self.Ih_table = single_Ih_table(reflections_for_scaling, 
+                                    weights_for_scaling.get_weights())
     '''refactor the next two operations into extract_reflections?
     reset the normalised values within the scale_factor object to current'''
     self.g_scale.set_normalised_values(reflections_for_scaling[
       'normalised_rotation_angle'])
-    self.g_decay.set_normalised_values(reflections_for_scaling[
-      'normalised_time_values'])
-    self.g_decay.set_d_values(reflections_for_scaling['d'])
-    self.g_absorption.set_values(sph_harm_table(reflections_for_scaling,
-                                                self.scaling_options['lmax']))
+    if self.scaling_options['decay_term']:
+      self.g_decay.set_normalised_values(reflections_for_scaling[
+        'normalised_time_values'])
+      self.g_decay.set_d_values(reflections_for_scaling['d'])
+    elif not self.scaling_options['decay_term']:
+      self.g_decay.set_normalised_values([0.0]*len(reflections_for_scaling))
+      self.g_decay.set_d_values(reflections_for_scaling['d'])
+    if self.scaling_options['absorption_term']:
+      self.g_absorption.set_values(sph_harm_table(reflections_for_scaling,
+                                                  self.scaling_options['lmax']))
+    #needed for null scale factor object.                                              
+    elif not self.scaling_options['absorption_term']:
+      self.g_absorption.set_normalised_values([1.0]*len(reflections_for_scaling))
+    self.g_parameterisation = {'g_absorption' : self.g_absorption, 'g_scale':
+                               self.g_scale, 'g_decay': self.g_decay}                                       
 
-  def initialise_scale_factors(self, reflection_table):
+  def initialise_scale_factors(self):
     '''initialise scale factors and add to self.active_parameters'''
-    self.initialise_scale_term(reflection_table)
-    self.initialise_decay_term(reflection_table)
-    self.initialise_absorption_scales(reflection_table, self.scaling_options['lmax'])
-    self.active_parameters.extend(self.g_scale.get_scale_factors())
-    self.active_parameters.extend(self.g_decay.get_scale_factors())
-    self.active_parameters.extend(self.g_absorption.get_scale_factors())
-
+    self.initialise_scale_term(self.reflection_table)
+    self.initialise_decay_term(self.reflection_table)
+    self.initialise_absorption_scales(self.reflection_table, 
+                                      self.scaling_options['lmax'])
+    
   def get_target_function(self):
     '''call the aimless target function method'''
     return target_function(self).return_targets()
@@ -167,36 +175,62 @@ class aimless_Data_Manager(Data_Manager):
     return aimless_basis_function(self, parameters).return_basis()
 
   def set_up_minimisation(self, param_name):
-    return self.active_parameters
+    constant_g_values = []
+    x = flex.double([])
+    self.cumulative_active_params = [0]
+    self.active_params_list = []
+    self.active_parameterisation = []
+    for p_type, scalefactor in self.g_parameterisation.iteritems():
+      if p_type in param_name: #have a list of param names?
+        x.extend(scalefactor.get_scale_factors())
+        self.n_active_params = len(x)
+        self.active_parameterisation.append(p_type)
+        n_params = len(scalefactor.get_scale_factors())
+        self.active_params_list.append(n_params)
+        self.cumulative_active_params.append(self.cumulative_active_params[-1] + n_params)
+      else:
+        constant_g_values.append(scalefactor.get_scales_of_reflections())
+    self.constant_g_values = flex.double(np.prod(np.array(constant_g_values), axis=0))
+    return x
+    #return self.active_parameters
 
   def initialise_decay_term(self, reflection_table):
     '''calculate the relative, normalised rotation angle. Here this is called
     normalised time to allow a different rotation interval compare to the scale
     correction. A SmoothScaleFactor_1D object is then initialised'''
-    if self.scaling_options['rotation_interval']:
-      rotation_interval = self.scaling_options['rotation_interval']
-      print "set rotation interval to %s" % rotation_interval
+    if self.scaling_options['decay_term']:
+      if self.scaling_options['B_factor_interval']:
+        rotation_interval = self.scaling_options['B_factor_interval']
+        print "set B_factor interval to %s" % rotation_interval
+      else:
+        rotation_interval = 20.0
+      rotation_interval = rotation_interval + 0.001
+      osc_range = self.experiments.scan.get_oscillation_range()
+      if ((osc_range[1] - osc_range[0]) / rotation_interval) % 1 < 0.33:
+        #if last bin less than 33% filled'
+        n_phi_bins = int((osc_range[1] - osc_range[0]) / rotation_interval)
+        'increase rotation interval slightly'
+        rotation_interval = (osc_range[1] - osc_range[0])/float(n_phi_bins) + 0.001
+      'extend by 0.001 to make sure all datapoints within min/max'
+      one_oscillation_width = self.experiments.scan.get_oscillation()[1]
+      reflection_table['normalised_time_values'] = ((reflection_table['xyzobs.px.value'].parts()[2]
+        * one_oscillation_width) - (osc_range[0] - 0.001))/rotation_interval
+      'define the highest and lowest gridpoints: go out two further than the max/min int values'
+      highest_parameter_value = int((max(reflection_table['normalised_time_values'])//1)+3)#was +2
+      lowest_parameter_value = int((min(reflection_table['normalised_time_values'])//1)-2)#was -1
+      n_decay_parameters =  highest_parameter_value - lowest_parameter_value + 1
+      self.g_decay = SF.SmoothScaleFactor_1D_Bfactor(0.0, n_decay_parameters, reflection_table['d'])
+      #self.g_decay.set_normalised_values(reflection_table['normalised_time_values'])
+      self.n_active_params += n_decay_parameters
+      self.n_g_decay_params = n_decay_parameters
+      self.active_parameters.extend(self.g_decay.get_scale_factors())
+      self.SF_object_list.append(self.g_decay)
+      self.SF_object_sizes.append(n_decay_parameters)
     else:
-      rotation_interval = 15.0
-    rotation_interval = rotation_interval + 0.001
-    osc_range = self.experiments.scan.get_oscillation_range()
-    if ((osc_range[1] - osc_range[0]) / rotation_interval) % 1 < 0.33:
-      #if last bin less than 33% filled'
-      n_phi_bins = int((osc_range[1] - osc_range[0]) / rotation_interval)
-      'increase rotation interval slightly'
-      rotation_interval = (osc_range[1] - osc_range[0])/float(n_phi_bins) + 0.001
-    'extend by 0.001 to make sure all datapoints within min/max'
-    one_oscillation_width = self.experiments.scan.get_oscillation()[1]
-    reflection_table['normalised_time_values'] = ((reflection_table['xyzobs.px.value'].parts()[2]
-      * one_oscillation_width) - (osc_range[0] - 0.001))/rotation_interval
-    'define the highest and lowest gridpoints: go out two further than the max/min int values'
-    highest_parameter_value = int((max(reflection_table['normalised_time_values'])//1)+3)#was +2
-    lowest_parameter_value = int((min(reflection_table['normalised_time_values'])//1)-2)#was -1
-    n_decay_parameters =  highest_parameter_value - lowest_parameter_value + 1
-    self.g_decay = SF.SmoothScaleFactor_1D_Bfactor(0.0, n_decay_parameters, reflection_table['d'])
-    #self.g_decay.set_normalised_values(reflection_table['normalised_time_values'])
-    self.n_active_params += n_decay_parameters
-    self.n_g_decay_params = n_decay_parameters
+      self.n_g_decay_params = 0
+      self.g_decay = SF.Null_ScaleFactor()
+      #self.SF_object_list.append(self.g_absorption)
+      #self.SF_object_sizes.append(0)
 
   def initialise_scale_term(self, reflection_table):
     '''calculate the relative, normalised rotation angle.
@@ -224,32 +258,91 @@ class aimless_Data_Manager(Data_Manager):
     #self.g_scale.set_normalised_values(reflection_table['normalised_rotation_angle'])
     self.n_active_params += n_scale_parameters
     self.n_g_scale_params = n_scale_parameters
+    self.active_parameters.extend(self.g_scale.get_scale_factors())
+    self.SF_object_list.append(self.g_scale)
+    self.SF_object_sizes.append(n_scale_parameters)
 
   def initialise_absorption_scales(self, reflection_table, lmax):
-    calc_s2d(self, reflection_table)
-    n_abs_params = 0
-    for i in range(lmax):
-      n_abs_params += (2*(i+1))+1
-    self.g_absorption = SF.SphericalAbsorption_ScaleFactor(0.0, n_abs_params,
-      sph_harm_table(reflection_table, lmax))
-    self.n_active_params += n_abs_params
-    self.n_g_abs_params = n_abs_params
+    if self.scaling_options['absorption_term']:
+      reflection_table = calc_s2d(reflection_table, self.experiments)
+      n_abs_params = 0
+      for i in range(lmax):
+        n_abs_params += (2*(i+1))+1
+      self.g_absorption = SF.SphericalAbsorption_ScaleFactor(0.0, n_abs_params,
+        sph_harm_table(reflection_table, lmax))
+      self.n_active_params += n_abs_params
+      self.n_g_abs_params = n_abs_params
+      self.active_parameters.extend(self.g_absorption.get_scale_factors())
+      self.SF_object_list.append(self.g_absorption)
+      self.SF_object_sizes.append(n_abs_params)
+    else:
+      reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
+                                 * self.experiments.scan.get_oscillation()[1])
+      self.g_absorption = SF.Null_ScaleFactor()
+      self.n_g_abs_params = 0
+      self.SF_object_list.append(self.g_absorption)
+      self.SF_object_sizes.append(0)
+
+
 
   def calc_absorption_constraint(self):
-      n_g_scale = self.n_g_scale_params
-      n_g_decay = self.n_g_decay_params
-      return (1e7 * (self.active_parameters[n_g_scale + n_g_decay:])**2)
+    #this should only be called if g_absorption in active params
+    idx = self.active_parameterisation.index('g_absorption')
+    weight = 1e5
+    abs_params = self.active_parameters[self.cumulative_active_params[idx]:
+                                        self.cumulative_active_params[idx+1]]
+    residual = (weight * (abs_params)**2)
+    gradient = (2 * weight * abs_params)
+    #need to make sure gradient is returned is same size as gradient calculated in target fn-
+    #would only be triggered if refining absorption as same time as another scale factor.
+    gradient_vector = flex.double([])
+    for i, param in enumerate(self.active_parameterisation):
+      if param != 'g_absorption':
+        gradient_vector.extend(flex.double([0.0]*self.n_active_params[i]))
+      elif param == 'g_absorption':
+        gradient_vector.extend(gradient)
+    return (residual, gradient_vector)
+
+  def normalise_scales_and_B(self):
+    absorption_scales = self.g_decay.get_scales_of_reflections()
+    B_values = flex.double(np.log(absorption_scales)) * 2.0 * (self.g_decay.d_values**2)
+    B_parameters = self.g_decay.get_scale_factors()
+    B_new_parameters = B_parameters - flex.double([max(B_values)]*len(B_parameters))
+    self.g_decay.set_scale_factors(B_new_parameters)
+    self.g_decay.calculate_smooth_scales()
+    absorption_scales = self.g_decay.get_scales_of_reflections()
+    B_values = flex.double(np.log(absorption_scales)) * 2.0 * (self.g_decay.d_values**2)
+    #scale_factors = self.g_scale.get_scale_factors()
+    scales = self.g_scale.get_scales_of_reflections()
+    normalised_values = self.g_scale.get_normalised_values()
+    first_value = min(normalised_values)
+    sel = (normalised_values == first_value)
+    initial_scale = list(scales.select(sel))[0]
+    scale_factors = self.g_scale.get_scale_factors()
+    new_scales = scale_factors/initial_scale
+    self.g_scale.scale_factors = new_scales
+    self.g_scale.calculate_smooth_scales()
+
+
 
   def expand_scales_to_all_reflections(self):
+    self.normalise_scales_and_B()
     "recalculate scales for reflections in sorted_reflection table"
     self.g_scale.set_normalised_values(self.reflection_table['normalised_rotation_angle'])
     angular_scale_factor = self.g_scale.calculate_smooth_scales()
+    if not self.scaling_options['decay_term']:
+      self.reflection_table['normalised_time_values'] = flex.double([1.0]*len(self.reflection_table))
     self.g_decay.set_normalised_values(self.reflection_table['normalised_time_values'])
     self.g_decay.set_d_values(self.reflection_table['d'])
     decay_factor = self.g_decay.calculate_smooth_scales()
-    self.g_absorption.set_values(sph_harm_table(self.reflection_table,
-                                                self.scaling_options['lmax']))
-    absorption_factor = self.g_absorption.calculate_scales()
+    absorption_scales = self.g_decay.get_scales_of_reflections()
+    B_values = flex.double(np.log(absorption_scales)) * 2.0 * (self.g_decay.d_values**2)
+    if self.scaling_options['absorption_term']:
+      self.g_absorption.set_values(sph_harm_table(self.reflection_table,
+                                                  self.scaling_options['lmax']))
+    else:
+      self.g_absorption.set_normalised_values([1.0]*len(self.reflection_table))
+    absorption_factor = self.g_absorption.calculate_smooth_scales()
     self.reflection_table['inverse_scale_factor'] = (angular_scale_factor
       * decay_factor * absorption_factor)
     self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table,
@@ -285,7 +378,7 @@ class KB_Data_Manager(Data_Manager):
     self.active_parameters = flex.double([])
     (reflections_for_scaling, weights_for_scaling) = (
       self.extract_reflections_for_scaling(self.reflection_table))
-    self.Ih_table = basic_Ih_table(reflections_for_scaling, weights_for_scaling.get_weights())
+    self.Ih_table = base_Ih_table(reflections_for_scaling, weights_for_scaling.get_weights())
     self.g_scale = SF.ScaleFactor(1.0, 1)
     self.g_decay = SF.B_ScaleFactor(0.0, 1, reflections_for_scaling['d'])
     self.active_parameters.extend(self.g_scale.scale_factors)
@@ -308,7 +401,7 @@ class KB_Data_Manager(Data_Manager):
     basis_fn = self.get_basis_function(parameters)
     self.active_derivatives = basis_fn[1]
     self.Ih_table.update_scale_factors(basis_fn[0])
-    #self.Ih_table.calc_Ih() #don't calculate Ih here as using a target instead
+    #note - we don't calculate Ih here as using a target instead
 
   def expand_scales_to_all_reflections(self):
     scale_factor = self.g_scale.scale_factors[0]
@@ -583,7 +676,7 @@ class XDS_Data_Manager(Data_Manager):
       del self.reflection_table[key]
 
 class multicrystal_datamanager(Data_Manager):
-  def __init__(self, reflections1, experiments1, reflections, experiments2, scaling_options):
+  def __init__(self, reflections1, experiments1, reflections2, experiments2, scaling_options):
     if scaling_options['scaling_method'] == 'xds':
       self.dm1 = XDS_Data_Manager(reflections1, experiments1, scaling_options)
       self.dm2 = XDS_Data_Manager(reflections2, experiments2, scaling_options)
@@ -621,10 +714,13 @@ class multicrystal_datamanager(Data_Manager):
 
   def calc_absorption_constraint(self):
     'method only called in aimless scaling'
-    c = flex.double([])
-    c.extend(self.dm1.calc_absorption_constraint())
-    c.extend(self.dm2.calc_absorption_constraint())
-    return c
+    R = flex.double([])
+    G = flex.double([])
+    R.extend(self.dm1.calc_absorption_constraint()[0])
+    R.extend(self.dm2.calc_absorption_constraint()[0])
+    G.extend(self.dm1.calc_absorption_constraint()[1])
+    G.extend(self.dm2.calc_absorption_constraint()[1])
+    return (R, G)
 
   def zip_data_together(self):
     joined_reflections = flex.reflection_table()
@@ -720,7 +816,7 @@ class targeted_datamanager(Data_Manager):
       sel = self.dm1.Ih_table.Ih_table['Ih_values'] != 0.0
       new_refl_table = self.dm1.Ih_table.Ih_table.select(sel)
       new_Ih_values = new_refl_table['Ih_values']
-      self.dm1.Ih_table = basic_Ih_table(new_refl_table, new_refl_table['weights'])
+      self.dm1.Ih_table = base_Ih_table(new_refl_table, new_refl_table['weights'])
       self.dm1.Ih_table.Ih_table['Ih_values'] = new_Ih_values
       self.dm1.g_decay.set_d_values(self.dm1.g_decay.d_values.select(sel))
     else:

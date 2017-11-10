@@ -37,8 +37,9 @@ class LBFGS_optimiser(object):
       if self.data_manager.scaling_options['decay_correction_rescaling']:
         if self.data_manager.scaling_options['parameterization'] == 'standard':
           self.data_manager.scale_gvalues()
-    if param_name:
-      print "completed minimisation for %s correction" % (param_name.lstrip('g_'))
+    #if param_name:
+    #  for param in param_name
+    #  print "completed minimisation for %s correction" % (param_name.lstrip('g_'))
 
   def compute_functional_and_gradients(self):
     '''first calculate the updated values of the scale factors and Ih,

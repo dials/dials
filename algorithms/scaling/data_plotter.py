@@ -222,20 +222,21 @@ def plot_smooth_scales(data_man, outputfile=None):
   plt.ylabel('Scale term')
   plt.xlabel('Normalised rotation angle')
 
-  rel_values = np.arange(0, int(max(data_man.reflection_table['normalised_time_values'])) + 1, 0.1)
-  test_decay_factor = SF.SmoothScaleFactor_1D(0.0, data_man.n_g_decay_params)
-  test_decay_factor.set_scale_factors(data_man.g_decay.get_scale_factors())
-  test_decay_factor.set_normalised_values(rel_values)
-  B_rel_values = test_decay_factor.calculate_smooth_scales()
-  plt.subplot(2,1,2)
-  plt.ylabel('Relative B factor (' + r'$\AA^{2}$'+')')
-  plt.xlabel('Normalised time value')
-  plt.plot(rel_values, B_rel_values)
+  if data_man.scaling_options['decay_term']:
+    rel_values = np.arange(0, int(max(data_man.reflection_table['normalised_time_values'])) + 1, 0.1)
+    test_decay_factor = SF.SmoothScaleFactor_1D(0.0, data_man.n_g_decay_params)
+    test_decay_factor.set_scale_factors(data_man.g_decay.get_scale_factors())
+    test_decay_factor.set_normalised_values(rel_values)
+    B_rel_values = test_decay_factor.calculate_smooth_scales()
+    plt.subplot(2,1,2)
+    plt.ylabel('Relative B factor (' + r'$\AA^{2}$'+')')
+    plt.xlabel('Normalised time value')
+    plt.plot(rel_values, B_rel_values)
   plt.tight_layout()
   if outputfile:
     plt.savefig(outputfile)
   else:
-    plt.savefig('Smooth_scale_factors.png')
+    plt.savefig('smooth_scale_factors.png')
 
 def plot_absorption_surface(data_man, outputfile=None):
   params = data_man.g_absorption.get_scale_factors()
@@ -267,6 +268,7 @@ def plot_absorption_surface(data_man, outputfile=None):
             r = sqrt2 * ((-1) ** m) * Ylm.real
           Intensity[ip, it] += params[counter] * r
       counter += 1
+  Intensity = 1.0/Intensity #make scale factor, not inverse
 
   if Intensity.max() - Intensity.min() != 0.0:
     rel_Int = (Intensity - Intensity.min())/(Intensity.max() - Intensity.min())
@@ -283,6 +285,7 @@ def plot_absorption_surface(data_man, outputfile=None):
   ax.set_xticks([0.0, (2.0*STEPS-1)/4.0, (2.0*STEPS-1)/2.0, 3.0*(2.0*STEPS-1)/4.0, (2.0*STEPS-1)])
   ax.set_xticklabels([0, 90, 180, 270, 360])
   ax.set_xlabel('Theta (degrees)')
+  ax.set_title('Scale factors for absorption correction (note: not inverse scales)')
   divider = make_axes_locatable(ax)
   cax1 = divider.append_axes("right", size="5%", pad=0.05)
   cbar = plt.colorbar(im, cax=cax1,ticks=[0, 0.25, 0.5, 0.75, 1])

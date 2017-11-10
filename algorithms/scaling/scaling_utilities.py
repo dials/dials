@@ -1,17 +1,18 @@
 from dials.array_family import flex
 import numpy as np
 
-def calc_s2d(data_man, reflection_table):
+def calc_s2d(reflection_table, experiments):
   reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
-                             * data_man.experiments.scan.get_oscillation()[1])
-  (s0x, s0y, s0z) = data_man.experiments.beam.get_s0()
+                             * experiments.scan.get_oscillation()[1])
+  (s0x, s0y, s0z) = experiments.beam.get_s0()
   reflection_table['s2'] = reflection_table['s1'] - (s0x, s0y, s0z)
-  reflection_table['s2d'] = apply_inverse_rotation(data_man, reflection_table['s2'],
+  reflection_table['s2d'] = apply_inverse_rotation(experiments, reflection_table['s2'],
                                                    reflection_table['phi'])
+  return reflection_table
 
-def apply_inverse_rotation(data_man, vec, phi):
+def apply_inverse_rotation(experiments, vec, phi):
   (r0, r1, r2) = vec.parts()
-  (ux, uy, uz) = data_man.experiments.goniometer.get_rotation_axis()
+  (ux, uy, uz) = experiments.goniometer.get_rotation_axis()
   from math import pi
   c_ph = flex.double(np.cos(2.0*pi*phi/180.0))
   s_ph = flex.double(np.sin(2.0*pi*phi/180.0))

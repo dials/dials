@@ -20,8 +20,9 @@ class target_function(object):
     weights = self.data_manager.Ih_table.Ih_table['weights']
     R = ((((intensities - (scale_factors * Ih_values))**2) * weights))
     if self.data_manager.scaling_options['scaling_method'] == 'aimless':
-      constraint_values = self.data_manager.calc_absorption_constraint()
-      R.extend(constraint_values)
+      if 'g_absorption' in self.data_manager.active_parameterisation:
+        constraint_values = self.data_manager.calc_absorption_constraint()[0]
+        R.extend(constraint_values)
     return R
 
   def calculate_gradient(self):
@@ -45,6 +46,9 @@ class target_function(object):
                + (scale_factors * dIh_g))
       grad = (2.0 * rhl * scaleweights * drdp)
       gradient.append(flex.sum(grad))
+    if self.data_manager.scaling_options['scaling_method'] == 'aimless':
+      if 'g_absorption' in self.data_manager.active_parameterisation:
+        gradient += self.data_manager.calc_absorption_constraint()[1]
     return gradient
 
   def return_targets(self):

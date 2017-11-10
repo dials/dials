@@ -3,8 +3,13 @@ from dials.array_family import flex
 from cctbx import miller, crystal
 import time as time
 
-class basic_Ih_table(object):
+class base_Ih_table(object):
   def __init__(self, refl_table, weights):
+    #check necessary columns exists in input reflection table
+    for column in ['asu_miller_index', 'intensity', 'inverse_scale_factor']:
+      if not column in refl_table.keys():
+        assert 0, """Attempting to create an Ih_table object from a reflection
+        table with no %s column""" % column
     #first create a minimal reflection table object
     self.Ih_table = flex.reflection_table()
     self.Ih_table['asu_miller_index'] = refl_table['asu_miller_index']
@@ -12,26 +17,25 @@ class basic_Ih_table(object):
     self.Ih_table['Ih_values'] = flex.double([0.0]*len(refl_table))
     self.Ih_table['weights'] = weights
     self.Ih_table['inverse_scale_factor'] = refl_table['inverse_scale_factor']
-    #bring in weights and initial scale factors
-    #self.weights_for_scaling = weighting.get_weights()
-    #self.scale_factors = refl_table['inverse_scale_factor']
     #calculate the indexing arrays
     (self.h_index_counter_array, self.h_index_cumulative_array) = self.assign_h_index()
-    self.Ih_array = None
-    #no calc_Ih method here, as for basic_Ih_table the Ih is calculated by the target_Ih
+    self.Ih_array = None #This may not be necessary in future but keep for now.
+  
+  #note: no calc_Ih method here, this must be filled in by subclasses, this is
+  #necessary to allow scaling against a target Ih external to the Ih_table.
 
   def update_scale_factors(self, scalefactors):
     if len(scalefactors) != len(self.Ih_table['inverse_scale_factor']):
-      assert 0, '''attempting to set a new set of scale factors of different
-      length than previous assignment: was %s, attempting %s''' % (
-      len(self.Ih_table['inverse_scale_factor']), len(scalefactors))
+      assert 0, """attempting to set a new set of scale factors of different
+      length than previous assignment: was %s, attempting %s""" % (
+        len(self.Ih_table['inverse_scale_factor']), len(scalefactors))
     self.Ih_table['inverse_scale_factor'] = scalefactors
 
   def set_Ih_values(self, Ih_values):
     if len(Ih_values) != len(self.Ih_table['Ih_values']):
-      assert 0, '''attempting to set a new set of Ih_values of different
-      length than previous assignment: was %s, attempting %s''' % (
-      len(self.Ih_table['Ih_values']), len(Ih_values))
+      assert 0, """attempting to set a new set of Ih_values of different
+      length than previous assignment: was %s, attempting %s""" % (
+        len(self.Ih_table['Ih_values']), len(Ih_values))
     self.Ih_table['Ih_values'] = Ih_values
 
   def get_Ih_values(self):
@@ -65,11 +69,12 @@ class basic_Ih_table(object):
     return h_index_counter_array, h_index_cumulative_array
 
 
-class single_Ih_table(basic_Ih_table):
+class single_Ih_table(base_Ih_table):
+  '''subclass of base_Ih_table to fill in the calc_Ih method. This is the default
+  data structure used for scaling a single sweep.'''
   def __init__(self, refl_table, weighting):
-    basic_Ih_table.__init__(self, refl_table, weighting)
-    #calculate a first estimate of Ih
-    self.calc_Ih()
+    base_Ih_table.__init__(self, refl_table, weighting)
+    self.calc_Ih() #calculate a first estimate of Ih
 
   def calc_Ih(self):
     '''calculate the current best estimate for I for each reflection group'''
