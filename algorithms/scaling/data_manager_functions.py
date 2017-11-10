@@ -326,7 +326,8 @@ class aimless_Data_Manager(Data_Manager):
 
 
   def expand_scales_to_all_reflections(self):
-    self.normalise_scales_and_B()
+    if not self.scaling_options['multi_mode']:
+      self.normalise_scales_and_B()
     "recalculate scales for reflections in sorted_reflection table"
     self.g_scale.set_normalised_values(self.reflection_table['normalised_rotation_angle'])
     angular_scale_factor = self.g_scale.calculate_smooth_scales()
@@ -691,6 +692,7 @@ class multicrystal_datamanager(Data_Manager):
     self.n_active_params_dataset1 = None
     self.n_active_params_dataset2 = None
     self.scaling_options = scaling_options
+    
     #reflections_for_scaling, weights_for_scaling = self.zip_data_together()
     reflections_for_scaling = self.zip_data_together()
     weights_for_scaling = reflections_for_scaling['weights']
@@ -708,6 +710,7 @@ class multicrystal_datamanager(Data_Manager):
     self.n_active_params_dataset1 = len(x1)
     self.n_active_params_dataset2 = len(x2)
     self.n_active_params = len(x1) + len(x2)
+    self.active_parameterisation = self.dm1.active_parameterisation
     x.extend(x1)
     x.extend(x2)
     return x
