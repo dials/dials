@@ -32,7 +32,6 @@ namespace dials { namespace refinement { namespace boost_python {
 
       //Work with raw pointers instead of overloadable objects
       const std::size_t* ptr_exp_ids = exp_ids.begin();
-
       const std::size_t* ptr_panel_id = panel_id.begin();
 
       //Predefine loop variables
@@ -43,16 +42,22 @@ namespace dials { namespace refinement { namespace boost_python {
       unsigned int data_offset = 0;
       unsigned int data_range = 0;
 
-      //Search for the beginning and end indices for the index values and track their pointers. Use these pointers to narow the next search margin and count the range of elements that match. These values indicate the count and can be added to a running total.
+      /* Search for the beginning and end indices for the index values and track their pointers.
+         Use these pointers to narow the next search margin and count the range of elements that
+         match. These values indicate the count and can be added to a running total.
+      */
       for(exp_it = 0; exp_it < exp_ids.size(); ++exp_it){ //Iterate through experiment IDs
-        //Get the pointer indices to the beginning and end of the values with the requested experimental ID. Performs search in ~2logN
+        // Get the pointer indices to the beginning and end of the values with the requested
+        // experimental ID. Performs search in ~2logN
         refIDRange = std::equal_range(ref_ids.begin(), ref_ids.end(), ptr_exp_ids[exp_it]);
 
         //Calculate pointer offset for start and end of the data to examine.
         data_range = refIDRange.second - refIDRange.first;
         data_offset = refIDRange.first - ref_ids.begin();
 
-        //Taking the previous pointer positions, and perfoming a search within this range for the matching panel IDs, we then counti the pointer range as all valid entries and add to the accumlator.
+        // Taking the previous pointer positions, and perfoming a search within this range
+        // for the matching panel IDs, we then counti the pointer range as all valid entries
+        // and add to the accumlator.
         for(pnl = 0; pnl < pnl_ids_flex.size(); ++pnl){ //Iterate through panel IDs
           panelIDRange = std::equal_range( ptr_panel_id + data_offset,
                                            ptr_panel_id + data_offset + data_range,
@@ -98,7 +103,7 @@ namespace dials { namespace refinement { namespace boost_python {
       int ii, jj;
       scitbx::af::shared< double > mul_norm;
 
-      //Calculate L-2 norm of Matrix*Vec operation for each matrix in F_dbdp
+      //Calculate L-2 norm of Matrix*Vec operation for each matrix in F_dbdp and each vec3 miller index across all exp_ids
       for( jj = 0; jj < F_dbdp.size(); ++jj){
         for (unsigned int exp_id_range = 0; exp_id_range < data_range.size(); ++exp_id_range){
           for( ii = data_offset[exp_id_range]; ii < data_offset[exp_id_range]+data_range[exp_id_range]; ++ii ){
@@ -108,7 +113,8 @@ namespace dials { namespace refinement { namespace boost_python {
         }
       }
 
-      //Sum the total offsets to determine each range for splitting of mul_norm to nref param values with F_dbdp.size() number of partitions
+      // Sum the total offsets to determine each range for splitting of mul_norm to
+      // nref param values with F_dbdp.size() number of partitions
       int sum_offsets = std::accumulate(data_range.begin(), data_range.end(), 0);
       scitbx::af::shared<int> nref_each_param;
       for (ii=0; ii < F_dbdp.size(); ++ii){
@@ -121,7 +127,7 @@ namespace dials { namespace refinement { namespace boost_python {
 
       //Return the value of the smallest element
       scitbx::af::shared<int>::iterator it = std::min_element(nref_each_param.begin(),nref_each_param.end());
-      result = *(nref_each_param.begin()+std::distance( nref_each_param.begin(), it));
+      result = *( nref_each_param.begin() + std::distance( nref_each_param.begin(), it) );
     }
     int result;
     static bool gtZero (double x) { return ( (x > 0.0) == 1 ); } //Used for comparison operation
@@ -157,7 +163,7 @@ namespace dials { namespace refinement { namespace boost_python {
   void export_pgnmn_iter()
   {
     typedef return_value_policy<return_by_value> rbv;
-
+    //templated constructor for int and size_t flex arrays of id
     class_<dials::refinement::boost_python::pgnmn_iter>("pgnmn_iter", no_init)
     .def( init< scitbx::af::shared<std::size_t>,
       const scitbx::af::shared<std::size_t>,

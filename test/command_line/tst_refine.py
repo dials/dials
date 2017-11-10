@@ -204,29 +204,34 @@ def test4():
   from dials_refinement_helpers_ext import mnmn_iter as mnmn
   #Borrowed from tst_reflection_table function tst_find_overlapping
   from random import randint, uniform
-  N = 10000
+  N = 11
   r = flex.reflection_table.empty_standard(N)
-  r['panel'] = flex.size_t(N)
-  r['id'] = flex.int(N)
+  r['panel'] = flex.size_t([1,0,1,1,0,0,1,0,1,0,0])
+  r['id'] = flex.int([1,2,1,1,2,0,1,1,0,0,0])
   exp_ids = flex.size_t([0,1,2])
   for i in xrange(N):
-    r['panel'][i] = randint(0,2)
-    r['id'][i] = randint(0,2)
-    r['miller_index'][i] = (int(i//1000) - 5, i%37-16, i%31-15) #A nice bunch of miller indices
+    r['miller_index'][i] = (int(i//10) - 5, i%3, i%7) #A nice bunch of miller indices
 
-  #Sorting reflection table during the filter step
+  '''
+   Filter out reflections to be used by refinement. Sorting of filtered reflections require
+   to allow C++ extension modules to give performance benefit. Sorting performed within the
+   _filter_reflections step by id, then by panel.
+  '''
   from dials.algorithms.refinement import RefinerFactory as rf
-  r_sorted = rf._filter_reflections(r)
-  r_sorted2 = rf._filter_reflections(r_sorted)
+  r_sorted = rf._filter_reflections(r) #Take unfiltered and unsorted table, and return filtered and sorted table
+  r_sorted2 = rf._filter_reflections(r_sorted) #Take filtered and sorted table, and perform no changes
 
-  assert(r['id'] != r_sorted['id'])
-  assert(r['miller_index'] != r_sorted['miller_index'])
-  assert(r['panel'] != r_sorted['panel'])
+  # Test that the unfiltered/unsorted table becomes filtered/sorted for id
+  assert ((r_sorted['id']==r['id'].select(flex.sort_permutation(r['id']))).count(False)==0)
+  # as above for panel within each id
+  for ii in [0,1,2]:
+    r_id = r.select(r['id']==ii)
+    r_sorted_id = r_sorted.select(r_sorted['id']==ii)
+    assert ( (r_sorted_id['panel']==r_id['panel'].select(flex.sort_permutation(r_id['panel']))).count(False)==0 )
 
-  #Check that sorting a sorted reflection table does not further change ordering
-  assert(r_sorted['id'] == r_sorted2['id'])
-  assert(r_sorted['miller_index'] == r_sorted2['miller_index'])
-  assert(r_sorted['panel'] == r_sorted2['panel'])
+  #Check that no changes occur when the table has been filtered/sorted to begin with
+  assert( (r_sorted['id'] == r_sorted2['id']).count(False)==0 )
+  assert( (r_sorted['panel'] == r_sorted2['panel']).count(False)==0 )
 
   ############################################################
   #Cut-down original algorithm for model_nparam_minus_nref
