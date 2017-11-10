@@ -204,41 +204,47 @@ def test4():
   from dials_refinement_helpers_ext import mnmn_iter as mnmn
   #Borrowed from tst_reflection_table function tst_find_overlapping
   from random import randint, uniform
-  N = 10000
+  N = 110
   r = flex.reflection_table.empty_standard(N)
-  r['panel'] = flex.size_t(N)
-  r['id'] = flex.int(N)
-  exp_ids = flex.size_t([0,1,2])
+  r['panel'] = flex.size_t([1,0,0,1,0,0,0,0,1,0,0]*10)
+  r['id'] = flex.int([1,2,1,1,2,0,1,1,1,0,1]*10)
+  exp_ids = flex.size_t([0,1])
   for i in xrange(N):
-    r['panel'][i] = randint(0,2)
-    r['id'][i] = randint(0,2)
-    r['miller_index'][i] = (int(i//1000) - 5, i%37-16, i%31-15) #A nice bunch of miller indices
+    r['miller_index'][i] = (int(i//10) - 5, i%3, i%7) #A nice bunch of miller indices
 
-  #Sorting reflection table during the filter step
-  from dials.algorithms.refinement import RefinerFactory as rf
-  r_sorted = rf._filter_reflections(r)
-  r_sorted2 = rf._filter_reflections(r_sorted)
+  '''
+   Filter out reflections to be used by refinement. Sorting of filtered reflections require
+   to allow C++ extension modules to give performance benefit. Sorting performed within the
+   _filter_reflections step by id, then by panel.
+  '''
+  from copy import deepcopy as dc
+  r_sorted = dc(r)
+  r_sorted.sort('id')
+  r_sorted.subsort('id','panel')
 
-  assert(r['id'] != r_sorted['id'])
-  assert(r['miller_index'] != r_sorted['miller_index'])
-  assert(r['panel'] != r_sorted['panel'])
-
-  #Check that sorting a sorted reflection table does not further change ordering
-  assert(r_sorted['id'] == r_sorted2['id'])
-  assert(r_sorted['miller_index'] == r_sorted2['miller_index'])
-  assert(r_sorted['panel'] == r_sorted2['panel'])
+  # Test that the unfiltered/unsorted table becomes filtered/sorted for id
+  assert ((r_sorted['id']==r['id'].select(flex.sort_permutation(r['id']))).count(False)==0)
+  # as above for panel within each id
+  for ii in [0,1,2]:
+    r_id = r.select(r['id']==ii)
+    r_sorted_id = r_sorted.select(r_sorted['id']==ii)
+    assert ( (r_sorted_id['panel']==r_id['panel'].select(flex.sort_permutation(r_id['panel']))).count(False)==0 )
 
   ############################################################
   #Cut-down original algorithm for model_nparam_minus_nref
   ############################################################
   isel = flex.size_t()
   for exp_id in exp_ids:
-    isel.extend((r_sorted['id'] == exp_id).iselection())
+    isel.extend((r['id'] == exp_id).iselection())
   res0 = len(isel)
 
   #Updated algorithm for model_nparam_minus_nref, with templated id column for int and size_t
+  res1_unsrt_int = mnmn(r["id"],exp_ids).result
   res1_int = mnmn(r_sorted["id"],exp_ids).result
   res1_sizet = mnmn(flex.size_t(list(r_sorted["id"])),exp_ids).result
+  
+  #Check that unsorted list fails, while sorted succeeds for both int and size_t array types
+  assert ( res0 != res1_unsrt_int )
   assert ( res0 == res1_int )
   assert ( res0 == res1_sizet )
 
@@ -255,8 +261,10 @@ def test4():
   res0 = min(nref_each_param)
 
   #Updated algorithm for unit_cell_nparam_minus_nref
+  res1_unsrt_int = ucnmn(r["id"], r["miller_index"], exp_ids, dB_dp).result
   res1_int = ucnmn(r_sorted["id"], r_sorted["miller_index"], exp_ids, dB_dp).result
   res1_sizet = ucnmn(flex.size_t(list(r_sorted["id"])), r_sorted["miller_index"], exp_ids, dB_dp).result
+  assert ( res0 != res1_unsrt_int )
   assert ( res0 == res1_int )
   assert ( res0 == res1_sizet )
 
@@ -266,15 +274,18 @@ def test4():
   isel = flex.size_t()
   pnl_ids = [0,1]
   for exp_id in exp_ids:
-    sub_expID = (r_sorted['id'] == exp_id).iselection()
-    sub_panels_expID = r_sorted['panel'].select(sub_expID)
+    sub_expID = (r['id'] == exp_id).iselection()
+    sub_panels_expID = r['panel'].select(sub_expID)
     for pnl in pnl_ids:
       isel.extend(sub_expID.select(sub_panels_expID == pnl))
   nref = len(isel)
   res0 = nref
+
   #Updated algorithm for panel_gp_nparam_minus_nref
+  res1_unsrt_int = pgnmn(r["id"], r["panel"], pnl_ids, exp_ids, 0).result
   res1_int = pgnmn(r_sorted["id"], r_sorted["panel"], pnl_ids, exp_ids, 0).result
   res1_sizet = pgnmn(flex.size_t(list(r_sorted["id"])), r_sorted["panel"], pnl_ids, exp_ids, 0).result
+  assert ( res0 != res1_unsrt_int )
   assert ( res0 == res1_int )
   assert ( res0 == res1_sizet )
 
