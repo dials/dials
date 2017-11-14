@@ -9,8 +9,9 @@ from dials.array_family import flex
 class target_function(object):
   '''Class that takes in a data manager object and returns a residual
   and gradient function for minimisation.'''
-  def __init__(self, data_manager_object):
+  def __init__(self, data_manager_object, parameters):
     self.data_manager = data_manager_object
+    self.parameters = parameters
 
   def calculate_residual(self):
     '''returns a residual vector'''
@@ -21,7 +22,7 @@ class target_function(object):
     R = ((((intensities - (scale_factors * Ih_values))**2) * weights))
     if self.data_manager.scaling_options['scaling_method'] == 'aimless':
       if 'g_absorption' in self.data_manager.active_parameterisation:
-        constraint_values = self.data_manager.calc_absorption_constraint()[0]
+        constraint_values = self.data_manager.calc_absorption_constraint(self.parameters)[0]
         R.extend(constraint_values)
     return R
 
@@ -37,7 +38,10 @@ class target_function(object):
     rhl = intensities - (Ih_values * scale_factors)
     num = len(intensities)
     dIh = ((intensities * scaleweights) - (Ih_values * 2.0 * scale_factors * scaleweights))
-
+    #print "active_parameters"
+    #print list(self.data_manager.active_parameterisation)
+    #print "absorption factors"
+    #print list(self.data_manager.g_absorption.get_scale_factors())
     for i in range(self.data_manager.n_active_params):
       dIh_g = (dIh * self.data_manager.active_derivatives[i*num:(i+1)*num])
       dIh_g = np.add.reduceat(dIh_g, self.data_manager.Ih_table.h_index_cumulative_array[:-1])/sumgsq
@@ -48,7 +52,7 @@ class target_function(object):
       gradient.append(flex.sum(grad))
     if self.data_manager.scaling_options['scaling_method'] == 'aimless':
       if 'g_absorption' in self.data_manager.active_parameterisation:
-        gradient += self.data_manager.calc_absorption_constraint()[1]
+        gradient += self.data_manager.calc_absorption_constraint(self.parameters)[1]
     return gradient
 
   def return_targets(self):

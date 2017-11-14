@@ -296,16 +296,14 @@ class SphericalAbsorption_ScaleFactor(ScaleFactor):
     '''name the methods the same as the rest of the aimless scale factors
     to allow generic calling - should all the names just be the same, no smooth?'''
     abs_scale = flex.double([1.0]*len(self.harmonic_values))
-    count = 0
-    for key in self.harmonic_values.keys():
-      abs_scale += self.harmonic_values[key] * self.scale_factors[count]
-      count += 1
+    for n in range(self.harmonic_values.ncols()):
+      abs_scale += self.harmonic_values[str(n)] * self.scale_factors[n]
     return abs_scale
 
   def calculate_smooth_derivatives(self):
     derivatives = flex.double([])
-    for key in self.harmonic_values.keys():
-      derivatives.extend(self.harmonic_values[key])
+    for n in range(self.harmonic_values.ncols()):
+      derivatives.extend(self.harmonic_values[str(n)])
     return derivatives
 
 class Null_ScaleFactor(SmoothScaleFactor):

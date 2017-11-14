@@ -71,9 +71,12 @@ class aimless_basis_function(basis_function):
     ngdecay = self.data_manager.n_g_decay_params
     #ngabs = self.data_manager.n_g_abs_params
     factors_to_multiply = []
+    #print list(self.parameters)
+    #print self.data_manager.active_parameterisation
     for i, active_param in enumerate(self.data_manager.active_parameterisation):
-      self.data_manager.g_parameterisation[active_param].set_scale_factors(
-        self.parameters[self.data_manager.cumulative_active_params[i]:self.data_manager.cumulative_active_params[i+1]])
+      SF_object = self.data_manager.g_parameterisation[active_param]
+      SF_object.set_scale_factors(self.parameters[self.data_manager.cumulative_active_params[i]:
+                                                  self.data_manager.cumulative_active_params[i+1]])
       factors_to_multiply.append(self.data_manager.g_parameterisation[active_param].calculate_smooth_scales())
     return flex.double(np.prod(np.array(factors_to_multiply), axis=0)) * self.data_manager.constant_g_values
     

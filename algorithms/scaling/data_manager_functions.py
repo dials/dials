@@ -67,8 +67,13 @@ class Data_Manager(object):
     '''Create a miller_set object, map to the asu and create a sorted
        reflection table, sorted by asu miller index'''
     u_c = self.experiments.crystal.get_unit_cell().parameters()
-    s_g = self.experiments.crystal.get_space_group()
-    crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
+    if self.scaling_options['space_group']:
+      s_g_symbol = self.scaling_options['space_group']
+      crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group_symbol=s_g_symbol)
+      print "setting space group as %s (check if you need some reindexing!)" % s_g_symbol
+    else:
+      s_g = self.experiments.crystal.get_space_group()
+      crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
     miller_set = miller.set(crystal_symmetry=crystal_symmetry,
                             indices=reflection_table['miller_index'])
     reflection_table["asu_miller_index"] = miller_set.map_to_asu().indices()
@@ -166,9 +171,9 @@ class aimless_Data_Manager(Data_Manager):
     self.initialise_absorption_scales(self.reflection_table, 
                                       self.scaling_options['lmax'])
     
-  def get_target_function(self):
+  def get_target_function(self, parameters):
     '''call the aimless target function method'''
-    return target_function(self).return_targets()
+    return target_function(self, parameters).return_targets()
 
   def get_basis_function(self, parameters):
     '''call the aimless basis function method'''
@@ -223,7 +228,7 @@ class aimless_Data_Manager(Data_Manager):
       #self.g_decay.set_normalised_values(reflection_table['normalised_time_values'])
       self.n_active_params += n_decay_parameters
       self.n_g_decay_params = n_decay_parameters
-      self.active_parameters.extend(self.g_decay.get_scale_factors())
+      self.active_parameters.extend(self.g_decay.scale_factors)
       self.SF_object_list.append(self.g_decay)
       self.SF_object_sizes.append(n_decay_parameters)
     else:
@@ -258,7 +263,7 @@ class aimless_Data_Manager(Data_Manager):
     #self.g_scale.set_normalised_values(reflection_table['normalised_rotation_angle'])
     self.n_active_params += n_scale_parameters
     self.n_g_scale_params = n_scale_parameters
-    self.active_parameters.extend(self.g_scale.get_scale_factors())
+    self.active_parameters.extend(self.g_scale.scale_factors)
     self.SF_object_list.append(self.g_scale)
     self.SF_object_sizes.append(n_scale_parameters)
 
@@ -272,7 +277,7 @@ class aimless_Data_Manager(Data_Manager):
         sph_harm_table(reflection_table, lmax))
       self.n_active_params += n_abs_params
       self.n_g_abs_params = n_abs_params
-      self.active_parameters.extend(self.g_absorption.get_scale_factors())
+      self.active_parameters.extend(self.g_absorption.scale_factors)
       self.SF_object_list.append(self.g_absorption)
       self.SF_object_sizes.append(n_abs_params)
     else:
@@ -285,12 +290,11 @@ class aimless_Data_Manager(Data_Manager):
 
 
 
-  def calc_absorption_constraint(self):
+  def calc_absorption_constraint(self, absorption_parameters):
     #this should only be called if g_absorption in active params
     idx = self.active_parameterisation.index('g_absorption')
-    weight = 1e5
-    abs_params = self.active_parameters[self.cumulative_active_params[idx]:
-                                        self.cumulative_active_params[idx+1]]
+    weight = 1e6
+    abs_params = absorption_parameters
     residual = (weight * (abs_params)**2)
     gradient = (2 * weight * abs_params)
     #need to make sure gradient is returned is same size as gradient calculated in target fn-
@@ -348,6 +352,7 @@ class aimless_Data_Manager(Data_Manager):
       * decay_factor * absorption_factor)
     self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table,
                                                                weights_filter=False)
+    
     #remove reflections that were determined as outliers
     sel = self.weights_for_scaling.get_weights() != 0.0
     self.reflection_table = self.reflection_table.select(sel)
@@ -386,9 +391,9 @@ class KB_Data_Manager(Data_Manager):
     self.active_parameters.extend(self.g_decay.scale_factors)
     self.n_active_params = 2
 
-  def get_target_function(self):
+  def get_target_function(self, parameters):
     '''call the target function method'''
-    return target_function_fixedIh(self).return_targets()
+    return target_function_fixedIh(self, parameters).return_targets()
 
   def get_basis_function(self, parameters):
     '''call the KB basis function method'''
@@ -444,12 +449,12 @@ class XDS_Data_Manager(Data_Manager):
     self.bin_reflections_absorption()
     self.bin_reflections_modulation()
 
-  def get_target_function(self):
+  def get_target_function(self, parameters):
     '''call the xds target function method'''
     if self.scaling_options['parameterization'] == 'log':
-      return xds_target_function_log(self).return_targets()
+      return xds_target_function_log(self, parameters).return_targets()
     else:
-      return target_function(self).return_targets()
+      return target_function(self, parameters).return_targets()
 
   def get_basis_function(self, parameters):
     '''call the xds basis function method'''
@@ -699,9 +704,9 @@ class multicrystal_datamanager(Data_Manager):
     self.Ih_table = single_Ih_table(reflections_for_scaling, weights_for_scaling)
     print "successfully initialised multicrystal_datamanager"
 
-  def get_target_function(self):
+  def get_target_function(self, parameters):
     '''call the xds target function method'''
-    return target_function(self).return_targets()
+    return target_function(self, parameters).return_targets()
 
   def set_up_minimisation(self, param_name):
     x = flex.double([])
@@ -827,9 +832,9 @@ class targeted_datamanager(Data_Manager):
       #self.target_refl_table = reflections_scaled
       assert 0, "no methods specified yet for scaling a large dataset against another"
 
-  def get_target_function(self):
+  def get_target_function(self, parameters):
     '''call the target function method'''
-    return self.dm1.get_target_function()
+    return self.dm1.get_target_function(parameters)
 
   def get_basis_function(self, parameters):
     '''call the KB basis function method'''

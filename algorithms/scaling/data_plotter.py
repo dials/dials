@@ -244,21 +244,22 @@ def plot_absorption_surface(data_man, outputfile=None):
   from scitbx import math
   from scitbx.array_family import flex
   import math as pymath
+  order = data_man.scaling_options['lmax']
+  lfg =  math.log_factorial_generator(2 * order + 1)
   STEPS = 50
-  theta = np.linspace(0, 2 * np.pi, 2*STEPS)
-  phi = np.linspace(0, np.pi, STEPS)
+  phi = np.linspace(0, 2 * np.pi, 2*STEPS)
+  theta = np.linspace(0, np.pi, STEPS)
   THETA, PHI = np.meshgrid(theta, phi)
   lmax = data_man.scaling_options['lmax']
   Intensity = np.ones(THETA.shape)
   counter = 0
   sqrt2 = pymath.sqrt(2)
+  nsssphe = math.nss_spherical_harmonics(order, 50000, lfg)
   for l in range(1, lmax+1):
-    lfg = math.log_factorial_generator(2 * l + 1)
-    nsssphe = math.nss_spherical_harmonics(l, 50000, lfg)
     for m in range(-l, l+1):
       for it, t in enumerate(theta):
         for ip, p in enumerate(phi):
-          Ylm = nsssphe.spherical_harmonic(l, abs(m), p, t)
+          Ylm = nsssphe.spherical_harmonic(l, abs(m), t, p)
           if m < 0:
             r = sqrt2 * ((-1) ** m) * Ylm.imag
           elif m == 0:
@@ -269,7 +270,7 @@ def plot_absorption_surface(data_man, outputfile=None):
           Intensity[ip, it] += params[counter] * r
       counter += 1
   Intensity = 1.0/Intensity #make scale factor, not inverse
-
+  
   if Intensity.max() - Intensity.min() != 0.0:
     rel_Int = (Intensity - Intensity.min())/(Intensity.max() - Intensity.min())
   else:
@@ -278,7 +279,7 @@ def plot_absorption_surface(data_man, outputfile=None):
   plt.figure(figsize=(8,6))
   gs = gridspec.GridSpec(1, 1)
   ax = plt.subplot(gs[0, 0])
-  im = ax.imshow(rel_Int, cmap='viridis', origin='lower')
+  im = ax.imshow(rel_Int.T, cmap='viridis', origin='lower')
   ax.set_yticks([0,  (STEPS-1)/4.0, (STEPS-1)/2.0, 3.0*(STEPS-1)/4.0, STEPS-1])
   ax.set_yticklabels([0, 45, 90, 135, 180])
   ax.set_ylabel('Phi (degrees)')

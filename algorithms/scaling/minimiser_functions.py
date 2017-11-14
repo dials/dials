@@ -45,7 +45,7 @@ class LBFGS_optimiser(object):
     '''first calculate the updated values of the scale factors and Ih,
     before calculating the residual and gradient functions'''
     self.data_manager.update_for_minimisation(parameters=self.x)
-    f, g = self.data_manager.get_target_function()
+    f, g = self.data_manager.get_target_function(parameters=self.x)
     f = flex.sum(f)
     self.residuals.append(f)
     print "Residual sum: %12.6g" % f
