@@ -210,8 +210,10 @@ def calc_correction_at_detector_area(data_man, position):
 
 def plot_smooth_scales(data_man, outputfile=None):
   rel_values = np.arange(0, int(max(data_man.reflection_table['normalised_rotation_angle'])) + 1, 0.1)
-  test_scale_factor = SF.SmoothScaleFactor_1D(1.0, data_man.n_g_scale_params)
-  test_scale_factor.set_scale_factors(data_man.g_scale.get_scale_factors())
+  scale_SFs = data_man.g_scale.get_scale_factors()
+  n_g_scale_params = len(scale_SFs)
+  test_scale_factor = SF.SmoothScaleFactor_1D(1.0, n_g_scale_params)
+  test_scale_factor.set_scale_factors(scale_SFs)
   test_scale_factor.set_normalised_values(rel_values)
   scales = test_scale_factor.calculate_smooth_scales()
 
@@ -224,8 +226,10 @@ def plot_smooth_scales(data_man, outputfile=None):
 
   if data_man.scaling_options['decay_term']:
     rel_values = np.arange(0, int(max(data_man.reflection_table['normalised_time_values'])) + 1, 0.1)
-    test_decay_factor = SF.SmoothScaleFactor_1D(0.0, data_man.n_g_decay_params)
-    test_decay_factor.set_scale_factors(data_man.g_decay.get_scale_factors())
+    decay_SFs = data_man.g_decay.get_scale_factors()
+    n_g_decay_params = len(decay_SFs)
+    test_decay_factor = SF.SmoothScaleFactor_1D(0.0, n_g_decay_params)
+    test_decay_factor.set_scale_factors(decay_SFs)
     test_decay_factor.set_normalised_values(rel_values)
     B_rel_values = test_decay_factor.calculate_smooth_scales()
     plt.subplot(2,1,2)

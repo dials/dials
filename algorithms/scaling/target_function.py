@@ -9,9 +9,9 @@ from dials.array_family import flex
 class target_function(object):
   '''Class that takes in a data manager object and returns a residual
   and gradient function for minimisation.'''
-  def __init__(self, data_manager_object, parameters):
+  def __init__(self, data_manager_object, apm):
     self.data_manager = data_manager_object
-    self.parameters = parameters
+    self.apm = apm
 
   def calculate_residual(self):
     '''returns a residual vector'''
@@ -21,8 +21,8 @@ class target_function(object):
     weights = self.data_manager.Ih_table.Ih_table['weights']
     R = ((((intensities - (scale_factors * Ih_values))**2) * weights))
     if self.data_manager.scaling_options['scaling_method'] == 'aimless':
-      if 'g_absorption' in self.data_manager.active_parameterisation:
-        constraint_values = self.data_manager.calc_absorption_constraint(self.parameters)[0]
+      if 'g_absorption' in self.apm.active_parameterisation:
+        constraint_values = self.data_manager.calc_absorption_constraint(self.apm)[0]
         R.extend(constraint_values)
     return R
 
@@ -42,7 +42,7 @@ class target_function(object):
     #print list(self.data_manager.active_parameterisation)
     #print "absorption factors"
     #print list(self.data_manager.g_absorption.get_scale_factors())
-    for i in range(self.data_manager.n_active_params):
+    for i in range(self.apm.n_active_params):
       dIh_g = (dIh * self.data_manager.active_derivatives[i*num:(i+1)*num])
       dIh_g = np.add.reduceat(dIh_g, self.data_manager.Ih_table.h_index_cumulative_array[:-1])/sumgsq
       dIh_g = flex.double(np.repeat(dIh_g, self.data_manager.Ih_table.h_index_counter_array))
@@ -51,8 +51,8 @@ class target_function(object):
       grad = (2.0 * rhl * scaleweights * drdp)
       gradient.append(flex.sum(grad))
     if self.data_manager.scaling_options['scaling_method'] == 'aimless':
-      if 'g_absorption' in self.data_manager.active_parameterisation:
-        gradient += self.data_manager.calc_absorption_constraint(self.parameters)[1]
+      if 'g_absorption' in self.apm.active_parameterisation:
+        gradient += self.data_manager.calc_absorption_constraint(self.apm)[1]
     return gradient
 
   def return_targets(self):

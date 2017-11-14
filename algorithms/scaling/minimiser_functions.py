@@ -9,13 +9,16 @@ from cctbx.array_family import flex
 from scitbx import lbfgs
 from math import exp
 import time
+from data_manager_functions import active_parameter_manager
 #note: include math exp import after flex imports to avoid exp conflicts?
 
 class LBFGS_optimiser(object):
   '''Class that takes in Data_Manager object and runs an LBFGS minimisation'''
   def __init__(self, Data_Manager_object, param_name):
     self.data_manager = Data_Manager_object
-    self.x = self.data_manager.set_up_minimisation(param_name)
+    self.apm = active_parameter_manager(self.data_manager, param_name)
+    self.x = self.apm.x
+    #self.x = self.data_manager.set_up_minimisation(param_name)
     self.residuals = []
     '''if param_name:
       print """performing minimisation for %s correction, on %s reflections out
@@ -25,8 +28,8 @@ class LBFGS_optimiser(object):
       print """performing minimisation on %s reflections out
         of %s total reflections""" % (len(self.data_manager.Ih_table.Ih_table),
         len(self.data_manager.reflection_table))'''
-    self.core_params = lbfgs.core_parameters(maxfev=15)
-    self.termination_params = lbfgs.termination_parameters(max_iterations=15)
+    self.core_params = lbfgs.core_parameters(maxfev=5)
+    self.termination_params = lbfgs.termination_parameters(max_iterations=5)
     lbfgs.run(target_evaluator=self, core_params=self.core_params,
               termination_params=self.termination_params)
     #a few extra options for xds_scaling
@@ -44,8 +47,8 @@ class LBFGS_optimiser(object):
   def compute_functional_and_gradients(self):
     '''first calculate the updated values of the scale factors and Ih,
     before calculating the residual and gradient functions'''
-    self.data_manager.update_for_minimisation(parameters=self.x)
-    f, g = self.data_manager.get_target_function(parameters=self.x)
+    self.data_manager.update_for_minimisation(self.apm)
+    f, g = self.data_manager.get_target_function(self.apm)
     f = flex.sum(f)
     self.residuals.append(f)
     print "Residual sum: %12.6g" % f

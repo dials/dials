@@ -108,9 +108,9 @@ class Data_Manager(object):
       reflection_table['variance'] = ((weight * var_prf) + ((1.0 - weight) * var_sum))
     return reflection_table
 
-  def update_for_minimisation(self, parameters):
+  def update_for_minimisation(self, apm):
     '''update the scale factors and Ih for the next iteration of minimisation'''
-    basis_fn = self.get_basis_function(parameters)
+    basis_fn = self.get_basis_function(apm)
     self.active_derivatives = basis_fn[1]
     self.Ih_table.update_scale_factors(basis_fn[0])
     self.Ih_table.calc_Ih()
@@ -132,11 +132,8 @@ class aimless_Data_Manager(Data_Manager):
   def __init__(self, reflections, experiments, scaling_options):
     Data_Manager.__init__(self, reflections, experiments, scaling_options)
     'initialise g-value objects'
-    #(self.g_absorption, self.g_scale, self.g_decay) = (None, None, None)
-    self.SF_object_list = []
-    self.SF_object_sizes = []
-    self.n_active_params = 0
-    self.active_parameters = flex.double([])
+    (self.g_absorption, self.g_scale, self.g_decay) = (None, None, None)
+    self.g_parameterisation = {}
     '''bin reflections, determine outliers, extract reflections and weights for
     scaling and set normalised values.'''
     self.initialise_scale_factors()
@@ -152,17 +149,9 @@ class aimless_Data_Manager(Data_Manager):
       self.g_decay.set_normalised_values(reflections_for_scaling[
         'normalised_time_values'])
       self.g_decay.set_d_values(reflections_for_scaling['d'])
-    elif not self.scaling_options['decay_term']:
-      self.g_decay.set_normalised_values([0.0]*len(reflections_for_scaling))
-      self.g_decay.set_d_values(reflections_for_scaling['d'])
     if self.scaling_options['absorption_term']:
       self.g_absorption.set_values(sph_harm_table(reflections_for_scaling,
-                                                  self.scaling_options['lmax']))
-    #needed for null scale factor object.                                              
-    elif not self.scaling_options['absorption_term']:
-      self.g_absorption.set_normalised_values([1.0]*len(reflections_for_scaling))
-    self.g_parameterisation = {'g_absorption' : self.g_absorption, 'g_scale':
-                               self.g_scale, 'g_decay': self.g_decay}                                       
+                                                  self.scaling_options['lmax']))                                   
 
   def initialise_scale_factors(self):
     '''initialise scale factors and add to self.active_parameters'''
@@ -171,33 +160,13 @@ class aimless_Data_Manager(Data_Manager):
     self.initialise_absorption_scales(self.reflection_table, 
                                       self.scaling_options['lmax'])
     
-  def get_target_function(self, parameters):
+  def get_target_function(self, apm):
     '''call the aimless target function method'''
-    return target_function(self, parameters).return_targets()
+    return target_function(self, apm).return_targets()
 
-  def get_basis_function(self, parameters):
+  def get_basis_function(self, apm):
     '''call the aimless basis function method'''
-    return aimless_basis_function(self, parameters).return_basis()
-
-  def set_up_minimisation(self, param_name):
-    constant_g_values = []
-    x = flex.double([])
-    self.cumulative_active_params = [0]
-    self.active_params_list = []
-    self.active_parameterisation = []
-    for p_type, scalefactor in self.g_parameterisation.iteritems():
-      if p_type in param_name: #have a list of param names?
-        x.extend(scalefactor.get_scale_factors())
-        self.n_active_params = len(x)
-        self.active_parameterisation.append(p_type)
-        n_params = len(scalefactor.get_scale_factors())
-        self.active_params_list.append(n_params)
-        self.cumulative_active_params.append(self.cumulative_active_params[-1] + n_params)
-      else:
-        constant_g_values.append(scalefactor.get_scales_of_reflections())
-    self.constant_g_values = flex.double(np.prod(np.array(constant_g_values), axis=0))
-    return x
-    #return self.active_parameters
+    return basis_function(self, apm).return_basis()
 
   def initialise_decay_term(self, reflection_table):
     '''calculate the relative, normalised rotation angle. Here this is called
@@ -225,17 +194,7 @@ class aimless_Data_Manager(Data_Manager):
       lowest_parameter_value = int((min(reflection_table['normalised_time_values'])//1)-2)#was -1
       n_decay_parameters =  highest_parameter_value - lowest_parameter_value + 1
       self.g_decay = SF.SmoothScaleFactor_1D_Bfactor(0.0, n_decay_parameters, reflection_table['d'])
-      #self.g_decay.set_normalised_values(reflection_table['normalised_time_values'])
-      self.n_active_params += n_decay_parameters
-      self.n_g_decay_params = n_decay_parameters
-      self.active_parameters.extend(self.g_decay.scale_factors)
-      self.SF_object_list.append(self.g_decay)
-      self.SF_object_sizes.append(n_decay_parameters)
-    else:
-      self.n_g_decay_params = 0
-      self.g_decay = SF.Null_ScaleFactor()
-      #self.SF_object_list.append(self.g_absorption)
-      #self.SF_object_sizes.append(0)
+      self.g_parameterisation['g_decay'] = self.g_decay
 
   def initialise_scale_term(self, reflection_table):
     '''calculate the relative, normalised rotation angle.
@@ -260,12 +219,8 @@ class aimless_Data_Manager(Data_Manager):
     lowest_parameter_value = int((min(reflection_table['normalised_rotation_angle'])//1)-2)#was -1
     n_scale_parameters = highest_parameter_value - lowest_parameter_value + 1
     self.g_scale = SF.SmoothScaleFactor_1D(1.0, n_scale_parameters)
-    #self.g_scale.set_normalised_values(reflection_table['normalised_rotation_angle'])
-    self.n_active_params += n_scale_parameters
-    self.n_g_scale_params = n_scale_parameters
-    self.active_parameters.extend(self.g_scale.scale_factors)
-    self.SF_object_list.append(self.g_scale)
-    self.SF_object_sizes.append(n_scale_parameters)
+    self.g_scale.set_normalised_values(reflection_table['normalised_rotation_angle'])
+    self.g_parameterisation['g_scale'] = self.g_scale
 
   def initialise_absorption_scales(self, reflection_table, lmax):
     if self.scaling_options['absorption_term']:
@@ -275,47 +230,40 @@ class aimless_Data_Manager(Data_Manager):
         n_abs_params += (2*(i+1))+1
       self.g_absorption = SF.SphericalAbsorption_ScaleFactor(0.0, n_abs_params,
         sph_harm_table(reflection_table, lmax))
-      self.n_active_params += n_abs_params
-      self.n_g_abs_params = n_abs_params
-      self.active_parameters.extend(self.g_absorption.scale_factors)
-      self.SF_object_list.append(self.g_absorption)
-      self.SF_object_sizes.append(n_abs_params)
+      self.g_parameterisation['g_absorption'] = self.g_absorption
     else:
       reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
                                  * self.experiments.scan.get_oscillation()[1])
-      self.g_absorption = SF.Null_ScaleFactor()
-      self.n_g_abs_params = 0
-      self.SF_object_list.append(self.g_absorption)
-      self.SF_object_sizes.append(0)
 
-
-
-  def calc_absorption_constraint(self, absorption_parameters):
+  def calc_absorption_constraint(self, apm):
     #this should only be called if g_absorption in active params
-    idx = self.active_parameterisation.index('g_absorption')
+    idx = apm.active_parameterisation.index('g_absorption')
+    start_idx = apm.cumulative_active_params[idx]
+    end_idx = apm.cumulative_active_params[idx+1]
     weight = 1e6
-    abs_params = absorption_parameters
+    abs_params = apm.x[start_idx:end_idx]
     residual = (weight * (abs_params)**2)
     gradient = (2 * weight * abs_params)
     #need to make sure gradient is returned is same size as gradient calculated in target fn-
     #would only be triggered if refining absorption as same time as another scale factor.
     gradient_vector = flex.double([])
-    for i, param in enumerate(self.active_parameterisation):
+    for i, param in enumerate(apm.active_parameterisation):
       if param != 'g_absorption':
-        gradient_vector.extend(flex.double([0.0]*self.n_active_params[i]))
+        gradient_vector.extend(flex.double([0.0]*apm.n_active_params[i]))
       elif param == 'g_absorption':
         gradient_vector.extend(gradient)
     return (residual, gradient_vector)
 
   def normalise_scales_and_B(self):
-    absorption_scales = self.g_decay.get_scales_of_reflections()
-    B_values = flex.double(np.log(absorption_scales)) * 2.0 * (self.g_decay.d_values**2)
-    B_parameters = self.g_decay.get_scale_factors()
-    B_new_parameters = B_parameters - flex.double([max(B_values)]*len(B_parameters))
-    self.g_decay.set_scale_factors(B_new_parameters)
-    self.g_decay.calculate_smooth_scales()
-    absorption_scales = self.g_decay.get_scales_of_reflections()
-    B_values = flex.double(np.log(absorption_scales)) * 2.0 * (self.g_decay.d_values**2)
+    if self.scaling_options['decay_term']:
+      absorption_scales = self.g_decay.get_scales_of_reflections()
+      B_values = flex.double(np.log(absorption_scales)) * 2.0 * (self.g_decay.d_values**2)
+      B_parameters = self.g_decay.get_scale_factors()
+      B_new_parameters = B_parameters - flex.double([max(B_values)]*len(B_parameters))
+      self.g_decay.set_scale_factors(B_new_parameters)
+      self.g_decay.calculate_smooth_scales()
+      absorption_scales = self.g_decay.get_scales_of_reflections()
+      B_values = flex.double(np.log(absorption_scales)) * 2.0 * (self.g_decay.d_values**2)
     #scale_factors = self.g_scale.get_scale_factors()
     scales = self.g_scale.get_scales_of_reflections()
     normalised_values = self.g_scale.get_normalised_values()
@@ -330,26 +278,25 @@ class aimless_Data_Manager(Data_Manager):
 
 
   def expand_scales_to_all_reflections(self):
+    expanded_scale_factors = []
     if not self.scaling_options['multi_mode']:
       self.normalise_scales_and_B()
     "recalculate scales for reflections in sorted_reflection table"
     self.g_scale.set_normalised_values(self.reflection_table['normalised_rotation_angle'])
-    angular_scale_factor = self.g_scale.calculate_smooth_scales()
-    if not self.scaling_options['decay_term']:
-      self.reflection_table['normalised_time_values'] = flex.double([1.0]*len(self.reflection_table))
-    self.g_decay.set_normalised_values(self.reflection_table['normalised_time_values'])
-    self.g_decay.set_d_values(self.reflection_table['d'])
-    decay_factor = self.g_decay.calculate_smooth_scales()
-    absorption_scales = self.g_decay.get_scales_of_reflections()
-    B_values = flex.double(np.log(absorption_scales)) * 2.0 * (self.g_decay.d_values**2)
+    expanded_scale_factors.append(self.g_scale.calculate_smooth_scales())
+    if self.scaling_options['decay_term']:
+      #self.reflection_table['normalised_time_values'] = flex.double([1.0]*len(self.reflection_table))
+      self.g_decay.set_normalised_values(self.reflection_table['normalised_time_values'])
+      self.g_decay.set_d_values(self.reflection_table['d'])
+      expanded_scale_factors.append(self.g_decay.calculate_smooth_scales())
+      absorption_scales = self.g_decay.get_scales_of_reflections()
+      B_values = flex.double(np.log(absorption_scales)) * 2.0 * (self.g_decay.d_values**2)
     if self.scaling_options['absorption_term']:
       self.g_absorption.set_values(sph_harm_table(self.reflection_table,
                                                   self.scaling_options['lmax']))
-    else:
-      self.g_absorption.set_normalised_values([1.0]*len(self.reflection_table))
-    absorption_factor = self.g_absorption.calculate_smooth_scales()
-    self.reflection_table['inverse_scale_factor'] = (angular_scale_factor
-      * decay_factor * absorption_factor)
+      expanded_scale_factors.append(self.g_absorption.calculate_smooth_scales())
+    self.reflection_table['inverse_scale_factor'] = flex.double(np.prod(np.array(expanded_scale_factors), axis=0))
+    #(angular_scale_factor * decay_factor * absorption_factor)
     self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table,
                                                                weights_filter=False)
     
@@ -416,38 +363,69 @@ class KB_Data_Manager(Data_Manager):
       np.exp(B/(2.0*(self.reflection_table['d']**2))))
 
 
+class active_parameter_manager(object):
+  ''' object to manage the current active parameters during minimisation.
+  Separated out to provide a consistent interface between the data manager and
+  minimiser.
+  Takes in a data manager, needed to access SF objects through g_parameterisation,
+  and a param_name list indicating the active parameters.'''
+  def __init__(self, Data_Manager, param_name):
+    constant_g_values = []
+    self.x = flex.double([])
+    self.n_active_params = 0
+    self.active_parameterisation = []
+    self.active_params_list = []
+    self.cumulative_active_params = [0]
+    for p_type, scalefactor in Data_Manager.g_parameterisation.iteritems():
+      if p_type in param_name:
+        self.x.extend(scalefactor.get_scale_factors())
+        self.n_active_params = len(self.x) #update n_active_params
+        self.active_parameterisation.append(p_type)
+        n_params = len(scalefactor.get_scale_factors())
+        self.active_params_list.append(n_params)
+        self.cumulative_active_params.append(self.cumulative_active_params[-1] + n_params)
+        n_reflections = len(scalefactor.get_scales_of_reflections())
+      else:
+        constant_g_values.append(scalefactor.get_scales_of_reflections())
+    if len(constant_g_values) > 0.0:
+      self.constant_g_values = flex.double(np.prod(np.array(constant_g_values), axis=0))
+    else:
+      self.constant_g_values = flex.double([1.0] * n_reflections)
+
+  def get_current_parameters(self):
+    return self.x
+
+
 class XDS_Data_Manager(Data_Manager):
   '''Data Manager subclass for implementing XDS parameterisation'''
   def __init__(self, reflections, experiments, scaling_options):
     Data_Manager.__init__(self, reflections, experiments, scaling_options)
     #initialise g-value arrays
-    self.g_absorption = None #these will later be initialised to ScaleFactor objects
-    self.g_modulation = None
-    self.g_decay = None
-    #items to keep track of active parameterisation
-    self.active_parameterisation = None
-    self.n_active_params = None
-    self.constant_g_values = None
+    (self.g_absorption, self.g_modulation, self.g_decay) = (None, None, None)
+    self.g_parameterisation = {}
     self.initialise_scale_factors() #this creates ScaleFactor objects
     (reflections_for_scaling, weights_for_scaling) = (
       self.extract_reflections_for_scaling(self.reflection_table))
     self.Ih_table = single_Ih_table(reflections_for_scaling, weights_for_scaling.get_weights())
     #update normalised values after extracting reflections for scaling
-    self.g_modulation.set_normalised_values(reflections_for_scaling['normalised_x_values'],
-      reflections_for_scaling['normalised_y_values'])
-    self.g_decay.set_normalised_values(reflections_for_scaling['normalised_res_values'],
-      reflections_for_scaling['normalised_time_values'])
-    self.g_absorption.set_normalised_values(reflections_for_scaling['normalised_x_abs_values'],
-      reflections_for_scaling['normalised_y_abs_values'],
-      reflections_for_scaling['normalised_time_values'])
-    #create a dict to allow easy access to the relevant parameters during minimisation
-    self.g_parameterisation = {'g_absorption' : self.g_absorption, 'g_modulation':
-                               self.g_modulation, 'g_decay': self.g_decay}
+    if scaling_options['modulation']:
+      self.g_modulation.set_normalised_values(reflections_for_scaling['normalised_x_values'],
+        reflections_for_scaling['normalised_y_values'])
+    if scaling_options['decay']:
+      self.g_decay.set_normalised_values(reflections_for_scaling['normalised_res_values'],
+        reflections_for_scaling['normalised_time_values'])
+    if scaling_options['absorption']:
+      self.g_absorption.set_normalised_values(reflections_for_scaling['normalised_x_abs_values'],
+        reflections_for_scaling['normalised_y_abs_values'],
+        reflections_for_scaling['normalised_time_values'])
+    #print self.g_parameterisation
 
   def initialise_scale_factors(self):
     self.bin_reflections_decay()
-    self.bin_reflections_absorption()
-    self.bin_reflections_modulation()
+    if self.scaling_options['absorption']:
+      self.bin_reflections_absorption()
+    if self.scaling_options['modulation']:
+      self.bin_reflections_modulation()
 
   def get_target_function(self, parameters):
     '''call the xds target function method'''
@@ -461,26 +439,7 @@ class XDS_Data_Manager(Data_Manager):
     if self.scaling_options['parameterization'] == 'log':
       return xds_basis_function_log(self, parameters).return_basis()
     else:
-      return xds_basis_function(self, parameters).return_basis()
-
-  def set_up_minimisation(self, param_name):
-    '''Set up the problem by indicating which g values are being minimised'''
-    '''This functions sets x to relevant self.SF.get_scale_factors() to return
-    to a minimiser. For XDS-like scaling, the factors that are not minimised
-    are kept constant, so calculate this here as well before minimisation.'''
-    constant_g_values = []
-    for p_type, scalefactor in self.g_parameterisation.iteritems():
-      if param_name == p_type:
-        x = scalefactor.get_scale_factors()
-        self.n_active_params = len(x)
-        self.active_parameterisation = param_name
-      else:
-        constant_g_values.append(scalefactor.get_scales_of_reflections())
-    if self.scaling_options['parameterization'] == 'standard':
-      self.constant_g_values = flex.double(np.prod(np.array(constant_g_values), axis=0))
-    elif self.scaling_options['parameterization'] == 'log':
-      self.constant_g_values = flex.double(np.sum(np.array(constant_g_values), axis=0))
-    return x
+      return basis_function(self, parameters).return_basis()
 
   def bin_reflections_decay(self):
     '''bin reflections for decay correction'''
@@ -517,16 +476,19 @@ class XDS_Data_Manager(Data_Manager):
     n_res_parameters = highest_parameter_value - lowest_parameter_value + 1
     self.reflection_table['normalised_time_values'] = ((self.reflection_table['xyzobs.px.value'].parts()[2]
       - zmin) / one_time_width)
-    #define the highest and lowest gridpoints: go out one further than the max/min int values
-    highest_parameter_value = int((max(self.reflection_table['normalised_time_values'])//1)+2)
-    lowest_parameter_value = int((min(self.reflection_table['normalised_time_values'])//1)-1)
-    n_time_parameters = highest_parameter_value - lowest_parameter_value + 1
-    if self.scaling_options['parameterization'] == 'log':
-      self.g_decay = SF.SmoothScaleFactor_2D(0.0, n_res_parameters, n_time_parameters)
-    else:
-      self.g_decay = SF.SmoothScaleFactor_2D(1.0, n_res_parameters, n_time_parameters)
-    self.g_decay.set_normalised_values(self.reflection_table['normalised_res_values'],
-      self.reflection_table['normalised_time_values'])
+    if self.scaling_options['decay']:
+      #put this here to allow calculation of normalised time values needed for abscor, will rearrange.
+      #define the highest and lowest gridpoints: go out one further than the max/min int values
+      highest_parameter_value = int((max(self.reflection_table['normalised_time_values'])//1)+2)
+      lowest_parameter_value = int((min(self.reflection_table['normalised_time_values'])//1)-1)
+      n_time_parameters = highest_parameter_value - lowest_parameter_value + 1
+      if self.scaling_options['parameterization'] == 'log':
+        self.g_decay = SF.SmoothScaleFactor_2D(0.0, n_res_parameters, n_time_parameters)
+      else:
+        self.g_decay = SF.SmoothScaleFactor_2D(1.0, n_res_parameters, n_time_parameters)
+      self.g_decay.set_normalised_values(self.reflection_table['normalised_res_values'],
+        self.reflection_table['normalised_time_values'])
+      self.g_parameterisation['g_decay'] = self.g_decay
   
   def bin_reflections_modulation(self):
     '''bin reflections for modulation correction'''
@@ -552,6 +514,7 @@ class XDS_Data_Manager(Data_Manager):
       self.g_modulation = SF.SmoothScaleFactor_2D(1.0, n_x_parameters, n_y_parameters)
     self.g_modulation.set_normalised_values(self.reflection_table['normalised_x_values'],
       self.reflection_table['normalised_y_values'])
+    self.g_parameterisation['g_modulation'] = self.g_modulation
 
   def bin_reflections_absorption(self):
     '''bin reflections for absorption correction'''
@@ -585,6 +548,7 @@ class XDS_Data_Manager(Data_Manager):
     self.g_absorption.set_normalised_values(self.reflection_table['normalised_x_abs_values'], 
       self.reflection_table['normalised_y_abs_values'],
       self.reflection_table['normalised_time_values'])
+    self.g_parameterisation['g_absorption'] = self.g_absorption
 
   def bin_reflections_absorption_radially(self):
     from math import pi
@@ -635,22 +599,27 @@ class XDS_Data_Manager(Data_Manager):
   def expand_scales_to_all_reflections(self):
     #currently we have Ih, scales and weights for reflections_for_scaling
     #first calculate the scales for all reflections (Sorted reflections)
-    self.g_modulation.set_normalised_values(self.reflection_table['normalised_x_values'],
-      self.reflection_table['normalised_y_values'])
-    gscalevalues = self.g_modulation.calculate_smooth_scales()
-    self.g_decay.set_normalised_values(self.reflection_table['normalised_res_values'],
-      self.reflection_table['normalised_time_values'])
-    gdecayvalues = self.g_decay.calculate_smooth_scales()
-    self.g_absorption.set_normalised_values(self.reflection_table['normalised_x_abs_values'],
-      self.reflection_table['normalised_y_abs_values'], 
-      self.reflection_table['normalised_time_values'])
-    gabsvalues = self.g_absorption.calculate_smooth_scales()
+    scales_to_expand = []
+    if self.scaling_options['modulation']:
+      self.g_modulation.set_normalised_values(self.reflection_table['normalised_x_values'],
+        self.reflection_table['normalised_y_values'])
+      scales_to_expand.append(self.g_modulation.calculate_smooth_scales())
+    if self.scaling_options['decay']:
+      self.g_decay.set_normalised_values(self.reflection_table['normalised_res_values'],
+        self.reflection_table['normalised_time_values'])
+      scales_to_expand.append(self.g_decay.calculate_smooth_scales())
+    if self.scaling_options['absorption']:
+      self.g_absorption.set_normalised_values(self.reflection_table['normalised_x_abs_values'],
+        self.reflection_table['normalised_y_abs_values'], 
+        self.reflection_table['normalised_time_values'])
+      scales_to_expand.append(self.g_absorption.calculate_smooth_scales())
+    
     if self.scaling_options['parameterization'] == 'log':
       self.reflection_table['inverse_scale_factor'] = flex.double(
-        np.exp(gscalevalues + gdecayvalues + gabsvalues))
+        np.exp(np.sum(np.array(scales_to_expand), axis=0)))
     else:
-      self.reflection_table['inverse_scale_factor'] = (gscalevalues * gdecayvalues
-                                                         * gabsvalues)
+      self.reflection_table['inverse_scale_factor'] = flex.double(
+        np.prod(np.array(scales_to_expand), axis=0))
     #the update weights - use statistical weights and just filter outliers, not on Isigma. dmin etc
     #self.reflection_table['wilson_outlier_flag'] = calculate_wilson_outliers(self.reflection_table, self.experiments)
     self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table, weights_filter=False)
