@@ -33,3 +33,11 @@ class Weighting(object):
     if 'wilson_outlier_flag' in reflection_table:
       sel = reflection_table['wilson_outlier_flag']
       self.scale_weighting.set_selected(sel, 0.0)
+
+  def apply_aimless_error_model(self, reflection_table, error_params):
+    def new_sigma(weight):
+      sigmaprime = error_params[0] * (((1.0/weight)
+                                     + ((error_params[1] * reflection_table['intensity'])**2))**0.5)
+      return sigmaprime
+    new_weights = [1.0/(new_sigma(i)**2) if i > 0.0 else 0.0 for i in self.scale_weighting]
+    self.scale_weighting = new_weights

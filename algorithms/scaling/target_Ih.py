@@ -19,6 +19,7 @@ class base_Ih_table(object):
     self.Ih_table['inverse_scale_factor'] = refl_table['inverse_scale_factor']
     #calculate the indexing arrays
     (self.h_index_counter_array, self.h_index_cumulative_array) = self.assign_h_index()
+    self.n_h = self.calc_nh()
     self.Ih_array = None #This may not be necessary in future but keep for now.
   
   #note: no calc_Ih method here, this must be filled in by subclasses, this is
@@ -37,6 +38,11 @@ class base_Ih_table(object):
       length than previous assignment: was %s, attempting %s""" % (
         len(self.Ih_table['weights']), len(weights))
     self.Ih_table['weights'] = weights
+
+  def update_aimless_error_model(self, error_params):
+    sigmaprime = error_params[0] * (((1.0/self.Ih_table['weights']) 
+                                    + ((error_params[1] * self.Ih_table['intensity'])**2))**0.5)
+    self.Ih_table['weights'] = 1.0/(sigmaprime**2)
 
   def set_Ih_values(self, Ih_values):
     if len(Ih_values) != len(self.Ih_table['Ih_values']):
@@ -75,6 +81,13 @@ class base_Ih_table(object):
       h_index_cumulative_array.append(hsum)
     return h_index_counter_array, h_index_cumulative_array
 
+  def calc_nh(self):
+    '''returns a vector of len(reflections) with the number of members of
+    each h group'''
+    n_h = flex.double([])
+    for i in self.h_index_counter_array:
+      n_h.extend(flex.double([i]*i))
+    return n_h
 
 class single_Ih_table(base_Ih_table):
   '''subclass of base_Ih_table to fill in the calc_Ih method. This is the default

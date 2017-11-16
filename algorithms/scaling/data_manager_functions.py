@@ -17,6 +17,7 @@ from reflection_weighting import *
 from data_quality_assessment import R_meas, R_pim
 from target_Ih import *
 import matplotlib.pyplot as plt
+import minimiser_functions as mf
 
 class Data_Manager(object):
   '''Data Manager takes a params parsestring containing the parsed
@@ -52,7 +53,7 @@ class Data_Manager(object):
     weights_for_scaling = self.update_weights_for_scaling(reflections_for_scaling)
     return reflections_for_scaling, weights_for_scaling
 
-  def update_weights_for_scaling(self, reflection_table, weights_filter=True):
+  def update_weights_for_scaling(self, reflection_table, weights_filter=True, error_model_params=None):
     '''set the weights of each reflection to be used in scaling'''
     weights_for_scaling = Weighting(reflection_table)
     if weights_filter:
@@ -61,6 +62,8 @@ class Data_Manager(object):
       weights_for_scaling.apply_dmin_cutoff(reflection_table,
                                             self.scaling_options['d_min'])
     weights_for_scaling.remove_wilson_outliers(reflection_table)
+    if error_model_params:
+      weights_for_scaling.apply_aimless_error_model(reflection_table, error_model_params)
     return weights_for_scaling
 
   def map_indices_to_asu(self, reflection_table):
@@ -167,6 +170,17 @@ class aimless_Data_Manager(Data_Manager):
   def get_basis_function(self, apm):
     '''call the aimless basis function method'''
     return basis_function(self, apm).return_basis()
+
+  def update_for_minimisation(self, apm):
+    '''update the scale factors and Ih for the next iteration of minimisation'''
+    basis_fn = self.get_basis_function(apm)
+    self.active_derivatives = basis_fn[1]
+    self.Ih_table.update_scale_factors(basis_fn[0])
+    #print error_model_params
+    #exit()
+    #mf.error_scale_LBFGSoptimiser(self.Ih_table, flex.double([1.0,0.0,0.0]))
+    #self.Ih_table.update_weights()
+    self.Ih_table.calc_Ih()
 
   def initialise_decay_term(self, reflection_table):
     '''calculate the relative, normalised rotation angle. Here this is called
@@ -297,9 +311,11 @@ class aimless_Data_Manager(Data_Manager):
       expanded_scale_factors.append(self.g_absorption.calculate_smooth_scales())
     self.reflection_table['inverse_scale_factor'] = flex.double(np.prod(np.array(expanded_scale_factors), axis=0))
     #(angular_scale_factor * decay_factor * absorption_factor)
-    self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table,
-                                                               weights_filter=False)
-    
+    #error_model_params = mf.error_scale_LBFGSoptimiser(self.Ih_table, flex.double([1.0,0.123])).x
+    #self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table,
+    #                                                           weights_filter=False,
+    #                                                           error_model_params=error_model_params)
+    #print "updated weights"
     #remove reflections that were determined as outliers
     sel = self.weights_for_scaling.get_weights() != 0.0
     self.reflection_table = self.reflection_table.select(sel)
