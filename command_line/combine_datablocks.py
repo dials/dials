@@ -19,7 +19,7 @@ in the order they are provided as input.
 """
 
 #!/usr/bin/env dials.python
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 from libtbx.phil import parse
 from dials.util.options import flatten_datablocks
 from dials.util.options import flatten_reflections
@@ -96,18 +96,26 @@ class Script(object):
     datablocks = flatten_datablocks(params.input.datablock)
     reflections = flatten_reflections(params.input.reflections)
 
+    if len(reflections):
+      r = self.combine_reflections(reflections)
+      # print number of reflections per imageset
+      from libtbx.table_utils import simple_table
+      max_id = max(r['id'])
+      header = ["Imageset", "Nref"]
+      nrefs_per_imset = [(r['id'] == i).count(True) for i in range(max_id + 1)]
+      rows = [(str(i), str(n)) for (i, n) in enumerate(nrefs_per_imset)]
+      st = simple_table(rows, header)
+      print(st.format())
+      rf = params.output.reflections_filename
+      print('Saving combined reflections to {0}'.format(rf))
+      r.as_pickle(rf)
+
     if len(datablocks):
       db = self.combine_datablocks(datablocks)
       dbf = params.output.datablocks_filename
-      print 'Saving combined datablocks to {0}'.format(dbf)
+      print('Saving combined datablocks to {0}'.format(dbf))
       dump = DataBlockDumper(db)
       dump.as_file(dbf, compact=params.output.compact)
-
-    if len(reflections):
-      r = self.combine_reflections(reflections)
-      rf = params.output.reflections_filename
-      print 'Saving combined reflections to {0}'.format(rf)
-      r.as_pickle(rf)
 
     return
 
@@ -121,12 +129,10 @@ class Script(object):
     new_reflections = flex.reflection_table()
     start_id = 0
     for rt in reflections:
-      print len(rt)
       id_range = max(rt['id']) - min(rt['id']) + 1
       if len(set(rt['id'])) != id_range:
         raise Sorry('imageset ids not contiguous')
       rt['id'] = rt['id'] - min(rt['id']) + start_id
-      print start_id
       start_id = max(rt['id']) + 1
       new_reflections.extend(rt)
     return new_reflections
