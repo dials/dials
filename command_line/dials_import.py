@@ -139,6 +139,18 @@ phil_scope = parse('''
     pedestal = None
       .type = str
       .help = "Apply a pedestal to the imported data"
+
+    dx = None
+      .type = str
+      .help = "Apply an x geometry offset"
+              "If both dx and dy are set then"
+              "OffsetParallaxCorrectedPxMmStrategy will be used"
+
+    dy = None
+      .type = str
+      .help = "Apply an y geometry offset"
+              "If both dx and dy are set then"
+              "OffsetParallaxCorrectedPxMmStrategy will be used"
   }
 ''', process_includes=True)
 
@@ -494,6 +506,16 @@ class MetaDataUpdater(object):
           You can override this by specifying the metadata as geometry parameters
         ''')
 
+      # Check if dx and dy are set
+      if [imageset.external_lookup.dx.filename,
+          imageset.external_lookup.dy.filename].count(None) == 0:
+        imageset.update_detector_px_mm_data()
+      elif [imageset.external_lookup.dx.filename,
+            imageset.external_lookup.dy.filename].count(None) == 1:
+        raise Sorry('''
+          Only 1 offset map is set. Need to set both dx and d
+        ''')
+
       # Append to new imageset list
       imageset_list.append(imageset)
 
@@ -516,6 +538,12 @@ class MetaDataUpdater(object):
       if lookup.dark.filename is not None:
         imageset.external_lookup.pedestal.filename = lookup.dark.filename
         imageset.external_lookup.pedestal.data = ImageDouble(lookup.dark.data)
+      if lookup.dx.filename is not None:
+        imageset.external_lookup.dx.filename = lookup.dx.filename
+        imageset.external_lookup.dx.data = ImageDouble(lookup.dx.data)
+      if lookup.dy.filename is not None:
+        imageset.external_lookup.dy.filename = lookup.dy.filename
+        imageset.external_lookup.dy.data = ImageDouble(lookup.dy.data)
     return imageset
 
   def import_lookup_data(self, params):
@@ -529,9 +557,13 @@ class MetaDataUpdater(object):
     mask_filename = None
     gain_filename = None
     dark_filename = None
+    dx_filename = None
+    dy_filename = None
     mask = None
     gain = None
     dark = None
+    dx = None
+    dy = None
     lookup_size = None
     if params.lookup.mask is not None:
       mask_filename = params.lookup.mask
@@ -561,13 +593,37 @@ class MetaDataUpdater(object):
         assert len(dark) == len(lookup_size), "Incompatible size"
         for s, d in zip(lookup_size, dark):
           assert s == d.all(), "Incompatible size"
-    Lookup = namedtuple("Lookup", ['size', 'mask', 'gain', 'dark'])
+    if params.lookup.dx is not None:
+      dx_filename = params.lookup.dx
+      dx = pickle.load(open(dx_filename))
+      if not isinstance(dx, tuple):
+        dx = (dx,)
+      if lookup_size is None:
+        lookup_size = [d.all() for d in dx]
+      else:
+        assert len(dx) == len(lookup_size), "Incompatible size"
+        for s, d in zip(lookup_size, dx):
+          assert s == d.all(), "Incompatible size"
+    if params.lookup.dy is not None:
+      dy_filename = params.lookup.dy
+      dy = pickle.load(open(dy_filename))
+      if not isinstance(dy, tuple):
+        dy = (dy,)
+      if lookup_size is None:
+        lookup_size = [d.all() for d in dy]
+      else:
+        assert len(dy) == len(lookup_size), "Incompatible size"
+        for s, d in zip(lookup_size, dy):
+          assert s == d.all(), "Incompatible size"
+    Lookup = namedtuple("Lookup", ['size', 'mask', 'gain', 'dark', 'dx', 'dy'])
     Item = namedtuple("Item", ["data", "filename"])
     return Lookup(
       size=lookup_size,
       mask=Item(data=mask, filename=mask_filename),
       gain=Item(data=gain, filename=gain_filename),
-      dark=Item(data=dark, filename=dark_filename))
+      dark=Item(data=dark, filename=dark_filename),
+      dx=Item(data=dx, filename=dx_filename),
+      dy=Item(data=dy, filename=dy_filename))
 
   def convert_to_grid_scan(self, datablock, params):
     '''
