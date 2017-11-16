@@ -97,19 +97,17 @@ class Script(object):
     reflections = flatten_reflections(params.input.reflections)
 
     if len(datablocks):
-      datablocks = self.combine_datablocks(datablocks)
+      db = self.combine_datablocks(datablocks)
+      dbf = params.output.datablocks_filename
+      print 'Saving combined datablocks to {0}'.format(dbf)
+      dump = DataBlockDumper(db)
+      dump.as_file(dbf, compact=params.output.compact)
 
     if len(reflections):
-      reflections = self.combine_reflections(reflections)
-
-    # save output
-    dbf = params.output.datablocks_filename
-    print 'Saving combined datablocks to {0}'.format(dbf)
-    dump = DataBlockDumper(datablocks)
-    dump.as_file(dbf, compact=params.output.compact)
-    rf = params.output.reflections_filename
-    print 'Saving combined reflections to {0}'.format(rf)
-    reflections.as_pickle(rf)
+      r = self.combine_reflections(reflections)
+      rf = params.output.reflections_filename
+      print 'Saving combined reflections to {0}'.format(rf)
+      r.as_pickle(rf)
 
     return
 
@@ -123,11 +121,14 @@ class Script(object):
     new_reflections = flex.reflection_table()
     start_id = 0
     for rt in reflections:
+      print len(rt)
       id_range = max(rt['id']) - min(rt['id']) + 1
       if len(set(rt['id'])) != id_range:
         raise Sorry('imageset ids not contiguous')
       rt['id'] = rt['id'] - min(rt['id']) + start_id
-    new_reflections.extend(rt)
+      print start_id
+      start_id = max(rt['id']) + 1
+      new_reflections.extend(rt)
     return new_reflections
 
 if __name__ == "__main__":
