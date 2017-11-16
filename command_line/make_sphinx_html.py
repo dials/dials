@@ -70,8 +70,8 @@ def update_dials_download_links():
         if shortname not in assets or assets[shortname][0] < last_update:
           assets[shortname] = (last_update, version, a.get('browser_download_url'))
 
-    long_names = { 'macosx.pkg': 'Mac installer (OS X 10.11)',
-                   'macosx.tar.gz': 'Mac tar archive (OS X 10.11)',
+    long_names = { 'macosx.pkg': 'Mac installer',
+                   'macosx.tar.gz': 'Mac tar archive',
                    'macosx-10.6.pkg': 'Mac installer (OS X 10.6)',
                    'macosx-10.6.tar.gz': 'Mac tar archive (OS X 10.6)',
                    'linux-x86_64.tar.xz': 'Linux installer',
