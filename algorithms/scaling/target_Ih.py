@@ -31,6 +31,13 @@ class base_Ih_table(object):
         len(self.Ih_table['inverse_scale_factor']), len(scalefactors))
     self.Ih_table['inverse_scale_factor'] = scalefactors
 
+  def update_weights(self, weights):
+    if len(weights) != len(self.Ih_table['weights']):
+      assert 0, """attempting to set a new set of weights of different
+      length than previous assignment: was %s, attempting %s""" % (
+        len(self.Ih_table['weights']), len(weights))
+    self.Ih_table['weights'] = weights
+
   def set_Ih_values(self, Ih_values):
     if len(Ih_values) != len(self.Ih_table['Ih_values']):
       assert 0, """attempting to set a new set of Ih_values of different

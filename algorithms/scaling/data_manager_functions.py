@@ -249,7 +249,7 @@ class aimless_Data_Manager(Data_Manager):
     gradient_vector = flex.double([])
     for i, param in enumerate(apm.active_parameterisation):
       if param != 'g_absorption':
-        gradient_vector.extend(flex.double([0.0]*apm.n_active_params[i]))
+        gradient_vector.extend(flex.double([0.0]*apm.active_params_list[i]))
       elif param == 'g_absorption':
         gradient_vector.extend(gradient)
     return (residual, gradient_vector)
