@@ -86,13 +86,22 @@ class Test:
     print 'OK'
 
   def tst_kabsch_debug(self):
-    from dials.algorithms.image.threshold import kabsch, KabschDebug
+    from dials.algorithms.image.threshold import kabsch
+    from dials.algorithms.image.threshold import kabsch_w_gain
+    from dials.algorithms.image.threshold import KabschDebug
     nsig_b = 3
     nsig_s = 3
     result1 = kabsch(self.image, self.mask, self.size, nsig_b, nsig_s, self.min_count)
     debug = KabschDebug(self.image, self.mask, self.size, nsig_b, nsig_s,  0, self.min_count)
     result2 = debug.final_mask()
     assert(result1.all_eq(result2))
+
+    result3 = kabsch_w_gain(self.image, self.mask, self.gain, self.size,
+        nsig_b, nsig_s, self.min_count)
+    debug = KabschDebug(self.image, self.mask, self.gain, self.size, nsig_b,
+        nsig_s,  0, self.min_count)
+    result4 = debug.final_mask()
+    assert (result3 == result4)
     print 'OK'
 
   def tst_dispersion_threshold(self):
