@@ -102,8 +102,8 @@ class DispersionSpotFinderThresholdExt(SpotFinderThresholdIface):
       logger.info("Setting global_threshold: %i" %(
         params.spotfinder.threshold.dispersion.global_threshold))
 
-    from dials.algorithms.spot_finding.threshold import XDSThresholdStrategy
-    self._algorithm = XDSThresholdStrategy(
+    from dials.algorithms.spot_finding.threshold import DispersionThresholdStrategy
+    self._algorithm = DispersionThresholdStrategy(
       kernel_size=params.spotfinder.threshold.dispersion.kernel_size,
       gain=params.spotfinder.threshold.dispersion.gain,
       mask=params.spotfinder.lookup.mask,

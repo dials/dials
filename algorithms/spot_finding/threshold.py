@@ -74,7 +74,7 @@ class UnimodalThresholdStrategy(ThresholdStrategy):
     return image >= threshold
 
 
-class XDSThresholdStrategy(ThresholdStrategy):
+class DispersionThresholdStrategy(ThresholdStrategy):
   '''
   A class implementing a 'gain' threshold.
 
