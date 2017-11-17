@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# kabsch_spotfinder_threshold.py
+# dispersion_spotfinder_threshold.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
@@ -13,13 +13,13 @@ from __future__ import absolute_import, division
 from dials.interfaces import SpotFinderThresholdIface
 
 import logging
-logger = logging.getLogger("dials.extensions.kabsch_spotfinder_threshold_ext")
+logger = logging.getLogger("dials.extensions.dispersion_spotfinder_threshold_ext")
 
 
-class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
-  ''' Extensions to do xds-like threshold. '''
+class DispersionSpotFinderThresholdExt(SpotFinderThresholdIface):
+  ''' Extensions to do disperion threshold. '''
 
-  name = 'xds'
+  name = 'dispersion'
 
   default = True
 
@@ -42,8 +42,8 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
         .expert_level = 1
 
       sigma_background = 6
-        .help = "The number of standard deviations of the coefficient of"
-                "variation (variance / mean) in the local area below"
+        .help = "The number of standard deviations of the index of dispersion"
+                "(variance / mean) in the local area below"
                 "which the pixel will be classified as background."
         .type = float
         .expert_level = 1
@@ -96,21 +96,21 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
 
     import libtbx
     params = self.params
-    if params.spotfinder.threshold.xds.global_threshold is libtbx.Auto:
-      params.spotfinder.threshold.xds.global_threshold \
+    if params.spotfinder.threshold.dispersion.global_threshold is libtbx.Auto:
+      params.spotfinder.threshold.dispersion.global_threshold \
         = int(estimate_global_threshold(image, mask))
       logger.info("Setting global_threshold: %i" %(
-        params.spotfinder.threshold.xds.global_threshold))
+        params.spotfinder.threshold.dispersion.global_threshold))
 
     from dials.algorithms.spot_finding.threshold import XDSThresholdStrategy
     self._algorithm = XDSThresholdStrategy(
-      kernel_size=params.spotfinder.threshold.xds.kernel_size,
-      gain=params.spotfinder.threshold.xds.gain,
+      kernel_size=params.spotfinder.threshold.dispersion.kernel_size,
+      gain=params.spotfinder.threshold.dispersion.gain,
       mask=params.spotfinder.lookup.mask,
-      n_sigma_b=params.spotfinder.threshold.xds.sigma_background,
-      n_sigma_s=params.spotfinder.threshold.xds.sigma_strong,
-      min_count=params.spotfinder.threshold.xds.min_local,
-      global_threshold=params.spotfinder.threshold.xds.global_threshold)
+      n_sigma_b=params.spotfinder.threshold.dispersion.sigma_background,
+      n_sigma_s=params.spotfinder.threshold.dispersion.sigma_strong,
+      min_count=params.spotfinder.threshold.dispersion.min_local,
+      global_threshold=params.spotfinder.threshold.dispersion.global_threshold)
 
     return self._algorithm(image, mask)
 

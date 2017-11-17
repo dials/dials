@@ -18,7 +18,7 @@
 #include <scitbx/array_family/ref_reductions.h>
 #include <dials/error.h>
 #include <dials/algorithms/image/filter/mean_and_variance.h>
-#include <dials/algorithms/image/filter/fano_filter.h>
+#include <dials/algorithms/image/filter/index_of_dispersion_filter.h>
 
 namespace dials { namespace algorithms {
 
@@ -93,7 +93,7 @@ namespace dials { namespace algorithms {
 
 
   /**
-   * Threshold the image using a fano filter. Essentially a test for objects
+   * Threshold the image using a index_of_dispersion filter. Essentially a test for objects
    * within a poisson distribution.
    *
    * var/mean > 1.0 + n_sigma * sqrt(2 / (n - 1)) ? object : background
@@ -103,16 +103,16 @@ namespace dials { namespace algorithms {
    * @param n_sigma The number of standard deviations.
    */
   template <typename FloatType>
-  af::versa< bool, af::c_grid<2> > fano(
+  af::versa< bool, af::c_grid<2> > index_of_dispersion(
       const af::const_ref< FloatType, af::c_grid<2> > &image,
       int2 size, double n_sigma) {
 
     // Check the input
     DIALS_ASSERT(n_sigma >= 0);
 
-    // Calculate the fano filtered image
-    FanoFilter<FloatType> filter(image, size);
-    af::versa< FloatType, af::c_grid<2> > fano_image = filter.fano();
+    // Calculate the index_of_dispersion filtered image
+    IndexOfDispersionFilter<FloatType> filter(image, size);
+    af::versa< FloatType, af::c_grid<2> > index_of_dispersion_image = filter.index_of_dispersion();
 
     // Calculate the bound
     std::size_t n = (2 * size[0] + 1) * (2 * size[1] + 1);
@@ -123,7 +123,7 @@ namespace dials { namespace algorithms {
     af::versa< bool, af::c_grid<2> > result(image.accessor(),
       af::init_functor_null<bool>());
     for (std::size_t i = 0; i < image.size(); ++i) {
-      result[i] = (fano_image[i] > bound) ? 1 : 0;
+      result[i] = (index_of_dispersion_image[i] > bound) ? 1 : 0;
     }
 
     // Return thresholded image
@@ -131,7 +131,7 @@ namespace dials { namespace algorithms {
   }
 
   /**
-   * Threshold the image using a fano filter. Essentially a test for objects
+   * Threshold the image using a index_of_dispersion filter. Essentially a test for objects
    * within a poisson distribution.
    *
    * var/mean > 1.0 + n_sigma * sqrt(2 / (n - 1)) ? object : background
@@ -143,7 +143,7 @@ namespace dials { namespace algorithms {
    * @param n_sigma The number of standard deviations.
    */
   template <typename FloatType>
-  af::versa< bool, af::c_grid<2> > fano_masked(
+  af::versa< bool, af::c_grid<2> > index_of_dispersion_masked(
       const af::const_ref< FloatType, af::c_grid<2> > &image,
       const af::const_ref< bool, af::c_grid<2> > &mask,
       int2 size, int min_count, double n_sigma) {
@@ -158,9 +158,9 @@ namespace dials { namespace algorithms {
       temp[i] = mask[i] ? 1 : 0;
     }
 
-    // Calculate the masked fano filtered image
-    FanoFilterMasked<FloatType> filter(image, temp.const_ref(), size, min_count);
-    af::versa< FloatType, af::c_grid<2> > fano_image = filter.fano();
+    // Calculate the masked index_of_dispersion filtered image
+    IndexOfDispersionFilterMasked<FloatType> filter(image, temp.const_ref(), size, min_count);
+    af::versa< FloatType, af::c_grid<2> > index_of_dispersion_image = filter.index_of_dispersion();
     af::versa< int, af::c_grid<2> > count = filter.count();
     temp = filter.mask();
 
@@ -169,7 +169,7 @@ namespace dials { namespace algorithms {
     for (std::size_t i = 0; i < image.size(); ++i) {
       if (temp[i]) {
         FloatType bound = 1.0 + n_sigma * std::sqrt(2.0 / (count[i] - 1));
-        result[i] = (fano_image[i] > bound) ? 1 : 0;
+        result[i] = (index_of_dispersion_image[i] > bound) ? 1 : 0;
       }
     }
 
@@ -178,7 +178,7 @@ namespace dials { namespace algorithms {
   }
 
   /**
-   * Threshold the image using a gain filter. Same as the fano filter but
+   * Threshold the image using a gain filter. Same as the index_of_dispersion filter but
    * using a gain map for the calculation
    *
    * var/mean > g + n_sigma * g * sqrt(2 / (n - 1)) ? object : background
@@ -207,9 +207,9 @@ namespace dials { namespace algorithms {
       temp[i] = mask[i] ? 1 : 0;
     }
 
-    // Calculate the masked fano filtered image
-    FanoFilterMasked<FloatType> filter(image, temp.const_ref(), size, min_count);
-    af::versa< FloatType, af::c_grid<2> > fano_image = filter.fano();
+    // Calculate the masked index_of_dispersion filtered image
+    IndexOfDispersionFilterMasked<FloatType> filter(image, temp.const_ref(), size, min_count);
+    af::versa< FloatType, af::c_grid<2> > index_of_dispersion_image = filter.index_of_dispersion();
     af::versa< int, af::c_grid<2> > count = filter.count();
     temp = filter.mask();
 
@@ -219,7 +219,7 @@ namespace dials { namespace algorithms {
       if (temp[i]) {
         FloatType bound = gain[i] + n_sigma * gain[i] *
           std::sqrt(2.0 / (count[i] - 1));
-        result[i] = (fano_image[i] > bound) ? 1 : 0;
+        result[i] = (index_of_dispersion_image[i] > bound) ? 1 : 0;
       }
     }
 
@@ -228,7 +228,7 @@ namespace dials { namespace algorithms {
   }
 
   /**
-   * Threshold the image as in xds. Same as the fano filter but
+   * Threshold the image as in xds. Same as the index_of_dispersion filter but
    * using a gain map for the calculation
    *
    * var/mean > g + n_sigma * g * sqrt(2 / (n - 1)) &&
@@ -242,7 +242,7 @@ namespace dials { namespace algorithms {
    * @param min_count The minimum number of pixels in the local area
    */
   template <typename FloatType>
-  af::versa< bool, af::c_grid<2> > kabsch(
+  af::versa< bool, af::c_grid<2> > dispersion(
       const af::const_ref< FloatType, af::c_grid<2> > &image,
       const af::const_ref< bool, af::c_grid<2> > &mask,
       int2 size, double nsig_b, double nsig_s, int min_count) {
@@ -256,9 +256,9 @@ namespace dials { namespace algorithms {
       temp[i] = mask[i] ? 1 : 0;
     }
 
-    // Calculate the masked fano filtered image
-    FanoFilterMasked<FloatType> filter(image, temp.const_ref(), size, min_count);
-    af::versa< FloatType, af::c_grid<2> > fano_image = filter.fano();
+    // Calculate the masked index_of_dispersion filtered image
+    IndexOfDispersionFilterMasked<FloatType> filter(image, temp.const_ref(), size, min_count);
+    af::versa< FloatType, af::c_grid<2> > index_of_dispersion_image = filter.index_of_dispersion();
     af::versa< FloatType, af::c_grid<2> > mean = filter.mean();
     af::versa< int, af::c_grid<2> > count = filter.count();
     temp = filter.mask();
@@ -269,7 +269,7 @@ namespace dials { namespace algorithms {
       if (temp[i]) {
         FloatType bnd_b = 1.0 + nsig_b * std::sqrt(2.0 / (count[i] - 1));
         FloatType bnd_s = mean[i] + nsig_s * std::sqrt(mean[i]);
-        result[i]  = (fano_image[i] > bnd_b && image[i] > bnd_s) ? 1 : 0;
+        result[i]  = (index_of_dispersion_image[i] > bnd_b && image[i] > bnd_s) ? 1 : 0;
       }
     }
 
@@ -278,7 +278,7 @@ namespace dials { namespace algorithms {
   }
 
   /**
-   * Threshold the image as in xds. Same as the fano filter but
+   * Threshold the image as in xds. Same as the index_of_dispersion filter but
    * using a gain map for the calculation
    *
    * var/mean > g + n_sigma * g * sqrt(2 / (n - 1)) &&
@@ -293,7 +293,7 @@ namespace dials { namespace algorithms {
    * @param min_count The minimum number of pixels in the local area
    */
   template <typename FloatType>
-  af::versa< bool, af::c_grid<2> > kabsch_w_gain(
+  af::versa< bool, af::c_grid<2> > dispersion_w_gain(
       const af::const_ref< FloatType, af::c_grid<2> > &image,
       const af::const_ref< bool, af::c_grid<2> > &mask,
       const af::const_ref< FloatType, af::c_grid<2> > &gain,
@@ -308,9 +308,9 @@ namespace dials { namespace algorithms {
       temp[i] = mask[i] ? 1 : 0;
     }
 
-    // Calculate the masked fano filtered image
-    FanoFilterMasked<FloatType> filter(image, temp.const_ref(), size, min_count);
-    af::versa< FloatType, af::c_grid<2> > fano_image = filter.fano();
+    // Calculate the masked index_of_dispersion filtered image
+    IndexOfDispersionFilterMasked<FloatType> filter(image, temp.const_ref(), size, min_count);
+    af::versa< FloatType, af::c_grid<2> > index_of_dispersion_image = filter.index_of_dispersion();
     af::versa< FloatType, af::c_grid<2> > mean = filter.mean();
     af::versa< int, af::c_grid<2> > count = filter.count();
     temp = filter.mask();
@@ -322,7 +322,7 @@ namespace dials { namespace algorithms {
         FloatType bnd_b = gain[i] + nsig_b * gain[i] *
           std::sqrt(2.0 / (count[i] - 1));
         FloatType bnd_s = mean[i] + nsig_s * std::sqrt(gain[i] * mean[i]);
-        result[i]  = (fano_image[i] > bnd_b && image[i] > bnd_s) ? 1 : 0;
+        result[i]  = (index_of_dispersion_image[i] > bnd_b && image[i] > bnd_s) ? 1 : 0;
       }
     }
 
@@ -650,7 +650,7 @@ namespace dials { namespace algorithms {
    * A class to help debug spot finding by exposing the results of various bits
    * of processing.
    */
-  class KabschDebug {
+  class DispersionThresholdDebug {
   public:
 
     /**
@@ -663,7 +663,8 @@ namespace dials { namespace algorithms {
      * @param threshold The global threshold value
      * @param min_count The minimum number of pixels in the local area
      */
-    KabschDebug(const af::const_ref<double, af::c_grid<2> > &image,
+    DispersionThresholdDebug(
+                const af::const_ref<double, af::c_grid<2> > &image,
                 const af::const_ref<bool, af::c_grid<2> > &mask,
                 int2 size,
                 double nsig_b,
@@ -684,7 +685,8 @@ namespace dials { namespace algorithms {
      * @param threshold The global threshold value
      * @param min_count The minimum number of pixels in the local area
      */
-    KabschDebug(const af::const_ref<double, af::c_grid<2> > &image,
+    DispersionThresholdDebug(
+                const af::const_ref<double, af::c_grid<2> > &image,
                 const af::const_ref<bool, af::c_grid<2> > &mask,
                 const af::const_ref<double, af::c_grid<2> > &gain,
                 int2 size,
@@ -705,12 +707,12 @@ namespace dials { namespace algorithms {
       return variance_;
     }
 
-    /** @returns The coefficient of variation map */
-    af::versa<double, af::c_grid<2> > coefficient_of_variation() const {
+    /** @returns The index of dispersion map */
+    af::versa<double, af::c_grid<2> > index_of_dispersion() const {
       return cv_;
     }
 
-    /** @returns The thresholded coefficient of variation mask */
+    /** @returns The thresholded index of dispersion mask */
     af::versa<bool, af::c_grid<2> > cv_mask() const {
       return cv_mask_;
     }
@@ -753,11 +755,11 @@ namespace dials { namespace algorithms {
         temp[i] = mask[i] ? 1 : 0;
       }
 
-      // Calculate the masked fano filtered image
-      FanoFilterMasked<double> filter(image, temp.const_ref(), size, min_count);
+      // Calculate the masked index_of_dispersion filtered image
+      IndexOfDispersionFilterMasked<double> filter(image, temp.const_ref(), size, min_count);
       mean_ = filter.mean();
       variance_ = filter.sample_variance();
-      cv_ = filter.fano();
+      cv_ = filter.index_of_dispersion();
       af::versa< int, af::c_grid<2> > count = filter.count();
       temp = filter.mask();
 

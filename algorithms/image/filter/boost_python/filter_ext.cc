@@ -17,7 +17,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_summed_area();
   void export_mean_and_variance();
-  void export_fano_filter();
+  void export_index_of_dispersion_filter();
   void export_convolve();
   void export_median();
   void export_distance();
@@ -27,7 +27,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   {
     export_summed_area();
     export_mean_and_variance();
-    export_fano_filter();
+    export_index_of_dispersion_filter();
     export_convolve();
     export_median();
     export_distance();

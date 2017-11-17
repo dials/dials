@@ -1,5 +1,5 @@
 /*
- * fano_filter.h
+ * index_of_dispersion_filter.h
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -8,8 +8,8 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_ALGORITHMS_IMAGE_FILTER_FANO_FILTER_H
-#define DIALS_ALGORITHMS_IMAGE_FILTER_FANO_FILTER_H
+#ifndef DIALS_ALGORITHMS_IMAGE_FILTER_INDEX_OF_DISPERSION_FILTER_H
+#define DIALS_ALGORITHMS_IMAGE_FILTER_INDEX_OF_DISPERSION_FILTER_H
 
 #include <algorithm>
 #include <cmath>
@@ -23,22 +23,24 @@ namespace dials { namespace algorithms {
   using scitbx::af::int2;
 
   /**
-   * Calculate the fano filtered image. The filtered image is created by
-   * calculating the fano factor (variation index var/mean) for each pixel.
+   * Calculate the index of dispersion filtered image. The filtered image is
+   * created by calculating the index of dispersion factor (variation index
+   * var/mean) for each pixel.
    */
   template <typename FloatType = double>
-  class FanoFilter {
+  class IndexOfDispersionFilter {
   public:
 
     typedef FloatType value_type;
 
     /**
-     * Calculate the fano filtered image. The filtered image is created by
-     * calculating the fano factor (variation index var/mean) for each pixel.
+     * Calculate the index of dispersion filtered image. The filtered image is
+     * created by calculating the index of dispersion factor (variation index
+     * var/mean) for each pixel.
      * @param image The image to filter
      * @param size Size of the filter kernel (2 * size + 1)
      */
-    FanoFilter(
+    IndexOfDispersionFilter(
         const af::const_ref<FloatType, af::c_grid<2> > &image,
         int2 size) {
 
@@ -48,12 +50,12 @@ namespace dials { namespace algorithms {
       var_  = filter.sample_variance();
 
       // Calculate the filtered image
-      fano_ = af::versa<FloatType, af::c_grid<2> >(var_.accessor(), 0);
+      index_of_dispersion_ = af::versa<FloatType, af::c_grid<2> >(var_.accessor(), 0);
       for (std::size_t i = 0; i < var_.size(); ++i) {
         if (mean_[i] > 0) {
-          fano_[i] = var_[i] / mean_[i];
+          index_of_dispersion_[i] = var_[i] / mean_[i];
         } else {
-          fano_[i] = 1.0;
+          index_of_dispersion_[i] = 1.0;
         }
       }
     }
@@ -61,8 +63,8 @@ namespace dials { namespace algorithms {
     /**
      * @returns The filtered image
      */
-    af::versa< FloatType, af::c_grid<2> > fano() const {
-      return fano_;
+    af::versa< FloatType, af::c_grid<2> > index_of_dispersion() const {
+      return index_of_dispersion_;
     }
 
     /**
@@ -80,33 +82,33 @@ namespace dials { namespace algorithms {
     }
 
   private:
-    af::versa< FloatType, af::c_grid<2> > fano_;
+    af::versa< FloatType, af::c_grid<2> > index_of_dispersion_;
     af::versa< FloatType, af::c_grid<2> > mean_;
     af::versa< FloatType, af::c_grid<2> > var_;
   };
 
 
   /**
-   * Calculate the masked fano filtered image. The filtered image is created by
-   * calculating the fano factor (variation index var/mean) for each pixel.
+   * Calculate the masked index of dispersion filtered image. The filtered image is created by
+   * calculating the index of dispersion factor (variation index var/mean) for each pixel.
    * The mask is updated for those pixels where the filtered image is invalid.
    */
   template <typename FloatType = double>
-  class FanoFilterMasked {
+  class IndexOfDispersionFilterMasked {
   public:
 
     typedef FloatType value_type;
 
     /**
-     * Calculate the masked fano filtered image. The filtered image is created
-     * by calculating the fano factor (variation index var/mean) for each pixel.
+     * Calculate the masked index of dispersion filtered image. The filtered image is created
+     * by calculating the index of dispersion factor (variation index var/mean) for each pixel.
      * The mask is updated for those pixels where the filtered image is invalid.
      * @param image The image to filter
      * @param mask The mask to use
      * @param size Size of the filter kernel (2 * size + 1)
      * @param min_count The minimum counts under the filter to include the pixel
      */
-    FanoFilterMasked(const af::const_ref< FloatType, af::c_grid<2> > &image,
+    IndexOfDispersionFilterMasked(const af::const_ref< FloatType, af::c_grid<2> > &image,
                      const af::const_ref< int, af::c_grid<2> > &mask,
                      int2 size, int min_count) {
 
@@ -118,12 +120,12 @@ namespace dials { namespace algorithms {
       count_ = filter.count();
 
       // Calculate the filtered image.
-      fano_ = af::versa< FloatType, af::c_grid<2> >(var_.accessor(), 0);
+      index_of_dispersion_ = af::versa< FloatType, af::c_grid<2> >(var_.accessor(), 0);
       for (std::size_t i = 0; i < var_.size(); ++i) {
         if (mask_[i] && mean_[i] > 0) {
-          fano_[i] = var_[i] / mean_[i];
+          index_of_dispersion_[i] = var_[i] / mean_[i];
         } else {
-          fano_[i] = 1.0;
+          index_of_dispersion_[i] = 1.0;
           mask_[i] = 0;
         }
       }
@@ -146,8 +148,8 @@ namespace dials { namespace algorithms {
     /**
      * @returns The filtered image
      */
-    af::versa< FloatType, af::c_grid<2> > fano() const {
-      return fano_;
+    af::versa< FloatType, af::c_grid<2> > index_of_dispersion() const {
+      return index_of_dispersion_;
     }
 
     /**
@@ -167,11 +169,11 @@ namespace dials { namespace algorithms {
   private:
     af::versa< int, af::c_grid<2> > count_;
     af::versa< int, af::c_grid<2> > mask_;
-    af::versa< FloatType, af::c_grid<2> > fano_;
+    af::versa< FloatType, af::c_grid<2> > index_of_dispersion_;
     af::versa< FloatType, af::c_grid<2> > mean_;
     af::versa< FloatType, af::c_grid<2> > var_;
   };
 
 }} // namespace dials::algorithms
 
-#endif /* DIALS_ALGORITHMS_IMAGE_FILTER_FANO_FILTER_H */
+#endif /* DIALS_ALGORITHMS_IMAGE_FILTER_INDEX_OF_DISPERSION_FILTER_H */

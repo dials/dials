@@ -62,14 +62,14 @@ class ComputeBackgroundAndGain(object):
 
   def _compute_gain_map(self, image, mask):
     '''Complete the gain map of a single image.'''
-    from dials.algorithms.image.filter import fano_filter
+    from dials.algorithms.image.filter import index_of_dispersion_filter
 
     # Need double image
     image = image.as_double()
 
     # Filter the image and return the mask
-    filteralg = fano_filter(image, mask, self._kernel_size, 0)
-    filtered  = filteralg.fano()
+    filteralg = index_of_dispersion_filter(image, mask, self._kernel_size, 0)
+    filtered  = filteralg.index_of_dispersion()
     mask      = filteralg.mask()
     mean      = filteralg.mean()
 

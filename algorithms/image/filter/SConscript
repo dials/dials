@@ -4,7 +4,7 @@ Import('env')
 sources = [
     'boost_python/summed_area.cc',
     'boost_python/mean_and_variance.cc',
-    'boost_python/fano_filter.cc',
+    'boost_python/index_of_dispersion_filter.cc',
     'boost_python/convolve.cc',
     'boost_python/median.cc',
     'boost_python/distance.cc',

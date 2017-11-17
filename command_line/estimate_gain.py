@@ -38,7 +38,7 @@ phil_scope = iotbx.phil.parse("""\
 def estimate_gain(imageset, kernel_size=(10,10), output_gain_map=None, max_images = 1):
   detector = imageset.get_detector()
 
-  from dials.algorithms.image.threshold import KabschDebug
+  from dials.algorithms.image.threshold import DispersionThresholdDebug
   gains = flex.double()
 
   for image_no in xrange(len(imageset)):
@@ -60,13 +60,13 @@ def estimate_gain(imageset, kernel_size=(10,10), output_gain_map=None, max_image
     kabsch_debug_list = []
     for i_panel in range(len(detector)):
       kabsch_debug_list.append(
-        KabschDebug(
+        DispersionThresholdDebug(
           raw_data[i_panel].as_double(), mask[i_panel], gain_map[i_panel],
           kernel_size, nsigma_b, nsigma_s, global_threshold, min_local))
 
     dispersion = flex.double()
     for kabsch in kabsch_debug_list:
-      dispersion.extend(kabsch.coefficient_of_variation().as_1d())
+      dispersion.extend(kabsch.index_of_dispersion().as_1d())
 
     sorted_dispersion = flex.sorted(dispersion)
     from libtbx.math_utils import nearest_integer as nint

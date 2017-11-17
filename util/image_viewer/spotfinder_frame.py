@@ -739,7 +739,7 @@ class SpotFrame(XrayFrame) :
       self.Layout()
 
   def get_raw_data(self, image):
-    from dials.algorithms.image.threshold import KabschDebug
+    from dials.algorithms.image.threshold import DispersionThresholdDebug
     from dials.array_family import flex
 
     detector = image.get_detector()
@@ -764,7 +764,7 @@ class SpotFrame(XrayFrame) :
       kabsch_debug_list = []
       for i_panel in range(len(detector)):
         kabsch_debug_list.append(
-          KabschDebug(
+          DispersionThresholdDebug(
             raw_data[i_panel].as_double(), mask[i_panel], gain_map[i_panel],
             size, nsigma_b, nsigma_s, global_threshold, min_local))
 
@@ -775,31 +775,31 @@ class SpotFrame(XrayFrame) :
         variance = [kabsch.variance() for kabsch in kabsch_debug_list]
         raw_data = variance
       elif self.settings.display == 'dispersion':
-        cv = [kabsch.coefficient_of_variation() for kabsch in kabsch_debug_list]
+        cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
         raw_data = cv
       elif self.settings.display == 'sigma_b':
-        cv = [kabsch.coefficient_of_variation() for kabsch in kabsch_debug_list]
+        cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
         cv_mask = [kabsch.cv_mask() for kabsch in kabsch_debug_list]
         cv_mask = [mask.as_1d().as_double() for mask in cv_mask]
         for i, mask in enumerate(cv_mask):
           mask.reshape(cv[i].accessor())
         raw_data = cv_mask
       elif self.settings.display == 'sigma_s':
-        cv = [kabsch.coefficient_of_variation() for kabsch in kabsch_debug_list]
+        cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
         value_mask = [kabsch.value_mask() for kabsch in kabsch_debug_list]
         value_mask = [mask.as_1d().as_double() for mask in value_mask]
         for i, mask in enumerate(value_mask):
           mask.reshape(cv[i].accessor())
         raw_data = value_mask
       elif self.settings.display == 'global':
-        cv = [kabsch.coefficient_of_variation() for kabsch in kabsch_debug_list]
+        cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
         global_mask = [kabsch.global_mask() for kabsch in kabsch_debug_list]
         global_mask = [mask.as_1d().as_double() for mask in global_mask]
         for i, mask in enumerate(global_mask):
           mask.reshape(cv[i].accessor())
         raw_data = global_mask
       elif self.settings.display == 'threshold':
-        cv = [kabsch.coefficient_of_variation() for kabsch in kabsch_debug_list]
+        cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
         final_mask = [kabsch.final_mask() for kabsch in kabsch_debug_list]
         final_mask = [mask.as_1d().as_double() for mask in final_mask]
         for i, mask in enumerate(final_mask):
@@ -1491,7 +1491,7 @@ class SpotSettingsPanel (wx.Panel) :
     #box.Add(txtd, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     #s.Add(box)
 
-    # Kabsch thresholding parameters
+    # DispersionThreshold thresholding parameters
     grid1 = wx.FlexGridSizer(cols=2, rows=7)
     s.Add(grid1)
 
@@ -1541,12 +1541,12 @@ class SpotSettingsPanel (wx.Panel) :
     self.kernel_size_ctrl.SetMin(1)
     grid1.Add(self.kernel_size_ctrl, 0, wx.ALL, 5)
 
-    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.nsigma_b_ctrl)
-    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.nsigma_s_ctrl)
-    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.global_threshold_ctrl)
-    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.kernel_size_ctrl)
-    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.min_local_ctrl)
-    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateKabschDebug, self.gain_ctrl)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateDispersionThresholdDebug, self.nsigma_b_ctrl)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateDispersionThresholdDebug, self.nsigma_s_ctrl)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateDispersionThresholdDebug, self.global_threshold_ctrl)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateDispersionThresholdDebug, self.kernel_size_ctrl)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateDispersionThresholdDebug, self.min_local_ctrl)
+    self.Bind(EVT_PHIL_CONTROL, self.OnUpdateDispersionThresholdDebug, self.gain_ctrl)
 
     from wxtbx.phil_controls.strctrl import StrCtrl
 
@@ -1570,7 +1570,7 @@ class SpotSettingsPanel (wx.Panel) :
       btn = wx.ToggleButton(self, -1, label)
       self.kabsch_buttons.append(btn)
       grid2.Add(btn, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
-      self.Bind(wx.EVT_TOGGLEBUTTON, self.OnKabschDebug, btn)
+      self.Bind(wx.EVT_TOGGLEBUTTON, self.OnDispersionThresholdDebug, btn)
 
     for button in self.kabsch_buttons:
       if button.GetLabelText() == self.settings.display:
@@ -1711,18 +1711,18 @@ class SpotSettingsPanel (wx.Panel) :
   def OnSaveFindSpotsParams(self, event):
     from dials.command_line.find_spots import phil_scope
     params = phil_scope.extract()
-    xds = params.spotfinder.threshold.xds
-    xds.gain = self.settings.gain
-    xds.global_threshold = self.settings.global_threshold
-    xds.kernel_size = self.settings.kernel_size
-    xds.min_local = self.settings.min_local
-    xds.sigma_background = self.settings.nsigma_b
-    xds.sigma_strong = self.settings.nsigma_s
+    dispersion = params.spotfinder.threshold.dispersion
+    dispersion.gain = self.settings.gain
+    dispersion.global_threshold = self.settings.global_threshold
+    dispersion.kernel_size = self.settings.kernel_size
+    dispersion.min_local = self.settings.min_local
+    dispersion.sigma_background = self.settings.nsigma_b
+    dispersion.sigma_strong = self.settings.nsigma_s
     with open(self.settings.find_spots_phil, 'wb') as f:
       print "Saving parameters to %s" % self.settings.find_spots_phil
       phil_scope.fetch_diff(phil_scope.format(params)).show(f)
 
-  def OnUpdateKabschDebug(self, event):
+  def OnUpdateDispersionThresholdDebug(self, event):
     if self.settings.nsigma_b != self.nsigma_b_ctrl.GetPhilValue() \
     or self.settings.nsigma_s != self.nsigma_s_ctrl.GetPhilValue() \
     or self.settings.global_threshold != self.global_threshold_ctrl.GetPhilValue() \
@@ -1732,7 +1732,7 @@ class SpotSettingsPanel (wx.Panel) :
       self.OnUpdate(event)
       self.GetParent().GetParent().show_filters()
 
-  def OnKabschDebug(self, event):
+  def OnDispersionThresholdDebug(self, event):
     button = event.GetEventObject()
     selected = button.GetLabelText()
 

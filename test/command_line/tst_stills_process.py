@@ -42,8 +42,8 @@ class Test(object):
       dispatch.squash_errors = False
       spotfinder {
         filter.min_spot_size=2
-        threshold.xds.gain=25
-        threshold.xds.global_threshold=100
+        threshold.dispersion.gain=25
+        threshold.dispersion.global_threshold=100
       }
       indexing {
         known_symmetry {
@@ -114,7 +114,7 @@ class Test(object):
       spotfinder {
         filter.min_spot_size = 2
         threshold {
-          xds {
+          dispersion {
             gain = 5.46 # from dials.estimate_gain run266702-0-subset.h5 max_images=4
             global_threshold = 50
           }

@@ -6,7 +6,7 @@ class Test:
     pass
 
   def run(self):
-    from dials.algorithms.image.filter import fano_filter
+    from dials.algorithms.image.filter import index_of_dispersion_filter
     from scitbx.array_family import flex
     from random import randint
 
@@ -18,10 +18,10 @@ class Test:
 
     # Calculate the summed area table
     mask2 = mask.deep_copy()
-    fano_filter = fano_filter(image, mask2, (3, 3), 2)
-    mean = fano_filter.mean()
-    var = fano_filter.sample_variance()
-    fano = fano_filter.fano()
+    index_of_dispersion_filter = index_of_dispersion_filter(image, mask2, (3, 3), 2)
+    mean = index_of_dispersion_filter.mean()
+    var = index_of_dispersion_filter.sample_variance()
+    index_of_dispersion = index_of_dispersion_filter.index_of_dispersion()
 
     # For a selection of random points, ensure that the value is the
     # sum of the area under the kernel
@@ -31,7 +31,7 @@ class Test:
       j = randint(10, 1990)
       m1 = mean[j,i]
       v1 = var[j,i]
-      f1 = fano[j,i]
+      f1 = index_of_dispersion[j,i]
       p = image[j-3:j+4,i-3:i+4]
       m = mask[j-3:j+4,i-3:i+4]
       if mask[j,i] == 0:

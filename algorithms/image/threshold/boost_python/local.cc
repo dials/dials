@@ -30,12 +30,12 @@ namespace dials { namespace algorithms { namespace boost_python {
       arg("k"),
       arg("r")));
 
-    def("fano", &fano<FloatType>, (
+    def("index_of_dispersion", &index_of_dispersion<FloatType>, (
       arg("image"),
       arg("size"),
       arg("n_sigma")));
 
-    def("fano_masked", &fano_masked<FloatType>, (
+    def("index_of_dispersion_masked", &index_of_dispersion_masked<FloatType>, (
       arg("image"),
       arg("mask"),
       arg("size"),
@@ -50,7 +50,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       arg("min_count"),
       arg("n_sigma")));
 
-    def("kabsch", &kabsch<FloatType>, (
+    def("dispersion", &dispersion<FloatType>, (
       arg("image"),
       arg("mask"),
       arg("size"),
@@ -58,7 +58,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       arg("n_sigma_s"),
       arg("min_count")));
 
-    def("kabsch_w_gain", &kabsch_w_gain<FloatType>, (
+    def("dispersion_w_gain", &dispersion_w_gain<FloatType>, (
       arg("image"),
       arg("mask"),
       arg("gain"),
@@ -87,7 +87,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       ;
 
 
-    class_<KabschDebug>("KabschDebug", no_init)
+    class_<DispersionThresholdDebug>("DispersionThresholdDebug", no_init)
       .def(init<const af::const_ref<double, af::c_grid<2> > &,
                 const af::const_ref<bool, af::c_grid<2> > &,
                 int2, double, double, double, int>((
@@ -110,13 +110,13 @@ namespace dials { namespace algorithms { namespace boost_python {
                     arg("n_sigma_s"),
                     arg("threshold"),
                     arg("min_count"))))
-      .def("mean", &KabschDebug::mean)
-      .def("variance", &KabschDebug::variance)
-      .def("coefficient_of_variation", &KabschDebug::coefficient_of_variation)
-      .def("global_mask", &KabschDebug::global_mask)
-      .def("cv_mask", &KabschDebug::cv_mask)
-      .def("value_mask", &KabschDebug::value_mask)
-      .def("final_mask", &KabschDebug::final_mask)
+      .def("mean", &DispersionThresholdDebug::mean)
+      .def("variance", &DispersionThresholdDebug::variance)
+      .def("index_of_dispersion", &DispersionThresholdDebug::index_of_dispersion)
+      .def("global_mask", &DispersionThresholdDebug::global_mask)
+      .def("cv_mask", &DispersionThresholdDebug::cv_mask)
+      .def("value_mask", &DispersionThresholdDebug::value_mask)
+      .def("final_mask", &DispersionThresholdDebug::final_mask)
       ;
 
   }

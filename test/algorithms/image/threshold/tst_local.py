@@ -19,12 +19,12 @@ class Test:
   def run(self):
     self.tst_niblack()
     self.tst_sauvola()
-    self.tst_fano()
-    self.tst_fano_masked()
+    self.tst_index_of_dispersion()
+    self.tst_index_of_dispersion_masked()
     self.tst_gain()
-    self.tst_kabsch()
-    self.tst_kabsch_w_gain()
-    self.tst_kabsch_debug()
+    self.tst_dispersion()
+    self.tst_dispersion_w_gain()
+    self.tst_dispersion_debug()
     self.tst_dispersion_threshold()
 
   def tst_niblack(self):
@@ -40,16 +40,16 @@ class Test:
     result = sauvola(self.image, self.size, k, r)
     print 'OK'
 
-  def tst_fano(self):
-    from dials.algorithms.image.threshold import fano
+  def tst_index_of_dispersion(self):
+    from dials.algorithms.image.threshold import index_of_dispersion
     n_sigma = 3
-    result = fano(self.image, self.size, n_sigma)
+    result = index_of_dispersion(self.image, self.size, n_sigma)
     print 'OK'
 
-  def tst_fano_masked(self):
-    from dials.algorithms.image.threshold import fano_masked
+  def tst_index_of_dispersion_masked(self):
+    from dials.algorithms.image.threshold import index_of_dispersion_masked
     n_sigma = 3
-    result = fano_masked(self.image, self.mask, self.size, self.min_count, n_sigma)
+    result = index_of_dispersion_masked(self.image, self.mask, self.size, self.min_count, n_sigma)
     print 'OK'
 
   def tst_gain(self):
@@ -58,54 +58,54 @@ class Test:
     result = gain(self.image, self.mask, self.gain, self.size, self.min_count, n_sigma)
     print 'OK'
 
-  def tst_kabsch(self):
-    from dials.algorithms.image.threshold import kabsch
+  def tst_dispersion(self):
+    from dials.algorithms.image.threshold import dispersion
     nsig_b = 3
     nsig_s = 3
-    result = kabsch(self.image, self.mask, self.size, nsig_b, nsig_s, self.min_count)
+    result = dispersion(self.image, self.mask, self.size, nsig_b, nsig_s, self.min_count)
     print 'OK'
 
-  def tst_kabsch_w_gain(self):
-    from dials.algorithms.image.threshold import kabsch_w_gain
+  def tst_dispersion_w_gain(self):
+    from dials.algorithms.image.threshold import dispersion_w_gain
     nsig_b = 3
     nsig_s = 3
-    result1 = kabsch_w_gain(self.image, self.mask, self.gain, self.size, nsig_b, nsig_s, self.min_count)
+    result1 = dispersion_w_gain(self.image, self.mask, self.gain, self.size, nsig_b, nsig_s, self.min_count)
 
     # scaling both the image and the gain should not affect the result
-    result2 = kabsch_w_gain(2.*self.image, self.mask, 2.*self.gain, self.size,
+    result2 = dispersion_w_gain(2.*self.image, self.mask, 2.*self.gain, self.size,
         nsig_b, nsig_s, self.min_count)
     assert (result1 == result2)
 
-    # should get the same result as kabsch if the gain is unity
-    from dials.algorithms.image.threshold import kabsch
-    result3 = kabsch(self.image, self.mask, self.size, nsig_b, nsig_s,
+    # should get the same result as dispersion if the gain is unity
+    from dials.algorithms.image.threshold import dispersion
+    result3 = dispersion(self.image, self.mask, self.size, nsig_b, nsig_s,
         self.min_count)
-    result4 = kabsch_w_gain(self.image, self.mask, (0*self.gain+1), self.size,
+    result4 = dispersion_w_gain(self.image, self.mask, (0*self.gain+1), self.size,
         nsig_b, nsig_s, self.min_count)
     assert (result3 == result4)
     print 'OK'
 
-  def tst_kabsch_debug(self):
-    from dials.algorithms.image.threshold import kabsch
-    from dials.algorithms.image.threshold import kabsch_w_gain
-    from dials.algorithms.image.threshold import KabschDebug
+  def tst_dispersion_debug(self):
+    from dials.algorithms.image.threshold import dispersion
+    from dials.algorithms.image.threshold import dispersion_w_gain
+    from dials.algorithms.image.threshold import DispersionThresholdDebug
     nsig_b = 3
     nsig_s = 3
-    result1 = kabsch(self.image, self.mask, self.size, nsig_b, nsig_s, self.min_count)
-    debug = KabschDebug(self.image, self.mask, self.size, nsig_b, nsig_s,  0, self.min_count)
+    result1 = dispersion(self.image, self.mask, self.size, nsig_b, nsig_s, self.min_count)
+    debug = DispersionThresholdDebug(self.image, self.mask, self.size, nsig_b, nsig_s,  0, self.min_count)
     result2 = debug.final_mask()
     assert(result1.all_eq(result2))
 
-    result3 = kabsch_w_gain(self.image, self.mask, self.gain, self.size,
+    result3 = dispersion_w_gain(self.image, self.mask, self.gain, self.size,
         nsig_b, nsig_s, self.min_count)
-    debug = KabschDebug(self.image, self.mask, self.gain, self.size, nsig_b,
+    debug = DispersionThresholdDebug(self.image, self.mask, self.gain, self.size, nsig_b,
         nsig_s,  0, self.min_count)
     result4 = debug.final_mask()
     assert (result3 == result4)
     print 'OK'
 
   def tst_dispersion_threshold(self):
-    from dials.algorithms.image.threshold import kabsch, kabsch_w_gain
+    from dials.algorithms.image.threshold import dispersion, dispersion_w_gain
     from dials.algorithms.image.threshold import DispersionThreshold
     from dials.array_family import flex
     nsig_b = 3
@@ -118,7 +118,7 @@ class Test:
       0,
       self.min_count)
 
-    result1 = kabsch(
+    result1 = dispersion(
       self.image,
       self.mask,
       self.size,
@@ -126,7 +126,7 @@ class Test:
       nsig_s,
       self.min_count)
 
-    result2 = kabsch_w_gain(
+    result2 = dispersion_w_gain(
       self.image,
       self.mask,
       self.gain,

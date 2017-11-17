@@ -15,7 +15,7 @@ tst_list = [
     "$D/test/algorithms/image/connected_components/tst_connected_components.py",
     "$D/test/algorithms/image/fill_holes/tst_simple_fill.py",
     "$D/test/algorithms/image/filter/tst_distance.py",
-    "$D/test/algorithms/image/filter/tst_fano.py",
+    "$D/test/algorithms/image/filter/tst_index_of_dispersion.py",
     "$D/test/algorithms/image/filter/tst_mean_and_variance.py",
     "$D/test/algorithms/image/filter/tst_median.py",
     "$D/test/algorithms/image/filter/tst_summed_area.py",

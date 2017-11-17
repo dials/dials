@@ -32,7 +32,7 @@ def extract_signal_mask(data):
   from dxtbx import datablock
 
   spot_params = phil_scope.fetch(source=iotbx.phil.parse(
-    "spotfinder.threshold.xds.gain=1")).extract()
+    "spotfinder.threshold.dispersion.gain=1")).extract()
   threshold_function = SpotFinderFactory.configure_threshold(
     spot_params, None)
   negative = (data < 0)

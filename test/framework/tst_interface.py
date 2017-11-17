@@ -72,7 +72,7 @@ class Test(object):
 
     # Check the interface contain the expected extensions
     from dials.extensions import GaussianRSProfileModelExt
-    from dials.extensions import KabschSpotFinderThresholdExt
+    from dials.extensions import DispersionSpotFinderThresholdExt
     from dials.extensions import SimpleCentroidExt
     from dials.extensions import NullBackgroundExt
     from dials.extensions import SimpleBackgroundExt
@@ -80,7 +80,7 @@ class Test(object):
     extensions = list(ProfileModelIface.extensions())
     assert(GaussianRSProfileModelExt in extensions)
     extensions = list(SpotFinderThresholdIface.extensions())
-    assert(KabschSpotFinderThresholdExt in extensions)
+    assert(DispersionSpotFinderThresholdExt in extensions)
     extensions = list(CentroidIface.extensions())
     assert(SimpleCentroidExt in extensions)
     extensions = list(BackgroundIface.extensions())
