@@ -1,6 +1,7 @@
 '''
 Define a Data_Manager object used for calculating scaling factors
 '''
+#from __future__ import print_function
 import copy
 from dials.array_family import flex
 from cctbx import miller, crystal
@@ -42,7 +43,7 @@ class Data_Manager(object):
     self.reflection_table['wilson_outlier_flag'] = calculate_wilson_outliers(
       self.reflection_table, self.experiments)
     self.weights_for_scaling = self.update_weights_for_scaling(
-      self.reflection_table,error_model_params=self.scaling_options['error_model_params'])
+      self.reflection_table)
 
   'define a few methods required upon initialisation to set up the data manager'
   def extract_reflections_for_scaling(self, reflection_table, error_model_params=None):
@@ -144,7 +145,8 @@ class aimless_Data_Manager(Data_Manager):
     scaling and set normalised values.'''
     self.initialise_scale_factors()
     (reflections_for_scaling, weights_for_scaling) = (
-      self.extract_reflections_for_scaling(self.reflection_table))
+      self.extract_reflections_for_scaling(self.reflection_table, 
+      error_model_params=self.scaling_options['error_model_params']))
     self.Ih_table = single_Ih_table(reflections_for_scaling, 
                                     weights_for_scaling.get_weights())
     '''refactor the next two operations into extract_reflections?
