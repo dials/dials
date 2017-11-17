@@ -7,7 +7,7 @@ class Test:
     from scitbx.array_family import flex
 
     # Create an image
-    self.image = flex.random_double(2000 * 2000)
+    self.image = flex.random_double(2000 * 2000, 10)
     self.image.reshape(flex.grid(2000, 2000))
     self.mask = flex.random_bool(2000 * 2000, 0.99)
     self.mask.reshape(flex.grid(2000, 2000))
@@ -69,7 +69,20 @@ class Test:
     from dials.algorithms.image.threshold import kabsch_w_gain
     nsig_b = 3
     nsig_s = 3
-    result = kabsch_w_gain(self.image, self.mask, self.gain, self.size, nsig_b, nsig_s, self.min_count)
+    result1 = kabsch_w_gain(self.image, self.mask, self.gain, self.size, nsig_b, nsig_s, self.min_count)
+
+    # scaling both the image and the gain should not affect the result
+    result2 = kabsch_w_gain(2.*self.image, self.mask, 2.*self.gain, self.size,
+        nsig_b, nsig_s, self.min_count)
+    assert (result1 == result2)
+
+    # should get the same result as kabsch if the gain is unity
+    from dials.algorithms.image.threshold import kabsch
+    result3 = kabsch(self.image, self.mask, self.size, nsig_b, nsig_s,
+        self.min_count)
+    result4 = kabsch_w_gain(self.image, self.mask, (0*self.gain+1), self.size,
+        nsig_b, nsig_s, self.min_count)
+    assert (result3 == result4)
     print 'OK'
 
   def tst_kabsch_debug(self):
