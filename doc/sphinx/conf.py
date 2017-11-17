@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 ### build documentation with: phenix.python `which sphinx-build` -b html source build/html
 
@@ -16,6 +16,7 @@ from __future__ import absolute_import, division
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+import datetime
 import sys
 import os
 
@@ -61,7 +62,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'DIALS'
-copyright = u'2015, Diamond Light Source, Lawrence Berkeley National Laboratory and STFC'
+copyright = u'%d, Diamond Light Source, Lawrence Berkeley National Laboratory and STFC' % datetime.datetime.now().year
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
