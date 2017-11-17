@@ -167,42 +167,4 @@ class error_scale_LBFGSoptimiser(object):
                                        1.0 * 2.0 * self.x[1]])
     return gradient
 
-    
 
-
-class B_optimiser(object):
-  '''Class that takes in minimised decay modulation array and fits a
-  global scale and B-factor to the first time row '''
-  def __init__(self, Data_Manager_object, initial_values):
-    self.data_manager = Data_Manager_object
-    #replace reference to bin_boundaries with an extraction of values from SF
-    d_bin_boundaries = self.data_manager.bin_boundaries['d']
-    self.res_values = flex.double([])
-    for i in range(0, len(d_bin_boundaries) - 1):
-      self.res_values.append(((1.0 / (d_bin_boundaries[i]**2))
-                              +(1.0 / (d_bin_boundaries[i+1]**2))) / 2.0)
-    self.x = initial_values
-    lbfgs.run(target_evaluator=self)
-
-  def compute_functional_and_gradients(self):
-    f = self.residual()
-    g = self.gradient()
-    return f, g
-
-  def residual(self):
-    gvalues = self.data_manager.g_decay[0:self.data_manager.scaling_options['n_d_bins']]
-    resolution = self.res_values
-    R = 0.0
-    for i, val in enumerate(resolution):
-      R += ((gvalues[i] * exp(self.x[0] * val)) - self.x[1])**2
-    return R
-
-  def gradient(self):
-    gvalues = self.data_manager.g_decay[0:self.data_manager.scaling_options['n_d_bins']]
-    resolution = self.res_values
-    G = flex.double([0.0, 0.0])
-    for i, val in enumerate(resolution):
-      G[0] += (2.0 * ((gvalues[i] * exp((self.x[0]) * val)) - self.x[1])
-               * resolution[i]*gvalues[i]*exp((self.x[0])*resolution[i]))
-      G[1] += -2.0 * ((gvalues[i] * exp((self.x[0]) * val)) - self.x[1])
-    return G

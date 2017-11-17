@@ -229,6 +229,7 @@ def plot_smooth_scales(data_man, outputfile=None):
     decay_SFs = data_man.g_decay.get_scale_factors()
     n_g_decay_params = len(decay_SFs)
     test_decay_factor = SF.SmoothScaleFactor_1D(0.0, n_g_decay_params)
+    test_decay_factor.Vr = 0.5 ##HACK - set to match that of SmoothScaleFactor_1D_Bfactor
     test_decay_factor.set_scale_factors(decay_SFs)
     test_decay_factor.set_normalised_values(rel_values)
     B_rel_values = test_decay_factor.calculate_smooth_scales()

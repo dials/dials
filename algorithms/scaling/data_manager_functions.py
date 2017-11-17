@@ -44,16 +44,18 @@ class Data_Manager(object):
     self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table)
 
   'define a few methods required upon initialisation to set up the data manager'
-  def extract_reflections_for_scaling(self, reflection_table):
+  def extract_reflections_for_scaling(self, reflection_table, error_model_params=None):
     '''select the reflections with non-zero weight and update scale weights
     object.'''
     weights_for_scaling = self.update_weights_for_scaling(reflection_table)
     sel = weights_for_scaling.get_weights() > 0.0
     reflections_for_scaling = reflection_table.select(sel)
-    weights_for_scaling = self.update_weights_for_scaling(reflections_for_scaling)
+    weights_for_scaling = self.update_weights_for_scaling(reflections_for_scaling, 
+      error_model_params=error_model_params)
     return reflections_for_scaling, weights_for_scaling
 
-  def update_weights_for_scaling(self, reflection_table, weights_filter=True, error_model_params=None):
+  def update_weights_for_scaling(self, reflection_table, weights_filter=True, 
+                                 error_model_params=None):
     '''set the weights of each reflection to be used in scaling'''
     weights_for_scaling = Weighting(reflection_table)
     if weights_filter:
@@ -289,8 +291,6 @@ class aimless_Data_Manager(Data_Manager):
     self.g_scale.scale_factors = new_scales
     self.g_scale.calculate_smooth_scales()
 
-
-
   def expand_scales_to_all_reflections(self):
     expanded_scale_factors = []
     if not self.scaling_options['multi_mode']:
@@ -311,15 +311,15 @@ class aimless_Data_Manager(Data_Manager):
       expanded_scale_factors.append(self.g_absorption.calculate_smooth_scales())
     self.reflection_table['inverse_scale_factor'] = flex.double(np.prod(np.array(expanded_scale_factors), axis=0))
     #(angular_scale_factor * decay_factor * absorption_factor)
-    #error_model_params = mf.error_scale_LBFGSoptimiser(self.Ih_table, flex.double([1.0,0.123])).x
-    #self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table,
-    #                                                           weights_filter=False,
-    #                                                           error_model_params=error_model_params)
     #print "updated weights"
     #remove reflections that were determined as outliers
     sel = self.weights_for_scaling.get_weights() != 0.0
     self.reflection_table = self.reflection_table.select(sel)
-    self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table, weights_filter=False)                                                           
+    error_model_params = mf.error_scale_LBFGSoptimiser(self.Ih_table, flex.double([1.0,0.123])).x
+    self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table,
+                                                               weights_filter=False,
+                                                               error_model_params=error_model_params)
+    #self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table, weights_filter=False)                                                           
     self.Ih_table = single_Ih_table(self.reflection_table, self.weights_for_scaling.get_weights())
     #(self.h_index_counter_array, self.h_index_cumulative_array) = (
     #  self.Ih_table.h_index_counter_array, self.Ih_table.h_index_cumulative_array)

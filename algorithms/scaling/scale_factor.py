@@ -305,22 +305,3 @@ class SphericalAbsorption_ScaleFactor(ScaleFactor):
     for n in range(self.harmonic_values.ncols()):
       derivatives.extend(self.harmonic_values[str(n)])
     return derivatives
-
-class Null_ScaleFactor(SmoothScaleFactor):
-  def __init__(self, scaling_options=None):
-    SmoothScaleFactor.__init__(self, 1.0, 0, scaling_options)
-    #scale factors initialise to one when you set normalised values
-
-  def set_normalised_values(self, normalised_values):
-    '''normalised_values is the column from the reflection table
-    of the normalised time/resolution etc'''
-    self.normalised_values = normalised_values
-    self.scales = flex.double([1.0]*len(self.normalised_values))
-
-  def calculate_smooth_scales(self):
-    return self.scales
-
-  def set_d_values(self, d_values):
-    #method so the null scalefactor object can be used for b factors
-    self.d_values = d_values
-
