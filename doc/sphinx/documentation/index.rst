@@ -16,4 +16,5 @@ Documentation and tutorials for DIALS:
    conventions
    installation_developer
    library_reference/index
+   developer_examples/index
 
