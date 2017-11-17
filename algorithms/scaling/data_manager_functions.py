@@ -41,7 +41,8 @@ class Data_Manager(object):
     'assign initial weights (will be statistical weights at this point)'
     self.reflection_table['wilson_outlier_flag'] = calculate_wilson_outliers(
       self.reflection_table, self.experiments)
-    self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table)
+    self.weights_for_scaling = self.update_weights_for_scaling(
+      self.reflection_table,error_model_params=self.scaling_options['error_model_params'])
 
   'define a few methods required upon initialisation to set up the data manager'
   def extract_reflections_for_scaling(self, reflection_table, error_model_params=None):
@@ -310,19 +311,12 @@ class aimless_Data_Manager(Data_Manager):
                                                   self.scaling_options['lmax']))
       expanded_scale_factors.append(self.g_absorption.calculate_smooth_scales())
     self.reflection_table['inverse_scale_factor'] = flex.double(np.prod(np.array(expanded_scale_factors), axis=0))
-    #(angular_scale_factor * decay_factor * absorption_factor)
-    #print "updated weights"
-    #remove reflections that were determined as outliers
     sel = self.weights_for_scaling.get_weights() != 0.0
     self.reflection_table = self.reflection_table.select(sel)
-    error_model_params = mf.error_scale_LBFGSoptimiser(self.Ih_table, flex.double([1.0,0.123])).x
+    #error_model_params = mf.error_scale_LBFGSoptimiser(self.Ih_table, flex.double([1.0,0.123])).x 
     self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table,
-                                                               weights_filter=False,
-                                                               error_model_params=error_model_params)
-    #self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table, weights_filter=False)                                                           
+      weights_filter=False, error_model_params=None)
     self.Ih_table = single_Ih_table(self.reflection_table, self.weights_for_scaling.get_weights())
-    #(self.h_index_counter_array, self.h_index_cumulative_array) = (
-    #  self.Ih_table.h_index_counter_array, self.Ih_table.h_index_cumulative_array)
     self.reflection_table['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
 
   def clean_reflection_table(self):

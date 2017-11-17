@@ -35,11 +35,14 @@ class Weighting(object):
       self.scale_weighting.set_selected(sel, 0.0)
 
   def apply_aimless_error_model(self, reflection_table, error_params):
-    '''def new_sigma(weight):
-      sigmaprime = error_params[0] * (((1.0/weight)
-                                     + ((error_params[1] * reflection_table['intensity'])**2))**0.5)
-      return sigmaprime
-    new_weights = [1.0/(new_sigma(i)**2) if i > 0.0 else 0.0 for i in self.scale_weighting]'''
-    sigmaprime = error_params[0] * (((1.0/self.scale_weighting)
-                                     + ((error_params[1] * reflection_table['intensity'])**2))**0.5)
-    self.scale_weighting = 1.0/(sigmaprime**2)
+    '''applies scaling factors to the errors of the intensities'''
+    print error_params
+    sel = self.scale_weighting != 0.0
+    nonzero_weights = self.scale_weighting.select(sel)
+    nz_intensities = reflection_table.select(sel)['intensity']
+    sigmaprime = error_params[0] * (((1.0/nonzero_weights)
+                                     + ((error_params[1] * nz_intensities)**2))**0.5)
+    new_weights = 1.0/(sigmaprime**2)
+    self.scale_weighting.set_selected(sel, new_weights)
+    print "applied error model"
+
