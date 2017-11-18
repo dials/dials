@@ -548,18 +548,6 @@ class SpotFinderFactory(object):
     '''
     from dials.interfaces import SpotFinderThresholdIface
 
-    # Set the gain if necessary - requires datablock
-    if params.spotfinder.threshold.dispersion.gain is None:
-      assert(datablock)
-      gain = None
-      for imageset in datablock.extract_imagesets():
-        for panel in imageset.get_detector():
-          if gain is None:
-            gain = panel.get_gain()
-          else:
-            assert abs(gain - panel.get_gain()) < 1e-7
-      params.spotfinder.threshold.dispersion.gain = gain
-
     # Configure the algotihm
     Algorithm = SpotFinderThresholdIface.extension(
       params.spotfinder.threshold.algorithm)
