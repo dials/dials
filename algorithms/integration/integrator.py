@@ -1142,6 +1142,7 @@ class Integrator(object):
 
         # Print the time info
         logger.info("")
+        logger.info("Timing information for reference profile formation")
         logger.info(str(time_info))
         logger.info("")
 
@@ -1173,6 +1174,7 @@ class Integrator(object):
 
           # Print the time info
           logger.info("")
+          logger.info("Timing information for reference profile validation")
           logger.info(str(time_info))
           logger.info("")
 
@@ -1215,6 +1217,7 @@ class Integrator(object):
     logger.info(self.integration_report.as_str(prefix=' '))
 
     # Print the time info
+    logger.info("Timing information for integration")
     logger.info(str(time_info))
     logger.info("")
 
