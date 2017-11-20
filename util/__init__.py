@@ -1,19 +1,4 @@
-#!/usr/bin/env python
-#
-# dials.util.__init__.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
-from __future__ import absolute_import, division
-from libtbx.utils import Sorry
-
-from scitbx.array_family import flex # import dependency
-from dials_util_ext import *
+from __future__ import absolute_import, division, print_function
 
 def debug_console():
   '''Start python console at the current code point.'''
@@ -21,8 +6,8 @@ def debug_console():
 
   # use exception trick to pick up the current frame
   try:
-    raise None
-  except: # intentional
+    raise RuntimeError()
+  except RuntimeError:
     frame = sys.exc_info()[2].tb_frame.f_back
 
   # evaluate commands in current namespace
@@ -38,19 +23,9 @@ def debug_console():
     import code
     code.interact(banner='='*80, local=namespace)
 
-class UsefulError(RuntimeError):
-  '''Error message to direct user to report to dials developers.'''
-
-  def __init__(self, message=''):
-    if message:
-      text = 'Error: "%s" - please report this to dials-support@lists.sourceforge.net' % message
-    else:
-      text = 'An error has occurred with no message'
-
-    RuntimeError.__init__(self, text)
-
-def usefulraiser(e):
+def halraiser(e):
   ''' Function to re-raise an exception with a useful message. '''
+  from libtbx.utils import Sorry
 
   text = 'Please report this error to dials-support@lists.sourceforge.net:'
 
@@ -62,50 +37,31 @@ def usefulraiser(e):
     e.args = (text + ' ' + str(e.args[0]),)
   else:
     e.args = (text,) + e.args
-
   raise
 
-class HalError(RuntimeError):
-  def __init__(self, string=''):
-
-    # Get the username
+# Add the following names to namespace for compatibility reasons.
+# Use will cause a warning to be printed. 20171120
+#
+# What you did:
+#   from dials.util import $name
+# What you should have done:
+#   from dials_util_ext import $name
+#
+def _make_dials_util_ext_redirection(name):
+  def dials_util_ext_redirector(*args, **kwargs):
+    import dials_util_ext
+    import sys
     try:
-      from getpass import getuser
-      username = getuser()
-    except Exception:
-      username = 'Dave'
-
-    # Put in HAL error text.
-    text = 'I\'m sorry {0}. I\'m afraid I can\'t do that. {1}'.format(
-        username, string)
-
-    # Init base class
-    RuntimeError.__init__(self, text)
-
-def halraiser(e):
-  ''' Function to re-raise an exception with a Hal message. '''
-
-  # Get the username
-  try:
-    from getpass import getuser
-    username = getuser()
-  except Exception:
-    username = 'Humanoid'
-
-  # Put in HAL error text.
-  text = 'I\'m sorry {0}. I\'m afraid I can\'t do that.'.format(username)
-
-  # Append to exception
-  if len(e.args) == 0:
-    e.args = (text,)
-  elif len(e.args) == 1:
-    e.args = (text + ' ' + str(e.args[0]),)
-  else:
-    e.args = (text,) + e.args
-
-  # Reraise the exception
-  raise
-
-# clobber existing definitions
-HalError = UsefulError
-halraiser = usefulraiser
+      raise RuntimeError()
+    except RuntimeError:
+      frame = sys.exc_info()[2].tb_frame.f_back
+    print("DeprecationWarning: {file}:{line} imported method {name} from dials.util rather than from dials_util_ext".format(name=name, file=frame.f_code.co_filename, line=frame.f_lineno))
+    return getattr(dials_util_ext, name)(*args, **kwargs)
+  return dials_util_ext_redirector
+ResolutionMaskGenerator = _make_dials_util_ext_redirection('ResolutionMaskGenerator')
+is_inside_polygon = _make_dials_util_ext_redirection('is_inside_polygon')
+mask_untrusted_circle = _make_dials_util_ext_redirection('mask_untrusted_circle')
+mask_untrusted_polygon = _make_dials_util_ext_redirection('mask_untrusted_polygon')
+mask_untrusted_rectangle = _make_dials_util_ext_redirection('mask_untrusted_rectangle')
+mask_untrusted_resolution_range = _make_dials_util_ext_redirection('mask_untrusted_resolution_range')
+scale_down_array = _make_dials_util_ext_redirection('scale_down_array')
