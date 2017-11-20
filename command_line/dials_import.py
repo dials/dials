@@ -184,9 +184,15 @@ class DataBlockImporter(object):
     # Check we have some filenames
     if len(datablocks) == 0:
 
-      format_kwargs = {
-        'dynamic_shadowing' : self.params.format.dynamic_shadowing
-      }
+      # FIXME Should probably make this smarter since it requires editing here
+      # and in dials.import phil scope
+      try:
+        format_kwargs = {
+          'dynamic_shadowing' : self.params.format.dynamic_shadowing,
+          'multi_panel' : self.params.format.multi_panel,
+        }
+      except Exception:
+        format_kwargs = None
 
       # Check if a template has been set and print help if not, otherwise try to
       # import the images based on the template input
