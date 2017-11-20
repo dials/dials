@@ -37,10 +37,6 @@ phil_scope = parse('''
       .type = bool
       .help = "For scan-varying prediction force scan-static prediction"
 
-    force_scan_varying = False
-      .type = bool
-      .help = "For scan-static prediction force scan-varying prediction"
-
     padding = 1.0
       .type = float(value_min=0)
       .help = "The padding in degrees"
@@ -62,7 +58,6 @@ class ReflectionPredictor(object):
                dmax=None,
                margin=1,
                force_static=False,
-               force_scan_varying=False,
                padding=0):
     '''
     Initialise a predictor for each experiment.
@@ -72,17 +67,12 @@ class ReflectionPredictor(object):
     :param dmax: The minimum resolution
     :param margin: The margin of hkl to predict
     :param force_static: force scan varying prediction to be static
-    :param force_scan_varying: force scan-static prediction to be scan-varying
 
     '''
-    from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
-    from dials.algorithms.spot_prediction import ScanVaryingReflectionPredictor
+    from dials.algorithms.spot_prediction import ScansReflectionPredictor
     from dials.algorithms.spot_prediction import StillsReflectionPredictor
     from dxtbx.imageset import ImageSweep
     from dials.array_family import flex
-
-    if force_static and force_scan_varying:
-      raise Sorry("Can not set both force_static and force_scan_varying")
 
     class Predictor(object):
       def __init__(self, name, func):
@@ -108,13 +98,8 @@ class ReflectionPredictor(object):
       nsp = experiment.crystal.num_scan_points
       nim = experiment.scan.get_num_images()
 
-      if force_scan_varying and nsp == 0:
-        nsp = nim + 1
-        A = [experiment.crystal.get_A() for i in range(nsp)]
-        experiment.crystal.set_A_at_scan_points(A)
-
       if not force_static and nsp == nim + 1:
-        predictor = ScanVaryingReflectionPredictor(
+        predictor = ScansReflectionPredictor(
           experiment,
           dmin=dmin,
           margin=margin,
@@ -123,15 +108,16 @@ class ReflectionPredictor(object):
                range(experiment.crystal.num_scan_points)]
         predict = Predictor(
           "scan varying prediction",
-          lambda: predictor.for_ub(flex.mat3_double(A)))
+          lambda: predictor.for_varying_ub(flex.mat3_double(A)))
       else:
-        predictor = ScanStaticReflectionPredictor(
+        predictor = ScansReflectionPredictor(
           experiment,
           dmin=dmin,
+          margin=margin,
           padding=padding)
         predict = Predictor(
           "scan static prediction",
-          lambda: predictor.for_ub(experiment.crystal.get_A()))
+          lambda: predictor.for_static_ub(experiment.crystal.get_A()))
     else:
       predictor = StillsReflectionPredictor(
         experiment,

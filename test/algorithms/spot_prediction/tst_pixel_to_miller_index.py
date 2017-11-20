@@ -33,9 +33,9 @@ def run():
     h0 = r['miller_index']
     h1 = transform.h(panel, x, y, z)
     try:
-      assert abs(h0[0] - h1[0]) < 1e-7
-      assert abs(h0[1] - h1[1]) < 1e-7
-      assert abs(h0[2] - h1[2]) < 1e-7
+      assert abs(h0[0] - h1[0]) < 1e-3
+      assert abs(h0[1] - h1[1]) < 1e-3
+      assert abs(h0[2] - h1[2]) < 1e-3
     except Exception:
       print h0, h1
       raise

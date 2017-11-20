@@ -353,6 +353,34 @@ namespace dials { namespace algorithms {
             dmin) {}
 
     /**
+     * Return the beam model
+     */
+    boost::shared_ptr<BeamBase> beam() const {
+      return beam_;
+    }
+
+    /**
+     * Return the detector model
+     */
+    Detector detector() const {
+      return detector_;
+    }
+
+    /**
+     * Return the goniometer model
+     */
+    Goniometer goniometer() const {
+      return goniometer_;
+    }
+
+    /**
+     * Return the scan model
+     */
+    Scan scan() const {
+      return scan_;
+    }
+
+    /**
      * Predict all the reflections for this model.
      * @returns The reflection table
      */
@@ -639,6 +667,157 @@ namespace dials { namespace algorithms {
     std::size_t margin_;
     double padding_;
     ScanVaryingRayPredictor predict_rays_;
+  };
+
+
+  /**
+   * A class to do reflection prediction for either static or scan varying
+   */
+  class ScansReflectionPredictor {
+  public:
+
+    /**
+     * Initialise the predictor
+     */
+    ScansReflectionPredictor(
+            const boost::shared_ptr<BeamBase> beam,
+            const Detector &detector,
+            const Goniometer &goniometer,
+            const Scan &scan,
+            const cctbx::sgtbx::space_group_type &space_group_type,
+            double dmin,
+            std::size_t margin,
+            double padding)
+      : predict_(
+          beam,
+          detector,
+          goniometer,
+          scan,
+          space_group_type,
+          dmin,
+          margin,
+          padding) {}
+
+
+
+    af::reflection_table for_static_ub(
+        const mat3<double> &A) const {
+      af::shared< mat3<double> > A_list(predict_.scan().get_num_images() + 1, A);
+      return predict_.for_ub(A_list.const_ref());
+    }
+
+    af::reflection_table for_varying_ub(
+        const af::const_ref< mat3<double> > &A) const {
+      return predict_.for_ub(A);
+    }
+
+    af::reflection_table for_static_ub_on_single_image(
+        int frame,
+        const mat3<double> &A) const {
+      return predict_.for_ub_on_single_image(frame, A, A);
+    }
+
+    af::reflection_table for_varying_ub_on_single_image(
+        int frame,
+        const mat3<double> &A1,
+        const mat3<double> &A2) const {
+      return predict_.for_ub_on_single_image(frame, A1, A2);
+    }
+
+    af::reflection_table for_hkl_with_static_ub(
+        const af::const_ref<miller_index> &h,
+        const af::const_ref<bool> &entering,
+        const af::const_ref<std::size_t> &panel,
+        const mat3<double> &A) const {
+      af::shared< mat3<double> > A_list(h.size(), A);
+      af::shared< vec3<double> > s0_list(h.size(), predict_.beam()->get_s0());
+      af::shared< mat3<double> > d_list(h.size());
+      for (std::size_t i = 0; i < d_list.size(); ++i) {
+        d_list[i] = predict_.detector()[panel[i]].get_d_matrix();
+      }
+      return predict_.for_hkl_with_individual_ub(
+          h,
+          entering,
+          panel,
+          A_list.const_ref(),
+          s0_list.const_ref(),
+          d_list.const_ref());
+    }
+
+    af::reflection_table for_hkl_with_individual_ub(
+        const af::const_ref<miller_index> &h,
+        const af::const_ref<bool> &entering,
+        const af::const_ref<std::size_t> &panel,
+        const af::const_ref< mat3<double> > &A) const {
+      af::shared< vec3<double> > s0_list(h.size(), predict_.beam()->get_s0());
+      af::shared< mat3<double> > d_list(h.size());
+      for (std::size_t i = 0; i < d_list.size(); ++i) {
+        d_list[i] = predict_.detector()[panel[i]].get_d_matrix();
+      }
+      return predict_.for_hkl_with_individual_ub(
+          h,
+          entering,
+          panel,
+          A,
+          s0_list.const_ref(),
+          d_list.const_ref());
+    }
+
+    af::reflection_table for_hkl_with_individual_ub_beam_and_d_matrix(
+        const af::const_ref<miller_index> &h,
+        const af::const_ref<bool> &entering,
+        const af::const_ref<std::size_t> &panel,
+        const af::const_ref< mat3<double> >&A,
+        const af::const_ref< vec3<double> > &s0,
+        const af::const_ref< mat3<double> > &d) const {
+      return predict_.for_hkl_with_individual_ub(h, entering, panel, A, s0, d);
+    }
+
+    void for_reflection_table_with_static_ub(
+        af::reflection_table table,
+        const mat3<double> &A) const {
+      af::shared< mat3<double> > A_list(table.size(), A);
+      af::shared< vec3<double> > s0_list(table.size(), predict_.beam()->get_s0());
+      af::shared< mat3<double> > d_list(table.size());
+      af::const_ref<std::size_t> panel = table["panel"];
+      for (std::size_t i = 0; i < d_list.size(); ++i) {
+        d_list[i] = predict_.detector()[panel[i]].get_d_matrix();
+      }
+      predict_.for_reflection_table(
+          table,
+          A_list.const_ref(),
+          s0_list.const_ref(),
+          d_list.const_ref());
+    }
+
+    void for_reflection_table_with_individual_ub(
+        af::reflection_table table,
+        const af::const_ref< mat3<double> > &A) const {
+      af::shared< vec3<double> > s0_list(table.size(), predict_.beam()->get_s0());
+      af::shared< mat3<double> > d_list(table.size());
+      af::const_ref<std::size_t> panel = table["panel"];
+      for (std::size_t i = 0; i < d_list.size(); ++i) {
+        d_list[i] = predict_.detector()[panel[i]].get_d_matrix();
+      }
+      predict_.for_reflection_table(
+          table,
+          A,
+          s0_list.const_ref(),
+          d_list.const_ref());
+    }
+
+    void for_reflection_table_with_individual_ub_beam_and_d_matrix(
+        af::reflection_table table,
+        const af::const_ref< mat3<double> > &A,
+        const af::const_ref< vec3<double> > &s0,
+        const af::const_ref< mat3<double> > &d) const {
+      predict_.for_reflection_table(table, A, s0, d);
+    }
+
+  protected:
+
+    ScanVaryingReflectionPredictor predict_;
+
   };
 
 

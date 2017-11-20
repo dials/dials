@@ -20,7 +20,6 @@ class Test(object):
 
     self.tst_static_prediction()
     self.tst_scan_varying_prediction()
-    self.tst_force_scan_varying_prediction()
     self.tst_force_static_prediction()
 
   def tst_static_prediction(self):
@@ -62,33 +61,6 @@ class Test(object):
     import cPickle as pickle
     table = pickle.load(open('predicted.pickle', 'rb'))
     assert(len(table) == 1934)
-    print 'OK'
-
-    # Check the reflection IDs
-    assert('id' in table)
-    assert('miller_index' in table)
-    assert('s1' in table)
-    assert('xyzcal.px' in table)
-    assert('xyzcal.mm' in table)
-    for row in table:
-      assert(row['id'] == 0)
-
-    print 'OK'
-
-  def tst_force_scan_varying_prediction(self):
-    from os.path import join
-    from libtbx import easy_run
-
-    # Call dials.predict
-    easy_run.fully_buffered([
-      'dials.predict',
-      join(self.path, 'experiments_scan_static_crystal.json'),
-      'force_scan_varying=True',
-    ]).raise_if_errors()
-
-    import cPickle as pickle
-    table = pickle.load(open('predicted.pickle', 'rb'))
-    assert(len(table) == 1996)
     print 'OK'
 
     # Check the reflection IDs
