@@ -1,19 +1,15 @@
 # python imports
 from __future__ import absolute_import, division
 import os
-from libtbx.test_utils import open_tmp_directory
 
-def test_command_line(dials_regression):
+def test_command_line(dials_regression, tmpdir):
   data_dir = os.path.join(dials_regression, 'refinement_test_data',
                           'multi_narrow_wedges')
   import glob
   experiments = glob.glob(
     os.path.join(data_dir, 'data/sweep_*/experiments.json'))
 
-  # work in a temporary directory
-  cwd = os.path.abspath(os.curdir)
-  tmp_dir = open_tmp_directory(suffix="tst_cluster_unit_cell")
-  os.chdir(tmp_dir)
+  tmpdir.chdir()
 
   import dials.util.procrunner
   result = dials.util.procrunner.run_process(
