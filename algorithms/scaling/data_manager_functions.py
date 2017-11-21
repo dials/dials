@@ -635,6 +635,11 @@ class XDS_Data_Manager(Data_Manager):
       self.reflection_table, weights_filter=False)
     sel = self.weights_for_scaling.get_weights() != 0.0
     self.reflection_table = self.reflection_table.select(sel)
+    self.weights_for_scaling = self.update_weights_for_scaling(
+      self.reflection_table, weights_filter=False)
+    #now calculate Ih for all reflections.
+    self.Ih_table = single_Ih_table(self.reflection_table, 
+      self.weights_for_scaling.get_weights())
 
   def clean_reflection_table(self):
     #add keys for additional data that is to be exported
