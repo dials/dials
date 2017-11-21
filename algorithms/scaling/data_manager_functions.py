@@ -323,13 +323,10 @@ class aimless_Data_Manager(Data_Manager):
 
   def clean_reflection_table(self):
     self.initial_keys.append('inverse_scale_factor')
-    self.initial_keys.append('Ih_values')
-    self.initial_keys.append('asu_miller_index')
-    self.initial_keys.append('phi')
     for key in self.reflection_table.keys():
       if not key in self.initial_keys:
         del self.reflection_table[key]
-    added_columns = ['h_index', 's2', 's2d',
+    added_columns = ['h_index', 's2', 's2d', 'phi'
                      'decay_factor', 'angular_scale_factor',
                      'normalised_rotation_angle', 'normalised_time_values',
                      'wilson_outlier_flag', 'centric_flag', 'absorption_factor']
@@ -420,7 +417,6 @@ class multi_active_parameter_manager(object):
     self.x = flex.double([])
     for apm in self.apm_list:
       self.x.extend(apm.x)
-    print list(self.x)
     self.n_active_params_dataset1 = len(self.apm_list[0].x)
     self.n_active_params_dataset2 = len(self.apm_list[1].x)
     self.n_active_params = self.n_active_params_dataset1 + self.n_active_params_dataset2
@@ -594,7 +590,6 @@ class XDS_Data_Manager(Data_Manager):
     yrelvalues = yvalues - y_center
     radial_values = ((xrelvalues**2) + (yrelvalues**2))**0.5
     angular_values = flex.double(np.arctan2(yrelvalues, xrelvalues))
-
     normalised_radial_values = n_rad_bins * radial_values / (max(radial_values) * 1.001)
     normalised_angular_values = n_ang_bins * (angular_values + pi) / (2.0 * pi)
     #catchers to stop values being exactly on the boundary and causing errors later.
@@ -602,7 +597,6 @@ class XDS_Data_Manager(Data_Manager):
     normalised_angular_values.set_selected(sel, 7.9999)
     sel = normalised_angular_values == 0.0
     normalised_angular_values.set_selected(sel, 0.0001)
-
     self.reflection_table['normalised_angle_values'] = normalised_angular_values
     self.reflection_table['normalised_radial_values'] = normalised_radial_values
     n_ang_parameters = n_rad_bins + 1
@@ -611,21 +605,6 @@ class XDS_Data_Manager(Data_Manager):
     highest_parameter_value = int((max(self.reflection_table['normalised_time_values'])//1)+1)
     lowest_parameter_value = int((min(self.reflection_table['normalised_time_values'])//1)-0)
     n_time_parameters = highest_parameter_value - lowest_parameter_value + 1
-
-  '''def scale_gvalues(self):
-    Rescale the decay g-values by a relative B-factor and a global scale
-    factor.
-    Optimal_rescale_values = mf.B_optimiser(self, flex.double([0.0, 1.0]))
-    print "Brel, 1/global scale = "+str(list(Optimal_rescale_values.x))
-    scaling_factors = []
-    for _ in range(self.binning_parameters['n_z_bins']):
-      scaling_factors += flex.exp(Optimal_rescale_values.x[0]
-                    *Optimal_rescale_values.res_values)
-    scaling_factors = flex.double(scaling_factors)
-
-    self.g_decay = self.g_decay * scaling_factors
-    self.g_decay = self.g_decay * (1.0 / Optimal_rescale_values.x[1])
-    print "scaled by B_rel and global scale parameter"'''
 
   def expand_scales_to_all_reflections(self):
     #currently we have Ih, scales and weights for reflections_for_scaling
@@ -651,37 +630,22 @@ class XDS_Data_Manager(Data_Manager):
     else:
       self.reflection_table['inverse_scale_factor'] = flex.double(
         np.prod(np.array(scales_to_expand), axis=0))
-    #the update weights - use statistical weights and just filter outliers, not on Isigma. dmin etc
-    #self.reflection_table['wilson_outlier_flag'] = (
-    # calculate_wilson_outliers(self.reflection_table, self.experiments))
+    'remove reflections that were determined as outliers'
     self.weights_for_scaling = self.update_weights_for_scaling(
       self.reflection_table, weights_filter=False)
-    #remove reflections that were determined as outliers
     sel = self.weights_for_scaling.get_weights() != 0.0
     self.reflection_table = self.reflection_table.select(sel)
-    self.weights_for_scaling = self.update_weights_for_scaling(
-      self.reflection_table, weights_filter=False)
-    #now calculate Ih for all reflections.
-    self.Ih_table = single_Ih_table(self.reflection_table, 
-                                    self.weights_for_scaling.get_weights())
-    #(self.h_index_counter_array, self.h_index_cumulative_array) = (
-    #  self.Ih_table.h_index_counter_array, self.Ih_table.h_index_cumulative_array)
-    self.reflection_table['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
 
   def clean_reflection_table(self):
     #add keys for additional data that is to be exported
     self.initial_keys.append('inverse_scale_factor')
-    self.initial_keys.append('Ih_values')
-    self.initial_keys.append('asu_miller_index')
     for key in self.reflection_table.keys():
       if not key in self.initial_keys:
         del self.reflection_table[key]
     added_columns = ['l_bin_index', 'a_bin_index', 'xy_bin_index', 'h_index',
-                     'normalised_y_values',
-                     'normalised_x_values', 'normalised_y_abs_values',
-                     'normalised_x_abs_values', 'normalised_time_values', 
-                     'normalised_res_values', 'wilson_outlier_flag',
-                     'centric_flag']
+      'normalised_y_values', 'normalised_x_values', 'normalised_y_abs_values',
+      'normalised_x_abs_values', 'normalised_time_values', 
+      'normalised_res_values', 'wilson_outlier_flag', 'centric_flag']
     for key in added_columns:
       del self.reflection_table[key]
 
@@ -795,8 +759,6 @@ class multicrystal_datamanager(Data_Manager):
     #self.weights_for_scaling.remove_wilson_outliers(self.reflection_table)
     self.Ih_table = single_Ih_table(self.reflection_table, self.weights_for_scaling.get_weights())
     self.reflection_table['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
-    #self.h_index_counter_array = self.Ih_table.h_index_counter_array 
-    #self.h_index_cumulative_array = self.Ih_table.h_index_cumulative_array
 
 class targeted_datamanager(Data_Manager):
   def __init__(self, reflections1, experiments1, reflections_scaled, scaling_options):
@@ -806,42 +768,31 @@ class targeted_datamanager(Data_Manager):
     self.scaling_options = scaling_options
     if osc_range[1]-osc_range[0]<1000.0: 
       #usually would have it osc_range <10, big here just for testing on LCY dataset
-      #first make a simple KB data manager
+      'first make a simple KB data manager'
       self.dm1 = KB_Data_Manager(reflections1, experiments1, scaling_options)
-      #now extract Ih values from reflections_scaled
+      'now extract Ih values from reflections_scaled'
       self.target_dm = Data_Manager(reflections_scaled, experiments1, scaling_options)
-      '''reflections_scaled = reflections_scaled.select(reflections_scaled['intensity.prf.variance'] > 0)
-      reflections_scaled = reflections_scaled.select(reflections_scaled['intensity.sum.variance'] > 0)
-      reflections_scaled = self.map_indices_to_asu(reflections_scaled)
-      reflections_scaled = self.select_optimal_intensities(reflections_scaled)
-      reflections_scaled['wilson_outlier_flag'] = calculate_wilson_outliers(
-      reflections_scaled, self.experiments)'''
-
       (target_reflections, target_weights) = (
-      self.extract_reflections_for_scaling(self.target_dm.reflections))
+      self.extract_reflections_for_scaling(self.target_dm.reflection_table))
       target_Ih_table = single_Ih_table(target_reflections, target_weights.get_weights())
-
-      self.scaled_refl_table = flex.reflection_table()
-      self.scaled_refl_table['asu_miller_index'] = target_Ih_table.Ih_table['asu_miller_index']
-      self.scaled_refl_table['Ih_values'] = target_Ih_table.Ih_table['Ih_values']
+      'find common reflections in the two datasets'
       for i, miller_idx in enumerate(self.dm1.Ih_table.Ih_table['asu_miller_index']):
-        sel = self.scaled_refl_table['asu_miller_index'] == miller_idx
-        Ih_values = self.scaled_refl_table['Ih_values'].select(sel)
+        sel = target_Ih_table.Ih_table['asu_miller_index'] == miller_idx
+        Ih_values = target_Ih_table.Ih_table['Ih_values'].select(sel)
         if Ih_values:
           self.dm1.Ih_table.Ih_table['Ih_values'][i] = Ih_values[0]
           #select [0] above as all Ih values are the same for asu_miller_idx
         else:
           self.dm1.Ih_table.Ih_table['Ih_values'][i] = 0.0
           #should already be zero but set again just in case
+      'select only those reflections matched in the target dataset'
       sel = self.dm1.Ih_table.Ih_table['Ih_values'] != 0.0
-      new_refl_table = self.dm1.Ih_table.Ih_table.select(sel)
-      new_Ih_values = new_refl_table['Ih_values']
-      self.dm1.Ih_table = base_Ih_table(new_refl_table, new_refl_table['weights'])
-      self.dm1.Ih_table.Ih_table['Ih_values'] = new_Ih_values
+      self.dm1.Ih_table.Ih_table = self.dm1.Ih_table.Ih_table.select(sel)
+      'update the data in the SF objects'
       if self.scaling_options['decay_term']:
         self.dm1.g_decay.set_d_values(self.dm1.g_decay.d_values.select(sel))
       if self.scaling_options['scale_term']:
-        self.dm1.g_scale.set_n_refl(len(new_Ih_values))
+        self.dm1.g_scale.set_n_refl(len(self.dm1.Ih_table.Ih_table))
       self.g_parameterisation = self.dm1.g_parameterisation
     else:
       #do full aimless/xds scaling of one dataset against the other?

@@ -38,10 +38,6 @@ class target_function(object):
     rhl = intensities - (Ih_values * scale_factors)
     num = len(intensities)
     dIh = ((intensities * scaleweights) - (Ih_values * 2.0 * scale_factors * scaleweights))
-    #print "active_parameters"
-    #print list(self.data_manager.active_parameterisation)
-    #print "absorption factors"
-    #print list(self.data_manager.g_absorption.get_scale_factors())
     for i in range(self.apm.n_active_params):
       dIh_g = (dIh * self.data_manager.active_derivatives[i*num:(i+1)*num])
       dIh_g = np.add.reduceat(dIh_g, self.data_manager.Ih_table.h_index_cumulative_array[:-1])/sumgsq

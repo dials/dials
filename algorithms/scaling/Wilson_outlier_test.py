@@ -4,7 +4,6 @@ from cctbx import miller, crystal
 import numpy as np
 from target_function import *
 from basis_functions import *
-import data_manager_functions as dmf
 import scale_factor as SF
 from reflection_weighting import *
 from data_quality_assessment import R_meas, R_pim
@@ -56,7 +55,7 @@ def calculate_wilson_outliers(reflection_table, experiments):
     d_bins[-1] = d_bins[-1] + 0.00001
     resbin_index = flex.int([-1] * len(reflection_table['d']))
     for i in range(n_refl_shells):
-      selection = dmf.select_variables_in_range(
+      selection = select_variables_in_range(
         reflection_table['d'], d_bins[i], d_bins[i+1])
       resbin_index.set_selected(selection, i)
 
@@ -109,3 +108,13 @@ def calculate_wilson_outliers(reflection_table, experiments):
             counter += 1
     print "found %s outliers from analysis of Wilson statistics" % (counter)
     return reflection_table['wilson_outlier_flag']
+
+def select_variables_in_range(variable_array, lower_limit, upper_limit):
+  '''return boolean selection of a given variable range'''
+  sel = flex.bool()
+  for variable in variable_array:
+    if lower_limit < variable <= upper_limit:
+      sel.append(True)
+    else:
+      sel.append(False)
+  return sel
