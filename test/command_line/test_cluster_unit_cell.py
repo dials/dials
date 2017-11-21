@@ -28,6 +28,7 @@ def test_command_line():
   import dials.util.procrunner
   result = dials.util.procrunner.run_process(
     command=['dials.cluster_unit_cell', 'plot.show=False'] + experiments,
+    print_stdout=False,
     )
   assert not result['exitcode']
 
