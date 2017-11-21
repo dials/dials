@@ -83,7 +83,6 @@ def run(args):
     clusters, cluster_axes = ucs.ab_cluster(
       params.threshold,
       log=params.plot.log,
-      ax=ax,
       write_file_lists=False,
       #schnell=_args.schnell,
       doplot=False)
