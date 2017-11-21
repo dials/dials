@@ -1,19 +1,9 @@
 # python imports
 from __future__ import absolute_import, division
 import os
-import libtbx.load_env # required for libtbx.env.find_in_repositories
-from libtbx import easy_run
 from libtbx.test_utils import open_tmp_directory
-import pytest
 
-def test_command_line():
-
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path='dials_regression',
-    test=os.path.isdir)
-  if dials_regression is None:
-    pytest.skip('dials_regression is not available')
-
+def test_command_line(dials_regression):
   data_dir = os.path.join(dials_regression, 'refinement_test_data',
                           'multi_narrow_wedges')
   import glob
