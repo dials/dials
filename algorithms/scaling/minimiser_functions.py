@@ -9,14 +9,17 @@ from cctbx.array_family import flex
 from scitbx import lbfgs
 from math import exp
 import time
-from data_manager_functions import active_parameter_manager
+from data_manager_functions import active_parameter_manager, multi_active_parameter_manager
 #note: include math exp import after flex imports to avoid exp conflicts?
 
 class LBFGS_optimiser(object):
   '''Class that takes in Data_Manager object and runs an LBFGS minimisation'''
   def __init__(self, Data_Manager_object, param_name):
     self.data_manager = Data_Manager_object
-    self.apm = active_parameter_manager(self.data_manager, param_name)
+    if self.data_manager.scaling_options['multi_mode']:
+      self.apm = multi_active_parameter_manager(self.data_manager, param_name)
+    else:
+      self.apm = active_parameter_manager(self.data_manager, param_name)
     self.x = self.apm.x
     #self.x = self.data_manager.set_up_minimisation(param_name)
     self.residuals = []
@@ -48,6 +51,9 @@ class LBFGS_optimiser(object):
     '''first calculate the updated values of the scale factors and Ih,
     before calculating the residual and gradient functions'''
     self.data_manager.update_for_minimisation(self.apm)
+    #print list(self.x)
+    #print list(self.apm.apm_list[0].x)
+    #print list(self.apm.apm_list[1].x)
     f, g = self.data_manager.get_target_function(self.apm)
     f = flex.sum(f)
     self.residuals.append(f)

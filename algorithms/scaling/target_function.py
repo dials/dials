@@ -60,6 +60,9 @@ class target_function(object):
     return self.calculate_residual(), self.calculate_gradient()
 
 class target_function_fixedIh(target_function):
+  def __init__(self, data_manager_object, apm):
+    target_function.__init__(self, data_manager_object, apm)
+
   'subclass to calculate the gradient for KB scaling against a fixed Ih'
   def calculate_gradient(self):
     gradient = flex.double([])
@@ -68,7 +71,7 @@ class target_function_fixedIh(target_function):
     Ih_values = self.data_manager.Ih_table.Ih_table['Ih_values']
     scaleweights = self.data_manager.Ih_table.Ih_table['weights']
     rhl = intensities - (Ih_values * scale_factors)
-    for i in range(self.data_manager.n_active_params):
+    for i in range(self.apm.n_active_params):
       drdp = -Ih_values * self.data_manager.active_derivatives[i*len(intensities):
                                                                (i+1)*len(intensities)]
       grad = (2.0 * rhl * scaleweights * drdp)

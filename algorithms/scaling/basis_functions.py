@@ -20,7 +20,10 @@ class basis_function(object):
       SF_object.set_scale_factors(self.apm.x[self.apm.cumulative_active_params[i]:
                                                   self.apm.cumulative_active_params[i+1]])
       factors_to_multiply.append(self.data_manager.g_parameterisation[active_param].calculate_smooth_scales())
-    return flex.double(np.prod(np.array(factors_to_multiply), axis=0)) * self.apm.constant_g_values
+    if self.apm.constant_g_values:
+      return flex.double(np.prod(np.array(factors_to_multiply), axis=0)) * self.apm.constant_g_values
+    else:
+      return flex.double(np.prod(np.array(factors_to_multiply), axis=0))
     
   def calculate_derivatives(self):
     if len(self.data_manager.g_parameterisation) == 1:
@@ -46,25 +49,36 @@ class basis_function(object):
     return self.calculate_scale_factors(), self.calculate_derivatives()
 
 class KB_basis_function(basis_function):
+  def __init__(self, data_manager_object, apm):
+    basis_function.__init__(self, data_manager_object, apm)
+
   def calculate_scale_factors(self):
-    print "Current scale and B-factor are %s" % (list(self.apm.x))
-    scale_term = self.apm.x[0:1]
-    decay_term = self.apm.x[1:2]
-    self.data_manager.g_scale.set_scale_factors(scale_term)
-    self.data_manager.g_decay.set_scale_factors(decay_term)
-    d = self.data_manager.g_decay.d_values
-    return (flex.double([scale_term[0]]*len(d)) * 
-            flex.double(np.exp(flex.double([decay_term[0]]*len(d))/(2.0*(d**2)))))
+    factors_to_multiply = []
+    print "Current parameters %s are %s" % (self.data_manager.g_parameterisation.keys(), list(self.apm.x))
+    for i, active_param in enumerate(self.apm.active_parameterisation):
+      SF_object = self.data_manager.g_parameterisation[active_param]
+      SF_object.set_scale_factors(self.apm.x[self.apm.cumulative_active_params[i]:
+                                                  self.apm.cumulative_active_params[i+1]])
+      factors_to_multiply.append(self.data_manager.g_parameterisation[active_param].get_scales_of_reflections())
+    return flex.double(np.prod(np.array(factors_to_multiply), axis=0))
 
   def calculate_derivatives(self):
-    d = self.data_manager.g_decay.d_values
-    B = self.data_manager.g_decay.scale_factors
-    decay_term = flex.double(np.exp(flex.double([B[0]]*len(d))/(2.0*(d**2))))
-    scale_term = self.data_manager.g_scale.scale_factors
-    derivatives = flex.double([])
-    derivatives.extend(decay_term)
-    derivatives.extend(flex.double([scale_term[0]]*len(d)) * decay_term / (2*(d**2)))
-    return derivatives
+    if len(self.data_manager.g_parameterisation) == 1:
+      #only one active parameter, so don't need to chain rule any derivatives
+      active_param = self.data_manager.g_parameterisation.values()[0]
+      return active_param.get_derivatives()
+    else:
+      derivatives = flex.double([])
+      for i, active_param in enumerate(self.apm.active_parameterisation):
+        derivs = self.data_manager.g_parameterisation[active_param].get_derivatives()
+        scale_multipliers = []
+        for param in self.data_manager.g_parameterisation.keys():
+          if param != active_param:
+            scale_multipliers.append(self.data_manager.g_parameterisation[param].get_scales_of_reflections())
+        scale_multiplier = flex.double(np.prod(np.array(scale_multipliers), axis=0))
+        tiling_factor = self.apm.cumulative_active_params[i+1] - self.apm.cumulative_active_params[i]
+        derivatives.extend(derivs * flex.double(np.tile(scale_multiplier, tiling_factor)))
+      return derivatives
 
 class xds_basis_function_log(basis_function):
   '''Subclass of basis_function for xds parameterisation'''

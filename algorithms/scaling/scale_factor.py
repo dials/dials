@@ -20,13 +20,40 @@ class ScaleFactor(object):
   def get_scale_factors(self):
     return self.scale_factors
 
+class K_ScaleFactor(ScaleFactor):
+  def __init__(self, initial_value, n_refl, scaling_options=None):
+    ScaleFactor.__init__(self, initial_value, 1, scaling_options)
+    self.n_refl = n_refl
+
+  def set_n_refl(self, n_refl):
+    self.n_refl = n_refl
+
+  def get_scales_of_reflections(self):
+    '''only one parameter for a K_ScaleFactor'''
+    return flex.double([self.scale_factors[0]]*self.n_refl)
+
+  def get_derivatives(self):
+    'return derivatives'
+    return flex.double([1.0]*self.n_refl)
+
 class B_ScaleFactor(ScaleFactor):
-  def __init__(self, initial_value, n_parameters, d_values, scaling_options=None):
-    ScaleFactor.__init__(self, initial_value, n_parameters, scaling_options)
+  def __init__(self, initial_value, d_values, scaling_options=None):
+    ScaleFactor.__init__(self, initial_value, 1, scaling_options)
     self.d_values = d_values
 
   def set_d_values(self, d_values):
     self.d_values = d_values
+
+  def get_scales_of_reflections(self):
+    '''only one parameter for a B_ScaleFactor'''
+    scales = flex.double([self.scale_factors[0]]*len(self.d_values))
+    return flex.double(np.exp(scales/(2.0 * (self.d_values**2))))
+
+  def get_derivatives(self):
+    'return derivatives'
+    scales = self.get_scales_of_reflections()
+    return scales / (2.0 * (self.d_values**2))
+ 
 
 class SmoothScaleFactor(ScaleFactor):
   def __init__(self, initial_value, n_parameters, scaling_options=None):
