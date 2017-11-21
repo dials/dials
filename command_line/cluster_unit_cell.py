@@ -47,6 +47,10 @@ def run(args):
     parser.print_help()
     exit(0)
 
+  do_cluster_analysis(experiments, params)
+
+def do_cluster_analysis(experiments, params):
+
   from cctbx import crystal
   from xfel.clustering.cluster import Cluster
   from xfel.clustering.cluster_groups import unit_cell_info
@@ -87,6 +91,8 @@ def run(args):
       #schnell=_args.schnell,
       doplot=False)
     print unit_cell_info(clusters)
+
+  return clusters
 
 
 if __name__ == '__main__':
