@@ -69,7 +69,8 @@ class ReflectionPredictor(object):
     :param force_static: force scan varying prediction to be static
 
     '''
-    from dials.algorithms.spot_prediction import ScansReflectionPredictor
+    from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
+    from dials.algorithms.spot_prediction import ScanVaryingReflectionPredictor
     from dials.algorithms.spot_prediction import StillsReflectionPredictor
     from dxtbx.imageset import ImageSweep
     from dials.array_family import flex
@@ -99,7 +100,7 @@ class ReflectionPredictor(object):
       nim = experiment.scan.get_num_images()
 
       if not force_static and nsp == nim + 1:
-        predictor = ScansReflectionPredictor(
+        predictor = ScanVaryingReflectionPredictor(
           experiment,
           dmin=dmin,
           margin=margin,
@@ -108,16 +109,15 @@ class ReflectionPredictor(object):
                range(experiment.crystal.num_scan_points)]
         predict = Predictor(
           "scan varying prediction",
-          lambda: predictor.for_varying_ub(flex.mat3_double(A)))
+          lambda: predictor.for_ub(flex.mat3_double(A)))
       else:
-        predictor = ScansReflectionPredictor(
+        predictor = ScanStaticReflectionPredictor(
           experiment,
           dmin=dmin,
-          margin=margin,
           padding=padding)
         predict = Predictor(
           "scan static prediction",
-          lambda: predictor.for_static_ub(experiment.crystal.get_A()))
+          lambda: predictor.for_ub(experiment.crystal.get_A()))
     else:
       predictor = StillsReflectionPredictor(
         experiment,

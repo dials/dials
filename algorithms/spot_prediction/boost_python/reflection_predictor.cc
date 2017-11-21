@@ -30,7 +30,9 @@ namespace dials { namespace algorithms { namespace boost_python {
           const cctbx::uctbx::unit_cell&,
           const cctbx::sgtbx::space_group_type&,
           double,
+          double,
           double>())
+      .def("for_ub_old_index_generator", &Predictor::for_ub_old_index_generator)
       .def("for_ub", &Predictor::for_ub)
       .def("for_hkl", &Predictor::for_hkl)
       .def("for_hkl", &Predictor::for_hkl_with_individual_ub)
@@ -58,43 +60,6 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("for_ub", &Predictor::for_ub)
       .def("for_ub_on_single_image", &Predictor::for_ub_on_single_image)
       .def("for_reflection_table", &Predictor::for_reflection_table)
-      ;
-  }
-
-  void export_scans_reflection_predictor() {
-
-    typedef ScansReflectionPredictor Predictor;
-
-    class_<Predictor>("ScansReflectionPredictor", no_init)
-      .def(init<
-          const boost::shared_ptr<BeamBase>,
-          const Detector&,
-          const Goniometer&,
-          const Scan&,
-          const cctbx::sgtbx::space_group_type&,
-          double,
-          std::size_t,
-          double>())
-      .def("for_static_ub",
-          &Predictor::for_static_ub)
-      .def("for_varying_ub",
-          &Predictor::for_varying_ub)
-      .def("for_static_ub_on_single_image",
-          &Predictor::for_static_ub_on_single_image)
-      .def("for_varying_ub_on_single_image",
-          &Predictor::for_varying_ub_on_single_image)
-      .def("for_hkl_with_static_ub",
-          &Predictor::for_hkl_with_static_ub)
-      .def("for_hkl_with_individual_ub",
-          &Predictor::for_hkl_with_individual_ub)
-      .def("for_hkl_with_individual_ub_beam_and_d_matrix",
-          &Predictor::for_hkl_with_individual_ub_beam_and_d_matrix)
-      .def("for_reflection_table_with_static_ub",
-          &Predictor::for_reflection_table_with_static_ub)
-      .def("for_reflection_table_with_individual_ub",
-          &Predictor::for_reflection_table_with_individual_ub)
-      .def("for_reflection_table_with_individual_ub_beam_and_d_matrix",
-          &Predictor::for_reflection_table_with_individual_ub_beam_and_d_matrix)
       ;
   }
 
@@ -221,7 +186,6 @@ namespace dials { namespace algorithms { namespace boost_python {
   {
     export_scan_static_reflection_predictor();
     export_scan_varying_reflection_predictor();
-    export_scans_reflection_predictor();
     export_stills_delta_psi_reflection_predictor();
     export_nave_stills_reflection_predictor();
     export_spherical_relp_stills_reflection_predictor();

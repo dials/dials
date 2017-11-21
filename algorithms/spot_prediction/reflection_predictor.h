@@ -98,6 +98,7 @@ namespace dials { namespace algorithms {
           const cctbx::uctbx::unit_cell &unit_cell,
           const cctbx::sgtbx::space_group_type &space_group_type,
           double dmin,
+          double margin,
           double padding)
       : beam_(beam),
         detector_(detector),
@@ -106,6 +107,7 @@ namespace dials { namespace algorithms {
         unit_cell_(unit_cell),
         space_group_type_(space_group_type),
         dmin_(dmin),
+        margin_(margin),
         padding_(padding),
         predict_rays_(
             beam->get_s0(),
@@ -116,13 +118,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(padding >= 0);
     }
 
-
-    /**
-     * Predict reflections for UB
-     * @param ub The UB matrix
-     * @returns A reflection table.
-     */
-    af::reflection_table for_ub(const mat3<double> &ub) const {
+    af::reflection_table for_ub_old_index_generator(const mat3<double> &ub) const {
 
       // Create the reflection table and the local container
       af::reflection_table table;
@@ -138,6 +134,50 @@ namespace dials { namespace algorithms {
         }
         append_for_index(predictions, ub, h);
       }
+
+      // Return the reflection table
+      return table;
+    }
+
+    /**
+     * Predict reflections for UB
+     * @param ub The UB matrix
+     * @returns A reflection table.
+     */
+    af::reflection_table for_ub(const mat3<double> &ub) const {
+
+      // Get the array range and loop through all the images
+      vec2<int> array_range = scan_.get_array_range();
+      double a0 = scan_.get_oscillation_range()[0];
+      double a1 = scan_.get_oscillation_range()[1];
+      int z0 = std::floor(scan_.get_array_index_from_angle(a0-padding_*pi/180.0) + 0.5);
+      int z1 = std::floor(scan_.get_array_index_from_angle(a1+padding_*pi/180.0) + 0.5);
+
+      // Get the rotation axis and beam vector
+      vec3<double> m2 = goniometer_.get_rotation_axis_datum();
+      vec3<double> s0 = beam_->get_s0();
+
+      // Create the reflection table and the local container
+      af::reflection_table table;
+      prediction_data predictions(table);
+      for (int frame = z0; frame < z1; ++frame) {
+
+        mat3<double> A1 = ub;
+        mat3<double> A2 = ub;
+        compute_setting_matrices(A1, A2, frame);
+
+        // Create the index generate and loop through the indices. For each index,
+        // predict the rays and append to the reflection table
+        ReekeIndexGenerator indices(A1, A2, space_group_type_, m2, s0, dmin_, margin_);
+        for (;;) {
+          miller_index h = indices.next();
+          if (h.is_zero()) {
+            break;
+          }
+          append_for_index(predictions, ub, h, frame);
+        }
+      }
+
 
       // Return the reflection table
       return table;
@@ -230,6 +270,60 @@ namespace dials { namespace algorithms {
 
   private:
 
+    /**
+     * Helper function to compute the setting matrix and the beginning and end
+     * of a frame.
+     */
+    void compute_setting_matrices(
+        mat3<double> &A1, mat3<double> &A2,
+        int frame) const {
+
+      // Get the rotation axis and beam vector
+      vec3<double> m2 = goniometer_.get_rotation_axis_datum();
+
+      // Calculate the setting matrix at the beginning and end
+      double phi_beg = scan_.get_angle_from_array_index(frame);
+      double phi_end = scan_.get_angle_from_array_index(frame + 1);
+      mat3<double> r_fixed =  goniometer_.get_fixed_rotation();
+      mat3<double> r_setting =  goniometer_.get_setting_rotation();
+      mat3<double> r_beg = axis_and_angle_as_matrix(m2, phi_beg);
+      mat3<double> r_end = axis_and_angle_as_matrix(m2, phi_end);
+      A1 = r_setting * r_beg * r_fixed * A1;
+      A2 = r_setting * r_end * r_fixed * A2;
+    }
+
+    void append_for_index(
+        prediction_data &p,
+        const mat3<double> ub,
+        const miller_index &h,
+        int frame) const {
+      af::small<Ray, 2> rays = predict_rays_(h, ub);
+      for (std::size_t i = 0; i < rays.size(); ++i) {
+        try {
+          Detector::coord_type impact = detector_.get_ray_intersection(rays[i].s1);
+          std::size_t panel = impact.first;
+          vec2<double> mm = impact.second;
+          vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
+          af::shared< vec2<double> > frames =
+            scan_.get_array_indices_with_angle(rays[i].angle, padding_, true);
+          for (std::size_t j = 0; j < frames.size(); ++j) {
+            if (frame < frames[j][1] && frame+1 > frames[j][1]) {
+              p.hkl.push_back(h);
+              p.enter.push_back(rays[i].entering);
+              p.s1.push_back(rays[i].s1);
+              p.panel.push_back(panel);
+              p.flags.push_back(af::Predicted);
+              p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], frames[j][0]));
+              p.xyz_px.push_back(vec3<double>(px[0], px[1], frames[j][1]));
+              break;
+            }
+          }
+        } catch(dxtbx::error) {
+          // do nothing
+        }
+      }
+    }
+
     void append_for_index(
         prediction_data &p,
         const mat3<double> ub,
@@ -299,6 +393,7 @@ namespace dials { namespace algorithms {
     cctbx::uctbx::unit_cell unit_cell_;
     cctbx::sgtbx::space_group_type space_group_type_;
     double dmin_;
+    double margin_;
     double padding_;
     ScanStaticRayPredictor predict_rays_;
   };
@@ -667,157 +762,6 @@ namespace dials { namespace algorithms {
     std::size_t margin_;
     double padding_;
     ScanVaryingRayPredictor predict_rays_;
-  };
-
-
-  /**
-   * A class to do reflection prediction for either static or scan varying
-   */
-  class ScansReflectionPredictor {
-  public:
-
-    /**
-     * Initialise the predictor
-     */
-    ScansReflectionPredictor(
-            const boost::shared_ptr<BeamBase> beam,
-            const Detector &detector,
-            const Goniometer &goniometer,
-            const Scan &scan,
-            const cctbx::sgtbx::space_group_type &space_group_type,
-            double dmin,
-            std::size_t margin,
-            double padding)
-      : predict_(
-          beam,
-          detector,
-          goniometer,
-          scan,
-          space_group_type,
-          dmin,
-          margin,
-          padding) {}
-
-
-
-    af::reflection_table for_static_ub(
-        const mat3<double> &A) const {
-      af::shared< mat3<double> > A_list(predict_.scan().get_num_images() + 1, A);
-      return predict_.for_ub(A_list.const_ref());
-    }
-
-    af::reflection_table for_varying_ub(
-        const af::const_ref< mat3<double> > &A) const {
-      return predict_.for_ub(A);
-    }
-
-    af::reflection_table for_static_ub_on_single_image(
-        int frame,
-        const mat3<double> &A) const {
-      return predict_.for_ub_on_single_image(frame, A, A);
-    }
-
-    af::reflection_table for_varying_ub_on_single_image(
-        int frame,
-        const mat3<double> &A1,
-        const mat3<double> &A2) const {
-      return predict_.for_ub_on_single_image(frame, A1, A2);
-    }
-
-    af::reflection_table for_hkl_with_static_ub(
-        const af::const_ref<miller_index> &h,
-        const af::const_ref<bool> &entering,
-        const af::const_ref<std::size_t> &panel,
-        const mat3<double> &A) const {
-      af::shared< mat3<double> > A_list(h.size(), A);
-      af::shared< vec3<double> > s0_list(h.size(), predict_.beam()->get_s0());
-      af::shared< mat3<double> > d_list(h.size());
-      for (std::size_t i = 0; i < d_list.size(); ++i) {
-        d_list[i] = predict_.detector()[panel[i]].get_d_matrix();
-      }
-      return predict_.for_hkl_with_individual_ub(
-          h,
-          entering,
-          panel,
-          A_list.const_ref(),
-          s0_list.const_ref(),
-          d_list.const_ref());
-    }
-
-    af::reflection_table for_hkl_with_individual_ub(
-        const af::const_ref<miller_index> &h,
-        const af::const_ref<bool> &entering,
-        const af::const_ref<std::size_t> &panel,
-        const af::const_ref< mat3<double> > &A) const {
-      af::shared< vec3<double> > s0_list(h.size(), predict_.beam()->get_s0());
-      af::shared< mat3<double> > d_list(h.size());
-      for (std::size_t i = 0; i < d_list.size(); ++i) {
-        d_list[i] = predict_.detector()[panel[i]].get_d_matrix();
-      }
-      return predict_.for_hkl_with_individual_ub(
-          h,
-          entering,
-          panel,
-          A,
-          s0_list.const_ref(),
-          d_list.const_ref());
-    }
-
-    af::reflection_table for_hkl_with_individual_ub_beam_and_d_matrix(
-        const af::const_ref<miller_index> &h,
-        const af::const_ref<bool> &entering,
-        const af::const_ref<std::size_t> &panel,
-        const af::const_ref< mat3<double> >&A,
-        const af::const_ref< vec3<double> > &s0,
-        const af::const_ref< mat3<double> > &d) const {
-      return predict_.for_hkl_with_individual_ub(h, entering, panel, A, s0, d);
-    }
-
-    void for_reflection_table_with_static_ub(
-        af::reflection_table table,
-        const mat3<double> &A) const {
-      af::shared< mat3<double> > A_list(table.size(), A);
-      af::shared< vec3<double> > s0_list(table.size(), predict_.beam()->get_s0());
-      af::shared< mat3<double> > d_list(table.size());
-      af::const_ref<std::size_t> panel = table["panel"];
-      for (std::size_t i = 0; i < d_list.size(); ++i) {
-        d_list[i] = predict_.detector()[panel[i]].get_d_matrix();
-      }
-      predict_.for_reflection_table(
-          table,
-          A_list.const_ref(),
-          s0_list.const_ref(),
-          d_list.const_ref());
-    }
-
-    void for_reflection_table_with_individual_ub(
-        af::reflection_table table,
-        const af::const_ref< mat3<double> > &A) const {
-      af::shared< vec3<double> > s0_list(table.size(), predict_.beam()->get_s0());
-      af::shared< mat3<double> > d_list(table.size());
-      af::const_ref<std::size_t> panel = table["panel"];
-      for (std::size_t i = 0; i < d_list.size(); ++i) {
-        d_list[i] = predict_.detector()[panel[i]].get_d_matrix();
-      }
-      predict_.for_reflection_table(
-          table,
-          A,
-          s0_list.const_ref(),
-          d_list.const_ref());
-    }
-
-    void for_reflection_table_with_individual_ub_beam_and_d_matrix(
-        af::reflection_table table,
-        const af::const_ref< mat3<double> > &A,
-        const af::const_ref< vec3<double> > &s0,
-        const af::const_ref< mat3<double> > &d) const {
-      predict_.for_reflection_table(table, A, s0, d);
-    }
-
-  protected:
-
-    ScanVaryingReflectionPredictor predict_;
-
   };
 
 

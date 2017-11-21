@@ -36,6 +36,7 @@ class Test(object):
     self.tst_number_of_predictions()
     self.tst_vs_old()
     self.tst_with_reflection_table()
+    self.tst_with_old_index_generator()
     #self.tst_with_hkl()
     #self.tst_with_hkl_and_panel()
     #self.tst_with_hkl_and_panel_list()
@@ -63,8 +64,34 @@ class Test(object):
     assert prediction_count == 1996, "Predicted %d spots != 1996 when rotated by 360 degrees" % prediction_count
 
   def tst_vs_old(self):
+    from dials.array_family import flex
     r_old = self.reflections
     r_new = self.predict_new()
+    index1 = flex.size_t(sorted(range(len(r_old)), key=lambda x: r_old['miller_index'][x]))
+    index2 = flex.size_t(sorted(range(len(r_new)), key=lambda x: r_new['miller_index'][x]))
+    r_old = r_old.select(index1)
+    r_new = r_new.select(index2)
+    assert(len(r_old) == len(r_new))
+    eps = 1e-7
+    for r1, r2 in zip(r_old.rows(), r_new.rows()):
+      assert(r1['miller_index'] == r2['miller_index'])
+      assert(r1['panel'] == r2['panel'])
+      assert(r1['entering'] == r2['entering'])
+      assert(all(abs(a-b) < eps for a, b in zip(r1['s1'], r2['s1'])))
+      assert(all(abs(a-b) < eps for a, b in zip(r1['xyzcal.px'], r2['xyzcal.px'])))
+      assert(all(abs(a-b) < eps for a, b in zip(r1['xyzcal.mm'], r2['xyzcal.mm'])))
+    print 'OK'
+
+  def tst_with_old_index_generator(self):
+    from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
+    from dials.array_family import flex
+    predict = ScanStaticReflectionPredictor(self.experiments[0])
+    r_old = predict.for_ub_old_index_generator(self.experiments[0].crystal.get_A())
+    r_new = predict.for_ub(self.experiments[0].crystal.get_A())
+    index1 = flex.size_t(sorted(range(len(r_old)), key=lambda x: r_old['miller_index'][x]))
+    index2 = flex.size_t(sorted(range(len(r_new)), key=lambda x: r_new['miller_index'][x]))
+    r_old = r_old.select(index1)
+    r_new = r_new.select(index2)
     assert(len(r_old) == len(r_new))
     eps = 1e-7
     for r1, r2 in zip(r_old.rows(), r_new.rows()):
