@@ -29,6 +29,7 @@ def test_command_line():
   result = dials.util.procrunner.run_process(
     command=['dials.cluster_unit_cell', 'plot.show=False'] + experiments,
     )
+  assert not result['exitcode']
 
   #print result
   assert os.path.exists('cluster_unit_cell.png')
