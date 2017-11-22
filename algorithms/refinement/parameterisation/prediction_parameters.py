@@ -919,13 +919,12 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     # Get required data
     axis = self._axis.select(isel)
     fixed_rotation = self._fixed_rotation.select(isel)
-    setting_rotation = self._setting_rotation.select(isel)
     phi_calc = self._phi_calc.select(isel)
     h = self._h.select(isel)
     s1 = self._s1.select(isel)
     e_X_r = self._e_X_r.select(isel)
     e_r_s0 = self._e_r_s0.select(isel)
-    U = self._U.select(isel)
+    UB = self._UB.select(isel)
     D = self._D.select(isel)
 
     if dS_dgon_p is None:
@@ -933,6 +932,9 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       # get derivatives of the setting matrix S wrt the parameters
       dS_dgon_p = [None if der is None else flex.mat3_double(len(isel), der.elems) \
                     for der in parameterisation.get_ds_dp(use_none_as_null=True)]
+
+    dphi_dp = []
+    dpv_dp = []
 
     # loop through the parameters
     for der in dS_dgon_p:
@@ -943,17 +945,15 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         continue
 
       # calculate the derivative of r for this parameter
-      # FIXME calculations here
+      tmp = fixed_rotation * (UB * h)
+      dr = der * tmp.rotate_around_origin(axis, phi_calc)
 
       # calculate the derivative of phi for this parameter
-      # FIXME calculations here
+      dphi = -1.0 * dr.dot(s1) / e_r_s0
+      dphi_dp.append(dphi)
 
       # calculate the derivative of pv for this parameter
-      # FIXME calculations here
-
-      # FIXME currently just set derivatives to None in any case
-      dphi_dp.append(None)
-      dpv_dp.append(None)
+      dpv_dp.append(D * (dr + e_X_r * dphi))
 
     return dpv_dp, dphi_dp
 

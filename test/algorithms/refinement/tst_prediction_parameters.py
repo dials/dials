@@ -42,6 +42,8 @@ from dials.algorithms.refinement.parameterisation.beam_parameters import \
 from dials.algorithms.refinement.parameterisation.crystal_parameters import \
     CrystalOrientationParameterisation, \
     CrystalUnitCellParameterisation
+from dials.algorithms.refinement.parameterisation.goniometer_parameters import \
+    GoniometerParameterisation
 
 from time import time
 start_time = time()
@@ -80,6 +82,7 @@ det_param = DetectorParameterisationSinglePanel(mydetector)
 s0_param = BeamParameterisation(mybeam, mygonio)
 xlo_param = CrystalOrientationParameterisation(mycrystal)
 xluc_param = CrystalUnitCellParameterisation(mycrystal)
+gon_param = GoniometerParameterisation(mygonio, mybeam)
 
 # Create an ExperimentList
 experiments = ExperimentList()
@@ -94,7 +97,8 @@ pred_param = XYPhiPredictionParameterisation(experiments,
                detector_parameterisations = [det_param],
                beam_parameterisations = [s0_param],
                xl_orientation_parameterisations = [xlo_param],
-               xl_unit_cell_parameterisations = [xluc_param])
+               xl_unit_cell_parameterisations = [xluc_param],
+               goniometer_parameterisations = [gon_param])
 
 # Generate reflections
 resolution = 2.0
