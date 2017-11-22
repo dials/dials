@@ -18,16 +18,6 @@ Extensions
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: dials.extensions.fitrs_integration_ext
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-.. automodule:: dials.extensions.summation_integration_ext
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 .. automodule:: dials.extensions.simple_centroid_ext
     :members:
     :undoc-members:

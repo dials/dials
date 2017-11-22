@@ -52,7 +52,7 @@ class StillsWeightingStrategy(StatisticalWeightingStrategy):
 class ExternalDelPsiWeightingStrategy(StatisticalWeightingStrategy):
   """Defines a single method that provides a ReflectionManager with a strategy
   for calculating weights for stills refinement. This version uses statistical
-   weights for X and Y and assume that the Delta Psi part is already provided in
+  weights for X and Y and assume that the Delta Psi part is already provided in
   the reflection table"""
 
   def calculate_weights(self, reflections):

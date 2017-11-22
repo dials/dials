@@ -17,7 +17,7 @@ noise being identified as diffraction spots.
 
 Examples::
 
-dials.estimate_gain datablock.json
+  dials.estimate_gain datablock.json
 
 '''
 

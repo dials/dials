@@ -9,11 +9,6 @@ Util
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: dials.util.config
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 .. automodule:: dials.util.export_mtz
     :members:
     :undoc-members:
