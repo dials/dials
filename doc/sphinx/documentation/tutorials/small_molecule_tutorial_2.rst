@@ -18,7 +18,7 @@ Import
 
 Usually DIALS processing is run on a sweep-by-sweep basis - for small molecule data however where multiple sweeps from one sample are routinely collected, with different experimental configurations, it is helpful to process all sweeps at once, therefore starting with:
 
-::
+.. code-block:: bash
 
    dials.import allow_multiple_sweeps=True ../data/*cbf
 
@@ -29,12 +29,14 @@ Spot Finding
 
 This is identical to the routine usage i.e.
 
-::
+.. code-block:: bash
+
    dials.find_spots datablock.json nproc=8
 
 Though will of course take a little longer to work through four sweeps. Here nproc=8 was assigned (for a core i7 machine.) The spot finding is independent from sweep to sweep but the spots from all sweeps may be viewed with
 
-::
+.. code-block:: bash
+
    dials.reciprocal_lattice_viewer datablock.json strong.pickle
 
 Which will show how the four sweeps overlap in reciprocal space, as:
@@ -46,7 +48,8 @@ Indexing
 
 Indexing here will depend on the model for the experiment being reasonably accurate. Provided that the lattices overlap in the reciprocal lattice view above, the indexing should be straightforward and will guarantee that all lattices are consistently indexed. One detail here is to split the experiments on output: this duplicates the models for the individual components rather than sharing them, which allows greater flexibility in refinement (and is critical for scan varying refinement).
 
-::
+.. code-block:: bash
+
    dials.index datablock.json strong.pickle split_experiments=True
 
 Without any additional input, the indexing will determine the most approproiate primitive lattice parameters and orientation which desctibe the observed reciprocal lattice positions.
@@ -56,7 +59,8 @@ Bravais Lattice Determination
 
 In the single sweep tutorial the determination of the Bravais lattice is performed between indexing and refinement. This step however will only work on a single lattice at a time - therefore in this case the analysis will be performed, the results verified then the conclusion fed back into indexing as follows:
 
-::
+.. code-block:: bash
+
    dials.refine_bravais_settings indexed.pickle experiments.json crystal_id=0
    dials.refine_bravais_settings indexed.pickle experiments.json crystal_id=1
    dials.refine_bravais_settings indexed.pickle experiments.json crystal_id=2
@@ -64,7 +68,8 @@ In the single sweep tutorial the determination of the Bravais lattice is perform
 
 Inspect the results, conclude that the oP lattice is appropriate then assign this as a space group for indexing (in this case, P222)
 
-::
+.. code-block:: bash
+
    dials.index datablock.json strong.pickle split_experiments=True space_group=P222
 
 This will once again consistently index the data, this time enforcing the lattice constraints.
@@ -74,45 +79,51 @@ Refinement
 
 Prior to integration we want to refine the experimental geometry and the scan varying crystal orientation and unit cell. This is performed in two steps - the first is to perform static refinement on each indexed sweep, the second to take this refined model and refine the unit cell and orientation allowing for time varying parameters:
 
-::
+.. code-block:: bash
+
    dials.refine indexed.pickle experiments.json output.reflections=static.pickle output.experiments=static.json
    dials.refine static.pickle static.json scan_varying=True
 
 At this stage the reciprocal lattice view will show a much improved level of agreement between the indexed reflections from the four sweeps:
 
-::
+.. code-block:: bash
+
    dials.reciprocal_lattice_viewer refined_experiments.json refined.pickle 
 
- Integration
- ----
+ 
+Integration
+----
 
- At this stage the reflections may be integrated - this is run with:
+At this stage the reflections may be integrated - this is run with:
 
- ::
-    dials.integrate refined.pickle refined_experiments.json nproc=8
+.. code-block:: bash
 
- which will integrate each sweep in sequence, again using 8 cores.
+   dials.integrate refined.pickle refined_experiments.json nproc=8
+
+which will integrate each sweep in sequence, again using 8 cores.
 
 Unit Cell Refinement
 ----
 
 After integration the unit cell for downstream analysis may be derived from refinement of the cell against observed two-theta angles from the reflections, across the four sweeps:
 
-::
+.. code-block:: bash
+
    dials.two_theta_refine integrated.pickle integrated_experiments.json p4p=integrated.p4p
 
 Here the results will be output to a p4p file for XPREP, which includes the standard uncertainties on the unit cell.
  
- Output
+Output
 ----
 
 After integration the data should be split before exporting to a format suitable for input to XPREP or SADABS:
 
-::
+.. code-block:: bash
+
    dials.split_experiments integrated.pickle integrated_experiments.json
    dials.export format=sadabs reflections_0.pickle experiments_0.json sadabs.hklout=integrated_0.sad run=0
    dials.export format=sadabs reflections_1.pickle experiments_1.json sadabs.hklout=integrated_1.sad run=1
    dials.export format=sadabs reflections_2.pickle experiments_2.json sadabs.hklout=integrated_2.sad run=2
    dials.export format=sadabs reflections_3.pickle experiments_3.json sadabs.hklout=integrated_3.sad run=3
 
- If desired, p4p files for each combination of reflections_[0-3].pickle, experiments_[0-3].json could also be generated. 
+If desired, p4p files for each combination of reflections_[0-3].pickle, experiments_[0-3].json could also be generated. 
