@@ -40,25 +40,40 @@ def run(args):
     check_format=False,
     epilog=help_message)
 
-  params, options = parser.parse_args(show_diff_phil=True)
+  params, options, args = parser.parse_args(
+    show_diff_phil=True,
+    return_unhandled=True
+  )
   experiments = flatten_experiments(params.input.experiments)
+  crystal_symmetries = []
 
   if len(experiments) == 0:
-    parser.print_help()
-    exit(0)
+    if len(args):
+      import os
+      from iotbx.reflection_file_reader import any_reflection_file
+      for arg in args:
+        assert os.path.isfile(arg), arg
+        reader = any_reflection_file(arg)
+        assert reader.file_type() == 'ccp4_mtz'
+        arrays = reader.as_miller_arrays(merge_equivalents=False)
+        crystal_symmetries.append(arrays[0].crystal_symmetry())
+    else:
+      parser.print_help()
+      exit(0)
+  else:
+    from cctbx import crystal
+    crystal_symmetries = [
+      crystal.symmetry(unit_cell=expt.crystal.get_unit_cell(),
+                       space_group=expt.crystal.get_space_group())
+      for expt in experiments]
 
-  do_cluster_analysis(experiments, params)
+  do_cluster_analysis(crystal_symmetries, params)
 
-def do_cluster_analysis(experiments, params):
+def do_cluster_analysis(crystal_symmetries, params):
 
-  from cctbx import crystal
   from xfel.clustering.cluster import Cluster
   from xfel.clustering.cluster_groups import unit_cell_info
 
-  crystal_symmetries = [
-    crystal.symmetry(unit_cell=expt.crystal.get_unit_cell(),
-                     space_group=expt.crystal.get_space_group())
-    for expt in experiments]
   ucs = Cluster.from_crystal_symmetries(crystal_symmetries)
 
   if params.plot.show or params.plot.name is not None:

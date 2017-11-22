@@ -27,10 +27,16 @@ def test_command_line(dials_regression, tmpdir):
   experiments = ExperimentList([
     ExperimentListFactory.from_json_file(expt, check_format=False)[0]
     for expt in experiments])
+  from cctbx import crystal
+  crystal_symmetries = [
+    crystal.symmetry(unit_cell=expt.crystal.get_unit_cell(),
+                     space_group=expt.crystal.get_space_group())
+    for expt in experiments]
+
   params = cluster_unit_cell.phil_scope.extract()
   params.plot.show = False
   params.plot.name = None
-  clusters = cluster_unit_cell.do_cluster_analysis(experiments, params)
+  clusters = cluster_unit_cell.do_cluster_analysis(crystal_symmetries, params)
   assert len(clusters) == 1
   cluster = clusters[0]
   assert len(cluster.members) == 40
