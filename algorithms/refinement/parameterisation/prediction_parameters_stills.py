@@ -443,6 +443,12 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
   _grad_names = ("dX_dp", "dY_dp", "dDeltaPsi_dp")
 
+  def __init__(self, *args, **kwargs):
+    super(StillsPredictionParameterisation, self).__init__(*args, **kwargs)
+    # check that a goniometer parameterisation is not passed in
+    assert not self._goniometer_parameterisations
+    return
+
   def _local_setup(self, reflections):
     """Setup additional attributes used in gradients calculation. These are
     specific to the stills-type prediction parameterisations that rotates the

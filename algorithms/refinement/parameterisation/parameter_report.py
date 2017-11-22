@@ -15,48 +15,56 @@ class ParameterReporter(object):
   ScanVaryingModelParameterisations present and provides access to their
   Parameters and ScanVaryingParameterSets for reporting purposes.
 
-  It is assumed that the provided model parameterisations will be one of four
+  It is assumed that the provided model parameterisations will be one of five
   types:
 
   * Detector parameterisation
   * Beam parameterisation
   * Crystal orientation parameterisation
   * Crystal unit cell parameterisation
+  * Goniometer setting parameterisation
   """
 
   def __init__(self,
                detector_parameterisations = None,
                beam_parameterisations = None,
                xl_orientation_parameterisations = None,
-               xl_unit_cell_parameterisations = None):
+               xl_unit_cell_parameterisations = None,
+               goniometer_parameterisations = None):
+
+    if detector_parameterisations is None:
+      detector_parameterisations = []
+    if beam_parameterisations is None:
+      beam_parameterisations = []
+    if xl_orientation_parameterisations is None:
+      xl_orientation_parameterisations = []
+    if xl_unit_cell_parameterisations is None:
+      xl_unit_cell_parameterisations = []
+    if goniometer_parameterisations is None:
+      goniometer_parameterisations = []
 
     # Keep references to all parameterised models
     self._detector_parameterisations = detector_parameterisations
     self._beam_parameterisations = beam_parameterisations
-    self._xl_orientation_parameterisations = \
-        xl_orientation_parameterisations
-    self._xl_unit_cell_parameterisations = \
-        xl_unit_cell_parameterisations
+    self._xl_orientation_parameterisations = xl_orientation_parameterisations
+    self._xl_unit_cell_parameterisations = xl_unit_cell_parameterisations
+    self._goniometer_parameterisations = goniometer_parameterisations
 
     self._length = self._len()
 
   def _len(self):
+
     length = 0
-    if self._detector_parameterisations:
-      for model in self._detector_parameterisations:
-        length += model.num_free()
-
-    if self._beam_parameterisations:
-      for model in self._beam_parameterisations:
-        length += model.num_free()
-
-    if self._xl_orientation_parameterisations:
-      for model in self._xl_orientation_parameterisations:
-        length += model.num_free()
-
-    if self._xl_unit_cell_parameterisations:
-      for model in self._xl_unit_cell_parameterisations:
-        length += model.num_free()
+    for model in self._detector_parameterisations:
+      length += model.num_free()
+    for model in self._beam_parameterisations:
+      length += model.num_free()
+    for model in self._xl_orientation_parameterisations:
+      length += model.num_free()
+    for model in self._xl_unit_cell_parameterisations:
+      length += model.num_free()
+    for model in self._goniometer_parameterisations:
+      length += model.num_free()
 
     return length
 
@@ -104,6 +112,15 @@ class ParameterReporter(object):
         tmp = self._indent(p)
         s += tmp + "\n"
 
+    if self._goniometer_parameterisations:
+      s += "Goniometer parameters:\n"
+      gon_plists = [x.get_params()
+                    for x in self._goniometer_parameterisations]
+      params = [x for l in gon_plists for x in l]
+      for p in params:
+        tmp = self._indent(p)
+        s += tmp + "\n"
+
     return s
 
   def varying_params_vs_image_number(self, image_range):
@@ -114,45 +131,18 @@ class ParameterReporter(object):
     image_numbers = range(image_range[0], image_range[1] + 1)
     columns = [TableColumn("Image", image_numbers)]
 
-    if self._detector_parameterisations:
-      for parameterisation in self._detector_parameterisations:
-        for p in parameterisation.get_params():
-          try:
-            vals = [parameterisation.get_smoothed_parameter_value(i, p)
-                    for i in image_numbers]
-            columns.append(TableColumn(p.name_stem, vals))
-          except AttributeError:
-            continue
-
-    if self._beam_parameterisations:
-      for parameterisation in self._beam_parameterisations:
-        for p in parameterisation.get_params():
-          try:
-            vals = [parameterisation.get_smoothed_parameter_value(i, p)
-                    for i in image_numbers]
-            columns.append(TableColumn(p.name_stem, vals))
-          except AttributeError:
-            continue
-
-    if self._xl_orientation_parameterisations:
-      for parameterisation in self._xl_orientation_parameterisations:
-        for p in parameterisation.get_params():
-          try:
-            vals = [parameterisation.get_smoothed_parameter_value(i, p)
-                    for i in image_numbers]
-            columns.append(TableColumn(p.name_stem, vals))
-          except AttributeError:
-            continue
-
-    if self._xl_unit_cell_parameterisations:
-      for parameterisation in self._xl_unit_cell_parameterisations:
-        for p in parameterisation.get_params():
-          try:
-            vals = [parameterisation.get_smoothed_parameter_value(i, p)
-                    for i in image_numbers]
-            columns.append(TableColumn(p.name_stem, vals))
-          except AttributeError:
-            continue
+    for parameterisation in (self._detector_parameterisations +
+                             self._beam_parameterisations +
+                             self._xl_orientation_parameterisations +
+                             self._xl_unit_cell_parameterisations +
+                             self._goniometer_parameterisations):
+      for p in parameterisation.get_params():
+        try:
+          vals = [parameterisation.get_smoothed_parameter_value(i, p)
+                  for i in image_numbers]
+          columns.append(TableColumn(p.name_stem, vals))
+        except AttributeError:
+          continue
 
     if len(columns) > 1:
       header = "\t".join([e.title for e in columns])
@@ -170,29 +160,12 @@ class ParameterReporter(object):
     in the global model"""
 
     global_p_list = []
-    if self._detector_parameterisations:
-      det_plists = [x.get_params(only_free)
-                    for x in self._detector_parameterisations]
-      params = [x for l in det_plists for x in l]
-      global_p_list.extend(params)
-
-    if self._beam_parameterisations:
-      src_plists = [x.get_params(only_free)
-                    for x in self._beam_parameterisations]
-      params = [x for l in src_plists for x in l]
-      global_p_list.extend(params)
-
-    if self._xl_orientation_parameterisations:
-      xlo_plists = [x.get_params(only_free)
-                    for x in self._xl_orientation_parameterisations]
-      params = [x for l in xlo_plists for x in l]
-      global_p_list.extend(params)
-
-    if self._xl_unit_cell_parameterisations:
-      xluc_plists = [x.get_params(only_free)
-                     for x in self._xl_unit_cell_parameterisations]
-      params = [x for l in xluc_plists for x in l]
-      global_p_list.extend(params)
+    for parameterisation in (self._detector_parameterisations +
+                             self._beam_parameterisations +
+                             self._xl_orientation_parameterisations +
+                             self._xl_unit_cell_parameterisations +
+                             self._goniometer_parameterisations):
+      global_p_list.extend(parameterisation.get_params(only_free))
 
     return global_p_list
 
@@ -226,6 +199,13 @@ class ParameterReporter(object):
                      in self._xl_unit_cell_parameterisations]
       params = ["Crystal%d" % (i + 1) + x for i, l \
                 in enumerate(xluc_param_name_lists) for x in l]
+      param_names.extend(params)
+
+    if self._goniometer_parameterisations:
+      gon_param_name_lists = [x.get_param_names(only_free) for x
+                     in self._goniometer_parameterisations]
+      params = ["Goniometer%d" % (i + 1) + x for i, l \
+                in enumerate(gon_param_name_lists) for x in l]
       param_names.extend(params)
 
     return param_names

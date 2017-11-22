@@ -90,13 +90,26 @@ class RestraintsParameterisation(object):
   def __init__(self, detector_parameterisations = None,
                beam_parameterisations = None,
                xl_orientation_parameterisations = None,
-               xl_unit_cell_parameterisations = None):
+               xl_unit_cell_parameterisations = None,
+               goniometer_parameterisations = None):
+
+    if detector_parameterisations is None:
+      detector_parameterisations = []
+    if beam_parameterisations is None:
+      beam_parameterisations = []
+    if xl_orientation_parameterisations is None:
+      xl_orientation_parameterisations = []
+    if xl_unit_cell_parameterisations is None:
+      xl_unit_cell_parameterisations = []
+    if goniometer_parameterisations is None:
+      goniometer_parameterisations = []
 
     # Keep references to all parameterised models
     self._detector_parameterisations = detector_parameterisations
     self._beam_parameterisations = beam_parameterisations
     self._xl_orientation_parameterisations = xl_orientation_parameterisations
     self._xl_unit_cell_parameterisations = xl_unit_cell_parameterisations
+    self._goniometer_parameterisations = goniometer_parameterisations
 
     # Loop over all parameterisations, extract experiment IDs and record
     # global parameter index for each that tells us which parameters have
@@ -127,6 +140,12 @@ class RestraintsParameterisation(object):
         self._exp_to_xluc_param[iexp] = ParamIndex(xlucp, iparam)
       iparam += xlucp.num_free()
 
+    self._exp_to_gon_param = {}
+    for gonp in self._goniometer_parameterisations:
+      for iexp in gonp.get_experiment_ids():
+        self._exp_to_gon_param[iexp] = ParamIndex(gonp, iparam)
+      iparam += gonp.num_free()
+
     # the number of free parameters
     self._nparam = iparam
 
@@ -149,6 +168,10 @@ class RestraintsParameterisation(object):
   #  return
   #
   #def add_restraints_to_target_xl_orientation(self):
+  #
+  #  return
+  #
+  #def add_restraints_to_target_goniometer(self):
   #
   #  return
 
@@ -190,6 +213,10 @@ class RestraintsParameterisation(object):
   #  return
   #
   #def add_restraints_to_group_xl_orientation(self):
+  #
+  #  return
+  #
+  #def add_restraints_to_group_goniometer(self):
   #
   #  return
 

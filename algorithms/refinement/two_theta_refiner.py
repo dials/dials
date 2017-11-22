@@ -236,6 +236,7 @@ class TwoThetaPredictionParameterisation(PredictionParameterisation):
     assert not self._detector_parameterisations
     assert not self._beam_parameterisations
     assert not self._xl_orientation_parameterisations
+    assert not self._goniometer_parameterisations
     return
 
   def _local_setup(self, reflections):
