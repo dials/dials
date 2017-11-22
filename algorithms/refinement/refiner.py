@@ -411,18 +411,6 @@ class RefinerFactory(object):
       if k in reflections.keys():
         rt[k] = reflections[k]
 
-    #Check for monotonically increasing value range. If not, ref_table isn't sorted,
-    # and proceed to sort by id and panel. This is required for the C++ extension
-    # modules to allow for nlogn subselection of values used in refinement.
-    l_id = rt["id"]
-    id0 = l_id[0]
-    for ii in xrange(1,len(l_id)):
-      if id0 <= l_id[ii]:
-        id0 = l_id[ii]
-      else:
-        rt.sort("id") #Ensuring the ref_table is sorted by id
-        rt.subsort("id","panel") #Ensuring that within each sorted id block, sorting is next performed by panel
-        break
     return rt
 
   @classmethod
@@ -2112,6 +2100,7 @@ class Refiner(object):
 
     reflections = self.predict_for_reflection_table(self._refman.get_indexed(),
       skip_derivatives=True)
+    reflections.sort('iobs')
     mask = self.selection_used_for_refinement()
     reflections.set_flags(mask, reflections.flags.used_in_refinement)
     return reflections

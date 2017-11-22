@@ -56,7 +56,7 @@ namespace dials { namespace refinement { namespace boost_python {
         data_offset = refIDRange.first - ref_ids.begin();
 
         // Taking the previous pointer positions, and perfoming a search within this range
-        // for the matching panel IDs, we then counti the pointer range as all valid entries
+        // for the matching panel IDs, we then count the pointer range as all valid entries
         // and add to the accumlator.
         for(pnl = 0; pnl < pnl_ids_flex.size(); ++pnl){ //Iterate through panel IDs
           panelIDRange = std::equal_range( ptr_panel_id + data_offset,
