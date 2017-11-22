@@ -66,7 +66,7 @@ namespace dials { namespace model { namespace boost_python {
     } else if (get_double.check()) {
       result = object(make_from_tuple<double>(data, mask));
     } else {
-      DIALS_ERROR("Unknown Image Data Type");
+      throw DIALS_ERROR("Unknown Image Data Type");
     }
     return result;
   }

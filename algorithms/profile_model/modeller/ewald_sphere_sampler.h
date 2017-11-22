@@ -176,7 +176,7 @@ namespace dials { namespace algorithms {
               temp.push_back(index(3,(iy+1)%num1_[3],iz));
               temp.push_back(index(3,(iy-1)%num1_[3],iz));
             } else {
-              DIALS_ERROR("Programmer Error!!!!");
+              throw DIALS_ERROR("Programmer Error!!!!");
             }
             neighbours_[l] = temp;
             l++;
@@ -300,7 +300,7 @@ namespace dials { namespace algorithms {
      * @returns The x, y, z coordinate of the profile
      */
     double3 coord(std::size_t index) const {
-      DIALS_ERROR("Not implemented");
+      throw DIALS_ERROR("Not implemented");
       return double3();
     }
 

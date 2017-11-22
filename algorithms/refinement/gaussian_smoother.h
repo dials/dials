@@ -128,12 +128,12 @@ namespace dials { namespace refinement {
 
       // In addition, like Aimless, limit it to the range [1,5]
       if (naverage < 1 || naverage > 5) {
-        DIALS_ERROR("GaussianSmoother:: num_average must be between 1 & 5");
+        throw DIALS_ERROR("GaussianSmoother:: num_average must be between 1 & 5");
       }
 
       // sigma cannot be set to zero
       if (sigma == 0.0) {
-        DIALS_ERROR("GaussianSmoother:: sigma cannot be set equal to zero");
+        throw DIALS_ERROR("GaussianSmoother:: sigma cannot be set equal to zero");
       }
 
       half_naverage = (double)naverage / 2.0;

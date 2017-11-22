@@ -795,7 +795,7 @@ namespace dials { namespace algorithms {
      * @returns reflection table.
      */
     af::reflection_table operator()() const {
-      DIALS_ERROR("Not implemented");
+      throw DIALS_ERROR("Not implemented");
       return af::reflection_table();
     }
 

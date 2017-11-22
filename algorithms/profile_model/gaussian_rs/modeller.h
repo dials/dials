@@ -135,7 +135,7 @@ namespace dials { namespace algorithms {
             scan,
             num_scan_points);
       default:
-        DIALS_ERROR("Unknown grid method");
+        throw DIALS_ERROR("Unknown grid method");
       };
       return sampler;
     }
@@ -393,7 +393,7 @@ namespace dials { namespace algorithms {
         success = fit_detector_space(reflections);
         break;
       default:
-        DIALS_ERROR("Unknown fitting method");
+        throw DIALS_ERROR("Unknown fitting method");
       };
       return success;
     }
@@ -411,7 +411,7 @@ namespace dials { namespace algorithms {
         fit_detector_space(reflections);
         break;
       default:
-        DIALS_ERROR("Unknown fitting method");
+        throw DIALS_ERROR("Unknown fitting method");
       };
     }
 

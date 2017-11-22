@@ -203,7 +203,7 @@ namespace dials { namespace algorithms {
           return Ray(s1, mod_2pi(phi[i]), entering);
         }
       }
-      DIALS_ERROR("No ray");
+      throw DIALS_ERROR("No ray");
       return Ray();
     }
 

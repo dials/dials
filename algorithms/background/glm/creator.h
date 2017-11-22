@@ -163,7 +163,7 @@ namespace dials { namespace algorithms {
         compute_loglinear_3d(data, background, mask);
         break;
       default:
-        DIALS_ERROR("Unknown Model");
+        throw DIALS_ERROR("Unknown Model");
       };
     }
 

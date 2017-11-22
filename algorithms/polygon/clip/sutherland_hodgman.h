@@ -220,7 +220,7 @@ bool is_inside_rect(const PointType &p, const RectType &r) {
   } else if (side == TOP) {
     inside = p[1] <= r[1][1];
   } else {
-    DIALS_ERROR("Unreachable");
+    throw DIALS_ERROR("Unreachable");
   }
   return inside;
 }
@@ -249,7 +249,7 @@ PointType intersection_rect(const PointType &p1, const PointType &p2,
     p[1] = r[1][1];
     p[0] = p1[0] + (p2[0] - p1[0]) * (p[1] - p1[1]) / (p2[1] - p1[1]);
   } else {
-    DIALS_ERROR("Unreachable");
+    throw DIALS_ERROR("Unreachable");
   }
   return p;
 }

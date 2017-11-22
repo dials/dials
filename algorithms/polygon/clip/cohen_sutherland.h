@@ -141,7 +141,7 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
       }
       break;
     default:
-      DIALS_ERROR("Shouldn't reach this point!");
+      throw DIALS_ERROR("Shouldn't reach this point!");
       break;
     };
 
