@@ -11,7 +11,8 @@ _*.nb
 *.pdf
 .DS_Store
 *~
-*.swp
+*.sw[op]
+*.log
 .git-notifier*
 git-notifier.log
 .gitversion
