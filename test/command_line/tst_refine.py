@@ -194,6 +194,103 @@ def test3():
   finally:
     os.chdir(cwd)
 
+  print "OK"
+  return
+
+#Test the functionality of the refiner.py extension modules
+def test4():
+  from dials_refinement_helpers_ext import pgnmn_iter as pgnmn
+  from dials_refinement_helpers_ext import ucnmn_iter as ucnmn
+  from dials_refinement_helpers_ext import mnmn_iter as mnmn
+  #Borrowed from tst_reflection_table function tst_find_overlapping
+  from random import randint, uniform
+  N = 110
+  r = flex.reflection_table.empty_standard(N)
+  r['panel'] = flex.size_t([1,0,0,1,0,0,0,0,1,0,0]*10)
+  r['id'] = flex.int([1,2,1,1,2,0,1,1,1,0,1]*10)
+  exp_ids = flex.size_t([0,1])
+  for i in xrange(N):
+    r['miller_index'][i] = (int(i//10) - 5, i%3, i%7) #A nice bunch of miller indices
+
+  '''
+   Filter out reflections to be used by refinement. Sorting of filtered reflections require
+   to allow C++ extension modules to give performance benefit. Sorting performed within the
+   _filter_reflections step by id, then by panel.
+  '''
+  from copy import deepcopy as dc
+  r_sorted = dc(r)
+  r_sorted.sort('id')
+  r_sorted.subsort('id','panel')
+
+  # Test that the unfiltered/unsorted table becomes filtered/sorted for id
+  assert ((r_sorted['id']==r['id'].select(flex.sort_permutation(r['id']))).count(False)==0)
+  # as above for panel within each id
+  for ii in [0,1,2]:
+    r_id = r.select(r['id']==ii)
+    r_sorted_id = r_sorted.select(r_sorted['id']==ii)
+    assert ( (r_sorted_id['panel']==r_id['panel'].select(flex.sort_permutation(r_id['panel']))).count(False)==0 )
+
+  ############################################################
+  #Cut-down original algorithm for model_nparam_minus_nref
+  ############################################################
+  isel = flex.size_t()
+  for exp_id in exp_ids:
+    isel.extend((r['id'] == exp_id).iselection())
+  res0 = len(isel)
+
+  #Updated algorithm for model_nparam_minus_nref, with templated id column for int and size_t
+  res1_unsrt_int = mnmn(r["id"],exp_ids).result
+  res1_int = mnmn(r_sorted["id"],exp_ids).result
+  res1_sizet = mnmn(flex.size_t(list(r_sorted["id"])),exp_ids).result
+  
+  #Check that unsorted list fails, while sorted succeeds for both int and size_t array types
+  assert ( res0 != res1_unsrt_int )
+  assert ( res0 == res1_int )
+  assert ( res0 == res1_sizet )
+
+  ############################################################
+  #Cut-down original algorithm for unit_cell_nparam_minus_nref
+  ############################################################
+  ref = r_sorted.select(isel)
+  h = ref['miller_index'].as_vec3_double()
+  dB_dp = flex.mat3_double( [(1,2,3,4,5,6,7,8,9), (0,1,0,1,0,1,0,1,0) ] )
+  nref_each_param = []
+  for der in dB_dp:
+    tst = (der * h).norms()
+    nref_each_param.append((tst > 0.0).count(True))
+  res0 = min(nref_each_param)
+
+  #Updated algorithm for unit_cell_nparam_minus_nref
+  res1_unsrt_int = ucnmn(r["id"], r["miller_index"], exp_ids, dB_dp).result
+  res1_int = ucnmn(r_sorted["id"], r_sorted["miller_index"], exp_ids, dB_dp).result
+  res1_sizet = ucnmn(flex.size_t(list(r_sorted["id"])), r_sorted["miller_index"], exp_ids, dB_dp).result
+  assert ( res0 != res1_unsrt_int )
+  assert ( res0 == res1_int )
+  assert ( res0 == res1_sizet )
+
+  ############################################################
+  #Cut-down original algorithm for panel_gp_nparam_minus_nref
+  ############################################################
+  isel = flex.size_t()
+  pnl_ids = [0,1]
+  for exp_id in exp_ids:
+    sub_expID = (r['id'] == exp_id).iselection()
+    sub_panels_expID = r['panel'].select(sub_expID)
+    for pnl in pnl_ids:
+      isel.extend(sub_expID.select(sub_panels_expID == pnl))
+  nref = len(isel)
+  res0 = nref
+
+  #Updated algorithm for panel_gp_nparam_minus_nref
+  res1_unsrt_int = pgnmn(r["id"], r["panel"], pnl_ids, exp_ids, 0).result
+  res1_int = pgnmn(r_sorted["id"], r_sorted["panel"], pnl_ids, exp_ids, 0).result
+  res1_sizet = pgnmn(flex.size_t(list(r_sorted["id"])), r_sorted["panel"], pnl_ids, exp_ids, 0).result
+  assert ( res0 != res1_unsrt_int )
+  assert ( res0 == res1_int )
+  assert ( res0 == res1_sizet )
+
+  print "OK"
+  return
 
 def run():
   if not libtbx.env.has_module("dials_regression"):
@@ -203,6 +300,7 @@ def run():
   test1()
   test2()
   test3()
+  test4()
 
 if __name__ == '__main__':
   from dials.test import cd_auto

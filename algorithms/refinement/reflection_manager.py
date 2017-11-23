@@ -185,6 +185,19 @@ class ReflectionManager(object):
     # keep track of the original indices of the reflections
     reflections['iobs'] = flex.size_t_range(len(reflections))
 
+    #Check for monotonically increasing value range. If not, ref_table isn't sorted,
+    # and proceed to sort by id and panel. This is required for the C++ extension
+    # modules to allow for nlogn subselection of values used in refinement.
+    l_id = reflections["id"]
+    id0 = l_id[0]
+    for ii in xrange(1,len(l_id)):
+      if id0 <= l_id[ii]:
+        id0 = l_id[ii]
+      else:
+        reflections.sort("id") #Ensuring the ref_table is sorted by id
+        reflections.subsort("id","panel") #Ensuring that within each sorted id block, sorting is next performed by panel
+        break
+
     # set up the reflection inclusion criteria
     self._close_to_spindle_cutoff = close_to_spindle_cutoff #too close to spindle
     self._outlier_detector = outlier_detector #for outlier rejection

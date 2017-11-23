@@ -24,6 +24,10 @@ from libtbx.phil import parse
 from libtbx.utils import Sorry
 import libtbx
 
+from dials_refinement_helpers_ext import pgnmn_iter as pgnmn
+from dials_refinement_helpers_ext import ucnmn_iter as ucnmn
+from dials_refinement_helpers_ext import mnmn_iter as mnmn
+
 # The include scope directive does not work here. For example:
 #
 #   include scope dials.algorithms.refinement.outlier_detection.phil_scope
@@ -406,6 +410,7 @@ class RefinerFactory(object):
     for k in cols:
       if k in reflections.keys():
         rt[k] = reflections[k]
+
     return rt
 
   @classmethod
@@ -995,6 +1000,10 @@ class RefinerFactory(object):
 
     # Parameter auto reduction options
     def model_nparam_minus_nref(p, reflections):
+      cutoff = options.auto_reduction.min_nref_per_parameter * p.num_free()
+
+      #Replaced Python code
+      '''
       exp_ids = p.get_experiment_ids()
       # Do we have enough reflections to support this parameterisation?
       nparam = p.num_free()
@@ -1004,6 +1013,8 @@ class RefinerFactory(object):
         isel.extend((reflections['id'] == exp_id).iselection())
       nref = len(isel)
       return nref - cutoff
+      '''
+      return mnmn(reflections["id"],p.get_experiment_ids()).result - cutoff
 
     def unit_cell_nparam_minus_nref(p, reflections):
       '''Special version of model_nparam_minus_nref for crystal unit cell
@@ -1012,6 +1023,19 @@ class RefinerFactory(object):
       reflections. For example, for an orthorhombic cell the g_param_0 parameter
       has no effect on predictions in the plane (0,k,l). Here, take the number
       of affected reflections for each parameter into account.'''
+
+      F_dbdp=flex.mat3_double( p.get_ds_dp() )
+      min_nref = options.auto_reduction.min_nref_per_parameter
+      # if no free parameters, do as model_nparam_minus_nref
+      if len(F_dbdp) == 0:
+        exp_ids = p.get_experiment_ids()
+        isel = flex.size_t()
+        for exp_id in exp_ids:
+          isel.extend((reflections['id'] == exp_id).iselection())
+        return len(isel)
+
+      #Replaced Python code
+      '''
       exp_ids = p.get_experiment_ids()
       isel = flex.size_t()
       for exp_id in exp_ids:
@@ -1027,7 +1051,10 @@ class RefinerFactory(object):
         der_mat = flex.mat3_double(len(h), der.elems)
         tst = (der_mat * h).norms()
         nref_each_param.append((tst > 0.0).count(True))
+
       return min([nref - min_nref for nref in nref_each_param])
+      '''
+      return ucnmn(reflections["id"], reflections["miller_index"], p.get_experiment_ids(), F_dbdp).result - min_nref
 
     # In the scan-varying case we can't calculate dB_dp before composing the
     # model, so revert to the original function
@@ -1035,21 +1062,35 @@ class RefinerFactory(object):
       unit_cell_nparam_minus_nref = model_nparam_minus_nref
 
     def panel_gp_nparam_minus_nref(p, pnl_ids, group, reflections, verbose=False):
-      exp_ids = p.get_experiment_ids()
+      """
+      :param p: ModelParameterisation; parameters in model
+      :param pnl_ids: panel IDs
+      :param group: group ID
+      :panel reflections: flex table of reflections
+      :panel verbose:
+      :return: returns surplus {int}
+      """
+      exp_ids = p.get_experiment_ids() #Experiments parameterised by this ModelParameterisation
       # Do we have enough reflections to support this parameterisation?
-      gp_params = [gp == group for gp in p.get_param_panel_groups()]
-      fixlist = p.get_fixed()
-      free_gp_params = [a and not b for a,b in zip(gp_params, fixlist)]
+      gp_params = [gp == group for gp in p.get_param_panel_groups()] #select the group ids for each param that matches the arg 'group'
+      fixlist = p.get_fixed() # Get the fixed parameters; list says yes or no over all
+      free_gp_params = [a and not b for a,b in zip(gp_params, fixlist)] #Free params is the total less the fixed
       nparam = free_gp_params.count(True)
       cutoff = options.auto_reduction.min_nref_per_parameter * nparam
       isel = flex.size_t()
+      #Use Boost.Python extension module to replace below code
+      surplus = pgnmn(reflections["id"], reflections["panel"], pnl_ids, exp_ids, cutoff).result
+
+      #Replaced Python code
+      '''
       for exp_id in exp_ids:
-        subsel = (reflections['id'] == exp_id).iselection()
-        panels = reflections['panel'].select(subsel)
+        sub_expID = (reflections['id'] == exp_id).iselection()
+        sub_panels_expID = reflections['panel'].select(sub_expID)
         for pnl in pnl_ids:
-          isel.extend(subsel.select(panels == pnl))
+          isel.extend(sub_expID.select(sub_panels_expID == pnl))
       nref = len(isel)
       surplus = nref - cutoff
+      '''
       if surplus < 0 and verbose:
         logger.warning('{0} reflections on panels {1} with a cutoff of {2}'.format(nref, pnl_ids, cutoff))
       return surplus
@@ -2059,6 +2100,7 @@ class Refiner(object):
 
     reflections = self.predict_for_reflection_table(self._refman.get_indexed(),
       skip_derivatives=True)
+    reflections.sort('iobs')
     mask = self.selection_used_for_refinement()
     reflections.set_flags(mask, reflections.flags.used_in_refinement)
     return reflections
@@ -2068,4 +2110,3 @@ class Refiner(object):
 
     # delegate to the target object, which has access to the predictor
     return self._target.predict_for_reflection_table(reflections, skip_derivatives)
-
