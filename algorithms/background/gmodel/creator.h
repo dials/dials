@@ -54,7 +54,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(max_iter > 0);
       DIALS_ASSERT(min_pixels > 0);
     }
-    
+
     /**
      * Compute the background values
      * @param sbox The shoeboxes

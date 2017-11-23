@@ -63,9 +63,9 @@ namespace dials { namespace algorithms {
      * @param max_iter The maximum number of iterations
      * @param min_pixels The minimum number of pixels needed
      */
-    GLMBackgroundCreator(Model model, 
-                         double tuning_constant, 
-                         std::size_t max_iter, 
+    GLMBackgroundCreator(Model model,
+                         double tuning_constant,
+                         std::size_t max_iter,
                          std::size_t min_pixels)
       : model_(model),
         tuning_constant_(tuning_constant),

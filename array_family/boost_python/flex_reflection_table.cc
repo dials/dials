@@ -706,7 +706,7 @@ namespace dials { namespace af { namespace boost_python {
     self[name] = Reflection::data_type(item);
   }
 
-  
+
   /**
    * Convert reflection table to list of reflections
    * @param self The reflection table

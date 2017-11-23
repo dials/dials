@@ -34,6 +34,7 @@ namespace dials { namespace algorithms {
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
+  using dxtbx::model::Panel;
 
   using dxtbx::ImageSweep;
   using dxtbx::format::Image;
@@ -51,25 +52,48 @@ namespace dials { namespace algorithms {
     /**
      * Initialise the the size of the panels
      * @param detector The detector model
-     * @param n The number of images
-     * @param dynamic_mask Using a dynamic mask
+     * @param num_images The number of images
+     * @param use_dynamic_mask Using a dynamic mask
+     * @param external_mask The external mask
      */
-    Buffer(const Detector &detector, std::size_t n, bool dynamic_mask)
-        : dynamic_mask_(dynamic_mask) {
-      std::size_t zsize = n;
+    Buffer(const Detector &detector,
+           std::size_t num_images,
+           bool use_dynamic_mask,
+           const Image<bool> &external_mask)
+        : use_dynamic_mask_(use_dynamic_mask) {
+      std::size_t zsize = num_images;
       DIALS_ASSERT(zsize > 0);
       for (std::size_t i = 0; i < detector.size(); ++i) {
         std::size_t xsize = detector[i].get_image_size()[0];
         std::size_t ysize = detector[i].get_image_size()[1];
         DIALS_ASSERT(xsize > 0);
         DIALS_ASSERT(ysize > 0);
+
+        // Allocate all the data buffers
         data_.push_back(
             af::versa< double, af::c_grid<3> >(
               af::c_grid<3>(zsize, ysize, xsize)));
-        if (dynamic_mask) {
-          mask_.push_back(
+
+        // Allocate all the dynamic mask buffers
+        if (use_dynamic_mask) {
+          dynamic_mask_.push_back(
             af::versa< bool, af::c_grid<3> >(
               af::c_grid<3>(zsize, ysize, xsize)));
+        }
+
+        // Allocate the static mask buffer
+        static_mask_.push_back(
+            af::versa< bool, af::c_grid<2> >(
+              af::c_grid<2>(ysize, xsize), true));
+      }
+
+      // Set the external mask
+      if (!external_mask.empty()) {
+        DIALS_ASSERT(external_mask.n_tiles() == static_mask_.size());
+        for (std::size_t i = 0; i < external_mask.n_tiles(); ++i) {
+          set_external_mask_for_panel(
+              external_mask.tile(i).data().const_ref(),
+              static_mask_[i].ref());
         }
       }
     }
@@ -80,6 +104,7 @@ namespace dials { namespace algorithms {
      * @param index The image index
      */
     void copy(const Image<double> &data, std::size_t index) {
+      DIALS_ASSERT(use_dynamic_mask_ == false);
       DIALS_ASSERT(data.n_tiles() == data_.size());
       for (std::size_t i = 0; i < data.n_tiles(); ++i) {
         copy(data.tile(i).data().const_ref(), data_[i].ref(), index);
@@ -93,13 +118,14 @@ namespace dials { namespace algorithms {
      * @param index The image index
      */
     void copy(const Image<double> &data, const Image<bool> &mask, std::size_t index) {
-      DIALS_ASSERT(dynamic_mask_ == true);
+      DIALS_ASSERT(use_dynamic_mask_ == true);
       DIALS_ASSERT(data.n_tiles() == mask.n_tiles());
       DIALS_ASSERT(data.n_tiles() == data_.size());
-      DIALS_ASSERT(mask.n_tiles() == mask_.size());
+      DIALS_ASSERT(mask.n_tiles() == dynamic_mask_.size());
       for (std::size_t i = 0; i < data.n_tiles(); ++i) {
         copy(data.tile(i).data().const_ref(), data_[i].ref(), index);
-        copy(mask.tile(i).data().const_ref(), mask_[i].ref(), index);
+        copy(mask.tile(i).data().const_ref(), dynamic_mask_[i].ref(), index);
+        apply_static_mask(dynamic_mask_[i].ref(), static_mask_[i].const_ref(), index);
       }
     }
 
@@ -116,17 +142,27 @@ namespace dials { namespace algorithms {
      * @param The panel number
      * @returns The buffer for the panel
      */
-    af::const_ref< bool, af::c_grid<3> > mask(std::size_t panel) const {
-      DIALS_ASSERT(dynamic_mask_ == true);
-      DIALS_ASSERT(panel < mask_.size());
-      return mask_[panel].const_ref();
+    af::const_ref< bool, af::c_grid<3> > dynamic_mask(std::size_t panel) const {
+      DIALS_ASSERT(use_dynamic_mask_ == true);
+      DIALS_ASSERT(panel < dynamic_mask_.size());
+      return dynamic_mask_[panel].const_ref();
+    }
+
+    /**
+     * @param The panel number
+     * @returns The buffer for the panel
+     */
+    af::const_ref< bool, af::c_grid<2> > static_mask(std::size_t panel) const {
+      DIALS_ASSERT(use_dynamic_mask_ == false);
+      DIALS_ASSERT(panel < static_mask_.size());
+      return static_mask_[panel].const_ref();
     }
 
     /**
      * @returns do we have a dynamic mask?
      */
-    bool dynamic_mask() const {
-      return dynamic_mask_;
+    bool has_dynamic_mask() const {
+      return use_dynamic_mask_;
     }
 
   protected:
@@ -151,9 +187,45 @@ namespace dials { namespace algorithms {
       }
     }
 
+    /**
+     * Apply the static mask to the dynamic mask
+     * @param src The source
+     * @param dst The destination
+     * @param index The image index
+     */
+    void apply_static_mask(af::ref< bool, af::c_grid<3> > dynamic_mask,
+                           af::const_ref< bool, af::c_grid<2> > static_mask,
+                           std::size_t index) {
+      std::size_t ysize = dynamic_mask.accessor()[1];
+      std::size_t xsize = dynamic_mask.accessor()[2];
+      DIALS_ASSERT(index < dynamic_mask.accessor()[0]);
+      DIALS_ASSERT(dynamic_mask.accessor()[1] == static_mask.accessor()[0]);
+      DIALS_ASSERT(dynamic_mask.accessor()[2] == static_mask.accessor()[1]);
+      for (std::size_t j = 0; j < ysize * xsize; ++j) {
+        bool d = dynamic_mask[index * (xsize*ysize) + j];
+        bool s = static_mask[j];
+        dynamic_mask[index * (xsize*ysize) + j] = d && s;
+      }
+    }
+
+    /**
+     * Set the static mask for a panel
+     * @param panel The panel
+     * @param panel_static_mask The static mask
+     */
+    void set_external_mask_for_panel(
+            const af::const_ref< bool, af::c_grid<2> > &external_mask,
+            af::ref< bool, af::c_grid<2> > panel_static_mask) {
+      DIALS_ASSERT(external_mask.accessor().all_eq(panel_static_mask.accessor()));
+      for (std::size_t j = 0; j < external_mask.size(); ++j) {
+        panel_static_mask[j] = external_mask[j] && panel_static_mask[j];
+      }
+    }
+
     std::vector< af::versa< double, af::c_grid<3> > > data_;
-    std::vector< af::versa< bool, af::c_grid<3> > > mask_;
-    bool dynamic_mask_;
+    std::vector< af::versa< bool, af::c_grid<3> > > dynamic_mask_;
+    std::vector< af::versa< bool, af::c_grid<2> > > static_mask_;
+    bool use_dynamic_mask_;
 
   };
 
@@ -214,10 +286,10 @@ namespace dials { namespace algorithms {
       std::size_t panel = reflection.get<std::size_t>("panel");
 
       // Extract the shoebox data
-      if (buffer_.dynamic_mask()) {
+      if (buffer_.has_dynamic_mask()) {
         extract_shoebox(
             buffer_.data(panel),
-            buffer_.mask(panel),
+            buffer_.dynamic_mask(panel),
             reflection,
             zstart_,
             underload_,
@@ -225,6 +297,7 @@ namespace dials { namespace algorithms {
       } else {
         extract_shoebox(
             buffer_.data(panel),
+            buffer_.static_mask(panel),
             reflection,
             zstart_,
             underload_,
@@ -278,11 +351,14 @@ namespace dials { namespace algorithms {
      * Extract the shoebox data from the buffer
      */
     void extract_shoebox(
-          const af::const_ref< double, af::c_grid<3> > &buffer,
+          const af::const_ref< double, af::c_grid<3> > &data_buffer,
+          const af::const_ref< bool, af::c_grid<2> > &mask_buffer,
           af::Reflection &reflection,
           int zstart,
           double underload,
           double overload) const {
+      DIALS_ASSERT(data_buffer.accessor()[1] == mask_buffer.accessor()[0]);
+      DIALS_ASSERT(data_buffer.accessor()[2] == mask_buffer.accessor()[1]);
       std::size_t panel = reflection.get<std::size_t>("panel");
       int6 bbox = reflection.get<int6>("bbox");
       Shoebox<> shoebox(panel, bbox);
@@ -314,11 +390,13 @@ namespace dials { namespace algorithms {
             if (kk >= 0 &&
                 jj >= 0 &&
                 ii >= 0 &&
-                kk < buffer.accessor()[0] &&
-                jj < buffer.accessor()[1] &&
-                ii < buffer.accessor()[2]) {
-              double d = buffer(kk, jj, ii);
-              int m = (d > underload && d < overload) ? Valid : 0;
+                kk < data_buffer.accessor()[0] &&
+                jj < data_buffer.accessor()[1] &&
+                ii < data_buffer.accessor()[2]) {
+              double d = data_buffer(kk, jj, ii);
+              int m = mask_buffer(jj, ii) && (d > underload && d < overload)
+                ? Valid
+                : 0;
               data(k,j,i) = d;
               mask(k,j,i) = m;
             } else {
@@ -377,7 +455,9 @@ namespace dials { namespace algorithms {
                 jj < data_buffer.accessor()[1] &&
                 ii < data_buffer.accessor()[2]) {
               double d = data_buffer(kk, jj, ii);
-              int m = mask_buffer(kk, jj, ii) ? Valid : 0;
+              int m = mask_buffer(kk, jj, ii) && (d > underload && d < overload)
+                ? Valid
+                : 0;
               data(k,j,i) = d;
               mask(k,j,i) = m;
             } else {
@@ -574,8 +654,13 @@ namespace dials { namespace algorithms {
       // Find the overlapping reflections
       AdjacencyList overlaps = find_overlapping_multi_panel(bbox, panel);
 
+
       // Allocate the array for the image data
-      Buffer buffer(detector, zsize, false);
+      Buffer buffer(
+          detector,
+          zsize,
+          imageset.has_dynamic_mask(),
+          imageset.get_static_mask());
 
       // Transform reflection data from column major to row major. The
       // reason for doing this is because we want to process each reflection
@@ -686,8 +771,8 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < zsize; ++i) {
 
         // Copy the image to the buffer
-        if (buffer.dynamic_mask()) {
-          buffer.copy(imageset.get_corrected_data(i), imageset.get_mask(i), i);
+        if (buffer.has_dynamic_mask()) {
+          buffer.copy(imageset.get_corrected_data(i), imageset.get_dynamic_mask(i), i);
         } else {
           buffer.copy(imageset.get_corrected_data(i), i);
         }
