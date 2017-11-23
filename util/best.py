@@ -29,6 +29,7 @@ def write_integrated_hkl(prefix, reflections):
   for i_expt in range(flex.max(expt_ids)+1):
     integrated = reflections.select(
       (reflections['id'] == i_expt) & integrated_sel)
+    integrated.sort("miller_index")
     h,k,l = integrated['miller_index'].as_vec3_double().parts()
     I = integrated['intensity.sum.value']
     sigI = flex.sqrt(integrated['intensity.sum.variance'])
