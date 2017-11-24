@@ -1040,6 +1040,8 @@ class RefinerFactory(object):
 
       if options.scan_varying:
         if not options.goniometer.force_static:
+          raise Sorry('Scan-varying goniometer refinement is not yet '
+            'available')
           # If a goniometer is scan-varying, then it must always be found
           # alongside the same Scan in any Experiments in which it appears
           if not scan:
