@@ -265,6 +265,34 @@ refinement
       %(sv_phil_str)s
     }
 
+    goniometer
+      .help = "goniometer setting matrix parameters"
+    {
+      fix = *all in_beam_plane out_beam_plane
+        .help = "Whether to fix goniometer parameters. By default,"
+                "fix all. Alternatively the setting matrix can be constrained"
+                "to allow rotation only within the spindle-beam plane"
+                "or to allow rotation only around an axis that lies in that"
+                "plane. Set to None to refine the in two orthogonal directions."
+        .type = choice(multi=True)
+
+      fix_list = None
+        .type = strings
+        .help = "Fix specified parameters by a list of 0-based indices or"
+                "partial names to match"
+        .expert_level = 1
+
+      %(constr_phil)s
+
+      force_static = True
+        .type = bool
+        .help = "Force a static parameterisation for the goniometer when doing"
+                "scan-varying refinement"
+        .expert_level = 1
+
+      %(sv_phil_str)s
+    }
+
     sparse = Auto
       .help = "Calculate gradients using sparse data structures."
       .type = bool
@@ -617,7 +645,8 @@ class RefinerFactory(object):
       tst = [options.beam.smoother,
              options.crystal.orientation.smoother,
              options.crystal.unit_cell.smoother,
-             options.detector.smoother]
+             options.detector.smoother,
+             options.goniometer.smoother]
       tst = [(e.absolute_num_intervals is None and
               e.interval_width_degrees is libtbx.Auto) for e in tst]
       if any(tst):
@@ -998,6 +1027,86 @@ class RefinerFactory(object):
       if det_param.num_free() > 0:
         det_params.append(det_param)
 
+    # Parameterise unique Goniometer setting matrices
+    gon_params = []
+    for igoniometer, goniometer in enumerate(experiments.goniometers()):
+      if goniometer is None: continue
+      # A Goniometer is parameterised with reference to the beam axis.
+      # Use the first Beam this Goniometer is associated with.
+      exp_ids = experiments.indices(goniometer)
+      assoc_models = [(experiments[i].beam, experiments[i].scan) \
+                      for i in exp_ids]
+      beam, scan = assoc_models[0]
+
+      if options.scan_varying:
+        if not options.goniometer.force_static:
+          # If a goniometer is scan-varying, then it must always be found
+          # alongside the same Scan in any Experiments in which it appears
+          if not scan:
+            raise Sorry('A scan-varying goniometer model cannot be created '
+                        'because a scan model is missing')
+          if not all(s is scan for (g, s) in assoc_models):
+            raise Sorry('A single scan-varying goniometer model cannot be '
+                        'refined when associated with more than one scan')
+        sweep_range_deg = scan.get_oscillation_range(deg=True)
+        array_range = scan.get_array_range()
+
+        if not options.goniometer.force_static:
+          n_intervals = options.goniometer.smoother.absolute_num_intervals
+          if n_intervals is None:
+            deg_per_interval = options.goniometer.smoother.interval_width_degrees
+            if deg_per_interval is libtbx.Auto and analysis is not None:
+              intervals = [analysis[i]['interval_width'] for i in exp_ids]
+              deg_per_interval = min(intervals)
+            elif deg_per_interval is None:
+              deg_per_interval = 36.0
+            n_intervals = max(int(
+              abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
+
+          gon_param = par.ScanVaryingGoniometerParameterisation(
+                                              goniometer,
+                                              array_range,
+                                              n_intervals,
+                                              beam=beam,
+                                              experiment_ids=exp_ids)
+        else: # force model to be static
+          gon_param = par.GoniometerParameterisation(goniometer, beam,
+                                                       experiment_ids=exp_ids)
+      else:
+        # Parameterise scan static goniometer
+        gon_param = par.GoniometerParameterisation(goniometer, beam,
+                                                       experiment_ids=exp_ids)
+
+      # get number of fixable units, either parameters or parameter sets in
+      # the scan-varying case
+      try:
+        num_gon = gon_param.num_sets()
+      except AttributeError:
+        num_gon = gon_param.num_total()
+
+      fix_list = []
+      if options.goniometer.fix_list:
+        fix_list.extend(options.goniometer.fix_list)
+
+      if options.goniometer.fix:
+        if "all" in options.goniometer.fix:
+          gon_param.set_fixed([True] * num_gon)
+        if "in_beam_plane" in options.goniometer.fix:
+          fix_list.append('Gamma1')
+        if "out_beam_plane" in options.goniometer.fix:
+          fix_list.append('Gamma2')
+
+      if fix_list:
+        names = filter_parameter_names(gon_param)
+        assert len(names) == num_gon
+        to_fix = string_sel(fix_list,
+                            names,
+                            "Goniometer{0}".format(igoniometer + 1))
+        gon_param.set_fixed(to_fix)
+
+      if gon_param.num_free() > 0:
+        gon_params.append(gon_param)
+
     # Parameter auto reduction options
     def model_nparam_minus_nref(p, reflections):
       cutoff = options.auto_reduction.min_nref_per_parameter * p.num_free()
@@ -1095,8 +1204,8 @@ class RefinerFactory(object):
         logger.warning('{0} reflections on panels {1} with a cutoff of {2}'.format(nref, pnl_ids, cutoff))
       return surplus
 
-    def weak_parameterisation_search(
-      beam_params, xl_ori_params, xl_uc_params, det_params, reflections):
+    def weak_parameterisation_search(beam_params, xl_ori_params, xl_uc_params,
+        det_params, gon_params, reflections):
       weak = None
       nref_deficit = 0
       panels = None
@@ -1139,6 +1248,12 @@ class RefinerFactory(object):
             panels = None
             pnl_gp = None
             name = 'Detector{0}'.format(i + 1)
+      for i, p in enumerate(gon_params):
+        net_nref = model_nparam_minus_nref(p, reflections)
+        if net_nref < nref_deficit:
+          nref_deficit = net_nref
+          weak = p
+          name = 'Goniometer{0}'.format(i + 1)
       return {'parameterisation':weak,
               'panels':panels,
               'panel_group_id':pnl_gp,
@@ -1211,6 +1326,12 @@ class RefinerFactory(object):
             msg = failmsg.format(mdl)
             raise Sorry(msg)
 
+      for i, gonp in enumerate(gon_params):
+        if model_nparam_minus_nref(gonp, reflections) < 0:
+          mdl = 'Goniometer{0}'.format(i + 1)
+          msg = failmsg.format(mdl)
+          raise Sorry(msg)
+
     elif options.auto_reduction.action == 'fix':
       warnmsg = 'Too few reflections to parameterise {0}'
       tmp = []
@@ -1271,12 +1392,21 @@ class RefinerFactory(object):
             logger.warning(msg)
       det_params = tmp
 
+      for i, gonp in enumerate(gon_params):
+        if model_nparam_minus_nref(gonp, reflections) >= 0:
+          tmp.append(gonp)
+        else:
+          mdl = 'Goniometer{0}'.format(i + 1)
+          msg = warnmsg.format(mdl)
+          logger.warning(msg)
+      gon_params = tmp
+
     elif options.auto_reduction.action == 'remove':
       warnmsg = 'Too few reflections to parameterise {0}'
       warnmsg += '\nAssociated reflections will be removed from the Reflection Manager'
       while True:
-        dat = weak_parameterisation_search(beam_params,
-          xl_ori_params, xl_uc_params, det_params, reflections)
+        dat = weak_parameterisation_search(beam_params, xl_ori_params,
+            xl_uc_params, det_params, gon_params, reflections)
         if dat['parameterisation'] is None: break
         exp_ids = dat['parameterisation'].get_experiment_ids()
         if dat['panels'] is not None:
@@ -1315,6 +1445,7 @@ class RefinerFactory(object):
       xl_ori_params = [p for p in xl_ori_params if p.num_free() > 0]
       xl_uc_params = [p for p in xl_uc_params if p.num_free() > 0]
       det_params = [p for p in det_params if p.num_free() > 0]
+      gon_params = [p for p in gon_params if p.num_free() > 0]
 
     # Now we have the final list of model parameterisations, build a restraints
     # parameterisation (if requested). Only unit cell restraints are supported
@@ -1322,7 +1453,7 @@ class RefinerFactory(object):
     if any([options.crystal.unit_cell.restraints.tie_to_target,
             options.crystal.unit_cell.restraints.tie_to_group]):
       restraints_param = cls.config_restraints(params, det_params, beam_params,
-        xl_ori_params, xl_uc_params)
+        xl_ori_params, xl_uc_params, gon_params)
     else:
       restraints_param = None
 
@@ -1356,7 +1487,7 @@ class RefinerFactory(object):
             import ScanVaryingPredictionParameterisation as PredParam
         pred_param = PredParam(
               experiments,
-              det_params, beam_params, xl_ori_params, xl_uc_params)
+              det_params, beam_params, xl_ori_params, xl_uc_params, gon_params)
       else:
         if options.sparse:
           from dials.algorithms.refinement.parameterisation.prediction_parameters \
@@ -1366,26 +1497,27 @@ class RefinerFactory(object):
             import XYPhiPredictionParameterisation as PredParam
         pred_param = PredParam(
             experiments,
-            det_params, beam_params, xl_ori_params, xl_uc_params)
+            det_params, beam_params, xl_ori_params, xl_uc_params, gon_params)
 
     # Parameter reporting
     param_reporter = par.ParameterReporter(det_params, beam_params,
-                                           xl_ori_params, xl_uc_params)
+        xl_ori_params, xl_uc_params, gon_params)
 
     return pred_param, param_reporter, restraints_param
 
   @staticmethod
   def config_restraints(params, det_params, beam_params,
-        xl_ori_params, xl_uc_params):
+        xl_ori_params, xl_uc_params, gon_params):
     """Given a set of user parameters plus model parameterisations, create a
     restraints plus a parameterisation of these restraints
 
     Params:
         params The input parameters
         det_params A list of detector parameterisations
-        beam_params A list of beam parameterisations,
+        beam_params A list of beam parameterisations
         xl_ori_params A list of crystal orientation parameterisations
         xl_uc_params A list of crystal unit cell parameterisations
+        gon_params A list of goniometer parameterisations
 
     Returns:
         A restraints parameterisation
@@ -1395,7 +1527,8 @@ class RefinerFactory(object):
     rp = RestraintsParameterisation(detector_parameterisations = det_params,
                beam_parameterisations = beam_params,
                xl_orientation_parameterisations = xl_ori_params,
-               xl_unit_cell_parameterisations = xl_uc_params)
+               xl_unit_cell_parameterisations = xl_uc_params,
+               goniometer_parameterisations = gon_params)
 
     # Shorten params path
     # FIXME Only unit cell restraints currently supported

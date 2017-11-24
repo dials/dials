@@ -314,8 +314,8 @@ class PredictionParameterisation(object):
       self._s0.set_selected(sel, states['s0'])
       self._U.set_selected(sel, states['U'])
       self._B.set_selected(sel, states['B'])
-      self._setting_rotation.set_selected(sel, states['S'])
       if exp.goniometer:
+        self._setting_rotation.set_selected(sel, states['S'])
         self._axis.set_selected(sel, exp.goniometer.get_rotation_axis_datum())
         self._fixed_rotation.set_selected(sel, exp.goniometer.get_fixed_rotation())
 
@@ -389,11 +389,16 @@ class PredictionParameterisation(object):
       sel = panels == ipanel
       D.set_selected(sel, D_mat)
 
-    return {'s0':experiment.beam.get_s0(),
-            'U':matrix.sqr(experiment.crystal.get_U()),
-            'B':matrix.sqr(experiment.crystal.get_B()),
-            'S':matrix.sqr(experiment.goniometer.get_setting_rotation()),
-            'D':D}
+    result = {'s0':experiment.beam.get_s0(),
+              'U':matrix.sqr(experiment.crystal.get_U()),
+              'B':matrix.sqr(experiment.crystal.get_B()),
+              'D':D}
+
+    # If a goniometer is present, get the setting matrix too
+    if experiment.goniometer:
+      result['S'] = matrix.sqr(experiment.goniometer.get_setting_rotation())
+
+    return result
 
   # The detector derivatives calculation is shared by scans and stills type
   # prediction, so this method is here, in the base class.
