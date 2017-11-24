@@ -314,10 +314,10 @@ class PredictionParameterisation(object):
       self._s0.set_selected(sel, states['s0'])
       self._U.set_selected(sel, states['U'])
       self._B.set_selected(sel, states['B'])
+      self._setting_rotation.set_selected(sel, states['S'])
       if exp.goniometer:
         self._axis.set_selected(sel, exp.goniometer.get_rotation_axis_datum())
         self._fixed_rotation.set_selected(sel, exp.goniometer.get_fixed_rotation())
-        self._setting_rotation.set_selected(sel, exp.goniometer.get_setting_rotation())
 
     # Other derived values
     self._h = reflections['miller_index'].as_vec3_double()
@@ -376,9 +376,9 @@ class PredictionParameterisation(object):
     return results
 
   def _get_model_data_for_experiment(self, experiment, reflections):
-    """Helper function to return model data s0, U, B and D for a particular
+    """Helper function to return model data s0, U, B, D and S for a particular
     experiment. D is always returned as an array the same length as the
-    reflections for the experiment, whereas here U, B and s0 are returned as
+    reflections for the experiment, whereas here s0, U, B and S are returned as
     single matrices or vectors. In the scan-varying overload these will all be
     arrays."""
 
@@ -392,6 +392,7 @@ class PredictionParameterisation(object):
     return {'s0':experiment.beam.get_s0(),
             'U':matrix.sqr(experiment.crystal.get_U()),
             'B':matrix.sqr(experiment.crystal.get_B()),
+            'S':matrix.sqr(experiment.goniometer.get_setting_rotation()),
             'D':D}
 
   # The detector derivatives calculation is shared by scans and stills type

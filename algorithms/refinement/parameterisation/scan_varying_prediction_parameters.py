@@ -536,7 +536,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     result = {}
 
     # compose at the requested image number and calculate using the cached
-    # varcov matrices. Take the first elt of the list becase the crystal
+    # varcov matrices. Take the first elt of the list because the crystal
     # parameterisations are not multi-state
     if xl_op is not None:
       try:

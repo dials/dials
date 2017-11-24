@@ -31,6 +31,8 @@ from dials.algorithms.refinement.parameterisation.scan_varying_beam_parameters \
     import ScanVaryingBeamParameterisation
 from dials.algorithms.refinement.parameterisation.scan_varying_detector_parameters \
     import ScanVaryingDetectorParameterisationSinglePanel
+from dials.algorithms.refinement.parameterisation.scan_varying_goniometer_parameters \
+    import ScanVaryingGoniometerParameterisation
 
 class Test(object):
 
@@ -75,6 +77,14 @@ geometry.parameters.crystal.c.length.range = 10 50"""
             self.crystal, self.scan.get_array_range(), 5)
     self.xluc_param = ScanVaryingCrystalUnitCellParameterisation(
             self.crystal, self.scan.get_array_range(), 5)
+    self.gon_param = ScanVaryingGoniometerParameterisation(
+            self.goniometer, self.scan.get_array_range(), 5, self.beam)
+    # FIXME At the moment the test of scan-varying goniometer parameters will
+    # fail, because ScanVaryingReflectionPredictor.for_reflection_table, used
+    # in managed_predictors.py, cannot take a varying rotation axis. This has
+    # to be changed before this test can pass, after which the following line
+    # can be deleted
+    self.gon_param = []
     return
 
   def generate_reflections(self):
@@ -135,7 +145,8 @@ geometry.parameters.crystal.c.length.range = 10 50"""
 
     # create prediction parameterisation of the requested type
     pred_param = ScanVaryingPredictionParameterisation(self.experiments,
-        [self.det_param], [self.s0_param], [self.xlo_param], [self.xluc_param])
+        [self.det_param], [self.s0_param], [self.xlo_param], [self.xluc_param],
+        [self.gon_param])
 
     # make a target to ensure reflections are predicted and refman is finalised
     from dials.algorithms.refinement.target import \
