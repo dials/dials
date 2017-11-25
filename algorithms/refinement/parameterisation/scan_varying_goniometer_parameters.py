@@ -83,7 +83,6 @@ class ScanVaryingGoniometerParameterisation(
 
     self._S_at_t, dS_dval = self._compose_core(iS0, gamma1, gamma2,
       gamma1_axis=gamma1_set.axis, gamma2_axis=gamma2_set.axis)
-    print self._S_at_t, t
 
     # calculate derivatives of state wrt underlying smoother parameters
     dS_dp1 = [None] * dgamma1_dp.size
