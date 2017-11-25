@@ -527,7 +527,7 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Predict reflections for UB
+     * Predict reflections for UB, s0, d
      * @param h The array of miller indices
      * @param entering The array of entering flags
      * @param panel The array of panels
@@ -536,7 +536,7 @@ namespace dials { namespace algorithms {
      * @param d The array of d matrices
      * @returns A reflection table.
      */
-    af::reflection_table for_hkl_with_individual_ub(
+    af::reflection_table for_hkl_with_individual_model(
         const af::const_ref<miller_index> &h,
         const af::const_ref<bool> &entering,
         const af::const_ref<std::size_t> &panel,
@@ -574,7 +574,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(ub.size() == table.nrows());
       DIALS_ASSERT(s0.size() == table.nrows());
       DIALS_ASSERT(d.size() == table.nrows());
-      af::reflection_table new_table = for_hkl_with_individual_ub(
+      af::reflection_table new_table = for_hkl_with_individual_model(
         table["miller_index"],
         table["entering"],
         table["panel"],
