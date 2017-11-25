@@ -139,17 +139,9 @@ geometry.parameters.crystal.c.length.range = 10 50"""
       outlier_detector=None)
 
     # create prediction parameterisation of the requested type
-
-    # FIXME At the moment the test of scan-varying goniometer parameters will
-    # fail, because ScanVaryingReflectionPredictor.for_reflection_table, used
-    # in managed_predictors.py, cannot take a varying rotation axis. This has
-    # to be changed before this test can pass. Until then, remove the
-    # goniometer parameterisation from the test
-    #pred_param = ScanVaryingPredictionParameterisation(self.experiments,
-    #    [self.det_param], [self.s0_param], [self.xlo_param], [self.xluc_param],
-    #    [self.gon_param])
     pred_param = ScanVaryingPredictionParameterisation(self.experiments,
-        [self.det_param], [self.s0_param], [self.xlo_param], [self.xluc_param])
+        [self.det_param], [self.s0_param], [self.xlo_param], [self.xluc_param],
+        [self.gon_param])
 
     # make a target to ensure reflections are predicted and refman is finalised
     from dials.algorithms.refinement.target import \
