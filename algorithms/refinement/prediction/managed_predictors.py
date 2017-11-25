@@ -104,7 +104,8 @@ class ExperimentsPredictor(object):
         UB = refs['ub_matrix']
         s0 = refs['s0_vector']
         dmat = refs['d_matrix']
-        predictor.for_reflection_table(refs, UB, s0, dmat)
+        Smat = refs['S_matrix']
+        predictor.for_reflection_table(refs, UB, s0, dmat, Smat)
       # scan static
       else:
         predictor = sc(e)

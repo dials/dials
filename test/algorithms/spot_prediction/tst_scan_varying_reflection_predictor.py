@@ -205,6 +205,8 @@ class Test(object):
     preds['ub_matrix'] = flex.mat3_double(len(preds), self.experiments[0].crystal.get_A())
     preds['s0'] = flex.vec3_double(len(preds), self.experiments[0].beam.get_s0())
     preds['d_matrix'] = flex.mat3_double(len(preds))
+    preds['S_matrix'] = flex.mat3_double(len(preds),
+        self.experiments[0].goniometer.get_setting_rotation())
     for ipanel, panel in enumerate(self.experiments[0].detector):
       sel = preds['panel'] == ipanel
       D = panel.get_d_matrix()
@@ -215,9 +217,10 @@ class Test(object):
     predict.for_reflection_table(preds,
                                  preds['ub_matrix'],
                                  preds['s0'],
-                                 preds['d_matrix'])
+                                 preds['d_matrix'],
+                                 preds['S_matrix'])
 
-    # Because UB, s0 and d values are the same for all reflections, the new
+    # Because UB, s0, d and S values are the same for all reflections, the new
     # reflections should be approx equal to those produced by the scan static
     # predictor
     old_x, old_y, old_z = old_preds['xyzcal.px'].parts()

@@ -542,17 +542,19 @@ namespace dials { namespace algorithms {
         const af::const_ref<std::size_t> &panel,
         const af::const_ref< mat3<double> >&ub,
         const af::const_ref< vec3<double> > &s0,
-        const af::const_ref< mat3<double> > &d) const {
+        const af::const_ref< mat3<double> > &d,
+        const af::const_ref< mat3<double> > &S) const {
       DIALS_ASSERT(ub.size() == h.size());
       DIALS_ASSERT(ub.size() == panel.size());
       DIALS_ASSERT(ub.size() == entering.size());
       DIALS_ASSERT(ub.size() == s0.size());
       DIALS_ASSERT(ub.size() == d.size());
+      DIALS_ASSERT(ub.size() == S.size());
       DIALS_ASSERT(scan_.get_oscillation()[1] > 0.0);
       af::reflection_table table;
       prediction_data predictions(table);
       for (std::size_t i = 0; i < h.size(); ++i) {
-        append_for_index(predictions, ub[i], s0[i], d[i], h[i], entering[i], panel[i]);
+        append_for_index(predictions, ub[i], s0[i], d[i], S[i], h[i], entering[i], panel[i]);
       }
       DIALS_ASSERT(table.nrows() == h.size());
       return table;
@@ -564,23 +566,27 @@ namespace dials { namespace algorithms {
      * @param ub The ub matrix array
      * @param s0 The s0 vector array
      * @param d The d matrix array
+     * @param S The S (goniometer setting) matrix array
      */
     void for_reflection_table(
         af::reflection_table table,
         const af::const_ref< mat3<double> > &ub,
         const af::const_ref< vec3<double> > &s0,
-        const af::const_ref< mat3<double> > &d
+        const af::const_ref< mat3<double> > &d,
+        const af::const_ref< mat3<double> > &S
         ) const {
       DIALS_ASSERT(ub.size() == table.nrows());
       DIALS_ASSERT(s0.size() == table.nrows());
       DIALS_ASSERT(d.size() == table.nrows());
+      DIALS_ASSERT(S.size() == table.nrows());
       af::reflection_table new_table = for_hkl_with_individual_model(
         table["miller_index"],
         table["entering"],
         table["panel"],
         ub,
         s0,
-        d);
+        d,
+        S);
       DIALS_ASSERT(new_table.nrows() == table.nrows());
       table["miller_index"] = new_table["miller_index"];
       table["entering"] = new_table["entering"];
@@ -700,18 +706,20 @@ namespace dials { namespace algorithms {
     /**
      * Do the prediction for a miller index given all model states.
      * @param p The reflection data
-     * @param ub The ub matrix array
-     * @param s0 The s0 vector array
-     * @param d The d matrix array
-     * @param h The miller index array
-     * @param entering The entering flag array
-     * @param panel The array of panel numbers
+     * @param ub The UB matrix
+     * @param s0 The s0 vector
+     * @param d The d matrix
+     * @param S The S matrix
+     * @param h The miller index
+     * @param entering The entering flag
+     * @param panel The panel number
      */
     void append_for_index(
         prediction_data &p,
         const mat3<double> ub,
         const vec3<double> s0,
         const mat3<double> d,
+        const mat3<double> S,
         const miller_index &h,
         bool entering,
         std::size_t panel) const {
@@ -723,7 +731,7 @@ namespace dials { namespace algorithms {
         s0,
         goniometer_.get_rotation_axis_datum(),
         goniometer_.get_fixed_rotation(),
-        goniometer_.get_setting_rotation(),
+        S,
         vec2<double>(0.0, two_pi));
       af::small<Ray, 2> rays = local_predict_rays_(h, ub);
       for (std::size_t i = 0; i < rays.size(); ++i) {
