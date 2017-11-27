@@ -13,7 +13,7 @@ Extensions
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: dials.extensions.kabsch_spotfinder_threshold_ext
+.. automodule:: dials.extensions.dispersion_spotfinder_threshold_ext
     :members:
     :undoc-members:
     :show-inheritance:
