@@ -12,7 +12,7 @@ import cPickle as pickle
 from target_function import *
 from basis_functions import *
 from scaling_utilities import *
-from Wilson_outlier_test import calculate_wilson_outliers
+from Wilson_outlier_test import calculate_wilson_outliers, calc_normE2
 import scale_factor as SF
 from reflection_weighting import *
 from data_quality_assessment import R_meas, R_pim
@@ -44,8 +44,9 @@ class Data_Manager(object):
     self.reflection_table = self.map_indices_to_asu(self.reflection_table)
     #add in a method that automatically updates the weights when the reflection table is changed?
     'assign initial weights (will be statistical weights at this point)'
+    self.reflection_table = calc_normE2(self.reflection_table, self.experiments)
     self.reflection_table['wilson_outlier_flag'] = calculate_wilson_outliers(
-      self.reflection_table, self.experiments)
+      self.reflection_table)
     self.weights_for_scaling = self.update_weights_for_scaling(
       self.reflection_table)
 
@@ -53,11 +54,17 @@ class Data_Manager(object):
   def extract_reflections_for_scaling(self, reflection_table, error_model_params=None):
     '''select the reflections with non-zero weight and update scale weights
     object.'''
+    n_refl = len(reflection_table)
     weights_for_scaling = self.update_weights_for_scaling(reflection_table)
     sel = weights_for_scaling.get_weights() > 0.0
     reflections_for_scaling = reflection_table.select(sel)
+    #sel1 = reflection_table['Esq'] > 0.8
+    #sel2 = reflection_table['Esq'] < 5.0
+    #reflections_for_scaling = reflection_table.select(sel1 and sel2)
     weights_for_scaling = self.update_weights_for_scaling(reflections_for_scaling,
       error_model_params=error_model_params)
+    print "%s reflections selected for scaling out of %s reflections" % (
+      reflections_for_scaling.size(), n_refl)
     return reflections_for_scaling, weights_for_scaling
 
   def update_weights_for_scaling(self, reflection_table, weights_filter=True, 
