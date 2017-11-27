@@ -15,3 +15,4 @@ Tutorials
    multi_lattice_tutorial
    metrology_corrections
    developer_tutorial
+   processing_in_detail_CCP4

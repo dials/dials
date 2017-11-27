@@ -1,0 +1,544 @@
+Processing in Detail - CCP4 Workshop Edition
+============================================
+
+.. highlight:: none
+
+Introduction
+------------
+
+DIALS processing may be performed by either running the individual tools (spot
+finding, indexing, refinement, integration, exporting to MTZ) or you can run
+:samp:`xia2 -dials`, which makes informed choices for you at each stage. In
+this tutorial we will run through each of the steps in turn, checking the output
+as we go. We will also enforce the correct lattice symmetry.
+
+
+Tutorial data
+-------------
+
+The following example uses a Beta-Lactamase dataset collected using beamline I04
+at Diamond Light Source, and reprocessed especially for these tutorials. The data
+is available for download from |lactamase|, but is also available for the workshop
+in the beamline data directory of ``/dls/i03/data/2017/mx19576-1/tutorial_data/summed/``.
+We'll only be using the first run of data in this tutorial.
+
+.. |lactamase|  image::  https://zenodo.org/badge/DOI/10.5281/zenodo.1014387.svg
+                :target: https://doi.org/10.5281/zenodo.1014387
+
+Import
+^^^^^^
+
+The first stage of step-by-step DIALS processing is to import the data - all
+that happens here is that the image headers are read, and a file describing
+their contents (:ref:`datablock.json <datablock-json>`) is written.
+
+.. literalinclude:: logs_ccp4/dials.import.cmd
+
+The output just describes what the software understands of the images it was
+passed, in this case one sweep of data containing 720 images:
+
+.. literalinclude:: logs_ccp4/dials.import.log
+
+Now is a good point to take a first look at the data using the
+:doc:`dials.image_viewer<../programs/dials_image_viewer>`, both to check that
+the data is sensible and to anticipate any problems in processing::
+
+  dials.image_viewer datablock.json
+
+You will be presented with the main image viewer screen:
+
+.. image:: /figures/ccp4_process_detail/image_viewer.jpg
+   :width: 100%
+
+Play with the brightness slider (①) a little until you can clearly see
+the spots on the first image (something in the range 10-20 should make
+the spots obvious). You can also change the colour scheme, toggle
+various information markers like beam center, and try different
+configurations for the spot finding (②).
+
+Find Spots
+^^^^^^^^^^
+
+The first "real" task in any processing using DIALS is the spot finding.
+Since this stage can take some time, because it is looking for spots on every
+image in the dataset, we request multiple processors to speed this up 
+(:samp:`nproc=4`) - an option which works with most of the dials tools:
+
+.. literalinclude:: logs_ccp4/dials.find_spots.cmd
+
+.. container:: toggle
+
+    .. container:: header
+
+        **Show/Hide Log**
+
+    .. literalinclude:: logs_ccp4/dials.find_spots.log
+        :linenos:
+
+Once this has completed, a new :ref:`reflection file <reflection_pickle>`
+'``strong.pickle``' is written, containing a record of every spot found.
+
+The default parameters for spot finding usually do a good job for
+Pilatus images, such as these. However they may not be optimal for data
+from other detector types, such as CCDs or image plates. Issues with
+incorrectly set gain might, for example, lead to background noise being
+extracted as spots. You can use the image mode buttons (③) to preview
+how the parameters affect the spot finding algorithm - 'threshold' is the
+image on which actual spots are find, so ensuring that this produces results
+at real diffraction spot images will give the best change of success.
+
+The :doc:`dials.image_viewer<../programs/dials_image_viewer>` tool is
+not as fast as viewers such as ADXV, however it does integrate well with
+DIALS data files. Having found strong spots open the image viewer again,
+but giving it the newly found reflection list::
+
+  dials.image_viewer datablock.json strong.pickle
+
+Adjust the brightness so that you can see the spots, then zoom in so
+that you can see the clustered individual pixels of a single spot.
+Pixels determined to be part of a spot's peak are marked with green
+dots. The blue outline shows the three-dimensional **shoebox** - the
+extents over detector *x*, *y* and image number *z* of a all peak pixels
+in a single spot. The single highest value pixel for any spot is marked
+with a pink circle, and the centre of mass is marked with a red cross.
+
+The spot centre-of-mass is usually close to the peak pixel, but slightly
+offset as the algorithm allows calculation of the spot centre at a
+better precision than the pixel size and image angular 'width'.
+
+.. image:: /figures/ccp4_process_detail/image_viewer_spot.png
+
+Another very powerful tool for investigating problems with strong spot positions
+is :doc:`dials.reciprocal_lattice_viewer<../programs/dials_reciprocal_lattice_viewer>`.
+This displays the strong spots in 3D, after mapping them from their detector
+positions to reciprocal space. In a favourable case you should be
+able to see the crystal's reciprocal lattice by eye in the strong spot
+positions. Some practice may be needed in rotating the lattice to an
+orientation that shows off the periodicity in reciprocal lattice positions::
+
+  dials.reciprocal_lattice_viewer datablock.json strong.pickle
+
+.. image:: /figures/ccp4_process_detail/reciprocal_lattice_strong.png
+
+Although the reciprocal spacing is visible, in this data, there are clearly
+some systematic distortions. These will be solved in the indexing.
+
+Indexing
+^^^^^^^^
+
+The next step will be indexing of the strong spots by
+:doc:`dials.index<../programs/dials_index>`, which by default uses a
+3D FFT algorithm (although the 1D FFT algorithm can be selected, using the
+parameter :samp:`indexing.method=fft1d`). We pass in all the strong
+spots found in the dataset:
+
+.. literalinclude:: logs_ccp4/dials.index.cmd
+
+If known, the space group and unit cell can be provided at this stage
+using the :samp:`space_group` and :samp:`unit_cell` parameters, and will
+be used to constrain the lattice during refinement, but otherwise
+indexing and refinement will be carried out in the primitive lattice
+using space group P1.
+
+.. container:: toggle
+
+    .. container:: header
+
+        **Show/Hide Log**
+
+    ..  literalinclude:: logs_ccp4/dials.index.log
+        :linenos:
+
+If successful, ``dials.index`` writes two output data files - an
+:ref:`experiments.json <experiments_json>` containing the tuned
+experimental model and determined parameters, and a ``indexed.pickle``
+reflection file, including index data from the best fit.
+
+It is worth reading through this output to understand what the indexing
+program has done. Note that this log is automatically captured in the file
+:file:`dials.index.log`, along with a somewhat more detailed log written
+into :file:`dials.index.debug.log` - but this second log is probably only
+helpful if something has gone wrong and you are trying to track down why.
+
+Inspecting the beginning of the log shows that the indexing step is done
+at a resolution lower than the full dataset; 1.84 Å:
+
+.. literalinclude:: logs_ccp4/dials.index.log
+    :lines: 9-11
+    :lineno-match:
+    :linenos:
+
+The resolution limit of data that can be used in indexing is determined
+by the size of the 3D FFT grid, and the likely maximum cell dimension.
+Here we used the default 256³ grid points. These are used to make
+an initial estimate for the unit cell parameters.
+
+What then follows are 'macro-cycles' of refinement where the experimental model
+is first tuned to get the best possible fit from the data, and then the
+resolution limit is reduced to cover more data than the previous cycle.
+16 parameters of the diffraction geometry are tuned - 6 for the
+detector, one for beam angle, 3 crystal orientation angles and the 6
+triclinic cell parameters.
+
+At each stage only 36000 reflections are used in the refinement job. In
+order to save time, a subset of the input reflections are used - by
+default using 100 reflections for every degree of the 360° scan.
+
+We see that the first macrocyle of refinement makes a big improvement in
+the positional RMSDs:
+
+.. literalinclude:: logs_ccp4/dials.index.log
+   :start-after: Starting refinement (macro-cycle 1)
+   :lines: 6-19
+   :lineno-match:
+   :linenos:
+
+Second and subsequent macrocycles are refined using the same number of
+reflections, but after extending to higher resolution. The RMSDs at the
+start of each cycle start off worse than at the end of the previous
+cycle, because the best fit model for lower resolution data is being
+applied to higher resolution reflections. As long as each macrocyle
+shows a reduction in RMSDs then refinement is doing its job of extending
+the applicability of the model out to a new resolution limit, until
+eventually the highest resolution strong spots have been included. The
+final macrocycle includes data out to 1.30 Å and produces a final model
+with RMSDs of 0.050 mm in X, 0.049 mm in Y and 0.104° in φ,
+corresponding to 0.29 pixels in X, 0.28 pixels in Y and 0.21 image
+widths in φ.
+
+Despite the high quality of this data, we notice from the log that at each
+macrocycle there were some outliers identified and removed from
+refinement as resolution increases. Large outliers can dominate refinement
+using a least squares target, so it is important to be able to remove these.
+More about this is discussed below in :ref:`detailccp4-sec-refinement`.
+It's also worth checking the total number of reflections that were unable to
+be assigned an index:
+
+.. literalinclude:: logs_ccp4/dials.index.log
+   :lines: 317-321
+   :lineno-match:
+   :linenos:
+
+because this can be an indication of poor data quality or a sign that more
+care needs to be taken in selecting the strategy used by ``dials.index``.
+
+After indexing it can be useful to inspect the reciprocal lattice again::
+
+  dials.reciprocal_lattice_viewer experiments.json indexed.pickle
+
+Now indexed/unindexed spots are differentiated by colour, and it is possible
+to see which spots were marked by :doc:`dials.refine <../programs/dials_refine>`
+as outliers. If you have a dataset with multiple lattices present, it may be
+possible to spot them in the unindexed reflections.
+
+In this case, we can see that the refinement has clearly resolved whatever
+systematic was causing distortions in the reciprocal space view, and the
+determined reciprocal unit cell fits the data well:
+
+.. image:: /figures/ccp4_process_detail/reciprocal_lattice_indexed.png
+
+
+Bravais Lattice Refinement
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Since we didn't know the Bravais lattice before indexing, we can now use
+:doc:`dials.refine_bravais_settings<../programs/dials_refine_bravais_settings>`
+to determine likely candidates. This takes the results of the P1
+autoindexing and runs refinement with all of the possible Bravais
+settings applied, allowing you to choose your preferred solution:
+
+.. literalinclude:: logs_ccp4/dials.refine_bravais_settings.cmd
+
+giving a table containing scoring data and unit cell for each Bravais
+setting:
+
+.. literalinclude:: logs_ccp4/dials.refine_bravais_settings.log
+    :lines: 9-30
+
+The scores include the metric fit (in degrees), RMSDs (in mm), and the
+best and worse correlation coefficients for data related by symmetry
+elements implied by the lowest symmetry space group from the Bravais
+setting. This uses the raw spot intensity measurement from the spot-
+finding procedure (uncorrected and unscaled) but provides a very useful
+check to see if the data does appear to adhere to the proposed symmetry
+operators.
+
+A separate ``bravais_setting_N.json`` experiments file is written for
+each plausible lattice type, corresponding to the solution index. In this
+example we choose to continue processing with
+:samp:`bravais_setting_2.json`, which is the highest symmetry suggested
+result - the options 3, 4, 5 have higher symmetries, but at the cost of
+a steep jump in RMSd's and worsening of fit.
+
+In cases where the change of basis operator to the chosen setting is the
+identity operator (:samp:`a,b,c`) we can proceed directly to further
+refinement. However, we notice that the change of basis operator for our
+chosen solution is :samp:`a+b,-a+b,c`, so it is necessary to reindex the
+:ref:`indexed.pickle <reflection_pickle>` file output by using
+:doc:`dials.reindex<../programs/dials_reindex>`:
+
+.. literalinclude:: logs_ccp4/dials.reindex.cmd
+
+This outputs the file :file:`reindexed_reflections.pickle` which we now
+use as input to downstream programs, in place of the original
+:file:`indexed.pickle`.
+
+.. _detailccp4-sec-refinement:
+
+Refinement
+^^^^^^^^^^
+
+The model is already refined during indexing, but we can also add explicit
+refinement steps using :doc:`dials.refine <../programs/dials_refine>`
+in here, to use all reflections in refinement rather than a subset and to
+fit a scan-varying model of the crystal. There are many options to
+refinement - to show all the options up to and including ``expert_level=1``
+use this command::
+
+  dials.refine -c -e 1
+
+and descriptions of each of the options can be included by adding ``-a1`` to
+the command. All of the main DIALS tools have equivalent command-line options
+to list available options.
+
+To refine a static model including the monoclinic constraints
+from ``dials.refine_bravais_settings`` run:
+
+.. literalinclude:: logs_ccp4/dials.refine.cmd
+
+.. container:: toggle
+
+    .. container:: header
+
+        **Show/Hide Log**
+
+    .. literalinclude:: logs_ccp4/dials.refine.log
+        :linenos:
+
+
+This uses all reflections in refinement rather than a subset and provided a
+small reduction in RMSDs, writing the results out to ``refined_experiments.json``
+and ``refined.pickle``.
+
+However, the refined model is still static over
+the whole dataset. We may want to do an additional refinement job to fit a
+more sophisticated model for the crystal, allowing small misset rotations to
+occur over the course of the scan. There are usually even small changes to
+the cell dimensions (typically resulting in a net increase in cell volume)
+caused by exposure to radiation during data collection. To account for both
+of these effects we can extend our parameterisation to obtain a smoothed
+*scan-varying* model for both the crystal orientation and unit cell. This means
+running a further refinement job starting from the output of the
+previous job:
+
+.. literalinclude:: logs_ccp4/dials.sv_refine.cmd
+
+.. container:: toggle
+
+    .. container:: header
+
+        **Show/Hide Log**
+
+    .. literalinclude:: logs_ccp4/dials.sv_refine.log
+        :linenos:
+
+which writes over the ``refined_experiments.json`` and
+``refined.pickle`` from the previous refinement step. By default the
+scan-varying refinement looks for smooth changes over an interval of 36°
+intervals, to avoid fitting unphysical models to noise, though this
+parameter can be tuned. We can use the :ref:`html-report`, described shortly, to
+view the results of fitting to smoothly varying crystal cell parameters:
+
+.. image:: /figures/ccp4_process_detail/scan_varying.png
+
+In this tutorial, we see no overall increase in all three cell parameters. If
+significant cell volume increases had been observed that might be indicative of
+radiation damage. However we can't yet conclude that there is *no* radiation
+damage from the *lack* of considerable change observed.
+
+
+Integration
+^^^^^^^^^^^
+
+After the refinement is done the next step is integration, which is performed
+by the program :doc:`dials.integrate <../programs/dials_integrate>`. Mostly,
+the default parameters are fine for Pilatus data, which will perform
+XDS-like 3D profile fitting while using a generalized linear model in order
+to fit a Poisson-distributed background model. We will also increase the
+number of processors used to speed the job up.
+
+.. literalinclude:: logs_ccp4/dials.integrate.cmd
+
+.. container:: toggle
+
+    .. container:: header
+
+        **Show/Hide Log**
+
+    .. literalinclude:: logs_ccp4/dials.integrate.log
+        :linenos:
+
+Checking the log output, we see that after loading in the reference
+reflections from :file:`refined.pickle`, new predictions are made up to the
+highest resolution at the corner of the detector. This is fine, but if we
+wanted to we could have adjusted the resolution limits using parameters
+:samp:`prediction.d_min` and :samp:`prediction.d_max`. The predictions are
+made using the scan-varying crystal model recorded in
+:file:`refined_experiments.json`. This ensures that prediction is made using
+the smoothly varying lattice and orientation that we determined in the
+refinement step. As this scan-varying model was determined in advance of
+integration, each of the integration jobs is independent and we can take
+advantage of true parallelism during processing.
+
+The profile model is calculated from the reflections in
+:file:`refined.pickle`. First reflections with a too small 'zeta'
+factor are filtered out. This essentially removes reflections that are too
+close to the spindle axis. In general these reflections require significant
+Lorentz corrections and as a result have less trustworthy intensities anyway.
+From the remaining reflection shoeboxes, the average beam divergence and
+reflecting range is calculated, providing the two Gaussian width parameters
+:math:`\sigma_D` and :math:`\sigma_M` used in the 3D profile model.
+
+Following this, independent integration jobs are set up. These jobs
+overlap, so reflections are assigned to one or more jobs. What follows are
+blocks of information specific to each integration job.
+
+After these jobs are finished, the reflections are 'post-processed', which
+includes the application of the LP correction to the intensities. Then
+summary tables are printed giving quality statistics first by frame, and
+then by resolution bin.
+
+
+.. _html-report:
+
+HTML report
+^^^^^^^^^^^
+
+Much more information from the various steps of data processing can be found
+within an HTML report generated using the program
+:doc:`dials.report <../programs/dials_report>`.
+This is run simply with:
+
+.. literalinclude:: logs_ccp4/dials.report.cmd
+
+which produces the file :download:`dials-report.html <logs_ccp4/dials-report.html>`.
+
+This report includes plots showing the scan-varying crystal orientation
+and unit cell parameters. The latter of these is useful to check that
+changes to the cell during processing appear reasonable. We can at least
+see from this and the low final refined RMSDs that this is a very well-
+behaved dataset.
+
+Some of the most useful plots are
+
+* **Difference between observed and calculated centroids vs phi**,
+  which shows how the average
+  residuals in each of X, Y, and φ vary as a fuction of φ.
+  If scan-varying refinement has been successful in capturing the real changes
+  during the scan then we would expect these plots to be straight lines.
+
+* **Centroid residuals in X and Y**, in which the X, Y residuals are shown
+  directly. The key point here is to look for a globular shape centred at the origin.
+
+* **Difference between observed and calculated centroids in X and Y**,
+  which show the difference between predicted and observed reflection positions
+  in either X or Y as functions of detector position. From these plots it is very
+  easy to see whole tiles that are worse than their neighbours, and whether
+  those tiles might be simply shifted or slightly rotated compared to the model
+  detector.
+
+* **Reflection and reference correlations binned in X/Y**.
+  These are useful companions to the
+  plots of centroid residual as a function of detector position above.
+  Whereas the above plots show systematic errors in the positions and
+  orientations of tiles of a multi-panel detector, these plots indicate what
+  effect that (and any other position-specific systematic error) has on the
+  integrated data quality. The first of these plots shows the correlation
+  between reflections and their reference profiles for all reflections in the
+  dataset. The second shows only the correlations between the strong reference
+  reflections and their profiles (thus these are expected to be higher and do
+  not extend to such high resolution).
+
+* **Distribution of I/Sigma vs Z**. This reproduces the
+  :math:`\frac{I}{\sigma_I}` information versus frame number given in the log
+  file in a graphical form. Here we see that :math:`\frac{I}{\sigma_I}` is fairly
+  flat over the whole dataset, which we might use as an indication that there
+  were no bad frames, not much radiation damage occurred and that scale factors
+  are likely to be fairly uniform.
+
+Exporting as MTZ
+^^^^^^^^^^^^^^^^
+
+The final step of dials processing is to export the integrated results to mtz
+format, suitable for input to downstream processing programs such as pointless_
+and aimless_.
+
+.. literalinclude:: logs_ccp4/dials.export.cmd
+
+And this is the output, showing the reflection file statistics.
+
+.. literalinclude:: logs_ccp4/dials.export.log
+    :linenos:
+
+What to do Next
+---------------
+
+The following demonstrates how to take the output of dials processing and
+continue with downstream analysis using the CCP4 programs pointless_, to sort the data and assign
+the correct symmetry, followed by scaling with aimless_ and intensity analysis
+using ctruncate_::
+
+  pointless hklin integrated.mtz hklout sorted.mtz > pointless.log
+  aimless hklin sorted.mtz hklout scaled.mtz > aimless.log << EOF
+  resolution 1.3
+  anomalous off
+  EOF
+  ctruncate -hklin scaled.mtz -hklout truncated.mtz \
+  -colin '/*/*/[IMEAN,SIGIMEAN]' > ctruncate.log
+
+to get merged data for downstream analysis. The output from this includes
+the merging statistics which will give a better idea about data quality. It is
+easiest to view these logfiles using the program :program:`logview`, e.g.::
+
+  logview aimless.log
+
+Often passing in a sensible resolution limit to aimless is helpful. Here we
+assumed we ran first without a resolution limit to help decide where to cut
+the data. This indicated slightly anisotropic diffraction, with diffraction along
+the *c*\* direction a little better than *a*\* and *b*\* directions, which are
+equivalent. Diffraction quality is good, however completeness falls off sharply,
+especially in the *c*\* direction. Following this we chose to exclude all data
+at a resolution higher than 1.3 Angstroms, to ensure about 80% completeness in
+the outer shell. Here is the summary from aimless.log:
+
+::
+
+  Summary data for        Project: DIALS Crystal: XTAL Dataset: FROMDIALS
+
+                                             Overall  InnerShell  OuterShell
+  Low resolution limit                      150.00    150.00      1.32
+  High resolution limit                       1.30      7.12      1.30
+
+  Rmerge  (within I+/I-)                     0.061     0.024     0.416
+  Rmerge  (all I+ and I-)                    0.069     0.026     0.488
+  Rmeas (within I+/I-)                       0.075     0.030     0.575
+  Rmeas (all I+ & I-)                        0.076     0.030     0.610
+  Rpim (within I+/I-)                        0.043     0.017     0.395
+  Rpim (all I+ & I-)                         0.033     0.014     0.358
+  Rmerge in top intensity bin                0.029        -         -
+  Total number of observations              308123      2257      5493
+  Total number unique                        62352       499      2474
+  Mean((I)/sd(I))                             10.7      27.1       1.4
+  Mn(I) half-set correlation CC(1/2)         0.999     0.999     0.722
+  Completeness                                98.2      99.8      80.1
+  Multiplicity                                 4.9       4.5       2.2
+
+  Anomalous completeness                      92.3     100.0      47.8
+  Anomalous multiplicity                       2.4       3.0       1.5
+  DelAnom correlation between half-sets     -0.002     0.279     0.065
+  Mid-Slope of Anom Normal Probability       0.953       -         -
+
+
+.. _pointless: http://www.ccp4.ac.uk/html/pointless.html
+.. _aimless: http://www.ccp4.ac.uk/html/aimless.html
+.. _ctruncate: http://www.ccp4.ac.uk/html/ctruncate.html
