@@ -145,10 +145,10 @@ class MaskGenerator(object):
 
   def generate(self, imageset):
     ''' Generate the mask. '''
-    from dials.util import ResolutionMaskGenerator
-    from dials.util import mask_untrusted_rectangle
-    from dials.util import mask_untrusted_circle
-    from dials.util import mask_untrusted_polygon
+    from dials.util.ext import ResolutionMaskGenerator
+    from dials.util.ext import mask_untrusted_rectangle
+    from dials.util.ext import mask_untrusted_circle
+    from dials.util.ext import mask_untrusted_polygon
     from dials.array_family import flex
 
     # Get the detector and beam
@@ -300,7 +300,7 @@ class GoniometerShadowMaskGenerator(object):
     return extrema
 
   def project_extrema(self, detector, scan_angle):
-    from dials.util import is_inside_polygon
+    from dials.util.ext import is_inside_polygon
     coords = self.extrema_at_scan_angle(scan_angle)
     shadow_boundary = []
 
@@ -383,7 +383,7 @@ class GoniometerShadowMaskGenerator(object):
 
   def get_mask(self, detector, scan_angle):
     shadow_boundary = self.project_extrema(detector, scan_angle)
-    from dials.util import mask_untrusted_polygon
+    from dials.util.ext import mask_untrusted_polygon
     mask = []
     for panel_id in range(len(detector)):
       m = None
