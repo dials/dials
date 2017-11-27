@@ -40,22 +40,17 @@ def halraiser(e):
   raise
 
 # Add the following names to namespace for compatibility reasons.
-# Use will cause a warning to be printed. 20171120
-#
-# What you did:
-#   from dials.util import $name
-# What you should have done:
-#   from dials_util_ext import $name
+# Will address relocating them into proper place soonishly. SCRATCH-95
 #
 def _make_dials_util_ext_redirection(name):
   def dials_util_ext_redirector(*args, **kwargs):
     import dials_util_ext
-    import sys
-    try:
-      raise RuntimeError()
-    except RuntimeError:
-      frame = sys.exc_info()[2].tb_frame.f_back
-    print("DeprecationWarning: {file}:{line} imported method {name} from dials.util rather than from dials_util_ext".format(name=name, file=frame.f_code.co_filename, line=frame.f_lineno))
+#   import sys
+#   try:
+#     raise RuntimeError()
+#   except RuntimeError:
+#     frame = sys.exc_info()[2].tb_frame.f_back
+#   print("DeprecationWarning: {file}:{line} imported method {name} from dials.util rather than from dials_util_ext".format(name=name, file=frame.f_code.co_filename, line=frame.f_lineno))
     return getattr(dials_util_ext, name)(*args, **kwargs)
   return dials_util_ext_redirector
 ResolutionMaskGenerator = _make_dials_util_ext_redirection('ResolutionMaskGenerator')
