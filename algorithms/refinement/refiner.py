@@ -1392,6 +1392,7 @@ class RefinerFactory(object):
             logger.warning(msg)
       det_params = tmp
 
+      tmp = []
       for i, gonp in enumerate(gon_params):
         if model_nparam_minus_nref(gonp, reflections) >= 0:
           tmp.append(gonp)
@@ -1446,11 +1447,6 @@ class RefinerFactory(object):
       xl_uc_params = [p for p in xl_uc_params if p.num_free() > 0]
       det_params = [p for p in det_params if p.num_free() > 0]
       gon_params = [p for p in gon_params if p.num_free() > 0]
-
-    # DEBUG reset gon_params, in order to have passing tests. This disables
-    # all goniometer setting matrix refinement and will be removed when a
-    # proper fix is implemented
-    gon_params=[]
 
     # Now we have the final list of model parameterisations, build a restraints
     # parameterisation (if requested). Only unit cell restraints are supported
