@@ -1,3 +1,4 @@
+from __future__ import print_function
 from dials.array_family import flex
 
 class Weighting(object):
@@ -36,7 +37,9 @@ class Weighting(object):
 
   def apply_aimless_error_model(self, reflection_table, error_params):
     '''applies scaling factors to the errors of the intensities'''
-    print error_params
+    msg = ('Applying an error model to the variances used for scaling {sep}'
+      'with the error model parameters {0}. {sep}').format(error_params, sep='\n')
+    print(msg)
     sel = self.scale_weighting != 0.0
     nonzero_weights = self.scale_weighting.select(sel)
     nz_intensities = reflection_table.select(sel)['intensity']
@@ -44,5 +47,3 @@ class Weighting(object):
                                      + ((error_params[1] * nz_intensities)**2))**0.5)
     new_weights = 1.0/(sigmaprime**2)
     self.scale_weighting.set_selected(sel, new_weights)
-    print "applied error model"
-

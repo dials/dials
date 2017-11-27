@@ -1,7 +1,7 @@
 '''
 Classes to create minimiser objects.
 '''
-
+from __future__ import print_function
 import numpy as np
 from dials_array_family_flex_ext import *
 from cctbx.array_family.flex import *
@@ -15,49 +15,33 @@ from data_manager_functions import active_parameter_manager, multi_active_parame
 class LBFGS_optimiser(object):
   '''Class that takes in Data_Manager object and runs an LBFGS minimisation'''
   def __init__(self, Data_Manager_object, param_name):
+    print('\n'+'*'*40+'\n'+'Initialising LBFGS optimiser instance. \n')
     self.data_manager = Data_Manager_object
     if self.data_manager.scaling_options['multi_mode']:
       self.apm = multi_active_parameter_manager(self.data_manager, param_name)
     else:
       self.apm = active_parameter_manager(self.data_manager, param_name)
     self.x = self.apm.x
-    #self.x = self.data_manager.set_up_minimisation(param_name)
     self.residuals = []
-    '''if param_name:
-      print """performing minimisation for %s correction, on %s reflections out
-        of %s total reflections""" % (param_name.lstrip('g_'),
-        len(self.data_manager.Ih_table.Ih_table), len(self.data_manager.reflection_table))
-    else:
-      print """performing minimisation on %s reflections out
-        of %s total reflections""" % (len(self.data_manager.Ih_table.Ih_table),
-        len(self.data_manager.reflection_table))'''
     self.core_params = lbfgs.core_parameters(maxfev=15)
     self.termination_params = lbfgs.termination_parameters(max_iterations=15)
     lbfgs.run(target_evaluator=self, core_params=self.core_params,
               termination_params=self.termination_params)
-    #a few extra options for xds_scaling
-    #if self.data_manager.scaling_options['parameterization'] == 'standard':
-    #  if param_name:
-    #    self.make_all_scales_positive(param_name)
     if param_name == 'g_decay':
       if self.data_manager.scaling_options['decay_correction_rescaling']:
         if self.data_manager.scaling_options['parameterization'] == 'standard':
           self.data_manager.scale_gvalues()
-    #if param_name:
-    #  for param in param_name
-    #  print "completed minimisation for %s correction" % (param_name.lstrip('g_'))
+    print(('\nCompleted minimisation for following corrections: {0}\n'
+      +'*'*40+'\n').format(''.join(i.lstrip('g_')+' ' for i in param_name)))
 
   def compute_functional_and_gradients(self):
     '''first calculate the updated values of the scale factors and Ih,
     before calculating the residual and gradient functions'''
     self.data_manager.update_for_minimisation(self.apm)
-    #print list(self.x)
-    #print list(self.apm.apm_list[0].x)
-    #print list(self.apm.apm_list[1].x)
     f, g = self.data_manager.get_target_function(self.apm)
     f = flex.sum(f)
     self.residuals.append(f)
-    print "Residual sum: %12.6g" % f
+    print("Residual sum: %12.6g" % f)
     return f, g
 
   def return_data_manager(self):
@@ -71,17 +55,17 @@ class LBFGS_optimiser(object):
     To cure, the absolute values of the scale factors are taken and the
     minimizer is called again until only positive scale factors are obtained.'''
     if (self.x < 0.0).count(True) > 0.0:
-      print """%s of the scale factors is/are negative, taking the absolute
-      values and trying again""" % ((self.x < 0.0).count(True))
+      print("""%s of the scale factors is/are negative, taking the absolute
+      values and trying again""" % ((self.x < 0.0).count(True)))
       self.x = abs(self.x)
       lbfgs.run(target_evaluator=self, core_params=self.core_params,
                 termination_params=self.termination_params)
       if (self.x < 0.0).count(True) > 0.0:
         self.make_all_scales_positive(param_name)
       else:
-        print "all scales should now be positive"
+        print("all scales should now be positive")
     else:
-      print "all scales are positive"
+      print("all scales are positive")
 
 class error_scale_LBFGSoptimiser(object):
   def __init__(self, Ih_table, starting_values):
@@ -93,7 +77,7 @@ class error_scale_LBFGSoptimiser(object):
     self.bin_intensities()
 
     lbfgs.run(target_evaluator=self)
-    print "minimised error scales, values are %s" % list(self.x)
+    print("minimised error scales, values are %s" % list(self.x))
     #import matplotlib.pyplot as plt
     #plt.hist(self.Ih_table.Ih_table['delta_hl'], 60)
     #plt.show()

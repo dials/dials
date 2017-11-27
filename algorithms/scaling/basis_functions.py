@@ -3,6 +3,7 @@ Classes that take in a data manager object and minimisation parameters and
 return the scale factors and derivatives of the scale factors w.r.t.
 the parameters
 '''
+from __future__ import print_function
 from cctbx.array_family import flex
 import numpy as np
 
@@ -54,7 +55,10 @@ class KB_basis_function(basis_function):
 
   def calculate_scale_factors(self):
     factors_to_multiply = []
-    print "Current parameters %s are %s" % (self.data_manager.g_parameterisation.keys(), list(self.apm.x))
+    msg = ('Current parameters: {0}= {1}').format(
+      ''.join(i.lstrip('g_')+' ' for i in self.data_manager.g_parameterisation),
+      ' '.join('%.6f' % i for i in list(self.apm.x)))
+    print(msg)
     for i, active_param in enumerate(self.apm.active_parameterisation):
       SF_object = self.data_manager.g_parameterisation[active_param]
       SF_object.set_scale_factors(self.apm.x[self.apm.cumulative_active_params[i]:

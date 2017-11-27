@@ -51,13 +51,13 @@ def plot_data_decay(data_man, outputfile=None):
   resmax = (1.0 / (min(data_man.reflection_table['d'])**2))
   resmin = (1.0 / (max(data_man.reflection_table['d'])**2))
 
-  print "dmin is %s" % (min(data_man.reflection_table['d']))
-  print "dmax is %s" % (max(data_man.reflection_table['d']))
+  #print "dmin is %s" % (min(data_man.reflection_table['d']))
+  #print "dmax is %s" % (max(data_man.reflection_table['d']))
   #determine boundaries in res
   resbin_boundaries = np.arange(resmin, resmax, 2*(resmax - resmin)/(ndbins-1))
-  print resbin_boundaries
+  #print resbin_boundaries
   dbin_boundaries = 1.0/(resbin_boundaries**0.5)
-  print dbin_boundaries
+  #print dbin_boundaries
   dbin_boundaries = ['%.3f' % x for x in dbin_boundaries]
 
   im = ax1.imshow(G_fin_2d, cmap='viridis', origin='upper', aspect='auto')
@@ -182,7 +182,7 @@ def plot_correction_at_multiple_detector_areas(data_man, positions, outputfile=N
     ax.set_xlabel('Normalised x position')
     ax.set_xticklabels(np.arange(0, nx))
     ax.set_title('Absorption correction factor surface at normalised time %s' % (float(position)+0.5), fontsize=7)
-    print "successfully plotted positon %s" % position
+    #print "successfully plotted positon %s" % position
   plt.tight_layout()
   if outputfile:
     plt.savefig(outputfile)
@@ -280,7 +280,7 @@ def plot_absorption_surface(data_man, outputfile=None):
     rel_Int = (Intensity - Intensity.min())/(Intensity.max() - Intensity.min())
   else:
     rel_Int = Intensity
-  print "max, min absorption factors are (%s,%s)" % (Intensity.max(),Intensity.min())
+  #print "max, min absorption factors are (%s,%s)" % (Intensity.max(),Intensity.min())
   plt.figure(figsize=(8,6))
   gs = gridspec.GridSpec(1, 1)
   ax = plt.subplot(gs[0, 0])

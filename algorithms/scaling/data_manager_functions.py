@@ -1,7 +1,7 @@
 '''
 Define a Data_Manager object used for calculating scaling factors
 '''
-#from __future__ import print_function
+from __future__ import print_function
 import copy
 from dials.array_family import flex
 from cctbx import miller, crystal
@@ -27,6 +27,7 @@ class Data_Manager(object):
      integrated.pickle and integrated_experiments.json files'''
   def __init__(self, reflections, experiments, scaling_options):
     'General attributes relevant for all parameterisations'
+    print('\nInitialising a data manager instance. \n')
     self.experiments = experiments
     'initial filter to select integrated reflections'
     reflections = reflections.select(reflections['intensity.prf.variance'] > 0)
@@ -63,14 +64,20 @@ class Data_Manager(object):
     reflections_for_scaling = reflections_for_scaling.select(sel1 & sel2)
     weights_for_scaling = self.update_weights_for_scaling(reflections_for_scaling,
       error_model_params=error_model_params)
-    print "%s reflections selected for scaling out of %s reflections" % (
-      reflections_for_scaling.size(), n_refl)
+    msg = ('{0} reflections were selected for scale factor determination {sep}'
+      'out of {1} reflections. This was based on selection criteria of {sep}'
+      'E2min = {2}, E2max = {3}, Isigma_min = {4}, dmin = {5}. {sep}').format(
+      reflections_for_scaling.size(), n_refl, self.scaling_options['E2min'],
+      self.scaling_options['E2max'], self.scaling_options['Isigma_min'], 
+      self.scaling_options['d_min'], sep='\n')
+    print(msg)
     return reflections_for_scaling, weights_for_scaling
 
   def update_weights_for_scaling(self, reflection_table, weights_filter=True, 
                                  error_model_params=None):
     '''set the weights of each reflection to be used in scaling'''
     weights_for_scaling = Weighting(reflection_table)
+    print('Updating weights to be used during scaling. \n')
     if weights_filter:
       weights_for_scaling.apply_Isigma_cutoff(reflection_table,
                                               self.scaling_options['Isigma_min'])
@@ -86,9 +93,13 @@ class Data_Manager(object):
        reflection table, sorted by asu miller index'''
     u_c = self.experiments.crystal.get_unit_cell().parameters()
     if self.scaling_options['space_group']:
+      sg_from_file = self.experiments.crystal.get_space_group().info()
       s_g_symbol = self.scaling_options['space_group']
       crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group_symbol=s_g_symbol)
-      print "setting space group as %s (check if you need some reindexing!)" % s_g_symbol
+      msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
+        'If the reflection indexing in these space groups is different, {sep}'
+        'bad things may happen!!! {sep}').format(sg_from_file, s_g_symbol, sep='\n')
+      print(msg)
     else:
       s_g = self.experiments.crystal.get_space_group()
       crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
@@ -110,6 +121,8 @@ class Data_Manager(object):
       reflection_table['variance'] = (reflection_table['intensity.'+intstr+'.variance']
                                       * (reflection_table['lp']**2)
                                       / (reflection_table['dqe']**2))
+      print(('{0} intensity values will be used for scaling. {sep}').format(
+        'Profile fitted' if intstr == 'prf' else 'Summation integrated', sep='\n'))
     #perform a combined prf/sum in a similar fashion to aimless
     elif self.scaling_options['integration_method'] == 'combine':
       int_prf = (reflection_table['intensity.prf.value']
@@ -124,6 +137,9 @@ class Data_Manager(object):
       weight = 1.0/(1.0 + ((int_prf/Imid)**3))
       reflection_table['intensity'] = ((weight * int_prf) + ((1.0 - weight) * int_sum))
       reflection_table['variance'] = ((weight * var_prf) + ((1.0 - weight) * var_sum))
+      msg = ('Combined profile/summation intensity values will be used for {sep}'
+      'scaling, with an Imid of {0}. {sep}').format(Imid, sep='\n')
+      print(msg)
     return reflection_table
 
   def update_for_minimisation(self, apm):
@@ -171,9 +187,11 @@ class aimless_Data_Manager(Data_Manager):
     if self.scaling_options['absorption_term']:
       self.g_absorption.set_values(sph_harm_table(reflections_for_scaling,
                                                   self.scaling_options['lmax']))
+    print('Completed initialisation of aimless data manager. \n' + '*'*40 + '\n')
 
   def initialise_scale_factors(self):
     '''initialise scale factors and add to self.active_parameters'''
+    print('Initialising scale factor objects. \n')
     self.initialise_scale_term(self.reflection_table)
     self.initialise_decay_term(self.reflection_table)
     self.initialise_absorption_scales(self.reflection_table,
@@ -201,7 +219,6 @@ class aimless_Data_Manager(Data_Manager):
     if self.scaling_options['decay_term']:
       if self.scaling_options['B_factor_interval']:
         rotation_interval = self.scaling_options['B_factor_interval']
-        print "set B_factor interval to %s" % rotation_interval
       else:
         rotation_interval = 20.0
       rotation_interval = rotation_interval + 0.001
@@ -221,6 +238,11 @@ class aimless_Data_Manager(Data_Manager):
       n_decay_parameters = highest_parameter_value - lowest_parameter_value + 1
       self.g_decay = SF.SmoothScaleFactor_1D_Bfactor(0.0, n_decay_parameters, reflection_table['d'])
       self.g_parameterisation['g_decay'] = self.g_decay
+      msg = ('The decay term Scale Factor object was successfully initialised. {sep}'
+        'The B-factor parameter interval has been set to {0} degrees. {sep}'
+        '{1} parameters will be used to parameterise the time-dependent decay. {sep}'
+        ).format(rotation_interval, n_decay_parameters, sep='\n')
+      print(msg)
 
   def initialise_scale_term(self, reflection_table):
     '''calculate the relative, normalised rotation angle.
@@ -247,6 +269,11 @@ class aimless_Data_Manager(Data_Manager):
     self.g_scale = SF.SmoothScaleFactor_1D(1.0, n_scale_parameters)
     self.g_scale.set_normalised_values(reflection_table['normalised_rotation_angle'])
     self.g_parameterisation['g_scale'] = self.g_scale
+    msg = ('The scale term Scale Factor object was successfully initialised. {sep}'
+      'The scale factor parameter interval has been set to {0} degrees. {sep}'
+      '{1} parameters will be used to parameterise the time-dependent scale. {sep}'
+        ).format(rotation_interval, n_scale_parameters, sep='\n')
+    print(msg)
 
   def initialise_absorption_scales(self, reflection_table, lmax):
     if self.scaling_options['absorption_term']:
@@ -260,6 +287,11 @@ class aimless_Data_Manager(Data_Manager):
     else:
       reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
                                  * self.experiments.scan.get_oscillation()[1])
+    msg = ('The absorption term Scale Factor object was successfully initialised. {sep}'
+      'The absorption term will be parameterised by a set of spherical {sep}'
+      'harmonics up to an lmax of {0} ({1} parameters). {sep}'
+      ).format(lmax, n_abs_params, sep='\n')
+    print(msg)
 
   def calc_absorption_constraint(self, apm):
     #this should only be called if g_absorption in active params
@@ -320,6 +352,8 @@ class aimless_Data_Manager(Data_Manager):
       expanded_scale_factors.append(self.g_absorption.calculate_smooth_scales())
     self.reflection_table['inverse_scale_factor'] = flex.double(
       np.prod(np.array(expanded_scale_factors), axis=0))
+    print(('Scale factors determined during minimisation have now been applied {sep}'
+      'to all reflections. {sep}').format(sep='\n'))
     sel = self.weights_for_scaling.get_weights() != 0.0
     self.reflection_table = self.reflection_table.select(sel)
     #error_model_params = mf.error_scale_LBFGSoptimiser(self.Ih_table, flex.double([1.0,0.123])).x 
@@ -327,6 +361,7 @@ class aimless_Data_Manager(Data_Manager):
       weights_filter=False, error_model_params=None)
     self.Ih_table = single_Ih_table(self.reflection_table, self.weights_for_scaling.get_weights())
     self.reflection_table['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
+    print('A new best estimate for I_h for all reflections has now been calculated. \n')
 
   def clean_reflection_table(self):
     self.initial_keys.append('inverse_scale_factor')
@@ -357,6 +392,7 @@ class KB_Data_Manager(Data_Manager):
     if scaling_options['decay_term']:
       self.g_decay = SF.B_ScaleFactor(0.0, reflections_for_scaling['d'])
       self.g_parameterisation['g_decay'] = self.g_decay
+    print('Completed initialisation of KB data manager. \n' + '*'*40 + '\n')
 
   def get_target_function(self, apm):
     '''call the target function method'''
@@ -383,6 +419,8 @@ class KB_Data_Manager(Data_Manager):
       expanded_scale_factors.append(self.g_decay.get_scales_of_reflections())
     self.reflection_table['inverse_scale_factor'] = flex.double(
       np.prod(np.array(expanded_scale_factors), axis=0))
+    print(('Scale factors determined during minimisation have now been applied {sep}'
+      'to all reflections. {sep}').format(sep='\n'))
 
 
 class active_parameter_manager(object):
@@ -412,6 +450,8 @@ class active_parameter_manager(object):
       self.constant_g_values = flex.double(np.prod(np.array(constant_g_values), axis=0))
     else:
       self.constant_g_values = None
+    print(('Set up parameter handler for following corrections: {0}\n').format(
+      ''.join(i.lstrip('g_')+' ' for i in self.active_parameterisation)))
 
   def get_current_parameters(self):
     return self.x
@@ -455,8 +495,10 @@ class XDS_Data_Manager(Data_Manager):
       self.g_absorption.set_normalised_values(reflections_for_scaling['normalised_x_abs_values'],
         reflections_for_scaling['normalised_y_abs_values'],
         reflections_for_scaling['normalised_time_values'])
+    print('Completed initialisation of XDS data manager. \n' + '*'*40 + '\n')
 
   def initialise_scale_factors(self):
+    print('Initialising scale factor objects. \n')
     self.bin_reflections_decay()
     if self.scaling_options['absorption']:
       self.bin_reflections_absorption()
@@ -494,8 +536,6 @@ class XDS_Data_Manager(Data_Manager):
       rotation_interval = 15.0 + 0.001
       n_phi_bins = int((osc_range[1] - osc_range[0]) / rotation_interval) + 1
     self.n_phi_bins = n_phi_bins
-    print "n_phi_bins = %s" % (n_phi_bins)
-    print "rotation interval = %s degrees" % (rotation_interval)
     nzbins = n_phi_bins
     '''Bin the data into resolution and time 'z' bins'''
     zmax = max(self.reflection_table['xyzobs.px.value'].parts()[2]) + 0.001
@@ -525,6 +565,13 @@ class XDS_Data_Manager(Data_Manager):
       self.g_decay.set_normalised_values(self.reflection_table['normalised_res_values'],
         self.reflection_table['normalised_time_values'])
       self.g_parameterisation['g_decay'] = self.g_decay
+    msg = ('The decay term Scale Factor object was successfully initialised. {sep}'
+      'The rotational parameter interval has been set to {0} degrees, giving {sep}'
+      '{1} phi bins, while the resolution has been binned into {2} bins. {sep}'
+      'In total, this Scale Factor object uses {3} parameters. {sep}'
+      ).format(rotation_interval, n_phi_bins, ndbins, 
+               n_time_parameters * n_res_parameters, sep='\n')
+    print(msg)
 
   def bin_reflections_modulation(self):
     '''bin reflections for modulation correction'''
@@ -551,6 +598,11 @@ class XDS_Data_Manager(Data_Manager):
     self.g_modulation.set_normalised_values(self.reflection_table['normalised_x_values'],
       self.reflection_table['normalised_y_values'])
     self.g_parameterisation['g_modulation'] = self.g_modulation
+    msg = ('The modulation term Scale Factor object was successfully initialised. {sep}'
+      'This parameterises a correction across the detector area, using a {sep}'
+      'square grid of {0} parameters. {sep}').format(n_x_parameters**2, sep='\n')
+    print(msg)
+
 
   def bin_reflections_absorption(self):
     '''bin reflections for absorption correction'''
@@ -585,6 +637,13 @@ class XDS_Data_Manager(Data_Manager):
       self.reflection_table['normalised_y_abs_values'],
       self.reflection_table['normalised_time_values'])
     self.g_parameterisation['g_absorption'] = self.g_absorption
+    msg = ('The absorption term Scale Factor object was successfully initialised. {sep}'
+      'This defines a {0} by {0} grid of absorption correction parameters {sep}'
+      'at {1} time values, giving a total of {2} parameters. {sep}'
+      ).format(n_x_parameters, n_time_parameters, 
+               n_time_parameters * (n_x_parameters**2), sep='\n')
+    print(msg)
+
 
   def bin_reflections_absorption_radially(self):
     from math import pi
@@ -640,6 +699,8 @@ class XDS_Data_Manager(Data_Manager):
       self.reflection_table['inverse_scale_factor'] = flex.double(
         np.prod(np.array(scales_to_expand), axis=0))
     'remove reflections that were determined as outliers'
+    print(('Scale factors determined during minimisation have now been applied {sep}'
+      'to all reflections. {sep}').format(sep='\n'))
     self.weights_for_scaling = self.update_weights_for_scaling(
       self.reflection_table, weights_filter=False)
     sel = self.weights_for_scaling.get_weights() != 0.0
@@ -649,6 +710,7 @@ class XDS_Data_Manager(Data_Manager):
     #now calculate Ih for all reflections.
     self.Ih_table = single_Ih_table(self.reflection_table, 
       self.weights_for_scaling.get_weights())
+    print('A new best estimate for I_h for all reflections has now been calculated. \n')
 
   def clean_reflection_table(self):
     #add keys for additional data that is to be exported
@@ -683,7 +745,7 @@ class multicrystal_datamanager(Data_Manager):
     reflections_for_scaling = self.zip_data_together()
     weights_for_scaling = reflections_for_scaling['weights']
     self.Ih_table = single_Ih_table(reflections_for_scaling, weights_for_scaling)
-    print "successfully initialised multicrystal_datamanager"
+    print('Completed initialisation of multicrystal data manager. \n' + '*'*40 + '\n')
 
   def get_target_function(self, apm):
     '''call the xds target function method'''
