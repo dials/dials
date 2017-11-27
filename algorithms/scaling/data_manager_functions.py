@@ -58,8 +58,8 @@ class Data_Manager(object):
     weights_for_scaling = self.update_weights_for_scaling(reflection_table)
     sel = weights_for_scaling.get_weights() > 0.0
     reflections_for_scaling = reflection_table.select(sel)
-    sel1 = reflections_for_scaling['Esq'] > 0.8
-    sel2 = reflections_for_scaling['Esq'] < 5.0
+    sel1 = reflections_for_scaling['Esq'] > self.scaling_options['E2min']
+    sel2 = reflections_for_scaling['Esq'] < self.scaling_options['E2max']
     reflections_for_scaling = reflections_for_scaling.select(sel1 & sel2)
     weights_for_scaling = self.update_weights_for_scaling(reflections_for_scaling,
       error_model_params=error_model_params)
@@ -330,10 +330,12 @@ class aimless_Data_Manager(Data_Manager):
 
   def clean_reflection_table(self):
     self.initial_keys.append('inverse_scale_factor')
+    self.initial_keys.append('phi')
     for key in self.reflection_table.keys():
       if not key in self.initial_keys:
         del self.reflection_table[key]
-    added_columns = ['h_index', 's2', 's2d', 'phi'
+    #keep phi column for now for comparing to aimless
+    added_columns = ['h_index', 's2', 's2d',
                      'decay_factor', 'angular_scale_factor',
                      'normalised_rotation_angle', 'normalised_time_values',
                      'wilson_outlier_flag', 'centric_flag', 'absorption_factor']

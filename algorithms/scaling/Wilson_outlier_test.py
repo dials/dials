@@ -15,7 +15,15 @@ def calc_normE2(reflection_table, experiments):
   crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
   miller_set = miller.set(crystal_symmetry=crystal_symmetry,
                           indices=reflection_table['asu_miller_index'])
-  miller_array = miller.array(miller_set, data=reflection_table['intensity'])
+
+  reflection_table = reflection_table.select(reflection_table['d'] > 0.0)
+  reflection_table['resolution'] = 1.0/reflection_table['d']**2
+  #handle negative reflections to minimise effect on mean I values.
+  reflection_table['intensity_for_norm'] = copy.deepcopy(reflection_table['intensity'])
+  sel = reflection_table['intensity'] < 0.0
+  reflection_table['intensity_for_norm'].set_selected(sel, 0.0)
+
+  miller_array = miller.array(miller_set, data=reflection_table['intensity_for_norm'])
   reflection_table['centric_flag'] = miller_array.centric_flags().data()
   #set up binning objects
   n_centrics = reflection_table['centric_flag'].count(True)
@@ -30,12 +38,7 @@ def calc_normE2(reflection_table, experiments):
     n_refl_shells = 10
   #calculate normalised intensities
   #first bin by resolution and determine the average values of each bin
-  reflection_table = reflection_table.select(reflection_table['d'] > 0.0)
-  reflection_table['resolution'] = 1.0/reflection_table['d']**2
-  #handle negative reflections to minimise effect on mean I values.
-  reflection_table['intensity_for_norm'] = reflection_table['intensity']
-  sel = reflection_table['intensity'] < 0.0
-  reflection_table['intensity_for_norm'].set_selected(sel, 0.0)
+
   step = ((max(reflection_table['resolution']) - min(reflection_table['resolution'])
            + 1e-8) / n_refl_shells)
   centrics_array = miller_array.select_centric()
@@ -50,19 +53,19 @@ def calc_normE2(reflection_table, experiments):
   mean_acentric_values = mean_acentric_values.data[1:-1]
   acentric_bin_limits = acentric_binner.limits()
 
-  reflection_table['Esq'] = flex.double([-1.0]*len(reflection_table))
+  reflection_table['Esq'] = flex.double([0.0]*len(reflection_table))
   for i in range(0,len(centric_bin_limits)-1):
     sel1 = reflection_table['centric_flag'] == True
-    sel2 = ((reflection_table['resolution']) > centric_bin_limits[i] and
-            (reflection_table['resolution']) <= centric_bin_limits[i+1])
-    sel = sel1 & sel2
+    sel2 = reflection_table['resolution'] > centric_bin_limits[i]
+    sel3 = reflection_table['resolution'] <= centric_bin_limits[i+1]
+    sel = sel1 & sel2 & sel3
     intensities = reflection_table['intensity'].select(sel)
     reflection_table['Esq'].set_selected(sel, intensities/ mean_centric_values[i])
   for i in range(0,len(acentric_bin_limits)-1):
     sel1 = reflection_table['centric_flag'] == False
-    sel2 = ((reflection_table['resolution']) > acentric_bin_limits[i] and
-            (reflection_table['resolution']) <= acentric_bin_limits[i+1])
-    sel = sel1 & sel2
+    sel2 = reflection_table['resolution'] > acentric_bin_limits[i]
+    sel3 = reflection_table['resolution'] <= acentric_bin_limits[i+1]
+    sel = sel1 & sel2 & sel3
     intensities = reflection_table['intensity'].select(sel)
     reflection_table['Esq'].set_selected(sel, intensities/ mean_acentric_values[i])
   del reflection_table['intensity_for_norm']
