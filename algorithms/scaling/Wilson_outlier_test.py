@@ -30,7 +30,7 @@ def calc_normE2(reflection_table, experiments):
     n_refl_shells = 10
   #calculate normalised intensities
   #first bin by resolution and determine the average values of each bin
-  reflection_table['d'] = reflection_table['d'].select(reflection_table['d'] > 0.0)
+  reflection_table = reflection_table.select(reflection_table['d'] > 0.0)
   reflection_table['resolution'] = 1.0/reflection_table['d']**2
   #handle negative reflections to minimise effect on mean I values.
   reflection_table['intensity_for_norm'] = reflection_table['intensity']
@@ -53,16 +53,16 @@ def calc_normE2(reflection_table, experiments):
   reflection_table['Esq'] = flex.double([-1.0]*len(reflection_table))
   for i in range(0,len(centric_bin_limits)-1):
     sel1 = reflection_table['centric_flag'] == True
-    sel2 = ((reflection_table['resolution']) > centric_bin_limits[i] and 
+    sel2 = ((reflection_table['resolution']) > centric_bin_limits[i] and
             (reflection_table['resolution']) <= centric_bin_limits[i+1])
-    sel = sel1 and sel2
+    sel = sel1 & sel2
     intensities = reflection_table['intensity'].select(sel)
     reflection_table['Esq'].set_selected(sel, intensities/ mean_centric_values[i])
   for i in range(0,len(acentric_bin_limits)-1):
     sel1 = reflection_table['centric_flag'] == False
-    sel2 = ((reflection_table['resolution']) > acentric_bin_limits[i] and 
+    sel2 = ((reflection_table['resolution']) > acentric_bin_limits[i] and
             (reflection_table['resolution']) <= acentric_bin_limits[i+1])
-    sel = sel1 and sel2
+    sel = sel1 & sel2
     intensities = reflection_table['intensity'].select(sel)
     reflection_table['Esq'].set_selected(sel, intensities/ mean_acentric_values[i])
   del reflection_table['intensity_for_norm']
@@ -82,11 +82,11 @@ def calculate_wilson_outliers(reflection_table):
 
   sel1 = reflection_table['centric_flag'] == True
   sel2 = reflection_table['Esq'] > 23.91 #probability <10^-6
-  reflection_table['wilson_outlier_flag'].set_selected(sel1 and sel2, True)
+  reflection_table['wilson_outlier_flag'].set_selected(sel1 & sel2, True)
 
   sel1 = reflection_table['centric_flag'] == False
   sel2 = reflection_table['Esq'] > 13.82 #probability <10^-6
-  reflection_table['wilson_outlier_flag'].set_selected(sel1 and sel2, True)
+  reflection_table['wilson_outlier_flag'].set_selected(sel1 & sel2, True)
 
   print "found %s outliers from analysis of Wilson statistics" % (
     reflection_table['wilson_outlier_flag'].count(True))
