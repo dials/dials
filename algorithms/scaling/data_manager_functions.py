@@ -167,7 +167,7 @@ class aimless_Data_Manager(Data_Manager):
     Data_Manager.__init__(self, reflections, experiments, scaling_options)
     'initialise g-value objects'
     (self.g_absorption, self.g_scale, self.g_decay) = (None, None, None)
-    self.g_parameterisation = {}
+    self.g_parameterisation = OrderedDict()
     '''bin reflections, determine outliers, extract reflections and weights for
     scaling and set normalised values.'''
     self.initialise_scale_factors()
@@ -231,7 +231,7 @@ class aimless_Data_Manager(Data_Manager):
       'extend by 0.001 to make sure all datapoints within min/max'
       one_oscillation_width = self.experiments.scan.get_oscillation()[1]
       reflection_table['normalised_time_values'] = ((reflection_table['xyzobs.px.value'].parts()[2]
-        * one_oscillation_width) - (osc_range[0] - 0.001))/rotation_interval
+        * one_oscillation_width) + 0.001)/rotation_interval
       'define the highest and lowest gridpoints: go out two further than the max/min int values'
       highest_parameter_value = int((max(reflection_table['normalised_time_values'])//1)+3)#was +2
       lowest_parameter_value = int((min(reflection_table['normalised_time_values'])//1)-2)#was -1
@@ -261,7 +261,7 @@ class aimless_Data_Manager(Data_Manager):
     'extend by 0.001 to make sure all datapoints within min/max'
     one_oscillation_width = self.experiments.scan.get_oscillation()[1]
     reflection_table['normalised_rotation_angle'] = ((reflection_table['xyzobs.px.value'].parts()[2]
-      * one_oscillation_width) - (osc_range[0] - 0.001))/rotation_interval
+      * one_oscillation_width) + 0.001)/rotation_interval
     'define the highest and lowest gridpoints: go out two further than the max/min int values'
     highest_parameter_value = int((max(reflection_table['normalised_rotation_angle'])//1)+3)#was +2
     lowest_parameter_value = int((min(reflection_table['normalised_rotation_angle'])//1)-2)#was -1
@@ -284,14 +284,15 @@ class aimless_Data_Manager(Data_Manager):
       self.g_absorption = SF.SphericalAbsorption_ScaleFactor(0.0, n_abs_params,
         sph_harm_table(reflection_table, lmax))
       self.g_parameterisation['g_absorption'] = self.g_absorption
+      msg = ('The absorption term Scale Factor object was successfully initialised. {sep}'
+        'The absorption term will be parameterised by a set of spherical {sep}'
+        'harmonics up to an lmax of {0} ({1} parameters). {sep}'
+        ).format(lmax, n_abs_params, sep='\n')
+      print(msg)
     else:
       reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
                                  * self.experiments.scan.get_oscillation()[1])
-    msg = ('The absorption term Scale Factor object was successfully initialised. {sep}'
-      'The absorption term will be parameterised by a set of spherical {sep}'
-      'harmonics up to an lmax of {0} ({1} parameters). {sep}'
-      ).format(lmax, n_abs_params, sep='\n')
-    print(msg)
+    
 
   def calc_absorption_constraint(self, apm):
     #this should only be called if g_absorption in active params
