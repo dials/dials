@@ -44,6 +44,10 @@ class JobWriter(object):
   '''Tool to save job command and result to files in a fixed destination'''
 
   def __init__(self, directory):
+    # Ensure this output path exists
+    if not os.path.isdir(directory):
+      os.makedirs(directory)
+
     self.directory = directory
 
   def __call__(self, cmd_filename, result_filename, job):
@@ -118,7 +122,7 @@ class Processing_Tutorial(object):
       self.result['stdout'] = open('dials-report.html').read()
 
   class dials_export(Job):
-    cmd = "dials.export integrated.pickle integrated_experiments.json mtz.hklout=integrated.mtz"
+    cmd = "dials.export integrated.pickle integrated_experiments.json"
 
 def generate_processing_detail_text():
   cwd = os.path.abspath(os.curdir)

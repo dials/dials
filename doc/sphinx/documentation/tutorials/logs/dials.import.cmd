@@ -1,1 +1,0 @@
-dials.import /home/david/bsx/cctbx-svn/build/xia2_regression/test_data/i04_bag_training/th_8_2_0*cbf
