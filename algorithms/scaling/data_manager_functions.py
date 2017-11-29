@@ -238,7 +238,7 @@ class aimless_Data_Manager(Data_Manager):
       n_decay_parameters = highest_parameter_value - lowest_parameter_value + 1
       self.g_decay = SF.SmoothScaleFactor_1D_Bfactor(0.0, n_decay_parameters, reflection_table['d'])
       self.g_parameterisation['g_decay'] = self.g_decay
-      msg = ('The decay term Scale Factor object was successfully initialised. {sep}'
+      msg = ('The decay term ScaleFactor object was successfully initialised. {sep}'
         'The B-factor parameter interval has been set to {0} degrees. {sep}'
         '{1} parameters will be used to parameterise the time-dependent decay. {sep}'
         ).format(rotation_interval, n_decay_parameters, sep='\n')
@@ -269,8 +269,8 @@ class aimless_Data_Manager(Data_Manager):
     self.g_scale = SF.SmoothScaleFactor_1D(1.0, n_scale_parameters)
     self.g_scale.set_normalised_values(reflection_table['normalised_rotation_angle'])
     self.g_parameterisation['g_scale'] = self.g_scale
-    msg = ('The scale term Scale Factor object was successfully initialised. {sep}'
-      'The scale factor parameter interval has been set to {0} degrees. {sep}'
+    msg = ('The scale term ScaleFactor object was successfully initialised. {sep}'
+      'The scale term parameter interval has been set to {0} degrees. {sep}'
       '{1} parameters will be used to parameterise the time-dependent scale. {sep}'
         ).format(rotation_interval, n_scale_parameters, sep='\n')
     print(msg)
@@ -284,7 +284,7 @@ class aimless_Data_Manager(Data_Manager):
       self.g_absorption = SF.SphericalAbsorption_ScaleFactor(0.0, n_abs_params,
         sph_harm_table(reflection_table, lmax))
       self.g_parameterisation['g_absorption'] = self.g_absorption
-      msg = ('The absorption term Scale Factor object was successfully initialised. {sep}'
+      msg = ('The absorption term ScaleFactor object was successfully initialised. {sep}'
         'The absorption term will be parameterised by a set of spherical {sep}'
         'harmonics up to an lmax of {0} ({1} parameters). {sep}'
         ).format(lmax, n_abs_params, sep='\n')
@@ -566,10 +566,10 @@ class XDS_Data_Manager(Data_Manager):
       self.g_decay.set_normalised_values(self.reflection_table['normalised_res_values'],
         self.reflection_table['normalised_time_values'])
       self.g_parameterisation['g_decay'] = self.g_decay
-    msg = ('The decay term Scale Factor object was successfully initialised. {sep}'
+    msg = ('The decay term ScaleFactor object was successfully initialised. {sep}'
       'The rotational parameter interval has been set to {0} degrees, giving {sep}'
       '{1} phi bins, while the resolution has been binned into {2} bins. {sep}'
-      'In total, this Scale Factor object uses {3} parameters. {sep}'
+      'In total, this ScaleFactor object uses {3} parameters. {sep}'
       ).format(rotation_interval, n_phi_bins, ndbins, 
                n_time_parameters * n_res_parameters, sep='\n')
     print(msg)
@@ -599,7 +599,7 @@ class XDS_Data_Manager(Data_Manager):
     self.g_modulation.set_normalised_values(self.reflection_table['normalised_x_values'],
       self.reflection_table['normalised_y_values'])
     self.g_parameterisation['g_modulation'] = self.g_modulation
-    msg = ('The modulation term Scale Factor object was successfully initialised. {sep}'
+    msg = ('The modulation term ScaleFactor object was successfully initialised. {sep}'
       'This parameterises a correction across the detector area, using a {sep}'
       'square grid of {0} parameters. {sep}').format(n_x_parameters**2, sep='\n')
     print(msg)
@@ -638,7 +638,7 @@ class XDS_Data_Manager(Data_Manager):
       self.reflection_table['normalised_y_abs_values'],
       self.reflection_table['normalised_time_values'])
     self.g_parameterisation['g_absorption'] = self.g_absorption
-    msg = ('The absorption term Scale Factor object was successfully initialised. {sep}'
+    msg = ('The absorption term ScaleFactor object was successfully initialised. {sep}'
       'This defines a {0} by {0} grid of absorption correction parameters {sep}'
       'at {1} time values, giving a total of {2} parameters. {sep}'
       ).format(n_x_parameters, n_time_parameters, 

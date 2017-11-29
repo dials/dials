@@ -46,12 +46,13 @@ def calc_normE2(reflection_table, experiments):
   #calculate normalised intensities: first calculate bin averages
   step = ((max(reflection_table['resolution']) - min(reflection_table['resolution'])
            + 1e-8) / n_refl_shells)
-  centrics_array = miller_array.select_centric()
-  centric_binner = centrics_array.setup_binner_d_star_sq_step(d_star_sq_step=step)
-  mean_centric_values = centrics_array.mean(use_binning=centric_binner)
-  mean_centric_values = mean_centric_values.data[1:-1]
+  if n_centrics:
+    centrics_array = miller_array.select_centric()
+    centric_binner = centrics_array.setup_binner_d_star_sq_step(d_star_sq_step=step)
+    mean_centric_values = centrics_array.mean(use_binning=centric_binner)
+    mean_centric_values = mean_centric_values.data[1:-1]
+    centric_bin_limits = centric_binner.limits()
 
-  centric_bin_limits = centric_binner.limits()
   acentrics_array = miller_array.select_acentric()
   acentric_binner = acentrics_array.setup_binner_d_star_sq_step(d_star_sq_step=step)
   mean_acentric_values = acentrics_array.mean(use_binning=acentric_binner)
@@ -59,13 +60,14 @@ def calc_normE2(reflection_table, experiments):
   acentric_bin_limits = acentric_binner.limits()
   #now calculate normalised intensity values
   reflection_table['Esq'] = flex.double([0.0]*len(reflection_table))
-  for i in range(0,len(centric_bin_limits)-1):
-    sel1 = reflection_table['centric_flag'] == True
-    sel2 = reflection_table['resolution'] > centric_bin_limits[i]
-    sel3 = reflection_table['resolution'] <= centric_bin_limits[i+1]
-    sel = sel1 & sel2 & sel3
-    intensities = reflection_table['intensity'].select(sel)
-    reflection_table['Esq'].set_selected(sel, intensities/ mean_centric_values[i])
+  if n_centrics:
+    for i in range(0,len(centric_bin_limits)-1):
+      sel1 = reflection_table['centric_flag'] == True
+      sel2 = reflection_table['resolution'] > centric_bin_limits[i]
+      sel3 = reflection_table['resolution'] <= centric_bin_limits[i+1]
+      sel = sel1 & sel2 & sel3
+      intensities = reflection_table['intensity'].select(sel)
+      reflection_table['Esq'].set_selected(sel, intensities/ mean_centric_values[i])
   for i in range(0,len(acentric_bin_limits)-1):
     sel1 = reflection_table['centric_flag'] == False
     sel2 = reflection_table['resolution'] > acentric_bin_limits[i]
