@@ -126,25 +126,25 @@ def generate_processing_detail_text():
   os.chdir(tmp_dir)
 
   try:
-    import_job = dials_import()()
+    import_job = Processing_Tutorial.dials_import()()
 
-    find_spots_job = dials_find_spots()()
+    find_spots_job = Processing_Tutorial.dials_find_spots()()
 
-    index_job = dials_index()()
+    index_job = Processing_Tutorial.dials_index()()
 
-    refine_bravais_settings_job = dials_refine_bravais_settings()()
+    refine_bravais_settings_job = Processing_Tutorial.dials_refine_bravais_settings()()
 
-    reindex_job = dials_reindex()()
+    reindex_job = Processing_Tutorial.dials_reindex()()
 
-    refine_job = dials_refine()()
+    refine_job = Processing_Tutorial.dials_refine()()
 
-    sv_refine_job = dials_sv_refine()()
+    sv_refine_job = Processing_Tutorial.dials_sv_refine()()
 
-    integrate_job = dials_integrate()()
+    integrate_job = Processing_Tutorial.dials_integrate()()
 
-    report_html_job = dials_report()()
+    report_html_job = Processing_Tutorial.dials_report()()
 
-    export_job = dials_export()()
+    export_job = Processing_Tutorial.dials_export()()
 
     # if we got this far, assume it is okay to overwrite the logs
     dials_dir = libtbx.env.find_in_repositories("dials")
