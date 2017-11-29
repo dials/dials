@@ -8,7 +8,7 @@ Introduction
 
 DIALS processing may be performed by either running the individual tools (spot
 finding, indexing, refinement, integration, exporting to MTZ) or you can run
-:samp:`xia2 -dials`, which makes informed choices for you at each stage. In
+:samp:`xia2 pipeline=dials`, which makes informed choices for you at each stage. In
 this tutorial we will run through each of the steps in turn, checking the output
 as we go. We will also enforce the correct lattice symmetry.
 
@@ -60,9 +60,9 @@ Find Spots
 ^^^^^^^^^^
 
 The first "real" task in any processing using DIALS is the spot finding.
-Since this stage can take some time, because it is looking for spots on every
-image in the dataset, we request multiple processors to speed this up 
-(:samp:`nproc=4`) - an option which works with most of the dials tools:
+Since this is looking for spots on every image in the dataset, this process
+can take some time, so we request multiple processors (:samp:`nproc=4`) to
+speed this up:
 
 .. literalinclude:: logs_ccp4/dials.find_spots.cmd
 
@@ -83,9 +83,9 @@ Pilatus images, such as these. However they may not be optimal for data
 from other detector types, such as CCDs or image plates. Issues with
 incorrectly set gain might, for example, lead to background noise being
 extracted as spots. You can use the image mode buttons (③) to preview
-how the parameters affect the spot finding algorithm - 'threshold' is the
-image on which actual spots are find, so ensuring that this produces results
-at real diffraction spot images will give the best change of success.
+how the parameters affect the spot finding algorithm. The final image,
+‘threshold’ is the one on which spots are found, so ensuring this produces 
+peaks at real diffraction spot positions will give the best chance of success. 
 
 The :doc:`dials.image_viewer<../programs/dials_image_viewer>` tool is
 not as fast as viewers such as ADXV, however it does integrate well with
@@ -175,21 +175,18 @@ an initial estimate for the unit cell parameters.
 
 What then follows are 'macro-cycles' of refinement where the experimental model
 is first tuned to get the best possible fit from the data, and then the
-resolution limit is reduced to cover more data than the previous cycle.
-16 parameters of the diffraction geometry are tuned - 6 for the
-detector, one for beam angle, 3 crystal orientation angles and the 6
-triclinic cell parameters.
+resolution limit is reduced to cover more data than the previous cycle.  16
+parameters of the diffraction geometry are tuned - 6 for the detector, one for
+beam angle, 3 crystal orientation angles and the 6 triclinic cell parameters.
+At each stage only 36000 reflections are used in the refinement job. In order
+to save time, a subset of the input reflections are used - by default using 100
+reflections for every degree of the 360° scan.
 
-At each stage only 36000 reflections are used in the refinement job. In
-order to save time, a subset of the input reflections are used - by
-default using 100 reflections for every degree of the 360° scan.
-
-We see that the first macrocyle of refinement makes a big improvement in
+We see that the first macrocycle of refinement makes a big improvement in
 the positional RMSDs:
 
 .. literalinclude:: logs_ccp4/dials.index.log
-   :start-after: Starting refinement (macro-cycle 1)
-   :lines: 6-19
+   :lines: 78-90
    :lineno-match:
    :linenos:
 
@@ -232,7 +229,7 @@ as outliers. If you have a dataset with multiple lattices present, it may be
 possible to spot them in the unindexed reflections.
 
 In this case, we can see that the refinement has clearly resolved whatever
-systematic was causing distortions in the reciprocal space view, and the
+systematic error was causing distortions in the reciprocal space view, and the
 determined reciprocal unit cell fits the data well:
 
 .. image:: /figures/ccp4_process_detail/reciprocal_lattice_indexed.png
@@ -490,8 +487,7 @@ using ctruncate_::
 
   pointless hklin integrated.mtz hklout sorted.mtz > pointless.log
   aimless hklin sorted.mtz hklout scaled.mtz > aimless.log << EOF
-  resolution 1.3
-  anomalous off
+  resolution 1.4
   EOF
   ctruncate -hklin scaled.mtz -hklout truncated.mtz \
   -colin '/*/*/[IMEAN,SIGIMEAN]' > ctruncate.log
@@ -502,41 +498,39 @@ easiest to view these logfiles using the program :program:`logview`, e.g.::
 
   logview aimless.log
 
-Often passing in a sensible resolution limit to aimless is helpful. Here we
-assumed we ran first without a resolution limit to help decide where to cut
-the data. This indicated slightly anisotropic diffraction, with diffraction along
-the *c*\* direction a little better than *a*\* and *b*\* directions, which are
-equivalent. Diffraction quality is good, however completeness falls off sharply,
-especially in the *c*\* direction. Following this we chose to exclude all data
-at a resolution higher than 1.3 Angstroms, to ensure about 80% completeness in
-the outer shell. Here is the summary from aimless.log:
+Often passing in a sensible resolution limit to aimless is helpful. Here
+we assumed we ran first without a resolution limit to help decide where
+to cut the data. Following this we chose to exclude all data at a
+resolution higher than 1.4 Angstroms, to ensure about 90% completeness
+in the outer shell. Here is the summary from aimless.log:
 
 ::
 
-  Summary data for        Project: DIALS Crystal: XTAL Dataset: FROMDIALS
+    Summary data for        Project: DIALS Crystal: XTAL Dataset: FROMDIALS
 
-                                             Overall  InnerShell  OuterShell
-  Low resolution limit                      150.00    150.00      1.32
-  High resolution limit                       1.30      7.12      1.30
+                                               Overall  InnerShell  OuterShell
+    Low resolution limit                       69.19     69.19      1.42
+    High resolution limit                       1.40      7.67      1.40
 
-  Rmerge  (within I+/I-)                     0.061     0.024     0.416
-  Rmerge  (all I+ and I-)                    0.069     0.026     0.488
-  Rmeas (within I+/I-)                       0.075     0.030     0.575
-  Rmeas (all I+ & I-)                        0.076     0.030     0.610
-  Rpim (within I+/I-)                        0.043     0.017     0.395
-  Rpim (all I+ & I-)                         0.033     0.014     0.358
-  Rmerge in top intensity bin                0.029        -         -
-  Total number of observations              308123      2257      5493
-  Total number unique                        62352       499      2474
-  Mean((I)/sd(I))                             10.7      27.1       1.4
-  Mn(I) half-set correlation CC(1/2)         0.999     0.999     0.722
-  Completeness                                98.2      99.8      80.1
-  Multiplicity                                 4.9       4.5       2.2
+    Rmerge  (within I+/I-)                     0.055     0.028     0.467
+    Rmerge  (all I+ and I-)                    0.065     0.039     0.534
+    Rmeas (within I+/I-)                       0.066     0.033     0.571
+    Rmeas (all I+ & I-)                        0.071     0.042     0.587
+    Rpim (within I+/I-)                        0.035     0.017     0.324
+    Rpim (all I+ & I-)                         0.027     0.016     0.239
+    Rmerge in top intensity bin                0.029        -         -
+    Total number of observations              275780      1919     11036
+    Total number unique                        41072       284      1908
+    Mean((I)/sd(I))                             14.7      48.7       2.5
+    Mn(I) half-set correlation CC(1/2)         0.999     0.999     0.887
+    Completeness                                94.2      99.2      90.3
+    Multiplicity                                 6.7       6.8       5.8
 
-  Anomalous completeness                      92.3     100.0      47.8
-  Anomalous multiplicity                       2.4       3.0       1.5
-  DelAnom correlation between half-sets     -0.002     0.279     0.065
-  Mid-Slope of Anom Normal Probability       0.953       -         -
+    Anomalous completeness                      94.1     100.0      89.2
+    Anomalous multiplicity                       3.4       3.7       2.9
+    DelAnom correlation between half-sets      0.336     0.541     0.026
+    Mid-Slope of Anom Normal Probability       1.097       -         -
+
 
 
 .. _pointless: http://www.ccp4.ac.uk/html/pointless.html

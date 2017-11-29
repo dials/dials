@@ -8,7 +8,7 @@ Introduction
 
 DIALS processing may be performed by either running the individual tools (spot
 finding, indexing, refinement, integration, exporting to MTZ) or you can run
-:samp:`xia2 -dials`, which makes informed choices for you at each stage. In
+:samp:`xia2 pipeline=dials`, which makes informed choices for you at each stage. In
 this tutorial we will run through each of the steps in turn, checking the output
 as we go. We will also enforce the correct lattice symmetry.
 

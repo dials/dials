@@ -211,7 +211,7 @@ def generate_processing_detail_text_ccp4():
     ("dials.sv_refine",               "dials.refine refined_experiments.json refined.pickle scan_varying=true"),
     ("dials.integrate",               "dials.integrate refined_experiments.json refined.pickle nproc=4"),
     ("dials.report",                  "dials.report integrated_experiments.json integrated.pickle"),
-    ("dials.export",                  "dials.export integrated.pickle integrated_experiments.json mtz.hklout=integrated.mtz"),
+    ("dials.export",                  "dials.export integrated.pickle integrated_experiments.json"),
   ]
 
   job_writer = JobWriter(OUTPUT_DIR)
@@ -238,4 +238,5 @@ if __name__ == "__main__":
   # As a quick development hack, add option for only the newer process
   if not "--ccp4" in sys.argv:
     generate_processing_detail_text()
-  generate_processing_detail_text_ccp4()
+  if not "--detail" in sys.argv:
+    generate_processing_detail_text_ccp4()
