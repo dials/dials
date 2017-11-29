@@ -80,6 +80,9 @@ class Script(object):
 
     assert(len(mask) == 1)
 
+    print("Num True: %d" % mask[0].count(True))
+    print("Num False: %d" % mask[0].count(False))
+
     from matplotlib import pylab
     pylab.imshow(mask[0].as_numpy_array(), interpolation='none')
     pylab.show()
