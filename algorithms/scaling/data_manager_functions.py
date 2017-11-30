@@ -58,10 +58,11 @@ class Data_Manager(object):
     n_refl = len(reflection_table)
     weights_for_scaling = self.update_weights_for_scaling(reflection_table)
     sel = weights_for_scaling.get_weights() > 0.0
-    reflections_for_scaling = reflection_table.select(sel)
-    sel1 = reflections_for_scaling['Esq'] > self.scaling_options['E2min']
-    sel2 = reflections_for_scaling['Esq'] < self.scaling_options['E2max']
-    reflections_for_scaling = reflections_for_scaling.select(sel1 & sel2)
+    #reflections_for_scaling = reflection_table.select(sel)
+    sel1 = reflection_table['Esq'] > self.scaling_options['E2min']
+    sel2 = reflection_table['Esq'] < self.scaling_options['E2max']
+    selection = sel & sel1 & sel2
+    reflections_for_scaling = reflection_table.select(selection)
     weights_for_scaling = self.update_weights_for_scaling(reflections_for_scaling,
       error_model_params=error_model_params)
     msg = ('{0} reflections were selected for scale factor determination {sep}'
@@ -71,7 +72,7 @@ class Data_Manager(object):
       self.scaling_options['E2max'], self.scaling_options['Isigma_min'], 
       self.scaling_options['d_min'], sep='\n')
     print(msg)
-    return reflections_for_scaling, weights_for_scaling
+    return reflections_for_scaling, weights_for_scaling, selection
 
   def update_weights_for_scaling(self, reflection_table, weights_filter=True, 
                                  error_model_params=None):
@@ -171,7 +172,7 @@ class aimless_Data_Manager(Data_Manager):
     '''bin reflections, determine outliers, extract reflections and weights for
     scaling and set normalised values.'''
     self.initialise_scale_factors()
-    (reflections_for_scaling, weights_for_scaling) = (
+    (reflections_for_scaling, weights_for_scaling, selection) = (
       self.extract_reflections_for_scaling(self.reflection_table,
       error_model_params=self.scaling_options['error_model_params']))
     self.Ih_table = single_Ih_table(reflections_for_scaling,
@@ -185,8 +186,9 @@ class aimless_Data_Manager(Data_Manager):
         'normalised_time_values'])
       self.g_decay.set_d_values(reflections_for_scaling['d'])
     if self.scaling_options['absorption_term']:
-      self.g_absorption.set_values(sph_harm_table(reflections_for_scaling,
-                                                  self.scaling_options['lmax']))
+      self.g_absorption.set_values(self.sph_harm_table.select(selection))
+      #self.g_absorption.set_values(sph_harm_table(reflections_for_scaling,
+                                                  #self.scaling_options['lmax']))
     print('Completed initialisation of aimless data manager. \n' + '*'*40 + '\n')
 
   def initialise_scale_factors(self):
@@ -281,8 +283,9 @@ class aimless_Data_Manager(Data_Manager):
       n_abs_params = 0
       for i in range(lmax):
         n_abs_params += (2*(i+1))+1
+      self.sph_harm_table = sph_harm_table(reflection_table, lmax)
       self.g_absorption = SF.SphericalAbsorption_ScaleFactor(0.0, n_abs_params,
-        sph_harm_table(reflection_table, lmax))
+        self.sph_harm_table)
       self.g_parameterisation['g_absorption'] = self.g_absorption
       msg = ('The absorption term ScaleFactor object was successfully initialised. {sep}'
         'The absorption term will be parameterised by a set of spherical {sep}'
@@ -348,8 +351,7 @@ class aimless_Data_Manager(Data_Manager):
       absorption_scales = self.g_decay.get_scales_of_reflections()
       B_values = flex.double(np.log(absorption_scales)) * 2.0 * (self.g_decay.d_values**2)
     if self.scaling_options['absorption_term']:
-      self.g_absorption.set_values(sph_harm_table(self.reflection_table,
-                                                  self.scaling_options['lmax']))
+      self.g_absorption.set_values(self.sph_harm_table)
       expanded_scale_factors.append(self.g_absorption.calculate_smooth_scales())
     self.reflection_table['inverse_scale_factor'] = flex.double(
       np.prod(np.array(expanded_scale_factors), axis=0))
@@ -383,7 +385,7 @@ class KB_Data_Manager(Data_Manager):
   def __init__(self, reflections, experiments, scaling_options):
     Data_Manager.__init__(self, reflections, experiments, scaling_options)
     self.active_parameters = flex.double([])
-    (reflections_for_scaling, weights_for_scaling) = (
+    (reflections_for_scaling, weights_for_scaling, selection) = (
       self.extract_reflections_for_scaling(self.reflection_table))
     self.Ih_table = base_Ih_table(reflections_for_scaling, weights_for_scaling.get_weights())
     self.g_parameterisation = OrderedDict()
@@ -482,7 +484,7 @@ class XDS_Data_Manager(Data_Manager):
     (self.g_absorption, self.g_modulation, self.g_decay) = (None, None, None)
     self.g_parameterisation = {}
     self.initialise_scale_factors() #this creates ScaleFactor objects
-    (reflections_for_scaling, weights_for_scaling) = (
+    (reflections_for_scaling, weights_for_scaling, selection) = (
       self.extract_reflections_for_scaling(self.reflection_table))
     self.Ih_table = single_Ih_table(reflections_for_scaling, weights_for_scaling.get_weights())
     #update normalised values after extracting reflections for scaling
@@ -849,7 +851,7 @@ class targeted_datamanager(Data_Manager):
       self.dm1 = KB_Data_Manager(reflections1, experiments1, scaling_options)
       'now extract Ih values from reflections_scaled'
       self.target_dm = Data_Manager(reflections_scaled, experiments1, scaling_options)
-      (target_reflections, target_weights) = (
+      (target_reflections, target_weights, target_selection) = (
       self.extract_reflections_for_scaling(self.target_dm.reflection_table))
       target_Ih_table = single_Ih_table(target_reflections, target_weights.get_weights())
       'find common reflections in the two datasets'
