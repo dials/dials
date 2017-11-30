@@ -279,6 +279,7 @@ namespace dials { namespace algorithms {
      */
     void append(af::const_ref< double, af::c_grid<3> > data,
                 af::const_ref< bool, af::c_grid<3> > mask) {
+      DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
       data_type d(data.accessor());
       mask_type m(mask.accessor());
       std::copy(data.begin(), data.end(), d.begin());
@@ -307,6 +308,14 @@ namespace dials { namespace algorithms {
       return mask_[index].const_ref();
     }
 
+    /**
+     * @returns number of reference profiles
+     */
+    std::size_t size() const {
+      DIALS_ASSERT(data_.size() == mask_.size());
+      return data_.size();
+    }
+
   protected:
 
     af::shared<data_type> data_;
@@ -328,7 +337,7 @@ namespace dials { namespace algorithms {
      */
     GaussianRSReferenceProfileData(
         const ReferenceProfileData &reference,
-        const CircleSampler &sampler,
+        boost::shared_ptr<SamplerIface> sampler,
         const TransformSpec &spec)
       : reference_(reference),
         sampler_(sampler),
@@ -344,7 +353,7 @@ namespace dials { namespace algorithms {
     /**
      * Get the sampler
      */
-    const CircleSampler& sampler() const {
+    boost::shared_ptr<SamplerIface> sampler() const {
       return sampler_;
     }
 
@@ -358,7 +367,7 @@ namespace dials { namespace algorithms {
   protected:
 
     ReferenceProfileData reference_;
-    CircleSampler sampler_;
+    boost::shared_ptr<SamplerIface> sampler_;
     TransformSpec spec_;
 
   };
@@ -386,6 +395,13 @@ namespace dials { namespace algorithms {
     const GaussianRSReferenceProfileData& operator[](std::size_t index) const {
       DIALS_ASSERT(index < spec_list_.size());
       return spec_list_[index];
+    }
+
+    /**
+     * @returns number of data structs
+     */
+    std::size_t size() const {
+      return spec_list_.size();
     }
 
   protected:
@@ -466,7 +482,7 @@ namespace dials { namespace algorithms {
       CoordinateSystem cs(m2, s0, s1, phi);
 
       // Get the reference profiles
-      std::size_t index = data_spec.sampler().nearest(sbox.panel, xyz);
+      std::size_t index = data_spec.sampler()->nearest(sbox.panel, xyz);
       data_const_reference reference_data = data_spec.reference().data(index);
       mask_const_reference reference_mask = data_spec.reference().mask(index);
 
@@ -627,7 +643,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(sbox.is_consistent());
 
       // Get the reference profiles
-      std::size_t index = data_spec.sampler().nearest(sbox.panel, xyz);
+      std::size_t index = data_spec.sampler()->nearest(sbox.panel, xyz);
       data_const_reference transformed_reference_data = data_spec.reference().data(index);
       //mask_const_reference transformed_reference_mask = data_spec.reference().mask(index);
 
@@ -804,7 +820,7 @@ namespace dials { namespace algorithms {
         mask.begin());
 
       // Get the reference profiles
-      std::size_t index = data_spec.sampler().nearest(sbox.panel, xyz);
+      std::size_t index = data_spec.sampler()->nearest(sbox.panel, xyz);
       data_const_reference transformed_reference_data = data_spec.reference().data(index);
       //mask_const_reference transformed_reference_mask = data_spec.reference().mask(index);
 
@@ -952,9 +968,7 @@ namespace dials { namespace algorithms {
 
     /**
      * Initialise the algorithm
-     * @param reference The reference profiles
-     * @param sampler The sampler for the reference profiles
-     * @param spec The transform spec
+     * @param data The reference profiles
      * @param detector_space Perform in detector space
      * @param deconvolution Do spot deconvolution
      */

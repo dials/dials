@@ -347,11 +347,66 @@ def tst_gaussianrs_detector_space_with_deconvolution_intensity_calculator2():
   print 'OK'
 
 
+def tst_gaussianrs_profile_data_pickling():
+    from dials.algorithms.integration.parallel_integrator import GaussianRSReferenceProfileData
+    from dials.algorithms.integration.parallel_integrator import GaussianRSMultiCrystalReferenceProfileData
+    from dials.algorithms.integration.parallel_integrator import  ReferenceProfileData
+    from dials.algorithms.profile_model.modeller import CircleSampler
+    from dials.array_family import flex
+    from dials.algorithms.profile_model.gaussian_rs.transform import TransformSpec
+    from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
+
+    reference  = data.reference[0]
+    experiments = data.experiments
+
+    assert len(reference) % 9 == 0
+    num_scan_points = len(reference) // 9
+
+    data_spec = GaussianRSMultiCrystalReferenceProfileData()
+    for e in experiments:
+
+      sampler = CircleSampler(
+        e.detector[0].get_image_size(),
+        e.scan.get_array_range(),
+        num_scan_points)
+
+
+      spec = TransformSpec(
+        e.beam,
+        e.detector,
+        e.goniometer,
+        e.scan,
+        e.profile.sigma_b(deg=False),
+        e.profile.sigma_m(deg=False),
+        e.profile.n_sigma() * 1.5,
+        5)
+
+      temp = reference
+
+      reference = ReferenceProfileData()
+      for d, m in temp:
+        reference.append(d, m)
+
+      spec = GaussianRSReferenceProfileData(reference, sampler, spec)
+
+      data_spec.append(spec)
+
+    import cPickle as pickle
+
+    s = pickle.dumps(data_spec)
+
+    data_spec2 = pickle.loads(s)
+
+    print 'OK'
+
+
 def tst_gaussianrs_intensity_calculator():
   tst_gaussianrs_reciprocal_space_intensity_calculator()
   tst_gaussianrs_detector_space_intensity_calculator()
   tst_gaussianrs_detector_space_with_deconvolution_intensity_calculator()
   tst_gaussianrs_detector_space_with_deconvolution_intensity_calculator2()
+  tst_gaussianrs_profile_data_pickling()
+
 
 
 if __name__ == '__main__':

@@ -60,6 +60,24 @@ namespace boost_python {
         grid_size));
   }
 
+  /**
+   * A class to pickle the transform spec
+   */
+  struct TransformSpecPickleSuite : boost::python::pickle_suite {
+    static
+    boost::python::tuple getinitargs(const TransformSpec &obj) {
+      return boost::python::make_tuple(
+          obj.beam(),
+          obj.detector(),
+          obj.goniometer(),
+          obj.scan(),
+          obj.sigma_b(),
+          obj.sigma_m(),
+          obj.n_sigma(),
+          obj.half_grid_size());
+    }
+  };
+
   /* template <typename FloatType> */
   /* af::versa< vec3<double>, af::c_grid<2> > transform_spec_s1_map( */
   /*     const TransformSpec &self, */
@@ -223,6 +241,7 @@ namespace boost_python {
       .def("grid_size", &TransformSpec::grid_size)
       .def("step_size", &TransformSpec::step_size)
       .def("grid_centre", &TransformSpec::grid_centre)
+      .def_pickle(TransformSpecPickleSuite())
       ;
 
     transform_forward_wrapper<double>("TransformForward");
