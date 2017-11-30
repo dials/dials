@@ -173,6 +173,7 @@ class SmoothScaleFactor_2D(SmoothScaleFactor):
     self.n2_parameters = n2_parameters
     self.Vr = 0.5
     self.weightsum = None
+    self.smoothing_window = 1.5#must be less than 2 to avoid indexing errors
 
   def set_normalised_values(self, normalised_values1, normalised_values2):
     '''normalised_values is the column from the reflection table
@@ -181,21 +182,20 @@ class SmoothScaleFactor_2D(SmoothScaleFactor):
     self.scales = flex.double([1.0]*len(self.normalised_values[0]))
 
   def calculate_smooth_scales(self):
-    smoothing_window = 1.5#must be less than 2 to avoid indexing errors
     self.weightsum = flex.double([0.0]*len(self.normalised_values[0]))
     for i, relative_pos_1 in enumerate(self.normalised_values[0]):
       relative_pos_2 = self.normalised_values[1][i]
-      max_range_1_to_include = int(relative_pos_1 + smoothing_window)
-      max_range_2_to_include = int(relative_pos_2 + smoothing_window)
-      min_range_2_to_include = int((relative_pos_2 - smoothing_window)//1) + 1
-      min_range_1_to_include = int((relative_pos_1 - smoothing_window)//1) + 1
+      max_range_1_to_include = int(relative_pos_1 + self.smoothing_window)
+      max_range_2_to_include = int(relative_pos_2 + self.smoothing_window)
+      min_range_2_to_include = int((relative_pos_2 - self.smoothing_window)//1) + 1
+      min_range_1_to_include = int((relative_pos_1 - self.smoothing_window)//1) + 1
       scale = 0.0
       weightsum = 0.0
       for j in range(min_range_1_to_include, max_range_1_to_include + 1):
         for k in range(min_range_2_to_include, max_range_2_to_include + 1):
           square_distance_to_point = ((float(k) - relative_pos_2)**2
                                       + (float(j) - relative_pos_1)**2)
-          if square_distance_to_point < (smoothing_window**2):
+          if square_distance_to_point < (self.smoothing_window**2):
             scale += (self.scale_factors[(j+1) + ((k+1)*self.n1_parameters)]
                       * np.exp(- square_distance_to_point / self.Vr))
             weightsum += np.exp(-square_distance_to_point/ self.Vr)
@@ -211,15 +211,15 @@ class SmoothScaleFactor_2D(SmoothScaleFactor):
     smoothing_window = 1.5#must be less than 2 to avoid indexing errors
     for i, relative_pos_1 in enumerate(self.normalised_values[0]):
       relative_pos_2 = self.normalised_values[1][i]
-      max_range_1_to_include = int(relative_pos_1 + smoothing_window)
-      max_range_2_to_include = int(relative_pos_2 + smoothing_window)
-      min_range_2_to_include = int((relative_pos_2 - smoothing_window)//1) + 1
-      min_range_1_to_include = int((relative_pos_1 - smoothing_window)//1) + 1
+      max_range_1_to_include = int(relative_pos_1 + self.smoothing_window)
+      max_range_2_to_include = int(relative_pos_2 + self.smoothing_window)
+      min_range_2_to_include = int((relative_pos_2 - self.smoothing_window)//1) + 1
+      min_range_1_to_include = int((relative_pos_1 - self.smoothing_window)//1) + 1
       for j in range(min_range_1_to_include, max_range_1_to_include + 1):
           for k in range(min_range_2_to_include, max_range_2_to_include + 1):
             square_distance_to_point = ((float(k) - relative_pos_2)**2
                                         + (float(j) - relative_pos_1)**2)
-            if square_distance_to_point < (smoothing_window**2):
+            if square_distance_to_point < (self.smoothing_window**2):
               self.derivatives[(((j+1) + ((k+1)*self.n1_parameters))*n) + i] += (
                 np.exp(- square_distance_to_point / self.Vr))/self.weightsum[i]
     return self.derivatives
