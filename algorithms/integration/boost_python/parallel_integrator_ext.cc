@@ -93,7 +93,11 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def(init<GLMBackgroundCreator::Model,
                 double,
                 std::size_t,
-                std::size_t>())
+                std::size_t>((
+        arg("model"),
+        arg("tuning_constant"),
+        arg("max_iter"),
+        arg("min_pixels"))))
       ;
 
     // Export GModel background calculator
@@ -104,27 +108,32 @@ namespace dials { namespace algorithms { namespace boost_python {
                 bool,
                 double,
                 std::size_t,
-                std::size_t>())
+                std::size_t>((
+        arg("model"),
+        arg("robust"),
+        arg("tuning_constant"),
+        arg("max_iter"),
+        arg("min_pixels"))))
       ;
 
 
     // Export the reference data structure
-    class_<Reference>("Reference")
-      .def("append", &Reference::append)
+    class_<ReferenceProfileData>("ReferenceProfileData")
+      .def("append", &ReferenceProfileData::append)
       ;
 
 
-    // Export GaussianRSIntensityCalculatorData
-    class_<GaussianRSIntensityCalculatorData>("GaussianRSIntensityCalculatorData", no_init)
+    // Export GaussianRSReferenceProfileData
+    class_<GaussianRSReferenceProfileData>("GaussianRSReferenceProfileData", no_init)
       .def(init<
-          const Reference&,
+          const ReferenceProfileData&,
           const CircleSampler&,
           const TransformSpec&>())
       ;
 
-    // Export GaussianRSMultiCrystalIntensityCalculatorData
-    class_<GaussianRSMultiCrystalIntensityCalculatorData>("GaussianRSMultiCrystalIntensityCalculatorData")
-      .def("append", &GaussianRSMultiCrystalIntensityCalculatorData::append)
+    // Export GaussianRSMultiCrystalReferenceProfileData
+    class_<GaussianRSMultiCrystalReferenceProfileData>("GaussianRSMultiCrystalReferenceProfileData")
+      .def("append", &GaussianRSMultiCrystalReferenceProfileData::append)
       ;
 
 
@@ -138,7 +147,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     class_<GaussianRSIntensityCalculator,
            bases<IntensityCalculatorIface> >("GaussianRSIntensityCalculator", no_init)
       .def(init<
-          const GaussianRSMultiCrystalIntensityCalculatorData &,
+          const GaussianRSMultiCrystalReferenceProfileData &,
           bool,
           bool>())
       ;

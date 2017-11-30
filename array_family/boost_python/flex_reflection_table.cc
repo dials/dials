@@ -706,6 +706,14 @@ namespace dials { namespace af { namespace boost_python {
     self[name] = Reflection::data_type(item);
   }
 
+  /**
+   * Copy the reflection
+   * @param self The reflection
+   */
+  Reflection Reflection_copy(const Reflection &self) {
+    return Reflection(self);
+  }
+
 
   /**
    * Convert reflection table to list of reflections
@@ -852,6 +860,8 @@ namespace dials { namespace af { namespace boost_python {
           &Reflection_set_miller_index)
       .def("set_shoebox",
           &Reflection_set_shoebox)
+      .def("copy",
+          &Reflection_copy)
       ;
 
     // Helper function

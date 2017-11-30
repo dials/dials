@@ -12,6 +12,8 @@
 #ifndef DIALS_ALGORITHMS_INTEGRATION_ALGORITHMS_H
 #define DIALS_ALGORITHMS_INTEGRATION_ALGORITHMS_H
 
+#include <numeric>
+
 #include <dxtbx/model/beam.h>
 #include <dxtbx/model/detector.h>
 #include <dxtbx/model/scan.h>
@@ -264,7 +266,7 @@ namespace dials { namespace algorithms {
   /**
    * A class to hold the reference data
    */
-  class Reference {
+  class ReferenceProfileData {
   public:
 
     typedef af::versa< double, af::c_grid<3> > data_type;
@@ -312,7 +314,10 @@ namespace dials { namespace algorithms {
   };
 
 
-  class GaussianRSIntensityCalculatorData {
+  /**
+   * A class to hold all the reference data
+   */
+  class GaussianRSReferenceProfileData {
   public:
 
     /**
@@ -321,29 +326,38 @@ namespace dials { namespace algorithms {
      * @param sampler The sampler object
      * @param spec The transform spec
      */
-    GaussianRSIntensityCalculatorData(
-        const Reference &reference,
+    GaussianRSReferenceProfileData(
+        const ReferenceProfileData &reference,
         const CircleSampler &sampler,
         const TransformSpec &spec)
       : reference_(reference),
         sampler_(sampler),
         spec_(spec) {}
 
-    const Reference& reference() const {
+    /**
+     * Get the reference
+     */
+    const ReferenceProfileData& reference() const {
       return reference_;
     }
 
+    /**
+     * Get the sampler
+     */
     const CircleSampler& sampler() const {
       return sampler_;
     }
 
+    /**
+     * Get the transform spec
+     */
     const TransformSpec& spec() const {
       return spec_;
     }
 
   protected:
 
-    Reference reference_;
+    ReferenceProfileData reference_;
     CircleSampler sampler_;
     TransformSpec spec_;
 
@@ -353,14 +367,14 @@ namespace dials { namespace algorithms {
   /**
    * A class to hold data for multiple crystals
    */
-  class GaussianRSMultiCrystalIntensityCalculatorData {
+  class GaussianRSMultiCrystalReferenceProfileData {
   public:
 
     /**
      * Add a data spec to the list
      * @param alg The mask calculator
      */
-    void append(const GaussianRSIntensityCalculatorData &spec) {
+    void append(const GaussianRSReferenceProfileData &spec) {
       spec_list_.push_back(spec);
     }
 
@@ -369,14 +383,14 @@ namespace dials { namespace algorithms {
      * @param index The index of the experiment
      * @returns The data spec for the experiments
      */
-    const GaussianRSIntensityCalculatorData& operator[](std::size_t index) const {
+    const GaussianRSReferenceProfileData& operator[](std::size_t index) const {
       DIALS_ASSERT(index < spec_list_.size());
       return spec_list_[index];
     }
 
   protected:
 
-    std::vector<GaussianRSIntensityCalculatorData> spec_list_;
+    std::vector<GaussianRSReferenceProfileData> spec_list_;
 
   };
 
@@ -409,7 +423,7 @@ namespace dials { namespace algorithms {
      * @param data The data to do profile fitting
      */
     GaussianRSReciprocalSpaceIntensityCalculator(
-        const GaussianRSMultiCrystalIntensityCalculatorData &data)
+        const GaussianRSMultiCrystalReferenceProfileData &data)
       : data_spec_(data) {}
 
     /**
@@ -429,7 +443,7 @@ namespace dials { namespace algorithms {
       // Get the index of the reflection
       int experiment_id = reflection.get< int >("id");
       DIALS_ASSERT(experiment_id >= 0);
-      const GaussianRSIntensityCalculatorData &data_spec = data_spec_[experiment_id];
+      const GaussianRSReferenceProfileData &data_spec = data_spec_[experiment_id];
 
       // Get the reflection flags and Unset profile fitting
       reflection["flags"] = reflection.get<std::size_t>("flags") & ~af::IntegratedPrf;
@@ -443,7 +457,7 @@ namespace dials { namespace algorithms {
 
       // Check the shoebox
       if (check(sbox, data_spec.spec().detector()) == false) {
-        return;
+        throw DIALS_ERROR("Invalid pixels in Shoebox");
       }
 
       // Create the coordinate system
@@ -493,8 +507,15 @@ namespace dials { namespace algorithms {
       mask_const_reference transformed_mask = transform.mask().const_ref();
       af::versa< bool, af::c_grid<3> > final_mask(transformed_mask.accessor());
       DIALS_ASSERT(reference_mask.size() == transformed_mask.size());
+      std::size_t mask_count = 0;
       for (std::size_t j = 0; j < final_mask.size(); ++j) {
         final_mask[j] = reference_mask[j] && transformed_mask[j];
+        if (final_mask[j]) {
+          mask_count++;
+        }
+      }
+      if (mask_count == 0) {
+        throw DIALS_ERROR("No pixels mapped to reciprocal space grid");
       }
 
       // Do the profile fitting
@@ -556,7 +577,7 @@ namespace dials { namespace algorithms {
       return bbox_valid && pixels_valid;
     }
 
-    GaussianRSMultiCrystalIntensityCalculatorData data_spec_;
+    GaussianRSMultiCrystalReferenceProfileData data_spec_;
 
   };
 
@@ -573,7 +594,7 @@ namespace dials { namespace algorithms {
      * @param data The data to do profile fitting
      */
     GaussianRSDetectorSpaceIntensityCalculator(
-        const GaussianRSMultiCrystalIntensityCalculatorData &data)
+        const GaussianRSMultiCrystalReferenceProfileData &data)
       : data_spec_(data) {}
 
     /**
@@ -593,7 +614,7 @@ namespace dials { namespace algorithms {
       // Get the index of the reflection
       int experiment_id = reflection.get< int >("id");
       DIALS_ASSERT(experiment_id >= 0);
-      const GaussianRSIntensityCalculatorData &data_spec = data_spec_[experiment_id];
+      const GaussianRSReferenceProfileData &data_spec = data_spec_[experiment_id];
 
       // Get the reflection flags and Unset profile fitting
       reflection["flags"] = reflection.get<std::size_t>("flags") & ~af::IntegratedPrf;
@@ -647,6 +668,15 @@ namespace dials { namespace algorithms {
         sbox.mask.end(),
         mask.begin());
 
+      // Compute partiality
+      double partiality = compute_partiality(reference_data, mask.const_ref());
+      DIALS_ASSERT(partiality >= 0 && partiality <= 1.0);
+
+      // Exit if partiality too small
+      if (partiality < 0.01) {
+        throw DIALS_ERROR("Partiality too small to fit");
+      }
+
       // Do the profile fitting
       ProfileFitter<double> fit(
           data.const_ref(),
@@ -660,10 +690,29 @@ namespace dials { namespace algorithms {
       reflection["intensity.prf.value"] = fit.intensity()[0];
       reflection["intensity.prf.variance"] = fit.variance()[0];
       reflection["intensity.prf.correlation"] = fit.correlation();
+      reflection["partiality_old"] = reflection.get<double>("partiality");
+      reflection["partiality"] = partiality;
       reflection["flags"] = reflection.get<std::size_t>("flags") | af::IntegratedPrf;
     }
 
   protected:
+
+    /**
+     * Compute partiality
+     */
+    double compute_partiality(
+        const af::const_ref< double, af::c_grid<3> > &data,
+        const af::const_ref< bool, af::c_grid<3> > &mask) const {
+      DIALS_ASSERT(data.size() == mask.size());
+      double partiality = 0.0;
+      for (std::size_t i = 0; i < data.size(); ++i) {
+        if (mask[i]) {
+          DIALS_ASSERT(data[i] >= 0);
+          partiality += data[i];
+        }
+      }
+      return partiality;
+    }
 
     /**
      * Copy the mask while checking the mask codes
@@ -678,7 +727,7 @@ namespace dials { namespace algorithms {
       }
     }
 
-    GaussianRSMultiCrystalIntensityCalculatorData data_spec_;
+    GaussianRSMultiCrystalReferenceProfileData data_spec_;
 
   };
 
@@ -695,7 +744,7 @@ namespace dials { namespace algorithms {
      * @param data The data to do profile fitting
      */
     GaussianRSDetectorSpaceWithDeconvolutionIntensityCalculator(
-        const GaussianRSMultiCrystalIntensityCalculatorData &data)
+        const GaussianRSMultiCrystalReferenceProfileData &data)
       : GaussianRSDetectorSpaceIntensityCalculator(data) {}
 
     /**
@@ -715,7 +764,7 @@ namespace dials { namespace algorithms {
       // Get the index of the reflection
       int experiment_id = reflection.get< int >("id");
       DIALS_ASSERT(experiment_id >= 0);
-      const GaussianRSIntensityCalculatorData &data_spec = data_spec_[experiment_id];
+      const GaussianRSReferenceProfileData &data_spec = data_spec_[experiment_id];
 
       // Get the reflection flags and Unset profile fitting
       reflection["flags"] = reflection.get<std::size_t>("flags") & ~af::IntegratedPrf;
@@ -787,13 +836,22 @@ namespace dials { namespace algorithms {
           reference_data.end(),
           profile.begin());
 
+      // Compute partiality
+      double partiality = compute_partiality(reference_data, mask.const_ref());
+      DIALS_ASSERT(partiality >= 0 && partiality <= 1.0);
+
+      // Exit if partiality too small
+      if (partiality < 0.01) {
+        throw DIALS_ERROR("Partiality too small to fit");
+      }
+
       // Add profiles for adjacent reflections
       for (std::size_t j = 0; j < adjacent_reflections.size(); ++j) {
 
         // Get the index of the reflection
         int experiment_id = adjacent_reflections[j].get< int >("id");
         DIALS_ASSERT(experiment_id >= 0);
-        const GaussianRSIntensityCalculatorData &data_spec2 = data_spec_[experiment_id];
+        const GaussianRSReferenceProfileData &data_spec2 = data_spec_[experiment_id];
 
         // Compute coordinate system
         vec3<double> s12 = adjacent_reflections[j].get< vec3<double> >("s1");
@@ -835,11 +893,14 @@ namespace dials { namespace algorithms {
         reflection["intensity.prf.value"] = fit.intensity()[0];
         reflection["intensity.prf.variance"] = fit.variance()[0];
         reflection["intensity.prf.correlation"] = fit.correlation();
+        reflection["partiality_old"] = reflection.get<double>("partiality");
+        reflection["partiality"] = partiality;
         reflection["flags"] = reflection.get<std::size_t>("flags") | af::IntegratedPrf;
 
-      } catch (dials::error) {
-        GaussianRSDetectorSpaceIntensityCalculator::exec(reflection, adjacent_reflections);
       } catch (std::runtime_error) {
+
+        // This is only thrown if the matrix is singular, in which case try and
+        // do profile fitting with no deconvolution
         GaussianRSDetectorSpaceIntensityCalculator::exec(reflection, adjacent_reflections);
       }
     }
@@ -898,7 +959,7 @@ namespace dials { namespace algorithms {
      * @param deconvolution Do spot deconvolution
      */
     GaussianRSIntensityCalculator(
-        const GaussianRSMultiCrystalIntensityCalculatorData &data,
+        const GaussianRSMultiCrystalReferenceProfileData &data,
         bool detector_space,
         bool deconvolution) {
 

@@ -289,6 +289,8 @@ namespace dials { namespace algorithms {
      * the profile array is then a profile for a separate reflection which must
      * be zero outside the reflection foreground.
      *
+     * FIXME The variance structure for I < 0 needs fixing
+     *
      * @param d The data array
      * @param b The background array
      * @param m The mask array
@@ -328,12 +330,12 @@ namespace dials { namespace algorithms {
 
       // Iterate a number of times
       for (niter_ = 0; niter_ < maxiter; ++niter_) {
-
+        //
         // Compute the variance for the given estimate
         std::copy(b.begin(), b.end(), v.begin());
         for (std::size_t j = 0; j < M; ++j) {
           for (std::size_t i = 0; i < N; ++i) {
-            v[i] += I[j] * p(j,i);
+            v[i] += std::max(1.0 / N, std::abs(I[j])) * p(j,i);
           }
         }
 
@@ -371,7 +373,7 @@ namespace dials { namespace algorithms {
         // Compute error
         error_ = 0;
         for (std::size_t j = 0; j < M; ++j) {
-          DIALS_ASSERT(I[j] > 0);
+          // DIALS_ASSERT(I[j] > 0);
           error_ += (I[j] - I0[j])*(I[j] - I0[j]);
         }
         if (error_ < eps*eps) {
@@ -388,7 +390,7 @@ namespace dials { namespace algorithms {
         double V = 0;
         for (std::size_t i = 0; i < N; ++i) {
           if (m[i] && p(j,i) > 0) {
-            V += b[i] + I[j] * p(j,i);
+            V += b[i] + std::max(1.0 / N, std::abs(I[j])) * p(j,i);
           }
         }
 
