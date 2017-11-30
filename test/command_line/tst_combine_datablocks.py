@@ -1,23 +1,15 @@
-"""Test combination of multiple datablocks and strong spots files."""
+from __future__ import absolute_import, division, print_function
 
-# python imports
-from __future__ import absolute_import, division
 import os
-import libtbx.load_env # required for libtbx.env.find_in_repositories
-from libtbx import easy_run
-from dxtbx.datablock import DataBlockFactory
+
 from dials.array_family import flex
+from dxtbx.datablock import DataBlockFactory
+from libtbx import easy_run
 
-def test1():
+def test_combination_of_multiple_datablocks_and_strong_spots_files(dials_regression, tmpdir):
+  tmpdir.chdir()
 
-  try:
-    dials_regression = libtbx.env.dist_path('dials_regression')
-  except KeyError:
-    print 'FAIL: dials_regression not configured'
-    exit(0)
-
-  path = os.path.join(
-    dials_regression, "centroid_test_data/centroid_####.cbf")
+  path = os.path.join(dials_regression, "centroid_test_data/centroid_####.cbf")
 
   # example combined two different spot-finding settings for the same dataset
   # e.d. for comparison with the reciprocal lattice viewer.
@@ -51,7 +43,6 @@ def test1():
     assert imset.get_beam() == ref_beam
     assert imset.get_scan() == ref_scan
     assert imset.get_goniometer() == ref_goniometer
-  print "OK"
 
   # check the reflections are unaffected, except for the change in id
   s1 = comb_strong.select(comb_strong['id'] == 0)
@@ -59,23 +50,5 @@ def test1():
   s2['id'] = flex.size_t(len(s2), 0)
   for r1, r2 in zip(s1, strong1):
     assert r1 == r2
-  print "OK"
   for r1, r2 in zip(s2, strong2):
     assert r1 == r2
-  print "OK"
-
-  return
-
-def run():
-  if not libtbx.env.has_module("dials_regression"):
-    print "Skipping tests in " + __file__ + " as dials_regression not present"
-    return
-
-  test1()
-
-if __name__ == '__main__':
-  from dials.test import cd_auto
-  with cd_auto(__file__):
-    from libtbx.utils import show_times_at_exit
-    show_times_at_exit()
-    run()
