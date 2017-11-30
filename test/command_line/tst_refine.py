@@ -242,7 +242,7 @@ def test4():
   res1_unsrt_int = mnmn(r["id"],exp_ids).result
   res1_int = mnmn(r_sorted["id"],exp_ids).result
   res1_sizet = mnmn(flex.size_t(list(r_sorted["id"])),exp_ids).result
-  
+
   #Check that unsorted list fails, while sorted succeeds for both int and size_t array types
   assert ( res0 != res1_unsrt_int )
   assert ( res0 == res1_int )
