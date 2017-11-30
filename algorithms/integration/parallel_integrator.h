@@ -611,6 +611,8 @@ namespace dials { namespace algorithms {
      * @param compute_background The background calculation function
      * @param compute_intensity The intensity calculation function
      * @param nthreads The number of parallel threads
+     * @param use_dynamic_mask Use the dynamic mask if present
+     * @param debug Add debug output
      */
     ParallelIntegrator(
           af::reflection_table reflections,
@@ -619,6 +621,7 @@ namespace dials { namespace algorithms {
           const BackgroundCalculatorIface &compute_background,
           const IntensityCalculatorIface &compute_intensity,
           std::size_t nthreads,
+          bool use_dynamic_mask,
           bool debug) {
 
       using dials::algorithms::shoebox::find_overlapping_multi_panel;
@@ -654,12 +657,11 @@ namespace dials { namespace algorithms {
       // Find the overlapping reflections
       AdjacencyList overlaps = find_overlapping_multi_panel(bbox, panel);
 
-
       // Allocate the array for the image data
       Buffer buffer(
           detector,
           zsize,
-          imageset.has_dynamic_mask(),
+          use_dynamic_mask && imageset.has_dynamic_mask(),
           imageset.get_static_mask());
 
       // Transform reflection data from column major to row major. The

@@ -317,6 +317,7 @@ namespace dials { namespace algorithms { namespace boost_python {
           const BackgroundCalculatorIface&,
           const IntensityCalculatorIface&,
           std::size_t,
+          bool,
           bool>((
               arg("reflections"),
               arg("imageset"),
@@ -324,6 +325,7 @@ namespace dials { namespace algorithms { namespace boost_python {
               arg("compute_background"),
               arg("compute_intensity"),
               arg("nthreads") = 1,
+              arg("use_dynamic_mask") = true,
               arg("debug") = false)))
       .def("reflections",
           &ParallelIntegrator::reflections)
