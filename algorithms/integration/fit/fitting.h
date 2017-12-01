@@ -141,6 +141,7 @@ namespace dials { namespace algorithms {
      * @returns The intensity
      */
     af::small<double,10> intensity() const {
+      DIALS_ASSERT(intensity_.size() > 0);
       return intensity_;
     }
 
@@ -148,6 +149,7 @@ namespace dials { namespace algorithms {
      * @returns the variance
      */
     af::small<double, 10> variance() const {
+      DIALS_ASSERT(variance_.size() > 0);
       return variance_;
     }
 
@@ -259,19 +261,20 @@ namespace dials { namespace algorithms {
         }
         DIALS_ASSERT(sum2 > 0);
         I = sum1 / sum2;
-        V = std::abs(I * sump) + sumb;
+        V = std::abs(I) + sumb;
         if ((error_ = std::abs(I - I0)) < eps) {
           break;
         }
         if (I < minI + TINY) {
           I = (sumd - sumb) / sump;
-          V = std::abs(I * sump) + sumb;
+          V = std::abs(I) + sumb;
           correlation_ = 0;
           break;
         }
         I0 = I;
       }
       DIALS_ASSERT(V >= 0);
+      DIALS_ASSERT(V >= I);
 
       // Set the intensity and variance
       intensity_.push_back(I);
@@ -387,12 +390,15 @@ namespace dials { namespace algorithms {
       // Set the return values
       for (std::size_t j = 0; j < M; ++j) {
 
-        double V = 0;
+        double V = std::abs(I[j]);
         for (std::size_t i = 0; i < N; ++i) {
-          if (m[i] && p(j,i) > 0) {
-            V += b[i] + std::max(1.0 / N, std::abs(I[j])) * p(j,i);
+          if (m[i]) {
+            V += b[i];
           }
         }
+
+        DIALS_ASSERT(V >= 0);
+        DIALS_ASSERT(V >= I[j]);
 
         intensity_.push_back(I[j]);
         variance_.push_back(V);

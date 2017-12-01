@@ -78,9 +78,12 @@ phil_scope = parse('''
         .type = choice
         .help = "The fitting method"
 
-      estimator = *least_squares maximum_likelihood
-        .type = choice
-        .help = "Least squares or maximum likelihood"
+      detector_space {
+
+        deconvolution = False
+          .type = bool
+          .help = "Do deconvolution in detector space"
+      }
 
     }
   }

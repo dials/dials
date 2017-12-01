@@ -39,13 +39,6 @@ env.SharedLibrary(
   LIBS=env["LIBS"])
 
 env.SharedLibrary(
-  target='#/lib/dials_algorithms_integration_maximum_likelihood_ext', 
-  source=[
-    'maximum_likelihood/boost_python/ext.cc',
-  ],
-  LIBS=env["LIBS"])
-
-env.SharedLibrary(
   target='#/lib/dials_algorithms_integration_bayes_ext', 
   source=[
     'bayes/boost_python/ext.cc',

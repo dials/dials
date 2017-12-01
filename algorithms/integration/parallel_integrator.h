@@ -319,6 +319,7 @@ namespace dials { namespace algorithms {
       try {
         compute_background_(reflection);
       } catch (dials::error) {
+        delete_shoebox(reflection, adjacent_reflections);
         return;
       }
 
@@ -332,8 +333,24 @@ namespace dials { namespace algorithms {
       try {
         compute_intensity_(reflection, adjacent_reflections);
       } catch (dials::error) {
-        return;
+        // pass
       }
+
+      // Erase the shoebox
+      delete_shoebox(reflection, adjacent_reflections);
+    }
+
+
+  protected:
+
+    /**
+     * Delete the shoebox
+     * @param reflection The reflection
+     * @param adjacent_reflections The adjancent reflections
+     */
+    void delete_shoebox(
+          af::Reflection &reflection,
+          std::vector<af::Reflection> &adjacent_reflections) const {
 
       // Erase the shoebox from the reflection
       if (!debug_) {
@@ -343,9 +360,6 @@ namespace dials { namespace algorithms {
         }
       }
     }
-
-
-  protected:
 
     /**
      * Extract the shoebox data from the buffer
@@ -654,6 +668,9 @@ namespace dials { namespace algorithms {
       af::const_ref<int6> bbox = reflections.get<int6>("bbox").const_ref();
       af::ref<std::size_t> flags = reflections.get<std::size_t>("flags").ref();
 
+      // Reset the flags
+      reset_flags(flags);
+
       // Find the overlapping reflections
       AdjacencyList overlaps = find_overlapping_multi_panel(bbox, panel);
 
@@ -663,6 +680,11 @@ namespace dials { namespace algorithms {
           zsize,
           use_dynamic_mask && imageset.has_dynamic_mask(),
           imageset.get_static_mask());
+
+      // If we have shoeboxes then delete
+      if (reflections.contains("shoebox")) {
+        reflections.erase("shoebox");
+      }
 
       // Transform reflection data from column major to row major. The
       // reason for doing this is because we want to process each reflection
