@@ -408,11 +408,70 @@ def tst_gaussianrs_intensity_calculator():
   tst_gaussianrs_profile_data_pickling()
 
 
+def tst_job_list():
+
+  from dials.algorithms.integration.parallel_integrator import SimpleJobList
+
+  jobs = SimpleJobList((0, 60), 20)
+
+  assert jobs[0] == (0, 20)
+  assert jobs[1] == (10, 30)
+  assert jobs[2] == (20, 40)
+  assert jobs[3] == (30, 50)
+  assert jobs[4] == (40, 60)
+
+  for frame in range(0, 15):
+    assert jobs.job_index(frame) == 0
+  for frame in range(16, 25):
+    assert jobs.job_index(frame) == 1
+  for frame in range(26, 35):
+    assert jobs.job_index(frame) == 2
+  for frame in range(36, 45):
+    assert jobs.job_index(frame) == 3
+  for frame in range(46, 60):
+    assert jobs.job_index(frame) == 4
+
+  print 'OK'
+
+def tst_reflection_manager():
+
+  from dials.algorithms.integration.parallel_integrator import SimpleJobList
+  from dials.algorithms.integration.parallel_integrator import SimpleReflectionManager
+  from math import floor
+
+  jobs = SimpleJobList((0, 60), 20)
+  reflections = data.reflections
+
+  manager = SimpleReflectionManager(jobs, reflections)
+
+  def check_job(index):
+    r = manager.split(index)
+    selection = r.get_flags(r.flags.dont_integrate)
+    r1 = r.select(~selection)
+
+    j0, j1 = jobs[index]
+
+    for rr in r1:
+      z0, z1 = rr['bbox'][4:6]
+      zc = int(floor((z0+z1)/2.0))
+      j = jobs.job_index(zc)
+      assert(j == index)
+      assert z0 >= j0 and z1 <= j1
+
+  check_job(0)
+  check_job(1)
+  check_job(2)
+  check_job(3)
+  check_job(4)
+  print 'OK'
+
 
 if __name__ == '__main__':
 
-  tst_gaussianrs_mask_calculator()
-  tst_simple_background_calculator()
-  tst_glm_background_calculator()
-  tst_gmodel_background_calculator()
-  tst_gaussianrs_intensity_calculator()
+  #tst_gaussianrs_mask_calculator()
+  #tst_simple_background_calculator()
+  #tst_glm_background_calculator()
+  #tst_gmodel_background_calculator()
+  #tst_gaussianrs_intensity_calculator()
+  tst_job_list()
+  tst_reflection_manager()

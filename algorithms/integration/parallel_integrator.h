@@ -24,6 +24,7 @@
 #include <dials/algorithms/shoebox/find_overlapping.h>
 #include <dials/algorithms/integration/sum/summation.h>
 #include <dials/algorithms/centroid/centroid.h>
+#include <dials/array_family/boost_python/flex_table_suite.h>
 #include <map>
 
 #include <dials/algorithms/integration/interfaces.h>
@@ -42,6 +43,30 @@ namespace dials { namespace algorithms {
 
   using dials::model::Shoebox;
   using dials::model::AdjacencyList;
+
+  /**
+   * Class to wrap logging
+   */
+  class Logger {
+  public:
+
+    Logger(boost::python::object obj)
+      : obj_(obj) {}
+
+    void info(const char *str) const {
+      obj_.attr("info")(str);
+    }
+
+    void debuf(const char *str) const {
+      obj_.attr("debug")(str);
+    }
+
+  private:
+
+    boost::python::object obj_;
+
+  };
+
 
   /**
    * A class to store the image data buffer
@@ -624,6 +649,7 @@ namespace dials { namespace algorithms {
      * @param compute_mask The mask calulcation function
      * @param compute_background The background calculation function
      * @param compute_intensity The intensity calculation function
+     * @param logger The logger class
      * @param nthreads The number of parallel threads
      * @param use_dynamic_mask Use the dynamic mask if present
      * @param debug Add debug output
@@ -634,6 +660,7 @@ namespace dials { namespace algorithms {
           const MaskCalculatorIface &compute_mask,
           const BackgroundCalculatorIface &compute_background,
           const IntensityCalculatorIface &compute_intensity,
+          const Logger &logger,
           std::size_t nthreads,
           bool use_dynamic_mask,
           bool debug) {
@@ -722,7 +749,8 @@ namespace dials { namespace algorithms {
           imageset,
           bbox,
           flags,
-          nthreads);
+          nthreads,
+          logger);
 
       // Transform the row major reflection array to the reflection table
       reflections_ = reflection_table_from_array(reflection_array.const_ref());
@@ -733,6 +761,62 @@ namespace dials { namespace algorithms {
      */
     af::reflection_table reflections() const {
       return reflections_;
+    }
+
+    /**
+     * Static method to get the memory in bytes needed
+     * @param imageset the imageset class
+     * @param use_dynamic_mask Are we using dynamic mask
+     */
+    static
+    std::size_t compute_required_memory(
+        ImageSweep imageset,
+        bool use_dynamic_mask) {
+      DIALS_ASSERT(imageset.get_detector() != NULL);
+      DIALS_ASSERT(imageset.get_scan() != NULL);
+      Detector detector = *imageset.get_detector();
+      Scan scan = *imageset.get_scan();
+      std::size_t nelements = 0;
+      for (std::size_t i = 0; i < detector.size(); ++i) {
+        std::size_t xsize = detector[i].get_image_size()[0];
+        std::size_t ysize = detector[i].get_image_size()[1];
+        nelements += xsize * ysize;
+      }
+      nelements *= scan.get_num_images();
+      std::size_t nbytes = nelements * sizeof(double);
+      if (use_dynamic_mask) {
+        nbytes += nelements * sizeof(bool);
+      }
+      return nbytes;
+    }
+
+    /**
+     * Static method to get the memory in bytes needed
+     * @param imageset the imageset class
+     * @param use_dynamic_mask Are we using dynamic mask
+     * @param max_memory_usage The maximum memory usage
+     */
+    static
+    std::size_t compute_max_block_size(
+        ImageSweep imageset,
+        bool use_dynamic_mask,
+        std::size_t max_memory_usage) {
+      DIALS_ASSERT(max_memory_usage > 0);
+      DIALS_ASSERT(imageset.get_detector() != NULL);
+      Detector detector = *imageset.get_detector();
+      std::size_t nelements = 0;
+      for (std::size_t i = 0; i < detector.size(); ++i) {
+        std::size_t xsize = detector[i].get_image_size()[0];
+        std::size_t ysize = detector[i].get_image_size()[1];
+        nelements += xsize * ysize;
+      }
+      std::size_t nbytes = nelements * sizeof(double);
+      if (use_dynamic_mask) {
+        nbytes += nelements * sizeof(bool);
+      }
+      DIALS_ASSERT(nbytes > 0);
+      DIALS_ASSERT(max_memory_usage > nbytes);
+      return (std::size_t)std::floor((float)max_memory_usage / (float)nbytes);
     }
 
   protected:
@@ -766,7 +850,8 @@ namespace dials { namespace algorithms {
         ImageSweep imageset,
         af::const_ref<int6> bbox,
         af::const_ref<std::size_t> flags,
-        std::size_t nthreads) const {
+        std::size_t nthreads,
+        const Logger &logger) const {
 
       using dials::util::ThreadPool;
 
@@ -804,13 +889,8 @@ namespace dials { namespace algorithms {
         // Get the reflections recorded at this point
         af::const_ref<std::size_t> indices = lookup.indices(i);
 
-        std::cout << "Integrating "
-                  << indices.size()
-                  << " reflections on image "
-                  << zstart + i
-                  << std::endl;
-
         // Iterate through the reflection indices
+        std::size_t count = 0;
         for (std::size_t j = 0; j < indices.size(); ++j) {
 
           // Get the reflection index
@@ -823,6 +903,8 @@ namespace dials { namespace algorithms {
           // Ignore if we're not integrating this reflection
           if (flags[k] & af::DontIntegrate) {
             continue;
+          } else {
+            count++;
           }
 
           // Post the integration job
@@ -833,6 +915,14 @@ namespace dials { namespace algorithms {
               boost::ref(reflections[k]),
               boost::ref(adjacent_reflections[k])));
         }
+
+        // Print some output
+        std::ostringstream ss;
+        ss << "Integrating "
+           << count
+           << " reflections on image "
+           << zstart + i;
+        logger.info(ss.str().c_str());
       }
 
       // Wait for all the integration jobs to complete
@@ -840,6 +930,531 @@ namespace dials { namespace algorithms {
     }
 
     af::reflection_table reflections_;
+  };
+
+
+  /**
+   * A class to manage jobs
+   */
+  class SimpleJobList {
+  public:
+
+
+    /**
+     * Compute the jobs
+     * @param range The range of frames
+     * @param block_size The size of the blocks
+     */
+    SimpleJobList(tiny<int,2> range, int block_size) {
+      construct_job_list(range, block_size);
+      construct_frame_to_job_lookup();
+    }
+
+    /**
+     * Set the jobs
+     * @params jobs The list of jobs
+     */
+    SimpleJobList(const af::const_ref< tiny<int,2> > &jobs) {
+      DIALS_ASSERT(jobs.size() > 0);
+      DIALS_ASSERT(jobs[0][1] > jobs[0][0]);
+      jobs_.push_back(jobs[0]);
+      for (std::size_t i = 1; i < jobs.size(); ++i) {
+        DIALS_ASSERT(jobs[i][1] > jobs[i][0]);
+        DIALS_ASSERT(jobs[i][0] > jobs[i-1][0]);
+        DIALS_ASSERT(jobs[i][1] > jobs[i-1][1]);
+        DIALS_ASSERT(jobs[i][0] <= jobs[i-1][1]);
+        jobs_.push_back(jobs[i]);
+      }
+      construct_frame_to_job_lookup();
+    }
+
+    /**
+     * @returns The requested job
+     */
+    tiny<int,2> operator[](std::size_t index) const {
+      DIALS_ASSERT(index < jobs_.size());
+      return jobs_[index];
+    }
+
+    /**
+     * @returns The number of jobs
+     */
+    std::size_t size() const {
+      return jobs_.size();
+    }
+
+    /**
+     * Get the index of the job closest to this frame
+     * @param frame The frame number
+     * @returns The job index
+     */
+    std::size_t job_index(int frame) const {
+      std::size_t index = frame - jobs_.front()[0];
+      DIALS_ASSERT(index >= 0);
+      DIALS_ASSERT(index < frame_to_job_lookup_.size());
+      return frame_to_job_lookup_[index];
+    }
+
+  private:
+
+    /**
+     * Construct the job list
+     * @param range The range of frames
+     * @param block_size The block size
+     */
+    void construct_job_list(tiny<int,2> range, int block_size) {
+
+      // Check some input
+      int frame0 = range[0];
+      int frame1 = range[1];
+      DIALS_ASSERT(frame1 > frame0);
+      int nframes = frame1 - frame0;
+      DIALS_ASSERT(nframes > 0);
+
+      // Block size is clamped to number of frames
+      if (block_size > nframes) {
+        block_size = nframes;
+      }
+      DIALS_ASSERT(block_size > 0);
+
+      // If the block size is equal to 1, then add all frames as jobs
+      // otherwise compute the jobs
+      if (block_size == 1) {
+        for (int f = frame0; f < frame1; ++f) {
+          jobs_.push_back(tiny<int,2>(f, f+1));
+        }
+      } else {
+
+        // Compute the half block size such that images are divided between
+        // blocks more evenly spaced
+        int nblocks = (int)std::ceil(2.0 * nframes / (double)block_size);
+        DIALS_ASSERT(nblocks > 0 && nblocks <= nframes);
+        int half_block_size = (int)std::ceil((double)nframes / (double)nblocks);
+
+        // Construct a list of job indices
+        af::shared<int> indices;
+        indices.push_back(frame0);
+        for (int i = 0; i < nblocks; ++i) {
+          int frame = frame0 + (i + 1) * half_block_size;
+          if (frame > frame1) {
+            frame = frame1;
+          }
+          indices.push_back(frame);
+          if (frame == frame1) {
+            break;
+          }
+        }
+
+        // Add all the jobs to the list
+        DIALS_ASSERT(indices.front() == frame0);
+        DIALS_ASSERT(indices.back() == frame1);
+        DIALS_ASSERT(indices.size() > 2);
+        for (std::size_t i = 0; i < indices.size() - 2; ++i) {
+          int i1 = indices[i];
+          int i2 = indices[i+2];
+          DIALS_ASSERT(i2 > i1);
+          jobs_.push_back(tiny<int,2>(i1, i2));
+        }
+        DIALS_ASSERT(jobs_.size() > 0);
+      }
+    }
+
+    /**
+     * Construct the frame to job lookup table
+     */
+    void construct_frame_to_job_lookup() {
+
+      // Check all the jobs overlap and are in order
+      for (std::size_t i = 0; i < jobs_.size()-1; ++i) {
+        DIALS_ASSERT(jobs_[i][0] < jobs_[i][1]);
+        DIALS_ASSERT(jobs_[i+1][0] < jobs_[i+1][1]);
+        DIALS_ASSERT(jobs_[i][0] < jobs_[i+1][0]);
+        DIALS_ASSERT(jobs_[i][1] >= jobs_[i+1][0]);
+        DIALS_ASSERT(jobs_[i][1] < jobs_[i+1][1]);
+      }
+
+      // set the first and last frames
+      int first_frame = jobs_.front()[0];
+      int last_frame = jobs_.back()[1];
+      DIALS_ASSERT(first_frame < last_frame);
+
+      // Loop through all the frames and find the job to which the frame is
+      // closest to the centre. Add the frame to that job
+      std::size_t closest_index = 0;
+      for (int frame = first_frame; frame < last_frame; ++frame) {
+        int z0 = jobs_[closest_index][0];
+        int z1 = jobs_[closest_index][1];
+        double zc = (z0 + z1) / 2.0;
+        double closest_distance = std::abs(zc - (frame + 0.5));
+        for (std::size_t i = closest_index+1; i < jobs_.size(); ++i) {
+          int zz0 = jobs_[i][0];
+          int zz1 = jobs_[i][1];
+          double zzc = (zz0 + zz1) / 2.0;
+          double distance = std::abs(zzc - (frame + 0.5));
+          if (distance < closest_distance) {
+            closest_distance = distance;
+            closest_index = i;
+          } else {
+            break;
+          }
+        }
+        frame_to_job_lookup_.push_back(closest_index);
+      }
+
+    }
+
+    std::vector< tiny<int,2> > jobs_;
+    std::vector< std::size_t > frame_to_job_lookup_;
+  };
+
+
+
+
+  /**
+   * A lookup class to split reflections along job boundaries and to gives
+   * indices of reflections in each job
+   */
+  class SimpleReflectionLookup {
+  public:
+
+    /**
+     * Construct the lookup
+     * @param jobs The job list
+     * @param data The reflections
+     */
+    SimpleReflectionLookup(
+          const SimpleJobList &jobs,
+          af::reflection_table data)
+        : jobs_(jobs),
+          first_frame_(0),
+          last_frame_(0) {
+
+      // Split the reflections along job boundaries
+      data_ = split_reflections(data);
+
+      // Construct the lookup table
+      construct_job_to_reflection_lookup();
+    }
+
+    /**
+     * @returns The reflection data
+     */
+    af::reflection_table data() {
+      return data_;
+    }
+
+    /**
+     * Get the indices of reflections in this job
+     * @param index The job index
+     * @returns The list of reflection indices
+     */
+    af::const_ref<std::size_t> indices(std::size_t index) const {
+      DIALS_ASSERT(index < job_to_reflection_lookup_.size());
+      return af::const_ref<std::size_t>(
+          &job_to_reflection_lookup_[index][0],
+          job_to_reflection_lookup_[index].size());
+    }
+
+    /**
+     * Get the index of the job closest to this frame
+     * @param frame The frame number
+     * @returns The job index
+     */
+    std::size_t job_index(int frame) const {
+      return jobs_.job_index(frame);
+    }
+
+    /**
+     * Get the frame range for the job
+     * @param index The job index
+     * @returns The frames in the job
+     */
+    tiny<int,2> job_range(std::size_t index) const {
+      return jobs_[index];
+    }
+
+  protected:
+
+    /**
+     * Create the lookup of reflections in each job
+     */
+    void construct_job_to_reflection_lookup() {
+      DIALS_ASSERT(data_.is_consistent());
+      DIALS_ASSERT(data_.size() > 0);
+      DIALS_ASSERT(data_.contains("bbox"));
+      DIALS_ASSERT(jobs_.size() > 0);
+
+      // Get some arrays
+      af::const_ref<int6> bbox = data_["bbox"];
+
+      // For each reflection, get the frame range and then get the centre of
+      // that range. Now find the job closest to that z point. Check that the
+      // splitting has worked correctly and that the reflection is within the
+      // job frame range. Then add the reflection to the list for the block.
+      job_to_reflection_lookup_.resize(jobs_.size());
+      for (std::size_t i = 0; i < bbox.size(); ++i) {
+        int z0 = bbox[i][4];
+        int z1 = bbox[i][5];
+        int zc = (int)std::floor((z0 + z1) / 2.0);
+        int index = job_index(zc);
+        tiny<int,2> job = job_range(index);
+        DIALS_ASSERT(z0 >= job[0]);
+        DIALS_ASSERT(z1 <= job[1]);
+        DIALS_ASSERT(index < job_to_reflection_lookup_.size());
+        job_to_reflection_lookup_[index].push_back(i);
+      }
+    }
+
+    /**
+     * Split the reflections overlapping job boundaries
+     * @param data The input reflection table
+     * @returns The split reflection table
+     */
+    af::reflection_table split_reflections(af::reflection_table data) const {
+
+      // Check input
+      DIALS_ASSERT(data.is_consistent());
+      DIALS_ASSERT(data.size() > 0);
+      DIALS_ASSERT(data.contains("bbox"));
+      DIALS_ASSERT(jobs_.size() > 0);
+
+      // Get some arrays
+      af::const_ref<int6> bbox = data["bbox"];
+
+      // Split the reflection
+      af::shared<std::size_t> indices;
+      af::shared<int6> bbox_new;
+      for (std::size_t i = 0; i < bbox.size(); ++i) {
+        int z0 = bbox[i][4];
+        int z1 = bbox[i][5];
+        DIALS_ASSERT(z0 < z1);
+        std::vector< tiny<int,2> > splits;
+        split_at_boundaries(z0, z1, std::back_inserter(splits));
+        DIALS_ASSERT(splits.size() > 0);
+        for (std::size_t j = 0; j < splits.size(); ++j) {
+          int6 b = bbox[i];
+          b[4] = splits[j][0];
+          b[5] = splits[j][1];
+          indices.push_back(i);
+          bbox_new.push_back(b);
+        }
+      }
+
+      // Resize the reflection table
+      DIALS_ASSERT(bbox_new.size() == indices.size());
+      DIALS_ASSERT(bbox_new.size() >= bbox.size());
+      data.resize(bbox_new.size());
+
+      // Reorder the reflections
+      af::boost_python::flex_table_suite::reorder(data, indices.const_ref());
+
+      // Set the new bounding boxes
+      af::boost_python::flex_table_suite::setitem_column(
+          data, "bbox", bbox_new.const_ref());
+      af::boost_python::flex_table_suite::setitem_column(
+          data, "partial_id", indices.const_ref());
+
+      // Return the data
+      return data;
+    }
+
+    /**
+     * Split a reflection at job boundaries so that most of the reflection is
+     * recorded within a single job. Works recursively.
+     * @param z0 The first frame in the shoebox
+     * @param z1 The last frame in the shoebox
+     * @param out The output iterator
+     */
+    template <typename OutputIterator>
+    void split_at_boundaries(int z0, int z1, OutputIterator out) const {
+      DIALS_ASSERT(z0 < z1);
+
+      // Compute the job closest to the centre
+      int zc = (int)std::floor((z0 + z1) / 2.0);
+      int index = job_index(zc);
+      tiny<int,2> job = job_range(index);
+
+      // Get the min and max frame range
+      int zmin = std::max(z0, job[0]);
+      int zmax = std::min(z1, job[1]);
+      DIALS_ASSERT(zmin < zmax);
+
+      // If the reflection extends below the job range
+      // then split at the lower boundary
+      if (z0 < zmin) {
+        split_at_boundaries(z0, zmin, out);
+      }
+
+      // Append the new frame range
+      *out++ = tiny<int,2>(zmin, zmax);
+
+      // If the reflection extends above the job range
+      // then split at the upper boundary
+      if (z1 > zmax) {
+        split_at_boundaries(zmax, z1, out);
+      }
+    }
+
+    SimpleJobList jobs_;
+    int first_frame_;
+    int last_frame_;
+    af::reflection_table data_;
+    std::vector< std::vector<std::size_t> >job_to_reflection_lookup_;
+  };
+
+
+  /**
+   * A class to manage the reflections
+   */
+  class SimpleReflectionManager {
+  public:
+
+    /**
+     * Construct from the job list and reflection data
+     * @param jobs The job list
+     * @param data The reflection data
+     */
+    SimpleReflectionManager(
+          const SimpleJobList &jobs,
+          af::reflection_table data)
+      : lookup_(jobs, data),
+        finished_(jobs.size()) {
+
+    }
+
+    /**
+     * @returns The result data
+     */
+    af::reflection_table data() {
+      DIALS_ASSERT(finished());
+      return lookup_.data();
+    }
+
+    /**
+     * @returns Is the process finished
+     */
+    bool finished() const {
+      return finished_.all_eq(true);
+    }
+
+    /**
+     * @returns The number of tasks
+     */
+    std::size_t size() const {
+      return finished_.size();
+    }
+
+    /**
+     * @returns The job
+     */
+    tiny<int,2> job(std::size_t index) const {
+      return lookup_.job_range(index);
+    }
+
+    /**
+     * @returns The number of reflections in a job
+     */
+    std::size_t num_reflections(std::size_t index) const {
+      DIALS_ASSERT(index < finished_.size());
+      return lookup_.indices(index).size();
+    }
+
+    /**
+     * @returns The reflections for a particular block.
+     */
+    af::reflection_table split(std::size_t index) {
+      using namespace af::boost_python::flex_table_suite;
+      DIALS_ASSERT(index < finished_.size());
+
+      // Get the job range
+      tiny<int,2> frame = lookup_.job_range(index);
+
+      // Select reflections to process in block
+      af::reflection_table data = select_rows_index(
+          lookup_.data(),
+          lookup_.indices(index));
+
+      // Select other reflections from adjacent blocks. These reflections will
+      // not be processed but will be used in finding adjacent reflections.
+      // First select reflections from the block before.
+      if (index > 0) {
+        af::reflection_table temp = select_rows_index(
+            lookup_.data(),
+            lookup_.indices(index-1));
+        af::ref<int6> bbox = temp["bbox"];
+        af::ref<std::size_t> flags = temp["flags"];
+        af::shared<std::size_t> selection;
+        for (std::size_t i = 0; i < flags.size(); ++i) {
+          flags[i] |= af::DontIntegrate;
+          if (bbox[i][5] > frame[0]) {
+            if (bbox[i][4] < frame[0]) {
+              bbox[i][4] = frame[0];
+            }
+            selection.push_back(i);
+          }
+        }
+        temp = select_rows_index(temp, selection.const_ref());
+        extend(data, temp);
+      }
+
+      // Now select reflections from the block after
+      if (index+1 < size()) {
+        af::reflection_table temp = select_rows_index(
+            lookup_.data(),
+            lookup_.indices(index+1));
+        af::ref<int6> bbox = temp["bbox"];
+        af::ref<std::size_t> flags = temp["flags"];
+        af::shared<std::size_t> selection;
+        for (std::size_t i = 0; i < flags.size(); ++i) {
+          flags[i] |= af::DontIntegrate;
+          if (bbox[i][4] < frame[1]) {
+            if (bbox[i][5] > frame[1]) {
+              bbox[i][5] = frame[1];
+            }
+            selection.push_back(i);
+          }
+        }
+        temp = select_rows_index(temp, selection.const_ref());
+        extend(data, temp);
+      }
+
+      // Return the reflections
+      return data;
+    }
+
+    /**
+     * Accumulate the results.
+     */
+    void accumulate(std::size_t index, af::reflection_table result) {
+      using namespace af::boost_python::flex_table_suite;
+      DIALS_ASSERT(index < finished_.size());
+      DIALS_ASSERT(finished_[index] == false);
+
+      // Get the reflection indices
+      af::const_ref<std::size_t> indices = lookup_.indices(index);
+
+      // Get the total number of reflections to integrate
+      std::size_t num_reflections = indices.size();
+
+      // Check the number is less (because result includes adjacent reflections)
+      DIALS_ASSERT(num_reflections < result.size());
+
+      // Resize the input reflections to just those that were processed
+      result.resize(indices.size());
+
+      // Get the data array
+      af::reflection_table data = lookup_.data();
+
+      // Set the result in the lookup data
+      set_selected_rows_index(data, indices, result);
+      finished_[index] = true;
+    }
+
+  private:
+
+    SimpleReflectionLookup lookup_;
+    af::shared<bool> finished_;
+
   };
 
 }}

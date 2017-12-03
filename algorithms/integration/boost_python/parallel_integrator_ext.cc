@@ -309,13 +309,14 @@ namespace dials { namespace algorithms { namespace boost_python {
    */
   void export_integrator() {
 
-    class_<ParallelIntegrator>("Integrator", no_init)
+    class_<ParallelIntegrator>("MultiThreadedIntegrator", no_init)
       .def(init<
           const af::reflection_table&,
           ImageSweep,
           const MaskCalculatorIface&,
           const BackgroundCalculatorIface&,
           const IntensityCalculatorIface&,
+          const Logger&,
           std::size_t,
           bool,
           bool>((
@@ -324,13 +325,47 @@ namespace dials { namespace algorithms { namespace boost_python {
               arg("compute_mask"),
               arg("compute_background"),
               arg("compute_intensity"),
+              arg("logger"),
               arg("nthreads") = 1,
               arg("use_dynamic_mask") = true,
               arg("debug") = false)))
       .def("reflections",
           &ParallelIntegrator::reflections)
+      .def("compute_required_memory",
+          &ParallelIntegrator::compute_required_memory, (
+            arg("imageset"),
+            arg("use_dynamic_mask")))
+      .def("compute_max_block_size",
+          &ParallelIntegrator::compute_max_block_size, (
+            arg("imageset"),
+            arg("use_dynamic_mask"),
+            arg("max_memory_usage")))
+      .staticmethod("compute_required_memory")
+      .staticmethod("compute_max_block_size")
       ;
 
+    class_<Logger>("Logger", no_init)
+      .def(init<boost::python::object>())
+      ;
+
+    class_<SimpleJobList>("SimpleJobList", no_init)
+      .def(init< tiny<int,2> , int >())
+      .def(init< const af::const_ref< tiny<int,2> > & >())
+      .def("__getitem__", &SimpleJobList::operator[])
+      .def("__len__", &SimpleJobList::size)
+      .def("job_index", &SimpleJobList::job_index)
+      ;
+
+    class_<SimpleReflectionManager>("SimpleReflectionManager", no_init)
+      .def(init< const SimpleJobList &, af::reflection_table >())
+      .def("data", &SimpleReflectionManager::data)
+      .def("finished", &SimpleReflectionManager::finished)
+      .def("job", &SimpleReflectionManager::job)
+      .def("num_reflections", &SimpleReflectionManager::num_reflections)
+      .def("split", &SimpleReflectionManager::split)
+      .def("accumulate", &SimpleReflectionManager::accumulate)
+      .def("__len__", &SimpleReflectionManager::size)
+      ;
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_integration_parallel_integrator_ext)

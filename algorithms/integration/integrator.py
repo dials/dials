@@ -69,7 +69,12 @@ def generate_phil_scope():
           .type = float(value_min=0.0,value_max=1.0)
           .help = "The maximum percentage of total physical memory to use for"
                   "allocating shoebox arrays."
+
       }
+
+      use_dynamic_mask = False
+        .type = bool
+        .help = "Use dynamic mask if available"
 
       debug {
 
