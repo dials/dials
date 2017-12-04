@@ -122,7 +122,6 @@ tst_list = [
     "$D/test/command_line/tst_rl_png.py",
     "$D/test/command_line/tst_show_extensions.py",
     "$D/test/command_line/tst_show.py",
-    "$D/test/command_line/tst_slice_sweep.py",
     "$D/test/command_line/tst_sort_reflections.py",
     "$D/test/command_line/tst_spot_counts_per_image.py",
     "$D/test/command_line/tst_spotfinder.py",
