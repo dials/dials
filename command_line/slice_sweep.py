@@ -127,8 +127,9 @@ def slice_experiments(experiments, image_ranges):
       raise IndexError("requested slice outside current scan range")
 
     # slicing uses the array range, not the image range
-    beg = sr[0] - 1
-    end = sr[1]
+    arr_start = exp.scan.get_array_range()[0]
+    beg = sr[0] - 1 - arr_start
+    end = sr[1] - arr_start
     exp.scan.swap(exp.scan[beg:end])
 
   return experiments
