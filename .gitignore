@@ -12,6 +12,7 @@ _*.nb
 .DS_Store
 *~
 *.swp
+*.log
 .git-notifier*
 git-notifier.log
 .gitversion
