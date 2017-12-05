@@ -344,7 +344,7 @@ namespace dials { namespace algorithms {
       try {
         compute_background_(reflection);
       } catch (dials::error) {
-        delete_shoebox(reflection, adjacent_reflections);
+        finalize_shoebox(reflection, adjacent_reflections, underload_, overload_);
         return;
       }
 
@@ -362,11 +362,100 @@ namespace dials { namespace algorithms {
       }
 
       // Erase the shoebox
-      delete_shoebox(reflection, adjacent_reflections);
+      finalize_shoebox(reflection, adjacent_reflections, underload_, overload_);
     }
 
 
   protected:
+
+    /**
+     * Before exiting do some stuff on the shoebox
+     * @param reflection The reflection
+     * @param adjacent_reflections The adjancent reflections
+     */
+    void finalize_shoebox(
+          af::Reflection &reflection,
+          std::vector<af::Reflection> &adjacent_reflections,
+          double underload,
+          double overload) const {
+
+      // Inspect the pixels
+      inspect_pixels(reflection, underload, overload);
+
+      // Delete the shoebox
+      delete_shoebox(reflection, adjacent_reflections);
+    }
+
+    /**
+     * Inspect the pixel and mask values
+     * @param reflection The reflection
+     */
+    void inspect_pixels(
+          af::Reflection &reflection,
+          double underload,
+          double overload) const {
+
+      typedef Shoebox<>::float_type float_type;
+
+      // Get the shoebox
+      Shoebox<> &sbox = reflection.get< Shoebox<> >("shoebox");
+      std::size_t flags = reflection.get<std::size_t>("flags");
+
+      // Get the pixel data
+      af::const_ref< float_type, af::c_grid<3> > data = sbox.data.const_ref();
+      af::const_ref< int, af::c_grid<3> > mask = sbox.mask.const_ref();
+      DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
+
+      // Check pixel values
+      std::size_t n_valid = 0;
+      std::size_t n_background = 0;
+      std::size_t n_background_used = 0;
+      std::size_t n_foreground = 0;
+      std::size_t mask_code1 = Valid;
+      std::size_t mask_code2 = Valid | Background;
+      std::size_t mask_code3 = Valid | Background | BackgroundUsed;
+      std::size_t mask_code4 = Valid | Foreground;
+      for (std::size_t i = 0; i < mask.size(); ++i) {
+        double d = data[i];
+        int m = mask[i];
+
+        if (d >= overload) {
+          flags |= af::Overloaded;
+        }
+
+        if ((m & Background) && !(m & Valid)) {
+          flags |= af::BackgroundIncludesBadPixels;
+        }
+
+        if ((m & Foreground) && !(m & Valid)) {
+          flags |= af::ForegroundIncludesBadPixels;
+        }
+
+        if ((m & mask_code1) == mask_code1) {
+          n_valid++;
+        }
+
+        if ((m & mask_code2) == mask_code2) {
+          n_background++;
+        }
+
+        if ((m & mask_code3) == mask_code3) {
+          n_background_used++;
+        }
+
+        if ((m & mask_code4) == mask_code4) {
+          n_foreground++;
+        }
+
+      }
+
+      // Set some information in the reflection
+      reflection["num_pixels.valid"] = (int)n_valid;
+      reflection["num_pixels.background"] = (int)n_background;
+      reflection["num_pixels.background_used"] = (int)n_background_used;
+      reflection["num_pixels.foreground"] = (int)n_foreground;
+      reflection["flags"] = flags;
+    }
 
     /**
      * Delete the shoebox
@@ -919,8 +1008,10 @@ namespace dials { namespace algorithms {
         // Print some output
         std::ostringstream ss;
         ss << "Integrating "
+           << std::setw(5)
            << count
            << " reflections on image "
+           << std::setw(6)
            << zstart + i;
         logger.info(ss.str().c_str());
       }

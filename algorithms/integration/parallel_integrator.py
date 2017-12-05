@@ -210,12 +210,12 @@ def assert_enough_memory(required_memory, max_memory_usage):
       Required image memory: %g GB
     ''' % (total_memory/1e9, limit_memory/1e9, required_memory/1e9))
   else:
+    logger.info('')
     logger.info(' Memory usage:')
     logger.info('  Total system memory: %g GB' % (total_memory/1e9))
     logger.info('  Limit image memory: %g GB' % (limit_memory/1e9))
     logger.info('  Required image memory: %g GB' % (required_memory/1e9))
     logger.info('')
-
 
 
 class Result(object):
@@ -348,8 +348,44 @@ class IntegrationJob(object):
     Integrate the reflections
 
     '''
+    from dials.algorithms.integration.integrator import frame_hist
 
+    # Compute the partiality
     self.reflections.compute_partiality(self.experiments)
+
+    # Get some info
+    EPS = 1e-7
+    full_value = (0.997300203937 - EPS)
+    fully_recorded = self.reflections['partiality'] > full_value
+    npart = fully_recorded.count(False)
+    nfull = fully_recorded.count(True)
+    select_ice = self.reflections.get_flags(self.reflections.flags.in_powder_ring)
+    select_int = ~self.reflections.get_flags(self.reflections.flags.dont_integrate)
+    nice = select_ice.count(True)
+    nint = select_int.count(True)
+    ntot = len(self.reflections)
+    frame0, frame1 = imageset.get_scan().get_array_range()
+
+    # Write some output
+    logger.info(" Beginning integration job %d" % self.index)
+    logger.info("")
+    logger.info(" Frames: %d -> %d" % (frame0, frame1))
+    logger.info("")
+    logger.info(" Number of reflections")
+    logger.info("  Partial:     %d" % npart)
+    logger.info("  Full:        %d" % nfull)
+    logger.info("  In ice ring: %d" % nice)
+    logger.info("  Integrate:   %d" % nint)
+    logger.info("  Total:       %d" % ntot)
+    logger.info("")
+
+    # Print a histogram of reflections on frames
+    if frame1 - frame0 > 1:
+      logger.info(' The following histogram shows the number of reflections predicted')
+      logger.info(' to have all or part of their intensity on each frame.')
+      logger.info('')
+      logger.info(frame_hist(self.reflections['bbox'].select(select_int), prefix=' ', symbol='*'))
+      logger.info('')
 
     # Construct the mask algorithm
     compute_mask = MaskCalculatorFactory.create(
@@ -650,22 +686,18 @@ class IntegrationManager(object):
         rows.append([str(i), str(group), str(f0), str(f1), str(n)])
     elif self.experiments.all_sweeps():
       rows = [["#",
-               "Group",
                "Frame From",
                "Frame To",
                "Angle From",
                "Angle To",
                "# Reflections"]]
       for i in range(len(self)):
-        job = self.manager.job(i)
-        group = job.index()
-        expr = job.expr()
-        f0, f1 = job.frames()
-        scan = self.experiments[expr[0]].scan
+        f0, f1 = self.manager.job(i)
+        scan = self.experiments[0].scan
         p0 = scan.get_angle_from_array_index(f0)
         p1 = scan.get_angle_from_array_index(f1)
         n = self.manager.num_reflections(i)
-        rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1), str(n)])
+        rows.append([str(i), str(f0), str(f1), str(p0), str(p1), str(n)])
     else:
       raise RuntimeError('Experiments must be all sweeps or all stills')
 
@@ -673,10 +705,10 @@ class IntegrationManager(object):
     task_table = table(rows, has_header=True, justify="right", prefix=" ")
 
     # The format string
-    if self.params.block.size is None:
+    if self.params.integration.block.size is None:
       block_size = "auto"
     else:
-      block_size = str(self.params.block.size)
+      block_size = str(self.params.integration.block.size)
     fmt = (
       'Processing reflections in the following blocks of images:\n'
       '\n'
@@ -684,4 +716,4 @@ class IntegrationManager(object):
       '\n'
       '%s\n'
     )
-    return fmt % (block_size, self.params.block.units, task_table)
+    return fmt % (block_size, self.params.integration.block.units, task_table)
