@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx import easy_run
+from libtbx.test_utils import approx_equal
 from dxtbx.model.experiment_list import ExperimentListFactory
 import cPickle as pickle
 
@@ -49,5 +50,11 @@ def test_slice_sweep_with_first_images_missing(dials_regression, tmpdir):
   # second slice
   cmd = "dials.slice_sweep experiments_5_20.json image_range=10,20"
   result = easy_run.fully_buffered(command=cmd).raise_if_errors()
+
+  sliced_exp = ExperimentListFactory.from_json_file("experiments_5_20_10_20.json",
+              check_format=False)[0]
+  assert sliced_exp.scan.get_image_range() == (10, 20)
+  assert sliced_exp.scan.get_array_range() == (9, 20)
+  assert approx_equal(sliced_exp.scan.get_oscillation()[0], 83.35)
 
   return
