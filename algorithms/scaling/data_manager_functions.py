@@ -10,7 +10,7 @@ from dials.util.options import flatten_experiments, flatten_reflections
 import numpy as np
 import cPickle as pickle
 from target_function import *
-from basis_functions import *
+import basis_functions as bf
 from scaling_utilities import *
 from Wilson_outlier_test import calculate_wilson_outliers, calc_normE2
 import scale_factor as SF
@@ -205,7 +205,7 @@ class aimless_Data_Manager(Data_Manager):
 
   def get_basis_function(self, apm):
     '''call the aimless basis function method'''
-    return basis_function(self, apm).return_basis()
+    return bf.basis_function(self, apm).return_basis()
 
   def update_for_minimisation(self, apm):
     '''update the scale factors and Ih for the next iteration of minimisation'''
@@ -327,7 +327,6 @@ class aimless_Data_Manager(Data_Manager):
       B_values = flex.double(np.log(absorption_scales)) * 2.0 * (self.g_decay.d_values**2)
       #B_parameters = self.g_decay.get_scale_factors()
       B_parameters = self.g_decay.value
-      print(list(B_parameters))
       B_new_parameters = B_parameters - flex.double([max(B_values)]*len(B_parameters))
       self.g_decay.update_scale_factors(B_new_parameters)
       #self.g_decay.value = B_new_parameters
@@ -413,7 +412,7 @@ class KB_Data_Manager(Data_Manager):
 
   def get_basis_function(self, apm):
     '''call the KB basis function method'''
-    return KB_basis_function(self, apm).return_basis()
+    return bf.KB_basis_function(self, apm).return_basis()
 
   def update_for_minimisation(self, apm):
     '''update the scale factors and Ih for the next iteration of minimisation'''
@@ -528,9 +527,9 @@ class XDS_Data_Manager(Data_Manager):
   def get_basis_function(self, parameters):
     '''call the xds basis function method'''
     if self.scaling_options['parameterization'] == 'log':
-      return xds_basis_function_log(self, parameters).return_basis()
+      return bf.xds_basis_function_log(self, parameters).return_basis()
     else:
-      return basis_function(self, parameters).return_basis()
+      return bf.basis_function(self, parameters).return_basis()
 
   def bin_reflections_decay(self):
     '''bin reflections for decay correction'''

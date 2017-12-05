@@ -18,17 +18,22 @@ class basis_function(object):
 
   def calculate_scale_factors(self):
     factors_to_multiply = []
+    multiplied_scale_factors = flex.double([1.0] * len(self.data_manager.Ih_table.Ih_table))
     for i, active_param in enumerate(self.apm.active_parameterisation):
       SF_object = self.data_manager.g_parameterisation[active_param]
       SF_object.set_scale_factors(self.apm.x[self.apm.cumulative_active_params[i]:
                                              self.apm.cumulative_active_params[i+1]])
-      factors_to_multiply.append(self.data_manager.g_parameterisation[
-        active_param].calculate_smooth_scales())
+      multiplied_scale_factors *= self.data_manager.g_parameterisation[
+        active_param].calculate_smooth_scales()                                      
+      #factors_to_multiply.append(self.data_manager.g_parameterisation[
+      #  active_param].calculate_smooth_scales())
     if self.apm.constant_g_values:
-      return (flex.double(np.prod(np.array(factors_to_multiply), axis=0))
-              * self.apm.constant_g_values)
+      multiplied_scale_factors *= self.apm.constant_g_values
+      return multiplied_scale_factors
+      #return (flex.double(np.prod(np.array(factors_to_multiply), axis=0))
+      #        * self.apm.constant_g_values)
     else:
-      return flex.double(np.prod(np.array(factors_to_multiply), axis=0))
+      return multiplied_scale_factors#flex.double(np.prod(np.array(factors_to_multiply), axis=0))
     
   def calculate_derivatives(self):
     if len(self.data_manager.g_parameterisation) == 1:
@@ -41,14 +46,14 @@ class basis_function(object):
       for i, active_param in enumerate(self.apm.active_parameterisation):
         derivs = self.data_manager.g_parameterisation[
           active_param].calculate_smooth_derivatives()
-        scale_multipliers = []
+        scale_multipliers = flex.double([1.0] * len(self.data_manager.Ih_table.Ih_table))
         for param in self.data_manager.g_parameterisation.keys():
           if param != active_param:
-            scale_multipliers.append(self.data_manager.g_parameterisation[
-              param].get_scales_of_reflections())
-        scale_mult = flex.double(np.prod(np.array(scale_multipliers), axis=0)) 
-        next_deriv = row_multiply(derivs, scale_mult)  
-        derivatives.assign_block(next_deriv,0,self.apm.cumulative_active_params[i])   
+            scale_multipliers *= self.data_manager.g_parameterisation[
+              param].get_scales_of_reflections()
+        #scale_mult = flex.double(np.prod(np.array(scale_multipliers), axis=0)) 
+        next_deriv = row_multiply(derivs, scale_multipliers)
+        derivatives.assign_block(next_deriv, 0, self.apm.cumulative_active_params[i])
       return derivatives
 
   def return_basis(self):

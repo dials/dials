@@ -102,7 +102,7 @@ class SmoothScaleFactor_1D(SmoothScaleFactor):
     self.max_scale_to_include = flex.int([])
     self.min_scale_to_include = flex.int([])
     self.scales = flex.double([1.0]*self.n_norm_val)
-    for norm_val in self.normalised_values:
+    '''for norm_val in self.normalised_values:
       self.max_scale_to_include.append(int(norm_val + self.smoothing_window))
       self.min_scale_to_include.append(int((norm_val - self.smoothing_window)//1) + 1)
     self.zip_vals = zip(self.normalised_values, 
@@ -110,7 +110,7 @@ class SmoothScaleFactor_1D(SmoothScaleFactor):
     self.exponentials = flex.float([])
     for norm_val, min_s, max_s in self.zip_vals:
       for j in range(min_s, max_s + 1):
-        self.exponentials.append(math.exp(-((norm_val - float(j))**2) / self.Vr))
+        self.exponentials.append(math.exp(-((norm_val - float(j))**2) / self.Vr))'''
     phi_range_deg = [int(min(self.normalised_values)//1), int(max(self.normalised_values)//1)+1]
     n_intervals = self.n_params-2
     self._smoother = GaussianSmoother(phi_range_deg, n_intervals)

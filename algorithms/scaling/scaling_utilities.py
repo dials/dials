@@ -60,9 +60,11 @@ def sph_harm_table(reflection_table, lmax):
 
   order = lmax
   lfg =  math.log_factorial_generator(2 * order + 1)
-
+  n_params = 0
+  for i in range(1,lmax+1):
+    n_params += (2*i) +1
   #sph_harm_terms = flex.reflection_table()
-  sph_harm_terms = sparse.matrix(len(reflection_table),24)
+  sph_harm_terms = sparse.matrix(len(reflection_table), n_params)
   (x, y, z) = reflection_table['s2d'].parts()
 
   phi_list = flex.double(np.arctan2(y, x))
@@ -70,11 +72,11 @@ def sph_harm_table(reflection_table, lmax):
   #phi_list = flex.double(np.arctan2(z, y))
   #theta_list = flex.double(np.arctan2((((z**2) + (y**2))**0.5), x))
   sqrt2 = pymath.sqrt(2)
-  nsssphe = math.nss_spherical_harmonics(order, 50000, lfg)
+  nsssphe = math.nss_spherical_harmonics(order, 5000, lfg)
   counter = 0
   for l in range(1, lmax+1):
     for m in range(-l, l+1):
-      sph_harm_list = []
+      #sph_harm_list = []
       for i, phi in enumerate(phi_list):
         theta = theta_list[i]
         Ylm = nsssphe.spherical_harmonic(l, abs(m), theta, phi)
