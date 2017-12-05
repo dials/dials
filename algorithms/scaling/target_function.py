@@ -58,26 +58,15 @@ class target_function(object):
 
 
     dIh_g = row_multiply(self.data_manager.active_derivatives, dIh)
-    dIh_g = dIh_g.transpose()
-    dIh_g = dIh_g * self.data_manager.Ih_table.h_index_mat
-    dIh_g = dIh_g.transpose()
-    #print len(sumgsq)
-    #print dIh_g.n_rows
-    #print dIh_g.n_cols
-    dIh_g = row_multiply(dIh_g, 1.0/sumgsq)
-    dIh_by_dpi = dIh_g.transpose()
+    dIh_g = dIh_g.transpose() * self.data_manager.Ih_table.h_index_mat
+    dIh_by_dpi = row_multiply(dIh_g.transpose(), 1.0/sumgsq)
     
-    #n = len(rhl)
-    #red_2gr = sparse.matrix(n,1)
-    reduced_2gr = 2.0 * rhl * scaleweights * scale_factors
-    part_2 = reduced_2gr * self.data_manager.Ih_table.h_index_mat
-    part_2 = part_2 * dIh_by_dpi.transpose()
-
-    reduced_2rIh = 2.0 * rhl * scaleweights * Ih_values
-    part_1 = reduced_2rIh * self.data_manager.active_derivatives
-    total = part_1 + part_2
-    print list(total)
-    return total
+    term_1 = (-2.0 * rhl * scaleweights * Ih_values *
+              self.data_manager.active_derivatives)
+    term_2 = (-2.0 * rhl * scaleweights * scale_factors *
+              self.data_manager.Ih_table.h_index_mat)
+    term_2 = term_2 * dIh_by_dpi
+    return term_1 + term_2
     '''exit()
     
 
