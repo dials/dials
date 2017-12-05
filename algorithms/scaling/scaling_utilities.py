@@ -1,5 +1,6 @@
 from dials.array_family import flex
 import numpy as np
+from scitbx import sparse
 
 def calc_s2d(reflection_table, experiments):
   reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
@@ -60,7 +61,8 @@ def sph_harm_table(reflection_table, lmax):
   order = lmax
   lfg =  math.log_factorial_generator(2 * order + 1)
 
-  sph_harm_terms = flex.reflection_table()
+  #sph_harm_terms = flex.reflection_table()
+  sph_harm_terms = sparse.matrix(len(reflection_table),24)
   (x, y, z) = reflection_table['s2d'].parts()
 
   phi_list = flex.double(np.arctan2(y, x))
@@ -83,7 +85,8 @@ def sph_harm_table(reflection_table, lmax):
           r = Ylm.real
         else:
           r = sqrt2 * ((-1) ** m) * Ylm.real
-        sph_harm_list.append(r)
-      sph_harm_terms[str(counter)] = flex.double(sph_harm_list)
+        #sph_harm_list.append(r)
+        sph_harm_terms[i,counter] = r
+      #sph_harm_terms[str(counter)] = flex.double(sph_harm_list)
       counter += 1
   return sph_harm_terms

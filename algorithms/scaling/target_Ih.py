@@ -114,12 +114,16 @@ class single_Ih_table(base_Ih_table):
     scale_factors = self.Ih_table['inverse_scale_factor']
     scaleweights = self.Ih_table['weights']
     gsq = (((scale_factors)**2) * scaleweights)
-    sumgsq = flex.double(np.add.reduceat(gsq, self.h_index_cumulative_array[:-1]))
+    #sumgsq = flex.double(np.add.reduceat(gsq, self.h_index_cumulative_array[:-1]))
+    sumgsq = gsq * self.h_index_mat
     gI = ((scale_factors * intensities) * scaleweights)
-    sumgI = flex.double(np.add.reduceat(gI, self.h_index_cumulative_array[:-1]))
-    sumweights = flex.double(np.add.reduceat(scaleweights, self.h_index_cumulative_array[:-1]))
-    self.Ih_array = flex.double([val/ sumgsq[i] if sumweights[i] > 0.0
-                                 else 0.0 for i, val in enumerate(sumgI)])
+    #sumgI = flex.double(np.add.reduceat(gI, self.h_index_cumulative_array[:-1]))
+    sumgI = gI * self.h_index_mat
+    #sumweights = flex.double(np.add.reduceat(scaleweights, self.h_index_cumulative_array[:-1]))
+    sumweights = scaleweights * self.h_index_mat
+    self.Ih_array = sumgI * 1.0/sumgsq
+    #self.Ih_array = flex.double([val/ sumgsq[i] if sumweights[i] > 0.0
+    #                             else 0.0 for i, val in enumerate(sumgI)])
     self.Ih_table['Ih_values'] = flex.double(
       np.repeat(self.Ih_array, self.h_index_counter_array))
 

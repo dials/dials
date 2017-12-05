@@ -4,7 +4,7 @@ import math as math
 from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \
         import GaussianSmoother
 from dials_scaling_helpers_ext import row_multiply
-
+from scitbx import sparse
 '''
 These classes define objects to hold a flex array of scale factors,
 including the required methods for calculating smooth scale factors and
@@ -83,6 +83,17 @@ class SmoothScaleFactor_1D(SmoothScaleFactor):
     SmoothScaleFactor.__init__(self, initial_value, n_parameters, scaling_options)
     self.smoothing_window = 2.5 #must be less than 3 to avoid indexing errors
 
+  def update_scale_factors(self, scale_factors):
+    if len(scale_factors) != len(self.scale_factors):
+      assert 0, '''attempting to set a new set of scale factors of different
+      length than previous assignment: was %s, attempting %s''' % (
+        len(self.scale_factors), len(scale_factors))
+    self.scale_factors = scale_factors
+    phi_range_deg = [int(min(self.normalised_values)//1), int(max(self.normalised_values)//1)+1]
+    n_intervals = self.n_params-2
+    self._smoother = GaussianSmoother(phi_range_deg, n_intervals)
+    self.value = self.scale_factors
+
   def set_normalised_values(self, normalised_values):
     '''normalised_values is the column from the reflection table
     of the normalised time/resolution etc'''
@@ -116,6 +127,7 @@ class SmoothScaleFactor_1D(SmoothScaleFactor):
   def calculate_smooth_scales(self):
     value, weight, sumweight = self._smoother.multi_value_weight(
       self.normalised_values, self)
+    self.scales = value
     return value
 
   def calculate_smooth_derivatives(self):
@@ -163,6 +175,23 @@ class SmoothScaleFactor_1D_Bfactor(SmoothScaleFactor_1D):
     self.d_values = d_values
 
   def calculate_smooth_scales(self):
+    value, weight, sumweight = self._smoother.multi_value_weight(
+      self.normalised_values, self)
+    value = flex.double(np.exp(value/(2.0 * (self.d_values**2))))
+    self.scales = value
+    return value
+
+  def calculate_smooth_derivatives(self):
+    value, weight, sumweight = self._smoother.multi_value_weight(
+      self.normalised_values, self)
+    inv_sw = 1. / sumweight
+    dv_dp = row_multiply(weight, inv_sw)
+    multiplicative_factor = (flex.double(np.exp(value/(2.0 * (self.d_values**2))))
+                             / (2.0 * (self.d_values**2))) 
+    deriv = row_multiply(dv_dp, multiplicative_factor)                      
+    return deriv
+
+  '''def calculate_smooth_scales(self):
     self.weightsum = flex.float([])
     self.scales = flex.float([])
     counter = 0
@@ -188,7 +217,7 @@ class SmoothScaleFactor_1D_Bfactor(SmoothScaleFactor_1D):
         counter += 1
     multiplicative_factor = (flex.double(np.exp(self.scales.as_double()/(2.0 * (self.d_values**2))))
                              / (2.0 * (self.d_values**2))) 
-    return self.derivatives.as_double() * flex.double(np.tile(multiplicative_factor, self.n_params))
+    return self.derivatives.as_double() * flex.double(np.tile(multiplicative_factor, self.n_params))'''
 
 
 class SmoothScaleFactor_2D(SmoothScaleFactor):
@@ -344,13 +373,21 @@ class SphericalAbsorption_ScaleFactor(ScaleFactor):
   def calculate_smooth_scales(self):
     '''name the methods the same as the rest of the aimless scale factors
     to allow generic calling - should all the names just be the same, no smooth?'''
-    abs_scale = flex.double([1.0]*len(self.harmonic_values))
-    for n in range(self.harmonic_values.ncols()):
-      abs_scale += self.harmonic_values[str(n)] * self.scale_factors[n]
+    abs_scale = flex.double([1.0]*self.harmonic_values.n_rows)
+    for i, col in enumerate(self.harmonic_values.cols()):
+      abs_scale += flex.double(col.as_dense_vector() * self.scale_factors[i])
+
+    #for n in range(self.harmonic_values.ncols()):
+    #  abs_scale += self.harmonic_values[str(n)] * self.scale_factors[n]
     return abs_scale
 
   def calculate_smooth_derivatives(self):
-    derivatives = flex.double([])
+    return self.harmonic_values
+    '''derivatives = flex.double([])
+    m = len(self.scale_factors)
+    derivatives = sparse.matrix(len(self.scales),m)
     for n in range(self.harmonic_values.ncols()):
-      derivatives.extend(self.harmonic_values[str(n)])
-    return derivatives
+      #col = self.harmonic_values[str(n)]
+      derivatives.assign_block(self.harmonic_values[str(n)],0,n)
+      #derivatives.extend(self.harmonic_values[str(n)])
+    return derivatives.as_scitbx_matrix()'''

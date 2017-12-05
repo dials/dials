@@ -7,6 +7,7 @@ from __future__ import print_function
 from cctbx.array_family import flex
 import numpy as np
 from dials_scaling_helpers_ext import row_multiply
+from scitbx import sparse
 
 class basis_function(object):
   '''Superclass for basis function that takes in a data manager object and
@@ -35,7 +36,8 @@ class basis_function(object):
       active_param = self.data_manager.g_parameterisation.values()[0]
       return active_param.calculate_smooth_derivatives()
     else:
-      derivatives = flex.double([])
+      n = len(self.data_manager.Ih_table.Ih_table)
+      derivatives = sparse.matrix(n,self.apm.cumulative_active_params[-1])
       for i, active_param in enumerate(self.apm.active_parameterisation):
         derivs = self.data_manager.g_parameterisation[
           active_param].calculate_smooth_derivatives()
@@ -44,11 +46,9 @@ class basis_function(object):
           if param != active_param:
             scale_multipliers.append(self.data_manager.g_parameterisation[
               param].get_scales_of_reflections())
-        scale_mult = flex.double(np.prod(np.array(scale_multipliers), axis=0))
-        tile_factor = (self.apm.cumulative_active_params[i+1]
-                       - self.apm.cumulative_active_params[i])
-        derivatives.extend(row_multiply(derivs, flex.double(np.tile(scale_mult, tile_factor))))
-        #derivatives.extend(derivs * flex.double(np.tile(scale_mult, tile_factor)))
+        scale_mult = flex.double(np.prod(np.array(scale_multipliers), axis=0)) 
+        next_deriv = row_multiply(derivs, scale_mult)  
+        derivatives.assign_block(next_deriv,0,self.apm.cumulative_active_params[i])   
       return derivatives
 
   def return_basis(self):

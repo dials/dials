@@ -186,9 +186,9 @@ class aimless_Data_Manager(Data_Manager):
         'normalised_time_values'])
       self.g_decay.set_d_values(reflections_for_scaling['d'])
     if self.scaling_options['absorption_term']:
-      self.g_absorption.set_values(self.sph_harm_table.select(selection))
-      #self.g_absorption.set_values(sph_harm_table(reflections_for_scaling,
-                                                  #self.scaling_options['lmax']))
+      #self.g_absorption.set_values(self.sph_harm_table.select(selection))
+      self.g_absorption.set_values(sph_harm_table(reflections_for_scaling,
+                                                  self.scaling_options['lmax']))
     print('Completed initialisation of aimless data manager. \n' + '*'*40 + '\n')
 
   def initialise_scale_factors(self):
@@ -235,8 +235,10 @@ class aimless_Data_Manager(Data_Manager):
       reflection_table['normalised_time_values'] = ((reflection_table['xyzobs.px.value'].parts()[2]
         * one_oscillation_width) + 0.001)/rotation_interval
       'define the highest and lowest gridpoints: go out two further than the max/min int values'
-      highest_parameter_value = int((max(reflection_table['normalised_time_values'])//1)+3)#was +2
-      lowest_parameter_value = int((min(reflection_table['normalised_time_values'])//1)-2)#was -1
+      #highest_parameter_value = int((max(reflection_table['normalised_time_values'])//1)+3)#was +2
+      #lowest_parameter_value = int((min(reflection_table['normalised_time_values'])//1)-2)#was -1
+      highest_parameter_value = int((max(reflection_table['normalised_time_values'])//1)+2)#was +2
+      lowest_parameter_value = int((min(reflection_table['normalised_time_values'])//1)-1)#was -1
       n_decay_parameters = highest_parameter_value - lowest_parameter_value + 1
       self.g_decay = SF.SmoothScaleFactor_1D_Bfactor(0.0, n_decay_parameters, reflection_table['d'])
       self.g_parameterisation['g_decay'] = self.g_decay
@@ -321,10 +323,14 @@ class aimless_Data_Manager(Data_Manager):
   def normalise_scales_and_B(self):
     if self.scaling_options['decay_term']:
       absorption_scales = self.g_decay.get_scales_of_reflections()
+      
       B_values = flex.double(np.log(absorption_scales)) * 2.0 * (self.g_decay.d_values**2)
-      B_parameters = self.g_decay.get_scale_factors()
+      #B_parameters = self.g_decay.get_scale_factors()
+      B_parameters = self.g_decay.value
+      print(list(B_parameters))
       B_new_parameters = B_parameters - flex.double([max(B_values)]*len(B_parameters))
-      self.g_decay.set_scale_factors(B_new_parameters)
+      self.g_decay.update_scale_factors(B_new_parameters)
+      #self.g_decay.value = B_new_parameters
       self.g_decay.calculate_smooth_scales()
       absorption_scales = self.g_decay.get_scales_of_reflections()
       B_values = flex.double(np.log(absorption_scales)) * 2.0 * (self.g_decay.d_values**2)
@@ -334,9 +340,11 @@ class aimless_Data_Manager(Data_Manager):
     first_value = min(normalised_values)
     sel = (normalised_values == first_value)
     initial_scale = list(scales.select(sel))[0]
-    scale_factors = self.g_scale.get_scale_factors()
+    #scale_factors = self.g_scale.get_scale_factors()
+    scale_factors = self.g_scale.value
     new_scales = scale_factors/initial_scale
-    self.g_scale.scale_factors = new_scales
+    self.g_scale.update_scale_factors(new_scales)
+    #self.g_scale.value = new_scales
     self.g_scale.calculate_smooth_scales()
 
   def expand_scales_to_all_reflections(self):

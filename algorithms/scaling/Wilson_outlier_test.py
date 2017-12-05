@@ -2,13 +2,8 @@ from __future__ import print_function
 import copy
 from dials.array_family import flex
 from cctbx import miller, crystal
-import numpy as np
-from target_function import *
-from basis_functions import *
-import scale_factor as SF
 from reflection_weighting import *
 from data_quality_assessment import R_meas, R_pim
-import matplotlib.pyplot as plt
 
 def calc_normE2(reflection_table, experiments):
   '''calculate normalised intensity values for centric and acentric reflections'''

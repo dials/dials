@@ -38,7 +38,8 @@ class target_function(object):
     Ih_values = self.data_manager.Ih_table.Ih_table['Ih_values']
     scaleweights = self.data_manager.Ih_table.Ih_table['weights']
     gsq = ((scale_factors)**2) * scaleweights#/ variances
-    sumgsq = flex.double(np.add.reduceat(gsq, self.data_manager.Ih_table.h_index_cumulative_array[:-1]))
+    #sumgsq = flex.double(np.add.reduceat(gsq, self.data_manager.Ih_table.h_index_cumulative_array[:-1]))
+    sumgsq = gsq * self.data_manager.Ih_table.h_index_mat
     rhl = intensities - (Ih_values * scale_factors)
     num = len(intensities)
     dIh = ((intensities * scaleweights) - (Ih_values * 2.0 * scale_factors * scaleweights))
@@ -66,7 +67,12 @@ class target_function(object):
     term_2 = (-2.0 * rhl * scaleweights * scale_factors *
               self.data_manager.Ih_table.h_index_mat)
     term_2 = term_2 * dIh_by_dpi
-    return term_1 + term_2
+
+    gradient = term_1 + term_2
+    if self.data_manager.scaling_options['scaling_method'] == 'aimless':
+      if 'g_absorption' in self.apm.active_parameterisation:
+        gradient += self.data_manager.calc_absorption_constraint(self.apm)[1]
+    return gradient
     '''exit()
     
 
