@@ -2,6 +2,7 @@ import numpy as np
 from dials.array_family import flex
 from cctbx import miller, crystal
 import time as time
+from scitbx import sparse
 
 class base_Ih_table(object):
   def __init__(self, refl_table, weights):
@@ -19,6 +20,7 @@ class base_Ih_table(object):
     self.Ih_table['inverse_scale_factor'] = refl_table['inverse_scale_factor']
     #calculate the indexing arrays
     (self.h_index_counter_array, self.h_index_cumulative_array) = self.assign_h_index()
+    self.assign_h_matrix()
     self.n_h = self.calc_nh()
     self.Ih_array = None #This may not be necessary in future but keep for now.
   
@@ -80,6 +82,16 @@ class base_Ih_table(object):
       hsum += n
       h_index_cumulative_array.append(hsum)
     return h_index_counter_array, h_index_cumulative_array
+
+  def assign_h_matrix(self):
+    n1 = len(self.Ih_table['asu_miller_index'])
+    self.h_index_mat = sparse.matrix(n1, len(self.h_index_counter_array))
+    for i in range(len(self.h_index_cumulative_array)-1):
+      col = sparse.matrix_column(n1)
+      start_idx = self.h_index_cumulative_array[i]
+      for j in range(self.h_index_counter_array[i]):
+        col[start_idx+j] = 1
+      self.h_index_mat[:,i] = col
 
   def calc_nh(self):
     '''returns a vector of len(reflections) with the number of members of

@@ -1,6 +1,9 @@
 from dials.array_family import flex
 import numpy as np
 import math as math
+from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \
+        import GaussianSmoother
+from dials_scaling_helpers_ext import row_multiply
 
 '''
 These classes define objects to hold a flex array of scale factors,
@@ -97,9 +100,32 @@ class SmoothScaleFactor_1D(SmoothScaleFactor):
     for norm_val, min_s, max_s in self.zip_vals:
       for j in range(min_s, max_s + 1):
         self.exponentials.append(math.exp(-((norm_val - float(j))**2) / self.Vr))
+    phi_range_deg = [int(min(self.normalised_values)//1), int(max(self.normalised_values)//1)+1]
+    n_intervals = self.n_params-2
+    self._smoother = GaussianSmoother(phi_range_deg, n_intervals)
+    self.value = self.scale_factors
+
+  def set_scale_factors(self, scale_factors):
+    if len(scale_factors) != len(self.scale_factors):
+      assert 0, '''attempting to set a new set of scale factors of different
+      length than previous assignment: was %s, attempting %s''' % (
+        len(self.scale_factors), len(scale_factors))
+    self.scale_factors = scale_factors
+    self.value = self.scale_factors
 
   def calculate_smooth_scales(self):
-    self.weightsum = flex.float([])
+    value, weight, sumweight = self._smoother.multi_value_weight(
+      self.normalised_values, self)
+    return value
+
+  def calculate_smooth_derivatives(self):
+    value, weight, sumweight = self._smoother.multi_value_weight(
+      self.normalised_values, self)
+    inv_sw = 1. / sumweight
+    dv_dp = row_multiply(weight, inv_sw)
+    return dv_dp
+
+    '''self.weightsum = flex.float([])
     self.scales = flex.float([])
     counter = 0
     for norm_val, min_s, max_s in self.zip_vals:
@@ -111,9 +137,9 @@ class SmoothScaleFactor_1D(SmoothScaleFactor):
         counter += 1
       self.weightsum.append(weightsum)
       self.scales.append(scale/weightsum)
-    return self.scales.as_double()
+    return self.scales.as_double()'''
 
-  def calculate_smooth_derivatives(self):
+  '''def calculate_smooth_derivatives(self):
     self.derivatives = flex.float([0.0] * len(self.scale_factors) * self.n_norm_val)
     counter = 0
     for i, (norm_val, min_s, max_s) in enumerate(self.zip_vals):
@@ -121,7 +147,7 @@ class SmoothScaleFactor_1D(SmoothScaleFactor):
         self.derivatives[((j+2)*self.n_norm_val)+i] += (
           self.exponentials[counter]/self.weightsum[i])
         counter += 1
-    return self.derivatives.as_double()
+    return self.derivatives.as_double()'''
 
 class SmoothScaleFactor_1D_Bfactor(SmoothScaleFactor_1D):
   def __init__(self, initial_value, n_parameters, d_values, scaling_options=None):

@@ -6,6 +6,7 @@ the parameters
 from __future__ import print_function
 from cctbx.array_family import flex
 import numpy as np
+from dials_scaling_helpers_ext import row_multiply
 
 class basis_function(object):
   '''Superclass for basis function that takes in a data manager object and
@@ -46,7 +47,8 @@ class basis_function(object):
         scale_mult = flex.double(np.prod(np.array(scale_multipliers), axis=0))
         tile_factor = (self.apm.cumulative_active_params[i+1]
                        - self.apm.cumulative_active_params[i])
-        derivatives.extend(derivs * flex.double(np.tile(scale_mult, tile_factor)))
+        derivatives.extend(row_multiply(derivs, flex.double(np.tile(scale_mult, tile_factor))))
+        #derivatives.extend(derivs * flex.double(np.tile(scale_mult, tile_factor)))
       return derivatives
 
   def return_basis(self):

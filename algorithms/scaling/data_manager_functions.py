@@ -265,8 +265,10 @@ class aimless_Data_Manager(Data_Manager):
     reflection_table['normalised_rotation_angle'] = ((reflection_table['xyzobs.px.value'].parts()[2]
       * one_oscillation_width) + 0.001)/rotation_interval
     'define the highest and lowest gridpoints: go out two further than the max/min int values'
-    highest_parameter_value = int((max(reflection_table['normalised_rotation_angle'])//1)+3)#was +2
-    lowest_parameter_value = int((min(reflection_table['normalised_rotation_angle'])//1)-2)#was -1
+    #highest_parameter_value = int((max(reflection_table['normalised_rotation_angle'])//1)+3)#was +2
+    #lowest_parameter_value = int((min(reflection_table['normalised_rotation_angle'])//1)-2)#was -1
+    highest_parameter_value = int((max(reflection_table['normalised_rotation_angle'])//1)+2)
+    lowest_parameter_value = int((min(reflection_table['normalised_rotation_angle'])//1)-1)
     n_scale_parameters = highest_parameter_value - lowest_parameter_value + 1
     self.g_scale = SF.SmoothScaleFactor_1D(1.0, n_scale_parameters)
     self.g_scale.set_normalised_values(reflection_table['normalised_rotation_angle'])
