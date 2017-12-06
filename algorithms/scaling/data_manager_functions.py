@@ -756,7 +756,8 @@ class multicrystal_datamanager(Data_Manager):
     self.n_active_params_dataset2 = None
     self.scaling_options = scaling_options
     self.data_managers = [self.dm1, self.dm2]
-    reflections_for_scaling = self.zip_data_together()
+    reflections_for_scaling = self.zip_data_together(self.dm1.Ih_table.Ih_table,
+                                                     self.dm2.Ih_table.Ih_table)
     weights_for_scaling = reflections_for_scaling['weights']
     self.Ih_table = single_Ih_table(reflections_for_scaling, weights_for_scaling)
     print('Completed initialisation of multicrystal data manager. \n' + '*'*40 + '\n')
@@ -775,46 +776,35 @@ class multicrystal_datamanager(Data_Manager):
     G.extend(self.dm2.calc_absorption_constraint(apm.apm_list[1])[1])
     return (R, G)
 
-  def zip_data_together(self):
+  def zip_data_together(self, Ih_table_1, Ih_table_2):
     joined_reflections = flex.reflection_table()
     h_idx_cumulative_1 = self.joined_Ih_table.h_index_cumulative_array_1
     h_idx_cumulative_2 = self.joined_Ih_table.h_index_cumulative_array_2
     for i in range(len(h_idx_cumulative_1)-1):
-      joined_reflections.extend(self.dm1.Ih_table.Ih_table[h_idx_cumulative_1[i]:
-                                                                 h_idx_cumulative_1[i+1]])
-      joined_reflections.extend(self.dm2.Ih_table.Ih_table[h_idx_cumulative_2[i]:
-                                                                 h_idx_cumulative_2[i+1]])
+      joined_reflections.extend(Ih_table_1[h_idx_cumulative_1[i]:
+                                           h_idx_cumulative_1[i+1]])
+      joined_reflections.extend(Ih_table_2[h_idx_cumulative_2[i]:
+                                           h_idx_cumulative_2[i+1]])
     return joined_reflections
 
   def zip_together_scales(self, scales1, scales2):
-    scales = flex.double([])
-    h_idx_cumulative_1 = self.joined_Ih_table.h_index_cumulative_array_1
-    h_idx_cumulative_2 = self.joined_Ih_table.h_index_cumulative_array_2
-    for i in range(len(h_idx_cumulative_1)-1):
-      scales.extend(scales1[h_idx_cumulative_1[i]:h_idx_cumulative_1[i+1]])
-      scales.extend(scales2[h_idx_cumulative_2[i]:h_idx_cumulative_2[i+1]])
-    return scales
+    scales_1_expanded = scales1 * self.joined_Ih_table.h_expand_mat_1
+    scales_2_expanded = scales2 * self.joined_Ih_table.h_expand_mat_2
+    return scales_1_expanded + scales_2_expanded
 
   def zip_together_derivatives(self, apm, derivs1, derivs2):
-    active_derivatives_1 = flex.double([])
-    active_derivatives_2 = flex.double([])
     n_refl_1 = len(self.dm1.Ih_table.Ih_table)
     n_refl_2 = len(self.dm2.Ih_table.Ih_table)
     n_param_1 = apm.n_active_params_dataset1
     n_param_2 = apm.n_active_params_dataset2
-
-    active_derivatives_1 = sparse.matrix()
-
-    active_derivatives_1.extend(derivs1)
-    active_derivatives_1.extend(flex.double([0.0]*n_refl_1*n_param_2))
-    active_derivatives_2.extend(flex.double([0.0]*n_refl_2*n_param_1))
-    active_derivatives_2.extend(derivs2)
-    joined_derivatives = flex.double([])
-    for i in range(0, apm.n_active_params):
-      joined_derivatives.extend(self.zip_together_scales(
-        active_derivatives_1[i*n_refl_1:(i+1)*n_refl_1],
-        active_derivatives_2[i*n_refl_2:(i+1)*n_refl_2]))
-    return joined_derivatives
+    active_derivatives = sparse.matrix((n_refl_1 + n_refl_2),(n_param_1 + n_param_2))                                   
+    derivs_1_T = derivs1.transpose()
+    expanded_1 = derivs_1_T * self.joined_Ih_table.h_expand_mat_1
+    active_derivatives.assign_block(expanded_1.transpose(), 0, 0)
+    derivs_2_T = derivs2.transpose()
+    expanded_2 = derivs_2_T * self.joined_Ih_table.h_expand_mat_2
+    active_derivatives.assign_block(expanded_2.transpose(), 0, n_param_1)
+    return active_derivatives
 
   def update_for_minimisation(self, apm):
     '''update the scale factors and Ih for the next iteration of minimisation,

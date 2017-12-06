@@ -136,6 +136,8 @@ class target_Ih(object):
     self.Ih_table = flex.reflection_table()
     self.determine_all_unique_indices()#fill in a unique index column
     self.assign_hjoin_index()
+    self.assign_h_expand_matrix_1()
+    self.assign_h_expand_matrix_2()
     #self.calc_Ih()
 
   def determine_all_unique_indices(self):
@@ -169,6 +171,31 @@ class target_Ih(object):
     for n in self.h_idx_count_2:
       hsum_2 += n
       self.h_index_cumulative_array_2.append(hsum_2)
+
+  def assign_h_expand_matrix_1(self):
+    n1 = len(self.Ih_table_1.Ih_table)
+    n2 = len(self.Ih_table_2.Ih_table)
+    self.h_expand_mat_1 = sparse.matrix(n1, (n1+n2))
+    counter = 0
+    for i, val in enumerate(self.h_idx_count_1):
+      for j in range(val):
+        idx = j + self.h_index_cumulative_array_1[i] + self.h_index_cumulative_array_2[i]
+        #print(counter,idx)
+        self.h_expand_mat_1[counter,idx] = 1
+        counter += 1
+
+  def assign_h_expand_matrix_2(self):
+    n1 = len(self.Ih_table_1.Ih_table)
+    n2 = len(self.Ih_table_2.Ih_table)
+    self.h_expand_mat_2 = sparse.matrix(n2, (n1+n2))
+    counter = 0
+    for i, val in enumerate(self.h_idx_count_2):
+      for j in range(val):
+        idx = j + self.h_index_cumulative_array_1[i+1] + self.h_index_cumulative_array_2[i]
+        self.h_expand_mat_2[counter,idx] = 1
+        counter += 1 
+
+
 
   def calc_Ih(self):
     self.Ih_table['Ih_values'] = flex.double([0.0]*len(self.Ih_table))
