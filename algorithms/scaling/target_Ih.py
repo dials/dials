@@ -120,7 +120,7 @@ class single_Ih_table(base_Ih_table):
     #sumgI = flex.double(np.add.reduceat(gI, self.h_index_cumulative_array[:-1]))
     sumgI = gI * self.h_index_mat
     #sumweights = flex.double(np.add.reduceat(scaleweights, self.h_index_cumulative_array[:-1]))
-    sumweights = scaleweights * self.h_index_mat
+    #sumweights = scaleweights * self.h_index_mat
     self.Ih_array = sumgI * 1.0/sumgsq
     #self.Ih_array = flex.double([val/ sumgsq[i] if sumweights[i] > 0.0
     #                             else 0.0 for i, val in enumerate(sumgI)])
@@ -128,7 +128,7 @@ class single_Ih_table(base_Ih_table):
       np.repeat(self.Ih_array, self.h_index_counter_array))
 
 
-class target_Ih(object):
+class joined_Ih_table(object):
   def __init__(self, Ih_table_1, Ih_table_2, experiments):
     self.experiments = experiments
     self.Ih_table_1 = Ih_table_1
@@ -154,13 +154,15 @@ class target_Ih(object):
 
   def assign_hjoin_index(self):
     #looks at sorted miller indices and counts instances relative to the target
-    miller_index_1 = list(self.Ih_table_1.Ih_table['asu_miller_index'])
-    miller_index_2 = list(self.Ih_table_2.Ih_table['asu_miller_index'])
+    miller_index_1 = self.Ih_table_1.Ih_table['asu_miller_index']
+    miller_index_2 = self.Ih_table_2.Ih_table['asu_miller_index']
     self.h_idx_count_1 = []
     self.h_idx_count_2 = []
     for unique_index in self.Ih_table['unique_indices']:
-      self.h_idx_count_1.append(miller_index_1.count(unique_index))
-      self.h_idx_count_2.append(miller_index_2.count(unique_index))
+      n1 = (miller_index_1 == unique_index).count(True)
+      n2 = (miller_index_2 == unique_index).count(True)
+      self.h_idx_count_1.append(n1)
+      self.h_idx_count_2.append(n2)
     hsum_1 = 0
     hsum_2 = 0
     self.h_index_cumulative_array_1 = [0]
@@ -180,8 +182,7 @@ class target_Ih(object):
     for i, val in enumerate(self.h_idx_count_1):
       for j in range(val):
         idx = j + self.h_index_cumulative_array_1[i] + self.h_index_cumulative_array_2[i]
-        #print(counter,idx)
-        self.h_expand_mat_1[counter,idx] = 1
+        self.h_expand_mat_1[counter, idx] = 1
         counter += 1
 
   def assign_h_expand_matrix_2(self):
@@ -192,10 +193,8 @@ class target_Ih(object):
     for i, val in enumerate(self.h_idx_count_2):
       for j in range(val):
         idx = j + self.h_index_cumulative_array_1[i+1] + self.h_index_cumulative_array_2[i]
-        self.h_expand_mat_2[counter,idx] = 1
-        counter += 1 
-
-
+        self.h_expand_mat_2[counter, idx] = 1
+        counter += 1
 
   def calc_Ih(self):
     self.Ih_table['Ih_values'] = flex.double([0.0]*len(self.Ih_table))

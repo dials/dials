@@ -4,7 +4,8 @@ return the scale factors and derivatives of the scale factors w.r.t.
 the parameters
 '''
 from __future__ import print_function
-from cctbx.array_family import flex
+#from cctbx.array_family import flex
+from dials.array_family import flex
 import numpy as np
 from dials_scaling_helpers_ext import row_multiply
 from scitbx import sparse

@@ -6,7 +6,8 @@ import data_manager_functions as dmf
 import scale_factor as SF
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from cctbx.array_family import flex
+#from cctbx.array_family import flex
+from dials.array_family import flex
 import copy as copy
 
 def save_data(minimised,filename):

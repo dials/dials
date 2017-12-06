@@ -1,8 +1,8 @@
 from dials.array_family import flex
 import numpy as np
-from scitbx import sparse
 
 def calc_s2d(reflection_table, experiments):
+  '''calculates diffraction vector in crystal frame'''
   reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
                              * experiments.scan.get_oscillation()[1])
   (s0x, s0y, s0z) = experiments.beam.get_s0()
@@ -55,7 +55,7 @@ def align_rotation_axis_along_z(exp_rot_axis, vectors):
   return flex.vec3_double(new_vectors)
 
 def sph_harm_table(reflection_table, lmax):
-  from scitbx import math
+  from scitbx import math, sparse
   import math as pymath
 
   order = lmax

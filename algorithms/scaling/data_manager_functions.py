@@ -9,16 +9,17 @@ import minimiser_functions as mf
 from dials.util.options import flatten_experiments, flatten_reflections
 import numpy as np
 import cPickle as pickle
-from target_function import *
+from target_function import target_function, target_function_fixedIh, xds_target_function_log
 import basis_functions as bf
-from scaling_utilities import *
+from scaling_utilities import calc_s2d, sph_harm_table
 from Wilson_outlier_test import calculate_wilson_outliers, calc_normE2
 import scale_factor as SF
-from reflection_weighting import *
+from reflection_weighting import Weighting
 from data_quality_assessment import R_meas, R_pim
-from target_Ih import *
+from target_Ih import single_Ih_table, joined_Ih_table, base_Ih_table
 import minimiser_functions as mf
 from collections import OrderedDict
+from scitbx import sparse
 
 
 class Data_Manager(object):
@@ -750,7 +751,7 @@ class multicrystal_datamanager(Data_Manager):
     else:
       assert 0, "Incorrect scaling method passed to multicrystal datamanager (not 'xds' or 'aimless')"
     self.experiments = experiments1 #assume same space group from two json files.?
-    self.joined_Ih_table = target_Ih(self.dm1.Ih_table, self.dm2.Ih_table, experiments1)
+    self.joined_Ih_table = joined_Ih_table(self.dm1.Ih_table, self.dm2.Ih_table, experiments1)
     self.n_active_params = None
     self.n_active_params_dataset1 = None
     self.n_active_params_dataset2 = None
@@ -826,7 +827,7 @@ class multicrystal_datamanager(Data_Manager):
     self.dm2.expand_scales_to_all_reflections()
 
   def join_multiple_datasets(self):
-    self.joined_Ih_table = target_Ih(self.dm1.Ih_table, self.dm2.Ih_table, self.experiments)
+    self.joined_Ih_table = joined_Ih_table(self.dm1.Ih_table, self.dm2.Ih_table, self.experiments)
     joined_reflections = flex.reflection_table()
     h_idx_cumulative_1 = self.joined_Ih_table.h_index_cumulative_array_1
     h_idx_cumulative_2 = self.joined_Ih_table.h_index_cumulative_array_2

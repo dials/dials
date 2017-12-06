@@ -7,7 +7,6 @@ import copy
 from dials.array_family import flex
 from dials_scaling_helpers_ext import row_multiply
 import time as time
-from dials_scaling_helpers_ext import row_multiply
 from scitbx import sparse
 
 class target_function(object):

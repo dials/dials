@@ -3,9 +3,10 @@ Classes to create minimiser objects.
 '''
 from __future__ import print_function
 import numpy as np
-from dials_array_family_flex_ext import *
-from cctbx.array_family.flex import *
-from cctbx.array_family import flex
+#from dials_array_family_flex_ext import *
+#from cctbx.array_family.flex import *
+#from cctbx.array_family import flex
+from dials.array_family import flex
 from scitbx import lbfgs
 from math import exp
 import time
