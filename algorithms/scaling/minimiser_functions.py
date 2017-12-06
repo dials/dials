@@ -22,7 +22,6 @@ class LBFGS_optimiser(object):
     else:
       self.apm = active_parameter_manager(self.data_manager, param_name)
     self.x = self.apm.x
-    print(len(self.x))
     self.residuals = []
     self.core_params = lbfgs.core_parameters(maxfev=15)
     self.termination_params = lbfgs.termination_parameters(max_iterations=15)

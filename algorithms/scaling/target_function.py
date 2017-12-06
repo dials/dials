@@ -32,62 +32,32 @@ class target_function(object):
 
   def calculate_gradient(self):
     '''returns a gradient vector'''
-    gradient = flex.double([])
     intensities = self.data_manager.Ih_table.Ih_table['intensity']
     scale_factors = self.data_manager.Ih_table.Ih_table['inverse_scale_factor']
     Ih_values = self.data_manager.Ih_table.Ih_table['Ih_values']
     scaleweights = self.data_manager.Ih_table.Ih_table['weights']
-    gsq = ((scale_factors)**2) * scaleweights#/ variances
-    #sumgsq = flex.double(np.add.reduceat(gsq, self.data_manager.Ih_table.h_index_cumulative_array[:-1]))
+    gsq = ((scale_factors)**2) * scaleweights
+    #sumgsq = flex.double(np.add.reduceat(gsq,
+    #self.data_manager.Ih_table.h_index_cumulative_array[:-1]))
     sumgsq = gsq * self.data_manager.Ih_table.h_index_mat
     rhl = intensities - (Ih_values * scale_factors)
-    num = len(intensities)
     dIh = ((intensities * scaleweights) - (Ih_values * 2.0 * scale_factors * scaleweights))
-    
-    #dIh = flex.double(np.repeat(dIh, self.apm.n_active_params))
-    '''reshaped_derivs = np.reshape(np.array(self.data_manager.active_derivatives), (self.apm.n_active_params, num))
-    dIh_g = reshaped_derivs * dIh
-    #dIh_g = np.reshape(dIh_g, (self.apm.n_active_params, num))
-    dIh_g = dIh_g.transpose()
-    dIh_g = np.add.reduceat(dIh_g, self.data_manager.Ih_table.h_index_cumulative_array[:-1])
-    dIh_g = dIh_g.transpose()
-    dIh_g = dIh_g * 1.0/sumgsq
-    dIh_g = np.repeat(dIh_g, np.array(self.data_manager.Ih_table.h_index_counter_array),axis=1)
-    drdp = -((reshaped_derivs * Ih_values) + (dIh_g * scale_factors))
-    grad = drdp * (2.0 * rhl * scaleweights)
-    gradient = flex.double(np.sum(grad, axis=1))'''
-
-
     dIh_g = row_multiply(self.data_manager.active_derivatives, dIh)
     dIh_g = dIh_g.transpose() * self.data_manager.Ih_table.h_index_mat
     dIh_by_dpi = row_multiply(dIh_g.transpose(), 1.0/sumgsq)
-    
+
     term_1 = (-2.0 * rhl * scaleweights * Ih_values *
               self.data_manager.active_derivatives)
     term_2 = (-2.0 * rhl * scaleweights * scale_factors *
               self.data_manager.Ih_table.h_index_mat)
     term_2 = term_2 * dIh_by_dpi
-
     gradient = term_1 + term_2
+
     if self.data_manager.scaling_options['scaling_method'] == 'aimless':
       if 'g_absorption' in self.apm.active_parameterisation:
         gradient += self.data_manager.calc_absorption_constraint(self.apm)[1]
     return gradient
-    '''exit()
     
-
-    for i in range(self.apm.n_active_params):
-      dIh_g = (dIh * self.data_manager.active_derivatives[i*num:(i+1)*num])
-      dIh_g = np.add.reduceat(dIh_g, self.data_manager.Ih_table.h_index_cumulative_array[:-1])/sumgsq
-      dIh_g = flex.double(np.repeat(dIh_g, self.data_manager.Ih_table.h_index_counter_array))
-      drdp = -((Ih_values * self.data_manager.active_derivatives[i*num:(i+1)*num])
-               + (scale_factors * dIh_g))
-      grad = (2.0 * rhl * scaleweights * drdp)
-      gradient.append(flex.sum(grad))
-    if self.data_manager.scaling_options['scaling_method'] == 'aimless':
-      if 'g_absorption' in self.apm.active_parameterisation:
-        gradient += self.data_manager.calc_absorption_constraint(self.apm)[1]
-    return gradient'''
 
   def return_targets(self):
     '''return residual and gradient arrays'''
@@ -99,18 +69,15 @@ class target_function_fixedIh(target_function):
 
   'subclass to calculate the gradient for KB scaling against a fixed Ih'
   def calculate_gradient(self):
-    gradient = flex.double([])
     intensities = self.data_manager.Ih_table.Ih_table['intensity']
     scale_factors = self.data_manager.Ih_table.Ih_table['inverse_scale_factor']
     Ih_values = self.data_manager.Ih_table.Ih_table['Ih_values']
     scaleweights = self.data_manager.Ih_table.Ih_table['weights']
     rhl = intensities - (Ih_values * scale_factors)
-    for i in range(self.apm.n_active_params):
-      drdp = -Ih_values * self.data_manager.active_derivatives[i*len(intensities):
-                                                               (i+1)*len(intensities)]
-      grad = (2.0 * rhl * scaleweights * drdp)
-      gradient.append(flex.sum(grad))
+    gradient = (-2.0 * rhl * scaleweights * Ih_values
+                * self.data_manager.active_derivatives)
     return gradient
+
 
 class xds_target_function_log(target_function):
   '''Subclass that takes a data manager object and returns a residual and

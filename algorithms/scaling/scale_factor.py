@@ -29,36 +29,36 @@ class K_ScaleFactor(ScaleFactor):
   def __init__(self, initial_value, n_refl, scaling_options=None):
     ScaleFactor.__init__(self, initial_value, 1, scaling_options)
     self.n_refl = n_refl
+    self.scales = None
+    self.derivatives = None
 
   def set_n_refl(self, n_refl):
     self.n_refl = n_refl
 
-  def get_scales_of_reflections(self):
-    '''only one parameter for a K_ScaleFactor'''
-    return flex.double([self.scale_factors[0]]*self.n_refl)
-
-  def get_derivatives(self):
-    'return derivatives'
-    return flex.double([1.0]*self.n_refl)
+  def calculate_scales_and_derivatives(self):
+    self.scales = flex.double([self.scale_factors[0]] * self.n_refl)
+    self.derivatives = sparse.matrix(self.n_refl, 1)
+    for i in range(self.n_refl):
+      self.derivatives[i, 0] = 1.0
 
 class B_ScaleFactor(ScaleFactor):
   def __init__(self, initial_value, d_values, scaling_options=None):
     ScaleFactor.__init__(self, initial_value, 1, scaling_options)
     self.d_values = d_values
+    self.n_refl = len(d_values)
+    self.scales = None
+    self.derivatives = None
 
   def set_d_values(self, d_values):
     self.d_values = d_values
+    self.n_refl = len(d_values)
 
-  def get_scales_of_reflections(self):
-    '''only one parameter for a B_ScaleFactor'''
-    scales = flex.double([self.scale_factors[0]]*len(self.d_values))
-    return flex.double(np.exp(scales/(2.0 * (self.d_values**2))))
-
-  def get_derivatives(self):
-    'return derivatives'
-    scales = self.get_scales_of_reflections()
-    return scales / (2.0 * (self.d_values**2))
- 
+  def calculate_scales_and_derivatives(self):
+    self.scales = flex.double(np.exp(flex.double([self.scale_factors[0]] * self.n_refl)
+                                     /(2.0 * (self.d_values**2))))
+    self.derivatives = sparse.matrix(self.n_refl, 1)
+    for i in range(self.n_refl):
+      self.derivatives[i, 0] = self.scales[i] / (2.0 * (self.d_values[i]**2))
 
 class SmoothScaleFactor(ScaleFactor):
   def __init__(self, initial_value, n_parameters, scaling_options=None):
@@ -82,6 +82,8 @@ class SmoothScaleFactor_1D(SmoothScaleFactor):
   def __init__(self, initial_value, n_parameters, scaling_options=None):
     SmoothScaleFactor.__init__(self, initial_value, n_parameters, scaling_options)
     self.smoothing_window = 2.5 #must be less than 3 to avoid indexing errors
+    self.scales = None
+    self.derivatives = None
 
   def update_scale_factors(self, scale_factors):
     if len(scale_factors) != len(self.scale_factors):
@@ -89,29 +91,14 @@ class SmoothScaleFactor_1D(SmoothScaleFactor):
       length than previous assignment: was %s, attempting %s''' % (
         len(self.scale_factors), len(scale_factors))
     self.scale_factors = scale_factors
-    phi_range_deg = [int(min(self.normalised_values)//1), int(max(self.normalised_values)//1)+1]
-    n_intervals = self.n_params-2
-    self._smoother = GaussianSmoother(phi_range_deg, n_intervals)
     self.value = self.scale_factors
 
   def set_normalised_values(self, normalised_values):
     '''normalised_values is the column from the reflection table
     of the normalised time/resolution etc'''
     self.normalised_values = normalised_values
-    self.n_norm_val = int(len(self.normalised_values))
-    self.max_scale_to_include = flex.int([])
-    self.min_scale_to_include = flex.int([])
-    self.scales = flex.double([1.0]*self.n_norm_val)
-    '''for norm_val in self.normalised_values:
-      self.max_scale_to_include.append(int(norm_val + self.smoothing_window))
-      self.min_scale_to_include.append(int((norm_val - self.smoothing_window)//1) + 1)
-    self.zip_vals = zip(self.normalised_values, 
-      self.min_scale_to_include, self.max_scale_to_include)
-    self.exponentials = flex.float([])
-    for norm_val, min_s, max_s in self.zip_vals:
-      for j in range(min_s, max_s + 1):
-        self.exponentials.append(math.exp(-((norm_val - float(j))**2) / self.Vr))'''
-    phi_range_deg = [int(min(self.normalised_values)//1), int(max(self.normalised_values)//1)+1]
+    phi_range_deg = [int(min(self.normalised_values)//1),
+                     int(max(self.normalised_values)//1)+1]
     n_intervals = self.n_params-2
     self._smoother = GaussianSmoother(phi_range_deg, n_intervals)
     self.value = self.scale_factors
@@ -124,42 +111,17 @@ class SmoothScaleFactor_1D(SmoothScaleFactor):
     self.scale_factors = scale_factors
     self.value = self.scale_factors
 
-  def calculate_smooth_scales(self):
-    value, weight, sumweight = self._smoother.multi_value_weight(
-      self.normalised_values, self)
-    self.scales = value
-    return value
-
-  def calculate_smooth_derivatives(self):
+  def calculate_scales_and_derivatives(self):
     value, weight, sumweight = self._smoother.multi_value_weight(
       self.normalised_values, self)
     inv_sw = 1. / sumweight
     dv_dp = row_multiply(weight, inv_sw)
-    return dv_dp
+    self.scales = value
+    self.derivatives = dv_dp
 
-    '''self.weightsum = flex.float([])
-    self.scales = flex.float([])
-    counter = 0
-    for norm_val, min_s, max_s in self.zip_vals:
-      scale = 0.0
-      weightsum = 0.0
-      for j in range(min_s, max_s + 1):
-        scale += self.scale_factors[j+2] * self.exponentials[counter]
-        weightsum += self.exponentials[counter]
-        counter += 1
-      self.weightsum.append(weightsum)
-      self.scales.append(scale/weightsum)
-    return self.scales.as_double()'''
-
-  '''def calculate_smooth_derivatives(self):
-    self.derivatives = flex.float([0.0] * len(self.scale_factors) * self.n_norm_val)
-    counter = 0
-    for i, (norm_val, min_s, max_s) in enumerate(self.zip_vals):
-      for j in range(min_s, max_s + 1):
-        self.derivatives[((j+2)*self.n_norm_val)+i] += (
-          self.exponentials[counter]/self.weightsum[i])
-        counter += 1
-    return self.derivatives.as_double()'''
+  def calculate_scales(self):
+    value, _, _ = self._smoother.multi_value_weight(self.normalised_values, self)
+    self.scales = value
 
 class SmoothScaleFactor_1D_Bfactor(SmoothScaleFactor_1D):
   def __init__(self, initial_value, n_parameters, d_values, scaling_options=None):
@@ -174,50 +136,18 @@ class SmoothScaleFactor_1D_Bfactor(SmoothScaleFactor_1D):
         len(d_values), len(self.normalised_values))
     self.d_values = d_values
 
-  def calculate_smooth_scales(self):
+  def calculate_scales_and_derivatives(self):
     value, weight, sumweight = self._smoother.multi_value_weight(
       self.normalised_values, self)
-    value = flex.double(np.exp(value/(2.0 * (self.d_values**2))))
-    self.scales = value
-    return value
-
-  def calculate_smooth_derivatives(self):
-    value, weight, sumweight = self._smoother.multi_value_weight(
-      self.normalised_values, self)
+    self.scales = flex.double(np.exp(value/(2.0 * (self.d_values**2))))
     inv_sw = 1. / sumweight
     dv_dp = row_multiply(weight, inv_sw)
-    multiplicative_factor = (flex.double(np.exp(value/(2.0 * (self.d_values**2))))
-                             / (2.0 * (self.d_values**2))) 
-    deriv = row_multiply(dv_dp, multiplicative_factor)                      
-    return deriv
+    multiplicative_factor = self.scales / (2.0 * (self.d_values**2))
+    self.derivatives = row_multiply(dv_dp, multiplicative_factor)
 
-  '''def calculate_smooth_scales(self):
-    self.weightsum = flex.float([])
-    self.scales = flex.float([])
-    counter = 0
-    for norm_val, min_s, max_s in self.zip_vals:
-      scale = 0.0
-      weightsum = 0.0
-      for j in range(min_s, max_s + 1):
-        scale += self.scale_factors[j+2] * self.exponentials[counter]
-        weightsum += self.exponentials[counter]
-        counter += 1
-      self.weightsum.append(weightsum)
-      self.scales.append(scale/weightsum)
-    self.scales = flex.double(np.exp(self.scales.as_double()/(2.0 * (self.d_values**2))))
-    return self.scales
-
-  def calculate_smooth_derivatives(self):
-    self.derivatives = flex.float([0.0] * len(self.scale_factors) * self.n_norm_val)
-    counter = 0
-    for i, (norm_val, min_s, max_s) in enumerate(self.zip_vals):
-      for j in range(min_s, max_s + 1):
-        self.derivatives[((j+2)*self.n_norm_val)+i] += (
-          self.exponentials[counter]/self.weightsum[i])
-        counter += 1
-    multiplicative_factor = (flex.double(np.exp(self.scales.as_double()/(2.0 * (self.d_values**2))))
-                             / (2.0 * (self.d_values**2))) 
-    return self.derivatives.as_double() * flex.double(np.tile(multiplicative_factor, self.n_params))'''
+  def calculate_scales(self):
+    value, _, _ = self._smoother.multi_value_weight(self.normalised_values, self)
+    self.scales = flex.double(np.exp(value/(2.0 * (self.d_values**2))))
 
 
 class SmoothScaleFactor_2D(SmoothScaleFactor):
@@ -353,41 +283,30 @@ class SmoothScaleFactor_GridAbsorption(SmoothScaleFactor):
     return self.derivatives
 
 class SphericalAbsorption_ScaleFactor(ScaleFactor):
+  '''ScaleFactor class for a spherical harmonic absorption correction'''
   def __init__(self, initial_value, n_parameters, values, scaling_options=None):
     ScaleFactor.__init__(self, initial_value, n_parameters, scaling_options)
     self.harmonic_values = values
-    self.scales = self.calculate_smooth_scales()
-    self.derivatives = self.calculate_smooth_derivatives()
+    self.calculate_scales_and_derivatives()
 
   def set_values(self, values):
+    '''set a new spherical harmonic coefficient matrix'''
     self.harmonic_values = values
-    self.scales = self.calculate_smooth_scales()
-    self.derivatives = self.calculate_smooth_derivatives()
+    self.calculate_scales_and_derivatives()
 
   def get_values(self):
+    '''access to spherical harmonic coefficient matrix'''
     return self.harmonic_values
 
   def get_scales_of_reflections(self):
+    '''access to scale factor for each reflection'''
     return self.scales
 
-  def calculate_smooth_scales(self):
-    '''name the methods the same as the rest of the aimless scale factors
-    to allow generic calling - should all the names just be the same, no smooth?'''
-    abs_scale = flex.double([1.0]*self.harmonic_values.n_rows)
+  def calculate_scales_and_derivatives(self):
+    '''calculation of scale factors and derivatives from
+       spherical harmonic coefficient matrix'''
+    abs_scale = flex.double([1.0] * self.harmonic_values.n_rows)#unity term
     for i, col in enumerate(self.harmonic_values.cols()):
       abs_scale += flex.double(col.as_dense_vector() * self.scale_factors[i])
-
-    #for n in range(self.harmonic_values.ncols()):
-    #  abs_scale += self.harmonic_values[str(n)] * self.scale_factors[n]
-    return abs_scale
-
-  def calculate_smooth_derivatives(self):
-    return self.harmonic_values
-    '''derivatives = flex.double([])
-    m = len(self.scale_factors)
-    derivatives = sparse.matrix(len(self.scales),m)
-    for n in range(self.harmonic_values.ncols()):
-      #col = self.harmonic_values[str(n)]
-      derivatives.assign_block(self.harmonic_values[str(n)],0,n)
-      #derivatives.extend(self.harmonic_values[str(n)])
-    return derivatives.as_scitbx_matrix()'''
+    self.scales = abs_scale
+    self.derivatives = self.harmonic_values

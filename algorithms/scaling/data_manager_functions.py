@@ -17,7 +17,6 @@ import scale_factor as SF
 from reflection_weighting import *
 from data_quality_assessment import R_meas, R_pim
 from target_Ih import *
-import matplotlib.pyplot as plt
 import minimiser_functions as mf
 from collections import OrderedDict
 
@@ -330,7 +329,7 @@ class aimless_Data_Manager(Data_Manager):
       B_new_parameters = B_parameters - flex.double([max(B_values)]*len(B_parameters))
       self.g_decay.update_scale_factors(B_new_parameters)
       #self.g_decay.value = B_new_parameters
-      self.g_decay.calculate_smooth_scales()
+      self.g_decay.calculate_scales_and_derivatives()
       absorption_scales = self.g_decay.get_scales_of_reflections()
       B_values = flex.double(np.log(absorption_scales)) * 2.0 * (self.g_decay.d_values**2)
     #scale_factors = self.g_scale.get_scale_factors()
@@ -344,26 +343,28 @@ class aimless_Data_Manager(Data_Manager):
     new_scales = scale_factors/initial_scale
     self.g_scale.update_scale_factors(new_scales)
     #self.g_scale.value = new_scales
-    self.g_scale.calculate_smooth_scales()
+    self.g_scale.calculate_scales_and_derivatives()
 
   def expand_scales_to_all_reflections(self):
-    expanded_scale_factors = []
+    expanded_scale_factors = flex.double([1.0]*len(self.reflection_table))
     if not self.scaling_options['multi_mode']:
       self.normalise_scales_and_B()
     "recalculate scales for reflections in sorted_reflection table"
     self.g_scale.set_normalised_values(self.reflection_table['normalised_rotation_angle'])
-    expanded_scale_factors.append(self.g_scale.calculate_smooth_scales())
+    self.g_scale.calculate_scales()
+    expanded_scale_factors *= self.g_scale.scales
     if self.scaling_options['decay_term']:
       self.g_decay.set_normalised_values(self.reflection_table['normalised_time_values'])
       self.g_decay.set_d_values(self.reflection_table['d'])
-      expanded_scale_factors.append(self.g_decay.calculate_smooth_scales())
+      self.g_decay.calculate_scales()
+      expanded_scale_factors *= self.g_decay.scales
       absorption_scales = self.g_decay.get_scales_of_reflections()
       B_values = flex.double(np.log(absorption_scales)) * 2.0 * (self.g_decay.d_values**2)
     if self.scaling_options['absorption_term']:
       self.g_absorption.set_values(self.sph_harm_table)
-      expanded_scale_factors.append(self.g_absorption.calculate_smooth_scales())
-    self.reflection_table['inverse_scale_factor'] = flex.double(
-      np.prod(np.array(expanded_scale_factors), axis=0))
+      self.g_absorption.calculate_scales_and_derivatives()
+      expanded_scale_factors  *= self.g_absorption.scales
+    self.reflection_table['inverse_scale_factor'] = expanded_scale_factors
     print(('Scale factors determined during minimisation have now been applied {sep}'
       'to all reflections. {sep}').format(sep='\n'))
     sel = self.weights_for_scaling.get_weights() != 0.0
@@ -412,7 +413,7 @@ class KB_Data_Manager(Data_Manager):
 
   def get_basis_function(self, apm):
     '''call the KB basis function method'''
-    return bf.KB_basis_function(self, apm).return_basis()
+    return bf.basis_function(self, apm).return_basis()
 
   def update_for_minimisation(self, apm):
     '''update the scale factors and Ih for the next iteration of minimisation'''
@@ -422,15 +423,16 @@ class KB_Data_Manager(Data_Manager):
     #note - we don't calculate Ih here as using a target instead
 
   def expand_scales_to_all_reflections(self):
-    expanded_scale_factors = []
+    expanded_scale_factors = flex.double([1.0]*len(self.reflection_table))
     if self.scaling_options['scale_term']:
       self.g_scale.set_n_refl(len(self.reflection_table))
-      expanded_scale_factors.append(self.g_scale.get_scales_of_reflections())
+      self.g_scale.calculate_scales()
+      expanded_scale_factors *= self.g_scale.scales
     if self.scaling_options['decay_term']:
       self.g_decay.set_d_values(self.reflection_table['d'])
-      expanded_scale_factors.append(self.g_decay.get_scales_of_reflections())
-    self.reflection_table['inverse_scale_factor'] = flex.double(
-      np.prod(np.array(expanded_scale_factors), axis=0))
+      self.g_decay.calculate_scales()
+      expanded_scale_factors *= self.g_decay.scales
+    self.reflection_table['inverse_scale_factor'] = expanded_scale_factors
     print(('Scale factors determined during minimisation have now been applied {sep}'
       'to all reflections. {sep}').format(sep='\n'))
 
@@ -800,6 +802,9 @@ class multicrystal_datamanager(Data_Manager):
     n_refl_2 = len(self.dm2.Ih_table.Ih_table)
     n_param_1 = apm.n_active_params_dataset1
     n_param_2 = apm.n_active_params_dataset2
+
+    active_derivatives_1 = sparse.matrix()
+
     active_derivatives_1.extend(derivs1)
     active_derivatives_1.extend(flex.double([0.0]*n_refl_1*n_param_2))
     active_derivatives_2.extend(flex.double([0.0]*n_refl_2*n_param_1))
