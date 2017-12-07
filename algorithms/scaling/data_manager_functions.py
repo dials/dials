@@ -105,8 +105,9 @@ class Data_Manager(object):
       s_g = self.experiments.crystal.get_space_group()
       crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
     miller_set = miller.set(crystal_symmetry=crystal_symmetry,
-                            indices=reflection_table['miller_index'])
-    reflection_table["asu_miller_index"] = miller_set.map_to_asu().indices()
+                            indices=reflection_table['miller_index'], anomalous_flag=True)
+    miller_set_in_asu = miller_set.map_to_asu()
+    reflection_table["asu_miller_index"] = miller_set_in_asu.indices()
     permuted = (miller_set.map_to_asu()).sort_permutation(by_value='packed_indices')
     reflection_table = reflection_table.select(permuted)
     return reflection_table

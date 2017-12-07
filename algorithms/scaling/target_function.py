@@ -36,14 +36,12 @@ class target_function(object):
     Ih_values = self.data_manager.Ih_table.Ih_table['Ih_values']
     scaleweights = self.data_manager.Ih_table.Ih_table['weights']
     gsq = ((scale_factors)**2) * scaleweights
-    #sumgsq = flex.double(np.add.reduceat(gsq,
-    #self.data_manager.Ih_table.h_index_cumulative_array[:-1]))
     sumgsq = gsq * self.data_manager.Ih_table.h_index_mat
     rhl = intensities - (Ih_values * scale_factors)
-    dIh = ((intensities * scaleweights) - (Ih_values * 2.0 * scale_factors * scaleweights))
+    dIh = scaleweights * (intensities - (Ih_values * 2.0 * scale_factors))
     dIh_g = row_multiply(self.data_manager.active_derivatives, dIh)
-    dIh_g = dIh_g.transpose() * self.data_manager.Ih_table.h_index_mat
-    dIh_by_dpi = row_multiply(dIh_g.transpose(), 1.0/sumgsq)
+    dIh_red = dIh_g.transpose() * self.data_manager.Ih_table.h_index_mat
+    dIh_by_dpi = row_multiply(dIh_red.transpose(), 1.0/sumgsq)
 
     term_1 = (-2.0 * rhl * scaleweights * Ih_values *
               self.data_manager.active_derivatives)

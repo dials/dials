@@ -74,10 +74,23 @@ def sph_harm_table(reflection_table, lmax):
   sqrt2 = pymath.sqrt(2)
   nsssphe = math.nss_spherical_harmonics(order, 5000, lfg)
   counter = 0
+  ziplist = zip(phi_list, theta_list)
+
   for l in range(1, lmax+1):
     for m in range(-l, l+1):
-      #sph_harm_list = []
-      for i, phi in enumerate(phi_list):
+      if m < 0:
+        for i, (phi, theta) in enumerate(ziplist):
+          sph_harm_terms[i, counter] = (sqrt2 * ((-1) ** m)
+            * nsssphe.spherical_harmonic(l, -1*m, theta, phi).imag)
+      elif m == 0:
+        for i, (phi, theta) in enumerate(ziplist):
+          sph_harm_terms[i, counter] = (
+            nsssphe.spherical_harmonic(l, m, theta, phi).real)
+      else:
+        for i, (phi, theta) in enumerate(ziplist):
+          sph_harm_terms[i, counter] = (sqrt2 * ((-1) ** m)
+            * nsssphe.spherical_harmonic(l, m, theta, phi).real)
+      '''for i, phi in enumerate(phi_list):
         theta = theta_list[i]
         Ylm = nsssphe.spherical_harmonic(l, abs(m), theta, phi)
         if m < 0:
@@ -89,6 +102,6 @@ def sph_harm_table(reflection_table, lmax):
           r = sqrt2 * ((-1) ** m) * Ylm.real
         #sph_harm_list.append(r)
         sph_harm_terms[i,counter] = r
-      #sph_harm_terms[str(counter)] = flex.double(sph_harm_list)
+      #sph_harm_terms[str(counter)] = flex.double(sph_harm_list)'''
       counter += 1
   return sph_harm_terms

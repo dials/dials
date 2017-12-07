@@ -12,6 +12,7 @@ class base_Ih_table(object):
         assert 0, """Attempting to create an Ih_table object from a reflection
         table with no %s column""" % column
     #first create a minimal reflection table object
+    #self.miller_set = miller_set
     self.Ih_table = flex.reflection_table()
     self.Ih_table['asu_miller_index'] = refl_table['asu_miller_index']
     self.Ih_table['intensity'] = refl_table['intensity']
@@ -60,18 +61,18 @@ class base_Ih_table(object):
     '''assign an index to the sorted reflection table that
        labels each group of unique miller indices'''
     s = len(self.Ih_table)
-    self.Ih_table['h_index'] = flex.int([0] * s)
+    #self.Ih_table['h_index'] = flex.int([0] * s)
     h_index_counter_array = []
     h_index = 0
     h_index_counter = 1
     for i in range(1, s):
       if (self.Ih_table['asu_miller_index'][i] ==
           self.Ih_table['asu_miller_index'][i-1]):
-        self.Ih_table['h_index'][i] = h_index
+        #self.Ih_table['h_index'][i] = h_index
         h_index_counter += 1
       else:
         h_index += 1
-        self.Ih_table['h_index'][i] = h_index
+        #self.Ih_table['h_index'][i] = h_index
         h_index_counter_array.append(h_index_counter)
         h_index_counter = 1
     h_index_counter_array.append(h_index_counter)
@@ -91,7 +92,7 @@ class base_Ih_table(object):
       start_idx = self.h_index_cumulative_array[i]
       for j in range(self.h_index_counter_array[i]):
         col[start_idx+j] = 1
-      self.h_index_mat[:,i] = col
+      self.h_index_mat[:, i] = col
 
   def calc_nh(self):
     '''returns a vector of len(reflections) with the number of members of
