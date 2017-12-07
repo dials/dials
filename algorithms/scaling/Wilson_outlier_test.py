@@ -3,7 +3,6 @@ import copy
 from dials.array_family import flex
 from cctbx import miller, crystal
 from reflection_weighting import Weighting
-from data_quality_assessment import R_meas, R_pim
 
 def calc_normE2(reflection_table, experiments):
   '''calculate normalised intensity values for centric and acentric reflections'''

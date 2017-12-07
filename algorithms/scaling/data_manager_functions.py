@@ -15,7 +15,6 @@ from scaling_utilities import calc_s2d, sph_harm_table
 from Wilson_outlier_test import calculate_wilson_outliers, calc_normE2
 import scale_factor as SF
 from reflection_weighting import Weighting
-from data_quality_assessment import R_meas, R_pim
 from target_Ih import single_Ih_table, joined_Ih_table, base_Ih_table
 import minimiser_functions as mf
 from collections import OrderedDict
@@ -428,15 +427,17 @@ class KB_Data_Manager(Data_Manager):
     expanded_scale_factors = flex.double([1.0]*len(self.reflection_table))
     if self.scaling_options['scale_term']:
       self.g_scale.set_n_refl(len(self.reflection_table))
-      self.g_scale.calculate_scales()
+      self.g_scale.calculate_scales_and_derivatives()
       expanded_scale_factors *= self.g_scale.scales
     if self.scaling_options['decay_term']:
       self.g_decay.set_d_values(self.reflection_table['d'])
-      self.g_decay.calculate_scales()
+      self.g_decay.calculate_scales_and_derivatives()
       expanded_scale_factors *= self.g_decay.scales
     self.reflection_table['inverse_scale_factor'] = expanded_scale_factors
     print(('Scale factors determined during minimisation have now been applied {sep}'
-      'to all reflections. {sep}').format(sep='\n'))
+      'to all reflections. Scale factors were determined to be K = {0:.4f}, {sep}'
+      'B = {1:.4f}. {sep}').format(list(self.g_scale.scale_factors)[0], 
+      list(self.g_decay.scale_factors)[0], sep='\n'))
 
 
 class active_parameter_manager(object):

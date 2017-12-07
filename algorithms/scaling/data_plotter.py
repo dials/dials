@@ -1,7 +1,6 @@
 import cPickle as pickle
 import matplotlib.pyplot as plt
 import numpy as np
-from data_quality_assessment import R_meas, R_pim
 import data_manager_functions as dmf
 import scale_factor as SF
 import matplotlib.gridspec as gridspec
