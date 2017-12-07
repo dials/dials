@@ -187,9 +187,9 @@ class aimless_Data_Manager(Data_Manager):
         'normalised_time_values'])
       self.g_decay.set_d_values(reflections_for_scaling['d'])
     if self.scaling_options['absorption_term']:
-      #self.g_absorption.set_values(self.sph_harm_table.select(selection))
-      self.g_absorption.set_values(sph_harm_table(reflections_for_scaling,
-                                                  self.scaling_options['lmax']))
+      sph_harm_table_T = self.sph_harm_table.transpose()
+      selected_sph_harm_table = sph_harm_table_T.select_columns(selection.iselection())
+      self.g_absorption.set_values(selected_sph_harm_table.transpose())
     print('Completed initialisation of aimless data manager. \n' + '*'*40 + '\n')
 
   def initialise_scale_factors(self):

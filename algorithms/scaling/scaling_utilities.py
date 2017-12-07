@@ -6,21 +6,15 @@ def calc_s2d(reflection_table, experiments):
   reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
                              * experiments.scan.get_oscillation()[1])
   (s0x, s0y, s0z) = experiments.beam.get_s0()
-  #print s0x,s0y,s0z
   reflection_table['s2'] = reflection_table['s1'] - (s0x, s0y, s0z)
-  #print reflection_table['s2'][100]
   rot_axis = experiments.goniometer.get_rotation_axis()
-  #print list(rot_axis)
   from math import pi
   angles = reflection_table['phi'] * -1.0 * pi / 180 #want to do an inverse rot.
-  reflection_table['s2d'] = rotate_vectors_about_axis(rot_axis, reflection_table['s2'], angles)
-  #print reflection_table['s2d'][100]  
-  #change coordinate system so that the rotation axis is the 'z' axis
-  reflection_table['s2d'] = align_rotation_axis_along_z(rot_axis,reflection_table['s2d'])
-  #print reflection_table['s2d'][100]
-  #exit()                                              
+  reflection_table['s2d'] = rotate_vectors_about_axis(rot_axis,
+    reflection_table['s2'], angles)
+  reflection_table['s2d'] = align_rotation_axis_along_z(rot_axis,
+    reflection_table['s2d'])
   return reflection_table
-
 
 def rotate_vectors_about_axis(rot_axis, vectors, angles):
   #assumes angles in radians

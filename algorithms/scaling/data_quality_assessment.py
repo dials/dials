@@ -1,70 +1,33 @@
 '''
 Simple functions for calculating R_meas, R_int from a Data_Manager_object
 '''
+from dials.array_family import flex
+import numpy as np
 
-def R_meas(Data_Manager_object):
+def R_pim_meas(data_man):
   '''Calculate R_meas from a Data_Manager_object'''
-  Ihl = Data_Manager_object.reflection_table['intensity']
-  Ih = Data_Manager_object.reflection_table['Ih_values']
+  Ihl = data_man.Ih_table.Ih_table['intensity']
+  gvalues = data_man.Ih_table.Ih_table['inverse_scale_factor']
 
-  gvalues = Data_Manager_object.reflection_table['inverse_scale_factor']
+  ones = flex.double([1.0] * len(Ihl))
+  nh = ones * data_man.Ih_table.h_index_mat
 
-  Rmeas_upper = 0.0
-  Rmeas_lower = 0.0
-  Ih_average = []
-  for h in range(len(Data_Manager_object.Ih_table.h_index_counter_array)):
-    a1 = 0.0
-    lsum = Data_Manager_object.Ih_table.h_index_counter_array[h]
-    if lsum > 1:
-      for i in range(lsum):
-        indexer = i + Data_Manager_object.Ih_table.h_index_cumulative_array[h]
-        a1 += (Ihl[indexer]/ (gvalues[indexer]))
-      average = a1/lsum
-      for i in range(lsum):
-        Ih_average.append(average)
-    else:
-      Ih_average.append(0.0)
-  for h in range(len(Data_Manager_object.Ih_table.h_index_counter_array)):
-    a1 = 0.0
-    lsum = Data_Manager_object.Ih_table.h_index_counter_array[h]
-    if lsum > 1:
-      for i in range(lsum):
-        indexer = i + Data_Manager_object.Ih_table.h_index_cumulative_array[h]
-        a1 += abs((Ihl[indexer] / (gvalues[indexer])) - Ih_average[indexer])
-        Rmeas_lower += (Ih_average[indexer])
-      Rmeas_upper += (((float(lsum) / (float(lsum) - 1.0))**0.5) * a1)
-  Rmeas = Rmeas_upper / Rmeas_lower
-  return Rmeas
+  I_average = (((Ihl/gvalues) * data_man.Ih_table.h_index_mat)/nh)
+  I_average_expanded = flex.double(np.repeat(I_average, 
+    data_man.Ih_table.h_index_counter_array))
 
-def R_pim(Data_Manager_object):
-  '''Calculate R_pim from a Data_Manager_object'''
-  Ihl = Data_Manager_object.reflection_table['intensity']
-  Ih = Data_Manager_object.reflection_table['Ih_values']
-  gvalues = Data_Manager_object.reflection_table['inverse_scale_factor']
-  Rpim_upper = 0.0
-  Rpim_lower = 0.0
-  Ih_average=[]
-  #calculate the average Ih for each group of reflections
-  for h in range(len(Data_Manager_object.Ih_table.h_index_counter_array)):
-    a1 = 0.0
-    lsum = Data_Manager_object.Ih_table.h_index_counter_array[h]
-    if lsum > 1:
-      for i in range(lsum):
-        indexer = i + Data_Manager_object.Ih_table.h_index_cumulative_array[h]
-        a1 += (Ihl[indexer]/gvalues[indexer])
-      average = a1/lsum
-      for i in range(lsum):
-        Ih_average.append(average)
-    else:
-      Ih_average.append(0.0)
-  for h in range(len(Data_Manager_object.Ih_table.h_index_counter_array)):
-    a1 = 0.0
-    lsum = Data_Manager_object.Ih_table.h_index_counter_array[h]
-    if lsum > 1:
-      for i in range(lsum):
-        indexer = i + Data_Manager_object.Ih_table.h_index_cumulative_array[h]
-        a1 += abs((Ihl[indexer] / (gvalues[indexer])) - Ih_average[indexer])
-        Rpim_lower += (Ih_average[indexer])
-      Rpim_upper += (((1.0 / (float(lsum) - 1.0))**0.5) * a1)
-  Rpim = Rpim_upper / Rpim_lower
-  return Rpim
+  diff = abs((Ihl/gvalues) - I_average_expanded)
+  reduced_diff = diff * data_man.Ih_table.h_index_mat
+ 
+  selection = (nh != 1.0)
+  sel_reduced_diff = reduced_diff.select(selection)
+  sel_nh = nh.select(selection)
+
+  Rpim_upper = flex.sum(((1.0/(sel_nh - 1.0))**0.5) * sel_reduced_diff)
+  Rmeas_upper = flex.sum(((sel_nh/(sel_nh - 1.0))**0.5) * sel_reduced_diff)
+  sumIh = I_average_expanded * data_man.Ih_table.h_index_mat
+  sumIh = sumIh.select(selection)
+  Rpim_lower = flex.sum(sumIh)
+  Rpim = Rpim_upper/Rpim_lower
+  Rmeas = Rmeas_upper/Rpim_lower
+  return Rpim, Rmeas
