@@ -23,6 +23,7 @@ namespace dials { namespace refinement { namespace boost_python {
                  std::size_t >((
         arg("x_range"),
         arg("num_intervals"))))
+      .def("set_smoothing", &GaussianSmoother::set_smoothing)
       .def("num_values", &GaussianSmoother::num_values)
       .def("num_samples", &GaussianSmoother::num_samples)
       .def("num_average", &GaussianSmoother::num_average)
