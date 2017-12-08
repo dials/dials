@@ -161,10 +161,13 @@ phil_scope = parse(control_phil_str + dials_phil_str, process_includes=True).fet
 
 def do_import(filename):
   logger.info("Loading %s"%os.path.basename(filename))
-  try:
-    datablocks = DataBlockFactory.from_json_file(filename)
-  except ValueError:
-    datablocks = DataBlockFactory.from_filenames([filename])
+  datablocks = DataBlockFactory.from_filenames([filename])
+  if len(datablocks) == 0:
+    try:
+      datablocks = DataBlockFactory.from_json_file(filename)
+    except ValueError:
+      raise Abort("Could not load %s"%filename)
+
   if len(datablocks) == 0:
     raise Abort("Could not load %s"%filename)
   if len(datablocks) > 1:
