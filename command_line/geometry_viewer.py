@@ -549,13 +549,24 @@ def run(args):
   usage = "%s [options] datablock.json" %(
     libtbx.env.dispatcher_name)
 
-  parser = OptionParser(
-    usage=usage,
-    phil=phil_scope,
-    read_datablocks=True,
-    read_experiments=True,
-    check_format=True,
-    epilog=help_message)
+  import os
+  if 'DIALS_EXPORT_DO_NOT_CHECK_FORMAT' in os.environ:
+    parser = OptionParser(
+      usage=usage,
+      phil=phil_scope,
+      read_datablocks=True,
+      read_experiments=True,
+      check_format=False,
+      epilog=help_message)
+
+  else:
+    parser = OptionParser(
+      usage=usage,
+      phil=phil_scope,
+      read_datablocks=True,
+      read_experiments=True,
+      check_format=True,
+      epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
   datablocks = flatten_datablocks(params.input.datablock)
