@@ -615,10 +615,8 @@ class Model(ProfileModelIface):
       # Create the grid method
       GridMethod = GaussianRSProfileModeller.GridMethod
       FitMethod = GaussianRSProfileModeller.FitMethod
-      Estimator = GaussianRSProfileModeller.Estimator
       grid_method = int(GridMethod.names[self.params.gaussian_rs.fitting.grid_method].real)
       fit_method = int(FitMethod.names[self.params.gaussian_rs.fitting.fit_method].real)
-      estimator = int(Estimator.names[self.params.gaussian_rs.fitting.estimator].real)
 
       if self._scan_varying:
         sigma_b = flex.mean(self.sigma_b(deg=False))
@@ -640,8 +638,7 @@ class Model(ProfileModelIface):
         num_scan_points,
         self.params.gaussian_rs.fitting.threshold,
         grid_method,
-        fit_method,
-        estimator)
+        fit_method)
 
     # Return the wrapper function
     return wrapper

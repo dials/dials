@@ -50,6 +50,16 @@ namespace dials { namespace algorithms {
 
   };
 
+  /**
+   * Interface class for computing the reference profiles
+   */
+  class ReferenceCalculatorIface {
+  public:
+
+    virtual void operator()(af::Reflection &reflection) = 0;
+
+  };
+
 }}
 
 #endif // DIALS_ALGORITHMS_INTEGRATION_INTERFACES_H

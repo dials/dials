@@ -89,34 +89,70 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * Add a profile with indices and weights
+     * @param index The index of the profile to add to
+     * @param weight The weight to give the profile
+     * @param profile The profile data
+     */
+    void add_single(std::size_t index,
+                    double weight,
+                    data_const_reference profile) {
+      DIALS_ASSERT(finalized_ == false);
+      DIALS_ASSERT(profile.accessor().all_eq(accessor_));
+      DIALS_ASSERT(index < data_.size());
+      double sum_data = sum(profile);
+      if (sum_data > 0) {
+        if (data_[index].size() == 0) {
+          data_[index] = data_type(accessor_, 0);
+          mask_[index] = mask_type(accessor_, true);
+        } else {
+          DIALS_ASSERT(data_[index].accessor().all_eq(accessor_));
+          DIALS_ASSERT(mask_[index].accessor().all_eq(accessor_));
+        }
+        data_reference data = data_[index].ref();
+        for (std::size_t i = 0; i < data.size(); ++i) {
+          data[i] += weight * profile[i] / sum_data;
+        }
+        n_reflections_[index]++;
+      }
+    }
+
+    /**
      * Accumulate the results of another modeller
      * @param other The other modeller
      */
     void accumulate(boost::shared_ptr<ProfileModellerIface> other) {
-      DIALS_ASSERT(finalized_ == false);
-
-      // Do the pointer case
       boost::shared_ptr<EmpiricalProfileModeller> obj =
         boost::dynamic_pointer_cast<EmpiricalProfileModeller>(other);
       DIALS_ASSERT(obj != 0);
+      accumulate_raw_pointer(obj.get());
+    }
+
+    /**
+     * Accumulate the results of another modeller
+     * @param other The other modeller
+     */
+    void accumulate_raw_pointer(const EmpiricalProfileModeller *other) {
+      DIALS_ASSERT(other != NULL);
+      DIALS_ASSERT(finalized_ == false);
 
       // Check sizes are the same
-      DIALS_ASSERT(data_.size() == obj->data_.size());
-      DIALS_ASSERT(accessor_.all_eq(obj->accessor_));
+      DIALS_ASSERT(data_.size() == other->data_.size());
+      DIALS_ASSERT(accessor_.all_eq(other->accessor_));
 
       // Loop through all the profiles. If needed, allocate them, then
       // add the pixel values from the other modeller to this
       for (std::size_t i = 0; i < data_.size(); ++i) {
-        n_reflections_[i] += obj->n_reflections_[i];
-        if (obj->data_[i].size() != 0) {
+        n_reflections_[i] += other->n_reflections_[i];
+        if (other->data_[i].size() != 0) {
           if (data_[i].size() == 0) {
             data_[i] = data_type(accessor_, 0);
             mask_[i] = mask_type(accessor_, true);
           }
           data_reference d1 = data_[i].ref();
           mask_reference m1 = mask_[i].ref();
-          data_const_reference d2 = obj->data_[i].const_ref();
-          mask_const_reference m2 = obj->mask_[i].const_ref();
+          data_const_reference d2 = other->data_[i].const_ref();
+          mask_const_reference m2 = other->mask_[i].const_ref();
           DIALS_ASSERT(d1.accessor().all_eq(d2.accessor()));
           DIALS_ASSERT(m1.accessor().all_eq(m2.accessor()));
           for (std::size_t j = 0; j < d1.size(); ++j) {
@@ -218,6 +254,39 @@ namespace dials { namespace algorithms {
       return n_reflections_[index];
     }
 
+    /**
+     * The model method
+     */
+    virtual
+    void model(af::reflection_table) {
+      throw DIALS_ERROR("No implemented");
+    }
+
+
+    /**
+     * The model copy method
+     */
+    virtual
+    pointer copy() const {
+      throw DIALS_ERROR("No implemented");
+    }
+
+    /**
+     * The fit method
+     */
+    virtual
+    af::shared<bool> fit(af::reflection_table) const {
+      throw DIALS_ERROR("No implemented");
+    }
+
+    /**
+     * The validate method
+     */
+    virtual
+    void validate(af::reflection_table) const {
+      throw DIALS_ERROR("No implemented");
+    }
+
   protected:
 
     /**
@@ -225,7 +294,6 @@ namespace dials { namespace algorithms {
      * @param index The index of the profile to finalize
      */
     void finalize(std::size_t index) {
-
       // Check data
       DIALS_ASSERT(data_[index].accessor().all_eq(accessor_));
       DIALS_ASSERT(mask_[index].accessor().all_eq(accessor_));
@@ -235,7 +303,7 @@ namespace dials { namespace algorithms {
       mask_reference mask = mask_[index].ref();
 
       // Calculate the profile maximum and signal threshold
-      double threshold = threshold_ * max(data);
+      //double threshold = threshold_ * max(data);
 
       // Get the sum of signal pixels
       double signal_sum = 0.0;
@@ -244,7 +312,7 @@ namespace dials { namespace algorithms {
           signal_sum += data[i];
         } else {
           data[i] = 0.0;
-          mask[i] = false;
+          //mask[i] = false;
         }
       }
 

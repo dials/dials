@@ -12,6 +12,7 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <dials/algorithms/integration/parallel_integrator.h>
+#include <dials/algorithms/integration/parallel_reference_profiler.h>
 #include <dials/algorithms/integration/algorithms.h>
 
 using namespace boost::python;
@@ -167,6 +168,21 @@ namespace dials { namespace algorithms { namespace boost_python {
     self(reflection, ar);
   }
 
+  /**
+   * Initialise the reference calculator
+   * @param sampler The sampler
+   * @param spec The spec list
+   * @returns The reference calculator
+   */
+  GaussianRSReferenceCalculator* GaussianRSReferenceCalculator_init(
+          boost::shared_ptr<SamplerIface> sampler,
+          boost::python::list spec) {
+    af::shared<TransformSpec> spec_list;
+    for (std::size_t i = 0; i < boost::python::len(spec); ++i) {
+      spec_list.push_back(boost::python::extract<TransformSpec>(spec[i])());
+    }
+    return new GaussianRSReferenceCalculator(sampler, spec_list.const_ref());
+  }
 
   /**
    * Export the interfaces
@@ -183,6 +199,10 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_<IntensityCalculatorIface, boost::noncopyable>("IntensityCalculatorIface", no_init)
       .def("__call__", &IntensityCalculatorIface_call)
+      ;
+
+    class_<ReferenceCalculatorIface, boost::noncopyable>("ReferenceCalculatorIface", no_init)
+      .def("__call__", &ReferenceCalculatorIface::operator())
       ;
 
   }
@@ -302,6 +322,20 @@ namespace dials { namespace algorithms { namespace boost_python {
           bool>())
       ;
 
+    // Export GaussianRSReferenceCalculator
+    class_<GaussianRSReferenceCalculator,
+          bases<ReferenceCalculatorIface> >("GaussianRSReferenceCalculator", no_init)
+      .def(init<
+          boost::shared_ptr<SamplerIface>,
+          const af::const_ref<TransformSpec>&>())
+      .def("__init__",
+          make_constructor(&GaussianRSReferenceCalculator_init))
+      .def("accumulate",
+          &GaussianRSReferenceCalculator::accumulate)
+      .def("reference_profiles",
+          &GaussianRSReferenceCalculator::reference_profiles)
+      ;
+
   }
 
   /**
@@ -337,6 +371,41 @@ namespace dials { namespace algorithms { namespace boost_python {
             arg("use_dynamic_mask")))
       .def("compute_max_block_size",
           &ParallelIntegrator::compute_max_block_size, (
+            arg("imageset"),
+            arg("use_dynamic_mask"),
+            arg("max_memory_usage")))
+      .staticmethod("compute_required_memory")
+      .staticmethod("compute_max_block_size")
+      ;
+
+    class_<ParallelReferenceProfiler>("MultiThreadedReferenceProfiler", no_init)
+      .def(init<
+          const af::reflection_table&,
+          ImageSweep,
+          const MaskCalculatorIface&,
+          const BackgroundCalculatorIface&,
+          ReferenceCalculatorIface&,
+          const Logger&,
+          std::size_t,
+          bool,
+          bool>((
+              arg("reflections"),
+              arg("imageset"),
+              arg("compute_mask"),
+              arg("compute_background"),
+              arg("compute_reference"),
+              arg("logger"),
+              arg("nthreads") = 1,
+              arg("use_dynamic_mask") = true,
+              arg("debug") = false)))
+      .def("reflections",
+          &ParallelReferenceProfiler::reflections)
+      .def("compute_required_memory",
+          &ParallelReferenceProfiler::compute_required_memory, (
+            arg("imageset"),
+            arg("use_dynamic_mask")))
+      .def("compute_max_block_size",
+          &ParallelReferenceProfiler::compute_max_block_size, (
             arg("imageset"),
             arg("use_dynamic_mask"),
             arg("max_memory_usage")))

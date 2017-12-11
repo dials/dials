@@ -14,23 +14,31 @@
 
 #include <numeric>
 
+#include <boost/thread.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
+
 #include <dxtbx/model/beam.h>
 #include <dxtbx/model/detector.h>
 #include <dxtbx/model/scan.h>
 #include <dxtbx/model/crystal.h>
+
+#include <dials/model/data/mask_code.h>
+#include <dials/model/data/shoebox.h>
+
+#include <dials/algorithms/spot_prediction/pixel_to_miller_index.h>
+
+#include <dials/algorithms/profile_model/modeller/empirical_modeller.h>
+#include <dials/algorithms/profile_model/modeller/circle_sampler.h>
 #include <dials/algorithms/profile_model/gaussian_rs/mask_calculator.h>
+#include <dials/algorithms/profile_model/gaussian_rs/transform/transform.h>
 
 #include <dials/algorithms/background/simple/creator.h>
 #include <dials/algorithms/background/glm/creator.h>
 #include <dials/algorithms/background/gmodel/creator.h>
 
-#include <dials/algorithms/profile_model/modeller/circle_sampler.h>
-#include <dials/algorithms/profile_model/gaussian_rs/transform/transform.h>
 #include <dials/algorithms/integration/fit/fitting.h>
 #include <dials/algorithms/integration/interfaces.h>
-#include <dials/algorithms/spot_prediction/pixel_to_miller_index.h>
-#include <dials/model/data/mask_code.h>
-#include <dials/model/data/shoebox.h>
 
 namespace dials { namespace algorithms {
 
@@ -1005,6 +1013,268 @@ namespace dials { namespace algorithms {
 
     boost::shared_ptr<GaussianRSIntensityCalculatorAlgorithm> algorithm_;
 
+  };
+
+
+  /**
+   * Class to wrap the methods to be called in parallel with a mutex.
+   * This just applies to the add_single method. The class has a mutex for each
+   * profile. The add_single method adds the profile information to the
+   * reference profile. In order to ensure that two profiles aren't added at the
+   * same time, the mutex for the reference profile is locked while the
+   * contribution is added.
+   */
+  class ThreadSafeEmpiricalProfileModeller : public EmpiricalProfileModeller {
+  public:
+
+    /**
+     * Initialise the modeller
+     * @param n The number of profiles
+     * @param accessor The size of the profiles
+     * @param threshold The threshold for counts
+     */
+    ThreadSafeEmpiricalProfileModeller(
+            std::size_t n,
+            int3 datasize,
+            double threshold)
+        : EmpiricalProfileModeller(n, datasize, threshold) {
+      for (std::size_t i = 0; i < n; ++i) {
+        mutex_.push_back(boost::make_shared<boost::mutex>());
+      }
+    }
+
+    /**
+     * Add a profile with indices and weights
+     * @param index The index of the profile to add to
+     * @param weight The weight to give the profile
+     * @param profile The profile data
+     */
+    void add_single(std::size_t index,
+                    double weight,
+                    data_const_reference profile) {
+      DIALS_ASSERT(index < mutex_.size());
+      DIALS_ASSERT(mutex_[index] != NULL);
+      boost::lock_guard<boost::mutex> guard(*mutex_[index]);
+      EmpiricalProfileModeller::add_single(index, weight, profile);
+    }
+
+  protected:
+
+    af::shared< boost::shared_ptr<boost::mutex> > mutex_;
+  };
+
+
+  /**
+   * A class implementing reference profile formation algorithm
+   */
+  class GaussianRSReferenceCalculator : public ReferenceCalculatorIface {
+  public:
+
+    GaussianRSReferenceCalculator(
+            boost::shared_ptr<SamplerIface> sampler,
+            const af::const_ref<TransformSpec> &spec)
+        : sampler_(sampler),
+          spec_(spec.begin(), spec.end()),
+          modeller_(init_modeller(sampler, spec)) {}
+
+    /**
+     * Check the mask code
+     */
+    struct CheckMaskCode {
+      bool operator()(int x) const {
+        int code = Valid | Foreground;
+        return ((x & code) == code) && !(x & Overlapped);
+      }
+    };
+
+    /**
+     * Do the reference profile formation
+     * @param reflection The reflection to process
+     */
+    virtual void operator()(af::Reflection &reflection) {
+
+      // Check input is OK
+      DIALS_ASSERT(reflection.contains("id"));
+      DIALS_ASSERT(reflection.contains("shoebox"));
+      DIALS_ASSERT(reflection.contains("flags"));
+      DIALS_ASSERT(reflection.contains("partiality"));
+      DIALS_ASSERT(reflection.contains("s1"));
+      DIALS_ASSERT(reflection.contains("xyzcal.px"));
+      DIALS_ASSERT(reflection.contains("xyzcal.mm"));
+
+      // Get some data
+      int experiment_id = reflection.get<int>("id");
+      Shoebox<> sbox = reflection.get< Shoebox<> >("shoebox");
+      double partiality = reflection.get<double>("partiality");
+      vec3<double> s1 = reflection.get< vec3<double> >("s1");
+      vec3<double> xyzpx = reflection.get< vec3<double> >("xyzcal.px");
+      vec3<double> xyzmm = reflection.get< vec3<double> >("xyzcal.mm");
+      std::size_t flags = reflection.get<std::size_t>("flags");
+      DIALS_ASSERT(sbox.is_consistent());
+      DIALS_ASSERT(spec_.size() == modeller_.size());
+      DIALS_ASSERT(experiment_id < spec_.size());
+
+      // Check if we want to use this reflection
+      if (check(experiment_id, flags, partiality, sbox)) {
+
+        // Create the coordinate system
+        vec3<double> m2 = spec_[experiment_id].goniometer().get_rotation_axis();
+        vec3<double> s0 = spec_[experiment_id].beam()->get_s0();
+        CoordinateSystem cs(m2, s0, s1, xyzmm[2]);
+
+        // Create the data array
+        af::versa< double, af::c_grid<3> > data(sbox.data.accessor());
+        std::transform(
+            sbox.data.begin(),
+            sbox.data.end(),
+            sbox.background.begin(),
+            data.begin(),
+            std::minus<double>());
+
+        // Create the mask array
+        af::versa< bool, af::c_grid<3> > mask(sbox.mask.accessor());
+        std::transform(
+            sbox.mask.begin(),
+            sbox.mask.end(),
+            mask.begin(),
+            CheckMaskCode());
+
+        // Compute the transform
+        TransformForward<double> transform(
+            spec_[experiment_id],
+            cs,
+            sbox.bbox,
+            sbox.panel,
+            data.const_ref(),
+            mask.const_ref());
+
+        // Get the indices and weights of the profiles
+        af::shared<std::size_t> indices = sampler_->nearest_n(sbox.panel, xyzpx);
+        for (std::size_t j = 0; j < indices.size(); ++j) {
+
+          // Get the weighting
+          double weight = sampler_->weight(indices[j], sbox.panel, xyzpx);
+
+          // Add the profile
+          modeller_[experiment_id].add_single(
+              indices[j],
+              weight,
+              transform.profile().const_ref());
+        }
+
+        // Set the flags
+        flags |= af::UsedInModelling;
+      }
+
+      // Set the reflection flags
+      reflection["flags"] = flags;
+    }
+
+    /**
+     * Accumulate resulrs from other reference calculators
+     * @param other The other reference calculator
+     */
+    void accumulate(const GaussianRSReferenceCalculator &other) {
+      DIALS_ASSERT(modeller_.size() == other.modeller_.size());
+      for (std::size_t i = 0; i < modeller_.size(); ++i) {
+        modeller_[i].accumulate_raw_pointer(&other.modeller_[i]);
+      }
+    }
+
+    /**
+     * Get the reference profile data
+     * @returns The reference profile data
+     */
+    GaussianRSMultiCrystalReferenceProfileData reference_profiles() {
+      GaussianRSMultiCrystalReferenceProfileData result;
+      DIALS_ASSERT(modeller_.size() == spec_.size());
+      for (std::size_t i = 0; i < spec_.size(); ++i) {
+        modeller_[i].finalize();
+        ReferenceProfileData reference;
+        for (std::size_t j = 0; j < modeller_[i].size(); ++j) {
+          try {
+            reference.append(
+                modeller_[i].data(j).const_ref(),
+                modeller_[i].mask(j).const_ref());
+          } catch (dials::error) {
+            af::versa< double, af::c_grid<3> > data;
+            af::versa< bool, af::c_grid<3> > mask;
+            reference.append(data.const_ref(), mask.const_ref());
+          }
+        }
+        result.append(
+            GaussianRSReferenceProfileData(
+              reference,
+              sampler_,
+              spec_[i]));
+      }
+      return result;
+    }
+
+  protected:
+
+    /**
+     * Initialise the profile modeller
+     */
+    af::shared<ThreadSafeEmpiricalProfileModeller> init_modeller(
+            boost::shared_ptr<SamplerIface> sampler,
+            const af::const_ref<TransformSpec> &spec) const {
+      DIALS_ASSERT(spec.size() > 0);
+      DIALS_ASSERT(sampler != NULL);
+      af::shared<ThreadSafeEmpiricalProfileModeller> result;
+      for (std::size_t i = 0; i < spec.size(); ++i) {
+        result.push_back(
+            ThreadSafeEmpiricalProfileModeller(
+              sampler->size(),
+              spec[i].grid_size(),
+              0));
+      }
+      return result;
+    }
+
+    /**
+     * Do we want to use the reflection in profile modelling
+     * @param experiment_id The experiment id
+     * @param flags The reflection flags
+     * @param partiality The reflection partiality
+     * @param sbox The reflection shoebox
+     * @return True/False
+     */
+    bool check(std::size_t experiment_id,
+               std::size_t flags,
+               double partiality,
+               const Shoebox<> &sbox) const {
+
+      // Check we're fully recorded
+      bool full = partiality > 0.99;
+
+      // Check reflection has been integrated
+      bool integrated = flags & af::IntegratedSum;
+
+      // Check if the bounding box is in the image
+      bool bbox_valid =
+        sbox.bbox[0] >= 0 &&
+        sbox.bbox[2] >= 0 &&
+        sbox.bbox[1] <= spec_[experiment_id].detector()[sbox.panel].get_image_size()[0] &&
+        sbox.bbox[3] <= spec_[experiment_id].detector()[sbox.panel].get_image_size()[1];
+
+      // Check if all pixels are valid
+      bool pixels_valid = true;
+      for (std::size_t i = 0; i < sbox.mask.size(); ++i) {
+        int m = sbox.mask[i];
+        if ((m & Foreground) && (!(m & Valid) || (m & Overlapped))) {
+          pixels_valid = false;
+          break;
+        }
+      }
+
+      // Return whether to use or not
+      return full && integrated && bbox_valid && pixels_valid;
+    }
+
+    boost::shared_ptr<SamplerIface> sampler_;
+    af::shared<TransformSpec> spec_;
+    af::shared<ThreadSafeEmpiricalProfileModeller> modeller_;
   };
 
 }}
