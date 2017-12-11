@@ -489,9 +489,6 @@ class multi_active_parameter_manager(object):
       self.n_active_params_list.append(len(apm.x))
       self.n_active_params += len(apm.x)
       self.n_cumulative_params.append(copy.deepcopy(self.n_active_params))
-    #self.n_active_params_dataset1 = len(self.apm_list[0].x)
-    #self.n_active_params_dataset2 = len(self.apm_list[1].x)
-    #self.n_active_params = self.n_active_params_dataset1 + self.n_active_params_dataset2
 
   def get_current_parameters(self):
     return self.x
@@ -748,35 +745,25 @@ class XDS_Data_Manager(Data_Manager):
     for key in added_columns:
       del self.reflection_table[key]
 
+
+
 class multicrystal_datamanager(Data_Manager):
   def __init__(self, reflections, experiments, scaling_options):#reflections1, experiments1, reflections2, experiments2, scaling_options):
     self.data_managers = []
     if scaling_options['scaling_method'] == 'xds':
       for reflection, experiment in zip(reflections, experiments):
         self.data_managers.append(XDS_Data_Manager(reflection, experiment, scaling_options))
-      #self.dm1 = XDS_Data_Manager(reflections1, experiments1, scaling_options)
-      #self.dm2 = XDS_Data_Manager(reflections2, experiments2, scaling_options)
     elif scaling_options['scaling_method'] == 'aimless':
       for reflection, experiment in zip(reflections, experiments):
         self.data_managers.append(aimless_Data_Manager(reflection, experiment, scaling_options))
-      #self.dm1 = aimless_Data_Manager(reflections1, experiments1, scaling_options)
-      #self.dm2 = aimless_Data_Manager(reflections2, experiments2, scaling_options)
     else:
       assert 0, "Incorrect scaling method passed to multicrystal datamanager (not 'xds' or 'aimless')"
-    #self.experiments = experiments1 #assume same space group from two json files.?
-    self.Ih_table = joined_Ih_table(*self.data_managers)#self.dm1.Ih_table, self.dm2.Ih_table, experiments1)
-    
+    self.Ih_table = joined_Ih_table(self.data_managers)
+    self.update_counter=0
     self.n_active_params = None
     self.n_active_params_dataset1 = None
     self.n_active_params_dataset2 = None
     self.scaling_options = scaling_options
-    #self.data_managers = [self.dm1, self.dm2]
-    #reflections_for_scaling = self.zip_data_together(self.data_managers)#self.dm1.Ih_table.Ih_table,
-    #                                                 #self.dm2.Ih_table.Ih_table)
-    #print('made it here')
-    #exit()
-    #weights_for_scaling = reflections_for_scaling['weights']
-    #self.Ih_table = self.joined_Ih_table#single_Ih_table(reflections_for_scaling, weights_for_scaling)
     print('Completed initialisation of multicrystal data manager. \n' + '*'*40 + '\n')
 
   def get_target_function(self, apm):
@@ -790,56 +777,22 @@ class multicrystal_datamanager(Data_Manager):
     for i, dm in enumerate(self.data_managers):
       R.extend(dm.calc_absorption_constraint(apm.apm_list[i])[0])
       G.extend(dm.calc_absorption_constraint(apm.apm_list[i])[1])
-    '''R.extend(self.dm1.calc_absorption_constraint(apm.apm_list[0])[0])
-    R.extend(self.dm2.calc_absorption_constraint(apm.apm_list[1])[0])
-    G.extend(self.dm1.calc_absorption_constraint(apm.apm_list[0])[1])
-    G.extend(self.dm2.calc_absorption_constraint(apm.apm_list[1])[1])'''
     return (R, G)
 
-  '''def zip_data_together(self, datamanagers):
-    joined_reflections = flex.reflection_table()
-    h_idx_cumulative_1 = self.joined_Ih_table.h_index_cumulative_array_1
-    h_idx_cumulative_2 = self.joined_Ih_table.h_index_cumulative_array_2
-    for i in range(len(h_idx_cumulative_1)-1):
-      joined_reflections.extend(Ih_table_1[h_idx_cumulative_1[i]:
-                                           h_idx_cumulative_1[i+1]])
-      joined_reflections.extend(Ih_table_2[h_idx_cumulative_2[i]:
-                                           h_idx_cumulative_2[i+1]])
-    return joined_reflections'''
-
-  def zip_together_scales(self, scales1, scales2):
-    scales_1_expanded = scales1 * self.joined_Ih_table.h_expand_mat_1
-    scales_2_expanded = scales2 * self.joined_Ih_table.h_expand_mat_2
-    return scales_1_expanded + scales_2_expanded
+  #def zip_together_scales(self, scales1, scales2):
+  #  scales_1_expanded = scales1 * self.joined_Ih_table.h_expand_mat_1
+  #  scales_2_expanded = scales2 * self.joined_Ih_table.h_expand_mat_2
+  #  return scales_1_expanded + scales_2_expanded
 
   def zip_together_derivatives(self, apm, basis_fn_deriv_list):#derivs1, derivs2):
-    n_refl_total = 0
-    n_param_total = 0
-    n_cumulative_params = [0]
-    for i, basis_fn_deriv in enumerate(basis_fn_deriv_list):
-      n_refl_total += len(self.data_managers[i].Ih_table.Ih_table)
-      n_param_total += apm.n_active_params_list[i]
-      n_cumulative_params.append(n_cumulative_params[-1] + apm.n_active_params_list[i])
-    
-    #n_refl_1 = len(self.dm1.Ih_table.Ih_table)
-    #n_refl_2 = len(self.dm2.Ih_table.Ih_table)
-    #n_param_1 = apm.n_active_params_dataset1
-    #n_param_2 = apm.n_active_params_dataset2
-
+    n_refl_total = len(self.Ih_table.Ih_table)
+    n_param_total = apm.n_cumulative_params[-1]
     active_derivatives = sparse.matrix(n_refl_total, n_param_total) 
     for i, derivs in enumerate(basis_fn_deriv_list):
       derivs_T = derivs.transpose()
       expanded = derivs_T * self.Ih_table.h_idx_expand_list[i]
-      active_derivatives.assign_block(expanded.transpose(), 0, n_cumulative_params[0])
+      active_derivatives.assign_block(expanded.transpose(), 0, apm.n_cumulative_params[i])
     return active_derivatives
-
-    '''derivs_1_T = derivs_1.transpose()
-    expanded_1 = derivs_1_T * self.joined_Ih_table.h_expand_mat_1
-    active_derivatives.assign_block(expanded_1.transpose(), 0, 0)
-    derivs_2_T = derivs2.transpose()
-    expanded_2 = derivs_2_T * self.joined_Ih_table.h_expand_mat_2
-    active_derivatives.assign_block(expanded_2.transpose(), 0, n_param_1)
-    return active_derivatives'''
 
   def update_for_minimisation(self, apm):
     '''update the scale factors and Ih for the next iteration of minimisation,
@@ -847,42 +800,28 @@ class multicrystal_datamanager(Data_Manager):
     basis functions, target functions etc get access to the parameters.'''
     for i, val in enumerate(apm.n_active_params_list):
       apm.apm_list[i].x = apm.x[apm.n_cumulative_params[i]:apm.n_cumulative_params[i+1]]
-      #apm.apm_list[0].x = apm.x[:apm.n_active_params_dataset1]
-      #apm.apm_list[1].x = apm.x[apm.n_active_params_dataset1:]
     basis_fn_deriv_list = []
     for i, dm in enumerate(self.data_managers):
       basis_fn = dm.get_basis_function(apm.apm_list[i])
       dm.Ih_table.Ih_table['inverse_scale_factor'] = basis_fn[0]
       basis_fn_deriv_list.append(basis_fn[1])
-
-    #basis_fn_1 = self.dm1.get_basis_function(apm.apm_list[0])
-    #basis_fn_2 = self.dm2.get_basis_function(apm.apm_list[1])
-    #self.dm1.Ih_table.Ih_table['inverse_scale_factor'] = basis_fn_1[0]
-    #self.dm2.Ih_table.Ih_table['inverse_scale_factor'] = basis_fn_2[0]
-    self.active_derivatives = self.zip_together_derivatives(apm, basis_fn_deriv_list)#basis_fn_1[1], basis_fn_2[1])
-    #self.Ih_table.Ih_table['inverse_scale_factor'] = self.zip_together_scales(
-    #  basis_fn_1[0], basis_fn_2[0])
+    self.active_derivatives = self.zip_together_derivatives(apm, basis_fn_deriv_list)
     self.Ih_table.calc_Ih()
 
   def expand_scales_to_all_reflections(self):
-    self.dm1.expand_scales_to_all_reflections()
-    self.dm2.expand_scales_to_all_reflections()
+    for dm in self.data_managers:
+      dm.expand_scales_to_all_reflections()
+      dm.expand_scales_to_all_reflections()
 
   def join_multiple_datasets(self):
-    self.joined_Ih_table = joined_Ih_table(self.dm1.Ih_table, self.dm2.Ih_table, self.experiments)
+    self.joined_Ih_table = joined_Ih_table(self.data_managers)
     joined_reflections = flex.reflection_table()
-    h_idx_cumulative_1 = self.joined_Ih_table.h_index_cumulative_array_1
-    h_idx_cumulative_2 = self.joined_Ih_table.h_index_cumulative_array_2
-    for i in range(len(h_idx_cumulative_1)-1):
-      joined_reflections.extend(self.dm1.reflection_table[h_idx_cumulative_1[i]:
-                                                          h_idx_cumulative_1[i+1]])
-      joined_reflections.extend(self.dm2.reflection_table[h_idx_cumulative_2[i]:
-                                                          h_idx_cumulative_2[i+1]])
+    for i in range(len(self.joined_Ih_table.h_index_cumulative_array)-1):
+      for j, dm in enumerate(self.data_managers):
+        joined_reflections.extend(dm.reflection_table[self.joined_Ih_table.h_idx_cumulative_list[j][i]:
+          self.joined_Ih_table.h_idx_cumulative_list[j][i+1]])
     self.reflection_table = joined_reflections
     self.weights_for_scaling = Weighting(self.reflection_table)
-    #self.reflection_table['wilson_outlier_flag'] = (
-    #calculate_wilson_outliers(self.reflection_table, self.experiments))
-    #self.weights_for_scaling.remove_wilson_outliers(self.reflection_table)
     self.Ih_table = single_Ih_table(self.reflection_table, self.weights_for_scaling.get_weights())
     self.reflection_table['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
 
