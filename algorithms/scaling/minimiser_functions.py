@@ -70,20 +70,17 @@ class LBFGS_optimiser(object):
 
 class error_scale_LBFGSoptimiser(object):
   def __init__(self, Ih_table, starting_values):
-    # default start a = 1.0, b = 0.0, c = 0.0
+    # default start a = 1.0, b = 0.05
+    #note- don't initialise with b(SdAdd) = 0.0 or it gets stuck on 0!!
     self.Ih_table = Ih_table
     self.x = starting_values
     self.Ih_table.Ih_table['sigmaprime'] = self.calc_sigmaprime()
     self.Ih_table.Ih_table['delta_hl'] = self.calc_deltahl()
     self.bin_intensities()
-
+    print("initialised error scale optimiser \n")
     lbfgs.run(target_evaluator=self)
-    print("minimised error scales, values are %s" % list(self.x))
-    #import matplotlib.pyplot as plt
-    #plt.hist(self.Ih_table.Ih_table['delta_hl'], 60)
-    #plt.show()
-    #plt.plot(self.bin_vars)
-    #plt.show()
+    print("minimised error model parameters, values are {0:.5f} and {1:.5f}. {sep}"
+      .format(self.x[0], self.x[1], sep='\n'))
 
   def compute_functional_and_gradients(self):
     '''first calculate the updated values of sigmaprime and delta_hl,

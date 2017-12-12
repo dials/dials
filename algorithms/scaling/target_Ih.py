@@ -15,10 +15,13 @@ class base_Ih_table(object):
     #self.miller_set = miller_set
     self.Ih_table = flex.reflection_table()
     self.Ih_table['asu_miller_index'] = refl_table['asu_miller_index']
+    self.Ih_table['Esq'] = refl_table['Esq']
     self.Ih_table['intensity'] = refl_table['intensity']
     self.Ih_table['Ih_values'] = flex.double([0.0]*len(refl_table))
     self.Ih_table['weights'] = weights
     self.Ih_table['inverse_scale_factor'] = refl_table['inverse_scale_factor']
+    sel = self.Ih_table['weights'] != 0.0
+    self.Ih_table = self.Ih_table.select(sel)
     #calculate the indexing arrays
     (self.h_index_counter_array, self.h_index_cumulative_array) = self.assign_h_index()
     self.assign_h_matrix()

@@ -27,6 +27,8 @@ class target_function(object):
       if 'g_absorption' in self.apm.active_parameterisation:
         constraint_values = self.data_manager.calc_absorption_constraint(self.apm)[0]
         R.extend(constraint_values)
+    #z = flex.sorted(R, reverse=True)
+    #print list(z)[0:10]
     return R
 
   def calculate_gradient(self):
