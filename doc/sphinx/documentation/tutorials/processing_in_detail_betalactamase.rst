@@ -1,4 +1,4 @@
-Processing in Detail - CCP4 Workshop Edition
+Processing in Detail - Beta-Lactamase Edition
 ============================================
 
 .. highlight:: none
@@ -16,11 +16,19 @@ as we go. We will also enforce the correct lattice symmetry.
 Tutorial data
 -------------
 
-The following example uses a Beta-Lactamase dataset collected using beamline I04
-at Diamond Light Source, and reprocessed especially for these tutorials. The data
-is available for download from |lactamase|, but is also available for the workshop
-in the beamline data directory of ``/dls/i03/data/2017/mx19576-1/tutorial_data/summed/``.
-We'll only be using the first run of data in this tutorial.
+The following example uses a Beta-Lactamase dataset collected using
+beamline I04 at Diamond Light Source, and reprocessed especially for
+these tutorials. The data is available for download from |lactamase|.
+We'll only be using the first run of data in this tutorial,
+:samp:`C2sum_1.tar`, extracted to a :samp:`tutorial_data` subdirectory.
+
+..  hint::
+    If you are physically at Diamond on the BAG-training sessions, then
+    this data is already available in your training data area. After
+    typing :samp:`module load bagtraining` you'll be moved to a working
+    folder, with the data already located in the :samp:`tutorial_data/`
+    subdirectory.
+
 
 .. |lactamase|  image::  https://zenodo.org/badge/DOI/10.5281/zenodo.1014387.svg
                 :target: https://doi.org/10.5281/zenodo.1014387
@@ -30,14 +38,14 @@ Import
 
 The first stage of step-by-step DIALS processing is to import the data - all
 that happens here is that the image headers are read, and a file describing
-their contents (:ref:`datablock.json <datablock-json>`) is written.
+their contents (:ref:`datablock.json <datablock-json>`) is written::
 
-.. literalinclude:: logs_ccp4/dials.import.cmd
+    dials.import tutorial_data/C2sum_1*.cbf.gz
 
 The output just describes what the software understands of the images it was
 passed, in this case one sweep of data containing 720 images:
 
-.. literalinclude:: logs_ccp4/dials.import.log
+.. literalinclude:: logs_detail_betalactamase/dials.import.log
 
 Now is a good point to take a first look at the data using the
 :doc:`dials.image_viewer<../programs/dials_image_viewer>`, both to check that
@@ -47,12 +55,13 @@ the data is sensible and to anticipate any problems in processing::
 
 You will be presented with the main image viewer screen:
 
-.. image:: /figures/ccp4_process_detail/image_viewer.jpg
+.. image:: /figures/process_detail_betalactamase/image_viewer.jpg
    :width: 100%
 
 Play with the brightness slider (①) a little until you can clearly see
 the spots on the first image (something in the range 10-20 should make
-the spots obvious). You can also change the colour scheme, toggle
+the spots obvious). You can also change the colour scheme (sometimes
+spots can be easier to identify in 'inverted' mode) , toggle
 various information markers like beam center, and try different
 configurations for the spot finding (②).
 
@@ -64,7 +73,7 @@ Since this is looking for spots on every image in the dataset, this process
 can take some time, so we request multiple processors (:samp:`nproc=4`) to
 speed this up:
 
-.. literalinclude:: logs_ccp4/dials.find_spots.cmd
+.. literalinclude:: logs_detail_betalactamase/dials.find_spots.cmd
 
 .. container:: toggle
 
@@ -72,7 +81,7 @@ speed this up:
 
         **Show/Hide Log**
 
-    .. literalinclude:: logs_ccp4/dials.find_spots.log
+    .. literalinclude:: logs_detail_betalactamase/dials.find_spots.log
         :linenos:
 
 Once this has completed, a new :ref:`reflection file <reflection_pickle>`
@@ -106,7 +115,7 @@ The spot centre-of-mass is usually close to the peak pixel, but slightly
 offset as the algorithm allows calculation of the spot centre at a
 better precision than the pixel size and image angular 'width'.
 
-.. image:: /figures/ccp4_process_detail/image_viewer_spot.png
+.. image:: /figures/process_detail_betalactamase/image_viewer_spot.png
 
 Another very powerful tool for investigating problems with strong spot positions
 is :doc:`dials.reciprocal_lattice_viewer<../programs/dials_reciprocal_lattice_viewer>`.
@@ -118,7 +127,7 @@ orientation that shows off the periodicity in reciprocal lattice positions::
 
   dials.reciprocal_lattice_viewer datablock.json strong.pickle
 
-.. image:: /figures/ccp4_process_detail/reciprocal_lattice_strong.png
+.. image:: /figures/process_detail_betalactamase/reciprocal_lattice_strong.png
 
 Although the reciprocal spacing is visible, in this data, there are clearly
 some systematic distortions. These will be solved in the indexing.
@@ -132,7 +141,7 @@ The next step will be indexing of the strong spots by
 parameter :samp:`indexing.method=fft1d`). We pass in all the strong
 spots found in the dataset:
 
-.. literalinclude:: logs_ccp4/dials.index.cmd
+.. literalinclude:: logs_detail_betalactamase/dials.index.cmd
 
 If known, the space group and unit cell can be provided at this stage
 using the :samp:`space_group` and :samp:`unit_cell` parameters, and will
@@ -146,7 +155,7 @@ using space group P1.
 
         **Show/Hide Log**
 
-    ..  literalinclude:: logs_ccp4/dials.index.log
+    ..  literalinclude:: logs_detail_betalactamase/dials.index.log
         :linenos:
 
 If successful, ``dials.index`` writes two output data files - an
@@ -163,7 +172,7 @@ helpful if something has gone wrong and you are trying to track down why.
 Inspecting the beginning of the log shows that the indexing step is done
 at a resolution lower than the full dataset; 1.84 Å:
 
-.. literalinclude:: logs_ccp4/dials.index.log
+.. literalinclude:: logs_detail_betalactamase/dials.index.log
     :lines: 9-11
     :lineno-match:
     :linenos:
@@ -185,7 +194,7 @@ reflections for every degree of the 360° scan.
 We see that the first macrocycle of refinement makes a big improvement in
 the positional RMSDs:
 
-.. literalinclude:: logs_ccp4/dials.index.log
+.. literalinclude:: logs_detail_betalactamase/dials.index.log
    :lines: 78-90
    :lineno-match:
    :linenos:
@@ -207,11 +216,11 @@ Despite the high quality of this data, we notice from the log that at each
 macrocycle there were some outliers identified and removed from
 refinement as resolution increases. Large outliers can dominate refinement
 using a least squares target, so it is important to be able to remove these.
-More about this is discussed below in :ref:`detailccp4-sec-refinement`.
+More about this is discussed below in :ref:`detailbetal-sec-refinement`.
 It's also worth checking the total number of reflections that were unable to
 be assigned an index:
 
-.. literalinclude:: logs_ccp4/dials.index.log
+.. literalinclude:: logs_detail_betalactamase/dials.index.log
    :lines: 317-321
    :lineno-match:
    :linenos:
@@ -232,7 +241,7 @@ In this case, we can see that the refinement has clearly resolved whatever
 systematic error was causing distortions in the reciprocal space view, and the
 determined reciprocal unit cell fits the data well:
 
-.. image:: /figures/ccp4_process_detail/reciprocal_lattice_indexed.png
+.. image:: /figures/process_detail_betalactamase/reciprocal_lattice_indexed.png
 
 
 Bravais Lattice Refinement
@@ -244,12 +253,12 @@ to determine likely candidates. This takes the results of the P1
 autoindexing and runs refinement with all of the possible Bravais
 settings applied, allowing you to choose your preferred solution:
 
-.. literalinclude:: logs_ccp4/dials.refine_bravais_settings.cmd
+.. literalinclude:: logs_detail_betalactamase/dials.refine_bravais_settings.cmd
 
 giving a table containing scoring data and unit cell for each Bravais
 setting:
 
-.. literalinclude:: logs_ccp4/dials.refine_bravais_settings.log
+.. literalinclude:: logs_detail_betalactamase/dials.refine_bravais_settings.log
     :lines: 9-30
 
 The scores include the metric fit (in degrees), RMSDs (in mm), and the
@@ -274,13 +283,13 @@ chosen solution is :samp:`a+b,-a+b,c`, so it is necessary to reindex the
 :ref:`indexed.pickle <reflection_pickle>` file output by using
 :doc:`dials.reindex<../programs/dials_reindex>`:
 
-.. literalinclude:: logs_ccp4/dials.reindex.cmd
+.. literalinclude:: logs_detail_betalactamase/dials.reindex.cmd
 
 This outputs the file :file:`reindexed_reflections.pickle` which we now
 use as input to downstream programs, in place of the original
 :file:`indexed.pickle`.
 
-.. _detailccp4-sec-refinement:
+.. _detailbetal-sec-refinement:
 
 Refinement
 ^^^^^^^^^^
@@ -301,7 +310,7 @@ to list available options.
 To refine a static model including the monoclinic constraints
 from ``dials.refine_bravais_settings`` run:
 
-.. literalinclude:: logs_ccp4/dials.refine.cmd
+.. literalinclude:: logs_detail_betalactamase/dials.refine.cmd
 
 .. container:: toggle
 
@@ -309,7 +318,7 @@ from ``dials.refine_bravais_settings`` run:
 
         **Show/Hide Log**
 
-    .. literalinclude:: logs_ccp4/dials.refine.log
+    .. literalinclude:: logs_detail_betalactamase/dials.refine.log
         :linenos:
 
 
@@ -328,7 +337,7 @@ of these effects we can extend our parameterisation to obtain a smoothed
 running a further refinement job starting from the output of the
 previous job:
 
-.. literalinclude:: logs_ccp4/dials.sv_refine.cmd
+.. literalinclude:: logs_detail_betalactamase/dials.sv_refine.cmd
 
 .. container:: toggle
 
@@ -336,7 +345,7 @@ previous job:
 
         **Show/Hide Log**
 
-    .. literalinclude:: logs_ccp4/dials.sv_refine.log
+    .. literalinclude:: logs_detail_betalactamase/dials.sv_refine.log
         :linenos:
 
 which writes over the ``refined_experiments.json`` and
@@ -346,7 +355,7 @@ intervals, to avoid fitting unphysical models to noise, though this
 parameter can be tuned. We can use the :ref:`html-report`, described shortly, to
 view the results of fitting to smoothly varying crystal cell parameters:
 
-.. image:: /figures/ccp4_process_detail/scan_varying.png
+.. image:: /figures/process_detail_betalactamase/scan_varying.png
 
 In this tutorial, we see no overall increase in all three cell parameters. If
 significant cell volume increases had been observed that might be indicative of
@@ -364,7 +373,7 @@ XDS-like 3D profile fitting while using a generalized linear model in order
 to fit a Poisson-distributed background model. We will also increase the
 number of processors used to speed the job up.
 
-.. literalinclude:: logs_ccp4/dials.integrate.cmd
+.. literalinclude:: logs_detail_betalactamase/dials.integrate.cmd
 
 .. container:: toggle
 
@@ -372,7 +381,7 @@ number of processors used to speed the job up.
 
         **Show/Hide Log**
 
-    .. literalinclude:: logs_ccp4/dials.integrate.log
+    .. literalinclude:: logs_detail_betalactamase/dials.integrate.log
         :linenos:
 
 Checking the log output, we see that after loading in the reference
@@ -416,9 +425,9 @@ within an HTML report generated using the program
 :doc:`dials.report <../programs/dials_report>`.
 This is run simply with:
 
-.. literalinclude:: logs_ccp4/dials.report.cmd
+.. literalinclude:: logs_detail_betalactamase/dials.report.cmd
 
-which produces the file :download:`dials-report.html <logs_ccp4/dials-report.html>`.
+which produces the file :download:`dials-report.html <logs_detail_betalactamase/dials-report.html>`.
 
 This report includes plots showing the scan-varying crystal orientation
 and unit cell parameters. The latter of these is useful to check that
@@ -470,11 +479,11 @@ The final step of dials processing is to export the integrated results to mtz
 format, suitable for input to downstream processing programs such as pointless_
 and aimless_.
 
-.. literalinclude:: logs_ccp4/dials.export.cmd
+.. literalinclude:: logs_detail_betalactamase/dials.export.cmd
 
 And this is the output, showing the reflection file statistics.
 
-.. literalinclude:: logs_ccp4/dials.export.log
+.. literalinclude:: logs_detail_betalactamase/dials.export.log
     :linenos:
 
 What to do Next

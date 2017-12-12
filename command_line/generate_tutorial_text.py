@@ -195,7 +195,7 @@ def generate_processing_detail_text_ccp4():
   # Work out where we are writing the output files to; in-source
   dials_dir = libtbx.env.find_in_repositories("dials")
   OUTPUT_DIR = os.path.join(dials_dir, "doc", "sphinx", "documentation",
-                            "tutorials", "logs_ccp4")
+                            "tutorials", "logs_detail_betalactamase")
   # Ensure this output path exists
   if not os.path.isdir(OUTPUT_DIR):
     os.makedirs(OUTPUT_DIR)
