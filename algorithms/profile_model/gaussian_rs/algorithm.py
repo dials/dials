@@ -69,8 +69,8 @@ class GaussianRSReferenceCalculatorFactory(object):
   @classmethod
   def create(Class,
              experiments,
-             grid_size,
-             scan_step,
+             grid_size = 5,
+             scan_step = 5,
              grid_method = 'circular_grid'):
     '''
     Create the intensity calculator
@@ -90,7 +90,7 @@ class GaussianRSReferenceCalculatorFactory(object):
     scan = experiments[0].scan
 
     # Get the number of scan points
-    scan_range = scan.get_oscillation_range()
+    scan_range = scan.get_oscillation_range(deg=True)
     scan_range = abs(scan_range[1] - scan_range[0])
     num_scan_points = int(ceil(scan_range / scan_step))
 

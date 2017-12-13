@@ -35,19 +35,9 @@ data = read_experiments_and_reflections()
 
 def tst_gaussianrs_mask_calculator():
 
-  from dials.algorithms.integration.parallel_integrator import MaskCalculator
-  from dials.algorithms.integration.parallel_integrator import MultiCrystalMaskCalculator
+  from dials.algorithms.integration.parallel_integrator import MaskCalculatorFactory
 
-  algorithm = MultiCrystalMaskCalculator()
-  for e in data.experiments:
-    alg = MaskCalculator(
-      e.beam,
-      e.detector,
-      e.goniometer,
-      e.scan,
-      e.profile.delta_b(deg=False),
-      e.profile.delta_m(deg=False))
-    algorithm.append(alg)
+  algorithm = MaskCalculatorFactory.create(data.experiments)
 
   from dials.array_family import flex
   reflections = flex.reflection_table_to_list_of_reflections(data.reflections)
@@ -60,7 +50,7 @@ def tst_gaussianrs_mask_calculator():
 
 def tst_simple_background_calculator():
 
-  from dials.algorithms.integration.parallel_integrator import SimpleBackgroundCalculatorFactory
+  from dials.algorithms.background.simple.algorithm import SimpleBackgroundCalculatorFactory
 
   algorithm = SimpleBackgroundCalculatorFactory.create(data.experiments)
 
@@ -81,7 +71,7 @@ def tst_simple_background_calculator():
 
 def tst_glm_background_calculator():
 
-  from dials.algorithms.integration.parallel_integrator import GLMBackgroundCalculatorFactory
+  from dials.algorithms.background.glm.algorithm import GLMBackgroundCalculatorFactory
 
   algorithm = GLMBackgroundCalculatorFactory.create(data.experiments)
 
@@ -110,7 +100,7 @@ class IntensityCalculatorFactory(object):
   def create(Class,
              detector_space=False,
              deconvolution=False):
-    from dials.algorithms.integration.parallel_integrator import GaussianRSIntensityCalculatorFactory
+    from dials.algorithms.profile_model.gaussian_rs.algorithm import GaussianRSIntensityCalculatorFactory
     from dials.algorithms.integration.parallel_integrator import GaussianRSReferenceProfileData
     from dials.algorithms.integration.parallel_integrator import GaussianRSMultiCrystalReferenceProfileData
     from dials.algorithms.integration.parallel_integrator import  ReferenceProfileData
@@ -296,19 +286,9 @@ def tst_gaussianrs_detector_space_with_deconvolution_intensity_calculator2():
   #print "Intensity Old", R.get("intensity.prf.value.old")
 
 
-  from dials.algorithms.integration.parallel_integrator import MaskCalculator
-  from dials.algorithms.integration.parallel_integrator import MultiCrystalMaskCalculator
+  from dials.algorithms.integration.parallel_integrator import MaskCalculatorFactory
 
-  mask_calculator = MultiCrystalMaskCalculator()
-  for e in data.experiments:
-    alg = MaskCalculator(
-      e.beam,
-      e.detector,
-      e.goniometer,
-      e.scan,
-      e.profile.delta_b(deg=False),
-      e.profile.delta_m(deg=False))
-    mask_calculator.append(alg)
+  mask_calculator = MaskCalculatorFactory.create(data.experiments)
 
   mask_calculator(R1, True)
   mask_calculator(R2, True)
@@ -332,7 +312,7 @@ def tst_gaussianrs_detector_space_with_deconvolution_intensity_calculator2():
   assert partiality1 <= partiality2, (partiality1, partiality2)
 
   assert abs(intensity - 179.04238328) < 1e-7, intensity
-  assert abs(variance - 181.396028623) < 1e-7, variance
+  assert abs(variance - 206.789505627) < 1e-7, variance
 
   #print "Partiality", R.get("partiality")
   #print "Partiality Old", R.get("partiality_old")
@@ -408,6 +388,41 @@ def tst_gaussianrs_intensity_calculator():
   tst_gaussianrs_profile_data_pickling()
 
 
+def tst_gaussianrs_reference_profile_calculator():
+
+  from dials.algorithms.profile_model.gaussian_rs.algorithm import GaussianRSReferenceCalculatorFactory
+
+  algorithm = GaussianRSReferenceCalculatorFactory.create(data.experiments)
+
+  from dials.array_family import flex
+  reflections = flex.reflection_table_to_list_of_reflections(data.reflections)
+
+  count = 0
+  for r in reflections:
+    try:
+      algorithm(r)
+    except Exception:
+      count += 1
+  assert len(reflections) == 15193, len(reflections)
+  assert count == 0, count
+
+  profiles = algorithm.reference_profiles()
+
+  count = 0
+  for i in range(len(profiles)):
+    p = profiles[i].reference()
+    for j in range(len(p)):
+      d = p.data(j)
+      m = p.mask(j)
+      if len(d) != 0:
+        count+=1
+
+  assert count == 9, count
+
+  print 'OK'
+
+
+
 def tst_job_list():
 
   from dials.algorithms.integration.parallel_integrator import SimpleJobList
@@ -468,10 +483,11 @@ def tst_reflection_manager():
 
 if __name__ == '__main__':
 
-  #tst_gaussianrs_mask_calculator()
-  #tst_simple_background_calculator()
-  #tst_glm_background_calculator()
-  #tst_gmodel_background_calculator()
-  #tst_gaussianrs_intensity_calculator()
+  tst_gaussianrs_mask_calculator()
+  tst_simple_background_calculator()
+  tst_glm_background_calculator()
+  tst_gmodel_background_calculator()
+  tst_gaussianrs_intensity_calculator()
+  tst_gaussianrs_reference_profile_calculator()
   tst_job_list()
   tst_reflection_manager()

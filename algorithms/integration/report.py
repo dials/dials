@@ -506,6 +506,70 @@ class ProfileModelReport(Report):
           self.add_array(array)
 
 
+class ProfileModelReport2(Report):
+  '''
+  A class to store the profile model report
+
+  '''
+
+  def __init__(self, experiments, reference, reflections):
+    '''
+    Create the integration report
+
+    :param experiments: The experiment list
+    :param reference: The reference profiles
+    :param reflections: The reflection table
+
+    '''
+    from collections import OrderedDict
+
+    # Initialise the report class
+    super(ProfileModelReport, self).__init__()
+
+    # Create the table
+    table = Table()
+
+    # Set the title
+    table.name = 'profile.summary'
+    table.title = 'Summary of profile model'
+
+    # Add the columns
+    table.cols.append(('id', 'ID'))
+    table.cols.append(('profile', 'Profile'))
+    table.cols.append(('created', 'Created'))
+    table.cols.append(('x', 'X (px)'))
+    table.cols.append(('y', 'Y (px)'))
+    table.cols.append(('z', 'Z (im)'))
+    table.cols.append(('n_reflections', '# reflections'))
+
+    # Create the summary for each profile model
+    for i in range(len(reference)):
+      model = reference[i]
+      for j in range(len(model)):
+        table.rows.append([
+          '%d'   % i,
+          '%d'   % j,
+          '%s'   % True,
+          '%.2f' % model.sampler().coord(j)[0],
+          '%.2f' % model.sampler().coord(j)[1],
+          '%.2f' % model.sampler().coord(j)[2],
+          '%d'   % model.n_reflections(j)])
+
+    # Add the table
+    self.add_table(table)
+
+    # Add the profiles
+    for i in range(len(fitter)):
+      model = fitter[i]
+      for j in range(len(model)):
+        if model.valid(j):
+          array = Array()
+          array.name = 'profile.model.%d.%d' % (i, j)
+          array.title = 'Profile model (id: %d, profile: %d)' % (i, j)
+          array.data = model.data(j)
+          self.add_array(array)
+
+
 class ProfileValidationReport(Report):
   '''
   A class to store the profile validation report

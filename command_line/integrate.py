@@ -555,6 +555,7 @@ class Script(object):
           e2.detector = e1.detector
           e2.goniometer = e1.goniometer
           e2.crystal = e1.crystal
+          e2.profile = e1.profile
           e2.imageset = new_iset
           e2.scan = new_scan
           new_reference_all[i]['id'] = flex.int(

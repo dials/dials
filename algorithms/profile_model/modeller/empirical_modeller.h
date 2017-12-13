@@ -300,7 +300,7 @@ namespace dials { namespace algorithms {
 
       // Get the reference profile at the index
       data_reference data = data_[index].ref();
-      mask_reference mask = mask_[index].ref();
+      //mask_reference mask = mask_[index].ref();
 
       // Calculate the profile maximum and signal threshold
       //double threshold = threshold_ * max(data);

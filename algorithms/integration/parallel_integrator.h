@@ -1068,6 +1068,22 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * @returns The first frame
+     */
+    int first_frame() const {
+      DIALS_ASSERT(jobs_.size() > 0);
+      return jobs_[0][0];
+    }
+
+    /**
+     * @returns The last frame
+     */
+    int last_frame() const {
+      DIALS_ASSERT(jobs_.size() > 0);
+      return jobs_[jobs_.size()-1][1];
+    }
+
+    /**
      * @returns The number of jobs
      */
     std::size_t size() const {
@@ -1080,7 +1096,13 @@ namespace dials { namespace algorithms {
      * @returns The job index
      */
     std::size_t job_index(int frame) const {
-      std::size_t index = frame - jobs_.front()[0];
+      int index = frame - jobs_.front()[0];
+      if (index < 0) {
+        index = 0;
+      }
+      if (index >= frame_to_job_lookup_.size()) {
+        index = frame_to_job_lookup_.size()-1;
+      }
       DIALS_ASSERT(index >= 0);
       DIALS_ASSERT(index < frame_to_job_lookup_.size());
       return frame_to_job_lookup_[index];
@@ -1309,15 +1331,19 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(data.contains("bbox"));
       DIALS_ASSERT(jobs_.size() > 0);
 
-      // Get some arrays
-      af::const_ref<int6> bbox = data["bbox"];
+      // Select reflections that are in range
+      data = select_in_range_reflections(data);
 
       // Split the reflection
-      af::shared<std::size_t> indices;
+      af::const_ref<int6> bbox = data["bbox"];
       af::shared<int6> bbox_new;
+      af::shared<std::size_t> indices;
+      int f0 = jobs_.first_frame();
+      int f1 = jobs_.last_frame();
       for (std::size_t i = 0; i < bbox.size(); ++i) {
-        int z0 = bbox[i][4];
-        int z1 = bbox[i][5];
+        DIALS_ASSERT(bbox[i][4] < bbox[i][5]);
+        int z0 = std::max(f0, bbox[i][4]);
+        int z1 = std::min(f1, bbox[i][5]);
         DIALS_ASSERT(z0 < z1);
         std::vector< tiny<int,2> > splits;
         split_at_boundaries(z0, z1, std::back_inserter(splits));
@@ -1350,6 +1376,34 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * Select reflections in range
+     * @param data The input reflection table
+     * @returns The split reflection table
+     */
+    af::reflection_table select_in_range_reflections(af::reflection_table data) const {
+
+      using namespace af::boost_python::flex_table_suite;
+
+      // Check if any need to be removed
+      af::const_ref<int6> bbox = data["bbox"];
+      af::shared<std::size_t> indices;
+      int f0 = jobs_.first_frame();
+      int f1 = jobs_.last_frame();
+      for (std::size_t i = 0; i < bbox.size(); ++i) {
+        DIALS_ASSERT(bbox[i][4] < bbox[i][5]);
+        int z0 = std::max(f0, bbox[i][4]);
+        int z1 = std::min(f1, bbox[i][5]);
+        if (z0 < z1) {
+          indices.push_back(i);
+        }
+      }
+
+      // Select the reflections
+      return select_rows_index(data, indices.const_ref());
+    }
+
+
+    /**
      * Split a reflection at job boundaries so that most of the reflection is
      * recorded within a single job. Works recursively.
      * @param z0 The first frame in the shoebox
@@ -1364,6 +1418,7 @@ namespace dials { namespace algorithms {
       int zc = (int)std::floor((z0 + z1) / 2.0);
       int index = job_index(zc);
       tiny<int,2> job = job_range(index);
+      DIALS_ASSERT(job[0] < job[1]);
 
       // Get the min and max frame range
       int zmin = std::max(z0, job[0]);
@@ -1528,7 +1583,7 @@ namespace dials { namespace algorithms {
       std::size_t num_reflections = indices.size();
 
       // Check the number is less (because result includes adjacent reflections)
-      DIALS_ASSERT(num_reflections < result.size());
+      DIALS_ASSERT(num_reflections <= result.size());
 
       // Resize the input reflections to just those that were processed
       result.resize(indices.size());

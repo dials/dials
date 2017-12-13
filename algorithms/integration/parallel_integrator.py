@@ -698,7 +698,7 @@ class IntegrationManager(object):
     '''
     from math import ceil
     imageset = self.experiments[0].imageset
-    array_range = (0, len(imageset))
+    array_range = imageset.get_array_range()
     block = self.params.integration.block
     assert block.units == 'frames'
     assert block.size > 0
@@ -1206,7 +1206,7 @@ class ReferenceCalculatorManager(object):
     '''
     from math import ceil
     imageset = self.experiments[0].imageset
-    array_range = (0, len(imageset))
+    array_range = imageset.get_array_range()
     block = self.params.integration.block
     assert block.units == 'frames'
     assert block.size > 0
@@ -1266,3 +1266,93 @@ class ReferenceCalculatorManager(object):
       '%s\n'
     )
     return fmt % (block_size, self.params.integration.block.units, task_table)
+
+
+class ReferenceCalculatorProcessor(object):
+
+  def __init__(self,
+               experiments,
+               reflections,
+               params = None):
+    from dials.util import pprint
+
+    # Create the reference manager
+    reference_manager = ReferenceCalculatorManager(
+      experiments,
+      reflections,
+      params)
+
+    # Print some output
+    logger.info(reference_manager.summary())
+
+    # Execute each task
+    for task in reference_manager.tasks():
+      result = task()
+      reference_manager.accumulate(result)
+
+    # Finalize the processing
+    reference_manager.finalize()
+
+    # Set the reflections and profiles
+    self._reflections = reference_manager.result()
+    self._profiles = reference_manager.reference
+
+    # Write the profiles to file
+    if params.integration.debug.reference.output:
+      with open(params.integration.debug.reference.filename, "wb") as outfile:
+        import cPickle as pickle
+        pickle.dump(self._profiles, outfile)
+
+    # Print the profiles to the debug log
+    for i in range(len(self._profiles)):
+      logger.debug("")
+      logger.debug("Reference Profiles for experiment %d" % i)
+      logger.debug("")
+      reference = self._profiles[i].reference()
+      for j in range(len(reference)):
+        data = reference.data(j)
+        logger.debug("Profile %d" % j)
+        if len(data) > 0:
+          logger.debug(pprint.profile3d(data))
+        else:
+          logger.debug("** NO PROFILE **")
+
+  def reflections(self):
+    return self._reflections
+
+  def profiles(self):
+    return self._profiles
+
+
+
+class IntegratorProcessor(object):
+
+  def __init__(self,
+               experiments,
+               reflections,
+               reference = None,
+               params = None):
+
+    # Create the reference manager
+    integration_manager = IntegrationManager(
+      experiments,
+      reflections,
+      reference,
+      params)
+
+    # Print some output
+    logger.info(integration_manager.summary())
+
+    # Execute each task
+    for task in integration_manager.tasks():
+      result = task()
+      integration_manager.accumulate(result)
+
+    # Finalize the processing
+    integration_manager.finalize()
+
+    # Set the reflections and profiles
+    self._reflections = integration_manager.result()
+
+  def reflections(self):
+    return self._reflections
