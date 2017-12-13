@@ -77,9 +77,9 @@ class error_scale_LBFGSoptimiser(object):
     self.Ih_table.Ih_table['sigmaprime'] = self.calc_sigmaprime()
     self.Ih_table.Ih_table['delta_hl'] = self.calc_deltahl()
     self.bin_intensities()
-    print("initialised error scale optimiser \n")
+    print("Initialised error model LBFGS optimiser instance. \n")
     lbfgs.run(target_evaluator=self)
-    print("minimised error model parameters, values are {0:.5f} and {1:.5f}. {sep}"
+    print("Minimised error model with parameters {0:.5f} and {1:.5f}. {sep}"
       .format(self.x[0], self.x[1], sep='\n'))
 
   def compute_functional_and_gradients(self):
@@ -87,8 +87,8 @@ class error_scale_LBFGSoptimiser(object):
     before calculating the residual and gradient functions'''
     self.Ih_table.Ih_table['sigmaprime'] = self.calc_sigmaprime()
     self.Ih_table.Ih_table['delta_hl'] = self.calc_deltahl()
-    R = self.calc_residual()
-    G = self.calc_gradient()
+    R = self.calc_error_residual()
+    G = self.calc_error_gradient()
     return R, G
 
   def calc_sigmaprime(self):
@@ -120,7 +120,7 @@ class error_scale_LBFGSoptimiser(object):
     for i, val in enumerate(self.n_bin_count[:-1]):
       self.n_in_each_bin.append(self.n_bin_count[i+1]-val)
 
-  def calc_residual(self):
+  def calc_error_residual(self):
     deltahl = self.Ih_table.Ih_table['delta_hl']
     import numpy as np
     sum_deltasq = flex.double(np.add.reduceat(deltahl**2, self.n_bin_count[:-1]))
@@ -129,10 +129,10 @@ class error_scale_LBFGSoptimiser(object):
                      (sum_delta_sq/(flex.double(self.n_in_each_bin)**2)))
     #print list(self.bin_vars)
     R = flex.sum(((flex.double([1.0]*len(self.bin_vars)) - self.bin_vars)**2))
-    R = R + 1.0*((1.0 - self.x[0])**2 + (self.x[1]**2))# + (self.x[2]**2))
+    R = R + (25.0*((1.0 - self.x[0])**2)) + (400.0*((0.0001 - self.x[1])**2))# + (self.x[2]**2))
     return R
 
-  def calc_gradient(self):
+  def calc_error_gradient(self):
     I_hl = self.Ih_table.Ih_table['intensity']
     sigmaprime = self.Ih_table.Ih_table['sigmaprime']
     delta_hl = self.Ih_table.Ih_table['delta_hl']

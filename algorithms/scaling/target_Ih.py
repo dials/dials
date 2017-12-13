@@ -150,6 +150,7 @@ class joined_Ih_table(object):
     self.assign_h_index_matrix()
     self.assign_h_expand_matrices()
     self.calc_Ih()
+    self.n_h = self.calc_nh()
 
   def determine_all_unique_indices(self):
     s_g_1 = self.experiments[0].crystal.get_space_group()
@@ -260,3 +261,11 @@ class joined_Ih_table(object):
     self.Ih_table['inverse_scale_factor'] = scales
     self.Ih_table['weights'] = scaleweights
     self.Ih_table['Ih_values'] = flex.double(np.repeat(sumgI/sumgsq, self.h_index_counter_array))
+
+  def calc_nh(self):
+    '''returns a vector of len(reflections) with the number of members of
+    each h group'''
+    n_h = flex.double([])
+    for i in self.h_index_counter_array:
+      n_h.extend(flex.double([i]*i))
+    return n_h

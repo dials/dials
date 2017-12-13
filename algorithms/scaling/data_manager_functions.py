@@ -55,15 +55,17 @@ class Data_Manager(object):
     '''select the reflections with non-zero weight and update scale weights
     object.'''
     n_refl = len(reflection_table)
-    weights_for_scaling = self.update_weights_for_scaling(reflection_table)
+    weights_for_scaling = self.update_weights_for_scaling(reflection_table,
+      error_model_params=error_model_params)
     sel = weights_for_scaling.get_weights() > 0.0
     #reflections_for_scaling = reflection_table.select(sel)
     sel1 = reflection_table['Esq'] > self.scaling_options['E2min']
     sel2 = reflection_table['Esq'] < self.scaling_options['E2max']
     selection = sel & sel1 & sel2
     reflections_for_scaling = reflection_table.select(selection)
-    weights_for_scaling = self.update_weights_for_scaling(reflections_for_scaling,
-      error_model_params=error_model_params)
+    weights_for_scaling.scale_weighting = weights_for_scaling.scale_weighting.select(selection)
+    #weights_for_scaling = self.update_weights_for_scaling(reflections_for_scaling,
+    #  error_model_params=error_model_params)
     msg = ('{0} reflections were selected for scale factor determination {sep}'
       'out of {1} reflections. This was based on selection criteria of {sep}'
       'E2min = {2}, E2max = {3}, Isigma_min = {4}, dmin = {5}. {sep}').format(
@@ -77,7 +79,7 @@ class Data_Manager(object):
                                  error_model_params=None):
     '''set the weights of each reflection to be used in scaling'''
     weights_for_scaling = Weighting(reflection_table)
-    print('Updating weights to be used during scaling. \n')
+    print('Updating the weights associated with the intensities. \n')
     if weights_filter:
       weights_for_scaling.apply_Isigma_cutoff(reflection_table,
                                               self.scaling_options['Isigma_min'])
@@ -174,15 +176,14 @@ class aimless_Data_Manager(Data_Manager):
     
     if self.scaling_options['reject_outliers']:
       self.Ih_table = single_Ih_table(self.reflection_table, self.weights_for_scaling.get_weights())
-      print(len(self.reflection_table))
       sel = flex.bool([True]*len(self.reflection_table))
       _, indices_of_outliers = reject_outliers(self, max_deviation=10.0)
-      #for index in indices_of_outliers:
-      #  print(self.Ih_table.Ih_table['Esq'][index])
-      print("found {0} outliers".format(len(indices_of_outliers)))
+      msg = ('An initial outlier rejection has been performed, {0} outliers {sep}'
+        'were found which have been removed from the dataset. {sep}'.format(
+        len(indices_of_outliers), sep='\n'))
+      print(msg)
       sel.set_selected(flex.size_t(indices_of_outliers), flex.bool([False]*len(indices_of_outliers)))
       self.reflection_table = self.reflection_table.select(sel)
-      print(len(self.reflection_table))
       self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table,
         weights_filter=False, error_model_params=None)
     
@@ -208,7 +209,8 @@ class aimless_Data_Manager(Data_Manager):
       self.g_absorption.set_values(selected_sph_harm_table.transpose())
     print('Completed initialisation of aimless data manager. \n' + '*'*40 + '\n')
 
-  def apply_updated_error_model(self, error_model_params):
+  def update_error_model(self):
+    error_model_params = mf.error_scale_LBFGSoptimiser(self.Ih_table,flex.double([1.0,0.01])).x
     self.scaling_options['error_model_params'] = error_model_params
     inverse_scale_factors = self.Ih_table.Ih_table['inverse_scale_factor']
     (reflections_for_scaling, weights_for_scaling, selection) = (
@@ -402,22 +404,23 @@ class aimless_Data_Manager(Data_Manager):
       weights_filter=False, error_model_params=None)
     self.Ih_table = single_Ih_table(self.reflection_table, self.weights_for_scaling.get_weights())
     self.reflection_table['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
-    print('A new best estimate for I_h for all reflections has now been calculated. \n')
+    #print('A new best estimate for I_h for all reflections has now been calculated. \n')
     if self.scaling_options['reject_outliers'] and not self.scaling_options['multi_mode']:
-      print(len(self.reflection_table))
       sel = flex.bool([True]*len(self.reflection_table))
       _, indices_of_outliers = reject_outliers(self, max_deviation=6.0)
       #for index in indices_of_outliers:
       #  print(self.Ih_table.Ih_table['Esq'][index])
-      print("found {0} outliers".format(len(indices_of_outliers)))
+      msg = ('A final outlier rejection has been performed, {0} outliers {sep}'
+         'were found which have been removed from the dataset. {sep}'.format(
+        len(indices_of_outliers), sep='\n'))
+      print(msg)
       sel.set_selected(flex.size_t(indices_of_outliers), flex.bool([False]*len(indices_of_outliers)))
       self.reflection_table = self.reflection_table.select(sel)
-      print(len(self.reflection_table))
       self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table,
         weights_filter=False, error_model_params=None)
       self.Ih_table = single_Ih_table(self.reflection_table, self.weights_for_scaling.get_weights())
       self.reflection_table['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
-      print('A new best estimate for I_h for all reflections has now been calculated. \n')
+    print('A new best estimate for I_h for all reflections has now been calculated. \n')
 
   def clean_reflection_table(self):
     self.initial_keys.append('inverse_scale_factor')
@@ -509,8 +512,9 @@ class active_parameter_manager(object):
       self.constant_g_values = flex.double(np.prod(np.array(constant_g_values), axis=0))
     else:
       self.constant_g_values = None
-    print(('Set up parameter handler for following corrections: {0}\n').format(
-      ''.join(i.lstrip('g_')+' ' for i in self.active_parameterisation)))
+    if not Data_Manager.scaling_options['multi_mode']:
+      print(('Set up parameter handler for following corrections: {0}\n').format(
+        ''.join(i.lstrip('g_')+' ' for i in self.active_parameterisation)))
 
   def get_current_parameters(self):
     return self.x
@@ -531,6 +535,8 @@ class multi_active_parameter_manager(object):
       self.n_active_params_list.append(len(apm.x))
       self.n_active_params += len(apm.x)
       self.n_cumulative_params.append(copy.deepcopy(self.n_active_params))
+    print(('Set up joint parameter handler for following corrections: {0}\n').format(
+        ''.join(i.lstrip('g_')+' ' for i in self.active_parameterisation)))
 
   def get_current_parameters(self):
     return self.x
@@ -821,10 +827,10 @@ class multicrystal_datamanager(Data_Manager):
       G.extend(dm.calc_absorption_constraint(apm.apm_list[i])[1])
     return (R, G)
 
-  #def zip_together_scales(self, scales1, scales2):
-  #  scales_1_expanded = scales1 * self.joined_Ih_table.h_expand_mat_1
-  #  scales_2_expanded = scales2 * self.joined_Ih_table.h_expand_mat_2
-  #  return scales_1_expanded + scales_2_expanded
+  def update_error_model(self):
+    for dm in self.data_managers:
+      dm.update_error_model()
+    self.Ih_table = joined_Ih_table(self.data_managers)
 
   def zip_together_derivatives(self, apm, basis_fn_deriv_list):#derivs1, derivs2):
     n_refl_total = len(self.Ih_table.Ih_table)
@@ -853,7 +859,6 @@ class multicrystal_datamanager(Data_Manager):
   def expand_scales_to_all_reflections(self):
     for dm in self.data_managers:
       dm.expand_scales_to_all_reflections()
-      dm.expand_scales_to_all_reflections()
 
   def join_multiple_datasets(self):
     self.joined_Ih_table = joined_Ih_table(self.data_managers)
@@ -868,18 +873,21 @@ class multicrystal_datamanager(Data_Manager):
     self.reflection_table['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
 
     if self.scaling_options['reject_outliers']:
-      print(len(self.reflection_table))
       sel = flex.bool([True]*len(self.reflection_table))
       _, indices_of_outliers = reject_outliers(self, max_deviation=6.0)
-      print(indices_of_outliers)
+      msg = ('Combined outlier rejection has been performed across all datasets, {sep}'
+        '{0} outliers were found which have been removed from the dataset. {sep}'.format(
+        len(indices_of_outliers), sep='\n'))
+      print(msg)
       sel.set_selected(flex.size_t(indices_of_outliers), flex.bool([False]*len(indices_of_outliers)))
       self.reflection_table = self.reflection_table.select(sel)
-      print(len(self.reflection_table))
       self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table,
         weights_filter=False, error_model_params=None)
       self.Ih_table = single_Ih_table(self.reflection_table, self.weights_for_scaling.get_weights())
       self.reflection_table['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
-      print('A new best estimate for I_h for all reflections has now been calculated. \n')
+      msg = ('A new best estimate for I_h for all reflections across all datasets {sep}'
+        'has now been calculated. {sep}').format(sep='\n')
+      print(msg)
 
 class targeted_datamanager(Data_Manager):
   def __init__(self, reflections1, experiments1, reflections_scaled, scaling_options):
