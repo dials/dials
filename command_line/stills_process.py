@@ -317,8 +317,7 @@ class Script(object):
           tags.append(basename)
 
       # Wrapper function
-      def do_work(item_set):
-        i, item_list = item_set
+      def do_work(i, item_list):
         processor = Processor(copy.deepcopy(params), composite_tag = "%04d"%i)
         for item in item_list:
           processor.process_datablock(item[0], item[1])
@@ -336,8 +335,7 @@ class Script(object):
           tags.append(basename)
 
       # Wrapper function
-      def do_work(item_set):
-        i, item_list = item_set
+      def do_work(i, item_list):
         processor = Processor(copy.deepcopy(params), composite_tag = "%04d"%i)
         for item in item_list:
           tag, filename = item
@@ -374,13 +372,16 @@ class Script(object):
       do_work((rank, subset))
     else:
       from dxtbx.command_line.image_average import splitit
-      easy_mp.parallel_map(
-        func=do_work,
-        iterable=enumerate(splitit(iterable, params.mp.nproc)),
-        processes=params.mp.nproc,
-        method=params.mp.method,
-        preserve_order=True,
-        preserve_exception_message=True)
+      result = list(easy_mp.multi_core_run(
+        myfunction=do_work,
+        argstuples=list(enumerate(splitit(iterable, params.mp.nproc))),
+        nproc=params.mp.nproc))
+      error_list = [r[2] for r in result]
+      if error_list.count(None) != len(error_list):
+        print "Some processes failed excecution. Not all images may have processed. Error messages:"
+        for error in error_list:
+          if error is None: continue
+          print error
 
     # Total Time
     logger.info("")
