@@ -454,7 +454,7 @@ class TestIntegrator3D(object):
       integrator = Integrator3D(
         self.exlist,
         self.rlist,
-        Parameters.from_phil(params.integration))
+        params)
       result = integrator.integrate()
     except Exception:
       print output

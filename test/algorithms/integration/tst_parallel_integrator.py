@@ -11,7 +11,7 @@ def read_experiments_and_reflections():
   try:
     dials_regression = libtbx.env.dist_path('dials_regression')
   except KeyError:
-    print 'SKIP: dials_regression not configured'
+    print('SKIP: dials_regression not configured')
     exit(0)
 
   directory = join(dials_regression, "integration_test_data", "shoeboxes")
@@ -45,7 +45,7 @@ def tst_gaussianrs_mask_calculator():
   for r in reflections:
     algorithm(r, False)
 
-  print 'OK'
+  print('OK')
 
 
 def tst_simple_background_calculator():
@@ -66,7 +66,7 @@ def tst_simple_background_calculator():
   assert len(reflections) == 15193, len(reflections)
   assert count == 333, count
 
-  print 'OK'
+  print('OK')
 
 
 def tst_glm_background_calculator():
@@ -87,7 +87,7 @@ def tst_glm_background_calculator():
   assert len(reflections) == 15193, len(reflections)
   assert count == 333, count
 
-  print 'OK'
+  print('OK')
 
 
 def tst_gmodel_background_calculator():
@@ -164,13 +164,13 @@ def tst_gaussianrs_reciprocal_space_intensity_calculator():
   for r in reflections:
     try:
       algorithm(r, [])
-    except Exception, e:
+    except Exception as e:
       count += 1
 
   assert len(reflections) == 15193, len(reflections)
   assert count == 5295, count
 
-  print 'OK'
+  print('OK')
 
 
 
@@ -190,7 +190,7 @@ def tst_gaussianrs_detector_space_intensity_calculator():
       algorithm(r, [])
       partiality_old = r.get('partiality_old')
       partiality_new = r.get('partiality')
-    except Exception, e:
+    except Exception as e:
       count += 1
       continue
 
@@ -202,7 +202,7 @@ def tst_gaussianrs_detector_space_intensity_calculator():
   assert count == 4801, count
 
 
-  print 'OK'
+  print('OK')
 
 
 def tst_gaussianrs_detector_space_with_deconvolution_intensity_calculator():
@@ -221,7 +221,7 @@ def tst_gaussianrs_detector_space_with_deconvolution_intensity_calculator():
       algorithm(r, [])
       partiality_old = r.get('partiality_old')
       partiality_new = r.get('partiality')
-    except Exception, e:
+    except Exception as e:
       count += 1
       continue
 
@@ -232,7 +232,7 @@ def tst_gaussianrs_detector_space_with_deconvolution_intensity_calculator():
   assert len(reflections) == 15193, len(reflections)
   assert count == 4801, count
 
-  print 'OK'
+  print('OK')
 
 def tst_gaussianrs_detector_space_with_deconvolution_intensity_calculator2():
   from scitbx import matrix
@@ -324,7 +324,7 @@ def tst_gaussianrs_detector_space_with_deconvolution_intensity_calculator2():
   #print R.get("shoebox").mask.all()
   #sbox = R.get("shoebox")
   #print sbox.mask.count(5) + sbox.mask.count(37) + sbox.mask.count(51)
-  print 'OK'
+  print('OK')
 
 
 def tst_gaussianrs_profile_data_pickling():
@@ -377,7 +377,7 @@ def tst_gaussianrs_profile_data_pickling():
 
     data_spec2 = pickle.loads(s)
 
-    print 'OK'
+    print('OK')
 
 
 def tst_gaussianrs_intensity_calculator():
@@ -419,7 +419,7 @@ def tst_gaussianrs_reference_profile_calculator():
 
   assert count == 9, count
 
-  print 'OK'
+  print('OK')
 
 
 
@@ -446,7 +446,7 @@ def tst_job_list():
   for frame in range(46, 60):
     assert jobs.job_index(frame) == 4
 
-  print 'OK'
+  print('OK')
 
 def tst_reflection_manager():
 
@@ -478,7 +478,7 @@ def tst_reflection_manager():
   check_job(2)
   check_job(3)
   check_job(4)
-  print 'OK'
+  print('OK')
 
 
 if __name__ == '__main__':
