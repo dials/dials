@@ -30,6 +30,7 @@ def data(dials_regression): # read experiments and reflections
     reference=reference)
 
 
+@pytest.mark.skip('requires boost_threads which is not built atm')
 def test_gaussianrs_mask_calculator(data):
   from dials.algorithms.integration.parallel_integrator import MaskCalculatorFactory
   algorithm = MaskCalculatorFactory.create(data.experiments)
@@ -39,6 +40,7 @@ def test_gaussianrs_mask_calculator(data):
     algorithm(r, False)
 
 
+@pytest.mark.skip('requires boost_threads which is not built atm')
 def test_simple_background_calculator(data):
   from dials.algorithms.background.simple.algorithm import SimpleBackgroundCalculatorFactory
   algorithm = SimpleBackgroundCalculatorFactory.create(data.experiments)
@@ -54,6 +56,7 @@ def test_simple_background_calculator(data):
   assert count == 333
 
 
+@pytest.mark.skip('requires boost_threads which is not built atm')
 def test_glm_background_calculator():
   from dials.algorithms.background.glm.algorithm import GLMBackgroundCalculatorFactory
   algorithm = GLMBackgroundCalculatorFactory.create(data.experiments)
@@ -69,6 +72,7 @@ def test_glm_background_calculator():
   assert count == 333
 
 
+@pytest.mark.skip('requires boost_threads which is not built atm')
 def test_gmodel_background_calculator():
   pass
 
@@ -129,6 +133,7 @@ class IntensityCalculatorFactory(object):
       deconvolution)
 
 
+@pytest.mark.skip('requires boost_threads which is not built atm')
 def test_gaussianrs_reciprocal_space_intensity_calculator(data):
   algorithm = IntensityCalculatorFactory.create(
     detector_space = False,
@@ -148,6 +153,7 @@ def test_gaussianrs_reciprocal_space_intensity_calculator(data):
   assert count == 5295
 
 
+@pytest.mark.skip('requires boost_threads which is not built atm')
 def test_gaussianrs_detector_space_intensity_calculator(data):
   algorithm = IntensityCalculatorFactory.create(
     detector_space = True,
@@ -175,6 +181,7 @@ def test_gaussianrs_detector_space_intensity_calculator(data):
 
 
 
+@pytest.mark.skip('requires boost_threads which is not built atm')
 def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator(data):
 
   algorithm = IntensityCalculatorFactory.create(
@@ -200,6 +207,7 @@ def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator(data)
   assert len(reflections) == 15193
   assert count == 4801
 
+@pytest.mark.skip('requires boost_threads which is not built atm')
 def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator2(data):
   from scitbx import matrix
 
@@ -291,6 +299,7 @@ def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator2(data
   #print sbox.mask.count(5) + sbox.mask.count(37) + sbox.mask.count(51)
 
 
+@pytest.mark.skip('requires boost_threads which is not built atm')
 def test_gaussianrs_profile_data_pickling(data):
     from dials.algorithms.integration.parallel_integrator import GaussianRSReferenceProfileData
     from dials.algorithms.integration.parallel_integrator import GaussianRSMultiCrystalReferenceProfileData
@@ -339,6 +348,7 @@ def test_gaussianrs_profile_data_pickling(data):
     data_spec2 = pickle.loads(s)
 
 
+@pytest.mark.skip('requires boost_threads which is not built atm')
 def test_gaussianrs_reference_profile_calculator(data):
   from dials.algorithms.profile_model.gaussian_rs.algorithm import GaussianRSReferenceCalculatorFactory
   algorithm = GaussianRSReferenceCalculatorFactory.create(data.experiments)
@@ -368,6 +378,7 @@ def test_gaussianrs_reference_profile_calculator(data):
 
 
 
+@pytest.mark.skip('requires boost_threads which is not built atm')
 def test_job_list():
   from dials.algorithms.integration.parallel_integrator import SimpleJobList
 
@@ -391,6 +402,7 @@ def test_job_list():
     assert jobs.job_index(frame) == 4
 
 
+@pytest.mark.skip('requires boost_threads which is not built atm')
 def test_reflection_manager():
   from dials.algorithms.integration.parallel_integrator import SimpleJobList
   from dials.algorithms.integration.parallel_integrator import SimpleReflectionManager
