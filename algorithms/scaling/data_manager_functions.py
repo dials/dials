@@ -794,9 +794,8 @@ class XDS_Data_Manager(Data_Manager):
       del self.reflection_table[key]
 
 
-
 class multicrystal_datamanager(Data_Manager):
-  def __init__(self, reflections, experiments, scaling_options):#reflections1, experiments1, reflections2, experiments2, scaling_options):
+  def __init__(self, reflections, experiments, scaling_options):
     self.data_managers = []
     if scaling_options['scaling_method'] == 'xds':
       for reflection, experiment in zip(reflections, experiments):
@@ -863,11 +862,15 @@ class multicrystal_datamanager(Data_Manager):
   def join_multiple_datasets(self):
     self.joined_Ih_table = joined_Ih_table(self.data_managers)
     joined_reflections = flex.reflection_table()
-    for i in range(len(self.joined_Ih_table.h_index_cumulative_array)-1):
-      for j, dm in enumerate(self.data_managers):
-        joined_reflections.extend(dm.reflection_table[self.joined_Ih_table.h_idx_cumulative_list[j][i]:
-          self.joined_Ih_table.h_idx_cumulative_list[j][i+1]])
-    self.reflection_table = joined_reflections
+    for dm in self.data_managers:
+      joined_reflections.extend(dm.reflection_table)
+    u_c = self.data_managers[0].experiments.crystal.get_unit_cell().parameters()
+    s_g = self.data_managers[0].experiments.crystal.get_space_group()
+    crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
+    miller_set = miller.set(crystal_symmetry=crystal_symmetry,
+                            indices=joined_reflections['asu_miller_index'], anomalous_flag=True)
+    permuted = miller_set.sort_permutation(by_value='packed_indices')
+    self.reflection_table = joined_reflections.select(permuted)
     self.weights_for_scaling = Weighting(self.reflection_table)
     self.Ih_table = single_Ih_table(self.reflection_table, self.weights_for_scaling.get_weights())
     self.reflection_table['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
