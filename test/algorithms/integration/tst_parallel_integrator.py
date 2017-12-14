@@ -19,7 +19,8 @@ def read_experiments_and_reflections():
   reflections_filename = join(directory, "shoeboxes_0_0.pickle")
   reference_filename = join(directory, "reference_profiles.pickle")
 
-  experiments = ExperimentListFactory.from_json_file(experiments_filename)
+  experiments = ExperimentListFactory.from_json_file(experiments_filename,
+                                                     check_format=False)
   reflections = flex.reflection_table.from_pickle(reflections_filename)
   reference = pickle.load(open(reference_filename))
 
