@@ -32,7 +32,6 @@ tst_list = [
     "$D/test/algorithms/integration/tst_profile_fitting_rs.py",
     "$D/test/algorithms/integration/tst_summation.py",
     "$D/test/algorithms/integration/tst_filter_overlaps.py",
-    "$D/test/algorithms/integration/tst_parallel_integrator.py",
     "$D/test/algorithms/polygon/clip/tst_clipping.py",
     "$D/test/algorithms/polygon/tst_spatial_interpolation.py",
     "$D/test/algorithms/profile_model/tst_profile_model.py",
