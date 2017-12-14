@@ -66,8 +66,9 @@ namespace dials { namespace af {
     int6,
     cctbx::miller::index<>,
     Shoebox<>
-  >::type reflection_table_types;
+  > reflection_table_type_generator;
 
+  typedef reflection_table_type_generator::type reflection_table_types;
   typedef flex_table<reflection_table_types> reflection_table;
 
   enum Flags {

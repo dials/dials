@@ -92,3 +92,37 @@ class BackgroundAlgorithm(object):
       success = self._create(reflections, image_volume)
     reflections.set_flags(success != True, reflections.flags.dont_integrate)
     return success
+
+
+class GModelBackgroundCalculatorFactory(object):
+  ''' Class to do background subtraction. '''
+
+  @classmethod
+  def create(Class,
+             experiments,
+             model=None,
+             robust=False,
+             tuning_constant=1.345,
+             min_pixels=10):
+    '''
+    Initialise the algorithm.
+
+    :param experiments: The list of experiments
+    :param model: The background model
+    :param robust: Use the robust background algorithm
+    :param tuning_constant: The robust tuning constant
+
+    '''
+    from dials.algorithms.integration.parallel_integrator import GModelBackgroundCalculator
+    from dials.algorithms.background.gmodel import Creator
+
+    # Get the model
+    model = global_model_cache.get(model)
+
+    # Create the background creator
+    return GModelBackgroundCalculator(
+      model           = model,
+      robust          = robust,
+      tuning_constant = tuning_constant,
+      max_iter        = 100,
+      min_pixels      = min_pixels)

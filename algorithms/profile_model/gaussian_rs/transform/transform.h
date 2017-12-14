@@ -94,6 +94,7 @@ namespace transform {
         sigma_b_(sigma_b),
         sigma_m_(sigma_m),
         n_sigma_(n_sigma),
+        half_grid_size_(grid_size),
         grid_size_(2*grid_size+1, 2*grid_size+1, 2*grid_size+1),
         step_size_(sigma_m_ * n_sigma_ / (grid_size + 0.5),
                    sigma_b_ * n_sigma_ / (grid_size + 0.5),
@@ -142,6 +143,11 @@ namespace transform {
       return n_sigma_;
     }
 
+    /** @returns The half grid size */
+    std::size_t half_grid_size() const {
+      return half_grid_size_;
+    }
+
     /** @returns the grid size */
     int3 grid_size() const {
       return grid_size_;
@@ -165,6 +171,7 @@ namespace transform {
     double sigma_b_;
     double sigma_m_;
     double n_sigma_;
+    std::size_t half_grid_size_;
     int3 grid_size_;
     double3 step_size_;
     double3 grid_centre_;

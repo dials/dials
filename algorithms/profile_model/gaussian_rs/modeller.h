@@ -20,7 +20,6 @@
 #include <dials/algorithms/profile_model/modeller/circle_sampler.h>
 #include <dials/algorithms/profile_model/modeller/ewald_sphere_sampler.h>
 #include <dials/algorithms/integration/fit/fitting.h>
-#include <dials/algorithms/integration/maximum_likelihood/fitting.h>
 
 namespace dials { namespace algorithms {
 
@@ -52,11 +51,6 @@ namespace dials { namespace algorithms {
       DetectorSpace   = 2
     };
 
-    enum Estimator {
-      LeastSquares      = 1,
-      MaximumLikelihood = 2
-    };
-
     GaussianRSProfileModellerBase(
         const boost::shared_ptr<BeamBase> beam,
         const Detector &detector,
@@ -68,8 +62,7 @@ namespace dials { namespace algorithms {
         std::size_t grid_size,
         std::size_t num_scan_points,
         int grid_method,
-        int fit_method,
-        int estimator)
+        int fit_method)
       : beam_(beam),
         detector_(detector),
         goniometer_(goniometer),
@@ -81,7 +74,6 @@ namespace dials { namespace algorithms {
         num_scan_points_(num_scan_points),
         grid_method_(grid_method),
         fit_method_(fit_method),
-        estimator_(estimator),
         sampler_(
           init_sampler(
             beam,
@@ -151,7 +143,6 @@ namespace dials { namespace algorithms {
     std::size_t num_scan_points_;
     int grid_method_;
     int fit_method_;
-    int estimator_;
     boost::shared_ptr<SamplerIface> sampler_;
   };
 
@@ -210,8 +201,7 @@ namespace dials { namespace algorithms {
             std::size_t num_scan_points,
             double threshold,
             int grid_method,
-            int fit_method,
-            int estimator)
+            int fit_method)
       : GaussianRSProfileModellerBase(
           beam,
           detector,
@@ -223,8 +213,7 @@ namespace dials { namespace algorithms {
           grid_size,
           num_scan_points,
           grid_method,
-          fit_method,
-          estimator),
+          fit_method),
         EmpiricalProfileModeller(
           sampler_->size(),
           int3(
@@ -290,10 +279,6 @@ namespace dials { namespace algorithms {
 
     int fit_method() const {
       return fit_method_;
-    }
-
-    int estimator() const {
-      return estimator_;
     }
 
     vec3<double> coord(std::size_t index) const {
@@ -421,9 +406,6 @@ namespace dials { namespace algorithms {
      */
     af::shared<bool> fit_reciprocal_space(af::reflection_table reflections) const {
 
-      // When doing fitting in transformed space use least squares
-      DIALS_ASSERT(estimator_ == LeastSquares);
-
       // Check input is OK
       DIALS_ASSERT(reflections.is_consistent());
       DIALS_ASSERT(reflections.contains("shoebox"));
@@ -513,28 +495,7 @@ namespace dials { namespace algorithms {
             for (std::size_t j = 0; j < m.size(); ++j) {
               m[j] = mask1[j] && mask2[j];
             }
-            /* if (miller_index[i] == cctbx::miller::index<>(9, -25, 74)) { */
-            /*   std::cout << "Profile" << std::endl; */
-            /*   for (std::size_t iii = 0; iii < p.size(); ++iii) { */
-            /*     std::cout << p[iii] << ", "; */
-            /*   } */
-            /*   std::cout << std::endl; */
-            /*   std::cout << "Mask" << std::endl; */
-            /*   for (std::size_t iii = 0; iii < p.size(); ++iii) { */
-            /*     std::cout << m[iii] << ", "; */
-            /*   } */
-            /*   std::cout << std::endl; */
-            /*   std::cout << "Background" << std::endl; */
-            /*   for (std::size_t iii = 0; iii < p.size(); ++iii) { */
-            /*     std::cout << b[iii] << ", "; */
-            /*   } */
-            /*   std::cout << std::endl; */
-            /*   std::cout << "Data" << std::endl; */
-            /*   for (std::size_t iii = 0; iii < p.size(); ++iii) { */
-            /*     std::cout << c[iii] << ", "; */
-            /*   } */
-            /*   std::cout << std::endl; */
-            /* } */
+
             // Do the profile fitting
             ProfileFitter<double> fit(
                 c,
@@ -641,55 +602,27 @@ namespace dials { namespace algorithms {
 
             // Create the mask array
             af::versa< bool, af::c_grid<3> > m(sbox[i].mask.accessor());
-            if (estimator_ == LeastSquares) {
 
-              std::transform(
-                sbox[i].mask.begin(),
-                sbox[i].mask.end(),
-                m.begin(),
-                detail::check_mask_code(Valid | Foreground));
+            std::transform(
+              sbox[i].mask.begin(),
+              sbox[i].mask.end(),
+              m.begin(),
+              detail::check_mask_code(Valid | Foreground));
 
 
-              // Do the profile fitting
-              ProfileFitter<double> fit(
-                  c.const_ref(),
-                  b.const_ref(),
-                  m.const_ref(),
-                  p,
-                  1e-3, 100);
-              DIALS_ASSERT(fit.niter() < 100);
+            // Do the profile fitting
+            ProfileFitter<double> fit(
+                c.const_ref(),
+                b.const_ref(),
+                m.const_ref(),
+                p,
+                1e-3, 100);
+            DIALS_ASSERT(fit.niter() < 100);
 
-              // Set the data in the reflection
-              intensity_val[i] = fit.intensity()[0];
-              intensity_var[i] = fit.variance()[0];
-              reference_cor[i] = fit.correlation();
-
-            } else {
-
-              DIALS_ASSERT(estimator_ == MaximumLikelihood);
-
-              std::transform(
-                sbox[i].mask.begin(),
-                sbox[i].mask.end(),
-                m.begin(),
-                detail::check_either_mask_code(
-                  Valid | Foreground,
-                  Valid | Background | BackgroundUsed));
-
-              // Do the profile fitting
-              MLProfileFitting<double> fit(
-                  p,
-                  m.const_ref(),
-                  c.const_ref(),
-                  b.const_ref(),
-                  1e-3, 1000);
-              DIALS_ASSERT(fit.niter() < 1000);
-
-              // Set the data in the reflection
-              intensity_val[i] = fit.intensity();
-              intensity_var[i] = fit.variance();
-              reference_cor[i] = fit.correlation();
-            }
+            // Set the data in the reflection
+            intensity_val[i] = fit.intensity()[0];
+            intensity_var[i] = fit.variance()[0];
+            reference_cor[i] = fit.correlation();
 
             // Set the integrated flag
             flags[i] |= af::IntegratedPrf;
@@ -719,8 +652,7 @@ namespace dials { namespace algorithms {
           num_scan_points_,
           threshold_,
           grid_method_,
-          fit_method_,
-          estimator_);
+          fit_method_);
       result.finalized_ = finalized_;
       result.n_reflections_.assign(
           n_reflections_.begin(),

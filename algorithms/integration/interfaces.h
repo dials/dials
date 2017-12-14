@@ -1,0 +1,65 @@
+/*
+ * interfaces.h
+ *
+ *  Copyright (C) 2013 Diamond Light Source
+ *
+ *  Author: James Parkhurst
+ *
+ *  This code is distributed under the BSD license, a copy of which is
+ *  included in the root directory of this package.
+ */
+
+#ifndef DIALS_ALGORITHMS_INTEGRATION_INTERFACES_H
+#define DIALS_ALGORITHMS_INTEGRATION_INTERFACES_H
+
+#include <dials/array_family/reflection.h>
+
+namespace dials { namespace algorithms {
+
+  /**
+   * Interface class for computing the reflection mask
+   */
+  class MaskCalculatorIface {
+  public:
+
+    virtual void operator()(
+        af::Reflection &reflection,
+        bool adjacent=false) const = 0;
+
+  };
+
+  /**
+   * Interface class for computing the reflection background
+   */
+  class BackgroundCalculatorIface {
+  public:
+
+    virtual void operator()(af::Reflection &reflection) const = 0;
+
+  };
+
+  /**
+   * Interface class for computing the reflection intensity
+   */
+  class IntensityCalculatorIface {
+  public:
+
+    virtual void operator()(
+        af::Reflection &reflection,
+        const std::vector<af::Reflection> &adjacent_reflections) const = 0;
+
+  };
+
+  /**
+   * Interface class for computing the reference profiles
+   */
+  class ReferenceCalculatorIface {
+  public:
+
+    virtual void operator()(af::Reflection &reflection) = 0;
+
+  };
+
+}}
+
+#endif // DIALS_ALGORITHMS_INTEGRATION_INTERFACES_H

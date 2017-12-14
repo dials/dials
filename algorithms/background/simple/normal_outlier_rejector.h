@@ -184,9 +184,10 @@ namespace dials { namespace algorithms { namespace background {
       DIALS_ASSERT(shoebox.size() == mask.size());
 
       // Copy valid pixels and indices into list
+      int mask_code = shoebox::Valid | shoebox::Background;
       af::shared<int> indices;
       for (std::size_t i = 0; i < shoebox.size(); ++i) {
-        if (mask[i] & shoebox::Valid && mask[i] & shoebox::Background) {
+        if ((mask[i] & mask_code) == mask_code && (mask[i] & shoebox::Overlapped) == 0) {
           indices.push_back(i);
         }
       }

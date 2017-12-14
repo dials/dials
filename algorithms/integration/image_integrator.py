@@ -638,7 +638,7 @@ class ImageIntegrator(object):
     # Save some stuff
     self.experiments = experiments
     self.reflections = reflections
-    self.params = params
+    self.params = Parameters.from_phil(params.integration)
     self.profile_model_report = None
     self.integration_report = None
 

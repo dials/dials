@@ -60,3 +60,39 @@ class BackgroundAlgorithm(object):
       success = self._create(reflections, image_volume)
     reflections.set_flags(success != True, reflections.flags.dont_integrate)
     return success
+
+
+class GLMBackgroundCalculatorFactory(object):
+  ''' Class to do background subtraction. '''
+
+  @classmethod
+  def create(Class, experiments,
+             model='constant3d',
+             tuning_constant=1.345,
+             min_pixels=10):
+    '''
+    Initialise the algorithm.
+
+    :param experiments: The list of experiments
+    :param model: The background model
+    :param tuning_constant: The robust tuning constant
+
+    '''
+    from dials.algorithms.integration.parallel_integrator import GLMBackgroundCalculator
+    from dials.algorithms.background.glm import Creator
+    if model == 'constant2d':
+      model = Creator.model.constant2d
+    elif model == 'constant3d':
+      model = Creator.model.constant3d
+    elif model == 'loglinear2d':
+      model = Creator.model.loglinear2d
+    elif model == 'loglinear3d':
+      model = Creator.model.loglinear3d
+    else:
+      raise RuntimeError('Unknown background model')
+    return GLMBackgroundCalculator(
+      model           = model,
+      tuning_constant = tuning_constant,
+      max_iter        = 100,
+      min_pixels      = min_pixels)
+

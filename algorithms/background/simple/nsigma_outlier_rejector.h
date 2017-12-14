@@ -55,7 +55,7 @@ namespace dials { namespace algorithms { namespace background {
       // Copy valid pixels and indices into list
       af::shared<double> data;
       for (std::size_t i = 0; i < shoebox.size(); ++i) {
-        if ((mask[i] & mask_code) == mask_code) {
+        if ((mask[i] & mask_code) == mask_code && (mask[i] & shoebox::Overlapped) == 0) {
           data.push_back(shoebox[i]);
         }
       }
@@ -71,7 +71,7 @@ namespace dials { namespace algorithms { namespace background {
 
       // Set rejected pixels as 'not background'
       for (std::size_t i = 0; i < mask.size(); ++i) {
-        if ((mask[i] & mask_code) == mask_code) {
+        if ((mask[i] & mask_code) == mask_code && (mask[i] & shoebox::Overlapped) == 0) {
           if (p0 <= shoebox[i] && shoebox[i] <= p1) {
             mask[i] |= shoebox::BackgroundUsed;
           }

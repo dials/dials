@@ -57,7 +57,7 @@ namespace dials { namespace algorithms { namespace background {
       // Copy valid pixels and indices into list
       af::shared<int> indices;
       for (std::size_t i = 0; i < shoebox.size(); ++i) {
-        if ((mask[i] & mask_code) == mask_code) {
+        if ((mask[i] & mask_code) == mask_code && (mask[i] & shoebox::Overlapped) == 0) {
           indices.push_back(i);
         }
       }

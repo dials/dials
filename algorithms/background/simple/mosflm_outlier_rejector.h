@@ -27,6 +27,7 @@ namespace dials { namespace algorithms { namespace background {
   using model::Valid;
   using model::Background;
   using model::BackgroundUsed;
+  using model::Overlapped;
 
   /**
    * Compute the background plane from a subset and select pixels within a few
@@ -111,7 +112,7 @@ namespace dials { namespace algorithms { namespace background {
       std::vector<std::size_t> index;
       index.reserve(data.size());
       for (std::size_t i = 0; i < mask.size(); ++i) {
-        if ((mask[i] & code) == code) {
+        if ((mask[i] & code) == code && (mask[i] & Overlapped) == 0) {
           index.push_back(i);
         } else {
           mask[i] &= ~BackgroundUsed;
@@ -201,7 +202,7 @@ namespace dials { namespace algorithms { namespace background {
       int hx = data.accessor()[1] / 2;
       for (std::size_t j = 0; j < mask.accessor()[0]; ++j) {
         for (std::size_t i = 0; i < mask.accessor()[1]; ++i) {
-          if ((mask(j,i) & code) == code) {
+          if ((mask(j,i) & code) == code && (mask(j,i) & Overlapped) == 0) {
             double x = ((int)i - hx);
             double y = ((int)j - hy);
             double p1 = data(j,i);

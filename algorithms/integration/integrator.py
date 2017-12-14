@@ -69,7 +69,12 @@ def generate_phil_scope():
           .type = float(value_min=0.0,value_max=1.0)
           .help = "The maximum percentage of total physical memory to use for"
                   "allocating shoebox arrays."
+
       }
+
+      use_dynamic_mask = False
+        .type = bool
+        .help = "Use dynamic mask if available"
 
       debug {
 
@@ -124,7 +129,7 @@ def generate_phil_scope():
 
       }
 
-      integrator = *auto 3d flat3d 2d single2d stills volume
+      integrator = *auto 3d flat3d 2d single2d stills volume 3d_threaded
         .type = choice
         .help = "The integrator to use."
         .expert_level=3
@@ -956,7 +961,7 @@ class Integrator(object):
     # Save some stuff
     self.experiments = experiments
     self.reflections = reflections
-    self.params = params
+    self.params = Parameters.from_phil(params.integration)
     self.profile_model_report = None
     self.integration_report = None
 
@@ -1323,6 +1328,223 @@ class IntegratorVolume(ImageIntegrator):
   pass
 
 
+class Integrator3DThreaded(object):
+  '''
+  Integrator for 3D algorithms
+
+  '''
+  def __init__(self,
+               experiments,
+               reflections,
+               params):
+
+    '''
+    Initialize the integrator
+
+    :param experiments: The experiment list
+    :param reflections: The reflections to process
+    :param params: The parameters to use
+
+    '''
+
+    # Save some stuff
+    self.experiments = experiments
+    self.reflections = reflections
+    self.params = params
+    self.profile_model_report = None
+    self.integration_report = None
+
+  def initialise(self):
+    '''
+    Initialise the integrator
+
+    '''
+    from dials.array_family import flex
+
+    # Compute some reflection properties
+    self.reflections.compute_zeta_multi(self.experiments)
+    self.reflections.compute_d(self.experiments)
+    self.reflections.compute_bbox(self.experiments)
+
+    # Filter the reflections by zeta
+    mask = flex.abs(self.reflections['zeta']) < self.params.integration.filter.min_zeta
+    num_ignore = mask.count(True)
+    self.reflections.set_flags(mask, self.reflections.flags.dont_integrate)
+
+    # Filter the reflections by powder ring
+    # if self.params.integration.filter.powder_filter is not None:
+    #   mask = self.params.integration.filter.powder_filter(self.reflections['d'])
+    #   self.reflections.set_flags(mask, self.reflections.flags.in_powder_ring)
+
+  def finalise(self):
+    '''
+    Finalise the integrator
+
+    '''
+
+    # Compute the corrections
+    self.reflections.compute_corrections(self.experiments)
+
+  def integrate(self):
+    '''
+    Integrate the data
+
+    '''
+    from dials.algorithms.integration.parallel_integrator import ReferenceCalculatorProcessor
+    from dials.algorithms.integration.parallel_integrator import IntegratorProcessor
+    from dials.algorithms.integration.report import IntegrationReport
+    from dials.algorithms.integration.report import ProfileModelReport
+    from dials.util.command_line import heading
+    from dials.util import pprint
+    from random import shuffle, seed
+    from math import floor, ceil
+    from dials.array_family import flex
+
+    # Init the report
+    self.profile_model_report = None
+    self.integration_report = None
+
+    # Heading
+    logger.info("=" * 80)
+    logger.info("")
+    logger.info(heading("Processing reflections"))
+    logger.info("")
+
+    # Create summary format
+    fmt = (
+      ' Processing the following experiments:\n'
+      '\n'
+      ' Experiments: %d\n'
+      ' Beams:       %d\n'
+      ' Detectors:   %d\n'
+      ' Goniometers: %d\n'
+      ' Scans:       %d\n'
+      ' Crystals:    %d\n'
+      ' Imagesets:   %d\n'
+    )
+
+    # Print the summary
+    logger.info(fmt % (
+      len(self.experiments),
+      len(self.experiments.beams()),
+      len(self.experiments.detectors()),
+      len(self.experiments.goniometers()),
+      len(self.experiments.scans()),
+      len(self.experiments.crystals()),
+      len(self.experiments.imagesets())))
+
+    # Do the initialisation
+    self.initialise()
+
+    # Do profile modelling
+    if self.params.integration.profile.fitting:
+
+      logger.info("=" * 80)
+      logger.info("")
+      logger.info(heading("Modelling reflection profiles"))
+      logger.info("")
+
+      # Compute the reference profiles
+      reference_calculator = ReferenceCalculatorProcessor(
+        experiments = self.experiments,
+        reflections = self.reflections,
+        params      = self.params)
+
+      # Get the reference profiles
+      self.reference_profiles = reference_calculator.profiles()
+
+      # Print the modeller report
+      # self.profile_model_report = ProfileModelReport(
+      #   self.experiments,
+      #   reference_profiles,
+      #   reference)
+      # logger.info("")
+      # logger.info(self.profile_model_report.as_str(prefix=' '))
+
+      # Print the time info
+      # logger.info("")
+      # logger.info("Timing information for reference profile formation")
+      # logger.info(str(time_info))
+      # logger.info("")
+
+    else:
+
+      # Set reference profiles to None
+      self.reference_profiles = None
+
+    logger.info("=" * 80)
+    logger.info("")
+    logger.info(heading("Integrating reflections"))
+    logger.info("")
+
+    integrator = IntegratorProcessor(
+      experiments = self.experiments,
+      reflections = self.reflections,
+      reference   = self.reference_profiles,
+      params      = self.params)
+
+    # Process the reflections
+    self.reflections = integrator.reflections()
+
+    # Do the finalisation
+    self.finalise()
+
+    # Create the integration report
+    self.integration_report = IntegrationReport(
+      self.experiments,
+      self.reflections)
+    logger.info("")
+    logger.info(self.integration_report.as_str(prefix=' '))
+
+    # Print the time info
+    # logger.info("Timing information for integration")
+    # logger.info(str(time_info))
+    # logger.info("")
+
+    # Return the reflections
+    return self.reflections
+
+  def report(self):
+    '''
+    Return the report of the processing
+
+    '''
+    from dials.util.report import Report
+    result = Report()
+    if self.profile_model_report is not None:
+      result.combine(self.profile_model_report)
+    result.combine(self.integration_report)
+    return result
+
+  def summary(self, block_size, block_size_units):
+    ''' Print a summary of the integration stuff. '''
+    from libtbx.table_utils import format as table
+    from dials.util.command_line import heading
+
+    # Compute the task table
+    if self._experiments.all_stills():
+      rows = [["#", "Group", "Frame From", "Frame To"]]
+      for i in range(len(self)):
+        job = self._manager.job(i)
+        group = job.index()
+        f0, f1 = job.frames()
+        rows.append([str(i), str(group), str(f0), str(f1)])
+    elif self._experiments.all_sweeps():
+      rows = [["#", "Group", "Frame From", "Frame To", "Angle From", "Angle To"]]
+      for i in range(len(self)):
+        job = self._manager.job(i)
+        group = job.index()
+        expr = job.expr()
+        f0, f1 = job.frames()
+        scan = self._experiments[expr[0]].scan
+        p0 = scan.get_angle_from_array_index(f0)
+        p1 = scan.get_angle_from_array_index(f1)
+        rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1)])
+    else:
+      raise RuntimeError('Experiments must be all sweeps or all stills')
+    task_table = table(rows, has_header=True, justify="right", prefix=" ")
+
+
 class IntegratorFactory(object):
   '''
   A factory for creating integrators.
@@ -1391,6 +1613,8 @@ class IntegratorFactory(object):
       IntegratorClass = IntegratorStills
     elif params.integration.integrator == 'volume':
       IntegratorClass = IntegratorVolume
+    elif params.integration.integrator == '3d_threaded':
+      IntegratorClass = Integrator3DThreaded
     else:
       raise RuntimeError("Unknown integration type")
 
@@ -1403,4 +1627,4 @@ class IntegratorFactory(object):
     return IntegratorClass(
       experiments,
       reflections,
-      Parameters.from_phil(params.integration))
+      params)

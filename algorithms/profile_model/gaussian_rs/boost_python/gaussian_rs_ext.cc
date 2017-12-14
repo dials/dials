@@ -77,8 +77,7 @@ namespace boost_python {
           obj.num_scan_points(),
           obj.threshold(),
           obj.grid_method(),
-          obj.fit_method(),
-          obj.estimator());
+          obj.fit_method());
     }
 
     static
@@ -156,7 +155,6 @@ namespace boost_python {
           std::size_t,
           double,
           int,
-          int,
           int>())
       .def("coord", &GaussianRSProfileModeller::coord)
       .def_pickle(GaussianRSProfileModellerPickleSuite())
@@ -174,11 +172,6 @@ namespace boost_python {
     enum_<GaussianRSProfileModeller::FitMethod>("FitMethod")
       .value("reciprocal_space", GaussianRSProfileModeller::ReciprocalSpace)
       .value("detector_space", GaussianRSProfileModeller::DetectorSpace)
-      ;
-
-    enum_<GaussianRSProfileModeller::Estimator>("Estimator")
-      .value("least_squares", GaussianRSProfileModeller::LeastSquares)
-      .value("maximum_likelihood", GaussianRSProfileModeller::MaximumLikelihood)
       ;
 
     /* register_ptr_to_python< boost::shared_ptr<GaussianRSProfileModeller> >(); */
