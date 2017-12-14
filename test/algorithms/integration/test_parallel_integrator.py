@@ -1,18 +1,17 @@
+from __future__ import absolute_import, division, print_function
 
-from __future__ import division
+import cPickle as pickle
+import math
 
-def read_experiments_and_reflections():
+from dials.array_family import flex
+import pytest
+
+@pytest.fixture(scope="module")
+def data(dials_regression): # read experiments and reflections
   from collections import namedtuple
   from dials.array_family import flex
-  import cPickle as pickle
   from dxtbx.model.experiment_list import ExperimentListFactory
-  import libtbx.load_env
   from os.path import join
-  try:
-    dials_regression = libtbx.env.dist_path('dials_regression')
-  except KeyError:
-    print('SKIP: dials_regression not configured')
-    exit(0)
 
   directory = join(dials_regression, "integration_test_data", "shoeboxes")
   experiments_filename = join(directory, "integrated_experiments.json")
@@ -31,31 +30,18 @@ def read_experiments_and_reflections():
     reference=reference)
 
 
-data = read_experiments_and_reflections()
-
-
-def tst_gaussianrs_mask_calculator():
-
+def test_gaussianrs_mask_calculator(data):
   from dials.algorithms.integration.parallel_integrator import MaskCalculatorFactory
-
   algorithm = MaskCalculatorFactory.create(data.experiments)
-
-  from dials.array_family import flex
   reflections = flex.reflection_table_to_list_of_reflections(data.reflections)
 
   for r in reflections:
     algorithm(r, False)
 
-  print('OK')
 
-
-def tst_simple_background_calculator():
-
+def test_simple_background_calculator(data):
   from dials.algorithms.background.simple.algorithm import SimpleBackgroundCalculatorFactory
-
   algorithm = SimpleBackgroundCalculatorFactory.create(data.experiments)
-
-  from dials.array_family import flex
   reflections = flex.reflection_table_to_list_of_reflections(data.reflections)
 
   count = 0
@@ -64,19 +50,13 @@ def tst_simple_background_calculator():
       algorithm(r)
     except Exception:
       count += 1
-  assert len(reflections) == 15193, len(reflections)
-  assert count == 333, count
-
-  print('OK')
+  assert len(reflections) == 15193
+  assert count == 333
 
 
-def tst_glm_background_calculator():
-
+def test_glm_background_calculator():
   from dials.algorithms.background.glm.algorithm import GLMBackgroundCalculatorFactory
-
   algorithm = GLMBackgroundCalculatorFactory.create(data.experiments)
-
-  from dials.array_family import flex
   reflections = flex.reflection_table_to_list_of_reflections(data.reflections)
 
   count = 0
@@ -85,13 +65,11 @@ def tst_glm_background_calculator():
       algorithm(r)
     except Exception:
       count += 1
-  assert len(reflections) == 15193, len(reflections)
-  assert count == 333, count
-
-  print('OK')
+  assert len(reflections) == 15193
+  assert count == 333
 
 
-def tst_gmodel_background_calculator():
+def test_gmodel_background_calculator():
   pass
 
 
@@ -151,13 +129,11 @@ class IntensityCalculatorFactory(object):
       deconvolution)
 
 
-def tst_gaussianrs_reciprocal_space_intensity_calculator():
-
+def test_gaussianrs_reciprocal_space_intensity_calculator(data):
   algorithm = IntensityCalculatorFactory.create(
     detector_space = False,
     deconvolution = False)
 
-  from dials.array_family import flex
   reflections = flex.reflection_table_to_list_of_reflections(data.reflections)
 
   count = 0
@@ -168,20 +144,15 @@ def tst_gaussianrs_reciprocal_space_intensity_calculator():
     except Exception as e:
       count += 1
 
-  assert len(reflections) == 15193, len(reflections)
-  assert count == 5295, count
-
-  print('OK')
+  assert len(reflections) == 15193
+  assert count == 5295
 
 
-
-def tst_gaussianrs_detector_space_intensity_calculator():
-
+def test_gaussianrs_detector_space_intensity_calculator(data):
   algorithm = IntensityCalculatorFactory.create(
     detector_space = True,
     deconvolution = False)
 
-  from dials.array_family import flex
   reflections = flex.reflection_table_to_list_of_reflections(data.reflections)
 
   count = 0
@@ -195,24 +166,21 @@ def tst_gaussianrs_detector_space_intensity_calculator():
       count += 1
       continue
 
-    assert partiality_old < 1.0 and partiality_old >= 0, partiality_old
-    assert partiality_new < 1.0 and partiality_new >= 0, partiality_new
+    assert partiality_old < 1.0 and partiality_old >= 0
+    assert partiality_new < 1.0 and partiality_new >= 0
 
 
-  assert len(reflections) == 15193, len(reflections)
-  assert count == 4801, count
+  assert len(reflections) == 15193
+  assert count == 4801
 
 
-  print('OK')
 
-
-def tst_gaussianrs_detector_space_with_deconvolution_intensity_calculator():
+def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator(data):
 
   algorithm = IntensityCalculatorFactory.create(
     detector_space = True,
     deconvolution = True)
 
-  from dials.array_family import flex
   reflections = flex.reflection_table_to_list_of_reflections(data.reflections)
 
   count = 0
@@ -226,19 +194,15 @@ def tst_gaussianrs_detector_space_with_deconvolution_intensity_calculator():
       count += 1
       continue
 
-    assert partiality_old < 1.0 and partiality_old >= 0, partiality_old
-    assert partiality_new < 1.0 and partiality_new >= 0, partiality_new
+    assert partiality_old < 1.0 and partiality_old >= 0
+    assert partiality_new < 1.0 and partiality_new >= 0
 
+  assert len(reflections) == 15193
+  assert count == 4801
 
-  assert len(reflections) == 15193, len(reflections)
-  assert count == 4801, count
-
-  print('OK')
-
-def tst_gaussianrs_detector_space_with_deconvolution_intensity_calculator2():
+def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator2(data):
   from scitbx import matrix
 
-  from dials.array_family import flex
   reflections = flex.reflection_table_to_list_of_reflections(data.reflections)
 
   R = None
@@ -310,10 +274,10 @@ def tst_gaussianrs_detector_space_with_deconvolution_intensity_calculator2():
   intensity = R_deconvolution.get("intensity.prf.value")
   variance = R_deconvolution.get("intensity.prf.variance")
 
-  assert partiality1 <= partiality2, (partiality1, partiality2)
+  assert partiality1 <= partiality2
 
-  assert abs(intensity - 179.04238328) < 1e-7, intensity
-  assert abs(variance - 206.789505627) < 1e-7, variance
+  assert abs(intensity - 179.04238328) < 1e-7
+  assert abs(variance - 206.789505627) < 1e-7
 
   #print "Partiality", R.get("partiality")
   #print "Partiality Old", R.get("partiality_old")
@@ -325,15 +289,13 @@ def tst_gaussianrs_detector_space_with_deconvolution_intensity_calculator2():
   #print R.get("shoebox").mask.all()
   #sbox = R.get("shoebox")
   #print sbox.mask.count(5) + sbox.mask.count(37) + sbox.mask.count(51)
-  print('OK')
 
 
-def tst_gaussianrs_profile_data_pickling():
+def test_gaussianrs_profile_data_pickling(data):
     from dials.algorithms.integration.parallel_integrator import GaussianRSReferenceProfileData
     from dials.algorithms.integration.parallel_integrator import GaussianRSMultiCrystalReferenceProfileData
     from dials.algorithms.integration.parallel_integrator import  ReferenceProfileData
     from dials.algorithms.profile_model.modeller import CircleSampler
-    from dials.array_family import flex
     from dials.algorithms.profile_model.gaussian_rs.transform import TransformSpec
     from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
 
@@ -372,30 +334,14 @@ def tst_gaussianrs_profile_data_pickling():
 
       data_spec.append(spec)
 
-    import cPickle as pickle
-
     s = pickle.dumps(data_spec)
 
     data_spec2 = pickle.loads(s)
 
-    print('OK')
 
-
-def tst_gaussianrs_intensity_calculator():
-  tst_gaussianrs_reciprocal_space_intensity_calculator()
-  tst_gaussianrs_detector_space_intensity_calculator()
-  tst_gaussianrs_detector_space_with_deconvolution_intensity_calculator()
-  tst_gaussianrs_detector_space_with_deconvolution_intensity_calculator2()
-  tst_gaussianrs_profile_data_pickling()
-
-
-def tst_gaussianrs_reference_profile_calculator():
-
+def test_gaussianrs_reference_profile_calculator(data):
   from dials.algorithms.profile_model.gaussian_rs.algorithm import GaussianRSReferenceCalculatorFactory
-
   algorithm = GaussianRSReferenceCalculatorFactory.create(data.experiments)
-
-  from dials.array_family import flex
   reflections = flex.reflection_table_to_list_of_reflections(data.reflections)
 
   count = 0
@@ -404,8 +350,8 @@ def tst_gaussianrs_reference_profile_calculator():
       algorithm(r)
     except Exception:
       count += 1
-  assert len(reflections) == 15193, len(reflections)
-  assert count == 0, count
+  assert len(reflections) == 15193
+  assert count == 0
 
   profiles = algorithm.reference_profiles()
 
@@ -418,14 +364,11 @@ def tst_gaussianrs_reference_profile_calculator():
       if len(d) != 0:
         count+=1
 
-  assert count == 9, count
-
-  print('OK')
+  assert count == 9
 
 
 
-def tst_job_list():
-
+def test_job_list():
   from dials.algorithms.integration.parallel_integrator import SimpleJobList
 
   jobs = SimpleJobList((0, 60), 20)
@@ -447,13 +390,10 @@ def tst_job_list():
   for frame in range(46, 60):
     assert jobs.job_index(frame) == 4
 
-  print('OK')
 
-def tst_reflection_manager():
-
+def test_reflection_manager():
   from dials.algorithms.integration.parallel_integrator import SimpleJobList
   from dials.algorithms.integration.parallel_integrator import SimpleReflectionManager
-  from math import floor
 
   jobs = SimpleJobList((0, 60), 20)
   reflections = data.reflections
@@ -469,7 +409,7 @@ def tst_reflection_manager():
 
     for rr in r1:
       z0, z1 = rr['bbox'][4:6]
-      zc = int(floor((z0+z1)/2.0))
+      zc = int(math.floor((z0+z1)/2.0))
       j = jobs.job_index(zc)
       assert(j == index)
       assert z0 >= j0 and z1 <= j1
@@ -479,16 +419,3 @@ def tst_reflection_manager():
   check_job(2)
   check_job(3)
   check_job(4)
-  print('OK')
-
-
-if __name__ == '__main__':
-
-  tst_gaussianrs_mask_calculator()
-  tst_simple_background_calculator()
-  tst_glm_background_calculator()
-  tst_gmodel_background_calculator()
-  tst_gaussianrs_intensity_calculator()
-  tst_gaussianrs_reference_profile_calculator()
-  tst_job_list()
-  tst_reflection_manager()
