@@ -558,7 +558,8 @@ class FinalizerStills(FinalizerBase):
         if (integrated['intensity.sum.variance'] < 0).count(True) > 0:
           raise Sorry("Found negative variances (sum). Are bad pixels properly masked out?")
         n = (integrated['intensity.sum.variance'] == 0).count(True)
-        if n == (integrated['intensity.sum.value'] == 0).count(True):
+        sel = (integrated['intensity.sum.variance'] == 0) & (integrated['intensity.sum.value'] == 0)
+        if n == sel.count(True):
           logger.info("Filtering %d reflections with no integrated signal (sum and variance = 0) out of %d"%(n, len(integrated)))
           integrated = integrated.select(integrated['intensity.sum.variance'] > 0)
         else:
