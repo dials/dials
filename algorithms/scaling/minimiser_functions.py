@@ -2,16 +2,10 @@
 Classes to create minimiser objects.
 '''
 from __future__ import print_function
-import numpy as np
-#from dials_array_family_flex_ext import *
-#from cctbx.array_family.flex import *
-#from cctbx.array_family import flex
 from dials.array_family import flex
-from scitbx import lbfgs
-from math import exp
-import time
-from data_manager_functions import active_parameter_manager, multi_active_parameter_manager
-#note: include math exp import after flex imports to avoid exp conflicts?
+from scitbx import lbfgs, sparse
+from data_manager_functions import (active_parameter_manager,
+  multi_active_parameter_manager)
 
 class LBFGS_optimiser(object):
   '''Class that takes in Data_Manager object and runs an LBFGS minimisation'''
@@ -33,7 +27,7 @@ class LBFGS_optimiser(object):
         if self.data_manager.scaling_options['parameterization'] == 'standard':
           self.data_manager.scale_gvalues()
     print(('\nCompleted minimisation for following corrections: {0}\n'
-      +'*'*40+'\n').format(''.join(i.lstrip('g_')+' ' for i in param_name)))
+           +'*'*40+'\n').format(''.join(i.lstrip('g_')+' ' for i in param_name)))
 
   def compute_functional_and_gradients(self):
     '''first calculate the updated values of the scale factors and Ih,
@@ -69,18 +63,20 @@ class LBFGS_optimiser(object):
       print("all scales are positive")
 
 class error_scale_LBFGSoptimiser(object):
+  '''Class that minimises an error model for an Ih_table'''
   def __init__(self, Ih_table, starting_values):
     # default start a = 1.0, b = 0.05
-    #note- don't initialise with b(SdAdd) = 0.0 or it gets stuck on 0!!
+    # note - don't initialise with b(SdAdd) = 0.0 or it gets stuck on 0!!
     self.Ih_table = Ih_table
     self.x = starting_values
     self.Ih_table.Ih_table['sigmaprime'] = self.calc_sigmaprime()
     self.Ih_table.Ih_table['delta_hl'] = self.calc_deltahl()
     self.bin_intensities()
+    self.bin_vars = None
     print("Initialised error model LBFGS optimiser instance. \n")
     lbfgs.run(target_evaluator=self)
     print("Minimised error model with parameters {0:.5f} and {1:.5f}. {sep}"
-      .format(self.x[0], self.x[1], sep='\n'))
+          .format(self.x[0], self.x[1], sep='\n'))
 
   def compute_functional_and_gradients(self):
     '''first calculate the updated values of sigmaprime and delta_hl,
@@ -92,13 +88,14 @@ class error_scale_LBFGSoptimiser(object):
     return R, G
 
   def calc_sigmaprime(self):
+    '''function to calculate the updated standard deviation'''
     sigmaprime = self.x[0] * ((1.0/self.Ih_table.Ih_table['weights'])
       #+ (self.x[1]*self.Ih_table.Ih_table['intensity'])
       + ((self.x[1]*self.Ih_table.Ih_table['intensity'])**2))**0.5
     return sigmaprime
 
   def calc_deltahl(self):
-    #first calcualte n from h_index_cumulative_array?
+    '''function to calculate the normalised deviation of the intensities'''
     n_h = self.Ih_table.n_h
     I_hl = self.Ih_table.Ih_table['intensity']
     g_hl = self.Ih_table.Ih_table['inverse_scale_factor']
@@ -108,31 +105,43 @@ class error_scale_LBFGSoptimiser(object):
     return delta_hl
 
   def bin_intensities(self):
+    '''bin data into intensity bins, and create a 'bin_reducer' matrix for
+       summation over indices '''
     sel = flex.sort_permutation(self.Ih_table.Ih_table['intensity'])
     self.Ih_table.Ih_table = self.Ih_table.Ih_table.select(sel)
-    deltahl = self.Ih_table.Ih_table['delta_hl']
     n = len(self.Ih_table.Ih_table)
-    n_bins = 20
-    self.n_bin_count = []
+    if n < 10000: # what is a sensible limit here?
+      n_bins = 10 # what is a sensible number of bins?
+    else:
+      n_bins = 20
+    self.n_bin_cumulative_array = []
     for i in range(0, n_bins+1):
-      self.n_bin_count.append((i*n)//n_bins)
-    self.n_in_each_bin = flex.double([])
-    for i, val in enumerate(self.n_bin_count[:-1]):
-      self.n_in_each_bin.append(self.n_bin_count[i+1]-val)
+      self.n_bin_cumulative_array.append((i*n)//n_bins)
+    self.n_bin_counter_array = flex.double([])
+    for i, val in enumerate(self.n_bin_cumulative_array[:-1]):
+      self.n_bin_counter_array.append((self.n_bin_cumulative_array[i+1]-val))
+    n = self.n_bin_cumulative_array[-1]
+    self.bin_reducer = sparse.matrix(n, len(self.n_bin_counter_array))
+    for i in range(len(self.n_bin_cumulative_array)-1):
+      col = sparse.matrix_column(n)
+      start_idx = self.n_bin_cumulative_array[i]
+      for j in range(int(self.n_bin_counter_array[i])):
+        col[start_idx+j] = 1
+      self.bin_reducer[:, i] = col
 
   def calc_error_residual(self):
+    'calculate the residual'
     deltahl = self.Ih_table.Ih_table['delta_hl']
-    import numpy as np
-    sum_deltasq = flex.double(np.add.reduceat(deltahl**2, self.n_bin_count[:-1]))
-    sum_delta_sq = flex.double(np.add.reduceat(deltahl, self.n_bin_count[:-1]))**2
-    self.bin_vars = ((sum_deltasq/flex.double(self.n_in_each_bin)) -
-                     (sum_delta_sq/(flex.double(self.n_in_each_bin)**2)))
-    #print list(self.bin_vars)
+    sum_deltasq = (deltahl**2) * self.bin_reducer
+    sum_delta_sq = (deltahl * self.bin_reducer)**2
+    self.bin_vars = ((sum_deltasq/flex.double(self.n_bin_counter_array)) -
+                     (sum_delta_sq/(flex.double(self.n_bin_counter_array)**2)))
     R = flex.sum(((flex.double([1.0]*len(self.bin_vars)) - self.bin_vars)**2))
-    R = R + (25.0*((1.0 - self.x[0])**2)) + (400.0*((0.0001 - self.x[1])**2))# + (self.x[2]**2))
+    R = R + (25.0*((1.0 - self.x[0])**2)) + (400.0*((0.0001 - self.x[1])**2))
     return R
 
   def calc_error_gradient(self):
+    'calculate the gradient vector'
     I_hl = self.Ih_table.Ih_table['intensity']
     sigmaprime = self.Ih_table.Ih_table['sigmaprime']
     delta_hl = self.Ih_table.Ih_table['delta_hl']
@@ -144,15 +153,13 @@ class error_scale_LBFGSoptimiser(object):
                  ddelta_dsigma * dsig_dc]
     gradient = flex.double([])
     for deriv in dsig_list:
-      term1 = flex.double(np.add.reduceat(2.0 * delta_hl * deriv, self.n_bin_count[:-1]))
-      term2a = flex.double(np.add.reduceat(delta_hl, self.n_bin_count[:-1]))
-      term2b = flex.double(np.add.reduceat(deriv, self.n_bin_count[:-1]))
-      grad = -1.0 * (2.0 * (flex.double([1.0]*len(self.bin_vars)) - self.bin_vars) *
-              ((term1 / self.n_in_each_bin)
-               - (2.0 * term2a * term2b / (self.n_in_each_bin**2))))
+      term1 = 2.0 * delta_hl * deriv * self.bin_reducer
+      term2a = delta_hl * self.bin_reducer
+      term2b = deriv * self.bin_reducer
+      grad = (2.0 * (flex.double([1.0]*len(self.bin_vars)) - self.bin_vars)
+              * ((term1 / self.n_bin_counter_array)
+                 - (2.0 * term2a * term2b / (self.n_bin_counter_array**2)))) * -1.0
       gradient.append(flex.sum(grad))
     gradient = gradient + flex.double([-1.0 * 2.0 * (1.0 - self.x[0]),
                                        1.0 * 2.0 * self.x[1]])
     return gradient
-
-
