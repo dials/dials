@@ -372,16 +372,19 @@ class Script(object):
       do_work((rank, subset))
     else:
       from dxtbx.command_line.image_average import splitit
-      result = list(easy_mp.multi_core_run(
-        myfunction=do_work,
-        argstuples=list(enumerate(splitit(iterable, params.mp.nproc))),
-        nproc=params.mp.nproc))
-      error_list = [r[2] for r in result]
-      if error_list.count(None) != len(error_list):
-        print "Some processes failed excecution. Not all images may have processed. Error messages:"
-        for error in error_list:
-          if error is None: continue
-          print error
+      if params.mp.nproc == 1:
+        do_work(0, iterable)
+      else:
+        result = list(easy_mp.multi_core_run(
+          myfunction=do_work,
+          argstuples=list(enumerate(splitit(iterable, params.mp.nproc))),
+          nproc=params.mp.nproc))
+        error_list = [r[2] for r in result]
+        if error_list.count(None) != len(error_list):
+          print "Some processes failed excecution. Not all images may have processed. Error messages:"
+          for error in error_list:
+            if error is None: continue
+            print error
 
     # Total Time
     logger.info("")
