@@ -552,15 +552,23 @@ class FinalizerStills(FinalizerBase):
     # verify sigmas are sensible
     if 'intensity.prf.value' in integrated:
       if (integrated['intensity.prf.variance'] <= 0).count(True) > 0:
-        raise Sorry("Found negative variances. Are bad pixels properly masked out?")
+        raise Sorry("Found negative variances (prf). Are bad pixels properly masked out?")
     if 'intensity.sum.value' in integrated:
       if (integrated['intensity.sum.variance'] <= 0).count(True) > 0:
-        raise Sorry("Found negative variances. Are bad pixels properly masked out?")
+        if (integrated['intensity.sum.variance'] < 0).count(True) > 0:
+          raise Sorry("Found negative variances (sum). Are bad pixels properly masked out?")
+        n = (integrated['intensity.sum.variance'] == 0).count(True)
+        if n == (integrated['intensity.sum.value'] == 0).count(True):
+          logger.info("Filtering %d reflections with no integrated signal (sum and variance = 0) out of %d"%(n, len(integrated)))
+          integrated = integrated.select(integrated['intensity.sum.variance'] > 0)
+        else:
+          raise Sorry("Found reflections with variances == 0 but summed signal != 0")
+
       # apply detector gain to summation variances
       integrated['intensity.sum.variance'] *= self.params.integration.summation.detector_gain
     if 'background.sum.value' in integrated:
       if (integrated['background.sum.variance'] < 0).count(True) > 0:
-        raise Sorry("Found negative variances. Are bad pixels properly masked out?")
+        raise Sorry("Found negative variances (background sum). Are bad pixels properly masked out?")
       if (integrated['background.sum.variance'] == 0).count(True) > 0:
         logger.info("Filtering %d reflections with zero background variance" % ((integrated['background.sum.variance'] == 0).count(True)))
         integrated = integrated.select(integrated['background.sum.variance'] > 0)
