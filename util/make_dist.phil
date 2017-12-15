@@ -1,7 +1,7 @@
 package_name = DIALS
 pkg_prefix = dials
 installer_script = dials/util/installer.py
-license = dials/license.txt
+license = dials/LICENSE
 source_module = annlib
 source_module = annlib_adaptbx
 source_module = dials

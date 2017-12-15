@@ -550,7 +550,6 @@ installer/dials_installer.sh -text
 interfaces/__init__.py -text
 /libtbx_config -text
 /libtbx_refresh.py -text
-/license.txt -text
 model/SConscript -text
 model/__init__.py -text
 model/data/SConscript -text
