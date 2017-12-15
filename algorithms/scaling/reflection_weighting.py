@@ -1,6 +1,9 @@
 from __future__ import print_function
 from dials.array_family import flex
 
+import logging
+logger = logging.getLogger('dials.scale')
+
 class Weighting(object):
   ''' This class defines a weighting object that takes in a reflection table,
   gives initial weights of 1/variance and has methods to set the weights of
@@ -40,7 +43,7 @@ class Weighting(object):
     msg = ('Applying an error model to the variances used for scaling {sep}'
       'with the error model parameters {0:.5f}, {1:.5f}. {sep}').format(error_params[0], 
       error_params[1], sep='\n')
-    print(msg)
+    logger.info(msg)
     sel = self.scale_weighting != 0.0
     nonzero_weights = self.scale_weighting.select(sel)
     nz_intensities = reflection_table.select(sel)['intensity']

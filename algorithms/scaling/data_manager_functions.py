@@ -21,19 +21,22 @@ from collections import OrderedDict
 from scitbx import sparse
 from aimless_outlier_rejection import reject_outliers
 
+import logging
+logger = logging.getLogger('dials.scale')
+
 class Data_Manager(object):
   '''Data Manager takes a params parsestring containing the parsed
      integrated.pickle and integrated_experiments.json files'''
-  def __init__(self, reflections, experiments, scaling_options):
+  def __init__(self, reflections, experiments, params):
     'General attributes relevant for all parameterisations'
-    print('\nInitialising a data manager instance. \n')
+    logger.info('\nInitialising a data manager instance. \n')
     self.experiments = experiments
     'initial filter to select integrated reflections'
     reflections = reflections.select(reflections['intensity.prf.variance'] > 0)
     reflections = reflections.select(reflections['intensity.sum.variance'] > 0)
     self.reflection_table = reflections.select(reflections.get_flags(
       reflections.flags.integrated))
-    self.scaling_options = scaling_options
+    self.params = params
     self.initial_keys = [key for key in self.reflection_table.keys()]
     if not 'inverse_scale_factor' in self.initial_keys:
       self.reflection_table['inverse_scale_factor'] = (
@@ -59,8 +62,8 @@ class Data_Manager(object):
       error_model_params=error_model_params)
     sel = weights_for_scaling.get_weights() > 0.0
     #reflections_for_scaling = reflection_table.select(sel)
-    sel1 = reflection_table['Esq'] > self.scaling_options['E2min']
-    sel2 = reflection_table['Esq'] < self.scaling_options['E2max']
+    sel1 = reflection_table['Esq'] > self.params.reflection_selection.E2min
+    sel2 = reflection_table['Esq'] < self.params.reflection_selection.E2max
     selection = sel & sel1 & sel2
     reflections_for_scaling = reflection_table.select(selection)
     weights_for_scaling.scale_weighting = weights_for_scaling.scale_weighting.select(selection)
@@ -69,22 +72,22 @@ class Data_Manager(object):
     msg = ('{0} reflections were selected for scale factor determination {sep}'
       'out of {1} reflections. This was based on selection criteria of {sep}'
       'E2min = {2}, E2max = {3}, Isigma_min = {4}, dmin = {5}. {sep}').format(
-      reflections_for_scaling.size(), n_refl, self.scaling_options['E2min'],
-      self.scaling_options['E2max'], self.scaling_options['Isigma_min'], 
-      self.scaling_options['d_min'], sep='\n')
-    print(msg)
+      reflections_for_scaling.size(), n_refl, self.params.reflection_selection.E2min,
+      self.params.reflection_selection.E2max, self.params.reflection_selection.Isigma_min, 
+      self.params.reflection_selection.d_min, sep='\n')
+    logger.info(msg)
     return reflections_for_scaling, weights_for_scaling, selection
 
   def update_weights_for_scaling(self, reflection_table, weights_filter=True, 
                                  error_model_params=None):
     '''set the weights of each reflection to be used in scaling'''
     weights_for_scaling = Weighting(reflection_table)
-    print('Updating the weights associated with the intensities. \n')
+    logger.info('Updating the weights associated with the intensities. \n')
     if weights_filter:
       weights_for_scaling.apply_Isigma_cutoff(reflection_table,
-                                              self.scaling_options['Isigma_min'])
+                                              self.params.reflection_selection.Isigma_min)
       weights_for_scaling.apply_dmin_cutoff(reflection_table,
-                                            self.scaling_options['d_min'])
+                                            self.params.reflection_selection.d_min)
     weights_for_scaling.remove_wilson_outliers(reflection_table)
     if error_model_params:
       weights_for_scaling.apply_aimless_error_model(reflection_table, error_model_params)
@@ -94,14 +97,14 @@ class Data_Manager(object):
     '''Create a miller_set object, map to the asu and create a sorted
        reflection table, sorted by asu miller index'''
     u_c = self.experiments.crystal.get_unit_cell().parameters()
-    if self.scaling_options['space_group']:
+    if self.params.scaling_options.force_space_group:
       sg_from_file = self.experiments.crystal.get_space_group().info()
-      s_g_symbol = self.scaling_options['space_group']
+      s_g_symbol = self.params.scaling_options.force_space_group
       crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group_symbol=s_g_symbol)
       msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
         'If the reflection indexing in these space groups is different, {sep}'
         'bad things may happen!!! {sep}').format(sg_from_file, s_g_symbol, sep='\n')
-      print(msg)
+      logger.info(msg)
     else:
       s_g = self.experiments.crystal.get_space_group()
       crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
@@ -115,19 +118,19 @@ class Data_Manager(object):
 
   def select_optimal_intensities(self, reflection_table):
     '''method to choose which intensities to use for scaling'''
-    if (self.scaling_options['integration_method'] == 'sum' or
-        self.scaling_options['integration_method'] == 'prf'):
-      intstr = self.scaling_options['integration_method']
+    if (self.params.scaling_options.integration_method == 'sum' or
+        self.params.scaling_options.integration_method == 'prf'):
+      intstr = self.params.scaling_options.integration_method
       reflection_table['intensity'] = (reflection_table['intensity.'+intstr+'.value']
                                        * reflection_table['lp']
                                        / reflection_table['dqe'])
       reflection_table['variance'] = (reflection_table['intensity.'+intstr+'.variance']
                                       * (reflection_table['lp']**2)
                                       / (reflection_table['dqe']**2))
-      print(('{0} intensity values will be used for scaling. {sep}').format(
+      logger.info(('{0} intensity values will be used for scaling. {sep}').format(
         'Profile fitted' if intstr == 'prf' else 'Summation integrated', sep='\n'))
     #perform a combined prf/sum in a similar fashion to aimless
-    elif self.scaling_options['integration_method'] == 'combine':
+    elif self.params.scaling_options.integration_method == 'combine':
       int_prf = (reflection_table['intensity.prf.value']
                  * reflection_table['lp'] / reflection_table['dqe'])
       int_sum = (reflection_table['intensity.sum.value']
@@ -142,7 +145,7 @@ class Data_Manager(object):
       reflection_table['variance'] = ((weight * var_prf) + ((1.0 - weight) * var_sum))
       msg = ('Combined profile/summation intensity values will be used for {sep}'
       'scaling, with an Imid of {0}. {sep}').format(Imid, sep='\n')
-      print(msg)
+      logger.info(msg)
     return reflection_table
 
   def update_for_minimisation(self, apm):
@@ -166,22 +169,22 @@ class Data_Manager(object):
 
 class aimless_Data_Manager(Data_Manager):
   '''Data Manager subclass for implementing XDS parameterisation'''
-  def __init__(self, reflections, experiments, scaling_options):
-    Data_Manager.__init__(self, reflections, experiments, scaling_options)
+  def __init__(self, reflections, experiments, params):
+    Data_Manager.__init__(self, reflections, experiments, params)
     'initialise g-value objects'
     (self.g_absorption, self.g_scale, self.g_decay) = (None, None, None)
     self.g_parameterisation = OrderedDict()
     '''bin reflections, determine outliers, extract reflections and weights for
     scaling and set normalised values.'''
     
-    if self.scaling_options['reject_outliers']:
+    if self.params.scaling_options.reject_outliers:
       self.Ih_table = single_Ih_table(self.reflection_table, self.weights_for_scaling.get_weights())
       sel = flex.bool([True]*len(self.reflection_table))
       _, indices_of_outliers = reject_outliers(self, max_deviation=10.0)
       msg = ('An initial outlier rejection has been performed, {0} outliers {sep}'
         'were found which have been removed from the dataset. {sep}'.format(
         len(indices_of_outliers), sep='\n'))
-      print(msg)
+      logger.info(msg)
       sel.set_selected(flex.size_t(indices_of_outliers), flex.bool([False]*len(indices_of_outliers)))
       self.reflection_table = self.reflection_table.select(sel)
       self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table,
@@ -191,7 +194,7 @@ class aimless_Data_Manager(Data_Manager):
 
     (reflections_for_scaling, weights_for_scaling, selection) = (
       self.extract_reflections_for_scaling(self.reflection_table,
-      error_model_params=self.scaling_options['error_model_params']))
+      error_model_params=self.params.scaling_options.error_model_params))
     self.Ih_table = single_Ih_table(reflections_for_scaling,
                                     weights_for_scaling.get_weights())
     
@@ -199,33 +202,33 @@ class aimless_Data_Manager(Data_Manager):
     reset the normalised values within the scale_factor object to current'''
     self.g_scale.set_normalised_values(reflections_for_scaling[
       'normalised_rotation_angle'])
-    if self.scaling_options['decay_term']:
+    if self.params.parameterisation.decay_term:
       self.g_decay.set_normalised_values(reflections_for_scaling[
         'normalised_time_values'])
       self.g_decay.set_d_values(reflections_for_scaling['d'])
-    if self.scaling_options['absorption_term']:
+    if self.params.parameterisation.absorption_term:
       sph_harm_table_T = self.sph_harm_table.transpose()
       selected_sph_harm_table = sph_harm_table_T.select_columns(selection.iselection())
       self.g_absorption.set_values(selected_sph_harm_table.transpose())
-    print('Completed initialisation of aimless data manager. \n' + '*'*40 + '\n')
+    logger.info('Completed initialisation of aimless data manager. \n' + '*'*40 + '\n')
 
   def update_error_model(self):
     error_model_params = mf.error_scale_LBFGSoptimiser(self.Ih_table,flex.double([1.0,0.01])).x
-    self.scaling_options['error_model_params'] = error_model_params
+    self.params.scaling_options.error_model_params = error_model_params
     inverse_scale_factors = self.Ih_table.Ih_table['inverse_scale_factor']
     (reflections_for_scaling, weights_for_scaling, selection) = (
       self.extract_reflections_for_scaling(self.reflection_table,
-      error_model_params=self.scaling_options['error_model_params']))
+      error_model_params=self.params.scaling_options.error_model_params))
     self.Ih_table = single_Ih_table(reflections_for_scaling,
                                     weights_for_scaling.get_weights())
 
   def initialise_scale_factors(self):
     '''initialise scale factors and add to self.active_parameters'''
-    print('Initialising scale factor objects. \n')
+    logger.info('Initialising scale factor objects. \n')
     self.initialise_scale_term(self.reflection_table)
     self.initialise_decay_term(self.reflection_table)
     self.initialise_absorption_scales(self.reflection_table,
-                                      self.scaling_options['lmax'])
+                                      self.params.parameterisation.lmax)
 
   def get_target_function(self, apm):
     '''call the aimless target function method'''
@@ -246,9 +249,9 @@ class aimless_Data_Manager(Data_Manager):
     '''calculate the relative, normalised rotation angle. Here this is called
     normalised time to allow a different rotation interval compare to the scale
     correction. A SmoothScaleFactor_1D object is then initialised'''
-    if self.scaling_options['decay_term']:
-      if self.scaling_options['B_factor_interval']:
-        rotation_interval = self.scaling_options['B_factor_interval']
+    if self.params.parameterisation.decay_term:
+      if self.params.parameterisation.B_factor_interval:
+        rotation_interval = self.params.parameterisation.B_factor_interval
       else:
         rotation_interval = 20.0
       rotation_interval = rotation_interval + 0.001
@@ -274,13 +277,13 @@ class aimless_Data_Manager(Data_Manager):
         'The B-factor parameter interval has been set to {0} degrees. {sep}'
         '{1} parameters will be used to parameterise the time-dependent decay. {sep}'
         ).format(rotation_interval, n_decay_parameters, sep='\n')
-      print(msg)
+      logger.info(msg)
 
   def initialise_scale_term(self, reflection_table):
     '''calculate the relative, normalised rotation angle.
     A SmoothScaleFactor_1D object is then initialised'''
-    if self.scaling_options['rotation_interval']:
-      rotation_interval = self.scaling_options['rotation_interval']
+    if self.params.parameterisation.rotation_interval:
+      rotation_interval = self.params.parameterisation.rotation_interval
     else:
       rotation_interval = 15.0
     rotation_interval = rotation_interval + 0.001
@@ -307,10 +310,10 @@ class aimless_Data_Manager(Data_Manager):
       'The scale term parameter interval has been set to {0} degrees. {sep}'
       '{1} parameters will be used to parameterise the time-dependent scale. {sep}'
         ).format(rotation_interval, n_scale_parameters, sep='\n')
-    print(msg)
+    logger.info(msg)
 
   def initialise_absorption_scales(self, reflection_table, lmax):
-    if self.scaling_options['absorption_term']:
+    if self.params.parameterisation.absorption_term:
       reflection_table = calc_s2d(reflection_table, self.experiments)
       n_abs_params = 0
       for i in range(lmax):
@@ -323,7 +326,7 @@ class aimless_Data_Manager(Data_Manager):
         'The absorption term will be parameterised by a set of spherical {sep}'
         'harmonics up to an lmax of {0} ({1} parameters). {sep}'
         ).format(lmax, n_abs_params, sep='\n')
-      print(msg)
+      logger.info(msg)
     else:
       reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
                                  * self.experiments.scan.get_oscillation()[1])
@@ -349,7 +352,7 @@ class aimless_Data_Manager(Data_Manager):
     return (residual, gradient_vector)
 
   def normalise_scales_and_B(self):
-    if self.scaling_options['decay_term']:
+    if self.params.parameterisation.decay_term:
       absorption_scales = self.g_decay.get_scales_of_reflections()
       
       B_values = flex.double(np.log(absorption_scales)) * 2.0 * (self.g_decay.d_values**2)
@@ -376,25 +379,25 @@ class aimless_Data_Manager(Data_Manager):
 
   def expand_scales_to_all_reflections(self):
     expanded_scale_factors = flex.double([1.0]*len(self.reflection_table))
-    if not self.scaling_options['multi_mode']:
+    if not self.params.scaling_options.multi_mode:
       self.normalise_scales_and_B()
     "recalculate scales for reflections in sorted_reflection table"
     self.g_scale.set_normalised_values(self.reflection_table['normalised_rotation_angle'])
     self.g_scale.calculate_scales()
     expanded_scale_factors *= self.g_scale.scales
-    if self.scaling_options['decay_term']:
+    if self.params.parameterisation.decay_term:
       self.g_decay.set_normalised_values(self.reflection_table['normalised_time_values'])
       self.g_decay.set_d_values(self.reflection_table['d'])
       self.g_decay.calculate_scales()
       expanded_scale_factors *= self.g_decay.scales
       absorption_scales = self.g_decay.get_scales_of_reflections()
       B_values = flex.double(np.log(absorption_scales)) * 2.0 * (self.g_decay.d_values**2)
-    if self.scaling_options['absorption_term']:
+    if self.params.parameterisation.absorption_term:
       self.g_absorption.set_values(self.sph_harm_table)
       self.g_absorption.calculate_scales_and_derivatives()
       expanded_scale_factors  *= self.g_absorption.scales
     self.reflection_table['inverse_scale_factor'] = expanded_scale_factors
-    print(('Scale factors determined during minimisation have now been applied {sep}'
+    logger.info(('Scale factors determined during minimisation have now been applied {sep}'
       'to all reflections. {sep}').format(sep='\n'))
     sel = self.weights_for_scaling.get_weights() != 0.0
     self.reflection_table = self.reflection_table.select(sel)
@@ -404,23 +407,23 @@ class aimless_Data_Manager(Data_Manager):
       weights_filter=False, error_model_params=None)
     self.Ih_table = single_Ih_table(self.reflection_table, self.weights_for_scaling.get_weights())
     self.reflection_table['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
-    #print('A new best estimate for I_h for all reflections has now been calculated. \n')
-    if self.scaling_options['reject_outliers'] and not self.scaling_options['multi_mode']:
+    #logger.info('A new best estimate for I_h for all reflections has now been calculated. \n')
+    if self.params.scaling_options.reject_outliers and not self.params.scaling_options.multi_mode:
       sel = flex.bool([True]*len(self.reflection_table))
       _, indices_of_outliers = reject_outliers(self, max_deviation=6.0)
       #for index in indices_of_outliers:
-      #  print(self.Ih_table.Ih_table['Esq'][index])
+      #  logger.info(self.Ih_table.Ih_table['Esq'][index])
       msg = ('A final outlier rejection has been performed, {0} outliers {sep}'
          'were found which have been removed from the dataset. {sep}'.format(
         len(indices_of_outliers), sep='\n'))
-      print(msg)
+      logger.info(msg)
       sel.set_selected(flex.size_t(indices_of_outliers), flex.bool([False]*len(indices_of_outliers)))
       self.reflection_table = self.reflection_table.select(sel)
       self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table,
         weights_filter=False, error_model_params=None)
       self.Ih_table = single_Ih_table(self.reflection_table, self.weights_for_scaling.get_weights())
       self.reflection_table['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
-    print('A new best estimate for I_h for all reflections has now been calculated. \n')
+    logger.info('A new best estimate for I_h for all reflections has now been calculated. \n')
 
   def clean_reflection_table(self):
     self.initial_keys.append('inverse_scale_factor')
@@ -438,20 +441,20 @@ class aimless_Data_Manager(Data_Manager):
 
 
 class KB_Data_Manager(Data_Manager):
-  def __init__(self, reflections, experiments, scaling_options):
-    Data_Manager.__init__(self, reflections, experiments, scaling_options)
+  def __init__(self, reflections, experiments, params):
+    Data_Manager.__init__(self, reflections, experiments, params)
     self.active_parameters = flex.double([])
     (reflections_for_scaling, weights_for_scaling, selection) = (
       self.extract_reflections_for_scaling(self.reflection_table))
     self.Ih_table = base_Ih_table(reflections_for_scaling, weights_for_scaling.get_weights())
     self.g_parameterisation = OrderedDict()
-    if scaling_options['scale_term']:
+    if self.params.parameterisation.scale_term:
       self.g_scale = SF.K_ScaleFactor(1.0, n_refl=len(self.Ih_table.Ih_table))
       self.g_parameterisation['g_scale'] = self.g_scale
-    if scaling_options['decay_term']:
+    if self.params.parameterisation.decay_term:
       self.g_decay = SF.B_ScaleFactor(0.0, reflections_for_scaling['d'])
       self.g_parameterisation['g_decay'] = self.g_decay
-    print('Completed initialisation of KB data manager. \n' + '*'*40 + '\n')
+    logger.info('Completed initialisation of KB data manager. \n' + '*'*40 + '\n')
 
   def get_target_function(self, apm):
     '''call the target function method'''
@@ -470,16 +473,16 @@ class KB_Data_Manager(Data_Manager):
 
   def expand_scales_to_all_reflections(self):
     expanded_scale_factors = flex.double([1.0]*len(self.reflection_table))
-    if self.scaling_options['scale_term']:
+    if self.params.parameterisation.scale_term:
       self.g_scale.set_n_refl(len(self.reflection_table))
       self.g_scale.calculate_scales_and_derivatives()
       expanded_scale_factors *= self.g_scale.scales
-    if self.scaling_options['decay_term']:
+    if self.params.parameterisation.decay_term:
       self.g_decay.set_d_values(self.reflection_table['d'])
       self.g_decay.calculate_scales_and_derivatives()
       expanded_scale_factors *= self.g_decay.scales
     self.reflection_table['inverse_scale_factor'] = expanded_scale_factors
-    print(('Scale factors determined during minimisation have now been applied {sep}'
+    logger.info(('Scale factors determined during minimisation have now been applied {sep}'
       'to all reflections. Scale factors were determined to be K = {0:.4f}, {sep}'
       'B = {1:.4f}. {sep}').format(list(self.g_scale.scale_factors)[0], 
       list(self.g_decay.scale_factors)[0], sep='\n'))
@@ -512,8 +515,8 @@ class active_parameter_manager(object):
       self.constant_g_values = flex.double(np.prod(np.array(constant_g_values), axis=0))
     else:
       self.constant_g_values = None
-    if not Data_Manager.scaling_options['multi_mode']:
-      print(('Set up parameter handler for following corrections: {0}\n').format(
+    if not Data_Manager.params.scaling_options.multi_mode:
+      logger.info(('Set up parameter handler for following corrections: {0}\n').format(
         ''.join(i.lstrip('g_')+' ' for i in self.active_parameterisation)))
 
   def get_current_parameters(self):
@@ -535,7 +538,7 @@ class multi_active_parameter_manager(object):
       self.n_active_params_list.append(len(apm.x))
       self.n_active_params += len(apm.x)
       self.n_cumulative_params.append(copy.deepcopy(self.n_active_params))
-    print(('Set up joint parameter handler for following corrections: {0}\n').format(
+    logger.info(('Set up joint parameter handler for following corrections: {0}\n').format(
         ''.join(i.lstrip('g_')+' ' for i in self.active_parameterisation)))
 
   def get_current_parameters(self):
@@ -543,8 +546,8 @@ class multi_active_parameter_manager(object):
 
 class XDS_Data_Manager(Data_Manager):
   '''Data Manager subclass for implementing XDS parameterisation'''
-  def __init__(self, reflections, experiments, scaling_options):
-    Data_Manager.__init__(self, reflections, experiments, scaling_options)
+  def __init__(self, reflections, experiments, params):
+    Data_Manager.__init__(self, reflections, experiments, params)
     #initialise g-value arrays
     (self.g_absorption, self.g_modulation, self.g_decay) = (None, None, None)
     self.g_parameterisation = {}
@@ -553,45 +556,45 @@ class XDS_Data_Manager(Data_Manager):
       self.extract_reflections_for_scaling(self.reflection_table))
     self.Ih_table = single_Ih_table(reflections_for_scaling, weights_for_scaling.get_weights())
     #update normalised values after extracting reflections for scaling
-    if scaling_options['modulation']:
+    if self.params.parameterisation.modulation:
       self.g_modulation.set_normalised_values(reflections_for_scaling['normalised_x_values'],
         reflections_for_scaling['normalised_y_values'])
-    if scaling_options['decay']:
+    if self.params.parameterisation.decay:
       self.g_decay.set_normalised_values(reflections_for_scaling['normalised_res_values'],
         reflections_for_scaling['normalised_time_values'])
-    if scaling_options['absorption']:
+    if self.params.parameterisation.absorption:
       self.g_absorption.set_normalised_values(reflections_for_scaling['normalised_x_abs_values'],
         reflections_for_scaling['normalised_y_abs_values'],
         reflections_for_scaling['normalised_time_values'])
-    print('Completed initialisation of XDS data manager. \n' + '*'*40 + '\n')
+    logger.info('Completed initialisation of XDS data manager. \n' + '*'*40 + '\n')
 
   def initialise_scale_factors(self):
-    print('Initialising scale factor objects. \n')
+    logger.info('Initialising scale factor objects. \n')
     self.bin_reflections_decay()
-    if self.scaling_options['absorption']:
+    if self.params.parameterisation.absorption:
       self.bin_reflections_absorption()
-    if self.scaling_options['modulation']:
+    if self.params.parameterisation.modulation:
       self.bin_reflections_modulation()
 
   def get_target_function(self, parameters):
     '''call the xds target function method'''
-    if self.scaling_options['parameterization'] == 'log':
+    if self.params.scaling_options.minimisation_parameterisation == 'log':
       return xds_target_function_log(self, parameters).return_targets()
     else:
       return target_function(self, parameters).return_targets()
 
   def get_basis_function(self, parameters):
     '''call the xds basis function method'''
-    if self.scaling_options['parameterization'] == 'log':
+    if self.params.scaling_options.minimisation_parameterisation == 'log':
       return bf.xds_basis_function_log(self, parameters).return_basis()
     else:
       return bf.basis_function(self, parameters).return_basis()
 
   def bin_reflections_decay(self):
     '''bin reflections for decay correction'''
-    ndbins = self.scaling_options['n_d_bins']
-    if self.scaling_options['rotation_interval']:
-      rotation_interval = self.scaling_options['rotation_interval']
+    ndbins = self.params.scaling_options.n_d_bins
+    if self.params.parameterisation.rotation_interval:
+      rotation_interval = self.params.parameterisation.rotation_interval
     else:
       rotation_interval = 15.0
     osc_range = self.experiments.scan.get_oscillation_range()
@@ -620,13 +623,13 @@ class XDS_Data_Manager(Data_Manager):
     n_res_parameters = highest_parameter_value - lowest_parameter_value + 1
     self.reflection_table['normalised_time_values'] = (
       (self.reflection_table['xyzobs.px.value'].parts()[2] - zmin) / one_time_width)
-    if self.scaling_options['decay']:
+    if self.params.parameterisation.decay:
       #put this here to allow calculation of normalised time values needed for abscor, will rearrange.
       #define the highest and lowest gridpoints: go out one further than the max/min int values
       highest_parameter_value = int((max(self.reflection_table['normalised_time_values'])//1)+2)
       lowest_parameter_value = int((min(self.reflection_table['normalised_time_values'])//1)-1)
       n_time_parameters = highest_parameter_value - lowest_parameter_value + 1
-      if self.scaling_options['parameterization'] == 'log':
+      if self.params.scaling_options.minimisation_parameterisation == 'log':
         self.g_decay = SF.SmoothScaleFactor_2D(0.0, n_res_parameters, n_time_parameters)
       else:
         self.g_decay = SF.SmoothScaleFactor_2D(1.0, n_res_parameters, n_time_parameters)
@@ -639,11 +642,11 @@ class XDS_Data_Manager(Data_Manager):
       'In total, this ScaleFactor object uses {3} parameters. {sep}'
       ).format(rotation_interval, n_phi_bins, ndbins, 
                n_time_parameters * n_res_parameters, sep='\n')
-    print(msg)
+    logger.info(msg)
 
   def bin_reflections_modulation(self):
     '''bin reflections for modulation correction'''
-    nxbins = nybins = self.scaling_options['n_detector_bins']
+    nxbins = nybins = params.parameterisation.n_detector_bins
     xvalues = self.reflection_table['xyzobs.px.value'].parts()[0]
     (xmax, xmin) = (max(xvalues) + 0.001, min(xvalues) - 0.001)
     yvalues = self.reflection_table['xyzobs.px.value'].parts()[1]
@@ -659,7 +662,7 @@ class XDS_Data_Manager(Data_Manager):
     highest_y_parameter_value = int((max(self.reflection_table['normalised_y_values'])//1)+2)
     lowest_y_parameter_value = int((min(self.reflection_table['normalised_y_values'])//1)-1)
     n_y_parameters = highest_y_parameter_value - lowest_y_parameter_value + 1
-    if self.scaling_options['parameterization'] == 'log':
+    if self.params.scaling_options.minimisation_parameterisation == 'log':
       self.g_modulation = SF.SmoothScaleFactor_2D(0.0, n_x_parameters, n_y_parameters)
     else:
       self.g_modulation = SF.SmoothScaleFactor_2D(1.0, n_x_parameters, n_y_parameters)
@@ -669,7 +672,7 @@ class XDS_Data_Manager(Data_Manager):
     msg = ('The modulation term ScaleFactor object was successfully initialised. {sep}'
       'This parameterises a correction across the detector area, using a {sep}'
       'square grid of {0} parameters. {sep}').format(n_x_parameters**2, sep='\n')
-    print(msg)
+    logger.info(msg)
 
 
   def bin_reflections_absorption(self):
@@ -695,7 +698,7 @@ class XDS_Data_Manager(Data_Manager):
     lowest_parameter_value = int((min(self.reflection_table['normalised_time_values'])//1)-0)
     n_time_parameters = highest_parameter_value - lowest_parameter_value + 1
     #n_time_bins = int((max(self.reflection_table['normalised_time_values'])//1)+1)
-    if self.scaling_options['parameterization'] == 'log':
+    if self.params.scaling_options.minimisation_parameterisation == 'log':
       self.g_absorption = SF.SmoothScaleFactor_GridAbsorption(
         0.0, n_x_parameters, n_y_parameters, n_time_parameters)
     else:
@@ -710,7 +713,7 @@ class XDS_Data_Manager(Data_Manager):
       'at {1} time values, giving a total of {2} parameters. {sep}'
       ).format(n_x_parameters, n_time_parameters, 
                n_time_parameters * (n_x_parameters**2), sep='\n')
-    print(msg)
+    logger.info(msg)
 
 
   def bin_reflections_absorption_radially(self):
@@ -746,28 +749,28 @@ class XDS_Data_Manager(Data_Manager):
     #currently we have Ih, scales and weights for reflections_for_scaling
     #first calculate the scales for all reflections (Sorted reflections)
     scales_to_expand = []
-    if self.scaling_options['modulation']:
+    if self.params.parameterisation.modulation:
       self.g_modulation.set_normalised_values(self.reflection_table['normalised_x_values'],
         self.reflection_table['normalised_y_values'])
       scales_to_expand.append(self.g_modulation.calculate_smooth_scales())
-    if self.scaling_options['decay']:
+    if self.params.parameterisation.decay:
       self.g_decay.set_normalised_values(self.reflection_table['normalised_res_values'],
         self.reflection_table['normalised_time_values'])
       scales_to_expand.append(self.g_decay.calculate_smooth_scales())
-    if self.scaling_options['absorption']:
+    if self.params.parameterisation.absorption:
       self.g_absorption.set_normalised_values(self.reflection_table['normalised_x_abs_values'],
         self.reflection_table['normalised_y_abs_values'],
         self.reflection_table['normalised_time_values'])
       scales_to_expand.append(self.g_absorption.calculate_smooth_scales())
     
-    if self.scaling_options['parameterization'] == 'log':
+    if self.params.scaling_options.minimisation_parameterisation == 'log':
       self.reflection_table['inverse_scale_factor'] = flex.double(
         np.exp(np.sum(np.array(scales_to_expand), axis=0)))
     else:
       self.reflection_table['inverse_scale_factor'] = flex.double(
         np.prod(np.array(scales_to_expand), axis=0))
     'remove reflections that were determined as outliers'
-    print(('Scale factors determined during minimisation have now been applied {sep}'
+    logger.info(('Scale factors determined during minimisation have now been applied {sep}'
       'to all reflections. {sep}').format(sep='\n'))
     self.weights_for_scaling = self.update_weights_for_scaling(
       self.reflection_table, weights_filter=False)
@@ -778,7 +781,7 @@ class XDS_Data_Manager(Data_Manager):
     #now calculate Ih for all reflections.
     self.Ih_table = single_Ih_table(self.reflection_table, 
       self.weights_for_scaling.get_weights())
-    print('A new best estimate for I_h for all reflections has now been calculated. \n')
+    logger.info('A new best estimate for I_h for all reflections has now been calculated. \n')
 
   def clean_reflection_table(self):
     #add keys for additional data that is to be exported
@@ -795,14 +798,15 @@ class XDS_Data_Manager(Data_Manager):
 
 
 class multicrystal_datamanager(Data_Manager):
-  def __init__(self, reflections, experiments, scaling_options):
+  def __init__(self, reflections, experiments, params):
     self.data_managers = []
-    if scaling_options['scaling_method'] == 'xds':
+    self.params = params
+    if self.params.scaling_method == 'xds':
       for reflection, experiment in zip(reflections, experiments):
-        self.data_managers.append(XDS_Data_Manager(reflection, experiment, scaling_options))
-    elif scaling_options['scaling_method'] == 'aimless':
+        self.data_managers.append(XDS_Data_Manager(reflection, experiment, params))
+    elif self.params.scaling_method == 'aimless':
       for reflection, experiment in zip(reflections, experiments):
-        self.data_managers.append(aimless_Data_Manager(reflection, experiment, scaling_options))
+        self.data_managers.append(aimless_Data_Manager(reflection, experiment, params))
     else:
       assert 0, "Incorrect scaling method passed to multicrystal datamanager (not 'xds' or 'aimless')"
     self.Ih_table = joined_Ih_table(self.data_managers)
@@ -810,8 +814,8 @@ class multicrystal_datamanager(Data_Manager):
     self.n_active_params = None
     self.n_active_params_dataset1 = None
     self.n_active_params_dataset2 = None
-    self.scaling_options = scaling_options
-    print('Completed initialisation of multicrystal data manager. \n' + '*'*40 + '\n')
+    self.params = params
+    logger.info('Completed initialisation of multicrystal data manager. \n' + '*'*40 + '\n')
 
   def get_target_function(self, apm):
     '''call the xds target function method'''
@@ -875,13 +879,13 @@ class multicrystal_datamanager(Data_Manager):
     self.Ih_table = single_Ih_table(self.reflection_table, self.weights_for_scaling.get_weights())
     self.reflection_table['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
 
-    if self.scaling_options['reject_outliers']:
+    if self.params.scaling_options.reject_outliers:
       sel = flex.bool([True]*len(self.reflection_table))
       _, indices_of_outliers = reject_outliers(self, max_deviation=6.0)
       msg = ('Combined outlier rejection has been performed across all datasets, {sep}'
         '{0} outliers were found which have been removed from the dataset. {sep}'.format(
         len(indices_of_outliers), sep='\n'))
-      print(msg)
+      logger.info(msg)
       sel.set_selected(flex.size_t(indices_of_outliers), flex.bool([False]*len(indices_of_outliers)))
       self.reflection_table = self.reflection_table.select(sel)
       self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table,
@@ -890,20 +894,20 @@ class multicrystal_datamanager(Data_Manager):
       self.reflection_table['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
       msg = ('A new best estimate for I_h for all reflections across all datasets {sep}'
         'has now been calculated. {sep}').format(sep='\n')
-      print(msg)
+      logger.info(msg)
 
 class targeted_datamanager(Data_Manager):
-  def __init__(self, reflections1, experiments1, reflections_scaled, scaling_options):
+  def __init__(self, reflections1, experiments1, reflections_scaled, params):
     #first assume that the Ih_values of reflections_scaled are the best estimates
     osc_range = experiments1.scan.get_oscillation_range()
     self.experiments = experiments1
-    self.scaling_options = scaling_options
+    self.params = params
     if osc_range[1]-osc_range[0]<1000.0: 
       #usually would have it osc_range <10, big here just for testing on LCY dataset
       'first make a simple KB data manager'
-      self.dm1 = KB_Data_Manager(reflections1, experiments1, scaling_options)
+      self.dm1 = KB_Data_Manager(reflections1, experiments1, params)
       'now extract Ih values from reflections_scaled'
-      self.target_dm = Data_Manager(reflections_scaled, experiments1, scaling_options)
+      self.target_dm = Data_Manager(reflections_scaled, experiments1, params)
       (target_reflections, target_weights, target_selection) = (
       self.extract_reflections_for_scaling(self.target_dm.reflection_table))
       target_Ih_table = single_Ih_table(target_reflections, target_weights.get_weights())
@@ -921,9 +925,9 @@ class targeted_datamanager(Data_Manager):
       sel = self.dm1.Ih_table.Ih_table['Ih_values'] != 0.0
       self.dm1.Ih_table.Ih_table = self.dm1.Ih_table.Ih_table.select(sel)
       'update the data in the SF objects'
-      if self.scaling_options['decay_term']:
+      if self.params.parameterisation.decay_term:
         self.dm1.g_decay.set_d_values(self.dm1.g_decay.d_values.select(sel))
-      if self.scaling_options['scale_term']:
+      if self.params.parameterisation.scale_term:
         self.dm1.g_scale.set_n_refl(len(self.dm1.Ih_table.Ih_table))
       self.g_parameterisation = self.dm1.g_parameterisation
     else:

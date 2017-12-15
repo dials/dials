@@ -4,6 +4,9 @@ from dials.array_family import flex
 from cctbx import miller, crystal
 from reflection_weighting import Weighting
 
+import logging
+logger = logging.getLogger('dials.scale')
+
 def calc_normE2(reflection_table, experiments):
   '''calculate normalised intensity values for centric and acentric reflections'''
   msg = ('Calculating normalised intensity values. {sep}'
@@ -12,7 +15,7 @@ def calc_normE2(reflection_table, experiments):
     'high E^2 values due to a mean close to zero and should only affect {sep}'
     'the E^2 values of the highest resolution bins. {sep}'
     ).format(sep='\n')
-  print(msg)
+  logger.info(msg)
   u_c = experiments.crystal.get_unit_cell().parameters()
   s_g = experiments.crystal.get_space_group()
   crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
@@ -75,7 +78,7 @@ def calc_normE2(reflection_table, experiments):
     'Intensities were binned into {2} resolution bins. {sep}'
     "Normalised intensities were added to the reflection table as 'Esq'. {sep}"
     ).format(n_centrics, n_acentrics, n_refl_shells, sep='\n')
-  print(msg)
+  logger.info(msg)
   return reflection_table
 
 def calculate_wilson_outliers(reflection_table):
@@ -100,5 +103,5 @@ def calculate_wilson_outliers(reflection_table):
     'and acentric reflections respectively). {sep}'
     ).format(reflection_table['wilson_outlier_flag'].count(True), centric_cutoff,
     acentric_cutoff, sep='\n')
-  print(msg)
+  logger.info(msg)
   return reflection_table['wilson_outlier_flag']

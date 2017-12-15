@@ -7,12 +7,15 @@ from scitbx import lbfgs, sparse
 from data_manager_functions import (active_parameter_manager,
   multi_active_parameter_manager)
 
+import logging
+logger = logging.getLogger('dials.scale')
+
 class LBFGS_optimiser(object):
   '''Class that takes in Data_Manager object and runs an LBFGS minimisation'''
   def __init__(self, Data_Manager_object, param_name):
-    print('\n'+'*'*40+'\n'+'Initialising LBFGS optimiser instance. \n')
+    logger.info(('\n'+'*'*40+'\n'+'Initialising LBFGS optimiser instance. \n'))
     self.data_manager = Data_Manager_object
-    if self.data_manager.scaling_options['multi_mode']:
+    if self.data_manager.params.scaling_options.multi_mode:
       self.apm = multi_active_parameter_manager(self.data_manager, param_name)
     else:
       self.apm = active_parameter_manager(self.data_manager, param_name)
@@ -22,11 +25,11 @@ class LBFGS_optimiser(object):
     self.termination_params = lbfgs.termination_parameters(max_iterations=15)
     lbfgs.run(target_evaluator=self, core_params=self.core_params,
               termination_params=self.termination_params)
-    if param_name == 'g_decay':
-      if self.data_manager.scaling_options['decay_correction_rescaling']:
-        if self.data_manager.scaling_options['parameterization'] == 'standard':
-          self.data_manager.scale_gvalues()
-    print(('\nCompleted minimisation for following corrections: {0}\n'
+    #if param_name == 'g_decay':
+    #  if self.data_manager.params.scaling_options.decay_correction_rescaling:
+    #    if self.data_manager.params.scaling_options.minimisation_parameterisation == 'standard':
+    #      self.data_manager.scale_gvalues()
+    logger.info(('\nCompleted minimisation for following corrections: {0}\n'
            +'*'*40+'\n').format(''.join(i.lstrip('g_')+' ' for i in param_name)))
 
   def compute_functional_and_gradients(self):
@@ -34,9 +37,13 @@ class LBFGS_optimiser(object):
     before calculating the residual and gradient functions'''
     self.data_manager.update_for_minimisation(self.apm)
     f, g = self.data_manager.get_target_function(self.apm)
+    logger.debug('\nParameter values \n')
+    logger.debug(str(list(self.x)) + '\n')
+    logger.debug('Parameter derivatives \n')
+    logger.debug(str(list(g)) + '\n')
     f = flex.sum(f)
     self.residuals.append(f)
-    print("Residual sum: %12.6g" % f)
+    logger.info("Residual sum: %12.6g" % f)
     return f, g
 
   def return_data_manager(self):
@@ -50,7 +57,7 @@ class LBFGS_optimiser(object):
     To cure, the absolute values of the scale factors are taken and the
     minimizer is called again until only positive scale factors are obtained.'''
     if (self.x < 0.0).count(True) > 0.0:
-      print("""%s of the scale factors is/are negative, taking the absolute
+      logger.info("""%s of the scale factors is/are negative, taking the absolute
       values and trying again""" % ((self.x < 0.0).count(True)))
       self.x = abs(self.x)
       lbfgs.run(target_evaluator=self, core_params=self.core_params,
@@ -58,9 +65,9 @@ class LBFGS_optimiser(object):
       if (self.x < 0.0).count(True) > 0.0:
         self.make_all_scales_positive(param_name)
       else:
-        print("all scales should now be positive")
+        logger.info("all scales should now be positive")
     else:
-      print("all scales are positive")
+      logger.info("all scales are positive")
 
 class error_scale_LBFGSoptimiser(object):
   '''Class that minimises an error model for an Ih_table'''
@@ -73,9 +80,9 @@ class error_scale_LBFGSoptimiser(object):
     self.Ih_table.Ih_table['delta_hl'] = self.calc_deltahl()
     self.bin_intensities()
     self.bin_vars = None
-    print("Initialised error model LBFGS optimiser instance. \n")
+    logger.info("Initialised error model LBFGS optimiser instance. \n")
     lbfgs.run(target_evaluator=self)
-    print("Minimised error model with parameters {0:.5f} and {1:.5f}. {sep}"
+    logger.info("Minimised error model with parameters {0:.5f} and {1:.5f}. {sep}"
           .format(self.x[0], self.x[1], sep='\n'))
 
   def compute_functional_and_gradients(self):

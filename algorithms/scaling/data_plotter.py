@@ -226,7 +226,7 @@ def plot_smooth_scales(data_man, outputfile=None):
   plt.ylabel('Scale term')
   plt.xlabel('Normalised rotation angle')
 
-  if data_man.scaling_options['decay_term']:
+  if data_man.params.parameterisation.decay_term:
     rel_values = np.arange(0, int(max(data_man.reflection_table['normalised_time_values'])) + 1, 0.1)
     decay_SFs = data_man.g_decay.get_scale_factors()
     n_g_decay_params = len(decay_SFs)
@@ -252,13 +252,13 @@ def plot_absorption_surface(data_man, outputfile=None):
   from scitbx import math
   from scitbx.array_family import flex
   import math as pymath
-  order = data_man.scaling_options['lmax']
+  order = data_man.params.parameterisation.lmax
   lfg =  math.log_factorial_generator(2 * order + 1)
   STEPS = 50
   phi = np.linspace(0, 2 * np.pi, 2*STEPS)
   theta = np.linspace(0, np.pi, STEPS)
   THETA, PHI = np.meshgrid(theta, phi)
-  lmax = data_man.scaling_options['lmax']
+  lmax = data_man.params.parameterisation.lmax
   Intensity = np.ones(THETA.shape)
   counter = 0
   sqrt2 = pymath.sqrt(2)
