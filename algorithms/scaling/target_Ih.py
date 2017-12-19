@@ -6,30 +6,28 @@ from scitbx import sparse
 
 class base_Ih_table(object):
   def __init__(self, refl_table, weights):
-    #check necessary columns exists in input reflection table
-    for column in ['asu_miller_index', 'intensity', 'inverse_scale_factor']:
-      if not column in refl_table.keys():
-        assert 0, """Attempting to create an Ih_table object from a reflection
-        table with no %s column""" % column
-    #first create a minimal reflection table object
-    #self.miller_set = miller_set
-    self.Ih_table = flex.reflection_table()
-    self.Ih_table['asu_miller_index'] = refl_table['asu_miller_index']
-    self.Ih_table['Esq'] = refl_table['Esq']
-    self.Ih_table['intensity'] = refl_table['intensity']
-    self.Ih_table['Ih_values'] = flex.double([0.0]*len(refl_table))
-    self.Ih_table['weights'] = weights
-    self.Ih_table['inverse_scale_factor'] = refl_table['inverse_scale_factor']
-    sel = self.Ih_table['weights'] != 0.0
-    self.Ih_table = self.Ih_table.select(sel)
-    #calculate the indexing arrays
+    self.Ih_table = self.create_Ih_table(refl_table, weights)
     (self.h_index_counter_array, self.h_index_cumulative_array) = self.assign_h_index()
     self.h_index_mat = self.assign_h_index_matrix()
     self.n_h = self.calc_nh()
-    self.Ih_array = None #This may not be necessary in future but keep for now.
-  
-  #note: no calc_Ih method here, this must be filled in by subclasses, this is
-  #necessary to allow scaling against a target Ih external to the Ih_table.
+
+  def create_Ih_table(self, refl_table, weights):
+    '''create an Ih_table from the reflection table'''
+    #check necessary columns exists in input reflection table
+    columns = ['asu_miller_index', 'intensity', 'inverse_scale_factor', 'Esq']
+    for col in columns:
+      if not col in refl_table.keys():
+        assert 0, """Attempting to create an Ih_table object from a reflection
+        table with no %s column""" % col
+    if len(refl_table) != len(weights):
+      assert 0, """Attempting to create an Ih_table object from a reflection
+      table and weights list of unequal length."""
+    Ih_table = flex.reflection_table()
+    for col in columns:
+      Ih_table[col] = refl_table[col]
+    Ih_table['Ih_values'] = flex.double([0.0] * len(refl_table))
+    Ih_table['weights'] = weights
+    return Ih_table.select(Ih_table['weights'] != 0.0)
 
   def update_scale_factors(self, scalefactors):
     if len(scalefactors) != len(self.Ih_table['inverse_scale_factor']):
@@ -57,25 +55,18 @@ class base_Ih_table(object):
         len(self.Ih_table['Ih_values']), len(Ih_values))
     self.Ih_table['Ih_values'] = Ih_values
 
-  def get_Ih_values(self):
-    return self.Ih_table['Ih_values']
-
   def assign_h_index(self):
     '''assign an index to the sorted reflection table that
        labels each group of unique miller indices'''
-    s = len(self.Ih_table)
-    #self.Ih_table['h_index'] = flex.int([0] * s)
     h_index_counter_array = []
     h_index = 0
     h_index_counter = 1
-    for i in range(1, s):
+    for i in range(1, len(self.Ih_table)):
       if (self.Ih_table['asu_miller_index'][i] ==
           self.Ih_table['asu_miller_index'][i-1]):
-        #self.Ih_table['h_index'][i] = h_index
         h_index_counter += 1
       else:
         h_index += 1
-        #self.Ih_table['h_index'][i] = h_index
         h_index_counter_array.append(h_index_counter)
         h_index_counter = 1
     h_index_counter_array.append(h_index_counter)
@@ -85,7 +76,7 @@ class base_Ih_table(object):
     for n in h_index_counter_array:
       hsum += n
       h_index_cumulative_array.append(hsum)
-    return h_index_counter_array, h_index_cumulative_array
+    return flex.int(h_index_counter_array), flex.int(h_index_cumulative_array)
 
   def assign_h_index_matrix(self):
     n1 = len(self.Ih_table['asu_miller_index'])
@@ -106,6 +97,7 @@ class base_Ih_table(object):
       n_h.extend(flex.double([i]*i))
     return n_h
 
+
 class single_Ih_table(base_Ih_table):
   '''subclass of base_Ih_table to fill in the calc_Ih method. This is the default
   data structure used for scaling a single sweep.'''
@@ -115,16 +107,14 @@ class single_Ih_table(base_Ih_table):
 
   def calc_Ih(self):
     '''calculate the current best estimate for I for each reflection group'''
-    intensities = self.Ih_table['intensity']
     scale_factors = self.Ih_table['inverse_scale_factor']
-    scaleweights = self.Ih_table['weights']
-    gsq = (((scale_factors)**2) * scaleweights)
+    gsq = (((scale_factors)**2) * self.Ih_table['weights'])
     sumgsq = gsq * self.h_index_mat
-    gI = ((scale_factors * intensities) * scaleweights)
+    gI = ((scale_factors * self.Ih_table['intensity']) * self.Ih_table['weights'])
     sumgI = gI * self.h_index_mat
-    self.Ih_array = sumgI * 1.0/sumgsq
+    Ih = sumgI/sumgsq
     self.Ih_table['Ih_values'] = flex.double(
-      np.repeat(self.Ih_array, self.h_index_counter_array))
+      np.repeat(Ih, self.h_index_counter_array))
 
 
 class joined_Ih_table(base_Ih_table):
@@ -251,14 +241,14 @@ class joined_Ih_table(base_Ih_table):
     sumgsq = gsq * self.h_index_mat
     gI = ((scales * intensities) * scaleweights)
     sumgI = gI * self.h_index_mat
-
+    Ih = sumgI/sumgsq
     self.Ih_table['intensity'] = intensities
     self.Ih_table['inverse_scale_factor'] = scales
     self.Ih_table['weights'] = scaleweights
-    self.Ih_table['Ih_values'] = flex.double(np.repeat(sumgI/sumgsq, self.h_index_counter_array))
+    self.Ih_table['Ih_values'] = flex.double(np.repeat(Ih, self.h_index_counter_array))
 
   def calc_Ih(self):
-    'method to calculate Ih'
+    '''calculate the current best estimate for I for each reflection group'''
     scales = flex.double([0.0] * self.h_index_cumulative_array[-1])
     for i, Ih_table in enumerate(self.Ih_tables):
       scales += Ih_table.Ih_table['inverse_scale_factor'] * self.h_idx_expand_list[i]
@@ -266,5 +256,6 @@ class joined_Ih_table(base_Ih_table):
     sumgsq = gsq * self.h_index_mat
     gI = ((scales * self.Ih_table['intensity']) * self.Ih_table['weights'])
     sumgI = gI * self.h_index_mat
+    Ih = sumgI/sumgsq
     self.Ih_table['inverse_scale_factor'] = scales
-    self.Ih_table['Ih_values'] = flex.double(np.repeat(sumgI/sumgsq, self.h_index_counter_array))
+    self.Ih_table['Ih_values'] = flex.double(np.repeat(Ih, self.h_index_counter_array))
