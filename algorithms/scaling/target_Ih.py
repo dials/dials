@@ -24,7 +24,7 @@ class base_Ih_table(object):
     self.Ih_table = self.Ih_table.select(sel)
     #calculate the indexing arrays
     (self.h_index_counter_array, self.h_index_cumulative_array) = self.assign_h_index()
-    self.assign_h_matrix()
+    self.h_index_mat = self.assign_h_index_matrix()
     self.n_h = self.calc_nh()
     self.Ih_array = None #This may not be necessary in future but keep for now.
   
@@ -87,15 +87,16 @@ class base_Ih_table(object):
       h_index_cumulative_array.append(hsum)
     return h_index_counter_array, h_index_cumulative_array
 
-  def assign_h_matrix(self):
+  def assign_h_index_matrix(self):
     n1 = len(self.Ih_table['asu_miller_index'])
-    self.h_index_mat = sparse.matrix(n1, len(self.h_index_counter_array))
+    h_index_mat = sparse.matrix(n1, len(self.h_index_counter_array))
     for i in range(len(self.h_index_cumulative_array)-1):
       col = sparse.matrix_column(n1)
       start_idx = self.h_index_cumulative_array[i]
       for j in range(self.h_index_counter_array[i]):
         col[start_idx+j] = 1
-      self.h_index_mat[:, i] = col
+      h_index_mat[:, i] = col
+    return h_index_mat
 
   def calc_nh(self):
     '''returns a vector of len(reflections) with the number of members of
@@ -118,66 +119,66 @@ class single_Ih_table(base_Ih_table):
     scale_factors = self.Ih_table['inverse_scale_factor']
     scaleweights = self.Ih_table['weights']
     gsq = (((scale_factors)**2) * scaleweights)
-    #sumgsq = flex.double(np.add.reduceat(gsq, self.h_index_cumulative_array[:-1]))
     sumgsq = gsq * self.h_index_mat
     gI = ((scale_factors * intensities) * scaleweights)
-    #sumgI = flex.double(np.add.reduceat(gI, self.h_index_cumulative_array[:-1]))
     sumgI = gI * self.h_index_mat
-    #sumweights = flex.double(np.add.reduceat(scaleweights, self.h_index_cumulative_array[:-1]))
-    #sumweights = scaleweights * self.h_index_mat
     self.Ih_array = sumgI * 1.0/sumgsq
-    #self.Ih_array = flex.double([val/ sumgsq[i] if sumweights[i] > 0.0
-    #                             else 0.0 for i, val in enumerate(sumgI)])
     self.Ih_table['Ih_values'] = flex.double(
       np.repeat(self.Ih_array, self.h_index_counter_array))
 
 
-class joined_Ih_table(object):
+class joined_Ih_table(base_Ih_table):
   def __init__(self, datamanagers):
     self.Ih_tables = []
     self.experiments = []
     for dm in datamanagers:
       self.Ih_tables.append(dm.Ih_table)
       self.experiments.append(dm.experiments)
-    self.h_idx_expand_list = None
-    self.h_idx_count_list = None
-    self.h_idx_cumulative_list = None
-    self.Ih_table = flex.reflection_table()
-    self.determine_all_unique_indices()#fill in a unique index column
-    self.assign_hjoin_index()
-    #assigned h_join index, so create a fresh Ih_table
-    self.Ih_table = flex.reflection_table()
-    self.assign_h_index_matrix()
-    self.assign_h_expand_matrices()
-    self.calc_Ih()
+    self.h_idx_count_list = []
+    self.h_idx_cumulative_list = []
+    self.Ih_table, self.unique_indices = self.determine_all_unique_indices()
+    self.assign_h_index_arrays()
+    self.h_index_mat = self.assign_h_index_matrix()
+    self.h_idx_expand_list = self.assign_h_expand_matrices()
+    #finish construction of Ih_table
+    self.construct_Ih_table()
     self.n_h = self.calc_nh()
 
   def determine_all_unique_indices(self):
+    '''this function finds the unique reflections across all datasets and
+    also writes the sorted asu miller indices to an Ih_table.'''
     s_g_1 = self.experiments[0].crystal.get_space_group()
     for experiment in self.experiments:
       assert experiment.crystal.get_space_group() == s_g_1
     crystal_symmetry = crystal.symmetry(space_group=s_g_1)
-    sets = []
+    all_miller_indices = []
     for Ih_tab in self.Ih_tables:
-      sets.append(list(set(Ih_tab.Ih_table['asu_miller_index'])))
-    sumsets = []
-    for a_set in sets:
-      sumsets += a_set
-    all_miller_indices = flex.miller_index(list(set(sumsets)))
-    miller_set = miller.set(crystal_symmetry=crystal_symmetry,
-                            indices=all_miller_indices)
-    permuted = miller_set.sort_permutation(by_value='packed_indices')
-    self.Ih_table['unique_indices'] = all_miller_indices.select(permuted)
+      all_miller_indices.extend(list(Ih_tab.Ih_table['asu_miller_index']))
 
-  def assign_hjoin_index(self):
-    #looks at sorted miller indices and counts instances relative to the target
-    self.h_idx_count_list = []
-    self.h_idx_cumulative_list = []
+    all_unique_indices = flex.miller_index(list(set(all_miller_indices)))
+    unique_miller_set = miller.set(crystal_symmetry=crystal_symmetry,
+                                   indices=all_unique_indices)
+    unique_permuted = unique_miller_set.sort_permutation(by_value='packed_indices')
+    unique_indices = all_unique_indices.select(unique_permuted)
+
+    all_miller_indices = flex.miller_index(all_miller_indices)
+    full_miller_set = miller.set(crystal_symmetry=crystal_symmetry,
+                                 indices=all_miller_indices)
+    all_permuted = full_miller_set.sort_permutation(by_value='packed_indices')
+    Ih_table = flex.reflection_table()
+    Ih_table['asu_miller_index'] = all_miller_indices.select(all_permuted)
+    return Ih_table, unique_indices
+
+
+  def assign_h_index_arrays(self):
+    '''this function determines new h_index counter and cumulative arrays for
+    the individual datasets to enable later creation of the h_expander matrices.
+    The counter and cumulative arrays for the joint dataset are also created.'''
     for Ih_table in self.Ih_tables:
       miller_idx = Ih_table.Ih_table['asu_miller_index']
       h_idx_count = flex.int([])
       #note: different to single case as need to count the zero instances as well
-      for unique_index in self.Ih_table['unique_indices']:
+      for unique_index in self.unique_indices:
         n = (miller_idx == unique_index).count(True)
         h_idx_count.append(n)
       hsum = 0
@@ -194,29 +195,20 @@ class joined_Ih_table(object):
       self.h_index_counter_array += h_idx_count
       self.h_index_cumulative_array += h_index_cumul
 
-  def assign_h_index_matrix(self):
-    #n = len(self.Ih_table)
-    n = self.h_index_cumulative_array[-1]
-    self.h_index_mat = sparse.matrix(n, len(self.h_index_counter_array))
-    for i in range(len(self.h_index_cumulative_array)-1):
-      col = sparse.matrix_column(n)
-      start_idx = self.h_index_cumulative_array[i]
-      for j in range(self.h_index_counter_array[i]):
-        col[start_idx+j] = 1
-      self.h_index_mat[:, i] = col
-
   def assign_h_expand_matrices(self):
-    n_total_refl = 0
-    self.h_idx_expand_list = []
-    for Ih_table in self.Ih_tables:
-      n_total_refl += len(Ih_table.Ih_table)
+    '''this function creates a h_expand matrix for each dataset, so that
+    quantites from the individual datasets can easily be combined during
+    scaling whilst maintaining the ordered grouping into symmetry
+    equivalent reflections.'''
+    n_total_refl = self.h_index_cumulative_array[-1]
+    h_idx_expand_list = []
     for m, Ih_table in enumerate(self.Ih_tables):
       n_refl = len(Ih_table.Ih_table)
       h_expand_mat = sparse.matrix(n_refl, n_total_refl)
       #delete certain elements to make the idx calculation easy in the loop:
       #shift arrays by -1 for n < m. This will probably end badly.
       for n in range(m):
-        del self.h_idx_cumulative_list[n][0] #was zero
+        del self.h_idx_cumulative_list[n][0] #this element was zero
       last_elements = []
       for n in range(m, len(self.Ih_tables)):
         last_elements.append(self.h_idx_cumulative_list[n][-1])
@@ -231,17 +223,20 @@ class joined_Ih_table(object):
           idx = j + summed_cumulative_arrays[i]
           h_expand_mat[counter, idx] = 1
           counter += 1
-      self.h_idx_expand_list.append(h_expand_mat)
+      h_idx_expand_list.append(h_expand_mat)
 
       #now put the elements back into the cumulative arrays for the next calc!
       for n in range(m):
-        self.h_idx_cumulative_list[n].insert(0,0)
+        self.h_idx_cumulative_list[n].insert(0, 0)
       counter = 0
       for n in range(m, len(self.Ih_tables)):
         self.h_idx_cumulative_list[n].append(last_elements[counter])
         counter += 1
+    return h_idx_expand_list
 
-  def calc_Ih(self):
+  def construct_Ih_table(self):
+    '''method to allow finishing the construction of the Ih_table now that
+    the expand matrices have been determined.'''
     n = self.h_index_cumulative_array[-1]
     intensities = flex.double([0.0]*n)
     scales = flex.double([0.0]*n)
@@ -256,16 +251,20 @@ class joined_Ih_table(object):
     sumgsq = gsq * self.h_index_mat
     gI = ((scales * intensities) * scaleweights)
     sumgI = gI * self.h_index_mat
-    
+
     self.Ih_table['intensity'] = intensities
     self.Ih_table['inverse_scale_factor'] = scales
     self.Ih_table['weights'] = scaleweights
     self.Ih_table['Ih_values'] = flex.double(np.repeat(sumgI/sumgsq, self.h_index_counter_array))
 
-  def calc_nh(self):
-    '''returns a vector of len(reflections) with the number of members of
-    each h group'''
-    n_h = flex.double([])
-    for i in self.h_index_counter_array:
-      n_h.extend(flex.double([i]*i))
-    return n_h
+  def calc_Ih(self):
+    'method to calculate Ih'
+    scales = flex.double([0.0] * self.h_index_cumulative_array[-1])
+    for i, Ih_table in enumerate(self.Ih_tables):
+      scales += Ih_table.Ih_table['inverse_scale_factor'] * self.h_idx_expand_list[i]
+    gsq = (((scales)**2) * self.Ih_table['weights'])
+    sumgsq = gsq * self.h_index_mat
+    gI = ((scales * self.Ih_table['intensity']) * self.Ih_table['weights'])
+    sumgI = gI * self.h_index_mat
+    self.Ih_table['inverse_scale_factor'] = scales
+    self.Ih_table['Ih_values'] = flex.double(np.repeat(sumgI/sumgsq, self.h_index_counter_array))

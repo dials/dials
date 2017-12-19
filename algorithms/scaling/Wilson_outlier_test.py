@@ -37,6 +37,14 @@ def calc_normE2(reflection_table, experiments):
     n_refl_shells = 20
   elif n_acentrics > 15000 or n_centrics > 15000:
     n_refl_shells = 15
+  elif n_acentrics < 100:
+    reflection_table['Esq'] = flex.double([1.0]*len(reflection_table))
+    del reflection_table['intensity_for_norm']
+    msg = ('No normalised intensity values were calculated, {sep}'
+    'as an insufficient number of reflections were detected. {sep}'
+    ).format(sep='\n')
+    logger.info(msg)
+    return reflection_table
   else:
     n_refl_shells = 10
   
@@ -49,7 +57,7 @@ def calc_normE2(reflection_table, experiments):
     mean_centric_values = centrics_array.mean(use_binning=centric_binner)
     mean_centric_values = mean_centric_values.data[1:-1]
     centric_bin_limits = centric_binner.limits()
-
+      
   acentrics_array = miller_array.select_acentric()
   acentric_binner = acentrics_array.setup_binner_d_star_sq_step(d_star_sq_step=step)
   mean_acentric_values = acentrics_array.mean(use_binning=acentric_binner)

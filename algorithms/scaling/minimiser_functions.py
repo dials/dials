@@ -4,8 +4,8 @@ Classes to create minimiser objects.
 from __future__ import print_function
 from dials.array_family import flex
 from scitbx import lbfgs, sparse
-from data_manager_functions import (active_parameter_manager,
-  multi_active_parameter_manager)
+import data_manager_functions as dmf#import (active_parameter_manager,
+#  multi_active_parameter_manager)
 
 import logging
 logger = logging.getLogger('dials.scale')
@@ -16,9 +16,9 @@ class LBFGS_optimiser(object):
     logger.info(('\n'+'*'*40+'\n'+'Initialising LBFGS optimiser instance. \n'))
     self.data_manager = Data_Manager_object
     if self.data_manager.params.scaling_options.multi_mode:
-      self.apm = multi_active_parameter_manager(self.data_manager, param_name)
+      self.apm = dmf.multi_active_parameter_manager(self.data_manager, param_name)
     else:
-      self.apm = active_parameter_manager(self.data_manager, param_name)
+      self.apm = dmf.active_parameter_manager(self.data_manager, param_name)
     self.x = self.apm.x
     self.residuals = []
     self.core_params = lbfgs.core_parameters(maxfev=15)

@@ -5,7 +5,7 @@ from __future__ import print_function
 import copy
 from dials.array_family import flex
 from cctbx import miller, crystal
-import minimiser_functions as mf
+#from minimiser_functions import error_scale_LBFGSoptimiser
 from dials.util.options import flatten_experiments, flatten_reflections
 import numpy as np
 import cPickle as pickle
@@ -32,12 +32,14 @@ class Data_Manager(object):
     logger.info('\nInitialising a data manager instance. \n')
     self.experiments = experiments
     'initial filter to select integrated reflections'
-    reflections = reflections.select(reflections['intensity.prf.variance'] > 0)
-    reflections = reflections.select(reflections['intensity.sum.variance'] > 0)
     self.reflection_table = reflections.select(reflections.get_flags(
       reflections.flags.integrated))
     self.params = params
     self.initial_keys = [key for key in self.reflection_table.keys()]
+    if 'intensity.prf.variance' in self.initial_keys:
+      reflections = reflections.select(reflections['intensity.prf.variance'] > 0)
+    if 'intensity.sum.variance' in self.initial_keys:
+      reflections = reflections.select(reflections['intensity.sum.variance'] > 0)
     if not 'inverse_scale_factor' in self.initial_keys:
       self.reflection_table['inverse_scale_factor'] = (
         flex.double([1.0] * len(self.reflection_table)))
@@ -146,6 +148,10 @@ class Data_Manager(object):
       msg = ('Combined profile/summation intensity values will be used for {sep}'
       'scaling, with an Imid of {0}. {sep}').format(Imid, sep='\n')
       logger.info(msg)
+    else:
+      logger.info('Invalid integration_method choice, using default profile fitted intensities')
+      self.params.scaling_options.integration_method = 'prf'
+      self.select_optimal_intensities(reflection_table)
     return reflection_table
 
   def update_for_minimisation(self, apm):
