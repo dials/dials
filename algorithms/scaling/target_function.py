@@ -38,17 +38,17 @@ class target_function(object):
     Ih_values = self.data_manager.Ih_table.Ih_table['Ih_values']
     scaleweights = self.data_manager.Ih_table.Ih_table['weights']
     gsq = ((scale_factors)**2) * scaleweights
-    sumgsq = gsq * self.data_manager.Ih_table.h_index_mat
+    sumgsq = gsq * self.data_manager.Ih_table.h_index_matrix
     rhl = intensities - (Ih_values * scale_factors)
     dIh = scaleweights * (intensities - (Ih_values * 2.0 * scale_factors))
     dIh_g = row_multiply(self.data_manager.active_derivatives, dIh)
-    dIh_red = dIh_g.transpose() * self.data_manager.Ih_table.h_index_mat
+    dIh_red = dIh_g.transpose() * self.data_manager.Ih_table.h_index_matrix
     dIh_by_dpi = row_multiply(dIh_red.transpose(), 1.0/sumgsq)
 
     term_1 = (-2.0 * rhl * scaleweights * Ih_values *
               self.data_manager.active_derivatives)
     term_2 = (-2.0 * rhl * scaleweights * scale_factors *
-              self.data_manager.Ih_table.h_index_mat)
+              self.data_manager.Ih_table.h_index_matrix)
     term_2 = term_2 * dIh_by_dpi
     gradient = term_1 + term_2
 
