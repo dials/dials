@@ -409,6 +409,124 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     match = SpotMatcher(max_separation=2)
     oind, sind = match(other, self)
     return sind, oind
+  
+  def match_with_reference_without_copying_columns(self, other):
+    '''
+    Match reflections with another set of reflections.
+
+    :param other: The reflection table to match against
+    :return: The matches
+
+    '''
+    from collections import defaultdict
+    import __builtin__
+    logger.info("Matching reference spots with predicted reflections")
+    logger.info(' %d observed reflections input' % len(other))
+    logger.info(' %d reflections predicted' % len(self))
+
+    # Get the miller index, entering flag and turn number for
+    # Both sets of reflections
+    i1 = self['id']
+    h1 = self['miller_index']
+    e1 = self['entering'].as_int()
+    x1, y1, z1 = self['xyzcal.px'].parts()
+    p1 = self['panel']
+
+    i2 = other['id']
+    h2 = other['miller_index']
+    e2 = other['entering'].as_int()
+    x2, y2, z2 = other['xyzcal.px'].parts()
+    p2 = other['panel']
+
+    class Match(object):
+      def __init__(self):
+        self.a = []
+        self.b = []
+
+    # Create the match lookup
+    lookup = defaultdict(Match)
+    for i in range(len(self)):
+      item = h1[i] + (e1[i], i1[i], p1[i])
+      lookup[item].a.append(i)
+
+    # Add matches from input reflections
+    for i in range(len(other)):
+      item = h2[i] + (e2[i], i2[i], p2[i])
+      if item in lookup:
+        lookup[item].b.append(i)
+
+    # Create the list of matches
+    match1 = []
+    match2 = []
+    for item, value in lookup.iteritems():
+      if len(value.b) == 0:
+        continue
+      elif len(value.a) == 1 and len(value.b) == 1:
+        match1.append(value.a[0])
+        match2.append(value.b[0])
+      else:
+        matched = {}
+        for i in value.a:
+          d = []
+          for j in value.b:
+            dx = x1[i]-x2[j]
+            dy = y1[i]-y2[j]
+            dz = z1[i]-z2[j]
+            d.append((i,j,dx**2 + dy**2 + dz**2))
+          i, j, d = __builtin__.min(d, key=lambda x: x[2])
+          if j not in matched:
+            matched[j] = (i, d)
+          elif d < matched[j][1]:
+            matched[j] = (i, d)
+        for key1, value1 in matched.iteritems():
+          match1.append(value1[0])
+          match2.append(key1)
+
+    # Select everything which matches
+    sind = flex.size_t(match1)
+    oind = flex.size_t(match2)
+
+    # Sort by self index
+    sort_index = flex.size_t(__builtin__.sorted(range(len(sind)), key=lambda x: sind[x]))
+    sind = sind.select(sort_index)
+    oind = oind.select(sort_index)
+
+    s2 = self.select(sind)
+    o2 = other.select(oind)
+    h1 = s2['miller_index']
+    h2 = o2['miller_index']
+    e1 = s2['entering']
+    e2 = o2['entering']
+    assert(h1 == h2).all_eq(True)
+    assert(e1 == e2).all_eq(True)
+    x1, y1, z1 = s2['xyzcal.px'].parts()
+    x2, y2, z2 = o2['xyzcal.px'].parts()
+    distance = flex.sqrt((x1-x2)**2+(y1-y2)**2+(z1-z2)**2)
+    mask = distance < 2
+    logger.info(' %d reflections matched' % len(o2))
+    logger.info(' %d reflections accepted' % mask.count(True))
+    self.set_flags(
+      sind.select(mask),
+      self.flags.reference_spot)
+    self.set_flags(
+      sind.select(o2.get_flags(self.flags.strong)),
+      self.flags.strong)
+    self.set_flags(
+      sind.select(o2.get_flags(self.flags.indexed)),
+      self.flags.indexed)
+    self.set_flags(
+      sind.select(o2.get_flags(self.flags.used_in_refinement)),
+      self.flags.used_in_refinement)
+    other_matched_indices = oind.select(mask)
+    other_unmatched_mask = flex.bool(len(other), True)
+    other_unmatched_mask.set_selected(
+      other_matched_indices,
+      flex.bool(len(other_matched_indices), False))
+    other_matched = other.select(other_matched_indices)
+    other_unmatched = other.select(other_unmatched_mask)
+    mask2 = flex.bool(len(self),False)
+    mask2.set_selected(sind.select(mask), True)
+    return mask2, other_matched, other_unmatched
 
   def match_with_reference(self, other):
     '''
@@ -485,14 +603,20 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     # Select everything which matches
     sind = flex.size_t(match1)
     oind = flex.size_t(match2)
+
+    # Sort by self index
+    sort_index = flex.size_t(__builtin__.sorted(range(len(sind)), key=lambda x: sind[x]))
+    sind = sind.select(sort_index)
+    oind = oind.select(sort_index)
+
     s2 = self.select(sind)
     o2 = other.select(oind)
     h1 = s2['miller_index']
     h2 = o2['miller_index']
     e1 = s2['entering']
     e2 = o2['entering']
-    assert(h1 == h2)
-    assert(e1 == e2)
+    assert(h1 == h2).all_eq(True)
+    assert(e1 == e2).all_eq(True)
     x1, y1, z1 = s2['xyzcal.px'].parts()
     x2, y2, z2 = o2['xyzcal.px'].parts()
     distance = flex.sqrt((x1-x2)**2+(y1-y2)**2+(z1-z2)**2)
