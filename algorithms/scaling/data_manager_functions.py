@@ -365,7 +365,7 @@ class aimless_Data_Manager(Data_Manager):
       #B_parameters = self.g_decay.get_scale_factors()
       B_parameters = self.g_decay.value
       B_new_parameters = B_parameters - flex.double([max(B_values)]*len(B_parameters))
-      self.g_decay.inverse_scales = B_new_parameters
+      self.g_decay.parameters = B_new_parameters
       #self.g_decay.value = B_new_parameters
       self.g_decay.calculate_scales_and_derivatives()
       absorption_scales = self.g_decay.inverse_scales
@@ -379,7 +379,7 @@ class aimless_Data_Manager(Data_Manager):
     #scale_factors = self.g_scale.get_scale_factors()
     scale_factors = self.g_scale.value
     new_scales = scale_factors/initial_scale
-    self.g_scale.inverse_scales = new_scales
+    self.g_scale.parameters = new_scales
     #self.g_scale.value = new_scales
     self.g_scale.calculate_scales_and_derivatives()
 
