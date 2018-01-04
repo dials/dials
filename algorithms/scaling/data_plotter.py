@@ -32,14 +32,14 @@ def plot_data_decay(data_man, outputfile=None):
   rel_values_1 = np.tile(rel_values_1, n2)
   rel_values_2 = np.repeat(rel_values_2, n1)
   test_scale_factor = SF.SmoothScaleFactor_2D(1.0, ndbins, nzbins)
-  test_scale_factor.set_scale_factors(data_man.g_decay.get_scale_factors())
-  test_scale_factor.set_normalised_values(rel_values_1, rel_values_2)
+  test_scale_factor.inverse_scales = data_man.g_decay.inverse_scales
+  test_scale_factor.normalised_values = (rel_values_1, rel_values_2)
   test_scale_factor.calculate_scales_and_derivatives()
-  scales = test_scale_factor.scales
+  scales = test_scale_factor.inverse_scales
   G_fin_2d = np.reshape(list(scales), (n2, n1)).T
   #G_fin_2d = G_fin_2d[1:-1,1:-1]
   data_man.g_decay.calculate_scales_and_derivatives()
-  G_fin = list(data_man.g_decay.scales)
+  G_fin = list(data_man.g_decay.inverse_scales)
 
   plt.figure(figsize=(11,6))
   gs = gridspec.GridSpec(1, 2)
@@ -89,7 +89,7 @@ def plot_data_absorption(data_man, outputfile=None):
   G_fin = list(data_man.g_absorption.get_scale_factors())
   G_fin_2d = np.reshape(G_fin, (nzbins, nabsbins)).T
   data_man.g_absorption.calculate_scales_and_derivatives()
-  G_fin = list(data_man.g_absorption.scales)
+  G_fin = list(data_man.g_absorption.inverse_scales)
 
   plt.figure(figsize=(11,6))
   gs = gridspec.GridSpec(1, 2)
@@ -133,7 +133,7 @@ def plot_data_modulation(data_man, outputfile=None):
   test_scale_factor.set_scale_factors(data_man.g_modulation.get_scale_factors())
   test_scale_factor.set_normalised_values(rel_values_1, rel_values_2)
   test_scale_factor.calculate_scales_and_derivatives()
-  scales = test_scale_factor.scales
+  scales = test_scale_factor.inverse_scales
   G_fin_2d = np.reshape(list(scales), (n2, n1))
 
   plt.figure(figsize=(11,6))
@@ -205,20 +205,20 @@ def calc_correction_at_detector_area(data_man, position):
   test_scale_factor = copy.deepcopy(data_man.g_absorption)
   test_scale_factor.set_normalised_values(rel_values_1, rel_values_2, rel_values_3)
   test_scale_factor.calculate_scales_and_derivatives()
-  scales = test_scale_factor.scales
+  scales = test_scale_factor.inverse_scales
   G_fin_2d = np.reshape(list(scales), (n2, n1))
   return G_fin_2d
 
 
 def plot_smooth_scales(data_man, outputfile=None):
   rel_values = np.arange(0, int(max(data_man.reflection_table['normalised_rotation_angle'])) + 1, 0.1)
-  scale_SFs = data_man.g_scale.get_scale_factors()
+  scale_SFs = data_man.g_scale.inverse_scales
   n_g_scale_params = len(scale_SFs)
   test_scale_factor = SF.SmoothScaleFactor_1D(1.0, n_g_scale_params)
-  test_scale_factor.set_scale_factors(scale_SFs)
-  test_scale_factor.set_normalised_values(rel_values)
+  test_scale_factor.inverse_scales = scale_SFs
+  test_scale_factor.normalised_values = rel_values
   test_scale_factor.calculate_scales()
-  scales = test_scale_factor.scales
+  scales = test_scale_factor.inverse_scales
   plt.figure(figsize=(14, 8))
   plt.subplot(2,1,1)
   plt.title('Smooth scale factors')
@@ -228,14 +228,14 @@ def plot_smooth_scales(data_man, outputfile=None):
 
   if data_man.params.parameterisation.decay_term:
     rel_values = np.arange(0, int(max(data_man.reflection_table['normalised_time_values'])) + 1, 0.1)
-    decay_SFs = data_man.g_decay.get_scale_factors()
+    decay_SFs = data_man.g_decay.inverse_scales
     n_g_decay_params = len(decay_SFs)
     test_decay_factor = SF.SmoothScaleFactor_1D(0.0, n_g_decay_params)
     test_decay_factor.Vr = 0.5 ##HACK - set to match that of SmoothScaleFactor_1D_Bfactor
-    test_decay_factor.set_scale_factors(decay_SFs)
-    test_decay_factor.set_normalised_values(rel_values)
+    test_decay_factor.inverse_scales = decay_SFs
+    test_decay_factor.normalised_values = rel_values
     test_decay_factor.calculate_scales()
-    B_rel_values = test_decay_factor.scales
+    B_rel_values = test_decay_factor.inverse_scales
     plt.subplot(2,1,2)
     plt.ylabel('Relative B factor (' + r'$\AA^{2}$'+')')
     plt.xlabel('Normalised time value')
@@ -247,7 +247,7 @@ def plot_smooth_scales(data_man, outputfile=None):
     plt.savefig('smooth_scale_factors.png')
 
 def plot_absorption_surface(data_man, outputfile=None):
-  params = data_man.g_absorption.get_scale_factors()
+  params = data_man.g_absorption.inverse_scales
 
   from scitbx import math
   from scitbx.array_family import flex

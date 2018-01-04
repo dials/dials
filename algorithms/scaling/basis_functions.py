@@ -20,15 +20,15 @@ class basis_function(object):
   def update_scale_factors(self):
     for i, active_param in enumerate(self.apm.active_parameterisation):
       SF_object = self.data_manager.g_parameterisation[active_param]
-      SF_object.set_scale_factors(self.apm.x[self.apm.cumulative_active_params[i]:
-                                             self.apm.cumulative_active_params[i+1]])
+      SF_object.inverse_scales = self.apm.x[self.apm.cumulative_active_params[i]:
+                                            self.apm.cumulative_active_params[i+1]]
       SF_object.calculate_scales_and_derivatives()
 
   def calculate_scale_factors(self):
     multiplied_scale_factors = flex.double([1.0] * len(self.data_manager.Ih_table.Ih_table))
     for active_param in self.apm.active_parameterisation:
       multiplied_scale_factors *= self.data_manager.g_parameterisation[
-        active_param].scales
+        active_param].inverse_scales
     if self.apm.constant_g_values:
       multiplied_scale_factors *= self.apm.constant_g_values
     return multiplied_scale_factors
@@ -46,7 +46,7 @@ class basis_function(object):
         scale_multipliers = flex.double([1.0] * n_refl)
         for param, SF_obj in self.data_manager.g_parameterisation.iteritems():
           if param != active_param:
-            scale_multipliers *= SF_obj.scales
+            scale_multipliers *= SF_obj.inverse_scales
         next_deriv = row_multiply(derivs, scale_multipliers)
         derivatives.assign_block(next_deriv, 0, self.apm.cumulative_active_params[i])
       return derivatives

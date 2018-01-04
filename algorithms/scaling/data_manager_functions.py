@@ -206,16 +206,16 @@ class aimless_Data_Manager(Data_Manager):
     
     '''refactor the next two operations into extract_reflections?
     reset the normalised values within the scale_factor object to current'''
-    self.g_scale.set_normalised_values(reflections_for_scaling[
+    self.g_scale.normalised_values = (reflections_for_scaling[
       'normalised_rotation_angle'])
     if self.params.parameterisation.decay_term:
-      self.g_decay.set_normalised_values(reflections_for_scaling[
+      self.g_decay.normalised_values = (reflections_for_scaling[
         'normalised_time_values'])
-      self.g_decay.set_d_values(reflections_for_scaling['d'])
+      self.g_decay.d_values = reflections_for_scaling['d']
     if self.params.parameterisation.absorption_term:
       sph_harm_table_T = self.sph_harm_table.transpose()
       selected_sph_harm_table = sph_harm_table_T.select_columns(selection.iselection())
-      self.g_absorption.set_values(selected_sph_harm_table.transpose())
+      self.g_absorption.harmonic_values = selected_sph_harm_table.transpose()
     logger.info('Completed initialisation of aimless data manager. \n' + '*'*40 + '\n')
 
   def update_error_model(self):
@@ -310,7 +310,7 @@ class aimless_Data_Manager(Data_Manager):
     lowest_parameter_value = int((min(reflection_table['normalised_rotation_angle'])//1)-1)
     n_scale_parameters = highest_parameter_value - lowest_parameter_value + 1
     self.g_scale = SF.SmoothScaleFactor_1D(1.0, n_scale_parameters)
-    self.g_scale.set_normalised_values(reflection_table['normalised_rotation_angle'])
+    self.g_scale.normalised_values = reflection_table['normalised_rotation_angle']
     self.g_parameterisation['g_scale'] = self.g_scale
     msg = ('The scale term ScaleFactor object was successfully initialised. {sep}'
       'The scale term parameter interval has been set to {0} degrees. {sep}'
@@ -359,27 +359,27 @@ class aimless_Data_Manager(Data_Manager):
 
   def normalise_scales_and_B(self):
     if self.params.parameterisation.decay_term:
-      absorption_scales = self.g_decay.get_scales_of_reflections()
+      absorption_scales = self.g_decay.inverse_scales
       
       B_values = flex.double(np.log(absorption_scales)) * 2.0 * (self.g_decay.d_values**2)
       #B_parameters = self.g_decay.get_scale_factors()
       B_parameters = self.g_decay.value
       B_new_parameters = B_parameters - flex.double([max(B_values)]*len(B_parameters))
-      self.g_decay.update_scale_factors(B_new_parameters)
+      self.g_decay.inverse_scales = B_new_parameters
       #self.g_decay.value = B_new_parameters
       self.g_decay.calculate_scales_and_derivatives()
-      absorption_scales = self.g_decay.get_scales_of_reflections()
+      absorption_scales = self.g_decay.inverse_scales
       B_values = flex.double(np.log(absorption_scales)) * 2.0 * (self.g_decay.d_values**2)
     #scale_factors = self.g_scale.get_scale_factors()
-    scales = self.g_scale.get_scales_of_reflections()
-    normalised_values = self.g_scale.get_normalised_values()
+    scales = self.g_scale.inverse_scales
+    normalised_values = self.g_scale.normalised_values
     first_value = min(normalised_values)
     sel = (normalised_values == first_value)
     initial_scale = list(scales.select(sel))[0]
     #scale_factors = self.g_scale.get_scale_factors()
     scale_factors = self.g_scale.value
     new_scales = scale_factors/initial_scale
-    self.g_scale.update_scale_factors(new_scales)
+    self.g_scale.inverse_scales = new_scales
     #self.g_scale.value = new_scales
     self.g_scale.calculate_scales_and_derivatives()
 
@@ -388,20 +388,20 @@ class aimless_Data_Manager(Data_Manager):
     if not self.params.scaling_options.multi_mode:
       self.normalise_scales_and_B()
     "recalculate scales for reflections in sorted_reflection table"
-    self.g_scale.set_normalised_values(self.reflection_table['normalised_rotation_angle'])
+    self.g_scale.normalised_values = self.reflection_table['normalised_rotation_angle']
     self.g_scale.calculate_scales()
-    expanded_scale_factors *= self.g_scale.scales
+    expanded_scale_factors *= self.g_scale.inverse_scales
     if self.params.parameterisation.decay_term:
-      self.g_decay.set_normalised_values(self.reflection_table['normalised_time_values'])
-      self.g_decay.set_d_values(self.reflection_table['d'])
+      self.g_decay.normalised_values = self.reflection_table['normalised_time_values']
+      self.g_decay.d_values = self.reflection_table['d']
       self.g_decay.calculate_scales()
-      expanded_scale_factors *= self.g_decay.scales
-      absorption_scales = self.g_decay.get_scales_of_reflections()
+      expanded_scale_factors *= self.g_decay.inverse_scales
+      absorption_scales = self.g_decay.inverse_scales
       B_values = flex.double(np.log(absorption_scales)) * 2.0 * (self.g_decay.d_values**2)
     if self.params.parameterisation.absorption_term:
-      self.g_absorption.set_values(self.sph_harm_table)
+      self.g_absorption.harmonic_values = self.sph_harm_table
       self.g_absorption.calculate_scales_and_derivatives()
-      expanded_scale_factors  *= self.g_absorption.scales
+      expanded_scale_factors  *= self.g_absorption.inverse_scales
     self.reflection_table['inverse_scale_factor'] = expanded_scale_factors
     logger.info(('Scale factors determined during minimisation have now been applied {sep}'
       'to all reflections. {sep}').format(sep='\n'))
@@ -480,13 +480,13 @@ class KB_Data_Manager(Data_Manager):
   def expand_scales_to_all_reflections(self):
     expanded_scale_factors = flex.double([1.0]*len(self.reflection_table))
     if self.params.parameterisation.scale_term:
-      self.g_scale.set_n_refl(len(self.reflection_table))
+      self.g_scale.n_refl = len(self.reflection_table)
       self.g_scale.calculate_scales_and_derivatives()
-      expanded_scale_factors *= self.g_scale.scales
+      expanded_scale_factors *= self.g_scale.inverse_scales
     if self.params.parameterisation.decay_term:
-      self.g_decay.set_d_values(self.reflection_table['d'])
+      self.g_decay.d_values = self.reflection_table['d']
       self.g_decay.calculate_scales_and_derivatives()
-      expanded_scale_factors *= self.g_decay.scales
+      expanded_scale_factors *= self.g_decay.inverse_scales
     self.reflection_table['inverse_scale_factor'] = expanded_scale_factors
     logger.info(('Scale factors determined during minimisation have now been applied {sep}'
       'to all reflections. Scale factors were determined to be K = {0:.4f}, {sep}'
@@ -509,14 +509,14 @@ class active_parameter_manager(object):
     self.cumulative_active_params = [0]
     for p_type, scalefactor in Data_Manager.g_parameterisation.iteritems():
       if p_type in param_name:
-        self.x.extend(scalefactor.get_scale_factors())
+        self.x.extend(scalefactor.inverse_scales)
         self.n_active_params = len(self.x) #update n_active_params
         self.active_parameterisation.append(p_type)
-        n_params = len(scalefactor.get_scale_factors())
+        n_params = len(scalefactor.inverse_scales)
         self.active_params_list.append(n_params)
         self.cumulative_active_params.append(self.cumulative_active_params[-1] + n_params)
       else:
-        constant_g_values.append(scalefactor.get_scales_of_reflections())
+        constant_g_values.append(scalefactor.inverse_scales)
     if len(constant_g_values) > 0.0:
       self.constant_g_values = flex.double(np.prod(np.array(constant_g_values), axis=0))
     else:
@@ -524,7 +524,7 @@ class active_parameter_manager(object):
     if not Data_Manager.params.scaling_options.multi_mode:
       logger.info(('Set up parameter handler for following corrections: {0}\n').format(
         ''.join(i.lstrip('g_')+' ' for i in self.active_parameterisation)))
-
+  
   def get_current_parameters(self):
     return self.x
 
@@ -932,9 +932,9 @@ class targeted_datamanager(Data_Manager):
       self.dm1.Ih_table.Ih_table = self.dm1.Ih_table.Ih_table.select(sel)
       'update the data in the SF objects'
       if self.params.parameterisation.decay_term:
-        self.dm1.g_decay.set_d_values(self.dm1.g_decay.d_values.select(sel))
+        self.dm1.g_decay.d_values = self.dm1.g_decay.d_values.select(sel)
       if self.params.parameterisation.scale_term:
-        self.dm1.g_scale.set_n_refl(len(self.dm1.Ih_table.Ih_table))
+        self.dm1.g_scale.n_refl = len(self.dm1.Ih_table.Ih_table)
       self.g_parameterisation = self.dm1.g_parameterisation
     else:
       #do full aimless/xds scaling of one dataset against the other?
