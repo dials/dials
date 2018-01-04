@@ -20,7 +20,7 @@ class basis_function(object):
   def update_scale_factors(self):
     for i, active_param in enumerate(self.apm.active_parameterisation):
       SF_object = self.data_manager.g_parameterisation[active_param]
-      SF_object.inverse_scales = self.apm.x[self.apm.cumulative_active_params[i]:
+      SF_object.parameters = self.apm.x[self.apm.cumulative_active_params[i]:
                                             self.apm.cumulative_active_params[i+1]]
       SF_object.calculate_scales_and_derivatives()
 

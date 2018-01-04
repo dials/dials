@@ -106,7 +106,7 @@ class SmoothScaleFactor(ScaleFactor):
   @property
   def value(self):
     '''add extra access for gaussian smoother'''
-    return self._inverse_scales
+    return self._parameters
 
   @property
   def normalised_values(self):
@@ -117,7 +117,7 @@ class SmoothScaleFactor(ScaleFactor):
   @normalised_values.setter
   def normalised_values(self, new_values):
     self._normalised_values = new_values
-    #self._inverse_scales = flex.double([1.0]*len(new_values))# - do i need this???
+    self._inverse_scales = flex.double([1.0]*len(new_values))# - do i need this???
 
 
 class SmoothScaleFactor_1D(SmoothScaleFactor):
@@ -148,7 +148,7 @@ class SmoothScaleFactor_1D(SmoothScaleFactor):
     phi_range_deg = [int(min(self._normalised_values)//1),
                      int(max(self._normalised_values)//1)+1]
     self._smoother = GaussianSmoother(phi_range_deg, self._n_params - 2)
-    #self._inverse_scales = flex.double([1.0]*len(new_values))
+    self._inverse_scales = flex.double([1.0]*len(new_values))
     #self.value = self.scale_factors
 
   def calculate_scales_and_derivatives(self):

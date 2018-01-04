@@ -509,10 +509,10 @@ class active_parameter_manager(object):
     self.cumulative_active_params = [0]
     for p_type, scalefactor in Data_Manager.g_parameterisation.iteritems():
       if p_type in param_name:
-        self.x.extend(scalefactor.inverse_scales)
+        self.x.extend(scalefactor.parameters)
         self.n_active_params = len(self.x) #update n_active_params
         self.active_parameterisation.append(p_type)
-        n_params = len(scalefactor.inverse_scales)
+        n_params = len(scalefactor.parameters)
         self.active_params_list.append(n_params)
         self.cumulative_active_params.append(self.cumulative_active_params[-1] + n_params)
       else:
