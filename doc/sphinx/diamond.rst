@@ -1,3 +1,4 @@
+:orphan:
 
 +++++++++++++++++++++++++++++++++++
 Using DIALS at Diamond Light Source
@@ -13,7 +14,7 @@ load the default version of DIALS by typing at the command line::
 The default version of DIALS (and xia2, etc.) is usually fixed at the start of
 a run, however a more recent nightly build of DIALS may be available::
 
-   $ module avail dials/latest
+   $ module load dials/latest
 
 Tutorials
 =========
@@ -166,4 +167,4 @@ feedback (positive or negative - we love to hear from you either way),
 please contact dials-support@lists.sourceforge.net or xia2.support@gmail.com
 respectively.
 
-.. _xia2: http://xia2.github.io/
+.. _xia2: https://xia2.github.io/
