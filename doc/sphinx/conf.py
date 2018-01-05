@@ -37,7 +37,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.imgmath',
+    'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'libtbx.sphinx.phil',
@@ -45,6 +45,10 @@ extensions = [
     'libtbx.sphinx.pubmed',
     'button',
 ]
+
+# Add CDN path for mathjax script, converting Latex to readable text on the fly.
+# (The Sphinx builtin path is deprecated.)
+mathjax_path = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
 
 sys.path.insert(0, os.path.abspath('.'))
 
