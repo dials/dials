@@ -409,7 +409,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     match = SpotMatcher(max_separation=2)
     oind, sind = match(other, self)
     return sind, oind
-  
+
   def match_with_reference_without_copying_columns(self, other):
     '''
     Match reflections with another set of reflections.
