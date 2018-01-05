@@ -111,6 +111,8 @@ pygments_style = 'sphinx'
 # If true, keep warnings as "system message" paragraphs in the built documents.
 #keep_warnings = False
 
+# Do not warn/fail about referencing remote images
+suppress_warnings = ['image.nonlocal_uri']
 
 # -- Options for HTML output ----------------------------------------------
 
