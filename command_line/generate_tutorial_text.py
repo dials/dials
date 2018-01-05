@@ -186,7 +186,7 @@ def generate_processing_detail_text_ccp4():
   # Find/validate the data input - until we've decided to integrate this
   # into the main release, have a DLS default or otherwise let it be
   # specified via a CCP4_TUTORIAL_DATA environment variable.
-  DATA_PATH = "/dls/i03/data/2017/mx19576-1/tutorial_data/summed/C2sum_1*.cbf.gz"
+  DATA_PATH = "/dls/i03/data/2017/mx19576-1/tutorial_data/summed/summed/C2sum_1*.cbf.gz"
   DATA_PATH = os.environ.get("CCP4_TUTORIAL_DATA", DATA_PATH)
   if not any(glob.glob(DATA_PATH)):
     print("Error: Could not find CCP4-2017 data; skipping text generation")
