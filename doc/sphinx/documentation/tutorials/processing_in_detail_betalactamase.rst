@@ -352,7 +352,8 @@ which writes over the ``refined_experiments.json`` and
 ``refined.pickle`` from the previous refinement step. By default the
 scan-varying refinement looks for smooth changes over an interval of 36°
 intervals, to avoid fitting unphysical models to noise, though this
-parameter can be tuned. We can use the :ref:`html-report`, described shortly, to
+parameter can be tuned. We can use the :ref:`betalactamase-html-report`,
+described shortly, to
 view the results of fitting to smoothly varying crystal cell parameters:
 
 .. image:: /figures/process_detail_betalactamase/scan_varying.png
@@ -415,7 +416,7 @@ summary tables are printed giving quality statistics first by frame, and
 then by resolution bin.
 
 
-.. _html-report:
+.. _betalactamase-html-report:
 
 HTML report
 ^^^^^^^^^^^
