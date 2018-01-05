@@ -49,7 +49,7 @@ DIALS development at `Diamond Light Source`_ is supported by the `BioStruct-X`_ 
 
 DIALS development at `Lawrence Berkeley National Laboratory`_ is
 supported by `National Institutes of Health`_ / `National Institute of General Medical Sciences`_
-grant R01-GM095887.  Work at LBNL is performed under
+grant R01-GM117126.  Work at LBNL is performed under
 `Department of Energy`_ contract DE-AC02-05CH11231.
 
 .. _`BioStruct-X`: http://www.biostruct-x.org/
