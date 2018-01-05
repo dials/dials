@@ -1,5 +1,5 @@
 Processing in Detail - Beta-Lactamase Edition
-============================================
+=============================================
 
 .. highlight:: none
 
