@@ -3,9 +3,6 @@
 DIALS Workshop 6th February 2015, Basel
 +++++++++++++++++++++++++++++++++++++++
 
-.. _introduction:
-
-
 Tutorials
 =========
 
