@@ -2,9 +2,11 @@
 Define the data structures required for a scaling algorithm. This consists of
 two distinct classes - a SingleIhTable and JointIhTable, which inherit
 properties from IhTableBase. Both SingleIhTable and JointIhTable have a similar
-interface, consisting of the public attributes Ih_table, h_index_counter_array,
-h_index_cumulative_array and h_index_matrix. The JointIhTable also has a
-h_index_expand_list attribute.
+interface, consisting of the public attributes size, h_index_counter_array,
+h_index_cumulative_array, h_index_matrix and n_h (the number of memebers
+in each group of equivalent reflections), as well as access to the data via
+the attributes weights, intensities, inverse_scale_factors, asu_miller_index
+and Ih_values. The JointIhTable also has a h_index_expand_list attribute.
 '''
 import abc
 import numpy as np
@@ -18,8 +20,11 @@ class IhTableBase(object):
   __metaclass__ = abc.ABCMeta
 
   def __init__(self, data):
-    #public attribute
     self._Ih_table = self._create_Ih_table(data)
+    self._h_index_counter_array = None
+    self._h_index_cumulative_array = None
+    self._h_index_matrix = None
+    self._n_h = None
 
   @abc.abstractmethod
   def _create_Ih_table(self, data):
@@ -68,35 +73,50 @@ class IhTableBase(object):
   def asu_miller_index(self):
     return self._Ih_table['asu_miller_index']
 
+  @property
+  def h_index_counter_array(self):
+    return self._h_index_counter_array
+
+  @property
+  def h_index_cumulative_array(self):
+    return self._h_index_cumulative_array
+
+  @property
+  def h_index_matrix(self):
+    return self._h_index_matrix
+
+  @property
+  def n_h(self):
+    return self._n_h
+
   def update_aimless_error_model(self, error_params):
     '''method to update the scaling weights using an aimless error model'''
+    #note - does this mean we should keep the initial variances?
+    #ok for now if you don't update the error model more than once?
     sigmaprime = (((1.0/self.weights) + ((error_params[1] * self.intensities)**2)
                   )**0.5) * error_params[0]
     self.weights = 1.0/(sigmaprime**2)
 
-  #def set_Ih_values(self, Ih_values):
-  #  '''method to set new Ih values'''
-  #  if len(Ih_values) != len(self.Ih_table['Ih_values']):
-  #    assert 0, """attempting to set a new set of Ih_values of different
-  #    length than previous assignment: was %s, attempting %s""" % (
-  #      len(self.Ih_table['Ih_values']), len(Ih_values))
-  #  self.Ih_table['Ih_values'] = Ih_values
-
   def select(self, selection):
-    'returns a new Ih_table instance based on selected data'
-    selected_reflections = self._Ih_table.select(selection)
-    selected_weights = self.weights.select(selection)
-    new_Ih_table = SingleIhTable(selected_reflections, selected_weights)
-    return new_Ih_table
+    ''''selects a subset of the data and recalculates h_index_arrays/matrix,
+    before returning self (to act like a flex selection operation).'''
+    self._Ih_table = self._Ih_table.select(selection)
+    (self._h_index_counter_array, self._h_index_cumulative_array
+    ) = self._assign_h_index(self.asu_miller_index)
+    self._h_index_matrix = self._assign_h_index_matrix(
+      self.h_index_counter_array, self.h_index_cumulative_array)
+    self._n_h = self._calc_nh(self.h_index_counter_array)
+    return self
 
-  def _assign_h_index(self):
+  @staticmethod
+  def _assign_h_index(asu_miller_index):
     '''assign an index to the Ih table that
        labels each group of unique miller indices'''
     h_index_counter_array = []
     h_index = 0
     h_index_counter = 1
-    for i in range(1, self.size):
-      if (self.asu_miller_index[i] == self.asu_miller_index[i-1]):
+    for i in range(1, len(asu_miller_index)):
+      if asu_miller_index[i] == asu_miller_index[i-1]:
         h_index_counter += 1
       else:
         h_index += 1
@@ -140,11 +160,11 @@ class SingleIhTable(IhTableBase):
   data structure used for scaling a single sweep.'''
   def __init__(self, reflection_table, weighting):
     super(SingleIhTable, self).__init__([reflection_table, weighting])
-    #public attributes
-    (self.h_index_counter_array, self.h_index_cumulative_array) = self._assign_h_index()
-    self.h_index_matrix = self._assign_h_index_matrix(
-      self.h_index_counter_array, self.h_index_cumulative_array)
-    self.n_h = self._calc_nh(self.h_index_counter_array)
+    (self._h_index_counter_array, self._h_index_cumulative_array
+    ) = self._assign_h_index(self.asu_miller_index)
+    self._h_index_matrix = self._assign_h_index_matrix(
+      self.h_index_counter_array, self._h_index_cumulative_array)
+    self._n_h = self._calc_nh(self.h_index_counter_array)
     self.calc_Ih() #calculate a first estimate of Ih
 
   def _create_Ih_table(self, data):
@@ -181,13 +201,13 @@ class JointIhTable(IhTableBase):
   '''Class to expand the datastructure for scaling multiple
   datasets together.'''
   def __init__(self, datamanagers):
-    #public attributes
-    self.h_index_counter_array = None
-    self.h_index_cumulative_array = None
-    self.h_index_matrix = None
-    self.h_index_expand_list = None
+    self._h_index_expand_list = None
     super(JointIhTable, self).__init__(data=datamanagers)
-    self.n_h = self._calc_nh(self.h_index_counter_array)
+    self._n_h = self._calc_nh(self.h_index_counter_array)
+
+  @property
+  def h_index_expand_list(self):
+    return self._h_index_expand_list
 
   def _create_Ih_table(self, data):
     '''construct a single Ih_table for the combined reflections, using the
@@ -201,9 +221,9 @@ class JointIhTable(IhTableBase):
     self._h_idx_cumulative_list = []
     Ih_table, self._unique_indices = self._determine_all_unique_indices()
     self._assign_h_index_arrays()
-    self.h_index_matrix = self._assign_h_index_matrix(
+    self._h_index_matrix = self._assign_h_index_matrix(
       self.h_index_counter_array, self.h_index_cumulative_array)
-    self.h_index_expand_list = self._assign_h_expand_matrices()
+    self._h_index_expand_list = self._assign_h_expand_matrices()
     #finish construction of Ih_table
     Ih_table = self._complete_Ih_table(Ih_table)
     return Ih_table
@@ -265,11 +285,11 @@ class JointIhTable(IhTableBase):
       self._h_idx_count_list.append(h_idx_count)
       self._h_idx_cumulative_list.append(h_index_cumulative_array)
     #now calculate the cumulative/counter arrays for the joint dataset.
-    self.h_index_counter_array = flex.int([0]*len(self._h_idx_count_list[0]))
-    self.h_index_cumulative_array = flex.int([0]*len(self._h_idx_cumulative_list[0]))
+    self._h_index_counter_array = flex.int([0]*len(self._h_idx_count_list[0]))
+    self._h_index_cumulative_array = flex.int([0]*len(self._h_idx_cumulative_list[0]))
     for h_idx_count, h_index_cumul in zip(self._h_idx_count_list, self._h_idx_cumulative_list):
-      self.h_index_counter_array += h_idx_count
-      self.h_index_cumulative_array += h_index_cumul
+      self._h_index_counter_array += h_idx_count
+      self._h_index_cumulative_array += h_index_cumul
 
   def _assign_h_expand_matrices(self):
     '''this function creates a h_expand matrix for each dataset, so that

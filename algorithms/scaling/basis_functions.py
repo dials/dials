@@ -25,7 +25,6 @@ class basis_function(object):
       SF_object.calculate_scales_and_derivatives()
 
   def calculate_scale_factors(self):
-    print(self.data_manager.Ih_table.size)
     multiplied_scale_factors = flex.double([1.0] * self.data_manager.Ih_table.size)
     for active_param in self.apm.active_parameterisation:
       multiplied_scale_factors *= self.data_manager.g_parameterisation[

@@ -495,14 +495,15 @@ class KB_Data_Manager(ScalingDataManager):
       self.g_decay.d_values = self.reflection_table['d']
       self.g_decay.calculate_scales_and_derivatives()
       expanded_scale_factors *= self.g_decay.inverse_scales
-      B = list(self.g_decay.inverse_scales)[0]
+      logger.info(('Scale factors determined during minimisation have now been applied {sep}'
+        'to all reflections. Scale factors were determined to be K = {0:.4f}, {sep}'
+        'B = {1:.4f}. {sep}').format(list(self.g_scale.parameters)[0], 
+        list(self.g_decay.parameters)[0], sep='\n'))
     else:
-      B = 0.0000
+      logger.info(('The scale factor determined during minimisation has now been applied {sep}'
+        'to all reflections. The scale factor was determined to be K = {0:.4f}. {sep}'
+        ).format(list(self.g_scale.inverse_scales)[0], sep='\n'))
     self.reflection_table['inverse_scale_factor'] = expanded_scale_factors
-    logger.info(('Scale factors determined during minimisation have now been applied {sep}'
-      'to all reflections. Scale factors were determined to be K = {0:.4f}, {sep}'
-      'B = {1:.4f}. {sep}').format(list(self.g_scale.inverse_scales)[0], 
-      B, sep='\n'))
 
 
 class active_parameter_manager(object):
@@ -936,8 +937,11 @@ class targeted_datamanager(ScalingDataManager):
           self.dm1.Ih_table.Ih_values[i] = 0.0
           #should already be zero but set again just in case
       'select only those reflections matched in the target dataset'
+      #print(list(self.dm1.Ih_table.Ih_values))
       sel = self.dm1.Ih_table.Ih_values != 0.0
       self.dm1.Ih_table = self.dm1.Ih_table.select(sel)
+      #print(list(self.dm1.Ih_table.Ih_values))
+      #exit()
       'update the data in the SF objects'
       if self.params.parameterisation.decay_term:
         self.dm1.g_decay.d_values = self.dm1.g_decay.d_values.select(sel)
