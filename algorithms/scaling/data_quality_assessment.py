@@ -6,8 +6,8 @@ import numpy as np
 
 def R_pim_meas(data_man):
   '''Calculate R_meas from a Data_Manager_object'''
-  Ihl = data_man.Ih_table.Ih_table['intensity']
-  gvalues = data_man.Ih_table.Ih_table['inverse_scale_factor']
+  Ihl = data_man.Ih_table.intensities
+  gvalues = data_man.Ih_table.inverse_scale_factors
 
   ones = flex.double([1.0] * len(Ihl))
   nh = ones * data_man.Ih_table.h_index_matrix

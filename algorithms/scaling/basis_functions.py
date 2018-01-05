@@ -25,7 +25,8 @@ class basis_function(object):
       SF_object.calculate_scales_and_derivatives()
 
   def calculate_scale_factors(self):
-    multiplied_scale_factors = flex.double([1.0] * len(self.data_manager.Ih_table.Ih_table))
+    print(self.data_manager.Ih_table.size)
+    multiplied_scale_factors = flex.double([1.0] * self.data_manager.Ih_table.size)
     for active_param in self.apm.active_parameterisation:
       multiplied_scale_factors *= self.data_manager.g_parameterisation[
         active_param].inverse_scales
@@ -39,7 +40,7 @@ class basis_function(object):
       active_param = self.data_manager.g_parameterisation.values()[0]
       return active_param.derivatives
     else:
-      n_refl = len(self.data_manager.Ih_table.Ih_table)
+      n_refl = self.data_manager.Ih_table.size
       derivatives = sparse.matrix(n_refl, self.apm.cumulative_active_params[-1])
       for i, active_param in enumerate(self.apm.active_parameterisation):
         derivs = self.data_manager.g_parameterisation[active_param].derivatives

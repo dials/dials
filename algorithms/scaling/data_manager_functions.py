@@ -24,105 +24,96 @@ from aimless_outlier_rejection import reject_outliers
 import logging
 logger = logging.getLogger('dials.scale')
 
-class Data_Manager(object):
-  '''Data Manager takes a params parsestring containing the parsed
-     integrated.pickle and integrated_experiments.json files'''
-  def __init__(self, reflections, experiments, params):
-    'General attributes relevant for all parameterisations'
-    logger.info('\nInitialising a data manager instance. \n')
-    self.experiments = experiments
-    'initial filter to select integrated reflections'
-    self.reflection_table = reflections.select(reflections.get_flags(
-      reflections.flags.integrated))
-    self.params = params
-    self.initial_keys = [key for key in self.reflection_table.keys()]
-    if 'intensity.prf.variance' in self.initial_keys:
-      reflections = reflections.select(reflections['intensity.prf.variance'] > 0)
-    if 'intensity.sum.variance' in self.initial_keys:
-      reflections = reflections.select(reflections['intensity.sum.variance'] > 0)
-    if not 'inverse_scale_factor' in self.initial_keys:
-      self.reflection_table['inverse_scale_factor'] = (
-        flex.double([1.0] * len(self.reflection_table)))
-    self.reflection_table['Ih_values'] = flex.double([0.0] * len(self.reflection_table))
-    'choose intensities, map to asu, assign unique refl. index'
-    self.reflection_table = self.select_optimal_intensities(self.reflection_table)
-    self.reflection_table = self.map_indices_to_asu(self.reflection_table)
-    #add in a method that automatically updates the weights when the reflection table is changed?
-    'assign initial weights (will be statistical weights at this point)'
-    self.reflection_table = calc_normE2(self.reflection_table, self.experiments)
-    self.reflection_table['wilson_outlier_flag'] = calculate_wilson_outliers(
-      self.reflection_table)
-    self.weights_for_scaling = self.update_weights_for_scaling(
-      self.reflection_table)
+class DataManagerUtilities(object):
+  '''Define a class of utility methods for the Data Manager.'''
 
-  'define a few methods required upon initialisation to set up the data manager'
-  def extract_reflections_for_scaling(self, reflection_table, error_model_params=None):
+  @staticmethod
+  def _reflection_table_setup(initial_keys, reflections):
+    '''initial filter to select integrated reflections.
+    input - initial_keys and reflection table
+    output - reflection table'''
+    reflections = reflections.select(reflections.get_flags(
+      reflections.flags.integrated))
+    if 'intensity.prf.variance' in initial_keys:
+      reflections = reflections.select(reflections['intensity.prf.variance'] > 0)
+    if 'intensity.sum.variance' in initial_keys:
+      reflections = reflections.select(reflections['intensity.sum.variance'] > 0)
+    if not 'inverse_scale_factor' in initial_keys:
+      reflections['inverse_scale_factor'] = (flex.double([1.0] * len(reflections)))
+    reflections['Ih_values'] = flex.double([0.0] * len(reflections))
+    return reflections
+
+  @classmethod
+  def _extract_reflections_for_scaling(cls, reflection_table, params,
+    error_model_params=None):
     '''select the reflections with non-zero weight and update scale weights
     object.'''
     n_refl = len(reflection_table)
-    weights_for_scaling = self.update_weights_for_scaling(reflection_table,
-      error_model_params=error_model_params)
-    sel = weights_for_scaling.get_weights() > 0.0
-    #reflections_for_scaling = reflection_table.select(sel)
-    sel1 = reflection_table['Esq'] > self.params.reflection_selection.E2min
-    sel2 = reflection_table['Esq'] < self.params.reflection_selection.E2max
+    weights_for_scaling = cls._update_weights_for_scaling(reflection_table,
+      params, error_model_params=error_model_params)
+    sel = weights_for_scaling.weights > 0.0
+    sel1 = reflection_table['Esq'] > params.reflection_selection.E2min
+    sel2 = reflection_table['Esq'] < params.reflection_selection.E2max
     selection = sel & sel1 & sel2
     reflections_for_scaling = reflection_table.select(selection)
-    weights_for_scaling.scale_weighting = weights_for_scaling.scale_weighting.select(selection)
-    #weights_for_scaling = self.update_weights_for_scaling(reflections_for_scaling,
-    #  error_model_params=error_model_params)
+    weights_for_scaling.weights= weights_for_scaling.weights.select(selection)
     msg = ('{0} reflections were selected for scale factor determination {sep}'
       'out of {1} reflections. This was based on selection criteria of {sep}'
       'E2min = {2}, E2max = {3}, Isigma_min = {4}, dmin = {5}. {sep}').format(
-      reflections_for_scaling.size(), n_refl, self.params.reflection_selection.E2min,
-      self.params.reflection_selection.E2max, self.params.reflection_selection.Isigma_min, 
-      self.params.reflection_selection.d_min, sep='\n')
+      reflections_for_scaling.size(), n_refl, params.reflection_selection.E2min,
+      params.reflection_selection.E2max, params.reflection_selection.Isigma_min, 
+      params.reflection_selection.d_min, sep='\n')
     logger.info(msg)
     return reflections_for_scaling, weights_for_scaling, selection
 
-  def update_weights_for_scaling(self, reflection_table, weights_filter=True,
+  @staticmethod
+  def _update_weights_for_scaling(reflection_table, params, weights_filter=True,
     error_model_params=None):
     '''set the weights of each reflection to be used in scaling'''
     weights_for_scaling = Weighting(reflection_table)
     logger.info('Updating the weights associated with the intensities. \n')
     if weights_filter:
       weights_for_scaling.apply_Isigma_cutoff(reflection_table,
-        self.params.reflection_selection.Isigma_min)
+        params.reflection_selection.Isigma_min)
       weights_for_scaling.apply_dmin_cutoff(reflection_table,
-        self.params.reflection_selection.d_min)
+        params.reflection_selection.d_min)
     weights_for_scaling.remove_wilson_outliers(reflection_table)
     if error_model_params:
-      weights_for_scaling.apply_aimless_error_model(reflection_table, error_model_params)
+      weights_for_scaling.apply_aimless_error_model(reflection_table,
+        error_model_params)
     return weights_for_scaling
 
-  def map_indices_to_asu(self, reflection_table):
+  @staticmethod
+  def _map_indices_to_asu(reflection_table, experiments, params):
     '''Create a miller_set object, map to the asu and create a sorted
        reflection table, sorted by asu miller index'''
-    u_c = self.experiments.crystal.get_unit_cell().parameters()
-    if self.params.scaling_options.force_space_group:
-      sg_from_file = self.experiments.crystal.get_space_group().info()
-      s_g_symbol = self.params.scaling_options.force_space_group
-      crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group_symbol=s_g_symbol)
+    u_c = experiments.crystal.get_unit_cell().parameters()
+    if params.scaling_options.force_space_group:
+      sg_from_file = experiments.crystal.get_space_group().info()
+      s_g_symbol = params.scaling_options.force_space_group
+      crystal_symmetry = crystal.symmetry(unit_cell=u_c,
+        space_group_symbol=s_g_symbol)
       msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
         'If the reflection indexing in these space groups is different, {sep}'
         'bad things may happen!!! {sep}').format(sg_from_file, s_g_symbol, sep='\n')
       logger.info(msg)
     else:
-      s_g = self.experiments.crystal.get_space_group()
+      s_g = experiments.crystal.get_space_group()
       crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
     miller_set = miller.set(crystal_symmetry=crystal_symmetry,
-                            indices=reflection_table['miller_index'], anomalous_flag=True)
+      indices=reflection_table['miller_index'], anomalous_flag=True)
     miller_set_in_asu = miller_set.map_to_asu()
     reflection_table["asu_miller_index"] = miller_set_in_asu.indices()
     permuted = (miller_set.map_to_asu()).sort_permutation(by_value='packed_indices')
     reflection_table = reflection_table.select(permuted)
     return reflection_table
 
-  def select_optimal_intensities(self, reflection_table):
+  @classmethod
+  def _select_optimal_intensities(cls, reflection_table, params):
     '''method to choose which intensities to use for scaling'''
-    if (self.params.scaling_options.integration_method == 'sum' or
-        self.params.scaling_options.integration_method == 'prf'):
-      intstr = self.params.scaling_options.integration_method
+    if (params.scaling_options.integration_method == 'sum' or
+        params.scaling_options.integration_method == 'prf'):
+      intstr = params.scaling_options.integration_method
       reflection_table['intensity'] = (reflection_table['intensity.'+intstr+'.value']
                                        * reflection_table['lp']
                                        / reflection_table['dqe'])
@@ -132,7 +123,7 @@ class Data_Manager(object):
       logger.info(('{0} intensity values will be used for scaling. {sep}').format(
         'Profile fitted' if intstr == 'prf' else 'Summation integrated', sep='\n'))
     #perform a combined prf/sum in a similar fashion to aimless
-    elif self.params.scaling_options.integration_method == 'combine':
+    elif params.scaling_options.integration_method == 'combine':
       int_prf = (reflection_table['intensity.prf.value']
                  * reflection_table['lp'] / reflection_table['dqe'])
       int_sum = (reflection_table['intensity.sum.value']
@@ -150,15 +141,63 @@ class Data_Manager(object):
       logger.info(msg)
     else:
       logger.info('Invalid integration_method choice, using default profile fitted intensities')
-      self.params.scaling_options.integration_method = 'prf'
-      self.select_optimal_intensities(reflection_table)
+      params.scaling_options.integration_method = 'prf'
+      cls._select_optimal_intensities(reflection_table, params)
     return reflection_table
+
+
+class ScalingDataManager(DataManagerUtilities):
+  '''Data Manager takes a params parsestring containing the parsed
+     integrated.pickle and integrated_experiments.json files'''
+  def __init__(self, reflections, experiments, params):
+    super(ScalingDataManager, self).__init__()
+    'General attributes relevant for all parameterisations'
+    logger.info('\nInitialising a data manager instance. \n')
+    self._experiments = experiments
+    self._params = params
+    self._initial_keys = [key for key in reflections.keys()]
+    'choose intensities, map to asu, assign unique refl. index'
+    reflection_table = self._reflection_table_setup(self._initial_keys, reflections)
+    reflection_table = self._select_optimal_intensities(reflection_table, self.params)
+    reflection_table = self._map_indices_to_asu(reflection_table,
+      self.experiments, self.params)
+    #add in a method that automatically updates the weights when the reflection table is changed?
+    'assign initial weights (will be statistical weights at this point)'
+    reflection_table = calc_normE2(reflection_table, self.experiments)
+    reflection_table['wilson_outlier_flag'] = calculate_wilson_outliers(
+      reflection_table)
+    self._reflection_table = reflection_table
+    #extra attributes that need to be filled in by subclasses.
+    self.Ih_table = None
+    self.g_parameterisation = None
+    self.apm = None 
+
+  @property
+  def experiments(self):
+    return self._experiments
+
+  @property
+  def reflection_table(self):
+    return self._reflection_table
+
+  @reflection_table.setter
+  def reflection_table(self, reflections):
+    self._reflection_table = reflections
+
+  @property
+  def params(self):
+    return self._params
+
+  @params.setter
+  def params(self, new_params):
+    self._params = new_params
+
 
   def update_for_minimisation(self, apm):
     '''update the scale factors and Ih for the next iteration of minimisation'''
     basis_fn = self.get_basis_function(apm)
-    self.active_derivatives = basis_fn[1]
-    self.Ih_table.update_scale_factors(basis_fn[0])
+    apm.active_derivatives = basis_fn[1]
+    self.Ih_table.inverse_scale_factors = basis_fn[0]
     self.Ih_table.calc_Ih()
 
   def get_target_function(self, apm):
@@ -168,6 +207,14 @@ class Data_Manager(object):
   def get_basis_function(self, apm):
     '''call thebasis function'''
     return bf.basis_function(self, apm).return_basis()
+
+  def expand_scales_to_all_reflections(self):
+    '''method to be filled in by subclasses'''
+    pass
+
+  def clean_reflection_table(self):
+    '''method to be filled in by subclasses'''
+    pass
 
   '''define a few methods for saving the data'''
   def save_reflection_table(self, filename):
@@ -181,7 +228,7 @@ class Data_Manager(object):
     data_file.close()
 
 
-class aimless_Data_Manager(Data_Manager):
+class aimless_Data_Manager(ScalingDataManager):
   '''Data Manager subclass for implementing XDS parameterisation'''
   def __init__(self, reflections, experiments, params):
     super(aimless_Data_Manager, self).__init__(reflections, experiments, params)
@@ -191,8 +238,9 @@ class aimless_Data_Manager(Data_Manager):
     '''bin reflections, determine outliers, extract reflections and weights for
     scaling and set normalised values.'''
     if self.params.scaling_options.reject_outliers:
-      self.Ih_table = SingleIhTable(self.reflection_table,
-        self.weights_for_scaling.get_weights())
+      weights = self._update_weights_for_scaling(self._reflection_table,
+        self.params).weights
+      self.Ih_table = SingleIhTable(self.reflection_table, weights)
       n_outliers = self.round_of_outlier_rejection()
       msg = ('An initial outlier rejection has been performed, {0} outliers {sep}'
         'were found which have been removed from the dataset. {sep}'.format(
@@ -204,10 +252,10 @@ class aimless_Data_Manager(Data_Manager):
 
   def select_reflections_for_scaling(self):
     (reflections_for_scaling, weights_for_scaling, selection) = (
-      self.extract_reflections_for_scaling(self.reflection_table,
+      self._extract_reflections_for_scaling(self.reflection_table, self.params,
       error_model_params=self.params.scaling_options.error_model_params))
     self.Ih_table = SingleIhTable(reflections_for_scaling,
-      weights_for_scaling.get_weights())
+      weights_for_scaling.weights)
     '''refactor the next two operations into extract_reflections?
     reset the normalised values within the scale_factor object to current'''
     self.g_scale.normalised_values = (reflections_for_scaling[
@@ -222,14 +270,14 @@ class aimless_Data_Manager(Data_Manager):
       self.g_absorption.harmonic_values = selected_sph_harm_table.transpose()
 
   def update_error_model(self):
-    error_model_params = mf.error_scale_LBFGSoptimiser(self.Ih_table,flex.double([1.0,0.01])).x
+    error_model_params = mf.error_scale_LBFGSoptimiser(self.Ih_table,
+      flex.double([1.0,0.01])).x
     self.params.scaling_options.error_model_params = error_model_params
-    inverse_scale_factors = self.Ih_table.Ih_table['inverse_scale_factor']
     (reflections_for_scaling, weights_for_scaling, selection) = (
-      self.extract_reflections_for_scaling(self.reflection_table,
+      self._extract_reflections_for_scaling(self.reflection_table, self.params,
       error_model_params=self.params.scaling_options.error_model_params))
     self.Ih_table = SingleIhTable(reflections_for_scaling,
-      weights_for_scaling.get_weights())
+      weights_for_scaling.weights)
 
   def initialise_scale_factors(self):
     '''initialise scale factors and add to self.active_parameters'''
@@ -355,10 +403,12 @@ class aimless_Data_Manager(Data_Manager):
     _, indices_of_outliers = reject_outliers(self, max_deviation=6.0)
     sel.set_selected(flex.size_t(indices_of_outliers), flex.bool([False]*len(indices_of_outliers)))
     self.reflection_table = self.reflection_table.select(sel)
-    self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table,
-      weights_filter=False, error_model_params=None)
-    #self.Ih_table = SingleIhTable(self.reflection_table, self.weights_for_scaling.get_weights())
-    #self.reflection_table['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
+    new_weights = self._update_weights_for_scaling(self.reflection_table,
+      self.params, weights_filter=False, error_model_params=None).weights
+    self.Ih_table = SingleIhTable(self.reflection_table, new_weights)
+    self.reflection_table = self.reflection_table.select(new_weights != 0)
+    self.reflection_table['Ih_values'] = self.Ih_table.Ih_values
+    return len(indices_of_outliers)
 
   def expand_scales_to_all_reflections(self):
     if not self.params.scaling_options.multi_mode:
@@ -380,12 +430,11 @@ class aimless_Data_Manager(Data_Manager):
     self.reflection_table['inverse_scale_factor'] = expanded_scale_factors
     logger.info(('Scale factors determined during minimisation have now been applied {sep}'
       'to all reflections. {sep}').format(sep='\n'))
-    sel = self.weights_for_scaling.get_weights() != 0.0
-    self.reflection_table = self.reflection_table.select(sel)
-    self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table,
-      weights_filter=False, error_model_params=None)
-    self.Ih_table = SingleIhTable(self.reflection_table, self.weights_for_scaling.get_weights())
-    self.reflection_table['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
+    weights = self._update_weights_for_scaling(self.reflection_table,
+      self.params, weights_filter=False, error_model_params=None).weights
+    self.Ih_table = SingleIhTable(self.reflection_table, weights)
+    self.reflection_table = self.reflection_table.select(weights != 0.0)
+    self.reflection_table['Ih_values'] = self.Ih_table.Ih_values
     if (self.params.scaling_options.reject_outliers and not 
         self.params.scaling_options.multi_mode):
       n_outliers = self.round_of_outlier_rejection()
@@ -393,15 +442,13 @@ class aimless_Data_Manager(Data_Manager):
         'were found which have been removed from the dataset. {sep}'.format(
         n_outliers, sep='\n'))
       logger.info(msg)
-      self.Ih_table = SingleIhTable(self.reflection_table, self.weights_for_scaling.get_weights())
-      self.reflection_table['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
     logger.info('A new best estimate for I_h for all reflections has now been calculated. \n')
 
   def clean_reflection_table(self):
-    self.initial_keys.append('inverse_scale_factor')
-    self.initial_keys.append('phi')
+    self._initial_keys.append('inverse_scale_factor')
+    self._initial_keys.append('phi')
     for key in self.reflection_table.keys():
-      if not key in self.initial_keys:
+      if not key in self._initial_keys:
         del self.reflection_table[key]
     #keep phi column for now for comparing to aimless
     added_columns = ['s2', 's2d', 'decay_factor', 'angular_scale_factor',
@@ -411,16 +458,16 @@ class aimless_Data_Manager(Data_Manager):
       del self.reflection_table[key]
 
 
-class KB_Data_Manager(Data_Manager):
+class KB_Data_Manager(ScalingDataManager):
   def __init__(self, reflections, experiments, params):
     super(KB_Data_Manager, self).__init__(reflections, experiments, params)
     self.active_parameters = flex.double([])
     (reflections_for_scaling, weights_for_scaling, selection) = (
-      self.extract_reflections_for_scaling(self.reflection_table))
-    self.Ih_table = SingleIhTable(reflections_for_scaling, weights_for_scaling.get_weights())
+      self._extract_reflections_for_scaling(self.reflection_table, self.params))
+    self.Ih_table = SingleIhTable(reflections_for_scaling, weights_for_scaling.weights)
     self.g_parameterisation = OrderedDict()
     if self.params.parameterisation.scale_term:
-      self.g_scale = SF.KScaleFactor(1.0, n_refl=len(self.Ih_table.Ih_table))
+      self.g_scale = SF.KScaleFactor(1.0, n_refl=self.Ih_table.size)
       self.g_parameterisation['g_scale'] = self.g_scale
     if self.params.parameterisation.decay_term:
       self.g_decay = SF.BScaleFactor(0.0, reflections_for_scaling['d'])
@@ -434,8 +481,8 @@ class KB_Data_Manager(Data_Manager):
   def update_for_minimisation(self, apm):
     '''update the scale factors and Ih for the next iteration of minimisation'''
     basis_fn = self.get_basis_function(apm)
-    self.active_derivatives = basis_fn[1]
-    self.Ih_table.update_scale_factors(basis_fn[0])
+    apm.active_derivatives = basis_fn[1]
+    self.Ih_table.inverse_scale_factors = basis_fn[0]
     #note - we don't calculate Ih here as using a target instead
 
   def expand_scales_to_all_reflections(self):
@@ -448,11 +495,14 @@ class KB_Data_Manager(Data_Manager):
       self.g_decay.d_values = self.reflection_table['d']
       self.g_decay.calculate_scales_and_derivatives()
       expanded_scale_factors *= self.g_decay.inverse_scales
+      B = list(self.g_decay.inverse_scales)[0]
+    else:
+      B = 0.0000
     self.reflection_table['inverse_scale_factor'] = expanded_scale_factors
     logger.info(('Scale factors determined during minimisation have now been applied {sep}'
       'to all reflections. Scale factors were determined to be K = {0:.4f}, {sep}'
-      'B = {1:.4f}. {sep}').format(list(self.g_scale.scale_factors)[0], 
-      list(self.g_decay.scale_factors)[0], sep='\n'))
+      'B = {1:.4f}. {sep}').format(list(self.g_scale.inverse_scales)[0], 
+      B, sep='\n'))
 
 
 class active_parameter_manager(object):
@@ -468,6 +518,7 @@ class active_parameter_manager(object):
     self.active_parameterisation = []
     self.active_params_list = []
     self.cumulative_active_params = [0]
+    self.active_derivatives = None
     for p_type, scalefactor in Data_Manager.g_parameterisation.iteritems():
       if p_type in param_name:
         self.x.extend(scalefactor.parameters)
@@ -511,7 +562,7 @@ class multi_active_parameter_manager(object):
   def get_current_parameters(self):
     return self.x
 
-class XDS_Data_Manager(Data_Manager):
+class XDS_Data_Manager(ScalingDataManager):
   '''Data Manager subclass for implementing XDS parameterisation'''
   def __init__(self, reflections, experiments, params):
     Data_Manager.__init__(self, reflections, experiments, params)
@@ -520,8 +571,8 @@ class XDS_Data_Manager(Data_Manager):
     self.g_parameterisation = {}
     self.initialise_scale_factors() #this creates ScaleFactor objects
     (reflections_for_scaling, weights_for_scaling, selection) = (
-      self.extract_reflections_for_scaling(self.reflection_table))
-    self.Ih_table = SingleIhTable(reflections_for_scaling, weights_for_scaling.get_weights())
+      self._extract_reflections_for_scaling(self.reflection_table, self.params))
+    self.Ih_table = SingleIhTable(reflections_for_scaling, weights_for_scaling.weights)
     #update normalised values after extracting reflections for scaling
     if self.params.parameterisation.modulation:
       self.g_modulation.set_normalised_values(reflections_for_scaling['normalised_x_values'],
@@ -739,22 +790,21 @@ class XDS_Data_Manager(Data_Manager):
     'remove reflections that were determined as outliers'
     logger.info(('Scale factors determined during minimisation have now been applied {sep}'
       'to all reflections. {sep}').format(sep='\n'))
-    self.weights_for_scaling = self.update_weights_for_scaling(
-      self.reflection_table, weights_filter=False)
-    sel = self.weights_for_scaling.get_weights() != 0.0
-    self.reflection_table = self.reflection_table.select(sel)
-    self.weights_for_scaling = self.update_weights_for_scaling(
-      self.reflection_table, weights_filter=False)
+    weights = self._update_weights_for_scaling(self.reflection_table,
+      self.params, weights_filter=False).weights
+    #sel = self.weights_for_scaling.weights != 0.0
+    self.reflection_table = self.reflection_table.select(weights != 0.0)
+    weights = self._update_weights_for_scaling(
+      self.reflection_table, self.params, weights_filter=False).weights
     #now calculate Ih for all reflections.
-    self.Ih_table = SingleIhTable(self.reflection_table, 
-      self.weights_for_scaling.get_weights())
+    self.Ih_table = SingleIhTable(self.reflection_table, weights)
     logger.info('A new best estimate for I_h for all reflections has now been calculated. \n')
 
   def clean_reflection_table(self):
     #add keys for additional data that is to be exported
-    self.initial_keys.append('inverse_scale_factor')
+    self._initial_keys.append('inverse_scale_factor')
     for key in self.reflection_table.keys():
-      if not key in self.initial_keys:
+      if not key in self._initial_keys:
         del self.reflection_table[key]
     added_columns = ['l_bin_index', 'a_bin_index', 'xy_bin_index', 'h_index',
       'normalised_y_values', 'normalised_x_values', 'normalised_y_abs_values',
@@ -764,7 +814,7 @@ class XDS_Data_Manager(Data_Manager):
       del self.reflection_table[key]
 
 
-class multicrystal_datamanager(Data_Manager):
+class multicrystal_datamanager(ScalingDataManager):
   def __init__(self, reflections, experiments, params):
     self.data_managers = []
     self.params = params
@@ -799,7 +849,7 @@ class multicrystal_datamanager(Data_Manager):
     self.Ih_table = JointIhTable(self.data_managers)
 
   def zip_together_derivatives(self, apm, basis_fn_deriv_list):#derivs1, derivs2):
-    n_refl_total = len(self.Ih_table.Ih_table)
+    n_refl_total = self.Ih_table.size
     n_param_total = apm.n_cumulative_params[-1]
     active_derivatives = sparse.matrix(n_refl_total, n_param_total) 
     for i, derivs in enumerate(basis_fn_deriv_list):
@@ -817,9 +867,9 @@ class multicrystal_datamanager(Data_Manager):
     basis_fn_deriv_list = []
     for i, dm in enumerate(self.data_managers):
       basis_fn = dm.get_basis_function(apm.apm_list[i])
-      dm.Ih_table.Ih_table['inverse_scale_factor'] = basis_fn[0]
+      dm.Ih_table.inverse_scale_factors = basis_fn[0]
       basis_fn_deriv_list.append(basis_fn[1])
-    self.active_derivatives = self.zip_together_derivatives(apm, basis_fn_deriv_list)
+    apm.active_derivatives = self.zip_together_derivatives(apm, basis_fn_deriv_list)
     self.Ih_table.calc_Ih()
 
   def expand_scales_to_all_reflections(self):
@@ -838,9 +888,10 @@ class multicrystal_datamanager(Data_Manager):
                             indices=joined_reflections['asu_miller_index'], anomalous_flag=True)
     permuted = miller_set.sort_permutation(by_value='packed_indices')
     self.reflection_table = joined_reflections.select(permuted)
-    self.weights_for_scaling = Weighting(self.reflection_table)
-    self.Ih_table = SingleIhTable(self.reflection_table, self.weights_for_scaling.get_weights())
-    self.reflection_table['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
+    #self.weights_for_scaling = Weighting(self.reflection_table)
+    weights = Weighting(self.reflection_table).weights
+    self.Ih_table = SingleIhTable(self.reflection_table, weights)
+    self.reflection_table['Ih_values'] = self.Ih_table.Ih_values
 
     if self.params.scaling_options.reject_outliers:
       sel = flex.bool([True]*len(self.reflection_table))
@@ -851,47 +902,47 @@ class multicrystal_datamanager(Data_Manager):
       logger.info(msg)
       sel.set_selected(flex.size_t(indices_of_outliers), flex.bool([False]*len(indices_of_outliers)))
       self.reflection_table = self.reflection_table.select(sel)
-      self.weights_for_scaling = self.update_weights_for_scaling(self.reflection_table,
-        weights_filter=False, error_model_params=None)
-      self.Ih_table = SingleIhTable(self.reflection_table, self.weights_for_scaling.get_weights())
-      self.reflection_table['Ih_values'] = self.Ih_table.Ih_table['Ih_values']
+      weights = self._update_weights_for_scaling(self.reflection_table,
+        self.params, weights_filter=False, error_model_params=None).weights
+      self.Ih_table = SingleIhTable(self.reflection_table, weights)
+      self.reflection_table['Ih_values'] = self.Ih_table.Ih_values
       msg = ('A new best estimate for I_h for all reflections across all datasets {sep}'
         'has now been calculated. {sep}').format(sep='\n')
       logger.info(msg)
 
-class targeted_datamanager(Data_Manager):
+class targeted_datamanager(ScalingDataManager):
   def __init__(self, reflections1, experiments1, reflections_scaled, params):
     #first assume that the Ih_values of reflections_scaled are the best estimates
     osc_range = experiments1.scan.get_oscillation_range()
-    self.experiments = experiments1
-    self.params = params
+    self._experiments = experiments1
+    self._params = params
     if osc_range[1]-osc_range[0]<1000.0: 
       #usually would have it osc_range <10, big here just for testing on LCY dataset
       'first make a simple KB data manager'
       self.dm1 = KB_Data_Manager(reflections1, experiments1, params)
       'now extract Ih values from reflections_scaled'
-      self.target_dm = Data_Manager(reflections_scaled, experiments1, params)
+      self.target_dm = ScalingDataManager(reflections_scaled, experiments1, params)
       (target_reflections, target_weights, target_selection) = (
-      self.extract_reflections_for_scaling(self.target_dm.reflection_table))
-      target_Ih_table = SingleIhTable(target_reflections, target_weights.get_weights())
+      self._extract_reflections_for_scaling(self.target_dm.reflection_table, self.params))
+      target_Ih_table = SingleIhTable(target_reflections, target_weights.weights)
       'find common reflections in the two datasets'
-      for i, miller_idx in enumerate(self.dm1.Ih_table.Ih_table['asu_miller_index']):
-        sel = target_Ih_table.Ih_table['asu_miller_index'] == miller_idx
-        Ih_values = target_Ih_table.Ih_table['Ih_values'].select(sel)
+      for i, miller_idx in enumerate(self.dm1.Ih_table.asu_miller_index):
+        sel = target_Ih_table.asu_miller_index == miller_idx
+        Ih_values = target_Ih_table.Ih_values.select(sel)
         if Ih_values:
-          self.dm1.Ih_table.Ih_table['Ih_values'][i] = Ih_values[0]
+          self.dm1.Ih_table.Ih_values[i] = Ih_values[0]
           #select [0] above as all Ih values are the same for asu_miller_idx
         else:
-          self.dm1.Ih_table.Ih_table['Ih_values'][i] = 0.0
+          self.dm1.Ih_table.Ih_values[i] = 0.0
           #should already be zero but set again just in case
       'select only those reflections matched in the target dataset'
-      sel = self.dm1.Ih_table.Ih_table['Ih_values'] != 0.0
-      self.dm1.Ih_table.Ih_table = self.dm1.Ih_table.Ih_table.select(sel)
+      sel = self.dm1.Ih_table.Ih_values != 0.0
+      self.dm1.Ih_table = self.dm1.Ih_table.select(sel)
       'update the data in the SF objects'
       if self.params.parameterisation.decay_term:
         self.dm1.g_decay.d_values = self.dm1.g_decay.d_values.select(sel)
       if self.params.parameterisation.scale_term:
-        self.dm1.g_scale.n_refl = len(self.dm1.Ih_table.Ih_table)
+        self.dm1.g_scale.n_refl = self.dm1.Ih_table.size
       self.g_parameterisation = self.dm1.g_parameterisation
     else:
       #do full aimless/xds scaling of one dataset against the other?

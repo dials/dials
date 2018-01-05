@@ -1,7 +1,7 @@
 from dials.array_family import flex
 
 def reject_outliers(self, max_deviation):
-  Ih_table = self.Ih_table.Ih_table
+  #Ih_table = self.Ih_table.Ih_table
   h_index_cumulative_array = self.Ih_table.h_index_cumulative_array
   outlier_list_h_index=[]
   outlier_list_refl_index=[]
@@ -9,9 +9,9 @@ def reject_outliers(self, max_deviation):
     #index = h_index_cumulative_array[i]
     if n > 2:
       h_idx_cumul = h_index_cumulative_array[i:i+2]
-      Ihls_u = Ih_table['intensity'][h_idx_cumul[0]:h_idx_cumul[1]]
-      gs_u = Ih_table['inverse_scale_factor'][h_idx_cumul[0]:h_idx_cumul[1]]
-      ws_u = Ih_table['weights'][h_idx_cumul[0]:h_idx_cumul[1]]
+      Ihls_u = self.Ih_table.intensities[h_idx_cumul[0]:h_idx_cumul[1]]
+      gs_u = self.Ih_table.inverse_scale_factors[h_idx_cumul[0]:h_idx_cumul[1]]
+      ws_u = self.Ih_table.weights[h_idx_cumul[0]:h_idx_cumul[1]]
       outlier_found = first_test_for_an_outlier(h_index_cumulative_array, Ihls_u, 
         gs_u, ws_u, i, n, max_deviation)
       if outlier_found:
@@ -22,7 +22,7 @@ def reject_outliers(self, max_deviation):
   else:
     outlier_list_h_index, outlier_list_refl_index = iterative_test_for_subsequent_outliers(
       outlier_list_h_index, outlier_list_refl_index,
-      h_index_cumulative_array, Ih_table, max_deviation)
+      h_index_cumulative_array, self.Ih_table, max_deviation)
     return outlier_list_h_index, outlier_list_refl_index
 
 
@@ -49,9 +49,9 @@ def subsequent_test_for_an_outlier(outlier_list_h_index, outlier_list_refl_index
                                    h_index_cumulative_array, Ih_table, max_deviation):
   new_outliers_h_index=[]
   new_outliers_refl_index=[]
-  Ihl = Ih_table['intensity']
-  scale_factors = Ih_table['inverse_scale_factor']
-  weights = Ih_table['weights']
+  Ihl = Ih_table.intensities
+  scale_factors = Ih_table.inverse_scale_factors
+  weights = Ih_table.weights
   #print outlier_list_h_index
   #print outlier_list_refl_index                                 
   for h_count_idx in outlier_list_h_index:

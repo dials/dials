@@ -76,8 +76,10 @@ class error_scale_LBFGSoptimiser(object):
     # note - don't initialise with b(SdAdd) = 0.0 or it gets stuck on 0!!
     self.Ih_table = Ih_table
     self.x = starting_values
-    self.Ih_table.Ih_table['sigmaprime'] = self.calc_sigmaprime()
-    self.Ih_table.Ih_table['delta_hl'] = self.calc_deltahl()
+    self.sigmaprime = None
+    self.delta_hl = None
+    self.calc_sigmaprime()
+    self.calc_deltahl()
     self.bin_intensities()
     self.bin_vars = None
     logger.info("Initialised error model LBFGS optimiser instance. \n")
@@ -88,35 +90,37 @@ class error_scale_LBFGSoptimiser(object):
   def compute_functional_and_gradients(self):
     '''first calculate the updated values of sigmaprime and delta_hl,
     before calculating the residual and gradient functions'''
-    self.Ih_table.Ih_table['sigmaprime'] = self.calc_sigmaprime()
-    self.Ih_table.Ih_table['delta_hl'] = self.calc_deltahl()
+    self.calc_sigmaprime()
+    self.calc_deltahl()
     R = self.calc_error_residual()
     G = self.calc_error_gradient()
     return R, G
 
   def calc_sigmaprime(self):
     '''function to calculate the updated standard deviation'''
-    sigmaprime = self.x[0] * ((1.0/self.Ih_table.Ih_table['weights'])
+    sigmaprime = self.x[0] * ((1.0/self.Ih_table.weights)
       #+ (self.x[1]*self.Ih_table.Ih_table['intensity'])
-      + ((self.x[1]*self.Ih_table.Ih_table['intensity'])**2))**0.5
-    return sigmaprime
+      + ((self.x[1]*self.Ih_table.intensities)**2))**0.5
+    self.sigmaprime = sigmaprime
 
   def calc_deltahl(self):
     '''function to calculate the normalised deviation of the intensities'''
     n_h = self.Ih_table.n_h
-    I_hl = self.Ih_table.Ih_table['intensity']
-    g_hl = self.Ih_table.Ih_table['inverse_scale_factor']
-    I_h = self.Ih_table.Ih_table['Ih_values']
+    I_hl = self.Ih_table.intensities
+    g_hl = self.Ih_table.inverse_scale_factors
+    I_h = self.Ih_table.Ih_values
     prefactor = ((n_h - flex.double([1.0]*len(n_h))) / n_h)**0.5
-    delta_hl = prefactor * ((I_hl/g_hl) - I_h) / self.Ih_table.Ih_table['sigmaprime']
-    return delta_hl
+    delta_hl = prefactor * ((I_hl/g_hl) - I_h) / self.sigmaprime
+    self.delta_hl = delta_hl
 
   def bin_intensities(self):
     '''bin data into intensity bins, and create a 'bin_reducer' matrix for
        summation over indices '''
-    sel = flex.sort_permutation(self.Ih_table.Ih_table['intensity'])
-    self.Ih_table.Ih_table = self.Ih_table.Ih_table.select(sel)
-    n = len(self.Ih_table.Ih_table)
+    sel = flex.sort_permutation(self.Ih_table.intensities)
+    #self.Ih_table = self.Ih_table.select(sel)
+    self.sigmaprime = self.sigmaprime.select(sel)
+    self.delta_hl = self.delta_hl.select(sel)
+    n = len(self.delta_hl)
     if n < 10000: # what is a sensible limit here?
       n_bins = 10 # what is a sensible number of bins?
     else:
@@ -138,7 +142,7 @@ class error_scale_LBFGSoptimiser(object):
 
   def calc_error_residual(self):
     'calculate the residual'
-    deltahl = self.Ih_table.Ih_table['delta_hl']
+    deltahl = self.delta_hl
     sum_deltasq = (deltahl**2) * self.bin_reducer
     sum_delta_sq = (deltahl * self.bin_reducer)**2
     self.bin_vars = ((sum_deltasq/flex.double(self.n_bin_counter_array)) -
@@ -149,9 +153,9 @@ class error_scale_LBFGSoptimiser(object):
 
   def calc_error_gradient(self):
     'calculate the gradient vector'
-    I_hl = self.Ih_table.Ih_table['intensity']
-    sigmaprime = self.Ih_table.Ih_table['sigmaprime']
-    delta_hl = self.Ih_table.Ih_table['delta_hl']
+    I_hl = self.Ih_table.intensities
+    sigmaprime = self.sigmaprime
+    delta_hl = self.delta_hl
     dsig_da = sigmaprime/self.x[0]
     #dsig_db = I_hl * (self.x[0]**2) / (2.0 * sigmaprime)
     dsig_dc = self.x[1] * (I_hl**2) * (self.x[0]**2) / sigmaprime

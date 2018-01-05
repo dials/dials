@@ -19,43 +19,75 @@ class IhTableBase(object):
 
   def __init__(self, data):
     #public attribute
-    self.Ih_table = self._create_Ih_table(data)
+    self._Ih_table = self._create_Ih_table(data)
 
   @abc.abstractmethod
   def _create_Ih_table(self, data):
     """Create an Ih_table using the constructor in a subclass"""
     pass
 
-  def update_scale_factors(self, scalefactors):
-    '''method to set new scale factors'''
-    if len(scalefactors) != len(self.Ih_table['inverse_scale_factor']):
-      assert 0, """attempting to set a new set of scale factors of different
-      length than previous assignment: was %s, attempting %s""" % (
-        len(self.Ih_table['inverse_scale_factor']), len(scalefactors))
-    self.Ih_table['inverse_scale_factor'] = scalefactors
+  @property
+  def size(self):
+    return self._Ih_table.size()
 
-  def update_weights(self, weights):
+  @property
+  def weights(self):
+    return self._Ih_table['weights']
+
+  @weights.setter
+  def weights(self, new_weights):
     '''method to set new weights'''
-    if len(weights) != len(self.Ih_table['weights']):
+    if len(new_weights) != len(self.weights):
       assert 0, """attempting to set a new set of weights of different
       length than previous assignment: was %s, attempting %s""" % (
-        len(self.Ih_table['weights']), len(weights))
-    self.Ih_table['weights'] = weights
+        len(self.weights), len(new_weights))
+    self._Ih_table['weights'] = new_weights
+
+  @property
+  def intensities(self):
+    return self._Ih_table['intensity']
+
+  @property
+  def inverse_scale_factors(self):
+    return self._Ih_table['inverse_scale_factor']
+
+  @inverse_scale_factors.setter
+  def inverse_scale_factors(self, new_scales):
+    '''method to set new scale factors'''
+    if len(new_scales) != len(self.inverse_scale_factors):
+      assert 0, """attempting to set a new set of scale factors of different
+      length than previous assignment: was %s, attempting %s""" % (
+        len(self.inverse_scale_factors), len(new_scales))
+    self._Ih_table['inverse_scale_factor'] = new_scales
+
+  @property
+  def Ih_values(self):
+    return self._Ih_table['Ih_values']
+
+  @property
+  def asu_miller_index(self):
+    return self._Ih_table['asu_miller_index']
 
   def update_aimless_error_model(self, error_params):
     '''method to update the scaling weights using an aimless error model'''
-    sigmaprime = (((1.0/self.Ih_table['weights'])
-                   + ((error_params[1] * self.Ih_table['intensity'])**2)
+    sigmaprime = (((1.0/self.weights) + ((error_params[1] * self.intensities)**2)
                   )**0.5) * error_params[0]
-    self.Ih_table['weights'] = 1.0/(sigmaprime**2)
+    self.weights = 1.0/(sigmaprime**2)
 
-  def set_Ih_values(self, Ih_values):
-    '''method to set new Ih values'''
-    if len(Ih_values) != len(self.Ih_table['Ih_values']):
-      assert 0, """attempting to set a new set of Ih_values of different
-      length than previous assignment: was %s, attempting %s""" % (
-        len(self.Ih_table['Ih_values']), len(Ih_values))
-    self.Ih_table['Ih_values'] = Ih_values
+  #def set_Ih_values(self, Ih_values):
+  #  '''method to set new Ih values'''
+  #  if len(Ih_values) != len(self.Ih_table['Ih_values']):
+  #    assert 0, """attempting to set a new set of Ih_values of different
+  #    length than previous assignment: was %s, attempting %s""" % (
+  #      len(self.Ih_table['Ih_values']), len(Ih_values))
+  #  self.Ih_table['Ih_values'] = Ih_values
+
+  def select(self, selection):
+    'returns a new Ih_table instance based on selected data'
+    selected_reflections = self._Ih_table.select(selection)
+    selected_weights = self.weights.select(selection)
+    new_Ih_table = SingleIhTable(selected_reflections, selected_weights)
+    return new_Ih_table
 
   def _assign_h_index(self):
     '''assign an index to the Ih table that
@@ -63,9 +95,8 @@ class IhTableBase(object):
     h_index_counter_array = []
     h_index = 0
     h_index_counter = 1
-    for i in range(1, len(self.Ih_table)):
-      if (self.Ih_table['asu_miller_index'][i] ==
-          self.Ih_table['asu_miller_index'][i-1]):
+    for i in range(1, self.size):
+      if (self.asu_miller_index[i] == self.asu_miller_index[i-1]):
         h_index_counter += 1
       else:
         h_index += 1
@@ -84,7 +115,6 @@ class IhTableBase(object):
   def _assign_h_index_matrix(h_idx_count_arr, h_idx_cumul_arr):
     '''assign a h_index matrix to allow fast summation over groups of
     symmetry equivalent reflections in the Ih_table'''
-    #n1 = len(self.Ih_table['asu_miller_index'])
     n1 = h_idx_cumul_arr[-1]
     h_index_matrix = sparse.matrix(n1, len(h_idx_count_arr))
     for i in range(len(h_idx_cumul_arr)-1):
@@ -138,14 +168,13 @@ class SingleIhTable(IhTableBase):
 
   def calc_Ih(self):
     '''calculate the current best estimate for I for each reflection group'''
-    scale_factors = self.Ih_table['inverse_scale_factor']
-    gsq = (((scale_factors)**2) * self.Ih_table['weights'])
+    scale_factors = self.inverse_scale_factors
+    gsq = (((scale_factors)**2) * self.weights)
     sumgsq = gsq * self.h_index_matrix
-    gI = ((scale_factors * self.Ih_table['intensity']) * self.Ih_table['weights'])
+    gI = ((scale_factors * self.intensities) * self.weights)
     sumgI = gI * self.h_index_matrix
     Ih = sumgI/sumgsq
-    self.Ih_table['Ih_values'] = flex.double(
-      np.repeat(Ih, self.h_index_counter_array))
+    self._Ih_table['Ih_values'] = flex.double(np.repeat(Ih, self.h_index_counter_array))
 
 
 class JointIhTable(IhTableBase):
@@ -183,14 +212,14 @@ class JointIhTable(IhTableBase):
     '''calculate the current best estimate for I for each reflection group'''
     scales = flex.double([0.0] * self.h_index_cumulative_array[-1])
     for i, Ih_table in enumerate(self._Ih_tables):
-      scales += Ih_table.Ih_table['inverse_scale_factor'] * self.h_index_expand_list[i]
-    gsq = (((scales)**2) * self.Ih_table['weights'])
+      scales += Ih_table.inverse_scale_factors * self.h_index_expand_list[i]
+    gsq = (((scales)**2) * self.weights)
     sumgsq = gsq * self.h_index_matrix
-    gI = ((scales * self.Ih_table['intensity']) * self.Ih_table['weights'])
+    gI = ((scales * self.intensities) * self.weights)
     sumgI = gI * self.h_index_matrix
     Ih = sumgI/sumgsq
-    self.Ih_table['inverse_scale_factor'] = scales
-    self.Ih_table['Ih_values'] = flex.double(np.repeat(Ih, self.h_index_counter_array))
+    self.inverse_scale_factors = scales
+    self._Ih_table['Ih_values'] = flex.double(np.repeat(Ih, self.h_index_counter_array))
 
   def _determine_all_unique_indices(self):
     '''this function finds the unique reflections across all datasets and
@@ -201,7 +230,7 @@ class JointIhTable(IhTableBase):
     crystal_symmetry = crystal.symmetry(space_group=s_g_1)
     all_miller_indices = []
     for Ih_tab in self._Ih_tables:
-      all_miller_indices.extend(list(Ih_tab.Ih_table['asu_miller_index']))
+      all_miller_indices.extend(list(Ih_tab.asu_miller_index))
     #find the ordered set of unique indices
     all_unique_indices = flex.miller_index(list(set(all_miller_indices)))
     unique_miller_set = miller.set(crystal_symmetry=crystal_symmetry,
@@ -222,7 +251,7 @@ class JointIhTable(IhTableBase):
     the individual datasets to enable later creation of the h_expander matrices.
     The counter and cumulative arrays for the joint dataset are also created.'''
     for Ih_table in self._Ih_tables:
-      miller_idx = Ih_table.Ih_table['asu_miller_index']
+      miller_idx = Ih_table.asu_miller_index
       h_idx_count = flex.int([])
       #note: different to single case as need to count the zero instances as well
       for unique_index in self._unique_indices:
@@ -250,7 +279,7 @@ class JointIhTable(IhTableBase):
     n_total_refl = self.h_index_cumulative_array[-1]
     h_idx_expand_list = []
     for m, Ih_table in enumerate(self._Ih_tables):
-      n_refl = len(Ih_table.Ih_table)
+      n_refl = Ih_table.size
       h_expand_mat = sparse.matrix(n_refl, n_total_refl)
       #delete certain elements to make the idx calculation easy in the loop:
       #shift arrays by -1 for n < m.
@@ -288,9 +317,9 @@ class JointIhTable(IhTableBase):
     scales = flex.double([0.0]*n)
     scaleweights = flex.double([0.0]*n)
     for i, Ih_tab in enumerate(self._Ih_tables):
-      intensities += Ih_tab.Ih_table['intensity'] * self.h_index_expand_list[i]
-      scales += Ih_tab.Ih_table['inverse_scale_factor'] * self.h_index_expand_list[i]
-      scaleweights += Ih_tab.Ih_table['weights'] * self.h_index_expand_list[i]
+      intensities += Ih_tab.intensities * self.h_index_expand_list[i]
+      scales += Ih_tab.inverse_scale_factors * self.h_index_expand_list[i]
+      scaleweights += Ih_tab.weights * self.h_index_expand_list[i]
     gsq = (((scales)**2) * scaleweights)
     sumgsq = gsq * self.h_index_matrix
     gI = ((scales * intensities) * scaleweights)
