@@ -222,6 +222,14 @@ namespace dials { namespace algorithms {
           flags |= af::ForegroundIncludesBadPixels;
         }
 
+        if ((m & Background) && (m & Overlapped)) {
+          flags |= af::OverlappedBg;
+        }
+
+        if ((m & Foreground) && (m & Overlapped)) {
+          flags |= af::OverlappedFg;
+        }
+
         if ((m & mask_code1) == mask_code1) {
           n_valid++;
         }
