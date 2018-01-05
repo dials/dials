@@ -338,22 +338,22 @@ namespace gaussian_rs {
 
       // Get the divergence and mosaicity for this point
       double delta_b_r2 = 0.0;
-      //double delta_m_r2 = 0.0;
+      double delta_m_r2 = 0.0;
       if (delta_b_r_.size() == 1) {
         delta_b_r2 = delta_b_r_[0]*delta_b_r_[0];
-        //delta_m_r2 = delta_m_r_[0]*delta_m_r_[0];
+        delta_m_r2 = delta_m_r_[0]*delta_m_r_[0];
       } else {
         int frame0 = index0_;
         int index = (int)std::floor(frame) - frame0;
         if (index < 0) {
           delta_b_r2 = delta_b_r_.front()*delta_b_r_.front();
-          //delta_m_r2 = delta_m_r_.front()*delta_m_r_.front();
+          delta_m_r2 = delta_m_r_.front()*delta_m_r_.front();
         } else if (index >= delta_b_r_.size()) {
           delta_b_r2 = delta_b_r_.back()*delta_b_r_.back();
-          //delta_m_r2 = delta_m_r_.back()*delta_m_r_.back();
+          delta_m_r2 = delta_m_r_.back()*delta_m_r_.back();
         } else {
           delta_b_r2 = delta_b_r_[index]*delta_b_r_[index];
-          //delta_m_r2 = delta_m_r_[index]*delta_m_r_[index];
+          delta_m_r2 = delta_m_r_[index]*delta_m_r_[index];
         }
       }
 
@@ -394,16 +394,16 @@ namespace gaussian_rs {
           double dxy = std::min(std::min(dxy1, dxy2), std::min(dxy3, dxy4));
           for (std::size_t k = 0; k < zsize; ++k) {
             if (z0 + (int)k >= index0_ && z0 + (int)k < index1_) {
-              /* double gz1 = cs.from_rotation_angle_fast(phi0_ + (z0 + k - index0_) * dphi_); */
-              /* double gz2 = cs.from_rotation_angle_fast(phi0_ + (z0 + k + 1 - index0_) * dphi_); */
-              /* double gz = std::abs(gz1) < std::abs(gz2) ? gz1 : gz2; */
-              /* double gzc2 = gz*gz*delta_m_r2; */
+              double gz1 = cs.from_rotation_angle_fast(phi0_ + (z0 + k - index0_) * dphi_);
+              double gz2 = cs.from_rotation_angle_fast(phi0_ + (z0 + k + 1 - index0_) * dphi_);
+              double gz = std::abs(gz1) < std::abs(gz2) ? gz1 : gz2;
+              double gzc2 = gz*gz*delta_m_r2;
               /* int mask_value = (dxy + gzc2 <= 1.0) ? Foreground : Background; */
               if (!adjacent) {
                 int mask_value = (dxy <= 1.0) ? Foreground : Background;
                 mask(k, j, i) |= mask_value;
               } else {
-                if (dxy <= 1.0) {
+                if (dxy+gzc2 <= 1.0) {
                   mask(k,j,i) |= Overlapped;
                 }
               }
