@@ -19,11 +19,11 @@ reflections are then saved to file.
 
 Examples::
 
-dials.predict experiments.json
+  dials.predict experiments.json
 
-dials.predict experiments.json force_static=True
+  dials.predict experiments.json force_static=True
 
-dials.predict experiments.json d_min=2.0
+  dials.predict experiments.json d_min=2.0
 
 '''
 
