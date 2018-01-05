@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 needs_sphinx = '1.1'
 
@@ -46,13 +46,13 @@ html_theme_options = {
     "rootlinks": [("dials://diamond.ac.uk/doc/", "DIALS"),]
 }
 
-pngmath_latex_preamble = r"""
+imgmath_latex_preamble = r"""
 \usepackage{color}
 \definecolor{textgray}{RGB}{51,51,51}
 \color{textgray}
 """
-pngmath_use_preview = True
-pngmath_dvipng_args = ['-gamma 1.5', '-D 96', '-bg Transparent']
+imgmath_use_preview = True
+imgmath_dvipng_args = ['-gamma 1.5', '-D 96', '-bg Transparent']
 
 #------------------------------------------------------------------------------
 # Plot style
