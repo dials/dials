@@ -943,7 +943,9 @@ Analysis of jointly refined datasets
 :program:`dials.integrate` will not work with our :file:`refined_combined_experiments_outrej.json`
 and :file:`combined_reflections.pickle` directly, so we have to separate these
 into individual files for each experiment. It is best to do this inside a new
-directory::
+directory:
+
+.. code-block:: bash
 
   mkdir joint
   cd !$
