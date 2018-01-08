@@ -2,6 +2,7 @@
 These classes define objects to hold a flex array of scale factors,
 including the required methods for calculating smooth scale factors and
 '''
+import abc
 from dials.array_family import flex
 import numpy as np
 #import math as math
@@ -13,19 +14,23 @@ from scitbx import sparse
 class ScaleFactor(object):
   '''Base ScaleFactor class, with an interface to access the parameters,
   inverse_scales and derivatives.'''
+  __metaclass__ = abc.ABCMeta
+
   def __init__(self, initial_value, n_parameters, scaling_options=None):
     self._parameters = flex.double([initial_value] * n_parameters)
     self._n_params = n_parameters
-    self.scaling_options = scaling_options
+    self._scaling_options = scaling_options
     self._inverse_scales = None
     self._derivatives = None
 
   @property
   def n_params(self):
+    '''number of parameters that parameterise the scale factor'''
     return self._n_params
 
   @property
   def parameters(self):
+    '''parameters of the model'''
     return self._parameters
 
   @parameters.setter
@@ -38,6 +43,7 @@ class ScaleFactor(object):
 
   @property
   def inverse_scales(self):
+    '''inverse scale factors associated with reflections'''
     return self._inverse_scales
 
   @inverse_scales.setter
@@ -46,7 +52,14 @@ class ScaleFactor(object):
 
   @property
   def derivatives(self):
+    '''derivatives matrix of reflections with respect to model parameters'''
     return self._derivatives
+
+  @abc.abstractmethod
+  def update_reflection_data(self):
+    '''method to be filled in by subclasses. Force setting of normalised
+    values and any other data (e.g. d_values) at same time.'''
+    pass
 
   def calculate_scales_and_derivatives(self):
     """method to be filled in by subclasses"""
@@ -55,17 +68,20 @@ class ScaleFactor(object):
 
 class KScaleFactor(ScaleFactor):
   '''ScaleFactor object for a single global scale parameter.'''
-  def __init__(self, initial_value, n_refl, scaling_options=None):
+  def __init__(self, initial_value, scaling_options=None):
     super(KScaleFactor, self).__init__(initial_value, 1, scaling_options)
-    self._n_refl = n_refl
+    self._n_refl = None#n_refl
 
   @property
   def n_refl(self):
     return self._n_refl
 
-  @n_refl.setter
-  def n_refl(self, number_of_refl):
-    self._n_refl = number_of_refl
+  def update_reflection_data(self, n_refl):
+    self._n_refl = n_refl
+
+  #@n_refl.setter
+  #def n_refl(self, number_of_refl):
+  #  self._n_refl = number_of_refl
 
   def calculate_scales_and_derivatives(self):
     self._inverse_scales = flex.double([self._parameters[0]] * self.n_refl)
@@ -76,20 +92,26 @@ class KScaleFactor(ScaleFactor):
 
 class BScaleFactor(ScaleFactor):
   '''ScaleFactor object for a single global B-scale parameter.'''
-  def __init__(self, initial_value, d_values, scaling_options=None):
+  def __init__(self, initial_value, scaling_options=None):
     super(BScaleFactor, self).__init__(initial_value, 1, scaling_options)
-    self._d_values = d_values
-    self._n_refl = len(d_values)
+    self._d_values = None#d_values
+    self._n_refl = None#len(d_values)
 
   @property
   def d_values(self):
     return self._d_values
 
-  @d_values.setter
-  def d_values(self, new_values):
-    '''also sets n_refl. Allow to set to a different length.'''
-    self._d_values = new_values
-    self._n_refl = len(new_values)
+  def update_reflection_data(self, dvalues):
+    '''also sets n_refl. Allow to set to a different length to previous.'''
+    self._d_values = dvalues
+    self._n_refl = len(dvalues)
+    #self._n_refl = number_of_refl
+
+  #@d_values.setter
+  #def d_values(self, new_values):
+  #  '''also sets n_refl. Allow to set to a different length to previous.'''
+  #  self._d_values = new_values
+  #  self._n_refl = len(new_values)
 
   def calculate_scales_and_derivatives(self):
     self._inverse_scales = flex.double(np.exp(flex.double(
@@ -121,11 +143,6 @@ class SmoothScaleFactor(ScaleFactor):
     of the normalised time/resolution etc'''
     return self._normalised_values
 
-  @normalised_values.setter
-  def normalised_values(self, new_values):
-    self._normalised_values = new_values
-    self.inverse_scales = flex.double([1.0]*len(new_values))# - do i need this???
-
 
 class SmoothScaleFactor1D(SmoothScaleFactor):
   '''Class to implement a smooth scale factor in one dimension.'''
@@ -135,21 +152,14 @@ class SmoothScaleFactor1D(SmoothScaleFactor):
     self.smoothing_window = 2.5 #must be less than 3 to avoid indexing errors
     self._smoother = None #placeholder for gaussian smoother
 
-  @property
-  def normalised_values(self):
-    '''normalised_values is the column from the reflection table
-    of the normalised time/resolution etc'''
-    return self._normalised_values
-
-  @normalised_values.setter
-  def normalised_values(self, new_values):
-    '''normalised_values is the column from the reflection table
-    of the normalised time/resolution etc'''
-    self._normalised_values = new_values
+  def update_reflection_data(self, normalised_values):
+    '''control access to setting all of reflection data at once'''
+    self._normalised_values = normalised_values
     phi_range_deg = [int(min(self._normalised_values)//1),
                      int(max(self._normalised_values)//1)+1]
     self._smoother = GaussianSmoother(phi_range_deg, self._n_params - 2)
-    self.inverse_scales = flex.double([1.0]*len(new_values))
+    #self.inverse_scales = flex.double([1.0]*len(new_values))
+    self.inverse_scales = flex.double([1.0]*len(normalised_values))
 
   def calculate_scales_and_derivatives(self):
     value, weight, sumweight = self._smoother.multi_value_weight(
@@ -166,25 +176,26 @@ class SmoothScaleFactor1D(SmoothScaleFactor):
 
 class SmoothBScaleFactor1D(SmoothScaleFactor1D):
   '''Subclass to SmoothScaleFactor1D for a smooth B-scale correction.'''
-  def __init__(self, initial_value, n_parameters, d_values, scaling_options=None):
+  def __init__(self, initial_value, n_parameters, scaling_options=None):
     super(SmoothBScaleFactor1D, self).__init__(initial_value, n_parameters,
       scaling_options)
     self.Vr = 0.5
-    self._d_values = d_values
-    self._n_refl = len(d_values)
+    self._d_values = None
+    self._n_refl = None
 
   @property
   def d_values(self):
     return self._d_values
 
-  @d_values.setter
-  def d_values(self, new_values):
-    if len(new_values) != len(self._normalised_values):
-      assert 0, '''attempting to set a new set of d factors of different
-      length to the data: %s vs %s''' % (
-        len(new_values), len(self._normalised_values))
-    self._d_values = new_values
-    self._n_refl = len(new_values)
+  def update_reflection_data(self, normalised_values, dvalues):
+    assert len(normalised_values) == len(dvalues)
+    self._normalised_values = normalised_values
+    phi_range_deg = [int(min(self._normalised_values)//1),
+                     int(max(self._normalised_values)//1)+1]
+    self._smoother = GaussianSmoother(phi_range_deg, self._n_params - 2)
+    self.inverse_scales = flex.double([1.0]*len(normalised_values))
+    self._d_values = dvalues
+    self._n_refl = len(dvalues)
 
   def calculate_scales_and_derivatives(self):
     value, weight, sumweight = self._smoother.multi_value_weight(
@@ -202,21 +213,25 @@ class SmoothBScaleFactor1D(SmoothScaleFactor1D):
 
 class SHScaleFactor(ScaleFactor):
   '''ScaleFactor class for a spherical harmonic absorption correction'''
-  def __init__(self, initial_value, n_parameters, values, scaling_options=None):
+  def __init__(self, initial_value, n_parameters, scaling_options=None):
     super(SHScaleFactor, self).__init__(
       initial_value, n_parameters, scaling_options)
-    self._harmonic_values = values
-    self.calculate_scales_and_derivatives()
+    self._harmonic_values = None
+    #self.calculate_scales_and_derivatives()
 
   @property
   def harmonic_values(self):
     return self._harmonic_values
 
-  @harmonic_values.setter
-  def harmonic_values(self, values):
-    '''set a new spherical harmonic coefficient matrix'''
-    self._harmonic_values = values
+  def update_reflection_data(self, harmonic_values):
+    self._harmonic_values = harmonic_values 
     self.calculate_scales_and_derivatives()
+
+  #@harmonic_values.setter
+  #def harmonic_values(self, values):
+  #  '''set a new spherical harmonic coefficient matrix'''
+  #  self._harmonic_values = values
+  #  self.calculate_scales_and_derivatives()
 
   def calculate_scales_and_derivatives(self):
     '''calculation of scale factors and derivatives from

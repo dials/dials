@@ -215,7 +215,8 @@ def plot_smooth_scales(data_man, outputfile=None):
   scale_SFs = data_man.g_scale.parameters
   n_g_scale_params = len(scale_SFs)
   test_scale_factor = SF.SmoothScaleFactor1D(1.0, n_g_scale_params)
-  test_scale_factor.normalised_values = rel_values
+  test_scale_factor.update_reflection_data(normalised_values=rel_values)
+  #test_scale_factor.normalised_values = rel_values
   test_scale_factor.parameters = scale_SFs
   test_scale_factor.calculate_scales()
   scales = test_scale_factor.inverse_scales
@@ -232,7 +233,8 @@ def plot_smooth_scales(data_man, outputfile=None):
     n_g_decay_params = len(decay_SFs)
     test_decay_factor = SF.SmoothScaleFactor1D(0.0, n_g_decay_params)
     test_decay_factor.Vr = 0.5 ##HACK - set to match that of SmoothScaleFactor_1D_Bfactor
-    test_decay_factor.normalised_values = rel_values
+    test_decay_factor.update_reflection_data(normalised_values=rel_values)
+    #test_decay_factor.normalised_values = rel_values
     test_decay_factor.parameters = decay_SFs
     
     test_decay_factor.calculate_scales()

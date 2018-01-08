@@ -18,6 +18,7 @@ class basis_function(object):
     self.apm = apm
 
   def update_scale_factors(self):
+    '''update the parameters in each SF object from the apm parameter list.'''
     for i, active_param in enumerate(self.apm.active_parameterisation):
       SF_object = self.data_manager.g_parameterisation[active_param]
       SF_object.parameters = self.apm.x[self.apm.cumulative_active_params[i]:
@@ -25,6 +26,7 @@ class basis_function(object):
       SF_object.calculate_scales_and_derivatives()
 
   def calculate_scale_factors(self):
+    '''calculate overall scale factor from reflections from individual components'''
     multiplied_scale_factors = flex.double([1.0] * self.data_manager.Ih_table.size)
     for active_param in self.apm.active_parameterisation:
       multiplied_scale_factors *= self.data_manager.g_parameterisation[
@@ -34,6 +36,7 @@ class basis_function(object):
     return multiplied_scale_factors
 
   def calculate_derivatives(self):
+    '''calculate derivatives matrix'''
     if len(self.data_manager.g_parameterisation) == 1:
       #only one active parameter, so don't need to chain rule any derivatives
       active_param = self.data_manager.g_parameterisation.values()[0]

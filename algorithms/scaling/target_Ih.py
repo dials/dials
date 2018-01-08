@@ -20,11 +20,11 @@ class IhTableBase(object):
   __metaclass__ = abc.ABCMeta
 
   def __init__(self, data):
-    self._Ih_table = self._create_Ih_table(data)
     self._h_index_counter_array = None
     self._h_index_cumulative_array = None
     self._h_index_matrix = None
     self._n_h = None
+    self._Ih_table = self._create_Ih_table(data)
 
   @abc.abstractmethod
   def _create_Ih_table(self, data):
