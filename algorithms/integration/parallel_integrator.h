@@ -304,8 +304,22 @@ namespace dials { namespace algorithms {
      * @param reflection The reflection object
      * @param adjacent_reflections The list of adjacent reflections
      */
-    void operator()(af::Reflection &reflection,
-                    std::vector<af::Reflection> &adjacent_reflections) const {
+
+    void operator()(
+        std::size_t index,
+        af::ref<af::Reflection> reflection_list,
+        const AdjacencyList &adjacency_list) const {
+
+      af::Reflection reflection;
+      std::vector< af::Reflection > adjacent_reflections;
+
+      // Get the reflection data
+      get_reflection(
+          index,
+          reflection_list,
+          adjacency_list,
+          reflection,
+          adjacent_reflections);
 
       // Get the panel number
       std::size_t panel = reflection.get<std::size_t>("panel");
@@ -363,10 +377,60 @@ namespace dials { namespace algorithms {
 
       // Erase the shoebox
       finalize_shoebox(reflection, adjacent_reflections, underload_, overload_);
+
+      // Set the reflection data
+      set_reflection(index, reflection_list, reflection);
     }
 
 
   protected:
+
+    /**
+     * Get the reflection data in a thread safe manner
+     * @param index The reflection index
+     * @param reflection_list The reflection list
+     * @param adjacency_list The adjacency list
+     * @param reflection The reflection data
+     * @param adjacent_reflections The adjacent reflections
+     */
+    void get_reflection(
+        std::size_t index,
+        const af::const_ref<af::Reflection> &reflection_list,
+        const AdjacencyList &adjacency_list,
+        af::Reflection &reflection,
+        std::vector<af::Reflection> &adjacent_reflections) const {
+      DIALS_ASSERT(index < reflection_list.size());
+
+      // Get the lock
+      boost::lock_guard<boost::mutex> guard(mutex_);
+
+      // Get the reflection
+      reflection = reflection_list[index];
+
+      // Get the adjacent reflections
+      adjacent_reflections.reserve(adjacency_list.vertex_num_edges(index));
+      AdjacencyList::edge_iterator_range edges = adjacency_list.edges(index);
+      for (AdjacencyList::edge_iterator it = edges.first; it != edges.second; ++it) {
+        DIALS_ASSERT(it->first == index);
+        DIALS_ASSERT(it->second < reflection_list.size());
+        adjacent_reflections.push_back(reflection_list[it->second]);
+      }
+    }
+
+    /**
+     * Set the reflection data in a thread safe way
+     * @param index The reflection index
+     * @param reflection_list The reflection list
+     * @param reflection The reflection data
+     */
+    void set_reflection(
+        std::size_t index,
+        af::ref<af::Reflection> reflection_list,
+        const af::Reflection &reflection) const {
+      DIALS_ASSERT(index < reflection_list.size());
+      boost::lock_guard<boost::mutex> guard(mutex_);
+      reflection_list[index] = reflection;
+    }
 
     /**
      * Before exiting do some stuff on the shoebox
@@ -661,6 +725,7 @@ namespace dials { namespace algorithms {
     double underload_;
     double overload_;
     bool debug_;
+    mutable boost::mutex mutex_;
   };
 
 
@@ -952,20 +1017,6 @@ namespace dials { namespace algorithms {
 
       using dials::util::ThreadPool;
 
-      // Construct a list of adjacent reflections for each given reflection
-      std::vector< std::vector<af::Reflection> > adjacent_reflections(reflections.size());
-      for (std::size_t i = 0; i < reflections.size(); ++i) {
-        if ((flags[i] & af::DontIntegrate) == 0) {
-          adjacent_reflections[i].reserve(overlaps.vertex_num_edges(i));
-          AdjacencyList::edge_iterator_range edges = overlaps.edges(i);
-          for (AdjacencyList::edge_iterator it = edges.first; it != edges.second; ++it) {
-            DIALS_ASSERT(it->first == i);
-            DIALS_ASSERT(it->second < reflections.size());
-            adjacent_reflections[i].push_back(reflections[it->second]);
-          }
-        }
-      }
-
       // Create the thread pool
       ThreadPool pool(nthreads);
 
@@ -1008,9 +1059,10 @@ namespace dials { namespace algorithms {
           pool.post(
             boost::bind(
               &ReflectionIntegrator::operator(),
-              integrator,
-              boost::ref(reflections[k]),
-              boost::ref(adjacent_reflections[k])));
+              boost::ref(integrator),
+              k,
+              af::ref<af::Reflection>(&reflections[0], reflections.size()),
+              boost::ref(overlaps)));
         }
 
         // Print some output
