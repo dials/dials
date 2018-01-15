@@ -115,23 +115,12 @@ namespace dials { namespace algorithms {
       std::size_t panel = reflection.get<std::size_t>("panel");
 
       // Extract the shoebox data
-      if (buffer_.has_dynamic_mask()) {
-        extract_shoebox(
-            buffer_.data(panel),
-            buffer_.dynamic_mask(panel),
-            reflection,
-            zstart_,
-            underload_,
-            overload_);
-      } else {
-        extract_shoebox(
-            buffer_.data(panel),
-            buffer_.static_mask(panel),
-            reflection,
-            zstart_,
-            underload_,
-            overload_);
-      }
+      extract_shoebox(
+          buffer_.data(panel),
+          reflection,
+          zstart_,
+          underload_,
+          overload_);
 
       // Compute the mask
       compute_mask_(reflection);
@@ -343,13 +332,10 @@ namespace dials { namespace algorithms {
     template <typename FloatType>
     void extract_shoebox(
           const af::const_ref< FloatType, af::c_grid<3> > &data_buffer,
-          const af::const_ref< bool, af::c_grid<2> > &mask_buffer,
           af::Reflection &reflection,
           int zstart,
           double underload,
           double overload) const {
-      DIALS_ASSERT(data_buffer.accessor()[1] == mask_buffer.accessor()[0]);
-      DIALS_ASSERT(data_buffer.accessor()[2] == mask_buffer.accessor()[1]);
       std::size_t panel = reflection.get<std::size_t>("panel");
       int6 bbox = reflection.get<int6>("bbox");
       Shoebox<> shoebox(panel, bbox);
@@ -385,69 +371,7 @@ namespace dials { namespace algorithms {
                 jj < data_buffer.accessor()[1] &&
                 ii < data_buffer.accessor()[2]) {
               double d = data_buffer(kk, jj, ii);
-              int m = mask_buffer(jj, ii) && (d > underload && d < overload)
-                ? Valid
-                : 0;
-              data(k,j,i) = d;
-              mask(k,j,i) = m;
-            } else {
-              data(k,j,i) = 0;
-              mask(k,j,i) = 0;
-            }
-          }
-        }
-      }
-      reflection["shoebox"] = shoebox;
-    }
-
-    /**
-     * Extract the shoebox data and mask from the buffer
-     */
-    template <typename FloatType>
-    void extract_shoebox(
-          const af::const_ref< FloatType, af::c_grid<3> > &data_buffer,
-          const af::const_ref< bool, af::c_grid<3> > &mask_buffer,
-          af::Reflection &reflection,
-          int zstart,
-          double underload,
-          double overload) const {
-      DIALS_ASSERT(data_buffer.accessor().all_eq(mask_buffer.accessor()));
-      std::size_t panel = reflection.get<std::size_t>("panel");
-      int6 bbox = reflection.get<int6>("bbox");
-      Shoebox<> shoebox(panel, bbox);
-      shoebox.allocate();
-      af::ref< float, af::c_grid<3> > data = shoebox.data.ref();
-      af::ref< int,   af::c_grid<3> > mask = shoebox.mask.ref();
-      int x0 = bbox[0];
-      int x1 = bbox[1];
-      int y0 = bbox[2];
-      int y1 = bbox[3];
-      int z0 = bbox[4];
-      int z1 = bbox[5];
-      DIALS_ASSERT(x1 > x0);
-      DIALS_ASSERT(y1 > y0);
-      DIALS_ASSERT(z1 > z0);
-      std::size_t zsize = z1 - z0;
-      std::size_t ysize = y1 - y0;
-      std::size_t xsize = x1 - x0;
-      DIALS_ASSERT(zsize == data.accessor()[0]);
-      DIALS_ASSERT(ysize == data.accessor()[1]);
-      DIALS_ASSERT(xsize == data.accessor()[2]);
-      DIALS_ASSERT(shoebox.is_consistent());
-      for (std::size_t k = 0; k < zsize; ++k) {
-        for (std::size_t j = 0; j < ysize; ++j) {
-          for (std::size_t i = 0; i < xsize; ++i) {
-            int kk = z0 + k - zstart;
-            int jj = y0 + j;
-            int ii = x0 + i;
-            if (kk >= 0 &&
-                jj >= 0 &&
-                ii >= 0 &&
-                kk < data_buffer.accessor()[0] &&
-                jj < data_buffer.accessor()[1] &&
-                ii < data_buffer.accessor()[2]) {
-              double d = data_buffer(kk, jj, ii);
-              int m = mask_buffer(kk, jj, ii) && (d > underload && d < overload)
+              int m = (d > underload && d < overload)
                 ? Valid
                 : 0;
               data(k,j,i) = d;
@@ -591,7 +515,7 @@ namespace dials { namespace algorithms {
       Buffer buffer(
           detector,
           zsize,
-          use_dynamic_mask && imageset.has_dynamic_mask(),
+          underload,
           imageset.get_static_mask());
 
       // If we have shoeboxes then delete
@@ -636,6 +560,7 @@ namespace dials { namespace algorithms {
           bbox,
           flags,
           nthreads,
+          use_dynamic_mask,
           logger);
 
       // Transform the row major reflection array to the reflection table
@@ -738,6 +663,7 @@ namespace dials { namespace algorithms {
         af::const_ref<int6> bbox,
         af::const_ref<std::size_t> flags,
         std::size_t nthreads,
+        bool use_dynamic_mask,
         const Logger &logger) const {
 
       using dials::util::ThreadPool;
@@ -753,7 +679,7 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < zsize; ++i) {
 
         // Copy the image to the buffer
-        if (buffer.has_dynamic_mask()) {
+        if (use_dynamic_mask) {
           buffer.copy(imageset.get_corrected_data(i), imageset.get_dynamic_mask(i), i);
         } else {
           buffer.copy(imageset.get_corrected_data(i), i);
