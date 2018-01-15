@@ -140,7 +140,6 @@ namespace dials { namespace algorithms {
     void copy(const Image<double> &data, const Image<bool> &mask, std::size_t index) {
       DIALS_ASSERT(data.n_tiles() == mask.n_tiles());
       DIALS_ASSERT(data.n_tiles() == data_.size());
-      DIALS_ASSERT(mask.n_tiles() == dynamic_mask_.size());
       for (std::size_t i = 0; i < data.n_tiles(); ++i) {
         copy(data.tile(i).data().const_ref(), data_[i].ref(), index);
         apply_mask(mask.tile(i).data().const_ref(), data_[i].ref(), index);
@@ -225,7 +224,6 @@ namespace dials { namespace algorithms {
     }
 
     std::vector< af::versa< float_type, af::c_grid<3> > > data_;
-    std::vector< af::versa< bool, af::c_grid<3> > > dynamic_mask_;
     std::vector< af::versa< bool, af::c_grid<2> > > static_mask_;
     float_type mask_value_;
 

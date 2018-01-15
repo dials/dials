@@ -72,7 +72,7 @@ def generate_phil_scope():
 
       }
 
-      use_dynamic_mask = False
+      use_dynamic_mask = True
         .type = bool
         .help = "Use dynamic mask if available"
 
