@@ -11,17 +11,17 @@ from cctbx import miller, crystal
 from scitbx import sparse
 #from minimiser_functions import error_scale_LBFGSoptimiser
 #from dials.util.options import flatten_experiments, flatten_reflections
-from dials.algorithms.scaling.target_function import (target_function,
+from target_function import (target_function,
   target_function_fixedIh, xds_target_function_log)
-import dials.algorithms.scaling.basis_functions as bf
-from dials.algorithms.scaling.scaling_utilities import calc_s2d, sph_harm_table
-from dials.algorithms.scaling.Wilson_outlier_test import (
+import basis_functions as bf
+from scaling_utilities import calc_s2d, sph_harm_table
+from Wilson_outlier_test import (
   calculate_wilson_outliers, calc_normE2)
-import dials.algorithms.scaling.scale_factor as SF
-from dials.algorithms.scaling.reflection_weighting import Weighting
-from dials.algorithms.scaling.target_Ih import SingleIhTable, JointIhTable
-import dials.algorithms.scaling.minimiser_functions as mf
-from dials.algorithms.scaling.aimless_outlier_rejection import reject_outliers
+import scale_factor as SF
+from reflection_weighting import Weighting
+from target_Ih import SingleIhTable, JointIhTable
+import minimiser_functions as mf
+from aimless_outlier_rejection import reject_outliers
 #from collections import OrderedDict
 
 
@@ -227,6 +227,59 @@ class ScalingDataManager(DataManagerUtilities):
       cls._select_optimal_intensities(reflection_table, params)
     return reflection_table
 
+class KB_Data_Manager(ScalingDataManager):
+  '''Data Manager subclass for implementing simple KB parameterisation'''
+  def __init__(self, reflections, experiments, params):
+    super(KB_Data_Manager, self).__init__(reflections, experiments, params)
+    (self.g_scale, self.g_decay) = (None, None)
+    self._initialise_scale_factors()
+    self._select_reflections_for_scaling()
+    logger.info('Completed initialisation of KB data manager. \n' + '*'*40 + '\n')
+
+  def _initialise_scale_factors(self):
+    if self.params.parameterisation.scale_term:
+      self.g_scale = SF.KScaleFactor(1.0)
+      self._g_parameterisation['g_scale'] = self.g_scale
+    if self.params.parameterisation.decay_term:
+      self.g_decay = SF.BScaleFactor(0.0)
+      self._g_parameterisation['g_decay'] = self.g_decay
+
+  def _select_reflections_for_scaling(self):
+    (reflections_for_scaling, weights_for_scaling, _) = (
+      self._scaling_subset(self.reflection_table, self.params))
+    self._Ih_table = SingleIhTable(reflections_for_scaling, weights_for_scaling.weights)
+    if self.params.parameterisation.scale_term:
+      self.g_scale.update_reflection_data(n_refl=self.Ih_table.size)
+    if self.params.parameterisation.decay_term:
+      self.g_decay.update_reflection_data(dvalues=reflections_for_scaling['d'])
+
+  def apply_selection_to_SFs(self, sel):
+    '''Updates data from within current SF objects using the given selection.
+       Required for targeted scaling.'''
+    if self.params.parameterisation.decay_term:
+      self.g_decay.update_reflection_data(dvalues=self.g_decay.d_values.select(sel))
+    if self.params.parameterisation.scale_term:
+      self.g_scale.update_reflection_data(n_refl=sel.count(True))
+
+  def expand_scales_to_all_reflections(self):
+    expanded_scale_factors = flex.double([1.0]*len(self.reflection_table))
+    if self.params.parameterisation.scale_term:
+      self.g_scale.update_reflection_data(n_refl=len(self.reflection_table))
+      self.g_scale.calculate_scales_and_derivatives()
+      expanded_scale_factors *= self.g_scale.inverse_scales
+      logger.info(('Scale factor K = {0:.4f} determined during minimisation {sep}'
+        'has now been applied to all reflections. {sep}').format(
+        list(self.g_scale.parameters)[0], sep='\n'))
+    if self.params.parameterisation.decay_term:
+      self.g_decay.update_reflection_data(dvalues=self.reflection_table['d'])
+      self.g_decay.calculate_scales_and_derivatives()
+      expanded_scale_factors *= self.g_decay.inverse_scales
+      logger.info(('B-factor B = {0:.4f} determined during minimisation {sep}'
+        'has now been applied to all reflections. {sep}').format(
+        list(self.g_decay.parameters)[0], sep='\n'))
+    self._reflection_table['inverse_scale_factor'] = expanded_scale_factors
+
+
 class AimlessDataManager(ScalingDataManager):
   '''Data Manager subclass for implementing aimless-style parameterisation'''
   def __init__(self, reflections, experiments, params):
@@ -285,16 +338,6 @@ class AimlessDataManager(ScalingDataManager):
     if self.params.parameterisation.absorption_term:
       sph_harm_table_T = self.g_absorption.harmonic_values.transpose()
       sel_sph_harm_table = sph_harm_table_T.select_columns(sel.iselection())
-      self.g_absorption.update_reflection_data(sel_sph_harm_table.transpose())
-
-  def _update_SF_data(self, refl_for_scaling, selection):
-    self.g_scale.update_reflection_data(refl_for_scaling['norm_rot_angle'])
-    if self.params.parameterisation.decay_term:
-      self.g_decay.update_reflection_data(dvalues=refl_for_scaling['d'],
-        normalised_values=refl_for_scaling['norm_time_values'])
-    if self.params.parameterisation.absorption_term:
-      sph_harm_table_T = self.sph_harm_table.transpose()
-      sel_sph_harm_table = sph_harm_table_T.select_columns(selection.iselection())
       self.g_absorption.update_reflection_data(sel_sph_harm_table.transpose())
 
   def update_error_model(self):
@@ -445,114 +488,131 @@ class AimlessDataManager(ScalingDataManager):
         del self.reflection_table[key]
 
 
-class KB_Data_Manager(ScalingDataManager):
-  '''Data Manager subclass for implementing XSCALE-style parameterisation'''
+class MultiCrystalDataManager(DataManagerUtilities):
+  '''Data Manager to handle concurrent scaling of multiple datasets'''
   def __init__(self, reflections, experiments, params):
-    super(KB_Data_Manager, self).__init__(reflections, experiments, params)
-    (self.g_scale, self.g_decay) = (None, None)
-    self._initialise_scale_factors()
-    self._select_reflections_for_scaling()
-    logger.info('Completed initialisation of KB data manager. \n' + '*'*40 + '\n')
+    super(MultiCrystalDataManager, self).__init__()
+    self.data_managers = []
+    self._params = params
+    if self.params.scaling_method == 'xscale':
+      print("xscale method not yet supported")
+      for reflection, experiment in zip(reflections, experiments):
+        self.data_managers.append(XDS_Data_Manager(reflection, experiment, params))
+    elif self.params.scaling_method == 'aimless':
+      for reflection, experiment in zip(reflections, experiments):
+        self.data_managers.append(AimlessDataManager(reflection, experiment, params))
+    else:
+      assert 0, """Incorrect scaling method passed to multicrystal datamanager
+      (not 'xds', 'aimless' or 'kb')"""
+    self._Ih_table = JointIhTable(self.data_managers)
+    logger.info('Completed initialisation of multicrystal data manager. \n' + '*'*40 + '\n')
 
-  def _initialise_scale_factors(self):
-    if self.params.parameterisation.scale_term:
-      self.g_scale = SF.KScaleFactor(1.0)
-      self._g_parameterisation['g_scale'] = self.g_scale
-    if self.params.parameterisation.decay_term:
-      self.g_decay = SF.BScaleFactor(0.0)
-      self._g_parameterisation['g_decay'] = self.g_decay
+  def calc_absorption_constraint(self, apm):
+    'method only called in aimless scaling'
+    R = flex.double([])
+    G = flex.double([])
+    for i, dm in enumerate(self.data_managers):
+      R.extend(dm.calc_absorption_constraint(apm.apm_list[i])[0])
+      G.extend(dm.calc_absorption_constraint(apm.apm_list[i])[1])
+    return (R, G)
 
-  def _select_reflections_for_scaling(self):
-    (reflections_for_scaling, weights_for_scaling, _) = (
-      self._scaling_subset(self.reflection_table, self.params))
-    self._Ih_table = SingleIhTable(reflections_for_scaling, weights_for_scaling.weights)
-    if self.params.parameterisation.scale_term:
-      self.g_scale.update_reflection_data(n_refl=self.Ih_table.size)
-    if self.params.parameterisation.decay_term:
-      self.g_decay.update_reflection_data(dvalues=reflections_for_scaling['d'])
+  def update_error_model(self):
+    for dm in self.data_managers:
+      dm.update_error_model()
+    self._Ih_table = JointIhTable(self.data_managers)
 
-  def apply_selection_to_SFs(self, sel):
-    '''Updates data from within current SF objects using the given selection.
-       Required for targeted scaling.'''
-    if self.params.parameterisation.decay_term:
-      self.g_decay.update_reflection_data(dvalues=self.g_decay.d_values.select(sel))
-    if self.params.parameterisation.scale_term:
-      self.g_scale.update_reflection_data(n_refl=sel.count(True))
+  def update_for_minimisation(self, apm):
+    '''update the scale factors and Ih for the next iteration of minimisation,
+    update the x values from the amp to the individual apms, as this is where
+    basis functions, target functions etc get access to the parameters.'''
+    for i, _ in enumerate(apm.n_active_params_list):
+      apm.apm_list[i].x = apm.x[apm.n_cumulative_params[i]:apm.n_cumulative_params[i+1]]
+    n_param_total = apm.n_cumulative_params[-1]
+    apm.active_derivatives = sparse.matrix(self.Ih_table.size, n_param_total)
+    for i, dm in enumerate(self.data_managers):
+      basis_fn = dm.get_basis_function(apm.apm_list[i])
+      dm.Ih_table.inverse_scale_factors = basis_fn[0]
+      expanded = basis_fn[1].transpose() * self.Ih_table.h_index_expand_list[i]
+      apm.active_derivatives.assign_block(expanded.transpose(), 0, apm.n_cumulative_params[i])
+    self.Ih_table.calc_Ih()
 
   def expand_scales_to_all_reflections(self):
-    expanded_scale_factors = flex.double([1.0]*len(self.reflection_table))
-    if self.params.parameterisation.scale_term:
-      self.g_scale.update_reflection_data(n_refl=len(self.reflection_table))
-      self.g_scale.calculate_scales_and_derivatives()
-      expanded_scale_factors *= self.g_scale.inverse_scales
-      logger.info(('Scale factor K = {0:.4f} determined during minimisation {sep}'
-        'has now been applied to all reflections. {sep}').format(
-        list(self.g_scale.parameters)[0], sep='\n'))
-    if self.params.parameterisation.decay_term:
-      self.g_decay.update_reflection_data(dvalues=self.reflection_table['d'])
-      self.g_decay.calculate_scales_and_derivatives()
-      expanded_scale_factors *= self.g_decay.inverse_scales
-      logger.info(('B-factor B = {0:.4f} determined during minimisation {sep}'
-        'has now been applied to all reflections. {sep}').format(
-        list(self.g_decay.parameters)[0], sep='\n'))
-    self._reflection_table['inverse_scale_factor'] = expanded_scale_factors
+    for dm in self.data_managers:
+      dm.expand_scales_to_all_reflections()
 
+  def join_multiple_datasets(self):
+    joined_reflections = flex.reflection_table()
+    for dm in self.data_managers:
+      joined_reflections.extend(dm.reflection_table)
+    miller_set = miller.set(crystal.symmetry(
+      space_group=self.data_managers[0].experiments.crystal.get_space_group()),
+      indices=joined_reflections['asu_miller_index'], anomalous_flag=True)
+    permuted = miller_set.sort_permutation(by_value='packed_indices')
+    self._reflection_table = joined_reflections.select(permuted)
+    weights = Weighting(self.reflection_table).weights
+    self._Ih_table = SingleIhTable(self.reflection_table, weights)
+    self._reflection_table['Ih_values'] = self.Ih_table.Ih_values
+    if self.params.scaling_options.reject_outliers:
+      sel = flex.bool([True]*len(self.reflection_table))
+      _, indices_of_outliers = reject_outliers(self, max_deviation=6.0)
+      msg = ('Combined outlier rejection has been performed across all datasets, {sep}'
+        '{0} outliers were found which have been removed from the dataset. {sep}'.format(
+        len(indices_of_outliers), sep='\n'))
+      logger.info(msg)
+      sel.set_selected(flex.size_t(indices_of_outliers),
+        flex.bool([False]*len(indices_of_outliers)))
+      self._reflection_table = self._reflection_table.select(sel)
+      weights = self._update_weights_for_scaling(self.reflection_table,
+        self.params, weights_filter=False, error_model_params=None).weights
+      self._Ih_table = SingleIhTable(self.reflection_table, weights)
+      self._reflection_table['Ih_values'] = self.Ih_table.Ih_values
+      msg = ('A new best estimate for I_h for all reflections across all datasets {sep}'
+        'has now been calculated. {sep}').format(sep='\n')
+      logger.info(msg)
 
-class active_parameter_manager(object):
-  ''' object to manage the current active parameters during minimisation.
-  Separated out to provide a consistent interface between the data manager and
-  minimiser.
-  Takes in a data manager, needed to access SF objects through g_parameterisation,
-  and a param_name list indicating the active parameters.'''
-  def __init__(self, Data_Manager, param_name):
-    constant_g_values = []
-    self.x = flex.double([])
-    self.n_active_params = 0
-    self.active_parameterisation = []
-    self.active_params_list = []
-    self.cumulative_active_params = [0]
-    self.active_derivatives = None
-    for p_type, scalefactor in Data_Manager.g_parameterisation.iteritems():
-      if p_type in param_name:
-        self.x.extend(scalefactor.parameters)
-        self.n_active_params = len(self.x) #update n_active_params
-        self.active_parameterisation.append(p_type)
-        n_params = scalefactor.n_params
-        self.active_params_list.append(n_params)
-        self.cumulative_active_params.append(self.cumulative_active_params[-1] + n_params)
-      else:
-        constant_g_values.append(scalefactor.inverse_scales)
-    if len(constant_g_values) > 0.0:
-      self.constant_g_values = flex.double(np.prod(np.array(constant_g_values), axis=0))
+class TargetedDataManager(ScalingDataManager):
+  '''Data Manager to allow scaling of one dataset against a target dataset.'''
+  def __init__(self, reflections, experiments, reflections_scaled, params):
+    super(TargetedDataManager, self).__init__(reflections_scaled, experiments, params)
+    #note - do we need some check on being same SG?
+    if self.params.scaling_method == 'KB':
+      self.dm1 = KB_Data_Manager(reflections, experiments, params)
+    elif self.params.scaling_method == 'aimless':
+      self.dm1 = AimlessDataManager(reflections, experiments, params)
     else:
-      self.constant_g_values = None
-    if not Data_Manager.params.scaling_options.multi_mode:
-      logger.info(('Set up parameter handler for following corrections: {0}\n').format(
-        ''.join(i.lstrip('g_')+' ' for i in self.active_parameterisation)))
+      assert 0, """Incorrect scaling method passed to multicrystal datamanager
+      (not 'aimless' or 'KB')"""
+    target_Ih_table = SingleIhTable(self.reflection_table,
+      1.0/self.reflection_table['variance'])
+    #find common reflections in the two datasets
+    for i, miller_idx in enumerate(self.dm1.Ih_table.asu_miller_index):
+      sel = target_Ih_table.asu_miller_index == miller_idx
+      Ih_values = target_Ih_table.Ih_values.select(sel)
+      if Ih_values:
+        self.dm1.Ih_table.Ih_values[i] = Ih_values[0] #all same so just get [0]
+      else:
+        self.dm1.Ih_table.Ih_values[i] = 0.0 #set to zero to allow selection below
+    sel = self.dm1.Ih_table.Ih_values != 0.0
+    self.dm1._Ih_table = self.dm1.Ih_table.select(sel)
+    self.dm1.apply_selection_to_SFs(sel)
+    self._g_parameterisation = self.dm1.g_parameterisation
 
+  def get_target_function(self, apm):
+    '''override the target function method for fixed Ih'''
+    return target_function_fixedIh(self.dm1, apm).return_targets()
 
-class multi_active_parameter_manager(object):
-  def __init__(self, Data_Manager, param_name):
-    self.apm_list = []
-    for DM in Data_Manager.data_managers:
-      apm = active_parameter_manager(DM, param_name)
-      self.apm_list.append(apm)
-    self.active_parameterisation = self.apm_list[0].active_parameterisation
-    self.x = flex.double([])
-    self.n_active_params_list = []
-    self.n_active_params = 0
-    self.n_cumulative_params = [0]
-    for apm in self.apm_list:
-      self.x.extend(apm.x)
-      self.n_active_params_list.append(len(apm.x))
-      self.n_active_params += len(apm.x)
-      self.n_cumulative_params.append(copy.deepcopy(self.n_active_params))
-    logger.info(('Set up joint parameter handler for following corrections: {0}\n').format(
-        ''.join(i.lstrip('g_')+' ' for i in self.active_parameterisation)))
+  def update_for_minimisation(self, apm):
+    '''update the scale factors and Ih for the next iteration of minimisation'''
+    basis_fn = self.dm1.get_basis_function(apm)
+    apm.active_derivatives = basis_fn[1]
+    self.dm1.Ih_table.inverse_scale_factors = basis_fn[0]
+    #note - we don't calculate Ih here as using a target instead
 
+  def expand_scales_to_all_reflections(self):
+    return self.dm1.expand_scales_to_all_reflections()
 
 class XDS_Data_Manager(ScalingDataManager):
-  '''Data Manager subclass for implementing XDS parameterisation'''
+  '''Data Manager subclass for implementing XSCALE-type parameterisation'''
   def __init__(self, reflections, experiments, params):
     super(XDS_Data_Manager, self).__init__(reflections, experiments, params)
     #initialise g-value arrays
@@ -800,131 +860,54 @@ class XDS_Data_Manager(ScalingDataManager):
       del self.reflection_table[key]
 
 
-class MultiCrystalDataManager(DataManagerUtilities):
-  '''Data Manager to handle concurrent scaling of multiple datasets'''
-  def __init__(self, reflections, experiments, params):
-    super(MultiCrystalDataManager, self).__init__()
-    self.data_managers = []
-    self._params = params
-    if self.params.scaling_method == 'xscale':
-      print("xscale method not yet supported")
-      for reflection, experiment in zip(reflections, experiments):
-        self.data_managers.append(XDS_Data_Manager(reflection, experiment, params))
-    elif self.params.scaling_method == 'aimless':
-      for reflection, experiment in zip(reflections, experiments):
-        self.data_managers.append(AimlessDataManager(reflection, experiment, params))
-    else:
-      assert 0, """Incorrect scaling method passed to multicrystal datamanager
-      (not 'xds', 'aimless' or 'kb')"""
-    self._Ih_table = JointIhTable(self.data_managers)
-    logger.info('Completed initialisation of multicrystal data manager. \n' + '*'*40 + '\n')
-
-  def calc_absorption_constraint(self, apm):
-    'method only called in aimless scaling'
-    R = flex.double([])
-    G = flex.double([])
-    for i, dm in enumerate(self.data_managers):
-      R.extend(dm.calc_absorption_constraint(apm.apm_list[i])[0])
-      G.extend(dm.calc_absorption_constraint(apm.apm_list[i])[1])
-    return (R, G)
-
-  def update_error_model(self):
-    for dm in self.data_managers:
-      dm.update_error_model()
-    self._Ih_table = JointIhTable(self.data_managers)
-
-  def update_for_minimisation(self, apm):
-    '''update the scale factors and Ih for the next iteration of minimisation,
-    update the x values from the amp to the individual apms, as this is where
-    basis functions, target functions etc get access to the parameters.'''
-    for i, _ in enumerate(apm.n_active_params_list):
-      apm.apm_list[i].x = apm.x[apm.n_cumulative_params[i]:apm.n_cumulative_params[i+1]]
-    n_param_total = apm.n_cumulative_params[-1]
-    apm.active_derivatives = sparse.matrix(self.Ih_table.size, n_param_total)
-    for i, dm in enumerate(self.data_managers):
-      basis_fn = dm.get_basis_function(apm.apm_list[i])
-      dm.Ih_table.inverse_scale_factors = basis_fn[0]
-      expanded = basis_fn[1].transpose() * self.Ih_table.h_index_expand_list[i]
-      apm.active_derivatives.assign_block(expanded.transpose(), 0, apm.n_cumulative_params[i])
-    self.Ih_table.calc_Ih()
-
-  def expand_scales_to_all_reflections(self):
-    for dm in self.data_managers:
-      dm.expand_scales_to_all_reflections()
-
-  def join_multiple_datasets(self):
-    #note - improve this method??
-    #self.JointIhTable = JointIhTable(self.data_managers)
-    joined_reflections = flex.reflection_table()
-    for dm in self.data_managers:
-      joined_reflections.extend(dm.reflection_table)
-    u_c = self.data_managers[0].experiments.crystal.get_unit_cell().parameters()
-    s_g = self.data_managers[0].experiments.crystal.get_space_group()
-    crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
-    miller_set = miller.set(crystal_symmetry=crystal_symmetry,
-      indices=joined_reflections['asu_miller_index'], anomalous_flag=True)
-    permuted = miller_set.sort_permutation(by_value='packed_indices')
-    self._reflection_table = joined_reflections.select(permuted)
-    #self.weights_for_scaling = Weighting(self.reflection_table)
-    weights = Weighting(self.reflection_table).weights
-    self._Ih_table = SingleIhTable(self.reflection_table, weights)
-    self._reflection_table['Ih_values'] = self.Ih_table.Ih_values
-
-    if self.params.scaling_options.reject_outliers:
-      sel = flex.bool([True]*len(self.reflection_table))
-      _, indices_of_outliers = reject_outliers(self, max_deviation=6.0)
-      msg = ('Combined outlier rejection has been performed across all datasets, {sep}'
-        '{0} outliers were found which have been removed from the dataset. {sep}'.format(
-        len(indices_of_outliers), sep='\n'))
-      logger.info(msg)
-      sel.set_selected(flex.size_t(indices_of_outliers),
-        flex.bool([False]*len(indices_of_outliers)))
-      self._reflection_table = self._reflection_table.select(sel)
-      weights = self._update_weights_for_scaling(self.reflection_table,
-        self.params, weights_filter=False, error_model_params=None).weights
-      self._Ih_table = SingleIhTable(self.reflection_table, weights)
-      self._reflection_table['Ih_values'] = self.Ih_table.Ih_values
-      msg = ('A new best estimate for I_h for all reflections across all datasets {sep}'
-        'has now been calculated. {sep}').format(sep='\n')
-      logger.info(msg)
-
-class TargetedDataManager(ScalingDataManager):
-  '''Data Manager to allow scaling of one dataset against a target dataset.'''
-  def __init__(self, reflections, experiments, reflections_scaled, params):
-    super(TargetedDataManager, self).__init__(reflections_scaled, experiments, params)
-    #note - do we need some check one being same SG?
-    if self.params.scaling_method == 'KB':
-      self.dm1 = KB_Data_Manager(reflections, experiments, params)
-    elif self.params.scaling_method == 'aimless':
-      self.dm1 = AimlessDataManager(reflections, experiments, params)
-    else:
-      assert 0, """Incorrect scaling method passed to multicrystal datamanager
-      (not 'aimless' or 'KB')"""
-    target_Ih_table = SingleIhTable(self.reflection_table,
-      1.0/self.reflection_table['variance'])
-    #find common reflections in the two datasets
-    for i, miller_idx in enumerate(self.dm1.Ih_table.asu_miller_index):
-      sel = target_Ih_table.asu_miller_index == miller_idx
-      Ih_values = target_Ih_table.Ih_values.select(sel)
-      if Ih_values:
-        self.dm1.Ih_table.Ih_values[i] = Ih_values[0] #all same so just get [0]
+class active_parameter_manager(object):
+  ''' object to manage the current active parameters during minimisation.
+  Separated out to provide a consistent interface between the data manager and
+  minimiser.
+  Takes in a data manager, needed to access SF objects through g_parameterisation,
+  and a param_name list indicating the active parameters.'''
+  def __init__(self, Data_Manager, param_name):
+    constant_g_values = []
+    self.x = flex.double([])
+    self.n_active_params = 0
+    self.active_parameterisation = []
+    self.active_params_list = []
+    self.cumulative_active_params = [0]
+    self.active_derivatives = None
+    for p_type, scalefactor in Data_Manager.g_parameterisation.iteritems():
+      if p_type in param_name:
+        self.x.extend(scalefactor.parameters)
+        self.n_active_params = len(self.x) #update n_active_params
+        self.active_parameterisation.append(p_type)
+        n_params = scalefactor.n_params
+        self.active_params_list.append(n_params)
+        self.cumulative_active_params.append(self.cumulative_active_params[-1] + n_params)
       else:
-        self.dm1.Ih_table.Ih_values[i] = 0.0 #set to zero to allow selection below
-    sel = self.dm1.Ih_table.Ih_values != 0.0
-    self.dm1._Ih_table = self.dm1.Ih_table.select(sel)
-    self.dm1.apply_selection_to_SFs(sel)
-    self._g_parameterisation = self.dm1.g_parameterisation
+        constant_g_values.append(scalefactor.inverse_scales)
+    if len(constant_g_values) > 0.0:
+      self.constant_g_values = flex.double(np.prod(np.array(constant_g_values), axis=0))
+    else:
+      self.constant_g_values = None
+    if not Data_Manager.params.scaling_options.multi_mode:
+      logger.info(('Set up parameter handler for following corrections: {0}\n').format(
+        ''.join(i.lstrip('g_')+' ' for i in self.active_parameterisation)))
 
-  def get_target_function(self, apm):
-    '''override the target function method for fixed Ih'''
-    return target_function_fixedIh(self.dm1, apm).return_targets()
 
-  def update_for_minimisation(self, apm):
-    '''update the scale factors and Ih for the next iteration of minimisation'''
-    basis_fn = self.dm1.get_basis_function(apm)
-    apm.active_derivatives = basis_fn[1]
-    self.dm1.Ih_table.inverse_scale_factors = basis_fn[0]
-    #note - we don't calculate Ih here as using a target instead
-
-  def expand_scales_to_all_reflections(self):
-    return self.dm1.expand_scales_to_all_reflections()
+class multi_active_parameter_manager(object):
+  def __init__(self, Data_Manager, param_name):
+    self.apm_list = []
+    for DM in Data_Manager.data_managers:
+      apm = active_parameter_manager(DM, param_name)
+      self.apm_list.append(apm)
+    self.active_parameterisation = self.apm_list[0].active_parameterisation
+    self.x = flex.double([])
+    self.n_active_params_list = []
+    self.n_active_params = 0
+    self.n_cumulative_params = [0]
+    for apm in self.apm_list:
+      self.x.extend(apm.x)
+      self.n_active_params_list.append(len(apm.x))
+      self.n_active_params += len(apm.x)
+      self.n_cumulative_params.append(copy.deepcopy(self.n_active_params))
+    logger.info(('Set up joint parameter handler for following corrections: {0}\n').format(
+        ''.join(i.lstrip('g_')+' ' for i in self.active_parameterisation)))
