@@ -57,7 +57,7 @@ namespace dials { namespace algorithms {
       obj_.attr("info")(str);
     }
 
-    void debuf(const char *str) const {
+    void debug(const char *str) const {
       obj_.attr("debug")(str);
     }
 
@@ -73,6 +73,8 @@ namespace dials { namespace algorithms {
    */
   class Buffer {
   public:
+
+    typedef Shoebox<>::float_type float_type;
 
     /**
      * Initialise the the size of the panels
@@ -96,7 +98,7 @@ namespace dials { namespace algorithms {
 
         // Allocate all the data buffers
         data_.push_back(
-            af::versa< double, af::c_grid<3> >(
+            af::versa< float_type, af::c_grid<3> >(
               af::c_grid<3>(zsize, ysize, xsize)));
 
         // Allocate all the dynamic mask buffers
@@ -158,7 +160,7 @@ namespace dials { namespace algorithms {
      * @param The panel number
      * @returns The buffer for the panel
      */
-    af::const_ref< double, af::c_grid<3> > data(std::size_t panel) const {
+    af::const_ref< float_type, af::c_grid<3> > data(std::size_t panel) const {
       DIALS_ASSERT(panel < data_.size());
       return data_[panel].const_ref();
     }
@@ -198,9 +200,9 @@ namespace dials { namespace algorithms {
      * @param dst The destination
      * @param index The image index
      */
-    template <typename T>
-    void copy(af::const_ref< T, af::c_grid<2> > src,
-              af::ref < T, af::c_grid<3> > dst,
+    template <typename InputType, typename OutputType>
+    void copy(af::const_ref< InputType, af::c_grid<2> > src,
+              af::ref < OutputType, af::c_grid<3> > dst,
               std::size_t index) {
       std::size_t ysize = src.accessor()[0];
       std::size_t xsize = src.accessor()[1];
@@ -247,7 +249,7 @@ namespace dials { namespace algorithms {
       }
     }
 
-    std::vector< af::versa< double, af::c_grid<3> > > data_;
+    std::vector< af::versa< float_type, af::c_grid<3> > > data_;
     std::vector< af::versa< bool, af::c_grid<3> > > dynamic_mask_;
     std::vector< af::versa< bool, af::c_grid<2> > > static_mask_;
     bool use_dynamic_mask_;
@@ -299,7 +301,7 @@ namespace dials { namespace algorithms {
      * 5. Compute the reflection centroid
      * 6. Compute the summed intensity
      * 7. Compute the profile fitted intensity
-     * 8. Delete the shoebox unless debuf has been set
+     * 8. Delete the shoebox unless debug has been set
      *
      * @param reflection The reflection object
      * @param adjacent_reflections The list of adjacent reflections
@@ -550,8 +552,9 @@ namespace dials { namespace algorithms {
     /**
      * Extract the shoebox data from the buffer
      */
+    template <typename FloatType>
     void extract_shoebox(
-          const af::const_ref< double, af::c_grid<3> > &data_buffer,
+          const af::const_ref< FloatType, af::c_grid<3> > &data_buffer,
           const af::const_ref< bool, af::c_grid<2> > &mask_buffer,
           af::Reflection &reflection,
           int zstart,
@@ -612,8 +615,9 @@ namespace dials { namespace algorithms {
     /**
      * Extract the shoebox data and mask from the buffer
      */
+    template <typename FloatType>
     void extract_shoebox(
-          const af::const_ref< double, af::c_grid<3> > &data_buffer,
+          const af::const_ref< FloatType, af::c_grid<3> > &data_buffer,
           const af::const_ref< bool, af::c_grid<3> > &mask_buffer,
           af::Reflection &reflection,
           int zstart,

@@ -340,8 +340,9 @@ namespace dials { namespace algorithms {
     /**
      * Extract the shoebox data from the buffer
      */
+    template <typename FloatType>
     void extract_shoebox(
-          const af::const_ref< double, af::c_grid<3> > &data_buffer,
+          const af::const_ref< FloatType, af::c_grid<3> > &data_buffer,
           const af::const_ref< bool, af::c_grid<2> > &mask_buffer,
           af::Reflection &reflection,
           int zstart,
@@ -402,8 +403,9 @@ namespace dials { namespace algorithms {
     /**
      * Extract the shoebox data and mask from the buffer
      */
+    template <typename FloatType>
     void extract_shoebox(
-          const af::const_ref< double, af::c_grid<3> > &data_buffer,
+          const af::const_ref< FloatType, af::c_grid<3> > &data_buffer,
           const af::const_ref< bool, af::c_grid<3> > &mask_buffer,
           af::Reflection &reflection,
           int zstart,
