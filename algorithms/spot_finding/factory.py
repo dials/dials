@@ -39,13 +39,12 @@ def generate_phil_scope():
       .help = "Do spot finding in 2D"
 
     scan_range = None
-      .help = "The range of images to use in finding spots. Number of arguments"
-              "must be a factor of two. Specifying \"0 0\" will use all images"
-              "by default. The given range follows C conventions"
-              "(e.g. j0 <= j < j1)."
+      .help = "The range of images to use in finding spots. The ranges are"
+              "inclusive (e.g. j0 <= j < j1)."
               "For sweeps the scan range is interpreted as the literal scan"
               "range. Whereas for imagesets the scan range is interpreted as"
-              "the image number in the imageset"
+              "the image number in the imageset. Multiple ranges can be"
+              "specified by repeating the scan_range= parameter."
       .type = ints(size=2)
       .multiple = True
 
