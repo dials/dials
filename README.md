@@ -8,6 +8,11 @@ Website
 https://dials.github.io  
 
 
+Reference
+---------
+
+[Winter, G., Waterman, D. G., Parkhurst, J. M., Brewster, A. S., Gildea, R. J., Gerstel, M., Fuentes-Montero, L., Vollmar, M., Michels-Clark, T., Young, I. D., Sauter, N. K. and Evans, G. (2018) Acta Cryst. D74.](http://journals.iucr.org/d/services/forthcoming.html)
+
 Funding
 -------
 
