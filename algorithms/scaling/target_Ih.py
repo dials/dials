@@ -171,7 +171,7 @@ class SingleIhTable(IhTableBase):
     '''create an Ih_table from the reflection table'''
     (refl_table, weights) = data
     #check necessary columns exists in input reflection table
-    columns = ['asu_miller_index', 'intensity', 'inverse_scale_factor', 'Esq']
+    columns = ['asu_miller_index', 'intensity', 'inverse_scale_factor']
     for col in columns:
       if not col in refl_table.keys():
         assert 0, """Attempting to create an Ih_table object from a reflection
@@ -182,7 +182,10 @@ class SingleIhTable(IhTableBase):
     Ih_table = flex.reflection_table()
     for col in columns:
       Ih_table[col] = refl_table[col]
-    Ih_table['Ih_values'] = flex.double([0.0] * len(refl_table))
+    if 'Ih_values' in refl_table.keys():
+      Ih_table['Ih_values'] = refl_table['Ih_values']
+    else:
+      Ih_table['Ih_values'] = flex.double([0.0] * len(refl_table))
     Ih_table['weights'] = weights
     return Ih_table.select(Ih_table['weights'] != 0.0)
 

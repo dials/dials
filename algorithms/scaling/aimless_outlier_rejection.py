@@ -8,15 +8,17 @@ def reject_outliers(self, max_deviation):
   for i, n in enumerate(self.Ih_table.h_index_counter_array):
     #index = h_index_cumulative_array[i]
     if n > 2:
-      h_idx_cumul = h_index_cumulative_array[i:i+2]
-      Ihls_u = self.Ih_table.intensities[h_idx_cumul[0]:h_idx_cumul[1]]
-      gs_u = self.Ih_table.inverse_scale_factors[h_idx_cumul[0]:h_idx_cumul[1]]
-      ws_u = self.Ih_table.weights[h_idx_cumul[0]:h_idx_cumul[1]]
-      outlier_found = first_test_for_an_outlier(h_index_cumulative_array, Ihls_u, 
-        gs_u, ws_u, i, n, max_deviation)
+      #h_idx_cumul = h_index_cumulative_array[i:i+2]
+      #Ihls_u = self.Ih_table.intensities[h_idx_cumul[0]:h_idx_cumul[1]]
+      #gs_u = self.Ih_table.inverse_scale_factors[h_idx_cumul[0]:h_idx_cumul[1]]
+      #ws_u = self.Ih_table.weights[h_idx_cumul[0]:h_idx_cumul[1]]
+      outlier_found = first_test_for_an_outlier(self.Ih_table, i, n, max_deviation)
+        #h_index_cumulative_array, Ihls_u, 
+        #gs_u, ws_u, i, n, max_deviation)
       if outlier_found:
         outlier_list_h_index.append(outlier_found[0])
         outlier_list_refl_index.append(outlier_found[1])
+  #print("done first test")
   if not outlier_list_h_index:
     return outlier_list_h_index, outlier_list_refl_index
   else:
@@ -105,39 +107,42 @@ def subsequent_test_for_an_outlier(outlier_list_h_index, outlier_list_refl_index
 
 
 
-def first_test_for_an_outlier(h_index_cumulative_array, Ihls_u, gs_u, ws_u, i, n, max_deviation):
-  norm_dev_list = flex.double([])
-  #print ws_u.count(0.0)
-  for j in range(n): 
-    Is = Ihls_u[0:j]
-    ws = ws_u[0:j]
-    gs = gs_u[0:j]
-    Is.extend(Ihls_u[j+1:n])
-    ws.extend(ws_u[j+1:n])
-    gs.extend(gs_u[j+1:n])
-    sigma = 1.0/flex.sum(ws*(gs**2))
-    Ih = flex.sum(ws*gs*Is) * sigma
-    norm_dev_list.append((Ihls_u[j] - (gs_u[j]*Ih))/
-                         ((1.0/ws_u[j]) + ((gs_u[j]*sigma)**2)))
-  abs_norm_dev_list = abs(norm_dev_list)
-  max_delta = max(abs_norm_dev_list)
+def first_test_for_an_outlier(Ih_table, i, n, max_deviation):
+  h_idx_cumul = Ih_table.h_index_cumulative_array[i:i+2]
+  I = Ih_table.intensities[h_idx_cumul[0]:h_idx_cumul[1]]
+  g = Ih_table.inverse_scale_factors[h_idx_cumul[0]:h_idx_cumul[1]]
+  w = Ih_table.weights[h_idx_cumul[0]:h_idx_cumul[1]]
+  wgI = I*g*w
+  wg2 = w*g*g
+  fwd_prod = [0.0]
+  rev_prod = [0.0]
+  for j in range(n-1):
+    fwd_prod.append(wgI[j] + fwd_prod[j])
+    a = wgI[j] + rev_prod[0]
+    rev_prod.insert(0, a)
+  wgIsum = flex.double(fwd_prod) + flex.double(rev_prod)
+  fwd_prod = [0.0]
+  rev_prod = [0.0]
+  for j in range(n-1):
+    fwd_prod.append(wg2[j] + fwd_prod[j])
+    a = wg2[j] + rev_prod[0]
+    rev_prod.insert(0, a)
+  wg2sum = flex.double(fwd_prod) + flex.double(rev_prod)
+  norm_dev_list = (I - (g* wgIsum/wg2sum))/((1.0/w)+((g/wg2sum)**2))
+
+  abs_norm_dev_list = (norm_dev_list**2)**0.5
+  max_delta = abs_norm_dev_list.min_max_mean().max
+
   if max_delta > max_deviation:
     sel = norm_dev_list >= 0.0
-    n_pos = sel.count(True)
-    n_neg = sel.count(False)
-    if n_pos == 1:
-      m = sel.iselection()
-      idx = m + h_index_cumulative_array[i]
-      return (i,idx[0])
-    elif n_neg == 1:
+    if sel.count(True) == 1:
+      return (i, (sel.iselection() + Ih_table.h_index_cumulative_array[i])[0])
+    elif sel.count(False) == 1:
       inv_sel = ~sel
-      m = inv_sel.iselection()
-      idx = m + h_index_cumulative_array[i]
-      return (i,idx[0])
+      return (i, (inv_sel.iselection() + Ih_table.h_index_cumulative_array[i])[0])
     else: 
       sel1 = abs(abs_norm_dev_list - max_delta) < 0.000001
-      m = sel1.iselection()
-      idx = m + h_index_cumulative_array[i]
-      return (i,idx[0])
+      return (i, (sel1.iselection() + Ih_table.h_index_cumulative_array[i])[0])
   else:
     return None
+

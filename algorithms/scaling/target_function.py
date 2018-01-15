@@ -18,38 +18,31 @@ class target_function(object):
 
   def calculate_residual(self):
     '''returns a residual vector'''
-    intensities = self.data_manager.Ih_table.intensities
-    scale_factors = self.data_manager.Ih_table.inverse_scale_factors
-    Ih_values = self.data_manager.Ih_table.Ih_values
-    weights = self.data_manager.Ih_table.weights
-    R = ((((intensities - (scale_factors * Ih_values))**2) * weights))
+    Ih_tab = self.data_manager.Ih_table
+    R = ((((Ih_tab.intensities - (Ih_tab.inverse_scale_factors * Ih_tab.Ih_values))**2)
+          * Ih_tab.weights))
     if self.data_manager.params.scaling_method == 'aimless':
       if 'g_absorption' in self.apm.active_parameterisation:
         constraint_values = self.data_manager.calc_absorption_constraint(self.apm)[0]
         R.extend(constraint_values)
-    #z = flex.sorted(R, reverse=True)
-    #print list(z)[0:10]
     return R
 
   def calculate_gradient(self):
     '''returns a gradient vector'''
-    intensities = self.data_manager.Ih_table.intensities
-    scale_factors = self.data_manager.Ih_table.inverse_scale_factors
-    Ih_values = self.data_manager.Ih_table.Ih_values
-    scaleweights = self.data_manager.Ih_table.weights
-    gsq = ((scale_factors)**2) * scaleweights
-    sumgsq = gsq * self.data_manager.Ih_table.h_index_matrix
-    rhl = intensities - (Ih_values * scale_factors)
-    dIh = scaleweights * (intensities - (Ih_values * 2.0 * scale_factors))
+    Ih_tab = self.data_manager.Ih_table
+    gsq = ((Ih_tab.inverse_scale_factors)**2) * Ih_tab.weights
+    sumgsq = gsq * Ih_tab.h_index_matrix
+    rhl = Ih_tab.intensities - (Ih_tab.Ih_values * Ih_tab.inverse_scale_factors)
+    dIh = ((Ih_tab.intensities - (Ih_tab.Ih_values * 2.0 * Ih_tab.inverse_scale_factors))
+           * Ih_tab.weights)
     dIh_g = row_multiply(self.apm.active_derivatives, dIh)
-    dIh_red = dIh_g.transpose() * self.data_manager.Ih_table.h_index_matrix
+    dIh_red = dIh_g.transpose() * Ih_tab.h_index_matrix
     dIh_by_dpi = row_multiply(dIh_red.transpose(), 1.0/sumgsq)
 
-    term_1 = (-2.0 * rhl * scaleweights * Ih_values *
+    term_1 = (-2.0 * rhl * Ih_tab.weights * Ih_tab.Ih_values *
               self.apm.active_derivatives)
-    term_2 = (-2.0 * rhl * scaleweights * scale_factors *
-              self.data_manager.Ih_table.h_index_matrix)
-    term_2 = term_2 * dIh_by_dpi
+    term_2 = (-2.0 * rhl * Ih_tab.weights * Ih_tab.inverse_scale_factors *
+              Ih_tab.h_index_matrix) * dIh_by_dpi
     gradient = term_1 + term_2
 
     if self.data_manager.params.scaling_method == 'aimless':
@@ -68,12 +61,9 @@ class target_function_fixedIh(target_function):
 
   'subclass to calculate the gradient for KB scaling against a fixed Ih'
   def calculate_gradient(self):
-    intensities = self.data_manager.Ih_table.intensities
-    scale_factors = self.data_manager.Ih_table.inverse_scale_factors
-    Ih_values = self.data_manager.Ih_table.Ih_values
-    scaleweights = self.data_manager.Ih_table.weights
-    rhl = intensities - (Ih_values * scale_factors)
-    gradient = (-2.0 * rhl * scaleweights * Ih_values
+    Ih_tab = self.data_manager.Ih_table
+    rhl = Ih_tab.intensities - (Ih_tab.Ih_values * Ih_tab.inverse_scale_factors)
+    gradient = (-2.0 * rhl * Ih_tab.weights * Ih_tab.Ih_values
                 * self.apm.active_derivatives)
     return gradient
 

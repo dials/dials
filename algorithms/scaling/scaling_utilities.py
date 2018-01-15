@@ -1,5 +1,6 @@
 from dials.array_family import flex
 import numpy as np
+import cPickle as pickle
 
 def calc_s2d(reflection_table, experiments):
   '''calculates diffraction vector in crystal frame'''
@@ -69,6 +70,25 @@ def sph_harm_table(reflection_table, lmax):
   nsssphe = math.nss_spherical_harmonics(order, 5000, lfg)
   counter = 0
   ziplist = zip(phi_list, theta_list)
+  '''phi_round = phi_list.iround()
+  theta_round = theta_list.iround()
+  ziplist=zip(phi_round, theta_round)
+  try:
+    sphfile = open('sph_harm_table.pickle')
+    shtable = pickle.load(sphfile)
+    sphfile.close()
+  except:
+    generate_sph_harm_terms(4)
+    sphfile = open('sph_harm_table.pickle')
+    shtable = pickle.load(sphfile)
+    sphfile.close()
+
+  for i, (phi, theta) in enumerate(ziplist):
+    j = theta + (phi*360)
+    print(dir(shtable.rows()))
+    print(list(shtable.rows()[0]))
+    sph_harm_terms.assign_block(shtable[:][j], j, 0)'''
+  
 
   for l in range(1, lmax+1):
     for m in range(-l, l+1):
@@ -84,18 +104,56 @@ def sph_harm_table(reflection_table, lmax):
         for i, (phi, theta) in enumerate(ziplist):
           sph_harm_terms[i, counter] = (sqrt2 * ((-1) ** m)
             * nsssphe.spherical_harmonic(l, m, theta, phi).real)
-      '''for i, phi in enumerate(phi_list):
-        theta = theta_list[i]
-        Ylm = nsssphe.spherical_harmonic(l, abs(m), theta, phi)
-        if m < 0:
-          r = sqrt2 * ((-1) ** m) * Ylm.imag
-        elif m == 0:
-          assert Ylm.imag == 0.0
-          r = Ylm.real
-        else:
-          r = sqrt2 * ((-1) ** m) * Ylm.real
-        #sph_harm_list.append(r)
-        sph_harm_terms[i,counter] = r
-      #sph_harm_terms[str(counter)] = flex.double(sph_harm_list)'''
       counter += 1
   return sph_harm_terms
+
+
+def generate_sph_harm_terms(lmax):
+  from scitbx import math, sparse
+  import math as pymath
+  import numpy as np
+
+  order = lmax
+  lfg =  math.log_factorial_generator(2 * order + 1)
+  n_params = 0
+  for i in range(1,lmax+1):
+    n_params += (2*i) +1
+  sph_harm_terms = flex.reflection_table()
+  for l in range(1, lmax+1):
+    for m in range(-l, l+1):
+      sph_harm_terms[str(l)+','+str(m)] = flex.double([0.0]*360*180)
+  #sph_harm_test = sparse.matrix((360*180), n_params)
+  sqrt2 = pymath.sqrt(2)
+  nsssphe = math.nss_spherical_harmonics(order, 5000, lfg)
+  counter = 0
+
+  phis = flex.double(np.linspace(start=0, stop=180, num=180, endpoint=False)).iround()
+  thetas = flex.double(np.linspace(start=0, stop=360, num=360, endpoint=False)).iround()
+  print("generating spherical harmonic table")
+
+  for l in range(1, lmax+1):
+    for m in range(-l, l+1):
+      col = str(l)+','+str(m)
+      if m < 0:
+        fac = float(((-1) ** m))
+        for phi in phis:
+          for theta in thetas:
+            i = theta + (phi*360)
+            sph_harm_terms[col][i] = sqrt2 * fac * nsssphe.spherical_harmonic(l, -1*m, theta, phi).imag
+      elif m == 0:
+        for phi in phis:
+          for theta in thetas:
+            i = theta + (phi*360)
+            sph_harm_terms[col][i]  = nsssphe.spherical_harmonic(l, m, theta, phi).real
+      else:
+        fac = float(((-1) ** m))
+        for phi in phis:
+          for theta in thetas:
+            i = theta + (phi*360)
+            sph_harm_terms[col][i]  = (sqrt2 * fac
+              * nsssphe.spherical_harmonic(l, m, theta, phi).real)
+      counter += 1
+
+  data_file = open('sph_harm_table.pickle', 'w')
+  pickle.dump(sph_harm_terms, data_file)
+  data_file.close()

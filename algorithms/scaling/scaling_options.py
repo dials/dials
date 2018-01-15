@@ -24,6 +24,10 @@ phil_scope = iotbx.phil.parse('''
       .type = int
       .help = "Number of spherical harmonics to include for absorption correction,
               recommended to be no more than 6."
+    surface_weight = 1e5
+      .type = float
+      .help = "Restraint weight applied to spherical harmonic terms in absorption
+              correction."
   }
   reflection_selection {
     E2min = 0.8

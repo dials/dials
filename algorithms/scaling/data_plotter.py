@@ -25,7 +25,7 @@ def plot_data_decay(data_man, outputfile=None):
   nzbins = data_man.g_decay.n2_parameters
   '''create a grid of x and y points and use these to generate scale factors'''
   max_res = int(max(data_man.reflection_table['normalised_res_values'])) + 1
-  max_time = int(max(data_man.reflection_table['normalised_time_values'])) + 1
+  max_time = int(max(data_man.reflection_table['norm_time_values'])) + 1
   rel_values_1 = np.arange(0, max_res+0.1, 0.1)
   rel_values_2 = np.arange(0, max_time+0.1, 0.1)
   (n1, n2) = (len(rel_values_1), len(rel_values_2))
@@ -211,7 +211,7 @@ def calc_correction_at_detector_area(data_man, position):
 
 
 def plot_smooth_scales(data_man, outputfile=None):
-  rel_values = np.arange(0, int(max(data_man.reflection_table['normalised_rotation_angle'])) + 1, 0.1)
+  rel_values = np.arange(0, int(max(data_man.reflection_table['norm_rot_angle'])) + 1, 0.1)
   scale_SFs = data_man.g_scale.parameters
   n_g_scale_params = len(scale_SFs)
   test_scale_factor = SF.SmoothScaleFactor1D(1.0, n_g_scale_params)
@@ -228,7 +228,7 @@ def plot_smooth_scales(data_man, outputfile=None):
   plt.xlabel('Normalised rotation angle')
 
   if data_man.params.parameterisation.decay_term:
-    rel_values = np.arange(0, int(max(data_man.reflection_table['normalised_time_values'])) + 1, 0.1)
+    rel_values = np.arange(0, int(max(data_man.reflection_table['norm_time_values'])) + 1, 0.1)
     decay_SFs = data_man.g_decay.parameters
     n_g_decay_params = len(decay_SFs)
     test_decay_factor = SF.SmoothScaleFactor1D(0.0, n_g_decay_params)
