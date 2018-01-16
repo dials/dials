@@ -71,8 +71,3 @@ def test_multi_data_manager():
   params.scaling_options.__inject__('multi_mode', True)
   data_manager = MultiCrystalDataManager([test_reflections, test_reflections],
     [test_experiments, test_experiments], params)
-
-
-
-
-  

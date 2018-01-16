@@ -13,12 +13,12 @@ def R_pim_meas(data_man):
   nh = ones * data_man.Ih_table.h_index_matrix
 
   I_average = (((Ihl/gvalues) * data_man.Ih_table.h_index_matrix)/nh)
-  I_average_expanded = flex.double(np.repeat(I_average, 
+  I_average_expanded = flex.double(np.repeat(I_average,
     data_man.Ih_table.h_index_counter_array))
 
   diff = abs((Ihl/gvalues) - I_average_expanded)
   reduced_diff = diff * data_man.Ih_table.h_index_matrix
- 
+
   selection = (nh != 1.0)
   sel_reduced_diff = reduced_diff.select(selection)
   sel_nh = nh.select(selection)

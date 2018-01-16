@@ -32,7 +32,7 @@ def calc_normE2(reflection_table, experiments):
   reflection_table['centric_flag'] = miller_array.centric_flags().data()
   n_centrics = reflection_table['centric_flag'].count(True)
   n_acentrics = reflection_table['centric_flag'].count(False)
-  
+
   if n_acentrics > 20000 or n_centrics > 20000:
     n_refl_shells = 20
   elif n_acentrics > 15000 or n_centrics > 15000:
@@ -47,7 +47,7 @@ def calc_normE2(reflection_table, experiments):
     return reflection_table
   else:
     n_refl_shells = 10
-  
+
   #calculate normalised intensities: first calculate bin averages
   step = ((max(reflection_table['resolution']) - min(reflection_table['resolution'])
            + 1e-8) / n_refl_shells)
@@ -57,7 +57,7 @@ def calc_normE2(reflection_table, experiments):
     mean_centric_values = centrics_array.mean(use_binning=centric_binner)
     mean_centric_values = mean_centric_values.data[1:-1]
     centric_bin_limits = centric_binner.limits()
-      
+
   acentrics_array = miller_array.select_acentric()
   acentric_binner = acentrics_array.setup_binner_d_star_sq_step(d_star_sq_step=step)
   mean_acentric_values = acentrics_array.mean(use_binning=acentric_binner)

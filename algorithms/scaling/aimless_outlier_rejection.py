@@ -13,7 +13,7 @@ def reject_outliers(self, max_deviation):
       #gs_u = self.Ih_table.inverse_scale_factors[h_idx_cumul[0]:h_idx_cumul[1]]
       #ws_u = self.Ih_table.weights[h_idx_cumul[0]:h_idx_cumul[1]]
       outlier_found = first_test_for_an_outlier(self.Ih_table, i, n, max_deviation)
-        #h_index_cumulative_array, Ihls_u, 
+        #h_index_cumulative_array, Ihls_u,
         #gs_u, ws_u, i, n, max_deviation)
       if outlier_found:
         outlier_list_h_index.append(outlier_found[0])
@@ -55,7 +55,7 @@ def subsequent_test_for_an_outlier(outlier_list_h_index, outlier_list_refl_index
   scale_factors = Ih_table.inverse_scale_factors
   weights = Ih_table.weights
   #print outlier_list_h_index
-  #print outlier_list_refl_index                                 
+  #print outlier_list_refl_index
   for h_count_idx in outlier_list_h_index:
     h_idx_cumul = h_index_cumulative_array[h_count_idx:h_count_idx+2]
     refl_indices = range(h_idx_cumul[0],h_idx_cumul[1])
@@ -97,7 +97,7 @@ def subsequent_test_for_an_outlier(outlier_list_h_index, outlier_list_refl_index
           idx = m + h_index_cumulative_array[h_count_idx]
           new_outliers_h_index.append(h_count_idx)
           new_outliers_refl_index.append(idx[0])
-        else: 
+        else:
           sel1 = abs(abs_norm_dev_list - max_delta) < 0.000001
           m = sel1.iselection()
           idx = m + h_index_cumulative_array[h_count_idx]
@@ -140,9 +140,8 @@ def first_test_for_an_outlier(Ih_table, i, n, max_deviation):
     elif sel.count(False) == 1:
       inv_sel = ~sel
       return (i, (inv_sel.iselection() + Ih_table.h_index_cumulative_array[i])[0])
-    else: 
+    else:
       sel1 = abs(abs_norm_dev_list - max_delta) < 0.000001
       return (i, (sel1.iselection() + Ih_table.h_index_cumulative_array[i])[0])
   else:
     return None
-

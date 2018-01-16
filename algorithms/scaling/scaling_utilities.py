@@ -88,7 +88,7 @@ def sph_harm_table(reflection_table, lmax):
     print(dir(shtable.rows()))
     print(list(shtable.rows()[0]))
     sph_harm_terms.assign_block(shtable[:][j], j, 0)'''
-  
+
 
   for l in range(1, lmax+1):
     for m in range(-l, l+1):

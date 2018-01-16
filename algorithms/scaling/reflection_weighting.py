@@ -46,7 +46,7 @@ class Weighting(object):
   def apply_aimless_error_model(self, reflection_table, error_params):
     '''applies scaling factors to the errors of the intensities'''
     msg = ('Applying an error model to the variances used for scaling {sep}'
-      'with the error model parameters {0:.5f}, {1:.5f}. {sep}').format(error_params[0], 
+      'with the error model parameters {0:.5f}, {1:.5f}. {sep}').format(error_params[0],
       error_params[1], sep='\n')
     logger.info(msg)
     sel = self.weights != 0.0

@@ -224,7 +224,7 @@ class SHScaleFactor(ScaleFactor):
     return self._harmonic_values
 
   def update_reflection_data(self, harmonic_values):
-    self._harmonic_values = harmonic_values 
+    self._harmonic_values = harmonic_values
     self.calculate_scales_and_derivatives()
 
   #@harmonic_values.setter

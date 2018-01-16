@@ -49,7 +49,7 @@ class target_function(object):
       if 'g_absorption' in self.apm.active_parameterisation:
         gradient += self.data_manager.calc_absorption_constraint(self.apm)[1]
     return gradient
-    
+
 
   def return_targets(self):
     '''return residual and gradient arrays'''

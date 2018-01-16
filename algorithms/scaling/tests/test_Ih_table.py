@@ -98,7 +98,7 @@ def test_Ih_table((reflection_table, weights)=generate_single_test_input()):
   assert list(Ih_table.n_h) == list(flex.double([1, 2, 2, 1, 1, 2, 2]))
   assert list(Ih_table.Ih_values) == list(flex.double(
     [100.0, 50.0, 50.0, 60.0, 30.0, 90.0, 90.0]))
-  
+
   assert Ih_table.h_index_matrix[0, 0] == 1
   assert Ih_table.h_index_matrix[1, 1] == 1
   assert Ih_table.h_index_matrix[2, 1] == 1
