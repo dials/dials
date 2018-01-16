@@ -37,6 +37,9 @@ phil_scope= libtbx.phil.parse("""
   prediction_width = None
     .type = float(value_min=0)
     .help = "Width of prediction window (degrees)"
+  show_panel_axes = False
+    .type = bool
+    .help = "Plot the fast, slow and normal vectors for each panel."
 """)
 
 def settings():
@@ -432,7 +435,7 @@ class GeometryWindow(wx_viewer.show_points_and_lines_mixin):
     gonio = self.parent.imageset.get_goniometer()
     beam = self.parent.imageset.get_beam()
     detector = self.parent.imageset.get_detector()
-    if detector is not None:
+    if self.settings.show_panel_axes and detector is not None:
       for p in detector:
         image_size = p.get_image_size_mm()
         from scitbx import matrix
