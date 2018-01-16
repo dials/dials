@@ -81,8 +81,8 @@ def generate_joint_test_input():
   weights = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
   data_manager_2 = generate_second_test_datamanager()
   weights_2 = flex.double([1.0, 1.0])
-  data_manager.Ih_table = SingleIhTable(data_manager.reflection_table, weights)
-  data_manager_2.Ih_table = SingleIhTable(data_manager_2.reflection_table, weights_2)
+  data_manager._Ih_table = SingleIhTable(data_manager.reflection_table, weights)
+  data_manager_2._Ih_table = SingleIhTable(data_manager_2.reflection_table, weights_2)
   return data_manager, data_manager_2
 
 def test_Ih_table((reflection_table, weights)=generate_single_test_input()):

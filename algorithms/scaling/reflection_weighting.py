@@ -1,5 +1,6 @@
 from __future__ import print_function
 from dials.array_family import flex
+import numpy as np
 
 import logging
 logger = logging.getLogger('dials.scale')
@@ -20,6 +21,22 @@ class Weighting(object):
   def weights(self, new_weights):
     self._scale_weighting = new_weights
 
+  def tukey_biweighting(self, Ih_table):
+    z_score = flex.double([])
+    zmax = 6.0
+    for i, _ in enumerate(Ih_table.h_index_counter_array):
+      h_idx_cumul = Ih_table.h_index_cumulative_array[i:i+2]
+      Ihls = Ih_table.intensities[h_idx_cumul[0]:h_idx_cumul[1]]
+      #gs = Ih_table.inverse_scale_factors[h_idx_cumul[0]:h_idx_cumul[1]]
+      #ws = Ih_table.weights[h_idx_cumul[0]:h_idx_cumul[1]]
+      var = Ih_table.variances[h_idx_cumul[0]:h_idx_cumul[1]]
+      med = np.median(Ihls)
+      sigma = max([np.median(var**0.5), np.median(Ihls - med)])
+      z = (Ihls - med) / sigma
+      z_score.extend(z)
+    self.weights = (1.0 - ((z_score/zmax)**2))**2
+    sel = self.weights < 0.0
+    self.weights.set_selected(sel, 0.0)
 
   def set_unity_weighting(self, reflection_table):
     '''method to weight each reflection equally'''

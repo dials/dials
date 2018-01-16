@@ -49,6 +49,10 @@ class IhTableBase(object):
     self._Ih_table['weights'] = new_weights
 
   @property
+  def variances(self):
+    return self._Ih_table['variance']
+
+  @property
   def intensities(self):
     return self._Ih_table['intensity']
 
@@ -91,11 +95,26 @@ class IhTableBase(object):
 
   def update_aimless_error_model(self, error_params):
     '''method to update the scaling weights using an aimless error model'''
-    #note - does this mean we should keep the initial variances?
-    #ok for now if you don't update the error model more than once?
-    sigmaprime = (((1.0/self.weights) + ((error_params[1] * self.intensities)**2)
+    sigmaprime = (((self.variances) + ((error_params[1] * self.intensities)**2)
                   )**0.5) * error_params[0]
     self.weights = 1.0/(sigmaprime**2)
+
+  def apply_tukey_biweighting(self):
+    '''use a tukey biweighting scheme for the scaling weights.'''
+    z_score = flex.double([])
+    zmax = 6.0
+    for i, _ in enumerate(self.h_index_counter_array):
+      h_idx_cumul = self.h_index_cumulative_array[i:i+2]
+      Ihls = self.intensities[h_idx_cumul[0]:h_idx_cumul[1]]
+      var = self.variances[h_idx_cumul[0]:h_idx_cumul[1]]
+      med = np.median(Ihls)
+      sigma = max([np.median(var**0.5), np.median(Ihls - med)])
+      z = (Ihls - med) / sigma
+      z_score.extend(z)
+    tukey_weights = (1.0 - ((z_score/zmax)**2))**2
+    sel = tukey_weights < 0.0
+    tukey_weights.set_selected(sel, 0.0)
+    self.weights = tukey_weights
 
   def select(self, selection):
     ''''selects a subset of the data and recalculates h_index_arrays/matrix,
@@ -158,8 +177,8 @@ class IhTableBase(object):
 class SingleIhTable(IhTableBase):
   '''Class to create an Ih_table. This is the default
   data structure used for scaling a single sweep.'''
-  def __init__(self, reflection_table, weighting):
-    super(SingleIhTable, self).__init__([reflection_table, weighting])
+  def __init__(self, reflection_table, weights=None):
+    super(SingleIhTable, self).__init__([reflection_table, weights])
     (self._h_index_counter_array, self._h_index_cumulative_array
     ) = self._assign_h_index(self.asu_miller_index)
     self._h_index_matrix = self._assign_h_index_matrix(
@@ -171,14 +190,11 @@ class SingleIhTable(IhTableBase):
     '''create an Ih_table from the reflection table'''
     (refl_table, weights) = data
     #check necessary columns exists in input reflection table
-    columns = ['asu_miller_index', 'intensity', 'inverse_scale_factor']
+    columns = ['asu_miller_index', 'intensity', 'inverse_scale_factor', 'variance']
     for col in columns:
       if not col in refl_table.keys():
         assert 0, """Attempting to create an Ih_table object from a reflection
         table with no %s column""" % col
-    if len(refl_table) != len(weights):
-      assert 0, """Attempting to create an Ih_table object from a reflection
-      table and weights list of unequal length."""
     Ih_table = flex.reflection_table()
     for col in columns:
       Ih_table[col] = refl_table[col]
@@ -186,8 +202,16 @@ class SingleIhTable(IhTableBase):
       Ih_table['Ih_values'] = refl_table['Ih_values']
     else:
       Ih_table['Ih_values'] = flex.double([0.0] * len(refl_table))
-    Ih_table['weights'] = weights
-    return Ih_table.select(Ih_table['weights'] != 0.0)
+    if weights:
+      if len(refl_table) != len(weights):
+        assert 0, """Attempting to create an Ih_table object from a reflection
+        table and weights list of unequal length."""
+      Ih_table['weights'] = weights
+      return Ih_table.select(Ih_table['weights'] != 0.0)
+    else:
+      Ih_table = Ih_table.select(Ih_table['variance'] != 0.0)
+      Ih_table['weights'] = 1.0/Ih_table['variance']
+      return Ih_table
 
   def calc_Ih(self):
     '''calculate the current best estimate for I for each reflection group'''

@@ -94,8 +94,7 @@ class DataManagerUtilities(object):
     data_file.close()
 
   @classmethod
-  def _scaling_subset(cls, reflection_table, params,
-    error_model_params=None):
+  def _scaling_subset(cls, reflection_table, params, error_model_params=None):
     '''select the reflections with non-zero weight and update scale weights
     object.'''
     weights_for_scaling = cls._update_weights_for_scaling(reflection_table,
@@ -116,8 +115,8 @@ class DataManagerUtilities(object):
     return reflections_for_scaling, weights_for_scaling, selection
 
   @staticmethod
-  def _update_weights_for_scaling(reflection_table, params, weights_filter=True,
-    error_model_params=None):
+  def _update_weights_for_scaling(reflection_table, params, 
+    weights_filter=True, error_model_params=None):
     '''set the weights of each reflection to be used in scaling'''
     weights_for_scaling = Weighting(reflection_table)
     logger.info('Updating the weights associated with the intensities. \n')
@@ -127,6 +126,8 @@ class DataManagerUtilities(object):
       weights_for_scaling.apply_dmin_cutoff(reflection_table,
         params.reflection_selection.d_min)
     weights_for_scaling.remove_wilson_outliers(reflection_table)
+    #if params.weighting.tukey_biweighting and Ih_table:
+    #  weights_for_scaling.tukey_biweighting(Ih_table)
     if error_model_params:
       weights_for_scaling.apply_aimless_error_model(reflection_table,
         error_model_params)
@@ -288,35 +289,31 @@ class AimlessDataManager(ScalingDataManager):
     self.sph_harm_table = None
     #determine outliers, initialise scalefactors and extract data for scaling
     if self.params.scaling_options.reject_outliers:
-      weights = self._update_weights_for_scaling(self._reflection_table,
-        self.params).weights
-      self._Ih_table = SingleIhTable(self.reflection_table, weights)
-      n_outliers = self.round_of_outlier_rejection()
-      msg = ('An initial outlier rejection has been performed, {0} outliers {sep}'
-        'were found which have been removed from the dataset. {sep}'.format(
-        n_outliers, sep='\n'))
-      logger.info(msg)
+      self._Ih_table = SingleIhTable(self.reflection_table)
+      self.round_of_outlier_rejection()
     self._initialise_scale_factors()
     self._select_reflections_for_scaling()
     logger.info('Completed initialisation of aimless data manager. \n' + '*'*40 + '\n')
 
   def round_of_outlier_rejection(self):
-    sel = flex.bool([True]*len(self.reflection_table))
-    _, indices_of_outliers = reject_outliers(self, max_deviation=6.0)
-    sel.set_selected(flex.size_t(indices_of_outliers), flex.bool([False]*len(indices_of_outliers)))
+    '''calculate outliers from the reflections in the Ih_table,
+    and use these to filter the reflection table and Ih_table.'''
+    sel = reject_outliers(self, self.params.scaling_options.outlier_zmax)
     self._reflection_table = self._reflection_table.select(sel)
-    new_weights = self._update_weights_for_scaling(self.reflection_table,
-      self.params, weights_filter=False, error_model_params=None).weights
-    self._Ih_table = SingleIhTable(self.reflection_table, new_weights)
-    self._reflection_table = self._reflection_table.select(new_weights != 0)
+    self._Ih_table = self.Ih_table.select(sel)
     self._reflection_table['Ih_values'] = self.Ih_table.Ih_values
-    return len(indices_of_outliers)
+    msg = ('A round of outlier rejection has been performed, {0} outliers {sep}'
+        'were found which have been removed from the dataset. {sep}'.format(
+        sel.count(False), sep='\n'))
+    logger.info(msg)
 
   def _select_reflections_for_scaling(self):
     (refl_for_scaling, weights_for_scaling, selection) = (
       self._scaling_subset(self.reflection_table, self.params,
-      error_model_params=self.params.scaling_options.error_model_params))
+      error_model_params=self.params.weighting.error_model_params))
     self._Ih_table = SingleIhTable(refl_for_scaling, weights_for_scaling.weights)
+    if self.params.weighting.tukey_biweighting:
+      self.Ih_table.apply_tukey_biweighting()
     '''refactor the next two operations into extract_reflections?
     reset the normalised values within the scale_factor object to current'''
     self.g_scale.update_reflection_data(refl_for_scaling['norm_rot_angle'])
@@ -341,13 +338,9 @@ class AimlessDataManager(ScalingDataManager):
       self.g_absorption.update_reflection_data(sel_sph_harm_table.transpose())
 
   def update_error_model(self):
-    self.params.scaling_options.error_model_params = (
+    self.params.weighting.error_model_params = (
       mf.error_scale_LBFGSoptimiser(self.Ih_table, flex.double([1.0, 0.01])).x)
-    (reflections_for_scaling, weights_for_scaling, _) = (
-      self._scaling_subset(self.reflection_table, self.params,
-      error_model_params=self.params.scaling_options.error_model_params))
-    self._Ih_table = SingleIhTable(reflections_for_scaling,
-      weights_for_scaling.weights)
+    self.Ih_table.update_aimless_error_model(self.params.weighting.error_model_params)
 
   def _initialise_scale_factors(self):
     '''initialise scale factors and add to self.active_parameters'''
@@ -464,18 +457,19 @@ class AimlessDataManager(ScalingDataManager):
     self._reflection_table['inverse_scale_factor'] = expanded_scale_factors
     logger.info(('Scale factors determined during minimisation have now been applied {sep}'
       'to all reflections. {sep}').format(sep='\n'))
-    weights = self._update_weights_for_scaling(self.reflection_table,
+    self._Ih_table = SingleIhTable(self.reflection_table)
+    weights = self._update_weights_for_scaling(self.reflection_table, 
       self.params, weights_filter=False, error_model_params=None).weights
-    self._Ih_table = SingleIhTable(self.reflection_table, weights)
+    self.Ih_table.weights = weights
+    self._Ih_table = self.Ih_table.select(self.Ih_table.weights != 0.0)
     self._reflection_table = self._reflection_table.select(weights != 0.0)
+    #if self.params.weighting.tukey_biweighting:
+    #  self.Ih_table.apply_tukey_biweighting()
+    #  self.Ih_table.calc_Ih()
     self._reflection_table['Ih_values'] = self.Ih_table.Ih_values
     if (self.params.scaling_options.reject_outliers and not
         self.params.scaling_options.multi_mode):
-      n_outliers = self.round_of_outlier_rejection()
-      msg = ('A final outlier rejection has been performed, {0} outliers {sep}'
-        'were found which have been removed from the dataset. {sep}'.format(
-        n_outliers, sep='\n'))
-      logger.info(msg)
+      self.round_of_outlier_rejection()
     logger.info('A new best estimate for I_h for all reflections has now been calculated. \n')
 
   def clean_reflection_table(self):
@@ -553,18 +547,14 @@ class MultiCrystalDataManager(DataManagerUtilities):
     self._Ih_table = SingleIhTable(self.reflection_table, weights)
     self._reflection_table['Ih_values'] = self.Ih_table.Ih_values
     if self.params.scaling_options.reject_outliers:
-      sel = flex.bool([True]*len(self.reflection_table))
-      _, indices_of_outliers = reject_outliers(self, max_deviation=6.0)
+      sel = reject_outliers(self, self.params.scaling_options.outlier_zmax)
+      n_outliers =  sel.count(False)
       msg = ('Combined outlier rejection has been performed across all datasets, {sep}'
         '{0} outliers were found which have been removed from the dataset. {sep}'.format(
-        len(indices_of_outliers), sep='\n'))
+        n_outliers, sep='\n'))
       logger.info(msg)
-      sel.set_selected(flex.size_t(indices_of_outliers),
-        flex.bool([False]*len(indices_of_outliers)))
       self._reflection_table = self._reflection_table.select(sel)
-      weights = self._update_weights_for_scaling(self.reflection_table,
-        self.params, weights_filter=False, error_model_params=None).weights
-      self._Ih_table = SingleIhTable(self.reflection_table, weights)
+      self._Ih_table = self.Ih_table.select(sel)
       self._reflection_table['Ih_values'] = self.Ih_table.Ih_values
       msg = ('A new best estimate for I_h for all reflections across all datasets {sep}'
         'has now been calculated. {sep}').format(sep='\n')

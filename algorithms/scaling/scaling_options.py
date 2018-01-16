@@ -43,14 +43,10 @@ phil_scope = iotbx.phil.parse('''
       .type = float
       .help = "Option to use a d-value subset of reflections to determine scale factors"
   }
-  scaling_options {
-    force_space_group = None
-      .type = str
-      .help = "Option to specify space group for scaling"
-    concurrent_scaling = True
+  weighting {
+    tukey_biweighting = False
       .type = bool
-      .help = "Option to allow absorption correction after decay/scale,
-              if concurrent_scaling is set to False"
+      .help = "Option to turn on tukey biweighting scheme for scaling weights."
     optimise_error_model = True
       .type = bool
       .help = "Option to allow optimisation of weights for scaling. Performs
@@ -59,9 +55,22 @@ phil_scope = iotbx.phil.parse('''
       .type = floats(size=2)
       .help = "Ability to force an error model adjustment, using the model
               in aimless - factors are called SDFac, SDadd in aimless."
+  }
+  scaling_options {
+    force_space_group = None
+      .type = str
+      .help = "Option to specify space group for scaling"
+    concurrent_scaling = True
+      .type = bool
+      .help = "Option to allow absorption correction after decay/scale, 
+              if concurrent_scaling is set to False"
     reject_outliers = True
       .type = bool
       .help = "Option to turn on outlier rejection"
+    outlier_zmax = 12.0
+      .type = float
+      .help = "Cutoff z-score value for identifying outliers based on their
+               normalised deviation within the group of equivalent reflections"
     verbosity = 1
       .type = int(value_min=0)
       .help = "The verbosity level"
