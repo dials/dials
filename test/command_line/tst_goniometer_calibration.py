@@ -33,12 +33,12 @@ def run(args):
 Goniometer axes and angles (ImgCIF coordinate system):
 GON_PHI:  rotation of 157.741 degrees about axis (-0.44164,-0.59119,0.67487)
 GON_KAPPA:  rotation of 143.755 degrees about axis (-0.51623,-0.85046,0.10111)
-GON_OMEGA:  rotation of 48.006 degrees about axis (1.00000,0.00002,-0.00049)
+GON_OMEGA:  rotation of 48.000 degrees about axis (1.00000,0.00000,0.00000)
 
 Goniometer axes and angles (MOSFLM coordinate system):
 GON_PHI:  rotation of 157.741 degrees about axis (-0.67446,-0.59119,-0.44226)
 GON_KAPPA:  rotation of 143.755 degrees about axis (-0.10064,-0.85046,-0.51633)
-GON_OMEGA:  rotation of 48.006 degrees about axis (-0.00043,0.00002,1.00000)
+GON_OMEGA:  rotation of 48.000 degrees about axis (-0.00092,0.00000,1.00000)
 
 ImgCIF _axis loop template:
 loop_
@@ -52,23 +52,22 @@ loop_
   _axis.offset[1]
   _axis.offset[2]
   _axis.offset[3]
-  GON_PHI    rotation  goniometer  GON_KAPPA  -0.4416  -0.5912   0.6749  .  .  .
-  GON_KAPPA  rotation  goniometer  GON_OMEGA  -0.5162  -0.8505   0.1011  .  .  .
-  GON_OMEGA  rotation  goniometer  .           1.0000   0.0000  -0.0005  .  .  .
+  GON_OMEGA  rotation  goniometer  .           1.0000   0.0000  0.0000  .  .  .
+  GON_KAPPA  rotation  goniometer  GON_OMEGA  -0.5162  -0.8505  0.1011  .  .  .
+  GON_PHI    rotation  goniometer  GON_KAPPA  -0.4416  -0.5912  0.6749  .  .  .
+
 '''
-  for line in expected_output.splitlines():
-    if not line: continue
-    assert line in result.stdout_lines, line
+  from libtbx.test_utils import show_diff
+  assert not show_diff(result.stdout_lines[11:], ''.join(expected_output))
 
   assert os.path.exists('xoalign_config.py')
   expected_xoalign_config = '''\
 GONIOMETER_AXES_NAMES = ('GON_OMEGA', 'GON_KAPPA', 'GON_PHI')
-GONIOMETER_AXES = [(-0.00043, 0.00002, 1.00000), (-0.10064, -0.85046, -0.51633), (-0.67446, -0.59119, -0.44226)]
+GONIOMETER_AXES = [(-0.00092, 0.00000, 1.00000), (-0.10064, -0.85046, -0.51633), (-0.67446, -0.59119, -0.44226)]
 GONIOMETER_DATUM = (0,0,0) # in degrees
 '''
   with open('xoalign_config.py', 'rb') as f:
     text = f.read()
-    from libtbx.test_utils import show_diff
     assert not show_diff(text, expected_xoalign_config)
 
   print "OK"

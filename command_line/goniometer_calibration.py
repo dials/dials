@@ -122,7 +122,7 @@ def run(args):
     header=['_axis.id', '_axis.type', '_axis.equipment', '_axis.depends_on',
             '_axis.vector[1]', '_axis.vector[2]', '_axis.vector[3]',
             '_axis.offset[1]', '_axis.offset[2]', '_axis.offset[3]'])
-  for row in reversed(rows):
+  for row in rows:
     loop.add_row(row)
 
   print loop
