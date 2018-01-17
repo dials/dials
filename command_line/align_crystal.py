@@ -215,7 +215,7 @@ class align_crystal(object):
     for (v1, v2), result in results.iteritems():
       for solutions in result.itervalues():
         for solution in solutions:
-          k = tuple(round(a, 2) for a in solution[1:])
+          k = tuple(round(a, 3) for a in solution[1:])
           self.unique_solutions.setdefault(k, OrderedSet())
           self.unique_solutions[k].add((v1, v2))
 
@@ -243,7 +243,7 @@ class align_crystal(object):
       rows.append((
         describe(v1, space_group, reciprocal=reciprocal),
         describe(v2, space_group, reciprocal=reciprocal),
-        '% 7.2f' %angles[0], '% 7.2f' %angles[1],
+        '% 7.3f' %angles[0], '% 7.3f' %angles[1],
       ))
     rows = [('Primary axis', 'Secondary axis', names[1], names[0])] + \
            sorted(rows)
