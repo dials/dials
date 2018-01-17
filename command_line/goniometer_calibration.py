@@ -86,8 +86,13 @@ def run(args):
 
   for i in range(len(experiments) - 1):
     target_angle = experiments[i+1].goniometer.get_angles()[i]
-    R_ij, axis, angle, cb_op = difference_rotation_matrix_axis_angle(
-      experiments[i].crystal, experiments[i+1].crystal, target_angle=target_angle)
+    if i == experiments[i].goniometer.get_scan_axis():
+      # rotation axis is canonical in our coordinate system
+      axis = experiments[i].goniometer.get_axes()[i]
+      angle = target_angle
+    else:
+      R_ij, axis, angle, cb_op = difference_rotation_matrix_axis_angle(
+        experiments[i].crystal, experiments[i+1].crystal, target_angle=target_angle)
     gonio = experiments[i+1].goniometer
     axis_names = gonio.get_names()
     axes.append(axis)
