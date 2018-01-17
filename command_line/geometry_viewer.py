@@ -321,7 +321,7 @@ class settings_window(wxtbx.utils.SettingsPanel) :
   def add_goniometer_controls(self, goniometer):
     from wx.lib.agw import floatspin
 
-    self.distance_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=1)
+    self.distance_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=2)
     self.distance_ctrl.SetValue(self.settings.detector_distance)
     self.distance_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
     if wx.VERSION >= (2,9): # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
@@ -339,7 +339,7 @@ class settings_window(wxtbx.utils.SettingsPanel) :
       axes = goniometer.get_axes()
       angles = goniometer.get_angles()
       for name, axis, angle in zip(names, axes, angles):
-        ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=1)
+        ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=3)
         ctrl.SetValue(angle)
         ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2,9): # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
