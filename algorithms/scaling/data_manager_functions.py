@@ -164,6 +164,7 @@ class ScalingDataManager(DataManagerUtilities):
       reflections = reflections.select(reflections['intensity.sum.variance'] > 0)
     if not 'inverse_scale_factor' in initial_keys:
       reflections['inverse_scale_factor'] = (flex.double([1.0] * len(reflections)))
+    reflections = reflections.select(reflections['partiality'] > 0.9)
     return reflections
 
   @staticmethod
@@ -351,6 +352,9 @@ class AimlessDataManager(ScalingDataManager):
     if self.params.parameterisation.absorption_term:
       self._initialise_absorption_term(self.reflection_table,
         self.params.parameterisation.lmax)
+    else:
+      #use calc_s2d to calculate phi values.
+      self._reflection_table = calc_s2d(self.reflection_table, self.experiments)
 
   def _initialise_scale_term(self, refl_table):
     '''calculate the 'normalised rotation angle', and initialise a SmoothScaleFactor'''
@@ -364,8 +368,8 @@ class AimlessDataManager(ScalingDataManager):
     one_osc_width = self.experiments.scan.get_oscillation()[1]
     z = refl_table['xyzobs.px.value'].parts()[2]
     na = refl_table['norm_rot_angle'] = ((one_osc_width * z) + 0.001) / rot_int
-    #need two parameters more extremal than the max/min norm values
-    n_param = int(max(na)//1) - int(min(na)//1) + 4
+    #need one parameter more extremal than the max/min norm values at each side
+    n_param = int(max(na)//1) - int(min(na)//1) + 3
     self.g_scale = SF.SmoothScaleFactor1D(1.0, n_param)
     self._g_parameterisation['g_scale'] = self.g_scale
     msg = ('The scale term ScaleFactor object was successfully initialised. {sep}'
@@ -386,8 +390,8 @@ class AimlessDataManager(ScalingDataManager):
     one_osc_width = self.experiments.scan.get_oscillation()[1]
     z = refl_table['xyzobs.px.value'].parts()[2]
     nt = refl_table['norm_time_values'] = ((one_osc_width * z) + 0.001) / rot_int
-    #need two parameters more extremal than the max/min norm values
-    n_param = int(max(nt)//1) - int(min(nt)//1) + 4
+    #need one parameter more extremal than the max/min norm values at each side
+    n_param = int(max(nt)//1) - int(min(nt)//1) + 3
     self.g_decay = SF.SmoothBScaleFactor1D(0.0, n_param)
     self._g_parameterisation['g_decay'] = self.g_decay
     msg = ('The decay term ScaleFactor object was successfully initialised. {sep}'
@@ -572,8 +576,7 @@ class TargetedDataManager(ScalingDataManager):
     else:
       assert 0, """Incorrect scaling method passed to multicrystal datamanager
       (not 'aimless' or 'KB')"""
-    target_Ih_table = SingleIhTable(self.reflection_table,
-      1.0/self.reflection_table['variance'])
+    target_Ih_table = SingleIhTable(self.reflection_table)
     #find common reflections in the two datasets
     for i, miller_idx in enumerate(self.dm1.Ih_table.asu_miller_index):
       sel = target_Ih_table.asu_miller_index == miller_idx

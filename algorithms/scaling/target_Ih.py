@@ -184,7 +184,8 @@ class SingleIhTable(IhTableBase):
     self._h_index_matrix = self._assign_h_index_matrix(
       self.h_index_counter_array, self._h_index_cumulative_array)
     self._n_h = self._calc_nh(self.h_index_counter_array)
-    self.calc_Ih() #calculate a first estimate of Ih
+    if not 'Ih_values' in reflection_table.keys():
+      self.calc_Ih() #calculate a first estimate of Ih
 
   def _create_Ih_table(self, data):
     '''create an Ih_table from the reflection table'''

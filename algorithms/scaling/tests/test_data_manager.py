@@ -1,3 +1,4 @@
+import copy as copy
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from data_manager_functions import (ScalingDataManager, MultiCrystalDataManager,
@@ -5,7 +6,6 @@ from data_manager_functions import (ScalingDataManager, MultiCrystalDataManager,
 from libtbx import phil
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer
-import copy as copy
 
 def generate_test_input():
   reflections = flex.reflection_table()
@@ -15,6 +15,7 @@ def generate_test_input():
   reflections['d'] = flex.double([0.8, 2.0, 2.0])
   reflections['lp'] = flex.double([1.0, 1.0, 1.0])
   reflections['dqe'] = flex.double([1.0, 1.0, 1.0])
+  reflections['partiality'] = flex.double([1.0, 1.0, 1.0])
   reflections['xyzobs.px.value'] = flex.vec3_double([(0.0, 0.0, 0.0),
     (0.0, 0.0, 45.0), (0.0, 0.0, 90.0)])
   reflections['s1'] = flex.vec3_double([(0.0, 0.1, 1.0), (0.0, 0.1, 1.0),
@@ -26,7 +27,7 @@ def generate_test_input():
               "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
               "space_group_hall_symbol": " C 2y"}
   experiments.crystal = Crystal.from_dict(exp_dict)
-  experiments.scan = Scan(image_range=[0, 90],oscillation=[0.0, 1.0])
+  experiments.scan = Scan(image_range=[0, 90], oscillation=[0.0, 1.0])
   experiments.beam = Beam(s0=(0.0, 0.0, 1.01))
   experiments.goniometer = Goniometer((1.0, 0.0, 0.0))
 
@@ -61,7 +62,7 @@ def test_AimlessDataManager():
 def test_targeted_data_manager():
   (test_reflections, test_experiments, params) = generate_test_input()
   targeted_reflections = copy.deepcopy(test_reflections)
-  targeted_reflections['inverse_scale_factor'] = flex.double([1.0,1.0,1.0])
+  targeted_reflections['inverse_scale_factor'] = flex.double([1.0, 1.0, 1.0])
   targeted_dm = TargetedDataManager(test_reflections, test_experiments,
     targeted_reflections, params)
 

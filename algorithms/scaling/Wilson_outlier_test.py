@@ -37,7 +37,7 @@ def calc_normE2(reflection_table, experiments):
     n_refl_shells = 20
   elif n_acentrics > 15000 or n_centrics > 15000:
     n_refl_shells = 15
-  elif n_acentrics < 100:
+  elif n_acentrics < 10000:
     reflection_table['Esq'] = flex.double([1.0]*len(reflection_table))
     del reflection_table['intensity_for_norm']
     msg = ('No normalised intensity values were calculated, {sep}'

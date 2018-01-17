@@ -3,9 +3,8 @@ These classes define objects to hold a flex array of scale factors,
 including the required methods for calculating smooth scale factors and
 '''
 import abc
-from dials.array_family import flex
 import numpy as np
-#import math as math
+from dials.array_family import flex
 from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \
         import GaussianSmoother
 from dials_scaling_helpers_ext import row_multiply
@@ -70,7 +69,7 @@ class KScaleFactor(ScaleFactor):
   '''ScaleFactor object for a single global scale parameter.'''
   def __init__(self, initial_value, scaling_options=None):
     super(KScaleFactor, self).__init__(initial_value, 1, scaling_options)
-    self._n_refl = None#n_refl
+    self._n_refl = None
 
   @property
   def n_refl(self):
@@ -79,10 +78,6 @@ class KScaleFactor(ScaleFactor):
   def update_reflection_data(self, n_refl):
     self._n_refl = n_refl
 
-  #@n_refl.setter
-  #def n_refl(self, number_of_refl):
-  #  self._n_refl = number_of_refl
-
   def calculate_scales_and_derivatives(self):
     self._inverse_scales = flex.double([self._parameters[0]] * self.n_refl)
     self._derivatives = sparse.matrix(self.n_refl, 1)
@@ -90,12 +85,11 @@ class KScaleFactor(ScaleFactor):
       self._derivatives[i, 0] = 1.0
 
 
-class BScaleFactor(ScaleFactor):
+class BScaleFactor(KScaleFactor):
   '''ScaleFactor object for a single global B-scale parameter.'''
   def __init__(self, initial_value, scaling_options=None):
-    super(BScaleFactor, self).__init__(initial_value, 1, scaling_options)
-    self._d_values = None#d_values
-    self._n_refl = None#len(d_values)
+    super(BScaleFactor, self).__init__(initial_value, scaling_options)
+    self._d_values = None
 
   @property
   def d_values(self):
@@ -105,13 +99,6 @@ class BScaleFactor(ScaleFactor):
     '''also sets n_refl. Allow to set to a different length to previous.'''
     self._d_values = dvalues
     self._n_refl = len(dvalues)
-    #self._n_refl = number_of_refl
-
-  #@d_values.setter
-  #def d_values(self, new_values):
-  #  '''also sets n_refl. Allow to set to a different length to previous.'''
-  #  self._d_values = new_values
-  #  self._n_refl = len(new_values)
 
   def calculate_scales_and_derivatives(self):
     self._inverse_scales = flex.double(np.exp(flex.double(
@@ -119,7 +106,7 @@ class BScaleFactor(ScaleFactor):
     self._derivatives = sparse.matrix(self._n_refl, 1)
     for i in range(self._n_refl):
       self._derivatives[i, 0] = (self._inverse_scales[i]
-                                 / (2.0 * (self._d_values[i]**2)))
+        / (2.0 * (self._d_values[i]**2)))
 
 
 class SmoothScaleFactor(ScaleFactor):
@@ -130,7 +117,9 @@ class SmoothScaleFactor(ScaleFactor):
     super(SmoothScaleFactor, self).__init__(initial_value, n_parameters,
       scaling_options)
     self._normalised_values = None
-    self.Vr = 1.0# 0.7
+    self.smoothing_window = 2.5 #redundant - replace with link to num_average
+    self.Vr = 1.0 #replace with link to sigma of gaussian smoother?
+    self._smoother = None #placeholder for gaussian smoother
 
   @property
   def value(self):
@@ -143,22 +132,20 @@ class SmoothScaleFactor(ScaleFactor):
     of the normalised time/resolution etc'''
     return self._normalised_values
 
+  def update_reflection_data(self):
+    pass
+
 
 class SmoothScaleFactor1D(SmoothScaleFactor):
   '''Class to implement a smooth scale factor in one dimension.'''
-  def __init__(self, initial_value, n_parameters, scaling_options=None):
-    super(SmoothScaleFactor1D, self).__init__(initial_value, n_parameters,
-      scaling_options)
-    self.smoothing_window = 2.5 #must be less than 3 to avoid indexing errors
-    self._smoother = None #placeholder for gaussian smoother
 
   def update_reflection_data(self, normalised_values):
     '''control access to setting all of reflection data at once'''
     self._normalised_values = normalised_values
     phi_range_deg = [int(min(self._normalised_values)//1),
                      int(max(self._normalised_values)//1)+1]
+    #include an assertion here to stop setting too few params?
     self._smoother = GaussianSmoother(phi_range_deg, self._n_params - 2)
-    #self.inverse_scales = flex.double([1.0]*len(new_values))
     self.inverse_scales = flex.double([1.0]*len(normalised_values))
 
   def calculate_scales_and_derivatives(self):
@@ -181,7 +168,6 @@ class SmoothBScaleFactor1D(SmoothScaleFactor1D):
       scaling_options)
     self.Vr = 0.5
     self._d_values = None
-    self._n_refl = None
 
   @property
   def d_values(self):
@@ -189,26 +175,20 @@ class SmoothBScaleFactor1D(SmoothScaleFactor1D):
 
   def update_reflection_data(self, normalised_values, dvalues):
     assert len(normalised_values) == len(dvalues)
-    self._normalised_values = normalised_values
-    phi_range_deg = [int(min(self._normalised_values)//1),
-                     int(max(self._normalised_values)//1)+1]
-    self._smoother = GaussianSmoother(phi_range_deg, self._n_params - 2)
-    self.inverse_scales = flex.double([1.0]*len(normalised_values))
+    super(SmoothBScaleFactor1D, self).update_reflection_data(normalised_values)
     self._d_values = dvalues
-    self._n_refl = len(dvalues)
 
   def calculate_scales_and_derivatives(self):
-    value, weight, sumweight = self._smoother.multi_value_weight(
-      self._normalised_values, self)
-    self._inverse_scales = flex.double(np.exp(value/(2.0 * (self._d_values**2))))
-    inv_sw = 1. / sumweight
-    dv_dp = row_multiply(weight, inv_sw)
-    multiplicative_factor = self._inverse_scales / (2.0 * (self._d_values**2))
-    self._derivatives = row_multiply(dv_dp, multiplicative_factor)
+    super(SmoothBScaleFactor1D, self).calculate_scales_and_derivatives()
+    self._inverse_scales = flex.double(np.exp(self._inverse_scales
+      /(2.0 * (self._d_values**2))))
+    self._derivatives = row_multiply(self._derivatives,
+      self._inverse_scales / (2.0 * (self._d_values**2)))
 
   def calculate_scales(self):
-    value, _, _ = self._smoother.multi_value_weight(self._normalised_values, self)
-    self._inverse_scales = flex.double(np.exp(value/(2.0 * (self._d_values**2))))
+    super(SmoothBScaleFactor1D, self).calculate_scales()
+    self._inverse_scales = flex.double(np.exp(self._inverse_scales
+      /(2.0 * (self._d_values**2))))
 
 
 class SHScaleFactor(ScaleFactor):
@@ -217,7 +197,6 @@ class SHScaleFactor(ScaleFactor):
     super(SHScaleFactor, self).__init__(
       initial_value, n_parameters, scaling_options)
     self._harmonic_values = None
-    #self.calculate_scales_and_derivatives()
 
   @property
   def harmonic_values(self):
@@ -226,12 +205,6 @@ class SHScaleFactor(ScaleFactor):
   def update_reflection_data(self, harmonic_values):
     self._harmonic_values = harmonic_values
     self.calculate_scales_and_derivatives()
-
-  #@harmonic_values.setter
-  #def harmonic_values(self, values):
-  #  '''set a new spherical harmonic coefficient matrix'''
-  #  self._harmonic_values = values
-  #  self.calculate_scales_and_derivatives()
 
   def calculate_scales_and_derivatives(self):
     '''calculation of scale factors and derivatives from
