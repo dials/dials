@@ -830,12 +830,9 @@ namespace dials { namespace algorithms {
     /**
      * Static method to get the memory in bytes needed
      * @param imageset the imageset class
-     * @param use_dynamic_mask Are we using dynamic mask
      */
     static
-    std::size_t compute_required_memory(
-        ImageSweep imageset,
-        bool use_dynamic_mask) {
+    std::size_t compute_required_memory(ImageSweep imageset) {
       DIALS_ASSERT(imageset.get_detector() != NULL);
       DIALS_ASSERT(imageset.get_scan() != NULL);
       Detector detector = *imageset.get_detector();
@@ -848,22 +845,17 @@ namespace dials { namespace algorithms {
       }
       nelements *= scan.get_num_images();
       std::size_t nbytes = nelements * sizeof(double);
-      if (use_dynamic_mask) {
-        nbytes += nelements * sizeof(bool);
-      }
       return nbytes;
     }
 
     /**
      * Static method to get the memory in bytes needed
      * @param imageset the imageset class
-     * @param use_dynamic_mask Are we using dynamic mask
      * @param max_memory_usage The maximum memory usage
      */
     static
     std::size_t compute_max_block_size(
         ImageSweep imageset,
-        bool use_dynamic_mask,
         std::size_t max_memory_usage) {
       DIALS_ASSERT(max_memory_usage > 0);
       DIALS_ASSERT(imageset.get_detector() != NULL);
@@ -875,9 +867,6 @@ namespace dials { namespace algorithms {
         nelements += xsize * ysize;
       }
       std::size_t nbytes = nelements * sizeof(double);
-      if (use_dynamic_mask) {
-        nbytes += nelements * sizeof(bool);
-      }
       DIALS_ASSERT(nbytes > 0);
       DIALS_ASSERT(max_memory_usage > nbytes);
       return (std::size_t)std::floor((float)max_memory_usage / (float)nbytes);

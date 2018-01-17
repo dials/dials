@@ -367,12 +367,10 @@ namespace dials { namespace algorithms { namespace boost_python {
           &ParallelIntegrator::reflections)
       .def("compute_required_memory",
           &ParallelIntegrator::compute_required_memory, (
-            arg("imageset"),
-            arg("use_dynamic_mask")))
+            arg("imageset")))
       .def("compute_max_block_size",
           &ParallelIntegrator::compute_max_block_size, (
             arg("imageset"),
-            arg("use_dynamic_mask"),
             arg("max_memory_usage")))
       .staticmethod("compute_required_memory")
       .staticmethod("compute_max_block_size")
@@ -402,12 +400,10 @@ namespace dials { namespace algorithms { namespace boost_python {
           &ParallelReferenceProfiler::reflections)
       .def("compute_required_memory",
           &ParallelReferenceProfiler::compute_required_memory, (
-            arg("imageset"),
-            arg("use_dynamic_mask")))
+            arg("imageset")))
       .def("compute_max_block_size",
           &ParallelReferenceProfiler::compute_max_block_size, (
             arg("imageset"),
-            arg("use_dynamic_mask"),
             arg("max_memory_usage")))
       .staticmethod("compute_required_memory")
       .staticmethod("compute_max_block_size")

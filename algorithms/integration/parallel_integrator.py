@@ -380,9 +380,7 @@ class IntegrationJob(object):
     Compute the required memory
 
     '''
-    return MultiThreadedIntegrator.compute_required_memory(
-      imageset,
-      use_dynamic_mask = self.params.integration.use_dynamic_mask)
+    return MultiThreadedIntegrator.compute_required_memory(imageset)
 
   def integrate(self, imageset):
     '''
@@ -648,7 +646,6 @@ class IntegrationManager(object):
     limit_memory = int(floor(total_memory * max_memory_usage))
     return MultiThreadedIntegrator.compute_max_block_size(
       self.experiments[0].imageset,
-      use_dynamic_mask = self.params.integration.use_dynamic_mask,
       max_memory_usage = limit_memory)
 
   def compute_blocks(self):
@@ -862,9 +859,7 @@ class ReferenceCalculatorJob(object):
     Compute the required memory
 
     '''
-    return MultiThreadedReferenceProfiler.compute_required_memory(
-      imageset,
-      use_dynamic_mask = self.params.integration.use_dynamic_mask)
+    return MultiThreadedReferenceProfiler.compute_required_memory(imageset)
 
   def compute_reference_profiles(self, imageset):
     '''
@@ -1156,7 +1151,6 @@ class ReferenceCalculatorManager(object):
     limit_memory = int(floor(total_memory * max_memory_usage))
     return MultiThreadedReferenceProfiler.compute_max_block_size(
       self.experiments[0].imageset,
-      use_dynamic_mask = self.params.integration.use_dynamic_mask,
       max_memory_usage = limit_memory)
 
   def compute_blocks(self):
