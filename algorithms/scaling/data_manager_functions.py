@@ -434,8 +434,8 @@ class AimlessDataManager(ScalingDataManager):
   def calc_absorption_constraint(self, apm):
     #should only be called from target function if g_absorption in active params
     idx = apm.active_parameterisation.index('g_absorption')
-    start_idx = apm.cumulative_active_params[idx]
-    end_idx = apm.cumulative_active_params[idx+1]
+    start_idx = apm.n_cumul_params_list[idx]
+    end_idx = apm.n_cumul_params_list[idx+1]
     weight = self.params.parameterisation.surface_weight
     abs_params = apm.x[start_idx:end_idx]
     residual = (weight * (abs_params)**2)
@@ -444,7 +444,7 @@ class AimlessDataManager(ScalingDataManager):
     gradient_vector = flex.double([])
     for i, param in enumerate(apm.active_parameterisation):
       if param != 'g_absorption':
-        gradient_vector.extend(flex.double([0.0]*apm.active_params_list[i]))
+        gradient_vector.extend(flex.double([0.0]*apm.n_params_list[i]))
       elif param == 'g_absorption':
         gradient_vector.extend(gradient)
     return (residual, gradient_vector)
@@ -542,15 +542,14 @@ class MultiCrystalDataManager(DataManagerUtilities):
     '''update the scale factors and Ih for the next iteration of minimisation,
     update the x values from the amp to the individual apms, as this is where
     basis functions, target functions etc get access to the parameters.'''
-    for i, _ in enumerate(apm.n_active_params_list):
-      apm.apm_list[i].x = apm.x[apm.n_cumulative_params[i]:apm.n_cumulative_params[i+1]]
-    n_param_total = apm.n_cumulative_params[-1]
-    apm.active_derivatives = sparse.matrix(self.Ih_table.size, n_param_total)
+    for i, _ in enumerate(apm.n_params_in_each_apm):
+      apm.apm_list[i].x = apm.x[apm.n_cumul_params_list[i]:apm.n_cumul_params_list[i+1]]
+    apm.active_derivatives = sparse.matrix(self.Ih_table.size, apm.n_active_params)
     for i, dm in enumerate(self.data_managers):
       basis_fn = dm.get_basis_function(apm.apm_list[i])
       dm.Ih_table.inverse_scale_factors = basis_fn[0]
       expanded = basis_fn[1].transpose() * self.Ih_table.h_index_expand_list[i]
-      apm.active_derivatives.assign_block(expanded.transpose(), 0, apm.n_cumulative_params[i])
+      apm.active_derivatives.assign_block(expanded.transpose(), 0, apm.n_cumul_params_list[i])
     self.Ih_table.calc_Ih()
 
   def expand_scales_to_all_reflections(self):
@@ -880,50 +879,47 @@ class XDS_Data_Manager(ScalingDataManager):
 class active_parameter_manager(object):
   ''' object to manage the current active parameters during minimisation.
   Separated out to provide a consistent interface between the data manager and
-  minimiser.
-  Takes in a data manager, needed to access SF objects through g_parameterisation,
-  and a param_name list indicating the active parameters.'''
+  minimiser. Takes in a data manager, needed to access SF objects through
+  g_parameterisation, and a param_name list indicating the active parameters.'''
   def __init__(self, Data_Manager, param_name):
-    constant_g_values = []
+    self.constant_g_values = None
     self.x = flex.double([])
     self.active_parameterisation = []
-    self.active_params_list = []
-    self.cumulative_active_params = [0]
+    self.n_params_list = [] #no of params in each SF
+    self.n_cumul_params_list = [0]
     self.active_derivatives = None
     for p_type, scalefactor in Data_Manager.g_parameterisation.iteritems():
       if p_type in param_name:
         self.x.extend(scalefactor.parameters)
         self.active_parameterisation.append(p_type)
-        n_params = scalefactor.n_params
-        self.active_params_list.append(n_params)
-        self.cumulative_active_params.append(self.cumulative_active_params[-1] + n_params)
+        self.n_params_list.append(scalefactor.n_params)
+        self.n_cumul_params_list.append(len(self.x))
       else:
-        constant_g_values.append(scalefactor.inverse_scales)
-    self.n_active_params = len(self.x) #update n_active_params
-    if len(constant_g_values) > 0.0:
-      self.constant_g_values = flex.double(np.prod(np.array(constant_g_values), axis=0))
-    else:
-      self.constant_g_values = None
-    if not Data_Manager.params.scaling_options.multi_mode:
-      logger.info(('Set up parameter handler for following corrections: {0}\n').format(
-        ''.join(i.lstrip('g_')+' ' for i in self.active_parameterisation)))
+        if self.constant_g_values is None:
+          self.constant_g_values = scalefactor.inverse_scales
+        else:
+          self.constant_g_values *= scalefactor.inverse_scales
+    self.n_active_params = len(self.x)
+    logger.info(('Set up parameter handler for following corrections: {0}\n'
+      ).format(''.join(i.lstrip('g_')+' ' for i in self.active_parameterisation)))
 
 
 class multi_active_parameter_manager(object):
+  ''' object to manage the current active parameters during minimisation
+  for multiple datasets that are simultaneously being scaled.'''
   def __init__(self, Data_Manager, param_name):
     self.apm_list = []
     for DM in Data_Manager.data_managers:
-      apm = active_parameter_manager(DM, param_name)
-      self.apm_list.append(apm)
+      self.apm_list.append(active_parameter_manager(DM, param_name))
     self.active_parameterisation = self.apm_list[0].active_parameterisation
     self.x = flex.double([])
-    self.n_active_params_list = []
-    self.n_active_params = 0
-    self.n_cumulative_params = [0]
+    self.n_params_in_each_apm = []
+    self.n_cumul_params_list = [0]
+    self.active_derivatives = None
     for apm in self.apm_list:
       self.x.extend(apm.x)
-      self.n_active_params_list.append(len(apm.x))
-      self.n_active_params += len(apm.x)
-      self.n_cumulative_params.append(copy.deepcopy(self.n_active_params))
-    logger.info(('Set up joint parameter handler for following corrections: {0}\n').format(
-        ''.join(i.lstrip('g_')+' ' for i in self.active_parameterisation)))
+      self.n_params_in_each_apm.append(len(apm.x))
+      self.n_cumul_params_list.append(len(self.x))
+    self.n_active_params = len(self.x)
+    logger.info(('Set up joint parameter handler for following corrections: {0}\n'
+      ).format(''.join(i.lstrip('g_')+' ' for i in self.active_parameterisation)))

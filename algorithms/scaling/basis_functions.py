@@ -21,8 +21,8 @@ class basis_function(object):
     '''update the parameters in each SF object from the apm parameter list.'''
     for i, active_param in enumerate(self.apm.active_parameterisation):
       SF_object = self.data_manager.g_parameterisation[active_param]
-      SF_object.parameters = self.apm.x[self.apm.cumulative_active_params[i]:
-                                            self.apm.cumulative_active_params[i+1]]
+      SF_object.parameters = self.apm.x[self.apm.n_cumul_params_list[i]:
+        self.apm.n_cumul_params_list[i+1]]
       SF_object.calculate_scales_and_derivatives()
 
   def calculate_scale_factors(self):
@@ -39,19 +39,18 @@ class basis_function(object):
     '''calculate derivatives matrix'''
     if len(self.data_manager.g_parameterisation) == 1:
       #only one active parameter, so don't need to chain rule any derivatives
-      active_param = self.data_manager.g_parameterisation.values()[0]
-      return active_param.derivatives
+      return self.data_manager.g_parameterisation.values()[0].derivatives
     else:
-      n_refl = self.data_manager.Ih_table.size
-      derivatives = sparse.matrix(n_refl, self.apm.cumulative_active_params[-1])
+      derivatives = sparse.matrix(self.data_manager.Ih_table.size,
+        self.apm.n_active_params)
       for i, active_param in enumerate(self.apm.active_parameterisation):
         derivs = self.data_manager.g_parameterisation[active_param].derivatives
-        scale_multipliers = flex.double([1.0] * n_refl)
+        scale_multipliers = flex.double([1.0] * self.data_manager.Ih_table.size)
         for param, SF_obj in self.data_manager.g_parameterisation.iteritems():
           if param != active_param:
             scale_multipliers *= SF_obj.inverse_scales
         next_deriv = row_multiply(derivs, scale_multipliers)
-        derivatives.assign_block(next_deriv, 0, self.apm.cumulative_active_params[i])
+        derivatives.assign_block(next_deriv, 0, self.apm.n_cumul_params_list[i])
       return derivatives
 
   def return_basis(self):

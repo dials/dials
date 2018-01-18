@@ -25,7 +25,7 @@ class target_function(object):
       if 'g_absorption' in self.apm.active_parameterisation:
         constraint_values = self.data_manager.calc_absorption_constraint(self.apm)[0]
         R.extend(constraint_values)
-    return R
+    return flex.sum(R)
 
   def calculate_gradient(self):
     '''returns a gradient vector'''
@@ -38,18 +38,15 @@ class target_function(object):
     dIh_g = row_multiply(self.apm.active_derivatives, dIh)
     dIh_red = dIh_g.transpose() * Ih_tab.h_index_matrix
     dIh_by_dpi = row_multiply(dIh_red.transpose(), 1.0/sumgsq)
-
     term_1 = (-2.0 * rhl * Ih_tab.weights * Ih_tab.Ih_values *
               self.apm.active_derivatives)
     term_2 = (-2.0 * rhl * Ih_tab.weights * Ih_tab.inverse_scale_factors *
               Ih_tab.h_index_matrix) * dIh_by_dpi
     gradient = term_1 + term_2
-
     if self.data_manager.params.scaling_method == 'aimless':
       if 'g_absorption' in self.apm.active_parameterisation:
         gradient += self.data_manager.calc_absorption_constraint(self.apm)[1]
     return gradient
-
 
   def return_targets(self):
     '''return residual and gradient arrays'''

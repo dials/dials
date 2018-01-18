@@ -41,7 +41,7 @@ class LBFGS_optimiser(object):
     logger.debug(str(list(self.x)) + '\n')
     logger.debug('Parameter derivatives \n')
     logger.debug(str(list(g)) + '\n')
-    f = flex.sum(f)
+    #f = flex.sum(f)
     self.residuals.append(f)
     logger.info("Residual sum: %12.6g" % f)
     return f, g
