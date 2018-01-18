@@ -1,5 +1,8 @@
 '''
-tests for Ih_table and joint_Ih_table data structures
+This code tests for Ih_table and joint_Ih_table data structures.
+This also provides a test for the ScalingDataManager, which must
+be successfully initialised in order to provide a feed in for the
+Ih_table.
 '''
 from target_Ih import SingleIhTable, JointIhTable
 from dials.array_family import flex
@@ -142,10 +145,7 @@ def test_Ih_table():
   assert Ih_table.h_index_matrix.n_cols == 2
   assert Ih_table.h_index_matrix.n_rows == 2
 
-
-def test_Ih_table_noweights():
   '''test for functionality of setting weights or not'''
-  (reflection_table, weights) = generate_single_test_input()
   Ih_table = SingleIhTable(reflection_table)
   #test that weights are set to inverse variances if no weights are given.
   expected_weights = 1.0/flex.double([100.0, 50.0, 50.0, 60.0, 30.0, 90.0, 90.0])
@@ -158,15 +158,13 @@ def test_Ih_table_noweights():
   assert (list(abs(Ih_table.weights - expected_weights)) <
     list(flex.double([1e-6]*Ih_table.size)))
 
-def test_Ih_table_Ihinput():
-  '''test for functionality of setting Ih_values'''
-  (reflection_table, weights) = generate_single_test_input()
-  #set Ih values to tenth of what they would otherwise be. Test that these are
-  #the set values after Ih table is initialised
+  '''test for functionality of setting Ih_values - set to a tenth of what they
+  would otherwise be. Test that these are set after Ih table is initialised'''
   reflection_table['Ih_values'] = flex.double([10.0, 5.0, 5.0, 6.0, 3.0, 9.0, 9.0])
   Ih_table = SingleIhTable(reflection_table, weights)
   assert list(Ih_table.Ih_values) == list(flex.double(
     [10.0, 5.0, 5.0, 6.0, 3.0, 9.0, 9.0]))
+
 
 def test_joint_Ih_table():
   '''test that the two reflection tables have been sorted/combined correctly'''

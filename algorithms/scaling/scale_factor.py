@@ -120,6 +120,7 @@ class SmoothScaleFactor(ScaleFactor):
     self.smoothing_window = 2.5 #redundant - replace with link to num_average
     self.Vr = 1.0 #replace with link to sigma of gaussian smoother?
     self._smoother = None #placeholder for gaussian smoother
+    self.normalisation_interval = None
 
   @property
   def value(self):
@@ -134,7 +135,6 @@ class SmoothScaleFactor(ScaleFactor):
 
   def update_reflection_data(self):
     pass
-
 
 class SmoothScaleFactor1D(SmoothScaleFactor):
   '''Class to implement a smooth scale factor in one dimension.'''

@@ -133,6 +133,23 @@ class DataManagerUtilities(object):
         error_model_params)
     return weights_for_scaling
 
+  def export_parameters_to_json(self, filename='scaling_parameters.json'):
+    '''function to export data from scalefactors to json file.'''
+    import json
+    data = {}
+    for key, SFobj in self.g_parameterisation.iteritems():
+      dictionary = {'object_type' : SFobj.__class__.__name__,
+          'number_of_parameters' : SFobj.n_params,
+          'parameters' : list(SFobj.parameters)}
+      if 'normalisation_interval' in SFobj.__dict__:
+        dictionary['normalisation_interval'] = SFobj.normalisation_interval
+        dictionary['min/max_norm_values'] = [min(SFobj.normalised_values),
+          max(SFobj.normalised_values)]
+        dictionary['parameter_normalised_positions'] = SFobj._smoother.positions()
+      data[key.lstrip('g_')] = dictionary
+    with open(filename, 'w') as outfile:
+      json.dump(data, outfile, indent=3)
+
 
 class ScalingDataManager(DataManagerUtilities):
   '''Parent class for scaling of a single dataset, containing a standard
@@ -371,6 +388,7 @@ class AimlessDataManager(ScalingDataManager):
     #need one parameter more extremal than the max/min norm values at each side
     n_param = int(max(na)//1) - int(min(na)//1) + 3
     self.g_scale = SF.SmoothScaleFactor1D(1.0, n_param)
+    self.g_scale.normalisation_interval = rot_int
     self._g_parameterisation['g_scale'] = self.g_scale
     msg = ('The scale term ScaleFactor object was successfully initialised. {sep}'
       'The scale term parameter interval has been set to {0} degrees. {sep}'
@@ -393,6 +411,7 @@ class AimlessDataManager(ScalingDataManager):
     #need one parameter more extremal than the max/min norm values at each side
     n_param = int(max(nt)//1) - int(min(nt)//1) + 3
     self.g_decay = SF.SmoothBScaleFactor1D(0.0, n_param)
+    self.g_decay.normalisation_interval = rot_int
     self._g_parameterisation['g_decay'] = self.g_decay
     msg = ('The decay term ScaleFactor object was successfully initialised. {sep}'
       'The B-factor parameter interval has been set to {0} degrees. {sep}'
@@ -563,6 +582,11 @@ class MultiCrystalDataManager(DataManagerUtilities):
       msg = ('A new best estimate for I_h for all reflections across all datasets {sep}'
         'has now been calculated. {sep}').format(sep='\n')
       logger.info(msg)
+
+  def export_parameters_to_json(self):
+    fname = 'scaling_parameters'
+    for i, dm in enumerate(self.data_managers):
+      dm.export_parameters_to_json(filename=fname+'_'+str(i+1)+'.json')
 
 class TargetedDataManager(ScalingDataManager):
   '''Data Manager to allow scaling of one dataset against a target dataset.'''
@@ -862,7 +886,6 @@ class active_parameter_manager(object):
   def __init__(self, Data_Manager, param_name):
     constant_g_values = []
     self.x = flex.double([])
-    self.n_active_params = 0
     self.active_parameterisation = []
     self.active_params_list = []
     self.cumulative_active_params = [0]
@@ -870,13 +893,13 @@ class active_parameter_manager(object):
     for p_type, scalefactor in Data_Manager.g_parameterisation.iteritems():
       if p_type in param_name:
         self.x.extend(scalefactor.parameters)
-        self.n_active_params = len(self.x) #update n_active_params
         self.active_parameterisation.append(p_type)
         n_params = scalefactor.n_params
         self.active_params_list.append(n_params)
         self.cumulative_active_params.append(self.cumulative_active_params[-1] + n_params)
       else:
         constant_g_values.append(scalefactor.inverse_scales)
+    self.n_active_params = len(self.x) #update n_active_params
     if len(constant_g_values) > 0.0:
       self.constant_g_values = flex.double(np.prod(np.array(constant_g_values), axis=0))
     else:
