@@ -979,95 +979,95 @@ namespace dials { namespace algorithms {
   /**
    * A class to manage jobs
    */
-  class SimpleJobList {
+  class SimpleBlockList {
   public:
 
 
     /**
-     * Compute the jobs
+     * Compute the blocks
      * @param range The range of frames
      * @param block_size The size of the blocks
      */
-    SimpleJobList(tiny<int,2> range, int block_size) {
-      construct_job_list(range, block_size);
-      construct_frame_to_job_lookup();
+    SimpleBlockList(tiny<int,2> range, int block_size) {
+      construct_block_list(range, block_size);
+      construct_frame_to_block_lookup();
     }
 
     /**
-     * Set the jobs
-     * @params jobs The list of jobs
+     * Set the blocks
+     * @params blocks The list of blocks
      */
-    SimpleJobList(const af::const_ref< tiny<int,2> > &jobs) {
-      DIALS_ASSERT(jobs.size() > 0);
-      DIALS_ASSERT(jobs[0][1] > jobs[0][0]);
-      jobs_.push_back(jobs[0]);
-      for (std::size_t i = 1; i < jobs.size(); ++i) {
-        DIALS_ASSERT(jobs[i][1] > jobs[i][0]);
-        DIALS_ASSERT(jobs[i][0] > jobs[i-1][0]);
-        DIALS_ASSERT(jobs[i][1] > jobs[i-1][1]);
-        DIALS_ASSERT(jobs[i][0] <= jobs[i-1][1]);
-        jobs_.push_back(jobs[i]);
+    SimpleBlockList(const af::const_ref< tiny<int,2> > &blocks) {
+      DIALS_ASSERT(blocks.size() > 0);
+      DIALS_ASSERT(blocks[0][1] > blocks[0][0]);
+      blocks_.push_back(blocks[0]);
+      for (std::size_t i = 1; i < blocks.size(); ++i) {
+        DIALS_ASSERT(blocks[i][1] > blocks[i][0]);
+        DIALS_ASSERT(blocks[i][0] > blocks[i-1][0]);
+        DIALS_ASSERT(blocks[i][1] > blocks[i-1][1]);
+        DIALS_ASSERT(blocks[i][0] <= blocks[i-1][1]);
+        blocks_.push_back(blocks[i]);
       }
-      construct_frame_to_job_lookup();
+      construct_frame_to_block_lookup();
     }
 
     /**
      * @returns The requested job
      */
     tiny<int,2> operator[](std::size_t index) const {
-      DIALS_ASSERT(index < jobs_.size());
-      return jobs_[index];
+      DIALS_ASSERT(index < blocks_.size());
+      return blocks_[index];
     }
 
     /**
      * @returns The first frame
      */
     int first_frame() const {
-      DIALS_ASSERT(jobs_.size() > 0);
-      return jobs_[0][0];
+      DIALS_ASSERT(blocks_.size() > 0);
+      return blocks_[0][0];
     }
 
     /**
      * @returns The last frame
      */
     int last_frame() const {
-      DIALS_ASSERT(jobs_.size() > 0);
-      return jobs_[jobs_.size()-1][1];
+      DIALS_ASSERT(blocks_.size() > 0);
+      return blocks_[blocks_.size()-1][1];
     }
 
     /**
-     * @returns The number of jobs
+     * @returns The number of blocks
      */
     std::size_t size() const {
-      return jobs_.size();
+      return blocks_.size();
     }
 
     /**
-     * Get the index of the job closest to this frame
+     * Get the index of the block closest to this frame
      * @param frame The frame number
-     * @returns The job index
+     * @returns The block index
      */
-    std::size_t job_index(int frame) const {
-      int index = frame - jobs_.front()[0];
+    std::size_t block_index(int frame) const {
+      int index = frame - blocks_.front()[0];
       if (index < 0) {
         index = 0;
       }
-      if (index >= frame_to_job_lookup_.size()) {
-        index = frame_to_job_lookup_.size()-1;
+      if (index >= frame_to_block_lookup_.size()) {
+        index = frame_to_block_lookup_.size()-1;
       }
       DIALS_ASSERT(index >= 0);
-      DIALS_ASSERT(index < frame_to_job_lookup_.size());
-      return frame_to_job_lookup_[index];
+      DIALS_ASSERT(index < frame_to_block_lookup_.size());
+      return frame_to_block_lookup_[index];
     }
 
   private:
 
     /**
-     * Construct the job list
+     * Construct the block list
      * @param range The range of frames
      * @param block_size The block size
      */
-    void construct_job_list(tiny<int,2> range, int block_size) {
+    void construct_block_list(tiny<int,2> range, int block_size) {
 
       // Check some input
       int frame0 = range[0];
@@ -1082,11 +1082,11 @@ namespace dials { namespace algorithms {
       }
       DIALS_ASSERT(block_size > 0);
 
-      // If the block size is equal to 1, then add all frames as jobs
-      // otherwise compute the jobs
+      // If the block size is equal to 1, then add all frames as blocks
+      // otherwise compute the blocks
       if (block_size == 1) {
         for (int f = frame0; f < frame1; ++f) {
-          jobs_.push_back(tiny<int,2>(f, f+1));
+          blocks_.push_back(tiny<int,2>(f, f+1));
         }
       } else {
 
@@ -1096,7 +1096,7 @@ namespace dials { namespace algorithms {
         DIALS_ASSERT(nblocks > 0 && nblocks <= nframes);
         int half_block_size = (int)std::ceil((double)nframes / (double)nblocks);
 
-        // Construct a list of job indices
+        // Construct a list of block indices
         af::shared<int> indices;
         indices.push_back(frame0);
         for (int i = 0; i < nblocks; ++i) {
@@ -1110,7 +1110,7 @@ namespace dials { namespace algorithms {
           }
         }
 
-        // Add all the jobs to the list
+        // Add all the blocks to the list
         DIALS_ASSERT(indices.front() == frame0);
         DIALS_ASSERT(indices.back() == frame1);
         DIALS_ASSERT(indices.size() > 2);
@@ -1118,42 +1118,42 @@ namespace dials { namespace algorithms {
           int i1 = indices[i];
           int i2 = indices[i+2];
           DIALS_ASSERT(i2 > i1);
-          jobs_.push_back(tiny<int,2>(i1, i2));
+          blocks_.push_back(tiny<int,2>(i1, i2));
         }
-        DIALS_ASSERT(jobs_.size() > 0);
+        DIALS_ASSERT(blocks_.size() > 0);
       }
     }
 
     /**
-     * Construct the frame to job lookup table
+     * Construct the frame to block lookup table
      */
-    void construct_frame_to_job_lookup() {
+    void construct_frame_to_block_lookup() {
 
       // Check all the jobs overlap and are in order
-      for (std::size_t i = 0; i < jobs_.size()-1; ++i) {
-        DIALS_ASSERT(jobs_[i][0] < jobs_[i][1]);
-        DIALS_ASSERT(jobs_[i+1][0] < jobs_[i+1][1]);
-        DIALS_ASSERT(jobs_[i][0] < jobs_[i+1][0]);
-        DIALS_ASSERT(jobs_[i][1] >= jobs_[i+1][0]);
-        DIALS_ASSERT(jobs_[i][1] < jobs_[i+1][1]);
+      for (std::size_t i = 0; i < blocks_.size()-1; ++i) {
+        DIALS_ASSERT(blocks_[i][0] < blocks_[i][1]);
+        DIALS_ASSERT(blocks_[i+1][0] < blocks_[i+1][1]);
+        DIALS_ASSERT(blocks_[i][0] < blocks_[i+1][0]);
+        DIALS_ASSERT(blocks_[i][1] >= blocks_[i+1][0]);
+        DIALS_ASSERT(blocks_[i][1] < blocks_[i+1][1]);
       }
 
       // set the first and last frames
-      int first_frame = jobs_.front()[0];
-      int last_frame = jobs_.back()[1];
+      int first_frame = blocks_.front()[0];
+      int last_frame = blocks_.back()[1];
       DIALS_ASSERT(first_frame < last_frame);
 
-      // Loop through all the frames and find the job to which the frame is
-      // closest to the centre. Add the frame to that job
+      // Loop through all the frames and find the block to which the frame is
+      // closest to the centre. Add the frame to that block
       std::size_t closest_index = 0;
       for (int frame = first_frame; frame < last_frame; ++frame) {
-        int z0 = jobs_[closest_index][0];
-        int z1 = jobs_[closest_index][1];
+        int z0 = blocks_[closest_index][0];
+        int z1 = blocks_[closest_index][1];
         double zc = (z0 + z1) / 2.0;
         double closest_distance = std::abs(zc - (frame + 0.5));
-        for (std::size_t i = closest_index+1; i < jobs_.size(); ++i) {
-          int zz0 = jobs_[i][0];
-          int zz1 = jobs_[i][1];
+        for (std::size_t i = closest_index+1; i < blocks_.size(); ++i) {
+          int zz0 = blocks_[i][0];
+          int zz1 = blocks_[i][1];
           double zzc = (zz0 + zz1) / 2.0;
           double distance = std::abs(zzc - (frame + 0.5));
           if (distance < closest_distance) {
@@ -1163,13 +1163,13 @@ namespace dials { namespace algorithms {
             break;
           }
         }
-        frame_to_job_lookup_.push_back(closest_index);
+        frame_to_block_lookup_.push_back(closest_index);
       }
 
     }
 
-    std::vector< tiny<int,2> > jobs_;
-    std::vector< std::size_t > frame_to_job_lookup_;
+    std::vector< tiny<int,2> > blocks_;
+    std::vector< std::size_t > frame_to_block_lookup_;
   };
 
 
@@ -1184,21 +1184,21 @@ namespace dials { namespace algorithms {
 
     /**
      * Construct the lookup
-     * @param jobs The job list
+     * @param blocks The block list
      * @param data The reflections
      */
     SimpleReflectionLookup(
-          const SimpleJobList &jobs,
+          const SimpleBlockList &blocks,
           af::reflection_table data)
-        : jobs_(jobs),
+        : blocks_(blocks),
           first_frame_(0),
           last_frame_(0) {
 
-      // Split the reflections along job boundaries
+      // Split the reflections along block boundaries
       data_ = split_reflections(data);
 
       // Construct the lookup table
-      construct_job_to_reflection_lookup();
+      construct_block_to_reflection_lookup();
     }
 
     /**
@@ -1209,33 +1209,33 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Get the indices of reflections in this job
-     * @param index The job index
+     * Get the indices of reflections in this block
+     * @param index The block index
      * @returns The list of reflection indices
      */
     af::const_ref<std::size_t> indices(std::size_t index) const {
-      DIALS_ASSERT(index < job_to_reflection_lookup_.size());
+      DIALS_ASSERT(index < block_to_reflection_lookup_.size());
       return af::const_ref<std::size_t>(
-          &job_to_reflection_lookup_[index][0],
-          job_to_reflection_lookup_[index].size());
+          &block_to_reflection_lookup_[index][0],
+          block_to_reflection_lookup_[index].size());
     }
 
     /**
-     * Get the index of the job closest to this frame
+     * Get the index of the block closest to this frame
      * @param frame The frame number
-     * @returns The job index
+     * @returns The block index
      */
-    std::size_t job_index(int frame) const {
-      return jobs_.job_index(frame);
+    std::size_t block_index(int frame) const {
+      return blocks_.block_index(frame);
     }
 
     /**
-     * Get the frame range for the job
-     * @param index The job index
-     * @returns The frames in the job
+     * Get the frame range for the block
+     * @param index The block index
+     * @returns The frames in the block
      */
-    tiny<int,2> job_range(std::size_t index) const {
-      return jobs_[index];
+    tiny<int,2> block_range(std::size_t index) const {
+      return blocks_[index];
     }
 
   protected:
@@ -1243,30 +1243,30 @@ namespace dials { namespace algorithms {
     /**
      * Create the lookup of reflections in each job
      */
-    void construct_job_to_reflection_lookup() {
+    void construct_block_to_reflection_lookup() {
       DIALS_ASSERT(data_.is_consistent());
       DIALS_ASSERT(data_.size() > 0);
       DIALS_ASSERT(data_.contains("bbox"));
-      DIALS_ASSERT(jobs_.size() > 0);
+      DIALS_ASSERT(blocks_.size() > 0);
 
       // Get some arrays
       af::const_ref<int6> bbox = data_["bbox"];
 
       // For each reflection, get the frame range and then get the centre of
-      // that range. Now find the job closest to that z point. Check that the
+      // that range. Now find the block closest to that z point. Check that the
       // splitting has worked correctly and that the reflection is within the
-      // job frame range. Then add the reflection to the list for the block.
-      job_to_reflection_lookup_.resize(jobs_.size());
+      // block frame range. Then add the reflection to the list for the block.
+      block_to_reflection_lookup_.resize(blocks_.size());
       for (std::size_t i = 0; i < bbox.size(); ++i) {
         int z0 = bbox[i][4];
         int z1 = bbox[i][5];
         int zc = (int)std::floor((z0 + z1) / 2.0);
-        int index = job_index(zc);
-        tiny<int,2> job = job_range(index);
-        DIALS_ASSERT(z0 >= job[0]);
-        DIALS_ASSERT(z1 <= job[1]);
-        DIALS_ASSERT(index < job_to_reflection_lookup_.size());
-        job_to_reflection_lookup_[index].push_back(i);
+        int index = block_index(zc);
+        tiny<int,2> block = block_range(index);
+        DIALS_ASSERT(z0 >= block[0]);
+        DIALS_ASSERT(z1 <= block[1]);
+        DIALS_ASSERT(index < block_to_reflection_lookup_.size());
+        block_to_reflection_lookup_[index].push_back(i);
       }
     }
 
@@ -1281,7 +1281,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(data.is_consistent());
       DIALS_ASSERT(data.size() > 0);
       DIALS_ASSERT(data.contains("bbox"));
-      DIALS_ASSERT(jobs_.size() > 0);
+      DIALS_ASSERT(blocks_.size() > 0);
 
       // Select reflections that are in range
       data = select_in_range_reflections(data);
@@ -1290,8 +1290,8 @@ namespace dials { namespace algorithms {
       af::const_ref<int6> bbox = data["bbox"];
       af::shared<int6> bbox_new;
       af::shared<std::size_t> indices;
-      int f0 = jobs_.first_frame();
-      int f1 = jobs_.last_frame();
+      int f0 = blocks_.first_frame();
+      int f1 = blocks_.last_frame();
       for (std::size_t i = 0; i < bbox.size(); ++i) {
         DIALS_ASSERT(bbox[i][4] < bbox[i][5]);
         int z0 = std::max(f0, bbox[i][4]);
@@ -1339,8 +1339,8 @@ namespace dials { namespace algorithms {
       // Check if any need to be removed
       af::const_ref<int6> bbox = data["bbox"];
       af::shared<std::size_t> indices;
-      int f0 = jobs_.first_frame();
-      int f1 = jobs_.last_frame();
+      int f0 = blocks_.first_frame();
+      int f1 = blocks_.last_frame();
       for (std::size_t i = 0; i < bbox.size(); ++i) {
         DIALS_ASSERT(bbox[i][4] < bbox[i][5]);
         int z0 = std::max(f0, bbox[i][4]);
@@ -1356,8 +1356,8 @@ namespace dials { namespace algorithms {
 
 
     /**
-     * Split a reflection at job boundaries so that most of the reflection is
-     * recorded within a single job. Works recursively.
+     * Split a reflection at block boundaries so that most of the reflection is
+     * recorded within a single block. Works recursively.
      * @param z0 The first frame in the shoebox
      * @param z1 The last frame in the shoebox
      * @param out The output iterator
@@ -1366,18 +1366,18 @@ namespace dials { namespace algorithms {
     void split_at_boundaries(int z0, int z1, OutputIterator out) const {
       DIALS_ASSERT(z0 < z1);
 
-      // Compute the job closest to the centre
+      // Compute the block closest to the centre
       int zc = (int)std::floor((z0 + z1) / 2.0);
-      int index = job_index(zc);
-      tiny<int,2> job = job_range(index);
-      DIALS_ASSERT(job[0] < job[1]);
+      int index = block_index(zc);
+      tiny<int,2> block = block_range(index);
+      DIALS_ASSERT(block[0] < block[1]);
 
       // Get the min and max frame range
-      int zmin = std::max(z0, job[0]);
-      int zmax = std::min(z1, job[1]);
+      int zmin = std::max(z0, block[0]);
+      int zmax = std::min(z1, block[1]);
       DIALS_ASSERT(zmin < zmax);
 
-      // If the reflection extends below the job range
+      // If the reflection extends below the block range
       // then split at the lower boundary
       if (z0 < zmin) {
         split_at_boundaries(z0, zmin, out);
@@ -1386,18 +1386,18 @@ namespace dials { namespace algorithms {
       // Append the new frame range
       *out++ = tiny<int,2>(zmin, zmax);
 
-      // If the reflection extends above the job range
+      // If the reflection extends above the block range
       // then split at the upper boundary
       if (z1 > zmax) {
         split_at_boundaries(zmax, z1, out);
       }
     }
 
-    SimpleJobList jobs_;
+    SimpleBlockList blocks_;
     int first_frame_;
     int last_frame_;
     af::reflection_table data_;
-    std::vector< std::vector<std::size_t> >job_to_reflection_lookup_;
+    std::vector< std::vector<std::size_t> > block_to_reflection_lookup_;
   };
 
 
@@ -1413,11 +1413,41 @@ namespace dials { namespace algorithms {
      * @param data The reflection data
      */
     SimpleReflectionManager(
-          const SimpleJobList &jobs,
-          af::reflection_table data)
-      : lookup_(jobs, data),
-        finished_(jobs.size()) {
+          const SimpleBlockList &blocks,
+          af::reflection_table data,
+          std::size_t njobs)
+      : lookup_(blocks, data),
+        njobs_(std::min(njobs, blocks.size())),
+        finished_(njobs_, false),
+        job_blocks_(njobs_) {
 
+      DIALS_ASSERT(njobs_ > 0);
+      std::size_t nblocks = blocks.size();
+      DIALS_ASSERT(nblocks > 0);
+      DIALS_ASSERT(nblocks >= njobs_);
+
+      // Compute blocks per job and remaning blocks
+      int blocks_per_job = (int)std::floor((double)nblocks / (double)njobs_);
+      int remaining_blocks = nblocks % njobs_;
+      DIALS_ASSERT(blocks_per_job >= 0);
+      DIALS_ASSERT(remaining_blocks >= 0);
+
+      // Populate the list of job blocks
+      int total_blocks_in_job_list = 0;
+      int last_block = 0;
+      for (std::size_t i = 0; i < njobs_; ++i) {
+        int num_blocks_in_job = blocks_per_job;
+        if (remaining_blocks > 0) {
+          num_blocks_in_job++;
+          remaining_blocks--;
+        }
+        DIALS_ASSERT(num_blocks_in_job > 0);
+        job_blocks_[i][0] = last_block;
+        job_blocks_[i][1] = last_block + num_blocks_in_job;
+        last_block += num_blocks_in_job;
+        total_blocks_in_job_list += job_blocks_[i][1] - job_blocks_[i][0];
+      }
+      DIALS_ASSERT(total_blocks_in_job_list == nblocks);
     }
 
     /**
@@ -1443,10 +1473,24 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * @returns The block
+     */
+    tiny<int,2> block(std::size_t index) const {
+      return lookup_.block_range(index);
+    }
+
+    /**
      * @returns The job
      */
     tiny<int,2> job(std::size_t index) const {
-      return lookup_.job_range(index);
+      DIALS_ASSERT(index < job_blocks_.size());
+      int i0 = job_blocks_[index][0];
+      int i1 = job_blocks_[index][1]-1;
+      DIALS_ASSERT(i0 <= i1);
+      int f0 = block(i0)[0];
+      int f1 = block(i1)[1];
+      DIALS_ASSERT(f0 < f1);
+      return tiny<int,2>(f0, f1);
     }
 
     /**
@@ -1465,20 +1509,30 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(index < finished_.size());
 
       // Get the job range
-      tiny<int,2> frame = lookup_.job_range(index);
+      tiny<int,2> frame = job(index);
+      tiny<int,2> blocks = job_blocks_[index];
+      DIALS_ASSERT(frame[0] < frame[1]);
+      DIALS_ASSERT(blocks[0] < blocks[1]);
+
+      // Select reflections to process in block
+      af::shared<std::size_t> indices;
+      for (std::size_t block = blocks[0]; block < blocks[1]; ++block) {
+        af::const_ref<std::size_t> temp = lookup_.indices(block);
+        indices.insert(indices.end(), temp.begin(), temp.end());
+      }
 
       // Select reflections to process in block
       af::reflection_table data = select_rows_index(
           lookup_.data(),
-          lookup_.indices(index));
+          indices.const_ref());
 
       // Select other reflections from adjacent blocks. These reflections will
       // not be processed but will be used in finding adjacent reflections.
       // First select reflections from the block before.
-      if (index > 0) {
+      if (blocks[0] > 0) {
         af::reflection_table temp = select_rows_index(
             lookup_.data(),
-            lookup_.indices(index-1));
+            lookup_.indices(blocks[0]-1));
         af::ref<int6> bbox = temp["bbox"];
         af::ref<std::size_t> flags = temp["flags"];
         af::shared<std::size_t> selection;
@@ -1496,10 +1550,10 @@ namespace dials { namespace algorithms {
       }
 
       // Now select reflections from the block after
-      if (index+1 < size()) {
+      if (blocks[1] < size()) {
         af::reflection_table temp = select_rows_index(
             lookup_.data(),
-            lookup_.indices(index+1));
+            lookup_.indices(blocks[1]));
         af::ref<int6> bbox = temp["bbox"];
         af::ref<std::size_t> flags = temp["flags"];
         af::shared<std::size_t> selection;
@@ -1528,8 +1582,18 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(index < finished_.size());
       DIALS_ASSERT(finished_[index] == false);
 
-      // Get the reflection indices
-      af::const_ref<std::size_t> indices = lookup_.indices(index);
+      // Get the job range
+      tiny<int,2> frame = job(index);
+      tiny<int,2> blocks = job_blocks_[index];
+      DIALS_ASSERT(frame[0] < frame[1]);
+      DIALS_ASSERT(blocks[0] < blocks[1]);
+
+      // Select reflections to process in block
+      af::shared<std::size_t> indices;
+      for (std::size_t block = blocks[0]; block < blocks[1]; ++block) {
+        af::const_ref<std::size_t> temp = lookup_.indices(block);
+        indices.insert(indices.end(), temp.begin(), temp.end());
+      }
 
       // Get the total number of reflections to integrate
       std::size_t num_reflections = indices.size();
@@ -1544,14 +1608,16 @@ namespace dials { namespace algorithms {
       af::reflection_table data = lookup_.data();
 
       // Set the result in the lookup data
-      set_selected_rows_index(data, indices, result);
+      set_selected_rows_index(data, indices.const_ref(), result);
       finished_[index] = true;
     }
 
   private:
 
     SimpleReflectionLookup lookup_;
+    std::size_t njobs_;
     af::shared<bool> finished_;
+    af::shared< tiny<int,2> > job_blocks_;
 
   };
 

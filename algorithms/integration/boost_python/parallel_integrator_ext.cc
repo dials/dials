@@ -413,18 +413,22 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def(init<boost::python::object>())
       ;
 
-    class_<SimpleJobList>("SimpleJobList", no_init)
+    class_<SimpleBlockList>("SimpleBlockList", no_init)
       .def(init< tiny<int,2> , int >())
       .def(init< const af::const_ref< tiny<int,2> > & >())
-      .def("__getitem__", &SimpleJobList::operator[])
-      .def("__len__", &SimpleJobList::size)
-      .def("job_index", &SimpleJobList::job_index)
+      .def("__getitem__", &SimpleBlockList::operator[])
+      .def("__len__", &SimpleBlockList::size)
+      .def("block_index", &SimpleBlockList::block_index)
       ;
 
     class_<SimpleReflectionManager>("SimpleReflectionManager", no_init)
-      .def(init< const SimpleJobList &, af::reflection_table >())
+      .def(init<
+          const SimpleBlockList &,
+          af::reflection_table,
+          std::size_t>())
       .def("data", &SimpleReflectionManager::data)
       .def("finished", &SimpleReflectionManager::finished)
+      .def("block", &SimpleReflectionManager::block)
       .def("job", &SimpleReflectionManager::job)
       .def("num_reflections", &SimpleReflectionManager::num_reflections)
       .def("split", &SimpleReflectionManager::split)

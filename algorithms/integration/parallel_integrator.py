@@ -533,7 +533,10 @@ class IntegrationManager(object):
     self.compute_jobs()
 
     # Create the reflection manager
-    self.manager = SimpleReflectionManager(self.jobs, self.reflections)
+    self.manager = SimpleReflectionManager(
+      self.blocks,
+      self.reflections,
+      self.params.integration.mp.njobs)
 
     # Parallel reading of HDF5 from the same handle is not allowed. Python
     # multiprocessing is a bit messed up and used fork on linux so need to
@@ -699,8 +702,8 @@ class IntegrationManager(object):
     block = self.params.integration.block
     assert block.units == 'frames'
     assert block.size > 0
-    self.jobs = SimpleJobList(array_range, block.size)
-    assert len(self.jobs) > 0, "Invalid number of jobs"
+    self.blocks = SimpleBlockList(array_range, block.size)
+    assert len(self.blocks) > 0, "Invalid number of jobs"
 
   def summary(self):
     '''
@@ -1030,7 +1033,10 @@ class ReferenceCalculatorManager(object):
     self.compute_jobs()
 
     # Create the reflection manager
-    self.manager = SimpleReflectionManager(self.jobs, self.reflections)
+    self.manager = SimpleReflectionManager(
+      self.blocks,
+      self.reflections,
+      self.params.integration.mp.njobs)
 
     # Parallel reading of HDF5 from the same handle is not allowed. Python
     # multiprocessing is a bit messed up and used fork on linux so need to
@@ -1204,8 +1210,8 @@ class ReferenceCalculatorManager(object):
     block = self.params.integration.block
     assert block.units == 'frames'
     assert block.size > 0
-    self.jobs = SimpleJobList(array_range, block.size)
-    assert len(self.jobs) > 0, "Invalid number of jobs"
+    self.blocks = SimpleBlockList(array_range, block.size)
+    assert len(self.blocks) > 0, "Invalid number of jobs"
 
   def summary(self):
     '''
