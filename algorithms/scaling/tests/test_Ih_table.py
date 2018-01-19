@@ -4,6 +4,7 @@ This also provides a test for the ScalingDataManager, which must
 be successfully initialised in order to provide a feed in for the
 Ih_table.
 '''
+import pytest
 from target_Ih import SingleIhTable, JointIhTable
 from dials.array_family import flex
 from dials.util.options import OptionParser
@@ -12,6 +13,7 @@ from libtbx import phil
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer
 
+@pytest.fixture(scope='module')
 def generate_refl_1():
   '''generate a test reflection table'''
   reflections = flex.reflection_table()
@@ -30,6 +32,7 @@ def generate_refl_1():
     reflections.flags.integrated)
   return reflections
 
+@pytest.fixture(scope='module')
 def generate_refl_2():
   '''generate another test reflection table'''
   reflections = flex.reflection_table()
@@ -43,7 +46,8 @@ def generate_refl_2():
   reflections.set_flags(flex.bool([True, True]), reflections.flags.integrated)
   return reflections
 
-def generate_test_experiments():
+@pytest.fixture(scope='module')
+def generate_experiments():
   '''generate a test experiments object'''
   experiments = ExperimentList()
   exp_dict = {"__id__" : "crystal", "real_space_a": [5.0, 0.0, 0.0],
@@ -55,7 +59,8 @@ def generate_test_experiments():
   experiments.goniometer = Goniometer((1.0, 0.0, 0.0))
   return experiments
 
-def generate_test_params():
+@pytest.fixture(scope='module')
+def generate_params():
   '''generate a test params object'''
   phil_scope = phil.parse('''
       include scope dials.algorithms.scaling.scaling_options.phil_scope
@@ -65,38 +70,40 @@ def generate_test_params():
     show_diff_phil=False)
   return parameters
 
-def generate_test_datamanager():
+@pytest.fixture(scope='module')
+def generate_test_datamanager(generate_refl_1, generate_experiments, generate_params):
   '''generate a test datamanager'''
-  return ScalingDataManager(generate_refl_1(), generate_test_experiments(),
-    generate_test_params())
+  return ScalingDataManager(generate_refl_1, generate_experiments, generate_params)
 
-def generate_second_test_datamanager():
+@pytest.fixture(scope='module')
+def generate_second_test_datamanager(generate_refl_2, generate_experiments, generate_params):
   '''generate a second test datamanager'''
-  return ScalingDataManager(generate_refl_2(), generate_test_experiments(),
-    generate_test_params())
+  return ScalingDataManager(generate_refl_2, generate_experiments, generate_params)
 
-def generate_single_test_input():
+@pytest.fixture
+def single_test_input(generate_test_datamanager):
   '''generate input for testing Ih_table'''
-  dm = generate_test_datamanager()
+  dm = generate_test_datamanager
   weights = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
   return dm.reflection_table, weights
 
-def generate_joint_test_input():
+@pytest.fixture
+def joint_test_input(generate_test_datamanager, generate_second_test_datamanager):
   '''generate input for testing joint_Ih_table'''
-  data_manager = generate_test_datamanager()
+  data_manager = generate_test_datamanager
   weights = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-  data_manager_2 = generate_second_test_datamanager()
+  data_manager_2 = generate_second_test_datamanager
   weights_2 = flex.double([1.0, 1.0])
   data_manager._Ih_table = SingleIhTable(data_manager.reflection_table, weights)
   data_manager_2._Ih_table = SingleIhTable(data_manager_2.reflection_table, weights_2)
   return data_manager, data_manager_2
 
 
-def test_Ih_table():
+def test_Ih_table(single_test_input):
   '''test for Ih_table. Upon initialisation, Ih_table should set unity
   scale factors and calculate Ih_values. It should also create the
   h_index arrays and h_index_matrix'''
-  (reflection_table, weights) = generate_single_test_input()
+  (reflection_table, weights) = single_test_input
   Ih_table = SingleIhTable(reflection_table, weights)
 
   assert Ih_table.size == 7
@@ -166,9 +173,9 @@ def test_Ih_table():
     [10.0, 5.0, 5.0, 6.0, 3.0, 9.0, 9.0]))
 
 
-def test_joint_Ih_table():
+def test_joint_Ih_table(joint_test_input):
   '''test that the two reflection tables have been sorted/combined correctly'''
-  (dm1, dm2) = generate_joint_test_input()
+  (dm1, dm2) = joint_test_input
   Ih_table = JointIhTable([dm1, dm2])
 
   assert list(Ih_table.asu_miller_index) == list(flex.miller_index([(0, 0, 1),

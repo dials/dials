@@ -9,6 +9,7 @@ import numpy as np
 from dials.array_family import flex
 from cctbx import miller, crystal
 from scitbx import sparse
+import iotbx.merging_statistics
 #from minimiser_functions import error_scale_LBFGSoptimiser
 #from dials.util.options import flatten_experiments, flatten_reflections
 from target_function import (target_function,
@@ -150,6 +151,25 @@ class DataManagerUtilities(object):
     with open(filename, 'w') as outfile:
       json.dump(data, outfile, indent=3)
 
+  def calc_merging_statistics(self):
+    u_c = self.experiments.crystal.get_unit_cell().parameters()
+    if self.params.scaling_options.force_space_group:
+      s_g_symbol = self.params.scaling_options.force_space_group
+      crystal_symmetry = crystal.symmetry(unit_cell=u_c,
+        space_group_symbol=s_g_symbol)
+    else:
+      s_g = self.experiments.crystal.get_space_group()
+      crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
+    miller_set = miller.set(crystal_symmetry=crystal_symmetry,
+      indices=self.Ih_table.asu_miller_index, anomalous_flag=False)
+    scaled_intensities = self.Ih_table.intensities/self.Ih_table.inverse_scale_factors
+    sigmas = (self.Ih_table.variances**0.5)/self.Ih_table.inverse_scale_factors
+    i_obs = miller.array(miller_set, data=scaled_intensities, sigmas=sigmas)
+    i_obs.set_observation_type_xray_intensity()
+    result = iotbx.merging_statistics.dataset_statistics(
+      i_obs=i_obs, n_bins=20, anomalous=False, use_internal_variance=False,
+      eliminate_sys_absent=False, sigma_filtering=None)
+    return [result]
 
 class ScalingDataManager(DataManagerUtilities):
   '''Parent class for scaling of a single dataset, containing a standard
@@ -202,7 +222,7 @@ class ScalingDataManager(DataManagerUtilities):
       s_g = experiments.crystal.get_space_group()
       crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
     miller_set = miller.set(crystal_symmetry=crystal_symmetry,
-      indices=reflection_table['miller_index'], anomalous_flag=True)
+      indices=reflection_table['miller_index'], anomalous_flag=False)
     miller_set_in_asu = miller_set.map_to_asu()
     reflection_table["asu_miller_index"] = miller_set_in_asu.indices()
     permuted = (miller_set.map_to_asu()).sort_permutation(by_value='packed_indices')
@@ -245,6 +265,8 @@ class ScalingDataManager(DataManagerUtilities):
       params.scaling_options.integration_method = 'prf'
       cls._select_optimal_intensities(reflection_table, params)
     return reflection_table
+
+  
 
 class KB_Data_Manager(ScalingDataManager):
   '''Data Manager subclass for implementing simple KB parameterisation'''
@@ -356,6 +378,7 @@ class AimlessDataManager(ScalingDataManager):
       self.g_absorption.update_reflection_data(sel_sph_harm_table.transpose())
 
   def update_error_model(self):
+    '''apply a correction to try to improve the error estimate.'''
     self.params.weighting.error_model_params = (
       mf.error_scale_LBFGSoptimiser(self.Ih_table, flex.double([1.0, 0.01])).x)
     self.Ih_table.update_aimless_error_model(self.params.weighting.error_model_params)
@@ -511,6 +534,7 @@ class MultiCrystalDataManager(DataManagerUtilities):
     super(MultiCrystalDataManager, self).__init__()
     self.data_managers = []
     self._params = params
+    self._experiments = experiments[0]
     if self.params.scaling_method == 'xscale':
       print("xscale method not yet supported")
       for reflection, experiment in zip(reflections, experiments):
@@ -586,6 +610,14 @@ class MultiCrystalDataManager(DataManagerUtilities):
     fname = 'scaling_parameters'
     for i, dm in enumerate(self.data_managers):
       dm.export_parameters_to_json(filename=fname+'_'+str(i+1)+'.json')
+
+  def calc_merging_statistics(self):
+    joint_result = super(MultiCrystalDataManager, self).calc_merging_statistics()[0]
+    results = []
+    for dm in self.data_managers:
+      results.append(dm.calc_merging_statistics()[0])
+    results.append(joint_result)
+    return results
 
 class TargetedDataManager(ScalingDataManager):
   '''Data Manager to allow scaling of one dataset against a target dataset.'''

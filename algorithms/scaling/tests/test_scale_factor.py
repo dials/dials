@@ -102,18 +102,20 @@ def test_SmoothBScaleFactor1D():
   assert SF.derivatives[1, 0] == SF.derivatives[1, 3]
 
 def test_SHScalefactor():
-  SF = SHScaleFactor(0.1, 3)
+  initial_param = 0.1
+  initial_val = 0.2
+  SF = SHScaleFactor(initial_param, 3)
   assert SF.n_params == 3
-  assert list(SF.parameters) == list(flex.double([0.1]*3))
+  assert list(SF.parameters) == list(flex.double([initial_param]*3))
   harmonic_values = sparse.matrix(1, 3)
-  harmonic_values[0, 0] = 0.1
-  harmonic_values[0, 1] = 0.1
-  harmonic_values[0, 2] = 0.1
+  harmonic_values[0, 0] = initial_val
+  harmonic_values[0, 1] = initial_val
+  harmonic_values[0, 2] = initial_val
   SF.update_reflection_data(harmonic_values)
-  assert SF.harmonic_values[0, 0] == 0.1
-  assert SF.harmonic_values[0, 1] == 0.1
-  assert SF.harmonic_values[0, 2] == 0.1
-  assert list(SF.inverse_scales) == [1.03] #is 1.0 + 3 x param x harm_val
-  assert SF.derivatives[0, 0] == 0.1
-  assert SF.derivatives[0, 1] == 0.1
-  assert SF.derivatives[0, 2] == 0.1
+  assert SF.harmonic_values[0, 0] == initial_val
+  assert SF.harmonic_values[0, 1] == initial_val
+  assert SF.harmonic_values[0, 2] == initial_val
+  assert list(SF.inverse_scales) == [1.0 + (3.0 * initial_val * initial_param)] #is 1.0 + 3 x param x harm_val
+  assert SF.derivatives[0, 0] == initial_val
+  assert SF.derivatives[0, 1] == initial_val
+  assert SF.derivatives[0, 2] == initial_val

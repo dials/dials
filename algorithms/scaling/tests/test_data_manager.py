@@ -3,6 +3,7 @@ This code tests the data managers and active parameter managers.
 '''
 import copy as copy
 import numpy as np
+import pytest
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from data_manager_functions import (ScalingDataManager, MultiCrystalDataManager,
@@ -14,7 +15,8 @@ from libtbx import phil
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer
 
-def generate_test_input():
+@pytest.fixture(scope='module')
+def generated_input():
   '''function to generate input for datamanagers'''
   #these miller_idx/d_values don't make physical sense, but I didn't want to
   #have to write the tests for lots of reflections.
@@ -52,9 +54,9 @@ def generate_test_input():
   return (reflections, experiments, parameters)
 
 
-def test_ScalingDataManager():
+def test_ScalingDataManager(generated_input):
   '''test a few extra features that are not covered by test_Ih_table'''
-  (test_reflections, test_experiments, params) = generate_test_input()
+  (test_reflections, test_experiments, params) = generated_input
   data_manager = ScalingDataManager(test_reflections, test_experiments, params)
 
   assert 'asu_miller_index' in data_manager.reflection_table.keys()
@@ -64,24 +66,26 @@ def test_ScalingDataManager():
   n = (data_manager.reflection_table['Esq'] == 0.0).count(True)
   assert n != len(data_manager.reflection_table)
 
-def test_KBDataManager():
-  '''test for successful initialisation of KBDataManager'''
+'''def test_KBDataManager():
+  #test for successful initialisation of KBDataManager
   (test_reflections, test_experiments, params) = generate_test_input()
-  data_manager = KB_Data_Manager(test_reflections, test_experiments, params)
+  data_manager = KB_Data_Manager(test_reflections, test_experiments, params)'''
 
 '''def test_AimlessDataManager():
   (test_reflections, test_experiments, params) = generate_test_input()
   data_manager = AimlessDataManager(test_reflections, test_experiments, params)'''
 
 
-def test_targeted_data_manager():
+def test_targeted_data_manager(generated_input):
   '''test for successful initialisation of targetedDataManager'''
-  (test_reflections, test_experiments, params) = generate_test_input()
+  (test_reflections, test_experiments, params) = generated_input
   targeted_reflections = copy.deepcopy(test_reflections)
   targeted_reflections['inverse_scale_factor'] = flex.double([1.0, 1.0, 1.0])
   targeted_dm = TargetedDataManager(test_reflections, test_experiments,
     targeted_reflections, params)
 
+  # note - write tests to check correct behaviour w.r.t Ih_table setup here.
+  #also do a test update cycle and check Ih values haven't been overwritten.
 
 '''def test_multi_data_manager():
   (test_reflections, test_experiments, params) = generate_test_input()
@@ -89,10 +93,10 @@ def test_targeted_data_manager():
   data_manager = MultiCrystalDataManager([test_reflections, test_reflections],
     [test_experiments, test_experiments], params)'''
 
-def test_apm():
+def test_apm(generated_input):
   '''test for a single active parameter manager. Also serves as general
   test for initialisation of AimlessDataManager'''
-  (test_reflections, test_experiments, params) = generate_test_input()
+  (test_reflections, test_experiments, params) = generated_input
   params.scaling_options.__inject__('multi_mode', False)
   data_manager = AimlessDataManager(test_reflections, test_experiments, params)
 
@@ -106,11 +110,11 @@ def test_apm():
   for i, p in enumerate(apm.active_parameterisation):
     assert apm.n_params_list[i] == data_manager.g_parameterisation[p].n_params
 
-def test_multi_apm():
+def test_multi_apm(generated_input):
   '''test for the multi active parameter manager. Also serves as general
   test for initialisation of MultiCrystalDataManager'''
-  (test_reflections, test_experiments, params) = generate_test_input()
-  params.scaling_options.__inject__('multi_mode', True)
+  (test_reflections, test_experiments, params) = generated_input
+  params.scaling_options.multi_mode = True
   data_manager = MultiCrystalDataManager([test_reflections, test_reflections],
     [test_experiments, test_experiments], params)
 
@@ -128,10 +132,10 @@ def test_multi_apm():
   params.extend(apm.apm_list[1].x)
   assert list(apm.x) == list(params)
 
-def test_basis_function():
+def test_basis_function(generated_input):
   '''test functionality of basis function object'''
-  (test_reflections, test_experiments, params) = generate_test_input()
-  params.scaling_options.__inject__('multi_mode', False)
+  (test_reflections, test_experiments, params) = generated_input
+  params.scaling_options.multi_mode = False
   data_manager = KB_Data_Manager(test_reflections, test_experiments, params)
 
   apm = active_parameter_manager(data_manager, ['g_scale', 'g_decay'])
@@ -188,8 +192,8 @@ def test_basis_function():
   assert basis_fn[1][1, 0] == data_manager.g_scale.derivatives[1, 0]
   assert basis_fn[1][2, 0] == data_manager.g_scale.derivatives[2, 0]
 
-def test_target_function():
-  (test_reflections, test_experiments, params) = generate_test_input()
+def test_target_function(generated_input):
+  (test_reflections, test_experiments, params) = generated_input
   #setup of data manager
   data_manager = KB_Data_Manager(test_reflections, test_experiments, params)
   data_manager.g_scale.parameters = flex.double([2.0])
