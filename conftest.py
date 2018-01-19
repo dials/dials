@@ -14,18 +14,20 @@ def dials_regression():
   '''Return the absolute path to the dials_regression module as a string.
      Skip the test if dials_regression is not installed.'''
   try:
-    return libtbx.env.dist_path('dials_regression')
-  except KeyError:
+    import dials_regression as dr
+  except ImportError:
     pytest.skip("dials_regression required for this test")
+  return os.path.dirname(dr.__file__)
 
 @pytest.fixture
 def xia2_regression():
   '''Return the absolute path to the xia2_regression module as a string.
      Skip the test if dials_regression is not installed.'''
   try:
-    return libtbx.env.dist_path('xia2_regression')
-  except KeyError:
+    import xia2_regression as xr
+  except ImportError:
     pytest.skip("xia2_regression required for this test")
+  return os.path.dirname(xr.__file__)
 
 @pytest.fixture
 def xia2_regression_build():
