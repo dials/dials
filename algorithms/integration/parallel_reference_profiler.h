@@ -111,12 +111,9 @@ namespace dials { namespace algorithms {
           reflection,
           adjacent_reflections);
 
-      // Get the panel number
-      std::size_t panel = reflection.get<std::size_t>("panel");
-
       // Extract the shoebox data
       extract_shoebox(
-          buffer_.data(panel),
+          buffer_,
           reflection,
           zstart_,
           underload_,
@@ -329,13 +326,13 @@ namespace dials { namespace algorithms {
     /**
      * Extract the shoebox data from the buffer
      */
-    template <typename FloatType>
     void extract_shoebox(
-          const af::const_ref< FloatType, af::c_grid<3> > &data_buffer,
+          const Buffer &buffer,
           af::Reflection &reflection,
           int zstart,
           double underload,
           double overload) const {
+      typedef af::const_ref<Buffer::float_type, af::c_grid<2> > data_buffer_type;
       std::size_t panel = reflection.get<std::size_t>("panel");
       int6 bbox = reflection.get<int6>("bbox");
       Shoebox<> shoebox(panel, bbox);
@@ -359,18 +356,20 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(xsize == data.accessor()[2]);
       DIALS_ASSERT(shoebox.is_consistent());
       for (std::size_t k = 0; k < zsize; ++k) {
+        int kk = z0 + k - zstart;
+        if (kk < 0 || kk >= buffer.num_images()) {
+          continue;
+        }
+        data_buffer_type data_buffer = buffer.data(panel, kk);
         for (std::size_t j = 0; j < ysize; ++j) {
           for (std::size_t i = 0; i < xsize; ++i) {
-            int kk = z0 + k - zstart;
             int jj = y0 + j;
             int ii = x0 + i;
-            if (kk >= 0 &&
-                jj >= 0 &&
+            if (jj >= 0 &&
                 ii >= 0 &&
-                kk < data_buffer.accessor()[0] &&
-                jj < data_buffer.accessor()[1] &&
-                ii < data_buffer.accessor()[2]) {
-              double d = data_buffer(kk, jj, ii);
+                jj < data_buffer.accessor()[0] &&
+                ii < data_buffer.accessor()[1]) {
+              double d = data_buffer(jj, ii);
               int m = (d > underload && d < overload)
                 ? Valid
                 : 0;
@@ -461,6 +460,7 @@ namespace dials { namespace algorithms {
      * @param compute_reference The intensity calculation function
      * @param logger The logger class
      * @param nthreads The number of parallel threads
+     * @param buffer_size The buffer_size
      * @param use_dynamic_mask Use the dynamic mask if present
      * @param debug Add debug output
      */
@@ -472,6 +472,7 @@ namespace dials { namespace algorithms {
           ReferenceCalculatorIface &compute_reference,
           const Logger &logger,
           std::size_t nthreads,
+          std::size_t buffer_size,
           bool use_dynamic_mask,
           bool debug) {
 
@@ -489,6 +490,9 @@ namespace dials { namespace algorithms {
       // Get the size of the data buffer needed
       std::size_t zsize = imageset.size();
       DIALS_ASSERT(zsize > 0);
+      if (buffer_size == 0 || buffer_size > zsize) {
+        buffer_size = zsize;
+      }
 
       // Get the starting frame and the underload/overload values
       int zstart = scan.get_array_range()[0];
@@ -515,6 +519,7 @@ namespace dials { namespace algorithms {
       Buffer buffer(
           detector,
           zsize,
+          buffer_size,
           underload,
           imageset.get_static_mask());
 
@@ -579,18 +584,19 @@ namespace dials { namespace algorithms {
      * @param imageset the imageset class
      */
     static
-    std::size_t compute_required_memory(ImageSweep imageset) {
+    std::size_t compute_required_memory(ImageSweep imageset, std::size_t block_size) {
       DIALS_ASSERT(imageset.get_detector() != NULL);
       DIALS_ASSERT(imageset.get_scan() != NULL);
       Detector detector = *imageset.get_detector();
       Scan scan = *imageset.get_scan();
+      block_size = std::min(block_size, (std::size_t)scan.get_num_images());
       std::size_t nelements = 0;
       for (std::size_t i = 0; i < detector.size(); ++i) {
         std::size_t xsize = detector[i].get_image_size()[0];
         std::size_t ysize = detector[i].get_image_size()[1];
         nelements += xsize * ysize;
       }
-      nelements *= scan.get_num_images();
+      nelements *= block_size;
       std::size_t nbytes = nelements * sizeof(double);
       return nbytes;
     }
@@ -664,14 +670,19 @@ namespace dials { namespace algorithms {
       int zstart = imageset.get_scan()->get_array_range()[0];
       std::size_t zsize = imageset.size();
 
+      // Create the buffer manager
+      BufferManager bm(buffer, bbox, flags, zstart);
+
       // Loop through all the images
       for (std::size_t i = 0; i < zsize; ++i) {
 
-        // Copy the image to the buffer
+        // Copy the image to the buffer. If the image number is greater than the
+        // buffer size (i.e. we are now deleting old images) then wait for the
+        // threads to finish so that we don't end up reading the wrong data
         if (use_dynamic_mask) {
-          buffer.copy(imageset.get_corrected_data(i), imageset.get_dynamic_mask(i), i);
+          bm.copy_when_ready(imageset.get_corrected_data(i), imageset.get_dynamic_mask(i), i);
         } else {
-          buffer.copy(imageset.get_corrected_data(i), i);
+          bm.copy_when_ready(imageset.get_corrected_data(i), i);
         }
 
         // Get the reflections recorded at this point
@@ -696,13 +707,16 @@ namespace dials { namespace algorithms {
           }
 
           // Post the integration job
-          pool.post(
+          bm.post(
+            pool,
             boost::bind(
               &ReflectionReferenceProfiler::operator(),
               boost::ref(parallel_reference_profiler),
               k,
               af::ref<af::Reflection>(&reflections[0], reflections.size()),
-              boost::ref(overlaps)));
+              boost::ref(overlaps)),
+            bbox[k][4]);
+
         }
 
         // Print some output
@@ -717,7 +731,7 @@ namespace dials { namespace algorithms {
       }
 
       // Wait for all the integration jobs to complete
-      pool.wait();
+      bm.wait(pool);
     }
 
     af::reflection_table reflections_;

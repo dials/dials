@@ -380,7 +380,9 @@ class IntegrationJob(object):
     Compute the required memory
 
     '''
-    return MultiThreadedIntegrator.compute_required_memory(imageset)
+    return MultiThreadedIntegrator.compute_required_memory(
+      imageset,
+      self.params.integration.block.size)
 
   def integrate(self, imageset):
     '''
@@ -451,6 +453,7 @@ class IntegrationJob(object):
       compute_intensity  = compute_intensity,
       logger             = Logger(logger),
       nthreads           = self.params.integration.mp.nproc,
+      buffer_size        = self.params.integration.block.size,
       use_dynamic_mask   = self.params.integration.use_dynamic_mask,
       debug              = self.params.integration.debug.output)
 
@@ -862,7 +865,9 @@ class ReferenceCalculatorJob(object):
     Compute the required memory
 
     '''
-    return MultiThreadedReferenceProfiler.compute_required_memory(imageset)
+    return MultiThreadedIntegrator.compute_required_memory(
+      imageset,
+      self.params.integration.block.size)
 
   def compute_reference_profiles(self, imageset):
     '''
@@ -932,6 +937,7 @@ class ReferenceCalculatorJob(object):
       compute_reference  = compute_reference,
       logger             = Logger(logger),
       nthreads           = self.params.integration.mp.nproc,
+      buffer_size        = self.params.integration.block.size,
       use_dynamic_mask   = self.params.integration.use_dynamic_mask,
       debug              = self.params.integration.debug.output)
 

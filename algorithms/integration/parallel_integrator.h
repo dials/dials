@@ -71,7 +71,7 @@ namespace dials { namespace algorithms {
   /**
    * A class to store the image data buffer
    */
-  class Buffer {
+  class BufferBase {
   public:
 
     typedef Shoebox<>::float_type float_type;
@@ -83,10 +83,10 @@ namespace dials { namespace algorithms {
      * @param mask_value The value of masked pixels in the buffer
      * @param external_mask The external mask
      */
-    Buffer(const Detector &detector,
-           std::size_t num_images,
-           float_type mask_value,
-           const Image<bool> &external_mask)
+    BufferBase(const Detector &detector,
+               std::size_t num_images,
+               float_type mask_value,
+               const Image<bool> &external_mask)
         : mask_value_(mask_value) {
       std::size_t zsize = num_images;
       DIALS_ASSERT(zsize > 0);
@@ -231,6 +231,142 @@ namespace dials { namespace algorithms {
 
 
   /**
+   * A class to store the image data circular buffer
+   */
+  class Buffer {
+  public:
+
+    typedef Shoebox<>::float_type float_type;
+
+    /**
+     * Initialise the the size of the panels
+     * @param detector The detector model
+     * @param num_images The number of images
+     * @param mask_value The value of masked pixels in the buffer
+     * @param external_mask The external mask
+     */
+    Buffer(const Detector &detector,
+           std::size_t num_images,
+           std::size_t num_buffer,
+           float_type mask_value,
+           const Image<bool> &external_mask)
+        : buffer_base_(
+            detector,
+            num_buffer,
+            mask_value,
+            external_mask),
+          num_images_(num_images),
+          num_buffer_(num_buffer),
+          buffer_range_(0, num_buffer) {
+      DIALS_ASSERT(num_buffer > 0);
+      DIALS_ASSERT(num_images >= num_buffer);
+    }
+
+    /**
+     * @returns The number of images
+     */
+    std::size_t num_images() const {
+      return num_images_;
+    }
+
+    /**
+     * @returns The number of images in the buffer
+     */
+    std::size_t num_buffer() const {
+      return num_buffer_;
+    }
+
+    /**
+     * @returns The current buffer image range
+     */
+    tiny<int,2> buffer_range() const {
+      return buffer_range_;
+    }
+
+    /**
+     * Copy an image to the buffer
+     * @param data The image data
+     * @param index The image index
+     */
+    void copy(const Image<double> &data, std::size_t index) {
+      DIALS_ASSERT(index < num_images_);
+      DIALS_ASSERT(index >= buffer_range_[0]);
+      DIALS_ASSERT(index <= buffer_range_[1]);
+      DIALS_ASSERT(buffer_range_[0] >= 0);
+      DIALS_ASSERT(buffer_range_[1] <= num_images_);
+      DIALS_ASSERT(buffer_range_[1] > buffer_range_[0]);
+      DIALS_ASSERT(buffer_range_[1] - buffer_range_[0] == num_buffer_);
+      if (index == buffer_range_[1]) {
+        buffer_range_[0]++;
+        buffer_range_[1]++;
+      }
+      buffer_base_.copy(data, index % num_buffer_);
+    }
+
+    /**
+     * Copy an image to the buffer
+     * @param data The image data
+     * @param mask The mask data
+     * @param index The image index
+     */
+    void copy(const Image<double> &data, const Image<bool> &mask, std::size_t index) {
+      DIALS_ASSERT(index < num_images_);
+      DIALS_ASSERT(index >= buffer_range_[0]);
+      DIALS_ASSERT(index <= buffer_range_[1]);
+      DIALS_ASSERT(buffer_range_[0] >= 0);
+      DIALS_ASSERT(buffer_range_[1] <= num_images_);
+      DIALS_ASSERT(buffer_range_[1] > buffer_range_[0]);
+      DIALS_ASSERT(buffer_range_[1] - buffer_range_[0] == num_buffer_);
+      if (index == buffer_range_[1]) {
+        buffer_range_[0]++;
+        buffer_range_[1]++;
+      }
+      buffer_base_.copy(data, mask, index % num_buffer_);
+    }
+
+    /**
+     * @param The panel number
+     * @returns The buffer for the panel
+     */
+    af::const_ref< float_type, af::c_grid<2> > data(
+        std::size_t panel,
+        std::size_t index) const {
+      DIALS_ASSERT(index < num_images_);
+      DIALS_ASSERT(index >= buffer_range_[0]);
+      DIALS_ASSERT(index < buffer_range_[1]);
+      DIALS_ASSERT(buffer_range_[0] >= 0);
+      DIALS_ASSERT(buffer_range_[1] <= num_images_);
+      DIALS_ASSERT(buffer_range_[1] > buffer_range_[0]);
+      DIALS_ASSERT(buffer_range_[1] - buffer_range_[0] == num_buffer_);
+      af::const_ref< float_type, af::c_grid<3> > data_buffer = buffer_base_.data(panel);
+      std::size_t ysize = data_buffer.accessor()[1];
+      std::size_t xsize = data_buffer.accessor()[2];
+      std::size_t offset = (index % num_buffer_) * (ysize * xsize);
+      DIALS_ASSERT(offset < data_buffer.size());
+      return af::const_ref< float_type, af::c_grid<2> >(
+          &data_buffer[offset],
+          af::c_grid<2>(ysize, xsize));
+    }
+
+    /**
+     * @param The panel number
+     * @returns The buffer for the panel
+     */
+    af::const_ref< bool, af::c_grid<2> > static_mask(std::size_t panel) const {
+      return buffer_base_.static_mask(panel);
+    }
+
+  protected:
+
+    BufferBase buffer_base_;
+    std::size_t num_images_;
+    std::size_t num_buffer_;
+    tiny<int,2> buffer_range_;
+
+  };
+
+
+  /**
    * A class to integrate a single reflection
    */
   class ReflectionIntegrator {
@@ -296,12 +432,9 @@ namespace dials { namespace algorithms {
           reflection,
           adjacent_reflections);
 
-      // Get the panel number
-      std::size_t panel = reflection.get<std::size_t>("panel");
-
       // Extract the shoebox data
       extract_shoebox(
-          buffer_.data(panel),
+          buffer_,
           reflection,
           zstart_,
           underload_,
@@ -336,7 +469,9 @@ namespace dials { namespace algorithms {
       try {
         compute_intensity_(reflection, adjacent_reflections);
       } catch (dials::error) {
-        // pass
+        std::size_t flags = reflection.get<std::size_t>("flags");
+        flags |= af::FailedDuringProfileFitting;
+        reflection["flags"] = flags;
       }
 
       // Erase the shoebox
@@ -514,13 +649,13 @@ namespace dials { namespace algorithms {
     /**
      * Extract the shoebox data from the buffer
      */
-    template <typename FloatType>
     void extract_shoebox(
-          const af::const_ref< FloatType, af::c_grid<3> > &data_buffer,
+          const Buffer &buffer,
           af::Reflection &reflection,
           int zstart,
           double underload,
           double overload) const {
+      typedef af::const_ref<Buffer::float_type, af::c_grid<2> > data_buffer_type;
       std::size_t panel = reflection.get<std::size_t>("panel");
       int6 bbox = reflection.get<int6>("bbox");
       Shoebox<> shoebox(panel, bbox);
@@ -544,18 +679,20 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(xsize == data.accessor()[2]);
       DIALS_ASSERT(shoebox.is_consistent());
       for (std::size_t k = 0; k < zsize; ++k) {
+        int kk = z0 + k - zstart;
+        if (kk < 0 || kk >= buffer.num_images()) {
+          continue;
+        }
+        data_buffer_type data_buffer = buffer.data(panel, kk);
         for (std::size_t j = 0; j < ysize; ++j) {
           for (std::size_t i = 0; i < xsize; ++i) {
-            int kk = z0 + k - zstart;
             int jj = y0 + j;
             int ii = x0 + i;
-            if (kk >= 0 &&
-                jj >= 0 &&
+            if (jj >= 0 &&
                 ii >= 0 &&
-                kk < data_buffer.accessor()[0] &&
-                jj < data_buffer.accessor()[1] &&
-                ii < data_buffer.accessor()[2]) {
-              double d = data_buffer(kk, jj, ii);
+                jj < data_buffer.accessor()[0] &&
+                ii < data_buffer.accessor()[1]) {
+              double d = data_buffer(jj, ii);
               int m = (d > underload && d < overload)
                 ? Valid
                 : 0;
@@ -697,6 +834,211 @@ namespace dials { namespace algorithms {
     std::vector<std::size_t> offset_;
   };
 
+  /**
+   * A class to manage the image buffer. Reflections are processed and then notify
+   * the manager when they are done. We maintain a counter of reflections which
+   * require each image. After each reflection is processed, the appropriate
+   * atomic counter is decremented. When the counter reaches zero, the image is no
+   * longer needed.
+   */
+  class BufferManager {
+  public:
+
+    /**
+     * Create the buffer manager
+     * @param buffer The buffer to manage
+     * @param bbox The bounding box
+     * @param first_image The first image
+     */
+    BufferManager(
+          Buffer &buffer,
+          const af::const_ref<int6> &bbox,
+          const af::const_ref<std::size_t> &flags,
+          int first_image)
+      : buffer_(buffer),
+        notifier_(
+            bbox,
+            flags,
+            first_image,
+            buffer.num_images(),
+            buffer.num_buffer()),
+        first_image_(first_image),
+        max_images_(buffer.num_buffer()) {}
+
+    /**
+     * Copy the image to the buffer when we are able to accept more images
+     * @param data The image data
+     * @param index The image index
+     */
+    void copy_when_ready(const Image<double> &data, std::size_t index) {
+      if (index >= max_images_) {
+        while (!notifier_.complete(buffer_.buffer_range()[0]));
+      }
+      buffer_.copy(data, index);
+    }
+
+    /**
+     * Copy the image to the buffer when we are able to accept more images
+     * @param data The image data
+     * @param mask The image mask
+     * @param index The image index
+     */
+    void copy_when_ready(const Image<double> &data, const Image<bool> &mask, std::size_t index) {
+      if (index >= max_images_) {
+        while (!notifier_.complete(buffer_.buffer_range()[0]));
+      }
+      buffer_.copy(data, mask, index);
+    }
+
+    /**
+     * Post the job to the pool
+     * @param pool The thread pool
+     * @param function The function to post
+     * @param bbox_first_image The image index
+     */
+    template <typename ThreadPoolType, typename Function>
+    void post(ThreadPoolType &pool, Function function, int bbox_first_image) {
+      DIALS_ASSERT(bbox_first_image >= first_image_);
+      pool.post(JobWrapper<Function>(function, notifier_, bbox_first_image-first_image_));
+    }
+
+    /**
+     * Wait and check all are complete
+     * @param pool The thread pool
+     */
+    template <typename ThreadPoolType>
+    void wait(ThreadPoolType &pool) {
+      pool.wait();
+      DIALS_ASSERT(notifier_.all_complete());
+    }
+
+  protected:
+
+    /**
+     * A class to notify the buffer manager when all jobs that need to access an
+     * image have completed so that the image can be deleted.
+     */
+    class Notifier {
+    public:
+
+      /**
+       * Init the counters
+       * @param bbox The reflection bbox
+       * @param flags The reflection flags
+       * @param first_image The first image
+       * @param last_image The last image
+       */
+      Notifier(const af::const_ref<int6> &bbox,
+               const af::const_ref<std::size_t> &flags,
+               int first_image,
+               std::size_t num_images,
+               std::size_t max_images)
+          : first_image_(first_image),
+            counter_(num_images) {
+        DIALS_ASSERT(bbox.size() == flags.size());
+        DIALS_ASSERT(num_images > 0);
+        int last_image = first_image + num_images;
+        for (std::size_t j = 0; j < bbox.size(); ++j) {
+          if ((flags[j] & af::DontIntegrate) == 0) {
+            int z0 = bbox[j][4];
+            int z1 = bbox[j][5];
+            DIALS_ASSERT(z0 >= first_image);
+            DIALS_ASSERT(z0 < last_image);
+            DIALS_ASSERT(z1 - z0 <= max_images);
+            int i = z0 - first_image_;
+            DIALS_ASSERT(i >= 0);
+            DIALS_ASSERT(i < counter_.size());
+            counter_[i]++;
+          }
+        }
+      }
+
+      /**
+       * Notify about a reflection using this image is finished.
+       * Reduce the atomic counter for the image
+       * @param image_index The image index
+       */
+      void notify(std::size_t index) {
+        DIALS_ASSERT(index < counter_.size());
+        counter_[index]--;
+      }
+
+      /**
+       * @param image_index The image index
+       * @returns The value of the counter
+       */
+      int counter(std::size_t index) {
+        DIALS_ASSERT(index < counter_.size());
+        return counter_[index];
+      }
+
+      /**
+       * Check whether all reflections needing this image are finsihed
+       * Check the atomic counter for the image
+       * @param index The image index
+       * @returns True/False complete
+       */
+      bool complete(std::size_t index) const {
+        DIALS_ASSERT(index < counter_.size());
+        return counter_[index] == 0;
+      }
+
+      /**
+       * Check that all images are complete
+       * @returns True/False complete
+       */
+      bool all_complete() const {
+        for (std::size_t i = 0; i < counter_.size(); ++i) {
+          if (counter_[i] != 0) {
+            return false;
+          }
+        }
+        return true;
+      }
+
+    protected:
+
+      int first_image_;
+      std::vector < boost::atomic<int> > counter_;
+
+    };
+
+    /**
+     * A wrapper to call the job function and then call the notifier function
+     */
+    template <typename Function>
+    class JobWrapper {
+    public:
+
+      /**
+       * Construct
+       * @param function The function to call
+       * @param notifier The notifier function
+       * @param index The image index
+       */
+      JobWrapper(Function function, Notifier &notifier, std::size_t index)
+        : function_(function),
+          notifier_(notifier),
+          index_(index) {}
+
+      /**
+       * Call the function and notify
+       */
+      void operator()() {
+        function_();
+        notifier_.notify(index_);
+      }
+
+      Function function_;
+      Notifier &notifier_;
+      std::size_t index_;
+    };
+
+    Buffer &buffer_;
+    Notifier notifier_;
+    int first_image_;
+    std::size_t max_images_;
+  };
 
 
   /**
@@ -714,6 +1056,7 @@ namespace dials { namespace algorithms {
      * @param compute_intensity The intensity calculation function
      * @param logger The logger class
      * @param nthreads The number of parallel threads
+     * @param buffer_size The buffer_size
      * @param use_dynamic_mask Use the dynamic mask if present
      * @param debug Add debug output
      */
@@ -725,6 +1068,7 @@ namespace dials { namespace algorithms {
           const IntensityCalculatorIface &compute_intensity,
           const Logger &logger,
           std::size_t nthreads,
+          std::size_t buffer_size,
           bool use_dynamic_mask,
           bool debug) {
 
@@ -742,6 +1086,9 @@ namespace dials { namespace algorithms {
       // Get the size of the data buffer needed
       std::size_t zsize = imageset.size();
       DIALS_ASSERT(zsize > 0);
+      if (buffer_size == 0 || buffer_size > zsize) {
+        buffer_size = zsize;
+      }
 
       // Get the starting frame and the underload/overload values
       int zstart = scan.get_array_range()[0];
@@ -768,6 +1115,7 @@ namespace dials { namespace algorithms {
       Buffer buffer(
           detector,
           zsize,
+          buffer_size,
           underload,
           imageset.get_static_mask());
 
@@ -832,18 +1180,19 @@ namespace dials { namespace algorithms {
      * @param imageset the imageset class
      */
     static
-    std::size_t compute_required_memory(ImageSweep imageset) {
+    std::size_t compute_required_memory(ImageSweep imageset, std::size_t block_size) {
       DIALS_ASSERT(imageset.get_detector() != NULL);
       DIALS_ASSERT(imageset.get_scan() != NULL);
       Detector detector = *imageset.get_detector();
       Scan scan = *imageset.get_scan();
+      block_size = std::min(block_size, (std::size_t)scan.get_num_images());
       std::size_t nelements = 0;
       for (std::size_t i = 0; i < detector.size(); ++i) {
         std::size_t xsize = detector[i].get_image_size()[0];
         std::size_t ysize = detector[i].get_image_size()[1];
         nelements += xsize * ysize;
       }
-      nelements *= scan.get_num_images();
+      nelements *= block_size;
       std::size_t nbytes = nelements * sizeof(double);
       return nbytes;
     }
@@ -916,14 +1265,19 @@ namespace dials { namespace algorithms {
       int zstart = imageset.get_scan()->get_array_range()[0];
       std::size_t zsize = imageset.size();
 
+      // Create the buffer manager
+      BufferManager bm(buffer, bbox, flags, zstart);
+
       // Loop through all the images
       for (std::size_t i = 0; i < zsize; ++i) {
 
-        // Copy the image to the buffer
+        // Copy the image to the buffer. If the image number is greater than the
+        // buffer size (i.e. we are now deleting old images) then wait for the
+        // threads to finish so that we don't end up reading the wrong data
         if (use_dynamic_mask) {
-          buffer.copy(imageset.get_corrected_data(i), imageset.get_dynamic_mask(i), i);
+          bm.copy_when_ready(imageset.get_corrected_data(i), imageset.get_dynamic_mask(i), i);
         } else {
-          buffer.copy(imageset.get_corrected_data(i), i);
+          bm.copy_when_ready(imageset.get_corrected_data(i), i);
         }
 
         // Get the reflections recorded at this point
@@ -948,13 +1302,15 @@ namespace dials { namespace algorithms {
           }
 
           // Post the integration job
-          pool.post(
+          bm.post(
+            pool,
             boost::bind(
               &ReflectionIntegrator::operator(),
               boost::ref(integrator),
               k,
               af::ref<af::Reflection>(&reflections[0], reflections.size()),
-              boost::ref(overlaps)));
+              boost::ref(overlaps)),
+            bbox[k][4]);
         }
 
         // Print some output
@@ -969,7 +1325,7 @@ namespace dials { namespace algorithms {
       }
 
       // Wait for all the integration jobs to complete
-      pool.wait();
+      bm.wait(pool);
     }
 
     af::reflection_table reflections_;

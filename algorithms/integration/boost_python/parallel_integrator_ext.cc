@@ -352,6 +352,7 @@ namespace dials { namespace algorithms { namespace boost_python {
           const IntensityCalculatorIface&,
           const Logger&,
           std::size_t,
+          std::size_t,
           bool,
           bool>((
               arg("reflections"),
@@ -361,6 +362,7 @@ namespace dials { namespace algorithms { namespace boost_python {
               arg("compute_intensity"),
               arg("logger"),
               arg("nthreads") = 1,
+              arg("buffer_size") = 0,
               arg("use_dynamic_mask") = true,
               arg("debug") = false)))
       .def("reflections",
@@ -385,6 +387,7 @@ namespace dials { namespace algorithms { namespace boost_python {
           ReferenceCalculatorIface&,
           const Logger&,
           std::size_t,
+          std::size_t,
           bool,
           bool>((
               arg("reflections"),
@@ -394,6 +397,7 @@ namespace dials { namespace algorithms { namespace boost_python {
               arg("compute_reference"),
               arg("logger"),
               arg("nthreads") = 1,
+              arg("buffer_size") = 0,
               arg("use_dynamic_mask") = true,
               arg("debug") = false)))
       .def("reflections",
