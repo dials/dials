@@ -5,7 +5,6 @@
 
 from __future__ import absolute_import, division, print_function
 
-import libtbx.load_env
 import os
 import pytest
 
@@ -33,7 +32,10 @@ def xia2_regression():
 def xia2_regression_build():
   '''Return the absolute path to the xia2_regression directory within the build
      path as a string. Skip the test if xia2_regression is not installed.'''
-  x2rpath = libtbx.env.under_build('xia2_regression')
+  try:
+    x2rpath = os.path.join(os.environ.get('LIBTBX_BUILD'), 'xia2_regression')
+  except AttributeError:
+    x2rpath = ''
   if not os.path.exists(x2rpath):
     pytest.skip("xia2_regression required for this test")
   return x2rpath
