@@ -39,8 +39,9 @@ namespace dials { namespace algorithms { namespace boost_python {
                  const Detector& >())
       .def("lp", &Corrections::lp, (
             arg("s1")))
-      .def("dqe", &Corrections::lp, (
-            arg("s1")))
+      .def("dqe", &Corrections::dqe, (
+            arg("s1"),
+            arg("panel")))
       ;
 
     class_<CorrectionsMulti>("CorrectionsMulti")
