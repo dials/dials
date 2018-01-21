@@ -85,6 +85,10 @@ control_phil_str = '''
     nproc = 1
       .type = int(value_min=1)
       .help = "The number of processes to use."
+    glob = None
+      .type = str
+      .help = For MPI, for multifile data, mandatory blobs giving file paths
+      .multiple = True
   }
 '''
 
