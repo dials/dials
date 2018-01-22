@@ -21,11 +21,11 @@ namespace dials { namespace algorithms {
    */
   class MaskCalculatorIface {
   public:
+    virtual ~MaskCalculatorIface() = 0;
 
     virtual void operator()(
         af::Reflection &reflection,
         bool adjacent=false) const = 0;
-
   };
 
   /**
@@ -33,9 +33,9 @@ namespace dials { namespace algorithms {
    */
   class BackgroundCalculatorIface {
   public:
+    virtual ~BackgroundCalculatorIface() = 0;
 
     virtual void operator()(af::Reflection &reflection) const = 0;
-
   };
 
   /**
@@ -43,11 +43,11 @@ namespace dials { namespace algorithms {
    */
   class IntensityCalculatorIface {
   public:
+    virtual ~IntensityCalculatorIface() = 0;
 
     virtual void operator()(
         af::Reflection &reflection,
         const std::vector<af::Reflection> &adjacent_reflections) const = 0;
-
   };
 
   /**
@@ -55,9 +55,9 @@ namespace dials { namespace algorithms {
    */
   class ReferenceCalculatorIface {
   public:
+    virtual ~ReferenceCalculatorIface() = 0;
 
     virtual void operator()(af::Reflection &reflection) = 0;
-
   };
 
 }}
