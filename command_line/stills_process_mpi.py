@@ -2,7 +2,7 @@
 #
 # LIBTBX_SET_DISPATCHER_NAME dials.stills_process_mpi
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 import libtbx.load_env
 import logging
 logger = logging.getLogger(libtbx.env.dispatcher_name)
@@ -62,7 +62,7 @@ class Script(base_script):
       if diff_phil is not '':
         logger.info('The following parameters have been modified:\n')
         logger.info(diff_phil)
-        print diff_phil
+        print(diff_phil)
       import glob
       for item in params.mp.glob:
         all_paths += glob.glob(item)
@@ -105,7 +105,7 @@ class Script(base_script):
     iterable = zip(tags, all_paths)
 
     self.subset = [item for i, item in enumerate(iterable) if (i+self.rank)%self.size == 0]
-    print "DELEGATE %d of %d: %s"%( self.rank, self.size, self.subset[0:10])
+    print("DELEGATE %d of %d: %s"%( self.rank, self.size, self.subset[0:10]))
 
   def run(self):
     import copy
