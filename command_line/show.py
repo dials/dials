@@ -62,6 +62,15 @@ def beam_centre_mm(detector, s0):
 
 
 def show_beam(detector, beam):
+
+  # standard static beam model string
+  s = str(beam)
+
+  # report whether the beam is scan-varying
+  if beam.num_scan_points > 0:
+    s += "    s0 sampled at " + str(beam.num_scan_points) + " scan points\n"
+
+  # add static model beam centres
   panel_id, (x, y) = beam_centre_mm(detector, beam.get_s0())
   if panel_id >= 0 and x is not None and y is not None:
     x_px, y_px = detector[panel_id].millimeter_to_pixel((x, y))
@@ -73,15 +82,11 @@ def show_beam(detector, beam):
     else:
       beam_centre_mm_str = "Beam centre (mm): (%.2f,%.2f)" %(x, y)
       beam_centre_px_str = "Beam centre (px): (%.2f,%.2f)" %(x_px, y_px)
-    static_str = str(beam) + beam_centre_mm_str + '\n' + beam_centre_px_str + '\n'
-  else:
-    static_str = str(beam)
 
-  sv_str = ""
+    s += beam_centre_mm_str + '\n' + beam_centre_px_str + '\n'
+
+  # report range of scan-varying model beam centres
   if beam.num_scan_points > 0:
-    sv_str += "    s0 sampled at " + str(beam.num_scan_points) \
-             + " scan points\n"
-
     # get scan-varying beam centres, ensuring all on same panel
     sv_s0 = beam.get_s0_at_scan_points()
     impacts = [beam_centre_mm(detector, s0) for s0 in sv_s0]
@@ -95,12 +100,12 @@ def show_beam(detector, beam):
     xy = [detector[pnl].millimeter_to_pixel(e) for e in xy]
     x_px, y_px = zip(*xy)
 
-    sv_str += "Beam centre range (mm): ([%.2f,%.2f],[%.2f,%.2f])\n" % (min(x_mm),
+    s += "Beam centre range (mm): ([%.2f,%.2f],[%.2f,%.2f])\n" % (min(x_mm),
         max(x_mm), min(y_mm), max(y_mm))
-    sv_str += "Beam centre range (px): ([%.2f,%.2f],[%.2f,%.2f])\n" % (min(x_px),
+    s += "Beam centre range (px): ([%.2f,%.2f],[%.2f,%.2f])\n" % (min(x_px),
         max(x_px), min(y_px), max(y_px))
 
-  return static_str + sv_str
+  return s
 
 
 def run(args):
