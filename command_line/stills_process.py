@@ -244,7 +244,7 @@ class Script(object):
     import copy
 
     # Parse the command line
-    params, options, all_paths = self.parser.parse_args(show_diff_phil=False, return_unhandled=True)
+    params, options, all_paths = self.parser.parse_args(show_diff_phil=False, return_unhandled=True, quick_parse=True)
 
     # Check we have some filenames
     if not all_paths:
@@ -373,7 +373,7 @@ class Script(object):
       size = comm.Get_size() # size: number of processes running in this job
 
       subset = [item for i, item in enumerate(iterable) if (i+rank)%size == 0]
-      do_work((rank, subset))
+      do_work(rank, subset)
     else:
       from dxtbx.command_line.image_average import splitit
       if params.mp.nproc == 1:
