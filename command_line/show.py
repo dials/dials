@@ -46,8 +46,7 @@ show_panel_distance = False
 """, process_includes=True)
 
 
-def beam_centre_mm(detector, beam):
-  s0 = beam.get_s0()
+def beam_centre_mm(detector, s0):
   x, y = (None, None)
   for panel_id, panel in enumerate(detector):
     try:
@@ -63,7 +62,7 @@ def beam_centre_mm(detector, beam):
 
 
 def show_beam(detector, beam):
-  panel_id, (x, y) = beam_centre_mm(detector, beam)
+  panel_id, (x, y) = beam_centre_mm(detector, beam.get_s0())
   if panel_id >= 0 and x is not None and y is not None:
     x_px, y_px = detector[panel_id].millimeter_to_pixel((x, y))
     if len(detector) > 1:
@@ -74,9 +73,35 @@ def show_beam(detector, beam):
     else:
       beam_centre_mm_str = "Beam centre (mm): (%.2f,%.2f)" %(x, y)
       beam_centre_px_str = "Beam centre (px): (%.2f,%.2f)" %(x_px, y_px)
-    return str(beam) + beam_centre_mm_str + '\n' + beam_centre_px_str + '\n'
+    static_str = str(beam) + beam_centre_mm_str + '\n' + beam_centre_px_str + '\n'
   else:
-    return str(beam)
+    static_str = str(beam)
+
+  sv_str = ""
+  if beam.num_scan_points > 0:
+    sv_str += "    s0 sampled at " + str(beam.num_scan_points) \
+             + " scan points\n"
+
+    # get scan-varying beam centres, ensuring all on same panel
+    sv_s0 = beam.get_s0_at_scan_points()
+    impacts = [beam_centre_mm(detector, s0) for s0 in sv_s0]
+    pnl, xy = zip(*impacts)
+    uniq_pnls = set(pnl)
+    if len(uniq_pnls) > 1 or min(uniq_pnls) < 0: return static_str + sv_str
+    pnl = list(uniq_pnls)[0]
+    x_mm, y_mm = zip(*xy)
+
+    # convert to pixels
+    xy = [detector[pnl].millimeter_to_pixel(e) for e in xy]
+    x_px, y_px = zip(*xy)
+
+    sv_str += "Beam centre range (mm): ([%.2f,%.2f],[%.2f,%.2f])\n" % (min(x_mm),
+        max(x_mm), min(y_mm), max(y_mm))
+    sv_str += "Beam centre range (px): ([%.2f,%.2f],[%.2f,%.2f])\n" % (min(x_px),
+        max(x_px), min(y_px), max(y_px))
+
+  return static_str + sv_str
+
 
 def run(args):
 
