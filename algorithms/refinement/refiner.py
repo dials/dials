@@ -2156,13 +2156,20 @@ class Refiner(object):
     if any(n > 1 for n in det_npanels):
       self.print_panel_rmsd_table()
 
-    # write scan varying setting matrices back to crystal models
+    # write scan-varying states back to their models
     #FIXME tidy up
     from dials.algorithms.refinement.parameterisation import \
       ScanVaryingPredictionParameterisation
     if isinstance(self._pred_param, ScanVaryingPredictionParameterisation):
       for iexp, exp in enumerate(self._experiments):
         ar_range = exp.scan.get_array_range()
+
+        # write scan-varying s0 vectors back to beam models
+        s0_list = [self._pred_param.get_s0(t, iexp) for t in range(ar_range[0],
+                                                            ar_range[1]+1)]
+        exp.beam.set_s0_at_scan_points(s0_list)
+
+        # write scan-varying setting matrices back to crystal models
         A_list = [self._pred_param.get_UB(t, iexp) for t in range(ar_range[0],
                                                             ar_range[1]+1)]
         exp.crystal.set_A_at_scan_points(A_list)

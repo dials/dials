@@ -407,6 +407,20 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
 
     return U*B
 
+  # called by refiner.run for setting the beam scan points
+  def get_s0(self, obs_image_number, experiment_id):
+    """Extract the s0 vector from the contained scan-dependent beam
+    parameterisation at specified image number."""
+
+    # identify which beam parameterisation to use for this experiment
+    bp = self._get_beam_parameterisation(experiment_id)
+
+    # model states at current frame
+    s0 = self._get_state_from_parameterisation(bp, obs_image_number)
+    if s0 is None: s0 = matrix.col(self._experiments[experiment_id].beam.get_s0())
+
+    return s0
+
   # overloaded for the scan-varying case
   def _get_model_data_for_experiment(self, experiment, reflections):
     """helper function to return model data s0, U, B, D and S for a particular
