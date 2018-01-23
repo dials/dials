@@ -96,14 +96,14 @@ def random_background_plane2(sbox, a, b, c, d):
     for k in range(dz):
       for j in range(dy):
         for i in range(dx):
-          sbox[k, j, i] += g.next()
+          sbox[k, j, i] += next(g)
   else:
     for k in range(dz):
       for j in range(dy):
         for i in range(dx):
           pixel = a + b * (i+0.5) + c * (j+0.5) + d * (k+0.5)
           g = variate(poisson_distribution(mean = pixel))
-          sbox[k, j, i] += g.next()
+          sbox[k, j, i] += next(g)
   return
 
 def random_background_plane(sbox, a, b, c, d):
@@ -121,14 +121,14 @@ def random_background_plane(sbox, a, b, c, d):
     for k in range(dz):
       for j in range(dy):
         for i in range(dx):
-          sbox[k, j, i] += g.next()
+          sbox[k, j, i] += next(g)
   else:
     for k in range(dz):
       for j in range(dy):
         for i in range(dx):
           pixel = a + b * i + c * j + d * k
           g = variate(poisson_distribution(mean = pixel))
-          sbox[k, j, i] += g.next()
+          sbox[k, j, i] += next(g)
   return
 
 def simple_gaussian_spots(params):

@@ -424,7 +424,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     method"""
 
     if self._varying_beams:
-      if reflections.has_key('imatch'):
+      if 'imatch' in reflections:
         imatch = reflections['imatch']
       else:
         imatch = None
@@ -441,7 +441,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     method"""
 
     if self._varying_xl_orientations:
-      if reflections.has_key('imatch'):
+      if 'imatch' in reflections:
         imatch = reflections['imatch']
       else:
         imatch = None
@@ -458,7 +458,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     method"""
 
     if self._varying_xl_unit_cells:
-      if reflections.has_key('imatch'):
+      if 'imatch' in reflections:
         imatch = reflections['imatch']
       else:
         imatch = None
@@ -475,7 +475,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     method"""
 
     if self._varying_detectors:
-      if reflections.has_key('imatch'):
+      if 'imatch' in reflections:
         imatch = reflections['imatch']
       else:
         imatch = None
@@ -492,7 +492,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     method"""
 
     if self._varying_goniometers:
-      if reflections.has_key('imatch'):
+      if 'imatch' in reflections:
         imatch = reflections['imatch']
       else:
         imatch = None

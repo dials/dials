@@ -55,7 +55,7 @@ def model_background(shoebox, mean_bg):
   for k in range(dz):
     for j in range(dy):
       for i in range(dx):
-        shoebox[k, j, i] += g.next()
+        shoebox[k, j, i] += next(g)
   return
 
 def random_vector_2D(vector, sd):

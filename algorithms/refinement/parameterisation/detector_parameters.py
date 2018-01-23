@@ -994,12 +994,12 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
     for igp, pnl_ids in enumerate(self._panel_ids_by_group):
 
       # extract parameters from the internal list
-      dist = param.next()
-      shift1 = param.next()
-      shift2 = param.next()
-      tau1 = param.next()
-      tau2 = param.next()
-      tau3 = param.next()
+      dist = next(param)
+      shift1 = next(param)
+      shift2 = next(param)
+      tau1 = next(param)
+      tau2 = next(param)
+      tau3 = next(param)
 
       #param_vals = flex.double((dist.value, shift1.value, shift2.value,
       #                            tau1.value, tau2.value, tau3.value))

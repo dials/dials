@@ -234,7 +234,7 @@ class PredictionParameterisation(object):
                   self._xl_orientation_parameterisations +
                   self._xl_unit_cell_parameterisations +
                   self._goniometer_parameterisations):
-      tmp = [it.next() for i in range(model.num_free())]
+      tmp = [next(it) for i in range(model.num_free())]
       model.set_param_vals(tmp)
     return
 
@@ -252,7 +252,7 @@ class PredictionParameterisation(object):
                   self._xl_orientation_parameterisations +
                   self._xl_unit_cell_parameterisations +
                   self._goniometer_parameterisations):
-      tmp = [it.next() for i in range(model.num_free())]
+      tmp = [next(it) for i in range(model.num_free())]
       model.set_param_esds(tmp)
     return
 

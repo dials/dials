@@ -23,7 +23,7 @@ def scale_down_array_py(image, scale_factor):
       scaled_image[j] = pixel
     else:
       for c in range(pixel):
-        if dist.next() < scale_factor:
+        if next(dist) < scale_factor:
           scaled_image[j] += 1
 
   return scaled_image

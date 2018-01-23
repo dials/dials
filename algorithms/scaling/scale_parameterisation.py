@@ -128,7 +128,7 @@ class ScaleParameterisation(object):
     it = iter(vals)
 
     for f in self._factors:
-      f.set_param_vals([it.next() for i in xrange(len(f))])
+      f.set_param_vals([next(it) for i in xrange(len(f))])
 
     return
 

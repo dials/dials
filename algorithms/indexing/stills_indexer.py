@@ -155,7 +155,7 @@ class stills_indexer(indexer_base):
         try:
           new = self.find_lattices()
           experiments.extend(new)
-        except Exception, e:
+        except Exception as e:
           logger.info("Indexing remaining reflections failed")
           logger.debug("Indexing remaining reflections failed, exception:\n" + str(e))
 

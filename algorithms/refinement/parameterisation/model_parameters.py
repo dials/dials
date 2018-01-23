@@ -210,7 +210,7 @@ class ModelParameterisation(object):
     v = iter(vals)
     for p in self._param:
       if not p.get_fixed(): # only set the free parameters
-        p.value = v.next()
+        p.value = next(v)
         p.esd = None
 
     # compose with the new parameter values
@@ -230,7 +230,7 @@ class ModelParameterisation(object):
     v = iter(esds)
     for p in self._param:
       if not p.get_fixed(): # only set the free parameters
-        p.esd = v.next()
+        p.esd = next(v)
 
     return
 
