@@ -22,6 +22,7 @@ namespace dials { namespace algorithms {
    */
   class BackgroundModel {
   public:
+    virtual ~BackgroundModel() = 0;
 
     virtual af::versa< double, af::c_grid<3> > extract(std::size_t panel, int6 bbox) const = 0;
 
