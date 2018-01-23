@@ -135,26 +135,6 @@ class DataManagerUtilities(object):
         error_model_params)
     return weights_for_scaling
 
-  def export_parameters_to_json(self, filename='scaled_experiments.json'):
-    '''function to export data from scalefactors to json file.'''
-    import json
-    data = {}
-    for key, SFobj in self.g_parameterisation.iteritems():
-      dictionary = {'object_type' : SFobj.__class__.__name__,
-          'number_of_parameters' : SFobj.n_params,
-          'parameters' : list(SFobj.parameters)}
-      if 'normalisation_interval' in SFobj.__dict__:
-        dictionary['normalisation_interval'] = SFobj.normalisation_interval
-        dictionary['min/max_norm_values'] = [min(SFobj.normalised_values),
-          max(SFobj.normalised_values)]
-        dictionary['parameter_normalised_positions'] = SFobj._smoother.positions()
-      data[key.lstrip('g_')] = dictionary
-    exper = self.experimentlist
-    datastore = exper.to_dict()
-    datastore['scaling'] = data
-    with open(filename, 'w') as outfile:
-      json.dump(datastore, outfile, indent=6)
-
   def calc_merging_statistics(self):
     u_c = self.experiments.crystal.get_unit_cell().parameters()
     if self.params.scaling_options.force_space_group:
@@ -521,8 +501,11 @@ class AimlessDataManager(ScalingDataManager):
 
 class MultiCrystalDataManager(DataManagerUtilities):
   '''Data Manager to handle concurrent scaling of multiple datasets'''
-  def __init__(self, reflections, experiments, params):
+  def __init__(self):
     super(MultiCrystalDataManager, self).__init__()
+    self.data_managers = None
+    
+  def init_from_refl_tables(self, reflections, experiments, params):
     self.data_managers = []
     self._params = params
     self._experiments = experiments[0]
@@ -537,6 +520,14 @@ class MultiCrystalDataManager(DataManagerUtilities):
     else:
       assert 0, """Incorrect scaling method passed to multicrystal datamanager
       (not 'xds', 'aimless' or 'kb')"""
+    self._Ih_table = JointIhTable(self.data_managers)
+    logger.info('Completed initialisation of multicrystal data manager. \n' + '*'*40 + '\n')
+
+  def init_from_datamanager(self, datamanager):
+    self._params = datamanager.params
+    self._experiments = datamanager.experiments
+    self.data_managers = datamanager.data_managers
+    self.data_managers.append(datamanager.dm1)
     self._Ih_table = JointIhTable(self.data_managers)
     logger.info('Completed initialisation of multicrystal data manager. \n' + '*'*40 + '\n')
 
@@ -598,11 +589,6 @@ class MultiCrystalDataManager(DataManagerUtilities):
         'has now been calculated. {sep}').format(sep='\n')
       logger.info(msg)
 
-  def export_parameters_to_json(self):
-    fname = 'scaled_experiments'
-    for i, dm in enumerate(self.data_managers):
-      dm.export_parameters_to_json(filename=fname+'_'+str(i+1)+'.json')
-
   def calc_merging_statistics(self):
     joint_result = super(MultiCrystalDataManager, self).calc_merging_statistics()[0]
     results = []
@@ -620,19 +606,32 @@ class MultiCrystalDataManager(DataManagerUtilities):
       if not key in self.data_managers[0].initial_keys:
         del self.reflection_table[key]
 
-class TargetedDataManager(ScalingDataManager):
+class TargetedDataManager(MultiCrystalDataManager):
   '''Data Manager to allow scaling of one dataset against a target dataset.'''
-  def __init__(self, reflections, experiments, reflections_scaled, params):
-    super(TargetedDataManager, self).__init__(reflections_scaled, experiments, params)
+  def __init__(self, reflections, experiments, is_already_scaled, params):
+    print(type(experiments))
+    scaled_reflections = []
+    scaled_experiments = []
+    unscaled_reflections = []
+    unscaled_experiments = []
+    for i, refl in enumerate(reflections):
+      if is_already_scaled[i] is True:
+        scaled_reflections.append(refl)
+        scaled_experiments.append(experiments[i])
+      else:
+        unscaled_reflections.append(refl)
+        unscaled_experiments.append(experiments[i])
+    super(TargetedDataManager, self).__init__()
+    self.init_from_refl_tables(scaled_reflections, scaled_experiments, params)
     #note - do we need some check on being same SG?
     if self.params.scaling_model == 'KB':
-      self.dm1 = KB_Data_Manager(reflections, experiments, params)
+      self.dm1 = KB_Data_Manager(unscaled_reflections[0], unscaled_experiments[0], params)
     elif self.params.scaling_model == 'aimless':
-      self.dm1 = AimlessDataManager(reflections, experiments, params)
+      self.dm1 = AimlessDataManager(unscaled_reflections[0], unscaled_experiments[0], params)
     else:
       assert 0, """Incorrect scaling method passed to multicrystal datamanager
       (not 'aimless' or 'KB')"""
-    target_Ih_table = SingleIhTable(self.reflection_table)
+    target_Ih_table = self.Ih_table#SingleIhTable(self.reflection_table)
     #find common reflections in the two datasets
     for i, miller_idx in enumerate(self.dm1.Ih_table.asu_miller_index):
       sel = target_Ih_table.asu_miller_index == miller_idx
