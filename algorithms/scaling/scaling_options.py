@@ -85,6 +85,9 @@ phil_scope = iotbx.phil.parse('''
     target = None
       .type = str
       .help = "Choice to specify a target dataset for scaling"
+    scale_with = None
+      .type = str
+      .help = "Choice to scale with a dataset that has already been scaled."
   }
 
   ''')

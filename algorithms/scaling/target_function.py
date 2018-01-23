@@ -21,7 +21,7 @@ class target_function(object):
     Ih_tab = self.data_manager.Ih_table
     R = ((((Ih_tab.intensities - (Ih_tab.inverse_scale_factors * Ih_tab.Ih_values))**2)
           * Ih_tab.weights))
-    if self.data_manager.params.scaling_method == 'aimless':
+    if self.data_manager.params.scaling_model == 'aimless':
       if 'g_absorption' in self.apm.active_parameterisation:
         constraint_values = self.data_manager.calc_absorption_constraint(self.apm)[0]
         R.extend(constraint_values)
@@ -43,7 +43,7 @@ class target_function(object):
     term_2 = (-2.0 * rhl * Ih_tab.weights * Ih_tab.inverse_scale_factors *
               Ih_tab.h_index_matrix) * dIh_by_dpi
     gradient = term_1 + term_2
-    if self.data_manager.params.scaling_method == 'aimless':
+    if self.data_manager.params.scaling_model == 'aimless':
       if 'g_absorption' in self.apm.active_parameterisation:
         gradient += self.data_manager.calc_absorption_constraint(self.apm)[1]
     return gradient

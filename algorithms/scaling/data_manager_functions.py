@@ -10,6 +10,7 @@ from dials.array_family import flex
 from cctbx import miller, crystal
 from scitbx import sparse
 import iotbx.merging_statistics
+from dxtbx.model.experiment_list import ExperimentListDict
 #from minimiser_functions import error_scale_LBFGSoptimiser
 #from dials.util.options import flatten_experiments, flatten_reflections
 from target_function import (target_function,
@@ -134,7 +135,7 @@ class DataManagerUtilities(object):
         error_model_params)
     return weights_for_scaling
 
-  def export_parameters_to_json(self, filename='scaling_parameters.json'):
+  def export_parameters_to_json(self, filename='scaled_experiments.json'):
     '''function to export data from scalefactors to json file.'''
     import json
     data = {}
@@ -148,8 +149,11 @@ class DataManagerUtilities(object):
           max(SFobj.normalised_values)]
         dictionary['parameter_normalised_positions'] = SFobj._smoother.positions()
       data[key.lstrip('g_')] = dictionary
+    exper = self.experimentlist
+    datastore = exper.to_dict()
+    datastore['scaling'] = data
     with open(filename, 'w') as outfile:
-      json.dump(data, outfile, indent=3)
+      json.dump(datastore, outfile, indent=6)
 
   def calc_merging_statistics(self):
     u_c = self.experiments.crystal.get_unit_cell().parameters()
@@ -174,10 +178,11 @@ class DataManagerUtilities(object):
 class ScalingDataManager(DataManagerUtilities):
   '''Parent class for scaling of a single dataset, containing a standard
      setup routine for the reflection_table'''
-  def __init__(self, reflections, experiments, params):
+  def __init__(self, reflections, experiments, params, dataset_id=0):
     super(ScalingDataManager, self).__init__()
     self._experiments = experiments
     self._params = params
+    reflections['dataset_id'] = flex.int([dataset_id]*len(reflections))
     self._initial_keys = [key for key in reflections.keys()]
     #choose intensities, map to asu, assign unique refl. index
     reflection_table = self._reflection_table_setup(self._initial_keys, reflections)
@@ -189,6 +194,11 @@ class ScalingDataManager(DataManagerUtilities):
     reflection_table['wilson_outlier_flag'] = calculate_wilson_outliers(
       reflection_table)
     self._reflection_table = reflection_table
+
+  @property
+  def initial_keys(self):
+    '''list of initial reflection table keys.'''
+    return self._initial_keys
 
   @staticmethod
   def _reflection_table_setup(initial_keys, reflections):
@@ -279,10 +289,10 @@ class KB_Data_Manager(ScalingDataManager):
 
   def _initialise_scale_factors(self):
     if self.params.parameterisation.scale_term:
-      self.g_scale = SF.KScaleFactor(1.0)
+      self.g_scale = self.experiments.scaling_model.components['scale']
       self._g_parameterisation['g_scale'] = self.g_scale
     if self.params.parameterisation.decay_term:
-      self.g_decay = SF.BScaleFactor(0.0)
+      self.g_decay = self.experiments.scaling_model.components['decay']
       self._g_parameterisation['g_decay'] = self.g_decay
 
   def _select_reflections_for_scaling(self):
@@ -323,8 +333,8 @@ class KB_Data_Manager(ScalingDataManager):
 
 class AimlessDataManager(ScalingDataManager):
   '''Data Manager subclass for implementing aimless-style parameterisation'''
-  def __init__(self, reflections, experiments, params):
-    super(AimlessDataManager, self).__init__(reflections, experiments, params)
+  def __init__(self, reflections, experiments, params, dataset_id=0):
+    super(AimlessDataManager, self).__init__(reflections, experiments, params, dataset_id)
     (self.g_absorption, self.g_scale, self.g_decay) = (None, None, None)
     self.sph_harm_table = None
     #determine outliers, initialise scalefactors and extract data for scaling
@@ -398,60 +408,41 @@ class AimlessDataManager(ScalingDataManager):
 
   def _initialise_scale_term(self, refl_table):
     '''calculate the 'normalised rotation angle', and initialise a SmoothScaleFactor'''
-    rot_int = self.params.parameterisation.rotation_interval + 0.001
-    osc_range = self.experiments.scan.get_oscillation_range()
-    if ((osc_range[1] - osc_range[0])/ rot_int) % 1 < 0.33:
-      #if last bin less than 33% filled, increase rot_int and extend by 0.001
-      #to make sure all datapoints within min/max''
-      n_phi_bins = int((osc_range[1] - osc_range[0])/ rot_int)
-      rot_int = (osc_range[1] - osc_range[0])/float(n_phi_bins) + 0.001
-    one_osc_width = self.experiments.scan.get_oscillation()[1]
-    z = refl_table['xyzobs.px.value'].parts()[2]
-    na = refl_table['norm_rot_angle'] = ((one_osc_width * z) + 0.001) / rot_int
-    #need one parameter more extremal than the max/min norm values at each side
-    n_param = int(max(na)//1) - int(min(na)//1) + 3
-    self.g_scale = SF.SmoothScaleFactor1D(1.0, n_param)
-    self.g_scale.normalisation_interval = rot_int
+    refl_table['norm_rot_angle'] = (refl_table['xyzobs.px.value'].parts()[2]
+      * self.experiments.scaling_model.scale_normalisation_factor)
+    self.g_scale = self.experiments.scaling_model.components['scale']
     self._g_parameterisation['g_scale'] = self.g_scale
     msg = ('The scale term ScaleFactor object was successfully initialised. {sep}'
-      'The scale term parameter interval has been set to {0} degrees. {sep}'
-      '{1} parameters will be used to parameterise the time-dependent scale. {sep}'
-        ).format(rot_int, n_param, sep='\n')
+      '{0} parameters will be used to parameterise the time-dependent scale. {sep}'
+        ).format(self.g_scale.n_params, sep='\n')
     logger.info(msg)
 
   def _initialise_decay_term(self, refl_table):
     '''calculate the 'normalised time', and initialise a SmoothBScaleFactor'''
-    rot_int = self.params.parameterisation.B_factor_interval + 0.001
-    osc_range = self.experiments.scan.get_oscillation_range()
-    if ((osc_range[1] - osc_range[0]) / rot_int) % 1 < 0.33:
-      #if last bin less than 33% filled, increase rot_int and extend by 0.001
-      #to make sure all datapoints within min/max''
-      n_phi_bins = int((osc_range[1] - osc_range[0]) / rot_int)
-      rot_int = (osc_range[1] - osc_range[0])/float(n_phi_bins) + 0.001
-    one_osc_width = self.experiments.scan.get_oscillation()[1]
-    z = refl_table['xyzobs.px.value'].parts()[2]
-    nt = refl_table['norm_time_values'] = ((one_osc_width * z) + 0.001) / rot_int
-    #need one parameter more extremal than the max/min norm values at each side
-    n_param = int(max(nt)//1) - int(min(nt)//1) + 3
-    self.g_decay = SF.SmoothBScaleFactor1D(0.0, n_param)
-    self.g_decay.normalisation_interval = rot_int
+    refl_table['norm_time_values'] = (refl_table['xyzobs.px.value'].parts()[2]
+      * self.experiments.scaling_model.decay_normalisation_factor)
+    self.g_decay = self.experiments.scaling_model.components['decay']
     self._g_parameterisation['g_decay'] = self.g_decay
     msg = ('The decay term ScaleFactor object was successfully initialised. {sep}'
-      'The B-factor parameter interval has been set to {0} degrees. {sep}'
-      '{1} parameters will be used to parameterise the time-dependent decay. {sep}'
-      ).format(rot_int, n_param, sep='\n')
+      '{0} parameters will be used to parameterise the time-dependent decay. {sep}'
+      ).format(self.g_decay.n_params, sep='\n')
     logger.info(msg)
 
   def _initialise_absorption_term(self, reflection_table, lmax):
     reflection_table = calc_s2d(reflection_table, self.experiments)
-    n_abs_params = (2*lmax) + (lmax**2)  #arithmetic sum formula (a1=3, d=2)
     self.sph_harm_table = sph_harm_table(reflection_table, lmax)
-    self.g_absorption = SF.SHScaleFactor(0.0, n_abs_params)
+    '''if 'scaling' in self.experiments.__dict__:
+      if self.experiments.scaling.absorption.object_type == "SHScaleFactor":
+        parameters = self.experiments.scaling.absorption.parameters
+        self.g_absorption = SF.SHScaleFactor(parameters, n_param)
+    else:
+      self.g_absorption = SF.SHScaleFactor(0.0, n_param)'''
+    self.g_absorption = self.experiments.scaling_model.components['absorption']
     self._g_parameterisation['g_absorption'] = self.g_absorption
     msg = ('The absorption term ScaleFactor object was successfully initialised. {sep}'
       'The absorption term will be parameterised by a set of spherical {sep}'
       'harmonics up to an lmax of {0} ({1} parameters). {sep}'
-      ).format(lmax, n_abs_params, sep='\n')
+      ).format(lmax, self.g_absorption.n_params, sep='\n')
     logger.info(msg)
 
   def calc_absorption_constraint(self, apm):
@@ -535,13 +526,14 @@ class MultiCrystalDataManager(DataManagerUtilities):
     self.data_managers = []
     self._params = params
     self._experiments = experiments[0]
-    if self.params.scaling_method == 'xscale':
+    #self.experimentdict = experiments.to_dict()
+    if self.params.scaling_model == 'xscale':
       print("xscale method not yet supported")
       for reflection, experiment in zip(reflections, experiments):
         self.data_managers.append(XDS_Data_Manager(reflection, experiment, params))
-    elif self.params.scaling_method == 'aimless':
-      for reflection, experiment in zip(reflections, experiments):
-        self.data_managers.append(AimlessDataManager(reflection, experiment, params))
+    elif self.params.scaling_model == 'aimless':
+      for i, (reflection, experiment) in enumerate(zip(reflections, experiments)):
+        self.data_managers.append(AimlessDataManager(reflection, experiment, params, dataset_id=i))
     else:
       assert 0, """Incorrect scaling method passed to multicrystal datamanager
       (not 'xds', 'aimless' or 'kb')"""
@@ -607,7 +599,7 @@ class MultiCrystalDataManager(DataManagerUtilities):
       logger.info(msg)
 
   def export_parameters_to_json(self):
-    fname = 'scaling_parameters'
+    fname = 'scaled_experiments'
     for i, dm in enumerate(self.data_managers):
       dm.export_parameters_to_json(filename=fname+'_'+str(i+1)+'.json')
 
@@ -619,14 +611,23 @@ class MultiCrystalDataManager(DataManagerUtilities):
     results.append(joint_result)
     return results
 
+  def clean_reflection_table(self):
+    self.data_managers[0].initial_keys.append('inverse_scale_factor')
+    self.data_managers[0].initial_keys.append('Ih_values')
+    #keep phi column for now for comparing to aimless
+    self.data_managers[0].initial_keys.append('phi')
+    for key in self.data_managers[0].reflection_table.keys():
+      if not key in self.data_managers[0].initial_keys:
+        del self.reflection_table[key]
+
 class TargetedDataManager(ScalingDataManager):
   '''Data Manager to allow scaling of one dataset against a target dataset.'''
   def __init__(self, reflections, experiments, reflections_scaled, params):
     super(TargetedDataManager, self).__init__(reflections_scaled, experiments, params)
     #note - do we need some check on being same SG?
-    if self.params.scaling_method == 'KB':
+    if self.params.scaling_model == 'KB':
       self.dm1 = KB_Data_Manager(reflections, experiments, params)
-    elif self.params.scaling_method == 'aimless':
+    elif self.params.scaling_model == 'aimless':
       self.dm1 = AimlessDataManager(reflections, experiments, params)
     else:
       assert 0, """Incorrect scaling method passed to multicrystal datamanager
@@ -658,6 +659,9 @@ class TargetedDataManager(ScalingDataManager):
 
   def expand_scales_to_all_reflections(self):
     return self.dm1.expand_scales_to_all_reflections()
+
+  def calc_merging_statistics(self):
+    return self.dm1.calc_merging_statistics()
 
 class XDS_Data_Manager(ScalingDataManager):
   '''Data Manager subclass for implementing XSCALE-type parameterisation'''

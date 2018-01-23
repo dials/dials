@@ -50,7 +50,7 @@ def generated_input():
   optionparser = OptionParser(phil=phil_scope, check_format=False)
   parameters, _ = optionparser.parse_args(args=None, quick_parse=True,
     show_diff_phil=False)
-  parameters.__inject__('scaling_method', 'aimless')
+  parameters.__inject__('scaling_model', 'aimless')
   return (reflections, experiments, parameters)
 
 
@@ -81,6 +81,7 @@ def test_targeted_data_manager(generated_input):
   (test_reflections, test_experiments, params) = generated_input
   targeted_reflections = copy.deepcopy(test_reflections)
   targeted_reflections['inverse_scale_factor'] = flex.double([1.0, 1.0, 1.0])
+  #params.scaling_model == 'aimless'
   targeted_dm = TargetedDataManager(test_reflections, test_experiments,
     targeted_reflections, params)
 

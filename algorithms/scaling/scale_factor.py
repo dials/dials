@@ -15,9 +15,13 @@ class ScaleFactor(object):
   inverse_scales and derivatives.'''
   __metaclass__ = abc.ABCMeta
 
-  def __init__(self, initial_value, n_parameters, scaling_options=None):
-    self._parameters = flex.double([initial_value] * n_parameters)
-    self._n_params = n_parameters
+  def __init__(self, initial_value, scaling_options=None):
+    #if isinstance(initial_value, list):
+    #  assert len(initial_value) == n_parameters
+    #  self._parameters = flex.double(initial_value)
+    #else:
+    self._parameters = initial_value#flex.double([initial_value] * n_parameters)
+    self._n_params = len(self._parameters)
     self._scaling_options = scaling_options
     self._inverse_scales = None
     self._derivatives = None
@@ -68,7 +72,9 @@ class ScaleFactor(object):
 class KScaleFactor(ScaleFactor):
   '''ScaleFactor object for a single global scale parameter.'''
   def __init__(self, initial_value, scaling_options=None):
-    super(KScaleFactor, self).__init__(initial_value, 1, scaling_options)
+    assert len(initial_value) == 1, '''Can only have one parameter for a K or B
+      Scale Factor'''
+    super(KScaleFactor, self).__init__(initial_value, scaling_options)
     self._n_refl = None
 
   @property
@@ -113,9 +119,8 @@ class SmoothScaleFactor(ScaleFactor):
   '''Base class for Smooth ScaleFactor objects - which allow use of a
   Gaussian smoother to calculate scales and derivatives based on the
   parameters and a set of normalised_values associated with each datapoint.'''
-  def __init__(self, initial_value, n_parameters, scaling_options=None):
-    super(SmoothScaleFactor, self).__init__(initial_value, n_parameters,
-      scaling_options)
+  def __init__(self, initial_value, scaling_options=None):
+    super(SmoothScaleFactor, self).__init__(initial_value, scaling_options)
     self._normalised_values = None
     self.smoothing_window = 2.5 #redundant - replace with link to num_average
     self.Vr = 1.0 #replace with link to sigma of gaussian smoother?
@@ -163,9 +168,8 @@ class SmoothScaleFactor1D(SmoothScaleFactor):
 
 class SmoothBScaleFactor1D(SmoothScaleFactor1D):
   '''Subclass to SmoothScaleFactor1D for a smooth B-scale correction.'''
-  def __init__(self, initial_value, n_parameters, scaling_options=None):
-    super(SmoothBScaleFactor1D, self).__init__(initial_value, n_parameters,
-      scaling_options)
+  def __init__(self, initial_value, scaling_options=None):
+    super(SmoothBScaleFactor1D, self).__init__(initial_value, scaling_options)
     self.Vr = 0.5
     self._d_values = None
 
@@ -193,9 +197,8 @@ class SmoothBScaleFactor1D(SmoothScaleFactor1D):
 
 class SHScaleFactor(ScaleFactor):
   '''ScaleFactor class for a spherical harmonic absorption correction'''
-  def __init__(self, initial_value, n_parameters, scaling_options=None):
-    super(SHScaleFactor, self).__init__(
-      initial_value, n_parameters, scaling_options)
+  def __init__(self, initial_value, scaling_options=None):
+    super(SHScaleFactor, self).__init__(initial_value, scaling_options)
     self._harmonic_values = None
 
   @property
