@@ -17,17 +17,17 @@ class Test:
     self.dmin = 1.5
     self.margin = 1
 
-  def run(self):
+  def compare_py_with_cpp(self):
 
     num = 20
 
     # Check indices are the same for each frame. Exceptionally there may be
-    # small differences that we can accept (e.g. 32 bit Linux C++ generate_cpp
+    # small differences that we can accept (e.g. 32 bit Linux C++ _generate_cpp
     # has been seen to generate 3 fewer indices for frame=0).
     for frame in range(num):
 
-      py_index = self.generate_python(frame)
-      cp_index = self.generate_cpp(frame)
+      py_index = self._generate_python(frame)
+      cp_index = self._generate_cpp(frame)
 
       py_set = set(py_index)
       cp_set = set(cp_index)
@@ -50,7 +50,52 @@ class Test:
 
       print 'OK'
 
-  def get_ub(self, frame):
+  def varying_s0(self):
+    from dials.algorithms.spot_prediction import ReekeIndexGenerator
+    from cctbx.sgtbx import space_group_info
+    space_group_type = space_group_info("P 1").group().type()
+    ub_beg, ub_end = self._get_ub(0)
+
+    import random
+    from math import pi
+
+    hkl_sets=[]
+    # loop over random beam changes and ensure we can generate indices
+    us0 = self.s0.normalize()
+    for i in range(100):
+      # find a random axis orthogonal to the beam about which to rotate it
+      axis = (us0.ortho()).rotate_around_origin(
+          axis=us0, angle=random.uniform(0,2*pi))
+
+      # apply small angle of rotation (up to ~1mrad) to perturb the beam direction
+      s0_2 = self.s0.rotate_around_origin(axis=axis,
+          angle=random.uniform(0,0.057), deg=True)
+
+      # alter the wavelength by up to about 0.1%
+      s0_2 = s0_2 * random.uniform(0.999,1.001)
+
+      # now try to generate indices
+      r = ReekeIndexGenerator(ub_beg, ub_end, space_group_type, self.axis,
+        self.s0, s0_2, self.dmin, self.margin)
+      hkl = r.to_array()
+      hkl_sets.append(set(list(hkl)))
+
+    # count common reflections in every set. For this example let's say we are
+    # satisfied if 98% of the smallest set of generated indices is common
+    # to every set. It is unclear how optimal this requirement is, but it at
+    # least shows that beam changes across one image that are much larger than
+    # we'd expect in normal processing do not hugely alter the generated list
+    # of HKLs.
+    min_set_len = min((len(e) for e in hkl_sets))
+    common = reduce((lambda s1, s2: s1.intersection(s2)), hkl_sets)
+    #print "{0:.3f}% common".format(len(common) / min_set_len)
+    assert len(common) >= 0.98 * min_set_len
+    print "OK"
+
+
+
+
+  def _get_ub(self, frame):
     from scitbx import matrix
     import scitbx.math
 
@@ -69,25 +114,28 @@ class Test:
     ub_end = r_osc_end * self.ub
     return ub_beg, ub_end
 
-  def generate_python(self, frame):
+  def _generate_python(self, frame):
     from dials.algorithms.spot_prediction.reeke import reeke_model
-    ub_beg, ub_end = self.get_ub(frame)
+    ub_beg, ub_end = self._get_ub(frame)
     r = reeke_model(ub_beg, ub_end, self.axis, self.s0, self.dmin, self.margin)
     hkl = r.generate_indices()
     hkl = [h for h in hkl if h != (0, 0, 0)]
     return sorted(hkl)
 
-  def generate_cpp(self, frame):
+  def _generate_cpp(self, frame):
     from dials.algorithms.spot_prediction import ReekeIndexGenerator
     from cctbx.sgtbx import space_group_info
     space_group_type = space_group_info("P 1").group().type()
-    ub_beg, ub_end = self.get_ub(frame)
+    ub_beg, ub_end = self._get_ub(frame)
     r = ReekeIndexGenerator(ub_beg, ub_end, space_group_type, self.axis, self.s0, self.dmin, self.margin)
     hkl = r.to_array()
     return sorted(list(hkl))
+
+
 
 if __name__ == '__main__':
   from dials.test import cd_auto
   with cd_auto(__file__):
     test = Test()
-    test.run()
+    test.compare_py_with_cpp()
+    test.varying_s0()
