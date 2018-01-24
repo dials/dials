@@ -81,15 +81,13 @@ class Test:
       hkl_sets.append(set(list(hkl)))
 
     # count common reflections in every set. For this example let's say we are
-    # satisfied if 98% of the smallest set of generated indices is common
+    # satisfied if 98% of the smallest set of generated indices are common
     # to every set. It is unclear how optimal this requirement is, but it at
     # least shows that beam changes across one image that are much larger than
     # we'd expect in normal processing do not hugely alter the generated list
     # of HKLs.
     min_set_len = min((len(e) for e in hkl_sets))
-    common = hkl_sets[0]
-    for s in hkl_sets[1:]:
-      common = common.intersection(s)
+    common = set.intersection(*hkl_sets)
     #print "{0:.3f}% common".format(len(common) / min_set_len)
     assert len(common) >= 0.98 * min_set_len
     print "OK"
