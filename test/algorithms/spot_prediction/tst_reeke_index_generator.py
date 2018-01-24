@@ -87,13 +87,12 @@ class Test:
     # we'd expect in normal processing do not hugely alter the generated list
     # of HKLs.
     min_set_len = min((len(e) for e in hkl_sets))
-    common = reduce((lambda s1, s2: s1.intersection(s2)), hkl_sets)
+    common = hkl_sets[0]
+    for s in hkl_sets[1:]:
+      common = common.intersection(s)
     #print "{0:.3f}% common".format(len(common) / min_set_len)
     assert len(common) >= 0.98 * min_set_len
     print "OK"
-
-
-
 
   def _get_ub(self, frame):
     from scitbx import matrix
