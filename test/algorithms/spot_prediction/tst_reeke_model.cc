@@ -140,7 +140,7 @@ public:
     ReekeInput input;
 
     ReekeModel model(input.ub_beg, input.ub_end,
-                      input.axis, input.source,
+                      input.axis, input.source, input.source,
                       input.dmin, input.margin);
 
     DIALS_ASSERT(almost_equal(model.ewald_sphere_p_limits().first[0], -100.0, 1e-7));

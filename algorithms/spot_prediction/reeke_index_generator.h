@@ -227,22 +227,23 @@ namespace reeke_detail {
      * @param ub_beg The beginning UB matrix
      * @param ub_end The end UB matrix
      * @param axis The rotation axis
-     * @param source THe source vector
+     * @param source_beg The beginning source vector
+     * @param source_end The end source vector
      * @param dmin The resolution
      * @param margin The margin to add around limits
      */
     ReekeModel(
         mat3<double> ub_beg, mat3<double> ub_end,
-        vec3<double> axis, vec3<double> source,
+        vec3<double> axis, vec3<double> source_beg, vec3<double> source_end,
         double dmin, int margin) {
 
       // Save the source and axis
-      source_ = source;
+      source_ = source_beg; // for now just take one vector, to merely test the new constructor
       axis_ = axis;
       margin_ = margin;
 
       // Set the wavelength
-      wavelength_ = 1.0 / source.length();
+      wavelength_ = 1.0 / source_.length();
       wavelength_sq_ = wavelength_ * wavelength_;
 
       // the resolution limit
@@ -252,12 +253,12 @@ namespace reeke_detail {
       // Determine the permutation order of columns of the setting matrix. Use
       // the setting from the beginning for this.  As a side-effect set
       // self._permutation.
-      reeke_detail::permute_matrix perm(ub_beg, ub_end, axis, source);
+      reeke_detail::permute_matrix perm(ub_beg, ub_end, axis, source_);
       permutation_ = perm.permutation;
 
       // Compute the variables that are constant with p
       reeke_detail::compute_constant_with_p compute_cp(
-          perm.rlv_beg, perm.rlv_end, axis, source);
+          perm.rlv_beg, perm.rlv_end, axis, source_);
       cp_beg_ = compute_cp.cp_beg;
       cp_end_ = compute_cp.cp_end;
 
@@ -649,7 +650,7 @@ namespace reeke_detail {
   public:
 
     /**
-     * Initialise the reeke model
+     * Initialise the reeke model with single s0 vector
      * @param ub_beg The starting UB matrix
      * @param ub_end The ending UB matrix
      * @param axis The rotation axis
@@ -662,7 +663,25 @@ namespace reeke_detail {
         cctbx::sgtbx::space_group_type const& space_group_type,
         vec3<double> axis, vec3<double> s0,
         double dmin, int margin)
-    : model_(ub_beg, ub_end, axis, -s0, dmin, margin),
+    : model_(ub_beg, ub_end, axis, -s0, -s0, dmin, margin),
+      space_group_type_(space_group_type) {}
+
+    /**
+     * Initialise the reeke model with varying s0 vector
+     * @param ub_beg The starting UB matrix
+     * @param ub_end The ending UB matrix
+     * @param axis The rotation axis
+     * @param s0_beg The starting beam vector
+     * @param s0_end The ending beam vector
+     * @param dmin The resolution limit
+     * @param margin The additional margin to add around limits
+     */
+    ReekeIndexGenerator(
+        mat3<double> ub_beg, mat3<double> ub_end,
+        cctbx::sgtbx::space_group_type const& space_group_type,
+        vec3<double> axis, vec3<double> s0_beg, vec3<double> s0_end,
+        double dmin, int margin)
+    : model_(ub_beg, ub_end, axis, -s0_beg, -s0_end, dmin, margin),
       space_group_type_(space_group_type) {}
 
     /**
