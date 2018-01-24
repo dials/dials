@@ -45,7 +45,7 @@ class wxbitmap_convert(object):
 
     else:
       #Got two arguments
-      if type(data_in_n1) is list and type(data_in_n2) is list:
+      if isinstance(data_in_n1, list) and isinstance(data_in_n2, list):
         #Got two lists
         if len(data_in_n1) == len(data_in_n2):
           self.lst_3d_data = []
@@ -60,7 +60,7 @@ class wxbitmap_convert(object):
           # might be a good idea to raise a runtime error here
           print "the two lists do NOT have the same size"
 
-      elif type(data_in_n1) is not list and type(data_in_n2) is not list:
+      elif not isinstance(data_in_n1, list) and not isinstance(data_in_n2, list):
         #Got two blocks
 
         self.lst_3d_data = []

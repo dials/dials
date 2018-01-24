@@ -599,7 +599,7 @@ class SpotFinderFactory(object):
       return None
 
     # If it's already loaded, return early
-    if type(filename_or_data) is tuple:
+    if isinstance(filename_or_data, tuple):
       return filename_or_data
 
     # Read the image and return the image data

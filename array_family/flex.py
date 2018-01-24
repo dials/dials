@@ -1099,7 +1099,7 @@ class reflection_table_selector(object):
     self.value = value
 
     # Set the operator
-    if type(op) == str:
+    if isinstance(op, str):
       if op == '<':
         self.op = operator.lt
       elif op == '<=':
@@ -1171,23 +1171,23 @@ class reflection_table_selector(object):
     else:
       mask1 = None
       data = reflections[self.column]
-    if type(data) == double:
+    if isinstance(data, double):
       value = __builtin__.float(self.value)
-    elif type(data) == int:
+    elif isinstance(data, int):
       value = __builtin__.int(self.value)
-    elif type(data) == size_t:
+    elif isinstance(data, size_t):
       value = __builtin__.int(self.value)
-    elif type(data) == std_string:
+    elif isinstance(data, std_string):
       value = self.value
-    elif type(data) == vec3_double:
+    elif isinstance(data, vec3_double):
       raise RuntimeError("Comparison not implemented")
-    elif type(data) == vec2_double:
+    elif isinstance(data, vec2_double):
       raise RuntimeError("Comparison not implemented")
-    elif type(data) == mat3_double:
+    elif isinstance(data, mat3_double):
       raise RuntimeError("Comparison not implemented")
-    elif type(data) == int6:
+    elif isinstance(data, int6):
       raise RuntimeError("Comparison not implemented")
-    elif type(data) == shoebox:
+    elif isinstance(data, shoebox):
       raise RuntimeError("Comparison not implemented")
     else:
       raise RuntimeError('Unknown column type')

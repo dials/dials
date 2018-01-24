@@ -363,11 +363,11 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
         rows.append([k, formats[k] %flex.min(col), formats[k] %flex.max(col),
                      formats[k]%flex.mean(col)])
       elif type(col) in (flex.vec3_double, flex.miller_index):
-        if type(col) == flex.miller_index:
+        if isinstance(col, flex.miller_index):
           col = col.as_vec3_double()
         rows.append([k, formats[k] %col.min(), formats[k] %col.max(),
                      formats[k]%col.mean()])
-      elif type(col) == flex.shoebox:
+      elif isinstance(col, flex.shoebox):
         rows.append([k, "", "", ""])
         si = col.summed_intensity().observed_value()
         rows.append(["  summed I", formats[k] %flex.min(si), formats[k] %flex.max(si),

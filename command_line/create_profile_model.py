@@ -128,7 +128,7 @@ class Script(object):
     for model in experiments:
       sigma_b = model.profile.sigma_b(deg=True)
       sigma_m = model.profile.sigma_m(deg=True)
-      if type(sigma_b) == type(1.0):
+      if isinstance(sigma_b, type(1.0)):
         logger.info('Sigma B: %f' % sigma_b)
         logger.info('Sigma M: %f' % sigma_m)
       else: # scan varying

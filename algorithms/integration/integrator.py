@@ -228,8 +228,7 @@ def hist(data, width=80, symbol='#', prefix=''):
   assert len(data) > 0, "Need > 0 reflections"
   assert width > 0, "Width should be > 0"
   count = Counter(data)
-  count = count.items()
-  count.sort()
+  count = sorted(count.items())
   frame, count = zip(*count)
   min_frame = min(frame)
   max_frame = max(frame)
@@ -1588,7 +1587,7 @@ class IntegratorFactory(object):
 
     # Read the mask in if necessary
     if params.integration.lookup.mask is not None:
-      if type(params.integration.lookup.mask) == str:
+      if isinstance(params.integration.lookup.mask, str):
         with open(params.integration.lookup.mask) as infile:
           params.integration.lookup.mask = pickle.load(infile)
 

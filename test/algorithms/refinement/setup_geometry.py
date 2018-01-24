@@ -74,7 +74,7 @@ class Extract(object):
   def set_seed(self):
 
     if not self._params.random_seed:
-      self._params.random_seed = random.randint(0, sys.maxint)
+      self._params.random_seed = random.randint(0, sys.maxsize)
     random.seed(self._params.random_seed)
     # set the flex random seed too
     from dials.array_family import flex

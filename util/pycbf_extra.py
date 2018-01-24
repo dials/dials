@@ -192,6 +192,5 @@ def search_for_image_volume(search_path):
   from glob import glob
 
   # Load the CBF image volume
-  cbf_path = glob(search_path)
-  cbf_path.sort()
+  cbf_path = sorted(glob(search_path))
   return get_image_volume(cbf_path)
