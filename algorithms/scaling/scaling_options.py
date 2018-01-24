@@ -57,6 +57,10 @@ phil_scope = iotbx.phil.parse('''
               in aimless - factors are called SDFac, SDadd in aimless."
   }
   scaling_options {
+    target = True
+      .type = bool
+      .help = "Option to turn of scaling against a target if some datasets
+               are already scaled"
     force_space_group = None
       .type = str
       .help = "Option to specify space group for scaling"
@@ -82,9 +86,6 @@ phil_scope = iotbx.phil.parse('''
       .type = str
       .help = "Choice of 'standard' (multiplicative) or 'log' g-value
                minimisation parameterisation"
-    target = None
-      .type = str
-      .help = "Choice to specify a target dataset for scaling"
     scale_with = None
       .type = str
       .help = "Choice to scale with a dataset that has already been scaled."

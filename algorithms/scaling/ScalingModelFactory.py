@@ -1,8 +1,6 @@
 '''
 Collection of factories for creating the scaling models.
 '''
-#to be called in main dials.scale when requiring a ScalingModel
-#Would
 from collections import OrderedDict
 from dials.array_family import flex
 import dials.algorithms.scaling.scale_factor as SF
@@ -95,6 +93,11 @@ class ScalingModelBase(object):
   def __init__(self):
     self._scaling_model = None
     self._components = OrderedDict()
+    self._id_ = None
+  
+  @property
+  def id_(self):
+    return self._id_
 
   @property
   def components(self):
@@ -106,6 +109,7 @@ class AimlessScalingModel(ScalingModelBase):
   '''Factory to create a scaling model for an aimless-type parameterisation.'''
   def __init__(self, s_norm_fac, s_params, d_norm_fac, d_params, abs_params):
     super(AimlessScalingModel, self).__init__()
+    self._id_ = 'aimless_scaling_model'
     self._components.update({'scale' : SF.SmoothScaleFactor1D(s_params)})
     self._components.update({'decay' : SF.SmoothBScaleFactor1D(d_params)})
     self._components.update({'absorption' : SF.SHScaleFactor(abs_params)})
@@ -126,7 +130,7 @@ class AimlessScalingModel(ScalingModelBase):
 
   def to_dict(self):
     '''format data to dictionary for output'''
-    dictionary = OrderedDict({'__id__' : 'aimless_scaling_model'})
+    dictionary = OrderedDict({'__id__' : self._id_})
     dictionary.update({'scale' : OrderedDict({
       'n_parameters' : len(self._components['scale'].parameters),
       'parameters' : list(self._components['scale'].parameters),
@@ -173,12 +177,13 @@ class KBScalingModel(ScalingModelBase):
   '''Factory to create a scaling model for an xscale-type parameterisation.'''
   def __init__(self, K_params, B_params):
     super(KBScalingModel, self).__init__()
+    self._id_ = 'KB_scaling_model'
     self._components.update({'scale' : SF.KScaleFactor(K_params)})
     self._components.update({'decay' : SF.BScaleFactor(B_params)})
 
   def to_dict(self):
     '''format data to dictionary for output'''
-    dictionary = OrderedDict({'__id__' : 'KB_scaling_model'})
+    dictionary = OrderedDict({'__id__' : self._id_})
     dictionary.update({'scale' : OrderedDict({
       'n_parameters' : len(self._components['scale'].parameters),
       'parameters' : list(self._components['scale'].parameters)})})
