@@ -130,7 +130,7 @@ namespace reeke_detail {
 
     compute_constant_with_p(
         mat3<double> rlv_beg, mat3<double> rlv_end,
-        vec3<double> axis, vec3<double> source) {
+        vec3<double> axis, vec3<double> source_beg, vec3<double> source_end) {
 
       // Set permuted setting matrices
       mat3<double> p_beg = rlv_beg.transpose();
@@ -150,16 +150,16 @@ namespace reeke_detail {
        *       -                       =    \ p31 p32 p33 -source_z /
        */
 
-      // Calculate P' matrices for the beginning and end settings
+      // Calculate P' matrices for the beginning and end states
       double pp_beg[12] = {
-        p_beg[0], p_beg[1], p_beg[2], -source[0],
-        p_beg[3], p_beg[4], p_beg[5], -source[1],
-        p_beg[6], p_beg[7], p_beg[8], -source[2]
+        p_beg[0], p_beg[1], p_beg[2], -source_beg[0],
+        p_beg[3], p_beg[4], p_beg[5], -source_beg[1],
+        p_beg[6], p_beg[7], p_beg[8], -source_beg[2]
       };
       double pp_end[12] = {
-        p_end[0], p_end[1], p_end[2], -source[0],
-        p_end[3], p_end[4], p_end[5], -source[1],
-        p_end[6], p_end[7], p_end[8], -source[2]
+        p_end[0], p_end[1], p_end[2], -source_end[0],
+        p_end[3], p_end[4], p_end[5], -source_end[1],
+        p_end[6], p_end[7], p_end[8], -source_end[2]
       };
 
       // Various quantities of interest are obtained from the reciprocal metric
@@ -238,27 +238,30 @@ namespace reeke_detail {
         double dmin, int margin) {
 
       // Save the source and axis
-      source_ = source_beg; // for now just take one vector, to merely test the new constructor
+      source_beg_ = source_beg;
+      source_end_ = source_end;
       axis_ = axis;
       margin_ = margin;
 
       // Set the wavelength
-      wavelength_ = 1.0 / source_.length();
-      wavelength_sq_ = wavelength_ * wavelength_;
+      wavelength_beg_ = 1.0 / source_beg_.length();
+      wavelength_sq_beg_ = wavelength_beg_ * wavelength_beg_;
+      wavelength_end_ = 1.0 / source_end_.length();
+      wavelength_sq_end_ = wavelength_end_ * wavelength_end_;
 
       // the resolution limit
       dstarmax_ = 1.0 / dmin;
       dstarmax2_ = dstarmax_ * dstarmax_;
 
       // Determine the permutation order of columns of the setting matrix. Use
-      // the setting from the beginning for this.  As a side-effect set
-      // self._permutation.
-      reeke_detail::permute_matrix perm(ub_beg, ub_end, axis, source_);
+      // the setting ans source vector from the beginning for this. As a
+      // side-effect set self._permutation.
+      reeke_detail::permute_matrix perm(ub_beg, ub_end, axis, source_beg_);
       permutation_ = perm.permutation;
 
       // Compute the variables that are constant with p
       reeke_detail::compute_constant_with_p compute_cp(
-          perm.rlv_beg, perm.rlv_end, axis, source_);
+          perm.rlv_beg, perm.rlv_end, axis, source_beg_, source_end_);
       cp_beg_ = compute_cp.cp_beg;
       cp_end_ = compute_cp.cp_end;
 
@@ -396,17 +399,17 @@ namespace reeke_detail {
         double dp_beg, double dp_end, double p_dist) {
 
       // Calculate beg limit
-      int sign = v_beg * source_ >= 0 ? 1 : -1;
+      int sign = v_beg * source_beg_ >= 0 ? 1 : -1;
       ewald_p_lim_beg_  = vec2<double>(
-          -sign * (source_.length() - dp_beg) / p_dist,
-           sign * (source_.length() + dp_beg) / p_dist);
+          -sign * (source_beg_.length() - dp_beg) / p_dist,
+           sign * (source_beg_.length() + dp_beg) / p_dist);
       reeke_detail::sort2(ewald_p_lim_beg_);
 
       // Calculate end limit
-      sign = v_end * source_ >= 0 ? 1 : -1;
+      sign = v_end * source_end_ >= 0 ? 1 : -1;
       ewald_p_lim_end_ = vec2<double>(
-          -sign * (source_.length() - dp_end) / p_dist,
-           sign * (source_.length() + dp_end) / p_dist);
+          -sign * (source_end_.length() - dp_end) / p_dist,
+           sign * (source_end_.length() + dp_end) / p_dist);
       reeke_detail::sort2(ewald_p_lim_end_);
     }
 
@@ -419,24 +422,28 @@ namespace reeke_detail {
 
       // Determine limits for the planes of p that touch the circle of
       // intersection between the Ewald and resolution limiting spheres
-      double sin_theta = 0.5 * wavelength_ * dstarmax_;
+      double sin_theta = 0.5 * wavelength_beg_ * dstarmax_;
       DIALS_ASSERT(sin_theta <= 1.0 && sin_theta >= -1.0); // sanity check
       double sin_2theta = std::sin(2.0 * std::asin(sin_theta));
 
       // Calculate beg limit
-      int sign = v_end * source_ >= 0 ? 1 : -1;
+      int sign = v_end * source_beg_ >= 0 ? 1 : -1;
       double e = 2.0 * sin_theta * sin_theta * dp_beg;
       double f = sin_2theta * std::sqrt(std::max(
-            1.0 / wavelength_sq_ - dp_beg * dp_beg, 0.0));
+            1.0 / wavelength_sq_beg_ - dp_beg * dp_beg, 0.0));
       res_p_lim_beg_ = vec2<double>(
           (sign * e - f) / p_dist,
           (sign * e + f) / p_dist);
       reeke_detail::sort2(res_p_lim_beg_);
 
+      sin_theta = 0.5 * wavelength_end_ * dstarmax_;
+      DIALS_ASSERT(sin_theta <= 1.0 && sin_theta >= -1.0); // sanity check
+      sin_2theta = std::sin(2.0 * std::asin(sin_theta));
+
       // Calculate end limit
       e = 2.0 * sin_theta * sin_theta * dp_end;
       f = sin_2theta * std::sqrt(std::max(
-            1.0 / wavelength_sq_ - dp_end * dp_end, 0.0));
+            1.0 / wavelength_sq_end_ - dp_end * dp_end, 0.0));
       res_p_lim_end_ = vec2<double>(
           (sign * e - f) / p_dist,
           (sign * e + f) / p_dist);
@@ -473,8 +480,8 @@ namespace reeke_detail {
       // Find distance between the planes of p and find distances between p = 0
       // and the plane passing through the centre of the Ewald sphere
       double p_dist = std::abs(rlv_beg0 * v_beg);
-      double dp_beg = std::abs(v_beg * source_);
-      double dp_end = std::abs(v_end * source_);
+      double dp_beg = std::abs(v_beg * source_beg_);
+      double dp_end = std::abs(v_end * source_end_);
 
       // Compute the ewald sphere and resolution limits
       compute_ewald_sphere_p_limits(v_beg, v_end, dp_beg, dp_end, p_dist);
@@ -482,7 +489,7 @@ namespace reeke_detail {
 
       // select between Ewald and resolution limits on the basis of sign
       af::tiny<double, 4> limits;
-      int sign = v_end * source_ >= 0 ? 1 : -1;
+      int sign = v_end * source_end_ >= 0 ? 1 : -1;
       if (sign < 0) {
         // p axis aligned with beam, against source
         limits[0] = std::max(res_p_lim_beg_[0], ewald_p_lim_beg_[0]);
@@ -629,12 +636,12 @@ namespace reeke_detail {
     }
 
     mat3<std::size_t> permutation_;
-    vec3<double> source_, axis_;
+    vec3<double> source_beg_, source_end_, axis_;
     af::small<double, 15> cp_beg_;
     af::small<double, 15> cp_end_;
     vec2<int> p_lim_;
     double dstarmax_, dstarmax2_;
-    double wavelength_, wavelength_sq_;
+    double wavelength_beg_, wavelength_sq_beg_, wavelength_end_, wavelength_sq_end_;
     int margin_;
     vec2<double> ewald_p_lim_beg_;
     vec2<double> ewald_p_lim_end_;

@@ -110,7 +110,7 @@ public:
 
     permute_matrix perm(input.ub_beg, input.ub_end, input.axis, input.source);
     compute_constant_with_p cp(perm.rlv_beg, perm.rlv_end,
-        input.axis, input.source);
+        input.axis, input.source, input.source);
 
     DIALS_ASSERT(almost_equal(cp.cp_beg[0], 0.0004, 1e-7));
     DIALS_ASSERT(almost_equal(cp.cp_beg[1], 0.0, 1e-7));
