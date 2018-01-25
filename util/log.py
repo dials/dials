@@ -12,7 +12,7 @@
 from __future__ import absolute_import, division
 import logging
 
-def config(verbosity=1, info='', debug=''):
+def config(verbosity=1, info='', debug='', name='dials'):
   '''
   Configure the logging.
 
@@ -82,15 +82,15 @@ def config(verbosity=1, info='', debug=''):
     },
 
     'loggers' : {
-      'dials' : {
+      name : {
         'handlers' : handlers,
         'level' : 'DEBUG',
         'propagate' : True
-      }
+      },
     }
   })
 
-def config_simple_stdout():
+def config_simple_stdout(name='dials'):
   '''
   Configure the logging to just go to stdout
 
@@ -119,11 +119,11 @@ def config_simple_stdout():
     },
 
     'loggers' : {
-      'dials' : {
+      name : {
         'handlers' : ['stream'],
         'level' : 'DEBUG',
         'propagate' : True
-      }
+      },
     }
   })
 
