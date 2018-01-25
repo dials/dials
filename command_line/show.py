@@ -221,26 +221,27 @@ def show_datablocks(datablocks, show_panel_distance=False):
       try: text.append(imageset.get_template())
       except Exception: pass
       detector = imageset.get_detector()
-      text.append(str(detector))
-      text.append('Max resolution (at corners): %f' % (
-        detector.get_max_resolution(imageset.get_beam().get_s0())))
-      text.append('Max resolution (inscribed):  %f' % (
-        detector.get_max_inscribed_resolution(imageset.get_beam().get_s0())))
-      if show_panel_distance:
-        for ipanel, panel in enumerate(detector):
-          from scitbx import matrix
-          fast = matrix.col(panel.get_fast_axis())
-          slow = matrix.col(panel.get_slow_axis())
-          normal = fast.cross(slow)
-          origin = matrix.col(panel.get_origin())
-          distance = origin.dot(normal)
-          fast_origin = - (origin - distance * normal).dot(fast)
-          slow_origin = - (origin - distance * normal).dot(slow)
-          text.append('Panel %d: distance %.2f origin %.2f %.2f' % \
-            (ipanel, distance, fast_origin, slow_origin))
+      if detector is not None:
+        text.append(str(detector))
+        text.append('Max resolution (at corners): %f' % (
+          detector.get_max_resolution(imageset.get_beam().get_s0())))
+        text.append('Max resolution (inscribed):  %f' % (
+          detector.get_max_inscribed_resolution(imageset.get_beam().get_s0())))
+        if show_panel_distance:
+          for ipanel, panel in enumerate(detector):
+            from scitbx import matrix
+            fast = matrix.col(panel.get_fast_axis())
+            slow = matrix.col(panel.get_slow_axis())
+            normal = fast.cross(slow)
+            origin = matrix.col(panel.get_origin())
+            distance = origin.dot(normal)
+            fast_origin = - (origin - distance * normal).dot(fast)
+            slow_origin = - (origin - distance * normal).dot(slow)
+            text.append('Panel %d: distance %.2f origin %.2f %.2f' % \
+              (ipanel, distance, fast_origin, slow_origin))
+          text.append('')
         text.append('')
-      text.append('')
-      text.append(show_beam(detector, imageset.get_beam()))
+        text.append(show_beam(detector, imageset.get_beam()))
       if imageset.get_scan() is not None:
         text.append(str(imageset.get_scan()))
       if imageset.get_goniometer() is not None:
