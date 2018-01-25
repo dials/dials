@@ -48,8 +48,13 @@ class LBFGS_optimiser(object):
     logger.info("Residual sum: %12.6g" % f)
     return f, g
 
-  def return_data_manager(self):
+  def return_scaler(self):
     '''return data_manager method'''
+    if not isinstance(self.data_manager, MultiScaler):
+      if 'g_scale' in self.apm.active_parameterisation:
+        self.data_manager.normalise_scale_component()
+      if 'g_decay' in self.apm.active_parameterisation:
+        self.data_manager.normalise_decay_component()
     return self.data_manager
 
   def make_all_scales_positive(self, param_name):

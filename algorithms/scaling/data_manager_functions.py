@@ -672,6 +672,11 @@ class XDS_Data_Manager(ScalingDataManager):
     super(XDS_Data_Manager, self).__init__(reflections, experiments, params)
     #initialise g-value arrays
     (self.g_absorption, self.g_modulation, self.g_decay) = (None, None, None)
+    if params.scaling_options.minimisation_parameterisation not in ['standard', 'log']:
+      msg = ('Invalid minimisation parameterisation choice, proceeding using {sep}'
+             'using standard g-value parameterisation').format(sep='\n')
+      logger.info(msg)
+      self.params.scaling_options.minimisation_parameterisation = 'standard'
     self._initialise_scale_factors() #this creates ScaleFactor objects
     (reflections_for_scaling, weights_for_scaling, _) = (
       self._scaling_subset(self.reflection_table, self.params))

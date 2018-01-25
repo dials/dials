@@ -3,6 +3,28 @@ from dials.array_family import flex
 
 logger = logging.getLogger('dials.scale')
 
+
+class ParameterlistFactory(object):
+  '''
+  Factory to create parameter lists to pass to a minimiser.
+  '''
+  @classmethod
+  def full_active_list(cls, params):
+    '''create a list with all params to include'''
+    param_name = []
+    if params.parameterisation.scale_term:
+      param_name.append('g_scale')
+    if params.parameterisation.decay_term:
+      param_name.append('g_decay')
+    if params.parameterisation.absorption_term:
+      param_name.append('g_absorption')
+    if not param_name:
+      assert 0, 'no parameters have been chosen for scaling, aborting process'
+    return param_name
+
+
+
+
 class active_parameter_manager(object):
   ''' object to manage the current active parameters during minimisation.
   Separated out to provide a consistent interface between the data manager and

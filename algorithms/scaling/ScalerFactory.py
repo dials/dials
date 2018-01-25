@@ -30,14 +30,16 @@ class Factory(object):
     '''
     create the scaling model defined by the params.
     '''
-    if len(reflections) == 1 and len(experiments) == 1:
+    if len(reflections) == 1:
       scaler = SingleScalerFactory.create(params, experiments[0], reflections[0])
     else:
-      #if more than one, first do some extra parsing to extract multiple datasets
-      reflections, is_scaled_list = cls.parse_multiple_datasets(reflections)
+      is_scaled_list = cls.is_scaled(reflections)
       #check if we want to do targeted scaling or normal scaling
-      if True in is_scaled_list and params.scaling_options.target is True:
-        scaler = TargetScalerFactory.create(params, experiments, reflections, is_scaled_list)
+      n_scaled = is_scaled_list.count(True)
+      if (params.scaling_options.target is True and n_scaled > 0
+        and n_scaled < len(reflections)):
+        scaler = TargetScalerFactory.create(params, experiments, reflections,
+          is_scaled_list)
       elif len(reflections) > 1:
         scaler = MultiScalerFactory.create(params, experiments, reflections)
       else:
@@ -45,29 +47,15 @@ class Factory(object):
     return scaler
 
   @classmethod
-  def parse_multiple_datasets(cls, reflections):
-    'method to parse multiple datasets to see if any have already been scaled.'
-    single_reflection_tables = []
+  def is_scaled(cls, reflections):
+    '''inspect reflection table to see if it already has scale factors.'''
     is_already_scaled = []
-    for refl_table in reflections:
-      if 'dataset_id' in refl_table.keys():
-        dataset_ids = set(refl_table['dataset_id'])
-        if len(dataset_ids) > 1: #more than one scaled dataset in refl_tab
-          logger.info(('Detected existence of a multi-dataset scaled reflection table, {sep}'
-            'containing {0} datasets. {sep}').format(len(dataset_ids), sep='\n'))
-          for dataset_id in dataset_ids:
-            single_refl_table = refl_table.select(refl_table['dataset_id'] == dataset_id)
-            single_reflection_tables.append(single_refl_table)
-            is_already_scaled.append(True)
-          logger.info("Successfully parsed multiple scaled reflection tables. \n")
-        else: #only one already scaled dataset in refl_tab
-          single_reflection_tables.append(refl_table)
-          is_already_scaled.append(True)
-      else: #refl_table has not previously been scaled
-        single_reflection_tables.append(refl_table)
+    for reflection_table in reflections:
+      if 'dataset_id' in reflection_table.keys():
+        is_already_scaled.append(True)
+      else:
         is_already_scaled.append(False)
-    reflections = single_reflection_tables
-    return reflections, is_already_scaled
+    return is_already_scaled
 
 
 class SingleScalerFactory(object):
@@ -107,29 +95,24 @@ class TargetScalerFactory(object):
   @classmethod
   def create(cls, params, experiments, reflections, is_scaled_list):
     '''sort scaled and unscaled datasets to pass to TargetScaler'''
-    scaled_reflections = []
     scaled_experiments = []
-    unscaled_reflections = []
-    unscaled_experiments = []
-    for i, refl in enumerate(reflections):
-      if is_scaled_list[i] is True:
-        scaled_reflections.append(refl)
-        scaled_experiments.append(experiments[i])
-      else:
-        unscaled_reflections.append(refl)
-        unscaled_experiments.append(experiments[i])
     scaled_scalers = []
-    for reflection, experiment in zip(scaled_reflections, scaled_experiments):
-      scaled_scalers.append(SingleScalerFactory.create(params, experiment, reflection))
-    return TargetScaler(params, scaled_experiments, scaled_scalers,
-      unscaled_experiments, unscaled_reflections)
+    unscaled_scalers = []
+    for i, reflection in enumerate(reflections):
+      if is_scaled_list[i] is True:
+        scaled_experiments.append(experiments[i])
+        scaled_scalers.append(SingleScalerFactory.create(params, experiments[i],
+          reflection, dataset_id=i))
+      else:
+        unscaled_scalers.append(SingleScalerFactory.create(params, experiments[i],
+          reflection, dataset_id=i))
+    return TargetScaler(params, scaled_experiments, scaled_scalers, unscaled_scalers[0])
 
 
 class ScalerUtilities(object):
   '''Base class for all Scalers (single and multiple)'''
   def __init__(self):
     'General attributes relevant for all parameterisations'
-    logger.info('\nInitialising a Scaler instance. \n')
     self._experiments = None
     self._params = None
     self._reflection_table = None
@@ -177,7 +160,7 @@ class ScalerUtilities(object):
     '''call thebasis function'''
     return bf.basis_function(self, apm).return_basis()
 
-  def expand_scales_to_all_reflections(self):
+  def expand_scales_to_all_reflections(self, caller=None):
     '''method to be filled in by subclasses'''
     pass
 
@@ -264,9 +247,13 @@ class SingleScaler(ScalerUtilities):
   and reflection.
   '''
   def __init__(self, params, experiment, reflection, dataset_id=0):
+    logger.info('\nInitialising a Single Scaler instance. \n')
     super(SingleScaler, self).__init__()
     self._experiments = experiment
     self._params = params
+    logger.info("Dataset id for this reflection table is %s." % dataset_id)
+    logger.info(('The type of scaling model being applied to this dataset {sep}'
+      'is an {0}. {sep}').format(self.experiments.scaling_model.id_, sep='\n'))
     reflection['dataset_id'] = flex.int([dataset_id]*len(reflection))
     self._initial_keys = [key for key in reflection.keys()]
     #choose intensities, map to asu, assign unique refl. index
@@ -398,7 +385,7 @@ class KBScaler(SingleScaler):
     if self.params.parameterisation.scale_term:
       self.g_scale.update_reflection_data(n_refl=sel.count(True))
 
-  def expand_scales_to_all_reflections(self):
+  def expand_scales_to_all_reflections(self, caller=None):
     expanded_scale_factors = flex.double([1.0]*len(self.reflection_table))
     if self.params.parameterisation.scale_term:
       self.g_scale.update_reflection_data(n_refl=len(self.reflection_table))
@@ -551,6 +538,22 @@ class AimlessScaler(SingleScaler):
         gradient_vector.extend(gradient)
     return (residual, gradient_vector)
 
+  def normalise_scale_component(self):
+    '''Method to do an invariant rescale of the scale at t=0 to one.'''
+    sel = (self.g_scale.normalised_values == min(self.g_scale.normalised_values))
+    initial_scale = self.g_scale.inverse_scales.select(sel)[0]
+    self.g_scale.parameters /= initial_scale
+    self.g_scale.calculate_scales_and_derivatives()
+    logger.info('Rescaled the scale component so that the initial scale is 1.\n')
+
+  def normalise_decay_component(self):
+    '''Method to do an invariant rescale of the max B to zero.'''
+    maxB = max(flex.double(np.log(self.g_decay.inverse_scales))
+                 * 2.0 * (self.g_decay.d_values**2))
+    self.g_decay.parameters -= flex.double([maxB] * self.g_decay.n_params)
+    self.g_decay.calculate_scales_and_derivatives()
+    logger.info('Rescaled the decay component so that the max B is 0.\n')
+
   def _normalise_scales_and_B(self):
     if self.params.parameterisation.decay_term:
       maxB = max(flex.double(np.log(self.g_decay.inverse_scales))
@@ -562,10 +565,7 @@ class AimlessScaler(SingleScaler):
     self.g_scale.parameters /= initial_scale
     self.g_scale.calculate_scales_and_derivatives()
 
-  def expand_scales_to_all_reflections(self):
-    if not self.params.scaling_options.multi_mode:
-      self._normalise_scales_and_B()
-    #recalculate scales for all reflections
+  def expand_scales_to_all_reflections(self, caller=None):
     expanded_scale_factors = flex.double([1.0]*len(self.reflection_table))
     self.g_scale.update_reflection_data(self.reflection_table['norm_rot_angle'])
     self.g_scale.calculate_scales()
@@ -592,8 +592,8 @@ class AimlessScaler(SingleScaler):
     #  self.Ih_table.apply_tukey_biweighting()
     #  self.Ih_table.calc_Ih()
     self._reflection_table['Ih_values'] = self.Ih_table.Ih_values
-    if (self.params.scaling_options.reject_outliers and not
-        self.params.scaling_options.multi_mode):
+    if (self.params.scaling_options.reject_outliers and
+      not isinstance(caller, MultiScaler)):
       self.round_of_outlier_rejection()
     logger.info('A new best estimate for I_h for all reflections has now been calculated. \n')
 
@@ -622,7 +622,8 @@ class MultiScaler(ScalerUtilities):
   a list of SingleScalers.
   '''
   def __init__(self, params, experiments, single_scalers):
-    '''initialise from a single scaler'''
+    '''initialise from a list if single scaler'''
+    logger.info('\nInitialising a MultiScaler instance. \n')
     super(MultiScaler, self).__init__()
     self.data_managers = single_scalers
     self._params = params
@@ -658,9 +659,9 @@ class MultiScaler(ScalerUtilities):
       apm.active_derivatives.assign_block(expanded.transpose(), 0, apm.n_cumul_params_list[i])
     self.Ih_table.calc_Ih()
 
-  def expand_scales_to_all_reflections(self):
+  def expand_scales_to_all_reflections(self, caller=None):
     for dm in self.data_managers:
-      dm.expand_scales_to_all_reflections()
+      dm.expand_scales_to_all_reflections(caller=self)
 
   def join_multiple_datasets(self):
     '''method to create a joint reflection table'''
@@ -713,11 +714,10 @@ class TargetScaler(MultiScaler):
   params, lists of scaled and unscaled experiments, a list of already scaled
   SingleScalers and a list of unscaled reflections.
   '''
-  def __init__(self, params, scaled_experiments, scaled_scalers,
-      unscaled_experiments, unscaled_reflections):
+  def __init__(self, params, scaled_experiments, scaled_scalers, unscaled_scaler):
+    logger.info('\nInitialising a TargetScaler instance. \n')
     super(TargetScaler, self).__init__(params, scaled_experiments, scaled_scalers)
-    self.dm1 = SingleScalerFactory.create(
-      params, unscaled_experiments[0], unscaled_reflections[0])
+    self.dm1 = unscaled_scaler
     #replace above with ScalerFactory to allow for scaling multiple against multiple?
     target_Ih_table = self.Ih_table
     for i, miller_idx in enumerate(self.dm1.Ih_table.asu_miller_index):
@@ -744,9 +744,43 @@ class TargetScaler(MultiScaler):
     self.dm1.Ih_table.inverse_scale_factors = basis_fn[0]
     #note - we don't calculate Ih here as using a target instead
 
-  def expand_scales_to_all_reflections(self):
-    return self.dm1.expand_scales_to_all_reflections()
+  def expand_scales_to_all_reflections(self, caller=None):
+    return self.dm1.expand_scales_to_all_reflections(caller=self)
 
   def calc_merging_statistics(self):
     return self.dm1.calc_merging_statistics()
 
+  def clean_reflection_table(self):
+    self.dm1.clean_reflection_table()
+
+  #def save_reflection_table(self, filename):
+  #  ''' Save the reflections to file. '''
+  #  self.dm1.save_reflection_table(filename)#='target_scaled.pickle')
+
+  def join_multiple_datasets(self):
+    '''method to create a joint reflection table'''
+    joined_reflections = flex.reflection_table()
+    for scaler in self.data_managers:
+      joined_reflections.extend(scaler.reflection_table)
+    joined_reflections.extend(self.dm1.reflection_table)
+    miller_set = miller.set(crystal.symmetry(
+      space_group=self.data_managers[0].experiments.crystal.get_space_group()),
+      indices=joined_reflections['asu_miller_index'], anomalous_flag=True)
+    permuted = miller_set.sort_permutation(by_value='packed_indices')
+    self._reflection_table = joined_reflections.select(permuted)
+    #weights = Weighting(self.reflection_table).weights
+    #self._Ih_table = SingleIhTable(self.reflection_table, weights)
+    #self._reflection_table['Ih_values'] = self.Ih_table.Ih_values
+    #if self.params.scaling_options.reject_outliers:
+    #  sel = reject_outliers(self, self.params.scaling_options.outlier_zmax)
+    #  n_outliers = sel.count(False)
+    #  msg = ('Combined outlier rejection has been performed across all datasets, {sep}'
+    #    '{0} outliers were found which have been removed from the dataset. {sep}'.format(
+    #    n_outliers, sep='\n'))
+    #  logger.info(msg)
+    #  self._reflection_table = self._reflection_table.select(sel)
+    #  self.Ih_table = self.Ih_table.select(sel)
+    #  self._reflection_table['Ih_values'] = self.Ih_table.Ih_values
+    #  msg = ('A new best estimate for I_h for all reflections across all datasets {sep}'
+    #    'has now been calculated. {sep}').format(sep='\n')
+    #  logger.info(msg)

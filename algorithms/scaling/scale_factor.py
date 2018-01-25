@@ -170,7 +170,7 @@ class SmoothBScaleFactor1D(SmoothScaleFactor1D):
   '''Subclass to SmoothScaleFactor1D for a smooth B-scale correction.'''
   def __init__(self, initial_value, scaling_options=None):
     super(SmoothBScaleFactor1D, self).__init__(initial_value, scaling_options)
-    self.Vr = 0.5
+    #self.Vr = 0.5
     self._d_values = None
 
   @property

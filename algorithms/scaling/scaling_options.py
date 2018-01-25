@@ -6,14 +6,14 @@ phil_scope = iotbx.phil.parse('''
     scale_term = True
       .type = bool
       .help = "Option to turn off decay correction (only for KB scaling)"
-    rotation_interval = 15.0
+    scale_interval = 15.0
       .type = float
       .help = "User specified rotation (phi) interval in degrees for phi binning
               for the scale term"
     decay_term = True
       .type = bool
       .help = "Option to turn off decay correction"
-    B_factor_interval = 20.0
+    decay_interval = 20.0
       .type = float
       .help = "User specified rotation (phi) interval in degrees for phi binning
               for the decay term"
@@ -24,7 +24,7 @@ phil_scope = iotbx.phil.parse('''
       .type = int
       .help = "Number of spherical harmonics to include for absorption correction,
               recommended to be no more than 6."
-    surface_weight = 1e5
+    surface_weight = 1e6
       .type = float
       .help = "Restraint weight applied to spherical harmonic terms in absorption
               correction."
@@ -59,8 +59,12 @@ phil_scope = iotbx.phil.parse('''
   scaling_options {
     target = True
       .type = bool
-      .help = "Option to turn of scaling against a target if some datasets
-               are already scaled"
+      .help = "Option to turn of initial round of targeted scaling
+               if some datasets are already scaled."
+    only_target = False
+      .type = bool
+      .help = "Option to only do targeted scaling if some datasets
+               are already scaled."
     force_space_group = None
       .type = str
       .help = "Option to specify space group for scaling"

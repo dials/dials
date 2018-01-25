@@ -31,7 +31,7 @@ def plot_data_decay(data_man, outputfile=None):
   (n1, n2) = (len(rel_values_1), len(rel_values_2))
   rel_values_1 = np.tile(rel_values_1, n2)
   rel_values_2 = np.repeat(rel_values_2, n1)
-  test_scale_factor = SF.SmoothScaleFactor_2D(1.0, ndbins, nzbins)
+  test_scale_factor = SF.SmoothScaleFactor_2D(flex.double([1.0]), ndbins, nzbins)
   test_scale_factor.inverse_scales = data_man.g_decay.inverse_scales
   test_scale_factor.normalised_values = (rel_values_1, rel_values_2)
   test_scale_factor.calculate_scales_and_derivatives()
@@ -211,27 +211,28 @@ def calc_correction_at_detector_area(data_man, position):
 
 
 def plot_smooth_scales(data_man, outputfile=None):
-  rel_values = np.arange(0, int(max(data_man.reflection_table['norm_rot_angle'])) + 1, 0.1)
-  scale_SFs = data_man.g_scale.parameters
-  n_g_scale_params = len(scale_SFs)
-  test_scale_factor = SF.SmoothScaleFactor1D(1.0, n_g_scale_params)
-  test_scale_factor.update_reflection_data(normalised_values=rel_values)
-  #test_scale_factor.normalised_values = rel_values
-  test_scale_factor.parameters = scale_SFs
-  test_scale_factor.calculate_scales()
-  scales = test_scale_factor.inverse_scales
   plt.figure(figsize=(14, 8))
-  plt.subplot(2,1,1)
-  plt.title('Smooth scale factors')
-  plt.plot(rel_values, scales)
-  plt.ylabel('Scale term')
-  plt.xlabel('Normalised rotation angle')
+  if data_man.params.parameterisation.scale_term:
+    rel_values = flex.double(np.arange(0, int(max(data_man.reflection_table['norm_rot_angle'])) + 1, 0.1))
+    scale_SFs = data_man.g_scale.parameters
+    #n_g_scale_params = len(scale_SFs)
+    test_scale_factor = SF.SmoothScaleFactor1D(scale_SFs)
+    test_scale_factor.update_reflection_data(normalised_values=rel_values)
+    #test_scale_factor.normalised_values = rel_values
+    test_scale_factor.parameters = scale_SFs
+    test_scale_factor.calculate_scales()
+    scales = test_scale_factor.inverse_scales
+    plt.subplot(2,1,1)
+    plt.title('Smooth scale factors')
+    plt.plot(rel_values, scales)
+    plt.ylabel('Scale term')
+    plt.xlabel('Normalised rotation angle')
 
   if data_man.params.parameterisation.decay_term:
     rel_values = np.arange(0, int(max(data_man.reflection_table['norm_time_values'])) + 1, 0.1)
     decay_SFs = data_man.g_decay.parameters
-    n_g_decay_params = len(decay_SFs)
-    test_decay_factor = SF.SmoothScaleFactor1D(0.0, n_g_decay_params)
+    #n_g_decay_params = len(decay_SFs)
+    test_decay_factor = SF.SmoothScaleFactor1D(decay_SFs)
     test_decay_factor.Vr = 0.5 ##HACK - set to match that of SmoothScaleFactor_1D_Bfactor
     test_decay_factor.update_reflection_data(normalised_values=rel_values)
     #test_decay_factor.normalised_values = rel_values
