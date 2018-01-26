@@ -406,53 +406,7 @@ def test_exercise_10(dials_regression):
                             absolute_angle_tolerance=1)
 
 def test_exercise_11(dials_regression):
-  return # disable test until a better image and/or parameters are available
-#  image_path = os.path.join(dials_regression, "spotfinding_test_data",
-#                            "idx-s00-20131106040304531.cbf")
-#  cwd = os.path.abspath(os.curdir)
-#  tmp_dir = os.path.abspath(open_tmp_directory(suffix="test_dials_index"))
-#  os.chdir(tmp_dir)
-#  print(tmp_dir)
-#
-#  args = ["dials.import", image_path,
-#          "output.datablock=datablock.json"]
-#  command = " ".join(args)
-#  #print(command)
-#  result = easy_run.fully_buffered(command=command).raise_if_errors()
-#
-#  datablock_json = os.path.join(tmp_dir, "datablock.json")
-#
-#  args = ["dials.find_spots",
-#          datablock_json,
-#          "threshold.xds.sigma_strong=7",
-#          "min_spot_size=6",
-#          ]
-#
-#  command = " ".join(args)
-#  #print(command)
-#  result = easy_run.fully_buffered(command=command).raise_if_errors()
-#  pickle_path = os.path.join(tmp_dir, "strong.pickle")
-#  assert os.path.exists(pickle_path)
-#
-#  extra_args = ["indexing.method=real_space_grid_search",
-#                "n_macro_cycles=3",
-#                "known_symmetry.unit_cell=78,78,39,90,90,90",
-#                "known_symmetry.space_group=P43212",
-#                "beam.fix=all",
-#                "detector.fix=all",
-#                "hkl_tolerance=0.5",
-#                ]
-#
-#  expected_unit_cell = uctbx.unit_cell((78, 78, 39, 90, 90, 90))
-#  expected_rmsds = (0.31, 0.38) # XXX these rmsds really aren't great
-#  expected_hall_symbol = ' P 4nw 2abw'
-#  n_expected_lattices = 1
-#
-#  result = run_one_indexing(pickle_path, datablock_json, extra_args, expected_unit_cell,
-#                            expected_rmsds, expected_hall_symbol,
-#                            n_expected_lattices=n_expected_lattices,
-#                            relative_length_tolerance=0.05,
-#                            absolute_angle_tolerance=1)
+  return # Test removed
 
 def test_exercise_12(dials_regression):
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
