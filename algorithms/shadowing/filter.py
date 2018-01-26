@@ -2,7 +2,7 @@ from __future__ import absolute_import, division
 
 def filter_shadowed_reflections(experiments, reflections,
                                 experiment_goniometer=False):
-  from dials.util import is_inside_polygon
+  from dials.util.ext import is_inside_polygon
   from scitbx.array_family import flex
   shadowed = flex.bool(reflections.size(), False)
   for expt_id in range(len(experiments)):

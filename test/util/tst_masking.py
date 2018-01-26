@@ -9,7 +9,7 @@ except KeyError:
 
 
 def exercise_polygon():
-  from dials.util import is_inside_polygon
+  from dials.util.ext import is_inside_polygon
   from scitbx.array_family import flex
 
   poly = flex.vec2_double(((0,0), (1,0), (1,1), (0,1)))
@@ -21,35 +21,50 @@ def exercise_polygon():
   assert list(is_inside_polygon(poly, points)) == [True, False, False, True]
 
 def exercise_dynamic_shadowing():
+
+  def exercise_one_image(
+    path, count_only_shadow, count_mask_shadow, count_mask_no_shadow):
+
+    from dxtbx.datablock import DataBlockFactory
+    assert os.path.exists(path), path
+    for shadowing in (libtbx.Auto, True, False):
+      format_kwargs = {'dynamic_shadowing': shadowing}
+      datablock = DataBlockFactory.from_filenames([path], format_kwargs=format_kwargs)[0]
+      imageset = datablock.extract_imagesets()[0]
+      detector = imageset.get_detector()
+      scan = imageset.get_scan()
+      filename = imageset.get_path(0)
+      masker = imageset.masker().format_class(filename, **format_kwargs).get_goniometer_shadow_masker()
+      assert masker is not None
+      mask = masker.get_mask(detector, scan_angle=scan.get_oscillation()[0])
+      assert len(mask) == len(detector)
+      # only shadowed pixels masked
+      assert mask[0].count(False) == count_only_shadow, (mask[0].count(False), count_only_shadow)
+      mask = imageset.get_mask(0)
+      # dead pixels, pixels in gaps, etc also masked
+      if shadowing is libtbx.Auto or shadowing is True:
+        assert mask[0].count(False) == count_mask_shadow, (mask[0].count(False), count_mask_shadow)
+      else:
+        assert mask[0].count(False) == count_mask_no_shadow, (mask[0].count(False), count_mask_no_shadow)
+
   if dials_regression is None:
     print 'SKIP: dials_regression not configured'
     return
 
-  path = os.path.join(
-    dials_regression, "shadow_test_data/DLS_I04_SmarGon/Th_3_O45_C45_P48_1_0500.cbf")
-
-  from dxtbx.datablock import DataBlockFactory
-  assert os.path.exists(path), path
-  for shadowing in (libtbx.Auto, True, False):
-    format_kwargs = {'dynamic_shadowing': shadowing}
-    datablock = DataBlockFactory.from_filenames([path], format_kwargs=format_kwargs)[0]
-    imageset = datablock.extract_imagesets()[0]
-    detector = imageset.get_detector()
-    scan = imageset.get_scan()
-    filename = imageset.get_path(0)
-    masker = imageset.masker().format_class(filename, **format_kwargs).get_goniometer_shadow_masker()
-    #masker = imageset.reader().get_format().get_goniometer_shadow_masker()
-    assert masker is not None
-    mask = masker.get_mask(detector, scan_angle=scan.get_oscillation()[0])
-    assert len(mask) == len(detector)
-    # only shadowed pixels masked
-    assert (mask[0].count(True), mask[0].count(False)) == (5797243, 426758)
-    mask = imageset.get_mask(0)
-    # dead pixels, pixels in gaps, etc also masked
-    if shadowing is libtbx.Auto or shadowing is True:
-      assert (mask[0].count(True), mask[0].count(False)) == (5306061, 917940)
-    else:
-      assert (mask[0].count(True), mask[0].count(False)) == (5695969, 528032)
+  exercise_one_image(
+    path=os.path.join(dials_regression,
+      "shadow_test_data/DLS_I04_SmarGon/Th_3_O45_C45_P48_1_0500.cbf"),
+    count_only_shadow=426758,
+    count_mask_shadow=917940,
+    count_mask_no_shadow=528032
+  )
+  exercise_one_image(
+    path=os.path.join(dials_regression,
+      "shadow_test_data/DLS_I03_SmarGon/protk_2_0600.cbf"),
+    count_only_shadow=519100,
+    count_mask_shadow=1002068,
+    count_mask_no_shadow=527314
+  )
 
 def exercise_shadow_plot():
   if dials_regression is None:
