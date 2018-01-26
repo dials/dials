@@ -183,11 +183,12 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Predict reflections for UB
-     * @param h The array of miller indices
+     * Predict reflections for specific Miller indices, entering flags and
+     * panels with single UB
+     * @param h The array of Miller indices
      * @param entering The array of entering flags
      * @param panel The array of panels
-     * @param ub The array of UB matrices
+     * @param ub A UB matrix
      * @returns A reflection table.
      */
     af::reflection_table for_hkl(
@@ -200,8 +201,9 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Predict reflections for UB
-     * @param h The array of miller indices
+     * Predict reflections for specific Miller indices, entering flags, panels
+     * with individual UB matrices
+     * @param h The array of Miller indices
      * @param entering The array of entering flags
      * @param panel The array of panels
      * @param ub The array of UB matrices
@@ -226,7 +228,8 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Predict reflections to the entries in the table.
+     * Predict reflections and add to the entries in the table for a single UB
+     * matrix
      * @param table The reflection table
      * @param ub The ub matrix
      */
@@ -238,7 +241,8 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Predict reflections to the entries in the table.
+     * Predict reflections and add to the entries in the table for individual UB
+     * matrices
      * @param table The reflection table
      * @param ub The list of ub matrices
      */
@@ -475,7 +479,8 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Predict all the reflections for this model.
+     * Predict all the reflections given an array of UB matrices.
+     * @param A The UB matrix recorded at scan points
      * @returns The reflection table
      */
     af::reflection_table for_ub(const af::const_ref< mat3<double> > &A) const {
@@ -504,7 +509,11 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Predict all the reflections for this model.
+     * Predict all the reflections on a single image given the start and end UB
+     * matrices
+     * @param frame The frame number
+     * @param A1 The start UB matrix
+     * @param A2 The end UB matrix
      * @returns The reflection table
      */
     af::reflection_table for_ub_on_single_image(
@@ -526,13 +535,16 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Predict reflections for UB, s0, d
+     * Predict reflections for specific Miller indices, entering flags and
+     * panels with individual UB matrices, s0 vectors, d matrices and S
+     * (setting) matrices
      * @param h The array of miller indices
      * @param entering The array of entering flags
      * @param panel The array of panels
      * @param ub The array of UB matrices
      * @param s0 The array of s0 vectors
      * @param d The array of d matrices
+     * @param S The array of setting matrices
      * @returns A reflection table.
      */
     af::reflection_table for_hkl_with_individual_model(
@@ -560,7 +572,8 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Predict reflections to the entries in the table.
+     * Predict reflections and add to the entries in the table for individual UB
+     * matrices, s0 vectors, d matrices and S (setting) matrices
      * @param table The reflection table
      * @param ub The ub matrix array
      * @param s0 The s0 vector array
@@ -631,9 +644,12 @@ namespace dials { namespace algorithms {
      * For the given image, generate the indices and do the prediction.
      * @param p The reflection data
      * @param frame The image frame to predict on.
+     * @param A1 The start UB matrix
+     * @param A2 The end UB matrix
      */
     void append_for_image(
-        prediction_data &p, int frame,
+        prediction_data &p,
+        int frame,
         mat3<double> A1,
         mat3<double> A2) const {
 
@@ -654,15 +670,20 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Do the prediction for a miller index on a frame.
+     * For a given Miller index, predict for a particular frame.
      * @param p The reflection data
      * @param A1 The beginning setting matrix.
      * @param A2 The end setting matrix
      * @param frame The frame to predict on
-     * @param h The miller index
+     * @param h The Miller index
      */
-    void append_for_index(prediction_data &p, mat3<double> A1, mat3<double> A2,
-        std::size_t frame, const miller_index &h, int panel=-1) const {
+    void append_for_index(
+        prediction_data &p,
+        mat3<double> A1,
+        mat3<double> A2,
+        std::size_t frame,
+        const miller_index &h,
+        int panel=-1) const {
       boost::optional<Ray> ray = predict_rays_(h, A1, A2, frame, 1);
       if (ray) {
         append_for_ray(p, h, *ray, panel);
@@ -670,13 +691,16 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Do the prediction for a given ray.
+     * Predict for a given Miller index with a precalcuated ray.
      * @param p The reflection data
      * @param h The miller index
      * @param ray The ray
      */
-    void append_for_ray(prediction_data &p,
-        const miller_index &h, const Ray &ray, int panel) const {
+    void append_for_ray(
+        prediction_data &p,
+        const miller_index &h,
+        const Ray &ray,
+        int panel) const {
       try {
 
         // Get the impact on the detector
@@ -703,7 +727,7 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Do the prediction for a miller index given all model states.
+     * Predict for a given miller index and all model states.
      * @param p The reflection data
      * @param ub The UB matrix
      * @param s0 The s0 vector
@@ -838,9 +862,9 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Predict the reflections with given HKL.
+     * Predict the reflections with given Miller indices.
      * @param h The miller index
-     * @returns The reflection list
+     * @returns The reflection table
      */
     af::reflection_table operator()(
         const af::const_ref< miller_index > &h) {
@@ -853,9 +877,9 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Predict for given hkl and panel.
-     * @param h The miller index
-     * @param panel The panel
+     * Predict for given Miller indices on a single panel.
+     * @param h The array of Miller indices
+     * @param panel The panel index
      * @returns The reflection table
      */
     af::reflection_table operator()(
@@ -866,9 +890,9 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Predict for given hkl and panel.
-     * @param h The miller index
-     * @param panel The panel
+     * Predict for given Miller indices for specific panels.
+     * @param h The array of Miller indices
+     * @param panel The array of panel indices
      * @returns The reflection table
      */
     af::reflection_table operator()(
@@ -884,9 +908,11 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Predict reflections for UB
+     * Predict reflections for specific Miller indices, panels and individual
+     * UB matrices
      * @param h The array of miller indices
      * @param panel The array of panels
+     * @param ub The array of setting matrices
      * @returns A reflection table.
      */
     af::reflection_table for_hkl_with_individual_ub(
@@ -907,7 +933,8 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Predict reflections to the entries in the table.
+     * Predict reflections and add to the entries in the table for a single UB
+     * matrix
      * @param table The reflection table
      * @param ub The ub matrix
      */
@@ -919,7 +946,8 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Predict reflections and add to the entries in the table.
+     * Predict reflections and add to the entries in the table for an array of
+     * UB matrices
      * @param table The reflection table
      */
     void for_reflection_table_with_individual_ub(
@@ -955,9 +983,11 @@ namespace dials { namespace algorithms {
   protected:
 
     /**
-     * Predict reflections for the given HKL.
+     * Predict for the given Miller index, UB matrix and panel number
      * @param p The reflection data
+     * @param ub The UB matrix
      * @param h The miller index
+     * @param panel The panel index
      */
     virtual void append_for_index(stills_prediction_data &p,
         const mat3<double> ub,
@@ -970,12 +1000,12 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Predict the reflection for the given ray data.
+     * Predict for the given Miller index, ray, panel number and delta psi
      * @param p The reflection data
      * @param h The miller index
      * @param ray The ray data
      * @param panel The panel number
-     * @param delpsi The calculated minimum rotation to Ewald sphere (delPsi) value
+     * @param delpsi The calculated minimum rotation to Ewald sphere
      */
     void append_for_ray(stills_prediction_data &p,
         const miller_index &h, const Ray &ray, int panel, double delpsi) const {
@@ -1053,7 +1083,7 @@ namespace dials { namespace algorithms {
 
     /**
      * Predict reflections for UB, using the Nave models from Nave 2014, JSR
-     * as implemented in Sauter 2014, Akta D, equations 16-17
+     * as implemented in Sauter 2014, Acta D, equations 16-17
      * @param ub The UB matrix
      * @returns A reflection table.
      */
@@ -1148,7 +1178,7 @@ namespace dials { namespace algorithms {
   protected:
 
     /**
-     * Predict reflections for the given HKL.
+     * Predict for the given Miller index, UB matrix and panel number.
      * Override uses SphericalRelpStillsRayPredictor.
      * @param p The reflection data
      * @param h The miller index
