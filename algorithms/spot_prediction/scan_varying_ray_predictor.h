@@ -41,8 +41,9 @@ namespace dials { namespace algorithms {
    * total number of images. In future we will simple pass a crystal model,
    * which will store its own per-image UB matrix.
    *
-   * Currently it is assumed that only the crystal model varies with image
-   * number, whilst the other models remain static.
+   * The first operator() method assumes only the crystal model varies with
+   * image number, whilst the other models remain static. The overload allows
+   * also the beam to differ between the start and end of the image.
    */
   class ScanVaryingRayPredictor {
   public:
@@ -74,7 +75,8 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Predict the ray for the given hkl on the given image.
+     * Predict the ray for the given Miller index on the given image, where the
+     * UB matrix differs between the start and end of the step
      * @param h The miller index
      * @param A1 The setting matrix for the beginning of the step.
      * @param A2 The setting matrix for the end of the step.
@@ -84,8 +86,10 @@ namespace dials { namespace algorithms {
      */
     boost::optional<Ray> operator()(
         const miller_index &h,
-        const mat3<double> &A1, const mat3<double> A2,
-        int image, std::size_t step) const {
+        const mat3<double> &A1,
+        const mat3<double> &A2,
+        int image,
+        std::size_t step) const {
 
       // Calculate the reciprocal space vectors
       vec3<double> r1 = A1 * h;
@@ -128,6 +132,110 @@ namespace dials { namespace algorithms {
 
       // Calculate the scattering vector and rotation angle
       vec3<double> s1 = r1 + alpha * dr + s0_;
+      double angle = dphi_[0] + (image - frame0_ + alpha * step) * dphi_[1];
+
+      // Return the ray
+      return Ray(s1, angle, starts_outside);
+    }
+
+    /**
+     * Predict the ray for the given Miller index on the given image, where the
+     * UB matrix and the s0 vector differs between the start and end of the
+     * step.
+     * @param h The miller index
+     * @param A1 The setting matrix for the beginning of the step.
+     * @param A2 The setting matrix for the end of the step.
+     * @param s0a The s0 vector for the beginning of the step.
+     * @param s0b The s0 vector for the end of the step.
+     * @param image The image index
+     * @param step The step to predict over.
+     * @returns The ray if predicted
+     */
+    boost::optional<Ray> operator()(
+        const miller_index &h,
+        const mat3<double> &A1,
+        const mat3<double> &A2,
+        const vec3<double> &s0a,
+        const vec3<double> &s0b,
+        int image,
+        std::size_t step) const {
+
+      // Calculate the reciprocal space vectors
+      vec3<double> r1 = A1 * h;
+      vec3<double> r2 = A2 * h;
+      vec3<double> dr = r2 - r1;
+      vec3<double> s0pr1 = s0a + r1;
+      vec3<double> s0pr2 = s0b + r2;
+
+      // Calculate the distances from the Ewald spheres along radii
+      double s0a_mag = s0a.length();
+      double s0b_mag = s0b.length();
+      double r1_from_es = s0pr1.length() - s0a_mag;
+      double r2_from_es = s0pr2.length() - s0b_mag;
+
+      // Check that the reflection cross the ewald sphere and is within
+      // the resolution limit
+      bool starts_outside = r1_from_es >= 0.0;
+      bool ends_outside = r2_from_es >= 0.0;
+      bool is_outside_res_limit = r1.length_sq() > dstarmax_sq_;
+      if (starts_outside == ends_outside || is_outside_res_limit) {
+        return boost::optional<Ray>();
+      }
+
+      // Calculate distance of r1 from the start Ewald sphere along the
+      // direction of linear change dr. That implies solving the equation
+      // |s0a + r1 + alpha * dr| = |s0a| for alpha. This is equivalent to
+      // solving the quadratic equation
+      //
+      // alpha^2*dr.dr + 2*alpha(s0a + r1).dr + 2*s0a.r1 + r1.r1 = 0
+      af::small<double, 2> roots = reeke_detail::solve_quad(
+          dr.length_sq(),
+          2.0 * s0pr1 * dr,
+          r1.length_sq() + 2.0*s0a*r1);
+
+      // Choose a root that lies in [0,1]
+      double alpha1;
+      if (0.0 <= roots[0] && roots[0] <= 1.0) {
+        alpha1 = roots[0];
+      } else if (0.0 <= roots[1] && roots[1] <= 1.0) {
+        alpha1 = roots[1];
+      } else {
+        return boost::optional<Ray>();
+      }
+
+      // Now calculate the distance of r2 from the end Ewald sphere along the
+      // direction of linear change -1.0*dr. That implies solving the equation
+      // |s0b + r2 - alpha * dr| = |s0b| for alpha. This is equivalent to
+      // solving the quadratic equation
+      //
+      // alpha^2*dr.dr - 2*alpha(s0b + r2).dr + 2*s0b.r2 + r2.r2 = 0
+      roots = reeke_detail::solve_quad(
+          dr.length_sq(),
+          -2.0 * s0pr2 * dr,
+          r2.length_sq() + 2.0*s0b*r2);
+      // Choose a root that lies in [0,1]
+      double alpha2;
+      if (0.0 <= roots[0] && roots[0] <= 1.0) {
+        alpha2 = roots[0];
+      } else if (0.0 <= roots[1] && roots[1] <= 1.0) {
+        alpha2 = roots[1];
+      } else {
+        return boost::optional<Ray>();
+      }
+
+      // Calculate alpha, the fraction along the linear step, as the distance
+      // from the Ewald sphere at the start compared to the total distance
+      // travelled relative to the Ewald sphere
+      double alpha = alpha1 / (alpha1 + alpha2);
+
+      // Linear approximation to the s0 vector at intersection
+      vec3<double> us0a = s0a.normalize();
+      vec3<double> us0_at_intersection = alpha * (s0b.normalize() - us0a) + us0a;
+      double wavenumber = (s0a_mag + s0b_mag) * 0.5;
+      vec3<double> s0_at_intersection = wavenumber * us0_at_intersection;
+
+      // Calculate the scattering vector and rotation angle
+      vec3<double> s1 = r1 + alpha * dr + s0_at_intersection;
       double angle = dphi_[0] + (image - frame0_ + alpha * step) * dphi_[1];
 
       // Return the ray

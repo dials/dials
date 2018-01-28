@@ -216,12 +216,78 @@ class TestRayPredictor:
       assert(r1['entering'] == r2['entering'])
     print 'OK'
 
+  def test_scan_varying(self):
+    from dials.algorithms.spot_prediction import ScanVaryingRayPredictor
+    from dials.algorithms.spot_prediction import ReekeIndexGenerator
+    from scitbx import matrix
+    import scitbx.math
+    from libtbx.test_utils import approx_equal
+    from math import pi
+
+    s0 = self.beam.get_s0()
+    m2 = self.gonio.get_rotation_axis()
+    UB = self.ub_matrix
+    dphi = self.scan.get_oscillation_range(deg=False)
+
+    # For quick comparison look at reflections on one frame only
+    frame = 0
+    angle_beg = self.scan.get_angle_from_array_index(frame, deg=False)
+    angle_end = self.scan.get_angle_from_array_index(frame+1, deg=False)
+    frame0_refs = self.reflections.select(
+        (self.reflections['phi'] >= angle_beg) & (self.reflections['phi'] <= angle_end))
+
+    # Get UB matrices at beginning and end of frame
+    r_osc_beg = matrix.sqr(
+      scitbx.math.r3_rotation_axis_and_angle_as_matrix(
+      axis = m2, angle = angle_beg, deg=False))
+    UB_beg = r_osc_beg * self.ub_matrix
+    r_osc_end = matrix.sqr(
+      scitbx.math.r3_rotation_axis_and_angle_as_matrix(
+      axis = m2, angle = angle_end, deg=False))
+    UB_end = r_osc_end * self.ub_matrix
+
+    # Get indices
+    r = ReekeIndexGenerator(UB_beg, UB_end, self.space_group_type, m2,
+      s0, self.d_min, margin=1)
+    h = r.to_array()
+
+    # Fn to loop through hkl applying a prediction function to each and testing
+    # the results are the same as those from the ScanStaticRayPredictor
+    def test_each_hkl(hkl_list, predict_fn):
+      DEG2RAD = pi/180.
+      count = 0
+      for hkl in hkl_list:
+        ray = predict_fn(hkl)
+        if ray is not None:
+          count += 1
+          ref = frame0_refs.select(frame0_refs['miller_index']==hkl)[0]
+          assert ref['entering'] == ray.entering
+          assert approx_equal(ref['phi'], ray.angle * DEG2RAD) # ray angle is in degrees (!)
+          assert approx_equal(ref['s1'], ray.s1)
+      # ensure all reflections were matched
+      assert count == len(frame0_refs)
+
+    # Create the ray predictor
+    sv_predict_rays = ScanVaryingRayPredictor(s0, m2,
+        self.scan.get_array_range()[0], self.scan.get_oscillation(), self.d_min)
+
+    # Test with the method that allows only differing UB matrices
+    test_each_hkl(h, lambda x: sv_predict_rays(x, UB_beg, UB_end, frame))
+
+    # Now repeat prediction using the overload that allows for different s0
+    # at the beginning and end of the frame. Here, pass in the same s0 each time
+    # and the result should be the same as before
+    test_each_hkl(h, lambda x: sv_predict_rays(x, UB_beg, UB_end, s0, s0, frame))
+
+    print "OK"
+
   def run(self):
     self.test_miller_index_set()
     self.test_rotation_angles()
     self.test_beam_vectors()
     self.test_new()
     self.test_new_from_array()
+    self.test_scan_varying()
 
 if __name__ == '__main__':
   if have_dials_regression:
