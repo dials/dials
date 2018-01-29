@@ -247,6 +247,11 @@ class Script(object):
       self.parser.print_help()
       return
 
+    # Mask validation
+    for mask_path in params.spotfinder.lookup.mask, params.integration.lookup.mask:
+      if mask_path is not None and not os.path.isfile(mask_path):
+        raise Sorry("Mask %s not found"%mask_path)
+
     # Save the options
     self.options = options
     self.params = params
