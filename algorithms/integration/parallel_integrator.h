@@ -135,6 +135,22 @@ namespace dials { namespace algorithms {
     /**
      * Copy an image to the buffer
      * @param data The image data
+     * @param index The image index
+     */
+    void copy(const Image<double> &data, bool mask, std::size_t index) {
+      DIALS_ASSERT(data.n_tiles() == data_.size());
+      if (mask) {
+        copy(data, index);
+      } else {
+        for (std::size_t i = 0; i < data.n_tiles(); ++i) {
+          apply_mask_to_all_pixels(data_[i].ref(), index);
+        }
+      }
+    }
+
+    /**
+     * Copy an image to the buffer
+     * @param data The image data
      * @param mask The mask data
      * @param index The image index
      */
@@ -185,6 +201,23 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(src.accessor()[1] == dst.accessor()[2]);
       for (std::size_t j = 0; j < ysize * xsize; ++j) {
         dst[index * (xsize*ysize) + j] = src[j];
+      }
+    }
+
+    /**
+     * Mask all pixels
+     * @param dst The destination
+     * @param index The image index
+     */
+    template <typename OutputType>
+    void apply_mask_to_all_pixels(
+          af::ref< OutputType, af::c_grid<3> > dst,
+          std::size_t index) {
+      std::size_t ysize = dst.accessor()[1];
+      std::size_t xsize = dst.accessor()[2];
+      DIALS_ASSERT(index < dst.accessor()[0]);
+      for (std::size_t j = 0; j < ysize * xsize; ++j) {
+        dst[index * (xsize*ysize) + j] = mask_value_;
       }
     }
 
@@ -302,6 +335,27 @@ namespace dials { namespace algorithms {
         buffer_range_[1]++;
       }
       buffer_base_.copy(data, index % num_buffer_);
+    }
+
+    /**
+     * Copy an image to the buffer
+     * @param data The image data
+     * @param mask The mask data
+     * @param index The image index
+     */
+    void copy(const Image<double> &data, bool mask, std::size_t index) {
+      DIALS_ASSERT(index < num_images_);
+      DIALS_ASSERT(index >= buffer_range_[0]);
+      DIALS_ASSERT(index <= buffer_range_[1]);
+      DIALS_ASSERT(buffer_range_[0] >= 0);
+      DIALS_ASSERT(buffer_range_[1] <= num_images_);
+      DIALS_ASSERT(buffer_range_[1] > buffer_range_[0]);
+      DIALS_ASSERT(buffer_range_[1] - buffer_range_[0] == num_buffer_);
+      if (index == buffer_range_[1]) {
+        buffer_range_[0]++;
+        buffer_range_[1]++;
+      }
+      buffer_base_.copy(data, mask, index % num_buffer_);
     }
 
     /**
@@ -881,6 +935,19 @@ namespace dials { namespace algorithms {
     /**
      * Copy the image to the buffer when we are able to accept more images
      * @param data The image data
+     * @param mask A single value mask
+     * @param index The image index
+     */
+    void copy_when_ready(const Image<double> &data, bool mask, std::size_t index) {
+      if (index >= max_images_) {
+        while (!notifier_.complete(buffer_.buffer_range()[0]));
+      }
+      buffer_.copy(data, mask, index);
+    }
+
+    /**
+     * Copy the image to the buffer when we are able to accept more images
+     * @param data The image data
      * @param mask The image mask
      * @param index The image index
      */
@@ -1280,7 +1347,9 @@ namespace dials { namespace algorithms {
         // Copy the image to the buffer. If the image number is greater than the
         // buffer size (i.e. we are now deleting old images) then wait for the
         // threads to finish so that we don't end up reading the wrong data
-        if (use_dynamic_mask) {
+        if (imageset.is_marked_for_rejection(i)) {
+          bm.copy_when_ready(imageset.get_corrected_data(i), false, i);
+        } else if (use_dynamic_mask) {
           bm.copy_when_ready(imageset.get_corrected_data(i), imageset.get_dynamic_mask(i), i);
         } else {
           bm.copy_when_ready(imageset.get_corrected_data(i), i);

@@ -679,7 +679,9 @@ namespace dials { namespace algorithms {
         // Copy the image to the buffer. If the image number is greater than the
         // buffer size (i.e. we are now deleting old images) then wait for the
         // threads to finish so that we don't end up reading the wrong data
-        if (use_dynamic_mask) {
+        if (imageset.is_marked_for_rejection(i)) {
+          bm.copy_when_ready(imageset.get_corrected_data(i), false, i);
+        } else if (use_dynamic_mask) {
           bm.copy_when_ready(imageset.get_corrected_data(i), imageset.get_dynamic_mask(i), i);
         } else {
           bm.copy_when_ready(imageset.get_corrected_data(i), i);

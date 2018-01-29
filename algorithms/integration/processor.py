@@ -467,13 +467,16 @@ class Task(object):
     for i in range(len(imageset)):
       st = time()
       image = imageset.get_corrected_data(i)
-      mask = imageset.get_mask(i)
-      if self.params.lookup.mask is not None:
-        assert len(mask) == len(self.params.lookup.mask), \
-          "Mask/Image are incorrect size %d %d" % (
-            len(mask),
-            len(self.params.lookup.mask))
-        mask = tuple(m1 & m2 for m1, m2 in zip(self.params.lookup.mask, mask))
+      if imageset.is_marked_for_rejection(i):
+        mask = tuple(flex.bool(im.accessor(), False) for im in image)
+      else:
+        mask = imageset.get_mask(i)
+        if self.params.lookup.mask is not None:
+          assert len(mask) == len(self.params.lookup.mask), \
+            "Mask/Image are incorrect size %d %d" % (
+              len(mask),
+              len(self.params.lookup.mask))
+          mask = tuple(m1 & m2 for m1, m2 in zip(self.params.lookup.mask, mask))
 
       read_time += time() - st
       processor.next(make_image(image, mask), self.executor)

@@ -112,6 +112,10 @@ phil_scope = parse(
 
   }
 
+  exclude_images = None
+    .type = ints
+    .help = "Exclude images from integration (e.g. 1,2,3,4,5 etc)"
+
   verbosity = 1
     .type = int(value_min=0)
     .help = "The verbosity level"
@@ -243,6 +247,9 @@ class Script(object):
       experiments,
       reference,
       params.scan_range)
+
+    # Modify experiment list if exclude images is set
+    experiments = self.exclude_images(experiments, params.exclude_images)
 
     # Predict the reflections
     logger.info("")
@@ -497,6 +504,16 @@ class Script(object):
 
     # create subset
     return predicted.select(working_isel)
+
+  def exclude_images(self, experiments, exclude_images):
+
+    if exclude_images is not None and len(exclude_images) > 0:
+      for experiment in experiments:
+        imageset = experiment.imageset
+        for index in exclude_images:
+          imageset.mark_for_rejection(index, True)
+
+    return experiments
 
   def split_for_scan_range(self, experiments, reference, scan_range):
     ''' Update experiments when scan range is set. '''
