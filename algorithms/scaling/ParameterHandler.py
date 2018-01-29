@@ -1,7 +1,7 @@
 import logging
 from dials.array_family import flex
 
-logger = logging.getLogger('dials.scale')
+logger = logging.getLogger('dials')
 
 
 class ParameterlistFactory(object):

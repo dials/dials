@@ -1,28 +1,13 @@
 '''
 Collection of factories for creating the scaling models.
+To add a new scaling model, one must define a new extension
+in dials.extensions.scaling_model_ext, create a new factory
+in this file and a new model is dials.algorithms.scaling.model.
 '''
-from collections import OrderedDict
 from dials.array_family import flex
-import dials.algorithms.scaling.scale_factor as SF
 from libtbx.phil import parse
 import dials.algorithms.scaling.Model as Model
-
-phil_scope = parse('''
-''')
-
-def generate_phil_scope():
-  '''
-  Generate the phil scope for profile model
-
-  :return: The phil scope
-
-  '''
-  import dials.extensions
-  from dials.interfaces import ScalingModelIface
-  phil_scope = ScalingModelIface.phil_scope()
-  return phil_scope
-
-#phil_scope = generate_phil_scope()
+import pkg_resources
 
 class Factory(object):
   '''
@@ -33,27 +18,16 @@ class Factory(object):
     '''
     create the scaling model defined by the params.
     '''
-    from dials.interfaces import ScalingModelIface
-    for ex in ScalingModelIface.extensions():
-      print(ex)
-      print(dir(ex))
-      print(ex.name)
-    print('gone through extensions')
-    Extension = ScalingModelIface.extension(params.scaling_model)
-    print(Extension)
-    Algorithm = Extension().algorithm()
     for i, (exp, refl) in enumerate(zip(experiments, reflections)):
       model = experiments.scaling_models()[i]
       if model is not None:
         exp.scaling_model = model
-      elif params.scaling_model == 'aimless':
-        exp.scaling_model = Algorithm.create(params, exp, refl)
-      elif params.scaling_model == 'xscale':
-        exp.scaling_model = XscaleScalingModel.create(params, exp, refl)
-      elif params.scaling_model == 'KB':
-        exp.scaling_model = KBSMFactory.create()
       else:
-        assert 0, 'scaling model not recognised'
+        for entry_point in pkg_resources.iter_entry_points('dxtbx.scaling_model_ext'):
+          if entry_point.name == params.scaling_model:
+            #finds relevant extension in dials.extensions.scaling_model_ext
+            factory = entry_point.load().factory()
+            exp.scaling_model = factory.create(params, exp, refl)
     return experiments
 
 class AimlessSMFactory(object):
@@ -109,9 +83,8 @@ class KBSMFactory(object):
   Factory for creating a KB scaling model.
   '''
   @classmethod
-  def create(cls):
+  def create(cls, _, __, ____):
     '''create the simple KB scaling model.'''
     K_param = flex.double([1.0])
     B_param = flex.double([0.0])
-    return KBScalingModel(K_param, B_param)
-
+    return Model.KBScalingModel(K_param, B_param)

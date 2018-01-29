@@ -5,7 +5,7 @@ from cctbx import miller, crystal
 from reflection_weighting import Weighting
 
 import logging
-logger = logging.getLogger('dials.scale')
+logger = logging.getLogger('dials')
 
 def calc_normE2(reflection_table, experiments):
   '''calculate normalised intensity values for centric and acentric reflections'''

@@ -19,7 +19,7 @@ from target_Ih import SingleIhTable, JointIhTable, IhTableBase
 import minimiser_functions as mf
 from aimless_outlier_rejection import reject_outliers
 
-logger = logging.getLogger('dials.scale')
+logger = logging.getLogger('dials')
 
 class Factory(object):
   '''
@@ -63,11 +63,11 @@ class SingleScalerFactory(object):
   @classmethod
   def create(cls, params, experiment, reflection, dataset_id=0):
     '''create a single scaler with the relevant parameterisation'''
-    if experiment.scaling_model.id_ == "aimless_scaling_model":
+    if experiment.scaling_model.id_ == "aimless":
       return AimlessScaler(params, experiment, reflection, dataset_id)
-    elif experiment.scaling_model.id_ == "KB_scaling_model":
+    elif experiment.scaling_model.id_ == "KB":
       return KBScaler(params, experiment, reflection, dataset_id)
-    elif experiment.scaling_model.id_ == "xscale_scaling_model":
+    elif experiment.scaling_model.id_ == "xscale":
       return XscaleScaler(params, experiment, reflection, dataset_id)
     else:
       assert 0, "Scaling model __id__ not recognised."
@@ -402,6 +402,13 @@ class KBScaler(SingleScaler):
         'has now been applied to all reflections. {sep}').format(
         list(self.g_decay.parameters)[0], sep='\n'))
     self._reflection_table['inverse_scale_factor'] = expanded_scale_factors
+    self._Ih_table = SingleIhTable(self.reflection_table)
+    weights = self._update_weights_for_scaling(self.reflection_table,
+      self.params, weights_filter=False, error_model_params=None).weights
+    self.Ih_table.weights = weights
+    self.Ih_table = self.Ih_table.select(self.Ih_table.weights != 0.0)
+    self._reflection_table = self._reflection_table.select(weights != 0.0)
+    self._reflection_table['Ih_values'] = self.Ih_table.Ih_values
 
 
 class AimlessScaler(SingleScaler):

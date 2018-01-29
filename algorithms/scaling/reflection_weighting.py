@@ -3,7 +3,7 @@ from dials.array_family import flex
 import numpy as np
 
 import logging
-logger = logging.getLogger('dials.scale')
+logger = logging.getLogger('dials')
 
 class Weighting(object):
   ''' This class defines a weighting object that takes in a reflection table,

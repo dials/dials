@@ -8,7 +8,7 @@ from scitbx import lbfgs, sparse
 from Parameter_handler import multi_active_parameter_manager, active_parameter_manager
 from dials.algorithms.scaling.ScalerFactory import MultiScaler, TargetScaler
 
-logger = logging.getLogger('dials.scale')
+logger = logging.getLogger('dials')
 
 class LBFGS_optimiser(object):
   '''Class that takes in Data_Manager object and runs an LBFGS minimisation'''

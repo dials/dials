@@ -1,12 +1,10 @@
 from collections import OrderedDict
 from dials.array_family import flex
 import dials.algorithms.scaling.scale_factor as SF
-from dxtbx.model import ScalingModelBaseIface
 
-class ScalingModelBase(ScalingModelBaseIface):
+class ScalingModelBase(object):
   '''Base class for Scale Factories'''
   def __init__(self):
-    #super(ScalingModelBase, self).__init__()
     self._scaling_model = None
     self._components = OrderedDict()
     self._id_ = None
@@ -22,10 +20,12 @@ class ScalingModelBase(ScalingModelBaseIface):
     return self._components
 
   def to_dict(self):
+    '''format data to dictionary for output'''
     pass
 
   @classmethod
   def from_dict(cls, obj):
+    '''create a scaling model object from a dictionary'''
     pass
 
 
@@ -33,7 +33,7 @@ class AimlessScalingModel(ScalingModelBase):
   '''Factory to create a scaling model for an aimless-type parameterisation.'''
   def __init__(self, s_norm_fac, s_params, d_norm_fac, d_params, abs_params):
     super(AimlessScalingModel, self).__init__()
-    self._id_ = 'aimless_scaling_model'
+    self._id_ = 'aimless'
     self._components.update({'scale' : SF.SmoothScaleFactor1D(s_params)})
     self._components.update({'decay' : SF.SmoothBScaleFactor1D(d_params)})
     self._components.update({'absorption' : SF.SHScaleFactor(abs_params)})
@@ -71,8 +71,8 @@ class AimlessScalingModel(ScalingModelBase):
   @classmethod
   def from_dict(cls, obj):
     '''create a scaling model object from a dictionary'''
-    if obj['__id__'] != "aimless_scaling_model":
-      raise RuntimeError('expected __id__ aimless_scaling_model, got %s' % obj['__id__'])
+    if obj['__id__'] != "aimless":
+      raise RuntimeError('expected __id__ aimless, got %s' % obj['__id__'])
     s_norm_fac = obj['scale']['normalisation_factor']
     s_params = flex.double(obj['scale']['parameters'])
     d_norm_fac = obj['decay']['normalisation_factor']
@@ -83,13 +83,29 @@ class AimlessScalingModel(ScalingModelBase):
 
 class XscaleScalingModel(ScalingModelBase):
   '''Factory to create a scaling model for an xscale-type parameterisation.'''
-  def __init__(self):
+  def __init__(self, a_params, d_params, m_params):
     super(XscaleScalingModel, self).__init__()
+    self._id_ = 'xscale'
+    self._components.update({'decay' : SF.SmoothScaleFactor2D(d_params)})
+    self._components.update({'absorption' : SF.SmoothScaleFactor3D(a_params)})
+    self._components.update({'modulation' : SF.SmoothScaleFactor2D(m_params)})
     assert 0, 'method not yet implemented'
 
   def to_dict(self):
     '''format data to dictionary for output'''
-    assert 0, 'method not yet implemented'
+    dictionary = OrderedDict({'__id__' : self._id_})
+    dictionary.update({'decay' : OrderedDict({
+      'n_parameters' : len(self._components['decay'].parameters),
+      'parameters' : list(self._components['decay'].parameters),
+      'normalisation_factor' : self._decay_normalisation_factor})})
+    dictionary.update({'absorption' : OrderedDict({
+      'n_parameters' : len(self._components['absorption'].parameters),
+      'parameters' : list(self._components['absorption'].parameters),
+      'normalisation_factor' : self._decay_normalisation_factor})})
+    dictionary.update({'modulation' : OrderedDict({
+      'n_parameters' : len(self._components['modulation'].parameters),
+      'parameters' : list(self._components['modulation'].parameters)})})
+    return dictionary
 
   @classmethod
   def from_dict(cls, obj):
@@ -101,7 +117,7 @@ class KBScalingModel(ScalingModelBase):
   '''Factory to create a scaling model for an xscale-type parameterisation.'''
   def __init__(self, K_params, B_params):
     super(KBScalingModel, self).__init__()
-    self._id_ = 'KB_scaling_model'
+    self._id_ = 'KB'
     self._components.update({'scale' : SF.KScaleFactor(K_params)})
     self._components.update({'decay' : SF.BScaleFactor(B_params)})
 
@@ -119,8 +135,8 @@ class KBScalingModel(ScalingModelBase):
   @classmethod
   def from_dict(cls, obj):
     '''create a scaling model object from a dictionary'''
-    if obj['__id__'] != "KB_scaling_model":
-      raise RuntimeError('expected __id__ KB_scaling_model, got %s' % obj['__id__'])
+    if obj['__id__'] != "KB":
+      raise RuntimeError('expected __id__ KB, got %s' % obj['__id__'])
     s_params = flex.double(obj['scale']['parameters'])
     d_params = flex.double(obj['decay']['parameters'])
     return cls(s_params, d_params)
