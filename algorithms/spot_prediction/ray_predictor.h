@@ -118,6 +118,43 @@ namespace dials { namespace algorithms {
       return rays;
     }
 
+    af::small<Ray,2> from_reciprocal_lattice_vector(vec3<double> pstar0) const {
+
+      af::small<Ray,2> rays;
+
+      // Try to calculate the diffracting rotation angles
+      vec2 <double> phi;
+      try {
+        phi = calculate_rotation_angles_(pstar0);
+      } catch(error) {
+        return rays;
+      }
+
+      // Loop through the 2 rotation angles
+      for (std::size_t i = 0; i < phi.size(); ++i) {
+
+        // Check that the angles are within the rotation range
+        if (!is_angle_in_range(dphi_, phi[i])) {
+          continue;
+        }
+
+        // Calculate the reciprocal space vector and diffracted beam vector
+        vec3 <double> pstar = setting_rotation_ * pstar0.unit_rotate_around_origin(m2_, phi[i]);
+        vec3 <double> s1 = s0_ + pstar;
+
+        double small = 1.0e-8;
+
+        DIALS_ASSERT(std::abs(s1.length() - s0_.length()) < small);
+
+        // Calculate the direction of reflection passage
+        bool entering = s1 * s0_m2_plane < 0.;
+
+        // Add the reflection
+        rays.push_back(Ray(s1, mod_2pi(phi[i]), entering));
+      }
+      return rays;
+    }
+
   private:
     RotationAngles calculate_rotation_angles_;
     mat3 <double> fixed_rotation_;

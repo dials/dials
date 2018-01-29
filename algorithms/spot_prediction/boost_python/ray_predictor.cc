@@ -61,6 +61,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("__call__", &ScanStaticRayPredictor::operator(), (
         arg("miller_index"),
         arg("UB")))
+      .def("__call__", &ScanStaticRayPredictor::from_reciprocal_lattice_vector)
       .def("__call__", &call_with_miller_index_array);
   }
 
