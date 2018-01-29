@@ -2,12 +2,13 @@ from __future__ import absolute_import, division, print_function
 
 import glob
 import os
-import pytest
-import libtbx.procrunner
 
-# 20180129: Removed these imports to see if they are still required
+import libtbx.procrunner
+import pytest
+import scitbx
+
+# 20180129: Removed this import to see if it is still required
 #
-#from scitbx import matrix
 ## this import required early to avoid seg fault on some systems
 #try:
 #  import scipy.linalg # import dependency
@@ -52,8 +53,8 @@ def test_thing_1(tmpdir, dials_regression):
                                        check_format=False)
   detector_1 = original_imageset.get_detector()
   detector_2 = optimized_datablock[0].unique_detectors()[0]
-  shift = (matrix.col(detector_1[0].get_origin()) -
-           matrix.col(detector_2[0].get_origin()))
+  shift = (scitbx.matrix.col(detector_1[0].get_origin()) -
+           scitbx.matrix.col(detector_2[0].get_origin()))
   assert shift.elems == pytest.approx((0.037, 0.061, 0.0), abs=1e-1)
 
 def test_thing_2(tmpdir, xia2_regression_build):
@@ -98,8 +99,8 @@ def test_thing_2(tmpdir, xia2_regression_build):
                                        check_format=False)
   detector_1 = original_imageset.get_detector()
   detector_2 = optimized_datablock[0].unique_detectors()[0]
-  shift = (matrix.col(detector_1[0].get_origin()) -
-           matrix.col(detector_2[0].get_origin()))
+  shift = (scitbx.matrix.col(detector_1[0].get_origin()) -
+           scitbx.matrix.col(detector_2[0].get_origin()))
   print(shift)
 
   # check we can actually index the resulting optimized datablock
@@ -138,6 +139,6 @@ def test_thing_3(tmpdir, dials_regression):
                                        check_format=False)
   detector_1 = original_imageset.get_detector()
   detector_2 = optimized_datablock[0].unique_detectors()[0]
-  shift = (matrix.col(detector_1[0].get_origin()) -
-           matrix.col(detector_2[0].get_origin()))
+  shift = (scitbx.matrix.col(detector_1[0].get_origin()) -
+           scitbx.matrix.col(detector_2[0].get_origin()))
   assert shift.elems == pytest.approx((-0.976, 2.497, 0.0), abs=1e-1)
