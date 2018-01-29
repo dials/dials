@@ -86,6 +86,8 @@ namespace dials { namespace algorithms {
               delta_b,
               delta_m) {}
 
+    ~GaussianRSMaskCalculator() {}
+
     /**
      * Compute the mask for a single reflection
      * @param reflection The reflection object
@@ -112,6 +114,8 @@ namespace dials { namespace algorithms {
    */
   class GaussianRSMultiCrystalMaskCalculator : public MaskCalculatorIface {
   public:
+
+    ~GaussianRSMultiCrystalMaskCalculator() {}
 
     /**
      * Add a mask calculator to the list
@@ -160,6 +164,7 @@ namespace dials { namespace algorithms {
           rejector,
           min_pixels) {}
 
+    ~SimpleBackgroundCalculator() {}
 
     /**
      * Compute the background
@@ -198,6 +203,8 @@ namespace dials { namespace algorithms {
           tuning_constant,
           max_iter,
           min_pixels) {}
+
+    ~GLMBackgroundCalculator() {}
 
     /**
      * Compute the background
@@ -240,6 +247,8 @@ namespace dials { namespace algorithms {
           max_iter,
           min_pixels) {}
 
+    ~GModelBackgroundCalculator() {}
+
     /**
      * Compute the background
      * @param reflection The reflection object
@@ -259,6 +268,8 @@ namespace dials { namespace algorithms {
    */
   class NullIntensityCalculator : public IntensityCalculatorIface {
   public:
+
+    ~NullIntensityCalculator() {}
 
     /**
      * Do nothing
@@ -999,6 +1010,8 @@ namespace dials { namespace algorithms {
       }
     }
 
+    ~GaussianRSIntensityCalculator() {}
+
     /**
      * Perform the integration
      * @param reflection The reflection object
@@ -1076,6 +1089,8 @@ namespace dials { namespace algorithms {
         : sampler_(sampler),
           spec_(spec.begin(), spec.end()),
           modeller_(init_modeller(sampler, spec)) {}
+
+    ~GaussianRSReferenceCalculator() {}
 
     /**
      * Check the mask code
