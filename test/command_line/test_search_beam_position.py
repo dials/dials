@@ -35,7 +35,7 @@ def test_thing_1(tmpdir, dials_regression):
 
   tmpdir.chdir()
 
-  args = ["dials.discover_better_experimental_model",
+  args = ["dials.search_beam_position",
           datablock_path1,
           datablock_path2,
           pickle_path1,
@@ -84,7 +84,7 @@ def test_thing_2(tmpdir, xia2_regression_build):
   assert os.path.exists('strong.pickle')
 
   # actually run the beam centre search
-  args = ["dials.discover_better_experimental_model", "datablock.json",
+  args = ["dials.search_beam_position", "datablock.json",
           "strong.pickle"]
   print(args)
   result = libtbx.procrunner.run_process(args)
@@ -125,7 +125,7 @@ def test_thing_3(tmpdir, dials_regression):
 
   tmpdir.chdir()
 
-  args = ["dials.discover_better_experimental_model",
+  args = ["dials.search_beam_position",
           datablock_path, pickle_path]
   print(args)
   result = libtbx.procrunner.run_process(args)
