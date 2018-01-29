@@ -1,4 +1,3 @@
-algorithms/indexing/indexer.py
 algorithms/indexing/nave_parameters.py
 algorithms/indexing/refinement.py
 algorithms/indexing/stills_indexer.py
@@ -49,7 +48,6 @@ command_line/hot_pixel_mask_to_xy.py
 command_line/idials.py
 command_line/image_correlation.py
 command_line/import_xds.py
-command_line/make_sphinx_html.py
 command_line/merge_cbf.py
 command_line/modify_geometry.py
 command_line/plot_centroid_analysis.py
@@ -92,7 +90,6 @@ doc/examples/read_experiment_and_data/example_experiment_data.py
 framework/dftbx/tst_dftbx.py
 framework/env.py
 installer/dials_installer.py
-test/algorithms/background/real.py
 test/algorithms/background/simulate.py
 test/algorithms/background/tst_background_subtraction.py
 test/algorithms/background/tst_creator.py
@@ -204,7 +201,6 @@ test/command_line/tst_combine_found_spots.py
 test/command_line/tst_compare.py
 test/command_line/tst_compare_orientation_matrices.py
 test/command_line/tst_create_profile_model.py
-test/command_line/tst_discover_better_experimental_model.py
 test/command_line/tst_estimate_gain.py
 test/command_line/tst_export.py
 test/command_line/tst_export_best.py
@@ -233,7 +229,6 @@ test/command_line/tst_rl_png.py
 test/command_line/tst_rs_mapper.py
 test/command_line/tst_show.py
 test/command_line/tst_show_extensions.py
-test/command_line/tst_slice_sweep.py
 test/command_line/tst_sort_reflections.py
 test/command_line/tst_spot_counts_per_image.py
 test/command_line/tst_spotfinder.py
@@ -246,7 +241,6 @@ test/model/data/tst_observation.py
 test/model/data/tst_pixel_list.py
 test/model/data/tst_prediction.py
 test/model/data/tst_shoebox.py
-test/nexus/tst_nexus.py
 test/tst_libtbx_import.py
 test/tst_phil.py
 test/tst_plot_reflections.py
@@ -263,7 +257,6 @@ util/export_xds_ascii.py
 util/idials.py
 util/image_viewer/mask_frame.py
 util/image_viewer/spotfinder_frame.py
-util/image_viewer/spotfinder_wrap.py
 util/mosflm.py
 util/mp.py
 util/nexus/nx_mx.py
