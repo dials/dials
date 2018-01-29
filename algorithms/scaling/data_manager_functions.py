@@ -164,11 +164,11 @@ class DataManagerUtilities(object):
 class ScalingDataManager(DataManagerUtilities):
   '''Parent class for scaling of a single dataset, containing a standard
      setup routine for the reflection_table'''
-  def __init__(self, reflections, experiments, params, dataset_id=0):
+  def __init__(self, reflections, experiments, params, scaled_id=0):
     super(ScalingDataManager, self).__init__()
     self._experiments = experiments
     self._params = params
-    reflections['dataset_id'] = flex.int([dataset_id]*len(reflections))
+    reflections['scaled_id'] = flex.int([scaled_id]*len(reflections))
     self._initial_keys = [key for key in reflections.keys()]
     #choose intensities, map to asu, assign unique refl. index
     reflection_table = self._reflection_table_setup(self._initial_keys, reflections)
@@ -318,8 +318,8 @@ class KB_Data_Manager(ScalingDataManager):
 
 class AimlessDataManager(ScalingDataManager):
   '''Data Manager subclass for implementing aimless-style parameterisation'''
-  def __init__(self, reflections, experiments, params, dataset_id=0):
-    super(AimlessDataManager, self).__init__(reflections, experiments, params, dataset_id)
+  def __init__(self, reflections, experiments, params, scaled_id=0):
+    super(AimlessDataManager, self).__init__(reflections, experiments, params, scaled_id)
     (self.g_absorption, self.g_scale, self.g_decay) = (None, None, None)
     self.sph_harm_table = None
     #determine outliers, initialise scalefactors and extract data for scaling
@@ -521,7 +521,7 @@ class MultiCrystalDataManager(DataManagerUtilities):
         self.data_managers.append(XDS_Data_Manager(reflection, experiment, params))
     elif self.params.scaling_model == 'aimless':
       for i, (reflection, experiment) in enumerate(zip(reflections, experiments)):
-        self.data_managers.append(AimlessDataManager(reflection, experiment, params, dataset_id=i))
+        self.data_managers.append(AimlessDataManager(reflection, experiment, params, scaled_id=i))
     else:
       assert 0, """Incorrect scaling method passed to multicrystal datamanager
       (not 'xds', 'aimless' or 'kb')"""

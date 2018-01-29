@@ -51,7 +51,7 @@ class Factory(object):
     '''inspect reflection table to see if it already has scale factors.'''
     is_already_scaled = []
     for reflection_table in reflections:
-      if 'dataset_id' in reflection_table.keys():
+      if 'scaled_id' in reflection_table.keys():
         is_already_scaled.append(True)
       else:
         is_already_scaled.append(False)
@@ -61,14 +61,14 @@ class Factory(object):
 class SingleScalerFactory(object):
   'Factory for creating a scaler for a single dataset'
   @classmethod
-  def create(cls, params, experiment, reflection, dataset_id=0):
+  def create(cls, params, experiment, reflection, scaled_id=0):
     '''create a single scaler with the relevant parameterisation'''
     if experiment.scaling_model.id_ == "aimless":
-      return AimlessScaler(params, experiment, reflection, dataset_id)
+      return AimlessScaler(params, experiment, reflection, scaled_id)
     elif experiment.scaling_model.id_ == "KB":
-      return KBScaler(params, experiment, reflection, dataset_id)
+      return KBScaler(params, experiment, reflection, scaled_id)
     elif experiment.scaling_model.id_ == "xscale":
-      return XscaleScaler(params, experiment, reflection, dataset_id)
+      return XscaleScaler(params, experiment, reflection, scaled_id)
     else:
       assert 0, "Scaling model __id__ not recognised."
 
@@ -80,7 +80,7 @@ class MultiScalerFactory(object):
     single_scalers = []
     for i, (reflection, experiment) in enumerate(zip(reflections, experiments)):
       single_scalers.append(SingleScalerFactory.create(
-        params, experiment, reflection, dataset_id=i))
+        params, experiment, reflection, scaled_id=i))
     return MultiScaler(params, experiments, single_scalers)
 
   @classmethod
@@ -102,10 +102,10 @@ class TargetScalerFactory(object):
       if is_scaled_list[i] is True:
         scaled_experiments.append(experiments[i])
         scaled_scalers.append(SingleScalerFactory.create(params, experiments[i],
-          reflection, dataset_id=i))
+          reflection, scaled_id=i))
       else:
         unscaled_scalers.append(SingleScalerFactory.create(params, experiments[i],
-          reflection, dataset_id=i))
+          reflection, scaled_id=i))
     return TargetScaler(params, scaled_experiments, scaled_scalers, unscaled_scalers[0])
 
 
@@ -246,15 +246,15 @@ class SingleScaler(ScalerUtilities):
   setup routine for the reflection_table - takes in params, experiment
   and reflection.
   '''
-  def __init__(self, params, experiment, reflection, dataset_id=0):
+  def __init__(self, params, experiment, reflection, scaled_id=0):
     logger.info('\nInitialising a Single Scaler instance. \n')
     super(SingleScaler, self).__init__()
     self._experiments = experiment
     self._params = params
-    logger.info("Dataset id for this reflection table is %s." % dataset_id)
+    logger.info("Dataset id for this reflection table is %s." % scaled_id)
     logger.info(('The type of scaling model being applied to this dataset {sep}'
       'is an {0}. {sep}').format(self.experiments.scaling_model.id_, sep='\n'))
-    reflection['dataset_id'] = flex.int([dataset_id]*len(reflection))
+    reflection['scaled_id'] = flex.int([scaled_id]*len(reflection))
     self._initial_keys = [key for key in reflection.keys()]
     #choose intensities, map to asu, assign unique refl. index
     reflection_table = self._reflection_table_setup(self._initial_keys, reflection)
@@ -353,8 +353,8 @@ class KBScaler(SingleScaler):
   '''
   Scaler for single dataset using simple KB parameterisation.
   '''
-  def __init__(self, params, experiment, reflection, dataset_id=0):
-    super(KBScaler, self).__init__(params, experiment, reflection, dataset_id)
+  def __init__(self, params, experiment, reflection, scaled_id=0):
+    super(KBScaler, self).__init__(params, experiment, reflection, scaled_id)
     (self.g_scale, self.g_decay) = (None, None)
     self._initialise_scale_factors()
     self._select_reflections_for_scaling()
@@ -415,8 +415,8 @@ class AimlessScaler(SingleScaler):
   '''
   Scaler for single dataset using aimless-like parameterisation.
   '''
-  def __init__(self, params, experiment, reflection, dataset_id=0):
-    super(AimlessScaler, self).__init__(params, experiment, reflection, dataset_id)
+  def __init__(self, params, experiment, reflection, scaled_id=0):
+    super(AimlessScaler, self).__init__(params, experiment, reflection, scaled_id)
     (self.g_absorption, self.g_scale, self.g_decay) = (None, None, None)
     self.sph_harm_table = None
     #determine outliers, initialise scalefactors and extract data for scaling
@@ -618,8 +618,8 @@ class XscaleScaler(SingleScaler):
   '''
   Scaler for single dataset using xscale-like parameterisation.
   '''
-  def __init__(self, params, experiment, reflection, dataset_id=0):
-    super(XscaleScaler, self).__init__(params, experiment, reflection, dataset_id)
+  def __init__(self, params, experiment, reflection, scaled_id=0):
+    super(XscaleScaler, self).__init__(params, experiment, reflection, scaled_id)
     assert 0, 'method not yet implemented'
 
 

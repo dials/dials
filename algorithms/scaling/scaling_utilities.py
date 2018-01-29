@@ -2,6 +2,39 @@ from dials.array_family import flex
 import numpy as np
 import cPickle as pickle
 
+import logging
+logger = logging.getLogger('dials')
+
+def save_experiments(experiments, filename):
+  ''' Save the profile model parameters. '''
+  from time import time
+  from dxtbx.model.experiment_list import ExperimentListDumper
+  st = time()
+  logger.info('\nSaving the experiments to %s' % filename)
+  dump = ExperimentListDumper(experiments)
+  with open(filename, "w") as outfile:
+    outfile.write(dump.as_json(split=True))
+  logger.info('Time taken: %g' % (time() - st))
+
+def parse_multiple_datasets(reflections):
+  'method to parse multiple datasets to see if any have already been scaled.'
+  single_reflection_tables = []
+  for refl_table in reflections:
+    if 'scaled_id' in refl_table.keys():
+      scaled_ids = set(refl_table['scaled_id'])
+      if len(scaled_ids) > 1: #more than one scaled dataset in refl_tab
+        logger.info(('\nDetected existence of a multi-dataset scaled reflection table {sep}'
+          'containing {0} datasets. {sep}').format(len(scaled_ids), sep='\n'))
+        for scaled_id in scaled_ids:
+          single_refl_table = refl_table.select(refl_table['scaled_id'] == scaled_id)
+          single_reflection_tables.append(single_refl_table)
+      else: #only one already scaled dataset in refl_tab
+        single_reflection_tables.append(refl_table)
+    else: #refl_table has not previously been scaled
+      single_reflection_tables.append(refl_table)
+  logger.info("Found %s reflection tables in total." % len(single_reflection_tables))
+  return single_reflection_tables
+
 def calc_s2d(reflection_table, experiments):
   '''calculates diffraction vector in crystal frame'''
   reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
