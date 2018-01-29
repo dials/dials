@@ -320,7 +320,7 @@ class FindSpotsParameterManager(ParameterManager):
 
 class DiscoverBetterModelParameterManager(ParameterManager):
   '''
-  Specialization for discover_better_experiment_model parameters
+  Specialization for search_beam_position parameters
 
   '''
 
@@ -339,7 +339,7 @@ class DiscoverBetterModelParameterManager(ParameterManager):
         reflections = None
           .type = str
       }
-      include scope dials.command_line.discover_better_experimental_model.phil_scope
+      include scope dials.command_line.search_beam_position.phil_scope
     ''', process_includes=True)
     super(DiscoverBetterModelParameterManager, self).__init__(phil_scope)
 
@@ -518,7 +518,7 @@ class GlobalParameterManager(dict):
     self.update({
       'import'                             : ImportParameterManager(),
       'find_spots'                         : FindSpotsParameterManager(),
-      'discover_better_experimental_model' : DiscoverBetterModelParameterManager(),
+      'search_beam_position' : DiscoverBetterModelParameterManager(),
       'index'                              : IndexParameterManager(),
       'refine_bravais_settings'            : RefineBSParameterManager(),
       'reindex'                            : ReIndexParameterManager(),
@@ -961,11 +961,11 @@ class FindSpots(Command):
 
 class DiscoverBetterExperimentalModel(Command):
   '''
-  A command to perform a discover_better_experimental_model operation
+  A command to perform a search_beam_position operation
 
   '''
 
-  name='discover_better_experimental_model'
+  name='search_beam_position'
 
   allowed_parents = ['find_spots']
 
@@ -1000,7 +1000,7 @@ class DiscoverBetterExperimentalModel(Command):
     # Run the command
     self.external_command = RunExternalCommand()
     self.external_command(
-      ['dials.discover_better_experimental_model', self.state.parameters],
+      ['dials.search_beam_position', self.state.parameters],
       stdout=stdout,
       stderr=stderr,
       stdout_filename=self.state.output,
@@ -1023,7 +1023,7 @@ class Index(Command):
 
   allowed_parents = [
     'find_spots',
-    'discover_better_experimental_model',
+    'search_beam_position',
     'index'
   ]
 
@@ -1413,7 +1413,7 @@ class ApplicationState(object):
   CommandClass = {
     'import'                             : Import,
     'find_spots'                         : FindSpots,
-    'discover_better_experimental_model' : DiscoverBetterExperimentalModel,
+    'search_beam_position' : DiscoverBetterExperimentalModel,
     'index'                              : Index,
     'refine_bravais_settings'            : RefineBravaisSettings,
     'reindex'                            : Reindex,
@@ -1588,7 +1588,7 @@ class Controller(object):
   mode_list = [
     'import',
     'find_spots',
-    'discover_better_experimental_model',
+    'search_beam_position',
     'index',
     'refine_bravais_settings',
     'reindex',

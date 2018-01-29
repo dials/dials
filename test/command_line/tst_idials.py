@@ -25,7 +25,7 @@ class Test(object):
     stdin_lines = [
       "import template=%s" % join(self.path, "centroid_####.cbf"),
       "find_spots",
-      "discover_better_experimental_model",
+      "search_beam_position",
       "index",
       "refine_bravais_settings",
       "reindex solution=22",
@@ -60,7 +60,7 @@ class Test(object):
     assert exists("12_integrated.mtz")
     assert exists("dials-1/1_import")
     assert exists("dials-1/2_find_spots")
-    assert exists("dials-1/3_discover_better_experimental_model")
+    assert exists("dials-1/3_search_beam_position")
     assert exists("dials-1/4_index")
     assert exists("dials-1/5_refine_bravais_settings")
     assert exists("dials-1/6_reindex")

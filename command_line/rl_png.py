@@ -200,7 +200,7 @@ def run(args):
       f.viewer.plot('rl_%sc.png' %prefix, n=c)
 
   elif n_solutions:
-    from dials.command_line.discover_better_experimental_model \
+    from dials.command_line.search_beam_position \
          import run_dps, dps_phil_scope
 
     hardcoded_phil = dps_phil_scope.extract()

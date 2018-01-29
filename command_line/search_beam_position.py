@@ -57,9 +57,9 @@ n_macro_cycles = 1
 output {
   datablock = optimized_datablock.json
     .type = path
-  log = "dials.discover_better_experimental_model.log"
+  log = "dials.search_beam_position.log"
     .type = str
-  debug_log = "dials.discover_better_experimental_model.debug.log"
+  debug_log = "dials.search_beam_position.debug.log"
     .type = str
 }
 """)

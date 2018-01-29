@@ -29,7 +29,7 @@ It provides convient access to the following dials programs
 
  - dials.import
  - dials.find_spots
- - dials.discover_better_experimental_model
+ - dials.search_beam_position
  - dials.index
  - dials.refine_bravais_settings
  - dials.reindex
@@ -269,9 +269,9 @@ class Console(Cmd):
     ''' Imperative find_spots command '''
     self.run_as_imperative("find_spots", params)
 
-  def do_discover_better_experimental_model(self, params):
-    ''' Imperative discover_better_experimental_model command '''
-    self.run_as_imperative("discover_better_experimental_model", params)
+  def do_search_beam_position(self, params):
+    ''' Imperative search_beam_position command '''
+    self.run_as_imperative("search_beam_position", params)
 
   def do_index(self, params):
     ''' Imperative index command '''
@@ -427,12 +427,12 @@ class Console(Cmd):
     '''
     return self.get_phil_completions(text, mode="find_spots")
 
-  def complete_discover_better_experimental_model(self, text, line, begidx, endidx):
+  def complete_search_beam_position(self, text, line, begidx, endidx):
     '''
-    Offer tab completion options for discover_better_experimental_model
+    Offer tab completion options for search_beam_position
 
     '''
-    return self.get_phil_completions(text, mode="discover_better_experimental_model")
+    return self.get_phil_completions(text, mode="search_beam_position")
 
   def complete_index(self, text, line, begidx, endidx):
     '''

@@ -283,7 +283,7 @@ Discover better experimental model
 We have determined that there is a problem with indexing, which gives us a
 mis-indexed solution. The typical culprit in such cases is a badly wrong
 beam centre. DIALS provides the
-:program:`dials.discover_better_experimental_model`, which can help out
+:program:`dials.search_beam_position`, which can help out
 here. This performs a grid search to improve the direct beam position using
 the `methods <http://dx.doi.org/10.1107%2FS0021889804005874>`_ also
 implemented in :program:`LABELIT`.
@@ -291,7 +291,7 @@ implemented in :program:`LABELIT`.
 This sits in between the spot finding and the indexing operations, so that
 we could have done::
 
-  dials.discover_better_experimental_model strong.pickle datablock.json n_macro_cycles=2
+  dials.search_beam_position strong.pickle datablock.json n_macro_cycles=2
 
 In particularly bad cases it may useful to perform this search iteratively.
 Here we requested two macrocyles, though we see from the concise, yet
@@ -372,7 +372,7 @@ Conclusions
 * Incorrect or wrongly-interpreted image headers are a fact of life. You will
   encounter these.
 * When beam centre problems are suspected, try
-  :program:`dials.discover_better_experimental_model`.
+  :program:`dials.search_beam_position`.
 * :program:`dials.reciprocal_lattice_viewer` and
   :program:`dials.image_viewer` are excellent troubleshooting tools for all
   sorts of spot finding and indexing problems.
