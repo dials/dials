@@ -814,7 +814,8 @@ class Script(object):
     '''
     from dxtbx.datablock import SweepDiff
     diff = SweepDiff(params.input.tolerance)
-    diff(sweep1, sweep2)
+    text = diff(sweep1, sweep2)
+    logger.info("\n".join(text))
 
 
 
