@@ -96,20 +96,43 @@ class ReflectionPredictor(object):
 
     # Select the predictor class
     if isinstance(experiment.imageset, ImageSweep):
-      nsp = experiment.crystal.num_scan_points
+      xl_nsp = experiment.crystal.num_scan_points
+      bm_nsp = experiment.beam.num_scan_points
       nim = experiment.scan.get_num_images()
 
-      if not force_static and nsp == nim + 1:
+      sv_compatible = (xl_nsp == nim + 1) or (bm_nsp == nim + 1)
+      if not force_static and sv_compatible:
         predictor = ScanVaryingReflectionPredictor(
           experiment,
           dmin=dmin,
           margin=margin,
           padding=padding)
-        A = [experiment.crystal.get_A_at_scan_point(i) for i in
-               range(experiment.crystal.num_scan_points)]
-        predict = Predictor(
-          "scan varying prediction",
-          lambda: predictor.for_ub(flex.mat3_double(A)))
+
+        if bm_nsp == 0:
+          # Only varying crystal
+          A = [experiment.crystal.get_A_at_scan_point(i) for i in
+                 range(experiment.crystal.num_scan_points)]
+          predict = Predictor(
+            "scan varying crystal prediction",
+            lambda: predictor.for_ub(flex.mat3_double(A)))
+
+        else:
+          # Any allowed model may vary
+          if xl_nsp == nim + 1:
+            A = [experiment.crystal.get_A_at_scan_point(i) for i in
+                 range(experiment.crystal.num_scan_points)]
+          else:
+            A = [experiment.crystal.get_A() for i in range(nim + 1)]
+          if bm_nsp == nim + 1:
+            s0 = [experiment.beam.get_s0_at_scan_point(i) for i in
+                 range(experiment.beam.num_scan_points)]
+          else:
+            s0 = [experiment.beam.get_s0() for i in range(nim + 1)]
+          predict = Predictor(
+            "scan varying model prediction",
+            lambda: predictor.for_varying_models(
+                flex.mat3_double(A),
+                flex.vec3_double(s0)))
       else:
         predictor = ScanStaticReflectionPredictor(
           experiment,

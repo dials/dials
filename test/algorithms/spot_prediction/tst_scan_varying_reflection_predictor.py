@@ -28,8 +28,9 @@ class Test(object):
     #self.tst_with_hkl_and_panel()
     #self.tst_with_hkl_and_panel_list()
     self.tst_for_reflection_table()
+    self.tst_vs_static()
 
-  def predict_new(self, hkl=None, frame=None, panel=None):
+  def _predict_new(self, hkl=None, frame=None, panel=None):
     from dials.algorithms.spot_prediction import ScanVaryingReflectionPredictor
     from time import time
     from dials.array_family import flex
@@ -50,7 +51,7 @@ class Test(object):
 
   def tst_regression(self):
     from libtbx.test_utils import approx_equal
-    r_new = self.predict_new()
+    r_new = self._predict_new()
     assert len(r_new) == 1934
     assert r_new[0]['miller_index'] == (-8, -30, -23)
     assert approx_equal(r_new[0]['xyzcal.px'],
@@ -93,8 +94,8 @@ class Test(object):
       #all_indices.extend(indices)
       #all_frames.extend(flex.int(len(indices), frame))
 
-    #r_old = self.predict_new()
-    #r_new = self.predict_new(all_indices, all_frames)
+    #r_old = self._predict_new()
+    #r_new = self._predict_new(all_indices, all_frames)
     #assert(len(r_old) == len(r_new))
     #print 'OK'
 
@@ -133,14 +134,14 @@ class Test(object):
       #all_indices.extend(indices)
       #all_frames.extend(flex.int(len(indices), frame))
 
-    #r_old = self.predict_new()
+    #r_old = self._predict_new()
     #try:
-      #r_new = self.predict_new(all_indices, all_frames, 1)
+      #r_new = self._predict_new(all_indices, all_frames, 1)
       #assert(False)
     #except Exception:
       #pass
 
-    #r_new = self.predict_new(all_indices, all_frames, 0)
+    #r_new = self._predict_new(all_indices, all_frames, 0)
     #assert(len(r_old) < len(r_new))
     #print 'OK'
 
@@ -180,18 +181,80 @@ class Test(object):
       #all_indices.extend(indices)
       #all_frames.extend(flex.int(len(indices), frame))
 
-    #r_old = self.predict_new()
+    #r_old = self._predict_new()
     #try:
-      #r_new = self.predict_new(all_indices, all_frames,
+      #r_new = self._predict_new(all_indices, all_frames,
                                #flex.size_t(len(all_indices), 1))
       #assert(False)
     #except Exception:
       #pass
 
-    #r_new = self.predict_new(all_indices, all_frames,
+    #r_new = self._predict_new(all_indices, all_frames,
                              #flex.size_t(len(all_indices), 0))
     #assert(len(r_old) < len(r_new))
     #print 'OK'
+
+  def tst_vs_static(self):
+    """Test that various modes of scan-varying prediction produce results
+    close to static prediction when the supplied models are indeed static"""
+
+    # Get static predictor results
+    from dials.test.algorithms.spot_prediction.tst_scan_static_reflection_predictor import Test as StaticTest
+    static_test = StaticTest()
+    scan = static_test.experiments[0].scan
+    crystal = static_test.experiments[0].crystal
+    beam = static_test.experiments[0].beam
+    n_scan_points = scan.get_num_images() + 1
+    static_preds = static_test.predict_new()
+    static_preds.sort('miller_index')
+
+    # Set up scan-varying predictor
+    from dials.algorithms.spot_prediction import ScanVaryingReflectionPredictor
+    from dials.array_family import flex
+    predict = ScanVaryingReflectionPredictor(static_test.experiments[0])
+
+    def compare(refs1, refs2):
+      assert len(refs1) == len(refs2)
+      from scitbx import matrix
+      from libtbx.test_utils import approx_equal
+      for r1, r2 in zip(refs1, refs2):
+        assert r1['miller_index'] == r2['miller_index']
+        # differences less than one hundredth of a pixel/image
+        for e1, e2 in zip(r1['xyzcal.px'], r2['xyzcal.px']):
+          assert abs(e1 - e2) < 0.01
+
+    # Prediction for UB matrix expressed as array of static UB
+    A = [crystal.get_A() for i in range(n_scan_points)]
+    result1 = predict.for_ub(flex.mat3_double(A))
+    result1.sort('miller_index')
+    compare(static_preds, result1)
+    print "OK"
+
+    # Prediction for UB matrix and s0 vectors expressed as arrays of static
+    # model states
+    s0 = [beam.get_s0() for i in range(n_scan_points)]
+    result2 = predict.for_varying_models(flex.mat3_double(A),
+        flex.vec3_double(s0))
+    result2.sort('miller_index')
+    compare(static_preds, result2)
+    print "OK"
+
+    # First frame only, start and end UB
+    _, _, z = static_preds['xyzcal.px'].parts()
+    static_preds_frame0 = static_preds.select((z >= 0) & (z < 1))
+    A = crystal.get_A()
+    result3 = predict.for_ub_on_single_image(0, A, A)
+    result3.sort('miller_index')
+    compare(static_preds_frame0, result3)
+    print "OK"
+
+    # First frame only, start and end UB and s0
+    s0 = beam.get_s0()
+    result4 = predict.for_varying_models_on_single_image(0, A, A, s0, s0)
+    result4.sort('miller_index')
+    compare(static_preds_frame0, result4)
+    print "OK"
+
 
   def tst_for_reflection_table(self):
     from libtbx.test_utils import approx_equal
