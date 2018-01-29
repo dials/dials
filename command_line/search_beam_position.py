@@ -54,6 +54,10 @@ wide_search_binning = 2
 n_macro_cycles = 1
   .type = int
   .help = "Number of macro cycles for an iterative beam centre search."
+
+seed = 42
+  .type = int(value_min=0)
+
 output {
   datablock = optimized_datablock.json
     .type = path
@@ -74,10 +78,6 @@ d_min = None
   .type = float(value_min=0)
 ''', process_includes=True)
 
-
-import random
-flex.set_random_seed(42)
-random.seed(42)
 
 class better_experimental_model_discovery(object):
   def __init__(self, imagesets, spot_lists, solution_lists,
@@ -469,6 +469,11 @@ def run(args):
   if diff_phil is not '':
     logger.info('The following parameters have been modified:\n')
     logger.info(diff_phil)
+
+  if params.seed is not None:
+    import random
+    flex.set_random_seed(params.seed)
+    random.seed(params.seed)
 
   imagesets = []
   for datablock in datablocks:
