@@ -535,9 +535,76 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * Predict all the reflections given arrays of models that are allowed to
+     * vary. At the moment this consists of the UB matrix and the s0 vector, but
+     * this will be extended in future to include S, the goniometer setting
+     * rotation matrix.
+     * @param A The UB matrix recorded at scan points
+     * @param s0 The s0 vector recorded at scan points
+     * @returns The reflection table
+     */
+    af::reflection_table for_varying_models(
+        const af::const_ref< mat3<double> > &A,
+        const af::const_ref< vec3<double> > &s0) const {
+      DIALS_ASSERT(A.size() == scan_.get_num_images() + 1);
+      DIALS_ASSERT(s0.size() == A.size());
+
+      // Create the table and local stuff
+      af::reflection_table table;
+      prediction_data predictions(table);
+
+      // Get the array range and loop through all the images
+      vec2<int> array_range = scan_.get_array_range();
+      double a0 = scan_.get_oscillation_range()[0];
+      double a1 = scan_.get_oscillation_range()[1];
+      int z0 = std::floor(scan_.get_array_index_from_angle(a0-padding_*pi/180.0) + 0.5);
+      int z1 = std::floor(scan_.get_array_index_from_angle(a1+padding_*pi/180.0) + 0.5);
+      const int offset = array_range[0];
+      for (int frame = z0; frame < z1; ++frame) {
+        int i = frame - offset;
+        if (i < 0) i = 0;
+        if (i >= A.size()-1) i = A.size() - 2;
+        append_for_image(predictions, frame, A[i], A[i+1], s0[i], s0[i+1]);
+      }
+
+      // Return the reflection table
+      return table;
+    }
+
+    /**
+     * Predict all the reflections on a single image given the start and end
+     * models (currently consisting of the UB matrices and s0 vectors)
+     * @param frame The frame number
+     * @param A1 The start UB matrix
+     * @param A2 The end UB matrix
+     * @param s0a The start s0 vector
+     * @param s0b The start s0 vector
+     * @returns The reflection table
+     */
+    af::reflection_table for_varying_models_on_single_image(
+        int frame,
+        const mat3<double> &A1,
+        const mat3<double> &A2,
+        const vec3<double> &s0a,
+        const vec3<double> &s0b) const {
+      vec2<int> array_range = scan_.get_array_range();
+      DIALS_ASSERT(frame >= array_range[0] && frame < array_range[1]);
+
+      // Create the table and local stuff
+      af::reflection_table table;
+      prediction_data predictions(table);
+
+      // Get the array range and loop through all the images
+      append_for_image(predictions, frame, A1, A2, s0a, s0b);
+
+      // Return the reflection table
+      return table;
+    }
+
+    /**
      * Predict reflections for specific Miller indices, entering flags and
      * panels with individual UB matrices, s0 vectors, d matrices and S
-     * (setting) matrices
+     * (goniometer setting) matrices
      * @param h The array of miller indices
      * @param entering The array of entering flags
      * @param panel The array of panels
@@ -573,7 +640,7 @@ namespace dials { namespace algorithms {
 
     /**
      * Predict reflections and add to the entries in the table for individual UB
-     * matrices, s0 vectors, d matrices and S (setting) matrices
+     * matrices, s0 vectors, d matrices and S (goniometer setting) matrices
      * @param table The reflection table
      * @param ub The ub matrix array
      * @param s0 The s0 vector array
@@ -641,7 +708,8 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * For the given image, generate the indices and do the prediction.
+     * For the given image with start and end A matrices, generate the indices
+     * and do the prediction.
      * @param p The reflection data
      * @param frame The image frame to predict on.
      * @param A1 The start UB matrix
@@ -670,7 +738,42 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * For a given Miller index, predict for a particular frame.
+     * For the given image with start and end A matrices and s0 vectors,
+     * generate the indices and do the prediction.
+     * @param p The reflection data
+     * @param frame The image frame to predict on.
+     * @param A1 The start UB matrix
+     * @param A2 The end UB matrix
+     * @param s0a The start s0 vector
+     * @param s0b The end s0 vector
+     */
+    void append_for_image(
+        prediction_data &p,
+        int frame,
+        mat3<double> A1,
+        mat3<double> A2,
+        vec3<double> s0a,
+        vec3<double> s0b) const {
+
+      // Get the rotation axis
+      vec3<double> m2 = goniometer_.get_rotation_axis_datum();
+      compute_setting_matrices(A1, A2, frame);
+
+      // Construct the index generator and do the predictions for each index
+      ReekeIndexGenerator indices(A1, A2, space_group_type_, m2, s0a, s0b,
+          dmin_, margin_);
+      for (;;) {
+        miller_index h = indices.next();
+        if (h.is_zero()) {
+          break;
+        }
+        append_for_index(p, A1, A2, s0a, s0b, frame, h);
+      }
+    }
+
+    /**
+     * For a given Miller index, predict for a particular frame with start and
+     * end A matrices.
      * @param p The reflection data
      * @param A1 The beginning setting matrix.
      * @param A2 The end setting matrix
@@ -685,6 +788,32 @@ namespace dials { namespace algorithms {
         const miller_index &h,
         int panel=-1) const {
       boost::optional<Ray> ray = predict_rays_(h, A1, A2, frame, 1);
+      if (ray) {
+        append_for_ray(p, h, *ray, panel);
+      }
+    }
+
+    /**
+     * For a given Miller index, predict for a particular frame with start and
+     * end A matrices and s0 vectors
+     * @param p The reflection data
+     * @param A1 The beginning setting matrix
+     * @param A2 The end setting matrix
+     * @param s0a The beginning s0 vector
+     * @param s0b The end s0 vector
+     * @param frame The frame to predict on
+     * @param h The Miller index
+     */
+    void append_for_index(
+        prediction_data &p,
+        mat3<double> A1,
+        mat3<double> A2,
+        vec3<double> s0a,
+        vec3<double> s0b,
+        std::size_t frame,
+        const miller_index &h,
+        int panel=-1) const {
+      boost::optional<Ray> ray = predict_rays_(h, A1, A2, s0a, s0b, frame, 1);
       if (ray) {
         append_for_ray(p, h, *ray, panel);
       }

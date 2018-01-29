@@ -59,6 +59,8 @@ namespace dials { namespace algorithms { namespace boost_python {
           double>())
       .def("for_ub", &Predictor::for_ub)
       .def("for_ub_on_single_image", &Predictor::for_ub_on_single_image)
+      .def("for_varying_models", &Predictor::for_varying_models)
+      .def("for_varying_models_on_single_image", &Predictor::for_varying_models_on_single_image)
       .def("for_reflection_table", &Predictor::for_reflection_table)
       ;
   }
