@@ -147,7 +147,6 @@ namespace dials { namespace algorithms {
     af::reflection_table for_ub(const mat3<double> &ub) const {
 
       // Get the array range and loop through all the images
-      vec2<int> array_range = scan_.get_array_range();
       double a0 = scan_.get_oscillation_range()[0];
       double a1 = scan_.get_oscillation_range()[1];
       int z0 = std::floor(scan_.get_array_index_from_angle(a0-padding_*pi/180.0) + 0.5);
