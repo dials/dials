@@ -1248,8 +1248,7 @@ class SpotFrame(XrayFrame) :
           r_phi = r.rotate_around_origin(axis, phi, deg=True)
           s1 = matrix.col(beam.get_s0()) + r_phi
         if len(detector) == 1:
-          xy = detector[0].get_ray_intersection(s1)
-          x, y = detector[0].millimeter_to_pixel(xy)
+          x, y = detector[0].get_bidirectional_ray_intersection_px(s1)
           x, y = map_coords(x, y, 0)
         else:
           panel = detector.get_panel_intersection(s1)
