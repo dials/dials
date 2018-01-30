@@ -7,7 +7,7 @@ logger = logging.getLogger('dials')
 class ParameterlistFactory(object):
   '''
   Factory to create parameter lists to pass to a minimiser.
-  The methods should return a nested list 
+  The methods should return a nested list
   i.e [['g_scale','g_decay','g_absorption']]
   or [['g_scale','g_decay'],['g_absorption']]
   '''
@@ -42,17 +42,17 @@ class ParameterlistFactory(object):
 
 class active_parameter_manager(object):
   ''' object to manage the current active parameters during minimisation.
-  Separated out to provide a consistent interface between the data manager and
-  minimiser. Takes in a data manager, needed to access SF objects through
+  Separated out to provide a consistent interface between the scaler and
+  minimiser. Takes in a scaler, needed to access SF objects through
   g_parameterisation, and a param_name list indicating the active parameters.'''
-  def __init__(self, Data_Manager, param_name):
+  def __init__(self, scaler, param_name):
     self.constant_g_values = None
     self.x = flex.double([])
     self.active_parameterisation = []
     self.n_params_list = [] #no of params in each SF
     self.n_cumul_params_list = [0]
     self.active_derivatives = None
-    for p_type, scalefactor in Data_Manager.g_parameterisation.iteritems():
+    for p_type, scalefactor in scaler.g_parameterisation.iteritems():
       if p_type in param_name:
         self.x.extend(scalefactor.parameters)
         self.active_parameterisation.append(p_type)
@@ -71,10 +71,10 @@ class active_parameter_manager(object):
 class multi_active_parameter_manager(object):
   ''' object to manage the current active parameters during minimisation
   for multiple datasets that are simultaneously being scaled.'''
-  def __init__(self, Data_Manager, param_name):
+  def __init__(self, multiscaler, param_name):
     self.apm_list = []
-    for DM in Data_Manager.data_managers:
-      self.apm_list.append(active_parameter_manager(DM, param_name))
+    for scaler in multiscaler.single_scalers:
+      self.apm_list.append(active_parameter_manager(scaler, param_name))
     self.active_parameterisation = self.apm_list[0].active_parameterisation
     self.x = flex.double([])
     self.n_params_in_each_apm = []

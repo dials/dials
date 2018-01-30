@@ -1,5 +1,4 @@
 from dials.array_family import flex
-import numpy as np
 
 def reject_outliers(dm, zmax):
   '''simple, quick, outlier rejection based on normalised deviations
@@ -19,12 +18,12 @@ def reject_outliers(dm, zmax):
   outliers = z_score > zmax
   sel.set_selected(outliers, False)
   return sel
-  
+
 
 def _reject_outliers(self, max_deviation):
   h_index_cumulative_array = self.Ih_table.h_index_cumulative_array
-  outlier_list_h_index=[]
-  outlier_list_refl_index=[]
+  outlier_list_h_index = []
+  outlier_list_refl_index = []
   for i, n in enumerate(self.Ih_table.h_index_counter_array):
     if n > 2:
       outlier_found = first_test_for_an_outlier(self.Ih_table, i, n, max_deviation)
@@ -33,11 +32,10 @@ def _reject_outliers(self, max_deviation):
         outlier_list_refl_index.append(outlier_found[1])
   if not outlier_list_h_index:
     return outlier_list_h_index, outlier_list_refl_index
-  else:
-    outlier_list_h_index, outlier_list_refl_index = iterative_test_for_subsequent_outliers(
-      outlier_list_h_index, outlier_list_refl_index,
-      h_index_cumulative_array, self.Ih_table, max_deviation)
-    return outlier_list_h_index, outlier_list_refl_index
+  outlier_list_h_index, outlier_list_refl_index = iterative_test_for_subsequent_outliers(
+    outlier_list_h_index, outlier_list_refl_index,
+    h_index_cumulative_array, self.Ih_table, max_deviation)
+  return outlier_list_h_index, outlier_list_refl_index
 
 
 def iterative_test_for_subsequent_outliers(outlier_list_h_index, outlier_list_refl_index,
@@ -51,27 +49,26 @@ def iterative_test_for_subsequent_outliers(outlier_list_h_index, outlier_list_re
       outlier_list_h_index.append(new_outliers_h)
       outlier_list_refl_index.append(new_outlier)
   n_new = len(outlier_list_h_index) - n_found
-  if n_new>0:
+  if n_new > 0:
     return iterative_test_for_subsequent_outliers(outlier_list_h_index,
       outlier_list_refl_index, h_index_cumulative_array, Ih_table, max_deviation)
-  else:
-    return outlier_list_h_index, outlier_list_refl_index
+  return outlier_list_h_index, outlier_list_refl_index
 
 def subsequent_test_for_an_outlier(outlier_list_h_index, outlier_list_refl_index,
                                    h_index_cumulative_array, Ih_table, max_deviation):
-  new_outliers_h_index=[]
-  new_outliers_refl_index=[]
+  new_outliers_h_index = []
+  new_outliers_refl_index = []
   Ihl = Ih_table.intensities
   scale_factors = Ih_table.inverse_scale_factors
-  weights = Ih_table.weights                                
+  weights = Ih_table.weights
   for h_count_idx in outlier_list_h_index:
     h_idx_cumul = h_index_cumulative_array[h_count_idx:h_count_idx+2]
-    refl_indices = range(h_idx_cumul[0],h_idx_cumul[1])
+    refl_indices = range(h_idx_cumul[0], h_idx_cumul[1])
     for refl_idx in outlier_list_refl_index:
       if h_idx_cumul[0] <= refl_idx and refl_idx < h_idx_cumul[1]:
         refl_indices.remove(refl_idx)
     if len(refl_indices) > 2:
-      norm_dev_list=flex.double([])
+      norm_dev_list = flex.double([])
       for index in refl_indices:
         Is = flex.double([])
         ws = flex.double([])
@@ -146,8 +143,6 @@ def first_test_for_an_outlier(Ih_table, i, n, max_deviation):
     elif sel.count(False) == 1:
       inv_sel = ~sel
       return (i, (inv_sel.iselection() + Ih_table.h_index_cumulative_array[i])[0])
-    else:
-      sel1 = abs(abs_norm_dev_list - max_delta) < 0.000001
-      return (i, (sel1.iselection() + Ih_table.h_index_cumulative_array[i])[0])
-  else:
-    return None
+    sel1 = abs(abs_norm_dev_list - max_delta) < 0.000001
+    return (i, (sel1.iselection() + Ih_table.h_index_cumulative_array[i])[0])
+  return None

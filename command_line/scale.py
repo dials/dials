@@ -5,7 +5,7 @@ Usage: dials_scratch.scale integrated.pickle integrated_experiments.json
 [integrated.pickle(2) integrated_experiments.json(2) ....] [options]
 
 This program performs scaling on the input datasets. The default parameterisation
-is a physical parameterisation based on that used in the program Aimless. If 
+is a physical parameterisation based on that used in the program Aimless. If
 multiple input files have been specified, the datasets will be jointly scaled
 against a common target of unique reflection intensities.
 
@@ -16,14 +16,15 @@ intensities are left unscaled in the output, but an 'inverse_scale_factor' colum
 is added to the pickle file.
 """
 from __future__ import absolute_import, division, print_function
-#import libtbx.load_env
 import time
 import logging
 import sys
+import libtbx.load_env
+from libtbx import phil
 from dials.util import halraiser
 from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
-from libtbx import phil
-from dials.algorithms.scaling import minimiser_functions
+
+from dials.algorithms.scaling.minimiser_functions import LBFGS_optimiser
 from dials.algorithms.scaling import ScalingModelFactory
 from dials.algorithms.scaling import ScalerFactory
 from dials.algorithms.scaling import ParameterHandler
@@ -31,8 +32,6 @@ from dials.algorithms.scaling.scaling_utilities import (
   parse_multiple_datasets, save_experiments)
 
 start_time = time.time()
-#logger = logging.getLogger()#'dials.scale')
-import libtbx.load_env
 logger = logging.getLogger('dials')
 
 phil_scope = phil.parse('''
@@ -106,7 +105,8 @@ def main(argv):
   minimised = lbfgs_scaling(scaler)
 
   '''calculate merging stats'''
-  results = minimised.calc_merging_statistics()
+  results, scaled_ids = minimised.calc_merging_statistics()
+  print(results)
   logger.info('*'*40)
   logger.info("Dataset statistics")
   plot_labels = []
@@ -118,9 +118,9 @@ def main(argv):
       plot_labels.append('Single dataset ')
     else:
       if i < len(results) - 1:
-        logger.info("\nStatistics for dataset " + str(i+1))
+        logger.info("\nStatistics for dataset " + str(scaled_ids[i]))
         result.overall.show_summary()
-        plot_labels.append('Dataset ' + str(i+1))
+        plot_labels.append('Dataset ' + str(scaled_ids[i]))
       else:
         logger.info("\nStatistics for combined datasets")
         result.overall.show_summary()
@@ -134,7 +134,7 @@ def main(argv):
   '''save scaled_experiments.json file'''
   save_experiments(experiments, params.output.experiments_out)
 
-  '''Clean up reflection table for outputting and save data'''
+  '''Save scaled.pickle datafile'''
   minimised.clean_reflection_table()
   minimised.save_reflection_table(params.output.scaled_out)
   logger.info(('\nSaved reflection table to {0}').format(params.output.scaled_out))
@@ -151,7 +151,7 @@ def lbfgs_scaling(scaler):
     '''do a scaling round against a target of already scaled datasets'''
     param_name = ParameterHandler.ParameterlistFactory.full_active_list(scaler.params)
     '''Pass the scaler to the optimiser'''
-    scaler = minimiser_functions.LBFGS_optimiser(scaler,
+    scaler = LBFGS_optimiser(scaler,
       param_name=param_name[0]).return_scaler()
 
     '''the minimisation has only been done on a subset on the data, so apply the
@@ -171,13 +171,13 @@ def lbfgs_scaling(scaler):
     param_name = ParameterHandler.ParameterlistFactory.consecutive_list(scaler.params)
   for param in param_name:
     '''Pass the scaler to the optimiser'''
-    scaler = minimiser_functions.LBFGS_optimiser(scaler,
+    scaler = LBFGS_optimiser(scaler,
       param_name=param).return_scaler()
   '''Optimise the error model and then do another minimisation'''
   if scaler.params.weighting.optimise_error_model:
     scaler.update_error_model()
     for param in param_name:
-      scaler = minimiser_functions.LBFGS_optimiser(scaler,
+      scaler = LBFGS_optimiser(scaler,
         param_name=param).return_scaler()
 
   '''The minimisation has only been done on a subset on the data, so apply the

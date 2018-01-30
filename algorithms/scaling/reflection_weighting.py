@@ -1,8 +1,8 @@
 from __future__ import print_function
+import logging
 from dials.array_family import flex
 import numpy as np
 
-import logging
 logger = logging.getLogger('dials')
 
 class Weighting(object):

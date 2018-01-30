@@ -5,9 +5,9 @@ in dials.extensions.scaling_model_ext, create a new factory
 in this file and a new model is dials.algorithms.scaling.model.
 '''
 from dials.array_family import flex
-from libtbx.phil import parse
 import dials.algorithms.scaling.Model as Model
 import pkg_resources
+
 
 class Factory(object):
   '''
@@ -66,8 +66,10 @@ class AimlessSMFactory(object):
     n_abs_param = (2*lmax) + (lmax**2)  #arithmetic sum formula (a1=3, d=2)
     abs_parameters = flex.double([0.0] * n_abs_param)
 
-    return Model.AimlessScalingModel(s_norm_fac, scale_parameters, d_norm_fac,
-      decay_parameters, abs_parameters)
+    configdict = {'s_norm_fac' : s_norm_fac, 'd_norm_fac' : d_norm_fac}
+
+    return Model.AimlessScalingModel(scale_parameters, decay_parameters,
+      abs_parameters, configdict)
 
 class XscaleSMFactory(object):
   '''
@@ -77,6 +79,63 @@ class XscaleSMFactory(object):
   def create(cls, params, experiments, reflections):
     '''create an XScale scaling model.'''
     assert 0, 'method not yet implemented'
+
+    scale_rot_int = params.parameterisation.scale_interval + 0.001
+    osc_range = experiments.scan.get_oscillation_range()
+    nzbins = int((osc_range[1] - osc_range[0])/ scale_rot_int)
+    if ((osc_range[1] - osc_range[0])/ scale_rot_int) % 1 < 0.33:
+      scale_rot_int = (osc_range[1] - osc_range[0])/float(nzbins) + 0.001
+      nzbins = int((osc_range[1] - osc_range[0])/ scale_rot_int)
+
+    '''Bin the data into resolution and time 'z' bins'''
+    (xvalues, yvalues, zvalues) = reflections['xyzobs.px.value'].parts()
+    (xmax, xmin) = (max(xvalues) + 0.001, min(xvalues) - 0.001)
+    (ymax, ymin) = (max(yvalues) + 0.001, min(yvalues) - 0.001)
+    (zmax, zmin) = (max(zvalues) + 0.001, min(zvalues) - 0.001)
+    resmax = (1.0 / (min(reflections['d'])**2)) + 0.001
+    resmin = (1.0 / (max(reflections['d'])**2)) - 0.001
+
+    res_bin_width = (resmax - resmin) / params.scaling_options.n_res_bins
+    time_bin_width = (zmax - zmin) / nzbins
+    nres = ((1.0 / (reflections['d']**2)) - resmin) / res_bin_width
+    n_res_param = int(max(nres)//1) - int(min(nres)//1) + 3 #for g_decay
+    nt = (reflections['xyzobs.px.value'].parts()[2] - zmin) / time_bin_width
+    n_time_param = int(max(nt)//1) - int(min(nt)//1) + 3 #for g_decay and g_abs
+    dec_params = flex.double([1.0] * n_time_param * n_res_param)
+
+    configdict = {'n_res_param': n_res_param, 'n_time_param': n_time_param,
+      'resmin' : resmin, 'res_bin_width' : res_bin_width, 'zmin' : zmin,
+      'time_bin_width' : time_bin_width}
+
+    nxbins = nybins = 4.0
+    x_bin_width = (xmax - xmin) / float(nxbins)
+    y_bin_width = (ymax - ymin) / float(nybins)
+    nax = ((xvalues - xmin) / x_bin_width)
+    n_x_param = int(max(nax)//1) - int(min(nax)//1) + 3
+    nay = ((yvalues - ymin) / y_bin_width)
+    n_y_param = int(max(nay)//1) - int(min(nay)//1) + 3
+    abs_params = flex.double([1.0] * n_x_param * n_y_param * n_time_param)
+
+    configdict.update({
+      'n_x_param' : n_x_param, 'n_y_param' : n_y_param, 'xmin' : xmin,
+      'ymin' : ymin, 'x_bin_width' : x_bin_width, 'y_bin_width' : y_bin_width
+    })
+
+    nx_det_bins = ny_det_bins = params.parameterisation.n_detector_bins
+    x_det_bin_width = (xmax - xmin) / float(nx_det_bins)
+    y_det_bin_width = (ymax - ymin) / float(ny_det_bins)
+    nxdet = ((xvalues - xmin) / x_det_bin_width)
+    n_x_mod_param = int(max(nxdet)//1) - int(min(nxdet)//1) + 3
+    nydet = ((yvalues - ymin) / y_det_bin_width)
+    n_y_mod_param = int(max(nydet)//1) - int(min(nydet)//1) + 3
+    mod_params = flex.double([1.0] * n_x_mod_param * n_y_mod_param)
+
+    configdict.update({
+      'n_x_mod_param' : n_x_mod_param, 'n_y_mod_param' : n_y_mod_param,
+      'x_det_bin_width' : x_det_bin_width, 'y_det_bin_width' : y_det_bin_width
+    })
+
+    return Model.XscaleScalingModel(dec_params, abs_params, mod_params, configdict)
 
 class KBSMFactory(object):
   '''

@@ -1,10 +1,10 @@
 from __future__ import print_function
 import copy
+import logging
 from dials.array_family import flex
 from cctbx import miller, crystal
-from reflection_weighting import Weighting
+from dials.algorithms.scaling.reflection_weighting import Weighting
 
-import logging
 logger = logging.getLogger('dials')
 
 def calc_normE2(reflection_table, experiments):
@@ -66,14 +66,14 @@ def calc_normE2(reflection_table, experiments):
   #now calculate normalised intensity values
   reflection_table['Esq'] = flex.double([0.0]*len(reflection_table))
   if n_centrics:
-    for i in range(0,len(centric_bin_limits)-1):
+    for i in range(0, len(centric_bin_limits)-1):
       sel1 = reflection_table['centric_flag'] == True
       sel2 = reflection_table['resolution'] > centric_bin_limits[i]
       sel3 = reflection_table['resolution'] <= centric_bin_limits[i+1]
       sel = sel1 & sel2 & sel3
       intensities = reflection_table['intensity'].select(sel)
       reflection_table['Esq'].set_selected(sel, intensities/ mean_centric_values[i])
-  for i in range(0,len(acentric_bin_limits)-1):
+  for i in range(0, len(acentric_bin_limits)-1):
     sel1 = reflection_table['centric_flag'] == False
     sel2 = reflection_table['resolution'] > acentric_bin_limits[i]
     sel3 = reflection_table['resolution'] <= acentric_bin_limits[i+1]

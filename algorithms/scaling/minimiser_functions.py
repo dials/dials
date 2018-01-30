@@ -5,22 +5,23 @@ from __future__ import print_function
 import logging
 from dials.array_family import flex
 from scitbx import lbfgs, sparse
-from Parameter_handler import multi_active_parameter_manager, active_parameter_manager
-from dials.algorithms.scaling.ScalerFactory import MultiScaler, TargetScaler
+from dials.algorithms.scaling.ParameterHandler import \
+  multi_active_parameter_manager, active_parameter_manager
 
 logger = logging.getLogger('dials')
 
 class LBFGS_optimiser(object):
-  '''Class that takes in Data_Manager object and runs an LBFGS minimisation'''
-  def __init__(self, Data_Manager_object, param_name):
+  '''Class that takes in scaler object and runs an LBFGS minimisation'''
+  def __init__(self, scaler, param_name):
     logger.info(('\n'+'*'*40+'\n'+'Initialising LBFGS optimiser instance. \n'))
-    self.data_manager = Data_Manager_object
-    if isinstance(self.data_manager, TargetScaler):
-      self.apm = active_parameter_manager(self.data_manager, param_name)
-    elif isinstance(self.data_manager, MultiScaler):
-      self.apm = multi_active_parameter_manager(self.data_manager, param_name)
+    self.scaler = scaler
+    from dials.algorithms.scaling.ScalerFactory import MultiScaler, TargetScaler
+    if isinstance(self.scaler, TargetScaler):
+      self.apm = active_parameter_manager(self.scaler, param_name)
+    elif isinstance(self.scaler, MultiScaler):
+      self.apm = multi_active_parameter_manager(self.scaler, param_name)
     else:
-      self.apm = active_parameter_manager(self.data_manager, param_name)
+      self.apm = active_parameter_manager(self.scaler, param_name)
     self.x = self.apm.x
     self.residuals = []
     self.core_params = lbfgs.core_parameters(maxfev=15)
@@ -28,17 +29,17 @@ class LBFGS_optimiser(object):
     lbfgs.run(target_evaluator=self, core_params=self.core_params,
               termination_params=self.termination_params)
     #if param_name == 'g_decay':
-    #  if self.data_manager.params.scaling_options.decay_correction_rescaling:
-    #    if self.data_manager.params.scaling_options.minimisation_parameterisation == 'standard':
-    #      self.data_manager.scale_gvalues()
+    #  if self.scaler.params.scaling_options.decay_correction_rescaling:
+    #    if self.scaler.params.scaling_options.minimisation_parameterisation == 'standard':
+    #      self.scaler.scale_gvalues()
     logger.info(('\nCompleted minimisation for following corrections: {0}\n'
            +'*'*40+'\n').format(''.join(i.lstrip('g_')+' ' for i in param_name)))
 
   def compute_functional_and_gradients(self):
     '''first calculate the updated values of the scale factors and Ih,
     before calculating the residual and gradient functions'''
-    self.data_manager.update_for_minimisation(self.apm)
-    f, g = self.data_manager.get_target_function(self.apm)
+    self.scaler.update_for_minimisation(self.apm)
+    f, g = self.scaler.get_target_function(self.apm)
     logger.debug('\nParameter values \n')
     logger.debug(str(list(self.x)) + '\n')
     logger.debug('Parameter derivatives \n')
@@ -49,13 +50,14 @@ class LBFGS_optimiser(object):
     return f, g
 
   def return_scaler(self):
-    '''return data_manager method'''
-    if not isinstance(self.data_manager, MultiScaler):
+    '''return scaler method'''
+    from dials.algorithms.scaling.ScalerFactory import MultiScaler
+    if not isinstance(self.scaler, MultiScaler):
       if 'g_scale' in self.apm.active_parameterisation:
-        self.data_manager.normalise_scale_component()
+        self.scaler.normalise_scale_component()
       if 'g_decay' in self.apm.active_parameterisation:
-        self.data_manager.normalise_decay_component()
-    return self.data_manager
+        self.scaler.normalise_decay_component()
+    return self.scaler
 
   def make_all_scales_positive(self, param_name):
     '''catcher that checks all the scale factors are positive in the standard

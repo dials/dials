@@ -228,9 +228,9 @@ class SingleIhTable(IhTableBase):
 class JointIhTable(IhTableBase):
   '''Class to expand the datastructure for scaling multiple
   datasets together.'''
-  def __init__(self, datamanagers):
+  def __init__(self, single_scalers):
     self._h_index_expand_list = None
-    super(JointIhTable, self).__init__(data=datamanagers)
+    super(JointIhTable, self).__init__(data=single_scalers)
     self._n_h = self._calc_nh(self.h_index_counter_array)
 
   @property
@@ -239,12 +239,12 @@ class JointIhTable(IhTableBase):
 
   def _create_Ih_table(self, data):
     '''construct a single Ih_table for the combined reflections, using the
-    Ih_tables from the individual datamanagers.'''
+    Ih_tables from the individual scalers.'''
     self._Ih_tables = []
     self._experiments = []
-    for datamanager in data:
-      self._Ih_tables.append(datamanager.Ih_table)
-      self._experiments.append(datamanager.experiments)
+    for scaler in data:
+      self._Ih_tables.append(scaler.Ih_table)
+      self._experiments.append(scaler.experiments)
     self._h_idx_count_list = []
     self._h_idx_cumulative_list = []
     Ih_table, self._unique_indices = self._determine_all_unique_indices()

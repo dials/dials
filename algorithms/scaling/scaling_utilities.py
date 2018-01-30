@@ -1,8 +1,9 @@
+from __future__ import print_function
+import logging
+import cPickle as pickle
 from dials.array_family import flex
 import numpy as np
-import cPickle as pickle
 
-import logging
 logger = logging.getLogger('dials')
 
 def save_experiments(experiments, filename):
@@ -57,7 +58,7 @@ def rotate_vectors_about_axis(rot_axis, vectors, angles):
   #normalise
   modulus = (ux**2 + uy**2 + uz**2)**0.5
   (ux, uy, uz) = (ux/modulus, uy/modulus, uz/modulus)
-  from math import pi
+  #from math import pi
   c_ph = flex.double(np.cos(angles))
   s_ph = flex.double(np.sin(angles))
   rx = (((c_ph + ((ux**2) * (1.0 - c_ph))) * r0)
@@ -75,8 +76,8 @@ def rotate_vectors_about_axis(rot_axis, vectors, angles):
 def align_rotation_axis_along_z(exp_rot_axis, vectors):
   (ux, uy, uz) = list(exp_rot_axis)
   cross_prod_uz = (uy, -1.0*ux, 0.0)
-  cpx, cpy, cpz = list(cross_prod_uz)
-  from math import acos, pi
+  #cpx, cpy, cpz = list(cross_prod_uz)
+  from math import acos
   angle_between_u_z = -1.0*acos(uz/((ux**2 + uy**2 + uz**2)**0.5))
   phi = flex.double([angle_between_u_z]*len(vectors))
   new_vectors = rotate_vectors_about_axis(cross_prod_uz, vectors, phi)
@@ -87,9 +88,9 @@ def sph_harm_table(reflection_table, lmax):
   import math as pymath
 
   order = lmax
-  lfg =  math.log_factorial_generator(2 * order + 1)
+  lfg = math.log_factorial_generator(2 * order + 1)
   n_params = 0
-  for i in range(1,lmax+1):
+  for i in range(1, lmax+1):
     n_params += (2*i) +1
   #sph_harm_terms = flex.reflection_table()
   sph_harm_terms = sparse.matrix(len(reflection_table), n_params)
@@ -142,14 +143,12 @@ def sph_harm_table(reflection_table, lmax):
 
 
 def generate_sph_harm_terms(lmax):
-  from scitbx import math, sparse
   import math as pymath
-  import numpy as np
-
+  from scitbx import math
   order = lmax
-  lfg =  math.log_factorial_generator(2 * order + 1)
+  lfg = math.log_factorial_generator(2 * order + 1)
   n_params = 0
-  for i in range(1,lmax+1):
+  for i in range(1, lmax+1):
     n_params += (2*i) +1
   sph_harm_terms = flex.reflection_table()
   for l in range(1, lmax+1):
@@ -172,18 +171,19 @@ def generate_sph_harm_terms(lmax):
         for phi in phis:
           for theta in thetas:
             i = theta + (phi*360)
-            sph_harm_terms[col][i] = sqrt2 * fac * nsssphe.spherical_harmonic(l, -1*m, theta, phi).imag
+            sph_harm_terms[col][i] = sqrt2 * fac * nsssphe.spherical_harmonic(
+              l, -1*m, theta, phi).imag
       elif m == 0:
         for phi in phis:
           for theta in thetas:
             i = theta + (phi*360)
-            sph_harm_terms[col][i]  = nsssphe.spherical_harmonic(l, m, theta, phi).real
+            sph_harm_terms[col][i] = nsssphe.spherical_harmonic(l, m, theta, phi).real
       else:
         fac = float(((-1) ** m))
         for phi in phis:
           for theta in thetas:
             i = theta + (phi*360)
-            sph_harm_terms[col][i]  = (sqrt2 * fac
+            sph_harm_terms[col][i] = (sqrt2 * fac
               * nsssphe.spherical_harmonic(l, m, theta, phi).real)
       counter += 1
 
