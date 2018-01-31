@@ -28,6 +28,9 @@ phil_scope = iotbx.phil.parse('''
       .type = float
       .help = "Restraint weight applied to spherical harmonic terms in absorption
               correction."
+    modulation_term = False
+      .type = bool
+      .help = "Option to turn off absorption correction"
   }
   reflection_selection {
     E2min = 0.8

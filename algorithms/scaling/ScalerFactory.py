@@ -239,8 +239,9 @@ class ScalerUtilities(object):
     i_obs.set_observation_type_xray_intensity()
     scaled_ids = list(set(self.reflection_table['scaled_id']))
     result = iotbx.merging_statistics.dataset_statistics(
-      i_obs=i_obs, n_bins=20, anomalous=False, use_internal_variance=False,
-      eliminate_sys_absent=False, sigma_filtering=None)
+      i_obs=i_obs, n_bins=20, anomalous=False, sigma_filtering=None)
+      #, use_internal_variance=False,
+      #eliminate_sys_absent=False, sigma_filtering=None)
     return ([result], scaled_ids[0])
 
 
@@ -283,7 +284,7 @@ class SingleScaler(ScalerUtilities):
       reflections = reflections.select(reflections['intensity.sum.variance'] > 0)
     if not 'inverse_scale_factor' in initial_keys:
       reflections['inverse_scale_factor'] = (flex.double([1.0] * len(reflections)))
-    reflections = reflections.select(reflections['partiality'] > 0.9)
+    reflections = reflections.select(reflections['partiality'] > 0.95)
     return reflections
 
   @staticmethod
@@ -352,10 +353,9 @@ class SingleScaler(ScalerUtilities):
     self._reflection_table['inverse_scale_factor'] = self.calc_expanded_scales()
     logger.info(('Scale factors determined during minimisation have now been applied {sep}'
       'to all reflections. {sep}').format(sep='\n'))
-    self._Ih_table = SingleIhTable(self.reflection_table)
     weights = self._update_weights_for_scaling(self.reflection_table,
       self.params, weights_filter=False, error_model_params=None).weights
-    self.Ih_table.weights = weights
+    self._Ih_table = SingleIhTable(self.reflection_table, weights)
     self.Ih_table = self.Ih_table.select(self.Ih_table.weights != 0.0)
     self._reflection_table = self._reflection_table.select(weights != 0.0)
     #if self.params.weighting.tukey_biweighting:
@@ -611,11 +611,11 @@ class XscaleScaler(SingleScaler):
 
   def _initialise_scale_factors(self):
     logger.info('Initialising scale factor objects. \n')
-    if self.params.parameterisation.decay:
+    if self.params.parameterisation.decay_term:
       self._initialise_decay_term()
-    if self.params.parameterisation.absorption:
+    if self.params.parameterisation.absorption_term:
       self._initialise_absorption_term()
-    if self.params.parameterisation.modulation:
+    if self.params.parameterisation.modulation_term:
       self._initialise_modulation_term()
 
   def _initialise_decay_term(self):
@@ -660,16 +660,16 @@ class XscaleScaler(SingleScaler):
     if self.params.weighting.tukey_biweighting:
       self.Ih_table.apply_tukey_biweighting()
     '''set the normalised values within the scale_factor object to current'''
-    if self.params.parameterisation.modulation:
-      self.g_modulation.set_normalised_values(
+    if self.params.parameterisation.modulation_term:
+      self.g_modulation.update_reflection_data(
         refl_for_scaling['normalised_x_values'],
         refl_for_scaling['normalised_y_values'])
-    if self.params.parameterisation.decay:
-      self.g_decay.set_normalised_values(
+    if self.params.parameterisation.decay_term:
+      self.g_decay.update_reflection_data(
         refl_for_scaling['normalised_res_values'],
         refl_for_scaling['norm_time_values'])
-    if self.params.parameterisation.absorption:
-      self.g_absorption.set_normalised_values(
+    if self.params.parameterisation.absorption_term:
+      self.g_absorption.update_reflection_data(
         refl_for_scaling['normalised_x_abs_values'],
         refl_for_scaling['normalised_y_abs_values'],
         refl_for_scaling['norm_time_values'])
@@ -678,27 +678,29 @@ class XscaleScaler(SingleScaler):
     assert 0, 'method not yet implemented'
 
   def normalise_scale_component(self):
-    assert 0, 'method not yet implemented'
+    pass
+    #assert 0, 'method not yet implemented'
 
   def normalise_decay_component(self):
-    assert 0, 'method not yet implemented'
+    pass
+    #assert 0, 'method not yet implemented'
 
   def calc_expanded_scales(self):
     expanded_scale_factors = flex.double([1.0]*len(self.reflection_table))
-    if self.params.parameterisation.modulation:
-      self.g_modulation.set_normalised_values(
+    if self.params.parameterisation.modulation_term:
+      self.g_modulation.update_reflection_data(
         self.reflection_table['normalised_x_values'],
         self.reflection_table['normalised_y_values'])
       self.g_modulation.calculate_scales()
       expanded_scale_factors *= self.g_modulation.inverse_scales
-    if self.params.parameterisation.decay:
-      self.g_decay.set_normalised_values(
+    if self.params.parameterisation.decay_term:
+      self.g_decay.update_reflection_data(
         self.reflection_table['normalised_res_values'],
         self.reflection_table['norm_time_values'])
       self.g_decay.calculate_scales()
       expanded_scale_factors *= self.g_decay.inverse_scales
-    if self.params.parameterisation.absorption:
-      self.g_absorption.set_normalised_values(
+    if self.params.parameterisation.absorption_term:
+      self.g_absorption.update_reflection_data(
         self.reflection_table['normalised_x_abs_values'],
         self.reflection_table['normalised_y_abs_values'],
         self.reflection_table['norm_time_values'])
@@ -762,7 +764,7 @@ class MultiScaler(ScalerUtilities):
       joined_reflections.extend(scaler.reflection_table)
     miller_set = miller.set(crystal.symmetry(
       space_group=self.single_scalers[0].experiments.crystal.get_space_group()),
-      indices=joined_reflections['asu_miller_index'], anomalous_flag=True)
+      indices=joined_reflections['asu_miller_index'], anomalous_flag=False)
     permuted = miller_set.sort_permutation(by_value='packed_indices')
     self._reflection_table = joined_reflections.select(permuted)
     weights = Weighting(self.reflection_table).weights
@@ -844,7 +846,7 @@ class TargetScaler(MultiScaler):
     joined_reflections.extend(self.dm1.reflection_table)
     miller_set = miller.set(crystal.symmetry(
       space_group=self.single_scalers[0].experiments.crystal.get_space_group()),
-      indices=joined_reflections['asu_miller_index'], anomalous_flag=True)
+      indices=joined_reflections['asu_miller_index'], anomalous_flag=False)
     permuted = miller_set.sort_permutation(by_value='packed_indices')
     self._reflection_table = joined_reflections.select(permuted)
     #weights = Weighting(self.reflection_table).weights

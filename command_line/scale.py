@@ -106,7 +106,6 @@ def main(argv):
 
   '''calculate merging stats'''
   results, scaled_ids = minimised.calc_merging_statistics()
-  print(results)
   logger.info('*'*40)
   logger.info("Dataset statistics")
   plot_labels = []

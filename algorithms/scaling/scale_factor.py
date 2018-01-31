@@ -6,9 +6,11 @@ import abc
 import numpy as np
 from dials.array_family import flex
 from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \
-        import GaussianSmoother
+        import GaussianSmoother, GaussianSmoother2D
 from dials_scaling_helpers_ext import row_multiply
 from scitbx import sparse
+#from dials_refinement_helpers_ext import GaussianSmoother2D as GS2D
+#from dials.algorithms.refinement.boost_python.gaussian_smoother_2D import \
 
 class ScaleFactor(object):
   '''Base ScaleFactor class, with an interface to access the parameters,
@@ -218,8 +220,51 @@ class SHScaleFactor(ScaleFactor):
     self._inverse_scales = abs_scale
     self._derivatives = self._harmonic_values
 
+class SmoothScaleFactor2D(SmoothScaleFactor):
+  '''Class to implement a smooth scale factor in two dimensions.'''
+  def __init__(self, initial_value, shape, scaling_options=None):
+    super(SmoothScaleFactor2D, self).__init__(initial_value, scaling_options)
+    self.n_x_params = shape[0]
+    self.n_y_params = shape[1]
+    self._normalised_x_values = None
+    self._normalised_y_values = None
 
-class SmoothScaleFactor_2D(SmoothScaleFactor):
+  @property
+  def normalised_x_values(self):
+    return self._normalised_x_values
+
+  @property
+  def normalised_y_values(self):
+    return self._normalised_y_values
+
+  def update_reflection_data(self, normalised_x_values, normalised_y_values):
+    '''control access to setting all of reflection data at once'''
+    self._normalised_x_values = normalised_x_values
+    self._normalised_y_values = normalised_y_values
+    x_range = [int(min(self._normalised_x_values)//1),
+               int(max(self._normalised_x_values)//1)+1]
+    y_range = [int(min(self._normalised_y_values)//1),
+               int(max(self._normalised_y_values)//1)+1]
+    #include an assertion here to stop setting too few params?
+    self._smoother = GaussianSmoother2D(x_range, self.n_x_params - 2,
+      y_range, self.n_y_params - 2)
+    self.inverse_scales = flex.double([1.0]*len(normalised_x_values))
+
+  def calculate_scales_and_derivatives(self):
+    value, weight, sumweight = self._smoother.multi_value_weight(
+      self._normalised_x_values, self._normalised_y_values, self)
+    inv_sw = 1. / sumweight
+    dv_dp = row_multiply(weight, inv_sw)
+    self._inverse_scales = value
+    self._derivatives = dv_dp
+
+  def calculate_scales(self):
+    '''method to only calculate scales if this is needed, for performance.'''
+    value, _, _ = self._smoother.multi_value_weight(self._normalised_x_values,
+      self._normalised_y_values, self)
+    self._inverse_scales = value
+
+"""class SmoothScaleFactor_2D(SmoothScaleFactor):
   def __init__(self, initial_value, n1_parameters, n2_parameters, scaling_options=None):
     n_parameters = n1_parameters * n2_parameters
     SmoothScaleFactor.__init__(self, initial_value, n_parameters, scaling_options)
@@ -348,4 +393,4 @@ class SmoothScaleFactor_GridAbsorption(SmoothScaleFactor):
               deriv_idx = (j + (k*self.nx_parameters)) + (i*self.nx_parameters*self.ny_parameters)
               self.derivatives[(deriv_idx * n) + datapoint_idx] += (
                 np.exp(- square_distance_to_point / self.Vr))/self.weightsum[datapoint_idx]
-    return self.derivatives
+    return self.derivatives"""

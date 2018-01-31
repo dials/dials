@@ -15,6 +15,11 @@ class ScalingModelBase(object):
     return self._id_
 
   @property
+  def configdict(self):
+    '''dictionary of configuration parameters'''
+    return self._configdict
+
+  @property
   def components(self):
     'components of the model, a dictionary'
     return self._components
@@ -86,16 +91,18 @@ class XscaleScalingModel(ScalingModelBase):
   '''Factory to create a scaling model for an xscale-type parameterisation.'''
   def __init__(self, dec_params, abs_params, mod_params, configdict):
     super(XscaleScalingModel, self).__init__()
-    assert 0, "model not yet implemented"
+    #assert 0, "model not yet implemented"
     self._id_ = 'xscale'
     self._configdict = configdict
     self._components.update({'decay' : SF.SmoothScaleFactor2D(dec_params,
       shape=(configdict['n_time_param'], configdict['n_res_param']))})
-    self._components.update({'absorption' : SF.SmoothScaleFactor3D(abs_params,
-      shape=(configdict['n_time_param'], configdict['n_x_param'],
-      configdict['n_y_param']))})
+    self._components.update({'absorption' : SF.SmoothScaleFactor2D(abs_params,
+      shape=(configdict['n_time_param'], configdict['n_x_param']))})
+    #self._components.update({'absorption' : SF.SmoothScaleFactor3D(abs_params,
+    #  shape=(configdict['n_time_param'], configdict['n_x_param'],
+    #  configdict['n_y_param']))})
     self._components.update({'modulation' : SF.SmoothScaleFactor2D(mod_params,
-      shape=(configdict['n_x_det_param'], configdict['n_y_det_param']))})
+      shape=(configdict['n_x_mod_param'], configdict['n_y_mod_param']))})
 
   def to_dict(self):
     '''format data to dictionary for output'''

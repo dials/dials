@@ -78,7 +78,8 @@ class XscaleSMFactory(object):
   @classmethod
   def create(cls, params, experiments, reflections):
     '''create an XScale scaling model.'''
-    assert 0, 'method not yet implemented'
+    #assert 0, 'method not yet implemented'
+    reflections = reflections.select(reflections['d'] > 0.0)
 
     scale_rot_int = params.parameterisation.scale_interval + 0.001
     osc_range = experiments.scan.get_oscillation_range()
@@ -95,7 +96,9 @@ class XscaleSMFactory(object):
     resmax = (1.0 / (min(reflections['d'])**2)) + 0.001
     resmin = (1.0 / (max(reflections['d'])**2)) - 0.001
 
-    res_bin_width = (resmax - resmin) / params.scaling_options.n_res_bins
+    n_res_bins = 20 #params.scaling_options.n_res_bins
+
+    res_bin_width = (resmax - resmin) / n_res_bins
     time_bin_width = (zmax - zmin) / nzbins
     nres = ((1.0 / (reflections['d']**2)) - resmin) / res_bin_width
     n_res_param = int(max(nres)//1) - int(min(nres)//1) + 3 #for g_decay
@@ -121,7 +124,9 @@ class XscaleSMFactory(object):
       'ymin' : ymin, 'x_bin_width' : x_bin_width, 'y_bin_width' : y_bin_width
     })
 
-    nx_det_bins = ny_det_bins = params.parameterisation.n_detector_bins
+    n_detector_bins = 10#params.parameterisation.n_detector_bins
+
+    nx_det_bins = ny_det_bins = n_detector_bins
     x_det_bin_width = (xmax - xmin) / float(nx_det_bins)
     y_det_bin_width = (ymax - ymin) / float(ny_det_bins)
     nxdet = ((xvalues - xmin) / x_det_bin_width)
