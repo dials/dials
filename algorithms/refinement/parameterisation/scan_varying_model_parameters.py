@@ -114,6 +114,7 @@ class GaussianSmoother(GS):
   def positions(self):
     return list(super(GaussianSmoother, self).positions())
 
+
 class ScanVaryingModelParameterisation(ModelParameterisation):
   """Extending ModelParameterisation to deal with ScanVaryingParameterSets.
 
