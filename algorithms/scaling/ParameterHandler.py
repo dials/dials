@@ -12,32 +12,34 @@ class ParameterlistFactory(object):
   or [['g_scale','g_decay'],['g_absorption']]
   '''
   @classmethod
-  def full_active_list(cls, params):
+  def full_active_list(cls, experiments):
     '''create a list with all params to include'''
+    
     param_name = []
-    if params.parameterisation.scale_term:
-      param_name.append(['g_scale'])
-    if params.parameterisation.decay_term:
-      param_name[0].append('g_decay')
-    if params.parameterisation.absorption_term:
-      param_name[0].append('g_absorption')
+    for param in experiments.scaling_model.configdict['corrections']:
+      param_name.append('g_'+str(param))
     if not param_name:
       assert 0, 'no parameters have been chosen for scaling, aborting process'
-    return param_name
+    return [param_name]
 
   @classmethod
-  def consecutive_list(cls, params):
+  def consecutive_list(cls, experiments):
     '''create a nested list with all params to include'''
     param_name = []
-    if params.parameterisation.scale_term:
-      param_name.append(['g_scale'])
-    if params.parameterisation.decay_term:
-      param_name[0].append('g_decay')
-    if params.parameterisation.absorption_term:
-      param_name.append(['g_absorption'])
+    corrections = experiments.scaling_model.configdict['corrections']
+    if experiments.scaling_model.id_ == 'aimless':
+      if 'scale' in corrections and 'decay' in corrections:
+        param_name.append(['g_scale', 'g_decay'])
+      elif 'scale' in corrections:
+        param_name.append(['g_scale'])
+      elif 'decay' in corrections:
+        param_name.append(['g_decay'])
+      if 'absorption' in experiments.scaling_model.configdict['corrections']:
+        param_name.append(['g_absorption'])
+    else:
+      for param in corrections:
+        param_name.append(['g_'+str(param)])
     return param_name
-
-
 
 
 class active_parameter_manager(object):
@@ -75,7 +77,9 @@ class multi_active_parameter_manager(object):
     self.apm_list = []
     for scaler in multiscaler.single_scalers:
       self.apm_list.append(active_parameter_manager(scaler, param_name))
-    self.active_parameterisation = self.apm_list[0].active_parameterisation
+    self.active_parameterisation = []
+    for apm in self.apm_list:
+      self.active_parameterisation.extend(apm.active_parameterisation)
     self.x = flex.double([])
     self.n_params_in_each_apm = []
     self.n_cumul_params_list = [0]

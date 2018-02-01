@@ -26,6 +26,18 @@ phil_scope = phil.parse('''
     absorption_out = "absorption_surface"
       .type = str
       .help = "Option to set filename for output absorption plot."
+    decay_out = "decay_correction"
+      .type = str
+      .help = "Option to set filename for 2D decay plot
+               (only relevant for xscale parameterisation)."
+    abscorplot = "absorption_correction"
+      .type = str
+      .help = "Option to set filename for absorption plot
+               (only relevant for xscale parameterisation)."
+    modcorplot = "modulation_correction"
+      .type = str
+      .help = "Option to set filename for modulation plot
+               (only relevant for xscale parameterisation)."
     experiment_range = ()
       .type = ints
       .help = "Option to specify a subset of experiments to plot."
@@ -74,6 +86,10 @@ def main(argv):
     elif isinstance(experiments[0].scaling_model, Model.XscaleScalingModel):
       if params.parameterisation.decay_term:
         plot_2D_decay_correction(experiments[0], reflections[0])
+      if params.parameterisation.absorption_term:
+        plot_3D_absorption_correction(experiments[0], reflections[0])
+      if params.parameterisation.modulation_term:
+        plot_2D_modulation_correction(experiments[0], reflections[0])
 
   elif params.output.experiment_range:
     for j in params.output.experiment_range:
@@ -85,6 +101,16 @@ def main(argv):
         if params.parameterisation.absorption_term:
           plot_absorption_surface(experiment,
             outputfile=str(params.output.absorption_out)+'_'+str(j+1)+'.png')
+      elif isinstance(experiment.scaling_model, Model.XscaleScalingModel):
+        if params.parameterisation.decay_term:
+          plot_2D_decay_correction(experiment, reflection,
+            outputfile=str(params.output.decay_out)+'_'+str(j+1)+'.png')
+        if params.parameterisation.absorption_term:
+          plot_3D_absorption_correction(experiment, reflection,
+            outputfile=str(params.output.abscorplot)+'_'+str(j+1)+'.png')
+        if params.parameterisation.modulation_term:
+          plot_2D_modulation_correction(experiment, reflection,
+            outputfile=str(params.output.modcorplot)+'_'+str(j+1)+'.png')
   else:
     for j, (experiment, reflection) in enumerate(zip(experiments, reflections)):
       if isinstance(experiment.scaling_model, Model.AimlessScalingModel):
@@ -93,6 +119,16 @@ def main(argv):
         if params.parameterisation.absorption_term:
           plot_absorption_surface(experiment,
             outputfile=str(params.output.absorption_out)+'_'+str(j+1)+'.png')
+      elif isinstance(experiment.scaling_model, Model.XscaleScalingModel):
+        if params.parameterisation.decay_term:
+          plot_2D_decay_correction(experiment, reflection,
+            outputfile=str(params.output.decay_out)+'_'+str(j+1)+'.png')
+        if params.parameterisation.absorption_term:
+          plot_3D_absorption_correction(experiment, reflection,
+            outputfile=str(params.output.abscorplot)+'_'+str(j+1)+'.png')
+        if params.parameterisation.modulation_term:
+          plot_2D_modulation_correction(experiment, reflection,
+            outputfile=str(params.output.modcorplot)+'_'+str(j+1)+'.png')
 
   print("\nFinished plotting graphs of scale factors. \n")
 
@@ -133,83 +169,10 @@ def plot_smooth_scales(params, experiments, reflections, outputfile=None):
     plt.savefig('smooth_scale_factors.png')
     print("Saving plot to smooth_scale_factors.png")
 
-
-def plot_2D_decay_correction(experiment, reflections, outputfile=None):
-  
-  reflections = reflections.select(reflections['d'] > 0.0)
-  configdict = experiment.scaling_model.configdict
-  reflections['normalised_res_values'] = (((1.0 / (reflections['d']**2))
-      - configdict['resmin']) / configdict['res_bin_width'])
-  reflections['norm_time_values'] = ((reflections['xyzobs.px.value'].parts()[2]
-      - configdict['zmin']) / configdict['time_bin_width'])
-  
-  ndbins = experiment.scaling_model.configdict['n_res_param']
-  nzbins = experiment.scaling_model.configdict['n_time_param']
-  '''create a grid of x and y points and use these to generate scale factors'''
-  max_res = int(max(reflections['normalised_res_values'])) + 1
-  max_time = int(max(reflections['norm_time_values'])) + 1
-
-  rel_values_1 = np.arange(0, max_res+0.1, 0.1)
-  rel_values_2 = np.arange(0, max_time+0.1, 0.1)
-  (n1, n2) = (len(rel_values_1), len(rel_values_2))
-  rel_values_1 = np.tile(rel_values_1, n2)
-  rel_values_2 = np.repeat(rel_values_2, n1)
-  
-  decay_factor = experiment.scaling_model.components['decay']
-  decay_factor.update_reflection_data(rel_values_1, rel_values_2)
-  decay_factor.calculate_scales()
-
-  scales = decay_factor.inverse_scales
-
-  G_fin_2d = np.reshape(list(scales), (n2, n1)).T
-  G_fin_2d = G_fin_2d[1:-1,1:-1]
-  #data_man.g_decay.calculate_scales_and_derivatives()
-  G_fin = list(scales)
-
-  plt.figure(figsize=(11,6))
-  gs = gridspec.GridSpec(1, 2)
-  ax1 = plt.subplot(gs[0, 0])
-  ax2 = plt.subplot(gs[0, 1])
-  ax2.hist(G_fin, 40, log=False)
-  ax2.set_xlabel('Inverse scale factor')
-  ax2.set_ylabel('Occurences')
-
-  resmax = (1.0 / (min(reflections['d'])**2))
-  resmin = (1.0 / (max(reflections['d'])**2))
-
-  #print "dmin is %s" % (min(data_man.reflection_table['d']))
-  #print "dmax is %s" % (max(data_man.reflection_table['d']))
-  #determine boundaries in res
-  resbin_boundaries = np.arange(resmin, resmax, 2*(resmax - resmin)/(ndbins-1))
-  #print resbin_boundaries
-  dbin_boundaries = 1.0/(resbin_boundaries**0.5)
-  #print dbin_boundaries
-  dbin_boundaries = ['%.3f' % x for x in dbin_boundaries]
-
-  im = ax1.imshow(G_fin_2d, cmap='viridis', origin='upper', aspect='auto')
-  divider = make_axes_locatable(ax1)
-  cax1 = divider.append_axes("right", size="5%", pad=0.05)
-  cbar = plt.colorbar(im, cax=cax1)
-  ax1.set_ylabel('d-value')
-  ax1.set_xlabel('Normalised time value')
-  ax1.set_yticks(np.arange(0, (max_res * 10)+0.01, 20))
-  ax1.set_yticklabels(dbin_boundaries)
-  ax1.set_xticks(np.arange(0, (max_time * 10)+0.01, 20))
-  ax1.set_xticklabels(np.arange(0, max_time+0.01, 2))
-  ax1.set_title('Inverse scale factors for decay correction', fontsize=12)
-  plt.tight_layout()
-  if outputfile:
-    plt.savefig(outputfile)
-  else:
-    plt.savefig('g_decay.png')
-
-
-
 def plot_absorption_surface(experiment, outputfile=None):
   params = experiment.scaling_model.components['absorption'].parameters
 
   from scitbx import math
-  from scitbx.array_family import flex
   import math as pymath
   order = int(-1.0 + ((1.0 + len(params))**0.5))
   lfg =  math.log_factorial_generator(2 * order + 1)
@@ -268,6 +231,173 @@ def plot_absorption_surface(experiment, outputfile=None):
   else:
     plt.savefig('absorption_surface.png')
     print("Saving plot to absorption_surface.png")
+
+def plot_2D_decay_correction(experiment, reflections, outputfile=None):
+  '''plotting of decay vs time correction for xscale parameterisation'''
+  '''first extract the model and data'''
+  reflections = reflections.select(reflections['d'] > 0.0)
+  configdict = experiment.scaling_model.configdict
+  reflections['normalised_res_values'] = (((1.0 / (reflections['d']**2))
+      - configdict['resmin']) / configdict['res_bin_width'])
+  reflections['norm_time_values'] = ((reflections['xyzobs.px.value'].parts()[2]
+      - configdict['zmin']) / configdict['time_bin_width'])
+
+  '''create a grid of x and y points and use these to generate scale factors'''
+  max_res = int(max(reflections['normalised_res_values'])) + 1
+  max_time = int(max(reflections['norm_time_values'])) + 1
+  rel_values_1 = np.arange(0, max_res+0.1, 0.1)
+  rel_values_2 = np.arange(0, max_time+0.1, 0.1)
+  (n1, n2) = (len(rel_values_1), len(rel_values_2))
+  rel_values_1 = np.tile(rel_values_1, n2)
+  rel_values_2 = np.repeat(rel_values_2, n1)
+
+  decay_factor = experiment.scaling_model.components['decay']
+  decay_factor.update_reflection_data(rel_values_1, rel_values_2)
+  decay_factor.calculate_scales()
+  scales = decay_factor.inverse_scales
+  scalefactor_2D = np.reshape(list(scales), (n2, n1)).T
+
+  '''generate a plot'''
+  plt.figure(figsize=(8, 4))
+  gs = gridspec.GridSpec(1, 2)
+  ax1 = plt.subplot(gs[0, 0])
+  ax2 = plt.subplot(gs[0, 1])
+
+  resmax = (1.0 / (min(reflections['d'])**2))
+  resmin = (1.0 / (max(reflections['d'])**2))
+  resbin_boundaries = np.arange(resmin, resmax, 2*(resmax - resmin)/(
+    experiment.scaling_model.configdict['n_res_param']-1))
+  dbin_boundaries = ['%.3f' % x for x in (1.0/(resbin_boundaries**0.5))]
+  im = ax1.imshow(scalefactor_2D, cmap='viridis', origin='upper', aspect='auto')
+  divider = make_axes_locatable(ax1)
+  cax1 = divider.append_axes("right", size="5%", pad=0.05)
+  cbar = plt.colorbar(im, cax=cax1)
+  ax1.set_ylabel('d-value')
+  ax1.set_xlabel('Normalised time value')
+  ax1.set_yticks(np.arange(0, (max_res * 10)+0.01, 20))
+  ax1.set_yticklabels(dbin_boundaries)
+  ax1.set_xticks(np.arange(0, (max_time * 10)+0.01, 20))
+  ax1.set_xticklabels(np.arange(0, max_time+0.01, 2))
+  ax1.set_title('Map of decay correction (inverse scale factors)', fontsize=10)
+
+  '''recalculate scales for plotting distribution in dataset'''
+  decay_factor.update_reflection_data(reflections['normalised_res_values'],
+    reflections['norm_time_values'])
+  decay_factor.calculate_scales()
+
+  ax2.hist(list(decay_factor.inverse_scales), 40, log=False)
+  ax2.set_xlabel('Decay correction inverse scale factor')
+  ax2.set_ylabel('Counts')
+  ax2.set_title('Distribution of dataset reflection corrections', fontsize=10)
+
+  plt.tight_layout()
+  if outputfile:
+    plt.savefig(outputfile)
+  else:
+    plt.savefig('decay_correction.png')
+
+def plot_2D_modulation_correction(experiment, reflections, outputfile=None):
+
+  configdict = experiment.scaling_model.configdict
+  nxdet = ((reflections['xyzobs.px.value'].parts()[0] - configdict['xmin']) /
+    configdict['x_det_bin_width'])
+  nydet = ((reflections['xyzobs.px.value'].parts()[1] - configdict['ymin']) /
+    configdict['y_det_bin_width'])
+
+
+  #nxbins = data_man.g_modulation.n1_parameters
+  #nybins = data_man.g_modulation.n2_parameters
+  max_x = int(max(nxdet)) + 1
+  max_y = int(max(nydet)) + 1
+  '''create a grid of x and y points and use these to generate scale factors'''
+  rel_values_1 = np.arange(0, max_x+0.2, 0.2)
+  rel_values_2 = np.arange(0, max_y+0.2, 0.2)
+  (n1, n2) = (len(rel_values_1), len(rel_values_2))
+  rel_values_1 = np.tile(rel_values_1, n2)
+  rel_values_2 = np.repeat(rel_values_2, n1)
+
+  modulation_factor = experiment.scaling_model.components['decay']
+  modulation_factor.update_reflection_data(rel_values_1, rel_values_2)
+  modulation_factor.calculate_scales()
+  scales = modulation_factor.inverse_scales
+  scalefactor_2D = np.reshape(list(scales), (n2, n1))
+
+  plt.figure(figsize=(8, 4))
+  gs = gridspec.GridSpec(1, 2)
+  ax1 = plt.subplot(gs[0, 0])
+  ax2 = plt.subplot(gs[0, 1])
+
+  im = ax1.imshow(scalefactor_2D, cmap='viridis', origin='lower')
+  divider = make_axes_locatable(ax1)
+  cax1 = divider.append_axes("right", size="5%", pad=0.05)
+  cbar = plt.colorbar(im, cax=cax1)
+  ax1.set_yticks(np.arange(0, (max_x * 5)+0.01, 10))
+  ax1.set_yticklabels(np.arange(0, max_x+0.01, 2))
+  ax1.set_xticks(np.arange(0, (max_y * 5)+0.01, 10))
+  ax1.set_xticklabels(np.arange(0, max_y+0.01, 2))
+  ax1.set_ylabel('Detector normalised y value')
+  ax1.set_xlabel('Detector normalised x value')
+  ax1.set_title('Map of detector correction (inverse scale factors)', fontsize=10)
+
+  '''recalculate scales for plotting distribution in dataset'''
+  modulation_factor.update_reflection_data(nxdet, nydet)
+  modulation_factor.calculate_scales()
+
+  ax2.hist(list(modulation_factor.inverse_scales), 40, log=False)
+  ax2.set_xlabel('Detector correction inverse scale factor')
+  ax2.set_ylabel('Counts')
+  ax2.set_title('Distribution of dataset reflection corrections', fontsize=10)
+
+  plt.tight_layout()
+  if outputfile:
+    plt.savefig(outputfile)
+  else:
+    plt.savefig('modulation_correction.png')
+
+def plot_3D_absorption_correction(experiment, reflections, outputfile=None):
+  '''produces a plot of the absorption correction model parameters
+  for xscale parameterisation'''
+  '''first extract the model and data'''
+  configdict = experiment.scaling_model.configdict
+  n_time_bins = configdict['n_time_param']
+  n_abs_bins = configdict['n_x_param'] * configdict['n_y_param']
+  (xvalues, yvalues, zvalues) = reflections['xyzobs.px.value'].parts()
+  '''calculate normalised x, y, time values'''
+  nt = (zvalues - configdict['zmin']) / configdict['time_bin_width']
+  nax = (xvalues - configdict['xmin']) / configdict['x_bin_width']
+  nay = (yvalues - configdict['ymin']) / configdict['y_bin_width']
+
+  absorption_factor = experiment.scaling_model.components['absorption']
+  absorption_factor.update_reflection_data(nax, nay, nt)
+  absorption_factor.calculate_scales()
+  parameters_2D = np.reshape(list(absorption_factor.parameters),
+    (n_time_bins, n_abs_bins)).T 
+  
+  '''generate a plot'''
+  plt.figure(figsize=(8, 4))
+  gs = gridspec.GridSpec(1, 2)
+  ax1 = plt.subplot(gs[0, 0])
+  ax2 = plt.subplot(gs[0, 1])
+  
+  im = ax1.imshow(parameters_2D, cmap='viridis', origin='lower')
+  divider = make_axes_locatable(ax1)
+  cax1 = divider.append_axes("right", size="5%", pad=0.05)
+  cbar = plt.colorbar(im, cax=cax1)
+  ax1.set_ylabel('Detector position (n x n grid)')
+  ax1.set_xlabel('Normalised time value')
+  ax1.set_title('Model parameters for absorption correction', fontsize=10)
+
+  ax2.hist(list(absorption_factor.inverse_scales), 40, log=False)
+  ax2.set_xlabel('Absorption correction inverse scale factor')
+  ax2.set_ylabel('Counts')
+  ax2.set_title('Distribution of dataset reflection corrections', fontsize=10)
+
+  plt.tight_layout()
+  if outputfile:
+    plt.savefig(outputfile)
+  else:
+    plt.savefig('absorption_correction.png')
+
 
 if __name__ == "__main__":
   try:

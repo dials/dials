@@ -148,7 +148,7 @@ def lbfgs_scaling(scaler):
 
   if isinstance(scaler, ScalerFactory.TargetScaler):
     '''do a scaling round against a target of already scaled datasets'''
-    param_name = ParameterHandler.ParameterlistFactory.full_active_list(scaler.params)
+    param_name = ParameterHandler.ParameterlistFactory.full_active_list(scaler.experiments)
     '''Pass the scaler to the optimiser'''
     scaler = LBFGS_optimiser(scaler,
       param_name=param_name[0]).return_scaler()
@@ -165,9 +165,9 @@ def lbfgs_scaling(scaler):
   '''from here onwards, scaler should only be a SingleScaler
   or MultiScaler (not TargetScaler)'''
   if scaler.params.scaling_options.concurrent_scaling:
-    param_name = ParameterHandler.ParameterlistFactory.full_active_list(scaler.params)
+    param_name = ParameterHandler.ParameterlistFactory.full_active_list(scaler.experiments)
   else:
-    param_name = ParameterHandler.ParameterlistFactory.consecutive_list(scaler.params)
+    param_name = ParameterHandler.ParameterlistFactory.consecutive_list(scaler.experiments)
   for param in param_name:
     '''Pass the scaler to the optimiser'''
     scaler = LBFGS_optimiser(scaler,

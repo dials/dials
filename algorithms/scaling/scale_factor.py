@@ -6,11 +6,59 @@ import abc
 import numpy as np
 from dials.array_family import flex
 from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \
-        import GaussianSmoother, GaussianSmoother2D
+        import GaussianSmoother#, GaussianSmoother2D, GaussianSmoother3D
 from dials_scaling_helpers_ext import row_multiply
 from scitbx import sparse
+from dials_refinement_helpers_ext import GaussianSmoother2D as GS2D
+from dials_refinement_helpers_ext import GaussianSmoother3D as GS3D
 #from dials_refinement_helpers_ext import GaussianSmoother2D as GS2D
 #from dials.algorithms.refinement.boost_python.gaussian_smoother_2D import \
+
+class GaussianSmoother2D(GS2D):
+  """A 2D Gaussian smoother"""
+
+  def value_weight(self, x, y, param):
+    result = super(GaussianSmoother2D, self).value_weight(x, y,
+      flex.double(param.value))
+    return (result.get_value(), result.get_weight(), result.get_sumweight())
+
+  def multi_value_weight(self, x, y, param):
+    result = super(GaussianSmoother2D, self).multi_value_weight(
+      flex.double(x), flex.double(y),
+      flex.double(param.value))
+    return (result.get_value(), result.get_weight(), result.get_sumweight())
+
+  def x_positions(self):
+    return list(super(GaussianSmoother2D, self).x_positions())
+
+  def y_positions(self):
+    return list(super(GaussianSmoother2D, self).y_positions())
+
+class GaussianSmoother3D(GS3D):
+  """A 3D Gaussian smoother"""
+
+  def value_weight(self, x, y, z, param):
+    result = super(GaussianSmoother3D, self).value_weight(x, y, z,
+      flex.double(param.value))
+    return (result.get_value(), result.get_weight(), result.get_sumweight())
+
+  def multi_value_weight(self, x, y, z, param):
+    result = super(GaussianSmoother3D, self).multi_value_weight(
+      flex.double(x), flex.double(y), flex.double(z),
+      flex.double(param.value))
+    return (result.get_value(), result.get_weight(), result.get_sumweight())
+
+  def x_positions(self):
+    return list(super(GaussianSmoother3D, self).x_positions())
+
+  def y_positions(self):
+    return list(super(GaussianSmoother3D, self).y_positions())
+
+  def z_positions(self):
+    return list(super(GaussianSmoother3D, self).z_positions())
+
+
+
 
 class ScaleFactor(object):
   '''Base ScaleFactor class, with an interface to access the parameters,
@@ -116,6 +164,28 @@ class BScaleFactor(KScaleFactor):
       self._derivatives[i, 0] = (self._inverse_scales[i]
         / (2.0 * (self._d_values[i]**2)))
 
+class SHScaleFactor(ScaleFactor):
+  '''ScaleFactor class for a spherical harmonic absorption correction'''
+  def __init__(self, initial_value, scaling_options=None):
+    super(SHScaleFactor, self).__init__(initial_value, scaling_options)
+    self._harmonic_values = None
+
+  @property
+  def harmonic_values(self):
+    return self._harmonic_values
+
+  def update_reflection_data(self, harmonic_values):
+    self._harmonic_values = harmonic_values
+    self.calculate_scales_and_derivatives()
+
+  def calculate_scales_and_derivatives(self):
+    '''calculation of scale factors and derivatives from
+       spherical harmonic coefficient matrix'''
+    abs_scale = flex.double([1.0] * self._harmonic_values.n_rows)#unity term
+    for i, col in enumerate(self._harmonic_values.cols()):
+      abs_scale += flex.double(col.as_dense_vector() * self._parameters[i])
+    self._inverse_scales = abs_scale
+    self._derivatives = self._harmonic_values
 
 class SmoothScaleFactor(ScaleFactor):
   '''Base class for Smooth ScaleFactor objects - which allow use of a
@@ -197,28 +267,7 @@ class SmoothBScaleFactor1D(SmoothScaleFactor1D):
       /(2.0 * (self._d_values**2))))
 
 
-class SHScaleFactor(ScaleFactor):
-  '''ScaleFactor class for a spherical harmonic absorption correction'''
-  def __init__(self, initial_value, scaling_options=None):
-    super(SHScaleFactor, self).__init__(initial_value, scaling_options)
-    self._harmonic_values = None
 
-  @property
-  def harmonic_values(self):
-    return self._harmonic_values
-
-  def update_reflection_data(self, harmonic_values):
-    self._harmonic_values = harmonic_values
-    self.calculate_scales_and_derivatives()
-
-  def calculate_scales_and_derivatives(self):
-    '''calculation of scale factors and derivatives from
-       spherical harmonic coefficient matrix'''
-    abs_scale = flex.double([1.0] * self._harmonic_values.n_rows)#unity term
-    for i, col in enumerate(self._harmonic_values.cols()):
-      abs_scale += flex.double(col.as_dense_vector() * self._parameters[i])
-    self._inverse_scales = abs_scale
-    self._derivatives = self._harmonic_values
 
 class SmoothScaleFactor2D(SmoothScaleFactor):
   '''Class to implement a smooth scale factor in two dimensions.'''
@@ -264,133 +313,45 @@ class SmoothScaleFactor2D(SmoothScaleFactor):
       self._normalised_y_values, self)
     self._inverse_scales = value
 
-"""class SmoothScaleFactor_2D(SmoothScaleFactor):
-  def __init__(self, initial_value, n1_parameters, n2_parameters, scaling_options=None):
-    n_parameters = n1_parameters * n2_parameters
-    SmoothScaleFactor.__init__(self, initial_value, n_parameters, scaling_options)
-    self.n1_parameters = n1_parameters
-    self.n2_parameters = n2_parameters
-    self.Vr = 0.5
-    self.weightsum = None
-    self.smoothing_window = 1.5#must be less than 2 to avoid indexing errors
+class SmoothScaleFactor3D(SmoothScaleFactor2D):
+  '''Class to implement a smooth scale factor in two dimensions.'''
+  def __init__(self, initial_value, shape, scaling_options=None):
+    super(SmoothScaleFactor3D, self).__init__(initial_value, shape, scaling_options)
+    self.n_z_params = shape[2]
+    self._normalised_z_values = None
 
-  def set_normalised_values(self, normalised_values1, normalised_values2):
-    '''normalised_values is the column from the reflection table
-    of the normalised time/resolution etc'''
-    self.normalised_values = [normalised_values1, normalised_values2]
-    self.scales = flex.double([1.0]*len(self.normalised_values[0]))
+  @property
+  def normalised_z_values(self):
+    return self._normalised_z_values
 
-  def calculate_smooth_scales(self):
-    self.weightsum = flex.double([0.0]*len(self.normalised_values[0]))
-    for i, relative_pos_1 in enumerate(self.normalised_values[0]):
-      relative_pos_2 = self.normalised_values[1][i]
-      max_range_1_to_include = int(relative_pos_1 + self.smoothing_window)
-      max_range_2_to_include = int(relative_pos_2 + self.smoothing_window)
-      min_range_2_to_include = int((relative_pos_2 - self.smoothing_window)//1) + 1
-      min_range_1_to_include = int((relative_pos_1 - self.smoothing_window)//1) + 1
-      scale = 0.0
-      weightsum = 0.0
-      for j in range(min_range_1_to_include, max_range_1_to_include + 1):
-        for k in range(min_range_2_to_include, max_range_2_to_include + 1):
-          square_distance_to_point = ((float(k) - relative_pos_2)**2
-                                      + (float(j) - relative_pos_1)**2)
-          if square_distance_to_point < (self.smoothing_window**2):
-            scale += (self.scale_factors[(j+1) + ((k+1)*self.n1_parameters)]
-                      * np.exp(- square_distance_to_point / self.Vr))
-            weightsum += np.exp(-square_distance_to_point/ self.Vr)
-      self.weightsum[i] = weightsum
-      self.scales[i] = scale/weightsum
-    return self.scales
+  def update_reflection_data(self, normalised_x_values, normalised_y_values,
+      normalised_z_values):
+    '''control access to setting all of reflection data at once'''
+    self._normalised_x_values = normalised_x_values
+    self._normalised_y_values = normalised_y_values
+    self._normalised_z_values = normalised_z_values
+    x_range = [int(min(self._normalised_x_values)//1),
+               int(max(self._normalised_x_values)//1)+1]
+    y_range = [int(min(self._normalised_y_values)//1),
+               int(max(self._normalised_y_values)//1)+1]
+    z_range = [int(min(self._normalised_z_values)//1),
+               int(max(self._normalised_z_values)//1)+1]
+    #include an assertion here to stop setting too few params?
+    self._smoother = GaussianSmoother3D(x_range, self.n_x_params - 2,
+      y_range, self.n_y_params - 2, z_range, self.n_z_params - 2)
+    self.inverse_scales = flex.double([1.0]*len(normalised_x_values))
 
-  def calculate_smooth_derivatives(self):
-    if not self.weightsum:
-      self.calculate_smooth_scales()
-    n = len(self.get_normalised_values()[0])
-    self.derivatives = flex.double([0.0] * len(self.scale_factors) * n)
-    #smoothing_window = 1.5#must be less than 2 to avoid indexing errors
-    for i, relative_pos_1 in enumerate(self.normalised_values[0]):
-      relative_pos_2 = self.normalised_values[1][i]
-      max_range_1_to_include = int(relative_pos_1 + self.smoothing_window)
-      max_range_2_to_include = int(relative_pos_2 + self.smoothing_window)
-      min_range_2_to_include = int((relative_pos_2 - self.smoothing_window)//1) + 1
-      min_range_1_to_include = int((relative_pos_1 - self.smoothing_window)//1) + 1
-      for j in range(min_range_1_to_include, max_range_1_to_include + 1):
-          for k in range(min_range_2_to_include, max_range_2_to_include + 1):
-            square_distance_to_point = ((float(k) - relative_pos_2)**2
-                                        + (float(j) - relative_pos_1)**2)
-            if square_distance_to_point < (self.smoothing_window**2):
-              self.derivatives[(((j+1) + ((k+1)*self.n1_parameters))*n) + i] += (
-                np.exp(- square_distance_to_point / self.Vr))/self.weightsum[i]
-    return self.derivatives
+  def calculate_scales_and_derivatives(self):
+    value, weight, sumweight = self._smoother.multi_value_weight(
+      self._normalised_x_values, self._normalised_y_values,
+      self._normalised_z_values, self)
+    inv_sw = 1. / sumweight
+    dv_dp = row_multiply(weight, inv_sw)
+    self._inverse_scales = value
+    self._derivatives = dv_dp
 
-class SmoothScaleFactor_GridAbsorption(SmoothScaleFactor):
-  def __init__(self, initial_value, n1_parameters, n2_parameters, n3_parameters,
-               scaling_options=None):
-    n_parameters = n1_parameters * n2_parameters * n3_parameters
-    SmoothScaleFactor.__init__(self, initial_value, n_parameters, scaling_options)
-    self.nx_parameters = n1_parameters
-    self.ny_parameters = n2_parameters
-    self.ntime_parameters = n3_parameters
-    self.Vr = 0.5
-    self.weightsum = None
-
-  def set_normalised_values(self, normalised_values1, normalised_values2, normalised_values3):
-    '''normalised_values is the column from the reflection table
-    of the normalised time/resolution etc'''
-    self.normalised_values = [normalised_values1, normalised_values2, normalised_values3]
-    self.scales = flex.double([1.0]*len(self.normalised_values[0]))
-
-  def calculate_smooth_scales(self):
-    smoothing_window = 1.0#must be 1.0 or less to avoid indexing errors,
-    #should probably be fixed or tightly constrained
-    self.weightsum = flex.double([0.0]*len(self.normalised_values[0]))
-    for datapoint_idx, relative_pos_1 in enumerate(self.normalised_values[0]):
-      relative_pos_2 = self.normalised_values[1][datapoint_idx]
-      relative_pos_3 = self.normalised_values[2][datapoint_idx]
-      max_range_1_to_include = int(relative_pos_1 + smoothing_window)
-      max_range_2_to_include = int(relative_pos_2 + smoothing_window)
-      max_range_3_to_include = int(relative_pos_3 + smoothing_window)
-      min_range_1_to_include = int((relative_pos_1 - smoothing_window)//1) + 1
-      min_range_2_to_include = int((relative_pos_2 - smoothing_window)//1) + 1
-      min_range_3_to_include = int((relative_pos_3 - smoothing_window)//1) + 1
-      scale = 0.0
-      weightsum = 0.0
-      for i in range(min_range_3_to_include, max_range_3_to_include + 1):
-        for j in range(min_range_1_to_include, max_range_1_to_include + 1):
-          for k in range(min_range_2_to_include, max_range_2_to_include + 1):
-            square_distance_to_point = ((float(k) - relative_pos_2)**2
-              + (float(j) - relative_pos_1)**2 + (float(i) - relative_pos_3)**2)
-            if square_distance_to_point < (smoothing_window**2):
-              scale_idx = (j + (k*self.nx_parameters)) + (i*self.nx_parameters*self.ny_parameters)
-              scale += (self.scale_factors[scale_idx] *
-                np.exp(- square_distance_to_point / self.Vr))
-              weightsum += np.exp(-square_distance_to_point/ self.Vr)
-      self.weightsum[datapoint_idx] = weightsum
-      self.scales[datapoint_idx] = scale/weightsum
-    return self.scales
-
-  def calculate_smooth_derivatives(self):
-    if not self.weightsum:
-      self.calculate_smooth_scales()
-    n = len(self.get_normalised_values()[0])
-    self.derivatives = flex.double([0.0] * len(self.scale_factors) * n)
-    smoothing_window = 1.0#must be 1.0 or less to avoid indexing problems later
-    for datapoint_idx, relative_pos_1 in enumerate(self.normalised_values[0]):
-      relative_pos_2 = self.normalised_values[1][datapoint_idx]
-      relative_pos_3 = self.normalised_values[2][datapoint_idx]
-      max_range_1_to_include = int(relative_pos_1 + smoothing_window)
-      max_range_2_to_include = int(relative_pos_2 + smoothing_window)
-      max_range_3_to_include = int(relative_pos_3 + smoothing_window)
-      min_range_1_to_include = int((relative_pos_1 - smoothing_window)//1) + 1
-      min_range_2_to_include = int((relative_pos_2 - smoothing_window)//1) + 1
-      min_range_3_to_include = int((relative_pos_3 - smoothing_window)//1) + 1
-      for i in range(min_range_3_to_include, max_range_3_to_include + 1):
-        for j in range(min_range_1_to_include, max_range_1_to_include + 1):
-          for k in range(min_range_2_to_include, max_range_2_to_include + 1):
-            square_distance_to_point = ((float(k) - relative_pos_2)**2
-              + (float(j) - relative_pos_1)**2 + (float(i) - relative_pos_3)**2)
-            if square_distance_to_point < (smoothing_window**2):
-              deriv_idx = (j + (k*self.nx_parameters)) + (i*self.nx_parameters*self.ny_parameters)
-              self.derivatives[(deriv_idx * n) + datapoint_idx] += (
-                np.exp(- square_distance_to_point / self.Vr))/self.weightsum[datapoint_idx]
-    return self.derivatives"""
+  def calculate_scales(self):
+    '''method to only calculate scales if this is needed, for performance.'''
+    value, _, _ = self._smoother.multi_value_weight(self._normalised_x_values,
+      self._normalised_y_values, self._normalised_z_values, self)
+    self._inverse_scales = value

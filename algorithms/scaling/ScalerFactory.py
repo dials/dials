@@ -97,6 +97,7 @@ class TargetScalerFactory(object):
     '''sort scaled and unscaled datasets to pass to TargetScaler'''
     scaled_experiments = []
     scaled_scalers = []
+    unscaled_experiments = []
     unscaled_scalers = []
     for i, reflection in enumerate(reflections):
       if is_scaled_list[i] is True:
@@ -104,12 +105,14 @@ class TargetScalerFactory(object):
         scaled_scalers.append(SingleScalerFactory.create(params, experiments[i],
           reflection, scaled_id=i))
       else:
+        unscaled_experiments.append(experiments[i])
         unscaled_scalers.append(SingleScalerFactory.create(params, experiments[i],
           reflection, scaled_id=i))
     if len(unscaled_scalers) > 1:
       assert 0, """method for targeted scaling of multiple datasets
       against a target not yet implemented"""
-    return TargetScaler(params, scaled_experiments, scaled_scalers, unscaled_scalers[0])
+    return TargetScaler(params, scaled_experiments, scaled_scalers,
+      unscaled_experiments, unscaled_scalers[0])
 
 
 class ScalerUtilities(object):
@@ -255,10 +258,11 @@ class SingleScaler(ScalerUtilities):
     logger.info('\nInitialising a Single Scaler instance. \n')
     super(SingleScaler, self).__init__()
     self._experiments = experiment
+    self._corrections = experiment.scaling_model.configdict['corrections']
     self._params = params
     logger.info("Dataset id for this reflection table is %s." % scaled_id)
     logger.info(('The type of scaling model being applied to this dataset {sep}'
-      'is an {0}. {sep}').format(self.experiments.scaling_model.id_, sep='\n'))
+      'is {0}. {sep}').format(self.experiments.scaling_model.id_, sep='\n'))
     reflection['scaled_id'] = flex.int([scaled_id]*len(reflection))
     self._initial_keys = [key for key in reflection.keys()]
     #choose intensities, map to asu, assign unique refl. index
@@ -272,6 +276,9 @@ class SingleScaler(ScalerUtilities):
       reflection_table)
     self._reflection_table = reflection_table
 
+  @property
+  def corrections(self):
+    return self._corrections
 
   @staticmethod
   def _reflection_table_setup(initial_keys, reflections):
@@ -373,6 +380,18 @@ class SingleScaler(ScalerUtilities):
       error_scale_LBFGSoptimiser(self.Ih_table, flex.double([1.0, 0.01])).x)
     self.Ih_table.update_aimless_error_model(self.params.weighting.error_model_params)
 
+  def round_of_outlier_rejection(self):
+    '''calculate outliers from the reflections in the Ih_table,
+    and use these to filter the reflection table and Ih_table.'''
+    sel = reject_outliers(self, self.params.scaling_options.outlier_zmax)
+    self._reflection_table = self._reflection_table.select(sel)
+    self.Ih_table = self.Ih_table.select(sel)
+    self._reflection_table['Ih_values'] = self.Ih_table.Ih_values
+    msg = ('A round of outlier rejection has been performed, {0} outliers {sep}'
+        'were found which have been removed from the dataset. {sep}'.format(
+        sel.count(False), sep='\n'))
+    logger.info(msg)
+
   def apply_selection_to_SFs(self, sel):
     '''Updates data from within current SF objects using the given selection.
        Required for targeted scaling. To be filled in by subclasses'''
@@ -395,10 +414,10 @@ class KBScaler(SingleScaler):
     logger.info('Completed initialisation of KB Scaler. \n' + '*'*40 + '\n')
 
   def _initialise_scale_factors(self):
-    if self.params.parameterisation.scale_term:
+    if 'scale' in self.corrections:
       self.g_scale = self.experiments.scaling_model.components['scale']
       self._g_parameterisation['g_scale'] = self.g_scale
-    if self.params.parameterisation.decay_term:
+    if 'decay' in self.corrections:
       self.g_decay = self.experiments.scaling_model.components['decay']
       self._g_parameterisation['g_decay'] = self.g_decay
 
@@ -406,30 +425,30 @@ class KBScaler(SingleScaler):
     (reflections_for_scaling, weights_for_scaling, _) = (
       self._scaling_subset(self.reflection_table, self.params))
     self._Ih_table = SingleIhTable(reflections_for_scaling, weights_for_scaling.weights)
-    if self.params.parameterisation.scale_term:
+    if 'scale' in self.corrections:
       self.g_scale.update_reflection_data(n_refl=self.Ih_table.size)
-    if self.params.parameterisation.decay_term:
+    if 'decay' in self.corrections:
       self.g_decay.update_reflection_data(dvalues=reflections_for_scaling['d'])
 
   def apply_selection_to_SFs(self, sel):
     '''Updates data from within current SF objects using the given selection.
        Required for targeted scaling.'''
-    if self.params.parameterisation.decay_term:
+    if 'decay' in self.corrections:
       self.g_decay.update_reflection_data(dvalues=self.g_decay.d_values.select(sel))
-    if self.params.parameterisation.scale_term:
+    if 'scale' in self.corrections:
       self.g_scale.update_reflection_data(n_refl=sel.count(True))
 
   def calc_expanded_scales(self):
     '''calculate'''
     expanded_scale_factors = flex.double([1.0]*len(self.reflection_table))
-    if self.params.parameterisation.scale_term:
+    if 'scale' in self.corrections:
       self.g_scale.update_reflection_data(n_refl=len(self.reflection_table))
       self.g_scale.calculate_scales_and_derivatives()
       expanded_scale_factors *= self.g_scale.inverse_scales
       logger.info(('Scale factor K = {0:.4f} determined during minimisation {sep}'
         'has now been applied to all reflections. {sep}').format(
         list(self.g_scale.parameters)[0], sep='\n'))
-    if self.params.parameterisation.decay_term:
+    if 'decay' in self.corrections:
       self.g_decay.update_reflection_data(dvalues=self.reflection_table['d'])
       self.g_decay.calculate_scales_and_derivatives()
       expanded_scale_factors *= self.g_decay.inverse_scales
@@ -455,24 +474,13 @@ class AimlessScaler(SingleScaler):
     self._select_reflections_for_scaling()
     logger.info('Completed initialisation of AimlessScaler. \n' + '*'*40 + '\n')
 
-  def round_of_outlier_rejection(self):
-    '''calculate outliers from the reflections in the Ih_table,
-    and use these to filter the reflection table and Ih_table.'''
-    sel = reject_outliers(self, self.params.scaling_options.outlier_zmax)
-    self._reflection_table = self._reflection_table.select(sel)
-    self.Ih_table = self.Ih_table.select(sel)
-    self._reflection_table['Ih_values'] = self.Ih_table.Ih_values
-    msg = ('A round of outlier rejection has been performed, {0} outliers {sep}'
-        'were found which have been removed from the dataset. {sep}'.format(
-        sel.count(False), sep='\n'))
-    logger.info(msg)
-
   def _initialise_scale_factors(self):
     '''initialise scale factors and add to self.active_parameters'''
-    self._initialise_scale_term(self.reflection_table)
-    if self.params.parameterisation.decay_term:
+    if 'scale' in self.corrections:
+      self._initialise_scale_term(self.reflection_table)
+    if 'decay' in self.corrections:
       self._initialise_decay_term(self.reflection_table)
-    if self.params.parameterisation.absorption_term:
+    if 'absorption' in self.corrections:
       self._initialise_absorption_term(self.reflection_table,
         self.params.parameterisation.lmax)
     else:
@@ -521,11 +529,12 @@ class AimlessScaler(SingleScaler):
       self.Ih_table.apply_tukey_biweighting()
     '''refactor the next two operations into extract_reflections?
     reset the normalised values within the scale_factor object to current'''
-    self.g_scale.update_reflection_data(refl_for_scaling['norm_rot_angle'])
-    if self.params.parameterisation.decay_term:
+    if 'scale' in self.corrections:
+      self.g_scale.update_reflection_data(refl_for_scaling['norm_rot_angle'])
+    if 'decay' in self.corrections:
       self.g_decay.update_reflection_data(dvalues=refl_for_scaling['d'],
         normalised_values=refl_for_scaling['norm_time_values'])
-    if self.params.parameterisation.absorption_term:
+    if 'absorption' in self.corrections:
       sph_harm_table_T = self.sph_harm_table.transpose()
       sel_sph_harm_table = sph_harm_table_T.select_columns(selection.iselection())
       self.g_absorption.update_reflection_data(sel_sph_harm_table.transpose())
@@ -533,11 +542,12 @@ class AimlessScaler(SingleScaler):
   def apply_selection_to_SFs(self, sel):
     '''Updates data from within current SF objects using the given selection.
        Required for targeted scaling.'''
-    self.g_scale.update_reflection_data(self.g_scale.normalised_values.select(sel))
-    if self.params.parameterisation.decay_term:
+    if 'scale' in self.corrections:
+      self.g_scale.update_reflection_data(self.g_scale.normalised_values.select(sel))
+    if 'decay' in self.corrections:
       self.g_decay.update_reflection_data(dvalues=self.g_decay.d_values.select(sel),
         normalised_values=self.g_decay.normalised_values.select(sel))
-    if self.params.parameterisation.absorption_term:
+    if 'absorption' in self.corrections:
       sph_harm_table_T = self.g_absorption.harmonic_values.transpose()
       sel_sph_harm_table = sph_harm_table_T.select_columns(sel.iselection())
       self.g_absorption.update_reflection_data(sel_sph_harm_table.transpose())
@@ -579,15 +589,16 @@ class AimlessScaler(SingleScaler):
 
   def calc_expanded_scales(self):
     expanded_scale_factors = flex.double([1.0]*len(self.reflection_table))
-    self.g_scale.update_reflection_data(self.reflection_table['norm_rot_angle'])
-    self.g_scale.calculate_scales()
-    expanded_scale_factors *= self.g_scale.inverse_scales
-    if self.params.parameterisation.decay_term:
+    if 'scale' in self.corrections:
+      self.g_scale.update_reflection_data(self.reflection_table['norm_rot_angle'])
+      self.g_scale.calculate_scales()
+      expanded_scale_factors *= self.g_scale.inverse_scales
+    if 'decay' in self.corrections:
       self.g_decay.update_reflection_data(dvalues=self.reflection_table['d'],
         normalised_values=self.reflection_table['norm_time_values'])
       self.g_decay.calculate_scales()
       expanded_scale_factors *= self.g_decay.inverse_scales
-    if self.params.parameterisation.absorption_term:
+    if 'absorption' in self.corrections:
       self.g_absorption.update_reflection_data(self.sph_harm_table)
       self.g_absorption.calculate_scales_and_derivatives()
       expanded_scale_factors *= self.g_absorption.inverse_scales
@@ -611,11 +622,12 @@ class XscaleScaler(SingleScaler):
 
   def _initialise_scale_factors(self):
     logger.info('Initialising scale factor objects. \n')
-    if self.params.parameterisation.decay_term:
+    configdict = self.experiments.scaling_model.configdict
+    if 'decay' in configdict['corrections']:
       self._initialise_decay_term()
-    if self.params.parameterisation.absorption_term:
+    if 'absorption' in configdict['corrections']:
       self._initialise_absorption_term()
-    if self.params.parameterisation.modulation_term:
+    if 'modulation' in configdict['corrections']:
       self._initialise_modulation_term()
 
   def _initialise_decay_term(self):
@@ -637,6 +649,9 @@ class XscaleScaler(SingleScaler):
       - configdict['xmin']) / configdict['x_bin_width'])
     refl_table['normalised_y_abs_values'] = ((refl_table['xyzobs.px.value'].parts()[1]
       - configdict['ymin']) / configdict['y_bin_width'])
+    if 'norm_time_values' not in refl_table:
+      refl_table['norm_time_values'] = ((refl_table['xyzobs.px.value'].parts()[2]
+        - configdict['zmin']) / configdict['time_bin_width'])
     self.g_absorption = self.experiments.scaling_model.components['absorption']
     self._g_parameterisation['g_absorption'] = self.g_absorption
     logger.info('The absorption term ScaleFactor object was successfully initialised')
@@ -650,7 +665,7 @@ class XscaleScaler(SingleScaler):
       - configdict['ymin']) / configdict['y_det_bin_width'])
     self.g_modulation = self.experiments.scaling_model.components['modulation']
     self._g_parameterisation['g_modulation'] = self.g_modulation
-    logger.info('The absorption term ScaleFactor object was successfully initialised')
+    logger.info('The modulation term ScaleFactor object was successfully initialised')
 
   def _select_reflections_for_scaling(self):
     (refl_for_scaling, weights_for_scaling, _) = (
@@ -660,22 +675,34 @@ class XscaleScaler(SingleScaler):
     if self.params.weighting.tukey_biweighting:
       self.Ih_table.apply_tukey_biweighting()
     '''set the normalised values within the scale_factor object to current'''
-    if self.params.parameterisation.modulation_term:
+    if 'modulation' in self.corrections:
       self.g_modulation.update_reflection_data(
-        refl_for_scaling['normalised_x_values'],
-        refl_for_scaling['normalised_y_values'])
-    if self.params.parameterisation.decay_term:
+        refl_for_scaling['normalised_x_det_values'],
+        refl_for_scaling['normalised_y_det_values'])
+    if 'decay' in self.corrections:
       self.g_decay.update_reflection_data(
         refl_for_scaling['normalised_res_values'],
         refl_for_scaling['norm_time_values'])
-    if self.params.parameterisation.absorption_term:
+    if 'absorption' in self.experiments.scaling_model.configdict['corrections']:
       self.g_absorption.update_reflection_data(
         refl_for_scaling['normalised_x_abs_values'],
         refl_for_scaling['normalised_y_abs_values'],
         refl_for_scaling['norm_time_values'])
 
   def apply_selection_to_SFs(self, sel):
-    assert 0, 'method not yet implemented'
+    if 'decay' in self.corrections:
+      self.g_decay.update_reflection_data(
+        normalised_x_values=self.g_decay.normalised_x_values.select(sel),
+        normalised_y_values=self.g_decay.normalised_y_values.select(sel))
+    if 'absorption' in self.corrections:
+      self.g_absorption.update_reflection_data(
+        normalised_x_values=self.g_absorption.normalised_x_values.select(sel),
+        normalised_y_values=self.g_absorption.normalised_y_values.select(sel),
+        normalised_z_values=self.g_absorption.normalised_z_values.select(sel))
+    if 'modulation' in self.corrections:
+      self.g_modulation.update_reflection_data(
+        normalised_x_values=self.g_modulation.normalised_x_values.select(sel),
+        normalised_y_values=self.g_modulation.normalised_y_values.select(sel))
 
   def normalise_scale_component(self):
     pass
@@ -687,19 +714,19 @@ class XscaleScaler(SingleScaler):
 
   def calc_expanded_scales(self):
     expanded_scale_factors = flex.double([1.0]*len(self.reflection_table))
-    if self.params.parameterisation.modulation_term:
+    if 'modulation' in self.corrections:
       self.g_modulation.update_reflection_data(
-        self.reflection_table['normalised_x_values'],
-        self.reflection_table['normalised_y_values'])
+        self.reflection_table['normalised_x_det_values'],
+        self.reflection_table['normalised_y_det_values'])
       self.g_modulation.calculate_scales()
       expanded_scale_factors *= self.g_modulation.inverse_scales
-    if self.params.parameterisation.decay_term:
+    if 'decay' in self.corrections:
       self.g_decay.update_reflection_data(
         self.reflection_table['normalised_res_values'],
         self.reflection_table['norm_time_values'])
       self.g_decay.calculate_scales()
       expanded_scale_factors *= self.g_decay.inverse_scales
-    if self.params.parameterisation.absorption_term:
+    if 'absorption' in self.corrections:
       self.g_absorption.update_reflection_data(
         self.reflection_table['normalised_x_abs_values'],
         self.reflection_table['normalised_y_abs_values'],
@@ -802,10 +829,11 @@ class TargetScaler(MultiScaler):
   params, lists of scaled and unscaled experiments, a list of already scaled
   SingleScalers and a list of unscaled reflections.
   '''
-  def __init__(self, params, scaled_experiments, scaled_scalers, unscaled_scaler):
+  def __init__(self, params, scaled_experiments, scaled_scalers, unscaled_experiments, unscaled_scaler):
     logger.info('\nInitialising a TargetScaler instance. \n')
     super(TargetScaler, self).__init__(params, scaled_experiments, scaled_scalers)
     self.dm1 = unscaled_scaler
+    self._experiments = unscaled_experiments[0]
     #replace above with ScalerFactory to allow for scaling multiple against multiple?
     target_Ih_table = self.Ih_table
     for i, miller_idx in enumerate(self.dm1.Ih_table.asu_miller_index):

@@ -7,6 +7,7 @@ in this file and a new model is dials.algorithms.scaling.model.
 from dials.array_family import flex
 import dials.algorithms.scaling.Model as Model
 import pkg_resources
+from collections import OrderedDict
 
 
 class Factory(object):
@@ -30,6 +31,25 @@ class Factory(object):
             exp.scaling_model = factory.create(params, exp, refl)
     return experiments
 
+class KBSMFactory(object):
+  '''
+  Factory for creating a KB scaling model.
+  '''
+  @classmethod
+  def create(cls, params, __, ____):
+    '''create the simple KB scaling model.'''
+    corrections = []
+    if params.parameterisation.decay_term:
+      corrections.append('decay')
+    if params.parameterisation.scale_term:
+      corrections.append('scale')
+    configdict = OrderedDict({'corrections': corrections})
+
+    K_param = flex.double([1.0])
+    B_param = flex.double([0.0])
+    
+    return Model.KBScalingModel(K_param, B_param, configdict)
+
 class AimlessSMFactory(object):
   '''
   Factory for creating an aimless-like scaling model.
@@ -39,6 +59,18 @@ class AimlessSMFactory(object):
     '''
     create the scaling model defined by the params.
     '''
+    corrections = []
+    #these names are used many time in the program as flags, create a better
+    #way to strongly enforce inclusion of certain corrections?
+    if params.parameterisation.scale_term:
+      corrections.append('scale')  
+    if params.parameterisation.decay_term:
+      corrections.append('decay')
+    if params.parameterisation.absorption_term:
+      corrections.append('absorption')
+  
+    configdict = OrderedDict({'corrections': corrections})
+
     scale_rot_int = params.parameterisation.scale_interval + 0.001
     osc_range = experiments.scan.get_oscillation_range()
     one_osc_width = experiments.scan.get_oscillation()[1]
@@ -66,7 +98,10 @@ class AimlessSMFactory(object):
     n_abs_param = (2*lmax) + (lmax**2)  #arithmetic sum formula (a1=3, d=2)
     abs_parameters = flex.double([0.0] * n_abs_param)
 
-    configdict = {'s_norm_fac' : s_norm_fac, 'd_norm_fac' : d_norm_fac}
+    if 'scale' in configdict['corrections']:
+      configdict.update({'s_norm_fac' : s_norm_fac})
+    if 'decay' in configdict['corrections']:
+      configdict.update({'d_norm_fac' : d_norm_fac})
 
     return Model.AimlessScalingModel(scale_parameters, decay_parameters,
       abs_parameters, configdict)
@@ -80,6 +115,16 @@ class XscaleSMFactory(object):
     '''create an XScale scaling model.'''
     #assert 0, 'method not yet implemented'
     reflections = reflections.select(reflections['d'] > 0.0)
+
+    #only create components that are specified in params?
+    corrections = []
+    if params.parameterisation.decay_term:
+      corrections.append('decay')
+    if params.parameterisation.absorption_term:
+      corrections.append('absorption')
+    if params.parameterisation.modulation_term:
+      corrections.append('modulation')
+    configdict = OrderedDict({'corrections': corrections})
 
     scale_rot_int = params.parameterisation.scale_interval + 0.001
     osc_range = experiments.scan.get_oscillation_range()
@@ -102,15 +147,16 @@ class XscaleSMFactory(object):
     time_bin_width = (zmax - zmin) / nzbins
     nres = ((1.0 / (reflections['d']**2)) - resmin) / res_bin_width
     n_res_param = int(max(nres)//1) - int(min(nres)//1) + 3 #for g_decay
-    nt = (reflections['xyzobs.px.value'].parts()[2] - zmin) / time_bin_width
+    nt = (zvalues - zmin) / time_bin_width
     n_time_param = int(max(nt)//1) - int(min(nt)//1) + 3 #for g_decay and g_abs
     dec_params = flex.double([1.0] * n_time_param * n_res_param)
 
-    configdict = {'n_res_param': n_res_param, 'n_time_param': n_time_param,
-      'resmin' : resmin, 'res_bin_width' : res_bin_width, 'zmin' : zmin,
-      'time_bin_width' : time_bin_width}
+    if 'decay' in configdict['corrections']:
+      configdict.update({'n_res_param': n_res_param, 'n_time_param': n_time_param,
+        'resmin' : resmin, 'res_bin_width' : res_bin_width, 'zmin' : zmin,
+        'time_bin_width' : time_bin_width})
 
-    nxbins = nybins = 4.0
+    nxbins = nybins = 3.0
     x_bin_width = (xmax - xmin) / float(nxbins)
     y_bin_width = (ymax - ymin) / float(nybins)
     nax = ((xvalues - xmin) / x_bin_width)
@@ -119,13 +165,14 @@ class XscaleSMFactory(object):
     n_y_param = int(max(nay)//1) - int(min(nay)//1) + 3
     abs_params = flex.double([1.0] * n_x_param * n_y_param * n_time_param)
 
-    configdict.update({
-      'n_x_param' : n_x_param, 'n_y_param' : n_y_param, 'xmin' : xmin,
-      'ymin' : ymin, 'x_bin_width' : x_bin_width, 'y_bin_width' : y_bin_width
-    })
+    if 'absorption' in configdict['corrections']:
+      configdict.update({
+        'n_x_param' : n_x_param, 'n_y_param' : n_y_param, 'xmin' : xmin,
+        'ymin' : ymin, 'x_bin_width' : x_bin_width, 'y_bin_width' : y_bin_width,
+        'n_time_param': n_time_param, 'zmin' : zmin, 'time_bin_width' : time_bin_width
+      })
 
     n_detector_bins = 10#params.parameterisation.n_detector_bins
-
     nx_det_bins = ny_det_bins = n_detector_bins
     x_det_bin_width = (xmax - xmin) / float(nx_det_bins)
     y_det_bin_width = (ymax - ymin) / float(ny_det_bins)
@@ -135,20 +182,11 @@ class XscaleSMFactory(object):
     n_y_mod_param = int(max(nydet)//1) - int(min(nydet)//1) + 3
     mod_params = flex.double([1.0] * n_x_mod_param * n_y_mod_param)
 
-    configdict.update({
-      'n_x_mod_param' : n_x_mod_param, 'n_y_mod_param' : n_y_mod_param,
-      'x_det_bin_width' : x_det_bin_width, 'y_det_bin_width' : y_det_bin_width
-    })
+    if 'modulation' in configdict['corrections']:
+      configdict.update({
+        'n_x_mod_param' : n_x_mod_param, 'n_y_mod_param' : n_y_mod_param,
+        'xmin' : xmin, 'ymin' : ymin,
+        'x_det_bin_width' : x_det_bin_width, 'y_det_bin_width' : y_det_bin_width
+      })
 
     return Model.XscaleScalingModel(dec_params, abs_params, mod_params, configdict)
-
-class KBSMFactory(object):
-  '''
-  Factory for creating a KB scaling model.
-  '''
-  @classmethod
-  def create(cls, _, __, ____):
-    '''create the simple KB scaling model.'''
-    K_param = flex.double([1.0])
-    B_param = flex.double([0.0])
-    return Model.KBScalingModel(K_param, B_param)
