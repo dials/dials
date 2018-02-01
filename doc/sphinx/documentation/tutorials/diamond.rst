@@ -1,5 +1,3 @@
-:orphan:
-
 +++++++++++++++++++++++++++++++++++
 Using DIALS at Diamond Light Source
 +++++++++++++++++++++++++++++++++++
@@ -24,25 +22,27 @@ For the following tutorials we suggest using the latest version of DIALS::
    $ module load dials/latest
 
 The thaumatin dataset used in the
-:doc:`documentation/tutorials/processing_in_detail_tutorial` is centrally
+:doc:`processing_in_detail_tutorial` is centrally
 available on the Diamond filesystem at
 :samp:`/dls/mx-scratch/dials_tutorial/i04_thaumatin/`.
 
 .. toctree::
    :maxdepth: 1
 
-   documentation/tutorials/processing_in_detail_tutorial
-   documentation/tutorials/multi_crystal_analysis
-   documentation/tutorials/metrology_corrections
+   processing_in_detail_tutorial
+   multi_crystal_analysis
+   metrology_corrections
 
 General
 =======
 
-.. toctree::
-   :maxdepth: 1
+* `Main documentation page`_
 
-   Main documentation page <index>
-   documentation/programs/index
+.. _Main documentation page: https://dials.github.io/
+
+* `Program documentation`_
+
+.. _Program documentation: https://dials.github.io/documentation/programs/index.html
 
 Using DIALS with xia2
 =====================

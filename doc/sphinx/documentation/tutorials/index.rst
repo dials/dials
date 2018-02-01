@@ -16,3 +16,4 @@ Tutorials
    metrology_corrections
    developer_tutorial
    processing_in_detail_betalactamase
+   diamond
