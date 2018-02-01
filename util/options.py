@@ -160,7 +160,9 @@ class ConfigWriter(object):
       f.write(text)
 
 # Simple tuple to hold basic information on why an argument failed
-ArgumentHandlingErrorInfo = namedtuple("ArgumentHandlingErrorInfo", ["name", "validation", "message", "traceback", "type"])
+ArgumentHandlingErrorInfo = namedtuple(
+    "ArgumentHandlingErrorInfo",
+    ["name", "validation", "message", "traceback", "type", "exception"])
 
 class Importer(object):
   ''' A class to import the command line arguments. '''
@@ -241,7 +243,8 @@ class Importer(object):
           validation=validation,
           message=exception.message,
           traceback=traceback.format_exc(),
-          type=type)
+          type=type,
+          exception=exception)
     )
 
   def try_read_datablocks_from_images(self,
@@ -871,10 +874,13 @@ class OptionParser(OptionParserBase):
         err = list(err)
         # Grouping the errors by message lets us avoid repeating messages
         if len(err) > 1:
-          msg.append("  {} failed repeatedly during processing:\n{}\n".format(
+          msg.append("  \"{}\" failed repeatedly during processing:\n{}\n".format(
             arg, "    " + err[0].message))
+        elif type(err[0].exception) is Sorry:
+          msg.append("  \"{}\" failed during {} processing:\n    {}\n".format(
+            arg, err[0].type, err[0].message))
         else:
-          msg.append("  {} failed during {} processing:\n{}\n".format(
+          msg.append("  \"{}\" failed during {} processing:\n{}\n".format(
             arg, err[0].type,
             "\n".join("    " + x for x in err[0].traceback.splitlines())))
 
