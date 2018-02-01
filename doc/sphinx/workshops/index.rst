@@ -3,9 +3,9 @@
 Workshops
 +++++++++
 
-* `DIALS-1`_: June 2012 (Diamond Light Source, UK)
+.. toctree::
 
-.. _DIALS-1: workshops/DIALS-1.html
+   DIALS-1
 
 * `DIALS West-1`_: July 2012 (Boston, MA)
 
@@ -15,9 +15,9 @@ Workshops
 
 .. _`DIALS-2`: http://cci.lbl.gov/dials/feb_2013_berkeley.htm
 
-* `DIALS-3`_: May 2013 (Cambridge, UK)
+.. toctree::
 
-.. _`DIALS-3`: workshops/dials3d.html
+   dials3d
 
 * DIALS-4A: September 2013 (Diamond Light Source, UK)
 

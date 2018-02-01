@@ -1,10 +1,6 @@
-:orphan:
-
-========================
-DIALS 1 - First workshop
-========================
-
-Diamond Light Source 12th - 13th June 2012
+=======================================================
+DIALS 1: 12th-13th June 2012 (Diamond Light Source, UK)
+=======================================================
 
 The field of structural biology by X-ray crystallography has benefitted greatly from technological advances in recent years. Automation, highly brilliant beamlines at 3rd generation synchrotron sources and high frame-rate pixel array detectors have together enabled extremely rapid collection of most MX datasets. In tandem, large area photon-counting detection, microfocus beams and high quality X-ray optics have brought more challenging projects within reach. At the cutting edge of this technological advance, the demonstration of FEL nano-crystallography offers the tantalising prospect of a new era of structural biology at large facilities, with a concomitant step change in data rates and requirements for computationally intensive processing.
 

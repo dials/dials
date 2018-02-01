@@ -1,10 +1,6 @@
-:orphan:
-
-=======================
-Dials developer meeting
-=======================
-
-Cambridge - 22nd May 2013
+======================================
+DIALS-3: 22nd May 2013 (Cambridge, UK)
+======================================
 
 DIALS update meeting with our collaborators at the MRC Laboratory of Molecular Biology in
 Cambridge. The day started with presentations from the Diamond and CCP4 developers ended with a
