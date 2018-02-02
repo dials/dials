@@ -1,13 +1,10 @@
-# python imports
 from __future__ import absolute_import, division, print_function
-import os
 
-def test_command_line(dials_regression, tmpdir):
-  try:
-    import scipy
-  except ImportError:
-    print("Skipping, no scipy")
-    return
+import os
+import pytest
+
+def test_dials_cluster_unit_cell_command_line(dials_regression, tmpdir):
+  pytest.importorskip("scipy")
 
   data_dir = os.path.join(dials_regression, 'refinement_test_data',
                           'multi_narrow_wedges')
@@ -46,11 +43,9 @@ def test_command_line(dials_regression, tmpdir):
   assert len(clusters) == 1
   cluster = clusters[0]
   assert len(cluster.members) == 40
-  from libtbx.test_utils import approx_equal
-  assert approx_equal(
-    cluster.medians,
+  assert cluster.medians == pytest.approx(
     [90.9430182020995, 90.9430182020995, 90.9430182020995,
-     109.47122063449069, 109.47122063449069, 109.47122063449069])
-  assert approx_equal(
-    cluster.stdevs,
-    [0.09509739126548639, 0.09509739126548526, 0.0950973912654865, 0, 0, 0])
+     109.47122063449069, 109.47122063449069, 109.47122063449069], abs=1e-6)
+  assert cluster.stdevs == pytest.approx(
+    [0.09509739126548639, 0.09509739126548526, 0.0950973912654865, 0, 0, 0],
+    abs=1e-6)
