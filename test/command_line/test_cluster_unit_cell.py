@@ -3,6 +3,12 @@ from __future__ import absolute_import, division
 import os
 
 def test_command_line(dials_regression, tmpdir):
+  try:
+    import scipy
+  except ImportError:
+    print "Skipping, no scipy"
+    return
+
   data_dir = os.path.join(dials_regression, 'refinement_test_data',
                           'multi_narrow_wedges')
   import glob
