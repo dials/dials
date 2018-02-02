@@ -87,8 +87,8 @@ refinement {
 def bravais_lattice_to_space_groups(chiral_only=True):
   from cctbx import sgtbx
   from cctbx.sgtbx import bravais_types
-  from libtbx.containers import OrderedDict
-  bravais_lattice_to_sg = OrderedDict()
+  import collections
+  bravais_lattice_to_sg = collections.OrderedDict()
   for sgn in range(230):
     sg = sgtbx.space_group_info(number=sgn+1).group()
     if (not chiral_only) or (sg.is_chiral()):

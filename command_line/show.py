@@ -293,8 +293,9 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
 
   text = []
 
-  from libtbx.containers import OrderedDict, OrderedSet
-  formats = OrderedDict([
+  import collections
+  from libtbx.containers import OrderedSet
+  formats = collections.OrderedDict((
     ('miller_index', '%i, %i, %i'),
     ('d','%.2f'),
     ('dqe','%.3f'),
@@ -341,7 +342,7 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
     ('y_resid2','%.3f'),
     ('kapton_absorption_correction','%.3f'),
     ('kapton_absorption_correction_sigmas','%.3f'),
-    ])
+    ))
 
   for rlist in reflections:
     from dials.array_family import flex

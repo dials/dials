@@ -16,7 +16,7 @@ from __future__ import absolute_import, division
 import copy
 import math
 
-from libtbx.containers import OrderedDict
+from collections import OrderedDict
 from dials.array_family import flex
 
 RAD2DEG = 180/math.pi

@@ -11,6 +11,7 @@
 
 from __future__ import absolute_import, division
 
+import collections
 import logging
 logger = logging.getLogger(__name__)
 
@@ -265,12 +266,11 @@ class BackgroundGradientFilter(object):
     if sweep.get_scan() is not None:
       zoffset = sweep.get_scan().get_array_range()[0]
 
-    from libtbx.containers import OrderedDict
     class image_data_cache(object):
       def __init__(self, imageset, size=10):
         self.imageset = imageset
         self.size = size
-        self._image_data = OrderedDict()
+        self._image_data = collections.OrderedDict()
 
       def __getitem__(self, i):
         image_data = self._image_data.get(i)
