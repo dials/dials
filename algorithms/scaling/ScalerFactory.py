@@ -422,7 +422,9 @@ class SingleScaler(ScalerUtilities):
           elif param == 'g_absorption':
             gradient_vector.extend(gradient)
         return (residual, gradient_vector)
-    return (flex.double([]), flex.double([]))
+      else:
+        return (flex.double([0.0]), flex.double([0.0]*apm.n_active_params))
+    return (flex.double([0.0]), flex.double([0.0]*apm.n_active_params))
 
 class KBScaler(SingleScaler):
   '''
@@ -771,8 +773,9 @@ class MultiScaler(ScalerUtilities):
     'method only called in aimless scaling'
     R = flex.double([])
     G = flex.double([])
-    for i, scaler in enumerate(self.single_scalers):
-      if scaler.id_ == 'aimless':
+    scaler_ids = [scaler.id_ for scaler in self.single_scalers]
+    if 'aimless' in scaler_ids:
+      for i, scaler in enumerate(self.single_scalers):
         R.extend(scaler.calc_absorption_constraint(apm.apm_list[i])[0])
         G.extend(scaler.calc_absorption_constraint(apm.apm_list[i])[1])
     return (R, G)

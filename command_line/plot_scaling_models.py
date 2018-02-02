@@ -1,19 +1,18 @@
 from __future__ import absolute_import, division, print_function
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import numpy as np
-import matplotlib.gridspec as gridspec
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-#from cctbx.array_family import flex
-from dials.array_family import flex
 import sys
+import numpy as np
+import matplotlib
+from dials.array_family import flex
+from dials.util import halraiser
+from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
 from dials.algorithms.scaling import ScalingModelFactory
 from dials.algorithms.scaling import Model
 from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets
 from libtbx import phil
-from dials.util import halraiser
-from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 phil_scope = phil.parse('''
   debug = False
@@ -77,66 +76,59 @@ def main(argv):
 
   print('\nPlotting graphs of scale factors. \n')
   if len(experiments) == 1:
-    if isinstance(experiments[0].scaling_model, Model.AimlessScalingModel):
-      plot_smooth_scales(params, experiments[0], reflections[0],
-        outputfile=str(params.output.scales_out)+'.png')
-      if params.parameterisation.absorption_term:
-        plot_absorption_surface(experiments[0],
+    experiment = experiments[0]
+    reflection = reflections[0]
+    if isinstance(experiment.scaling_model, Model.AimlessScalingModel):
+      if ('scale' in experiment.scaling_model.configdict['corrections'] or
+        'decay' in experiment.scaling_model.configdict['corrections']):
+        plot_smooth_scales(params, experiment, reflection,
+          outputfile=str(params.output.scales_out)+'.png')
+      if 'absorption' in experiment.scaling_model.configdict['corrections']:
+        plot_absorption_surface(experiment,
           outputfile=str(params.output.absorption_out)+'.png')
-    elif isinstance(experiments[0].scaling_model, Model.XscaleScalingModel):
-      if params.parameterisation.decay_term:
-        plot_2D_decay_correction(experiments[0], reflections[0])
-      if params.parameterisation.absorption_term:
-        plot_3D_absorption_correction(experiments[0], reflections[0])
-      if params.parameterisation.modulation_term:
-        plot_2D_modulation_correction(experiments[0], reflections[0])
-
-  elif params.output.experiment_range:
-    for j in params.output.experiment_range:
-      experiment = experiments[j]
-      reflection = reflections[j]
-      if isinstance(experiment.scaling_model, Model.AimlessScalingModel):
-        plot_smooth_scales(params, experiment, reflection,
-          outputfile=str(params.output.scales_out)+'_'+str(j+1)+'.png')
-        if params.parameterisation.absorption_term:
-          plot_absorption_surface(experiment,
-            outputfile=str(params.output.absorption_out)+'_'+str(j+1)+'.png')
-      elif isinstance(experiment.scaling_model, Model.XscaleScalingModel):
-        if params.parameterisation.decay_term:
-          plot_2D_decay_correction(experiment, reflection,
-            outputfile=str(params.output.decay_out)+'_'+str(j+1)+'.png')
-        if params.parameterisation.absorption_term:
-          plot_3D_absorption_correction(experiment, reflection,
-            outputfile=str(params.output.abscorplot)+'_'+str(j+1)+'.png')
-        if params.parameterisation.modulation_term:
-          plot_2D_modulation_correction(experiment, reflection,
-            outputfile=str(params.output.modcorplot)+'_'+str(j+1)+'.png')
+    elif isinstance(experiment.scaling_model, Model.XscaleScalingModel):
+      if 'decay' in experiment.scaling_model.configdict['corrections']:
+        plot_2D_decay_correction(experiment, reflection)
+      if 'absorption' in experiment.scaling_model.configdict['corrections']:
+        plot_3D_absorption_correction(experiment, reflection)
+      if 'modulation' in experiment.scaling_model.configdict['corrections']:
+        plot_2D_modulation_correction(experiment, reflection)
   else:
-    for j, (experiment, reflection) in enumerate(zip(experiments, reflections)):
-      if isinstance(experiment.scaling_model, Model.AimlessScalingModel):
-        plot_smooth_scales(params, experiment, reflection,
-          outputfile=str(params.output.scales_out)+'_'+str(j+1)+'.png')
-        if params.parameterisation.absorption_term:
-          plot_absorption_surface(experiment,
-            outputfile=str(params.output.absorption_out)+'_'+str(j+1)+'.png')
-      elif isinstance(experiment.scaling_model, Model.XscaleScalingModel):
-        if params.parameterisation.decay_term:
-          plot_2D_decay_correction(experiment, reflection,
-            outputfile=str(params.output.decay_out)+'_'+str(j+1)+'.png')
-        if params.parameterisation.absorption_term:
-          plot_3D_absorption_correction(experiment, reflection,
-            outputfile=str(params.output.abscorplot)+'_'+str(j+1)+'.png')
-        if params.parameterisation.modulation_term:
-          plot_2D_modulation_correction(experiment, reflection,
-            outputfile=str(params.output.modcorplot)+'_'+str(j+1)+'.png')
-
+    if params.output.experiment_range:
+      for j in params.output.experiment_range:
+        experiment = experiments[j]
+        reflection = reflections[j]
+        plot_multi(params, experiment, reflection, j)
+    else:
+      for j, (experiment, reflection) in enumerate(zip(experiments, reflections)):
+        plot_multi(params, experiment, reflection, j)
   print("\nFinished plotting graphs of scale factors. \n")
 
 
+def plot_multi(params, experiment, reflection, j):
+  '''subscript to plot a single instance of a multi-dataset file'''
+  if isinstance(experiment.scaling_model, Model.AimlessScalingModel):
+    if ('scale' in experiment.scaling_model.configdict['corrections'] or
+      'decay' in experiment.scaling_model.configdict['corrections']):
+      plot_smooth_scales(params, experiment, reflection,
+        outputfile=str(params.output.scales_out)+'_'+str(j+1)+'.png')
+    if 'absorption' in experiment.scaling_model.configdict['corrections']:
+      plot_absorption_surface(experiment,
+        outputfile=str(params.output.absorption_out)+'_'+str(j+1)+'.png')
+  elif isinstance(experiment.scaling_model, Model.XscaleScalingModel):
+    if 'decay' in experiment.scaling_model.configdict['corrections']:
+      plot_2D_decay_correction(experiment, reflection,
+        outputfile=str(params.output.decay_out)+'_'+str(j+1)+'.png')
+    if 'absorption' in experiment.scaling_model.configdict['corrections']:
+      plot_3D_absorption_correction(experiment, reflection,
+        outputfile=str(params.output.abscorplot)+'_'+str(j+1)+'.png')
+    if 'modulation' in experiment.scaling_model.configdict['corrections']:
+      plot_2D_modulation_correction(experiment, reflection,
+        outputfile=str(params.output.modcorplot)+'_'+str(j+1)+'.png')
 
 def plot_smooth_scales(params, experiments, reflections, outputfile=None):
   plt.figure(figsize=(14, 8))
-  if params.parameterisation.scale_term:
+  if 'scale' in experiments.scaling_model.configdict['corrections']:
     reflections['norm_rot_angle'] = (reflections['xyzobs.px.value'].parts()[2]
       * experiments.scaling_model.scale_normalisation_factor)
     rel_values = flex.double(np.arange(0, int(max(reflections['norm_rot_angle'])) + 1, 0.1))
@@ -149,7 +141,7 @@ def plot_smooth_scales(params, experiments, reflections, outputfile=None):
     plt.ylabel('Scale term')
     plt.xlabel('Normalised rotation angle')
 
-  if params.parameterisation.decay_term:
+  if 'decay' in experiments.scaling_model.configdict['corrections']:
     reflections['norm_time_values'] = (reflections['xyzobs.px.value'].parts()[2]
       * experiments.scaling_model.decay_normalisation_factor)
     rel_values = np.arange(0, int(max(reflections['norm_time_values'])) + 1, 0.1)
@@ -175,7 +167,7 @@ def plot_absorption_surface(experiment, outputfile=None):
   from scitbx import math
   import math as pymath
   order = int(-1.0 + ((1.0 + len(params))**0.5))
-  lfg =  math.log_factorial_generator(2 * order + 1)
+  lfg = math.log_factorial_generator(2 * order + 1)
   STEPS = 50
   phi = np.linspace(0, 2 * np.pi, 2*STEPS)
   theta = np.linspace(0, np.pi, STEPS)
@@ -206,11 +198,11 @@ def plot_absorption_surface(experiment, outputfile=None):
   else:
     rel_Int = Intensity
   #print "max, min absorption factors are (%s,%s)" % (Intensity.max(),Intensity.min())
-  plt.figure(figsize=(8,6))
+  plt.figure(figsize=(8, 6))
   gs = gridspec.GridSpec(1, 1)
   ax = plt.subplot(gs[0, 0])
   im = ax.imshow(rel_Int.T, cmap='viridis', origin='lower')
-  ax.set_yticks([0,  (STEPS-1)/4.0, (STEPS-1)/2.0, 3.0*(STEPS-1)/4.0, STEPS-1])
+  ax.set_yticks([0, (STEPS-1)/4.0, (STEPS-1)/2.0, 3.0*(STEPS-1)/4.0, STEPS-1])
   ax.set_yticklabels([0, 45, 90, 135, 180])
   ax.set_ylabel('Phi (degrees)')
   ax.set_xticks([0.0, (2.0*STEPS-1)/4.0, (2.0*STEPS-1)/2.0, 3.0*(2.0*STEPS-1)/4.0, (2.0*STEPS-1)])
@@ -219,7 +211,7 @@ def plot_absorption_surface(experiment, outputfile=None):
   ax.set_title('Scale factors for absorption correction (note: not inverse scales)')
   divider = make_axes_locatable(ax)
   cax1 = divider.append_axes("right", size="5%", pad=0.05)
-  cbar = plt.colorbar(im, cax=cax1,ticks=[0, 0.25, 0.5, 0.75, 1])
+  cbar = plt.colorbar(im, cax=cax1, ticks=[0, 0.25, 0.5, 0.75, 1])
   cbar.ax.set_yticklabels(['%.6f' % Intensity.min(),
                            '%.6f' % ((Intensity.min()*0.75) + (Intensity.max()*0.25)),
                            '%.6f' % ((Intensity.min()*0.5) + (Intensity.max()*0.5)),
@@ -267,7 +259,7 @@ def plot_2D_decay_correction(experiment, reflections, outputfile=None):
   resmin = (1.0 / (max(reflections['d'])**2))
   resbin_boundaries = np.arange(resmin, resmax, 2*(resmax - resmin)/(
     experiment.scaling_model.configdict['n_res_param']-1))
-  dbin_boundaries = ['%.3f' % x for x in (1.0/(resbin_boundaries**0.5))]
+  dbin_boundaries = ['%.3f' % x for x in 1.0/(resbin_boundaries**0.5)]
   im = ax1.imshow(scalefactor_2D, cmap='viridis', origin='upper', aspect='auto')
   divider = make_axes_locatable(ax1)
   cax1 = divider.append_axes("right", size="5%", pad=0.05)
@@ -371,14 +363,14 @@ def plot_3D_absorption_correction(experiment, reflections, outputfile=None):
   absorption_factor.update_reflection_data(nax, nay, nt)
   absorption_factor.calculate_scales()
   parameters_2D = np.reshape(list(absorption_factor.parameters),
-    (n_time_bins, n_abs_bins)).T 
-  
+    (n_time_bins, n_abs_bins)).T
+
   '''generate a plot'''
   plt.figure(figsize=(8, 4))
   gs = gridspec.GridSpec(1, 2)
   ax1 = plt.subplot(gs[0, 0])
   ax2 = plt.subplot(gs[0, 1])
-  
+
   im = ax1.imshow(parameters_2D, cmap='viridis', origin='lower')
   divider = make_axes_locatable(ax1)
   cax1 = divider.append_axes("right", size="5%", pad=0.05)

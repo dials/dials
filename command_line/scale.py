@@ -149,7 +149,6 @@ def lbfgs_scaling(scaler):
   if isinstance(scaler, ScalerFactory.TargetScaler):
     '''do a scaling round against a target of already scaled datasets'''
     param_lists = ParameterHandler.ActiveParameterFactory(scaler).return_active_list()
-    print(param_lists)
     '''Pass the scaler to the optimiser'''
     scaler = LBFGS_optimiser(scaler,
       param_lists=param_lists).return_scaler()
@@ -166,21 +165,18 @@ def lbfgs_scaling(scaler):
   '''from here onwards, scaler should only be a SingleScaler
   or MultiScaler (not TargetScaler)'''
   #if scaler.params.scaling_options.concurrent_scaling:
-  param_name = ParameterHandler.ActiveParameterFactory(scaler).return_active_list()
-  #print(param_name)
+  param_lists = ParameterHandler.ActiveParameterFactory(scaler).return_active_list()
   #else:
-  #  param_name = ParameterHandler.ParameterlistFactory.consecutive_list(scaler)
-  #  print(param_name)
-  #for param in param_name:
-  #  '''Pass the scaler to the optimiser'''
+  #  param_lists = ParameterHandler.ParameterlistFactory.consecutive_list(scaler)
+  #for param in param_lists:
+  '''Pass the scaler to the optimiser'''
   scaler = LBFGS_optimiser(scaler,
-    param_lists=param_name).return_scaler()
+    param_lists=param_lists).return_scaler()
   '''Optimise the error model and then do another minimisation'''
   if scaler.params.weighting.optimise_error_model:
     scaler.update_error_model()
-    #for param in param_name:
     scaler = LBFGS_optimiser(scaler,
-      param_lists=param_name).return_scaler()
+      param_lists=param_lists).return_scaler()
 
   '''The minimisation has only been done on a subset on the data, so apply the
   scale factors to the whole reflection table.'''

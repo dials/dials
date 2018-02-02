@@ -50,7 +50,7 @@ phil_scope = iotbx.phil.parse('''
     tukey_biweighting = False
       .type = bool
       .help = "Option to turn on tukey biweighting scheme for scaling weights."
-    optimise_error_model = True
+    optimise_error_model = False
       .type = bool
       .help = "Option to allow optimisation of weights for scaling. Performs
                and additional scale factor minimisation after adjusting weights."
