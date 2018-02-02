@@ -13,7 +13,7 @@ threshold = 5000
   .type = float(value_min=0)
   .help = 'Threshold value for the clustering'
 plot {
-  show = True
+  show = False
     .type = bool
   name = 'cluster_unit_cell.png'
     .type = path
