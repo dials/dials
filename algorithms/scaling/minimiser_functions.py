@@ -12,17 +12,17 @@ logger = logging.getLogger('dials')
 
 class LBFGS_optimiser(object):
   '''Class that takes in scaler object and runs an LBFGS minimisation'''
-  def __init__(self, scaler, param_name):
+  def __init__(self, scaler, param_lists):
     logger.info(('\n'+'*'*40+'\n'+'Initialising LBFGS optimiser instance. \n'))
     self.scaler = scaler
-    print(param_name)
+    print(param_lists)
     from dials.algorithms.scaling.ScalerFactory import MultiScaler, TargetScaler
     if isinstance(self.scaler, TargetScaler):
-      self.apm = active_parameter_manager(self.scaler, param_name)
+      self.apm = active_parameter_manager(self.scaler, param_lists[0])
     elif isinstance(self.scaler, MultiScaler):
-      self.apm = multi_active_parameter_manager(self.scaler, param_name)
+      self.apm = multi_active_parameter_manager(self.scaler, param_lists)
     else:
-      self.apm = active_parameter_manager(self.scaler, param_name)
+      self.apm = active_parameter_manager(self.scaler, param_lists[0])
     self.x = self.apm.x
     self.residuals = []
     self.core_params = lbfgs.core_parameters(maxfev=15)
@@ -33,8 +33,8 @@ class LBFGS_optimiser(object):
     #  if self.scaler.params.scaling_options.decay_correction_rescaling:
     #    if self.scaler.params.scaling_options.minimisation_parameterisation == 'standard':
     #      self.scaler.scale_gvalues()
-    logger.info(('\nCompleted minimisation for following corrections: {0}\n'
-           +'*'*40+'\n').format(''.join(i.lstrip('g_')+' ' for i in param_name)))
+    #logger.info(('\nCompleted minimisation for following corrections: {0}\n'
+    #       +'*'*40+'\n').format(''.join(i.lstrip('g_')+' ' for i in param_lists)))
 
   def compute_functional_and_gradients(self):
     '''first calculate the updated values of the scale factors and Ih,

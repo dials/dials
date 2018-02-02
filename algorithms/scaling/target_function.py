@@ -17,10 +17,10 @@ class target_function(object):
     Ih_tab = self.scaler.Ih_table
     R = ((((Ih_tab.intensities - (Ih_tab.inverse_scale_factors * Ih_tab.Ih_values))**2)
           * Ih_tab.weights))
-    if self.scaler.params.scaling_model == 'aimless':
-      if 'g_absorption' in self.apm.active_parameterisation:
-        constraint_values = self.scaler.calc_absorption_constraint(self.apm)[0]
-        R.extend(constraint_values)
+    #if self.scaler.id_ == 'aimless':#self.scaler.params.scaling_model == 'aimless':
+    if 'g_absorption' in self.apm.active_parameterisation:
+      constraint_values = self.scaler.calc_absorption_constraint(self.apm)[0]
+      R.extend(constraint_values)
     return flex.sum(R)
 
   def calculate_gradient(self):
@@ -39,9 +39,11 @@ class target_function(object):
     term_2 = (-2.0 * rhl * Ih_tab.weights * Ih_tab.inverse_scale_factors *
               Ih_tab.h_index_matrix) * dIh_by_dpi
     gradient = term_1 + term_2
-    if self.scaler.params.scaling_model == 'aimless':
-      if 'g_absorption' in self.apm.active_parameterisation:
-        gradient += self.scaler.calc_absorption_constraint(self.apm)[1]
+    #if self.scaler.params.scaling_model == 'aimless':
+    if 'g_absorption' in self.apm.active_parameterisation:
+      added_grad = self.scaler.calc_absorption_constraint(self.apm)[1]
+      if added_grad:
+        gradient += added_grad
     return gradient
 
   def return_targets(self):

@@ -402,10 +402,35 @@ class SingleScaler(ScalerUtilities):
     To be filled in by subclasses.'''
     pass
 
+  def calc_absorption_constraint(self, apm):
+    '''calculates a constraint for the spherical harmonic absorption correction.
+    Should only be called from target function if g_absorption in active params.'''
+    if self.id_ == 'aimless':
+      if 'g_absorption' in apm.active_parameterisation:
+        idx = apm.active_parameterisation.index('g_absorption')
+        start_idx = apm.n_cumul_params_list[idx]
+        end_idx = apm.n_cumul_params_list[idx+1]
+        weight = self.params.parameterisation.surface_weight
+        abs_params = apm.x[start_idx:end_idx]
+        residual = (weight * (abs_params)**2)
+        gradient = (2.0 * weight * abs_params)
+        #return a gradient vector to be added to that calculated in target function
+        gradient_vector = flex.double([])
+        for i, param in enumerate(apm.active_parameterisation):
+          if param != 'g_absorption':
+            gradient_vector.extend(flex.double([0.0]*apm.n_params_list[i]))
+          elif param == 'g_absorption':
+            gradient_vector.extend(gradient)
+        return (residual, gradient_vector)
+    return (flex.double([]), flex.double([]))
+
 class KBScaler(SingleScaler):
   '''
   Scaler for single dataset using simple KB parameterisation.
   '''
+
+  id_ = 'KB'
+
   def __init__(self, params, experiment, reflection, scaled_id=0):
     super(KBScaler, self).__init__(params, experiment, reflection, scaled_id)
     (self.g_scale, self.g_decay) = (None, None)
@@ -462,6 +487,9 @@ class AimlessScaler(SingleScaler):
   '''
   Scaler for single dataset using aimless-like parameterisation.
   '''
+
+  id_ = 'aimless'
+
   def __init__(self, params, experiment, reflection, scaled_id=0):
     super(AimlessScaler, self).__init__(params, experiment, reflection, scaled_id)
     (self.g_absorption, self.g_scale, self.g_decay) = (None, None, None)
@@ -482,7 +510,8 @@ class AimlessScaler(SingleScaler):
       self._initialise_decay_term(self.reflection_table)
     if 'absorption' in self.corrections:
       self._initialise_absorption_term(self.reflection_table,
-        self.params.parameterisation.lmax)
+        self.experiments.scaling_model.configdict['lmax'])
+        #self.params.parameterisation.lmax)
     else:
       #use calc_s2d to calculate phi values.
       self._reflection_table = calc_s2d(self.reflection_table, self.experiments)
@@ -552,24 +581,7 @@ class AimlessScaler(SingleScaler):
       sel_sph_harm_table = sph_harm_table_T.select_columns(sel.iselection())
       self.g_absorption.update_reflection_data(sel_sph_harm_table.transpose())
 
-  def calc_absorption_constraint(self, apm):
-    '''calculates a constraint for the spherical harmonic absorption correction.
-    Should only be called from target function if g_absorption in active params.'''
-    idx = apm.active_parameterisation.index('g_absorption')
-    start_idx = apm.n_cumul_params_list[idx]
-    end_idx = apm.n_cumul_params_list[idx+1]
-    weight = self.params.parameterisation.surface_weight
-    abs_params = apm.x[start_idx:end_idx]
-    residual = (weight * (abs_params)**2)
-    gradient = (2.0 * weight * abs_params)
-    #return a gradient vector to be added to that calculated in target function
-    gradient_vector = flex.double([])
-    for i, param in enumerate(apm.active_parameterisation):
-      if param != 'g_absorption':
-        gradient_vector.extend(flex.double([0.0]*apm.n_params_list[i]))
-      elif param == 'g_absorption':
-        gradient_vector.extend(gradient)
-    return (residual, gradient_vector)
+  
 
   def normalise_scale_component(self):
     '''Method to do an invariant rescale of the scale at t=0 to one.'''
@@ -613,6 +625,9 @@ class XscaleScaler(SingleScaler):
   '''
   Scaler for single dataset using xscale-like parameterisation.
   '''
+
+  id_ = 'xscale'
+
   def __init__(self, params, experiment, reflection, scaled_id=0):
     super(XscaleScaler, self).__init__(params, experiment, reflection, scaled_id)
     (self.g_absorption, self.g_modulation, self.g_decay) = (None, None, None)
@@ -757,8 +772,9 @@ class MultiScaler(ScalerUtilities):
     R = flex.double([])
     G = flex.double([])
     for i, scaler in enumerate(self.single_scalers):
-      R.extend(scaler.calc_absorption_constraint(apm.apm_list[i])[0])
-      G.extend(scaler.calc_absorption_constraint(apm.apm_list[i])[1])
+      if scaler.id_ == 'aimless':
+        R.extend(scaler.calc_absorption_constraint(apm.apm_list[i])[0])
+        G.extend(scaler.calc_absorption_constraint(apm.apm_list[i])[1])
     return (R, G)
 
   def update_error_model(self):

@@ -1,6 +1,6 @@
 '''
 This code tests for Ih_table and joint_Ih_table data structures.
-This also provides a test for the ScalingDataManager, which must
+This also provides a test for the scaler, which must
 be successfully initialised in order to provide a feed in for the
 Ih_table.
 '''
@@ -8,10 +8,10 @@ import pytest
 from target_Ih import SingleIhTable, JointIhTable
 from dials.array_family import flex
 from dials.util.options import OptionParser
-from data_manager_functions import ScalingDataManager
 from libtbx import phil
-from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model import Crystal, Scan, Beam, Goniometer
+from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment, ExperimentList
+import ScalingModelFactory as ScalingModelFactory
+import ScalerFactory as ScalerFactory
 
 @pytest.fixture(scope='module')
 def generate_refl_1():
@@ -30,7 +30,7 @@ def generate_refl_1():
   reflections['partiality'] = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
   reflections.set_flags(flex.bool([True, True, True, True, True, True, True]),
     reflections.flags.integrated)
-  return reflections
+  return [reflections]
 
 @pytest.fixture(scope='module')
 def generate_refl_2():
@@ -44,7 +44,7 @@ def generate_refl_2():
   reflections['dqe'] = flex.double([1.0, 1.0])
   reflections['partiality'] = flex.double([1.0, 1.0])
   reflections.set_flags(flex.bool([True, True]), reflections.flags.integrated)
-  return reflections
+  return [reflections]
 
 @pytest.fixture(scope='module')
 def generate_experiments():
@@ -53,10 +53,13 @@ def generate_experiments():
   exp_dict = {"__id__" : "crystal", "real_space_a": [5.0, 0.0, 0.0],
               "real_space_b": [0.0, 10.0, 0.0], "real_space_c": [0.0, 0.0, 5.0],
               "space_group_hall_symbol": " C 2y"}
-  experiments.crystal = Crystal.from_dict(exp_dict)
-  experiments.scan = Scan(image_range=[0, 90], oscillation=[0.0, 1.0])
-  experiments.beam = Beam(s0=(0.0, 0.0, 1.01))
-  experiments.goniometer = Goniometer((1.0, 0.0, 0.0))
+  crystal = Crystal.from_dict(exp_dict)
+  scan = Scan(image_range=[0, 90], oscillation=[0.0, 1.0])
+  beam = Beam(s0=(0.0, 0.0, 1.01))
+  goniometer = Goniometer((1.0, 0.0, 0.0))
+  detector = Detector()
+  experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
+    detector=detector, crystal=crystal))
   return experiments
 
 @pytest.fixture(scope='module')
@@ -68,35 +71,42 @@ def generate_params():
   optionparser = OptionParser(phil=phil_scope, check_format=False)
   parameters, _ = optionparser.parse_args(args=None, quick_parse=True,
     show_diff_phil=False)
+  parameters.__inject__('scaling_model', 'KB')
   return parameters
 
 @pytest.fixture(scope='module')
-def generate_test_datamanager(generate_refl_1, generate_experiments, generate_params):
-  '''generate a test datamanager'''
-  return ScalingDataManager(generate_refl_1, generate_experiments, generate_params)
+def generate_test_scaler(generate_refl_1, generate_experiments, generate_params):
+  '''generate a test scalerr'''
+  params, test_experiments, test_reflections = generate_params, generate_experiments, generate_refl_1
+  experiments = ScalingModelFactory.Factory.create(params, test_experiments, test_reflections)
+  scaler = ScalerFactory.Factory.create(params, experiments, test_reflections)
+  return scaler
 
 @pytest.fixture(scope='module')
-def generate_second_test_datamanager(generate_refl_2, generate_experiments, generate_params):
-  '''generate a second test datamanager'''
-  return ScalingDataManager(generate_refl_2, generate_experiments, generate_params)
+def generate_second_test_scaler(generate_refl_2, generate_experiments, generate_params):
+  '''generate a second test scaler'''
+  params, test_experiments, test_reflections = generate_params, generate_experiments, generate_refl_2
+  experiments = ScalingModelFactory.Factory.create(params, test_experiments, test_reflections)
+  scaler = ScalerFactory.Factory.create(params, experiments, test_reflections)
+  return scaler
 
 @pytest.fixture
-def single_test_input(generate_test_datamanager):
+def single_test_input(generate_test_scaler):
   '''generate input for testing Ih_table'''
-  dm = generate_test_datamanager
+  scaler = generate_test_scaler
   weights = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-  return dm.reflection_table, weights
+  return scaler.reflection_table, weights
 
 @pytest.fixture
-def joint_test_input(generate_test_datamanager, generate_second_test_datamanager):
+def joint_test_input(generate_test_scaler, generate_second_test_scaler):
   '''generate input for testing joint_Ih_table'''
-  data_manager = generate_test_datamanager
+  scaler = generate_test_scaler
   weights = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-  data_manager_2 = generate_second_test_datamanager
+  scaler_2 = generate_second_test_scaler
   weights_2 = flex.double([1.0, 1.0])
-  data_manager._Ih_table = SingleIhTable(data_manager.reflection_table, weights)
-  data_manager_2._Ih_table = SingleIhTable(data_manager_2.reflection_table, weights_2)
-  return data_manager, data_manager_2
+  scaler._Ih_table = SingleIhTable(scaler.reflection_table, weights)
+  scaler_2._Ih_table = SingleIhTable(scaler_2.reflection_table, weights_2)
+  return scaler, scaler_2
 
 
 def test_Ih_table(single_test_input):

@@ -148,10 +148,11 @@ def lbfgs_scaling(scaler):
 
   if isinstance(scaler, ScalerFactory.TargetScaler):
     '''do a scaling round against a target of already scaled datasets'''
-    param_name = ParameterHandler.ParameterlistFactory.full_active_list(scaler.experiments)
+    param_lists = ParameterHandler.ActiveParameterFactory(scaler).return_active_list()
+    print(param_lists)
     '''Pass the scaler to the optimiser'''
     scaler = LBFGS_optimiser(scaler,
-      param_name=param_name[0]).return_scaler()
+      param_lists=param_lists).return_scaler()
 
     '''the minimisation has only been done on a subset on the data, so apply the
     scale factors to the sorted reflection table.'''
@@ -164,20 +165,22 @@ def lbfgs_scaling(scaler):
 
   '''from here onwards, scaler should only be a SingleScaler
   or MultiScaler (not TargetScaler)'''
-  if scaler.params.scaling_options.concurrent_scaling:
-    param_name = ParameterHandler.ParameterlistFactory.full_active_list(scaler.experiments)
-  else:
-    param_name = ParameterHandler.ParameterlistFactory.consecutive_list(scaler.experiments)
-  for param in param_name:
-    '''Pass the scaler to the optimiser'''
-    scaler = LBFGS_optimiser(scaler,
-      param_name=param).return_scaler()
+  #if scaler.params.scaling_options.concurrent_scaling:
+  param_name = ParameterHandler.ActiveParameterFactory(scaler).return_active_list()
+  #print(param_name)
+  #else:
+  #  param_name = ParameterHandler.ParameterlistFactory.consecutive_list(scaler)
+  #  print(param_name)
+  #for param in param_name:
+  #  '''Pass the scaler to the optimiser'''
+  scaler = LBFGS_optimiser(scaler,
+    param_lists=param_name).return_scaler()
   '''Optimise the error model and then do another minimisation'''
   if scaler.params.weighting.optimise_error_model:
     scaler.update_error_model()
-    for param in param_name:
-      scaler = LBFGS_optimiser(scaler,
-        param_name=param).return_scaler()
+    #for param in param_name:
+    scaler = LBFGS_optimiser(scaler,
+      param_lists=param_name).return_scaler()
 
   '''The minimisation has only been done on a subset on the data, so apply the
   scale factors to the whole reflection table.'''

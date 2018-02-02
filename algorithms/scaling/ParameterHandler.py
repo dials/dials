@@ -3,6 +3,45 @@ from dials.array_family import flex
 
 logger = logging.getLogger('dials')
 
+class ActiveParameterFactory(object):
+
+  def __init__(self, scaler):
+    self.scaler = scaler
+    self.param_lists = []
+    self.create_active_list()
+    
+  def create_active_list(self):
+    from dials.algorithms.scaling import ScalerFactory
+    if isinstance(self.scaler, ScalerFactory.SingleScaler):  
+      param_name = []
+      for param in self.scaler.corrections:
+        param_name.append('g_'+str(param))
+      if not param_name:
+        assert 0, 'no parameters have been chosen for scaling, aborting process'
+      self.param_lists.append(param_name)
+
+    if isinstance(self.scaler, ScalerFactory.TargetScaler):
+      param_name = []
+      for param in self.scaler.dm1.corrections:# assumes single exp in targetscaler
+        param_name.append('g_'+str(param))
+      if not param_name:
+        assert 0, 'no parameters have been chosen for scaling, aborting process'
+      self.param_lists.append(param_name)
+
+    elif isinstance(self.scaler, ScalerFactory.MultiScaler):
+      for scaler in self.scaler.single_scalers:
+        param_name = []
+        for param in scaler.corrections:
+          param_name.append('g_'+str(param))
+        if not param_name:
+          assert 0, 'no parameters have been chosen for scaling, aborting process'
+        self.param_lists.append(param_name)
+
+  def return_active_list(self):
+    return self.param_lists
+
+
+
 
 class ParameterlistFactory(object):
   '''
@@ -12,29 +51,41 @@ class ParameterlistFactory(object):
   or [['g_scale','g_decay'],['g_absorption']]
   '''
   @classmethod
-  def full_active_list(cls, experiments):
+  def full_active_list(cls, scaler):
     '''create a list with all params to include'''
-    
-    param_name = []
-    for param in experiments.scaling_model.configdict['corrections']:
-      param_name.append('g_'+str(param))
-    if not param_name:
-      assert 0, 'no parameters have been chosen for scaling, aborting process'
+    from dials.algorithms.scaling import ScalerFactory
+    if isinstance(scaler, ScalerFactory.SingleScaler) or isinstance(
+      scaler, ScalerFactory.TargetScaler): # assumes single exp in targetscaler
+      param_name = []
+      for param in scaler.corrections:
+        param_name.append('g_'+str(param))
+      if not param_name:
+        assert 0, 'no parameters have been chosen for scaling, aborting process'
+    elif isinstance(scaler, ScalerFactory.MultiScaler):
+      param_name_list = []
+      for scaler in scaler.single_scalers:
+        param_name = []
+        for param in scaler.corrections:
+          param_name.append('g_'+str(param))
+        if not param_name:
+          assert 0, 'no parameters have been chosen for scaling, aborting process'
+        param_name_list.append(param_name)
+
     return [param_name]
 
   @classmethod
-  def consecutive_list(cls, experiments):
+  def consecutive_list(cls, scaler):
     '''create a nested list with all params to include'''
     param_name = []
-    corrections = experiments.scaling_model.configdict['corrections']
-    if experiments.scaling_model.id_ == 'aimless':
+    corrections = scaler.experiments.scaling_model.configdict['corrections']
+    if scaler.experiments.scaling_model.id_ == 'aimless':
       if 'scale' in corrections and 'decay' in corrections:
         param_name.append(['g_scale', 'g_decay'])
       elif 'scale' in corrections:
         param_name.append(['g_scale'])
       elif 'decay' in corrections:
         param_name.append(['g_decay'])
-      if 'absorption' in experiments.scaling_model.configdict['corrections']:
+      if 'absorption' in scaler.experiments.scaling_model.configdict['corrections']:
         param_name.append(['g_absorption'])
     else:
       for param in corrections:
@@ -73,10 +124,10 @@ class active_parameter_manager(object):
 class multi_active_parameter_manager(object):
   ''' object to manage the current active parameters during minimisation
   for multiple datasets that are simultaneously being scaled.'''
-  def __init__(self, multiscaler, param_name):
+  def __init__(self, multiscaler, param_list):
     self.apm_list = []
-    for scaler in multiscaler.single_scalers:
-      self.apm_list.append(active_parameter_manager(scaler, param_name))
+    for i, scaler in enumerate(multiscaler.single_scalers):
+      self.apm_list.append(active_parameter_manager(scaler, param_list[i]))
     self.active_parameterisation = []
     for apm in self.apm_list:
       self.active_parameterisation.extend(apm.active_parameterisation)

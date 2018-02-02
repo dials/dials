@@ -47,7 +47,7 @@ class KBSMFactory(object):
 
     K_param = flex.double([1.0])
     B_param = flex.double([0.0])
-    
+
     return Model.KBScalingModel(K_param, B_param, configdict)
 
 class AimlessSMFactory(object):
@@ -102,6 +102,8 @@ class AimlessSMFactory(object):
       configdict.update({'s_norm_fac' : s_norm_fac})
     if 'decay' in configdict['corrections']:
       configdict.update({'d_norm_fac' : d_norm_fac})
+    if 'absorption' in configdict['corrections']:
+      configdict.update({'lmax' : lmax})
 
     return Model.AimlessScalingModel(scale_parameters, decay_parameters,
       abs_parameters, configdict)

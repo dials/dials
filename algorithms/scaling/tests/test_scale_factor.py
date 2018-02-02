@@ -15,7 +15,7 @@ def test_base_scalefactor():
     def update_reflection_data(self):
       pass
 
-  base_SF = base_SF_filler(1.0, 3)
+  base_SF = base_SF_filler(flex.double([1.0] * 3))
   assert base_SF.n_params == 3
   assert list(base_SF.parameters) == list(flex.double([1.0, 1.0, 1.0]))
 
@@ -32,7 +32,7 @@ def test_base_scalefactor():
 
 def test_KScaleFactor():
   'test for simple global K scalefactor object'
-  KSF = KScaleFactor(2.0)
+  KSF = KScaleFactor(flex.double([2.0]))
   assert KSF.n_params == 1
   assert list(KSF.parameters) == list(flex.double([2.0]))
   KSF.update_reflection_data(n_refl=2)
@@ -44,7 +44,7 @@ def test_KScaleFactor():
 
 def test_BScaleFactor():
   'test for simple global B scalefactor object'
-  BSF = BScaleFactor(0.0)
+  BSF = BScaleFactor(flex.double([0.0]))
   assert BSF.n_params == 1
   assert list(BSF.parameters) == list(flex.double([0.0]))
   BSF.update_reflection_data(dvalues=flex.double([1.0, 1.0]))
@@ -58,7 +58,7 @@ def test_BScaleFactor():
 def test_SmoothScaleFactor1D():
   'test for a gaussian smoothed 1D scalefactor object'
   from math import exp
-  SF = SmoothScaleFactor1D(1.1, 5)
+  SF = SmoothScaleFactor1D(flex.double([1.1] * 5))
   assert SF.n_params == 5
   assert list(SF.parameters) == list(flex.double([1.1, 1.1, 1.1, 1.1, 1.1]))
   SF.update_reflection_data(normalised_values=[0.5, 1.0, 2.5])
@@ -80,7 +80,7 @@ def test_SmoothScaleFactor1D():
 def test_SmoothBScaleFactor1D():
   'test for a gaussian smoothed 1D scalefactor object'
   from math import exp
-  SF = SmoothBScaleFactor1D(0.0, 5)
+  SF = SmoothBScaleFactor1D(flex.double([0.0] * 5))
   assert SF.n_params == 5
   assert list(SF.parameters) == list(flex.double([0.0]*5))
   SF.update_reflection_data(normalised_values=[0.5, 1.0, 2.5],
@@ -104,7 +104,7 @@ def test_SmoothBScaleFactor1D():
 def test_SHScalefactor():
   initial_param = 0.1
   initial_val = 0.2
-  SF = SHScaleFactor(initial_param, 3)
+  SF = SHScaleFactor(flex.double([initial_param] * 3))
   assert SF.n_params == 3
   assert list(SF.parameters) == list(flex.double([initial_param]*3))
   harmonic_values = sparse.matrix(1, 3)
