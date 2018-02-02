@@ -6,6 +6,8 @@ Publications
 DIALS Journal Articles
 ----------------------
 
+* .. pubmed:: 28989718 Background
+* .. pubmed:: 27980508 Robust
 * .. pubmed:: 27050135 Refinement
 * .. pubmed:: 25286849 Multilattice
 * .. pubmed:: 25242914 dxtbx
