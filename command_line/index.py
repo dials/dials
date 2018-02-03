@@ -118,8 +118,6 @@ def run(args):
     else:
       parser.print_help()
       return
-  #elif len(datablocks) > 1:
-    #raise Sorry("Only one DataBlock can be processed at a time")
   else:
     imagesets = []
     for datablock in datablocks:
@@ -132,7 +130,6 @@ def run(args):
   if len(reflections) == 0:
     raise Sorry("No reflection lists found in input")
   if len(reflections) > 1:
-    #raise Sorry("Multiple reflections lists provided in input")
     assert len(reflections) == len(imagesets)
     from scitbx.array_family import flex
     for i in range(len(reflections)):
@@ -140,7 +137,6 @@ def run(args):
       if i > 0:
         reflections[0].extend(reflections[i])
 
-  #assert(len(reflections) == 1)
   reflections = reflections[0]
 
   for imageset in imagesets:
