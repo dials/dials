@@ -10,6 +10,8 @@
 
 from __future__ import absolute_import, division
 
+from libtbx.utils import Sorry
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -847,9 +849,15 @@ class SpotFinder(object):
     # Get spots from bits of scan
     hot_pixels = tuple(flex.size_t() for i in range(len(imageset.get_detector())))
     reflections = flex.reflection_table()
-    for scan in scan_range:
-      j0, j1 = scan
+    for j0, j1 in scan_range:
+      # Make sure we were asked to do something sensible
+      if j1 < j0:
+        raise Sorry("Scan range must be in ascending order")
+      elif j0 < max_scan_range[0] or j1 > max_scan_range[1]:
+        raise Sorry("Scan range must be within image range {}..{}".format(
+            max_scan_range[0] + 1, max_scan_range[1]))
       assert(j1 >= j0 and j0 > max_scan_range[0] and j1 <= max_scan_range[1])
+
       logger.info('\nFinding spots in image {0} to {1}...'.format(j0, j1))
       j0 -= 1
       if isinstance(imageset, ImageSweep):
