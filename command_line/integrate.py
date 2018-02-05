@@ -11,6 +11,7 @@
 
 from __future__ import absolute_import, division
 import libtbx.load_env
+from libtbx.utils import Sorry
 import logging
 logger = logging.getLogger(libtbx.env.dispatcher_name)
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
@@ -537,10 +538,10 @@ class Script(object):
 
       # Get the array range
       if scan is not None:
-        frame10, frame11 = scan.get_array_range()
+        frames_start, frames_end = scan.get_array_range()
         assert(scan.get_num_images() == len(iset))
       else:
-        frame10, frame11 = (0, len(iset))
+        frames_start, frames_end = (0, len(iset))
 
       # Create the new lists
       new_experiments = ExperimentList()
@@ -552,20 +553,32 @@ class Script(object):
 
       # Loop through all the scan ranges and create a new experiment list with
       # the requested scan ranges.
-      for frame00, frame01 in scan_range:
-        assert(frame01 >  frame00)
-        assert(frame00 >= frame10)
-        assert(frame01 <= frame11)
-        index0 = frame00 - frame10
-        index1 = index0 + (frame01 - frame00)
-        assert(index0 < index1)
-        assert(index0 >= 0)
-        assert(index1 <= len(iset))
-        new_iset = iset[index0:index1]
+      for scan_start, scan_end in scan_range:
+        # Validate the requested scan range
+        if scan_end == scan_start:
+          raise Sorry(
+              "Scan range end must be higher than start; pass {},{} for single image".
+              format(scan_start, scan_start + 1))
+        if scan_end < scan_start:
+          raise Sorry("Scan range must be in ascending order")
+        elif scan_start < frames_start or scan_end > frames_end:
+          raise Sorry("Scan range must be within image range {}..{}".format(
+              frames_start, frames_end))
+
+        assert(scan_end >  scan_start)
+        assert(scan_start >= frames_start)
+        assert(scan_end <= frames_end)
+
+        index_start = scan_start - frames_start
+        index_end = index_start + (scan_end - scan_start)
+        assert(index_start < index_end)
+        assert(index_start >= 0)
+        assert(index_end <= len(iset))
+        new_iset = iset[index_start:index_end]
         if scan is None:
           new_scan = None
         else:
-          new_scan = scan[index0:index1]
+          new_scan = scan[index_start:index_end]
         for i, e1 in enumerate(experiments):
           e2 = Experiment()
           e2.beam = e1.beam
@@ -584,8 +597,8 @@ class Script(object):
 
       # Print some information
       logger.info('Modified experiment list to integrate over requested scan range')
-      for frame00, frame01 in scan_range:
-        logger.info(' scan_range = %d -> %d' % (frame00, frame01))
+      for scan_start, scan_end in scan_range:
+        logger.info(' scan_range = %d -> %d' % (scan_start, scan_end))
       logger.info('')
 
     # Return the experiments
