@@ -416,7 +416,6 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(reflections.contains("xyzcal.mm"));
 
       // Get some data
-      af::const_ref< cctbx::miller::index<> > miller_index = reflections["miller_index"];
       af::const_ref< Shoebox<> > sbox = reflections["shoebox"];
       af::const_ref< vec3<double> > s1 = reflections["s1"];
       af::const_ref< vec3<double> > xyzpx = reflections["xyzcal.px"];

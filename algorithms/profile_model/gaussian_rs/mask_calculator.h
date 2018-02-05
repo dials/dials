@@ -727,7 +727,7 @@ namespace gaussian_rs {
     Detector detector_;
     vec3<double> s0_;
     double delta_b_r_;
-    double delta_m_r_;
+    /*double delta_m_r_;*/
   };
 
 
