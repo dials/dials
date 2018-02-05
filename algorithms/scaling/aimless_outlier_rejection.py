@@ -12,7 +12,7 @@ def reject_outliers(dm, zmax):
     w = dm.Ih_table.weights[h_idx_cumul[0]:h_idx_cumul[1]]
     wgIsum = flex.sum(I*g*w)
     wg2sum = flex.sum(w*g*g)
-    norm_dev_list = (I - (g * wgIsum/wg2sum))/((1.0/w)+((g/wg2sum)**2))
+    norm_dev_list = (I - (g * wgIsum/wg2sum))/(((1.0/w)+((g/wg2sum)**2))**0.5)
     abs_norm_dev_list = (norm_dev_list**2)**0.5
     z_score.extend(abs_norm_dev_list)
   outliers = z_score > zmax

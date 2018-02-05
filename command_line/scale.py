@@ -12,8 +12,11 @@ against a common target of unique reflection intensities.
 By default, a scale, decay and absorption correction parameterisation for each
 dataset is used. One scaled.pickle and scaled_experiments.json files are output,
 which may contain data and scale models from multiple experiments. The reflection
-intensities are left unscaled in the output, but an 'inverse_scale_factor' column
-is added to the pickle file.
+intensities are left unscaled and unmerged in the output, but an
+'inverse_scale_factor' column is added to the pickle file.
+
+To plot the scale factors determined by this program, one should subsequently run:
+dials_scratch.plot_scaling_models scaled.pickle scaled_experiments.json
 """
 from __future__ import absolute_import, division, print_function
 import time
@@ -40,7 +43,7 @@ phil_scope = phil.parse('''
     .help = "Output additional debugging information"
   scaling_model = aimless
       .type = str
-      .help = "Set method for scaling - 'aimless' or 'KB' for simple KB scaling"
+      .help = "Set method for scaling - 'aimless', 'xscale' or 'KB'. "
   output {
     log = dials_scratch.scaling.log
       .type = str

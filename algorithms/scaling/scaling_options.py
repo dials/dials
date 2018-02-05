@@ -93,9 +93,6 @@ phil_scope = iotbx.phil.parse('''
       .type = str
       .help = "Choice of 'standard' (multiplicative) or 'log' g-value
                minimisation parameterisation"
-    scale_with = None
-      .type = str
-      .help = "Choice to scale with a dataset that has already been scaled."
   }
 
   ''')

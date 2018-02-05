@@ -17,7 +17,7 @@ from dials.algorithms.scaling.reflection_weighting import Weighting
 from dials.algorithms.scaling.target_Ih import SingleIhTable, JointIhTable, IhTableBase
 from dials.algorithms.scaling.minimiser_functions import error_scale_LBFGSoptimiser
 from dials.algorithms.scaling.aimless_outlier_rejection import reject_outliers
-
+from dxtbx.model import Crystal
 
 logger = logging.getLogger('dials')
 
@@ -400,6 +400,12 @@ class SingleScaler(ScalerUtilities):
   def calc_expanded_scales(self):
     '''calculate the scale factors for all reflections from the model.
     To be filled in by subclasses.'''
+    pass
+
+  def normalise_scale_component(self):
+    pass
+
+  def normalise_decay_component(self):
     pass
 
   def calc_absorption_constraint(self, apm):

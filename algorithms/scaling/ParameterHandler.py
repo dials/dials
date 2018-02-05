@@ -9,10 +9,10 @@ class ActiveParameterFactory(object):
     self.scaler = scaler
     self.param_lists = []
     self.create_active_list()
-    
+
   def create_active_list(self):
     from dials.algorithms.scaling import ScalerFactory
-    if isinstance(self.scaler, ScalerFactory.SingleScaler):  
+    if isinstance(self.scaler, ScalerFactory.SingleScaler):
       param_name = []
       for param in self.scaler.corrections:
         param_name.append('g_'+str(param))
