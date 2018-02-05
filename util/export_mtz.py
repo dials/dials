@@ -700,7 +700,7 @@ def export_mtz(integrated_data, experiment_list, hklout,
     experiment.data["batch_offset"] = flex.int(len(experiment.data["id"]), experiment.batch_offset)
 
     # Calculate whether we have a ROT value for this experiment, and set the column
-    _, _, frac_image_id = integrated_data['xyzcal.px'].parts()
+    _, _, frac_image_id = experiment.data['xyzcal.px'].parts()
     frac_image_id = flex.double(frac_image_id)
     if experiment.scan:
       # When getting angle, z_px counts from 0; image_index from 1
