@@ -36,6 +36,7 @@ tst_list = [
     "$D/test/algorithms/refinement/tst_beam_parameters.py",
     "$D/test/algorithms/refinement/tst_crystal_parameters.py",
     "$D/test/algorithms/refinement/tst_detector_parameters.py",
+    "$D/test/algorithms/refinement/tst_goniometer_parameters.py",
     "$D/test/algorithms/refinement/tst_finite_diffs.py",
     "$D/test/algorithms/refinement/tst_hierarchical_detector_refinement.py",
     "$D/test/algorithms/refinement/tst_multi_experiment_refinement.py",
