@@ -908,7 +908,6 @@ class TargetScaler(MultiScaler):
     super(TargetScaler, self).__init__(params, scaled_experiments, scaled_scalers)
     self.unscaled_scalers = unscaled_scalers
     self._experiments = unscaled_experiments[0]
-    #replace above with ScalerFactory to allow for scaling multiple against multiple?
     target_Ih_table = self.Ih_table
     for scaler in unscaled_scalers:
       for i, miller_idx in enumerate(scaler.Ih_table.asu_miller_index):
@@ -921,36 +920,27 @@ class TargetScaler(MultiScaler):
       sel = scaler.Ih_table.Ih_values != 0.0
       scaler.Ih_table = scaler.Ih_table.select(sel)
       scaler.apply_selection_to_SFs(sel)
-    if len(self.unscaled_scalers) > 1:
-      self._Ih_table = JointIhTable(self.unscaled_scalers)
-    else:
-      self._Ih_table = self.unscaled_scalers[0].Ih_table
-    self._g_parameterisation = self.unscaled_scalers[0].g_parameterisation
+    self._g_parameterisation = self.unscaled_scalers[0].g_parameterisation #???
     logger.info('Completed initialisation of TargetScaler. \n' + '*'*40 + '\n')
 
   def get_target_function(self, apm):
     '''override the target function method for fixed Ih'''
-    return target_function_fixedIh(self, apm).return_targets()
+    R = 0.0
+    G = flex.double([])
+    for i, scaler in enumerate(self.unscaled_scalers):
+      (Ri, Gi) = target_function_fixedIh(scaler, apm.apm_list[i]).return_targets()
+      R += Ri
+      G.extend(Gi)
+    return R, G
 
   def update_for_minimisation(self, apm):
     '''update the scale factors and Ih for the next iteration of minimisation'''
-    if len(self.unscaled_scalers) == 1:
-      basis_fn = self.unscaled_scalers[0].get_basis_function(apm)
-      apm.active_derivatives = basis_fn[1]
-      self.unscaled_scalers[0].Ih_table.inverse_scale_factors = basis_fn[0]
-    else:
-      '''update the scale factors and Ih for the next iteration of minimisation,
-      update the x values from the amp to the individual apms, as this is where
-      basis functions, target functions etc get access to the parameters.'''
-      for i, _ in enumerate(apm.n_params_in_each_apm):
-        apm.apm_list[i].x = apm.x[apm.n_cumul_params_list[i]:apm.n_cumul_params_list[i+1]]
-      apm.active_derivatives = sparse.matrix(self.Ih_table.size, apm.n_active_params)
-      for i, scaler in enumerate(self.unscaled_scalers):
-        basis_fn = scaler.get_basis_function(apm.apm_list[i])
-        scaler.Ih_table.inverse_scale_factors = basis_fn[0]
-        expanded = basis_fn[1].transpose() * self.Ih_table.h_index_expand_list[i]
-        apm.active_derivatives.assign_block(expanded.transpose(), 0, apm.n_cumul_params_list[i])
-    #note - we don't calculate Ih here as using a target instead
+    for i, _ in enumerate(apm.n_params_in_each_apm):
+      apm.apm_list[i].x = apm.x[apm.n_cumul_params_list[i]:apm.n_cumul_params_list[i+1]]
+    for i, scaler in enumerate(self.unscaled_scalers):
+      basis_fn = scaler.get_basis_function(apm.apm_list[i])
+      apm.apm_list[i].active_derivatives = basis_fn[1]
+      scaler.Ih_table.inverse_scale_factors = basis_fn[0]
 
   def calc_absorption_constraint(self, apm):
     'method only called in aimless scaling'
@@ -958,13 +948,9 @@ class TargetScaler(MultiScaler):
     G = flex.double([])
     scaler_ids = [scaler.id_ for scaler in self.unscaled_scalers]
     if 'aimless' in scaler_ids:
-      if len(self.unscaled_scalers) == 1:
-        R.extend(self.unscaled_scalers[0].calc_absorption_constraint(apm)[0])
-        G.extend(self.unscaled_scalers[0].calc_absorption_constraint(apm)[1])
-      else:
-        for i, scaler in enumerate(self.unscaled_scalers):
-          R.extend(scaler.calc_absorption_constraint(apm.apm_list[i])[0])
-          G.extend(scaler.calc_absorption_constraint(apm.apm_list[i])[1])
+      for i, scaler in enumerate(self.unscaled_scalers):
+        R.extend(scaler.calc_absorption_constraint(apm.apm_list[i])[0])
+        G.extend(scaler.calc_absorption_constraint(apm.apm_list[i])[1])
     return (R, G)
 
   def expand_scales_to_all_reflections(self):
@@ -972,7 +958,13 @@ class TargetScaler(MultiScaler):
       scaler.expand_scales_to_all_reflections(caller=self)
 
   def calc_merging_statistics(self):
-    return self.dm1.calc_merging_statistics()
+    results = []
+    scaled_ids = []
+    for scaler in self.unscaled_scalers:
+      result, scaled_id = scaler.calc_merging_statistics()
+      results.append(result[0])
+      scaled_ids.append(scaled_id)
+    return (results, scaled_ids)
 
   def join_multiple_datasets(self):
     '''method to create a joint reflection table'''
@@ -986,19 +978,20 @@ class TargetScaler(MultiScaler):
       indices=joined_reflections['asu_miller_index'], anomalous_flag=False)
     permuted = miller_set.sort_permutation(by_value='packed_indices')
     self._reflection_table = joined_reflections.select(permuted)
-    #weights = Weighting(self.reflection_table).weights
-    #self._Ih_table = SingleIhTable(self.reflection_table, weights)
-    #self._reflection_table['Ih_values'] = self.Ih_table.Ih_values
-    #if self.params.scaling_options.reject_outliers:
-    #  sel = reject_outliers(self, self.params.scaling_options.outlier_zmax)
-    #  n_outliers = sel.count(False)
-    #  msg = ('Combined outlier rejection has been performed across all datasets, {sep}'
-    #    '{0} outliers were found which have been removed from the dataset. {sep}'.format(
-    #    n_outliers, sep='\n'))
-    #  logger.info(msg)
-    #  self._reflection_table = self._reflection_table.select(sel)
-    #  self.Ih_table = self.Ih_table.select(sel)
-    #  self._reflection_table['Ih_values'] = self.Ih_table.Ih_values
-    #  msg = ('A new best estimate for I_h for all reflections across all datasets {sep}'
-    #    'has now been calculated. {sep}').format(sep='\n')
-    #  logger.info(msg)
+    #does it make sense to do the following? do we want this?
+    weights = Weighting(self.reflection_table).weights
+    self._Ih_table = SingleIhTable(self.reflection_table, weights)
+    self._reflection_table['Ih_values'] = self.Ih_table.Ih_values
+    if self.params.scaling_options.reject_outliers:
+      sel = reject_outliers(self, self.params.scaling_options.outlier_zmax)
+      n_outliers = sel.count(False)
+      msg = ('Combined outlier rejection has been performed across all datasets, {sep}'
+        '{0} outliers were found which have been removed from the dataset. {sep}'.format(
+        n_outliers, sep='\n'))
+      logger.info(msg)
+      self._reflection_table = self._reflection_table.select(sel)
+      self.Ih_table = self.Ih_table.select(sel)
+      self._reflection_table['Ih_values'] = self.Ih_table.Ih_values
+      msg = ('A new best estimate for I_h for all reflections across all datasets {sep}'
+        'has now been calculated. {sep}').format(sep='\n')
+      logger.info(msg)

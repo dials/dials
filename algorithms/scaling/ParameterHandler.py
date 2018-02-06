@@ -150,7 +150,7 @@ class multi_active_parameter_manager(object):
     logger.info(('Set up joint parameter handler for following corrections: {0}\n'
       ).format(''.join(i.lstrip('g_')+' ' for i in self.active_parameterisation)))
 
-class target_multi_active_parameter_manager(object):
+class target_active_parameter_manager(object):
   ''' object to manage the current active parameters during minimisation
   for multiple datasets that are simultaneously being scaled.'''
   def __init__(self, targetscaler, param_list):
@@ -163,7 +163,6 @@ class target_multi_active_parameter_manager(object):
     self.x = flex.double([])
     self.n_params_in_each_apm = []
     self.n_cumul_params_list = [0]
-    self.active_derivatives = None
     for apm in self.apm_list:
       self.x.extend(apm.x)
       self.n_params_in_each_apm.append(len(apm.x))
