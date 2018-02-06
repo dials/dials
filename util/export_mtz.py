@@ -604,6 +604,7 @@ def _calculate_batch_offsets(experiments):
     end_number = start_number + range_width - 1
     batch_offsets[i] = start_number - experiment.image_range[0]
     maximum_batch_number = end_number
+    experiment.scan.set_batch_offset(batch_offsets[i])
 
   return batch_offsets
 
@@ -657,8 +658,19 @@ def export_mtz(integrated_data, experiment_list, hklout,
     else:
       experiment.image_range = 1, 1
 
-  # Calculate any offset to the image numbers
-  batch_offsets = _calculate_batch_offsets(experiment_list)
+
+  batch_offsets = flex.int(
+    expt.scan.get_batch_offset() for expt in experiment_list)
+  if batch_offsets.all_eq(0):
+    # Calculate any offset to the image numbers
+    batch_offsets = _calculate_batch_offsets(experiment_list)
+  else:
+    unique_offsets = set(batch_offsets)
+    if len(unique_offsets) != len(batch_offsets):
+      import collections
+      raise Sorry('Duplicate batch offsets detected: %s' %', '.join(
+        str(item) for item, count in collections.Counter(batch_offsets).items()
+        if count > 1))
 
   # Create the mtz file
   mtz_file = mtz.object()
@@ -677,7 +689,6 @@ def export_mtz(integrated_data, experiment_list, hklout,
   for experiment_index, experiment in enumerate(experiment_list):
     # Grab our subset of the data
     experiment.data = dict(integrated_data.select(integrated_data["id"] == experiment_index))
-    experiment.batch_offset = batch_offsets[experiment_index]
 
     # Do any crystal transformations for the experiment
     cb_op_to_ref = experiment.crystal.get_space_group().info(
@@ -691,13 +702,13 @@ def export_mtz(integrated_data, experiment_list, hklout,
 
     for i in range(experiment.image_range[0], experiment.image_range[1]+1):
       _add_batch(mtz_file, experiment,
-        batch_number=i+experiment.batch_offset,
+        batch_number=i+experiment.scan.get_batch_offset(),
         image_number=i,
         force_static_model=force_static_model)
 
     # Create the batch offset array. This gives us an experiment (id)-dependent
     # batch offset to calculate the correct batch from image number.
-    experiment.data["batch_offset"] = flex.int(len(experiment.data["id"]), experiment.batch_offset)
+    experiment.data["batch_offset"] = flex.int(len(experiment.data["id"]), experiment.scan.get_batch_offset())
 
     # Calculate whether we have a ROT value for this experiment, and set the column
     _, _, frac_image_id = experiment.data['xyzcal.px'].parts()

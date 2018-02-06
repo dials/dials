@@ -35,10 +35,21 @@ def offset_ranges(offsets, ranges):
 class TestBatchRangeCalculations(object):
   "Test the calculation of non-overlapping batch ranges"
 
+  class MockScan(object):
+    def __init__(self):
+      self._batch_offset = 0
+
+    def get_batch_offset(self):
+      return self._batch_offset
+
+    def set_batch_offset(self, batch_offset):
+      self._batch_offset = batch_offset
+
   class MockExperiment(object):
     def __init__(self, image_range):
       assert len(image_range) == 2
       self.image_range = tuple(image_range)
+      self.scan = TestBatchRangeCalculations.MockScan()
 
   def _run_ranges(self, ranges):
     """Convenience method to run the routine with a minimal experiment, and return the result as ranges of batch number"""
