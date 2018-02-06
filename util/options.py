@@ -876,7 +876,7 @@ class OptionParser(OptionParserBase):
         if len(err) > 1:
           msg.append("  \"{}\" failed repeatedly during processing:\n{}\n".format(
             arg, "    " + err[0].message))
-        elif type(err[0].exception) is Sorry:
+        elif isinstance(err[0].exception, Sorry):
           msg.append("  \"{}\" failed during {} processing:\n    {}\n".format(
             arg, err[0].type, err[0].message))
         else:
