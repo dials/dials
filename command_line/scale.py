@@ -107,6 +107,11 @@ def main(argv):
   scaler = ScalerFactory.Factory.create(params, experiments, reflections)
   minimised = lbfgs_scaling(scaler)
 
+  if minimised.outlier_table:
+    minimised.save_outlier_table('outliers.pickle')
+    logger.info("%s outliers in total were removed from the dataset and saved to %s"
+      % (len(minimised.outlier_table),'outliers.pickle'))
+
   '''calculate merging stats'''
   results, scaled_ids = minimised.calc_merging_statistics()
   logger.info('*'*40)
@@ -132,6 +137,13 @@ def main(argv):
   if params.output.plot_merging_stats:
     from xia2.command_line.compare_merging_stats import plot_merging_stats
     plot_merging_stats(results, labels=plot_labels)
+
+  #correl_list = minimised.calc_correlation()
+  #if correl_list:
+  #  n = len(minimised.single_scalers)
+  #  print(correl_list)
+  #  for i in range(0, n*n, n):
+  #    print(correl_list[i:i+n])
 
   '''save scaled_experiments.json file'''
   save_experiments(experiments, params.output.experiments_out)

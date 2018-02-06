@@ -21,12 +21,19 @@ class ActiveParameterFactory(object):
       self.param_lists.append(param_name)
 
     if isinstance(self.scaler, ScalerFactory.TargetScaler):
-      param_name = []
-      for param in self.scaler.dm1.corrections:# assumes single exp in targetscaler
-        param_name.append('g_'+str(param))
-      if not param_name:
-        assert 0, 'no parameters have been chosen for scaling, aborting process'
-      self.param_lists.append(param_name)
+      for scaler in self.scaler.unscaled_scalers:
+        param_name = []
+        for param in scaler.corrections:
+          param_name.append('g_'+str(param))
+        if not param_name:
+          assert 0, 'no parameters have been chosen for scaling, aborting process'
+        self.param_lists.append(param_name)    
+      #param_name = []
+      #for param in self.scaler.dm1.corrections:# assumes single exp in targetscaler
+      #  param_name.append('g_'+str(param))
+      #if not param_name:
+      #  assert 0, 'no parameters have been chosen for scaling, aborting process'
+      #self.param_lists.append(param_name)
 
     elif isinstance(self.scaler, ScalerFactory.MultiScaler):
       for scaler in self.scaler.single_scalers:
@@ -127,6 +134,28 @@ class multi_active_parameter_manager(object):
   def __init__(self, multiscaler, param_list):
     self.apm_list = []
     for i, scaler in enumerate(multiscaler.single_scalers):
+      self.apm_list.append(active_parameter_manager(scaler, param_list[i]))
+    self.active_parameterisation = []
+    for apm in self.apm_list:
+      self.active_parameterisation.extend(apm.active_parameterisation)
+    self.x = flex.double([])
+    self.n_params_in_each_apm = []
+    self.n_cumul_params_list = [0]
+    self.active_derivatives = None
+    for apm in self.apm_list:
+      self.x.extend(apm.x)
+      self.n_params_in_each_apm.append(len(apm.x))
+      self.n_cumul_params_list.append(len(self.x))
+    self.n_active_params = len(self.x)
+    logger.info(('Set up joint parameter handler for following corrections: {0}\n'
+      ).format(''.join(i.lstrip('g_')+' ' for i in self.active_parameterisation)))
+
+class target_multi_active_parameter_manager(object):
+  ''' object to manage the current active parameters during minimisation
+  for multiple datasets that are simultaneously being scaled.'''
+  def __init__(self, targetscaler, param_list):
+    self.apm_list = []
+    for i, scaler in enumerate(targetscaler.unscaled_scalers):
       self.apm_list.append(active_parameter_manager(scaler, param_list[i]))
     self.active_parameterisation = []
     for apm in self.apm_list:

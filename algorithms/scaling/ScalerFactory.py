@@ -87,7 +87,8 @@ class MultiScalerFactory(object):
   def create_from_targetscaler(cls, targetscaler):
     '''pass a TargetScaler to a MultiScaler'''
     single_scalers = targetscaler.single_scalers
-    single_scalers.append(targetscaler.dm1)
+    for scaler in targetscaler.unscaled_scalers:
+      single_scalers.append(scaler)
     return MultiScaler(targetscaler.params, [targetscaler.experiments], single_scalers)
 
 class TargetScalerFactory(object):
@@ -108,11 +109,11 @@ class TargetScalerFactory(object):
         unscaled_experiments.append(experiments[i])
         unscaled_scalers.append(SingleScalerFactory.create(params, experiments[i],
           reflection, scaled_id=i))
-    if len(unscaled_scalers) > 1:
-      assert 0, """method for targeted scaling of multiple datasets
-      against a target not yet implemented"""
+    #if len(unscaled_scalers) > 1:
+    #  assert 0, """method for targeted scaling of multiple datasets
+    #  against a target not yet implemented"""
     return TargetScaler(params, scaled_experiments, scaled_scalers,
-      unscaled_experiments, unscaled_scalers[0])
+      unscaled_experiments, unscaled_scalers)
 
 
 class ScalerUtilities(object):
@@ -122,6 +123,7 @@ class ScalerUtilities(object):
     self._experiments = None
     self._params = None
     self._reflection_table = []
+    self._outlier_table = flex.reflection_table()
     self._Ih_table = None
     self._initial_keys = []
     self._g_parameterisation = {}
@@ -147,6 +149,10 @@ class ScalerUtilities(object):
   @property
   def reflection_table(self):
     return self._reflection_table
+
+  @property
+  def outlier_table(self):
+    return self._outlier_table
 
   @property
   def params(self):
@@ -183,6 +189,10 @@ class ScalerUtilities(object):
   def save_reflection_table(self, filename):
     ''' Save the reflections to file. '''
     self.reflection_table.as_pickle(filename)
+
+  def save_outlier_table(self, filename):
+    ''' Save the reflections to file. '''
+    self.outlier_table.as_pickle(filename)
 
   @classmethod
   def _scaling_subset(cls, reflection_table, params, error_model_params=None):
@@ -235,17 +245,45 @@ class ScalerUtilities(object):
       crystal_symmetry = crystal.symmetry(unit_cell=u_c,
         space_group=s_g)
     miller_set = miller.set(crystal_symmetry=crystal_symmetry,
-      indices=self.Ih_table.asu_miller_index, anomalous_flag=False)
+      indices=self.Ih_table.miller_index, anomalous_flag=False)
     scaled_intensities = self.Ih_table.intensities/self.Ih_table.inverse_scale_factors
     sigmas = (self.Ih_table.variances**0.5)/self.Ih_table.inverse_scale_factors
     i_obs = miller.array(miller_set, data=scaled_intensities, sigmas=sigmas)
     i_obs.set_observation_type_xray_intensity()
     scaled_ids = list(set(self.reflection_table['scaled_id']))
     result = iotbx.merging_statistics.dataset_statistics(
-      i_obs=i_obs, n_bins=20, anomalous=False, sigma_filtering=None)
-      #, use_internal_variance=False,
+      i_obs=i_obs, n_bins=20, anomalous=False, sigma_filtering=None,
+      use_internal_variance=True)
       #eliminate_sys_absent=False, sigma_filtering=None)
     return ([result], scaled_ids[0])
+
+  def calc_correlation(self):
+    if isinstance(self, MultiScaler):
+      array_list = []
+      for scaler in self.single_scalers:
+        u_c = scaler.experiments.crystal.get_unit_cell().parameters()
+        if self.params.scaling_options.force_space_group:
+          s_g_symbol = self.params.scaling_options.force_space_group
+          crystal_symmetry = crystal.symmetry(unit_cell=u_c,
+            space_group_symbol=s_g_symbol)
+        else:
+          s_g = scaler.experiments.crystal.get_space_group()
+          crystal_symmetry = crystal.symmetry(unit_cell=u_c,
+            space_group=s_g)
+        miller_set = miller.set(crystal_symmetry=crystal_symmetry,
+          indices=scaler.Ih_table.asu_miller_index, anomalous_flag=False)
+        scaled_intensities = scaler.Ih_table.intensities/scaler.Ih_table.inverse_scale_factors
+        sigmas = (scaler.Ih_table.variances**0.5)/scaler.Ih_table.inverse_scale_factors
+        i_obs = miller.array(miller_set, data=scaled_intensities, sigmas=sigmas)
+        array_list.append(i_obs)
+      correl_list = []
+      for array_1 in array_list:
+        for array_2 in array_list:
+          correl = array_1.correlation(other=array_2)
+          correl_list.append(correl.coefficient())
+      return correl_list
+    return None
+
 
 
 class SingleScaler(ScalerUtilities):
@@ -275,6 +313,7 @@ class SingleScaler(ScalerUtilities):
     reflection_table['wilson_outlier_flag'] = calculate_wilson_outliers(
       reflection_table)
     self._reflection_table = reflection_table
+    
 
   @property
   def corrections(self):
@@ -362,7 +401,10 @@ class SingleScaler(ScalerUtilities):
       'to all reflections. {sep}').format(sep='\n'))
     weights = self._update_weights_for_scaling(self.reflection_table,
       self.params, weights_filter=False, error_model_params=None).weights
+    #now create an Ih table that doesn't include any outliers
     self._Ih_table = SingleIhTable(self.reflection_table, weights)
+    outlier_sel = weights == 0.0
+    self._outlier_table.extend(self.reflection_table.select(outlier_sel))
     self.Ih_table = self.Ih_table.select(self.Ih_table.weights != 0.0)
     self._reflection_table = self._reflection_table.select(weights != 0.0)
     #if self.params.weighting.tukey_biweighting:
@@ -384,6 +426,8 @@ class SingleScaler(ScalerUtilities):
     '''calculate outliers from the reflections in the Ih_table,
     and use these to filter the reflection table and Ih_table.'''
     sel = reject_outliers(self, self.params.scaling_options.outlier_zmax)
+    outliers_sel = ~sel
+    self._outlier_table.extend(self._reflection_table.select(outliers_sel))
     self._reflection_table = self._reflection_table.select(sel)
     self.Ih_table = self.Ih_table.select(sel)
     self._reflection_table['Ih_values'] = self.Ih_table.Ih_values
@@ -812,8 +856,11 @@ class MultiScaler(ScalerUtilities):
   def join_multiple_datasets(self):
     '''method to create a joint reflection table'''
     joined_reflections = flex.reflection_table()
+    joined_outliers = flex.reflection_table()
     for scaler in self.single_scalers:
       joined_reflections.extend(scaler.reflection_table)
+      joined_outliers.extend(scaler.outlier_table)
+    self._outlier_table = joined_outliers
     miller_set = miller.set(crystal.symmetry(
       space_group=self.single_scalers[0].experiments.crystal.get_space_group()),
       indices=joined_reflections['asu_miller_index'], anomalous_flag=False)
@@ -824,6 +871,8 @@ class MultiScaler(ScalerUtilities):
     self._reflection_table['Ih_values'] = self.Ih_table.Ih_values
     if self.params.scaling_options.reject_outliers:
       sel = reject_outliers(self, self.params.scaling_options.outlier_zmax)
+      outlier_sel = ~sel
+      self._outlier_table.extend(self._reflection_table.select(outlier_sel))
       n_outliers = sel.count(False)
       msg = ('Combined outlier rejection has been performed across all datasets, {sep}'
         '{0} outliers were found which have been removed from the dataset. {sep}'.format(
@@ -854,39 +903,73 @@ class TargetScaler(MultiScaler):
   params, lists of scaled and unscaled experiments, a list of already scaled
   SingleScalers and a list of unscaled reflections.
   '''
-  def __init__(self, params, scaled_experiments, scaled_scalers, unscaled_experiments, unscaled_scaler):
+  def __init__(self, params, scaled_experiments, scaled_scalers, unscaled_experiments, unscaled_scalers):
     logger.info('\nInitialising a TargetScaler instance. \n')
     super(TargetScaler, self).__init__(params, scaled_experiments, scaled_scalers)
-    self.dm1 = unscaled_scaler
+    self.unscaled_scalers = unscaled_scalers
     self._experiments = unscaled_experiments[0]
     #replace above with ScalerFactory to allow for scaling multiple against multiple?
     target_Ih_table = self.Ih_table
-    for i, miller_idx in enumerate(self.dm1.Ih_table.asu_miller_index):
-      sel = target_Ih_table.asu_miller_index == miller_idx
-      Ih_values = target_Ih_table.Ih_values.select(sel)
-      if Ih_values:
-        self.dm1.Ih_table.Ih_values[i] = Ih_values[0] #all same so just get [0]
-      else:
-        self.dm1.Ih_table.Ih_values[i] = 0.0 #set to zero to allow selection below
-    sel = self.dm1.Ih_table.Ih_values != 0.0
-    self.dm1.Ih_table = self.dm1.Ih_table.select(sel)
-    self.dm1.apply_selection_to_SFs(sel)
-    self._g_parameterisation = self.dm1.g_parameterisation
+    for scaler in unscaled_scalers:
+      for i, miller_idx in enumerate(scaler.Ih_table.asu_miller_index):
+        sel = target_Ih_table.asu_miller_index == miller_idx
+        Ih_values = target_Ih_table.Ih_values.select(sel)
+        if Ih_values:
+          scaler.Ih_table.Ih_values[i] = Ih_values[0] #all same so just get [0]
+        else:
+          scaler.Ih_table.Ih_values[i] = 0.0 #set to zero to allow selection below
+      sel = scaler.Ih_table.Ih_values != 0.0
+      scaler.Ih_table = scaler.Ih_table.select(sel)
+      scaler.apply_selection_to_SFs(sel)
+    if len(self.unscaled_scalers) > 1:
+      self._Ih_table = JointIhTable(self.unscaled_scalers)
+    else:
+      self._Ih_table = self.unscaled_scalers[0].Ih_table
+    self._g_parameterisation = self.unscaled_scalers[0].g_parameterisation
     logger.info('Completed initialisation of TargetScaler. \n' + '*'*40 + '\n')
 
   def get_target_function(self, apm):
     '''override the target function method for fixed Ih'''
-    return target_function_fixedIh(self.dm1, apm).return_targets()
+    return target_function_fixedIh(self, apm).return_targets()
 
   def update_for_minimisation(self, apm):
     '''update the scale factors and Ih for the next iteration of minimisation'''
-    basis_fn = self.dm1.get_basis_function(apm)
-    apm.active_derivatives = basis_fn[1]
-    self.dm1.Ih_table.inverse_scale_factors = basis_fn[0]
+    if len(self.unscaled_scalers) == 1:
+      basis_fn = self.unscaled_scalers[0].get_basis_function(apm)
+      apm.active_derivatives = basis_fn[1]
+      self.unscaled_scalers[0].Ih_table.inverse_scale_factors = basis_fn[0]
+    else:
+      '''update the scale factors and Ih for the next iteration of minimisation,
+      update the x values from the amp to the individual apms, as this is where
+      basis functions, target functions etc get access to the parameters.'''
+      for i, _ in enumerate(apm.n_params_in_each_apm):
+        apm.apm_list[i].x = apm.x[apm.n_cumul_params_list[i]:apm.n_cumul_params_list[i+1]]
+      apm.active_derivatives = sparse.matrix(self.Ih_table.size, apm.n_active_params)
+      for i, scaler in enumerate(self.unscaled_scalers):
+        basis_fn = scaler.get_basis_function(apm.apm_list[i])
+        scaler.Ih_table.inverse_scale_factors = basis_fn[0]
+        expanded = basis_fn[1].transpose() * self.Ih_table.h_index_expand_list[i]
+        apm.active_derivatives.assign_block(expanded.transpose(), 0, apm.n_cumul_params_list[i])
     #note - we don't calculate Ih here as using a target instead
 
+  def calc_absorption_constraint(self, apm):
+    'method only called in aimless scaling'
+    R = flex.double([])
+    G = flex.double([])
+    scaler_ids = [scaler.id_ for scaler in self.unscaled_scalers]
+    if 'aimless' in scaler_ids:
+      if len(self.unscaled_scalers) == 1:
+        R.extend(self.unscaled_scalers[0].calc_absorption_constraint(apm)[0])
+        G.extend(self.unscaled_scalers[0].calc_absorption_constraint(apm)[1])
+      else:
+        for i, scaler in enumerate(self.unscaled_scalers):
+          R.extend(scaler.calc_absorption_constraint(apm.apm_list[i])[0])
+          G.extend(scaler.calc_absorption_constraint(apm.apm_list[i])[1])
+    return (R, G)
+
   def expand_scales_to_all_reflections(self):
-    return self.dm1.expand_scales_to_all_reflections(caller=self)
+    for scaler in self.unscaled_scalers:
+      scaler.expand_scales_to_all_reflections(caller=self)
 
   def calc_merging_statistics(self):
     return self.dm1.calc_merging_statistics()
@@ -896,7 +979,8 @@ class TargetScaler(MultiScaler):
     joined_reflections = flex.reflection_table()
     for scaler in self.single_scalers:
       joined_reflections.extend(scaler.reflection_table)
-    joined_reflections.extend(self.dm1.reflection_table)
+    for scaler in self.unscaled_scalers:
+      joined_reflections.extend(scaler.reflection_table)
     miller_set = miller.set(crystal.symmetry(
       space_group=self.single_scalers[0].experiments.crystal.get_space_group()),
       indices=joined_reflections['asu_miller_index'], anomalous_flag=False)

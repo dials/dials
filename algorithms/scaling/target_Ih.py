@@ -78,6 +78,10 @@ class IhTableBase(object):
     return self._Ih_table['asu_miller_index']
 
   @property
+  def miller_index(self):
+    return self._Ih_table['miller_index']
+
+  @property
   def h_index_counter_array(self):
     return self._h_index_counter_array
 
@@ -191,7 +195,8 @@ class SingleIhTable(IhTableBase):
     '''create an Ih_table from the reflection table'''
     (refl_table, weights) = data
     #check necessary columns exists in input reflection table
-    columns = ['asu_miller_index', 'intensity', 'inverse_scale_factor', 'variance']
+    columns = ['asu_miller_index', 'intensity', 'inverse_scale_factor',
+      'variance', 'miller_index']
     for col in columns:
       if not col in refl_table.keys():
         assert 0, """Attempting to create an Ih_table object from a reflection

@@ -6,7 +6,7 @@ import logging
 from dials.array_family import flex
 from scitbx import lbfgs, sparse
 from dials.algorithms.scaling.ParameterHandler import \
-  multi_active_parameter_manager, active_parameter_manager
+  multi_active_parameter_manager, active_parameter_manager, target_multi_active_parameter_manager
 
 logger = logging.getLogger('dials')
 
@@ -16,8 +16,10 @@ class LBFGS_optimiser(object):
     logger.info(('\n'+'*'*40+'\n'+'Initialising LBFGS optimiser instance. \n'))
     self.scaler = scaler
     from dials.algorithms.scaling.ScalerFactory import MultiScaler, TargetScaler
-    if isinstance(self.scaler, TargetScaler):
-      self.apm = active_parameter_manager(self.scaler, param_lists[0])
+    if isinstance(self.scaler, TargetScaler) and len(self.scaler.unscaled_scalers) > 1:
+      self.apm = target_multi_active_parameter_manager(self.scaler, param_lists)
+    elif isinstance(self.scaler, TargetScaler) and len(self.scaler.unscaled_scalers) == 1:
+      self.apm = active_parameter_manager(self.scaler.unscaled_scalers[0], param_lists[0])
     elif isinstance(self.scaler, MultiScaler):
       self.apm = multi_active_parameter_manager(self.scaler, param_lists)
     else:
