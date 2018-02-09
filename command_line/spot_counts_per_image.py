@@ -37,7 +37,7 @@ id = None
 
 def run(args):
   import libtbx.load_env
-  usage = "%s [options] datablock.json strong.pickle" %libtbx.env.dispatcher_name
+  usage = "%s [options] datablock.json strong.pickle" % libtbx.env.dispatcher_name
 
   parser = OptionParser(
     usage=usage,
@@ -85,13 +85,12 @@ def run(args):
     imageset, reflections, resolution_analysis=params.resolution_analysis)
   rows = [
     ("Overall statistics", ""),
-    ("#spots", "%i" %overall_stats.n_spots_total),
-    ("#spots_no_ice", "%i" %overall_stats.n_spots_no_ice),
-    #("total_intensity", "%.0f" %overall_stats.total_intensity),
-    ("d_min", "%.2f" %overall_stats.estimated_d_min),
-    ("d_min (distl method 1)", "%.2f (%.2f)" %(
+    ("#spots", "%i" % overall_stats.n_spots_total),
+    ("#spots_no_ice", "%i" % overall_stats.n_spots_no_ice),
+    ("d_min", "%.2f" % overall_stats.estimated_d_min),
+    ("d_min (distl method 1)", "%.2f (%.2f)" % (
       overall_stats.d_min_distl_method_1, overall_stats.noisiness_method_1)),
-    ("d_min (distl method 2)", "%.2f (%.2f)" %(
+    ("d_min (distl method 2)", "%.2f (%.2f)" % (
       overall_stats.d_min_distl_method_1, overall_stats.noisiness_method_1)),
     ]
   print table_utils.format(rows, has_header=True, prefix="| ", postfix=" |")
