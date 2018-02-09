@@ -29,6 +29,8 @@ plot = None
   .type = path
 json = None
   .type = path
+split_json = False
+  .type = bool
 individual_plots = False
   .type = bool
 id = None
@@ -97,8 +99,14 @@ def run(args):
 
   if params.json is not None:
     import json
-    with open(params.json, 'wb') as fp:
-      json.dump(stats.__dict__, fp)
+    if not params.split_json:
+      with open(params.json, 'wb') as fp:
+        json.dump(stats.__dict__, fp)
+    else:
+      for k in stats.__dict__:
+        start, end = params.json.split('.')
+        with open('%s_%s.%s' % (start, k, end), 'wb') as fp:
+          json.dump(stats.__dict__[k], fp)
   if params.plot is not None:
     per_image_analysis.plot_stats(stats, filename=params.plot)
 
