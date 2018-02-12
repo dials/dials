@@ -430,7 +430,7 @@ def _write_columns(mtz_file, dataset, integrated_data, scale_partials,
   if nref == 0:
     raise Sorry('no reflections for export')
 
-  xdet, ydet, zdet = [flex.double(x) for x in integrated_data['xyzcal.px'].parts()]
+  xdet, ydet, zdet = [flex.double(x) for x in integrated_data['xyzobs.px.value'].parts()]
 
   # compute BATCH values - floor() to get (fortran) image captured within
   #                        +1     because FORTRAN counting; zdet+1=image_index
