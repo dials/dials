@@ -1,25 +1,5 @@
 from dials.array_family import flex
 
-def reject_outliers(dm, zmax):
-  '''simple, quick, outlier rejection based on normalised deviations
-  (similar to aimless)'''
-  sel = flex.bool([True]*len(dm.reflection_table))
-  z_score = flex.double([])
-  for i, _ in enumerate(dm.Ih_table.h_index_counter_array):
-    h_idx_cumul = dm.Ih_table.h_index_cumulative_array[i:i+2]
-    I = dm.Ih_table.intensities[h_idx_cumul[0]:h_idx_cumul[1]]
-    g = dm.Ih_table.inverse_scale_factors[h_idx_cumul[0]:h_idx_cumul[1]]
-    w = dm.Ih_table.weights[h_idx_cumul[0]:h_idx_cumul[1]]
-    wgIsum = flex.sum(I*g*w)
-    wg2sum = flex.sum(w*g*g)
-    norm_dev_list = (I - (g * wgIsum/wg2sum))/(((1.0/w)+((g/wg2sum)**2))**0.5)
-    abs_norm_dev_list = (norm_dev_list**2)**0.5
-    z_score.extend(abs_norm_dev_list)
-  outliers = z_score > zmax
-  sel.set_selected(outliers, False)
-  return sel
-
-
 def _reject_outliers(self, max_deviation):
   h_index_cumulative_array = self.Ih_table.h_index_cumulative_array
   outlier_list_h_index = []

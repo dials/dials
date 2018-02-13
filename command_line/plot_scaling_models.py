@@ -176,7 +176,7 @@ def plot_absorption_surface(experiment, outputfile=None):
   Intensity = np.ones(THETA.shape)
   counter = 0
   sqrt2 = pymath.sqrt(2)
-  nsssphe = math.nss_spherical_harmonics(order, 5000, lfg)
+  nsssphe = math.nss_spherical_harmonics(order, 50000, lfg)
   for l in range(1, lmax+1):
     for m in range(-l, l+1):
       for it, t in enumerate(theta):
@@ -191,7 +191,7 @@ def plot_absorption_surface(experiment, outputfile=None):
             r = sqrt2 * ((-1) ** m) * Ylm.real
           Intensity[ip, it] += params[counter] * r
       counter += 1
-  Intensity = 1.0/Intensity #make scale factor, not inverse
+  #Intensity = 1.0/Intensity #make scale factor, not inverse
 
   if Intensity.max() - Intensity.min() != 0.0:
     rel_Int = (Intensity - Intensity.min())/(Intensity.max() - Intensity.min())
@@ -208,7 +208,7 @@ def plot_absorption_surface(experiment, outputfile=None):
   ax.set_xticks([0.0, (2.0*STEPS-1)/4.0, (2.0*STEPS-1)/2.0, 3.0*(2.0*STEPS-1)/4.0, (2.0*STEPS-1)])
   ax.set_xticklabels([0, 90, 180, 270, 360])
   ax.set_xlabel('Theta (degrees)')
-  ax.set_title('Scale factors for absorption correction (note: not inverse scales)')
+  ax.set_title('Absorption correction surface')
   divider = make_axes_locatable(ax)
   cax1 = divider.append_axes("right", size="5%", pad=0.05)
   cbar = plt.colorbar(im, cax=cax1, ticks=[0, 0.25, 0.5, 0.75, 1])

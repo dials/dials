@@ -5,7 +5,7 @@ be successfully initialised in order to provide a feed in for the
 Ih_table.
 '''
 import pytest
-from target_Ih import SingleIhTable, JointIhTable
+from Ih_table import SingleIhTable, JointIhTable
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from libtbx import phil

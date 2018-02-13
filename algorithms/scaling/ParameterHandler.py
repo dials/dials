@@ -11,8 +11,8 @@ class ActiveParameterFactory(object):
     self.create_active_list()
 
   def create_active_list(self):
-    from dials.algorithms.scaling import ScalerFactory
-    if isinstance(self.scaler, ScalerFactory.SingleScaler):
+    from dials.algorithms.scaling import Scaler
+    if isinstance(self.scaler, Scaler.SingleScaler):
       param_name = []
       for param in self.scaler.corrections:
         param_name.append('g_'+str(param))
@@ -20,7 +20,7 @@ class ActiveParameterFactory(object):
         assert 0, 'no parameters have been chosen for scaling, aborting process'
       self.param_lists.append(param_name)
 
-    if isinstance(self.scaler, ScalerFactory.TargetScaler):
+    if isinstance(self.scaler, Scaler.TargetScaler):
       for scaler in self.scaler.unscaled_scalers:
         param_name = []
         for param in scaler.corrections:
@@ -35,7 +35,7 @@ class ActiveParameterFactory(object):
       #  assert 0, 'no parameters have been chosen for scaling, aborting process'
       #self.param_lists.append(param_name)
 
-    elif isinstance(self.scaler, ScalerFactory.MultiScaler):
+    elif isinstance(self.scaler, Scaler.MultiScaler):
       for scaler in self.scaler.single_scalers:
         param_name = []
         for param in scaler.corrections:
@@ -60,15 +60,15 @@ class ParameterlistFactory(object):
   @classmethod
   def full_active_list(cls, scaler):
     '''create a list with all params to include'''
-    from dials.algorithms.scaling import ScalerFactory
-    if isinstance(scaler, ScalerFactory.SingleScaler) or isinstance(
-      scaler, ScalerFactory.TargetScaler): # assumes single exp in targetscaler
+    from dials.algorithms.scaling import Scaler
+    if isinstance(scaler, Scaler.SingleScaler) or isinstance(
+      scaler, Scaler.TargetScaler): # assumes single exp in targetscaler
       param_name = []
       for param in scaler.corrections:
         param_name.append('g_'+str(param))
       if not param_name:
         assert 0, 'no parameters have been chosen for scaling, aborting process'
-    elif isinstance(scaler, ScalerFactory.MultiScaler):
+    elif isinstance(scaler, Scaler.MultiScaler):
       param_name_list = []
       for scaler in scaler.single_scalers:
         param_name = []

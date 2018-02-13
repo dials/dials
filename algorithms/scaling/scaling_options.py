@@ -30,7 +30,7 @@ phil_scope = iotbx.phil.parse('''
               correction."
     modulation_term = False
       .type = bool
-      .help = "Option to turn off absorption correction"
+      .help = "Option to turn on a detector correction for xscale parameterisation."
   }
   reflection_selection {
     E2min = 0.8

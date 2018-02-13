@@ -28,11 +28,12 @@ from dials.util import halraiser
 from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
 
 from dials.algorithms.scaling.minimiser_functions import LBFGS_optimiser
-from dials.algorithms.scaling import ScalingModelFactory
+from dials.algorithms.scaling.model import ScalingModelFactory
 from dials.algorithms.scaling import ScalerFactory
 from dials.algorithms.scaling import ParameterHandler
 from dials.algorithms.scaling.scaling_utilities import (
   parse_multiple_datasets, save_experiments)
+
 
 start_time = time.time()
 logger = logging.getLogger('dials')
@@ -100,12 +101,14 @@ def main(argv):
   assert len(experiments) == len(reflections), ''' mismatched number of
   experiments and reflection tables found'''
 
-  '''first create the scaling model'''
+  '''first create the scaling model if it didn't alread exist in the experiments files'''
   experiments = ScalingModelFactory.Factory.create(params, experiments, reflections)
 
   '''now create the scaler and do the scaling'''
   scaler = ScalerFactory.Factory.create(params, experiments, reflections)
   minimised = lbfgs_scaling(scaler)
+  for experiment in experiments:
+    experiment.scaling_model.set_scaling_model_as_scaled()
 
   if minimised.outlier_table:
     minimised.save_outlier_table('outliers.pickle')

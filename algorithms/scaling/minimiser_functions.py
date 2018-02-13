@@ -15,7 +15,7 @@ class LBFGS_optimiser(object):
   def __init__(self, scaler, param_lists):
     logger.info(('\n'+'*'*40+'\n'+'Initialising LBFGS optimiser instance. \n'))
     self.scaler = scaler
-    from dials.algorithms.scaling.ScalerFactory import MultiScaler, TargetScaler
+    from dials.algorithms.scaling.Scaler import MultiScaler, TargetScaler
     if isinstance(self.scaler, TargetScaler):
       self.apm = target_active_parameter_manager(self.scaler, param_lists)
     elif isinstance(self.scaler, MultiScaler):
@@ -51,7 +51,7 @@ class LBFGS_optimiser(object):
 
   def return_scaler(self):
     '''return scaler method'''
-    from dials.algorithms.scaling.ScalerFactory import MultiScaler
+    from dials.algorithms.scaling.Scaler import MultiScaler
     if not isinstance(self.scaler, MultiScaler):
       if 'g_scale' in self.apm.active_parameterisation:
         self.scaler.normalise_scale_component()
