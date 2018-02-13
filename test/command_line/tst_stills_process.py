@@ -19,6 +19,12 @@ class Test(object):
   def run(self):
     self.test_cspad_cbf_in_memory()
     self.test_sacla_h5()
+    try:
+      import mpi4py # Check if mpi4py exists
+    except ImportError:
+      pass
+    else:
+      self.test_sacla_h5(use_mpi=True)
 
   def test_cspad_cbf_in_memory(self):
     from os.path import join, exists
@@ -84,7 +90,7 @@ class Test(object):
 
     print 'OK'
 
-  def test_sacla_h5(self, in_memory=False):
+  def test_sacla_h5(self, in_memory=False, use_mpi=False):
     from os.path import join, exists
     from libtbx import easy_run
     import os
@@ -129,11 +135,13 @@ class Test(object):
     f.close()
 
     # Call dials.stills_process
-    result = easy_run.fully_buffered([
-      'dials.stills_process',
-      join(self.sacla_path, 'run266702-0-subset.h5'),
-      'process_sacla.phil',
-    ]).raise_if_errors()
+    if use_mpi:
+      command = ['mpirun', '-n', '4', 'dials.stills_process']
+    else:
+      command = ['dials.stills_process']
+    command += [join(self.sacla_path, 'run266702-0-subset.h5'),
+      'process_sacla.phil']
+    result = easy_run.fully_buffered(command).raise_if_errors()
     result.show_stdout()
 
     import cPickle as pickle
