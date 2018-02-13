@@ -106,7 +106,7 @@ def exercise_client(port):
 
   from libtbx.test_utils import approx_equal
   assert approx_equal(
-    unit_cell, [40.04, 42.92, 42.56, 89.81, 90.15, 90.19], eps=1e-1)
+    unit_cell, [39.90, 42.67, 42.37, 89.89, 90.10, 90.13], eps=1e-1)
 
   client_command = " ".join([client_command] + filenames[1:])
   result = easy_run.fully_buffered(command=client_command).raise_if_errors()
