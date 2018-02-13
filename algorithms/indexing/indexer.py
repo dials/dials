@@ -2022,7 +2022,7 @@ def find_max_cell(reflections, max_cell_multiplier, step_size,
     q2 = sorted_bin_counts[nint(len(sorted_bin_counts)/2)]
     q3 = sorted_bin_counts[nint(len(sorted_bin_counts)*3/4)]
     iqr = q3-q1
-    inlier_sel = (bin_counts > (q1 - 1.5*iqr)) & (bin_counts < (q3 + 1.5*iqr))
+    inlier_sel = (bin_counts >= (q1 - 1.5*iqr)) & (bin_counts <= (q3 + 1.5*iqr))
 
     sel = flex.bool(d_star_sq.size(), True)
     for i_slot in range(hist.slots().size()):
