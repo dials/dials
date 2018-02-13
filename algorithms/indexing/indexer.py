@@ -2035,7 +2035,8 @@ def find_max_cell(reflections, max_cell_multiplier, step_size,
   #from libtbx import easy_pickle
   #easy_pickle.dump('filtered.pickle', reflections)
 
-  assert len(reflections) > 0
+  assert len(reflections) > 0, \
+         'Too few spots remaining for nearest neighbour analysis (%d)' %len(reflections)
   # The nearest neighbour analysis gets fooled when the same part of
   # reciprocal space has been measured twice as this introduced small
   # random differences in position between reflections measured twice.
