@@ -18,7 +18,7 @@ class basis_function(object):
   def update_scale_factors(self):
     '''update the parameters in each SF object from the apm parameter list.'''
     for i, active_param in enumerate(self.apm.active_parameterisation):
-      SF_object = self.scaler.g_parameterisation[active_param]
+      SF_object = self.scaler.experiments.scaling_model.components[active_param]
       SF_object.parameters = self.apm.x[self.apm.n_cumul_params_list[i]:
         self.apm.n_cumul_params_list[i+1]]
       SF_object.calculate_scales_and_derivatives()
@@ -27,7 +27,7 @@ class basis_function(object):
     '''calculate overall scale factor from reflections from individual components'''
     multiplied_scale_factors = flex.double([1.0] * self.scaler.Ih_table.size)
     for active_param in self.apm.active_parameterisation:
-      multiplied_scale_factors *= self.scaler.g_parameterisation[
+      multiplied_scale_factors *= self.scaler.experiments.scaling_model.components[
         active_param].inverse_scales
     if self.apm.constant_g_values:
       multiplied_scale_factors *= self.apm.constant_g_values
@@ -35,15 +35,15 @@ class basis_function(object):
 
   def calculate_derivatives(self):
     '''calculate derivatives matrix'''
-    if len(self.scaler.g_parameterisation) == 1:
+    if len(self.scaler.experiments.scaling_model.components) == 1:
       #only one active parameter, so don't need to chain rule any derivatives
-      return self.scaler.g_parameterisation.values()[0].derivatives
+      return self.scaler.experiments.scaling_model.components.values()[0].derivatives
     derivatives = sparse.matrix(self.scaler.Ih_table.size,
       self.apm.n_active_params)
     for i, active_param in enumerate(self.apm.active_parameterisation):
-      derivs = self.scaler.g_parameterisation[active_param].derivatives
+      derivs = self.scaler.experiments.scaling_model.components[active_param].derivatives
       scale_multipliers = flex.double([1.0] * self.scaler.Ih_table.size)
-      for param, SF_obj in self.scaler.g_parameterisation.iteritems():
+      for param, SF_obj in self.scaler.experiments.scaling_model.components.iteritems():
         if param != active_param:
           scale_multipliers *= SF_obj.inverse_scales
       next_deriv = row_multiply(derivs, scale_multipliers)

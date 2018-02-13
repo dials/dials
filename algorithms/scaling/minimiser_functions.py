@@ -5,35 +5,21 @@ from __future__ import print_function
 import logging
 from dials.array_family import flex
 from scitbx import lbfgs, sparse
-from dials.algorithms.scaling.ParameterHandler import \
-  multi_active_parameter_manager, active_parameter_manager, target_active_parameter_manager
 
 logger = logging.getLogger('dials')
 
 class LBFGS_optimiser(object):
   '''Class that takes in scaler object and runs an LBFGS minimisation'''
-  def __init__(self, scaler, param_lists):
+  def __init__(self, scaler, apm):
     logger.info(('\n'+'*'*40+'\n'+'Initialising LBFGS optimiser instance. \n'))
     self.scaler = scaler
-    from dials.algorithms.scaling.Scaler import MultiScaler, TargetScaler
-    if isinstance(self.scaler, TargetScaler):
-      self.apm = target_active_parameter_manager(self.scaler, param_lists)
-    elif isinstance(self.scaler, MultiScaler):
-      self.apm = multi_active_parameter_manager(self.scaler, param_lists)
-    else:
-      self.apm = active_parameter_manager(self.scaler, param_lists[0])
+    self.apm = apm
     self.x = self.apm.x
     self.residuals = []
     self.core_params = lbfgs.core_parameters(maxfev=15)
     self.termination_params = lbfgs.termination_parameters(max_iterations=15)
     lbfgs.run(target_evaluator=self, core_params=self.core_params,
               termination_params=self.termination_params)
-    #if param_name == 'g_decay':
-    #  if self.scaler.params.scaling_options.decay_correction_rescaling:
-    #    if self.scaler.params.scaling_options.minimisation_parameterisation == 'standard':
-    #      self.scaler.scale_gvalues()
-    #logger.info(('\nCompleted minimisation for following corrections: {0}\n'
-    #       +'*'*40+'\n').format(''.join(i.lstrip('g_')+' ' for i in param_lists)))
 
   def compute_functional_and_gradients(self):
     '''first calculate the updated values of the scale factors and Ih,
@@ -52,11 +38,11 @@ class LBFGS_optimiser(object):
   def return_scaler(self):
     '''return scaler method'''
     from dials.algorithms.scaling.Scaler import MultiScalerBase
-    if not isinstance(self.scaler, MultiScalerBase):
-      if 'g_scale' in self.apm.active_parameterisation:
-        self.scaler.normalise_scale_component()
-      if 'g_decay' in self.apm.active_parameterisation:
-        self.scaler.normalise_decay_component()
+    #if not isinstance(self.scaler, MultiScalerBase):
+    #  if 'scale' in self.apm.active_parameterisation:
+    #    self.scaler.normalise_scale_component()
+    #  if 'decay' in self.apm.active_parameterisation:
+    #    self.scaler.normalise_decay_component()
     return self.scaler
 
   def make_all_scales_positive(self, param_name):
