@@ -12,7 +12,7 @@ class ActiveParameterFactory(object):
 
   def create_active_list(self):
     from dials.algorithms.scaling import Scaler
-    if isinstance(self.scaler, Scaler.SingleScaler):
+    if isinstance(self.scaler, Scaler.SingleScalerBase):
       param_name = []
       for param in self.scaler.corrections:
         param_name.append('g_'+str(param))
@@ -61,7 +61,7 @@ class ParameterlistFactory(object):
   def full_active_list(cls, scaler):
     '''create a list with all params to include'''
     from dials.algorithms.scaling import Scaler
-    if isinstance(scaler, Scaler.SingleScaler) or isinstance(
+    if isinstance(scaler, Scaler.SingleScalerBase) or isinstance(
       scaler, Scaler.TargetScaler): # assumes single exp in targetscaler
       param_name = []
       for param in scaler.corrections:

@@ -10,7 +10,7 @@ from dials.array_family import flex
 from dials.util.options import OptionParser
 from libtbx import phil
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment, ExperimentList
-import ScalingModelFactory as ScalingModelFactory
+from dials.algorithms.scaling.model import ScalingModelFactory as ScalingModelFactory
 import ScalerFactory as ScalerFactory
 
 @pytest.fixture(scope='module')

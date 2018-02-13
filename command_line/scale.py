@@ -199,7 +199,7 @@ def lbfgs_scaling(scaler):
   '''The minimisation has only been done on a subset on the data, so apply the
   scale factors to the whole reflection table.'''
   scaler.expand_scales_to_all_reflections()
-  if isinstance(scaler, ScalerFactory.MultiScaler):
+  if isinstance(scaler, ScalerFactory.MultiScalerBase):
     scaler.join_multiple_datasets()
   return scaler
 

@@ -19,8 +19,7 @@ class target_function(object):
           * Ih_tab.weights))
     #if self.scaler.id_ == 'aimless':#self.scaler.params.scaling_model == 'aimless':
     if 'g_absorption' in self.apm.active_parameterisation:
-      constraint_values = self.scaler.calc_absorption_constraint(self.apm)[0]
-      R.extend(constraint_values)
+      R.extend(self.scaler.calc_absorption_constraint(self.apm)[0])
     return flex.sum(R)
 
   def calculate_gradient(self):

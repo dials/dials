@@ -11,7 +11,7 @@ from basis_functions import basis_function
 from libtbx import phil
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
-import ScalingModelFactory as ScalingModelFactory
+from dials.algorithms.scaling.model import ScalingModelFactory as ScalingModelFactory
 import ScalerFactory as ScalerFactory
 
 
