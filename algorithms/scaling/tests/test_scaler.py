@@ -148,15 +148,15 @@ def test_apm():
   experiments = ScalingModelFactory.Factory.create(params, test_experiments, test_reflections)
   scaler = ScalerFactory.Factory.create(params, experiments, test_reflections)
 
-  apm = active_parameter_manager(scaler, ['g_decay', 'g_scale'])
-  assert 'g_decay' in apm.active_parameterisation
-  assert 'g_scale' in apm.active_parameterisation
-  assert 'g_absorption' not in apm.active_parameterisation
-  assert apm.n_active_params == scaler.g_scale.n_params + scaler.g_decay.n_params
+  apm = active_parameter_manager(scaler, ['decay', 'scale'])
+  assert 'decay' in apm.active_parameterisation
+  assert 'scale' in apm.active_parameterisation
+  assert 'absorption' not in apm.active_parameterisation
+  assert apm.n_active_params == scaler.components['scale'].n_params + scaler.components['decay'].n_params
   assert apm.constant_g_values is not None
-  assert list(apm.constant_g_values) == list(scaler.g_absorption.inverse_scales)
+  assert list(apm.constant_g_values) == list(scaler.components['absorption'].inverse_scales)
   for i, p in enumerate(apm.active_parameterisation):
-    assert apm.n_params_list[i] == scaler.g_parameterisation[p].n_params
+    assert apm.n_params_list[i] == scaler.components[p].n_params
 
 def test_multi_apm():
   '''test for the multi active parameter manager. Also serves as general
@@ -169,16 +169,16 @@ def test_multi_apm():
 
   assert isinstance(scaler, ScalerFactory.MultiScaler)
 
-  apm = multi_active_parameter_manager(scaler, [['g_decay', 'g_scale'], ['g_decay', 'g_scale']])
-  assert 'g_decay' in apm.active_parameterisation
-  assert 'g_scale' in apm.active_parameterisation
-  assert 'g_absorption' not in apm.active_parameterisation
+  apm = multi_active_parameter_manager(scaler, [['decay', 'scale'], ['decay', 'scale']])
+  assert 'decay' in apm.active_parameterisation
+  assert 'scale' in apm.active_parameterisation
+  assert 'absorption' not in apm.active_parameterisation
   dm0 = scaler.single_scalers[0]
   dm1 = scaler.single_scalers[1]
-  assert apm.n_active_params == (dm0.g_scale.n_params + dm0.g_decay.n_params
-    + dm1.g_scale.n_params + dm1.g_decay.n_params)
-  assert apm.n_params_in_each_apm[0] == dm0.g_scale.n_params + dm0.g_decay.n_params
-  assert apm.n_params_in_each_apm[1] == dm1.g_scale.n_params + dm1.g_decay.n_params
+  assert apm.n_active_params == (dm0.components['scale'].n_params + dm0.components['decay'].n_params
+    + dm1.components['scale'].n_params + dm1.components['decay'].n_params)
+  assert apm.n_params_in_each_apm[0] == dm0.components['scale'].n_params + dm0.components['decay'].n_params
+  assert apm.n_params_in_each_apm[1] == dm1.components['scale'].n_params + dm1.components['decay'].n_params
   params = apm.apm_list[0].x
   params.extend(apm.apm_list[1].x)
   assert list(apm.x) == list(params)
@@ -198,38 +198,38 @@ def test_basis_function(generated_KB_param):
   #params.scaling_options.multi_mode = False
   #data_manager = KB_Data_Manager(test_reflections, test_experiments, params)
 
-  apm = active_parameter_manager(scaler, ['g_scale', 'g_decay'])
+  apm = active_parameter_manager(scaler, ['decay', 'scale'])
 
   #first change the parameters in the apm
-  n_scale_params = scaler.g_scale.n_params
-  n_decay_params = scaler.g_decay.n_params
-  #order of params in apm.x - decay first then scale
+  n_scale_params = scaler.components['scale'].n_params
+  n_decay_params = scaler.components['decay'].n_params
+  #order of params in apm.x - depends on order in scaling model 'components'
   new_B = 1.0
   new_S = 2.0
-  apm.x = flex.double([new_B] * n_decay_params)
-  apm.x.extend(flex.double([new_S] * n_scale_params))
+  apm.x = (flex.double([new_S] * n_scale_params))
+  apm.x.extend(flex.double([new_B] * n_decay_params))
   basis_func = basis_function(scaler, apm)
 
   #first check that scale factors can be successfully updated
   basis_fn = basis_func.return_basis() #includes update SF method.
-  assert list(scaler.g_decay.parameters) == (
+  assert list(scaler.components['decay'].parameters) == (
     list(flex.double([new_B] * n_decay_params)))
-  assert list(scaler.g_scale.parameters) == (
+  assert list(scaler.components['scale'].parameters) == (
     list(flex.double([new_S] * n_scale_params)))
 
   #now check that the inverse scale factor was correctly calculated
   assert list(basis_fn[0]) == list(new_S * np.exp(new_B/
-    (2.0*(scaler.g_decay.d_values**2))))
+    (2.0*(scaler.components['decay'].d_values**2))))
 
   #now check that the derivative matrix was correctly calculated
-  g_decay = scaler.g_decay
-  g_scale = scaler.g_scale
-  assert basis_fn[1][0, 0] == g_decay.derivatives[0, 0] * g_scale.inverse_scales[0]
-  assert basis_fn[1][1, 0] == g_decay.derivatives[1, 0] * g_scale.inverse_scales[1]
-  assert basis_fn[1][2, 0] == g_decay.derivatives[2, 0] * g_scale.inverse_scales[2]
-  assert basis_fn[1][0, 1] == g_scale.derivatives[0, 0] * g_decay.inverse_scales[0]
-  assert basis_fn[1][1, 1] == g_scale.derivatives[1, 0] * g_decay.inverse_scales[1]
-  assert basis_fn[1][2, 1] == g_scale.derivatives[2, 0] * g_decay.inverse_scales[2]
+  g_decay = scaler.components['decay']
+  g_scale = scaler.components['scale']
+  assert basis_fn[1][0, 0] == g_scale.derivatives[0, 0] * g_decay.inverse_scales[0]
+  assert basis_fn[1][1, 0] == g_scale.derivatives[1, 0] * g_decay.inverse_scales[1]
+  assert basis_fn[1][2, 0] == g_scale.derivatives[2, 0] * g_decay.inverse_scales[2]
+  assert basis_fn[1][0, 1] == g_decay.derivatives[0, 0] * g_scale.inverse_scales[0]
+  assert basis_fn[1][1, 1] == g_decay.derivatives[1, 0] * g_scale.inverse_scales[1]
+  assert basis_fn[1][2, 1] == g_decay.derivatives[2, 0] * g_scale.inverse_scales[2]
 
   #test case of only one active parameter as well on fresh data manager
   (test_reflections, test_experiments, params) = generated_single_input(
@@ -238,24 +238,24 @@ def test_basis_function(generated_KB_param):
   assert len(test_reflections) == 1
   experiments = ScalingModelFactory.Factory.create(params, test_experiments, test_reflections)
   scaler = ScalerFactory.Factory.create(params, experiments, test_reflections)
-  apm = active_parameter_manager(scaler, ['g_scale'])
+  apm = active_parameter_manager(scaler, ['scale'])
 
   #need to set the inverse scales for this test dataset.
-  scaler.g_scale.inverse_scales = flex.double([1.0, 1.0, 1.0])
-  scaler.g_decay.inverse_scales = flex.double([1.0, 1.0, 1.0])
+  scaler.components['scale'].inverse_scales = flex.double([1.0, 1.0, 1.0])
+  scaler.components['decay'].inverse_scales = flex.double([1.0, 1.0, 1.0])
   #first change the parameters in the apm
   new_S = 2.0
-  apm.x = flex.double([new_S] * scaler.g_scale.n_params)
+  apm.x = flex.double([new_S] * scaler.components['scale'].n_params)
   basis_func = basis_function(scaler, apm)
   basis_fn = basis_func.return_basis()
 
   #now check that the inverse scale factor was correctly calculated
-  assert list(basis_fn[0]) == list([new_S] * len(scaler.g_scale.inverse_scales))
+  assert list(basis_fn[0]) == list([new_S] * len(scaler.components['scale'].inverse_scales))
 
   #now check that the derivative matrix was correctly calculated
-  assert basis_fn[1][0, 0] == scaler.g_scale.derivatives[0, 0]
-  assert basis_fn[1][1, 0] == scaler.g_scale.derivatives[1, 0]
-  assert basis_fn[1][2, 0] == scaler.g_scale.derivatives[2, 0]
+  assert basis_fn[1][0, 0] == scaler.components['scale'].derivatives[0, 0]
+  assert basis_fn[1][1, 0] == scaler.components['scale'].derivatives[1, 0]
+  assert basis_fn[1][2, 0] == scaler.components['scale'].derivatives[2, 0]
 
 def test_target_function(generated_KB_param):
   (test_reflections, test_experiments, params) = generated_single_input(
@@ -267,12 +267,12 @@ def test_target_function(generated_KB_param):
   assert scaler.id_ == 'KB'
 
   #setup of data manager
-  scaler.g_scale.parameters = flex.double([2.0])
-  scaler.g_decay.parameters = flex.double([1.0])
-  scaler.g_scale.inverse_scales = flex.double([1.0, 2.0, 1.0])
-  scaler.g_decay.inverse_scales = flex.double([1.0, 2.0, 1.0])
+  scaler.components['scale'].parameters = flex.double([2.0])
+  scaler.components['decay'].parameters = flex.double([1.0])
+  scaler.components['scale'].inverse_scales = flex.double([1.0, 2.0, 1.0])
+  scaler.components['decay'].inverse_scales = flex.double([1.0, 2.0, 1.0])
 
-  apm = active_parameter_manager(scaler, ['g_scale', 'g_decay'])
+  apm = active_parameter_manager(scaler, ['scale', 'decay'])
   scaler.update_for_minimisation(apm)
 
   #first get residual and gradients

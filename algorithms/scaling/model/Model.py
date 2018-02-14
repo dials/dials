@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from dials.array_family import flex
-import dials.algorithms.scaling.scale_factor as SF
+import dials.algorithms.scaling.model.scale_factor as SF
 
 class ScalingModelBase(object):
   '''Base class for Scale Factories'''

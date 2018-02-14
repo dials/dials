@@ -2,7 +2,7 @@
 tests for scalefactor objects
 '''
 from dials.array_family import flex
-from scale_factor import (ScaleFactor, KScaleFactor, BScaleFactor,
+from model.scale_factor import (ScaleFactor, KScaleFactor, BScaleFactor,
   SmoothScaleFactor, SmoothScaleFactor1D, SmoothBScaleFactor1D, SHScaleFactor)
 import pytest
 from scitbx import sparse
