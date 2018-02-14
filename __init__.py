@@ -1,11 +1,5 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 import dials.extensions
-
 import logging
-try:
-  from logging import NullHandler
-except ImportError:
-  class NullHandler(logging.Handler):
-    def emit(self, record):
-      pass
-logging.getLogger(__name__).addHandler(NullHandler())
+
+logging.getLogger('dials').addHandler(logging.NullHandler())
