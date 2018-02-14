@@ -4,12 +4,26 @@ from dials.array_family import flex
 logger = logging.getLogger('dials')
 
 class ActiveParameterFactory(object):
+  '''class to create and return appropriate apm factory.'''
+
+  @classmethod
+  def create(cls, scaler):
+    '''create the factory based on phil options'''
+    if scaler.params.scaling_options.concurrent_scaling:
+      return ConcurrentParameterFactory(scaler)
+    else:
+      return ConsecutiveParameterFactory(scaler)
+
+
+class ConcurrentParameterFactory(object):
+  '''factory to set up apms for concurrent scaling of all active parameters'''
 
   def __init__(self, scaler):
     self.scaler = scaler
     self.apm = None
     self.param_lists = []
     self.create_active_list()
+    self.n_cycles = 1
 
   def create_active_list(self):
     '''return a list indicating the names of active parameters'''
@@ -49,15 +63,20 @@ class ActiveParameterFactory(object):
       assert 0, '''scaler not derived from Scaler.SingleScalerBase or
         Scaler.MultiScalerBase. An additional option must be defined in ParameterHandler'''
 
-  def return_apm(self):
+  def make_next_apm(self):
     'method to call to return the apm'
     return self.apm
 
 class ConsecutiveParameterFactory(object):
+  '''factory to set up apms for consecutive scaling of all active parameters'''
+
   def __init__(self, scaler):
     self.scaler = scaler
-    self.param_lists = None
+    self.param_lists = []
+    self.n_cycles = None
     self.create_consecutive_list()
+    print(self.param_lists)
+    print(self.n_cycles)
 
   def create_consecutive_list(self):
     '''return a list indicating the names of active parameters'''
@@ -65,78 +84,73 @@ class ConsecutiveParameterFactory(object):
     #scalers derived from new base scalers in future?
     from dials.algorithms.scaling import Scaler
     if isinstance(self.scaler, Scaler.SingleScalerBase):
-      param_name = []
       corrections = self.scaler.experiments.scaling_model.configdict['corrections']
-      if self.scaler.experiments.scaling_model.id_ == 'aimless':
-        if 'scale' in corrections and 'decay' in corrections:
-          param_name.append(['scale', 'decay'])
-        elif 'scale' in corrections:
-          param_name.append(['scale'])
-        elif 'decay' in corrections:
-          param_name.append(['decay'])
-        if 'absorption' in self.scaler.experiments.scaling_model.configdict['corrections']:
-          param_name.append(['absorption'])
+      for cycle in self.scaler.consecutive_scaling:
+        corrlist = []
+        for corr in cycle:
+          if corr in corrections:
+            corrlist.append(corr)
+        self.param_lists.append(corrlist)
+      self.n_cycles = sum([1 for i in self.param_lists if i])
+
+    elif isinstance(self.scaler, Scaler.MultiScalerBase):
+      if self.scaler.id_ == 'target':
+        scalers = self.scaler.unscaled_scalers
+      elif self.scaler.id_ == 'multi':
+        scalers = self.scaler.single_scalers
       else:
-        for param in corrections:
-          param_name.append([str(param)])
-      self.param_lists = param_name
+        assert 0, 'unrecognised scaler id_ for scaler derived from MultiScalerBase'
+
+      for scaler in scalers:
+        ind_param_list = []
+        corrections = scaler.experiments.scaling_model.configdict['corrections']
+        for cycle in scaler.consecutive_scaling:
+          corrlist = []
+          for corr in cycle:
+            if corr in corrections:
+              corrlist.append(corr)
+          ind_param_list.append(corrlist)
+        self.param_lists.append(ind_param_list)
+      #now need to calculate the max number of cycles needed across all scalers
+      is_cycle_active = []
+      for p_list in self.param_lists:
+        for i, cycle in enumerate(p_list):
+          if cycle:
+            is_cycle_active.append(i)
+      self.n_cycles = len(set(is_cycle_active))
+      #now make sure all lists are same length
+      max_len = max([len(i) for i in self.param_lists])
+      for p_list in self.param_lists:
+        for _ in range(max_len - len(p_list)):
+          p_list.append([])
     else:
-      assert 0, 'method not yet implemented for consecutive scaling of multiple datasets.'
+      assert 0, '''scaler not derived from Scaler.SingleScalerBase or
+        Scaler.MultiScalerBase. An additional option must be defined in ParameterHandler'''
 
   def make_next_apm(self):
-    apm = active_parameter_manager(self.scaler, self.param_lists[0])
-    self.param_lists = self.param_lists[1:]
-    return apm
-
-class ParameterlistFactory(object):
-  '''
-  Factory to create parameter lists to pass to a minimiser.
-  The methods should return a nested list
-  i.e [['scale','decay','absorption']]
-  or [['scale','decay'],['absorption']]
-  '''
-  @classmethod
-  def full_active_list(cls, scaler):
-    '''create a list with all params to include'''
+    '''generate a valid apm for minimisation (contains some active parameters,
+    but not necessarily for all datasets)'''
     from dials.algorithms.scaling import Scaler
-    if isinstance(scaler, Scaler.SingleScalerBase) or isinstance(
-      scaler, Scaler.TargetScaler): # assumes single exp in targetscaler
-      param_name = []
-      for param in scaler.corrections:
-        param_name.append('g_'+str(param))
-      if not param_name:
-        assert 0, 'no parameters have been chosen for scaling, aborting process'
-    elif isinstance(scaler, Scaler.MultiScaler):
-      param_name_list = []
-      for scaler in scaler.single_scalers:
-        param_name = []
-        for param in scaler.corrections:
-          param_name.append('g_'+str(param))
-        if not param_name:
-          assert 0, 'no parameters have been chosen for scaling, aborting process'
-        param_name_list.append(param_name)
-
-    return [param_name]
-
-  @classmethod
-  def consecutive_list(cls, scaler):
-    '''create a nested list with all params to include'''
-    param_name = []
-    corrections = scaler.experiments.scaling_model.configdict['corrections']
-    if scaler.experiments.scaling_model.id_ == 'aimless':
-      if 'scale' in corrections and 'decay' in corrections:
-        param_name.append(['g_scale', 'g_decay'])
-      elif 'scale' in corrections:
-        param_name.append(['g_scale'])
-      elif 'decay' in corrections:
-        param_name.append(['g_decay'])
-      if 'absorption' in scaler.experiments.scaling_model.configdict['corrections']:
-        param_name.append(['g_absorption'])
+    if isinstance(self.scaler, Scaler.SingleScalerBase):
+      apm = active_parameter_manager(self.scaler, self.param_lists[0])
+      self.param_lists = self.param_lists[1:]
+    elif isinstance(self.scaler, Scaler.MultiScalerBase):
+      params = []
+      for i in range(0, len(self.param_lists)):
+        params.append(self.param_lists[i][0])
+        self.param_lists[i] = self.param_lists[i][1:] #remove first element
+      if self.scaler.id_ == 'multi':
+        apm = multi_active_parameter_manager(self.scaler, params)
+      elif self.scaler.id_ == 'target':
+        apm = target_active_parameter_manager(self.scaler, params)
+      else:
+        assert 0, 'unrecognised scaler id_ for scaler derived from MultiScalerBase'
     else:
-      for param in corrections:
-        param_name.append(['g_'+str(param)])
-    return param_name
-
+      assert 0, '''scaler not derived from SingleScalerBase or MultiScalerBase.
+        An additional option must be defined in ParameterHandler'''
+    if not apm.active_parameterisation: #no active parameters, so iterate
+      apm = self.make_next_apm()
+    return apm
 
 class active_parameter_manager(object):
   ''' object to manage the current active parameters during minimisation.

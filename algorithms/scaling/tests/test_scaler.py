@@ -281,8 +281,10 @@ def test_target_function(generated_KB_param):
     below will not really be working!"""
   f_d_grad = calculate_gradient_fd(scaler, apm)
   assert list(grad - f_d_grad) < ([1e-5] * apm.n_active_params)
-  assert list(f_d_grad) > [1e-8] * apm.n_active_params, """finite difference
-    grad should not be zero, or the test will not really be working!"""
+  sel = f_d_grad > 1e-8
+  assert sel, """assert sel has some elements, as finite difference grad should
+    not all be zero, or the test will not really be working!
+    (expect one to be zero for KB scaling example?)"""
 
 def calculate_gradient_fd(dm, apm):
   '''calculate gradient array with finite difference approach'''

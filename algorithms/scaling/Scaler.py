@@ -199,7 +199,7 @@ class SingleScalerBase(ScalerBase):
     logger.info('\nInitialising a Single Scaler instance. \n')
     super(SingleScalerBase, self).__init__()
     self._experiments = experiment
-    self._corrections = experiment.scaling_model.configdict['corrections']
+    #self._corrections = experiment.scaling_model.configdict['corrections']
     self._params = params
     logger.info("Dataset id for this reflection table is %s." % scaled_id)
     logger.info(('The type of scaling model being applied to this dataset {sep}'
@@ -220,11 +220,20 @@ class SingleScalerBase(ScalerBase):
 
   @property
   def corrections(self):
-    return self._corrections
+    'shortcut to scaling model corrections'
+    return self._experiments.scaling_model.configdict['corrections']
 
   @property
   def components(self):
     return self.experiments.scaling_model.components
+
+  @abc.abstractproperty
+  def consecutive_scaling(self):
+    '''should return a nested list of correction names, to indicate the order
+    to perform scaling in consecutive scaling mode if concurrent_scaling=0.
+    e.g. [['scale', 'decay'], ['absorption']] would cause the first cycle to
+    refine scale and decay, and then absorption in a subsequent cycle.'''
+    pass
 
   def update_for_minimisation(self, apm):
     '''update the scale factors and Ih for the next iteration of minimisation'''
@@ -416,6 +425,10 @@ class KBScaler(SingleScalerBase):
     self._select_reflections_for_scaling()
     logger.info('Completed initialisation of KB Scaler. \n' + '*'*40 + '\n')
 
+  @property
+  def consecutive_scaling(self):
+    return [['scale', 'decay']]
+
   def _select_reflections_for_scaling(self):
     (refl_for_scaling, weights_for_scaling, _) = (
       self._scaling_subset(self.reflection_table, self.params))
@@ -465,13 +478,16 @@ class AimlessScaler(SingleScalerBase):
     super(AimlessScaler, self).__init__(params, experiment, reflection, scaled_id)
     self.sph_harm_table = None
     self.absorption_weights = None
-    #determine outliers, initialise scalefactors and extract data for scaling
     if self.params.scaling_options.reject_outliers:
       self._Ih_table = SingleIhTable(self.reflection_table)
       self.round_of_outlier_rejection()
     self._initialise_scale_factors()
     self._select_reflections_for_scaling()
     logger.info('Completed initialisation of AimlessScaler. \n' + '*'*40 + '\n')
+
+  @property
+  def consecutive_scaling(self):
+    return [['scale', 'decay'], ['absorption']]
 
   def _initialise_scale_factors(self):
     '''initialise scale factors and add to self.active_parameters'''
@@ -578,6 +594,10 @@ class XscaleScaler(SingleScalerBase):
     self._initialise_scale_factors()
     self._select_reflections_for_scaling()
     logger.info('Completed initialisation of Xscale Scaler. \n' + '*'*40 + '\n')
+
+  @property
+  def consecutive_scaling(self):
+    return [['decay'], ['absorption'], ['modulation']]
 
   def _initialise_scale_factors(self):
     logger.info('Initialising scale factor objects. \n')
@@ -775,8 +795,9 @@ class MultiScaler(MultiScalerBase):
     for i, scaler in enumerate(self.single_scalers):
       basis_fn = scaler.get_basis_function(apm.apm_list[i])
       scaler.Ih_table.inverse_scale_factors = basis_fn[0]
-      expanded = basis_fn[1].transpose() * self.Ih_table.h_index_expand_list[i]
-      apm.active_derivatives.assign_block(expanded.transpose(), 0, apm.n_cumul_params_list[i])
+      if basis_fn[1]:
+        expanded = basis_fn[1].transpose() * self.Ih_table.h_index_expand_list[i]
+        apm.active_derivatives.assign_block(expanded.transpose(), 0, apm.n_cumul_params_list[i])
     self.Ih_table.calc_Ih()
 
   def expand_scales_to_all_reflections(self, caller=None):

@@ -106,7 +106,8 @@ def main(argv):
 
   '''now create the scaler and do the scaling'''
   scaler = ScalerFactory.Factory.create(params, experiments, reflections)
-  minimised = lbfgs_scaling(scaler)
+  minimised = scaling_algorithm(scaler)
+
   for experiment in experiments:
     experiment.scaling_model.set_scaling_model_as_scaled()
 
@@ -161,17 +162,23 @@ def main(argv):
   logger.info("\nTotal time taken: {0:.4f}s ".format((finish_time - start_time)))
   logger.info('\n'+'*'*40+'\n')
 
-def lbfgs_scaling(scaler):
-  '''main function to do lbfbs scaling'''
+def perform_scaling(scaler):
+  '''a function to call to do a complete minimisation based on the current state'''
+  apm_factory = ParameterHandler.ActiveParameterFactory.create(scaler)
+  for _ in range(apm_factory.n_cycles):
+    apm = apm_factory.make_next_apm() 
+    #if apm.active_parameterisation:
+    scaler = LBFGS_optimiser(scaler, apm).return_scaler()
+  return scaler
 
+def scaling_algorithm(scaler):
+  '''main function to do lbfbs scaling'''
   if scaler.id_ == 'target':
     '''do a scaling round against a target of already scaled datasets'''
-    apm = ParameterHandler.ActiveParameterFactory(scaler).return_apm()
-    '''Pass the scaler to the optimiser'''
-    scaler = LBFGS_optimiser(scaler, apm).return_scaler()
+    scaler = perform_scaling(scaler)
 
     '''the minimisation has only been done on a subset on the data, so apply the
-    scale factors to the sorted reflection table.'''
+    scale factors to the whole reflection table.'''
     scaler.expand_scales_to_all_reflections()
     if scaler.params.scaling_options.only_target is True:
       scaler.join_multiple_datasets()
@@ -181,18 +188,11 @@ def lbfgs_scaling(scaler):
 
   '''from here onwards, scaler should only be a SingleScaler
   or MultiScaler (not TargetScaler)'''
-  if scaler.params.scaling_options.concurrent_scaling:
-    apm = ParameterHandler.ActiveParameterFactory(scaler).return_apm()
-    scaler = LBFGS_optimiser(scaler, apm).return_scaler()
-  else:
-    apm_factory = ParameterHandler.ConsecutiveParameterFactory(scaler)
-    for _ in range(0,len(apm_factory.param_lists)):
-      apm = apm_factory.make_next_apm()
-      scaler = LBFGS_optimiser(scaler, apm).return_scaler()
+  scaler = perform_scaling(scaler)
   '''Optimise the error model and then do another minimisation'''
-  '''if scaler.params.weighting.optimise_error_model:
+  if scaler.params.weighting.optimise_error_model:
     scaler.update_error_model()
-    scaler = LBFGS_optimiser(scaler, apm).return_scaler()'''
+    scaler = perform_scaling(scaler)
 
   '''The minimisation has only been done on a subset on the data, so apply the
   scale factors to the whole reflection table.'''

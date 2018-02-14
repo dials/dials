@@ -35,11 +35,13 @@ class basis_function(object):
 
   def calculate_derivatives(self):
     '''calculate derivatives matrix'''
-    if len(self.scaler.experiments.scaling_model.components) == 1:
+    if not self.apm.active_parameterisation:
+      return None
+    if len(self.apm.active_parameterisation) == 1:
       #only one active parameter, so don't need to chain rule any derivatives
-      return self.scaler.experiments.scaling_model.components.values()[0].derivatives
-    derivatives = sparse.matrix(self.scaler.Ih_table.size,
-      self.apm.n_active_params)
+      active_param = self.apm.active_parameterisation[0]
+      return self.scaler.experiments.scaling_model.components[active_param].derivatives
+    derivatives = sparse.matrix(self.scaler.Ih_table.size, self.apm.n_active_params)
     for i, active_param in enumerate(self.apm.active_parameterisation):
       derivs = self.scaler.experiments.scaling_model.components[active_param].derivatives
       scale_multipliers = flex.double([1.0] * self.scaler.Ih_table.size)
