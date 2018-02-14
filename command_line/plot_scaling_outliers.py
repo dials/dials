@@ -1,18 +1,12 @@
 from __future__ import absolute_import, division, print_function
 import sys
-import numpy as np
 import matplotlib
-from dials.array_family import flex
 from dials.util import halraiser
-from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
-from dials.algorithms.scaling.model import ScalingModelFactory
-from dials.algorithms.scaling.model import Model
-from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets
+from dials.util.options import OptionParser, flatten_reflections
 from libtbx import phil
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 phil_scope = phil.parse('''
   output {

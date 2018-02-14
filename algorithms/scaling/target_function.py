@@ -17,8 +17,7 @@ class target_function(object):
     Ih_tab = self.scaler.Ih_table
     R = ((((Ih_tab.intensities - (Ih_tab.inverse_scale_factors * Ih_tab.Ih_values))**2)
           * Ih_tab.weights))
-    #if self.scaler.id_ == 'aimless':#self.scaler.params.scaling_model == 'aimless':
-    if 'g_absorption' in self.apm.active_parameterisation:
+    if 'absorption' in self.apm.components_list:
       R.extend(self.scaler.calc_absorption_constraint(self.apm)[0])
     return flex.sum(R)
 
@@ -30,15 +29,15 @@ class target_function(object):
     rhl = Ih_tab.intensities - (Ih_tab.Ih_values * Ih_tab.inverse_scale_factors)
     dIh = ((Ih_tab.intensities - (Ih_tab.Ih_values * 2.0 * Ih_tab.inverse_scale_factors))
            * Ih_tab.weights)
-    dIh_g = row_multiply(self.apm.active_derivatives, dIh)
+    dIh_g = row_multiply(self.apm.derivatives, dIh)
     dIh_red = dIh_g.transpose() * Ih_tab.h_index_matrix
     dIh_by_dpi = row_multiply(dIh_red.transpose(), 1.0/sumgsq)
     term_1 = (-2.0 * rhl * Ih_tab.weights * Ih_tab.Ih_values *
-              self.apm.active_derivatives)
+              self.apm.derivatives)
     term_2 = (-2.0 * rhl * Ih_tab.weights * Ih_tab.inverse_scale_factors *
               Ih_tab.h_index_matrix) * dIh_by_dpi
     gradient = term_1 + term_2
-    if 'g_absorption' in self.apm.active_parameterisation:
+    if 'absorption' in self.apm.components_list:
       gradient += self.scaler.calc_absorption_constraint(self.apm)[1]
     return gradient
 
@@ -51,8 +50,7 @@ class target_function_fixedIh(target_function):
   def calculate_gradient(self):
     Ih_tab = self.scaler.Ih_table
     rhl = Ih_tab.intensities - (Ih_tab.Ih_values * Ih_tab.inverse_scale_factors)
-    gradient = (-2.0 * rhl * Ih_tab.weights * Ih_tab.Ih_values
-                * self.apm.active_derivatives)
+    gradient = (-2.0 * rhl * Ih_tab.weights * Ih_tab.Ih_values * self.apm.derivatives)
     return gradient
 
 """class xds_target_function_log(target_function):
@@ -72,11 +70,11 @@ class target_function_fixedIh(target_function):
     num = len(intensities)
     dIh = ((scale_factors * intensities) - (Ih_values * 2.0 * scale_factors)) * scaleweights
     for i in range(self.scaler.n_active_params):
-      dIh_g = (dIh * self.apm.active_derivatives[i*num:(i+1)*num])
+      dIh_g = (dIh * self.apm.derivatives[i*num:(i+1)*num])
       dIh_g = np.add.reduceat(dIh_g, self.scaler.Ih_table.h_index_cumulative_array[:-1])/sumgsq
       dIh_g = flex.double(np.repeat(dIh_g, self.scaler.Ih_table.h_index_counter_array))
       drdp = -((Ih_values + dIh_g) * scale_factors
-                * self.apm.active_derivatives[i*num:(i+1)*num])
+                * self.apm.derivatives[i*num:(i+1)*num])
       grad = (2.0 * rhl * scaleweights * drdp)
       gradient.append(flex.sum(grad))
     return gradient"""

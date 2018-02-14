@@ -1,7 +1,23 @@
-import logging
-from dials.array_family import flex
+from dials.algorithms.scaling.active_parameter_managers import \
+  active_parameter_manager, multi_active_parameter_manager
 
-logger = logging.getLogger('dials')
+class scaling_active_parameter_manager(active_parameter_manager):
+  '''
+  Adds an extra property to the apm to avoid a repetitive calculation during
+  mimimisation cycles for scaling.
+  '''
+  def __init__(self, components, selection_list):
+    self.constant_g_values = None
+    for component, obj in components.iteritems():
+      if not component in selection_list:
+        assert hasattr(obj, 'inverse_scales'), '''component object must have the
+          attribute 'inverse_scales'.'''
+        if self.constant_g_values is None:
+          self.constant_g_values = obj.inverse_scales
+        else:
+          self.constant_g_values *= obj.inverse_scales
+    super(scaling_active_parameter_manager, self).__init__(components, selection_list)
+
 
 class ActiveParameterFactory(object):
   '''class to create and return appropriate apm factory.'''
@@ -13,7 +29,6 @@ class ActiveParameterFactory(object):
       return ConcurrentParameterFactory(scaler)
     else:
       return ConsecutiveParameterFactory(scaler)
-
 
 class ConcurrentParameterFactory(object):
   '''factory to set up apms for concurrent scaling of all active parameters'''
@@ -37,7 +52,8 @@ class ConcurrentParameterFactory(object):
       if not param_name:
         assert 0, 'no parameters have been chosen for scaling, aborting process'
       self.param_lists = param_name
-      self.apm = active_parameter_manager(self.scaler, self.param_lists)
+      self.apm = scaling_active_parameter_manager(
+        self.scaler.experiments.scaling_model.components, self.param_lists)
 
     elif isinstance(self.scaler, Scaler.MultiScalerBase):
       if self.scaler.id_ == 'target':
@@ -55,9 +71,13 @@ class ConcurrentParameterFactory(object):
           assert 0, 'no parameters have been chosen for scaling, aborting process'
         self.param_lists.append(param_name)
       if self.scaler.id_ == 'target':
-        self.apm = target_active_parameter_manager(self.scaler, self.param_lists)
+        components = [i.experiments.scaling_model.components for i in self.scaler.unscaled_scalers]
+        self.apm = multi_active_parameter_manager(components, self.param_lists,
+          scaling_active_parameter_manager)
       elif self.scaler.id_ == 'multi':
-        self.apm = multi_active_parameter_manager(self.scaler, self.param_lists)
+        components = [i.experiments.scaling_model.components for i in self.scaler.single_scalers]
+        self.apm = multi_active_parameter_manager(components, self.param_lists,
+          scaling_active_parameter_manager)
 
     else:
       assert 0, '''scaler not derived from Scaler.SingleScalerBase or
@@ -75,8 +95,8 @@ class ConsecutiveParameterFactory(object):
     self.param_lists = []
     self.n_cycles = None
     self.create_consecutive_list()
-    print(self.param_lists)
-    print(self.n_cycles)
+    #print(self.param_lists)
+    #print(self.n_cycles)
 
   def create_consecutive_list(self):
     '''return a list indicating the names of active parameters'''
@@ -140,85 +160,20 @@ class ConsecutiveParameterFactory(object):
         params.append(self.param_lists[i][0])
         self.param_lists[i] = self.param_lists[i][1:] #remove first element
       if self.scaler.id_ == 'multi':
-        apm = multi_active_parameter_manager(self.scaler, params)
+        components = [i.components for i in self.scaler.single_scalers]
+        apm = multi_active_parameter_manager(components, params,
+          scaling_active_parameter_manager)
       elif self.scaler.id_ == 'target':
-        apm = target_active_parameter_manager(self.scaler, params)
+        components = [i.components for i in self.scaler.unscaled_scalers]
+        apm = multi_active_parameter_manager(components, params,
+          scaling_active_parameter_manager)
       else:
         assert 0, 'unrecognised scaler id_ for scaler derived from MultiScalerBase'
     else:
       assert 0, '''scaler not derived from SingleScalerBase or MultiScalerBase.
         An additional option must be defined in ParameterHandler'''
-    if not apm.active_parameterisation: #no active parameters, so iterate
+    if not apm.components_list: #no active parameters, so iterate
       apm = self.make_next_apm()
     return apm
 
-class active_parameter_manager(object):
-  ''' object to manage the current active parameters during minimisation.
-  Separated out to provide a consistent interface between the scaler and
-  minimiser. Takes in a scaler, needed to access SF objects through
-  g_parameterisation, and a param_name list indicating the active parameters.'''
-  def __init__(self, scaler, param_name):
-    self.constant_g_values = None
-    self.x = flex.double([])
-    self.active_parameterisation = []
-    self.n_params_list = [] #no of params in each SF
-    self.n_cumul_params_list = [0]
-    self.active_derivatives = None
-    for p_type, scalefactor in scaler.experiments.scaling_model.components.iteritems():
-      if p_type in param_name:
-        self.x.extend(scalefactor.parameters)
-        self.active_parameterisation.append(p_type)
-        self.n_params_list.append(scalefactor.n_params)
-        self.n_cumul_params_list.append(len(self.x))
-      else:
-        if self.constant_g_values is None:
-          self.constant_g_values = scalefactor.inverse_scales
-        else:
-          self.constant_g_values *= scalefactor.inverse_scales
-    self.n_active_params = len(self.x)
-    logger.info(('Set up parameter handler for following corrections: {0}\n'
-      ).format(''.join(str(i)+' ' for i in self.active_parameterisation)))
 
-
-class multi_active_parameter_manager(object):
-  ''' object to manage the current active parameters during minimisation
-  for multiple datasets that are simultaneously being scaled.'''
-  def __init__(self, multiscaler, param_list):
-    self.apm_list = []
-    for i, scaler in enumerate(multiscaler.single_scalers):
-      self.apm_list.append(active_parameter_manager(scaler, param_list[i]))
-    self.active_parameterisation = []
-    for apm in self.apm_list:
-      self.active_parameterisation.extend(apm.active_parameterisation)
-    self.x = flex.double([])
-    self.n_params_in_each_apm = []
-    self.n_cumul_params_list = [0]
-    self.active_derivatives = None
-    for apm in self.apm_list:
-      self.x.extend(apm.x)
-      self.n_params_in_each_apm.append(len(apm.x))
-      self.n_cumul_params_list.append(len(self.x))
-    self.n_active_params = len(self.x)
-    logger.info(('Set up joint parameter handler for following corrections: {0}\n'
-      ).format(''.join(str(i)+' ' for i in self.active_parameterisation)))
-
-class target_active_parameter_manager(object):
-  ''' object to manage the current active parameters during minimisation
-  for multiple datasets that are simultaneously being scaled.'''
-  def __init__(self, targetscaler, param_list):
-    self.apm_list = []
-    for i, scaler in enumerate(targetscaler.unscaled_scalers):
-      self.apm_list.append(active_parameter_manager(scaler, param_list[i]))
-    self.active_parameterisation = []
-    for apm in self.apm_list:
-      self.active_parameterisation.extend(apm.active_parameterisation)
-    self.x = flex.double([])
-    self.n_params_in_each_apm = []
-    self.n_cumul_params_list = [0]
-    for apm in self.apm_list:
-      self.x.extend(apm.x)
-      self.n_params_in_each_apm.append(len(apm.x))
-      self.n_cumul_params_list.append(len(self.x))
-    self.n_active_params = len(self.x)
-    logger.info(('Set up joint parameter handler for following corrections: {0}\n'
-      ).format(''.join(str(i)+' ' for i in self.active_parameterisation)))

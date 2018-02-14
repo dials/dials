@@ -30,6 +30,7 @@ from dials.util.options import OptionParser, flatten_reflections, flatten_experi
 from dials.algorithms.scaling.minimiser_functions import LBFGS_optimiser
 from dials.algorithms.scaling.model import ScalingModelFactory
 from dials.algorithms.scaling import ScalerFactory
+from dials.algorithms.scaling import Scaler
 from dials.algorithms.scaling import ParameterHandler
 from dials.algorithms.scaling.scaling_utilities import (
   parse_multiple_datasets, save_experiments)
@@ -114,7 +115,7 @@ def main(argv):
   if minimised.outlier_table:
     minimised.save_outlier_table('outliers.pickle')
     logger.info("%s outliers in total were removed from the dataset and saved to %s"
-      % (len(minimised.outlier_table),'outliers.pickle'))
+      % (len(minimised.outlier_table), 'outliers.pickle'))
 
   '''calculate merging stats'''
   results, scaled_ids = minimised.calc_merging_statistics()
@@ -166,8 +167,7 @@ def perform_scaling(scaler):
   '''a function to call to do a complete minimisation based on the current state'''
   apm_factory = ParameterHandler.ActiveParameterFactory.create(scaler)
   for _ in range(apm_factory.n_cycles):
-    apm = apm_factory.make_next_apm() 
-    #if apm.active_parameterisation:
+    apm = apm_factory.make_next_apm()
     scaler = LBFGS_optimiser(scaler, apm).return_scaler()
   return scaler
 
@@ -197,7 +197,7 @@ def scaling_algorithm(scaler):
   '''The minimisation has only been done on a subset on the data, so apply the
   scale factors to the whole reflection table.'''
   scaler.expand_scales_to_all_reflections()
-  if isinstance(scaler, ScalerFactory.MultiScalerBase):
+  if isinstance(scaler, Scaler.MultiScalerBase):
     scaler.join_multiple_datasets()
   return scaler
 

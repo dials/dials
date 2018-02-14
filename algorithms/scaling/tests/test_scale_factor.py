@@ -3,7 +3,7 @@ tests for scalefactor objects
 '''
 from dials.array_family import flex
 from model.scale_factor import (ScaleFactor, KScaleFactor, BScaleFactor,
-  SmoothScaleFactor, SmoothScaleFactor1D, SmoothBScaleFactor1D, SHScaleFactor)
+  SmoothScaleFactor1D, SmoothBScaleFactor1D, SHScaleFactor)
 import pytest
 from scitbx import sparse
 
@@ -115,7 +115,7 @@ def test_SHScalefactor():
   assert SF.harmonic_values[0, 0] == initial_val
   assert SF.harmonic_values[0, 1] == initial_val
   assert SF.harmonic_values[0, 2] == initial_val
-  assert list(SF.inverse_scales) == [1.0 + (3.0 * initial_val * initial_param)] #is 1.0 + 3 x param x harm_val
+  assert list(SF.inverse_scales) == [1.0 + (3.0 * initial_val * initial_param)]
   assert SF.derivatives[0, 0] == initial_val
   assert SF.derivatives[0, 1] == initial_val
   assert SF.derivatives[0, 2] == initial_val

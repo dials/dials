@@ -225,6 +225,7 @@ class SingleScalerBase(ScalerBase):
 
   @property
   def components(self):
+    'shortcut to scaling model components'
     return self.experiments.scaling_model.components
 
   @abc.abstractproperty
@@ -238,7 +239,7 @@ class SingleScalerBase(ScalerBase):
   def update_for_minimisation(self, apm):
     '''update the scale factors and Ih for the next iteration of minimisation'''
     basis_fn = self.get_basis_function(apm)
-    apm.active_derivatives = basis_fn[1]
+    apm.derivatives = basis_fn[1]
     self.Ih_table.inverse_scale_factors = basis_fn[0]
     self.Ih_table.calc_Ih()
 
@@ -393,24 +394,21 @@ class SingleScalerBase(ScalerBase):
     '''calculates a constraint for the spherical harmonic absorption correction.
     Should only be called from target function if absorption in active params.'''
     if self.id_ == 'aimless':
-      if 'absorption' in apm.active_parameterisation:
-        idx = apm.active_parameterisation.index('absorption')
-        start_idx = apm.n_cumul_params_list[idx]
-        end_idx = apm.n_cumul_params_list[idx+1]
-        abs_params = apm.x[start_idx:end_idx]
+      if 'absorption' in apm.components:
+        abs_params = apm.select_parameters('absorption')
         residual = (self.absorption_weights * (abs_params)**2)
         gradient = (2.0 * self.absorption_weights * abs_params)
         #return a gradient vector to be added to that calculated in target function
         gradient_vector = flex.double([])
-        for i, param in enumerate(apm.active_parameterisation):
-          if param != 'absorption':
-            gradient_vector.extend(flex.double([0.0]*apm.n_params_list[i]))
-          elif param == 'absorption':
+        for comp in apm.components:
+          if comp != 'absorption':
+            gradient_vector.extend(flex.double([0.0] * apm.components[comp]['n_params']))
+          elif comp == 'absorption':
             gradient_vector.extend(gradient)
         return (residual, gradient_vector)
       else:
-        return (flex.double([0.0]), flex.double([0.0]*apm.n_active_params))
-    return (flex.double([0.0]), flex.double([0.0]*apm.n_active_params))
+        return (flex.double([0.0]), flex.double([0.0] * apm.n_active_params))
+    return (flex.double([0.0]), flex.double([0.0] * apm.n_active_params))
 
 class KBScaler(SingleScalerBase):
   '''
@@ -501,7 +499,7 @@ class AimlessScaler(SingleScalerBase):
     refl_table['phi'] = (refl_table['xyzobs.px.value'].parts()[2]
       * self.experiments.scan.get_oscillation()[1])
     if 'absorption' in self.corrections:
-      lmax=self.experiments.scaling_model.configdict['lmax']
+      lmax = self.experiments.scaling_model.configdict['lmax']
       self.sph_harm_table = sph_harm_table(refl_table, self.experiments, lmax)
       self.absorption_weights = flex.double([])
       for i in range(1, lmax+1):
@@ -789,15 +787,15 @@ class MultiScaler(MultiScalerBase):
     '''update the scale factors and Ih for the next iteration of minimisation,
     update the x values from the amp to the individual apms, as this is where
     basis functions, target functions etc get access to the parameters.'''
-    for i, _ in enumerate(apm.n_params_in_each_apm):
-      apm.apm_list[i].x = apm.x[apm.n_cumul_params_list[i]:apm.n_cumul_params_list[i+1]]
-    apm.active_derivatives = sparse.matrix(self.Ih_table.size, apm.n_active_params)
+    for i, single_apm in enumerate(apm.apm_list):
+      single_apm.x = apm.select_parameters(i)
+    apm.derivatives = sparse.matrix(self.Ih_table.size, apm.n_active_params)
     for i, scaler in enumerate(self.single_scalers):
       basis_fn = scaler.get_basis_function(apm.apm_list[i])
       scaler.Ih_table.inverse_scale_factors = basis_fn[0]
       if basis_fn[1]:
         expanded = basis_fn[1].transpose() * self.Ih_table.h_index_expand_list[i]
-        apm.active_derivatives.assign_block(expanded.transpose(), 0, apm.n_cumul_params_list[i])
+        apm.derivatives.assign_block(expanded.transpose(), 0, apm.apm_data[i]['start_idx'])
     self.Ih_table.calc_Ih()
 
   def expand_scales_to_all_reflections(self, caller=None):
@@ -861,11 +859,11 @@ class TargetScaler(MultiScalerBase):
 
   def update_for_minimisation(self, apm):
     '''update the scale factors and Ih for the next iteration of minimisation'''
-    for i, _ in enumerate(apm.n_params_in_each_apm):
-      apm.apm_list[i].x = apm.x[apm.n_cumul_params_list[i]:apm.n_cumul_params_list[i+1]]
+    for i, single_apm in enumerate(apm.apm_list):
+      single_apm.x = apm.select_parameters(i)
     for i, scaler in enumerate(self.unscaled_scalers):
       basis_fn = scaler.get_basis_function(apm.apm_list[i])
-      apm.apm_list[i].active_derivatives = basis_fn[1]
+      apm.apm_list[i].derivatives = basis_fn[1]
       scaler.Ih_table.inverse_scale_factors = basis_fn[0]
 
   def calc_absorption_constraint(self, apm):

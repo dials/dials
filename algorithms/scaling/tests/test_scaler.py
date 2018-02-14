@@ -6,7 +6,9 @@ import numpy as np
 import pytest
 from dials.array_family import flex
 from dials.util.options import OptionParser
-from ParameterHandler import active_parameter_manager, multi_active_parameter_manager
+from ParameterHandler import scaling_active_parameter_manager
+from active_parameter_managers import (multi_active_parameter_manager,
+  active_parameter_manager)
 from basis_functions import basis_function
 from libtbx import phil
 from dxtbx.model.experiment_list import ExperimentList
@@ -148,15 +150,16 @@ def test_apm():
   experiments = ScalingModelFactory.Factory.create(params, test_experiments, test_reflections)
   scaler = ScalerFactory.Factory.create(params, experiments, test_reflections)
 
-  apm = active_parameter_manager(scaler, ['decay', 'scale'])
-  assert 'decay' in apm.active_parameterisation
-  assert 'scale' in apm.active_parameterisation
-  assert 'absorption' not in apm.active_parameterisation
-  assert apm.n_active_params == scaler.components['scale'].n_params + scaler.components['decay'].n_params
+  apm = scaling_active_parameter_manager(scaler.components, ['decay', 'scale'])
+  assert 'decay' in apm.components_list
+  assert 'scale' in apm.components_list
+  assert 'absorption' not in apm.components_list
+  assert apm.n_active_params == (scaler.components['scale'].n_params
+    + scaler.components['decay'].n_params)
   assert apm.constant_g_values is not None
   assert list(apm.constant_g_values) == list(scaler.components['absorption'].inverse_scales)
-  for i, p in enumerate(apm.active_parameterisation):
-    assert apm.n_params_list[i] == scaler.components[p].n_params
+  for component in apm.components:
+    assert apm.components[component]['n_params'] == scaler.components[component].n_params
 
 def test_multi_apm():
   '''test for the multi active parameter manager. Also serves as general
@@ -168,17 +171,20 @@ def test_multi_apm():
   scaler = ScalerFactory.Factory.create(params, experiments, test_reflections)
 
   assert isinstance(scaler, ScalerFactory.MultiScaler)
-
-  apm = multi_active_parameter_manager(scaler, [['decay', 'scale'], ['decay', 'scale']])
-  assert 'decay' in apm.active_parameterisation
-  assert 'scale' in apm.active_parameterisation
-  assert 'absorption' not in apm.active_parameterisation
+  components_list = [i.components for i in scaler.single_scalers]
+  apm = multi_active_parameter_manager(components_list,
+    [['decay', 'scale'], ['decay', 'scale']], scaling_active_parameter_manager)
+  assert 'decay' in apm.components_list
+  assert 'scale' in apm.components_list
+  assert 'absorption' not in apm.components_list
   dm0 = scaler.single_scalers[0]
   dm1 = scaler.single_scalers[1]
   assert apm.n_active_params == (dm0.components['scale'].n_params + dm0.components['decay'].n_params
     + dm1.components['scale'].n_params + dm1.components['decay'].n_params)
-  assert apm.n_params_in_each_apm[0] == dm0.components['scale'].n_params + dm0.components['decay'].n_params
-  assert apm.n_params_in_each_apm[1] == dm1.components['scale'].n_params + dm1.components['decay'].n_params
+  assert apm.apm_data[0]['start_idx'] == 0
+  assert apm.apm_data[0]['end_idx'] == apm.apm_list[0].n_active_params
+  assert apm.apm_data[1]['start_idx'] == apm.apm_list[0].n_active_params
+  assert apm.apm_data[1]['end_idx'] == apm.n_active_params
   params = apm.apm_list[0].x
   params.extend(apm.apm_list[1].x)
   assert list(apm.x) == list(params)
@@ -198,7 +204,7 @@ def test_basis_function(generated_KB_param):
   #params.scaling_options.multi_mode = False
   #data_manager = KB_Data_Manager(test_reflections, test_experiments, params)
 
-  apm = active_parameter_manager(scaler, ['decay', 'scale'])
+  apm = scaling_active_parameter_manager(scaler.components, ['decay', 'scale'])
 
   #first change the parameters in the apm
   n_scale_params = scaler.components['scale'].n_params
@@ -238,7 +244,7 @@ def test_basis_function(generated_KB_param):
   assert len(test_reflections) == 1
   experiments = ScalingModelFactory.Factory.create(params, test_experiments, test_reflections)
   scaler = ScalerFactory.Factory.create(params, experiments, test_reflections)
-  apm = active_parameter_manager(scaler, ['scale'])
+  apm = scaling_active_parameter_manager(scaler.components, ['scale'])
 
   #need to set the inverse scales for this test dataset.
   scaler.components['scale'].inverse_scales = flex.double([1.0, 1.0, 1.0])
@@ -272,7 +278,7 @@ def test_target_function(generated_KB_param):
   scaler.components['scale'].inverse_scales = flex.double([1.0, 2.0, 1.0])
   scaler.components['decay'].inverse_scales = flex.double([1.0, 2.0, 1.0])
 
-  apm = active_parameter_manager(scaler, ['scale', 'decay'])
+  apm = scaling_active_parameter_manager(scaler.components, ['scale', 'decay'])
   scaler.update_for_minimisation(apm)
 
   #first get residual and gradients
@@ -305,3 +311,31 @@ def calculate_gradient_fd(dm, apm):
     dm.update_for_minimisation(apm)
     gradients[i] = (flex.sum(R_upper) - flex.sum(R_low)) / delta
   return gradients
+
+def test_general_apm():
+  'test for general active parameter manager'
+  
+  class dummy_obj(object):
+    '''class to create dummy object with parameters attribute'''
+    def __init__(self, parameters):
+      self.parameters = parameters
+
+  a = dummy_obj(flex.double([1.0, 2.0]))
+  b = dummy_obj(flex.double([2.0, 4.0]))
+  c = dummy_obj(flex.double([3.0, 6.0]))
+
+  components = {'1' : a, '2' : b, '3' : c}
+
+  apm = active_parameter_manager(components, ['1', '3'])
+  assert apm.n_active_params == 4
+  assert '1' in apm.components_list
+  assert '3' in apm.components_list
+  assert '2' not in apm.components_list
+  assert '1' in apm.components
+  assert '3' in apm.components
+  assert '2' not in apm.components
+  assert apm.components['1']['object'].parameters == flex.double([1.0, 2.0])
+  assert apm.components['1']['object'].parameters == flex.double([3.0, 6.0])
+
+  assert apm.select_parameters('1') == flex.double([1.0, 2.0])
+  assert apm.select_parameters('3') == flex.double([3.0, 6.0])

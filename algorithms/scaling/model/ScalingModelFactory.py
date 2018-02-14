@@ -63,12 +63,12 @@ class AimlessSMFactory(object):
     #these names are used many time in the program as flags, create a better
     #way to strongly enforce inclusion of certain corrections?
     if params.parameterisation.scale_term:
-      corrections.append('scale')  
+      corrections.append('scale')
     if params.parameterisation.decay_term:
       corrections.append('decay')
     if params.parameterisation.absorption_term:
       corrections.append('absorption')
-  
+
     configdict = OrderedDict({'corrections': corrections})
 
     scale_rot_int = params.parameterisation.scale_interval + 0.001

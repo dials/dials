@@ -3,7 +3,7 @@ Collection of factories for creating the scalers.
 '''
 import logging
 import pkg_resources
-from dials.algorithms.scaling.Scaler import MultiScaler, TargetScaler, MultiScalerBase
+from dials.algorithms.scaling.Scaler import MultiScaler, TargetScaler
 logger = logging.getLogger('dials')
 
 class Factory(object):
