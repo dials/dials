@@ -42,6 +42,8 @@ def update_dials_download_links():
   if Toolbox().download_to_file('https://api.github.com/repos/dials/dials/releases/latest', release_json, cache=False):
     with open(release_json, 'r') as json_data:
       release_info = json.load(json_data)
+  try: os.remove(release_json)
+  except OSError: pass
 
   if not release_info: release_info = {}
 
@@ -84,22 +86,21 @@ def update_dials_download_links():
     release.write("".join(sorted(buttons)))
 
 if __name__ == "__main__":
-
   parser = OptionParser(description="Generate documentation website for DIALS")
   parser.add_option("-?", action="help", help=SUPPRESS_HELP)
   parser.add_option("-s", "--strict", dest="strict",
-      action="store_true", default=False,
-      help="Run in strict mode and stop on encountering any errors or warnings")
+      action="store_true", default=True,
+      help="Run in strict mode and stop on encountering any errors or warnings (default)")
+  parser.add_option("-i", "--ignore", dest="strict",
+      action="store_false",
+      help="Ignore any errors or warnings")
   options, args = parser.parse_args()
 
   update_dials_download_links()
-  cctbx_base = libtbx.env.find_in_repositories("cctbx_project")
   dials_dir = libtbx.env.find_in_repositories("dials")
   dials_github_io = libtbx.env.find_in_repositories("dials.github.io")
   assert dials_github_io is not None, \
       "Repository dials.github.io needs to be checked out and configured in modules directory"
-  assert cctbx_base is not None
-  base_dir = os.path.dirname(cctbx_base)
   dest_dir = dials_github_io
   os.chdir(os.path.join(dials_dir, "doc", "sphinx"))
 

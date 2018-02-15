@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function
 
-### build documentation with: phenix.python `which sphinx-build` -b html source build/html
-
-#
 # DIALS documentation build configuration file, created by
 # sphinx-quickstart on Thu Jul 24 15:08:40 2014.
 #
