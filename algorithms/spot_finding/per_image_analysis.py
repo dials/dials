@@ -638,7 +638,7 @@ def plot_ordered_d_star_sq(reflections, imageset):
 
 
 def stats_single_image(imageset, reflections, i=None, resolution_analysis=True,
-                       plot=False, filter_ice=True):
+                       plot=False, filter_ice=True, ice_rings_width=0.004):
   reflections = map_to_reciprocal_space(reflections, imageset)
   if plot and i is not None:
     filename = "i_over_sigi_vs_resolution_%d.png" %(i+1)
@@ -661,7 +661,7 @@ def stats_single_image(imageset, reflections, i=None, resolution_analysis=True,
   reflections_no_ice = reflections_all
   ice_sel = None
   if filter_ice:
-    ice_sel = ice_rings_selection(reflections_all)
+    ice_sel = ice_rings_selection(reflections_all, width=ice_rings_width)
     if ice_sel is not None:
       reflections_no_ice = reflections_all.select(~ice_sel)
   n_spots_total = len(reflections_all)
