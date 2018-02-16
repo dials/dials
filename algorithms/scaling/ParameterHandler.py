@@ -25,63 +25,70 @@ class ActiveParameterFactory(object):
   @classmethod
   def create(cls, scaler):
     '''create the factory based on phil options'''
-    if scaler.params.scaling_options.concurrent_scaling:
-      return ConcurrentParameterFactory(scaler)
+    #replace these methods with some kind of entry point mechanism to allow
+    #scalers derived from new base scalers in future?
+    #if scaler.params.scaling_options.concurrent_scaling:
+    from dials.algorithms.scaling import Scaler
+    if isinstance(scaler, Scaler.SingleScalerBase):
+      if scaler.params.scaling_options.concurrent_scaling:
+        return ConcurrentParameterFactory([scaler], mode='single',
+          apm_type=scaling_active_parameter_manager)
+      else:
+        return ConsecutiveParameterFactory([scaler], mode='single',
+          apm_type=scaling_active_parameter_manager)
+    elif isinstance(scaler, Scaler.MultiScalerBase):
+      if scaler.id_ == 'target':
+        data_managers = scaler.unscaled_scalers
+      elif scaler.id_ == 'multi':
+        data_managers = scaler.single_scalers
+      else:
+        assert 0, 'unrecognised scaler id_ for scaler derived from MultiScalerBase'
+      if scaler.params.scaling_options.concurrent_scaling:
+        return ConcurrentParameterFactory(data_managers, mode='multi',
+          apm_type=scaling_active_parameter_manager)
+      else:
+        return ConsecutiveParameterFactory(data_managers, mode='multi',
+          apm_type=scaling_active_parameter_manager)
     else:
-      return ConsecutiveParameterFactory(scaler)
+      assert 0, '''scaler not derived from Scaler.SingleScalerBase or
+        Scaler.MultiScalerBase. An additional option must be defined in
+        ActiveParameterFactory'''
 
 class ConcurrentParameterFactory(object):
   '''factory to set up apms for concurrent scaling of all active parameters'''
 
-  def __init__(self, scaler):
-    self.scaler = scaler
+  def __init__(self, data_managers, mode, apm_type):
+    assert mode == 'single' or mode == 'multi', '''mode must be set as single
+      or multi depending on number of datasets.'''
+    self.data_managers = data_managers
     self.apm = None
     self.param_lists = []
-    self.create_active_list()
+    self.create_active_list(mode, apm_type)
     self.n_cycles = 1
 
-  def create_active_list(self):
+  def create_active_list(self, mode, apm_type):
     '''return a list indicating the names of active parameters'''
-    #replace these methods with some kind of entry point mechanism to allow
-    #scalers derived from new base scalers in future?
-    from dials.algorithms.scaling import Scaler
-    if isinstance(self.scaler, Scaler.SingleScalerBase):
+
+    if mode == 'single':
       param_name = []
-      for param in self.scaler.corrections:
+      for param in self.data_managers[0].corrections:
         param_name.append(str(param))
       if not param_name:
         assert 0, 'no parameters have been chosen for scaling, aborting process'
       self.param_lists = param_name
-      self.apm = scaling_active_parameter_manager(
-        self.scaler.experiments.scaling_model.components, self.param_lists)
+      self.apm = apm_type(self.data_managers[0].components, self.param_lists)
 
-    elif isinstance(self.scaler, Scaler.MultiScalerBase):
-      if self.scaler.id_ == 'target':
-        scalers = self.scaler.unscaled_scalers
-      elif self.scaler.id_ == 'multi':
-        scalers = self.scaler.single_scalers
-      else:
-        assert 0, 'unrecognised scaler id_ for scaler derived from MultiScalerBase'
-
-      for scaler in scalers:
+    elif mode == 'multi':
+      for data_manager in self.data_managers:
         param_name = []
-        for param in scaler.corrections:
+        for param in data_manager.corrections:
           param_name.append(str(param))
         if not param_name:
           assert 0, 'no parameters have been chosen for scaling, aborting process'
         self.param_lists.append(param_name)
-      if self.scaler.id_ == 'target':
-        components = [i.experiments.scaling_model.components for i in self.scaler.unscaled_scalers]
-        self.apm = multi_active_parameter_manager(components, self.param_lists,
-          scaling_active_parameter_manager)
-      elif self.scaler.id_ == 'multi':
-        components = [i.experiments.scaling_model.components for i in self.scaler.single_scalers]
-        self.apm = multi_active_parameter_manager(components, self.param_lists,
-          scaling_active_parameter_manager)
-
-    else:
-      assert 0, '''scaler not derived from Scaler.SingleScalerBase or
-        Scaler.MultiScalerBase. An additional option must be defined in ParameterHandler'''
+      components = [i.components for i in self.data_managers]
+      self.apm = multi_active_parameter_manager(components, self.param_lists,
+        apm_type)
 
   def make_next_apm(self):
     'method to call to return the apm'
@@ -90,48 +97,39 @@ class ConcurrentParameterFactory(object):
 class ConsecutiveParameterFactory(object):
   '''factory to set up apms for consecutive scaling of all active parameters'''
 
-  def __init__(self, scaler):
-    self.scaler = scaler
+  def __init__(self, data_managers, mode, apm_type):
+    assert mode == 'single' or mode == 'multi', '''mode must be set as single
+      or multi depending on number of datasets.'''
+    self.data_managers = data_managers
+    self.mode = mode
+    self.apm_type = apm_type
     self.param_lists = []
     self.n_cycles = None
     self.create_consecutive_list()
-    #print(self.param_lists)
-    #print(self.n_cycles)
 
   def create_consecutive_list(self):
     '''return a list indicating the names of active parameters'''
-    #replace these methods with some kind of entry point mechanism to allow
-    #scalers derived from new base scalers in future?
-    from dials.algorithms.scaling import Scaler
-    if isinstance(self.scaler, Scaler.SingleScalerBase):
-      corrections = self.scaler.experiments.scaling_model.configdict['corrections']
-      for cycle in self.scaler.consecutive_scaling:
+
+    if self.mode == 'single':
+      for cycle in self.data_managers[0].consecutive_scaling:
         corrlist = []
         for corr in cycle:
-          if corr in corrections:
+          if corr in self.data_managers[0].corrections:
             corrlist.append(corr)
         self.param_lists.append(corrlist)
       self.n_cycles = sum([1 for i in self.param_lists if i])
 
-    elif isinstance(self.scaler, Scaler.MultiScalerBase):
-      if self.scaler.id_ == 'target':
-        scalers = self.scaler.unscaled_scalers
-      elif self.scaler.id_ == 'multi':
-        scalers = self.scaler.single_scalers
-      else:
-        assert 0, 'unrecognised scaler id_ for scaler derived from MultiScalerBase'
-
-      for scaler in scalers:
+    elif self.mode == 'multi':
+      for data_manager in self.data_managers:
         ind_param_list = []
-        corrections = scaler.experiments.scaling_model.configdict['corrections']
-        for cycle in scaler.consecutive_scaling:
+        for cycle in data_manager.consecutive_scaling:
           corrlist = []
           for corr in cycle:
-            if corr in corrections:
+            if corr in data_manager.corrections:
               corrlist.append(corr)
           ind_param_list.append(corrlist)
         self.param_lists.append(ind_param_list)
-      #now need to calculate the max number of cycles needed across all scalers
+      #now need to calculate the max number of cycles needed across all data_managers
       is_cycle_active = []
       for p_list in self.param_lists:
         for i, cycle in enumerate(p_list):
@@ -143,37 +141,21 @@ class ConsecutiveParameterFactory(object):
       for p_list in self.param_lists:
         for _ in range(max_len - len(p_list)):
           p_list.append([])
-    else:
-      assert 0, '''scaler not derived from Scaler.SingleScalerBase or
-        Scaler.MultiScalerBase. An additional option must be defined in ParameterHandler'''
 
   def make_next_apm(self):
     '''generate a valid apm for minimisation (contains some active parameters,
     but not necessarily for all datasets)'''
-    from dials.algorithms.scaling import Scaler
-    if isinstance(self.scaler, Scaler.SingleScalerBase):
-      apm = active_parameter_manager(self.scaler, self.param_lists[0])
+
+    if self.mode == 'single':
+      apm = self.apm_type(self.data_managers[0].components, self.param_lists[0])
       self.param_lists = self.param_lists[1:]
-    elif isinstance(self.scaler, Scaler.MultiScalerBase):
+    elif self.mode == 'multi':
       params = []
       for i in range(0, len(self.param_lists)):
         params.append(self.param_lists[i][0])
         self.param_lists[i] = self.param_lists[i][1:] #remove first element
-      if self.scaler.id_ == 'multi':
-        components = [i.components for i in self.scaler.single_scalers]
-        apm = multi_active_parameter_manager(components, params,
-          scaling_active_parameter_manager)
-      elif self.scaler.id_ == 'target':
-        components = [i.components for i in self.scaler.unscaled_scalers]
-        apm = multi_active_parameter_manager(components, params,
-          scaling_active_parameter_manager)
-      else:
-        assert 0, 'unrecognised scaler id_ for scaler derived from MultiScalerBase'
-    else:
-      assert 0, '''scaler not derived from SingleScalerBase or MultiScalerBase.
-        An additional option must be defined in ParameterHandler'''
+      components = [i.components for i in self.data_managers]
+      apm = multi_active_parameter_manager(components, params, self.apm_type)
     if not apm.components_list: #no active parameters, so iterate
       apm = self.make_next_apm()
     return apm
-
-

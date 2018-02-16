@@ -718,10 +718,13 @@ class MultiScalerBase(ScalerBase):
     R = flex.double([])
     G = flex.double([])
     scaler_ids = [scaler.id_ for scaler in scalers]
-    if 'aimless' in scaler_ids:
-      for i, scaler in enumerate(scalers):
-        R.extend(scaler.calc_absorption_constraint(apm.apm_list[i])[0])
-        G.extend(scaler.calc_absorption_constraint(apm.apm_list[i])[1])
+    #if 'aimless' in scaler_ids:
+    for i, scaler in enumerate(scalers):
+      R.extend(scaler.calc_absorption_constraint(apm.apm_list[i])[0])
+      G.extend(scaler.calc_absorption_constraint(apm.apm_list[i])[1])
+    #else:
+    #  for i, scaler in enumerate(scalers):
+
     return (R, G)
 
   @abc.abstractmethod
