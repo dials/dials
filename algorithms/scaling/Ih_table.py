@@ -188,6 +188,7 @@ class SingleIhTable(IhTableBase):
     self._h_index_matrix = self._assign_h_index_matrix(
       self.h_index_counter_array, self._h_index_cumulative_array)
     self._n_h = self._calc_nh(self.h_index_counter_array)
+    self.h_expand_matrix = self._assign_h_expand_matrix()
     if not 'Ih_values' in reflection_table.keys():
       self.calc_Ih() #calculate a first estimate of Ih
 
@@ -227,8 +228,19 @@ class SingleIhTable(IhTableBase):
     gI = ((scale_factors * self.intensities) * self.weights)
     sumgI = gI * self.h_index_matrix
     Ih = sumgI/sumgsq
-    self._Ih_table['Ih_values'] = flex.double(np.repeat(Ih, self.h_index_counter_array))
+    self._Ih_table['Ih_values'] = Ih * self.h_expand_matrix #flex.double(np.repeat(Ih, self.h_index_counter_array))##
 
+  def _assign_h_expand_matrix(self):
+    n_unique_groups = len(self.h_index_counter_array)
+    n_refl = self.size
+    h_expand_mat = sparse.matrix(n_unique_groups, n_refl)
+    counter=0
+    for i, val in enumerate(self._h_index_counter_array):
+      for j in range(val):
+        idx = j + self.h_index_cumulative_array[i]
+        h_expand_mat[counter, idx] = 1
+      counter += 1
+    return h_expand_mat
 
 class JointIhTable(IhTableBase):
   '''Class to expand the datastructure for scaling multiple

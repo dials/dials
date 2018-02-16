@@ -81,6 +81,9 @@ class ScalerBase(object):
     '''call the target function'''
     return target_function(self, apm).return_targets()
 
+  def get_residuals_jacobian_weight(self, apm):
+    return target_function(self, apm).return_residuals_jacobian_weight()
+
   def get_basis_function(self, apm):
     '''call thebasis function'''
     return basis_function(self, apm).return_basis()
@@ -199,7 +202,6 @@ class SingleScalerBase(ScalerBase):
     logger.info('\nInitialising a Single Scaler instance. \n')
     super(SingleScalerBase, self).__init__()
     self._experiments = experiment
-    #self._corrections = experiment.scaling_model.configdict['corrections']
     self._params = params
     logger.info("Dataset id for this reflection table is %s." % scaled_id)
     logger.info(('The type of scaling model being applied to this dataset {sep}'
@@ -219,17 +221,12 @@ class SingleScalerBase(ScalerBase):
     self._reflection_table = reflection_table
 
   @property
-  def corrections(self):
-    'shortcut to scaling model corrections'
-    return self._experiments.scaling_model.configdict['corrections']
-
-  @property
   def components(self):
     'shortcut to scaling model components'
     return self.experiments.scaling_model.components
 
   @abc.abstractproperty
-  def consecutive_scaling(self):
+  def consecutive_scaling_order(self):
     '''should return a nested list of correction names, to indicate the order
     to perform scaling in consecutive scaling mode if concurrent_scaling=0.
     e.g. [['scale', 'decay'], ['absorption']] would cause the first cycle to
@@ -424,38 +421,38 @@ class KBScaler(SingleScalerBase):
     logger.info('Completed initialisation of KB Scaler. \n' + '*'*40 + '\n')
 
   @property
-  def consecutive_scaling(self):
+  def consecutive_scaling_order(self):
     return [['scale', 'decay']]
 
   def _select_reflections_for_scaling(self):
     (refl_for_scaling, weights_for_scaling, _) = (
       self._scaling_subset(self.reflection_table, self.params))
     self._Ih_table = SingleIhTable(refl_for_scaling, weights_for_scaling.weights)
-    if 'scale' in self.corrections:
+    if 'scale' in self.components:
       self.components['scale'].update_reflection_data(n_refl=self.Ih_table.size)
-    if 'decay' in self.corrections:
+    if 'decay' in self.components:
       self.components['decay'].update_reflection_data(dvalues=refl_for_scaling['d'])
 
   def apply_selection_to_SFs(self, sel):
     '''Updates data from within current SF objects using the given selection.
        Required for targeted scaling.'''
-    if 'decay' in self.corrections:
+    if 'decay' in self.components:
       self.components['decay'].update_reflection_data(
         dvalues=self.components['decay'].d_values.select(sel))
-    if 'scale' in self.corrections:
+    if 'scale' in self.components:
       self.components['scale'].update_reflection_data(n_refl=sel.count(True))
 
   def calc_expanded_scales(self):
     '''calculate'''
     expanded_scale_factors = flex.double([1.0]*len(self.reflection_table))
-    if 'scale' in self.corrections:
+    if 'scale' in self.components:
       self.components['scale'].update_reflection_data(n_refl=len(self.reflection_table))
       self.components['scale'].calculate_scales_and_derivatives()
       expanded_scale_factors *= self.components['scale'].inverse_scales
       logger.info(('Scale factor K = {0:.4f} determined during minimisation {sep}'
         'has now been applied to all reflections. {sep}').format(
         list(self.components['scale'].parameters)[0], sep='\n'))
-    if 'decay' in self.corrections:
+    if 'decay' in self.components:
       self.components['decay'].update_reflection_data(dvalues=self.reflection_table['d'])
       self.components['decay'].calculate_scales_and_derivatives()
       expanded_scale_factors *= self.components['decay'].inverse_scales
@@ -484,21 +481,21 @@ class AimlessScaler(SingleScalerBase):
     logger.info('Completed initialisation of AimlessScaler. \n' + '*'*40 + '\n')
 
   @property
-  def consecutive_scaling(self):
+  def consecutive_scaling_order(self):
     return [['scale', 'decay'], ['absorption']]
 
   def _initialise_scale_factors(self):
     '''initialise scale factors and add to self.active_parameters'''
     refl_table = self.reflection_table
-    if 'scale' in self.corrections:
+    if 'scale' in self.components:
       refl_table['norm_rot_angle'] = (refl_table['xyzobs.px.value'].parts()[2]
         * self.experiments.scaling_model.scale_normalisation_factor)
-    if 'decay' in self.corrections:
+    if 'decay' in self.components:
       refl_table['norm_time_values'] = (refl_table['xyzobs.px.value'].parts()[2]
         * self.experiments.scaling_model.decay_normalisation_factor)
     refl_table['phi'] = (refl_table['xyzobs.px.value'].parts()[2]
       * self.experiments.scan.get_oscillation()[1])
-    if 'absorption' in self.corrections:
+    if 'absorption' in self.components:
       lmax = self.experiments.scaling_model.configdict['lmax']
       self.sph_harm_table = sph_harm_table(refl_table, self.experiments, lmax)
       self.absorption_weights = flex.double([])
@@ -516,12 +513,12 @@ class AimlessScaler(SingleScalerBase):
       self.Ih_table.apply_tukey_biweighting()
     '''refactor the next two operations into extract_reflections?
     reset the normalised values within the scale_factor object to current'''
-    if 'scale' in self.corrections:
+    if 'scale' in self.components:
       self.components['scale'].update_reflection_data(refl_for_scaling['norm_rot_angle'])
-    if 'decay' in self.corrections:
+    if 'decay' in self.components:
       self.components['decay'].update_reflection_data(dvalues=refl_for_scaling['d'],
         normalised_values=refl_for_scaling['norm_time_values'])
-    if 'absorption' in self.corrections:
+    if 'absorption' in self.components:
       sph_harm_table_T = self.sph_harm_table.transpose()
       sel_sph_harm_table = sph_harm_table_T.select_columns(selection.iselection())
       self.components['absorption'].update_reflection_data(sel_sph_harm_table.transpose())
@@ -529,14 +526,14 @@ class AimlessScaler(SingleScalerBase):
   def apply_selection_to_SFs(self, sel):
     '''Updates data from within current SF objects using the given selection.
        Required for targeted scaling.'''
-    if 'scale' in self.corrections:
+    if 'scale' in self.components:
       self.components['scale'].update_reflection_data(
         self.components['scale'].normalised_values.select(sel))
-    if 'decay' in self.corrections:
+    if 'decay' in self.components:
       self.components['decay'].update_reflection_data(
         dvalues=self.components['decay'].d_values.select(sel),
         normalised_values=self.components['decay'].normalised_values.select(sel))
-    if 'absorption' in self.corrections:
+    if 'absorption' in self.components:
       sph_harm_table_T = self.components['absorption'].harmonic_values.transpose()
       sel_sph_harm_table = sph_harm_table_T.select_columns(sel.iselection())
       self.components['absorption'].update_reflection_data(sel_sph_harm_table.transpose())
@@ -560,16 +557,16 @@ class AimlessScaler(SingleScalerBase):
 
   def calc_expanded_scales(self):
     expanded_scale_factors = flex.double([1.0]*len(self.reflection_table))
-    if 'scale' in self.corrections:
+    if 'scale' in self.components:
       self.components['scale'].update_reflection_data(self.reflection_table['norm_rot_angle'])
       self.components['scale'].calculate_scales()
       expanded_scale_factors *= self.components['scale'].inverse_scales
-    if 'decay' in self.corrections:
+    if 'decay' in self.components:
       self.components['decay'].update_reflection_data(dvalues=self.reflection_table['d'],
         normalised_values=self.reflection_table['norm_time_values'])
       self.components['decay'].calculate_scales()
       expanded_scale_factors *= self.components['decay'].inverse_scales
-    if 'absorption' in self.corrections:
+    if 'absorption' in self.components:
       self.components['absorption'].update_reflection_data(self.sph_harm_table)
       self.components['absorption'].calculate_scales_and_derivatives()
       expanded_scale_factors *= self.components['absorption'].inverse_scales
@@ -594,17 +591,16 @@ class XscaleScaler(SingleScalerBase):
     logger.info('Completed initialisation of Xscale Scaler. \n' + '*'*40 + '\n')
 
   @property
-  def consecutive_scaling(self):
+  def consecutive_scaling_order(self):
     return [['decay'], ['absorption'], ['modulation']]
 
   def _initialise_scale_factors(self):
     logger.info('Initialising scale factor objects. \n')
-    configdict = self.experiments.scaling_model.configdict
-    if 'decay' in configdict['corrections']:
+    if 'decay' in self.components:
       self._initialise_decay_term()
-    if 'absorption' in configdict['corrections']:
+    if 'absorption' in self.components:
       self._initialise_absorption_term()
-    if 'modulation' in configdict['corrections']:
+    if 'modulation' in self.components:
       self._initialise_modulation_term()
     self.print_scale_init_msg()
 
@@ -644,50 +640,50 @@ class XscaleScaler(SingleScalerBase):
     if self.params.weighting.tukey_biweighting:
       self.Ih_table.apply_tukey_biweighting()
     '''set the normalised values within the scale_factor object to current'''
-    if 'modulation' in self.corrections:
+    if 'modulation' in self.components:
       self.components['modulation'].update_reflection_data(
         refl_for_scaling['normalised_x_det_values'],
         refl_for_scaling['normalised_y_det_values'])
-    if 'decay' in self.corrections:
+    if 'decay' in self.components:
       self.components['decay'].update_reflection_data(
         refl_for_scaling['normalised_res_values'],
         refl_for_scaling['norm_time_values'])
-    if 'absorption' in self.experiments.scaling_model.configdict['corrections']:
+    if 'absorption' in self.components:
       self.components['absorption'].update_reflection_data(
         refl_for_scaling['normalised_x_abs_values'],
         refl_for_scaling['normalised_y_abs_values'],
         refl_for_scaling['norm_time_values'])
 
   def apply_selection_to_SFs(self, sel):
-    if 'decay' in self.corrections:
+    if 'decay' in self.components:
       self.components['decay'].update_reflection_data(
         normalised_x_values=self.components['decay'].normalised_x_values.select(sel),
         normalised_y_values=self.components['decay'].normalised_y_values.select(sel))
-    if 'absorption' in self.corrections:
+    if 'absorption' in self.components:
       self.components['absorption'].update_reflection_data(
         normalised_x_values=self.components['absorption'].normalised_x_values.select(sel),
         normalised_y_values=self.components['absorption'].normalised_y_values.select(sel),
         normalised_z_values=self.components['absorption'].normalised_z_values.select(sel))
-    if 'modulation' in self.corrections:
+    if 'modulation' in self.components:
       self.components['modulation'].update_reflection_data(
         normalised_x_values=self.components['modulation'].normalised_x_values.select(sel),
         normalised_y_values=self.components['modulation'].normalised_y_values.select(sel))
 
   def calc_expanded_scales(self):
     expanded_scale_factors = flex.double([1.0]*len(self.reflection_table))
-    if 'modulation' in self.corrections:
+    if 'modulation' in self.components:
       self.components['modulation'].update_reflection_data(
         self.reflection_table['normalised_x_det_values'],
         self.reflection_table['normalised_y_det_values'])
       self.components['modulation'].calculate_scales()
       expanded_scale_factors *= self.components['modulation'].inverse_scales
-    if 'decay' in self.corrections:
+    if 'decay' in self.components:
       self.components['decay'].update_reflection_data(
         self.reflection_table['normalised_res_values'],
         self.reflection_table['norm_time_values'])
       self.components['decay'].calculate_scales()
       expanded_scale_factors *= self.components['decay'].inverse_scales
-    if 'absorption' in self.corrections:
+    if 'absorption' in self.components:
       self.components['absorption'].update_reflection_data(
         self.reflection_table['normalised_x_abs_values'],
         self.reflection_table['normalised_y_abs_values'],

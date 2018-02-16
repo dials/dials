@@ -28,6 +28,7 @@ from dials.util import halraiser
 from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
 
 from dials.algorithms.scaling.minimiser_functions import LBFGS_optimiser
+from dials.algorithms.scaling.ScalingRefiner import AdaptLbfgs, GaussNewtonIterations
 from dials.algorithms.scaling.model import ScalingModelFactory
 from dials.algorithms.scaling import ScalerFactory
 from dials.algorithms.scaling import Scaler
@@ -102,7 +103,8 @@ def main(argv):
   assert len(experiments) == len(reflections), ''' mismatched number of
   experiments and reflection tables found'''
 
-  '''first create the scaling model if it didn't alread exist in the experiments files'''
+  '''first create the scaling model if it didn't already exist in the
+  experiments files'''
   experiments = ScalingModelFactory.Factory.create(params, experiments, reflections)
 
   '''now create the scaler and do the scaling'''
@@ -168,7 +170,9 @@ def perform_scaling(scaler):
   apm_factory = ParameterHandler.ActiveParameterFactory.create(scaler)
   for _ in range(apm_factory.n_cycles):
     apm = apm_factory.make_next_apm()
-    scaler = LBFGS_optimiser(scaler, apm).return_scaler()
+    refinery = AdaptLbfgs(scaler, apm, max_iterations=15)
+    refinery.run()
+    scaler = refinery.return_scaler()
   return scaler
 
 def scaling_algorithm(scaler):
@@ -194,6 +198,13 @@ def scaling_algorithm(scaler):
     scaler.update_error_model()
     scaler = perform_scaling(scaler)
 
+  apm_factory = ParameterHandler.ActiveParameterFactory.create(scaler)
+  for _ in range(apm_factory.n_cycles):
+    apm = apm_factory.make_next_apm()
+    refinery = GaussNewtonIterations(scaler, apm, max_iterations=2)
+    refinery.run()
+    scaler = refinery.return_scaler()
+  
   '''The minimisation has only been done on a subset on the data, so apply the
   scale factors to the whole reflection table.'''
   scaler.expand_scales_to_all_reflections()
