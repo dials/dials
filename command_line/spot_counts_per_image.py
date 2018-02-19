@@ -97,17 +97,17 @@ def run(args):
     ]
   print table_utils.format(rows, has_header=True, prefix="| ", postfix=" |")
 
-  if params.json is not None:
+  if params.json:
     import json
-    if not params.split_json:
-      with open(params.json, 'wb') as fp:
-        json.dump(stats.__dict__, fp)
-    else:
+    if params.split_json:
       for k in stats.__dict__:
         start, end = params.json.split('.')
         with open('%s_%s.%s' % (start, k, end), 'wb') as fp:
           json.dump(stats.__dict__[k], fp)
-  if params.plot is not None:
+    else:
+      with open(params.json, 'wb') as fp:
+        json.dump(stats.__dict__, fp)
+  if params.plot:
     per_image_analysis.plot_stats(stats, filename=params.plot)
 
 if __name__ == '__main__':
