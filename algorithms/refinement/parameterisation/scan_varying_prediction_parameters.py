@@ -328,43 +328,58 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
         reflections['s0_vector'].set_selected(subsel, s0.elems)
         reflections['S_matrix'].set_selected(subsel, S.elems)
 
-        # set states and derivatives for multi-panel detector
-        if dp is not None and dp.is_multi_state():
+        # set states and derivatives for this detector
+        if dp is not None: # detector is parameterised
+          if dp.is_multi_state(): # parameterised detector is multi panel
 
-          # loop through the panels in this detector
-          for panel_id, _ in enumerate(exp.detector):
+            # loop through the panels in this detector
+            for panel_id, _ in enumerate(exp.detector):
 
-            # get the right subset of array indices to set for this panel
-            subsel2 = subsel.select(panels == panel_id)
-            if len(subsel2) == 0:
-              # if no reflections intersect this panel, skip calculation
-              continue
+              # get the right subset of array indices to set for this panel
+              subsel2 = subsel.select(panels == panel_id)
+              if len(subsel2) == 0:
+                # if no reflections intersect this panel, skip calculation
+                continue
 
-            dmat  = self._get_state_from_parameterisation(dp,
-              frame, multi_state_elt=panel_id)
-            if dmat is None: dmat = exp.detector[panel_id].get_d_matrix()
-            Dmat = exp.detector[panel_id].get_D_matrix()
-            reflections['d_matrix'].set_selected(subsel2, dmat)
-            reflections['D_matrix'].set_selected(subsel2, Dmat)
+              dmat  = self._get_state_from_parameterisation(dp,
+                frame, multi_state_elt=panel_id)
+              if dmat is None: dmat = exp.detector[panel_id].get_d_matrix()
+              Dmat = exp.detector[panel_id].get_D_matrix()
+              reflections['d_matrix'].set_selected(subsel2, dmat)
+              reflections['D_matrix'].set_selected(subsel2, Dmat)
 
-            if dp is not None and self._varying_detectors and not skip_derivatives:
-              for j, dd in enumerate(dp.get_ds_dp(multi_state_elt=panel_id,
-                                                  use_none_as_null=True)):
+              if self._varying_detectors and not skip_derivatives:
+                for j, dd in enumerate(dp.get_ds_dp(multi_state_elt=panel_id,
+                                                    use_none_as_null=True)):
+                  if dd is None: continue
+                  self._derivative_cache.append(dp, j, dd, subsel)
+
+          else: # parameterised detector is single panel
+            dmat  = self._get_state_from_parameterisation(dp, frame)
+            if dmat is None: dmat = exp.detector[0].get_d_matrix()
+            Dmat = exp.detector[0].get_D_matrix()
+            reflections['d_matrix'].set_selected(subsel, dmat)
+            reflections['D_matrix'].set_selected(subsel, Dmat)
+
+            if self._varying_detectors and not skip_derivatives:
+              for j, dd in enumerate(dp.get_ds_dp(use_none_as_null=True)):
                 if dd is None: continue
                 self._derivative_cache.append(dp, j, dd, subsel)
 
-        else: # set states and derivatives for single panel detector
+        else: # set states for unparameterised detector (dp is None)
+            # loop through the panels in this detector
+            for panel_id, _ in enumerate(exp.detector):
 
-          dmat  = self._get_state_from_parameterisation(dp, frame)
-          if dmat is None: dmat = exp.detector[0].get_d_matrix()
-          Dmat = exp.detector[0].get_D_matrix()
-          reflections['d_matrix'].set_selected(subsel, dmat)
-          reflections['D_matrix'].set_selected(subsel, Dmat)
+              # get the right subset of array indices to set for this panel
+              subsel2 = subsel.select(panels == panel_id)
+              if len(subsel2) == 0:
+                # if no reflections intersect this panel, skip to the next
+                continue
 
-          if dp is not None and self._varying_detectors and not skip_derivatives:
-            for j, dd in enumerate(dp.get_ds_dp(use_none_as_null=True)):
-              if dd is None: continue
-              self._derivative_cache.append(dp, j, dd, subsel)
+              dmat = exp.detector[panel_id].get_d_matrix()
+              Dmat = exp.detector[panel_id].get_D_matrix()
+              reflections['d_matrix'].set_selected(subsel2, dmat)
+              reflections['D_matrix'].set_selected(subsel2, Dmat)
 
         # set derivatives of the states for crystal, beam and goniometer
         if not skip_derivatives:
