@@ -176,7 +176,6 @@ class DataBlockImporter(object):
     from dxtbx.datablock import DataBlockTemplateImporter
     from dxtbx.datablock import DataBlockFactory
     from dials.util.options import flatten_datablocks
-    from libtbx.utils import Sorry
 
     # Get the datablocks
     datablocks = flatten_datablocks(self.params.input.datablock)
@@ -654,7 +653,6 @@ class Script(object):
   def __init__(self):
     ''' Set the expected options. '''
     from dials.util.options import OptionParser
-    import libtbx.load_env
 
     # Create the option parser
     usage = "usage: %s [options] /path/to/image/files" % libtbx.env.dispatcher_name
