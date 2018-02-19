@@ -136,7 +136,7 @@ class BlockCalculator(object):
       for f_num, f in enumerate(frame_range):
         sub_isel = isel.select(frames == f)
         self._reflections['block'].set_selected(sub_isel, f_num)
-        self._reflections['block_centre'].set_selected(sub_isel, f)
+        self._reflections['block_centre'].set_selected(sub_isel, f_num)
 
     return self._reflections
 
