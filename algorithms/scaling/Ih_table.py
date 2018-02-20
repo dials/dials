@@ -181,7 +181,7 @@ class IhTableBase(object):
     n_unique_groups = len(self.h_index_counter_array)
     n_refl = self.size
     h_expand_mat = sparse.matrix(n_unique_groups, n_refl)
-    counter=0
+    counter = 0
     for i, val in enumerate(self._h_index_counter_array):
       for j in range(val):
         idx = j + self.h_index_cumulative_array[i]
@@ -240,9 +240,7 @@ class SingleIhTable(IhTableBase):
     gI = ((scale_factors * self.intensities) * self.weights)
     sumgI = gI * self.h_index_matrix
     Ih = sumgI/sumgsq
-    self._Ih_table['Ih_values'] = Ih * self.h_expand_matrix #flex.double(np.repeat(Ih, self.h_index_counter_array))##
-
-  
+    self._Ih_table['Ih_values'] = Ih * self.h_expand_matrix
 
 class JointIhTable(IhTableBase):
   '''Class to expand the datastructure for scaling multiple
@@ -255,6 +253,8 @@ class JointIhTable(IhTableBase):
 
   @property
   def h_index_expand_list(self):
+    '''a list of the matrices needed to expand the lists of data for efficient
+    calculation of Ih.'''
     return self._h_index_expand_list
 
   def _create_Ih_table(self, data):
@@ -287,7 +287,7 @@ class JointIhTable(IhTableBase):
     sumgI = gI * self.h_index_matrix
     Ih = sumgI/sumgsq
     self.inverse_scale_factors = scales
-    self._Ih_table['Ih_values'] = Ih * self.h_expand_matrix#flex.double(np.repeat(Ih, self.h_index_counter_array))
+    self._Ih_table['Ih_values'] = Ih * self.h_expand_matrix
 
   def _determine_all_unique_indices(self):
     '''this function finds the unique reflections across all datasets and

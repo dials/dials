@@ -6,8 +6,9 @@ class scaling_active_parameter_manager(active_parameter_manager):
   Adds an extra property to the apm to avoid a repetitive calculation during
   mimimisation cycles for scaling.
   '''
-  def __init__(self, components, selection_list):
+  def __init__(self, data_manager, selection_list):
     self.constant_g_values = None
+    components = data_manager.components
     for component, obj in components.iteritems():
       if not component in selection_list:
         assert hasattr(obj, 'inverse_scales'), '''component object must have the
@@ -16,7 +17,7 @@ class scaling_active_parameter_manager(active_parameter_manager):
           self.constant_g_values = obj.inverse_scales
         else:
           self.constant_g_values *= obj.inverse_scales
-    super(scaling_active_parameter_manager, self).__init__(components, selection_list)
+    super(scaling_active_parameter_manager, self).__init__(data_manager, selection_list)
 
 
 class ActiveParameterFactory(object):

@@ -34,7 +34,7 @@ from dials.algorithms.scaling.model import ScalingModelFactory
 from dials.algorithms.scaling import ScalerFactory
 from dials.algorithms.scaling import Scaler
 from dials.algorithms.scaling import ParameterHandler
-from dials.algorithms.scaling.target_function import ScalingTarget
+from dials.algorithms.scaling.target_function import ScalingTarget, ScalingTargetFixedIH
 from dials.algorithms.scaling.scaling_utilities import (
   parse_multiple_datasets, save_experiments)
 
@@ -167,12 +167,12 @@ def main(argv):
   logger.info("\nTotal time taken: {0:.4f}s ".format((finish_time - start_time)))
   logger.info('\n'+'*'*40+'\n')
 
-def perform_scaling(scaler):
+def perform_scaling(scaler, target_type=ScalingTarget):
   '''a function to call to do a complete minimisation based on the current state'''
   apm_factory = ParameterHandler.ActiveParameterFactory.create(scaler)
   for _ in range(apm_factory.n_cycles):
     apm = apm_factory.make_next_apm()
-    refinery = AdaptLbfgs(scaler, target=ScalingTarget(scaler, apm),
+    refinery = AdaptLbfgs(scaler, target=target_type(scaler, apm),
       prediction_parameterisation=apm, max_iterations=25)
     refinery.run()
     scaler = refinery.return_scaler()
@@ -182,7 +182,7 @@ def scaling_algorithm(scaler):
   '''main function to do lbfbs scaling'''
   if scaler.id_ == 'target':
     '''do a scaling round against a target of already scaled datasets'''
-    scaler = perform_scaling(scaler)
+    scaler = perform_scaling(scaler, target_type=ScalingTargetFixedIH)
 
     '''the minimisation has only been done on a subset on the data, so apply the
     scale factors to the whole reflection table.'''

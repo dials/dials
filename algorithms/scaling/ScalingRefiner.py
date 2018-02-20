@@ -255,7 +255,7 @@ class Refinery(object):
     except IndexError:
       return False
 
-    tests = [abs((e[1] - e[0])/e[1]) < 0.0001 if e[1] > 0 else True for e in zip(r1, r2)]
+    tests = [abs((e[1] - e[0])/e[1]) < 0.00001 if e[1] > 0 else True for e in zip(r1, r2)]
 
     return all(tests)
 
@@ -408,9 +408,9 @@ class AdaptLbfgs(ScalingRefinery):
       self.history.reason_for_termination = TARGET_ACHIEVED
       return True
 
-    if self.test_rmsd_convergence():
-      self.history.reason_for_termination = RMSD_CONVERGED
-      return True
+    #if self.test_rmsd_convergence():
+    #  self.history.reason_for_termination = RMSD_CONVERGED
+    #  return True
 
     return False
 
@@ -445,15 +445,6 @@ class AdaptLbfgs(ScalingRefinery):
 
     return
 
-
-  '''def run(self, curvatures=False):
-    """
-    Run the minimiser, keeping track of its log.
-    """
-    if curvatures: self.diag_mode = "always"
-    self.minimizer = lbfgs.run(target_evaluator=self,
-        termination_params=self._termination_params)'''
-
 class AdaptLstbx(ScalingRefinery, normal_eqns.non_linear_ls,
     normal_eqns.non_linear_ls_mixin):
   """Adapt Refinery for lstbx"""
@@ -464,11 +455,6 @@ class AdaptLstbx(ScalingRefinery, normal_eqns.non_linear_ls,
     super(AdaptLstbx, self).__init__(scaler, target, prediction_parameterisation, constraints_manager,
              log=log, verbosity=verbosity, tracking=tracking,
              max_iterations=max_iterations)
-
-  #def __init__(self, scaler, target, prediction_parameterisation,
-  #    constraints_manager=None, max_iterations=max_iterations):
-  #  super(AdaptLstbx, self).__init__(scaler, target, prediction_parameterisation,
-  #    constraints_manager, max_iterations)
 
     # required for restart to work (do I need that method?)
     self.x_0 = self.x.deep_copy()
@@ -502,8 +488,6 @@ class AdaptLstbx(ScalingRefinery, normal_eqns.non_linear_ls,
 
     # observation terms
     if objective_only:
-      #residual, _, = self._scaler.get_target_function(self._prediction_parameterisation)
-      #residuals, weights = self._target.compute_residuals()
       residuals, weights = self._target.compute_residuals()
       self.add_residuals(residuals, weights)
     else:
@@ -558,8 +542,8 @@ class AdaptLstbx(ScalingRefinery, normal_eqns.non_linear_ls,
     self.parameter_var_cov = \
         self.history["reduced_chi_squared"][-1] * nm_inv
     # send this back to the models to calculate their uncertainties
-    #self._parameters.calculate_model_state_uncertainties(
-    #  self.parameter_var_cov)
+    self._parameters.calculate_model_state_uncertainties(
+      self.parameter_var_cov)
 
     # send parameter variances back to the parameter classes
     # themselves, for reporting purposes and for building restraints
@@ -586,7 +570,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
   step_threshold = None
   damping_value = 0.0007
   max_shift_over_esd = 15
-  convergence_as_shift_over_esd = 1e-5
+  convergence_as_shift_over_esd = 1e-6
 
   def __init__(self, scaler, target, prediction_parameterisation, constraints_manager=None,
                log=None, verbosity=0, tracking=None,
@@ -596,13 +580,6 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
              self, scaler, target, prediction_parameterisation, constraints_manager,
              log=log, verbosity=verbosity, tracking=tracking,
              max_iterations=max_iterations)
-
-  #def __init__(self, scaler, target, prediction_parameterisation,
-  #    constraints_manager=None, max_iterations=None, **kwds):
-
-  #  AdaptLstbx.__init__(self, scaler, target, prediction_parameterisation,
-  #    constraints_manager=constraints_manager,
-  #    max_iterations=max_iterations)
 
     # add an attribute to the journal
     self.history.add_column("reduced_chi_squared")#flex.double()
@@ -618,7 +595,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
 
     # return early if refinement is not possible
     if self.dof < 1:
-      #self.history.reason_for_termination = DOF_TOO_LOW
+      self.history.reason_for_termination = DOF_TOO_LOW
       return
 
     while True:
@@ -650,15 +627,15 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
 
       # test termination criteria
       if self.test_for_termination():
-        #self.history.reason_for_termination = TARGET_ACHIEVED
+        self.history.reason_for_termination = TARGET_ACHIEVED
         break
 
       if self.test_rmsd_convergence():
-        #self.history.reason_for_termination = RMSD_CONVERGED
+        self.history.reason_for_termination = RMSD_CONVERGED
         break
 
       if self.had_too_small_a_step():
-        #self.history.reason_for_termination = STEP_TOO_SMALL
+        self.history.reason_for_termination = STEP_TOO_SMALL
         break
 
       if self.test_objective_increasing_but_not_nref():
@@ -669,7 +646,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
         break
 
       if self.n_iterations == self._max_iterations:
-        #self.history.reason_for_termination = MAX_ITERATIONS
+        self.history.reason_for_termination = MAX_ITERATIONS
         break
 
       # prepare for next step
@@ -678,7 +655,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
       self.build_up()
     
     self.set_cholesky_factor()
-    #self.calculate_esds()
+    self.calculate_esds()
 
     return
 
@@ -738,7 +715,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
 
     # return early if refinement is not possible
     if self.dof < 1:
-      #self.history.reason_for_termination = DOF_TOO_LOW
+      self.history.reason_for_termination = DOF_TOO_LOW
       return
 
     self.setup_mu()

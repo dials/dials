@@ -90,6 +90,7 @@ class ScaleFactor(object):
     #else:
     self._parameters = initial_value#flex.double([initial_value] * n_parameters)
     self._parameter_esds = None
+    self._var_cov = None
     self._n_params = len(self._parameters)
     self._scaling_options = scaling_options
     self._inverse_scales = None
@@ -125,6 +126,14 @@ class ScaleFactor(object):
     self._parameter_esds = esds
 
   @property
+  def var_cov_matrix(self):
+    return self._var_cov
+
+  @var_cov_matrix.setter
+  def var_cov_matrix(self, var_cov):
+    self._var_cov = var_cov
+
+  @property
   def inverse_scales(self):
     '''inverse scale factors associated with reflections'''
     return self._inverse_scales
@@ -143,16 +152,6 @@ class ScaleFactor(object):
     '''method to be filled in by subclasses. Force setting of normalised
     values and any other data (e.g. d_values) at same time.'''
     pass
-
-  #@abs.abstractmethod
-  #def set_uncertainties(self, var_cov):
-  #  '''set uncertainties in of the parameters from a var-cov matrix'''
-  #  pass
-
-  #@abs.abstractmethod
-  #def calculate_scale_uncertainties(self):
-  #  '''calculate uncertainties in the inverse scale factors'''
-  #  pass
 
   def calculate_scales_and_derivatives(self):
     """method to be filled in by subclasses"""
@@ -179,15 +178,6 @@ class KScaleFactor(ScaleFactor):
     self._derivatives = sparse.matrix(self.n_refl, 1)
     for i in range(self.n_refl):
       self._derivatives[i, 0] = 1.0
-
-  def set_uncertainties(self, var_cov):
-    assert var_cov.n_cols == 1 and var_cov.n_rows == 1
-    self._parameter_variances = var_cov[0, 0]
-
-  def calculate_scale_uncertainties(self):
-    assert self._parameter_variances, "parameter variances have not been set"
-    self._inverse_scale_variances = flex.double(
-      [self._parameter_variances] * self.n_refl)
 
 class BScaleFactor(KScaleFactor):
   '''ScaleFactor object for a single global B-scale parameter.'''
@@ -234,16 +224,6 @@ class SHScaleFactor(ScaleFactor):
       abs_scale += flex.double(col.as_dense_vector() * self._parameters[i])
     self._inverse_scales = abs_scale
     self._derivatives = self._harmonic_values
-
-  def set_uncertainties(self, var_cov):
-    self._parameter_variances = flex.double([])
-    for i, col in enumerate(var_cov.cols()):
-      self._parameter_variances.extend(col[i])
-
-  def calculate_scale_uncertainties(self):
-    assert self._parameter_variances, "parameter variances have not been set"
-    self._inverse_scale_variances = flex.double(
-      [self._parameter_variances] * self.n_refl)
 
 class SmoothScaleFactor(ScaleFactor):
   '''Base class for Smooth ScaleFactor objects - which allow use of a
@@ -296,11 +276,6 @@ class SmoothScaleFactor1D(SmoothScaleFactor):
     value, _, _ = self._smoother.multi_value_weight(self._normalised_values, self.value)
     self._inverse_scales = value
 
-  def set_uncertainties(self, var_cov):
-    self._parameter_variances = flex.double([])
-    for i, col in enumerate(var_cov.cols()):
-      self._parameter_variances.extend(col[i])
-
 class SmoothBScaleFactor1D(SmoothScaleFactor1D):
   '''Subclass to SmoothScaleFactor1D for a smooth B-scale correction.'''
   def __init__(self, initial_value, scaling_options=None):
@@ -328,8 +303,6 @@ class SmoothBScaleFactor1D(SmoothScaleFactor1D):
     super(SmoothBScaleFactor1D, self).calculate_scales()
     self._inverse_scales = flex.double(np.exp(self._inverse_scales
       /(2.0 * (self._d_values**2))))
-
-
 
 
 class SmoothScaleFactor2D(SmoothScaleFactor):

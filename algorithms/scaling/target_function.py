@@ -8,7 +8,9 @@ from scitbx import sparse
 import abc
 
 class ScalingTarget(object):
-  
+  '''A class to be used by a Scaling Refinery to calculate gradients,
+  residuals etc required by the Refinery for minimisation.
+  '''
   __metaclass__  = abc.ABCMeta
   _grad_names = ['dI_dp']
   rmsd_names = ["RMSD_I"]
@@ -31,7 +33,8 @@ class ScalingTarget(object):
   def rmsds(self):
     """calculate unweighted RMSDs for the matches"""
     # cache rmsd calculation for achieved test
-    self._rmsds = [(flex.sum(self.calculate_residuals()**2)/self.scaler.Ih_table.size)**0.5]
+    R = self.calculate_residuals() #need to add restraints?
+    self._rmsds = [(flex.sum((R)**2)/self.scaler.Ih_table.size)**0.5]
     #print("rmsds %s" % self._rmsds)
     return self._rmsds
 
@@ -98,7 +101,7 @@ class ScalingTarget(object):
     restraints = None
     if 'absorption' in self.apm.components_list:
       restr = self.scaler.calc_absorption_constraint(self.apm)
-      resid_restr = flex.sum(restr[0])
+      resid_restr = flex.sum(restr[0]) #want just a value to add to total functional here
       grad_restr = restr[1]
       restraints = [resid_restr, grad_restr, None]
     return restraints #list of restraints to add to resid, grads and curvs?
@@ -112,6 +115,31 @@ class ScalingTarget(object):
 
   #def compute_restraints_residuals_and_gradients(self): #for adaptlstbx (GN/ LM)
   #  return restraints #list of restraints to add to residuals, jacobian and weights?
+
+class ScalingTargetFixedIH(ScalingTarget):
+  '''A special implementation of scaling target for when the scaling is to be
+  done against a fixed reference Ih set (i.e scaler is a TargetScaler)
+  '''
+  def calculate_gradients(self):
+    G = flex.double([])
+    for i, unscaled_scaler in enumerate(self.scaler.unscaled_scalers):
+      apm = self.apm.apm_list[i]
+      Ih_tab = unscaled_scaler.Ih_table
+      rhl = Ih_tab.intensities - (Ih_tab.Ih_values * Ih_tab.inverse_scale_factors)
+      G.extend(-2.0 * rhl * Ih_tab.weights * Ih_tab.Ih_values * apm.derivatives)
+    return G
+
+  def calculate_residuals(self):
+    '''returns a residual vector'''
+    R = flex.double([])
+    for unscaled_scaler in self.scaler.unscaled_scalers:
+      Ih_tab = unscaled_scaler.Ih_table
+      R.extend((((Ih_tab.intensities - (Ih_tab.inverse_scale_factors * Ih_tab.Ih_values))**2)
+                * Ih_tab.weights))
+    return R
+
+  def compute_residuals_and_gradients(self):
+    assert 0, 'method not yet implemented for targeted scaling'
 
 
 class target_function(object):
@@ -190,7 +218,7 @@ class target_function(object):
 
 class target_function_fixedIh(target_function):
   '''subclass to calculate the gradient for scaling against a fixed Ih'''
-  def calculate_gradient(self):
+  def calculate_gradients(self):
     Ih_tab = self.scaler.Ih_table
     rhl = Ih_tab.intensities - (Ih_tab.Ih_values * Ih_tab.inverse_scale_factors)
     gradient = (-2.0 * rhl * Ih_tab.weights * Ih_tab.Ih_values * self.apm.derivatives)

@@ -14,12 +14,13 @@ class active_parameter_manager(object):
   This class stores a reference to the components to be minimised, alongside
   some bookkeeping to allow selection of the parameters for an individual component.
   '''
-  def __init__(self, components, selection_list):
+  def __init__(self, data_manager, selection_list): #was components, selection_list
     self.x = flex.double([])
     self.components = OrderedDict()
+    self.data_manager = data_manager
     self.derivatives = None
     self.components_list = [] #just a list of the component names
-
+    components = data_manager.components
     n_cumul_params = 0
     for component, obj in components.iteritems():
       if component in selection_list:
@@ -51,15 +52,17 @@ class active_parameter_manager(object):
   def get_param_vals(self):
     '''method for refinement engine access'''
     return self.x
-  
+
   def calculate_model_state_uncertainties(self, var_cov):
+    '''set var_cov matrices for each component to allow later calculation of errors'''
     i = 0
     for component in self.components:
-      n = component['n_params']
+      n = self.components[component]['n_params']
       sub = var_cov.matrix_copy_block(i, i, n, n)
-      component.set_uncertainties(sub) #set uncertainties in each component
+      self.components[component]['object'].var_cov_matrix = sub #set var_cov for each comp.
       i += n
-    #now calculate overall uncertainties for inverse scales
+    self.data_manager.var_cov_matrix = var_cov
+    #error calculation must happen later when scales are expanded to all refl.
 
   def set_param_esds(self, esds):
     '''set the estimated standard deviations of the model components'''
@@ -76,15 +79,16 @@ class multi_active_parameter_manager(object):
   Initialise with two lists of components and selections, each item of which
   is used to initialise an active parameter manager of type apm_class.
   '''
-  def __init__(self, components_list, selection_lists, apm_class):
+  def __init__(self, data_managers, selection_lists, apm_class):
     self.x = flex.double([])
     self.derivatives = None
+    self.data_managers = data_managers
     self.components_list = [] #just a list of the component names
     self.apm_list = []
     self.apm_data = OrderedDict()
 
-    for component, selection_list in zip(components_list, selection_lists):
-      self.apm_list.append(apm_class(component, selection_list))
+    for data_manager, selection_list in zip(self.data_managers, selection_lists):
+      self.apm_list.append(apm_class(data_manager, selection_list))
 
     n_cumul_params = 0
     for i, apm in enumerate(self.apm_list):
@@ -115,9 +119,19 @@ class multi_active_parameter_manager(object):
     return self.x
 
   def set_param_esds(self, esds):
+    '''set the estimated standard deviations of the parameters'''
     for i, apm in enumerate(self.apm_list):
       apm_data = self.apm_data[i]
       apm.set_param_esds(esds[apm_data['start_idx'] : apm_data['end_idx']])
+
+  def calculate_model_state_uncertainties(self, var_cov):
+    '''set var_cov matrices for each component to allow later calculation of errors'''
+    i = 0
+    for apm in self.apm_list:
+      n = apm.n_active_params
+      sub = var_cov.matrix_copy_block(i, i, n, n)
+      apm.calculate_model_state_uncertainties(sub)
+      i += n
 
 class ConcurrentAPMFactory(object):
   '''
@@ -148,7 +162,7 @@ class ConcurrentAPMFactory(object):
       if not param_name:
         assert 0, 'no parameters have been chosen for scaling, aborting process'
       self.param_lists = param_name
-      self.apm = apm_type(self.data_managers[0].components, self.param_lists)
+      self.apm = apm_type(self.data_managers[0], self.param_lists)
 
     elif mode == 'multi':
       for data_manager in self.data_managers:
@@ -158,8 +172,8 @@ class ConcurrentAPMFactory(object):
         if not param_name:
           assert 0, 'no parameters have been chosen for scaling, aborting process'
         self.param_lists.append(param_name)
-      components = [i.components for i in self.data_managers]
-      self.apm = multi_active_parameter_manager(components, self.param_lists,
+      #components = [i.components for i in self.data_managers]
+      self.apm = multi_active_parameter_manager(self.data_managers, self.param_lists,
         apm_type)
 
   def make_next_apm(self):
@@ -227,15 +241,15 @@ class ConsecutiveAPMFactory(object):
     but not necessarily for all datasets)'''
 
     if self.mode == 'single':
-      apm = self.apm_type(self.data_managers[0].components, self.param_lists[0])
+      apm = self.apm_type(self.data_managers[0], self.param_lists[0])
       self.param_lists = self.param_lists[1:]
     elif self.mode == 'multi':
       params = []
       for i in range(0, len(self.param_lists)):
         params.append(self.param_lists[i][0])
         self.param_lists[i] = self.param_lists[i][1:] #remove first element
-      components = [i.components for i in self.data_managers]
-      apm = multi_active_parameter_manager(components, params, self.apm_type)
+      #components = [i.components for i in self.data_managers]
+      apm = multi_active_parameter_manager(self.data_managers, params, self.apm_type)
     if not apm.components_list: #no active parameters, so iterate
       apm = self.make_next_apm()
     return apm

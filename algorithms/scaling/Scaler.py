@@ -4,6 +4,7 @@ import numpy as np
 from dials.array_family import flex
 from cctbx import miller, crystal
 from scitbx import sparse
+from dials_scaling_helpers_ext import row_multiply
 import iotbx.merging_statistics
 from dials.algorithms.scaling.target_function import \
   target_function, target_function_fixedIh
@@ -27,6 +28,7 @@ class ScalerBase(object):
     self._reflection_table = []
     self._outlier_table = flex.reflection_table()
     self._Ih_table = None
+    self._var_cov = None
     self._initial_keys = []
 
   @property
@@ -37,6 +39,14 @@ class ScalerBase(object):
   def Ih_table(self, new_Ih_table):
     assert isinstance(new_Ih_table, IhTableBase)
     self._Ih_table = new_Ih_table
+
+  @property
+  def var_cov_matrix(self):
+    return self._var_cov
+
+  @var_cov_matrix.setter
+  def var_cov_matrix(self, var_cov):
+    self._var_cov = var_cov
 
   @property
   def experiments(self):
@@ -62,6 +72,7 @@ class ScalerBase(object):
   def clean_reflection_table(self):
     '''remove additional added columns that are not required for output'''
     self._initial_keys.append('inverse_scale_factor')
+    self._initial_keys.append('inverse_scale_factor_variance')
     self._initial_keys.append('Ih_values')
     for key in self.reflection_table.keys():
       if not key in self._initial_keys:
@@ -318,6 +329,8 @@ class SingleScalerBase(ScalerBase):
 
   def expand_scales_to_all_reflections(self, caller=None):
     self._reflection_table['inverse_scale_factor'] = self.calc_expanded_scales()
+    if self.var_cov_matrix:
+      self._reflection_table['inverse_scale_factor_variance'] = self.calc_sf_variances()
     logger.info(('Scale factors determined during minimisation have now been applied {sep}'
       'to all reflections. {sep}').format(sep='\n'))
     weights = self._update_weights_for_scaling(self.reflection_table,
@@ -407,6 +420,40 @@ class SingleScalerBase(ScalerBase):
         return (flex.double([0.0]), flex.double([0.0] * apm.n_active_params))
     return (flex.double([0.0]), flex.double([0.0] * apm.n_active_params))
 
+  def calc_sf_variances(self):
+    '''use the parameter var_cov matrix to calculate the variances of the inverse scales'''
+    n_param = 0
+    for component in self.components:
+      n_param += self.components[component].n_params
+      n_refl = len(self.components[component].inverse_scales) #should all be same
+    jacobian = sparse.matrix(n_refl, n_param)
+    n_cumulative_param = 0
+    for component in self.components:
+      block = self.components[component].derivatives
+      n_param = self.components[component].n_params
+      for component_2 in self.components:
+        if component_2 != component:
+          block = row_multiply(block, self.components[component].inverse_scales)
+      jacobian.assign_block(block, 0, n_cumulative_param)
+      n_cumulative_param += n_param
+    jacobian_transpose = jacobian.transpose()
+
+    length = int(len(self.var_cov_matrix)**0.5)
+    var_cov_mat = sparse.matrix(length, length)
+    for i in range(length):
+      col = sparse.matrix_column(length)
+      for j in range(length):
+        col[j] = self.var_cov_matrix[(i*length) + j]
+      var_cov_mat[:, i] = col
+    logger.info('Calculating error estimates of inverse scale factors. \n')
+    sigmasq = flex.float([])
+    #note: must be a faster way to do this next bit?
+    for col in jacobian_transpose.cols(): #iterating over reflections
+      a = flex.double(col.as_dense_vector())
+      var = (a * var_cov_mat) * a
+      sigmasq.append(flex.sum(var))
+    return sigmasq.as_double()
+
 class KBScaler(SingleScalerBase):
   '''
   Scaler for single dataset using simple KB parameterisation.
@@ -443,7 +490,6 @@ class KBScaler(SingleScalerBase):
       self.components['scale'].update_reflection_data(n_refl=sel.count(True))
 
   def calc_expanded_scales(self):
-    '''calculate'''
     expanded_scale_factors = flex.double([1.0]*len(self.reflection_table))
     if 'scale' in self.components:
       self.components['scale'].update_reflection_data(n_refl=len(self.reflection_table))
@@ -460,6 +506,8 @@ class KBScaler(SingleScalerBase):
         'has now been applied to all reflections. {sep}').format(
         list(self.components['decay'].parameters)[0], sep='\n'))
     return expanded_scale_factors
+
+  
 
 
 class AimlessScaler(SingleScalerBase):
@@ -559,12 +607,12 @@ class AimlessScaler(SingleScalerBase):
     expanded_scale_factors = flex.double([1.0]*len(self.reflection_table))
     if 'scale' in self.components:
       self.components['scale'].update_reflection_data(self.reflection_table['norm_rot_angle'])
-      self.components['scale'].calculate_scales()
+      self.components['scale'].calculate_scales_and_derivatives()
       expanded_scale_factors *= self.components['scale'].inverse_scales
     if 'decay' in self.components:
       self.components['decay'].update_reflection_data(dvalues=self.reflection_table['d'],
         normalised_values=self.reflection_table['norm_time_values'])
-      self.components['decay'].calculate_scales()
+      self.components['decay'].calculate_scales_and_derivatives()
       expanded_scale_factors *= self.components['decay'].inverse_scales
     if 'absorption' in self.components:
       self.components['absorption'].update_reflection_data(self.sph_harm_table)
@@ -675,20 +723,20 @@ class XscaleScaler(SingleScalerBase):
       self.components['modulation'].update_reflection_data(
         self.reflection_table['normalised_x_det_values'],
         self.reflection_table['normalised_y_det_values'])
-      self.components['modulation'].calculate_scales()
+      self.components['modulation'].calculate_scales_and_derivatives()
       expanded_scale_factors *= self.components['modulation'].inverse_scales
     if 'decay' in self.components:
       self.components['decay'].update_reflection_data(
         self.reflection_table['normalised_res_values'],
         self.reflection_table['norm_time_values'])
-      self.components['decay'].calculate_scales()
+      self.components['decay'].calculate_scales_and_derivatives()
       expanded_scale_factors *= self.components['decay'].inverse_scales
     if 'absorption' in self.components:
       self.components['absorption'].update_reflection_data(
         self.reflection_table['normalised_x_abs_values'],
         self.reflection_table['normalised_y_abs_values'],
         self.reflection_table['norm_time_values'])
-      self.components['absorption'].calculate_scales()
+      self.components['absorption'].calculate_scales_and_derivatives()
       expanded_scale_factors *= self.components['absorption'].inverse_scales
     return expanded_scale_factors
 
