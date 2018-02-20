@@ -5,27 +5,45 @@ including the required methods for calculating smooth scale factors and
 import abc
 import numpy as np
 from dials.array_family import flex
-from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \
-        import GaussianSmoother#, GaussianSmoother2D, GaussianSmoother3D
+#from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \
+#        import GaussianSmoother#, GaussianSmoother2D, GaussianSmoother3D
 from dials_scaling_helpers_ext import row_multiply
 from scitbx import sparse
+from dials_refinement_helpers_ext import GaussianSmoother as GS1D
 from dials_refinement_helpers_ext import GaussianSmoother2D as GS2D
 from dials_refinement_helpers_ext import GaussianSmoother3D as GS3D
 #from dials_refinement_helpers_ext import GaussianSmoother2D as GS2D
 #from dials.algorithms.refinement.boost_python.gaussian_smoother_2D import \
 
+class GaussianSmoother1D(GS1D):
+  """A Gaussian smoother for ScanVaryingModelParameterisations"""
+
+  def value_weight(self, x, value):
+    result = super(GaussianSmoother1D, self).value_weight(x,
+      flex.double(value))
+    return (result.get_value(), result.get_weight(), result.get_sumweight())
+
+  def multi_value_weight(self, x, value):
+    result = super(GaussianSmoother1D, self).multi_value_weight(
+      flex.double(x),
+      flex.double(value))
+    return (result.get_value(), result.get_weight(), result.get_sumweight())
+
+  def positions(self):
+    return list(super(GaussianSmoother1D, self).positions())
+
 class GaussianSmoother2D(GS2D):
   """A 2D Gaussian smoother"""
 
-  def value_weight(self, x, y, param):
+  def value_weight(self, x, y, value):
     result = super(GaussianSmoother2D, self).value_weight(x, y,
-      flex.double(param.value))
+      flex.double(value))
     return (result.get_value(), result.get_weight(), result.get_sumweight())
 
-  def multi_value_weight(self, x, y, param):
+  def multi_value_weight(self, x, y, value):
     result = super(GaussianSmoother2D, self).multi_value_weight(
       flex.double(x), flex.double(y),
-      flex.double(param.value))
+      flex.double(value))
     return (result.get_value(), result.get_weight(), result.get_sumweight())
 
   def x_positions(self):
@@ -37,15 +55,15 @@ class GaussianSmoother2D(GS2D):
 class GaussianSmoother3D(GS3D):
   """A 3D Gaussian smoother"""
 
-  def value_weight(self, x, y, z, param):
+  def value_weight(self, x, y, z, value):
     result = super(GaussianSmoother3D, self).value_weight(x, y, z,
-      flex.double(param.value))
+      flex.double(value))
     return (result.get_value(), result.get_weight(), result.get_sumweight())
 
-  def multi_value_weight(self, x, y, z, param):
+  def multi_value_weight(self, x, y, z, value):
     result = super(GaussianSmoother3D, self).multi_value_weight(
       flex.double(x), flex.double(y), flex.double(z),
-      flex.double(param.value))
+      flex.double(value))
     return (result.get_value(), result.get_weight(), result.get_sumweight())
 
   def x_positions(self):
@@ -71,9 +89,11 @@ class ScaleFactor(object):
     #  self._parameters = flex.double(initial_value)
     #else:
     self._parameters = initial_value#flex.double([initial_value] * n_parameters)
+    self._parameter_esds = None
     self._n_params = len(self._parameters)
     self._scaling_options = scaling_options
     self._inverse_scales = None
+    self._inverse_scale_variances = None
     self._derivatives = None
 
   @property
@@ -93,6 +113,16 @@ class ScaleFactor(object):
       length than previous assignment: was %s, attempting %s''' % (
         len(self._parameters), len(values))
     self._parameters = values
+  
+  @property
+  def parameter_esds(self):
+    '''variances of the parameters'''
+    return self._parameter_esds
+
+  @parameter_esds.setter
+  def parameter_esds(self, esds):
+    assert len(esds) == len(self._parameters)
+    self._parameter_esds = esds
 
   @property
   def inverse_scales(self):
@@ -113,6 +143,16 @@ class ScaleFactor(object):
     '''method to be filled in by subclasses. Force setting of normalised
     values and any other data (e.g. d_values) at same time.'''
     pass
+
+  #@abs.abstractmethod
+  #def set_uncertainties(self, var_cov):
+  #  '''set uncertainties in of the parameters from a var-cov matrix'''
+  #  pass
+
+  #@abs.abstractmethod
+  #def calculate_scale_uncertainties(self):
+  #  '''calculate uncertainties in the inverse scale factors'''
+  #  pass
 
   def calculate_scales_and_derivatives(self):
     """method to be filled in by subclasses"""
@@ -140,6 +180,14 @@ class KScaleFactor(ScaleFactor):
     for i in range(self.n_refl):
       self._derivatives[i, 0] = 1.0
 
+  def set_uncertainties(self, var_cov):
+    assert var_cov.n_cols == 1 and var_cov.n_rows == 1
+    self._parameter_variances = var_cov[0, 0]
+
+  def calculate_scale_uncertainties(self):
+    assert self._parameter_variances, "parameter variances have not been set"
+    self._inverse_scale_variances = flex.double(
+      [self._parameter_variances] * self.n_refl)
 
 class BScaleFactor(KScaleFactor):
   '''ScaleFactor object for a single global B-scale parameter.'''
@@ -187,6 +235,16 @@ class SHScaleFactor(ScaleFactor):
     self._inverse_scales = abs_scale
     self._derivatives = self._harmonic_values
 
+  def set_uncertainties(self, var_cov):
+    self._parameter_variances = flex.double([])
+    for i, col in enumerate(var_cov.cols()):
+      self._parameter_variances.extend(col[i])
+
+  def calculate_scale_uncertainties(self):
+    assert self._parameter_variances, "parameter variances have not been set"
+    self._inverse_scale_variances = flex.double(
+      [self._parameter_variances] * self.n_refl)
+
 class SmoothScaleFactor(ScaleFactor):
   '''Base class for Smooth ScaleFactor objects - which allow use of a
   Gaussian smoother to calculate scales and derivatives based on the
@@ -222,12 +280,12 @@ class SmoothScaleFactor1D(SmoothScaleFactor):
     phi_range_deg = [int(min(self._normalised_values)//1),
                      int(max(self._normalised_values)//1)+1]
     #include an assertion here to stop setting too few params?
-    self._smoother = GaussianSmoother(phi_range_deg, self._n_params - 2)
+    self._smoother = GaussianSmoother1D(phi_range_deg, self._n_params - 2)
     self.inverse_scales = flex.double([1.0]*len(normalised_values))
 
   def calculate_scales_and_derivatives(self):
     value, weight, sumweight = self._smoother.multi_value_weight(
-      self._normalised_values, self)
+      self._normalised_values, self.value)
     inv_sw = 1. / sumweight
     dv_dp = row_multiply(weight, inv_sw)
     self._inverse_scales = value
@@ -235,8 +293,13 @@ class SmoothScaleFactor1D(SmoothScaleFactor):
 
   def calculate_scales(self):
     '''method to only calculate scales if this is needed, for performance.'''
-    value, _, _ = self._smoother.multi_value_weight(self._normalised_values, self)
+    value, _, _ = self._smoother.multi_value_weight(self._normalised_values, self.value)
     self._inverse_scales = value
+
+  def set_uncertainties(self, var_cov):
+    self._parameter_variances = flex.double([])
+    for i, col in enumerate(var_cov.cols()):
+      self._parameter_variances.extend(col[i])
 
 class SmoothBScaleFactor1D(SmoothScaleFactor1D):
   '''Subclass to SmoothScaleFactor1D for a smooth B-scale correction.'''
@@ -301,7 +364,7 @@ class SmoothScaleFactor2D(SmoothScaleFactor):
 
   def calculate_scales_and_derivatives(self):
     value, weight, sumweight = self._smoother.multi_value_weight(
-      self._normalised_x_values, self._normalised_y_values, self)
+      self._normalised_x_values, self._normalised_y_values, self.value)
     inv_sw = 1. / sumweight
     dv_dp = row_multiply(weight, inv_sw)
     self._inverse_scales = value
@@ -310,7 +373,7 @@ class SmoothScaleFactor2D(SmoothScaleFactor):
   def calculate_scales(self):
     '''method to only calculate scales if this is needed, for performance.'''
     value, _, _ = self._smoother.multi_value_weight(self._normalised_x_values,
-      self._normalised_y_values, self)
+      self._normalised_y_values, self.value)
     self._inverse_scales = value
 
 class SmoothScaleFactor3D(SmoothScaleFactor2D):
@@ -344,7 +407,7 @@ class SmoothScaleFactor3D(SmoothScaleFactor2D):
   def calculate_scales_and_derivatives(self):
     value, weight, sumweight = self._smoother.multi_value_weight(
       self._normalised_x_values, self._normalised_y_values,
-      self._normalised_z_values, self)
+      self._normalised_z_values, self.value)
     inv_sw = 1. / sumweight
     dv_dp = row_multiply(weight, inv_sw)
     self._inverse_scales = value
@@ -353,5 +416,5 @@ class SmoothScaleFactor3D(SmoothScaleFactor2D):
   def calculate_scales(self):
     '''method to only calculate scales if this is needed, for performance.'''
     value, _, _ = self._smoother.multi_value_weight(self._normalised_x_values,
-      self._normalised_y_values, self._normalised_z_values, self)
+      self._normalised_y_values, self._normalised_z_values, self.value)
     self._inverse_scales = value

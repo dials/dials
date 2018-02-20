@@ -44,6 +44,31 @@ class active_parameter_manager(object):
     end_idx = self.components[component]['end_idx']
     return self.x[start_idx : end_idx]
 
+  def set_param_vals(self, x):
+    '''method for refinement engine access'''
+    self.x = x
+
+  def get_param_vals(self):
+    '''method for refinement engine access'''
+    return self.x
+  
+  def calculate_model_state_uncertainties(self, var_cov):
+    i = 0
+    for component in self.components:
+      n = component['n_params']
+      sub = var_cov.matrix_copy_block(i, i, n, n)
+      component.set_uncertainties(sub) #set uncertainties in each component
+      i += n
+    #now calculate overall uncertainties for inverse scales
+
+  def set_param_esds(self, esds):
+    '''set the estimated standard deviations of the model components'''
+    for component in self.components:
+      start_idx = self.components[component]['start_idx']
+      end_idx = self.components[component]['end_idx']
+      self.components[component]['object'].parameter_esds = esds[start_idx:end_idx]
+
+
 class multi_active_parameter_manager(object):
   '''
   Parameter manager to manage the current active parameters during minimisation
@@ -80,6 +105,19 @@ class multi_active_parameter_manager(object):
     'selects the subset of self.x corresponding to the apm number'
     apm_data = self.apm_data[apm_number]
     return self.x[apm_data['start_idx'] : apm_data['end_idx']]
+
+  def set_param_vals(self, x):
+    '''method for refinement engine access'''
+    self.x = x
+
+  def get_param_vals(self):
+    '''method for refinement engine access'''
+    return self.x
+
+  def set_param_esds(self, esds):
+    for i, apm in enumerate(self.apm_list):
+      apm_data = self.apm_data[i]
+      apm.set_param_esds(esds[apm_data['start_idx'] : apm_data['end_idx']])
 
 class ConcurrentAPMFactory(object):
   '''
