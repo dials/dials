@@ -165,11 +165,21 @@ class indexer_fft3d(indexer_base):
     if flood_fill.n_voids() < 4:
       # Require at least peak at origin and one peak for each basis vector
       raise Sorry("Indexing failed: fft3d peak search failed to find sufficient number of peaks.")
+
     # the peak at the origin might have a significantly larger volume than the
-    # rest so exclude this peak from determining maximum volume
-    isel = (flood_fill.grid_points_per_void() > int(
-        self.params.fft3d.peak_volume_cutoff * flex.max(
-          flood_fill.grid_points_per_void()[1:]))).iselection()
+    # rest so exclude any anomalously large peaks from determining minimum volume
+    from scitbx.math import five_number_summary
+    outliers = flex.bool(flood_fill.n_voids(), False)
+    grid_points_per_void = flood_fill.grid_points_per_void()
+    min_x, q1_x, med_x, q3_x, max_x = five_number_summary(grid_points_per_void)
+    iqr_multiplier = 5
+    iqr_x = q3_x - q1_x
+    cut_x = iqr_multiplier * iqr_x
+    outliers.set_selected(grid_points_per_void.as_double() > (q3_x + cut_x), True)
+    #print q3_x + cut_x, outliers.count(True)
+    isel = (grid_points_per_void > int(
+      self.params.fft3d.peak_volume_cutoff * flex.max(
+        grid_points_per_void.select(~outliers)))).iselection()
 
     if self.params.optimise_initial_basis_vectors:
       self.volumes = flood_fill.grid_points_per_void().select(isel)
