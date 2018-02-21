@@ -7,48 +7,16 @@ except ImportError:
 
 import glob
 import os
+import pytest
 
-import libtbx.load_env
 from libtbx import easy_run
 from libtbx.test_utils import approx_equal
-from libtbx.test_utils import open_tmp_directory
+from scitbx import matrix
 from cctbx.array_family import flex # import dependency
 from cctbx import uctbx
 from dials.model.serialize import load
 from dxtbx.serialize import load as dxtbx_load
 
-have_dials_regression = libtbx.env.has_module("dials_regression")
-if have_dials_regression:
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression",
-    test=os.path.isdir)
-
-# check optional dependencies of multi-lattice search
-try:
-  import scipy # implicit import
-  have_scipy = True
-except ImportError:
-  have_scipy = False
-
-try:
-  import sklearn # implicit import
-  have_sklearn = True
-except ImportError:
-  have_sklearn = False
-
-try:
-  import networkx # implicit import
-  have_networkx = True
-except ImportError:
-  have_networkx = False
-
-
-def check_external_dependencies(dependencies):
-  missing = []
-  for dependency in dependencies:
-    if not globals().get('have_%s' %dependency, False):
-      missing.append(dependency)
-  return missing
 
 def unit_cells_are_similar(uc1, uc2, relative_length_tolerance=0.01,
                            absolute_angle_tolerance=1):
@@ -62,9 +30,8 @@ def unit_cells_are_similar(uc1, uc2, relative_length_tolerance=0.01,
     if abs(l1[i]-l2[i]) > absolute_angle_tolerance:
       if abs(l1[i]-(180-l2[i])) > absolute_angle_tolerance:
         return False
-      #else:
-        #print(uc1, uc2)
   return True
+
 
 class run_one_indexing(object):
   def __init__(self,
@@ -79,20 +46,15 @@ class run_one_indexing(object):
                absolute_angle_tolerance=0.5):
 
     args = ["dials.index", pickle_path, sweep_path] + extra_args
-
-    cwd = os.path.abspath(os.curdir)
-    tmp_dir = open_tmp_directory(suffix="test_dials_index")
-    os.chdir(tmp_dir)
     command = " ".join(args)
     print(command)
     result = easy_run.fully_buffered(command=command).raise_if_errors()
-    os.chdir(cwd)
-    assert os.path.exists(os.path.join(tmp_dir, "experiments.json"))
+    assert os.path.exists("experiments.json")
     experiments_list = dxtbx_load.experiment_list(
-      os.path.join(tmp_dir, "experiments.json"), check_format=False)
+      "experiments.json", check_format=False)
     assert len(experiments_list.crystals()) == n_expected_lattices, (
       len(experiments_list.crystals()), n_expected_lattices)
-    assert os.path.exists(os.path.join(tmp_dir, "indexed.pickle"))
+    assert os.path.exists("indexed.pickle")
 
     report_timings = False
     if report_timings:
@@ -101,19 +63,13 @@ class run_one_indexing(object):
       calc_rmsds_timer = time_log("calc_rmsds")
       unpickling_timer.start()
 
-    self.indexed_reflections = load.reflections(os.path.join(tmp_dir, "indexed.pickle"))
+    self.indexed_reflections = load.reflections("indexed.pickle")
     if report_timings:
       unpickling_timer.stop()
 
     for i in range(len(experiments_list)):
       experiment = experiments_list[i]
       self.crystal_model = experiment.crystal
-      #assert self.crystal_model.get_unit_cell().is_similar_to(
-        #expected_unit_cell,
-        #relative_length_tolerance=relative_length_tolerance,
-        #absolute_angle_tolerance=absolute_angle_tolerance), (
-          #self.crystal_model.get_unit_cell().parameters(),
-          #expected_unit_cell.parameters())
       assert unit_cells_are_similar(
         self.crystal_model.get_unit_cell(),expected_unit_cell,
         relative_length_tolerance=relative_length_tolerance,
@@ -147,7 +103,7 @@ class run_one_indexing(object):
     rmsd_z = flex.mean(flex.pow2(obs_z-calc_z))**0.5
     return (rmsd_x, rmsd_y, rmsd_z)
 
-def test_exercise_1(dials_regression):
+def test_index_i04_weak_data_fft3d(dials_regression, tmpdir):
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
@@ -161,15 +117,15 @@ def test_exercise_1(dials_regression):
   expected_rmsds = (0.05, 0.04, 0.0005)
   expected_hall_symbol = ' P 1'
 
-  result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
-                            expected_rmsds, expected_hall_symbol)
+  with tmpdir.as_cwd():
+    result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                              expected_rmsds, expected_hall_symbol)
 
-def test_exercise_2(dials_regression):
-  missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
-  if len(missing):
-    print ("Skipping test_exercise_2: missing dependencies " +
-           ", ".join(missing))
-    return
+def test_index_cluster_analysis_search(dials_regression, tmpdir):
+  pytest.importorskip("scipy")
+  pytest.importorskip("sklearn")
+  pytest.importorskip("networkx")
+
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
@@ -183,16 +139,15 @@ def test_exercise_2(dials_regression):
   expected_rmsds = (0.05, 0.04, 0.0004)
   expected_hall_symbol = ' P 1'
 
-  result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
-                            expected_rmsds, expected_hall_symbol)
+  with tmpdir.as_cwd():
+    result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                              expected_rmsds, expected_hall_symbol)
 
-def test_exercise_3(dials_regression):
-  from scitbx import matrix
-  missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
-  if len(missing):
-    print ("Skipping test_exercise_3: missing dependencies " +
-           ", ".join(missing))
-    return
+def test_index_cluster_analysis_search_with_symmetry(dials_regression, tmpdir):
+  pytest.importorskip("scipy")
+  pytest.importorskip("sklearn")
+  pytest.importorskip("networkx")
+
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
@@ -209,8 +164,9 @@ def test_exercise_3(dials_regression):
   extra_args.append("known_symmetry.space_group=P4")
   expected_hall_symbol = ' P 4'
 
-  result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
-                            expected_rmsds, expected_hall_symbol)
+  with tmpdir.as_cwd():
+    result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                              expected_rmsds, expected_hall_symbol)
 
   a, b, c = map(matrix.col, result.crystal_model.get_real_space_vectors())
   assert approx_equal(a.length(), b.length())
@@ -219,12 +175,11 @@ def test_exercise_3(dials_regression):
   assert approx_equal(b.angle(c, deg=True), 90)
   assert approx_equal(c.angle(a, deg=True), 90)
 
-def test_exercise_4(dials_regression):
-  missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
-  if len(missing):
-    print ("Skipping test_exercise_4: missing dependencies " +
-           ", ".join(missing))
-    return
+def test_index_trypsin_single_lattice(dials_regression, tmpdir):
+  pytest.importorskip("scipy")
+  pytest.importorskip("sklearn")
+  pytest.importorskip("networkx")
+
   # trypsin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1.pickle")
@@ -241,15 +196,15 @@ def test_exercise_4(dials_regression):
   expected_rmsds = (0.061, 0.06, 0.00042)
   expected_hall_symbol = ' P 1'
 
-  result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
-                            expected_rmsds, expected_hall_symbol)
+  with tmpdir.as_cwd():
+    result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                              expected_rmsds, expected_hall_symbol)
 
-def test_exercise_5(dials_regression):
-  missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
-  if len(missing):
-    print ("Skipping test_exercise_5: missing dependencies " +
-           ", ".join(missing))
-    return
+def test_index_trypsin_two_lattice(dials_regression, tmpdir):
+  pytest.importorskip("scipy")
+  pytest.importorskip("sklearn")
+  pytest.importorskip("networkx")
+
   # synthetic trypsin multi-lattice dataset (2 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2.pickle")
@@ -261,25 +216,26 @@ def test_exercise_5(dials_regression):
                 "max_cell=70",
                 "scan_range=0,50",
                 "scan_range=450,500",
-                "scan_range=850,900"]
+                "scan_range=850,900",
+                "max_lattices=2"]
   expected_unit_cell = uctbx.unit_cell(
     (54.3, 58.3, 66.5, 90, 90, 90))
   expected_rmsds = (0.1, 0.1, 0.005)
   expected_hall_symbol = ' P 1'
   n_expected_lattices = 2
 
-  result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
-                            expected_rmsds, expected_hall_symbol,
-                            n_expected_lattices=n_expected_lattices,
-                            relative_length_tolerance=0.02,
-                            absolute_angle_tolerance=1)
+  with tmpdir.as_cwd():
+    result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                              expected_rmsds, expected_hall_symbol,
+                              n_expected_lattices=n_expected_lattices,
+                              relative_length_tolerance=0.02,
+                              absolute_angle_tolerance=1)
 
-def test_exercise_6(dials_regression):
-  missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
-  if len(missing):
-    print ("Skipping test_exercise_6: missing dependencies " +
-           ", ".join(missing))
-    return
+def test_index_trypsin_three_lattice(dials_regression, tmpdir):
+  pytest.importorskip("scipy")
+  pytest.importorskip("sklearn")
+  pytest.importorskip("networkx")
+
   # synthetic trypsin multi-lattice dataset (3 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3.pickle")
@@ -289,25 +245,25 @@ def test_exercise_6(dials_regression):
                 "n_macro_cycles=2",
                 "reciprocal_space_grid.d_min=4",
                 "max_cell=70",
-                ]
+                "max_lattices=3"]
   expected_unit_cell = uctbx.unit_cell(
     (54.3, 58.3, 66.5, 90, 90, 90))
   expected_rmsds = (0.24, 0.30, 0.006)
   expected_hall_symbol = ' P 1'
   n_expected_lattices = 3
 
-  result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
-                            expected_rmsds, expected_hall_symbol,
-                            n_expected_lattices=n_expected_lattices,
-                            relative_length_tolerance=0.01,
-                            absolute_angle_tolerance=1)
+  with tmpdir.as_cwd():
+    result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                              expected_rmsds, expected_hall_symbol,
+                              n_expected_lattices=n_expected_lattices,
+                              relative_length_tolerance=0.01,
+                              absolute_angle_tolerance=1)
 
-def test_exercise_7(dials_regression):
-  missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
-  if len(missing):
-    print ("Skipping test_exercise_7: missing dependencies " +
-           ", ".join(missing))
-    return
+def test_index_trypsin_four_lattice_P1(dials_regression, tmpdir):
+  pytest.importorskip("scipy")
+  pytest.importorskip("sklearn")
+  pytest.importorskip("networkx")
+
   # synthetic trypsin multi-lattice dataset (4 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3_4.pickle")
@@ -325,13 +281,14 @@ def test_exercise_7(dials_regression):
   expected_hall_symbol = ' P 1'
   n_expected_lattices = 4
 
-  result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
-                            expected_rmsds, expected_hall_symbol,
-                            n_expected_lattices=n_expected_lattices,
-                            relative_length_tolerance=0.01,
-                            absolute_angle_tolerance=1)
+  with tmpdir.as_cwd():
+    result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                              expected_rmsds, expected_hall_symbol,
+                              n_expected_lattices=n_expected_lattices,
+                              relative_length_tolerance=0.01,
+                              absolute_angle_tolerance=1)
 
-def test_exercise_8(dials_regression):
+def test_index_trypsin_four_lattice_P212121(dials_regression, tmpdir):
   # synthetic trypsin multi-lattice dataset (4 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3_4.pickle")
@@ -351,13 +308,14 @@ def test_exercise_8(dials_regression):
   expected_hall_symbol = ' P 2ac 2ab'
   n_expected_lattices = 1
 
-  result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
-                            expected_rmsds, expected_hall_symbol,
-                            n_expected_lattices=n_expected_lattices,
-                            relative_length_tolerance=0.02,
-                            absolute_angle_tolerance=1)
+  with tmpdir.as_cwd():
+    result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                              expected_rmsds, expected_hall_symbol,
+                              n_expected_lattices=n_expected_lattices,
+                              relative_length_tolerance=0.02,
+                              absolute_angle_tolerance=1)
 
-def test_exercise_9(dials_regression):
+def test_index_i04_weak_data_fft1d(dials_regression, tmpdir):
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
@@ -373,10 +331,11 @@ def test_exercise_9(dials_regression):
   expected_rmsds = (0.06, 0.05, 0.0005)
   expected_hall_symbol = ' P 1'
 
-  result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
-                     expected_rmsds, expected_hall_symbol)
+  with tmpdir.as_cwd():
+    result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                       expected_rmsds, expected_hall_symbol)
 
-def test_exercise_10(dials_regression):
+def test_index_trypsin_index_assignment_local(dials_regression, tmpdir):
   # synthetic trypsin multi-lattice dataset (3 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3.pickle")
@@ -399,21 +358,18 @@ def test_exercise_10(dials_regression):
   expected_hall_symbol = ' P 2ac 2ab'
   n_expected_lattices = 3
 
-  result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
-                            expected_rmsds, expected_hall_symbol,
-                            n_expected_lattices=n_expected_lattices,
-                            relative_length_tolerance=0.02,
-                            absolute_angle_tolerance=1)
+  with tmpdir.as_cwd():
+    result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                              expected_rmsds, expected_hall_symbol,
+                              n_expected_lattices=n_expected_lattices,
+                              relative_length_tolerance=0.02,
+                              absolute_angle_tolerance=1)
 
-def test_exercise_11(dials_regression):
-  return # Test removed
+def test_index_peak_search_clean(dials_regression, tmpdir):
+  pytest.importorskip("scipy")
+  pytest.importorskip("sklearn")
+  pytest.importorskip("networkx")
 
-def test_exercise_12(dials_regression):
-  missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
-  if len(missing):
-    print ("Skipping test_exercise_12: missing dependencies " +
-           ", ".join(missing))
-    return
   # test indexing from single image of i04_weak_data
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "first_image.pickle")
@@ -432,10 +388,11 @@ def test_exercise_12(dials_regression):
   expected_rmsds = (0.06, 0.07, 0.003)
   expected_hall_symbol = ' P 4'
 
-  result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
-                            expected_rmsds, expected_hall_symbol)
+  with tmpdir.as_cwd():
+    result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                              expected_rmsds, expected_hall_symbol)
 
-def test_exercise_13(dials_regression):
+def test_index_imosflm_tutorial(dials_regression, tmpdir):
   # test on spots derived from imosflm tutorial data:
   # http://www.ccp4.ac.uk/courses/BCA2005/tutorials/dataproc-tutorial.html
   data_dir = os.path.join(dials_regression, "indexing_test_data", "imosflm_hg_mar")
@@ -459,36 +416,34 @@ def test_exercise_13(dials_regression):
       expected_hall_symbol = ' P 1'
     expected_rmsds = (0.08, 0.11, 0.004)
 
-    result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
-                              expected_rmsds, expected_hall_symbol)
+    with tmpdir.as_cwd():
+      result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                                expected_rmsds, expected_hall_symbol)
 
-def test_exercise_14(dials_regression):
+def test_index_insulin(dials_regression, tmpdir):
   data_dir = os.path.join(dials_regression, "xia2_demo_data")
 
-  cwd = os.path.abspath(os.curdir)
-  tmp_dir = os.path.abspath(open_tmp_directory())
-  os.chdir(tmp_dir)
-  print(tmp_dir)
+  tmpdir.chdir()
 
   import shutil
   for i, image_path in enumerate(("insulin_1_001.img", "insulin_1_045.img")):
     shutil.copyfile(
       os.path.join(data_dir, image_path), "image_00%i.img" %(i+1))
 
-  args = ["dials.import", ' '.join(glob.glob(os.path.join(tmp_dir, "image_00*.img"))),
+  args = ["dials.import", ' '.join(glob.glob("image_00*.img")),
           "output.datablock=datablock.json", "allow_multiple_sweeps=True"]
   command = " ".join(args)
   #print(command)
   result = easy_run.fully_buffered(command=command).raise_if_errors()
 
-  datablock_json = os.path.join(tmp_dir, "datablock.json")
+  datablock_json = "datablock.json"
 
   args = ["dials.find_spots", datablock_json]
 
   command = " ".join(args)
   print(command)
   result = easy_run.fully_buffered(command=command).raise_if_errors()
-  pickle_path = os.path.join(tmp_dir, "strong.pickle")
+  pickle_path = "strong.pickle"
   assert os.path.exists(pickle_path)
 
   expected_unit_cell = uctbx.unit_cell((78.163, 78.163, 78.163, 90.000, 90.000, 90.000))
@@ -503,10 +458,11 @@ def test_exercise_14(dials_regression):
     extra_args.append("indexing.method=%s" %method)
     extra_args.append("treat_single_image_as_still=False")
 
-    result = run_one_indexing(pickle_path, datablock_json, extra_args, expected_unit_cell,
-                              expected_rmsds, expected_hall_symbol)
+    with tmpdir.as_cwd():
+      result = run_one_indexing(pickle_path, datablock_json, extra_args, expected_unit_cell,
+                                expected_rmsds, expected_hall_symbol)
 
-def test_exercise_15(dials_regression):
+def test_index_4rotation(dials_regression, tmpdir):
   data_dir = os.path.join(dials_regression, "indexing_test_data", "4rotation")
   pickle_path = os.path.join(data_dir, "strong.pickle")
   sweep_path = os.path.join(data_dir, "datablock_import.json")
@@ -517,11 +473,12 @@ def test_exercise_15(dials_regression):
   expected_rmsds = (0.06, 0.08, 0.22)
   expected_hall_symbol = ' R 3'
 
-  result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
-                            expected_rmsds, expected_hall_symbol)
-  assert len(result.indexed_reflections) > 276800, len(result.indexed_reflections)
+  with tmpdir.as_cwd():
+    result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                              expected_rmsds, expected_hall_symbol)
+    assert len(result.indexed_reflections) > 276800, len(result.indexed_reflections)
 
-def test_exercise_16(dials_regression):
+def test_index_small_molecule_multi_sweep_4(dials_regression, tmpdir):
   # test for small molecule multi-sweep indexing, 4 sweeps with different values
   # of goniometer.fixed_rotation()
   data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
@@ -537,12 +494,13 @@ def test_exercise_16(dials_regression):
   expected_rmsds = (0.10, 0.7, 0.5)
   expected_hall_symbol = ' I 4'
 
-  result = run_one_indexing(" ".join(pickle_paths),  " ".join(sweep_paths),
-                            extra_args, expected_unit_cell,
-                            expected_rmsds, expected_hall_symbol)
-  assert len(result.indexed_reflections) > 1250, len(result.indexed_reflections)
+  with tmpdir.as_cwd():
+    result = run_one_indexing(" ".join(pickle_paths),  " ".join(sweep_paths),
+                              extra_args, expected_unit_cell,
+                              expected_rmsds, expected_hall_symbol)
+    assert len(result.indexed_reflections) > 1250, len(result.indexed_reflections)
 
-def test_exercise_17(dials_regression):
+def test_index_small_molecule_multi_sweep_3(dials_regression, tmpdir):
   # test for small molecule multi-sweep indexing, 3 sweeps with different values
   # of goniometer setting rotation (i.e. phi scans)
   data_dir = os.path.join(dials_regression, "dials-191")
@@ -558,15 +516,16 @@ def test_exercise_17(dials_regression):
   expected_rmsds = (0.32, 0.34, 0.005 )
   expected_hall_symbol = ' P 1'
 
-  result = run_one_indexing(" ".join(pickle_paths),  " ".join(sweep_paths),
-                            extra_args, expected_unit_cell,
-                            expected_rmsds, expected_hall_symbol)
-  assert len(result.indexed_reflections) > 12000, len(result.indexed_reflections)
-  # expect at least indexed 2000 reflections per experiment
-  for i in range(3):
-    assert (result.indexed_reflections['id'] == i).count(True) > 2000
+  with tmpdir.as_cwd():
+    result = run_one_indexing(" ".join(pickle_paths),  " ".join(sweep_paths),
+                              extra_args, expected_unit_cell,
+                              expected_rmsds, expected_hall_symbol)
+    assert len(result.indexed_reflections) > 12000, len(result.indexed_reflections)
+    # expect at least indexed 2000 reflections per experiment
+    for i in range(3):
+      assert (result.indexed_reflections['id'] == i).count(True) > 2000
 
-def test_exercise_18(dials_regression):
+def test_index_small_molecule_ice_max_cell(dials_regression, tmpdir):
   # test for small molecule indexing: presence of ice rings makes max-cell
   # estimation tricky
   data_dir = os.path.join(dials_regression, "indexing_test_data", "MXSW-904")
@@ -578,42 +537,8 @@ def test_exercise_18(dials_regression):
   expected_rmsds = (0.06, 0.05, 0.04  )
   expected_hall_symbol = ' P 1'
 
-  result = run_one_indexing(pickle_path, datablock,
-                            extra_args, expected_unit_cell,
-                            expected_rmsds, expected_hall_symbol)
-  assert len(result.indexed_reflections) > 1300, len(result.indexed_reflections)
-
-def run(args):
-  if not libtbx.env.has_module("dials_regression"):
-    print("Skipping exercise_index_3D_FFT_simple: dials_regression not present")
-    return
-
-  exercises = (test_exercise_1, test_exercise_2, test_exercise_3, test_exercise_4, test_exercise_5,
-               test_exercise_6, test_exercise_7, test_exercise_8, test_exercise_9, test_exercise_10,
-               test_exercise_11, test_exercise_12, test_exercise_13, test_exercise_14, test_exercise_15,
-               test_exercise_16, test_exercise_17, test_exercise_18)
-  if len(args):
-    args = [int(arg) for arg in args]
-    for arg in args: assert arg > 0
-    exercises = [exercises[arg-1] for arg in args]
-
-  from libtbx import easy_mp
-
-  nproc = easy_mp.get_processes(libtbx.Auto)
-  nproc = min(nproc, len(exercises))
-
-  def run_parallel(args):
-    assert len(args) == 1
-    exercise = args[0]
-    exercise(dials_regression)
-
-  easy_mp.parallel_map(
-    func=run_parallel,
-    iterable=[(e,) for e in exercises],
-    processes=nproc)
-
-if __name__ == '__main__':
-  import sys
-  from libtbx.utils import show_times_at_exit
-  show_times_at_exit()
-  run(sys.argv[1:])
+  with tmpdir.as_cwd():
+    result = run_one_indexing(pickle_path, datablock,
+                              extra_args, expected_unit_cell,
+                              expected_rmsds, expected_hall_symbol)
+    assert len(result.indexed_reflections) > 1300, len(result.indexed_reflections)
