@@ -10,12 +10,10 @@ import os
 import pytest
 
 from libtbx import easy_run
-from libtbx.test_utils import approx_equal
 from scitbx import matrix
-from cctbx.array_family import flex # import dependency
 from cctbx import uctbx
-from dials.model.serialize import load
-from dxtbx.serialize import load as dxtbx_load
+from dxtbx.serialize import load
+from dials.array_family import flex # import dependency
 
 
 def unit_cells_are_similar(uc1, uc2, relative_length_tolerance=0.01,
@@ -50,7 +48,7 @@ class run_one_indexing(object):
     print(command)
     result = easy_run.fully_buffered(command=command).raise_if_errors()
     assert os.path.exists("experiments.json")
-    experiments_list = dxtbx_load.experiment_list(
+    experiments_list = load.experiment_list(
       "experiments.json", check_format=False)
     assert len(experiments_list.crystals()) == n_expected_lattices, (
       len(experiments_list.crystals()), n_expected_lattices)
@@ -63,7 +61,7 @@ class run_one_indexing(object):
       calc_rmsds_timer = time_log("calc_rmsds")
       unpickling_timer.start()
 
-    self.indexed_reflections = load.reflections("indexed.pickle")
+    self.indexed_reflections = flex.reflection_table.from_pickle("indexed.pickle")
     if report_timings:
       unpickling_timer.stop()
 
@@ -169,11 +167,11 @@ def test_index_cluster_analysis_search_with_symmetry(dials_regression, tmpdir):
                               expected_rmsds, expected_hall_symbol)
 
   a, b, c = map(matrix.col, result.crystal_model.get_real_space_vectors())
-  assert approx_equal(a.length(), b.length())
+  assert pytest.approx(a.length(), b.length())
   assert c.length() > b.length()
-  assert approx_equal(a.angle(b, deg=True), 90)
-  assert approx_equal(b.angle(c, deg=True), 90)
-  assert approx_equal(c.angle(a, deg=True), 90)
+  assert pytest.approx(a.angle(b, deg=True), 90)
+  assert pytest.approx(b.angle(c, deg=True), 90)
+  assert pytest.approx(c.angle(a, deg=True), 90)
 
 def test_index_trypsin_single_lattice(dials_regression, tmpdir):
   pytest.importorskip("scipy")
