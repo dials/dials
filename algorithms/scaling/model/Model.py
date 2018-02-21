@@ -41,8 +41,10 @@ class ScalingModelBase(object):
     for key in self.components:
       dictionary.update({key : OrderedDict([
         ('n_parameters', self._components[key].n_params),
-        ('parameters', list(self._components[key].parameters)),
-        ('est_standard_devs', list(self._components[key].parameter_esds))])})
+        ('parameters', list(self._components[key].parameters))])})
+      if self._components[key].parameter_esds:
+        dictionary[key].update([('est_standard_devs',
+          list(self._components[key].parameter_esds))])
     dictionary.update({'configuration_parameters' : self._configdict})
     return dictionary
 

@@ -255,7 +255,7 @@ class Refinery(object):
     except IndexError:
       return False
 
-    tests = [abs((e[1] - e[0])/e[1]) < 0.00001 if e[1] > 0 else True for e in zip(r1, r2)]
+    tests = [abs((e[1] - e[0])/e[1]) < 0.0001 if e[1] > 0 else True for e in zip(r1, r2)]
 
     return all(tests)
 
@@ -408,9 +408,9 @@ class AdaptLbfgs(ScalingRefinery):
       self.history.reason_for_termination = TARGET_ACHIEVED
       return True
 
-    #if self.test_rmsd_convergence():
-    #  self.history.reason_for_termination = RMSD_CONVERGED
-    #  return True
+    if self.test_rmsd_convergence():
+      self.history.reason_for_termination = RMSD_CONVERGED
+      return True
 
     return False
 
@@ -493,12 +493,24 @@ class AdaptLstbx(ScalingRefinery, normal_eqns.non_linear_ls,
     else:
       residuals, self._jacobian, weights = \
             self._target.compute_residuals_and_gradients()
-      print(flex.sum(residuals))
+      
         #self._target.compute_residuals_and_gradients(block)
       #j = self._jacobian
       #if self._constr_manager is not None:
       #  j = self._constr_manager.constrain_jacobian(j)
       self.add_equations(residuals, self._jacobian, weights)
+    
+    restraints = self._target.compute_restraints_residuals_and_gradients()
+    if restraints:
+      if objective_only:
+        self.add_residuals(restraints[0], restraints[2])
+      else:
+        #j = restraints[1]
+        #if self._constr_manager is not None:
+        #  j = self._constr_manager.constrain_jacobian(j)
+        self.add_equations(restraints[0], restraints[1], restraints[2])
+        print(flex.sum(residuals)+flex.sum(restraints[0]))
+    return
 
   def step_forward(self):
     self.old_x = self.x.deep_copy()
@@ -570,7 +582,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
   step_threshold = None
   damping_value = 0.0007
   max_shift_over_esd = 15
-  convergence_as_shift_over_esd = 1e-6
+  convergence_as_shift_over_esd = 1e-5
 
   def __init__(self, scaler, target, prediction_parameterisation, constraints_manager=None,
                log=None, verbosity=0, tracking=None,
@@ -585,7 +597,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
     self.history.add_column("reduced_chi_squared")#flex.double()
 
     # adopt any overrides of the defaults above
-    #libtbx.adopt_optional_init_args(self, kwds)
+    libtbx.adopt_optional_init_args(self, kwds)
 
   def run(self):
     self.n_iterations = 0

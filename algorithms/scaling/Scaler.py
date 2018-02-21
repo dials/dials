@@ -400,9 +400,27 @@ class SingleScalerBase(ScalerBase):
         sep='\n')
     logger.info(msg)
 
+  def compute_restraints_residuals_jacobian(self, apm):
+    restraints = None
+    restr = self.calc_absorption_constraint(apm)
+    if restr:
+      #resid_restr = flex.float([])
+      #resid_restr.append(flex.sum(restr[0]))
+      resid_restr = restr[0] # list
+      surface_weights = self.absorption_weights
+      n_abs_params = len(restr[0])
+      n_tot_params = apm.n_active_params
+      jacobian = sparse.matrix(n_abs_params, n_tot_params)
+      offset = n_tot_params - n_abs_params
+      for i in range(n_abs_params):
+        jacobian[i, offset+i] = -1.0 * (surface_weights[i]**0.5)
+      restraints = [resid_restr, jacobian, flex.double([1.0] * n_abs_params)]
+    return restraints
+
   def calc_absorption_constraint(self, apm):
     '''calculates a constraint for the spherical harmonic absorption correction.
     Should only be called from target function if absorption in active params.'''
+    restraints = None
     if self.id_ == 'aimless':
       if 'absorption' in apm.components:
         abs_params = apm.select_parameters('absorption')
@@ -415,10 +433,12 @@ class SingleScalerBase(ScalerBase):
             gradient_vector.extend(flex.double([0.0] * apm.components[comp]['n_params']))
           elif comp == 'absorption':
             gradient_vector.extend(gradient)
-        return (residual, gradient_vector)
+        restraints = [residual, gradient_vector]
+    '''    return (residual, gradient_vector)
       else:
         return (flex.double([0.0]), flex.double([0.0] * apm.n_active_params))
-    return (flex.double([0.0]), flex.double([0.0] * apm.n_active_params))
+    return (flex.double([0.0]), flex.double([0.0] * apm.n_active_params))'''
+    return restraints
 
   def calc_sf_variances(self):
     '''use the parameter var_cov matrix to calculate the variances of the inverse scales'''
@@ -759,17 +779,51 @@ class MultiScalerBase(ScalerBase):
   @staticmethod
   def calc_multi_absorption_constraint(apm, scalers):
     'method only called in aimless scaling'
-    R = flex.double([])
-    G = flex.double([])
+    restraints = None
     scaler_ids = [scaler.id_ for scaler in scalers]
-    #if 'aimless' in scaler_ids:
-    for i, scaler in enumerate(scalers):
-      R.extend(scaler.calc_absorption_constraint(apm.apm_list[i])[0])
-      G.extend(scaler.calc_absorption_constraint(apm.apm_list[i])[1])
-    #else:
-    #  for i, scaler in enumerate(scalers):
+    if 'aimless' in scaler_ids:
+      R = flex.double([])
+      G = flex.double([])
+      for i, scaler in enumerate(scalers):
+        restr = scaler.calc_absorption_constraint(apm.apm_list[i])
+        if restr:
+          R.extend(restr[0])
+          G.extend(restr[1])
+        else:
+          G.extend(flex.double([0.0] * apm.apm_list[i].n_active_params))
+      restraints = [R, G]
+    return restraints
 
-    return (R, G)
+  @abc.abstractmethod
+  def compute_restraints_residuals_jacobian(self, apm):
+    'abstract method for combining the absorption constraints for multiple scalers'
+    pass
+
+  @staticmethod
+  def compute_multi_restraints_residuals_jacobian(apm, scalers):
+    '''method to calculate absorption restraint for multiple scalers'''
+    restraints = None
+    scaler_ids = [scaler.id_ for scaler in scalers]
+    if 'aimless' in scaler_ids:
+      R = flex.double([])
+      jacobian_list = []
+      scaler_list = []
+      #jacobian = sparse.matrix(1, apm.n_active_params) 
+      for i, scaler in enumerate(scalers):
+        restr = scaler.compute_restraints_residuals_jacobian(apm.apm_list[i])
+        if restr:
+          R.extend(restr[0])
+          jacobian_list.append(restr[1])
+          scaler_list.append(i)
+      n_restraints = len(R)
+      jacobian = sparse.matrix(n_restraints, apm.n_active_params)
+      n_row_cumul = 0
+      for j, jac in enumerate(jacobian_list):
+        scaler_no = scaler_list[j]
+        jacobian.assign_block(jac, n_row_cumul, apm.apm_data[scaler_no]['start_idx'] )
+        n_row_cumul += jac.n_rows
+      restraints = [R, jacobian, flex.double([1.0]*len(R))]
+    return restraints
 
   @abc.abstractmethod
   def join_multiple_datasets(self):
@@ -823,6 +877,10 @@ class MultiScaler(MultiScalerBase):
 
   def calc_absorption_constraint(self, apm):
     return super(MultiScaler, MultiScaler).calc_multi_absorption_constraint(
+      apm, self.single_scalers)
+
+  def compute_restraints_residuals_jacobian(self, apm):
+    return super(MultiScaler, MultiScaler).compute_multi_restraints_residuals_jacobian(
       apm, self.single_scalers)
 
   def update_error_model(self):
@@ -915,6 +973,10 @@ class TargetScaler(MultiScalerBase):
 
   def calc_absorption_constraint(self, apm):
     return super(TargetScaler, TargetScaler).calc_multi_absorption_constraint(
+      apm, self.unscaled_scalers)
+
+  def compute_restraints_residuals_jacobian(self, apm):
+    return super(TargetScaler, TargetScaler).compute_multi_restraints_residuals_jacobian(
       apm, self.unscaled_scalers)
 
   def expand_scales_to_all_reflections(self, caller=None):

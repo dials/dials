@@ -33,8 +33,11 @@ class ScalingTarget(object):
   def rmsds(self):
     """calculate unweighted RMSDs for the matches"""
     # cache rmsd calculation for achieved test
-    R = self.calculate_residuals() #need to add restraints?
-    self._rmsds = [(flex.sum((R)**2)/self.scaler.Ih_table.size)**0.5]
+    R = self.calculate_residuals()
+    if 'absorption' in self.apm.components_list:
+      restr = self.scaler.calc_absorption_constraint(self.apm)
+      R.extend(restr[0]) #need to add restraints?
+    self._rmsds = [(flex.sum((R))/self.scaler.Ih_table.size)**0.5]
     #print("rmsds %s" % self._rmsds)
     return self._rmsds
 
@@ -101,9 +104,10 @@ class ScalingTarget(object):
     restraints = None
     if 'absorption' in self.apm.components_list:
       restr = self.scaler.calc_absorption_constraint(self.apm)
-      resid_restr = flex.sum(restr[0]) #want just a value to add to total functional here
-      grad_restr = restr[1]
-      restraints = [resid_restr, grad_restr, None]
+      if restr:
+        resid_restr = flex.sum(restr[0]) #want just a value to add to total functional here
+        grad_restr = restr[1]
+        restraints = [resid_restr, grad_restr, None]
     return restraints #list of restraints to add to resid, grads and curvs?
 
   'methods for adaptlstbx (GN/ LM algorithms)'
@@ -113,8 +117,21 @@ class ScalingTarget(object):
   def compute_residuals_and_gradients(self): #for adaptlstbx (GN/ LM)
     return self.calculate_residuals(), self.calculate_jacobian(), self.weights
 
-  #def compute_restraints_residuals_and_gradients(self): #for adaptlstbx (GN/ LM)
-  #  return restraints #list of restraints to add to residuals, jacobian and weights?
+  def compute_restraints_residuals_and_gradients(self): #for adaptlstbx (GN/ LM)
+    restraints = None
+    if 'absorption' in self.apm.components_list:
+      restraints = self.scaler.compute_restraints_residuals_jacobian(self.apm)
+      '''restr = self.scaler.calc_absorption_constraint(self.apm)
+      resid_restr = restr[0] # list
+      surface_weights = self.scaler.absorption_weights
+      n_abs_params = len(restr[0])
+      n_tot_params = self.apm.n_active_params
+      jacobian = sparse.matrix(n_abs_params, n_tot_params)
+      offset = n_tot_params - n_abs_params
+      for i in range(n_abs_params):
+        jacobian[i, offset+i] = -1.0 * (surface_weights[i]**0.5)
+      restaints = [resid_restr, jacobian, flex.double([1.0] * n_abs_params)]'''
+    return restraints
 
 class ScalingTargetFixedIH(ScalingTarget):
   '''A special implementation of scaling target for when the scaling is to be
