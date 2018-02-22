@@ -24,16 +24,16 @@ def test_compare_orientation_matrices():
                       R * real_space_b,
                       R * real_space_c,
                       space_group=sgtbx.space_group('P 1'))
-  assert pytest.approx(matrix.sqr(crystal_b.get_U()) *
-                       matrix.sqr(crystal_a.get_U()).transpose(), R)
+  assert (matrix.sqr(crystal_b.get_U()) *
+          matrix.sqr(crystal_a.get_U()).transpose()).elems == pytest.approx(R.elems)
   best_R_ab, best_axis, best_angle, best_cb_op = \
     compare_orientation_matrices.difference_rotation_matrix_axis_angle(
       crystal_a,
       crystal_b)
   best_euler_angles = euler.xyz_angles(best_R_ab)
-  assert pytest.approx(best_euler_angles, euler_angles)
+  assert best_euler_angles == pytest.approx(euler_angles)
   assert best_cb_op.is_identity_op()
-  assert pytest.approx(best_R_ab, R)
+  assert best_R_ab.elems == pytest.approx(R.elems)
 
   # now see if we can deconvolute the original euler angles after applying
   # a change of basis to one of the crystals
@@ -52,6 +52,6 @@ def test_compare_orientation_matrices():
       crystal_a,
       crystal_b)
   best_euler_angles = euler.xyz_angles(best_R_ab)
-  assert pytest.approx(best_euler_angles, euler_angles)
+  assert best_euler_angles == pytest.approx(euler_angles)
   assert best_cb_op.c() == cb_op.inverse().c()
-  assert pytest.approx(best_R_ab, R)
+  assert best_R_ab.elems == pytest.approx(R.elems)

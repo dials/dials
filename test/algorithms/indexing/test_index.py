@@ -154,11 +154,11 @@ def test_index_cluster_analysis_search_with_symmetry(dials_regression, tmpdir):
                               expected_rmsds, expected_hall_symbol)
 
   a, b, c = map(matrix.col, result.crystal_model.get_real_space_vectors())
-  assert pytest.approx(a.length(), b.length())
+  assert a.length() == pytest.approx(b.length())
   assert c.length() > b.length()
-  assert pytest.approx(a.angle(b, deg=True), 90)
-  assert pytest.approx(b.angle(c, deg=True), 90)
-  assert pytest.approx(c.angle(a, deg=True), 90)
+  assert a.angle(b, deg=True) == pytest.approx(90)
+  assert b.angle(c, deg=True) == pytest.approx(90)
+  assert c.angle(a, deg=True) == pytest.approx(90)
 
 def test_index_trypsin_single_lattice(dials_regression, tmpdir):
   pytest.importorskip("scipy")
