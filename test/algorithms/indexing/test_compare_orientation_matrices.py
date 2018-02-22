@@ -1,13 +1,14 @@
-from __future__ import absolute_import, division
-from libtbx.test_utils import approx_equal
+from __future__ import absolute_import, division, print_function
 
-def exercise():
-  from dials.algorithms.indexing import compare_orientation_matrices
-  from dxtbx.model import Crystal
-  from cctbx import sgtbx
-  from scitbx import matrix
-  from scitbx.math import euler_angles as euler
+import pytest
 
+from cctbx import sgtbx
+from scitbx import matrix
+from scitbx.math import euler_angles as euler
+from dxtbx.model import Crystal
+from dials.algorithms.indexing import compare_orientation_matrices
+
+def test_compare_orientation_matrices():
   # try and see if we can get back the original rotation matrix and euler angles
   real_space_a = matrix.col((10,0,0))
   real_space_b = matrix.col((0,10,10))
@@ -23,16 +24,16 @@ def exercise():
                       R * real_space_b,
                       R * real_space_c,
                       space_group=sgtbx.space_group('P 1'))
-  assert approx_equal(matrix.sqr(crystal_b.get_U()) *
-                      matrix.sqr(crystal_a.get_U()).transpose(), R)
+  assert pytest.approx(matrix.sqr(crystal_b.get_U()) *
+                       matrix.sqr(crystal_a.get_U()).transpose(), R)
   best_R_ab, best_axis, best_angle, best_cb_op = \
     compare_orientation_matrices.difference_rotation_matrix_axis_angle(
       crystal_a,
       crystal_b)
   best_euler_angles = euler.xyz_angles(best_R_ab)
-  assert approx_equal(best_euler_angles, euler_angles)
+  assert pytest.approx(best_euler_angles, euler_angles)
   assert best_cb_op.is_identity_op()
-  assert approx_equal(best_R_ab, R)
+  assert pytest.approx(best_R_ab, R)
 
   # now see if we can deconvolute the original euler angles after applying
   # a change of basis to one of the crystals
@@ -51,16 +52,6 @@ def exercise():
       crystal_a,
       crystal_b)
   best_euler_angles = euler.xyz_angles(best_R_ab)
-  assert approx_equal(best_euler_angles, euler_angles)
+  assert pytest.approx(best_euler_angles, euler_angles)
   assert best_cb_op.c() == cb_op.inverse().c()
-  assert approx_equal(best_R_ab, R)
-
-
-
-
-def run():
-  exercise()
-  print "OK"
-
-if __name__ == '__main__':
-  run()
+  assert pytest.approx(best_R_ab, R)

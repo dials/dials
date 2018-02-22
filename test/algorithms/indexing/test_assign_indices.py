@@ -1,38 +1,36 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
+import copy
 import os
-import libtbx.load_env
+import pytest
+import random
 from cctbx import crystal, miller, sgtbx
+from cctbx.sgtbx import bravais_types
 from scitbx import matrix
+from scitbx.math import euler_angles_as_matrix
 from dxtbx.serialize import load
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 from dxtbx.model import Crystal
 from dials.array_family import flex
+from dials.algorithms.indexing \
+     import index_reflections, index_reflections_local
+from dials.algorithms.indexing.indexer import indexer_base
 
 # set random seeds so tests more reliable
 seed = 54321
-import random
 random.seed(seed)
 flex.set_random_seed(seed)
 
-have_dials_regression = libtbx.env.has_module("dials_regression")
-if have_dials_regression:
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression",
-    test=os.path.isdir)
-else:
-  print 'SKIP: dials_regression not configured'
-  exit(0)
-
 
 def random_rotation(angle_min=0, angle_max=360):
-  import random
-  from scitbx.math import euler_angles_as_matrix
   return euler_angles_as_matrix(
     [random.uniform(angle_min,angle_max) for i in xrange(3)])
 
 
-def run(space_group_info):
+@pytest.mark.parametrize(
+  'space_group_info',
+  [sgtbx.space_group_info(symbol=symbol) for symbol in bravais_types.acentric])
+def test_assign_indices(dials_regression, space_group_info):
   datablock_json = os.path.join(
     dials_regression, "indexing_test_data",
     "i04_weak_data", "datablock_orig.json")
@@ -42,7 +40,6 @@ def run(space_group_info):
 
   sweep = sweep[:20]
 
-  import random
   space_group = space_group_info.group()
   unit_cell = space_group_info.any_compatible_unit_cell(volume=random.uniform(1e4,1e6))
 
@@ -77,7 +74,6 @@ def run(space_group_info):
     crystal_symmetry, miller_indices, anomalous_flag=True)
   predicted_reflections['xyzobs.mm.value'] = predicted_reflections['xyzcal.mm']
   predicted_reflections['id'] = flex.int(len(predicted_reflections), 0)
-  from dials.algorithms.indexing.indexer import indexer_base
   indexer_base.map_centroids_to_reciprocal_space(
     predicted_reflections, sweep.get_detector(), sweep.get_beam(),
     sweep.get_goniometer())
@@ -132,16 +128,10 @@ def run(space_group_info):
 
 
 
-
-
 class compare_global_local(object):
 
   def __init__(self, experiment, reflections,
                expected_miller_indices):
-
-    from dials.algorithms.indexing \
-         import index_reflections, index_reflections_local
-    import copy
 
     # index reflections using simple "global" method
     self.reflections_global = copy.deepcopy(reflections)
@@ -171,14 +161,6 @@ class compare_global_local(object):
     self.correct_local = (
       expected_miller_indices == self.reflections_local['miller_index']).count(True)
 
-    print self.misindexed_global, self.correct_global, len(self.reflections_global)
-    print self.misindexed_local, self.correct_local, len(self.reflections_local)
+    print(self.misindexed_global, self.correct_global, len(self.reflections_global))
+    print(self.misindexed_local, self.correct_local, len(self.reflections_local))
 
-
-if __name__ == '__main__':
-  from libtbx.utils import show_times_at_exit
-  show_times_at_exit()
-  from cctbx.sgtbx import bravais_types
-  for symbol in bravais_types.acentric:
-    space_group_info = sgtbx.space_group_info(symbol=symbol)
-    run(space_group_info)
