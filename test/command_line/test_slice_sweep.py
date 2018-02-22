@@ -31,8 +31,6 @@ def test_slice_sweep_and_compare_with_expected_results(dials_regression, tmpdir)
   assert sliced_exp.scan.get_image_range() == (1, 20)
   assert len(sliced_refs) == 3670
 
-  return
-
 def test_slice_sweep_with_first_images_missing(dials_regression, tmpdir):
   """Test slicing where scan image range does not start at 1, exercising
   a case that exposed a bug"""
@@ -55,6 +53,4 @@ def test_slice_sweep_with_first_images_missing(dials_regression, tmpdir):
               check_format=False)[0]
   assert sliced_exp.scan.get_image_range() == (10, 20)
   assert sliced_exp.scan.get_array_range() == (9, 20)
-  assert pytest.approx(sliced_exp.scan.get_oscillation()[0], 83.35)
-
-  return
+  assert sliced_exp.scan.get_oscillation()[0] == pytest.approx(83.35)
