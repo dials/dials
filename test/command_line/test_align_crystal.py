@@ -1,21 +1,17 @@
 from __future__ import absolute_import, division
 
-def run():
-  import os
-  import libtbx.load_env
-  from libtbx import easy_run
-  from libtbx.test_utils import show_diff
-  try:
-    dials_regression = libtbx.env.dist_path('dials_regression')
-  except KeyError:
-    print 'FAIL: dials_regression not configured'
-    exit(0)
+import pytest
+import os
+from libtbx import easy_run
+
+def test_align_crystal(dials_regression, tmpdir):
+  tmpdir.chdir()
 
   path = os.path.join(dials_regression, "experiment_test_data")
   cmd = "dials.align_crystal %s/kappa_experiments.json" %path
   result = easy_run.fully_buffered(cmd).raise_if_errors()
   out = "\n".join(result.stdout_lines[6:])
-  assert not show_diff(out, """\
+  assert out == """\
 Angles between reciprocal cell axes and principal experimental axes:
 --------------------------------------------
 Experimental axis | a*     | b*     | c*
@@ -41,11 +37,4 @@ Primary axis | Secondary axis | GON_KAPPA | GON_PHI
 c* (6-fold)  | a* (2-fold)    |   4.324   | -77.874
 c* (6-fold)  | a* (2-fold)    |  -4.324   |  106.075
 ----------------------------------------------------\
-""")
-
-
-if __name__ == '__main__':
-  from dials.test import cd_auto
-  with cd_auto(__file__):
-    run()
-    print "OK"
+"""
