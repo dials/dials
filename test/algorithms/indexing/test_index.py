@@ -54,16 +54,7 @@ class run_one_indexing(object):
       len(experiments_list.crystals()), n_expected_lattices)
     assert os.path.exists("indexed.pickle")
 
-    report_timings = False
-    if report_timings:
-      from libtbx.utils import time_log
-      unpickling_timer = time_log("unpickling")
-      calc_rmsds_timer = time_log("calc_rmsds")
-      unpickling_timer.start()
-
     self.indexed_reflections = flex.reflection_table.from_pickle("indexed.pickle")
-    if report_timings:
-      unpickling_timer.stop()
 
     for i in range(len(experiments_list)):
       experiment = experiments_list[i]
@@ -85,10 +76,6 @@ class run_one_indexing(object):
       self.rmsds = self.get_rmsds_obs_pred(reflections, experiment)
       for actual, expected in zip(self.rmsds, expected_rmsds):
         assert actual <= expected, "%s %s" %(self.rmsds, expected_rmsds)
-    if report_timings:
-      print(calc_rmsds_timer.legend)
-      print(unpickling_timer.report())
-      print(calc_rmsds_timer.report())
 
   def get_rmsds_obs_pred(self, observations, experiment):
     reflections = observations.select(observations.get_flags(
