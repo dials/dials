@@ -40,6 +40,12 @@ phil_scope = phil.parse('''
     experiment_range = ()
       .type = ints
       .help = "Option to specify a subset of experiments to plot."
+    with_errors = True
+      .type = bool
+      .help = "Option to turn off plotting of parameters and errors."
+    limit_range_to_obs = False
+      .type = bool
+      .help = "Option to only plot parameters and errors within experimental range."
   }
   include scope dials.algorithms.scaling.scaling_options.phil_scope
 ''', process_includes=True)
@@ -138,6 +144,13 @@ def plot_smooth_scales(params, experiments, reflections, outputfile=None):
     plt.subplot(2, 1, 1)
     plt.title('Smooth scale factors')
     plt.plot(rel_values, scale_SF.inverse_scales)
+    if params.output.with_errors:
+      if params.output.limit_range_to_obs:
+        plt.errorbar(scale_SF._smoother.positions()[1:-1], scale_SF.parameters[1:-1], 
+          yerr=scale_SF.parameter_esds[1:-1], fmt='o', color='k')
+      else:
+        plt.errorbar(scale_SF._smoother.positions(), scale_SF.parameters, 
+          yerr=scale_SF.parameter_esds, fmt='o', color='k')
     plt.ylabel('Scale term')
     plt.xlabel('Normalised rotation angle')
 
@@ -153,6 +166,13 @@ def plot_smooth_scales(params, experiments, reflections, outputfile=None):
     plt.ylabel('Relative B factor (' + r'$\AA^{2}$'+')')
     plt.xlabel('Normalised time value')
     plt.plot(rel_values, np.log(decay_SF.inverse_scales)*2.0) #convert scales to B values
+    if params.output.with_errors:
+      if params.output.limit_range_to_obs:
+        plt.errorbar(decay_SF._smoother.positions()[1:-1], decay_SF.parameters[1:-1], 
+          yerr=decay_SF.parameter_esds[1:-1], fmt='o', color='k')
+      else:
+        plt.errorbar(decay_SF._smoother.positions(), decay_SF.parameters, 
+          yerr=decay_SF.parameter_esds, fmt='o', color='k')
   #plt.tight_layout()
   if outputfile:
     plt.savefig(outputfile)

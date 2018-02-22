@@ -48,7 +48,11 @@ class KBSMFactory(object):
     K_param = flex.double([1.0])
     B_param = flex.double([0.0])
 
-    return Model.KBScalingModel(K_param, B_param, configdict)
+    parameters_dict = {
+      'scale': {'parameters' : K_param, 'parameter_esds' : None},
+      'decay': {'parameters' : B_param, 'parameter_esds' : None}}
+
+    return Model.KBScalingModel(parameters_dict, configdict)
 
 class AimlessSMFactory(object):
   '''
@@ -105,8 +109,12 @@ class AimlessSMFactory(object):
     if 'absorption' in configdict['corrections']:
       configdict.update({'lmax' : lmax})
 
-    return Model.AimlessScalingModel(scale_parameters, decay_parameters,
-      abs_parameters, configdict)
+    parameters_dict = {
+      'scale': {'parameters' : scale_parameters, 'parameter_esds' : None},
+      'decay': {'parameters' : decay_parameters, 'parameter_esds' : None},
+      'absorption': {'parameters' : abs_parameters, 'parameter_esds' : None}}
+
+    return Model.AimlessScalingModel(parameters_dict, configdict)
 
 class XscaleSMFactory(object):
   '''
@@ -191,4 +199,9 @@ class XscaleSMFactory(object):
         'x_det_bin_width' : x_det_bin_width, 'y_det_bin_width' : y_det_bin_width
       })
 
-    return Model.XscaleScalingModel(dec_params, abs_params, mod_params, configdict)
+    parameters_dict = {
+      'decay': {'parameters' : dec_params, 'parameter_esds' : None},
+      'absorption': {'parameters' : abs_params, 'parameter_esds' : None},
+      'modulation': {'parameters' : mod_params, 'parameter_esds' : None}}
+
+    return Model.XscaleScalingModel(parameters_dict, configdict)

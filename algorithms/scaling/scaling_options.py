@@ -75,6 +75,10 @@ phil_scope = iotbx.phil.parse('''
       .type = bool
       .help = "Option to allow absorption correction after decay/scale, 
               if concurrent_scaling is set to False"
+    full_matrix_round = True
+      .type = bool
+      .help = "Option to turn off GN/LM refinement round used to determine
+               error estimates on scale factors."
     reject_outliers = True
       .type = bool
       .help = "Option to turn on outlier rejection"

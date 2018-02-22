@@ -1,4 +1,4 @@
-"""Contains classes for scaling refinement engines - inherited from the 
+"""Contains classes for scaling refinement engines - inherited from the
 dials.refinement engine with a few methods overwritten to use them with scaling
 code"""
 

@@ -201,13 +201,14 @@ def scaling_algorithm(scaler):
     scaler.update_error_model()
     scaler = perform_scaling(scaler)
 
-  apm_factory = ParameterHandler.ActiveParameterFactory.create(scaler)
-  for _ in range(apm_factory.n_cycles):
-    apm = apm_factory.make_next_apm()
-    refinery = ScalingGaussNewtonIterations(scaler, target=ScalingTarget(scaler, apm),
-      prediction_parameterisation=apm, max_iterations=1)
-    refinery.run()
-    scaler = refinery.return_scaler()
+  if scaler.params.scaling_options.full_matrix_round:
+    apm_factory = ParameterHandler.ActiveParameterFactory.create(scaler)
+    for _ in range(apm_factory.n_cycles):
+      apm = apm_factory.make_next_apm()
+      refinery = ScalingGaussNewtonIterations(scaler, target=ScalingTarget(scaler, apm),
+        prediction_parameterisation=apm, max_iterations=1)
+      refinery.run()
+      scaler = refinery.return_scaler()
   
   '''The minimisation has only been done on a subset on the data, so apply the
   scale factors to the whole reflection table.'''

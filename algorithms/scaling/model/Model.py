@@ -59,14 +59,20 @@ class AimlessScalingModel(ScalingModelBase):
 
   id_ = 'aimless'
 
-  def __init__(self, s_params, d_params, abs_params, configdict, is_scaled=False):
+  def __init__(self, parameters_dict, configdict, is_scaled=False):
     super(AimlessScalingModel, self).__init__(configdict, is_scaled)
     if 'scale' in configdict['corrections']:
-      self._components.update({'scale' : SF.SmoothScaleFactor1D(s_params)})
+      scale_setup = parameters_dict['scale']
+      self._components.update({'scale' : SF.SmoothScaleFactor1D(
+        scale_setup['parameters'], scale_setup['parameter_esds'])})
     if 'decay' in configdict['corrections']:
-      self._components.update({'decay' : SF.SmoothBScaleFactor1D(d_params)})
+      decay_setup = parameters_dict['decay']
+      self._components.update({'decay' : SF.SmoothBScaleFactor1D(
+        decay_setup['parameters'], decay_setup['parameter_esds'])})
     if 'absorption' in configdict['corrections']:
-      self._components.update({'absorption' : SF.SHScaleFactor(abs_params)})
+      absorption_setup = parameters_dict['absorption']
+      self._components.update({'absorption' : SF.SHScaleFactor(
+        absorption_setup['parameters'], absorption_setup['parameter_esds'])})
 
   @property
   def scale_normalisation_factor(self):
@@ -86,15 +92,28 @@ class AimlessScalingModel(ScalingModelBase):
     if obj['__id__'] != cls.id_:
       raise RuntimeError('expected __id__ %s, got %s' % (cls.id_, obj['__id__']))
     (s_params, d_params, abs_params) = (None, None, None)
+    (s_params_sds, d_params_sds, a_params_sds) = (None, None, None)
     configdict = obj['configuration_parameters']
     is_scaled = obj['is_scaled']
     if 'scale' in configdict['corrections']:
       s_params = flex.double(obj['scale']['parameters'])
+      if 'est_standard_devs' in obj['scale']:
+        s_params_sds = flex.double(obj['scale']['est_standard_devs'])
     if 'decay' in configdict['corrections']:
       d_params = flex.double(obj['decay']['parameters'])
+      if 'est_standard_devs' in obj['decay']:
+        d_params_sds = flex.double(obj['decay']['est_standard_devs'])
     if 'absorption' in configdict['corrections']:
       abs_params = flex.double(obj['absorption']['parameters'])
-    return cls(s_params, d_params, abs_params, configdict, is_scaled)
+      if 'est_standard_devs' in obj['absorption']:
+        a_params_sds = flex.double(obj['absorption']['est_standard_devs'])
+
+    parameters_dict = {
+      'scale': {'parameters' : s_params, 'parameter_esds' : s_params_sds},
+      'decay': {'parameters' : d_params, 'parameter_esds' : d_params_sds},
+      'absorption': {'parameters' : abs_params, 'parameter_esds' : a_params_sds}}
+    
+    return cls(parameters_dict, configdict, is_scaled)
 
 
 class XscaleScalingModel(ScalingModelBase):
@@ -102,18 +121,24 @@ class XscaleScalingModel(ScalingModelBase):
 
   id_ = 'xscale'
 
-  def __init__(self, dec_params, abs_params, mod_params, configdict, is_scaled=False):
+  def __init__(self, parameters_dict, configdict, is_scaled=False):
     super(XscaleScalingModel, self).__init__(configdict, is_scaled)
     if 'decay' in configdict['corrections']:
-      self._components.update({'decay' : SF.SmoothScaleFactor2D(dec_params,
-        shape=(configdict['n_res_param'], configdict['n_time_param']))})
+      decay_setup = parameters_dict['decay']
+      self._components.update({'decay' : SF.SmoothScaleFactor2D(
+        decay_setup['parameters'], shape=(configdict['n_res_param'],
+        configdict['n_time_param']), parameter_esds=decay_setup['parameter_esds'])})
     if 'absorption' in configdict['corrections']:
-      self._components.update({'absorption' : SF.SmoothScaleFactor3D(abs_params,
-        shape=(configdict['n_x_param'], configdict['n_y_param'],
-          configdict['n_time_param']))})
+      abs_setup = parameters_dict['absorption']
+      self._components.update({'absorption' : SF.SmoothScaleFactor3D(
+        abs_setup['parameters'], shape=(configdict['n_x_param'],
+        configdict['n_y_param'], configdict['n_time_param']),
+        parameter_esds=abs_setup['parameter_esds'])})
     if 'modulation' in configdict['corrections']:
-      self._components.update({'modulation' : SF.SmoothScaleFactor2D(mod_params,
-        shape=(configdict['n_x_mod_param'], configdict['n_y_mod_param']))})
+      mod_setup = parameters_dict['modulation']
+      self._components.update({'modulation' : SF.SmoothScaleFactor2D(
+        mod_setup['parameters'], shape=(configdict['n_x_mod_param'],
+        configdict['n_y_mod_param']), parameter_esds=mod_setup['parameter_esds'])})
 
   @classmethod
   def from_dict(cls, obj):
@@ -123,25 +148,42 @@ class XscaleScalingModel(ScalingModelBase):
     configdict = obj['configuration_parameters']
     is_scaled = obj['is_scaled']
     (dec_params, abs_params, mod_params) = (None, None, None)
+    (d_params_sds, a_params_sds, m_params_sds) = (None, None, None)
     if 'decay' in configdict['corrections']:
       dec_params = flex.double(obj['decay']['parameters'])
+      if 'est_standard_devs' in obj['decay']:
+        d_params_sds = flex.double(obj['decay']['est_standard_devs'])
     if 'absorption' in configdict['corrections']:
       abs_params = flex.double(obj['absorption']['parameters'])
+      if 'est_standard_devs' in obj['absorption']:
+        a_params_sds = flex.double(obj['absorption']['est_standard_devs'])
     if 'modulation' in configdict['corrections']:
       mod_params = flex.double(obj['modulation']['parameters'])
-    return cls(dec_params, abs_params, mod_params, configdict, is_scaled)
+      if 'est_standard_devs' in obj['modulation']:
+        m_params_sds = flex.double(obj['modulation']['est_standard_devs'])
+
+    parameters_dict = {
+      'decay': {'parameters' : dec_params, 'parameter_esds' : d_params_sds},
+      'absorption': {'parameters' : abs_params, 'parameter_esds' : a_params_sds},
+      'modulation': {'parameters' : mod_params, 'parameter_esds' : m_params_sds}}
+
+    return cls(parameters_dict, configdict, is_scaled)
 
 class KBScalingModel(ScalingModelBase):
   '''Factory to create a scaling model for an xscale-type parameterisation.'''
 
   id_ = 'KB'
 
-  def __init__(self, K_params, B_params, configdict, is_scaled=False):
+  def __init__(self, parameters_dict, configdict, is_scaled=False):
     super(KBScalingModel, self).__init__(configdict, is_scaled)
     if 'scale' in configdict['corrections']:
-      self._components.update({'scale' : SF.KScaleFactor(K_params)})
+      self._components.update({'scale' : SF.KScaleFactor(
+        parameters_dict['scale']['parameters'],
+        parameters_dict['scale']['parameter_esds'])})
     if 'decay' in configdict['corrections']:
-      self._components.update({'decay' : SF.BScaleFactor(B_params)})
+      self._components.update({'decay' : SF.BScaleFactor(
+        parameters_dict['decay']['parameters'],
+        parameters_dict['decay']['parameter_esds'])})
 
   @classmethod
   def from_dict(cls, obj):
@@ -151,8 +193,18 @@ class KBScalingModel(ScalingModelBase):
     configdict = obj['configuration_parameters']
     is_scaled = obj['is_scaled']
     (s_params, d_params) = (None, None)
+    (s_params_sds, d_params_sds) = (None, None)
     if 'scale' in configdict['corrections']:
       s_params = flex.double(obj['scale']['parameters'])
+      if 'est_standard_devs' in obj['scale']:
+        s_params_sds = flex.double(obj['scale']['est_standard_devs'])
     if 'decay' in configdict['corrections']:
       d_params = flex.double(obj['decay']['parameters'])
-    return cls(s_params, d_params, configdict, is_scaled)
+      if 'est_standard_devs' in obj['decay']:
+        d_params_sds = flex.double(obj['decay']['est_standard_devs'])
+
+    parameters_dict = {
+      'scale': {'parameters' : s_params, 'parameter_esds' : s_params_sds},
+      'decay': {'parameters' : d_params, 'parameter_esds' : d_params_sds}}
+
+    return cls(parameters_dict, configdict, is_scaled)

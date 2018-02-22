@@ -205,9 +205,10 @@ class SingleScalerBase(ScalerBase):
     super(SingleScalerBase, self).__init__()
     self._experiments = experiment
     self._params = params
+
     n_model_params = sum([val.n_params for val in self.components.itervalues()])
-    print(n_model_params)
     self._var_cov = sparse.matrix(n_model_params, n_model_params)
+
     logger.info("Dataset id for this reflection table is %s." % scaled_id)
     logger.info(('The type of scaling model being applied to this dataset {sep}'
       'is {0}. {sep}').format(self.experiments.scaling_model.id_, sep='\n'))
