@@ -112,8 +112,8 @@ def generate_crystal(unit_cell, space_group):
 
 
 def run_indexing(datablock, strong_spots, crystal_model, rmsds):
-  sweep_path = os.path.join(tmp_dir, "datablock.json")
-  pickle_path = os.path.join(tmp_dir, "strong.pickle")
+  sweep_path = "datablock.json"
+  pickle_path = "strong.pickle"
 
   dump.datablock(datablock, sweep_path)
   easy_pickle.dump(pickle_path, strong_spots)
