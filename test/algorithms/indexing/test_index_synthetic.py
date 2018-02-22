@@ -1,30 +1,25 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 import math
 import os
 import random
-import libtbx.load_env
 from libtbx import easy_pickle
-from libtbx.test_utils import open_tmp_directory
 from scitbx import matrix
+from scitbx.math import euler_angles_as_matrix
+import scitbx.random
 from cctbx import crystal, sgtbx, uctbx
-
 from dxtbx.model.experiment_list import Experiment
+from dxtbx.model import Crystal
 from dxtbx.serialize import dump, load
+from dxtbx.imageset import ImageSweep
+from dxtbx.imageset import ImageSetData
+from dxtbx.format.Format import Reader, Masker
 
 from dials.array_family import flex
-
-
-have_dials_regression = libtbx.env.has_module("dials_regression")
-if have_dials_regression:
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression",
-    test=os.path.isdir)
+from dials.test.algorithms.indexing.test_index import run_one_indexing
 
 
 def random_rotation():
-  import random
-  from scitbx.math import euler_angles_as_matrix
   return euler_angles_as_matrix([random.uniform(0,360) for i in xrange(3)])
 
 
@@ -54,7 +49,7 @@ def any_compatible_unit_cell(space_group, volume=None, asu_volume=None):
         (-alpha + beta + gamma) < 360):
       break
     else:
-      print a, b, c, alpha, beta, gamma
+      print(a, b, c, alpha, beta, gamma)
 
   if sg_number <   3:
     params = (a, b, c, alpha, beta, gamma)
@@ -78,7 +73,6 @@ def any_compatible_unit_cell(space_group, volume=None, asu_volume=None):
 
 def generate_spots(crystal_model, detector, beam, goniometer=None, scan=None,
                    sel_fraction=1.0):
-  import math
 
   experiment = Experiment(beam=beam,
                           detector=detector,
@@ -87,9 +81,11 @@ def generate_spots(crystal_model, detector, beam, goniometer=None, scan=None,
                           crystal=crystal_model)
 
   # if we don't set the imageset then from_predictions uses the StillsReflectionPredictor :-(
-  from dxtbx.imageset import NullReader, ImageSweep
-  imageset = ImageSweep(NullReader, indices=range(len(scan.get_epochs())), beam=beam, goniometer=goniometer,
-                        detector=detector, scan=scan)
+  filenames = [""] * len(scan)
+  reader = Reader(filenames)
+  masker = Masker(filenames)
+  data = ImageSetData(reader, masker)
+  imageset = ImageSweep(data, beam, detector, goniometer, scan)
   experiment.imageset = imageset
 
   predicted = flex.reflection_table.from_predictions(experiment)
@@ -105,7 +101,6 @@ def generate_spots(crystal_model, detector, beam, goniometer=None, scan=None,
 
 
 def generate_crystal(unit_cell, space_group):
-  from dxtbx.model import Crystal
   B = matrix.sqr(unit_cell.fractionalization_matrix()).transpose()
   U = random_rotation()
   A = U * B
@@ -117,18 +112,11 @@ def generate_crystal(unit_cell, space_group):
 
 
 def run_indexing(datablock, strong_spots, crystal_model, rmsds):
-
-  cwd = os.path.abspath(os.curdir)
-  tmp_dir = os.path.abspath(open_tmp_directory(suffix="test_dials_index"))
-  os.chdir(tmp_dir)
-
   sweep_path = os.path.join(tmp_dir, "datablock.json")
   pickle_path = os.path.join(tmp_dir, "strong.pickle")
 
   dump.datablock(datablock, sweep_path)
   easy_pickle.dump(pickle_path, strong_spots)
-
-  from dials.test.algorithms.indexing.tst_index import run_one_indexing
 
   space_group_info = crystal_model.get_space_group()
   symmetry = crystal.symmetry(unit_cell=crystal_model.get_unit_cell(),
@@ -148,13 +136,11 @@ def run_indexing(datablock, strong_spots, crystal_model, rmsds):
                    extra_args=[],
                    expected_unit_cell=symmetry.minimum_cell().unit_cell(),
                    expected_rmsds=expected_rmsds,
-                   #expected_hall_symbol=crystal_model.get_space_group().type().hall_symbol(),
                    expected_hall_symbol=' P 1',
                    )
 
 
 def add_random_noise_xyz(datablock, strong_spots, rmsds):
-  import scitbx.random
   errors = flex.vec3_double(*list(
     scitbx.random.variate(
       scitbx.random.normal_distribution(0, rmsds[i]))(len(strong_spots))
@@ -162,9 +148,9 @@ def add_random_noise_xyz(datablock, strong_spots, rmsds):
   strong_spots['xyzobs.px.value'] += errors
 
 
-def run():
+def test_index_synthetic(dials_regression, tmpdir):
+  tmpdir.chdir()
 
-  #space_group = sgtbx.space_group_info(number=random.randint(1,230)).group()
   space_group = sgtbx.space_group_info(
     number=random.choice((1,3,16,75,143,195))).group()
 
@@ -178,8 +164,8 @@ def run():
   scan.set_image_range((1,900))
 
   crystal_model = generate_crystal(unit_cell, space_group)
-  print crystal_model
-  print unit_cell.minimum_cell()
+  print(crystal_model)
+  print(unit_cell.minimum_cell())
   strong_spots = generate_spots(
     crystal_model, imageset.get_detector(),
     imageset.get_beam(),
@@ -188,13 +174,6 @@ def run():
     sel_fraction=0.25)
 
   rmsds = (0.5, 0.5, 0.5) # px/image
-  #print strong_spots[0]['xyzobs.px.value']
   add_random_noise_xyz(datablock, strong_spots, rmsds)
-  #print strong_spots[0]['xyzobs.px.value']
 
   run_indexing(datablock, strong_spots, crystal_model, rmsds)
-
-  print "OK"
-
-if __name__ == '__main__':
-  run()
