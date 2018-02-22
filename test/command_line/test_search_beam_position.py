@@ -105,7 +105,7 @@ def test_thing_2(tmpdir, xia2_regression_build):
 
   # check we can actually index the resulting optimized datablock
   from cctbx import uctbx
-  from dials.test.algorithms.indexing.tst_index import run_one_indexing
+  from dials.test.algorithms.indexing.test_index import run_one_indexing
   expected_unit_cell = uctbx.unit_cell(
     (57.780, 57.800, 150.017, 89.991, 89.990, 90.007))
   expected_rmsds = (0.06, 0.05, 0.001)
