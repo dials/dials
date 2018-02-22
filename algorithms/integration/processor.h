@@ -201,15 +201,15 @@ namespace dials { namespace algorithms {
           int y0 = b[2];
           int y1 = b[3];
           int z0 = b[4];
-          std::size_t xs = x1 - x0;
-          std::size_t ys = y1 - y0;
-          std::size_t z = frame_ - z0;
-          std::size_t yi = data.accessor()[0];
-          std::size_t xi = data.accessor()[1];
+          int xs = x1 - x0;
+          int ys = y1 - y0;
+          int z = frame_ - z0;
+          int yi = (int)data.accessor()[0];
+          int xi = (int)data.accessor()[1];
           int xb = x0 >= 0 ? 0 : std::abs(x0);
           int yb = y0 >= 0 ? 0 : std::abs(y0);
-          int xe = x1 <= xi ? xs : xs-(x1-(int)xi);
-          int ye = y1 <= yi ? ys : ys-(y1-(int)yi);
+          int xe = x1 <= xi ? xs : xs-(x1-xi);
+          int ye = y1 <= yi ? ys : ys-(y1-yi);
           if (yb >= ye || xb >= xe) {
             continue;
           }
