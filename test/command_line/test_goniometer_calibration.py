@@ -1,20 +1,9 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 import os
-import libtbx.load_env
 from libtbx import easy_run
 
-have_dials_regression = libtbx.env.has_module("dials_regression")
-if have_dials_regression:
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression",
-    test=os.path.isdir)
 
-
-def run(args):
-  if not have_dials_regression:
-    print "Skipping tst_goniometer_calibration.py: dials_regression not available."
-    return
-
+def test_goniometer_calibration(dials_regression):
   data_dir = os.path.join(dials_regression, 'rotation_calibration')
   o0_k0_p0 = os.path.join(data_dir, 'experiments_o0_k0_p0.json')
   o0_k0_p48 = os.path.join(data_dir, 'experiments_o0_k0_p48.json')
@@ -26,7 +15,7 @@ def run(args):
           "xoalign=xoalign_config.py"]
 
   command = " ".join(args)
-  print command
+  print(command)
   result = easy_run.fully_buffered(command=command).raise_if_errors()
 
   expected_output = '''
@@ -55,10 +44,8 @@ loop_
   GON_OMEGA  rotation  goniometer  .           1.0000   0.0000  0.0000  .  .  .
   GON_KAPPA  rotation  goniometer  GON_OMEGA  -0.5162  -0.8505  0.1011  .  .  .
   GON_PHI    rotation  goniometer  GON_KAPPA  -0.4416  -0.5912  0.6749  .  .  .
-
 '''
-  from libtbx.test_utils import show_diff
-  assert not show_diff(result.stdout_lines[11:], ''.join(expected_output))
+  assert '\n'.join(result.stdout_lines[11:]) == ''.join(expected_output)
 
   assert os.path.exists('xoalign_config.py')
   expected_xoalign_config = '''\
@@ -68,12 +55,4 @@ GONIOMETER_DATUM = (0,0,0) # in degrees
 '''
   with open('xoalign_config.py', 'rb') as f:
     text = f.read()
-    assert not show_diff(text, expected_xoalign_config)
-
-  print "OK"
-
-if __name__ == '__main__':
-  import sys
-  from dials.test import cd_auto
-  with cd_auto(__file__):
-    run(sys.argv[1:])
+    assert text == expected_xoalign_config
