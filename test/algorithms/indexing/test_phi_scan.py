@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 # this import required early to avoid seg fault on some systems
 try:
@@ -7,20 +7,12 @@ except ImportError:
   pass
 
 import os
-import libtbx.load_env
-from libtbx.test_utils import approx_equal
+import pytest
 from cctbx import uctbx
+from dials.test.algorithms.indexing.test_index import run_one_indexing
 
-def run():
-  have_dials_regression = libtbx.env.has_module("dials_regression")
-  if not have_dials_regression:
-    print "Skipped: dials_regression not available"
-    return
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression",
-    test=os.path.isdir)
-
-  from dials.test.algorithms.indexing.tst_index import run_one_indexing
+def test_run(dials_regression, tmpdir):
+  tmpdir.chdir()
 
   expected_unit_cell = uctbx.unit_cell(
     (11.624, 13.550, 30.103, 89.964, 93.721, 90.132))
@@ -42,29 +34,22 @@ def run():
   gonio_old = imageset_old.get_goniometer()
   gonio_new = imageset_new.get_goniometer()
 
-  assert approx_equal(
-    gonio_old.get_rotation_axis(),
+  assert gonio_old.get_rotation_axis() == pytest.approx(
     (0.7497646259807715, -0.5517923303436749, 0.36520984351713554))
-  assert approx_equal(
-    gonio_old.get_setting_rotation(),
+  assert gonio_old.get_setting_rotation() == pytest.approx(
     (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0))
-  assert approx_equal(
-    gonio_old.get_fixed_rotation(),
+  assert gonio_old.get_fixed_rotation() == pytest.approx(
     (0.7497646259807748, -0.20997265900532208, -0.6275065641872948,
      -0.5517923303436731, 0.3250014637526764, -0.7680490041218182,
      0.3652098435171313, 0.9221092836691605, 0.12781329809272568))
 
-  assert approx_equal(
-    gonio_new.get_rotation_axis(), gonio_old.get_rotation_axis())
-  assert approx_equal(gonio_new.get_rotation_axis_datum(), (1,0,0))
-  assert approx_equal(
-    gonio_new.get_setting_rotation(),
-    (0.7497646259807705, -0.20997265900532142, -0.6275065641873,
+  assert gonio_new.get_rotation_axis() == pytest.approx(gonio_old.get_rotation_axis())
+  assert gonio_new.get_rotation_axis_datum() == pytest.approx((1,0,0))
+  assert gonio_new.get_setting_rotation() == pytest.approx((
+     0.7497646259807705, -0.20997265900532142, -0.6275065641873,
      -0.5517923303436786, 0.3250014637526763, -0.768049004121814,
      0.3652098435171315, 0.9221092836691607, 0.12781329809272335))
-  assert approx_equal(
-    gonio_new.get_fixed_rotation(),
-    (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0))
+  assert gonio_new.get_fixed_rotation() == pytest.approx((1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0))
 
   result_old = run_one_indexing(
     pickle_path=strong_pickle, sweep_path=datablock_old,
@@ -82,9 +67,9 @@ def run():
     expected_hall_symbol=' P 1',
     )
 
-  assert approx_equal(result_old.rmsds, result_new.rmsds)
-  assert approx_equal(result_old.crystal_model.get_unit_cell().parameters(),
-                      result_new.crystal_model.get_unit_cell().parameters())
+  assert result_old.rmsds == pytest.approx(result_new.rmsds, abs=1e-6)
+  assert result_old.crystal_model.get_unit_cell().parameters() == \
+         pytest.approx(result_new.crystal_model.get_unit_cell().parameters(), abs=1e-6)
 
   # Now test refinement gradients are correct
   from dxtbx.model.experiment_list import ExperimentList, Experiment
@@ -114,22 +99,22 @@ def run():
   an_grads_old = refiner_old._pred_param.get_gradients(refiner_old.get_matches())
   an_grads_new = refiner_new._pred_param.get_gradients(refiner_new.get_matches())
   for g1, g2 in zip(an_grads_old, an_grads_new):
-    assert approx_equal(g1["dX_dp"], g2["dX_dp"], eps=1.e-6)
-    assert approx_equal(g1["dY_dp"], g2["dY_dp"], eps=1.e-6)
-    assert approx_equal(g1["dphi_dp"], g2["dphi_dp"], eps=1.e-6)
+    assert g1["dX_dp"] == pytest.approx(g2["dX_dp"], abs=1.e-6)
+    assert g1["dY_dp"] == pytest.approx(g2["dY_dp"], abs=1.e-6)
+    assert g1["dphi_dp"] == pytest.approx(g2["dphi_dp"], abs=1.e-6)
 
   # Analytical gradients should be approximately equal to finite difference
   # gradients in either case
   fd_grads_old = calc_fd_grads(refiner_old)
   for g1, g2 in zip(fd_grads_old, an_grads_old):
-    assert approx_equal(g1["dX_dp"], g2["dX_dp"], eps=5.e-6)
-    assert approx_equal(g1["dY_dp"], g2["dY_dp"], eps=5.e-6)
-    assert approx_equal(g1["dphi_dp"], g2["dphi_dp"], eps=5.e-6)
+    assert g1["dX_dp"] == pytest.approx(g2["dX_dp"], abs=5.e-6)
+    assert g1["dY_dp"] == pytest.approx(g2["dY_dp"], abs=5.e-6)
+    assert g1["dphi_dp"] == pytest.approx(g2["dphi_dp"], abs=5.e-6)
   fd_grads_new = calc_fd_grads(refiner_new)
   for g1, g2 in zip(fd_grads_new, an_grads_new):
-    assert approx_equal(g1["dX_dp"], g2["dX_dp"], eps=5.e-6)
-    assert approx_equal(g1["dY_dp"], g2["dY_dp"], eps=5.e-6)
-    assert approx_equal(g1["dphi_dp"], g2["dphi_dp"], eps=5.e-6)
+    assert g1["dX_dp"] == pytest.approx(g2["dX_dp"], abs=5.e-6)
+    assert g1["dY_dp"] == pytest.approx(g2["dY_dp"], abs=5.e-6)
+    assert g1["dphi_dp"] == pytest.approx(g2["dphi_dp"], abs=5.e-6)
 
 def calc_fd_grads(refiner):
 
@@ -137,10 +122,7 @@ def calc_fd_grads(refiner):
   deltas = [1.e-7] * len(p_vals)
 
   fd_grads=[]
-  for i in range(len(deltas)):
-
-    val = p_vals[i]
-
+  for i, val in enumerate(p_vals):
     p_vals[i] -= deltas[i] / 2.
     refiner._pred_param.set_param_vals(p_vals)
 
@@ -168,9 +150,3 @@ def calc_fd_grads(refiner):
   refiner._pred_param.set_param_vals(p_vals)
 
   return fd_grads
-
-if __name__ == '__main__':
-  from dials.test import cd_auto
-  with cd_auto(__file__):
-    run()
-    print "OK"
