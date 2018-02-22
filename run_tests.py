@@ -141,7 +141,6 @@ tst_list = [
     "$D/test/util/tst_nexus.py",
     "$D/test/util/tst_nexus_multi_experiment.py",
     "$D/test/util/tst_masking.py",
-    "$D/test/algorithms/indexing/tst_phi_scan.py",
     "$D/test/algorithms/indexing/tst_assign_indices.py",
     "$D/test/command_line/tst_refine_bravais_settings.py",
     "$D/test/algorithms/indexing/tst_compare_orientation_matrices.py",
