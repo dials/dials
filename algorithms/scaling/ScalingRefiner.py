@@ -15,6 +15,8 @@ from libtbx.phil import parse
 
 # use lstbx classes
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
+#from dials.algorithms.refinement.engine import Journal, Refinery, AdaptLbfgs,
+#  AdaptLbfgs, SimpleLBFGS, adaptlstbx, GaussNewtonIterations, LevenbergMarquardtIterations
 
 TARGET_ACHIEVED = "RMSD target achieved"
 RMSD_CONVERGED = "RMSD no longer decreasing"
@@ -322,8 +324,24 @@ class ScalingRefinery(Refinery):
 
   def return_scaler(self):
     '''return scaler method'''
-    from dials.algorithms.scaling.Scaler import MultiScalerBase
+    from dials.algorithms.scaling.Scaler import MultiScalerBase, SingleScalerBase
     self.print_step_table()
+    
+    if isinstance(self._scaler, SingleScalerBase):
+      if self._parameters.var_cov_matrix:
+        self._scaler.update_var_cov(self._parameters)
+        #self._scaler.var_cov_matrix = self._parameters.var_cov_matrix
+    elif self._scaler.id_ == 'multi':
+      if self._parameters.apm_list[0].var_cov_matrix:
+        for i, scaler in enumerate(self._scaler.single_scalers):
+          scaler.update_var_cov(self._parameters.apm_list[i])
+          #scaler.var_cov_matrix = self._parameters.apm_list[i].var_cov_matrix
+    elif self._scaler.id_ == 'target':
+      if self._parameters.apm_list[0].var_cov_matrix:
+        for i, scaler in enumerate(self._scaler.unscaled_scalers):
+          scaler.update_var_cov(self._parameters.apm_list[i])
+          #scaler.var_cov_matrix = self._parameters.apm_list[i].var_cov_matrix
+
     if not isinstance(self._scaler, MultiScalerBase):
       if 'scale' in self._parameters.components:
         self._scaler.normalise_scale_component()

@@ -36,7 +36,8 @@ class ScalingTarget(object):
     R = self.calculate_residuals()
     if 'absorption' in self.apm.components_list:
       restr = self.scaler.calc_absorption_constraint(self.apm)
-      R.extend(restr[0]) #need to add restraints?
+      if restr:
+        R.extend(restr[0]) #need to add restraints?
     self._rmsds = [(flex.sum((R))/self.scaler.Ih_table.size)**0.5]
     #print("rmsds %s" % self._rmsds)
     return self._rmsds

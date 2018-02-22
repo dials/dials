@@ -28,7 +28,6 @@ class ScalerBase(object):
     self._reflection_table = []
     self._outlier_table = flex.reflection_table()
     self._Ih_table = None
-    self._var_cov = None
     self._initial_keys = []
 
   @property
@@ -39,14 +38,6 @@ class ScalerBase(object):
   def Ih_table(self, new_Ih_table):
     assert isinstance(new_Ih_table, IhTableBase)
     self._Ih_table = new_Ih_table
-
-  @property
-  def var_cov_matrix(self):
-    return self._var_cov
-
-  @var_cov_matrix.setter
-  def var_cov_matrix(self, var_cov):
-    self._var_cov = var_cov
 
   @property
   def experiments(self):
@@ -214,6 +205,9 @@ class SingleScalerBase(ScalerBase):
     super(SingleScalerBase, self).__init__()
     self._experiments = experiment
     self._params = params
+    n_model_params = sum([val.n_params for val in self.components.itervalues()])
+    print(n_model_params)
+    self._var_cov = sparse.matrix(n_model_params, n_model_params)
     logger.info("Dataset id for this reflection table is %s." % scaled_id)
     logger.info(('The type of scaling model being applied to this dataset {sep}'
       'is {0}. {sep}').format(self.experiments.scaling_model.id_, sep='\n'))
@@ -235,6 +229,38 @@ class SingleScalerBase(ScalerBase):
   def components(self):
     'shortcut to scaling model components'
     return self.experiments.scaling_model.components
+
+  @property
+  def var_cov_matrix(self):
+    return self._var_cov
+
+  def update_var_cov(self, apm):
+    '''update the full parameter variance covariance matrix after a refinement.
+    If all parameters have been refined, then the full var_cov matrix can be set.
+    Else one must select subblocks for pairs of parameters and assign these into
+    the full var_cov matrix, taking care to out these in the correct position.
+    This is applicable if only some parameters have been refined in this cycle.'''
+    var_cov_list = apm.var_cov_matrix #values are passed as a list from refinery
+    if int(len(var_cov_list)**0.5) == self.var_cov_matrix.n_rows:
+      self._var_cov.assign_block(var_cov_list.matrix_copy_block(0, 0, apm.n_active_params,
+        apm.n_active_params), 0, 0)
+    else: #need to set part of the var_cov matrix e.g. if only refined some params
+      #first work out the order in self._var_cov
+      cumul_pos_dict = {}
+      n_cumul_params = 0
+      for name, component in self.components.iteritems():
+        cumul_pos_dict[name] = n_cumul_params
+        n_cumul_params += component.n_params
+      #now get a var_cov_matrix subblock for pairs of parameters
+      for name in apm.components_list:
+        for name2 in apm.components_list:
+          n_rows = apm.components[name]['n_params']
+          n_cols = apm.components[name2]['n_params']
+          start_row = apm.components[name]['start_idx']
+          start_col = apm.components[name2]['start_idx']
+          sub = var_cov_list.matrix_copy_block(start_row, start_col, n_rows, n_cols)
+          #now set this block into correct location in overall var_cov
+          self._var_cov.assign_block(sub, cumul_pos_dict[name], cumul_pos_dict[name2])
 
   @abc.abstractproperty
   def consecutive_scaling_order(self):
@@ -457,20 +483,12 @@ class SingleScalerBase(ScalerBase):
       jacobian.assign_block(block, 0, n_cumulative_param)
       n_cumulative_param += n_param
     jacobian_transpose = jacobian.transpose()
-
-    length = int(len(self.var_cov_matrix)**0.5)
-    var_cov_mat = sparse.matrix(length, length)
-    for i in range(length):
-      col = sparse.matrix_column(length)
-      for j in range(length):
-        col[j] = self.var_cov_matrix[(i*length) + j]
-      var_cov_mat[:, i] = col
     logger.info('Calculating error estimates of inverse scale factors. \n')
     sigmasq = flex.float([])
-    #note: must be a faster way to do this next bit?
+    #note: must be a faster way to do this next bit? - in c++?
     for col in jacobian_transpose.cols(): #iterating over reflections
       a = flex.double(col.as_dense_vector())
-      var = (a * var_cov_mat) * a
+      var = (a * self._var_cov) * a
       sigmasq.append(flex.sum(var))
     return sigmasq.as_double()
 
@@ -808,7 +826,6 @@ class MultiScalerBase(ScalerBase):
       R = flex.double([])
       jacobian_list = []
       scaler_list = []
-      #jacobian = sparse.matrix(1, apm.n_active_params) 
       for i, scaler in enumerate(scalers):
         restr = scaler.compute_restraints_residuals_jacobian(apm.apm_list[i])
         if restr:
