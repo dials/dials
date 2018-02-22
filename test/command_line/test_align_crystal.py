@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division
 
-import pytest
 import os
 from libtbx import easy_run
 

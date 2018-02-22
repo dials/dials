@@ -1,8 +1,8 @@
 from __future__ import absolute_import, division, print_function
+
+import pytest
 import os
-import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx import easy_run
-from libtbx.test_utils import approx_equal
 from dxtbx.model.experiment_list import ExperimentListFactory
 import cPickle as pickle
 
@@ -55,6 +55,6 @@ def test_slice_sweep_with_first_images_missing(dials_regression, tmpdir):
               check_format=False)[0]
   assert sliced_exp.scan.get_image_range() == (10, 20)
   assert sliced_exp.scan.get_array_range() == (9, 20)
-  assert approx_equal(sliced_exp.scan.get_oscillation()[0], 83.35)
+  assert pytest.approx(sliced_exp.scan.get_oscillation()[0], 83.35)
 
   return
