@@ -10,8 +10,14 @@ class Weighting(object):
   gives initial weights of 1/variance and has methods to set the weights of
   certain reflections to zero.'''
   def __init__(self, reflection_table):
-    '''set initial weighting to be a statistical weighting'''
-    self._scale_weighting = 1.0/reflection_table['variance']
+    '''set initial weighting to be a statistical weighting - chose only the
+    reflections to be used in scaling first when setting nonzero weights.'''
+    bad_refl_sel = reflection_table.get_flags(
+      reflection_table.flags.bad_for_scaling, all=False)
+    self._scale_weighting = flex.double([0.0]*len(reflection_table))
+    chosen = ~bad_refl_sel
+    self._scale_weighting.set_selected(chosen.iselection(),
+      1.0/reflection_table['variance'].select(chosen))
 
   @property
   def weights(self):
@@ -52,13 +58,6 @@ class Weighting(object):
     '''method to set a zero weight below an d-value cutoff'''
     sel = reflection_table['d'] <= d_cutoff_value
     self.weights.set_selected(sel, 0.0)
-
-  def remove_wilson_outliers(self, reflection_table):
-    '''method to set a zero weight for any outliers as determined by
-    Wilson_outlier_test.py'''
-    if 'wilson_outlier_flag' in reflection_table:
-      sel = reflection_table['wilson_outlier_flag']
-      self.weights.set_selected(sel, 0.0)
 
   def apply_aimless_error_model(self, reflection_table, error_params):
     '''applies scaling factors to the errors of the intensities'''

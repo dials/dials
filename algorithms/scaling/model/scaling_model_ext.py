@@ -28,19 +28,21 @@ class AimlessScalingModelExt(ScalingModelIface):
   @classmethod
   def factory(cls):
     '''returns the scaling Model Factory'''
-    from dials.algorithms.scaling.model.ScalingModelFactory import AimlessSMFactory
+    from dials.algorithms.scaling.model.scaling_model_factory import \
+      AimlessSMFactory
     return AimlessSMFactory
 
   @classmethod
   def scaler(cls):
     '''returns the scaler factory'''
-    from dials.algorithms.scaling.Scaler import AimlessScaler
+    from dials.algorithms.scaling.scaler import AimlessScaler
     return AimlessScaler
 
   @staticmethod
   def from_dict(d):
     '''creates a scaling model from a dict'''
-    from dials.algorithms.scaling.model.Model import AimlessScalingModel
+    from dials.algorithms.scaling.model.model import \
+      AimlessScalingModel
     return AimlessScalingModel.from_dict(d)
 
 class KBScalingModelExt(ScalingModelIface):
@@ -51,19 +53,20 @@ class KBScalingModelExt(ScalingModelIface):
   @classmethod
   def factory(cls):
     '''returns the scaling Model Factory'''
-    from dials.algorithms.scaling.model.ScalingModelFactory import KBSMFactory
+    from dials.algorithms.scaling.model.scaling_model_factory import \
+      KBSMFactory
     return KBSMFactory
 
   @classmethod
   def scaler(cls):
     '''returns the scaler factory'''
-    from dials.algorithms.scaling.Scaler import KBScaler
+    from dials.algorithms.scaling.scaler import KBScaler
     return KBScaler
 
   @staticmethod
   def from_dict(d):
     '''creates a scaling model from a dict'''
-    from dials.algorithms.scaling.model.Model import KBScalingModel
+    from dials.algorithms.scaling.model.model import KBScalingModel
     return KBScalingModel.from_dict(d)
 
 class XscaleScalingModelExt(ScalingModelIface):
@@ -74,17 +77,18 @@ class XscaleScalingModelExt(ScalingModelIface):
   @classmethod
   def factory(cls):
     '''returns the scaling Model Factory'''
-    from dials.algorithms.scaling.model.ScalingModelFactory import XscaleSMFactory
+    from dials.algorithms.scaling.model.scaling_model_factory import \
+      XscaleSMFactory
     return XscaleSMFactory
 
   @classmethod
   def scaler(cls):
     '''returns the scaler factory'''
-    from dials.algorithms.scaling.Scaler import XscaleScaler
+    from dials.algorithms.scaling.scaler import XscaleScaler
     return XscaleScaler
 
   @staticmethod
   def from_dict(d):
     '''creates a scaling model from a dict'''
-    from dials.algorithms.scaling.model.Model import XscaleScalingModel
+    from dials.algorithms.scaling.model.model import XscaleScalingModel
     return XscaleScalingModel.from_dict(d)

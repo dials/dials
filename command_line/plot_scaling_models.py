@@ -5,8 +5,9 @@ import matplotlib
 from dials.array_family import flex
 from dials.util import halraiser
 from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
-from dials.algorithms.scaling.model import ScalingModelFactory
-from dials.algorithms.scaling.model import Model
+from dials.algorithms.scaling.model import model as Model
+from dials.algorithms.scaling.model.scaling_model_factory import \
+  create_scaling_model
 from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets
 from libtbx import phil
 matplotlib.use('Agg')
@@ -50,7 +51,7 @@ phil_scope = phil.parse('''
   include scope dials.algorithms.scaling.scaling_options.phil_scope
 ''', process_includes=True)
 
-def main(argv):
+def plot_scaling_models(argv):
   '''the plotting script'''
 
   optionparser = OptionParser(usage=None, read_experiments=True,
@@ -78,7 +79,7 @@ def main(argv):
     print("Found %s experiments in total." % len(experiments))
     print('\n'+'*'*40)
 
-  experiments = ScalingModelFactory.Factory.create(params, experiments, reflections)
+  experiments = create_scaling_model(params, experiments, reflections)
 
   print('\nPlotting graphs of scale factors. \n')
   if len(experiments) == 1:
@@ -133,49 +134,84 @@ def plot_multi(params, experiment, reflection, j):
         outputfile=str(params.output.modcorplot)+'_'+str(j+1)+'.png')
 
 def plot_smooth_scales(params, experiments, reflections, outputfile=None):
-  plt.figure(figsize=(14, 8))
+  plt.figure(figsize=(8.5, 5))
+  legends = []
+  ax1 = None
+  reflections = reflections.select(~reflections.get_flags(
+    reflections.flags.user_excluded_in_scaling))
+  reflections = reflections.select(reflections.get_flags(
+    reflections.flags.integrated))
   if 'scale' in experiments.scaling_model.configdict['corrections']:
     reflections['norm_rot_angle'] = (reflections['xyzobs.px.value'].parts()[2]
       * experiments.scaling_model.scale_normalisation_factor)
-    rel_values = flex.double(np.arange(0, int(max(reflections['norm_rot_angle'])) + 1, 0.1))
+    scale_rot_int = experiments.scaling_model.configdict['scale_rot_interval']
+    int_rel_max = int(max(reflections['norm_rot_angle'])) + 1
+    int_rel_min = (int(min(reflections['norm_rot_angle'])))
+    rel_values = flex.double(np.linspace(int_rel_min, int_rel_max, (int_rel_max/0.1)+1,
+      endpoint=True))
+    rel_values[-1] = rel_values[-1] - 0.0001
+    rel_values = rel_values - rel_values[0]
     scale_SF = experiments.scaling_model.components['scale']
     scale_SF.update_reflection_data(normalised_values=rel_values)
     scale_SF.calculate_scales()
-    plt.subplot(2, 1, 1)
-    plt.title('Smooth scale factors')
-    plt.plot(rel_values, scale_SF.inverse_scales)
+    smoother_phis = [i * scale_rot_int for i in scale_SF.smoother.positions()]
+    ax1 = plt.subplot(2, 1, 1)
+    #plt.title('Smooth scale factors')
+    ax1.plot(rel_values*scale_rot_int, scale_SF.inverse_scales,
+      label='smootly varying \ninverse scale factor')
     if params.output.with_errors:
       if params.output.limit_range_to_obs:
-        plt.errorbar(scale_SF._smoother.positions()[1:-1], scale_SF.parameters[1:-1], 
+        ax1.errorbar(smoother_phis[1:-1], scale_SF.parameters[1:-1],
           yerr=scale_SF.parameter_esds[1:-1], fmt='o', color='k')
       else:
-        plt.errorbar(scale_SF._smoother.positions(), scale_SF.parameters, 
-          yerr=scale_SF.parameter_esds, fmt='o', color='k')
-    plt.ylabel('Scale term')
-    plt.xlabel('Normalised rotation angle')
+        ax1.errorbar(smoother_phis, scale_SF.parameters,
+          yerr=scale_SF.parameter_esds, fmt='o', color='k',
+          label='model parameters')
+    ax1.set_ylabel('Inverse scale factor', fontsize=12)
+    ax1.set_xlabel('Rotation angle ('+r'$^{\circ}$'+')', fontsize=12)
+    ax1.tick_params(axis='both', which='major', labelsize=12)
+    leg1 = ax1.legend(bbox_to_anchor=(1.02, 1), loc=2, fontsize=12)
+    legends.append(leg1)
 
   if 'decay' in experiments.scaling_model.configdict['corrections']:
     reflections['norm_time_values'] = (reflections['xyzobs.px.value'].parts()[2]
       * experiments.scaling_model.decay_normalisation_factor)
-    rel_values = np.arange(0, int(max(reflections['norm_time_values'])) + 1, 0.1)
+    decay_rot_int = experiments.scaling_model.configdict['decay_rot_interval']
+    int_rel_max = int(max(reflections['norm_time_values'])) + 1
+    int_rel_min = (int(min(reflections['norm_rot_angle'])))
+    rel_values = flex.double(np.linspace(int_rel_min, int_rel_max, (int_rel_max/0.1)+1,
+      endpoint=True))
+    rel_values[-1] = rel_values[-1] - 0.0001
+    rel_values = rel_values - rel_values[0]
     decay_SF = experiments.scaling_model.components['decay']
     decay_SF.update_reflection_data(normalised_values=rel_values,
       dvalues=flex.double([1.0]*len(rel_values)))
     decay_SF.calculate_scales()
-    plt.subplot(2, 1, 2)
-    plt.ylabel('Relative B factor (' + r'$\AA^{2}$'+')')
-    plt.xlabel('Normalised time value')
-    plt.plot(rel_values, np.log(decay_SF.inverse_scales)*2.0) #convert scales to B values
+    smoother_phis = [i * decay_rot_int for i in decay_SF._smoother.positions()]
+    if ax1:
+      ax2 = plt.subplot(2, 1, 2, sharex=ax1)
+    else:
+      ax2 = plt.subplot(2, 1, 2)
+    ax2.set_ylabel('Relative B factor (' + r'$\AA^{2}$'+')', fontsize=12)
+    ax2.set_xlabel('Rotation angle ('+r'$^{\circ}$'+')', fontsize=12)
+    ax2.plot(rel_values * decay_rot_int, np.log(decay_SF.inverse_scales)*2.0,
+      label='smootly varying \nB-factor') #convert scales to B values
     if params.output.with_errors:
       if params.output.limit_range_to_obs:
-        plt.errorbar(decay_SF._smoother.positions()[1:-1], decay_SF.parameters[1:-1], 
+        ax2.errorbar(smoother_phis[1:-1], decay_SF.parameters[1:-1],
           yerr=decay_SF.parameter_esds[1:-1], fmt='o', color='k')
       else:
-        plt.errorbar(decay_SF._smoother.positions(), decay_SF.parameters, 
-          yerr=decay_SF.parameter_esds, fmt='o', color='k')
-  #plt.tight_layout()
+        ax2.errorbar(smoother_phis, decay_SF.parameters,
+          yerr=decay_SF.parameter_esds, fmt='o', color='k', label='model parameters')
+    leg2 = ax2.legend(bbox_to_anchor=(1.02, 1), loc=2, fontsize=12)
+    ax2.tick_params(axis='both', which='major', labelsize=12)
+    if ax1:
+      plt.setp(ax1.get_xticklabels(), visible=False)
+      ax1.set_xlabel('')
+    legends.append(leg2)
+  plt.tight_layout()
   if outputfile:
-    plt.savefig(outputfile)
+    plt.savefig(outputfile, bbox_extra_artists=(legends), bbox_inches='tight')
     print("Saving plot to %s" % outputfile)
   else:
     plt.savefig('smooth_scale_factors.png')
@@ -218,30 +254,31 @@ def plot_absorption_surface(experiment, outputfile=None):
   else:
     rel_Int = Intensity
   #print "max, min absorption factors are (%s,%s)" % (Intensity.max(),Intensity.min())
-  plt.figure(figsize=(8, 6))
+  plt.figure(figsize=(8, 5))
   gs = gridspec.GridSpec(1, 1)
   ax = plt.subplot(gs[0, 0])
   im = ax.imshow(rel_Int.T, cmap='viridis', origin='lower')
   ax.set_yticks([0, (STEPS-1)/4.0, (STEPS-1)/2.0, 3.0*(STEPS-1)/4.0, STEPS-1])
-  ax.set_yticklabels([0, 45, 90, 135, 180])
-  ax.set_ylabel('Phi (degrees)')
+  ax.set_yticklabels([0, 45, 90, 135, 180], fontsize=12)
+  ax.set_ylabel(r'$\phi$'+' ('+r'$^{\circ}$'+')', fontsize=14)
   ax.set_xticks([0.0, (2.0*STEPS-1)/4.0, (2.0*STEPS-1)/2.0, 3.0*(2.0*STEPS-1)/4.0, (2.0*STEPS-1)])
-  ax.set_xticklabels([0, 90, 180, 270, 360])
-  ax.set_xlabel('Theta (degrees)')
-  ax.set_title('Absorption correction surface')
+  ax.set_xticklabels([0, 90, 180, 270, 360], fontsize=12)
+  ax.set_xlabel(r'$\theta$'+' ('+r'$^{\circ}$'+')', fontsize=14)
+  ax.set_title('Absorption correction surface - inverse scale factors', fontsize=12)
   divider = make_axes_locatable(ax)
   cax1 = divider.append_axes("right", size="5%", pad=0.05)
   cbar = plt.colorbar(im, cax=cax1, ticks=[0, 0.25, 0.5, 0.75, 1])
-  cbar.ax.set_yticklabels(['%.6f' % Intensity.min(),
-                           '%.6f' % ((Intensity.min()*0.75) + (Intensity.max()*0.25)),
-                           '%.6f' % ((Intensity.min()*0.5) + (Intensity.max()*0.5)),
-                           '%.6f' % ((Intensity.min()*0.25) + (Intensity.max()*0.75)),
-                           '%.6f' % Intensity.max()])
+  cbar.ax.set_yticklabels(['%.3f' % Intensity.min(),
+                           '%.3f' % ((Intensity.min()*0.75) + (Intensity.max()*0.25)),
+                           '%.3f' % ((Intensity.min()*0.5) + (Intensity.max()*0.5)),
+                           '%.3f' % ((Intensity.min()*0.25) + (Intensity.max()*0.75)),
+                           '%.3f' % Intensity.max()], fontsize=12)
   #ax2 = plt.subplot(gs[1, 0])
   #data = [list(params)[0:5],list(params)[5:10],list(params)[10:15],list(params)[15:20]]
   #errors = [list(experiment.scaling_model.components['absorption'].parameter_esds)]
   #ax2.table(cellText=data, loc='top')
   #ax2.axis("off")
+  plt.tight_layout()
   if outputfile:
     plt.savefig(outputfile)
     print("Saving plot to %s" % outputfile)
@@ -418,6 +455,6 @@ def plot_3D_absorption_correction(experiment, reflections, outputfile=None):
 
 if __name__ == "__main__":
   try:
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(plot_scaling_models(sys.argv[1:]))
   except Exception as e:
     halraiser(e)

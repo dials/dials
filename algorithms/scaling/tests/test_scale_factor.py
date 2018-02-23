@@ -2,17 +2,21 @@
 tests for scalefactor objects
 '''
 from dials.array_family import flex
-from model.scale_factor import (ScaleFactor, KScaleFactor, BScaleFactor,
-  SmoothScaleFactor1D, SmoothBScaleFactor1D, SHScaleFactor)
+from model.components.scale_components import SHScaleComponent, \
+  SingleBScaleFactor, SingleScaleFactor, ScaleComponentBase
+from model.components.smooth_scale_components import SmoothScaleComponent1D,\
+  SmoothBScaleComponent1D, SmoothScaleComponent2D, SmoothScaleComponent3D
 import pytest
 from scitbx import sparse
 
 def test_base_scalefactor():
   'test for abstract scalefactor object'
 
-  class base_SF_filler(ScaleFactor):
+  class base_SF_filler(ScaleComponentBase):
     'subclass ScaleFactor to fill in the abstract method'
     def update_reflection_data(self):
+      pass
+    def calculate_scales_and_derivatives(self):
       pass
 
   base_SF = base_SF_filler(flex.double([1.0] * 3))
@@ -32,7 +36,7 @@ def test_base_scalefactor():
 
 def test_KScaleFactor():
   'test for simple global K scalefactor object'
-  KSF = KScaleFactor(flex.double([2.0]))
+  KSF = SingleScaleFactor(flex.double([2.0]))
   assert KSF.n_params == 1
   assert list(KSF.parameters) == list(flex.double([2.0]))
   KSF.update_reflection_data(n_refl=2)
@@ -44,7 +48,7 @@ def test_KScaleFactor():
 
 def test_BScaleFactor():
   'test for simple global B scalefactor object'
-  BSF = BScaleFactor(flex.double([0.0]))
+  BSF = SingleBScaleFactor(flex.double([0.0]))
   assert BSF.n_params == 1
   assert list(BSF.parameters) == list(flex.double([0.0]))
   BSF.update_reflection_data(dvalues=flex.double([1.0, 1.0]))
@@ -58,7 +62,7 @@ def test_BScaleFactor():
 def test_SmoothScaleFactor1D():
   'test for a gaussian smoothed 1D scalefactor object'
   from math import exp
-  SF = SmoothScaleFactor1D(flex.double([1.1] * 5))
+  SF = SmoothScaleComponent1D(flex.double([1.1] * 5))
   assert SF.n_params == 5
   assert list(SF.parameters) == list(flex.double([1.1, 1.1, 1.1, 1.1, 1.1]))
   SF.update_reflection_data(normalised_values=[0.5, 1.0, 2.5])
@@ -80,7 +84,7 @@ def test_SmoothScaleFactor1D():
 def test_SmoothBScaleFactor1D():
   'test for a gaussian smoothed 1D scalefactor object'
   from math import exp
-  SF = SmoothBScaleFactor1D(flex.double([0.0] * 5))
+  SF = SmoothBScaleComponent1D(flex.double([0.0] * 5))
   assert SF.n_params == 5
   assert list(SF.parameters) == list(flex.double([0.0]*5))
   SF.update_reflection_data(normalised_values=[0.5, 1.0, 2.5],
@@ -104,7 +108,7 @@ def test_SmoothBScaleFactor1D():
 def test_SHScalefactor():
   initial_param = 0.1
   initial_val = 0.2
-  SF = SHScaleFactor(flex.double([initial_param] * 3))
+  SF = SHScaleComponent(flex.double([initial_param] * 3))
   assert SF.n_params == 3
   assert list(SF.parameters) == list(flex.double([initial_param]*3))
   harmonic_values = sparse.matrix(1, 3)

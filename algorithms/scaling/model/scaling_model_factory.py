@@ -2,34 +2,26 @@
 Collection of factories for creating the scaling models.
 To add a new scaling model, one must define a new extension
 in dials.extensions.scaling_model_ext, create a new factory
-in this file and a new model is dials.algorithms.scaling.model.
+in this file and create a new model in dials.algorithms.scaling.model.
 '''
 from dials.array_family import flex
-import dials.algorithms.scaling.model.Model as Model
+import dials.algorithms.scaling.model.model as Model
 import pkg_resources
 from collections import OrderedDict
 
-
-class Factory(object):
-  '''
-  Factory for creating Scaling models
-  '''
-  @classmethod
-  def create(cls, params, experiments, reflections):
-    '''
-    create the scaling model defined by the params.
-    '''
-    for i, (exp, refl) in enumerate(zip(experiments, reflections)):
-      model = experiments.scaling_models()[i]
-      if model is not None:
-        exp.scaling_model = model
-      else:
-        for entry_point in pkg_resources.iter_entry_points('dxtbx.scaling_model_ext'):
-          if entry_point.name == params.scaling_model:
-            #finds relevant extension in dials.extensions.scaling_model_ext
-            factory = entry_point.load().factory()
-            exp.scaling_model = factory.create(params, exp, refl)
-    return experiments
+def create_scaling_model(params, experiments, reflections):
+  'function to create/load the appropriate scaling model for each experiment'
+  for i, (exp, refl) in enumerate(zip(experiments, reflections)):
+    model = experiments.scaling_models()[i]
+    if model is not None:
+      exp.scaling_model = model
+    else:
+      for entry_point in pkg_resources.iter_entry_points('dxtbx.scaling_model_ext'):
+        if entry_point.name == params.model:
+          #finds relevant extension in dials.extensions.scaling_model_ext
+          factory = entry_point.load().factory()
+          exp.scaling_model = factory.create(params, exp, refl)
+  return experiments
 
 class KBSMFactory(object):
   '''
@@ -75,27 +67,31 @@ class AimlessSMFactory(object):
 
     configdict = OrderedDict({'corrections': corrections})
 
-    scale_rot_int = params.parameterisation.scale_interval + 0.001
     osc_range = experiments.scan.get_oscillation_range()
     one_osc_width = experiments.scan.get_oscillation()[1]
-    if ((osc_range[1] - osc_range[0])/ scale_rot_int) % 1 < 0.33:
-      #for scale and decay, if last bin less than 33% filled, increase rot_int
-      #and extend by 0.001 to make sure all datapoints within min/max''
-      n_phi_bins = int((osc_range[1] - osc_range[0])/ scale_rot_int)
-      scale_rot_int = (osc_range[1] - osc_range[0])/float(n_phi_bins) + 0.001
-    s_norm_fac = 0.9999 * one_osc_width / scale_rot_int
-    na = reflections['xyzobs.px.value'].parts()[2] * s_norm_fac
-    #need one parameter more extremal than the max/min norm values at each side
-    n_scale_param = int(max(na)//1) - int(min(na)//1) + 3
+    user_excluded = reflections.get_flags(
+      reflections.flags.user_excluded_in_scaling)
+    if user_excluded.count(True) > 0:
+      reflections_for_scaling = reflections.select(~user_excluded)
+      reflections_for_scaling = reflections_for_scaling.select(
+        reflections_for_scaling.get_flags(reflections_for_scaling.flags.integrated))
+      max_osc = (max(reflections_for_scaling['xyzobs.px.value'].parts()[2]
+        * one_osc_width) + experiments.scan.get_oscillation()[0])
+      min_osc = (min(reflections_for_scaling['xyzobs.px.value'].parts()[2]
+        * one_osc_width) + experiments.scan.get_oscillation()[0])
+      if max_osc < osc_range[1] - 0.8: #some end frames excluded
+        min_osc = osc_range[0]
+        osc_range = (min_osc, max_osc + 0.001)
+      elif min_osc > osc_range[0] + 0.8: #some beginning frames excluded
+        max_osc = osc_range[1]
+        osc_range = (min_osc, max_osc)
+
+    n_scale_param, s_norm_fac, scale_rot_int = cls.initialise_smooth_input(
+      osc_range, one_osc_width, params.parameterisation.scale_interval)
     scale_parameters = flex.double([1.0] * n_scale_param)
 
-    decay_rot_int = params.parameterisation.decay_interval + 0.001
-    if ((osc_range[1] - osc_range[0]) / decay_rot_int) % 1 < 0.33:
-      n_phi_bins = int((osc_range[1] - osc_range[0]) / decay_rot_int)
-      decay_rot_int = (osc_range[1] - osc_range[0])/float(n_phi_bins) + 0.001
-    d_norm_fac = 0.9999 * one_osc_width / decay_rot_int
-    nt = reflections['xyzobs.px.value'].parts()[2] * d_norm_fac
-    n_decay_param = int(max(nt)//1) - int(min(nt)//1) + 3
+    n_decay_param, d_norm_fac, decay_rot_int = cls.initialise_smooth_input(
+      osc_range, one_osc_width, params.parameterisation.decay_interval)
     decay_parameters = flex.double([0.0] * n_decay_param)
 
     lmax = params.parameterisation.lmax
@@ -103,9 +99,11 @@ class AimlessSMFactory(object):
     abs_parameters = flex.double([0.0] * n_abs_param)
 
     if 'scale' in configdict['corrections']:
-      configdict.update({'s_norm_fac' : s_norm_fac})
+      configdict.update({'s_norm_fac' : s_norm_fac,
+                         'scale_rot_interval' : scale_rot_int})
     if 'decay' in configdict['corrections']:
-      configdict.update({'d_norm_fac' : d_norm_fac})
+      configdict.update({'d_norm_fac' : d_norm_fac,
+                         'decay_rot_interval' : decay_rot_int})
     if 'absorption' in configdict['corrections']:
       configdict.update({'lmax' : lmax})
 
@@ -115,6 +113,25 @@ class AimlessSMFactory(object):
       'absorption': {'parameters' : abs_parameters, 'parameter_esds' : None}}
 
     return Model.AimlessScalingModel(parameters_dict, configdict)
+
+  @classmethod
+  def initialise_smooth_input(cls, osc_range, one_osc_width, interval):
+    'function to calculate the number of parameters and norm_fac/rot_int'
+    interval += 0.001
+    if (osc_range[1] - osc_range[0]) < (2.0 * interval):
+      if (osc_range[1] - osc_range[0]) <= interval:
+        rot_int = osc_range[1] - osc_range[0]
+        n_param = 2
+      else:
+        rot_int = ((osc_range[1] - osc_range[0])/2.0)
+        n_param = 3
+    else:
+      n_bins = max(int((osc_range[1] - osc_range[0])/ interval)+1, 3)
+      rot_int = (osc_range[1] - osc_range[0])/float(n_bins)
+      n_param = n_bins + 2
+    norm_fac = 0.9999 * one_osc_width / rot_int #to make sure normalise values
+    #fall within range of smoother.
+    return n_param, norm_fac, rot_int
 
 class XscaleSMFactory(object):
   '''

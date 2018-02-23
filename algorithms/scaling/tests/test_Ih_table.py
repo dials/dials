@@ -9,9 +9,11 @@ from Ih_table import SingleIhTable, JointIhTable
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from libtbx import phil
-from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment, ExperimentList
-from dials.algorithms.scaling.model import ScalingModelFactory as ScalingModelFactory
-import ScalerFactory as ScalerFactory
+from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment,\
+  ExperimentList
+from dials.algorithms.scaling.model.scaling_model_factory import \
+  create_scaling_model
+from dials.algorithms.scaling.scaler_factory import create_scaler
 
 @pytest.fixture(scope='module')
 def generate_refl_1():
@@ -71,23 +73,26 @@ def generate_params():
   optionparser = OptionParser(phil=phil_scope, check_format=False)
   parameters, _ = optionparser.parse_args(args=None, quick_parse=True,
     show_diff_phil=False)
-  parameters.__inject__('scaling_model', 'KB')
+  parameters.__inject__('model', 'KB')
   return parameters
 
 @pytest.fixture(scope='module')
 def generate_test_scaler(generate_refl_1, generate_experiments, generate_params):
-  '''generate a test scalerr'''
-  params, test_experiments, test_reflections = generate_params, generate_experiments, generate_refl_1
-  experiments = ScalingModelFactory.Factory.create(params, test_experiments, test_reflections)
-  scaler = ScalerFactory.Factory.create(params, experiments, test_reflections)
+  '''generate a test scaler'''
+  (params, test_experiments, test_reflections) = (
+    generate_params, generate_experiments, generate_refl_1)
+  experiments = create_scaling_model(params, test_experiments, test_reflections)
+  scaler = create_scaler(params, experiments, test_reflections)
   return scaler
 
 @pytest.fixture(scope='module')
-def generate_second_test_scaler(generate_refl_2, generate_experiments, generate_params):
+def generate_second_test_scaler(generate_refl_2, generate_experiments,
+    generate_params):
   '''generate a second test scaler'''
-  params, test_experiments, test_reflections = generate_params, generate_experiments, generate_refl_2
-  experiments = ScalingModelFactory.Factory.create(params, test_experiments, test_reflections)
-  scaler = ScalerFactory.Factory.create(params, experiments, test_reflections)
+  (params, test_experiments, test_reflections) = (
+    generate_params, generate_experiments, generate_refl_2)
+  experiments = create_scaling_model(params, test_experiments, test_reflections)
+  scaler = create_scaler(params, experiments, test_reflections)
   return scaler
 
 @pytest.fixture
@@ -121,9 +126,6 @@ def test_Ih_table(single_test_input):
   assert (Ih_table.weights == 1.0).count(True) == Ih_table.size
   assert list(Ih_table.asu_miller_index) == list(flex.miller_index(
     [(0, 0, 1), (0, 0, 2), (0, 0, 2), (0, 2, 0), (0, 4, 0), (1, 0, 0), (1, 0, 0)]))
-  assert list(Ih_table.h_index_counter_array) == list(flex.int([1, 2, 1, 1, 2]))
-  assert list(Ih_table.h_index_cumulative_array) == list(flex.int([0, 1, 3, 4, 5, 7]))
-  assert list(Ih_table.n_h) == list(flex.double([1, 2, 2, 1, 1, 2, 2]))
   assert list(Ih_table.Ih_values) == list(flex.double(
     [100.0, 50.0, 50.0, 60.0, 30.0, 90.0, 90.0]))
   assert list(Ih_table.variances) == list(flex.double(
@@ -150,9 +152,6 @@ def test_Ih_table(single_test_input):
   assert (Ih_table.weights == 1.0).count(True) == Ih_table.size
   assert list(Ih_table.asu_miller_index) == list(flex.miller_index(
     [(0, 0, 1), (0, 0, 2)]))
-  assert list(Ih_table.h_index_counter_array) == list(flex.int([1, 1]))
-  assert list(Ih_table.h_index_cumulative_array) == list(flex.int([0, 1, 2]))
-  assert list(Ih_table.n_h) == list(flex.double([1, 1]))
   assert list(Ih_table.Ih_values) == list(flex.double([100.0, 50.0]))
   assert list(Ih_table.variances) == list(flex.double([100.0, 50.0]))
   assert list(Ih_table.intensities) == list(flex.double([100.0, 40.0]))
@@ -192,9 +191,9 @@ def test_joint_Ih_table(joint_test_input):
     (0, 0, 2), (0, 0, 2), (0, 2, 0), (0, 4, 0), (0, 4, 0), (1, 0, 0), (1, 0, 0),
     (1, 0, 0)]))
   assert list(Ih_table.Ih_values) == list(flex.double(
-    [100.0, 50.0, 50.0, 60.0, 30.0, 30.0, 80.0, 80.0, 80.0]))
+    [100.0, 50.0, 50.0, 60.0, 30.0, 80.0, 80.0, 30.0, 80.0]))
   assert Ih_table.size == 9
-  assert list(Ih_table.h_index_counter_array) == list(flex.int([1, 2, 1, 2, 3]))
+  '''assert list(Ih_table.h_index_counter_array) == list(flex.int([1, 2, 1, 2, 3]))
   assert list(Ih_table.h_index_cumulative_array) == list(flex.int([0, 1, 3, 4, 6, 9]))
   assert list(Ih_table._h_idx_count_list[0]) == list(flex.int([1, 2, 1, 1, 2]))
   assert list(Ih_table._h_idx_count_list[1]) == list(flex.int([0, 0, 0, 1, 1]))
@@ -217,4 +216,4 @@ def test_joint_Ih_table(joint_test_input):
   assert Ih_table.h_index_expand_list[1][1, 8] == 1
   assert Ih_table.h_index_expand_list[1].non_zeroes == 2
   assert Ih_table.h_index_expand_list[1].n_cols == 9
-  assert Ih_table.h_index_expand_list[1].n_rows == 2
+  assert Ih_table.h_index_expand_list[1].n_rows == 2'''

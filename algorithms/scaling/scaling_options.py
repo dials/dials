@@ -33,10 +33,10 @@ phil_scope = iotbx.phil.parse('''
       .help = "Option to turn on a detector correction for xscale parameterisation."
   }
   reflection_selection {
-    E2min = 0.8
+    E2_min = 0.8
       .type = float
       .help = "Minimum normalised E^2 value to select reflections for scaling"
-    E2max = 5.0
+    E2_max = 5.0
       .type = float
       .help = "Maximum normalised E^2 value to select reflections for scaling"
     Isigma_min = -5.0
@@ -59,6 +59,18 @@ phil_scope = iotbx.phil.parse('''
       .help = "Ability to force an error model adjustment, using the model
               in aimless - factors are called SDFac, SDadd in aimless."
   }
+  cut_data {
+    exclude_image_range = None
+      .type = floats(size=2)
+      .help = "Exclude a range of image numbers (start, stop) from the dataset,
+               only used if a single dataset present."
+    max_resolution = None
+      .type = float
+      .help = "Option to apply a maximum resolution cutoff for the dataset."
+    min_resolution = None
+      .type = float
+      .help = "Option to apply a minimum resolution cutoff for the dataset."
+  }
   scaling_options {
     target = True
       .type = bool
@@ -68,13 +80,13 @@ phil_scope = iotbx.phil.parse('''
       .type = bool
       .help = "Option to only do targeted scaling if some datasets
                are already scaled."
-    force_space_group = None
+    space_group = None
       .type = str
       .help = "Option to specify space group for scaling"
-    concurrent_scaling = True
+    concurrent = True
       .type = bool
-      .help = "Option to allow absorption correction after decay/scale, 
-              if concurrent_scaling is set to False"
+      .help = "Option to allow consecutive scaling if concurrent is
+               set to False"
     full_matrix_round = True
       .type = bool
       .help = "Option to turn off GN/LM refinement round used to determine
@@ -89,14 +101,9 @@ phil_scope = iotbx.phil.parse('''
     verbosity = 1
       .type = int(value_min=0)
       .help = "The verbosity level"
-    integration_method = 'prf'
-      .type = str
-      .help = "Option to choose from profile fitted intensities (prf)
-              or summation integrated intensities (sum)"
-    minimisation_parameterisation = 'standard'
-      .type = str
-      .help = "Choice of 'standard' (multiplicative) or 'log' g-value
-               minimisation parameterisation"
+    integration_method = *prf sum
+      .type = choice
+      .help = "Option to choose from profile fitted or summation intensities."
   }
 
   ''')

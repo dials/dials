@@ -35,8 +35,8 @@ class active_parameter_manager(object):
     for comp in self.components:
       self.components_list.extend([comp])
 
-    logger.info(('Set up parameter manager for following corrections: {0}\n'
-      ).format(''.join(str(i)+' ' for i in self.components_list)))
+    logger.info(('Components to be refined in this cycle: {0}\n'
+      ).format(''.join(str(i)+', ' for i in self.components_list).rstrip(', ')))
 
   def select_parameters(self, component):
     '''selects the subset of self.x corresponding to the component'''
@@ -99,8 +99,8 @@ class multi_active_parameter_manager(object):
       for comp in apm.components:
         self.components_list.extend([comp])
 
-    logger.info(('Set up multi-dataset parameter manager for following corrections: {0}\n'
-      ).format(''.join(str(i)+' ' for i in self.components_list)))
+    logger.info(('Configured a multi-dataset parameter manager for {0} datasets.\n'
+      ).format(len(self.apm_list)))
 
   def select_parameters(self, apm_number):
     'selects the subset of self.x corresponding to the apm number'

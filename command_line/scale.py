@@ -4,19 +4,19 @@
 Usage: dials_scratch.scale integrated.pickle integrated_experiments.json
 [integrated.pickle(2) integrated_experiments.json(2) ....] [options]
 
-This program performs scaling on the input datasets. The default parameterisation
-is a physical parameterisation based on that used in the program Aimless. If
-multiple input files have been specified, the datasets will be jointly scaled
-against a common target of unique reflection intensities.
+This program performs scaling on the input datasets. The default
+parameterisationis a physical parameterisation based on that used in the program
+Aimless. Ifmultiple input files have been specified, the datasets will be
+jointly scaledagainst a common target of unique reflection intensities.
 
 By default, a scale, decay and absorption correction parameterisation for each
 dataset is used. One scaled.pickle and scaled_experiments.json files are output,
-which may contain data and scale models from multiple experiments. The reflection
-intensities are left unscaled and unmerged in the output, but an
+which may contain data and scale models from multiple experiments. The
+reflectionintensities are left unscaled and unmerged in the output, but an
 'inverse_scale_factor' and 'inverse_scale_factor_variance' column is added to
 the pickle file.
 
-To plot the scale factors determined by this program, one should subsequently run:
+To plot the scale factors determined by this program, one should run:
 dials_scratch.plot_scaling_models scaled.pickle scaled_experiments.json
 """
 from __future__ import absolute_import, division, print_function
@@ -25,18 +25,21 @@ import logging
 import sys
 import libtbx.load_env
 from libtbx import phil
+from libtbx.str_utils import make_sub_header
 from dials.util import halraiser
-from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
-
-from dials.algorithms.scaling.ScalingRefiner import ScalingSimpleLBFGS,\
-  ScalingGaussNewtonIterations, ScalingLevenbergMarquardtIterations
-from dials.algorithms.scaling.model import ScalingModelFactory
-from dials.algorithms.scaling import ScalerFactory
-from dials.algorithms.scaling import Scaler
-from dials.algorithms.scaling import ParameterHandler
-from dials.algorithms.scaling.target_function import ScalingTarget, ScalingTargetFixedIH
+from dials.util.options import OptionParser, flatten_reflections,\
+  flatten_experiments
+from dials.algorithms.scaling.scaling_refiner import scaling_refinery
+from dials.algorithms.scaling.model.scaling_model_factory import \
+  create_scaling_model
+from dials.algorithms.scaling.scaler_factory import create_scaler,\
+  MultiScalerFactory
+from dials.algorithms.scaling import scaler as scaler_module
+from dials.algorithms.scaling.parameter_handler import create_apm
+from dials.algorithms.scaling.target_function import ScalingTarget,\
+  ScalingTargetFixedIH
 from dials.algorithms.scaling.scaling_utilities import (
-  parse_multiple_datasets, save_experiments)
+  parse_multiple_datasets, save_experiments, save_reflections)
 
 
 start_time = time.time()
@@ -46,9 +49,10 @@ phil_scope = phil.parse('''
   debug = False
     .type = bool
     .help = "Output additional debugging information"
-  scaling_model = aimless
-      .type = str
-      .help = "Set method for scaling - 'aimless', 'xscale' or 'KB'. "
+  model = *aimless xscale KB
+      .type = choice
+      .help = "Set scaling model to be applied to input datasets without
+               an existing model. "
   output {
     log = dials_scratch.scaling.log
       .type = str
@@ -59,18 +63,23 @@ phil_scope = phil.parse('''
     plot_merging_stats = False
       .type = bool
       .help = "Option to switch on plotting of merging stats."
-    experiments_out = "scaled_experiments.json"
+    plot_scaling_models = False
+      .type = bool
+      .help = "Option to switch on plotting of the scaling models determined."
+    experiments = "scaled_experiments.json"
       .type = str
       .help = "Option to set filepath for output json."
-    scaled_out = "scaled.pickle"
+    scaled = "scaled.pickle"
       .type = str
-      .help = "Option to set filepath for output pickle file of scaled intensities."
+      .help = "Option to set filepath for output pickle file of scaled
+               intensities."
   }
   include scope dials.algorithms.scaling.scaling_options.phil_scope
+  include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
 ''', process_includes=True)
 
 def main(argv):
-  '''main script to run the scaling algorithm'''
+  """Main script to run the scaling algorithm."""
 
   optionparser = OptionParser(usage=__doc__.strip(), read_experiments=True,
     read_reflections=True, read_datablocks=False, phil=phil_scope,
@@ -96,118 +105,139 @@ def main(argv):
   experiments = flatten_experiments(params.input.experiments)
 
   if len(experiments) != 1:
-    logger.info(('Checking for the existence of a reflection table containing {sep}'
-    'multiple scaled datasets. {sep}').format(sep='\n'))
+    logger.info(('Checking for the existence of a reflection table {sep}'
+      'containing multiple scaled datasets {sep}').format(sep='\n'))
     reflections = parse_multiple_datasets(reflections)
+    logger.info("Found %s reflection tables in total." % len(reflections))
     logger.info("Found %s experiments in total." % len(experiments))
-    logger.info('\n'+'*'*40)
 
-  assert len(experiments) == len(reflections), ''' mismatched number of
+  assert len(experiments) == len(reflections), '''mismatched number of
   experiments and reflection tables found'''
 
-  '''first create the scaling model if it didn't already exist in the
-  experiments files'''
-  experiments = ScalingModelFactory.Factory.create(params, experiments, reflections)
+  #Perform any cutting of the dataset
+  if len(reflections) == 1:
+    if params.cut_data.exclude_image_range:
+      start_excl = params.cut_data.exclude_image_range[0]
+      end_excl = params.cut_data.exclude_image_range[1]
+      mask1 = start_excl < reflections[0]['xyzobs.px.value'].parts()[2]
+      mask2 = end_excl > reflections[0]['xyzobs.px.value'].parts()[2]
+      reflections[0].set_flags(mask1 & mask2, reflections[0].flags.user_excluded_in_scaling)
+    if params.cut_data.max_resolution:
+      reflections[0].set_flags(reflections[0]['d'] < params.cut_data.max_resolution,
+      reflections[0].flags.user_excluded_in_scaling)
+    if params.cut_data.min_resolution:
+      reflections[0].set_flags(reflections[0]['d'] > params.cut_data.min_resolution,
+      reflections[0].flags.user_excluded_in_scaling)
+  # First create the scaling model if it didn't already exist in the
+  # experiments files.
+  experiments = create_scaling_model(params, experiments, reflections)
 
-  '''now create the scaler and do the scaling'''
-  scaler = ScalerFactory.Factory.create(params, experiments, reflections)
+  logger.info('\nScaling models have been initialised for all experiments.')
+  logger.info('\n' + '='*80 + '\n')
+
+  # Now create the scaler and do the scaling.
+  scaler = create_scaler(params, experiments, reflections)
   minimised = scaling_algorithm(scaler)
 
   for experiment in experiments:
     experiment.scaling_model.set_scaling_model_as_scaled()
 
-  if minimised.outlier_table:
-    minimised.save_outlier_table('outliers.pickle')
-    logger.info("%s outliers in total were removed from the dataset and saved to %s"
-      % (len(minimised.outlier_table), 'outliers.pickle'))
-
-  '''calculate merging stats'''
+  logger.info('\n'+'='*80+'\n')
+  # Calculate merging stats.
   results, scaled_ids = minimised.calc_merging_statistics()
-  logger.info('*'*40)
-  logger.info("Dataset statistics")
   plot_labels = []
-  #result.overall.show_summary(out=log.info_handle(logger))
   for i, result in enumerate(results):
     if len(results) == 1:
       logger.info("")
-      result.overall.show_summary()
+      result.show()#out=log.info_handle(logger))
       plot_labels.append('Single dataset ')
     else:
       if i < len(results) - 1:
-        logger.info("\nStatistics for dataset " + str(scaled_ids[i]))
-        result.overall.show_summary()
+        make_sub_header("Merging statistics for dataset " + str(scaled_ids[i]),
+          out=log.info_handle(logger))
+        result.show(header=0)#out=log.info_handle(logger))
         plot_labels.append('Dataset ' + str(scaled_ids[i]))
       else:
-        logger.info("\nStatistics for combined datasets")
-        result.overall.show_summary()
+        make_sub_header("Merging statistics for combined datasets",
+          out=log.info_handle(logger))
+        result.show(header=0)#out=log.info_handle(logger))
         plot_labels.append('Combined datasets')
 
-  '''plot merging stats if requested'''
+  # Plot merging stats if requested.
   if params.output.plot_merging_stats:
     from xia2.command_line.compare_merging_stats import plot_merging_stats
     plot_merging_stats(results, labels=plot_labels)
-
-  '''save scaled_experiments.json file'''
-  save_experiments(experiments, params.output.experiments_out)
-
-  '''Save scaled.pickle datafile'''
+  
+  logger.info('\n'+'='*80+'\n')
+  # Save scaled_experiments.json and scaled.pickle files.
+  save_experiments(experiments, params.output.experiments)
   minimised.clean_reflection_table()
-  minimised.save_reflection_table(params.output.scaled_out)
-  logger.info(('\nSaved reflection table to {0}').format(params.output.scaled_out))
+  save_reflections(minimised, params.output.scaled)
 
-  '''All done!'''
+  '''if params.output.plot_scaling_models:
+    from dials_scratch.command_line.plot_scaling_models import plot_scaling_models
+    plot_scaling_models(params.output.scaled, params.output.experiments)'''
+
+  # All done!
   finish_time = time.time()
-  logger.info("\nTotal time taken: {0:.4f}s ".format((finish_time - start_time)))
-  logger.info('\n'+'*'*40+'\n')
+  logger.info("\nTotal time taken: {0:.4f}s ".format(finish_time - start_time))
+  logger.info('\n'+'='*80+'\n')
 
 def perform_scaling(scaler, target_type=ScalingTarget):
-  '''a function to call to do a complete minimisation based on the current state'''
-  apm_factory = ParameterHandler.ActiveParameterFactory.create(scaler)
+  """Perform a complete minimisation based on the current state."""
+  apm_factory = create_apm(scaler)
   for _ in range(apm_factory.n_cycles):
     apm = apm_factory.make_next_apm()
-    refinery = ScalingSimpleLBFGS(target=target_type(scaler, apm),
-      prediction_parameterisation=apm, max_iterations=25)
+    refinery = scaling_refinery(engine=scaler.params.scaling_refinery.engine,
+      target=target_type(scaler, apm), prediction_parameterisation=apm,
+      max_iterations=scaler.params.scaling_refinery.max_iterations)
     refinery.run()
     scaler = refinery.return_scaler()
+    logger.info('\n'+'='*80+'\n')
   return scaler
 
 def scaling_algorithm(scaler):
-  '''main function to do lbfbs scaling'''
+  """ The main scaling algorithm."""
+
   if scaler.id_ == 'target':
-    '''do a scaling round against a target of already scaled datasets'''
+    # Do a scaling round against a target of already scaled datasets.
     scaler = perform_scaling(scaler, target_type=ScalingTargetFixedIH)
 
-    '''the minimisation has only been done on a subset on the data, so apply the
-    scale factors to the whole reflection table.'''
-    scaler.expand_scales_to_all_reflections()
+    # The minimisation has only been done on a subset on the data, so apply the
+    # scale factors to the whole reflection table.
     if scaler.params.scaling_options.only_target is True:
+      scaler.expand_scales_to_all_reflections()
       scaler.join_multiple_datasets()
       return scaler
-    '''now pass to a multiscaler ready for next round of scaling.'''
-    scaler = ScalerFactory.MultiScalerFactory.create_from_targetscaler(scaler)
+    # Now pass to a multiscaler ready for next round of scaling.
+    scaler.expand_scales_to_all_reflections(calc_cov=False)
+    scaler = MultiScalerFactory.create_from_targetscaler(scaler)
 
-  '''from here onwards, scaler should only be a SingleScaler
-  or MultiScaler (not TargetScaler)'''
+  # From here onwards, scaler should only be a SingleScaler
+  # or MultiScaler (not TargetScaler).
   scaler = perform_scaling(scaler)
-  '''Optimise the error model and then do another minimisation'''
+  # Optimise the error model and then do another minimisation.
   if scaler.params.weighting.optimise_error_model:
     scaler.update_error_model()
     scaler = perform_scaling(scaler)
 
-  '''now do one round of full matrix minimisation to determine errors'''
+  # Now do one round of full matrix minimisation to determine errors.
   if scaler.params.scaling_options.full_matrix_round:
-    apm_factory = ParameterHandler.ActiveParameterFactory.create(scaler)
+    apm_factory = create_apm(scaler)
     for _ in range(apm_factory.n_cycles):
       apm = apm_factory.make_next_apm()
-      refinery = ScalingGaussNewtonIterations(target=ScalingTarget(scaler, apm),
-        prediction_parameterisation=apm, max_iterations=1)
+      refinery = scaling_refinery(
+        engine=scaler.params.scaling_refinery.full_matrix_engine,
+        target=ScalingTarget(scaler, apm), prediction_parameterisation=apm,
+        max_iterations=scaler.params.scaling_refinery.full_matrix_max_iterations)
       refinery.run()
       scaler = refinery.return_scaler()
-  
-  '''The minimisation has only been done on a subset on the data, so apply the
-  scale factors to the whole reflection table.'''
+      logger.info('\n'+'='*80+'\n')
+
+  # The minimisation has only been done on a subset on the data, so apply the
+  # scale factors to the whole reflection table.
   scaler.expand_scales_to_all_reflections()
-  if isinstance(scaler, Scaler.MultiScalerBase):
+  if isinstance(scaler, scaler_module.MultiScalerBase):
     scaler.join_multiple_datasets()
   return scaler
 

@@ -1,6 +1,10 @@
 from collections import OrderedDict
 from dials.array_family import flex
-import dials.algorithms.scaling.model.scale_factor as SF
+from dials.algorithms.scaling.model.components.scale_components import \
+  SingleScaleFactor, SingleBScaleFactor, SHScaleComponent
+from dials.algorithms.scaling.model.components.smooth_scale_components import \
+  SmoothScaleComponent1D, SmoothBScaleComponent1D, SmoothScaleComponent2D,\
+  SmoothScaleComponent3D
 
 class ScalingModelBase(object):
   '''Base class for Scale Factories'''
@@ -63,15 +67,15 @@ class AimlessScalingModel(ScalingModelBase):
     super(AimlessScalingModel, self).__init__(configdict, is_scaled)
     if 'scale' in configdict['corrections']:
       scale_setup = parameters_dict['scale']
-      self._components.update({'scale' : SF.SmoothScaleFactor1D(
+      self._components.update({'scale' : SmoothScaleComponent1D(
         scale_setup['parameters'], scale_setup['parameter_esds'])})
     if 'decay' in configdict['corrections']:
       decay_setup = parameters_dict['decay']
-      self._components.update({'decay' : SF.SmoothBScaleFactor1D(
+      self._components.update({'decay' : SmoothBScaleComponent1D(
         decay_setup['parameters'], decay_setup['parameter_esds'])})
     if 'absorption' in configdict['corrections']:
       absorption_setup = parameters_dict['absorption']
-      self._components.update({'absorption' : SF.SHScaleFactor(
+      self._components.update({'absorption' : SHScaleComponent(
         absorption_setup['parameters'], absorption_setup['parameter_esds'])})
 
   @property
@@ -125,18 +129,18 @@ class XscaleScalingModel(ScalingModelBase):
     super(XscaleScalingModel, self).__init__(configdict, is_scaled)
     if 'decay' in configdict['corrections']:
       decay_setup = parameters_dict['decay']
-      self._components.update({'decay' : SF.SmoothScaleFactor2D(
+      self._components.update({'decay' : SmoothScaleComponent2D(
         decay_setup['parameters'], shape=(configdict['n_res_param'],
         configdict['n_time_param']), parameter_esds=decay_setup['parameter_esds'])})
     if 'absorption' in configdict['corrections']:
       abs_setup = parameters_dict['absorption']
-      self._components.update({'absorption' : SF.SmoothScaleFactor3D(
+      self._components.update({'absorption' : SmoothScaleComponent3D(
         abs_setup['parameters'], shape=(configdict['n_x_param'],
         configdict['n_y_param'], configdict['n_time_param']),
         parameter_esds=abs_setup['parameter_esds'])})
     if 'modulation' in configdict['corrections']:
       mod_setup = parameters_dict['modulation']
-      self._components.update({'modulation' : SF.SmoothScaleFactor2D(
+      self._components.update({'modulation' : SmoothScaleComponent2D(
         mod_setup['parameters'], shape=(configdict['n_x_mod_param'],
         configdict['n_y_mod_param']), parameter_esds=mod_setup['parameter_esds'])})
 
@@ -177,11 +181,11 @@ class KBScalingModel(ScalingModelBase):
   def __init__(self, parameters_dict, configdict, is_scaled=False):
     super(KBScalingModel, self).__init__(configdict, is_scaled)
     if 'scale' in configdict['corrections']:
-      self._components.update({'scale' : SF.KScaleFactor(
+      self._components.update({'scale' : SingleScaleFactor(
         parameters_dict['scale']['parameters'],
         parameters_dict['scale']['parameter_esds'])})
     if 'decay' in configdict['corrections']:
-      self._components.update({'decay' : SF.BScaleFactor(
+      self._components.update({'decay' : SingleBScaleFactor(
         parameters_dict['decay']['parameters'],
         parameters_dict['decay']['parameter_esds'])})
 

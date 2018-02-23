@@ -3,10 +3,37 @@ Collection of factories for creating the scalers.
 '''
 import logging
 import pkg_resources
-from dials.algorithms.scaling.Scaler import MultiScaler, TargetScaler
+from dials.algorithms.scaling.scaler import MultiScaler, TargetScaler
 logger = logging.getLogger('dials')
 
-class Factory(object):
+def create_scaler(params, experiments, reflections):
+  'method to create the appropriate scaler'
+  if len(reflections) == 1:
+    scaler = SingleScalerFactory.create(params, experiments[0], reflections[0])
+  else:
+    is_scaled_list = is_scaled(experiments)
+    n_scaled = is_scaled_list.count(True)
+    if (params.scaling_options.target is True and n_scaled < len(reflections)
+        and n_scaled > 0): #if only some scaled and want to do targeted scaling
+      scaler = TargetScalerFactory.create(params, experiments, reflections,
+        is_scaled_list)
+    elif len(reflections) > 1: #else just make one multiscaler for all refls
+      scaler = MultiScalerFactory.create(params, experiments, reflections)
+    else:
+      assert 0, 'no reflection tables found to create the scaler'
+  return scaler
+
+def is_scaled(experiments):
+  'helper function to return a boolean list of whether experiments are scaled'
+  is_already_scaled = []
+  for experiment in experiments:
+    if experiment.scaling_model.is_scaled:
+      is_already_scaled.append(True)
+    else:
+      is_already_scaled.append(False)
+  return is_already_scaled
+
+"""class Factory(object):
   '''
   Factory for creating Scalers.
   '''
@@ -39,7 +66,7 @@ class Factory(object):
         is_already_scaled.append(True)
       else:
         is_already_scaled.append(False)
-    return is_already_scaled
+    return is_already_scaled"""
 
 
 class SingleScalerFactory(object):
@@ -71,6 +98,7 @@ class MultiScalerFactory(object):
     '''method to pass scalers from TargetScaler to a MultiScaler'''
     single_scalers = targetscaler.single_scalers
     for scaler in targetscaler.unscaled_scalers:
+      scaler._select_reflections_for_scaling()
       single_scalers.append(scaler)
     return MultiScaler(targetscaler.params, [targetscaler.experiments], single_scalers)
 

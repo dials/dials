@@ -6,6 +6,7 @@ from __future__ import absolute_import, division
 import logging
 from dials.algorithms.refinement.engine import SimpleLBFGS,\
  GaussNewtonIterations, LevenbergMarquardtIterations
+from libtbx.phil import parse
 #logger = logging.getLogger(__name__)
 logger = logging.getLogger('dials')
 
@@ -19,21 +20,32 @@ MAX_ITERATIONS = "Reached maximum number of iterations"
 MAX_TRIAL_ITERATIONS = "Reached maximum number of consecutive unsuccessful trial steps"
 DOF_TOO_LOW = "Not enough degrees of freedom to refine"
 
-"""refinery_phil_str = '''
-refinery
+scaling_refinery_phil_str = '''
+scaling_refinery
   .help = "Parameters to configure the refinery"
   .expert_level = 1
 {
-  engine = SimpleLBFGS LBFGScurvs GaussNewton *LevMar SparseLevMar
-    .help = "The minimisation engine to use"
+  engine = *SimpleLBFGS LBFGScurvs GaussNewton LevMar
+    .help = "The minimisation engine to use for the main scaling algorithm"
     .type = choice
-
   max_iterations = None
     .help = "Maximum number of iterations in refinement before termination."
             "None implies the engine supplies its own default."
     .type = int(value_min=1)
 
-  log = None
+  full_matrix_engine = GaussNewton *LevMar
+    .help = "The minimisation engine to use for a full matrix round of
+             minimisation after the main scaling, in order to determine
+             error estimates."
+    .type = choice
+  full_matrix_max_iterations = 1
+    .help = "Maximum number of iterations before termination in the full matrix
+             minimisation round."
+            "None implies the engine supplies its own default."
+    .type = int(value_min=1)
+}
+'''
+'''refinery_log = None
     .help = "Filename for an optional log that a minimisation engine may use"
             "to write additional information"
     .type = path
@@ -69,7 +81,25 @@ refinery
   }
 }
 '''
-scaling_refinery_phil_scope = parse(refinery_phil_str)"""
+scaling_refinery_phil_scope = parse(scaling_refinery_phil_str)
+
+def scaling_refinery(engine, target, prediction_parameterisation,
+    max_iterations):
+  'helper function to return correct engine based on phil parameters'
+  if engine == 'SimpleLBFGS':
+    return ScalingSimpleLBFGS(target=target,
+      prediction_parameterisation=prediction_parameterisation,
+      max_iterations=max_iterations)
+  elif engine == 'LBFGScurvs':
+    assert 0, 'LBFGS with curvatures not yet implemented'
+  elif engine == 'GaussNewton':
+    return ScalingGaussNewtonIterations(target=target,
+      prediction_parameterisation=prediction_parameterisation,
+      max_iterations=max_iterations)
+  elif engine == 'LevMar':
+    return ScalingLevenbergMarquardtIterations(target=target,
+      prediction_parameterisation=prediction_parameterisation,
+      max_iterations=max_iterations)
 
 
 class ScalingRefinery(object):
@@ -101,7 +131,7 @@ class ScalingRefinery(object):
 
   def return_scaler(self):
     '''return scaler method'''
-    from dials.algorithms.scaling.Scaler import MultiScalerBase, SingleScalerBase
+    from dials.algorithms.scaling.scaler import MultiScalerBase, SingleScalerBase
     self.print_step_table()
 
     if isinstance(self._scaler, SingleScalerBase):

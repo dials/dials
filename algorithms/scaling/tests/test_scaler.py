@@ -6,15 +6,19 @@ import numpy as np
 import pytest
 from dials.array_family import flex
 from dials.util.options import OptionParser
-from ParameterHandler import scaling_active_parameter_manager
+from parameter_handler import scaling_active_parameter_manager
 from active_parameter_managers import (multi_active_parameter_manager,
   active_parameter_manager)
 from basis_functions import basis_function
 from libtbx import phil
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
-from dials.algorithms.scaling.model import ScalingModelFactory as ScalingModelFactory
-import ScalerFactory as ScalerFactory
+from dials.algorithms.scaling.model.scaling_model_factory import \
+  create_scaling_model
+from dials.algorithms.scaling.scaler_factory import create_scaler,\
+  MultiScaler
+from dials.algorithms.scaling.target_function import ScalingTarget,\
+  ScalingTargetFixedIH
 
 
 def generated_refl():
@@ -24,7 +28,8 @@ def generated_refl():
   reflections = flex.reflection_table()
   reflections['intensity.prf.value'] = flex.double([1.0, 10.0, 100.0])
   reflections['intensity.prf.variance'] = flex.double([1.0, 10.0, 100.0])
-  reflections['miller_index'] = flex.miller_index([(1, 0, 0), (0, 0, 1), (1, 0, 0)]) #don't change
+  reflections['miller_index'] = flex.miller_index([(1, 0, 0), (0, 0, 1),
+    (1, 0, 0)]) #don't change
   reflections['d'] = flex.double([0.8, 2.0, 2.0]) #don't change
   reflections['lp'] = flex.double([1.0, 1.0, 1.0])
   reflections['dqe'] = flex.double([1.0, 1.0, 1.0])
@@ -33,7 +38,8 @@ def generated_refl():
     (0.0, 0.0, 5.0), (0.0, 0.0, 10.0)])
   reflections['s1'] = flex.vec3_double([(0.0, 0.1, 1.0), (0.0, 0.1, 1.0),
     (0.0, 0.1, 1.0)])
-  reflections.set_flags(flex.bool([True, True, True]), reflections.flags.integrated)
+  reflections.set_flags(flex.bool([True, True, True]),
+    reflections.flags.integrated)
   return [reflections]
 
 #@pytest.fixture(scope='module')
@@ -77,7 +83,7 @@ def generated_param():
   optionparser = OptionParser(phil=phil_scope, check_format=False)
   parameters, _ = optionparser.parse_args(args=None, quick_parse=True,
     show_diff_phil=False)
-  parameters.__inject__('scaling_model', 'aimless')
+  parameters.__inject__('model', 'aimless')
   return parameters
 
 @pytest.fixture(scope='module')
@@ -89,7 +95,7 @@ def generated_KB_param():
   optionparser = OptionParser(phil=phil_scope, check_format=False)
   parameters, _ = optionparser.parse_args(args=None, quick_parse=True,
     show_diff_phil=False)
-  parameters.__inject__('scaling_model', 'KB')
+  parameters.__inject__('model', 'KB')
   return parameters
 
 #@pytest.fixture(scope='module')
@@ -114,16 +120,14 @@ def generated_multi_input(generated_refl, generated_two_exp, generated_param):
 def generated_single_input(generated_refl, generated_single_exp, generated_param):
   return (generated_refl, generated_single_exp, generated_param)
 
-
-
 def test_SingleScalerFactory():
   '''test a few extra features that are not covered by test_Ih_table'''
   (test_reflections, test_experiments, params) = generated_single_input(
     generated_refl(), generated_single_exp(), generated_param())
   assert len(test_experiments) == 1
   assert len(test_reflections) == 1
-  experiments = ScalingModelFactory.Factory.create(params, test_experiments, test_reflections)
-  scaler = ScalerFactory.Factory.create(params, experiments, test_reflections)
+  experiments = create_scaling_model(params, test_experiments, test_reflections)
+  scaler = create_scaler(params, experiments, test_reflections)
 
   assert 'asu_miller_index' in scaler.reflection_table.keys()
   assert 'intensity' in scaler.reflection_table.keys()
@@ -137,8 +141,8 @@ def test_TargetScalerFactory():
   (test_reflections, test_experiments, params) = generated_target_input(
     generated_refl(), generated_single_exp(), generated_param())
 
-  experiments = ScalingModelFactory.Factory.create(params, test_experiments, test_reflections)
-  _ = ScalerFactory.Factory.create(params, experiments, test_reflections)
+  experiments = create_scaling_model(params, test_experiments, test_reflections)
+  _ = create_scaler(params, experiments, test_reflections)
 
 def test_apm():
   '''test for a single active parameter manager. Also serves as general
@@ -147,8 +151,8 @@ def test_apm():
     generated_refl(), generated_single_exp(), generated_param())
   assert len(test_experiments) == 1
   assert len(test_reflections) == 1
-  experiments = ScalingModelFactory.Factory.create(params, test_experiments, test_reflections)
-  scaler = ScalerFactory.Factory.create(params, experiments, test_reflections)
+  experiments = create_scaling_model(params, test_experiments, test_reflections)
+  scaler = create_scaler(params, experiments, test_reflections)
 
   apm = scaling_active_parameter_manager(scaler.components, ['decay', 'scale'])
   assert 'decay' in apm.components_list
@@ -167,10 +171,10 @@ def test_multi_apm():
   (test_reflections, test_experiments, params) = generated_multi_input(
     generated_refl(), generated_two_exp(), generated_param())
 
-  experiments = ScalingModelFactory.Factory.create(params, test_experiments, test_reflections)
-  scaler = ScalerFactory.Factory.create(params, experiments, test_reflections)
+  experiments = create_scaling_model(params, test_experiments, test_reflections)
+  scaler = create_scaler(params, experiments, test_reflections)
 
-  assert isinstance(scaler, ScalerFactory.MultiScaler)
+  assert isinstance(scaler, MultiScaler)
   components_list = [i.components for i in scaler.single_scalers]
   apm = multi_active_parameter_manager(components_list,
     [['decay', 'scale'], ['decay', 'scale']], scaling_active_parameter_manager)
@@ -179,8 +183,9 @@ def test_multi_apm():
   assert 'absorption' not in apm.components_list
   dm0 = scaler.single_scalers[0]
   dm1 = scaler.single_scalers[1]
-  assert apm.n_active_params == (dm0.components['scale'].n_params + dm0.components['decay'].n_params
-    + dm1.components['scale'].n_params + dm1.components['decay'].n_params)
+  assert apm.n_active_params == (dm0.components['scale'].n_params
+    + dm0.components['decay'].n_params + dm1.components['scale'].n_params
+    + dm1.components['decay'].n_params)
   assert apm.apm_data[0]['start_idx'] == 0
   assert apm.apm_data[0]['end_idx'] == apm.apm_list[0].n_active_params
   assert apm.apm_data[1]['start_idx'] == apm.apm_list[0].n_active_params
@@ -196,8 +201,8 @@ def test_basis_function(generated_KB_param):
     generated_refl(), generated_single_exp(), generated_KB_param)
   assert len(test_experiments) == 1
   assert len(test_reflections) == 1
-  experiments = ScalingModelFactory.Factory.create(params, test_experiments, test_reflections)
-  scaler = ScalerFactory.Factory.create(params, experiments, test_reflections)
+  experiments = create_scaling_model(params, test_experiments, test_reflections)
+  scaler = create_scaler(params, experiments, test_reflections)
   assert scaler.id_ == 'KB'
 
   #(test_reflections, test_experiments, params) = generated_input
@@ -228,22 +233,22 @@ def test_basis_function(generated_KB_param):
     (2.0*(scaler.components['decay'].d_values**2))))
 
   #now check that the derivative matrix was correctly calculated
-  g_decay = scaler.components['decay']
-  g_scale = scaler.components['scale']
-  assert basis_fn[1][0, 0] == g_scale.derivatives[0, 0] * g_decay.inverse_scales[0]
-  assert basis_fn[1][1, 0] == g_scale.derivatives[1, 0] * g_decay.inverse_scales[1]
-  assert basis_fn[1][2, 0] == g_scale.derivatives[2, 0] * g_decay.inverse_scales[2]
-  assert basis_fn[1][0, 1] == g_decay.derivatives[0, 0] * g_scale.inverse_scales[0]
-  assert basis_fn[1][1, 1] == g_decay.derivatives[1, 0] * g_scale.inverse_scales[1]
-  assert basis_fn[1][2, 1] == g_decay.derivatives[2, 0] * g_scale.inverse_scales[2]
+  decay = scaler.components['decay']
+  scale = scaler.components['scale']
+  assert basis_fn[1][0, 0] == scale.derivatives[0, 0] * decay.inverse_scales[0]
+  assert basis_fn[1][1, 0] == scale.derivatives[1, 0] * decay.inverse_scales[1]
+  assert basis_fn[1][2, 0] == scale.derivatives[2, 0] * decay.inverse_scales[2]
+  assert basis_fn[1][0, 1] == decay.derivatives[0, 0] * scale.inverse_scales[0]
+  assert basis_fn[1][1, 1] == decay.derivatives[1, 0] * scale.inverse_scales[1]
+  assert basis_fn[1][2, 1] == decay.derivatives[2, 0] * scale.inverse_scales[2]
 
   #test case of only one active parameter as well on fresh data manager
   (test_reflections, test_experiments, params) = generated_single_input(
     generated_refl(), generated_single_exp(), generated_KB_param)
   assert len(test_experiments) == 1
   assert len(test_reflections) == 1
-  experiments = ScalingModelFactory.Factory.create(params, test_experiments, test_reflections)
-  scaler = ScalerFactory.Factory.create(params, experiments, test_reflections)
+  experiments = create_scaling_model(params, test_experiments, test_reflections)
+  scaler = create_scaler(params, experiments, test_reflections)
   apm = scaling_active_parameter_manager(scaler.components, ['scale'])
 
   #need to set the inverse scales for this test dataset.
@@ -256,7 +261,8 @@ def test_basis_function(generated_KB_param):
   basis_fn = basis_func.return_basis()
 
   #now check that the inverse scale factor was correctly calculated
-  assert list(basis_fn[0]) == list([new_S] * len(scaler.components['scale'].inverse_scales))
+  assert list(basis_fn[0]) == list([new_S] *
+    len(scaler.components['scale'].inverse_scales))
 
   #now check that the derivative matrix was correctly calculated
   assert basis_fn[1][0, 0] == scaler.components['scale'].derivatives[0, 0]
@@ -268,8 +274,8 @@ def test_target_function(generated_KB_param):
     generated_refl(), generated_single_exp(), generated_KB_param)
   assert len(test_experiments) == 1
   assert len(test_reflections) == 1
-  experiments = ScalingModelFactory.Factory.create(params, test_experiments, test_reflections)
-  scaler = ScalerFactory.Factory.create(params, experiments, test_reflections)
+  experiments = create_scaling_model(params, test_experiments, test_reflections)
+  scaler = create_scaler(params, experiments, test_reflections)
   assert scaler.id_ == 'KB'
 
   #setup of data manager
@@ -282,7 +288,8 @@ def test_target_function(generated_KB_param):
   scaler.update_for_minimisation(apm)
 
   #first get residual and gradients
-  res, grad = scaler.get_target_function(apm)
+  target = ScalingTarget(scaler, apm)
+  res, grad = target.compute_functional_gradients()
   assert res > 1e-8, """residual should not be zero, or the gradient test
     below will not really be working!"""
   f_d_grad = calculate_gradient_fd(scaler, apm)
