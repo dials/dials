@@ -7,6 +7,8 @@ import numpy
 import iotbx.phil
 from libtbx import table_utils
 
+import dials.util.banner
+
 help_message = '''
 
 Examples::

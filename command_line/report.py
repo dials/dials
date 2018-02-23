@@ -18,6 +18,7 @@ import math
 
 from collections import OrderedDict
 from dials.array_family import flex
+import dials.util.banner
 
 RAD2DEG = 180/math.pi
 

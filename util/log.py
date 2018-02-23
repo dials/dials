@@ -89,6 +89,7 @@ def config(verbosity=1, info='', debug='', name='dials'):
       },
     }
   })
+  import dials.util.banner
 
 def config_simple_stdout(name='dials'):
   '''
@@ -126,6 +127,8 @@ def config_simple_stdout(name='dials'):
       },
     }
   })
+
+  import dials.util.banner
 
 
 class CacheHandler(logging.Handler):

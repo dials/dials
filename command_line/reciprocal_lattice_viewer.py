@@ -2,7 +2,7 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 from gltbx import wx_viewer
 import copy
 import wx
@@ -13,6 +13,7 @@ from scitbx.math import minimum_covering_sphere
 from dials.array_family import flex
 from scitbx import matrix
 import libtbx.phil
+import dials.util.banner
 
 help_message = '''
 
