@@ -8,62 +8,6 @@ from scitbx import lbfgs, sparse
 
 logger = logging.getLogger('dials')
 
-class LBFGS_optimiser(object):
-  '''Class that takes in scaler object and runs an LBFGS minimisation'''
-  def __init__(self, scaler, apm):
-    logger.info(('\n'+'*'*40+'\n'+'Initialising LBFGS optimiser instance. \n'))
-    self.scaler = scaler
-    self.apm = apm
-    self.x = self.apm.x
-    self.residuals = []
-    self.core_params = lbfgs.core_parameters(maxfev=15)
-    self.termination_params = lbfgs.termination_parameters(max_iterations=15)
-    lbfgs.run(target_evaluator=self, core_params=self.core_params,
-              termination_params=self.termination_params)
-
-  def compute_functional_and_gradients(self):
-    '''first calculate the updated values of the scale factors and Ih,
-    before calculating the residual and gradient functions'''
-    self.scaler.update_for_minimisation(self.apm)
-    f, g = self.scaler.get_target_function(self.apm)
-    logger.debug('\nParameter values \n')
-    logger.debug(str(list(self.x)) + '\n')
-    logger.debug('Parameter derivatives \n')
-    logger.debug(str(list(g)) + '\n')
-    #f = flex.sum(f)
-    self.residuals.append(f)
-    logger.info("Residual sum: %12.6g" % f)
-    return f, g
-
-  def return_scaler(self):
-    '''return scaler method'''
-    from dials.algorithms.scaling.Scaler import MultiScalerBase
-    if not isinstance(self.scaler, MultiScalerBase):
-      if 'scale' in self.apm.components:
-        self.scaler.normalise_scale_component()
-      if 'decay' in self.apm.components:
-        self.scaler.normalise_decay_component()
-    return self.scaler
-
-  def make_all_scales_positive(self, param_name):
-    '''catcher that checks all the scale factors are positive in the standard
-    parameterization. If they are not, the assumption is that the algorithm
-    has got stuck in a local minimum, likely due to a few bad datapoints.
-    To cure, the absolute values of the scale factors are taken and the
-    minimizer is called again until only positive scale factors are obtained.'''
-    if (self.x < 0.0).count(True) > 0.0:
-      logger.info("""%s of the scale factors is/are negative, taking the absolute
-      values and trying again""" % ((self.x < 0.0).count(True)))
-      self.x = abs(self.x)
-      lbfgs.run(target_evaluator=self, core_params=self.core_params,
-                termination_params=self.termination_params)
-      if (self.x < 0.0).count(True) > 0.0:
-        self.make_all_scales_positive(param_name)
-      else:
-        logger.info("all scales should now be positive")
-    else:
-      logger.info("all scales are positive")
-
 class error_scale_LBFGSoptimiser(object):
   '''Class that minimises an error model for an Ih_table'''
   def __init__(self, Ih_table, starting_values):
@@ -169,3 +113,22 @@ class error_scale_LBFGSoptimiser(object):
     gradient = gradient + flex.double([-1.0 * 2.0 * (1.0 - self.x[0]),
                                        1.0 * 2.0 * self.x[1]])
     return gradient
+
+"""def make_all_scales_positive(self, param_name):
+    '''catcher that checks all the scale factors are positive in the standard
+    parameterization. If they are not, the assumption is that the algorithm
+    has got stuck in a local minimum, likely due to a few bad datapoints.
+    To cure, the absolute values of the scale factors are taken and the
+    minimizer is called again until only positive scale factors are obtained.'''
+    if (self.x < 0.0).count(True) > 0.0:"""
+'''    logger.info("""%s of the scale factors is/are negative, taking the absolute
+      values and trying again""" % ((self.x < 0.0).count(True)))'''
+"""    self.x = abs(self.x)
+      lbfgs.run(target_evaluator=self, core_params=self.core_params,
+                termination_params=self.termination_params)
+      if (self.x < 0.0).count(True) > 0.0:
+        self.make_all_scales_positive(param_name)
+      else:
+        logger.info("all scales should now be positive")
+    else:
+      logger.info("all scales are positive")"""

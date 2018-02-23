@@ -107,17 +107,14 @@ class ScalingRefinery(object):
     if isinstance(self._scaler, SingleScalerBase):
       if self._parameters.var_cov_matrix:
         self._scaler.update_var_cov(self._parameters)
-        #self._scaler.var_cov_matrix = self._parameters.var_cov_matrix
     elif self._scaler.id_ == 'multi':
       if self._parameters.apm_list[0].var_cov_matrix:
         for i, scaler in enumerate(self._scaler.single_scalers):
           scaler.update_var_cov(self._parameters.apm_list[i])
-          #scaler.var_cov_matrix = self._parameters.apm_list[i].var_cov_matrix
     elif self._scaler.id_ == 'target':
       if self._parameters.apm_list[0].var_cov_matrix:
         for i, scaler in enumerate(self._scaler.unscaled_scalers):
           scaler.update_var_cov(self._parameters.apm_list[i])
-          #scaler.var_cov_matrix = self._parameters.apm_list[i].var_cov_matrix
 
     if not isinstance(self._scaler, MultiScalerBase):
       if 'scale' in self._parameters.components:
@@ -129,9 +126,9 @@ class ScalingRefinery(object):
 
 class ScalingSimpleLBFGS(SimpleLBFGS, ScalingRefinery):
   """Adapt Refinery for L-BFGS minimiser"""
-  def __init__(self, scaler, *args, **kwargs):
+  def __init__(self, *args, **kwargs):
     super(ScalingSimpleLBFGS, self).__init__(*args, **kwargs)
-    ScalingRefinery.__init__(self, scaler)
+    ScalingRefinery.__init__(self, self._target.scaler)
 
   def compute_functional_gradients_and_curvatures(self):
     """overwrite method to avoid calls to 'blocks' methods of target"""
@@ -187,7 +184,7 @@ class ScalingGaussNewtonIterations(ScalingLstbxBuildUpMixin, GaussNewtonIteratio
   max_shift_over_esd = 15
   convergence_as_shift_over_esd = 1e-5
 
-  def __init__(self, scaler, target, prediction_parameterisation, constraints_manager=None,
+  def __init__(self, target, prediction_parameterisation, constraints_manager=None,
                log=None, verbosity=0, tracking=None,
                max_iterations=20, **kwds):
 
@@ -195,13 +192,13 @@ class ScalingGaussNewtonIterations(ScalingLstbxBuildUpMixin, GaussNewtonIteratio
              self, target, prediction_parameterisation, constraints_manager,
              log=log, verbosity=verbosity, tracking=tracking,
              max_iterations=max_iterations)
-    ScalingLstbxBuildUpMixin.__init__(self, scaler)
+    ScalingLstbxBuildUpMixin.__init__(self, self._target.scaler)
 
 class ScalingLevenbergMarquardtIterations(ScalingLstbxBuildUpMixin, LevenbergMarquardtIterations):
   """Refinery implementation, employing lstbx Levenberg Marquadt
   iterations"""
 
-  def __init__(self, scaler, target, prediction_parameterisation, constraints_manager=None,
+  def __init__(self, target, prediction_parameterisation, constraints_manager=None,
                log=None, verbosity=0, tracking=None,
                max_iterations=20, **kwds):
 
@@ -209,4 +206,4 @@ class ScalingLevenbergMarquardtIterations(ScalingLstbxBuildUpMixin, LevenbergMar
              self, target, prediction_parameterisation, constraints_manager,
              log=log, verbosity=verbosity, tracking=tracking,
              max_iterations=max_iterations)
-    ScalingLstbxBuildUpMixin.__init__(self, scaler)
+    ScalingLstbxBuildUpMixin.__init__(self, self._target.scaler)

@@ -237,6 +237,11 @@ def plot_absorption_surface(experiment, outputfile=None):
                            '%.6f' % ((Intensity.min()*0.5) + (Intensity.max()*0.5)),
                            '%.6f' % ((Intensity.min()*0.25) + (Intensity.max()*0.75)),
                            '%.6f' % Intensity.max()])
+  #ax2 = plt.subplot(gs[1, 0])
+  #data = [list(params)[0:5],list(params)[5:10],list(params)[10:15],list(params)[15:20]]
+  #errors = [list(experiment.scaling_model.components['absorption'].parameter_esds)]
+  #ax2.table(cellText=data, loc='top')
+  #ax2.axis("off")
   if outputfile:
     plt.savefig(outputfile)
     print("Saving plot to %s" % outputfile)

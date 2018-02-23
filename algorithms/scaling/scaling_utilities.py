@@ -26,7 +26,6 @@ def parse_multiple_datasets(reflections):
   single_reflection_tables = []
   for refl_table in reflections:
     dataset_ids = set(refl_table['id']).difference(set([-1]))
-    print(dataset_ids)
     n_datasets = len(dataset_ids)
     if n_datasets > 1:
       logger.info(('\nDetected existence of a multi-dataset scaled reflection table {sep}'

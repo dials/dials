@@ -6,8 +6,6 @@ from cctbx import miller, crystal
 from scitbx import sparse
 from dials_scaling_helpers_ext import row_multiply
 import iotbx.merging_statistics
-from dials.algorithms.scaling.target_function import \
-  target_function, target_function_fixedIh
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.scaling_utilities import (sph_harm_table,
   reject_outliers, calculate_wilson_outliers, calc_normE2)
@@ -78,13 +76,6 @@ class ScalerBase(object):
   def expand_scales_to_all_reflections(self, caller=None):
     '''expand scales from a subset to all reflections'''
     pass
-
-  def get_target_function(self, apm):
-    '''call the target function'''
-    return target_function(self, apm).return_targets()
-
-  def get_residuals_jacobian_weight(self, apm):
-    return target_function(self, apm).return_residuals_jacobian_weight()
 
   def get_basis_function(self, apm):
     '''call thebasis function'''
@@ -164,34 +155,6 @@ class ScalerBase(object):
       #eliminate_sys_absent=False, sigma_filtering=None)
     return ([result], scaled_ids[0])
 
-  def calc_correlation(self):
-    if isinstance(self, MultiScaler):
-      array_list = []
-      for scaler in self.single_scalers:
-        u_c = scaler.experiments.crystal.get_unit_cell().parameters()
-        if self.params.scaling_options.force_space_group:
-          s_g_symbol = self.params.scaling_options.force_space_group
-          crystal_symmetry = crystal.symmetry(unit_cell=u_c,
-            space_group_symbol=s_g_symbol)
-        else:
-          s_g = scaler.experiments.crystal.get_space_group()
-          crystal_symmetry = crystal.symmetry(unit_cell=u_c,
-            space_group=s_g)
-        miller_set = miller.set(crystal_symmetry=crystal_symmetry,
-          indices=scaler.Ih_table.asu_miller_index, anomalous_flag=False)
-        scaled_intensities = scaler.Ih_table.intensities/scaler.Ih_table.inverse_scale_factors
-        sigmas = (scaler.Ih_table.variances**0.5)/scaler.Ih_table.inverse_scale_factors
-        i_obs = miller.array(miller_set, data=scaled_intensities, sigmas=sigmas)
-        array_list.append(i_obs)
-      correl_list = []
-      for array_1 in array_list:
-        for array_2 in array_list:
-          correl = array_1.correlation(other=array_2)
-          correl_list.append(correl.coefficient())
-      return correl_list
-    return None
-
-
 
 class SingleScalerBase(ScalerBase):
   '''
@@ -243,8 +206,8 @@ class SingleScalerBase(ScalerBase):
     This is applicable if only some parameters have been refined in this cycle.'''
     var_cov_list = apm.var_cov_matrix #values are passed as a list from refinery
     if int(len(var_cov_list)**0.5) == self.var_cov_matrix.n_rows:
-      self._var_cov.assign_block(var_cov_list.matrix_copy_block(0, 0, apm.n_active_params,
-        apm.n_active_params), 0, 0)
+      self._var_cov.assign_block(var_cov_list.matrix_copy_block(0, 0,
+        apm.n_active_params, apm.n_active_params), 0, 0)
     else: #need to set part of the var_cov matrix e.g. if only refined some params
       #first work out the order in self._var_cov
       cumul_pos_dict = {}
@@ -429,10 +392,8 @@ class SingleScalerBase(ScalerBase):
 
   def compute_restraints_residuals_jacobian(self, apm):
     restraints = None
-    restr = self.calc_absorption_constraint(apm)
+    restr = self.calc_absorption_restraint(apm)
     if restr:
-      #resid_restr = flex.float([])
-      #resid_restr.append(flex.sum(restr[0]))
       resid_restr = restr[0] # list
       surface_weights = self.absorption_weights
       n_abs_params = len(restr[0])
@@ -444,16 +405,16 @@ class SingleScalerBase(ScalerBase):
       restraints = [resid_restr, jacobian, flex.double([1.0] * n_abs_params)]
     return restraints
 
-  def calc_absorption_constraint(self, apm):
-    '''calculates a constraint for the spherical harmonic absorption correction.
+  def calc_absorption_restraint(self, apm):
+    '''calculates a restraint for the spherical harmonic absorption correction.
     Should only be called from target function if absorption in active params.'''
+    #note - move to a separate restraint manager?
     restraints = None
     if self.id_ == 'aimless':
       if 'absorption' in apm.components:
         abs_params = apm.select_parameters('absorption')
         residual = (self.absorption_weights * (abs_params)**2)
         gradient = (2.0 * self.absorption_weights * abs_params)
-        #return a gradient vector to be added to that calculated in target function
         gradient_vector = flex.double([])
         for comp in apm.components:
           if comp != 'absorption':
@@ -461,10 +422,6 @@ class SingleScalerBase(ScalerBase):
           elif comp == 'absorption':
             gradient_vector.extend(gradient)
         restraints = [residual, gradient_vector]
-    '''    return (residual, gradient_vector)
-      else:
-        return (flex.double([0.0]), flex.double([0.0] * apm.n_active_params))
-    return (flex.double([0.0]), flex.double([0.0] * apm.n_active_params))'''
     return restraints
 
   def calc_sf_variances(self):
@@ -545,9 +502,6 @@ class KBScaler(SingleScalerBase):
         'has now been applied to all reflections. {sep}').format(
         list(self.components['decay'].parameters)[0], sep='\n'))
     return expanded_scale_factors
-
-  
-
 
 class AimlessScaler(SingleScalerBase):
   '''
@@ -787,16 +741,16 @@ class MultiScalerBase(ScalerBase):
     self.single_scalers = single_scalers
     self._initial_keys = self.single_scalers[0].initial_keys
     self._params = params
-    self._experiments = experiments[0]
+    self._experiments = experiments[0] #what should this be set to - where exactly is used?
     self._Ih_table = JointIhTable(self.single_scalers)
 
   @abc.abstractmethod
-  def calc_absorption_constraint(self, apm):
-    'abstract method for combining the absorption constraints for multiple scalers'
+  def calc_absorption_restraint(self, apm):
+    'abstract method for combining the absorption restraints for multiple scalers'
     pass
 
   @staticmethod
-  def calc_multi_absorption_constraint(apm, scalers):
+  def calc_multi_absorption_restraint(apm, scalers):
     'method only called in aimless scaling'
     restraints = None
     scaler_ids = [scaler.id_ for scaler in scalers]
@@ -804,7 +758,7 @@ class MultiScalerBase(ScalerBase):
       R = flex.double([])
       G = flex.double([])
       for i, scaler in enumerate(scalers):
-        restr = scaler.calc_absorption_constraint(apm.apm_list[i])
+        restr = scaler.calc_absorption_restraint(apm.apm_list[i])
         if restr:
           R.extend(restr[0])
           G.extend(restr[1])
@@ -815,7 +769,7 @@ class MultiScalerBase(ScalerBase):
 
   @abc.abstractmethod
   def compute_restraints_residuals_jacobian(self, apm):
-    'abstract method for combining the absorption constraints for multiple scalers'
+    'abstract method for combining the absorption restraints for multiple scalers'
     pass
 
   @staticmethod
@@ -838,7 +792,7 @@ class MultiScalerBase(ScalerBase):
       n_row_cumul = 0
       for j, jac in enumerate(jacobian_list):
         scaler_no = scaler_list[j]
-        jacobian.assign_block(jac, n_row_cumul, apm.apm_data[scaler_no]['start_idx'] )
+        jacobian.assign_block(jac, n_row_cumul, apm.apm_data[scaler_no]['start_idx'])
         n_row_cumul += jac.n_rows
       restraints = [R, jacobian, flex.double([1.0]*len(R))]
     return restraints
@@ -893,8 +847,8 @@ class MultiScaler(MultiScalerBase):
     super(MultiScaler, self).__init__(params, experiments, single_scalers)
     logger.info('Completed initialisation of MultiScaler. \n' + '*'*40 + '\n')
 
-  def calc_absorption_constraint(self, apm):
-    return super(MultiScaler, MultiScaler).calc_multi_absorption_constraint(
+  def calc_absorption_restraint(self, apm):
+    return super(MultiScaler, MultiScaler).calc_multi_absorption_restraint(
       apm, self.single_scalers)
 
   def compute_restraints_residuals_jacobian(self, apm):
@@ -970,16 +924,6 @@ class TargetScaler(MultiScalerBase):
       scaler.apply_selection_to_SFs(sel)
     logger.info('Completed initialisation of TargetScaler. \n' + '*'*40 + '\n')
 
-  def get_target_function(self, apm):
-    '''override the target function method for fixed Ih'''
-    R = 0.0
-    G = flex.double([])
-    for i, scaler in enumerate(self.unscaled_scalers):
-      (Ri, Gi) = target_function_fixedIh(scaler, apm.apm_list[i]).return_targets()
-      R += Ri
-      G.extend(Gi)
-    return R, G
-
   def update_for_minimisation(self, apm):
     '''update the scale factors and Ih for the next iteration of minimisation'''
     for i, single_apm in enumerate(apm.apm_list):
@@ -989,8 +933,8 @@ class TargetScaler(MultiScalerBase):
       apm.apm_list[i].derivatives = basis_fn[1]
       scaler.Ih_table.inverse_scale_factors = basis_fn[0]
 
-  def calc_absorption_constraint(self, apm):
-    return super(TargetScaler, TargetScaler).calc_multi_absorption_constraint(
+  def calc_absorption_restraint(self, apm):
+    return super(TargetScaler, TargetScaler).calc_multi_absorption_restraint(
       apm, self.unscaled_scalers)
 
   def compute_restraints_residuals_jacobian(self, apm):

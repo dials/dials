@@ -13,7 +13,8 @@ By default, a scale, decay and absorption correction parameterisation for each
 dataset is used. One scaled.pickle and scaled_experiments.json files are output,
 which may contain data and scale models from multiple experiments. The reflection
 intensities are left unscaled and unmerged in the output, but an
-'inverse_scale_factor' column is added to the pickle file.
+'inverse_scale_factor' and 'inverse_scale_factor_variance' column is added to
+the pickle file.
 
 To plot the scale factors determined by this program, one should subsequently run:
 dials_scratch.plot_scaling_models scaled.pickle scaled_experiments.json
@@ -27,7 +28,6 @@ from libtbx import phil
 from dials.util import halraiser
 from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
 
-from dials.algorithms.scaling.minimiser_functions import LBFGS_optimiser
 from dials.algorithms.scaling.ScalingRefiner import ScalingSimpleLBFGS,\
   ScalingGaussNewtonIterations, ScalingLevenbergMarquardtIterations
 from dials.algorithms.scaling.model import ScalingModelFactory
@@ -147,13 +147,6 @@ def main(argv):
     from xia2.command_line.compare_merging_stats import plot_merging_stats
     plot_merging_stats(results, labels=plot_labels)
 
-  #correl_list = minimised.calc_correlation()
-  #if correl_list:
-  #  n = len(minimised.single_scalers)
-  #  print(correl_list)
-  #  for i in range(0, n*n, n):
-  #    print(correl_list[i:i+n])
-
   '''save scaled_experiments.json file'''
   save_experiments(experiments, params.output.experiments_out)
 
@@ -172,7 +165,7 @@ def perform_scaling(scaler, target_type=ScalingTarget):
   apm_factory = ParameterHandler.ActiveParameterFactory.create(scaler)
   for _ in range(apm_factory.n_cycles):
     apm = apm_factory.make_next_apm()
-    refinery = ScalingSimpleLBFGS(scaler, target=target_type(scaler, apm),
+    refinery = ScalingSimpleLBFGS(target=target_type(scaler, apm),
       prediction_parameterisation=apm, max_iterations=25)
     refinery.run()
     scaler = refinery.return_scaler()
@@ -201,11 +194,12 @@ def scaling_algorithm(scaler):
     scaler.update_error_model()
     scaler = perform_scaling(scaler)
 
+  '''now do one round of full matrix minimisation to determine errors'''
   if scaler.params.scaling_options.full_matrix_round:
     apm_factory = ParameterHandler.ActiveParameterFactory.create(scaler)
     for _ in range(apm_factory.n_cycles):
       apm = apm_factory.make_next_apm()
-      refinery = ScalingGaussNewtonIterations(scaler, target=ScalingTarget(scaler, apm),
+      refinery = ScalingGaussNewtonIterations(target=ScalingTarget(scaler, apm),
         prediction_parameterisation=apm, max_iterations=1)
       refinery.run()
       scaler = refinery.return_scaler()

@@ -35,15 +35,15 @@ class ScalingTarget(object):
     # cache rmsd calculation for achieved test
     R = self.calculate_residuals()
     if 'absorption' in self.apm.components_list:
-      restr = self.scaler.calc_absorption_constraint(self.apm)
+      restr = self.scaler.calc_absorption_restraint(self.apm)
       if restr:
-        R.extend(restr[0]) #need to add restraints?
+        R.extend(restr[0])
     self._rmsds = [(flex.sum((R))/self.scaler.Ih_table.size)**0.5]
     #print("rmsds %s" % self._rmsds)
     return self._rmsds
 
   def achieved(self):
-    return False
+    return False #implement a method here?
 
   def calculate_residuals(self):
     '''returns a residual vector'''
@@ -68,18 +68,14 @@ class ScalingTarget(object):
     term_2 = (-2.0 * rhl * Ih_tab.weights * Ih_tab.inverse_scale_factors *
               Ih_tab.h_index_matrix) * dIh_by_dpi
     gradient = term_1 + term_2
-    #if 'absorption' in self.apm.components_list:
-    #  gradient += self.scaler.calc_absorption_constraint(self.apm)[1]
     return gradient
 
   def calculate_jacobian(self):
     '''returns a jacobian matrix of size Ih_table.size by len(self.apm.x)'''
     Ih_tab = self.scaler.Ih_table
-    gsq = ((Ih_tab.inverse_scale_factors)**2)#  * Ih_tab.weights
+    gsq = ((Ih_tab.inverse_scale_factors)**2)
     sumgsq = gsq * Ih_tab.h_index_matrix
-    #rhl = Ih_tab.intensities - (Ih_tab.Ih_values * Ih_tab.inverse_scale_factors)
     dIh = ((Ih_tab.intensities - (Ih_tab.Ih_values * 2.0 * Ih_tab.inverse_scale_factors)))
-    #  * Ih_tab.weights)
     dIh_g = row_multiply(self.apm.derivatives, dIh)
     dIh_red = dIh_g.transpose() * Ih_tab.h_index_matrix
     dIh_by_dpi = row_multiply(dIh_red.transpose(), 1.0/sumgsq)
@@ -93,7 +89,7 @@ class ScalingTarget(object):
       jacobian[:, i] = tot
     return jacobian
 
-  'methods for adaptlbfgs'
+  'the following methods are for adaptlbfgs'
   def compute_functional_gradients(self):
     return flex.sum(self.calculate_residuals()), self.calculate_gradients()
 
@@ -104,34 +100,25 @@ class ScalingTarget(object):
     'calculate restraints on parameters'
     restraints = None
     if 'absorption' in self.apm.components_list:
-      restr = self.scaler.calc_absorption_constraint(self.apm)
+      restr = self.scaler.calc_absorption_restraint(self.apm)
       if restr:
         resid_restr = flex.sum(restr[0]) #want just a value to add to total functional here
         grad_restr = restr[1]
         restraints = [resid_restr, grad_restr, None]
     return restraints #list of restraints to add to resid, grads and curvs?
 
-  'methods for adaptlstbx (GN/ LM algorithms)'
-  def compute_residuals(self): #for adaptlstbx (GN/ LM)
+  'the following methods are for adaptlstbx (GN/ LM algorithms)'
+  def compute_residuals(self):
     return self.calculate_residuals(), self.weights
 
-  def compute_residuals_and_gradients(self): #for adaptlstbx (GN/ LM)
+  def compute_residuals_and_gradients(self):
     return self.calculate_residuals(), self.calculate_jacobian(), self.weights
 
-  def compute_restraints_residuals_and_gradients(self): #for adaptlstbx (GN/ LM)
+  def compute_restraints_residuals_and_gradients(self):
+    'calculate restraints on parameters'
     restraints = None
     if 'absorption' in self.apm.components_list:
       restraints = self.scaler.compute_restraints_residuals_jacobian(self.apm)
-      '''restr = self.scaler.calc_absorption_constraint(self.apm)
-      resid_restr = restr[0] # list
-      surface_weights = self.scaler.absorption_weights
-      n_abs_params = len(restr[0])
-      n_tot_params = self.apm.n_active_params
-      jacobian = sparse.matrix(n_abs_params, n_tot_params)
-      offset = n_tot_params - n_abs_params
-      for i in range(n_abs_params):
-        jacobian[i, offset+i] = -1.0 * (surface_weights[i]**0.5)
-      restaints = [resid_restr, jacobian, flex.double([1.0] * n_abs_params)]'''
     return restraints
 
 class ScalingTargetFixedIH(ScalingTarget):
@@ -160,7 +147,7 @@ class ScalingTargetFixedIH(ScalingTarget):
     assert 0, 'method not yet implemented for targeted scaling'
 
 
-class target_function(object):
+"""class target_function(object):
   '''Class that takes in a scaler and returns a residual
   and gradient function for minimisation.'''
   def __init__(self, scaler, apm):
@@ -173,7 +160,7 @@ class target_function(object):
     R = ((((Ih_tab.intensities - (Ih_tab.inverse_scale_factors * Ih_tab.Ih_values))**2)
           * Ih_tab.weights))
     if 'absorption' in self.apm.components_list:
-      R.extend(self.scaler.calc_absorption_constraint(self.apm)[0]) #FIX TO ALLOW GN minim.
+      R.extend(self.scaler.calc_absorption_restraint(self.apm)[0]) #FIX TO ALLOW GN minim.
     return R
 
   def calculate_gradient(self):
@@ -193,7 +180,7 @@ class target_function(object):
               Ih_tab.h_index_matrix) * dIh_by_dpi
     gradient = term_1 + term_2
     if 'absorption' in self.apm.components_list:
-      gradient += self.scaler.calc_absorption_constraint(self.apm)[1]
+      gradient += self.scaler.calc_absorption_restraint(self.apm)[1]
     return gradient
 
   def calculate_residual_2(self):
@@ -202,7 +189,7 @@ class target_function(object):
     R = ((((Ih_tab.intensities - (Ih_tab.inverse_scale_factors * Ih_tab.Ih_values))**2)
           * Ih_tab.weights))
     #if 'absorption' in self.apm.components_list:
-    #  R.extend(self.scaler.calc_absorption_constraint(self.apm)[0]) #FIX TO ALLOW GN minim.
+    #  R.extend(self.scaler.calc_absorption_restraint(self.apm)[0]) #FIX TO ALLOW GN minim.
     return R
 
   def calculate_jacobian(self):
@@ -240,7 +227,7 @@ class target_function_fixedIh(target_function):
     Ih_tab = self.scaler.Ih_table
     rhl = Ih_tab.intensities - (Ih_tab.Ih_values * Ih_tab.inverse_scale_factors)
     gradient = (-2.0 * rhl * Ih_tab.weights * Ih_tab.Ih_values * self.apm.derivatives)
-    return gradient
+    return gradient"""
 
 """class xds_target_function_log(target_function):
   '''Subclass that takes a data manager object and returns a residual and
