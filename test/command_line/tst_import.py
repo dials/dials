@@ -175,6 +175,38 @@ class Test(object):
     beam_centre = imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0())
     assert approx_equal(beam_centre, (200,100))
 
+    # test slow_fast_beam_centre with a multi-panel CS-PAD image
+    dials_regression = os.path.join(self.path, os.pardir)
+    impath = os.path.join(dials_regression, "image_examples",
+        "LCLS_cspad_nexus", "idx-20130301060858401.cbf")
+    cmd = ('dials.import {0} slow_fast_beam_centre=134,42,18 '
+           'output.datablock=slow_fast_beam_centre.json').format(impath)
+    easy_run.fully_buffered(cmd).raise_if_errors()
+    assert os.path.exists('slow_fast_beam_centre.json')
+    datablock = load.datablock('slow_fast_beam_centre.json')[0]
+    imgset = datablock.extract_imagesets()[0]
+    # beam centre on 18th panel
+    s0 = imgset.get_beam().get_s0()
+    beam_centre = imgset.get_detector()[18].get_beam_centre_px(s0)
+    assert approx_equal(beam_centre, (42,134))
+    # check relative panel positions have not changed
+    from scitbx import matrix
+    o = matrix.col(imgset.get_detector()[0].get_origin())
+    offsets = []
+    for p in imgset.get_detector():
+      intra_pnl = o - matrix.col(p.get_origin())
+      offsets.append(intra_pnl.length())
+    cmd = ('dials.import {0} output.datablock=reference.json').format(impath)
+    easy_run.fully_buffered(cmd).raise_if_errors()
+    assert os.path.exists('reference.json')
+    ref_db = load.datablock('reference.json')[0]
+    ref_imset = ref_db.extract_imagesets()[0]
+    o = matrix.col(ref_imset.get_detector()[0].get_origin())
+    ref_offsets = []
+    for p in ref_imset.get_detector():
+      intra_pnl = o - matrix.col(p.get_origin())
+      ref_offsets.append(intra_pnl.length())
+    assert approx_equal(offsets, ref_offsets)
     print 'OK'
 
   def tst_from_image_files(self):
