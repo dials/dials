@@ -698,7 +698,7 @@ def export_mtz(integrated_data, experiment_list, hklout,
 
     s0 = experiment.beam.get_s0()
     s0n = matrix.col(s0).normalize().elems
-    logger.info('Beam vector: %.4f %.4f %.4f' % s0n)
+    logger.debug('Beam vector: %.4f %.4f %.4f' % s0n)
 
     for i in range(experiment.image_range[0], experiment.image_range[1]+1):
       _add_batch(mtz_file, experiment,
@@ -711,13 +711,11 @@ def export_mtz(integrated_data, experiment_list, hklout,
     experiment.data["batch_offset"] = flex.int(len(experiment.data["id"]), experiment.scan.get_batch_offset())
 
     # Calculate whether we have a ROT value for this experiment, and set the column
-    _, _, frac_image_id = experiment.data['xyzcal.px'].parts()
-    frac_image_id = flex.double(frac_image_id)
+    _, _, z = experiment.data['xyzcal.px'].parts()
     if experiment.scan:
-      # When getting angle, z_px counts from 0; image_index from 1
-      experiment.data["ROT"] = flex.double([experiment.scan.get_angle_from_image_index(z+1) for z in frac_image_id])
+      experiment.data["ROT"] = experiment.scan.get_angle_from_array_index(z)
     else:
-      experiment.data["ROT"] = frac_image_id
+      experiment.data["ROT"] = z
 
   # Update the mtz general information now we've processed the experiments
   mtz_file.set_space_group_info(experiment_list[0].crystal.get_space_group().info())
