@@ -7,8 +7,6 @@ import numpy
 import iotbx.phil
 from libtbx import table_utils
 
-import dials.util.banner
-
 help_message = '''
 
 Examples::
@@ -111,7 +109,7 @@ def show_beam(detector, beam):
 
 
 def run(args):
-
+  import dials.util.banner
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments
   from dials.util.options import flatten_datablocks
