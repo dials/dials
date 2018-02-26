@@ -3,8 +3,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Ignored Mathematica files shall be prefixed by _
+# Temporary files
 .cache
+.pytest_cache
+
+# Ignored Mathematica files shall be prefixed by _
 _*.nb
 *.fdb_latexmk
 *.gz
