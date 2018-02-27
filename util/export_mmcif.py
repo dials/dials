@@ -1,42 +1,32 @@
-#!/usr/bin/env python
-#
-# export_mmcif.py
-#
-#  Copyright (C) 2017 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
+
+import datetime
 import logging
-logger = logging.getLogger(__name__)
-from math import pi
+import math
+
+import dials.util.version
+import iotbx.cif.model
 from cctbx.sgtbx import bravais_types
 
-RAD2DEG = 180.0/pi
+logger = logging.getLogger(__name__)
+RAD2DEG = 180.0 / math.pi
 
 class MMCIFOutputFile(object):
   '''
   Class to output experiments and reflections as MMCIF file
-
   '''
 
   def __init__(self, filename):
     '''
     Init with the filename
-
     '''
-    import iotbx.cif.model
     self._cif = iotbx.cif.model.cif()
     self.filename = filename
 
   def write(self, experiments, reflections):
     '''
     Write the experiments and reflections to file
-
     '''
-    import iotbx.cif.model
 
     # Select reflections
     selection = reflections.get_flags(reflections.flags.integrated, all=True)
@@ -44,6 +34,13 @@ class MMCIFOutputFile(object):
 
     # Get the cif block
     cif_block = iotbx.cif.model.block()
+
+    # Audit trail
+    dials_version = dials.util.version.dials_version()
+    cif_block["_audit.creation_method"] = dials_version
+    cif_block["_audit.creation_date"] = datetime.date.today().isoformat()
+    cif_block["_computing.data_reduction"] = "%s (Winter, G. et al., 2018)" % dials_version
+    cif_block["_publ.section_references"] = "Winter, G. et al. (2018) Acta Cryst. D74, 85-97."
 
     # Hard coding X-ray
     cif_block["_pdbx_diffrn_data_section.id"] = 'dials'
@@ -189,7 +186,8 @@ class MMCIFOutputFile(object):
     self._cif['dials'] = cif_block
 
     # Print to file
-    print >>open(self.filename, "w"), self._cif
+    with open(self.filename, "w") as fh:
+      self._cif.show(out=fh)
 
     # Log
     logger.info("Wrote reflections to %s" % self.filename)

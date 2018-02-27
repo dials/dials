@@ -25,7 +25,7 @@ be_super_annoying = not os.getenv('DIALS_NOBANNER') and \
                      '1.14-' in os.getenv('PHENIX_VERSION', '')) # Become less annoying at end of July 2018
 try:
   import getpass
-  if getpass.getuser() == 'mep236777':
+  if getpass.getuser() == 'mep23677':
     sys.stdout.write("\033[31;1m")
     def print(x):
       for c in x:
