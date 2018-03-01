@@ -343,6 +343,12 @@ class ReflectionManager(object):
       # second test: reject reflections that lie outside the scan range
       passed2 = exp.scan.is_angle_valid(phi, deg=False)
 
+      # sanity check to catch a mutilated scan that does not make sense
+      if passed2.count(True) == 0:
+        from libtbx.utils import Sorry
+        raise Sorry("Experiment id {0} contains no reflections with valid "
+                    "scan angles".format(iexp))
+
       # combine tests
       to_update = passed1 & passed2
       to_keep.set_selected(sel, to_update)
