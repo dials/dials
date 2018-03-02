@@ -23,18 +23,6 @@ less_annoying_banner = 'DIALS (2018) Acta Cryst. D74, 85-97. https://doi.org/10.
 be_super_annoying = not os.getenv('DIALS_NOBANNER') and \
                     (time.time() < 1530403199 or \
                      '1.14-' in os.getenv('PHENIX_VERSION', '')) # Become less annoying at end of July 2018
-try:
-  import getpass
-  if getpass.getuser() == 'mep23677':
-    sys.stdout.write("\033[31;1m")
-    def print(x):
-      for c in x:
-        sys.stdout.write(c)
-        sys.stdout.flush()
-        time.sleep(0.015)
-      sys.stdout.write("\n")
-except ImportError:
-  pass
 if be_super_annoying:
   banner = super_annoying_banner
 else:
