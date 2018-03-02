@@ -18,6 +18,7 @@ from dxtbx.format.Format import Reader, Masker
 from dials.array_family import flex
 from dials.test.algorithms.indexing.test_index import run_one_indexing
 
+import pytest
 
 def random_rotation():
   return euler_angles_as_matrix([random.uniform(0,360) for i in xrange(3)])
@@ -48,8 +49,8 @@ def any_compatible_unit_cell(space_group, volume=None, asu_volume=None):
         (-alpha + beta + gamma) > 0 and
         (-alpha + beta + gamma) < 360):
       break
-    else:
-      print(a, b, c, alpha, beta, gamma)
+    #else:
+    #  print(a, b, c, alpha, beta, gamma)
 
   if sg_number <   3:
     params = (a, b, c, alpha, beta, gamma)
@@ -148,14 +149,13 @@ def add_random_noise_xyz(datablock, strong_spots, rmsds):
   strong_spots['xyzobs.px.value'] += errors
 
 
-def test_index_synthetic(dials_regression, tmpdir):
+@pytest.mark.parametrize(('space_group', 'unit_cell_volume'), [('P1', 1000), ('P2', 10000), ('P222', 10000), ('P23', 10000)])
+def test_index_synthetic(space_group, unit_cell_volume, dials_regression, tmpdir):
   tmpdir.chdir()
 
-  space_group = sgtbx.space_group_info(
-    number=random.choice((1,3,16,75,143,195))).group()
-
+  space_group = sgtbx.space_group_info(symbol=space_group).group()
   unit_cell = any_compatible_unit_cell(
-    space_group, volume=random.uniform(1e3, 1e6))
+    space_group, volume=unit_cell_volume)
 
   fname = os.path.join(dials_regression, "centroid_test_data", "datablock.json")
   datablock = load.datablock(fname, check_format=False)
