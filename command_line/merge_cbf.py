@@ -31,13 +31,50 @@ phil_scope = iotbx.phil.parse("""\
 merge_n_images = 2
   .type = int(value_min=1)
   .help = "Number of input images to average into a single output image"
+
+get_raw_data_from_imageset = True
+  .type = bool
+  .help = "By default the raw data is read via the imageset. This limits use"
+          "to single panel detectors where the format class does not make"
+          "modifications to the array size in the file. Set this option to"
+          "false in order to bypass the imageset and read the data as-is from"
+          "the CBF file"
+  .expert_level = 2
+
 output {
   image_prefix = sum_
     .type = path
 }
 """, process_includes=True)
 
-def merge_cbf(imageset, n_images, out_prefix="sum_"):
+def get_raw_data_from_file(imageset, i):
+  """Use cbflib_adaptbx directly to access the raw data array rather than
+  through the imageset, in order to work for multi-panel detectors and other
+  situations where the format class modifies the raw array"""
+  from cbflib_adaptbx import uncompress
+  import binascii
+  file_name = imageset.get_image_identifier(i)
+  with open(file_name, 'rb') as cbf:
+    data = cbf.read()
+  start_tag = binascii.unhexlify('0c1a04d5')
+  data_offset = data.find(start_tag) + 4
+  cbf_header = data[:data_offset - 4]
+  fast = slow = length = 0
+  for record in cbf_header.split('\n'):
+    if 'X-Binary-Size-Fastest-Dimension' in record:
+      fast = int(record.split()[-1])
+    elif 'X-Binary-Size-Second-Dimension' in record:
+      slow = int(record.split()[-1])
+    elif 'X-Binary-Size:' in record:
+      xbsize_record = record
+      length = int(record.split()[-1])
+  values = uncompress(packed = data[data_offset:data_offset+length],
+                            fast = fast, slow = slow)
+  return (values,)
+
+
+def merge_cbf(imageset, n_images, out_prefix="sum_",
+    get_raw_data_from_imageset=True):
 
   from dxtbx.format.FormatCBF import FormatCBF
   assert issubclass(imageset.get_format_class(), FormatCBF), (
@@ -60,7 +97,11 @@ def merge_cbf(imageset, n_images, out_prefix="sum_"):
 
       i_in = (i_out*n_images) + j
 
-      data_in = imageset.get_raw_data(i_in)
+      if get_raw_data_from_imageset:
+        data_in = imageset.get_raw_data(i_in)
+      else:
+        data_in = get_raw_data_from_file(imageset, i_in)
+
       assert len(data_in) == 1
       data_in = data_in[0]
       if data_out is None:
@@ -174,7 +215,8 @@ def run():
     assert len(imagesets) == 1
     imageset = imagesets[0]
 
-  merge_cbf(imageset, n_images, out_prefix=out_prefix)
+  merge_cbf(imageset, n_images, out_prefix=out_prefix,
+      get_raw_data_from_imageset=params.get_raw_data_from_imageset)
 
 if __name__ == '__main__':
   run()

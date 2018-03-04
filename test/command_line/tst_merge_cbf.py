@@ -27,6 +27,18 @@ def exercise():
   g = glob.glob(os.path.join(tmp_dir, "sum_*.cbf"))
   assert len(g) == 3
 
+  # test alternate mode of accessing image data
+  cmd += " image_prefix=sum2_ get_raw_data_from_imageset=false"
+  print cmd
+  result = easy_run.fully_buffered(cmd).raise_if_errors()
+  g2 = glob.glob(os.path.join(tmp_dir, "sum2_*.cbf"))
+  assert len(g2) == 3
+
+  # check summed images are the same in either case
+  import filecmp
+  for f1, f2 in zip(sorted(g), sorted(g2)):
+    assert filecmp.cmp(f1, f2)
+
 
 def run(args):
   if not have_dials_regression:
