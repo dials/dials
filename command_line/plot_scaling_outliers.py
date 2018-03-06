@@ -40,6 +40,8 @@ def main(argv):
 
 def plot_outliers(params, reflections):
   '''plots positions of outliers'''
+  reflections = reflections.select(reflections.get_flags(
+    reflections.flags.outlier_in_scaling))
   plt.figure(figsize=(11, 6))
   gs = gridspec.GridSpec(1, 2)
   ax1 = plt.subplot(gs[0, 0])
@@ -49,13 +51,11 @@ def plot_outliers(params, reflections):
   ax1.scatter(x, y, s=0.5)
   ax1.set_ylabel('detector y-position')
   ax1.set_xlabel('detector x-position')
-  #ax1.set_xlim([min(x), max(x)])
-  #ax1.set_ylim([min(y), max(y)])
   ax2.hist(z, bins=n_bins, label="n_bins = %s" % n_bins)
   ax2.set_ylabel('number of outliers')
   ax2.set_xlabel('image number')
-  #ax2.set_xlim([min(z), max(z)])
   ax2.legend()
+  print("Saving plot to %s" % params.output.plot_out)
   plt.savefig(params.output.plot_out)
 
 if __name__ == "__main__":

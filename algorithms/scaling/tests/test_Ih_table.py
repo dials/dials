@@ -187,9 +187,9 @@ def test_joint_Ih_table(joint_test_input):
   (dm1, dm2) = joint_test_input
   Ih_table = JointIhTable([dm1, dm2])
 
-  assert list(Ih_table.asu_miller_index) == list(flex.miller_index([(0, 0, 1),
-    (0, 0, 2), (0, 0, 2), (0, 2, 0), (0, 4, 0), (0, 4, 0), (1, 0, 0), (1, 0, 0),
-    (1, 0, 0)]))
+  assert list(Ih_table.asu_miller_index) == list(flex.miller_index(
+    [(0, 0, 1), (0, 0, 2), (0, 0, 2), (0, 2, 0), (0, 4, 0), (1, 0, 0),
+    (1, 0, 0), (0, 4, 0), (1, 0, 0)]))
   assert list(Ih_table.Ih_values) == list(flex.double(
     [100.0, 50.0, 50.0, 60.0, 30.0, 80.0, 80.0, 30.0, 80.0]))
   assert Ih_table.size == 9
