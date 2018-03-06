@@ -3,6 +3,7 @@ Collection of factories for creating the scalers.
 '''
 import logging
 import pkg_resources
+from libtbx.utils import Sorry
 from dials.algorithms.scaling.scaler import MultiScaler, TargetScaler
 logger = logging.getLogger('dials')
 
@@ -20,7 +21,7 @@ def create_scaler(params, experiments, reflections):
     elif len(reflections) > 1: #else just make one multiscaler for all refls
       scaler = MultiScalerFactory.create(params, experiments, reflections)
     else:
-      assert 0, 'no reflection tables found to create the scaler'
+      raise Sorry("no reflection tables found to create a scaler")
   return scaler
 
 def is_scaled(experiments):
@@ -33,42 +34,6 @@ def is_scaled(experiments):
       is_already_scaled.append(False)
   return is_already_scaled
 
-"""class Factory(object):
-  '''
-  Factory for creating Scalers.
-  '''
-  @classmethod
-  def create(cls, params, experiments, reflections):
-    '''
-    create the scaling model defined by the params.
-    '''
-    if len(reflections) == 1:
-      scaler = SingleScalerFactory.create(params, experiments[0], reflections[0])
-    else:
-      is_scaled_list = cls.is_scaled(experiments)
-      n_scaled = is_scaled_list.count(True)
-      if (params.scaling_options.target is True and n_scaled < len(reflections)
-          and n_scaled > 0): #if only some scaled and want to do targeted scaling
-        scaler = TargetScalerFactory.create(params, experiments, reflections,
-          is_scaled_list)
-      elif len(reflections) > 1: #else just make one multiscaler for all refls
-        scaler = MultiScalerFactory.create(params, experiments, reflections)
-      else:
-        assert 0, 'no reflection tables found to create the scaler'
-    return scaler
-
-  @classmethod
-  def is_scaled(cls, experiments):
-    '''inspect scaling model to see if it has already been scaled.'''
-    is_already_scaled = []
-    for experiment in experiments:
-      if experiment.scaling_model.is_scaled:
-        is_already_scaled.append(True)
-      else:
-        is_already_scaled.append(False)
-    return is_already_scaled"""
-
-
 class SingleScalerFactory(object):
   'Factory for creating a scaler for a single dataset'
   @classmethod
@@ -79,7 +44,7 @@ class SingleScalerFactory(object):
         #finds relevant extension in dials.extensions.scaling_model_ext
         scalerfactory = entry_point.load().scaler()
         return scalerfactory(params, experiment, reflection, scaled_id)
-    assert 0, "Unable to find Scaler in dials.extensions.scaling_model_ext"""
+    raise Sorry("unable to find scaler in dials.extensions.scaling_model_ext")
 
 class MultiScalerFactory(object):
   'Factory for creating a scaler for multiple datasets'

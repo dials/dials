@@ -25,6 +25,7 @@ import logging
 import sys
 import libtbx.load_env
 from libtbx import phil
+from libtbx.utils import Sorry
 from libtbx.str_utils import make_sub_header
 from dials.util import halraiser
 from dials.util.options import OptionParser, flatten_reflections,\
@@ -110,24 +111,35 @@ def main(argv):
     reflections = parse_multiple_datasets(reflections)
     logger.info("Found %s reflection tables in total." % len(reflections))
     logger.info("Found %s experiments in total." % len(experiments))
+    s_g_1 = experiments[0].crystal.get_space_group()
+    for experiment in experiments:
+      if experiment.crystal.get_space_group() != s_g_1:
+        raise Sorry("""experiments have different space groups and cannot be
+        scaled together, please reanalyse the data so that the space groups
+        are consistent""")
 
-  assert len(experiments) == len(reflections), '''mismatched number of
-  experiments and reflection tables found'''
+  if len(experiments) != len(reflections):
+     raise Sorry("mismatched number of experiments and reflection tables found.")
 
-  #Perform any cutting of the dataset
-  if len(reflections) == 1:
-    if params.cut_data.exclude_image_range:
+  # Perform any cutting of the dataset before creating scaling models.
+  if params.cut_data.exclude_image_range:
+    if len(reflections) == 1:
       start_excl = params.cut_data.exclude_image_range[0]
       end_excl = params.cut_data.exclude_image_range[1]
       mask1 = start_excl < reflections[0]['xyzobs.px.value'].parts()[2]
       mask2 = end_excl > reflections[0]['xyzobs.px.value'].parts()[2]
       reflections[0].set_flags(mask1 & mask2, reflections[0].flags.user_excluded_in_scaling)
+    else:
+      raise Sorry("""exclude_image_range can only be used with one dataset,
+      not multiple datasets.""")
+  for reflection in reflections:
     if params.cut_data.max_resolution:
-      reflections[0].set_flags(reflections[0]['d'] < params.cut_data.max_resolution,
-      reflections[0].flags.user_excluded_in_scaling)
+      reflection.set_flags(reflection['d'] < params.cut_data.max_resolution,
+      reflection.flags.user_excluded_in_scaling)
     if params.cut_data.min_resolution:
-      reflections[0].set_flags(reflections[0]['d'] > params.cut_data.min_resolution,
-      reflections[0].flags.user_excluded_in_scaling)
+      reflection.set_flags(reflection['d'] > params.cut_data.min_resolution,
+      reflection.flags.user_excluded_in_scaling)
+
   # First create the scaling model if it didn't already exist in the
   # experiments files.
   experiments = create_scaling_model(params, experiments, reflections)

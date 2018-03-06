@@ -1,6 +1,7 @@
 import logging
 from collections import OrderedDict
 from dials.array_family import flex
+from libtbx.utils import Sorry
 
 logger = logging.getLogger('dials')
 
@@ -157,7 +158,7 @@ class ConcurrentAPMFactory(object):
       for param in self.data_managers[0].components:
         param_name.append(str(param))
       if not param_name:
-        assert 0, 'no parameters have been chosen for scaling, aborting process'
+        raise Sorry("No components have been chosen for scaling, aborting process.")
       self.param_lists = param_name
       self.apm = apm_type(self.data_managers[0].components, self.param_lists)
 
@@ -167,7 +168,7 @@ class ConcurrentAPMFactory(object):
         for param in data_manager.components:
           param_name.append(str(param))
         if not param_name:
-          assert 0, 'no parameters have been chosen for scaling, aborting process'
+          raise Sorry("No components have been chosen for scaling, aborting process.")
         self.param_lists.append(param_name)
       components = [i.components for i in self.data_managers]
       self.apm = multi_active_parameter_manager(components, self.param_lists,

@@ -140,7 +140,6 @@ class XscaleSMFactory(object):
   @classmethod
   def create(cls, params, experiments, reflections):
     '''create an XScale scaling model.'''
-    #assert 0, 'method not yet implemented'
     reflections = reflections.select(reflections['d'] > 0.0)
 
     #only create components that are specified in params?

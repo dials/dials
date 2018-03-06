@@ -116,7 +116,7 @@ class AimlessScalingModel(ScalingModelBase):
       'scale': {'parameters' : s_params, 'parameter_esds' : s_params_sds},
       'decay': {'parameters' : d_params, 'parameter_esds' : d_params_sds},
       'absorption': {'parameters' : abs_params, 'parameter_esds' : a_params_sds}}
-    
+
     return cls(parameters_dict, configdict, is_scaled)
 
 
