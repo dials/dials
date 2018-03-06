@@ -117,6 +117,12 @@ namespace dials { namespace af {
 
     // Bad reference
     BadReference = (1 << 21),
+
+    // Used in scaling
+    UserExcludedInScaling = (1 << 22),
+    OutlierInScaling = (1 << 23),
+    ExcludedForScaling = (1 << 24),
+    BadForScaling = UserExcludedInScaling | OutlierInScaling | ExcludedForScaling,
   };
 
 }} // namespace dials::af

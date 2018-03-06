@@ -813,6 +813,10 @@ namespace dials { namespace af { namespace boost_python {
         .value("failed_during_summation", FailedDuringSummation)
         .value("failed_during_profile_fitting", FailedDuringProfileFitting)
         .value("bad_reference", BadReference)
+        .value("user_excluded_in_scaling", UserExcludedInScaling)
+        .value("outlier_in_scaling", OutlierInScaling)
+        .value("excluded_for_scaling", ExcludedForScaling)
+        .value("bad_for_scaling", BadForScaling)
         ;
 
       // return the wrapped class
