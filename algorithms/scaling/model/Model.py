@@ -57,6 +57,8 @@ class ScalingModelBase(object):
     '''create a scaling model object from a dictionary'''
     pass
 
+  def set_error_model(self, error_model_params):
+    self._configdict.update({'error_model_parameters' : error_model_params})
 
 class AimlessScalingModel(ScalingModelBase):
   '''Factory to create a scaling model for an aimless-type parameterisation.'''

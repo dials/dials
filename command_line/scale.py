@@ -214,6 +214,26 @@ def perform_scaling(scaler, target_type=ScalingTarget):
     logger.info('\n'+'='*80+'\n')
   return scaler
 
+def perform_error_optimisation(scaler):
+  """Perform an optimisation of the sigma values."""
+  if isinstance(scaler, scaler_module.MultiScalerBase):
+    for s_scaler in scaler.single_scalers:
+      refinery = error_model_refinery(engine='SimpleLBFGS',
+        target=ErrorModelTarget(BasicErrorModel(s_scaler.Ih_table)),
+        max_iterations=100)
+      refinery.run()
+      error_model = refinery.return_error_manager()
+      s_scaler.update_error_model(error_model.refined_parameters)
+    scaler.Ih_table.update_weights_from_error_models()
+  else:
+    refinery = error_model_refinery(engine='SimpleLBFGS',
+      target=ErrorModelTarget(BasicErrorModel(scaler.Ih_table)),
+      max_iterations=100)
+    refinery.run()
+    error_model = refinery.return_error_manager()
+    scaler.update_error_model(error_model.refined_parameters)
+  return scaler
+
 def scaling_algorithm(scaler):
   """The main scaling algorithm."""
 
@@ -225,6 +245,11 @@ def scaling_algorithm(scaler):
     # scale factors to the whole reflection table.
     if scaler.params.scaling_options.only_target is True:
       scaler.expand_scales_to_all_reflections()
+
+      if scaler.params.weighting.optimise_error_model:
+        scaler = perform_error_optimisation(scaler)
+        scaler.apply_error_model_to_variances()
+
       scaler.join_multiple_datasets()
       return scaler
     # Now pass to a multiscaler ready for next round of scaling.
@@ -237,22 +262,9 @@ def scaling_algorithm(scaler):
 
   # Option to optimise the error model and then do another minimisation.
   if scaler.params.weighting.optimise_error_model:
-    if isinstance(scaler, scaler_module.MultiScalerBase):
-      for s_scaler in scaler.single_scalers:
-        refinery = error_model_refinery(engine='SimpleLBFGS',
-          target=ErrorModelTarget(BasicErrorModel(s_scaler.Ih_table)),
-          max_iterations=100)
-        refinery.run()
-        error_model = refinery.return_error_manager()
-        s_scaler.Ih_table.update_error_model(error_model.refined_parameters)
-      scaler.Ih_table.update_weights_from_error_models()
-    else:
-      refinery = error_model_refinery(engine='SimpleLBFGS',
-        target=ErrorModelTarget(BasicErrorModel(scaler.Ih_table)),
-        max_iterations=100)
-      refinery.run()
-      error_model = refinery.return_error_manager()
-      scaler.Ih_table.update_error_model(error_model.refined_parameters)
+    scaler.expand_scales_to_all_reflections()
+    scaler = perform_error_optimisation(scaler)
+    scaler.select_reflections_for_scaling()
     scaler = perform_scaling(scaler)
 
   # Now do one round of full matrix minimisation to determine errors.
@@ -271,6 +283,11 @@ def scaling_algorithm(scaler):
   # The minimisation has only been done on a subset on the data, so apply the
   # scale factors to the whole reflection table.
   scaler.expand_scales_to_all_reflections()
+
+  if scaler.params.weighting.optimise_error_model:
+    scaler = perform_error_optimisation(scaler)
+    scaler.apply_error_model_to_variances()
+
   if isinstance(scaler, scaler_module.MultiScalerBase):
     scaler.join_multiple_datasets()
   return scaler

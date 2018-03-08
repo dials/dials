@@ -35,7 +35,7 @@ class BasicErrorModel(object):
       + ((x[1]*self.Ih_table.intensities)**2))**0.5
     return sigmaprime
 
-  def calc_deltahl(self, x):
+  def calc_deltahl(self):
     """Calculate the normalised deviations from the model."""
     I_hl = self.Ih_table.intensities
     g_hl = self.Ih_table.inverse_scale_factors
@@ -47,7 +47,7 @@ class BasicErrorModel(object):
   def update_for_minimisation(self, x):
     """"Calculate the updated quantites."""
     self.sigmaprime = self.calc_sigmaprime(x)
-    self.delta_hl = self.calc_deltahl(x)
+    self.delta_hl = self.calc_deltahl()
     self.bin_variances = self.calculate_bin_variances()
 
   def create_summation_matrix(self):

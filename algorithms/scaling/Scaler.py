@@ -10,8 +10,8 @@ from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.scaling_utilities import (sph_harm_table,
   reject_outliers, calculate_wilson_outliers, calc_normE2)
 from dials.algorithms.scaling.reflection_weighting import Weighting
-from dials.algorithms.scaling.Ih_table import SingleIhTable, JointIhTable, IhTableBase
-from dials.algorithms.scaling.minimiser_functions import error_scale_LBFGSoptimiser
+from dials.algorithms.scaling.Ih_table import SingleIhTable,\
+  JointIhTable, IhTableBase
 logger = logging.getLogger('dials')
 
 class ScalerBase(object):
@@ -335,12 +335,13 @@ class SingleScalerBase(ScalerBase):
     if (self.params.scaling_options.reject_outliers and
       not isinstance(caller, MultiScalerBase)):
       self._reflection_table = self.round_of_outlier_rejection(self._reflection_table)
+    if self.params.weighting.optimise_error_model:
+      self.Ih_table = SingleIhTable(self._reflection_table)
 
-  def update_error_model(self):
+  def update_error_model(self, error_model_params):
     '''apply a correction to try to improve the error estimate.'''
-    self.params.weighting.error_model_params = (
-      error_scale_LBFGSoptimiser(self.Ih_table, flex.double([1.0, 0.01])).x)
-    self.Ih_table.update_error_model(self.params.weighting.error_model_params)
+    self.Ih_table.update_error_model(error_model_params)
+    self.experiments.scaling_model.set_error_model(list(error_model_params))
 
   @abc.abstractmethod
   def apply_selection_to_SFs(self, sel):
@@ -445,6 +446,12 @@ class SingleScalerBase(ScalerBase):
     logger.info(msg)
     return reflection_table
 
+  def apply_error_model_to_variances(self):
+    error_model = self.experiments.scaling_model.configdict['error_model_parameters']
+    self.reflection_table['variance'] = error_model[0] * (self.reflection_table['variance']
+      + ((error_model[1] * self.reflection_table['intensity'])**2))**0.5
+    logger.info('The error model determined has been applied to the variances')
+
 class KBScaler(SingleScalerBase):
   '''
   Scaler for single dataset using simple KB parameterisation.
@@ -455,14 +462,14 @@ class KBScaler(SingleScalerBase):
   def __init__(self, params, experiment, reflection, scaled_id=0):
     super(KBScaler, self).__init__(params, experiment, reflection, scaled_id)
     self.print_scale_init_msg()
-    self._select_reflections_for_scaling()
+    self.select_reflections_for_scaling()
     logger.info('Completed configuration of Scaler. \n\n' + '='*80 + '\n')
 
   @property
   def consecutive_scaling_order(self):
     return [['scale', 'decay']]
 
-  def _select_reflections_for_scaling(self):
+  def select_reflections_for_scaling(self):
     (refl_for_scaling, w_for_scaling, _) = (
       self._scaling_subset(self.reflection_table, self.params))
     self._Ih_table = SingleIhTable(refl_for_scaling, w_for_scaling.weights)
@@ -513,7 +520,7 @@ class AimlessScaler(SingleScalerBase):
     self.sph_harm_table = None
     self.absorption_weights = None
     self._initialise_scale_factors()
-    self._select_reflections_for_scaling()
+    self.select_reflections_for_scaling()
     logger.info('Completed configuration of Scaler. \n\n' + '='*80 + '\n')
 
   @property
@@ -540,7 +547,7 @@ class AimlessScaler(SingleScalerBase):
       self.absorption_weights *= self.params.parameterisation.surface_weight
     self.print_scale_init_msg()
 
-  def _select_reflections_for_scaling(self):
+  def select_reflections_for_scaling(self):
     (refl_for_scaling, weights_for_scaling, selection) = (
       self._scaling_subset(self.reflection_table, self.params,
       error_model_params=self.params.weighting.error_model_params))
@@ -627,7 +634,7 @@ class XscaleScaler(SingleScalerBase):
   def __init__(self, params, experiment, reflection, scaled_id=0):
     super(XscaleScaler, self).__init__(params, experiment, reflection, scaled_id)
     self._initialise_scale_factors()
-    self._select_reflections_for_scaling()
+    self.select_reflections_for_scaling()
     logger.info('Completed configuration of Scaler. \n\n' + '='*80 + '\n')
 
   @property
@@ -676,7 +683,7 @@ class XscaleScaler(SingleScalerBase):
     refl_table['normalised_y_det_values'] = ((refl_table['xyzobs.px.value'].parts()[1]
       - configdict['ymin']) / configdict['y_det_bin_width'])
 
-  def _select_reflections_for_scaling(self):
+  def select_reflections_for_scaling(self):
     (refl_for_scaling, weights_for_scaling, _) = (
       self._scaling_subset(self.reflection_table, self.params,
       error_model_params=self.params.weighting.error_model_params))
@@ -833,6 +840,15 @@ class MultiScalerBase(ScalerBase):
     logger.info(msg)
     return reflection_table
 
+  def apply_error_model_to_variances(self):
+    """Update variances of individual reflection tables."""
+    for scaler in self.single_scalers:
+      scaler.apply_error_model_to_variances()
+
+  def select_reflections_for_scaling(self):
+    for scaler in self.single_scalers:
+      scaler.select_reflections_for_scaling()
+
 class MultiScaler(MultiScalerBase):
   '''
   Scaler for multiple datasets - takes in params, experiments and
@@ -854,10 +870,8 @@ class MultiScaler(MultiScalerBase):
     return super(MultiScaler, MultiScaler).compute_multi_restraints_residuals_jacobian(
       apm, self.single_scalers)
 
-  def update_error_model(self):
-    for scaler in self.single_scalers:
-      scaler.update_error_model()
-    self._Ih_table = JointIhTable(self.single_scalers)
+  def update_error_model(self, error_model_params):
+    self.Ih_table.update_error_model(error_model_params)
 
   def update_for_minimisation(self, apm):
     '''update the scale factors and Ih for the next iteration of minimisation,

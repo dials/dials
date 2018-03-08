@@ -153,6 +153,7 @@ class ErrorModelRefinery(object):
     self.error_manager.refined_parameters = self._target.x
     logger.info("\nMinimised error model with parameters {0:.5f} and {1:.5f}. {sep}"
           .format(self._target.x[0], abs(self._target.x[1]), sep='\n'))
+    
     return self.error_manager
 
 
