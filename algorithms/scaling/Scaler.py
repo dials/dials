@@ -116,7 +116,7 @@ class ScalerBase(object):
     #if params.weighting.tukey_biweighting and Ih_table:
     #  weights_for_scaling.tukey_biweighting(Ih_table)
     if error_model_params:
-      weights_for_scaling.apply_aimless_error_model(reflection_table,
+      weights_for_scaling.apply_error_model(reflection_table,
         error_model_params)
     return weights_for_scaling
 
@@ -340,7 +340,7 @@ class SingleScalerBase(ScalerBase):
     '''apply a correction to try to improve the error estimate.'''
     self.params.weighting.error_model_params = (
       error_scale_LBFGSoptimiser(self.Ih_table, flex.double([1.0, 0.01])).x)
-    self.Ih_table.update_aimless_error_model(self.params.weighting.error_model_params)
+    self.Ih_table.update_error_model(self.params.weighting.error_model_params)
 
   @abc.abstractmethod
   def apply_selection_to_SFs(self, sel):

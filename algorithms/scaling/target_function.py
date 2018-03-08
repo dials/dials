@@ -1,18 +1,22 @@
-'''
-Classes that take in a scaler and return a residual and gradient
-vector for minimisation for different scaling parameterisations.
-'''
-import abc
+"""
+This file defines targets for scaling.
+
+These are initialised with a scaler and an active parameter manager,
+and have implementations of residual/gradient calculations for
+scaling.
+"""
+import logging
 from dials.array_family import flex
 from dials_scaling_helpers_ext import row_multiply
 from scitbx import sparse
 
 
 class ScalingTarget(object):
-  '''A class to be used by a Scaling Refinery to calculate gradients,
+  """
+  A class to be used by a Scaling Refinery to calculate gradients,
   residuals etc required by the Refinery for minimisation.
-  '''
-  __metaclass__ = abc.ABCMeta
+  '"""
+  
   _grad_names = ['dI_dp']
   rmsd_names = ["RMSD_I"]
   rmsd_units = ["a.u"]
@@ -29,10 +33,11 @@ class ScalingTarget(object):
     self.scaler.update_for_minimisation(self.apm)
 
   def get_num_matches(self):
+    """Return the number of reflections in current minimisation cycle."""
     return self.scaler.Ih_table.size
 
   def rmsds(self):
-    """calculate unweighted RMSDs for the matches"""
+    """Calculate unweighted RMSDs for the matches."""
     # cache rmsd calculation for achieved test
     R = self.calculate_residuals()
     if 'absorption' in self.apm.components_list:
@@ -47,14 +52,14 @@ class ScalingTarget(object):
     return False #implement a method here?
 
   def calculate_residuals(self):
-    '''returns a residual vector'''
+    """Return the residual vector."""
     Ih_tab = self.scaler.Ih_table
     R = ((((Ih_tab.intensities - (Ih_tab.inverse_scale_factors * Ih_tab.Ih_values))**2)
           * Ih_tab.weights))
     return R
 
   def calculate_gradients(self):
-    '''returns a gradient vector on length len(self.apm.x)'''
+    """Return a gradient vector on length len(self.apm.x)."""
     Ih_tab = self.scaler.Ih_table
     gsq = ((Ih_tab.inverse_scale_factors)**2) * Ih_tab.weights
     sumgsq = gsq * Ih_tab.h_index_matrix
@@ -72,7 +77,7 @@ class ScalingTarget(object):
     return gradient
 
   def calculate_jacobian(self):
-    '''returns a jacobian matrix of size Ih_table.size by len(self.apm.x)'''
+    """Calculate the jacobian matrix, size Ih_table.size by len(self.apm.x)."""
     Ih_tab = self.scaler.Ih_table
     invsumgsq = 1.0 / ((Ih_tab.inverse_scale_factors)**2) * Ih_tab.h_index_matrix
     dIh = ((Ih_tab.intensities - (Ih_tab.Ih_values * 2.0 * Ih_tab.inverse_scale_factors)))
@@ -119,9 +124,10 @@ class ScalingTarget(object):
     return restraints
 
 class ScalingTargetFixedIH(ScalingTarget):
-  '''A special implementation of scaling target for when the scaling is to be
+  """A special implementation of scaling target for when the scaling is to be
   done against a fixed reference Ih set (i.e scaler is a TargetScaler)
-  '''
+  """
+  
   def calculate_gradients(self):
     G = flex.double([])
     for i, unscaled_scaler in enumerate(self.scaler.unscaled_scalers):

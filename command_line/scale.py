@@ -30,7 +30,8 @@ from libtbx.str_utils import make_sub_header
 from dials.util import halraiser
 from dials.util.options import OptionParser, flatten_reflections,\
   flatten_experiments
-from dials.algorithms.scaling.scaling_refiner import scaling_refinery
+from dials.algorithms.scaling.scaling_refiner import scaling_refinery,\
+  error_model_refinery
 from dials.algorithms.scaling.model.scaling_model_factory import \
   create_scaling_model
 from dials.algorithms.scaling.scaler_factory import create_scaler,\
@@ -39,6 +40,10 @@ from dials.algorithms.scaling import scaler as scaler_module
 from dials.algorithms.scaling.parameter_handler import create_apm
 from dials.algorithms.scaling.target_function import ScalingTarget,\
   ScalingTargetFixedIH
+from dials.algorithms.scaling.error_model.error_model import \
+  BasicErrorModel
+from dials.algorithms.scaling.error_model.error_model_target import \
+  ErrorModelTarget
 from dials.algorithms.scaling.scaling_utilities import (
   parse_multiple_datasets, save_experiments, save_reflections)
 
@@ -128,7 +133,8 @@ def main(argv):
       end_excl = params.cut_data.exclude_image_range[1]
       mask1 = start_excl < reflections[0]['xyzobs.px.value'].parts()[2]
       mask2 = end_excl > reflections[0]['xyzobs.px.value'].parts()[2]
-      reflections[0].set_flags(mask1 & mask2, reflections[0].flags.user_excluded_in_scaling)
+      reflections[0].set_flags(mask1 & mask2,
+        reflections[0].flags.user_excluded_in_scaling)
     else:
       raise Sorry("""exclude_image_range can only be used with one dataset,
       not multiple datasets.""")
@@ -209,7 +215,7 @@ def perform_scaling(scaler, target_type=ScalingTarget):
   return scaler
 
 def scaling_algorithm(scaler):
-  """ The main scaling algorithm."""
+  """The main scaling algorithm."""
 
   if scaler.id_ == 'target':
     # Do a scaling round against a target of already scaled datasets.
@@ -228,9 +234,25 @@ def scaling_algorithm(scaler):
   # From here onwards, scaler should only be a SingleScaler
   # or MultiScaler (not TargetScaler).
   scaler = perform_scaling(scaler)
-  # Optimise the error model and then do another minimisation.
+
+  # Option to optimise the error model and then do another minimisation.
   if scaler.params.weighting.optimise_error_model:
-    scaler.update_error_model()
+    if isinstance(scaler, scaler_module.MultiScalerBase):
+      for s_scaler in scaler.single_scalers:
+        refinery = error_model_refinery(engine='SimpleLBFGS',
+          target=ErrorModelTarget(BasicErrorModel(s_scaler.Ih_table)),
+          max_iterations=100)
+        refinery.run()
+        error_model = refinery.return_error_manager()
+        s_scaler.Ih_table.update_error_model(error_model.refined_parameters)
+      scaler.Ih_table.update_weights_from_error_models()
+    else:
+      refinery = error_model_refinery(engine='SimpleLBFGS',
+        target=ErrorModelTarget(BasicErrorModel(scaler.Ih_table)),
+        max_iterations=100)
+      refinery.run()
+      error_model = refinery.return_error_manager()
+      scaler.Ih_table.update_error_model(error_model.refined_parameters)
     scaler = perform_scaling(scaler)
 
   # Now do one round of full matrix minimisation to determine errors.

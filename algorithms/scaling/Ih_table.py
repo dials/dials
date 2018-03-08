@@ -32,6 +32,7 @@ class IhTableBase(object):
     self._h_index_matrix = None
     self._h_expand_matrix = None
     self._Ih_table = self._create_Ih_table(data)
+    self._n_h = None
 
   @abc.abstractmethod
   def _create_Ih_table(self, data):
@@ -128,7 +129,20 @@ class IhTableBase(object):
     h_index_matrix."""
     return self._h_expand_matrix
 
-  def update_aimless_error_model(self, error_params):
+  @property
+  def n_h(self):
+    """A vector of length n_refl, containing the number of reflections in
+    the respective symmetry group.
+    
+    Not calculated by default, as only needed for certain calculations."""
+    return self._n_h
+
+  def calc_nh(self):
+    """Calculate the n_h vector."""
+    return ((flex.double([1.0] * self.size) * self.h_index_matrix)
+      * self.h_expand_matrix)
+
+  def update_error_model(self, error_params):
     """Update the scaling weights based on an error model."""
     sigmaprime = (((self.variances) + ((error_params[1] * self.intensities)**2)
                   )**0.5) * error_params[0]
@@ -334,3 +348,11 @@ class JointIhTable(IhTableBase):
     Ih = sumgI/sumgsq
     self.inverse_scale_factors = scales
     self._Ih_table['Ih_values'] = Ih * self.h_expand_matrix
+
+  def update_weights_from_error_models(self):
+    """Reset weights, to be used after the weights of individual Ih tables
+    have been modified."""
+    weights = flex.double()
+    for Ih_tab in self._Ih_tables:
+      weights.extend(Ih_tab.weights)
+    self.weights = weights

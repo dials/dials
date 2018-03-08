@@ -1,6 +1,7 @@
-"""Contains classes for scaling refinement engines - inherited from the
-dials.refinement engine with a few methods overwritten to use them with scaling
-code"""
+""" Classes for scaling refinement engines.
+
+Classes are inherited from the dials.refinement engine with a few
+methods overwritten to use them with scaling code."""
 
 from __future__ import absolute_import, division
 import logging
@@ -9,8 +10,6 @@ from dials.algorithms.refinement.engine import SimpleLBFGS,\
 from libtbx.phil import parse
 #logger = logging.getLogger(__name__)
 logger = logging.getLogger('dials')
-
-
 
 TARGET_ACHIEVED = "RMSD target achieved"
 RMSD_CONVERGED = "RMSD no longer decreasing"
@@ -85,7 +84,7 @@ scaling_refinery_phil_scope = parse(scaling_refinery_phil_str)
 
 def scaling_refinery(engine, target, prediction_parameterisation,
     max_iterations):
-  'helper function to return correct engine based on phil parameters'
+  """Return the correct engine based on phil parameters."""
   if engine == 'SimpleLBFGS':
     return ScalingSimpleLBFGS(target=target,
       prediction_parameterisation=prediction_parameterisation,
@@ -101,38 +100,71 @@ def scaling_refinery(engine, target, prediction_parameterisation,
       prediction_parameterisation=prediction_parameterisation,
       max_iterations=max_iterations)
 
+def error_model_refinery(engine, target, max_iterations):
+  """Return the correct engine based on phil parameters.
+
+  Note that here the target also takes the role of the predication
+  parameterisation by implementing the set_param_vals and get_param_vals
+  methods (the code is organised in this way to allow the use of the
+  dials.refinement engines)."""
+  if engine == 'SimpleLBFGS':
+    return ErrorModelSimpleLBFGS(target=target,
+      prediction_parameterisation=target,
+      max_iterations=max_iterations)
+  '''elif engine == 'LBFGScurvs':
+    assert 0, 'LBFGS with curvatures not yet implemented'
+  elif engine == 'GaussNewton':
+    return ScalingGaussNewtonIterations(target=target,
+      prediction_parameterisation=prediction_parameterisation,
+      max_iterations=max_iterations)
+  elif engine == 'LevMar':
+    return ScalingLevenbergMarquardtIterations(target=target,
+      prediction_parameterisation=prediction_parameterisation,
+      max_iterations=max_iterations)'''
+
+def print_step_table(refinery):
+  """print useful output about refinement steps in the form of a simple table"""
+
+  from libtbx.table_utils import simple_table
+
+  logger.info("\nRefinement steps:")
+
+  header = ["Step", "Nref"]
+  for (name, units) in zip(refinery._target.rmsd_names, refinery._target.rmsd_units):
+    header.append(name + "\n(" + units + ")")
+
+  rows = []
+  for i in range(refinery.history.get_nrows()):
+    rmsds = [r for r in refinery.history["rmsd"][i]]
+    rows.append([str(i), str(refinery.history["num_reflections"][i])] + \
+      ["%.5g" % r for r in rmsds])
+
+  st = simple_table(rows, header)
+  logger.info(st.format())
+  logger.info(refinery.history.reason_for_termination)
+
+class ErrorModelRefinery(object):
+  """Mixin class to add extra return method."""
+  def __init__(self, error_model_manager):
+    self.error_manager = error_model_manager
+
+  def return_error_manager(self):
+    print_step_table(self)
+    self.error_manager.refined_parameters = self._target.x
+    logger.info("\nMinimised error model with parameters {0:.5f} and {1:.5f}. {sep}"
+          .format(self._target.x[0], abs(self._target.x[1]), sep='\n'))
+    return self.error_manager
+
 
 class ScalingRefinery(object):
   'mixin class to add extra return method'
   def __init__(self, scaler):
     self._scaler = scaler
 
-  def print_step_table(self):
-    """print useful output about refinement steps in the form of a simple table"""
-
-    from libtbx.table_utils import simple_table
-
-    logger.info("\nRefinement steps:")
-
-    header = ["Step", "Nref"]
-    for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):
-      header.append(name + "\n(" + units + ")")
-
-    rows = []
-    for i in range(self.history.get_nrows()):
-      rmsds = [r for r in self.history["rmsd"][i]]
-      rows.append([str(i), str(self.history["num_reflections"][i])] + \
-        ["%.5g" % r for r in rmsds])
-
-    st = simple_table(rows, header)
-    logger.info(st.format())
-    logger.info(self.history.reason_for_termination)
-
-
   def return_scaler(self):
     '''return scaler method'''
     from dials.algorithms.scaling.scaler import MultiScalerBase, SingleScalerBase
-    self.print_step_table()
+    print_step_table(self)
 
     if isinstance(self._scaler, SingleScalerBase):
       if self._parameters.var_cov_matrix:
@@ -159,6 +191,28 @@ class ScalingSimpleLBFGS(SimpleLBFGS, ScalingRefinery):
   def __init__(self, *args, **kwargs):
     super(ScalingSimpleLBFGS, self).__init__(*args, **kwargs)
     ScalingRefinery.__init__(self, self._target.scaler)
+
+  def compute_functional_gradients_and_curvatures(self):
+    """overwrite method to avoid calls to 'blocks' methods of target"""
+    self.prepare_for_step()
+
+    f, g, _ = self._target.compute_functional_gradients_and_curvatures()
+
+    # restraints terms
+    restraints = \
+      self._target.compute_restraints_functional_gradients_and_curvatures()
+
+    if restraints:
+      f += restraints[0]
+      g += restraints[1]
+
+    return f, g, None
+
+class ErrorModelSimpleLBFGS(SimpleLBFGS, ErrorModelRefinery):
+  """Adapt Refinery for L-BFGS minimiser"""
+  def __init__(self, *args, **kwargs):
+    super(ErrorModelSimpleLBFGS, self).__init__(*args, **kwargs)
+    ErrorModelRefinery.__init__(self, self)
 
   def compute_functional_gradients_and_curvatures(self):
     """overwrite method to avoid calls to 'blocks' methods of target"""
