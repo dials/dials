@@ -455,7 +455,8 @@ class SpotFrame(XrayFrame) :
     elif isinstance(file_name_or_data, basestring):
       from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
       from dxtbx.datablock import DataBlockFilenameImporter
-
+      # dxtbx/Boost cannot currently handle unicode here
+      file_name_or_data = str(file_name_or_data)
       importer = DataBlockFilenameImporter([file_name_or_data])
       assert len(importer.datablocks) == 1
       imagesets = importer.datablocks[0].extract_imagesets()
