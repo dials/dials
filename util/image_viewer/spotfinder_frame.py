@@ -10,6 +10,11 @@ from dials.array_family import flex
 from wxtbx.phil_controls.intctrl import IntCtrl as PhilIntCtrl
 from wxtbx.phil_controls import EVT_PHIL_CONTROL
 
+from dxtbx.datablock import DataBlockFilenameImporter
+
+from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
+
+from .viewer_tools import LegacyChooserAdapter, ListWithSelection, ImageChooserControl
 
 myEVT_LOADIMG = wx.NewEventType()
 EVT_LOADIMG = wx.PyEventBinder(myEVT_LOADIMG, 1)
@@ -43,6 +48,10 @@ class SpotFrame(XrayFrame) :
 
     self.reflections = kwds["reflections"]
     del kwds["datablock"]; del kwds["experiments"]; del kwds["reflections"] #otherwise wx complains
+
+    # Store the list of images we can view
+    self.images = ListWithSelection()
+
     super(SpotFrame, self).__init__(*args, **kwds)
     self.viewer.reflections = self.reflections
     self.viewer.frames = self.imagesets
@@ -72,8 +81,6 @@ class SpotFrame(XrayFrame) :
     self.draw_max_pix_timer = time_log("draw_max_pix")
     self.draw_ctr_mass_timer = time_log("draw_ctr_mass_pix")
 
-    self._image_chooser_tmp_key = []
-    self._image_chooser_tmp_clientdata = []
     self.display_foreground_circles_patch = False #hard code this option, for now
 
     if (self.experiments is not None
@@ -148,9 +155,25 @@ class SpotFrame(XrayFrame) :
     self.Bind(wx.EVT_MENU, self.OnSaveAs, btn)
     txt = wx.StaticText(self.toolbar, -1, "Image:")
     self.toolbar.AddControl(txt)
-    self.image_chooser = wx.Choice(self.toolbar, -1, size=(300,-1))
-    self.toolbar.AddControl(self.image_chooser)
-    self.Bind(wx.EVT_CHOICE, self.OnChooseImage, self.image_chooser)
+
+    # Because parent classes (e.g. XRayFrame) depends on this control explicitly
+    # created in this subclass, we create an adapter to connect to the new design
+    self.image_chooser = LegacyChooserAdapter(self.images, self.load_image)
+
+    # Create a sub-control with our image selection slider and label
+    # Manually tune the height for now - don't understand toolbar sizing
+    panel = ImageChooserControl(self.toolbar, size=(300,40))
+    # The Toolbar doesn't call layout for it's children?!
+    panel.Layout()
+    # Platform support for slider events seems a little inconsistent
+    # with wxPython 3, so we just trap all EVT_SLIDER events.
+    panel.Bind(wx.EVT_SLIDER,         self.OnChooseImage)
+    # These events appear to be a more reliable indicator?
+    panel.Bind(wx.EVT_SCROLL_CHANGED, self.OnChooseImage)
+    # Finally, add our new control to the toolbar
+    self.toolbar.AddControl(panel)
+    self.image_chooser_panel = panel
+
     btn = self.toolbar.AddLabelTool(id=wx.ID_BACKWARD,
       label="Previous",
       bitmap=bitmaps.fetch_icon_bitmap("actions","1leftarrow"),
@@ -202,22 +225,37 @@ class SpotFrame(XrayFrame) :
       event.SetText("Show mask tool")
 
   def OnChooseImage (self, event) :
-    super(SpotFrame, self).OnChooseImage(event)
-    self.jump_to_image.SetValue(self.image_chooser.GetSelection()+1)
+    # Whilst scrolling and choosing, show what we are looking at
+    selected_image = self.images[self.image_chooser_panel.GetValue()-1]
+    # Always show the current 'loaded' image as such
+    if selected_image == self.images.selected:
+      self.image_chooser_panel.set_label(self.get_key(selected_image))
+    else:
+      self.image_chooser_panel.set_temporary_label(self.get_key(selected_image))
+
+    # Don't update whilst dragging the slider
+    if event.EventType == wx.EVT_SLIDER.typeId:
+      if wx.GetMouseState().LeftDown():
+        return
+
+    # Once we've stopped scrolling, load the selected item
+    self.load_image(selected_image)
 
   def OnPrevious (self, event) :
     super(SpotFrame, self).OnPrevious(event)
-    self.jump_to_image.SetValue(self.image_chooser.GetSelection()+1)
+    # Parent function moves - now update the UI to match
+    self.jump_to_image.SetValue(self.images.selected_index+1)
 
   def OnNext (self, event) :
     super(SpotFrame, self).OnNext(event)
-    self.jump_to_image.SetValue(self.image_chooser.GetSelection()+1)
+    # Parent function moves - now update the UI to match
+    self.jump_to_image.SetValue(self.images.selected_index+1)
 
   def OnJumpToImage (self, event) :
     phil_value = self.jump_to_image.GetPhilValue()
-    if (self.image_chooser.GetSelection() != (phil_value - 1)):
-      self.jump_to_image.SetMax(self.image_chooser.GetCount())
-      self.load_image(self.image_chooser.GetClientData(phil_value - 1))
+    if (self.images.selected_index != (phil_value - 1)):
+      self.jump_to_image.SetMax(len(self.images))
+      self.load_image(self.images[phil_value - 1])
 
   # consolidate initialization of PySlip object into a single function
   def init_pyslip(self):
@@ -415,46 +453,53 @@ class SpotFrame(XrayFrame) :
     #print self.draw_max_pix_timer.report()
     #print self.draw_ctr_mass_timer.report()
 
-  def add_file_name_or_data (self, file_name_or_data) :
-      """The add_file_name_or_data() function appends @p
-      file_name_or_data to the image chooser, unless it is already
-      present.  For file-backed images, the base name is displayed in
-      the chooser.  If necessary, the number of entries in the chooser
-      is pruned.  The function returns the index of the recently added
-      entry.  XXX This is probably the place for heuristics to determine
-      if the viewer was given a pattern, or a plain list of files.  XXX
-      Rename this function, because it only deals with the chooser?
+  def add_file_name_or_data(self, image_data) :
+      """
+      Adds an image to the viewer's list of images.
+
+      This just adds the image to the virtual list, and updates the UI
+      where necessary e.g. image chooser maximums. If the image already
+      exists, will not add a duplicate.
+
+      AKA and better named something like 'add_image' but we can't rename
+      whilst tied to rstbx.
+
+      :param image_data: The image metadata object
+      :type  image_data: chooser_wrapper
+      :returns: The index of the image in the list of images
+      :rtype:   int
       """
 
-      key = self.get_key(file_name_or_data)
-      count = self.image_chooser.GetCount()
-      for i in xrange(count) :
-        if key == str(self.image_chooser.GetClientData(i)):
-          return i
-      self._image_chooser_tmp_key.append(key)
-      self._image_chooser_tmp_clientdata.append(file_name_or_data)
-      return len(self._image_chooser_tmp_key) + count
+      assert isinstance(image_data, chooser_wrapper)
+
+      # If this is already loaded, then return the index
+      if image_data in self.images:
+        return self.images.index(image_data)
+
+      self.images.append(image_data)
+      self.image_chooser_panel.SetMax(len(self.images))
+      return len(self.images)-1
 
   def load_file_event(self, evt):
     self.load_image(evt.get_filename())
 
   def load_image (self, file_name_or_data) :
-    """The load_image() function displays the image from @p
-    file_name_or_data.  The chooser is updated appropriately.
+    """
+    Load and display an image.
+
+    Given either a filename or a pre-existing image data object, loads the
+    image from disk, displays it, and updates the UI to reflect the new image.
+
+    :param file_name_or_data: The image item to load
+    :type file_name_or_data: str or chooser_wrapper
     """
 
-    if self._image_chooser_tmp_key:
-      starting_count = self.image_chooser.GetCount()
-      n = len(self._image_chooser_tmp_key)
-      self.image_chooser.AppendItems(self._image_chooser_tmp_key)
-      for i in range(n):
-        self.image_chooser.SetClientData(
-          starting_count+i, self._image_chooser_tmp_clientdata[i])
-      self._image_chooser_tmp_key = []
-      self._image_chooser_tmp_clientdata = []
-    elif isinstance(file_name_or_data, basestring):
-      from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
-      from dxtbx.datablock import DataBlockFilenameImporter
+    # If this image is already loaded, then don't reload it
+    if file_name_or_data == self.images.selected:
+      return
+
+    # If given a string, we need to load and convert to a chooser_wrapper
+    if isinstance(file_name_or_data, basestring):
       # dxtbx/Boost cannot currently handle unicode here
       file_name_or_data = str(file_name_or_data)
       importer = DataBlockFilenameImporter([file_name_or_data])
@@ -463,22 +508,31 @@ class SpotFrame(XrayFrame) :
       imageset = imagesets[0]
       file_name_or_data = chooser_wrapper(imageset, imageset.indices()[0])
       self.add_file_name_or_data(file_name_or_data)
-      self.load_image(file_name_or_data)
-      return
+
+    assert isinstance(file_name_or_data, chooser_wrapper)
+
+    # We are never called without first calling add_file_name_or_data?
+    assert file_name_or_data in self.images
 
     show_untrusted = False
     if self.params.show_mask:
       show_untrusted = True
+
+    previously_selected_image = self.images.selected
+    self.images.selected = file_name_or_data
+    # Do the actual data/image loading and update the viewer
     super(SpotFrame, self).load_image(
       file_name_or_data, get_raw_data=self.get_raw_data,
       show_untrusted=show_untrusted)
 
-    # Now we've loaded the new image, destroy the caches for all the old images.
-    # This is okay as at the moment we don't use the cached data (another bug)
-    for image in map(self.image_chooser.GetClientData, range(self.image_chooser.GetCount())):
-      if image is file_name_or_data:
-        image.set_raw_data(None)
+    # Update the navigation UI controls to reflect this loaded image
+    self.image_chooser_panel.SetValue(self.images.selected_index+1)
+    self.image_chooser_panel.set_label(self.get_key(file_name_or_data))
+    self.jump_to_image.SetValue(self.images.selected_index+1)
 
+    # Destroy the cached data for the previous image
+    if previously_selected_image:
+      previously_selected_image.set_raw_data(None)
 
   def OnShowSettings (self, event) :
     if self.settings_frame is None:
@@ -1035,10 +1089,8 @@ class SpotFrame(XrayFrame) :
     shoebox_dict = {'width': 2, 'color': '#0000FFA0', 'closed': False}
     ctr_mass_dict = {'width': 2, 'color': '#FF0000', 'closed': False}
     vector_dict = {'width': 4, 'color': '#F62817', 'closed': False}
-    i_frame = self.image_chooser.GetClientData(
-      self.image_chooser.GetSelection()).index
-    imageset = self.image_chooser.GetClientData(
-      self.image_chooser.GetSelection()).image_set
+    i_frame = self.images.selected.index
+    imageset = self.images.selected.image_set
     if imageset.get_scan() is not None:
       i_frame += imageset.get_scan().get_array_range()[0]
     shoebox_data = []

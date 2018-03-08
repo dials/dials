@@ -14,6 +14,9 @@ class chooser_wrapper(_chooser_wrapper):
   def show_header(self):
     debug_memory_usage()
     pass
+  def __eq__(self, other):
+    return (hasattr(other, "image_set") and self.image_set is other.image_set and
+            hasattr(other, "index") and self.index == other.index)
 
 class spot_wrapper(object):
   def __init__(self, params):
@@ -39,6 +42,7 @@ class spot_wrapper(object):
     for imageset in imagesets:
       for idx in xrange(len(imageset.indices())):
         self.frame.add_file_name_or_data(chooser_wrapper(imageset, idx))
+    # Make sure we load the first image as the current one
     self.frame.load_image(chooser_wrapper(imagesets[0], 0))
     debug_memory_usage()
     app.MainLoop()
