@@ -14,7 +14,7 @@ from dxtbx.datablock import DataBlockFilenameImporter
 
 from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
 
-from .viewer_tools import LegacyChooserAdapter, ListWithSelection, ImageChooserControl
+from .viewer_tools import LegacyChooserAdapter, ImageCollectionWithSelection, ImageChooserControl
 
 myEVT_LOADIMG = wx.NewEventType()
 EVT_LOADIMG = wx.PyEventBinder(myEVT_LOADIMG, 1)
@@ -50,7 +50,7 @@ class SpotFrame(XrayFrame) :
     del kwds["datablock"]; del kwds["experiments"]; del kwds["reflections"] #otherwise wx complains
 
     # Store the list of images we can view
-    self.images = ListWithSelection()
+    self.images = ImageCollectionWithSelection()
 
     super(SpotFrame, self).__init__(*args, **kwds)
     self.viewer.reflections = self.reflections
@@ -189,7 +189,7 @@ class SpotFrame(XrayFrame) :
     txt = wx.StaticText(self.toolbar, -1, "Jump to image:")
     self.toolbar.AddControl(txt)
 
-    self.jump_to_image = PhilIntCtrl(self.toolbar, -1, name="image", size=(50,-1))
+    self.jump_to_image = PhilIntCtrl(self.toolbar, -1, name="image", size=(65,-1))
     self.jump_to_image.SetMin(1)
     self.jump_to_image.SetValue(1)
     self.toolbar.AddControl(self.jump_to_image)
@@ -254,7 +254,6 @@ class SpotFrame(XrayFrame) :
   def OnJumpToImage (self, event) :
     phil_value = self.jump_to_image.GetPhilValue()
     if (self.images.selected_index != (phil_value - 1)):
-      self.jump_to_image.SetMax(len(self.images))
       self.load_image(self.images[phil_value - 1])
 
   # consolidate initialization of PySlip object into a single function
@@ -476,8 +475,9 @@ class SpotFrame(XrayFrame) :
       if image_data in self.images:
         return self.images.index(image_data)
 
-      self.images.append(image_data)
+      self.images.add(image_data)
       self.image_chooser_panel.SetMax(len(self.images))
+      self.jump_to_image.SetMax(len(self.images))
       return len(self.images)-1
 
   def load_file_event(self, evt):
@@ -501,7 +501,8 @@ class SpotFrame(XrayFrame) :
     # If given a string, we need to load and convert to a chooser_wrapper
     if isinstance(file_name_or_data, basestring):
       # dxtbx/Boost cannot currently handle unicode here
-      file_name_or_data = str(file_name_or_data)
+      if isinstance(file_name_or_data, unicode):
+        file_name_or_data = file_name_or_data.encode("utf-8")
       importer = DataBlockFilenameImporter([file_name_or_data])
       assert len(importer.datablocks) == 1
       imagesets = importer.datablocks[0].extract_imagesets()

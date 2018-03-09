@@ -10,27 +10,14 @@ import collections
 
 import wx
 
-class ListWithSelection(collections.MutableSequence):
-  """A list-like object that tracks a 'currently selected item'"""
+from orderedset import OrderedSet
+
+class ImageCollectionWithSelection(OrderedSet):
+  """A Ordered-like object that tracks a 'currently selected item'"""
 
   def __init__(self, items=None):
-    self._items = list(items or [])
+    super(ImageCollectionWithSelection, self).__init__(items or [])
     self._selected_index = None
-
-  def __getitem__(self, index):
-    return self._items[index]
-
-  def __setitem__(self, index, value):
-    self._items[index] = value
-
-  def __delitem__(self, index):
-    del self._items[index]
-
-  def __len__(self):
-    return len(self._items)
-
-  def insert(self, index, object):
-    self._items.insert(index, object)
 
   @property
   def selected_index(self):
@@ -48,11 +35,11 @@ class ListWithSelection(collections.MutableSequence):
   def selected(self):
     if self._selected_index is None:
       return None
-    return self._items[self._selected_index]
+    return self[self._selected_index]
 
   @selected.setter
   def selected(self, item):
-    self._selected_index = self._items.index(item)
+    self._selected_index = self.index(item)
 
 class LegacyChooserAdapter(object):
   """Fake wx.Choice replacement for legacy upstream code.
@@ -96,6 +83,7 @@ class ImageChooserControl(wx.Control):
   Convenience control to display a slider and accompanying label
   """
   def __init__(self, *args, **kwargs):
+    kwargs["style"] = kwargs.get("style", 0) | wx.BORDER_NONE
     super(ImageChooserControl, self).__init__(*args, **kwargs)
 
     self._slider = wx.Slider(self, -1, style=wx.SL_AUTOTICKS)

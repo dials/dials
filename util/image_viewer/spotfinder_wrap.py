@@ -4,8 +4,13 @@ from rstbx.slip_viewer.frame import chooser_wrapper as _chooser_wrapper
 
 try:
   import resource
+  import platform
   def debug_memory_usage():
-    print('Memory usage: %.1f MB' % (int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) / 1024))
+    # getrusage returns kb on linux, bytes on mac
+    units_per_mb = 1024
+    if platform.system() == "Darwin":
+      units_per_mb = 1024*1024
+    print('Memory usage: %.1f MB' % (int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) / units_per_mb))
 except ImportError:
   def debug_memory_usage():
     pass
@@ -17,6 +22,10 @@ class chooser_wrapper(_chooser_wrapper):
   def __eq__(self, other):
     return (hasattr(other, "image_set") and self.image_set is other.image_set and
             hasattr(other, "index") and self.index == other.index)
+  def __ne__(self, other):
+    return not self == other
+  def __hash__(self):
+    return hash((id(self.image_set),self.index))
 
 class spot_wrapper(object):
   def __init__(self, params):
