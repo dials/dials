@@ -55,7 +55,7 @@ phil_scope = phil.parse('''
   debug = False
     .type = bool
     .help = "Output additional debugging information"
-  model = *aimless xscale KB
+  model = *physical array KB
       .type = choice
       .help = "Set scaling model to be applied to input datasets without
                an existing model. "

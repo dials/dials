@@ -11,9 +11,10 @@ from scitbx import sparse
 class basis_function(object):
   '''Superclass for basis function that takes in a scaler and
   minimisation parameters and calcuates the scale factors and derivatives'''
-  def __init__(self, scaler, apm):
+  def __init__(self, scaler, apm, curvatures=False):
     self.scaler = scaler
     self.apm = apm
+    self.curvatures = curvatures
 
   def update_scale_factors(self):
     '''update the parameters in each SF object from the apm parameter list.'''
@@ -49,10 +50,32 @@ class basis_function(object):
       derivatives.assign_block(next_deriv, 0, self.apm.components[component]['start_idx'])
     return derivatives
 
+  def calculate_curvatures(self):
+    """Calculate the curvatures matrix."""
+    if not self.apm.components:
+      return None
+    if len(self.apm.components) == 1:
+      #only one active parameter, so don't need to chain rule any derivatives
+      return self.apm.components.values()[0]['object'].curvatures
+    curvatures = sparse.matrix(self.scaler.Ih_table.size, self.apm.n_active_params)
+    for component in self.apm.components:
+      curvs = self.apm.components[component]['object'].curvatures
+      if curvs != 0.0:
+        scale_multipliers = flex.double([1.0] * self.scaler.Ih_table.size)
+        for comp, SF_obj in self.scaler.experiments.scaling_model.components.iteritems():
+          if comp != component:
+            scale_multipliers *= SF_obj.inverse_scales
+        next_curv = row_multiply(curvs, scale_multipliers)
+        curvatures.assign_block(next_curv, 0, self.apm.components[component]['start_idx'])
+    return curvatures
+
   def return_basis(self):
     '''Return the calculated scale factors and derivatives to be used
     in minimisation'''
     self.update_scale_factors()
+    if self.curvatures:
+      return (self.calculate_scale_factors(), self.calculate_derivatives(),
+        self.calculate_curvatures())
     return self.calculate_scale_factors(), self.calculate_derivatives()
 
 '''class xds_basis_function_log(basis_function):

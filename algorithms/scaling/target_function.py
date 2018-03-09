@@ -9,6 +9,7 @@ import logging
 from dials.array_family import flex
 from dials_scaling_helpers_ext import row_multiply
 from scitbx import sparse
+from dials_scratch_scaling_ext import elementwise_square
 
 
 class ScalingTarget(object):
@@ -21,16 +22,17 @@ class ScalingTarget(object):
   rmsd_names = ["RMSD_I"]
   rmsd_units = ["a.u"]
 
-  def __init__(self, scaler, apm):
+  def __init__(self, scaler, apm, curvatures=False):
     self.scaler = scaler
     self.apm = apm
     self.weights = self.scaler.Ih_table.weights
+    self.curvatures = curvatures
 
     # Quantities to cache each step
     self._rmsds = None
 
   def predict(self):#do basis function calcuation and update Ih
-    self.scaler.update_for_minimisation(self.apm)
+    self.scaler.update_for_minimisation(self.apm, self.curvatures)
 
   def get_num_matches(self):
     """Return the number of reflections in current minimisation cycle."""
@@ -76,6 +78,85 @@ class ScalingTarget(object):
     gradient = term_1 + term_2
     return gradient
 
+  def calculate_curvatures(self):
+    """Calculate the second derivatives"""
+    # Make some shorthand notation
+    Ih_tab = self.scaler.Ih_table
+    w = Ih_tab.weights
+    I = Ih_tab.intensities
+    Ih = Ih_tab.Ih_values
+    g = Ih_tab.inverse_scale_factors
+    h_idx_transpose = Ih_tab.h_index_matrix.transpose()
+    gprime = self.apm.derivatives
+
+    #First calculate Ih' = ((suml wIg') - Ih(suml 2wgg'))/(suml wgg)
+    dIh = w * (I - (Ih * 2.0 * g))
+    gsq = g * g * w
+    v_inv = 1.0/(gsq * Ih_tab.h_index_matrix) #len(n_unique_groups)
+    Ihprime_numerator = h_idx_transpose * row_multiply(gprime, dIh)
+    Ihprime = row_multiply(Ihprime_numerator, v_inv) #n_unique_groups x n_params matrix
+
+    Ihprime_expanded = (Ihprime.transpose() * Ih_tab.h_expand_matrix).transpose()
+    a = row_multiply(gprime, Ih)
+    b = row_multiply(Ihprime_expanded, g)
+    for j, col in enumerate(a.cols()):
+      b[:,j] += col #n_refl x n_params
+    rprime = b
+    rprimesq = elementwise_square(rprime)
+    # First term is sum_refl 2.0 * (r')2
+    first_term = 2.0 * w * rprimesq
+    print(list(first_term))
+
+    # Second term is sum_refl -2.0 * r * r''
+    #  = -2.0 * r * (Ih g'' + 2g'Ih' + g Ih'') = A + B + C
+    # Ih '' = u'/v - Ih v'/v. so C = -2 r g u'/v + 2 r g Ih' v'/v = D + E
+    r = I - (g * Ih)
+    if self.apm.curvatures:
+      A = -2.0 * w * r * Ih * self.apm.curvatures #len n_params
+    B = row_multiply(gprime, (-4.0 * w * r)).transpose() * Ih_tab.h_index_matrix
+    B = B.transpose() * Ihprime_expanded #problem - need to do elementwise multiplication of two big matrices.
+
+    reduced_prefactor = (-2.0 * r * g * Ih_tab.h_index_matrix)
+    B = -4.0 * r * ((h_idx_transpose * gprime).transpose() * Ihprime) #len n_params
+    vprime_over_v = row_multiply((h_idx_transpose * row_multiply(gprime, (2.0 * w * g))), v_inv) #len n_unique_groups x n_params
+    E = (-1.0 * reduced_prefactor * Ihprime) * vprime_over_v
+
+    #E = (2.0 * r * g * Ih_tab.h_index_matrix) * row_multiply(Ihprime, vprime_over_v) #len n_params
+
+    # n_unique_groups x n_params matrices
+    if self.apm.curvatures:
+      u1 = h_idx_transpose * row_multiply(self.apm.curvatures, w * I)
+      u4 = h_idx_transpose * row_multiply(self.apm.curvatures, 2.0 * g * Ih * w)
+    u2 = row_multiply((h_idx_transpose * row_multiply(gprime, 2.0 * w * g)), v_inv)
+    u3 = h_idx_transpose * row_multiply(elementwise_square(gprime), 2.0 * Ih * w)
+
+    if self.apm.curvatures:
+      D1 = reduced_prefactor * row_multiply(u1, v_inv) #len n_params
+      D4 = reduced_prefactor * row_multiply(u4, v_inv)
+    D2 = (reduced_prefactor * Ihprime) * u2 #len n_params
+    D3 = reduced_prefactor * row_multiply(u3, v_inv) #len n_params
+
+    if self.apm.curvatures:
+      curvs = A + B + D1 + D2 + D3 + D4 + E + first_term
+      print(list(A))
+      print(list(B))
+      print(list(D1))
+      print(list(D2)) #bad
+      print(list(D3))
+      print(list(D4))
+      print(list(E)) #bad
+      print(list(first_term))
+      print(list(curvs))
+      return curvs
+    curvs = B + D2 + D3 + E + first_term
+    print(list(B))
+    print(list(D2))
+    print(list(D3))
+    print(list(E))
+    print(list(first_term))
+    print(list(curvs))
+    return curvs
+
   def calculate_jacobian(self):
     """Calculate the jacobian matrix, size Ih_table.size by len(self.apm.x)."""
     Ih_tab = self.scaler.Ih_table
@@ -96,7 +177,7 @@ class ScalingTarget(object):
     return flex.sum(self.calculate_residuals()), self.calculate_gradients()
 
   def compute_functional_gradients_and_curvatures(self):
-    return flex.sum(self.calculate_residuals()), self.calculate_gradients(), None #curvatures
+    return flex.sum(self.calculate_residuals()), self.calculate_gradients(), self.calculate_curvatures()
 
   def compute_restraints_functional_gradients_and_curvatures(self):
     'calculate restraints on parameters'

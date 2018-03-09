@@ -63,7 +63,7 @@ class ScalerBase(object):
         del self._reflection_table[key]
 
   @abc.abstractmethod
-  def update_for_minimisation(self, apm):
+  def update_for_minimisation(self, apm, curvatures=False):
     '''update the scale factors and Ih for the next iteration of minimisation'''
     pass
 
@@ -72,9 +72,9 @@ class ScalerBase(object):
     '''expand scales from a subset to all reflections'''
     pass
 
-  def get_basis_function(self, apm):
-    '''call thebasis function'''
-    return basis_function(self, apm).return_basis()
+  def get_basis_function(self, apm, curvatures=False):
+    '''call the basis function'''
+    return basis_function(self, apm, curvatures).return_basis()
 
   def save_reflection_table(self, filename):
     ''' Save the reflections to file. '''
@@ -229,10 +229,12 @@ class SingleScalerBase(ScalerBase):
     refine scale and decay, and then absorption in a subsequent cycle.'''
     pass
 
-  def update_for_minimisation(self, apm):
+  def update_for_minimisation(self, apm, curvatures=False):
     '''update the scale factors and Ih for the next iteration of minimisation'''
-    basis_fn = self.get_basis_function(apm)
+    basis_fn = self.get_basis_function(apm, curvatures=curvatures)
     apm.derivatives = basis_fn[1]
+    if curvatures:
+      apm.curvatures = basis_fn[2]
     self.Ih_table.inverse_scale_factors = basis_fn[0]
     self.Ih_table.calc_Ih()
 
@@ -345,22 +347,21 @@ class SingleScalerBase(ScalerBase):
 
   @abc.abstractmethod
   def apply_selection_to_SFs(self, sel):
-    '''Updates data from within current SF objects using the given selection.
-       Required for targeted scaling. To be filled in by subclasses'''
+    """Update data from within current SF objects using the given selection.
+       Required for targeted scaling."""
     pass
 
   @abc.abstractmethod
   def calc_expanded_scales(self, scaled_reflections, selection=None):
-    '''calculate the scale factors for all reflections from the model.
-    To be filled in by subclasses.'''
+    """Calculate the scale factors for all reflections from the model."""
     pass
 
   def normalise_scale_component(self):
-    '''can be filled in by subclass to allow normalising, as is the case for aimless'''
+    """Define a normalisation method, as is the case for the physical scaler."""
     pass
 
   def normalise_decay_component(self):
-    '''can be filled in by subclass to allow normalising, as is the case for aimless'''
+    """Define a normalisation method, as is the case for the physical scaler."""
     pass
 
   def print_scale_init_msg(self):
@@ -394,7 +395,7 @@ class SingleScalerBase(ScalerBase):
     Should only be called from target function if absorption in active params.'''
     #note - move to a separate restraint manager?
     restraints = None
-    if self.id_ == 'aimless':
+    if self.id_ == 'physical':
       if 'absorption' in apm.components:
         abs_params = apm.select_parameters('absorption')
         residual = (self.absorption_weights * (abs_params)**2)
@@ -508,15 +509,16 @@ class KBScaler(SingleScalerBase):
         list(self.components['decay'].parameters)[0], sep='\n'))
     return expanded_scale_factors
 
-class AimlessScaler(SingleScalerBase):
-  '''
-  Scaler for single dataset using aimless-like parameterisation.
-  '''
+class PhysicalScaler(SingleScalerBase):
+  """
+  Scaler for single dataset using physical parameterisation, similar to 
+  the program aimless.
+  """
 
-  id_ = 'aimless'
+  id_ = 'physical'
 
   def __init__(self, params, experiment, reflection, scaled_id=0):
-    super(AimlessScaler, self).__init__(params, experiment, reflection, scaled_id)
+    super(PhysicalScaler, self).__init__(params, experiment, reflection, scaled_id)
     self.sph_harm_table = None
     self.absorption_weights = None
     self._initialise_scale_factors()
@@ -621,18 +623,19 @@ class AimlessScaler(SingleScalerBase):
 
   def clean_reflection_table(self):
     self._initial_keys.append('phi')
-    super(AimlessScaler, self).clean_reflection_table()
+    super(PhysicalScaler, self).clean_reflection_table()
 
 
-class XscaleScaler(SingleScalerBase):
-  '''
-  Scaler for single dataset using xscale-like parameterisation.
-  '''
+class ArrayScaler(SingleScalerBase):
+  """
+  Scaler for single dataset using an array-based parameterisation, similar to
+  the program xscale.
+  """
 
-  id_ = 'xscale'
+  id_ = 'array'
 
   def __init__(self, params, experiment, reflection, scaled_id=0):
-    super(XscaleScaler, self).__init__(params, experiment, reflection, scaled_id)
+    super(ArrayScaler, self).__init__(params, experiment, reflection, scaled_id)
     self._initialise_scale_factors()
     self.select_reflections_for_scaling()
     logger.info('Completed configuration of Scaler. \n\n' + '='*80 + '\n')
@@ -762,10 +765,10 @@ class MultiScalerBase(ScalerBase):
 
   @staticmethod
   def calc_multi_absorption_restraint(apm, scalers):
-    'method only called in aimless scaling'
+    'method only called in physical scaling'
     restraints = None
     scaler_ids = [scaler.id_ for scaler in scalers]
-    if 'aimless' in scaler_ids:
+    if 'physical' in scaler_ids:
       R = flex.double([])
       G = flex.double([])
       for i, scaler in enumerate(scalers):
@@ -788,7 +791,7 @@ class MultiScalerBase(ScalerBase):
     '''method to calculate absorption restraint for multiple scalers'''
     restraints = None
     scaler_ids = [scaler.id_ for scaler in scalers]
-    if 'aimless' in scaler_ids:
+    if 'physical' in scaler_ids:
       R = flex.double([])
       jacobian_list = []
       scaler_list = []
@@ -873,7 +876,7 @@ class MultiScaler(MultiScalerBase):
   def update_error_model(self, error_model_params):
     self.Ih_table.update_error_model(error_model_params)
 
-  def update_for_minimisation(self, apm):
+  def update_for_minimisation(self, apm, curvatures=False):
     '''update the scale factors and Ih for the next iteration of minimisation,
     update the x values from the amp to the individual apms, as this is where
     basis functions, target functions etc get access to the parameters.'''
@@ -940,7 +943,7 @@ class TargetScaler(MultiScalerBase):
       scaler.apply_selection_to_SFs(sel)
     logger.info('Completed initialisation of TargetScaler. \n' + '*'*40 + '\n')
 
-  def update_for_minimisation(self, apm):
+  def update_for_minimisation(self, apm, curvatures=False):
     '''update the scale factors and Ih for the next iteration of minimisation'''
     for i, single_apm in enumerate(apm.apm_list):
       single_apm.x = apm.select_parameters(i)

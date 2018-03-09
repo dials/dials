@@ -60,13 +60,13 @@ class ScalingModelBase(object):
   def set_error_model(self, error_model_params):
     self._configdict.update({'error_model_parameters' : error_model_params})
 
-class AimlessScalingModel(ScalingModelBase):
-  '''Factory to create a scaling model for an aimless-type parameterisation.'''
+class PhysicalScalingModel(ScalingModelBase):
+  '''Factory to create a scaling model for a physical parameterisation.'''
 
-  id_ = 'aimless'
+  id_ = 'physical'
 
   def __init__(self, parameters_dict, configdict, is_scaled=False):
-    super(AimlessScalingModel, self).__init__(configdict, is_scaled)
+    super(PhysicalScalingModel, self).__init__(configdict, is_scaled)
     if 'scale' in configdict['corrections']:
       scale_setup = parameters_dict['scale']
       self._components.update({'scale' : SmoothScaleComponent1D(
@@ -122,13 +122,13 @@ class AimlessScalingModel(ScalingModelBase):
     return cls(parameters_dict, configdict, is_scaled)
 
 
-class XscaleScalingModel(ScalingModelBase):
-  '''Factory to create a scaling model for an xscale-type parameterisation.'''
+class ArrayScalingModel(ScalingModelBase):
+  '''Factory to create a scaling model for an array-based parameterisation.'''
 
-  id_ = 'xscale'
+  id_ = 'array'
 
   def __init__(self, parameters_dict, configdict, is_scaled=False):
-    super(XscaleScalingModel, self).__init__(configdict, is_scaled)
+    super(ArrayScalingModel, self).__init__(configdict, is_scaled)
     if 'decay' in configdict['corrections']:
       decay_setup = parameters_dict['decay']
       self._components.update({'decay' : SmoothScaleComponent2D(
@@ -176,7 +176,7 @@ class XscaleScalingModel(ScalingModelBase):
     return cls(parameters_dict, configdict, is_scaled)
 
 class KBScalingModel(ScalingModelBase):
-  '''Factory to create a scaling model for an xscale-type parameterisation.'''
+  '''Factory to create a scaling model for a KB parameterisation.'''
 
   id_ = 'KB'
 

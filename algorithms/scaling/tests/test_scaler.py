@@ -83,7 +83,7 @@ def generated_param():
   optionparser = OptionParser(phil=phil_scope, check_format=False)
   parameters, _ = optionparser.parse_args(args=None, quick_parse=True,
     show_diff_phil=False)
-  parameters.__inject__('model', 'aimless')
+  parameters.__inject__('model', 'physical')
   return parameters
 
 @pytest.fixture(scope='module')
@@ -137,7 +137,7 @@ def test_SingleScalerFactory():
   assert n != len(scaler.reflection_table)
 
 def test_TargetScalerFactory():
-  '''test for successful initialisation of targetedDataManager'''
+  """test for successful initialisation of TargetedScaler."""
   (test_reflections, test_experiments, params) = generated_target_input(
     generated_refl(), generated_single_exp(), generated_param())
 
@@ -145,8 +145,8 @@ def test_TargetScalerFactory():
   _ = create_scaler(params, experiments, test_reflections)
 
 def test_apm():
-  '''test for a single active parameter manager. Also serves as general
-  test for initialisation of AimlessDataManager'''
+  """test for a single active parameter manager. Also serves as general
+  test for initialisation of PhysicalScaler."""
   (test_reflections, test_experiments, params) = generated_single_input(
     generated_refl(), generated_single_exp(), generated_param())
   assert len(test_experiments) == 1

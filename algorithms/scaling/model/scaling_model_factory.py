@@ -46,10 +46,11 @@ class KBSMFactory(object):
 
     return Model.KBScalingModel(parameters_dict, configdict)
 
-class AimlessSMFactory(object):
-  '''
-  Factory for creating an aimless-like scaling model.
-  '''
+class PhysicalSMFactory(object):
+  """
+  Factory for creating a physical scaling model.
+  """
+  
   @classmethod
   def create(cls, params, experiments, reflections):
     '''
@@ -112,7 +113,7 @@ class AimlessSMFactory(object):
       'decay': {'parameters' : decay_parameters, 'parameter_esds' : None},
       'absorption': {'parameters' : abs_parameters, 'parameter_esds' : None}}
 
-    return Model.AimlessScalingModel(parameters_dict, configdict)
+    return Model.PhysicalScalingModel(parameters_dict, configdict)
 
   @classmethod
   def initialise_smooth_input(cls, osc_range, one_osc_width, interval):
@@ -133,13 +134,14 @@ class AimlessSMFactory(object):
     #fall within range of smoother.
     return n_param, norm_fac, rot_int
 
-class XscaleSMFactory(object):
-  '''
-  Factory for creating an scale-like scaling model.
-  '''
+class ArraySMFactory(object):
+  """
+  Factory for creating an array-based scaling model.
+  """
+
   @classmethod
   def create(cls, params, experiments, reflections):
-    '''create an XScale scaling model.'''
+    '''create an array-based scaling model.'''
     reflections = reflections.select(reflections['d'] > 0.0)
 
     #only create components that are specified in params?
@@ -220,4 +222,4 @@ class XscaleSMFactory(object):
       'absorption': {'parameters' : abs_params, 'parameter_esds' : None},
       'modulation': {'parameters' : mod_params, 'parameter_esds' : None}}
 
-    return Model.XscaleScalingModel(parameters_dict, configdict)
+    return Model.ArrayScalingModel(parameters_dict, configdict)

@@ -59,7 +59,7 @@ class Weighting(object):
     sel = reflection_table['d'] <= d_cutoff_value
     self.weights.set_selected(sel, 0.0)
 
-  def apply_aimless_error_model(self, reflection_table, error_params):
+  def apply_error_model(self, reflection_table, error_params):
     '''applies scaling factors to the errors of the intensities'''
     msg = ('Applying an error model to the variances used for scaling {sep}'
       'with the error model parameters {0:.5f}, {1:.5f}. {sep}').format(error_params[0],

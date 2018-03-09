@@ -20,33 +20,33 @@ class ScalingModelIface(interface.Interface):
         ''' Get from dictionary. '''
         pass
 
-class AimlessScalingModelExt(ScalingModelIface):
-  ''' An extension class implementing a scaling model. '''
+class PhysicalScalingModelExt(ScalingModelIface):
+  """An extension class implementing a physical scaling model."""
 
-  name = 'aimless'
+  name = 'physical'
 
   @classmethod
   def factory(cls):
     '''returns the scaling Model Factory'''
     from dials.algorithms.scaling.model.scaling_model_factory import \
-      AimlessSMFactory
-    return AimlessSMFactory
+      PhysicalSMFactory
+    return PhysicalSMFactory
 
   @classmethod
   def scaler(cls):
     '''returns the scaler factory'''
-    from dials.algorithms.scaling.scaler import AimlessScaler
-    return AimlessScaler
+    from dials.algorithms.scaling.scaler import PhysicalScaler
+    return PhysicalScaler
 
   @staticmethod
   def from_dict(d):
     '''creates a scaling model from a dict'''
     from dials.algorithms.scaling.model.model import \
-      AimlessScalingModel
-    return AimlessScalingModel.from_dict(d)
+      PhysicalScalingModel
+    return PhysicalScalingModel.from_dict(d)
 
 class KBScalingModelExt(ScalingModelIface):
-  ''' An extension class implementing a scaling model. '''
+  """An extension class implementing a KB scaling model."""
 
   name = 'KB'
 
@@ -69,26 +69,26 @@ class KBScalingModelExt(ScalingModelIface):
     from dials.algorithms.scaling.model.model import KBScalingModel
     return KBScalingModel.from_dict(d)
 
-class XscaleScalingModelExt(ScalingModelIface):
-  ''' An extension class implementing a scaling model. '''
+class ArrayScalingModelExt(ScalingModelIface):
+  """An extension class implementing an array-based scaling model."""
 
-  name = 'xscale'
+  name = 'array'
 
   @classmethod
   def factory(cls):
     '''returns the scaling Model Factory'''
     from dials.algorithms.scaling.model.scaling_model_factory import \
-      XscaleSMFactory
-    return XscaleSMFactory
+      ArraySMFactory
+    return ArraySMFactory
 
   @classmethod
   def scaler(cls):
     '''returns the scaler factory'''
-    from dials.algorithms.scaling.scaler import XscaleScaler
-    return XscaleScaler
+    from dials.algorithms.scaling.scaler import ArrayScaler
+    return ArrayScaler
 
   @staticmethod
   def from_dict(d):
     '''creates a scaling model from a dict'''
-    from dials.algorithms.scaling.model.model import XscaleScalingModel
-    return XscaleScalingModel.from_dict(d)
+    from dials.algorithms.scaling.model.model import ArrayScalingModel
+    return ArrayScalingModel.from_dict(d)

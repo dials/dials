@@ -170,7 +170,7 @@ def test_Ih_table(single_test_input):
   Ih_table.weights = weights
   assert (Ih_table.weights == 1.0).count(True) == Ih_table.size
   #now test that one can apply an error model, with params that reset w to 1/var
-  Ih_table.update_aimless_error_model([1.0, 0.0])
+  Ih_table.update_error_model([1.0, 0.0])
   assert (list(abs(Ih_table.weights - expected_weights)) <
     list(flex.double([1e-6]*Ih_table.size)))
 

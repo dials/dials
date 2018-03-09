@@ -30,7 +30,8 @@ phil_scope = iotbx.phil.parse('''
               correction."
     modulation_term = False
       .type = bool
-      .help = "Option to turn on a detector correction for xscale parameterisation."
+      .help = "Option to turn on a detector correction for an array-based
+               parameterisation."
   }
   reflection_selection {
     E2_min = 0.8
@@ -56,8 +57,8 @@ phil_scope = iotbx.phil.parse('''
                and additional scale factor minimisation after adjusting weights."
     error_model_params = None
       .type = floats(size=2)
-      .help = "Ability to force an error model adjustment, using the model
-              in aimless - factors are called SDFac, SDadd in aimless."
+      .help = "Ability to force an error model adjustment, based on the model
+              used in aimless - factors are called SDFac, SDadd in aimless."
   }
   cut_data {
     exclude_image_range = None

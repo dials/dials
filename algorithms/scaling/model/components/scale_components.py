@@ -34,6 +34,7 @@ class ScaleComponentBase(object):
     self._inverse_scales = None
     self._inverse_scale_variances = None
     self._derivatives = None
+    self._curvatures = 0.0
 
   @property
   def n_params(self):
@@ -86,6 +87,12 @@ class ScaleComponentBase(object):
     """A spares matrix of the derivatives of the inverse scale
     factors with respect to the component parameters."""
     return self._derivatives
+
+  @property
+  def curvatures(self):
+    """A spares matrix of the curvatures of the inverse scale
+    factors with respect to the component parameters."""
+    return self._curvatures
 
   @abc.abstractmethod
   def update_reflection_data(self):
