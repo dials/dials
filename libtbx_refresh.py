@@ -29,8 +29,9 @@ except Exception:
 try:
   import libtbx.pkg_utils
   libtbx.pkg_utils.require('mock', '>=2.0')
-  libtbx.pkg_utils.require('pytest', '>=3.1')
   libtbx.pkg_utils.require('orderedset')
+  libtbx.pkg_utils.require('pytest', '>=3.1')
+  libtbx.pkg_utils.require('Jinja2')
 except ImportError:
   print("\n" * 10 + "Could not verify dependencies: cctbx sources out of date" + "\n" * 10)
 
