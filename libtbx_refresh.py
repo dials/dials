@@ -37,6 +37,7 @@ libtbx.pkg_utils.require('procrunner')
 def _install_dials_autocompletion():
   '''generate bash.sh and SConscript file in /build/dials/autocomplete'''
   import libtbx.load_env
+  import os
 
   # Find the dials source directory
   dist_path = libtbx.env.dist_path('dials')
