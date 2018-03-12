@@ -1,9 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
+import os
+
 try:
   from glob import glob
   import libtbx.load_env
-  import os
   dials_path = libtbx.env.dist_path('dials')
   filenames = glob(os.path.join(dials_path, "extensions", "*.pyc"))
   if filenames:
@@ -26,19 +27,16 @@ try:
 except Exception:
   pass
 
-try:
-  import libtbx.pkg_utils
-  libtbx.pkg_utils.require('mock', '>=2.0')
-  libtbx.pkg_utils.require('orderedset')
-  libtbx.pkg_utils.require('pytest', '>=3.1')
-  libtbx.pkg_utils.require('Jinja2')
-except ImportError:
-  print("\n" * 10 + "Could not verify dependencies: cctbx sources out of date" + "\n" * 10)
+import libtbx.pkg_utils
+libtbx.pkg_utils.require('mock', '>=2.0')
+libtbx.pkg_utils.require('orderedset')
+libtbx.pkg_utils.require('pytest', '>=3.1')
+libtbx.pkg_utils.require('Jinja2')
+libtbx.pkg_utils.require('procrunner')
 
 def _install_dials_autocompletion():
   '''generate bash.sh and SConscript file in /build/dials/autocomplete'''
   import libtbx.load_env
-  import os
 
   # Find the dials source directory
   dist_path = libtbx.env.dist_path('dials')

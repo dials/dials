@@ -14,8 +14,8 @@ def test_dials_cluster_unit_cell_command_line(dials_regression, tmpdir):
 
   tmpdir.chdir()
 
-  import dials.util.procrunner
-  result = dials.util.procrunner.run_process(
+  import procrunner
+  result = procrunner.run_process(
     command=['dials.cluster_unit_cell', 'plot.show=False'] + experiments,
     print_stdout=False,
     )

@@ -265,7 +265,6 @@ util/nexus_old.py
 util/options.py
 util/picklez.py
 util/pprint.py
-util/procrunner.py
 util/pycbf_extra.py
 util/rebin_images.py
 util/show_version.py

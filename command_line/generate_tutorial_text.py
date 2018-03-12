@@ -10,7 +10,7 @@ import argparse
 
 import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx.test_utils import open_tmp_directory
-from dials.util.procrunner import run_process
+from procrunner import run_process
 
 class Job(object):
   """Represents a step command to execute"""

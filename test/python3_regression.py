@@ -27,10 +27,10 @@ def find_new_python3_incompatible_code(module_under_test):
   # Mask all *PYTHON* variables from environment - Python3 will not like cctbx python settings
   environ_override = { k: '' for k in list(os.environ) if 'PYTHON' in k }
 
-  from dials.util.procrunner import run_process
+  from procrunner import run_process
   module_path = module_under_test.__path__[0]
   try:
-    result = run_process(['python3', '-m', 'compileall', '-x', '\.git', '-q', module_path], environ=environ_override, print_stdout=False)
+    result = run_process(['python3', '-m', 'compileall', '-x', '\.git', '-q', module_path], environment_override=environ_override, print_stdout=False)
   except OSError as e:
     if e.errno == 2:
       return None

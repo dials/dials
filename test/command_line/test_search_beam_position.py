@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 import glob
 import os
 
-import libtbx.procrunner
+import procrunner
 import pytest
 import scitbx
 
@@ -42,7 +42,7 @@ def test_thing_1(tmpdir, dials_regression):
           pickle_path2]
 
   print(args)
-  result = libtbx.procrunner.run_process(args)
+  result = procrunner.run_process(args)
   assert result['stderr'] == '' and result['exitcode'] == 0
   assert os.path.exists('optimized_datablock.json')
 
@@ -71,7 +71,7 @@ def test_thing_2(tmpdir, xia2_regression_build):
   # beam centre from image headers: 205.28,210.76 mm
   args = ["dials.import", "mosflm_beam_centre=207,212"] + g
   print(args)
-  result = libtbx.procrunner.run_process(args)
+  result = procrunner.run_process(args)
   assert result['stderr'] == '' and result['exitcode'] == 0
   assert os.path.exists('datablock.json')
 
@@ -79,7 +79,7 @@ def test_thing_2(tmpdir, xia2_regression_build):
   args = ["dials.find_spots", "datablock.json",
           "scan_range=1,10", "scan_range=531,540"]
   print(args)
-  result = libtbx.procrunner.run_process(args)
+  result = procrunner.run_process(args)
   assert result['stderr'] == '' and result['exitcode'] == 0
   assert os.path.exists('strong.pickle')
 
@@ -87,7 +87,7 @@ def test_thing_2(tmpdir, xia2_regression_build):
   args = ["dials.search_beam_position", "datablock.json",
           "strong.pickle"]
   print(args)
-  result = libtbx.procrunner.run_process(args)
+  result = procrunner.run_process(args)
   assert result['stderr'] == '' and result['exitcode'] == 0
   assert os.path.exists('optimized_datablock.json')
 
@@ -128,7 +128,7 @@ def test_thing_3(tmpdir, dials_regression):
   args = ["dials.search_beam_position",
           datablock_path, pickle_path]
   print(args)
-  result = libtbx.procrunner.run_process(args)
+  result = procrunner.run_process(args)
   assert result['stderr'] == '' and result['exitcode'] == 0
   assert os.path.exists('optimized_datablock.json')
 
