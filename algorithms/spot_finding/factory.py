@@ -73,7 +73,7 @@ def generate_phil_scope():
       max_spot_size = 100
         .help = "The maximum number of contiguous pixels for a spot"
                 "to be accepted by the filtering algorithm."
-        .type = int(value_min=1)
+        .type = int(value_min=1, allow_none=False)
 
       max_separation = 2
         .help = "The maximum peak-to-centroid separation (in pixels)"
