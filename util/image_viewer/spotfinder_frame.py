@@ -483,7 +483,12 @@ class SpotFrame(XrayFrame) :
   def load_file_event(self, evt):
     self.load_image(evt.get_filename())
 
-  def load_image (self, file_name_or_data) :
+  def reload_image(self):
+    """Re-load the currently displayed image"""
+    with wx.BusyCursor():
+      self.load_image(self.images.selected, refresh=True)
+
+  def load_image (self, file_name_or_data, refresh=False):
     """
     Load and display an image.
 
@@ -491,11 +496,12 @@ class SpotFrame(XrayFrame) :
     image from disk, displays it, and updates the UI to reflect the new image.
 
     :param file_name_or_data: The image item to load
+    :param refresh: Should the image be reloaded if currently selected?
     :type file_name_or_data: str or chooser_wrapper
     """
 
     # If this image is already loaded, then don't reload it
-    if file_name_or_data == self.images.selected:
+    if not refresh and file_name_or_data == self.images.selected:
       return
 
     # If given a string, we need to load and convert to a chooser_wrapper
@@ -532,7 +538,7 @@ class SpotFrame(XrayFrame) :
     self.jump_to_image.SetValue(self.images.selected_index+1)
 
     # Destroy the cached data for the previous image
-    if previously_selected_image:
+    if previously_selected_image and previously_selected_image != self.images.selected:
       previously_selected_image.set_raw_data(None)
 
   def OnShowSettings (self, event) :
@@ -1740,7 +1746,7 @@ class SpotSettingsPanel (wx.Panel) :
   def OnUpdateShowMask(self, event):
     self.OnUpdate(event)
     self.params.show_mask = self.settings.show_mask
-    self.GetParent().GetParent().OnChooseImage(event)
+    self.GetParent().GetParent().reload_image()
 
   def OnClearAll(self, event):
     for btn in (self.center_ctrl, self.ctr_mass, self.max_pix, self.all_pix,
