@@ -125,48 +125,14 @@ def calculate_sph_coefficients(ziplist, lmax, sph_harm_terms, nsssphe):
 def sph_harm_table(reflection_table, experiments, lmax):
   from scitbx import math, sparse
   reflection_table = calc_crystal_frame_vectors(reflection_table, experiments)
-  order = lmax
-  lfg = math.log_factorial_generator(2 * order + 1)
-  n_params = 0
-  for i in range(1, lmax+1):
-    n_params += (2*i) +1
 
-  #sph_harm_terms = flex.double([])
-  
-
-  sph_harm_terms = sparse.matrix(len(reflection_table), n_params)
   (x1, y1, z1) = reflection_table['s0c'].parts()
   (x2, y2, z2) = reflection_table['s1c'].parts()
 
   phi_list, theta_list = calc_theta_phi(x1, y1, z1)
   phi_list_2, theta_list_2 = calc_theta_phi(x2, y2, z2)
-  #nsssphe = math.nss_spherical_harmonics(order, 5000, lfg)
-  #sph_h_t = create_sph_harm_table(phi_list, theta_list, phi_list_2, theta_list_2, lmax)
   sph_h_t = create_sph_harm_table(theta_list, phi_list, theta_list_2, phi_list_2, lmax)
   return sph_h_t
-  #ziplist = zip(phi_list, theta_list, phi_list_2, theta_list_2)
-  #
-  #sph_harm_terms = calculate_sph_coefficients(ziplist, lmax, sph_harm_terms, nsssphe)
-  #sph_harm_terms.reshape(flex.grid(reflection_table.size(),n_params))
-  '''for l in range(1, lmax+1):
-    for m in range(-l, l+1):
-      if m < 0:
-        for i, (phi, theta, phi2, theta2) in enumerate(ziplist):
-          sph_harm_terms[i, counter] = (sqrt2 * ((-1) ** m)
-            * (nsssphe.spherical_harmonic(l, -1*m, theta, phi).imag
-            + nsssphe.spherical_harmonic(l, -1*m, theta2, phi2).imag)/2.0)
-      elif m == 0:
-        for i, (phi, theta, phi2, theta2) in enumerate(ziplist):
-          sph_harm_terms[i, counter] = ((
-            nsssphe.spherical_harmonic(l, m, theta, phi).real
-            + nsssphe.spherical_harmonic(l, m, theta2, phi2).real)/2.0)
-      else:
-        for i, (phi, theta, phi2, theta2) in enumerate(ziplist):
-          sph_harm_terms[i, counter] = (sqrt2 * ((-1) ** m)
-            * (nsssphe.spherical_harmonic(l, m, theta, phi).real
-            + nsssphe.spherical_harmonic(l, m, theta2, phi2).real)/2.0)
-      counter += 1
-  return sph_harm_terms'''
 
 def reject_outliers(reflection_table, zmax):
   '''simple, quick, outlier rejection based on normalised deviations
