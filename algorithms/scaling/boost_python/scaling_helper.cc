@@ -12,6 +12,16 @@ namespace dials_scratch { namespace scaling { namespace boost_python {
   {
     def("elementwise_square", &elementwise_square, (
       arg("m")));
-  }
+    }
+
+    void export_sph_harm_table()
+    {
+    def("create_sph_harm_table", &create_sph_harm_table, (
+      arg("s0_theta"),
+      arg("s0_phi"),
+      arg("s1_theta"),
+      arg("s1_phi"),
+      arg("lmax")));
+    }
 
 }}} // namespace = dials_scratch::scaling::boost_python

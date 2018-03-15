@@ -10,6 +10,7 @@ import copy
 import logging
 from cctbx import miller, crystal
 from Ih_table import SingleIhTable
+from dials_scratch_scaling_ext import create_sph_harm_table
 
 logger = logging.getLogger('dials')
 
@@ -139,13 +140,14 @@ def sph_harm_table(reflection_table, experiments, lmax):
 
   phi_list, theta_list = calc_theta_phi(x1, y1, z1)
   phi_list_2, theta_list_2 = calc_theta_phi(x2, y2, z2)
-  nsssphe = math.nss_spherical_harmonics(order, 5000, lfg)
-
-  ziplist = zip(phi_list, theta_list, phi_list_2, theta_list_2)
-
-  sph_harm_terms = calculate_sph_coefficients(ziplist, lmax, sph_harm_terms, nsssphe)
+  #nsssphe = math.nss_spherical_harmonics(order, 5000, lfg)
+  #sph_h_t = create_sph_harm_table(phi_list, theta_list, phi_list_2, theta_list_2, lmax)
+  sph_h_t = create_sph_harm_table(theta_list, phi_list, theta_list_2, phi_list_2, lmax)
+  return sph_h_t
+  #ziplist = zip(phi_list, theta_list, phi_list_2, theta_list_2)
+  #
+  #sph_harm_terms = calculate_sph_coefficients(ziplist, lmax, sph_harm_terms, nsssphe)
   #sph_harm_terms.reshape(flex.grid(reflection_table.size(),n_params))
-  return sph_harm_terms
   '''for l in range(1, lmax+1):
     for m in range(-l, l+1):
       if m < 0:
