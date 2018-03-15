@@ -2,6 +2,9 @@ from __future__ import absolute_import, division, print_function
 
 import pytest
 
+import matplotlib
+matplotlib.use('Agg')
+
 from cctbx import sgtbx
 
 from dials.algorithms.symmetry.cosym.generate_test_data import generate_test_data
@@ -37,14 +40,5 @@ def test_cosym_analyse_datasets(space_group):
   for ridx_set in reindexing_ops.values():
     for expected_set in expected_reindexing_ops.values():
       assert (
-        #(len(ridx_set.symmetric_difference(expected_set)) <= 2) or
-        #(len(ridx_set.intersection(expected_set)) <= 2))
         (len(ridx_set.symmetric_difference(expected_set)) == 0) or
         (len(ridx_set.intersection(expected_set)) == 0))
-
-
-  #assert expected_reindexing_ops == reindexing_ops
-
-  #for op in expected_reindexing_ops:
-    #assert op in reindexing_ops, op
-    #assert expected_reindexing_ops
