@@ -2,6 +2,7 @@
 #define DIALS_SCRATCH_SCALING_SCALING_HELPER_H
 
 #include <scitbx/sparse/matrix.h>
+#include <scitbx/math/zernike.h>
 
 namespace dials_scratch { namespace scaling {
   
