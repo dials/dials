@@ -29,15 +29,15 @@ phil_scope = phil.parse('''
     decay_out = "decay_correction"
       .type = str
       .help = "Option to set filename for 2D decay plot
-               (only relevant for xscale parameterisation)."
+               (only relevant for array-based parameterisation)."
     abscorplot = "absorption_correction"
       .type = str
       .help = "Option to set filename for absorption plot
-               (only relevant for xscale parameterisation)."
+               (only relevant for array-based parameterisation)."
     modcorplot = "modulation_correction"
       .type = str
       .help = "Option to set filename for modulation plot
-               (only relevant for xscale parameterisation)."
+               (only relevant for array-based parameterisation)."
     experiment_range = ()
       .type = ints
       .help = "Option to specify a subset of experiments to plot."
@@ -85,7 +85,7 @@ def plot_scaling_models(argv):
   if len(experiments) == 1:
     experiment = experiments[0]
     reflection = reflections[0]
-    if isinstance(experiment.scaling_model, Model.AimlessScalingModel):
+    if isinstance(experiment.scaling_model, Model.PhysicalScalingModel):
       if ('scale' in experiment.scaling_model.configdict['corrections'] or
         'decay' in experiment.scaling_model.configdict['corrections']):
         plot_smooth_scales(params, experiment, reflection,
@@ -93,7 +93,7 @@ def plot_scaling_models(argv):
       if 'absorption' in experiment.scaling_model.configdict['corrections']:
         plot_absorption_surface(experiment,
           outputfile=str(params.output.absorption_out)+'.png')
-    elif isinstance(experiment.scaling_model, Model.XscaleScalingModel):
+    elif isinstance(experiment.scaling_model, Model.ArrayScalingModel):
       if 'decay' in experiment.scaling_model.configdict['corrections']:
         plot_2D_decay_correction(experiment, reflection)
       if 'absorption' in experiment.scaling_model.configdict['corrections']:
@@ -114,7 +114,7 @@ def plot_scaling_models(argv):
 
 def plot_multi(params, experiment, reflection, j):
   '''subscript to plot a single instance of a multi-dataset file'''
-  if isinstance(experiment.scaling_model, Model.AimlessScalingModel):
+  if isinstance(experiment.scaling_model, Model.PhysicalScalingModel):
     if ('scale' in experiment.scaling_model.configdict['corrections'] or
       'decay' in experiment.scaling_model.configdict['corrections']):
       plot_smooth_scales(params, experiment, reflection,
@@ -122,7 +122,7 @@ def plot_multi(params, experiment, reflection, j):
     if 'absorption' in experiment.scaling_model.configdict['corrections']:
       plot_absorption_surface(experiment,
         outputfile=str(params.output.absorption_out)+'_'+str(j+1)+'.png')
-  elif isinstance(experiment.scaling_model, Model.XscaleScalingModel):
+  elif isinstance(experiment.scaling_model, Model.ArrayScalingModel):
     if 'decay' in experiment.scaling_model.configdict['corrections']:
       plot_2D_decay_correction(experiment, reflection,
         outputfile=str(params.output.decay_out)+'_'+str(j+1)+'.png')
@@ -287,7 +287,7 @@ def plot_absorption_surface(experiment, outputfile=None):
     print("Saving plot to absorption_surface.png")
 
 def plot_2D_decay_correction(experiment, reflections, outputfile=None):
-  '''plotting of decay vs time correction for xscale parameterisation'''
+  '''plotting of decay vs time correction for array-based parameterisation'''
   '''first extract the model and data'''
   reflections = reflections.select(reflections['d'] > 0.0)
   configdict = experiment.scaling_model.configdict
@@ -410,7 +410,7 @@ def plot_2D_modulation_correction(experiment, reflections, outputfile=None):
 
 def plot_3D_absorption_correction(experiment, reflections, outputfile=None):
   '''produces a plot of the absorption correction model parameters
-  for xscale parameterisation'''
+  for array-based parameterisation'''
   '''first extract the model and data'''
   configdict = experiment.scaling_model.configdict
   n_time_bins = configdict['n_time_param']
