@@ -190,7 +190,7 @@ def main(argv):
   # Save scaled_experiments.json and scaled.pickle files.
   save_experiments(experiments, params.output.experiments)
   minimised.clean_reflection_table()
-  save_reflections(minimised, params.output.scaled)
+  save_reflections(minimised.reflection_table, params.output.scaled)
 
   '''if params.output.plot_scaling_models:
     from dials_scratch.command_line.plot_scaling_models import plot_scaling_models

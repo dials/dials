@@ -19,8 +19,8 @@ phil_scope = iotbx.phil.parse('''
       .type = float
       .help = "Rotation (phi) interval between model parameters for the decay
                component (physical/array default models)."
-    n_resolution_bins = 10.0
-      .type = float
+    n_resolution_bins = 10
+      .type = int(value_min=1)
       .help = "Number of resolution bins to use for the decay term in the
                array-based model."
     absorption_term = True
@@ -28,7 +28,7 @@ phil_scope = iotbx.phil.parse('''
       .help = "Option to turn off absorption correction (for physical/array
                default models)."
     lmax = 4
-      .type = int
+      .type = int(value_min=2)
       .help = "Number of spherical harmonics to include for absorption
               correction (for physical default model), recommended to be no
               more than 6."
@@ -40,6 +40,16 @@ phil_scope = iotbx.phil.parse('''
       .type = bool
       .help = "Option to turn on a detector correction for the array default
                model."
+    n_modulation_bins = 20
+      .type = int(value_min=1)
+      .help = "Number of bins in each dimension (applied to both x and y) for
+              binning the detector position for the modulation term of the
+              array model."
+    n_absorption_bins = 3
+      .type = int(value_min=1)
+      .help = "Number of bins in each dimension (applied to both x and y) for
+              binning the detector position for the absorption term of the
+              array model."
   }
   reflection_selection {
     E2_min = 0.8

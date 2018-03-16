@@ -50,7 +50,7 @@ class ScalerBase(object):
 
   @property
   def initial_keys(self):
-    '''list of initial reflection table keys.'''
+    """A list of initial reflection table keys."""
     return self._initial_keys
 
   def clean_reflection_table(self):
@@ -75,10 +75,6 @@ class ScalerBase(object):
   def get_basis_function(self, apm, curvatures=False):
     '''call the basis function'''
     return basis_function(self, apm, curvatures).return_basis()
-
-  def save_reflection_table(self, filename):
-    ''' Save the reflections to file. '''
-    self.reflection_table.as_pickle(filename)
 
   @classmethod
   def _scaling_subset(cls, reflection_table, params, error_model_params=None):

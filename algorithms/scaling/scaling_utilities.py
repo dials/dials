@@ -1,15 +1,13 @@
 from __future__ import print_function
 import logging
 from time import time
-from dxtbx.model.experiment_list import ExperimentListDumper
+import copy
 import cPickle as pickle
 from dials.array_family import flex
-import numpy as np
 from math import pi
-import copy
-import logging
 from cctbx import miller, crystal
 from Ih_table import SingleIhTable
+from dxtbx.model.experiment_list import ExperimentListDumper
 from dials_scratch_scaling_ext import create_sph_harm_table, calc_theta_phi,\
   rotate_vectors_about_axis
 
@@ -28,7 +26,7 @@ def save_reflections(reflections, filename):
   '''Save the scaled reflections.'''
   st = time()
   logger.info('Saving the scaled reflections to %s' % filename)
-  reflections.save_reflection_table(filename)
+  reflections.as_pickle(filename)
   logger.info('Time taken: %g' % (time() - st))
 
 def parse_multiple_datasets(reflections):

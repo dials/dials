@@ -53,50 +53,47 @@ class PhysicalSMFactory(object):
   
   @classmethod
   def create(cls, params, experiments, reflections):
-    '''
-    create the scaling model defined by the params.
-    '''
+    """Create the scaling model defined by the params."""
     corrections = []
     #these names are used many time in the program as flags, create a better
     #way to strongly enforce inclusion of certain corrections?
-    if params.parameterisation.scale_term:
-      corrections.append('scale')
-    if params.parameterisation.decay_term:
-      corrections.append('decay')
-    if params.parameterisation.absorption_term:
-      corrections.append('absorption')
-
-    configdict = OrderedDict({'corrections': corrections})
-
 
     osc_range = check_for_user_excluded(experiments, reflections)
     one_osc_width = experiments.scan.get_oscillation()[1]
 
-    n_scale_param, s_norm_fac, scale_rot_int = initialise_smooth_input(
-      osc_range, one_osc_width, params.parameterisation.scale_interval)
-    scale_parameters = flex.double([1.0] * n_scale_param)
+    if params.parameterisation.scale_term:
+      corrections.append('scale')
+      n_scale_param, s_norm_fac, scale_rot_int = initialise_smooth_input(
+        osc_range, one_osc_width, params.parameterisation.scale_interval)
+      scale_parameters = flex.double([1.0] * n_scale_param)
+    if params.parameterisation.decay_term:
+      corrections.append('decay')
+      n_decay_param, d_norm_fac, decay_rot_int = initialise_smooth_input(
+        osc_range, one_osc_width, params.parameterisation.decay_interval)
+      decay_parameters = flex.double([0.0] * n_decay_param)
+    if params.parameterisation.absorption_term:
+      corrections.append('absorption')
+      lmax = params.parameterisation.lmax
+      n_abs_param = (2*lmax) + (lmax**2)  #arithmetic sum formula (a1=3, d=2)
+      abs_parameters = flex.double([0.0] * n_abs_param)
 
-    n_decay_param, d_norm_fac, decay_rot_int = initialise_smooth_input(
-      osc_range, one_osc_width, params.parameterisation.decay_interval)
-    decay_parameters = flex.double([0.0] * n_decay_param)
-
-    lmax = params.parameterisation.lmax
-    n_abs_param = (2*lmax) + (lmax**2)  #arithmetic sum formula (a1=3, d=2)
-    abs_parameters = flex.double([0.0] * n_abs_param)
+    configdict = OrderedDict({'corrections': corrections})
+    parameters_dict = {}
 
     if 'scale' in configdict['corrections']:
       configdict.update({'s_norm_fac' : s_norm_fac,
-                         'scale_rot_interval' : scale_rot_int})
+        'scale_rot_interval' : scale_rot_int})
+      parameters_dict['scale'] = {'parameters' : scale_parameters,
+        'parameter_esds' : None}
     if 'decay' in configdict['corrections']:
       configdict.update({'d_norm_fac' : d_norm_fac,
-                         'decay_rot_interval' : decay_rot_int})
+        'decay_rot_interval' : decay_rot_int})
+      parameters_dict['decay'] = {'parameters' : decay_parameters,
+        'parameter_esds' : None}
     if 'absorption' in configdict['corrections']:
       configdict.update({'lmax' : lmax})
-
-    parameters_dict = {
-      'scale': {'parameters' : scale_parameters, 'parameter_esds' : None},
-      'decay': {'parameters' : decay_parameters, 'parameter_esds' : None},
-      'absorption': {'parameters' : abs_parameters, 'parameter_esds' : None}}
+      parameters_dict['absorption'] = {'parameters' : abs_parameters,
+        'parameter_esds' : None}
 
     return Model.PhysicalScalingModel(parameters_dict, configdict)
 
@@ -117,6 +114,18 @@ def initialise_smooth_input(osc_range, one_osc_width, interval):
   norm_fac = 0.9999 * one_osc_width / rot_int #to make sure normalise values
   #fall within range of smoother.
   return n_param, norm_fac, rot_int
+
+def calc_n_param_from_bins(value_min, value_max, n_bins):
+  """Return the correct number of bins for initialising the gaussian
+  smoothers."""
+  bin_width = (value_max - value_min) / n_bins
+  if n_bins == 1:
+    n_param = 2
+  elif n_bins == 2:
+    n_param = 3
+  else:
+    n_param = n_bins + 2
+  return n_param, bin_width
 
 def check_for_user_excluded(experiments, reflections):
   """Determine the oscillation range, allowing for user excluded range."""
@@ -150,77 +159,57 @@ class ArraySMFactory(object):
     '''create an array-based scaling model.'''
     reflections = reflections.select(reflections['d'] > 0.0)
 
-    #only create components that are specified in params?
+    # First initialise things common to more than one correction.
+    osc_range = check_for_user_excluded(experiments, reflections)
+    one_osc_width = experiments.scan.get_oscillation()[1]
+    n_time_param, time_norm_fac, time_rot_int = initialise_smooth_input(
+      osc_range, one_osc_width, params.parameterisation.decay_interval)
+    (xvalues, yvalues, _) = reflections['xyzobs.px.value'].parts()
+    (xmax, xmin) = (max(xvalues) + 0.001, min(xvalues) - 0.001)
+    (ymax, ymin) = (max(yvalues) + 0.001, min(yvalues) - 0.001)
+    
     corrections = []
     if params.parameterisation.decay_term:
       corrections.append('decay')
+      resmax = (1.0 / (min(reflections['d'])**2)) + 0.001
+      resmin = (1.0 / (max(reflections['d'])**2)) - 0.001
+      n_res_bins = params.parameterisation.n_resolution_bins
+      n_res_param, res_bin_width = calc_n_param_from_bins(resmin, resmax,
+        n_res_bins)
+      dec_params = flex.double([1.0] * n_time_param * n_res_param)
     if params.parameterisation.absorption_term:
       corrections.append('absorption')
+      nxbins = nybins = params.parameterisation.n_absorption_bins
+      n_x_param, x_bin_width = calc_n_param_from_bins(xmin, xmax, nxbins)
+      n_y_param, y_bin_width = calc_n_param_from_bins(ymin, ymax, nybins)
+      abs_params = flex.double([1.0] * n_x_param * n_y_param * n_time_param)
     if params.parameterisation.modulation_term:
       corrections.append('modulation')
+      nx_det_bins = ny_det_bins = params.parameterisation.n_modulation_bins
+      n_x_mod_param, x_det_bin_width = calc_n_param_from_bins(
+        xmin, xmax, nx_det_bins)
+      n_y_mod_param, y_det_bin_width = calc_n_param_from_bins(
+        ymin, ymax, ny_det_bins)
+      mod_params = flex.double([1.0] * n_x_mod_param * n_y_mod_param)
+
     configdict = OrderedDict({'corrections': corrections})
-
-    #scale_rot_int = params.parameterisation.scale_interval + 0.001
-    osc_range = check_for_user_excluded(experiments, reflections)
-    one_osc_width = experiments.scan.get_oscillation()[1]
-
-    n_time_param, time_norm_fac, time_rot_int = initialise_smooth_input(
-      osc_range, one_osc_width, params.parameterisation.decay_interval)
-
-    #nzbins = max(int((osc_range[1] - osc_range[0])/ scale_rot_int), 2) ###FIX
-    #if ((osc_range[1] - osc_range[0])/ scale_rot_int) % 1 < 0.33:
-    #  scale_rot_int = (osc_range[1] - osc_range[0])/float(nzbins) + 0.001
-    #  nzbins = int((osc_range[1] - osc_range[0])/ scale_rot_int)
-
-    '''Bin the data into resolution and time 'z' bins'''
-    (xvalues, yvalues, zvalues) = reflections['xyzobs.px.value'].parts()
-    (xmax, xmin) = (max(xvalues) + 0.001, min(xvalues) - 0.001)
-    (ymax, ymin) = (max(yvalues) + 0.001, min(yvalues) - 0.001)
-    #(zmax, zmin) = (max(zvalues) + 0.001, min(zvalues) - 0.001)
-    resmax = (1.0 / (min(reflections['d'])**2)) + 0.001
-    resmin = (1.0 / (max(reflections['d'])**2)) - 0.001
-
-    n_res_bins = params.parameterisation.n_resolution_bins #params.scaling_options.n_res_bins
-
-    res_bin_width = (resmax - resmin) / n_res_bins
-    #time_bin_width = (zmax - zmin) / nzbins
-    nres = ((1.0 / (reflections['d']**2)) - resmin) / res_bin_width
-    n_res_param = int(max(nres)//1) - int(min(nres)//1) + 3 #for g_decay
-    #nt = (zvalues - zmin) / time_bin_width
-    #n_time_param = int(max(nt)//1) - int(min(nt)//1) + 3 #for g_decay and g_abs
-    dec_params = flex.double([1.0] * n_time_param * n_res_param)
+    parameters_dict = {}
 
     if 'decay' in configdict['corrections']:
       configdict.update({'n_res_param': n_res_param, 'n_time_param': n_time_param,
         'resmin' : resmin, 'res_bin_width' : res_bin_width,
         'time_norm_fac' : time_norm_fac, 'time_rot_interval' : time_rot_int})
-
-    nxbins = nybins = 3.0
-    x_bin_width = (xmax - xmin) / float(nxbins)
-    y_bin_width = (ymax - ymin) / float(nybins)
-    nax = ((xvalues - xmin) / x_bin_width)
-    n_x_param = int(max(nax)//1) - int(min(nax)//1) + 3
-    nay = ((yvalues - ymin) / y_bin_width)
-    n_y_param = int(max(nay)//1) - int(min(nay)//1) + 3
-    abs_params = flex.double([1.0] * n_x_param * n_y_param * n_time_param)
+      parameters_dict['decay'] = {'parameters' : dec_params,
+        'parameter_esds' : None}
 
     if 'absorption' in configdict['corrections']:
-      configdict.update({
-        'n_x_param' : n_x_param, 'n_y_param' : n_y_param, 'xmin' : xmin,
-        'ymin' : ymin, 'x_bin_width' : x_bin_width, 'y_bin_width' : y_bin_width,
-        'n_time_param': n_time_param, 'time_norm_fac' : time_norm_fac,
-        'time_rot_interval' : time_rot_int
+      configdict.update({ 'n_x_param' : n_x_param, 'n_y_param' : n_y_param,
+        'xmin' : xmin, 'ymin' : ymin, 'x_bin_width' : x_bin_width,
+        'y_bin_width' : y_bin_width, 'n_time_param': n_time_param,
+        'time_norm_fac' : time_norm_fac, 'time_rot_interval' : time_rot_int
       })
-
-    n_detector_bins = 10#params.parameterisation.n_detector_bins
-    nx_det_bins = ny_det_bins = n_detector_bins
-    x_det_bin_width = (xmax - xmin) / float(nx_det_bins)
-    y_det_bin_width = (ymax - ymin) / float(ny_det_bins)
-    nxdet = ((xvalues - xmin) / x_det_bin_width)
-    n_x_mod_param = int(max(nxdet)//1) - int(min(nxdet)//1) + 3
-    nydet = ((yvalues - ymin) / y_det_bin_width)
-    n_y_mod_param = int(max(nydet)//1) - int(min(nydet)//1) + 3
-    mod_params = flex.double([1.0] * n_x_mod_param * n_y_mod_param)
+      parameters_dict['absorption'] = {'parameters' : abs_params,
+        'parameter_esds' : None}
 
     if 'modulation' in configdict['corrections']:
       configdict.update({
@@ -228,10 +217,7 @@ class ArraySMFactory(object):
         'xmin' : xmin, 'ymin' : ymin,
         'x_det_bin_width' : x_det_bin_width, 'y_det_bin_width' : y_det_bin_width
       })
-
-    parameters_dict = {
-      'decay': {'parameters' : dec_params, 'parameter_esds' : None},
-      'absorption': {'parameters' : abs_params, 'parameter_esds' : None},
-      'modulation': {'parameters' : mod_params, 'parameter_esds' : None}}
+      parameters_dict['modulation'] = {'parameters' : mod_params,
+        'parameter_esds' : None}
 
     return Model.ArrayScalingModel(parameters_dict, configdict)
