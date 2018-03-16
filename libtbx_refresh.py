@@ -34,6 +34,7 @@ libtbx.pkg_utils.require('pytest', '>=3.1')
 libtbx.pkg_utils.require('Jinja2')
 libtbx.pkg_utils.require('procrunner')
 libtbx.pkg_utils.require('scipy')
+libtbx.pkg_utils.require('scikit_learn[alldeps]')
 
 def _install_dials_autocompletion():
   '''generate bash.sh and SConscript file in /build/dials/autocomplete'''
