@@ -147,7 +147,7 @@ class determine_space_group(object):
   def resolution_filter(self, d_min, min_i_mean_over_sigma_mean, min_cc_half):
     if d_min is libtbx.Auto and (
         min_i_mean_over_sigma_mean is not None or min_cc_half is not None):
-      from xia2.Modules import Resolutionizer
+      from dials.util import Resolutionizer
       rparams = Resolutionizer.phil_defaults.extract().resolutionizer
       rparams.nbins = 20
       resolutionizer = Resolutionizer.resolutionizer(self.intensities, None, rparams)
