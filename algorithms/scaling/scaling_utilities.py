@@ -10,7 +10,8 @@ import copy
 import logging
 from cctbx import miller, crystal
 from Ih_table import SingleIhTable
-from dials_scratch_scaling_ext import create_sph_harm_table
+from dials_scratch_scaling_ext import create_sph_harm_table, calc_theta_phi,\
+  rotate_vectors_about_axis
 
 logger = logging.getLogger('dials')
 
@@ -46,100 +47,46 @@ def parse_multiple_datasets(reflections):
       single_reflection_tables.append(refl_table)
   return single_reflection_tables
 
-
 def calc_crystal_frame_vectors(reflection_table, experiments):
-  '''calculates diffraction vector in crystal frame'''
-  reflection_table['s0'] = flex.vec3_double([experiments.beam.get_s0()]*len(reflection_table))
-  rot_axis = experiments.goniometer.get_rotation_axis()
+  """Calculate the diffraction vectors in the crystal frame."""
+  reflection_table['s0'] = flex.vec3_double(
+    [experiments.beam.get_s0()]*len(reflection_table))
+  rot_axis = flex.vec3_double([experiments.goniometer.get_rotation_axis()])
   angles = reflection_table['phi'] * -1.0 * pi / 180 #want to do an inverse rot.
   reflection_table['s1c'] = rotate_vectors_about_axis(rot_axis,
     reflection_table['s1'], angles)
   reflection_table['s0c'] = rotate_vectors_about_axis(rot_axis,
-    reflection_table['s0'], angles) #all s2 vectors now relative to a 'fixed crystal'
+    reflection_table['s0'], angles)
   reflection_table['s1c'] = align_rotation_axis_along_z(rot_axis,
     reflection_table['s1c'])
   reflection_table['s0c'] = align_rotation_axis_along_z(rot_axis,
     reflection_table['s0c'])
   return reflection_table
 
-def rotate_vectors_about_axis(rot_axis, vectors, angles):
-  #assumes angles in radians
-  (r0, r1, r2) = vectors.parts()
-  (ux, uy, uz) = list(rot_axis)
-  #normalise
-  modulus = (ux**2 + uy**2 + uz**2)**0.5
-  (ux, uy, uz) = (ux/modulus, uy/modulus, uz/modulus)
-  c_ph = flex.double(np.cos(angles))
-  s_ph = flex.double(np.sin(angles))
-  rx = (((c_ph + ((ux**2) * (1.0 - c_ph))) * r0)
-        + (((ux * uy * (1.0 - c_ph)) - (uz * s_ph)) * r1)
-        + (((uz * ux * (1.0 - c_ph)) + (uy * s_ph)) * r2))
-  ry = ((((ux * uy * (1.0 - c_ph)) + (uz * s_ph)) * r0)
-        + ((c_ph + ((uy**2) * (1.0 - c_ph))) * r1)
-        + (((uz * uy * (1.0 - c_ph)) - (ux * s_ph)) * r2))
-  rz = ((((ux * uz * (1.0 - c_ph)) - (uy * s_ph)) * r0)
-        + (((uy * uz * (1.0 - c_ph)) + (ux * s_ph)) * r1)
-        + ((c_ph + ((uz**2) * (1.0 - c_ph))) * r2))
-  rotated_vectors = zip(rx, ry, rz)
-  return flex.vec3_double(rotated_vectors)
-
 def align_rotation_axis_along_z(exp_rot_axis, vectors):
-  (ux, uy, uz) = list(exp_rot_axis)
-  cross_prod_uz = (uy, -1.0*ux, 0.0)
-  #cpx, cpy, cpz = list(cross_prod_uz)
+  """Rotate the coordinate system such that the exp_rot_axis is along z."""
+  (ux, uy, uz) = exp_rot_axis[0][0], exp_rot_axis[0][1], exp_rot_axis[0][2]
+  cross_prod_uz = flex.vec3_double([(uy, -1.0*ux, 0.0)])
   from math import acos
   angle_between_u_z = -1.0*acos(uz/((ux**2 + uy**2 + uz**2)**0.5))
   phi = flex.double([angle_between_u_z]*len(vectors))
   new_vectors = rotate_vectors_about_axis(cross_prod_uz, vectors, phi)
   return flex.vec3_double(new_vectors)
 
-def calc_theta_phi(x,y,z):
-  phi_list = flex.double(np.arctan2(y, x))
-  theta_list = flex.double(np.arctan2((((x**2) + (y**2))**0.5), z))
-  return phi_list, theta_list
-
-def calculate_sph_coefficients(ziplist, lmax, sph_harm_terms, nsssphe):
-  import math as pymath
-  counter = 0
-  sqrt2 = pymath.sqrt(2)
-  for l in range(1, lmax+1):
-    for m in range(-l, l+1):
-      if m < 0:
-        for i, (phi, theta, phi2, theta2) in enumerate(ziplist):
-          sph_harm_terms[i, counter] = (sqrt2 * ((-1) ** m)
-            * (nsssphe.spherical_harmonic(l, -1*m, theta, phi).imag
-            + nsssphe.spherical_harmonic(l, -1*m, theta2, phi2).imag)/2.0)
-      elif m == 0:
-        for i, (phi, theta, phi2, theta2) in enumerate(ziplist):
-          sph_harm_terms[i, counter] = ((
-            nsssphe.spherical_harmonic(l, m, theta, phi).real
-            + nsssphe.spherical_harmonic(l, m, theta2, phi2).real)/2.0)
-      else:
-        for i, (phi, theta, phi2, theta2) in enumerate(ziplist):
-          sph_harm_terms[i, counter] = (sqrt2 * ((-1) ** m)
-            * (nsssphe.spherical_harmonic(l, m, theta, phi).real
-            + nsssphe.spherical_harmonic(l, m, theta2, phi2).real)/2.0)
-      counter += 1
-  return sph_harm_terms
-
 def sph_harm_table(reflection_table, experiments, lmax):
-  from scitbx import math, sparse
+  """Calculate the spherical harmonic table for a spherical
+    harmonic absorption correction."""
+  from scitbx import sparse # Leave - needed to allow return of sph_harm_table
   reflection_table = calc_crystal_frame_vectors(reflection_table, experiments)
-
-  (x1, y1, z1) = reflection_table['s0c'].parts()
-  (x2, y2, z2) = reflection_table['s1c'].parts()
-
-  phi_list, theta_list = calc_theta_phi(x1, y1, z1)
-  phi_list_2, theta_list_2 = calc_theta_phi(x2, y2, z2)
-  sph_h_t = create_sph_harm_table(theta_list, phi_list, theta_list_2, phi_list_2, lmax)
+  theta_phi = calc_theta_phi(reflection_table['s0c'])
+  theta_phi_2 = calc_theta_phi(reflection_table['s1c'])
+  sph_h_t = create_sph_harm_table(theta_phi, theta_phi_2, lmax)
   return sph_h_t
 
 def reject_outliers(reflection_table, zmax):
   '''simple, quick, outlier rejection based on normalised deviations
   (similar to aimless)'''
-  Ih_table = SingleIhTable(reflection_table)#self.reflection_table)
-  #print(len(reflection_table))
-  #print(Ih_table.size)
+  Ih_table = SingleIhTable(reflection_table)
   I = Ih_table.intensities
   g = Ih_table.inverse_scale_factors
   w = Ih_table.weights
@@ -149,8 +96,6 @@ def reject_outliers(reflection_table, zmax):
   z_score = (norm_dev**2)**0.5
   outliers_sel = z_score > zmax
   select_isel = Ih_table._nonzero_weights.iselection()
-  #print(len(select_isel))
-  #print(len(outliers_sel))
   outliers_in_overall = select_isel.select(outliers_sel)
   outlier_mask = flex.bool([False]*len(reflection_table))
   outlier_mask.set_selected(outliers_in_overall, True)
@@ -158,33 +103,6 @@ def reject_outliers(reflection_table, zmax):
     reflection_table.flags.outlier_in_scaling)
   return reflection_table
 
-'''def R_pim_meas(scaler):
-  #Calculate R_pim, R_meas from a scaler
-  Ihl = scaler.Ih_table.intensities
-  gvalues = scaler.Ih_table.inverse_scale_factors
-
-  ones = flex.double([1.0] * len(Ihl))
-  nh = ones * scaler.Ih_table.h_index_matrix
-
-  I_average = (((Ihl/gvalues) * scaler.Ih_table.h_index_matrix)/nh)
-  I_average_expanded = flex.double(np.repeat(I_average,
-    scaler.Ih_table.h_index_counter_array))
-
-  diff = abs((Ihl/gvalues) - I_average_expanded)
-  reduced_diff = diff * scaler.Ih_table.h_index_matrix
-
-  selection = (nh != 1.0)
-  sel_reduced_diff = reduced_diff.select(selection)
-  sel_nh = nh.select(selection)
-
-  Rpim_upper = flex.sum(((1.0/(sel_nh - 1.0))**0.5) * sel_reduced_diff)
-  Rmeas_upper = flex.sum(((sel_nh/(sel_nh - 1.0))**0.5) * sel_reduced_diff)
-  sumIh = I_average_expanded * scaler.Ih_table.h_index_matrix
-  sumIh = sumIh.select(selection)
-  Rpim_lower = flex.sum(sumIh)
-  Rpim = Rpim_upper/Rpim_lower
-  Rmeas = Rmeas_upper/Rpim_lower
-  return Rpim, Rmeas'''
 
 def calc_normE2(reflection_table, experiments):
   '''calculate normalised intensity values for centric and acentric reflections'''
@@ -308,3 +226,31 @@ def calculate_wilson_outliers(reflection_table):
     centric_cutoff,acentric_cutoff, sep='\n')
   logger.info(msg)
   return reflection_table
+
+'''def R_pim_meas(scaler):
+  #Calculate R_pim, R_meas from a scaler
+  Ihl = scaler.Ih_table.intensities
+  gvalues = scaler.Ih_table.inverse_scale_factors
+
+  ones = flex.double([1.0] * len(Ihl))
+  nh = ones * scaler.Ih_table.h_index_matrix
+
+  I_average = (((Ihl/gvalues) * scaler.Ih_table.h_index_matrix)/nh)
+  I_average_expanded = flex.double(np.repeat(I_average,
+    scaler.Ih_table.h_index_counter_array))
+
+  diff = abs((Ihl/gvalues) - I_average_expanded)
+  reduced_diff = diff * scaler.Ih_table.h_index_matrix
+
+  selection = (nh != 1.0)
+  sel_reduced_diff = reduced_diff.select(selection)
+  sel_nh = nh.select(selection)
+
+  Rpim_upper = flex.sum(((1.0/(sel_nh - 1.0))**0.5) * sel_reduced_diff)
+  Rmeas_upper = flex.sum(((sel_nh/(sel_nh - 1.0))**0.5) * sel_reduced_diff)
+  sumIh = I_average_expanded * scaler.Ih_table.h_index_matrix
+  sumIh = sumIh.select(selection)
+  Rpim_lower = flex.sum(sumIh)
+  Rpim = Rpim_upper/Rpim_lower
+  Rmeas = Rmeas_upper/Rpim_lower
+  return Rpim, Rmeas'''

@@ -63,7 +63,7 @@ class MultiScalerFactory(object):
     '''method to pass scalers from TargetScaler to a MultiScaler'''
     single_scalers = targetscaler.single_scalers
     for scaler in targetscaler.unscaled_scalers:
-      scaler._select_reflections_for_scaling()
+      scaler.select_reflections_for_scaling()
       single_scalers.append(scaler)
     return MultiScaler(targetscaler.params, [targetscaler.experiments], single_scalers)
 
