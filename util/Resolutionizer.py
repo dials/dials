@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 import copy
 import math
@@ -16,7 +16,7 @@ def nint(a):
 start_time = time.time()
 def stamp(message):
   if False:
-    print "[%7.3f] %s" % (time.time() - start_time, message)
+    print("[%7.3f] %s" % (time.time() - start_time, message))
   return
 
 def poly_residual(xp, y, params):
@@ -350,32 +350,27 @@ class resolutionizer(object):
 
     if self._params.rmerge:
       stamp("ra: rmerge")
-      print 'Resolution rmerge:       %.2f' % \
-          self.resolution_rmerge()
+      print('Resolution rmerge:       %.2f' % self.resolution_rmerge())
 
     if self._params.completeness:
       stamp("ra: comp")
-      print 'Resolution completeness: %.2f' % \
-          self.resolution_completeness()
+      print('Resolution completeness: %.2f' % self.resolution_completeness())
 
     if self._params.cc_half:
       stamp("ra: cc")
-      print 'Resolution cc_half     : %.2f' % \
-          self.resolution_cc_half()
+      print('Resolution cc_half     : %.2f' % self.resolution_cc_half())
 
     if self._params.isigma:
       stamp("ra: isig")
-      print 'Resolution I/sig:        %.2f' % \
-          self.resolution_unmerged_isigma()
+      print('Resolution I/sig:        %.2f' % self.resolution_unmerged_isigma())
 
     if self._params.misigma:
       stamp("ra: mnisig")
-      print 'Resolution Mn(I/sig):    %.2f' % \
-          self.resolution_merged_isigma()
+      print('Resolution Mn(I/sig):    %.2f' % self.resolution_merged_isigma())
 
     if self._params.i_mean_over_sigma_mean:
-      print 'Resolution Mn(I)/Mn(sig):    %.2f' % \
-          self.resolution_i_mean_over_sigma_mean()
+      print('Resolution Mn(I)/Mn(sig):    %.2f' %
+            self.resolution_i_mean_over_sigma_mean())
 
   def resolution_rmerge(self, limit=None, log=None):
     '''Compute a resolution limit where either rmerge = 1.0 (limit if
