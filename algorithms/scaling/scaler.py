@@ -112,9 +112,6 @@ class ScalerBase(object):
         params.reflection_selection.Isigma_min)
       weights_for_scaling.apply_dmin_cutoff(reflection_table,
         params.reflection_selection.d_min)
-    #weights_for_scaling.remove_wilson_outliers(reflection_table)
-    #if params.weighting.tukey_biweighting and Ih_table:
-    #  weights_for_scaling.tukey_biweighting(Ih_table)
     if error_model_params:
       weights_for_scaling.apply_error_model(reflection_table,
         error_model_params)
@@ -554,8 +551,8 @@ class PhysicalScaler(SingleScalerBase):
       self._scaling_subset(self.reflection_table, self.params,
       error_model_params=self.params.weighting.error_model_params))
     self._Ih_table = SingleIhTable(refl_for_scaling, weights_for_scaling.weights)
-    if self.params.weighting.tukey_biweighting:
-      self.Ih_table.apply_tukey_biweighting()
+    #if self.params.weighting.tukey_biweighting: #not working for now, FIX
+    #  self.Ih_table.apply_tukey_biweighting()
     '''refactor the next two operations into extract_reflections?
     reset the normalised values within the scale_factor object to current'''
     if 'scale' in self.components:
@@ -664,8 +661,9 @@ class ArrayScaler(SingleScalerBase):
       - configdict['resmin']) / configdict['res_bin_width'])
     refl_table['normalised_res_values'].set_selected(d0_sel, 0.0001)
     refl_table['d'].set_selected(d0_sel, 0.0)
-    refl_table['norm_time_values'] = ((refl_table['xyzobs.px.value'].parts()[2]
-      - configdict['zmin']) / configdict['time_bin_width'])
+    refl_table['norm_time_values'] = (refl_table['xyzobs.px.value'].parts()[2] * 
+      self.experiments.scaling_model.configdict['time_norm_fac'])
+    #- configdict['zmin']) / configdict['time_bin_width'])
 
   def _initialise_absorption_term(self):
     refl_table = self.reflection_table
@@ -675,8 +673,8 @@ class ArrayScaler(SingleScalerBase):
     refl_table['normalised_y_abs_values'] = ((refl_table['xyzobs.px.value'].parts()[1]
       - configdict['ymin']) / configdict['y_bin_width'])
     if 'norm_time_values' not in refl_table:
-      refl_table['norm_time_values'] = ((refl_table['xyzobs.px.value'].parts()[2]
-        - configdict['zmin']) / configdict['time_bin_width'])
+      refl_table['norm_time_values'] = (refl_table['xyzobs.px.value'].parts()[2] 
+      * self.experiments.scaling_model.configdict['time_norm_fac'])
 
   def _initialise_modulation_term(self):
     refl_table = self.reflection_table
@@ -691,8 +689,8 @@ class ArrayScaler(SingleScalerBase):
       self._scaling_subset(self.reflection_table, self.params,
       error_model_params=self.params.weighting.error_model_params))
     self._Ih_table = SingleIhTable(refl_for_scaling, weights_for_scaling.weights)
-    if self.params.weighting.tukey_biweighting:
-      self.Ih_table.apply_tukey_biweighting()
+    #if self.params.weighting.tukey_biweighting: #not working for now, FIX
+    #  self.Ih_table.apply_tukey_biweighting()
     '''set the normalised values within the scale_factor object to current'''
     if 'modulation' in self.components:
       self.components['modulation'].update_reflection_data(

@@ -294,7 +294,7 @@ def plot_2D_decay_correction(experiment, reflections, outputfile=None):
   reflections['normalised_res_values'] = (((1.0 / (reflections['d']**2))
       - configdict['resmin']) / configdict['res_bin_width'])
   reflections['norm_time_values'] = ((reflections['xyzobs.px.value'].parts()[2]
-      - configdict['zmin']) / configdict['time_bin_width'])
+      * experiment.scaling_model.configdict['time_norm_fac']))
 
   '''create a grid of x and y points and use these to generate scale factors'''
   max_res = int(max(reflections['normalised_res_values'])) + 1
@@ -417,7 +417,7 @@ def plot_3D_absorption_correction(experiment, reflections, outputfile=None):
   n_abs_bins = configdict['n_x_param'] * configdict['n_y_param']
   (xvalues, yvalues, zvalues) = reflections['xyzobs.px.value'].parts()
   '''calculate normalised x, y, time values'''
-  nt = (zvalues - configdict['zmin']) / configdict['time_bin_width']
+  nt = zvalues * experiment.scaling_model.configdict['time_norm_fac']
   nax = (xvalues - configdict['xmin']) / configdict['x_bin_width']
   nay = (yvalues - configdict['ymin']) / configdict['y_bin_width']
 

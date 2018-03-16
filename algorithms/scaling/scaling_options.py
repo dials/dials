@@ -5,33 +5,41 @@ phil_scope = iotbx.phil.parse('''
   parameterisation {
     scale_term = True
       .type = bool
-      .help = "Option to turn off decay correction (only for KB scaling)"
+      .help = "Option to turn off scale correction (for physical/KB
+               default models)."
     scale_interval = 15.0
       .type = float
-      .help = "User specified rotation (phi) interval in degrees for phi binning
-              for the scale term"
+      .help = "Rotation (phi) interval between model parameters for the scale
+               component (physical model)."
     decay_term = True
       .type = bool
-      .help = "Option to turn off decay correction"
+      .help = "Option to turn off decay correction (for physical/array/KB
+               default models)."
     decay_interval = 20.0
       .type = float
-      .help = "User specified rotation (phi) interval in degrees for phi binning
-              for the decay term"
+      .help = "Rotation (phi) interval between model parameters for the decay
+               component (physical/array default models)."
+    n_resolution_bins = 10.0
+      .type = float
+      .help = "Number of resolution bins to use for the decay term in the
+               array-based model."
     absorption_term = True
       .type = bool
-      .help = "Option to turn off absorption correction"
+      .help = "Option to turn off absorption correction (for physical/array
+               default models)."
     lmax = 4
       .type = int
-      .help = "Number of spherical harmonics to include for absorption correction,
-              recommended to be no more than 6."
+      .help = "Number of spherical harmonics to include for absorption
+              correction (for physical default model), recommended to be no
+              more than 6."
     surface_weight = 1e6
       .type = float
-      .help = "Restraint weight applied to spherical harmonic terms in absorption
-              correction."
+      .help = "Restraint weight applied to spherical harmonic terms in the 
+               physical model absorption correction."
     modulation_term = False
       .type = bool
-      .help = "Option to turn on a detector correction for an array-based
-               parameterisation."
+      .help = "Option to turn on a detector correction for the array default
+               model."
   }
   reflection_selection {
     E2_min = 0.8
