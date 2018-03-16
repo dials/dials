@@ -239,7 +239,11 @@ class determine_space_group(object):
 
     # (ii)
 
-    self.cc_identity = cc_identity(self.intensities)
+    reindexed_intensities = self.intensities.change_basis(
+      sgtbx.change_of_basis_op('-x,-y,-z')).map_to_asu()
+    x, y = self.intensities.common_sets(
+      reindexed_intensities, assert_is_similar_symmetry=False)
+    self.cc_identity = CorrelationCoefficientAccumulator(x.data(), y.data())
     n_identity = self.cc_identity.n()
 
     min_sd = 0.05
@@ -371,15 +375,14 @@ class ScoreSymmetryElement(object):
       cb_ops.append(cb_op.inverse())
     for cb_op in cb_ops:
       if cb_op.is_identity_op():
-        self.cc += cc_identity(intensities)
-      else:
-        reindexed_intensities = intensities.change_basis(cb_op).map_to_asu()
-        x, y = intensities.common_sets(
-          reindexed_intensities, assert_is_similar_symmetry=False)
-        sel = sgtbx.space_group().expand_smx(self.sym_op).epsilon(x.indices()) == 1
-        x = x.select(sel)
-        y = y.select(sel)
-        self.cc += CorrelationCoefficientAccumulator(x.data(), y.data())
+        cb_op = sgtbx.change_of_basis_op('-x,-y,-z')
+      reindexed_intensities = intensities.change_basis(cb_op).map_to_asu()
+      x, y = intensities.common_sets(
+        reindexed_intensities, assert_is_similar_symmetry=False)
+      sel = sgtbx.space_group().expand_smx(self.sym_op).epsilon(x.indices()) == 1
+      x = x.select(sel)
+      y = y.select(sel)
+      self.cc += CorrelationCoefficientAccumulator(x.data(), y.data())
 
     self.n_refs = self.cc.n()
     self.sigma_cc = max(0.1, cc_sig_fac/self.n_refs**0.5)
@@ -525,17 +528,6 @@ def trunccauchy_pdf(x, a, b, loc=0, scale=1):
   assert b > a
   rv = scipy.stats.cauchy(loc=loc, scale=scale)
   return rv.pdf(x) / (rv.cdf(b) - rv.cdf(a))
-
-
-def cc_identity(intensities, seed=0):
-  intensities = intensities.as_non_anomalous_array().map_to_asu().sort("packed_indices")
-  split_datasets = miller.split_unmerged(
-    unmerged_indices=intensities.indices(),
-    unmerged_data=intensities.data(),
-    unmerged_sigmas=intensities.sigmas(),
-    seed=seed)
-  return CorrelationCoefficientAccumulator(
-    split_datasets.data_1, split_datasets.data_2)
 
 
 def intensity_quasi_normalisations(intensities, d_star_power=1):
