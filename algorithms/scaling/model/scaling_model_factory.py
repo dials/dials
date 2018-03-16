@@ -60,7 +60,7 @@ class PhysicalSMFactory(object):
 
     osc_range = check_for_user_excluded(experiments, reflections)
     one_osc_width = experiments.scan.get_oscillation()[1]
-
+    print(osc_range)
     if params.parameterisation.scale_term:
       corrections.append('scale')
       n_scale_param, s_norm_fac, scale_rot_int = initialise_smooth_input(
@@ -167,7 +167,7 @@ class ArraySMFactory(object):
     (xvalues, yvalues, _) = reflections['xyzobs.px.value'].parts()
     (xmax, xmin) = (max(xvalues) + 0.001, min(xvalues) - 0.001)
     (ymax, ymin) = (max(yvalues) + 0.001, min(yvalues) - 0.001)
-    
+
     corrections = []
     if params.parameterisation.decay_term:
       corrections.append('decay')

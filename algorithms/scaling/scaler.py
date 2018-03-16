@@ -547,10 +547,9 @@ class PhysicalScaler(SingleScalerBase):
       self._scaling_subset(self.reflection_table, self.params,
       error_model_params=self.params.weighting.error_model_params))
     self._Ih_table = SingleIhTable(refl_for_scaling, weights_for_scaling.weights)
-    #if self.params.weighting.tukey_biweighting: #not working for now, FIX
-    #  self.Ih_table.apply_tukey_biweighting()
-    '''refactor the next two operations into extract_reflections?
-    reset the normalised values within the scale_factor object to current'''
+    '''if self.params.weighting.tukey_biweighting: #not working for now, FIX
+      self.Ih_table.apply_tukey_biweighting()'''
+    # reset the normalised values within the scale_factor object to current
     if 'scale' in self.components:
       self.components['scale'].update_reflection_data(refl_for_scaling['norm_rot_angle'])
     if 'decay' in self.components:

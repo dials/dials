@@ -13,6 +13,7 @@ from libtbx import phil
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from matplotlib.ticker import FormatStrFormatter
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 phil_scope = phil.parse('''
@@ -144,13 +145,15 @@ def plot_smooth_scales(params, experiments, reflections, outputfile=None):
   if 'scale' in experiments.scaling_model.configdict['corrections']:
     reflections['norm_rot_angle'] = (reflections['xyzobs.px.value'].parts()[2]
       * experiments.scaling_model.scale_normalisation_factor)
+    reflections['norm_rot_angle'] = (reflections['norm_rot_angle']
+      - min(reflections['norm_rot_angle']))
     scale_rot_int = experiments.scaling_model.configdict['scale_rot_interval']
     int_rel_max = int(max(reflections['norm_rot_angle'])) + 1
     int_rel_min = (int(min(reflections['norm_rot_angle'])))
-    rel_values = flex.double(np.linspace(int_rel_min, int_rel_max, (int_rel_max/0.1)+1,
+    rel_values = flex.double(np.linspace(0, int_rel_max-int_rel_min, ((int_rel_max-int_rel_min)/0.1)+1,
       endpoint=True))
     rel_values[-1] = rel_values[-1] - 0.0001
-    rel_values = rel_values - rel_values[0]
+    #rel_values = rel_values - rel_values[0]
     scale_SF = experiments.scaling_model.components['scale']
     scale_SF.update_reflection_data(normalised_values=rel_values)
     scale_SF.calculate_scales()
@@ -176,13 +179,15 @@ def plot_smooth_scales(params, experiments, reflections, outputfile=None):
   if 'decay' in experiments.scaling_model.configdict['corrections']:
     reflections['norm_time_values'] = (reflections['xyzobs.px.value'].parts()[2]
       * experiments.scaling_model.decay_normalisation_factor)
+    reflections['norm_time_values'] = (reflections['norm_time_values']
+      - min(reflections['norm_time_values']))
     decay_rot_int = experiments.scaling_model.configdict['decay_rot_interval']
     int_rel_max = int(max(reflections['norm_time_values'])) + 1
-    int_rel_min = (int(min(reflections['norm_rot_angle'])))
-    rel_values = flex.double(np.linspace(int_rel_min, int_rel_max, (int_rel_max/0.1)+1,
+    int_rel_min = (int(min(reflections['norm_time_values'])))
+    rel_values = flex.double(np.linspace(0, int_rel_max-int_rel_min, ((int_rel_max-int_rel_min)/0.1)+1,
       endpoint=True))
     rel_values[-1] = rel_values[-1] - 0.0001
-    rel_values = rel_values - rel_values[0]
+    #rel_values = rel_values# - rel_values[0]
     decay_SF = experiments.scaling_model.components['decay']
     decay_SF.update_reflection_data(normalised_values=rel_values,
       dvalues=flex.double([1.0]*len(rel_values)))
@@ -193,7 +198,7 @@ def plot_smooth_scales(params, experiments, reflections, outputfile=None):
     else:
       ax2 = plt.subplot(2, 1, 2)
     ax2.set_ylabel('Relative B factor (' + r'$\AA^{2}$'+')', fontsize=12)
-    ax2.set_xlabel('Rotation angle ('+r'$^{\circ}$'+')', fontsize=12)
+    ax2.set_xlabel('Rotation angle (' + r'$^{\circ}$'+')', fontsize=12)
     ax2.plot(rel_values * decay_rot_int, np.log(decay_SF.inverse_scales)*2.0,
       label='smootly varying \nB-factor') #convert scales to B values
     if params.output.with_errors:
@@ -290,17 +295,33 @@ def plot_2D_decay_correction(experiment, reflections, outputfile=None):
   '''plotting of decay vs time correction for array-based parameterisation'''
   '''first extract the model and data'''
   reflections = reflections.select(reflections['d'] > 0.0)
+  reflections = reflections.select(~reflections.get_flags(
+    reflections.flags.user_excluded_in_scaling))
+  reflections = reflections.select(reflections.get_flags(
+    reflections.flags.integrated))
   configdict = experiment.scaling_model.configdict
   reflections['normalised_res_values'] = (((1.0 / (reflections['d']**2))
       - configdict['resmin']) / configdict['res_bin_width'])
-  reflections['norm_time_values'] = ((reflections['xyzobs.px.value'].parts()[2]
-      * experiment.scaling_model.configdict['time_norm_fac']))
+  reflections['norm_time_values'] = (reflections['xyzobs.px.value'].parts()[2]
+      * configdict['time_norm_fac'])
+  reflections['norm_time_values'] = (reflections['norm_time_values']
+      - min(reflections['norm_time_values']))
+
+  time_rot_int = configdict['time_rot_interval']
+  int_rel_max = int(max(reflections['norm_time_values'])) + 1
+  int_rel_min = (int(min(reflections['norm_time_values'])))
+
+  rel_values = flex.double(np.linspace(0, int_rel_max - int_rel_min, ((int_rel_max-int_rel_min)/0.1)+1,
+    endpoint=True))
+  rel_values[-1] = rel_values[-1] - 0.0001
+  rel_values_2 = rel_values - rel_values[0]
+  x_axis_vals = rel_values_2
 
   '''create a grid of x and y points and use these to generate scale factors'''
   max_res = int(max(reflections['normalised_res_values'])) + 1
-  max_time = int(max(reflections['norm_time_values'])) + 1
+  #max_time = int(max(reflections['norm_time_values'])) + 1
   rel_values_1 = np.arange(0, max_res+0.1, 0.1)
-  rel_values_2 = np.arange(0, max_time+0.1, 0.1)
+  #rel_values_2 = np.arange(0, max_time+0.1, 0.1)
   (n1, n2) = (len(rel_values_1), len(rel_values_2))
   rel_values_1 = np.tile(rel_values_1, n2)
   rel_values_2 = np.repeat(rel_values_2, n1)
@@ -326,13 +347,18 @@ def plot_2D_decay_correction(experiment, reflections, outputfile=None):
   divider = make_axes_locatable(ax1)
   cax1 = divider.append_axes("right", size="5%", pad=0.05)
   cbar = plt.colorbar(im, cax=cax1)
-  ax1.set_ylabel('d-value')
-  ax1.set_xlabel('Normalised time value')
+  ax1.set_ylabel('d ('+r'$\AA$'+')')
+  ax1.set_xlabel('Rotation angle ('+r'$^{\circ}$'+')')
   ax1.set_yticks(np.arange(0, (max_res * 10)+0.01, 20))
   ax1.set_yticklabels(dbin_boundaries)
-  ax1.set_xticks(np.arange(0, (max_time * 10)+0.01, 20))
-  ax1.set_xticklabels(np.arange(0, max_time+0.01, 2))
-  ax1.set_title('Map of decay correction (inverse scale factors)', fontsize=10)
+  #ax1.set_xticks(x_axis_vals)
+  #ax1.set_xticklabels(x_axis_vals*time_rot_int)
+  ax1.set_xticks(np.arange(0, ((int_rel_max - int_rel_min) * 10)+0.01, 10))
+  xlabels = np.arange(0, (time_rot_int*(int_rel_max-int_rel_min))+0.001, time_rot_int)
+  xlabels = np.around(xlabels, 1)
+  ax1.set_xticklabels(xlabels)
+  
+  ax1.set_title('Decay correction (inverse scale factors)\n', fontsize=10)
 
   '''recalculate scales for plotting distribution in dataset'''
   decay_factor.update_reflection_data(reflections['normalised_res_values'],
@@ -340,9 +366,9 @@ def plot_2D_decay_correction(experiment, reflections, outputfile=None):
   decay_factor.calculate_scales()
 
   ax2.hist(list(decay_factor.inverse_scales), 40, log=False)
-  ax2.set_xlabel('Decay correction inverse scale factor')
+  ax2.set_xlabel('inverse scale factor')
   ax2.set_ylabel('Counts')
-  ax2.set_title('Distribution of dataset reflection corrections', fontsize=10)
+  ax2.set_title('Distribution of dataset reflection corrections\n', fontsize=10)
 
   plt.tight_layout()
   if outputfile:

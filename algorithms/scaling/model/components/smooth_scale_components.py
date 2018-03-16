@@ -131,6 +131,8 @@ class SmoothScaleComponent1D(SmoothScaleComponentBase):
 
   def update_reflection_data(self, normalised_values):
     """Set the normalised coordinate values and configure the smoother."""
+    # Make sure zeroed correctly.
+    normalised_values = normalised_values - min(normalised_values)
     self._normalised_values = normalised_values
     phi_range_deg = [int(min(self._normalised_values)//1),
                      int(max(self._normalised_values)//1)+1]
@@ -219,6 +221,8 @@ class SmoothScaleComponent2D(SmoothScaleComponentBase):
 
   def update_reflection_data(self, normalised_x_values, normalised_y_values):
     '''control access to setting all of reflection data at once'''
+    normalised_x_values = normalised_x_values - min(normalised_x_values)
+    normalised_y_values = normalised_y_values - min(normalised_y_values)
     self._normalised_x_values = normalised_x_values
     self._normalised_y_values = normalised_y_values
     x_range = [int(min(self._normalised_x_values)//1),
@@ -282,6 +286,9 @@ class SmoothScaleComponent3D(SmoothScaleComponentBase):
   def update_reflection_data(self, normalised_x_values, normalised_y_values,
       normalised_z_values):
     """Set the normalised coordinate values and configure the smoother."""
+    normalised_x_values = normalised_x_values - min(normalised_x_values)
+    normalised_y_values = normalised_y_values - min(normalised_y_values)
+    normalised_z_values = normalised_x_values - min(normalised_z_values)
     self._normalised_x_values = normalised_x_values
     self._normalised_y_values = normalised_y_values
     self._normalised_z_values = normalised_z_values
