@@ -96,7 +96,6 @@ tst_list = [
     "$D/test/command_line/tst_create_profile_model.py",
     "$D/test/command_line/tst_estimate_gain.py",
     "$D/test/command_line/tst_export.py",
-    "$D/test/command_line/tst_export_mosflm.py",
     "$D/test/command_line/tst_export_xds.py",
     "$D/test/command_line/tst_export_best.py",
     "$D/test/command_line/tst_filter_reflections.py",
