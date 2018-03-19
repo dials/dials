@@ -17,6 +17,7 @@ from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters 
         import GaussianSmoother, ScanVaryingParameterSet
 from dials_scaling_helpers_ext import row_multiply
 from dials.algorithms.scaling.scaling_helpers import products_omitting_one_item
+from functools import reduce
 
 class ScaleFactor(object):
   """Base class for parameterisation of a component of the overall scale"""

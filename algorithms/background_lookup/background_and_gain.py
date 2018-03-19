@@ -10,6 +10,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from functools import reduce
 
 class ComputeBackgroundAndGain(object):
   '''Class to calculate the gain map of a detector.'''

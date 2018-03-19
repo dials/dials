@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division
 from libtbx import test_utils
 import libtbx.load_env
+from functools import reduce
 
 param_tsts = (
     "$D/test/algorithms/refinement/tst_beam_parameters.py",

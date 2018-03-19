@@ -23,6 +23,7 @@ from dials.algorithms.scaling.scale_parameterisation import ScaleParameterisatio
 from dials.algorithms.scaling.scale_parameterisation import IncidentBeamFactor
 
 from dials.algorithms.scaling.scaling_helpers import products_omitting_one_item
+from functools import reduce
 
 def test_row_multiply():
 

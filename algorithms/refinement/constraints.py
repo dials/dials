@@ -16,6 +16,7 @@ from libtbx.phil import parse
 from libtbx.utils import Sorry
 from scitbx.array_family import flex
 from scitbx import sparse
+from functools import reduce
 
 logger = logging.getLogger(__name__)
 

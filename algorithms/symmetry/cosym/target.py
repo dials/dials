@@ -68,8 +68,8 @@ class Target(object):
     else:
       self._lattice_ids = self._lattice_ids.data() # type flex int
       self._data = data # type miller array with flex double data
-    assert type(self._data.indices()) == type(flex.miller_index())
-    assert type(self._data.data()) == type(flex.double())
+    assert isinstance(self._data.indices(), type(flex.miller_index()))
+    assert isinstance(self._data.data(), type(flex.double()))
 
     # construct a lookup for the separate lattices
     last_id = -1; self._lattices = flex.int()

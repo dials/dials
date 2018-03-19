@@ -15,6 +15,7 @@ from scitbx import matrix
 from dials.algorithms.refinement.parameterisation.model_parameters import Parameter, ModelParameterisation
 from dials.algorithms.refinement.refinement_helpers import \
     dR_from_axis_and_angle, get_panel_groups_at_depth, get_panel_ids_at_root
+from functools import reduce
 
 class DetectorMixin(object):
   """Mix-in class defining some functionality unique to detector
