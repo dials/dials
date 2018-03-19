@@ -149,6 +149,7 @@ def add_random_noise_xyz(datablock, strong_spots, rmsds):
   strong_spots['xyzobs.px.value'] += errors
 
 
+@pytest.mark.skip('Skipping test as it is unstable, cf. dials/dials#518')
 @pytest.mark.parametrize(('space_group', 'unit_cell_volume'), [('P1', 1000), ('P2', 10000), ('P222', 10000), ('P23', 10000)])
 def test_index_synthetic(space_group, unit_cell_volume, dials_regression, tmpdir):
   tmpdir.chdir()
