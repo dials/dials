@@ -1,5 +1,7 @@
+from __future__ import absolute_import, division, print_function
 
-from __future__ import absolute_import, division
+import os
+import sys
 
 class InputWriter(object):
   '''
@@ -21,10 +23,9 @@ class InputWriter(object):
     Call this to write input files
 
     '''
-    from os.path import join
     import cPickle as pickle
     for i, item in enumerate(self.iterable, start=1):
-      with open(join(self.directory, "%d.input" % i), "wb") as outfile:
+      with open(os.path.join(self.directory, "%d.input" % i), "wb") as outfile:
         pickle.dump(
           (self.function, item),
           outfile,
@@ -49,9 +50,6 @@ def cluster_map(
   '''
   import multiprocessing
   import cPickle as pickle
-  from os.path import join
-  import os
-  import sys
   import tempfile
   import drmaa
 
@@ -84,8 +82,8 @@ def cluster_map(
     jt.joinFiles        = True
     jt.jobEnvironment   = os.environ
     jt.workingDirectory = cwd
-    jt.outputPath       = ":" + join(cwd, "%s.stdout" % drmaa.JobTemplate.PARAMETRIC_INDEX)
-    jt.errorPath        = ":" + join(cwd, "%s.stderr" % drmaa.JobTemplate.PARAMETRIC_INDEX)
+    jt.outputPath       = ":" + os.path.join(cwd, "%s.stdout" % drmaa.JobTemplate.PARAMETRIC_INDEX)
+    jt.errorPath        = ":" + os.path.join(cwd, "%s.stderr" % drmaa.JobTemplate.PARAMETRIC_INDEX)
     jt.jobCategory      = job_category
 
     # FIXME Currently no portable way of specifying this
@@ -105,9 +103,9 @@ def cluster_map(
       result = []
       for i, jobid in enumerate(joblist, start=1):
         s.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
-        with open(join(cwd, "%d.stdout" % i), "r") as infile:
+        with open(os.path.join(cwd, "%d.stdout" % i), "r") as infile:
           sys.stdout.write("".join(infile.readlines()))
-        with open(join(cwd, "%d.output" % i), "rb") as infile:
+        with open(os.path.join(cwd, "%d.output" % i), "rb") as infile:
           r = pickle.load(infile)
         if isinstance(r, Exception):
           raise r
@@ -138,21 +136,13 @@ def cluster_map(
   return result
 
 
-
-
 if __name__ == '__main__':
-
-  def callback(x):
-    print x
-
   from dials.util.cluster_func_test import func
   from dials.util.mp import MultiNodeClusterFunction
 
-
-
-  print cluster_map(
+  print(cluster_map(
     func,
     list(range(100)),
-    nslots=4
-   # callback=callback,
-    )
+    nslots=4,
+    # callback=print,
+  ))

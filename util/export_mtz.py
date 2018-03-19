@@ -2,16 +2,16 @@
 
 from __future__ import absolute_import, division, print_function
 
-from collections import defaultdict
-from math import floor, ceil, sqrt, sin, cos, pi, log
+import logging
 import time
-
-from iotbx import mtz
-from libtbx.utils import Sorry
-from scitbx import matrix
+from collections import defaultdict
+from math import ceil, cos, floor, log, pi, sin, sqrt
 
 from dials.array_family import flex
 from dials.util.version import dials_version
+from iotbx import mtz
+from libtbx.utils import Sorry
+from scitbx import matrix
 
 try:
   from math import isclose
@@ -20,7 +20,6 @@ except ImportError:
   def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
       return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
-import logging
 logger = logging.getLogger(__name__)
 
 

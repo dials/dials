@@ -1,18 +1,8 @@
-#!/usr/bin/env python
-#
-# dials.util.mosflm.py
-#
-#  Copyright (C) 2014 Diamond Light Source
-#
-#  Author: Richard Gildea
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 import os
-from dxtbx.model import Crystal
 
+from dxtbx.model import Crystal
 
 def dump(experiments, directory):
   '''
@@ -66,10 +56,10 @@ def dump(experiments, directory):
 
     index_mat = os.path.join(sub_dir, "index.mat")
     mosflm_in = os.path.join(sub_dir, "mosflm.in")
-    print "Exporting experiment to %s and %s" %(index_mat, mosflm_in)
+    print("Exporting experiment to %s and %s" %(index_mat, mosflm_in))
 
     with open(index_mat, "wb") as f:
-      print >> f, format_mosflm_mat(w*A_mosflm, U_mosflm, cryst.get_unit_cell())
+      f.write(format_mosflm_mat(w*A_mosflm, U_mosflm, cryst.get_unit_cell()))
 
     img_dir, template = os.path.split(imageset.get_template())
     symmetry = cryst_mosflm.get_space_group().type().number()
@@ -77,14 +67,12 @@ def dump(experiments, directory):
     distance = detector[0].get_directed_distance()
 
     with open(mosflm_in, "wb") as f:
-      print >> f, write_mosflm_input(directory=img_dir,
+      f.write(write_mosflm_input(directory=img_dir,
                                      template=template,
                                      symmetry=symmetry,
                                      beam_centre=beam_centre,
                                      distance=distance,
-                                     mat_file="index.mat")
-
-  return
+                                     mat_file="index.mat"))
 
 
 def format_mosflm_mat(A, U, unit_cell, missets=(0,0,0)):

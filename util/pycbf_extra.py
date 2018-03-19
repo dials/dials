@@ -1,5 +1,6 @@
 """This module defines some useful header functions for CBF files."""
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 from scitbx import matrix
 import pycbf
@@ -34,27 +35,27 @@ def print_info(cbf_path):
     # Select the ith category and print its name
     cbf_handle.select_category(i)
     category_name = cbf_handle.category_name()
-    print "Category:", i, category_name
+    print("Category:", i, category_name)
 
     # Count the number of rows and columns in the category
     # and print them
     num_rows = cbf_handle.count_rows()
     num_cols = cbf_handle.count_columns()
-    print "\tNum (rows, cols)", (num_rows, num_cols)
+    print("\tNum (rows, cols)", (num_rows, num_cols))
 
     # Rewind the columns and print the name of each
     cbf_handle.rewind_column()
     for i in range(num_cols):
       cbf_handle.select_column(i)
       column_name = cbf_handle.column_name()
-      print '\tColumn:', i, column_name
+      print('\tColumn:', i, column_name)
 
     # Loop through all rows and columns and print the
     # type of the data stored in that table element
     for j in range(num_rows):
       cbf_handle.select_row(j)
       cbf_handle.rewind_column()
-      print '\t\tRow:', j, cbf_handle.get_value()
+      print('\t\tRow:', j, cbf_handle.get_value())
       for i in range(num_cols):
         cbf_handle.select_column(i)
         type_of_value = cbf_handle.get_typeofvalue()
@@ -69,7 +70,7 @@ def print_info(cbf_path):
           value = cbf_handle.get_value()
         else:
           value = '...'
-        print "\t\tColumn", i, "Type:", type_of_value, value
+        print("\t\tColumn", i, "Type:", type_of_value, value)
 
 
 def get_beam_direction(cbf_handle):

@@ -1,4 +1,5 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
+
 import os
 import shutil
 import sys
@@ -62,7 +63,7 @@ class installer(install_distribution.installer):
     def rmdir(subdir):
       fullpath = os.path.join(directory, subdir)
       if not os.path.exists(fullpath):
-        print "Skipping", " " * 26, subdir
+        print("Skipping", " " * 26, subdir)
         return
       num_files, total_size = 0, 0
       for dirpath, dirnames, filenames in os.walk(fullpath):
@@ -70,19 +71,19 @@ class installer(install_distribution.installer):
           fp = os.path.join(dirpath, f)
           total_size += os.path.getsize(fp)
           num_files += 1
-      print "Removing %9s, %4d files from %s" % \
-          (humansize(total_size), num_files, subdir)
+      print("Removing %9s, %4d files from %s" % \
+          (humansize(total_size), num_files, subdir))
       shutil.rmtree(fullpath)
       self._cleaned_size = self._cleaned_size + total_size
       self._cleaned_files = self._cleaned_files + num_files
     def rmfile(filename):
       fullpath = os.path.join(directory, filename)
       if not os.path.exists(fullpath):
-        print "Skipping", " " * 26, filename
+        print("Skipping", " " * 26, filename)
         return
       filesize = os.path.getsize(fullpath)
-      print "Removing %9s, file %s" % \
-          (humansize(filesize), filename)
+      print("Removing %9s, file %s" % \
+          (humansize(filesize), filename))
       os.remove(fullpath)
       self._cleaned_size = self._cleaned_size + filesize
       self._cleaned_files = self._cleaned_files + 1
@@ -117,7 +118,7 @@ class installer(install_distribution.installer):
         pythonpath = os.path.dirname(sitepath)
         rmdir(os.path.join(pythonpath, 'test'))
     except Exception:
-      print "Could not deduce python package paths"
+      print("Could not deduce python package paths")
 
     rmdir('base/share/doc')
     rmdir('base/share/gtk-doc')
@@ -136,9 +137,9 @@ class installer(install_distribution.installer):
     rmdir('modules/cbflib/ply-3.2/test')
     rmfile('modules/cbflib/idx-s00-20131106040304531.cbf')
     rmdir('modules/clipper/examples')
-    print "-" * 60
-    print "Deleted %d files, decrufting installation by %s\n" % \
-        (self._cleaned_files, humansize(self._cleaned_size))
+    print("-" * 60)
+    print("Deleted %d files, decrufting installation by %s\n" % \
+        (self._cleaned_files, humansize(self._cleaned_size)))
 
 if __name__ == "__main__":
   installer(sys.argv[1:]).install()

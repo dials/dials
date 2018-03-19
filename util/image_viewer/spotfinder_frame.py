@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 import rstbx.viewer.display
 import wx
 from wx.lib.intctrl import IntCtrl
@@ -999,7 +1000,7 @@ class SpotFrame(XrayFrame) :
                     vertices, color="#%s"%base_color, name="<all_foreground_circles_%d>"%key,
                     width=2,
                     show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5], update=False))
-                print "Circles: center of foreground masks for the %d spots actually integrated"%(len(vertices)//5)
+                print("Circles: center of foreground masks for the %d spots actually integrated"%(len(vertices)//5))
         else:
           if len(all_pix_data) > 0:
             self.dials_spotfinder_layers.append(self.pyslip.AddPointLayer(
@@ -1778,7 +1779,7 @@ class SpotSettingsPanel (wx.Panel) :
     dispersion.sigma_background = self.settings.nsigma_b
     dispersion.sigma_strong = self.settings.nsigma_s
     with open(self.settings.find_spots_phil, 'wb') as f:
-      print "Saving parameters to %s" % self.settings.find_spots_phil
+      print("Saving parameters to %s" % self.settings.find_spots_phil)
       phil_scope.fetch_diff(phil_scope.format(params)).show(f)
 
   def OnUpdateDispersionThresholdDebug(self, event):

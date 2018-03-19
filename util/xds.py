@@ -8,7 +8,7 @@
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 def dump(experiments, reflections, directory):
   '''
@@ -47,7 +47,7 @@ def dump(experiments, reflections, directory):
       to_xds = xds.to_xds(imageset)
       xds_inp = os.path.join(sub_dir, 'XDS.INP')
       xparm_xds = os.path.join(sub_dir, 'XPARM.XDS')
-      print "Exporting experiment to %s and %s" %(xds_inp, xparm_xds)
+      print("Exporting experiment to %s and %s" %(xds_inp, xparm_xds))
       with open(xds_inp, 'wb') as f:
         to_xds.XDS_INP(
           out=f,
@@ -89,5 +89,5 @@ def export_spot_xds(reflections, filename):
     xds_writer = spot_xds.writer(centroids=centroids,
                                  intensities=intensities,
                                  miller_indices=miller_indices)
-    print "Exporting spot list as %s" %filename
+    print("Exporting spot list as %s" %filename)
     xds_writer.write_file(filename=filename)

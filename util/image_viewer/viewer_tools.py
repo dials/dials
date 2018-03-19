@@ -4,12 +4,11 @@
 Various tools/controls used by the image viewer
 """
 
-from __future__ import division, print_function, absolute_import
+from __future__ import absolute_import, division, print_function
 
 import collections
 
 import wx
-
 from orderedset import OrderedSet
 
 class ImageCollectionWithSelection(OrderedSet):

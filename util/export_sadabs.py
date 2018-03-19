@@ -1,10 +1,12 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 import logging
+
+from dials.util.export_mtz import (scale_partial_reflections,
+                                   sum_partial_reflections)
+
 logger = logging.getLogger(__name__)
 
-from dials.util.export_mtz import sum_partial_reflections
-from dials.util.export_mtz import scale_partial_reflections
 
 def export_sadabs(integrated_data, experiment_list, hklout, run=0,
                   summation=False, include_partials=False, keep_partials=False,

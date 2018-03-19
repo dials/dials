@@ -1,6 +1,7 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -121,7 +122,7 @@ class Header(Result):
       # rate_data = frames[8].bytes
     else:
       raise RuntimeError('Need header_detail to be "all" or "basic"')
-    print conf
+    print(conf)
 
     # Save the header data
     self.header = {

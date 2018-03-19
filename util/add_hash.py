@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 def enhash(e, h, k, l):
   return e * (2 ** 30) + (h+512) * (2 ** 20) + (k+512) * (2 ** 10) + (l+512)
@@ -62,4 +62,4 @@ if __name__ == '__main__':
     sel = hash_value == h
     assert(sel.count(True) == 1)
 
-  print flex.min(hash_value), flex.max(hash_value)
+  print(flex.min(hash_value), flex.max(hash_value))

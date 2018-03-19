@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 def gz_open(filename, mode):
   import gzip
@@ -86,7 +86,7 @@ def main(in_images, out_images):
   in_image_headers = []
 
   for i in in_images:
-    print "Reading %s" % i
+    print("Reading %s" % i)
     pixel, header = read_image(i)
     in_image_data.append(pixel)
     in_image_headers.append(header)
@@ -95,7 +95,7 @@ def main(in_images, out_images):
   rebin_images = split_counts(sum_image, n)
 
   for o, pixel, header in zip(out_images, rebin_images, in_image_headers):
-    print "Writing %s" % o
+    print("Writing %s" % o)
     write_image(o, pixel, header)
 
 def main_sum(in_images, out_image):
@@ -109,12 +109,12 @@ def main_sum(in_images, out_image):
   in_image_headers = []
 
   for i in in_images:
-    print "Reading %s" % i
+    print("Reading %s" % i)
     pixel, header = read_image(i)
     in_image_data.append(pixel)
     in_image_headers.append(header)
 
   sum_image = merge_counts(in_image_data)
 
-  print "Writing %s" % out_image
+  print("Writing %s" % out_image)
   write_image(out_image, sum_image, in_image_headers[0])

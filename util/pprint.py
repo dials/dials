@@ -1,6 +1,6 @@
 
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 def profile2d(p, vmin=None, vmax=None):
   from dials.array_family import flex
@@ -93,5 +93,4 @@ if __name__ == '__main__':
   a[4:5,:,:] = a5
   a = a * 1000
 
-  print profile3d(a)
-
+  print(profile3d(a))

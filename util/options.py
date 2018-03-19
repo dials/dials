@@ -9,14 +9,13 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
+import cPickle
 import itertools
 import optparse
 import pickle
-import cPickle
 import traceback
-
 from collections import defaultdict, namedtuple
 
 import libtbx.phil
@@ -811,9 +810,9 @@ class OptionParser(OptionParserBase):
         '  expert_level = %d\n' % (
           options.attributes_level,
           options.expert_level))
-      print self.phil.as_str(
+      print(self.phil.as_str(
         expert_level=options.expert_level,
-        attributes_level=options.attributes_level)
+        attributes_level=options.attributes_level))
       exit(0)
 
     if hasattr(options, 'export_autocomplete_hints') and options.export_autocomplete_hints:
@@ -831,8 +830,8 @@ class OptionParser(OptionParserBase):
     if show_diff_phil:
       diff_phil_str = self.diff_phil.as_str()
       if diff_phil_str is not '':
-        print 'The following parameters have been modified:\n'
-        print diff_phil_str
+        print('The following parameters have been modified:\n')
+        print(diff_phil_str)
 
     # Return the parameters
     if return_unhandled:
@@ -842,7 +841,7 @@ class OptionParser(OptionParserBase):
       msg = self._warn_about_unhandled_args(args, verbosity=options.verbose)
 
       if ignore_unhandled:
-        print msg
+        print(msg)
       else:
         raise Sorry(msg)
     return params, options
@@ -1004,28 +1003,28 @@ class OptionParser(OptionParserBase):
 
       return result
 
-    print 'function _dials_autocomplete_flags ()'
-    print '{'
-    print ' case "$1" in'
+    print('function _dials_autocomplete_flags ()')
+    print('{')
+    print(' case "$1" in')
     for p in parameter_choice_list.iterkeys():
-      print '\n  %s)' % p
-      print '   _dials_autocomplete_values="%s";;' % ' '.join(parameter_choice_list[p])
-    print '\n  *)'
-    print '    _dials_autocomplete_values="";;'
-    print ' esac'
-    print '}'
+      print('\n  %s)' % p)
+      print('   _dials_autocomplete_values="%s";;' % ' '.join(parameter_choice_list[p]))
+    print('\n  *)')
+    print('    _dials_autocomplete_values="";;')
+    print(' esac')
+    print('}')
 
-    print 'function _dials_autocomplete_expansion ()'
-    print '{'
-    print ' case "$1" in'
+    print('function _dials_autocomplete_expansion ()')
+    print('{')
+    print(' case "$1" in')
     for p, exp in parameter_expansion_list.iteritems():
       if exp is not None:
-        print '\n  %s=)' % p
-        print '   _dials_autocomplete_values="%s=";;' % exp
-    print '\n  *)'
-    print '    _dials_autocomplete_values="";;'
-    print ' esac'
-    print '}'
+        print('\n  %s=)' % p)
+        print('   _dials_autocomplete_values="%s=";;' % exp)
+    print('\n  *)')
+    print('    _dials_autocomplete_values="";;')
+    print(' esac')
+    print('}')
 
     tree = construct_completion_tree(parameter_list)
 
@@ -1033,20 +1032,20 @@ class OptionParser(OptionParserBase):
       for subkey in tree.iterkeys():
         if subkey != '':
           _tree_to_bash(prefix + subkey + '.', tree[subkey])
-          print '\n  %s*)' % (prefix + subkey + '.')
-          print '    _dials_autocomplete_values="%s";;' % " ".join(sorted([prefix + subkey + '.' + x for x in tree[subkey]['']]))
+          print('\n  %s*)' % (prefix + subkey + '.'))
+          print('    _dials_autocomplete_values="%s";;' % " ".join(sorted([prefix + subkey + '.' + x for x in tree[subkey]['']])))
 
-    print 'function _dials_autocomplete_hints ()'
-    print '{'
-    print ' case "$1" in'
+    print('function _dials_autocomplete_hints ()')
+    print('{')
+    print(' case "$1" in')
     _tree_to_bash('', tree)
 
     toplevelset = tree[''] | set([p + "=" for p, exp in parameter_expansion_list.iteritems() if exp is not None])
 
-    print '\n  *)'
-    print '    _dials_autocomplete_values="%s";;' % " ".join(sorted(toplevelset))
-    print ' esac'
-    print '}'
+    print('\n  *)')
+    print('    _dials_autocomplete_values="%s";;' % " ".join(sorted(toplevelset)))
+    print(' esac')
+    print('}')
 
 
 def flatten_reflections(filename_object_list):

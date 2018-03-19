@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 # Extensions to NXMX
 #
@@ -655,7 +655,7 @@ def dump(entry, experiments):
   from dials.array_family import flex
   from dxtbx.imageset import ImageSweep
 
-  print "Dumping NXmx"
+  print("Dumping NXmx")
 
   # Rotate the experiments such that beam direction is along (0, 0, -1)
   experiments, rotations = convert_to_nexus_beam_direction(experiments)
@@ -764,7 +764,7 @@ def load(entry, exp_index):
   from dxtbx.model.experiment_list import ExperimentList
   from dxtbx.model.experiment_list import Experiment
 
-  print "Loading NXmx"
+  print("Loading NXmx")
 
   # Check file contains the feature
   assert("features" in entry)

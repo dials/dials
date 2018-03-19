@@ -1,16 +1,4 @@
-#!/usr/bin/env python
-#
-# mp.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
-from __future__ import absolute_import, division
-
+from __future__ import absolute_import, division, print_function
 
 def parallel_map(
     func,
@@ -270,9 +258,6 @@ if __name__ == '__main__':
   def func(x):
     return x
 
-  def callback(x):
-    print x
-
   iterable = range(100)
 
   multi_node_parallel_map(
@@ -281,4 +266,4 @@ if __name__ == '__main__':
     nproc=4,
     njobs=10,
     cluster_method='multiprocessing',
-    callback=callback)
+    callback=print)

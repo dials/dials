@@ -1,12 +1,14 @@
-from __future__ import division
+from __future__ import absolute_import, division, print_function
+
+import wx
+from wxtbx.phil_controls.floatctrl import FloatCtrl as _FloatCtrl
+
 # -*- Mode: Python; c-basic-offset: 2; indent-tabs-mode: nil; tab-width: 8 -*-
 #
 # $Id
 
-import wx
 
 
-from wxtbx.phil_controls.floatctrl import FloatCtrl as _FloatCtrl
 
 class FloatCtrl(_FloatCtrl):
 
@@ -579,7 +581,7 @@ class MaskSettingsPanel(wx.Panel):
 
     # Save the mask to file
     from libtbx import easy_pickle
-    print "Writing mask to %s" % self.params.output.mask
+    print("Writing mask to %s" % self.params.output.mask)
     easy_pickle.dump(self.params.output.mask, mask)
 
   def OnSaveMaskParams(self, event):
@@ -587,7 +589,7 @@ class MaskSettingsPanel(wx.Panel):
     params = phil_scope.extract()
     file_name = self.params.output.mask_params
     with open(file_name, 'wb') as f:
-      print "Saving parameters to %s" % file_name
+      print("Saving parameters to %s" % file_name)
       phil_scope.fetch_diff(phil_scope.format(self.params.masking)).show(f)
 
   def UpdateMask(self):
@@ -641,7 +643,7 @@ class MaskSettingsPanel(wx.Panel):
         try:
           self.AddUntrustedCircle(xc, yc, xedge, yedge)
         except Exception(e):
-          print e
+          print(e)
         finally:
           self._pyslip.DeleteLayer(self._mode_circle_layer)
           self._mode_circle_layer = None

@@ -9,11 +9,13 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
+
+import logging
+
 from iotbx.phil import parse
 from scitbx.array_family import flex
 
-import logging
 logger = logging.getLogger(__name__)
 
 ice_rings_phil_str = """\

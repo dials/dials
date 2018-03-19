@@ -1,10 +1,12 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 import logging
+
+from dials.util.export_mtz import (scale_partial_reflections,
+                                   sum_partial_reflections)
+
 logger = logging.getLogger(__name__)
 
-from dials.util.export_mtz import sum_partial_reflections
-from dials.util.export_mtz import scale_partial_reflections
 
 def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
                      include_partials=False, keep_partials=False, var_model=(1,0)):
@@ -141,8 +143,8 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
   fast = panel.get_fast_axis()
   slow = panel.get_slow_axis()
   Rd = align_reference_frame(fast, (1,0,0), slow, (0,1,0))
-  print 'Coordinate change:'
-  print '%5.2f %5.2f %5.2f\n%5.2f %5.2f %5.2f\n%5.2f %5.2f %5.2f\n' % Rd.elems
+  print('Coordinate change:')
+  print('%5.2f %5.2f %5.2f\n%5.2f %5.2f %5.2f\n%5.2f %5.2f %5.2f\n' % Rd.elems)
 
   fast = Rd * fast
   slow = Rd * slow

@@ -8,9 +8,11 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division
-from dials.util import debug_console
+from __future__ import absolute_import, division, print_function
+
 import time
+
+from dials.util import debug_console
 
 def parse_range_list_string(string):
   """Parse a string in the following ways:

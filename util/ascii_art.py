@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 def spot_counts_per_image_plot(reflections, **kwargs):
   if len(reflections) == 0:
@@ -85,6 +85,6 @@ if __name__ == '__main__':
   from libtbx import easy_pickle
 
   for arg in sys.argv[1:]:
-    print arg
-    print spot_counts_per_image_plot(easy_pickle.load(arg))
-    print
+    print(arg)
+    print(spot_counts_per_image_plot(easy_pickle.load(arg)))
+    print()

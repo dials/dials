@@ -10,7 +10,7 @@
 #  included in the root directory of this package.
 #
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 class H5PYEncoder(object):
   '''Encoder base class.'''
@@ -169,7 +169,7 @@ if __name__ == '__main__':
     reflections['shoebox'][i].background = flex.double(flex.grid(10,10,10))
 
   for i in range(10):
-    print reflections['shoebox'][i].data.all()
+    print(reflections['shoebox'][i].data.all())
 
   writer = NexusFile('temp.h5', 'w')
   writer.set_reflections(reflections)
@@ -180,4 +180,4 @@ if __name__ == '__main__':
   reader.close()
 
   for r in reflections:
-    print r
+    print(r)

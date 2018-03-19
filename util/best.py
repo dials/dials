@@ -1,26 +1,19 @@
-#!/usr/bin/env python
-#
-# dials.util.best.py
-#
-#  Copyright (C) 2016 Diamond Light Source
-#
-#  Author: Richard Gildea
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 import logging
+import math
+import os
+
 logger = logging.getLogger(__name__)
 
 def write_background_file(file_name, imageset, n_bins):
   from dials.command_line.background import background
   d, I, sig = background(imageset, imageset.indices()[0], n_bins=n_bins)
 
-  logger.info('Saving background file to %s' %file_name)
+  logger.info('Saving background file to %s' % file_name)
   with open(file_name, 'wb') as f:
     for d_, I_, sig_ in zip(d, I, sig):
-      print >> f, '%10.4f %10.2f %10.2f' %(d_, I_, sig_)
+      f.write('%10.4f %10.2f %10.2f' % (d_, I_, sig_) + os.linesep)
 
 def write_integrated_hkl(prefix, reflections):
   from scitbx.array_family import flex
@@ -41,7 +34,7 @@ def write_integrated_hkl(prefix, reflections):
     logger.info('Saving reflections to %s' %file_name)
     with open(file_name, 'wb') as f:
       for i in range(len(integrated)):
-        print >> f, '%4.0f %4.0f %4.0f %10.2f %10.2f' %(h[i], k[i], l[i], I[i], sigI[i])
+        f.write('%4.0f %4.0f %4.0f %10.2f %10.2f' % (h[i], k[i], l[i], I[i], sigI[i]) + os.linesep)
 
 def write_par_file(file_name, experiment):
   from scitbx import matrix
@@ -96,7 +89,6 @@ def write_par_file(file_name, experiment):
   # http://xds.mpimf-heidelberg.mpg.de/html_doc/xds_parameters.html
   # BEAM_DIVERGENCE=
   # This value is approximately arctan(spot diameter/DETECTOR_DISTANCE)
-  import math
   profile = experiment.profile
   spot_diameter = math.tan(profile.delta_b() * math.pi/180) * distance
   spot_diameter_px = spot_diameter * detector[0].get_pixel_size()[0]
@@ -128,31 +120,30 @@ def write_par_file(file_name, experiment):
 
   logger.info('Saving BEST parameter file to %s' %file_name)
   with open(file_name, 'wb') as f:#
-    print >> f, '# parameter file for BEST'
-    print >> f, 'TITLE          From DIALS'
-    print >> f, 'DETECTOR       PILA'
-    print >> f, 'SITE           Not set'
-    print >> f, 'DIAMETER       %6.2f' %(max(detector[0].get_image_size()) * detector[0].get_pixel_size()[0])
-    print >> f, 'PIXEL          %s' %detector[0].get_pixel_size()[0]
-    print >> f, 'ROTAXIS        %4.2f %4.2f %4.2f' %rotation.elems, direction
-    print >> f, 'POLAXIS        %4.2f %4.2f %4.2f' %polarization.elems
-    print >> f, 'GAIN               1.00' # correct for Pilatus images
+    print('# parameter file for BEST', file=f)
+    print('TITLE          From DIALS', file=f)
+    print('DETECTOR       PILA', file=f)
+    print('SITE           Not set', file=f)
+    print('DIAMETER       %6.2f' %(max(detector[0].get_image_size()) * detector[0].get_pixel_size()[0]), file=f)
+    print('PIXEL          %s' %detector[0].get_pixel_size()[0], file=f)
+    print('ROTAXIS        %4.2f %4.2f %4.2f' %rotation.elems, direction, file=f)
+    print('POLAXIS        %4.2f %4.2f %4.2f' %polarization.elems, file=f)
+    print('GAIN               1.00', file=f) # correct for Pilatus images
     # http://strucbio.biologie.uni-konstanz.de/xdswiki/index.php/FAQ#You_said_that_the_XDS_deals_with_high_mosaicity._How_high_mosaicity_is_still_manageable.3F
     # http://journals.iucr.org/d/issues/2012/01/00/wd5161/index.html
     # Transform from XDS defintion of sigma_m to FWHM (MOSFLM mosaicity definition)
-    print >> f, 'CMOSAIC            %.2f' %(experiment.profile.sigma_m() * 2.355)
-    print >> f, 'PHISTART           %.2f' %scan.get_oscillation_range()[0]
-    print >> f, 'PHIWIDTH           %.2f' %scan.get_oscillation()[1]
-    print >> f, 'DISTANCE        %7.2f' %distance
-    print >> f, 'WAVELENGTH      %.5f' %beam.get_wavelength()
-    print >> f, 'POLARISATION    %7.5f' %beam.get_polarization_fraction()
-    print >> f, 'SYMMETRY       %s' %space_group_symbol(cryst.get_space_group())
-    print >> f, 'UB             %9.6f %9.6f %9.6f' %UB_mosflm[:3]
-    print >> f, '               %9.6f %9.6f %9.6f' %UB_mosflm[3:6]
-    print >> f, '               %9.6f %9.6f %9.6f' %UB_mosflm[6:]
-    print >> f, 'CELL           %8.2f %8.2f %8.2f %6.2f %6.2f %6.2f' %uc_params
-    print >> f, 'RASTER           %i %i %i %i %i' %(nxs, nys, nc, nrx, nry)
-    print >> f, 'SEPARATION      %.3f  %.3f' %(spot_diameter, spot_diameter)
-    print >> f, 'BEAM           %8.3f %8.3f' %beam_centre
-    print >> f, '# end of parameter file for BEST'
-
+    print('CMOSAIC            %.2f' %(experiment.profile.sigma_m() * 2.355), file=f)
+    print('PHISTART           %.2f' %scan.get_oscillation_range()[0], file=f)
+    print('PHIWIDTH           %.2f' %scan.get_oscillation()[1], file=f)
+    print('DISTANCE        %7.2f' %distance, file=f)
+    print('WAVELENGTH      %.5f' %beam.get_wavelength(), file=f)
+    print('POLARISATION    %7.5f' %beam.get_polarization_fraction(), file=f)
+    print('SYMMETRY       %s' %space_group_symbol(cryst.get_space_group()), file=f)
+    print('UB             %9.6f %9.6f %9.6f' %UB_mosflm[:3], file=f)
+    print('               %9.6f %9.6f %9.6f' %UB_mosflm[3:6], file=f)
+    print('               %9.6f %9.6f %9.6f' %UB_mosflm[6:], file=f)
+    print('CELL           %8.2f %8.2f %8.2f %6.2f %6.2f %6.2f' %uc_params, file=f)
+    print('RASTER           %i %i %i %i %i' %(nxs, nys, nc, nrx, nry), file=f)
+    print('SEPARATION      %.3f  %.3f' %(spot_diameter, spot_diameter), file=f)
+    print('BEAM           %8.3f %8.3f' %beam_centre, file=f)
+    print('# end of parameter file for BEST', file=f)

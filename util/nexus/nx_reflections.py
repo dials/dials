@@ -1,5 +1,5 @@
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 schema_url = 'https://github.com/nexusformat/definitions/blob/master/contributed_definitions/NXreflections.nxdl.xml'
 
@@ -269,7 +269,7 @@ def read(handle, key):
 def dump(entry, reflections, experiments):
   from dials.array_family import flex
 
-  print "Dumping NXreflections"
+  print("Dumping NXreflections")
 
   # Add the feature
   if "features" in entry:
@@ -306,7 +306,7 @@ def dump(entry, reflections, experiments):
     try:
       write(refls, key, data)
     except KeyError as e:
-      print e
+      print(e)
 
   # FIXME Write the overlaps (for testing at the moment)
   overlaps = [[] for i in range(len(reflections))]
@@ -320,7 +320,7 @@ def dump(entry, reflections, experiments):
 def load(entry):
   from dials.array_family import flex
 
-  print "Loading NXreflections"
+  print("Loading NXreflections")
 
   # Check the feature is present
   assert("features" in entry)

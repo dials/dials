@@ -3,8 +3,8 @@ from __future__ import absolute_import, division, print_function
 import atexit
 import logging
 import os
-import time
 import sys
+import time
 
 super_annoying_banner = '''
 ############################################################################

@@ -9,9 +9,9 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division
-import sys
+from __future__ import absolute_import, division, print_function
 
+import sys
 
 class ActionError(RuntimeError):
   '''
@@ -1620,8 +1620,8 @@ class Controller(object):
     # Read state if available
     if recover and exists(state_filename):
       self.state = ApplicationState.load(state_filename)
-      print "Recovered state from %s" % state_filename
-      print self.get_history()
+      print("Recovered state from %s" % state_filename)
+      print(self.get_history())
     else:
       def find_directory(working_directory):
         counter = 1
@@ -1838,4 +1838,3 @@ class Controller(object):
       stderr=stderr)
     command.start()
     return command
-

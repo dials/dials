@@ -1,4 +1,5 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
+
 def export_text(integrated_data):
   '''Export contents of a dials reflection table as text.'''
 
@@ -18,4 +19,4 @@ def export_text(integrated_data):
   v *= lp
 
   for _h, _k, _l, _i, _v in zip(h, k, l, i, v):
-    print '%4d %4d %4d %f %f' % (_h, _k, _l, _i, _v)
+    print('%4d %4d %4d %f %f' % (_h, _k, _l, _i, _v))

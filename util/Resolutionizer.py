@@ -6,8 +6,8 @@ import sys
 import time
 
 import iotbx.phil
-from libtbx.utils import Sorry
 from cctbx.array_family import flex
+from libtbx.utils import Sorry
 from scitbx import lbfgs
 
 def nint(a):
