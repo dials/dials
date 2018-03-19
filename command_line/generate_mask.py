@@ -75,7 +75,7 @@ class Script(object):
     params, options = self.parser.parse_args(show_diff_phil=True)
     datablocks = flatten_datablocks(params.input.datablock)
 
-    # COnfigu logging
+    # Configure logging
     log.config()
 
     # Check number of args
@@ -97,7 +97,8 @@ class Script(object):
 
     # Save the mask to file
     print "Writing mask to %s" % params.output.mask
-    pickle.dump(mask, open(params.output.mask, "w"))
+    with open(params.output.mask, "w") as fh:
+      pickle.dump(mask, fh)
 
     # Save the datablock
     if params.output.datablock is not None:
