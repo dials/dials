@@ -76,14 +76,14 @@ class TargetScalerFactory(object):
     scaled_scalers = []
     unscaled_experiments = []
     unscaled_scalers = []
-    for i, reflection in enumerate(reflections):
+    for i, (experiment, reflection) in enumerate(zip(experiments,reflections)):
       if is_scaled_list[i] is True:
-        scaled_experiments.append(experiments[i])
-        scaled_scalers.append(SingleScalerFactory.create(params, experiments[i],
+        scaled_experiments.append(experiment)
+        scaled_scalers.append(SingleScalerFactory.create(params, experiment,
           reflection, scaled_id=i))
       else:
-        unscaled_experiments.append(experiments[i])
-        unscaled_scalers.append(SingleScalerFactory.create(params, experiments[i],
+        unscaled_experiments.append(experiment)
+        unscaled_scalers.append(SingleScalerFactory.create(params, experiment,
           reflection, scaled_id=i))
     return TargetScaler(params, scaled_experiments, scaled_scalers,
       unscaled_experiments, unscaled_scalers)

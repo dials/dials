@@ -16,9 +16,12 @@ from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.algorithms.scaling.model.scaling_model_factory import \
   create_scaling_model
 from dials.algorithms.scaling.scaler_factory import create_scaler,\
-  MultiScaler
+  MultiScaler, TargetScaler, TargetScalerFactory
+from dials.algorithms.scaling.scaler import TargetScaler, PhysicalScaler
 from dials.algorithms.scaling.target_function import ScalingTarget,\
   ScalingTargetFixedIH
+from dials.util.options import OptionParser, flatten_reflections,\
+  flatten_experiments
 
 
 def generated_refl():
@@ -67,10 +70,11 @@ def generated_two_exp():
   scan = Scan(image_range=[0, 90], oscillation=[0.0, 1.0])
   beam = Beam(s0=(0.0, 0.0, 1.01))
   goniometer = Goniometer((1.0, 0.0, 0.0))
+  goniometer_2 = Goniometer((1.0, 1.0, 0.0))
   detector = Detector()
   experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
     detector=detector, crystal=crystal))
-  experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
+  experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer_2,
     detector=detector, crystal=crystal))
   return experiments
 
@@ -99,14 +103,7 @@ def generated_KB_param():
   return parameters
 
 #@pytest.fixture(scope='module')
-def generated_target_input(generated_refl, generated_two_exp, generated_param):
-  refl = generated_refl
-  exp = generated_two_exp
-  param = generated_param
-  refl_2 = copy.deepcopy(generated_refl[0])
-  refl_2['inverse_scale_factor'] = flex.double([1.0, 1.0, 1.0])
-  refl.append(refl_2)
-  return (refl, exp, param)
+
 
 def generated_multi_input(generated_refl, generated_two_exp, generated_param):
   refl = generated_refl
@@ -136,13 +133,8 @@ def test_SingleScalerFactory():
   n = (scaler.reflection_table['Esq'] == 0.0).count(True)
   assert n != len(scaler.reflection_table)
 
-def test_TargetScalerFactory():
-  """test for successful initialisation of TargetedScaler."""
-  (test_reflections, test_experiments, params) = generated_target_input(
-    generated_refl(), generated_single_exp(), generated_param())
 
-  experiments = create_scaling_model(params, test_experiments, test_reflections)
-  _ = create_scaler(params, experiments, test_reflections)
+
 
 def test_apm():
   """test for a single active parameter manager. Also serves as general

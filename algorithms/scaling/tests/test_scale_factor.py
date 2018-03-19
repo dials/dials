@@ -65,12 +65,12 @@ def test_SmoothScaleFactor1D():
   SF = SmoothScaleComponent1D(flex.double([1.1] * 5))
   assert SF.n_params == 5
   assert list(SF.parameters) == list(flex.double([1.1, 1.1, 1.1, 1.1, 1.1]))
-  SF.update_reflection_data(normalised_values=[0.5, 1.0, 2.5])
-  assert list(SF.normalised_values) == list(flex.double([0.5, 1.0, 2.5]))
-  assert list(SF.inverse_scales) == list(flex.double([1.0, 1.0, 1.0]))
+  SF.update_reflection_data(normalised_values=flex.double([0.5, 1.0, 2.5, 0.0]))
+  assert list(SF.normalised_values) == list(flex.double([0.5, 1.0, 2.5, 0.0]))
+  assert list(SF.inverse_scales) == list(flex.double([1.0, 1.0, 1.0,1.0]))
   SF._smoother.set_smoothing(4, 1.0)
   SF.calculate_scales()
-  assert (list(abs(SF.inverse_scales - flex.double([1.1, 1.1, 1.1]))) <
+  assert (list(abs(SF.inverse_scales - flex.double([1.1, 1.1, 1.1, 1.1]))) <
     list(flex.double([1e-7]*len(SF.inverse_scales))))
   SF.calculate_scales_and_derivatives()
   assert abs((SF.derivatives[0, 0]/SF.derivatives[0, 1]) - exp(-1.0)/exp(0.0)) < 1e-6
@@ -87,14 +87,14 @@ def test_SmoothBScaleFactor1D():
   SF = SmoothBScaleComponent1D(flex.double([0.0] * 5))
   assert SF.n_params == 5
   assert list(SF.parameters) == list(flex.double([0.0]*5))
-  SF.update_reflection_data(normalised_values=[0.5, 1.0, 2.5],
-    dvalues=flex.double([1.0, 1.0, 1.0]))
-  assert list(SF.normalised_values) == list(flex.double([0.5, 1.0, 2.5]))
-  assert list(SF.d_values) == list(flex.double([1.0, 1.0, 1.0]))
-  assert list(SF.inverse_scales) == list(flex.double([1.0, 1.0, 1.0]))
+  SF.update_reflection_data(normalised_values=flex.double([0.5, 1.0, 2.5, 0.0]),
+    dvalues=flex.double([1.0, 1.0, 1.0, 1.0]))
+  assert list(SF.normalised_values) == list(flex.double([0.5, 1.0, 2.5, 0.0]))
+  assert list(SF.d_values) == list(flex.double([1.0, 1.0, 1.0, 1.0]))
+  assert list(SF.inverse_scales) == list(flex.double([1.0, 1.0, 1.0, 1.0]))
   SF._smoother.set_smoothing(4, 1.0)
   SF.calculate_scales()
-  assert (list(abs(SF.inverse_scales - flex.double([1.0, 1.0, 1.0]))) <
+  assert (list(abs(SF.inverse_scales - flex.double([1.0, 1.0, 1.0, 1.0]))) <
     list(flex.double([1e-7]*len(SF.inverse_scales))))
   SF.calculate_scales_and_derivatives()
   assert abs((SF.derivatives[0, 0]/SF.derivatives[0, 1]) - exp(-1.0)/exp(0.0)) < 1e-6

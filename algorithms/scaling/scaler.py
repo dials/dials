@@ -2,6 +2,7 @@ import abc
 import logging
 import numpy as np
 from dials.array_family import flex
+import copy as copy
 from cctbx import miller, crystal
 from scitbx import sparse
 from dials_scaling_helpers_ext import row_multiply
@@ -144,7 +145,7 @@ class ScalerBase(object):
 
 class SingleScalerBase(ScalerBase):
   '''
-  Parent class for single dataset Scalers, containing a standard
+  Parent class for single-dataset Scalers, containing a standard
   setup routine for the reflection_table - takes in params, experiment
   and reflection.
   '''
@@ -923,14 +924,21 @@ class TargetScaler(MultiScalerBase):
     self.unscaled_scalers = unscaled_scalers
     self._experiments = unscaled_experiments[0]
     target_Ih_table = self.Ih_table
+    from libtbx.containers import OrderedSet
     for scaler in unscaled_scalers:
-      for i, miller_idx in enumerate(scaler.Ih_table.asu_miller_index):
+      scaler.Ih_table._Ih_table['Ih_values'] = flex.double([0.0] * scaler.Ih_table.size)
+      #set to zero to allow selection below
+      location_in_unscaled_array = 0
+      for j, miller_idx in enumerate(OrderedSet(scaler.Ih_table.asu_miller_index)):
         sel = target_Ih_table.asu_miller_index == miller_idx
         Ih_values = target_Ih_table.Ih_values.select(sel)
+        n_in_group = scaler.Ih_table.h_index_matrix.col(j).non_zeroes
         if Ih_values:
-          scaler.Ih_table.Ih_values[i] = Ih_values[0] #all same so just get [0]
-        else:
-          scaler.Ih_table.Ih_values[i] = 0.0 #set to zero to allow selection below
+          i = location_in_unscaled_array
+          Ih = flex.double([copy.copy(Ih_values[0])] * n_in_group)
+          scaler.Ih_table.Ih_values.set_selected(
+            flex.size_t(range(i, i + n_in_group)), Ih)
+        location_in_unscaled_array += n_in_group
       sel = scaler.Ih_table.Ih_values != 0.0
       scaler.Ih_table = scaler.Ih_table.select(sel)
       scaler.apply_selection_to_SFs(sel)
