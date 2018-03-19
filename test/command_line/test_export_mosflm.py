@@ -3,8 +3,6 @@ from __future__ import absolute_import, division, print_function
 import os
 
 def test_export_mosflm(dials_regression, tmpdir):
-  import shutil
-  import fileinput
   from libtbx import easy_run
 
   with open(os.path.join(dials_regression, "experiment_test_data/experiment_1.json"), 'r') as fi:
