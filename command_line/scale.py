@@ -126,7 +126,7 @@ def main(argv):
     'that this is the last pickle file passed in and that no corresponding \n'
     'experiments file is passed in.\n')
     experiments.append(experiments[0]) # Assume correct space group.
-    reflections[-1]['id'] = flex.int([len(reflections)] * reflections[-1].size())
+    reflections[-1]['id'] = flex.int(reflections[-1].size(), len(reflections))
 
   if len(experiments) != 1:
     logger.info(('Checking for the existence of a reflection table {sep}'
@@ -146,7 +146,7 @@ def main(argv):
 
   # Perform any cutting of the dataset before creating scaling models.
   for reflection in reflections:
-    reflection.set_flags(flex.bool([False]*reflection.size()),
+    reflection.set_flags(flex.bool(reflection.size(), False),
       reflection.flags.user_excluded_in_scaling)
     if params.cut_data.max_resolution:
       reflection.set_flags(reflection['d'] < params.cut_data.max_resolution,
