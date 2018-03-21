@@ -84,8 +84,13 @@ phil_scope = phil.parse('''
   include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
 ''', process_includes=True)
 
+# suggest you make this into a top level class with a set of methods which do
+# individual steps (details will follow)
+
 def main(argv):
   """Main script to run the scaling algorithm."""
+
+  # def __init__()
 
   from dials.array_family import flex
   optionparser = OptionParser(usage=__doc__.strip(), read_experiments=True,
@@ -144,6 +149,8 @@ def main(argv):
   if len(experiments) != len(reflections):
      raise Sorry("Mismatched number of experiments and reflection tables found.")
 
+  # def prepare_input()
+
   # Perform any cutting of the dataset before creating scaling models.
   for reflection in reflections:
     reflection.set_flags(flex.bool(reflection.size(), False),
@@ -167,6 +174,8 @@ def main(argv):
       not multiple datasets.""")
 
 
+  # def scale()
+
   # First create the scaling model if it didn't already exist in the
   # experiments files.
   experiments = create_scaling_model(params, experiments, reflections)
@@ -179,6 +188,8 @@ def main(argv):
 
   for experiment in experiments:
     experiment.scaling_model.set_scaling_model_as_scaled()
+
+  # def merging_stats()
 
   logger.info('\n'+'='*80+'\n')
   # Calculate merging stats.
@@ -205,6 +216,8 @@ def main(argv):
   if params.output.plot_merging_stats:
     from xia2.command_line.compare_merging_stats import plot_merging_stats
     plot_merging_stats(results, labels=plot_labels)
+
+  # def output
 
   logger.info('\n'+'='*80+'\n')
   # Save scaled_experiments.json and scaled.pickle files.
