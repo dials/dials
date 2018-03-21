@@ -5,7 +5,7 @@
 namespace dials_scratch { namespace scaling { namespace boost_python {
 
   using namespace boost::python;
-    
+
   using scitbx::sparse::matrix;
 
     void export_elementwise_square()

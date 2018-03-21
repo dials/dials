@@ -313,7 +313,7 @@ def calculate_gradient_fd(dm, apm):
 
 def test_general_apm():
   'test for general active parameter manager'
-  
+
   class dummy_obj(object):
     '''class to create dummy object with parameters attribute'''
     def __init__(self, parameters):

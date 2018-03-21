@@ -357,7 +357,7 @@ def plot_2D_decay_correction(experiment, reflections, outputfile=None):
   xlabels = np.arange(0, (time_rot_int*(int_rel_max-int_rel_min))+0.001, time_rot_int)
   xlabels = np.around(xlabels, 1)
   ax1.set_xticklabels(xlabels)
-  
+
   ax1.set_title('Decay correction (inverse scale factors)\n', fontsize=10)
 
   '''recalculate scales for plotting distribution in dataset'''

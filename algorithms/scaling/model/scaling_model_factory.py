@@ -57,7 +57,7 @@ class PhysicalSMFactory(object):
   """
   Factory for creating a physical scaling model.
   """
-  
+
   @classmethod
   def create(cls, params, experiments, reflections):
     """Create the scaling model defined by the params."""

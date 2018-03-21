@@ -165,7 +165,7 @@ def main(argv):
     else:
       raise Sorry("""exclude_image_range can only be used with one dataset,
       not multiple datasets.""")
-  
+
 
   # First create the scaling model if it didn't already exist in the
   # experiments files.
@@ -205,7 +205,7 @@ def main(argv):
   if params.output.plot_merging_stats:
     from xia2.command_line.compare_merging_stats import plot_merging_stats
     plot_merging_stats(results, labels=plot_labels)
-  
+
   logger.info('\n'+'='*80+'\n')
   # Save scaled_experiments.json and scaled.pickle files.
   if params.scaling_options.target_intensities:

@@ -73,7 +73,7 @@ def main(argv):
         raise Sorry("""No error model found in experiments file - likely cause is that
           no error model was optimised for this dataset.""")
       error_model.refined_parameters = single_scaler.experiments.scaling_model.configdict[
-        'error_model_parameters'] 
+        'error_model_parameters']
       error_model.update_for_minimisation(error_model.refined_parameters)
       normal_probability_plot(error_model, filename="error_models_"+str(i)+".png")
   else:
@@ -87,7 +87,7 @@ def main(argv):
       raise Sorry("""No error model found in experiments file - likely cause is that
         no error model was optimised for this dataset.""")
     error_model.refined_parameters = scaler.experiments.scaling_model.configdict[
-      'error_model_parameters'] 
+      'error_model_parameters']
     error_model.update_for_minimisation(error_model.refined_parameters)
     normal_probability_plot(error_model, filename=params.output.plot_out)
 

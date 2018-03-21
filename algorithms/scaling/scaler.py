@@ -307,7 +307,7 @@ class SingleScalerBase(ScalerBase):
       params.scaling_options.integration_method = 'prf'
       cls._select_optimal_intensities(reflection_table, params)
     variance_mask = reflection_table['variance'] <= 0.0
-    reflection_table.set_flags(variance_mask, reflection_table.flags.excluded_for_scaling)  
+    reflection_table.set_flags(variance_mask, reflection_table.flags.excluded_for_scaling)
     return reflection_table
 
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=True):
@@ -508,7 +508,7 @@ class KBScaler(SingleScalerBase):
 
 class PhysicalScaler(SingleScalerBase):
   """
-  Scaler for single dataset using physical parameterisation, similar to 
+  Scaler for single dataset using physical parameterisation, similar to
   the program aimless.
   """
 
@@ -660,7 +660,7 @@ class ArrayScaler(SingleScalerBase):
       - configdict['resmin']) / configdict['res_bin_width'])
     refl_table['normalised_res_values'].set_selected(d0_sel, 0.0001)
     refl_table['d'].set_selected(d0_sel, 0.0)
-    refl_table['norm_time_values'] = (refl_table['xyzobs.px.value'].parts()[2] * 
+    refl_table['norm_time_values'] = (refl_table['xyzobs.px.value'].parts()[2] *
       self.experiments.scaling_model.configdict['time_norm_fac'])
     #- configdict['zmin']) / configdict['time_bin_width'])
 
@@ -672,7 +672,7 @@ class ArrayScaler(SingleScalerBase):
     refl_table['normalised_y_abs_values'] = ((refl_table['xyzobs.px.value'].parts()[1]
       - configdict['ymin']) / configdict['y_bin_width'])
     if 'norm_time_values' not in refl_table:
-      refl_table['norm_time_values'] = (refl_table['xyzobs.px.value'].parts()[2] 
+      refl_table['norm_time_values'] = (refl_table['xyzobs.px.value'].parts()[2]
       * self.experiments.scaling_model.configdict['time_norm_fac'])
 
   def _initialise_modulation_term(self):

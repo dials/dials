@@ -5,7 +5,7 @@
 #include <scitbx/math/zernike.h>
 
 namespace dials_scratch { namespace scaling {
-  
+
   /**
    * Elementwise squaring of a matrix
    */

@@ -133,7 +133,7 @@ class IhTableBase(object):
   def n_h(self):
     """A vector of length n_refl, containing the number of reflections in
     the respective symmetry group.
-    
+
     Not calculated by default, as only needed for certain calculations."""
     return self._n_h
 

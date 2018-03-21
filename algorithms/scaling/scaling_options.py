@@ -34,7 +34,7 @@ phil_scope = iotbx.phil.parse('''
               more than 6."
     surface_weight = 1e6
       .type = float
-      .help = "Restraint weight applied to spherical harmonic terms in the 
+      .help = "Restraint weight applied to spherical harmonic terms in the
                physical model absorption correction."
     modulation_term = False
       .type = bool

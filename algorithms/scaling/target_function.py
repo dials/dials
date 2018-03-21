@@ -17,7 +17,7 @@ class ScalingTarget(object):
   A class to be used by a Scaling Refinery to calculate gradients,
   residuals etc required by the Refinery for minimisation.
   '"""
-  
+
   _grad_names = ['dI_dp']
   rmsd_names = ["RMSD_I"]
   rmsd_units = ["a.u"]
@@ -208,7 +208,7 @@ class ScalingTargetFixedIH(ScalingTarget):
   """A special implementation of scaling target for when the scaling is to be
   done against a fixed reference Ih set (i.e scaler is a TargetScaler)
   """
-  
+
   def calculate_gradients(self):
     G = flex.double([])
     for i, unscaled_scaler in enumerate(self.scaler.unscaled_scalers):
