@@ -105,7 +105,7 @@ phil_scope = iotbx.phil.parse('''
               that is being scaled will be saved on its own, or combined with the
               already scaled dataset."
     target_intensities = None
-      .type = str
+      .type = path
       .help = "Target intensity pickle file to use as target."
     space_group = None
       .type = str
