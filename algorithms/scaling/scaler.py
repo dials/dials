@@ -77,6 +77,31 @@ class ScalerBase(object):
     '''call the basis function'''
     return basis_function(self, apm, curvatures).return_basis()
 
+  @staticmethod
+  def _map_indices_to_asu(reflection_table, experiments, params):
+    '''Create a miller_set object, map to the asu and create a sorted
+       reflection table, sorted by asu miller index'''
+    u_c = experiments.crystal.get_unit_cell().parameters()
+    if params.scaling_options.space_group:
+      sg_from_file = experiments.crystal.get_space_group().info()
+      s_g_symbol = params.scaling_options.space_group
+      crystal_symmetry = crystal.symmetry(unit_cell=u_c,
+        space_group_symbol=s_g_symbol)
+      msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
+        'If the reflection indexing in these space groups is different, {sep}'
+        'bad things may happen!!! {sep}').format(sg_from_file, s_g_symbol, sep='\n')
+      logger.info(msg)
+    else:
+      s_g = experiments.crystal.get_space_group()
+      crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
+    miller_set = miller.set(crystal_symmetry=crystal_symmetry,
+      indices=reflection_table['miller_index'], anomalous_flag=False)
+    miller_set_in_asu = miller_set.map_to_asu()
+    reflection_table["asu_miller_index"] = miller_set_in_asu.indices()
+    permuted = (miller_set.map_to_asu()).sort_permutation(by_value='packed_indices')
+    reflection_table = reflection_table.select(permuted)
+    return reflection_table
+
   @classmethod
   def _scaling_subset(cls, reflection_table, params, error_model_params=None):
     '''select the reflections with non-zero weight and update scale weights
@@ -235,40 +260,18 @@ class SingleScalerBase(ScalerBase):
   @staticmethod
   def _reflection_table_setup(initial_keys, reflections):
     'initial filter to select integrated reflections'
-    
     mask = ~reflections.get_flags(reflections.flags.integrated)
     d_mask = reflections['d'] <= 0.0
     partials_mask = reflections['partiality'] < 0.95
     reflections.set_flags(mask or partials_mask or d_mask,
       reflections.flags.excluded_for_scaling)
+    print('%s reflections not suitable for scaling (low partiality,\n'
+      'not integrated etc).\n' % reflections.get_flags(
+      reflections.flags.excluded_for_scaling).count(True))
     if not 'inverse_scale_factor' in initial_keys:
       reflections['inverse_scale_factor'] = (flex.double([1.0] * reflections.size()))
     return reflections
 
-  @staticmethod
-  def _map_indices_to_asu(reflection_table, experiments, params):
-    '''Create a miller_set object, map to the asu and create a sorted
-       reflection table, sorted by asu miller index'''
-    u_c = experiments.crystal.get_unit_cell().parameters()
-    if params.scaling_options.space_group:
-      sg_from_file = experiments.crystal.get_space_group().info()
-      s_g_symbol = params.scaling_options.space_group
-      crystal_symmetry = crystal.symmetry(unit_cell=u_c,
-        space_group_symbol=s_g_symbol)
-      msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
-        'If the reflection indexing in these space groups is different, {sep}'
-        'bad things may happen!!! {sep}').format(sg_from_file, s_g_symbol, sep='\n')
-      logger.info(msg)
-    else:
-      s_g = experiments.crystal.get_space_group()
-      crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
-    miller_set = miller.set(crystal_symmetry=crystal_symmetry,
-      indices=reflection_table['miller_index'], anomalous_flag=False)
-    miller_set_in_asu = miller_set.map_to_asu()
-    reflection_table["asu_miller_index"] = miller_set_in_asu.indices()
-    permuted = (miller_set.map_to_asu()).sort_permutation(by_value='packed_indices')
-    reflection_table = reflection_table.select(permuted)
-    return reflection_table
 
   @classmethod
   def _select_optimal_intensities(cls, reflection_table, params):
@@ -847,10 +850,10 @@ class MultiScalerBase(ScalerBase):
       scaler.select_reflections_for_scaling()
 
 class MultiScaler(MultiScalerBase):
-  '''
+  """
   Scaler for multiple datasets - takes in params, experiments and
   a list of SingleScalers.
-  '''
+  """
 
   id_ = 'multi'
 
@@ -909,11 +912,11 @@ class MultiScaler(MultiScalerBase):
     return (results, scaled_ids)
 
 class TargetScaler(MultiScalerBase):
-  '''
+  """
   Target Scaler for scaling one dataset against already scaled data - takes in
   params, lists of scaled and unscaled experiments, a list of already scaled
   SingleScalers and a list of unscaled reflections.
-  '''
+  """
 
   id_ = 'target'
 
@@ -972,11 +975,55 @@ class TargetScaler(MultiScalerBase):
       result, scaled_id = scaler.calc_merging_statistics()
       results.append(result[0])
       scaled_ids.append(scaled_id)
+    joint_result, _ = super(TargetScaler, self).calc_merging_statistics()
+    results.append(joint_result[0])
+    scaled_ids.append('x')
     return (results, scaled_ids)
 
   def join_multiple_datasets(self):
     '''method to create a joint reflection table'''
     scalers = []
-    scalers.extend(self.single_scalers)
+    if not (self.params.scaling_options.target_intensities and
+      self.params.scaling_options.only_target):
+      scalers.extend(self.single_scalers)
     scalers.extend(self.unscaled_scalers)
     super(TargetScaler, self).join_datasets_from_scalers(scalers)
+
+  def select_reflections_for_scaling(self):
+    for scaler in self.unscaled_scalers:
+      scaler.select_reflections_for_scaling()
+
+
+class NullScaler(ScalerBase):
+  """
+  Null scaler to allow targeted scaling against calculated intensities.
+  """
+
+  id_ = 'null'
+
+  def __init__(self, params, experiment, reflection, scaled_id=0):
+    super(NullScaler, self).__init__()
+    self._experiments = experiment
+    self._params = params
+    self._reflection_table = self._map_indices_to_asu(reflection, experiment,
+      params)
+    self._initial_keys = [key for key in self._reflection_table.keys()]
+    self._reflection_table['intensity'] = self._reflection_table[
+      'intensity.calculated.value']
+    n_refl = self._reflection_table.size()
+    self._reflection_table['inverse_scale_factor'] = flex.double([1.0] * n_refl)
+    self._reflection_table['variance'] = flex.double([1.0] * n_refl)
+    weights = self._reflection_table['intensity.calculated.value']
+    self._reflection_table.set_flags(flex.bool([False]*n_refl),
+      self._reflection_table.flags.excluded_for_scaling)
+    self._Ih_table = SingleIhTable(self._reflection_table, weights)
+    logger.info('NullScaler contains %s reflections' % n_refl)
+    logger.info('Completed configuration of NullScaler. \n\n' + '='*80 + '\n')
+
+  def expand_scales_to_all_reflections(self, caller=None):
+    '''expand scales from a subset to all reflections'''
+    pass
+
+  def update_for_minimisation(self, apm, curvatures=False):
+    '''update the scale factors and Ih for the next iteration of minimisation'''
+    pass

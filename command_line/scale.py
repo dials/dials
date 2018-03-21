@@ -110,6 +110,24 @@ def main(argv):
   reflections = flatten_reflections(params.input.reflections)
   experiments = flatten_experiments(params.input.experiments)
 
+  if params.scaling_options.target_intensities:
+    from dials.array_family import flex
+    target_params, _ = optionparser.parse_args(
+      [params.scaling_options.target_intensities], show_diff_phil=False)
+    target_reflections = flatten_reflections(target_params.input.reflections)
+    reflections.append(target_reflections[0])
+
+  # If scaling against a target calculated dataset, it is assumed that this
+  # is the last pickle file passed in and that no corresponding experiments file
+  # is passed in.
+  if params.scaling_options.target_intensities:
+    logger.info('*'*36 + ' WARNING ' + '*'*36 + '\n'
+    'For scaling against target calculated dataset, it is assumed \n'
+    'that this is the last pickle file passed in and that no corresponding \n'
+    'experiments file is passed in.\n')
+    experiments.append(experiments[0]) # Assume correct space group.
+    reflections[-1]['id'] = flex.int([len(reflections)] * reflections[-1].size())
+
   if len(experiments) != 1:
     logger.info(('Checking for the existence of a reflection table {sep}'
       'containing multiple scaled datasets {sep}').format(sep='\n'))
@@ -124,9 +142,18 @@ def main(argv):
         are consistent""")
 
   if len(experiments) != len(reflections):
-     raise Sorry("mismatched number of experiments and reflection tables found.")
+     raise Sorry("Mismatched number of experiments and reflection tables found.")
 
   # Perform any cutting of the dataset before creating scaling models.
+  for reflection in reflections:
+    reflection.set_flags(flex.bool([False]*reflection.size()),
+      reflection.flags.user_excluded_in_scaling)
+    if params.cut_data.max_resolution:
+      reflection.set_flags(reflection['d'] < params.cut_data.max_resolution,
+      reflection.flags.user_excluded_in_scaling)
+    if params.cut_data.min_resolution:
+      reflection.set_flags(reflection['d'] > params.cut_data.min_resolution,
+      reflection.flags.user_excluded_in_scaling)
   if params.cut_data.exclude_image_range:
     if len(reflections) == 1:
       start_excl = params.cut_data.exclude_image_range[0]
@@ -138,18 +165,11 @@ def main(argv):
     else:
       raise Sorry("""exclude_image_range can only be used with one dataset,
       not multiple datasets.""")
-  for reflection in reflections:
-    if params.cut_data.max_resolution:
-      reflection.set_flags(reflection['d'] < params.cut_data.max_resolution,
-      reflection.flags.user_excluded_in_scaling)
-    if params.cut_data.min_resolution:
-      reflection.set_flags(reflection['d'] > params.cut_data.min_resolution,
-      reflection.flags.user_excluded_in_scaling)
+  
 
   # First create the scaling model if it didn't already exist in the
   # experiments files.
   experiments = create_scaling_model(params, experiments, reflections)
-
   logger.info('\nScaling models have been initialised for all experiments.')
   logger.info('\n' + '='*80 + '\n')
 
@@ -188,6 +208,8 @@ def main(argv):
   
   logger.info('\n'+'='*80+'\n')
   # Save scaled_experiments.json and scaled.pickle files.
+  if params.scaling_options.target_intensities:
+    experiments = experiments[:-1]
   save_experiments(experiments, params.output.experiments)
   minimised.clean_reflection_table()
   save_reflections(minimised.reflection_table, params.output.scaled)
@@ -238,17 +260,22 @@ def scaling_algorithm(scaler):
   """The main scaling algorithm."""
 
   if scaler.id_ == 'target':
-    # Do a scaling round against a target of already scaled datasets.
     scaler = perform_scaling(scaler, target_type=ScalingTargetFixedIH)
 
     # The minimisation has only been done on a subset on the data, so apply the
     # scale factors to the whole reflection table.
-    if scaler.params.scaling_options.only_target is True:
+    if scaler.params.scaling_options.only_target or (
+      scaler.params.scaling_options.target_intensities):
+      scaler.expand_scales_to_all_reflections()
+
+      # Do another round so that more suitable weights are used.
+      scaler.select_reflections_for_scaling()
+      scaler = perform_scaling(scaler, target_type=ScalingTargetFixedIH)
       scaler.expand_scales_to_all_reflections()
 
       if scaler.params.weighting.optimise_error_model:
         scaler = perform_error_optimisation(scaler)
-        scaler.apply_error_model_to_variances()
+        '''scaler.apply_error_model_to_variances()'''
 
       scaler.join_multiple_datasets()
       return scaler
@@ -294,7 +321,7 @@ def scaling_algorithm(scaler):
 
   if scaler.params.weighting.optimise_error_model:
     scaler = perform_error_optimisation(scaler)
-    scaler.apply_error_model_to_variances()
+    '''scaler.apply_error_model_to_variances()'''
 
   if isinstance(scaler, scaler_module.MultiScalerBase):
     scaler.join_multiple_datasets()

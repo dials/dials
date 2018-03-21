@@ -14,7 +14,7 @@ def create_scaler(params, experiments, reflections):
   else:
     is_scaled_list = is_scaled(experiments)
     n_scaled = is_scaled_list.count(True)
-    if (params.scaling_options.target is True and n_scaled < len(reflections)
+    if (params.scaling_options.target_cycle and n_scaled < len(reflections)
         and n_scaled > 0): #if only some scaled and want to do targeted scaling
       scaler = TargetScalerFactory.create(params, experiments, reflections,
         is_scaled_list)
@@ -46,6 +46,14 @@ class SingleScalerFactory(object):
         return scalerfactory(params, experiment, reflection, scaled_id)
     raise Sorry("unable to find scaler in dials.extensions.scaling_model_ext")
 
+class NullScalerFactory(object):
+  'Factory for creating null scaler'
+  @classmethod
+  def create(cls, params, experiment, reflection, scaled_id=0):
+    """Return Null Scaler."""
+    from dials.algorithms.scaling.scaler import NullScaler
+    return NullScaler(params, experiment, reflection)
+
 class MultiScalerFactory(object):
   'Factory for creating a scaler for multiple datasets'
   @classmethod
@@ -76,11 +84,16 @@ class TargetScalerFactory(object):
     scaled_scalers = []
     unscaled_experiments = []
     unscaled_scalers = []
-    for i, (experiment, reflection) in enumerate(zip(experiments,reflections)):
+    for i, (experiment, reflection) in enumerate(zip(experiments, reflections)):
       if is_scaled_list[i] is True:
-        scaled_experiments.append(experiment)
-        scaled_scalers.append(SingleScalerFactory.create(params, experiment,
-          reflection, scaled_id=i))
+        if params.scaling_options.target_intensities:
+          scaled_experiments.append(experiment)
+          scaled_scalers.append(NullScalerFactory.create(params, experiment,
+            reflection, scaled_id=i))
+        else:
+          scaled_experiments.append(experiment)
+          scaled_scalers.append(SingleScalerFactory.create(params, experiment,
+            reflection, scaled_id=i))
       else:
         unscaled_experiments.append(experiment)
         unscaled_scalers.append(SingleScalerFactory.create(params, experiment,

@@ -91,7 +91,7 @@ phil_scope = iotbx.phil.parse('''
       .help = "Option to apply a minimum resolution cutoff for the dataset."
   }
   scaling_options {
-    target = True
+    target_cycle = True
       .type = bool
       .help = "Option to turn of initial round of targeted scaling
                if some datasets are already scaled."
@@ -99,6 +99,14 @@ phil_scope = iotbx.phil.parse('''
       .type = bool
       .help = "Option to only do targeted scaling if some datasets
                are already scaled."
+    only_save_targeted = True
+      .type = bool
+      .help = "If only_target is true, this option to change whether the dataset
+              that is being scaled will be saved on its own, or combined with the
+              already scaled dataset."
+    target_intensities = None
+      .type = str
+      .help = "Target intensity pickle file to use as target."
     space_group = None
       .type = str
       .help = "Option to specify space group for scaling"

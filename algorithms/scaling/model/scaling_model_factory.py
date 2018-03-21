@@ -4,16 +4,23 @@ To add a new scaling model, one must define a new extension
 in dials.extensions.scaling_model_ext, create a new factory
 in this file and create a new model in dials.algorithms.scaling.model.
 '''
+from collections import OrderedDict
 from dials.array_family import flex
 import dials.algorithms.scaling.model.model as Model
 import pkg_resources
-from collections import OrderedDict
 
 def create_scaling_model(params, experiments, reflections):
   'function to create/load the appropriate scaling model for each experiment'
   for i, (exp, refl) in enumerate(zip(experiments, reflections)):
     model = experiments.scaling_models()[i]
-    if model is not None:
+    if params.scaling_options.target_intensities and i == len(reflections)-1:
+      for entry_point in pkg_resources.iter_entry_points('dxtbx.scaling_model_ext'):
+        if entry_point.name == 'KB':
+          #finds relevant extension in dials.extensions.scaling_model_ext
+          factory = entry_point.load().factory()
+          exp.scaling_model = factory.create(params, exp, refl)
+          exp.scaling_model.set_scaling_model_as_scaled()
+    elif model is not None:
       exp.scaling_model = model
     else:
       for entry_point in pkg_resources.iter_entry_points('dxtbx.scaling_model_ext'):
@@ -60,7 +67,6 @@ class PhysicalSMFactory(object):
 
     osc_range = check_for_user_excluded(experiments, reflections)
     one_osc_width = experiments.scan.get_oscillation()[1]
-    print(osc_range)
     if params.parameterisation.scale_term:
       corrections.append('scale')
       n_scale_param, s_norm_fac, scale_rot_int = initialise_smooth_input(
