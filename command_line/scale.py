@@ -87,6 +87,7 @@ phil_scope = phil.parse('''
 def main(argv):
   """Main script to run the scaling algorithm."""
 
+  from dials.array_family import flex
   optionparser = OptionParser(usage=__doc__.strip(), read_experiments=True,
     read_reflections=True, read_datablocks=False, phil=phil_scope,
     check_format=False)
@@ -111,7 +112,6 @@ def main(argv):
   experiments = flatten_experiments(params.input.experiments)
 
   if params.scaling_options.target_intensities:
-    from dials.array_family import flex
     target_params, _ = optionparser.parse_args(
       [params.scaling_options.target_intensities], show_diff_phil=False)
     target_reflections = flatten_reflections(target_params.input.reflections)
