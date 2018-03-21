@@ -27,7 +27,8 @@ import libtbx.load_env
 from libtbx import phil
 from libtbx.utils import Sorry
 from libtbx.str_utils import make_sub_header
-from dials.util import halraiser
+from dials.util import halraiser, log
+from dials.array_family import flex
 from dials.util.options import OptionParser, flatten_reflections,\
   flatten_experiments
 from dials.algorithms.scaling.scaling_refiner import scaling_refinery,\
@@ -48,7 +49,7 @@ from dials.algorithms.scaling.scaling_utilities import (
   parse_multiple_datasets, save_experiments, save_reflections)
 
 
-start_time = time.time()
+
 logger = logging.getLogger('dials')
 
 phil_scope = phil.parse('''
@@ -84,159 +85,156 @@ phil_scope = phil.parse('''
   include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
 ''', process_includes=True)
 
-# suggest you make this into a top level class with a set of methods which do
-# individual steps (details will follow)
 
-def main(argv):
+class Script(object):
   """Main script to run the scaling algorithm."""
 
-  # def __init__()
+  def __init__(self):
+    optionparser = OptionParser(usage=__doc__.strip(), read_experiments=True,
+      read_reflections=True, read_datablocks=False, phil=phil_scope,
+      check_format=False)
+    self.params, _ = optionparser.parse_args(show_diff_phil=False)
 
-  from dials.array_family import flex
-  optionparser = OptionParser(usage=__doc__.strip(), read_experiments=True,
-    read_reflections=True, read_datablocks=False, phil=phil_scope,
-    check_format=False)
-  params, _ = optionparser.parse_args(argv, show_diff_phil=False)
+    log.config(verbosity=1, info=self.params.output.log,
+      debug=self.params.output.debug_log)
 
-  from dials.util import log
-  log.config(verbosity=1, info=params.output.log, debug=params.output.debug_log)
+    if not self.params.input.experiments or not self.params.input.reflections:
+      optionparser.print_help()
+      return
 
-  if not params.input.experiments or not params.input.reflections:
-    optionparser.print_help()
-    return
+    from dials.util.version import dials_version
+    logger.info(dials_version())
 
-  from dials.util.version import dials_version
-  logger.info(dials_version())
+    diff_phil = optionparser.diff_phil.as_str()
+    if diff_phil is not '':
+      logger.info('The following parameters have been modified:\n')
+      logger.info(diff_phil)
 
-  diff_phil = optionparser.diff_phil.as_str()
-  if diff_phil is not '':
-    logger.info('The following parameters have been modified:\n')
-    logger.info(diff_phil)
+    self.reflections = flatten_reflections(self.params.input.reflections)
+    self.experiments = flatten_experiments(self.params.input.experiments)
 
-  reflections = flatten_reflections(params.input.reflections)
-  experiments = flatten_experiments(params.input.experiments)
+    if self.params.scaling_options.target_intensities:
+      target_params, _ = optionparser.parse_args(
+        [self.params.scaling_options.target_intensities], show_diff_phil=False)
+      target_reflections = flatten_reflections(target_params.input.reflections)
+      self.reflections.append(target_reflections[0])
 
-  if params.scaling_options.target_intensities:
-    target_params, _ = optionparser.parse_args(
-      [params.scaling_options.target_intensities], show_diff_phil=False)
-    target_reflections = flatten_reflections(target_params.input.reflections)
-    reflections.append(target_reflections[0])
+    # If scaling against a target calculated dataset, it is assumed that this
+    # is the last pickle file passed in and that no corresponding experiments
+    # file is passed in.
+    if self.params.scaling_options.target_intensities:
+      logger.info('*'*36 + ' WARNING ' + '*'*36 + '\n'
+      'For scaling against target calculated dataset, it is assumed \n'
+      'that this is the last pickle file passed in and that no corresponding \n'
+      'experiments file is passed in.\n')
+      self.experiments.append(self.experiments[0]) # Assume correct space group for now.
+      self.reflections[-1]['id'] = flex.int(self.reflections[-1].size(),
+        len(self.reflections))
 
-  # If scaling against a target calculated dataset, it is assumed that this
-  # is the last pickle file passed in and that no corresponding experiments file
-  # is passed in.
-  if params.scaling_options.target_intensities:
-    logger.info('*'*36 + ' WARNING ' + '*'*36 + '\n'
-    'For scaling against target calculated dataset, it is assumed \n'
-    'that this is the last pickle file passed in and that no corresponding \n'
-    'experiments file is passed in.\n')
-    experiments.append(experiments[0]) # Assume correct space group.
-    reflections[-1]['id'] = flex.int(reflections[-1].size(), len(reflections))
+    if len(self.experiments) != 1:
+      logger.info(('Checking for the existence of a reflection table {sep}'
+        'containing multiple scaled datasets {sep}').format(sep='\n'))
+      reflections = parse_multiple_datasets(self.reflections)
+      logger.info("Found %s reflection tables in total." % len(reflections))
+      logger.info("Found %s experiments in total." % len(self.experiments))
+      s_g_1 = self.experiments[0].crystal.get_space_group()
+      for experiment in self.experiments:
+        if experiment.crystal.get_space_group() != s_g_1:
+          raise Sorry("""experiments have different space groups and cannot be
+          scaled together, please reanalyse the data so that the space groups
+          are consistent""")
 
-  if len(experiments) != 1:
-    logger.info(('Checking for the existence of a reflection table {sep}'
-      'containing multiple scaled datasets {sep}').format(sep='\n'))
-    reflections = parse_multiple_datasets(reflections)
-    logger.info("Found %s reflection tables in total." % len(reflections))
-    logger.info("Found %s experiments in total." % len(experiments))
-    s_g_1 = experiments[0].crystal.get_space_group()
-    for experiment in experiments:
-      if experiment.crystal.get_space_group() != s_g_1:
-        raise Sorry("""experiments have different space groups and cannot be
-        scaled together, please reanalyse the data so that the space groups
-        are consistent""")
+    if len(self.experiments) != len(self.reflections):
+      raise Sorry("Mismatched number of experiments and reflection tables found.")
 
-  if len(experiments) != len(reflections):
-     raise Sorry("Mismatched number of experiments and reflection tables found.")
-
-  # def prepare_input()
-
-  # Perform any cutting of the dataset before creating scaling models.
-  for reflection in reflections:
-    reflection.set_flags(flex.bool(reflection.size(), False),
-      reflection.flags.user_excluded_in_scaling)
-    if params.cut_data.max_resolution:
-      reflection.set_flags(reflection['d'] < params.cut_data.max_resolution,
-      reflection.flags.user_excluded_in_scaling)
-    if params.cut_data.min_resolution:
-      reflection.set_flags(reflection['d'] > params.cut_data.min_resolution,
-      reflection.flags.user_excluded_in_scaling)
-  if params.cut_data.exclude_image_range:
-    if len(reflections) == 1:
-      start_excl = params.cut_data.exclude_image_range[0]
-      end_excl = params.cut_data.exclude_image_range[1]
-      mask1 = start_excl < reflections[0]['xyzobs.px.value'].parts()[2]
-      mask2 = end_excl > reflections[0]['xyzobs.px.value'].parts()[2]
-      reflections[0].set_flags(mask1 & mask2,
-        reflections[0].flags.user_excluded_in_scaling)
-    else:
-      raise Sorry("""exclude_image_range can only be used with one dataset,
-      not multiple datasets.""")
+  def run(self):
+    """Run the scaling script."""
+    start_time = time.time()
+    self.prepare_input()
+    self.scale()
+    self.merging_stats()
+    self.output()
+    # All done!
+    finish_time = time.time()
+    logger.info("\nTotal time taken: {0:.4f}s ".format(finish_time - start_time))
+    logger.info('\n'+'='*80+'\n')
 
 
-  # def scale()
-
-  # First create the scaling model if it didn't already exist in the
-  # experiments files.
-  experiments = create_scaling_model(params, experiments, reflections)
-  logger.info('\nScaling models have been initialised for all experiments.')
-  logger.info('\n' + '='*80 + '\n')
-
-  # Now create the scaler and do the scaling.
-  scaler = create_scaler(params, experiments, reflections)
-  minimised = scaling_algorithm(scaler)
-
-  for experiment in experiments:
-    experiment.scaling_model.set_scaling_model_as_scaled()
-
-  # def merging_stats()
-
-  logger.info('\n'+'='*80+'\n')
-  # Calculate merging stats.
-  results, scaled_ids = minimised.calc_merging_statistics()
-  plot_labels = []
-  for i, result in enumerate(results):
-    if len(results) == 1:
-      logger.info("")
-      result.show()#out=log.info_handle(logger))
-      plot_labels.append('Single dataset ')
-    else:
-      if i < len(results) - 1:
-        make_sub_header("Merging statistics for dataset " + str(scaled_ids[i]),
-          out=log.info_handle(logger))
-        result.show(header=0)#out=log.info_handle(logger))
-        plot_labels.append('Dataset ' + str(scaled_ids[i]))
+  def prepare_input(self):
+    """Perform any cutting of the dataset prior to creating scaling models."""
+    for reflection in self.reflections:
+      reflection.set_flags(flex.bool(reflection.size(), False),
+        reflection.flags.user_excluded_in_scaling)
+      if self.params.cut_data.max_resolution:
+        reflection.set_flags(reflection['d'] < self.params.cut_data.max_resolution,
+        reflection.flags.user_excluded_in_scaling)
+      if self.params.cut_data.min_resolution:
+        reflection.set_flags(reflection['d'] > self.params.cut_data.min_resolution,
+        reflection.flags.user_excluded_in_scaling)
+    if self.params.cut_data.exclude_image_range:
+      if len(self.reflections) == 1:
+        start_excl = self.params.cut_data.exclude_image_range[0]
+        end_excl = self.params.cut_data.exclude_image_range[1]
+        mask1 = start_excl < self.reflections[0]['xyzobs.px.value'].parts()[2]
+        mask2 = end_excl > self.reflections[0]['xyzobs.px.value'].parts()[2]
+        self.reflections[0].set_flags(mask1 & mask2,
+          self.reflections[0].flags.user_excluded_in_scaling)
       else:
-        make_sub_header("Merging statistics for combined datasets",
-          out=log.info_handle(logger))
-        result.show(header=0)#out=log.info_handle(logger))
-        plot_labels.append('Combined datasets')
+        raise Sorry("""exclude_image_range can only be used with one dataset,
+        not multiple datasets.""")
 
-  # Plot merging stats if requested.
-  if params.output.plot_merging_stats:
-    from xia2.command_line.compare_merging_stats import plot_merging_stats
-    plot_merging_stats(results, labels=plot_labels)
+  def scale(self):
+    """Create the scaling models and perform scaling."""
+    self.experiments = create_scaling_model(self.params, self.experiments,
+      self.reflections)
+    logger.info('\nScaling models have been initialised for all experiments.')
+    logger.info('\n' + '='*80 + '\n')
 
-  # def output
+    self.scaler = create_scaler(self.params, self.experiments, self.reflections)
+    self.minimised = scaling_algorithm(self.scaler)
 
-  logger.info('\n'+'='*80+'\n')
-  # Save scaled_experiments.json and scaled.pickle files.
-  if params.scaling_options.target_intensities:
-    experiments = experiments[:-1]
-  save_experiments(experiments, params.output.experiments)
-  minimised.clean_reflection_table()
-  #if params.scaling_options.target_intensities:
-  #  save_reflections
-  save_reflections(minimised.reflection_table, params.output.scaled)
+    for experiment in self.experiments:
+      experiment.scaling_model.set_scaling_model_as_scaled()
 
-  '''if params.output.plot_scaling_models:
-    from dials_scratch.command_line.plot_scaling_models import plot_scaling_models
-    plot_scaling_models(params.output.scaled, params.output.experiments)'''
+  def merging_stats(self):
+    """Calculate and print the merging statistics."""
+    logger.info('\n'+'='*80+'\n')
+    # Calculate merging stats.
+    results, scaled_ids = self.minimised.calc_merging_statistics()
+    plot_labels = []
+    for i, result in enumerate(results):
+      if len(results) == 1:
+        logger.info("")
+        result.show()#out=log.info_handle(logger))
+        plot_labels.append('Single dataset ')
+      else:
+        if i < len(results) - 1:
+          make_sub_header("Merging statistics for dataset " + str(scaled_ids[i]),
+            out=log.info_handle(logger))
+          result.show(header=0)#out=log.info_handle(logger))
+          plot_labels.append('Dataset ' + str(scaled_ids[i]))
+        else:
+          make_sub_header("Merging statistics for combined datasets",
+            out=log.info_handle(logger))
+          result.show(header=0)#out=log.info_handle(logger))
+          plot_labels.append('Combined datasets')
 
-  # All done!
-  finish_time = time.time()
-  logger.info("\nTotal time taken: {0:.4f}s ".format(finish_time - start_time))
-  logger.info('\n'+'='*80+'\n')
+    # Plot merging stats if requested.
+    if self.params.output.plot_merging_stats:
+      from xia2.command_line.compare_merging_stats import plot_merging_stats
+      plot_merging_stats(results, labels=plot_labels)
+
+  def output(self):
+    """Save the experiments json and scaled pickle file."""
+    logger.info('\n'+'='*80+'\n')
+    if self.params.scaling_options.target_intensities:
+      self.experiments = self.experiments[:-1]
+    save_experiments(self.experiments, self.params.output.experiments)
+    save_reflections(self.minimised, self.params.output.scaled)
+
+    '''if params.output.plot_scaling_models:
+      from dials_scratch.command_line.plot_scaling_models import plot_scaling_models
+      plot_scaling_models(params.output.scaled, params.output.experiments)'''
 
 def perform_scaling(scaler, target_type=ScalingTarget):
   """Perform a complete minimisation based on the current state."""
@@ -347,6 +345,8 @@ def scaling_algorithm(scaler):
 
 if __name__ == "__main__":
   try:
-    sys.exit(main(sys.argv[1:]))
+    script = Script()
+    script.run()
+    #sys.exit(main(sys.argv[1:]))
   except Exception as e:
     halraiser(e)

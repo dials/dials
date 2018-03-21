@@ -22,11 +22,13 @@ def save_experiments(experiments, filename):
     outfile.write(dump.as_json(split=True))
   logger.info('Time taken: %g' % (time() - st))
 
-def save_reflections(reflections, filename):
+def save_reflections(scaler, filename):
   '''Save the scaled reflections.'''
+  #First remove any additional columns added during scaling that are not needed.
+  scaler.clean_reflection_table() 
   st = time()
   logger.info('Saving the scaled reflections to %s' % filename)
-  reflections.as_pickle(filename)
+  scaler.reflection_table.as_pickle(filename)
   logger.info('Time taken: %g' % (time() - st))
 
 def parse_multiple_datasets(reflections):
