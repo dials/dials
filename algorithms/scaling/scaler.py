@@ -925,6 +925,8 @@ class TargetScaler(MultiScalerBase):
     logger.info('\nInitialising a TargetScaler instance. \n')
     super(TargetScaler, self).__init__(params, scaled_experiments, scaled_scalers)
     self.unscaled_scalers = unscaled_scalers
+    self._initial_keys = self.unscaled_scalers[0].initial_keys #needed for 
+    # scaling against calculated Is
     self._experiments = unscaled_experiments[0]
     target_Ih_table = self.Ih_table
     from libtbx.containers import OrderedSet
@@ -983,8 +985,7 @@ class TargetScaler(MultiScalerBase):
   def join_multiple_datasets(self):
     '''method to create a joint reflection table'''
     scalers = []
-    if not (self.params.scaling_options.target_intensities and
-      self.params.scaling_options.only_target):
+    if not self.params.scaling_options.target_intensities:
       scalers.extend(self.single_scalers)
     scalers.extend(self.unscaled_scalers)
     super(TargetScaler, self).join_datasets_from_scalers(scalers)
@@ -1021,7 +1022,6 @@ class NullScaler(ScalerBase):
     logger.info('Completed configuration of NullScaler. \n\n' + '='*80 + '\n')
 
   def expand_scales_to_all_reflections(self, caller=None):
-    '''expand scales from a subset to all reflections'''
     pass
 
   def update_for_minimisation(self, apm, curvatures=False):

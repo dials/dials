@@ -225,6 +225,8 @@ def main(argv):
     experiments = experiments[:-1]
   save_experiments(experiments, params.output.experiments)
   minimised.clean_reflection_table()
+  #if params.scaling_options.target_intensities:
+  #  save_reflections
   save_reflections(minimised.reflection_table, params.output.scaled)
 
   '''if params.output.plot_scaling_models:
@@ -284,6 +286,9 @@ def scaling_algorithm(scaler):
       # Do another round so that more suitable weights are used.
       scaler.select_reflections_for_scaling()
       scaler = perform_scaling(scaler, target_type=ScalingTargetFixedIH)
+
+      #Need to add in a full matrix round to allow calculation of variances.
+
       scaler.expand_scales_to_all_reflections()
 
       if scaler.params.weighting.optimise_error_model:
