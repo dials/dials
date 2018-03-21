@@ -6,13 +6,13 @@ Usage: dials_scratch.scale integrated.pickle integrated_experiments.json
 
 This program performs scaling on the input datasets. The default
 parameterisationis a physical parameterisation based on that used in the program
-Aimless. Ifmultiple input files have been specified, the datasets will be
-jointly scaledagainst a common target of unique reflection intensities.
+Aimless. If multiple input files have been specified, the datasets will be
+jointly scaled against a common target of unique reflection intensities.
 
 By default, a scale, decay and absorption correction parameterisation for each
 dataset is used. One scaled.pickle and scaled_experiments.json files are output,
 which may contain data and scale models from multiple experiments. The
-reflectionintensities are left unscaled and unmerged in the output, but an
+reflection intensities are left unscaled and unmerged in the output, but an
 'inverse_scale_factor' and 'inverse_scale_factor_variance' column is added to
 the pickle file.
 
