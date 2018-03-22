@@ -44,21 +44,19 @@ namespace dials_scratch { namespace scaling {
     {
       int n_cols = jacobian_transpose.n_cols();
       scitbx::af::shared<double> sigmasq(n_cols);
-      int n_refl = var_cov_matrix.n_rows();
       for (int i=0; i < n_cols; i++){
-        scitbx::af::shared<double> result(n_refl);
-        for (int j=0; j < n_refl; j++){
-          result[j] += jacobian_transpose.col(i) * var_cov_matrix.col(j);
-          }
+        //scitbx::af::shared<double> result(n_refl);
+        //for (int j=0; j < n_refl; j++){
+        //  result[j] += jacobian_transpose.col(i) * var_cov_matrix.col(j);
+        //  }
 
         for (scitbx::sparse::matrix<double>::row_iterator
           p = jacobian_transpose.col(i).begin();
           p != jacobian_transpose.col(i).end(); ++p){
             int k = p.index();
-            sigmasq[i] += *p * result[k];
+            sigmasq[i] += *p * (jacobian_transpose.col(i) * var_cov_matrix.col(k));// *p * result[k];
           }
       }
-
       return sigmasq;
     }
 
