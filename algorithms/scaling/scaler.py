@@ -13,6 +13,7 @@ from dials.algorithms.scaling.scaling_utilities import (sph_harm_table,
 from dials.algorithms.scaling.reflection_weighting import Weighting
 from dials.algorithms.scaling.Ih_table import SingleIhTable,\
   JointIhTable, IhTableBase
+from dials_scratch_scaling_ext import calc_sigmasq as cpp_calc_sigmasq
 logger = logging.getLogger('dials')
 
 class ScalerBase(object):
@@ -269,7 +270,7 @@ class SingleScalerBase(ScalerBase):
       'not integrated etc).\n' % reflections.get_flags(
       reflections.flags.excluded_for_scaling).count(True))
     if not 'inverse_scale_factor' in initial_keys:
-      reflections['inverse_scale_factor'] = (flex.double([1.0] * reflections.size()))
+      reflections['inverse_scale_factor'] = (flex.double(reflections.size(), 1.0))
     return reflections
 
 
@@ -312,9 +313,9 @@ class SingleScalerBase(ScalerBase):
 
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=True):
     self._reflection_table['inverse_scale_factor'] = flex.double(
-      [1.0] * self.reflection_table.size())
+      self.reflection_table.size(), 1.0)
     self._reflection_table['inverse_scale_factor_variance'] = flex.double(
-      [0.0] * self.reflection_table.size())
+      self.reflection_table.size(), 0.0)
     sel = self.reflection_table.get_flags(
       self.reflection_table.flags.bad_for_scaling, all=False)
     scaled_sel = ~sel
@@ -384,7 +385,7 @@ class SingleScalerBase(ScalerBase):
       offset = n_tot_params - n_abs_params
       for i in range(n_abs_params):
         jacobian[i, offset+i] = -1.0 * (surface_weights[i]**0.5)
-      restraints = [resid_restr, jacobian, flex.double([1.0] * n_abs_params)]
+      restraints = [resid_restr, jacobian, flex.double(n_abs_params, 1.0)]
     return restraints
 
   def calc_absorption_restraint(self, apm):
@@ -424,13 +425,7 @@ class SingleScalerBase(ScalerBase):
       n_cumulative_param += n_param
     jacobian_transpose = jacobian.transpose()
     logger.info('Calculating error estimates of inverse scale factors. \n')
-    sigmasq = flex.float([])
-    #note: must be a faster way to do this next bit? - in c++?
-    for col in jacobian_transpose.cols(): #iterating over reflections
-      a = flex.double(col.as_dense_vector())
-      var = (a * self._var_cov) * a
-      sigmasq.append(flex.sum(var))
-    return sigmasq.as_double()
+    return cpp_calc_sigmasq(jacobian_transpose, self._var_cov)
 
   def round_of_outlier_rejection(self, reflection_table):
     """calculate outliers from the reflections in the Ih_table,
@@ -487,7 +482,7 @@ class KBScaler(SingleScalerBase):
       self.components['scale'].update_reflection_data(n_refl=sel.count(True))
 
   def calc_expanded_scales(self, scaled_reflections, selection):
-    expanded_scale_factors = flex.double([1.0] * scaled_reflections.size())
+    expanded_scale_factors = flex.double(scaled_reflections.size(), 1.0)
     if 'scale' in self.components:
       self.components['scale'].update_reflection_data(
         n_refl=scaled_reflections.size())
@@ -599,7 +594,7 @@ class PhysicalScaler(SingleScalerBase):
      'maximum B-factor applied to any reflection is 0.0.')
 
   def calc_expanded_scales(self, scaled_reflections, selection):
-    expanded_scale_factors = flex.double([1.0] * scaled_reflections.size())
+    expanded_scale_factors = flex.double(scaled_reflections.size(), 1.0)
     if 'scale' in self.components:
       self.components['scale'].update_reflection_data(scaled_reflections['norm_rot_angle'])
       self.components['scale'].calculate_scales_and_derivatives()
@@ -721,7 +716,7 @@ class ArrayScaler(SingleScalerBase):
         normalised_y_values=self.components['modulation'].normalised_y_values.select(sel))
 
   def calc_expanded_scales(self, scaled_reflections, selection):
-    expanded_scale_factors = flex.double([1.0] * scaled_reflections.size())
+    expanded_scale_factors = flex.double(scaled_reflections.size(), 1.0)
     if 'modulation' in self.components:
       self.components['modulation'].update_reflection_data(
         scaled_reflections['normalised_x_det_values'],
@@ -805,7 +800,7 @@ class MultiScalerBase(ScalerBase):
         scaler_no = scaler_list[j]
         jacobian.assign_block(jac, n_row_cumul, apm.apm_data[scaler_no]['start_idx'])
         n_row_cumul += jac.n_rows
-      restraints = [R, jacobian, flex.double([1.0] * R.size())]
+      restraints = [R, jacobian, flex.double(R.size(), 1.0)]
     return restraints
 
   @abc.abstractmethod
@@ -930,19 +925,26 @@ class TargetScaler(MultiScalerBase):
     self._experiments = unscaled_experiments[0]
     target_Ih_table = self.Ih_table
     from libtbx.containers import OrderedSet
+    target_asu_Ih_dict = dict(zip(target_Ih_table.asu_miller_index,
+      target_Ih_table.Ih_values))
     for scaler in unscaled_scalers:
-      scaler.Ih_table._Ih_table['Ih_values'] = flex.double([0.0] * scaler.Ih_table.size)
+      scaler.Ih_table._Ih_table['Ih_values'] = flex.double(scaler.Ih_table.size, 0.0)
       #set to zero to allow selection below
       location_in_unscaled_array = 0
       for j, miller_idx in enumerate(OrderedSet(scaler.Ih_table.asu_miller_index)):
-        sel = target_Ih_table.asu_miller_index == miller_idx
-        Ih_values = target_Ih_table.Ih_values.select(sel)
+        #sel = target_Ih_table.asu_miller_index == miller_idx
+        #Ih_values = target_Ih_table.Ih_values.select(sel)
         n_in_group = scaler.Ih_table.h_index_matrix.col(j).non_zeroes
-        if Ih_values:
+        if miller_idx in target_asu_Ih_dict:
+          i = location_in_unscaled_array
+          Ih = flex.double([target_asu_Ih_dict[miller_idx]] * n_in_group)
+          scaler.Ih_table.Ih_values.set_selected(
+            flex.size_t(range(i, i + n_in_group)), Ih)
+        '''if Ih_values:
           i = location_in_unscaled_array
           Ih = flex.double([copy.copy(Ih_values[0])] * n_in_group)
           scaler.Ih_table.Ih_values.set_selected(
-            flex.size_t(range(i, i + n_in_group)), Ih)
+            flex.size_t(range(i, i + n_in_group)), Ih)'''
         location_in_unscaled_array += n_in_group
       sel = scaler.Ih_table.Ih_values != 0.0
       scaler.Ih_table = scaler.Ih_table.select(sel)
@@ -1012,8 +1014,8 @@ class NullScaler(ScalerBase):
     self._reflection_table['intensity'] = self._reflection_table[
       'intensity.calculated.value']
     n_refl = self._reflection_table.size()
-    self._reflection_table['inverse_scale_factor'] = flex.double([1.0] * n_refl)
-    self._reflection_table['variance'] = flex.double([1.0] * n_refl)
+    self._reflection_table['inverse_scale_factor'] = flex.double(n_refl, 1.0)
+    self._reflection_table['variance'] = flex.double(n_refl, 1.0)
     weights = self._reflection_table['intensity.calculated.value']
     self._reflection_table.set_flags(flex.bool([False]*n_refl),
       self._reflection_table.flags.excluded_for_scaling)

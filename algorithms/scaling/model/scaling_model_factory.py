@@ -71,17 +71,17 @@ class PhysicalSMFactory(object):
       corrections.append('scale')
       n_scale_param, s_norm_fac, scale_rot_int = initialise_smooth_input(
         osc_range, one_osc_width, params.parameterisation.scale_interval)
-      scale_parameters = flex.double([1.0] * n_scale_param)
+      scale_parameters = flex.double(n_scale_param, 1.0)
     if params.parameterisation.decay_term:
       corrections.append('decay')
       n_decay_param, d_norm_fac, decay_rot_int = initialise_smooth_input(
         osc_range, one_osc_width, params.parameterisation.decay_interval)
-      decay_parameters = flex.double([0.0] * n_decay_param)
+      decay_parameters = flex.double(n_decay_param, 0.0)
     if params.parameterisation.absorption_term:
       corrections.append('absorption')
       lmax = params.parameterisation.lmax
       n_abs_param = (2*lmax) + (lmax**2)  #arithmetic sum formula (a1=3, d=2)
-      abs_parameters = flex.double([0.0] * n_abs_param)
+      abs_parameters = flex.double(n_abs_param, 0.0)
 
     configdict = OrderedDict({'corrections': corrections})
     parameters_dict = {}
@@ -182,13 +182,13 @@ class ArraySMFactory(object):
       n_res_bins = params.parameterisation.n_resolution_bins
       n_res_param, res_bin_width = calc_n_param_from_bins(resmin, resmax,
         n_res_bins)
-      dec_params = flex.double([1.0] * n_time_param * n_res_param)
+      dec_params = flex.double((n_time_param * n_res_param), 1.0)
     if params.parameterisation.absorption_term:
       corrections.append('absorption')
       nxbins = nybins = params.parameterisation.n_absorption_bins
       n_x_param, x_bin_width = calc_n_param_from_bins(xmin, xmax, nxbins)
       n_y_param, y_bin_width = calc_n_param_from_bins(ymin, ymax, nybins)
-      abs_params = flex.double([1.0] * n_x_param * n_y_param * n_time_param)
+      abs_params = flex.double((n_x_param * n_y_param * n_time_param), 1.0)
     if params.parameterisation.modulation_term:
       corrections.append('modulation')
       nx_det_bins = ny_det_bins = params.parameterisation.n_modulation_bins
@@ -196,7 +196,7 @@ class ArraySMFactory(object):
         xmin, xmax, nx_det_bins)
       n_y_mod_param, y_det_bin_width = calc_n_param_from_bins(
         ymin, ymax, ny_det_bins)
-      mod_params = flex.double([1.0] * n_x_mod_param * n_y_mod_param)
+      mod_params = flex.double((n_x_mod_param * n_y_mod_param), 1.0)
 
     configdict = OrderedDict({'corrections': corrections})
     parameters_dict = {}

@@ -36,4 +36,11 @@ namespace dials_scratch { namespace scaling { namespace boost_python {
       arg("xyz")));
     }
 
+    void export_calc_sigmasq()
+    {
+    def("calc_sigmasq", &calc_sigmasq, (
+      arg("jacobian_transpose"),
+      arg("var_cov")));
+    }
+
 }}} // namespace = dials_scratch::scaling::boost_python

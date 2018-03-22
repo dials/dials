@@ -38,6 +38,31 @@ namespace dials_scratch { namespace scaling {
       return theta_phi;
     }
 
+  scitbx::af::shared<double> calc_sigmasq(
+    scitbx::sparse::matrix<double> jacobian_transpose,
+    scitbx::sparse::matrix<double> var_cov_matrix)
+    {
+      int n_cols = jacobian_transpose.n_cols();
+      scitbx::af::shared<double> sigmasq(n_cols);
+      int n_refl = var_cov_matrix.n_rows();
+      for (int i=0; i < n_cols; i++){
+        scitbx::af::shared<double> result(n_refl);
+        for (int j=0; j < n_refl; j++){
+          result[j] += jacobian_transpose.col(i) * var_cov_matrix.col(j);
+          }
+
+        for (scitbx::sparse::matrix<double>::row_iterator
+          p = jacobian_transpose.col(i).begin();
+          p != jacobian_transpose.col(i).end(); ++p){
+            int k = p.index();
+            sigmasq[i] += *p * result[k];
+          }
+      }
+
+      return sigmasq;
+    }
+
+
   scitbx::af::shared<scitbx::vec3<double> > rotate_vectors_about_axis(
     scitbx::af::shared<scitbx::vec3<double> > const rot_axis,
     scitbx::af::shared<scitbx::vec3<double> > const vectors,

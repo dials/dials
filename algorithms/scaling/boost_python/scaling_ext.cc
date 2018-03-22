@@ -9,6 +9,7 @@ namespace dials_scratch { namespace scaling { namespace boost_python {
   void export_sph_harm_table();
   void export_rotate_vectors_about_axis();
   void export_calc_theta_phi();
+  void export_calc_sigmasq();
 
   BOOST_PYTHON_MODULE(dials_scratch_scaling_ext)
   {
@@ -16,6 +17,7 @@ namespace dials_scratch { namespace scaling { namespace boost_python {
     export_sph_harm_table();
     export_rotate_vectors_about_axis();
     export_calc_theta_phi();
+    export_calc_sigmasq();
   }
 
 }}} // namespace dials_scratch::scaling::boost_python

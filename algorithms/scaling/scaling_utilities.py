@@ -47,6 +47,15 @@ def parse_multiple_datasets(reflections):
       single_reflection_tables.append(refl_table)
   return single_reflection_tables
 
+'''def calc_sigmasq(jacobian_transpose, var_cov):
+  sigmasq = flex.float([])
+  #note: must be a faster way to do this next bit? - in c++?
+  for col in jacobian_transpose.cols(): #iterating over reflections
+    a = flex.double(col.as_dense_vector())
+    var = (a * var_cov) * a
+    sigmasq.append(flex.sum(var))
+  return sigmasq.as_double()'''
+
 def calc_crystal_frame_vectors(reflection_table, experiments):
   """Calculate the diffraction vectors in the crystal frame."""
   reflection_table['s0'] = flex.vec3_double(
