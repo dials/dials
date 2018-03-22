@@ -1,12 +1,13 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.generate_tutorial_text
 
 from __future__ import absolute_import, division
-import sys
-import os
-import glob
-import shutil
-import shlex
+
 import argparse
+import glob
+import os
+import shlex
+import shutil
+import sys
 
 import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx.test_utils import open_tmp_directory
@@ -189,8 +190,7 @@ def generate_processing_detail_text_ccp4():
   DATA_PATH = "/dls/i03/data/2017/mx19576-1/tutorial_data/summed/summed/C2sum_1*.cbf.gz"
   DATA_PATH = os.environ.get("CCP4_TUTORIAL_DATA", DATA_PATH)
   if not any(glob.glob(DATA_PATH)):
-    print("Error: Could not find CCP4-2017 data; skipping text generation")
-    return
+    sys.exit("Error: Could not find CCP4-2017 data; skipping text generation")
 
   # Work out where we are writing the output files to; in-source
   dials_dir = libtbx.env.find_in_repositories("dials")
