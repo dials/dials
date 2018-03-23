@@ -71,7 +71,7 @@ namespace gaussian_rs {
      */
     CoordinateSystem2d(vec3<double> s0, vec3<double> s1)
       : s0_(s0),
-        s1_(s1),
+        s1_(s1.normalize()*s0.length()),
         p_star_(s1 - s0),
         e1_(s1.cross(s0).normalize()),
         e2_(s1.cross(e1_).normalize()) {}
