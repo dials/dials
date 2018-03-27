@@ -1,7 +1,9 @@
 from __future__ import absolute_import, division
 
+from os.path import isdir, join
+
 import libtbx.load_env
-from os.path import join, isdir
+
 have_dials_regression = libtbx.env.has_module("dials_regression")
 if have_dials_regression:
   dials_regression = libtbx.env.find_in_repositories(
@@ -71,7 +73,6 @@ def run():
   assert(min_gen_l <= min_xds_l and max_gen_l >= max_xds_l)
 
   # Test Passed
-  print "OK"
 
 if __name__ == '__main__':
   from dials.test import cd_auto

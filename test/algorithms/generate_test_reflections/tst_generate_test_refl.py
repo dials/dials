@@ -1,4 +1,5 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
+
 def tst_generate_test_reflections():
   from dials.algorithms.simulation.generate_test_reflections import main
   from dials.algorithms.simulation.generate_test_reflections import \
@@ -47,10 +48,8 @@ rotation {
 
 """])
   main(working_phil.extract())
-  print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto
   with cd_auto(__file__):
     tst_generate_test_reflections()
-

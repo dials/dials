@@ -1,5 +1,4 @@
-from __future__ import absolute_import, division
-
+from __future__ import absolute_import, division, print_function
 
 class Test:
 
@@ -31,39 +30,33 @@ class Test:
     from dials.algorithms.image.threshold import niblack
     n_sigma = 3
     result = niblack(self.image, self.size, n_sigma)
-    print 'OK'
 
   def tst_sauvola(self):
     from dials.algorithms.image.threshold import sauvola
     k = 3
     r = 3
     result = sauvola(self.image, self.size, k, r)
-    print 'OK'
 
   def tst_index_of_dispersion(self):
     from dials.algorithms.image.threshold import index_of_dispersion
     n_sigma = 3
     result = index_of_dispersion(self.image, self.size, n_sigma)
-    print 'OK'
 
   def tst_index_of_dispersion_masked(self):
     from dials.algorithms.image.threshold import index_of_dispersion_masked
     n_sigma = 3
     result = index_of_dispersion_masked(self.image, self.mask, self.size, self.min_count, n_sigma)
-    print 'OK'
 
   def tst_gain(self):
     from dials.algorithms.image.threshold import gain
     n_sigma = 3
     result = gain(self.image, self.mask, self.gain, self.size, self.min_count, n_sigma)
-    print 'OK'
 
   def tst_dispersion(self):
     from dials.algorithms.image.threshold import dispersion
     nsig_b = 3
     nsig_s = 3
     result = dispersion(self.image, self.mask, self.size, nsig_b, nsig_s, self.min_count)
-    print 'OK'
 
   def tst_dispersion_w_gain(self):
     from dials.algorithms.image.threshold import dispersion_w_gain
@@ -83,7 +76,6 @@ class Test:
     result4 = dispersion_w_gain(self.image, self.mask, (0*self.gain+1), self.size,
         nsig_b, nsig_s, self.min_count)
     assert (result3 == result4)
-    print 'OK'
 
   def tst_dispersion_debug(self):
     from dials.algorithms.image.threshold import dispersion
@@ -102,7 +94,6 @@ class Test:
         nsig_s,  0, self.min_count)
     result4 = debug.final_mask()
     assert (result3 == result4)
-    print 'OK'
 
   def tst_dispersion_threshold(self):
     from dials.algorithms.image.threshold import dispersion, dispersion_w_gain
@@ -142,7 +133,6 @@ class Test:
     assert(result1 == result3)
     assert(result2 == result4)
 
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

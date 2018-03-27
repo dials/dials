@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 from dials.test.algorithms.integration.profile.tst_profile_helpers import gaussian
 
 def add_poisson_noise(x):
@@ -60,7 +61,6 @@ class Test(object):
     assert(abs(I[0] - flex.sum(c)) < eps)
     assert(abs(V[0] - I[0]) < eps)
 
-    print 'OK'
 
   def tst_identical(self):
 
@@ -90,7 +90,6 @@ class Test(object):
     assert(abs(I[0] - flex.sum(c)) < eps)
     assert(abs(V[0] - I[0]) < eps)
 
-    print 'OK'
 
   def tst_with_no_background(self):
 
@@ -120,7 +119,6 @@ class Test(object):
     assert(abs(I[0] - flex.sum(c)) < eps)
     assert(abs(V[0] - I[0]) < eps)
 
-    print 'OK'
 
   def tst_with_flat_background(self):
 
@@ -155,7 +153,6 @@ class Test(object):
     assert(abs(I[0] - Iknown) < eps)
     assert(abs(V[0] - Vknown) < eps)
 
-    print 'OK'
 
   def tst_identical_partial(self):
 
@@ -191,7 +188,6 @@ class Test(object):
     assert(abs(I[0] - flex.sum(p)) < eps)
     assert(abs(V[0] - flex.sum(p)) < eps)
 
-    print 'OK'
 
   def tst_with_no_background_partial(self):
 
@@ -230,7 +226,6 @@ class Test(object):
     assert(abs(I[0] - Iknown) < eps)
     assert(abs(V[0] - Vknown) < eps)
 
-    print 'OK'
 
   def tst_with_flat_background_partial(self):
 
@@ -271,7 +266,6 @@ class Test(object):
     assert(abs(I[0] - Iknown) < eps)
     assert(abs(V[0] - Vknown) < eps)
 
-    print 'OK'
 
   def generate_3_profiles(self):
     from dials.array_family import flex
@@ -352,7 +346,6 @@ class Test(object):
     if passed:
       assert False, "This should fail"
 
-    print 'OK'
 
   def tst_deconvolve_3_with_no_background(self):
     from dials.algorithms.integration.fit import ProfileFitter
@@ -398,7 +391,6 @@ class Test(object):
       assert(abs(I[i] - Iknown[i]) < eps)
       assert(abs(V[i] - Iknown[i]) < eps)
 
-    print 'OK'
 
   def tst_deconvolve_3_with_flat_background(self):
     from dials.algorithms.integration.fit import ProfileFitter
@@ -446,7 +438,6 @@ class Test(object):
       assert(abs(I[i] - Iknown[i]) < eps)
       assert(abs(V[i] - Vknown[i]) < eps)
 
-    print 'OK'
 
   def tst_deconvolve_7_with_no_background(self):
     from dials.algorithms.integration.fit import ProfileFitter
@@ -494,7 +485,6 @@ class Test(object):
       assert(abs(I[i] - Iknown[i]) < eps)
       assert(abs(V[i] - Iknown[i]) < eps)
 
-    print 'OK'
 
   def tst_deconvolve_7_with_flat_background(self):
     from dials.algorithms.integration.fit import ProfileFitter
@@ -546,7 +536,6 @@ class Test(object):
       assert(abs(I[i] - Iknown[i]) < eps)
       assert(abs(V[i] - Vknown[i]) < eps)
 
-    print 'OK'
 
 
 if __name__ == '__main__':

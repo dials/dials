@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 def point_in_polygon(point, poly):
   inside = False
@@ -100,7 +100,6 @@ class TestSimpleWithConvex(object):
 #            for v in result:
 #                assert(point_in_polygon(v, clip))
 
-    print 'OK'
 
   def tst_non_intersecting(self):
     from dials.algorithms.polygon import clip
@@ -119,7 +118,6 @@ class TestSimpleWithConvex(object):
       # Ensure we no vertices
       assert(len(result) == 0)
 
-    print 'OK'
 
 
 class TestSimpleWithRect(object):
@@ -151,7 +149,6 @@ class TestSimpleWithRect(object):
 #            for v in result:
 #                assert(point_in_polygon(v, clip))
 
-    print 'OK'
 
 #    def tst_non_intersecting(self):
 #        from dials.algorithms.polygon import clip
@@ -202,7 +199,6 @@ class TestTriangleWithTriangle(object):
 #            for v in result:
 #                assert(point_in_polygon(v, clip))
 
-    print 'OK'
 
   def tst_non_intersecting(self):
     from dials.algorithms.polygon import clip
@@ -218,7 +214,6 @@ class TestTriangleWithTriangle(object):
       # Ensure we no vertices
       assert(len(result) == 0)
 
-    print 'OK'
 
 
 class TestTriangleWithConvexQuad(object):
@@ -247,7 +242,6 @@ class TestTriangleWithConvexQuad(object):
 #            for v in result:
 #                assert(point_in_polygon(v, clip))
 
-    print 'OK'
 
   def tst_non_intersecting(self):
     from dials.algorithms.polygon import clip
@@ -263,7 +257,6 @@ class TestTriangleWithConvexQuad(object):
       # Ensure we no vertices
       assert(len(result) == 0)
 
-    print 'OK'
 
 
 class TestQuadWithTriangle(object):
@@ -292,7 +285,6 @@ class TestQuadWithTriangle(object):
 #            for v in result:
 #                assert(point_in_polygon(v, clip))
 
-    print 'OK'
 
   def tst_non_intersecting(self):
     from dials.algorithms.polygon import clip
@@ -308,7 +300,6 @@ class TestQuadWithTriangle(object):
       # Ensure we no vertices
       assert(len(result) == 0)
 
-    print 'OK'
 
 
 class TestQuadWithConvexQuad(object):
@@ -337,7 +328,6 @@ class TestQuadWithConvexQuad(object):
 #            for v in result:
 #                assert(point_in_polygon(v, clip))
 
-    print 'OK'
 
   def tst_non_intersecting(self):
     from dials.algorithms.polygon import clip
@@ -353,7 +343,6 @@ class TestQuadWithConvexQuad(object):
       # Ensure we no vertices
       assert(len(result) == 0)
 
-    print 'OK'
 
 
 class TestLineWithRect(object):
@@ -377,7 +366,6 @@ class TestLineWithRect(object):
         assert(status == False)
 
 
-    print 'OK'
 
   def inbetween(self, x, x0, x1):
     x00 = min([x0, x1])

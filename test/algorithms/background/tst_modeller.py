@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 class TestExact(object):
 
@@ -21,7 +21,6 @@ class TestExact(object):
       assert(len(model.params()) == 9)
       for j in range(9):
         assert(abs(model.params()[j] - c[j]) < eps)
-    print 'OK'
 
   def tst_constant3d_modeller(self):
     from dials.algorithms.background.simple import Constant3dModeller
@@ -33,7 +32,6 @@ class TestExact(object):
       assert(len(model.params()) == 1)
       for j in range(1):
         assert(abs(model.params()[j] - c) < eps)
-    print 'OK'
 
   def tst_linear2d_modeller(self):
     from dials.algorithms.background.simple import Linear2dModeller
@@ -46,7 +44,6 @@ class TestExact(object):
       for j in range(9):
         for k in range(3):
           assert(abs(model.params()[k+j*3] - p[j][k]) < eps)
-    print 'OK'
 
   def tst_linear3d_modeller(self):
     from dials.algorithms.background.simple import Linear3dModeller
@@ -58,7 +55,6 @@ class TestExact(object):
       assert(len(model.params()) == 4)
       for j in range(4):
         assert(abs(model.params()[j] - p[j]) < eps)
-    print 'OK'
 
   def generate_constant_background_2d(self, size, bmin, bmax):
     from random import uniform
@@ -205,7 +201,6 @@ class TestPoisson(object):
 
     # Check it looks standard normal
     self.assert_std_norm(z)
-    print 'OK'
 
   def tst_constant3d_modeller(self):
     from dials.algorithms.background.simple import Constant3dModeller
@@ -228,7 +223,6 @@ class TestPoisson(object):
 
     # Check it looks standard normal
     self.assert_std_norm(z)
-    print 'OK'
 
   def tst_linear2d_modeller(self):
     from dials.algorithms.background.simple import Linear2dModeller
@@ -264,7 +258,6 @@ class TestPoisson(object):
     self.assert_std_norm(za)
     self.assert_std_norm(zb)
     self.assert_std_norm(zc)
-    print 'OK'
 
   def tst_linear3d_modeller(self):
     from dials.algorithms.background.simple import Linear3dModeller
@@ -305,7 +298,6 @@ class TestPoisson(object):
     self.assert_std_norm(zb)
     self.assert_std_norm(zc)
     self.assert_std_norm(zd)
-    print 'OK'
 
   def assert_std_norm(self, z):
     from dials.array_family import flex

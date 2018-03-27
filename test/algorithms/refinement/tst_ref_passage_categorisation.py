@@ -110,4 +110,3 @@ for ref in obs_refs:
   test = (s0 + r_orig).length() > s0.length()
   assert(ref['entering'] == test)
 
-print "OK"

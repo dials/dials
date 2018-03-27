@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division
 
-
 class Test(object):
 
   def __init__(self):
@@ -30,7 +29,6 @@ class Test(object):
 
     # remember to uncomment the next line
     #assert(len(table) == 361)
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

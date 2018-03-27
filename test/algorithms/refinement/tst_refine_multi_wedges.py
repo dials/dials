@@ -124,7 +124,6 @@ class Test(object):
       s0_1 = matrix.col(e1.beam.get_unit_s0())
       s0_2 = matrix.col(e1.beam.get_unit_s0())
       assert s0_1.accute_angle(s0_2, deg=True) < 0.0057 # ~0.1 mrad
-    print "OK"
     return
 
 def run():

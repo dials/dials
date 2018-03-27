@@ -12,6 +12,7 @@
 """Tests for ObservationManager and related objects."""
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 from libtbx.test_utils import approx_equal
 
 from cctbx.array_family import flex
@@ -48,7 +49,6 @@ def test_minimum_multiplicity_selection():
   sel = minimum_multiplicity_selection(hkl, 6)
   assert sel.count(False) == len(hkl)
 
-  print "OK"
 
 def test_grouped_observations():
 
@@ -78,7 +78,6 @@ def test_grouped_observations():
   avI = (w1*g1*I1 + w2*g2*I2 + w3*g3*I3) / (w1*g1*g1 + w2*g2*g2 + w3*g3*g3)
   assert approx_equal(avI, go.get_average_intensity()[0])
 
-  print "OK"
 
 
 if __name__ == '__main__':

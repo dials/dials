@@ -8,9 +8,11 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division
-from scitbx import matrix
+from __future__ import absolute_import, division, print_function
+
 from math import sqrt
+
+from scitbx import matrix
 
 class Test(object):
 
@@ -127,7 +129,6 @@ class Test(object):
       delpsi = sgn*r.accute_angle(q)
       assert approx_equal(delpsi, ref['delpsical.rad'])
 
-    print "OK"
 
   def spherical_relp(self):
 
@@ -152,7 +153,6 @@ class Test(object):
       s1 = es_radius * (q + s0) / denom
       assert approx_equal(s1, ref['s1'])
 
-    print "OK"
 
 
 if __name__ == '__main__':
@@ -163,4 +163,3 @@ if __name__ == '__main__':
 
   test = Test(test_nave_model=True)
   test.run()
-

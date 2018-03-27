@@ -158,4 +158,3 @@ if __name__ == '__main__':
   from dials.test import cd_auto
   with cd_auto(__file__):
     run()
-    print "OK"

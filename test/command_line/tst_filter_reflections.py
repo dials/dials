@@ -17,10 +17,12 @@ certain flags
 
 # python imports
 from __future__ import absolute_import, division
+
+import cPickle as pickle
 import os
+
 from libtbx import easy_run
 from libtbx.test_utils import open_tmp_directory
-import cPickle as pickle
 
 def test1():
 
@@ -55,7 +57,6 @@ def test1():
   assert len(ref) == 1
   assert list(ref['iobs']) == [1]
 
-  print "OK"
 
   return
 

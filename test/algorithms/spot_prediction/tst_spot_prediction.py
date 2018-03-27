@@ -1,7 +1,8 @@
 from __future__ import absolute_import, division
-from os.path import join, isdir
-import libtbx.load_env
 
+from os.path import isdir, join
+
+import libtbx.load_env
 
 have_dials_regression = libtbx.env.has_module("dials_regression")
 if have_dials_regression:
@@ -91,7 +92,6 @@ class TestSpotPredictor:
     d = [self.unit_cell.d(h) for h in self.integrate_handle.hkl]
     d_min = min(d)
     assert(self.d_min <= d_min)
-    print "OK"
 
   def test_miller_index_set(self):
     """Ensure we have the whole set of miller indices"""
@@ -101,7 +101,6 @@ class TestSpotPredictor:
     for hkl in self.integrate_handle.hkl:
       assert(gen_hkl[hkl])
 
-    print "OK"
 
   def test_rotation_angles(self):
     """Ensure the rotation angles agree with XDS"""
@@ -140,7 +139,6 @@ class TestSpotPredictor:
 
       assert(abs(xds_phi - my_phi) < 0.1)
 
-    print "OK"
 
   def test_beam_vectors(self):
     """Ensure |s1| == |s0|"""
@@ -151,7 +149,6 @@ class TestSpotPredictor:
       s1_length = matrix.col(s1).length()
       assert(abs(s0_length - s1_length) < 1e-7)
 
-    print "OK"
 
   def test_image_coordinates(self):
     """Ensure the image coordinates agree with XDS"""
@@ -195,7 +192,6 @@ class TestSpotPredictor:
       assert(abs(xds_xy[0] - my_xy[0]) < 0.1)
       assert(abs(xds_xy[1] - my_xy[1]) < 0.1)
 
-    print "OK"
 
   def run(self):
     self.test_dmin()
@@ -203,7 +199,6 @@ class TestSpotPredictor:
     self.test_rotation_angles()
     self.test_beam_vectors()
     self.test_image_coordinates()
-    print "OK"
 
 if __name__ == '__main__':
   from dials.test import cd_auto

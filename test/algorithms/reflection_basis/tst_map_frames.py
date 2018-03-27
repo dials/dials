@@ -107,7 +107,6 @@ class TestMapFramesForward(object):
           last = curr
 
     # Test passed
-    print 'OK'
 
 
 class TestMapFramesReverse(object):
@@ -221,7 +220,6 @@ class TestMapFramesReverse(object):
           last = curr
 
     # Test passed
-    print 'OK'
 
 
 class TestMapForwardReverse(object):
@@ -325,7 +323,6 @@ class TestMapForwardReverse(object):
             assert(reverse_fraction[i,j] < eps)
 
     # Test passed
-    print 'OK'
 
 
 class Test(object):

@@ -61,7 +61,6 @@ class Test(object):
       assert((s11 - s12).length() <= eps)
 
     # Test passed
-    print 'OK'
 
   def tst_sub_division_at_corners(self):
 
@@ -93,7 +92,6 @@ class Test(object):
       assert((s11 - s12).length() <= eps)
 
     # Test passed
-    print 'OK'
 
   def tst_sub_division_at_centres(self):
 
@@ -125,7 +123,6 @@ class Test(object):
       assert((s11 - s12).length() <= eps)
 
     # Test passed
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

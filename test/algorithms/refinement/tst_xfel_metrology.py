@@ -99,4 +99,3 @@ if __name__ == '__main__':
   from libtbx.utils import show_times_at_exit
   show_times_at_exit()
   run()
-  print "OK"

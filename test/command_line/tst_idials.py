@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division
-from dials.array_family import flex # import dependency
 
+from dials.array_family import flex  # import dependency
 
 class Test(object):
 
@@ -36,7 +36,6 @@ class Test(object):
     easy_run.fully_buffered(
       'idials',
       stdin_lines=stdin_lines).raise_if_errors()
-    print 'OK'
 
     # Check that state works
     stdin_lines = [
@@ -51,7 +50,6 @@ class Test(object):
     easy_run.fully_buffered('idials',
                             stdin_lines=stdin_lines).raise_if_errors()
 
-    print 'OK'
 
     # Check all the stuff we expect, exists
     assert exists("dials.state")
@@ -71,7 +69,6 @@ class Test(object):
     assert exists("dials-1/11_integrate")
     assert exists("dials-1/12_export")
 
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

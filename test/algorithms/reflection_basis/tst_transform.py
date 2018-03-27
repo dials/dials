@@ -153,7 +153,6 @@ class TestForward(object):
       assert(abs(sum_grid - sum_image) <= eps)
 
     # Test passed
-    print 'OK'
 
 #    def tst_transformed_centroid(self):
 
@@ -345,7 +344,6 @@ class TestForward(object):
         print "Failed for: ", (x, y, z)
         raise
     # Test passed
-    print 'OK'
 
 
 #class TestReverse(object):
@@ -606,7 +604,6 @@ class TestForwardNoModel(object):
         # pylab.show()
 
     # Test passed
-    print 'OK'
 
 class Test(object):
   def __init__(self):

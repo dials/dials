@@ -46,7 +46,6 @@ class Test(object):
 
     assert exists("hot_mask.pickle")
 
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

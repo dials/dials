@@ -4,7 +4,6 @@
 algorithm"""
 from __future__ import absolute_import, division
 
-
 def test_maha():
 
   # Want implementation of Mahalanobis distance to match this R session:
@@ -47,7 +46,6 @@ def test_maha():
   R_result = [2.1838336, 1.9673401, 1.3335029, 4.9191627, 2.1246818,
               5.3297995, 4.9022487, 2.5335913, 0.1952562, 1.5105832]
   assert approx_equal(list(maha), R_result)
-  print "OK"
   return
 
 def test_fast_mcd_small():
@@ -166,7 +164,6 @@ def test_fast_mcd_small():
   assert approx_equal(fast_mcd._consistency_fac, 2.36792847084)
   assert approx_equal(fast_mcd._finite_samp_fac, 1.12792118859)
 
-  print "OK"
   return
 
 def test_fast_mcd_large():
@@ -229,7 +226,6 @@ def test_fast_mcd_large():
   assert approx_equal(fast_mcd._consistency_fac, 2.45659976388)
   assert approx_equal(fast_mcd._finite_samp_fac, 1.00193273884)
 
-  print "OK"
   return
 
 if __name__ == "__main__":

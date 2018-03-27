@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 class Test(object):
 
@@ -39,7 +39,6 @@ class Test(object):
     assert(pl2.index().all_eq(pl.index()))
     assert(pl2.value().all_eq(pl.value()))
 
-    print 'OK'
 
   def tst_add_image(self):
     from dials.model.data import PixelList, PixelListLabeller
@@ -59,7 +58,6 @@ class Test(object):
       labeller.add(pl)
     assert(len(labeller.values()) == count)
 
-    print 'OK'
 
   def tst_labels_3d(self):
     from dials.model.data import PixelList, PixelListLabeller
@@ -108,7 +106,6 @@ class Test(object):
             vi += 1
 
     # Test passed
-    print 'OK'
 
   def tst_labels_2d(self):
     from dials.model.data import PixelList, PixelListLabeller
@@ -157,7 +154,6 @@ class Test(object):
             vi += 1
 
     # Test passed
-    print 'OK'
 
   def tst_with_no_points(self):
 
@@ -187,7 +183,6 @@ class Test(object):
     assert len(labels1) == 0
     assert len(labels2) == 0
 
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

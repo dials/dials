@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division
-from dials.array_family import flex # import dependency
+
+from dials.array_family import flex  # import dependency
 
 class Test(object):
 
@@ -30,7 +31,6 @@ class Test(object):
       self.path
     ]).raise_if_errors()
 
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

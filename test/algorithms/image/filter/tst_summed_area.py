@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 class Test:
 
@@ -28,7 +28,6 @@ class Test:
       assert(abs(e - v) <= eps)
 
     # Test passed
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

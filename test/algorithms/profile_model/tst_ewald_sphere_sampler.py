@@ -96,7 +96,6 @@ class Test(object):
     assert sorted(sampler.nearest_n(25)) == sorted([9, 25, 26, 56])
     assert sorted(sampler.nearest_n(26)) == sorted([9, 26, 27, 25])
     assert sorted(sampler.nearest_n(56)) == sorted([24, 56, 25, 55])
-    print 'OK'
 
 if __name__ == '__main__':
 

@@ -216,7 +216,6 @@ def test1():
     # ...the angle between them
     assert approx_equal(o1.accute_angle(o2), 0, eps=1e-5)
 
-  print "OK"
   return
 
 def run():

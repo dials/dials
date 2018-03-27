@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 class Test(object):
 
@@ -41,7 +41,6 @@ class Test(object):
     assert(r1 == r0 / 3.0)
     assert(r2 == r1 * sqrt(5.0))
     assert(9 * nz == size)
-    print 'OK'
 
   def tst_detector_area(self):
     from dials.algorithms.profile_model.modeller import CircleSampler
@@ -66,7 +65,6 @@ class Test(object):
     assert(im[0, 0] == 6)
     assert(im[0, width//2] == 7)
     assert(im[0, width-1] == 8)
-    print 'OK'
 #        from matplotlib import pylab
 #        pylab.imshow(im.as_numpy_array())
 #        pylab.show()
@@ -99,7 +97,6 @@ class Test(object):
       assert(abs(y0 - y1) <= eps)
       assert(abs(z0 - z1) <= eps)
 
-    print 'OK'
 
 
   def tst_nearest(self):
@@ -138,7 +135,6 @@ class Test(object):
       index1 = sampler.nearest(0, (x, y, z))
       assert(index0 == index1)
 
-    print 'OK'
 
   def tst_nearest_n(self):
     from math import sqrt, atan2, pi, floor
@@ -191,7 +187,6 @@ class Test(object):
           assert(index1[2] == index0 + 1)
           assert(index1[3] == index0 - 1)
 
-    print 'OK'
 
   def tst_weights(self):
     from dials.algorithms.profile_model.modeller import CircleSampler
@@ -238,7 +233,6 @@ class Test(object):
       weight = sampler.weight(i, 0, coord)
       assert(abs(weight - 0.5) < eps)
 
-    print 'OK'
 
   def tst_self_consistent(self):
     from dials.algorithms.profile_model.modeller import CircleSampler
@@ -254,7 +248,6 @@ class Test(object):
       index = sampler.nearest(0, coord)
       assert(index == i)
 
-    print 'OK'
 
   def tst_z_index(self):
     from dials.algorithms.profile_model.modeller import CircleSampler
@@ -278,7 +271,6 @@ class Test(object):
     assert((sampler.nearest(0, (500, 500, 11.0)) / 9) == 1)
     assert((sampler.nearest(0, (500, 500, 12.0)) / 9) == 1)
 
-    print 'OK'
 
   def tst_pickle(self):
     from dials.algorithms.profile_model.modeller import CircleSampler
@@ -300,7 +292,6 @@ class Test(object):
     assert(sampler.image_size() == sampler2.image_size())
     assert(sampler.num_z() == sampler2.num_z())
 
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

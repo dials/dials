@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+
 import pytest
 
 def test_dials_cluster_unit_cell_command_line(dials_regression, tmpdir):

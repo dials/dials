@@ -77,7 +77,6 @@ class Test(object):
       assert(mask.all_eq(shoebox.MaskCode.Valid))
 
     # Passed that test
-    print "OK"
 
   def tst_overlapping(self, reflections, overlapping,
       adjacency_list, image_size):
@@ -147,7 +146,6 @@ class Test(object):
       assert(numpy.all(calculated_mask == expected_mask))
 
     # Passed the test
-    print "OK"
 
   def predict_reflections(self):
     from dials.algorithms import shoebox

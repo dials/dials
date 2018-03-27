@@ -16,10 +16,12 @@ Test dials.rs_mapper on images if dials_regression is present.
 
 # python imports
 from __future__ import absolute_import, division
+
 import os
-import libtbx.load_env # required for libtbx.env.find_in_repositories
+
+import libtbx.load_env  # required for libtbx.env.find_in_repositories
 from libtbx import easy_run
-from libtbx.test_utils import open_tmp_directory, approx_equal
+from libtbx.test_utils import approx_equal, open_tmp_directory
 
 def test1():
 
@@ -51,7 +53,6 @@ def test1():
   assert approx_equal(m.header_mean, 0.018606403842568398)
   assert approx_equal(flex.mean(m.data), 0.018606403842568398)
 
-  print "OK"
 
   return
 

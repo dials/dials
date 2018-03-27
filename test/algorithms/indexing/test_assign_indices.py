@@ -2,8 +2,9 @@ from __future__ import absolute_import, division, print_function
 
 import copy
 import os
-import pytest
 import random
+
+import pytest
 from cctbx import crystal, miller, sgtbx
 from cctbx.sgtbx import bravais_types
 from scitbx import matrix
@@ -163,4 +164,3 @@ class compare_global_local(object):
 
     print(self.misindexed_global, self.correct_global, len(self.reflections_global))
     print(self.misindexed_local, self.correct_local, len(self.reflections_local))
-

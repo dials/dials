@@ -337,5 +337,3 @@ if __name__ == "__main__":
   # of the test case?
 
   test.run_spherical_relp_stills_pred_param(verbose)
-
-  print "OK"

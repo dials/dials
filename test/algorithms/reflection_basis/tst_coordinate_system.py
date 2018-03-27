@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division
 from dials.algorithms.profile_model.gaussian_rs import *
+import pytest
 
 class TestCoordinateSystem(object):
   """Test the XDS coordinate system class"""
@@ -34,7 +35,6 @@ class TestCoordinateSystem(object):
     assert(abs(matrix.col(self.cs.s1()) - s1) <= eps)
     assert(abs(matrix.col(self.cs.m2()) - m2.normalize()) <= eps)
     assert(abs(self.cs.phi() - self.phi) <= eps)
-    print 'OK'
 
   def test_axis_length(self):
     """Ensure axes are of unit length"""
@@ -47,7 +47,6 @@ class TestCoordinateSystem(object):
     assert(abs(matrix.col(self.cs.e3_axis()).length() - 1.0) <= eps)
 
     # Test passed
-    print "OK"
 
   def test_axis_orthogonal(self):
     """Ensure that the following are true:
@@ -81,7 +80,6 @@ class TestCoordinateSystem(object):
     assert(abs(e3.dot(s1 - s0) - 0.0) <= eps)
 
     # Test passed
-    print "OK"
 
   def test_limits(self):
     """ Test the coordinate system limits
@@ -105,7 +103,6 @@ class TestCoordinateSystem(object):
     assert(abs(1.0 - lim[1]) <= eps)
 
     # Test passed
-    print 'OK'
 
   def __call__(self):
     """Run the tests"""
@@ -148,7 +145,6 @@ class TestFromBeamVector(object):
     assert(abs(c2 - 0.0) <= eps)
 
     # Test passed
-    print "OK"
 
   def test_limit(self):
     """ Calculate the coordinate at the limits.
@@ -175,7 +171,6 @@ class TestFromBeamVector(object):
     assert(abs(sqrt(c1**2 + c2**2) - abs(self.cs.limits()[0])) <= eps)
 
     # Test passed
-    print 'OK'
 
   def __call__(self):
     """Run all the tests"""
@@ -218,7 +213,6 @@ class TestFromRotationAngle(object):
     assert(abs(c3 - 0.0) <= eps)
 
     # Test passed
-    print "OK"
 
   def test_e3_coordinate_approximation(self):
 
@@ -240,7 +234,6 @@ class TestFromRotationAngle(object):
     assert(abs(c3 - c3_2) < eps)
 
     # Test passed
-    print "OK"
 
   def __call__(self):
     """Run all the tests"""
@@ -274,7 +267,6 @@ class TestToBeamVector(object):
     s_dash = self.cs.to_beam_vector((0, 0))
     assert(abs(matrix.col(s_dash) - matrix.col(self.s1)) <= eps)
 
-    print "OK"
 
   def test_far_out_coordinates(self):
     """Test some large coordinates, 1 valid and the other invalid. (i.e.
@@ -291,14 +283,9 @@ class TestToBeamVector(object):
     s_dash = self.cs.to_beam_vector((c1, c2))
 
     # A large value which is raises an exception
-    try:
+    with pytest.raises(RuntimeError):
       c1 = 1.0 + eps
       s_dash = self.cs.to_beam_vector((c1, c2))
-      assert(False)
-    except RuntimeError:
-
-      #Test passed
-      print "OK"
 
     # Setting c2 and c3 to zero
     c1 = 0
@@ -309,14 +296,9 @@ class TestToBeamVector(object):
     s_dash = self.cs.to_beam_vector((c1, c2))
 
     # A large value which is raises an exception
-    try:
+    with pytest.raises(RuntimeError):
       c2 = 1.0 + eps
       s_dash = self.cs.to_beam_vector((c1, c2))
-      assert(False)
-    except RuntimeError:
-
-      #Test passed
-      print "OK"
 
   def test_forward_and_reverse_transform(self):
     """Test the forward and reverse Beam Vector -> XDS transforms Create
@@ -355,7 +337,6 @@ class TestToBeamVector(object):
       assert(abs(matrix.col(s_dash) - matrix.col(s_dash_2)) <= eps)
 
     # Test passed
-    print "OK"
 
   def __call__(self):
     """Run the tests"""
@@ -413,13 +394,11 @@ class TestToRotationAngle(object):
       assert(abs(phi_dash_2 - phi_dash) <= eps)
 
     # Test passed
-    print "OK"
 
   def test_origin(self):
     eps = 1e-7
     phi_dash = self.cs.to_rotation_angle(0.0)
     assert(abs(phi_dash - self.phi) <= eps)
-    print 'OK'
 
   def test_far_out_coordinates(self):
     """Test some large coordinates, 1 valid and the other invalid. (i.e.
@@ -445,23 +424,14 @@ class TestToRotationAngle(object):
     phi_dash = self.cs.to_rotation_angle(c3)
 
     # A large value which is raises an exception
-    try:
+    with pytest.raises(RuntimeError):
       c3 = lim0 + eps
       phi_dash = self.cs.to_rotation_angle(c3)
       print phi_dash
-      assert(False)
-    except RuntimeError:
-      pass
 
-    try:
+    with pytest.raises(RuntimeError):
       c3 = lim1 - eps
       phi_dash = self.cs.to_rotation_angle(c3)
-      assert(False)
-    except RuntimeError:
-      pass
-
-    #Test passed
-    print "OK"
 
   def test_e3_coordinate_approximation(self):
 
@@ -482,7 +452,6 @@ class TestToRotationAngle(object):
     assert(abs(phi_dash - phi_dash_2) < eps)
 
     # Test passed
-    print "OK"
 
   def __call__(self):
     """Run all the tests"""

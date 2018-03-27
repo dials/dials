@@ -1,7 +1,8 @@
-from __future__ import absolute_import, division
-import os
-from libtbx import easy_run
+from __future__ import absolute_import, division, print_function
 
+import os
+
+from libtbx import easy_run
 
 def test_rl_png_datablock(dials_regression, tmpdir):
   tmpdir.chdir()

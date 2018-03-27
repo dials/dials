@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division
-from dials.array_family import flex # import dependency
+
+from dials.array_family import flex  # import dependency
 
 class Test(object):
   def __init__(self):
@@ -23,7 +24,6 @@ class Test(object):
       ['dials.estimate_gain',
        'input.datablock=%s' % input_filename]).raise_if_errors()
 
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

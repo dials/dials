@@ -1,7 +1,8 @@
 from __future__ import absolute_import, division, print_function
-import os
-from libtbx import easy_run
 
+import os
+
+from libtbx import easy_run
 
 def test_goniometer_calibration(dials_regression):
   data_dir = os.path.join(dials_regression, 'rotation_calibration')

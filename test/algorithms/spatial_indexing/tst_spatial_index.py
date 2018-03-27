@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 from dials.algorithms.spatial_indexing import make_spatial_index
 
@@ -52,7 +52,6 @@ class Test(object):
         assert(not self.inside2d(rg, self.vec2_double[j]))
 
 
-    print 'OK'
 
   def tst_vec3_double(self, num):
     from random import randint
@@ -77,7 +76,6 @@ class Test(object):
       for j in set(range(len(self.vec3_double))).difference(set(idx)):
         assert(not self.inside3d(rg, self.vec3_double[j]))
 
-    print 'OK'
 
   def inside2d(self, rg, a):
     inside = (rg[0] <= a[0] and rg[1] >= a[0] and

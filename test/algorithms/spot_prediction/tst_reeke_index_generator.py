@@ -1,5 +1,4 @@
-from __future__ import absolute_import, division
-
+from __future__ import absolute_import, division, print_function
 
 class Test:
 
@@ -48,7 +47,6 @@ class Test:
       diff = py_set ^ cp_set
       assert len(diff) <= 6
 
-      print 'OK'
 
   def varying_s0(self):
     from dials.algorithms.spot_prediction import ReekeIndexGenerator
@@ -90,7 +88,6 @@ class Test:
     common = set.intersection(*hkl_sets)
     #print "{0:.3f}% common".format(len(common) / min_set_len)
     assert len(common) >= 0.98 * min_set_len
-    print "OK"
 
   def _get_ub(self, frame):
     from scitbx import matrix

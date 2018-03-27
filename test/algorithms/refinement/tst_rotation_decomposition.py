@@ -11,7 +11,8 @@
 
 """Test decomposition of rotation matrices around arbitrary axes"""
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
+
 import math
 import random
 from scitbx import matrix
@@ -150,6 +151,3 @@ if __name__ == '__main__':
   # tests using arbitrary axes and angles, ensuring not too many are skipped
   results = [test_random_axes_and_angles() for i in range(n_tests)]
   assert results.count("skipped") < 0.2 * n_tests
-
-  print "OK"
-

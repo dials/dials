@@ -80,7 +80,6 @@ class Test(object):
       assert(all(abs(a-b) < eps for a, b in zip(r1['s1'], r2['s1'])))
       assert(all(abs(a-b) < eps for a, b in zip(r1['xyzcal.px'], r2['xyzcal.px'])))
       assert(all(abs(a-b) < eps for a, b in zip(r1['xyzcal.mm'], r2['xyzcal.mm'])))
-    print 'OK'
 
   def tst_with_old_index_generator(self):
     from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
@@ -101,7 +100,6 @@ class Test(object):
       assert(all(abs(a-b) < eps for a, b in zip(r1['s1'], r2['s1'])))
       assert(all(abs(a-b) < eps for a, b in zip(r1['xyzcal.px'], r2['xyzcal.px'])))
       assert(all(abs(a-b) < eps for a, b in zip(r1['xyzcal.mm'], r2['xyzcal.mm'])))
-    print 'OK'
 
   def tst_with_reflection_table(self):
     from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
@@ -121,7 +119,6 @@ class Test(object):
       assert(all(abs(a-b) < eps for a, b in zip(r1['s1'], r2['s1'])))
       assert(all(abs(a-b) < eps for a, b in zip(r1['xyzcal.px'], r2['xyzcal.px'])))
       assert(all(abs(a-b) < eps for a, b in zip(r1['xyzcal.mm'], r2['xyzcal.mm'])))
-    print 'OK'
 
   # FIXME Fix the Spot prediction interface
   #def tst_with_hkl(self):

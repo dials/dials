@@ -1,5 +1,5 @@
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 class Test(object):
 
@@ -65,7 +65,6 @@ class Test(object):
     assert(modeller1.finalized)
 
     # Test passed
-    print 'OK'
 
 
 if __name__ == '__main__':

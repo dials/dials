@@ -1,7 +1,9 @@
 from __future__ import absolute_import, division
 
+from os.path import isdir, join
+
 import libtbx.load_env
-from os.path import join, isdir
+
 have_dials_regression = libtbx.env.has_module("dials_regression")
 if have_dials_regression:
   dials_regression = libtbx.env.find_in_repositories(
@@ -80,7 +82,6 @@ def run():
       s1 = s0 + pstar
       assert(abs(s1.length() - s0.length()) < 1e-7)
 
-  print "OK"
 
   # Create a dict of lists of xy for each hkl
   gen_phi = {}
@@ -123,7 +124,6 @@ def run():
     assert(abs(xds_phi - my_phi) < 0.1)
 
   # Test Passed
-  print "OK"
 
 if __name__ == '__main__':
   from dials.test import cd_auto

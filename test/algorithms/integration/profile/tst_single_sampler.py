@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 class Test(object):
 
@@ -32,7 +32,6 @@ class Test(object):
     assert(nz == grid_size)
     assert(step_size == depth / nz)
     assert(nz == size)
-    print 'OK'
 
   def tst_indexing(self):
     from dials.algorithms.profile_model.modeller import SingleSampler
@@ -55,7 +54,6 @@ class Test(object):
       x1, y1, z1 = sampler.coord(i)
       assert(abs(z0 - z1) <= eps)
 
-    print 'OK'
 
 
   def tst_nearest(self):
@@ -80,7 +78,6 @@ class Test(object):
       index1 = sampler.nearest(0, (x, y, z))
       assert(index0 == index1)
 
-    print 'OK'
 
   def tst_nearest_n(self):
     from random import uniform
@@ -107,7 +104,6 @@ class Test(object):
       for ind in index1:
         assert(abs(ind - k) <= 1)
 
-    print 'OK'
 
   def tst_weights(self):
     from dials.algorithms.profile_model.modeller import SingleSampler
@@ -145,7 +141,6 @@ class Test(object):
         weight = sampler.weight(k, 0, (coord + coord1)/2.0)
         assert(abs(weight - 0.5) < eps)
 
-    print 'OK'
 
   def tst_self_consistent(self):
     from dials.algorithms.profile_model.modeller import SingleSampler
@@ -161,7 +156,6 @@ class Test(object):
       index = sampler.nearest(0, coord)
       assert(index == i)
 
-    print 'OK'
 
   def tst_pickle(self):
     from dials.algorithms.profile_model.modeller import SingleSampler
@@ -182,7 +176,6 @@ class Test(object):
 
     assert(sampler.grid_size() == sampler2.grid_size())
 
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

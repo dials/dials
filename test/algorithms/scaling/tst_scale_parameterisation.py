@@ -12,6 +12,7 @@
 """Tests for ScaleParameterisation and related objects."""
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 import random
 
 from scitbx.array_family import flex
@@ -39,7 +40,6 @@ def test_row_multiply():
 
   assert m2.as_dense_matrix().as_1d() == flex.double(
     [3.0, 6.0, 0.0, 6.0, 4.0, 0.0]).all_eq(True)
-  print "OK"
 
 class TestIncidentBeamFactor(object):
 
@@ -66,7 +66,6 @@ class TestIncidentBeamFactor(object):
     # compare with the analytical calculation, converted to dense
     assert approx_equal(dv_dp.as_dense_matrix(), fd_dv_dp)
 
-    print "OK"
 
   def _calc_fd_grad(self):
     delta = 1.e-7
@@ -103,7 +102,6 @@ def test_scale_parameterisation():
   sf.set_param_vals(p2)
   p3 = sf.get_param_vals()
   for e1, e2 in zip(p2, p3): assert e1 == e2
-  print "OK"
 
   # test getting overall scale and its derivatives
   phi = [0, random.uniform(0, 180), 180]
@@ -134,7 +132,6 @@ def test_scale_parameterisation():
   # compare with the analytical calculation, converted to dense
   assert approx_equal(dscale_dp.as_dense_matrix(), fd_grad)
 
-  print "OK"
   return
 
 def test_products_omitting_one_item():
@@ -158,7 +155,6 @@ def test_products_omitting_one_item():
     for a, b in zip(prods, tst):
       assert a == b
 
-  print "OK"
 
 if __name__ == '__main__':
 

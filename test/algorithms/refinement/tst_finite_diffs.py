@@ -14,6 +14,7 @@ difference calculations"""
 
 # Python and cctbx imports
 from __future__ import absolute_import, division
+from __future__ import print_function
 import sys
 from math import pi
 import random
@@ -255,7 +256,6 @@ fdgrads = get_fd_gradients(mytarget, pred_param, [1.e-7] * len(pred_param))
 diffs = [a - b for a, b in zip(dL_dp, fdgrads[0])]
 norm_diffs = tuple([a / b for a, b in zip(diffs, fdgrads[0])])
 for e in norm_diffs: assert abs(e) < 0.001 # check differences less than 0.1%
-print "OK"
 
 # test normalised differences between FD curvatures and analytical least
 # squares approximation. We don't expect this to be especially close
@@ -263,4 +263,3 @@ if curvs:
   diffs = [a - b for a, b in zip(curvs, fdgrads[1])]
   norm_diffs = tuple([a / b for a, b in zip(diffs, fdgrads[1])])
   for e in norm_diffs: assert abs(e) < 0.1 # check differences less than 10%
-print "OK"

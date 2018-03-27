@@ -1,5 +1,5 @@
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 class Test(object):
 
@@ -31,7 +31,6 @@ class Test(object):
     assert(model2.n_sigma() == 2)
     assert(model2.sigma_b() == 4)
     assert(model2.sigma_m() == 5)
-    print 'OK'
 
 if __name__ == '__main__':
   test = Test()

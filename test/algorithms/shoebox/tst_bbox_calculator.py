@@ -120,7 +120,6 @@ class Test(object):
         assert(abs(e31) >= self.delta_mosaicity)
         assert(abs(e32) >= self.delta_mosaicity)
 
-    print 'OK'
 
   def tst_radius(self):
     from scitbx import matrix
@@ -187,7 +186,6 @@ class Test(object):
           assert(sqrt(e11**2 + e21**2) >= radius12)
           assert(sqrt(e12**2 + e22**2) >= radius12)
 
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

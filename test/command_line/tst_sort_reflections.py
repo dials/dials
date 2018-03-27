@@ -64,7 +64,6 @@ class Test(object):
     mi2 = flex.miller_index(sorted(orig['miller_index']))
     assert mi1.all_eq(mi2)
 
-    print 'OK'
 
   def assert_sorted(self, x, reverse=False):
     assert(len(x) > 0)

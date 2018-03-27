@@ -59,7 +59,6 @@ class TestJobList(object):
       assert(r1['value2'] == r2['value2'])
       assert(abs(r1['value3'] - r2['value3']) < EPS)
 
-    print 'OK'
 
   def tst_split_blocks_non_overlapping(self):
     from dials.array_family import flex
@@ -135,7 +134,6 @@ class TestJobList(object):
       assert(r1['value2'] == r2['value2'])
       assert(abs(r1['value3'] - r2['value3']) < EPS)
 
-    print 'OK'
 
   def tst_split_blocks_overlapping(self):
     from dials.array_family import flex
@@ -231,7 +229,6 @@ class TestJobList(object):
       assert(bb[2] == bbox[2])
       assert(bb[3] == bbox[3])
 
-    print 'OK'
 
 
 class TestReflectionManager(object):
@@ -396,7 +393,6 @@ class TestReflectionManager(object):
         assert(result[self.processed[i][j]] == i+1)
 
     # Test passed
-    print 'OK'
 
 
 class TestIntegrator3D(object):
@@ -462,7 +458,6 @@ class TestIntegrator3D(object):
 
     sys.stdout = stdout
 
-    print 'OK'
 
 class TestSummation(object):
 
@@ -530,7 +525,6 @@ class TestSummation(object):
       assert(approx_equal_dict(r1, r2, 'xyzcal.mm'))
       assert(approx_equal_dict(r1, r2, 'xyzcal.px'))
       assert(approx_equal_dict(r1, r2, 'zeta'))
-    print 'OK'
 
     # result3 and result4 should be the same
     assert(len(result3) == len(result4))
@@ -553,7 +547,6 @@ class TestSummation(object):
       assert(approx_equal_dict(r3, r4, 'xyzobs.px.value'))
       assert(approx_equal_dict(r3, r4, 'xyzobs.px.variance'))
       assert(approx_equal_dict(r3, r4, 'zeta'))
-    print 'OK'
 
     # result3 should add up to result1
     assert(len(result3) >= len(result1))
@@ -590,7 +583,6 @@ class TestSummation(object):
     for r1, r3, in zip(expected1, expected3):
       assert(approx_equal_dict(r1, r3, 'intensity.sum.value'))
       assert(approx_equal_dict(r1, r3, 'intensity.sum.variance'))
-    print 'OK'
 
 
   def integrate(self, integrator_type):

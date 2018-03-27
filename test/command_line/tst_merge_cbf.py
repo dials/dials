@@ -1,10 +1,12 @@
 from __future__ import absolute_import, division
+
 import glob
 import os
+
+import libtbx.load_env
 from libtbx import easy_run
 from libtbx.test_utils import open_tmp_directory
 
-import libtbx.load_env
 have_dials_regression = libtbx.env.has_module("dials_regression")
 if have_dials_regression:
   dials_regression = libtbx.env.find_in_repositories(

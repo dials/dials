@@ -99,7 +99,6 @@ class Test(object):
           raise
 
     # Test passed
-    print 'OK'
 
 
 if __name__ == '__main__':

@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+
 from libtbx.test_utils import approx_equal
 
 class Test(object):
@@ -47,7 +48,6 @@ class Test(object):
     imgset = datablock.extract_imagesets()
     assert len(imgset) == 2
 
-    print 'OK'
 
   def tst_with_mask(self):
     from glob import glob
@@ -68,7 +68,6 @@ class Test(object):
     imgset = datablock.extract_imagesets()[0]
     assert imgset.external_lookup.mask.filename == mask_filename
 
-    print 'OK'
 
   def tst_override_geometry(self):
     from glob import glob
@@ -145,7 +144,6 @@ class Test(object):
     assert scan.get_image_range() == (1,4)
     assert scan.get_oscillation() == (1,2)
 
-    print 'OK'
 
   def tst_import_beam_centre(self):
     from glob import glob
@@ -207,7 +205,6 @@ class Test(object):
       intra_pnl = o - matrix.col(p.get_origin())
       ref_offsets.append(intra_pnl.length())
     assert approx_equal(offsets, ref_offsets)
-    print 'OK'
 
   def tst_from_image_files(self):
     from subprocess import call, PIPE
@@ -224,7 +221,6 @@ class Test(object):
 
     assert(exists("import_datablock.json"))
 
-    print 'OK'
 
   def tst_from_template(self):
     from subprocess import call, PIPE
@@ -240,7 +236,6 @@ class Test(object):
 
     assert(exists("import_datablock.json"))
 
-    print 'OK'
 
   def tst_extrapolate_scan(self):
     from subprocess import call, PIPE
@@ -259,7 +254,6 @@ class Test(object):
       print cmd
       raise
 
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

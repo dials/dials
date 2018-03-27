@@ -24,6 +24,7 @@ cctbx.python tst_multi_panel_detector_parameterisation.py "random_seed=3"
 
 # Python and cctbx imports
 from __future__ import absolute_import, division
+from __future__ import print_function
 import sys
 from math import pi
 from scitbx import matrix
@@ -330,4 +331,3 @@ if __name__ == '__main__':
     assert approx_equal(params, params2)
 
   # if we got this far...
-  print "OK"

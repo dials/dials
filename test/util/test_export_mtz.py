@@ -4,14 +4,16 @@ Unit testing for the export_mtz.py routines
 
 from __future__ import absolute_import, division, print_function
 
+import itertools
+
+import dials.util.export_mtz as export_mtz
+
 try:
   from mock import Mock
 except ImportError:
   from unittest.mock import Mock
 
-import itertools
 
-import dials.util.export_mtz as export_mtz
 
 def in_ranges(value, ranges):
   """Check if a value is in a list of ranges"""

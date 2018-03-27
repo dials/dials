@@ -1,5 +1,4 @@
-from __future__ import absolute_import, division
-
+from __future__ import absolute_import, division, print_function
 
 class Test(object):
 
@@ -104,7 +103,6 @@ class Test(object):
           assert(value == d2[y,x])
 
     # Test passed
-    print 'OK'
 
 
 if __name__ == '__main__':

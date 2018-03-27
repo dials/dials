@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 class Test(object):
 
@@ -51,7 +51,6 @@ class Test(object):
     assert(abs(self.obs.intensity.corrected.value - 1234.1) < eps)
     assert(abs(self.obs.intensity.corrected.variance - 42.1) < eps)
 
-    print 'OK'
 
   def tst_equality(self):
     from dials.model.data import Observation
@@ -90,7 +89,6 @@ class Test(object):
     obs2 = Observation(self.obs)
     obs2.intensity.corrected.variance = 0
     assert(obs2 != self.obs)
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

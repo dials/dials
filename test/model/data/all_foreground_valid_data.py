@@ -1,4 +1,5 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
+
 data=r'''cdials_array_family_flex_ext
 shoebox
 p1

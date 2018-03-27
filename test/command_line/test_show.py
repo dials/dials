@@ -1,7 +1,8 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 import glob
 import os
+
 from libtbx import easy_run
 from libtbx.test_utils import show_diff
 

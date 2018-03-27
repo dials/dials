@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division
-from dials.array_family import flex # import dependency
 
+from dials.array_family import flex  # import dependency
 
 class Test(object):
 
@@ -111,7 +111,6 @@ class Test(object):
     assert results[0]['zero'][1] - results[1]['zero'][1] < 0.0001
     assert False not in [results[0]['low'][i] > results[1]['low'][i] for i in (0, 1)]
     assert False not in [results[0]['high'][i] > results[1]['high'][i] for i in (0, 1)]
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

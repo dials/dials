@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 class Test:
 
@@ -36,7 +36,6 @@ class Test:
       assert(abs(m1 - m2) <= eps)
 
     # Test passed
-    print 'OK'
 
   def tst_masked_mean_filter(self):
     from dials.algorithms.image.filter import mean_filter
@@ -73,7 +72,6 @@ class Test:
       assert(abs(m1 - m2) <= eps)
 
     # Test passed
-    print 'OK'
 
   def tst_mean_and_variance_filter(self):
     from dials.algorithms.image.filter import mean_and_variance_filter
@@ -107,7 +105,6 @@ class Test:
       assert(abs(sv1 - sv2) <= eps)
 
     # Test passed
-    print 'OK'
 
   def tst_masked_mean_and_variance_filter(self):
     from dials.algorithms.image.filter import mean_and_variance_filter
@@ -148,7 +145,6 @@ class Test:
       assert(abs(v1 - v2) <= eps)
 
     # Test passed
-    print 'OK'
 
 
 if __name__ == '__main__':

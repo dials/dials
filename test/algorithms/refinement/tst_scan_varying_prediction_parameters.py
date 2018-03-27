@@ -202,7 +202,6 @@ geometry.parameters.crystal.c.length.range = 10 50"""
     # return to the initial state
     pred_param.set_param_vals(p_vals)
     pred_param.compose(reflections)
-    print "OK"
 
     return
 

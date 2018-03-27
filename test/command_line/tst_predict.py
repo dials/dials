@@ -1,7 +1,7 @@
 
 from __future__ import absolute_import, division
-from dials.array_family import flex # import dependency
 
+from dials.array_family import flex  # import dependency
 
 class Test(object):
 
@@ -35,7 +35,6 @@ class Test(object):
     import cPickle as pickle
     table = pickle.load(open('predicted.pickle', 'rb'))
     assert(len(table) == 1996)
-    print 'OK'
 
     # Check the reflection IDs
     assert('id' in table)
@@ -46,7 +45,6 @@ class Test(object):
     for row in table:
       assert(row['id'] == 0)
 
-    print 'OK'
 
   def tst_scan_varying_prediction(self):
     from os.path import join
@@ -61,7 +59,6 @@ class Test(object):
     import cPickle as pickle
     table = pickle.load(open('predicted.pickle', 'rb'))
     assert(len(table) == 1934)
-    print 'OK'
 
     # Check the reflection IDs
     assert('id' in table)
@@ -72,7 +69,6 @@ class Test(object):
     for row in table:
       assert(row['id'] == 0)
 
-    print 'OK'
 
   def tst_force_static_prediction(self):
     from os.path import join
@@ -88,7 +84,6 @@ class Test(object):
     import cPickle as pickle
     table = pickle.load(open('predicted.pickle', 'rb'))
     assert(len(table) == 1996)
-    print 'OK'
 
     # Check the reflection IDs
     assert('id' in table)
@@ -99,7 +94,6 @@ class Test(object):
     for row in table:
       assert(row['id'] == 0)
 
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

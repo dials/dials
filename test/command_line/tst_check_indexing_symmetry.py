@@ -10,8 +10,10 @@
 
 # python imports
 from __future__ import absolute_import, division
+
 import os
-import libtbx.load_env # required for libtbx.env.find_in_repositories
+
+import libtbx.load_env  # required for libtbx.env.find_in_repositories
 from libtbx import easy_run
 from libtbx.test_utils import open_tmp_directory
 
@@ -43,7 +45,6 @@ def test1():
   finally:
     os.chdir(cwd)
 
-  print "OK"
   return
 
 def run():

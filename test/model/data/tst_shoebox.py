@@ -41,7 +41,6 @@ class Test(object):
       assert(shoebox.mask.all() == (0, 0, 0))
 
     # Test passed
-    print 'OK'
 
   def tst_offset(self):
     from random import randint
@@ -63,7 +62,6 @@ class Test(object):
       assert(shoebox.offset() == (z0, y0, x0))
 
     # Test passed
-    print 'OK'
 
   def tst_size(self):
     from random import randint
@@ -85,7 +83,6 @@ class Test(object):
       assert(shoebox.size() == (z1 - z0, y1 - y0, x1 - x0))
 
     # Test passed
-    print 'OK'
 
   def tst_consistent(self):
     from random import randint
@@ -114,7 +111,6 @@ class Test(object):
         raise
 
     # Test passed
-    print 'OK'
 
   def tst_is_bbox_within_image_volume(self):
 
@@ -139,7 +135,6 @@ class Test(object):
     assert(not shoebox.is_bbox_within_image_volume(isize, srange))
 
     # Test passed
-    print 'OK'
 
   def tst_does_bbox_contain_bad_pixels(self):
     from scitbx.array_family import flex
@@ -176,7 +171,6 @@ class Test(object):
       assert(res1 == res2)
 
     # Test passed
-    print 'OK'
 
   def tst_count_mask_values(self):
 
@@ -203,7 +197,6 @@ class Test(object):
       assert(shoebox.count_mask_values(value) == num)
 
     # Test passed
-    print 'OK'
 
   def tst_centroid_all(self):
     from scitbx import matrix
@@ -212,7 +205,6 @@ class Test(object):
       assert(shoebox.is_consistent())
       assert(abs(matrix.col(centroid.px.position) - matrix.col(XC)) < 1.0)
 
-    print 'OK'
 
   def tst_centroid_masked(self):
     from scitbx import matrix
@@ -221,7 +213,6 @@ class Test(object):
       assert(shoebox.is_consistent())
       assert(abs(matrix.col(centroid.px.position) - matrix.col(XC)) < 1.0)
 
-    print 'OK'
 
   def tst_summed_intensity(self):
     for shoebox, (XC, I) in self.random_shoeboxes(10):
@@ -229,7 +220,6 @@ class Test(object):
       assert(shoebox.is_consistent())
       assert(abs(intensity.observed.value - I) < 1e-1)
 
-    print 'OK'
 
   def tst_flatten(self):
     from dials.array_family import flex
@@ -256,7 +246,6 @@ class Test(object):
       assert(expected_mask.all_eq(shoebox.mask))
       assert(shoebox.flat)
       assert(shoebox.is_consistent())
-    print 'OK'
 
   def tst_all_foreground_valid(self):
     import cPickle as pickle
@@ -267,7 +256,6 @@ class Test(object):
         assert(not shoeboxes[i].all_foreground_valid())
       else:
         assert(shoeboxes[i].all_foreground_valid())
-    print 'OK'
 
   def random_shoeboxes(self, num, mask=False):
     from random import randint, uniform

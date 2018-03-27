@@ -1,5 +1,6 @@
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
+
 from dials.algorithms.shoebox import find_overlapping
 
 class Test(object):
@@ -42,7 +43,6 @@ class Test(object):
       edge = overlaps.source(edge), overlaps.target(edge)
       edge = (min(edge), max(edge))
       assert(edge in edges)
-    print 'OK'
 
   def tst_multiple_panels(self):
     from dials.array_family import flex
@@ -76,7 +76,6 @@ class Test(object):
       edge = (overlaps.source(edge), overlaps.target(edge))
       edge = (min(edge), max(edge))
       assert(edge in edges)
-    print 'OK'
 
   def brute_force(self, bbox, panel = None):
     overlaps = []

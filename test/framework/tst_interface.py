@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 from dials.framework.interface import Interface
 
@@ -26,7 +26,6 @@ class Test(object):
       pass
 
     # Test passed
-    print 'OK'
 
   def tst_after_import_interfaces(self):
     import dials.interfaces # import dependency
@@ -47,7 +46,6 @@ class Test(object):
     assert(BackgroundIface in interfaces)
 
     # Test passed
-    print 'OK'
 
   def tst_after_import_extensions(self):
     import dials.extensions # import dependency
@@ -88,7 +86,6 @@ class Test(object):
     assert(SimpleBackgroundExt in extensions)
 
     # Test passed
-    print 'OK'
 
 
 if __name__ == '__main__':

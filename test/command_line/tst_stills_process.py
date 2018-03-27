@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division
-from dials.array_family import flex # import dependency
 
+from dials.array_family import flex  # import dependency
 
 class Test(object):
 
@@ -88,7 +88,6 @@ class Test(object):
     assert 'id' in table
     assert (table['id'] == 0).count(False) == 0
 
-    print 'OK'
 
   def test_sacla_h5(self, in_memory=False, use_mpi=False):
     from os.path import join, exists
@@ -185,7 +184,6 @@ class Test(object):
       assert len(table) in n_refls, (result, len(table))
       assert 'id' in table
       assert (table['id'] == 0).count(False) == 0
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

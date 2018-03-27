@@ -89,7 +89,6 @@ class SmootherTest(object):
       except ImportError as e:
         print "pyplot not available", e
 
-    print "OK"
 
 # Use classes to wrap up ScanVarying*Parameterisation classes with
 # compose and get_state overridden, so they can be passed to the existing FD
@@ -354,7 +353,6 @@ class TestScanVaryingCrystalOrientationParameterisation(TestScanVaryingModelPara
       except ImportError as e:
         print "pyplot not available", e
 
-    print "OK"
 
   def test_random(self):
     """Test random initial orientations, random parameter shifts and random
@@ -454,7 +452,6 @@ class TestScanVaryingCrystalUnitCellParameterisation(TestScanVaryingModelParamet
     for e, f in zip(an_ds_dp, fd_ds_dp):
       assert(approx_equal((e - f), null_mat, eps = 1.e-6))
 
-    print "OK"
     return
 
   def run(self):
@@ -498,7 +495,6 @@ class TestScanVaryingBeamParameterisation(TestScanVaryingModelParameterisation):
     for e, f in zip(an_ds_dp, fd_ds_dp):
       assert(approx_equal((e - f), null_vec, eps = 1.e-6))
 
-    print "OK"
     return
 
   def run(self):
@@ -541,7 +537,6 @@ class TestScanVaryingDetectorParameterisation(TestScanVaryingModelParameterisati
     for e, f in zip(an_ds_dp, fd_ds_dp):
       assert(approx_equal((e - f), null_mat, eps = 1.e-6))
 
-    print "OK"
     return
 
   def run(self):

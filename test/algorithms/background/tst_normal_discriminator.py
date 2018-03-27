@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 class Test(object):
 
@@ -28,7 +28,6 @@ class Test(object):
     shoebox.reshape(flex.grid((5, 5, 5)))
     mask = discriminate(shoebox)
     self.is_correct(shoebox, mask, 3.0, 10)
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

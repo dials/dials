@@ -182,7 +182,6 @@ def regression_test():
 
   #TODO Tests for an oblique cell
 
-  print "OK"
 
 if __name__ == '__main__':
 

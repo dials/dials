@@ -11,9 +11,10 @@
 """Test derivatives of the Hamilton, Rollett and Sparks least-squares target
 (http://doi.org/10.1107/S0365110X65000233)"""
 
-from __future__ import division
-from scitbx.random import variate, poisson_distribution
+from __future__ import absolute_import, division, print_function
+
 from libtbx.test_utils import approx_equal
+from scitbx.random import poisson_distribution, variate
 
 def av_I(I, w, g):
   '''Given observations I for some reflection, their weights w and their
@@ -149,7 +150,6 @@ if __name__ == '__main__':
     fd_dmrgI_dp = fd_grad_av_I(I, w, g, iparam)
 
     assert approx_equal(dmrgI_dp, fd_dmrgI_dp)
-  print "OK"
 
   # Now test the complete expression for the first derivative of the residuals
   # of the HRS target.
@@ -158,4 +158,3 @@ if __name__ == '__main__':
     fd_dr_dp = fd_grad_r(I, w, g, iparam)
 
     assert approx_equal(dr_dp, fd_dr_dp)
-  print "OK"

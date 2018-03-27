@@ -36,7 +36,6 @@ class TestSimulated:
     print "Z: mean=%f, sdev=%f" % (meanz, sdevz)
     assert(abs(meanz - 0.0) < (5 * sdevz / sqrt(num)))
     assert(abs(sdevz - 1.0) < 1e-1)
-    print 'OK'
 
   def generate_profiles(self, num, counts):
     from dials.algorithms.simulation.generate_test_reflections import main

@@ -4,6 +4,7 @@
 between two vectors with respect to each element of the vectors"""
 
 from __future__ import division
+from __future__ import absolute_import, print_function
 from scitbx import matrix
 from random import uniform
 from math import sin, cos, acos
@@ -106,5 +107,3 @@ if __name__ == '__main__':
   nsuccess = results.count(True)
 
   assert nsuccess > 0.95 * ntests
-  print "OK"
-

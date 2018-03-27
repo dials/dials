@@ -41,7 +41,6 @@ class Test(object):
 
     diff = flex.abs(lp1 - lp2)
     assert(diff.all_lt(1e-7))
-    print 'OK'
 
   def compute_expected(self):
     from dials.array_family import flex

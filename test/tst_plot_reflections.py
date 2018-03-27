@@ -1,5 +1,7 @@
 from __future__ import absolute_import, division
+
 import os
+
 import libtbx.load_env
 from libtbx import easy_run
 
@@ -23,7 +25,6 @@ def exercise():
 
 def run():
   exercise()
-  print "OK"
 
 if __name__ == '__main__':
   run()

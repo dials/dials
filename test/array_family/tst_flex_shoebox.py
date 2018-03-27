@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 class Test(object):
 
@@ -47,7 +47,6 @@ class Test(object):
     assert(shoebox.is_consistent() == flex.bool(10, False))
 
     # Test passed
-    print 'OK'
 
   def tst_is_bbox_within_image_volume(self):
     from dials.model.data import Shoebox
@@ -69,7 +68,6 @@ class Test(object):
       flex.bool([True, False, False, False, False, False, False]))
 
     # Test passed
-    print 'OK'
 
   def tst_does_bbox_contain_bad_pixels(self):
     from dials.array_family import flex
@@ -109,7 +107,6 @@ class Test(object):
     assert(shoebox.does_bbox_contain_bad_pixels(mask) == res)
 
     # Test passed
-    print 'OK'
 
   def tst_count_mask_values(self):
     from dials.model.data import Shoebox
@@ -138,7 +135,6 @@ class Test(object):
     assert(shoebox.count_mask_values(value) == num)
 
     # Test passed
-    print 'OK'
 
   def tst_bounding_boxes(self):
     from dials.model.data import Shoebox
@@ -162,7 +158,6 @@ class Test(object):
       assert(bbox2[i] == bbox[i])
 
     # Test passed
-    print 'OK'
 
 
 if __name__ == '__main__':

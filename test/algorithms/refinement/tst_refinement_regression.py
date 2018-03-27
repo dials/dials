@@ -17,6 +17,7 @@ parameters using generated reflection positions from ideal geometry.
 
 # Python and cctbx imports
 from __future__ import absolute_import, division
+from __future__ import print_function
 from math import pi
 from scitbx import matrix
 from scitbx.array_family import flex
@@ -257,7 +258,6 @@ assert refiner.get_num_steps() == 1
 assert approx_equal(mytarget.rmsds(), (0.00508252354876,
                                        0.00420954552156,
                                        8.97303428289e-05))
-print "OK"
 
 ###############################
 # Undo known parameter shifts #
@@ -287,4 +287,3 @@ assert refiner.get_num_steps() == 9
 assert approx_equal(mytarget.rmsds(), (0.0558857700305,
                                        0.0333446685335,
                                        0.000347402754278))
-print "OK"

@@ -152,7 +152,6 @@ class Test(object):
         raise
 
     # Test passed
-    print 'OK'
 
   def generate_reflections(self, num):
     from random import randint, seed

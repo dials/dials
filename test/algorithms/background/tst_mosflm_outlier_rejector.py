@@ -175,7 +175,6 @@ class Test(object):
 
     # Only 1 should fail
     assert(count == 1)
-    print 'OK'
 
 
 if __name__ == '__main__':

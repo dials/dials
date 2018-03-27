@@ -220,5 +220,3 @@ for i, dO in enumerate(dO_dp):
   assert approx_equal(daa_dp, fd_grad[i]['daa_dp'])
   assert approx_equal(dbb_dp, fd_grad[i]['dbb_dp'])
   assert approx_equal(dcc_dp, fd_grad[i]['dcc_dp'])
-
-print "OK"

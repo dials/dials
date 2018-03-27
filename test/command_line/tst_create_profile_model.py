@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division
 
-
 class Test(object):
 
   def __init__(self):
@@ -46,7 +45,6 @@ class Test(object):
       print sigma_b
       print sigma_m
       raise
-    print 'OK'
 
   def tst_extended(self):
     from os.path import join
@@ -74,7 +72,6 @@ class Test(object):
       print sigma_b
       print sigma_m
       raise
-    print 'OK'
 
 
 if __name__ == '__main__':

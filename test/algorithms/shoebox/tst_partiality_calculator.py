@@ -83,7 +83,6 @@ class Test(object):
     assert(len(partiality) == len(predicted))
     assert(partiality.all_le(1.0) and partiality.all_gt(0))
 
-    print 'OK'
 
 if __name__ == '__main__':
   test = Test()

@@ -16,6 +16,7 @@ predictor.
 
 # Python and cctbx imports
 from __future__ import absolute_import, division
+from __future__ import print_function
 import sys
 from math import pi
 from scitbx import matrix
@@ -147,13 +148,11 @@ def run_tst(args):
   refs2_sorted = sort_refs(refs2)
 
   assert len(refs1_sorted) == len(refs2_sorted)
-  print "OK"
 
   for (r1, r2) in zip(refs1_sorted, refs2_sorted):
     assert r1['miller_index'] == r2['miller_index']
     dz = r1['xyzcal.px'][2] - r2['xyzcal.px'][2]
     assert abs(dz) < 0.01
-  print "OK"
 
   return
 

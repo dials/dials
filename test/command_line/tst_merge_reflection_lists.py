@@ -1,7 +1,6 @@
 
 from __future__ import absolute_import, division
 
-
 class Test(object):
 
   def __init__(self):
@@ -38,7 +37,6 @@ class Test(object):
 
     table = flex.reflection_table.from_pickle('merged.pickle')
     assert(len(table) == 360)
-    print 'OK'
 
     # Call dials.merge_reflection_lists
     easy_run.fully_buffered([
@@ -50,7 +48,6 @@ class Test(object):
 
     table = flex.reflection_table.from_pickle('merged.pickle')
     assert(len(table) == 720)
-    print 'OK'
 
 
 if __name__ == '__main__':

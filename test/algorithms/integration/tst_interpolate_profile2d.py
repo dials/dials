@@ -1,6 +1,6 @@
 
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 class Test(object):
 
@@ -84,7 +84,6 @@ class Test(object):
     for x1, x2 in zip(result, exp):
       assert(abs(x1 - x2) < eps)
 
-    print 'OK'
 
 if __name__ == '__main__':
   test = Test()

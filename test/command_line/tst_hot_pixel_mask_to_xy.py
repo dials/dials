@@ -1,5 +1,7 @@
 from __future__ import absolute_import, division
+
 import os
+
 import libtbx.load_env
 from libtbx import easy_run
 
@@ -32,4 +34,3 @@ if __name__ == '__main__':
   from dials.test import cd_auto
   with cd_auto(__file__):
     run()
-    print "OK"

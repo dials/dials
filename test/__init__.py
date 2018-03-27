@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 class cd(object):
   def __init__(self, path):
@@ -22,4 +22,3 @@ class cd_auto(cd):
     path = splitext(basename(filename))[0]
     path = "%s_%s" % (path, uuid4().hex)
     super(cd_auto, self).__init__(path)
-

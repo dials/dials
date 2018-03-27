@@ -1,7 +1,6 @@
 
 from __future__ import absolute_import, division
 
-
 class Test(object):
 
   def __init__(self):
@@ -44,7 +43,6 @@ class Test(object):
     assert('intensity.cor.value' in table)
     assert('intensity.cor.variance' in table)
     assert(len(table) == 174911)
-    print 'OK'
 
   def tst_import_spot_xds(self):
     from os.path import join
@@ -66,7 +64,6 @@ class Test(object):
     assert('xyzobs.px.value' in table)
     assert('intensity.sum.value' in table)
     assert(len(table) == 742)
-    print 'OK'
 
     # Call dials.import_xds
     easy_run.fully_buffered([
@@ -85,7 +82,6 @@ class Test(object):
     assert('xyzobs.px.value' in table)
     assert('intensity.sum.value' in table)
     assert(len(table) == 664)
-    print 'OK'
 
 
   def tst_from_xds_files(self):
@@ -100,7 +96,6 @@ class Test(object):
       join(self.path)]).raise_if_errors()
 
     assert(exists("import_experiments.json"))
-    print 'OK'
 
 
 if __name__ == '__main__':

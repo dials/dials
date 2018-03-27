@@ -1,5 +1,6 @@
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
+
 from dials.algorithms.profile_model.gaussian_rs.transform import rebin_pixels
 
 class Test(object):
@@ -45,7 +46,6 @@ class Test(object):
         assert(abs(output[j,i] - grid[j, i]) <= eps)
 
     # Test passed
-    print 'OK'
 
   def tst_known_offset(self):
     from scitbx.array_family import flex
@@ -82,7 +82,6 @@ class Test(object):
         assert(abs(output[j,i] - 1.0) <= eps)
 
     # Test passed
-    print 'OK'
 
   def tst_larger_output(self):
     from scitbx.array_family import flex
@@ -114,7 +113,6 @@ class Test(object):
         assert(abs(output[j,i] - 0.25 * value) <= eps)
 
     # Test passed
-    print 'OK'
 
   def tst_larger_input(self):
     from scitbx.array_family import flex
@@ -148,7 +146,6 @@ class Test(object):
         assert(abs(output[j,i] - 4 * value) <= eps)
 
     # Test passed
-    print 'OK'
 
   def tst_known_orientation(self):
     from scitbx.array_family import flex
@@ -192,7 +189,6 @@ class Test(object):
         assert(abs(output[j,i] - expected[j][i] * value) <= eps)
 
     # Test passed
-    print 'OK'
 
   def tst_conservation_of_counts(self):
     from scitbx.array_family import flex
@@ -231,7 +227,6 @@ class Test(object):
     assert(abs(flex.sum(output) - flex.sum(grid)) <= eps)
 
     # Test passed
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

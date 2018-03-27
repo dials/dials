@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division
-from dials.array_family import flex # import dependency
 
+from dials.array_family import flex  # import dependency
 
 class Test(object):
 
@@ -56,7 +56,6 @@ class Test(object):
     for row in table:
       assert(row['id'] == 0)
     self.table = table
-    print 'OK'
 
   def test2(self):
     from os.path import join
@@ -83,7 +82,6 @@ class Test(object):
     for row in table:
       assert(row['id'] == 0)
     self.table = table
-    print 'OK'
 
   def test3(self):
     from os.path import join
@@ -172,7 +170,6 @@ class Test(object):
     assert(flex.abs(diff_Obs_Z).all_lt(1e-7))
     # assert(flex.abs(diff_Obs_P).all_lt(1e-7))
 
-    print 'OK'
 
   def test4(self):
     from os.path import join
@@ -210,7 +207,6 @@ class Test(object):
     table = pickle.load(open('integrated.pickle', 'rb'))
     assert len(table) == 500
 
-    print 'OK'
 
   def test_multi_sweep(self):
     from os.path import join
@@ -251,7 +247,6 @@ class Test(object):
     I2 = I2.select(F2)
     assert flex.abs(I1 - I2) < 1e-6
 
-    print 'OK'
 
   def test_multi_lattice(self):
     from os.path import join
@@ -284,7 +279,6 @@ class Test(object):
     exp_id = list(set(table['id']))
     assert len(exp_id) == 2
 
-    print 'OK'
 
 
   def test_output_rubbish(self):
@@ -327,7 +321,6 @@ class Test(object):
     for row in table:
       assert(row['id'] == 0)
     self.table = table
-    print 'OK'
 
 
 if __name__ == '__main__':

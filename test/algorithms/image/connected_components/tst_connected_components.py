@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 class Test2d:
 
@@ -54,7 +54,6 @@ class Test2d:
           ind += 1
 
     # Test passed
-    print 'OK'
 
   def tst_values_are_valid(self, data_list, mask_list, values):
 
@@ -69,7 +68,6 @@ class Test2d:
           assert(v1 == v2)
 
     # Test passed
-    print 'OK'
 
 
   def tst_labels_are_valid(self, data_list, mask_list, coords, labels):
@@ -103,7 +101,6 @@ class Test2d:
             vi += 1
 
     # Test passed
-    print 'OK'
 
 class Test3d:
 
@@ -159,7 +156,6 @@ class Test3d:
           ind += 1
 
     # Test passed
-    print 'OK'
 
   def tst_values_are_valid(self, data_list, mask_list, values):
 
@@ -174,7 +170,6 @@ class Test3d:
           assert(v1 == v2)
 
     # Test passed
-    print 'OK'
 
 
   def tst_labels_are_valid(self, data_list, mask_list, coords, labels):
@@ -205,7 +200,6 @@ class Test3d:
             vi += 1
 
     # Test passed
-    print 'OK'
 
 
 if __name__ == '__main__':

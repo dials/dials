@@ -1,6 +1,8 @@
 from __future__ import absolute_import, division
+
+from os.path import isdir, join
+
 import libtbx.load_env
-from os.path import join, isdir
 
 have_dials_regression = libtbx.env.has_module("dials_regression")
 if have_dials_regression:
@@ -134,7 +136,6 @@ class TestRayPredictor:
       # Check the Phi values are the same
       assert(abs(xds_phi - my_phi) < 0.1)
 
-    print "OK"
 
   def test_beam_vectors(self):
     """Ensure |s1| == |s0|"""
@@ -145,7 +146,6 @@ class TestRayPredictor:
       s1_length = matrix.col(s1).length()
       assert(abs(s0_length - s1_length) < 1e-7)
 
-    print "OK"
 
   def test_new(self):
 
@@ -180,7 +180,6 @@ class TestRayPredictor:
       assert(all(abs(a - b) < eps for a, b in zip(r1['s1'], r2.s1)))
       assert(abs(r1['phi'] - r2.angle) < eps)
       assert(r1['entering'] == r2.entering)
-    print 'OK'
 
   def test_new_from_array(self):
     from dials.algorithms.spot_prediction import ScanStaticRayPredictor
@@ -214,7 +213,6 @@ class TestRayPredictor:
       assert(all(abs(a - b) < eps for a, b in zip(r1['s1'], r2['s1'])))
       assert(abs(r1['phi'] - r2['phi']) < eps)
       assert(r1['entering'] == r2['entering'])
-    print 'OK'
 
   def test_scan_varying(self):
     from dials.algorithms.spot_prediction import ScanVaryingRayPredictor
@@ -279,7 +277,6 @@ class TestRayPredictor:
     # and the result should be the same as before
     test_each_hkl(h, lambda x: sv_predict_rays(x, UB_beg, UB_end, s0, s0, frame))
 
-    print "OK"
 
   def run(self):
     self.test_miller_index_set()

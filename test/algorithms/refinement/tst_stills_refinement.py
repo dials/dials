@@ -17,6 +17,7 @@ Only the crystal is perturbed while the beam and detector are known.
 
 # Python and cctbx imports
 from __future__ import absolute_import, division
+from __future__ import print_function
 import sys
 from math import pi
 from scitbx import matrix
@@ -208,6 +209,3 @@ assert uc1.is_similar_to(uc2)
 if do_plot:
   plt = refiner.parameter_correlation_plot(len(history["parameter_correlation"])-1)
   plt.show()
-
-print "OK"
-

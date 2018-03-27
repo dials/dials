@@ -1,5 +1,5 @@
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 def generate_shoebox(size, mean, nforeground, ninvalid):
   from dials.algorithms.simulation.generate_test_reflections \
@@ -61,7 +61,6 @@ class TestTruncated(object):
         self.ninvalid)
       self.reject(data, mask)
       self.assert_is_correct(data, mask)
-    print 'OK'
 
   def assert_is_correct(self, data, mask):
     from dials.array_family import flex
@@ -97,7 +96,6 @@ class TestNSigma(object):
         self.ninvalid)
       self.reject(data, mask)
       self.assert_is_correct(data, mask)
-    print 'OK'
 
   def assert_is_correct(self, data, mask):
     from scitbx.array_family import flex
@@ -135,7 +133,6 @@ class TestNormal(object):
         self.ninvalid)
       self.reject(data, mask)
       self.assert_is_correct(data, mask)
-    print 'OK'
 
   def assert_is_correct(self, data, mask):
     invalid, foreground, background, background_used, background_valid = \

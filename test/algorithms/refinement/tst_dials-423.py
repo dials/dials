@@ -59,7 +59,6 @@ class Test(object):
     d2 = refiner.get_experiments()[0].detector
 
     assert d1.is_similar_to(d2)
-    print "OK"
     return
 
 def run():

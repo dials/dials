@@ -1,4 +1,5 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
+
 from dials.algorithms.profile_model.modeller import EmpiricalProfileModeller
 from dials.test.algorithms.integration.profile.tst_profile_helpers import gaussian
 
@@ -54,7 +55,6 @@ class Test(object):
             assert(abs(reference[k,j,i] - profile[k,j,i]) <= eps)
       assert(abs(flex.sum(reference) - 1.0) <= eps)
 
-    print 'OK'
 
   def tst_with_systematically_offset_profiles(self):
     from scitbx.array_family import flex
@@ -83,7 +83,6 @@ class Test(object):
         profile = reference
       assert(abs(flex.sum(reference) - 1.0) <= eps)
 
-    print 'OK'
 
 
   def normalize_profile(self, profile):
@@ -167,4 +166,3 @@ if __name__ == '__main__':
   with cd_auto(__file__):
     test = Test()
     test.run()
-

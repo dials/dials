@@ -1,9 +1,11 @@
 from __future__ import absolute_import, division
-import os
+
 import cPickle as pickle
+import os
+
 import libtbx.load_env
+from dials.array_family import flex  # import dependency
 from libtbx import easy_run
-from dials.array_family import flex # import dependency
 
 def exercise_merge_spot_lists():
   if not libtbx.env.has_module("dials_regression"):
@@ -50,7 +52,6 @@ def exercise_merge_spot_lists():
     i2 = r2.intensity
     assert(abs(i1 - i2) < 1e-7)
 
-  print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

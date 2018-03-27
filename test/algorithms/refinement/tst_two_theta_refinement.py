@@ -324,9 +324,7 @@ def run():
     return
 
   test_fd_derivatives()
-  print "OK"
   test_refinement()
-  print "OK"
 
 if __name__ == '__main__':
   from libtbx.utils import show_times_at_exit

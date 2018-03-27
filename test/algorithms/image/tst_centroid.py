@@ -1,5 +1,4 @@
-from __future__ import absolute_import, division
-
+from __future__ import absolute_import, division, print_function
 
 class CentroidTest(object):
 
@@ -28,7 +27,6 @@ class CentroidTest(object):
     assert(abs(self.gold2d - matrix.col(centroid.mean())) < self.EPS)
     assert(abs(self.gold2dvar - matrix.col(centroid.variance())) < self.EPS)
     assert(abs(self.gold2dubvar - matrix.col(centroid.unbiased_variance())) < self.EPS)
-    print 'OK'
 
   def tst_centroid_points3d(self):
     from dials.algorithms.image.centroid import centroid_points
@@ -39,7 +37,6 @@ class CentroidTest(object):
     assert(abs(self.gold3d - matrix.col(centroid.mean())) < self.EPS)
     assert(abs(self.gold3dvar - matrix.col(centroid.variance())) < self.EPS)
     assert(abs(self.gold3dubvar - matrix.col(centroid.unbiased_variance())) < self.EPS)
-    print 'OK'
 
   def tst_centroid_image(self):
     self.tst_centroid_image2d()
@@ -54,7 +51,6 @@ class CentroidTest(object):
     assert(abs(self.gold2d - matrix.col(centroid.mean())) < self.EPS)
     assert(abs(self.gold2dvar - matrix.col(centroid.variance())) < self.EPS)
     assert(abs(self.gold2dubvar - matrix.col(centroid.unbiased_variance())) < self.EPS)
-    print 'OK'
 
   def tst_centroid_image3d(self):
     from dials.algorithms.image.centroid import centroid_image
@@ -65,7 +61,6 @@ class CentroidTest(object):
     assert(abs(self.gold3d - matrix.col(centroid.mean())) < self.EPS)
     assert(abs(self.gold3dvar - matrix.col(centroid.variance())) < self.EPS)
     assert(abs(self.gold3dubvar - matrix.col(centroid.unbiased_variance())) < self.EPS)
-    print 'OK'
 
   def tst_centroid_masked_image(self):
     self.tst_centroid_masked_image2d()
@@ -80,7 +75,6 @@ class CentroidTest(object):
     assert(abs(self.goldmasked2d - matrix.col(centroid.mean())) < self.EPS)
     assert(abs(self.goldmasked2dvar - matrix.col(centroid.variance())) < self.EPS)
     assert(abs(self.goldmasked2dubvar - matrix.col(centroid.unbiased_variance())) < self.EPS)
-    print 'OK'
 
   def tst_centroid_masked_image3d(self):
     from dials.algorithms.image.centroid import centroid_image
@@ -91,7 +85,6 @@ class CentroidTest(object):
     assert(abs(self.goldmasked3d - matrix.col(centroid.mean())) < self.EPS)
     assert(abs(self.goldmasked3dvar - matrix.col(centroid.variance())) < self.EPS)
     assert(abs(self.goldmasked3dubvar - matrix.col(centroid.unbiased_variance())) < self.EPS)
-    print 'OK'
 
   def tst_centroid_bias(self):
 
@@ -113,7 +106,6 @@ class CentroidTest(object):
     assert centroid.average_bias_estimate()[0] < 1e-7
     assert centroid.average_bias_estimate()[1] < 1e-7
 
-    print 'OK'
 
   def generate_data(self):
     from scitbx.array_family import flex

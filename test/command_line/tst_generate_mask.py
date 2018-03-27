@@ -30,7 +30,6 @@ class Test(object):
 
     assert(exists("mask.pickle"))
 
-    print 'OK'
 
     # Call dials.generate_mask
     easy_run.fully_buffered([
@@ -49,7 +48,6 @@ class Test(object):
     assert imageset.external_lookup.mask.filename == os.path.join(
       os.path.abspath(os.getcwd()), 'mask2.pickle')
 
-    print 'OK'
 
     # Call dials.generate_mask
     easy_run.fully_buffered([
@@ -60,7 +58,6 @@ class Test(object):
     ]).raise_if_errors()
     assert(exists("mask3.pickle"))
 
-    print 'OK'
 
     # Call dials.generate_mask
     easy_run.fully_buffered([
@@ -71,7 +68,6 @@ class Test(object):
     ]).raise_if_errors()
     assert(exists("mask4.pickle"))
 
-    print 'OK'
 
     # Call dials.generate_mask
     easy_run.fully_buffered([
@@ -83,7 +79,6 @@ class Test(object):
     ]).raise_if_errors()
     assert(exists("mask5.pickle"))
 
-    print 'OK'
 
     # Call dials.generate_mask
     easy_run.fully_buffered([
@@ -94,7 +89,6 @@ class Test(object):
     ]).raise_if_errors()
     assert(exists("mask6.pickle"))
 
-    print 'OK'
 
     # Call dials.generate_mask
     easy_run.fully_buffered([
@@ -112,7 +106,6 @@ class Test(object):
     assert not mask[0][1,1]
     assert mask[0][0,1]
 
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

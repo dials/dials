@@ -3,8 +3,8 @@ from __future__ import absolute_import, division, print_function
 import cPickle as pickle
 import math
 
-from dials.array_family import flex
 import pytest
+from dials.array_family import flex
 
 @pytest.fixture(scope="module")
 def data(dials_regression): # read experiments and reflections

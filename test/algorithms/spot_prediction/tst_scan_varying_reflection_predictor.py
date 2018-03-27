@@ -56,7 +56,6 @@ class Test(object):
     assert r_new[0]['miller_index'] == (-8, -30, -23)
     assert approx_equal(r_new[0]['xyzcal.px'],
       (75.33831543451907, 2327.55737978813, 0.2548567552525226))
-    print "OK"
     return
 
   #def tst_with_hkl(self):
@@ -228,7 +227,6 @@ class Test(object):
     result1 = predict.for_ub(flex.mat3_double(A))
     result1.sort('miller_index')
     compare(static_preds, result1)
-    print "OK"
 
     # Prediction for UB matrix and s0 vectors expressed as arrays of static
     # model states
@@ -237,7 +235,6 @@ class Test(object):
         flex.vec3_double(s0))
     result2.sort('miller_index')
     compare(static_preds, result2)
-    print "OK"
 
     # First frame only, start and end UB
     _, _, z = static_preds['xyzcal.px'].parts()
@@ -246,14 +243,12 @@ class Test(object):
     result3 = predict.for_ub_on_single_image(0, A, A)
     result3.sort('miller_index')
     compare(static_preds_frame0, result3)
-    print "OK"
 
     # First frame only, start and end UB and s0
     s0 = beam.get_s0()
     result4 = predict.for_varying_models_on_single_image(0, A, A, s0, s0)
     result4.sort('miller_index')
     compare(static_preds_frame0, result4)
-    print "OK"
 
 
   def tst_for_reflection_table(self):
@@ -292,7 +287,6 @@ class Test(object):
     assert old_y.all_approx_equal(new_y)
     assert old_z.all_approx_equal(new_z)
 
-    print "OK"
 
     return
 

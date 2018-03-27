@@ -72,7 +72,6 @@ def test1():
     (0.0009903, 0.0009903, 0.0021227, 0.0, 0.0, 0.0))
   assert approx_equal(ref_exp.crystal.get_cell_volume_sd(), 23.8063382)
 
-  print "OK"
   return
 
 def test2():
@@ -139,7 +138,6 @@ def test2():
   finally:
     os.chdir(cwd)
 
-  print "OK"
   return
 
 def test3():
@@ -194,7 +192,6 @@ def test3():
   finally:
     os.chdir(cwd)
 
-  print "OK"
   return
 
 #Test the functionality of the refiner.py extension modules
@@ -289,7 +286,6 @@ def test4():
   assert ( res0 == res1_int )
   assert ( res0 == res1_sizet )
 
-  print "OK"
   return
 
 def run():

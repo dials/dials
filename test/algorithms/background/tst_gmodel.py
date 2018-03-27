@@ -120,7 +120,6 @@ class Test(object):
     assert (scale4 > 0).count(False) == 0
     assert (diff1 < 1e-5).count(False) == 0
 
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

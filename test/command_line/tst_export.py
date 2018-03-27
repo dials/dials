@@ -1,7 +1,6 @@
 
 from __future__ import absolute_import, division
 
-
 class Test(object):
 
   def __init__(self):
@@ -47,7 +46,6 @@ class Test(object):
 
     assert exists("integrated.nxs")
 
-    print 'OK'
 
   def test_mtz(self):
     from libtbx import easy_run
@@ -63,7 +61,6 @@ class Test(object):
 
     assert exists("integrated.mtz")
 
-    print 'OK'
 
   def test_xds_ascii(self):
     from libtbx import easy_run
@@ -98,7 +95,6 @@ class Test(object):
       psi = float(tokens[-1])
       assert approx_equal(psi, psi_values[hkl], eps=0.1)
 
-    print 'OK'
 
   def test_sadabs(self):
     from libtbx import easy_run
@@ -132,7 +128,6 @@ class Test(object):
         continue
       assert approx_equal(cosines, direction_cosines[hkl], eps=0.001)
 
-    print 'OK'
 
   def test_json(self):
     import json
@@ -181,7 +176,6 @@ class Test(object):
       assert d['imageset_id'][0] == 0
       assert d['experiment_id'][0] == 0
 
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

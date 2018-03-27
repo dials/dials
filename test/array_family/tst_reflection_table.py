@@ -51,7 +51,6 @@ class Test(object):
     assert(table.nrows() == 10)
     assert(table.ncols() == 0)
     assert(table.empty())
-    print 'OK'
 
     # test with valid columns
     table = flex.reflection_table([
@@ -62,7 +61,6 @@ class Test(object):
     assert(table.nrows() == 10)
     assert(table.ncols() == 3)
     assert(not table.empty())
-    print 'OK'
 
     # test with invalid columns
     try:
@@ -73,7 +71,6 @@ class Test(object):
       assert(false)
     except Exception:
       pass
-    print 'OK'
 
   def tst_resizing(self):
     from dials.array_family import flex
@@ -89,7 +86,6 @@ class Test(object):
     assert('col1' in table)
     assert('col2' in table)
     assert('col3' not in table)
-    print 'OK'
 
     # Create a table with 2 columns and 10 rows
     table = flex.reflection_table()
@@ -97,7 +93,6 @@ class Test(object):
     table['col2'] = flex.double(10)
     assert(table.nrows() == 10)
     assert(table.ncols() == 2)
-    print 'OK'
 
     # Add an extra column with the wrong size (throw)
     try:
@@ -111,7 +106,6 @@ class Test(object):
     assert(len(table['col1']) == 10)
     assert(len(table['col2']) == 10)
     assert len(table) == table.size()
-    print 'OK'
 
     # Resize the table (should resize all columns)
     table.resize(50)
@@ -120,14 +114,12 @@ class Test(object):
     assert(table.is_consistent())
     assert(len(table['col1']) == 50)
     assert(len(table['col2']) == 50)
-    print 'OK'
 
     # Make the table inconsistent
     table['col1'].resize(40)
     assert(not table.is_consistent())
     assert_exception(lambda: table.nrows())
     assert_exception(lambda: table.ncols())
-    print 'OK'
 
     # Clear the table
     table.clear()
@@ -135,7 +127,6 @@ class Test(object):
     assert(table.empty())
     assert(table.nrows() == 0)
     assert(table.ncols() == 0)
-    print 'OK'
 
   def tst_delete(self):
     from dials.array_family import flex
@@ -150,7 +141,6 @@ class Test(object):
     assert(table.nrows() == 10)
     assert(table.ncols() == 2)
     assert(not "col3" in table)
-    print 'OK'
 
     # Test del row
     del table[5]
@@ -159,7 +149,6 @@ class Test(object):
     assert(table.ncols() == 2)
     assert(all(a==b for a, b in zip(list(table['col1']),
       [0, 1, 2, 3, 4, 6, 7, 8, 9])))
-    print 'OK'
 
     # Test del slice
     del table[0:10:2]
@@ -168,14 +157,12 @@ class Test(object):
     assert(table.ncols() == 2)
     assert(all(a==b for a, b in zip(list(table['col1']),
       [1, 3, 6, 8])))
-    print 'OK'
 
     # Test del slice
     del table[:]
     assert(table.is_consistent())
     assert(table.nrows() == 0)
     assert(table.ncols() == 2)
-    print 'OK'
 
   def tst_row_operations(self):
     from dials.array_family import flex
@@ -202,7 +189,6 @@ class Test(object):
     assert(all(a == b for a, b in zip(table['col1'], c1)))
     assert(all(a == b for a, b in zip(table['col2'], c2)))
     assert(all(a == b for a, b in zip(table['col3'], c3)))
-    print 'OK'
 
     # Append some rows to the table
     row = { 'col1' : 10 }
@@ -216,7 +202,6 @@ class Test(object):
     assert(all(a == b for a, b in zip(table['col1'], c1)))
     assert(all(a == b for a, b in zip(table['col2'], c2)))
     assert(all(a == b for a, b in zip(table['col3'], c3)))
-    print 'OK'
 
     row = { 'col2' : 11 }
     c1 = c1 + [0]
@@ -229,7 +214,6 @@ class Test(object):
     assert(all(a == b for a, b in zip(table['col1'], c1)))
     assert(all(a == b for a, b in zip(table['col2'], c2)))
     assert(all(a == b for a, b in zip(table['col3'], c3)))
-    print 'OK'
 
     row = { 'col1' : 12, 'col2' : 12, 'col3' : 'l' }
     c1 = c1 + [12]
@@ -242,7 +226,6 @@ class Test(object):
     assert(all(a == b for a, b in zip(table['col1'], c1)))
     assert(all(a == b for a, b in zip(table['col2'], c2)))
     assert(all(a == b for a, b in zip(table['col3'], c3)))
-    print 'OK'
 
     # Try inserting some rows
     row = { 'col1' : -1 }
@@ -256,7 +239,6 @@ class Test(object):
     assert(all(a == b for a, b in zip(table['col1'], c1)))
     assert(all(a == b for a, b in zip(table['col2'], c2)))
     assert(all(a == b for a, b in zip(table['col3'], c3)))
-    print 'OK'
 
     row = { 'col1' : -2, 'col2' : -3, 'col3' : 'abc' }
     c1.insert(2, -2)
@@ -269,7 +251,6 @@ class Test(object):
     assert(all(a == b for a, b in zip(table['col1'], c1)))
     assert(all(a == b for a, b in zip(table['col2'], c2)))
     assert(all(a == b for a, b in zip(table['col3'], c3)))
-    print 'OK'
 
     # Try iterating through table rows
     for i in range(table.nrows()):
@@ -277,7 +258,6 @@ class Test(object):
       assert(row['col1'] == c1[i])
       assert(row['col2'] == c2[i])
       assert(row['col3'] == c3[i])
-    print 'OK'
 
     # Trying setting some rows
     row = { 'col1' : 100 }
@@ -291,7 +271,6 @@ class Test(object):
     assert(table[10]['col1'] == 1000)
     assert(table[10]['col2'] == 2000)
     assert(table[10]['col3'] == 'hello')
-    print 'OK'
 
   def tst_iteration(self):
 
@@ -316,7 +295,6 @@ class Test(object):
     assert(k.count('col1') == 1)
     assert(k.count('col2') == 1)
     assert(k.count('col3') == 1)
-    print 'OK'
 
     # Try iterating columns
     k = []
@@ -328,14 +306,12 @@ class Test(object):
     assert(k.count('col1') == 1)
     assert(k.count('col2') == 1)
     assert(k.count('col3') == 1)
-    print 'OK'
 
     # Try iterating rows
     for row1, row2 in zip(table.rows(), zip(c1, c2, c3)):
       assert(row1['col1'] == row2[0])
       assert(row1['col2'] == row2[1])
       assert(row1['col3'] == row2[2])
-    print 'OK'
 
   def tst_slicing(self):
 
@@ -363,7 +339,6 @@ class Test(object):
     assert(all(a == b for a, b in zip(new_table['col1'], c11)))
     assert(all(a == b for a, b in zip(new_table['col2'], c22)))
     assert(all(a == b for a, b in zip(new_table['col3'], c33)))
-    print 'OK'
 
     # Try backward slicing
     new_table = table[7:2:-2]
@@ -376,7 +351,6 @@ class Test(object):
     assert(all(a == b for a, b in zip(new_table['col1'], c11)))
     assert(all(a == b for a, b in zip(new_table['col2'], c22)))
     assert(all(a == b for a, b in zip(new_table['col3'], c33)))
-    print 'OK'
 
     # Try setting forward slicing
     table[2:7:2] = new_table
@@ -389,7 +363,6 @@ class Test(object):
     assert(all(a == b for a, b in zip(table['col1'], c1)))
     assert(all(a == b for a, b in zip(table['col2'], c2)))
     assert(all(a == b for a, b in zip(table['col3'], c3)))
-    print 'OK'
 
     # Try setting backward slicing
     table[7:2:-2] = new_table
@@ -402,7 +375,6 @@ class Test(object):
     assert(all(a == b for a, b in zip(table['col1'], c1)))
     assert(all(a == b for a, b in zip(table['col2'], c2)))
     assert(all(a == b for a, b in zip(table['col3'], c3)))
-    print 'OK'
 
   def tst_updating(self):
 
@@ -426,7 +398,6 @@ class Test(object):
     assert(table0.is_consistent())
     assert(table0.nrows() == 10)
     assert(table0.ncols() == 2)
-    print 'OK'
 
     # Update table1 with table2 columns
     table1.update(table2)
@@ -436,7 +407,6 @@ class Test(object):
     assert(table2.is_consistent())
     assert(table2.nrows() == 10)
     assert(table2.ncols() == 1)
-    print 'OK'
 
     # Update trable1 with invalid table
     c3 = ['a', 'b', 'c']
@@ -456,7 +426,6 @@ class Test(object):
     assert(table2.is_consistent())
     assert(table2.nrows() == 3)
     assert(table2.ncols() == 1)
-    print 'OK'
 
   def tst_select(self):
 
@@ -479,7 +448,6 @@ class Test(object):
     assert(new_table.ncols() == 2)
     assert(all(a == b for a, b in zip(new_table['col1'], c1)))
     assert(all(a == b for a, b in zip(new_table['col2'], c2)))
-    print 'OK'
 
     # Select some columns
     new_table = table.select(flex.std_string(['col1', 'col2']))
@@ -487,7 +455,6 @@ class Test(object):
     assert(new_table.ncols() == 2)
     assert(all(a == b for a, b in zip(new_table['col1'], c1)))
     assert(all(a == b for a, b in zip(new_table['col2'], c2)))
-    print 'OK'
 
     # Select some rows
     index = flex.size_t([0, 1, 5, 8, 9])
@@ -500,7 +467,6 @@ class Test(object):
     assert(all(a == b for a, b in zip(new_table['col1'], cc1)))
     assert(all(a == b for a, b in zip(new_table['col2'], cc2)))
     assert(all(a == b for a, b in zip(new_table['col3'], cc3)))
-    print 'OK'
 
     # Select some rows
     index = flex.bool([True, True, False, False, False,
@@ -511,7 +477,6 @@ class Test(object):
     assert(all(a == b for a, b in zip(new_table['col1'], cc1)))
     assert(all(a == b for a, b in zip(new_table['col2'], cc2)))
     assert(all(a == b for a, b in zip(new_table['col3'], cc3)))
-    print 'OK'
 
   def tst_set_selected(self):
 
@@ -537,7 +502,6 @@ class Test(object):
     assert(all(a == b for a, b in zip(table1['col1'], c1)))
     assert(all(a == b for a, b in zip(table1['col2'], c2)))
     assert(all(a == b for a, b in zip(table1['col3'], c3)))
-    print 'OK'
 
     # Set selected columns
     table1 = flex.reflection_table()
@@ -548,7 +512,6 @@ class Test(object):
     assert(all(a == b for a, b in zip(table1['col1'], c1)))
     assert(all(a == b for a, b in zip(table1['col2'], c2)))
     assert(all(a == b for a, b in zip(table1['col3'], c3)))
-    print 'OK'
 
     cc1 = list(range(10, 15))
     cc2 = list(range(10, 15))
@@ -572,7 +535,6 @@ class Test(object):
     assert(all(a == b for a, b in zip(table1['col1'], ccc1)))
     assert(all(a == b for a, b in zip(table1['col2'], ccc2)))
     assert(all(a == b for a, b in zip(table1['col3'], ccc3)))
-    print 'OK'
 
     # Set selected rows
     table2 = flex.reflection_table()
@@ -586,7 +548,6 @@ class Test(object):
     assert(all(a == b for a, b in zip(table1['col1'], ccc1)))
     assert(all(a == b for a, b in zip(table1['col2'], ccc2)))
     assert(all(a == b for a, b in zip(table1['col3'], ccc3)))
-    print 'OK'
 
   def tst_del_selected(self):
 
@@ -611,7 +572,6 @@ class Test(object):
     assert("col2" not in table1)
     assert("col3" not in table1)
     assert(all(a == b for a, b in zip(table1['col1'], c1)))
-    print 'OK'
 
     # Del selected columns
     table1 = flex.reflection_table()
@@ -625,7 +585,6 @@ class Test(object):
     assert("col2" not in table1)
     assert("col3" not in table1)
     assert(all(a == b for a, b in zip(table1['col1'], c1)))
-    print 'OK'
 
     # Del selected rows
     table1 = flex.reflection_table()
@@ -645,7 +604,6 @@ class Test(object):
     assert(all(a == b for a, b in zip(table1['col1'], ccc1)))
     assert(all(a == b for a, b in zip(table1['col2'], ccc2)))
     assert(all(a == b for a, b in zip(table1['col3'], ccc3)))
-    print 'OK'
 
     # Del selected rows
     table1 = flex.reflection_table()
@@ -660,7 +618,6 @@ class Test(object):
     assert(all(a == b for a, b in zip(table1['col1'], ccc1)))
     assert(all(a == b for a, b in zip(table1['col2'], ccc2)))
     assert(all(a == b for a, b in zip(table1['col3'], ccc3)))
-    print 'OK'
 
   def tst_sort(self):
 
@@ -682,7 +639,6 @@ class Test(object):
     table.sort("c", order=(1,2,0))
     assert list(table['c']) == [(1, 1, 1), (2, 1, 1), (3, 1, 1), (3, 2, 1), (2, 4, 2)]
 
-    print "OK"
 
   def tst_flags(self):
 
@@ -695,7 +651,6 @@ class Test(object):
     # Get all the flags
     f1 = table.get_flags(table.flags.predicted)
     assert(f1.count(True) == 0)
-    print 'OK'
 
     # Set some flags
     mask = flex.bool([True, True, False, False, True])
@@ -705,7 +660,6 @@ class Test(object):
     assert(all(f11 == f22 for f11, f22 in zip(f1, mask)))
     f2 = table.get_flags(table.flags.predicted | table.flags.observed)
     assert(f2.count(True) == 0)
-    print 'OK'
 
     # Unset the flags
     mask = flex.bool(5, True)
@@ -714,7 +668,6 @@ class Test(object):
     assert(f1.count(True) == 0)
     flags = table['flags']
     assert(all(f == 0 for f in flags))
-    print 'OK'
 
     # Set multiple flags
     mask = flex.bool([True, True, False, False, True])
@@ -733,7 +686,6 @@ class Test(object):
     assert(f2.count(True) == 3)
     assert(f3.count(True) == 3)
     assert(f4.count(True) == 1)
-    print 'OK'
 
     # Get where any are set
     f1 = table.get_flags(table.flags.predicted, all=False)
@@ -744,7 +696,6 @@ class Test(object):
     assert(f2.count(True) == 3)
     assert(f3.count(True) == 3)
     assert(f4.count(True) == 5)
-    print 'OK'
 
   def tst_serialize(self):
 
@@ -771,7 +722,6 @@ class Test(object):
     assert(all(a == b for a, b in zip(new_table['col1'], c1)))
     assert(all(a == b for a, b in zip(new_table['col2'], c2)))
     assert(all(a == b for a, b in zip(new_table['col3'], c3)))
-    print 'OK'
 
   def tst_copy(self):
     import copy
@@ -786,7 +736,6 @@ class Test(object):
     shallow['col2'] = flex.double(range(10))
     assert(table.ncols() == 2)
     assert(table.is_consistent())
-    print 'OK'
 
     # Make a deep copy of the table
     deep = copy.deepcopy(table)
@@ -802,7 +751,6 @@ class Test(object):
     assert(table2.ncols() == 3)
     assert(table.is_consistent())
     assert(table2.is_consistent())
-    print 'OK'
 
   def tst_extract_shoeboxes(self):
     from dials.array_family import flex
@@ -910,7 +858,6 @@ class Test(object):
               assert(v1 == 0)
               assert(m1 == 0)
 
-    print 'OK'
 
   def tst_split_by_experiment_id(self):
     from dials.array_family import flex
@@ -927,7 +874,6 @@ class Test(object):
     for res, exp in zip(result, [0, 1, 2, 3, 5]):
       assert(len(res) == 100)
       assert(res['id'].count(exp) == 100)
-    print 'OK'
 
   def tst_split_indices_by_experiment_id(self):
     from dials.array_family import flex
@@ -947,7 +893,6 @@ class Test(object):
         [100, 100, 100, 100, 0, 100]):
       assert(len(index) == num)
       assert(r.select(index)['id'].count(exp) == num)
-    print 'OK'
 
   def tst_split_partials(self):
     from dials.array_family import flex
@@ -993,7 +938,6 @@ class Test(object):
       assert(r1['bbox'] == r2['bbox'])
       assert(r1['partial_id'] == r2['partial_id'])
 
-    print 'OK'
 
   def tst_split_partials_with_shoebox(self):
     from dials.array_family import flex
@@ -1066,7 +1010,6 @@ class Test(object):
       assert(r1['shoebox'].data.as_double().as_1d().all_approx_equal(
         r2['shoebox'].data.as_double().as_1d()))
 
-    print 'OK'
 
   def tst_find_overlapping(self):
     from dials.array_family import flex
@@ -1123,7 +1066,6 @@ class Test(object):
 
 
 
-    print 'OK'
 
 
 if __name__ == '__main__':

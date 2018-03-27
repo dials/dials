@@ -1,7 +1,7 @@
 
 from __future__ import absolute_import, division
-from dials.array_family import flex # import dependency
 
+from dials.array_family import flex  # import dependency
 
 class Test(object):
 
@@ -40,7 +40,6 @@ class Test(object):
     imageset = imagesets[0]
     assert imageset.external_lookup.mask.filename == mask_filename
 
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

@@ -141,7 +141,6 @@ def test1():
 
     assert approx_equal(an, fd, eps=1e-5)
 
-  print "OK"
 
 def test2():
   '''Simple test with two triclinic crystals restrained to a target unit cell'''
@@ -266,7 +265,6 @@ def test2():
     an = grads.col(i).as_dense_vector()
     assert approx_equal(an, fd, eps=1e-5)
 
-  print "OK"
 
 def test3():
   '''Test with multiple crystals, and a stills refiner'''
@@ -366,7 +364,6 @@ def test3():
     #print
     assert approx_equal(an, fd, eps=1e-5)
 
-  print "OK"
   return
 
 def test4():
@@ -465,7 +462,6 @@ def test4():
     #print
     assert approx_equal(an, fd, eps=1e-5)
 
-  print "OK"
   return
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 class Test:
 
@@ -44,7 +44,6 @@ class Test:
         value = median(pixels.as_numpy_array())
         assert(abs(value - result[j,i]) < eps)
 
-    print 'OK'
 
   def tst_masked_filter(self):
 
@@ -77,7 +76,6 @@ class Test:
           assert(abs(value - result[j,i]) < eps)
         else:
           assert(abs(result[j,i] - 0.0) < eps)
-    print 'OK'
 
 
 if __name__ == '__main__':

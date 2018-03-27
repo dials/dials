@@ -29,7 +29,6 @@ def exercise_spotfinder():
     assert approx_equal(refl['xyzobs.px.value'],
                         (1399.1190476190477, 514.2142857142857, 0.5))
     assert "shoebox" in reflections
-  print 'OK'
 
   # now with a resolution filter
   args = ["dials.find_spots", "filter.d_min=2", "filter.d_max=15",
@@ -40,7 +39,6 @@ def exercise_spotfinder():
     reflections = pickle.load(f)
     assert len(reflections) == 467, len(reflections)
     assert "shoebox" not in reflections
-  print 'OK'
 
   # now write a hot mask
   args = ["dials.find_spots", "write_hot_mask=True",
@@ -56,7 +54,6 @@ def exercise_spotfinder():
     mask = pickle.load(f)
     assert len(mask) == 1, len(mask)
     assert mask[0].count(False) == 12, mask[0].count(False)
-  print 'OK'
 
   # now write a hot mask
   args = ["dials.find_spots", "write_hot_mask=True", "hot_mask_prefix=my_hot_mask",
@@ -72,7 +69,6 @@ def exercise_spotfinder():
     mask = pickle.load(f)
     assert len(mask) == 1, len(mask)
     assert mask[0].count(False) == 12, mask[0].count(False)
-  print 'OK'
 
   # now with more generous parameters
   args = ["dials.find_spots", "min_spot_size=3",
@@ -83,7 +79,6 @@ def exercise_spotfinder():
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
     assert len(reflections) == 678, len(reflections)
-  print 'OK'
 
   # Now with a user defined mask
   template = glob(os.path.join(data_dir, "centroid*.cbf"))
@@ -120,7 +115,6 @@ def exercise_spotfinder():
     assert x.all_lt(1200)
     assert y.all_lt(1200)
 
-  print 'OK'
 
 
   # now with XFEL stills
@@ -134,7 +128,6 @@ def exercise_spotfinder():
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
     assert len(reflections) == 2643, len(reflections)
-  print 'OK'
 
 
 
@@ -190,4 +183,3 @@ if __name__ == '__main__':
   from dials.test import cd_auto
   with cd_auto(__file__):
     run()
-    print 'OK'

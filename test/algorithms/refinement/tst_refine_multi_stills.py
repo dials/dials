@@ -50,7 +50,6 @@ def test1():
                 check_format=False)
   finally:
     os.chdir(cwd)
-  print "OK"
 
   # compare results
   tol = 1e-5
@@ -69,7 +68,6 @@ def test1():
     assert d1.is_similar_to(d2,
       fast_axis_tolerance=1e-4, slow_axis_tolerance=1e-4, origin_tolerance=1e-2)
 
-  print "OK"
 
   return
 
@@ -106,7 +104,6 @@ def test2():
       "refined_experiments_nproc4.json", check_format=False)
   finally:
     os.chdir(cwd)
-  print "OK"
 
   # compare results
   for b1, b2 in zip(nproc1.beams(), nproc4.beams()):
@@ -116,7 +113,6 @@ def test2():
   for d1, d2 in zip(nproc1.detectors(), nproc4.detectors()):
     assert d1.is_similar_to(d2,
       fast_axis_tolerance=5e-5, slow_axis_tolerance=5e-5, origin_tolerance=5e-5)
-  print "OK"
   return
 
 def run():

@@ -1,12 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
 import pytest
-
 from cctbx import crystal, sgtbx, uctbx
-from cctbx.sgtbx import lattice_symmetry
-from cctbx.sgtbx import bravais_types
+from cctbx.sgtbx import bravais_types, lattice_symmetry
 from dials.algorithms.indexing import symmetry
-
 
 # 1) known unit cell and space group
 #      -> cb op for test unit cell to best match for reference symmetry

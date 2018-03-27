@@ -40,7 +40,6 @@ def run():
       print h0, h1
       raise
 
-  print 'OK'
 
 if __name__ == '__main__':
 

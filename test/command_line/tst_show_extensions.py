@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 class Test(object):
   def run(self):
@@ -9,7 +9,6 @@ class Test(object):
       'dev.dials.show_extensions',
     ]).raise_if_errors()
 
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

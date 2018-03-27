@@ -16,6 +16,7 @@ A simple test of refinement using two crystals.
 
 # Python and cctbx imports
 from __future__ import absolute_import, division
+from __future__ import print_function
 import sys
 from math import pi
 from scitbx import matrix
@@ -262,14 +263,12 @@ from dials.algorithms.refinement.refiner import RefinerFactory
 refiner = RefinerFactory.from_parameters_data_experiments(params, obs_refs,
   experiments, verbosity=0)
 history = refiner.run()
-print "OK"
 
 # scan varying
 params.refinement.parameterisation.scan_varying=True
 refiner = RefinerFactory.from_parameters_data_experiments(params, obs_refs,
   experiments, verbosity=0)
 history = refiner.run()
-print "OK"
 
 #plt = refiner.parameter_correlation_plot(len(history["parameter_correlation"])-1)
 #plt.show()

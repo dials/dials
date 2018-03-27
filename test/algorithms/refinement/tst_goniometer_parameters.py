@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 from __future__ import absolute_import, division
-from math import pi
+
 import random
+from math import pi
 
 from libtbx.test_utils import approx_equal
 from scitbx import matrix

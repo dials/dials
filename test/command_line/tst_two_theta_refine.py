@@ -68,7 +68,6 @@ def test1():
     (9.58081e-5, 0.000149909, 0.000215765, 0, 0, 0))
   assert approx_equal(xl.get_cell_volume_sd(), 0.0116254298)
 
-  print "OK"
   return
 
 def run():

@@ -373,7 +373,6 @@ def run(verbose = False):
     if verbose: print 'checking analytical vs finite difference gradients for s1'
     for a, b in zip(fd_grad['ds1'], an_grad['ds1']):
       assert approx_equal(a, b)
-    print 'OK'
 
 if __name__ == "__main__":
 

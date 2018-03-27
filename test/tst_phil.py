@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 import os
 from dials.util.phil import parse
@@ -51,7 +51,6 @@ class Test(object):
     assert DataBlockFactory.from_json_file.call_args[0] == (self.datablock_path,)
     assert ExperimentListFactory.from_json_file.call_args[0] == (self.experiments_path,)
 
-    print 'OK'
 
 if __name__ == '__main__':
   test = Test()

@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 from dials.algorithms.symmetry import origin
 from dials.array_family import flex
@@ -13,7 +13,6 @@ def tst_origin_offset_miller_indices():
                                      for l in range(-1, 4)])
 
   assert ref == omi
-  print 'OK'
 
 if __name__ == '__main__':
   tst_origin_offset_miller_indices()

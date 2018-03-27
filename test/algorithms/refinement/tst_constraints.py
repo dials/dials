@@ -115,7 +115,6 @@ def test1():
   assert constr_dL_dp[5] == dL_dp[1] + dL_dp[3]
   assert constr_dL_dp[6] == dL_dp[5] + dL_dp[6] + dL_dp[7]
 
-  print "OK"
 
 def test2():
   """Test joint refinement where two detectors are constrained to enforce a
@@ -213,7 +212,6 @@ def test2():
   p2 = det2[0]
   assert approx_equal(p2.get_distance() - p1.get_distance(), 0.9987655)
 
-  print "OK"
 
 if __name__ == '__main__':
 

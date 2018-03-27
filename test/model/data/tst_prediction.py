@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 class Test(object):
 
@@ -32,7 +32,6 @@ class Test(object):
     assert(abs(self.pred.position.mm[1] - 12) <= eps)
     assert(abs(self.pred.position.mm[2] - 13) <= eps)
 
-    print 'OK'
 
   def tst_equality(self):
     from dials.model.data import Prediction
@@ -57,7 +56,6 @@ class Test(object):
     pred2 = Prediction(self.pred)
     pred2.position.mm = (0, 0, 0)
     assert(pred2 != self.pred)
-    print 'OK'
 
 if __name__ == '__main__':
   from dials.test import cd_auto

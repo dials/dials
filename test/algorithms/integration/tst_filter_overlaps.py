@@ -1,4 +1,5 @@
 from __future__ import division
+
 from cctbx.array_family import flex
 
 class TestForOverlaps(object):
@@ -69,7 +70,6 @@ class TestForOverlaps(object):
           s = i // shoebox.xsize()
           print "Overlapping foreground and background found at (%d, %d)" % (f, s)
           assert False
-    print "OK"
 
 class Test(TestForOverlaps):
 

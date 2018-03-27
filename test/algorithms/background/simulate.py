@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division
 
-
 def gaussian(grid, A, cent, sig):
 
   from scitbx.array_family import flex
