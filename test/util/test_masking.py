@@ -1,14 +1,8 @@
 from __future__ import absolute_import, division
 
 import os
-import libtbx.load_env
-try:
-  dials_regression = libtbx.env.dist_path('dials_regression')
-except KeyError:
-  dials_regression = None
 
-
-def exercise_polygon():
+def test_polygon():
   from dials.util.ext import is_inside_polygon
   from scitbx.array_family import flex
 
@@ -20,7 +14,8 @@ def exercise_polygon():
   points = flex.vec2_double(((0.3, 0.8), (0.3, 1.5), (-8,9), (0.00001, 0.9999)))
   assert list(is_inside_polygon(poly, points)) == [True, False, False, True]
 
-def exercise_dynamic_shadowing():
+def test_dynamic_shadowing(dials_regression):
+  import libtbx
 
   def exercise_one_image(
     path, count_only_shadow, count_mask_shadow, count_mask_no_shadow):
@@ -47,10 +42,6 @@ def exercise_dynamic_shadowing():
       else:
         assert mask[0].count(False) == count_mask_no_shadow, (mask[0].count(False), count_mask_no_shadow)
 
-  if dials_regression is None:
-    print 'SKIP: dials_regression not configured'
-    return
-
   exercise_one_image(
     path=os.path.join(dials_regression,
       "shadow_test_data/DLS_I04_SmarGon/Th_3_O45_C45_P48_1_0500.cbf"),
@@ -66,11 +57,8 @@ def exercise_dynamic_shadowing():
     count_mask_no_shadow=527314
   )
 
-def exercise_shadow_plot():
-  if dials_regression is None:
-    print 'SKIP: dials_regression not configured'
-    return
-
+def test_shadow_plot(dials_regression, tmpdir):
+  tmpdir.chdir()
   path = os.path.join(
     dials_regression, "shadow_test_data/DLS_I04_SmarGon/Th_3_O45_C45_P48_1_0500.cbf")
 
@@ -93,11 +81,7 @@ def exercise_shadow_plot():
     'dials.shadow_plot datablock.json mode=2d plot=shadow_2d.png').raise_if_errors()
   assert os.path.exists('shadow_2d.png')
 
-def exercise_filter_shadowed_reflections():
-  if dials_regression is None:
-    print 'SKIP: dials_regression not configured'
-    return
-
+def test_filter_shadowed_reflections(dials_regression):
   experiments_json = os.path.join(
     dials_regression, "shadow_test_data/DLS_I04_SmarGon/experiments.json")
 
@@ -115,16 +99,3 @@ def exercise_filter_shadowed_reflections():
       experiments, predicted, experiment_goniometer=experiment_goniometer)
     assert shadowed.count(True) == 17
     assert shadowed.count(False) == 674
-
-def run():
-  exercise_polygon()
-  exercise_dynamic_shadowing()
-  exercise_shadow_plot()
-  exercise_filter_shadowed_reflections()
-  print 'OK'
-
-
-if __name__ == '__main__':
-  from dials.test import cd_auto
-  with cd_auto(__file__):
-    run()

@@ -1,11 +1,12 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
+
+from math import pi
 
 def test_polarization_conversion():
   from random import uniform
   from scitbx import matrix
   from dials.util.nexus.nx_mx import polarization_normal_to_stokes
   from dials.util.nexus.nx_mx import polarization_stokes_to_normal
-  from math import pi
 
   EPS = 1e-7
 
@@ -21,13 +22,9 @@ def test_polarization_conversion():
     angle = n2.angle(n1)
     assert(abs(angle) < EPS or abs(angle - pi) < EPS or abs(angle-2*pi) < EPS)
     assert(abs(p1 - p2) < EPS)
-  print 'OK'
-
-
 
 def run_single(experiments1, filename):
   from dials.util.nexus import dump, load
-  from math import pi
   from scitbx import matrix
 
   EPS = 1e-7
@@ -173,17 +170,9 @@ def run_single(experiments1, filename):
       else:
         assert(crystal2[i] != crystal2[j])
 
-  print 'OK'
-
-def run():
+def test_run(tmpdir, dials_regression):
   from dxtbx.model.experiment_list import ExperimentListFactory
   from os.path import join
-  import libtbx.load_env
-  try:
-    dials_regression = libtbx.env.dist_path('dials_regression')
-  except KeyError:
-    print 'FAIL: dials_regression not configured'
-    exit(0)
   path = join(dials_regression, "nexus_test_data", "shared_models")
   filename_list = [
     'single',
@@ -193,14 +182,9 @@ def run():
     'multiple_sweeps',
     'stills'
   ]
+  tmpdir.chdir()
   for filename in filename_list:
     filename_in = join(path, "%s.json" % filename)
     filename_out = "%s.nxs" % filename
     experiments = ExperimentListFactory.from_json_file(filename_in)
     run_single(experiments, filename_out)
-
-if __name__ == '__main__':
-  from dials.test import cd_auto
-  with cd_auto(__file__):
-    test_polarization_conversion()
-    run()

@@ -2,14 +2,13 @@
 Unit testing for the export_mtz.py routines
 """
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 try:
   from mock import Mock
 except ImportError:
   from unittest.mock import Mock
 
-import pytest
 import itertools
 
 import dials.util.export_mtz as export_mtz

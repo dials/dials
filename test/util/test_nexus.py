@@ -1,18 +1,12 @@
+from __future__ import absolute_import, division, print_function
 
-from __future__ import absolute_import, division
-
-def run():
+def test_run(dials_regression, tmpdir):
+  tmpdir.chdir()
 
   from dials.util.nexus import dump, load
   from dxtbx.model.experiment_list import ExperimentListFactory
   from dials.array_family import flex
   from os.path import join
-  import libtbx.load_env
-  try:
-    dials_regression = libtbx.env.dist_path('dials_regression')
-  except KeyError:
-    print 'Skipped: dials_regression not configured'
-    exit(0)
   path = join(dials_regression, "nexus_test_data")
 
   # Read the experiments
@@ -55,7 +49,6 @@ def run():
       assert(data1.all_eq(data2))
 
   # Test passed
-  print 'OK'
 
   # Check the experiments are ok
   assert(len(experiments1) == len(experiments2))
@@ -71,7 +64,6 @@ def run():
   assert(abs(b1.get_polarization_fraction() - b2.get_polarization_fraction()) < EPS)
   assert(all(abs(d1 - d2) < EPS
     for d1, d2 in zip(b1.get_polarization_normal(), b2.get_polarization_normal())))
-  print 'OK'
 
   # Check the goniometer
   g1 = exp1.goniometer
@@ -82,7 +74,6 @@ def run():
     for d1, d2 in zip(g1.get_fixed_rotation(), g2.get_fixed_rotation())))
   assert(all(abs(d1 - d2) < EPS
     for d1, d2 in zip(g1.get_setting_rotation(), g2.get_setting_rotation())))
-  print 'OK'
 
   # Check the scan
   s1 = exp1.scan
@@ -95,7 +86,6 @@ def run():
     assert(abs(e1 - e2) < EPS)
   for e1, e2 in zip(s1.get_epochs(), s2.get_epochs()):
     assert(abs(e1 - e2) < EPS)
-  print 'OK'
 
   # Check the detector
   d1 = exp1.detector
@@ -114,7 +104,6 @@ def run():
       assert(abs(x1 - x2) < EPS)
     for x1, x2 in zip(p1.get_origin(), p2.get_origin()):
       assert(abs(x1 - x2) < EPS)
-  print 'OK'
 
   # Check the crystal
   c1 = exp1.crystal
@@ -136,9 +125,3 @@ def run():
     uc2 = c2.get_unit_cell_at_scan_point(i)
     for p1, p2 in zip(uc1.parameters(), uc2.parameters()):
       assert(abs(p1-p2) < EPS)
-  print 'OK'
-
-if __name__ == '__main__':
-  from dials.test import cd_auto
-  with cd_auto(__file__):
-    run()

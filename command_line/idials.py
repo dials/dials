@@ -12,6 +12,7 @@
 # LIBTBX_SET_DISPATCHER_NAME idials
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 try:
   # try importing scipy.linalg before any cctbx modules to avoid segfault on
@@ -95,13 +96,13 @@ def print_error(exception):
   Print out the error message
 
   '''
-  print ''
-  print '*' * 80
-  print 'USER ERROR: PLEASE REPLACE USER'
-  print ''
-  print exception
-  print '*' * 80
-  print ''
+  print('')
+  print('*' * 80)
+  print('USER ERROR: PLEASE REPLACE USER')
+  print('')
+  print(exception)
+  print('*' * 80)
+  print('')
 
 
 class Console(Cmd):
@@ -180,7 +181,7 @@ class Console(Cmd):
       filename = self.controller.get_summary()
       if filename is None:
         raise RuntimeError('No result to show')
-      print 'For report, see: %s' % filename
+      print('For report, see: %s' % filename)
     except Exception as e:
       print_error(e)
 
@@ -213,7 +214,7 @@ class Console(Cmd):
     ''' Undo parameters. '''
     try:
       self.controller.undo_parameters()
-      print self.controller.get_parameters(diff=True).as_str()
+      print(self.controller.get_parameters(diff=True).as_str())
     except Exception as e:
       print_error(e)
 
@@ -221,7 +222,7 @@ class Console(Cmd):
     ''' Redo parameters. '''
     try:
       self.controller.redo_parameters()
-      print self.controller.get_parameters(diff=True).as_str()
+      print(self.controller.get_parameters(diff=True).as_str())
     except Exception as e:
       print_error(e)
 
@@ -251,11 +252,11 @@ class Console(Cmd):
 
   def do_get(self, line):
     ''' Show all the possible parameters '''
-    print self.controller.get_parameters(diff=True).as_str()
+    print(self.controller.get_parameters(diff=True).as_str())
 
   def do_all(self, line):
     ''' Show all the possible parameters '''
-    print self.controller.get_parameters(diff=False).as_str()
+    print(self.controller.get_parameters(diff=False).as_str())
 
   def do_history(self, line):
     ''' Show the history. '''
@@ -303,7 +304,7 @@ class Console(Cmd):
 
   def do_EOF(self, line):
     ''' Exit the console '''
-    print ''
+    print('')
     return True
 
   def do_shell(self, line):
@@ -387,9 +388,9 @@ class Console(Cmd):
     Print the history
 
     '''
-    print ''
-    print 'History'
-    print self.controller.get_history()
+    print('')
+    print('History')
+    print(self.controller.get_history())
 
   def complete_mode(self, text, line, begidx, endidx):
     '''
@@ -527,7 +528,7 @@ Type "help" for more information
 if __name__ == '__main__':
 
   # Print the console intro
-  print CONSOLE_INTRO
+  print(CONSOLE_INTRO)
 
   # Create the console
   console = Console()
