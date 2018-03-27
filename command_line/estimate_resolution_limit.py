@@ -1,6 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.estimate_resolution_limit
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 from libtbx.phil import command_line
 from libtbx.utils import Sorry
@@ -98,7 +99,7 @@ def run(args):
   x_cutoff = (y_cutoff - c)/m
 
   estimated_d_min = uctbx.d_star_sq_as_d(x_cutoff)
-  print "estimated d_min: %.2f" %estimated_d_min
+  print("estimated d_min: %.2f" %estimated_d_min)
 
   if params.plot:
     from matplotlib import pyplot

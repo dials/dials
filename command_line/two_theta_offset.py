@@ -10,6 +10,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 from libtbx.phil import parse
 
 help_message = '''
@@ -91,7 +92,7 @@ class Script(object):
       axis = matrix.col(rot.axis)
       if abs(angle) < 10:
         continue
-      print 'Axis: %8.5f %8.5f %8.5f' % axis.elems, 'angle: %7.4f' % angle
+      print('Axis: %8.5f %8.5f %8.5f' % axis.elems, 'angle: %7.4f' % angle)
 
 def determine_axis(detectors, params):
   from scitbx import matrix
@@ -125,8 +126,8 @@ def determine_axis(detectors, params):
   two_theta = component(x2 - centre, axis).angle(
     component(x1 - centre, axis), deg=True)
 
-  print 'Centre: %7.4f %7.4f %7.4f' % centre.elems, \
-    '  axis: %7.4f %7.4f %7.4f' % axis.elems, 'angle: %.2f' % two_theta
+  print('Centre: %7.4f %7.4f %7.4f' % centre.elems, \
+    '  axis: %7.4f %7.4f %7.4f' % axis.elems, 'angle: %.2f' % two_theta)
 
 def component(a, n):
   return a - a.dot(n) * n

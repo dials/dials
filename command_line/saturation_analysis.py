@@ -1,6 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.saturation_analysis
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 def strip_not_integrated(integrated_data):
   sel = integrated_data.get_flags(integrated_data.flags.integrated)
@@ -39,8 +40,8 @@ def saturation_analysis(data_files, value_column):
   strong = (reference_data[value_column] > 3 * flex.sqrt(
     reference_data[variance_column]))
 
-  print 'Keeping %d strong reflections of %d' % (strong.count(True),
-                                                 len(reference_data))
+  print('Keeping %d strong reflections of %d' % (strong.count(True),
+                                                 len(reference_data)))
 
   reference_data = reference_data.select(strong)
 
@@ -65,7 +66,7 @@ def saturation_analysis(data_files, value_column):
         matches += 1
         x.append(rrefl[value_column])
         y.append(refl[value_column])
-    print 'For %s matched %d/%d' % (query_pickle, matches, len(query_data))
+    print('For %s matched %d/%d' % (query_pickle, matches, len(query_data)))
     fout.close()
     from matplotlib import pyplot
     pyplot.scatter(x.as_numpy_array(), y.as_numpy_array())

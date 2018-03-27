@@ -8,6 +8,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.simulate_rs
 
@@ -78,14 +79,14 @@ class Script(object):
     # Parse the command line arguments
     params, options = self.parser.parse_args()
 
-    print 'Simulating with the following parameters:'
-    print ' # Reflections: %d' % params.num
-    print ' Intensity: %d' % params.intensity
-    print ' Background: %s' % params.background
-    print ' Sigma B: %f degrees' % params.sigma_b
-    print ' Sigma M: %f degrees' % params.sigma_m
-    print ' N Sigma: %f degrees' % params.n_sigma
-    print ' Random: %s' % str(params.random)
+    print('Simulating with the following parameters:')
+    print(' # Reflections: %d' % params.num)
+    print(' Intensity: %d' % params.intensity)
+    print(' Background: %s' % params.background)
+    print(' Sigma B: %f degrees' % params.sigma_b)
+    print(' Sigma M: %f degrees' % params.sigma_m)
+    print(' N Sigma: %f degrees' % params.n_sigma)
+    print(' Random: %s' % str(params.random))
 
     # Get the experiments
     experiments = flatten_experiments(params.input.experiments)
@@ -108,7 +109,7 @@ class Script(object):
       refl = simulate.with_given_intensity(N, I, B[0], B[1], B[2], B[3])
 
     # Save the reflections to file
-    print 'Writing reflections to %s' % params.output
+    print('Writing reflections to %s' % params.output)
     refl.as_pickle(params.output)
 
 

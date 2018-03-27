@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 #!/usr/bin/env python
 # -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 2 -*-
 #
@@ -43,7 +44,7 @@ def debug_plot_residuals(refiner, inlier_sel=None):
   crystal_ids = matches['id']
   if inlier_sel is None:
     inlier_sel = flex.bool(len(residuals), True)
-  print inlier_sel.size(), panel_ids.size()
+  print(inlier_sel.size(), panel_ids.size())
   for i_crystal in range(flex.max(crystal_ids)+1):
     crystal_sel = (crystal_ids == i_crystal)
     for i_panel in range(len(refiner.get_experiments().detectors()[0])):

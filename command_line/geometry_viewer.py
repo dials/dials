@@ -3,6 +3,7 @@
 
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 from __future__ import absolute_import, division
+from __future__ import print_function
 from gltbx import wx_viewer
 import copy
 import wx
@@ -170,7 +171,7 @@ class render_3d(object):
     if predicted is None:
       return
     t1 = time.time()
-    print "Predicted %i reflections in %.2f s" %(predicted.size(), (t1-t0))
+    print("Predicted %i reflections in %.2f s" %(predicted.size(), (t1-t0)))
     xyzcal_mm = predicted['xyzcal.mm']
     xc, yc, zc = predicted['xyzcal.mm'].parts()
     xycal = flex.vec2_double(xc, yc)

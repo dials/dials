@@ -3,6 +3,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.check_strategy
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 from scitbx.array_family import flex
 import libtbx.phil
 
@@ -46,9 +47,9 @@ def run(args):
   reflections = reflections[0]
   shadowed = filter_shadowed_reflections(experiments, reflections)
 
-  print "# shadowed reflections: %i/%i (%.2f%%)" %(
+  print("# shadowed reflections: %i/%i (%.2f%%)" %(
     shadowed.count(True), shadowed.size(),
-    shadowed.count(True)/shadowed.size() * 100)
+    shadowed.count(True)/shadowed.size() * 100))
 
   expt = experiments[0]
   x,y,z = reflections['xyzcal.px'].parts()

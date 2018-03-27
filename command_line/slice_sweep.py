@@ -11,6 +11,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 from os.path import splitext, basename
 from scitbx.array_family import flex
 from libtbx.utils import Sorry
@@ -242,7 +243,7 @@ class Script(object):
 
     # Catch case of nothing to do
     if not any([slice_exps, slice_refs, slice_dbs]):
-      print "No suitable input provided"
+      print("No suitable input provided")
       self.parser.print_help()
       return
 
@@ -332,8 +333,8 @@ class Script(object):
         else:
           ext = "_sliced.json"
         output_experiments_filename = bname + ext
-      print 'Saving sliced experiments to {0}'.format(
-        output_experiments_filename)
+      print('Saving sliced experiments to {0}'.format(
+        output_experiments_filename))
 
       from dxtbx.model.experiment_list import ExperimentListDumper
       dump = ExperimentListDumper(sliced_experiments)
@@ -353,8 +354,8 @@ class Script(object):
           ext = "_sliced.pickle"
         output_reflections_filename = bname + ext
 
-      print 'Saving sliced reflections to {0}'.format(
-        output_reflections_filename)
+      print('Saving sliced reflections to {0}'.format(
+        output_reflections_filename))
       sliced_reflections.as_pickle(output_reflections_filename)
 
     # Save sliced datablocks
@@ -370,8 +371,8 @@ class Script(object):
         else:
           ext = "_sliced.json"
         output_datablocks_filename = bname + ext
-      print 'Saving sliced datablocks to {0}'.format(
-        output_datablocks_filename)
+      print('Saving sliced datablocks to {0}'.format(
+        output_datablocks_filename))
 
       from dxtbx.datablock import DataBlockDumper
       dump = DataBlockDumper(sliced_datablocks)

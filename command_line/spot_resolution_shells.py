@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 import libtbx.phil
 
 help_message = '''
@@ -46,7 +47,7 @@ def spot_resolution_shells(imagesets, reflections, params):
   d = 1.0 / flex.sqrt(h0.slot_centers())
 
   for j in range(params.shells):
-    print '%d %f %d' % (j, d[j], n[j])
+    print('%d %f %d' % (j, d[j], n[j]))
 
 def run(args):
 

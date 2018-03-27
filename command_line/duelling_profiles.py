@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.duelling_profiles
 
@@ -231,9 +232,9 @@ def model_reflection_predict(reflection, experiment, params):
   xyz_mm = reflection['xyzcal.mm']
 
   if params.debug:
-    print 'hkl = %d %d %d' % hkl
-    print 'xyz px = %f %f %f' % xyz
-    print 'xyz mm = %f %f %f' % xyz_mm
+    print('hkl = %d %d %d' % hkl)
+    print('xyz px = %f %f %f' % xyz)
+    print('xyz mm = %f %f %f' % xyz_mm)
 
   Amat = matrix.sqr(experiment.crystal.get_A_at_scan_point(int(xyz[2])))
   p0_star = Amat * hkl
@@ -243,7 +244,7 @@ def model_reflection_predict(reflection, experiment, params):
   assert(angles)
 
   if params.debug:
-    print 'angles = %f %f' % angles
+    print('angles = %f %f' % angles)
 
   angle = angles[0] if reflection['entering'] else angles[1]
 
@@ -322,13 +323,13 @@ def model_reflection_rt0(reflection, experiment, params):
   xyz_mm = reflection['xyzcal.mm']
 
   if params.debug:
-    print 'hkl = %d %d %d' % hkl
-    print 'xyz px = %f %f %f' % xyz
-    print 'xyz mm = %f %f %f' % xyz_mm
+    print('hkl = %d %d %d' % hkl)
+    print('xyz px = %f %f %f' % xyz)
+    print('xyz mm = %f %f %f' % xyz_mm)
     if reflection['entering']:
-      print 'entering'
+      print('entering')
     else:
-      print 'exiting'
+      print('exiting')
 
   Amat = matrix.sqr(experiment.crystal.get_A_at_scan_point(int(xyz[2])))
   p0_star = Amat * hkl
@@ -338,7 +339,7 @@ def model_reflection_rt0(reflection, experiment, params):
   assert(angles)
 
   if params.debug:
-    print 'angles = %f %f' % angles
+    print('angles = %f %f' % angles)
 
   angle = angles[0] if (abs(angles[0] - xyz_mm[2]) <
                         abs(angles[1] - xyz_mm[2])) else angles[1]
@@ -348,7 +349,7 @@ def model_reflection_rt0(reflection, experiment, params):
   s1 = matrix.col(reflection['s1'])
   t = p.get_thickness() / math.cos(s1.angle(n))
   if params.debug:
-    print 'dqe = %f' % reflection['dqe']
+    print('dqe = %f' % reflection['dqe'])
 
   if params.physics:
     i0 = reflection['intensity.sum.value'] / reflection['dqe']
@@ -364,7 +365,7 @@ def model_reflection_rt0(reflection, experiment, params):
   s0 = matrix.col(experiment.beam.get_s0())
 
   if params.debug:
-    print 's1 = %f %f %f' % s1
+    print('s1 = %f %f %f' % s1)
 
   pixels = reflection['shoebox']
   pixels.flatten()
@@ -375,12 +376,12 @@ def model_reflection_rt0(reflection, experiment, params):
   data.reshape(flex.grid(dy, dx))
 
   if params.show:
-    print 'Observed reflection (flattened in Z):'
-    print
+    print('Observed reflection (flattened in Z):')
+    print()
     for j in range(dy):
       for i in range(dx):
-        print '%5d' % data[(j, i)],
-      print
+        print('%5d' % data[(j, i)], end=' ')
+      print()
 
   if params.sigma_m > 0:
     sigma_m = params.sigma_m * d2r
@@ -403,7 +404,7 @@ def model_reflection_rt0(reflection, experiment, params):
 
   scale = params.scale
   if params.show:
-    print '%d rays' % (int(round(i0 * scale)))
+    print('%d rays' % (int(round(i0 * scale))))
   for i in range(int(round(i0 * scale))):
     if params.sigma_l:
       l_scale = random.gauss(1, params.sigma_l)
@@ -451,16 +452,16 @@ def model_reflection_rt0(reflection, experiment, params):
       patch[(int(y), int(x))] += 1.0 / scale
 
   if params.show:
-    print 'Simulated reflection (flattened in Z):'
-    print
+    print('Simulated reflection (flattened in Z):')
+    print()
     for j in range(dy):
       for i in range(dx):
-        print '%5d' % int(patch[(j, i)]),
-      print
+        print('%5d' % int(patch[(j, i)]), end=' ')
+      print()
 
 
   cc = profile_correlation(data, patch)
-  print 'Correlation coefficient: %.3f isum: %.1f ' % (cc, i0)
+  print('Correlation coefficient: %.3f isum: %.1f ' % (cc, i0))
 
   return cc
 
@@ -506,7 +507,7 @@ def main(reflections, experiment, params):
 
   nref1 = len(reflections)
 
-  print 'Removed %d reflections, %d remain' % (nref0 - nref1, nref1)
+  print('Removed %d reflections, %d remain' % (nref0 - nref1, nref1))
 
   results = []
 
@@ -518,11 +519,11 @@ def main(reflections, experiment, params):
     elif params.id_start and params.id_end:
       if j < params.id_start or j >= params.id_end:
         continue
-      print j
+      print(j)
       result = globals()['model_reflection_%s' % method](reflection, experiment, params)
 
     else:
-      print j
+      print(j)
       result = globals()['model_reflection_%s' % method](reflection, experiment, params)
     if result is not None:
       results.append(result)
@@ -555,13 +556,13 @@ def run(args):
     exit()
 
   if not 'shoebox' in reflections[0]:
-    print 'Please add shoeboxes to reflection pickle'
+    print('Please add shoeboxes to reflection pickle')
     exit()
 
   results = main(reflections[0], experiments[0], params)
 
   if results:
-    print 'mean result: %.3f' % (sum(results) / len(results))
+    print('mean result: %.3f' % (sum(results) / len(results)))
 
 if __name__ == '__main__':
   import sys

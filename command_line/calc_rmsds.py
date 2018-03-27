@@ -11,6 +11,7 @@
 
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 import libtbx.load_env
 import logging
@@ -79,7 +80,7 @@ def run(args):
   import math
   xy_rmsds = math.sqrt(rmsds[0]**2 + rmsds[1]**2)
 
-  print rmsds
+  print(rmsds)
 
 
 

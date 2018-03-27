@@ -1,4 +1,5 @@
 from __future__ import division
+from __future__ import print_function
 from dials.array_family import flex
 from scitbx import matrix
 import math
@@ -206,7 +207,7 @@ class KaptonAbsorption(object):
     if False and self.detector is not None: ### XXX not implemented -- impose fast and slow axes for now
       self.fast = matrix.col(self.detector[0].get_fast_axis())
       self.slow = matrix.col(self.detector[0].get_slow_axis())
-      print "fast and slow detector axes:", tuple(self.fast), tuple(self.slow)
+      print("fast and slow detector axes:", tuple(self.fast), tuple(self.slow))
     else:
       self.fast = matrix.col((1, 0, 0))
       self.slow = matrix.col((0, -1, 0))

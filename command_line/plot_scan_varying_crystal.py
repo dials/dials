@@ -10,6 +10,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 import os
 import matplotlib
@@ -117,7 +118,7 @@ class Script(object):
       scan = exp.scan
 
       if crystal.num_scan_points == 0:
-        print "Ignoring scan-static crystal"
+        print("Ignoring scan-static crystal")
         continue
 
       scan_pts = range(crystal.num_scan_points)
@@ -135,12 +136,12 @@ class Script(object):
                   'gamma':cc,
                   'volume':vol}
       if self._debug:
-        print "Crystal in Experiment {0}".format(iexp)
-        print "Phi\ta\tb\tc\talpha\tbeta\tgamma\tVolume"
+        print("Crystal in Experiment {0}".format(iexp))
+        print("Phi\ta\tb\tc\talpha\tbeta\tgamma\tVolume")
         msg = "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}"
         line_dat = zip(phi, a, b, c, aa, bb, cc, vol)
         for line in line_dat:
-          print msg.format(*line)
+          print(msg.format(*line))
       dat.append(cell_dat)
     self.plot_cell(dat)
 
@@ -152,7 +153,7 @@ class Script(object):
       scan = exp.scan
 
       if crystal.num_scan_points == 0:
-        print "Ignoring scan-static crystal"
+        print("Ignoring scan-static crystal")
         continue
 
       scan_pts = range(crystal.num_scan_points)
@@ -173,12 +174,12 @@ class Script(object):
                    'phi2':phi2,
                    'phi1':phi1}
       if self._debug:
-        print "Crystal in Experiment {0}".format(iexp)
-        print "Image\tphi3\tphi2\tphi1"
+        print("Crystal in Experiment {0}".format(iexp))
+        print("Image\tphi3\tphi2\tphi1")
         msg = "{0}\t{1}\t{2}\t{3}"
         line_dat = zip(phi, phi3, phi2, phi1)
         for line in line_dat:
-          print msg.format(*line)
+          print(msg.format(*line))
       dat.append(angle_dat)
     self.plot_orientation(dat)
 
@@ -187,7 +188,7 @@ class Script(object):
       import matplotlib.pyplot as plt
       import matplotlib.gridspec as gridspec
     except ImportError as e:
-      print "matplotlib modules not available", e
+      print("matplotlib modules not available", e)
       return None
 
     from math import floor, ceil
@@ -267,7 +268,7 @@ class Script(object):
 
     basename = os.path.join(self._directory, "unit_cell")
     fullname = basename + self._format
-    print "Saving unit cell plot to {0}".format(fullname)
+    print("Saving unit cell plot to {0}".format(fullname))
     plt.savefig(fullname)
 
   def plot_orientation(self, dat):
@@ -275,7 +276,7 @@ class Script(object):
       import matplotlib.pyplot as plt
       import matplotlib.gridspec as gridspec
     except ImportError as e:
-      print "matplotlib modules not available", e
+      print("matplotlib modules not available", e)
       return None
 
     from math import floor, ceil
@@ -308,7 +309,7 @@ class Script(object):
 
     basename = os.path.join(self._directory, "orientation")
     fullname = basename + self._format
-    print "Saving orientation plot to {0}".format(fullname)
+    print("Saving orientation plot to {0}".format(fullname))
     plt.savefig(fullname)
 
 if __name__ == '__main__':

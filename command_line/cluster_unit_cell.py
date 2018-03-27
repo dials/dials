@@ -2,6 +2,7 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 import iotbx.phil
 from cctbx import sgtbx
 
@@ -91,7 +92,7 @@ def do_cluster_analysis(crystal_symmetries, params):
       write_file_lists=False,
       #schnell=_args.schnell,
       doplot=True)
-    print unit_cell_info(clusters)
+    print(unit_cell_info(clusters))
     plt.tight_layout()
     if params.plot.name is not None:
       plt.savefig(params.plot.name)
@@ -105,7 +106,7 @@ def do_cluster_analysis(crystal_symmetries, params):
       write_file_lists=False,
       #schnell=_args.schnell,
       doplot=False)
-    print unit_cell_info(clusters)
+    print(unit_cell_info(clusters))
 
   return clusters
 

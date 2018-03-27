@@ -11,6 +11,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 import math
 import logging
 logger = logging.getLogger(__name__)
@@ -1654,18 +1655,18 @@ class indexer_base(object):
           v_j = vectors[j]
           angles[i,j] = v_i.angle(v_j, deg=True)
 
-      print >> s, (" "*7),
+      print((" "*7), end=' ', file=s)
       for i in range(len(vectors)):
-        print >> s, "%7.3f" % vectors[i].length(),
-      print >> s
+        print("%7.3f" % vectors[i].length(), end=' ', file=s)
+      print(file=s)
       for i in range(len(vectors)):
-        print >> s, "%7.3f" % vectors[i].length(),
+        print("%7.3f" % vectors[i].length(), end=' ', file=s)
         for j in range(len(vectors)):
           if j <= i:
-            print >> s, (" "*7),
+            print((" "*7), end=' ', file=s)
           else:
-            print >> s, "%5.1f  " %angles[i,j],
-        print >> s
+            print("%5.1f  " %angles[i,j], end=' ', file=s)
+        print(file=s)
 
       logger.debug(s.getvalue())
 
@@ -1718,7 +1719,7 @@ class indexer_base(object):
         for site in reflections['rlp']:
           xs.add_scatterer(xray.scatterer("C", site=site))
         xs.sites_mod_short()
-        print >> f, xs.as_pdb_file()
+        f.write(xs.as_pdb_file())
 
   def debug_write_ccp4_map(self, map_data, file_name):
     from iotbx import ccp4_map

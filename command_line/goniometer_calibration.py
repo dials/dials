@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 import iotbx.phil
 
@@ -105,18 +106,18 @@ def run(args):
       '%.4f' %axis[0], '%.4f' %axis[1], '%.4f' %axis[2], '.', '.', '.'))
 
   axis_names = experiments[0].goniometer.get_names()
-  print "Goniometer axes and angles (ImgCIF coordinate system):"
+  print("Goniometer axes and angles (ImgCIF coordinate system):")
   for axis, angle, name in zip(axes, angles, axis_names):
-    print "%s: " %name, "rotation of %.3f degrees" %angle, "about axis (%.5f,%.5f,%.5f)" %axis
+    print("%s: " %name, "rotation of %.3f degrees" %angle, "about axis (%.5f,%.5f,%.5f)" %axis)
 
-  print
-  print "Goniometer axes and angles (MOSFLM coordinate system):"
+  print()
+  print("Goniometer axes and angles (MOSFLM coordinate system):")
   for axis, angle, name in zip(axes, angles, axis_names):
-    print "%s: " %name, "rotation of %.3f degrees" %angle, "about axis (%.5f,%.5f,%.5f)" %(
-      R_to_mosflm * matrix.col(axis)).elems
+    print("%s: " %name, "rotation of %.3f degrees" %angle, "about axis (%.5f,%.5f,%.5f)" %(
+      R_to_mosflm * matrix.col(axis)).elems)
 
-  print
-  print "ImgCIF _axis loop template:"
+  print()
+  print("ImgCIF _axis loop template:")
   from iotbx import cif
   loop = cif.model.loop(
     header=['_axis.id', '_axis.type', '_axis.equipment', '_axis.depends_on',
@@ -125,7 +126,7 @@ def run(args):
   for row in rows:
     loop.add_row(row)
 
-  print loop
+  print(loop)
 
   if params.output.xoalign is not None:
     axes_mosflm = [(R_to_mosflm * matrix.col(axis)).elems for axis in axes]
@@ -133,10 +134,10 @@ def run(args):
 
 def write_xoalign_config(file_name, axes, names):
   with open(file_name, 'wb') as f:
-    print >> f, 'GONIOMETER_AXES_NAMES = ' + str(tuple(names))
-    print >> f, 'GONIOMETER_AXES = ' + '[' + ', '.join(
-      '(' + ', '.join('%.5f' %x for x in axis) + ')' for axis in axes) + ']'
-    print >> f, 'GONIOMETER_DATUM = (0,0,0) # in degrees'
+    print('GONIOMETER_AXES_NAMES = ' + str(tuple(names)), file=f)
+    print('GONIOMETER_AXES = ' + '[' + ', '.join(
+      '(' + ', '.join('%.5f' %x for x in axis) + ')' for axis in axes) + ']', file=f)
+    print('GONIOMETER_DATUM = (0,0,0) # in degrees', file=f)
 
 if __name__ == '__main__':
   import sys

@@ -12,6 +12,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.plot_centroid_analysis
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 from libtbx.utils import Sorry
 from libtbx.phil import parse
 from dials.array_family import flex
@@ -93,7 +94,7 @@ def save_plots(params, raw, smoothed, suffix=''):
 
   # write them out
   fname = 'x-residual-analysis' + suffix + '.' + params.output.format
-  print "Saving {0}".format(fname)
+  print("Saving {0}".format(fname))
   plt.savefig(fname)
 
   # Y residuals plot
@@ -124,7 +125,7 @@ def save_plots(params, raw, smoothed, suffix=''):
 
   # write them out
   fname = 'y-residual-analysis' + suffix + '.' + params.output.format
-  print "Saving {0}".format(fname)
+  print("Saving {0}".format(fname))
   plt.savefig(fname)
 
   # phi residuals plot
@@ -155,7 +156,7 @@ def save_plots(params, raw, smoothed, suffix=''):
 
   # write them out
   fname = 'phi-residual-analysis' + suffix + '.' + params.output.format
-  print "Saving {0}".format(fname)
+  print("Saving {0}".format(fname))
   plt.savefig(fname)
 
   return

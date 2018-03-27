@@ -11,6 +11,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 import math
 
 import libtbx
@@ -224,7 +225,7 @@ class indexer_fft3d(indexer_base):
     volumes = self.volumes.select(perm)
     if self.params.debug:
       with open('peaks.pdb', 'wb') as f:
-        print >> f, xs.as_pdb_file()
+        f.write(xs.as_pdb_file())
 
     sites_frac = xs.sites_frac()
     vectors = xs.sites_cart()
@@ -331,7 +332,7 @@ class indexer_fft3d(indexer_base):
     xs = xs.select(flex.sort_permutation(lengths))
     if self.params.debug:
       with open('peaks.pdb', 'wb') as f:
-        print >> f, xs.as_pdb_file()
+        f.write(xs.as_pdb_file())
 
     vector_heights = flex.double()
 
@@ -491,7 +492,7 @@ class indexer_fft3d(indexer_base):
         xs.add_scatterer(xray.scatterer("C", site=v/(a/10)))
       xs.sites_mod_short()
       with open(file_name, 'wb') as f:
-        print >> f, xs.as_pdb_file()
+        f.write(xs.as_pdb_file())
 
     for crystal_model in self.candidate_crystal_models:
       logger.debug(crystal_model)

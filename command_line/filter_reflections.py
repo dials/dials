@@ -12,6 +12,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.filter_reflections
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 from dials.array_family import flex
 
 help_message = '''
@@ -115,9 +116,9 @@ class Script(object):
       if n > 0: rows.append([name, "%d" % n])
     if len(rows) > 0:
       st = simple_table(rows, header)
-      print st.format()
+      print(st.format())
     else:
-      print "No flags set"
+      print("No flags set")
 
     return
 
@@ -170,14 +171,14 @@ class Script(object):
       if 'partiality' not in reflections:
         raise Sorry("Reflection table has no partiality information")
 
-    print "{0} reflections loaded".format(len(reflections))
+    print("{0} reflections loaded".format(len(reflections)))
 
     if (len(params.inclusions.flag) == 0 and
         len(params.exclusions.flag) == 0 and
         params.d_min is None and params.d_max is None and
         params.partiality.min is None and params.partiality.max is None and
         not params.ice_rings.filter):
-      print "No filter specified. Performing analysis instead."
+      print("No filter specified. Performing analysis instead.")
       return self.analysis(reflections)
 
     # Build up the initial inclusion selection
@@ -188,41 +189,41 @@ class Script(object):
       inc = inc & sel
     reflections = reflections.select(inc)
 
-    print "{0} reflections selected to form the working set".format(len(reflections))
+    print("{0} reflections selected to form the working set".format(len(reflections)))
 
     # Make requested exclusions from the current selection
     exc = flex.bool(len(reflections))
     for flag in params.exclusions.flag:
-      print flag
+      print(flag)
       sel = reflections.get_flags(getattr(reflections.flags, flag))
       exc = exc | sel
     reflections = reflections.select(~exc)
 
-    print "{0} reflections excluded from the working set".format(exc.count(True))
+    print("{0} reflections excluded from the working set".format(exc.count(True)))
 
     # Filter based on resolution
     if params.d_min is not None:
       selection = reflections['d'] >= params.d_min
       reflections = reflections.select(selection)
-      print "Selected %d reflections with d >= %f" % (len(reflections), params.d_min)
+      print("Selected %d reflections with d >= %f" % (len(reflections), params.d_min))
 
     # Filter based on resolution
     if params.d_max is not None:
       selection = reflections['d'] <= params.d_max
       reflections = reflections.select(selection)
-      print "Selected %d reflections with d <= %f" % (len(reflections), params.d_max)
+      print("Selected %d reflections with d <= %f" % (len(reflections), params.d_max))
 
     # Filter based on partiality
     if params.partiality.min is not None:
       selection = reflections['partiality'] >= params.partiality.min
       reflections = reflections.select(selection)
-      print "Selected %d reflections with partiality >= %f" % (len(reflections), params.partiality.min)
+      print("Selected %d reflections with partiality >= %f" % (len(reflections), params.partiality.min))
 
     # Filter based on partiality
     if params.partiality.max is not None:
       selection = reflections['partiality'] <= params.partiality.max
       reflections = reflections.select(selection)
-      print "Selected %d reflections with partiality <= %f" % (len(reflections), params.partiality.max)
+      print("Selected %d reflections with partiality <= %f" % (len(reflections), params.partiality.max))
 
     # Filter powder rings
 
@@ -250,14 +251,14 @@ class Script(object):
 
       ice_sel = ice_filter(d_spacings)
 
-      print "Rejecting %i reflections at ice ring resolution" %ice_sel.count(True)
+      print("Rejecting %i reflections at ice ring resolution" %ice_sel.count(True))
       reflections = reflections.select(~ice_sel)
       #reflections = reflections.select(ice_sel)
 
     # Save filtered reflections to file
     if params.output.reflections:
-      print "Saving {0} reflections to {1}".format(len(reflections),
-                                                   params.output.reflections)
+      print("Saving {0} reflections to {1}".format(len(reflections),
+                                                   params.output.reflections))
       reflections.as_pickle(params.output.reflections)
 
     return

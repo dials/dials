@@ -2,6 +2,7 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 import copy
 import collections
 from libtbx.containers import OrderedSet
@@ -248,8 +249,8 @@ class align_crystal(object):
       ))
     rows = [('Primary axis', 'Secondary axis', names[1], names[0])] + \
            sorted(rows)
-    print 'Independent solutions:'
-    print table_utils.format(rows=rows, has_header=True)
+    print('Independent solutions:')
+    print(table_utils.format(rows=rows, has_header=True))
 
   def as_json(self, filename=None):
     names = self.experiment.goniometer.get_names()
@@ -301,9 +302,9 @@ class align_crystal(object):
     rows.append([names[2]] + [
       '%.3f' %smallest_angle(axis.angle(matrix.col(axes[2]), deg=True))
       for axis in (a_star_, b_star_, c_star_)])
-    print 'Angles between reciprocal cell axes and principal experimental axes:'
-    print table_utils.format(rows=rows, has_header=True)
-    print
+    print('Angles between reciprocal cell axes and principal experimental axes:')
+    print(table_utils.format(rows=rows, has_header=True))
+    print()
 
     rows = [['Experimental axis', 'a', 'b', 'c']]
     rows.append([names[0]] + [
@@ -315,9 +316,9 @@ class align_crystal(object):
     rows.append([names[2]] + [
       '%.3f' %smallest_angle(axis.angle(matrix.col(axes[2]), deg=True))
       for axis in (a_, b_, c_)])
-    print 'Angles between unit cell axes and principal experimental axes:'
-    print table_utils.format(rows=rows, has_header=True)
-    print
+    print('Angles between unit cell axes and principal experimental axes:')
+    print(table_utils.format(rows=rows, has_header=True))
+    print()
 
 
 def run(args):

@@ -12,6 +12,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.sort_reflections
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 import libtbx.load_env
 from dials.array_family import flex
 
@@ -89,19 +90,19 @@ class Sort(object):
     assert(params.key in reflections)
 
     # Sort the reflections
-    print "Sorting by %s with reverse=%r" % (params.key, params.reverse)
+    print("Sorting by %s with reverse=%r" % (params.key, params.reverse))
     perm = self.sort_permutation(reflections[params.key], params.reverse)
     reflections = reflections.select(perm)
 
     if options.verbose > 0:
-      print "Head of sorted list " + attr + ":"
+      print("Head of sorted list " + attr + ":")
       n = min(len(reflections), 10)
       for i in range(10):
         print (reflections[i][attr])
 
     # Save sorted reflections to file
     if params.output:
-      print "Saving reflections to {0}".format(params.output)
+      print("Saving reflections to {0}".format(params.output))
       reflections.as_pickle(params.output)
 
     return

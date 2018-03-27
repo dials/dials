@@ -1,6 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.simple_strategy
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 from dials.array_family import flex
 from scitbx import matrix
 import iotbx.phil
@@ -117,11 +118,11 @@ def run(args):
       angles = reversed(solution)
       gonio.set_angles(angles)
 
-      print
-      print "Goniometer settings to rotate crystal by %.2f degrees:" %rot_angle
+      print()
+      print("Goniometer settings to rotate crystal by %.2f degrees:" %rot_angle)
       for name, angle in zip(gonio.get_names(), gonio.get_angles()):
-        print "%s: %.2f degrees" %(name, angle)
-      print
+        print("%s: %.2f degrees" %(name, angle))
+      print()
 
     strategy2 = Strategy(expt2, d_min=params.d_min,
                          unit_cell_scale=params.unit_cell_scale,
@@ -140,8 +141,8 @@ class Strategy(object):
 
   def __init__(self, experiment, other=None, d_min=None, unit_cell_scale=1, degrees_per_bin=5,
                min_frac_new=0.001):
-    print experiment.goniometer
-    print experiment.scan
+    print(experiment.goniometer)
+    print(experiment.scan)
     self.experiment = copy.deepcopy(experiment)
     self.other = other
     self.unit_cell_scale = unit_cell_scale
@@ -171,10 +172,10 @@ class Strategy(object):
     theta_max_rad = math.asin(sin_theta)
     self.theta_max = theta_max_rad * 180/math.pi
 
-    print "theta_max (degrees): %.2f" %self.theta_max
+    print("theta_max (degrees): %.2f" %self.theta_max)
 
     Btot = 1 - 3 * (4 * theta_max_rad - math.sin(4 * theta_max_rad))/(32 * (math.sin(theta_max_rad)**3))
-    print Btot
+    print(Btot)
 
     # Section 2.9, Dauter Acta Cryst. (1999). D55, 1703-1717
     #max_rotation = 360 + 2 * self.theta_max
@@ -219,12 +220,12 @@ class Strategy(object):
 
   def show(self):
     self.stats.show()
-    print "Suggested cutoff (non-anom): %.2f degrees" %self.cutoff_non_anom
-    print "  (completeness: %.2f %%)" %(
-      100 * self.ieither_completeness[int(self.cutoff_non_anom/self.degrees_per_bin)])
-    print "Suggested cutoff (anom): %.2f degrees" %self.cutoff_anom
-    print "  (completeness: %.2f %%)" %(
-      100 * self.iboth_completeness[int(self.cutoff_anom/self.degrees_per_bin)])
+    print("Suggested cutoff (non-anom): %.2f degrees" %self.cutoff_non_anom)
+    print("  (completeness: %.2f %%)" %(
+      100 * self.ieither_completeness[int(self.cutoff_non_anom/self.degrees_per_bin)]))
+    print("Suggested cutoff (anom): %.2f degrees" %self.cutoff_anom)
+    print("  (completeness: %.2f %%)" %(
+      100 * self.iboth_completeness[int(self.cutoff_anom/self.degrees_per_bin)]))
 
   def plot(self, prefix=''):
     plot_statistics(self.stats, prefix=prefix, degrees_per_bin=self.degrees_per_bin,
@@ -294,8 +295,8 @@ class ComputeStats(object):
     self.frac_new_pairs = fraction_new(self.iboth_completeness) / degrees_per_bin
 
   def show(self):
-    print "Max. completeness (non-anom): %.2f %%" %(100 * flex.max(self.ieither_completeness))
-    print "Max. completeness (anom): %.2f %%" %(100 * flex.max(self.iboth_completeness))
+    print("Max. completeness (non-anom): %.2f %%" %(100 * flex.max(self.ieither_completeness)))
+    print("Max. completeness (anom): %.2f %%" %(100 * flex.max(self.iboth_completeness)))
 
 
 def plot_statistics(statistics, prefix='', degrees_per_bin=5,

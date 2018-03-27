@@ -12,7 +12,7 @@
 # Example code for how to load experiments and reflections in the DIALS
 # framework
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 from libtbx.phil import parse
 
 help_message = '''
@@ -66,18 +66,18 @@ class Script(object):
 
     reflections = reflections[0]
 
-    print 'Read %d reflections' % len(reflections)
+    print('Read %d reflections' % len(reflections))
 
     indexed = reflections.select(reflections.get_flags(
       reflections.flags.indexed))
 
-    print 'Kept %d indexed reflections' % len(indexed)
+    print('Kept %d indexed reflections' % len(indexed))
 
     for name in sorted(indexed.keys()):
-      print 'Found column %s' % name
+      print('Found column %s' % name)
 
     for reflection in indexed[:3]:
-      print reflection
+      print(reflection)
 
     # verify that these experiments correspond to exactly one imageset, one
     # detector, one beam (obviously)

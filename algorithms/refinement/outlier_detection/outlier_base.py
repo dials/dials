@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 from libtbx.phil import parse
 from libtbx.table_utils import simple_table
 from dials.array_family import flex
@@ -406,6 +407,6 @@ if __name__ == "__main__":
   # test construction
   params=phil_scope.extract()
   params.outlier.algorithm="tukey"
-  print CentroidOutlierFactory.from_parameters_and_colnames(params, [1, 2, 3])
+  print(CentroidOutlierFactory.from_parameters_and_colnames(params, [1, 2, 3]))
   params.outlier.algorithm="mcd"
-  print CentroidOutlierFactory.from_parameters_and_colnames(params, [1, 2, 3])
+  print(CentroidOutlierFactory.from_parameters_and_colnames(params, [1, 2, 3]))

@@ -8,6 +8,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 from scitbx.array_family import flex
 from cctbx import uctbx, sgtbx
@@ -140,7 +141,7 @@ class Script(object):
             step = 2 * rec_range / npoints
             axis = imageset.get_goniometer().get_rotation_axis()
             osc_range = imageset.get_scan(i).get_oscillation_range()
-            print "Oscillation range: %.1f - %.1f" % (osc_range[0], osc_range[1])
+            print("Oscillation range: %.1f - %.1f" % (osc_range[0], osc_range[1]))
             angle = (osc_range[0] + osc_range[1]) / 2 / 180 * math.pi
             if not self.reverse_phi: # FIXME: ???
                 angle *= -1

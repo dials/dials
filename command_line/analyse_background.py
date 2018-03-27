@@ -10,6 +10,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 help_message = '''
@@ -61,7 +62,7 @@ class Script(object):
     total_image = None
     total_mask = None
     for i in range(len(imageset)):
-      print i
+      print(i)
       image = imageset.get_raw_data(i)
       mask = imageset.get_mask(i)
       if total_image is None:
@@ -70,9 +71,9 @@ class Script(object):
       else:
         total_image += image[0]
     total_image /= len(imageset)
-    print min(total_image)
-    print max(total_image)
-    print sum(total_image) / len(total_image)
+    print(min(total_image))
+    print(max(total_image))
+    print(sum(total_image) / len(total_image))
 
     from matplotlib import pylab
     pylab.imshow(total_image.as_numpy_array(), vmin=0,vmax=2)

@@ -18,6 +18,7 @@ each panel that take the first detector model to the second one as a heatmap
 
 """
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 from dxtbx.model.experiment_list import Experiment
 from scitbx.array_family import flex
@@ -138,9 +139,9 @@ class PlotData(object):
     slow_b = matrix.col(panel_b.get_slow_axis())
     norm_b = fast_b.cross(slow_b)
 
-    print 'Panel: %d dFast %.3f dSlow %.3f dNorm %.3f' % (ipanel,
+    print('Panel: %d dFast %.3f dSlow %.3f dNorm %.3f' % (ipanel,
       fast_a.angle(fast_b, deg=True), slow_a.angle(slow_b, deg=True),
-      norm_a.angle(norm_b, deg=True))
+      norm_a.angle(norm_b, deg=True)))
 
 def plot_grid_of_panels(panel_data, nrow, ncol, direction='fast', tag = ''):
   '''Plot data for each panel in a stack of subplots, with the first panel
@@ -181,7 +182,7 @@ def plot_grid_of_panels(panel_data, nrow, ncol, direction='fast', tag = ''):
   clim = max(abs(min(clim_low)), max(clim_high))
   clim = (-clim, clim)
   if (clim[1] - clim[0]) < 1e-12:
-    print "...skipping plot with shift too small to show"
+    print("...skipping plot with shift too small to show")
     return
   for im in imarr: im.set_clim(clim)
   fig.subplots_adjust(right=0.8)
@@ -279,17 +280,17 @@ def guess_grid_size(detector):
 
   if n_panels == 24 and pxl_size == [0.172, 0.172] and pnl_size == [2463, 195]:
     # guessed P12M 24 row model
-    print "Guessed P12M detector modelled with 24 rows"
+    print("Guessed P12M detector modelled with 24 rows")
     grid_size = (24, 1)
   elif n_panels == 120 and pxl_size == [0.172, 0.172] and pnl_size == [487, 195]:
     # guessed P12M 24 row, 5 column model
-    print "Guessed P12M detector modelled with 24 rows in 5 columns"
+    print("Guessed P12M detector modelled with 24 rows in 5 columns")
     grid_size = (24, 5)
   elif n_panels == 60 and pxl_size == [0.172, 0.172] and pnl_size == [487, 195]:
-    print "Guessed P6M detector modelled with 60 separate panels"
+    print("Guessed P6M detector modelled with 60 separate panels")
     grid_size = (12, 5)
   elif n_panels == 64 and pxl_size == [0.110, 0.110] and pnl_size == [194, 185]:
-    print "Guessed CS-PAD detector. WARNING plot_type=spherical_polar is probably more useful!"
+    print("Guessed CS-PAD detector. WARNING plot_type=spherical_polar is probably more useful!")
     grid_size = (8, 8)
   else:
     grid_size = None
@@ -329,14 +330,14 @@ class Script(object):
                  "detector. Only the first will be considered.")
       detector1 = params.input.datablock[0].data[0].unique_detectors()
       if len(detector1) > 1:
-        print warnmsg.format("first")
+        print(warnmsg.format("first"))
       detector1 = detector1[0]
       beam1 = params.input.datablock[0].data[0].unique_beams()[0]
       experiment1 = Experiment(beam=beam1, detector=detector1)
 
       detector2 = params.input.datablock[1].data[0].unique_detectors()
       if len(detector2) > 1:
-        print warnmsg.format("second")
+        print(warnmsg.format("second"))
       detector2 = detector2[0]
       beam2 = params.input.datablock[1].data[0].unique_beams()[0]
       experiment2 = Experiment(beam=beam2, detector=detector2)
@@ -349,13 +350,13 @@ class Script(object):
                  "detector. Only the first will be considered.")
       detector1 = params.input.experiments[0].data.detectors()
       if len(detector1) > 1:
-        print warnmsg.format("first")
+        print(warnmsg.format("first"))
       detector1 = detector1[0]
       experiment1 = params.input.experiments[0].data[0]
 
       detector2 = params.input.experiments[1].data.detectors()
       if len(detector2) > 1:
-        print warnmsg.format("second")
+        print(warnmsg.format("second"))
       detector2 = detector2[0]
       experiment2 = params.input.experiments[1].data[0]
 
@@ -393,7 +394,7 @@ class Script(object):
 
     # first the plots using offsets in local fast, slow, normal frames
     for direction in ['fast', 'slow', 'normal']:
-      print "Doing plot of offsets in the {0} direction".format(direction)
+      print("Doing plot of offsets in the {0} direction".format(direction))
       if self.params.plot_type == 'panel_grid':
         plot_grid_of_panels(dat, grid_size[0], grid_size[1], direction, tag)
       elif self.params.plot_type == 'spherical_polar':
@@ -401,7 +402,7 @@ class Script(object):
 
     # now plots using offsets in the laboratory frame
     for direction in ['x', 'y', 'z']:
-      print "Doing plot of offsets in the laboratory {0} direction".format(direction)
+      print("Doing plot of offsets in the laboratory {0} direction".format(direction))
       if self.params.plot_type == 'panel_grid':
         plot_grid_of_panels(dat, grid_size[0], grid_size[1], direction, tag)
       elif self.params.plot_type == 'spherical_polar':

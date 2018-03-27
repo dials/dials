@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 import libtbx.phil
 
 help_message = '''
@@ -62,10 +63,10 @@ def run(args):
 
   from dxtbx.serialize import dump
   if len(experiments):
-    print "Saving modified experiments to %s" %params.output.experiments
+    print("Saving modified experiments to %s" %params.output.experiments)
     dump.experiment_list(experiments, params.output.experiments)
   elif len(datablocks):
-    print "Saving modified datablock to %s" %params.output.datablock
+    print("Saving modified datablock to %s" %params.output.datablock)
     dump.datablock(datablocks, params.output.datablock)
 
 if __name__ == '__main__':

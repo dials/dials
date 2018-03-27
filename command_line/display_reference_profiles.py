@@ -12,6 +12,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.display_reference_profiles
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 import math
 
 def display_reference_profiles(reference_pickle_file, profile_number,
@@ -33,12 +34,12 @@ def display_reference_profiles(reference_pickle_file, profile_number,
 
   if printing:
     for k in range(size_z):
-      print 'Slice %d' % k
+      print('Slice %d' % k)
       for j in range(size_y):
         for i in range(size_x):
-          print '%4d' % int(as_integer[k, j, i]),
-        print ''
-      print ''
+          print('%4d' % int(as_integer[k, j, i]), end=' ')
+        print('')
+      print('')
 
   if plot_name is not None:
     import matplotlib
@@ -97,7 +98,7 @@ def display_reference_profiles(reference_pickle_file, profile_number,
   yi = sum_yi / sum(central_profile)
   zi = sum_zi / sum(central_profile)
 
-  print 'Moment 1 (zyx): %.2f %.2f %.2f' % (zi, yi, xi)
+  print('Moment 1 (zyx): %.2f %.2f %.2f' % (zi, yi, xi))
 
   sum_xxi = 0
   sum_yyi = 0
@@ -126,13 +127,13 @@ def display_reference_profiles(reference_pickle_file, profile_number,
   else:
     zzi = 0.0
 
-  print 'Moment 2 (zyx): %.2f %.2f %.2f' % (zzi, yyi, xxi)
+  print('Moment 2 (zyx): %.2f %.2f %.2f' % (zzi, yyi, xxi))
 
 if __name__ == '__main__':
   import sys
 
   if len(sys.argv) < 2:
-    print "Usage: dials.display_reference_profiles reflections.pickle"
+    print("Usage: dials.display_reference_profiles reflections.pickle")
     exit(0)
   if len(sys.argv) > 2:
     profile_number = int(sys.argv[2])

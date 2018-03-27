@@ -2,6 +2,7 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 from scitbx.array_family import flex
 import libtbx.phil
 from libtbx.utils import Sorry
@@ -129,7 +130,7 @@ def run(args):
     if params.mode == '2d':
       raise Sorry('json output not supported for mode=2d')
 
-    print 'Writing json output to %s' %params.output.json
+    print('Writing json output to %s' %params.output.json)
     d = {
       'scan_points': list(scan_points),
       'fraction_shadowed': list(fraction_shadowed),
@@ -167,7 +168,7 @@ def run(args):
       fig = plt.gcf()
       fig.set_size_inches(params.output.size_inches)
     plt.tight_layout()
-    print 'Saving plot to %s' %params.output.plot
+    print('Saving plot to %s' %params.output.plot)
     plt.savefig(params.output.plot)
 
 

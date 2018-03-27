@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 import libtbx.phil
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.rfactor
 
@@ -58,8 +59,8 @@ def main(args):
   nw = free_set.count(False)
   nf = free_set.count(True)
 
-  print 'resol  Rwork Rfree #work #free'
-  print '%.3f %.4f %.4f %d %d' % (data_d_min, R, Rf, nw, nf)
+  print('resol  Rwork Rfree #work #free')
+  print('%.3f %.4f %.4f %d %d' % (data_d_min, R, Rf, nw, nf))
 
 if __name__ == '__main__':
   import sys

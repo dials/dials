@@ -1,5 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.csv
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 import iotbx.phil
 from scitbx.array_family import flex
@@ -76,7 +77,7 @@ def run(args):
   else:
     fmt = '%%.%df,%%.%df,%%.%df,%%d,%%d\n' % (dp, dp, dp)
 
-  print 'Using format:', fmt.strip()
+  print('Using format:', fmt.strip())
 
   for k, (imageset, refl) in enumerate(zip(imagesets, spots)):
     if 'imageset_id' not in refl:
@@ -94,7 +95,7 @@ def run(args):
     for _rlp in rlp:
       fout.write(fmt % (_rlp[0], _rlp[1], _rlp[2], k, k))
 
-    print 'Appended %d spots to %s' % (len(rlp), params.output.csv)
+    print('Appended %d spots to %s' % (len(rlp), params.output.csv))
 
   fout.close()
 

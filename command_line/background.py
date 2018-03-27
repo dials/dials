@@ -3,6 +3,7 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 import iotbx.phil
 from scitbx.array_family import flex
@@ -70,12 +71,12 @@ def run(args):
   sigmas = []
 
   for indx in images:
-    print 'For frame %d:' % indx
+    print('For frame %d:' % indx)
     d, I, sig = background(imageset, indx, n_bins=params.n_bins)
 
-    print '%8s %8s %8s' % ('d', 'I', 'sig')
+    print('%8s %8s %8s' % ('d', 'I', 'sig'))
     for j in range(len(I)):
-      print '%8.3f %8.3f %8.3f' % (d[j], I[j], sig[j])
+      print('%8.3f %8.3f %8.3f' % (d[j], I[j], sig[j]))
 
     d_spacings.append(d)
     intensities.append(I)
@@ -132,12 +133,12 @@ def background(imageset, indx, n_bins):
   background = data.select((~bad & ~peak_pixels).iselection())
 
   # print some summary information
-  print 'Mean background: %.3f' % (flex.sum(background) / background.size())
-  print 'Max/total signal pixels: %.0f / %.0f' % (flex.max(signal),
-                                                  flex.sum(signal))
-  print 'Peak/background/hot pixels: %d / %d / %d' % (peak_pixels.count(True),
+  print('Mean background: %.3f' % (flex.sum(background) / background.size()))
+  print('Max/total signal pixels: %.0f / %.0f' % (flex.max(signal),
+                                                  flex.sum(signal)))
+  print('Peak/background/hot pixels: %d / %d / %d' % (peak_pixels.count(True),
                                                       background.size(),
-                                                      hot.count(True))
+                                                      hot.count(True)))
 
   # compute histogram of two-theta values, then same weighted
   # by pixel values, finally divide latter by former to get

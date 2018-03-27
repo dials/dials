@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.compare_xds_dials
 
@@ -39,7 +40,7 @@ def pull_reference(integrate_hkl, d_min = 0.0):
     xyz.append(tuple(f_tokens[5:8]))
     lp.append(f_tokens[8])
 
-  print 'Reference: %d observations' % len(hkl)
+  print('Reference: %d observations' % len(hkl))
   return hkl, i, sigi, xyz, lp
 
 def get_dials_matrix(experiments_json):
@@ -134,7 +135,7 @@ def pull_calculated(integrate_pkl):
     x, y, z = r['xyzcal.px']
     xyz.append((x, y, z))
 
-  print 'Computed: %d observations' % len(hkl)
+  print('Computed: %d observations' % len(hkl))
   return hkl, i, sigi, xyz, lp
 
 def meansd(values):
@@ -185,7 +186,7 @@ def compare_chunks(integrate_hkl, integrate_pkl, experiments_json, d_min = 0.0):
 
   rdx = derive_reindex_matrix(experiments_json, integrate_hkl)
 
-  print 'Reindex matrix:\n%d %d %d\n%d %d %d\n%d %d %d' % (rdx.elems)
+  print('Reindex matrix:\n%d %d %d\n%d %d %d\n%d %d %d' % (rdx.elems))
 
   uc = integrate_hkl_to_unit_cell(integrate_hkl)
 
@@ -246,7 +247,7 @@ def compare_chunks(integrate_hkl, integrate_pkl, experiments_json, d_min = 0.0):
 
   # then extract the original observation structure
 
-  print 'Paired %d observations' % len(XDS)
+  print('Paired %d observations' % len(XDS))
 
   scale = sum(XDS) / sum(DIALS)
 
@@ -266,8 +267,8 @@ def compare_chunks(integrate_hkl, integrate_pkl, experiments_json, d_min = 0.0):
 
     c = cc(dials, xds)
     r, s = R(dials, xds)
-    print '%7d %4d %.3f %.3f %.3f %.3f %.3f' % \
-      (chunk[0], len(xds), min(resols), max(resols), c, r, s)
+    print('%7d %4d %.3f %.3f %.3f %.3f %.3f' % \
+      (chunk[0], len(xds), min(resols), max(resols), c, r, s))
     ccs.append(c)
     rs.append(r)
     ss.append(s)

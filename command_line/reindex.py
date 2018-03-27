@@ -11,6 +11,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 import copy
@@ -102,7 +103,7 @@ def derive_change_of_basis_op(from_hkl, to_hkl):
   # now convert into a cctbx change_of_basis_op object
   change_of_basis_op = sgtbx.change_of_basis_op(
     sgtbx.rt_mx(sgtbx.rot_mx(r, denominator=denom))).inverse()
-  print "discovered change_of_basis_op=%s" %(str(change_of_basis_op))
+  print("discovered change_of_basis_op=%s" %(str(change_of_basis_op)))
 
   # sanity check that this is the right cb_op
   assert (change_of_basis_op.apply(from_hkl) == to_hkl).count(False) == 0
@@ -151,10 +152,10 @@ def run(args):
       cryst = experiments.crystals()[0]
       R, axis, angle, change_of_basis_op = difference_rotation_matrix_axis_angle(
         cryst, reference_crystal)
-      print "Change of basis op: %s" %change_of_basis_op
-      print "Rotation matrix to transform input crystal to reference::"
-      print R.mathematica_form(format="%.3f", one_row_per_line=True)
-      print "Rotation of %.3f degrees" %angle, "about axis (%.3f, %.3f, %.3f)" %axis
+      print("Change of basis op: %s" %change_of_basis_op)
+      print("Rotation matrix to transform input crystal to reference::")
+      print(R.mathematica_form(format="%.3f", one_row_per_line=True))
+      print("Rotation of %.3f degrees" %angle, "about axis (%.3f, %.3f, %.3f)" %axis)
 
     elif len(reflections):
       assert len(reflections) == 1
@@ -201,14 +202,14 @@ def run(args):
         a, b, c, space_group=params.space_group.group())
     experiment.crystal.update(cryst_reindexed)
 
-    print "Old crystal:"
-    print cryst_orig
-    print
-    print "New crystal:"
-    print cryst_reindexed
-    print
+    print("Old crystal:")
+    print(cryst_orig)
+    print()
+    print("New crystal:")
+    print(cryst_reindexed)
+    print()
 
-    print "Saving reindexed experimental models to %s" %params.output.experiments
+    print("Saving reindexed experimental models to %s" %params.output.experiments)
     dump.experiment_list(experiments, params.output.experiments)
 
   if len(reflections):
@@ -225,8 +226,8 @@ def run(args):
       miller_indices = flex.miller_index(h.iround(), k.iround(), l.iround())
     non_integral_indices = change_of_basis_op.apply_results_in_non_integral_indices(miller_indices)
     if non_integral_indices.size() > 0:
-      print "Removing %i/%i reflections (change of basis results in non-integral indices)" %(
-      non_integral_indices.size(), miller_indices.size())
+      print("Removing %i/%i reflections (change of basis results in non-integral indices)" %(
+      non_integral_indices.size(), miller_indices.size()))
     sel = flex.bool(miller_indices.size(), True)
     sel.set_selected(non_integral_indices, False)
     miller_indices_reindexed = change_of_basis_op.apply(
@@ -234,7 +235,7 @@ def run(args):
     reflections['miller_index'].set_selected(sel, miller_indices_reindexed)
     reflections['miller_index'].set_selected(~sel, (0,0,0))
 
-    print "Saving reindexed reflections to %s" %params.output.reflections
+    print("Saving reindexed reflections to %s" %params.output.reflections)
     easy_pickle.dump(params.output.reflections, reflections)
 
 

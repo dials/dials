@@ -3,6 +3,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.stills_process
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 import logging
 logger = logging.getLogger('dials.command_line.stills_process')
 
@@ -389,10 +390,10 @@ class Script(object):
           nproc=params.mp.nproc))
         error_list = [r[2] for r in result]
         if error_list.count(None) != len(error_list):
-          print "Some processes failed excecution. Not all images may have processed. Error messages:"
+          print("Some processes failed excecution. Not all images may have processed. Error messages:")
           for error in error_list:
             if error is None: continue
-            print error
+            print(error)
 
     # Total Time
     logger.info("")
@@ -457,25 +458,25 @@ class Processor(object):
     try:
       observed = self.find_spots(datablock)
     except Exception as e:
-      print "Error spotfinding", tag, str(e)
+      print("Error spotfinding", tag, str(e))
       if not self.params.dispatch.squash_errors: raise
       return
     try:
       experiments, indexed = self.index(datablock, observed)
     except Exception as e:
-      print "Couldn't index", tag, str(e)
+      print("Couldn't index", tag, str(e))
       if not self.params.dispatch.squash_errors: raise
       return
     try:
       experiments, indexed = self.refine(experiments, indexed)
     except Exception as e:
-      print "Error refining", tag, str(e)
+      print("Error refining", tag, str(e))
       if not self.params.dispatch.squash_errors: raise
       return
     try:
       integrated = self.integrate(experiments, indexed)
     except Exception as e:
-      print "Error integrating", tag, str(e)
+      print("Error integrating", tag, str(e))
       if not self.params.dispatch.squash_errors: raise
       return
 
@@ -569,7 +570,7 @@ class Processor(object):
         if sel.count(True) == 1:
           filtered.extend(indexed.select(sel))
       logger.info("Filtered duplicate reflections, %d out of %d remaining"%(len(filtered),len(indexed)))
-      print "Filtered duplicate reflections, %d out of %d remaining"%(len(filtered),len(indexed))
+      print("Filtered duplicate reflections, %d out of %d remaining"%(len(filtered),len(indexed)))
       indexed = filtered
 
     logger.info('')

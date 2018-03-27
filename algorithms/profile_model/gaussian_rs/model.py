@@ -9,6 +9,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 from libtbx.phil import parse
 from dials.model.experiment.profile import ProfileModelIface
 import logging
@@ -647,12 +648,12 @@ class Model(ProfileModelIface):
     if out is None:
       import sys
       out = sys.stdout
-    print >> out, "Profile model:"
-    print >> out, "    type: gaussian_rs"
-    print >> out, "    delta_b (sigma_b): %f (%f)" %(
-      self.delta_b(), self.sigma_b())
-    print >> out, "    delta_m (sigma_m): %f (%f)" %(
-      self.delta_m(), self.sigma_m())
+    print("Profile model:", file=out)
+    print("    type: gaussian_rs", file=out)
+    print("    delta_b (sigma_b): %f (%f)" %(
+      self.delta_b(), self.sigma_b()), file=out)
+    print("    delta_m (sigma_m): %f (%f)" %(
+      self.delta_m(), self.sigma_m()), file=out)
 
   def __str__(self):
     from cStringIO import StringIO

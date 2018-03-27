@@ -3,6 +3,7 @@
 #
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 import logging
 logger = logging.getLogger(__name__)
 
@@ -471,7 +472,7 @@ class stills_indexer(indexer_base):
         target_space_group = self.target_symmetry_primitive.space_group()
         new_crystal, cb_op_to_primitive = self.apply_symmetry(cm, target_space_group)
         if new_crystal is None:
-          print "Cannot convert to target symmetry, candidate %d/%d"%(icm, n_cand)
+          print("Cannot convert to target symmetry, candidate %d/%d"%(icm, n_cand))
           continue
         new_crystal = new_crystal.change_basis(self.cb_op_primitive_inp)
         cm = candidate_orientation_matrices[icm] = new_crystal
@@ -484,12 +485,12 @@ class stills_indexer(indexer_base):
 
       if params.indexing.stills.refine_all_candidates:
         try:
-          print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d initial outlier identification"%(icm, n_cand)
+          print("$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d initial outlier identification"%(icm, n_cand))
           acceptance_flags = self.identify_outliers(params, experiments, indexed)
           #create a new "indexed" list with outliers thrown out:
           indexed = indexed.select(acceptance_flags)
 
-          print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d refinement before outlier rejection"%(icm, n_cand)
+          print("$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d refinement before outlier rejection"%(icm, n_cand))
           R = e_refine(params = params, experiments=experiments, reflections=indexed, graph_verbose=False)
           ref_experiments = R.get_experiments()
 
@@ -502,7 +503,7 @@ class stills_indexer(indexer_base):
           acceptance_flags_nv0 = nv0.nv_acceptance_flags
           indexed = indexed.select(acceptance_flags & acceptance_flags_nv0)
 
-          print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d after positional and delta-psi outlier rejection"%(icm, n_cand)
+          print("$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d after positional and delta-psi outlier rejection"%(icm, n_cand))
           R = e_refine(params = params, experiments=ref_experiments, reflections=indexed, graph_verbose=False)
           ref_experiments = R.get_experiments()
 
@@ -514,14 +515,14 @@ class stills_indexer(indexer_base):
             target_space_group = self.target_symmetry_primitive.space_group()
             new_crystal, cb_op_to_primitive = self.apply_symmetry(crystal_model, target_space_group)
             if new_crystal is None:
-              print "P1 refinement yielded model diverged from target, candidate %d/%d"%(icm, n_cand)
+              print("P1 refinement yielded model diverged from target, candidate %d/%d"%(icm, n_cand))
               continue
 
           rmsd, _ = calc_2D_rmsd_and_displacements(R.predict_for_reflection_table(indexed))
         except Exception as e:
-          print "Couldn't refine candiate %d/%d, %s"%(icm, n_cand, str(e))
+          print("Couldn't refine candiate %d/%d, %s"%(icm, n_cand, str(e)))
         else:
-          print "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d done"%(icm, n_cand)
+          print("$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d done"%(icm, n_cand))
           candidates.append(candidate_info(crystal = crystal_model,
                                            green_curve_area = nv.green_curve_area,
                                            ewald_proximal_volume = nv.ewald_proximal_volume(),
@@ -542,18 +543,18 @@ class stills_indexer(indexer_base):
     if len(candidates) == 0:
       raise Sorry("No suitable indexing solution found")
 
-    print "**** ALL CANDIDATES:"
+    print("**** ALL CANDIDATES:")
     for i,XX in enumerate(candidates):
-      print "\n****Candidate %d"%i,XX
+      print("\n****Candidate %d"%i,XX)
       cc = XX.crystal
       if hasattr(cc, 'get_half_mosaicity_deg'):
-        print "  half mosaicity %5.2f deg."%(cc.get_half_mosaicity_deg())
-        print "  domain size %.0f Ang."%(cc.get_domain_size_ang())
-    print "\n**** BEST CANDIDATE:"
+        print("  half mosaicity %5.2f deg."%(cc.get_half_mosaicity_deg()))
+        print("  domain size %.0f Ang."%(cc.get_domain_size_ang()))
+    print("\n**** BEST CANDIDATE:")
 
     results = flex.double([c.rmsd for c in candidates])
     best = candidates[flex.min_index(results)]
-    print best
+    print(best)
 
     if params.indexing.stills.refine_all_candidates:
       if best.rmsd > params.indexing.stills.rmsd_min_px:
@@ -567,7 +568,7 @@ class stills_indexer(indexer_base):
           if i == flex.min_index(results):
             continue
           if best.ewald_proximal_volume > candidates[i].ewald_proximal_volume:
-            print "Couldn't figure out which candidate is best; picked the one with the best RMSD."
+            print("Couldn't figure out which candidate is best; picked the one with the best RMSD.")
 
     best.indexed['entering'] = flex.bool(best.n_indexed, False)
 
@@ -577,7 +578,7 @@ class stills_indexer(indexer_base):
       if not params.indexing.stills.candidate_outlier_rejection:
         return flex.bool(len(indexed), True)
 
-      print "$$$ stills_indexer::identify_outliers"
+      print("$$$ stills_indexer::identify_outliers")
       refiner = e_refine(params, experiments, indexed, graph_verbose=False)
 
       RR = refiner.predict_for_reflection_table(indexed)

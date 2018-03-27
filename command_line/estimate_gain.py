@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 import iotbx.phil
 from scitbx.array_family import flex
@@ -76,14 +77,14 @@ def estimate_gain(imageset, kernel_size=(10,10), output_gain_map=None, max_image
     q3 = sorted_dispersion[nint(len(sorted_dispersion)*3/4)]
     iqr = q3-q1
 
-    print "q1, q2, q3: %.2f, %.2f, %.2f" %(q1, q2, q3)
+    print("q1, q2, q3: %.2f, %.2f, %.2f" %(q1, q2, q3))
     if iqr == 0.0:
       raise Sorry('Unable to robustly estimate the variation of pixel values.')
 
     inlier_sel = (sorted_dispersion > (q1 - 1.5*iqr)) & (sorted_dispersion < (q3 + 1.5*iqr))
     sorted_dispersion = sorted_dispersion.select(inlier_sel)
     gain = sorted_dispersion[nint(len(sorted_dispersion)/2)]
-    print "Estimated gain: %.2f" % gain
+    print("Estimated gain: %.2f" % gain)
     gains.append(gain)
 
     if image_no == 0:
@@ -93,8 +94,8 @@ def estimate_gain(imageset, kernel_size=(10,10), output_gain_map=None, max_image
 
   if len(gains) > 1:
     stats = flex.mean_and_variance(gains)
-    print "Average gain: %.2f +/- %.2f"%(stats.mean(),
-      stats.unweighted_sample_standard_deviation())
+    print("Average gain: %.2f +/- %.2f"%(stats.mean(),
+      stats.unweighted_sample_standard_deviation()))
 
   if output_gain_map:
     if len(gains) > 1:
@@ -139,8 +140,8 @@ def run(args):
   # Log the diff phil
   diff_phil = parser.diff_phil.as_str()
   if diff_phil is not '':
-    print 'The following parameters have been modified:\n'
-    print diff_phil
+    print('The following parameters have been modified:\n')
+    print(diff_phil)
 
   datablocks = flatten_datablocks(params.input.datablock)
 

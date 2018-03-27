@@ -1,8 +1,11 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 import math
+import os
+
 from cctbx.array_family import flex
 import iotbx.phil
 from cctbx import crystal, miller
@@ -273,12 +276,12 @@ def run(args):
 
   if params.save_coordinates:
     with open('projections.txt', 'wb') as f:
-      print >> f, "crystal h k l x y"
+      f.write("crystal h k l x y" + os.linesep)
       for i_cryst, projections in enumerate(projections_all):
         for hkl, proj in zip(miller_indices, projections):
-          print >> f, "%i" %(i_cryst+1),
-          print >> f, "%i %i %i" %hkl,
-          print >> f, "%f %f" %proj
+          f.write("%i " % (i_cryst+1))
+          f.write("%i %i %i " % hkl)
+          f.write(("%f %f" + os.linesep) % proj)
 
   if params.plot.show or params.plot.filename:
     epochs = None
@@ -436,7 +439,7 @@ def projections_as_json(projections, filename=None):
   json_str = json.dumps(d)
   if filename is not None:
     with open(filename, 'wb') as f:
-      print >> f, json_str
+      f.write(json_str)
   return json_str
 
 if __name__ == '__main__':

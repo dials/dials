@@ -11,6 +11,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 import logging
 logger = logging.getLogger('dials.command_line.two_theta_refine')
 import cPickle as pickle
@@ -435,11 +436,11 @@ class Script(object):
     # Try to load the models and data
     nexp = len(experiments)
     if nexp == 0:
-      print "No Experiments found in the input"
+      print("No Experiments found in the input")
       self.parser.print_help()
       return
     if len(reflections) == 0:
-      print "No reflection data found in the input"
+      print("No reflection data found in the input")
       self.parser.print_help()
       return
 

@@ -8,6 +8,7 @@
 #
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 from scitbx import matrix
 from dials.array_family import flex
 
@@ -768,18 +769,18 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       assert flex.min(e_r_s0_mag) > 1.e-6
     except AssertionError as e:
       imin = flex.min_index(e_r_s0_mag)
-      print "(e X r).s0 too small:"
-      print "for", (e_r_s0_mag <= 1.e-6).count(True), "reflections"
-      print "out of", len(e_r_s0_mag), "total"
-      print "such as", reflections['miller_index'][imin]
-      print "with scattering vector", reflections['s1'][imin]
-      print "where r =", self._r[imin]
-      print "e =", self._axis[imin]
-      print "s0 =", self._s0[imin]
+      print("(e X r).s0 too small:")
+      print("for", (e_r_s0_mag <= 1.e-6).count(True), "reflections")
+      print("out of", len(e_r_s0_mag), "total")
+      print("such as", reflections['miller_index'][imin])
+      print("with scattering vector", reflections['s1'][imin])
+      print("where r =", self._r[imin])
+      print("e =", self._axis[imin])
+      print("s0 =", self._s0[imin])
       print ("this reflection forms angle with the equatorial plane "
              "normal:")
       vecn = matrix.col(self._s0[imin]).cross(matrix.col(self._axis[imin])).normalize()
-      print matrix.col(reflections['s1'][imin]).accute_angle(vecn)
+      print(matrix.col(reflections['s1'][imin]).accute_angle(vecn))
       raise e
     return
 

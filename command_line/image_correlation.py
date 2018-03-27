@@ -1,6 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.image_correlation
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 import iotbx.phil
 from dials.array_family import flex
@@ -92,7 +93,7 @@ def run(args):
       a = imageset.get_raw_data(img_a)[0]
       b = imageset.get_raw_data(img_b)[0]
       n, cc = image_correlation(a, b)
-      print '%5d %5d %7d %.4f' % (img_a, img_b, n, cc)
+      print('%5d %5d %7d %.4f' % (img_a, img_b, n, cc))
 
 if __name__ == '__main__':
   main()

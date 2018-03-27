@@ -12,6 +12,7 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 import math
 import matplotlib
 
@@ -76,9 +77,9 @@ def ensure_required(rlist, required):
     if k not in rlist:
       not_present.append(k)
   if len(not_present) != 0:
-    print " Skipping: following required fields not present:"
+    print(" Skipping: following required fields not present:")
     for k in not_present:
-      print "  %s" % k
+      print("  %s" % k)
     return False
   return True
 
@@ -248,7 +249,7 @@ class StrongSpotsAnalyser(object):
     from dials.util.command_line import Command
 
     # Check we have the required fields
-    print "Analysing strong spots"
+    print("Analysing strong spots")
     if not ensure_required(rlist, self.required):
       return
 
@@ -256,8 +257,8 @@ class StrongSpotsAnalyser(object):
     selection = rlist['intensity.sum.variance'] <= 0
     if selection.count(True) > 0:
       rlist.del_selected(selection)
-      print ' Removing %d reflections with variance <= 0' % \
-        selection.count(True)
+      print(' Removing %d reflections with variance <= 0' % \
+        selection.count(True))
 
     if 'flags' in rlist:
       # Select only strong reflections
@@ -361,7 +362,7 @@ class CentroidAnalyser(object):
     from dials.util.command_line import Command
 
     # Check we have the required fields
-    print "Analysing reflection centroids"
+    print("Analysing reflection centroids")
     if not ensure_required(rlist, self.required):
       return
 
@@ -369,16 +370,16 @@ class CentroidAnalyser(object):
     selection = rlist['intensity.sum.variance'] <= 0
     if selection.count(True) > 0:
       rlist.del_selected(selection)
-      print ' Removing %d reflections with variance <= 0' % \
-        selection.count(True)
+      print(' Removing %d reflections with variance <= 0' % \
+        selection.count(True))
 
     # Remove partial reflections as their observed centroids won't be accurate
     if 'partiality' in rlist:
       selection = rlist['partiality'] < 0.99
       if selection.count(True) > 0 and selection.count(True) < selection.size():
         rlist.del_selected(selection)
-        print ' Removing %d partial reflections' % \
-          selection.count(True)
+        print(' Removing %d partial reflections' % \
+          selection.count(True))
 
     # Select only integrated reflections
     Command.start(" Selecting only summation-integated reflections")
@@ -395,14 +396,14 @@ class CentroidAnalyser(object):
       Command.end(" Selected %d refined reflections" % len(rlist))
 
     # Look at differences in calculated/observed position
-    print " Analysing centroid differences with I/Sigma > %s" %threshold
+    print(" Analysing centroid differences with I/Sigma > %s" %threshold)
     self.centroid_diff_hist(rlist, threshold)
-    print " Analysing centroid differences in x/y with I/Sigma > %s" %threshold
+    print(" Analysing centroid differences in x/y with I/Sigma > %s" %threshold)
     self.centroid_diff_xy(rlist, threshold)
     self.centroid_xy_xz_zy_residuals(rlist, threshold)
-    print " Analysing centroid differences in z with I/Sigma > %s" %threshold
+    print(" Analysing centroid differences in z with I/Sigma > %s" %threshold)
     self.centroid_diff_z(rlist, threshold)
-    print " Analysing centroid differences vs phi with I/Sigma > %s" %threshold
+    print(" Analysing centroid differences vs phi with I/Sigma > %s" %threshold)
     self.centroid_mean_diff_vs_phi(rlist, threshold)
 
   def centroid_diff_hist(self, rlist, threshold):
@@ -743,27 +744,27 @@ class BackgroundAnalyser(object):
     from dials.util.command_line import Command
 
     # Check we have the required fields
-    print "Analysing reflection backgrounds"
+    print("Analysing reflection backgrounds")
     if not ensure_required(rlist, self.required):
       return
 
     selection = rlist['intensity.sum.variance'] <= 0
     if selection.count(True) > 0:
       rlist.del_selected(selection)
-      print ' Removing %d reflections with variance <= 0' % \
-        selection.count(True)
+      print(' Removing %d reflections with variance <= 0' % \
+        selection.count(True))
 
     selection = rlist['background.mse'] < 0
     if selection.count(True) > 0:
       rlist.del_selected(selection)
-      print ' Removing %d reflections with negative background model RMSD' % \
-        selection.count(True)
+      print(' Removing %d reflections with negative background model RMSD' % \
+        selection.count(True))
 
     selection = rlist['background.mean'] <= 0
     if selection.count(True) > 0:
       rlist.del_selected(selection)
-      print ' Removing %d reflections with mean background <= 0' % \
-        selection.count(True)
+      print(' Removing %d reflections with mean background <= 0' % \
+        selection.count(True))
 
     # Select only integrated reflections
     Command.start(" Selecting only integated reflections")
@@ -775,21 +776,21 @@ class BackgroundAnalyser(object):
     Command.end(" Selected %d integrated reflections" % len(rlist))
 
     # Look at distribution of I/Sigma
-    print " Analysing distribution of background mean"
+    print(" Analysing distribution of background mean")
     self.mean_hist(rlist)
-    print " Analysing distribution of background mean vs XY"
+    print(" Analysing distribution of background mean vs XY")
     self.mean_vs_xy(rlist)
-    print " Analysing distribution of background mean vs z"
+    print(" Analysing distribution of background mean vs z")
     self.mean_vs_z(rlist)
-    print " Analysing distribution of background mean vs I/Sigma"
+    print(" Analysing distribution of background mean vs I/Sigma")
     self.mean_vs_ios(rlist)
-    print " Analysing distribution of background CVRMSD"
+    print(" Analysing distribution of background CVRMSD")
     self.rmsd_hist(rlist)
-    print " Analysing distribution of background CVRMSD vs XY"
+    print(" Analysing distribution of background CVRMSD vs XY")
     self.rmsd_vs_xy(rlist)
-    print " Analysing distribution of background CVRMSD vs z"
+    print(" Analysing distribution of background CVRMSD vs z")
     self.rmsd_vs_z(rlist)
-    print " Analysing distribution of background CVRMSD vs I/Sigma"
+    print(" Analysing distribution of background CVRMSD vs I/Sigma")
     self.rmsd_vs_ios(rlist)
 
   def mean_hist(self, rlist):
@@ -968,21 +969,21 @@ class IntensityAnalyser(object):
     # FIXME Do the same and a comparison for intensity.prf
 
     # Check we have the required fields
-    print "Analysing reflection intensities"
+    print("Analysing reflection intensities")
     if not ensure_required(rlist, self.required):
       return
 
     selection = rlist['intensity.sum.variance'] <= 0
     if selection.count(True) > 0:
       rlist.del_selected(selection)
-      print ' Removing %d reflections with variance <= 0' % \
-        selection.count(True)
+      print(' Removing %d reflections with variance <= 0' % \
+        selection.count(True))
 
     selection = rlist['intensity.sum.value'] <= 0
     if selection.count(True) > 0:
       rlist.del_selected(selection)
-      print ' Removing %d reflections with intensity <= 0' % \
-        selection.count(True)
+      print(' Removing %d reflections with intensity <= 0' % \
+        selection.count(True))
 
     # Select only integrated reflections
     Command.start(" Selecting only integated reflections")
@@ -994,17 +995,17 @@ class IntensityAnalyser(object):
     Command.end(" Selected %d integrated reflections" % len(rlist))
 
     # Look at distribution of I/Sigma
-    print " Analysing distribution of I/Sigma"
+    print(" Analysing distribution of I/Sigma")
     self.i_over_s_hist(rlist)
-    print " Analysing distribution of I/Sigma vs xy"
+    print(" Analysing distribution of I/Sigma vs xy")
     self.i_over_s_vs_xy(rlist, "sum")
-    print " Analysing distribution of I/Sigma vs xy"
+    print(" Analysing distribution of I/Sigma vs xy")
     self.i_over_s_vs_xy(rlist, "prf")
-    print " Analysing distribution of I/Sigma vs z"
+    print(" Analysing distribution of I/Sigma vs z")
     self.i_over_s_vs_z(rlist)
-    print " Analysing number of background pixels used"
+    print(" Analysing number of background pixels used")
     self.num_background_hist(rlist)
-    print " Analysing number of foreground pixels used"
+    print(" Analysing number of foreground pixels used")
     self.num_foreground_hist(rlist)
 
   def i_over_s_hist(self, rlist):
@@ -1118,7 +1119,7 @@ class ReferenceProfileAnalyser(object):
     from dials.util.command_line import Command
 
     # Check we have the required fields
-    print "Analysing reference profiles"
+    print("Analysing reference profiles")
     if not ensure_required(rlist, self.required):
       return
 
@@ -1132,41 +1133,41 @@ class ReferenceProfileAnalyser(object):
     Command.end(" Selected %d integrated reflections" % len(rlist))
 
     # Analyse distribution of reference spots
-    print " Analysing reference profile distribution vs x/y"
+    print(" Analysing reference profile distribution vs x/y")
     self.reference_xy(rlist)
-    print " Analysing reference profile distribution vs z"
+    print(" Analysing reference profile distribution vs z")
     self.reference_z(rlist)
 
     # Look at correlations between profiles
     def ideal_correlations(filename, rlist):
       ''' Call for reference spots and all reflections. '''
 
-      print " Analysing reflection profile correlations"
+      print(" Analysing reflection profile correlations")
       self.ideal_reflection_corr_hist(rlist, filename)
 
-      print " Analysing reflection profile correlations vs x/y"
+      print(" Analysing reflection profile correlations vs x/y")
       self.ideal_reflection_corr_vs_xy(rlist, filename)
 
-      print " Analysing reflection profile correlations vs z"
+      print(" Analysing reflection profile correlations vs z")
       self.ideal_reflection_corr_vs_z(rlist, filename)
 
-      print " Analysing reflection profile correlations vs I/Sigma"
+      print(" Analysing reflection profile correlations vs I/Sigma")
       self.ideal_reflection_corr_vs_ios(rlist, filename)
 
     # Look at correlations between profiles
     def correlations(filename, rlist):
       ''' Call for reference spots and all reflections. '''
 
-      print " Analysing reflection profile correlations"
+      print(" Analysing reflection profile correlations")
       self.reflection_corr_hist(rlist, filename)
 
-      print " Analysing reflection profile correlations vs x/y"
+      print(" Analysing reflection profile correlations vs x/y")
       self.reflection_corr_vs_xy(rlist, filename)
 
-      print " Analysing reflection profile correlations vs z"
+      print(" Analysing reflection profile correlations vs z")
       self.reflection_corr_vs_z(rlist, filename)
 
-      print " Analysing reflection profile correlations vs I/Sigma"
+      print(" Analysing reflection profile correlations vs I/Sigma")
       self.reflection_corr_vs_ios(rlist, filename)
 
     mask = rlist.get_flags(rlist.flags.reference_spot)

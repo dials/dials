@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.compare_mosflm_xds
 
@@ -43,7 +44,7 @@ def pull_reference_xds(integrate_hkl, d_min = 0.0):
     sigi.append(f_tokens[4] * peak / f_tokens[8])
     xyz.append(tuple(f_tokens[5:8]))
 
-  print 'Reference: %d observations' % len(hkl)
+  print('Reference: %d observations' % len(hkl))
   return hkl, i, sigi, xyz
 
 def pull_reference(integrate_mtz):
@@ -101,7 +102,7 @@ def pull_reference(integrate_mtz):
 
   i = i_lp / lp
 
-  print 'Reference: %d observations' % len(hkl)
+  print('Reference: %d observations' % len(hkl))
   return hkl, i, sigi, xyz
 
 def integrate_mtz_to_unit_cell(integrate_mtz):
@@ -142,7 +143,7 @@ def pull_calculated(integrate_pkl):
     z = r.frame_number
     xyz.append((x, y, z))
 
-  print 'Computed: %d observations' % len(hkl)
+  print('Computed: %d observations' % len(hkl))
   return hkl, i, sigi, xyz
 
 def meansd(values):
@@ -182,7 +183,7 @@ def compare_chunks(integrate_mtz, integrate_hkl):
 
   rdx = derive_reindex_matrix(integrate_hkl, integrate_mtz)
 
-  print rdx
+  print(rdx)
 
   xhkl, xi, xsigi, xxyz = pull_reference(integrate_mtz)
   dhkl, di, dsigi, dxyz = pull_reference_xds(integrate_hkl)
@@ -241,7 +242,7 @@ def compare_chunks(integrate_mtz, integrate_hkl):
 
   # then extract the original observation structure
 
-  print 'Paired %d observations' % len(MOS)
+  print('Paired %d observations' % len(MOS))
 
   scale = sum(MOS) / sum(XDS)
 
@@ -261,9 +262,9 @@ def compare_chunks(integrate_mtz, integrate_hkl):
 
     c = cc(xds, mos)
     r, s = R(xds, mos)
-    print '%7d %4d %.3f %.3f %.3f %.3f %.3f' % (chunk[0], len(mos),
+    print('%7d %4d %.3f %.3f %.3f %.3f %.3f' % (chunk[0], len(mos),
                                                 min(resols), max(resols),
-                                                c, r, s)
+                                                c, r, s))
     ccs.append(c)
     rs.append(r)
     ss.append(s)

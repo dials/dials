@@ -2,6 +2,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.extract_background_signal
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 import libtbx.load_env
 import logging
@@ -144,7 +145,7 @@ class Script(object):
       mean_background = (summed_background /
                          summed_mask.as_double())
       data.as_1d().set_selected(mask.as_1d(), mean_background.as_1d())
-      print flex.sum(data.select(data.as_1d() > 0))
+      print(flex.sum(data.select(data.as_1d() > 0)))
 
 if __name__ == '__main__':
   from dials.util import halraiser

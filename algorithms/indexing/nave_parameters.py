@@ -3,6 +3,7 @@
 #
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 from scitbx.matrix import sqr,col
 from dials.array_family import flex
 import math
@@ -27,10 +28,10 @@ class nave_parameters(object):
       RR = self.refinery.predict_for_reflection_table(self.reflections)
     excursion_rad = RR["delpsical.rad"]
     delta_psi_deg = excursion_rad * 180./math.pi
-    print
-    print flex.max(delta_psi_deg), flex.min(delta_psi_deg)
+    print()
+    print(flex.max(delta_psi_deg), flex.min(delta_psi_deg))
     mean_excursion = flex.mean(delta_psi_deg)
-    print "The mean excursion is %7.3f degrees, r.m.s.d %7.3f"%(mean_excursion, math.sqrt(flex.mean(RR["delpsical2"])))
+    print("The mean excursion is %7.3f degrees, r.m.s.d %7.3f"%(mean_excursion, math.sqrt(flex.mean(RR["delpsical2"]))))
 
     from dxtbx.model import MosaicCrystalSauter2014
     crystal = MosaicCrystalSauter2014(self.experiments[0].crystal)
@@ -45,10 +46,10 @@ class nave_parameters(object):
 
     #  First -- try to get a reasonable envelope for the observed excursions.
         ## minimum of three regions; maximum of 50 measurements in each bin
-    print "fitting parameters on %d spots"%len(excursion_rad)
+    print("fitting parameters on %d spots"%len(excursion_rad))
     n_bins = min(max(3, len(excursion_rad)//25),50)
     bin_sz = len(excursion_rad)//n_bins
-    print "nbins",n_bins,"bin_sz",bin_sz
+    print("nbins",n_bins,"bin_sz",bin_sz)
     order = flex.sort_permutation(two_thetas)
     two_thetas_env = flex.double()
     dspacings_env = flex.double()
@@ -69,13 +70,13 @@ class nave_parameters(object):
     Vector       = col((sum_te_u, sum_te))
     solution     = Normal_Mat.inverse() * Vector
     s_ang = 1./(2*solution[0])
-    print "Best LSQ fit Scheerer domain size is %9.2f ang"%(
-      s_ang)
+    print("Best LSQ fit Scheerer domain size is %9.2f ang"%(
+      s_ang))
 
     tan_phi_rad = dspacings / (2. * s_ang)
     tan_phi_deg = tan_phi_rad * 180./math.pi
     k_degrees = solution[1]* 180./math.pi
-    print "The LSQ full mosaicity is %8.5f deg; half-mosaicity %9.5f"%(2*k_degrees, k_degrees)
+    print("The LSQ full mosaicity is %8.5f deg; half-mosaicity %9.5f"%(2*k_degrees, k_degrees))
     tan_outer_deg = tan_phi_deg + k_degrees
 
     from xfel.mono_simulation.max_like import minimizer
@@ -86,7 +87,7 @@ class nave_parameters(object):
     d_estimate = max(s_ang, lower_limit_domain_size)
     M = minimizer(d_i = dspacings, psi_i = excursion_rad, eta_rad = abs(2. * solution[1]),
                   Deff = d_estimate)
-    print "ML: mosaicity FW=%4.2f deg, Dsize=%5.0fA on %d spots"%(M.x[1]*180./math.pi, 2./M.x[0], len(two_thetas))
+    print("ML: mosaicity FW=%4.2f deg, Dsize=%5.0fA on %d spots"%(M.x[1]*180./math.pi, 2./M.x[0], len(two_thetas)))
     tan_phi_rad_ML = dspacings / (2. / M.x[0])
     tan_phi_deg_ML = tan_phi_rad_ML * 180./math.pi
     tan_outer_deg_ML = tan_phi_deg_ML + 0.5*M.x[1]*180./math.pi
@@ -116,7 +117,7 @@ class nave_parameters(object):
 
     from xfel.mono_simulation.util import green_curve_area
     self.green_curve_area = green_curve_area(two_thetas, tan_outer_deg_ML)
-    print "The green curve area is ", self.green_curve_area
+    print("The green curve area is ", self.green_curve_area)
 
     crystal.set_half_mosaicity_deg(M.x[1]*180./(2.*math.pi))
     crystal.set_domain_size_ang(2./M.x[0])

@@ -10,6 +10,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 from iotbx.phil import parse
 
 help_message = '''
@@ -96,7 +97,7 @@ class Script(object):
     mask = generator.generate(imageset)
 
     # Save the mask to file
-    print "Writing mask to %s" % params.output.mask
+    print("Writing mask to %s" % params.output.mask)
     with open(params.output.mask, "w") as fh:
       pickle.dump(mask, fh)
 
@@ -105,8 +106,8 @@ class Script(object):
       imageset.external_lookup.mask.data = ImageBool(mask)
       imageset.external_lookup.mask.filename = params.output.mask
       from dxtbx.datablock import DataBlockDumper
-      print 'Saving datablocks to {0}'.format(
-        params.output.datablock)
+      print('Saving datablocks to {0}'.format(
+        params.output.datablock))
       dump = DataBlockDumper(datablocks)
       dump.as_file(params.output.datablock)
 

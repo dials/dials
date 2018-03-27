@@ -1,6 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.show
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 import numpy
 
@@ -139,22 +140,22 @@ def run(args):
     exit()
 
   if len(experiments):
-    print show_experiments(
+    print(show_experiments(
       experiments, show_panel_distance=params.show_panel_distance,
-      show_scan_varying=params.show_scan_varying)
+      show_scan_varying=params.show_scan_varying))
 
   if len(datablocks):
-    print show_datablocks(
-      datablocks, show_panel_distance=params.show_panel_distance)
+    print(show_datablocks(
+      datablocks, show_panel_distance=params.show_panel_distance))
 
   if len(reflections):
-    print show_reflections(
+    print(show_reflections(
       reflections, show_intensities=params.show_intensities,
       show_profile_fit=params.show_profile_fit,
       show_centroids=params.show_centroids,
       show_all_reflection_data=params.show_all_reflection_data,
       show_flags=params.show_flags,
-      max_reflections=params.max_reflections)
+      max_reflections=params.max_reflections))
 
 
 def show_experiments(experiments, show_panel_distance=False,

@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 from scitbx.math import r3_rotation_axis_and_angle_from_matrix
 from scitbx import matrix
 import math
@@ -50,11 +51,11 @@ def show_rotation_matrix_differences(crystal_models, out=None, miller_indices=No
         break
       R_ij, axis, angle, cb_op = difference_rotation_matrix_axis_angle(
         crystal_models[i], crystal_models[j])
-      print >> out, "Change of basis op: %s" %cb_op
-      print >> out, "Rotation matrix to transform crystal %i to crystal %i:" %(
-        i+1, j+1)
-      print >> out, R_ij.mathematica_form(format="%.3f", one_row_per_line=True)
-      print >> out, "Rotation of %.3f degrees" %angle, "about axis (%.3f, %.3f, %.3f)" %axis
+      print("Change of basis op: %s" %cb_op, file=out)
+      print("Rotation matrix to transform crystal %i to crystal %i:" %(
+        i+1, j+1), file=out)
+      print(R_ij.mathematica_form(format="%.3f", one_row_per_line=True), file=out)
+      print("Rotation of %.3f degrees" %angle, "about axis (%.3f, %.3f, %.3f)" %axis, file=out)
       if miller_indices is not None:
         for hkl in miller_indices:
           cm_i = crystal_models[i]
@@ -71,5 +72,5 @@ def show_rotation_matrix_differences(crystal_models, out=None, miller_indices=No
           v_i = hkl[0] * a_star_i + hkl[1] * b_star_i + hkl[2] * c_star_i
           v_j = hkl[0] * a_star_j + hkl[1] * b_star_j + hkl[2] * c_star_j
 
-          print >> out, '(%i,%i,%i):' %hkl, '%.2f deg' %v_i.angle(v_j, deg=True)
-      print >> out
+          print('(%i,%i,%i):' %hkl, '%.2f deg' %v_i.angle(v_j, deg=True), file=out)
+      print(file=out)

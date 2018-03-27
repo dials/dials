@@ -12,6 +12,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.show_integration_memory_info
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 from libtbx.phil import parse
 
 # Create the help message

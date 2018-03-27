@@ -13,6 +13,7 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 import copy
 import math
 
@@ -111,9 +112,9 @@ def ensure_required(rlist, required):
     if k not in rlist:
       not_present.append(k)
   if len(not_present) != 0:
-    print " Skipping: following required fields not present:"
+    print(" Skipping: following required fields not present:")
     for k in not_present:
-      print "  %s" % k
+      print("  %s" % k)
     return False
   return True
 
@@ -265,7 +266,7 @@ class ScanVaryingCrystalAnalyser(object):
     from dials.util.command_line import Command
 
     # Check we have the required fields
-    print "Analysing scan-varying crystal model"
+    print("Analysing scan-varying crystal model")
 
     d = OrderedDict()
 
@@ -285,7 +286,7 @@ class ScanVaryingCrystalAnalyser(object):
       scan = exp.scan
 
       if crystal.num_scan_points == 0:
-        print "Ignoring scan-static crystal"
+        print("Ignoring scan-static crystal")
         continue
 
       scan_pts = range(crystal.num_scan_points)
@@ -306,12 +307,12 @@ class ScanVaryingCrystalAnalyser(object):
                   'gamma':cc,
                   'volume':vol}
       if self._debug:
-        print "Crystal in Experiment {0}".format(iexp)
-        print "Phi\ta\tb\tc\talpha\tbeta\tgamma\tVolume"
+        print("Crystal in Experiment {0}".format(iexp))
+        print("Phi\ta\tb\tc\talpha\tbeta\tgamma\tVolume")
         msg = "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}"
         line_dat = zip(phi, a, b, c, aa, bb, cc, vol)
         for line in line_dat:
-          print msg.format(*line)
+          print(msg.format(*line))
       dat.append(cell_dat)
 
     d = {
@@ -445,7 +446,7 @@ class ScanVaryingCrystalAnalyser(object):
       scan = exp.scan
 
       if crystal.num_scan_points == 0:
-        print "Ignoring scan-static crystal"
+        print("Ignoring scan-static crystal")
         continue
 
       scan_pts = range(crystal.num_scan_points)
@@ -466,12 +467,12 @@ class ScanVaryingCrystalAnalyser(object):
                    'phi2':phi2,
                    'phi1':phi1}
       if self._debug:
-        print "Crystal in Experiment {0}".format(iexp)
-        print "Image\tphi3\tphi2\tphi1"
+        print("Crystal in Experiment {0}".format(iexp))
+        print("Image\tphi3\tphi2\tphi1")
         msg = "{0}\t{1}\t{2}\t{3}"
         line_dat = zip(phi, phi3, phi2, phi1)
         for line in line_dat:
-          print msg.format(*line)
+          print(msg.format(*line))
       dat.append(angle_dat)
 
     d = {
@@ -557,7 +558,7 @@ class StrongSpotsAnalyser(object):
     from dials.util.command_line import Command
 
     # Check we have the required fields
-    print "Analysing strong spots"
+    print("Analysing strong spots")
     if not ensure_required(rlist, self.required):
       return {'strong': {}}
 
@@ -566,8 +567,8 @@ class StrongSpotsAnalyser(object):
       selection = rlist['intensity.sum.variance'] <= 0
       if selection.count(True) > 0:
         rlist.del_selected(selection)
-        print ' Removing %d reflections with variance <= 0' % \
-          selection.count(True)
+        print(' Removing %d reflections with variance <= 0' % \
+          selection.count(True))
 
     if 'flags' in rlist:
       # Select only strong reflections
@@ -800,7 +801,7 @@ class CentroidAnalyser(object):
     from dials.util.command_line import Command
 
     # Check we have the required fields
-    print "Analysing reflection centroids"
+    print("Analysing reflection centroids")
     if not ensure_required(rlist, self.required):
       return {'centroid': {}}
 
@@ -808,16 +809,16 @@ class CentroidAnalyser(object):
     selection = rlist['intensity.sum.variance'] <= 0
     if selection.count(True) > 0:
       rlist.del_selected(selection)
-      print ' Removing %d reflections with variance <= 0' % \
-        selection.count(True)
+      print(' Removing %d reflections with variance <= 0' % \
+        selection.count(True))
 
     # Remove partial reflections as their observed centroids won't be accurate
     if 'partiality' in rlist:
       selection = rlist['partiality'] < 0.99
       if selection.count(True) > 0 and selection.count(True) < selection.size():
         rlist.del_selected(selection)
-        print ' Removing %d partial reflections' % \
-          selection.count(True)
+        print(' Removing %d partial reflections' % \
+          selection.count(True))
 
     # Select only integrated reflections
     Command.start(" Selecting only summation-integrated reflections")
@@ -836,14 +837,14 @@ class CentroidAnalyser(object):
     d = OrderedDict()
 
     # Look at differences in calculated/observed position
-    print " Analysing centroid differences with I/Sigma > %s" %threshold
+    print(" Analysing centroid differences with I/Sigma > %s" %threshold)
     d.update(self.centroid_diff_hist(rlist, threshold))
-    print " Analysing centroid differences in x/y with I/Sigma > %s" %threshold
+    print(" Analysing centroid differences in x/y with I/Sigma > %s" %threshold)
     d.update(self.centroid_diff_xy(rlist, threshold))
     d.update(self.centroid_xy_xz_zy_residuals(rlist, threshold))
-    print " Analysing centroid differences in z with I/Sigma > %s" %threshold
+    print(" Analysing centroid differences in z with I/Sigma > %s" %threshold)
     d.update(self.centroid_diff_z(rlist, threshold))
-    print " Analysing centroid differences vs phi with I/Sigma > %s" %threshold
+    print(" Analysing centroid differences vs phi with I/Sigma > %s" %threshold)
     d.update(self.centroid_mean_diff_vs_phi(rlist, threshold))
     return {'centroid': d}
 
@@ -1410,27 +1411,27 @@ class BackgroundAnalyser(object):
     from dials.util.command_line import Command
 
     # Check we have the required fields
-    print "Analysing reflection backgrounds"
+    print("Analysing reflection backgrounds")
     if not ensure_required(rlist, self.required):
       return
 
     selection = rlist['intensity.sum.variance'] <= 0
     if selection.count(True) > 0:
       rlist.del_selected(selection)
-      print ' Removing %d reflections with variance <= 0' % \
-        selection.count(True)
+      print(' Removing %d reflections with variance <= 0' % \
+        selection.count(True))
 
     selection = rlist['background.mse'] < 0
     if selection.count(True) > 0:
       rlist.del_selected(selection)
-      print ' Removing %d reflections with negative background model RMSD' % \
-        selection.count(True)
+      print(' Removing %d reflections with negative background model RMSD' % \
+        selection.count(True))
 
     selection = rlist['background.mean'] <= 0
     if selection.count(True) > 0:
       rlist.del_selected(selection)
-      print ' Removing %d reflections with mean background <= 0' % \
-        selection.count(True)
+      print(' Removing %d reflections with mean background <= 0' % \
+        selection.count(True))
 
     # Select only integrated reflections
     Command.start(" Selecting only integrated reflections")
@@ -1442,21 +1443,21 @@ class BackgroundAnalyser(object):
     Command.end(" Selected %d integrated reflections" % len(rlist))
 
     # Look at distribution of I/Sigma
-    print " Analysing distribution of background mean"
+    print(" Analysing distribution of background mean")
     self.mean_hist(rlist)
-    print " Analysing distribution of background mean vs XY"
+    print(" Analysing distribution of background mean vs XY")
     self.mean_vs_xy(rlist)
-    print " Analysing distribution of background mean vs z"
+    print(" Analysing distribution of background mean vs z")
     self.mean_vs_z(rlist)
-    print " Analysing distribution of background mean vs I/Sigma"
+    print(" Analysing distribution of background mean vs I/Sigma")
     self.mean_vs_ios(rlist)
-    print " Analysing distribution of background CVRMSD"
+    print(" Analysing distribution of background CVRMSD")
     self.rmsd_hist(rlist)
-    print " Analysing distribution of background CVRMSD vs XY"
+    print(" Analysing distribution of background CVRMSD vs XY")
     self.rmsd_vs_xy(rlist)
-    print " Analysing distribution of background CVRMSD vs z"
+    print(" Analysing distribution of background CVRMSD vs z")
     self.rmsd_vs_z(rlist)
-    print " Analysing distribution of background CVRMSD vs I/Sigma"
+    print(" Analysing distribution of background CVRMSD vs I/Sigma")
     self.rmsd_vs_ios(rlist)
 
   def mean_hist(self, rlist):
@@ -1631,21 +1632,21 @@ class IntensityAnalyser(object):
     # FIXME Do the same and a comparison for intensity.prf
 
     # Check we have the required fields
-    print "Analysing reflection intensities"
+    print("Analysing reflection intensities")
     if not ensure_required(rlist, self.required):
       return {'intensity': {}}
 
     selection = rlist['intensity.sum.variance'] <= 0
     if selection.count(True) > 0:
       rlist.del_selected(selection)
-      print ' Removing %d reflections with variance <= 0' % \
-        selection.count(True)
+      print(' Removing %d reflections with variance <= 0' % \
+        selection.count(True))
 
     selection = rlist['intensity.sum.value'] <= 0
     if selection.count(True) > 0:
       rlist.del_selected(selection)
-      print ' Removing %d reflections with intensity <= 0' % \
-        selection.count(True)
+      print(' Removing %d reflections with intensity <= 0' % \
+        selection.count(True))
 
     # Select only integrated reflections
     Command.start(" Selecting only integrated reflections")
@@ -1665,16 +1666,16 @@ class IntensityAnalyser(object):
     d = OrderedDict()
 
     # Look at distribution of I/Sigma
-    print " Analysing distribution of I/Sigma"
+    print(" Analysing distribution of I/Sigma")
     d.update(self.i_over_s_hist(rlist))
-    print " Analysing distribution of I/Sigma vs xy"
+    print(" Analysing distribution of I/Sigma vs xy")
     d.update(self.i_over_s_vs_xy(rlist, "sum"))
     if 'intensity.prf.value' in rlist:
-      print " Analysing distribution of I/Sigma vs xy"
+      print(" Analysing distribution of I/Sigma vs xy")
       d.update(self.i_over_s_vs_xy(rlist, "prf"))
-    print " Analysing distribution of I/Sigma vs z"
+    print(" Analysing distribution of I/Sigma vs z")
     d.update(self.i_over_s_vs_z(rlist))
-    print " Analysing distribution of partialities"
+    print(" Analysing distribution of partialities")
     d.update(self.partiality_hist(rlist))
     #print " Analysing number of background pixels used"
     #self.num_background_hist(rlist)
@@ -1880,7 +1881,7 @@ class ReferenceProfileAnalyser(object):
     from dials.util.command_line import Command
 
     # Check we have the required fields
-    print "Analysing reference profiles"
+    print("Analysing reference profiles")
     if not ensure_required(rlist, self.required):
       return {'reference': {}}
 
@@ -1902,25 +1903,25 @@ class ReferenceProfileAnalyser(object):
     d = OrderedDict()
 
     # Analyse distribution of reference spots
-    print " Analysing reference profile distribution vs x/y"
+    print(" Analysing reference profile distribution vs x/y")
     d.update(self.reference_xy(rlist))
-    print " Analysing reference profile distribution vs z"
+    print(" Analysing reference profile distribution vs z")
     d.update(self.reference_z(rlist))
 
     # Look at correlations between profiles
     def ideal_correlations(filename, rlist):
       ''' Call for reference spots and all reflections. '''
 
-      print " Analysing reflection profile correlations"
+      print(" Analysing reflection profile correlations")
       self.ideal_reflection_corr_hist(rlist, filename)
 
-      print " Analysing reflection profile correlations vs x/y"
+      print(" Analysing reflection profile correlations vs x/y")
       self.ideal_reflection_corr_vs_xy(rlist, filename)
 
-      print " Analysing reflection profile correlations vs z"
+      print(" Analysing reflection profile correlations vs z")
       self.ideal_reflection_corr_vs_z(rlist, filename)
 
-      print " Analysing reflection profile correlations vs I/Sigma"
+      print(" Analysing reflection profile correlations vs I/Sigma")
       self.ideal_reflection_corr_vs_ios(rlist, filename)
 
     # Look at correlations between profiles
@@ -1928,16 +1929,16 @@ class ReferenceProfileAnalyser(object):
       ''' Call for reference spots and all reflections. '''
 
       d = OrderedDict()
-      print " Analysing reflection profile correlations"
+      print(" Analysing reflection profile correlations")
       d.update(self.reflection_corr_hist(rlist, filename))
 
-      print " Analysing reflection profile correlations vs x/y"
+      print(" Analysing reflection profile correlations vs x/y")
       d.update(self.reflection_corr_vs_xy(rlist, filename))
 
-      print " Analysing reflection profile correlations vs z"
+      print(" Analysing reflection profile correlations vs z")
       d.update(self.reflection_corr_vs_z(rlist, filename))
 
-      print " Analysing reflection profile correlations vs I/Sigma"
+      print(" Analysing reflection profile correlations vs I/Sigma")
       d.update(self.reflection_corr_vs_ios(rlist, filename))
 
       return d
@@ -1955,7 +1956,7 @@ class ReferenceProfileAnalyser(object):
   def reflection_correlations_vs_resolution(self, rlist):
     ''' Analyse the distribution of reference profiles. '''
 
-    print " Analysing reflection correlations vs resolution"
+    print(" Analysing reflection correlations vs resolution")
     from cctbx import uctbx
     from dials.algorithms.spot_finding.per_image_analysis import binner_d_star_cubed
     profile_correlation = rlist['profile.correlation']
@@ -2376,13 +2377,13 @@ class Analyser(object):
                              geometry_table=expt_geom_table,
                              static_dir=static_dir)
 
-      print "Writing html report to: %s" %self.params.output.html
+      print("Writing html report to: %s" %self.params.output.html)
       with open(self.params.output.html, 'wb') as f:
-        print >> f, html.encode('ascii', 'xmlcharrefreplace')
+        f.write(html.encode('ascii', 'xmlcharrefreplace'))
 
     if self.params.output.json is not None:
       import json
-      print "Writing json data to: %s" %self.params.output.json
+      print("Writing json data to: %s" %self.params.output.json)
       with open(self.params.output.json, 'wb') as f:
         json.dump(json_data, f)
 

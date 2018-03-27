@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 #from scipy.interpolate import griddata
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.compare_xds_dials2
@@ -46,7 +47,7 @@ def pull_reference(integrate_hkl, d_min = 0.0):
     xyz.append(tuple(f_tokens[5:8]))
     lp.append(f_tokens[8])
 
-  print 'Reference: %d observations' % len(hkl)
+  print('Reference: %d observations' % len(hkl))
   return hkl, i, sigi, xyz, lp
 
 def get_dials_matrix(crystal_json):
@@ -146,7 +147,7 @@ def pull_calculated(integrate_pkl):
     z = r.frame_number
     xyz.append((x, y, z))
 
-  print 'Computed: %d observations' % len(hkl)
+  print('Computed: %d observations' % len(hkl))
   return hkl, i, sigi, xyz, lp
 
 def meansd(values):
@@ -202,7 +203,7 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
 
   rdx = derive_reindex_matrix(crystal_json, sweep_json, integrate_hkl)
 
-  print 'Reindex matrix:\n%d %d %d\n%d %d %d\n%d %d %d' % (rdx.elems)
+  print('Reindex matrix:\n%d %d %d\n%d %d %d\n%d %d %d' % (rdx.elems))
 
   uc = integrate_hkl_to_unit_cell(integrate_hkl)
 
@@ -248,7 +249,7 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
       XLP.append(xlp[c])
       DLP.append(dlp[j])
 
-  print "Found %d matches" % len(XDS)
+  print("Found %d matches" % len(XDS))
 
   compare = CompareIntensity(sweep, uc, HKL, XYZ, XDS, DIALS, SIGMA_XDS, SIGMA_DIALS, XLP, DLP)
 #  compare.plot_scale_factor_vs_resolution()
@@ -298,7 +299,7 @@ class CompareIntensity(object):
     self.dlp = dlp
 
   def plot_scale_factor_vs_resolution(self):
-    print "plot_scale_factor_vs_resolution"
+    print("plot_scale_factor_vs_resolution")
     from matplotlib import pyplot
     index = [i for i in range(len(self.scale)) if abs(self.scale[i]) < 10]
     res = [self.d[i] for i in index]
@@ -311,7 +312,7 @@ class CompareIntensity(object):
     pyplot.close()
 
   def plot_scale_factor_vs_frame_number(self):
-    print "plot_scale_factor_vs_frame_number"
+    print("plot_scale_factor_vs_frame_number")
     from matplotlib import pyplot
     index = [i for i in range(len(self.scale)) if abs(self.scale[i]) < 10]
     frame = [self.xyz[i][2] for i in index]
@@ -327,7 +328,7 @@ class CompareIntensity(object):
     pass
 
   def plot_chunked_statistics_vs_resolution(self):
-    print "plot_chunked_statistics_vs_resolution"
+    print("plot_chunked_statistics_vs_resolution")
     # Sort by resolution
     index = sorted(range(len(self.d)), key=lambda i: self.d[i])
     index.reverse()
@@ -350,8 +351,8 @@ class CompareIntensity(object):
         c = cc(dials, xds)
         r, s, v = R(dials, xds)
         import math
-        print '%7d %4d %.3f %.3f %.3f %.3f %.3f %.3f' % \
-          (chunk[0], len(xds), min(resols), max(resols), c, r, s, math.sqrt(v))
+        print('%7d %4d %.3f %.3f %.3f %.3f %.3f %.3f' % \
+          (chunk[0], len(xds), min(resols), max(resols), c, r, s, math.sqrt(v)))
         ccs.append(c)
         rs.append(r)
         ss.append(s)
@@ -372,7 +373,7 @@ class CompareIntensity(object):
     pyplot.close()
 
   def plot_chunked_statistics_vs_frame_number(self):
-    print "plot_chunked_statistics_vs_frame_number"
+    print("plot_chunked_statistics_vs_frame_number")
     # Sort by resolution
     index = sorted(range(len(self.xyz)), key=lambda i: self.xyz[i][2])
     i_xds = [self.i_xds[i] for i in index]
@@ -399,8 +400,8 @@ class CompareIntensity(object):
         c = cc(dials, xds)
         r, s, v = R(dials, xds)
         import math
-        print '%7d %4d %.3f %.3f %.3f %.3f %.3f %.3f' % \
-          (chunk[0], len(xds), min(frames), max(frames), c, r, s, math.sqrt(v))
+        print('%7d %4d %.3f %.3f %.3f %.3f %.3f %.3f' % \
+          (chunk[0], len(xds), min(frames), max(frames), c, r, s, math.sqrt(v)))
         ccs.append(c)
         rs.append(r)
         ss.append(s)
@@ -421,7 +422,7 @@ class CompareIntensity(object):
     pyplot.close()
 
   def plot_chunked_statistics_vs_i_over_sigma(self):
-    print "plot_chunked_statistics_vs_frame_number"
+    print("plot_chunked_statistics_vs_frame_number")
     # Sort by resolution
     i_over_s = [i / s for i, s in zip(self.i_xds, self.sigma_xds)]
     index = list(reversed(sorted(range(len(i_over_s)), key=lambda i: i_over_s[i])))
@@ -442,8 +443,8 @@ class CompareIntensity(object):
           break
         c = cc(dials, xds)
         r, s, v = R(dials, xds)
-        print '%7d %4d %.3f %.3f %.3f %.3f %.3f' % \
-          (chunk[0], len(xds), min(ios), max(ios), c, r, s)
+        print('%7d %4d %.3f %.3f %.3f %.3f %.3f' % \
+          (chunk[0], len(xds), min(ios), max(ios), c, r, s))
         ccs.append(c)
         rs.append(r)
         ss.append(s)
@@ -462,7 +463,7 @@ class CompareIntensity(object):
     pyplot.close()
 
   def plot_scale_vs_i_over_sigma(self):
-    print "plot_scale_vs_i_over_sigma"
+    print("plot_scale_vs_i_over_sigma")
     # Sort by resolution
     i_over_s = [i / s for i, s in zip(self.i_xds, self.sigma_xds)]
     index = list(reversed(sorted(range(len(i_over_s)), key=lambda i: i_over_s[i])))
@@ -501,7 +502,7 @@ class CompareIntensity(object):
     pyplot.close()
 
   def plot_chunked_i_over_sigma_vs_frame_number(self):
-    print "plot_chunked_i_over_sigma__vs_frame_number"
+    print("plot_chunked_i_over_sigma__vs_frame_number")
     # Sort by resolution
     index = sorted(range(len(self.xyz)), key=lambda i: self.xyz[i][2])
     i_over_s = [i / s for i, s in zip(self.i_xds, self.sigma_xds)]
@@ -522,8 +523,8 @@ class CompareIntensity(object):
         if len(ios) < 10:
           break
         mios = sum(ios) / len(ios)
-        print '%7d %4d %.3f %.3f %.3f' % \
-          (chunk[0], len(ios), min(frames), max(frames), mios)
+        print('%7d %4d %.3f %.3f %.3f' % \
+          (chunk[0], len(ios), min(frames), max(frames), mios))
         mean_i_over_sigma.append(mios)
     chunks = [j for j in range(len(chunks))]
     chunks = chunks[:len(mean_i_over_sigma)]
@@ -537,7 +538,7 @@ class CompareIntensity(object):
     pyplot.close()
 
   def plot_chunked_resolution_vs_frame_number(self):
-    print "plot_chunked_resolution__vs_frame_number"
+    print("plot_chunked_resolution__vs_frame_number")
     # Sort by resolution
     index = sorted(range(len(self.xyz)), key=lambda i: self.xyz[i][2])
     d = [self.d[i] for i in index]
@@ -557,8 +558,8 @@ class CompareIntensity(object):
         if len(dd) < 10:
           break
         md = sum(dd) / len(dd)
-        print '%7d %4d %.3f %.3f %.3f' % \
-          (chunk[0], len(dd), min(frames), max(frames), md)
+        print('%7d %4d %.3f %.3f %.3f' % \
+          (chunk[0], len(dd), min(frames), max(frames), md))
         mean_d.append(md)
     chunks = [j for j in range(len(chunks))]
     chunks = chunks[:len(mean_d)]
@@ -572,7 +573,7 @@ class CompareIntensity(object):
     pyplot.close()
 
   def plot_chunked_lp_vs_frame_number(self):
-    print "plot_chunked_lp__vs_frame_number"
+    print("plot_chunked_lp__vs_frame_number")
     # Sort by resolution
     index = sorted(range(len(self.xyz)), key=lambda i: self.xyz[i][2])
     xlp = [self.xlp[i] for i in index]
@@ -594,8 +595,8 @@ class CompareIntensity(object):
         if len(XLP) < 10:
           break
         r, s, v0 = R(DLP, XLP)
-        print '%7d %4d %.3f %.3f %.3f' % \
-          (chunk[0], len(xlp), min(frames), max(frames), s)
+        print('%7d %4d %.3f %.3f %.3f' % \
+          (chunk[0], len(xlp), min(frames), max(frames), s))
         ss.append(s)
     chunks = [j for j in range(len(chunks))]
     chunks = chunks[:len(ss)]
@@ -611,11 +612,11 @@ class CompareIntensity(object):
   def plot_scale_vs_x_y(self):
     from scitbx.array_family import flex
     from math import ceil
-    print "Getting scale"
+    print("Getting scale")
     points = [(int(xyz[1] / 8), int(xyz[0] / 8)) for xyz in self.xyz]
     scale = [x / d for x, d in zip(self.i_xds, self.i_dials)]
 
-    print "Creating Grid"
+    print("Creating Grid")
     image_size = self.sweep.get_detector()[0].get_image_size()[::-1]
     image_size = (int(ceil(image_size[0] / 8)), int(ceil(image_size[1] / 8)))
     grid = flex.double(flex.grid(image_size))

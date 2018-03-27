@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 import copy
 import logging
 import math
@@ -83,9 +84,9 @@ class refined_settings_list(list):
                          "%.0f"%uc.volume(),
                          "%s"%item['cb_op_inp_best'].as_abc()])
 
-    print >> out, table_utils.format(
-        table_data, has_header=1, justify='right', delim=' ')
-    print >> out, "* = recommended solution"
+    print(table_utils.format(
+        table_data, has_header=1, justify='right', delim=' '), file=out)
+    print("* = recommended solution", file=out)
 
 # Mapping of Bravais lattice type to corresponding lowest possible symmetry
 bravais_lattice_to_lowest_symmetry_spacegroup_number = {

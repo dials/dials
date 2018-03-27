@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 import os
 
@@ -65,9 +66,9 @@ def run(args):
   if params.nproc is libtbx.Auto:
     from libtbx.introspection import number_of_processors
     params.nproc = number_of_processors(return_value_if_unknown=-1)
-  print 'nproc: %i' %params.nproc
+  print('nproc: %i' %params.nproc)
   results = work_all(filenames, args, nproc=params.nproc)
-  print results
+  print(results)
 
   if params.json is not None:
     import json

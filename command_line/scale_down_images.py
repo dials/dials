@@ -1,6 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.scale_down_images
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 def nproc():
   from libtbx.introspection import number_of_processors
@@ -9,7 +10,7 @@ def nproc():
 def joiner(args):
   from dials.util.scale_down_image import scale_down_image
   scale_down_image(*args)
-  print args[1]
+  print(args[1])
 
 def scale_down_images(in_template, out_template, start, end, scale_factor):
   from multiprocessing import Pool

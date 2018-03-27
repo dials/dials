@@ -1,6 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.semisynthetic_variance_analysis
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 def weighted_mean_variance(values, variances):
   import math
@@ -105,7 +106,7 @@ def semisynthetic_variance_analysis(semisynthetic_integrated_data_files,
       # since I have everything needed to compute chi-square here...
       n = len(values)
       chi2 = sum([((v - weighted_mean) ** 2) / weighted_variance for v in values]) / n
-      print '%.3f %.3f %.3f' % (weighted_mean / math.sqrt(weighted_variance), fit.slope(), chi2)
+      print('%.3f %.3f %.3f' % (weighted_mean / math.sqrt(weighted_variance), fit.slope(), chi2))
     else:
       values = { }
       variances = { }
@@ -131,7 +132,7 @@ def semisynthetic_variance_analysis(semisynthetic_integrated_data_files,
         n = len(values[m])
         chi2 = sum([((v - weighted_mean) ** 2) / weighted_variance for v in values[m]]) / n
         result += '%f %.3f %.3f ' % (math.sqrt(weighted_variance), fit.slope(), chi2)
-      print result
+      print(result)
 
 if __name__ == '__main__':
   import sys

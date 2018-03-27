@@ -1,5 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.show_profiles
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 def print_profile(r):
   s = r['shoebox'].data
@@ -7,10 +8,10 @@ def print_profile(r):
   for i in range(_i):
     for j in range(_j):
       for k in range(_k):
-        print '%5d' % int(s[i,j,k]),
-      print ''
-    print ''
-    print ''
+        print('%5d' % int(s[i,j,k]), end=' ')
+      print('')
+    print('')
+    print('')
 
 def show_profiles(integrated_pickle, isig_limit = None):
   from dials.array_family import flex

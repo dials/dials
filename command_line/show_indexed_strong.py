@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.show_indexed_strong
 
@@ -14,7 +15,7 @@ def show_indexed_strong(indexed_data):
 
   for b in range(min(batch), max(batch) + 1):
     sel = batch == b
-    print '%d %d %d' % (b, len(batch.select(sel)), len(mi.select(sel)))
+    print('%d %d %d' % (b, len(batch.select(sel)), len(mi.select(sel))))
 
   return
 
@@ -28,7 +29,7 @@ def show_strong(strong_data):
 
   for b in range(min(batch), max(batch) + 1):
     sel = batch == b
-    print '%d %d' % (b, len(batch.select(sel)))
+    print('%d %d' % (b, len(batch.select(sel))))
 
   return
 

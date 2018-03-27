@@ -1,4 +1,5 @@
 from __future__ import division
+from __future__ import print_function
 from libtbx.phil import parse
 from dials.array_family import flex
 from cctbx.crystal import symmetry
@@ -38,8 +39,8 @@ class SignificanceFilter(object):
     table_header2 = ["Bin","Resolution Range","Completeness","","","cutoff","(um)",""]
 
     for exp_id in xrange(len(experiments)):
-      print "*"*80
-      print "Significance filtering experiment", exp_id
+      print("*"*80)
+      print("Significance filtering experiment", exp_id)
       table_data = []
       table_data.append(table_header)
       table_data.append(table_header2)
@@ -91,18 +92,18 @@ class SignificanceFilter(object):
       for b, row in zip(acceptable_resolution_bins, table_data[2:]):
         if b:
           row.append("X")
-      print table_utils.format(table_data,has_header=2,justify='center',delim=" ")
+      print(table_utils.format(table_data,has_header=2,justify='center',delim=" "))
 
       # Save the results
       if any(acceptable_resolution_bins):
         best_index = acceptable_resolution_bins.count(True)-1
         best_row = table_data[best_index+2]
         d_min = binner.bin_d_range(binner.range_used()[best_index])[1]
-        print "best row:", " ".join(best_row)
+        print("best row:", " ".join(best_row))
         if self.params.enable:
           results.extend(refls.select(d >= d_min))
       else:
-        print "Data didn't pass cutoff"
+        print("Data didn't pass cutoff")
     if self.params.enable:
       return results
     else:

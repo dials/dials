@@ -18,6 +18,7 @@ detector, only the detector parameters are refined at first (using all data)
 then each crystal is refined individually. This forms one macrocycle."""
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 from math import sqrt
 
 from libtbx.phil import parse
@@ -90,8 +91,8 @@ def check_experiment(experiment, reflections):
 
 def detector_refiner(params, experiments, reflections):
 
-  print "Refining detector at hierarchy_level=" + \
-    str(params.refinement.parameterisation.detector.hierarchy_level)
+  print("Refining detector at hierarchy_level=" + \
+    str(params.refinement.parameterisation.detector.hierarchy_level))
 
   # Here use the specialised faster refiner
   refiner = StillsDetectorRefinerFactory.from_parameters_data_experiments(
@@ -101,13 +102,13 @@ def detector_refiner(params, experiments, reflections):
 
 def detector_parallel_refiners(params, experiments, reflections):
 
-  print "Refining detector at hierarchy_level=" + \
-    str(params.refinement.parameterisation.detector.hierarchy_level), "\n"
+  print("Refining detector at hierarchy_level=" + \
+    str(params.refinement.parameterisation.detector.hierarchy_level), "\n")
   orig_detector = experiments.detectors()[0]
   try:
     h = orig_detector.hierarchy()
   except AttributeError:
-    print "This detector does not have a hierarchy"
+    print("This detector does not have a hierarchy")
     raise
 
   # get the panel groups at the chosen level
@@ -115,18 +116,18 @@ def detector_parallel_refiners(params, experiments, reflections):
   try:
     groups = get_panel_groups_at_depth(h, level)
   except AttributeError:
-    print "Cannot access the hierarchy at the depth level={0}".format(level)
+    print("Cannot access the hierarchy at the depth level={0}".format(level))
     raise
 
   # collect the panel ids for each Panel within the groups
   panels = [p for p in orig_detector]
   panel_ids_by_group = [get_panel_ids_at_root(panels, g) for g in groups]
 
-  print "The detector will be divided into", len(panel_ids_by_group), \
-    "groups consisting of the following panels:"
+  print("The detector will be divided into", len(panel_ids_by_group), \
+    "groups consisting of the following panels:")
   for i, g in enumerate(panel_ids_by_group):
-    print "Group%02d:" % (i+1), g
-  print
+    print("Group%02d:" % (i+1), g)
+  print()
 
   # now construct sub-detectors
   def recursive_add_child(d, parent, child):
@@ -194,7 +195,7 @@ def detector_parallel_refiners(params, experiments, reflections):
     refs, exps = item
 
     if len(refs) < 20:
-      print "Cannot refine detector", exps[0].detector.hierarchy().get_name(), "due to too few reflections (", len(refs), ")"
+      print("Cannot refine detector", exps[0].detector.hierarchy().get_name(), "due to too few reflections (", len(refs), ")")
       return exps # do not refine this detector element
 
     # Here use the specialised faster refiner
@@ -221,9 +222,9 @@ def detector_parallel_refiners(params, experiments, reflections):
     group.set_frame(f, s, o) # propagates local frame changes
 
   # refine the full detector to get RMSDs per panel
-  print
-  print "Refining full recombined detector"
-  print "---------------------------------"
+  print()
+  print("Refining full recombined detector")
+  print("---------------------------------")
   experiments = detector_refiner(params, experiments, reflections)
 
   # reset hierarchy_level
@@ -236,7 +237,7 @@ def crystals_refiner(params, experiments, reflections):
   def do_work(item):
     iexp, exp = item
 
-    print "Refining crystal", iexp
+    print("Refining crystal", iexp)
     # reflection subset for a single experiment
     refs = reflections.select(reflections['id'] == iexp)
     refs['id'] = flex.int(len(refs),0)
@@ -255,14 +256,14 @@ def crystals_refiner(params, experiments, reflections):
       # do refinement
       refiner.run()
     except Exception as e:
-      print "Error,", str(e)
+      print("Error,", str(e))
       return
 
     refined_exps = refiner.get_experiments()
     # replace this experiment with the refined one
     experiments[iexp] = refined_exps[0]
 
-  print "Beginning crystal refinement with %d processor(s)"%params.mp.nproc
+  print("Beginning crystal refinement with %d processor(s)"%params.mp.nproc)
   easy_mp.parallel_map(
     func = do_work,
     iterable = enumerate(experiments),
@@ -363,7 +364,7 @@ class Script(object):
 
   def run(self):
 
-    print "Parsing input"
+    print("Parsing input")
     params, options = self.parser.parse_args(show_diff_phil=True)
 
     #Configure the logging
@@ -426,7 +427,7 @@ class Script(object):
         panel.set_frame(vf, vs,
                         panel_oris[i]/len(params.input.experiments))
 
-      print "Reference detector (averaged):", str(ref_exp.detector)
+      print("Reference detector (averaged):", str(ref_exp.detector))
 
     # set the experiment factory that combines a crystal with the reference beam
     # and the reference detector
@@ -461,7 +462,7 @@ class Script(object):
 
         # check this experiment
         if not check_experiment(combined_exp, sub_ref):
-          print "skipping experiment", i, "in", exp_wrapper.filename, "due to poor RMSDs"
+          print("skipping experiment", i, "in", exp_wrapper.filename, "due to poor RMSDs")
           continue
 
         # set reflections ID
@@ -483,16 +484,16 @@ class Script(object):
     header = ["Experiment", "Nref"]
     rows = [(str(i), str(n)) for (i, n) in enumerate(nrefs_per_exp)]
     st = simple_table(rows, header)
-    print "Number of reflections per experiment"
-    print st.format()
+    print("Number of reflections per experiment")
+    print(st.format())
 
     for cycle in range(params.n_macrocycles):
 
-      print "MACROCYCLE %02d" % (cycle + 1)
-      print "=============\n"
+      print("MACROCYCLE %02d" % (cycle + 1))
+      print("=============\n")
       # first run: multi experiment joint refinement of detector with fixed beam and
       # crystals
-      print "PHASE 1"
+      print("PHASE 1")
 
       # SET THIS TEST TO FALSE TO REFINE WHOLE DETECTOR AS SINGLE JOB
       if params.detector_phase.refinement.parameterisation.detector.hierarchy_level > 0:
@@ -501,20 +502,20 @@ class Script(object):
         experiments = detector_refiner(params.detector_phase, experiments, reflections)
 
       # second run
-      print "PHASE 2"
+      print("PHASE 2")
       experiments = crystals_refiner(params.crystals_phase, experiments, reflections)
 
     # Save the refined experiments to file
     output_experiments_filename = params.output.experiments_filename
-    print 'Saving refined experiments to {0}'.format(output_experiments_filename)
+    print('Saving refined experiments to {0}'.format(output_experiments_filename))
     from dxtbx.model.experiment_list import ExperimentListDumper
     dump = ExperimentListDumper(experiments)
     dump.as_json(output_experiments_filename)
 
     # Write out refined reflections, if requested
     if params.output.reflections_filename:
-      print 'Saving refined reflections to {0}'.format(
-        params.output.reflections_filename)
+      print('Saving refined reflections to {0}'.format(
+        params.output.reflections_filename))
       reflections.as_pickle(params.output.reflections_filename)
 
     return

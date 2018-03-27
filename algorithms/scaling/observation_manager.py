@@ -12,6 +12,7 @@
 principally ObservationManager."""
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 from dials.array_family import flex
 import cctbx.crystal
 import cctbx.miller
@@ -172,11 +173,11 @@ class Script(object):
     # Try to load the models and data
     nexp = len(experiments)
     if nexp == 0:
-      print "No Experiments found in the input"
+      print("No Experiments found in the input")
       self.parser.print_help()
       return
     if len(reflections) == 0:
-      print "No reflection data found in the input"
+      print("No reflection data found in the input")
       self.parser.print_help()
       return
     if len(reflections) > 1:
@@ -184,7 +185,7 @@ class Script(object):
     reflections = reflections[0] # first reflection list
     reflections = reflections.select(reflections['id'] == 0) # first experiment
     if len(reflections) == 0:
-      print "No reflection data for the first experiment found in the input"
+      print("No reflection data for the first experiment found in the input")
       self.parser.print_help()
       return
     if len(experiments) > 1:

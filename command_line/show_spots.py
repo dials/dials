@@ -1,6 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.show_spots
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 def show_spots(strong_spots):
 
@@ -27,12 +28,12 @@ def show_spots(strong_spots):
   vdz = sum([(v - mdz) ** 2 for v in dz]) / len(dz)
 
   for j in range(len(strong_spots)):
-    print '%8.2f %8.2f %8.2f %8.4f %8.4f %8.4f' % (x[j], y[j], z[j],
-                                                   dx[j], dy[j], dz[j])
+    print('%8.2f %8.2f %8.2f %8.4f %8.4f %8.4f' % (x[j], y[j], z[j],
+                                                   dx[j], dy[j], dz[j]))
 
-  print '<dX>: %.4f %.4f' % (mdx, math.sqrt(vdx))
-  print '<dY>: %.4f %.4f' % (mdy, math.sqrt(vdy))
-  print '<dZ>: %.4f %.4f' % (mdz, math.sqrt(vdz))
+  print('<dX>: %.4f %.4f' % (mdx, math.sqrt(vdx)))
+  print('<dY>: %.4f %.4f' % (mdy, math.sqrt(vdy)))
+  print('<dZ>: %.4f %.4f' % (mdz, math.sqrt(vdz)))
 
 if __name__ == '__main__':
   import sys

@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 from dials.util.options import OptionParser
@@ -95,7 +96,7 @@ def run(args):
     ("d_min (distl method 2)", "%.2f (%.2f)" % (
       overall_stats.d_min_distl_method_1, overall_stats.noisiness_method_1)),
     ]
-  print table_utils.format(rows, has_header=True, prefix="| ", postfix=" |")
+  print(table_utils.format(rows, has_header=True, prefix="| ", postfix=" |"))
 
   if params.json:
     import json

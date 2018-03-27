@@ -11,6 +11,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 from libtbx.phil import command_line
 import iotbx.phil
@@ -80,11 +81,11 @@ def run(args):
       reference_U = U
       reference_space_group = lattice_symmetry_group(crystal.get_unit_cell(),
                                                      max_delta=0.0)
-      print '%s possible lattice ops' % len(reference_space_group.all_ops())
+      print('%s possible lattice ops' % len(reference_space_group.all_ops()))
 
-    print 'Experiment %d' % j
-    print 'Closest (original) axis: %s* %.2f' % \
-      (abc_names[close[1]], close[0])
+    print('Experiment %d' % j)
+    print('Closest (original) axis: %s* %.2f' % \
+      (abc_names[close[1]], close[0]))
 
     results = []
     for op in reference_space_group.all_ops():
@@ -93,13 +94,13 @@ def run(args):
       rot = r3_rotation_axis_and_angle_from_matrix(relative)
       results.append((abs(rot.angle()), op.r().as_hkl(), rot))
     results.sort()
-    print 'Best reindex op for experiment %d: %12s (%.3f)' % \
-      (j, results[0][1], 180.0 * results[0][2].angle() / pi)
+    print('Best reindex op for experiment %d: %12s (%.3f)' % \
+      (j, results[0][1], 180.0 * results[0][2].angle() / pi))
 
     if results[0][0] > (5 * pi / 180.0):
-      print 'Rotation: axis: %.4f %.4f %.4f' % results[0][2].axis
-      print '          angle: %.4f degrees' % \
-        (180.0 * results[0][2].angle() / pi)
+      print('Rotation: axis: %.4f %.4f %.4f' % results[0][2].axis)
+      print('          angle: %.4f degrees' % \
+        (180.0 * results[0][2].angle() / pi))
 
 if __name__ == '__main__':
   import sys

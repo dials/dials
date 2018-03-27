@@ -1,6 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.generate_tutorial_text
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 import argparse
 import glob
@@ -24,7 +25,7 @@ class Job(object):
 
     :returns: Dictionary with keys 'cmd' and 'result'
     """
-    print self.cmd
+    print(self.cmd)
     self.result = Job.run_process(self.cmd)
     self.mangle_result()
     return {'cmd':self.cmd, 'result':self.result['stdout']}
@@ -37,7 +38,7 @@ class Job(object):
   def run_process(command):
     """Runs a command, prints running info and results the result, if success"""
     result = run_process(shlex.split(command))
-    print "running command took {0:.2f} seconds\n".format(result['runtime'])
+    print("running command took {0:.2f} seconds\n".format(result['runtime']))
     assert result['exitcode'] == 0, "Command execution failed"
     return result
 
@@ -169,7 +170,7 @@ def generate_processing_detail_text():
     job_writer("dials.report.cmd", "dials-report.html", report_html_job)
     job_writer("dials.export.cmd", "dials.export.log", export_job)
 
-    print "Updated result files written to {0}".format(result_dir)
+    print("Updated result files written to {0}".format(result_dir))
 
   finally:
     os.chdir(cwd)
@@ -227,7 +228,7 @@ def generate_processing_detail_text_ccp4():
     # Report step is special; we want the dials-report.html file instead
     shutil.copy("dials-report.html", OUTPUT_DIR)
 
-    print "Updated result files written to {0}".format(OUTPUT_DIR)
+    print("Updated result files written to {0}".format(OUTPUT_DIR))
 
   finally:
     # Remove our intermediatary files

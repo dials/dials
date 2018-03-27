@@ -1,6 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.generate_bias_lookup_table
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 def sum_of_erf(mu, sigma, N=1000):
   '''
@@ -72,4 +73,4 @@ if __name__ == '__main__':
   sigma, bias_sq = compute_lookup_table()
 
   for s, b in zip(sigma, bias_sq):
-    print "%0.2f %0.7f" % (s, b)
+    print("%0.2f %0.7f" % (s, b))

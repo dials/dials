@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 import socket as pysocket
 
 def work(host, port, filename, params):
@@ -65,7 +66,7 @@ def work_all(host, port, filenames, params, plot=False, table=False,
     response = threads[filename].get()
     d = json.loads(response)
     results.append(d)
-    print response_to_xml(d)
+    print(response_to_xml(d))
 
   if json_file is not None:
     'Writing results to %s' %json_file
@@ -112,7 +113,7 @@ def work_all(host, port, filenames, params, plot=False, table=False,
     if grid is not None:
       from matplotlib import pyplot
       n_spots_no_ice.reshape(flex.grid(grid))
-      print n_spots_no_ice.size()
+      print(n_spots_no_ice.size())
       from matplotlib import pyplot
       fig = pyplot.figure()
       pyplot.pcolormesh(n_spots_no_ice.as_numpy_array(), cmap=pyplot.cm.Reds)
@@ -131,12 +132,12 @@ def stop(host, port, nproc):
       if socket.getcode() == '200':
         stopped = stopped + 1
       else:
-        print "socket returned code", socket.getcode()
+        print("socket returned code", socket.getcode())
     except (pysocket.timeout, urllib2.HTTPError) as e:
-      print "error on stopping server:", e
+      print("error on stopping server:", e)
     except urllib2.URLError as e:
       if e.reason.errno != 111:
-        print "error on stopping server:", e
+        print("error on stopping server:", e)
     except pysocket.error:
       # Assuming this means the server killed itself before the reply left the send buffer.
       stopped = stopped + 1
@@ -191,22 +192,22 @@ if __name__ == '__main__':
 
   if len(unhandled) and unhandled[0] == 'stop':
     stopped = stop(params.host, params.port, params.nproc)
-    print 'Stopped %d findspots processes' % stopped
+    print('Stopped %d findspots processes' % stopped)
   elif len(unhandled) and unhandled[0] == 'ping':
     from urllib2 import urlopen
     url = 'http://%s:%i' %(params.host, params.port)
     try:
       data = urlopen(url).read()
-      print "Success"
+      print("Success")
       sys.exit(0)
     except Exception:
-      print "Failure"
+      print("Failure")
       sys.exit(1)
   else:
     if len(filenames) == 1:
       response = work(params.host, params.port, filenames[0], unhandled)
       import json
-      print response_to_xml(json.loads(response))
+      print(response_to_xml(json.loads(response)))
     else:
       work_all(params.host, params.port, filenames, unhandled, plot=params.plot,
                table=params.table, json_file=params.json,

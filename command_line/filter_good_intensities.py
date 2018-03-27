@@ -1,6 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.filter_good_intensities
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 def filter_good_reflections(integrated_data):
   assert(min(integrated_data['id']) == max(integrated_data['id']) == 0)
@@ -8,22 +9,22 @@ def filter_good_reflections(integrated_data):
   selection = integrated_data['intensity.sum.variance'] <= 0
   if selection.count(True) > 0:
     integrated_data.del_selected(selection)
-    print 'Removing %d reflections with negative variance' % \
-          selection.count(True)
+    print('Removing %d reflections with negative variance' % \
+          selection.count(True))
 
   if 'intensity.prf.variance' in integrated_data:
     selection = integrated_data['intensity.prf.variance'] <= 0
     if selection.count(True) > 0:
       integrated_data.del_selected(selection)
-      print 'Removing %d profile reflections with negative variance' % \
-            selection.count(True)
+      print('Removing %d profile reflections with negative variance' % \
+            selection.count(True))
 
   if 'partiality' in integrated_data:
     selection = integrated_data['partiality'] < 0.99
     if selection.count(True) > 0:
       integrated_data.del_selected(selection)
-      print 'Removing %d incomplete reflections' % \
-        selection.count(True)
+      print('Removing %d incomplete reflections' % \
+        selection.count(True))
 
   return integrated_data
 

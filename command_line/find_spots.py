@@ -12,6 +12,7 @@
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 import logging
 logger = logging.getLogger('dials.command_line.find_spots')
@@ -178,7 +179,7 @@ class Script(object):
       from cStringIO import StringIO
       s = StringIO()
       for i, imageset in enumerate(datablocks[0].extract_imagesets()):
-        print >> s, "Number of centroids per image for imageset %i:" %i
+        print("Number of centroids per image for imageset %i:" %i, file=s)
         stats = per_image_analysis.stats_imageset(
           imageset, reflections.select(reflections['id'] == i),
           resolution_analysis=False)

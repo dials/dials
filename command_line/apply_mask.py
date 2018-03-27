@@ -10,6 +10,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 from iotbx.phil import parse
 
 help_message = '''
@@ -92,7 +93,7 @@ class Script(object):
     imageset.external_lookup.mask.filename = params.input.mask
 
     # Dump the datablock
-    print "Writing datablock to %s" % params.output.datablock
+    print("Writing datablock to %s" % params.output.datablock)
     dump = DataBlockDumper(datablock)
     dump.as_json(filename=params.output.datablock)
 

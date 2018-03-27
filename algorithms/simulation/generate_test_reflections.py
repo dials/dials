@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 from libtbx.phil import parse
 
@@ -376,8 +377,8 @@ def main(params):
     else:
       underestimates.append(j)
 
-  print '%d overestimates, %d underestimates' % (len(overestimates),
-                                                 len(underestimates))
+  print('%d overestimates, %d underestimates' % (len(overestimates),
+                                                 len(underestimates)))
 
   overestimates = rlist.select(flex.size_t(overestimates))
   underestimates = rlist.select(flex.size_t(underestimates))

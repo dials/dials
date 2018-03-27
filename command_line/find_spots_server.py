@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 import time
 import BaseHTTPServer as server_base
 from multiprocessing import Process
@@ -284,7 +285,7 @@ port = 1701
 def main(nproc, port):
   server_class = server_base.HTTPServer
   httpd = server_class(('', port), handler)
-  print time.asctime(), 'Serving %d processes on port %d' % (nproc, port)
+  print(time.asctime(), 'Serving %d processes on port %d' % (nproc, port))
 
   for j in range(nproc - 1):
     proc = Process(target=serve, args=(httpd,))
@@ -292,7 +293,7 @@ def main(nproc, port):
     proc.start()
   serve(httpd)
   httpd.server_close()
-  print time.asctime(), 'done'
+  print(time.asctime(), 'done')
 
 if __name__ == '__main__':
   usage = '%s [options]' % libtbx.env.dispatcher_name

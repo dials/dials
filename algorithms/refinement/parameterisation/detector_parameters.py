@@ -10,6 +10,7 @@
 #
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 from scitbx import matrix
 
 from dials.algorithms.refinement.parameterisation.model_parameters import Parameter, ModelParameterisation
@@ -846,14 +847,14 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
     try:
       h = detector.hierarchy()
     except AttributeError:
-      print "This detector does not have a hierarchy"
+      print("This detector does not have a hierarchy")
       raise
 
     # list the panel groups at the chosen level
     try:
       self._groups = get_panel_groups_at_depth(h, level)
     except AttributeError:
-      print "Cannot access the hierarchy at the depth level={0}".format(level)
+      print("Cannot access the hierarchy at the depth level={0}".format(level))
       raise
 
     # collect the panel ids for each Panel within the groups

@@ -10,6 +10,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 class SpotXDSImporter(object):
   ''' Class to import a spot.xds file to a reflection table. '''
@@ -116,7 +117,7 @@ class IntegrateHKLImporter(object):
 
     # Derive the reindex matrix
     rdx = self.derive_reindex_matrix(handle)
-    print 'Reindex matrix:\n%d %d %d\n%d %d %d\n%d %d %d' % (rdx.elems)
+    print('Reindex matrix:\n%d %d %d\n%d %d %d\n%d %d %d' % (rdx.elems))
 
     # Reindex the reflections
     Command.start('Reindexing reflections')
@@ -202,14 +203,14 @@ class XDSFileImporter(object):
 
     # Print out any unhandled files
     if len(unhandled) > 0:
-      print '-' * 80
-      print 'The following command line arguments were not handled:'
+      print('-' * 80)
+      print('The following command line arguments were not handled:')
       for filename in unhandled:
-        print '  %s' % filename
+        print('  %s' % filename)
 
     # Print some general info
-    print '-' * 80
-    print 'Read %d experiments from %s' % (len(experiments), xds_file)
+    print('-' * 80)
+    print('Read %d experiments from %s' % (len(experiments), xds_file))
 
     # Attempt to create scan-varying crystal model if requested
     if params.read_varying_crystal:
@@ -217,44 +218,44 @@ class XDSFileImporter(object):
       if os.path.isfile(integrate_lp):
         self.extract_varying_crystal(integrate_lp, experiments)
       else:
-        print "No INTEGRATE.LP to extract varying crystal model. Skipping"
+        print("No INTEGRATE.LP to extract varying crystal model. Skipping")
 
     # Loop through the data blocks
     for i, exp in enumerate(experiments):
 
       # Print some experiment info
-      print "-" * 80
-      print "Experiment %d" % i
-      print "  format: %s" % str(exp.imageset.get_format_class())
-      print "  type: %s" % type(exp.imageset)
-      print "  num images: %d" % len(exp.imageset)
+      print("-" * 80)
+      print("Experiment %d" % i)
+      print("  format: %s" % str(exp.imageset.get_format_class()))
+      print("  type: %s" % type(exp.imageset))
+      print("  num images: %d" % len(exp.imageset))
 
       # Print some model info
       if options.verbose > 1:
-        print ""
-        if exp.beam:       print exp.beam
-        else:              print "no beam!"
-        if exp.detector:   print exp.detector
-        else:              print "no detector!"
-        if exp.goniometer: print exp.goniometer
-        else:              print "no goniometer!"
-        if exp.scan:       print exp.scan
-        else:              print "no scan!"
-        if exp.crystal:    print exp.crystal
-        else:              print "no crystal!"
+        print("")
+        if exp.beam:       print(exp.beam)
+        else:              print("no beam!")
+        if exp.detector:   print(exp.detector)
+        else:              print("no detector!")
+        if exp.goniometer: print(exp.goniometer)
+        else:              print("no goniometer!")
+        if exp.scan:       print(exp.scan)
+        else:              print("no scan!")
+        if exp.crystal:    print(exp.crystal)
+        else:              print("no crystal!")
 
     # Write the experiment list to a JSON or pickle file
     if params.output.filename is None:
       params.output.filename = 'experiments.json'
-    print "-" * 80
-    print 'Writing experiments to %s' % params.output.filename
+    print("-" * 80)
+    print('Writing experiments to %s' % params.output.filename)
     dump = ExperimentListDumper(experiments)
     dump.as_file(params.output.filename)
 
     # Optionally save as a data block
     if params.output.xds_datablock:
-      print "-" * 80
-      print "Writing data block to %s" % params.output.xds_datablock
+      print("-" * 80)
+      print("Writing data block to %s" % params.output.xds_datablock)
       dump = DataBlockDumper(experiments.to_datablocks())
       dump.as_file(params.output.xds_datablock)
 
@@ -285,8 +286,8 @@ class XDSFileImporter(object):
     '''
 
     if len(experiments) > 1:
-      print "Can only read a varying crystal model for a single " +\
-            "experiment. Skipping."
+      print("Can only read a varying crystal model for a single " +\
+            "experiment. Skipping.")
       return
     experiment = experiments[0]
 
@@ -325,7 +326,7 @@ class XDSFileImporter(object):
       assert len(a_axis) == len(b_axis) == len(c_axis) == nblocks
       assert (xds_axis, xds_beam).count(None) == 0
     except AssertionError:
-      print msg
+      print(msg)
       return
 
     # conversions to numeric
@@ -337,7 +338,7 @@ class XDSFileImporter(object):
       xds_beam = [float(e) for e in xds_beam]
       xds_axis = [float(e) for e in xds_axis]
     except ValueError:
-      print msg
+      print(msg)
       return
 
     # coordinate frame conversions

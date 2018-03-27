@@ -1,5 +1,6 @@
 #!/usr/bin/env dials.python
 from __future__ import absolute_import, division
+from __future__ import print_function
 from libtbx.phil import parse
 
 help_message = '''
@@ -261,7 +262,7 @@ class Cluster(object):
       write_file_lists=False,
       schnell=False,
       doplot=dendrogram)
-    print unit_cell_info(self.clusters)
+    print(unit_cell_info(self.clusters))
     self.clustered_frames = {int(c.cname.split("_")[1]):c.members for c in self.clusters}
     if dendrogram:
       plt.tight_layout()
@@ -300,11 +301,11 @@ class Script(object):
 
     # Try to load the models and data
     if len(params.input.experiments) == 0:
-      print "No Experiments found in the input"
+      print("No Experiments found in the input")
       self.parser.print_help()
       return
     if len(params.input.reflections) == 0:
-      print "No reflection data found in the input"
+      print("No reflection data found in the input")
       self.parser.print_help()
       return
     try:
@@ -426,15 +427,15 @@ class Script(object):
 
     if params.output.min_reflections_per_experiment is not None and \
         skipped_expts > 0:
-      print "Removed {0} experiments with fewer than {1} reflections".format(
-        skipped_expts, params.output.min_reflections_per_experiment)
+      print("Removed {0} experiments with fewer than {1} reflections".format(
+        skipped_expts, params.output.min_reflections_per_experiment))
 
     # print number of reflections per experiment
     from libtbx.table_utils import simple_table
     header = ["Experiment", "Nref"]
     rows = [(str(i), str(n)) for (i, n) in enumerate(nrefs_per_exp)]
     st = simple_table(rows, header)
-    print st.format()
+    print(st.format())
 
     # save a random subset if requested
     if params.output.n_subset is not None and len(experiments) > params.output.n_subset:
@@ -451,8 +452,8 @@ class Script(object):
           refls['id'] = flex.int(len(refls), n_picked)
           subset_refls.extend(refls)
           n_picked += 1
-        print "Selecting a random subset of {0} experiments out of {1} total.".format(
-          params.output.n_subset, len(experiments))
+        print("Selecting a random subset of {0} experiments out of {1} total.".format(
+          params.output.n_subset, len(experiments)))
       elif params.output.n_subset_method == "n_refl":
         if params.output.n_refl_panel_list is None:
           refls_subset = reflections
@@ -470,8 +471,8 @@ class Script(object):
           refls = reflections.select(reflections['id'] == idx)
           refls['id'] = flex.int(len(refls), expt_id)
           subset_refls.extend(refls)
-        print "Selecting a subset of {0} experiments with highest number of reflections out of {1} total.".format(
-          params.output.n_subset, len(experiments))
+        print("Selecting a subset of {0} experiments with highest number of reflections out of {1} total.".format(
+          params.output.n_subset, len(experiments)))
 
       experiments = subset_exp
       reflections = subset_refls
@@ -479,10 +480,10 @@ class Script(object):
     def save_output(experiments, reflections, exp_name, refl_name):
       # save output
       from dxtbx.model.experiment_list import ExperimentListDumper
-      print 'Saving combined experiments to {0}'.format(exp_name)
+      print('Saving combined experiments to {0}'.format(exp_name))
       dump = ExperimentListDumper(experiments)
       dump.as_json(exp_name)
-      print 'Saving combined reflections to {0}'.format(refl_name)
+      print('Saving combined reflections to {0}'.format(refl_name))
       reflections.as_pickle(refl_name)
 
     def save_in_batches(experiments, reflections, exp_name, refl_name, batch_size=1000):

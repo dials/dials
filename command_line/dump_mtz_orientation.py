@@ -11,6 +11,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 def dump_mtz_orientation(mtz_file):
   from iotbx import mtz
@@ -20,7 +21,7 @@ def dump_mtz_orientation(mtz_file):
   m = mtz.object(mtz_file)
   for b in m.batches():
     rxyz = tuple(xyz_angles(matrix.sqr(b.umat())))
-    print b.num(), '%7.4f %7.4f %7.4f' % rxyz
+    print(b.num(), '%7.4f %7.4f %7.4f' % rxyz)
 
 if __name__ == '__main__':
   import sys

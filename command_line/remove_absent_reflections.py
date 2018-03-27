@@ -1,6 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.remove_absent_reflections
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 from iotbx import mtz
 
@@ -36,5 +37,5 @@ if __name__ == '__main__':
   if not os.paths.exists(hklout):
     raise Sorry('%s does not exist' % hklout)
 
-  print 'Removed %d absent reflections' % remove_absent_reflections(
-    hklin, hklout)
+  print('Removed %d absent reflections' % remove_absent_reflections(
+    hklin, hklout))

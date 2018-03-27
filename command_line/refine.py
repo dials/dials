@@ -12,6 +12,7 @@
 
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 from __future__ import absolute_import, division
+from __future__ import print_function
 import logging
 logger = logging.getLogger('dials.command_line.refine')
 from libtbx.utils import Sorry
@@ -213,11 +214,11 @@ class Script(object):
     # Try to load the models and data
     nexp = len(experiments)
     if nexp == 0:
-      print "No Experiments found in the input"
+      print("No Experiments found in the input")
       self.parser.print_help()
       return
     if len(reflections) == 0:
-      print "No reflection data found in the input"
+      print("No reflection data found in the input")
       self.parser.print_help()
       return
     if len(reflections) > 1:

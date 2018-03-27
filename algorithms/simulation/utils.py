@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 def build_prediction_matrix(hkl, mhkl, phkl, hmkl, hpkl, hkml, hkpl, tst=False):
   '''Build a prediction matrix around reflection hkl, coomputing dx / dh etc.'''
 
@@ -28,6 +29,6 @@ def build_prediction_matrix(hkl, mhkl, phkl, hmkl, hpkl, hkml, hkpl, tst=False):
     dy = y[0] + dxyz[1] - y[j + 1]
     dz = z[0] + dxyz[2] - z[j + 1]
 
-    print j, dx, dy, dz
+    print(j, dx, dy, dz)
 
   return d

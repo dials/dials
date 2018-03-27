@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.compare_mosflm_dials
 
@@ -59,7 +60,7 @@ def pull_reference(integrate_mtz):
 
   i = i_lp / lp
 
-  print 'Reference: %d observations' % len(hkl)
+  print('Reference: %d observations' % len(hkl))
   return hkl, i, sigi, xyz
 
 def integrate_mtz_to_unit_cell(integrate_mtz):
@@ -105,7 +106,7 @@ def pull_calculated(integrate_pkl):
     z = r.frame_number
     xyz.append((x, y, z))
 
-  print 'Computed: %d observations' % len(hkl)
+  print('Computed: %d observations' % len(hkl))
   return hkl, i, sigi, xyz
 
 def meansd(values):
@@ -152,7 +153,7 @@ def compare_chunks(integrate_mtz, integrate_pkl, crystal_json, sweep_json):
 
   rdx = derive_reindex_matrix(crystal_json, sweep_json, integrate_mtz)
 
-  print rdx
+  print(rdx)
 
   xhkl, xi, xsigi, xxyz = pull_reference(integrate_mtz)
   dhkl, di, dsigi, dxyz = pull_calculated(integrate_pkl)
@@ -211,7 +212,7 @@ def compare_chunks(integrate_mtz, integrate_pkl, crystal_json, sweep_json):
 
   # then extract the original observation structure
 
-  print 'Paired %d observations' % len(MOS)
+  print('Paired %d observations' % len(MOS))
 
   scale = sum(MOS) / sum(DIALS)
 

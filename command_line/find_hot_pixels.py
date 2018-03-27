@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 import iotbx.phil
 from dials.util.options import OptionParser
@@ -93,7 +94,7 @@ def run(args):
   mask = hot_pixel_mask(imagesets[0], reflections)
   pickle.dump(mask, open(params.output.mask, 'w'), pickle.HIGHEST_PROTOCOL)
 
-  print 'Wrote hot pixel mask to %s' % params.output.mask
+  print('Wrote hot pixel mask to %s' % params.output.mask)
   return
 
 def hot_pixel_mask(imageset, reflections):
@@ -107,7 +108,7 @@ def hot_pixel_mask(imageset, reflections):
   for x, y in xylist:
     mask[y, x] = False
 
-  print 'Found %d hot pixels' % len(xylist)
+  print('Found %d hot pixels' % len(xylist))
 
   return (mask,)
 

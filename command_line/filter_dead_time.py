@@ -1,6 +1,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.filter_dead_time
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 import iotbx.phil
 
@@ -95,10 +96,10 @@ def run(args):
     sel = overlap > params.reject_fraction
 
     sel_good.set_selected(sel, False)
-    print 'Rejecting %i reflections from image %i' %(sel.count(True), i)
+    print('Rejecting %i reflections from image %i' %(sel.count(True), i))
 
-  print 'Keeping %i reflections (rejected %i)' %(
-    sel_good.count(True), sel_good.count(False))
+  print('Keeping %i reflections (rejected %i)' %(
+    sel_good.count(True), sel_good.count(False)))
 
   from libtbx import easy_pickle
   easy_pickle.dump(params.output.reflections, reflections.select(sel_good))

@@ -1,5 +1,6 @@
 #!/usr/bin/env dials.python
 from __future__ import absolute_import, division
+from __future__ import print_function
 from libtbx.phil import parse
 from scitbx import matrix
 from libtbx.table_utils import simple_table
@@ -60,12 +61,12 @@ class Script(object):
 
     # Try to load the experiments
     if not params.input.experiments:
-      print "No Experiments found in the input"
+      print("No Experiments found in the input")
       self.parser.print_help()
       return
 
     experiments = flatten_experiments(params.input.experiments)
-    print "{0} experiments loaded".format(len(experiments))
+    print("{0} experiments loaded".format(len(experiments)))
 
     us0_vecs = self.extract_us0_vecs(experiments)
     e_vecs = self.extract_rotation_axes(experiments)
@@ -81,17 +82,17 @@ class Script(object):
       rows.append([str(iexp), beam_str, e_str, fmt.format(ang)])
     if len(rows) > 0:
       st = simple_table(rows, header)
-      print st.format()
+      print(st.format())
 
     # mean and sd
     if len(rows) > 1:
       angles = flex.double(angles)
       mv = flex.mean_and_variance(angles)
 
-      print "Mean and standard deviation of the angle"
+      print("Mean and standard deviation of the angle")
       print (fmt.format(mv.mean()) + " +/- " + fmt.format(
         mv.unweighted_sample_standard_deviation()))
-      print
+      print()
 
     return
 

@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 import iotbx.phil
 
@@ -199,7 +200,7 @@ def run(args):
       path = os.path.join(
         output_dir, params.prefix + ("%04d" % i_image) + '.' + params.format)
 
-      print "Exporting %s" %path
+      print("Exporting %s" %path)
       with open(path, 'wb') as tmp_stream:
         pil_img.save(tmp_stream, format=params.format,
                      compress_level=params.png.compress_level,

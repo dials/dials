@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 import math
 from libtbx import group_args
@@ -828,8 +829,8 @@ def print_table(stats, perm=None, n_rows=None, out=None):
   from libtbx import table_utils
 
   rows = table(stats, perm=perm, n_rows=n_rows)
-  print >> out, table_utils.format(
-    rows, has_header=True, prefix="| ", postfix=" |")
+  print(table_utils.format(
+    rows, has_header=True, prefix="| ", postfix=" |"), file=out)
 
 def plot_stats(stats, filename='per_image_analysis.png'):
   n_spots_total = flex.int(stats.n_spots_total)
