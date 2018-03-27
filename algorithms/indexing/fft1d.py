@@ -12,9 +12,9 @@
 
 from __future__ import absolute_import, division
 
-from scitbx.array_family import flex
 from dials.algorithms.indexing.indexer import indexer_base
 from dxtbx.model.experiment_list import Experiment, ExperimentList
+from scitbx.array_family import flex
 
 class indexer_fft1d(indexer_base):
 

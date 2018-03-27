@@ -10,16 +10,18 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division
-from __future__ import print_function
-import logging
-logger = logging.getLogger('dials.command_line.two_theta_refine')
+from __future__ import absolute_import, division, print_function
+
 import cPickle as pickle
+import logging
+from time import time
+
 from dials.array_family import flex
 from dials.util import log
 from dials.util.version import dials_version
 from libtbx.utils import Sorry, format_float_with_standard_uncertainty
-from time import time
+
+logger = logging.getLogger('dials.command_line.two_theta_refine')
 
 help_message = '''
 

@@ -10,7 +10,6 @@
 
 from __future__ import absolute_import, division
 
-
 class ReflectionBlockIntegratorStills(object):
   ''' A class to perform the integration. '''
 

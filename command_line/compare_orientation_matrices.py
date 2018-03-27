@@ -1,7 +1,7 @@
-from __future__ import absolute_import, division
-from cctbx.array_family import flex
+from __future__ import absolute_import, division, print_function
 
 import iotbx.phil
+from cctbx.array_family import flex
 
 help_message = '''
 

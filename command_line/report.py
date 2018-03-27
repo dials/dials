@@ -12,14 +12,14 @@
 #
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
 import copy
 import math
-
 from collections import OrderedDict
-from dials.array_family import flex
+
 import dials.util.banner
+from dials.array_family import flex
 
 RAD2DEG = 180/math.pi
 

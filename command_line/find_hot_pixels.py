@@ -1,12 +1,11 @@
-from __future__ import absolute_import, division
-from __future__ import print_function
-
-import iotbx.phil
-from dials.util.options import OptionParser
-from dials.util.options import flatten_reflections
-from dials.util.options import flatten_datablocks
+from __future__ import absolute_import, division, print_function
 
 import logging
+
+import iotbx.phil
+from dials.util.options import (OptionParser, flatten_datablocks,
+                                flatten_reflections)
+
 logger = logging.getLogger('dials.command_line.find_hot_pixels')
 
 phil_scope = iotbx.phil.parse("""\

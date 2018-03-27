@@ -11,10 +11,10 @@
 #
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import logging
+
 logger = logging.getLogger('dials.command_line.find_spots')
 
 help_message = '''

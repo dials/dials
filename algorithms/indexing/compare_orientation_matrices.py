@@ -1,9 +1,9 @@
-from __future__ import absolute_import, division
-from __future__ import print_function
-from scitbx.math import r3_rotation_axis_and_angle_from_matrix
-from scitbx import matrix
+from __future__ import absolute_import, division, print_function
+
 import math
 
+from scitbx import matrix
+from scitbx.math import r3_rotation_axis_and_angle_from_matrix
 
 def difference_rotation_matrix_axis_angle(crystal_a, crystal_b, target_angle=0):
   from cctbx import sgtbx

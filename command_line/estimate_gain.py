@@ -1,11 +1,9 @@
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import iotbx.phil
-from scitbx.array_family import flex
-from dials.util.options import OptionParser
-from dials.util.options import flatten_datablocks
+from dials.util.options import OptionParser, flatten_datablocks
 from libtbx.utils import Sorry
+from scitbx.array_family import flex
 
 help_message = '''
 

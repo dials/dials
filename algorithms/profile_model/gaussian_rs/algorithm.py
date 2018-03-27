@@ -11,7 +11,6 @@
 
 from __future__ import division
 
-
 class GaussianRSMaskCalculatorFactory(object):
   '''
   Factory class for mask calculator

@@ -1,12 +1,12 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
-from __future__ import absolute_import, division
-from __future__ import print_function
-from scitbx.array_family import flex
+from __future__ import absolute_import, division, print_function
+
+import libtbx
 import libtbx.phil
 from libtbx.utils import Sorry
-import libtbx
+from scitbx.array_family import flex
 
 help_message = '''
 Generate a 1d or 2d goniometer detector shadow plot for a given datablock.

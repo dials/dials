@@ -95,4 +95,3 @@ class GLMBackgroundCalculatorFactory(object):
       tuning_constant = tuning_constant,
       max_iter        = 100,
       min_pixels      = min_pixels)
-

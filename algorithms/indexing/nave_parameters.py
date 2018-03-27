@@ -2,11 +2,12 @@
 # -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 2 -*-
 #
 
-from __future__ import absolute_import, division
-from __future__ import print_function
-from scitbx.matrix import sqr,col
-from dials.array_family import flex
+from __future__ import absolute_import, division, print_function
+
 import math
+
+from dials.array_family import flex
+from scitbx.matrix import col, sqr
 
 """
 Class to determine mosaicity and effective domain size for a crystal given a set of indexed reflections

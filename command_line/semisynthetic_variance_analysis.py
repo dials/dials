@@ -1,7 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.semisynthetic_variance_analysis
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 def weighted_mean_variance(values, variances):
   import math

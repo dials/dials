@@ -1,9 +1,9 @@
 #!/usr/bin/env dials.python
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
 from libtbx.phil import parse
-from scitbx import matrix
 from libtbx.table_utils import simple_table
+from scitbx import matrix
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.compare_beam_spindle_angles
 
@@ -115,4 +115,3 @@ if __name__ == "__main__":
     script.run()
   except Exception as e:
     halraiser(e)
-

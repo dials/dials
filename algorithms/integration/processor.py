@@ -9,12 +9,15 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
-import boost.python
+
 import logging
-logger = logging.getLogger(__name__)
-from dials_algorithms_integration_integrator_ext import *
-from dials.util import phil
+
+import boost.python
 import libtbx
+from dials.util import phil
+from dials_algorithms_integration_integrator_ext import *
+
+logger = logging.getLogger(__name__)
 
 class ExecutorAux(Executor, boost.python.injector):
 

@@ -10,12 +10,11 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
-from libtbx.phil import command_line
 import iotbx.phil
 from dials.util.options import OptionParser
+from libtbx.phil import command_line
 
 help_message = '''
 

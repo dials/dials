@@ -1,8 +1,11 @@
 
 from __future__ import absolute_import, division
+
 import logging
-logger = logging.getLogger(__name__)
+
 from dials_algorithms_background_modeller_ext import *
+
+logger = logging.getLogger(__name__)
 
 
 class FinalizeModel(object):

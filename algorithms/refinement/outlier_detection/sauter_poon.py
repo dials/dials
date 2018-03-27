@@ -11,6 +11,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+
 from dials.algorithms.refinement.outlier_detection import CentroidOutlier
 from dials.array_family import flex
 

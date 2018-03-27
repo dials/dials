@@ -1,6 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.generate_test_reflections
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 def main(args):
   from dials.algorithms.simulation.generate_test_reflections import \

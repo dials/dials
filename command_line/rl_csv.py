@@ -1,6 +1,5 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.csv
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import iotbx.phil
 from scitbx.array_family import flex

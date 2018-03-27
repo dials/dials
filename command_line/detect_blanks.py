@@ -1,14 +1,15 @@
-from __future__ import absolute_import, division
-
-import math
+from __future__ import absolute_import, division, print_function
 
 import logging
-logger = logging.getLogger('dials.command_line.detect_blanks')
+import math
 
-from libtbx.math_utils import iceil
 import libtbx.phil
+from libtbx.math_utils import iceil
 from libtbx.utils import Sorry
 from scitbx.array_family import flex
+
+logger = logging.getLogger('dials.command_line.detect_blanks')
+
 
 
 phil_scope= libtbx.phil.parse('''\

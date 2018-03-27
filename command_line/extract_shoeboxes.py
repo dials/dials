@@ -11,9 +11,10 @@
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.extract_shoeboxes
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 import logging
+
 logger = logging.getLogger('dials.command_line.extract_shoeboxes')
 
 help_message = '''

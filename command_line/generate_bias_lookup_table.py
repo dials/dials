@@ -1,7 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.generate_bias_lookup_table
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 def sum_of_erf(mu, sigma, N=1000):
   '''

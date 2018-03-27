@@ -11,9 +11,10 @@
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.make_radial_average
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 help_message = '''

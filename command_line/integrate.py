@@ -9,9 +9,12 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division
-from libtbx.utils import Sorry
+from __future__ import absolute_import, division, print_function
+
 import logging
+
+from libtbx.utils import Sorry
+
 logger = logging.getLogger('dials.command_line.integrate')
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 

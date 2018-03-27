@@ -1,7 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.saturation_analysis
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 def strip_not_integrated(integrated_data):
   sel = integrated_data.get_flags(integrated_data.flags.integrated)

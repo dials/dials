@@ -9,8 +9,8 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 help_message = '''

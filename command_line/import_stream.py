@@ -8,11 +8,13 @@
 #
 #  This code is` distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
+
+import logging
+
 from dxtbx.datablock import DataBlockDumper
 from libtbx.utils import Sorry
 
-import logging
 logger = logging.getLogger('dials.command_line.import_stream')
 
 help_message = '''

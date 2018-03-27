@@ -1,6 +1,7 @@
 from __future__ import division
-from libtbx.phil import parse
+
 from dials.array_family import flex
+from libtbx.phil import parse
 
 phil_scope = parse("""
 overlaps_filter {

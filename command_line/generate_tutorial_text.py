@@ -1,7 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.generate_tutorial_text
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import argparse
 import glob
@@ -10,7 +9,7 @@ import shlex
 import shutil
 import sys
 
-import libtbx.load_env # required for libtbx.env.find_in_repositories
+import libtbx.load_env  # required for libtbx.env.find_in_repositories
 from libtbx.test_utils import open_tmp_directory
 from procrunner import run_process
 

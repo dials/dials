@@ -1,9 +1,8 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.plot_find_spots_client
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
-from cctbx.array_family import flex
 import iotbx.phil
+from cctbx.array_family import flex
 
 help_message = '''
 '''
@@ -518,4 +517,3 @@ def plot_unit_cell_histograms(crystals):
 if __name__ == '__main__':
   import sys
   run(sys.argv[1:])
-

@@ -2,10 +2,10 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.check_strategy
 
-from __future__ import absolute_import, division
-from __future__ import print_function
-from scitbx.array_family import flex
+from __future__ import absolute_import, division, print_function
+
 import libtbx.phil
+from scitbx.array_family import flex
 
 help_message = '''
 

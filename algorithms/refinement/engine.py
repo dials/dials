@@ -12,17 +12,20 @@ LevenbergMarquardtIterations, GaussNewtonIterations, SimpleLBFGS and LBFGScurvs
 are the current concrete implementations"""
 
 from __future__ import absolute_import, division
-import logging
-logger = logging.getLogger(__name__)
 
-from scitbx import lbfgs
-from scitbx.array_family import flex
+import logging
+
 import libtbx
 from libtbx import easy_mp
 from libtbx.phil import parse
-
+from scitbx import lbfgs
+from scitbx.array_family import flex
 # use lstbx classes
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
+
+logger = logging.getLogger(__name__)
+
+
 
 # termination reason strings
 TARGET_ACHIEVED = "RMSD target achieved"

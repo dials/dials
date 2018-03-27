@@ -1,5 +1,4 @@
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.print_test_reflections
 
@@ -64,4 +63,3 @@ if __name__ == '__main__':
     print('Reflection %d' % i)
     print_refl(row)
     print('*' * 80)
-

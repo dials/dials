@@ -9,10 +9,12 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 #
-from __future__ import absolute_import, division
-from libtbx.phil import parse
+from __future__ import absolute_import, division, print_function
 
 import logging
+
+from libtbx.phil import parse
+
 logger = logging.getLogger('dials.command_line.export')
 
 help_message = '''

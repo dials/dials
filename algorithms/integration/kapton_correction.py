@@ -1,10 +1,11 @@
-from __future__ import division
-from __future__ import print_function
-from dials.array_family import flex
-from scitbx import matrix
+from __future__ import division, print_function
+
 import math
-from iotbx import phil
+
 from dials.algorithms.shoebox import MaskCode
+from dials.array_family import flex
+from iotbx import phil
+from scitbx import matrix
 
 absorption_defs = """
   absorption_correction

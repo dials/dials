@@ -11,9 +11,10 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
-from dials.array_family import flex
+
 from dials.algorithms.refinement.outlier_detection import CentroidOutlier
 from dials.algorithms.statistics.fast_mcd import FastMCD, maha_dist_sq
+from dials.array_family import flex
 from dials_refinement_helpers_ext import qchisq
 
 class MCD(CentroidOutlier):

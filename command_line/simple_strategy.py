@@ -1,12 +1,13 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.simple_strategy
 
-from __future__ import absolute_import, division
-from __future__ import print_function
-from dials.array_family import flex
-from scitbx import matrix
-import iotbx.phil
+from __future__ import absolute_import, division, print_function
+
 import copy
 import math
+
+import iotbx.phil
+from dials.array_family import flex
+from scitbx import matrix
 
 help_message = '''
 

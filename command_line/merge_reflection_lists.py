@@ -11,7 +11,8 @@
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.merge_reflection_lists
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
+
 from libtbx.phil import parse
 
 # Create the help message

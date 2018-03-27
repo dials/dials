@@ -1,15 +1,15 @@
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
 import copy
 import logging
 import math
-from libtbx import easy_mp
+
 from cctbx import crystal, sgtbx
-from scitbx.matrix import col
-from scitbx.array_family import flex
+from cctbx.sgtbx import bravais_types, change_of_basis_op, subgroups
+from libtbx import easy_mp
 from rstbx.symmetry.subgroup import MetricSubgroup
-
-
+from scitbx.array_family import flex
+from scitbx.matrix import col
 
 def dials_crystal_from_orientation(crystal_orientation,space_group):
   dm = crystal_orientation.direct_matrix()
@@ -258,9 +258,6 @@ def refine_subgroup(args):
     logger.disabled = disabled
   return subgroup
 
-from cctbx.sgtbx import subgroups
-from cctbx.sgtbx import bravais_types
-from cctbx.sgtbx import change_of_basis_op
 find_max_delta = sgtbx.lattice_symmetry_find_max_delta
 
 def metric_supergroup(group):

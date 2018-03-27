@@ -11,7 +11,9 @@
 outlier rejection parameters automatically"""
 
 from __future__ import absolute_import, division
+
 from math import pi
+
 from dials.array_family import flex
 from scitbx.math.periodogram import Periodogram
 
@@ -231,4 +233,3 @@ class CentroidAnalyser(object):
     else:
       period = None
     return period
-

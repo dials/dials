@@ -1,6 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.sum_images
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 def sum_images(in_template, out_image, start, end):
   from dials.util.rebin_images import main_sum

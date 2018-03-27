@@ -7,14 +7,14 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
-from scitbx.array_family import flex
-from cctbx import uctbx, sgtbx
-from iotbx import ccp4_map, phil
-import dials.algorithms.rs_mapper as recviewer
 import math
+
+import dials.algorithms.rs_mapper as recviewer
+from cctbx import sgtbx, uctbx
+from iotbx import ccp4_map, phil
+from scitbx.array_family import flex
 
 help_message = '''
 This program reconstructs reciprocal space from diffraction images. The orientation matrix is not necessary; only diffraction geometry is required.

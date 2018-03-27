@@ -10,11 +10,12 @@
 #  included in the root directory of this package.
 
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
+import logging
 
 import libtbx.load_env
-import logging
+
 logger = logging.getLogger('dials.command_line.calc_rmsds')
 
 help_message = '''

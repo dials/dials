@@ -1,6 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.rebin_images
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 def rebin_images(in_template, out_template, start, end):
   from dials.util.rebin_images import main

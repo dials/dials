@@ -1,14 +1,15 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
-from __future__ import absolute_import, division
-from __future__ import print_function
-import copy
+from __future__ import absolute_import, division, print_function
+
 import collections
-from libtbx.containers import OrderedSet
-from scitbx import matrix
+import copy
+
 import iotbx.phil
 from cctbx import sgtbx
+from libtbx.containers import OrderedSet
+from scitbx import matrix
 
 help_message = '''
 Calculation of possible goniometer settings for re-alignment of crystal axes.

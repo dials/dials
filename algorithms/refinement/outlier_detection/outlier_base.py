@@ -1,11 +1,12 @@
-from __future__ import absolute_import, division
-from __future__ import print_function
-from libtbx.phil import parse
-from libtbx.table_utils import simple_table
-from dials.array_family import flex
-from math import pi
+from __future__ import absolute_import, division, print_function
 
 import logging
+from math import pi
+
+from dials.array_family import flex
+from libtbx.phil import parse
+from libtbx.table_utils import simple_table
+
 logger = logging.getLogger(__name__)
 
 RAD2DEG = 180./pi

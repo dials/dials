@@ -1,11 +1,13 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.make_sphinx_html
 
 from __future__ import absolute_import, division, print_function
-from procrunner import run_process
-import libtbx.load_env
+
+import os
 import shutil
 from optparse import SUPPRESS_HELP, OptionParser
-import os
+
+import libtbx.load_env
+from procrunner import run_process
 
 # Disable all HTTPS verification. This is to work around an issue
 # in biopython, possibly biopython relying on unreliable servers.

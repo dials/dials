@@ -1,11 +1,9 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.show
 
-from __future__ import absolute_import, division
-from __future__ import print_function
-
-import numpy
+from __future__ import absolute_import, division, print_function
 
 import iotbx.phil
+import numpy
 from libtbx import table_utils
 
 help_message = '''

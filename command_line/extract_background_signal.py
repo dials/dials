@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.extract_background_signal
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
+import logging
 
 import libtbx.load_env
-import logging
+
 logger = logging.getLogger('dials.command_line.extract_background_signal')
 
 help_message = '''

@@ -9,9 +9,11 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
-from dials_algorithms_integration_parallel_integrator_ext import *
 
 import logging
+
+from dials_algorithms_integration_parallel_integrator_ext import *
+
 logger = logging.getLogger(__name__)
 
 class MaskCalculatorFactory(object):

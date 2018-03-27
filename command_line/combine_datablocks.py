@@ -20,11 +20,11 @@ in the order they are provided as input.
 
 #!/usr/bin/env dials.python
 from __future__ import absolute_import, division, print_function
-from libtbx.phil import parse
-from dials.util.options import flatten_datablocks
-from dials.util.options import flatten_reflections
-from dxtbx.datablock import DataBlock, DataBlockDumper
+
 from dials.array_family import flex
+from dials.util.options import flatten_datablocks, flatten_reflections
+from dxtbx.datablock import DataBlock, DataBlockDumper
+from libtbx.phil import parse
 from libtbx.utils import Sorry
 
 # The phil scope

@@ -1,6 +1,8 @@
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
 import socket as pysocket
+
+import libtbx.phil
 
 def work(host, port, filename, params):
   import httplib
@@ -146,7 +148,6 @@ def stop(host, port, nproc):
       stopped = stopped + 1
   return stopped
 
-import libtbx.phil
 phil_scope = libtbx.phil.parse("""\
 nproc = Auto
   .type = int(value_min=1)

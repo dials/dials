@@ -11,12 +11,14 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+
 import logging
+from functools import reduce
+
 from libtbx.phil import parse
 from libtbx.utils import Sorry
-from scitbx.array_family import flex
 from scitbx import sparse
-from functools import reduce
+from scitbx.array_family import flex
 
 logger = logging.getLogger(__name__)
 

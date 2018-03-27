@@ -1,10 +1,11 @@
-from __future__ import division
-from __future__ import print_function
-from libtbx.phil import parse
-from dials.array_family import flex
-from cctbx.crystal import symmetry
-from libtbx import table_utils
+from __future__ import division, print_function
+
 import math
+
+from cctbx.crystal import symmetry
+from dials.array_family import flex
+from libtbx import table_utils
+from libtbx.phil import parse
 
 """
 Class to find a reasonable cutoff for integration based on work in LABELIT.

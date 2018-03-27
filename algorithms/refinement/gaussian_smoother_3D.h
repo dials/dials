@@ -140,11 +140,11 @@ namespace dials { namespace refinement {
 
     std::size_t num_y_values(){
       return nyvalues;
-    } 
+    }
 
     std::size_t num_z_values(){
       return nzvalues;
-    } 
+    }
 
     // Get number of sample intervals
     std::size_t num_x_samples(){
@@ -229,7 +229,7 @@ namespace dials { namespace refinement {
             sumwv += weight[idx] * values[idx];
             sumweight  += weight[idx];
           }
-        } 
+        }
       }
 
       double value;

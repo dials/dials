@@ -1,14 +1,15 @@
-from __future__ import absolute_import, division
-from __future__ import print_function
-import time
+from __future__ import absolute_import, division, print_function
+
 import BaseHTTPServer as server_base
-from multiprocessing import Process
-from multiprocessing import current_process
+import logging
 import os
 import sys
+import time
+from multiprocessing import Process, current_process
 
 import libtbx.load_env
-import logging
+import libtbx.phil
+
 logger = logging.getLogger('dials.command_line.find_spots_server')
 
 help_message = '''\
@@ -273,7 +274,6 @@ def serve(httpd):
   return
 
 
-import libtbx.phil
 phil_scope = libtbx.phil.parse('''\
 nproc = Auto
   .type = int(value_min=1)

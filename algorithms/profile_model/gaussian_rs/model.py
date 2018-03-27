@@ -8,11 +8,13 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division
-from __future__ import print_function
-from libtbx.phil import parse
-from dials.model.experiment.profile import ProfileModelIface
+from __future__ import absolute_import, division, print_function
+
 import logging
+
+from dials.model.experiment.profile import ProfileModelIface
+from libtbx.phil import parse
+
 logger = logging.getLogger(__name__)
 
 phil_scope = parse('''

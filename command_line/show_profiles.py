@@ -1,6 +1,5 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.show_profiles
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 def print_profile(r):
   s = r['shoebox'].data

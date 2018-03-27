@@ -1,7 +1,6 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.estimate_resolution_limit
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 from libtbx.phil import command_line
 from libtbx.utils import Sorry

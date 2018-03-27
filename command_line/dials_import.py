@@ -9,12 +9,14 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 # LIBTBX_SET_DISPATCHER_NAME dials.import
-from __future__ import absolute_import, division
-from dxtbx.datablock import DataBlockFactory, DataBlockDumper
-from libtbx.utils import Sorry
+from __future__ import absolute_import, division, print_function
+
+import logging
 
 import libtbx.load_env
-import logging
+from dxtbx.datablock import DataBlockDumper, DataBlockFactory
+from libtbx.utils import Sorry
+
 logger = logging.getLogger('dials.command_line.import')
 
 help_message = '''

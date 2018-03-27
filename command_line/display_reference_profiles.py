@@ -11,8 +11,8 @@
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.display_reference_profiles
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
 import math
 
 def display_reference_profiles(reference_pickle_file, profile_number,

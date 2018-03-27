@@ -3,7 +3,8 @@
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.diffraction_geometry_viewer
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
+
 from dials.command_line.reciprocal_lattice_viewer import *
 
 class DGVWindow(RLVWindow):

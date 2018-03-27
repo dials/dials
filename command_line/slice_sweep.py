@@ -10,15 +10,16 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division
-from __future__ import print_function
-from os.path import splitext, basename
-from scitbx.array_family import flex
-from libtbx.utils import Sorry
-from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.datablock import DataBlock
+from __future__ import absolute_import, division, print_function
+
+from os.path import basename, splitext
+
 from dials.algorithms.refinement.refinement_helpers import \
-  calculate_frame_numbers
+    calculate_frame_numbers
+from dxtbx.datablock import DataBlock
+from dxtbx.model.experiment_list import ExperimentList
+from libtbx.utils import Sorry
+from scitbx.array_family import flex
 
 help_message = '''
 

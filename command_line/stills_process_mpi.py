@@ -3,12 +3,15 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.stills_process_mpi
 
 from __future__ import absolute_import, division, print_function
-import logging
-logger = logging.getLogger('dials.command_line.stills_process_mpi')
 
-from libtbx.utils import Abort, Sorry
+import logging
 import os
 from time import time
+
+from libtbx.utils import Abort, Sorry
+
+logger = logging.getLogger('dials.command_line.stills_process_mpi')
+
 
 help_message = '''
 MPI derivative of dials.stills_process.  Only handle individual images, not HDF5

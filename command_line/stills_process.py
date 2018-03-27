@@ -2,14 +2,16 @@
 #
 # LIBTBX_SET_DISPATCHER_NAME dials.stills_process
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
 import logging
+import os
+
+from dxtbx.datablock import DataBlockFactory
+from libtbx.utils import Abort, Sorry
+
 logger = logging.getLogger('dials.command_line.stills_process')
 
-from libtbx.utils import Abort, Sorry
-from dxtbx.datablock import DataBlockFactory
-import os
 
 help_message = '''
 DIALS script for processing still images. Import, index, refine, and integrate are all done for each image

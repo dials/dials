@@ -9,8 +9,7 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 class SpotXDSImporter(object):
   ''' Class to import a spot.xds file to a reflection table. '''

@@ -12,9 +12,11 @@
 from __future__ import absolute_import, division
 
 import logging
-logger = logging.getLogger(__name__)
 
 from dials.util.phil import parse
+
+logger = logging.getLogger(__name__)
+
 
 phil_scope = parse('''
 
@@ -147,4 +149,3 @@ class Creator(object):
     reflections['background.scale'] = scale
     reflections.set_flags(success != True, reflections.flags.dont_integrate)
     return success
-
