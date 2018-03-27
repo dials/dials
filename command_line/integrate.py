@@ -10,10 +10,9 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
-import libtbx.load_env
 from libtbx.utils import Sorry
 import logging
-logger = logging.getLogger(libtbx.env.dispatcher_name)
+logger = logging.getLogger('dials.command_line.integrate')
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 help_message = '''

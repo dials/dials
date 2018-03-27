@@ -12,9 +12,8 @@ except ImportError:
 # Offline backend
 matplotlib.use("Agg")
 
-import libtbx.load_env
 import logging
-logger = logging.getLogger(libtbx.env.dispatcher_name)
+logger = logging.getLogger('dials.command_line.rl_png')
 
 import libtbx.phil
 from scitbx import matrix

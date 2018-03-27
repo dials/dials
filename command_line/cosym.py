@@ -2,9 +2,8 @@ from __future__ import absolute_import, division, print_function
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 
-import libtbx.load_env
 import logging
-logger = logging.getLogger(libtbx.env.dispatcher_name)
+logger = logging.getLogger('dials.command_line.cosym')
 
 import os
 import iotbx.phil

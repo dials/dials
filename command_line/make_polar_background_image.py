@@ -1,21 +1,9 @@
-#!/usr/bin/env python
-#
-# dials.make_radial_average.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.make_polar_background_image
 
 from __future__ import absolute_import, division
 
-import libtbx.load_env
 import logging
-logger = logging.getLogger(libtbx.env.dispatcher_name)
+logger = logging.getLogger('dials.command_line.make_polar_background_image')
 
 help_message = '''
 

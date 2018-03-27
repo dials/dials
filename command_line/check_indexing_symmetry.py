@@ -13,7 +13,7 @@ from __future__ import absolute_import, division
 
 import libtbx.load_env
 import logging
-logger = logging.getLogger(libtbx.env.dispatcher_name)
+logger = logging.getLogger('dials.command_line.check_indexing_symmetry')
 from libtbx.phil import command_line
 import iotbx.phil
 from cctbx import sgtbx
@@ -298,7 +298,6 @@ def test_P1_crystal_indexing(reflections, experiment, params):
   return
 
 def run(args):
-  import libtbx.load_env
   from dials.array_family import flex
   from dials.util import log
   from dials.util.version import dials_version

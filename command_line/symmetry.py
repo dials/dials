@@ -1,8 +1,7 @@
 from __future__ import division, absolute_import, print_function
 
-import libtbx.load_env
 import logging
-logger = logging.getLogger(libtbx.env.dispatcher_name)
+logger = logging.getLogger('dials.command_line.symmetry')
 
 import copy
 import os

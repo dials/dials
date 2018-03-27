@@ -1,9 +1,8 @@
 from __future__ import absolute_import, division
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
-import libtbx.load_env
 import logging
-logger = logging.getLogger(libtbx.env.dispatcher_name)
+logger = logging.getLogger('dials.command_line.index')
 
 try:
   # try importing scipy.linalg before any cctbx modules, otherwise we

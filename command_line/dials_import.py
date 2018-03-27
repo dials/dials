@@ -15,7 +15,7 @@ from libtbx.utils import Sorry
 
 import libtbx.load_env
 import logging
-logger = logging.getLogger(libtbx.env.dispatcher_name)
+logger = logging.getLogger('dials.command_line.import')
 
 help_message = '''
 

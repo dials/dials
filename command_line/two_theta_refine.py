@@ -11,9 +11,8 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
-import libtbx.load_env
 import logging
-logger = logging.getLogger(libtbx.env.dispatcher_name)
+logger = logging.getLogger('dials.command_line.two_theta_refine')
 import cPickle as pickle
 from dials.array_family import flex
 from dials.util import log

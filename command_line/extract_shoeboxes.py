@@ -13,9 +13,8 @@
 
 from __future__ import absolute_import, division
 
-import libtbx.load_env
 import logging
-logger = logging.getLogger(libtbx.env.dispatcher_name)
+logger = logging.getLogger('dials.command_line.extract_shoeboxes')
 
 help_message = '''
 

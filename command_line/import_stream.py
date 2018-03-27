@@ -12,9 +12,8 @@ from __future__ import absolute_import, division
 from dxtbx.datablock import DataBlockDumper
 from libtbx.utils import Sorry
 
-import libtbx.load_env
 import logging
-logger = logging.getLogger(libtbx.env.dispatcher_name)
+logger = logging.getLogger('dials.command_line.import_stream')
 
 help_message = '''
 

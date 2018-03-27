@@ -14,7 +14,7 @@ from __future__ import absolute_import, division
 
 import libtbx.load_env
 import logging
-logger = logging.getLogger(libtbx.env.dispatcher_name)
+logger = logging.getLogger('dials.command_line.calc_rmsds')
 
 help_message = '''
 
@@ -30,7 +30,6 @@ from dials.command_line.refine import phil_scope
 
 def run(args):
   from dials.util import log
-  import libtbx.load_env
   usage = "%s experiments.json indexed.pickle [options]" %libtbx.env.dispatcher_name
 
 

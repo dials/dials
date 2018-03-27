@@ -12,7 +12,7 @@ from dials.algorithms.indexing.indexer \
 
 import libtbx.load_env
 import logging
-logger = logging.getLogger(libtbx.env.dispatcher_name)
+logger = logging.getLogger('dials.command_line.search_beam_position')
 
 help_message = '''
 

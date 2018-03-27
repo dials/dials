@@ -2,9 +2,8 @@ from __future__ import absolute_import, division
 
 import math
 
-import libtbx.load_env
 import logging
-logger = logging.getLogger(libtbx.env.dispatcher_name)
+logger = logging.getLogger('dials.command_line.detect_blanks')
 
 from libtbx.math_utils import iceil
 import libtbx.phil

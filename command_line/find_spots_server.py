@@ -8,8 +8,7 @@ import sys
 
 import libtbx.load_env
 import logging
-logger = logging.getLogger(
-  __name__ if __name__ != '__main__' else libtbx.env.dispatcher_name)
+logger = logging.getLogger('dials.command_line.find_spots_server')
 
 help_message = '''\
 A client/server version of dials.find_spots with additional analysis including
