@@ -61,7 +61,6 @@ tst_list = [
     "$D/test/algorithms/refinement/tst_constraints.py",
     "$D/test/algorithms/refinement/tst_angle_derivatives_wrt_vector_elts.py",
     "$D/test/algorithms/refinement/tst_dials-423.py",
-    "$D/test/algorithms/reflection_basis/tst_beam_vector_map.py",
     "$D/test/algorithms/reflection_basis/tst_coordinate_system.py",
     "$D/test/algorithms/reflection_basis/tst_grid_index_generator.py",
     "$D/test/algorithms/reflection_basis/tst_map_frames.py",
