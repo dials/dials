@@ -24,7 +24,6 @@ tst_list = [
     "$D/test/algorithms/integration/profile/tst_multi_experiment_modeller.py",
     "$D/test/algorithms/integration/profile/tst_profile_fitting.py",
     "$D/test/algorithms/integration/profile/tst_single_sampler.py",
-    "$D/test/algorithms/integration/tst_interface.py",
     "$D/test/algorithms/integration/tst_filter_overlaps.py",
     "$D/test/algorithms/polygon/clip/tst_clipping.py",
     "$D/test/algorithms/polygon/tst_spatial_interpolation.py",
