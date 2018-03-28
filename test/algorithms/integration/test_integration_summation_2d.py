@@ -8,6 +8,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 def run(i, imp):
   from random import randint
@@ -57,17 +58,17 @@ def run(i, imp):
   # first select the algorithm for background calculation
 
   if imp == "inclined":
-    print "testing inclined_background_subtractor"
+    print("testing inclined_background_subtractor")
     from dials.algorithms.background.inclined_background_subtractor \
      import layering_and_background_plane
     layering_and_background_plane(ref_table)
   elif imp == "flat":
-    print "testing flat_background_subtractor"
+    print("testing flat_background_subtractor")
     from dials.algorithms.background.flat_background_subtractor \
      import layering_and_background_avg
     layering_and_background_avg(ref_table)
   elif imp == "curved":
-    print "testing curved_background_subtractor"
+    print("testing curved_background_subtractor")
     from dials.algorithms.background.curved_background_subtractor \
      import layering_and_background_modl
     layering_and_background_modl(ref_table)
@@ -88,14 +89,14 @@ def run(i, imp):
     if resl_its[n_its] <= i_to_compare[n_its] + i and \
        resl_its[n_its] >= i_to_compare[n_its] - i and \
        resl_var[n_its] > resl_its[n_its]:
-      print "Ok ", n_its
+      print("Ok ", n_its)
     else:
-      print "Wrong num", n_its
+      print("Wrong num", n_its)
 
-      print "i =", i
-      print "resl_its[n_its] =", resl_its[n_its]
-      print "i_to_compare[n_its] =", i_to_compare[n_its]
-      print "resl_var[n_its] =", resl_var[n_its]
+      print("i =", i)
+      print("resl_its[n_its] =", resl_its[n_its])
+      print("i_to_compare[n_its] =", i_to_compare[n_its])
+      print("resl_var[n_its] =", resl_var[n_its])
 
       result = "wrong"
       raise RuntimeError('wrong result')
@@ -105,8 +106,8 @@ def run(i, imp):
 if __name__ == '__main__':
   for i in range(5):
     res1 = run(i, "flat")
-    print res1
+    print(res1)
     res2 = run(i, "inclined")
-    print res2
+    print(res2)
     res3 = run(i, "curved")
-    print res3
+    print(res3)

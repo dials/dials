@@ -13,6 +13,7 @@
 
 # Python and cctbx imports
 from __future__ import absolute_import, division
+from __future__ import print_function
 import sys
 import random
 from scitbx import matrix
@@ -81,7 +82,7 @@ class Extract(object):
     flex.set_random_seed(self._params.random_seed)
     if self._verbose:
       msg = "Random seed set to %d while building models"
-      print msg % self._params.random_seed
+      print(msg % self._params.random_seed)
 
   def build_goniometer(self):
 

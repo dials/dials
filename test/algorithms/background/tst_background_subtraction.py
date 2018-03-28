@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 class TestSimulated:
 
@@ -33,7 +34,7 @@ class TestSimulated:
     meanz = mv.mean()
     varz = mv.unweighted_sample_variance()
     sdevz = sqrt(varz)
-    print "Z: mean=%f, sdev=%f" % (meanz, sdevz)
+    print("Z: mean=%f, sdev=%f" % (meanz, sdevz))
     assert(abs(meanz - 0.0) < (5 * sdevz / sqrt(num)))
     assert(abs(sdevz - 1.0) < 1e-1)
 

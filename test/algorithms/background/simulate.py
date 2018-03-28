@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 def gaussian(grid, A, cent, sig):
 
@@ -59,7 +60,7 @@ if __name__ == '__main__':
   from dials.algorithms.background import IndexOfDispersionDiscriminator
   from dials.algorithms.background import normal_expected_n_sigma
 
-  print normal_expected_n_sigma(30 * 30)
+  print(normal_expected_n_sigma(30 * 30))
 
   discriminate_normal = NormalDiscriminator(n_sigma = normal_expected_n_sigma(30 * 30))
   discriminate_poisson = IndexOfDispersionDiscriminator(n_sigma = 2)

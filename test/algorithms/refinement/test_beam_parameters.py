@@ -1,19 +1,18 @@
-#!/usr/bin/env python
+from __future__ import absolute_import, division, print_function
 
-from __future__ import absolute_import, division
 from math import pi
 import random
 
-from libtbx.test_utils import approx_equal
-from scitbx import matrix
+import pytest
 
-from dxtbx.model import BeamFactory
-from dials.algorithms.refinement.parameterisation.beam_parameters import \
+def test_beam_parameters():
+  from scitbx import matrix
+
+  from dxtbx.model import BeamFactory
+  from dials.algorithms.refinement.parameterisation.beam_parameters import \
     BeamParameterisation
-from dials.algorithms.refinement.refinement_helpers \
+  from dials.algorithms.refinement.refinement_helpers \
     import get_fd_gradients, random_param_shift
-
-if __name__ == '__main__':
 
   # make a random beam vector and parameterise it
   bf = BeamFactory()
@@ -24,8 +23,8 @@ if __name__ == '__main__':
   # update the modelled vector s0?
   s0_old = matrix.col(s0.get_s0())
   s0p.set_param_vals([1000*0.1, 1000*0.1, 0.8])
-  assert(approx_equal(matrix.col(s0.get_s0()).angle(s0_old), 0.1413033))
-  assert(approx_equal(matrix.col(s0.get_s0()).length(), 0.8))
+  assert matrix.col(s0.get_s0()).angle(s0_old) == pytest.approx(0.1413033, abs=1e-6)
+  assert matrix.col(s0.get_s0()).length() == pytest.approx(0.8, abs=1e-6)
 
   # random initial orientations and wavelengths with a random parameter shifts
   attempts = 1000
@@ -48,17 +47,14 @@ if __name__ == '__main__':
 
     for j in range(3):
       try:
-        assert(approx_equal((fd_ds_dp[j] - an_ds_dp[j]),
-                matrix.col((0., 0., 0.)), eps = 1.e-6))
+        assert list(fd_ds_dp[j] - an_ds_dp[j]) == pytest.approx((0, 0, 0), abs=1e-6)
       except Exception:
-        failures += 1
-        print "for try", i
-        print "failure for parameter number", j
-        print "with fd_ds_dp = "
-        print fd_ds_dp[j]
-        print "and an_ds_dp = "
-        print an_ds_dp[j]
-        print "so that difference fd_ds_dp - an_ds_dp ="
-        print fd_ds_dp[j] - an_ds_dp[j]
-
-  if failures == 0: print "OK"
+        print("for try", i)
+        print("failure for parameter number", j)
+        print("with fd_ds_dp = ")
+        print(fd_ds_dp[j])
+        print("and an_ds_dp = ")
+        print(an_ds_dp[j])
+        print("so that difference fd_ds_dp - an_ds_dp =")
+        print(fd_ds_dp[j] - an_ds_dp[j])
+        raise

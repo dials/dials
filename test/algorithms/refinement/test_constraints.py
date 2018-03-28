@@ -1,5 +1,3 @@
-#!/usr/bin/env cctbx.python
-
 #
 #  Copyright (C) (2017) STFC Rutherford Appleton Laboratory, UK.
 #
@@ -14,10 +12,9 @@ Tests for the constraints system used in refinement
 
 """
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 import os
 from copy import deepcopy
-import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx.test_utils import open_tmp_directory, approx_equal
 from libtbx import easy_run
 from scitbx import sparse
@@ -28,7 +25,7 @@ from dials.algorithms.refinement.constraints import EqualShiftConstraint
 from dials.algorithms.refinement.constraints import ConstraintManager
 from dials.algorithms.refinement.constraints import SparseConstraintManager
 
-def test1():
+def test_contraints_manager_simple_test():
 
   x = flex.random_double(10)
 
@@ -116,19 +113,11 @@ def test1():
   assert constr_dL_dp[6] == dL_dp[5] + dL_dp[6] + dL_dp[7]
 
 
-def test2():
+def test_constrained_refinement(dials_regression, tmpdir):
   """Test joint refinement where two detectors are constrained to enforce a
   differential distance (along the shared initial normal vector) of 1 mm.
   This test can be constructed on the fly from data already in
   dials_regression"""
-
-  if not libtbx.env.has_module("dials_regression"):
-    print "Skipping test2 in " + __file__ + " as dials_regression not present"
-    return
-
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression",
-    test=os.path.isdir)
 
   # use the 'centroid' data for this test. The 'regularized' experiments are
   # useful because the detector has fast and slow exactly aligned with X, -Y
@@ -139,9 +128,7 @@ def test2():
   pickle_path = os.path.join(data_dir, "spot_1000_xds.pickle")
 
   # work in a temporary directory
-  cwd = os.path.abspath(os.curdir)
-  tmp_dir = open_tmp_directory(suffix="test_dials_constraints")
-  os.chdir(tmp_dir)
+  tmpdir.chdir()
 
   # load the experiments and spots
   el = ExperimentListFactory.from_json_file(experiments_path, check_format=False)
@@ -181,16 +168,13 @@ def test2():
   cmd = ("dials.refine foo_experiments.json foo_reflections.pickle "
          "history=history.pickle refinement.parameterisation.detector."
          "constraints.parameter=Dist")
-  try:
-    result = easy_run.fully_buffered(command=cmd).raise_if_errors()
-    # load refinement history
-    import cPickle as pickle
-    with open('history.pickle') as f:
-      history = pickle.load(f)
-    ref_exp = ExperimentListFactory.from_json_file('refined_experiments.json',
-      check_format=False)
-  finally:
-    os.chdir(cwd)
+  result = easy_run.fully_buffered(command=cmd).raise_if_errors()
+  # load refinement history
+  import cPickle as pickle
+  with open('history.pickle') as f:
+    history = pickle.load(f)
+  ref_exp = ExperimentListFactory.from_json_file('refined_experiments.json',
+    check_format=False)
 
   # we expect 8 steps of constrained refinement
   assert history.get_nrows()  == 8
@@ -211,12 +195,3 @@ def test2():
   p1 = det1[0]
   p2 = det2[0]
   assert approx_equal(p2.get_distance() - p1.get_distance(), 0.9987655)
-
-
-if __name__ == '__main__':
-
-  # simple test of constraint manager
-  test1()
-
-  # test constrained refinement
-  test2()
