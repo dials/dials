@@ -4,6 +4,20 @@ from dials.array_family import flex
 import cPickle as pickle
 from libtbx.utils import Sorry
 from scitbx import matrix
+import libtbx.load_env
+
+help_message = '''
+
+Generate dx.pickle, dy.pickle distortion maps for a detector model picked up
+from either an image file or a datablock.json. These maps can be used to
+represent distortion within the millimetre to pixel mapping
+
+Examples::
+
+  {0} image_001.cbf dx=0.5 dy=1.5
+  {0} datablock.json mode=ellipse phi=0 l2=0.95
+
+'''.format(libtbx.env.dispatcher_name)
 
 scope = phil.parse('''
   mode = *translate ellipse
@@ -152,7 +166,8 @@ def main():
     phil=scope,
     read_datablocks=True,
     read_datablocks_from_images=True,
-    check_format=False)
+    check_format=False,
+    epilog=help_message)
 
   params, options = parser.parse_args()
   datablocks = flatten_datablocks(params.input.datablock)
