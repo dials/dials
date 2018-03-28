@@ -1,8 +1,6 @@
-#!/usr/bin/env python
-
 """Testing functions for multivariate outlier rejection by the FAST-MCD
 algorithm"""
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 def test_maha():
 
@@ -46,10 +44,8 @@ def test_maha():
   R_result = [2.1838336, 1.9673401, 1.3335029, 4.9191627, 2.1246818,
               5.3297995, 4.9022487, 2.5335913, 0.1952562, 1.5105832]
   assert approx_equal(list(maha), R_result)
-  return
 
 def test_fast_mcd_small():
-
   from scitbx.array_family import flex
   from dials.algorithms.statistics.fast_mcd import FastMCD
 
@@ -164,10 +160,7 @@ def test_fast_mcd_small():
   assert approx_equal(fast_mcd._consistency_fac, 2.36792847084)
   assert approx_equal(fast_mcd._finite_samp_fac, 1.12792118859)
 
-  return
-
-def test_fast_mcd_large():
-
+def test_fast_mcd_large(dials_regression):
   from scitbx.array_family import flex
   from dials.algorithms.statistics.fast_mcd import FastMCD
 
@@ -178,20 +171,11 @@ def test_fast_mcd_large():
   flex.set_random_seed(42)
 
   # test large dataset algorithm
-  import libtbx.load_env # required for libtbx.env.find_in_repositories
-  if not libtbx.env.has_module("dials_regression"):
-    print "Skipping test_fast_mcd_large(): dials_regression not available."
-    return
-
-  # load data
   import os
-  dials_regression = libtbx.env.find_in_repositories(
-      relative_path="dials_regression",
-      test=os.path.isdir)
   data_pth = os.path.join(dials_regression, "refinement_test_data",
     "outlier_rejection", "residuals.dat")
 
-  with(open(data_pth, "r")) as f:
+  with open(data_pth, "r") as f:
     residuals = f.readlines()
 
   # ignore first line, which is a header
@@ -225,10 +209,3 @@ def test_fast_mcd_large():
   # Correction factors
   assert approx_equal(fast_mcd._consistency_fac, 2.45659976388)
   assert approx_equal(fast_mcd._finite_samp_fac, 1.00193273884)
-
-  return
-
-if __name__ == "__main__":
-  test_maha()
-  test_fast_mcd_small()
-  test_fast_mcd_large()

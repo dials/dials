@@ -1,25 +1,16 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 import glob
 import os
 from libtbx import easy_run
-from libtbx.test_utils import approx_equal, open_tmp_directory
+from libtbx.test_utils import approx_equal
 from cctbx import uctbx
 
-import libtbx.load_env
-have_xia2_regression = libtbx.env.has_module("xia2_regression")
-if have_xia2_regression:
-  xia2_regression = libtbx.env.under_build("xia2_regression")
-  have_test_data = os.path.exists(os.path.join(xia2_regression, "test_data"))
-
-def exercise_1():
-  data_dir = os.path.join(xia2_regression, "test_data", "X4_wide")
-  cwd = os.path.abspath(os.curdir)
-  tmp_dir = open_tmp_directory()
-  os.chdir(tmp_dir)
-  print tmp_dir
+def test_1(xia2_regression_build, tmpdir):
+  tmpdir.chdir()
+  data_dir = os.path.join(xia2_regression_build, "test_data", "X4_wide")
 
   g = sorted(glob.glob(os.path.join(data_dir, "X4_wide_M1S4_2_00*.cbf")))
-  assert len(g) == 90, len(g)
+  assert len(g) == 90
 
   commands = [
     "dials.import %s" %" ".join(g),
@@ -53,31 +44,3 @@ def exercise_1():
     expected_unit_cell.parameters(), list(batch.cell()))
   assert mtz_object.space_group().type().lookup_symbol() == "P 41 21 2"
   assert approx_equal(mtz_object.n_reflections(), 7446, eps=2e3)
-  os.chdir(cwd)
-
-def run(args):
-  if not have_xia2_regression:
-    print "Skipping tst_scan_varying_integration_bug.py: xia2_regression not available"
-    return
-
-  if not have_test_data:
-    print "Skipping tst_scan_varying_integration_bug.py: xia2_regression " + \
-          "test data not available. Please run " + \
-          "xia2_regression.fetch_test_data first"
-
-    return
-
-  exercises = (exercise_1,)
-  if len(args):
-    args = [int(arg) for arg in args]
-    for arg in args: assert arg > 0
-    exercises = [exercises[arg-1] for arg in args]
-
-  for exercise in exercises:
-    exercise()
-
-if __name__ == '__main__':
-  import sys
-  from libtbx.utils import show_times_at_exit
-  show_times_at_exit()
-  run(sys.argv[1:])
