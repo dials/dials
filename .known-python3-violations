@@ -1,16 +1,9 @@
 framework/env.py
-test/algorithms/background/simulate.py
-test/algorithms/background/tst_background_subtraction.py
 test/algorithms/integration/profile/tst_stereographic_projection_sampler.py
-test/algorithms/integration/test_integration_summation_2d.py
-test/algorithms/integration/tst_corrections.py
 test/algorithms/integration/tst_filter_overlaps.py
 test/algorithms/integration/tst_interface.py
 test/algorithms/peak_finding/tst_merge_spot_lists.py
 test/algorithms/profile_model/tst_ewald_sphere_sampler.py
-test/algorithms/refinement/setup_geometry.py
-test/algorithms/refinement/tst_beam_parameters.py
-test/algorithms/refinement/tst_constraints.py
 test/algorithms/refinement/tst_crystal_parameters.py
 test/algorithms/refinement/tst_detector_parameters.py
 test/algorithms/refinement/tst_dials-423.py
@@ -47,7 +40,6 @@ test/algorithms/spot_prediction/tst_scan_static_reflection_predictor.py
 test/algorithms/spot_prediction/tst_scan_varying_reflection_predictor.py
 test/algorithms/spot_prediction/tst_spot_prediction.py
 test/algorithms/statistics/tst_fast_mcd.py
-test/array_family/tst_reflection_table.py
 test/command_line/tst_apply_mask.py
 test/command_line/tst_check_indexing_symmetry.py
 test/command_line/tst_combine_experiments.py
@@ -73,7 +65,6 @@ test/command_line/tst_merge_reflection_lists.py
 test/command_line/tst_plot_scan_varying_crystal.py
 test/command_line/tst_predict.py
 test/command_line/tst_refine.py
-test/command_line/tst_refine_bravais_settings.py
 test/command_line/tst_rs_mapper.py
 test/command_line/tst_sort_reflections.py
 test/command_line/tst_spot_counts_per_image.py

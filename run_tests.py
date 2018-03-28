@@ -81,7 +81,6 @@ tst_list = [
     "$D/test/algorithms/scaling/tst_scale_parameterisation.py",
     "$D/test/algorithms/scaling/tst_HRS_derivatives.py",
     "$D/test/array_family/tst_flex_shoebox.py",
-    "$D/test/array_family/tst_reflection_table.py",
     "$D/test/command_line/tst_export_bitmaps.py",
     "$D/test/command_line/tst_apply_mask.py",
     "$D/test/command_line/tst_check_indexing_symmetry.py",
