@@ -1,4 +1,4 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 class Test(object):
 
@@ -99,15 +99,15 @@ class Test(object):
       z1 = randint(1, 10) + z0
       try:
         shoebox = Shoebox((x0, x1, y0, y1, z0, z1))
-        assert(not shoebox.is_consistent())
+        assert not shoebox.is_consistent()
         shoebox.allocate()
-        assert(shoebox.is_consistent())
+        assert shoebox.is_consistent()
         shoebox.data = flex.real(flex.grid(20,20, 20))
-        assert(not shoebox.is_consistent())
+        assert not shoebox.is_consistent()
         shoebox.deallocate()
-        assert(not shoebox.is_consistent())
+        assert not shoebox.is_consistent()
       except Exception:
-        print x0, y0, z0, x1, y1, z1
+        print(x0, y0, z0, x1, y1, z1)
         raise
 
     # Test passed
