@@ -66,8 +66,8 @@ class ScalingTarget(object):
     gsq = ((Ih_tab.inverse_scale_factors)**2) * Ih_tab.weights
     sumgsq = gsq * Ih_tab.h_index_matrix
     rhl = Ih_tab.intensities - (Ih_tab.Ih_values * Ih_tab.inverse_scale_factors)
-    dIh = ((Ih_tab.intensities - (Ih_tab.Ih_values * 2.0 * Ih_tab.inverse_scale_factors))
-           * Ih_tab.weights)
+    dIh = ((Ih_tab.intensities - (Ih_tab.Ih_values * 2.0 *
+      Ih_tab.inverse_scale_factors)) * Ih_tab.weights)
     dIh_g = row_multiply(self.apm.derivatives, dIh)
     dIh_red = dIh_g.transpose() * Ih_tab.h_index_matrix
     dIh_by_dpi = row_multiply(dIh_red.transpose(), 1.0/sumgsq)

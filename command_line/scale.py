@@ -134,8 +134,8 @@ class Script(object):
     if len(self.experiments) != 1:
       logger.info(('Checking for the existence of a reflection table {sep}'
         'containing multiple scaled datasets {sep}').format(sep='\n'))
-      reflections = parse_multiple_datasets(self.reflections)
-      logger.info("Found %s reflection tables in total." % len(reflections))
+      self.reflections = parse_multiple_datasets(self.reflections)
+      logger.info("Found %s reflection tables in total." % len(self.reflections))
       logger.info("Found %s experiments in total." % len(self.experiments))
       s_g_1 = self.experiments[0].crystal.get_space_group()
       for experiment in self.experiments:

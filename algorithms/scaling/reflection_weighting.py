@@ -17,8 +17,10 @@ class Weighting(object):
     self._scale_weighting = flex.double([0.0]*len(reflection_table))
     chosen = ~bad_refl_sel
     self._scale_weighting.set_selected(chosen.iselection(),
-      (reflection_table['inverse_scale_factor'].select(chosen)**2
-      )/reflection_table['variance'].select(chosen))
+      1.0/reflection_table['variance'].select(chosen))
+    #self._scale_weighting.set_selected(chosen.iselection(),
+    #  (reflection_table['inverse_scale_factor'].select(chosen)**2
+    #  )/reflection_table['variance'].select(chosen))
 
   @property
   def weights(self):
