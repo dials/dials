@@ -124,3 +124,9 @@ def test_normal():
       ninvalid)
     reject(data, mask)
     assert_is_correct(data, mask)
+
+if __name__ == '__main__':
+
+  test_truncated()
+  test_nsigma()
+  test_normal()
