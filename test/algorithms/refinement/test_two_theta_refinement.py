@@ -1,5 +1,3 @@
-#!/usr/bin/env cctbx.python
-
 #
 #  Copyright (C) (2016) STFC Rutherford Appleton Laboratory, UK.
 #
@@ -14,10 +12,8 @@ Test refinement of a crystal unit cell using a two theta target.
 
 """
 
-# python imports
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 import os
-import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx.test_utils import approx_equal
 from math import pi
 from copy import deepcopy
@@ -181,14 +177,8 @@ def test_fd_derivatives():
   # return to the initial state
   pred_param.set_param_vals(p_vals)
 
-  return
-
-def test_refinement():
+def test_refinement(dials_regression):
   '''Test a refinement run'''
-
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression",
-    test=os.path.isdir)
 
   # Get a beam and detector from a datablock. This one has a CS-PAD, but that
   # is irrelevant
@@ -201,7 +191,6 @@ def test_refinement():
   from dxtbx.datablock import DataBlockFactory
   datablock = DataBlockFactory.from_serialized_format(datablock_path, check_format=False)
   im_set = datablock[0].extract_imagesets()[0]
-  from copy import deepcopy
   detector = deepcopy(im_set.get_detector())
   beam = im_set.get_beam()
 
@@ -315,18 +304,3 @@ def test_refinement():
 
   #print "Unit cell esds:"
   #print refined_xl.get_cell_parameter_sd()
-
-  return
-
-def run():
-  if not libtbx.env.has_module("dials_regression"):
-    print "Skipping tests in " + __file__ + " as dials_regression not present"
-    return
-
-  test_fd_derivatives()
-  test_refinement()
-
-if __name__ == '__main__':
-  from libtbx.utils import show_times_at_exit
-  show_times_at_exit()
-  run()
