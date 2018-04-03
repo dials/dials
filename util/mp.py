@@ -9,7 +9,7 @@ def parallel_map(
     asynchronous               = True,
     callback                   = None,
     preserve_order             = True,
-    preserve_exception_message = False,
+    preserve_exception_message = True,
     job_category               = "low"):
   '''
   A wrapper function to call either drmaa or easy_mp to do a parallel map
@@ -52,7 +52,7 @@ class MultiNodeClusterFunction(object):
                nproc=1,
                asynchronous=True,
                preserve_order=True,
-               preserve_exception_message=False):
+               preserve_exception_message=True):
     '''
     Init the function
 
@@ -122,7 +122,7 @@ def multi_node_parallel_map(
     asynchronous=True,
     callback=None,
     preserve_order=True,
-    preserve_exception_message=False):
+    preserve_exception_message=True):
   '''
   A wrapper function to call a function using multiple cluster nodes and with
   multiple processors on each node

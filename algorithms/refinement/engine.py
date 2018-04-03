@@ -494,7 +494,7 @@ class AdaptLbfgs(Refinery):
         iterable=blocks,
         processes=self._nproc,
         method="multiprocessing",
-        #preserve_exception_message=True
+        preserve_exception_message=True
         )
 
     else:
@@ -685,7 +685,7 @@ class AdaptLstbx(
           processes=self._nproc,
           callback=callback_wrapper,
           method="multiprocessing",
-          #preserve_exception_message=True
+          preserve_exception_message=True
           )
 
       else:
