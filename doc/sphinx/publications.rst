@@ -6,6 +6,7 @@ Publications
 DIALS Journal Articles
 ----------------------
 
+* .. pubmed:: 29533234 DIALS
 * .. pubmed:: 28989718 Background
 * .. pubmed:: 27980508 Robust
 * .. pubmed:: 27050135 Refinement
