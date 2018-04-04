@@ -7,13 +7,14 @@
 #  included in the root directory of this package.
 #
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
+
 # A class for producing efficient looping limits for reflection
 # prediction based on the Reeke algorithm (see Mosflm).
 
 from scitbx import matrix
 import scitbx.math
-from math import pi
+import math
 from dials.algorithms.spot_prediction.reeke import reeke_model
 
 def visualize_with_rgl(reeke_model, rscript="reeke_vis.R", dat="reeke_hkl.dat"):
@@ -98,12 +99,10 @@ def visualize_with_rgl(reeke_model, rscript="reeke_vis.R", dat="reeke_hkl.dat"):
     for hkl in indices:
       f.write("%d, %d, %d\n" % hkl)
 
-  print "Generated indices were written to %s" % dat
-  print "An R script for visualising these was written to %s," % rscript
-  print "which can be run from the R prompt with:"
-  print "source('%s')" % rscript
-
-  return
+  print("Generated indices were written to %s" % dat)
+  print("An R script for visualising these was written to %s," % rscript)
+  print("which can be run from the R prompt with:")
+  print("source('%s')" % rscript)
 
 def reeke_model_for_use_case(phi_beg, phi_end, margin):
   """Construct a reeke_model for the geometry of the Use Case Thaumatin
@@ -130,7 +129,7 @@ def reeke_model_for_use_case(phi_beg, phi_end, margin):
 
   return reeke_model(ub_beg, ub_end, axis, s0, dmin, margin)
 
-def regression_test():
+def test_regression():
   """Perform a regression test by comparing to indices generating
   by the brute force method used in the Use Case."""
 
@@ -169,8 +168,8 @@ def regression_test():
   ra = rotation_angles(dmin, ub_beg, wavelength, axis)
 
   obs_indices, obs_angles = ra.observed_indices_and_angles_from_angle_range(
-      phi_start_rad = 0.0 * pi / 180.0,
-      phi_end_rad = 1.0 * pi / 180.0,
+      phi_start_rad = 0.0 * math.pi / 180.0,
+      phi_end_rad = 1.0 * math.pi / 180.0,
       indices = indices)
 
   r = reeke_model(ub_beg, ub_end, axis, s0, dmin, 1.0)
@@ -182,20 +181,13 @@ def regression_test():
 
   #TODO Tests for an oblique cell
 
-
 if __name__ == '__main__':
-
   import sys
 
-  if len(sys.argv) == 1:
-    regression_test()
-
-  elif len(sys.argv) < 3:
-    from libtbx.utils import Sorry
-    raise Sorry("Expecting either 3 or 4 arguments: path/to/xparm.xds start_phi end_phi margin=3")
+  if len(sys.argv) < 3:
+    sys.exit("Expecting either 3 or 4 arguments: path/to/xparm.xds start_phi end_phi margin=3")
 
   else:
-
     # take an xparm.xds, phi_beg, phi_end and margin from the command arguments.
     from rstbx.cftbx.coordinate_frame_converter import \
         coordinate_frame_converter
@@ -219,4 +211,4 @@ if __name__ == '__main__':
     indices = r.generate_indices()
 
     for hkl in indices:
-      print "%4d %4d %4d" % hkl
+      print("%4d %4d %4d" % hkl)

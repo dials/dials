@@ -1,5 +1,3 @@
-#!/usr/bin/env cctbx.python
-
 #
 #  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
 #
@@ -9,7 +7,7 @@
 #  included in the root directory of this package.
 #
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 from dxtbx.model import Crystal
 from scitbx import matrix
@@ -20,9 +18,9 @@ from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enl
 from dials.algorithms.refinement.parameterisation \
     import CrystalOrientationParameterisation, CrystalUnitCellParameterisation
 
-if __name__ == '__main__':
-
+def test():
   import random
+  import textwrap
   from libtbx.test_utils import approx_equal
   from cctbx.uctbx import unit_cell
 
@@ -98,39 +96,33 @@ if __name__ == '__main__':
                                       [1.e-7] * xl_ucp.num_free())
 
     for j in range(3):
-      try:
-        assert(approx_equal(
+      assert(approx_equal(
                     (xl_op_fd_ds_dp[j] - xl_op_an_ds_dp[j]),
                     null_mat,
-                    eps=1.e-6))
-      except AssertionError:
-        failures += 1
-        print "for try", i
-        print "failure for parameter number", j
-        print "of the orientation parameterisation"
-        print "with fd_ds_dp = "
-        print xl_op_fd_ds_dp[j]
-        print "and an_ds_dp = "
-        print xl_op_an_ds_dp[j]
-        print "so that difference fd_ds_dp - an_ds_dp ="
-        print xl_op_fd_ds_dp[j] - xl_op_an_ds_dp[j]
+                    eps=1.e-6)), textwrap.dedent("""\
+        Failure in try {i}
+        failure for parameter number {j}
+        of the orientation parameterisation
+        with fd_ds_dp =
+        {fd}
+        and an_ds_dp =
+        {an}
+        so that difference fd_ds_dp - an_ds_dp =
+        {diff}
+        """).format(i=i, j=j, fd=xl_op_fd_ds_dp[j], an=xl_op_an_ds_dp[j], diff=xl_op_fd_ds_dp[j] - xl_op_an_ds_dp[j])
 
     for j in range(xl_ucp.num_free()):
-      try:
-        assert(approx_equal(
+      assert(approx_equal(
                     (xl_uc_fd_ds_dp[j] - xl_uc_an_ds_dp[j]),
                     null_mat,
-                    eps = 1.e-6))
-      except AssertionError:
-        failures += 1
-        print "for try", i
-        print "failure for parameter number", j
-        print "of the unit cell parameterisation"
-        print "with fd_ds_dp = "
-        print xl_uc_fd_ds_dp[j]
-        print "and an_ds_dp = "
-        print xl_uc_an_ds_dp[j]
-        print "so that difference fd_ds_dp - an_ds_dp ="
-        print xl_uc_fd_ds_dp[j] - xl_uc_an_ds_dp[j]
-
-  if failures == 0: print "OK"
+                    eps = 1.e-6)), textwrap.dedent("""\
+        Failure in try {i}
+        failure for parameter number {j}
+        of the unit cell parameterisation
+        with fd_ds_dp =
+        {fd}
+        and an_ds_dp =
+        {an}
+        so that difference fd_ds_dp - an_ds_dp =
+        {diff}
+        """).format(i=i, j=j, fd=xl_uc_fd_ds_dp[j], an=xl_uc_an_ds_dp[j], diff=xl_uc_fd_ds_dp[j] - xl_uc_an_ds_dp[j])
