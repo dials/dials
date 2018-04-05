@@ -6,6 +6,7 @@ import logging
 logger = logging.getLogger('dials.command_line.cosym')
 
 import os
+from libtbx.utils import Sorry
 import iotbx.phil
 from cctbx import sgtbx
 from iotbx.reflection_file_reader import any_reflection_file
@@ -190,6 +191,9 @@ def run(args):
 
     intensities.set_observation_type_xray_intensity()
     datasets_input.append(intensities)
+
+  if len(datasets_input) == 0:
+    raise Sorry('No valid reflection files provided on command line')
 
   datasets = []
   for intensities in datasets_input:
