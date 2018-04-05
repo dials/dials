@@ -96,6 +96,11 @@ class IhTableBase(object):
     return self._Ih_table['Ih_values']
 
   @property
+  def Ih_table(self):
+    """A reflection table of all the data stored by the class."""
+    return self._Ih_table
+
+  @property
   def asu_miller_index(self):
     """The asymmetric miller indices."""
     return self._Ih_table['asu_miller_index']
@@ -276,7 +281,7 @@ class JointIhTable(IhTableBase):
     # Now join together the datasets to make the Ih table
     Ih_table = flex.reflection_table()
     for Ih_tab in self._Ih_tables:
-      Ih_table.extend(Ih_tab._Ih_table)
+      Ih_table.extend(Ih_tab.Ih_table)
     scales = Ih_table['inverse_scale_factor']
     scaleweights = Ih_table['weights']
     intensities = Ih_table['intensity']

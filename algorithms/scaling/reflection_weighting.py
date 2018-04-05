@@ -1,3 +1,7 @@
+"""
+Class to return a flex array of weights for scaling.
+"""
+
 from __future__ import print_function
 import logging
 from dials.array_family import flex
@@ -24,6 +28,7 @@ class Weighting(object):
 
   @property
   def weights(self):
+    """The weights flex array"""
     return self._scale_weighting
 
   @weights.setter
@@ -31,6 +36,7 @@ class Weighting(object):
     self._scale_weighting = new_weights
 
   def tukey_biweighting(self, Ih_table):
+    """Apply a tukey biweighting."""
     z_score = flex.double([])
     zmax = 6.0
     for i, _ in enumerate(Ih_table.h_index_counter_array):

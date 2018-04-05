@@ -1,3 +1,6 @@
+"""
+Error model classes for scaling.
+"""
 import logging
 from dials.array_family import flex
 from scitbx import sparse

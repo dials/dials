@@ -40,6 +40,7 @@ class ErrorModelTarget(object):
     return self._rmsds
 
   def achieved(self):
+    """Method required for refinement engine."""
     return False #implement a method here?
 
   def calculate_residuals(self):
@@ -83,4 +84,3 @@ class ErrorModelTarget(object):
     gradient_restraint = flex.double([-2.0 * R1 * (1.0 - self.x[0]),
       R2 * 2.0 * self.x[1]])
     return [residual_restraint, gradient_restraint, None]
-

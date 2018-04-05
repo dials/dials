@@ -11,7 +11,6 @@ from dials_scaling_helpers_ext import row_multiply
 from dials_refinement_helpers_ext import GaussianSmoother as GS1D
 from dials_refinement_helpers_ext import GaussianSmoother2D as GS2D
 from dials_refinement_helpers_ext import GaussianSmoother3D as GS3D
-from scitbx import sparse
 from dials_scratch_scaling_ext import elementwise_square
 from dials.algorithms.scaling.model.components.scale_components import \
   ScaleComponentBase

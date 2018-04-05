@@ -1,3 +1,6 @@
+"""
+Phil scope of options for scaling.
+"""
 import iotbx.phil
 
 phil_scope = iotbx.phil.parse('''

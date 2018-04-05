@@ -209,7 +209,7 @@ class ArraySMFactory(object):
         'parameter_esds' : None}
 
     if 'absorption' in configdict['corrections']:
-      configdict.update({ 'n_x_param' : n_x_param, 'n_y_param' : n_y_param,
+      configdict.update({'n_x_param' : n_x_param, 'n_y_param' : n_y_param,
         'xmin' : xmin, 'ymin' : ymin, 'x_bin_width' : x_bin_width,
         'y_bin_width' : y_bin_width, 'n_time_param': n_time_param,
         'time_norm_fac' : time_norm_fac, 'time_rot_interval' : time_rot_int

@@ -5,10 +5,8 @@ These are initialised with a scaler and an active parameter manager,
 and have implementations of residual/gradient calculations for
 scaling.
 """
-import logging
 from dials.array_family import flex
 from dials_scaling_helpers_ext import row_multiply
-from scitbx import sparse
 from dials_scratch_scaling_ext import elementwise_square
 
 
@@ -31,7 +29,8 @@ class ScalingTarget(object):
     # Quantities to cache each step
     self._rmsds = None
 
-  def predict(self):#do basis function calcuation and update Ih
+  def predict(self):
+    """Calculate the current values of quantities for the minimisation."""
     self.scaler.update_for_minimisation(self.apm, self.curvatures)
 
   def get_num_matches(self):
@@ -51,6 +50,7 @@ class ScalingTarget(object):
     return self._rmsds
 
   def achieved(self):
+    """Method required by refinement engine."""
     return False #implement a method here?
 
   def calculate_residuals(self):

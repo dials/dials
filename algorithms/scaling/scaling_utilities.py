@@ -1,12 +1,15 @@
+"""
+Module of utility functions for scaling.
+"""
+
 from __future__ import print_function
 import logging
 from time import time
 import copy
-import cPickle as pickle
+from math import pi, acos
 from dials.array_family import flex
-from math import pi
 from cctbx import miller, crystal
-from Ih_table import SingleIhTable
+from dials.algorithms.scaling.Ih_table import SingleIhTable
 from dxtbx.model.experiment_list import ExperimentListDumper
 from dials_scratch_scaling_ext import create_sph_harm_table, calc_theta_phi,\
   rotate_vectors_about_axis
@@ -16,19 +19,19 @@ logger = logging.getLogger('dials')
 def save_experiments(experiments, filename):
   """Save the experiments json."""
   st = time()
-  logger.info('Saving the experiments to %s' % filename)
+  logger.info('Saving the experiments to %s', filename)
   dump = ExperimentListDumper(experiments)
   with open(filename, "w") as outfile:
     outfile.write(dump.as_json(split=True))
-  logger.info('Time taken: %g' % (time() - st))
+  logger.info('Time taken: %g', (time() - st))
 
 def save_reflections(scaler, filename):
   """Save the scaled reflections."""
   scaler.clean_reflection_table() #Remove unwanted columns.
   st = time()
-  logger.info('Saving the scaled reflections to %s' % filename)
+  logger.info('Saving the scaled reflections to %s', filename)
   scaler.reflection_table.as_pickle(filename)
-  logger.info('Time taken: %g' % (time() - st))
+  logger.info('Time taken: %g', (time() - st))
 
 def parse_multiple_datasets(reflections):
   """Parse multiple datasets from single reflection tables, selecting on id."""
@@ -37,8 +40,8 @@ def parse_multiple_datasets(reflections):
     dataset_ids = set(refl_table['id']).difference(set([-1]))
     n_datasets = len(dataset_ids)
     if n_datasets > 1:
-      logger.info(('\nDetected existence of a multi-dataset scaled reflection table {sep}'
-        'containing {0} datasets. {sep}').format(n_datasets, sep='\n'))
+      logger.info('\nDetected existence of a multi-dataset scaled reflection table \n'
+        'containing %s datasets. \n', n_datasets)
       for dataset_id in dataset_ids:
         single_refl_table = refl_table.select(refl_table['id'] == dataset_id)
         single_reflection_tables.append(single_refl_table)
@@ -75,7 +78,6 @@ def align_rotation_axis_along_z(exp_rot_axis, vectors):
   """Rotate the coordinate system such that the exp_rot_axis is along z."""
   (ux, uy, uz) = exp_rot_axis[0][0], exp_rot_axis[0][1], exp_rot_axis[0][2]
   cross_prod_uz = flex.vec3_double([(uy, -1.0*ux, 0.0)])
-  from math import acos
   angle_between_u_z = -1.0 * acos(uz/((ux**2 + uy**2 + uz**2)**0.5))
   phi = flex.double(vectors.size(), angle_between_u_z)
   new_vectors = rotate_vectors_about_axis(cross_prod_uz, vectors, phi)
@@ -84,7 +86,6 @@ def align_rotation_axis_along_z(exp_rot_axis, vectors):
 def sph_harm_table(reflection_table, experiments, lmax):
   """Calculate the spherical harmonic table for a spherical
     harmonic absorption correction."""
-  from scitbx import sparse # Leave - needed to allow return of sph_harm_table
   reflection_table = calc_crystal_frame_vectors(reflection_table, experiments)
   theta_phi = calc_theta_phi(reflection_table['s0c'])
   theta_phi_2 = calc_theta_phi(reflection_table['s1c'])
@@ -103,9 +104,9 @@ def reject_outliers(reflection_table, zmax):
   norm_dev = (I - (g * wgIsum/wg2sum))/(((1.0/w)+((g/wg2sum)**2))**0.5)
   z_score = (norm_dev**2)**0.5
   outliers_sel = z_score > zmax
-  select_isel = Ih_table._nonzero_weights.iselection()
+  select_isel = Ih_table.nonzero_weights.iselection()
   outliers_in_overall = select_isel.select(outliers_sel)
-  outlier_mask = flex.bool([False]*len(reflection_table))
+  outlier_mask = flex.bool(reflection_table.size(), False)
   outlier_mask.set_selected(outliers_in_overall, True)
   reflection_table.set_flags(outlier_mask,
     reflection_table.flags.outlier_in_scaling)
@@ -122,22 +123,23 @@ def calc_normE2(reflection_table, experiments):
     ).format(sep='\n')
   logger.info(msg)
   #print(len(reflection_table))
-  sel = reflection_table.get_flags(reflection_table.flags.bad_for_scaling,
+  bad_refl_sel = reflection_table.get_flags(reflection_table.flags.bad_for_scaling,
     all=False)
-  good_refl = ~sel
-  scaling_subset = reflection_table.select(good_refl)
+  scaling_subset = reflection_table.select(~bad_refl_sel)
   # Scaling subset is data that has not been flagged as bad or excluded
-  u_c = experiments.crystal.get_unit_cell().parameters()
-  s_g = experiments.crystal.get_space_group()
-  crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
+  crystal_symmetry = crystal.symmetry(
+    unit_cell=experiments.crystal.get_unit_cell().parameters(),
+    space_group=experiments.crystal.get_space_group())
   miller_set = miller.set(crystal_symmetry=crystal_symmetry,
-                          indices=scaling_subset['asu_miller_index'])
+    indices=scaling_subset['asu_miller_index'])
   scaling_subset['resolution'] = 1.0/scaling_subset['d']**2
   #handle negative reflections to minimise effect on mean I values.
-  scaling_subset['intensity_for_norm'] = copy.deepcopy(scaling_subset['intensity'])
-  sel = scaling_subset['intensity'] < 0.0
-  scaling_subset['intensity_for_norm'].set_selected(sel, 0.0)
-  miller_array = miller.array(miller_set, data=scaling_subset['intensity_for_norm'])
+  scaling_subset['intensity_for_norm'] = copy.deepcopy(
+    scaling_subset['intensity'])
+  scaling_subset['intensity_for_norm'].set_selected(
+    scaling_subset['intensity'] < 0.0, 0.0)
+  miller_array = miller.array(miller_set,
+    data=scaling_subset['intensity_for_norm'])
   #set up binning objects
   scaling_subset['centric_flag'] = miller_array.centric_flags().data()
   n_centrics = scaling_subset['centric_flag'].count(True)
@@ -163,18 +165,18 @@ def calc_normE2(reflection_table, experiments):
            + 1e-8) / n_refl_shells)
   if n_centrics:
     centrics_array = miller_array.select_centric()
-    centric_binner = centrics_array.setup_binner_d_star_sq_step(d_star_sq_step=step)
+    centric_binner = centrics_array.setup_binner_d_star_sq_step(
+      d_star_sq_step=step)
     mean_centric_values = centrics_array.mean(use_binning=centric_binner)
     mean_centric_values = mean_centric_values.data[1:-1]
     centric_bin_limits = centric_binner.limits()
-  #  print(list(centric_bin_limits))
 
   acentrics_array = miller_array.select_acentric()
-  acentric_binner = acentrics_array.setup_binner_d_star_sq_step(d_star_sq_step=step)
+  acentric_binner = acentrics_array.setup_binner_d_star_sq_step(
+    d_star_sq_step=step)
   mean_acentric_values = acentrics_array.mean(use_binning=acentric_binner)
   mean_acentric_values = mean_acentric_values.data[1:-1]
   acentric_bin_limits = acentric_binner.limits()
-  #print(list(acentric_bin_limits))
   #now calculate normalised intensity values for full reflection table
   miller_set = miller.set(crystal_symmetry=crystal_symmetry,
                           indices=reflection_table['asu_miller_index'])
@@ -188,14 +190,14 @@ def calc_normE2(reflection_table, experiments):
 
   if n_centrics:
     for i in range(0, len(centric_bin_limits)-1):
-      sel1 = reflection_table['centric_flag'] == True
+      sel1 = reflection_table['centric_flag']
       sel2 = reflection_table['resolution'] > centric_bin_limits[i]
       sel3 = reflection_table['resolution'] <= centric_bin_limits[i+1]
       sel = sel1 & sel2 & sel3
       intensities = reflection_table['intensity'].select(sel)
       reflection_table['Esq'].set_selected(sel, intensities/ mean_centric_values[i])
   for i in range(0, len(acentric_bin_limits)-1):
-    sel1 = reflection_table['centric_flag'] == False
+    sel1 = ~reflection_table['centric_flag']
     sel2 = reflection_table['resolution'] > acentric_bin_limits[i]
     sel3 = reflection_table['resolution'] <= acentric_bin_limits[i+1]
     sel = sel1 & sel2 & sel3
@@ -217,12 +219,12 @@ def calculate_wilson_outliers(reflection_table):
   flex array indicating any outliers."""
 
   centric_cutoff = 23.91
-  sel1 = reflection_table['centric_flag'] == True
+  sel1 = reflection_table['centric_flag']
   sel2 = reflection_table['Esq'] > centric_cutoff #probability <10^-6
   reflection_table.set_flags(sel1 & sel2, reflection_table.flags.outlier_in_scaling)
 
   acentric_cutoff = 13.82
-  sel1 = reflection_table['centric_flag'] == False
+  sel1 = ~reflection_table['centric_flag']
   sel2 = reflection_table['Esq'] > acentric_cutoff #probability <10^-6
   reflection_table.set_flags(sel1 & sel2, reflection_table.flags.outlier_in_scaling)
   msg = ('{0} reflections have been identified as outliers based on their normalised {sep}'
@@ -231,7 +233,7 @@ def calculate_wilson_outliers(reflection_table):
     'and acentric reflections respectively). {sep}'
     ).format(reflection_table.get_flags(
     reflection_table.flags.outlier_in_scaling).count(True),
-    centric_cutoff,acentric_cutoff, sep='\n')
+    centric_cutoff, acentric_cutoff, sep='\n')
   logger.info(msg)
   return reflection_table
 

@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+"""
+Definitions of scaling model extensions.
+"""
 from __future__ import absolute_import, division
 
 from dials.framework import interface
@@ -13,6 +16,11 @@ class ScalingModelIface(interface.Interface):
     @classmethod
     def factory(cls):
         ''' Get the factory. '''
+        pass
+
+    @classmethod
+    def scaler(cls):
+        ''' Get the scaler. '''
         pass
 
     @staticmethod
