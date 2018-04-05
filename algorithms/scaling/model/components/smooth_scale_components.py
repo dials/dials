@@ -129,7 +129,7 @@ class SmoothScaleComponent1D(SmoothScaleComponentBase):
     a spacing of 1."""
     return self._normalised_values
 
-  def configure_reflection_table(self, reflection_table, experiments):
+  def configure_reflection_table(self, reflection_table, experiments, params):
     reflection_table[self._col_name] = (reflection_table['xyzobs.px.value'].parts()[2]
         * experiments.scaling_model.scale_normalisation_factor)
     return reflection_table
@@ -177,14 +177,12 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
     """The current set of d-values associated with this component."""
     return self._d_values
 
-  def configure_reflection_table(self, reflection_table, experiments):
+  def configure_reflection_table(self, reflection_table, experiments, params):
     reflection_table[self._col_name] = (reflection_table['xyzobs.px.value'].parts()[2]
         * experiments.scaling_model.decay_normalisation_factor)
     return reflection_table
 
-  def update_reflection_data(self, reflection_table, selection=None):#normalised_values, dvalues):
-    #normalised_values = reflection_table[self._col_name]
-    #assert len(normalised_values) == len(dvalues)
+  def update_reflection_data(self, reflection_table, selection=None):
     super(SmoothBScaleComponent1D, self).update_reflection_data(
       reflection_table, selection)
     self._d_values = reflection_table['d']
@@ -215,13 +213,14 @@ class SmoothScaleComponent2D(SmoothScaleComponentBase):
   initial values are passed as a 1D array, and shape is a 2-tuple
   indicating the number of parameters in each dimension."""
 
-  def __init__(self, initial_values, shape, parameter_esds=None):
+  def __init__(self, initial_values, shape, col_names, parameter_esds=None):
     assert len(initial_values) == (shape[0] * shape[1]), '''The shape
     information to initialise a 2D smoother is inconsistent with the length
     of the initial parameter list.'''
     super(SmoothScaleComponent2D, self).__init__(initial_values, parameter_esds)
     self._n_x_params = shape[0]
     self._n_y_params = shape[1]
+    self._col_names = col_names
     self._normalised_x_values = None
     self._normalised_y_values = None
 
@@ -235,19 +234,21 @@ class SmoothScaleComponent2D(SmoothScaleComponentBase):
     """The normalised coordinate values in the second dimension."""
     return self._normalised_y_values
 
-  def update_reflection_data(self, normalised_x_values, normalised_y_values):
+  def update_reflection_data(self, reflection_table, selection=None):
     '''control access to setting all of reflection data at once'''
-    normalised_x_values = normalised_x_values - min(normalised_x_values)
-    normalised_y_values = normalised_y_values - min(normalised_y_values)
-    self._normalised_x_values = normalised_x_values
-    self._normalised_y_values = normalised_y_values
+    if selection:
+      reflection_table = reflection_table.select(selection)
+    normalised_x_values = reflection_table[self._col_names[0]]
+    normalised_y_values = reflection_table[self._col_names[1]]
+    self._normalised_x_values = normalised_x_values - min(normalised_x_values)
+    self._normalised_y_values = normalised_y_values - min(normalised_y_values)
     x_range = [int(min(self._normalised_x_values)//1),
                int(max(self._normalised_x_values)//1)+1]
     y_range = [int(min(self._normalised_y_values)//1),
                int(max(self._normalised_y_values)//1)+1]
     self._smoother = GaussianSmoother2D(x_range, self._nparam_to_val(
       self._n_x_params), y_range, self._nparam_to_val(self._n_y_params))
-    self.inverse_scales = flex.double(normalised_x_values.size(), 1.0)
+    self.inverse_scales = flex.double(self._normalised_x_values.size(), 1.0)
 
   def calculate_scales_and_derivatives(self):
     value, weight, sumweight = self._smoother.multi_value_weight(
@@ -271,7 +272,7 @@ class SmoothScaleComponent3D(SmoothScaleComponentBase):
   initial values are passed as a 1D array, and shape is a 3-tuple
   indicating the number of parameters in each dimension."""
 
-  def __init__(self, initial_values, shape, parameter_esds=None):
+  def __init__(self, initial_values, shape, col_names, parameter_esds=None):
     assert len(initial_values) == (shape[0] * shape[1] * shape[2]), '''The
     shape information to initialise a 3D smoother is inconsistent with the
     length of the initial parameter list.'''
@@ -279,10 +280,11 @@ class SmoothScaleComponent3D(SmoothScaleComponentBase):
       parameter_esds)
     self._n_x_params = shape[0]
     self._n_y_params = shape[1]
+    self._n_z_params = shape[2]
     self._normalised_x_values = None
     self._normalised_y_values = None
-    self._n_z_params = shape[2]
     self._normalised_z_values = None
+    self._col_names = col_names
 
   @property
   def normalised_x_values(self):
@@ -299,15 +301,17 @@ class SmoothScaleComponent3D(SmoothScaleComponentBase):
     """The normalised coordinate values in the third dimension."""
     return self._normalised_z_values
 
-  def update_reflection_data(self, normalised_x_values, normalised_y_values,
-      normalised_z_values):
+  def update_reflection_data(self, reflection_table, selection=None):
+    '''control access to setting all of reflection data at once'''
+    if selection:
+      reflection_table = reflection_table.select(selection)
+    normalised_x_values = reflection_table[self._col_names[0]]
+    normalised_y_values = reflection_table[self._col_names[1]]
+    normalised_z_values = reflection_table[self._col_names[2]]
     """Set the normalised coordinate values and configure the smoother."""
-    normalised_x_values = normalised_x_values - min(normalised_x_values)
-    normalised_y_values = normalised_y_values - min(normalised_y_values)
-    normalised_z_values = normalised_x_values - min(normalised_z_values)
-    self._normalised_x_values = normalised_x_values
-    self._normalised_y_values = normalised_y_values
-    self._normalised_z_values = normalised_z_values
+    self._normalised_x_values = normalised_x_values - min(normalised_x_values)
+    self._normalised_y_values = normalised_y_values - min(normalised_y_values)
+    self._normalised_z_values = normalised_z_values - min(normalised_z_values)
     x_range = [int(min(self._normalised_x_values)//1),
                int(max(self._normalised_x_values)//1)+1]
     y_range = [int(min(self._normalised_y_values)//1),
@@ -317,7 +321,7 @@ class SmoothScaleComponent3D(SmoothScaleComponentBase):
     self._smoother = GaussianSmoother3D(x_range, self._nparam_to_val(
       self._n_x_params), y_range, self._nparam_to_val(self._n_y_params),
       z_range, self._nparam_to_val(self._n_z_params))
-    self.inverse_scales = flex.double(normalised_x_values.size(), 1.0)
+    self.inverse_scales = flex.double(self._normalised_x_values.size(), 1.0)
 
   def calculate_scales_and_derivatives(self):
     value, weight, sumweight = self._smoother.multi_value_weight(

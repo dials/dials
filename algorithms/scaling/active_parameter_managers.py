@@ -210,7 +210,7 @@ class ConsecutiveAPMFactory(object):
     '''return a list indicating the names of active parameters'''
 
     if self.mode == 'single':
-      for cycle in self.data_managers[0].consecutive_scaling_order:
+      for cycle in self.data_managers[0].experiments.scaling_model.consecutive_scaling_order:
         corrlist = []
         for corr in cycle:
           if corr in self.data_managers[0].components:
@@ -221,7 +221,7 @@ class ConsecutiveAPMFactory(object):
     elif self.mode == 'multi':
       for data_manager in self.data_managers:
         ind_param_list = []
-        for cycle in data_manager.consecutive_scaling_order:
+        for cycle in data_manager.experiments.scaling_model.consecutive_scaling_order:
           corrlist = []
           for corr in cycle:
             if corr in data_manager.components:

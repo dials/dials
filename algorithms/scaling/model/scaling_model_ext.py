@@ -18,11 +18,6 @@ class ScalingModelIface(interface.Interface):
         ''' Get the factory. '''
         pass
 
-    @classmethod
-    def scaler(cls):
-        ''' Get the scaler. '''
-        pass
-
     @staticmethod
     def from_dict(d):
         ''' Get from dictionary. '''
@@ -39,12 +34,6 @@ class PhysicalScalingModelExt(ScalingModelIface):
     from dials.algorithms.scaling.model.scaling_model_factory import \
       PhysicalSMFactory
     return PhysicalSMFactory
-
-  @classmethod
-  def scaler(cls):
-    '''returns the scaler factory'''
-    from dials.algorithms.scaling.scaler import PhysicalScaler
-    return PhysicalScaler
 
   @staticmethod
   def from_dict(d):
@@ -65,12 +54,6 @@ class KBScalingModelExt(ScalingModelIface):
       KBSMFactory
     return KBSMFactory
 
-  @classmethod
-  def scaler(cls):
-    '''returns the scaler factory'''
-    from dials.algorithms.scaling.scaler import KBScaler
-    return KBScaler
-
   @staticmethod
   def from_dict(d):
     '''creates a scaling model from a dict'''
@@ -88,12 +71,6 @@ class ArrayScalingModelExt(ScalingModelIface):
     from dials.algorithms.scaling.model.scaling_model_factory import \
       ArraySMFactory
     return ArraySMFactory
-
-  @classmethod
-  def scaler(cls):
-    '''returns the scaler factory'''
-    from dials.algorithms.scaling.scaler import ArrayScaler
-    return ArrayScaler
 
   @staticmethod
   def from_dict(d):

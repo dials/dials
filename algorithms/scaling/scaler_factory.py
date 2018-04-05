@@ -4,7 +4,7 @@ Collection of factories for creating the scalers.
 import logging
 import pkg_resources
 from libtbx.utils import Sorry
-from dials.algorithms.scaling.scaler import MultiScaler, TargetScaler
+from dials.algorithms.scaling.scaler import MultiScaler, TargetScaler, SingleScalerBase
 logger = logging.getLogger('dials')
 
 def create_scaler(params, experiments, reflections):
@@ -39,12 +39,8 @@ class SingleScalerFactory(object):
   @classmethod
   def create(cls, params, experiment, reflection, scaled_id=0):
     '''create a single scaler with the relevant parameterisation'''
-    for entry_point in pkg_resources.iter_entry_points('dxtbx.scaling_model_ext'):
-      if entry_point.name == experiment.scaling_model.id_:
-        #finds relevant extension in dials.extensions.scaling_model_ext
-        scalerfactory = entry_point.load().scaler()
-        return scalerfactory(params, experiment, reflection, scaled_id)
-    raise Sorry("unable to find scaler in dials.extensions.scaling_model_ext")
+    from dials.algorithms.scaling.scaler import SingleScalerBase
+    return SingleScalerBase(params, experiment, reflection, scaled_id)
 
 class NullScalerFactory(object):
   'Factory for creating null scaler'

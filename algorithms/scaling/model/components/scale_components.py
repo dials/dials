@@ -196,11 +196,23 @@ class SHScaleComponent(ScaleComponentBase):
   def __init__(self, initial_values, parameter_esds=None):
     super(SHScaleComponent, self).__init__(initial_values, parameter_esds)
     self._harmonic_values = None
+    self._sph_harm_table = None
+    self._parameter_restraints = None
 
   @property
   def harmonic_values(self):
     """A matrix of harmonic coefficients for the data."""
     return self._harmonic_values
+
+  @property
+  def sph_harm_table(self):
+    """A matrix of the full harmonic coefficient for a reflection table."""
+    return self._sph_harm_table
+  
+  @property
+  def parameter_restraints(self):
+    """Restraint weights for the component parameters."""
+    return self._parameter_restraints
 
   def update_reflection_data(self, _, selection=None):
     """Update the spherical harmonic coefficients."""
@@ -211,9 +223,13 @@ class SHScaleComponent(ScaleComponentBase):
       #self._harmonic_values = harmonic_values
       self.calculate_scales_and_derivatives()
 
-  def configure_reflection_table(self, reflection_table, experiments): 
-    self.sph_harm_table = sph_harm_table(reflection_table, experiments,
-      experiments.scaling_model.configdict['lmax'])
+  def configure_reflection_table(self, reflection_table, experiments, params): 
+    lmax = experiments.scaling_model.configdict['lmax']
+    self._sph_harm_table = sph_harm_table(reflection_table, experiments, lmax)
+    self._parameter_restraints = flex.double([])
+    for i in range(1, lmax+1):
+      self._parameter_restraints.extend(flex.double([1.0] * ((2*i)+1)))
+    self._parameter_restraints *= params.parameterisation.surface_weight
     return reflection_table
 
   def calculate_scales_and_derivatives(self):

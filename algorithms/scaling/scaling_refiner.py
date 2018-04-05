@@ -181,10 +181,11 @@ class ScalingRefinery(object):
           scaler.update_var_cov(self._parameters.apm_list[i])
 
     if not isinstance(self._scaler, MultiScalerBase):
-      if 'scale' in self._parameters.components:
-        self._scaler.normalise_scale_component()
-      if 'decay' in self._parameters.components:
-        self._scaler.normalise_decay_component()
+      self._scaler.experiments.scaling_model.normalise_components()
+      #if 'scale' in self._parameters.components:
+      #  self._scaler.normalise_scale_component()
+      #if 'decay' in self._parameters.components:
+      #  self._scaler.normalise_decay_component()
     return self._scaler
 
 

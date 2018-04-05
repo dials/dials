@@ -1,3 +1,10 @@
+"""
+Definitions of scaling models - collections of scale components with appropriate
+methods to define how these are composed into one model.
+"""
+import abc
+import logging
+import numpy as np
 from collections import OrderedDict
 from dials.array_family import flex
 from dials.algorithms.scaling.model.components.scale_components import \
@@ -6,10 +13,14 @@ from dials.algorithms.scaling.model.components.smooth_scale_components import \
   SmoothScaleComponent1D, SmoothBScaleComponent1D, SmoothScaleComponent2D,\
   SmoothScaleComponent3D
 
+logger = logging.getLogger('dials')
+
 class ScalingModelBase(object):
   '''Base class for Scale Factories'''
 
   id_ = None
+
+  __metaclass__ = abc.ABCMeta
 
   def __init__(self, configdict, is_scaled=False):
     self._components = OrderedDict()
@@ -28,6 +39,13 @@ class ScalingModelBase(object):
     '''update scaling model to show that no scaled data is associated with this model'''
     self._is_scaled = False
 
+  def configure_reflection_table(self, reflection_table, experiment, params):
+    return reflection_table
+
+  def normalise_components(self):
+    """Optionally define a normalisation of the parameters after scaling."""
+    pass
+
   @property
   def configdict(self):
     '''dictionary of configuration parameters'''
@@ -37,6 +55,14 @@ class ScalingModelBase(object):
   def components(self):
     'components of the model, a dictionary'
     return self._components
+
+  @abc.abstractproperty
+  def consecutive_scaling_order(self):
+    """Return a nested list of correction names, to indicate the order
+    to perform scaling in consecutive scaling mode if concurrent=0.
+    e.g. [['scale', 'decay'], ['absorption']] would cause the first cycle to
+    refine scale and decay, and then absorption in a subsequent cycle."""
+    pass
 
   def to_dict(self):
     '''format data to dictionary for output'''
@@ -92,6 +118,37 @@ class PhysicalScalingModel(ScalingModelBase):
     to normalised time'''
     return self._configdict['d_norm_fac']
 
+  @property
+  def consecutive_scaling_order(self):
+    return [['scale', 'decay'], ['absorption']]
+
+  def configure_reflection_table(self, reflection_table, experiment, params):
+    reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
+      * experiment.scan.get_oscillation()[1])
+    for component in self.components.itervalues():
+      reflection_table = component.configure_reflection_table(
+        reflection_table, experiment, params)
+    return reflection_table
+
+  def normalise_components(self):
+    if 'scale' in self.components:
+      # Do an invariant rescale of the scale at t=0 to one.'''
+      sel = (self.components['scale'].normalised_values ==
+        min(self.components['scale'].normalised_values))
+      initial_scale = self.components['scale'].inverse_scales.select(sel)[0]
+      self.components['scale'].parameters /= initial_scale
+      self.components['scale'].calculate_scales_and_derivatives()
+      logger.info('\nThe "scale" model component has been rescaled, so that the\n'
+        'initial scale is 1.0.')
+    if 'decay' in self.components:
+      # Do an invariant rescale of the max B to zero.'''
+      maxB = max(flex.double(np.log(self.components['decay'].inverse_scales))
+                  * 2.0 * (self.components['decay'].d_values**2))
+      self.components['decay'].parameters -= flex.double(self.components['decay'].n_params, maxB)
+      self.components['decay'].calculate_scales_and_derivatives()
+      logger.info('The "decay" model component has been rescaled, so that the\n'
+        'maximum B-factor applied to any reflection is 0.0.')
+
   @classmethod
   def from_dict(cls, obj):
     '''create a scaling model object from a dictionary'''
@@ -133,18 +190,49 @@ class ArrayScalingModel(ScalingModelBase):
       decay_setup = parameters_dict['decay']
       self._components.update({'decay' : SmoothScaleComponent2D(
         decay_setup['parameters'], shape=(configdict['n_res_param'],
-        configdict['n_time_param']), parameter_esds=decay_setup['parameter_esds'])})
+        configdict['n_time_param']), col_names=['normalised_res_values',
+        'norm_time_values'], parameter_esds=decay_setup['parameter_esds'])})
     if 'absorption' in configdict['corrections']:
       abs_setup = parameters_dict['absorption']
       self._components.update({'absorption' : SmoothScaleComponent3D(
         abs_setup['parameters'], shape=(configdict['n_x_param'],
         configdict['n_y_param'], configdict['n_time_param']),
+        col_names=['normalised_x_abs_values', 'normalised_y_abs_values',
+          'norm_time_values'],
         parameter_esds=abs_setup['parameter_esds'])})
     if 'modulation' in configdict['corrections']:
       mod_setup = parameters_dict['modulation']
       self._components.update({'modulation' : SmoothScaleComponent2D(
         mod_setup['parameters'], shape=(configdict['n_x_mod_param'],
-        configdict['n_y_mod_param']), parameter_esds=mod_setup['parameter_esds'])})
+        configdict['n_y_mod_param']), col_names=['normalised_x_det_values',
+        'normalised_y_det_values'], parameter_esds=mod_setup['parameter_esds'])})
+
+  @property
+  def consecutive_scaling_order(self):
+    return [['decay'], ['absorption'], ['modulation']]
+
+  def configure_reflection_table(self, reflection_table, experiment, params):
+    refl_table = reflection_table
+    refl_table['norm_time_values'] = (refl_table['xyzobs.px.value'].parts()[2]
+        * self.configdict['time_norm_fac'])
+    if 'decay' in self.components:
+      d0_sel = refl_table['d'] == 0.0
+      refl_table['d'].set_selected(d0_sel, 1.0)  #set for now, then set back to zero later
+      refl_table['normalised_res_values'] = (((1.0 / (refl_table['d']**2))
+        - self.configdict['resmin']) / self.configdict['res_bin_width'])
+      refl_table['normalised_res_values'].set_selected(d0_sel, 0.0001)
+      refl_table['d'].set_selected(d0_sel, 0.0)
+    if 'absorption' in self.components:
+      refl_table['normalised_x_abs_values'] = ((refl_table['xyzobs.px.value'].parts()[0]
+        - self.configdict['xmin']) / self.configdict['x_bin_width'])
+      refl_table['normalised_y_abs_values'] = ((refl_table['xyzobs.px.value'].parts()[1]
+        - self.configdict['ymin']) / self.configdict['y_bin_width'])
+    if 'modulation' in self.components:
+      refl_table['normalised_x_det_values'] = ((refl_table['xyzobs.px.value'].parts()[0]
+        - self.configdict['xmin']) / self.configdict['x_det_bin_width'])
+      refl_table['normalised_y_det_values'] = ((refl_table['xyzobs.px.value'].parts()[1]
+        - self.configdict['ymin']) / self.configdict['y_det_bin_width'])
+    return refl_table
 
   @classmethod
   def from_dict(cls, obj):
@@ -190,6 +278,10 @@ class KBScalingModel(ScalingModelBase):
       self._components.update({'decay' : SingleBScaleFactor(
         parameters_dict['decay']['parameters'],
         parameters_dict['decay']['parameter_esds'])})
+
+  @property
+  def consecutive_scaling_order(self):
+    return [['scale', 'decay']]
 
   @classmethod
   def from_dict(cls, obj):
