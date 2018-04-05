@@ -5,6 +5,7 @@ logger = logging.getLogger(__name__)
 
 import copy
 from collections import OrderedDict
+import math
 
 from libtbx import Auto
 from libtbx import table_utils
@@ -507,10 +508,10 @@ class analyse_datasets(object):
     distances = np.insert(distances, 0, 0)
     silhouette_scores = flex.double()
     thresholds = flex.double()
-    for threshold in distances:
+    for threshold in distances[1:]:
       cluster_labels = self.cluster_labels.deep_copy()
       labels = hierarchy.fcluster(
-        linkage_matrix, threshold+eps, criterion='distance').tolist()
+        linkage_matrix, threshold-eps, criterion='distance').tolist()
       counts = [labels.count(l) for l in set(labels)]
       if len(set(counts)) > 1:
         # only equal-sized clusters are valid
@@ -529,19 +530,23 @@ class analyse_datasets(object):
       silhouette_scores.append(silhouette_avg)
       thresholds.append(threshold)
 
+      logger.info('Clustering:')
+      logger.info('  Number of clusters: %i' % n_clusters)
+      logger.info('  Threshold score: %.3f (%.1f deg)' % (
+        threshold, math.degrees(math.acos(1-threshold))))
+      logger.info('  Silhouette score: %.3f' % silhouette_avg)
+
       if self.params.save_plot:
         plot_silhouette(
           sample_silhouette_values, cluster_labels.as_numpy_array(),
           file_name='silhouette_%i.png' % n_clusters)
-
-    logger.info('Silhouette scores: %s' %(list(silhouette_scores)))
 
     idx = flex.max_index(silhouette_scores)
     if silhouette_scores[idx] < self.params.cluster.seed.min_silhouette_score:
       # assume single cluster
       self.cluster_labels = flex.int(self.cluster_labels.size(), 0)
     else:
-      threshold = thresholds[idx] + eps
+      threshold = thresholds[idx] - eps
       labels = hierarchy.fcluster(
         linkage_matrix, threshold, criterion='distance')
       cluster_labels = flex.double(self.cluster_labels.size(), -1)
