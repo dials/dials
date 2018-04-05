@@ -4,14 +4,6 @@ import copy
 
 import pytest
 
-def assert_exception(func):
-  # Don't use this function because it is broken.
-  try:
-    func()
-    assert(False)
-  except Exception:
-    pass
-
 def test_init():
   from dials.array_family import flex
 
@@ -97,11 +89,7 @@ def test_resizing():
   assert(not table.is_consistent())
   with pytest.raises(Exception):
     table.nrows()
-  # This should be
-  # with pytest.raises(Exception):
-  #   table.ncols()
-  # but that fails, because table.ncols() actually returns 2
-  assert_exception(lambda: table.ncols())
+  assert(table.ncols() == 2)
 
   # Clear the table
   table.clear()
