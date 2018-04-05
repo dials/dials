@@ -1,15 +1,13 @@
 import abc
 import logging
-import numpy as np
 from dials.array_family import flex
-import copy as copy
 from cctbx import miller, crystal
 from scitbx import sparse
 from dials_scaling_helpers_ext import row_multiply
 import iotbx.merging_statistics
 from libtbx.containers import OrderedSet
 from dials.algorithms.scaling.basis_functions import basis_function
-from dials.algorithms.scaling.scaling_utilities import (sph_harm_table,
+from dials.algorithms.scaling.scaling_utilities import (
   reject_outliers, calculate_wilson_outliers, calc_normE2)
 from dials.algorithms.scaling.reflection_weighting import Weighting
 from dials.algorithms.scaling.Ih_table import SingleIhTable,\
@@ -180,9 +178,9 @@ class SingleScalerBase(ScalerBase):
 
   def __init__(self, params, experiment, reflection, scaled_id=0):
     logger.info('Configuring a Scaler for a single dataset. \n')
-    logger.info(('The dataset id assigned to this reflection table is {0}, {sep}'
-      'the scaling model type being applied is {1}. {sep}').format(scaled_id,
-      experiment.scaling_model.id_, sep='\n'))
+    logger.info('The dataset id assigned to this reflection table is %s, \n'
+      'the scaling model type being applied is %s. \n', scaled_id,
+      experiment.scaling_model.id_)
     super(SingleScalerBase, self).__init__()
     self._experiments = experiment
     self._params = params
@@ -290,8 +288,8 @@ class SingleScalerBase(ScalerBase):
         reflection_table['intensity.'+intstr+'.value'] * conversion)
       reflection_table['variance'] = (
         reflection_table['intensity.'+intstr+'.variance'] * (conversion**2))
-      logger.info(('{0} intensity values will be used for scaling. {sep}').format(
-        'Profile fitted' if intstr == 'prf' else 'Summation integrated', sep='\n'))
+      logger.info('%s intensity values will be used for scaling. \n',
+        'Profile fitted' if intstr == 'prf' else 'Summation integrated')
     #perform a combined prf/sum in a similar fashion to aimless
     elif params.scaling_options.integration_method == 'combine':
       int_prf = reflection_table['intensity.prf.value'] * conversion
@@ -324,9 +322,9 @@ class SingleScalerBase(ScalerBase):
     scaled_reflections = self._reflection_table.select(scaled_sel)
     scaled_reflections['inverse_scale_factor'] = self.calc_expanded_scales(
       scaled_reflections, scaled_sel)
-    logger.info(('Scale factors determined during minimisation have now been\n'
-      'applied to all reflections for dataset {0}.\n').format(
-        self.reflection_table['id'][0]))
+    logger.info('Scale factors determined during minimisation have now been\n'
+      'applied to all reflections for dataset %s.\n',
+      self.reflection_table['id'][0])
     if self.var_cov_matrix and calc_cov:
       scaled_reflections['inverse_scale_factor_variance'] = calc_sf_variances(
         self.components, self._var_cov)
@@ -362,8 +360,7 @@ class SingleScalerBase(ScalerBase):
     for key, val in self.components.iteritems():
       rows.append([key, str(val.n_params)])
     st = simple_table(rows, header)
-    logger.info(('The following corrections will be applied to this dataset: {sep}'
-      ).format(sep='\n'))
+    logger.info('The following corrections will be applied to this dataset: \n')
     logger.info(st.format())
 
   def compute_restraints_residuals_jacobian(self, apm):
@@ -621,14 +618,14 @@ class TargetScaler(MultiScalerBase):
     logger.info('\nInitialising a TargetScaler instance. \n')
     super(TargetScaler, self).__init__(params, scaled_experiments, scaled_scalers)
     self.unscaled_scalers = unscaled_scalers
-    self._initial_keys = self.unscaled_scalers[0].initial_keys #needed for 
+    self._initial_keys = self.unscaled_scalers[0].initial_keys #needed for
     # scaling against calculated Is
     self._experiments = unscaled_experiments[0]
     target_Ih_table = self.Ih_table
     target_asu_Ih_dict = dict(zip(target_Ih_table.asu_miller_index,
       target_Ih_table.Ih_values))
     for scaler in unscaled_scalers:
-      scaler.Ih_table._Ih_table['Ih_values'] = flex.double(
+      scaler.Ih_table.Ih_table['Ih_values'] = flex.double(
         scaler.Ih_table.size, 0.0) # set to zero to allow selection below
       location_in_unscaled_array = 0
       for j, miller_idx in enumerate(OrderedSet(scaler.Ih_table.asu_miller_index)):
@@ -701,6 +698,7 @@ class NullScaler(ScalerBase):
     super(NullScaler, self).__init__()
     self._experiments = experiment
     self._params = params
+    self._scaled_id = scaled_id
     self._reflection_table = self._map_indices_to_asu(reflection, experiment,
       params)
     self._initial_keys = [key for key in self._reflection_table.keys()]
@@ -713,7 +711,7 @@ class NullScaler(ScalerBase):
     self._reflection_table.set_flags(flex.bool([False]*n_refl),
       self._reflection_table.flags.excluded_for_scaling)
     self._Ih_table = SingleIhTable(self._reflection_table, weights)
-    logger.info('NullScaler contains %s reflections' % n_refl)
+    logger.info('NullScaler contains %s reflections', n_refl)
     logger.info('Completed configuration of NullScaler. \n\n' + '='*80 + '\n')
 
   def expand_scales_to_all_reflections(self, caller=None):

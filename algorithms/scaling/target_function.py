@@ -100,12 +100,12 @@ class ScalingTarget(object):
     a = row_multiply(gprime, Ih)
     b = row_multiply(Ihprime_expanded, g)
     for j, col in enumerate(a.cols()):
-      b[:,j] += col #n_refl x n_params
+      b[:, j] += col #n_refl x n_params
     rprime = b
     rprimesq = elementwise_square(rprime)
     # First term is sum_refl 2.0 * (r')2
     first_term = 2.0 * w * rprimesq
-    print(list(first_term))
+    #print(list(first_term))
 
     # Second term is sum_refl -2.0 * r * r''
     #  = -2.0 * r * (Ih g'' + 2g'Ih' + g Ih'') = A + B + C
@@ -114,11 +114,13 @@ class ScalingTarget(object):
     if self.apm.curvatures:
       A = -2.0 * w * r * Ih * self.apm.curvatures #len n_params
     B = row_multiply(gprime, (-4.0 * w * r)).transpose() * Ih_tab.h_index_matrix
-    B = B.transpose() * Ihprime_expanded #problem - need to do elementwise multiplication of two big matrices.
+    B = B.transpose() * Ihprime_expanded #problem -
+    # need to do elementwise multiplication of two big matrices.
 
     reduced_prefactor = (-2.0 * r * g * Ih_tab.h_index_matrix)
     B = -4.0 * r * ((h_idx_transpose * gprime).transpose() * Ihprime) #len n_params
-    vprime_over_v = row_multiply((h_idx_transpose * row_multiply(gprime, (2.0 * w * g))), v_inv) #len n_unique_groups x n_params
+    vprime_over_v = row_multiply((h_idx_transpose * row_multiply(gprime,
+      (2.0 * w * g))), v_inv) #len n_unique_groups x n_params
     E = (-1.0 * reduced_prefactor * Ihprime) * vprime_over_v
 
     #E = (2.0 * r * g * Ih_tab.h_index_matrix) * row_multiply(Ihprime, vprime_over_v) #len n_params
@@ -138,23 +140,9 @@ class ScalingTarget(object):
 
     if self.apm.curvatures:
       curvs = A + B + D1 + D2 + D3 + D4 + E + first_term
-      print(list(A))
-      print(list(B))
-      print(list(D1))
-      print(list(D2)) #bad
-      print(list(D3))
-      print(list(D4))
-      print(list(E)) #bad
-      print(list(first_term))
-      print(list(curvs))
       return curvs
     curvs = B + D2 + D3 + E + first_term
-    print(list(B))
-    print(list(D2))
-    print(list(D3))
-    print(list(E))
-    print(list(first_term))
-    print(list(curvs))
+
     return curvs
 
   def calculate_jacobian(self):

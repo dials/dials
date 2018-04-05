@@ -2,10 +2,15 @@
 tests for scalefactor objects
 '''
 from dials.array_family import flex
+from libtbx.test_utils import approx_equal
+from dxtbx.model.experiment_list import ExperimentList
+from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from model.components.scale_components import SHScaleComponent, \
   SingleBScaleFactor, SingleScaleFactor, ScaleComponentBase
 from model.components.smooth_scale_components import SmoothScaleComponent1D,\
   SmoothBScaleComponent1D, SmoothScaleComponent2D, SmoothScaleComponent3D
+from dials.algorithms.scaling.scaling_utilities import calc_crystal_frame_vectors,\
+  calc_theta_phi, create_sph_harm_table, sph_harm_table
 import pytest
 from scitbx import sparse
 
@@ -39,7 +44,9 @@ def test_KScaleFactor():
   KSF = SingleScaleFactor(flex.double([2.0]))
   assert KSF.n_params == 1
   assert list(KSF.parameters) == list(flex.double([2.0]))
-  KSF.update_reflection_data(n_refl=2)
+  rt = flex.reflection_table()
+  rt['d'] = flex.double([1.0, 1.0])
+  KSF.update_reflection_data(rt)
   assert KSF.n_refl == 2
   KSF.calculate_scales_and_derivatives()
   assert list(KSF.inverse_scales) == list(flex.double([2.0, 2.0]))
@@ -51,7 +58,9 @@ def test_BScaleFactor():
   BSF = SingleBScaleFactor(flex.double([0.0]))
   assert BSF.n_params == 1
   assert list(BSF.parameters) == list(flex.double([0.0]))
-  BSF.update_reflection_data(dvalues=flex.double([1.0, 1.0]))
+  rt = flex.reflection_table()
+  rt['d'] = flex.double([1.0, 1.0])
+  BSF.update_reflection_data(rt)
   assert BSF.n_refl == 2
   assert list(BSF.d_values) == list(flex.double([1.0, 1.0]))
   BSF.calculate_scales_and_derivatives()
@@ -62,12 +71,14 @@ def test_BScaleFactor():
 def test_SmoothScaleFactor1D():
   'test for a gaussian smoothed 1D scalefactor object'
   from math import exp
-  SF = SmoothScaleComponent1D(flex.double([1.1] * 5))
+  SF = SmoothScaleComponent1D(flex.double(5, 1.1), col_name='norm_rot')
   assert SF.n_params == 5
   assert list(SF.parameters) == list(flex.double([1.1, 1.1, 1.1, 1.1, 1.1]))
-  SF.update_reflection_data(normalised_values=flex.double([0.5, 1.0, 2.5, 0.0]))
+  rt = flex.reflection_table()
+  rt['norm_rot'] = flex.double([0.5, 1.0, 2.5, 0.0])
+  SF.update_reflection_data(rt)
   assert list(SF.normalised_values) == list(flex.double([0.5, 1.0, 2.5, 0.0]))
-  assert list(SF.inverse_scales) == list(flex.double([1.0, 1.0, 1.0,1.0]))
+  assert list(SF.inverse_scales) == list(flex.double([1.0, 1.0, 1.0, 1.0]))
   SF._smoother.set_smoothing(4, 1.0)
   SF.calculate_scales()
   assert (list(abs(SF.inverse_scales - flex.double([1.1, 1.1, 1.1, 1.1]))) <
@@ -84,11 +95,13 @@ def test_SmoothScaleFactor1D():
 def test_SmoothBScaleFactor1D():
   'test for a gaussian smoothed 1D scalefactor object'
   from math import exp
-  SF = SmoothBScaleComponent1D(flex.double([0.0] * 5))
+  SF = SmoothBScaleComponent1D(flex.double(5, 0.0), col_name='norm_rot')
   assert SF.n_params == 5
-  assert list(SF.parameters) == list(flex.double([0.0]*5))
-  SF.update_reflection_data(normalised_values=flex.double([0.5, 1.0, 2.5, 0.0]),
-    dvalues=flex.double([1.0, 1.0, 1.0, 1.0]))
+  assert list(SF.parameters) == list(flex.double(5, 0.0))
+  rt = flex.reflection_table()
+  rt['norm_rot'] = flex.double([0.5, 1.0, 2.5, 0.0])
+  rt['d'] = flex.double([1.0, 1.0, 1.0, 1.0])
+  SF.update_reflection_data(rt)
   assert list(SF.normalised_values) == list(flex.double([0.5, 1.0, 2.5, 0.0]))
   assert list(SF.d_values) == list(flex.double([1.0, 1.0, 1.0, 1.0]))
   assert list(SF.inverse_scales) == list(flex.double([1.0, 1.0, 1.0, 1.0]))
@@ -105,12 +118,86 @@ def test_SmoothBScaleFactor1D():
   assert SF.derivatives[1, 1] == SF.derivatives[1, 2]
   assert SF.derivatives[1, 0] == SF.derivatives[1, 3]
 
-def test_SHScalefactor():
+def generated_single_exp():
+  experiments = ExperimentList()
+  exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
+              "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
+              "space_group_hall_symbol": " C 2y"}
+  crystal = Crystal.from_dict(exp_dict)
+  scan = Scan(image_range=[0, 90], oscillation=[0.0, 1.0])
+  beam = Beam(s0=(1.0, 0.0, 0.0))
+  goniometer = Goniometer((0.0, 0.0, 1.0))
+  detector = Detector()
+  experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
+    detector=detector, crystal=crystal))
+  return experiments
+
+def generated_param():
+  from libtbx import phil
+  phil_scope = phil.parse('''
+      include scope dials.algorithms.scaling.scaling_options.phil_scope
+  ''', process_includes=True)
+
+  from dials.util.options import OptionParser
+  optionparser = OptionParser(phil=phil_scope, check_format=False)
+  parameters, _ = optionparser.parse_args(args=None, quick_parse=True,
+    show_diff_phil=False)
+  parameters.__inject__('model', 'physical')
+  return parameters
+
+def test_sph_harm_table():
+  """Simple test, constructing spherical harmonic table bit by bit."""
+  rt = flex.reflection_table()
+  from math import sqrt, pi
+  s1_vec = (1.0/sqrt(2.0), 0.0, 1.0/sqrt(2.0))
+  s0_vec = (1.0, 0.0, 0.0)
+  rt['s1'] = flex.vec3_double([s1_vec, s1_vec, s1_vec])
+  rt['phi'] = flex.double([0.0, 45.0, 90.0])
+  exp = generated_single_exp()[0]
+  assert list(exp.beam.get_s0()) == list(s0_vec)
+  assert list(exp.goniometer.get_rotation_axis()) == list((0.0, 0.0, 1.0))
+  reflection_table = calc_crystal_frame_vectors(rt, exp)
+  assert list(reflection_table['s0']) == list(flex.vec3_double([s0_vec, s0_vec, s0_vec]))
+  assert approx_equal(list(reflection_table['s0c']), list(flex.vec3_double([s0_vec,
+    (1.0/sqrt(2.0), -1.0/sqrt(2.0), 0.0), (0.0, -1.0, 0.0)])))
+  assert approx_equal(list(reflection_table['s1c']), list(flex.vec3_double([s1_vec,
+    (1.0/2.0, -1.0/2.0, 1.0/sqrt(2.0)),
+    (0.0, -1.0/sqrt(2.0), 1.0/sqrt(2.0))])))
+  theta_phi = calc_theta_phi(reflection_table['s0c'])
+  assert approx_equal(list(theta_phi), [(pi/2.0, 0.0), (pi/2.0, -1.0*pi/4.0), (pi/2.0, -1.0*pi/2.0)])
+  theta_phi_2 = calc_theta_phi(reflection_table['s1c'])
+  assert approx_equal(list(theta_phi_2), [(pi/4.0, 0.0), (pi/4.0, -1.0*pi/4.0), (pi/4.0, -1.0*pi/2.0)])
+  sph_h_t = create_sph_harm_table(theta_phi, theta_phi_2, 2)
+  Y10 = ((3.0/(8.0*pi))**0.5)/2.0
+  Y20 = -1.0*((5.0/(256.0*pi))**0.5)
+  assert approx_equal(sph_h_t[0, 1], Y10)
+  assert approx_equal(sph_h_t[1, 1], Y10)
+  assert approx_equal(sph_h_t[2, 1], Y10)
+  assert approx_equal(sph_h_t[0, 5], Y20)
+  assert approx_equal(sph_h_t[1, 5], Y20)
+  assert approx_equal(sph_h_t[2, 5], Y20)
+
+
+'''def test_SHScalefactor():
+  """Test the spherical harmonic absorption component."""
   initial_param = 0.1
   initial_val = 0.2
+
+  rt = flex.reflection_table()
+  from math import sqrt, pi
+  s1_vec = (1.0/sqrt(2.0), 0.0, 1.0/sqrt(2.0))
+  s0_vec = (1.0, 0.0, 0.0)
+  rt['s1'] = flex.vec3_double([s1_vec, s1_vec, s1_vec])
+  rt['phi'] = flex.double([0.0, 45.0, 90.0])
+  exp = generated_single_exp()[0]
+  param = generated_param()
+
   SF = SHScaleComponent(flex.double([initial_param] * 3))
   assert SF.n_params == 3
   assert list(SF.parameters) == list(flex.double([initial_param]*3))
+
+  SF.configure_reflection_table(rt, exp, param)
+
   harmonic_values = sparse.matrix(1, 3)
   harmonic_values[0, 0] = initial_val
   harmonic_values[0, 1] = initial_val
@@ -122,4 +209,4 @@ def test_SHScalefactor():
   assert list(SF.inverse_scales) == [1.0 + (3.0 * initial_val * initial_param)]
   assert SF.derivatives[0, 0] == initial_val
   assert SF.derivatives[0, 1] == initial_val
-  assert SF.derivatives[0, 2] == initial_val
+  assert SF.derivatives[0, 2] == initial_val'''

@@ -76,6 +76,8 @@ def calc_crystal_frame_vectors(reflection_table, experiments):
 
 def align_rotation_axis_along_z(exp_rot_axis, vectors):
   """Rotate the coordinate system such that the exp_rot_axis is along z."""
+  if list(exp_rot_axis) == [(0.0, 0.0, 1.0)]:
+    return vectors
   (ux, uy, uz) = exp_rot_axis[0][0], exp_rot_axis[0][1], exp_rot_axis[0][2]
   cross_prod_uz = flex.vec3_double([(uy, -1.0*ux, 0.0)])
   angle_between_u_z = -1.0 * acos(uz/((ux**2 + uy**2 + uz**2)**0.5))

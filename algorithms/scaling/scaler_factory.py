@@ -2,9 +2,9 @@
 Collection of factories for creating the scalers.
 '''
 import logging
-import pkg_resources
 from libtbx.utils import Sorry
-from dials.algorithms.scaling.scaler import MultiScaler, TargetScaler, SingleScalerBase
+from dials.algorithms.scaling.scaler import MultiScaler, TargetScaler,\
+  SingleScalerBase
 logger = logging.getLogger('dials')
 
 def create_scaler(params, experiments, reflections):
@@ -39,7 +39,6 @@ class SingleScalerFactory(object):
   @classmethod
   def create(cls, params, experiment, reflection, scaled_id=0):
     '''create a single scaler with the relevant parameterisation'''
-    from dials.algorithms.scaling.scaler import SingleScalerBase
     return SingleScalerBase(params, experiment, reflection, scaled_id)
 
 class NullScalerFactory(object):
@@ -48,7 +47,7 @@ class NullScalerFactory(object):
   def create(cls, params, experiment, reflection, scaled_id=0):
     """Return Null Scaler."""
     from dials.algorithms.scaling.scaler import NullScaler
-    return NullScaler(params, experiment, reflection)
+    return NullScaler(params, experiment, reflection, scaled_id)
 
 class MultiScalerFactory(object):
   'Factory for creating a scaler for multiple datasets'

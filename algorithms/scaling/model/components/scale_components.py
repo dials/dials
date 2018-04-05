@@ -165,7 +165,7 @@ class SingleBScaleFactor(ScaleComponentBase):
     """The current number of reflections associated with this component."""
     return self._n_refl
 
-  def update_reflection_data(self, reflection_table, selection):
+  def update_reflection_data(self, reflection_table, selection=None):
     """"Add reflection data to the component, only the d-values and number
     of reflections are needed."""
     if selection:

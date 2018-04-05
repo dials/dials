@@ -12,17 +12,17 @@ from active_parameter_managers import (multi_active_parameter_manager,
   active_parameter_manager)
 from basis_functions import basis_function
 from libtbx import phil
+from libtbx.test_utils import approx_equal
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.algorithms.scaling.model.scaling_model_factory import \
   create_scaling_model
 from dials.algorithms.scaling.scaler_factory import create_scaler,\
-  MultiScaler, TargetScaler, TargetScalerFactory
-from dials.algorithms.scaling.scaler import TargetScaler, PhysicalScaler
+  MultiScaler
+from dials.algorithms.scaling.scaler import SingleScalerBase
 from dials.algorithms.scaling.target_function import ScalingTarget,\
   ScalingTargetFixedIH
-from dials.util.options import OptionParser, flatten_reflections,\
-  flatten_experiments
+
 
 
 def generated_refl():
@@ -196,7 +196,7 @@ def test_basis_function(generated_KB_param):
   assert len(test_reflections) == 1
   experiments = create_scaling_model(params, test_experiments, test_reflections)
   scaler = create_scaler(params, experiments, test_reflections)
-  assert scaler.id_ == 'KB'
+  assert scaler.experiments.scaling_model.id_ == 'KB'
 
   #(test_reflections, test_experiments, params) = generated_input
   #params.scaling_options.multi_mode = False
@@ -269,7 +269,7 @@ def test_target_function(generated_KB_param):
   assert len(test_reflections) == 1
   experiments = create_scaling_model(params, test_experiments, test_reflections)
   scaler = create_scaler(params, experiments, test_reflections)
-  assert scaler.id_ == 'KB'
+  assert scaler.experiments.scaling_model.id_ == 'KB'
 
   #setup of data manager
   scaler.components['scale'].parameters = flex.double([2.0])
@@ -348,16 +348,27 @@ def test_sf_variance_calculation(generated_KB_param):
   experiments = create_scaling_model(params, test_experiments, test_reflections)
   from dials.algorithms.scaling.scaler import calc_sf_variances
   components = experiments[0].scaling_model.components
-  components['scale'].update_reflection_data(3)
+  rt = flex.reflection_table()
+  d1 = 1.0
+  d2 = 2.0
+  d3 = 3.0
+  rt['d'] = flex.double([d1, d2, d3])
+  components['scale'].update_reflection_data(rt)
   components['scale'].calculate_scales_and_derivatives()
   assert list(components['scale'].derivatives.col(0)) == [(0,1.0), (1,1.0), (2,1.0)]
-  components['decay'].update_reflection_data(flex.double([1.0, 2.0, 3.0]))
+  components['decay'].update_reflection_data(rt)
   components['decay'].calculate_scales_and_derivatives()
-  assert list(components['decay'].derivatives.col(0)) == [(0,1.0/2.0), (1,1.0/8.0), (2,1.0/18.0)]
-  var_cov = sparse.matrix(2,2)
-  var_cov[0, 0] = 0.1
-  var_cov[0, 1] = 0.1
-  var_cov[1, 0] = 0.1
-  var_cov[1, 1] = 0.1
+  assert list(components['decay'].derivatives.col(0)) == [(0, 1.0/(2.0*d1*d1)),
+    (1, 1.0/(2.0*d2*d2)), (2, 1.0/(2.0*d3*d3))]
+  var_cov = sparse.matrix(2, 2)
+  a = 0.2
+  b = 0.3
+  c = 0.1
+  var_cov[0, 0] = a
+  var_cov[0, 1] = c
+  var_cov[1, 0] = c
+  var_cov[1, 1] = b
   variances = calc_sf_variances(components, var_cov)
-  assert list(variances) == [0.1, 0.1, 0.1, 0.1]
+  assert approx_equal(list(variances), [b/(4.0*(d1**4.0)) + c/((d1**2.0)) + a,
+    b/(4.0*(d2**4.0)) + c/((d2**2.0)) + a,
+    b/(4.0*(d3**4.0)) + c/((d3**2.0)) + a])

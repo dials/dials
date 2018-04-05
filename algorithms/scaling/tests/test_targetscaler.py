@@ -14,7 +14,7 @@ from dials.algorithms.scaling.model.scaling_model_factory import \
   create_scaling_model
 from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScaler, TargetScaler, TargetScalerFactory
-from dials.algorithms.scaling.scaler import TargetScaler, PhysicalScaler
+from dials.algorithms.scaling.scaler import TargetScaler, SingleScalerBase
 from dials.algorithms.scaling.target_function import ScalingTarget,\
   ScalingTargetFixedIH
 from dials.util.options import OptionParser, flatten_reflections,\
@@ -125,8 +125,8 @@ def test_TargetScalerFactory():
 
   assert len(test_reflections) == 2
   experiments = create_scaling_model(params, test_experiments, test_reflections)
-  ss = PhysicalScaler(params, experiments[0], test_reflections[0])
-  ss2 = PhysicalScaler(params, experiments[0], test_reflections[1])
+  ss = SingleScalerBase(params, experiments[0], test_reflections[0])
+  ss2 = SingleScalerBase(params, experiments[0], test_reflections[1])
   targetscaler = TargetScaler(params, experiments, [ss],
     experiments, [ss2])
   assert isinstance(targetscaler, TargetScaler)
