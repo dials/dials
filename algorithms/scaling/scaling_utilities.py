@@ -14,7 +14,7 @@ from dials_scratch_scaling_ext import create_sph_harm_table, calc_theta_phi,\
 logger = logging.getLogger('dials')
 
 def save_experiments(experiments, filename):
-  ''' Save the experiments json. '''
+  """Save the experiments json."""
   st = time()
   logger.info('Saving the experiments to %s' % filename)
   dump = ExperimentListDumper(experiments)
@@ -23,16 +23,15 @@ def save_experiments(experiments, filename):
   logger.info('Time taken: %g' % (time() - st))
 
 def save_reflections(scaler, filename):
-  '''Save the scaled reflections.'''
-  #First remove any additional columns added during scaling that are not needed.
-  scaler.clean_reflection_table() 
+  """Save the scaled reflections."""
+  scaler.clean_reflection_table() #Remove unwanted columns.
   st = time()
   logger.info('Saving the scaled reflections to %s' % filename)
   scaler.reflection_table.as_pickle(filename)
   logger.info('Time taken: %g' % (time() - st))
 
 def parse_multiple_datasets(reflections):
-  'method to parse multiple datasets from single reflection tables, selecting on id'
+  """Parse multiple datasets from single reflection tables, selecting on id."""
   single_reflection_tables = []
   for refl_table in reflections:
     dataset_ids = set(refl_table['id']).difference(set([-1]))
@@ -77,8 +76,8 @@ def align_rotation_axis_along_z(exp_rot_axis, vectors):
   (ux, uy, uz) = exp_rot_axis[0][0], exp_rot_axis[0][1], exp_rot_axis[0][2]
   cross_prod_uz = flex.vec3_double([(uy, -1.0*ux, 0.0)])
   from math import acos
-  angle_between_u_z = -1.0*acos(uz/((ux**2 + uy**2 + uz**2)**0.5))
-  phi = flex.double([angle_between_u_z]*len(vectors))
+  angle_between_u_z = -1.0 * acos(uz/((ux**2 + uy**2 + uz**2)**0.5))
+  phi = flex.double(vectors.size(), angle_between_u_z)
   new_vectors = rotate_vectors_about_axis(cross_prod_uz, vectors, phi)
   return flex.vec3_double(new_vectors)
 
@@ -149,7 +148,7 @@ def calc_normE2(reflection_table, experiments):
   elif n_acentrics > 15000 or n_centrics > 15000:
     n_refl_shells = 15
   elif n_acentrics < 10000:
-    reflection_table['Esq'] = flex.double([1.0]*len(reflection_table))
+    reflection_table['Esq'] = flex.double(reflection_table.size(), 1.0)
     del reflection_table['intensity_for_norm']
     msg = ('No normalised intensity values were calculated, as an {sep}'
     'insufficient number of reflections were detected. {sep}'
@@ -180,7 +179,7 @@ def calc_normE2(reflection_table, experiments):
   miller_set = miller.set(crystal_symmetry=crystal_symmetry,
                           indices=reflection_table['asu_miller_index'])
 
-  reflection_table['Esq'] = flex.double([0.0]*len(reflection_table))
+  reflection_table['Esq'] = flex.double(reflection_table.size(), 0.0)
   miller_array = miller.array(miller_set)
   reflection_table['centric_flag'] = miller_array.centric_flags().data()
   d0_sel = reflection_table['d'] == 0.0

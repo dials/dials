@@ -190,7 +190,7 @@ def plot_smooth_scales(params, experiments, reflections, outputfile=None):
     #rel_values = rel_values# - rel_values[0]
     decay_SF = experiments.scaling_model.components['decay']
     decay_SF.update_reflection_data(normalised_values=rel_values,
-      dvalues=flex.double([1.0]*len(rel_values)))
+      dvalues=flex.double(rel_values.size(), 1.0))
     decay_SF.calculate_scales()
     smoother_phis = [i * decay_rot_int for i in decay_SF._smoother.positions()]
     if ax1:

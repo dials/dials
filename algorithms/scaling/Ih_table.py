@@ -139,7 +139,7 @@ class IhTableBase(object):
 
   def calc_nh(self):
     """Calculate the n_h vector."""
-    return ((flex.double([1.0] * self.size) * self.h_index_matrix)
+    return ((flex.double(self.size, 1.0) * self.h_index_matrix)
       * self.h_expand_matrix)
 
   def update_error_model(self, error_params):
@@ -206,7 +206,7 @@ class SingleIhTable(IhTableBase):
     if 'Ih_values' in refl_table.keys():
       Ih_table['Ih_values'] = refl_table['Ih_values']
     else:
-      Ih_table['Ih_values'] = flex.double([0.0] * refl_table.size())
+      Ih_table['Ih_values'] = flex.double(refl_table.size(), 0.0)
     if weights:
       if refl_table.size() != weights.size():
         assert 0, """Attempting to create an Ih_table object from a reflection
@@ -270,8 +270,7 @@ class JointIhTable(IhTableBase):
     for scaler in data:
       self._Ih_tables.append(scaler.Ih_table)
       self._experiments.append(scaler.experiments)
-    self._unique_indices, all_indices = (
-      self._determine_all_unique_indices())
+    self._unique_indices, all_indices = self._determine_all_unique_indices()
     self._h_index_matrix, self._h_expand_matrix = self._assign_h_matrices(
       all_indices)
     # Now join together the datasets to make the Ih table

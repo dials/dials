@@ -138,7 +138,7 @@ class SmoothScaleComponent1D(SmoothScaleComponentBase):
                      int(max(self._normalised_values)//1)+1]
     self._smoother = GaussianSmoother1D(phi_range_deg,
       self._nparam_to_val(self._n_params))
-    self.inverse_scales = flex.double([1.0] * len(normalised_values))
+    self.inverse_scales = flex.double(normalised_values.size(), 1.0)
 
   def calculate_scales_and_derivatives(self):
     value, weight, sumweight = self._smoother.multi_value_weight(
@@ -231,7 +231,7 @@ class SmoothScaleComponent2D(SmoothScaleComponentBase):
                int(max(self._normalised_y_values)//1)+1]
     self._smoother = GaussianSmoother2D(x_range, self._nparam_to_val(
       self._n_x_params), y_range, self._nparam_to_val(self._n_y_params))
-    self.inverse_scales = flex.double([1.0]*len(normalised_x_values))
+    self.inverse_scales = flex.double(normalised_x_values.size(), 1.0)
 
   def calculate_scales_and_derivatives(self):
     value, weight, sumweight = self._smoother.multi_value_weight(
@@ -301,7 +301,7 @@ class SmoothScaleComponent3D(SmoothScaleComponentBase):
     self._smoother = GaussianSmoother3D(x_range, self._nparam_to_val(
       self._n_x_params), y_range, self._nparam_to_val(self._n_y_params),
       z_range, self._nparam_to_val(self._n_z_params))
-    self.inverse_scales = flex.double([1.0]*len(normalised_x_values))
+    self.inverse_scales = flex.double(normalised_x_values.size(), 1.0)
 
   def calculate_scales_and_derivatives(self):
     value, weight, sumweight = self._smoother.multi_value_weight(

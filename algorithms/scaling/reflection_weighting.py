@@ -14,7 +14,7 @@ class Weighting(object):
     reflections to be used in scaling first when setting nonzero weights.'''
     bad_refl_sel = reflection_table.get_flags(
       reflection_table.flags.bad_for_scaling, all=False)
-    self._scale_weighting = flex.double([0.0]*len(reflection_table))
+    self._scale_weighting = flex.double(reflection_table.size(), 0.0)
     chosen = ~bad_refl_sel
     self._scale_weighting.set_selected(chosen.iselection(),
       1.0/reflection_table['variance'].select(chosen))
@@ -49,7 +49,7 @@ class Weighting(object):
 
   def set_unity_weighting(self, reflection_table):
     '''method to weight each reflection equally'''
-    self.weights = flex.double([1.0]*len(reflection_table['variance']))
+    self.weights = flex.double(reflection_table.size(), 1.0)
 
   def apply_Isigma_cutoff(self, reflection_table, ratio):
     '''method to set a zero weight below an I/sigma cutoff'''

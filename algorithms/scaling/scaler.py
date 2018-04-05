@@ -18,12 +18,11 @@ from dials_scratch_scaling_ext import calc_sigmasq as cpp_calc_sigmasq
 logger = logging.getLogger('dials')
 
 class ScalerBase(object):
-  '''Base class for all Scalers (single and multiple)'''
+  """Base class for all Scalers (single and multiple)."""
 
   __metaclass__ = abc.ABCMeta
 
   def __init__(self):
-    'General attributes relevant for all parameterisations'
     self._experiments = None
     self._params = None
     self._reflection_table = []
@@ -57,7 +56,7 @@ class ScalerBase(object):
     return self._initial_keys
 
   def clean_reflection_table(self):
-    '''remove additional added columns that are not required for output'''
+    """Remove additional added columns that are not required for output."""
     self._initial_keys.append('inverse_scale_factor')
     self._initial_keys.append('inverse_scale_factor_variance')
     self._initial_keys.append('Ih_values')
@@ -67,22 +66,21 @@ class ScalerBase(object):
 
   @abc.abstractmethod
   def update_for_minimisation(self, apm, curvatures=False):
-    '''update the scale factors and Ih for the next iteration of minimisation'''
+    """Update the scale factors and Ih for the next minimisation iteration."""
     pass
 
   @abc.abstractmethod
   def expand_scales_to_all_reflections(self, caller=None):
-    '''expand scales from a subset to all reflections'''
+    """Expand scales from a subset to all reflections."""
     pass
 
   def get_basis_function(self, apm, curvatures=False):
-    '''call the basis function'''
+    """Call the basis function"""
     return basis_function(self, apm, curvatures).return_basis()
 
   @staticmethod
   def _map_indices_to_asu(reflection_table, experiments, params):
-    '''Create a miller_set object, map to the asu and create a sorted
-       reflection table, sorted by asu miller index'''
+    """Map the miller index to the asu and use to sort the reflection table."""
     u_c = experiments.crystal.get_unit_cell().parameters()
     if params.scaling_options.space_group:
       sg_from_file = experiments.crystal.get_space_group().info()
@@ -100,14 +98,14 @@ class ScalerBase(object):
       indices=reflection_table['miller_index'], anomalous_flag=False)
     miller_set_in_asu = miller_set.map_to_asu()
     reflection_table["asu_miller_index"] = miller_set_in_asu.indices()
-    permuted = (miller_set.map_to_asu()).sort_permutation(by_value='packed_indices')
+    permuted = (miller_set.map_to_asu()).sort_permutation(
+      by_value='packed_indices')
     reflection_table = reflection_table.select(permuted)
     return reflection_table
 
   @classmethod
   def _scaling_subset(cls, reflection_table, params, error_model_params=None):
-    '''select the reflections with non-zero weight and update scale weights
-    object.'''
+    """Select reflections with non-zero weight and update scale weights."""
     weights_for_scaling = cls._update_weights_for_scaling(reflection_table,
       params, error_model_params=error_model_params)
     sel = weights_for_scaling.weights > 0.0
@@ -128,9 +126,8 @@ class ScalerBase(object):
   @staticmethod
   def _update_weights_for_scaling(reflection_table, params,
     weights_filter=True, error_model_params=None):
-    '''set the weights of each reflection to be used in scaling'''
+    """Set the weights of each reflection to be used in scaling."""
     weights_for_scaling = Weighting(reflection_table)
-    #logger.info('Updating the weights associated with the intensities. \n')
     if weights_filter:
       weights_for_scaling.apply_Isigma_cutoff(reflection_table,
         params.reflection_selection.Isigma_min)
@@ -171,11 +168,11 @@ class ScalerBase(object):
     return ([result], scaled_ids[0])
 
 class SingleScalerBase(ScalerBase):
-  '''
+  """
   Parent class for single-dataset Scalers, containing a standard
   setup routine for the reflection_table - takes in params, experiment
   and reflection.
-  '''
+  """
 
   def __init__(self, params, experiment, reflection, scaled_id=0):
     logger.info('Configuring a Scaler for a single dataset. \n')
@@ -207,7 +204,7 @@ class SingleScalerBase(ScalerBase):
 
   @property
   def components(self):
-    'shortcut to scaling model components'
+    """Shortcut to scaling model components."""
     return self.experiments.scaling_model.components
 
   @property
@@ -215,11 +212,14 @@ class SingleScalerBase(ScalerBase):
     return self._var_cov
 
   def update_var_cov(self, apm):
-    '''update the full parameter variance covariance matrix after a refinement.
+    """
+    Update the full parameter variance covariance matrix after a refinement.
+
     If all parameters have been refined, then the full var_cov matrix can be set.
     Else one must select subblocks for pairs of parameters and assign these into
     the full var_cov matrix, taking care to out these in the correct position.
-    This is applicable if only some parameters have been refined in this cycle.'''
+    This is applicable if only some parameters have been refined in this cycle.
+    """
     var_cov_list = apm.var_cov_matrix #values are passed as a list from refinery
     if int(var_cov_list.size()**0.5) == self.var_cov_matrix.n_rows:
       self._var_cov.assign_block(var_cov_list.matrix_copy_block(0, 0,
@@ -238,20 +238,22 @@ class SingleScalerBase(ScalerBase):
           n_cols = apm.components[name2]['n_params']
           start_row = apm.components[name]['start_idx']
           start_col = apm.components[name2]['start_idx']
-          sub = var_cov_list.matrix_copy_block(start_row, start_col, n_rows, n_cols)
+          sub = var_cov_list.matrix_copy_block(start_row, start_col, n_rows,
+            n_cols)
           #now set this block into correct location in overall var_cov
-          self._var_cov.assign_block(sub, cumul_pos_dict[name], cumul_pos_dict[name2])
+          self._var_cov.assign_block(sub, cumul_pos_dict[name],
+            cumul_pos_dict[name2])
 
   @abc.abstractproperty
   def consecutive_scaling_order(self):
-    '''should return a nested list of correction names, to indicate the order
+    """Return a nested list of correction names, to indicate the order
     to perform scaling in consecutive scaling mode if concurrent=0.
     e.g. [['scale', 'decay'], ['absorption']] would cause the first cycle to
-    refine scale and decay, and then absorption in a subsequent cycle.'''
+    refine scale and decay, and then absorption in a subsequent cycle."""
     pass
 
   def update_for_minimisation(self, apm, curvatures=False):
-    '''update the scale factors and Ih for the next iteration of minimisation'''
+    """Update the scale factors and Ih for the next minimisation iteration."""
     basis_fn = self.get_basis_function(apm, curvatures=curvatures)
     apm.derivatives = basis_fn[1]
     if curvatures:
@@ -261,7 +263,7 @@ class SingleScalerBase(ScalerBase):
 
   @staticmethod
   def _reflection_table_setup(initial_keys, reflections):
-    'initial filter to select integrated reflections'
+    """Initial filter to select integrated reflections."""
     mask = ~reflections.get_flags(reflections.flags.integrated)
     d_mask = reflections['d'] <= 0.0
     partials_mask = reflections['partiality'] < 0.95
@@ -277,7 +279,7 @@ class SingleScalerBase(ScalerBase):
 
   @classmethod
   def _select_optimal_intensities(cls, reflection_table, params):
-    '''method to choose which intensities to use for scaling'''
+    """Choose which intensities to use for scaling."""
     if (params.scaling_options.integration_method == 'sum' or
         params.scaling_options.integration_method == 'prf'):
       intstr = params.scaling_options.integration_method
@@ -299,17 +301,16 @@ class SingleScalerBase(ScalerBase):
       var_sum = reflection_table['intensity.sum.variance'] * (conversion**2)
       Imid = max(int_sum)/2.0
       weight = 1.0/(1.0 + ((int_prf/Imid)**3))
-      reflection_table['intensity'] = ((weight * int_prf) + ((1.0 - weight) * int_sum))
-      reflection_table['variance'] = ((weight * var_prf) + ((1.0 - weight) * var_sum))
+      reflection_table['intensity'] = ((weight * int_prf)
+        + ((1.0 - weight) * int_sum))
+      reflection_table['variance'] = ((weight * var_prf)
+        + ((1.0 - weight) * var_sum))
       msg = ('Combined profile/summation intensity values will be used for {sep}'
       'scaling, with an Imid of {0}. {sep}').format(Imid, sep='\n')
       logger.info(msg)
-    else:
-      logger.info('Invalid integration_method choice, using default profile fitted intensities')
-      params.scaling_options.integration_method = 'prf'
-      cls._select_optimal_intensities(reflection_table, params)
     variance_mask = reflection_table['variance'] <= 0.0
-    reflection_table.set_flags(variance_mask, reflection_table.flags.excluded_for_scaling)
+    reflection_table.set_flags(variance_mask,
+      reflection_table.flags.excluded_for_scaling)
     return reflection_table
 
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=True):
@@ -328,19 +329,21 @@ class SingleScalerBase(ScalerBase):
       'applied to all reflections for dataset {0}.\n').format(
         self.reflection_table['id'][0]))
     if self.var_cov_matrix and calc_cov:
-      scaled_reflections['inverse_scale_factor_variance'] = self.calc_sf_variances()
+      scaled_reflections['inverse_scale_factor_variance'] = calc_sf_variances(
+        self.components, self._var_cov)
     self.reflection_table['inverse_scale_factor'].set_selected(scaled_isel,
       scaled_reflections['inverse_scale_factor'])
-    self.reflection_table['inverse_scale_factor_variance'].set_selected(scaled_isel,
-      scaled_reflections['inverse_scale_factor_variance'])
+    self.reflection_table['inverse_scale_factor_variance'].set_selected(
+      scaled_isel, scaled_reflections['inverse_scale_factor_variance'])
     if (self.params.scaling_options.reject_outliers and
       not isinstance(caller, MultiScalerBase)):
-      self._reflection_table = self.round_of_outlier_rejection(self._reflection_table)
+      self._reflection_table = self.round_of_outlier_rejection(
+        self._reflection_table)
     if self.params.weighting.optimise_error_model:
       self.Ih_table = SingleIhTable(self._reflection_table)
 
   def update_error_model(self, error_model_params):
-    '''apply a correction to try to improve the error estimate.'''
+    """Apply a correction to try to improve the error estimate."""
     self.Ih_table.update_error_model(error_model_params)
     self.experiments.scaling_model.set_error_model(list(error_model_params))
 
@@ -364,6 +367,7 @@ class SingleScalerBase(ScalerBase):
     pass
 
   def print_scale_init_msg(self):
+    """Print a standard message about the components applied to the dataset."""
     from libtbx.table_utils import simple_table
     header = ['correction', 'n_parameters']
     rows = []
@@ -402,31 +406,11 @@ class SingleScalerBase(ScalerBase):
         gradient_vector = flex.double([])
         for comp in apm.components:
           if comp != 'absorption':
-            gradient_vector.extend(flex.double([0.0] * apm.components[comp]['n_params']))
+            gradient_vector.extend(flex.double(apm.components[comp]['n_params'], 0.0))
           elif comp == 'absorption':
             gradient_vector.extend(gradient)
         restraints = [residual, gradient_vector]
     return restraints
-
-  def calc_sf_variances(self):
-    '''use the parameter var_cov matrix to calculate the variances of the inverse scales'''
-    n_param = 0
-    for component in self.components:
-      n_param += self.components[component].n_params
-      n_refl = self.components[component].inverse_scales.size() #should all be same
-    jacobian = sparse.matrix(n_refl, n_param)
-    n_cumulative_param = 0
-    for component in self.components:
-      block = self.components[component].derivatives
-      n_param = self.components[component].n_params
-      for component_2 in self.components:
-        if component_2 != component:
-          block = row_multiply(block, self.components[component].inverse_scales)
-      jacobian.assign_block(block, 0, n_cumulative_param)
-      n_cumulative_param += n_param
-    jacobian_transpose = jacobian.transpose()
-    logger.info('Calculating error estimates of inverse scale factors. \n')
-    return cpp_calc_sigmasq(jacobian_transpose, self._var_cov)
 
   def round_of_outlier_rejection(self, reflection_table):
     """calculate outliers from the reflections in the Ih_table,
@@ -447,9 +431,9 @@ class SingleScalerBase(ScalerBase):
     logger.info('The error model determined has been applied to the variances')
 
 class KBScaler(SingleScalerBase):
-  '''
+  """
   Scaler for single dataset using simple KB parameterisation.
-  '''
+  """
 
   id_ = 'KB'
 
@@ -470,8 +454,7 @@ class KBScaler(SingleScalerBase):
     if 'scale' in self.components:
       self.components['scale'].update_reflection_data(n_refl=self.Ih_table.size)
     if 'decay' in self.components:
-      self.components['decay'].update_reflection_data(
-        dvalues=refl_for_scaling['d'])
+      self.components['decay'].update_reflection_data(refl_for_scaling['d'])
 
   def apply_selection_to_SFs(self, sel):
     '''Updates data from within current SF objects using the given selection.
@@ -770,7 +753,7 @@ class MultiScalerBase(ScalerBase):
           R.extend(restr[0])
           G.extend(restr[1])
         else:
-          G.extend(flex.double([0.0] * apm.apm_list[i].n_active_params))
+          G.extend(flex.double(apm.apm_list[i].n_active_params, 0.0))
       restraints = [R, G]
     return restraints
 
@@ -1022,3 +1005,23 @@ class NullScaler(ScalerBase):
   def update_for_minimisation(self, apm, curvatures=False):
     '''update the scale factors and Ih for the next iteration of minimisation'''
     pass
+
+def calc_sf_variances(components, var_cov):
+  """Use the parameter var_cov matrix to calculate the variances of the
+  inverse scales."""
+  n_param = 0
+  for component in components:
+    n_param += components[component].n_params
+    n_refl = components[component].inverse_scales.size() #should all be same
+  jacobian = sparse.matrix(n_refl, n_param)
+  n_cumulative_param = 0
+  for component in components:
+    block = components[component].derivatives
+    n_param = components[component].n_params
+    for component_2 in components:
+      if component_2 != component:
+        block = row_multiply(block, components[component].inverse_scales)
+    jacobian.assign_block(block, 0, n_cumulative_param)
+    n_cumulative_param += n_param
+  logger.info('Calculating error estimates of inverse scale factors. \n')
+  return cpp_calc_sigmasq(jacobian.transpose(), var_cov)

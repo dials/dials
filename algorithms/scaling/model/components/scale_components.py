@@ -132,7 +132,7 @@ class SingleScaleFactor(ScaleComponentBase):
     self._n_refl = n_refl
 
   def calculate_scales_and_derivatives(self):
-    self._inverse_scales = flex.double([self._parameters[0]] * self.n_refl)
+    self._inverse_scales = flex.double(self.n_refl, self._parameters[0])
     self._derivatives = sparse.matrix(self.n_refl, 1)
     for i in range(self.n_refl):
       self._derivatives[i, 0] = 1.0
@@ -200,7 +200,7 @@ class SHScaleComponent(ScaleComponentBase):
     self.calculate_scales_and_derivatives()
 
   def calculate_scales_and_derivatives(self):
-    abs_scale = flex.double([1.0] * self._harmonic_values.n_rows) # Unity term
+    abs_scale = flex.double(self._harmonic_values.n_rows, 1.0) # Unity term
     for i, col in enumerate(self._harmonic_values.cols()):
       abs_scale += flex.double(col.as_dense_vector() * self._parameters[i])
     self._inverse_scales = abs_scale

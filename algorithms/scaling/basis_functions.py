@@ -25,7 +25,7 @@ class basis_function(object):
 
   def calculate_scale_factors(self):
     '''calculate overall scale factor from reflections from individual components'''
-    multiplied_scale_factors = flex.double([1.0] * self.scaler.Ih_table.size)
+    multiplied_scale_factors = flex.double(self.scaler.Ih_table.size, 1.0)
     for component in self.apm.components:
       multiplied_scale_factors *= self.apm.components[component]['object'].inverse_scales
     if self.apm.constant_g_values:
@@ -42,7 +42,7 @@ class basis_function(object):
     derivatives = sparse.matrix(self.scaler.Ih_table.size, self.apm.n_active_params)
     for component in self.apm.components:
       derivs = self.apm.components[component]['object'].derivatives
-      scale_multipliers = flex.double([1.0] * self.scaler.Ih_table.size)
+      scale_multipliers = flex.double(self.scaler.Ih_table.size, 1.0)
       for comp, SF_obj in self.scaler.experiments.scaling_model.components.iteritems():
         if comp != component:
           scale_multipliers *= SF_obj.inverse_scales
@@ -61,7 +61,7 @@ class basis_function(object):
     for component in self.apm.components:
       curvs = self.apm.components[component]['object'].curvatures
       if curvs != 0.0:
-        scale_multipliers = flex.double([1.0] * self.scaler.Ih_table.size)
+        scale_multipliers = flex.double(self.scaler.Ih_table.size, 1.0)
         for comp, SF_obj in self.scaler.experiments.scaling_model.components.iteritems():
           if comp != component:
             scale_multipliers *= SF_obj.inverse_scales

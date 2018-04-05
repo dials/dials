@@ -16,7 +16,7 @@ class BasicErrorModel(object):
     self.delta_hl = None
     self.bin_variances = None
     self._summation_matrix = self.create_summation_matrix()
-    self._bin_counts = flex.double([1.0] * self.Ih_table.size) * self.summation_matrix
+    self._bin_counts = flex.double(self.Ih_table.size, 1.0) * self.summation_matrix
     self.refined_parameters = None
 
   @property
@@ -40,7 +40,7 @@ class BasicErrorModel(object):
     I_hl = self.Ih_table.intensities
     g_hl = self.Ih_table.inverse_scale_factors
     I_h = self.Ih_table.Ih_values
-    prefactor = ((self.n_h - flex.double([1.0]*len(self.n_h))) / self.n_h)**0.5
+    prefactor = ((self.n_h - flex.double(self.n_h.size(), 1.0)) / self.n_h)**0.5
     delta_hl = prefactor * ((I_hl/g_hl) - I_h) / self.sigmaprime
     return delta_hl
 

@@ -4,6 +4,7 @@ This code tests the data managers and active parameter managers.
 import copy as copy
 import numpy as np
 import pytest
+from scitbx import sparse
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from parameter_handler import scaling_active_parameter_manager
@@ -338,3 +339,25 @@ def test_general_apm():
 
   assert apm.select_parameters('1') == flex.double([1.0, 2.0])
   assert apm.select_parameters('3') == flex.double([3.0, 6.0])
+
+def test_sf_variance_calculation(generated_KB_param):
+  (test_reflections, test_experiments, params) = generated_single_input(
+    generated_refl(), generated_single_exp(), generated_KB_param)
+  assert len(test_experiments) == 1
+  assert len(test_reflections) == 1
+  experiments = create_scaling_model(params, test_experiments, test_reflections)
+  from dials.algorithms.scaling.scaler import calc_sf_variances
+  components = experiments[0].scaling_model.components
+  components['scale'].update_reflection_data(3)
+  components['scale'].calculate_scales_and_derivatives()
+  assert list(components['scale'].derivatives.col(0)) == [(0,1.0), (1,1.0), (2,1.0)]
+  components['decay'].update_reflection_data(flex.double([1.0, 2.0, 3.0]))
+  components['decay'].calculate_scales_and_derivatives()
+  assert list(components['decay'].derivatives.col(0)) == [(0,1.0/2.0), (1,1.0/8.0), (2,1.0/18.0)]
+  var_cov = sparse.matrix(2,2)
+  var_cov[0, 0] = 0.1
+  var_cov[0, 1] = 0.1
+  var_cov[1, 0] = 0.1
+  var_cov[1, 1] = 0.1
+  variances = calc_sf_variances(components, var_cov)
+  assert list(variances) == [0.1, 0.1, 0.1, 0.1]

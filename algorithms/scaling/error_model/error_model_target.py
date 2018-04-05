@@ -45,7 +45,7 @@ class ErrorModelTarget(object):
   def calculate_residuals(self):
     """Return the residual vector"""
     bin_vars = self.error_model.bin_variances
-    R = ((flex.double([1.0]*len(bin_vars)) - bin_vars)**2)
+    R = ((flex.double(bin_vars.size(), 1.0) - bin_vars)**2)
     return R
 
   def calculate_gradients(self):
@@ -63,7 +63,7 @@ class ErrorModelTarget(object):
       term1 = 2.0 * self.error_model.delta_hl * deriv * sum_matrix
       term2a = self.error_model.delta_hl * sum_matrix
       term2b = deriv * sum_matrix
-      grad = (-2.0 * (flex.double([1.0]*len(bin_vars)) - bin_vars)
+      grad = (-2.0 * (flex.double(bin_vars.size(), 1.0) - bin_vars)
         * ((term1 / bin_counts) - (2.0 * term2a * term2b / (bin_counts**2))))
       gradient.append(flex.sum(grad))
     return gradient
