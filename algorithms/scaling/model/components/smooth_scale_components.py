@@ -114,10 +114,11 @@ class SmoothScaleComponentBase(ScaleComponentBase):
 class SmoothScaleComponent1D(SmoothScaleComponentBase):
   """A smoothly varying scale component in one dimension."""
 
-  def __init__(self, initial_values, parameter_esds=None):
+  def __init__(self, initial_values, col_name, parameter_esds=None):
     super(SmoothScaleComponent1D, self).__init__(initial_values,
       parameter_esds)
     self._normalised_values = None
+    self._col_name = col_name
 
   @property
   def normalised_values(self):
@@ -128,8 +129,16 @@ class SmoothScaleComponent1D(SmoothScaleComponentBase):
     a spacing of 1."""
     return self._normalised_values
 
-  def update_reflection_data(self, normalised_values):
+  def configure_reflection_table(self, reflection_table, experiments):
+    reflection_table[self._col_name] = (reflection_table['xyzobs.px.value'].parts()[2]
+        * experiments.scaling_model.scale_normalisation_factor)
+    return reflection_table
+
+  def update_reflection_data(self, reflection_table, selection=None):
     """Set the normalised coordinate values and configure the smoother."""
+    normalised_values = reflection_table[self._col_name]
+    if selection:
+      normalised_values = normalised_values.select(selection)
     # Make sure zeroed correctly.
     normalised_values = normalised_values - min(normalised_values)
     self._normalised_values = normalised_values
@@ -158,8 +167,8 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
   '''Subclass of SmoothScaleComponent1D to implement a smoothly
   varying B-factor correction.'''
 
-  def __init__(self, initial_values, parameter_esds=None):
-    super(SmoothBScaleComponent1D, self).__init__(initial_values,
+  def __init__(self, initial_values, col_name, parameter_esds=None):
+    super(SmoothBScaleComponent1D, self).__init__(initial_values, col_name,
       parameter_esds)
     self._d_values = None
 
@@ -168,11 +177,19 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
     """The current set of d-values associated with this component."""
     return self._d_values
 
-  def update_reflection_data(self, normalised_values, dvalues):
-    assert len(normalised_values) == len(dvalues)
+  def configure_reflection_table(self, reflection_table, experiments):
+    reflection_table[self._col_name] = (reflection_table['xyzobs.px.value'].parts()[2]
+        * experiments.scaling_model.decay_normalisation_factor)
+    return reflection_table
+
+  def update_reflection_data(self, reflection_table, selection=None):#normalised_values, dvalues):
+    #normalised_values = reflection_table[self._col_name]
+    #assert len(normalised_values) == len(dvalues)
     super(SmoothBScaleComponent1D, self).update_reflection_data(
-      normalised_values)
-    self._d_values = dvalues
+      reflection_table, selection)
+    self._d_values = reflection_table['d']
+    if selection:
+      self._d_values = self._d_values.select(selection)
 
   def calculate_scales_and_derivatives(self):
     super(SmoothBScaleComponent1D, self).calculate_scales_and_derivatives()

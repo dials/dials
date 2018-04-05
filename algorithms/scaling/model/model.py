@@ -70,11 +70,11 @@ class PhysicalScalingModel(ScalingModelBase):
     if 'scale' in configdict['corrections']:
       scale_setup = parameters_dict['scale']
       self._components.update({'scale' : SmoothScaleComponent1D(
-        scale_setup['parameters'], scale_setup['parameter_esds'])})
+        scale_setup['parameters'], 'norm_rot_angle', scale_setup['parameter_esds'])})
     if 'decay' in configdict['corrections']:
       decay_setup = parameters_dict['decay']
       self._components.update({'decay' : SmoothBScaleComponent1D(
-        decay_setup['parameters'], decay_setup['parameter_esds'])})
+        decay_setup['parameters'], 'norm_time_values', decay_setup['parameter_esds'])})
     if 'absorption' in configdict['corrections']:
       absorption_setup = parameters_dict['absorption']
       self._components.update({'absorption' : SHScaleComponent(

@@ -9,6 +9,7 @@ import abc
 import numpy as np
 from dials.array_family import flex
 from scitbx import sparse
+from dials.algorithms.scaling.scaling_utilities import sph_harm_table
 
 
 class ScaleComponentBase(object):
@@ -95,7 +96,7 @@ class ScaleComponentBase(object):
     return self._curvatures
 
   @abc.abstractmethod
-  def update_reflection_data(self):
+  def update_reflection_data(self, reflection_table, selection=None):
     """Add or change the relevant reflection data for the component.
 
     No restrictions should be placed on the data remaining the same
@@ -127,9 +128,14 @@ class SingleScaleFactor(ScaleComponentBase):
     """The current number of reflections associated with this component."""
     return self._n_refl
 
-  def update_reflection_data(self, n_refl):
+  def update_reflection_data(self, reflection_table, selection=None):
     """Add reflection data to the component, only n_reflections needed."""
-    self._n_refl = n_refl
+    if selection:
+      print(reflection_table.size())
+      print(selection.size())
+      reflection_table = reflection_table.select(selection)
+    self._n_refl = reflection_table.size()
+    #self._n_refl = n_refl
 
   def calculate_scales_and_derivatives(self):
     self._inverse_scales = flex.double(self.n_refl, self._parameters[0])
@@ -159,11 +165,13 @@ class SingleBScaleFactor(ScaleComponentBase):
     """The current number of reflections associated with this component."""
     return self._n_refl
 
-  def update_reflection_data(self, dvalues):
+  def update_reflection_data(self, reflection_table, selection):
     """"Add reflection data to the component, only the d-values and number
     of reflections are needed."""
-    self._d_values = dvalues
-    self._n_refl = len(dvalues)
+    if selection:
+      reflection_table = reflection_table.select(selection)
+    self._d_values = reflection_table['d']
+    self._n_refl = reflection_table.size()
 
   def calculate_scales_and_derivatives(self):
     self._inverse_scales = flex.double(np.exp(flex.double(
@@ -194,10 +202,19 @@ class SHScaleComponent(ScaleComponentBase):
     """A matrix of harmonic coefficients for the data."""
     return self._harmonic_values
 
-  def update_reflection_data(self, harmonic_values):
+  def update_reflection_data(self, _, selection=None):
     """Update the spherical harmonic coefficients."""
-    self._harmonic_values = harmonic_values
-    self.calculate_scales_and_derivatives()
+    if selection:
+      sph_harm_table_T = self.sph_harm_table.transpose()
+      sel_sph_harm_table = sph_harm_table_T.select_columns(selection.iselection())
+      self._harmonic_values = sel_sph_harm_table.transpose()
+      #self._harmonic_values = harmonic_values
+      self.calculate_scales_and_derivatives()
+
+  def configure_reflection_table(self, reflection_table, experiments): 
+    self.sph_harm_table = sph_harm_table(reflection_table, experiments,
+      experiments.scaling_model.configdict['lmax'])
+    return reflection_table
 
   def calculate_scales_and_derivatives(self):
     abs_scale = flex.double(self._harmonic_values.n_rows, 1.0) # Unity term

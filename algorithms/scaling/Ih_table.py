@@ -196,6 +196,16 @@ class SingleIhTable(IhTableBase):
     for referring outliers back to initial input."""
     return self._nonzero_weights
 
+  def select(self, selection):
+    """Extend select method to update nonzero_weights array."""
+    original_nzweights_size = self.nonzero_weights.size()
+    nzweights_isel = self.nonzero_weights.iselection()
+    self = super(SingleIhTable, self).select(selection)
+    new_selected_nzweights = nzweights_isel.select(selection)
+    self._nonzero_weights = flex.bool(original_nzweights_size, False)
+    self._nonzero_weights.set_selected(new_selected_nzweights, True)
+    return self
+
   def _create_Ih_table(self, data):
     """Create an Ih_table from the reflection table and optionally weights.
 
