@@ -1,37 +1,28 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
-class Test(object):
+def test(dials_regression, tmpdir):
+  from os.path import join
+  path = join(dials_regression, "integration_test_data/i04-weak-data")
+  tmpdir.chdir()
 
-  def __init__(self):
-    from os.path import join
-    import libtbx.load_env
-    try:
-      dials_regression = libtbx.env.dist_path('dials_regression')
-    except KeyError:
-      print 'FAIL: dials_regression not configured'
-      exit(0)
+  from libtbx import easy_run
+  # Call dev.dials.compare_mosflm_dials
+  easy_run.fully_buffered([
+      'dev.dials.compare_mosflm_dials',
+      join(path, 'integrate.mtz'),
+      join(path, 'integrated.pickle'),
+      join(path, 'crystal.json'),
+      join(path, 'sweep.json'),
+  ]).raise_if_errors()
 
-    self.path = join(dials_regression, "integration_test_data/i04-weak-data")
-
-  def run(self):
-    from os.path import join
-    from libtbx import easy_run
-
-    # Call dials.compare_mosflm_dials
-    easy_run.fully_buffered([
-      'dials.compare_mosflm_dials',
-      join(self.path, 'integrate.mtz'),
-      join(self.path, 'integrated.pickle'),
-      join(self.path, 'crystal.json'),
-      join(self.path, 'sweep.json'),
-    ]).raise_if_errors()
-
-
-    # remember to uncomment the next line
-    #assert(len(table) == 361)
+  # remember to uncomment the next line
+  #assert(len(table) == 361)
 
 if __name__ == '__main__':
+  import libtbx.load_env
+  dials_regression = libtbx.env.dist_path('dials_regression')
+  import mock
+  tmpdir = mock.Mock()
   from dials.test import cd_auto
   with cd_auto(__file__):
-    test = Test()
-    test.run()
+    test(dials_regression, tmpdir)
