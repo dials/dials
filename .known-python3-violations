@@ -31,10 +31,6 @@ test/algorithms/spot_prediction/tst_scan_static_reflection_predictor.py
 test/algorithms/spot_prediction/tst_scan_varying_reflection_predictor.py
 test/algorithms/spot_prediction/tst_spot_prediction.py
 test/command_line/tst_combine_experiments.py
-test/command_line/tst_combine_found_spots.py
-test/command_line/tst_create_profile_model.py
-test/command_line/tst_estimate_gain.py
-test/command_line/tst_export.py
 test/command_line/tst_export_best.py
 test/command_line/tst_export_bitmaps.py
 test/command_line/tst_export_xds.py

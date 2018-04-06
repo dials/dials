@@ -74,8 +74,6 @@ tst_list = [
     "$D/test/array_family/tst_flex_shoebox.py",
     "$D/test/command_line/tst_export_bitmaps.py",
     "$D/test/command_line/tst_combine_experiments.py",
-    "$D/test/command_line/tst_estimate_gain.py",
-    "$D/test/command_line/tst_export.py",
     "$D/test/command_line/tst_export_xds.py",
     "$D/test/command_line/tst_export_best.py",
     "$D/test/command_line/tst_filter_reflections.py",
