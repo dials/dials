@@ -638,10 +638,17 @@ def plot(coords, labels=None, show=False, plot_name=None):
       edgecolor = col
     if coord_z is None:
       ax.scatter(coord_x.select(isel), coord_y.select(isel),
-                  s=markersize, marker=marker, c=col, edgecolor=edgecolor)
+                 s=markersize, marker=marker, c=col, edgecolor=edgecolor, alpha=0.5)
+      if k >= 0:
+        ax.scatter(flex.mean(coord_x.select(isel)), flex.mean(coord_y.select(isel)),
+                   s=markersize*10, marker=marker, c=col, edgecolor='black')
     else:
       ax.scatter(coord_x.select(isel), coord_y.select(isel), coord_z.select(isel),
                  s=markersize, marker=marker, c=col, edgecolor=edgecolor)
+      if k >= 0:
+        ax.scatter(flex.mean(coord_x.select(isel)), flex.mean(coord_y.select(isel)),
+                   flex.mean(coord_z.select(isel)),
+                   s=markersize*10, marker=marker, c=col, edgecolor='black')
 
   ax.set_xlim(-1,1)
   ax.set_ylim(-1,1)
