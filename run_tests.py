@@ -48,7 +48,6 @@ tst_list = [
     "$D/test/algorithms/refinement/tst_restraints_parameterisation.py",
     "$D/test/algorithms/refinement/tst_restraints_gradients.py",
     "$D/test/algorithms/refinement/tst_sv_multi_panel_refinement.py",
-    "$D/test/algorithms/refinement/tst_xfel_metrology.py",
     "$D/test/algorithms/refinement/tst_angle_derivatives_wrt_vector_elts.py",
     "$D/test/algorithms/shoebox/tst_find_overlapping.py",
     "$D/test/algorithms/spatial_indexing/tst_spatial_index.py",
