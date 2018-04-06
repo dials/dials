@@ -1,31 +1,24 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
-from os.path import isdir, join
+import math
+import os
 
-import libtbx.load_env
+import pytest
 
-have_dials_regression = libtbx.env.has_module("dials_regression")
-if have_dials_regression:
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression", test=isdir)
-
-def run():
-  if not have_dials_regression:
-    print "Skipping test: dials_regression not available."
-    return
+def test(dials_regression, tmpdir):
+  tmpdir.chdir()
 
   from scitbx import matrix
   from iotbx.xds import xparm, integrate_hkl
   from dials.util import ioutil
-  from math import ceil
   from dials.algorithms.spot_prediction import RotationAngles
   import dxtbx
   from rstbx.cftbx.coordinate_frame_converter import \
       coordinate_frame_converter
 
   # The XDS files to read from
-  integrate_filename = join(dials_regression, 'data/sim_mx/INTEGRATE.HKL')
-  gxparm_filename = join(dials_regression, 'data/sim_mx/GXPARM.XDS')
+  integrate_filename = os.path.join(dials_regression, 'data/sim_mx/INTEGRATE.HKL')
+  gxparm_filename = os.path.join(dials_regression, 'data/sim_mx/GXPARM.XDS')
 
   # Read the XDS files
   integrate_handle = integrate_hkl.reader()
@@ -56,7 +49,7 @@ def run():
 
   # Get the number of frames from the max z value
   xcal, ycal, zcal = zip(*integrate_handle.xyzcal)
-  num_frames = int(ceil(max(zcal)))
+  num_frames = int(math.ceil(max(zcal)))
   scan.set_image_range((scan.get_image_range()[0],
                       scan.get_image_range()[0] + num_frames - 1))
 
@@ -80,8 +73,7 @@ def run():
       r = m2.axis_and_angle_as_r3_rotation_matrix(angle=phi)
       pstar = r * ub * h
       s1 = s0 + pstar
-      assert(abs(s1.length() - s0.length()) < 1e-7)
-
+      assert s1.length() == pytest.approx(s0.length(), abs=1e-7)
 
   # Create a dict of lists of xy for each hkl
   gen_phi = {}
@@ -121,11 +113,4 @@ def run():
       my_phi = my_phi[0]
 
     # Check the Phi values are the same
-    assert(abs(xds_phi - my_phi) < 0.1)
-
-  # Test Passed
-
-if __name__ == '__main__':
-  from dials.test import cd_auto
-  with cd_auto(__file__):
-    run()
+    assert xds_phi == pytest.approx(my_phi, abs=0.1)

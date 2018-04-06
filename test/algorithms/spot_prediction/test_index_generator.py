@@ -1,19 +1,8 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
-from os.path import isdir, join
+import os
 
-import libtbx.load_env
-
-have_dials_regression = libtbx.env.has_module("dials_regression")
-if have_dials_regression:
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression", test=isdir)
-
-def run():
-  if not have_dials_regression:
-    print "Skipping test: dials_regression not available."
-    return
-
+def test(dials_regression):
   from iotbx.xds import xparm, integrate_hkl
   from dials.util import ioutil
   from dials.algorithms.spot_prediction import IndexGenerator
@@ -23,8 +12,8 @@ def run():
   from scitbx import matrix
 
   # The XDS files to read from
-  integrate_filename = join(dials_regression, 'data/sim_mx/INTEGRATE.HKL')
-  gxparm_filename = join(dials_regression, 'data/sim_mx/GXPARM.XDS')
+  integrate_filename = os.path.join(dials_regression, 'data', 'sim_mx', 'INTEGRATE.HKL')
+  gxparm_filename = os.path.join(dials_regression, 'data', 'sim_mx', 'GXPARM.XDS')
 
   # Read the XDS files
   integrate_handle = integrate_hkl.reader()
@@ -68,13 +57,6 @@ def run():
   min_xds_l, max_xds_l = numpy.min(xds_l), numpy.max(xds_l)
 
   # Ensure we have the whole xds range  in the generated set
-  assert(min_gen_h <= min_xds_h and max_gen_h >= max_xds_h)
-  assert(min_gen_k <= min_xds_k and max_gen_k >= max_xds_k)
-  assert(min_gen_l <= min_xds_l and max_gen_l >= max_xds_l)
-
-  # Test Passed
-
-if __name__ == '__main__':
-  from dials.test import cd_auto
-  with cd_auto(__file__):
-    run()
+  assert min_gen_h <= min_xds_h and max_gen_h >= max_xds_h
+  assert min_gen_k <= min_xds_k and max_gen_k >= max_xds_k
+  assert min_gen_l <= min_xds_l and max_gen_l >= max_xds_l
