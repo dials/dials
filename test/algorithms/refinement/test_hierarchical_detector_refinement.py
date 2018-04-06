@@ -1,29 +1,14 @@
-#!/usr/bin/env cctbx.python
+# Test hierarchical detector refinement.
 
-#
-#  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
+from __future__ import absolute_import, division, print_function
 
-"""
-Test hierarchical detector refinement.
-
-"""
-
-# python imports
-from __future__ import absolute_import, division
+import copy
+import math
 import os
-import libtbx.load_env # required for libtbx.env.find_in_repositories
-from libtbx.test_utils import approx_equal
-from math import pi
-#from libtbx.test_utils import open_tmp_directory
+
+import pytest
 
 def generate_reflections(experiments):
-
   from dials.algorithms.spot_prediction import IndexGenerator
   from dials.algorithms.refinement.prediction import \
     ScansRayPredictor, ExperimentsPredictor
@@ -60,7 +45,7 @@ def generate_reflections(experiments):
   obs_refs['xyzobs.mm.value'] = obs_refs['xyzcal.mm']
 
   # Invent some variances for the centroid positions of the simulated data
-  im_width = 0.1 * pi / 180.
+  im_width = 0.1 * math.pi / 180.
   px_size = detector[0].get_pixel_size()
   var_x = flex.double(len(obs_refs), (px_size[0] / 2.)**2)
   var_y = flex.double(len(obs_refs), (px_size[1] / 2.)**2)
@@ -69,15 +54,9 @@ def generate_reflections(experiments):
 
   return obs_refs, ref_predictor
 
-def test1():
-
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression",
-    test=os.path.isdir)
-
+def test1(dials_regression):
   # use a datablock that contains a CS-PAD detector description
-  data_dir = os.path.join(dials_regression, "refinement_test_data",
-                          "hierarchy_test")
+  data_dir = os.path.join(dials_regression, "refinement_test_data", "hierarchy_test")
   datablock_path = os.path.join(data_dir, "datablock.json")
   assert os.path.exists(datablock_path)
 
@@ -85,8 +64,7 @@ def test1():
   from dxtbx.datablock import DataBlockFactory
   datablock = DataBlockFactory.from_serialized_format(datablock_path, check_format=False)
   im_set = datablock[0].extract_imagesets()[0]
-  from copy import deepcopy
-  detector = deepcopy(im_set.get_detector())
+  detector = copy.deepcopy(im_set.get_detector())
   beam = im_set.get_beam()
 
   # we'll invent a crystal, goniometer and scan for this test
@@ -107,8 +85,8 @@ def test1():
                       deg = True)
   sweep_range = scan.get_oscillation_range(deg=False)
   im_width = scan.get_oscillation(deg=False)[1]
-  assert sweep_range == (0., pi)
-  assert approx_equal(im_width, 0.1 * pi / 180.)
+  assert sweep_range == (0., math.pi)
+  assert im_width == pytest.approx(0.1 * math.pi / 180.)
 
   from dxtbx.model.experiment_list import ExperimentList, Experiment
 
@@ -205,27 +183,11 @@ def test1():
   refined_det = refiner.get_experiments()[0].detector
 
   from scitbx import matrix
-  import math
   for op, rp in zip(orig_det, refined_det):
     # compare the origin vectors by...
     o1 = matrix.col(op.get_origin())
     o2 = matrix.col(rp.get_origin())
     # ...their relative lengths
-    assert approx_equal(
-      math.fabs(o1.length() - o2.length()) / o1.length(), 0, eps=1e-5)
+    assert math.fabs(o1.length() - o2.length()) / o1.length() == pytest.approx(0, abs=1e-5)
     # ...the angle between them
-    assert approx_equal(o1.accute_angle(o2), 0, eps=1e-5)
-
-  return
-
-def run():
-  if not libtbx.env.has_module("dials_regression"):
-    print "Skipping tests in " + __file__ + " as dials_regression not present"
-    return
-
-  test1()
-
-if __name__ == '__main__':
-  from libtbx.utils import show_times_at_exit
-  show_times_at_exit()
-  run()
+    assert o1.accute_angle(o2) == pytest.approx(0, abs=1e-5)

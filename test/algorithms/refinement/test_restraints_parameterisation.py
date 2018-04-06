@@ -1,35 +1,21 @@
-#!/usr/bin/env cctbx.python
+from __future__ import absolute_import, division, print_function
 
-#
-#  Copyright (C) (2015) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
+# Tests for RestraintsParameterisation and associated classes used in refinement
 
-"""
-Tests for RestraintsParameterisation and associated classes used in refinement
-
-"""
-
-# Python and cctbx imports
-from __future__ import absolute_import, division
+import math
 import os
-from libtbx.phil import parse
-import libtbx.load_env # required for libtbx.env.find_in_repositories
-from dxtbx.model.experiment_list import ExperimentListFactory
-from libtbx.test_utils import approx_equal
+import random
+
 from dials.algorithms.refinement import RefinerFactory
 from dials.array_family import flex
 from dials.algorithms.refinement.restraints import RestraintsParameterisation
+from dxtbx.model.experiment_list import ExperimentListFactory
+from libtbx.phil import parse
+import pytest
 
-def test1():
+def test_single_crystal_restraints_gradients():
   '''Simple test with a single triclinic crystal restrained to a target unit cell'''
 
-  from math import pi
-  from random import gauss
   from dials.test.algorithms.refinement.setup_geometry import Extract
   from dxtbx.model.experiment_list import ExperimentList, Experiment
 
@@ -61,7 +47,7 @@ def test1():
   mybeam = models.beam
 
   # Build a mock scan for a 72 degree sweep
-  sweep_range = (0., pi/5.)
+  sweep_range = (0., math.pi/5.)
   from dxtbx.model import ScanFactory
   sf = ScanFactory()
   myscan = sf.make_scan(image_range = (1,720),
@@ -71,7 +57,6 @@ def test1():
                         deg = True)
 
   # Create parameterisations of these models
-
   det_param = DetectorParameterisationSinglePanel(mydetector)
   s0_param = BeamParameterisation(mybeam, mygonio)
   xlo_param = CrystalOrientationParameterisation(mycrystal)
@@ -99,7 +84,7 @@ def test1():
   # make a unit cell target
   sigma = 1.
   uc = mycrystal.get_unit_cell().parameters()
-  target_uc = [gauss(e, sigma) for e in uc]
+  target_uc = [random.gauss(e, sigma) for e in uc]
 
   rp.add_restraints_to_target_xl_unit_cell(experiment_id=0, values=target_uc,
                                            sigma=[sigma]*6)
@@ -112,17 +97,17 @@ def test1():
   deltas = [1.e-7] * len(p_vals)
 
   fd_grad=[]
-  for i in range(len(deltas)):
 
+  for i, delta in enumerate(deltas):
     val = p_vals[i]
 
-    p_vals[i] -= deltas[i] / 2.
+    p_vals[i] -= delta / 2.
     pred_param.set_param_vals(p_vals)
 
     rev_state, foo, bar = rp.get_residuals_gradients_and_weights()
     rev_state = flex.double(rev_state)
 
-    p_vals[i] += deltas[i]
+    p_vals[i] += delta
     pred_param.set_param_vals(p_vals)
 
     fwd_state, foo, bar = rp.get_residuals_gradients_and_weights()
@@ -130,7 +115,7 @@ def test1():
 
     p_vals[i] = val
 
-    fd = (fwd_state - rev_state) / deltas[i]
+    fd = (fwd_state - rev_state) / delta
     fd_grad.append(fd)
 
   # for comparison, fd_grad is a list of flex.doubles, each of which corresponds
@@ -139,14 +124,12 @@ def test1():
     # extract dense column from the sparse matrix
     an = grads.col(i).as_dense_vector()
 
-    assert approx_equal(an, fd, eps=1e-5)
+    assert an == pytest.approx(fd, abs=1e-5)
 
 
-def test2():
+def test_two_triclinic_crystals():
   '''Simple test with two triclinic crystals restrained to a target unit cell'''
 
-  from math import pi
-  from random import gauss
   from dials.test.algorithms.refinement.setup_geometry import Extract
   from dxtbx.model.experiment_list import ExperimentList, Experiment
 
@@ -181,7 +164,7 @@ def test2():
   mybeam = models.beam
 
   # Build a mock scan for a 72 degree sweep
-  sweep_range = (0., pi/5.)
+  sweep_range = (0., math.pi/5.)
   from dxtbx.model import ScanFactory
   sf = ScanFactory()
   myscan = sf.make_scan(image_range = (1,720),
@@ -222,7 +205,7 @@ def test2():
   # make a unit cell target
   sigma = 1.
   uc = mycrystal.get_unit_cell().parameters()
-  target_uc = [gauss(e, sigma) for e in uc]
+  target_uc = [random.gauss(e, sigma) for e in uc]
 
   rp.add_restraints_to_target_xl_unit_cell(experiment_id=0, values=target_uc,
                                            sigma=[sigma]*6)
@@ -237,17 +220,17 @@ def test2():
   deltas = [1.e-7] * len(p_vals)
 
   fd_grad=[]
-  for i in range(len(deltas)):
 
+  for i, delta in enumerate(deltas):
     val = p_vals[i]
 
-    p_vals[i] -= deltas[i] / 2.
+    p_vals[i] -= delta / 2.
     pred_param.set_param_vals(p_vals)
 
     rev_state, foo, bar = rp.get_residuals_gradients_and_weights()
     rev_state = flex.double(rev_state)
 
-    p_vals[i] += deltas[i]
+    p_vals[i] += delta
     pred_param.set_param_vals(p_vals)
 
     fwd_state, foo, bar = rp.get_residuals_gradients_and_weights()
@@ -255,7 +238,7 @@ def test2():
 
     p_vals[i] = val
 
-    fd = (fwd_state - rev_state) / deltas[i]
+    fd = (fwd_state - rev_state) / delta
     fd_grad.append(fd)
 
   # for comparison, fd_grad is a list of flex.doubles, each of which corresponds
@@ -263,15 +246,11 @@ def test2():
   for i, fd in enumerate(fd_grad):
     # extract dense column from the sparse matrix
     an = grads.col(i).as_dense_vector()
-    assert approx_equal(an, fd, eps=1e-5)
+    assert an == pytest.approx(fd, abs=1e-5)
 
 
-def test3():
+def test_10_crystals_with_stills_parameterisation(dials_regression):
   '''Test with multiple crystals, and a stills refiner'''
-
-  if not libtbx.env.has_module("dials_regression"):
-    print "Skipping test2 in " + __file__ + " as dials_regression not present"
-    return
 
   # The phil scope
   from dials.algorithms.refinement.refiner import phil_scope
@@ -302,10 +281,6 @@ def test3():
   working_phil = phil_scope.fetch(source=user_phil)
   working_params = working_phil.extract()
 
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression",
-    test=os.path.isdir)
-
   # use the multi stills test data
   data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
   experiments_path = os.path.join(data_dir, "combined_experiments.json")
@@ -330,17 +305,17 @@ def test3():
   deltas = [1.e-7] * len(p_vals)
 
   fd_grad=[]
-  for i in range(len(deltas)):
 
+  for i, delta in enumerate(deltas):
     val = p_vals[i]
 
-    p_vals[i] -= deltas[i] / 2.
+    p_vals[i] -= delta / 2.
     pred_param.set_param_vals(p_vals)
 
     rev_state, foo, bar = rp.get_residuals_gradients_and_weights()
     rev_state = flex.double(rev_state)
 
-    p_vals[i] += deltas[i]
+    p_vals[i] += delta
     pred_param.set_param_vals(p_vals)
 
     fwd_state, foo, bar = rp.get_residuals_gradients_and_weights()
@@ -348,7 +323,7 @@ def test3():
 
     p_vals[i] = val
 
-    fd = (fwd_state - rev_state) / deltas[i]
+    fd = (fwd_state - rev_state) / delta
     fd_grad.append(fd)
 
   # for comparison, fd_grad is a list of flex.doubles, each of which corresponds
@@ -362,16 +337,9 @@ def test3():
     #print list(an.round(6))
     #print list(fd.round(6))
     #print
-    assert approx_equal(an, fd, eps=1e-5)
+    assert an == pytest.approx(fd, abs=1e-5)
 
-  return
-
-def test4():
-  '''Test group restraint with multiple crystals, and a stills refiner'''
-
-  if not libtbx.env.has_module("dials_regression"):
-    print "Skipping test2 in " + __file__ + " as dials_regression not present"
-    return
+def test_group_restraint_with_multiple_crystals_and_a_stills_refiner(dials_regression):
 
   # The phil scope
   from dials.algorithms.refinement.refiner import phil_scope
@@ -400,10 +368,6 @@ def test4():
   working_phil = phil_scope.fetch(source=user_phil)
   working_params = working_phil.extract()
 
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression",
-    test=os.path.isdir)
-
   # use the multi stills test data
   data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
   experiments_path = os.path.join(data_dir, "combined_experiments.json")
@@ -428,17 +392,17 @@ def test4():
   deltas = [1.e-7] * len(p_vals)
 
   fd_grad=[]
-  for i in range(len(deltas)):
 
+  for i, delta in enumerate(deltas):
     val = p_vals[i]
 
-    p_vals[i] -= deltas[i] / 2.
+    p_vals[i] -= delta / 2.
     pred_param.set_param_vals(p_vals)
 
     rev_state, foo, bar = rp.get_residuals_gradients_and_weights()
     rev_state = flex.double(rev_state)
 
-    p_vals[i] += deltas[i]
+    p_vals[i] += delta
     pred_param.set_param_vals(p_vals)
 
     fwd_state, foo, bar = rp.get_residuals_gradients_and_weights()
@@ -446,7 +410,7 @@ def test4():
 
     p_vals[i] = val
 
-    fd = (fwd_state - rev_state) / deltas[i]
+    fd = (fwd_state - rev_state) / delta
     fd_grad.append(fd)
 
   # for comparison, fd_grad is a list of flex.doubles, each of which corresponds
@@ -460,20 +424,4 @@ def test4():
     #print list(an.round(6))
     #print list(fd.round(6))
     #print
-    assert approx_equal(an, fd, eps=1e-5)
-
-  return
-
-if __name__ == '__main__':
-
-  # test single crystal restraints gradients
-  test1()
-
-  # test two crystals
-  test2()
-
-  # test 10 crystals with the stills parameterisation
-  test3()
-
-  # test group parameterisation
-  test4()
+    assert an == pytest.approx(fd, abs=1e-5)

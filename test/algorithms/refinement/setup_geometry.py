@@ -12,8 +12,7 @@
 """Setup experimental geometry for refinement test cases"""
 
 # Python and cctbx imports
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 import sys
 import random
 from scitbx import matrix
@@ -108,7 +107,7 @@ class Extract(object):
       else: inclination = \
                   self._params.beam.direction.inclination.angle
 
-      beam_dir = matrix.col((0, 0, 1)).rotate(
+      beam_dir = matrix.col((0, 0, 1)).rotate_around_origin(
                   matrix.col((0, 1, 0)), inclination, deg=True)
 
     elif self._params.beam.direction.method == 'close_to':
