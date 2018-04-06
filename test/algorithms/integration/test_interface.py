@@ -546,5 +546,3 @@ def test_summation(dials_regression):
   for r1, r3, in zip(expected1, expected3):
     assert(approx_equal_dict(r1, r3, 'intensity.sum.value'))
     assert(approx_equal_dict(r1, r3, 'intensity.sum.variance'))
-
-

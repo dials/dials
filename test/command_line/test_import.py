@@ -47,7 +47,7 @@ def test_with_mask(dials_regression, tmpdir):
   assert result['exitcode'] == 0
   assert result['stderr'] == ''
   assert os.path.exists("datablock_with_mask.json")
-  
+
   from dxtbx.serialize import load
   datablock = load.datablock("datablock_with_mask.json")[0]
   imgset = datablock.extract_imagesets()[0]

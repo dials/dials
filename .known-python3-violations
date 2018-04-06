@@ -30,17 +30,12 @@ test/algorithms/spot_prediction/tst_rotation_angles.py
 test/algorithms/spot_prediction/tst_scan_static_reflection_predictor.py
 test/algorithms/spot_prediction/tst_scan_varying_reflection_predictor.py
 test/algorithms/spot_prediction/tst_spot_prediction.py
-test/command_line/tst_combine_experiments.py
 test/command_line/tst_export_best.py
 test/command_line/tst_export_bitmaps.py
-test/command_line/tst_export_xds.py
 test/command_line/tst_filter_reflections.py
-test/command_line/tst_find_hot_pixels.py
 test/command_line/tst_generate_mask.py
 test/command_line/tst_idials.py
 test/command_line/tst_import_xds.py
-test/command_line/tst_integrate.py
-test/command_line/tst_kapton_correction.py
 test/command_line/tst_merge_cbf.py
 test/command_line/tst_merge_reflection_lists.py
 test/command_line/tst_plot_scan_varying_crystal.py
@@ -49,7 +44,6 @@ test/command_line/tst_refine.py
 test/command_line/tst_rs_mapper.py
 test/command_line/tst_sort_reflections.py
 test/command_line/tst_spot_counts_per_image.py
-test/command_line/tst_spotfinder.py
 test/command_line/tst_stereographic_projections.py
 test/command_line/tst_stills_detector_hybrid_refine.py
 test/command_line/tst_stills_process.py
