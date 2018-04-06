@@ -1,7 +1,6 @@
 framework/env.py
 test/algorithms/integration/profile/tst_stereographic_projection_sampler.py
 test/algorithms/integration/tst_filter_overlaps.py
-test/algorithms/peak_finding/tst_merge_spot_lists.py
 test/algorithms/refinement/tst_detector_parameters.py
 test/algorithms/refinement/tst_goniometer_parameters.py
 test/algorithms/refinement/tst_hierarchical_detector_refinement.py
@@ -31,11 +30,8 @@ test/algorithms/spot_prediction/tst_rotation_angles.py
 test/algorithms/spot_prediction/tst_scan_static_reflection_predictor.py
 test/algorithms/spot_prediction/tst_scan_varying_reflection_predictor.py
 test/algorithms/spot_prediction/tst_spot_prediction.py
-test/command_line/tst_apply_mask.py
-test/command_line/tst_check_indexing_symmetry.py
 test/command_line/tst_combine_experiments.py
 test/command_line/tst_combine_found_spots.py
-test/command_line/tst_compare.py
 test/command_line/tst_create_profile_model.py
 test/command_line/tst_estimate_gain.py
 test/command_line/tst_export.py
@@ -45,9 +41,7 @@ test/command_line/tst_export_xds.py
 test/command_line/tst_filter_reflections.py
 test/command_line/tst_find_hot_pixels.py
 test/command_line/tst_generate_mask.py
-test/command_line/tst_hot_pixel_mask_to_xy.py
 test/command_line/tst_idials.py
-test/command_line/tst_import.py
 test/command_line/tst_import_xds.py
 test/command_line/tst_integrate.py
 test/command_line/tst_kapton_correction.py
@@ -63,7 +57,6 @@ test/command_line/tst_spotfinder.py
 test/command_line/tst_stereographic_projections.py
 test/command_line/tst_stills_detector_hybrid_refine.py
 test/command_line/tst_stills_process.py
-viewer/boost_tst.py
 viewer/flex_3d_array_viewer_test.py
 viewer/from_flex_to_wxbitmap.py
 viewer/slice_viewer.py
