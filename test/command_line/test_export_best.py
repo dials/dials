@@ -1,20 +1,12 @@
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
-def run():
-  import os
-  import libtbx.load_env
-  from libtbx import easy_run
-  from libtbx.test_utils import show_diff
-  try:
-    dials_regression = libtbx.env.dist_path('dials_regression')
-  except KeyError:
-    print 'FAIL: dials_regression not configured'
-    exit(0)
+import os
+from libtbx import easy_run
 
+def test_export_best(dials_regression, tmpdir):
+  tmpdir.chdir()
   path = os.path.join(
     dials_regression, "centroid_test_data/centroid_####.cbf")
-
-  print os.getcwd()
 
   cmd = "dials.import template=%s" %path
   result = easy_run.fully_buffered(cmd).raise_if_errors()
@@ -30,7 +22,7 @@ def run():
   assert os.path.exists("best.dat")
   with open("best.dat", "rb") as f:
     lines = ''.join(f.readlines()[:10])
-    assert not show_diff(lines, """\
+    assert lines == """\
   191.5469       0.00       0.06
    63.8495       1.97       1.39
    38.3104       1.96       1.35
@@ -41,12 +33,12 @@ def run():
    12.7729       1.88       1.47
    11.2710       1.91       2.04
    10.0854       1.86       1.39
-""")
+"""
 
   assert os.path.exists("best.hkl")
   with open("best.hkl", "rb") as f:
     lines = ''.join(f.readlines()[:10])
-    assert not show_diff(lines, """\
+    assert lines == """\
  -20   27   -8      22.61      15.76
  -20   27   -7      69.46      17.54
  -20   27   -6       0.55      15.56
@@ -57,12 +49,12 @@ def run():
  -20   28   -6      14.81      15.25
  -20   28   -4     -10.41      15.47
  -20   28   -2       6.65      15.26
-""")
+"""
 
   assert os.path.exists("best.par")
   with open("best.par", "rb") as f:
     lines = f.read()
-    assert not show_diff(lines, """\
+    assert lines == """\
 # parameter file for BEST
 TITLE          From DIALS
 DETECTOR       PILA
@@ -87,11 +79,4 @@ RASTER           7 7 5 3 3
 SEPARATION      0.500  0.500
 BEAM            219.865  212.610
 # end of parameter file for BEST
-""")
-  return
-
-
-if __name__ == '__main__':
-  from dials.test import cd_auto
-  with cd_auto(__file__):
-    run()
+"""

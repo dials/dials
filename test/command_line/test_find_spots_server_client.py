@@ -1,31 +1,23 @@
 from __future__ import absolute_import, division, print_function
 
+import glob
+import multiprocessing
 import os
+import pytest
 import socket
 import time
 import timeit
+from xml.dom import minidom
 
-import libtbx.load_env
 from libtbx import easy_run
 
-have_dials_regression = libtbx.env.has_module("dials_regression")
-if have_dials_regression:
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression",
-    test=os.path.isdir)
-
-
-def run():
-  if not have_dials_regression:
-    print("Skipping tst_find_spots_server_client: dials_regression not available.")
-    return
+def test_find_spots_server_client(dials_regression, tmpdir):
+  tmpdir.chdir()
 
   def start_server(server_command):
     result = easy_run.fully_buffered(command=server_command)
     result.show_stdout()
     result.show_stderr()
-
-  import multiprocessing
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   s.bind(("",0))
   port = s.getsockname()[1]
@@ -38,8 +30,11 @@ def run():
   p.start()
   wait_for_server(port) # need to give server chance to start
 
+  data_dir = os.path.join(dials_regression, "centroid_test_data")
+  filenames = sorted(glob.glob(os.path.join(data_dir, "*.cbf")))
+
   try:
-    exercise_client(port=port)
+    exercise_client(port=port, filenames=filenames)
 
   finally:
     client_stop_command = "dials.find_spots_client port=%i stop" %port
@@ -67,10 +62,7 @@ def wait_for_server(port, max_wait=20):
     raise Exception("Server failed to start after %d seconds" % max_wait)
   print("dials.find_spots_server up after %f seconds" % (timeit.default_timer() - start_time))
 
-def exercise_client(port):
-  import glob
-  data_dir = os.path.join(dials_regression, "centroid_test_data")
-  filenames = sorted(glob.glob(os.path.join(data_dir, "*.cbf")))
+def exercise_client(port, filenames):
   assert len(filenames) > 0
   client_command = " ".join(
     ["dials.find_spots_client",
@@ -91,7 +83,6 @@ def exercise_client(port):
   result.show_stdout()
   #result.show_stderr()
 
-  from xml.dom import minidom
   xmldoc = minidom.parseString(out)
   assert len(xmldoc.getElementsByTagName('image')) == 1
   assert len(xmldoc.getElementsByTagName('spot_count')) == 1
@@ -106,34 +97,24 @@ def exercise_client(port):
     float(f) for f in
     xmldoc.getElementsByTagName('unit_cell')[0].childNodes[0].data.split()]
 
-  from libtbx.test_utils import approx_equal
-  assert approx_equal(
-    unit_cell, [39.90, 42.67, 42.37, 89.89, 90.10, 90.13], eps=1e-1)
+  assert unit_cell == pytest.approx(
+    [39.90, 42.67, 42.37, 89.89, 90.10, 90.13], abs=1e-1)
 
   client_command = " ".join([client_command] + filenames[1:])
   result = easy_run.fully_buffered(command=client_command).raise_if_errors()
   out = "<document>%s</document>" %"\n".join(result.stdout_lines)
 
-  from xml.dom import minidom
   xmldoc = minidom.parseString(out)
   images = xmldoc.getElementsByTagName('image')
   assert len(images) == 9
   spot_counts = sorted([int(node.childNodes[0].data)
                  for node in xmldoc.getElementsByTagName('spot_count')])
-  assert spot_counts == sorted([203, 196, 205, 209, 195, 205, 203, 207, 189]), spot_counts
+  assert spot_counts == sorted([203, 196, 205, 209, 195, 205, 203, 207, 189])
   spot_counts_no_ice = sorted([
     int(node.childNodes[0].data)
     for node in xmldoc.getElementsByTagName('spot_count_no_ice')])
   assert spot_counts_no_ice \
-         == sorted([169, 171, 175, 176, 177, 184, 193, 195, 196]), spot_counts_no_ice
+         == sorted([169, 171, 175, 176, 177, 184, 193, 195, 196])
   d_min = sorted([float(node.childNodes[0].data)
                   for node in xmldoc.getElementsByTagName('d_min')])
-  assert d_min == sorted([1.45, 1.47, 1.55, 1.55, 1.56, 1.59, 1.61, 1.61, 1.64]), d_min
-
-
-if __name__ == '__main__':
-  from dials.test import cd_auto
-  with cd_auto(__file__):
-    from libtbx.utils import show_times_at_exit
-    show_times_at_exit()
-    run()
+  assert d_min == sorted([1.45, 1.47, 1.55, 1.55, 1.56, 1.59, 1.61, 1.61, 1.64])
