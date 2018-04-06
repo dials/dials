@@ -9,7 +9,7 @@ import abc
 import numpy as np
 from dials.array_family import flex
 from scitbx import sparse
-from dials.algorithms.scaling.scaling_utilities import sph_harm_table
+
 
 
 class ScaleComponentBase(object):
@@ -33,7 +33,7 @@ class ScaleComponentBase(object):
     self._var_cov = None
     self._n_params = len(self._parameters)
     self._inverse_scales = None
-    self._inverse_scale_variances = None
+    #self._inverse_scale_variances = None
     self._derivatives = None
     self._curvatures = 0.0
 
@@ -110,6 +110,11 @@ class ScaleComponentBase(object):
     self._inverse_scales and self._derivatives."""
     pass
 
+  @abc.abstractmethod
+  def calculate_scales_derivatives_curvatures(self):
+    """Use the component parameters to calculate and set
+    self._inverse_scales, self._derivatives and self._curvatures."""
+    pass
 
 class SingleScaleFactor(ScaleComponentBase):
   """A model component consisting of a single global scale parameter.
@@ -131,11 +136,8 @@ class SingleScaleFactor(ScaleComponentBase):
   def update_reflection_data(self, reflection_table, selection=None):
     """Add reflection data to the component, only n_reflections needed."""
     if selection:
-      print(reflection_table.size())
-      print(selection.size())
       reflection_table = reflection_table.select(selection)
     self._n_refl = reflection_table.size()
-    #self._n_refl = n_refl
 
   def calculate_scales_and_derivatives(self):
     self._inverse_scales = flex.double(self.n_refl, self._parameters[0])
@@ -217,11 +219,22 @@ class SHScaleComponent(ScaleComponentBase):
   def sph_harm_table(self):
     """A matrix of the full harmonic coefficient for a reflection table."""
     return self._sph_harm_table
-  
+
+  @sph_harm_table.setter
+  def sph_harm_table(self, sht):
+    """Set the spherical harmonic table."""
+    self._sph_harm_table = sht
+
   @property
   def parameter_restraints(self):
     """Restraint weights for the component parameters."""
     return self._parameter_restraints
+
+  @parameter_restraints.setter
+  def parameter_restraints(self, restraints):
+    assert restraints.size() == self.parameters.size()
+    """Set Restraint weights for the component parameters."""
+    self._parameter_restraints = restraints
 
   def update_reflection_data(self, _, selection=None):
     """Update the spherical harmonic coefficients."""
@@ -232,18 +245,13 @@ class SHScaleComponent(ScaleComponentBase):
       #self._harmonic_values = harmonic_values
       self.calculate_scales_and_derivatives()
 
-  def configure_reflection_table(self, reflection_table, experiments, params): 
-    lmax = experiments.scaling_model.configdict['lmax']
-    self._sph_harm_table = sph_harm_table(reflection_table, experiments, lmax)
-    self._parameter_restraints = flex.double([])
-    for i in range(1, lmax+1):
-      self._parameter_restraints.extend(flex.double([1.0] * ((2*i)+1)))
-    self._parameter_restraints *= params.parameterisation.surface_weight
-    return reflection_table
-
   def calculate_scales_and_derivatives(self):
     abs_scale = flex.double(self._harmonic_values.n_rows, 1.0) # Unity term
     for i, col in enumerate(self._harmonic_values.cols()):
       abs_scale += flex.double(col.as_dense_vector() * self._parameters[i])
     self._inverse_scales = abs_scale
     self._derivatives = self._harmonic_values
+
+  def calculate_scales_derivatives_curvatures(self):
+    self.calculate_scales_and_derivatives()
+    self._curvatures = sparse.matrix(self._inverse_scales.size(), self._n_params)

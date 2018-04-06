@@ -1,8 +1,7 @@
 '''
 This code tests for Ih_table and joint_Ih_table data structures.
-This also provides a test for the scaler, which must
-be successfully initialised in order to provide a feed in for the
-Ih_table.
+This also provides a test for the scaler, which must be successfully
+initialised in order to provide input for the Ih_table.
 '''
 import pytest
 from Ih_table import SingleIhTable, JointIhTable
@@ -18,7 +17,7 @@ from dials.algorithms.scaling.scaler_factory import create_scaler
 
 @pytest.fixture(scope='module')
 def generate_refl_1():
-  '''generate a test reflection table'''
+  """Generate a test reflection table."""
   reflections = flex.reflection_table()
   reflections['intensity.prf.value'] = flex.double(
     [100.0, 100.0, 80.0, 60.0, 30.0, 40.0, 60.0])
@@ -37,7 +36,7 @@ def generate_refl_1():
 
 @pytest.fixture(scope='module')
 def generate_refl_2():
-  '''generate another test reflection table'''
+  """Generate another test reflection table."""
   reflections = flex.reflection_table()
   reflections['intensity.prf.value'] = flex.double([60.0, 30.0])
   reflections['intensity.prf.variance'] = flex.double([60.0, 30.0])
@@ -51,7 +50,7 @@ def generate_refl_2():
 
 @pytest.fixture(scope='module')
 def generate_experiments():
-  '''generate a test experiments object'''
+  """Generate a test experiments object."""
   experiments = ExperimentList()
   exp_dict = {"__id__" : "crystal", "real_space_a": [5.0, 0.0, 0.0],
               "real_space_b": [0.0, 10.0, 0.0], "real_space_c": [0.0, 0.0, 5.0],
@@ -67,7 +66,7 @@ def generate_experiments():
 
 @pytest.fixture(scope='module')
 def generate_params():
-  '''generate a test params object'''
+  """Generate a test params object."""
   phil_scope = phil.parse('''
       include scope dials.algorithms.scaling.scaling_options.phil_scope
   ''', process_includes=True)
@@ -79,7 +78,7 @@ def generate_params():
 
 @pytest.fixture(scope='module')
 def generate_test_scaler(generate_refl_1, generate_experiments, generate_params):
-  '''generate a test scaler'''
+  """Generate a test scaler."""
   (params, test_experiments, test_reflections) = (
     generate_params, generate_experiments, generate_refl_1)
   experiments = create_scaling_model(params, test_experiments, test_reflections)
@@ -89,7 +88,7 @@ def generate_test_scaler(generate_refl_1, generate_experiments, generate_params)
 @pytest.fixture(scope='module')
 def generate_second_test_scaler(generate_refl_2, generate_experiments,
     generate_params):
-  '''generate a second test scaler'''
+  """Generate a second test scaler."""
   (params, test_experiments, test_reflections) = (
     generate_params, generate_experiments, generate_refl_2)
   experiments = create_scaling_model(params, test_experiments, test_reflections)
@@ -98,14 +97,14 @@ def generate_second_test_scaler(generate_refl_2, generate_experiments,
 
 @pytest.fixture
 def single_test_input(generate_test_scaler):
-  '''generate input for testing Ih_table'''
+  """Generate input for testing Ih_table."""
   scaler = generate_test_scaler
   weights = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
   return scaler.reflection_table, weights
 
 @pytest.fixture
 def joint_test_input(generate_test_scaler, generate_second_test_scaler):
-  '''generate input for testing joint_Ih_table'''
+  """Generate input for testing joint_Ih_table."""
   scaler = generate_test_scaler
   weights = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
   scaler_2 = generate_second_test_scaler
@@ -206,11 +205,12 @@ def test_Ih_table_nonzero_weights(single_test_input):
 
 
 def test_joint_Ih_table(joint_test_input):
-  '''test that the two reflection tables have been sorted/combined correctly'''
+  """Test that the joint_Ih_table datastructure correctly combined the data
+  from two reflection tables."""
   (dm1, dm2) = joint_test_input
   Ih_table = JointIhTable([dm1, dm2])
 
-  # Test for correct setup and calc_Ih
+  # Test for correct setup and calc_Ih method.
   assert list(Ih_table.asu_miller_index) == list(flex.miller_index(
     [(0, 0, 1), (0, 0, 2), (0, 0, 2), (0, 2, 0), (0, 4, 0), (1, 0, 0),
     (1, 0, 0), (0, 4, 0), (1, 0, 0)]))

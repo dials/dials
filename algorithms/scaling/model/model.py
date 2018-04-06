@@ -12,6 +12,7 @@ from dials.algorithms.scaling.model.components.scale_components import \
 from dials.algorithms.scaling.model.components.smooth_scale_components import \
   SmoothScaleComponent1D, SmoothBScaleComponent1D, SmoothScaleComponent2D,\
   SmoothScaleComponent3D
+from dials.algorithms.scaling.scaling_utilities import sph_harm_table
 
 logger = logging.getLogger('dials')
 
@@ -107,27 +108,29 @@ class PhysicalScalingModel(ScalingModelBase):
         absorption_setup['parameters'], absorption_setup['parameter_esds'])})
 
   @property
-  def scale_normalisation_factor(self):
-    '''multiplicative factor to convert from pixel(z)
-    to normalised rotation angle'''
-    return self._configdict['s_norm_fac']
-
-  @property
-  def decay_normalisation_factor(self):
-    '''multiplicative factor to convert from pixel(z)
-    to normalised time'''
-    return self._configdict['d_norm_fac']
-
-  @property
   def consecutive_scaling_order(self):
     return [['scale', 'decay'], ['absorption']]
 
   def configure_reflection_table(self, reflection_table, experiment, params):
     reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
       * experiment.scan.get_oscillation()[1])
-    for component in self.components.itervalues():
-      reflection_table = component.configure_reflection_table(
-        reflection_table, experiment, params)
+    if 'scale' in self.components:
+      reflection_table[self.components['scale'].col_name] = (
+        reflection_table['xyzobs.px.value'].parts()[2]
+        * self._configdict['s_norm_fac'])
+    if 'decay' in self.components:
+      reflection_table[self.components['decay'].col_name] = (
+        reflection_table['xyzobs.px.value'].parts()[2]
+        * self._configdict['d_norm_fac'])
+    if 'absorption' in self.components:
+      lmax = experiment.scaling_model.configdict['lmax']
+      self.components['absorption'].sph_harm_table = sph_harm_table(
+        reflection_table, experiment, lmax)
+      parameter_restraints = flex.double([])
+      for i in range(1, lmax+1):
+        parameter_restraints.extend(flex.double([1.0] * ((2*i)+1)))
+      parameter_restraints *= params.parameterisation.surface_weight
+      self.components['absorption'].parameter_restraints = parameter_restraints
     return reflection_table
 
   def normalise_components(self):

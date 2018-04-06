@@ -111,6 +111,9 @@ class SmoothScaleComponentBase(ScaleComponentBase):
       return n_params - 1
     return n_params - 2
 
+  def calculate_scales_derivatives_curvatures(self):
+    pass
+
 class SmoothScaleComponent1D(SmoothScaleComponentBase):
   """A smoothly varying scale component in one dimension."""
 
@@ -129,10 +132,11 @@ class SmoothScaleComponent1D(SmoothScaleComponentBase):
     a spacing of 1."""
     return self._normalised_values
 
-  def configure_reflection_table(self, reflection_table, experiments, params):
-    reflection_table[self._col_name] = (reflection_table['xyzobs.px.value'].parts()[2]
-        * experiments.scaling_model.scale_normalisation_factor)
-    return reflection_table
+  @property
+  def col_name(self):
+    """The column name to use to obtain normalised coordinates from a
+    reflection table."""
+    return self._col_name
 
   def update_reflection_data(self, reflection_table, selection=None):
     """Set the normalised coordinate values and configure the smoother."""
@@ -176,11 +180,6 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
   def d_values(self):
     """The current set of d-values associated with this component."""
     return self._d_values
-
-  def configure_reflection_table(self, reflection_table, experiments, params):
-    reflection_table[self._col_name] = (reflection_table['xyzobs.px.value'].parts()[2]
-        * experiments.scaling_model.decay_normalisation_factor)
-    return reflection_table
 
   def update_reflection_data(self, reflection_table, selection=None):
     super(SmoothBScaleComponent1D, self).update_reflection_data(
