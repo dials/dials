@@ -2,7 +2,6 @@
 This code tests the data managers and active parameter managers.
 '''
 import copy as copy
-import numpy as np
 import pytest
 from scitbx import sparse
 from dials.array_family import flex
@@ -10,7 +9,6 @@ from dials.util.options import OptionParser
 from parameter_handler import scaling_active_parameter_manager
 from active_parameter_managers import (multi_active_parameter_manager,
   active_parameter_manager)
-from basis_functions import basis_function
 from libtbx import phil
 from libtbx.test_utils import approx_equal
 from dxtbx.model.experiment_list import ExperimentList
@@ -22,8 +20,6 @@ from dials.algorithms.scaling.scaler_factory import create_scaler,\
 from dials.algorithms.scaling.scaler import SingleScalerBase
 from dials.algorithms.scaling.target_function import ScalingTarget,\
   ScalingTargetFixedIH
-
-
 
 def generated_refl():
   '''function to generate input for datamanagers'''
@@ -186,81 +182,6 @@ def test_multi_apm():
   params = apm.apm_list[0].x
   params.extend(apm.apm_list[1].x)
   assert list(apm.x) == list(params)
-
-
-def test_basis_function(generated_KB_param):
-  '''test functionality of basis function object'''
-  (test_reflections, test_experiments, params) = generated_single_input(
-    generated_refl(), generated_single_exp(), generated_KB_param)
-  assert len(test_experiments) == 1
-  assert len(test_reflections) == 1
-  experiments = create_scaling_model(params, test_experiments, test_reflections)
-  scaler = create_scaler(params, experiments, test_reflections)
-  assert scaler.experiments.scaling_model.id_ == 'KB'
-
-  #(test_reflections, test_experiments, params) = generated_input
-  #params.scaling_options.multi_mode = False
-  #data_manager = KB_Data_Manager(test_reflections, test_experiments, params)
-
-  apm = scaling_active_parameter_manager(scaler.components, ['decay', 'scale'])
-
-  #first change the parameters in the apm
-  n_scale_params = scaler.components['scale'].n_params
-  n_decay_params = scaler.components['decay'].n_params
-  #order of params in apm.x - depends on order in scaling model 'components'
-  new_B = 1.0
-  new_S = 2.0
-  apm.x = (flex.double([new_S] * n_scale_params))
-  apm.x.extend(flex.double([new_B] * n_decay_params))
-  basis_func = basis_function(scaler, apm)
-
-  #first check that scale factors can be successfully updated
-  basis_fn = basis_func.return_basis() #includes update SF method.
-  assert list(scaler.components['decay'].parameters) == (
-    list(flex.double([new_B] * n_decay_params)))
-  assert list(scaler.components['scale'].parameters) == (
-    list(flex.double([new_S] * n_scale_params)))
-
-  #now check that the inverse scale factor was correctly calculated
-  assert list(basis_fn[0]) == list(new_S * np.exp(new_B/
-    (2.0*(scaler.components['decay'].d_values**2))))
-
-  #now check that the derivative matrix was correctly calculated
-  decay = scaler.components['decay']
-  scale = scaler.components['scale']
-  assert basis_fn[1][0, 0] == scale.derivatives[0, 0] * decay.inverse_scales[0]
-  assert basis_fn[1][1, 0] == scale.derivatives[1, 0] * decay.inverse_scales[1]
-  assert basis_fn[1][2, 0] == scale.derivatives[2, 0] * decay.inverse_scales[2]
-  assert basis_fn[1][0, 1] == decay.derivatives[0, 0] * scale.inverse_scales[0]
-  assert basis_fn[1][1, 1] == decay.derivatives[1, 0] * scale.inverse_scales[1]
-  assert basis_fn[1][2, 1] == decay.derivatives[2, 0] * scale.inverse_scales[2]
-
-  #test case of only one active parameter as well on fresh data manager
-  (test_reflections, test_experiments, params) = generated_single_input(
-    generated_refl(), generated_single_exp(), generated_KB_param)
-  assert len(test_experiments) == 1
-  assert len(test_reflections) == 1
-  experiments = create_scaling_model(params, test_experiments, test_reflections)
-  scaler = create_scaler(params, experiments, test_reflections)
-  apm = scaling_active_parameter_manager(scaler.components, ['scale'])
-
-  #need to set the inverse scales for this test dataset.
-  scaler.components['scale'].inverse_scales = flex.double([1.0, 1.0, 1.0])
-  scaler.components['decay'].inverse_scales = flex.double([1.0, 1.0, 1.0])
-  #first change the parameters in the apm
-  new_S = 2.0
-  apm.x = flex.double([new_S] * scaler.components['scale'].n_params)
-  basis_func = basis_function(scaler, apm)
-  basis_fn = basis_func.return_basis()
-
-  #now check that the inverse scale factor was correctly calculated
-  assert list(basis_fn[0]) == list([new_S] *
-    len(scaler.components['scale'].inverse_scales))
-
-  #now check that the derivative matrix was correctly calculated
-  assert basis_fn[1][0, 0] == scaler.components['scale'].derivatives[0, 0]
-  assert basis_fn[1][1, 0] == scaler.components['scale'].derivatives[1, 0]
-  assert basis_fn[1][2, 0] == scaler.components['scale'].derivatives[2, 0]
 
 def test_target_function(generated_KB_param):
   (test_reflections, test_experiments, params) = generated_single_input(

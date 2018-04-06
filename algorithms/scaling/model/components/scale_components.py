@@ -143,6 +143,9 @@ class SingleScaleFactor(ScaleComponentBase):
     for i in range(self.n_refl):
       self._derivatives[i, 0] = 1.0
 
+  def calculate_scales_derivatives_curvatures(self):
+    self.calculate_scales_and_derivatives()
+    self._curvatures = sparse.matrix(self.n_refl, 1) #curatures are all zero.
 
 class SingleBScaleFactor(ScaleComponentBase):
   """A model component for a single global B-factor parameter.
@@ -181,6 +184,12 @@ class SingleBScaleFactor(ScaleComponentBase):
       self._derivatives[i, 0] = (self._inverse_scales[i]
         / (2.0 * (self._d_values[i]**2)))
 
+  def calculate_scales_derivatives_curvatures(self):
+    self.calculate_scales_and_derivatives()
+    self._curvatures = sparse.matrix(self.n_refl, 1) #curatures are all zero.
+    for i in range(self._n_refl):
+      self._curvatures[i, 0] = (self._inverse_scales[i]
+        / ((2.0 * (self._d_values[i]**2))**2))
 
 class SHScaleComponent(ScaleComponentBase):
   """A model component for a spherical harmonic absorption correction.

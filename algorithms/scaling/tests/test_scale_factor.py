@@ -1,25 +1,19 @@
-'''
-tests for scalefactor objects
-'''
+"""
+Tests for scale components module.
+"""
 from dials.array_family import flex
-from libtbx.test_utils import approx_equal
-from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from model.components.scale_components import SHScaleComponent, \
   SingleBScaleFactor, SingleScaleFactor, ScaleComponentBase
 from model.components.smooth_scale_components import SmoothScaleComponent1D,\
   SmoothBScaleComponent1D, SmoothScaleComponent2D, SmoothScaleComponent3D
-from dials.algorithms.scaling.scaling_utilities import calc_crystal_frame_vectors,\
-  calc_theta_phi, create_sph_harm_table, sph_harm_table
 import pytest
-from scitbx import sparse
 
 def test_base_scalefactor():
   'test for abstract scalefactor object'
 
   class base_SF_filler(ScaleComponentBase):
     'subclass ScaleFactor to fill in the abstract method'
-    def update_reflection_data(self):
+    def update_reflection_data(self, reflection_table, selection=None):
       pass
     def calculate_scales_and_derivatives(self):
       pass

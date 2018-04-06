@@ -93,7 +93,7 @@ def test_basis_function(generated_KB_param):
   apm.x = (flex.double(n_scale_params, new_S))
   apm.x.extend(flex.double(n_decay_params, new_B))
   basis_fn = basis_function(scaler, apm)
-  basis_fn.update_scale_factors()
+  basis_fn.update_scale_factors_with_curvs()
   assert list(scaler.components['decay'].parameters) == (
     list(flex.double([new_B] * n_decay_params)))
   assert list(scaler.components['scale'].parameters) == (
@@ -114,6 +114,15 @@ def test_basis_function(generated_KB_param):
   assert calc_derivs[0, 1] == decay.derivatives[0, 0] * scale.inverse_scales[0]
   assert calc_derivs[1, 1] == decay.derivatives[1, 0] * scale.inverse_scales[1]
   assert calc_derivs[2, 1] == decay.derivatives[2, 0] * scale.inverse_scales[2]
+
+  # Test that the curvatures matrix is correctly composed.
+  calc_curvs = basis_fn.calculate_curvatures()
+  assert calc_curvs[0, 0] == scale.curvatures[0, 0] * decay.inverse_scales[0]
+  assert calc_curvs[1, 0] == scale.curvatures[1, 0] * decay.inverse_scales[1]
+  assert calc_curvs[2, 0] == scale.curvatures[2, 0] * decay.inverse_scales[2]
+  assert calc_curvs[0, 1] == decay.curvatures[0, 0] * scale.inverse_scales[0]
+  assert calc_curvs[1, 1] == decay.curvatures[1, 0] * scale.inverse_scales[1]
+  assert calc_curvs[2, 1] == decay.curvatures[2, 0] * scale.inverse_scales[2]
 
   # Repeat the test when there is only one active parameter.
   # First reset the parameters

@@ -28,6 +28,8 @@ class IhTableBase(object):
 
   __metaclass__ = abc.ABCMeta
 
+  id_ = 'IhTableBase' #used as an alternative to isinstance() calls.
+
   def __init__(self, data):
     self._h_index_matrix = None
     self._h_expand_matrix = None
@@ -144,7 +146,7 @@ class IhTableBase(object):
 
   def calc_nh(self):
     """Calculate the n_h vector."""
-    return ((flex.double(self.size, 1.0) * self.h_index_matrix)
+    self._n_h = ((flex.double(self.size, 1.0) * self.h_index_matrix)
       * self.h_expand_matrix)
 
   def update_error_model(self, error_params):

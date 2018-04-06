@@ -11,7 +11,7 @@ from dials.algorithms.scaling.scaling_utilities import (
   reject_outliers, calculate_wilson_outliers, calc_normE2)
 from dials.algorithms.scaling.reflection_weighting import Weighting
 from dials.algorithms.scaling.Ih_table import SingleIhTable,\
-  JointIhTable, IhTableBase
+  JointIhTable#, IhTableBase
 from dials_scratch_scaling_ext import calc_sigmasq as cpp_calc_sigmasq
 logger = logging.getLogger('dials')
 
@@ -33,7 +33,7 @@ class ScalerBase(object):
 
   @Ih_table.setter
   def Ih_table(self, new_Ih_table):
-    assert isinstance(new_Ih_table, IhTableBase)
+    assert new_Ih_table.id_ == 'IhTableBase'
     self._Ih_table = new_Ih_table
 
   @property

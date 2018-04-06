@@ -9,6 +9,7 @@ from Ih_table import SingleIhTable, JointIhTable
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from libtbx import phil
+from libtbx.test_utils import approx_equal
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment,\
   ExperimentList
 from dials.algorithms.scaling.model.scaling_model_factory import \
@@ -24,8 +25,8 @@ def generate_refl_1():
   reflections['intensity.prf.variance'] = flex.double(
     [90.0, 100.0, 90.0, 60.0, 30.0, 50.0, 50.0])
   #note the variance values is what should come out as Ih_values if unity weights
-  reflections['miller_index'] = flex.miller_index(
-    [(1, 0, 0), (0, 0, 1), (-1, 0, 0), (0, 2, 0), (0, 4, 0), (0, 0, -2), (0, 0, 2)])
+  reflections['miller_index'] = flex.miller_index([(1, 0, 0), (0, 0, 1),
+    (-1, 0, 0), (0, 2, 0), (0, 4, 0), (0, 0, -2), (0, 0, 2)])
   reflections['d'] = flex.double([5.0, 5.0, 5.0, 5.0, 2.5, 2.5, 2.5])
   reflections['lp'] = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
   reflections['dqe'] = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
@@ -109,23 +110,25 @@ def joint_test_input(generate_test_scaler, generate_second_test_scaler):
   weights = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
   scaler_2 = generate_second_test_scaler
   weights_2 = flex.double([1.0, 1.0])
-  scaler._Ih_table = SingleIhTable(scaler.reflection_table, weights)
-  scaler_2._Ih_table = SingleIhTable(scaler_2.reflection_table, weights_2)
+  scaler.Ih_table = SingleIhTable(scaler.reflection_table, weights)
+  scaler_2.Ih_table = SingleIhTable(scaler_2.reflection_table, weights_2)
   return scaler, scaler_2
 
-
 def test_Ih_table(single_test_input):
-  '''test for Ih_table. Upon initialisation, Ih_table should set unity
-  scale factors and calculate Ih_values. It should also create the
-  h_index arrays and h_index_matrix'''
+  """Test for Ih_table datastructure. Upon initialisation, Ih_table should set
+  unity scale factors and calculate Ih_values. It should also create the
+  a h_index_matrix."""
   (reflection_table, weights) = single_test_input
   Ih_table = SingleIhTable(reflection_table, weights)
 
+  assert Ih_table.id_ == "IhTableBase"
+
+  # Tests calc_Ih, assign_h_matrices, interface
   assert Ih_table.size == 7
   assert (Ih_table.inverse_scale_factors == 1.0).count(True) == Ih_table.size
   assert (Ih_table.weights == 1.0).count(True) == Ih_table.size
-  assert list(Ih_table.asu_miller_index) == list(flex.miller_index(
-    [(0, 0, 1), (0, 0, 2), (0, 0, 2), (0, 2, 0), (0, 4, 0), (1, 0, 0), (1, 0, 0)]))
+  assert list(Ih_table.asu_miller_index) == list(flex.miller_index([(0, 0, 1),
+    (0, 0, 2), (0, 0, 2), (0, 2, 0), (0, 4, 0), (1, 0, 0), (1, 0, 0)]))
   assert list(Ih_table.Ih_values) == list(flex.double(
     [100.0, 50.0, 50.0, 60.0, 30.0, 90.0, 90.0]))
   assert list(Ih_table.variances) == list(flex.double(
@@ -144,7 +147,11 @@ def test_Ih_table(single_test_input):
   assert Ih_table.h_index_matrix.n_cols == 5
   assert Ih_table.h_index_matrix.n_rows == 7
 
-  #test selection function
+  # Test calc_nh function.
+  Ih_table.calc_nh()
+  assert list(Ih_table.n_h) == [1.0, 2.0, 2.0, 1.0, 1.0, 2.0, 2.0]
+
+  # Test selection function
   sel = flex.bool([True, True, False, False, False, False, False])
   Ih_table = Ih_table.select(sel)
   assert Ih_table.size == 2
@@ -161,25 +168,41 @@ def test_Ih_table(single_test_input):
   assert Ih_table.h_index_matrix.n_cols == 2
   assert Ih_table.h_index_matrix.n_rows == 2
 
-  '''test for functionality of setting weights or not'''
+  # Test for second method to initialise without specifying weights - weights
+  # should bee set to inverse variances if no weights are given.
   Ih_table = SingleIhTable(reflection_table)
-  #test that weights are set to inverse variances if no weights are given.
   expected_weights = 1.0/flex.double([100.0, 50.0, 50.0, 60.0, 30.0, 90.0, 90.0])
   assert list(Ih_table.weights) == list(expected_weights)
-  #now test that one can set the weights to unity
+  # Test that one can set the weights to unity
   Ih_table.weights = weights
   assert (Ih_table.weights == 1.0).count(True) == Ih_table.size
-  #now test that one can apply an error model, with params that reset w to 1/var
-  Ih_table.update_error_model([1.0, 0.0])
-  assert (list(abs(Ih_table.weights - expected_weights)) <
-    list(flex.double([1e-6]*Ih_table.size)))
 
-  '''test for functionality of setting Ih_values - set to a tenth of what they
-  would otherwise be. Test that these are set after Ih table is initialised'''
-  reflection_table['Ih_values'] = flex.double([10.0, 5.0, 5.0, 6.0, 3.0, 9.0, 9.0])
+  # Test that one can apply an error model, with params that reset w to 1/var
+  Ih_table.update_error_model([1.0, 0.0])
+  assert approx_equal(list(Ih_table.weights), list(expected_weights))
+
+  # Test for functionality of having preset Ih_values, set to a tenth of what
+  # they would be. Test that these are set after Ih table is initialised.
+  reflection_table['Ih_values'] = flex.double(
+    [10.0, 5.0, 5.0, 6.0, 3.0, 9.0, 9.0])
   Ih_table = SingleIhTable(reflection_table, weights)
   assert list(Ih_table.Ih_values) == list(flex.double(
     [10.0, 5.0, 5.0, 6.0, 3.0, 9.0, 9.0]))
+
+def test_Ih_table_nonzero_weights(single_test_input):
+  """Test for 'nonzero_Weights' attribute and how this changes during selection.
+  The purpose of this is to indicate the relationship of the Ih_table data to
+  the original input reflection table."""
+  (reflection_table, weights) = single_test_input
+  weights[0] = 0.0
+  Ih_table = SingleIhTable(reflection_table, weights)
+  assert list(Ih_table.nonzero_weights) == list(flex.bool([False, True, True,
+    True, True, True, True]))
+  assert Ih_table.size == 6
+  Ih_table = Ih_table.select(flex.bool([True, True, True, False, False, False]))
+  assert Ih_table.size == 3
+  assert list(Ih_table.nonzero_weights) == list(flex.bool([False, True, True,
+    True, False, False, False]))
 
 
 def test_joint_Ih_table(joint_test_input):
@@ -187,33 +210,32 @@ def test_joint_Ih_table(joint_test_input):
   (dm1, dm2) = joint_test_input
   Ih_table = JointIhTable([dm1, dm2])
 
+  # Test for correct setup and calc_Ih
   assert list(Ih_table.asu_miller_index) == list(flex.miller_index(
     [(0, 0, 1), (0, 0, 2), (0, 0, 2), (0, 2, 0), (0, 4, 0), (1, 0, 0),
     (1, 0, 0), (0, 4, 0), (1, 0, 0)]))
   assert list(Ih_table.Ih_values) == list(flex.double(
     [100.0, 50.0, 50.0, 60.0, 30.0, 80.0, 80.0, 30.0, 80.0]))
   assert Ih_table.size == 9
-  '''assert list(Ih_table.h_index_counter_array) == list(flex.int([1, 2, 1, 2, 3]))
-  assert list(Ih_table.h_index_cumulative_array) == list(flex.int([0, 1, 3, 4, 6, 9]))
-  assert list(Ih_table._h_idx_count_list[0]) == list(flex.int([1, 2, 1, 1, 2]))
-  assert list(Ih_table._h_idx_count_list[1]) == list(flex.int([0, 0, 0, 1, 1]))
-  assert list(Ih_table._h_idx_cumulative_list[0]) == list(flex.int([0, 1, 3, 4, 5, 7]))
-  assert list(Ih_table._h_idx_cumulative_list[1]) == list(flex.int([0, 0, 0, 0, 1, 2]))
 
-  #now test h_expand matrices
-  assert Ih_table.h_index_expand_list[0][0, 0] == 1
-  assert Ih_table.h_index_expand_list[0][1, 1] == 1
-  assert Ih_table.h_index_expand_list[0][2, 2] == 1
-  assert Ih_table.h_index_expand_list[0][3, 3] == 1
-  assert Ih_table.h_index_expand_list[0][4, 4] == 1
-  assert Ih_table.h_index_expand_list[0][5, 6] == 1
-  assert Ih_table.h_index_expand_list[0][6, 7] == 1
-  assert Ih_table.h_index_expand_list[0].non_zeroes == 7
-  assert Ih_table.h_index_expand_list[0].n_cols == 9
-  assert Ih_table.h_index_expand_list[0].n_rows == 7
+  # Test for correct setup of joint h_index_matrix.
+  assert Ih_table.h_index_matrix[0, 0] == 1
+  assert Ih_table.h_index_matrix[1, 1] == 1
+  assert Ih_table.h_index_matrix[2, 1] == 1
+  assert Ih_table.h_index_matrix[3, 2] == 1
+  assert Ih_table.h_index_matrix[4, 3] == 1
+  assert Ih_table.h_index_matrix[5, 4] == 1
+  assert Ih_table.h_index_matrix[6, 4] == 1
+  assert Ih_table.h_index_matrix[7, 3] == 1
+  assert Ih_table.h_index_matrix[8, 4] == 1
+  assert Ih_table.h_index_matrix.non_zeroes == 9
+  assert Ih_table.h_index_matrix.n_cols == 5
+  assert Ih_table.h_index_matrix.n_rows == 9
 
-  assert Ih_table.h_index_expand_list[1][0, 5] == 1
-  assert Ih_table.h_index_expand_list[1][1, 8] == 1
-  assert Ih_table.h_index_expand_list[1].non_zeroes == 2
-  assert Ih_table.h_index_expand_list[1].n_cols == 9
-  assert Ih_table.h_index_expand_list[1].n_rows == 2'''
+  # Test setting of error models and updating weights.
+  dm1.Ih_table.update_error_model([0.5, 0.0])
+  dm2.Ih_table.update_error_model([0.5, 0.0])
+  Ih_table.update_weights_from_error_models()
+  expected_weights = 4.0/flex.double([100.0, 50.0, 50.0, 60.0, 30.0, 90.0,
+    90.0, 30.0, 60.0])
+  assert approx_equal(list(Ih_table.weights), list(expected_weights))

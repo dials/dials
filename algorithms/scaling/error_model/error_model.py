@@ -14,7 +14,8 @@ class BasicErrorModel(object):
   def __init__(self, Ih_table):
     logger.info("Initialising an error model for refinement.")
     self.Ih_table = Ih_table
-    self.n_h = self.Ih_table.calc_nh()
+    self.Ih_table.calc_nh()
+    self.n_h = self.Ih_table.n_h
     self.sigmaprime = None
     self.delta_hl = None
     self.bin_variances = None
