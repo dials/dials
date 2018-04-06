@@ -1,35 +1,4 @@
 The /scratch directory has been moved into its own repository.
-To install this repository choose ONE of the following options:
+To install this repository run
 
-1. If you have a github account and SSH keypair installed, run
-
-   mkdir $(libtbx.show_repository_paths | head -1)/dials_scratch
-   cd $_
-   git clone git@github.com:dials/dials_scratch.git .
-   libtbx.configure dials_scratch
-
-
-2. If you have git installed, and are happy with read-only-access to the repository, run
-
-   mkdir $(libtbx.show_repository_paths | head -1)/dials_scratch
-   cd $_
-   git clone https://github.com/dials/dials_scratch.git .
-   libtbx.configure dials_scratch
-
-
-3. If you have svn installed, run
-
-   mkdir $(libtbx.show_repository_paths | head -1)/dials_scratch
-   cd $_
-   svn checkout https://github.com/dials/dials_scratch.git .
-   libtbx.configure dials_scratch
-
-
-4. If you have neither git nor svn installed, run
-
-   mkdir $(libtbx.show_repository_paths | head -1)/dials_scratch
-   cd $_
-   curl -L https://github.com/dials/dials_scratch/archive/master.zip > master.zip
-   unzip master.zip && rm master.zip
-   libtbx.configure dials_scratch
-
+libtbx.install dials_scratch xia2_regression
