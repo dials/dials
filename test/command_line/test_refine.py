@@ -1,14 +1,3 @@
-#!/usr/bin/env cctbx.python
-
-#
-#  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-
 """
 Test command line program dials.refine by running a job with saved data and
 comparing with expected output.
@@ -16,23 +5,21 @@ comparing with expected output.
 This serves as a high level test that not only checks whether refinement works,
 but also that the command line program is functioning and that the output models
 have not changed format and so on.
-
 """
 
-# python imports
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
+
+import copy
+import cPickle as pickle
 import os
-import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx import easy_run
-from libtbx.test_utils import open_tmp_directory, approx_equal
+from libtbx.test_utils import approx_equal
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dials.array_family import flex
+import pytest
 
-def test1():
-
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression",
-    test=os.path.isdir)
+def test1(dials_regression, tmpdir):
+  tmpdir.chdir()
 
   # use the i04_weak_data for this test
   data_dir = os.path.join(dials_regression, "refinement_test_data", "i04_weak_data")
@@ -45,22 +32,14 @@ def test1():
   # set some old defaults
   cmd = "dials.refine close_to_spindle_cutoff=0.05 reflections_per_degree=100 " + \
         "outlier.separate_blocks=False " + experiments_path + " " + pickle_path
-  print cmd
 
-  # work in a temporary directory
-  cwd = os.path.abspath(os.curdir)
-  tmp_dir = open_tmp_directory(suffix="test_dials_refine")
-  os.chdir(tmp_dir)
-  try:
-    result = easy_run.fully_buffered(command=cmd).raise_if_errors()
-    # load results
-    reg_exp = ExperimentListFactory.from_json_file(
-                os.path.join(data_dir, "regression_experiments.json"),
-                check_format=False)[0]
-    ref_exp = ExperimentListFactory.from_json_file("refined_experiments.json",
-                check_format=False)[0]
-  finally:
-    os.chdir(cwd)
+  result = easy_run.fully_buffered(command=cmd).raise_if_errors()
+  # load results
+  reg_exp = ExperimentListFactory.from_json_file(
+	      os.path.join(data_dir, "regression_experiments.json"),
+	      check_format=False)[0]
+  ref_exp = ExperimentListFactory.from_json_file("refined_experiments.json",
+	      check_format=False)[0]
 
   # test refined models against expected
   assert reg_exp.crystal == ref_exp.crystal
@@ -68,20 +47,16 @@ def test1():
   assert reg_exp.beam == ref_exp.beam
 
   # test cell parameter esds
-  assert approx_equal(ref_exp.crystal.get_cell_parameter_sd(),
-    (0.0009903, 0.0009903, 0.0021227, 0.0, 0.0, 0.0))
-  assert approx_equal(ref_exp.crystal.get_cell_volume_sd(), 23.8063382)
+  assert ref_exp.crystal.get_cell_parameter_sd() == \
+      pytest.approx((0.0009903, 0.0009903, 0.0021227, 0.0, 0.0, 0.0), abs=1e-6)
+  assert ref_exp.crystal.get_cell_volume_sd() == pytest.approx(23.8063382, abs=1e-6)
 
-  return
-
-def test2():
+def test2(dials_regression, tmpdir):
   """Run scan-varying refinement, comparing RMSD table with expected values.
   This test automates what was manually done periodically and recorded in
   dials_regression/refinement_test_data/centroid/README.txt"""
 
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression",
-    test=os.path.isdir)
+  tmpdir.chdir()
 
   # use the i04_weak_data for this test
   data_dir = os.path.join(dials_regression, "refinement_test_data", "centroid")
@@ -102,51 +77,35 @@ def test2():
     " crystal.orientation.smoother.interval_width_degrees=36.0"
     " crystal.unit_cell.smoother.interval_width_degrees=36.0")
 
-  # work in a temporary directory
-  cwd = os.path.abspath(os.curdir)
-  tmp_dir = open_tmp_directory(suffix="test_dials_refine")
-  os.chdir(tmp_dir)
-  try:
-    print cmd1
-    result1 = easy_run.fully_buffered(command=cmd1).raise_if_errors()
-    print cmd2
-    result2 = easy_run.fully_buffered(command=cmd2).raise_if_errors()
-    # load and check results
-    import cPickle as pickle
-    history=pickle.load(open("history.pickle", "r"))
+  result1 = easy_run.fully_buffered(command=cmd1).raise_if_errors()
+  result2 = easy_run.fully_buffered(command=cmd2).raise_if_errors()
 
-    expected_rmsds = [(0.088488398, 0.114583571, 0.001460382),
-                      (0.080489334, 0.086406517, 0.001284069),
-                      (0.078835086, 0.086052630, 0.001195882),
-                      (0.077476911, 0.086194611, 0.001161143),
-                      (0.076755840, 0.086090630, 0.001157239),
-                      (0.076586376, 0.085939462, 0.001155641),
-                      (0.076603722, 0.085878953, 0.001155065),
-                      (0.076611382, 0.085862959, 0.001154863),
-                      (0.076608732, 0.085856935, 0.001154384),
-                      (0.076605731, 0.085852271, 0.001153858),
-                      (0.076604576, 0.085852318, 0.001153643),
-                      (0.076603981, 0.085854175, 0.001153594)]
+  # load and check results
+  history=pickle.load(open("history.pickle", "r"))
 
-    assert approx_equal(history['rmsd'], expected_rmsds)
+  expected_rmsds = [(0.088488398, 0.114583571, 0.001460382),
+		    (0.080489334, 0.086406517, 0.001284069),
+		    (0.078835086, 0.086052630, 0.001195882),
+		    (0.077476911, 0.086194611, 0.001161143),
+		    (0.076755840, 0.086090630, 0.001157239),
+		    (0.076586376, 0.085939462, 0.001155641),
+		    (0.076603722, 0.085878953, 0.001155065),
+		    (0.076611382, 0.085862959, 0.001154863),
+		    (0.076608732, 0.085856935, 0.001154384),
+		    (0.076605731, 0.085852271, 0.001153858),
+		    (0.076604576, 0.085852318, 0.001153643),
+		    (0.076603981, 0.085854175, 0.001153594)]
+  assert approx_equal(history['rmsd'], expected_rmsds)
 
-    # check that the used_in_refinement flag got set correctly
-    rt = flex.reflection_table.from_pickle('refined.pickle')
-    uir = rt.get_flags(rt.flags.used_in_refinement)
-    assert uir.count(True) == history['num_reflections'][-1]
+  # check that the used_in_refinement flag got set correctly
+  rt = flex.reflection_table.from_pickle('refined.pickle')
+  uir = rt.get_flags(rt.flags.used_in_refinement)
+  assert uir.count(True) == history['num_reflections'][-1]
 
-  finally:
-    os.chdir(cwd)
-
-  return
-
-def test3():
+def test3(dials_regression, tmpdir):
   """Strict check for scan-varying refinement using automated outlier rejection
   block width and interval width setting"""
-
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression",
-    test=os.path.isdir)
+  tmpdir.chdir()
 
   # use the i04_weak_data for this test
   data_dir = os.path.join(dials_regression, "refinement_test_data", "centroid")
@@ -160,39 +119,26 @@ def test3():
           " scan_varying=true max_iterations=5 output.history=history.pickle "
           "crystal.orientation.smoother.interval_width_degrees=auto "
           "crystal.unit_cell.smoother.interval_width_degrees=auto")
+  result1 = easy_run.fully_buffered(command=cmd1).raise_if_errors()
 
-  # work in a temporary directory
-  cwd = os.path.abspath(os.curdir)
-  tmp_dir = open_tmp_directory(suffix="test_dials_refine")
-  os.chdir(tmp_dir)
-  try:
-    print cmd1
-    result1 = easy_run.fully_buffered(command=cmd1).raise_if_errors()
+  # load and check results
+  history=pickle.load(open("history.pickle", "r"))
 
-    # load and check results
-    import cPickle as pickle
-    history=pickle.load(open("history.pickle", "r"))
+  expected_rmsds = [[0.619507829, 0.351326044, 0.006955399],
+		    [0.174024575, 0.113486044, 0.004704006],
+		    [0.098351363, 0.084052519, 0.002660408],
+		    [0.069202909, 0.072796782, 0.001451734],
+		    [0.064305277, 0.071560831, 0.001165639],
+		    [0.062955462, 0.071315612, 0.001074453]]
+  assert approx_equal(history['rmsd'], expected_rmsds)
 
-    expected_rmsds = [[0.619507829, 0.351326044, 0.006955399],
-                      [0.174024575, 0.113486044, 0.004704006],
-                      [0.098351363, 0.084052519, 0.002660408],
-                      [0.069202909, 0.072796782, 0.001451734],
-                      [0.064305277, 0.071560831, 0.001165639],
-                      [0.062955462, 0.071315612, 0.001074453]]
-    assert approx_equal(history['rmsd'], expected_rmsds)
+  # check the refined unit cell
+  ref_exp = ExperimentListFactory.from_json_file("refined_experiments.json",
+    check_format=False)[0]
+  unit_cell = ref_exp.crystal.get_unit_cell().parameters()
+  assert unit_cell == pytest.approx([42.27482, 42.27482, 39.66893, 90.00000, 90.00000, 90.00000],
+      abs=1e-3)
 
-    # check the refined unit cell
-    ref_exp = ExperimentListFactory.from_json_file("refined_experiments.json",
-      check_format=False)[0]
-    unit_cell = ref_exp.crystal.get_unit_cell().parameters()
-    assert approx_equal(
-      unit_cell, [42.27482, 42.27482, 39.66893, 90.00000, 90.00000, 90.00000],
-      eps=1e-3)
-
-  finally:
-    os.chdir(cwd)
-
-  return
 
 #Test the functionality of the refiner.py extension modules
 def test4():
@@ -214,18 +160,17 @@ def test4():
    to allow C++ extension modules to give performance benefit. Sorting performed within the
    _filter_reflections step by id, then by panel.
   '''
-  from copy import deepcopy as dc
-  r_sorted = dc(r)
+  r_sorted = copy.deepcopy(r)
   r_sorted.sort('id')
   r_sorted.subsort('id','panel')
 
   # Test that the unfiltered/unsorted table becomes filtered/sorted for id
-  assert ((r_sorted['id']==r['id'].select(flex.sort_permutation(r['id']))).count(False)==0)
+  assert (r_sorted['id']==r['id'].select(flex.sort_permutation(r['id']))).count(False) == 0
   # as above for panel within each id
   for ii in [0,1,2]:
     r_id = r.select(r['id']==ii)
     r_sorted_id = r_sorted.select(r_sorted['id']==ii)
-    assert ( (r_sorted_id['panel']==r_id['panel'].select(flex.sort_permutation(r_id['panel']))).count(False)==0 )
+    assert (r_sorted_id['panel']==r_id['panel'].select(flex.sort_permutation(r_id['panel']))).count(False) == 0
 
   ############################################################
   #Cut-down original algorithm for model_nparam_minus_nref
@@ -241,9 +186,9 @@ def test4():
   res1_sizet = mnmn(flex.size_t(list(r_sorted["id"])),exp_ids).result
 
   #Check that unsorted list fails, while sorted succeeds for both int and size_t array types
-  assert ( res0 != res1_unsrt_int )
-  assert ( res0 == res1_int )
-  assert ( res0 == res1_sizet )
+  assert res0 != res1_unsrt_int
+  assert res0 == res1_int
+  assert res0 == res1_sizet
 
   ############################################################
   #Cut-down original algorithm for unit_cell_nparam_minus_nref
@@ -261,9 +206,9 @@ def test4():
   res1_unsrt_int = ucnmn(r["id"], r["miller_index"], exp_ids, dB_dp).result
   res1_int = ucnmn(r_sorted["id"], r_sorted["miller_index"], exp_ids, dB_dp).result
   res1_sizet = ucnmn(flex.size_t(list(r_sorted["id"])), r_sorted["miller_index"], exp_ids, dB_dp).result
-  assert ( res0 != res1_unsrt_int )
-  assert ( res0 == res1_int )
-  assert ( res0 == res1_sizet )
+  assert res0 != res1_unsrt_int
+  assert res0 == res1_int
+  assert res0 == res1_sizet
 
   ############################################################
   #Cut-down original algorithm for panel_gp_nparam_minus_nref
@@ -282,25 +227,6 @@ def test4():
   res1_unsrt_int = pgnmn(r["id"], r["panel"], pnl_ids, exp_ids, 0).result
   res1_int = pgnmn(r_sorted["id"], r_sorted["panel"], pnl_ids, exp_ids, 0).result
   res1_sizet = pgnmn(flex.size_t(list(r_sorted["id"])), r_sorted["panel"], pnl_ids, exp_ids, 0).result
-  assert ( res0 != res1_unsrt_int )
-  assert ( res0 == res1_int )
-  assert ( res0 == res1_sizet )
-
-  return
-
-def run():
-  if not libtbx.env.has_module("dials_regression"):
-    print "Skipping tests in " + __file__ + " as dials_regression not present"
-    return
-
-  test1()
-  test2()
-  test3()
-  test4()
-
-if __name__ == '__main__':
-  from dials.test import cd_auto
-  with cd_auto(__file__):
-    from libtbx.utils import show_times_at_exit
-    show_times_at_exit()
-    run()
+  assert res0 != res1_unsrt_int
+  assert res0 == res1_int
+  assert res0 == res1_sizet
