@@ -1,5 +1,5 @@
 """
-Test for the basis function module.
+Test for the basis function and target function module.
 """
 import numpy as np
 import pytest
@@ -7,14 +7,15 @@ from dials.array_family import flex
 from dials.util.options import OptionParser
 from parameter_handler import scaling_active_parameter_manager
 from libtbx import phil
-#from libtbx.test_utils import approx_equal
+from libtbx.test_utils import approx_equal
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.algorithms.scaling.model.scaling_model_factory import \
   create_scaling_model
 from dials.algorithms.scaling.scaler_factory import create_scaler
+from dials.algorithms.scaling.target_function import ScalingTarget#,\
+#  ScalingTargetFixedIH
 from basis_functions import basis_function
-
 
 def generated_refl():
   """Generate reflection table to test the basis function."""
@@ -144,3 +145,54 @@ def test_basis_function(generated_KB_param):
   assert basis_fn[1][0, 0] == scaler.components['scale'].derivatives[0, 0]
   assert basis_fn[1][1, 0] == scaler.components['scale'].derivatives[1, 0]
   assert basis_fn[1][2, 0] == scaler.components['scale'].derivatives[2, 0]
+
+def test_target_function(generated_KB_param):
+  """Test for the ScalingTarget class."""
+  (test_reflections, test_experiments, params) = (
+    generated_refl(), generated_single_exp(), generated_KB_param)
+  assert len(test_experiments) == 1
+  assert len(test_reflections) == 1
+  experiments = create_scaling_model(params, test_experiments, test_reflections)
+  scaler = create_scaler(params, experiments, test_reflections)
+  assert scaler.experiments.scaling_model.id_ == 'KB'
+
+  #setup of data manager
+  scaler.components['scale'].parameters = flex.double([2.0])
+  scaler.components['decay'].parameters = flex.double([1.0])
+  scaler.components['scale'].inverse_scales = flex.double([1.0, 2.0, 1.0])
+  scaler.components['decay'].inverse_scales = flex.double([1.0, 2.0, 1.0])
+
+  apm = scaling_active_parameter_manager(scaler.components, ['scale', 'decay'])
+  scaler.update_for_minimisation(apm)
+
+  #first get residual and gradients
+  target = ScalingTarget(scaler, apm)
+  res, grad = target.compute_functional_gradients()
+  assert res > 1e-8, """residual should not be zero, or the gradient test
+    below will not really be working!"""
+  f_d_grad = calculate_gradient_fd(scaler, apm)
+  assert approx_equal(list(grad), list(f_d_grad))
+  sel = f_d_grad > 1e-8
+  assert sel, """assert sel has some elements, as finite difference grad should
+    not all be zero, or the test will not really be working!
+    (expect one to be zero for KB scaling example?)"""
+
+def calculate_gradient_fd(dm, apm):
+  """Calculate gradient array with finite difference approach."""
+  delta = 1.0e-6
+  Ih_tab = dm.Ih_table
+  gradients = flex.double([0.0] * apm.n_active_params)
+  #iterate over parameters, varying one at a time and calculating the gradient
+  for i in range(apm.n_active_params):
+    apm.x[i] -= 0.5 * delta
+    dm.update_for_minimisation(apm)
+    R_low = ((((Ih_tab.intensities - (Ih_tab.inverse_scale_factors
+      * Ih_tab.Ih_values))**2) * Ih_tab.weights))
+    apm.x[i] += delta
+    dm.update_for_minimisation(apm)
+    R_upper = ((((Ih_tab.intensities - (Ih_tab.inverse_scale_factors
+      * Ih_tab.Ih_values))**2) * Ih_tab.weights))
+    apm.x[i] -= 0.5 * delta
+    dm.update_for_minimisation(apm)
+    gradients[i] = (flex.sum(R_upper) - flex.sum(R_low)) / delta
+  return gradients

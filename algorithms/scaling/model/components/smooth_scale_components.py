@@ -6,6 +6,7 @@ inverse scale factors and derivatives with respect to the component
 parameters.
 """
 import numpy as np
+from scitbx import sparse
 from dials.array_family import flex
 from dials_scaling_helpers_ext import row_multiply
 from dials_refinement_helpers_ext import GaussianSmoother as GS1D
@@ -22,73 +23,83 @@ class GaussianSmoother1D(GS1D):
   """A 1D Gaussian smoother."""
 
   def value_weight(self, x, value):
+    """Return the value, weight and sumweight at a single point."""
     result = super(GaussianSmoother1D, self).value_weight(x,
       flex.double(value))
     return (result.get_value(), result.get_weight(), result.get_sumweight())
 
   def multi_value_weight(self, x, value):
+    """Return the value, weight and sumweight at multiple points."""
     result = super(GaussianSmoother1D, self).multi_value_weight(
       flex.double(x),
       flex.double(value))
     return (result.get_value(), result.get_weight(), result.get_sumweight())
 
   def positions(self):
+    """Return the smoother positions."""
     return list(super(GaussianSmoother1D, self).positions())
 
 class GaussianSmoother2D(GS2D):
   """A 2D Gaussian smoother."""
 
   def value_weight(self, x, y, value):
+    """Return the value, weight and sumweight at a single point."""
     result = super(GaussianSmoother2D, self).value_weight(x, y,
       flex.double(value))
     return (result.get_value(), result.get_weight(), result.get_sumweight())
 
   def multi_value_weight(self, x, y, value):
+    """Return the value, weight and sumweight at multiple points."""
     result = super(GaussianSmoother2D, self).multi_value_weight(
       flex.double(x), flex.double(y),
       flex.double(value))
     return (result.get_value(), result.get_weight(), result.get_sumweight())
 
   def x_positions(self):
+    """Return the smoother x-positions."""
     return list(super(GaussianSmoother2D, self).x_positions())
 
   def y_positions(self):
+    """Return the smoother y-positions."""
     return list(super(GaussianSmoother2D, self).y_positions())
 
 class GaussianSmoother3D(GS3D):
   """A 3D Gaussian smoother."""
 
   def value_weight(self, x, y, z, value):
+    """Return the value, weight and sumweight at a single point."""
     result = super(GaussianSmoother3D, self).value_weight(x, y, z,
       flex.double(value))
     return (result.get_value(), result.get_weight(), result.get_sumweight())
 
   def multi_value_weight(self, x, y, z, value):
+    """Return the value, weight and sumweight at multiple points."""
     result = super(GaussianSmoother3D, self).multi_value_weight(
       flex.double(x), flex.double(y), flex.double(z),
       flex.double(value))
     return (result.get_value(), result.get_weight(), result.get_sumweight())
 
   def x_positions(self):
+    """Return the smoother x-positions."""
     return list(super(GaussianSmoother3D, self).x_positions())
 
   def y_positions(self):
+    """Return the smoother y-positions."""
     return list(super(GaussianSmoother3D, self).y_positions())
 
   def z_positions(self):
+    """Return the smoother z-positions."""
     return list(super(GaussianSmoother3D, self).z_positions())
 
 
-class SmoothScaleComponentBase(ScaleComponentBase):
-  """Base class for smooth scale factor components.
+class SmoothMixin(object):
+  """Mixin class for smooth scale factor components.
 
-  These use a Gaussian smoother to calculate scales and derivatives
+  This uses a Gaussian smoother to calculate scales and derivatives
   based on the parameters and a have a set of normalised_values
   associated with the data."""
 
-  def __init__(self, initial_values, parameter_esds=None):
-    super(SmoothScaleComponentBase, self).__init__(initial_values,
-      parameter_esds)
+  def __init__(self):
     self._Vr = 1.0
     self._smoother = None
 
@@ -102,7 +113,8 @@ class SmoothScaleComponentBase(ScaleComponentBase):
     """The Gaussian smoother."""
     return self._smoother
 
-  def _nparam_to_val(self, n_params):
+  @staticmethod
+  def nparam_to_val(n_params):
     """Convert the number of parameters to the required input value
     for the smoother."""
     assert n_params >= 2, '''cannot initialise a smooth scale factor
@@ -111,10 +123,7 @@ class SmoothScaleComponentBase(ScaleComponentBase):
       return n_params - 1
     return n_params - 2
 
-  def calculate_scales_derivatives_curvatures(self):
-    pass
-
-class SmoothScaleComponent1D(SmoothScaleComponentBase):
+class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
   """A smoothly varying scale component in one dimension."""
 
   def __init__(self, initial_values, col_name, parameter_esds=None):
@@ -149,7 +158,7 @@ class SmoothScaleComponent1D(SmoothScaleComponentBase):
     phi_range_deg = [int(min(self._normalised_values)//1),
                      int(max(self._normalised_values)//1)+1]
     self._smoother = GaussianSmoother1D(phi_range_deg,
-      self._nparam_to_val(self._n_params))
+      self.nparam_to_val(self._n_params))
     self.inverse_scales = flex.double(normalised_values.size(), 1.0)
 
   def calculate_scales_and_derivatives(self):
@@ -165,6 +174,11 @@ class SmoothScaleComponent1D(SmoothScaleComponentBase):
     value, _, _ = self._smoother.multi_value_weight(self._normalised_values,
       self.value)
     self._inverse_scales = value
+
+  def calculate_scales_derivatives_curvatures(self):
+    # Note - curvatures are zero for this component.
+    self.calculate_scales_and_derivatives()
+    self._curvatures = sparse.matrix(self._inverse_scales.size(), self.n_params)
 
 
 class SmoothBScaleComponent1D(SmoothScaleComponent1D):
@@ -194,16 +208,18 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
       /(2.0 * (self._d_values**2))))
     self._derivatives = row_multiply(self._derivatives,
       self._inverse_scales / (2.0 * (self._d_values**2)))
-    self._curvatures = row_multiply(elementwise_square(self._derivatives),
-      1.0/self._inverse_scales)
 
   def calculate_scales(self):
     super(SmoothBScaleComponent1D, self).calculate_scales()
     self._inverse_scales = flex.double(np.exp(self._inverse_scales
       /(2.0 * (self._d_values**2))))
 
+  def calculate_scales_derivatives_curvatures(self):
+    self.calculate_scales_and_derivatives()
+    self._curvatures = row_multiply(elementwise_square(self._derivatives),
+      1.0/self._inverse_scales)
 
-class SmoothScaleComponent2D(SmoothScaleComponentBase):
+class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
   """Implementation of a 2D array-based smoothly varying scale factor.
 
   A 2d array of parameters is defined, and the scale factor at fractional
@@ -222,6 +238,16 @@ class SmoothScaleComponent2D(SmoothScaleComponentBase):
     self._col_names = col_names
     self._normalised_x_values = None
     self._normalised_y_values = None
+
+  @property
+  def n_x_params(self):
+    """The number of parameters that parameterise the x-component."""
+    return self._n_x_params
+
+  @property
+  def n_y_params(self):
+    """The number of parameters that parameterise the y-component."""
+    return self._n_y_params
 
   @property
   def normalised_x_values(self):
@@ -245,8 +271,8 @@ class SmoothScaleComponent2D(SmoothScaleComponentBase):
                int(max(self._normalised_x_values)//1)+1]
     y_range = [int(min(self._normalised_y_values)//1),
                int(max(self._normalised_y_values)//1)+1]
-    self._smoother = GaussianSmoother2D(x_range, self._nparam_to_val(
-      self._n_x_params), y_range, self._nparam_to_val(self._n_y_params))
+    self._smoother = GaussianSmoother2D(x_range, self.nparam_to_val(
+      self._n_x_params), y_range, self.nparam_to_val(self._n_y_params))
     self.inverse_scales = flex.double(self._normalised_x_values.size(), 1.0)
 
   def calculate_scales_and_derivatives(self):
@@ -258,11 +284,17 @@ class SmoothScaleComponent2D(SmoothScaleComponentBase):
     self._derivatives = dv_dp
 
   def calculate_scales(self):
+    """"Only calculate the scales if needed, for performance."""
     value, _, _ = self._smoother.multi_value_weight(self._normalised_x_values,
       self._normalised_y_values, self.value)
     self._inverse_scales = value
 
-class SmoothScaleComponent3D(SmoothScaleComponentBase):
+  def calculate_scales_derivatives_curvatures(self):
+    # Note - curvatures are zero for this component.
+    self.calculate_scales_and_derivatives()
+    self._curvatures = sparse.matrix(self._inverse_scales.size(), self.n_params)
+
+class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
   """Implementation of a 3D array-based smoothly varying scale factor.
 
   A 3d array of parameters is defined, and the scale factor at fractional
@@ -284,6 +316,21 @@ class SmoothScaleComponent3D(SmoothScaleComponentBase):
     self._normalised_y_values = None
     self._normalised_z_values = None
     self._col_names = col_names
+
+  @property
+  def n_x_params(self):
+    """The number of parameters that parameterise the x-component."""
+    return self._n_x_params
+
+  @property
+  def n_y_params(self):
+    """The number of parameters that parameterise the y-component."""
+    return self._n_y_params
+
+  @property
+  def n_z_params(self):
+    """The number of parameters that parameterise the z-component."""
+    return self._n_z_params
 
   @property
   def normalised_x_values(self):
@@ -317,9 +364,9 @@ class SmoothScaleComponent3D(SmoothScaleComponentBase):
                int(max(self._normalised_y_values)//1)+1]
     z_range = [int(min(self._normalised_z_values)//1),
                int(max(self._normalised_z_values)//1)+1]
-    self._smoother = GaussianSmoother3D(x_range, self._nparam_to_val(
-      self._n_x_params), y_range, self._nparam_to_val(self._n_y_params),
-      z_range, self._nparam_to_val(self._n_z_params))
+    self._smoother = GaussianSmoother3D(x_range, self.nparam_to_val(
+      self._n_x_params), y_range, self.nparam_to_val(self._n_y_params),
+      z_range, self.nparam_to_val(self._n_z_params))
     self.inverse_scales = flex.double(self._normalised_x_values.size(), 1.0)
 
   def calculate_scales_and_derivatives(self):
@@ -332,6 +379,12 @@ class SmoothScaleComponent3D(SmoothScaleComponentBase):
     self._derivatives = dv_dp
 
   def calculate_scales(self):
+    """"Only calculate the scales if needed, for performance."""
     value, _, _ = self._smoother.multi_value_weight(self._normalised_x_values,
       self._normalised_y_values, self._normalised_z_values, self.value)
     self._inverse_scales = value
+
+  def calculate_scales_derivatives_curvatures(self):
+    # Note - curvatures are zero for this component.
+    self.calculate_scales_and_derivatives()
+    self._curvatures = sparse.matrix(self._inverse_scales.size(), self.n_params)
