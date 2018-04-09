@@ -224,6 +224,7 @@ phil_str = '''
     .type = strings
   space_group = None
     .type = space_group
+    .expert_level = 1
 '''
 
 
