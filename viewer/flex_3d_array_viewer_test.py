@@ -11,6 +11,7 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 from __future__ import absolute_import, division
+from __future__ import print_function
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 from dials.array_family import flex
@@ -66,4 +67,4 @@ if __name__ == "__main__":
   show_3d(data_xyz_flex)
   show_3d(lst_flex)
   show_3d(lst_flex_norm)
-  print "Test Done"
+  print("Test Done")

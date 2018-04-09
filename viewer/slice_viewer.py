@@ -9,6 +9,7 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 from __future__ import absolute_import, division
+from __future__ import print_function
 import wx
 from dials.viewer.viewer_low_level_util import \
      flex_arr_img_panel, MyGrid, flex_3d_frame, grid_frame
@@ -98,7 +99,7 @@ class show_3d_wx_app(wx.App):
 class show_reflections(show_3d):
   def __init__(self, table, two_windows = False):
     #two_windows = True
-    print "two_windows =", two_windows
+    print("two_windows =", two_windows)
 
     if two_windows:
       app = show_tabl_2fr_wx_app(redirect = False)
@@ -128,7 +129,7 @@ class show_tabl_2fr_wx_app(wx.App):
   def in_tabl(self, table, two_windows):
     self.data_grid.ini_n_intro(table)
     if two_windows:
-      print "two_windows =", two_windows
+      print("two_windows =", two_windows)
       self.flex_panel.ini_n_intro(table)
       self.info_panel.ini_n_intro(table)
 

@@ -9,6 +9,7 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 from __future__ import absolute_import, division
+from __future__ import print_function
 from dials.array_family import flex
 
 from dials.viewer.bitmap_from_array import wxbmp_from_np_array
@@ -58,7 +59,7 @@ class wxbitmap_convert(object):
 
         else:
           # might be a good idea to raise a runtime error here
-          print "the two lists do NOT have the same size"
+          print("the two lists do NOT have the same size")
 
       elif not isinstance(data_in_n1, list) and not isinstance(data_in_n2, list):
         #Got two blocks
@@ -82,7 +83,7 @@ class wxbitmap_convert(object):
 
       else:
         # might be a good idea to raise a runtime error here
-        print "Got mixture of different type of data"
+        print("Got mixture of different type of data")
 
 
 

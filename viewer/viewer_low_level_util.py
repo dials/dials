@@ -9,6 +9,7 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 from __future__ import absolute_import, division
+from __future__ import print_function
 from dials.array_family import flex
 from dials.viewer.from_flex_to_wxbitmap import wxbitmap_convert
 
@@ -192,18 +193,18 @@ class MyGrid(gridlib.Grid):
     try:
       tupldata = sorted(self.data, key=lambda x: int(x[col_to_sort]),
                         reverse = self.sorted_flags[col_to_sort])
-      print "using key=lambda x: int(x[col_to_sort])"
+      print("using key=lambda x: int(x[col_to_sort])")
 
     except Exception:
       try:
         tupldata = sorted(self.data, key=lambda x: float(x[col_to_sort]),
                           reverse = self.sorted_flags[col_to_sort])
-        print "using key=lambda x: float(x[col_to_sort])"
+        print("using key=lambda x: float(x[col_to_sort])")
       except Exception:
         tupldata = sorted(self.data, key=lambda x:
                           tuple(eval(str(x[col_to_sort]))),
                           reverse = self.sorted_flags[col_to_sort])
-        print "using key=lambda x: tuple(x[col_to_sort])"
+        print("using key=lambda x: tuple(x[col_to_sort])")
 
     colLabels = tuple(self.lst_keys)
     rowLabels = tuple(range(len(tupldata)))
@@ -247,7 +248,7 @@ class flex_arr_img_panel(wx.Panel):
 
     else:
       self.first_lst_in, self.segn_lst_in = data_in_one, data_in_two
-      print "flex array entered"
+      print("flex array entered")
       self.local_bbox = None
 
     self.bmp_lst = self._mi_list_of_wxbitmaps()
@@ -316,7 +317,7 @@ class flex_arr_img_panel(wx.Panel):
 
   def to_change_palette(self, palette_name = None):
     if palette_name is None:
-      print "Something went wrong"
+      print("Something went wrong")
     else:
       self.palette = palette_name
       self.bmp_lst = self._mi_list_of_wxbitmaps()
@@ -565,7 +566,7 @@ class buttons_panel(wx.Panel):
     self.OnButtUpdate()
 
   def OnButtUpdate(self):
-    print "OnButtUpdate(self):"
+    print("OnButtUpdate(self):")
     if self.RadButtb2w.GetValue():
         self.parent_panel.to_change_palette("black2white")
     elif self.RadButtw2b.GetValue():
