@@ -1,24 +1,20 @@
-import copy as copy
-import numpy as np
+"""
+Test for targetscaler and fixed Ih target function.
+"""
 import pytest
 from dials.array_family import flex
 from dials.util.options import OptionParser
-from parameter_handler import scaling_active_parameter_manager
-from active_parameter_managers import (multi_active_parameter_manager,
-  active_parameter_manager)
-from basis_functions import basis_function
 from libtbx import phil
+from libtbx.test_utils import approx_equal
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.algorithms.scaling.model.scaling_model_factory import \
   create_scaling_model
-from dials.algorithms.scaling.scaler_factory import create_scaler,\
-  MultiScaler, TargetScaler, TargetScalerFactory
-from dials.algorithms.scaling.scaler import TargetScaler, SingleScalerBase
-from dials.algorithms.scaling.target_function import ScalingTarget,\
-  ScalingTargetFixedIH
-from dials.util.options import OptionParser, flatten_reflections,\
-  flatten_experiments
+from dials.algorithms.scaling.scaler_factory import TargetScaler
+from dials.algorithms.scaling.scaler import SingleScalerBase
+from dials.algorithms.scaling.target_function import ScalingTargetFixedIH
+from dials.algorithms.scaling.parameter_handler import create_apm
+from test_basis_and_target_function import calculate_gradient_fd
 
 def generated_refl():
   '''function to generate input for datamanagers'''
@@ -42,11 +38,11 @@ def generated_refl():
   return [reflections]
 
 def generated_refl_2():
-  '''function to generate input for datamanagers'''
+  """Generate a second reflection table."""
   #these miller_idx/d_values don't make physical sense, but I didn't want to
   #have to write the tests for lots of reflections.
   reflections = flex.reflection_table()
-  reflections['intensity.prf.value'] = flex.double([1.0, 10.0, 100.0])
+  reflections['intensity.prf.value'] = flex.double([2.0, 10.0, 100.0])
   reflections['intensity.prf.variance'] = flex.double([1.0, 10.0, 100.0])
   reflections['miller_index'] = flex.miller_index([(1, 0, 0), (0, 0, 5),
     (5, 0, 0)]) #don't change
@@ -65,6 +61,7 @@ def generated_refl_2():
 
 #@pytest.fixture(scope='module')
 def generated_single_exp():
+  """Generate and experiments object."""
   experiments = ExperimentList()
   exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
               "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
@@ -80,6 +77,7 @@ def generated_single_exp():
 
 #@pytest.fixture(scope='module')
 def generated_two_exp():
+  """Generate a two experiments Experimentlist."""
   experiments = ExperimentList()
   exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
               "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
@@ -98,6 +96,7 @@ def generated_two_exp():
 
 @pytest.fixture(scope='module')
 def generated_param():
+  """Generate a params phil scope."""
   phil_scope = phil.parse('''
       include scope dials.algorithms.scaling.scaling_options.phil_scope
   ''', process_includes=True)
@@ -105,11 +104,12 @@ def generated_param():
   optionparser = OptionParser(phil=phil_scope, check_format=False)
   parameters, _ = optionparser.parse_args(args=None, quick_parse=True,
     show_diff_phil=False)
-  parameters.__inject__('model', 'physical')
+  parameters.__inject__('model', 'KB')
   return parameters
 
 def generated_target_input(generated_refl, generated_refl_2,
     generated_single_exp, generated_param):
+  """Generate suitable input for a targetscaler."""
   refl = generated_refl
   refl_2 = generated_refl_2
   refl.append(refl_2[0])
@@ -119,7 +119,7 @@ def generated_target_input(generated_refl, generated_refl_2,
   return (refl, exp, param)
 
 def test_TargetScalerFactory():
-  """test for successful initialisation of TargetedScaler."""
+  """Test for successful initialisation of TargetedScaler."""
   (test_reflections, test_experiments, params) = generated_target_input(
     generated_refl(), generated_refl_2(), generated_two_exp(), generated_param())
 
@@ -134,3 +134,16 @@ def test_TargetScalerFactory():
   assert list(targetscaler.unscaled_scalers[0].Ih_table.asu_miller_index) == (
     list(flex.miller_index([(1, 0, 0)])))
   assert list(targetscaler.unscaled_scalers[0].Ih_table.Ih_values) == list(flex.double([1.0]))
+
+  # Test fixed Ih scaling target
+  apm_factory = create_apm(targetscaler)
+  apm = apm_factory.make_next_apm()
+
+  # Create a scaling target and check gradients and residuals.
+  target_function = ScalingTargetFixedIH(targetscaler, apm)
+  target_function.predict()
+  resid = target_function.calculate_residuals()
+  assert list(resid) == [1.0]#   (weight x (2.0 - (1.0 * 1.0))**2)
+  gradients = target_function.calculate_gradients()
+  fd_grad = calculate_gradient_fd(target_function)
+  assert approx_equal(list(fd_grad), list(gradients))

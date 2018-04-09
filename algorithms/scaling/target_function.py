@@ -49,7 +49,8 @@ class ScalingTarget(object):
     #print("rmsds %s" % self._rmsds)
     return self._rmsds
 
-  def achieved(self):
+  @staticmethod
+  def achieved():
     """Method required by refinement engine."""
     return False #implement a method here?
 
@@ -79,6 +80,8 @@ class ScalingTarget(object):
     return gradient
 
   def calculate_curvatures(self):
+    """Return the second derivative of the target function."""
+    assert 0, "method not yet implemented."
     """Calculate the second derivatives"""
     # Make some shorthand notation
     Ih_tab = self.scaler.Ih_table
@@ -162,13 +165,16 @@ class ScalingTarget(object):
 
   # The following methods are for adaptlbfgs.
   def compute_functional_gradients(self):
+    """Return the functional and gradients."""
     return flex.sum(self.calculate_residuals()), self.calculate_gradients()
 
   def compute_functional_gradients_and_curvatures(self):
-    return flex.sum(self.calculate_residuals()), self.calculate_gradients(), self.calculate_curvatures()
+    """Return the functional, gradients and curvatures."""
+    return (flex.sum(self.calculate_residuals()), self.calculate_gradients(),
+      self.calculate_curvatures())
 
   def compute_restraints_functional_gradients_and_curvatures(self):
-    'calculate restraints on parameters'
+    """Return the restrains for functional, gradients and curvatures."""
     restraints = None
     if 'absorption' in self.apm.components_list:
       restr = self.scaler.calc_absorption_restraint(self.apm)
@@ -178,15 +184,17 @@ class ScalingTarget(object):
         restraints = [resid_restr, grad_restr, None]
     return restraints #list of restraints to add to resid, grads and curvs?
 
-  'the following methods are for adaptlstbx (GN/ LM algorithms)'
+  # The following methods are for adaptlstbx (GN/ LM algorithms)
   def compute_residuals(self):
+    """Return the residuals array and weights."""
     return self.calculate_residuals(), self.weights
 
   def compute_residuals_and_gradients(self):
+    """Return the residuals array, jacobian matrix and weights."""
     return self.calculate_residuals(), self.calculate_jacobian(), self.weights
 
   def compute_restraints_residuals_and_gradients(self):
-    'calculate restraints on parameters'
+    """Return the restraints for the residuals and jacobian."""
     restraints = None
     if 'absorption' in self.apm.components_list:
       restraints = self.scaler.compute_restraints_residuals_jacobian(self.apm)

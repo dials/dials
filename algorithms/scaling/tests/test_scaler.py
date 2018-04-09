@@ -17,6 +17,7 @@ from dials.algorithms.scaling.model.scaling_model_factory import \
   create_scaling_model
 from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScaler
+from dials.algorithms.scaling.target_function import ScalingTarget
 #from dials.algorithms.scaling.scaler import SingleScalerBase
 
 def generated_refl():
@@ -128,8 +129,46 @@ def test_SingleScalerFactory():
   n = (scaler.reflection_table['Esq'] == 0.0).count(True)
   assert n != len(scaler.reflection_table)
 
+'''def calculate_jacobian_fd(target):
+  """Calculate jacobian matrix with finite difference approach."""
+  delta = 1.0e-6
+  #apm = target.apm
+  jacobian = sparse.matrix(target.get_num_matches(), target.apm.n_active_params)
+  #iterate over parameters, varying one at a time and calculating the residuals
+  for i in range(target.apm.n_active_params):
+    target.apm.x[i] -= 0.5 * delta
+    target.predict()
+    R_low = (target.calculate_residuals()/target.weights)**0.5 #unweighted unsquared residual
+    target.apm.x[i] += delta
+    target.predict()
+    R_upper = (target.calculate_residuals()/target.weights)**0.5 #unweighted unsquared residual
+    target.apm.x[i] -= 0.5 * delta
+    target.predict()
+    fin_difference = (R_upper - R_low) / delta
+    for j in range(fin_difference.size()):
+      jacobian[j, i] = fin_difference[j]
+  return jacobian
 
+def test_target_jacobian_calc():
+  (test_reflections, test_experiments, params) = generated_single_input(
+    generated_refl(), generated_single_exp(), generated_param())
+  assert len(test_experiments) == 1
+  assert len(test_reflections) == 1
+  experiments = create_scaling_model(params, test_experiments, test_reflections)
+  scaler = create_scaler(params, experiments, test_reflections)
 
+  apm = scaling_active_parameter_manager(scaler.components, ['decay', 'scale'])
+
+  target = ScalingTarget(scaler, apm)
+
+  fd_jacobian = calculate_jacobian_fd(target)
+  print(fd_jacobian)
+  r, jacobian, w = target.compute_residuals_and_gradients()
+  print(jacobian)
+  print(list(w))
+  for i in range(0, 3):
+    for j in range(0, 2):
+      assert approx_equal(jacobian[i, j], fd_jacobian[i, j])'''
 
 def test_apm():
   """test for a single active parameter manager. Also serves as general

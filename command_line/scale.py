@@ -22,8 +22,7 @@ dials_scratch.plot_scaling_models scaled.pickle scaled_experiments.json
 from __future__ import absolute_import, division, print_function
 import time
 import logging
-import sys
-import libtbx.load_env
+#import libtbx.load_env
 from libtbx import phil
 from libtbx.utils import Sorry
 from libtbx.str_utils import make_sub_header
@@ -94,6 +93,8 @@ class Script(object):
       read_reflections=True, read_datablocks=False, phil=phil_scope,
       check_format=False)
     self.params, _ = optionparser.parse_args(show_diff_phil=False)
+    self.scaler = None
+    self.minimised = None
 
     log.config(verbosity=1, info=self.params.output.log,
       debug=self.params.output.debug_log)
@@ -132,11 +133,11 @@ class Script(object):
         len(self.reflections))
 
     if len(self.experiments) != 1:
-      logger.info(('Checking for the existence of a reflection table {sep}'
-        'containing multiple scaled datasets {sep}').format(sep='\n'))
+      logger.info('Checking for the existence of a reflection table \n'
+        'containing multiple scaled datasets \n')
       self.reflections = parse_multiple_datasets(self.reflections)
-      logger.info("Found %s reflection tables in total." % len(self.reflections))
-      logger.info("Found %s experiments in total." % len(self.experiments))
+      logger.info("Found %s reflection tables in total.", len(self.reflections))
+      logger.info("Found %s experiments in total.", len(self.experiments))
       s_g_1 = self.experiments[0].crystal.get_space_group()
       for experiment in self.experiments:
         if experiment.crystal.get_space_group() != s_g_1:
@@ -347,6 +348,5 @@ if __name__ == "__main__":
   try:
     script = Script()
     script.run()
-    #sys.exit(main(sys.argv[1:]))
   except Exception as e:
     halraiser(e)

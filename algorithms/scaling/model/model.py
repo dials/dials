@@ -4,8 +4,8 @@ methods to define how these are composed into one model.
 """
 import abc
 import logging
-import numpy as np
 from collections import OrderedDict
+import numpy as np
 from dials.array_family import flex
 from dials.algorithms.scaling.model.components.scale_components import \
   SingleScaleFactor, SingleBScaleFactor, SHScaleComponent
@@ -17,7 +17,7 @@ from dials.algorithms.scaling.scaling_utilities import sph_harm_table
 logger = logging.getLogger('dials')
 
 class ScalingModelBase(object):
-  '''Base class for Scale Factories'''
+  """Base class for scaling models."""
 
   id_ = None
 
@@ -30,17 +30,19 @@ class ScalingModelBase(object):
 
   @property
   def is_scaled(self):
+    """Indictor as to whether this model has previously been refined."""
     return self._is_scaled
 
   def set_scaling_model_as_scaled(self):
-    '''update scaling model to indicate a scaling process has been performed on the data'''
+    """Indicate a scaling process has been performed on the data."""
     self._is_scaled = True
 
   def set_scaling_model_as_unscaled(self):
-    '''update scaling model to show that no scaled data is associated with this model'''
+    """Indicate that no scaled data is associated with this model."""
     self._is_scaled = False
 
   def configure_reflection_table(self, reflection_table, experiment, params):
+    """Perform calculations necessary to update the reflection table."""
     return reflection_table
 
   def normalise_components(self):
@@ -49,12 +51,12 @@ class ScalingModelBase(object):
 
   @property
   def configdict(self):
-    '''dictionary of configuration parameters'''
+    """Dictionary of configuration parameters."""
     return self._configdict
 
   @property
   def components(self):
-    'components of the model, a dictionary'
+    """The components of the model, a dictionary."""
     return self._components
 
   @abc.abstractproperty
@@ -66,7 +68,7 @@ class ScalingModelBase(object):
     pass
 
   def to_dict(self):
-    '''format data to dictionary for output'''
+    """Format data to dictionary for output."""
     dictionary = OrderedDict({'__id__' : self.id_})
     dictionary.update({'is_scaled' : self._is_scaled})
     for key in self.components:
@@ -81,14 +83,15 @@ class ScalingModelBase(object):
 
   @classmethod
   def from_dict(cls, obj):
-    '''create a scaling model object from a dictionary'''
+    """Create a scaling model object from a dictionary."""
     pass
 
   def set_error_model(self, error_model_params):
+    """Associate an error model with the dataset."""
     self._configdict.update({'error_model_parameters' : error_model_params})
 
 class PhysicalScalingModel(ScalingModelBase):
-  '''Factory to create a scaling model for a physical parameterisation.'''
+  """A scaling model for a physical parameterisation."""
 
   id_ = 'physical'
 
@@ -154,7 +157,7 @@ class PhysicalScalingModel(ScalingModelBase):
 
   @classmethod
   def from_dict(cls, obj):
-    '''create a scaling model object from a dictionary'''
+    """Create a scaling model object from a dictionary."""
     if obj['__id__'] != cls.id_:
       raise RuntimeError('expected __id__ %s, got %s' % (cls.id_, obj['__id__']))
     (s_params, d_params, abs_params) = (None, None, None)
@@ -183,7 +186,7 @@ class PhysicalScalingModel(ScalingModelBase):
 
 
 class ArrayScalingModel(ScalingModelBase):
-  '''Factory to create a scaling model for an array-based parameterisation.'''
+  """A scaling model for an array-based parameterisation."""
 
   id_ = 'array'
 
@@ -239,7 +242,7 @@ class ArrayScalingModel(ScalingModelBase):
 
   @classmethod
   def from_dict(cls, obj):
-    '''create a scaling model object from a dictionary'''
+    """Create a scaling model object from a dictionary."""
     if obj['__id__'] != cls.id_:
       raise RuntimeError('expected __id__ %s, got %s' % (cls.id_, obj['__id__']))
     configdict = obj['configuration_parameters']
@@ -267,7 +270,7 @@ class ArrayScalingModel(ScalingModelBase):
     return cls(parameters_dict, configdict, is_scaled)
 
 class KBScalingModel(ScalingModelBase):
-  '''Factory to create a scaling model for a KB parameterisation.'''
+  """A scaling model for a KB parameterisation."""
 
   id_ = 'KB'
 
@@ -288,7 +291,7 @@ class KBScalingModel(ScalingModelBase):
 
   @classmethod
   def from_dict(cls, obj):
-    '''create a scaling model object from a dictionary'''
+    """Create a scaling model object from a dictionary."""
     if obj['__id__'] != cls.id_:
       raise RuntimeError('expected __id__ %s, got %s' % (cls.id_, obj['__id__']))
     configdict = obj['configuration_parameters']
