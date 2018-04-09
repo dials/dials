@@ -1,14 +1,16 @@
-#!/usr/bin/env python
 '''
 Test derivatives typed up in dials_regression/doc/notes/prediction/stills_prediction_nave3.pdf
 '''
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
+
 import sys
+
+import pytest
+
 from cctbx.sgtbx import space_group, space_group_symbols
 from libtbx.phil import parse
 from scitbx import matrix
-from libtbx.test_utils import approx_equal
 from dials.array_family import flex
 from dials.test.algorithms.refinement.setup_geometry import Extract
 from dials.algorithms.spot_prediction import IndexGenerator
@@ -107,7 +109,7 @@ class AnalyticalGradients(object):
 
     # check equation 10
     tmp = self.s0len * (q_s0) / s
-    for a, b in zip(s1, tmp): assert approx_equal(a, b)
+    for a, b in zip(s1, tmp): assert a == pytest.approx(b, abs=1e-7)
 
     ds1_dp = {}
 
@@ -221,8 +223,7 @@ class AnalyticalGradients(object):
 
     return ds1_dp
 
-def run(verbose = False):
-
+def test():
   # Build models, with a larger crystal than default in order to get plenty of
   # reflections on the 'still' image
   overrides = """
@@ -315,13 +316,13 @@ def run(verbose = False):
 
   fd_grads = []
   p_names = pred_param.get_param_names()
-  for i in range(len(deltas)):
+  for i, delta in enumerate(deltas):
 
     # save parameter value
     val = p_vals[i]
 
     # calc reverse state
-    p_vals[i] -= deltas[i] / 2.
+    p_vals[i] -= delta / 2.
     pred_param.set_param_vals(p_vals)
 
     ref_predictor.update()
@@ -333,7 +334,7 @@ def run(verbose = False):
     rev_state = s1
 
     # calc forward state
-    p_vals[i] += deltas[i]
+    p_vals[i] += delta
     pred_param.set_param_vals(p_vals)
 
     ref_predictor.update()
@@ -349,7 +350,7 @@ def run(verbose = False):
 
     # finite difference - currently for s1 only
     fd = (fwd_state - rev_state)
-    inv_delta = 1. / deltas[i]
+    inv_delta = 1. / delta
     s1_grads = fd * inv_delta
 
     # store gradients
@@ -361,19 +362,15 @@ def run(verbose = False):
   for i, fd_grad in enumerate(fd_grads):
 
     ## compare FD with analytical calculations
-    if verbose: print "\n\nParameter {0}: {1}". format(i,  fd_grad['name'])
+    print("\n\nParameter {0}: {1}". format(i,  fd_grad['name']))
 
-    if verbose: print "d[s1]/dp for the first reflection"
-    if verbose: print 'finite diff', fd_grad['ds1'][0]
+    print("d[s1]/dp for the first reflection")
+    print('finite diff', fd_grad['ds1'][0])
     try:
       an_grad = an_grads[fd_grad['name']]
     except KeyError:
       continue
 
-    if verbose: print 'checking analytical vs finite difference gradients for s1'
+    print('checking analytical vs finite difference gradients for s1')
     for a, b in zip(fd_grad['ds1'], an_grad['ds1']):
-      assert approx_equal(a, b)
-
-if __name__ == "__main__":
-
-  run(verbose=False)
+      assert a == pytest.approx(b, abs=1e-7)

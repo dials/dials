@@ -1,24 +1,10 @@
-#!/usr/bin/env python
+from __future__ import absolute_import, division, print_function
 
-#
-#  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-
-from __future__ import absolute_import, division
 import sys
-from cctbx.sgtbx import space_group, space_group_symbols
-from libtbx.test_utils import approx_equal
-from libtbx.phil import parse
+import pytest
+
 from math import pi
 from scitbx.array_family import flex
-from dials.test.algorithms.refinement.setup_geometry import Extract
-from dxtbx.model import ScanFactory
-from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
 from dxtbx.model.experiment_list import ExperimentList, Experiment
 from dials.algorithms.refinement.prediction import ScansRayPredictor, \
   ExperimentsPredictor
@@ -34,10 +20,11 @@ from dials.algorithms.refinement.parameterisation.scan_varying_detector_paramete
 from dials.algorithms.refinement.parameterisation.scan_varying_goniometer_parameters \
     import ScanVaryingGoniometerParameterisation
 
-class Test(object):
-
+class _Test(object):
   def create_models(self, cmdline_overrides=None):
-
+    from dials.test.algorithms.refinement.setup_geometry import Extract
+    from dxtbx.model import ScanFactory
+    from libtbx.phil import parse
     if cmdline_overrides is None:
       cmdline_overrides = []
     overrides = """geometry.parameters.crystal.a.length.range = 10 50
@@ -80,9 +67,9 @@ geometry.parameters.crystal.c.length.range = 10 50"""
     self.gon_param = ScanVaryingGoniometerParameterisation(
             self.goniometer, self.scan.get_array_range(), 5, self.beam)
 
-    return
-
   def generate_reflections(self):
+    from cctbx.sgtbx import space_group, space_group_symbols
+    from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
     sweep_range = self.scan.get_oscillation_range(deg=False)
     resolution = 2.0
     index_generator = IndexGenerator(self.crystal.get_unit_cell(),
@@ -127,93 +114,81 @@ geometry.parameters.crystal.c.length.range = 10 50"""
 
     return reflections
 
-  def __call__(self, cmdline_overrides):
+def test(cmdline_overrides=[]):
+  tc = _Test()
+  tc.create_models(cmdline_overrides)
+  reflections = tc.generate_reflections()
 
-    self.create_models(cmdline_overrides)
-    reflections = self.generate_reflections()
+  # use a ReflectionManager to exclude reflections too close to the spindle,
+  # plus set the frame numbers
+  from dials.algorithms.refinement.reflection_manager import ReflectionManager
+  refman = ReflectionManager(reflections, tc.experiments,
+    outlier_detector=None)
 
-    # use a ReflectionManager to exclude reflections too close to the spindle,
-    # plus set the frame numbers
-    from dials.algorithms.refinement.reflection_manager import ReflectionManager
-    refman = ReflectionManager(reflections, self.experiments,
-      outlier_detector=None)
+  # create prediction parameterisation of the requested type
+  pred_param = ScanVaryingPredictionParameterisation(tc.experiments,
+      [tc.det_param], [tc.s0_param], [tc.xlo_param], [tc.xluc_param],
+      [tc.gon_param])
 
-    # create prediction parameterisation of the requested type
-    pred_param = ScanVaryingPredictionParameterisation(self.experiments,
-        [self.det_param], [self.s0_param], [self.xlo_param], [self.xluc_param],
-        [self.gon_param])
+  # make a target to ensure reflections are predicted and refman is finalised
+  from dials.algorithms.refinement.target import \
+    LeastSquaresPositionalResidualWithRmsdCutoff
+  target = LeastSquaresPositionalResidualWithRmsdCutoff(tc.experiments,
+      tc.ref_predictor, refman, pred_param, restraints_parameterisation=None)
 
-    # make a target to ensure reflections are predicted and refman is finalised
-    from dials.algorithms.refinement.target import \
-      LeastSquaresPositionalResidualWithRmsdCutoff
-    target = LeastSquaresPositionalResidualWithRmsdCutoff(self.experiments,
-        self.ref_predictor, refman, pred_param, restraints_parameterisation=None)
+  # keep only those reflections that pass inclusion criteria and have predictions
+  reflections = refman.get_matches()
 
-    # keep only those reflections that pass inclusion criteria and have predictions
-    reflections = refman.get_matches()
+  # get analytical gradients
+  pred_param.compose(reflections)
+  an_grads = pred_param.get_gradients(reflections)
 
-    # get analytical gradients
-    pred_param.compose(reflections)
-    an_grads = pred_param.get_gradients(reflections)
+  # get finite difference gradients
+  p_vals = pred_param.get_param_vals()
+  p_names = pred_param.get_param_names()
+  deltas = [1.e-7] * len(p_vals)
 
-    # get finite difference gradients
-    p_vals = pred_param.get_param_vals()
-    p_names = pred_param.get_param_names()
-    deltas = [1.e-7] * len(p_vals)
+  for i, delta in enumerate(deltas):
+    val = p_vals[i]
 
-    for i in range(len(deltas)):
-
-      val = p_vals[i]
-
-      p_vals[i] -= deltas[i] / 2.
-      pred_param.set_param_vals(p_vals)
-      pred_param.compose(reflections)
-
-      self.ref_predictor(reflections)
-
-      rev_state = reflections['xyzcal.mm'].deep_copy()
-
-      p_vals[i] += deltas[i]
-      pred_param.set_param_vals(p_vals)
-      pred_param.compose(reflections)
-
-      self.ref_predictor(reflections)
-
-      fwd_state = reflections['xyzcal.mm'].deep_copy()
-      p_vals[i] = val
-
-      fd = (fwd_state - rev_state)
-      x_grads, y_grads, phi_grads = fd.parts()
-      x_grads /= deltas[i]
-      y_grads /= deltas[i]
-      phi_grads /= deltas[i]
-
-      try:
-        for n, (a,b) in enumerate(zip(x_grads, an_grads[i]["dX_dp"])):
-          assert approx_equal(a, b, eps=1.e-5)
-        for n, (a,b) in enumerate(zip(y_grads, an_grads[i]["dY_dp"])):
-          assert approx_equal(a, b, eps=1.e-5)
-        for n, (a,b) in enumerate(zip(phi_grads, an_grads[i]["dphi_dp"])):
-          assert approx_equal(a, b, eps=1.e-5)
-      except AssertionError:
-        print "Failure for {0}".format(p_names[i])
-        raise
-
-    # return to the initial state
+    p_vals[i] -= delta / 2.
     pred_param.set_param_vals(p_vals)
     pred_param.compose(reflections)
 
-    return
+    tc.ref_predictor(reflections)
+
+    rev_state = reflections['xyzcal.mm'].deep_copy()
+
+    p_vals[i] += delta
+    pred_param.set_param_vals(p_vals)
+    pred_param.compose(reflections)
+
+    tc.ref_predictor(reflections)
+
+    fwd_state = reflections['xyzcal.mm'].deep_copy()
+    p_vals[i] = val
+
+    fd = (fwd_state - rev_state)
+    x_grads, y_grads, phi_grads = fd.parts()
+    x_grads /= delta
+    y_grads /= delta
+    phi_grads /= delta
+
+    try:
+      for (a,b) in zip(x_grads, an_grads[i]["dX_dp"]):
+        assert a == pytest.approx(b, abs=1e-5)
+      for (a,b) in zip(y_grads, an_grads[i]["dY_dp"]):
+        assert a == pytest.approx(b, abs=1e-5)
+      for (a,b) in zip(phi_grads, an_grads[i]["dphi_dp"]):
+        assert a == pytest.approx(b, abs=1e-5)
+    except AssertionError:
+      print("Failure for {0}".format(p_names[i]))
+      raise
+
+  # return to the initial state
+  pred_param.set_param_vals(p_vals)
+  pred_param.compose(reflections)
 
 if __name__ == "__main__":
-
-  from time import time
-  start_time = time()
-
   cmdline_overrides = sys.argv[1:]
-
-  test1 = Test()
-  test1(cmdline_overrides)
-
-  finish_time = time()
-  print "Time Taken: ",finish_time - start_time
+  test(cmdline_overrides)
