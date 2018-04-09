@@ -1,15 +1,4 @@
-#!/usr/bin/env python
-
-#
-#  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 from math import sin, cos, pi, sqrt
 import random
 
@@ -91,8 +80,7 @@ def make_multi_panel(single_panel_detector):
 
   return multi_panel_detector
 
-if __name__ == '__main__':
-
+def test():
   # set the random seed to make the test reproducible
   random.seed(1337)
 
@@ -194,7 +182,6 @@ if __name__ == '__main__':
 
   # random initial orientations with a random parameter shift at each
   attempts = 100
-  failures = 0
   for i in range(attempts):
 
     # create random initial position
@@ -216,23 +203,21 @@ if __name__ == '__main__':
                     [1.e-6] * 3 + [1.e-4 * pi/180] * 3)
 
     for j in range(6):
-      try:
-        assert(approx_equal((fd_ds_dp[j] - an_ds_dp[j]),
-                matrix.sqr((0., 0., 0.,
-                            0., 0., 0.,
-                            0., 0., 0.)), eps = 1.e-6))
-      except AssertionError:
-        failures += 1
-        print "for try", i
-        print "failure for parameter number", j
-        print "with fd_ds_dp = "
-        print fd_ds_dp[j]
-        print "and an_ds_dp = "
-        print an_ds_dp[j]
-        print "so that difference fd_ds_dp - an_ds_dp ="
-        print fd_ds_dp[j] - an_ds_dp[j]
-
-  if failures == 0: print "OK"
+      assert(approx_equal((fd_ds_dp[j] - an_ds_dp[j]),
+              matrix.sqr((0., 0., 0.,
+                          0., 0., 0.,
+                          0., 0., 0.)), eps = 1.e-6)), textwrap.dedent("""\
+        Failure comparing analytical with finite difference derivatives.
+        Failure in try {i}
+        failure for parameter number {j}
+        of the orientation parameterisation
+        with fd_ds_dp =
+        {fd}
+        and an_ds_dp =
+        {an}
+        so that difference fd_ds_dp - an_ds_dp =
+        {diff}
+        """).format(i=i, j=j, fd=fd_ds_dp[j], an=an_ds_dp[j], diff=fd_ds_dp[j] - an_ds_dp[j])
 
   # 5. Test a multi-panel detector with non-coplanar panels.
 
@@ -289,7 +274,6 @@ if __name__ == '__main__':
     assert(approx_equal(a, b, eps=1.e-10))
 
   attempts = 5
-  failures = 0
   for i in range(attempts):
 
     multi_panel_detector = make_multi_panel(det)
@@ -319,25 +303,21 @@ if __name__ == '__main__':
                                   multi_state_elt=j)
 
       for k in range(6):
-        try:
-          assert(approx_equal((fd_ds_dp[k] - matrix.sqr(an_ds_dp[k])),
-                  matrix.sqr((0., 0., 0.,
-                              0., 0., 0.,
-                              0., 0., 0.)),
-                              eps = 1.e-5,
-                              out = None))
-        except AssertionError:
-          failures += 1
-          print "for try", i
-          print "for panel number", j
-          print "failure for parameter number", k
-          print "with fd_ds_dp = "
-          print fd_ds_dp[k]
-          print "and an_ds_dp = "
-          print an_ds_dp[k]
-          print "so that difference fd_ds_dp - an_ds_dp ="
-          print fd_ds_dp[k] - matrix.sqr(an_ds_dp[k])
-
-  if failures == 0: print "OK"
-  else: raise RuntimeError("Failure comparing analytical with finite difference"
-                           "derivatives. Check stdout for details.")
+        assert approx_equal((fd_ds_dp[k] - matrix.sqr(an_ds_dp[k])),
+                matrix.sqr((0., 0., 0.,
+                            0., 0., 0.,
+                            0., 0., 0.)),
+                            eps = 1.e-5,
+                            out = None), textwrap.dedent("""\
+        Failure comparing analytical with finite difference derivatives.
+        Failure in try {i}
+        for panel number {j]
+        failure for parameter number {k}
+        of the orientation parameterisation
+        with fd_ds_dp =
+        {fd}
+        and an_ds_dp =
+        {an}
+        so that difference fd_ds_dp - an_ds_dp =
+        {diff}
+        """).format(i=i, j=j, k=k, fd=fd_ds_dp[k], an=an_ds_dp[k], diff=fd_ds_dp[k] - matrix.sqr(an_ds_dp[k]))

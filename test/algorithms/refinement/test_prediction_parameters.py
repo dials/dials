@@ -57,10 +57,10 @@ def test():
   from dxtbx.model import ScanFactory
   sf = ScanFactory()
   myscan = sf.make_scan(image_range = (1,720),
-			exposure_times = 0.1,
-			oscillation = (0, 0.1),
-			epochs = range(720),
-			deg = True)
+                        exposure_times = 0.1,
+                        oscillation = (0, 0.1),
+                        epochs = range(720),
+                        deg = True)
 
   #### Create parameterisations of these models
 
@@ -73,24 +73,24 @@ def test():
   # Create an ExperimentList
   experiments = ExperimentList()
   experiments.append(Experiment(
-	beam=mybeam, detector=mydetector, goniometer=mygonio, scan=myscan,
-	crystal=mycrystal, imageset=None))
+        beam=mybeam, detector=mydetector, goniometer=mygonio, scan=myscan,
+        crystal=mycrystal, imageset=None))
 
   #### Unit tests
 
   # Build a prediction parameterisation
   pred_param = XYPhiPredictionParameterisation(experiments,
-		 detector_parameterisations = [det_param],
-		 beam_parameterisations = [s0_param],
-		 xl_orientation_parameterisations = [xlo_param],
-		 xl_unit_cell_parameterisations = [xluc_param],
-		 goniometer_parameterisations = [gon_param])
+                 detector_parameterisations = [det_param],
+                 beam_parameterisations = [s0_param],
+                 xl_orientation_parameterisations = [xlo_param],
+                 xl_unit_cell_parameterisations = [xluc_param],
+                 goniometer_parameterisations = [gon_param])
 
   # Generate reflections
   resolution = 2.0
   index_generator = IndexGenerator(mycrystal.get_unit_cell(),
-			space_group(space_group_symbols(1).hall()).type(),
-			resolution)
+                        space_group(space_group_symbols(1).hall()).type(),
+                        resolution)
   indices = index_generator.to_array()
 
   # Predict rays within the sweep range

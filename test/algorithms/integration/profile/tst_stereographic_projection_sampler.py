@@ -1,5 +1,4 @@
-
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 class Test(object):
 
@@ -10,7 +9,7 @@ class Test(object):
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
     except KeyError:
-      print 'FAIL: dials_regression not configured'
+      print('FAIL: dials_regression not configured')
       exit(0)
 
     path = join(dials_regression, "centroid_test_data", "experiments.json")
@@ -36,7 +35,7 @@ class Test(object):
         x = r * sin(theta)*cos(phi)
         y = r * sin(theta)*sin(phi)
         z = -1 + r * cos(theta)
-        print x
+        print(x)
         X.append(x / (1 - z))
         Y.append(y / (1 - z))
 
