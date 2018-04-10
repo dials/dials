@@ -1011,6 +1011,13 @@ def test_find_overlapping():
       assert is_overlap(b0,b1,i)
 
 def test_to_from_msgpack():
+
+  # Skip if no msgpack
+  try:
+    import msgpack
+  except ImportError:
+    return
+
   from dials.array_family import flex
   # The columns as lists
   c1 = list(range(10))
