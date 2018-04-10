@@ -320,15 +320,15 @@ def scaling_algorithm(scaler):
         engine=scaler.params.scaling_refinery.full_matrix_engine,
         target=ScalingTarget(scaler, apm), prediction_parameterisation=apm,
         max_iterations=scaler.params.scaling_refinery.full_matrix_max_iterations)
-      try:
-        refinery.run()
-      except:
+      #try:
+      refinery.run()
+      '''except:
         raise Sorry(""" Unable to do a round of full matrix minimisation needed
         to determine scale factor uncertainties. This is likely due to
         overparameterisation, and can often be avoided by reducing the number
         of model parameters through the command line options, or by removing
         model components (e.g. absorption_term=False). As a last resort,
-        the full matrix round can be turned off with full_matrix_round=False.""")
+        the full matrix round can be turned off with full_matrix_round=False.""")'''
       scaler = refinery.return_scaler()
       logger.info('\n'+'='*80+'\n')
 

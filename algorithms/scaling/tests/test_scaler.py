@@ -6,19 +6,15 @@ import pytest
 from scitbx import sparse
 from dials.array_family import flex
 from dials.util.options import OptionParser
-from parameter_handler import scaling_active_parameter_manager
-from active_parameter_managers import (multi_active_parameter_manager,
-  active_parameter_manager)
 from libtbx import phil
 from libtbx.test_utils import approx_equal
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.algorithms.scaling.model.scaling_model_factory import \
   create_scaling_model
-from dials.algorithms.scaling.scaler_factory import create_scaler,\
-  MultiScaler
+from dials.algorithms.scaling.scaler_factory import create_scaler
 from dials.algorithms.scaling.target_function import ScalingTarget
-#from dials.algorithms.scaling.scaler import SingleScalerBase
+from dials_scaling.jbe.scaling_code.scaler import SingleScalerBase
 
 def generated_refl():
   '''function to generate input for datamanagers'''

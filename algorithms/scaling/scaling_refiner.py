@@ -151,6 +151,7 @@ class ErrorModelRefinery(object):
     self.error_manager = error_model_manager
 
   def return_error_manager(self):
+    """Set error manager parameters and return error manager."""
     print_step_table(self)
     self.error_manager.refined_parameters = self._target.x
     logger.info("\nMinimised error model with parameters {0:.5f} and {1:.5f}. {sep}"
@@ -301,7 +302,7 @@ class ScalingGaussNewtonIterations(ScalingLstbxBuildUpMixin, GaussNewtonIteratio
 
   def __init__(self, target, prediction_parameterisation, constraints_manager=None,
                log=None, verbosity=0, tracking=None,
-               max_iterations=20, **kwds):
+               max_iterations=20):
 
     GaussNewtonIterations.__init__(
              self, target, prediction_parameterisation, constraints_manager,
@@ -315,7 +316,7 @@ class ScalingLevenbergMarquardtIterations(ScalingLstbxBuildUpMixin, LevenbergMar
 
   def __init__(self, target, prediction_parameterisation, constraints_manager=None,
                log=None, verbosity=0, tracking=None,
-               max_iterations=20, **kwds):
+               max_iterations=20):
 
     LevenbergMarquardtIterations.__init__(
              self, target, prediction_parameterisation, constraints_manager,

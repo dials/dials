@@ -1,3 +1,12 @@
+"""
+This module defines a set of 'Scalers'. These act to initialise and connect
+various parts of the scaling algorithm and datastructures such as the Ih_table,
+basis_function etc, and present a united interface to the main scale.py
+script. A SingleScaler is defined, for scaling of a single dataset, and a
+MultiScaler is defined for scaling multiple datasets simultaneously.
+A TargetScaler is used for targeted scaling.
+"""
+
 import abc
 import logging
 from dials.array_family import flex
@@ -6,14 +15,51 @@ from scitbx import sparse
 from dials_scaling_helpers_ext import row_multiply
 import iotbx.merging_statistics
 from libtbx.containers import OrderedSet
+from libtbx.table_utils import simple_table
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.scaling_utilities import (
   reject_outliers, calculate_wilson_outliers, calc_normE2)
+#from dials.algorithms.scaling.restraints.scaling_restraints import ScalingRestraints
 from dials.algorithms.scaling.reflection_weighting import Weighting
 from dials.algorithms.scaling.Ih_table import SingleIhTable,\
   JointIhTable#, IhTableBase
+
 from dials_scratch_scaling_ext import calc_sigmasq as cpp_calc_sigmasq
 logger = logging.getLogger('dials')
+
+class ScalingRestraints(object):
+  """Scaling Restraints class."""
+  def __init__(self, apm):
+    self.apm = apm
+
+  def compute_restraints_residuals_jacobian(self):
+    """Calculate restraints for jacobian."""
+    restraints = None
+    restr = self.calculate_restraints()
+    if restr:
+      resid_restr = restr[0] # list
+      surface_weights = self.apm.components['absorption']['object'].parameter_restraints
+      n_abs_params = restr[0].size()
+      n_tot_params = self.apm.n_active_params
+      jacobian = sparse.matrix(n_abs_params, n_tot_params)
+      offset = n_tot_params - n_abs_params
+      for i in range(n_abs_params):
+        jacobian[i, offset+i] = -1.0 * (surface_weights[i]**0.5)
+      restraints = [resid_restr, jacobian, flex.double(n_abs_params, 1.0)]
+    return restraints
+
+  def calculate_restraints(self):
+    """Calculate restraints for the scaling model."""
+    residuals = flex.double([])
+    gradient_vector = flex.double([])
+    for comp in self.apm.components.itervalues():
+      resid = comp['object'].calculate_restraints()
+      if resid:
+        gradient_vector.extend(resid[1])
+        residuals.extend(resid[0])
+      else:
+        gradient_vector.extend(flex.double(comp['n_params'], 0.0))
+    return [residuals, gradient_vector]
 
 class ScalerBase(object):
   """Base class for all Scalers (single and multiple)."""
@@ -29,6 +75,8 @@ class ScalerBase(object):
 
   @property
   def Ih_table(self):
+    """"A sorted reflection table, with additional methods for performing
+    sums over equivalent reflections."""
     return self._Ih_table
 
   @Ih_table.setter
@@ -38,14 +86,17 @@ class ScalerBase(object):
 
   @property
   def experiments(self):
+    """The experiment object associated with the dataset."""
     return self._experiments
 
   @property
   def reflection_table(self):
+    """The reflection table of the datatset."""
     return self._reflection_table
 
   @property
   def params(self):
+    """The params phil scope."""
     return self._params
 
   @property
@@ -139,6 +190,7 @@ class ScalerBase(object):
     return weights_for_scaling
 
   def calc_merging_statistics(self):
+    """Calculate the merging stats and return these with the dataset id."""
     u_c = self.experiments.crystal.get_unit_cell().parameters()
     bad_refl_sel = self.reflection_table.get_flags(
       self.reflection_table.flags.bad_for_scaling, all=False)
@@ -278,7 +330,6 @@ class SingleScalerBase(ScalerBase):
       reflections['inverse_scale_factor'] = (flex.double(reflections.size(), 1.0))
     return reflections
 
-
   @classmethod
   def _select_optimal_intensities(cls, reflection_table, params):
     """Choose which intensities to use for scaling."""
@@ -325,8 +376,12 @@ class SingleScalerBase(ScalerBase):
     scaled_sel = ~sel
     scaled_isel = scaled_sel.iselection()
     scaled_reflections = self._reflection_table.select(scaled_sel)
-    scaled_reflections['inverse_scale_factor'] = self.calc_expanded_scales(
-      scaled_reflections, scaled_sel)
+    scaled_reflections['inverse_scale_factor'] = flex.double(
+      scaled_reflections.size(), 1.0)
+    for component in self.components.itervalues():
+      component.update_reflection_data(self.reflection_table, scaled_sel)
+      component.calculate_scales_and_derivatives()
+      scaled_reflections['inverse_scale_factor'] *= component.inverse_scales
     logger.info('Scale factors determined during minimisation have now been\n'
       'applied to all reflections for dataset %s.\n',
       self.reflection_table['id'][0])
@@ -344,62 +399,23 @@ class SingleScalerBase(ScalerBase):
     if self.params.weighting.optimise_error_model:
       self.Ih_table = SingleIhTable(self._reflection_table)
 
-  def calc_expanded_scales(self, scaled_reflections, selection):
-    expanded_scale_factors = flex.double(scaled_reflections.size(), 1.0)
-    for component in self.components.itervalues():
-      component.update_reflection_data(self.reflection_table, selection)
-      component.calculate_scales_and_derivatives()
-      expanded_scale_factors *= component.inverse_scales
-    return expanded_scale_factors
-
   def update_error_model(self, error_model_params):
     """Apply a correction to try to improve the error estimate."""
     self.Ih_table.update_error_model(error_model_params)
     self.experiments.scaling_model.set_error_model(list(error_model_params))
 
-  def print_scale_init_msg(self):
-    """Print a standard message about the components applied to the dataset."""
-    from libtbx.table_utils import simple_table
-    header = ['correction', 'n_parameters']
-    rows = []
-    for key, val in self.components.iteritems():
-      rows.append([key, str(val.n_params)])
-    st = simple_table(rows, header)
-    logger.info('The following corrections will be applied to this dataset: \n')
-    logger.info(st.format())
-
   def compute_restraints_residuals_jacobian(self, apm):
-    restraints = None
-    restr = self.calc_absorption_restraint(apm)
-    if restr:
-      resid_restr = restr[0] # list
-      surface_weights = self.components['absorption'].parameter_restraints
-      n_abs_params = restr[0].size()
-      n_tot_params = apm.n_active_params
-      jacobian = sparse.matrix(n_abs_params, n_tot_params)
-      offset = n_tot_params - n_abs_params
-      for i in range(n_abs_params):
-        jacobian[i, offset+i] = -1.0 * (surface_weights[i]**0.5)
-      restraints = [resid_restr, jacobian, flex.double(n_abs_params, 1.0)]
-    return restraints
-
-  def calc_absorption_restraint(self, apm):
-    '''calculates a restraint for the spherical harmonic absorption correction.
-    Should only be called from target function if absorption in active params.'''
-    #note - move to a separate restraint manager?
+    """Calculate a restraint for the jacobian."""
     restraints = None
     if self.experiments.scaling_model.id_ == 'physical':
-      if 'absorption' in apm.components:
-        abs_params = apm.select_parameters('absorption')
-        residual = (self.components['absorption'].parameter_restraints * (abs_params)**2)
-        gradient = (2.0 * self.components['absorption'].parameter_restraints * abs_params)
-        gradient_vector = flex.double([])
-        for comp in apm.components:
-          if comp != 'absorption':
-            gradient_vector.extend(flex.double(apm.components[comp]['n_params'], 0.0))
-          elif comp == 'absorption':
-            gradient_vector.extend(gradient)
-        restraints = [residual, gradient_vector]
+      restraints = ScalingRestraints(apm).compute_restraints_residuals_jacobian()
+    return restraints
+
+  def calculate_restraints(self, apm):
+    """Calculate a restraint for the residual and gradient."""
+    restraints = None
+    if self.experiments.scaling_model.id_ == 'physical':
+      restraints = ScalingRestraints(apm).calculate_restraints()
     return restraints
 
   def round_of_outlier_rejection(self, reflection_table):
@@ -421,12 +437,14 @@ class SingleScalerBase(ScalerBase):
     logger.info('The error model determined has been applied to the variances')
 
   def apply_selection_to_SFs(self, sel):
-    '''Updates data from within current SF objects using the given selection.
-       Required for targeted scaling.'''
+    """Updates data from within current SF objects using the given selection.
+       Required for targeted scaling."""
     for component in self.components.itervalues():
       component.update_reflection_data(self.reflection_table, sel)
 
   def select_reflections_for_scaling(self):
+    """Select a subset of reflections, create and Ih table and update the
+    model components."""
     (refl_for_scaling, w_for_scaling, selection) = (
       self._scaling_subset(self.reflection_table, self.params))
     self._Ih_table = SingleIhTable(refl_for_scaling, w_for_scaling.weights)
@@ -436,10 +454,15 @@ class SingleScalerBase(ScalerBase):
       component.update_reflection_data(self.reflection_table, selection)
 
   def _configure_reflection_table(self):
-    '''initialise scale factors and add to self.active_parameters'''
+    """Calculate requried quantities"""
     self._reflection_table = self.experiments.scaling_model.configure_reflection_table(
       self._reflection_table, self.experiments, self.params)
-    self.print_scale_init_msg()
+    rows = []
+    for key, val in self.components.iteritems():
+      rows.append([key, str(val.n_params)])
+    st = simple_table(rows, ['correction', 'n_parameters'])
+    logger.info('The following corrections will be applied to this dataset: \n')
+    logger.info(st.format())
 
 class MultiScalerBase(ScalerBase):
   '''Base class for Scalers handling multiple datasets'''
@@ -454,7 +477,7 @@ class MultiScalerBase(ScalerBase):
     self._Ih_table = JointIhTable(self.single_scalers)
 
   @abc.abstractmethod
-  def calc_absorption_restraint(self, apm):
+  def calculate_restraints(self, apm):
     'abstract method for combining the absorption restraints for multiple scalers'
     pass
 
@@ -467,7 +490,7 @@ class MultiScalerBase(ScalerBase):
       R = flex.double([])
       G = flex.double([])
       for i, scaler in enumerate(scalers):
-        restr = scaler.calc_absorption_restraint(apm.apm_list[i])
+        restr = scaler.calculate_restraints(apm.apm_list[i])
         if restr:
           R.extend(restr[0])
           G.extend(restr[1])
@@ -560,7 +583,7 @@ class MultiScaler(MultiScalerBase):
     super(MultiScaler, self).__init__(params, experiments, single_scalers)
     logger.info('Completed configuration of MultiScaler. \n\n' + '='*80 + '\n')
 
-  def calc_absorption_restraint(self, apm):
+  def calculate_restraints(self, apm):
     return super(MultiScaler, MultiScaler).calc_multi_absorption_restraint(
       apm, self.single_scalers)
 
@@ -654,7 +677,7 @@ class TargetScaler(MultiScalerBase):
       apm.apm_list[i].derivatives = basis_fn[1]
       scaler.Ih_table.inverse_scale_factors = basis_fn[0]
 
-  def calc_absorption_restraint(self, apm):
+  def calculate_restraints(self, apm):
     return super(TargetScaler, TargetScaler).calc_multi_absorption_restraint(
       apm, self.unscaled_scalers)
 

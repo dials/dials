@@ -41,10 +41,10 @@ class ScalingTarget(object):
     """Calculate unweighted RMSDs for the matches."""
     # cache rmsd calculation for achieved test
     R = self.calculate_residuals()
-    if 'absorption' in self.apm.components_list:
-      restr = self.scaler.calc_absorption_restraint(self.apm)
-      if restr:
-        R.extend(restr[0])
+    #if 'absorption' in self.apm.components_list:
+    restr = self.scaler.calculate_restraints(self.apm)
+    if restr:
+      R.extend(restr[0])
     self._rmsds = [(flex.sum((R))/self.scaler.Ih_table.size)**0.5]
     #print("rmsds %s" % self._rmsds)
     return self._rmsds
@@ -176,12 +176,12 @@ class ScalingTarget(object):
   def compute_restraints_functional_gradients_and_curvatures(self):
     """Return the restrains for functional, gradients and curvatures."""
     restraints = None
-    if 'absorption' in self.apm.components_list:
-      restr = self.scaler.calc_absorption_restraint(self.apm)
-      if restr:
-        resid_restr = flex.sum(restr[0]) #want just a value to add to total functional here
-        grad_restr = restr[1]
-        restraints = [resid_restr, grad_restr, None]
+    #if 'absorption' in self.apm.components_list:
+    restr = self.scaler.calculate_restraints(self.apm)
+    if restr:
+      resid_restr = flex.sum(restr[0]) #want just a value to add to total functional here
+      grad_restr = restr[1]
+      restraints = [resid_restr, grad_restr, None]
     return restraints #list of restraints to add to resid, grads and curvs?
 
   # The following methods are for adaptlstbx (GN/ LM algorithms)

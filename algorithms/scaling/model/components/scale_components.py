@@ -65,6 +65,10 @@ class ScaleComponentBase(object):
     assert len(esds) == len(self._parameters)
     self._parameter_esds = esds
 
+  def calculate_restraints(self):
+    """"Calculate residual and gradient restraints for the component."""
+    return None
+
   @property
   def var_cov_matrix(self):
     """The variance/covariance matrix of the parameters."""
@@ -235,6 +239,11 @@ class SHScaleComponent(ScaleComponentBase):
     assert restraints.size() == self.parameters.size()
     """Set Restraint weights for the component parameters."""
     self._parameter_restraints = restraints
+
+  def calculate_restraints(self):
+    residual = self.parameter_restraints * (self._parameters**2)
+    gradient = 2.0 * self.parameter_restraints * self._parameters
+    return residual, gradient
 
   def update_reflection_data(self, _, selection=None):
     """Update the spherical harmonic coefficients."""
