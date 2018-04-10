@@ -1013,10 +1013,7 @@ def test_find_overlapping():
 def test_to_from_msgpack():
 
   # Skip if no msgpack
-  try:
-    import msgpack
-  except ImportError:
-    return
+  pytest.importorskip("msgpack")
 
   from dials.array_family import flex
   # The columns as lists
