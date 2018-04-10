@@ -126,7 +126,7 @@ class PhysicalScalingModel(ScalingModelBase):
         reflection_table['xyzobs.px.value'].parts()[2]
         * self._configdict['d_norm_fac'])
     if 'absorption' in self.components:
-      lmax = experiment.scaling_model.configdict['lmax']
+      lmax = self._configdict['lmax']
       self.components['absorption'].sph_harm_table = sph_harm_table(
         reflection_table, experiment, lmax)
       parameter_restraints = flex.double([])
@@ -150,7 +150,8 @@ class PhysicalScalingModel(ScalingModelBase):
       # Do an invariant rescale of the max B to zero.'''
       maxB = max(flex.double(np.log(self.components['decay'].inverse_scales))
                   * 2.0 * (self.components['decay'].d_values**2))
-      self.components['decay'].parameters -= flex.double(self.components['decay'].n_params, maxB)
+      self.components['decay'].parameters -= flex.double(
+        self.components['decay'].n_params, maxB)
       self.components['decay'].calculate_scales_and_derivatives()
       logger.info('The "decay" model component has been rescaled, so that the\n'
         'maximum B-factor applied to any reflection is 0.0.')
@@ -219,8 +220,8 @@ class ArrayScalingModel(ScalingModelBase):
 
   def configure_reflection_table(self, reflection_table, experiment, params):
     refl_table = reflection_table
-    refl_table['norm_time_values'] = (refl_table['xyzobs.px.value'].parts()[2]
-        * self.configdict['time_norm_fac'])
+    xyz = refl_table['xyzobs.px.value'].parts()
+    refl_table['norm_time_values'] = (xyz[2] * self.configdict['time_norm_fac'])
     if 'decay' in self.components:
       d0_sel = refl_table['d'] == 0.0
       refl_table['d'].set_selected(d0_sel, 1.0)  #set for now, then set back to zero later
@@ -229,14 +230,14 @@ class ArrayScalingModel(ScalingModelBase):
       refl_table['normalised_res_values'].set_selected(d0_sel, 0.0001)
       refl_table['d'].set_selected(d0_sel, 0.0)
     if 'absorption' in self.components:
-      refl_table['normalised_x_abs_values'] = ((refl_table['xyzobs.px.value'].parts()[0]
+      refl_table['normalised_x_abs_values'] = ((xyz[0]
         - self.configdict['xmin']) / self.configdict['x_bin_width'])
-      refl_table['normalised_y_abs_values'] = ((refl_table['xyzobs.px.value'].parts()[1]
+      refl_table['normalised_y_abs_values'] = ((xyz[1]
         - self.configdict['ymin']) / self.configdict['y_bin_width'])
     if 'modulation' in self.components:
-      refl_table['normalised_x_det_values'] = ((refl_table['xyzobs.px.value'].parts()[0]
+      refl_table['normalised_x_det_values'] = ((xyz[0]
         - self.configdict['xmin']) / self.configdict['x_det_bin_width'])
-      refl_table['normalised_y_det_values'] = ((refl_table['xyzobs.px.value'].parts()[1]
+      refl_table['normalised_y_det_values'] = ((xyz[1]
         - self.configdict['ymin']) / self.configdict['y_det_bin_width'])
     return refl_table
 

@@ -583,9 +583,8 @@ class MultiScaler(MultiScalerBase):
       basis_fn = scaler.get_basis_function(apm.apm_list[i])
       scaler.Ih_table.inverse_scale_factors = basis_fn[0]
       if basis_fn[1]:
-        #expanded = basis_fn[1].transpose() * self.Ih_table.h_index_expand_list[i]
-        #apm.derivatives.assign_block(expanded.transpose(), 0, apm.apm_data[i]['start_idx'])
-        apm.derivatives.assign_block(basis_fn[1], start_row_no, apm.apm_data[i]['start_idx'])
+        apm.derivatives.assign_block(basis_fn[1], start_row_no,
+          apm.apm_data[i]['start_idx'])
         start_row_no += basis_fn[1].n_rows
     self.Ih_table.calc_Ih()
 
@@ -647,20 +646,13 @@ class TargetScaler(MultiScalerBase):
     logger.info('Completed initialisation of TargetScaler. \n' + '*'*40 + '\n')
 
   def update_for_minimisation(self, apm, curvatures=False):
-    '''update the scale factors and Ih for the next iteration of minimisation'''
-    if len(self.unscaled_scalers) == 1:
-      basis_fn = self.unscaled_scalers[0].get_basis_function(apm, curvatures=curvatures)
-      apm.derivatives = basis_fn[1]
-      if curvatures:
-        apm.curvatures = basis_fn[2]
-      self.unscaled_scalers[0].Ih_table.inverse_scale_factors = basis_fn[0]
-    else:
-      for i, single_apm in enumerate(apm.apm_list):
-        single_apm.x = apm.select_parameters(i)
-      for i, scaler in enumerate(self.unscaled_scalers):
-        basis_fn = scaler.get_basis_function(apm.apm_list[i])
-        apm.apm_list[i].derivatives = basis_fn[1]
-        scaler.Ih_table.inverse_scale_factors = basis_fn[0]
+    """Update the scale factors and Ih for the next iteration of minimisation."""
+    for i, single_apm in enumerate(apm.apm_list):
+      single_apm.x = apm.select_parameters(i)
+    for i, scaler in enumerate(self.unscaled_scalers):
+      basis_fn = scaler.get_basis_function(apm.apm_list[i])
+      apm.apm_list[i].derivatives = basis_fn[1]
+      scaler.Ih_table.inverse_scale_factors = basis_fn[0]
 
   def calc_absorption_restraint(self, apm):
     return super(TargetScaler, TargetScaler).calc_multi_absorption_restraint(

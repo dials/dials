@@ -153,12 +153,15 @@ class ConcurrentAPMFactory(object):
   Data managers is a list of objects which have a components attribute.
   """
 
-  def __init__(self, data_managers, apm_type):
-    #assert mode == 'single' or mode == 'multi', '''mode must be set as single
-    #  or multi depending on number of datasets.'''
+  def __init__(self, data_managers, apm_type, multi_mode=False):
+    # One can optionally set multi_mode=True to force a multi_apm to be created
+    # for only one dataset - this is currently needed to handle refinement methods
+    # which expect either one or multiple datasets.
     self.data_managers = data_managers
     self.apm = None
-    self.n_datasets = len(data_managers)
+    self.multi_mode = multi_mode
+    if len(data_managers) > 1:
+      self.multi_mode = True
     self.param_lists = []
     self.create_active_list(apm_type)
     self.n_cycles = 1
@@ -166,7 +169,7 @@ class ConcurrentAPMFactory(object):
   def create_active_list(self, apm_type):
     """Return a list indicating the names of active parameters."""
 
-    if self.n_datasets == 1:
+    if not self.multi_mode:
       param_name = []
       for param in self.data_managers[0].components:
         param_name.append(str(param))
@@ -203,12 +206,14 @@ class ConsecutiveAPMFactory(object):
   make_next_apm can be called n_cycles times.
   mode=single/multi returns a single/mutli active parameter manager.
   """
-  def __init__(self, data_managers, apm_type):
-    #assert mode == 'single' or mode == 'multi', '''mode must be set as single
-    #  or multi depending on number of datasets.'''
+  def __init__(self, data_managers, apm_type, multi_mode=False):
+    # One can optionally set multi_mode=True to force a multi_apm to be created
+    # for only one dataset - this is currently needed to handle refinement methods
+    # which expect either one or multiple datasets.
     self.data_managers = data_managers
-    self.n_datasets = len(data_managers)
-    #self.mode = mode
+    self.multi_mode = multi_mode
+    if len(data_managers) > 1:
+      self.multi_mode = True
     self.apm_type = apm_type
     self.param_lists = []
     self.n_cycles = None
@@ -217,7 +222,7 @@ class ConsecutiveAPMFactory(object):
   def create_consecutive_list(self):
     """Return a list indicating the names of active parameters."""
 
-    if self.n_datasets == 1:
+    if not self.multi_mode:
       for cycle in self.data_managers[0].consecutive_refinement_order:
         corrlist = []
         for corr in cycle:
@@ -253,7 +258,7 @@ class ConsecutiveAPMFactory(object):
     """Generate a valid apm for minimisation (contains some active parameters,
     but not necessarily for all datasets)."""
 
-    if self.n_datasets == 1:
+    if not self.multi_mode:
       apm = self.apm_type(self.data_managers[0].components, self.param_lists[0])
       self.param_lists = self.param_lists[1:]
     else:

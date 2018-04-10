@@ -3,7 +3,6 @@ Tests for the active parameter manager module.
 """
 from scitbx import sparse
 from dials.array_family import flex
-from parameter_handler import scaling_active_parameter_manager
 from active_parameter_managers import (multi_active_parameter_manager,
   active_parameter_manager, ConcurrentAPMFactory, ConsecutiveAPMFactory)
 
@@ -21,6 +20,7 @@ class DummyDataManager(object):
     self.consecutive_refinement_order = None
 
   def set_consecutive_order(self, orderlist):
+    """Set the consecutive refinement order list."""
     self.consecutive_refinement_order = orderlist
 
 def test_general_apm():

@@ -170,27 +170,6 @@ def test_target_jacobian_calc():
     for j in range(0, 2):
       assert approx_equal(jacobian[i, j], fd_jacobian[i, j])'''
 
-def test_apm():
-  """test for a single active parameter manager. Also serves as general
-  test for initialisation of PhysicalScaler."""
-  (test_reflections, test_experiments, params) = generated_single_input(
-    generated_refl(), generated_single_exp(), generated_param())
-  assert len(test_experiments) == 1
-  assert len(test_reflections) == 1
-  experiments = create_scaling_model(params, test_experiments, test_reflections)
-  scaler = create_scaler(params, experiments, test_reflections)
-
-  apm = scaling_active_parameter_manager(scaler.components, ['decay', 'scale'])
-  assert 'decay' in apm.components_list
-  assert 'scale' in apm.components_list
-  assert 'absorption' not in apm.components_list
-  assert apm.n_active_params == (scaler.components['scale'].n_params
-    + scaler.components['decay'].n_params)
-  assert apm.constant_g_values is not None
-  assert list(apm.constant_g_values) == list(scaler.components['absorption'].inverse_scales)
-  for component in apm.components:
-    assert apm.components[component]['n_params'] == scaler.components[component].n_params
-
 def test_sf_variance_calculation(generated_KB_param):
   (test_reflections, test_experiments, params) = generated_single_input(
     generated_refl(), generated_single_exp(), generated_KB_param)

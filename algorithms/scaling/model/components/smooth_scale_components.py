@@ -240,6 +240,12 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
     self._normalised_y_values = None
 
   @property
+  def col_names(self):
+    """The column names used to obtain normalised coordinates from a
+    reflection table."""
+    return self._col_names
+
+  @property
   def n_x_params(self):
     """The number of parameters that parameterise the x-component."""
     return self._n_x_params
@@ -316,6 +322,12 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
     self._normalised_y_values = None
     self._normalised_z_values = None
     self._col_names = col_names
+
+  @property
+  def col_names(self):
+    """The column names used to obtain normalised coordinates from a
+    reflection table."""
+    return self._col_names
 
   @property
   def n_x_params(self):
