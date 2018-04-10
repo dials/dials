@@ -34,7 +34,7 @@ def test(dials_regression, tmpdir):
   ]
 
   easy_run.fully_buffered('idials',
-			  stdin_lines=stdin_lines).raise_if_errors()
+                          stdin_lines=stdin_lines).raise_if_errors()
 
   # Check all the stuff we expect, exists
   assert os.path.exists("dials.state")

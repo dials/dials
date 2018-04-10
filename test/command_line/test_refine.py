@@ -36,10 +36,10 @@ def test1(dials_regression, tmpdir):
   result = easy_run.fully_buffered(command=cmd).raise_if_errors()
   # load results
   reg_exp = ExperimentListFactory.from_json_file(
-	      os.path.join(data_dir, "regression_experiments.json"),
-	      check_format=False)[0]
+              os.path.join(data_dir, "regression_experiments.json"),
+              check_format=False)[0]
   ref_exp = ExperimentListFactory.from_json_file("refined_experiments.json",
-	      check_format=False)[0]
+              check_format=False)[0]
 
   # test refined models against expected
   assert reg_exp.crystal == ref_exp.crystal
@@ -84,17 +84,17 @@ def test2(dials_regression, tmpdir):
   history=pickle.load(open("history.pickle", "r"))
 
   expected_rmsds = [(0.088488398, 0.114583571, 0.001460382),
-		    (0.080489334, 0.086406517, 0.001284069),
-		    (0.078835086, 0.086052630, 0.001195882),
-		    (0.077476911, 0.086194611, 0.001161143),
-		    (0.076755840, 0.086090630, 0.001157239),
-		    (0.076586376, 0.085939462, 0.001155641),
-		    (0.076603722, 0.085878953, 0.001155065),
-		    (0.076611382, 0.085862959, 0.001154863),
-		    (0.076608732, 0.085856935, 0.001154384),
-		    (0.076605731, 0.085852271, 0.001153858),
-		    (0.076604576, 0.085852318, 0.001153643),
-		    (0.076603981, 0.085854175, 0.001153594)]
+                    (0.080489334, 0.086406517, 0.001284069),
+                    (0.078835086, 0.086052630, 0.001195882),
+                    (0.077476911, 0.086194611, 0.001161143),
+                    (0.076755840, 0.086090630, 0.001157239),
+                    (0.076586376, 0.085939462, 0.001155641),
+                    (0.076603722, 0.085878953, 0.001155065),
+                    (0.076611382, 0.085862959, 0.001154863),
+                    (0.076608732, 0.085856935, 0.001154384),
+                    (0.076605731, 0.085852271, 0.001153858),
+                    (0.076604576, 0.085852318, 0.001153643),
+                    (0.076603981, 0.085854175, 0.001153594)]
   assert approx_equal(history['rmsd'], expected_rmsds)
 
   # check that the used_in_refinement flag got set correctly
@@ -125,11 +125,11 @@ def test3(dials_regression, tmpdir):
   history=pickle.load(open("history.pickle", "r"))
 
   expected_rmsds = [[0.619507829, 0.351326044, 0.006955399],
-		    [0.174024575, 0.113486044, 0.004704006],
-		    [0.098351363, 0.084052519, 0.002660408],
-		    [0.069202909, 0.072796782, 0.001451734],
-		    [0.064305277, 0.071560831, 0.001165639],
-		    [0.062955462, 0.071315612, 0.001074453]]
+                    [0.174024575, 0.113486044, 0.004704006],
+                    [0.098351363, 0.084052519, 0.002660408],
+                    [0.069202909, 0.072796782, 0.001451734],
+                    [0.064305277, 0.071560831, 0.001165639],
+                    [0.062955462, 0.071315612, 0.001074453]]
   assert approx_equal(history['rmsd'], expected_rmsds)
 
   # check the refined unit cell
