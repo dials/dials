@@ -60,7 +60,7 @@ class ScalingModelBase(object):
     return self._components
 
   @abc.abstractproperty
-  def consecutive_scaling_order(self):
+  def consecutive_refinement_order(self):
     """Return a nested list of correction names, to indicate the order
     to perform scaling in consecutive scaling mode if concurrent=0.
     e.g. [['scale', 'decay'], ['absorption']] would cause the first cycle to
@@ -111,7 +111,7 @@ class PhysicalScalingModel(ScalingModelBase):
         absorption_setup['parameters'], absorption_setup['parameter_esds'])})
 
   @property
-  def consecutive_scaling_order(self):
+  def consecutive_refinement_order(self):
     return [['scale', 'decay'], ['absorption']]
 
   def configure_reflection_table(self, reflection_table, experiment, params):
@@ -214,7 +214,7 @@ class ArrayScalingModel(ScalingModelBase):
         'normalised_y_det_values'], parameter_esds=mod_setup['parameter_esds'])})
 
   @property
-  def consecutive_scaling_order(self):
+  def consecutive_refinement_order(self):
     return [['decay'], ['absorption'], ['modulation']]
 
   def configure_reflection_table(self, reflection_table, experiment, params):
@@ -286,7 +286,7 @@ class KBScalingModel(ScalingModelBase):
         parameters_dict['decay']['parameter_esds'])})
 
   @property
-  def consecutive_scaling_order(self):
+  def consecutive_refinement_order(self):
     return [['scale', 'decay']]
 
   @classmethod

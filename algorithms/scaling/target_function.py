@@ -207,6 +207,11 @@ class ScalingTargetFixedIH(ScalingTarget):
 
   def calculate_gradients(self):
     G = flex.double([])
+    if len(self.scaler.unscaled_scalers) == 1:
+      Ih_tab = self.scaler.unscaled_scalers[0].Ih_table
+      rhl = Ih_tab.intensities - (Ih_tab.Ih_values * Ih_tab.inverse_scale_factors)
+      G.extend(-2.0 * rhl * Ih_tab.weights * Ih_tab.Ih_values * self.apm.derivatives)
+      return G
     for i, unscaled_scaler in enumerate(self.scaler.unscaled_scalers):
       apm = self.apm.apm_list[i]
       Ih_tab = unscaled_scaler.Ih_table
@@ -217,6 +222,11 @@ class ScalingTargetFixedIH(ScalingTarget):
   def calculate_residuals(self):
     '''returns a residual vector'''
     R = flex.double([])
+    if len(self.scaler.unscaled_scalers) == 1:
+      Ih_tab = self.scaler.unscaled_scalers[0].Ih_table
+      R.extend((((Ih_tab.intensities - (Ih_tab.inverse_scale_factors * Ih_tab.Ih_values))**2)
+                * Ih_tab.weights))
+      return R
     for unscaled_scaler in self.scaler.unscaled_scalers:
       Ih_tab = unscaled_scaler.Ih_table
       R.extend((((Ih_tab.intensities - (Ih_tab.inverse_scale_factors * Ih_tab.Ih_values))**2)

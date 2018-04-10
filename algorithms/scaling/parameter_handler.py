@@ -18,17 +18,16 @@ class scaling_active_parameter_manager(active_parameter_manager):
           self.constant_g_values = obj.inverse_scales
         else:
           self.constant_g_values *= obj.inverse_scales
-    super(scaling_active_parameter_manager, self).__init__(components, selection_list)
+    super(scaling_active_parameter_manager, self).__init__(components,
+      selection_list)
 
 def create_apm(scaler):
   '''method to create and return the appropriate apm factory'''
   if isinstance(scaler, SingleScalerBase):
     if scaler.params.scaling_options.concurrent:
-      return ConcurrentAPMFactory([scaler], mode='single',
-        apm_type=scaling_active_parameter_manager)
+      return ConcurrentAPMFactory([scaler], scaling_active_parameter_manager)
     else:
-      return ConsecutiveAPMFactory([scaler], mode='single',
-        apm_type=scaling_active_parameter_manager)
+      return ConsecutiveAPMFactory([scaler], scaling_active_parameter_manager)
   elif isinstance(scaler, MultiScalerBase):
     if scaler.id_ == 'target':
       data_managers = scaler.unscaled_scalers
@@ -37,11 +36,11 @@ def create_apm(scaler):
     else:
       assert 0, 'unrecognised scaler id_ for scaler derived from MultiScalerBase'
     if scaler.params.scaling_options.concurrent:
-      return ConcurrentAPMFactory(data_managers, mode='multi',
-        apm_type=scaling_active_parameter_manager)
+      return ConcurrentAPMFactory(data_managers,
+        scaling_active_parameter_manager)
     else:
-      return ConsecutiveAPMFactory(data_managers, mode='multi',
-        apm_type=scaling_active_parameter_manager)
+      return ConsecutiveAPMFactory(data_managers,
+        scaling_active_parameter_manager)
   else:
     assert 0, '''scaler not derived from Scaler.SingleScalerBase or
       Scaler.MultiScalerBase. An additional option must be defined in

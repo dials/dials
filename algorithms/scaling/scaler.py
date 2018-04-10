@@ -213,6 +213,11 @@ class SingleScalerBase(ScalerBase):
     return self.experiments.scaling_model.components
 
   @property
+  def consecutive_refinement_order(self):
+    """Shortcut to scaling model scaling order."""
+    return self.experiments.scaling_model.consecutive_refinement_order
+
+  @property
   def var_cov_matrix(self):
     return self._var_cov
 
@@ -643,12 +648,19 @@ class TargetScaler(MultiScalerBase):
 
   def update_for_minimisation(self, apm, curvatures=False):
     '''update the scale factors and Ih for the next iteration of minimisation'''
-    for i, single_apm in enumerate(apm.apm_list):
-      single_apm.x = apm.select_parameters(i)
-    for i, scaler in enumerate(self.unscaled_scalers):
-      basis_fn = scaler.get_basis_function(apm.apm_list[i])
-      apm.apm_list[i].derivatives = basis_fn[1]
-      scaler.Ih_table.inverse_scale_factors = basis_fn[0]
+    if len(self.unscaled_scalers) == 1:
+      basis_fn = self.unscaled_scalers[0].get_basis_function(apm, curvatures=curvatures)
+      apm.derivatives = basis_fn[1]
+      if curvatures:
+        apm.curvatures = basis_fn[2]
+      self.unscaled_scalers[0].Ih_table.inverse_scale_factors = basis_fn[0]
+    else:
+      for i, single_apm in enumerate(apm.apm_list):
+        single_apm.x = apm.select_parameters(i)
+      for i, scaler in enumerate(self.unscaled_scalers):
+        basis_fn = scaler.get_basis_function(apm.apm_list[i])
+        apm.apm_list[i].derivatives = basis_fn[1]
+        scaler.Ih_table.inverse_scale_factors = basis_fn[0]
 
   def calc_absorption_restraint(self, apm):
     return super(TargetScaler, TargetScaler).calc_multi_absorption_restraint(

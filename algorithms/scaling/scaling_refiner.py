@@ -176,9 +176,13 @@ class ScalingRefinery(object):
         for i, scaler in enumerate(self._scaler.single_scalers):
           scaler.update_var_cov(self._parameters.apm_list[i])
     elif self._scaler.id_ == 'target':
-      if self._parameters.apm_list[0].var_cov_matrix:
-        for i, scaler in enumerate(self._scaler.unscaled_scalers):
-          scaler.update_var_cov(self._parameters.apm_list[i])
+      if len(self._scaler.unscaled_scalers) == 1:
+        if self._parameters.var_cov_matrix:
+          self._scaler.unscaled_scalers[0].update_var_cov(self._parameters.apm)
+      else:
+        if self._parameters.apm_list[0].var_cov_matrix:
+          for i, scaler in enumerate(self._scaler.unscaled_scalers):
+            scaler.update_var_cov(self._parameters.apm_list[i])
 
     if not isinstance(self._scaler, MultiScalerBase):
       self._scaler.experiments.scaling_model.normalise_components()

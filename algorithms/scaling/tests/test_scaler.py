@@ -191,63 +191,6 @@ def test_apm():
   for component in apm.components:
     assert apm.components[component]['n_params'] == scaler.components[component].n_params
 
-def test_multi_apm():
-  '''test for the multi active parameter manager. Also serves as general
-  test for initialisation of MultiCrystalDataManager'''
-  (test_reflections, test_experiments, params) = generated_multi_input(
-    generated_refl(), generated_two_exp(), generated_param())
-
-  experiments = create_scaling_model(params, test_experiments, test_reflections)
-  scaler = create_scaler(params, experiments, test_reflections)
-
-  assert isinstance(scaler, MultiScaler)
-  components_list = [i.components for i in scaler.single_scalers]
-  apm = multi_active_parameter_manager(components_list,
-    [['decay', 'scale'], ['decay', 'scale']], scaling_active_parameter_manager)
-  assert 'decay' in apm.components_list
-  assert 'scale' in apm.components_list
-  assert 'absorption' not in apm.components_list
-  dm0 = scaler.single_scalers[0]
-  dm1 = scaler.single_scalers[1]
-  assert apm.n_active_params == (dm0.components['scale'].n_params
-    + dm0.components['decay'].n_params + dm1.components['scale'].n_params
-    + dm1.components['decay'].n_params)
-  assert apm.apm_data[0]['start_idx'] == 0
-  assert apm.apm_data[0]['end_idx'] == apm.apm_list[0].n_active_params
-  assert apm.apm_data[1]['start_idx'] == apm.apm_list[0].n_active_params
-  assert apm.apm_data[1]['end_idx'] == apm.n_active_params
-  params = apm.apm_list[0].x
-  params.extend(apm.apm_list[1].x)
-  assert list(apm.x) == list(params)
-
-def test_general_apm():
-  'test for general active parameter manager'
-
-  class dummy_obj(object):
-    '''class to create dummy object with parameters attribute'''
-    def __init__(self, parameters):
-      self.parameters = parameters
-
-  a = dummy_obj(flex.double([1.0, 2.0]))
-  b = dummy_obj(flex.double([2.0, 4.0]))
-  c = dummy_obj(flex.double([3.0, 6.0]))
-
-  components = {'1' : a, '2' : b, '3' : c}
-
-  apm = active_parameter_manager(components, ['1', '3'])
-  assert apm.n_active_params == 4
-  assert '1' in apm.components_list
-  assert '3' in apm.components_list
-  assert '2' not in apm.components_list
-  assert '1' in apm.components
-  assert '3' in apm.components
-  assert '2' not in apm.components
-  assert apm.components['1']['object'].parameters == flex.double([1.0, 2.0])
-  assert apm.components['1']['object'].parameters == flex.double([3.0, 6.0])
-
-  assert apm.select_parameters('1') == flex.double([1.0, 2.0])
-  assert apm.select_parameters('3') == flex.double([3.0, 6.0])
-
 def test_sf_variance_calculation(generated_KB_param):
   (test_reflections, test_experiments, params) = generated_single_input(
     generated_refl(), generated_single_exp(), generated_KB_param)
