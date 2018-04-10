@@ -1009,3 +1009,40 @@ def test_find_overlapping():
       assert j0 == j1
       assert p0 == p1
       assert is_overlap(b0,b1,i)
+
+def test_to_from_msgpack():
+  from dials.array_family import flex
+  # The columns as lists
+  c1 = list(range(10))
+  c2 = list(range(10))
+  c3 = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'i', 'j', 'k']
+
+  # Create a table with some elements
+  table = flex.reflection_table()
+  table['col1'] = flex.int(c1)
+  table['col2'] = flex.double(c2)
+  table['col3'] = flex.std_string(c3)
+
+  obj = table.as_msgpack()
+  new_table = flex.reflection_table.from_msgpack(obj)
+  assert(new_table.is_consistent())
+  assert(new_table.nrows() == 10)
+  assert(new_table.ncols() == 3)
+  assert(all(a == b for a, b in zip(new_table['col1'], c1)))
+  assert(all(a == b for a, b in zip(new_table['col2'], c2)))
+  assert(all(a == b for a, b in zip(new_table['col3'], c3)))
+
+  # Create a table with some elements
+  table = flex.reflection_table()
+  table['col1'] = flex.int(c1)
+  table['col2'] = flex.double(c2)
+  table['col3'] = flex.std_string(c3)
+
+  obj = table.as_msgpack_file("test.mpack")
+  new_table = flex.reflection_table.from_msgpack_file("test.mpack")
+  assert(new_table.is_consistent())
+  assert(new_table.nrows() == 10)
+  assert(new_table.ncols() == 3)
+  assert(all(a == b for a, b in zip(new_table['col1'], c1)))
+  assert(all(a == b for a, b in zip(new_table['col2'], c2)))
+  assert(all(a == b for a, b in zip(new_table['col3'], c3)))
