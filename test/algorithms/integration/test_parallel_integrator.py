@@ -54,7 +54,7 @@ def test_simple_background_calculator(data):
   assert count == 333
 
 
-def test_glm_background_calculator():
+def test_glm_background_calculator(data):
   from dials.algorithms.background.glm.algorithm import GLMBackgroundCalculatorFactory
   algorithm = GLMBackgroundCalculatorFactory.create(data.experiments)
   reflections = flex.reflection_table_to_list_of_reflections(data.reflections)
@@ -77,6 +77,7 @@ class IntensityCalculatorFactory(object):
 
   @classmethod
   def create(Class,
+             data,
              detector_space=False,
              deconvolution=False):
     from dials.algorithms.profile_model.gaussian_rs.algorithm import GaussianRSIntensityCalculatorFactory
@@ -131,6 +132,7 @@ class IntensityCalculatorFactory(object):
 
 def test_gaussianrs_reciprocal_space_intensity_calculator(data):
   algorithm = IntensityCalculatorFactory.create(
+    data,
     detector_space = False,
     deconvolution = False)
 
@@ -150,6 +152,7 @@ def test_gaussianrs_reciprocal_space_intensity_calculator(data):
 
 def test_gaussianrs_detector_space_intensity_calculator(data):
   algorithm = IntensityCalculatorFactory.create(
+    data,
     detector_space = True,
     deconvolution = False)
 
@@ -178,6 +181,7 @@ def test_gaussianrs_detector_space_intensity_calculator(data):
 def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator(data):
 
   algorithm = IntensityCalculatorFactory.create(
+    data,
     detector_space = True,
     deconvolution = True)
 
@@ -237,6 +241,7 @@ def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator2(data
   R2.set_vec3_double("s1", s12)
 
   compute_intensity= IntensityCalculatorFactory.create(
+    data,
     detector_space = True,
     deconvolution = False)
 
@@ -261,6 +266,7 @@ def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator2(data
   #print R.get("shoebox").mask.as_numpy_array()[0,:,:]
 
   compute_intensity= IntensityCalculatorFactory.create(
+    data,
     detector_space = True,
     deconvolution = True)
 
@@ -276,8 +282,8 @@ def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator2(data
 
   assert partiality1 <= partiality2
 
-  assert abs(intensity - 179.04238328) < 1e-7
-  assert abs(variance - 206.789505627) < 1e-7
+  assert abs(intensity - 179.05997142249996) < 1e-7
+  assert abs(variance - 203.56992949599677) < 1e-7
 
   #print "Partiality", R.get("partiality")
   #print "Partiality Old", R.get("partiality_old")
@@ -369,9 +375,9 @@ def test_gaussianrs_reference_profile_calculator(data):
 
 
 def test_job_list():
-  from dials.algorithms.integration.parallel_integrator import SimpleJobList
+  from dials.algorithms.integration.parallel_integrator import SimpleBlockList
 
-  jobs = SimpleJobList((0, 60), 20)
+  jobs = SimpleBlockList((0, 60), 20)
 
   assert jobs[0] == (0, 20)
   assert jobs[1] == (10, 30)
@@ -380,25 +386,25 @@ def test_job_list():
   assert jobs[4] == (40, 60)
 
   for frame in range(0, 15):
-    assert jobs.job_index(frame) == 0
+    assert jobs.block_index(frame) == 0
   for frame in range(16, 25):
-    assert jobs.job_index(frame) == 1
+    assert jobs.block_index(frame) == 1
   for frame in range(26, 35):
-    assert jobs.job_index(frame) == 2
+    assert jobs.block_index(frame) == 2
   for frame in range(36, 45):
-    assert jobs.job_index(frame) == 3
+    assert jobs.block_index(frame) == 3
   for frame in range(46, 60):
-    assert jobs.job_index(frame) == 4
+    assert jobs.block_index(frame) == 4
 
 
-def test_reflection_manager():
-  from dials.algorithms.integration.parallel_integrator import SimpleJobList
+def test_reflection_manager(data):
+  from dials.algorithms.integration.parallel_integrator import SimpleBlockList
   from dials.algorithms.integration.parallel_integrator import SimpleReflectionManager
 
-  jobs = SimpleJobList((0, 60), 20)
+  jobs = SimpleBlockList((0, 60), 20)
   reflections = data.reflections
 
-  manager = SimpleReflectionManager(jobs, reflections)
+  manager = SimpleReflectionManager(jobs, reflections, 5)
 
   def check_job(index):
     r = manager.split(index)
@@ -410,7 +416,7 @@ def test_reflection_manager():
     for rr in r1:
       z0, z1 = rr['bbox'][4:6]
       zc = int(math.floor((z0+z1)/2.0))
-      j = jobs.job_index(zc)
+      j = jobs.block_index(zc)
       assert(j == index)
       assert z0 >= j0 and z1 <= j1
 
