@@ -12,7 +12,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
-from dials.model.experiment.profile import ProfileModelIface
+from dials.model.experiment.profile import ProfileModelExt
 from libtbx.phil import parse
 
 logger = logging.getLogger(__name__)
@@ -94,7 +94,7 @@ phil_scope = parse('''
 ''')
 
 
-class Model(ProfileModelIface):
+class Model(ProfileModelExt):
 
   def __init__(self,
                params,

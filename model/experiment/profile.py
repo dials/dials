@@ -10,12 +10,9 @@
 
 from __future__ import absolute_import, division
 
-from dxtbx.model.profile import ProfileModelBaseIface
-import abc
-
-class ProfileModelIface(ProfileModelBaseIface):
+class ProfileModelExt(object):
   '''
-  The abc definition for a profile model.
+  The definition for a profile model.
 
   '''
 
@@ -43,7 +40,6 @@ class ProfileModelIface(ProfileModelBaseIface):
     '''
     return None
 
-  @abc.abstractmethod
   def predict_reflections(self,
                           imageset,
                           crystal,
@@ -65,7 +61,6 @@ class ProfileModelIface(ProfileModelBaseIface):
     '''
     pass
 
-  @abc.abstractmethod
   def compute_partiality(self,
                          reflections,
                          crystal,
@@ -88,7 +83,6 @@ class ProfileModelIface(ProfileModelBaseIface):
     '''
     pass
 
-  @abc.abstractmethod
   def compute_bbox(self,
                    reflections,
                    crystal,
@@ -110,7 +104,6 @@ class ProfileModelIface(ProfileModelBaseIface):
     '''
     pass
 
-  @abc.abstractmethod
   def compute_mask(self,
                    reflections,
                    crystal,

@@ -43,7 +43,6 @@ tst_list = [
     "$D/test/algorithms/scaling/tst_scale_parameterisation.py",
     "$D/test/algorithms/scaling/tst_HRS_derivatives.py",
     "$D/test/array_family/tst_flex_shoebox.py",
-    "$D/test/framework/tst_interface.py",
     "$D/test/model/data/tst_pixel_list.py",
     "$D/test/model/data/tst_prediction.py",
     "$D/test/model/data/tst_shoebox.py",

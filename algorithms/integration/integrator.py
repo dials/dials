@@ -1,14 +1,5 @@
-#
-# integrator.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
+from __future__ import absolute_import, division, print_function
 
-from __future__ import absolute_import, division
 from dials_algorithms_integration_integrator_ext import *
 from dials.algorithms.integration.processor import Processor3D
 from dials.algorithms.integration.processor import ProcessorFlat3D
@@ -32,8 +23,6 @@ def generate_phil_scope():
 
   '''
   import dials.extensions
-  from dials.interfaces import BackgroundIface
-  from dials.interfaces import CentroidIface
 
   phil_scope = phil.parse('''
 
@@ -205,8 +194,8 @@ def generate_phil_scope():
   main_scope = phil_scope.get_without_substitution("integration")
   assert len(main_scope) == 1
   main_scope = main_scope[0]
-  main_scope.adopt_scope(BackgroundIface.phil_scope())
-  main_scope.adopt_scope(CentroidIface.phil_scope())
+  main_scope.adopt_scope(dials.extensions.Background.phil_scope())
+  main_scope.adopt_scope(dials.extensions.Centroid.phil_scope())
   return phil_scope
 
 # The integration phil scope
@@ -1571,8 +1560,7 @@ class IntegratorFactory(object):
 
     '''
     from dials.algorithms.integration.filtering import IceRingFilter
-    from dials.interfaces import BackgroundIface
-    from dials.interfaces import CentroidIface
+    import dials.extensions
     from dials.array_family import flex
     from libtbx.utils import Sorry
     import cPickle as pickle
@@ -1592,9 +1580,9 @@ class IntegratorFactory(object):
           params.integration.lookup.mask = pickle.load(infile)
 
     # Initialise the strategy classes
-    BackgroundAlgorithm = BackgroundIface.extension(
+    BackgroundAlgorithm = dials.extensions.Background.load(
       params.integration.background.algorithm)
-    CentroidAlgorithm = CentroidIface.extension(
+    CentroidAlgorithm = dials.extensions.Centroid.load(
       params.integration.centroid.algorithm)
 
     # Set the algorithms in the reflection table

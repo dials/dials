@@ -10,9 +10,7 @@
 #  included in the root directory of this package.
 from __future__ import absolute_import, division
 
-from dials.interfaces import ProfileModelIface
-
-class GaussianRSProfileModelExt(ProfileModelIface):
+class GaussianRSProfileModelExt(object):
   ''' An extension class implementing a reciprocal space gaussian profile model. '''
 
   name = 'gaussian_rs'
