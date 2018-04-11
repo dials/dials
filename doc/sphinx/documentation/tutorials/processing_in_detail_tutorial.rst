@@ -1,5 +1,5 @@
-Processing in Detail
-====================
+Processing in Detail (Thaumatin)
+================================
 
 .. highlight:: none
 

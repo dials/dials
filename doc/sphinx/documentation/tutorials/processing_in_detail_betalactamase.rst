@@ -1,5 +1,5 @@
-Processing in Detail - Beta-Lactamase Edition
-=============================================
+Processing in Detail
+====================
 
 .. highlight:: none
 
@@ -18,9 +18,7 @@ Tutorial data
 
 The following example uses a Beta-Lactamase dataset collected using
 beamline I04 at Diamond Light Source, and reprocessed especially for
-these tutorials. The data is available for download from |lactamase|.
-We'll only be using the first run of data in this tutorial,
-:samp:`C2sum_1.tar`, extracted to a :samp:`tutorial_data` subdirectory.
+these tutorials.
 
 ..  hint::
     If you are physically at Diamond on the BAG-training sessions, then
@@ -29,6 +27,9 @@ We'll only be using the first run of data in this tutorial,
     folder, with the data already located in the :samp:`tutorial_data/`
     subdirectory.
 
+The data is otherwise available for download from |lactamase|.
+We'll only be using the first run of data in this tutorial,
+:samp:`C2sum_1.tar`, extracted to a :samp:`tutorial_data` subdirectory.
 
 .. |lactamase|  image::  https://zenodo.org/badge/DOI/10.5281/zenodo.1014387.svg
                 :target: https://doi.org/10.5281/zenodo.1014387
@@ -37,8 +38,8 @@ Import
 ^^^^^^
 
 The first stage of step-by-step DIALS processing is to import the data - all
-that happens here is that the image headers are read, and a file describing
-their contents (:ref:`datablock.json <datablock-json>`) is written::
+that happens here is that metadata are read for all the images, and a file
+describing their contents (:ref:`datablock.json <datablock-json>`) is written::
 
     dials.import tutorial_data/C2sum_1*.cbf.gz
 
@@ -87,15 +88,6 @@ speed this up:
 Once this has completed, a new :ref:`reflection file <reflection_pickle>`
 '``strong.pickle``' is written, containing a record of every spot found.
 
-The default parameters for spot finding usually do a good job for
-Pilatus images, such as these. However they may not be optimal for data
-from other detector types, such as CCDs or image plates. Issues with
-incorrectly set gain might, for example, lead to background noise being
-extracted as spots. You can use the image mode buttons (③) to preview
-how the parameters affect the spot finding algorithm. The final image,
-‘threshold’ is the one on which spots are found, so ensuring this produces 
-peaks at real diffraction spot positions will give the best chance of success. 
-
 The :doc:`dials.image_viewer<../programs/dials_image_viewer>` tool is
 not as fast as viewers such as ADXV, however it does integrate well with
 DIALS data files. Having found strong spots open the image viewer again,
@@ -116,6 +108,15 @@ offset as the algorithm allows calculation of the spot centre at a
 better precision than the pixel size and image angular 'width'.
 
 .. image:: /figures/process_detail_betalactamase/image_viewer_spot.png
+
+The default parameters for spot finding usually do a good job for
+Pilatus images, such as these. However they may not be optimal for data
+from other detector types, such as CCDs or image plates. Issues with
+incorrectly set gain might, for example, lead to background noise being
+extracted as spots. You can use the image mode buttons (③) to preview
+how the parameters affect the spot finding algorithm. The final image,
+‘threshold’ is the one on which spots were found, so ensuring this produces
+peaks at real diffraction spot positions will give the best chance of success.
 
 Another very powerful tool for investigating problems with strong spot positions
 is :doc:`dials.reciprocal_lattice_viewer<../programs/dials_reciprocal_lattice_viewer>`.
@@ -173,7 +174,8 @@ Inspecting the beginning of the log shows that the indexing step is done
 at a resolution lower than the full dataset; 1.84 Å:
 
 .. literalinclude:: logs_detail_betalactamase/dials.index.log
-    :lines: 9-11
+    :start-at: Found max_cell
+    :lines: 1-3
     :lineno-match:
     :linenos:
 
@@ -195,7 +197,8 @@ We see that the first macrocycle of refinement makes a big improvement in
 the positional RMSDs:
 
 .. literalinclude:: logs_detail_betalactamase/dials.index.log
-   :lines: 78-90
+   :start-after: Refinement steps
+   :end-before: RMSD no longer decreasing
    :lineno-match:
    :linenos:
 
@@ -220,8 +223,9 @@ More about this is discussed below in :ref:`detailbetal-sec-refinement`.
 It's also worth checking the total number of reflections that were unable to
 be assigned an index:
 
-.. literalinclude:: logs_detail_betalactamase/dials.index.log
-   :lines: 317-321
+.. literalinclude:: logs_detail_betalactamase/dials.index.log.extract_unindexed
+   :start-after: [START_EXTRACT]
+   :end-before:  [END_EXTRACT]
    :lineno-match:
    :linenos:
 
@@ -259,7 +263,9 @@ giving a table containing scoring data and unit cell for each Bravais
 setting:
 
 .. literalinclude:: logs_detail_betalactamase/dials.refine_bravais_settings.log
-    :lines: 9-30
+    :start-at: Chiral space groups
+    :end-before: usr+sys
+
 
 The scores include the metric fit (in degrees), RMSDs (in mm), and the
 best and worse correlation coefficients for data related by symmetry
