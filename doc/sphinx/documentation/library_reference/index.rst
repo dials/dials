@@ -8,5 +8,4 @@ Library Reference
    algorithms/index.rst
    extensions/index.rst
    framework/index.rst
-   interfaces/index.rst
    util/index.rst
