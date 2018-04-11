@@ -297,7 +297,7 @@ def scaling_algorithm(scaler):
       scaler.join_multiple_datasets()
       return scaler
     # Now pass to a multiscaler ready for next round of scaling.
-    scaler.expand_scales_to_all_reflections(calc_cov=False)
+    scaler.expand_scales_to_all_reflections()
     scaler = MultiScalerFactory.create_from_targetscaler(scaler)
 
   # From here onwards, scaler should only be a SingleScaler
@@ -334,7 +334,7 @@ def scaling_algorithm(scaler):
 
   # The minimisation has only been done on a subset on the data, so apply the
   # scale factors to the whole reflection table.
-  scaler.expand_scales_to_all_reflections()
+  scaler.expand_scales_to_all_reflections(calc_cov=True)
 
   if scaler.params.weighting.optimise_error_model:
     scaler = perform_error_optimisation(scaler)

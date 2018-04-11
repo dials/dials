@@ -19,47 +19,14 @@ from libtbx.table_utils import simple_table
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.scaling_utilities import (
   reject_outliers, calculate_wilson_outliers, calc_normE2)
-#from dials.algorithms.scaling.restraints.scaling_restraints import ScalingRestraints
 from dials.algorithms.scaling.reflection_weighting import Weighting
 from dials.algorithms.scaling.Ih_table import SingleIhTable,\
-  JointIhTable#, IhTableBase
-
+  JointIhTable
+from dials.algorithms.scaling.scaling_restraints import ScalingRestraints,\
+  MultiScalingRestraints
 from dials_scratch_scaling_ext import calc_sigmasq as cpp_calc_sigmasq
 logger = logging.getLogger('dials')
 
-class ScalingRestraints(object):
-  """Scaling Restraints class."""
-  def __init__(self, apm):
-    self.apm = apm
-
-  def compute_restraints_residuals_jacobian(self):
-    """Calculate restraints for jacobian."""
-    restraints = None
-    restr = self.calculate_restraints()
-    if restr:
-      resid_restr = restr[0] # list
-      surface_weights = self.apm.components['absorption']['object'].parameter_restraints
-      n_abs_params = restr[0].size()
-      n_tot_params = self.apm.n_active_params
-      jacobian = sparse.matrix(n_abs_params, n_tot_params)
-      offset = n_tot_params - n_abs_params
-      for i in range(n_abs_params):
-        jacobian[i, offset+i] = -1.0 * (surface_weights[i]**0.5)
-      restraints = [resid_restr, jacobian, flex.double(n_abs_params, 1.0)]
-    return restraints
-
-  def calculate_restraints(self):
-    """Calculate restraints for the scaling model."""
-    residuals = flex.double([])
-    gradient_vector = flex.double([])
-    for comp in self.apm.components.itervalues():
-      resid = comp['object'].calculate_restraints()
-      if resid:
-        gradient_vector.extend(resid[1])
-        residuals.extend(resid[0])
-      else:
-        gradient_vector.extend(flex.double(comp['n_params'], 0.0))
-    return [residuals, gradient_vector]
 
 class ScalerBase(object):
   """Base class for all Scalers (single and multiple)."""
@@ -119,7 +86,7 @@ class ScalerBase(object):
     pass
 
   @abc.abstractmethod
-  def expand_scales_to_all_reflections(self, caller=None):
+  def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
     """Expand scales from a subset to all reflections."""
     pass
 
@@ -271,6 +238,7 @@ class SingleScalerBase(ScalerBase):
 
   @property
   def var_cov_matrix(self):
+    """The variance covariance matrix for the parameters."""
     return self._var_cov
 
   def update_var_cov(self, apm):
@@ -366,7 +334,7 @@ class SingleScalerBase(ScalerBase):
       reflection_table.flags.excluded_for_scaling)
     return reflection_table
 
-  def expand_scales_to_all_reflections(self, caller=None, calc_cov=True):
+  def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
     self._reflection_table['inverse_scale_factor'] = flex.double(
       self.reflection_table.size(), 1.0)
     self._reflection_table['inverse_scale_factor_variance'] = flex.double(
@@ -431,6 +399,7 @@ class SingleScalerBase(ScalerBase):
     return reflection_table
 
   def apply_error_model_to_variances(self):
+    """Apply an aimless-like error model to the variances."""
     error_model = self.experiments.scaling_model.configdict['error_model_parameters']
     self.reflection_table['variance'] = error_model[0] * (self.reflection_table['variance']
       + ((error_model[1] * self.reflection_table['intensity'])**2))**0.5
@@ -482,22 +451,13 @@ class MultiScalerBase(ScalerBase):
     pass
 
   @staticmethod
-  def calc_multi_absorption_restraint(apm, scalers):
+  def calc_multi_restraints(apm, scalers):
     'method only called in physical scaling'
-    restraints = None
     scaler_ids = [scaler.experiments.scaling_model.id_ for scaler in scalers]
     if 'physical' in scaler_ids:
-      R = flex.double([])
-      G = flex.double([])
-      for i, scaler in enumerate(scalers):
-        restr = scaler.calculate_restraints(apm.apm_list[i])
-        if restr:
-          R.extend(restr[0])
-          G.extend(restr[1])
-        else:
-          G.extend(flex.double(apm.apm_list[i].n_active_params, 0.0))
-      restraints = [R, G]
-    return restraints
+      #Ok for now, but make more general? But will be slow for many datasets?
+      return MultiScalingRestraints(apm).calculate_restraints()
+    return None
 
   @abc.abstractmethod
   def compute_restraints_residuals_jacobian(self, apm):
@@ -506,28 +466,11 @@ class MultiScalerBase(ScalerBase):
 
   @staticmethod
   def compute_multi_restraints_residuals_jacobian(apm, scalers):
-    '''method to calculate absorption restraint for multiple scalers'''
-    restraints = None
+    """Calculate restraints for multiple scalers."""
     scaler_ids = [scaler.experiments.scaling_model.id_ for scaler in scalers]
     if 'physical' in scaler_ids:
-      R = flex.double([])
-      jacobian_list = []
-      scaler_list = []
-      for i, scaler in enumerate(scalers):
-        restr = scaler.compute_restraints_residuals_jacobian(apm.apm_list[i])
-        if restr:
-          R.extend(restr[0])
-          jacobian_list.append(restr[1])
-          scaler_list.append(i)
-      n_restraints = R.size()
-      jacobian = sparse.matrix(n_restraints, apm.n_active_params)
-      n_row_cumul = 0
-      for j, jac in enumerate(jacobian_list):
-        scaler_no = scaler_list[j]
-        jacobian.assign_block(jac, n_row_cumul, apm.apm_data[scaler_no]['start_idx'])
-        n_row_cumul += jac.n_rows
-      restraints = [R, jacobian, flex.double(R.size(), 1.0)]
-    return restraints
+      return MultiScalingRestraints(apm).compute_restraints_residuals_jacobian()
+    return None
 
   @abc.abstractmethod
   def join_multiple_datasets(self):
@@ -567,6 +510,7 @@ class MultiScalerBase(ScalerBase):
       scaler.apply_error_model_to_variances()
 
   def select_reflections_for_scaling(self):
+    """Select reflections for scaling in individual scalers."""
     for scaler in self.single_scalers:
       scaler.select_reflections_for_scaling()
 
@@ -584,7 +528,7 @@ class MultiScaler(MultiScalerBase):
     logger.info('Completed configuration of MultiScaler. \n\n' + '='*80 + '\n')
 
   def calculate_restraints(self, apm):
-    return super(MultiScaler, MultiScaler).calc_multi_absorption_restraint(
+    return super(MultiScaler, MultiScaler).calc_multi_restraints(
       apm, self.single_scalers)
 
   def compute_restraints_residuals_jacobian(self, apm):
@@ -592,6 +536,7 @@ class MultiScaler(MultiScalerBase):
       apm, self.single_scalers)
 
   def update_error_model(self, error_model_params):
+    """Update the error model in Ih table."""
     self.Ih_table.update_error_model(error_model_params)
 
   def update_for_minimisation(self, apm, curvatures=False):
@@ -611,9 +556,9 @@ class MultiScaler(MultiScalerBase):
         start_row_no += basis_fn[1].n_rows
     self.Ih_table.calc_Ih()
 
-  def expand_scales_to_all_reflections(self, caller=None):
+  def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
     for scaler in self.single_scalers:
-      scaler.expand_scales_to_all_reflections(caller=self)
+      scaler.expand_scales_to_all_reflections(caller=self, calc_cov=calc_cov)
 
   def join_multiple_datasets(self):
     '''method to create a joint reflection table'''
@@ -678,14 +623,14 @@ class TargetScaler(MultiScalerBase):
       scaler.Ih_table.inverse_scale_factors = basis_fn[0]
 
   def calculate_restraints(self, apm):
-    return super(TargetScaler, TargetScaler).calc_multi_absorption_restraint(
+    return super(TargetScaler, TargetScaler).calc_multi_restraints(
       apm, self.unscaled_scalers)
 
   def compute_restraints_residuals_jacobian(self, apm):
     return super(TargetScaler, TargetScaler).compute_multi_restraints_residuals_jacobian(
       apm, self.unscaled_scalers)
 
-  def expand_scales_to_all_reflections(self, caller=None, calc_cov=True):
+  def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
     for scaler in self.unscaled_scalers:
       scaler.expand_scales_to_all_reflections(caller=self, calc_cov=calc_cov)
 
@@ -741,7 +686,7 @@ class NullScaler(ScalerBase):
     logger.info('NullScaler contains %s reflections', n_refl)
     logger.info('Completed configuration of NullScaler. \n\n' + '='*80 + '\n')
 
-  def expand_scales_to_all_reflections(self, caller=None):
+  def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
     pass
 
   def update_for_minimisation(self, apm, curvatures=False):

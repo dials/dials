@@ -169,21 +169,21 @@ class ScalingRefinery(object):
     from dials.algorithms.scaling.scaler import MultiScalerBase, SingleScalerBase
     print_step_table(self)
 
-    if isinstance(self._scaler, SingleScalerBase):
+    if self._scaler.id_ == 'single':
       if self._parameters.var_cov_matrix:
         self._scaler.update_var_cov(self._parameters)
-    elif self._scaler.id_ == 'multi':
-      if self._parameters.apm_list[0].var_cov_matrix:
+    elif self._scaler.id_ == 'multi' or self._scaler.id_ == 'target':
+      if self._parameters.apm_list[0].var_cov_matrix: #test if has been set
         for i, scaler in enumerate(self._scaler.single_scalers):
           scaler.update_var_cov(self._parameters.apm_list[i])
-    elif self._scaler.id_ == 'target':
+    '''elif self._scaler.id_ == 'target':
       if len(self._scaler.unscaled_scalers) == 1:
         if self._parameters.var_cov_matrix:
           self._scaler.unscaled_scalers[0].update_var_cov(self._parameters.apm)
       else:
         if self._parameters.apm_list[0].var_cov_matrix:
           for i, scaler in enumerate(self._scaler.unscaled_scalers):
-            scaler.update_var_cov(self._parameters.apm_list[i])
+            scaler.update_var_cov(self._parameters.apm_list[i])'''
 
     if not isinstance(self._scaler, MultiScalerBase):
       self._scaler.experiments.scaling_model.normalise_components()

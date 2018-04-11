@@ -66,7 +66,11 @@ class ScaleComponentBase(object):
     self._parameter_esds = esds
 
   def calculate_restraints(self):
-    """"Calculate residual and gradient restraints for the component."""
+    """Calculate residual and gradient restraints for the component."""
+    return None
+
+  def calculate_jacobian_restraints(self):
+    """Calculate residual and jacobian restraints for the component."""
     return None
 
   @property
@@ -244,6 +248,13 @@ class SHScaleComponent(ScaleComponentBase):
     residual = self.parameter_restraints * (self._parameters**2)
     gradient = 2.0 * self.parameter_restraints * self._parameters
     return residual, gradient
+
+  def calculate_jacobian_restraints(self):
+    jacobian = sparse.matrix(self.n_params, self.n_params)
+    for i in range(self.n_params):
+      jacobian[i, i] = -1.0 * (self._parameter_restraints[i]**0.5)
+    resid_restraint = self.calculate_restraints()[0]
+    return resid_restraint, jacobian
 
   def update_reflection_data(self, _, selection=None):
     """Update the spherical harmonic coefficients."""
