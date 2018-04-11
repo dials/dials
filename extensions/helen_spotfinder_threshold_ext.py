@@ -1,18 +1,6 @@
-#!/usr/bin/env python
-#
-# helen_spotfinder_threshold.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division
-from dials.interfaces import SpotFinderThresholdIface
 
-class HelenSpotFinderThresholdExt(SpotFinderThresholdIface):
+class HelenSpotFinderThresholdExt(object):
   ''' Extensions to do spot finding threshold. '''
 
   name = 'helen'

@@ -35,27 +35,23 @@ class Script(object):
 
   def run(self):
     ''' Run the script. '''
-    import dials.extensions # import dependency
-    from dials.interfaces import ProfileModelIface
-    from dials.interfaces import BackgroundIface
-    from dials.interfaces import CentroidIface
-    from dials.interfaces import SpotFinderThresholdIface
+    import dials.extensions
 
     # Parse the command line arguments
     params, options = self.parser.parse_args()
 
     # Create the list of interfaces
     interfaces = [
-      ProfileModelIface,
-      BackgroundIface,
-      CentroidIface,
-      SpotFinderThresholdIface
+      dials.extensions.ProfileModel,
+      dials.extensions.Background,
+      dials.extensions.Centroid,
+      dials.extensions.SpotFinderThreshold,
     ]
 
     # Loop through all the interfaces
     for iface in interfaces:
       print('-' * 80)
-      print('Interface: %s' % iface.__name__)
+      print('Extension interface: %s' % iface.__name__)
 
       # Either just show information about interfaces or show some about
       # extensions depending on user input

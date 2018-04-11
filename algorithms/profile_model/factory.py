@@ -17,8 +17,7 @@ def generate_phil_scope():
 
   '''
   import dials.extensions
-  from dials.interfaces import ProfileModelIface
-  phil_scope = ProfileModelIface.phil_scope()
+  phil_scope = dials.extensions.ProfileModel.phil_scope()
   return phil_scope
 
 phil_scope = generate_phil_scope()
@@ -40,8 +39,8 @@ class ProfileModelFactory(object):
     :return: The profile model
 
     '''
-    from dials.interfaces import ProfileModelIface
-    Extension = ProfileModelIface.extension(params.profile.algorithm)
+    import dials.extensions
+    Extension = dials.extensions.ProfileModel.load(params.profile.algorithm)
     Algorithm = Extension().algorithm()
     create_profile_model = True
     if hasattr(params, 'create_profile_model'):

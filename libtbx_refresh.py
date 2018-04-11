@@ -2,24 +2,12 @@ from __future__ import absolute_import, division, print_function
 
 import os
 
-try:
-  from glob import glob
-  import libtbx.load_env
-  dials_path = libtbx.env.dist_path('dials')
-  filenames = glob(os.path.join(dials_path, "extensions", "*.pyc"))
-  if filenames:
-    print("Cleaning up 'dials/extensions':")
-    for filename in filenames:
-      print(" Deleting %s" % filename)
-      os.remove(filename)
-except Exception:
-  pass
+import libtbx.pkg_utils
 
-try:
-  from dials.framework import env
-  env.cache.wipe()
-except Exception:
-  pass
+libtbx.pkg_utils.define_entry_points({
+  'dxtbx.profile_model': [
+    'gaussian_rs = dials.extensions.gaussian_rs_profile_model_ext:GaussianRSProfileModelExt',
+  ]})
 
 try:
   from dials.util.version import dials_version

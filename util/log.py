@@ -90,6 +90,7 @@ def config(verbosity=1, info='', debug='', name='dials'):
       },
     }
   })
+  logging.getLogger('dxtbx').setLevel(logging.DEBUG)
   import dials.util.banner
 
 def config_simple_stdout(name='dials'):

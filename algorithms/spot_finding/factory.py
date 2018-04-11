@@ -1,15 +1,4 @@
-#!/usr/bin/env python
-#
-# algorithm_factory.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 import collections
 import logging
@@ -17,8 +6,7 @@ logger = logging.getLogger(__name__)
 
 def generate_phil_scope():
   from iotbx.phil import parse
-  import dials.extensions # import dependency
-  from dials.interfaces import SpotFinderThresholdIface
+  import dials.extensions
 
   phil_scope = parse('''
 
@@ -135,7 +123,7 @@ def generate_phil_scope():
   main_scope = phil_scope.get_without_substitution("spotfinder")
   assert(len(main_scope) == 1)
   main_scope = main_scope[0]
-  main_scope.adopt_scope(SpotFinderThresholdIface.phil_scope())
+  main_scope.adopt_scope(dials.extensions.SpotFinderThreshold.phil_scope())
   return phil_scope
 
 phil_scope = generate_phil_scope()
@@ -545,10 +533,10 @@ class SpotFinderFactory(object):
     :return: The threshold algorithm
 
     '''
-    from dials.interfaces import SpotFinderThresholdIface
+    import dials.extensions
 
     # Configure the algotihm
-    Algorithm = SpotFinderThresholdIface.extension(
+    Algorithm = dials.extensions.SpotFinderThreshold.load(
       params.spotfinder.threshold.algorithm)
     return Algorithm(params)
 

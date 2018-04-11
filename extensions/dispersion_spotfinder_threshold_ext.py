@@ -1,22 +1,10 @@
-#!/usr/bin/env python
-#
-# dispersion_spotfinder_threshold.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division
-from dials.interfaces import SpotFinderThresholdIface
 
 import logging
 logger = logging.getLogger("dials.extensions.dispersion_spotfinder_threshold_ext")
 
 
-class DispersionSpotFinderThresholdExt(SpotFinderThresholdIface):
+class DispersionSpotFinderThresholdExt(object):
   ''' Extensions to do dispersion threshold. '''
 
   name = 'dispersion'

@@ -48,7 +48,7 @@ def default_background_algorithm():
   :return: The default background algorithm
 
   '''
-  from dials.extensions import GLMBackgroundExt
+  from dials.extensions.glm_background_ext import GLMBackgroundExt
   return strategy(GLMBackgroundExt)
 
 def default_centroid_algorithm():
@@ -58,7 +58,7 @@ def default_centroid_algorithm():
   :return: The default centroid algorithm
 
   '''
-  from dials.extensions import SimpleCentroidExt
+  from dials.extensions.simple_centroid_ext import SimpleCentroidExt
   return strategy(SimpleCentroidExt)
 
 class reflection_table_aux(boost.python.injector, reflection_table):
