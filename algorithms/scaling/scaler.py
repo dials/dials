@@ -48,7 +48,10 @@ class ScalerBase(object):
 
   @Ih_table.setter
   def Ih_table(self, new_Ih_table):
-    assert new_Ih_table.id_ == 'IhTableBase'
+    msg = ('Attempting to set a new Ih_table with an object not recognised as \n'
+      'a valid Ih_table')
+    assert hasattr(new_Ih_table, 'id_'), msg
+    assert new_Ih_table.id_ == 'IhTableBase', msg
     self._Ih_table = new_Ih_table
 
   @property
@@ -376,7 +379,7 @@ class SingleScalerBase(ScalerBase):
     """Calculate a restraint for the jacobian."""
     restraints = None
     if self.experiments.scaling_model.id_ == 'physical':
-      restraints = ScalingRestraints(apm).compute_restraints_residuals_jacobian()
+      restraints = ScalingRestraints(apm).calculate_jacobian_restraints()
     return restraints
 
   def calculate_restraints(self, apm):
@@ -469,7 +472,7 @@ class MultiScalerBase(ScalerBase):
     """Calculate restraints for multiple scalers."""
     scaler_ids = [scaler.experiments.scaling_model.id_ for scaler in scalers]
     if 'physical' in scaler_ids:
-      return MultiScalingRestraints(apm).compute_restraints_residuals_jacobian()
+      return MultiScalingRestraints(apm).calculate_jacobian_restraints()
     return None
 
   @abc.abstractmethod
@@ -543,8 +546,8 @@ class MultiScaler(MultiScalerBase):
     '''update the scale factors and Ih for the next iteration of minimisation,
     update the x values from the amp to the individual apms, as this is where
     basis functions, target functions etc get access to the parameters.'''
-    for i, single_apm in enumerate(apm.apm_list):
-      single_apm.x = apm.select_parameters(i)
+    #for i, single_apm in enumerate(apm.apm_list): Moved to multi_apm
+    #  single_apm.x = apm.select_parameters(i)
     apm.derivatives = sparse.matrix(self.Ih_table.size, apm.n_active_params)
     start_row_no = 0
     for i, scaler in enumerate(self.single_scalers):
@@ -615,8 +618,8 @@ class TargetScaler(MultiScalerBase):
 
   def update_for_minimisation(self, apm, curvatures=False):
     """Update the scale factors and Ih for the next iteration of minimisation."""
-    for i, single_apm in enumerate(apm.apm_list):
-      single_apm.x = apm.select_parameters(i)
+    #for i, single_apm in enumerate(apm.apm_list): Moved to multi_apm
+    #  single_apm.x = apm.select_parameters(i)
     for i, scaler in enumerate(self.unscaled_scalers):
       basis_fn = scaler.get_basis_function(apm.apm_list[i])
       apm.apm_list[i].derivatives = basis_fn[1]

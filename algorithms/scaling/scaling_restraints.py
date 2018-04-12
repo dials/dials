@@ -21,7 +21,7 @@ class MultiScalingRestraints(object):
       G.extend(restr[1])
     return [R, G]
 
-  def compute_restraints_residuals_jacobian(self):
+  def calculate_jacobian_restraints(self):
     """Calculate restraints for jacobian."""
     residual_restraints = self.calculate_restraints()[0]
     n_restraints = residual_restraints.size() - residual_restraints.count(0.0)
@@ -30,7 +30,7 @@ class MultiScalingRestraints(object):
       jacobian = sparse.matrix(n_restraints, self.apm.n_active_params)
       cumul_restr_pos = 0
       for i, single_apm in enumerate(self.apm.apm_list):
-        restraints = ScalingRestraints(single_apm).compute_restraints_residuals_jacobian()
+        restraints = ScalingRestraints(single_apm).calculate_jacobian_restraints()
         if restraints:
           jacobian.assign_block(restraints[1], cumul_restr_pos, self.apm.apm_data[i]['start_idx'])
           cumul_restr_pos += restraints[1].n_rows
@@ -44,7 +44,7 @@ class ScalingRestraints(object):
   def __init__(self, apm):
     self.apm = apm
 
-  def compute_restraints_residuals_jacobian(self):
+  def calculate_jacobian_restraints(self):
     """Calculate restraints for jacobian."""
     residual_restraints = self.calculate_restraints()[0]
     n_restraints = residual_restraints.size() - residual_restraints.count(0.0)

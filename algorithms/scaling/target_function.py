@@ -30,7 +30,8 @@ class ScalingTarget(object):
     self._rmsds = None
 
   def predict(self):
-    """Calculate the current values of quantities for the minimisation."""
+    """Calculate the current values of quantities for the minimisation. Defer
+    to the scaler to allow custom behaviour for single/multiple datasets."""
     self.scaler.update_for_minimisation(self.apm, self.curvatures)
 
   def get_num_matches(self):

@@ -2,6 +2,7 @@
 Test for the basis function and target function module.
 """
 import numpy as np
+import copy
 import pytest
 from dials.array_family import flex
 from dials.util.options import OptionParser
@@ -90,8 +91,9 @@ def test_basis_function(generated_KB_param):
   # Note, order of params in apm.x depends on order in scaling model components.
   new_B = 1.0
   new_S = 2.0
-  apm.x = (flex.double(n_scale_params, new_S))
-  apm.x.extend(flex.double(n_decay_params, new_B))
+  #apm.x = (flex.double(n_scale_params, new_S))
+  #apm.x.extend(flex.double(n_decay_params, new_B))
+  apm.set_param_vals(flex.double([new_S, new_B]))
   basis_fn = basis_function(scaler, apm)
   basis_fn.update_scale_factors_with_curvs()
   assert list(scaler.components['decay'].parameters) == (
@@ -134,7 +136,7 @@ def test_basis_function(generated_KB_param):
   # Now generate a parameter manager for a single component.
   apm = scaling_active_parameter_manager(scaler.components, ['scale'])
   new_S = 2.0
-  apm.x = flex.double(scaler.components['scale'].n_params, new_S)
+  apm.set_param_vals(flex.double(scaler.components['scale'].n_params, new_S))
   basis_func = basis_function(scaler, apm)
   basis_fn = basis_func.return_basis() # All in one alternative call.
 
@@ -201,13 +203,20 @@ def calculate_gradient_fd(target):
   gradients = flex.double([0.0] * target.apm.n_active_params)
   #iterate over parameters, varying one at a time and calculating the gradient
   for i in range(target.apm.n_active_params):
-    target.apm.x[i] -= 0.5 * delta
+    new_x = copy.copy(target.apm.x)
+    new_x[i] -= 0.5 * delta
+    #target.apm.x[i] -= 0.5 * delta
+    target.apm.set_param_vals(new_x)
     target.predict()
     R_low = target.calculate_residuals()
-    target.apm.x[i] += delta
+    #target.apm.x[i] += delta
+    new_x[i] += delta
+    target.apm.set_param_vals(new_x)
     target.predict()
     R_upper = target.calculate_residuals()
-    target.apm.x[i] -= 0.5 * delta
+    #target.apm.x[i] -= 0.5 * delta
+    new_x[i] -= 0.5 * delta
+    target.apm.set_param_vals(new_x)
     target.predict()
     gradients[i] = (flex.sum(R_upper) - flex.sum(R_low)) / delta
   return gradients

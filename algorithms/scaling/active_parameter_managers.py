@@ -120,6 +120,8 @@ class multi_active_parameter_manager(object):
   def set_param_vals(self, x):
     """Set method for refinement engine access."""
     self.x = x
+    for i, single_apm in enumerate(self.apm_list):
+      single_apm.x = self.select_parameters(i)
 
   def get_param_vals(self):
     """Get method for refinement engine access."""

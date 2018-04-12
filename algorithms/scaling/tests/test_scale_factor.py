@@ -52,6 +52,9 @@ def test_ScaleComponentBase():
   assert hasattr(base_SF, '_derivatives')
   assert hasattr(base_SF, '_curvatures')
 
+  assert base_SF.calculate_restraints() == None
+  assert base_SF.calculate_jacobian_restraints() == None
+
   base_SF = base_SF_filler(flex.double(3, 1.0), flex.double(3, 0.1))
   assert list(base_SF.parameter_esds) == list(flex.double(3, 0.1))
 
@@ -119,6 +122,17 @@ def test_SHScalefactor():
   assert SF.derivatives[0, 2] == initial_val
   SF.calculate_scales_derivatives_curvatures()
   assert SF.curvatures.non_zeroes == 0
+
+  # Test setting of restraints and that restraints are calculated.
+  # Not testing actual calculation as may want to change the form.
+  SF.parameter_restraints = flex.double([0.1, 0.2, 0.3])
+  assert SF.parameter_restraints == flex.double([0.1, 0.2, 0.3])
+  restraints = SF.calculate_restraints()
+  assert restraints[0] is not None
+  assert restraints[1] is not None
+  jacobian_restraints = SF.calculate_jacobian_restraints()
+  assert jacobian_restraints[0] is not None
+  assert jacobian_restraints[1] is not None
 
 def test_SmoothMixin():
   """Simple test for the Smooth Mixin class."""
