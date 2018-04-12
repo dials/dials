@@ -148,7 +148,32 @@ namespace adaptor {
   };
 
   /**
-   * Pack a const_ref into a msgpack array
+   * A helper class to return size of an element
+   */
+  template <typename T>
+  struct element_size_helper {
+    static
+    std::size_t size() {
+      return sizeof(T);
+    }
+  };
+
+  /**
+   * A helper class to give size of a tiny type
+   */
+  template <typename T, std::size_t N>
+  struct element_size_helper < scitbx::af::tiny_plain<T, N> > {
+    static
+    std::size_t size() {
+      return N * element_size_helper<T>::size();
+    }
+  };
+
+  /**
+   * Pack a const ref into a msgpack raw binary structure. Serializing the whole
+   * array as a binary blob is much faster than serializing as an array. It also takes
+   * less space in the case of elements which are fixed sized arrays (such as
+   * vec2/vec3/mat3 etc).
    */
   template <typename T>
   struct pack< scitbx::af::const_ref<T> > {
@@ -156,7 +181,28 @@ namespace adaptor {
     msgpack::packer<Stream>& operator()(
         msgpack::packer<Stream>& o,
         const scitbx::af::const_ref<T>& v) const {
-      typedef typename scitbx::af::const_ref<T>::const_iterator iterator;
+      std::size_t num_elements = v.size();
+      std::size_t element_size = element_size_helper<T>::size();
+      std::size_t binary_size = num_elements * element_size;
+      o.pack_bin(binary_size);
+      o.pack_bin_body(reinterpret_cast<const char*>(&v[0]), binary_size);
+      return o;
+    }
+  };
+
+  /**
+   * Pack a const_ref<Shoebox<>> into a msgpack array.
+   *
+   * Shoebox arrays are treated differently because they are themselves
+   * structs with multiple items.
+   */
+  template <typename T>
+  struct pack< scitbx::af::const_ref< dials::af::Shoebox<T> > > {
+    template <typename Stream>
+    msgpack::packer<Stream>& operator()(
+        msgpack::packer<Stream>& o,
+        const scitbx::af::const_ref< dials::af::Shoebox<T> >& v) const {
+      typedef typename scitbx::af::const_ref< dials::af::Shoebox<T> >::const_iterator iterator;
       o.pack_array(v.size());
       for (iterator it = v.begin(); it != v.end(); ++it) {
         o.pack(*it);
@@ -166,7 +212,7 @@ namespace adaptor {
   };
 
   /**
-   * Pack a shared into a msgpack array
+   * Pack a shared into a msgpack raw binary structure
    */
   template <typename T>
   struct pack< scitbx::af::shared<T> > {
@@ -174,7 +220,8 @@ namespace adaptor {
     msgpack::packer<Stream>& operator()(
         msgpack::packer<Stream>& o,
         const scitbx::af::shared<T>& v) const {
-      return o.pack(v.const_ref());
+      o.pack(v.const_ref());
+      return o;
     }
   };
 
@@ -203,58 +250,6 @@ namespace adaptor {
     msgpack::packer<Stream>& operator()(
         msgpack::packer<Stream>& o,
         const scitbx::af::tiny<T,N>& v) const {
-      return o.pack(v.const_ref());
-    }
-  };
-
-  /**
-   * Pack a vec2 into a msgpack array
-   */
-  template <typename T>
-  struct pack< scitbx::vec2<T> > {
-    template <typename Stream>
-    msgpack::packer<Stream>& operator()(
-        msgpack::packer<Stream>& o,
-        const scitbx::vec2<T>& v) const {
-      return o.pack(v.const_ref());
-    }
-  };
-
-  /**
-   * Pack a vec3 into a msgpack array
-   */
-  template <typename T>
-  struct pack< scitbx::vec3<T> > {
-    template <typename Stream>
-    msgpack::packer<Stream>& operator()(
-        msgpack::packer<Stream>& o,
-        const scitbx::vec3<T>& v) const {
-      return o.pack(v.const_ref());
-    }
-  };
-
-  /**
-   * Pack a mat3 into a msgpack array
-   */
-  template <typename T>
-  struct pack< scitbx::mat3<T> > {
-    template <typename Stream>
-    msgpack::packer<Stream>& operator()(
-        msgpack::packer<Stream>& o,
-        const scitbx::mat3<T>& v) const {
-      return o.pack(v.const_ref());
-    }
-  };
-
-  /**
-   * Pack a cctbx::miller::index<> into a msgpack array
-   */
-  template <typename T>
-  struct pack< cctbx::miller::index<T> > {
-    template <typename Stream>
-    msgpack::packer<Stream>& operator()(
-        msgpack::packer<Stream>& o,
-        const cctbx::miller::index<T>& v) const {
       return o.pack(v.const_ref());
     }
   };
@@ -343,24 +338,29 @@ namespace adaptor {
       typedef typename scitbx::af::ref<T>::iterator iterator;
 
       // Ensure the type is an array
-      if (o.type != msgpack::type::ARRAY) {
-        throw DIALS_ERROR("msgpack type is not an array");
+      if (o.type != msgpack::type::BIN) {
+        throw DIALS_ERROR("msgpack type is not BIN");
+      }
+
+      // Compute the element and binary sizes
+      std::size_t element_size = element_size_helper<T>::size();
+      std::size_t binary_size = o.via.bin.size;
+      std::size_t num_elements = binary_size / element_size;
+
+      // Check the sizes are consistent
+      if (num_elements * element_size != binary_size) {
+        throw DIALS_ERROR("msgpack bin data does not have correct size");
       }
 
       // Ensure it is of the correct size
-      if (o.via.array.size != v.size()) {
-        throw DIALS_ERROR("msgpack array does not have correct dimensions");
+      if (num_elements != v.size()) {
+        throw DIALS_ERROR("msgpack bin data does not have correct size");
       }
 
-      // Convert the values in the array
-      if (o.via.array.size > 0) {
-        msgpack::object* first = o.via.array.ptr;
-        msgpack::object* last = first + o.via.array.size;
-        iterator out = v.begin();
-        for (msgpack::object *it = first; it != last; ++it) {
-          it->convert(*out++);
-        }
-      }
+      // Copy the binary data
+      const T *first = reinterpret_cast<const T*>(o.via.bin.ptr);
+      const T *last = first + num_elements;
+      std::copy(first, last, v.begin());
       return o;
     }
   };
@@ -376,11 +376,50 @@ namespace adaptor {
       typedef typename scitbx::af::shared<T>::iterator iterator;
 
       // Ensure the type is an array
-      if (o.type != msgpack::type::ARRAY) {
-        throw DIALS_ERROR("msgpack type is not an array");
+      if (o.type != msgpack::type::BIN) {
+        throw DIALS_ERROR("msgpack type is not BIN");
+      }
+
+      // Compute the element and binary sizes
+      std::size_t element_size = element_size_helper<T>::size();
+      std::size_t binary_size = o.via.bin.size;
+      std::size_t num_elements = binary_size / element_size;
+
+      // Check the sizes are consistent
+      if (num_elements * element_size != binary_size) {
+        throw DIALS_ERROR("msgpack bin data does not have correct size");
       }
 
       // Resize the array
+      v.resize(num_elements);
+
+      // Copy the binary data
+      const T *first = reinterpret_cast<const T*>(o.via.bin.ptr);
+      const T *last = first + num_elements;
+      std::copy(first, last, v.begin());
+      return o;
+    }
+  };
+
+  /**
+   * Convert a msgpack array into a variable sized scitbx::af::shared<Shoebox<>>>
+   *
+   * Shoebox arrays are treated differently because they are themselves
+   * structs with multiple items.
+   */
+  template<typename T>
+  struct convert< scitbx::af::shared< dials::af::Shoebox<T> > > {
+    msgpack::object const& operator()(
+        msgpack::object const& o,
+        scitbx::af::shared< dials::af::Shoebox<T> >& v) const {
+      typedef typename scitbx::af::shared< dials::af::Shoebox<T> >::iterator iterator;
+
+      // Ensure the type is an array
+      if (o.type != msgpack::type::ARRAY) {
+        throw msgpack::type_error();
+      }
+
+      // Ensure it is of the correct size
       v.resize(o.via.array.size);
 
       // Convert the values in the array
@@ -438,62 +477,6 @@ namespace adaptor {
     msgpack::object const& operator()(
         msgpack::object const& o,
         scitbx::af::tiny<T,N>& v) const {
-      scitbx::af::ref<T> r = v.ref();
-      o.convert(r);
-      return o;
-    }
-  };
-
-  /**
-   * Convert a msgpack array to a vec2
-   */
-  template <typename T>
-  struct convert< scitbx::vec2<T> > {
-    msgpack::object const& operator()(
-        msgpack::object const& o,
-        scitbx::vec2<T>& v) const {
-      scitbx::af::ref<T> r = v.ref();
-      o.convert(r);
-      return o;
-    }
-  };
-
-  /**
-   * Convert a msgpack array to a vec3
-   */
-  template <typename T>
-  struct convert< scitbx::vec3<T> > {
-    msgpack::object const& operator()(
-        msgpack::object const & o,
-        scitbx::vec3<T>& v) const {
-      scitbx::af::ref<T> r = v.ref();
-      o.convert(r);
-      return o;
-    }
-  };
-
-  /**
-   * Convert a msgpack array to a mat3
-   */
-  template <typename T>
-  struct convert< scitbx::mat3<T> > {
-    msgpack::object const& operator()(
-        msgpack::object const& o,
-        scitbx::mat3<T>& v) const {
-      scitbx::af::ref<T> r = v.ref();
-      o.convert(r);
-      return o;
-    }
-  };
-
-  /**
-   * Convert a msgpack array to a cctbx::miller::index
-   */
-  template <typename T>
-  struct convert< cctbx::miller::index<T> > {
-    msgpack::object const& operator()(
-        msgpack::object const& o,
-        cctbx::miller::index<T>& v) const {
       scitbx::af::ref<T> r = v.ref();
       o.convert(r);
       return o;
