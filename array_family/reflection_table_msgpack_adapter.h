@@ -460,7 +460,7 @@ namespace adaptor {
       o.via.array.ptr[0].convert(grid_ref);
 
       // Resize the versa
-      v.resize(grid);
+      v = scitbx::af::versa<T, Accessor>(grid);
 
       // Read the data
       scitbx::af::ref<T> data_ref(&v[0], v.size());
