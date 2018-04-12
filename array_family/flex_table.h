@@ -88,6 +88,7 @@ namespace dials { namespace af {
             mapped_type(af::shared<T>(n, init_zero<T>()))));
         }
         af::shared<T> this_column = boost::get< af::shared<T> >(it->second);
+        DIALS_ASSERT(this_column.size() == other_column.size());
         for (std::size_t i = 0; i < this_column.size(); ++i) {
           this_column[i] = other_column[i];
         }
