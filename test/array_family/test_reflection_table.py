@@ -1049,11 +1049,14 @@ def test_to_from_msgpack():
     assert a.panel == b.panel
     assert a.bbox == b.bbox
     for aa, bb in zip(a.data, b.data):
-      assert(abs(aa-bb) < 1e-9)
+      if (abs(aa-bb) > 1e-9):
+        return False
     for aa, bb in zip(a.background, b.background):
-      assert(abs(aa-bb) < 1e-9)
+      if (abs(aa-bb) > 1e-9):
+        return False
     for aa, bb in zip(a.mask, b.mask):
-      assert(aa == bb)
+      if aa != bb:
+        return False
     return True
 
   # The columns as lists
@@ -1088,17 +1091,17 @@ def test_to_from_msgpack():
   assert(new_table.is_consistent())
   assert(new_table.nrows() == 10)
   assert(new_table.ncols() == 11)
-  assert(all(a == b for a, b in zip(new_table['col1'], c1)))
-  assert(all(a == b for a, b in zip(new_table['col2'], c2)))
-  assert(all(a == b for a, b in zip(new_table['col3'], c3)))
-  assert(all(a == b for a, b in zip(new_table['col4'], c4)))
-  assert(all(a == b for a, b in zip(new_table['col5'], c5)))
-  assert(all(a == b for a, b in zip(new_table['col6'], c6)))
-  assert(all(a == b for a, b in zip(new_table['col7'], c7)))
-  assert(all(a == b for a, b in zip(new_table['col8'], c8)))
-  assert(all(a == b for a, b in zip(new_table['col9'], c9)))
-  assert(all(a == b for a, b in zip(new_table['col10'], c10)))
-  assert(all(compare(a, b) for a, b in zip(new_table['col11'], c11)))
+  assert(all(tuple(a == b for a, b in zip(new_table['col1'], c1))))
+  assert(all(tuple(a == b for a, b in zip(new_table['col2'], c2))))
+  assert(all(tuple(a == b for a, b in zip(new_table['col3'], c3))))
+  assert(all(tuple(a == b for a, b in zip(new_table['col4'], c4))))
+  assert(all(tuple(a == b for a, b in zip(new_table['col5'], c5))))
+  assert(all(tuple(a == b for a, b in zip(new_table['col6'], c6))))
+  assert(all(tuple(a == b for a, b in zip(new_table['col7'], c7))))
+  assert(all(tuple(a == b for a, b in zip(new_table['col8'], c8))))
+  assert(all(tuple(a == b for a, b in zip(new_table['col9'], c9))))
+  assert(all(tuple(a == b for a, b in zip(new_table['col10'], c10))))
+  assert(all(tuple(compare(a, b) for a, b in zip(new_table['col11'], c11))))
 
 def test_to_from_msgpack2(dials_regression):
 
