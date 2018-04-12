@@ -73,15 +73,14 @@ class Extract(object):
 
   def set_seed(self):
 
-    if self._params.random_seed is None:
-      self._params.random_seed = random.randint(0, sys.maxint)
-    random.seed(self._params.random_seed)
-    # set the flex random seed too
-    from dials.array_family import flex
-    flex.set_random_seed(self._params.random_seed)
-    if self._verbose:
-      msg = "Random seed set to %d while building models"
-      print(msg % self._params.random_seed)
+    if self._params.random_seed is not None:
+      random.seed(self._params.random_seed)
+      # set the flex random seed too
+      from dials.array_family import flex
+      flex.set_random_seed(self._params.random_seed)
+      if self._verbose:
+        msg = "Random seed set to %d while building models"
+        print(msg % self._params.random_seed)
 
   def build_goniometer(self):
 
