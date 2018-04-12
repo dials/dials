@@ -330,6 +330,7 @@ class Script(object):
       # Wrapper function
       def do_work(i, item_list):
         processor = Processor(copy.deepcopy(params), composite_tag = "%04d"%i)
+
         for item in item_list:
           processor.process_datablock(item[0], item[1])
         processor.finalize()
@@ -458,6 +459,12 @@ class Processor(object):
 
     # Do the processing
     try:
+      self.pre_process(datablock)
+    except Exception as e:
+      print("Error in pre-process", tag, str(e))
+      if not self.params.dispatch.squash_errors: raise
+      return
+    try:
       observed = self.find_spots(datablock)
     except Exception as e:
       print("Error spotfinding", tag, str(e))
@@ -481,6 +488,10 @@ class Processor(object):
       print("Error integrating", tag, str(e))
       if not self.params.dispatch.squash_errors: raise
       return
+
+  def pre_process(self, datablock):
+    """ Add any pre-processing steps here """
+    pass
 
   def find_spots(self, datablock):
     from time import time
