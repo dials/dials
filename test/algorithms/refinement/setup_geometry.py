@@ -73,7 +73,7 @@ class Extract(object):
 
   def set_seed(self):
 
-    if not self._params.random_seed:
+    if self._params.random_seed is not None:
       self._params.random_seed = random.randint(0, sys.maxsize)
     random.seed(self._params.random_seed)
     # set the flex random seed too
