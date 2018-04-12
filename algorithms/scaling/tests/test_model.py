@@ -1,15 +1,19 @@
 """
 Tests for the scaling model classes.
 """
+import pytest
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.algorithms.scaling.model.model import ScalingModelBase,\
   KBScalingModel, PhysicalScalingModel, ArrayScalingModel
+from dials.algorithms.scaling.model.scaling_model_factory import \
+  KBSMFactory, PhysicalSMFactory, ArraySMFactory, create_scaling_model,\
+  calc_n_param_from_bins
 from libtbx import phil
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 
-def generated_single_exp():
+def generated_exp(n=1):
   experiments = ExperimentList()
   exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
               "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
@@ -21,6 +25,10 @@ def generated_single_exp():
   detector = Detector()
   experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
     detector=detector, crystal=crystal))
+  if n > 1:
+    for _ in range(0, n-1):
+      experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
+        detector=detector, crystal=crystal))
   return experiments
 
 def generated_param():
@@ -32,6 +40,15 @@ def generated_param():
   parameters, _ = optionparser.parse_args(args=None, quick_parse=True,
     show_diff_phil=False)
   return parameters
+
+def generated_refl():
+  rt = flex.reflection_table()
+  rt['d'] =  flex.double([1.0, 1.0, 1.0, 1.0])
+  rt['xyzobs.px.value'] = flex.vec3_double([(0.0, 0.0, 0.0),
+    (0.0, 0.0, 5.0), (0.0, 0.0, 10.0), (0.0, 0.0, 10.0)])
+  rt.set_flags(flex.bool([False, False, False, False]),
+    rt.flags.user_excluded_in_scaling)
+  return rt
 
 def test_ScalingModelBase():
   """Test for base scaling model class"""
@@ -87,6 +104,8 @@ def test_KBScalingModel():
   new_dict = KBmodel.to_dict()
   assert new_dict == KB_dict
 
+
+
 def test_PhysicalScalingModel():
   """Test the PhysicalScalingModel class."""
   configdict = {'corrections':['scale', 'decay', 'absorption'],
@@ -115,7 +134,7 @@ def test_PhysicalScalingModel():
   rt['xyzobs.px.value'] = flex.vec3_double([(0.1, 0.1, 0.1), (0.1, 0.1, 0.1)])
   rt['s1'] = flex.vec3_double([(0.1, 0.1, 1.1), (0.1, 0.1, 1.1)])
   rt['d'] = flex.double([1.0, 1.0])
-  exp = generated_single_exp()[0]
+  exp = generated_exp()[0]
   params = generated_param()
   rt = physicalmodel.configure_reflection_table(rt, exp, params)
   assert physicalmodel.components['scale'].col_name in rt
@@ -174,7 +193,7 @@ def test_ArrayScalingModel():
   rt['xyzobs.px.value'] = flex.vec3_double([(0.1, 0.1, 0.1), (0.1, 0.1, 0.1)])
   rt['s1'] = flex.vec3_double([(0.1, 0.1, 1.1), (0.1, 0.1, 1.1)])
   rt['d'] = flex.double([1.0, 1.0])
-  exp = generated_single_exp()[0]
+  exp = generated_exp()[0]
   params = generated_param()
   rt = arraymodel.configure_reflection_table(rt, exp, params)
   for comp in ['decay', 'absorption']:
@@ -199,4 +218,75 @@ def test_ArrayScalingModel():
 
   new_dict = arraymodel.to_dict()
   assert new_dict == array_dict
+
+def test_ScalingModelfactories():
+  """Test the factory creation of the three standard scaling models."""
+  params = generated_param()
+  rt = generated_refl() #only needs user excluded in scaling flags to be set.
+  exp = generated_exp()
+  KBmodel = KBSMFactory.create(params, [], [])
+  assert isinstance(KBmodel, KBScalingModel)
+
+  # Only needs user excluded in scaling flags to be set.
+  physicalmodel = PhysicalSMFactory.create(params, exp[0], rt)
+  assert isinstance(physicalmodel, PhysicalScalingModel)
+
+  #needs user excluded in scaling flags, d and xyz.
+  arraymodel = ArraySMFactory.create(params, exp[0], rt)
+  assert isinstance(arraymodel, ArrayScalingModel)
+
+  # Add more rigorous tests to checl that the model has been set up correctly.?
+  # Might be best to refactor scaling model factories first.
+
+def test_model_factory_utilities():
+  """Test the utility functions in the scaling_model_factory module."""
+
+  # Test calc_n_param_from_bins(value_min, value_max, n_bins)
+  assert calc_n_param_from_bins(0.0, 1.0, 1) == (2, 1.0)
+  assert calc_n_param_from_bins(0.0, 2.0, 2) == (3, 1.0)
+  assert calc_n_param_from_bins(0.0, 3.0, 3) == (5, 1.0)
+  assert calc_n_param_from_bins(0.0, 10.0, 10) == (12, 1.0)
+  assert calc_n_param_from_bins(0.0, 10.0, 5) == (7, 2.0)
+  with pytest.raises(AssertionError):
+    (_, _) = calc_n_param_from_bins(0.0, 1.0, 0)
+    (_, _) = calc_n_param_from_bins(0.0, 1.0, 0.5)
+
+  # Test initialise_smooth_input(osc_range, one_osc_width, interval)
+  # Test check for user excluded
   
+
+def test_create_scaling_model():
+  """Test the create scaling model function."""
+
+  # Test that one can create the correct scaling model with the phil param.
+  for m in ['physical', 'array', 'KB']:
+    params = generated_param()
+    exp = generated_exp()
+    rt = generated_refl()
+    params.__inject__('model', m)
+    new_exp = create_scaling_model(params, exp, [rt])
+    assert new_exp[0].scaling_model.id_ == m
+
+  # If a scaling model already exists, then nothing else should happen.
+  params = generated_param()
+  exp = generated_exp()
+  rt = generated_refl()
+  exp[0].scaling_model = PhysicalSMFactory().create(params, exp[0], rt)
+  old_scaling_model = exp[0].scaling_model
+  params.__inject__('model', 'KB')
+  new_exp = create_scaling_model(params, exp, [rt])
+  new_scaling_model = new_exp[0].scaling_model
+  assert new_scaling_model is old_scaling_model # Should not modify original.
+
+  # Test multiple datasets, where one already has a scaling model.
+  exp = generated_exp(3)
+  params = generated_param()
+  rt = generated_refl()
+  rt_2 = generated_refl()
+  rt_3 = generated_refl()
+  exp[0].scaling_model = PhysicalSMFactory().create(params, exp[0], rt)
+  params.__inject__('model', 'KB')
+  new_exp = create_scaling_model(params, exp, [rt, rt_2, rt_3])
+  assert new_exp[0].scaling_model is exp[0].scaling_model
+  assert isinstance(new_exp[1].scaling_model, KBScalingModel)
+  assert isinstance(new_exp[2].scaling_model, KBScalingModel)

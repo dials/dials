@@ -65,7 +65,7 @@ class PhysicalSMFactory(object):
     #these names are used many time in the program as flags, create a better
     #way to strongly enforce inclusion of certain corrections?
 
-    osc_range = check_for_user_excluded(experiments, reflections)
+    osc_range = osc_range_check_for_user_excluded(experiments, reflections)
     one_osc_width = experiments.scan.get_oscillation()[1]
     if params.parameterisation.scale_term:
       corrections.append('scale')
@@ -124,6 +124,8 @@ def initialise_smooth_input(osc_range, one_osc_width, interval):
 def calc_n_param_from_bins(value_min, value_max, n_bins):
   """Return the correct number of bins for initialising the gaussian
   smoothers."""
+  assert n_bins > 0
+  assert isinstance(n_bins, int)
   bin_width = (value_max - value_min) / n_bins
   if n_bins == 1:
     n_param = 2
@@ -133,7 +135,7 @@ def calc_n_param_from_bins(value_min, value_max, n_bins):
     n_param = n_bins + 2
   return n_param, bin_width
 
-def check_for_user_excluded(experiments, reflections):
+def osc_range_check_for_user_excluded(experiments, reflections):
   """Determine the oscillation range, allowing for user excluded range."""
   osc_range = experiments.scan.get_oscillation_range()
   one_osc_width = experiments.scan.get_oscillation()[1]
@@ -166,7 +168,7 @@ class ArraySMFactory(object):
     reflections = reflections.select(reflections['d'] > 0.0)
 
     # First initialise things common to more than one correction.
-    osc_range = check_for_user_excluded(experiments, reflections)
+    osc_range = osc_range_check_for_user_excluded(experiments, reflections)
     one_osc_width = experiments.scan.get_oscillation()[1]
     n_time_param, time_norm_fac, time_rot_int = initialise_smooth_input(
       osc_range, one_osc_width, params.parameterisation.decay_interval)

@@ -30,23 +30,13 @@ from dials.util import halraiser, log
 from dials.array_family import flex
 from dials.util.options import OptionParser, flatten_reflections,\
   flatten_experiments
-from dials.algorithms.scaling.scaling_refiner import scaling_refinery,\
-  error_model_refinery
 from dials.algorithms.scaling.model.scaling_model_factory import \
   create_scaling_model
 from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScalerFactory
 from dials.algorithms.scaling import scaler as scaler_module
-from dials.algorithms.scaling.parameter_handler import create_apm
-from dials.algorithms.scaling.target_function import ScalingTarget,\
-  ScalingTargetFixedIH
-from dials.algorithms.scaling.error_model.error_model import \
-  BasicErrorModel
-from dials.algorithms.scaling.error_model.error_model_target import \
-  ErrorModelTarget
 from dials.algorithms.scaling.scaling_utilities import (
   parse_multiple_datasets, save_experiments, save_reflections)
-
 
 
 logger = logging.getLogger('dials')
@@ -192,7 +182,7 @@ class Script(object):
     logger.info('\n' + '='*80 + '\n')
 
     self.scaler = create_scaler(self.params, self.experiments, self.reflections)
-    self.minimised = scaling_algorithm(self.scaler)
+    self.minimised = self.scaling_algorithm(self.scaler)
 
     for experiment in self.experiments:
       experiment.scaling_model.set_scaling_model_as_scaled()
@@ -237,112 +227,64 @@ class Script(object):
       from dials_scratch.command_line.plot_scaling_models import plot_scaling_models
       plot_scaling_models(params.output.scaled, params.output.experiments)'''
 
-def perform_scaling(scaler, target_type=ScalingTarget):
-  """Perform a complete minimisation based on the current state."""
-  apm_factory = create_apm(scaler)
-  for _ in range(apm_factory.n_cycles):
-    apm = apm_factory.make_next_apm()
-    refinery = scaling_refinery(engine=scaler.params.scaling_refinery.engine,
-      target=target_type(scaler, apm), prediction_parameterisation=apm,
-      max_iterations=scaler.params.scaling_refinery.max_iterations)
-    refinery.run()
-    scaler = refinery.return_scaler()
-    logger.info('\n'+'='*80+'\n')
-  return scaler
+  def scaling_algorithm(self, scaler):
+    """The main scaling algorithm."""
 
-def perform_error_optimisation(scaler):
-  """Perform an optimisation of the sigma values."""
-  if isinstance(scaler, scaler_module.MultiScalerBase):
-    for s_scaler in scaler.single_scalers:
-      refinery = error_model_refinery(engine='SimpleLBFGS',
-        target=ErrorModelTarget(BasicErrorModel(s_scaler.Ih_table)),
-        max_iterations=100)
-      refinery.run()
-      error_model = refinery.return_error_manager()
-      s_scaler.update_error_model(error_model.refined_parameters)
-    scaler.Ih_table.update_weights_from_error_models()
-  else:
-    refinery = error_model_refinery(engine='SimpleLBFGS',
-      target=ErrorModelTarget(BasicErrorModel(scaler.Ih_table)),
-      max_iterations=100)
-    refinery.run()
-    error_model = refinery.return_error_manager()
-    scaler.update_error_model(error_model.refined_parameters)
-  return scaler
+    if scaler.id_ == 'target':
+      scaler.perform_scaling()
 
-def scaling_algorithm(scaler):
-  """The main scaling algorithm."""
+      # The minimisation has only been done on a subset on the data, so apply the
+      # scale factors to the whole reflection table.
+      if scaler.params.scaling_options.only_target or (
+        scaler.params.scaling_options.target_intensities):
+        scaler.expand_scales_to_all_reflections()
 
-  if scaler.id_ == 'target':
-    scaler = perform_scaling(scaler, target_type=ScalingTargetFixedIH)
+        # Do another round so that more suitable weights are used.
+        scaler.select_reflections_for_scaling()
+        scaler.perform_scaling()
+
+        #Need to add in a full matrix round to allow calculation of variances.
+
+        scaler.expand_scales_to_all_reflections()
+
+        if scaler.params.weighting.optimise_error_model:
+          scaler.perform_error_optimisation()
+          '''scaler.apply_error_model_to_variances()'''
+
+        scaler.join_multiple_datasets()
+        return scaler
+      # Now pass to a multiscaler ready for next round of scaling.
+      scaler.expand_scales_to_all_reflections()
+      scaler = MultiScalerFactory.create_from_targetscaler(scaler)
+
+    # From here onwards, scaler should only be a SingleScaler
+    # or MultiScaler (not TargetScaler).
+    scaler.perform_scaling()
+
+    # Option to optimise the error model and then do another minimisation.
+    if scaler.params.weighting.optimise_error_model:
+      scaler.expand_scales_to_all_reflections()
+      scaler.perform_error_optimisation()
+      scaler.select_reflections_for_scaling()
+      scaler.perform_scaling()
+
+    # Now do one round of full matrix minimisation to determine errors.
+    if scaler.params.scaling_options.full_matrix_round:
+      scaler.perform_scaling(
+        engine=scaler.params.scaling_refinery.full_matrix_engine,
+        max_iterations=scaler.params.scaling_refinery.full_matrix_max_iterations)
 
     # The minimisation has only been done on a subset on the data, so apply the
     # scale factors to the whole reflection table.
-    if scaler.params.scaling_options.only_target or (
-      scaler.params.scaling_options.target_intensities):
-      scaler.expand_scales_to_all_reflections()
+    scaler.expand_scales_to_all_reflections(calc_cov=True)
 
-      # Do another round so that more suitable weights are used.
-      scaler.select_reflections_for_scaling()
-      scaler = perform_scaling(scaler, target_type=ScalingTargetFixedIH)
+    if scaler.params.weighting.optimise_error_model:
+      scaler.perform_error_optimisation()
+      '''scaler.apply_error_model_to_variances()'''
 
-      #Need to add in a full matrix round to allow calculation of variances.
-
-      scaler.expand_scales_to_all_reflections()
-
-      if scaler.params.weighting.optimise_error_model:
-        scaler = perform_error_optimisation(scaler)
-        '''scaler.apply_error_model_to_variances()'''
-
+    if isinstance(scaler, scaler_module.MultiScalerBase):
       scaler.join_multiple_datasets()
-      return scaler
-    # Now pass to a multiscaler ready for next round of scaling.
-    scaler.expand_scales_to_all_reflections()
-    scaler = MultiScalerFactory.create_from_targetscaler(scaler)
-
-  # From here onwards, scaler should only be a SingleScaler
-  # or MultiScaler (not TargetScaler).
-  scaler = perform_scaling(scaler)
-
-  # Option to optimise the error model and then do another minimisation.
-  if scaler.params.weighting.optimise_error_model:
-    scaler.expand_scales_to_all_reflections()
-    scaler = perform_error_optimisation(scaler)
-    scaler.select_reflections_for_scaling()
-    scaler = perform_scaling(scaler)
-
-  # Now do one round of full matrix minimisation to determine errors.
-  if scaler.params.scaling_options.full_matrix_round:
-    apm_factory = create_apm(scaler)
-    for _ in range(apm_factory.n_cycles):
-      apm = apm_factory.make_next_apm()
-      refinery = scaling_refinery(
-        engine=scaler.params.scaling_refinery.full_matrix_engine,
-        target=ScalingTarget(scaler, apm), prediction_parameterisation=apm,
-        max_iterations=scaler.params.scaling_refinery.full_matrix_max_iterations)
-      #try:
-      refinery.run()
-      '''except:
-        raise Sorry(""" Unable to do a round of full matrix minimisation needed
-        to determine scale factor uncertainties. This is likely due to
-        overparameterisation, and can often be avoided by reducing the number
-        of model parameters through the command line options, or by removing
-        model components (e.g. absorption_term=False). As a last resort,
-        the full matrix round can be turned off with full_matrix_round=False.""")'''
-      scaler = refinery.return_scaler()
-      logger.info('\n'+'='*80+'\n')
-
-  # The minimisation has only been done on a subset on the data, so apply the
-  # scale factors to the whole reflection table.
-  scaler.expand_scales_to_all_reflections(calc_cov=True)
-
-  if scaler.params.weighting.optimise_error_model:
-    scaler = perform_error_optimisation(scaler)
-    '''scaler.apply_error_model_to_variances()'''
-
-  if isinstance(scaler, scaler_module.MultiScalerBase):
-    scaler.join_multiple_datasets()
-  return scaler
+    return scaler
 
 if __name__ == "__main__":
   try:

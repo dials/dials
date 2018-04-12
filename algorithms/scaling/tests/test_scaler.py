@@ -43,22 +43,6 @@ def generated_refl():
     reflections.flags.integrated)
   return [reflections]
 
-#@pytest.fixture(scope='module')
-def generated_single_exp():
-  """Generate and experimentlist with a single experiment."""
-  experiments = ExperimentList()
-  exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
-              "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
-              "space_group_hall_symbol": " C 2y"}
-  crystal = Crystal.from_dict(exp_dict)
-  scan = Scan(image_range=[0, 90], oscillation=[0.0, 1.0])
-  beam = Beam(s0=(0.0, 0.0, 1.01))
-  goniometer = Goniometer((1.0, 0.0, 0.0))
-  detector = Detector()
-  experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
-    detector=detector, crystal=crystal))
-  return experiments
-
 
 @pytest.fixture(scope='module')
 def generated_param():
@@ -81,6 +65,10 @@ def test_ScalerBase():
     """Class to fill in abstract methods."""
 
     def update_for_minimisation(self, apm, curvatures=False):
+      """Fill in abstract method."""
+      pass
+
+    def perform_error_optimisation(self):
       """Fill in abstract method."""
       pass
 
@@ -107,7 +95,7 @@ def test_ScalerBase():
   rt = flex.reflection_table()
   rt['miller_index'] = flex.miller_index([(1, 0, 0), (0, 0, 1),
     (1, 0, 0), (2, 2, 2)])
-  exp = generated_single_exp()
+  exp = generated_exp()
   param = generated_param()
   sorted_rt = scalerbase._map_indices_to_asu(rt, exp[0], param)
   assert list(sorted_rt['miller_index']) == list(flex.miller_index([(0, 0, 1),
@@ -115,7 +103,7 @@ def test_ScalerBase():
 
 def test_SingleScaler():
   """Test the single scaler class."""
-  refl, exp, param = generated_refl(), generated_single_exp(), generated_param()
+  refl, exp, param = generated_refl(), generated_exp(), generated_param()
   exp = create_scaling_model(param, exp, refl)
   singlescaler = SingleScalerBase(param, exp[0], refl[0], scaled_id=2)
 
@@ -158,8 +146,6 @@ def test_SingleScaler():
   assert singlescaler.components == exp[0].scaling_model.components
   assert singlescaler.experiments == exp[0]
   assert singlescaler.params == param
-  assert singlescaler.consecutive_refinement_order == (
-    exp[0].scaling_model.consecutive_refinement_order)
 
   # Test configure_reflection_table?
   assert '_configure_reflection_table' in dir(singlescaler)
@@ -237,18 +223,18 @@ def generated_KB_param():
   parameters.__inject__('model', 'KB')
   return parameters
 
-def generated_multi_input(generated_refl, generated_two_exp, generated_param):
+def generated_multi_input():
   """Generate a multiple dataset input for a multiscaler."""
-  refl = generated_refl
-  exp = generated_two_exp
-  param = generated_param
-  refl_2 = copy.deepcopy(generated_refl[0])
-  refl.append(refl_2)
+  refl = generated_refl()
+  exp = generated_exp(2)
+  param = generated_param()
+  refl.append(generated_refl()[0])
   return (refl, exp, param)
 
 
 #@pytest.fixture(scope='module')
-def generated_two_exp():
+def generated_exp(n=1):
+  """Generate an experiment list with two experiments."""
   experiments = ExperimentList()
   exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
               "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
@@ -261,15 +247,16 @@ def generated_two_exp():
   detector = Detector()
   experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
     detector=detector, crystal=crystal))
-  experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer_2,
-    detector=detector, crystal=crystal))
+  if n > 1:
+    for _ in range(0, n-1):
+      experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer_2,
+        detector=detector, crystal=crystal))
   return experiments
 
 def test_MultiScaler():
   """Test the MultiScaler class."""
 
-  refl, exp, param = generated_multi_input(generated_refl(), generated_two_exp(),
-    generated_KB_param())
+  refl, exp, param = generated_multi_input()
   exp = create_scaling_model(param, exp, refl)
   scaler = create_scaler(param, exp, refl)
   assert scaler.id_ == 'multi'
@@ -365,7 +352,7 @@ def test_target_jacobian_calc():
 
 def test_sf_variance_calculation(generated_KB_param):
   """Test the calculation of scale factor variances."""
-  test_experiments, params = generated_single_exp(), generated_KB_param
+  test_experiments, params = generated_exp(), generated_KB_param
   assert len(test_experiments) == 1
   experiments = create_scaling_model(params, test_experiments, [None])
   components = experiments[0].scaling_model.components

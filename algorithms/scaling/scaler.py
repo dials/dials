@@ -24,6 +24,15 @@ from dials.algorithms.scaling.Ih_table import SingleIhTable,\
   JointIhTable
 from dials.algorithms.scaling.scaling_restraints import ScalingRestraints,\
   MultiScalingRestraints
+from dials.algorithms.scaling.target_function import ScalingTarget,\
+  ScalingTargetFixedIH
+from dials.algorithms.scaling.scaling_refiner import scaling_refinery,\
+  error_model_refinery
+from dials.algorithms.scaling.error_model.error_model import \
+  BasicErrorModel
+from dials.algorithms.scaling.error_model.error_model_target import \
+  ErrorModelTarget
+from dials.algorithms.scaling.parameter_handler import create_apm
 from dials_scratch_scaling_ext import calc_sigmasq as cpp_calc_sigmasq
 logger = logging.getLogger('dials')
 
@@ -159,35 +168,51 @@ class ScalerBase(object):
         error_model_params)
     return weights_for_scaling
 
+  def perform_scaling(self, target_type=ScalingTarget, engine=None,
+      max_iterations=None):
+    """Minimise the scaling model"""
+    apm_factory = create_apm(self)
+    for _ in range(apm_factory.n_cycles):
+      apm = apm_factory.make_next_apm()
+      if not engine:
+        engine = self.params.scaling_refinery.engine
+      if not max_iterations:
+        max_iterations = self.params.scaling_refinery.max_iterations
+      refinery = scaling_refinery(engine=engine, target=target_type(self, apm),
+        prediction_parameterisation=apm, max_iterations=max_iterations)
+      refinery.run()
+      self = refinery.return_scaler()
+      logger.info('\n'+'='*80+'\n')
+
+  @abc.abstractmethod
+  def perform_error_optimisation(self):
+    """Optimise an error model."""
+    pass
+
   def calc_merging_statistics(self):
     """Calculate the merging stats and return these with the dataset id."""
     u_c = self.experiments.crystal.get_unit_cell().parameters()
     bad_refl_sel = self.reflection_table.get_flags(
       self.reflection_table.flags.bad_for_scaling, all=False)
-    reflections = self.reflection_table.select(~bad_refl_sel)
+    r_t = self.reflection_table.select(~bad_refl_sel)
     if self.params.scaling_options.space_group:
-      s_g_symbol = self.params.scaling_options.space_group
       crystal_symmetry = crystal.symmetry(unit_cell=u_c,
-        space_group_symbol=s_g_symbol)
+        space_group_symbol=self.params.scaling_options.space_group)
     else:
       s_g = self.experiments.crystal.get_space_group()
-      crystal_symmetry = crystal.symmetry(unit_cell=u_c,
-        space_group=s_g)
+      crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
     miller_set = miller.set(crystal_symmetry=crystal_symmetry,
-      indices=reflections['miller_index'], anomalous_flag=False)
-    scaled_intensities = (reflections['intensity']/
-      reflections['inverse_scale_factor'])
-    sigmas = ((reflections['variance']**0.5)/
-      reflections['inverse_scale_factor'])
-    i_obs = miller.array(miller_set, data=scaled_intensities)
+      indices=r_t['miller_index'], anomalous_flag=False)
+    i_obs = miller.array(miller_set, data=r_t['intensity']/
+      r_t['inverse_scale_factor'])
     i_obs.set_observation_type_xray_intensity()
-    i_obs.set_sigmas(sigmas)
-    scaled_ids = list(set(self.reflection_table['id']))
+    i_obs.set_sigmas((r_t['variance']**0.5)/r_t['inverse_scale_factor'])
+    dataset_id = list(set(self.reflection_table['id']))[0]
     result = iotbx.merging_statistics.dataset_statistics(
       i_obs=i_obs, n_bins=20, anomalous=False, sigma_filtering=None,
       use_internal_variance=True, eliminate_sys_absent=False)
       #eliminate_sys_absent=False, sigma_filtering=None)
-    return ([result], scaled_ids[0])
+    return ([result], dataset_id)
 
 class SingleScalerBase(ScalerBase):
   """
@@ -233,11 +258,6 @@ class SingleScalerBase(ScalerBase):
   def components(self):
     """Shortcut to scaling model components."""
     return self.experiments.scaling_model.components
-
-  @property
-  def consecutive_refinement_order(self):
-    """Shortcut to scaling model scaling order."""
-    return self.experiments.scaling_model.consecutive_refinement_order
 
   @property
   def var_cov_matrix(self):
@@ -425,6 +445,14 @@ class SingleScalerBase(ScalerBase):
     for component in self.components.itervalues():
       component.update_reflection_data(self.reflection_table, selection)
 
+  def perform_error_optimisation(self):
+    refinery = error_model_refinery(engine='SimpleLBFGS',
+      target=ErrorModelTarget(BasicErrorModel(self.Ih_table)),
+      max_iterations=100)
+    refinery.run()
+    error_model = refinery.return_error_manager()
+    self.update_error_model(error_model.refined_parameters)
+
   def _configure_reflection_table(self):
     """Calculate requried quantities"""
     self._reflection_table = self.experiments.scaling_model.configure_reflection_table(
@@ -442,47 +470,42 @@ class MultiScalerBase(ScalerBase):
     '''initialise from a list of single scalers'''
     super(MultiScalerBase, self).__init__()
     self.single_scalers = single_scalers
+    self.active_scalers = None
     self._initial_keys = self.single_scalers[0].initial_keys
     self._params = params
     self._experiments = experiments[0] #what should this be set to - where exactly is used?
     logger.info('Determining symmetry equivalent reflections across datasets.\n')
     self._Ih_table = JointIhTable(self.single_scalers)
 
-  @abc.abstractmethod
   def calculate_restraints(self, apm):
-    'abstract method for combining the absorption restraints for multiple scalers'
-    pass
-
-  @staticmethod
-  def calc_multi_restraints(apm, scalers):
-    'method only called in physical scaling'
-    scaler_ids = [scaler.experiments.scaling_model.id_ for scaler in scalers]
+    """Calculate a restraints residuals/gradient vector for multiple datasets."""
+    scaler_ids = [scaler.experiments.scaling_model.id_ for scaler in
+      self.active_scalers]
     if 'physical' in scaler_ids:
       #Ok for now, but make more general? But will be slow for many datasets?
       return MultiScalingRestraints(apm).calculate_restraints()
     return None
 
-  @abc.abstractmethod
   def compute_restraints_residuals_jacobian(self, apm):
-    'abstract method for combining the absorption restraints for multiple scalers'
-    pass
-
-  @staticmethod
-  def compute_multi_restraints_residuals_jacobian(apm, scalers):
-    """Calculate restraints for multiple scalers."""
-    scaler_ids = [scaler.experiments.scaling_model.id_ for scaler in scalers]
+    """Calculate a restraints residuals/jacobian for multiple datasets."""
+    scaler_ids = [scaler.experiments.scaling_model.id_ for scaler in
+      self.active_scalers]
     if 'physical' in scaler_ids:
       return MultiScalingRestraints(apm).calculate_jacobian_restraints()
     return None
 
+  def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
+    for scaler in self.active_scalers:
+      scaler.expand_scales_to_all_reflections(caller=self, calc_cov=calc_cov)
+
   @abc.abstractmethod
   def join_multiple_datasets(self):
-    'abstract method for combining all datasets into a single reflectiont table'
+    """Combine all datasets into a single reflection table."""
     pass
 
   def join_datasets_from_scalers(self, scalers):
-    '''method to create a joint reflection table from single scalers.
-    Anticipated to be called from join_multiple_datasets'''
+    """Create a joint reflection table from single scalers.
+    Anticipated to be called from join_multiple_datasets."""
     joined_reflections = flex.reflection_table()
     for scaler in scalers:
       joined_reflections.extend(scaler.reflection_table)
@@ -514,8 +537,19 @@ class MultiScalerBase(ScalerBase):
 
   def select_reflections_for_scaling(self):
     """Select reflections for scaling in individual scalers."""
-    for scaler in self.single_scalers:
+    for scaler in self.active_scalers:
       scaler.select_reflections_for_scaling()
+
+  def perform_error_optimisation(self):
+    """Perform an optimisation of the sigma values."""
+    for s_scaler in self.active_scalers:
+      refinery = error_model_refinery(engine='SimpleLBFGS',
+        target=ErrorModelTarget(BasicErrorModel(s_scaler.Ih_table)),
+        max_iterations=100)
+      refinery.run()
+      error_model = refinery.return_error_manager()
+      s_scaler.update_error_model(error_model.refined_parameters)
+    self.Ih_table.update_weights_from_error_models()
 
 class MultiScaler(MultiScalerBase):
   """
@@ -528,15 +562,8 @@ class MultiScaler(MultiScalerBase):
   def __init__(self, params, experiments, single_scalers):
     logger.info('Configuring a MultiScaler to handle the individual Scalers. \n')
     super(MultiScaler, self).__init__(params, experiments, single_scalers)
+    self.active_scalers = self.single_scalers
     logger.info('Completed configuration of MultiScaler. \n\n' + '='*80 + '\n')
-
-  def calculate_restraints(self, apm):
-    return super(MultiScaler, MultiScaler).calc_multi_restraints(
-      apm, self.single_scalers)
-
-  def compute_restraints_residuals_jacobian(self, apm):
-    return super(MultiScaler, MultiScaler).compute_multi_restraints_residuals_jacobian(
-      apm, self.single_scalers)
 
   def update_error_model(self, error_model_params):
     """Update the error model in Ih table."""
@@ -558,10 +585,6 @@ class MultiScaler(MultiScalerBase):
           apm.apm_data[i]['start_idx'])
         start_row_no += basis_fn[1].n_rows
     self.Ih_table.calc_Ih()
-
-  def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
-    for scaler in self.single_scalers:
-      scaler.expand_scales_to_all_reflections(caller=self, calc_cov=calc_cov)
 
   def join_multiple_datasets(self):
     '''method to create a joint reflection table'''
@@ -593,13 +616,20 @@ class TargetScaler(MultiScalerBase):
     logger.info('\nInitialising a TargetScaler instance. \n')
     super(TargetScaler, self).__init__(params, scaled_experiments, scaled_scalers)
     self.unscaled_scalers = unscaled_scalers
+    self.active_scalers = self.unscaled_scalers
     self._initial_keys = self.unscaled_scalers[0].initial_keys #needed for
     # scaling against calculated Is
     self._experiments = unscaled_experiments[0]
+    self.set_Ih_values_to_target()
+    logger.info('Completed initialisation of TargetScaler. \n' + '*'*40 + '\n')
+
+  def set_Ih_values_to_target(self):
+    """Match equivalent reflections between individual unscaled datasets and
+    set target Ih values in the Ih_table for each dataset."""
     target_Ih_table = self.Ih_table
     target_asu_Ih_dict = dict(zip(target_Ih_table.asu_miller_index,
       target_Ih_table.Ih_values))
-    for scaler in unscaled_scalers:
+    for scaler in self.unscaled_scalers:
       scaler.Ih_table.Ih_table['Ih_values'] = flex.double(
         scaler.Ih_table.size, 0.0) # set to zero to allow selection below
       location_in_unscaled_array = 0
@@ -614,7 +644,6 @@ class TargetScaler(MultiScalerBase):
       sel = scaler.Ih_table.Ih_values != 0.0
       scaler.Ih_table = scaler.Ih_table.select(sel)
       scaler.apply_selection_to_SFs(scaler.Ih_table.nonzero_weights)
-    logger.info('Completed initialisation of TargetScaler. \n' + '*'*40 + '\n')
 
   def update_for_minimisation(self, apm, curvatures=False):
     """Update the scale factors and Ih for the next iteration of minimisation."""
@@ -624,18 +653,6 @@ class TargetScaler(MultiScalerBase):
       basis_fn = scaler.get_basis_function(apm.apm_list[i])
       apm.apm_list[i].derivatives = basis_fn[1]
       scaler.Ih_table.inverse_scale_factors = basis_fn[0]
-
-  def calculate_restraints(self, apm):
-    return super(TargetScaler, TargetScaler).calc_multi_restraints(
-      apm, self.unscaled_scalers)
-
-  def compute_restraints_residuals_jacobian(self, apm):
-    return super(TargetScaler, TargetScaler).compute_multi_restraints_residuals_jacobian(
-      apm, self.unscaled_scalers)
-
-  def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
-    for scaler in self.unscaled_scalers:
-      scaler.expand_scales_to_all_reflections(caller=self, calc_cov=calc_cov)
 
   def calc_merging_statistics(self):
     results = []
@@ -657,9 +674,8 @@ class TargetScaler(MultiScalerBase):
     scalers.extend(self.unscaled_scalers)
     super(TargetScaler, self).join_datasets_from_scalers(scalers)
 
-  def select_reflections_for_scaling(self):
-    for scaler in self.unscaled_scalers:
-      scaler.select_reflections_for_scaling()
+  def perform_scaling(self):
+    super(TargetScaler, self).perform_scaling(target_type=ScalingTargetFixedIH)
 
 
 class NullScaler(ScalerBase):
@@ -692,9 +708,25 @@ class NullScaler(ScalerBase):
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
     pass
 
+  def perform_error_optimisation(self):
+    pass
+
   def update_for_minimisation(self, apm, curvatures=False):
     '''update the scale factors and Ih for the next iteration of minimisation'''
     pass
+
+def perform_scaling(scaler, target_type=ScalingTarget):
+  """Perform a complete minimisation based on the current state."""
+  apm_factory = create_apm(scaler)
+  for _ in range(apm_factory.n_cycles):
+    apm = apm_factory.make_next_apm()
+    refinery = scaling_refinery(engine=scaler.params.scaling_refinery.engine,
+      target=target_type(scaler, apm), prediction_parameterisation=apm,
+      max_iterations=scaler.params.scaling_refinery.max_iterations)
+    refinery.run()
+    scaler = refinery.return_scaler()
+    logger.info('\n'+'='*80+'\n')
+  return scaler
 
 def calc_sf_variances(components, var_cov):
   """Use the parameter var_cov matrix to calculate the variances of the

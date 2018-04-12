@@ -52,8 +52,8 @@ def test_ScaleComponentBase():
   assert hasattr(base_SF, '_derivatives')
   assert hasattr(base_SF, '_curvatures')
 
-  assert base_SF.calculate_restraints() == None
-  assert base_SF.calculate_jacobian_restraints() == None
+  assert base_SF.calculate_restraints() is None
+  assert base_SF.calculate_jacobian_restraints() is None
 
   base_SF = base_SF_filler(flex.double(3, 1.0), flex.double(3, 0.1))
   assert list(base_SF.parameter_esds) == list(flex.double(3, 0.1))

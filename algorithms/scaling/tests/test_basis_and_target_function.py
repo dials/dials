@@ -1,8 +1,8 @@
 """
 Test for the basis function and target function module.
 """
-import numpy as np
 import copy
+import numpy as np
 import pytest
 from dials.array_family import flex
 from dials.util.options import OptionParser

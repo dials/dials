@@ -3,8 +3,8 @@ Test for targetscaler and fixed Ih target function.
 """
 from __future__ import print_function
 
-import pytest
 from math import log
+import pytest
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from libtbx import phil
@@ -63,8 +63,8 @@ def generated_refl_2():
     reflections.flags.integrated)
   return [reflections]
 
-
 def generated_refl_3():
+  """Generate a reflection table for targeted scaling."""
   reflections = flex.reflection_table()
   reflections['intensity.prf.value'] = flex.double([2.0, 5.0, 2.0])
   reflections['intensity.prf.variance'] = flex.double([2.0, 5.0, 2.0])
