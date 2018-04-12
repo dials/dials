@@ -1015,9 +1015,26 @@ def test_to_from_msgpack():
   from dials.array_family import flex
 
   def gen_shoebox():
-    shoebox = Shoebox(0, (0, 1, 0, 3, 0, 4))
+    shoebox = Shoebox(0, (0, 4, 0, 3, 0, 1))
     shoebox.allocate()
+    for k in range(1):
+      for j in range(3):
+        for i in range(4):
+          shoebox.data[k,j,i] = i+j+k
+          shoebox.mask[k,j,i] = i % 2
+          shoebox.background[k,j,i] = i*j
     return shoebox
+
+  def compare(a, b):
+    assert a.panel == b.panel
+    assert a.bbox == b.bbox
+    for aa, bb in zip(a.data, b.data):
+      assert(abs(aa-bb) < 1e-9)
+    for aa, bb in zip(a.background, b.background):
+      assert(abs(aa-bb) < 1e-9)
+    for aa, bb in zip(a.mask, b.mask):
+      assert(aa == bb)
+    return True
 
   # The columns as lists
   c1 = list(range(10))
@@ -1054,6 +1071,14 @@ def test_to_from_msgpack():
   assert(all(a == b for a, b in zip(new_table['col1'], c1)))
   assert(all(a == b for a, b in zip(new_table['col2'], c2)))
   assert(all(a == b for a, b in zip(new_table['col3'], c3)))
+  assert(all(a == b for a, b in zip(new_table['col4'], c4)))
+  assert(all(a == b for a, b in zip(new_table['col5'], c5)))
+  assert(all(a == b for a, b in zip(new_table['col6'], c6)))
+  assert(all(a == b for a, b in zip(new_table['col7'], c7)))
+  assert(all(a == b for a, b in zip(new_table['col8'], c8)))
+  assert(all(a == b for a, b in zip(new_table['col9'], c9)))
+  assert(all(a == b for a, b in zip(new_table['col10'], c10)))
+  assert(all(compare(a, b) for a, b in zip(new_table['col11'], c11)))
 
 def test_to_from_msgpack2(dials_regression):
 
