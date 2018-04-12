@@ -201,34 +201,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       assert(isinstance(result, reflection_table))
       return result
 
-  def as_msgpack(self):
-    '''
-    Write as msgpack format
-
-    '''
-    import msgpack
-    import cPickle as pickle
-    def encode(obj):
-      if isinstance(obj, reflection_table):
-        data_string = pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL)
-        return { "__dials.array_family.flex.reflection_table__" : data_string }
-      raise TypeError("Not a reflection table")
-    return msgpack.packb(self, default=encode, use_bin_type=True)
-
-  @staticmethod
-  def from_msgpack(packed):
-    '''
-    Convert from msgpack format
-
-    '''
-    import msgpack
-    import cPickle as pickle
-    def decode(obj):
-      if "__dials.array_family.flex.reflection_table__" in obj:
-        return pickle.loads(obj["__dials.array_family.flex.reflection_table__"])
-      raise TypeError("No reflection table in file")
-    return msgpack.unpackb(packed, object_hook=decode, raw=False)
-
   def as_msgpack_file(self, filename):
     '''
     Write the reflection table to file in msgpack format

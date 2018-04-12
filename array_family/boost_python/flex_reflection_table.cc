@@ -14,6 +14,7 @@
 #include <dials/array_family/boost_python/flex_table_suite.h>
 #include <dials/array_family/reflection_table.h>
 #include <dials/array_family/reflection.h>
+#include <dials/array_family/reflection_table_msgpack_adapter.h>
 #include <dials/model/data/shoebox.h>
 #include <dials/model/data/observation.h>
 #include <dials/algorithms/profile_model/gaussian_rs/coordinate_system.h>
@@ -730,6 +731,30 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
 
+  /**
+   * Pack the reflection table in msgpack format
+   * @param self The reflection table
+   * @returns The msgpack string
+   */
+  std::string reflection_table_as_msgpack(
+      reflection_table self) {
+    std::stringstream buffer;
+    msgpack::pack(buffer, self);
+    return buffer.str();
+  }
+
+  /**
+   * Unpack the reflection table from msgpack format
+   * @param the msgpack string
+   * @returns The reflection table
+   */
+  reflection_table reflection_table_from_msgpack(std::string packed) {
+    msgpack::unpacked result;
+    std::size_t off = 0;
+    msgpack::unpack(result, packed.data(), packed.size(), off);
+    reflection_table r = result.get().as<reflection_table>();
+    return r;
+  }
 
   /**
    * Struct to facilitate wrapping reflection table type
@@ -783,6 +808,11 @@ namespace dials { namespace af { namespace boost_python {
           &split_indices_by_experiment_id<flex_table_type>)
         .def("compute_phi_range",
           &compute_phi_range<flex_table_type>)
+        .def("as_msgpack",
+          &reflection_table_as_msgpack)
+        .def("from_msgpack",
+          &reflection_table_from_msgpack)
+        .staticmethod("from_msgpack")
         ;
 
       // Create the flags enum in the reflection table scope
