@@ -313,7 +313,7 @@ namespace adaptor {
     msgpack::packer<Stream>& operator()(
         msgpack::packer<Stream>& o,
         const dials::af::reflection_table& v) const {
-      typedef typename dials::af::reflection_table::const_iterator iterator;
+      typedef dials::af::reflection_table::const_iterator iterator;
       o.pack_array(4);
       o.pack("dials::af::reflection_table");
       o.pack(1);
@@ -596,8 +596,8 @@ namespace adaptor {
     msgpack::object const& operator()(
         msgpack::object const& o,
         dials::af::reflection_table& v) const {
-      typedef typename dials::af::reflection_table::key_type key_type;
-      typedef typename dials::af::reflection_table::mapped_type mapped_type;
+      typedef dials::af::reflection_table::key_type key_type;
+      typedef dials::af::reflection_table::mapped_type mapped_type;
 
       // Check the type is an array
       if (o.type != msgpack::type::ARRAY) {
