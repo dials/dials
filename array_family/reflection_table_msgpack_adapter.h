@@ -314,10 +314,14 @@ namespace adaptor {
         msgpack::packer<Stream>& o,
         const dials::af::reflection_table& v) const {
       typedef dials::af::reflection_table::const_iterator iterator;
-      o.pack_array(4);
+      o.pack_map(4);
+      o.pack("filetype");
       o.pack("dials::af::reflection_table");
+      o.pack("version");
       o.pack(1);
+      o.pack("nrows");
       o.pack(v.nrows());
+      o.pack("data");
       o.pack_map(v.ncols());
       for (iterator it = v.begin(); it != v.end(); ++it) {
         o.pack(it->first);
@@ -600,48 +604,101 @@ namespace adaptor {
       typedef dials::af::reflection_table::mapped_type mapped_type;
 
       // Check the type is an array
-      if (o.type != msgpack::type::ARRAY) {
-        throw DIALS_ERROR("msgpack type is not an array");
+      if (o.type != msgpack::type::MAP) {
+        throw DIALS_ERROR("msgpack type is not an map");
       }
 
       // Check there are 4 elements
-      if (o.via.array.size != 4) {
-        throw DIALS_ERROR("msgpack array does not have correct dimensions");
+      if (o.via.map.size != 4) {
+        throw DIALS_ERROR("msgpack map does not have correct dimensions");
       }
 
-      // Read the metadata
-      std::string type;
-      std::size_t version;
-      std::size_t nrows;
-      o.via.array.ptr[0].convert(type);
-      o.via.array.ptr[1].convert(version);
-      o.via.array.ptr[2].convert(nrows);
+      // Set the the column map object to NULL
+      msgpack::object *map_object = NULL;
 
-      // Check this is a reflection table
-      if (type != "dials::af::reflection_table") {
-        throw DIALS_ERROR("Expected dials::af::reflection_table, got something else");
+      // Required colulmns
+      bool found_filetype = false;
+      bool found_version = false;
+      bool found_nrows = false;
+
+      // Loop through the meta data
+      msgpack::object_kv* first = o.via.map.ptr;
+      msgpack::object_kv* last = first + o.via.map.size;
+      for (msgpack::object_kv *it = first; it != last; ++it) {
+
+        // Get the item name
+        std::string name;
+        it->key.convert(name);
+
+        // Read the meta data columns
+        if (name == "filetype") {
+
+          // Check this is a reflection table
+          std::string type;
+          it->val.convert(type);
+          if (type != "dials::af::reflection_table") {
+            throw DIALS_ERROR("Expected dials::af::reflection_table, got something else");
+          }
+
+          // Filetype is required
+          found_filetype = true;
+
+        } else if (name == "version") {
+
+          // Check the version is what we expect
+          std::size_t version;
+          it->val.convert(version);
+          if (version != 1) {
+            throw DIALS_ERROR("Expected version 1, got something else");
+          }
+
+          // Version is required
+          found_version = true;
+
+        } else if (name == "nrows") {
+
+          // Resize the expected number of rows
+          std::size_t nrows;
+          it->val.convert(nrows);
+          v.resize(nrows);
+
+          // nrows is required
+          found_nrows = true;
+
+        } else if (name == "data") {
+
+          // Get the data ptr
+          map_object = &it->val;
+
+        } else {
+          throw DIALS_ERROR("unknown key in reflection file");
+        }
       }
 
-      // Check the version is what we expect
-      if (version != 1) {
-        throw DIALS_ERROR("Expected version 1, got something else");
+      // Check filetype has been found
+      if (!found_filetype) {
+        throw DIALS_ERROR("File type not found");
       }
 
-      // Resize the expected number of rows
-      v.resize(nrows);
+      // Check version has been found
+      if (!found_version) {
+        throw DIALS_ERROR("Version not found");
+      }
 
-      // Get the column map
-      const msgpack::object& map_object = o.via.array.ptr[3];
+      // Check the number of rows has been found
+      if (!found_nrows) {
+        throw DIALS_ERROR("Number of rows not found");
+      }
 
-      // Ensure it is a column type
-      if (map_object.type != msgpack::type::MAP) {
-        throw DIALS_ERROR("msgpack type is not a map");
+      // Check the table data
+      if (map_object == NULL || map_object->type != msgpack::type::MAP) {
+        throw DIALS_ERROR("Table data not found");
       }
 
       // Read the columns from the map
-      if (map_object.via.map.size != 0) {
-        msgpack::object_kv* first = map_object.via.map.ptr;
-        msgpack::object_kv* last = first + map_object.via.map.size;
+      if (map_object->via.map.size != 0) {
+        msgpack::object_kv* first = map_object->via.map.ptr;
+        msgpack::object_kv* last = first + map_object->via.map.size;
         for (msgpack::object_kv *it = first; it != last; ++it) {
           key_type key;
           mapped_type value;
