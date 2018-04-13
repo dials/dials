@@ -1,11 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
-needs_sphinx = '1.1'
+import datetime
+
+# needs_sphinx = '1.1'
 
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.imgmath',
-    'numpydoc',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
     'sphinx.ext.coverage',
     'sphinx.ext.autosummary',
@@ -15,12 +17,16 @@ extensions = [
     'libtbx.sphinx.python_string'
 ]
 
+# Add CDN path for mathjax script, converting Latex to readable text on the fly.
+# (The Sphinx builtin path is deprecated.)
+mathjax_path = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+
 templates_path = ['_templates']
 source_suffix = '.rst'
 master_doc = 'index'
 
 project = u'DIALS'
-copyright = u'2015, Diamond Light Source, Lawrence Berkeley National Laboratory and STFC'
+copyright = u'%d, Diamond Light Source, Lawrence Berkeley National Laboratory and STFC' % datetime.datetime.now().year
 
 version = ''
 release = ''
