@@ -11,6 +11,7 @@ from libtbx.phil import parse
 #logger = logging.getLogger(__name__)
 logger = logging.getLogger('dials')
 
+
 TARGET_ACHIEVED = "RMSD target achieved"
 RMSD_CONVERGED = "RMSD no longer decreasing"
 STEP_TOO_SMALL = "Step too small"
@@ -287,7 +288,7 @@ class ScalingLstbxBuildUpMixin(ScalingRefinery):
         self.add_residuals(restraints[0], restraints[2])
       else:
         self.add_equations(restraints[0], restraints[1], restraints[2])
-        #print(flex.sum(residuals)+flex.sum(restraints[0]))
+
     return
 
 class ScalingGaussNewtonIterations(ScalingLstbxBuildUpMixin, GaussNewtonIterations):

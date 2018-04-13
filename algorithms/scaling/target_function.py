@@ -9,7 +9,6 @@ from dials.array_family import flex
 from dials_scaling_helpers_ext import row_multiply
 from dials_scratch_scaling_ext import elementwise_square
 
-
 class ScalingTarget(object):
   """
   A class to be used by a Scaling Refinery to calculate gradients,
@@ -192,7 +191,8 @@ class ScalingTarget(object):
 
   def compute_residuals_and_gradients(self):
     """Return the residuals array, jacobian matrix and weights."""
-    return self.calculate_residuals(), self.calculate_jacobian(), self.weights
+    r, j, w = self.calculate_residuals(), self.calculate_jacobian(), self.weights
+    return (r/w)**0.5, j, w
 
   def compute_restraints_residuals_and_gradients(self):
     """Return the restraints for the residuals and jacobian."""

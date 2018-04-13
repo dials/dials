@@ -67,19 +67,19 @@ def generated_refl_2():
 def generated_refl_3():
   """Generate a reflection table for targeted scaling."""
   reflections = flex.reflection_table()
-  reflections['intensity.prf.value'] = flex.double([2.0, 5.0, 2.0])
-  reflections['intensity.prf.variance'] = flex.double([2.0, 5.0, 2.0])
+  reflections['intensity.prf.value'] = flex.double([2.0, 5.0, 2.0, 1.0])
+  reflections['intensity.prf.variance'] = flex.double([2.0, 5.0, 2.0, 1.0])
   reflections['miller_index'] = flex.miller_index([(1, 0, 0), (0, 0, 1),
-    (1, 0, 0)]) #don't change
-  reflections['d'] = flex.double([1.0, 2.0, 1.0])
-  reflections['lp'] = flex.double([1.0, 1.0, 1.0])
-  reflections['dqe'] = flex.double([1.0, 1.0, 1.0])
-  reflections['partiality'] = flex.double([1.0, 1.0, 1.0])
+    (1, 0, 0), (10, 0, 0)]) #don't change
+  reflections['d'] = flex.double([1.0, 2.0, 1.0, 0.5])
+  reflections['lp'] = flex.double([1.0, 1.0, 1.0, 1.0])
+  reflections['dqe'] = flex.double([1.0, 1.0, 1.0, 1.0])
+  reflections['partiality'] = flex.double([1.0, 1.0, 1.0, 1.0])
   reflections['xyzobs.px.value'] = flex.vec3_double([(0.0, 0.0, 0.0),
-    (0.0, 0.0, 5.0), (0.0, 0.0, 10.0)])
+    (0.0, 0.0, 5.0), (0.0, 0.0, 10.0), (0.0, 0.0, 10.0)])
   reflections['s1'] = flex.vec3_double([(0.0, 0.1, 1.0), (0.0, 0.1, 1.0),
-    (0.0, 0.1, 1.0)])
-  reflections.set_flags(flex.bool([True, True, True]),
+    (0.0, 0.1, 1.0), (0.0, 0.1, 1.0)])
+  reflections.set_flags(flex.bool([True, True, True, True]),
     reflections.flags.integrated)
   return [reflections]
 
@@ -155,7 +155,7 @@ def test_TargetScaler():
   targetscaler = TargetScaler(params, experiments, [ss],
     experiments, [ss2])
   assert isinstance(targetscaler, TargetScaler)
-  assert list(targetscaler.Ih_table.Ih_values) == [10.0, 1.0, 1.0]
+  assert list(targetscaler.Ih_table.Ih_values) == [1.0, 10.0, 1.0]
   assert list(targetscaler.unscaled_scalers[0].Ih_table.asu_miller_index) == (
     list(flex.miller_index([(1, 0, 0)]))) #Only one matched across datasets.
   assert list(targetscaler.unscaled_scalers[0].Ih_table.Ih_values) == [1.0]
@@ -208,8 +208,8 @@ def test_simple_targeted_refinement():
   # Solving these gives the form tested for at the end of this test.
 
   assert list(targetscaler.unscaled_scalers[0].Ih_table.Ih_values) == [
-    10.0, 1.0, 1.0]
-  assert list(targetscaler.Ih_table.Ih_values) == [10.0, 1.0, 1.0]
+    1.0, 10.0, 1.0]
+  assert list(targetscaler.Ih_table.Ih_values) == [1.0, 10.0, 1.0]
 
   apm_factory = create_apm(targetscaler)
   apm = apm_factory.make_next_apm()

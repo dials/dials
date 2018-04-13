@@ -14,7 +14,6 @@ from cctbx import miller, crystal
 from scitbx import sparse
 from dials_scaling_helpers_ext import row_multiply
 import iotbx.merging_statistics
-from libtbx.containers import OrderedSet
 from libtbx.table_utils import simple_table
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.scaling_utilities import (
@@ -44,6 +43,7 @@ class ScalerBase(object):
 
   def __init__(self):
     self._experiments = None
+    self.space_group = None
     self._params = None
     self._reflection_table = []
     self._Ih_table = None
@@ -102,20 +102,32 @@ class ScalerBase(object):
     """Expand scales from a subset to all reflections."""
     pass
 
-  @staticmethod
-  def _map_indices_to_asu(reflection_table, experiments, params):
-    """Map the miller index to the asu and use to sort the reflection table."""
-    u_c = experiments.crystal.get_unit_cell().parameters()
-    if params.scaling_options.space_group:
-      sg_from_file = experiments.crystal.get_space_group().info()
-      s_g_symbol = params.scaling_options.space_group
+  def _set_space_group(self):
+    if self.params.scaling_options.space_group:
+      sg_from_file = self.experiments.crystal.get_space_group().info()
+      s_g_symbol = self.params.scaling_options.space_group
       crystal_symmetry = crystal.symmetry(space_group_symbol=s_g_symbol)
+      self.space_group = crystal_symmetry.space_group()
       msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
         'If the reflection indexing in these space groups is different, {sep}'
         'bad things may happen!!! {sep}').format(sg_from_file, s_g_symbol, sep='\n')
       logger.info(msg)
     else:
-      s_g = experiments.crystal.get_space_group()
+      self.space_group = self.experiments.crystal.get_space_group()
+
+  '''def _map_indices_to_asu(self, reflection_table, experiments, params):
+    """Map the miller index to the asu and use to sort the reflection table."""
+    if params.scaling_options.space_group:
+      sg_from_file = experiments.crystal.get_space_group().info()
+      s_g_symbol = params.scaling_options.space_group
+      crystal_symmetry = crystal.symmetry(space_group_symbol=s_g_symbol)
+      self.space_group = crystal_symmetry.space_group()
+      msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
+        'If the reflection indexing in these space groups is different, {sep}'
+        'bad things may happen!!! {sep}').format(sg_from_file, s_g_symbol, sep='\n')
+      logger.info(msg)
+    else:
+      self.space_group = experiments.crystal.get_space_group()
       crystal_symmetry = crystal.symmetry(space_group=s_g)
     miller_set = miller.set(crystal_symmetry=crystal_symmetry,
       indices=reflection_table['miller_index'], anomalous_flag=False)
@@ -124,7 +136,7 @@ class ScalerBase(object):
     permuted = (miller_set.map_to_asu()).sort_permutation(
       by_value='packed_indices')
     reflection_table = reflection_table.select(permuted)
-    return reflection_table
+    return reflection_table'''
 
   @classmethod
   def _scaling_subset(cls, reflection_table, params, error_model_params=None):
@@ -226,6 +238,7 @@ class SingleScalerBase(ScalerBase):
     super(SingleScalerBase, self).__init__()
     self._experiments = experiment
     self._params = params
+    self._set_space_group()
     n_model_params = sum([val.n_params for val in self.components.itervalues()])
     self._var_cov = sparse.matrix(n_model_params, n_model_params)
     # Rename the id for now so that we have unique dataset ids
@@ -236,8 +249,8 @@ class SingleScalerBase(ScalerBase):
       reflection) #flag not integrated, bad d, bad partiality
     reflection_table = self._select_optimal_intensities(reflection_table,
       self.params) #flag bad variance,
-    reflection_table = self._map_indices_to_asu(reflection_table,
-      self.experiments, self.params)
+    '''reflection_table = self._map_indices_to_asu(reflection_table,
+      self.experiments, self.params)'''
     # Calculate values for later filtering, but don't filter here!!!
     reflection_table = calc_normE2(reflection_table, self.experiments)
     if 'centric_flag' in reflection_table: #If E2 values have been calculated
@@ -379,7 +392,7 @@ class SingleScalerBase(ScalerBase):
       self._reflection_table = self.round_of_outlier_rejection(
         self._reflection_table)
     if self.params.weighting.optimise_error_model:
-      self.Ih_table = SingleIhTable(self._reflection_table)
+      self.Ih_table = SingleIhTable(self._reflection_table, self.space_group)
 
   def update_error_model(self, error_model_params):
     """Apply a correction to try to improve the error estimate."""
@@ -403,7 +416,7 @@ class SingleScalerBase(ScalerBase):
   def round_of_outlier_rejection(self, reflection_table):
     """calculate outliers from the reflections in the Ih_table,
     and use these to filter the reflection table and Ih_table."""
-    reflection_table = reject_outliers(reflection_table,
+    reflection_table = reject_outliers(reflection_table, self.space_group,
       self.params.scaling_options.outlier_zmax)
     msg = ('A round of outlier rejection has been performed, in total {0} {sep}'
         'outliers have now been identified. {sep}'.format(
@@ -430,7 +443,7 @@ class SingleScalerBase(ScalerBase):
     model components."""
     (refl_for_scaling, w_for_scaling, selection) = (
       self._scaling_subset(self.reflection_table, self.params))
-    self._Ih_table = SingleIhTable(refl_for_scaling, w_for_scaling.weights)
+    self._Ih_table = SingleIhTable(refl_for_scaling, self.space_group, w_for_scaling.weights)
     #if self.params.weighting.tukey_biweighting: #not working for now, FIX
     #  self.Ih_table.apply_tukey_biweighting()
     for component in self.components.itervalues():
@@ -461,12 +474,14 @@ class MultiScalerBase(ScalerBase):
     '''initialise from a list of single scalers'''
     super(MultiScalerBase, self).__init__()
     self.single_scalers = single_scalers
+    self.space_group = single_scalers[0].space_group
     self.active_scalers = None
     self._initial_keys = self.single_scalers[0].initial_keys
     self._params = params
     self._experiments = experiments[0] #what should this be set to - where exactly is used?
     logger.info('Determining symmetry equivalent reflections across datasets.\n')
-    self._Ih_table = JointIhTable(self.single_scalers)
+    self._Ih_table = JointIhTable([x.Ih_table for x in self.single_scalers],
+      self.space_group)
 
   def calculate_restraints(self, apm):
     """Calculate a restraints residuals/gradient vector for multiple datasets."""
@@ -500,11 +515,11 @@ class MultiScalerBase(ScalerBase):
     joined_reflections = flex.reflection_table()
     for scaler in scalers:
       joined_reflections.extend(scaler.reflection_table)
-    miller_set = miller.set(crystal.symmetry(
-      space_group=scalers[0].experiments.crystal.get_space_group()),
-      indices=joined_reflections['asu_miller_index'], anomalous_flag=False)
-    permuted = miller_set.sort_permutation(by_value='packed_indices')
-    self._reflection_table = joined_reflections.select(permuted)
+    #miller_set = miller.set(crystal.symmetry(
+    #  space_group=scalers[0].experiments.crystal.get_space_group()),
+    #  indices=joined_reflections['asu_miller_index'], anomalous_flag=False)
+    #permuted = miller_set.sort_permutation(by_value='packed_indices')
+    self._reflection_table = joined_reflections#.select(permuted)
     if self.params.scaling_options.reject_outliers:
       self._reflection_table = self.round_of_outlier_rejection(
         self._reflection_table)
@@ -512,7 +527,7 @@ class MultiScalerBase(ScalerBase):
   def round_of_outlier_rejection(self, reflection_table):
     """calculate outliers from the reflections in the Ih_table,
     and use these to filter the reflection table and Ih_table."""
-    reflection_table = reject_outliers(reflection_table,
+    reflection_table = reject_outliers(reflection_table, self.space_group,
       self.params.scaling_options.outlier_zmax)
     msg = ('Combined outlier rejection has been performed across all datasets, {sep}'
       'in total {0} outliers have now been identified. {sep}'.format(
@@ -614,22 +629,10 @@ class TargetScaler(MultiScalerBase):
 
   def set_Ih_values_to_target(self):
     """Match equivalent reflections between individual unscaled datasets and
-    set target Ih values in the Ih_table for each dataset."""
+    set target Ixh values in the Ih_table for each dataset."""
     target_Ih_table = self.Ih_table
-    target_asu_Ih_dict = dict(zip(target_Ih_table.asu_miller_index,
-      target_Ih_table.Ih_values))
     for scaler in self.unscaled_scalers:
-      scaler.Ih_table.Ih_table['Ih_values'] = flex.double(
-        scaler.Ih_table.size, 0.0) # set to zero to allow selection below
-      location_in_unscaled_array = 0
-      for j, miller_idx in enumerate(OrderedSet(scaler.Ih_table.asu_miller_index)):
-        n_in_group = scaler.Ih_table.h_index_matrix.col(j).non_zeroes
-        if miller_idx in target_asu_Ih_dict:
-          i = location_in_unscaled_array
-          Ih = flex.double(n_in_group, target_asu_Ih_dict[miller_idx])
-          scaler.Ih_table.Ih_values.set_selected(
-            flex.size_t(range(i, i + n_in_group)), Ih)
-        location_in_unscaled_array += n_in_group
+      scaler.Ih_table.set_Ih_values_to_target(target_Ih_table)
       sel = scaler.Ih_table.Ih_values != 0.0
       scaler.Ih_table = scaler.Ih_table.select(sel)
       scaler.apply_selection_to_SFs(scaler.Ih_table.nonzero_weights)
@@ -688,7 +691,7 @@ class NullScaler(ScalerBase):
     weights = self._reflection_table['intensity.calculated.value']
     self._reflection_table.set_flags(flex.bool([False]*n_refl),
       self._reflection_table.flags.excluded_for_scaling)
-    self._Ih_table = SingleIhTable(self._reflection_table, weights)
+    self._Ih_table = SingleIhTable(self._reflection_table, self.space_group, weights)
     logger.info('NullScaler contains %s reflections', n_refl)
     logger.info('Completed configuration of NullScaler. \n\n' + '='*80 + '\n')
 

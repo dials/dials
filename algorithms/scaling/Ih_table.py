@@ -1,24 +1,22 @@
 """
-Classes that define the sorted datastructures needed for scaling.
+Classes that define the datastructures needed for scaling.
 
 The basic design of the data structure, called the Ih_table, is
-similar to a reflection_table but is initialised with a sorted
-reflection table, where reflections are grouped by their asu
-miller index.
-In addition to the table, a set of sparse matrices are defined;
-the h_index_matrix, which is used to efficiently calculate sums
-over groups of reflections, and the h_expand_matrix, which is
-used to in a similar way to numpy.repeat, to repeat summation
-properties so that calculations are fully vectorised.
+similar to a reflection_table. The asu miller index is calculated
+and set of sparse matrices are defined; the h_index_matrix, which is used
+to efficiently calculate sums over groups of reflections, and the
+h_expand_matrix, which is used to in a similar way to numpy.repeat, to
+repeat summation properties so that calculations are fully vectorised.
 Data structures are defined for scaling single and multiple
-datasets simulatenously - the JointIhTable has further matrices
-to keep track of the locations of equivalent reflections across
-datasets and still perform fully vectorised calculations.
-Access to the data is given through the attributes weights,
-intensities, inverse_scale_factors, asu_miller_index and Ih_values.
+datasets simulatenously - the JointIhTable h_index_matrix keeps track of
+the locations of equivalent reflections across datasets and still perform
+fully vectorised calculations. Access to the data is given through the
+attributes weights, intensities, inverse_scale_factors, asu_miller_index
+and Ih_values.
 """
 import abc
 import numpy as np
+from libtbx.containers import OrderedSet
 from dials.array_family import flex
 from cctbx import miller, crystal
 from scitbx import sparse
@@ -30,19 +28,14 @@ class IhTableBase(object):
 
   id_ = 'IhTableBase' #used as an alternative to isinstance() calls.
 
-  def __init__(self, data):
+  def __init__(self):
     self._h_index_matrix = None
     self._h_expand_matrix = None
-    self._Ih_table = self._create_Ih_table(data)
+    self._Ih_table = None
     self._n_h = None
 
   @abc.abstractmethod
-  def _create_Ih_table(self, data):
-    """Create an Ih_table using the constructor in a subclass."""
-    pass
-
-  @abc.abstractmethod
-  def _assign_h_matrices(self, asu_miller_index):
+  def _assign_h_matrices(self):
     """Assign the h_index and h_expand matrices."""
     pass
 
@@ -176,19 +169,20 @@ class IhTableBase(object):
     """Select a subset of the data and recalculate h_index_matrices,
     before returning self (to act like a flex selection operation)."""
     self._Ih_table = self._Ih_table.select(selection)
-    self._h_index_matrix, self._h_expand_matrix = self._assign_h_matrices(
-      self.asu_miller_index)
+    self._h_index_matrix, self._h_expand_matrix = self._assign_h_matrices()
     return self
 
 class SingleIhTable(IhTableBase):
   """Class to create an Ih_table. This is the default
   data structure used for scaling a single sweep."""
 
-  def __init__(self, reflection_table, weights=None):
+  def __init__(self, reflection_table, space_group, weights=None):
+    super(SingleIhTable, self).__init__()
     self._nonzero_weights = None
-    super(SingleIhTable, self).__init__([reflection_table, weights])
-    self._h_index_matrix, self._h_expand_matrix = self._assign_h_matrices(
-      self.asu_miller_index)
+    self.space_group = space_group
+    self._Ih_table = self._create_Ih_table(reflection_table, weights)
+    self.map_indices_to_asu()
+    self._h_index_matrix, self._h_expand_matrix = self._assign_h_matrices()
     if not 'Ih_values' in reflection_table.keys():
       self.calc_Ih() #calculate a first estimate of Ih
 
@@ -208,14 +202,10 @@ class SingleIhTable(IhTableBase):
     self._nonzero_weights.set_selected(new_selected_nzweights, True)
     return self
 
-  def _create_Ih_table(self, data):
-    """Create an Ih_table from the reflection table and optionally weights.
-
-    It is assumed that the refl_table is already sorted by asu_miller_index."""
-    (refl_table, weights) = data
+  def _create_Ih_table(self, refl_table, weights):
+    """Create an Ih_table from the reflection table and optionally weights."""
     Ih_table = flex.reflection_table()
-    for col in ['asu_miller_index', 'intensity', 'inverse_scale_factor',
-      'variance', 'miller_index']:
+    for col in ['intensity', 'inverse_scale_factor', 'variance', 'miller_index']:
       if not col in refl_table.keys():
         assert 0, """Attempting to create an Ih_table object from a reflection
         table with no %s column""" % col
@@ -240,8 +230,46 @@ class SingleIhTable(IhTableBase):
     self._nonzero_weights = nonzero_weights_sel
     return Ih_table
 
-  def _assign_h_matrices(self, asu_miller_index):
+  def map_indices_to_asu(self):
+    """Map the indices to the asymmetric unit."""
+    crystal_symmetry = crystal.symmetry(space_group=self.space_group)
+    miller_set = miller.set(crystal_symmetry=crystal_symmetry,
+      indices=self.miller_index, anomalous_flag=False)
+    miller_set_in_asu = miller_set.map_to_asu()
+    self._Ih_table['asu_miller_index'] = miller_set_in_asu.indices()
+
+  def get_sorted_asu_indices(self):
+    """Return the sorted asu indices and the permutation selection."""
+    crystal_symmetry = crystal.symmetry(space_group=self.space_group)
+    miller_set_in_asu = miller.set(crystal_symmetry=crystal_symmetry,
+      indices=self.asu_miller_index, anomalous_flag=False)
+    permuted = miller_set_in_asu.sort_permutation(by_value='packed_indices')
+    sorted_asu_miller_index = self.asu_miller_index.select(permuted)
+    return sorted_asu_miller_index, permuted
+
+  def set_Ih_values_to_target(self, target_Ih_table):
+    """Given an Ih table as a target, the common reflections across the tables
+    are determined and the Ih_values are set to those of the target. If no
+    matching reflection is found, the Ih value is set to zero."""
+    target_asu_Ih_dict = dict(zip(target_Ih_table.asu_miller_index,
+      target_Ih_table.Ih_values))
+    new_Ih_values = flex.double(self.size, 0.0)
+    location_in_unscaled_array = 0
+    sorted_asu_indices, permuted = self.get_sorted_asu_indices()
+    for j, miller_idx in enumerate(OrderedSet(sorted_asu_indices)):
+      n_in_group = self.h_index_matrix.col(j).non_zeroes
+      if miller_idx in target_asu_Ih_dict:
+        i = location_in_unscaled_array
+        new_Ih_values.set_selected(flex.size_t(range(i, i + n_in_group)),
+          flex.double(n_in_group, target_asu_Ih_dict[miller_idx]))
+      location_in_unscaled_array += n_in_group
+    self.Ih_values.set_selected(permuted, new_Ih_values)
+
+  def _assign_h_matrices(self):#, asu_miller_index):
     """Assign the h_index and h_expand matrices."""
+    # First sort by asu miller index to make loop quicker below.
+    asu_miller_index, permuted = self.get_sorted_asu_indices()
+    # Now populate the matrix.
     n_refl = asu_miller_index.size()
     n_unique_groups = len(set(asu_miller_index))
     h_index_matrix = sparse.matrix(n_refl, n_unique_groups)
@@ -252,6 +280,8 @@ class SingleIhTable(IhTableBase):
         group_idx += 1
       h_index_matrix[refl_idx, group_idx] = 1.0
       previous = asu_idx
+    # Permute h_index_matrix to the unsorted asu_miller_index order.
+    h_index_matrix = h_index_matrix.permute_rows(permuted)
     h_expand_matrix = h_index_matrix.transpose()
     return h_index_matrix, h_expand_matrix
 
@@ -269,27 +299,20 @@ class JointIhTable(IhTableBase):
   """Class to expand the datastructure for scaling multiple
   datasets together."""
 
-  def __init__(self, single_scalers):
-    self._Ih_tables = []
-    self._experiments = []
-    self._unique_indices = None
-    super(JointIhTable, self).__init__(data=single_scalers)
+  def __init__(self, Ih_table_list, space_group):
+    super(JointIhTable, self).__init__()
+    self._Ih_tables = Ih_table_list
+    self.space_group = space_group
+    self._Ih_table = self._create_Ih_table()
 
-  def _create_Ih_table(self, data):
-    """Construct a single Ih_table for the combined reflections, using the
-    Ih_tables from the individual scalers.
+  def _create_Ih_table(self):
+    """Construct a single Ih_table for the combined reflections, using a list
+    of individual Ih_tables.
 
-    The data is stored differently to a single Ih_Table - the data here is
-    not sorted by miller index, but is formed by extending each of the
-    individual sorted tables. This does not matter, as the order is encoded
-    within the h_index, h_expand matrices. Keeping the data in extended order
-    allows a quicker calculation of Ih."""
-    for scaler in data:
-      self._Ih_tables.append(scaler.Ih_table)
-      self._experiments.append(scaler.experiments)
-    self._unique_indices, all_indices = self._determine_all_unique_indices()
-    self._h_index_matrix, self._h_expand_matrix = self._assign_h_matrices(
-      all_indices)
+    The data table of the JointIhTable is formed by extending each of the
+    individual tables. The grouping is encoded within the h_index matrix.
+    Keeping the data in extended order allows a quicker calculation of Ih."""
+    self._h_index_matrix, self._h_expand_matrix = self._assign_h_matrices()
     # Now join together the datasets to make the Ih table
     Ih_table = flex.reflection_table()
     for Ih_tab in self._Ih_tables:
@@ -305,46 +328,36 @@ class JointIhTable(IhTableBase):
   def _determine_all_unique_indices(self):
     """Determine the ordered set of unique indices and the ordered set
     of all asu miller indices across all datasets."""
-    s_g_1 = self._experiments[0].crystal.get_space_group()
-    for experiment in self._experiments:
-      assert experiment.crystal.get_space_group() == s_g_1
-    crystal_symmetry = crystal.symmetry(space_group=s_g_1)
-    all_miller_indices = []
+    all_miller_indices = flex.miller_index()
     for Ih_tab in self._Ih_tables:
-      all_miller_indices.extend(list(Ih_tab.asu_miller_index))
+      all_miller_indices.extend(Ih_tab.asu_miller_index)
     # Find the ordered set of unique indices
     all_unique_indices = flex.miller_index(list(set(all_miller_indices)))
-    unique_ms = miller.set(crystal_symmetry=crystal_symmetry,
-      indices=all_unique_indices)
+    unique_ms = miller.set(crystal_symmetry=crystal.symmetry(
+      space_group=self.space_group), indices=all_unique_indices)
     unique_permuted = unique_ms.sort_permutation(by_value='packed_indices')
     unique_indices = all_unique_indices.select(unique_permuted)
-    # Find the ordered set of all indices
-    all_miller_indices = flex.miller_index(all_miller_indices)
-    full_miller_set = miller.set(crystal_symmetry=crystal_symmetry,
-      indices=all_miller_indices)
-    all_permuted = full_miller_set.sort_permutation(by_value='packed_indices')
-    all_indices = all_miller_indices.select(all_permuted)
-    return unique_indices, all_indices
+    return unique_indices, all_miller_indices
 
-  def _assign_h_matrices(self, asu_miller_index):
+  def _assign_h_matrices(self):
     """Assign the h_index and h_expand matrices."""
-    n_unique_groups = self._unique_indices.size()
-    total_h_idx_matrix = sparse.matrix(asu_miller_index.size(), n_unique_groups)
+    all_unique_indices, all_miller_indices = self._determine_all_unique_indices()
+    n_unique_groups = all_unique_indices.size()
+    total_h_idx_matrix = sparse.matrix(all_miller_indices.size(), n_unique_groups)
     h_idx_matrix_row = 0
-    crystal_symmetry = crystal.symmetry(
-      space_group=self._experiments[0].crystal.get_space_group())
+    crystal_symmetry = crystal.symmetry(space_group=self.space_group)
     for Ih_table in self._Ih_tables:
       h_expand_matrix = sparse.matrix(Ih_table.h_index_matrix.n_cols,
         n_unique_groups)
       unique_indices = flex.miller_index(list(set(Ih_table.asu_miller_index)))
       unique_miller_set = miller.set(crystal_symmetry=crystal_symmetry,
         indices=unique_indices)
-      unique_indices_sorted = unique_indices.select(
-        unique_miller_set.sort_permutation(by_value='packed_indices'))
+      sel = unique_miller_set.sort_permutation(by_value='packed_indices')
+      unique_indices_sorted = unique_indices.select(sel)
       # Extend by one to allow a quick loop below without bounds check.
       unique_indices_sorted.extend(flex.miller_index([(0, 0, 0)]))
       indiv_group_idx = 0
-      for overall_group_idx, asu_idx in enumerate(self._unique_indices):
+      for overall_group_idx, asu_idx in enumerate(all_unique_indices):
         if asu_idx == unique_indices_sorted[indiv_group_idx]:
           h_expand_matrix[indiv_group_idx, overall_group_idx] = 1.0
           indiv_group_idx += 1

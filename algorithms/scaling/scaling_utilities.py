@@ -94,10 +94,10 @@ def sph_harm_table(reflection_table, experiments, lmax):
   sph_h_t = create_sph_harm_table(theta_phi, theta_phi_2, lmax)
   return sph_h_t
 
-def reject_outliers(reflection_table, zmax):
+def reject_outliers(reflection_table, space_group, zmax):
   '''simple, quick, outlier rejection based on normalised deviations
   (similar to aimless)'''
-  Ih_table = SingleIhTable(reflection_table)
+  Ih_table = SingleIhTable(reflection_table, space_group)
   I = Ih_table.intensities
   g = Ih_table.inverse_scale_factors
   w = Ih_table.weights
@@ -133,7 +133,7 @@ def calc_normE2(reflection_table, experiments):
     unit_cell=experiments.crystal.get_unit_cell().parameters(),
     space_group=experiments.crystal.get_space_group())
   miller_set = miller.set(crystal_symmetry=crystal_symmetry,
-    indices=scaling_subset['asu_miller_index'])
+    indices=scaling_subset['miller_index'])
   scaling_subset['resolution'] = 1.0/scaling_subset['d']**2
   #handle negative reflections to minimise effect on mean I values.
   scaling_subset['intensity_for_norm'] = copy.deepcopy(
@@ -181,7 +181,7 @@ def calc_normE2(reflection_table, experiments):
   acentric_bin_limits = acentric_binner.limits()
   #now calculate normalised intensity values for full reflection table
   miller_set = miller.set(crystal_symmetry=crystal_symmetry,
-                          indices=reflection_table['asu_miller_index'])
+                          indices=reflection_table['miller_index'])
 
   reflection_table['Esq'] = flex.double(reflection_table.size(), 0.0)
   miller_array = miller.array(miller_set)

@@ -6,119 +6,66 @@ initialised in order to provide input for the Ih_table.
 import pytest
 from Ih_table import SingleIhTable, JointIhTable
 from dials.array_family import flex
-from dials.util.options import OptionParser
-from libtbx import phil
 from libtbx.test_utils import approx_equal
-from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment,\
-  ExperimentList
-from dials.algorithms.scaling.model.scaling_model_factory import \
-  create_scaling_model
-from dials.algorithms.scaling.scaler_factory import create_scaler
+from cctbx.sgtbx import space_group
+
+@pytest.fixture()
+def large_reflection_table():
+  """Create a reflection table."""
+  return generate_refl_1()
+
+@pytest.fixture()
+def small_reflection_table():
+  """Create a small reflection table."""
+  return generate_refl_2()
 
 @pytest.fixture(scope='module')
+def test_sg():
+  """Create a space group object."""
+  return space_group("C 2y")
+
 def generate_refl_1():
-  """Generate a test reflection table."""
+  """Generate a test reflection table. Note tha the variance values are chosen
+  as the 'True' Ih_values, which would be found if unity weights were chosen
+  in this example."""
   reflections = flex.reflection_table()
-  reflections['intensity.prf.value'] = flex.double(
-    [100.0, 100.0, 80.0, 60.0, 30.0, 40.0, 60.0])
-  reflections['intensity.prf.variance'] = flex.double(
-    [90.0, 100.0, 90.0, 60.0, 30.0, 50.0, 50.0])
-  #note the variance values is what should come out as Ih_values if unity weights
+  reflections['intensity'] = flex.double([100.0, 100.0, 80.0, 60.0, 30.0,
+    40.0, 60.0])
+  reflections['inverse_scale_factor'] = flex.double(7, 1.0)
+  reflections['variance'] = flex.double([90.0, 100.0, 90.0, 60.0, 30.0,
+    50.0, 50.0])
   reflections['miller_index'] = flex.miller_index([(1, 0, 0), (0, 0, 1),
     (-1, 0, 0), (0, 2, 0), (0, 4, 0), (0, 0, -2), (0, 0, 2)])
-  reflections['d'] = flex.double([5.0, 5.0, 5.0, 5.0, 2.5, 2.5, 2.5])
-  reflections['lp'] = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-  reflections['dqe'] = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-  reflections['partiality'] = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-  reflections.set_flags(flex.bool([True, True, True, True, True, True, True]),
-    reflections.flags.integrated)
+  reflections.set_flags(flex.bool(7, True), reflections.flags.integrated)
   return [reflections]
 
-@pytest.fixture(scope='module')
 def generate_refl_2():
   """Generate another test reflection table."""
   reflections = flex.reflection_table()
-  reflections['intensity.prf.value'] = flex.double([60.0, 30.0])
-  reflections['intensity.prf.variance'] = flex.double([60.0, 30.0])
-  reflections['miller_index'] = flex.miller_index([(1, 0, 0), (0, 4, 0)])
-  reflections['d'] = flex.double([5.0, 2.5])
-  reflections['lp'] = flex.double([1.0, 1.0])
-  reflections['dqe'] = flex.double([1.0, 1.0])
-  reflections['partiality'] = flex.double([1.0, 1.0])
-  reflections.set_flags(flex.bool([True, True]), reflections.flags.integrated)
+  reflections['intensity'] = flex.double([60.0, 30.0, 10.0, 30.0])
+  reflections['variance'] = flex.double([60.0, 30.0, 10.0, 30.0])
+  reflections['inverse_scale_factor'] = flex.double([1.0, 1.0, 1.0, 1.0])
+  reflections['miller_index'] = flex.miller_index([(1, 0, 0), (0, 4, 0),
+    (10, 0, 0), (0, 4, 0)])
+  reflections.set_flags(flex.bool(4, True), reflections.flags.integrated)
   return [reflections]
 
-@pytest.fixture(scope='module')
-def generate_experiments():
-  """Generate a test experiments object."""
-  experiments = ExperimentList()
-  exp_dict = {"__id__" : "crystal", "real_space_a": [5.0, 0.0, 0.0],
-              "real_space_b": [0.0, 10.0, 0.0], "real_space_c": [0.0, 0.0, 5.0],
-              "space_group_hall_symbol": " C 2y"}
-  crystal = Crystal.from_dict(exp_dict)
-  scan = Scan(image_range=[0, 90], oscillation=[0.0, 1.0])
-  beam = Beam(s0=(0.0, 0.0, 1.01))
-  goniometer = Goniometer((1.0, 0.0, 0.0))
-  detector = Detector()
-  experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
-    detector=detector, crystal=crystal))
-  return experiments
-
-@pytest.fixture(scope='module')
-def generate_params():
-  """Generate a test params object."""
-  phil_scope = phil.parse('''
-      include scope dials.algorithms.scaling.scaling_options.phil_scope
-  ''', process_includes=True)
-  optionparser = OptionParser(phil=phil_scope, check_format=False)
-  parameters, _ = optionparser.parse_args(args=None, quick_parse=True,
-    show_diff_phil=False)
-  parameters.__inject__('model', 'KB')
-  return parameters
-
-@pytest.fixture(scope='module')
-def generate_test_scaler(generate_refl_1, generate_experiments, generate_params):
-  """Generate a test scaler."""
-  (params, test_experiments, test_reflections) = (
-    generate_params, generate_experiments, generate_refl_1)
-  experiments = create_scaling_model(params, test_experiments, test_reflections)
-  scaler = create_scaler(params, experiments, test_reflections)
-  return scaler
-
-@pytest.fixture(scope='module')
-def generate_second_test_scaler(generate_refl_2, generate_experiments,
-    generate_params):
-  """Generate a second test scaler."""
-  (params, test_experiments, test_reflections) = (
-    generate_params, generate_experiments, generate_refl_2)
-  experiments = create_scaling_model(params, test_experiments, test_reflections)
-  scaler = create_scaler(params, experiments, test_reflections)
-  return scaler
-
 @pytest.fixture
-def single_test_input(generate_test_scaler):
-  """Generate input for testing Ih_table."""
-  scaler = generate_test_scaler
-  weights = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-  return scaler.reflection_table, weights
-
-@pytest.fixture
-def joint_test_input(generate_test_scaler, generate_second_test_scaler):
+def joint_test_input(large_reflection_table, small_reflection_table, test_sg):
   """Generate input for testing joint_Ih_table."""
-  scaler = generate_test_scaler
-  weights = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-  scaler_2 = generate_second_test_scaler
-  weights_2 = flex.double([1.0, 1.0])
-  scaler.Ih_table = SingleIhTable(scaler.reflection_table, weights)
-  scaler_2.Ih_table = SingleIhTable(scaler_2.reflection_table, weights_2)
-  return scaler, scaler_2
+  weights = flex.double(7, 1.0)
+  weights_2 = flex.double(4, 1.0)
+  Ih_table_1 = SingleIhTable(large_reflection_table[0], test_sg, weights)
+  Ih_table_2 = SingleIhTable(small_reflection_table[0], test_sg, weights_2)
+  return Ih_table_1, Ih_table_2, test_sg
 
-def test_Ih_table(single_test_input):
+def test_Ih_table(large_reflection_table, test_sg):
   """Test for Ih_table datastructure. Upon initialisation, Ih_table should set
   unity scale factors and calculate Ih_values. It should also create the
   a h_index_matrix."""
-  (reflection_table, weights) = single_test_input
-  Ih_table = SingleIhTable(reflection_table, weights)
+  weights = flex.double(7, 1.0)
+  reflection_table = large_reflection_table[0]
+  Ih_table = SingleIhTable(reflection_table, test_sg, weights)
 
   assert Ih_table.id_ == "IhTableBase"
 
@@ -126,29 +73,30 @@ def test_Ih_table(single_test_input):
   assert Ih_table.size == 7
   assert (Ih_table.inverse_scale_factors == 1.0).count(True) == Ih_table.size
   assert (Ih_table.weights == 1.0).count(True) == Ih_table.size
-  assert list(Ih_table.asu_miller_index) == list(flex.miller_index([(0, 0, 1),
-    (0, 0, 2), (0, 0, 2), (0, 2, 0), (0, 4, 0), (1, 0, 0), (1, 0, 0)]))
-  assert list(Ih_table.Ih_values) == list(flex.double(
-    [100.0, 50.0, 50.0, 60.0, 30.0, 90.0, 90.0]))
-  assert list(Ih_table.variances) == list(flex.double(
-    [100.0, 50.0, 50.0, 60.0, 30.0, 90.0, 90.0]))
-  assert list(Ih_table.intensities) == list(flex.double(
-    [100.0, 40.0, 60.0, 60.0, 30.0, 100.0, 80.0]))
+  assert list(Ih_table.asu_miller_index) == list(flex.miller_index([(1, 0, 0),
+    (0, 0, 1), (1, 0, 0), (0, 2, 0), (0, 4, 0), (0, 0, 2), (0, 0, 2)]))
 
-  assert Ih_table.h_index_matrix[0, 0] == 1
-  assert Ih_table.h_index_matrix[1, 1] == 1
-  assert Ih_table.h_index_matrix[2, 1] == 1
+  assert list(Ih_table.Ih_values) == list(flex.double(
+    [90.0, 100.0, 90.0, 60.0, 30.0, 50.0, 50.0]))
+  assert list(Ih_table.variances) == list(flex.double(
+    [90.0, 100.0, 90.0, 60.0, 30.0, 50.0, 50.0]))
+  assert list(Ih_table.intensities) == list(flex.double(
+    [100.0, 100.0, 80.0, 60.0, 30.0, 40.0, 60.0]))
+
+  assert Ih_table.h_index_matrix[0, 4] == 1
+  assert Ih_table.h_index_matrix[1, 0] == 1
+  assert Ih_table.h_index_matrix[2, 4] == 1
   assert Ih_table.h_index_matrix[3, 2] == 1
   assert Ih_table.h_index_matrix[4, 3] == 1
-  assert Ih_table.h_index_matrix[5, 4] == 1
-  assert Ih_table.h_index_matrix[6, 4] == 1
+  assert Ih_table.h_index_matrix[5, 1] == 1
+  assert Ih_table.h_index_matrix[6, 1] == 1
   assert Ih_table.h_index_matrix.non_zeroes == 7
   assert Ih_table.h_index_matrix.n_cols == 5
   assert Ih_table.h_index_matrix.n_rows == 7
 
   # Test calc_nh function.
   Ih_table.calc_nh()
-  assert list(Ih_table.n_h) == [1.0, 2.0, 2.0, 1.0, 1.0, 2.0, 2.0]
+  assert list(Ih_table.n_h) == [2.0, 1.0, 2.0, 1.0, 1.0, 2.0, 2.0]
 
   # Test selection function
   sel = flex.bool([True, True, False, False, False, False, False])
@@ -157,20 +105,23 @@ def test_Ih_table(single_test_input):
   assert (Ih_table.inverse_scale_factors == 1.0).count(True) == Ih_table.size
   assert (Ih_table.weights == 1.0).count(True) == Ih_table.size
   assert list(Ih_table.asu_miller_index) == list(flex.miller_index(
-    [(0, 0, 1), (0, 0, 2)]))
-  assert list(Ih_table.Ih_values) == list(flex.double([100.0, 50.0]))
-  assert list(Ih_table.variances) == list(flex.double([100.0, 50.0]))
-  assert list(Ih_table.intensities) == list(flex.double([100.0, 40.0]))
-  assert Ih_table.h_index_matrix[0, 0] == 1
-  assert Ih_table.h_index_matrix[1, 1] == 1
+    [(1, 0, 0), (0, 0, 1)]))
+  assert list(Ih_table.Ih_values) == list(flex.double([90.0, 100.0]))
+  assert list(Ih_table.variances) == list(flex.double([90.0, 100.0]))
+  assert list(Ih_table.intensities) == list(flex.double([100.0, 100.0]))
+  assert Ih_table.h_index_matrix[0, 1] == 1
+  assert Ih_table.h_index_matrix[1, 0] == 1
   assert Ih_table.h_index_matrix.non_zeroes == 2
   assert Ih_table.h_index_matrix.n_cols == 2
   assert Ih_table.h_index_matrix.n_rows == 2
+  # Test that non-zero weights was correctly updated
+  assert list(Ih_table.nonzero_weights) == [True, True, False, False, False,
+    False, False]
 
   # Test for second method to initialise without specifying weights - weights
-  # should bee set to inverse variances if no weights are given.
-  Ih_table = SingleIhTable(reflection_table)
-  expected_weights = 1.0/flex.double([100.0, 50.0, 50.0, 60.0, 30.0, 90.0, 90.0])
+  # should be set to inverse variances if no weights are given.
+  Ih_table = SingleIhTable(reflection_table, test_sg)
+  expected_weights = 1.0/flex.double([90.0, 100.0, 90.0, 60.0, 30.0, 50.0, 50.0])
   assert list(Ih_table.weights) == list(expected_weights)
   # Test that one can set the weights to unity
   Ih_table.weights = weights
@@ -184,17 +135,18 @@ def test_Ih_table(single_test_input):
   # they would be. Test that these are set after Ih table is initialised.
   reflection_table['Ih_values'] = flex.double(
     [10.0, 5.0, 5.0, 6.0, 3.0, 9.0, 9.0])
-  Ih_table = SingleIhTable(reflection_table, weights)
+  Ih_table = SingleIhTable(reflection_table, test_sg, weights)
   assert list(Ih_table.Ih_values) == list(flex.double(
     [10.0, 5.0, 5.0, 6.0, 3.0, 9.0, 9.0]))
 
-def test_Ih_table_nonzero_weights(single_test_input):
+def test_Ih_table_nonzero_weights(large_reflection_table, test_sg):
   """Test for 'nonzero_Weights' attribute and how this changes during selection.
   The purpose of this is to indicate the relationship of the Ih_table data to
   the original input reflection table."""
-  (reflection_table, weights) = single_test_input
+  weights = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+  reflection_table = large_reflection_table[0]
   weights[0] = 0.0
-  Ih_table = SingleIhTable(reflection_table, weights)
+  Ih_table = SingleIhTable(reflection_table, test_sg, weights)
   assert list(Ih_table.nonzero_weights) == list(flex.bool([False, True, True,
     True, True, True, True]))
   assert Ih_table.size == 6
@@ -203,39 +155,54 @@ def test_Ih_table_nonzero_weights(single_test_input):
   assert list(Ih_table.nonzero_weights) == list(flex.bool([False, True, True,
     True, False, False, False]))
 
+def test_set_Ih_values_to_target(joint_test_input):
+  """Test the setting of Ih values for targeted scaling."""
+  target_Ih_table, Ih_table_2, _ = joint_test_input
 
-def test_joint_Ih_table(joint_test_input):
+  # First check that values are set up correctly.
+  assert list(target_Ih_table.Ih_values) == [90.0, 100.0, 90.0, 60.0, 30.0,
+    50.0, 50.0]
+  assert list(Ih_table_2.Ih_values) == [60.0, 30.0, 10.0, 30.0]
+
+  # Set the common values from the target
+  Ih_table_2.set_Ih_values_to_target(target_Ih_table)
+  assert list(Ih_table_2.Ih_values) == [90.0, 30.0, 0.0, 30.0]
+
+def test_new_joint_Ih_table(joint_test_input):
   """Test that the joint_Ih_table datastructure correctly combined the data
   from two reflection tables."""
-  (dm1, dm2) = joint_test_input
-  Ih_table = JointIhTable([dm1, dm2])
+
+  Ih_table_1, Ih_table_2, sg = joint_test_input
+  Ih_table = JointIhTable([Ih_table_1, Ih_table_2], sg)
 
   # Test for correct setup and calc_Ih method.
   assert list(Ih_table.asu_miller_index) == list(flex.miller_index(
-    [(0, 0, 1), (0, 0, 2), (0, 0, 2), (0, 2, 0), (0, 4, 0), (1, 0, 0),
-    (1, 0, 0), (0, 4, 0), (1, 0, 0)]))
-  assert list(Ih_table.Ih_values) == list(flex.double(
-    [100.0, 50.0, 50.0, 60.0, 30.0, 80.0, 80.0, 30.0, 80.0]))
-  assert Ih_table.size == 9
+    [(1, 0, 0), (0, 0, 1), (1, 0, 0), (0, 2, 0), (0, 4, 0), (0, 0, 2),
+    (0, 0, 2), (1, 0, 0), (0, 4, 0), (10, 0, 0), (0, 4, 0)]))
 
-  # Test for correct setup of joint h_index_matrix.
-  assert Ih_table.h_index_matrix[0, 0] == 1
-  assert Ih_table.h_index_matrix[1, 1] == 1
-  assert Ih_table.h_index_matrix[2, 1] == 1
+  assert Ih_table.h_index_matrix[0, 4] == 1
+  assert Ih_table.h_index_matrix[1, 0] == 1
+  assert Ih_table.h_index_matrix[2, 4] == 1
   assert Ih_table.h_index_matrix[3, 2] == 1
   assert Ih_table.h_index_matrix[4, 3] == 1
-  assert Ih_table.h_index_matrix[5, 4] == 1
-  assert Ih_table.h_index_matrix[6, 4] == 1
-  assert Ih_table.h_index_matrix[7, 3] == 1
-  assert Ih_table.h_index_matrix[8, 4] == 1
-  assert Ih_table.h_index_matrix.non_zeroes == 9
-  assert Ih_table.h_index_matrix.n_cols == 5
-  assert Ih_table.h_index_matrix.n_rows == 9
+  assert Ih_table.h_index_matrix[5, 1] == 1
+  assert Ih_table.h_index_matrix[6, 1] == 1
+  assert Ih_table.h_index_matrix[7, 4] == 1
+  assert Ih_table.h_index_matrix[8, 3] == 1
+  assert Ih_table.h_index_matrix[9, 5] == 1
+  assert Ih_table.h_index_matrix[10, 3] == 1
+  assert Ih_table.h_index_matrix.non_zeroes == 11
+  assert Ih_table.h_index_matrix.n_cols == 6
+  assert Ih_table.h_index_matrix.n_rows == 11
+  assert Ih_table.size == 11
+
+  assert list(Ih_table.Ih_values) == list(flex.double(
+    [80.0, 100.0, 80.0, 60.0, 30.0, 50.0, 50.0, 80.0, 30.0, 10.0, 30.0]))
 
   # Test setting of error models and updating weights.
-  dm1.Ih_table.update_error_model([0.5, 0.0])
-  dm2.Ih_table.update_error_model([0.5, 0.0])
+  Ih_table_1.update_error_model([0.5, 0.0])
+  Ih_table_2.update_error_model([0.5, 0.0])
   Ih_table.update_weights_from_error_models()
-  expected_weights = 4.0/flex.double([100.0, 50.0, 50.0, 60.0, 30.0, 90.0,
-    90.0, 30.0, 60.0])
+  expected_weights = 4.0/flex.double(
+    [90.0, 100.0, 90.0, 60.0, 30.0, 50.0, 50.0, 60.0, 30.0, 10.0, 30.0])
   assert approx_equal(list(Ih_table.weights), list(expected_weights))

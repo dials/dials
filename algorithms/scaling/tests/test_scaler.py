@@ -95,11 +95,6 @@ def test_ScalerBase():
   rt = flex.reflection_table()
   rt['miller_index'] = flex.miller_index([(1, 0, 0), (0, 0, 1),
     (1, 0, 0), (2, 2, 2)])
-  exp = generated_exp()
-  param = generated_param()
-  sorted_rt = scalerbase._map_indices_to_asu(rt, exp[0], param)
-  assert list(sorted_rt['miller_index']) == list(flex.miller_index([(0, 0, 1),
-    (1, 0, 0), (1, 0, 0), (2, 2, 2)]))
 
 def test_SingleScaler():
   """Test the single scaler class."""
@@ -118,8 +113,8 @@ def test_SingleScaler():
   assert list(rt['id']) == [2] * rt.size()
 
   # Test that reflection table has been sorted by asu miller index.
-  assert list(rt['asu_miller_index']) == list(flex.miller_index(
-    [(0, 0, 1), (1, 0, 0), (2, 0, 0), (2, 2, 2)]))
+  #assert list(rt['asu_miller_index']) == list(flex.miller_index(
+  #  [(0, 0, 1), (1, 0, 0), (2, 0, 0), (2, 2, 2)]))
 
   # Test that bad reflections are removed.
   assert list(rt.get_flags(rt.flags.integrated)) == [True, True, False, False]
@@ -155,7 +150,7 @@ def test_SingleScaler():
   # Test select reflections for scaling - should have selected two.
   assert singlescaler.Ih_table.size == 2
   assert list(singlescaler.Ih_table.asu_miller_index) == (
-    list(flex.miller_index([(0, 0, 1), (1, 0, 0)])))
+    list(flex.miller_index([(1, 0, 0), (0, 0, 1)])))
   assert singlescaler.components['scale'].n_refl == 2
   assert singlescaler.components['decay'].n_refl == 2
 
@@ -300,34 +295,41 @@ def test_MultiScaler():
   # Test join_multiple_datasets - joins then sorts by asu_miller_idx
   scaler.join_multiple_datasets()
   assert list(scaler.reflection_table['inverse_scale_factor']) == [
-    1.1, 1.2, 1.1, 1.2, 1.0, 1.0, 1.0, 1.0]
+    1.1, 1.1, 1.0, 1.0, 1.2, 1.2, 1.0, 1.0]
 
   # Other methods to test - update_error_model, calc_merging_stats.
 
 
-'''def calculate_jacobian_fd(target):
+def calculate_jacobian_fd(target):
   """Calculate jacobian matrix with finite difference approach."""
   delta = 1.0e-6
   #apm = target.apm
   jacobian = sparse.matrix(target.get_num_matches(), target.apm.n_active_params)
   #iterate over parameters, varying one at a time and calculating the residuals
   for i in range(target.apm.n_active_params):
-    target.apm.x[i] -= 0.5 * delta
+    new_x = copy.copy(target.apm.x)
+    new_x[i] -= 0.5 * delta
+    target.apm.set_param_vals(new_x)
+    #target.apm.x[i] -= 0.5 * delta
     target.predict()
     R_low = (target.calculate_residuals()/target.weights)**0.5 #unweighted unsquared residual
-    target.apm.x[i] += delta
+    #target.apm.x[i] += delta
+    new_x[i] += delta
+    target.apm.set_param_vals(new_x)
     target.predict()
     R_upper = (target.calculate_residuals()/target.weights)**0.5 #unweighted unsquared residual
-    target.apm.x[i] -= 0.5 * delta
+    #target.apm.x[i] -= 0.5 * delta
+    new_x[i] -= 0.5 * delta
+    target.apm.set_param_vals(new_x)
     target.predict()
     fin_difference = (R_upper - R_low) / delta
     for j in range(fin_difference.size()):
       jacobian[j, i] = fin_difference[j]
   return jacobian
 
-def test_target_jacobian_calc():
-  (test_reflections, test_experiments, params) = generated_single_input(
-    generated_refl(), generated_single_exp(), generated_param())
+'''def test_target_jacobian_calc():
+  (test_reflections, test_experiments, params) = (
+    generated_refl(), generated_exp(1), generated_param())
   assert len(test_experiments) == 1
   assert len(test_reflections) == 1
   experiments = create_scaling_model(params, test_experiments, test_reflections)
@@ -340,11 +342,13 @@ def test_target_jacobian_calc():
   fd_jacobian = calculate_jacobian_fd(target)
   print(fd_jacobian)
   r, jacobian, w = target.compute_residuals_and_gradients()
+  r = (r/w)**0.5
   print(jacobian)
   print(list(w))
   for i in range(0, 3):
     for j in range(0, 2):
       assert approx_equal(jacobian[i, j], fd_jacobian[i, j])'''
+
 
 def test_sf_variance_calculation(generated_KB_param):
   """Test the calculation of scale factor variances."""

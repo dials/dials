@@ -6,7 +6,6 @@ from dials.array_family import flex
 from active_parameter_managers import (multi_active_parameter_manager,
   active_parameter_manager, ConcurrentAPMFactory, ConsecutiveAPMFactory)
 import pytest
-import mock
 
 class DummyComponent(object):
   """Dummy model component object."""
@@ -109,7 +108,6 @@ def test_concurrent_apm_factory():
   components_1 = {'scale' : DummyComponent(), 'decay' : DummyComponent(),
     'absorption' : DummyComponent()}
   data_manager = DummyDataManager(components_1)
-  
 
   apm_factory = ConcurrentAPMFactory([data_manager],
     apm_type=active_parameter_manager)

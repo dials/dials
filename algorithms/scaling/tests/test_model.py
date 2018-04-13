@@ -43,7 +43,7 @@ def generated_param():
 
 def generated_refl():
   rt = flex.reflection_table()
-  rt['d'] =  flex.double([1.0, 1.0, 1.0, 1.0])
+  rt['d'] = flex.double([1.0, 1.0, 1.0, 1.0])
   rt['xyzobs.px.value'] = flex.vec3_double([(0.0, 0.0, 0.0),
     (0.0, 0.0, 5.0), (0.0, 0.0, 10.0), (0.0, 0.0, 10.0)])
   rt.set_flags(flex.bool([False, False, False, False]),
@@ -171,7 +171,7 @@ def test_ArrayScalingModel():
     'time_norm_fac' : 1.0, 'time_rot_interval' : 1.0, 'n_x_param' : 2,
     'n_y_param' : 2, 'xmin' : 0.0, 'ymin' : 0.0, 'x_bin_width' : 1.0,
     'y_bin_width' : 2.0}
-  
+
   parameters_dict = {
       'decay': {'parameters' : flex.double([1.2, 1.1, 1.0, 0.9]),
         'parameter_esds' : None},
@@ -253,7 +253,7 @@ def test_model_factory_utilities():
 
   # Test initialise_smooth_input(osc_range, one_osc_width, interval)
   # Test check for user excluded
-  
+
 
 def test_create_scaling_model():
   """Test the create scaling model function."""

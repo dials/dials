@@ -15,7 +15,7 @@ from dials.algorithms.scaling.model.scaling_model_factory import \
   create_scaling_model
 from dials.algorithms.scaling.scaler_factory import create_scaler
 from dials.algorithms.scaling.target_function import ScalingTarget
-from basis_functions import basis_function
+from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.model.components.scale_components import \
   SingleBScaleFactor, SingleScaleFactor
 
@@ -188,7 +188,7 @@ def test_target_function(generated_KB_param):
   #_ = target.compute_functional_gradients_and_curvatures()
 
   # Calculate residuals explicitly and check RMSDS.
-  assert approx_equal(list(resid), [0.0, 50.0/36.0, 100.0/36.0])
+  assert approx_equal(list(resid), [50.0/36.0, 0.0, 100.0/36.0])
   assert approx_equal(target.rmsds()[0], (150.0/(36.0*3.0))**0.5)
 
 
