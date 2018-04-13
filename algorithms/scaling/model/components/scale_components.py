@@ -31,6 +31,7 @@ class ScaleComponentBase(object):
     self._parameters = initial_values
     self._parameter_esds = parameter_esds
     self._var_cov = None
+    self._n_refl = None
     self._n_params = len(self._parameters)
     self._inverse_scales = None
     #self._inverse_scale_variances = None
@@ -53,6 +54,7 @@ class ScaleComponentBase(object):
       assert 0, '''attempting to set a new set of parameters of different
       length than previous assignment: was %s, attempting %s''' % (
         len(self._parameters), len(values))
+    #print('setting new parameters for %s' % self.__class__)
     self._parameters = values
 
   @property
@@ -81,6 +83,11 @@ class ScaleComponentBase(object):
   @var_cov_matrix.setter
   def var_cov_matrix(self, var_cov):
     self._var_cov = var_cov
+
+  @property
+  def n_refl(self):
+    """The current number of reflections associated with this component."""
+    return self._n_refl
 
   @property
   def inverse_scales(self):
@@ -113,7 +120,7 @@ class ScaleComponentBase(object):
     pass
 
   @abc.abstractmethod
-  def calculate_scales_and_derivatives(self):
+  def calculate_scales_and_derivatives(self, curvatures=False):
     """Use the component parameters to calculate and set
     self._inverse_scales and self._derivatives."""
     pass
@@ -134,12 +141,6 @@ class SingleScaleFactor(ScaleComponentBase):
     assert len(initial_values) == 1, '''This model component is only designed
       for a single global scale component'''
     super(SingleScaleFactor, self).__init__(initial_values, parameter_esds)
-    self._n_refl = None
-
-  @property
-  def n_refl(self):
-    """The current number of reflections associated with this component."""
-    return self._n_refl
 
   def update_reflection_data(self, reflection_table, selection=None):
     """Add reflection data to the component, only n_reflections needed."""
@@ -147,11 +148,13 @@ class SingleScaleFactor(ScaleComponentBase):
       reflection_table = reflection_table.select(selection)
     self._n_refl = reflection_table.size()
 
-  def calculate_scales_and_derivatives(self):
+  def calculate_scales_and_derivatives(self, curvatures=False):
     self._inverse_scales = flex.double(self.n_refl, self._parameters[0])
     self._derivatives = sparse.matrix(self.n_refl, 1)
     for i in range(self.n_refl):
       self._derivatives[i, 0] = 1.0
+    if curvatures:
+      self._curvatures = sparse.matrix(self.n_refl, 1) #curvatures are all zero.
 
   def calculate_scales_derivatives_curvatures(self):
     self.calculate_scales_and_derivatives()
@@ -186,13 +189,18 @@ class SingleBScaleFactor(ScaleComponentBase):
     self._d_values = reflection_table['d']
     self._n_refl = reflection_table.size()
 
-  def calculate_scales_and_derivatives(self):
+  def calculate_scales_and_derivatives(self, curvatures=False):
     self._inverse_scales = flex.double(np.exp(flex.double(
       [self._parameters[0]] * self._n_refl) / (2.0 * (self._d_values**2))))
     self._derivatives = sparse.matrix(self._n_refl, 1)
     for i in range(self._n_refl):
       self._derivatives[i, 0] = (self._inverse_scales[i]
         / (2.0 * (self._d_values[i]**2)))
+    if curvatures:
+      self._curvatures = sparse.matrix(self.n_refl, 1) #curatures are all zero.
+      for i in range(self._n_refl):
+        self._curvatures[i, 0] = (self._inverse_scales[i]
+          / ((2.0 * (self._d_values[i]**2))**2))
 
   def calculate_scales_derivatives_curvatures(self):
     self.calculate_scales_and_derivatives()
@@ -264,13 +272,16 @@ class SHScaleComponent(ScaleComponentBase):
       self._harmonic_values = sel_sph_harm_table.transpose()
       #self._harmonic_values = harmonic_values
       self.calculate_scales_and_derivatives()
+      self._n_refl = self.inverse_scales.size()
 
-  def calculate_scales_and_derivatives(self):
+  def calculate_scales_and_derivatives(self, curvatures=False):
     abs_scale = flex.double(self._harmonic_values.n_rows, 1.0) # Unity term
     for i, col in enumerate(self._harmonic_values.cols()):
       abs_scale += flex.double(col.as_dense_vector() * self._parameters[i])
     self._inverse_scales = abs_scale
     self._derivatives = self._harmonic_values
+    if curvatures:
+      self._curvatures = sparse.matrix(self._inverse_scales.size(), self._n_params)
 
   def calculate_scales_derivatives_curvatures(self):
     self.calculate_scales_and_derivatives()

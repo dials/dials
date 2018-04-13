@@ -13,6 +13,7 @@ from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.algorithms.scaling.model.scaling_model_factory import \
   create_scaling_model
 from dials.algorithms.scaling.scaler_factory import create_scaler
+from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.parameter_handler import \
   scaling_active_parameter_manager, create_apm
 #from dials.algorithms.scaling.active_parameter_managers import \
@@ -87,7 +88,6 @@ def test_ScalerBase():
     scalerbase.Ih_table = [1.0]
 
   scalerbase_directory = dir(scalerbase)
-  assert 'get_basis_function' in scalerbase_directory
   assert '_scaling_subset' in scalerbase_directory
   assert '_update_weights_for_scaling' in scalerbase_directory
 
@@ -192,7 +192,7 @@ def test_SingleScaler():
   apm.set_param_vals([1.1, 0.0])
   assert apm.derivatives is None
   singlescaler.update_for_minimisation(apm)
-  bf = singlescaler.get_basis_function(apm)
+  bf = basis_function(apm).return_basis()
   assert list(singlescaler.Ih_table.inverse_scale_factors) == list(bf[0])
   for i in range(apm.derivatives.n_rows):
     for j in range(apm.derivatives.n_cols):
@@ -270,16 +270,14 @@ def test_MultiScaler():
   apm = apm_factory.make_next_apm()
   apm.set_param_vals(flex.double([1.1, 0.1, 1.2, 0.2]))
   # Check individual Ih tables were updated and derivatives matrix correctly composed
-  old_Ih_values = list(scaler.Ih_table.Ih_values)
+  #old_Ih_values = list(scaler.Ih_table.Ih_values)
   scaler.update_for_minimisation(apm)
   # Check Ih tables were updated.
   new_I_0 = list(scaler.single_scalers[0].Ih_table.inverse_scale_factors)
   new_I_1 = list(scaler.single_scalers[1].Ih_table.inverse_scale_factors)
-  scaler.single_scalers[0].update_for_minimisation(apm.apm_list[0])
-  single_bf_0 = scaler.single_scalers[0].get_basis_function(apm.apm_list[0])
+  single_bf_0 = basis_function(apm.apm_list[0]).return_basis()
   assert new_I_0 == list(single_bf_0[0])
-  scaler.single_scalers[1].update_for_minimisation(apm.apm_list[1])
-  single_bf_1 = scaler.single_scalers[1].get_basis_function(apm.apm_list[1])
+  single_bf_1 = basis_function(apm.apm_list[1]).return_basis()
   assert new_I_1 == list(single_bf_1[0])
   # Check derivatives were correctly composed.
   for i in range(2):
@@ -289,8 +287,6 @@ def test_MultiScaler():
     for j in range(2):
       assert apm.derivatives[i+2, j+2] == single_bf_1[1][i, j]
   assert apm.derivatives.non_zeroes == 8
-  # Check Ih values were updated. # Defer testing of calculation to test_Ih
-  assert list(scaler.Ih_table.Ih_values) != old_Ih_values
 
   # Test that expand_scales_to_all_reflections updates each dataset.
   apm.set_param_vals(flex.double([1.1, 0.0, 1.2, 0.0]))

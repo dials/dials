@@ -14,6 +14,7 @@ from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.algorithms.scaling.model.scaling_model_factory import \
   create_scaling_model
 from dials.algorithms.scaling.scaler_factory import TargetScaler
+from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.scaler import SingleScalerBase
 from dials.algorithms.scaling.target_function import ScalingTargetFixedIH
 from dials.algorithms.scaling.parameter_handler import create_apm
@@ -180,7 +181,7 @@ def test_TargetScaler():
   # Check Ih tables were updated.
   new_I_0 = list(targetscaler.unscaled_scalers[0].Ih_table.inverse_scale_factors)
   #targetscaler.update_for_minimisation(apm)
-  single_bf_0 = targetscaler.unscaled_scalers[0].get_basis_function(apm.apm_list[0])
+  single_bf_0 = basis_function(apm.apm_list[0]).return_basis()
   assert new_I_0 == list(single_bf_0[0])
   assert old_Ih_values == list(targetscaler.unscaled_scalers[0].Ih_table.Ih_values)
 

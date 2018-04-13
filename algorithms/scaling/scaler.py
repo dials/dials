@@ -102,10 +102,6 @@ class ScalerBase(object):
     """Expand scales from a subset to all reflections."""
     pass
 
-  def get_basis_function(self, apm, curvatures=False):
-    """Call the basis function"""
-    return basis_function(self, apm, curvatures).return_basis()
-
   @staticmethod
   def _map_indices_to_asu(reflection_table, experiments, params):
     """Map the miller index to the asu and use to sort the reflection table."""
@@ -299,7 +295,7 @@ class SingleScalerBase(ScalerBase):
 
   def update_for_minimisation(self, apm, curvatures=False):
     """Update the scale factors and Ih for the next minimisation iteration."""
-    basis_fn = self.get_basis_function(apm, curvatures=curvatures)
+    basis_fn = basis_function(apm, curvatures).return_basis()
     apm.derivatives = basis_fn[1]
     if curvatures:
       apm.curvatures = basis_fn[2]
@@ -578,7 +574,7 @@ class MultiScaler(MultiScalerBase):
     apm.derivatives = sparse.matrix(self.Ih_table.size, apm.n_active_params)
     start_row_no = 0
     for i, scaler in enumerate(self.single_scalers):
-      basis_fn = scaler.get_basis_function(apm.apm_list[i])
+      basis_fn = basis_function(apm.apm_list[i], curvatures).return_basis()
       scaler.Ih_table.inverse_scale_factors = basis_fn[0]
       if basis_fn[1]:
         apm.derivatives.assign_block(basis_fn[1], start_row_no,
@@ -650,7 +646,7 @@ class TargetScaler(MultiScalerBase):
     #for i, single_apm in enumerate(apm.apm_list): Moved to multi_apm
     #  single_apm.x = apm.select_parameters(i)
     for i, scaler in enumerate(self.unscaled_scalers):
-      basis_fn = scaler.get_basis_function(apm.apm_list[i])
+      basis_fn = basis_function(apm.apm_list[i]).return_basis()
       apm.apm_list[i].derivatives = basis_fn[1]
       scaler.Ih_table.inverse_scale_factors = basis_fn[0]
 
@@ -714,19 +710,6 @@ class NullScaler(ScalerBase):
   def update_for_minimisation(self, apm, curvatures=False):
     '''update the scale factors and Ih for the next iteration of minimisation'''
     pass
-
-def perform_scaling(scaler, target_type=ScalingTarget):
-  """Perform a complete minimisation based on the current state."""
-  apm_factory = create_apm(scaler)
-  for _ in range(apm_factory.n_cycles):
-    apm = apm_factory.make_next_apm()
-    refinery = scaling_refinery(engine=scaler.params.scaling_refinery.engine,
-      target=target_type(scaler, apm), prediction_parameterisation=apm,
-      max_iterations=scaler.params.scaling_refinery.max_iterations)
-    refinery.run()
-    scaler = refinery.return_scaler()
-    logger.info('\n'+'='*80+'\n')
-  return scaler
 
 def calc_sf_variances(components, var_cov):
   """Use the parameter var_cov matrix to calculate the variances of the

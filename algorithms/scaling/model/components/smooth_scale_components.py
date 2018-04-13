@@ -160,14 +160,17 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
     self._smoother = GaussianSmoother1D(phi_range_deg,
       self.nparam_to_val(self._n_params))
     self.inverse_scales = flex.double(normalised_values.size(), 1.0)
+    self._n_refl = self.inverse_scales.size()
 
-  def calculate_scales_and_derivatives(self):
+  def calculate_scales_and_derivatives(self, curvatures=False):
     value, weight, sumweight = self._smoother.multi_value_weight(
       self._normalised_values, self.value)
     inv_sw = 1. / sumweight
     dv_dp = row_multiply(weight, inv_sw)
     self._inverse_scales = value
     self._derivatives = dv_dp
+    if curvatures:
+      self._curvatures = sparse.matrix(self._inverse_scales.size(), self.n_params)
 
   def calculate_scales(self):
     """"Only calculate the scales if needed, for performance."""
@@ -202,12 +205,15 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
     if selection:
       self._d_values = self._d_values.select(selection)
 
-  def calculate_scales_and_derivatives(self):
+  def calculate_scales_and_derivatives(self, curvatures=False):
     super(SmoothBScaleComponent1D, self).calculate_scales_and_derivatives()
     self._inverse_scales = flex.double(np.exp(self._inverse_scales
       /(2.0 * (self._d_values**2))))
     self._derivatives = row_multiply(self._derivatives,
       self._inverse_scales / (2.0 * (self._d_values**2)))
+    if curvatures:
+      self._curvatures = row_multiply(elementwise_square(self._derivatives),
+        1.0/self._inverse_scales)
 
   def calculate_scales(self):
     super(SmoothBScaleComponent1D, self).calculate_scales()
@@ -280,14 +286,17 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
     self._smoother = GaussianSmoother2D(x_range, self.nparam_to_val(
       self._n_x_params), y_range, self.nparam_to_val(self._n_y_params))
     self.inverse_scales = flex.double(self._normalised_x_values.size(), 1.0)
+    self._n_refl = self.inverse_scales.size()
 
-  def calculate_scales_and_derivatives(self):
+  def calculate_scales_and_derivatives(self, curvatures=False):
     value, weight, sumweight = self._smoother.multi_value_weight(
       self._normalised_x_values, self._normalised_y_values, self.value)
     inv_sw = 1. / sumweight
     dv_dp = row_multiply(weight, inv_sw)
     self._inverse_scales = value
     self._derivatives = dv_dp
+    if curvatures:
+      self._curvatures = sparse.matrix(self._inverse_scales.size(), self.n_params)
 
   def calculate_scales(self):
     """"Only calculate the scales if needed, for performance."""
@@ -380,8 +389,9 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
       self._n_x_params), y_range, self.nparam_to_val(self._n_y_params),
       z_range, self.nparam_to_val(self._n_z_params))
     self.inverse_scales = flex.double(self._normalised_x_values.size(), 1.0)
+    self._n_refl = self.inverse_scales.size()
 
-  def calculate_scales_and_derivatives(self):
+  def calculate_scales_and_derivatives(self, curvatures=False):
     value, weight, sumweight = self._smoother.multi_value_weight(
       self._normalised_x_values, self._normalised_y_values,
       self._normalised_z_values, self.value)
@@ -389,6 +399,8 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
     dv_dp = row_multiply(weight, inv_sw)
     self._inverse_scales = value
     self._derivatives = dv_dp
+    if curvatures:
+      self._curvatures = sparse.matrix(self._inverse_scales.size(), self.n_params)
 
   def calculate_scales(self):
     """"Only calculate the scales if needed, for performance."""

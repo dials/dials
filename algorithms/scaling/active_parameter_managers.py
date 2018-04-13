@@ -56,6 +56,9 @@ class active_parameter_manager(object):
   def set_param_vals(self, x):
     """Set method for refinement engine access."""
     self.x = x
+    for component in self.components:
+      component_obj = self.components[component]['object']
+      component_obj.parameters = self.select_parameters(component)
 
   def get_param_vals(self):
     """Get method for refinement engine access."""
@@ -121,7 +124,7 @@ class multi_active_parameter_manager(object):
     """Set method for refinement engine access."""
     self.x = x
     for i, single_apm in enumerate(self.apm_list):
-      single_apm.x = self.select_parameters(i)
+      single_apm.set_param_vals(self.select_parameters(i))
 
   def get_param_vals(self):
     """Get method for refinement engine access."""

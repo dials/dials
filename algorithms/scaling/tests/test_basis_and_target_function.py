@@ -94,8 +94,8 @@ def test_basis_function(generated_KB_param):
   #apm.x = (flex.double(n_scale_params, new_S))
   #apm.x.extend(flex.double(n_decay_params, new_B))
   apm.set_param_vals(flex.double([new_S, new_B]))
-  basis_fn = basis_function(scaler, apm)
-  basis_fn.update_scale_factors_with_curvs()
+  basis_fn = basis_function(apm, curvatures=True)
+  basis_fn.update_scale_factors()
   assert list(scaler.components['decay'].parameters) == (
     list(flex.double([new_B] * n_decay_params)))
   assert list(scaler.components['scale'].parameters) == (
@@ -137,8 +137,8 @@ def test_basis_function(generated_KB_param):
   apm = scaling_active_parameter_manager(scaler.components, ['scale'])
   new_S = 2.0
   apm.set_param_vals(flex.double(scaler.components['scale'].n_params, new_S))
-  basis_func = basis_function(scaler, apm)
-  basis_fn = basis_func.return_basis() # All in one alternative call.
+  basis_fn = basis_function(apm).return_basis()
+  #basis_fn = basis_func.return_basis() # All in one alternative call.
 
   # Test that the scales and derivatives were correctly calculated
   assert list(basis_fn[0]) == list([new_S] *

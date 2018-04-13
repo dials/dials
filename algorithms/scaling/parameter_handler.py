@@ -23,6 +23,7 @@ class scaling_active_parameter_manager(active_parameter_manager):
           self.constant_g_values *= obj.inverse_scales
     super(scaling_active_parameter_manager, self).__init__(components,
       selection_list)
+    self.n_obs = self.components[selection_list[0]]['object'].n_refl
 
 def create_apm(scaler):
   """Create and return the appropriate apm factory for the scaler."""
