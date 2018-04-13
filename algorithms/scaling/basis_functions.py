@@ -18,7 +18,7 @@ class basis_function(object):
   def update_scale_factors(self):
     """Update the parameters in each SF object from the apm parameter list."""
     for component in self.apm.components.itervalues():
-      component['object'].calculate_scales_and_derivatives(curvatures=self.curvatures)
+      component['object'].calculate_scales_and_derivatives(self.curvatures)
 
   def calculate_scale_factors(self):
     """Calculate the overall scale factor for each reflection from individual

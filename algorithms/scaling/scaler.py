@@ -109,15 +109,14 @@ class ScalerBase(object):
     if params.scaling_options.space_group:
       sg_from_file = experiments.crystal.get_space_group().info()
       s_g_symbol = params.scaling_options.space_group
-      crystal_symmetry = crystal.symmetry(unit_cell=u_c,
-        space_group_symbol=s_g_symbol)
+      crystal_symmetry = crystal.symmetry(space_group_symbol=s_g_symbol)
       msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
         'If the reflection indexing in these space groups is different, {sep}'
         'bad things may happen!!! {sep}').format(sg_from_file, s_g_symbol, sep='\n')
       logger.info(msg)
     else:
       s_g = experiments.crystal.get_space_group()
-      crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
+      crystal_symmetry = crystal.symmetry(space_group=s_g)
     miller_set = miller.set(crystal_symmetry=crystal_symmetry,
       indices=reflection_table['miller_index'], anomalous_flag=False)
     miller_set_in_asu = miller_set.map_to_asu()
@@ -358,27 +357,23 @@ class SingleScalerBase(ScalerBase):
       self.reflection_table.size(), 1.0)
     self._reflection_table['inverse_scale_factor_variance'] = flex.double(
       self.reflection_table.size(), 0.0)
-    sel = self.reflection_table.get_flags(
+    scaled_sel = ~self.reflection_table.get_flags(
       self.reflection_table.flags.bad_for_scaling, all=False)
-    scaled_sel = ~sel
     scaled_isel = scaled_sel.iselection()
-    scaled_reflections = self._reflection_table.select(scaled_sel)
-    scaled_reflections['inverse_scale_factor'] = flex.double(
-      scaled_reflections.size(), 1.0)
+    scaled_invsf = self._reflection_table['inverse_scale_factor'].select(scaled_sel)
     for component in self.components.itervalues():
       component.update_reflection_data(self.reflection_table, scaled_sel)
       component.calculate_scales_and_derivatives()
-      scaled_reflections['inverse_scale_factor'] *= component.inverse_scales
+      scaled_invsf *= component.inverse_scales
+    self.reflection_table['inverse_scale_factor'].set_selected(scaled_isel,
+      scaled_invsf)
     logger.info('Scale factors determined during minimisation have now been\n'
       'applied to all reflections for dataset %s.\n',
       self.reflection_table['id'][0])
     if self.var_cov_matrix and calc_cov:
-      scaled_reflections['inverse_scale_factor_variance'] = calc_sf_variances(
-        self.components, self._var_cov)
-    self.reflection_table['inverse_scale_factor'].set_selected(scaled_isel,
-      scaled_reflections['inverse_scale_factor'])
-    self.reflection_table['inverse_scale_factor_variance'].set_selected(
-      scaled_isel, scaled_reflections['inverse_scale_factor_variance'])
+      scaled_invsfvar = calc_sf_variances(self.components, self._var_cov)
+      self.reflection_table['inverse_scale_factor_variance'].set_selected(
+        scaled_isel, scaled_invsfvar)
     if (self.params.scaling_options.reject_outliers and
       not isinstance(caller, MultiScalerBase)):
       self._reflection_table = self.round_of_outlier_rejection(
@@ -569,8 +564,6 @@ class MultiScaler(MultiScalerBase):
     '''update the scale factors and Ih for the next iteration of minimisation,
     update the x values from the amp to the individual apms, as this is where
     basis functions, target functions etc get access to the parameters.'''
-    #for i, single_apm in enumerate(apm.apm_list): Moved to multi_apm
-    #  single_apm.x = apm.select_parameters(i)
     apm.derivatives = sparse.matrix(self.Ih_table.size, apm.n_active_params)
     start_row_no = 0
     for i, scaler in enumerate(self.single_scalers):
@@ -643,8 +636,6 @@ class TargetScaler(MultiScalerBase):
 
   def update_for_minimisation(self, apm, curvatures=False):
     """Update the scale factors and Ih for the next iteration of minimisation."""
-    #for i, single_apm in enumerate(apm.apm_list): Moved to multi_apm
-    #  single_apm.x = apm.select_parameters(i)
     for i, scaler in enumerate(self.unscaled_scalers):
       basis_fn = basis_function(apm.apm_list[i]).return_basis()
       apm.apm_list[i].derivatives = basis_fn[1]

@@ -16,6 +16,8 @@ from dials.algorithms.scaling.model.scaling_model_factory import \
 from dials.algorithms.scaling.scaler_factory import create_scaler
 from dials.algorithms.scaling.target_function import ScalingTarget
 from basis_functions import basis_function
+from dials.algorithms.scaling.model.components.scale_components import \
+  SingleBScaleFactor, SingleScaleFactor
 
 def generated_refl():
   """Generate reflection table to test the basis and target function."""
@@ -69,47 +71,40 @@ def generated_KB_param():
 
 
 
-def test_basis_function(generated_KB_param):
-  """Test for the basis function class. This is initialised with a scaler and
-  parameter manager, and uses these to calculate the scale factors and
-  derivatives for each reflection based on the model components."""
+def test_basis_function():
+  """Test for the basis function class. This calculates scale factors and
+  derivatives for reflections based on the model components."""
 
-  # First initialise a scaling model, scaler and parameter manager.
-  (test_reflections, test_experiments, params) = (
-    generated_refl(), generated_single_exp(), generated_KB_param)
-  assert len(test_experiments) == 1
-  assert len(test_reflections) == 1
-  experiments = create_scaling_model(params, test_experiments, test_reflections)
-  scaler = create_scaler(params, experiments, test_reflections)
-  assert scaler.experiments.scaling_model.id_ == 'KB'
-  apm = scaling_active_parameter_manager(scaler.components, ['decay', 'scale'])
+  # To test the basis function, need a scaling active parameter manager - to set
+  # this up we need a components dictionary with some reflection data.
+
+  # Let's use KB model components for simplicity.
+  rt = generated_refl()[0]
+  components = {'scale' : SingleScaleFactor(flex.double([1.0])), 'decay':
+    SingleBScaleFactor(flex.double([0.0]))} #Create empty components.
+  for component in components.itervalues():
+    component.update_reflection_data(rt) #Add some data to components.
+
+  apm = scaling_active_parameter_manager(components, ['decay', 'scale'])
 
   # First test that scale factors can be successfully updated.
   # Manually change the parameters in the apm.
-  n_scale_params = scaler.components['scale'].n_params
-  n_decay_params = scaler.components['decay'].n_params
+  decay = components['decay'] # Define alias
+  scale = components['scale'] # Define alias
   # Note, order of params in apm.x depends on order in scaling model components.
   new_B = 1.0
   new_S = 2.0
-  #apm.x = (flex.double(n_scale_params, new_S))
-  #apm.x.extend(flex.double(n_decay_params, new_B))
   apm.set_param_vals(flex.double([new_S, new_B]))
   basis_fn = basis_function(apm, curvatures=True)
   basis_fn.update_scale_factors()
-  assert list(scaler.components['decay'].parameters) == (
-    list(flex.double([new_B] * n_decay_params)))
-  assert list(scaler.components['scale'].parameters) == (
-    list(flex.double([new_S] * n_scale_params)))
 
   # Now test that the inverse scale factor is correctly calculated.
   calculated_sfs = basis_fn.calculate_scale_factors()
   assert list(calculated_sfs) == list(new_S * np.exp(new_B/
-    (2.0*(scaler.components['decay'].d_values**2))))
+    (2.0*(decay.d_values**2))))
 
   # Now check that the derivative matrix is correctly calculated.
   calc_derivs = basis_fn.calculate_derivatives()
-  decay = scaler.components['decay']
-  scale = scaler.components['scale']
   assert calc_derivs[0, 0] == scale.derivatives[0, 0] * decay.inverse_scales[0]
   assert calc_derivs[1, 0] == scale.derivatives[1, 0] * decay.inverse_scales[1]
   assert calc_derivs[2, 0] == scale.derivatives[2, 0] * decay.inverse_scales[2]
@@ -128,24 +123,24 @@ def test_basis_function(generated_KB_param):
 
   # Repeat the test when there is only one active parameter.
   # First reset the parameters
-  scaler.components['decay'].parameters = flex.double([0.0])
-  scaler.components['scale'].parameters = flex.double([1.0])
-  scaler.components['decay'].calculate_scales_and_derivatives()
-  scaler.components['scale'].calculate_scales_and_derivatives()
+  components['decay'].parameters = flex.double([0.0])
+  components['scale'].parameters = flex.double([1.0])
+  components['decay'].calculate_scales_and_derivatives()
+  components['scale'].calculate_scales_and_derivatives()
 
   # Now generate a parameter manager for a single component.
-  apm = scaling_active_parameter_manager(scaler.components, ['scale'])
+  apm = scaling_active_parameter_manager(components, ['scale'])
   new_S = 2.0
-  apm.set_param_vals(flex.double(scaler.components['scale'].n_params, new_S))
+  apm.set_param_vals(flex.double(components['scale'].n_params, new_S))
   basis_fn = basis_function(apm).return_basis()
   #basis_fn = basis_func.return_basis() # All in one alternative call.
 
   # Test that the scales and derivatives were correctly calculated
   assert list(basis_fn[0]) == list([new_S] *
-    scaler.components['scale'].inverse_scales.size())
-  assert basis_fn[1][0, 0] == scaler.components['scale'].derivatives[0, 0]
-  assert basis_fn[1][1, 0] == scaler.components['scale'].derivatives[1, 0]
-  assert basis_fn[1][2, 0] == scaler.components['scale'].derivatives[2, 0]
+    components['scale'].inverse_scales.size())
+  assert basis_fn[1][0, 0] == components['scale'].derivatives[0, 0]
+  assert basis_fn[1][1, 0] == components['scale'].derivatives[1, 0]
+  assert basis_fn[1][2, 0] == components['scale'].derivatives[2, 0]
 
 def test_target_function(generated_KB_param):
   """Test for the ScalingTarget class."""

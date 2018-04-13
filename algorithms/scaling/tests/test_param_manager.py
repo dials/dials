@@ -45,6 +45,9 @@ def test_general_apm():
 
   apm.set_param_vals(flex.double([2.0, 1.5]))
   assert apm.get_param_vals() == flex.double([2.0, 1.5])
+  # Test params were updated in components
+  assert list(components['scale'].parameters) == [2.0]
+  assert list(components['decay'].parameters) == [1.5]
   # Test selection of parameters
   decay_params = apm.select_parameters('decay')
   assert len(decay_params) == 1
