@@ -136,19 +136,12 @@ def test_concurrent_apm_factory():
   assert '1' in multi_apm.apm_list[1].components_list
   assert '2' in multi_apm.apm_list[1].components_list
 
-@pytest.mark.skip(reason="need to use a mock object for a scaler.")
 def test_consecutive_apm_factory():
   """Test the apm factory for consecutive refinement."""
   components_1 = {'scale' : DummyComponent(), 'decay' : DummyComponent(),
     'absorption' : DummyComponent()}
   data_manager = DummyDataManager(components_1)
   data_manager.set_consecutive_order([['scale', 'decay'], ['absorption']])
-
-  '''@mock.patch("datamanager")
-  def mock_datamanager(mock_class):
-    mock_class.return_value.experiments.scaling_model.consecutive_refinement_order.return_value = [
-      ['scale', 'decay'], ['absorption']]
-    inst = datamanager()'''
 
   # Test single dataset case.
   apm_factory = ConsecutiveAPMFactory([data_manager],

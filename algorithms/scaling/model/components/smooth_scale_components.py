@@ -178,11 +178,6 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
       self.value)
     self._inverse_scales = value
 
-  def calculate_scales_derivatives_curvatures(self):
-    # Note - curvatures are zero for this component.
-    self.calculate_scales_and_derivatives()
-    self._curvatures = sparse.matrix(self._inverse_scales.size(), self.n_params)
-
 
 class SmoothBScaleComponent1D(SmoothScaleComponent1D):
   '''Subclass of SmoothScaleComponent1D to implement a smoothly
@@ -220,10 +215,6 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
     self._inverse_scales = flex.double(np.exp(self._inverse_scales
       /(2.0 * (self._d_values**2))))
 
-  def calculate_scales_derivatives_curvatures(self):
-    self.calculate_scales_and_derivatives()
-    self._curvatures = row_multiply(elementwise_square(self._derivatives),
-      1.0/self._inverse_scales)
 
 class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
   """Implementation of a 2D array-based smoothly varying scale factor.
@@ -304,10 +295,6 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
       self._normalised_y_values, self.value)
     self._inverse_scales = value
 
-  def calculate_scales_derivatives_curvatures(self):
-    # Note - curvatures are zero for this component.
-    self.calculate_scales_and_derivatives()
-    self._curvatures = sparse.matrix(self._inverse_scales.size(), self.n_params)
 
 class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
   """Implementation of a 3D array-based smoothly varying scale factor.
@@ -407,8 +394,3 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
     value, _, _ = self._smoother.multi_value_weight(self._normalised_x_values,
       self._normalised_y_values, self._normalised_z_values, self.value)
     self._inverse_scales = value
-
-  def calculate_scales_derivatives_curvatures(self):
-    # Note - curvatures are zero for this component.
-    self.calculate_scales_and_derivatives()
-    self._curvatures = sparse.matrix(self._inverse_scales.size(), self.n_params)

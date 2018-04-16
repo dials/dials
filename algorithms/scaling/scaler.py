@@ -198,18 +198,13 @@ class ScalerBase(object):
 
   def calc_merging_statistics(self):
     """Calculate the merging stats and return these with the dataset id."""
-    u_c = self.experiments.crystal.get_unit_cell().parameters()
     bad_refl_sel = self.reflection_table.get_flags(
       self.reflection_table.flags.bad_for_scaling, all=False)
     r_t = self.reflection_table.select(~bad_refl_sel)
-    if self.params.scaling_options.space_group:
-      crystal_symmetry = crystal.symmetry(unit_cell=u_c,
-        space_group_symbol=self.params.scaling_options.space_group)
-    else:
-      s_g = self.experiments.crystal.get_space_group()
-      crystal_symmetry = crystal.symmetry(unit_cell=u_c, space_group=s_g)
-    miller_set = miller.set(crystal_symmetry=crystal_symmetry,
-      indices=r_t['miller_index'], anomalous_flag=False)
+    u_c = self.experiments.crystal.get_unit_cell().parameters()
+    miller_set = miller.set(crystal_symmetry=crystal.symmetry(unit_cell=u_c,
+      space_group=self.space_group), indices=r_t['miller_index'],
+      anomalous_flag=False)
     i_obs = miller.array(miller_set, data=r_t['intensity']/
       r_t['inverse_scale_factor'])
     i_obs.set_observation_type_xray_intensity()
@@ -218,7 +213,6 @@ class ScalerBase(object):
     result = iotbx.merging_statistics.dataset_statistics(
       i_obs=i_obs, n_bins=20, anomalous=False, sigma_filtering=None,
       use_internal_variance=True, eliminate_sys_absent=False)
-      #eliminate_sys_absent=False, sigma_filtering=None)
     return ([result], dataset_id)
 
 class SingleScalerBase(ScalerBase):
@@ -249,8 +243,6 @@ class SingleScalerBase(ScalerBase):
       reflection) #flag not integrated, bad d, bad partiality
     reflection_table = self._select_optimal_intensities(reflection_table,
       self.params) #flag bad variance,
-    '''reflection_table = self._map_indices_to_asu(reflection_table,
-      self.experiments, self.params)'''
     # Calculate values for later filtering, but don't filter here!!!
     reflection_table = calc_normE2(reflection_table, self.experiments)
     if 'centric_flag' in reflection_table: #If E2 values have been calculated
@@ -266,6 +258,11 @@ class SingleScalerBase(ScalerBase):
   def components(self):
     """Shortcut to scaling model components."""
     return self.experiments.scaling_model.components
+
+  @property
+  def consecutive_refinement_order(self):
+    """Link to consecutive refinement order for parameter manager."""
+    return self.experiments.scaling_model.consecutive_refinement_order
 
   @property
   def var_cov_matrix(self):
@@ -478,7 +475,7 @@ class MultiScalerBase(ScalerBase):
     self.active_scalers = None
     self._initial_keys = self.single_scalers[0].initial_keys
     self._params = params
-    self._experiments = experiments[0] #what should this be set to - where exactly is used?
+    self._experiments = experiments[0]
     logger.info('Determining symmetry equivalent reflections across datasets.\n')
     self._Ih_table = JointIhTable([x.Ih_table for x in self.single_scalers],
       self.space_group)
@@ -512,14 +509,9 @@ class MultiScalerBase(ScalerBase):
   def join_datasets_from_scalers(self, scalers):
     """Create a joint reflection table from single scalers.
     Anticipated to be called from join_multiple_datasets."""
-    joined_reflections = flex.reflection_table()
+    self._reflection_table = flex.reflection_table()
     for scaler in scalers:
-      joined_reflections.extend(scaler.reflection_table)
-    #miller_set = miller.set(crystal.symmetry(
-    #  space_group=scalers[0].experiments.crystal.get_space_group()),
-    #  indices=joined_reflections['asu_miller_index'], anomalous_flag=False)
-    #permuted = miller_set.sort_permutation(by_value='packed_indices')
-    self._reflection_table = joined_reflections#.select(permuted)
+      self._reflection_table.extend(scaler.reflection_table)
     if self.params.scaling_options.reject_outliers:
       self._reflection_table = self.round_of_outlier_rejection(
         self._reflection_table)
@@ -616,14 +608,13 @@ class TargetScaler(MultiScalerBase):
   id_ = 'target'
 
   def __init__(self, params, scaled_experiments, scaled_scalers,
-    unscaled_experiments, unscaled_scalers):
+    unscaled_scalers):
     logger.info('\nInitialising a TargetScaler instance. \n')
     super(TargetScaler, self).__init__(params, scaled_experiments, scaled_scalers)
     self.unscaled_scalers = unscaled_scalers
     self.active_scalers = self.unscaled_scalers
     self._initial_keys = self.unscaled_scalers[0].initial_keys #needed for
     # scaling against calculated Is
-    self._experiments = unscaled_experiments[0]
     self.set_Ih_values_to_target()
     logger.info('Completed initialisation of TargetScaler. \n' + '*'*40 + '\n')
 

@@ -144,7 +144,7 @@ def plot_smooth_scales(params, experiments, reflections, outputfile=None):
     reflections.flags.integrated))
   if 'scale' in experiments.scaling_model.configdict['corrections']:
     reflections['norm_rot_angle'] = (reflections['xyzobs.px.value'].parts()[2]
-      * experiments.scaling_model.scale_normalisation_factor)
+      * experiments.scaling_model.configdict['s_norm_fac'])
     reflections['norm_rot_angle'] = (reflections['norm_rot_angle']
       - min(reflections['norm_rot_angle']))
     scale_rot_int = experiments.scaling_model.configdict['scale_rot_interval']
@@ -153,9 +153,11 @@ def plot_smooth_scales(params, experiments, reflections, outputfile=None):
     rel_values = flex.double(np.linspace(0, int_rel_max-int_rel_min, ((int_rel_max-int_rel_min)/0.1)+1,
       endpoint=True))
     rel_values[-1] = rel_values[-1] - 0.0001
+    rt = flex.reflection_table()
+    rt['norm_rot_angle'] = rel_values
     #rel_values = rel_values - rel_values[0]
     scale_SF = experiments.scaling_model.components['scale']
-    scale_SF.update_reflection_data(normalised_values=rel_values)
+    scale_SF.update_reflection_data(rt)
     scale_SF.calculate_scales()
     smoother_phis = [i * scale_rot_int for i in scale_SF.smoother.positions()]
     ax1 = plt.subplot(2, 1, 1)
@@ -178,7 +180,7 @@ def plot_smooth_scales(params, experiments, reflections, outputfile=None):
 
   if 'decay' in experiments.scaling_model.configdict['corrections']:
     reflections['norm_time_values'] = (reflections['xyzobs.px.value'].parts()[2]
-      * experiments.scaling_model.decay_normalisation_factor)
+      * experiments.scaling_model.configdict['d_norm_fac'])
     reflections['norm_time_values'] = (reflections['norm_time_values']
       - min(reflections['norm_time_values']))
     decay_rot_int = experiments.scaling_model.configdict['decay_rot_interval']
@@ -189,8 +191,11 @@ def plot_smooth_scales(params, experiments, reflections, outputfile=None):
     rel_values[-1] = rel_values[-1] - 0.0001
     #rel_values = rel_values# - rel_values[0]
     decay_SF = experiments.scaling_model.components['decay']
-    decay_SF.update_reflection_data(normalised_values=rel_values,
-      dvalues=flex.double(rel_values.size(), 1.0))
+    rt = flex.reflection_table()
+    rt['norm_time_values'] = rel_values
+    rt['d'] = flex.double(rel_values.size(), 1.0)
+    decay_SF.update_reflection_data(rt)#normalised_values=rel_values,
+    #  dvalues=flex.double(rel_values.size(), 1.0))
     decay_SF.calculate_scales()
     smoother_phis = [i * decay_rot_int for i in decay_SF._smoother.positions()]
     if ax1:
@@ -326,8 +331,12 @@ def plot_2D_decay_correction(experiment, reflections, outputfile=None):
   rel_values_1 = np.tile(rel_values_1, n2)
   rel_values_2 = np.repeat(rel_values_2, n1)
 
+  rt = flex.reflection_table()
+  rt['norm_time_values'] = rel_values_2
+  rt['norm_res_values'] = rel_values_1
+
   decay_factor = experiment.scaling_model.components['decay']
-  decay_factor.update_reflection_data(rel_values_1, rel_values_2)
+  decay_factor.update_reflection_data(rt)
   decay_factor.calculate_scales()
   scales = decay_factor.inverse_scales
   scalefactor_2D = np.reshape(list(scales), (n2, n1)).T
@@ -361,8 +370,7 @@ def plot_2D_decay_correction(experiment, reflections, outputfile=None):
   ax1.set_title('Decay correction (inverse scale factors)\n', fontsize=10)
 
   '''recalculate scales for plotting distribution in dataset'''
-  decay_factor.update_reflection_data(reflections['normalised_res_values'],
-    reflections['norm_time_values'])
+  decay_factor.update_reflection_data(rt)
   decay_factor.calculate_scales()
 
   ax2.hist(list(decay_factor.inverse_scales), 40, log=False)
@@ -396,8 +404,12 @@ def plot_2D_modulation_correction(experiment, reflections, outputfile=None):
   rel_values_1 = np.tile(rel_values_1, n2)
   rel_values_2 = np.repeat(rel_values_2, n1)
 
+  rt = flex.reflection_table()
+  rt['normalised_y_det_values'] = rel_values_2
+  rt['normalised_x_det_values'] = rel_values_1
+
   modulation_factor = experiment.scaling_model.components['decay']
-  modulation_factor.update_reflection_data(rel_values_1, rel_values_2)
+  modulation_factor.update_reflection_data(rt)
   modulation_factor.calculate_scales()
   scales = modulation_factor.inverse_scales
   scalefactor_2D = np.reshape(list(scales), (n2, n1))
@@ -420,7 +432,7 @@ def plot_2D_modulation_correction(experiment, reflections, outputfile=None):
   ax1.set_title('Map of detector correction (inverse scale factors)', fontsize=10)
 
   '''recalculate scales for plotting distribution in dataset'''
-  modulation_factor.update_reflection_data(nxdet, nydet)
+  modulation_factor.update_reflection_data(rt)
   modulation_factor.calculate_scales()
 
   ax2.hist(list(modulation_factor.inverse_scales), 40, log=False)
@@ -447,8 +459,13 @@ def plot_3D_absorption_correction(experiment, reflections, outputfile=None):
   nax = (xvalues - configdict['xmin']) / configdict['x_bin_width']
   nay = (yvalues - configdict['ymin']) / configdict['y_bin_width']
 
+  rt = flex.reflection_table()
+  rt['normalised_x_abs_values'] = nax
+  rt['normalised_y_abs_values'] = nay,
+  rt['norm_time_values'] = nt
+
   absorption_factor = experiment.scaling_model.components['absorption']
-  absorption_factor.update_reflection_data(nax, nay, nt)
+  absorption_factor.update_reflection_data(rt)
   absorption_factor.calculate_scales()
   parameters_2D = np.reshape(list(absorption_factor.parameters),
     (n_time_bins, n_abs_bins)).T

@@ -26,6 +26,7 @@ class MultiScalingRestraints(object):
     residual_restraints = self.calculate_restraints()[0]
     n_restraints = residual_restraints.size() - residual_restraints.count(0.0)
     if n_restraints:
+      weights = flex.double([])
       restraints_vector = flex.double([])
       jacobian = sparse.matrix(n_restraints, self.apm.n_active_params)
       cumul_restr_pos = 0
@@ -35,7 +36,8 @@ class MultiScalingRestraints(object):
           jacobian.assign_block(restraints[1], cumul_restr_pos, self.apm.apm_data[i]['start_idx'])
           cumul_restr_pos += restraints[1].n_rows
           restraints_vector.extend(restraints[0])
-      return [restraints_vector, jacobian, flex.double(n_restraints, 1.0)]
+          weights.extend(restraints[2])
+      return [restraints_vector, jacobian, weights]
     return None
 
 class ScalingRestraints(object):
@@ -49,6 +51,7 @@ class ScalingRestraints(object):
     residual_restraints = self.calculate_restraints()[0]
     n_restraints = residual_restraints.size() - residual_restraints.count(0.0)
     if n_restraints:
+      weights = flex.double([])
       restraints_vector = flex.double([])
       jacobian = sparse.matrix(n_restraints, self.apm.n_active_params)
       cumul_restr_pos = 0
@@ -58,9 +61,10 @@ class ScalingRestraints(object):
           jacobian.assign_block(restraints[1], cumul_restr_pos, comp['start_idx'])
           cumul_restr_pos += comp['n_params']
           restraints_vector.extend(restraints[0])
+          weights.extend(restraints[2])
       # Return the restraints vector, jacobian and weights (unity as weights
       # contained in individual jacobian/weoghts calculations).
-      return [restraints_vector, jacobian, flex.double(n_restraints, 1.0)]
+      return [restraints_vector, jacobian, weights]
     return None
 
   def calculate_restraints(self):

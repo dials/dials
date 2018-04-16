@@ -34,7 +34,6 @@ class ScaleComponentBase(object):
     self._n_refl = None
     self._n_params = len(self._parameters)
     self._inverse_scales = None
-    #self._inverse_scale_variances = None
     self._derivatives = None
     self._curvatures = 0.0
 
@@ -54,7 +53,6 @@ class ScaleComponentBase(object):
       assert 0, '''attempting to set a new set of parameters of different
       length than previous assignment: was %s, attempting %s''' % (
         len(self._parameters), len(values))
-    #print('setting new parameters for %s' % self.__class__)
     self._parameters = values
 
   @property
@@ -125,11 +123,6 @@ class ScaleComponentBase(object):
     self._inverse_scales and self._derivatives."""
     pass
 
-  @abc.abstractmethod
-  def calculate_scales_derivatives_curvatures(self):
-    """Use the component parameters to calculate and set
-    self._inverse_scales, self._derivatives and self._curvatures."""
-    pass
 
 class SingleScaleFactor(ScaleComponentBase):
   """A model component consisting of a single global scale parameter.
@@ -156,9 +149,6 @@ class SingleScaleFactor(ScaleComponentBase):
     if curvatures:
       self._curvatures = sparse.matrix(self.n_refl, 1) #curvatures are all zero.
 
-  def calculate_scales_derivatives_curvatures(self):
-    self.calculate_scales_and_derivatives()
-    self._curvatures = sparse.matrix(self.n_refl, 1) #curatures are all zero.
 
 class SingleBScaleFactor(ScaleComponentBase):
   """A model component for a single global B-factor parameter.
@@ -202,12 +192,6 @@ class SingleBScaleFactor(ScaleComponentBase):
         self._curvatures[i, 0] = (self._inverse_scales[i]
           / ((2.0 * (self._d_values[i]**2))**2))
 
-  def calculate_scales_derivatives_curvatures(self):
-    self.calculate_scales_and_derivatives()
-    self._curvatures = sparse.matrix(self.n_refl, 1) #curatures are all zero.
-    for i in range(self._n_refl):
-      self._curvatures[i, 0] = (self._inverse_scales[i]
-        / ((2.0 * (self._d_values[i]**2))**2))
 
 class SHScaleComponent(ScaleComponentBase):
   """A model component for a spherical harmonic absorption correction.
@@ -255,14 +239,15 @@ class SHScaleComponent(ScaleComponentBase):
   def calculate_restraints(self):
     residual = self.parameter_restraints * (self._parameters**2)
     gradient = 2.0 * self.parameter_restraints * self._parameters
+    #return self.parameters, 
     return residual, gradient
 
   def calculate_jacobian_restraints(self):
     jacobian = sparse.matrix(self.n_params, self.n_params)
     for i in range(self.n_params):
-      jacobian[i, i] = -1.0 * (self._parameter_restraints[i]**0.5)
-    resid_restraint = self.calculate_restraints()[0]
-    return resid_restraint, jacobian
+      jacobian[i, i] = +1.0# * (self._parameter_restraints[i]**0.5)
+    #resid_restraint = self.calculate_restraints()[0]
+    return self._parameters, jacobian, self._parameter_restraints
 
   def update_reflection_data(self, _, selection=None):
     """Update the spherical harmonic coefficients."""
@@ -270,7 +255,6 @@ class SHScaleComponent(ScaleComponentBase):
       sph_harm_table_T = self.sph_harm_table.transpose()
       sel_sph_harm_table = sph_harm_table_T.select_columns(selection.iselection())
       self._harmonic_values = sel_sph_harm_table.transpose()
-      #self._harmonic_values = harmonic_values
       self.calculate_scales_and_derivatives()
       self._n_refl = self.inverse_scales.size()
 
@@ -282,7 +266,3 @@ class SHScaleComponent(ScaleComponentBase):
     self._derivatives = self._harmonic_values
     if curvatures:
       self._curvatures = sparse.matrix(self._inverse_scales.size(), self._n_params)
-
-  def calculate_scales_derivatives_curvatures(self):
-    self.calculate_scales_and_derivatives()
-    self._curvatures = sparse.matrix(self._inverse_scales.size(), self._n_params)

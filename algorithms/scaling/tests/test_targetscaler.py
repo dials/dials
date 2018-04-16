@@ -152,8 +152,7 @@ def test_TargetScaler():
   experiments = create_scaling_model(params, test_experiments, test_reflections)
   ss = SingleScalerBase(params, experiments[0], test_reflections[0])
   ss2 = SingleScalerBase(params, experiments[0], test_reflections[1])
-  targetscaler = TargetScaler(params, experiments, [ss],
-    experiments, [ss2])
+  targetscaler = TargetScaler(params, experiments, [ss], [ss2])
   assert isinstance(targetscaler, TargetScaler)
   assert list(targetscaler.Ih_table.Ih_values) == [1.0, 10.0, 1.0]
   assert list(targetscaler.unscaled_scalers[0].Ih_table.asu_miller_index) == (
@@ -167,7 +166,7 @@ def test_TargetScaler():
   # Create a scaling target and check gradients and residuals.
   target_function = ScalingTargetFixedIH(targetscaler, apm)
   target_function.predict()
-  resid = target_function.calculate_residuals()
+  resid = (target_function.calculate_residuals()**2) * target_function.weights
   assert list(resid) == [1.0]#   (weight x (2.0 - (1.0 * 1.0))**2)
   gradients = target_function.calculate_gradients()
   fd_grad = calculate_gradient_fd(target_function)
@@ -196,8 +195,7 @@ def test_simple_targeted_refinement():
   experiments = create_scaling_model(params, test_experiments, test_reflections)
   ss = SingleScalerBase(params, experiments[0], test_reflections[0])
   ss2 = SingleScalerBase(params, experiments[0], test_reflections[1])
-  targetscaler = TargetScaler(params, experiments, [ss],
-    experiments, [ss2])
+  targetscaler = TargetScaler(params, experiments, [ss], [ss2])
   assert isinstance(targetscaler, TargetScaler)
 
   # Based on input - have Target Ih of 1.0, 10.0 and d of 1.0, 2.0. Then refl to

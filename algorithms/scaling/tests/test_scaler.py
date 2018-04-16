@@ -1,7 +1,6 @@
 '''
 This code tests the data managers and active parameter managers.
 '''
-import copy as copy
 import pytest
 from scitbx import sparse
 from dials.array_family import flex
@@ -16,14 +15,39 @@ from dials.algorithms.scaling.scaler_factory import create_scaler
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.parameter_handler import \
   scaling_active_parameter_manager, create_apm
-#from dials.algorithms.scaling.active_parameter_managers import \
-#  multi_active_parameter_manager
 from dials.algorithms.scaling.scaler import SingleScalerBase,\
   calc_sf_variances, ScalerBase
 from dials.algorithms.scaling.Ih_table import JointIhTable
 
+@pytest.fixture
+def test_reflections():
+  """Make a test reflection table."""
+  return generated_refl()
+
+@pytest.fixture
+def test_experiments():
+  """Make a test experiments list"""
+  return generated_exp()
+
+@pytest.fixture
+def two_test_experiments():
+  """Make a test experiments list"""
+  return generated_exp(2)
+
+@pytest.fixture
+def two_test_reflections():
+  """Make a test experiments list"""
+  refl = generated_refl()
+  refl.append(generated_refl()[0])
+  return refl
+
+@pytest.fixture(scope='module')
+def test_params():
+  """Make a test param phil scope."""
+  return generated_param()
+
 def generated_refl():
-  '''function to generate input for datamanagers'''
+  """Generate a reflection table."""
   #these miller_idx/d_values don't make physical sense, but I didn't want to
   #have to write the tests for lots of reflections.
   reflections = flex.reflection_table()
@@ -44,14 +68,31 @@ def generated_refl():
     reflections.flags.integrated)
   return [reflections]
 
+def generated_exp(n=1):
+  """Generate an experiment list with two experiments."""
+  experiments = ExperimentList()
+  exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
+              "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
+              "space_group_hall_symbol": " C 2y"}
+  crystal = Crystal.from_dict(exp_dict)
+  scan = Scan(image_range=[0, 90], oscillation=[0.0, 1.0])
+  beam = Beam(s0=(0.0, 0.0, 1.01))
+  goniometer = Goniometer((1.0, 0.0, 0.0))
+  goniometer_2 = Goniometer((1.0, 1.0, 0.0))
+  detector = Detector()
+  experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
+    detector=detector, crystal=crystal))
+  if n > 1:
+    for _ in range(0, n-1):
+      experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer_2,
+        detector=detector, crystal=crystal))
+  return experiments
 
-@pytest.fixture(scope='module')
 def generated_param():
   """Generate a param phil scope."""
   phil_scope = phil.parse('''
       include scope dials.algorithms.scaling.scaling_options.phil_scope
   ''', process_includes=True)
-
   optionparser = OptionParser(phil=phil_scope, check_format=False)
   parameters, _ = optionparser.parse_args(args=None, quick_parse=True,
     show_diff_phil=False)
@@ -96,11 +137,11 @@ def test_ScalerBase():
   rt['miller_index'] = flex.miller_index([(1, 0, 0), (0, 0, 1),
     (1, 0, 0), (2, 2, 2)])
 
-def test_SingleScaler():
+def test_SingleScaler(test_reflections, test_experiments, test_params):
   """Test the single scaler class."""
-  refl, exp, param = generated_refl(), generated_exp(), generated_param()
-  exp = create_scaling_model(param, exp, refl)
-  singlescaler = SingleScalerBase(param, exp[0], refl[0], scaled_id=2)
+  exp = create_scaling_model(test_params, test_experiments, test_reflections)
+  singlescaler = SingleScalerBase(test_params, exp[0], test_reflections[0],
+    scaled_id=2)
 
   # First test for things that are required upon initialisation.
   # Test that the var_cov matrix has been initialised to zero with the correct size
@@ -112,10 +153,6 @@ def test_SingleScaler():
   # Test that an id has been given.
   assert list(rt['id']) == [2] * rt.size()
 
-  # Test that reflection table has been sorted by asu miller index.
-  #assert list(rt['asu_miller_index']) == list(flex.miller_index(
-  #  [(0, 0, 1), (1, 0, 0), (2, 0, 0), (2, 2, 2)]))
-
   # Test that bad reflections are removed.
   assert list(rt.get_flags(rt.flags.integrated)) == [True, True, False, False]
   assert list(rt.get_flags(rt.flags.excluded_for_scaling)) == [
@@ -125,11 +162,11 @@ def test_SingleScaler():
   assert list(rt['inverse_scale_factor']) == [1.0] * rt.size()
 
   # Test for correct choice of intensities.
-  new_rt = SingleScalerBase._select_optimal_intensities(rt, param)
+  new_rt = SingleScalerBase._select_optimal_intensities(rt, test_params)
   assert list(new_rt['intensity']) == list(rt['intensity.prf.value'])
   assert list(new_rt['variance']) == list(rt['intensity.prf.variance'])
-  param.scaling_options.integration_method = 'sum'
-  new_rt = SingleScalerBase._select_optimal_intensities(rt, param)
+  test_params.scaling_options.integration_method = 'sum'
+  new_rt = SingleScalerBase._select_optimal_intensities(rt, test_params)
   assert list(new_rt['intensity']) == list(rt['intensity.sum.value'])
   assert list(new_rt['variance']) == list(rt['intensity.sum.variance'])
 
@@ -140,7 +177,7 @@ def test_SingleScaler():
 
   assert singlescaler.components == exp[0].scaling_model.components
   assert singlescaler.experiments == exp[0]
-  assert singlescaler.params == param
+  assert singlescaler.params == test_params
 
   # Test configure_reflection_table?
   assert '_configure_reflection_table' in dir(singlescaler)
@@ -169,7 +206,7 @@ def test_SingleScaler():
   assert list(rt['inverse_scale_factor']) == [1.1, 1.1, 1.0, 1.0]
   # Variance set to zero if not calculated
   assert list(rt['inverse_scale_factor_variance']) == [0.0] * rt.size()
-
+ 
   # Test update var cov.
   apm = scaling_active_parameter_manager(singlescaler.components,
     ['scale', 'decay'])
@@ -205,53 +242,11 @@ def test_SingleScaler():
   # Test restraints calculation calls? But should these be moved elsewhere?
   # Test outlier rejection call? Defer to test in scaling utilities?
 
-@pytest.fixture(scope='module')
-def generated_KB_param():
-  """Generate a phil scope for a kB model."""
-  phil_scope = phil.parse('''
-      include scope dials.algorithms.scaling.scaling_options.phil_scope
-  ''', process_includes=True)
 
-  optionparser = OptionParser(phil=phil_scope, check_format=False)
-  parameters, _ = optionparser.parse_args(args=None, quick_parse=True,
-    show_diff_phil=False)
-  parameters.__inject__('model', 'KB')
-  return parameters
-
-def generated_multi_input():
-  """Generate a multiple dataset input for a multiscaler."""
-  refl = generated_refl()
-  exp = generated_exp(2)
-  param = generated_param()
-  refl.append(generated_refl()[0])
-  return (refl, exp, param)
-
-
-#@pytest.fixture(scope='module')
-def generated_exp(n=1):
-  """Generate an experiment list with two experiments."""
-  experiments = ExperimentList()
-  exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
-              "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
-              "space_group_hall_symbol": " C 2y"}
-  crystal = Crystal.from_dict(exp_dict)
-  scan = Scan(image_range=[0, 90], oscillation=[0.0, 1.0])
-  beam = Beam(s0=(0.0, 0.0, 1.01))
-  goniometer = Goniometer((1.0, 0.0, 0.0))
-  goniometer_2 = Goniometer((1.0, 1.0, 0.0))
-  detector = Detector()
-  experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
-    detector=detector, crystal=crystal))
-  if n > 1:
-    for _ in range(0, n-1):
-      experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer_2,
-        detector=detector, crystal=crystal))
-  return experiments
-
-def test_MultiScaler():
+def test_MultiScaler(two_test_reflections, two_test_experiments, test_params):
   """Test the MultiScaler class."""
 
-  refl, exp, param = generated_multi_input()
+  refl, exp, param = two_test_reflections, two_test_experiments, test_params
   exp = create_scaling_model(param, exp, refl)
   scaler = create_scaler(param, exp, refl)
   assert scaler.id_ == 'multi'
@@ -292,7 +287,7 @@ def test_MultiScaler():
   assert list(scaler.single_scalers[1].reflection_table[
     'inverse_scale_factor']) == [1.2, 1.2, 1.0, 1.0]
 
-  # Test join_multiple_datasets - joins then sorts by asu_miller_idx
+  # Test join_multiple_datasets
   scaler.join_multiple_datasets()
   assert list(scaler.reflection_table['inverse_scale_factor']) == [
     1.1, 1.1, 1.0, 1.0, 1.2, 1.2, 1.0, 1.0]
@@ -300,61 +295,10 @@ def test_MultiScaler():
   # Other methods to test - update_error_model, calc_merging_stats.
 
 
-def calculate_jacobian_fd(target):
-  """Calculate jacobian matrix with finite difference approach."""
-  delta = 1.0e-6
-  #apm = target.apm
-  jacobian = sparse.matrix(target.get_num_matches(), target.apm.n_active_params)
-  #iterate over parameters, varying one at a time and calculating the residuals
-  for i in range(target.apm.n_active_params):
-    new_x = copy.copy(target.apm.x)
-    new_x[i] -= 0.5 * delta
-    target.apm.set_param_vals(new_x)
-    #target.apm.x[i] -= 0.5 * delta
-    target.predict()
-    R_low = (target.calculate_residuals()/target.weights)**0.5 #unweighted unsquared residual
-    #target.apm.x[i] += delta
-    new_x[i] += delta
-    target.apm.set_param_vals(new_x)
-    target.predict()
-    R_upper = (target.calculate_residuals()/target.weights)**0.5 #unweighted unsquared residual
-    #target.apm.x[i] -= 0.5 * delta
-    new_x[i] -= 0.5 * delta
-    target.apm.set_param_vals(new_x)
-    target.predict()
-    fin_difference = (R_upper - R_low) / delta
-    for j in range(fin_difference.size()):
-      jacobian[j, i] = fin_difference[j]
-  return jacobian
-
-'''def test_target_jacobian_calc():
-  (test_reflections, test_experiments, params) = (
-    generated_refl(), generated_exp(1), generated_param())
-  assert len(test_experiments) == 1
-  assert len(test_reflections) == 1
-  experiments = create_scaling_model(params, test_experiments, test_reflections)
-  scaler = create_scaler(params, experiments, test_reflections)
-
-  apm = scaling_active_parameter_manager(scaler.components, ['decay', 'scale'])
-
-  target = ScalingTarget(scaler, apm)
-
-  fd_jacobian = calculate_jacobian_fd(target)
-  print(fd_jacobian)
-  r, jacobian, w = target.compute_residuals_and_gradients()
-  r = (r/w)**0.5
-  print(jacobian)
-  print(list(w))
-  for i in range(0, 3):
-    for j in range(0, 2):
-      assert approx_equal(jacobian[i, j], fd_jacobian[i, j])'''
-
-
-def test_sf_variance_calculation(generated_KB_param):
+def test_sf_variance_calculation(test_experiments, test_params):
   """Test the calculation of scale factor variances."""
-  test_experiments, params = generated_exp(), generated_KB_param
   assert len(test_experiments) == 1
-  experiments = create_scaling_model(params, test_experiments, [None])
+  experiments = create_scaling_model(test_params, test_experiments, [None])
   components = experiments[0].scaling_model.components
   rt = flex.reflection_table()
   d1 = 1.0

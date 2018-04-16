@@ -4,6 +4,7 @@ Test for the basis function and target function module.
 import copy
 import numpy as np
 import pytest
+from scitbx import sparse
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from parameter_handler import scaling_active_parameter_manager
@@ -18,6 +19,39 @@ from dials.algorithms.scaling.target_function import ScalingTarget
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.model.components.scale_components import \
   SingleBScaleFactor, SingleScaleFactor
+
+@pytest.fixture
+def large_reflection_table():
+  """Create a larger reflection table"""
+  return generated_10_refl()
+
+def generated_10_refl():
+  """Generate reflection table to test the basis and target function."""
+  #these miller_idx/d_values don't make physical sense, but I didn't want to
+  #have to write the tests for lots of reflections.
+  reflections = flex.reflection_table()
+  reflections['intensity.prf.value'] = flex.double([75.0, 10.0, 100.0, 25.0, 50.0, 100.0,
+    25.0, 20.0, 300.0, 10.0])
+  reflections['intensity.prf.variance'] = flex.double([50.0, 10.0, 100.0, 50.0, 10.0, 100.0,
+    50.0, 10.0, 100.0, 10.0])
+  reflections['miller_index'] = flex.miller_index([(1, 0, 0), (0, 0, 1),
+    (1, 0, 0), (1, 0, 0), (0, 0, 1),
+    (1, 0, 0), (0, 4, 0), (0, 0, 1),
+    (1, 0, 0), (0, 4, 0)]) #don't change
+  reflections['d'] = flex.double([2.0, 0.8, 2.0, 2.0, 0.8, 2.0, 2.0, 0.8, 2.0, 1.0]) #don't change
+  reflections['lp'] = flex.double(10, 1.0)
+  reflections['dqe'] = flex.double(10, 1.0)
+  reflections['partiality'] = flex.double(10, 1.0)
+  reflections['xyzobs.px.value'] = flex.vec3_double([(0.0, 0.0, 0.0),
+    (0.0, 0.0, 5.0), (0.0, 0.0, 10.0), (0.0, 0.0, 15.0), (0.0, 0.0, 20.0),
+    (0.0, 0.0, 25.0), (0.0, 0.0, 30.0), (0.0, 0.0, 35.0), (0.0, 0.0, 40.0),
+    (0.0, 0.0, 59.0)])
+  reflections['s1'] = flex.vec3_double([(0.0, 0.1, 1.0), (0.0, 0.1, 1.0),
+    (0.0, 0.1, 20.0), (0.0, 0.1, 20.0), (0.0, 0.1, 20.0), (0.0, 0.1, 20.0),
+    (0.0, 0.1, 20.0), (0.0, 0.1, 20.0), (0.0, 0.1, 20.0), (0.0, 0.1, 20.0)])
+  reflections.set_flags(flex.bool(10, True), reflections.flags.integrated)
+  return [reflections]
+
 
 def generated_refl():
   """Generate reflection table to test the basis and target function."""
@@ -35,7 +69,7 @@ def generated_refl():
   reflections['xyzobs.px.value'] = flex.vec3_double([(0.0, 0.0, 0.0),
     (0.0, 0.0, 5.0), (0.0, 0.0, 10.0)])
   reflections['s1'] = flex.vec3_double([(0.0, 0.1, 1.0), (0.0, 0.1, 1.0),
-    (0.0, 0.1, 1.0)])
+    (0.0, 0.1, 20.0)])
   reflections.set_flags(flex.bool([True, True, True]),
     reflections.flags.integrated)
   return [reflections]
@@ -48,7 +82,7 @@ def generated_single_exp():
               "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
               "space_group_hall_symbol": " C 2y"}
   crystal = Crystal.from_dict(exp_dict)
-  scan = Scan(image_range=[0, 90], oscillation=[0.0, 1.0])
+  scan = Scan(image_range=[0, 60], oscillation=[0.0, 1.0])
   beam = Beam(s0=(0.0, 0.0, 1.01))
   goniometer = Goniometer((1.0, 0.0, 0.0))
   detector = Detector()
@@ -56,8 +90,7 @@ def generated_single_exp():
     detector=detector, crystal=crystal))
   return experiments
 
-@pytest.fixture(scope='module')
-def generated_KB_param():
+def generated_param(model='KB'):
   """Generate the scaling phil param scope."""
   phil_scope = phil.parse('''
       include scope dials.algorithms.scaling.scaling_options.phil_scope
@@ -66,9 +99,13 @@ def generated_KB_param():
   optionparser = OptionParser(phil=phil_scope, check_format=False)
   parameters, _ = optionparser.parse_args(args=None, quick_parse=True,
     show_diff_phil=False)
-  parameters.__inject__('model', 'KB')
+  parameters.__inject__('model', model)
+  parameters.parameterisation.absorption_term = False
   return parameters
 
+@pytest.fixture
+def jacobian_gradient_input(large_reflection_table):
+  return generated_param(model='physical'), generated_single_exp(), large_reflection_table
 
 
 def test_basis_function():
@@ -142,12 +179,12 @@ def test_basis_function():
   assert basis_fn[1][1, 0] == components['scale'].derivatives[1, 0]
   assert basis_fn[1][2, 0] == components['scale'].derivatives[2, 0]
 
-def test_target_function(generated_KB_param):
+def test_target_function():
   """Test for the ScalingTarget class."""
 
   # First set up the scaler
   (test_reflections, test_experiments, params) = (
-    generated_refl(), generated_single_exp(), generated_KB_param)
+    generated_refl(), generated_single_exp(), generated_param(model='KB'))
   assert len(test_experiments) == 1
   assert len(test_reflections) == 1
   experiments = create_scaling_model(params, test_experiments, test_reflections)
@@ -182,7 +219,7 @@ def test_target_function(generated_KB_param):
   _ = target.compute_functional_gradients()
   _ = target.achieved()
   _ = target.predict()
-  resid = target.calculate_residuals()
+  resid = (target.calculate_residuals()**2) * target.weights
   # Note - activate two below when curvatures are implemented.
   #_ = target.compute_restraints_functional_gradients_and_curvatures()
   #_ = target.compute_functional_gradients_and_curvatures()
@@ -190,6 +227,28 @@ def test_target_function(generated_KB_param):
   # Calculate residuals explicitly and check RMSDS.
   assert approx_equal(list(resid), [50.0/36.0, 0.0, 100.0/36.0])
   assert approx_equal(target.rmsds()[0], (150.0/(36.0*3.0))**0.5)
+
+def test_target_jacobian_calc(jacobian_gradient_input):
+  test_params, exp, test_refl = jacobian_gradient_input
+  test_params.parameterisation.decay_term=False
+  experiments = create_scaling_model(test_params, exp, test_refl)
+  assert experiments[0].scaling_model.id_ == 'physical'
+  scaler = create_scaler(test_params, experiments, test_refl)
+
+  apm = scaling_active_parameter_manager(scaler.components, ['scale'])
+
+  target = ScalingTarget(scaler, apm)
+  target.predict()
+
+  fd_jacobian = calculate_jacobian_fd(target)
+  print(fd_jacobian)
+  r, jacobian, w = target.compute_residuals_and_gradients()
+  r = (r/w)**0.5
+  print(jacobian)
+  print(list(w))
+  for i in range(0, 3):
+    for j in range(0, 2):
+      assert approx_equal(jacobian[i, j], fd_jacobian[i, j])
 
 
 def calculate_gradient_fd(target):
@@ -203,15 +262,40 @@ def calculate_gradient_fd(target):
     #target.apm.x[i] -= 0.5 * delta
     target.apm.set_param_vals(new_x)
     target.predict()
-    R_low = target.calculate_residuals()
+    R_low = (target.calculate_residuals()**2) * target.weights
     #target.apm.x[i] += delta
     new_x[i] += delta
     target.apm.set_param_vals(new_x)
     target.predict()
-    R_upper = target.calculate_residuals()
+    R_upper = (target.calculate_residuals()**2) * target.weights
     #target.apm.x[i] -= 0.5 * delta
     new_x[i] -= 0.5 * delta
     target.apm.set_param_vals(new_x)
     target.predict()
     gradients[i] = (flex.sum(R_upper) - flex.sum(R_low)) / delta
   return gradients
+
+def calculate_jacobian_fd(target):
+  """Calculate jacobian matrix with finite difference approach."""
+  delta = 1.0e-8
+  #apm = target.apm
+  jacobian = sparse.matrix(target.get_num_matches(), target.apm.n_active_params)
+  #iterate over parameters, varying one at a time and calculating the residuals
+  for i in range(target.apm.n_active_params):
+    new_x = copy.copy(target.apm.x)
+    new_x[i] -= 0.5 * delta
+    target.apm.set_param_vals(new_x)
+    target.predict()
+    R_low = target.calculate_residuals()#unweighted unsquared residual
+    new_x[i] += delta
+    target.apm.set_param_vals(new_x)
+    target.predict()
+    R_upper = target.calculate_residuals() #unweighted unsquared residual
+    new_x[i] -= 0.5 * delta
+    target.apm.set_param_vals(new_x)
+    target.predict()
+    fin_difference = (R_upper - R_low) / delta
+    for j in range(fin_difference.size()):
+      jacobian[j, i] = fin_difference[j]
+  return jacobian
+

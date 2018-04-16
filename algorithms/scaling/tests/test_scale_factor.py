@@ -20,9 +20,7 @@ def test_ScaleComponentBase():
     """Subclass to fill in the abstract method."""
     def update_reflection_data(self, reflection_table, selection=None):
       pass
-    def calculate_scales_and_derivatives(self):
-      pass
-    def calculate_scales_derivatives_curvatures(self):
+    def calculate_scales_and_derivatives(self, curvatures=False):
       pass
 
   # Test initialisation with no parameter esds.
@@ -71,7 +69,7 @@ def test_SingleScaleFactor():
   assert list(KSF.inverse_scales) == list(flex.double([2.0, 2.0]))
   assert KSF.derivatives[0, 0] == 1
   assert KSF.derivatives[1, 0] == 1
-  KSF.calculate_scales_derivatives_curvatures()
+  KSF.calculate_scales_and_derivatives(curvatures=True)
   assert KSF.curvatures.non_zeroes == 0
   KSF.update_reflection_data(rt, flex.bool([True, False])) # Test selection.
   assert KSF.n_refl == 1
@@ -90,7 +88,7 @@ def test_SingleBScaleFactor():
   assert list(BSF.inverse_scales) == list(flex.double([1.0, 1.0]))
   assert BSF.derivatives[0, 0] == 0.5
   assert BSF.derivatives[1, 0] == 0.5
-  BSF.calculate_scales_derivatives_curvatures()
+  BSF.calculate_scales_and_derivatives(curvatures=True)
   assert BSF.curvatures[0, 0] == 0.25
   assert BSF.curvatures[1, 0] == 0.25
   BSF.update_reflection_data(rt, flex.bool([True, False])) # Test selection.
@@ -120,7 +118,7 @@ def test_SHScalefactor():
   assert SF.derivatives[0, 0] == initial_val
   assert SF.derivatives[0, 1] == initial_val
   assert SF.derivatives[0, 2] == initial_val
-  SF.calculate_scales_derivatives_curvatures()
+  SF.calculate_scales_and_derivatives(curvatures=True)
   assert SF.curvatures.non_zeroes == 0
 
   # Test setting of restraints and that restraints are calculated.
@@ -169,7 +167,7 @@ def test_SmoothScaleFactor1D():
   assert sum(list(T[:, 2].as_dense_vector())) == 1.0
   assert SF.derivatives[1, 1] == SF.derivatives[1, 2]
   assert SF.derivatives[1, 0] == SF.derivatives[1, 3]
-  SF.calculate_scales_derivatives_curvatures()
+  SF.calculate_scales_and_derivatives(curvatures=True)
   assert SF.curvatures.non_zeroes == 0
 
 def test_SmoothBScaleFactor1D():
@@ -199,7 +197,7 @@ def test_SmoothBScaleFactor1D():
   assert sum(list(T[:, 2].as_dense_vector())) == 0.5
   assert SF.derivatives[1, 1] == SF.derivatives[1, 2]
   assert SF.derivatives[1, 0] == SF.derivatives[1, 3]
-  SF.calculate_scales_derivatives_curvatures()
+  SF.calculate_scales_and_derivatives(curvatures=True)
   assert not SF.curvatures.non_zeroes == 0
   assert approx_equal(SF.curvatures[0, 0]/SF.curvatures[0, 1],
     (exp(-1.0)/exp(0.0))**2)
@@ -233,7 +231,7 @@ def test_SmoothScaleFactor2D():
   SF.smoother.set_smoothing(4, 1.0) #will average 3 in x,y dims.
   assert list(SF.smoother.x_positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5, 4.5]
   assert list(SF.smoother.y_positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5]
-  SF.calculate_scales_derivatives_curvatures()
+  SF.calculate_scales_and_derivatives(curvatures=True)
   assert SF.curvatures.non_zeroes == 0
   assert approx_equal(list(SF.inverse_scales), [1.1]*30)
   sumexp = exp(0.0) + (4.0 * exp(-1.0/1.0)) + (4.0*exp(-2.0/1.0))
@@ -253,7 +251,7 @@ def test_SmoothScaleFactor2D():
   SF.smoother.set_smoothing(4, 1.0) #will average 3,2 in x,y dims.
   assert list(SF.smoother.x_positions()) == [0.0, 1.0, 2.0]
   assert list(SF.smoother.y_positions()) == [0.0, 1.0]
-  SF.calculate_scales_derivatives_curvatures()
+  SF.calculate_scales_and_derivatives(curvatures=True)
   sumexp = (4.0 * exp(-0.5/1.0)) + (2.0*exp(-2.5/1.0))
   assert approx_equal(SF.derivatives[1, 1], (exp(-0.5)/sumexp))
 
@@ -285,7 +283,7 @@ def test_SmoothScaleFactor3D():
   assert list(SF.smoother.x_positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5, 4.5]
   assert list(SF.smoother.y_positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5]
   assert list(SF.smoother.z_positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5]
-  SF.calculate_scales_derivatives_curvatures()
+  SF.calculate_scales_and_derivatives(curvatures=True)
   assert SF.curvatures.non_zeroes == 0
   assert approx_equal(list(SF.inverse_scales), [1.1]*150)
   sumexp = (exp(-0.0) + (6.0 * exp(-1.0/1.0)) + (8.0*exp(-3.0/1.0)) +

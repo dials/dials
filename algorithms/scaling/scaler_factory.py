@@ -77,7 +77,6 @@ class TargetScalerFactory(object):
     '''sort scaled and unscaled datasets to pass to TargetScaler'''
     scaled_experiments = []
     scaled_scalers = []
-    unscaled_experiments = []
     unscaled_scalers = []
     for i, (experiment, reflection) in enumerate(zip(experiments, reflections)):
       if is_scaled_list[i] is True:
@@ -90,8 +89,7 @@ class TargetScalerFactory(object):
           scaled_scalers.append(SingleScalerFactory.create(params, experiment,
             reflection, scaled_id=i))
       else:
-        unscaled_experiments.append(experiment)
         unscaled_scalers.append(SingleScalerFactory.create(params, experiment,
           reflection, scaled_id=i))
     return TargetScaler(params, scaled_experiments, scaled_scalers,
-      unscaled_experiments, unscaled_scalers)
+      unscaled_scalers)

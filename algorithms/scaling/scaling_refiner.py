@@ -38,7 +38,7 @@ scaling_refinery
              minimisation after the main scaling, in order to determine
              error estimates."
     .type = choice
-  full_matrix_max_iterations = 1
+  full_matrix_max_iterations = None
     .help = "Maximum number of iterations before termination in the full matrix
              minimisation round."
             "None implies the engine supplies its own default."
