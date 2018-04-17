@@ -193,11 +193,10 @@ def do_import(filename):
     raise Abort("Got multiple datablocks from file %s"%filename)
 
   # Ensure the indexer and downstream applications treat this as set of stills
-  from dxtbx.imageset import ImageSet
   reset_sets = []
 
   for imageset in datablocks[0].extract_imagesets():
-    imageset = ImageSet(imageset.data(), imageset.indices())
+    imageset = imageset.__class__(imageset.data(), imageset.indices())
     imageset.set_scan(None)
     imageset.set_goniometer(None)
     reset_sets.append(imageset)
@@ -309,6 +308,7 @@ class Script(object):
       # frame using its index
 
       datablocks = [do_import(path) for path in all_paths]
+
       if self.reference_detector is not None:
         from dxtbx.model import Detector
         for datablock in datablocks:
@@ -317,10 +317,6 @@ class Script(object):
               imageset.set_detector(
                 Detector.from_dict(self.reference_detector.to_dict()),
                 index=i)
-
-      for datablock in datablocks:
-        for imageset in datablock.extract_imagesets():
-          update_geometry(imageset)
 
       indices = []
       basenames = []
@@ -345,6 +341,8 @@ class Script(object):
         processor = Processor(copy.deepcopy(params), composite_tag = "%04d"%i)
 
         for item in item_list:
+          for imageset in item[1].extract_imagesets():
+            update_geometry(imageset)
           processor.process_datablock(item[0], item[1])
         processor.finalize()
 
