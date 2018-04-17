@@ -341,8 +341,13 @@ class Script(object):
         processor = Processor(copy.deepcopy(params), composite_tag = "%04d"%i)
 
         for item in item_list:
-          for imageset in item[1].extract_imagesets():
-            update_geometry(imageset)
+          try:
+            for imageset in item[1].extract_imagesets():
+              update_geometry(imageset)
+          except Exception as e:
+            logger.info("Error updating geometry on item %s, %s"%(str(item[0]), str(e)))
+            continue
+
           processor.process_datablock(item[0], item[1])
         processor.finalize()
 
@@ -377,7 +382,11 @@ class Script(object):
             from dxtbx.model import Detector
             imagesets[0].set_detector(Detector.from_dict(self.reference_detector.to_dict()))
 
-          update_geometry(imagesets[0])
+          try:
+            update_geometry(imagesets[0])
+          except Exception as e:
+            logger.info("Error updating geometry on item %s, %s"%(tag, str(e)))
+            continue
 
           processor.process_datablock(tag, datablock)
         processor.finalize()
