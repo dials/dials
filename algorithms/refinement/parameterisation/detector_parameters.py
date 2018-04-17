@@ -12,10 +12,11 @@
 from __future__ import absolute_import, division
 from __future__ import print_function
 from scitbx import matrix
+from scitbx.array_family import flex
 
 from dials.algorithms.refinement.parameterisation.model_parameters import Parameter, ModelParameterisation
-from dials.algorithms.refinement.refinement_helpers import \
-    dR_from_axis_and_angle, get_panel_groups_at_depth, get_panel_ids_at_root
+from dials.algorithms.refinement.refinement_helpers import (dR_from_axis_and_angle,
+    get_panel_groups_at_depth, get_panel_ids_at_root, PanelGroupCompose)
 from functools import reduce
 
 class DetectorMixin(object):
@@ -1003,13 +1004,21 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
       tau2 = next(param)
       tau3 = next(param)
 
-      #param_vals = flex.double((dist.value, shift1.value, shift2.value,
-      #                            tau1.value, tau2.value, tau3.value))
-      #param_axes = flex.vec3_double((dist.axis, shift1.axis, shift2.axis,
-      #                                tau1.axis, tau2.axis, tau3.axis))
+      param_vals = flex.double((dist.value, shift1.value, shift2.value,
+                                  tau1.value, tau2.value, tau3.value))
+      param_axes = flex.vec3_double((dist.axis, shift1.axis, shift2.axis,
+                                      tau1.axis, tau2.axis, tau3.axis))
+
       offsets = self._offsets[igp]
       dir1s = self._dir1s[igp]
       dir2s = self._dir2s[igp]
+
+      # Get items from the initial state for the group of interest
+      initial_state = self._initial_state[igp]
+      id1 = initial_state['d1']
+      id2 = initial_state['d2']
+      idn = initial_state['dn']
+      igp_offset = initial_state['gp_offset']
 
       # convert angles to radians
       tau1rad = tau1.value / 1000.
@@ -1029,15 +1038,11 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
                                                               deg=False)
       dTau3_dtau3 = dR_from_axis_and_angle(tau3.axis, tau3rad, deg=False)
 
+      # Set up the helper class for calculations
+      pgc = PanelGroupCompose(id1,id2,idn,igp_offset,param_vals,param_axes)
+
       Tau32 = Tau3 * Tau2
       Tau321 = Tau32 * Tau1
-
-      # Get items from the initial state for the group of interest
-      initial_state = self._initial_state[igp]
-      id1 = initial_state['d1']
-      id2 = initial_state['d2']
-      idn = initial_state['dn']
-      igp_offset = initial_state['gp_offset']
 
       # Compose new state
       # =================
@@ -1062,6 +1067,11 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
       origin = dorg + igp_offset[0] * d1 + \
                       igp_offset[1] * d2 + \
                       igp_offset[2] * dn
+
+      # Debugging
+      assert approx_equal(origin, pgc.origin())
+      assert approx_equal(d1, pgc.d1())
+      assert approx_equal(d2, pgc.d2())
 
       # assign back to the group frame
       self._groups[igp].set_frame(d1, d2, origin)

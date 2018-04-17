@@ -15,6 +15,7 @@ from scitbx import matrix
 from scitbx.array_family import flex # import dependency
 from dials_refinement_helpers_ext import dR_from_axis_and_angle as dR_cpp
 from dials_refinement_helpers_ext import CrystalOrientationCompose as xloc_cpp
+from dials_refinement_helpers_ext import PanelGroupCompose as pgc_cpp
 import logging
 logger = logging.getLogger(__name__)
 import random
@@ -34,8 +35,21 @@ def ordinal_number(array_index=None, cardinal_number=None):
     i = int(cardinal_number)
   return str(i) + {1: 'st', 2: 'nd', 3: 'rd'}.get(4 if 10 <= i % 100 < 20 else i % 10, "th")
 
+class PanelGroupCompose(pgc_cpp):
+  '''Wrapper for the C++ PanelGroupCompose class with accessors that
+  return scitbx matrix values.'''
+
+  def d1(self):
+    return matrix.col(super(PanelGroupCompose, self).d1())
+
+  def d2(self):
+    return matrix.col(super(PanelGroupCompose, self).d2())
+
+  def origin(self):
+    return matrix.col(super(PanelGroupCompose, self).origin())
+
 class CrystalOrientationCompose(xloc_cpp):
-  '''Wrapper for the C++ CrystalOrientationCompose class wiht accessors that
+  '''Wrapper for the C++ CrystalOrientationCompose class with accessors that
   return matrix.sqr values.'''
 
   def U(self):

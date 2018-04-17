@@ -382,6 +382,149 @@ namespace dials { namespace refinement {
   }
 
   /**
+   * Helper class for the compose method of the hierarchical detector
+   * parameterisation (the DetectorParameterisationHierarchical class in Python)
+   * that moves slow calculations here
+   */
+  class PanelGroupCompose {
+
+    public:
+
+      PanelGroupCompose(
+        const vec3<double> &initial_d1,
+        const vec3<double> &initial_d2,
+        const vec3<double> &initial_dn,
+        const vec3<double> &initial_gp_offset,
+        const af::const_ref< double> &param_vals,
+        const af::const_ref< vec3 <double> > &param_axes)
+        : id1(initial_d1),
+          id2(initial_d2),
+          idn(initial_dn),
+          igp_offset(initial_gp_offset){
+
+        DIALS_ASSERT(param_vals.size() == 6 &&
+                     param_axes.size() == 6);
+
+        // Set parameters with conversion of angles from mrad to radians
+        dist = param_vals[0];
+        shift1 = param_vals[1];
+        shift2 = param_vals[2];
+        tau1 = param_vals[3] / 1000.;
+        tau2 = param_vals[4] / 1000.;
+        tau3 = param_vals[5] / 1000.;
+
+        // Set axes for each of the parameters to act along
+        dist_axis = param_axes[0];
+        shift1_axis = param_axes[1];
+        shift2_axis = param_axes[2];
+        tau1_axis = param_axes[3];
+        tau2_axis = param_axes[4];
+        tau3_axis = param_axes[5];
+
+        compose_new_state();
+      }
+
+      // Accessors for the newly composed state
+      vec3<double> d1(){
+        return d1_;
+      }
+
+      vec3<double> d2(){
+        return d2_;
+      }
+
+      vec3<double> origin(){
+        return origin_;
+      }
+
+      // Use the cached derivatives for the panel group to calculate the
+      // derivatives of the d matrix for one panel, described by the offset,
+      // dir1_new_basis and dir2_new_basis vectors.
+      af::shared < mat3<double> > derivatives_for_panel(
+          const vec3<double> offset,
+          const vec3<double> dir1_new_basis,
+          const vec3<double> dir2_new_basis){
+
+      af::shared < mat3<double> > ret(6, af::init_functor_null< mat3<double> >());
+
+      // DO STUFF
+
+      return ret;
+      }
+
+    private:
+      // Calculate the new state for this panel group and cache the
+      // intermediate derivatives required for calculating the derivatives
+      // of each panel's d matrix wrt the parameters.
+      void compose_new_state(){
+
+        // compose rotation matrices and their first order derivatives
+        mat3<double> Tau1 = axis_and_angle_as_matrix(tau1_axis, tau1);
+        mat3<double> dTau1_dtau1 = dR_from_axis_and_angle(tau1_axis, tau1);
+
+        mat3<double> Tau2 = axis_and_angle_as_matrix(tau2_axis, tau2);
+        mat3<double> dTau2_dtau2 = dR_from_axis_and_angle(tau2_axis, tau2);
+
+        mat3<double> Tau3 = axis_and_angle_as_matrix(tau3_axis, tau3);
+        mat3<double> dTau3_dtau3 = dR_from_axis_and_angle(tau3_axis, tau3);
+
+        mat3<double> Tau32 = Tau3 * Tau2;
+        mat3<double> Tau321 = Tau32 * Tau1;
+
+        // Compose new state
+        // =================
+        // First the frame positioned at a distance from the lab origin
+        vec3<double> P0 = dist * dist_axis; // distance along initial group normal
+        vec3<double> Px = P0 + id1; // point at the end of d1 in lab frame
+        vec3<double> Py = P0 + id2; // point at the end of d2 in lab frame
+
+        // detector shift vector
+        vec3<double> dsv = P0 + shift1 * shift1_axis + shift2 * shift2_axis;
+
+        // compose dorg point
+        vec3<double> dorg = Tau321 * dsv - Tau32 * P0 + P0;
+
+        // compose new d1, d2 and dn and ensure frame remains orthonormal.
+        d1_ = (Tau321 * (Px - P0)).normalize();
+        d2_ = (Tau321 * (Py - P0)).normalize();
+        vec3<double> dn_ = d1_.cross(d2_).normalize();
+        d2_ = dn_.cross(d1_);
+
+        // compose new group origin
+        origin_ = dorg + igp_offset[0] * d1_ +
+                         igp_offset[1] * d2_ +
+                         igp_offset[2] * dn_;
+
+      }
+
+      // Initial state
+      vec3<double> id1;
+      vec3<double> id2;
+      vec3<double> idn;
+      vec3<double> igp_offset;
+
+      // Parameters
+      double dist;
+      vec3<double> dist_axis;
+      double shift1;
+      vec3<double> shift1_axis;
+      double shift2;
+      vec3<double> shift2_axis;
+      double tau1;
+      vec3<double> tau1_axis;
+      double tau2;
+      vec3<double> tau2_axis;
+      double tau3;
+      vec3<double> tau3_axis;
+
+      // New state vectors
+      vec3<double> d1_;
+      vec3<double> d2_;
+      vec3<double> origin_;
+
+  };
+
+  /**
    * Given an initial orientation matrix, the values of the three orientation
    * parameters, phi1, phi2 and phi3 (in mrad), plus the axes about which these
    * parameters act, calculate the new orientation U plus the derivatives
