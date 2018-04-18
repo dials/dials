@@ -11,7 +11,7 @@ from dials.algorithms.symmetry.cosym import target
 
 
 @pytest.mark.parametrize('space_group', ['P2', 'P3', 'P6', 'R3:h', 'I23'])
-def test_cosym(space_group):
+def test_cosym_target(space_group):
   datasets, expected_reindexing_ops = generate_test_data(
     space_group=sgtbx.space_group_info(symbol=space_group).group())
 
