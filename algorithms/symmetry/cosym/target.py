@@ -11,6 +11,7 @@ info_handle = log.info_handle(logger)
 from cctbx.array_family import flex
 from cctbx import sgtbx
 from cctbx import miller
+import cctbx.sgtbx.cosets
 
 class Target(object):
 
@@ -79,12 +80,9 @@ class Target(object):
         self._lattices.append(n)
 
     self._sym_ops = set(['x,y,z'])
-    if lattice_group is None:
-      self._sym_ops.update(set(
-        [op.operator.as_xyz() for op in self.generate_twin_operators()]))
-    else:
-      self._sym_ops.update(set(
-        [op.as_xyz() for op in lattice_group.group()]))
+    self._lattice_group = lattice_group
+    self._sym_ops.update(
+      set([op.as_xyz() for op in self.generate_twin_operators()]))
     if dimensions is None:
       dimensions = max(2, len(self._sym_ops))
     self.set_dimensions(dimensions)
@@ -116,12 +114,33 @@ class Target(object):
     self.dim = dimensions
     logger.info('Using %i dimensions for analysis' %self.dim)
 
-  def generate_twin_operators(self):
-    from mmtbx.scaling.twin_analyses import twin_laws
-    TL = twin_laws(miller_array=self._data)
-    for twin_law in TL.operators:
-      if self.verbose: logger.info(twin_law.operator.r().as_hkl())
-    return TL.operators
+  def generate_twin_operators(self, lattice_symmetry_max_delta=3.0):
+    # see also mmtbx.scaling.twin_analyses.twin_laws
+    cb_op_to_niggli_cell = \
+      self._data.change_of_basis_op_to_niggli_cell()
+    if self._lattice_group is None:
+      minimum_cell_symmetry = self._data.crystal_symmetry().change_basis(
+        cb_op=cb_op_to_niggli_cell)
+      self._lattice_group = sgtbx.lattice_symmetry.group(
+        reduced_cell=minimum_cell_symmetry.unit_cell(),
+        max_delta=lattice_symmetry_max_delta)
+      intensity_symmetry = minimum_cell_symmetry.reflection_intensity_symmetry(
+        anomalous_flag=self._data.anomalous_flag())
+    else:
+      assert cb_op_to_niggli_cell.is_identity_op()
+      intensity_symmetry = self._data.reflection_intensity_symmetry()
+
+    operators = []
+    cb_op = cb_op_to_niggli_cell.inverse()
+    for partition in sgtbx.cosets.left_decomposition(
+      g = self._lattice_group,
+      h = intensity_symmetry.space_group()
+          .build_derived_acentric_group()
+          .make_tidy()).partitions[1:] :
+      if (partition[0].r().determinant() > 0):
+        operators.append(cb_op.apply(partition[0]))
+
+    return operators
 
   def lattice_lower_upper_index(self, lattice_id):
     lower_index = self._lattices[lattice_id]
