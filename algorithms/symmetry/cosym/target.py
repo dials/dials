@@ -126,12 +126,12 @@ class Target(object):
         max_delta=lattice_symmetry_max_delta)
       intensity_symmetry = minimum_cell_symmetry.reflection_intensity_symmetry(
         anomalous_flag=self._data.anomalous_flag())
+      cb_op = cb_op_to_niggli_cell.inverse()
     else:
-      assert cb_op_to_niggli_cell.is_identity_op()
+      cb_op = sgtbx.change_of_basis_op()
       intensity_symmetry = self._data.reflection_intensity_symmetry()
 
     operators = []
-    cb_op = cb_op_to_niggli_cell.inverse()
     for partition in sgtbx.cosets.left_decomposition(
       g = self._lattice_group,
       h = intensity_symmetry.space_group()
