@@ -309,15 +309,6 @@ class Script(object):
 
       datablocks = [do_import(path) for path in all_paths]
 
-      if self.reference_detector is not None:
-        from dxtbx.model import Detector
-        for datablock in datablocks:
-          for imageset in datablock.extract_imagesets():
-            for i in range(len(imageset)):
-              imageset.set_detector(
-                Detector.from_dict(self.reference_detector.to_dict()),
-                index=i)
-
       indices = []
       basenames = []
       split_datablocks = []
@@ -347,6 +338,13 @@ class Script(object):
           except RuntimeError as e:
             logger.info("Error updating geometry on item %s, %s"%(str(item[0]), str(e)))
             continue
+
+          if self.reference_detector is not None:
+            from dxtbx.model import Detector
+            for i in range(len(imageset)):
+              imageset.set_detector(
+                Detector.from_dict(self.reference_detector.to_dict()),
+                index=i)
 
           processor.process_datablock(item[0], item[1])
         processor.finalize()
@@ -378,15 +376,15 @@ class Script(object):
           if len(imagesets[0]) > 1:
             raise Abort("Found a multi-image file. Run again with pre_import=True")
 
-          if self.reference_detector is not None:
-            from dxtbx.model import Detector
-            imagesets[0].set_detector(Detector.from_dict(self.reference_detector.to_dict()))
-
           try:
             update_geometry(imagesets[0])
           except RuntimeError as e:
             logger.info("Error updating geometry on item %s, %s"%(tag, str(e)))
             continue
+
+          if self.reference_detector is not None:
+            from dxtbx.model import Detector
+            imagesets[0].set_detector(Detector.from_dict(self.reference_detector.to_dict()))
 
           processor.process_datablock(tag, datablock)
         processor.finalize()
