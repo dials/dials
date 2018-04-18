@@ -344,7 +344,7 @@ class Script(object):
           try:
             for imageset in item[1].extract_imagesets():
               update_geometry(imageset)
-          except Exception as e:
+          except RuntimeError as e:
             logger.info("Error updating geometry on item %s, %s"%(str(item[0]), str(e)))
             continue
 
@@ -384,7 +384,7 @@ class Script(object):
 
           try:
             update_geometry(imagesets[0])
-          except Exception as e:
+          except RuntimeError as e:
             logger.info("Error updating geometry on item %s, %s"%(tag, str(e)))
             continue
 
