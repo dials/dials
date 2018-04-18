@@ -445,11 +445,153 @@ namespace dials { namespace refinement {
           const vec3<double> dir1_new_basis,
           const vec3<double> dir2_new_basis){
 
-      af::shared < mat3<double> > ret(6, af::init_functor_null< mat3<double> >());
+        // Panel origin, which is calculated by:
+        // o = dorg + offset[0] * d1 + offset[1] * d2 + offset[2] * dn
 
-      // DO STUFF
+        // derivative wrt dist. NB only ddorg_ddist is not null! The full
+        // expressions are left here in comments to aid understanding
+        // vec3<double> do_ddist = ddorg_ddist + offset[0] * dd1_ddist +
+        //                                       offset[1] * dd2_ddist +
+        //                                       offset[2] * ddn_ddist;
+        vec3<double> do_ddist = ddorg_ddist;
 
-      return ret;
+        // derivative wrt shift1. NB only ddorg_dshift1 is non-null.
+        // vec3<double> do_dshift1 = ddorg_dshift1 + offset[0] * dd1_dshift1 +
+        //                                           offset[1] * dd2_dshift1 +
+        //                                           offset[2] * ddn_dshift1;
+        vec3<double> do_dshift1 = ddorg_dshift1;
+
+        // derivative wrt shift2. NB only ddorg_dshift2 is non-null.
+        // vec3<double> do_dshift2 = ddorg_dshift2 + offset[0] * dd1_dshift2 +
+        //                                           offset[1] * dd2_dshift2 +
+        //                                           offset[2] * ddn_dshift2;
+        vec3<double> do_dshift2 = ddorg_dshift2;
+
+        // derivative wrt tau1
+        vec3<double> do_dtau1 = ddorg_dtau1 + offset[0] * dd1_dtau1 +
+                                              offset[1] * dd2_dtau1 +
+                                              offset[2] * ddn_dtau1;
+
+        // derivative wrt tau2
+        vec3<double> do_dtau2 = ddorg_dtau2 + offset[0] * dd1_dtau2 +
+                                              offset[1] * dd2_dtau2 +
+                                              offset[2] * ddn_dtau2;
+
+        // derivative wrt tau3
+        vec3<double> do_dtau3 = ddorg_dtau3 + offset[0] * dd1_dtau3 +
+                                              offset[1] * dd2_dtau3 +
+                                              offset[2] * ddn_dtau3;
+
+        // Panel dir1:
+        // dir1 = dir1_new_basis[0] * d1 + dir1_new_basis[1] * d2 +
+        //        dir1_new_basis[2] * dn
+
+        // derivative wrt dist. NB These are all null.
+        // vec3<double> ddir1_ddist = dir1_new_basis[0] * dd1_ddist +
+        //                            dir1_new_basis[1] * dd2_ddist +
+        //                            dir1_new_basis[2] * ddn_ddist;
+        vec3<double> ddir1_ddist = vec3<double>(0.,0.,0.);
+
+        // derivative wrt shift1. NB These are all null.
+        // vec3<double> ddir1_dshift1 = dir1_new_basis[0] * dd1_dshift1 +
+        //                              dir1_new_basis[1] * dd2_dshift1 +
+        //                              dir1_new_basis[2] * ddn_dshift1;
+        vec3<double> ddir1_dshift1 = vec3<double>(0.,0.,0.);
+
+        // derivative wrt shift2. NB These are all null.
+        // vec3<double> ddir1_dshift2 = dir1_new_basis[0] * dd1_dshift2 +
+        //                              dir1_new_basis[1] * dd2_dshift2 +
+        //                              dir1_new_basis[2] * ddn_dshift2;
+        vec3<double> ddir1_dshift2 = vec3<double>(0.,0.,0.);
+
+        // derivative wrt tau1
+        vec3<double> ddir1_dtau1 = dir1_new_basis[0] * dd1_dtau1 +
+                                   dir1_new_basis[1] * dd2_dtau1 +
+                                   dir1_new_basis[2] * ddn_dtau1;
+
+        // derivative wrt tau2
+        vec3<double> ddir1_dtau2 = dir1_new_basis[0] * dd1_dtau2 +
+                                   dir1_new_basis[1] * dd2_dtau2 +
+                                   dir1_new_basis[2] * ddn_dtau2;
+
+        // derivative wrt tau3
+        vec3<double> ddir1_dtau3 = dir1_new_basis[0] * dd1_dtau3 +
+                                   dir1_new_basis[1] * dd2_dtau3 +
+                                   dir1_new_basis[2] * ddn_dtau3;
+
+        // Panel dir2:
+        // dir2 = dir2_new_basis[0] * d1 + dir2_new_basis[1] * d2 +
+        //        dir2_new_basis[2] * dn
+
+        // derivative wrt dist. NB These are all null.
+        // vec3<double> ddir2_ddist = dir2_new_basis[0] * dd1_ddist +
+        //                            dir2_new_basis[1] * dd2_ddist +
+        //                            dir2_new_basis[2] * ddn_ddist;
+        vec3<double> ddir2_ddist = vec3<double>(0.,0.,0.);
+
+        // derivative wrt shift1. NB These are all null.
+        // vec3<double> ddir2_dshift1 = dir2_new_basis[0] * dd1_dshift1 +
+        //                              dir2_new_basis[1] * dd2_dshift1 +
+        //                              dir2_new_basis[2] * ddn_dshift1;
+        vec3<double> ddir2_dshift1 = vec3<double>(0.,0.,0.);
+
+        // derivative wrt shift2. NB These are all null.
+        // vec3<double> ddir2_dshift2 = dir2_new_basis[0] * dd1_dshift2 +
+        //                              dir2_new_basis[1] * dd2_dshift2 +
+        //                              dir2_new_basis[2] * ddn_dshift2;
+        vec3<double> ddir2_dshift2 = vec3<double>(0.,0.,0.);
+
+        // derivative wrt tau1
+        vec3<double> ddir2_dtau1 = dir2_new_basis[0] * dd1_dtau1 +
+                                   dir2_new_basis[1] * dd2_dtau1 +
+                                   dir2_new_basis[2] * ddn_dtau1;
+
+        // derivative wrt tau2
+        vec3<double> ddir2_dtau2 = dir2_new_basis[0] * dd1_dtau2 +
+                                   dir2_new_basis[1] * dd2_dtau2 +
+                                   dir2_new_basis[2] * ddn_dtau2;
+
+        // derivative wrt tau3
+        vec3<double> ddir2_dtau3 = dir2_new_basis[0] * dd1_dtau3 +
+                                   dir2_new_basis[1] * dd2_dtau3 +
+                                   dir2_new_basis[2] * ddn_dtau3;
+
+        // combine these vectors together into derivatives of the panel
+        // matrix d and store them, converting angles back to mrad
+
+        af::shared < mat3<double> > ret(6, af::init_functor_null< mat3<double> >());
+
+        // derivative wrt dist
+        ret[0] = mat3<double>(ddir1_ddist[0], ddir2_ddist[0], do_ddist[0],
+                              ddir1_ddist[1], ddir2_ddist[1], do_ddist[1],
+                              ddir1_ddist[2], ddir2_ddist[2], do_ddist[2]);
+
+        // derivative wrt shift1
+        ret[1] = mat3<double>(ddir1_dshift1[0], ddir2_dshift1[0], do_dshift1[0],
+                              ddir1_dshift1[1], ddir2_dshift1[1], do_dshift1[1],
+                              ddir1_dshift1[2], ddir2_dshift1[2], do_dshift1[2]);
+
+        // derivative wrt shift2
+        ret[2] = mat3<double>(ddir1_dshift2[0], ddir2_dshift2[0], do_dshift2[0],
+                              ddir1_dshift2[1], ddir2_dshift2[1], do_dshift2[1],
+                              ddir1_dshift2[2], ddir2_dshift2[2], do_dshift2[2]);
+
+        // derivative wrt tau1
+        ret[3] = mat3<double>(ddir1_dtau1[0], ddir2_dtau1[0], do_dtau1[0],
+                              ddir1_dtau1[1], ddir2_dtau1[1], do_dtau1[1],
+                              ddir1_dtau1[2], ddir2_dtau1[2], do_dtau1[2]) / 1000.;
+
+        // derivative wrt tau2
+        ret[4] = mat3<double>(ddir1_dtau2[0], ddir2_dtau2[0], do_dtau2[0],
+                              ddir1_dtau2[1], ddir2_dtau2[1], do_dtau2[1],
+                              ddir1_dtau2[2], ddir2_dtau2[2], do_dtau2[2]) / 1000.;
+
+        // derivative wrt tau3
+        ret[5] = mat3<double>(ddir1_dtau3[0], ddir2_dtau3[0], do_dtau3[0],
+                              ddir1_dtau3[1], ddir2_dtau3[1], do_dtau3[1],
+                              ddir1_dtau3[2], ddir2_dtau3[2], do_dtau3[2]) / 1000.;
+
+        return ret;
       }
 
     private:
@@ -495,6 +637,105 @@ namespace dials { namespace refinement {
                          igp_offset[1] * d2_ +
                          igp_offset[2] * dn_;
 
+        // calculate derivatives of the state wrt parameters
+        // =================================================
+        // Start with the dorg vector, where
+        // dorg = Tau321 * dsv - Tau32 * P0 + P0
+
+        // derivative wrt dist
+        vec3<double>& dP0_ddist = dist_axis;
+        vec3<double>& ddsv_ddist = dP0_ddist;
+        ddorg_ddist = Tau321 * ddsv_ddist - Tau32 * dP0_ddist + dP0_ddist;
+
+        // derivative wrt shift1
+        vec3<double>& ddsv_dshift1 = shift1_axis;
+        ddorg_dshift1 = Tau321 * ddsv_dshift1;
+
+        // derivative wrt shift2
+        vec3<double>& ddsv_dshift2 = shift2_axis;
+        ddorg_dshift2 = Tau321 * ddsv_dshift2;
+
+        // derivative wrt tau1
+        mat3<double> dTau321_dtau1 = Tau32 * dTau1_dtau1;
+        ddorg_dtau1 = dTau321_dtau1 * dsv;
+
+        // derivative wrt tau2
+        mat3<double> dTau32_dtau2 = Tau3 * dTau2_dtau2;
+        mat3<double> dTau321_dtau2 = dTau32_dtau2 * Tau1;
+        ddorg_dtau2 = dTau321_dtau2 * dsv - dTau32_dtau2 * P0;
+
+        // derivative wrt tau3
+        mat3<double> dTau32_dtau3 = dTau3_dtau3 * Tau2;
+        mat3<double> dTau321_dtau3 = dTau32_dtau3 * Tau1;
+        ddorg_dtau3 = dTau321_dtau3 * dsv - dTau32_dtau3 * P0;
+
+        // Now derivatives of the direction d1, where
+        // d1 = (Tau321 * (Px - P0)).normalize()
+        // For calc of derivatives ignore the normalize(), which should
+        // be unnecessary anyway as Px - P0 is a unit vector and Tau321 a
+        // pure rotation.
+
+        // derivative wrt dist
+        // dPx_ddist = dist_axis; dP0_ddist = dist_axis, so these cancel
+        dd1_ddist = vec3<double>(0., 0., 0.);
+
+        // derivative wrt shift1
+        dd1_dshift1 = vec3<double>(0., 0., 0.);
+
+        // derivative wrt shift2
+        dd1_dshift2 = vec3<double>(0., 0., 0.);
+
+        // derivative wrt tau1
+        dd1_dtau1 = dTau321_dtau1 * (Px - P0);
+
+        // derivative wrt tau2
+        dd1_dtau2 = dTau321_dtau2 * (Px - P0);
+
+        // derivative wrt tau3
+        dd1_dtau3 = dTau321_dtau3 * (Px - P0);
+
+        // Derivatives of the direction d2, where
+        // d2 = (Tau321 * (Py - P0)).normalize()
+
+        // derivative wrt dist
+        dd2_ddist = vec3<double>(0., 0., 0.);
+
+        // derivative wrt shift1
+        dd2_dshift1 = vec3<double>(0., 0., 0.);
+
+        // derivative wrt shift2
+        dd2_dshift2 = vec3<double>(0., 0., 0.);
+
+        // derivative wrt tau1
+        dd2_dtau1 = dTau321_dtau1 * (Py - P0);
+
+        // derivative wrt tau2
+        dd2_dtau2 = dTau321_dtau2 * (Py - P0);
+
+        // derivative wrt tau3
+        dd2_dtau3 = dTau321_dtau3 * (Py - P0);
+
+        // Derivatives of the direction dn, where
+        // dn = d1.cross(d2).normalize()
+
+        // derivative wrt dist
+        ddn_ddist = vec3<double>(0., 0., 0.);
+
+        // derivative wrt shift1
+        ddn_dshift1 = vec3<double>(0., 0., 0.);
+
+        // derivative wrt shift2
+        ddn_dshift2 = vec3<double>(0., 0., 0.);
+
+        // derivative wrt tau1. Product rule for cross product applies
+        ddn_dtau1 = dd1_dtau1.cross(d2_) + d1_.cross(dd2_dtau1);
+
+        // derivative wrt tau2
+        ddn_dtau2 = dd1_dtau2.cross(d2_) + d1_.cross(dd2_dtau2);
+
+        // derivative wrt tau3
+        ddn_dtau3 = dd1_dtau3.cross(d2_) + d1_.cross(dd2_dtau3);
+
       }
 
       // Initial state
@@ -522,6 +763,31 @@ namespace dials { namespace refinement {
       vec3<double> d2_;
       vec3<double> origin_;
 
+      // Derivatives
+      vec3<double> ddorg_ddist;
+      vec3<double> ddorg_dshift1;
+      vec3<double> ddorg_dshift2;
+      vec3<double> ddorg_dtau1;
+      vec3<double> ddorg_dtau2;
+      vec3<double> ddorg_dtau3;
+      vec3<double> dd1_ddist;
+      vec3<double> dd1_dshift1;
+      vec3<double> dd1_dshift2;
+      vec3<double> dd1_dtau1;
+      vec3<double> dd1_dtau2;
+      vec3<double> dd1_dtau3;
+      vec3<double> dd2_ddist;
+      vec3<double> dd2_dshift1;
+      vec3<double> dd2_dshift2;
+      vec3<double> dd2_dtau1;
+      vec3<double> dd2_dtau2;
+      vec3<double> dd2_dtau3;
+      vec3<double> ddn_ddist;
+      vec3<double> ddn_dshift1;
+      vec3<double> ddn_dshift2;
+      vec3<double> ddn_dtau1;
+      vec3<double> ddn_dtau2;
+      vec3<double> ddn_dtau3;
   };
 
   /**

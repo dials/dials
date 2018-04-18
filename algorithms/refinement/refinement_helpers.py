@@ -48,6 +48,12 @@ class PanelGroupCompose(pgc_cpp):
   def origin(self):
     return matrix.col(super(PanelGroupCompose, self).origin())
 
+  def derivatives_for_panel(self, offset, dir1_new_basis, dir2_new_basis):
+    d = super(PanelGroupCompose, self).derivatives_for_panel(
+        offset, dir1_new_basis, dir2_new_basis)
+    return [matrix.sqr(e) for e in d]
+
+
 class CrystalOrientationCompose(xloc_cpp):
   '''Wrapper for the C++ CrystalOrientationCompose class with accessors that
   return matrix.sqr values.'''
