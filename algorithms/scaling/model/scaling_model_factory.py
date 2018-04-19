@@ -39,47 +39,41 @@ class PhysicalSMFactory(object):
   @classmethod
   def create(cls, params, experiments, reflections):
     """Create the scaling model defined by the params."""
-    corrections = []
-    #these names are used many time in the program as flags, create a better
-    #way to strongly enforce inclusion of certain corrections?
+
+    configdict = OrderedDict({'corrections':[]})
+    parameters_dict = {}
 
     osc_range = osc_range_check_for_user_excluded(experiments, reflections)
     one_osc_width = experiments.scan.get_oscillation()[1]
+
     if params.parameterisation.scale_term:
-      corrections.append('scale')
+      configdict['corrections'].append('scale')
       n_scale_param, s_norm_fac, scale_rot_int = initialise_smooth_input(
         osc_range, one_osc_width, params.parameterisation.scale_interval)
-      scale_parameters = flex.double(n_scale_param, 1.0)
-    if params.parameterisation.decay_term:
-      corrections.append('decay')
-      n_decay_param, d_norm_fac, decay_rot_int = initialise_smooth_input(
-        osc_range, one_osc_width, params.parameterisation.decay_interval)
-      decay_parameters = flex.double(n_decay_param, 0.0)
-    if params.parameterisation.absorption_term:
-      corrections.append('absorption')
-      lmax = params.parameterisation.lmax
-      n_abs_param = (2*lmax) + (lmax**2)  #arithmetic sum formula (a1=3, d=2)
-      abs_parameters = flex.double(n_abs_param, 0.0)
-
-    configdict = OrderedDict({'corrections': corrections})
-    parameters_dict = {}
-
-    if 'scale' in configdict['corrections']:
       configdict.update({'s_norm_fac' : s_norm_fac,
         'scale_rot_interval' : scale_rot_int})
-      parameters_dict['scale'] = {'parameters' : scale_parameters,
-        'parameter_esds' : None}
-    if 'decay' in configdict['corrections']:
-      configdict.update({'d_norm_fac' : d_norm_fac,
-        'decay_rot_interval' : decay_rot_int})
-      parameters_dict['decay'] = {'parameters' : decay_parameters,
-        'parameter_esds' : None}
-    if 'absorption' in configdict['corrections']:
-      configdict.update({'lmax' : lmax})
-      parameters_dict['absorption'] = {'parameters' : abs_parameters,
+      parameters_dict['scale'] = {'parameters' : flex.double(n_scale_param, 1.0),
         'parameter_esds' : None}
 
+    if params.parameterisation.decay_term:
+      configdict['corrections'].append('decay')
+      n_decay_param, d_norm_fac, decay_rot_int = initialise_smooth_input(
+        osc_range, one_osc_width, params.parameterisation.decay_interval)
+      configdict.update({'d_norm_fac' : d_norm_fac,
+        'decay_rot_interval' : decay_rot_int})
+      parameters_dict['decay'] = {'parameters' : flex.double(n_decay_param, 0.0),
+        'parameter_esds' : None}
+
+    if params.parameterisation.absorption_term:
+      configdict['corrections'].append('absorption')
+      lmax = params.parameterisation.lmax
+      n_abs_param = (2*lmax) + (lmax**2)  #arithmetic sum formula (a1=3, d=2)
+      configdict.update({'lmax' : lmax})
+      parameters_dict['absorption'] = {'parameters' : flex.double(
+        n_abs_param, 0.0), 'parameter_esds' : None}
+
     return Model.PhysicalScalingModel(parameters_dict, configdict)
+
 
 def initialise_smooth_input(osc_range, one_osc_width, interval):
   """Calculate the number of parameters and norm_fac/rot_int."""

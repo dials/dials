@@ -11,6 +11,7 @@ import abc
 import logging
 from dials.array_family import flex
 from cctbx import crystal
+from cctbx.sgtbx import space_group
 from scitbx import sparse
 from dials_scaling_helpers_ext import row_multiply
 from libtbx.table_utils import simple_table
@@ -107,6 +108,7 @@ class ScalerBase(object):
       s_g_symbol = self.params.scaling_options.space_group
       crystal_symmetry = crystal.symmetry(space_group_symbol=s_g_symbol)
       self.space_group = crystal_symmetry.space_group()
+      self.experiments.crystal.set_space_group(self.space_group)
       msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
         'If the reflection indexing in these space groups is different, {sep}'
         'bad things may happen!!! {sep}').format(sg_from_file, s_g_symbol, sep='\n')

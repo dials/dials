@@ -2,52 +2,38 @@
 Tests for the scaling model classes.
 """
 import pytest
+from mock import Mock
 from dials.array_family import flex
-from dials.util.options import OptionParser
 from dials.algorithms.scaling.model.model import ScalingModelBase,\
   KBScalingModel, PhysicalScalingModel, ArrayScalingModel
-from dials.algorithms.scaling.model.scaling_model_factory import \
-  KBSMFactory, PhysicalSMFactory, ArraySMFactory, calc_n_param_from_bins
-from dials.algorithms.scaling.scaling_library import create_scaling_model
-from libtbx import phil
-from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 
-def generated_exp(n=1):
-  experiments = ExperimentList()
-  exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
-              "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
-              "space_group_hall_symbol": " C 2y"}
-  crystal = Crystal.from_dict(exp_dict)
-  scan = Scan(image_range=[0, 90], oscillation=[0.0, 1.0])
-  beam = Beam(s0=(0.0, 0.0, 1.01))
-  goniometer = Goniometer((1.0, 0.0, 0.0))
-  detector = Detector()
-  experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
-    detector=detector, crystal=crystal))
-  if n > 1:
-    for _ in range(0, n-1):
-      experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
-        detector=detector, crystal=crystal))
-  return experiments
+@pytest.fixture(scope='module')
+def test_reflections():
+  """Return a reflection table."""
+  return generated_refl()
 
-def generated_param():
-  phil_scope = phil.parse('''
-      include scope dials.algorithms.scaling.scaling_options.phil_scope
-  ''', process_includes=True)
+@pytest.fixture
+def mock_params():
+  """Mock params phil scope."""
+  params = Mock()
+  params.parameterisation.surface_weight = 1e5
+  return params
 
-  optionparser = OptionParser(phil=phil_scope, check_format=False)
-  parameters, _ = optionparser.parse_args(args=None, quick_parse=True,
-    show_diff_phil=False)
-  return parameters
+@pytest.fixture
+def mock_exp():
+  """Mock experiments object."""
+  exp = Mock()
+  exp.scan.get_oscillation.return_value = [0.0, 1.0]
+  exp.beam.get_s0.return_value = (0.0, 0.0, 1.01)
+  exp.goniometer.get_rotation_axis.return_value = (1.0, 0.0, 0.0)
+  return exp
 
 def generated_refl():
+  """Create a reflection table."""
   rt = flex.reflection_table()
-  rt['d'] = flex.double([1.0, 1.0, 1.0, 1.0])
-  rt['xyzobs.px.value'] = flex.vec3_double([(0.0, 0.0, 0.0),
-    (0.0, 0.0, 5.0), (0.0, 0.0, 10.0), (0.0, 0.0, 10.0)])
-  rt.set_flags(flex.bool([False, False, False, False]),
-    rt.flags.user_excluded_in_scaling)
+  rt['xyzobs.px.value'] = flex.vec3_double([(0.1, 0.1, 0.1), (0.1, 0.1, 0.1)])
+  rt['s1'] = flex.vec3_double([(0.1, 0.1, 1.1), (0.1, 0.1, 1.1)])
+  rt['d'] = flex.double([1.0, 1.0])
   return rt
 
 def test_ScalingModelBase():
@@ -104,11 +90,9 @@ def test_KBScalingModel():
   new_dict = KBmodel.to_dict()
   assert new_dict == KB_dict
 
-
-
-def test_PhysicalScalingModel():
+def test_PhysicalScalingModel(test_reflections, mock_exp, mock_params):
   """Test the PhysicalScalingModel class."""
-  configdict = {'corrections':['scale', 'decay', 'absorption'],
+  configdict = {'corrections': ['scale', 'decay', 'absorption'],
     's_norm_fac': 1.0, 'scale_rot_interval': 2.0, 'd_norm_fac': 1.0,
     'decay_rot_interval': 2.0, 'lmax' : 1}
 
@@ -130,13 +114,8 @@ def test_PhysicalScalingModel():
   assert list(comps['absorption'].parameters) == [0.01, 0.01, 0.01]
 
   # Test configure reflection table
-  rt = flex.reflection_table()
-  rt['xyzobs.px.value'] = flex.vec3_double([(0.1, 0.1, 0.1), (0.1, 0.1, 0.1)])
-  rt['s1'] = flex.vec3_double([(0.1, 0.1, 1.1), (0.1, 0.1, 1.1)])
-  rt['d'] = flex.double([1.0, 1.0])
-  exp = generated_exp()[0]
-  params = generated_param()
-  rt = physicalmodel.configure_reflection_table(rt, exp, params)
+  rt = physicalmodel.configure_reflection_table(test_reflections, mock_exp,
+    mock_params)
   assert physicalmodel.components['scale'].col_name in rt
   assert physicalmodel.components['decay'].col_name in rt
 
@@ -165,7 +144,8 @@ def test_PhysicalScalingModel():
   new_dict = physicalmodel.to_dict()
   assert new_dict == physical_dict
 
-def test_ArrayScalingModel():
+def test_ArrayScalingModel(test_reflections, mock_exp, mock_params):
+  """Test the ArrayScalingModel class."""
   configdict = {'corrections':['decay', 'absorption'], 'n_res_param': 2,
     'n_time_param': 2, 'resmin' : 1.0, 'res_bin_width' : 1.0,
     'time_norm_fac' : 1.0, 'time_rot_interval' : 1.0, 'n_x_param' : 2,
@@ -189,13 +169,8 @@ def test_ArrayScalingModel():
     0.1, 0.2, 0.1, 0.2, 0.1, 0.2, 0.1, 0.2]
 
   # Test configure reflection table
-  rt = flex.reflection_table()
-  rt['xyzobs.px.value'] = flex.vec3_double([(0.1, 0.1, 0.1), (0.1, 0.1, 0.1)])
-  rt['s1'] = flex.vec3_double([(0.1, 0.1, 1.1), (0.1, 0.1, 1.1)])
-  rt['d'] = flex.double([1.0, 1.0])
-  exp = generated_exp()[0]
-  params = generated_param()
-  rt = arraymodel.configure_reflection_table(rt, exp, params)
+  rt = arraymodel.configure_reflection_table(test_reflections, mock_exp,
+    mock_params)
   for comp in ['decay', 'absorption']:
     for col_name in arraymodel.components[comp].col_names:
       assert col_name in rt
@@ -218,75 +193,3 @@ def test_ArrayScalingModel():
 
   new_dict = arraymodel.to_dict()
   assert new_dict == array_dict
-
-def test_ScalingModelfactories():
-  """Test the factory creation of the three standard scaling models."""
-  params = generated_param()
-  rt = generated_refl() #only needs user excluded in scaling flags to be set.
-  exp = generated_exp()
-  KBmodel = KBSMFactory.create(params, [], [])
-  assert isinstance(KBmodel, KBScalingModel)
-
-  # Only needs user excluded in scaling flags to be set.
-  physicalmodel = PhysicalSMFactory.create(params, exp[0], rt)
-  assert isinstance(physicalmodel, PhysicalScalingModel)
-
-  #needs user excluded in scaling flags, d and xyz.
-  arraymodel = ArraySMFactory.create(params, exp[0], rt)
-  assert isinstance(arraymodel, ArrayScalingModel)
-
-  # Add more rigorous tests to checl that the model has been set up correctly.?
-  # Might be best to refactor scaling model factories first.
-
-def test_model_factory_utilities():
-  """Test the utility functions in the scaling_model_factory module."""
-
-  # Test calc_n_param_from_bins(value_min, value_max, n_bins)
-  assert calc_n_param_from_bins(0.0, 1.0, 1) == (2, 1.0)
-  assert calc_n_param_from_bins(0.0, 2.0, 2) == (3, 1.0)
-  assert calc_n_param_from_bins(0.0, 3.0, 3) == (5, 1.0)
-  assert calc_n_param_from_bins(0.0, 10.0, 10) == (12, 1.0)
-  assert calc_n_param_from_bins(0.0, 10.0, 5) == (7, 2.0)
-  with pytest.raises(AssertionError):
-    (_, _) = calc_n_param_from_bins(0.0, 1.0, 0)
-    (_, _) = calc_n_param_from_bins(0.0, 1.0, 0.5)
-
-  # Test initialise_smooth_input(osc_range, one_osc_width, interval)
-  # Test check for user excluded
-
-
-def test_create_scaling_model():
-  """Test the create scaling model function."""
-
-  # Test that one can create the correct scaling model with the phil param.
-  for m in ['physical', 'array', 'KB']:
-    params = generated_param()
-    exp = generated_exp()
-    rt = generated_refl()
-    params.__inject__('model', m)
-    new_exp = create_scaling_model(params, exp, [rt])
-    assert new_exp[0].scaling_model.id_ == m
-
-  # If a scaling model already exists, then nothing else should happen.
-  params = generated_param()
-  exp = generated_exp()
-  rt = generated_refl()
-  exp[0].scaling_model = PhysicalSMFactory().create(params, exp[0], rt)
-  old_scaling_model = exp[0].scaling_model
-  params.__inject__('model', 'KB')
-  new_exp = create_scaling_model(params, exp, [rt])
-  new_scaling_model = new_exp[0].scaling_model
-  assert new_scaling_model is old_scaling_model # Should not modify original.
-
-  # Test multiple datasets, where one already has a scaling model.
-  exp = generated_exp(3)
-  params = generated_param()
-  rt = generated_refl()
-  rt_2 = generated_refl()
-  rt_3 = generated_refl()
-  exp[0].scaling_model = PhysicalSMFactory().create(params, exp[0], rt)
-  params.__inject__('model', 'KB')
-  new_exp = create_scaling_model(params, exp, [rt, rt_2, rt_3])
-  assert new_exp[0].scaling_model is exp[0].scaling_model
-  assert isinstance(new_exp[1].scaling_model, KBScalingModel)
-  assert isinstance(new_exp[2].scaling_model, KBScalingModel)

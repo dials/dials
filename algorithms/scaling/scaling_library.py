@@ -66,6 +66,11 @@ def scale_single_dataset(reflection_table, experiment, params=None,
     optionparser = OptionParser(phil=phil_scope, check_format=False)
     params, _ = optionparser.parse_args(args=None, quick_parse=True)
     params.__inject__('model', model)
+  else:
+    try:
+      params.__inject__('model', model)
+    except:
+      pass
 
   experiments = create_scaling_model(params, experiment, [reflection_table])
   scaler = SingleScalerFactory.create(params, experiments[0], reflection_table)
