@@ -11,14 +11,14 @@ from libtbx import phil
 from libtbx.test_utils import approx_equal
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
-from dials.algorithms.scaling.model.scaling_model_factory import \
-  create_scaling_model
+from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.algorithms.scaling.scaler_factory import TargetScaler
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.scaler import SingleScalerBase
 from dials.algorithms.scaling.target_function import ScalingTargetFixedIH
 from dials.algorithms.scaling.parameter_handler import create_apm
 from dials.algorithms.scaling.scaling_refiner import scaling_refinery
+from dials.algorithms.scaling.scaling_library import scale_against_target
 from test_basis_and_target_function import calculate_gradient_fd
 
 def generated_refl():
@@ -71,7 +71,7 @@ def generated_refl_3():
   reflections['intensity.prf.variance'] = flex.double([2.0, 5.0, 2.0, 1.0])
   reflections['miller_index'] = flex.miller_index([(1, 0, 0), (0, 0, 1),
     (1, 0, 0), (10, 0, 0)]) #don't change
-  reflections['d'] = flex.double([1.0, 2.0, 1.0, 0.5])
+  reflections['d'] = flex.double([1.0, 2.0, 1.0, (4.0/3.0)**0.5])
   reflections['lp'] = flex.double([1.0, 1.0, 1.0, 1.0])
   reflections['dqe'] = flex.double([1.0, 1.0, 1.0, 1.0])
   reflections['partiality'] = flex.double([1.0, 1.0, 1.0, 1.0])
@@ -184,6 +184,17 @@ def test_TargetScaler():
   assert new_I_0 == list(single_bf_0[0])
   assert old_Ih_values == list(targetscaler.unscaled_scalers[0].Ih_table.Ih_values)
 
+def test_scale_against_target():
+  """Test the scale_against_target library function."""
+  target_reflections = generated_refl()[0]
+  reflections = generated_refl_3()[0]
+  target_experiments = generated_two_exp()
+  experiments = generated_single_exp()
+  scaled_reflections = scale_against_target(reflections, experiments,
+    target_reflections, target_experiments)
+  assert approx_equal(list(scaled_reflections['inverse_scale_factor']), 
+    [2.0, 0.5, 2.0, 2.0 * (4.0 **(-1.0/3.0))])
+
 
 def test_simple_targeted_refinement():
   """Create a targetScaler with simple KB params, and test that the refinement
@@ -217,6 +228,7 @@ def test_simple_targeted_refinement():
     max_iterations=targetscaler.params.scaling_refinery.max_iterations)
   refinery.run()
   scaler = refinery.return_scaler()
+  scaler.expand_scales_to_all_reflections()
 
   assert approx_equal(list(scaler.unscaled_scalers[0].components[
     'scale'].parameters), [(4.0**(-1.0/3.0))/2.0])

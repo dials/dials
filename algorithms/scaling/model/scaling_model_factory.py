@@ -7,28 +7,6 @@ in this file and create a new model in dials.algorithms.scaling.model.
 from collections import OrderedDict
 from dials.array_family import flex
 import dials.algorithms.scaling.model.model as Model
-import pkg_resources
-
-def create_scaling_model(params, experiments, reflections):
-  'function to create/load the appropriate scaling model for each experiment'
-  for i, (exp, refl) in enumerate(zip(experiments, reflections)):
-    model = experiments.scaling_models()[i]
-    if params.scaling_options.target_intensities and i == len(reflections)-1:
-      for entry_point in pkg_resources.iter_entry_points('dxtbx.scaling_model_ext'):
-        if entry_point.name == 'KB':
-          #finds relevant extension in dials.extensions.scaling_model_ext
-          factory = entry_point.load().factory()
-          exp.scaling_model = factory.create(params, exp, refl)
-          exp.scaling_model.set_scaling_model_as_scaled()
-    elif model is not None:
-      exp.scaling_model = model
-    else:
-      for entry_point in pkg_resources.iter_entry_points('dxtbx.scaling_model_ext'):
-        if entry_point.name == params.model:
-          #finds relevant extension in dials.extensions.scaling_model_ext
-          factory = entry_point.load().factory()
-          exp.scaling_model = factory.create(params, exp, refl)
-  return experiments
 
 class KBSMFactory(object):
   '''

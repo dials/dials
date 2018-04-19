@@ -65,7 +65,7 @@ def main(argv):
       single_scaler.expand_scales_to_all_reflections()
       weighting = single_scaler._update_weights_for_scaling(single_scaler.reflection_table,
         single_scaler.params, weights_filter=False, error_model_params=None)
-      single_scaler.Ih_table = SingleIhTable(single_scaler.reflection_table,
+      single_scaler.Ih_table = SingleIhTable(single_scaler.reflection_table, scaler.space_group,
         weighting.weights)
       Ih_table = single_scaler.Ih_table
       error_model = BasicErrorModel(Ih_table)
@@ -80,7 +80,7 @@ def main(argv):
     scaler.expand_scales_to_all_reflections()
     weighting = scaler._update_weights_for_scaling(scaler.reflection_table, scaler.params,
       weights_filter=False, error_model_params=None)
-    scaler.Ih_table = SingleIhTable(scaler.reflection_table, weighting.weights)
+    scaler.Ih_table = SingleIhTable(scaler.reflection_table, scaler.space_group, weighting.weights)
     Ih_table = scaler.Ih_table
     error_model = BasicErrorModel(Ih_table)
     if not 'error_model_parameters' in scaler.experiments.scaling_model.configdict:

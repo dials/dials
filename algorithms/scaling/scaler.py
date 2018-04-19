@@ -10,10 +10,9 @@ A TargetScaler is used for targeted scaling.
 import abc
 import logging
 from dials.array_family import flex
-from cctbx import miller, crystal
+from cctbx import crystal
 from scitbx import sparse
 from dials_scaling_helpers_ext import row_multiply
-import iotbx.merging_statistics
 from libtbx.table_utils import simple_table
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.scaling_utilities import (
@@ -115,29 +114,6 @@ class ScalerBase(object):
     else:
       self.space_group = self.experiments.crystal.get_space_group()
 
-  '''def _map_indices_to_asu(self, reflection_table, experiments, params):
-    """Map the miller index to the asu and use to sort the reflection table."""
-    if params.scaling_options.space_group:
-      sg_from_file = experiments.crystal.get_space_group().info()
-      s_g_symbol = params.scaling_options.space_group
-      crystal_symmetry = crystal.symmetry(space_group_symbol=s_g_symbol)
-      self.space_group = crystal_symmetry.space_group()
-      msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
-        'If the reflection indexing in these space groups is different, {sep}'
-        'bad things may happen!!! {sep}').format(sg_from_file, s_g_symbol, sep='\n')
-      logger.info(msg)
-    else:
-      self.space_group = experiments.crystal.get_space_group()
-      crystal_symmetry = crystal.symmetry(space_group=s_g)
-    miller_set = miller.set(crystal_symmetry=crystal_symmetry,
-      indices=reflection_table['miller_index'], anomalous_flag=False)
-    miller_set_in_asu = miller_set.map_to_asu()
-    reflection_table["asu_miller_index"] = miller_set_in_asu.indices()
-    permuted = (miller_set.map_to_asu()).sort_permutation(
-      by_value='packed_indices')
-    reflection_table = reflection_table.select(permuted)
-    return reflection_table'''
-
   @classmethod
   def _scaling_subset(cls, reflection_table, params, error_model_params=None):
     """Select reflections with non-zero weight and update scale weights."""
@@ -196,24 +172,6 @@ class ScalerBase(object):
     """Optimise an error model."""
     pass
 
-  def calc_merging_statistics(self):
-    """Calculate the merging stats and return these with the dataset id."""
-    bad_refl_sel = self.reflection_table.get_flags(
-      self.reflection_table.flags.bad_for_scaling, all=False)
-    r_t = self.reflection_table.select(~bad_refl_sel)
-    u_c = self.experiments.crystal.get_unit_cell().parameters()
-    miller_set = miller.set(crystal_symmetry=crystal.symmetry(unit_cell=u_c,
-      space_group=self.space_group), indices=r_t['miller_index'],
-      anomalous_flag=False)
-    i_obs = miller.array(miller_set, data=r_t['intensity']/
-      r_t['inverse_scale_factor'])
-    i_obs.set_observation_type_xray_intensity()
-    i_obs.set_sigmas((r_t['variance']**0.5)/r_t['inverse_scale_factor'])
-    dataset_id = list(set(self.reflection_table['id']))[0]
-    result = iotbx.merging_statistics.dataset_statistics(
-      i_obs=i_obs, n_bins=20, anomalous=False, sigma_filtering=None,
-      use_internal_variance=True, eliminate_sys_absent=False)
-    return ([result], dataset_id)
 
 class SingleScalerBase(ScalerBase):
   """
@@ -586,18 +544,6 @@ class MultiScaler(MultiScalerBase):
     '''method to create a joint reflection table'''
     super(MultiScaler, self).join_datasets_from_scalers(self.single_scalers)
 
-  def calc_merging_statistics(self):
-    joint_result, _ = super(MultiScaler, self).calc_merging_statistics()
-    results = []
-    scaled_ids = []
-    for scaler in self.single_scalers:
-      result, scaled_id = scaler.calc_merging_statistics()
-      results.append(result[0])
-      scaled_ids.append(scaled_id)
-    results.append(joint_result[0])
-    scaled_ids.append('x')
-    return (results, scaled_ids)
-
 class TargetScaler(MultiScalerBase):
   """
   Target Scaler for scaling one dataset against already scaled data - takes in
@@ -634,18 +580,6 @@ class TargetScaler(MultiScalerBase):
       basis_fn = basis_function(apm.apm_list[i]).return_basis()
       apm.apm_list[i].derivatives = basis_fn[1]
       scaler.Ih_table.inverse_scale_factors = basis_fn[0]
-
-  def calc_merging_statistics(self):
-    results = []
-    scaled_ids = []
-    for scaler in self.unscaled_scalers:
-      result, scaled_id = scaler.calc_merging_statistics()
-      results.append(result[0])
-      scaled_ids.append(scaled_id)
-    joint_result, _ = super(TargetScaler, self).calc_merging_statistics()
-    results.append(joint_result[0])
-    scaled_ids.append('x')
-    return (results, scaled_ids)
 
   def join_multiple_datasets(self):
     '''method to create a joint reflection table'''

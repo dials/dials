@@ -19,7 +19,7 @@ phil_scope = phil.parse('''
 def main(argv):
   '''the plotting script'''
 
-  optionparser = OptionParser(usage=None, read_experiments=False,
+  optionparser = OptionParser(usage=None, read_experiments=True,
     read_reflections=True, read_datablocks=False, phil=phil_scope,
     check_format=False)
   params, _ = optionparser.parse_args(argv, show_diff_phil=False)

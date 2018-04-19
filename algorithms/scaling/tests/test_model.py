@@ -7,8 +7,8 @@ from dials.util.options import OptionParser
 from dials.algorithms.scaling.model.model import ScalingModelBase,\
   KBScalingModel, PhysicalScalingModel, ArrayScalingModel
 from dials.algorithms.scaling.model.scaling_model_factory import \
-  KBSMFactory, PhysicalSMFactory, ArraySMFactory, create_scaling_model,\
-  calc_n_param_from_bins
+  KBSMFactory, PhysicalSMFactory, ArraySMFactory, calc_n_param_from_bins
+from dials.algorithms.scaling.scaling_library import create_scaling_model
 from libtbx import phil
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment

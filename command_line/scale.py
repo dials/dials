@@ -30,11 +30,10 @@ from dials.util import halraiser, log
 from dials.array_family import flex
 from dials.util.options import OptionParser, flatten_reflections,\
   flatten_experiments
-from dials.algorithms.scaling.model.scaling_model_factory import \
-  create_scaling_model
+from dials.algorithms.scaling.scaling_library import create_scaling_model,\
+  calculate_merging_statistics, calculate_single_merging_stats
 from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScalerFactory
-from dials.algorithms.scaling import scaler as scaler_module
 from dials.algorithms.scaling.scaling_utilities import (
   parse_multiple_datasets, save_experiments, save_reflections)
 
@@ -110,9 +109,6 @@ class Script(object):
       target_reflections = flatten_reflections(target_params.input.reflections)
       self.reflections.append(target_reflections[0])
 
-    # If scaling against a target calculated dataset, it is assumed that this
-    # is the last pickle file passed in and that no corresponding experiments
-    # file is passed in.
     if self.params.scaling_options.target_intensities:
       logger.info('*'*36 + ' WARNING ' + '*'*36 + '\n'
       'For scaling against target calculated dataset, it is assumed \n'
@@ -184,31 +180,33 @@ class Script(object):
     self.scaler = create_scaler(self.params, self.experiments, self.reflections)
     self.minimised = self.scaling_algorithm(self.scaler)
 
-    for experiment in self.experiments:
-      experiment.scaling_model.set_scaling_model_as_scaled()
 
   def merging_stats(self):
     """Calculate and print the merging statistics."""
     logger.info('\n'+'='*80+'\n')
     # Calculate merging stats.
-    results, scaled_ids = self.minimised.calc_merging_statistics()
     plot_labels = []
-    for i, result in enumerate(results):
-      if len(results) == 1:
-        logger.info("")
-        result.show()#out=log.info_handle(logger))
-        plot_labels.append('Single dataset ')
-      else:
-        if i < len(results) - 1:
-          make_sub_header("Merging statistics for dataset " + str(scaled_ids[i]),
-            out=log.info_handle(logger))
-          result.show(header=0)#out=log.info_handle(logger))
-          plot_labels.append('Dataset ' + str(scaled_ids[i]))
-        else:
-          make_sub_header("Merging statistics for combined datasets",
-            out=log.info_handle(logger))
-          result.show(header=0)#out=log.info_handle(logger))
-          plot_labels.append('Combined datasets')
+    results, scaled_ids = calculate_merging_statistics(
+      self.minimised.reflection_table, self.experiments)
+    if len(results) == 1:
+      logger.info("")
+      results[0].show()#out=log.info_handle(logger))
+      results[0].show_estimated_cutoffs()#out=log.info_handle(logger))
+      plot_labels.append('Single dataset ')
+    else:
+      for result, data_id in zip(results, scaled_ids):
+        make_sub_header("Merging statistics for dataset " + str(data_id),
+          out=log.info_handle(logger))
+        result.show(header=0)#out=log.info_handle(logger))
+        result.show_estimated_cutoffs()
+        plot_labels.append('Dataset ' + str(data_id))
+      make_sub_header("Merging statistics for combined datasets",
+        out=log.info_handle(logger))
+      result = calculate_single_merging_stats(
+        self.minimised.reflection_table, self.experiments[0])
+      result.show(header=0)#out=log.info_handle(logger))
+      result.show_estimated_cutoffs()
+      plot_labels.append('Combined datasets')
 
     # Plot merging stats if requested.
     if self.params.output.plot_merging_stats:
@@ -282,7 +280,7 @@ class Script(object):
       scaler.perform_error_optimisation()
       '''scaler.apply_error_model_to_variances()'''
 
-    if isinstance(scaler, scaler_module.MultiScalerBase):
+    if scaler.id_ == 'multi':
       scaler.join_multiple_datasets()
     return scaler
 
