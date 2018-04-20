@@ -578,6 +578,45 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Extend the identifiers
+   */
+  void reflection_table_extend_identifiers(
+      reflection_table &self,
+      const reflection_table &other) {
+    typedef reflection_table::experiment_map_type::const_iterator const_iterator;
+    typedef reflection_table::experiment_map_type::iterator iterator;
+    for (const_iterator it = other.experiment_identifiers()->begin();
+         it != other.experiment_identifiers()->end(); ++it) {
+      iterator found = self.experiment_identifiers()->find(it->first);
+      if (found != self.experiment_identifiers()->end()) {
+        (*self.experiment_identifiers())[it->first] = it->second;
+      } else if (it->second != found->second) {
+        throw DIALS_ERROR("Experiment identifiers do now match");
+      }
+    }
+  }
+
+  /**
+   * Extend the reflection table
+   */
+  void reflection_table_extend(
+      reflection_table &self,
+      const reflection_table &other) {
+    reflection_table_extend_identifiers(self, other);
+    flex_table_suite::extend(self, other);
+  }
+
+  /**
+   * Update the reflection table
+   */
+  void reflection_table_update(
+      reflection_table &self,
+      const reflection_table &other) {
+    reflection_table_extend_identifiers(self, other);
+    flex_table_suite::update(self, other);
+  }
+
+  /**
    * A visitor to convert an item to an object
    */
   struct item_to_object_visitor : public boost::static_visitor<object> {
@@ -893,6 +932,10 @@ namespace dials { namespace af { namespace boost_python {
           &compute_phi_range<flex_table_type>)
         .def("experiment_identifiers",
           &T::experiment_identifiers)
+        .def("extend",
+          reflection_table_extend)
+        .def("update",
+          reflection_table_update)
         .def_pickle(flex_reflection_table_pickle_suite())
         ;
 

@@ -1113,6 +1113,8 @@ def test_experiment_identifiers():
 
   assert table.are_experiment_identifiers_consistent() == False
 
+  identifiers[4] = 'mnop'
+
   import cPickle as pickle
   pickled = pickle.dumps(table)
   table2 = pickle.loads(pickled)
@@ -1122,3 +1124,22 @@ def test_experiment_identifiers():
 
   for i in id1.keys():
     assert id1[i] == id2[i]
+
+  other_table = flex.reflection_table()
+  other_table['id'] = flex.int([3, 4])
+
+  assert other_table.are_experiment_identifiers_consistent() == True
+
+  identifiers = other_table.experiment_identifiers()
+  identifiers[3] = 'mnop'
+  identifiers[4] = 'qrst'
+
+  table.extend(other_table)
+
+  assert len(table.experiment_identifiers()) == 5
+  assert table.experiment_identifiers()[0] == 'abcd'
+  assert table.experiment_identifiers()[1] == 'efgh'
+  assert table.experiment_identifiers()[2] == 'ijkl'
+  assert table.experiment_identifiers()[3] == 'mnop'
+  assert table.experiment_identifiers()[4] == 'qrst'
+
