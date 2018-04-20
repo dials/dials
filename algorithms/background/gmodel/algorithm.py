@@ -98,7 +98,7 @@ class GModelBackgroundCalculatorFactory(object):
   ''' Class to do background subtraction. '''
 
   @classmethod
-  def create(Class,
+  def create(cls,
              experiments,
              model=None,
              robust=False,

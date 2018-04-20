@@ -23,7 +23,7 @@ class MaskCalculatorFactory(object):
   '''
 
   @classmethod
-  def create(Class, experiments, params=None):
+  def create(cls, experiments, params=None):
     '''
     Select the mask calculator
 
@@ -53,7 +53,7 @@ class BackgroundCalculatorFactory(object):
   '''
 
   @classmethod
-  def create(Class, experiments, params=None):
+  def create(cls, experiments, params=None):
     '''
     Select the background calculator
 
@@ -141,7 +141,7 @@ class IntensityCalculatorFactory(object):
   '''
 
   @classmethod
-  def create(Class, experiments, reference_profiles, params=None):
+  def create(cls, experiments, reference_profiles, params=None):
     '''
     Select the intensity calculator
 
@@ -188,7 +188,7 @@ class ReferenceCalculatorFactory(object):
   '''
 
   @classmethod
-  def create(Class, experiments, params=None):
+  def create(cls, experiments, params=None):
     '''
     Select the reference calculator
 
