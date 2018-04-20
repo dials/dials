@@ -22,6 +22,7 @@ import sphinx_bootstrap_theme
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+import datetime
 import sys
 import os
 
@@ -42,13 +43,17 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.imgmath',
+    'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
-    'numpydoc',
+    'sphinx.ext.napoleon',
     'libtbx.sphinx.phil',
     'libtbx.sphinx.python_string',
     'libtbx.sphinx.pubmed',
 ]
+
+# Add CDN path for mathjax script, converting Latex to readable text on the fly.
+# (The Sphinx builtin path is deprecated.)
+mathjax_path = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -64,7 +69,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'DIALS'
-copyright = u'2015, Diamond Light Source, Lawrence Berkeley National Laboratory and STFC'
+copyright = u'%d, Diamond Light Source, Lawrence Berkeley National Laboratory and STFC' % datetime.datetime.now().year
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

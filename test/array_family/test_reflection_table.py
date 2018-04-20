@@ -1115,3 +1115,83 @@ def test_to_from_msgpack2(dials_regression):
       assert all(a == b for a, b in zip(col1, col2))
     elif type(col1) == flex.int6:
       assert all(a == b for a, b in zip(col1, col2))
+  obj = table.as_msgpack_file("test.mpack")
+  new_table = flex.reflection_table.from_msgpack_file("test.mpack")
+  assert(new_table.is_consistent())
+  assert(new_table.nrows() == 10)
+  assert(new_table.ncols() == 3)
+  assert(all(a == b for a, b in zip(new_table['col1'], c1)))
+  assert(all(a == b for a, b in zip(new_table['col2'], c2)))
+  assert(all(a == b for a, b in zip(new_table['col3'], c3)))
+
+def test_experiment_identifiers():
+
+  from dials.array_family import flex
+  from dxtbx.model import ExperimentList, Experiment
+
+  table = flex.reflection_table()
+  table['id'] = flex.int([0,1,2,3])
+
+  assert table.are_experiment_identifiers_consistent() == True
+
+  identifiers = table.experiment_identifiers()
+  identifiers[0] = 'abcd'
+  identifiers[1] = 'efgh'
+  identifiers[2] = 'ijkl'
+  identifiers[3] = 'mnop'
+
+  assert identifiers[0] == 'abcd'
+  assert identifiers[1] == 'efgh'
+  assert identifiers[2] == 'ijkl'
+  assert identifiers[3] == 'mnop'
+
+  for k, v in identifiers:
+    if k == 0:
+      assert v == 'abcd'
+    if k == 1:
+      assert v == 'efgh'
+    if k == 2:
+      assert v == 'ijkl'
+    if k == 3:
+      assert v == 'mnop'
+
+  assert tuple(identifiers.keys()) == (0, 1, 2, 3)
+  assert tuple(identifiers.values()) == ("abcd", "efgh", "ijkl", "mnop")
+
+
+  assert table.are_experiment_identifiers_consistent() == True
+
+  experiments = ExperimentList()
+  experiments.append(Experiment(identifier="abcd"))
+  experiments.append(Experiment(identifier="efgh"))
+  experiments.append(Experiment(identifier="ijkl"))
+  experiments.append(Experiment(identifier="mnop"))
+
+  assert table.are_experiment_identifiers_consistent(experiments) == True
+
+  experiments = ExperimentList()
+  experiments.append(Experiment(identifier="abcd"))
+  experiments.append(Experiment(identifier="efgh"))
+  experiments.append(Experiment(identifier="ijkl"))
+  experiments.append(Experiment(identifier="mnop"))
+  experiments[3].identifier = "ijkl"
+
+  assert table.are_experiment_identifiers_consistent(experiments) == False
+
+  identifiers = table.experiment_identifiers()
+  identifiers[0] = 'abcd'
+  identifiers[1] = 'efgh'
+  identifiers[2] = 'ijkl'
+  identifiers[3] = 'ijkl'
+
+  assert table.are_experiment_identifiers_consistent() == False
+
+  import cPickle as pickle
+  pickled = pickle.dumps(table)
+  table2 = pickle.loads(pickled)
+
+  id1 = table.experiment_identifiers()
+  id2 = table2.experiment_identifiers()
+
+  for i in id1.keys():
+    assert id1[i] == id2[i]

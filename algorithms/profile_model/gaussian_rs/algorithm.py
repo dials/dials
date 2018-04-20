@@ -18,7 +18,7 @@ class GaussianRSMaskCalculatorFactory(object):
   '''
 
   @classmethod
-  def create(Class, experiments):
+  def create(cls, experiments):
     '''
     Create the mask calculator
 
@@ -45,7 +45,7 @@ class GaussianRSIntensityCalculatorFactory(object):
   '''
 
   @classmethod
-  def create(Class,
+  def create(cls,
              data,
              detector_space = False,
              deconvolution = False):
@@ -66,7 +66,7 @@ class GaussianRSReferenceCalculatorFactory(object):
   '''
 
   @classmethod
-  def create(Class,
+  def create(cls,
              experiments,
              grid_size = 5,
              scan_step = 5,

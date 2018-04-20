@@ -76,7 +76,7 @@ def test_gmodel_background_calculator():
 class IntensityCalculatorFactory(object):
 
   @classmethod
-  def create(Class,
+  def create(cls,
              data,
              detector_space=False,
              deconvolution=False):

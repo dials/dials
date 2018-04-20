@@ -239,6 +239,12 @@ namespace dials { namespace af {
         default_nrows_(n) {}
 
     /**
+     * Virtual destructor
+     */
+    virtual
+    ~flex_table() {}
+
+    /**
      * Access a column by key
      * @param key The column name
      * @returns The proxy object to access the column data

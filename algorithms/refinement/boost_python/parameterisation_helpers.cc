@@ -61,6 +61,24 @@ namespace dials { namespace refinement { namespace boost_python {
       .def("dU_dphi2", &CrystalOrientationCompose::dU_dphi2)
       .def("dU_dphi3", &CrystalOrientationCompose::dU_dphi3);
 
+    class_<PanelGroupCompose>("PanelGroupCompose", no_init)
+      .def(init<vec3<double>,
+                vec3<double>,
+                vec3<double>,
+                vec3<double>,
+                af::const_ref<double>,
+                af::const_ref< vec3<double> > > ((
+        arg("initial_d1"),
+        arg("initial_d2"),
+        arg("initial_dn"),
+        arg("initial_gp_offset"),
+        arg("param_vals"),
+        arg("param_axes"))))
+      .def("d1", &PanelGroupCompose::d1)
+      .def("d2", &PanelGroupCompose::d2)
+      .def("origin", &PanelGroupCompose::origin)
+      .def("derivatives_for_panel", &PanelGroupCompose::derivatives_for_panel);
+
   }
 
 }}} // namespace dials::refinement::boost_python

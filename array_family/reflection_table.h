@@ -69,7 +69,37 @@ namespace dials { namespace af {
   > reflection_table_type_generator;
 
   typedef reflection_table_type_generator::type reflection_table_types;
-  typedef flex_table<reflection_table_types> reflection_table;
+
+
+  class reflection_table : public flex_table<reflection_table_types> {
+  public:
+
+    typedef flex_table<reflection_table_types>::map_type map_type;
+    typedef flex_table<reflection_table_types>::key_type key_type;
+    typedef flex_table<reflection_table_types>::mapped_type mapped_type;
+    typedef flex_table<reflection_table_types>::map_value_type map_value_type;
+    typedef flex_table<reflection_table_types>::iterator iterator;
+    typedef flex_table<reflection_table_types>::const_iterator const_iterator;
+    typedef flex_table<reflection_table_types>::size_type size_type;
+    typedef std::map<std::size_t, std::string> experiment_map_type;
+
+    reflection_table()
+      : flex_table<reflection_table_types>(),
+        experiment_identifiers_(boost::make_shared<experiment_map_type>()) {}
+
+    reflection_table(size_type n)
+      : flex_table<reflection_table_types>(n),
+        experiment_identifiers_(boost::make_shared<experiment_map_type>()) {}
+
+    boost::shared_ptr<experiment_map_type> experiment_identifiers() const {
+      return experiment_identifiers_;
+    }
+
+  protected:
+
+    boost::shared_ptr<experiment_map_type> experiment_identifiers_;
+
+  };
 
   enum Flags {
 

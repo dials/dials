@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division
 from docutils import nodes
 import jinja2
-from sphinx.util.compat import Directive
+from docutils.parsers.rst import Directive
 from docutils.parsers.rst.directives import unchanged
 
 BUTTON_TEMPLATE = jinja2.Template(u"""

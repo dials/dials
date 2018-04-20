@@ -1630,7 +1630,7 @@ class RefinerFactory(object):
 
     # While a random subset of reflections is used, continue to
     # set random.seed to get consistent behaviour
-    if options.random_seed:
+    if options.random_seed is not None:
       import random
       random.seed(options.random_seed)
       flex.set_random_seed(options.random_seed)
