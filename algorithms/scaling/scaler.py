@@ -11,14 +11,12 @@ import abc
 import logging
 from dials.array_family import flex
 from cctbx import crystal
-from cctbx.sgtbx import space_group
 from scitbx import sparse
 from dials_scaling_helpers_ext import row_multiply
 from libtbx.table_utils import simple_table
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.scaling_utilities import (
   reject_outliers, calculate_wilson_outliers, calc_normE2)
-from dials.algorithms.scaling.reflection_weighting import Weighting
 from dials.algorithms.scaling.Ih_table import SingleIhTable,\
   JointIhTable
 from dials.algorithms.scaling.scaling_restraints import ScalingRestraints,\
@@ -31,7 +29,7 @@ from dials.algorithms.scaling.error_model.error_model import \
   BasicErrorModel
 from dials.algorithms.scaling.error_model.error_model_target import \
   ErrorModelTarget
-from dials.algorithms.scaling.parameter_handler import create_apm
+from dials.algorithms.scaling.parameter_handler import create_apm_factory
 from dials_scratch_scaling_ext import calc_sigmasq as cpp_calc_sigmasq
 logger = logging.getLogger('dials')
 
@@ -119,44 +117,28 @@ class ScalerBase(object):
   @classmethod
   def _scaling_subset(cls, reflection_table, params, error_model_params=None):
     """Select reflections with non-zero weight and update scale weights."""
-    weights_for_scaling = cls._update_weights_for_scaling(reflection_table,
-      params, error_model_params=error_model_params)
-    sel = weights_for_scaling.weights > 0.0
+    sel = ~reflection_table.get_flags(reflection_table.flags.bad_for_scaling,
+      all=False)
     sel1 = reflection_table['Esq'] > params.reflection_selection.E2_min
     sel2 = reflection_table['Esq'] < params.reflection_selection.E2_max
-    selection = sel & sel1 & sel2
-    weights_for_scaling.weights.set_selected(~selection, 0.0)
+    sel3 = reflection_table['intensity']/(reflection_table['variance']**0.5) > (
+      params.reflection_selection.Isigma_min)
+    sel4 = reflection_table['d'] > params.reflection_selection.d_min
+    selection = sel & sel1 & sel2 & sel3 & sel4
     reflections_for_scaling = reflection_table.select(selection)
-    #weights_for_scaling.weights = weights_for_scaling.weights.select(selection)
     msg = ('{0} reflections were selected for scale factor determination {sep}'
       'out of {5} reflections. This was based on selection criteria of {sep}'
       'E2_min = {1}, E2_max = {2}, Isigma_min = {3}, dmin = {4}. {sep}').format(
-      reflections_for_scaling.size(), params.reflection_selection.E2_min,
+      selection.count(True), params.reflection_selection.E2_min,
       params.reflection_selection.E2_max, params.reflection_selection.Isigma_min,
       params.reflection_selection.d_min, reflection_table.size(), sep='\n')
     logger.info(msg)
-    #return reflections_for_scaling, weights_for_scaling, selection
-    return reflection_table, weights_for_scaling, selection
-
-  @staticmethod
-  def _update_weights_for_scaling(reflection_table, params,
-    weights_filter=True, error_model_params=None):
-    """Set the weights of each reflection to be used in scaling."""
-    weights_for_scaling = Weighting(reflection_table)
-    if weights_filter:
-      weights_for_scaling.apply_Isigma_cutoff(reflection_table,
-        params.reflection_selection.Isigma_min)
-      weights_for_scaling.apply_dmin_cutoff(reflection_table,
-        params.reflection_selection.d_min)
-    if error_model_params:
-      weights_for_scaling.apply_error_model(reflection_table,
-        error_model_params)
-    return weights_for_scaling
+    return reflections_for_scaling, selection
 
   def perform_scaling(self, target_type=ScalingTarget, engine=None,
       max_iterations=None):
     """Minimise the scaling model"""
-    apm_factory = create_apm(self)
+    apm_factory = create_apm_factory(self)
     for _ in range(apm_factory.n_cycles):
       apm = apm_factory.make_next_apm()
       if not engine:
@@ -398,11 +380,10 @@ class SingleScalerBase(ScalerBase):
   def select_reflections_for_scaling(self):
     """Select a subset of reflections, create and Ih table and update the
     model components."""
-    (refl_for_scaling, w_for_scaling, selection) = (
-      self._scaling_subset(self.reflection_table, self.params))
-    self._Ih_table = SingleIhTable(refl_for_scaling, self.space_group, w_for_scaling.weights)
-    #if self.params.weighting.tukey_biweighting: #not working for now, FIX
-    #  self.Ih_table.apply_tukey_biweighting()
+    refl_for_scaling, selection = self._scaling_subset(self.reflection_table,
+      self.params)
+    self._Ih_table = SingleIhTable(refl_for_scaling, self.space_group,
+      weighting_scheme=self.params.weighting.weighting_scheme)
     for component in self.components.itervalues():
       component.update_reflection_data(self.reflection_table, selection)
 

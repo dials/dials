@@ -9,7 +9,7 @@ from dials.util.options import OptionParser
 from dials.algorithms.scaling.model.model import KBScalingModel,\
   PhysicalScalingModel, ArrayScalingModel
 from dials.algorithms.scaling.model.scaling_model_factory import \
-  KBSMFactory, PhysicalSMFactory, ArraySMFactory, calc_n_param_from_bins
+  KBSMFactory, PhysicalSMFactory, ArraySMFactory, calc_n_param_from_bins, initialise_smooth_input
 #from dials.algorithms.scaling.scaling_library import create_scaling_model
 from libtbx import phil
 from dxtbx.model.experiment_list import ExperimentList
@@ -106,7 +106,26 @@ def test_model_factory_utilities():
     (_, _) = calc_n_param_from_bins(0.0, 1.0, 0.5)
 
   # Test initialise_smooth_input(osc_range, one_osc_width, interval)
+  # This is initialised with the oscillation range, width of one osc and 
+  # rotation interval in degress, returning
+  n_param, norm_fac, rot_int = initialise_smooth_input([0, 10], 1.0, 1.0)
+  assert (n_param, norm_fac, rot_int) == (12, 1.0, 1.0)
+  n_param, norm_fac, rot_int = initialise_smooth_input([0, 10], 1.0, 12)
+  assert (n_param, norm_fac, rot_int) == (2, 0.1, 10.0)
+  n_param, norm_fac, rot_int = initialise_smooth_input([0, 10], 1.0, 10)
+  assert (n_param, norm_fac, rot_int) == (2, 0.1, 10.0)
+  n_param, norm_fac, rot_int = initialise_smooth_input([0, 10], 1.0, 9.99)
+  assert (n_param, norm_fac, rot_int) == (3, 0.2, 5.0)
+  n_param, norm_fac, rot_int = initialise_smooth_input([0, 10], 1.0, 5.0)
+  assert (n_param, norm_fac, rot_int) == (3, 0.2, 5.0)
+  n_param, norm_fac, rot_int = initialise_smooth_input([0, 10], 1.0, 4.99)
+  assert (n_param, norm_fac, rot_int) == (5, 3.0/10.0, 10.0/3.0)
+  n_param, norm_fac, rot_int = initialise_smooth_input([0, 10], 2.0, 4.99)
+  assert (n_param, norm_fac, rot_int) == (5, 6.0/10.0, 10.0/3.0)
+
   # Test check for user excluded
+   
+  
 
 
 def generated_exp(n=1):

@@ -16,7 +16,7 @@ from dials.algorithms.scaling.scaler_factory import TargetScaler
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.scaler import SingleScalerBase
 from dials.algorithms.scaling.target_function import ScalingTargetFixedIH
-from dials.algorithms.scaling.parameter_handler import create_apm
+from dials.algorithms.scaling.parameter_handler import create_apm_factory
 from dials.algorithms.scaling.scaling_refiner import scaling_refinery
 from dials.algorithms.scaling.scaling_library import scale_against_target
 from test_basis_and_target_function import calculate_gradient_fd
@@ -160,7 +160,7 @@ def test_TargetScaler():
   assert list(targetscaler.unscaled_scalers[0].Ih_table.Ih_values) == [1.0]
 
   # Test fixed Ih scaling target
-  apm_factory = create_apm(targetscaler)
+  apm_factory = create_apm_factory(targetscaler)
   apm = apm_factory.make_next_apm()
 
   # Create a scaling target and check gradients and residuals.
@@ -220,7 +220,7 @@ def test_simple_targeted_refinement():
     1.0, 10.0, 1.0]
   assert list(targetscaler.Ih_table.Ih_values) == [1.0, 10.0, 1.0]
 
-  apm_factory = create_apm(targetscaler)
+  apm_factory = create_apm_factory(targetscaler)
   apm = apm_factory.make_next_apm()
   target_function = ScalingTargetFixedIH(targetscaler, apm)
   refinery = scaling_refinery(engine=targetscaler.params.scaling_refinery.engine,

@@ -13,7 +13,7 @@ from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.algorithms.scaling.scaler_factory import create_scaler
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.parameter_handler import \
-  scaling_active_parameter_manager, create_apm
+  scaling_active_parameter_manager, create_apm_factory
 from dials.algorithms.scaling.scaler import SingleScalerBase,\
   calc_sf_variances, ScalerBase
 from dials.algorithms.scaling.Ih_table import JointIhTable
@@ -129,7 +129,6 @@ def test_ScalerBase():
 
   scalerbase_directory = dir(scalerbase)
   assert '_scaling_subset' in scalerbase_directory
-  assert '_update_weights_for_scaling' in scalerbase_directory
 
   # Test map indices to asu.
   rt = flex.reflection_table()
@@ -255,7 +254,7 @@ def test_MultiScaler(two_test_reflections, two_test_experiments, test_params):
     assert isinstance(single_scaler, SingleScalerBase)
 
   # Test updating for minimisation
-  apm_factory = create_apm(scaler)
+  apm_factory = create_apm_factory(scaler)
   apm = apm_factory.make_next_apm()
   apm.set_param_vals(flex.double([1.1, 0.1, 1.2, 0.2]))
   # Check individual Ih tables were updated and derivatives matrix correctly composed

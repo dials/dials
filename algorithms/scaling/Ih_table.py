@@ -15,11 +15,13 @@ attributes weights, intensities, inverse_scale_factors, asu_miller_index
 and Ih_values.
 """
 import abc
+import logging
 import numpy as np
 from libtbx.containers import OrderedSet
 from dials.array_family import flex
 from cctbx import miller, crystal
 from scitbx import sparse
+logger = logging.getLogger('dials')
 
 class IhTableBase(object):
   """Base class that defines the interface of the datastructure."""
@@ -176,15 +178,17 @@ class SingleIhTable(IhTableBase):
   """Class to create an Ih_table. This is the default
   data structure used for scaling a single sweep."""
 
-  def __init__(self, reflection_table, space_group, weights=None):
+  def __init__(self, reflection_table, space_group, weighting_scheme=None):
     super(SingleIhTable, self).__init__()
     self._nonzero_weights = None
     self.space_group = space_group
-    self._Ih_table = self._create_Ih_table(reflection_table, weights)
+    self._Ih_table = self._create_Ih_table(reflection_table, weighting_scheme)
     self.map_indices_to_asu()
     self._h_index_matrix, self._h_expand_matrix = self._assign_h_matrices()
     if not 'Ih_values' in reflection_table.keys():
       self.calc_Ih() #calculate a first estimate of Ih
+    if weighting_scheme == 'tukey':
+      self.apply_tukey_biweighting()
 
   @property
   def nonzero_weights(self):
@@ -202,7 +206,7 @@ class SingleIhTable(IhTableBase):
     self._nonzero_weights.set_selected(new_selected_nzweights, True)
     return self
 
-  def _create_Ih_table(self, refl_table, weights):
+  def _create_Ih_table(self, refl_table, weighting_scheme):
     """Create an Ih_table from the reflection table and optionally weights."""
     Ih_table = flex.reflection_table()
     for col in ['intensity', 'inverse_scale_factor', 'variance', 'miller_index']:
@@ -214,14 +218,19 @@ class SingleIhTable(IhTableBase):
       Ih_table['Ih_values'] = refl_table['Ih_values']
     else:
       Ih_table['Ih_values'] = flex.double(refl_table.size(), 0.0)
-    if weights:
-      if refl_table.size() != weights.size():
-        assert 0, """Attempting to create an Ih_table object from a reflection
-        table and weights list of unequal length."""
+    if weighting_scheme:
+      if weighting_scheme == 'invvar' or weighting_scheme == 'tukey':
+        weights = 1.0/refl_table['variance']
+      elif weighting_scheme == 'unity':
+        weights = flex.double(refl_table.size(), 1.0)
+      else:
+        logger.info('Unrecognised weighting scheme, applying default inverse \n'
+          'variance weights')
+        weights = 1.0/refl_table['variance']
       Ih_table['weights'] = weights
       nonzero_weights_sel = Ih_table['weights'] != 0.0
       Ih_table = Ih_table.select(nonzero_weights_sel)
-    else:
+    else: # apply inverse variance weighting
       nonzero_weights_sel = ~(
         refl_table.get_flags(refl_table.flags.user_excluded_in_scaling)
         | refl_table.get_flags(refl_table.flags.excluded_for_scaling))

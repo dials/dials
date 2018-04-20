@@ -55,8 +55,8 @@ def joint_test_input(large_reflection_table, small_reflection_table, test_sg):
   """Generate input for testing joint_Ih_table."""
   weights = flex.double(7, 1.0)
   weights_2 = flex.double(4, 1.0)
-  Ih_table_1 = SingleIhTable(large_reflection_table[0], test_sg, weights)
-  Ih_table_2 = SingleIhTable(small_reflection_table[0], test_sg, weights_2)
+  Ih_table_1 = SingleIhTable(large_reflection_table[0], test_sg, weighting_scheme='unity')
+  Ih_table_2 = SingleIhTable(small_reflection_table[0], test_sg, weighting_scheme='unity')
   return Ih_table_1, Ih_table_2, test_sg
 
 def test_Ih_table(large_reflection_table, test_sg):
@@ -65,7 +65,7 @@ def test_Ih_table(large_reflection_table, test_sg):
   a h_index_matrix."""
   weights = flex.double(7, 1.0)
   reflection_table = large_reflection_table[0]
-  Ih_table = SingleIhTable(reflection_table, test_sg, weights)
+  Ih_table = SingleIhTable(reflection_table, test_sg, weighting_scheme='unity')
 
   assert Ih_table.id_ == "IhTableBase"
 
@@ -143,15 +143,18 @@ def test_Ih_table_nonzero_weights(large_reflection_table, test_sg):
   """Test for 'nonzero_Weights' attribute and how this changes during selection.
   The purpose of this is to indicate the relationship of the Ih_table data to
   the original input reflection table."""
-  weights = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
   reflection_table = large_reflection_table[0]
-  weights[0] = 0.0
-  Ih_table = SingleIhTable(reflection_table, test_sg, weights)
-  assert list(Ih_table.nonzero_weights) == list(flex.bool([False, True, True,
-    True, True, True, True]))
+  Ih_table = SingleIhTable(reflection_table, test_sg, weighting_scheme='unity')
+  Ih_table = Ih_table.select(flex.bool([True, True, True, False, False, False,
+    False]))
+  assert Ih_table.size == 3
+  assert list(Ih_table.nonzero_weights) == list(flex.bool([True, True,
+    True, False, False, False, False]))
+  reflection_table.set_flags(flex.bool([True, False, False, False, False,
+    False, False]), reflection_table.flags.bad_for_scaling)
+  Ih_table = SingleIhTable(reflection_table, test_sg)
   assert Ih_table.size == 6
   Ih_table = Ih_table.select(flex.bool([True, True, True, False, False, False]))
-  assert Ih_table.size == 3
   assert list(Ih_table.nonzero_weights) == list(flex.bool([False, True, True,
     True, False, False, False]))
 

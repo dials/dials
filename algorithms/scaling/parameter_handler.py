@@ -23,19 +23,25 @@ class scaling_active_parameter_manager(active_parameter_manager):
           self.constant_g_values *= obj.inverse_scales
     super(scaling_active_parameter_manager, self).__init__(components,
       selection_list)
-    self.n_obs = self.components[selection_list[0]]['object'].n_refl
+    n_obs = []
+    for component in components:
+      n_obs.append(components[component].n_refl)
+    assert len(set(n_obs)) == 1 # Assert same no of refl set in all components.
+    self.n_obs = n_obs[0]
 
-def create_apm(scaler):
-  """Create and return the appropriate apm factory for the scaler."""
+def create_apm_factory(scaler):
+  """Create and return the appropriate apm factory for the scaler.
+  
+  Supported cases - single dataset and multi/target datasets - concurrent or
+  consecutive scaling, where the consecutive order is defined by
+  scaler.consecutive_refinement_order."""
   if scaler.id_ == 'single':
     if scaler.params.scaling_options.concurrent:
       return ConcurrentAPMFactory([scaler], scaling_active_parameter_manager)
     return ConsecutiveAPMFactory([scaler], scaling_active_parameter_manager)
   else:
-    if scaler.id_ == 'target':
-      data_managers = scaler.unscaled_scalers
-    elif scaler.id_ == 'multi':
-      data_managers = scaler.single_scalers
+    if scaler.id_ == 'target' or scaler.id_ == 'multi':
+      data_managers = scaler.active_scalers
     else:
       assert 0, 'unrecognised scaler id_ for non-single scaler.'
     if scaler.params.scaling_options.concurrent:

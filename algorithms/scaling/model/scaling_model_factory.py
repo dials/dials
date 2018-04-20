@@ -15,19 +15,17 @@ class KBSMFactory(object):
   @classmethod
   def create(cls, params, __, ____):
     '''create the simple KB scaling model.'''
-    corrections = []
+    configdict = OrderedDict({'corrections': []})
+    parameters_dict = {}
+
     if params.parameterisation.decay_term:
-      corrections.append('decay')
+      configdict['corrections'].append('decay')
+      parameters_dict['decay'] = {'parameters' : flex.double([0.0]),
+        'parameter_esds' : None}
     if params.parameterisation.scale_term:
-      corrections.append('scale')
-    configdict = OrderedDict({'corrections': corrections})
-
-    K_param = flex.double([1.0])
-    B_param = flex.double([0.0])
-
-    parameters_dict = {
-      'scale': {'parameters' : K_param, 'parameter_esds' : None},
-      'decay': {'parameters' : B_param, 'parameter_esds' : None}}
+      configdict['corrections'].append('scale')
+      parameters_dict['scale'] = {'parameters' : flex.double([1.0]),
+        'parameter_esds' : None}
 
     return Model.KBScalingModel(parameters_dict, configdict)
 
@@ -77,7 +75,7 @@ class PhysicalSMFactory(object):
 
 def initialise_smooth_input(osc_range, one_osc_width, interval):
   """Calculate the number of parameters and norm_fac/rot_int."""
-  interval += 0.001
+  interval += 0.00001
   if (osc_range[1] - osc_range[0]) < (2.0 * interval):
     if (osc_range[1] - osc_range[0]) <= interval:
       rot_int = osc_range[1] - osc_range[0]
@@ -89,7 +87,8 @@ def initialise_smooth_input(osc_range, one_osc_width, interval):
     n_bins = max(int((osc_range[1] - osc_range[0])/ interval)+1, 3)
     rot_int = (osc_range[1] - osc_range[0])/float(n_bins)
     n_param = n_bins + 2
-  norm_fac = 0.9999 * one_osc_width / rot_int #to make sure normalise values
+  norm_fac = one_osc_width / rot_int
+  #norm_fac = 0.9999 * one_osc_width / rot_int #to make sure normalise values
   #fall within range of smoother.
   return n_param, norm_fac, rot_int
 
@@ -121,10 +120,10 @@ def osc_range_check_for_user_excluded(experiments, reflections):
       * one_osc_width) + experiments.scan.get_oscillation()[0])
     min_osc = (min(reflections_for_scaling['xyzobs.px.value'].parts()[2]
       * one_osc_width) + experiments.scan.get_oscillation()[0])
-    if max_osc < osc_range[1] - 0.8: #some end frames excluded
+    if max_osc < osc_range[1] - one_osc_width: #some end frames excluded
       min_osc = osc_range[0]
       osc_range = (min_osc, max_osc + 0.001)
-    elif min_osc > osc_range[0] + 0.8: #some beginning frames excluded
+    elif min_osc > osc_range[0] + one_osc_width: #some beginning frames excluded
       max_osc = osc_range[1]
       osc_range = (min_osc, max_osc)
   return osc_range
@@ -148,56 +147,43 @@ class ArraySMFactory(object):
     (xmax, xmin) = (max(xvalues) + 0.001, min(xvalues) - 0.001)
     (ymax, ymin) = (max(yvalues) + 0.001, min(yvalues) - 0.001)
 
-    corrections = []
+    configdict = OrderedDict({'corrections': []})
+    parameters_dict = {}
+
     if params.parameterisation.decay_term:
-      corrections.append('decay')
+      configdict['corrections'].append('decay')
       resmax = (1.0 / (min(reflections['d'])**2)) + 0.001
       resmin = (1.0 / (max(reflections['d'])**2)) - 0.001
       n_res_bins = params.parameterisation.n_resolution_bins
       n_res_param, res_bin_width = calc_n_param_from_bins(resmin, resmax,
         n_res_bins)
-      dec_params = flex.double((n_time_param * n_res_param), 1.0)
-    if params.parameterisation.absorption_term:
-      corrections.append('absorption')
-      nxbins = nybins = params.parameterisation.n_absorption_bins
-      n_x_param, x_bin_width = calc_n_param_from_bins(xmin, xmax, nxbins)
-      n_y_param, y_bin_width = calc_n_param_from_bins(ymin, ymax, nybins)
-      abs_params = flex.double((n_x_param * n_y_param * n_time_param), 1.0)
-    if params.parameterisation.modulation_term:
-      corrections.append('modulation')
-      nx_det_bins = ny_det_bins = params.parameterisation.n_modulation_bins
-      n_x_mod_param, x_det_bin_width = calc_n_param_from_bins(
-        xmin, xmax, nx_det_bins)
-      n_y_mod_param, y_det_bin_width = calc_n_param_from_bins(
-        ymin, ymax, ny_det_bins)
-      mod_params = flex.double((n_x_mod_param * n_y_mod_param), 1.0)
-
-    configdict = OrderedDict({'corrections': corrections})
-    parameters_dict = {}
-
-    if 'decay' in configdict['corrections']:
       configdict.update({'n_res_param': n_res_param, 'n_time_param': n_time_param,
         'resmin' : resmin, 'res_bin_width' : res_bin_width,
         'time_norm_fac' : time_norm_fac, 'time_rot_interval' : time_rot_int})
-      parameters_dict['decay'] = {'parameters' : dec_params,
-        'parameter_esds' : None}
+      parameters_dict['decay'] = {'parameters' : flex.double(
+        (n_time_param * n_res_param), 1.0), 'parameter_esds' : None}
 
-    if 'absorption' in configdict['corrections']:
+    if params.parameterisation.absorption_term:
+      configdict['corrections'].append('absorption')
+      nxbins = nybins = params.parameterisation.n_absorption_bins
+      n_x_param, x_bin_width = calc_n_param_from_bins(xmin, xmax, nxbins)
+      n_y_param, y_bin_width = calc_n_param_from_bins(ymin, ymax, nybins)
       configdict.update({'n_x_param' : n_x_param, 'n_y_param' : n_y_param,
         'xmin' : xmin, 'ymin' : ymin, 'x_bin_width' : x_bin_width,
         'y_bin_width' : y_bin_width, 'n_time_param': n_time_param,
-        'time_norm_fac' : time_norm_fac, 'time_rot_interval' : time_rot_int
-      })
-      parameters_dict['absorption'] = {'parameters' : abs_params,
-        'parameter_esds' : None}
+        'time_norm_fac' : time_norm_fac, 'time_rot_interval' : time_rot_int})
+      parameters_dict['absorption'] = {'parameters' : flex.double(
+        (n_x_param * n_y_param * n_time_param), 1.0), 'parameter_esds' : None}
 
-    if 'modulation' in configdict['corrections']:
-      configdict.update({
-        'n_x_mod_param' : n_x_mod_param, 'n_y_mod_param' : n_y_mod_param,
-        'xmin' : xmin, 'ymin' : ymin,
-        'x_det_bin_width' : x_det_bin_width, 'y_det_bin_width' : y_det_bin_width
-      })
-      parameters_dict['modulation'] = {'parameters' : mod_params,
-        'parameter_esds' : None}
+    if params.parameterisation.modulation_term:
+      configdict['corrections'].append('modulation')
+      nx_det_bins = ny_det_bins = params.parameterisation.n_modulation_bins
+      n_x_mod_param, x_det_bw = calc_n_param_from_bins(xmin, xmax, nx_det_bins)
+      n_y_mod_param, y_det_bw = calc_n_param_from_bins(ymin, ymax, ny_det_bins)
+      configdict.update({'n_x_mod_param' : n_x_mod_param,
+        'n_y_mod_param' : n_y_mod_param, 'xmin' : xmin, 'ymin' : ymin,
+        'x_det_bin_width' : x_det_bw, 'y_det_bin_width' : y_det_bw})
+      parameters_dict['modulation'] = {'parameters' : flex.double(
+        (n_x_mod_param * n_y_mod_param), 1.0), 'parameter_esds' : None}
 
     return Model.ArrayScalingModel(parameters_dict, configdict)

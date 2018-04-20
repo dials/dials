@@ -11,7 +11,7 @@ phil_scope = iotbx.phil.parse('''
       .help = "Option to turn off scale correction (for physical/KB
                default models)."
     scale_interval = 15.0
-      .type = float
+      .type = float(value_min=1.0)
       .help = "Rotation (phi) interval between model parameters for the scale
                component (physical model)."
     decay_term = True
@@ -19,7 +19,7 @@ phil_scope = iotbx.phil.parse('''
       .help = "Option to turn off decay correction (for physical/array/KB
                default models)."
     decay_interval = 20.0
-      .type = float
+      .type = float(value_min=1.0)
       .help = "Rotation (phi) interval between model parameters for the decay
                component (physical/array default models)."
     n_resolution_bins = 10
@@ -36,7 +36,7 @@ phil_scope = iotbx.phil.parse('''
               correction (for physical default model), recommended to be no
               more than 6."
     surface_weight = 1e6
-      .type = float
+      .type = float(value_min=0.0)
       .help = "Restraint weight applied to spherical harmonic terms in the
                physical model absorption correction."
     modulation_term = False
@@ -69,9 +69,9 @@ phil_scope = iotbx.phil.parse('''
       .help = "Option to use a d-value subset of reflections to determine scale factors"
   }
   weighting {
-    tukey_biweighting = False
-      .type = bool
-      .help = "Option to turn on tukey biweighting scheme for scaling weights."
+    weighting_scheme = *invvar tukey unity
+      .type = choice
+      .help = "Weighting scheme used during Ih calculation."
     optimise_error_model = False
       .type = bool
       .help = "Option to allow optimisation of weights for scaling. Performs
