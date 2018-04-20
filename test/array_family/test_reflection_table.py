@@ -1112,3 +1112,13 @@ def test_experiment_identifiers():
   identifiers[3] = 'ijkl'
 
   assert table.are_experiment_identifiers_consistent() == False
+
+  import cPickle as pickle
+  pickled = pickle.dumps(table)
+  table2 = pickle.loads(pickled)
+
+  id1 = table.experiment_identifiers()
+  id2 = table2.experiment_identifiers()
+
+  for i in id1.keys():
+    assert id1[i] == id2[i]

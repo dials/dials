@@ -738,12 +738,20 @@ namespace dials { namespace af { namespace boost_python {
   struct flex_reflection_table_pickle_suite : boost::python::pickle_suite {
 
     typedef reflection_table flex_table_type;
-    typedef typename reflection_table::const_iterator const_iterator;
+    typedef reflection_table::const_iterator const_iterator;
 
     static
     boost::python::tuple getstate(const flex_table_type &self) {
       DIALS_ASSERT(self.is_consistent());
-      unsigned int version = 1;
+      unsigned int version = 2;
+
+      // Get the identifiers as a dictionary
+      dict identifiers;
+      for (reflection_table::experiment_map_type::const_iterator
+          it = self.experiment_identifiers()->begin();
+          it != self.experiment_identifiers()->end(); ++it) {
+        identifiers[it->first] = it->second;
+      }
 
       // Get the columns as a dictionary
       dict columns;
@@ -755,6 +763,7 @@ namespace dials { namespace af { namespace boost_python {
       // Make the tuple
       return boost::python::make_tuple(
           version,
+          identifiers,
           self.nrows(),
           self.ncols(),
           columns);
@@ -762,6 +771,19 @@ namespace dials { namespace af { namespace boost_python {
 
     static
     void setstate(flex_table_type &self, boost::python::tuple state) {
+      DIALS_ASSERT(boost::python::len(state) > 0);
+      std::size_t version = extract<unsigned int>(state[0]);
+      if (version == 1) {
+        setstate_version_1(self, state);
+      } else if (version == 2) {
+        setstate_version_2(self, state);
+      } else {
+        throw DIALS_ERROR("Unknown pickle version");
+      }
+    }
+
+    static
+    void setstate_version_1(flex_table_type &self, boost::python::tuple state) {
       DIALS_ASSERT(boost::python::len(state) == 4);
       DIALS_ASSERT(extract<unsigned int>(state[0]) == 1);
       std::size_t nrows = extract<std::size_t>(state[1]);
@@ -770,6 +792,40 @@ namespace dials { namespace af { namespace boost_python {
 
       // Extract the columns
       dict columns = extract<dict>(state[3]);
+      DIALS_ASSERT(len(columns) == ncols);
+      object iterator = columns.iteritems();
+      object self_obj(self);
+      for (std::size_t i = 0; i < ncols; ++i) {
+        object item = iterator.attr("next")();
+        DIALS_ASSERT(len(item[1]) == nrows);
+        std::string name = extract<std::string>(item[0]);
+        self_obj[name] = item[1];
+      }
+      DIALS_ASSERT(self.is_consistent());
+    }
+
+    static
+    void setstate_version_2(flex_table_type &self, boost::python::tuple state) {
+      DIALS_ASSERT(boost::python::len(state) == 5);
+      DIALS_ASSERT(extract<unsigned int>(state[0]) == 2);
+
+      // Extract the identifiers
+      dict identifiers = extract<dict>(state[1]);
+      object identifier_iterator = identifiers.iteritems();
+      for (std::size_t i = 0; i < len(identifiers); ++i) {
+        object item = identifier_iterator.attr("next")();
+        std::size_t index = extract<std::size_t>(item[0]);
+        std::string ident = extract<std::string>(item[1]);
+        (*self.experiment_identifiers())[index] = ident;
+      }
+
+      // Extract nrows and cols
+      std::size_t nrows = extract<std::size_t>(state[2]);
+      std::size_t ncols = extract<std::size_t>(state[3]);
+      self.resize(nrows);
+
+      // Extract the columns
+      dict columns = extract<dict>(state[4]);
       DIALS_ASSERT(len(columns) == ncols);
       object iterator = columns.iteritems();
       object self_obj(self);

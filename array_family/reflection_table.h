@@ -91,7 +91,7 @@ namespace dials { namespace af {
       : flex_table<reflection_table_types>(n),
         experiment_identifiers_(boost::make_shared<experiment_map_type>()) {}
 
-    boost::shared_ptr<experiment_map_type> experiment_identifiers() {
+    boost::shared_ptr<experiment_map_type> experiment_identifiers() const {
       return experiment_identifiers_;
     }
 
