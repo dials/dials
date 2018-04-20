@@ -1122,6 +1122,31 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       result[i] = (1.0*mask.count(True)) / mask.size()
     return result
 
+  def are_experiment_identifiers_consistent(self, experiments=None):
+    '''
+    Check the experiment identifiers
+
+    '''
+    identifiers = self.experiment_identifiers()
+    if len(identifiers) > 0:
+      values = identifiers.values()
+      if len(set(values)) != len(values):
+        return False
+      if "id" in self:
+        index = set(self['id'])
+        for i in index:
+          if i not in identifiers:
+            return False
+    if experiments is not None:
+      if len(identifiers) > 0:
+        if len(identifiers) != len(experiments):
+          return False
+        for i in range(len(experiments)):
+          if identifiers[i] != experiments[i].identifier:
+            return False
+    return True
+
+
 
 class reflection_table_selector(object):
   '''

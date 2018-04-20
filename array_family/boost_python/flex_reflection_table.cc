@@ -10,6 +10,7 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <boost/python/suite/indexing/map_indexing_suite.hpp>
 #include <numeric>
 #include <dials/array_family/boost_python/flex_table_suite.h>
 #include <dials/array_family/reflection_table.h>
@@ -738,7 +739,6 @@ namespace dials { namespace af { namespace boost_python {
   struct flex_reflection_table_wrapper : public flex_table_wrapper<T> {
 
     typedef flex_table_wrapper<T> base_type;
-    typedef typename base_type::flex_types flex_types;
     typedef typename base_type::flex_table_type flex_table_type;
     typedef typename base_type::class_type class_type;
 
@@ -783,6 +783,8 @@ namespace dials { namespace af { namespace boost_python {
           &split_indices_by_experiment_id<flex_table_type>)
         .def("compute_phi_range",
           &compute_phi_range<flex_table_type>)
+        .def("experiment_identifiers",
+          &T::experiment_identifiers)
         ;
 
       // Create the flags enum in the reflection table scope
@@ -824,6 +826,137 @@ namespace dials { namespace af { namespace boost_python {
     }
   };
 
+
+  /**
+   * Functions for experiment identifier map
+   */
+  namespace experiment_map_type_detail {
+
+    /**
+     * Get an item
+     */
+    std::string getitem(
+        const reflection_table::experiment_map_type &self,
+        std::size_t index) {
+      typedef reflection_table::experiment_map_type::const_iterator iterator;
+      iterator it = self.find(index);
+      DIALS_ASSERT(it != self.end());
+      return it->second;
+    }
+
+    /**
+     * Set an item
+     */
+    void setitem(
+        reflection_table::experiment_map_type &self,
+        std::size_t index,
+        std::string value) {
+      self[index] = value;
+    }
+
+    /**
+     * Check if the map contains an item
+     */
+    bool contains(
+        const reflection_table::experiment_map_type &self,
+        std::size_t index) {
+      return self.find(index) != self.end();
+    }
+
+    /**
+     * Get the keys
+     */
+    af::shared<std::size_t> keys(
+        const reflection_table::experiment_map_type &self) {
+      typedef reflection_table::experiment_map_type::const_iterator iterator;
+      af::shared<std::size_t> k;
+      for (iterator it = self.begin(); it != self.end(); ++it) {
+        k.push_back(it->first);
+      }
+      return k;
+    }
+
+    /**
+     * Get the values
+     */
+    af::shared<std::string> values(
+        const reflection_table::experiment_map_type &self) {
+      typedef reflection_table::experiment_map_type::const_iterator iterator;
+      af::shared<std::string> v;
+      for (iterator it = self.begin(); it != self.end(); ++it) {
+        v.push_back(it->second);
+      }
+      return v;
+    }
+
+
+    /**
+     * A proxy iterator
+     */
+    class iterator {
+    public:
+
+      typedef reflection_table::experiment_map_type map_type;
+      typedef ptrdiff_t difference_type;
+      typedef std::forward_iterator_tag iterator_category;
+      typedef boost::python::tuple value_type;
+      typedef const value_type *pointer;
+      typedef const value_type reference;
+
+      iterator(const map_type::const_iterator &it)
+        : it_(it) {}
+
+      reference operator*() {
+        boost::python::tuple result;
+        return boost::python::make_tuple(it_->first, it_->second);
+      }
+
+      iterator& operator++() {
+        ++it_;
+        return *this;
+      }
+
+      iterator operator++(int) {
+        iterator result(*this);
+        ++(*this);
+        return result;
+      }
+
+      bool operator==(const iterator& rhs) const {
+        return it_ == rhs.it_;
+      }
+
+      bool operator!=(const iterator& rhs) const {
+        return !(*this == rhs);
+      }
+
+    private:
+      map_type::const_iterator it_;
+    };
+
+    /**
+     * Map the iterator range
+     */
+    struct make_iterator {
+      static
+      iterator begin(const reflection_table::experiment_map_type &self) {
+        return iterator(self.begin());
+      }
+
+      static
+      iterator end(const reflection_table::experiment_map_type &self) {
+        return iterator(self.end());
+      }
+
+      static
+      object range() {
+        return boost::python::range(
+          &make_iterator::begin,
+          &make_iterator::end);
+      }
+    };
+  }
+
   void export_flex_reflection_table() {
 
     // Set the do
@@ -832,11 +965,22 @@ namespace dials { namespace af { namespace boost_python {
     local_docstring_options.enable_py_signatures();
     local_docstring_options.disable_cpp_signatures();
 
-    // Define all the types we want to support in the table
-    typedef reflection_table::mapped_type flex_types;
+    // Export the experiment id map
+    class_<reflection_table::experiment_map_type,
+           boost::shared_ptr<reflection_table::experiment_map_type> >("experiment_id_map")
+      .def("__len__", &reflection_table::experiment_map_type::size)
+      .def("__getitem__", &experiment_map_type_detail::getitem)
+      .def("__setitem__", &experiment_map_type_detail::setitem)
+      .def("__contains__", &experiment_map_type_detail::contains)
+      .def("keys", &experiment_map_type_detail::keys)
+      .def("values", &experiment_map_type_detail::values)
+      .def("__iter__", experiment_map_type_detail::make_iterator::range());
+      ;
+    ;
 
     // Export the reflection table
-    flex_reflection_table_wrapper<flex_types>::wrap("reflection_table");
+    flex_reflection_table_wrapper<reflection_table>::wrap("reflection_table")
+      ;
 
     // Export the reflection object
     class_<Reflection>("Reflection")

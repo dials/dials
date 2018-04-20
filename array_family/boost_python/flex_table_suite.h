@@ -1211,9 +1211,9 @@ namespace flex_table_suite {
   template <typename T>
   struct flex_table_wrapper {
 
-    typedef T flex_types;
-    typedef flex_table<flex_types> flex_table_type;
+    typedef T flex_table_type;
     typedef class_<flex_table_type> class_type;
+    typedef typename flex_table_type::mapped_type flex_types;
 
     static
     class_type wrap(const char *name) {
