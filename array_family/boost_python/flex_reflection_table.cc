@@ -30,6 +30,7 @@ namespace dials { namespace af { namespace boost_python {
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::af::int6;
+  using flex_table_suite::column_to_object_visitor;
   using flex_table_suite::flex_table_wrapper;
   using dials::model::Shoebox;
   using dials::model::Observation;
@@ -731,6 +732,57 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
 
+  /**
+   * Class to pickle and unpickle the table
+   */
+  struct flex_reflection_table_pickle_suite : boost::python::pickle_suite {
+
+    typedef reflection_table flex_table_type;
+    typedef typename reflection_table::const_iterator const_iterator;
+
+    static
+    boost::python::tuple getstate(const flex_table_type &self) {
+      DIALS_ASSERT(self.is_consistent());
+      unsigned int version = 1;
+
+      // Get the columns as a dictionary
+      dict columns;
+      column_to_object_visitor visitor;
+      for (const_iterator it = self.begin(); it != self.end(); ++it) {
+        columns[it->first] = it->second.apply_visitor(visitor);
+      }
+
+      // Make the tuple
+      return boost::python::make_tuple(
+          version,
+          self.nrows(),
+          self.ncols(),
+          columns);
+    }
+
+    static
+    void setstate(flex_table_type &self, boost::python::tuple state) {
+      DIALS_ASSERT(boost::python::len(state) == 4);
+      DIALS_ASSERT(extract<unsigned int>(state[0]) == 1);
+      std::size_t nrows = extract<std::size_t>(state[1]);
+      std::size_t ncols = extract<std::size_t>(state[2]);
+      self.resize(nrows);
+
+      // Extract the columns
+      dict columns = extract<dict>(state[3]);
+      DIALS_ASSERT(len(columns) == ncols);
+      object iterator = columns.iteritems();
+      object self_obj(self);
+      for (std::size_t i = 0; i < ncols; ++i) {
+        object item = iterator.attr("next")();
+        DIALS_ASSERT(len(item[1]) == nrows);
+        std::string name = extract<std::string>(item[0]);
+        self_obj[name] = item[1];
+      }
+      DIALS_ASSERT(self.is_consistent());
+    }
+  };
+
 
   /**
    * Struct to facilitate wrapping reflection table type
@@ -785,6 +837,7 @@ namespace dials { namespace af { namespace boost_python {
           &compute_phi_range<flex_table_type>)
         .def("experiment_identifiers",
           &T::experiment_identifiers)
+        .def_pickle(flex_reflection_table_pickle_suite())
         ;
 
       // Create the flags enum in the reflection table scope
@@ -956,6 +1009,7 @@ namespace dials { namespace af { namespace boost_python {
       }
     };
   }
+
 
   void export_flex_reflection_table() {
 

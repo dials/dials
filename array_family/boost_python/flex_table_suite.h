@@ -1272,7 +1272,6 @@ namespace flex_table_suite {
         //.def("sort", &sort<flex_table_type>, (
           //arg("column"),
           //arg("reverse")=false))
-        .def_pickle(flex_table_pickle_suite<flex_table_type>())
         ;
 
       // For each column type, create a __setitem__ method to set column data
