@@ -84,11 +84,11 @@ namespace dials { namespace af {
     typedef std::map<std::size_t, std::string> experiment_map_type;
 
     reflection_table()
-      : flex_table(),
+      : flex_table<reflection_table_types>(),
         experiment_identifiers_(boost::make_shared<experiment_map_type>()) {}
 
     reflection_table(size_type n)
-      : flex_table(n),
+      : flex_table<reflection_table_types>(n),
         experiment_identifiers_(boost::make_shared<experiment_map_type>()) {}
 
     boost::shared_ptr<experiment_map_type> experiment_identifiers() {
