@@ -64,7 +64,7 @@ termination_params {
 }
 
 cluster {
-  method = dbscan bisect minimize_divide *agglomerative seed
+  method = dbscan bisect minimize_divide agglomerative *seed
     .type = choice
   dbscan {
     eps = 0.5
