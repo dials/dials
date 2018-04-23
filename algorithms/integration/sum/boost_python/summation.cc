@@ -27,21 +27,21 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def(init <const af::const_ref<FloatType>&,
                  const af::const_ref<FloatType>&,
                  const af::const_ref<int>&>((
-          arg("signal"),
-          arg("background"),
-          arg("mask"))))
+          boost::python::arg("signal"),
+          boost::python::arg("background"),
+          boost::python::arg("mask"))))
       .def(init <const af::const_ref< FloatType, af::c_grid<2> >&,
                  const af::const_ref< FloatType, af::c_grid<2> >&,
                  const af::const_ref< int, af::c_grid<2> >&>((
-          arg("signal"),
-          arg("background"),
-          arg("mask"))))
+          boost::python::arg("signal"),
+          boost::python::arg("background"),
+          boost::python::arg("mask"))))
       .def(init <const af::const_ref< FloatType, af::c_grid<3> >&,
                  const af::const_ref< FloatType, af::c_grid<3> >&,
                  const af::const_ref< int, af::c_grid<3> >&>((
-          arg("signal"),
-          arg("background"),
-          arg("mask"))))
+          boost::python::arg("signal"),
+          boost::python::arg("background"),
+          boost::python::arg("mask"))))
       .def("intensity",
         &SummationType::intensity)
       .def("variance",
@@ -89,21 +89,21 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     def("integrate_by_summation",
       &make_summation_1d<FloatType>, (
-        arg("image"),
-        arg("background"),
-        arg("mask")));
+        boost::python::arg("image"),
+        boost::python::arg("background"),
+        boost::python::arg("mask")));
 
     def("integrate_by_summation",
       &make_summation_2d<FloatType>, (
-        arg("image"),
-        arg("background"),
-        arg("mask")));
+        boost::python::arg("image"),
+        boost::python::arg("background"),
+        boost::python::arg("mask")));
 
     def("integrate_by_summation",
       &make_summation_3d<FloatType>, (
-        arg("image"),
-        arg("background"),
-        arg("mask")));
+        boost::python::arg("image"),
+        boost::python::arg("background"),
+        boost::python::arg("mask")));
   }
 
   void export_summation() {
