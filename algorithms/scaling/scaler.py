@@ -115,7 +115,7 @@ class ScalerBase(object):
       self.space_group = self.experiments.crystal.get_space_group()
 
   @classmethod
-  def _scaling_subset(cls, reflection_table, params, error_model_params=None):
+  def _scaling_subset(cls, reflection_table, params):
     """Select reflections with non-zero weight and update scale weights."""
     sel = ~reflection_table.get_flags(reflection_table.flags.bad_for_scaling,
       all=False)
@@ -384,6 +384,8 @@ class SingleScalerBase(ScalerBase):
       self.params)
     self._Ih_table = SingleIhTable(refl_for_scaling, self.space_group,
       weighting_scheme=self.params.weighting.weighting_scheme)
+    if self.params.weighting.error_model_params:
+      self.update_error_model(self.params.weighting.error_model_params)
     for component in self.components.itervalues():
       component.update_reflection_data(self.reflection_table, selection)
 

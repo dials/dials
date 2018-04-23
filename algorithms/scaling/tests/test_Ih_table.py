@@ -37,7 +37,7 @@ def generate_refl_1():
   reflections['miller_index'] = flex.miller_index([(1, 0, 0), (0, 0, 1),
     (-1, 0, 0), (0, 2, 0), (0, 4, 0), (0, 0, -2), (0, 0, 2)])
   reflections.set_flags(flex.bool(7, True), reflections.flags.integrated)
-  return [reflections]
+  return reflections
 
 def generate_refl_2():
   """Generate another test reflection table."""
@@ -48,15 +48,15 @@ def generate_refl_2():
   reflections['miller_index'] = flex.miller_index([(1, 0, 0), (0, 4, 0),
     (10, 0, 0), (0, 4, 0)])
   reflections.set_flags(flex.bool(4, True), reflections.flags.integrated)
-  return [reflections]
+  return reflections
 
 @pytest.fixture
 def joint_test_input(large_reflection_table, small_reflection_table, test_sg):
   """Generate input for testing joint_Ih_table."""
-  weights = flex.double(7, 1.0)
-  weights_2 = flex.double(4, 1.0)
-  Ih_table_1 = SingleIhTable(large_reflection_table[0], test_sg, weighting_scheme='unity')
-  Ih_table_2 = SingleIhTable(small_reflection_table[0], test_sg, weighting_scheme='unity')
+  Ih_table_1 = SingleIhTable(large_reflection_table, test_sg,
+    weighting_scheme='unity')
+  Ih_table_2 = SingleIhTable(small_reflection_table, test_sg,
+    weighting_scheme='unity')
   return Ih_table_1, Ih_table_2, test_sg
 
 def test_Ih_table(large_reflection_table, test_sg):
@@ -64,7 +64,7 @@ def test_Ih_table(large_reflection_table, test_sg):
   unity scale factors and calculate Ih_values. It should also create the
   a h_index_matrix."""
   weights = flex.double(7, 1.0)
-  reflection_table = large_reflection_table[0]
+  reflection_table = large_reflection_table
   Ih_table = SingleIhTable(reflection_table, test_sg, weighting_scheme='unity')
 
   assert Ih_table.id_ == "IhTableBase"
@@ -143,7 +143,7 @@ def test_Ih_table_nonzero_weights(large_reflection_table, test_sg):
   """Test for 'nonzero_Weights' attribute and how this changes during selection.
   The purpose of this is to indicate the relationship of the Ih_table data to
   the original input reflection table."""
-  reflection_table = large_reflection_table[0]
+  reflection_table = large_reflection_table
   Ih_table = SingleIhTable(reflection_table, test_sg, weighting_scheme='unity')
   Ih_table = Ih_table.select(flex.bool([True, True, True, False, False, False,
     False]))
@@ -157,6 +157,14 @@ def test_Ih_table_nonzero_weights(large_reflection_table, test_sg):
   Ih_table = Ih_table.select(flex.bool([True, True, True, False, False, False]))
   assert list(Ih_table.nonzero_weights) == list(flex.bool([False, True, True,
     True, False, False, False]))
+
+@pytest.mark.skip(reason='Feature not yet implemented')
+def test_tukey_weighting(large_reflection_table, test_sg):
+  """Test the setting of biweights."""
+  reflection_table = large_reflection_table
+  Ih_table = SingleIhTable(reflection_table, test_sg, weighting_scheme='tukey')
+  #assert list(Ih_table.weights) == [1.0] * 7
+
 
 def test_set_Ih_values_to_target(joint_test_input):
   """Test the setting of Ih values for targeted scaling."""

@@ -24,6 +24,11 @@ def large_reflection_table():
   """Create a larger reflection table"""
   return generated_10_refl()
 
+@pytest.fixture
+def small_reflection_table():
+  """Create a small reflection table"""
+  return generated_refl()
+
 def generated_10_refl():
   """Generate reflection table to test the basis and target function."""
   #these miller_idx/d_values don't make physical sense, but I didn't want to
@@ -107,7 +112,7 @@ def jacobian_gradient_input(large_reflection_table):
   return generated_param(model='physical'), generated_single_exp(), large_reflection_table
 
 
-def test_basis_function():
+def test_basis_function(small_reflection_table):
   """Test for the basis function class. This calculates scale factors and
   derivatives for reflections based on the model components."""
 
@@ -115,7 +120,7 @@ def test_basis_function():
   # this up we need a components dictionary with some reflection data.
 
   # Let's use KB model components for simplicity.
-  rt = generated_refl()[0]
+  rt = small_reflection_table[0]
   components = {'scale' : SingleScaleFactor(flex.double([1.0])), 'decay':
     SingleBScaleFactor(flex.double([0.0]))} #Create empty components.
   for component in components.itervalues():

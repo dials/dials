@@ -152,8 +152,10 @@ class IhTableBase(object):
 
   def apply_tukey_biweighting(self):
     """Apply a tukey biweighting scheme for the scaling weights."""
-    z_score = flex.double([])
+    pass
+    '''z_score = flex.double([])
     zmax = 6.0
+    for i, _ in 
     for i, _ in enumerate(self.h_index_counter_array):
       h_idx_cumul = self.h_index_cumulative_array[i:i+2]
       Ihls = self.intensities[h_idx_cumul[0]:h_idx_cumul[1]]
@@ -165,7 +167,7 @@ class IhTableBase(object):
     tukey_weights = (1.0 - ((z_score/zmax)**2))**2
     sel = tukey_weights < 0.0
     tukey_weights.set_selected(sel, 0.0)
-    self.weights = tukey_weights
+    self.weights = tukey_weights'''
 
   def select(self, selection):
     """Select a subset of the data and recalculate h_index_matrices,

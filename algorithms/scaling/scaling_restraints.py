@@ -17,15 +17,18 @@ class MultiScalingRestraints(object):
     G = flex.double([])
     for single_apm in self.apm.apm_list:
       restr = ScalingRestraints(single_apm).calculate_restraints()
-      R.extend(restr[0])
-      G.extend(restr[1])
-    return [R, G]
+      if restr:
+        R.extend(restr[0])
+        G.extend(restr[1])
+    if R:
+      return [R, G]
+    return None
 
   def calculate_jacobian_restraints(self):
     """Calculate restraints for jacobian."""
-    residual_restraints = self.calculate_restraints()[0]
-    n_restraints = residual_restraints.size() - residual_restraints.count(0.0)
-    if n_restraints:
+    residual_restraints = self.calculate_restraints()
+    if residual_restraints:
+      n_restraints = residual_restraints[0].size() - residual_restraints[0].count(0.0)
       weights = flex.double([])
       restraints_vector = flex.double([])
       jacobian = sparse.matrix(n_restraints, self.apm.n_active_params)
@@ -48,9 +51,11 @@ class ScalingRestraints(object):
 
   def calculate_jacobian_restraints(self):
     """Calculate restraints for jacobian."""
-    residual_restraints = self.calculate_restraints()[0]
-    n_restraints = residual_restraints.size() - residual_restraints.count(0.0)
-    if n_restraints:
+    residual_restraints = self.calculate_restraints()
+    #n_restraints = residual_restraints.size() - residual_restraints.count(0.0)
+    if residual_restraints:
+      n_restraints = residual_restraints[0].size() - residual_restraints[0].count(0.0)
+    #if n_restraints:
       weights = flex.double([])
       restraints_vector = flex.double([])
       jacobian = sparse.matrix(n_restraints, self.apm.n_active_params)
@@ -78,4 +83,6 @@ class ScalingRestraints(object):
         residuals.extend(resid[0])
       else:
         gradient_vector.extend(flex.double(comp['n_params'], 0.0))
-    return [residuals, gradient_vector]
+    if residuals:
+      return [residuals, gradient_vector]
+    return None
