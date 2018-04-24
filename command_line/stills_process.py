@@ -39,6 +39,19 @@ control_phil_str = '''
       .type = bool
       .help = If True, if an image fails to process, continue to the next image. \
               otherwise, halt processing and show the error.
+    find_spots = True
+      .expert_level = 2
+      .type = bool
+      .help = Whether to do spotfinding. Needed for indexing/integration
+    index = True
+      .expert_level = 2
+      .type = bool
+      .help = Attempt to index images. find_spots also needs to be True for this to work
+    integrate = True
+      .expert_level = 2
+      .type = bool
+      .help = Integrate indexed images. Ignored if index=False or find_spots=False
+
   }
 
   output {
@@ -465,13 +478,21 @@ class Processor(object):
       if not self.params.dispatch.squash_errors: raise
       return
     try:
-      observed = self.find_spots(datablock)
+      if self.params.dispatch.find_spots:
+        observed = self.find_spots(datablock)
+      else:
+        print("Spot Finding turned off. Exiting")
+        return
     except Exception as e:
       print("Error spotfinding", tag, str(e))
       if not self.params.dispatch.squash_errors: raise
       return
     try:
-      experiments, indexed = self.index(datablock, observed)
+      if self.params.dispatch.index:
+        experiments, indexed = self.index(datablock, observed)
+      else:
+        print("Indexing turned off. Exiting")
+        return
     except Exception as e:
       print("Couldn't index", tag, str(e))
       if not self.params.dispatch.squash_errors: raise
@@ -483,7 +504,11 @@ class Processor(object):
       if not self.params.dispatch.squash_errors: raise
       return
     try:
-      integrated = self.integrate(experiments, indexed)
+      if self.params.dispatch.integrate:
+        integrated = self.integrate(experiments, indexed)
+      else:
+        print("Integration turned off. Exiting")
+        return
     except Exception as e:
       print("Error integrating", tag, str(e))
       if not self.params.dispatch.squash_errors: raise
