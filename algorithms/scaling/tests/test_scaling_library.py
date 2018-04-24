@@ -34,20 +34,20 @@ def generated_refl():
   #these miller_idx/d_values don't make physical sense, but I didn't want to
   #have to write the tests for lots of reflections.
   reflections = flex.reflection_table()
-  reflections['intensity.prf.value'] = flex.double([1.0, 10.0, 100.0, 1.0])
-  reflections['intensity.prf.variance'] = flex.double([1.0, 10.0, 100.0, 1.0])
-  reflections['intensity.sum.value'] = flex.double([10.0, 100.0, 1000.0, 10.0])
-  reflections['intensity.sum.variance'] = flex.double([10.0, 100.0, 1000.0, 10.0])
+  reflections['intensity.prf.value'] = flex.double([1.0, 10.0, 10.0, 1.0, 2.0])
+  reflections['intensity.prf.variance'] = flex.double([1.0, 10.0, 10.0, 1.0, 2.0])
+  reflections['intensity.sum.value'] = flex.double([10.0, 100.0, 100.0, 10.0, 10.0])
+  reflections['intensity.sum.variance'] = flex.double([10.0, 100.0, 100.0, 10.0, 10.0])
   reflections['miller_index'] = flex.miller_index([(1, 0, 0), (0, 0, 1),
-    (1, 0, 0), (0, 0, 1)]) #don't change
-  reflections['d'] = flex.double([0.8, 2.0, 0.8, 2.0]) #don't change
-  reflections['lp'] = flex.double([1.0, 1.0, 1.0, 1.0])
-  reflections['partiality'] = flex.double([1.0, 1.0, 1.0, 1.0])
+    (1, 0, 0), (0, 0, 1), (0, 0, 2)]) #don't change
+  reflections['d'] = flex.double([0.8, 2.0, 0.8, 2.0, 1.2]) #don't change
+  reflections['lp'] = flex.double(5, 1.0)
+  reflections['partiality'] = flex.double(5, 1.0)
   reflections['xyzobs.px.value'] = flex.vec3_double([(0.0, 0.0, 0.0),
-    (0.0, 0.0, 5.0), (0.0, 0.0, 10.0), (0.0, 0.0, 10.0)])
+    (0.0, 0.0, 5.0), (0.0, 0.0, 10.0), (0.0, 0.0, 10.0), (0.0, 0.0, 7.5)])
   reflections['s1'] = flex.vec3_double([(0.0, 0.1, 1.0), (0.0, 0.1, 1.0),
-    (0.0, 0.1, 1.0), (0.0, 0.1, 1.0)])
-  reflections.set_flags(flex.bool([True, True, True, True]),
+    (0.0, 0.1, 1.0), (0.0, 0.1, 1.0), (0.0, 0.1, 1.0)])
+  reflections.set_flags(flex.bool(5, True),
     reflections.flags.integrated)
   return reflections
 

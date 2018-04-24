@@ -133,7 +133,8 @@ def print_step_table(refinery):
   logger.info("\nRefinement steps:")
 
   header = ["Step", "Nref"]
-  for (name, units) in zip(refinery._target.rmsd_names, refinery._target.rmsd_units):
+  for (name, units) in zip(refinery._target.rmsd_names,
+    refinery._target.rmsd_units):
     header.append(name + "\n(" + units + ")")
 
   rows = []

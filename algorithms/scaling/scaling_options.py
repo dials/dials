@@ -127,7 +127,7 @@ phil_scope = iotbx.phil.parse('''
         significant amount of time to run for large datasets or high
         multiplicities, whereas simple should be quick for these datasets."
     outlier_zmax = 9.0
-      .type = float
+      .type = float(value_min=6.0)
       .help = "Cutoff z-score value for identifying outliers based on their
                normalised deviation within the group of equivalent reflections"
     verbosity = 1

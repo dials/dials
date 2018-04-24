@@ -204,7 +204,7 @@ def test_SingleScaler(test_reflections, test_experiments, test_params):
   assert list(rt['inverse_scale_factor']) == [1.1, 1.1, 1.0, 1.0]
   # Variance set to zero if not calculated
   assert list(rt['inverse_scale_factor_variance']) == [0.0] * rt.size()
- 
+
   # Test update var cov.
   apm = scaling_active_parameter_manager(singlescaler.components,
     ['scale', 'decay'])

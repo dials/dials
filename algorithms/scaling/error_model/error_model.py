@@ -11,9 +11,10 @@ class BasicErrorModel(object):
   Object to manage calculation of deviations for an error model.
   """
 
-  def __init__(self, Ih_table):
+  def __init__(self, Ih_table, n_bins=10):
     logger.info("Initialising an error model for refinement.")
     self.Ih_table = Ih_table
+    self.n_bins = n_bins
     self.Ih_table.calc_nh()
     self.n_h = self.Ih_table.n_h
     self.sigmaprime = None
@@ -57,12 +58,13 @@ class BasicErrorModel(object):
   def create_summation_matrix(self):
     """"Create a summation matrix to allow sums into intensity bins."""
     sel = flex.sort_permutation(self.Ih_table.intensities)
-    #sel is the list of indices in order of small to high
+    #sel is the list of indices in order of least to greatest intensity.
     n = self.Ih_table.size
-    if n < 10000: # what is a sensible limit here?
-      n_bins = 10 # what is a sensible number of bins?
-    else:
-      n_bins = 20
+    n_bins = self.n_bins
+    #if n < 10000: # what is a sensible limit here?
+    #  n_bins = 10 # what is a sensible number of bins?
+    #else:
+    #  n_bins = 20
     summation_matrix = sparse.matrix(n, n_bins)
     n_cumul_array = flex.int([])
     for i in range(0, n_bins+1):

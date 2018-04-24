@@ -162,9 +162,8 @@ def test_Ih_table_nonzero_weights(large_reflection_table, test_sg):
 def test_tukey_weighting(large_reflection_table, test_sg):
   """Test the setting of biweights."""
   reflection_table = large_reflection_table
-  Ih_table = SingleIhTable(reflection_table, test_sg, weighting_scheme='tukey')
+  _ = SingleIhTable(reflection_table, test_sg, weighting_scheme='tukey')
   #assert list(Ih_table.weights) == [1.0] * 7
-
 
 def test_set_Ih_values_to_target(joint_test_input):
   """Test the setting of Ih values for targeted scaling."""

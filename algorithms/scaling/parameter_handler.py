@@ -31,7 +31,7 @@ class scaling_active_parameter_manager(active_parameter_manager):
 
 def create_apm_factory(scaler):
   """Create and return the appropriate apm factory for the scaler.
-  
+
   Supported cases - single dataset and multi/target datasets - concurrent or
   consecutive scaling, where the consecutive order is defined by
   scaler.consecutive_refinement_order."""
