@@ -2,47 +2,56 @@
 Tests for scaling utilities module.
 '''
 from math import sqrt, pi
+import pytest
+from mock import Mock
 from dials.array_family import flex
 from libtbx.test_utils import approx_equal
-from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
-from dials.algorithms.scaling.scaling_utilities import calc_crystal_frame_vectors,\
-  calc_theta_phi, create_sph_harm_table, sph_harm_table, align_rotation_axis_along_z, \
-  parse_multiple_datasets
-#import pytest
+from cctbx.sgtbx import space_group
+from dials.algorithms.scaling.scaling_utilities import \
+  calc_crystal_frame_vectors, calc_theta_phi, create_sph_harm_table,\
+  sph_harm_table, align_rotation_axis_along_z, parse_multiple_datasets,\
+  set_wilson_outliers
 
-def generated_single_exp():
-  """Generate an experiment."""
-  experiments = ExperimentList()
-  exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
-              "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
-              "space_group_hall_symbol": " C 2y"}
-  crystal = Crystal.from_dict(exp_dict)
-  scan = Scan(image_range=[0, 90], oscillation=[0.0, 1.0])
-  beam = Beam(s0=(1.0, 0.0, 0.0))
-  goniometer = Goniometer((0.0, 0.0, 1.0))
-  detector = Detector()
-  experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
-    detector=detector, crystal=crystal))
-  return experiments
+@pytest.fixture(scope='module')
+def test_space_group():
+  """Create a space group object."""
+  return space_group("C 2y")
 
-def generate_input_vectors():
-  """Generate the input for the following tests."""
+@pytest.fixture(scope='module')
+def mock_exp():
+  """Create a mock experiments object."""
+  exp = Mock()
+  exp.beam.get_s0.return_value = (1.0, 0.0, 0.0)
+  exp.goniometer.get_rotation_axis.return_value = (0.0, 0.0, 1.0)
+  return exp
+
+@pytest.fixture(scope='module')
+def test_reflection_table():
+  """Return a test reflection table."""
+  return generate_reflection_table()
+
+@pytest.fixture(scope='module')
+def wilson_test_reflection_table():
+  """Return a test reflection table."""
+  rt = flex.reflection_table()
+  rt['centric_flag'] = flex.bool([True, True, False, False])
+  rt['Esq'] = flex.double([50.0, 10.0, 50.0, 10.0])
+  return rt
+
+def generate_reflection_table():
+  """Create a reflection table with s1 and phi."""
   rt = flex.reflection_table()
   s1_vec = (1.0/sqrt(2.0), 0.0, 1.0/sqrt(2.0))
   rt['s1'] = flex.vec3_double([s1_vec, s1_vec, s1_vec])
   rt['phi'] = flex.double([0.0, 45.0, 90.0])
-  exp = generated_single_exp()[0]
-  return rt, exp
+  return rt
 
-def test_calc_crystal_frame_vectors():
+def test_calc_crystal_frame_vectors(test_reflection_table, mock_exp):
   """Test the namesake function, to check that the vectors are correctly rotated
   into the crystal frame."""
-  rt, exp = generate_input_vectors()
+  rt, exp = test_reflection_table, mock_exp
   s0_vec = (1.0, 0.0, 0.0)
   s1_vec = (1.0/sqrt(2.0), 0.0, 1.0/sqrt(2.0))
-  assert list(exp.beam.get_s0()) == list(s0_vec)
-  assert list(exp.goniometer.get_rotation_axis()) == list((0.0, 0.0, 1.0))
   reflection_table = calc_crystal_frame_vectors(rt, exp)
   assert list(reflection_table['s0']) == list(flex.vec3_double(
     [s0_vec, s0_vec, s0_vec]))
@@ -60,14 +69,14 @@ def test_align_rotation_axis_along_z():
   vectors = flex.vec3_double([(1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0),
     (1.0, 0.0, 1.0)])
   rotated_vectors = align_rotation_axis_along_z(rot_axis, vectors)
-  assert approx_equal(list(rotated_vectors), list(flex.vec3_double([(0.0, 0.0, 1.0),
-    (0.0, 1.0, 0.0), (-1.0, 0.0, 0.0), (-1.0, 0.0, 1.0)])))
+  assert approx_equal(list(rotated_vectors), list(flex.vec3_double([
+    (0.0, 0.0, 1.0), (0.0, 1.0, 0.0), (-1.0, 0.0, 0.0), (-1.0, 0.0, 1.0)])))
 
-def test_sph_harm_table():
+def test_sph_harm_table(test_reflection_table, mock_exp):
   """Simple test for the spherical harmonic table, constructing the table step
   by step, and verifying the values of a few easy-to-calculate entries.
   This also acts as a test for the calc_theta_phi function as well."""
-  rt, exp = generate_input_vectors()
+  rt, exp = test_reflection_table, mock_exp
   reflection_table = calc_crystal_frame_vectors(rt, exp)
   theta_phi = calc_theta_phi(reflection_table['s0c'])
   assert approx_equal(list(theta_phi),
@@ -106,3 +115,10 @@ def test_parse_multiple_datasets():
   assert len(single_tables) == 3
   single_tables = parse_multiple_datasets([rt1])
   assert len(single_tables) == 1
+
+def set_calculate_wilson_outliers(wilson_test_reflection_table):
+  """Test the set wilson outliers function."""
+  reflection_table = set_wilson_outliers(wilson_test_reflection_table)
+
+  assert list(reflection_table.get_flags(
+    reflection_table.flags.outlier_in_scaling)) == [True, False, True, False]

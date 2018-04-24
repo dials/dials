@@ -10,13 +10,15 @@ A TargetScaler is used for targeted scaling.
 import abc
 import logging
 from dials.array_family import flex
+from dials.util.export_mtz import sum_partial_reflections
 from cctbx import crystal
 from scitbx import sparse
 from dials_scaling_helpers_ext import row_multiply
 from libtbx.table_utils import simple_table
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.scaling_utilities import (
-  reject_outliers, calculate_wilson_outliers, calc_normE2)
+  set_wilson_outliers, calc_normE2)
+from dials.algorithms.scaling.outlier_rejection import reject_outliers
 from dials.algorithms.scaling.Ih_table import SingleIhTable,\
   JointIhTable
 from dials.algorithms.scaling.scaling_restraints import ScalingRestraints,\
@@ -187,9 +189,9 @@ class SingleScalerBase(ScalerBase):
       self.params) #flag bad variance,
     # Calculate values for later filtering, but don't filter here!!!
     reflection_table = calc_normE2(reflection_table, self.experiments)
-    if 'centric_flag' in reflection_table: #If E2 values have been calculated
-      reflection_table = calculate_wilson_outliers(reflection_table)
-    if self.params.scaling_options.reject_outliers:
+    #if 'centric_flag' in reflection_table: #If E2 values have been calculated
+    #  reflection_table = set_wilson_outliers(reflection_table)
+    if self.params.scaling_options.outlier_rejection != '0':
       reflection_table = self.round_of_outlier_rejection(reflection_table)
     self._reflection_table = reflection_table
     self._configure_reflection_table()
@@ -258,7 +260,7 @@ class SingleScalerBase(ScalerBase):
     """Initial filter to select integrated reflections."""
     mask = ~reflections.get_flags(reflections.flags.integrated)
     d_mask = reflections['d'] <= 0.0
-    partials_mask = reflections['partiality'] < 0.95
+    partials_mask = reflections['partiality'] < 0.6
     reflections.set_flags(mask or partials_mask or d_mask,
       reflections.flags.excluded_for_scaling)
     print('%s reflections not suitable for scaling (low partiality,\n'
@@ -274,10 +276,18 @@ class SingleScalerBase(ScalerBase):
     if (params.scaling_options.integration_method == 'sum' or
         params.scaling_options.integration_method == 'prf'):
       intstr = params.scaling_options.integration_method
+      conversion = flex.double(reflection_table.size(), 1.0)
+      if 'partiality' in reflection_table:
+        inverse_partiality = flex.double(reflection_table.size(), 1.0)
+        nonzero_partiality_sel = reflection_table['partiality'] > 0.0
+        good_refl = reflection_table.select(reflection_table['partiality'] > 0.0)
+        inverse_partiality.set_selected(nonzero_partiality_sel.iselection(),
+          1.0/good_refl['partiality'])
+        conversion *= inverse_partiality
+      if 'lp' in reflection_table:
+        conversion *= reflection_table['lp']
       if 'dqe' in reflection_table:
-        conversion = reflection_table['lp'] / reflection_table['dqe']
-      else:
-        conversion = reflection_table['lp']
+        conversion /= reflection_table['dqe']
       reflection_table['intensity'] = (
         reflection_table['intensity.'+intstr+'.value'] * conversion)
       reflection_table['variance'] = (
@@ -326,7 +336,7 @@ class SingleScalerBase(ScalerBase):
       scaled_invsfvar = calc_sf_variances(self.components, self._var_cov)
       self.reflection_table['inverse_scale_factor_variance'].set_selected(
         scaled_isel, scaled_invsfvar)
-    if (self.params.scaling_options.reject_outliers and
+    if (self.params.scaling_options.outlier_rejection != '0' and
       not isinstance(caller, MultiScalerBase)):
       self._reflection_table = self.round_of_outlier_rejection(
         self._reflection_table)
@@ -356,12 +366,13 @@ class SingleScalerBase(ScalerBase):
     """calculate outliers from the reflections in the Ih_table,
     and use these to filter the reflection table and Ih_table."""
     reflection_table = reject_outliers(reflection_table, self.space_group,
-      self.params.scaling_options.outlier_zmax)
+      self.params)
     msg = ('A round of outlier rejection has been performed, in total {0} {sep}'
         'outliers have now been identified. {sep}'.format(
         reflection_table.get_flags(reflection_table.flags.outlier_in_scaling
         ).count(True), sep='\n'))
     logger.info(msg)
+    #exit()
     return reflection_table
 
   def apply_error_model_to_variances(self):
@@ -455,7 +466,7 @@ class MultiScalerBase(ScalerBase):
     self._reflection_table = flex.reflection_table()
     for scaler in scalers:
       self._reflection_table.extend(scaler.reflection_table)
-    if self.params.scaling_options.reject_outliers:
+    if self.params.scaling_options.outlier_rejection != '0':
       self._reflection_table = self.round_of_outlier_rejection(
         self._reflection_table)
 
@@ -463,7 +474,7 @@ class MultiScalerBase(ScalerBase):
     """calculate outliers from the reflections in the Ih_table,
     and use these to filter the reflection table and Ih_table."""
     reflection_table = reject_outliers(reflection_table, self.space_group,
-      self.params.scaling_options.outlier_zmax)
+      self.params)
     msg = ('Combined outlier rejection has been performed across all datasets, {sep}'
       'in total {0} outliers have now been identified. {sep}'.format(
         reflection_table.get_flags(reflection_table.flags.outlier_in_scaling

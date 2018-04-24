@@ -155,7 +155,6 @@ class IhTableBase(object):
     pass
     '''z_score = flex.double([])
     zmax = 6.0
-    for i, _ in 
     for i, _ in enumerate(self.h_index_counter_array):
       h_idx_cumul = self.h_index_cumulative_array[i:i+2]
       Ihls = self.intensities[h_idx_cumul[0]:h_idx_cumul[1]]

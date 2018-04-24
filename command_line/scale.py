@@ -278,7 +278,7 @@ class Script(object):
 
     if scaler.params.weighting.optimise_error_model:
       scaler.perform_error_optimisation()
-      '''scaler.apply_error_model_to_variances()'''
+      #scaler.apply_error_model_to_variances()
 
     if scaler.id_ == 'multi':
       scaler.join_multiple_datasets()

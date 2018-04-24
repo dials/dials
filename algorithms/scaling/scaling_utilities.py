@@ -9,7 +9,6 @@ import copy
 from math import pi, acos
 from dials.array_family import flex
 from cctbx import miller, crystal
-from dials.algorithms.scaling.Ih_table import SingleIhTable
 from dxtbx.model.experiment_list import ExperimentListDumper
 from dials_scratch_scaling_ext import create_sph_harm_table, calc_theta_phi,\
   rotate_vectors_about_axis
@@ -94,26 +93,6 @@ def sph_harm_table(reflection_table, experiments, lmax):
   sph_h_t = create_sph_harm_table(theta_phi, theta_phi_2, lmax)
   return sph_h_t
 
-def reject_outliers(reflection_table, space_group, zmax):
-  '''simple, quick, outlier rejection based on normalised deviations
-  (similar to aimless)'''
-  Ih_table = SingleIhTable(reflection_table, space_group)
-  I = Ih_table.intensities
-  g = Ih_table.inverse_scale_factors
-  w = Ih_table.weights
-  wgIsum = ((w * g * I) * Ih_table.h_index_matrix) * Ih_table.h_expand_matrix
-  wg2sum = ((w * g * g) * Ih_table.h_index_matrix) * Ih_table.h_expand_matrix
-  norm_dev = (I - (g * wgIsum/wg2sum))/(((1.0/w)+((g/wg2sum)**2))**0.5)
-  z_score = (norm_dev**2)**0.5
-  outliers_sel = z_score > zmax
-  select_isel = Ih_table.nonzero_weights.iselection()
-  outliers_in_overall = select_isel.select(outliers_sel)
-  outlier_mask = flex.bool(reflection_table.size(), False)
-  outlier_mask.set_selected(outliers_in_overall, True)
-  reflection_table.set_flags(outlier_mask,
-    reflection_table.flags.outlier_in_scaling)
-  return reflection_table
-
 
 def calc_normE2(reflection_table, experiments):
   '''calculate normalised intensity values for centric and acentric reflections'''
@@ -124,28 +103,28 @@ def calc_normE2(reflection_table, experiments):
     'the E^2 values of the highest resolution bins. {sep}'
     ).format(sep='\n')
   logger.info(msg)
-  #print(len(reflection_table))
-  bad_refl_sel = reflection_table.get_flags(reflection_table.flags.bad_for_scaling,
-    all=False)
-  scaling_subset = reflection_table.select(~bad_refl_sel)
+
+  bad_refl_sel = reflection_table.get_flags(
+    reflection_table.flags.bad_for_scaling, all=False)
+  rt_subset = reflection_table.select(~bad_refl_sel)
+
   # Scaling subset is data that has not been flagged as bad or excluded
   crystal_symmetry = crystal.symmetry(
     unit_cell=experiments.crystal.get_unit_cell().parameters(),
     space_group=experiments.crystal.get_space_group())
   miller_set = miller.set(crystal_symmetry=crystal_symmetry,
-    indices=scaling_subset['miller_index'])
-  scaling_subset['resolution'] = 1.0/scaling_subset['d']**2
+    indices=rt_subset['miller_index'])
+  rt_subset['resolution'] = 1.0/rt_subset['d']**2
+
   #handle negative reflections to minimise effect on mean I values.
-  scaling_subset['intensity_for_norm'] = copy.deepcopy(
-    scaling_subset['intensity'])
-  scaling_subset['intensity_for_norm'].set_selected(
-    scaling_subset['intensity'] < 0.0, 0.0)
-  miller_array = miller.array(miller_set,
-    data=scaling_subset['intensity_for_norm'])
+  rt_subset['intensity_for_norm'] = copy.deepcopy(rt_subset['intensity'])
+  rt_subset['intensity_for_norm'].set_selected(rt_subset['intensity'] < 0.0, 0.0)
+  miller_array = miller.array(miller_set, data=rt_subset['intensity_for_norm'])
+
   #set up binning objects
-  scaling_subset['centric_flag'] = miller_array.centric_flags().data()
-  n_centrics = scaling_subset['centric_flag'].count(True)
-  n_acentrics = scaling_subset['centric_flag'].count(False)
+  rt_subset['centric_flag'] = miller_array.centric_flags().data()
+  n_centrics = rt_subset['centric_flag'].count(True)
+  n_acentrics = rt_subset.size() - n_centrics
 
   if n_acentrics > 20000 or n_centrics > 20000:
     n_refl_shells = 20
@@ -163,7 +142,7 @@ def calc_normE2(reflection_table, experiments):
     n_refl_shells = 10
 
   #calculate normalised intensities: first calculate bin averages
-  step = ((max(scaling_subset['resolution']) - min(scaling_subset['resolution'])
+  step = ((max(rt_subset['resolution']) - min(rt_subset['resolution'])
            + 1e-8) / n_refl_shells)
   if n_centrics:
     centrics_array = miller_array.select_centric()
@@ -180,10 +159,10 @@ def calc_normE2(reflection_table, experiments):
     mean_acentric_values = acentrics_array.mean(use_binning=acentric_binner)
     mean_acentric_values = mean_acentric_values.data[1:-1]
     acentric_bin_limits = acentric_binner.limits()
+
   #now calculate normalised intensity values for full reflection table
   miller_set = miller.set(crystal_symmetry=crystal_symmetry,
-                          indices=reflection_table['miller_index'])
-
+    indices=reflection_table['miller_index'])
   reflection_table['Esq'] = flex.double(reflection_table.size(), 0.0)
   miller_array = miller.array(miller_set)
   reflection_table['centric_flag'] = miller_array.centric_flags().data()
@@ -192,16 +171,16 @@ def calc_normE2(reflection_table, experiments):
   reflection_table['resolution'] = 1.0/reflection_table['d']**2
 
   if n_centrics:
+    sel1 = reflection_table['centric_flag']
     for i in range(0, len(centric_bin_limits)-1):
-      sel1 = reflection_table['centric_flag']
       sel2 = reflection_table['resolution'] > centric_bin_limits[i]
       sel3 = reflection_table['resolution'] <= centric_bin_limits[i+1]
       sel = sel1 & sel2 & sel3
       intensities = reflection_table['intensity'].select(sel)
       reflection_table['Esq'].set_selected(sel, intensities/ mean_centric_values[i])
   if n_acentrics:
+    sel1 = ~reflection_table['centric_flag']
     for i in range(0, len(acentric_bin_limits)-1):
-      sel1 = ~reflection_table['centric_flag']
       sel2 = reflection_table['resolution'] > acentric_bin_limits[i]
       sel3 = reflection_table['resolution'] <= acentric_bin_limits[i+1]
       sel = sel1 & sel2 & sel3
@@ -216,21 +195,21 @@ def calc_normE2(reflection_table, experiments):
   logger.info(msg)
   return reflection_table
 
-def calculate_wilson_outliers(reflection_table):
-  """function that takes in a reflection table and experiments object and
-  looks at the wilson distribution of intensities in reflection shells to
-  look for the presence of outliers with high intensities. Returns a bool
-  flex array indicating any outliers."""
+def set_wilson_outliers(reflection_table):
+  """Function that takes in a reflection table with 'Esq' and 'centric_flag'
+  values and sets an outlier flag depending on a cutoff for p < 1e-6."""
 
   centric_cutoff = 23.91
   sel1 = reflection_table['centric_flag']
   sel2 = reflection_table['Esq'] > centric_cutoff #probability <10^-6
-  reflection_table.set_flags(sel1 & sel2, reflection_table.flags.outlier_in_scaling)
+  reflection_table.set_flags(sel1 & sel2,
+    reflection_table.flags.outlier_in_scaling)
 
   acentric_cutoff = 13.82
   sel1 = ~reflection_table['centric_flag']
   sel2 = reflection_table['Esq'] > acentric_cutoff #probability <10^-6
-  reflection_table.set_flags(sel1 & sel2, reflection_table.flags.outlier_in_scaling)
+  reflection_table.set_flags(sel1 & sel2,
+    reflection_table.flags.outlier_in_scaling)
   msg = ('{0} reflections have been identified as outliers based on their normalised {sep}'
     'intensity values. These are reflections that have a probablity of {sep}'
     '< 10e-6 based on a Wilson distribution (E^2 > {1}, {2} for centric {sep}'
