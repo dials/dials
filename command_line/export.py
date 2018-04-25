@@ -231,7 +231,7 @@ phil_scope = parse('''
 
 class MTZExporter(object):
   '''
-  A class to export stuff in MTZ format
+  A class to export reflections in MTZ format
 
   '''
 
@@ -251,7 +251,7 @@ class MTZExporter(object):
     if len(reflections) != 1:
       raise Sorry('MTZ exporter requires 1 reflection table')
 
-    # Save the stuff
+    # Save the input
     self.params = params
     self.experiments = experiments
     self.reflections = reflections[0]
@@ -282,7 +282,7 @@ class MTZExporter(object):
 
 class SadabsExporter(object):
   '''
-  A class to export stuff in HKL format
+  A class to export data in HKL format
 
   '''
 
@@ -302,7 +302,7 @@ class SadabsExporter(object):
     if len(reflections) != 1:
       raise Sorry('SADABS exporter requires 1 reflection table')
 
-    # Save the stuff
+    # Save the data
     self.params = params
     self.experiments = experiments
     self.reflections = reflections[0]
@@ -322,7 +322,7 @@ class SadabsExporter(object):
 
 class XDSASCIIExporter(object):
   '''
-  A class to export stuff in XDS_ASCII format
+  A class to export data in XDS_ASCII format
 
   '''
 
@@ -342,7 +342,7 @@ class XDSASCIIExporter(object):
     if len(reflections) != 1:
       raise Sorry('XDS_ASCII exporter requires 1 reflection table')
 
-    # Save the stuff
+    # Save the input
     self.params = params
     self.experiments = experiments
     self.reflections = reflections[0]
@@ -359,7 +359,7 @@ class XDSASCIIExporter(object):
 
 class NexusExporter(object):
   '''
-  A class to export stuff in Nexus format
+  A class to export data in Nexus format
 
   '''
 
@@ -379,7 +379,7 @@ class NexusExporter(object):
     if len(reflections) != 1:
       raise Sorry('Nexus exporter requires 1 reflection table')
 
-    # Save the stuff
+    # Save the input
     self.params = params
     self.experiments = experiments
     self.reflections = reflections[0]
@@ -397,7 +397,7 @@ class NexusExporter(object):
 
 class MMCIFExporter(object):
   '''
-  A class to export stuff in CIF format
+  A class to export data in CIF format
 
   '''
 
@@ -417,7 +417,7 @@ class MMCIFExporter(object):
     if len(reflections) != 1:
       raise Sorry('CIF exporter requires 1 reflection table')
 
-    # Save the stuff
+    # Save the input
     self.params = params
     self.experiments = experiments
     self.reflections = reflections[0]
