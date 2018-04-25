@@ -20,7 +20,7 @@ libtbx.pkg_utils.require('mock', '>=2.0')
 libtbx.pkg_utils.require('orderedset')
 libtbx.pkg_utils.require('pytest', '>=3.1')
 libtbx.pkg_utils.require('Jinja2')
-libtbx.pkg_utils.require('procrunner')
+libtbx.pkg_utils.require('procrunner', '>=0.4')
 libtbx.pkg_utils.require('scipy')
 libtbx.pkg_utils.require('scikit_learn[alldeps]')
 
