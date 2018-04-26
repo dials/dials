@@ -126,7 +126,6 @@ class ScalerBase(object):
       params.reflection_selection.Isigma_min)
     sel4 = reflection_table['d'] > params.reflection_selection.d_min
     selection = sel & sel1 & sel2 & sel3 & sel4
-    reflections_for_scaling = reflection_table.select(selection)
     msg = ('{0} reflections were selected for scale factor determination {sep}'
       'out of {5} reflections. This was based on selection criteria of {sep}'
       'E2_min = {1}, E2_max = {2}, Isigma_min = {3}, dmin = {4}. {sep}').format(
@@ -134,7 +133,7 @@ class ScalerBase(object):
       params.reflection_selection.E2_max, params.reflection_selection.Isigma_min,
       params.reflection_selection.d_min, reflection_table.size(), sep='\n')
     logger.info(msg)
-    return reflections_for_scaling, selection
+    return selection
 
   def perform_scaling(self, target_type=ScalingTarget, engine=None,
       max_iterations=None):
@@ -390,10 +389,9 @@ class SingleScalerBase(ScalerBase):
   def select_reflections_for_scaling(self):
     """Select a subset of reflections, create and Ih table and update the
     model components."""
-    refl_for_scaling, selection = self._scaling_subset(self.reflection_table,
-      self.params)
-    self._Ih_table = SingleIhTable(refl_for_scaling, self.space_group,
-      weighting_scheme=self.params.weighting.weighting_scheme)
+    selection = self._scaling_subset(self.reflection_table, self.params)
+    self._Ih_table = SingleIhTable(self.reflection_table, self.space_group,
+      selection, self.params.weighting.weighting_scheme)
     if self.params.weighting.error_model_params:
       self.update_error_model(self.params.weighting.error_model_params)
     for component in self.components.itervalues():
@@ -431,8 +429,7 @@ class MultiScalerBase(ScalerBase):
     self._params = params
     self._experiments = experiments[0]
     logger.info('Determining symmetry equivalent reflections across datasets.\n')
-    self._Ih_table = JointIhTable([x.Ih_table for x in self.single_scalers],
-      self.space_group)
+    self._Ih_table = JointIhTable([x.Ih_table for x in self.single_scalers])
 
   def calculate_restraints(self, apm):
     """Calculate a restraints residuals/gradient vector for multiple datasets."""

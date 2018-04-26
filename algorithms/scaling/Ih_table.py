@@ -169,12 +169,12 @@ class SingleIhTable(IhTableBase):
   """Class to create an Ih_table. This is the default
   data structure used for scaling a single sweep."""
 
-  def __init__(self, reflection_table, space_group, weighting_scheme=None):
+  def __init__(self, reflection_table, space_group, selection=None, weighting_scheme=None):
     super(SingleIhTable, self).__init__()
     self._nonzero_weights = None
     self.weighting_scheme = weighting_scheme
     self.space_group = space_group
-    self._Ih_table = self._create_Ih_table(reflection_table)
+    self._Ih_table = self._create_Ih_table(reflection_table, selection)
     self.map_indices_to_asu()
     self._h_index_matrix, self._h_expand_matrix = self._assign_h_matrices()
     if not 'Ih_values' in reflection_table.keys():
@@ -198,7 +198,7 @@ class SingleIhTable(IhTableBase):
     self._nonzero_weights.set_selected(new_selected_nzweights, True)
     return self
 
-  def _create_Ih_table(self, refl_table):
+  def _create_Ih_table(self, refl_table, selection):
     """Create an Ih_table from the reflection table and optionally weights."""
     Ih_table = flex.reflection_table()
     for col in ['intensity', 'inverse_scale_factor', 'variance', 'miller_index']:
@@ -214,6 +214,8 @@ class SingleIhTable(IhTableBase):
       refl_table.get_flags(refl_table.flags.user_excluded_in_scaling)
       | refl_table.get_flags(refl_table.flags.excluded_for_scaling)
       | refl_table.get_flags(refl_table.flags.outlier_in_scaling))
+    if selection:
+      nonzero_weights_sel = nonzero_weights_sel & selection
     Ih_table = Ih_table.select(nonzero_weights_sel)
     if self.weighting_scheme == 'unity':
       Ih_table['weights'] = flex.double(Ih_table.size(), 1.0)
@@ -294,10 +296,10 @@ class JointIhTable(IhTableBase):
   """Class to expand the datastructure for scaling multiple
   datasets together."""
 
-  def __init__(self, Ih_table_list, space_group):
+  def __init__(self, Ih_table_list):
     super(JointIhTable, self).__init__()
     self._Ih_tables = Ih_table_list
-    self.space_group = space_group
+    self.space_group = self._Ih_tables[0].space_group
     self.weighting_scheme = self._Ih_tables[0].weighting_scheme
     self._Ih_table = self._create_Ih_table()
 

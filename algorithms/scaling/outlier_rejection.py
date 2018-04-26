@@ -1,7 +1,6 @@
 """
 Module of uoutlier rejection algorithms.
 """
-from __future__ import print_function
 from dials.array_family import flex
 from dials.algorithms.scaling.Ih_table import SingleIhTable
 

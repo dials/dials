@@ -57,7 +57,7 @@ def joint_test_input(large_reflection_table, small_reflection_table, test_sg):
     weighting_scheme='unity')
   Ih_table_2 = SingleIhTable(small_reflection_table, test_sg,
     weighting_scheme='unity')
-  return Ih_table_1, Ih_table_2, test_sg
+  return Ih_table_1, Ih_table_2
 
 def test_Ih_table(large_reflection_table, test_sg):
   """Test for Ih_table datastructure. Upon initialisation, Ih_table should set
@@ -135,7 +135,7 @@ def test_Ih_table(large_reflection_table, test_sg):
   # they would be. Test that these are set after Ih table is initialised.
   reflection_table['Ih_values'] = flex.double(
     [10.0, 5.0, 5.0, 6.0, 3.0, 9.0, 9.0])
-  Ih_table = SingleIhTable(reflection_table, test_sg, weights)
+  Ih_table = SingleIhTable(reflection_table, test_sg, weighting_scheme='unity')
   assert list(Ih_table.Ih_values) == list(flex.double(
     [10.0, 5.0, 5.0, 6.0, 3.0, 9.0, 9.0]))
 
@@ -167,7 +167,7 @@ def test_iterative_weighting(large_reflection_table, test_sg):
 
 def test_set_Ih_values_to_target(joint_test_input):
   """Test the setting of Ih values for targeted scaling."""
-  target_Ih_table, Ih_table_2, _ = joint_test_input
+  target_Ih_table, Ih_table_2 = joint_test_input
 
   # First check that values are set up correctly.
   assert list(target_Ih_table.Ih_values) == [90.0, 100.0, 90.0, 60.0, 30.0,
@@ -182,8 +182,8 @@ def test_new_joint_Ih_table(joint_test_input):
   """Test that the joint_Ih_table datastructure correctly combined the data
   from two reflection tables."""
 
-  Ih_table_1, Ih_table_2, sg = joint_test_input
-  Ih_table = JointIhTable([Ih_table_1, Ih_table_2], sg)
+  Ih_table_1, Ih_table_2 = joint_test_input
+  Ih_table = JointIhTable([Ih_table_1, Ih_table_2])
 
   # Test for correct setup and calc_Ih method.
   assert list(Ih_table.asu_miller_index) == list(flex.miller_index(
