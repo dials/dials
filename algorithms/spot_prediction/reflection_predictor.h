@@ -566,7 +566,7 @@ namespace dials { namespace algorithms {
         int i = frame - offset;
         if (i < 0) i = 0;
         if (i >= A.size()-1) i = A.size() - 2;
-        append_for_image(predictions, frame, A[i], A[i+1], s0[i], s0[i+1]);
+        append_for_image(predictions, frame, A[i], A[i+1], s0[i], s0[i+1], S[i], S[i+1]);
       }
 
       // Return the reflection table
@@ -602,7 +602,7 @@ namespace dials { namespace algorithms {
       prediction_data predictions(table);
 
       // Get the array range and loop through all the images
-      append_for_image(predictions, frame, A1, A2, s0a, s0b);
+      append_for_image(predictions, frame, A1, A2, s0a, s0b, S1, S2);
 
       // Return the reflection table
       return table;
@@ -693,8 +693,8 @@ namespace dials { namespace algorithms {
   private:
 
     /**
-     * Helper function to compute the setting matrix and the beginning and end
-     * of a frame.
+     * Helper function to compute the crystal setting matrix at the beginning
+     * and end of a frame.
      */
     void compute_setting_matrices(
         mat3<double> &A1, mat3<double> &A2,
@@ -712,6 +712,27 @@ namespace dials { namespace algorithms {
       mat3<double> r_end = axis_and_angle_as_matrix(m2, phi_end);
       A1 = r_setting * r_beg * r_fixed * A1;
       A2 = r_setting * r_end * r_fixed * A2;
+    }
+
+    /**
+     * Helper function to compute the crystal setting matrix at the beginning
+     * and end of a frame when the goniometer setting rotation differs
+     */
+    void compute_setting_matrices(
+        mat3<double> &A1, mat3<double> &A2, mat3<double> &S1, mat3<double> &S2,
+        int frame) const {
+
+      // Get the rotation axis and beam vector
+      vec3<double> m2 = goniometer_.get_rotation_axis_datum();
+
+      // Calculate the setting matrix at the beginning and end
+      double phi_beg = scan_.get_angle_from_array_index(frame);
+      double phi_end = scan_.get_angle_from_array_index(frame + 1);
+      mat3<double> r_fixed =  goniometer_.get_fixed_rotation();
+      mat3<double> r_beg = axis_and_angle_as_matrix(m2, phi_beg);
+      mat3<double> r_end = axis_and_angle_as_matrix(m2, phi_end);
+      A1 = S1 * r_beg * r_fixed * A1;
+      A2 = S2 * r_end * r_fixed * A2;
     }
 
     /**
@@ -745,14 +766,17 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * For the given image with start and end A matrices and s0 vectors,
-     * generate the indices and do the prediction.
+     * For the given image with start and end A matrices, s0 vectors, and
+     * goniometer setting rotations S, generate the indices and do the
+     * prediction.
      * @param p The reflection data
      * @param frame The image frame to predict on.
      * @param A1 The start UB matrix
      * @param A2 The end UB matrix
      * @param s0a The start s0 vector
      * @param s0b The end s0 vector
+     * @param S1 The start S matrix
+     * @param S2 The end S matrix
      */
     void append_for_image(
         prediction_data &p,
@@ -760,11 +784,13 @@ namespace dials { namespace algorithms {
         mat3<double> A1,
         mat3<double> A2,
         vec3<double> s0a,
-        vec3<double> s0b) const {
+        vec3<double> s0b,
+        mat3<double> S1,
+        mat3<double> S2) const {
 
       // Get the rotation axis
       vec3<double> m2 = goniometer_.get_rotation_axis_datum();
-      compute_setting_matrices(A1, A2, frame);
+      compute_setting_matrices(A1, A2, S1, S2, frame);
 
       // Construct the index generator and do the predictions for each index
       ReekeIndexGenerator indices(A1, A2, space_group_type_, m2, s0a, s0b,

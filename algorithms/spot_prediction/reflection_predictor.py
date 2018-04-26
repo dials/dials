@@ -109,7 +109,7 @@ class ReflectionPredictor(object):
           margin=margin,
           padding=padding)
 
-        if bm_nsp == 0:
+        if bm_nsp == 0 and gn_nsp == 0:
           # Only varying crystal
           A = [experiment.crystal.get_A_at_scan_point(i) for i in
                  range(experiment.crystal.num_scan_points)]
