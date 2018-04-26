@@ -406,35 +406,60 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
     return
 
   # called by refiner.run for setting the crystal scan points
-  def get_UB(self, obs_image_number, experiment_id):
+  def get_varying_UB(self, obs_image_numbers, experiment_id):
     """Extract the setting matrix from the contained scan-dependent crystal
     parameterisations at specified image number."""
+
+    if not (self._varying_xl_unit_cells or self._varying_xl_orientations):
+      return None
 
     # identify which crystal parameterisations to use for this experiment
     xl_op = self._get_xl_orientation_parameterisation(experiment_id)
     xl_ucp = self._get_xl_unit_cell_parameterisation(experiment_id)
 
-    # model states at current frame
-    U = self._get_state_from_parameterisation(xl_op, obs_image_number)
-    if U is None: U = matrix.sqr(self._experiments[experiment_id].crystal.get_U())
-    B = self._get_state_from_parameterisation(xl_ucp, obs_image_number)
-    if B is None: B = matrix.sqr(self._experiments[experiment_id].crystal.get_B())
+    UB_list=[]
+    for i in obs_image_numbers:
+      U = self._get_state_from_parameterisation(xl_op, i)
+      B = self._get_state_from_parameterisation(xl_ucp, i)
+      UB_list.append(U*B)
 
-    return U*B
+    return UB_list
 
   # called by refiner.run for setting the beam scan points
-  def get_s0(self, obs_image_number, experiment_id):
+  def get_varying_s0(self, obs_image_numbers, experiment_id):
     """Extract the s0 vector from the contained scan-dependent beam
     parameterisation at specified image number."""
+
+    if not self._varying_beams:
+      return None
 
     # identify which beam parameterisation to use for this experiment
     bp = self._get_beam_parameterisation(experiment_id)
 
-    # model states at current frame
-    s0 = self._get_state_from_parameterisation(bp, obs_image_number)
-    if s0 is None: s0 = matrix.col(self._experiments[experiment_id].beam.get_s0())
+    s0_list = []
+    for i in obs_image_numbers:
+      s0 = self._get_state_from_parameterisation(bp, i)
+      s0_list.append(s0)
 
-    return s0
+    return s0_list
+
+  # called by refiner.run for setting the goniometer scan points
+  def get_varying_setting_rotation(self, obs_image_numbers, experiment_id):
+    """Extract the S matrix from the contained scan-dependent goniometer
+    parameterisation at specified image number."""
+
+    if not self._varying_goniometers:
+      return None
+
+    # identify which goniometer parameterisation to use for this experiment
+    gp = self._get_goniometer_parameterisation(experiment_id)
+
+    S_list = []
+    for i in obs_image_numbers:
+      S = self._get_state_from_parameterisation(gp, i)
+      S_list.append(S)
+
+    return S_list
 
   # overloaded for the scan-varying case
   def _get_model_data_for_experiment(self, experiment, reflections):

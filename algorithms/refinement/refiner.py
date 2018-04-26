@@ -2163,16 +2163,23 @@ class Refiner(object):
     if isinstance(self._pred_param, ScanVaryingPredictionParameterisation):
       for iexp, exp in enumerate(self._experiments):
         ar_range = exp.scan.get_array_range()
+        obs_image_numbers = range(ar_range[0], ar_range[1]+1)
 
         # write scan-varying s0 vectors back to beam models
-        s0_list = [self._pred_param.get_s0(t, iexp) for t in range(ar_range[0],
-                                                            ar_range[1]+1)]
-        exp.beam.set_s0_at_scan_points(s0_list)
+        s0_list = self._pred_param.get_varying_s0(obs_image_numbers, iexp)
+        if s0_list is not None:
+          exp.beam.set_s0_at_scan_points(s0_list)
 
-        # write scan-varying setting matrices back to crystal models
-        A_list = [self._pred_param.get_UB(t, iexp) for t in range(ar_range[0],
-                                                            ar_range[1]+1)]
-        exp.crystal.set_A_at_scan_points(A_list)
+        # write scan-varying setting rotation matrices back to goniometer models
+        S_list = self._pred_param.get_varying_setting_rotation(
+            obs_image_numbers, iexp)
+        if S_list is not None:
+          exp.goniometer.set_setting_rotation_at_scan_points(S_list)
+
+        # write scan-varying crystal setting matrices back to crystal models
+        A_list = self._pred_param.get_varying_UB(obs_image_numbers, iexp)
+        if A_list is not None:
+          exp.crystal.set_A_at_scan_points(A_list)
 
         # get state covariance matrices the whole range of images. We select
         # the first element of this at each image because crystal scan-varying
