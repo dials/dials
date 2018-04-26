@@ -536,18 +536,20 @@ namespace dials { namespace algorithms {
 
     /**
      * Predict all the reflections given arrays of models that are allowed to
-     * vary. At the moment this consists of the UB matrix and the s0 vector, but
-     * this will be extended in future to include S, the goniometer setting
+     * vary, namely the UB matrix, s0 vector and S, the goniometer setting
      * rotation matrix.
      * @param A The UB matrix recorded at scan points
      * @param s0 The s0 vector recorded at scan points
+     * @param S The setting rotation matrix recorded at scan points
      * @returns The reflection table
      */
     af::reflection_table for_varying_models(
         const af::const_ref< mat3<double> > &A,
-        const af::const_ref< vec3<double> > &s0) const {
+        const af::const_ref< vec3<double> > &s0,
+        const af::const_ref< mat3<double> > &S) const {
       DIALS_ASSERT(A.size() == scan_.get_num_images() + 1);
       DIALS_ASSERT(s0.size() == A.size());
+      DIALS_ASSERT(S.size() == A.size());
 
       // Create the table and local stuff
       af::reflection_table table;
@@ -573,12 +575,15 @@ namespace dials { namespace algorithms {
 
     /**
      * Predict all the reflections on a single image given the start and end
-     * models (currently consisting of the UB matrices and s0 vectors)
+     * models (consisting of the UB matrices, s0 vectors and goniometer setting
+     * rotations S)
      * @param frame The frame number
      * @param A1 The start UB matrix
      * @param A2 The end UB matrix
      * @param s0a The start s0 vector
      * @param s0b The start s0 vector
+     * @param S1 The start S matrix
+     * @param S2 The end S matrix
      * @returns The reflection table
      */
     af::reflection_table for_varying_models_on_single_image(
@@ -586,7 +591,9 @@ namespace dials { namespace algorithms {
         const mat3<double> &A1,
         const mat3<double> &A2,
         const vec3<double> &s0a,
-        const vec3<double> &s0b) const {
+        const vec3<double> &s0b,
+        const mat3<double> &S1,
+        const mat3<double> &S2) const {
       vec2<int> array_range = scan_.get_array_range();
       DIALS_ASSERT(frame >= array_range[0] && frame < array_range[1]);
 

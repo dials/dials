@@ -98,6 +98,7 @@ class ReflectionPredictor(object):
     if isinstance(experiment.imageset, ImageSweep):
       xl_nsp = experiment.crystal.num_scan_points
       bm_nsp = experiment.beam.num_scan_points
+      gn_nsp = experiment.goniometer.num_scan_points
       nim = experiment.scan.get_num_images()
 
       sv_compatible = (xl_nsp == nim + 1) or (bm_nsp == nim + 1)
@@ -128,11 +129,15 @@ class ReflectionPredictor(object):
                  range(experiment.beam.num_scan_points)]
           else:
             s0 = [experiment.beam.get_s0() for i in range(nim + 1)]
+          if gn_nsp == nim + 1:
+            S =  [experiment.goniometer.get_setting_rotation_at_scan_point(i)
+                  for i in range(experiment.goniometer.num_scan_points)]
           predict = Predictor(
             "scan varying model prediction",
             lambda: predictor.for_varying_models(
                 flex.mat3_double(A),
-                flex.vec3_double(s0)))
+                flex.vec3_double(s0),
+                flex.mat3_double(S)))
       else:
         predictor = ScanStaticReflectionPredictor(
           experiment,
