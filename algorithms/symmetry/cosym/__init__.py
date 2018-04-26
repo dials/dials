@@ -592,7 +592,8 @@ class analyse_datasets(object):
       plot((coord_x, coord_y, coord_z), labels=self.cluster_labels, plot_name='xyz.png')
       plot((coord_reduced_x, coord_reduced_y, coord_reduced_z), labels=self.cluster_labels, plot_name='xyz_pca.png')
 
-def plot(coords, labels=None, show=False, plot_name=None):
+def plot(coords, labels=None, plot_centroids=True, plot_all=True, show=False, plot_name=None):
+  assert plot_centroids or plot_all
   assert len(coords) >= 2
 
   coord_x = coords[0]
@@ -630,10 +631,12 @@ def plot(coords, labels=None, show=False, plot_name=None):
       col = '0.25' # mid-grey
       markersize = 1
       marker = '+'
+      alpha = 0.1
       #continue
     else:
       markersize = 2
       marker = 'o'
+      alpha = 0.5
     if 0 and not isinstance(col, basestring) and len(col) == 4:
       # darken the edges
       frac = 0.75
@@ -641,15 +644,17 @@ def plot(coords, labels=None, show=False, plot_name=None):
     else:
       edgecolor = col
     if coord_z is None:
-      ax.scatter(coord_x.select(isel), coord_y.select(isel),
-                 s=markersize, marker=marker, c=col, edgecolor=edgecolor, alpha=0.5)
-      if k >= 0:
+      if plot_all:
+        ax.scatter(coord_x.select(isel), coord_y.select(isel),
+                   s=markersize, marker=marker, c=col, edgecolor=edgecolor, alpha=alpha)
+      if plot_centroids and k >= 0:
         ax.scatter(flex.mean(coord_x.select(isel)), flex.mean(coord_y.select(isel)),
                    s=markersize*10, marker=marker, c=col, edgecolor='black')
     else:
-      ax.scatter(coord_x.select(isel), coord_y.select(isel), coord_z.select(isel),
-                 s=markersize, marker=marker, c=col, edgecolor=edgecolor)
-      if k >= 0:
+      if plot_all:
+        ax.scatter(coord_x.select(isel), coord_y.select(isel), coord_z.select(isel),
+                   s=markersize, marker=marker, c=col, edgecolor=edgecolor, alpha=alpha)
+      if plot_centroids and k >= 0:
         ax.scatter(flex.mean(coord_x.select(isel)), flex.mean(coord_y.select(isel)),
                    flex.mean(coord_z.select(isel)),
                    s=markersize*10, marker=marker, c=col, edgecolor='black')
