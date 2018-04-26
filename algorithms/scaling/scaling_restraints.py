@@ -28,7 +28,7 @@ class MultiScalingRestraints(object):
     """Calculate restraints for jacobian."""
     residual_restraints = self.calculate_restraints()
     if residual_restraints:
-      n_restraints = residual_restraints[0].size() - residual_restraints[0].count(0.0)
+      n_restraints = residual_restraints[0].size()
       weights = flex.double([])
       restraints_vector = flex.double([])
       jacobian = sparse.matrix(n_restraints, self.apm.n_active_params)
@@ -52,10 +52,8 @@ class ScalingRestraints(object):
   def calculate_jacobian_restraints(self):
     """Calculate restraints for jacobian."""
     residual_restraints = self.calculate_restraints()
-    #n_restraints = residual_restraints.size() - residual_restraints.count(0.0)
     if residual_restraints:
-      n_restraints = residual_restraints[0].size() - residual_restraints[0].count(0.0)
-    #if n_restraints:
+      n_restraints = residual_restraints[0].size()
       weights = flex.double([])
       restraints_vector = flex.double([])
       jacobian = sparse.matrix(n_restraints, self.apm.n_active_params)

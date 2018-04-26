@@ -159,10 +159,10 @@ def test_Ih_table_nonzero_weights(large_reflection_table, test_sg):
     True, False, False, False]))
 
 @pytest.mark.skip(reason='Feature not yet implemented')
-def test_tukey_weighting(large_reflection_table, test_sg):
-  """Test the setting of biweights."""
+def test_iterative_weighting(large_reflection_table, test_sg):
+  """Test the setting of iterative weights."""
   reflection_table = large_reflection_table
-  _ = SingleIhTable(reflection_table, test_sg, weighting_scheme='tukey')
+  _ = SingleIhTable(reflection_table, test_sg, weighting_scheme='iterative')
   #assert list(Ih_table.weights) == [1.0] * 7
 
 def test_set_Ih_values_to_target(joint_test_input):

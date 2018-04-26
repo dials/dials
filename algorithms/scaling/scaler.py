@@ -10,7 +10,6 @@ A TargetScaler is used for targeted scaling.
 import abc
 import logging
 from dials.array_family import flex
-from dials.util.export_mtz import sum_partial_reflections
 from cctbx import crystal
 from scitbx import sparse
 from dials_scaling_helpers_ext import row_multiply
@@ -340,8 +339,8 @@ class SingleScalerBase(ScalerBase):
       not isinstance(caller, MultiScalerBase)):
       self._reflection_table = self.round_of_outlier_rejection(
         self._reflection_table)
-    if self.params.weighting.optimise_error_model:
-      self.Ih_table = SingleIhTable(self._reflection_table, self.space_group)
+    #if self.params.weighting.optimise_error_model:
+    #  self.Ih_table = SingleIhTable(self._reflection_table, self.space_group)
 
   def update_error_model(self, error_model_params):
     """Apply a correction to try to improve the error estimate."""
@@ -401,6 +400,7 @@ class SingleScalerBase(ScalerBase):
       component.update_reflection_data(self.reflection_table, selection)
 
   def perform_error_optimisation(self):
+    self.Ih_table = SingleIhTable(self._reflection_table, self.space_group)
     refinery = error_model_refinery(engine='SimpleLBFGS',
       target=ErrorModelTarget(BasicErrorModel(self.Ih_table)),
       max_iterations=100)
@@ -495,6 +495,8 @@ class MultiScalerBase(ScalerBase):
   def perform_error_optimisation(self):
     """Perform an optimisation of the sigma values."""
     for s_scaler in self.active_scalers:
+      s_scaler.Ih_table = SingleIhTable(s_scaler.reflection_table,
+        s_scaler.space_group)
       refinery = error_model_refinery(engine='SimpleLBFGS',
         target=ErrorModelTarget(BasicErrorModel(s_scaler.Ih_table)),
         max_iterations=100)

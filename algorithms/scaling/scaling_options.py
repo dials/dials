@@ -69,7 +69,7 @@ phil_scope = iotbx.phil.parse('''
       .help = "Option to use a d-value subset of reflections to determine scale factors"
   }
   weighting {
-    weighting_scheme = *invvar tukey unity
+    weighting_scheme = *invvar unity
       .type = choice
       .help = "Weighting scheme used during Ih calculation."
     optimise_error_model = False

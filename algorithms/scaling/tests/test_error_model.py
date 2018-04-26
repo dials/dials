@@ -5,6 +5,7 @@ from math import sqrt
 import pytest
 from libtbx.test_utils import approx_equal
 from dials.algorithms.scaling.error_model.error_model import BasicErrorModel
+from dials.algorithms.scaling.error_model.error_model_target import ErrorModelTarget
 from dials.algorithms.scaling.Ih_table import SingleIhTable
 from dials.array_family import flex
 from cctbx.sgtbx import space_group
@@ -82,3 +83,36 @@ def test_errormodel(large_reflection_table, test_sg):
   error_model = BasicErrorModel(Ih_table, n_bins=2)
   error_model.update_for_minimisation([1.0, 0.0])
   assert approx_equal(list(error_model.bin_variances), expected_bin_vars)
+
+def test_error_model_target(large_reflection_table, test_sg):
+  """Test the error model target."""
+  Ih_table = SingleIhTable(large_reflection_table, test_sg)
+
+  error_model = BasicErrorModel(Ih_table, n_bins=2)
+  error_model.update_for_minimisation([1.0, 0.05])
+  target = ErrorModelTarget(error_model)
+  # Test residual calculation
+  residuals = target.calculate_gradients()
+  assert residuals == (flex.double(2, 1.0) - error_model.bin_variances)**2
+
+  # Test gradient calculation against finite differences.
+  gradients = target.calculate_gradients()
+  gradient_fd = calculate_gradient_fd(target)
+  assert approx_equal(gradients, gradient_fd)
+
+def calculate_gradient_fd(target):
+  """Calculate gradient array with finite difference approach."""
+  delta = 1.0e-6
+  gradients = flex.double([0.0] * len(target.x))
+  #iterate over parameters, varying one at a time and calculating the gradient
+  for i in range(len(target.x)):
+    target.x[i] -= 0.5 * delta
+    target.predict()
+    R_low = target.calculate_residuals()
+    target.x[i] += delta
+    target.predict()
+    R_upper = target.calculate_residuals()
+    target.x[i] -= 0.5 * delta
+    target.predict()
+    gradients[i] = (flex.sum(R_upper) - flex.sum(R_low)) / delta
+  return gradients

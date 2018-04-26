@@ -27,6 +27,9 @@ class OutlierRejectionBase(object):
     self.space_group = space_group
     self.zmax = zmax
     self.outliers_list = flex.size_t([])
+    # First all outliers are unset, as the Ih_table will not
+    # usee reflections flagged as outliers.
+    self.unset_outlier_flags()
     self.do_outlier_rejection()
     self.set_outlier_flags()
 
@@ -34,14 +37,17 @@ class OutlierRejectionBase(object):
     """Return the reflection table."""
     return self.reflection_table
 
-  def set_outlier_flags(self):
-    """Set the outlier in scaling flag in the reflection table."""
+  def unset_outlier_flags(self):
+    """Unset the outlier_in_scaling flag in the reflection table."""
     already_outliers = self.reflection_table.get_flags(
       self.reflection_table.flags.outlier_in_scaling)
     already_sel = already_outliers == True
     if already_sel.count(True):
       self.reflection_table.unset_flags(already_sel,
         self.reflection_table.flags.outlier_in_scaling)
+
+  def set_outlier_flags(self):
+    """Set the outlier_in_scaling flag in the reflection table."""
     outlier_mask = flex.bool(self.reflection_table.size(), False)
     outlier_mask.set_selected(self.outliers_list, True)
     self.reflection_table.set_flags(outlier_mask,
@@ -124,7 +130,7 @@ class NormDevOutlierRejection(OutlierRejectionBase):
       ((1.0/w_sel)+((g_sel/wg2sum_others_sel)**2))**0.5)
     z_score = (norm_dev**2)**0.5
     # Want an array same size as Ih table.
-    all_z_scores = flex.double(Ih_table.size, 0.0) 
+    all_z_scores = flex.double(Ih_table.size, 0.0)
     all_z_scores.set_selected(sel.iselection(), z_score)
 
     outliers = flex.bool(sel.size(), False)
@@ -141,7 +147,7 @@ class NormDevOutlierRejection(OutlierRejectionBase):
           outliers.set_selected(outlier_index, True)
           other_indices = indices_of_group.select(~max_selecter)
           other_potential_outliers.extend(other_indices)
-    
+
     #Now determine location of outliers w.r.t initial reflection table order.
     nz_weights_isel = Ih_table.nonzero_weights.iselection()
     outlier_indices = nz_weights_isel.select(outliers)
