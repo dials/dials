@@ -177,7 +177,7 @@ class ScalingRefinery(object):
         self._scaler.experiments.scaling_model.set_scaling_model_as_scaled()
     elif self._scaler.id_ == 'multi' or self._scaler.id_ == 'target':
       if self._parameters.apm_list[0].var_cov_matrix: #test if has been set
-        for i, scaler in enumerate(self._scaler.single_scalers):
+        for i, scaler in enumerate(self._scaler.active_scalers):
           scaler.update_var_cov(self._parameters.apm_list[i])
           scaler.experiments.scaling_model.set_scaling_model_as_scaled()
 

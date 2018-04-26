@@ -6,6 +6,7 @@ and have implementations of residual/gradient calculations for
 scaling.
 """
 from dials.array_family import flex
+from scitbx import sparse
 from dials_scaling_helpers_ext import row_multiply
 from dials_scratch_scaling_ext import elementwise_square
 
@@ -83,12 +84,14 @@ class ScalingTarget(object):
     Ih_tab = self.scaler.Ih_table
     invsumgsq = 1.0 / ((Ih_tab.weights * ((Ih_tab.inverse_scale_factors)**2))
       * Ih_tab.h_index_matrix)
-    dIh = ((Ih_tab.intensities - (Ih_tab.Ih_values * 2.0 * Ih_tab.inverse_scale_factors))) * Ih_tab.weights
+    dIh = ((Ih_tab.intensities - (Ih_tab.Ih_values * 2.0 *
+      Ih_tab.inverse_scale_factors))) * Ih_tab.weights
     dIh_g = row_multiply(self.apm.derivatives, dIh)
     dIh_red = dIh_g.transpose() * Ih_tab.h_index_matrix
     dIh_by_dpi = row_multiply(dIh_red.transpose(), invsumgsq)
     dIh_by_dpi = dIh_by_dpi.transpose() * Ih_tab.h_expand_matrix
-    term1 = row_multiply(dIh_by_dpi.transpose(), -1.0 * Ih_tab.inverse_scale_factors)
+    term1 = row_multiply(dIh_by_dpi.transpose(),
+      -1.0 * Ih_tab.inverse_scale_factors)
     term2 = row_multiply(self.apm.derivatives, Ih_tab.Ih_values)
     for i, col in enumerate(term2.cols()):
       term1[:, i] -= col # Sum columns to create the jacobian
@@ -112,7 +115,8 @@ class ScalingTarget(object):
     gsq = g * g * w
     v_inv = 1.0/(gsq * Ih_tab.h_index_matrix) #len(n_unique_groups)
     Ihprime_numerator = h_idx_transpose * row_multiply(gprime, dIh)
-    Ihprime = row_multiply(Ihprime_numerator, v_inv) #n_unique_groups x n_params matrix
+    Ihprime = row_multiply(Ihprime_numerator, v_inv)
+    #n_unique_groups x n_params matrix
 
     Ihprime_expanded = (Ihprime.transpose() * Ih_tab.h_expand_matrix).transpose()
     a = row_multiply(gprime, Ih)
@@ -141,7 +145,8 @@ class ScalingTarget(object):
       (2.0 * w * g))), v_inv) #len n_unique_groups x n_params
     E = (-1.0 * reduced_prefactor * Ihprime) * vprime_over_v
 
-    #E = (2.0 * r * g * Ih_tab.h_index_matrix) * row_multiply(Ihprime, vprime_over_v) #len n_params
+    #E = (2.0 * r * g * Ih_tab.h_index_matrix) * row_multiply(Ihprime,
+    # vprime_over_v) #len n_params
 
     # n_unique_groups x n_params matrices
     if self.apm.curvatures:
@@ -238,5 +243,14 @@ class ScalingTargetFixedIH(ScalingTarget):
         Ih_tab.Ih_values))
     return R
 
-  def compute_residuals_and_gradients(self):
-    assert 0, 'method not yet implemented for targeted scaling'
+  def calculate_jacobian(self):
+    """Calculate the jacobian matrix, size Ih_table.size by len(self.apm.x)."""
+    n_refl = sum([i.n_obs for i in self.apm.apm_list])
+    jacobian = sparse.matrix(n_refl, self.apm.n_active_params)
+    n_cumul_rows = 0
+    for i, scaler in enumerate(self.scaler.unscaled_scalers):
+      apm = self.apm.apm_list[i]
+      j = row_multiply(apm.derivatives, -1.0 * scaler.Ih_table.Ih_values)
+      jacobian.assign_block(j, n_cumul_rows, self.apm.apm_data[i]['start_idx'])
+      n_cumul_rows += apm.n_obs
+    return jacobian
