@@ -106,6 +106,17 @@ def show_beam(detector, beam):
 
   return s
 
+def show_goniometer(goniometer):
+
+  # standard static goniometer model string
+  s = str(goniometer)
+
+  # report whether the goniometer is scan-varying
+  if goniometer.num_scan_points > 0:
+     s += ("    Setting rotation sampled at " +
+     str(goniometer.num_scan_points) + " scan points\n")
+
+  return s
 
 def run(args):
   import dials.util.banner
@@ -186,7 +197,7 @@ def show_experiments(experiments, show_panel_distance=False,
     if expt.scan is not None:
       text.append(str(expt.scan))
     if expt.goniometer is not None:
-      text.append(str(expt.goniometer))
+      text.append(show_goniometer(expt.goniometer))
     from cStringIO import StringIO
     s = StringIO()
     expt.crystal.show(show_scan_varying=show_scan_varying, out=s)
