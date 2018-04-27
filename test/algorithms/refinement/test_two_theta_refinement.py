@@ -18,6 +18,7 @@ from libtbx.test_utils import approx_equal
 from math import pi
 from copy import deepcopy
 
+from dxtbx.model.experiment_list import ExperimentList, Experiment
 from dials.algorithms.refinement.two_theta_refiner import ( TwoThetaTarget,
   TwoThetaReflectionManager, TwoThetaExperimentsPredictor,
   TwoThetaPredictionParameterisation)
@@ -76,12 +77,6 @@ def test_fd_derivatives():
 
   # Import model builder
   from dials.test.algorithms.refinement.setup_geometry import Extract
-
-  # Imports for reflection prediction
-  from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
-  from dxtbx.model.experiment_list import ExperimentList, Experiment
-  from dials.algorithms.refinement.prediction import ScansRayPredictor, \
-    ExperimentsPredictor
 
   # Create models
   overrides = """geometry.parameters.crystal.a.length.range = 10 50
@@ -215,8 +210,6 @@ def test_refinement(dials_regression):
   im_width = scan.get_oscillation(deg=False)[1]
   assert sweep_range == (0., pi)
   assert approx_equal(im_width, 0.1 * pi / 180.)
-
-  from dxtbx.model.experiment_list import ExperimentList, Experiment
 
   # Build an experiment list
   experiments = ExperimentList()
