@@ -240,9 +240,8 @@ def run(args):
       if params.space_group is not None:
         space_group_info = params.space_group.primitive_setting()
         if not space_group_info.group().is_compatible_unit_cell(intensities.unit_cell()):
-          logger.info('Skipping data set %s' %file_name)
           logger.info(
-            'Incompatible space group and unit cell: %s, %s' %(
+            'Skipping data set - incompatible space group and unit cell: %s, %s' %(
               space_group_info, intensities.unit_cell()))
           continue
       else:
