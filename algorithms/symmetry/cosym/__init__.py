@@ -488,6 +488,10 @@ class analyse_datasets(object):
       self.cluster_labels.set_selected(flex.size_t(cluster.tolist()), cluster_id)
       cluster_id += 1
 
+    if flex.max(self.cluster_labels) == 0:
+      # assume single cluster
+      return self.cluster_labels
+
     cluster_centroids = []
     X = self.coords.as_numpy_array()
     for i in set(self.cluster_labels):
