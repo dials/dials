@@ -45,4 +45,3 @@ def test_cosym_target(space_group):
     assert f < f0
     assert g.all_approx_equal(0, 1e-4)
     assert g_fd.all_approx_equal(0, 1e-4)
-

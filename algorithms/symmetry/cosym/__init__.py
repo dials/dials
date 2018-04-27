@@ -334,11 +334,8 @@ class analyse_datasets(object):
 
     space_groups = []
 
-    reindexing_ops = []
-
     sym_ops = [sgtbx.rt_mx(s).new_denominators(1, 12) for s in self.target.get_sym_ops()]
     self.space_groups = space_groups
-    self.reindexing_ops = reindexing_ops
 
     reindexing_ops = {}
     space_groups = {}
