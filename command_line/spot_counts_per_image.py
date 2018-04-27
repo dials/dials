@@ -1,5 +1,4 @@
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 from dials.util.options import OptionParser
@@ -31,6 +30,8 @@ plot = None
 json = None
   .type = path
 split_json = False
+  .type = bool
+joint_json = True
   .type = bool
 individual_plots = False
   .type = bool
@@ -105,7 +106,7 @@ def run(args):
         start, end = params.json.split('.')
         with open('%s_%s.%s' % (start, k, end), 'wb') as fp:
           json.dump(stats.__dict__[k], fp)
-    else:
+    if params.joint_json:
       with open(params.json, 'wb') as fp:
         json.dump(stats.__dict__, fp)
   if params.plot:
