@@ -13,12 +13,18 @@ from __future__ import print_function
 #  included in the root directory of this package.
 
 from cctbx.array_family import flex
+import logging
 import math
 
+logger = logging.getLogger(__name__)
 
 def refine(params, reflections, experiments,
            verbosity=0, debug_plots=False):
   detector = experiments.detectors()[0]
+  if params.refinement.parameterisation.scan_varying:
+    logger.warn(
+      'scan_varying=True not supported in indexing: setting scan_varying=False')
+    params.refinement.parameterisation.scan_varying = False
 
   from dials.algorithms.refinement import RefinerFactory
   refiner = RefinerFactory.from_parameters_data_experiments(
