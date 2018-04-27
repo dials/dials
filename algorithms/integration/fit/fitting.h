@@ -201,7 +201,7 @@ namespace dials { namespace algorithms {
         double eps,
         std::size_t maxiter) {
 
-      const double TINY = 1e-7;
+      const double TINY = 1e-10;
       const double MASSIVE = 1e10;
 
       // Save the max iter
@@ -218,32 +218,32 @@ namespace dials { namespace algorithms {
       double sumd = 0;
       double sumb = 0;
       double sump = 0;
-      double mind = -1;
-      double minI = MASSIVE;
+      /* double mind = -1; */
+      /* double minI = MASSIVE; */
       for (std::size_t i = 0; i < m.size(); ++i) {
         if (m[i]) {
           DIALS_ASSERT(p[i] >= 0);
-          DIALS_ASSERT(b[i] >= 0);
-          DIALS_ASSERT(d[i] >= 0);
+          /* DIALS_ASSERT(b[i] >= 0); */
+          /* DIALS_ASSERT(d[i] >= 0); */
           sumd += d[i];
           sumb += b[i];
           sump += p[i];
-          if (mind < 0 || d[i] < mind) mind = d[i];
-          if (p[i] > 0 && b[i] / p[i] < minI) minI = b[i] / p[i];
+          /* if (mind < 0 || d[i] < mind) mind = d[i]; */
+          /* if (p[i] > 0 && b[i] / p[i] < minI) minI = b[i] / p[i]; */
         }
       }
-      minI = -minI;
+      /* minI = -minI; */
       DIALS_ASSERT(sumb >= 0);
       DIALS_ASSERT(sumd >= 0);
       DIALS_ASSERT(sump > 0);
-      DIALS_ASSERT(minI <= 0);
+      /* DIALS_ASSERT(minI <= 0); */
 
       // Iterate to calculate the intensity. Exit if intensity goes less
       // than zero or if the tolerance or number of iteration is reached.
       double I0 = sumd - sumb;
-      if (I0 < minI + TINY) {
-        I0 = minI + TINY;
-      }
+      /* if (I0 < minI + TINY) { */
+      /*   I0 = minI + TINY; */
+      /* } */
       double I = 0.0;
       double V = 0.0;
       for (niter_ = 0; niter_ < maxiter; ++niter_) {
@@ -251,26 +251,24 @@ namespace dials { namespace algorithms {
         double sum2 = 0.0;
         for (std::size_t i = 0; i < p.size(); ++i) {
           if (m[i] && p[i] > 0) {
-            double v = b[i] + I0 * p[i];
+            double v = TINY + std::abs(b[i]) + std::abs(I0 * p[i]);
             DIALS_ASSERT(v > 0);
-            if (v > 0) {
-              sum1 += (d[i] - b[i]) * p[i] / v;
-              sum2 += p[i] * p[i] / v;
-            }
+            sum1 += (d[i] - b[i]) * p[i] / v;
+            sum2 += p[i] * p[i] / v;
           }
         }
         DIALS_ASSERT(sum2 > 0);
         I = sum1 / sum2;
-        V = std::abs(I) + sumb;
+        V = std::abs(I) + std::abs(sumb);
         if ((error_ = std::abs(I - I0)) < eps) {
           break;
         }
-        if (I < minI + TINY) {
-          I = (sumd - sumb) / sump;
-          V = std::abs(I) + sumb;
-          correlation_ = 0;
-          break;
-        }
+        /* if (I < minI + TINY) { */
+        /*   I = (sumd - sumb) / sump; */
+        /*   V = std::abs(I) + sumb; */
+        /*   correlation_ = 0; */
+        /*   break; */
+        /* } */
         I0 = I;
       }
       DIALS_ASSERT(V >= 0);
