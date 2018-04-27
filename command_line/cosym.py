@@ -120,9 +120,21 @@ def run(args):
       for i in range(len(experiments)):
         reflections.append(reflections_input.select(reflections_input['id'] == i))
 
+    if len(experiments) > len(reflections):
+      flattened_reflections = []
+      for refl in reflections:
+        for i in range(0, flex.max(refl['id'])+1):
+          sel = refl['id'] == i
+          flattened_reflections.append(refl.select(sel))
+      reflections = flattened_reflections
+
     assert len(experiments) == len(reflections)
 
     from cctbx import crystal, miller
+    i_refl = 0
+    for i_expt in enumerate(experiments):
+      refl = reflections[i_refl]
+
     for expt, refl in zip(experiments, reflections):
       crystal_symmetry = crystal.symmetry(
         unit_cell=expt.crystal.get_unit_cell(),
