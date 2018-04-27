@@ -297,9 +297,29 @@ def run(args):
     elif len(cluster_lattice_ids) > len(largest_cluster_lattice_ids):
       largest_cluster_lattice_ids = cluster_lattice_ids
 
-  logger.info(
-    'Selecting subset of data for cosym analysis: %s' %str(largest_cluster_lattice_ids))
-  datasets = [datasets[i] for i in largest_cluster_lattice_ids]
+  dataset_selection = largest_cluster_lattice_ids
+  if len(dataset_selection) < len(datasets):
+    logger.info(
+      'Selecting subset of data for cosym analysis: %s' %str(dataset_selection))
+    datasets = [datasets[i] for i in dataset_selection]
+
+  if params.space_group is None:
+    # per-dataset change of basis operator to ensure all consistent
+    change_of_basis_ops = []
+    for i, dataset in enumerate(datasets):
+      metric_subgroups = sgtbx.lattice_symmetry.metric_subgroups(dataset, max_delta=5)
+      subgroup = metric_subgroups.result_groups[0]
+      cb_op_inp_best = subgroup['cb_op_inp_best']
+      datasets[i] = dataset.change_basis(cb_op_inp_best)
+      change_of_basis_ops.append(cb_op_inp_best)
+
+    cb_op_ref_min = datasets[0].change_of_basis_op_to_niggli_cell()
+    for i, dataset in enumerate(datasets):
+      datasets[i] = dataset.change_basis(cb_op_ref_min).customized_copy(
+        space_group_info=sgtbx.space_group_info('P1'))
+      change_of_basis_ops[i] = cb_op_ref_min * change_of_basis_ops[i]
+  else:
+    change_of_basis_ops = [sgtbx.change_of_basis_op()] * len(datasets)
 
   result = analyse_datasets(datasets, params)
 
@@ -324,7 +344,6 @@ def run(args):
     logger.info(cb_op)
     logger.info(datasets)
 
-
   if (len(experiments) and len(reflections) and
       params.output.reflections is not None and
       params.output.experiments is not None):
@@ -337,12 +356,13 @@ def run(args):
     for cb_op, dataset_ids in reindexing_ops.iteritems():
       cb_op = sgtbx.change_of_basis_op(cb_op)
       for dataset_id in dataset_ids:
-        expt = experiments[dataset_id]
-        refl = reflections[dataset_id]
+        expt = experiments[dataset_selection[dataset_id]]
+        refl = reflections[dataset_selection[dataset_id]]
         reindexed_expt = copy.deepcopy(expt)
         refl_reindexed = copy.deepcopy(refl)
-        reindexed_expt.crystal = reindexed_expt.crystal.change_basis(cb_op)
-        refl_reindexed['miller_index'] = cb_op.apply(
+        cb_op_this = cb_op * change_of_basis_ops[dataset_id]
+        reindexed_expt.crystal = reindexed_expt.crystal.change_basis(cb_op_this)
+        refl_reindexed['miller_index'] = cb_op_this.apply(
           refl_reindexed['miller_index'])
         reindexed_experiments.append(reindexed_expt)
         refl_reindexed['id'] = flex.int(refl_reindexed.size(), expt_id)
@@ -358,15 +378,17 @@ def run(args):
     for cb_op, dataset_ids in reindexing_ops.iteritems():
       cb_op = sgtbx.change_of_basis_op(cb_op)
       for dataset_id in dataset_ids:
-        file_name = files[dataset_id]
+        file_name = files[dataset_selection[dataset_id]]
         basename = os.path.basename(file_name)
-        out_name = os.path.splitext(basename)[0] + params.output.suffix + '_' + str(dataset_id) + ".mtz"
+        out_name = os.path.splitext(
+          basename)[0] + params.output.suffix + '_' + str(dataset_selection[dataset_id]) + ".mtz"
         reader = any_reflection_file(file_name)
         assert reader.file_type() == 'ccp4_mtz'
         mtz_object = reader.file_content()
-        if not cb_op.is_identity_op():
-          logger.info('reindexing %s (%s)' %(file_name, cb_op.as_xyz()))
-          mtz_object.change_basis_in_place(cb_op)
+        cb_op_this = cb_op * change_of_basis_ops[dataset_id]
+        if not cb_op_this.is_identity_op():
+          logger.info('reindexing %s (%s)' %(file_name, cb_op_this.as_xyz()))
+          mtz_object.change_basis_in_place(cb_op_this)
         mtz_object.write(out_name)
 
 if __name__ == '__main__':
