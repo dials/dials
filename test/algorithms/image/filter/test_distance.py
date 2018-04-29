@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 import math
 
 def test():
-  from dials.algorithms.image.filter import manhatten_distance
+  from dials.algorithms.image.filter import manhattan_distance
   from scitbx.array_family import flex
 
   data = flex.bool(flex.grid(100, 100), True)
@@ -13,7 +13,7 @@ def test():
       if math.sqrt((j - 50)**2 + (i - 50)**2) <= 10.5:
         data[j,i] = False
 
-  distance = manhatten_distance(data)
+  distance = manhattan_distance(data)
 
   M = distance[1:-1,1:-1]
   D = data[1:-1,1:-1]
