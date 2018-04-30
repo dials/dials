@@ -42,8 +42,14 @@ class StateDerivativeCache(object):
     # Get the data from the cache
     entry = self._cache[parameterisation]
 
-    # Figure out the right flex array type
-    shape = entry[0][0].derivative.n
+    # Figure out the right flex array type from entries in the cache
+    shape = None
+    for e in entry:
+      if e:
+        shape = e[0].derivative.n
+        break
+    if shape is None:
+      raise TypeError("No model state derivatives found")
     if shape == (3, 1):
       arr_type = flex.vec3_double
       null = (0, 0, 0)
