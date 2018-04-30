@@ -19,6 +19,7 @@ from libtbx.containers import OrderedSet
 from dials.array_family import flex
 from cctbx import miller, crystal
 from scitbx import sparse
+from weighting import get_weighting_scheme
 
 class IhTableBase(object):
   """Base class that defines the interface of the datastructure."""
@@ -39,7 +40,7 @@ class IhTableBase(object):
     pass
 
   @abc.abstractmethod
-  def calc_Ih(self, update_weights=True):
+  def calc_Ih(self):
     """Calculate the current best estimate for I for each reflection group.
     update_weights flag should only affect behaviour if the weighting scheme
     is iterative."""
@@ -57,10 +58,10 @@ class IhTableBase(object):
 
   @weights.setter
   def weights(self, new_weights):
-    if new_weights.size() != self.weights.size():
+    if new_weights.size() != self.size:
       assert 0, '''attempting to set a new set of weights of different
       length than previous assignment: was %s, attempting %s''' % (
-        self.weights.size(), new_weights.size())
+        self.size, new_weights.size())
     self._Ih_table['weights'] = new_weights
 
   @property
@@ -149,14 +150,9 @@ class IhTableBase(object):
                   )**0.5) * error_params[0]
     self.weights = 1.0/(sigmaprime**2)
 
-  def apply_iterative_weights(self):
+  def update_weights(self):
     """Apply an iterative weighting scheme."""
-    ti = (self.intensities - (self.inverse_scale_factors * self.Ih_values))/(
-      self.inverse_scale_factors * self.Ih_values)
-    wi = (flex.double(self.size, 1.0) - ((ti/2.0*4.685)**2))**2
-    zero_sel = ti > 2.0*4.685
-    wi.set_selected(zero_sel, 0.0)
-    self.weights = wi
+    self.weighting_scheme.apply_iterative_weights()
 
   def select(self, selection):
     """Select a subset of the data and recalculate h_index_matrices,
@@ -172,15 +168,14 @@ class SingleIhTable(IhTableBase):
   def __init__(self, reflection_table, space_group, selection=None, weighting_scheme=None):
     super(SingleIhTable, self).__init__()
     self._nonzero_weights = None
-    self.weighting_scheme = weighting_scheme
     self.space_group = space_group
     self._Ih_table = self._create_Ih_table(reflection_table, selection)
+    self.weighting_scheme = get_weighting_scheme(self, weighting_scheme)
+    self.weighting_scheme.calculate_initial_weights()
     self.map_indices_to_asu()
     self._h_index_matrix, self._h_expand_matrix = self._assign_h_matrices()
     if not 'Ih_values' in reflection_table.keys():
-      self.calc_Ih(update_weights=False) #calculate a first estimate of Ih
-    if weighting_scheme == 'tukey':
-      self.apply_tukey_biweighting()
+      self.calc_Ih() #calculate a first estimate of Ih
 
   @property
   def nonzero_weights(self):
@@ -217,10 +212,10 @@ class SingleIhTable(IhTableBase):
     if selection:
       nonzero_weights_sel = nonzero_weights_sel & selection
     Ih_table = Ih_table.select(nonzero_weights_sel)
-    if self.weighting_scheme == 'unity':
-      Ih_table['weights'] = flex.double(Ih_table.size(), 1.0)
-    else:
-      Ih_table['weights'] = 1.0/Ih_table['variance']
+    #if self.weighting_scheme == 'unity':
+    #  Ih_table['weights'] = flex.double(Ih_table.size(), 1.0)
+    #else:
+    #  Ih_table['weights'] = 1.0/Ih_table['variance']
     self._nonzero_weights = nonzero_weights_sel
     return Ih_table
 
@@ -279,10 +274,8 @@ class SingleIhTable(IhTableBase):
     h_expand_matrix = h_index_matrix.transpose()
     return h_index_matrix, h_expand_matrix
 
-  def calc_Ih(self, update_weights=True):
+  def calc_Ih(self):
     """Calculate the current best estimate for I for each reflection group."""
-    if self.weighting_scheme == 'iterative' and update_weights:
-      self.apply_iterative_weights()
     scale_factors = self.inverse_scale_factors
     gsq = (((scale_factors)**2) * self.weights)
     sumgsq = gsq * self.h_index_matrix
@@ -290,7 +283,6 @@ class SingleIhTable(IhTableBase):
     sumgI = gI * self.h_index_matrix
     Ih = sumgI/sumgsq
     self._Ih_table['Ih_values'] = Ih * self.h_expand_matrix
-    
 
 class JointIhTable(IhTableBase):
   """Class to expand the datastructure for scaling multiple
@@ -302,6 +294,8 @@ class JointIhTable(IhTableBase):
     self.space_group = self._Ih_tables[0].space_group
     self.weighting_scheme = self._Ih_tables[0].weighting_scheme
     self._Ih_table = self._create_Ih_table()
+    self.weighting_scheme = get_weighting_scheme(self,
+      self._Ih_tables[0].weighting_scheme.weighting_scheme)
 
   def _create_Ih_table(self):
     """Construct a single Ih_table for the combined reflections, using a list
@@ -365,10 +359,8 @@ class JointIhTable(IhTableBase):
     total_h_expand_matrix = total_h_idx_matrix.transpose()
     return total_h_idx_matrix, total_h_expand_matrix
 
-  def calc_Ih(self, update_weights=True):
+  def calc_Ih(self):
     """Calculate the current best estimate for I for each reflection group."""
-    if self.weighting_scheme == 'iterative' and update_weights:
-      self.apply_iterative_weights()
     scales = flex.double([])
     for Ih_table in self._Ih_tables:
       scales.extend(Ih_table.inverse_scale_factors)

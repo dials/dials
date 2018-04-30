@@ -251,6 +251,7 @@ class SingleScalerBase(ScalerBase):
     if curvatures:
       apm.curvatures = basis_fn[2]
     self.Ih_table.inverse_scale_factors = basis_fn[0]
+    self.Ih_table.update_weights()
     self.Ih_table.calc_Ih()
 
   @staticmethod
@@ -533,6 +534,7 @@ class MultiScaler(MultiScalerBase):
         apm.derivatives.assign_block(basis_fn[1], start_row_no,
           apm.apm_data[i]['start_idx'])
         start_row_no += basis_fn[1].n_rows
+    self.Ih_table.update_weights()
     self.Ih_table.calc_Ih()
 
   def join_multiple_datasets(self):
@@ -575,6 +577,7 @@ class TargetScaler(MultiScalerBase):
       basis_fn = basis_function(apm.apm_list[i]).return_basis()
       apm.apm_list[i].derivatives = basis_fn[1]
       scaler.Ih_table.inverse_scale_factors = basis_fn[0]
+      scaler.Ih_table.update_weights()
 
   def join_multiple_datasets(self):
     '''method to create a joint reflection table'''

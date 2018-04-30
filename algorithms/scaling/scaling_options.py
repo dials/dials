@@ -69,9 +69,12 @@ phil_scope = iotbx.phil.parse('''
       .help = "Option to use a d-value subset of reflections to determine scale factors"
   }
   weighting {
-    weighting_scheme = *invvar unity
+    weighting_scheme = *invvar unity GM cauchy huber
       .type = choice
-      .help = "Weighting scheme used during Ih calculation."
+      .help = "Weighting scheme used during Ih calculation. Weighting schemes
+              other than invvar and unity may trigger iterative reweighting
+              during minimisation, which may be unstable for certain minimisation
+              engines (LBFGS)."
     optimise_error_model = False
       .type = bool
       .help = "Option to allow optimisation of weights for scaling. Performs

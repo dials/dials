@@ -158,12 +158,20 @@ def test_Ih_table_nonzero_weights(large_reflection_table, test_sg):
   assert list(Ih_table.nonzero_weights) == list(flex.bool([False, True, True,
     True, False, False, False]))
 
-@pytest.mark.skip(reason='Feature not yet implemented')
 def test_iterative_weighting(large_reflection_table, test_sg):
   """Test the setting of iterative weights."""
-  reflection_table = large_reflection_table
-  _ = SingleIhTable(reflection_table, test_sg, weighting_scheme='iterative')
-  #assert list(Ih_table.weights) == [1.0] * 7
+  rt = large_reflection_table
+  Ih_table = SingleIhTable(rt, test_sg, weighting_scheme='GM')
+
+  # After construction, weights should initially be set to inverse variances,
+  # to allow the first calculation of Ih (by least-squares approach).
+  assert list(Ih_table.weights) == list(1.0/rt['variance'])
+
+  # Now update weights
+  Ih_table.update_weights()
+  gIh = Ih_table.inverse_scale_factors * Ih_table.Ih_values
+  t = (Ih_table.intensities - gIh) / gIh
+  assert list(Ih_table.weights) == list(1.0/(1.0 + t**2)**2)
 
 def test_set_Ih_values_to_target(joint_test_input):
   """Test the setting of Ih values for targeted scaling."""
