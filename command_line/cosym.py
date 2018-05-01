@@ -286,7 +286,7 @@ def run(args):
   )
   if params.save_plot:
     plt.tight_layout()
-    plt.savefig('cluster_unit_cell.png')
+    plt.savefig('%scluster_unit_cell.png' % params.plot_prefix)
   logger.info(unit_cell_info(clusters))
   largest_cluster = None
   largest_cluster_lattice_ids = None

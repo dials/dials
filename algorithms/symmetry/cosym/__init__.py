@@ -43,6 +43,9 @@ min_pairs = 3
 save_plot = True
   .type = bool
 
+plot_prefix = ''
+  .type = str
+
 verbose = False
   .type = bool
 
@@ -171,7 +174,7 @@ class analyse_datasets(object):
         plt.plot([x_g, x_g], plt.ylim())
         plt.xlabel('Dimensions')
         plt.ylabel('Functional')
-        plt.savefig('functional_vs_dimension.png')
+        plt.savefig('%sfunctional_vs_dimension.png' % params.plot_prefix)
 
         plt.clf()
         for dim, expl_var in zip(dimensions, explained_variance):
@@ -179,7 +182,7 @@ class analyse_datasets(object):
         plt.plot([x_g, x_g], plt.ylim())
         plt.xlabel('Dimension')
         plt.ylabel('Explained variance')
-        plt.savefig('explained_variance_vs_dimension.png')
+        plt.savefig('%sexplained_variance_vs_dimension.png' % params.plot_prefix)
 
         plt.clf()
         for dim, expl_var_ratio in zip(dimensions, explained_variance_ratio):
@@ -187,7 +190,8 @@ class analyse_datasets(object):
         plt.plot([x_g, x_g], plt.ylim())
         plt.xlabel('Dimension')
         plt.ylabel('Explained variance ratio')
-        plt.savefig('explained_variance_ratio_vs_dimension.png')
+        plt.savefig(
+          '%sexplained_variance_ratio_vs_dimension.png' % params.plot_prefix)
 
     self.optimise()
     self.principal_component_analysis()
@@ -571,27 +575,38 @@ class analyse_datasets(object):
     return self.cluster_labels
 
   def plot(self):
-    self.target.plot_rij_matrix(plot_name='rij.png')
-    self.target.plot_rij_histogram(plot_name='rij_hist.png')
-    self.target.plot_rij_cumulative_frequency(plot_name='rij_sorted.png')
-    self.target.plot_wij_matrix(plot_name='wij.png')
-    self.target.plot_wij_histogram(plot_name='wij_hist.png')
-    self.target.plot_wij_cumulative_frequency(plot_name='wij_sorted.png')
+    self.target.plot_rij_matrix(plot_name='%srij.png' % self.params.plot_prefix)
+    self.target.plot_rij_histogram(
+      plot_name='%srij_hist.png' % self.params.plot_prefix)
+    self.target.plot_rij_cumulative_frequency(
+      plot_name='%srij_sorted.png' % self.params.plot_prefix)
+    self.target.plot_wij_matrix(plot_name='%swij.png' % self.params.plot_prefix)
+    self.target.plot_wij_histogram(
+      plot_name='%swij_hist.png' % self.params.plot_prefix)
+    self.target.plot_wij_cumulative_frequency(
+      plot_name='%swij_sorted.png' % self.params.plot_prefix)
 
     coord_x = self.coords[:,0:1].as_1d()
     coord_y = self.coords[:,1:2].as_1d()
     coord_reduced_x = self.coords_reduced[:,0:1].as_1d()
     coord_reduced_y = self.coords_reduced[:,1:2].as_1d()
-    plot((coord_x, coord_y), labels=self.cluster_labels, plot_name='xy.png')
-    plot((coord_reduced_x, coord_reduced_y), labels=self.cluster_labels, plot_name='xy_pca.png')
-    plot_angles((coord_x, coord_y), labels=self.cluster_labels, plot_name='phi_r.png')
-    plot_angles((coord_reduced_x, coord_reduced_y), labels=self.cluster_labels, plot_name='phi_r_pca.png')
+    plot((coord_x, coord_y), labels=self.cluster_labels,
+         plot_name='%sxy.png' % self.params.plot_prefix)
+    plot((coord_reduced_x, coord_reduced_y), labels=self.cluster_labels,
+         plot_name='%sxy_pca.png' % self.params.plot_prefix)
+    plot_angles((coord_x, coord_y), labels=self.cluster_labels,
+                plot_name='%sphi_r.png' % self.params.plot_prefix)
+    plot_angles((coord_reduced_x, coord_reduced_y), labels=self.cluster_labels,
+                plot_name='%sphi_r_pca.png' % self.params.plot_prefix)
 
     if self.coords_reduced.all()[1] > 2:
       coord_z = self.coords[:,2:3].as_1d()
       coord_reduced_z = self.coords_reduced[:,2:3].as_1d()
-      plot((coord_x, coord_y, coord_z), labels=self.cluster_labels, plot_name='xyz.png')
-      plot((coord_reduced_x, coord_reduced_y, coord_reduced_z), labels=self.cluster_labels, plot_name='xyz_pca.png')
+      plot((coord_x, coord_y, coord_z), labels=self.cluster_labels,
+           plot_name='%sxyz.png' % self.params.plot_prefix)
+      plot((coord_reduced_x, coord_reduced_y, coord_reduced_z),
+           labels=self.cluster_labels,
+           plot_name='%sxyz_pca.png' % self.params.plot_prefix)
 
 def plot(coords, labels=None, plot_centroids=True, plot_all=True, show=False, plot_name=None):
   assert plot_centroids or plot_all
