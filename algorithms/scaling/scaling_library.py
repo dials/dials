@@ -8,13 +8,19 @@ tables and ExperimentList objects (and sometimes phil_scope objects if
 necessary), and return common dials objects such as reflection tables and
 ExperimentLists.
 """
+from copy import deepcopy
 import pkg_resources
 from libtbx import phil
+from mock import Mock
 import iotbx.merging_statistics
+from iotbx import cif
 from cctbx import miller, crystal
+from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.algorithms.scaling.scaler_factory import SingleScalerFactory,\
   TargetScalerFactory
+from dials.algorithms.scaling.model.scaling_model_factory import \
+  KBSMFactory
 
 def scale_against_target(reflection_table, experiment, target_reflection_table,
   target_experiment, params=None, model='KB'):
@@ -45,7 +51,6 @@ def scale_against_target(reflection_table, experiment, target_reflection_table,
   scaler.perform_scaling()
   scaler.expand_scales_to_all_reflections(calc_cov=True)
   return scaler.unscaled_scalers[0].reflection_table
-
 
 def scale_single_dataset(reflection_table, experiment, params=None,
     model='physical'):
@@ -84,14 +89,14 @@ def create_scaling_model(params, experiments, reflections):
   """Create or load a scaling model for multiple datasets."""
   for i, (exp, refl) in enumerate(zip(experiments, reflections)):
     model = experiments.scaling_models()[i]
-    if params.scaling_options.target_intensities and i == len(reflections)-1:
+    '''if params.scaling_options.target_intensities and i == len(reflections)-1:
       for entry_point in pkg_resources.iter_entry_points('dxtbx.scaling_model_ext'):
         if entry_point.name == 'KB':
           #finds relevant extension in dials.extensions.scaling_model_ext
           factory = entry_point.load().factory()
           exp.scaling_model = factory.create(params, exp, refl)
-          exp.scaling_model.set_scaling_model_as_scaled()
-    elif model is not None:
+          exp.scaling_model.set_scaling_model_as_scaled()'''
+    if model is not None:
       exp.scaling_model = model
     else:
       for entry_point in pkg_resources.iter_entry_points('dxtbx.scaling_model_ext'):
@@ -136,3 +141,57 @@ def calculate_single_merging_stats(reflection_table, experiment):
     i_obs=i_obs, n_bins=20, anomalous=False, sigma_filtering=None,
     use_internal_variance=True, eliminate_sys_absent=False)
   return result
+
+def intensity_array_from_cif_file(cif_file):
+  """Return an intensity miller array from a cif file."""
+  model = cif.reader(file_path=cif_file).build_crystal_structures()['1']
+  ic = model.structure_factors(anomalous_flag=True, d_min=0.4,
+    algorithm='direct').f_calc().as_intensity_array()
+  return ic
+
+def create_datastructures_for_structural_model(reflections, experiments,
+    cif_file):
+  """Read a cif file, calculate intensities and scale them to the average
+  intensity of the reflections. Return an experiment and reflection table to
+  be used for the structural model in scaling."""
+
+  # read model, compute Fc, square to F^2
+  ic = intensity_array_from_cif_file(cif_file)
+  exp = deepcopy(experiments[0])
+  params = Mock()
+  params.parameterisation.decay_term.return_value = False
+  params.parameterisation.scale_term.return_value = True
+  exp.scaling_model = KBSMFactory.create(params, [], [])
+  exp.scaling_model.set_scaling_model_as_scaled() #Set as scaled to fix scale.
+
+  # Now put the calculated I's on roughly a common scale with the data.
+  miller_indices = flex.miller_index([])
+  intensities = flex.double([])
+
+  for refl in reflections:
+    miller_indices.extend(refl['miller_index'])
+    intensities.extend(refl['intensity.prf.value'])
+  miller_set = miller.set(crystal_symmetry=crystal.symmetry(
+    space_group=experiments[0].crystal.get_space_group()),
+    indices=miller_indices, anomalous_flag=True)
+  idata = miller.array(miller_set, data=intensities)
+
+  match = idata.match_indices(ic)
+  pairs = match.pairs()
+
+  icalc = flex.double()
+  iobs = flex.double()
+  miller_idx = flex.miller_index()
+  for p in pairs:
+    # Note : will create miller_idx duplicates in i_calc - problem?
+    iobs.append(idata.data()[p[0]])
+    icalc.append(ic.data()[p[1]])
+    miller_idx.append(ic.indices()[p[1]])
+
+  icalc *= flex.sum(iobs) / flex.sum(icalc)
+
+  rt = flex.reflection_table()
+  rt['intensity'] = icalc
+  rt['miller_index'] = miller_idx
+
+  return exp, rt

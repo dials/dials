@@ -32,7 +32,8 @@ from dials.array_family import flex
 from dials.util.options import OptionParser, flatten_reflections,\
   flatten_experiments
 from dials.algorithms.scaling.scaling_library import create_scaling_model,\
-  calculate_merging_statistics, calculate_single_merging_stats
+  calculate_merging_statistics, calculate_single_merging_stats,\
+  create_datastructures_for_structural_model
 from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScalerFactory
 from dials.algorithms.scaling.scaling_utilities import (
@@ -104,21 +105,6 @@ class Script(object):
     self.reflections = flatten_reflections(self.params.input.reflections)
     self.experiments = flatten_experiments(self.params.input.experiments)
 
-    if self.params.scaling_options.target_intensities:
-      target_params, _ = optionparser.parse_args(
-        [self.params.scaling_options.target_intensities], show_diff_phil=False)
-      target_reflections = flatten_reflections(target_params.input.reflections)
-      self.reflections.append(target_reflections[0])
-
-    if self.params.scaling_options.target_intensities:
-      logger.info('*'*36 + ' WARNING ' + '*'*36 + '\n'
-      'For scaling against target calculated dataset, it is assumed \n'
-      'that this is the last pickle file passed in and that no corresponding \n'
-      'experiments file is passed in.\n')
-      self.experiments.append(self.experiments[0]) # Assume correct space group for now.
-      self.reflections[-1]['id'] = flex.int(self.reflections[-1].size(),
-        len(self.reflections))
-
     if len(self.experiments) != 1:
       logger.info('Checking for the existence of a reflection table \n'
         'containing multiple scaled datasets \n')
@@ -142,6 +128,15 @@ class Script(object):
           raise Sorry('experiments have different space groups and cannot be'
             'scaled together, please reanalyse the data so that the space groups'
             'are consistent or manually specify a space group.')
+
+    if self.params.scaling_options.target_model:
+      logger.info("Extracting data from structural model.")
+      exp, reflections = create_datastructures_for_structural_model(
+        self.reflections, self.experiments, self.params.scaling_options.target_model)
+      self.experiments.append(exp)
+      self.reflections.append(reflections)
+      self.reflections[-1]['id'] = flex.int(self.reflections[-1].size(),
+        len(self.reflections))
 
     if len(self.experiments) != len(self.reflections):
       raise Sorry("Mismatched number of experiments and reflection tables found.")
@@ -228,7 +223,7 @@ class Script(object):
   def output(self):
     """Save the experiments json and scaled pickle file."""
     logger.info('\n'+'='*80+'\n')
-    if self.params.scaling_options.target_intensities:
+    if self.params.scaling_options.target_model:
       self.experiments = self.experiments[:-1]
     save_experiments(self.experiments, self.params.output.experiments)
     save_reflections(self.minimised, self.params.output.scaled)
@@ -243,19 +238,22 @@ class Script(object):
     if scaler.id_ == 'target':
       scaler.perform_scaling()
 
-      # The minimisation has only been done on a subset on the data, so apply the
-      # scale factors to the whole reflection table.
       if scaler.params.scaling_options.only_target or (
-        scaler.params.scaling_options.target_intensities):
+        scaler.params.scaling_options.target_model):
+        #Do some rounds of targeted scaling and then exit the algorithm.
         scaler.expand_scales_to_all_reflections()
 
         # Do another round so that more suitable weights are used.
         scaler.select_reflections_for_scaling()
         scaler.perform_scaling()
 
-        #Need to add in a full matrix round to allow calculation of variances.
+        if scaler.params.scaling_options.full_matrix_round and (
+          scaler.params.scaling_refinery.engine == 'SimpleLBFGS'):
+          scaler.perform_scaling(
+            engine=scaler.params.scaling_refinery.full_matrix_engine,
+            max_iterations=scaler.params.scaling_refinery.full_matrix_max_iterations)
 
-        scaler.expand_scales_to_all_reflections()
+        scaler.expand_scales_to_all_reflections(calc_cov=True)
 
         if scaler.params.weighting.optimise_error_model:
           scaler.perform_error_optimisation()

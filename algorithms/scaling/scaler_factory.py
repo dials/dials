@@ -80,7 +80,7 @@ class TargetScalerFactory(object):
     unscaled_scalers = []
     for i, (experiment, reflection) in enumerate(zip(experiments, reflections)):
       if is_scaled_list[i] is True:
-        if params.scaling_options.target_intensities:
+        if params.scaling_options.target_model:
           scaled_experiments.append(experiment)
           scaled_scalers.append(NullScalerFactory.create(params, experiment,
             reflection, scaled_id=i))

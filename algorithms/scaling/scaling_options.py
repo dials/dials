@@ -110,9 +110,10 @@ phil_scope = iotbx.phil.parse('''
       .help = "If only_target is true, this option to change whether the dataset
               that is being scaled will be saved on its own, or combined with the
               already scaled dataset."
-    target_intensities = None
+    target_model = None
       .type = path
-      .help = "Target intensity pickle file to use as target."
+      .help = "Path to cif file to use to calculate target intensities for
+              scaling."
     space_group = None
       .type = str
       .help = "Option to specify space group for scaling"

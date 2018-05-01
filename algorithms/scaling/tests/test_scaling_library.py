@@ -4,12 +4,16 @@ Tests for scaling library module.
 
 import pytest
 from libtbx import phil
+from mock import Mock, patch
 from dials.util.options import OptionParser
 from dials.array_family import flex
+from cctbx import miller, crystal
+from cctbx.sgtbx import space_group
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.algorithms.scaling.scaling_library import scale_single_dataset,\
-  create_scaling_model
+  create_scaling_model, create_datastructures_for_structural_model,\
+  intensity_array_from_cif_file
 from dials.algorithms.scaling.model.model import KBScalingModel
 from dials.algorithms.scaling.model.scaling_model_factory import \
   PhysicalSMFactory
@@ -28,6 +32,15 @@ def test_experiments():
 def test_params():
   """Make a test param phil scope."""
   return generated_param()
+
+@pytest.fixture()
+def mock_cif():
+  """Mock a cif file for testing loading data from a cif."""
+  cif = Mock()
+  cif.intensities = flex.double([1.0, 1.0])
+  cif.indices = flex.miller_index([(1, 0, 0), (0, 0, 1)])
+  cif.space_group = space_group("C 2y")
+  return cif
 
 def generated_refl():
   """Generate a reflection table."""
@@ -128,3 +141,23 @@ def test_create_scaling_model():
   assert new_exp[0].scaling_model is exp[0].scaling_model
   assert isinstance(new_exp[1].scaling_model, KBScalingModel)
   assert isinstance(new_exp[2].scaling_model, KBScalingModel)
+
+
+def mock_intensity_array_from_cif_file(cif):
+  """Mock cif-intensity converter to replace call in create_datastructures..."""
+  miller_set = miller.set(crystal_symmetry=crystal.symmetry(
+    space_group=cif.space_group), indices=cif.indices, anomalous_flag=True)
+  idata = miller.array(miller_set, data=cif.intensities)
+  return idata
+
+@patch('dials.algorithms.scaling.scaling_library.intensity_array_from_cif_file',
+  side_effect=mock_intensity_array_from_cif_file)
+def test_get_intensities_from_cif(_, test_reflections, test_experiments, mock_cif):
+  """Test the conversion of a cif file to reflections and experiments suitable
+  for scaling."""
+  exp, refl = create_datastructures_for_structural_model([test_reflections],
+    test_experiments, mock_cif)
+  assert list(refl['intensity']) == [5.5, 5.5, 5.5, 5.5]
+  assert list(refl['miller_index']) == [(1, 0, 0), (0, 0, 1),
+    (1, 0, 0), (0, 0, 1)]
+  assert exp.scaling_model.is_scaled is True

@@ -582,13 +582,15 @@ class TargetScaler(MultiScalerBase):
   def join_multiple_datasets(self):
     '''method to create a joint reflection table'''
     scalers = []
-    if not self.params.scaling_options.target_intensities:
+    if not self.params.scaling_options.target_model:
       scalers.extend(self.single_scalers)
     scalers.extend(self.unscaled_scalers)
     super(TargetScaler, self).join_datasets_from_scalers(scalers)
 
-  def perform_scaling(self):
-    super(TargetScaler, self).perform_scaling(target_type=ScalingTargetFixedIH)
+  def perform_scaling(self, target_type=ScalingTargetFixedIH, engine=None,
+      max_iterations=None):
+    super(TargetScaler, self).perform_scaling(target_type=target_type,
+      engine=engine, max_iterations=max_iterations)
 
 
 class NullScaler(ScalerBase):
@@ -602,19 +604,20 @@ class NullScaler(ScalerBase):
     super(NullScaler, self).__init__()
     self._experiments = experiment
     self._params = params
+    self._set_space_group()
     self._scaled_id = scaled_id
-    self._reflection_table = self._map_indices_to_asu(reflection, experiment,
-      params)
+    self._reflection_table = reflection
     self._initial_keys = [key for key in self._reflection_table.keys()]
-    self._reflection_table['intensity'] = self._reflection_table[
-      'intensity.calculated.value']
+    #self._reflection_table['intensity'] = self._reflection_table[
+    #  'intensity.calculated.value']
     n_refl = self._reflection_table.size()
     self._reflection_table['inverse_scale_factor'] = flex.double(n_refl, 1.0)
     self._reflection_table['variance'] = flex.double(n_refl, 1.0)
-    weights = self._reflection_table['intensity.calculated.value']
-    self._reflection_table.set_flags(flex.bool([False]*n_refl),
+    #weights = self._reflection_table['intensity.calculated.value']
+    self._reflection_table.set_flags(flex.bool(n_refl, False),
       self._reflection_table.flags.excluded_for_scaling)
-    self._Ih_table = SingleIhTable(self._reflection_table, self.space_group, weights)
+    self._Ih_table = SingleIhTable(self._reflection_table, self.space_group,
+      weighting_scheme='unity')
     logger.info('NullScaler contains %s reflections', n_refl)
     logger.info('Completed configuration of NullScaler. \n\n' + '='*80 + '\n')
 
