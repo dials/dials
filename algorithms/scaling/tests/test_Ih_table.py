@@ -139,6 +139,18 @@ def test_Ih_table(large_reflection_table, test_sg):
   assert list(Ih_table.Ih_values) == list(flex.double(
     [10.0, 5.0, 5.0, 6.0, 3.0, 9.0, 9.0]))
 
+def test_Ih_table_freework(large_reflection_table, test_sg):
+  """Test the splitting of a single dataset into a work and free set."""
+  reflection_table = large_reflection_table
+  Ih_table = SingleIhTable(reflection_table, test_sg, weighting_scheme='unity')
+  Ih_table.split_into_free_work(30.0)
+
+def test_joint_Ih_table_freework(joint_test_input):
+  """Test the splitting of a multiple dataset into a work and free set."""
+  Ih_table_1, Ih_table_2 = joint_test_input
+  Ih_table = JointIhTable([Ih_table_1, Ih_table_2])
+  Ih_table.split_into_free_work(20.0)
+
 def test_Ih_table_nonzero_weights(large_reflection_table, test_sg):
   """Test for 'nonzero_Weights' attribute and how this changes during selection.
   The purpose of this is to indicate the relationship of the Ih_table data to

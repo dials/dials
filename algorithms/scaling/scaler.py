@@ -166,7 +166,7 @@ class SingleScalerBase(ScalerBase):
 
   id_ = 'single'
 
-  def __init__(self, params, experiment, reflection, scaled_id=0):
+  def __init__(self, params, experiment, reflection, scaled_id=0, for_multi=False):
     logger.info('Configuring a Scaler for a single dataset. \n')
     logger.info('The dataset id assigned to this reflection table is %s, \n'
       'the scaling model type being applied is %s. \n', scaled_id,
@@ -193,7 +193,7 @@ class SingleScalerBase(ScalerBase):
       reflection_table = self.round_of_outlier_rejection(reflection_table)
     self._reflection_table = reflection_table
     self._configure_reflection_table()
-    self.select_reflections_for_scaling()
+    self.select_reflections_for_scaling(split_free_set=(not for_multi))
     logger.info('Completed configuration of Scaler. \n\n' + '='*80 + '\n')
 
   @property
@@ -247,7 +247,13 @@ class SingleScalerBase(ScalerBase):
   def update_for_minimisation(self, apm, curvatures=False):
     """Update the scale factors and Ih for the next minimisation iteration."""
     basis_fn = basis_function(apm, curvatures).return_basis()
-    apm.derivatives = basis_fn[1]
+    if self.Ih_table.free_set_sel:
+      dervis_trans = basis_fn[1].transpose()
+      work_set = ~self.Ih_table.free_set_sel
+      derivs = dervis_trans.select_columns(work_set.iselection())
+      apm.derivatives = derivs.transpose()
+    else:
+      apm.derivatives = basis_fn[1]
     if curvatures:
       apm.curvatures = basis_fn[2]
     self.Ih_table.inverse_scale_factors = basis_fn[0]
@@ -387,12 +393,15 @@ class SingleScalerBase(ScalerBase):
     for component in self.components.itervalues():
       component.update_reflection_data(self.reflection_table, sel)
 
-  def select_reflections_for_scaling(self):
+  def select_reflections_for_scaling(self, split_free_set=True):
     """Select a subset of reflections, create and Ih table and update the
     model components."""
     selection = self._scaling_subset(self.reflection_table, self.params)
     self._Ih_table = SingleIhTable(self.reflection_table, self.space_group,
       selection, self.params.weighting.weighting_scheme)
+    if self.params.scaling_options.use_free_set and split_free_set:
+      self._Ih_table.split_into_free_work(
+        self.params.scaling_options.free_set_percentage)
     if self.params.weighting.error_model_params:
       self.update_error_model(self.params.weighting.error_model_params)
     for component in self.components.itervalues():
@@ -431,6 +440,8 @@ class MultiScalerBase(ScalerBase):
     self._experiments = experiments[0]
     logger.info('Determining symmetry equivalent reflections across datasets.\n')
     self._Ih_table = JointIhTable([x.Ih_table for x in self.single_scalers])
+    if self.params.scaling_options.use_free_set:
+      self._Ih_table.split_into_free_work(self.params.scaling_options.free_set_percentage)
 
   def calculate_restraints(self, apm):
     """Calculate a restraints residuals/gradient vector for multiple datasets."""
@@ -488,7 +499,7 @@ class MultiScalerBase(ScalerBase):
   def select_reflections_for_scaling(self):
     """Select reflections for scaling in individual scalers."""
     for scaler in self.active_scalers:
-      scaler.select_reflections_for_scaling()
+      scaler.select_reflections_for_scaling(split_free_set=False)
 
   def perform_error_optimisation(self):
     """Perform an optimisation of the sigma values."""
@@ -525,7 +536,10 @@ class MultiScaler(MultiScalerBase):
     '''update the scale factors and Ih for the next iteration of minimisation,
     update the x values from the amp to the individual apms, as this is where
     basis functions, target functions etc get access to the parameters.'''
-    apm.derivatives = sparse.matrix(self.Ih_table.size, apm.n_active_params)
+    n_matrix_rows = self.Ih_table.size
+    if self.Ih_table.free_set_sel:
+      n_matrix_rows += self.Ih_table.free_Ih_table.size
+    apm.derivatives = sparse.matrix(n_matrix_rows, apm.n_active_params)
     start_row_no = 0
     for i, scaler in enumerate(self.single_scalers):
       basis_fn = basis_function(apm.apm_list[i], curvatures).return_basis()
@@ -534,6 +548,11 @@ class MultiScaler(MultiScalerBase):
         apm.derivatives.assign_block(basis_fn[1], start_row_no,
           apm.apm_data[i]['start_idx'])
         start_row_no += basis_fn[1].n_rows
+    if self.Ih_table.free_set_sel:
+      isel = (~self.Ih_table.free_set_sel).iselection()
+      derivs_T = apm.derivatives.transpose()
+      sel_derivs = derivs_T.select_columns(isel)
+      apm.derivatives = sel_derivs.transpose()
     self.Ih_table.update_weights()
     self.Ih_table.calc_Ih()
 

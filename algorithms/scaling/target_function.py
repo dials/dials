@@ -25,7 +25,9 @@ class ScalingTarget(object):
     self.apm = apm
     self.weights = self.scaler.Ih_table.weights
     self.curvatures = curvatures
-
+    if self.scaler.params.scaling_options.use_free_set:
+      self.rmsd_names = ["RMSD_I", "Free RMSD_I"]
+      self.rmsd_units = ["a.u", "a.u"]
     # Quantities to cache each step
     self._rmsds = None
 
@@ -39,15 +41,12 @@ class ScalingTarget(object):
     return self.scaler.Ih_table.size
 
   def rmsds(self):
-    """Calculate unweighted RMSDs for the matches."""
-    # cache rmsd calculation for achieved test
+    """Calculate RMSDs for the matches."""
     R = (self.calculate_residuals()**2) * self.weights
-    #if 'absorption' in self.apm.components_list:
     restr = self.scaler.calculate_restraints(self.apm)
     if restr:
       R.extend(restr[0])
     self._rmsds = [(flex.sum((R))/self.scaler.Ih_table.size)**0.5]
-    #print("rmsds %s" % self._rmsds)
     return self._rmsds
 
   @staticmethod
@@ -60,6 +59,12 @@ class ScalingTarget(object):
     Ih_tab = self.scaler.Ih_table
     R = Ih_tab.intensities - (Ih_tab.inverse_scale_factors * Ih_tab.Ih_values)
     return R
+
+  def calculate_free_rmsds(self):
+    """Calculate an RMSD from the free set."""
+    Ih_tab = self.scaler.Ih_table.free_Ih_table
+    R = Ih_tab.intensities - (Ih_tab.inverse_scale_factors * Ih_tab.Ih_values)
+    return [(flex.sum((R**2) * Ih_tab.weights)/Ih_tab.size)**0.5]
 
   def calculate_gradients(self):
     """Return a gradient vector on length len(self.apm.x)."""

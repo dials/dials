@@ -2,6 +2,9 @@ from __future__ import absolute_import, division, print_function
 import sys
 import numpy as np
 import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from dials.array_family import flex
 from dials.util import halraiser
 from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
@@ -9,11 +12,8 @@ from dials.algorithms.scaling.model import model as Model
 from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets
 from libtbx import phil
+
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-from matplotlib.ticker import FormatStrFormatter
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 phil_scope = phil.parse('''
   debug = False
@@ -149,8 +149,8 @@ def plot_smooth_scales(params, experiments, reflections, outputfile=None):
     scale_rot_int = experiments.scaling_model.configdict['scale_rot_interval']
     int_rel_max = int(max(reflections['norm_rot_angle'])) + 1
     int_rel_min = (int(min(reflections['norm_rot_angle'])))
-    rel_values = flex.double(np.linspace(0, int_rel_max-int_rel_min, ((int_rel_max-int_rel_min)/0.1)+1,
-      endpoint=True))
+    rel_values = flex.double(np.linspace(0, int_rel_max-int_rel_min,
+      ((int_rel_max-int_rel_min)/0.1)+1, endpoint=True))
     rel_values[-1] = rel_values[-1] - 0.0001
     rt = flex.reflection_table()
     rt['norm_rot_angle'] = rel_values

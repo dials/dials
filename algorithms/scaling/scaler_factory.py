@@ -37,9 +37,9 @@ def is_scaled(experiments):
 class SingleScalerFactory(object):
   'Factory for creating a scaler for a single dataset'
   @classmethod
-  def create(cls, params, experiment, reflection, scaled_id=0):
+  def create(cls, params, experiment, reflection, scaled_id=0, for_multi=False):
     '''create a single scaler with the relevant parameterisation'''
-    return SingleScalerBase(params, experiment, reflection, scaled_id)
+    return SingleScalerBase(params, experiment, reflection, scaled_id, for_multi)
 
 class NullScalerFactory(object):
   'Factory for creating null scaler'
@@ -58,7 +58,7 @@ class MultiScalerFactory(object):
     single_scalers = []
     for i, (reflection, experiment) in enumerate(zip(reflections, experiments)):
       single_scalers.append(SingleScalerFactory.create(
-        params, experiment, reflection, scaled_id=i))
+        params, experiment, reflection, scaled_id=i, for_multi=True))
     return MultiScaler(params, experiments, single_scalers)
 
   @classmethod

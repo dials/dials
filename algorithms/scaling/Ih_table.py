@@ -15,11 +15,14 @@ attributes weights, intensities, inverse_scale_factors, asu_miller_index
 and Ih_values.
 """
 import abc
+import logging
 from libtbx.containers import OrderedSet
 from dials.array_family import flex
 from cctbx import miller, crystal
 from scitbx import sparse
 from dials.algorithms.scaling.weighting import get_weighting_scheme
+logger = logging.getLogger('dials')
+
 
 class IhTableBase(object):
   """Base class that defines the interface of the datastructure."""
@@ -32,6 +35,8 @@ class IhTableBase(object):
     self._h_index_matrix = None
     self._h_expand_matrix = None
     self._Ih_table = None
+    self._free_Ih_table = None
+    self._free_set_sel = flex.bool([])
     self._n_h = None
 
   @abc.abstractmethod
@@ -81,11 +86,20 @@ class IhTableBase(object):
 
   @inverse_scale_factors.setter
   def inverse_scale_factors(self, new_scales):
-    if new_scales.size() != self.inverse_scale_factors.size():
+    if self._free_set_sel:
+      selected_new_scales = new_scales.select(~self._free_set_sel)
+      assert selected_new_scales.size() == self.size, """attempting to set
+      a new set of scale factors of different length than previous
+      assignment: was %s, attempting %s""" % (self.size,
+        selected_new_scales.size())
+      self._Ih_table['inverse_scale_factor'] = selected_new_scales
+      self._free_Ih_table.inverse_scale_factors = new_scales.select(self._free_set_sel)
+    elif new_scales.size() != self.size:
       assert 0, """attempting to set a new set of scale factors of different
       length than previous assignment: was %s, attempting %s""" % (
         self.inverse_scale_factors.size(), new_scales.size())
-    self._Ih_table['inverse_scale_factor'] = new_scales
+    else:
+      self._Ih_table['inverse_scale_factor'] = new_scales
 
   @property
   def Ih_values(self):
@@ -96,6 +110,16 @@ class IhTableBase(object):
   def Ih_table(self):
     """A reflection table of all the data stored by the class."""
     return self._Ih_table
+
+  @property
+  def free_Ih_table(self):
+    """An Ih table of a subset of the data for a 'free' set in refinement."""
+    return self._free_Ih_table
+
+  @property
+  def free_set_sel(self):
+    """The selection used to split the data into a free and work set."""
+    return self._free_set_sel
 
   @property
   def asu_miller_index(self):
@@ -161,14 +185,49 @@ class IhTableBase(object):
     self._h_index_matrix, self._h_expand_matrix = self._assign_h_matrices()
     return self
 
+  def split_into_free_work(self, percentage, offset=0):
+    """Split the dataset into a working and free set. The reflections chosen are
+    a percentage of the symmetry equivalent groups, chosen in even steps starting
+    at the offset, default 0."""
+    n_groups = self.h_index_matrix.n_cols
+    group_selection = [i for i in range(offset, n_groups, int(100/percentage))]
+    free_set = flex.double(self.size, 0.0)
+    for g in group_selection:
+      free_set += self.h_index_matrix.col(g).as_dense_vector()
+    free_set_sel = free_set != 0.0
+    #select out a reflection table, and use this to initialise a new Ih_table.
+    free_Ih_table = self._Ih_table.select(free_set_sel)
+    free_Ih_table.set_flags(flex.bool(free_Ih_table.size(), False),
+      free_Ih_table.flags.bad_for_scaling)
+    self._free_Ih_table = SingleIhTable(free_Ih_table, self.space_group)
+    self._free_set_sel = free_set_sel
+    self = self.select(~free_set_sel)
+    msg = (('The dataset has been split into a working and free set. \n'
+      'The free set contains {0} reflections, in {1} unique groups,\n'
+      'and the working set contains {2} reflections in {3} unique groups.\n'
+      ).format(self.free_Ih_table.size, self.free_Ih_table.h_index_matrix.n_cols,
+    self.size, self.h_index_matrix.n_cols))
+    logger.info(msg)
+
 class SingleIhTable(IhTableBase):
   """Class to create an Ih_table. This is the default
-  data structure used for scaling a single sweep."""
+  data structure used for scaling a single sweep.
 
-  def __init__(self, reflection_table, space_group, selection=None, weighting_scheme=None):
+  The preferred initialisation is to pass in a full reflection table
+  and a flex selection to indicate a subset of data for the table. This
+  way, the nonzero_weights array relates the order of the data stored in
+  the Ih table back to the order of the initial data in the reflection
+  table, which is needed in certain cases. If no selection is specified,
+  all data from the reflection table is used, minus any reflections flagged
+  as unsuitable or outliers. A weighting scheme can also be specified, if
+  none then inverse variance weighting is used."""
+
+  def __init__(self, reflection_table, space_group, selection=None,
+      weighting_scheme=None):
     super(SingleIhTable, self).__init__()
     self._nonzero_weights = None
     self.space_group = space_group
+    self._free_Ih_table = None
     self._Ih_table = self._create_Ih_table(reflection_table, selection)
     self.weighting_scheme = get_weighting_scheme(self, weighting_scheme)
     self.weighting_scheme.calculate_initial_weights()
@@ -205,10 +264,11 @@ class SingleIhTable(IhTableBase):
       Ih_table['Ih_values'] = refl_table['Ih_values']
     else:
       Ih_table['Ih_values'] = flex.double(refl_table.size(), 0.0)
-    nonzero_weights_sel = ~(
-      refl_table.get_flags(refl_table.flags.user_excluded_in_scaling)
-      | refl_table.get_flags(refl_table.flags.excluded_for_scaling)
-      | refl_table.get_flags(refl_table.flags.outlier_in_scaling))
+    nonzero_weights_sel = ~(refl_table.get_flags(refl_table.flags.bad_for_scaling,
+      all=False))
+      #refl_table.get_flags(refl_table.flags.user_excluded_in_scaling)
+      #| refl_table.get_flags(refl_table.flags.excluded_for_scaling)
+      #| refl_table.get_flags(refl_table.flags.outlier_in_scaling))
     if selection:
       nonzero_weights_sel = nonzero_weights_sel & selection
     Ih_table = Ih_table.select(nonzero_weights_sel)
@@ -283,6 +343,8 @@ class SingleIhTable(IhTableBase):
     sumgI = gI * self.h_index_matrix
     Ih = sumgI/sumgsq
     self._Ih_table['Ih_values'] = Ih * self.h_expand_matrix
+    if self._free_Ih_table:
+      self._free_Ih_table.calc_Ih()
 
 class JointIhTable(IhTableBase):
   """Class to expand the datastructure for scaling multiple
@@ -356,6 +418,16 @@ class JointIhTable(IhTableBase):
       h_index_component = Ih_table.h_index_matrix * h_expand_matrix
       total_h_idx_matrix.assign_block(h_index_component, h_idx_matrix_row, 0)
       h_idx_matrix_row += Ih_table.h_index_matrix.n_rows
+    if self.free_set_sel:
+      isel = (~self.free_set_sel).iselection()
+      total_h_idx_matrix_T = total_h_idx_matrix.transpose()
+      total_h_idx_matrix_T = total_h_idx_matrix_T.select_columns(isel)
+      total_h_idx_matrix = total_h_idx_matrix_T.transpose()
+      good_cols = flex.size_t([])
+      for i, col in enumerate(total_h_idx_matrix.cols()):
+        if col.non_zeroes != 0:
+          good_cols.append(i)
+      total_h_idx_matrix = total_h_idx_matrix.select_columns(good_cols)
     total_h_expand_matrix = total_h_idx_matrix.transpose()
     return total_h_idx_matrix, total_h_expand_matrix
 
@@ -364,11 +436,17 @@ class JointIhTable(IhTableBase):
     scales = flex.double([])
     for Ih_table in self._Ih_tables:
       scales.extend(Ih_table.inverse_scale_factors)
+    if self.free_set_sel:
+      free_scales = scales.select(self.free_set_sel)
+      self.free_Ih_table.inverse_scale_factors = free_scales
+      scales = scales.select(~self.free_set_sel)
     sumgsq = (((scales)**2) * self.weights) * self.h_index_matrix
     sumgI = ((scales * self.intensities) * self.weights) * self.h_index_matrix
     Ih = sumgI/sumgsq
-    self.inverse_scale_factors = scales
+    self._Ih_table['inverse_scale_factor'] = scales
     self._Ih_table['Ih_values'] = Ih * self.h_expand_matrix
+    if self._free_Ih_table:
+      self._free_Ih_table.calc_Ih()
 
   def update_weights_from_error_models(self):
     """Reset weights, to be used after the weights of individual Ih tables

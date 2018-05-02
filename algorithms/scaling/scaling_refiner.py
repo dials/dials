@@ -140,8 +140,13 @@ def print_step_table(refinery):
   rows = []
   for i in range(refinery.history.get_nrows()):
     rmsds = [r for r in refinery.history["rmsd"][i]]
-    rows.append([str(i), str(refinery.history["num_reflections"][i])] + \
-      ["%.5g" % r for r in rmsds])
+    if refinery._target.scaler.params.scaling_options.use_free_set:
+      free_rmsds = [r for r in refinery.history["Free RMSD"][i]]
+      rows.append([str(i), str(refinery.history["num_reflections"][i])] + \
+        ["%.5g" % r for r in rmsds] + ["%.5g" % r for r in free_rmsds])
+    else:
+      rows.append([str(i), str(refinery.history["num_reflections"][i])] + \
+        ["%.5g" % r for r in rmsds])
 
   st = simple_table(rows, header)
   logger.info(st.format())
@@ -191,6 +196,13 @@ class ScalingSimpleLBFGS(SimpleLBFGS, ScalingRefinery):
   def __init__(self, *args, **kwargs):
     super(ScalingSimpleLBFGS, self).__init__(*args, **kwargs)
     ScalingRefinery.__init__(self, self._target.scaler)
+    if self._target.scaler.params.scaling_options.use_free_set:
+      self.history.add_column("Free RMSD")
+
+  def update_journal(self):
+    super(ScalingSimpleLBFGS, self).update_journal()
+    if "Free RMSD" in self.history:
+      self.history.set_last_cell("Free RMSD", self._freermsd)
 
   def compute_functional_gradients_and_curvatures(self):
     """overwrite method to avoid calls to 'blocks' methods of target"""
@@ -201,6 +213,11 @@ class ScalingSimpleLBFGS(SimpleLBFGS, ScalingRefinery):
     # restraints terms
     restraints = \
       self._target.compute_restraints_functional_gradients_and_curvatures()
+
+    if self._target.scaler.params.scaling_options.use_free_set:
+      self._freermsd = self._target.calculate_free_rmsds()
+      #print(self._freermsd)
+    #self.history.set_last_cell("Free RMSD'", free_R)
 
     if restraints:
       f += restraints[0]
@@ -256,6 +273,7 @@ class ErrorModelSimpleLBFGS(SimpleLBFGS, ErrorModelRefinery):
 
 class ScalingLstbxBuildUpMixin(ScalingRefinery):
   '''Mixin class to overwrite the build_up method in AdaptLstbx'''
+  
   def build_up(self, objective_only=False):
     'overwrite method from Adaptlstbx'
     # set current parameter values
@@ -280,6 +298,9 @@ class ScalingLstbxBuildUpMixin(ScalingRefinery):
       else:
         self.add_equations(restraints[0], restraints[1], restraints[2])
 
+    if self._target.scaler.params.scaling_options.use_free_set:
+      self._freermsd = self._target.calculate_free_rmsds()
+
     return
 
 class ScalingGaussNewtonIterations(ScalingLstbxBuildUpMixin, GaussNewtonIterations):
@@ -301,6 +322,13 @@ class ScalingGaussNewtonIterations(ScalingLstbxBuildUpMixin, GaussNewtonIteratio
              log=log, verbosity=verbosity, tracking=tracking,
              max_iterations=max_iterations)
     ScalingLstbxBuildUpMixin.__init__(self, self._target.scaler)
+    if self._target.scaler.params.scaling_options.use_free_set:
+      self.history.add_column("Free RMSD")
+
+  def update_journal(self):
+    super(ScalingGaussNewtonIterations, self).update_journal()
+    if "Free RMSD" in self.history:
+      self.history.set_last_cell("Free RMSD", self._freermsd)
 
 class ScalingLevenbergMarquardtIterations(ScalingLstbxBuildUpMixin, LevenbergMarquardtIterations):
   """Refinery implementation, employing lstbx Levenberg Marquadt
@@ -315,3 +343,10 @@ class ScalingLevenbergMarquardtIterations(ScalingLstbxBuildUpMixin, LevenbergMar
              log=log, verbosity=verbosity, tracking=tracking,
              max_iterations=max_iterations)
     ScalingLstbxBuildUpMixin.__init__(self, self._target.scaler)
+    if self._target.scaler.params.scaling_options.use_free_set:
+      self.history.add_column("Free RMSD")
+
+  def update_journal(self):
+    super(ScalingLevenbergMarquardtIterations, self).update_journal()
+    if "Free RMSD" in self.history:
+      self.history.set_last_cell("Free RMSD", self._freermsd)

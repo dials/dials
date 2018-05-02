@@ -114,6 +114,16 @@ phil_scope = iotbx.phil.parse('''
       .type = path
       .help = "Path to cif file to use to calculate target intensities for
               scaling."
+    use_free_set = False
+      .type = bool
+      .help = "Option to use a free set during scaling to check for overbiasing.
+              This free set is used to calculate an RMSD, which is shown alongisde
+              the 'working' RMSD during refinement, but is not currently used
+              to terminate refinement or make any choices on the model."
+    free_set_percentage = 5.0
+      .type = float
+      .help = "Percentage of symmetry equivalent groups to use for the free set,
+              if use_free_set is True."
     space_group = None
       .type = str
       .help = "Option to specify space group for scaling"
