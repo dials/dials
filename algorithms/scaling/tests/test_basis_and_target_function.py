@@ -233,8 +233,9 @@ def test_target_function():
   assert approx_equal(target.rmsds()[0], (150.0/(36.0*3.0))**0.5)
 
 def test_target_jacobian_calc(jacobian_gradient_input):
+  """Test for the target function calculation of the jacobian matrix."""
   test_params, exp, test_refl = jacobian_gradient_input
-  test_params.parameterisation.decay_term=False
+  test_params.parameterisation.decay_term = False
   experiments = create_scaling_model(test_params, exp, test_refl)
   assert experiments[0].scaling_model.id_ == 'physical'
   scaler = create_scaler(test_params, experiments, test_refl)
@@ -245,11 +246,8 @@ def test_target_jacobian_calc(jacobian_gradient_input):
   target.predict()
 
   fd_jacobian = calculate_jacobian_fd(target)
-  print(fd_jacobian)
   r, jacobian, w = target.compute_residuals_and_gradients()
   r = (r/w)**0.5
-  print(jacobian)
-  print(list(w))
   for i in range(0, 3):
     for j in range(0, 2):
       assert approx_equal(jacobian[i, j], fd_jacobian[i, j])

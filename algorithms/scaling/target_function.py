@@ -47,6 +47,8 @@ class ScalingTarget(object):
     if restr:
       R.extend(restr[0])
     self._rmsds = [(flex.sum((R))/self.scaler.Ih_table.size)**0.5]
+    if self.scaler.params.scaling_options.use_free_set:
+      self.calculate_free_rmsds()
     return self._rmsds
 
   @staticmethod
@@ -64,7 +66,7 @@ class ScalingTarget(object):
     """Calculate an RMSD from the free set."""
     Ih_tab = self.scaler.Ih_table.free_Ih_table
     R = Ih_tab.intensities - (Ih_tab.inverse_scale_factors * Ih_tab.Ih_values)
-    return [(flex.sum((R**2) * Ih_tab.weights)/Ih_tab.size)**0.5]
+    self._rmsds.append((flex.sum((R**2) * Ih_tab.weights)/Ih_tab.size)**0.5)
 
   def calculate_gradients(self):
     """Return a gradient vector on length len(self.apm.x)."""
@@ -227,9 +229,20 @@ class ScalingTargetFixedIH(ScalingTarget):
     for scaler in self.scaler.unscaled_scalers:
       self.weights.extend(scaler.Ih_table.weights)
     self.curvatures = curvatures
-
+    if self.scaler.params.scaling_options.use_free_set:
+      self.rmsd_names = ["RMSD_I", "Free RMSD_I"]
+      self.rmsd_units = ["a.u", "a.u"]
     # Quantities to cache each step
     self._rmsds = None
+
+  def calculate_free_rmsds(self):
+    """Calculate an RMSD from the free set."""
+    RMSD = flex.double([])
+    for unscaled_scaler in self.scaler.unscaled_scalers:
+      Ih_tab = unscaled_scaler.Ih_table.free_Ih_table
+      R = Ih_tab.intensities - (Ih_tab.inverse_scale_factors * Ih_tab.Ih_values)
+      RMSD.extend((R**2) * Ih_tab.weights)
+    self._rmsds.append((flex.sum(RMSD)/RMSD.size())**0.5)
 
   def calculate_gradients(self):
     G = flex.double([])
@@ -250,7 +263,7 @@ class ScalingTargetFixedIH(ScalingTarget):
 
   def calculate_jacobian(self):
     """Calculate the jacobian matrix, size Ih_table.size by len(self.apm.x)."""
-    n_refl = sum([i.n_obs for i in self.apm.apm_list])
+    n_refl = sum([i.Ih_table.size for i in self.scaler.unscaled_scalers])
     jacobian = sparse.matrix(n_refl, self.apm.n_active_params)
     n_cumul_rows = 0
     for i, scaler in enumerate(self.scaler.unscaled_scalers):

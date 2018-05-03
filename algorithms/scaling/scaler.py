@@ -440,8 +440,6 @@ class MultiScalerBase(ScalerBase):
     self._experiments = experiments[0]
     logger.info('Determining symmetry equivalent reflections across datasets.\n')
     self._Ih_table = JointIhTable([x.Ih_table for x in self.single_scalers])
-    if self.params.scaling_options.use_free_set:
-      self._Ih_table.split_into_free_work(self.params.scaling_options.free_set_percentage)
 
   def calculate_restraints(self, apm):
     """Calculate a restraints residuals/gradient vector for multiple datasets."""
@@ -525,6 +523,9 @@ class MultiScaler(MultiScalerBase):
   def __init__(self, params, experiments, single_scalers):
     logger.info('Configuring a MultiScaler to handle the individual Scalers. \n')
     super(MultiScaler, self).__init__(params, experiments, single_scalers)
+    if self.params.scaling_options.use_free_set:
+      self._Ih_table.split_into_free_work(
+        self.params.scaling_options.free_set_percentage)
     self.active_scalers = self.single_scalers
     logger.info('Completed configuration of MultiScaler. \n\n' + '='*80 + '\n')
 
@@ -589,12 +590,21 @@ class TargetScaler(MultiScalerBase):
       sel = scaler.Ih_table.Ih_values != 0.0
       scaler.Ih_table = scaler.Ih_table.select(sel)
       scaler.apply_selection_to_SFs(scaler.Ih_table.nonzero_weights)
+      if self.params.scaling_options.use_free_set:
+        scaler.Ih_table.split_into_free_work(
+          self.params.scaling_options.free_set_percentage)
 
   def update_for_minimisation(self, apm, curvatures=False):
     """Update the scale factors and Ih for the next iteration of minimisation."""
     for i, scaler in enumerate(self.unscaled_scalers):
       basis_fn = basis_function(apm.apm_list[i]).return_basis()
-      apm.apm_list[i].derivatives = basis_fn[1]
+      if scaler.Ih_table.free_set_sel:
+        dervis_trans = basis_fn[1].transpose()
+        work_set = ~scaler.Ih_table.free_set_sel
+        derivs = dervis_trans.select_columns(work_set.iselection())
+        apm.apm_list[i].derivatives = derivs.transpose()
+      else:
+        apm.apm_list[i].derivatives = basis_fn[1]
       scaler.Ih_table.inverse_scale_factors = basis_fn[0]
       scaler.Ih_table.update_weights()
 
