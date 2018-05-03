@@ -7,7 +7,7 @@ import pytest
 from scitbx import sparse
 from dials.array_family import flex
 from dials.util.options import OptionParser
-from parameter_handler import scaling_active_parameter_manager
+from dials.algorithms.scaling.parameter_handler import scaling_active_parameter_manager
 from libtbx import phil
 from libtbx.test_utils import approx_equal
 from dxtbx.model.experiment_list import ExperimentList
@@ -101,7 +101,7 @@ def generated_param(model='KB'):
   ''', process_includes=True)
 
   optionparser = OptionParser(phil=phil_scope, check_format=False)
-  parameters, _ = optionparser.parse_args(args=None, quick_parse=True,
+  parameters, _ = optionparser.parse_args(args=[], quick_parse=True,
     show_diff_phil=False)
   parameters.__inject__('model', model)
   parameters.parameterisation.absorption_term = False

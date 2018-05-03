@@ -4,7 +4,7 @@ This also provides a test for the scaler, which must be successfully
 initialised in order to provide input for the Ih_table.
 '''
 import pytest
-from Ih_table import SingleIhTable, JointIhTable
+from dials.algorithms.scaling.Ih_table import SingleIhTable, JointIhTable
 from dials.array_family import flex
 from libtbx.test_utils import approx_equal
 from cctbx.sgtbx import space_group

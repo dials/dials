@@ -40,7 +40,7 @@ def scale_against_target(reflection_table, experiment, target_reflection_table,
       include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
     ''', process_includes=True)
     optionparser = OptionParser(phil=phil_scope, check_format=False)
-    params, _ = optionparser.parse_args(args=None, quick_parse=True)
+    params, _ = optionparser.parse_args(args=[], quick_parse=True)
     params.__inject__('model', model)
 
   reflections = [reflection_table, target_reflection_table]
@@ -69,7 +69,7 @@ def scale_single_dataset(reflection_table, experiment, params=None,
       include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
     ''', process_includes=True)
     optionparser = OptionParser(phil=phil_scope, check_format=False)
-    params, _ = optionparser.parse_args(args=None, quick_parse=True)
+    params, _ = optionparser.parse_args(args=[], quick_parse=True)
     params.__inject__('model', model)
   else:
     try:

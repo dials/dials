@@ -4,11 +4,11 @@ Tests for scale components module.
 from math import exp
 from libtbx.test_utils import approx_equal
 from dials.array_family import flex
-from model.components.scale_components import SHScaleComponent, \
-  SingleBScaleFactor, SingleScaleFactor, ScaleComponentBase
-from model.components.smooth_scale_components import SmoothScaleComponent1D,\
-  SmoothBScaleComponent1D, SmoothScaleComponent2D, SmoothScaleComponent3D,\
-  SmoothMixin
+from dials.algorithms.scaling.model.components.scale_components import \
+  SHScaleComponent, SingleBScaleFactor, SingleScaleFactor, ScaleComponentBase
+from dials.algorithms.scaling.model.components.smooth_scale_components import \
+  SmoothScaleComponent1D, SmoothBScaleComponent1D, SmoothScaleComponent2D,\
+  SmoothScaleComponent3D, SmoothMixin
 import pytest
 from scitbx import sparse
 

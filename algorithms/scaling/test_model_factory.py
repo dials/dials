@@ -59,7 +59,7 @@ def generated_param():
   ''', process_includes=True)
 
   optionparser = OptionParser(phil=phil_scope, check_format=False)
-  parameters, _ = optionparser.parse_args(args=None, quick_parse=True,
+  parameters, _ = optionparser.parse_args(args=[], quick_parse=True,
     show_diff_phil=False)
   return parameters
 

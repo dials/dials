@@ -19,7 +19,7 @@ from dials.algorithms.scaling.target_function import ScalingTargetFixedIH
 from dials.algorithms.scaling.parameter_handler import create_apm_factory
 from dials.algorithms.scaling.scaling_refiner import scaling_refinery
 from dials.algorithms.scaling.scaling_library import scale_against_target
-from test_basis_and_target_function import calculate_gradient_fd
+from dials_scratch.jbe.tests.test_basis_and_target_function import calculate_gradient_fd
 
 def generated_refl():
   '''function to generate input for datamanagers'''
@@ -127,7 +127,7 @@ def generated_param():
   ''', process_includes=True)
 
   optionparser = OptionParser(phil=phil_scope, check_format=False)
-  parameters, _ = optionparser.parse_args(args=None, quick_parse=True,
+  parameters, _ = optionparser.parse_args(args=[], quick_parse=True,
     show_diff_phil=False)
   parameters.__inject__('model', 'KB')
   return parameters
