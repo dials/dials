@@ -29,7 +29,7 @@ class WeightingBase(object):
 
   def calculate_initial_weights(self):
     """Set the initial weight, to allow first calculation of Ih."""
-    self.Ih_table.weights = 1.0/self.Ih_table.Ih_table['variance']
+    self.Ih_table.weights = 1.0/self.Ih_table.variances
 
   def apply_iterative_weights(self):
     """Update the weights, if relevant."""
