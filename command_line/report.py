@@ -590,6 +590,8 @@ class StrongSpotsAnalyser(object):
     d.update(self.spot_count_per_image(rlist))
     # Look at distribution of unindexed spots with detector position
     d.update(self.unindexed_count_xy(rlist))
+    # Look at distribution of indexed spots with detector position
+    d.update(self.indexed_count_xy(rlist))
     #self.spot_count_per_panel(rlist)
     return {'strong': d}
 
@@ -731,6 +733,53 @@ ice rings, or poor spot-finding parameters.
         }],
         'layout': {
           'title': 'Number of unindexed reflections binned in X/Y',
+          'xaxis': {
+            'domain': [0, 0.85],
+            'title': 'X',
+            'showgrid': False,
+          },
+          'yaxis': {
+            'title': 'Y',
+            'autorange': 'reversed',
+            'showgrid': False,
+          },
+          'width': 500,
+          'height': 450,
+        },
+      },
+    }
+
+  def indexed_count_xy(self, rlist):
+    '''Analyse the indexed spot count in x/y. '''
+    from os.path import join
+    x,y,z = rlist['xyzobs.px.value'].parts()
+
+    indexed_sel = rlist.get_flags(rlist.flags.indexed)
+    if indexed_sel.count(True) == 0 or indexed_sel.count(False) == 0:
+      return {}
+
+    x = x.select(indexed_sel).as_numpy_array()
+    y = y.select(indexed_sel).as_numpy_array()
+
+    import numpy as np
+    H, xedges, yedges = np.histogram2d(x, y, bins=(self.nbinsx, self.nbinsy))
+
+    return {
+      'n_indexed_vs_xy': {
+        'data': [{
+          'x': xedges.tolist(),
+          'y': yedges.tolist(),
+          'z': H.transpose().tolist(),
+          'type': 'heatmap',
+          'name': 'n_indexed',
+          'colorbar': {
+            'title': 'Number of reflections',
+            'titleside': 'right',
+          },
+          'colorscale': 'Jet',
+        }],
+        'layout': {
+          'title': 'Number of indexed reflections binned in X/Y',
           'xaxis': {
             'domain': [0, 0.85],
             'title': 'X',
