@@ -43,5 +43,5 @@ def test_cosym_target(space_group):
     f, g = t.compute_functional_and_gradients(x)
     g_fd = t.compute_gradients_fd(x)
     assert f < f0
-    assert g.all_approx_equal(0, 1e-4)
-    assert g_fd.all_approx_equal(0, 1e-4)
+    assert g.all_approx_equal(0, 1e-3)
+    assert g_fd.all_approx_equal(0, 1e-3)

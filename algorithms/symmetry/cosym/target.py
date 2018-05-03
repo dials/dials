@@ -3,6 +3,8 @@ from __future__ import absolute_import, division, print_function
 import logging
 logger = logging.getLogger(__name__)
 
+import math
+
 from dials.util import log
 
 debug_handle = log.debug_handle(logger)
@@ -184,11 +186,17 @@ class Target(object):
 
       n_sym_ops = len(self._sym_ops)
       NN = n_lattices * n_sym_ops
-      rij = flex.double(flex.grid((NN, NN)), 0)
-      if self._weights is None:
-        wij = None
+
+      from scipy import sparse
+      rij_row = []
+      rij_col = []
+      rij_data = []
+      if self._weights is not None:
+        wij_row = []
+        wij_col = []
+        wij_data = []
       else:
-        wij = flex.double(flex.grid(NN,NN),0.)
+        wij = None
 
       i_lower, i_upper = self.lattice_lower_upper_index(i)
       intensities_i = self._data.data()[i_lower:i_upper]
@@ -241,19 +249,25 @@ class Target(object):
 
             if cc is not None and n is not None:
               if self._weights == 'count':
-                wij[(ik, jk)] = n
-                wij[(jk, ik)] = n
+                wij_row.extend([ik, jk])
+                wij_col.extend([jk, ik])
+                wij_data.extend([n, n])
               elif self._weights == 'standard_error':
                 assert n > 2
                 # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
-                import math
                 se = math.sqrt((1-cc**2)/(n-2))
                 wij = 1/se
-                wij[(ik, jk)] = wij
-                wij[(jk, ik)] = wij
+                wij_row.extend([ik, jk])
+                wij_col.extend([jk, ik])
+                wij_data.extend([wij, wij])
 
-              rij[(ik, jk)] = cc
-              rij[(jk, ik)] = cc
+              rij_row.extend([ik, jk])
+              rij_col.extend([jk, ik])
+              rij_data.extend([cc, cc])
+
+      rij = sparse.coo_matrix((rij_data, (rij_row, rij_col)), shape=(NN, NN))
+      if self._weights is not None:
+        wij = sparse.coo_matrix((wij_data, (wij_row, wij_col)), shape=(NN, NN))
 
       return rij, wij
 
@@ -271,10 +285,23 @@ class Target(object):
 
     timer_collate = time_log('collate', use_wall_clock=True)
     timer_collate.start()
+    rij_matrix = None
+    wij_matrix = None
     for i, (rij, wij) in enumerate(results):
-      self.rij_matrix += rij
+      if rij_matrix is None:
+        rij_matrix = rij
+      else:
+        rij_matrix += rij
       if wij is not None:
-        self.wij_matrix += wij
+        if wij_matrix is None:
+          wij_matrix = wij
+        else:
+          wij_matrix += wij
+
+    self.rij_matrix = flex.double(rij_matrix.todense())
+    if wij_matrix is not None:
+      import numpy as np
+      self.wij_matrix = flex.double(wij_matrix.todense().astype(np.float64))
     timer_collate.stop()
 
     logger.debug(time_log.legend)
