@@ -89,6 +89,10 @@ cluster {
   }
 }
 
+nproc = 1
+  .type = int(value_min=1)
+  .help = "The number of processes to use."
+
 ''')
 
 class analyse_datasets(object):
@@ -117,7 +121,8 @@ class analyse_datasets(object):
       lattice_group=lattice_group,
       dimensions=dimensions,
       verbose=self.params.verbose,
-      weights=self.params.weights
+      weights=self.params.weights,
+      nproc=self.params.nproc,
     )
     if self.params.dimensions is Auto:
       dimensions = []

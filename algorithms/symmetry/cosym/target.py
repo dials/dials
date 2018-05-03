@@ -8,6 +8,8 @@ from dials.util import log
 debug_handle = log.debug_handle(logger)
 info_handle = log.info_handle(logger)
 
+from libtbx.utils import time_log
+
 from cctbx.array_family import flex
 from cctbx import sgtbx
 from cctbx import miller
@@ -16,7 +18,8 @@ import cctbx.sgtbx.cosets
 class Target(object):
 
   def __init__(self, miller_arrays, weights=None, min_pairs=None,
-               lattice_group=None, dimensions=None, verbose=False):
+               lattice_group=None, dimensions=None, verbose=False,
+               nproc=1):
 
     self._miller_arrays = miller_arrays
     self.verbose = verbose
@@ -24,6 +27,7 @@ class Target(object):
       assert weights in ('count', 'standard_error')
     self._weights = weights
     self._min_pairs = min_pairs
+    self._nproc = nproc
 
     miller_array_all = None
     lattice_ids = None
@@ -175,12 +179,30 @@ class Target(object):
       miller.map_to_asu(space_group_type, False, indices_reindexed)
       indices[cb_op.as_xyz()] = indices_reindexed
 
-    rij_cache = {}
+    def _compute_rij_matrix_one_row_block(i):
+      rij_cache = {}
 
-    for i in xrange(n_lattices):
-      for j in xrange(i, n_lattices):
+      n_sym_ops = len(self._sym_ops)
+      NN = n_lattices * n_sym_ops
+      rij = flex.double(flex.grid((NN, NN)), 0)
+      if self._weights is None:
+        wij = None
+      else:
+        wij = flex.double(flex.grid(NN,NN),0.)
+
+      i_lower, i_upper = self.lattice_lower_upper_index(i)
+      intensities_i = self._data.data()[i_lower:i_upper]
+
+      for j in range(i, n_lattices):
+
+        j_lower, j_upper = self.lattice_lower_upper_index(j)
+        intensities_j = self._data.data()[j_lower:j_upper]
+
         for k, cb_op_k in enumerate(self._sym_ops):
           cb_op_k = sgtbx.change_of_basis_op(cb_op_k)
+
+          indices_i = indices[cb_op_k.as_xyz()][i_lower:i_upper]
+
           for kk, cb_op_kk in enumerate(self._sym_ops):
             if i == j and k == kk:
               # don't include correlation of dataset with itself
@@ -194,13 +216,7 @@ class Target(object):
             if use_cache and key in rij_cache:
               cc, n = rij_cache[key]
             else:
-              i_lower, i_upper = self.lattice_lower_upper_index(i)
-              j_lower, j_upper = self.lattice_lower_upper_index(j)
-
-              indices_i = indices[cb_op_k.as_xyz()][i_lower:i_upper]
               indices_j = indices[cb_op_kk.as_xyz()][j_lower:j_upper]
-              intensities_i = self._data.data()[i_lower:i_upper]
-              intensities_j = self._data.data()[j_lower:j_upper]
 
               matches = miller.match_indices(indices_i, indices_j)
               pairs = matches.pairs()
@@ -225,19 +241,45 @@ class Target(object):
 
             if cc is not None and n is not None:
               if self._weights == 'count':
-                self.wij_matrix[(ik, jk)] = n
-                self.wij_matrix[(jk, ik)] = n
+                wij[(ik, jk)] = n
+                wij[(jk, ik)] = n
               elif self._weights == 'standard_error':
                 assert n > 2
                 # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
                 import math
                 se = math.sqrt((1-cc**2)/(n-2))
                 wij = 1/se
-                self.wij_matrix[(ik, jk)] = wij
-                self.wij_matrix[(jk, ik)] = wij
+                wij[(ik, jk)] = wij
+                wij[(jk, ik)] = wij
 
-              self.rij_matrix[(ik, jk)] = cc
-              self.rij_matrix[(jk, ik)] = cc
+              rij[(ik, jk)] = cc
+              rij[(jk, ik)] = cc
+
+      return rij, wij
+
+    timer_mp = time_log('parallel_map', use_wall_clock=True)
+    timer_mp.start()
+    from libtbx import easy_mp
+    args = [(i,) for i in range(n_lattices)]
+    results = easy_mp.parallel_map(
+      _compute_rij_matrix_one_row_block,
+      args,
+      processes=self._nproc,
+      iterable_type=easy_mp.posiargs,
+      method='multiprocessing')
+    timer_mp.stop()
+
+    timer_collate = time_log('collate', use_wall_clock=True)
+    timer_collate.start()
+    for i, (rij, wij) in enumerate(results):
+      self.rij_matrix += rij
+      if wij is not None:
+        self.wij_matrix += wij
+    timer_collate.stop()
+
+    logger.debug(time_log.legend)
+    logger.debug(timer_mp.report())
+    logger.debug(timer_collate.report())
 
     return self.rij_matrix, self.wij_matrix
 
