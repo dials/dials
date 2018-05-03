@@ -4,6 +4,7 @@ This also provides a test for the scaler, which must be successfully
 initialised in order to provide input for the Ih_table.
 '''
 import pytest
+from copy import deepcopy
 from dials.algorithms.scaling.Ih_table import SingleIhTable, JointIhTable
 from dials.array_family import flex
 from libtbx.test_utils import approx_equal
@@ -63,6 +64,16 @@ def test_Ih_table(large_reflection_table, test_sg):
   """Test for Ih_table datastructure. Upon initialisation, Ih_table should set
   unity scale factors and calculate Ih_values. It should also create the
   a h_index_matrix."""
+
+  # Test initialisation fails without correct columns
+  for key in ['intensity', 'variance', 'inverse_scale_factor', 'miller_index']:
+    col_copy = deepcopy(large_reflection_table[key])
+    del large_reflection_table[key]
+    with pytest.raises(AssertionError):
+      Ih_table = SingleIhTable(large_reflection_table, test_sg,
+        weighting_scheme='unity')
+    large_reflection_table[key] = col_copy
+
   weights = flex.double(7, 1.0)
   reflection_table = large_reflection_table
   Ih_table = SingleIhTable(reflection_table, test_sg, weighting_scheme='unity')
@@ -139,17 +150,79 @@ def test_Ih_table(large_reflection_table, test_sg):
   assert list(Ih_table.Ih_values) == list(flex.double(
     [10.0, 5.0, 5.0, 6.0, 3.0, 9.0, 9.0]))
 
+  # Test for size checking when setting new weights, inverse scales
+  with pytest.raises(AssertionError):
+    Ih_table.inverse_scale_factors = flex.double([1.0])
+  with pytest.raises(AssertionError):
+    Ih_table.weights = flex.double([1.0])
+
 def test_Ih_table_freework(large_reflection_table, test_sg):
   """Test the splitting of a single dataset into a work and free set."""
   reflection_table = large_reflection_table
   Ih_table = SingleIhTable(reflection_table, test_sg, weighting_scheme='unity')
+  
+  old_Ih_values = deepcopy(Ih_table.Ih_values)
+  
   Ih_table.split_into_free_work(30.0)
+
+  #Test that the Ih_table was split properly.
+  assert Ih_table.free_Ih_table
+  assert list(Ih_table.free_set_sel) == [False, True, False, False, True,
+    False, False]
+  assert Ih_table.free_Ih_table.h_index_matrix.non_zeroes == 2
+  assert Ih_table.free_Ih_table.h_index_matrix.n_cols == 2
+  assert Ih_table.free_Ih_table.h_index_matrix[0, 0] == 1
+  assert Ih_table.free_Ih_table.h_index_matrix[1, 1] == 1
+
+  assert Ih_table.h_index_matrix.non_zeroes == 5
+  assert Ih_table.h_index_matrix.n_cols == 3
+  assert Ih_table.h_index_matrix[0, 2] == 1
+  assert Ih_table.h_index_matrix[1, 2] == 1
+  assert Ih_table.h_index_matrix[2, 1] == 1
+  assert Ih_table.h_index_matrix[3, 0] == 1
+  assert Ih_table.h_index_matrix[4, 0] == 1
+
+  # Now test that calc_Ih correctly calculates for the two sets.
+  Ih_table.calc_Ih()
+  assert list(Ih_table.Ih_values) == list(
+    old_Ih_values.select(~Ih_table.free_set_sel))
+  assert list(Ih_table.free_Ih_table.Ih_values) == list(
+    old_Ih_values.select(Ih_table.free_set_sel))
+
+  # Now test setting of new inverse scales in the case of a free set
+  new_scales = flex.double([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
+  Ih_table.inverse_scale_factors = new_scales
+  assert Ih_table.inverse_scale_factors == new_scales.select(
+    ~Ih_table.free_set_sel)
+  assert Ih_table.free_Ih_table.inverse_scale_factors == new_scales.select(
+    Ih_table.free_set_sel)
+
 
 def test_joint_Ih_table_freework(joint_test_input):
   """Test the splitting of a multiple dataset into a work and free set."""
   Ih_table_1, Ih_table_2 = joint_test_input
   Ih_table = JointIhTable([Ih_table_1, Ih_table_2])
+  old_inverse_scales = Ih_table.inverse_scale_factors
+  old_Ih_vals = Ih_table.Ih_values
   Ih_table.split_into_free_work(20.0)
+  # As the split method is contained in the base, shouldn't need to check all
+  # elements, but do need to check the calc_Ih method which is a bit different.
+  assert Ih_table.free_set_sel
+  assert Ih_table.h_index_matrix.non_zeroes == 9
+  assert Ih_table.h_index_matrix.n_cols == 4
+  assert Ih_table.h_index_matrix.n_rows == 9
+  assert Ih_table.free_Ih_table.h_index_matrix.non_zeroes == 2
+  assert Ih_table.free_Ih_table.h_index_matrix.n_cols == 2
+  assert Ih_table.free_Ih_table.h_index_matrix.n_rows == 2
+  Ih_table.calc_Ih()
+  assert list(Ih_table.inverse_scale_factors) == list(
+    old_inverse_scales.select(~Ih_table.free_set_sel))
+  assert list(Ih_table.Ih_values) == list(
+    old_Ih_vals.select(~Ih_table.free_set_sel))
+  assert list(Ih_table.free_Ih_table.inverse_scale_factors) == list(
+    old_inverse_scales.select(Ih_table.free_set_sel))
+  assert list(Ih_table.free_Ih_table.Ih_values) == list(
+    old_Ih_vals.select(Ih_table.free_set_sel))
 
 def test_Ih_table_nonzero_weights(large_reflection_table, test_sg):
   """Test for 'nonzero_Weights' attribute and how this changes during selection.

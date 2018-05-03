@@ -2,13 +2,14 @@
 Tests for outlier rejection.
 '''
 import pytest
+from libtbx.utils import Sorry
 from dials.array_family import flex
 from cctbx.sgtbx import space_group
 from dials.algorithms.scaling.outlier_rejection import \
-  NormDevOutlierRejection, SimpleNormDevOutlierRejection
+  NormDevOutlierRejection, SimpleNormDevOutlierRejection, reject_outliers
 
 @pytest.fixture(scope='module')
-def test_space_group():
+def test_sg():
   """Create a space group object."""
   return space_group("C 2y")
 
@@ -34,20 +35,44 @@ def generate_outlier_table():
   rt.set_flags(flex.bool(12, False), rt.flags.user_excluded_in_scaling)
   return rt
 
-def test_standard_outlier_rejection(outlier_reflection_table, test_space_group):
+expected_standard_output = [False, False, False, False, True, False, False,
+  True, True, True, False, False]
+
+expected_simple_output = [False, False, False, False, True, True, True, True,
+  True, True, False, False]
+
+def test_standard_outlier_rejection(outlier_reflection_table, test_sg):
   """Test the outlier rejection algorithm, that the outlier flags are set
   as expected."""
   zmax = 6.0
-  refl = NormDevOutlierRejection(outlier_reflection_table,
-    test_space_group, zmax).return_reflection_table()
-  assert list(refl.get_flags(refl.flags.outlier_in_scaling)) == [False, False,
-    False, False, True, False, False, True, True, True, False, False]
+  OutlierRej = NormDevOutlierRejection(outlier_reflection_table,
+    test_sg, zmax)
+  refl = OutlierRej.return_reflection_table()
+  assert list(refl.get_flags(refl.flags.outlier_in_scaling)) == \
+    expected_standard_output
+  OutlierRej.unset_outlier_flags()
+  refl = OutlierRej.return_reflection_table()
+  assert list(refl.get_flags(refl.flags.outlier_in_scaling)) == [False] * 12
 
-def test_simple_outlier_rejection(outlier_reflection_table, test_space_group):
+def test_simple_outlier_rejection(outlier_reflection_table, test_sg):
   """Test the outlier rejection algorithm, that the outlier flags are set
   as expected."""
   zmax = 6.0
   refl = SimpleNormDevOutlierRejection(outlier_reflection_table,
-    test_space_group, zmax).return_reflection_table()
+    test_sg, zmax).return_reflection_table()
   assert list(refl.get_flags(refl.flags.outlier_in_scaling)) == [False, False,
     False, False, True, True, True, True, True, True, False, False]
+
+def test_reject_outliers_function(outlier_reflection_table, test_sg):
+  """Test the helper function."""
+
+  refl = reject_outliers(outlier_reflection_table, test_sg, 'standard')
+  assert list(refl.get_flags(refl.flags.outlier_in_scaling)) == \
+    expected_standard_output
+
+  refl = reject_outliers(outlier_reflection_table, test_sg, 'simple')
+  assert list(refl.get_flags(refl.flags.outlier_in_scaling)) == \
+    expected_simple_output
+
+  with pytest.raises(Sorry):
+    refl = reject_outliers(outlier_reflection_table, test_sg, 'badchoice')

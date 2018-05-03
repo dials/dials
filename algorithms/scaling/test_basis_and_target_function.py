@@ -183,6 +183,12 @@ def test_basis_function(small_reflection_table):
   assert basis_fn[1][1, 0] == components['scale'].derivatives[1, 0]
   assert basis_fn[1][2, 0] == components['scale'].derivatives[2, 0]
 
+  apm = scaling_active_parameter_manager(components, [])
+  basis_fn = basis_function(apm, curvatures=True)
+  s, d, c = basis_fn.return_basis()
+  assert d is None
+  assert c is None
+
 def test_target_function():
   """Test for the ScalingTarget class."""
 

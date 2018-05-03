@@ -42,14 +42,12 @@ class IhTableBase(object):
   @abc.abstractmethod
   def _assign_h_matrices(self):
     """Assign the h_index and h_expand matrices."""
-    pass
 
   @abc.abstractmethod
   def calc_Ih(self):
     """Calculate the current best estimate for I for each reflection group.
     update_weights flag should only affect behaviour if the weighting scheme
     is iterative."""
-    pass
 
   @property
   def size(self):

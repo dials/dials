@@ -65,7 +65,6 @@ class ScalingModelBase(object):
     to perform scaling in consecutive scaling mode if concurrent=0.
     e.g. [['scale', 'decay'], ['absorption']] would cause the first cycle to
     refine scale and decay, and then absorption in a subsequent cycle."""
-    pass
 
   def to_dict(self):
     """Format data to dictionary for output."""
@@ -82,9 +81,9 @@ class ScalingModelBase(object):
     return dictionary
 
   @classmethod
+  @abc.abstractmethod
   def from_dict(cls, obj):
     """Create a scaling model object from a dictionary."""
-    pass
 
   def set_error_model(self, error_model_params):
     """Associate an error model with the dataset."""

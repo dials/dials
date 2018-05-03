@@ -1,21 +1,23 @@
 """
 Module of uoutlier rejection algorithms.
 """
+from libtbx.utils import Sorry
 from dials.array_family import flex
 from dials.algorithms.scaling.Ih_table import SingleIhTable
 
 
-def reject_outliers(reflection_table, space_group, params):
+def reject_outliers(reflection_table, space_group, method='standard', zmax=9.0):
   """Helper function to act as interface to outlier algorithms."""
-  if params.scaling_options.outlier_rejection == 'standard':
+  if method == 'standard':
     refl = NormDevOutlierRejection(reflection_table, space_group,
-      params.scaling_options.outlier_zmax).return_reflection_table()
+      zmax).return_reflection_table()
     return refl
-  elif params.scaling_options.outlier_rejection == 'simple':
+  elif method == 'simple':
     refl = SimpleNormDevOutlierRejection(reflection_table, space_group,
-      params.scaling_options.outlier_zmax).return_reflection_table()
+      zmax).return_reflection_table()
     return refl
-  return reflection_table
+  else:
+    raise Sorry("Invalid choice of outlier rejection method.")
 
 class OutlierRejectionBase(object):
   """Base class for outlier rejection algorithms based on the use of the

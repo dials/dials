@@ -115,13 +115,11 @@ class ScaleComponentBase(object):
     No restrictions should be placed on the data remaining the same
     size, to allow easy changing of the data contained during scaling.
     The input data will be specific to the component."""
-    pass
 
   @abc.abstractmethod
   def calculate_scales_and_derivatives(self, curvatures=False):
     """Use the component parameters to calculate and set
     self._inverse_scales and self._derivatives."""
-    pass
 
 
 class SingleScaleFactor(ScaleComponentBase):

@@ -94,12 +94,10 @@ class ScalerBase(object):
   @abc.abstractmethod
   def update_for_minimisation(self, apm, curvatures=False):
     """Update the scale factors and Ih for the next minimisation iteration."""
-    pass
 
   @abc.abstractmethod
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
     """Expand scales from a subset to all reflections."""
-    pass
 
   def _set_space_group(self):
     if self.params.scaling_options.space_group:
@@ -154,7 +152,6 @@ class ScalerBase(object):
   @abc.abstractmethod
   def perform_error_optimisation(self):
     """Optimise an error model."""
-    pass
 
 
 class SingleScalerBase(ScalerBase):
@@ -371,7 +368,8 @@ class SingleScalerBase(ScalerBase):
     """calculate outliers from the reflections in the Ih_table,
     and use these to filter the reflection table and Ih_table."""
     reflection_table = reject_outliers(reflection_table, self.space_group,
-      self.params)
+      self.params.scaling_options.outlier_rejection,
+      self.params.scaling_options.outlier_zmax)
     msg = ('A round of outlier rejection has been performed, in total {0} {sep}'
         'outliers have now been identified. {sep}'.format(
         reflection_table.get_flags(reflection_table.flags.outlier_in_scaling
@@ -465,7 +463,6 @@ class MultiScalerBase(ScalerBase):
   @abc.abstractmethod
   def join_multiple_datasets(self):
     """Combine all datasets into a single reflection table."""
-    pass
 
   def join_datasets_from_scalers(self, scalers):
     """Create a joint reflection table from single scalers.
@@ -481,7 +478,8 @@ class MultiScalerBase(ScalerBase):
     """calculate outliers from the reflections in the Ih_table,
     and use these to filter the reflection table and Ih_table."""
     reflection_table = reject_outliers(reflection_table, self.space_group,
-      self.params)
+      self.params.scaling_options.outlier_rejection,
+      self.params.scaling_options.outlier_zmax)
     msg = ('Combined outlier rejection has been performed across all datasets, {sep}'
       'in total {0} outliers have now been identified. {sep}'.format(
         reflection_table.get_flags(reflection_table.flags.outlier_in_scaling
