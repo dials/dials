@@ -1,14 +1,15 @@
 from __future__ import absolute_import, division, print_function
 
+import json
 import os
 
 def test_export_mosflm(dials_regression, tmpdir):
   from libtbx import easy_run
 
+  dials_regression_escaped = json.dumps(dials_regression).strip('"')
   with open(os.path.join(dials_regression, "experiment_test_data/experiment_1.json"), 'r') as fi:
     with (tmpdir / 'experiments.json').open('w') as fo:
-      for line in fi.readlines():
-        fo.write(line.replace('$DIALS_REGRESSION', dials_regression))
+      fo.write(fi.read().replace('$DIALS_REGRESSION', dials_regression_escaped))
 
   tmpdir.chdir()
 
