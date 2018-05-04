@@ -56,6 +56,3 @@ def xia2_regression_build():
   if 'test_data' not in os.listdir(x2rpath):
     pytest.skip("xia2_regression files need to be downloaded for this test. Run xia2_regression.fetch_test_data")
   return x2rpath
-
-from libtbx.test_utils.pytest import libtbx_collector
-pytest_collect_file = libtbx_collector()
