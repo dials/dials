@@ -209,25 +209,18 @@ def refine_subgroup(args):
   except RuntimeError as e:
     if (str(e) == "scitbx Error: g0 - astry*astry -astrz*astrz <= 0." or
         str(e) == "scitbx Error: g1-bstrz*bstrz <= 0."):
-      subgroup.refined_crystal = None
+      subgroup.refined_experiments = None
       subgroup.rmsd = None
       subgroup.Nmatches = None
-      subgroup.scan = None
-      subgroup.goniometer = None
-      subgroup.beam = None
-      subgroup.detector = None
     else: raise
   else:
     dall = refinery.rmsds()
     dx = dall[0]; dy = dall[1]
     subgroup.rmsd = math.sqrt(dx*dx + dy*dy)
     subgroup.Nmatches = len(refinery.get_matches())
-    refined_exps = refinery.get_experiments()
-    subgroup.scan = refined_exps[0].scan
-    subgroup.goniometer = refined_exps[0].goniometer
-    subgroup.beam = refined_exps[0].beam
-    subgroup.detector = refined_exps[0].detector
-    subgroup.refined_crystal = refined_exps[0].crystal
+    subgroup.refined_experiments = refinery.get_experiments()
+    assert len(subgroup.refined_experiments.crystals()) == 1
+    subgroup.refined_crystal = subgroup.refined_experiments.crystals()[0]
     cs = crystal.symmetry(
       unit_cell=subgroup.refined_crystal.get_unit_cell(),
       space_group=subgroup.refined_crystal.get_space_group())
