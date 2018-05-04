@@ -202,6 +202,14 @@ refinement
                   "when doing scan-varying refinement"
           .expert_level = 1
 
+        set_scan_varying_errors = False
+          .type = bool
+          .help = "If scan-varying refinement is done, and if the estimated"
+                  "covariance of the B matrix has been calculated by the"
+                  "minimiser, choose whether to return this to the model or"
+                  "not. The default is not to, in order to keep the file size"
+                  "of the serialized model small."
+
         %(sv_phil_str)s
       }
 
@@ -807,10 +815,10 @@ class RefinerFactory(object):
               abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
 
           xl_ori_param = par.ScanVaryingCrystalOrientationParameterisation(
-                                              crystal,
-                                              array_range,
-                                              n_intervals,
-                                              experiment_ids=exp_ids)
+              crystal,
+              array_range,
+              n_intervals,
+              experiment_ids=exp_ids)
         else: # force model to be static
           xl_ori_param = par.CrystalOrientationParameterisation(crystal,
                                                           experiment_ids=exp_ids)
@@ -828,11 +836,13 @@ class RefinerFactory(object):
             n_intervals = max(int(
               abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
 
+          set_errors = options.crystal.unit_cell.set_scan_varying_errors
           xl_uc_param = par.ScanVaryingCrystalUnitCellParameterisation(
-                                              crystal,
-                                              array_range,
-                                              n_intervals,
-                                              experiment_ids=exp_ids)
+              crystal,
+              array_range,
+              n_intervals,
+              experiment_ids=exp_ids,
+              set_state_uncertainties=set_errors)
         else: # force model to be static
           xl_uc_param = par.CrystalUnitCellParameterisation(crystal,
                                                           experiment_ids=exp_ids)
