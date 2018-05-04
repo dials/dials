@@ -355,7 +355,7 @@ def plot_projections(projections, filename=None, show=None,
           if (flex.sqrt(flex.pow2(p1)+flex.pow2(p2)) < 1e-3).iselection()[0] != j:
             continue
           pyplot.text(proj[0], proj[1], str(hkl), fontsize=font_size)
-  pyplot.axes().set_aspect('equal')
+  fig.axes[0].set_aspect('equal')
   pyplot.xlim(-1.1,1.1)
   pyplot.ylim(-1.1,1.1)
   if filename is not None:
