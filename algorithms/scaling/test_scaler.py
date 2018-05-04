@@ -2,11 +2,13 @@
 This code tests the data managers and active parameter managers.
 '''
 import pytest
+from mock import Mock, MagicMock
 from scitbx import sparse
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from libtbx import phil
 from libtbx.test_utils import approx_equal
+from cctbx.sgtbx import space_group
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.algorithms.scaling.scaling_library import create_scaling_model
@@ -58,6 +60,7 @@ def generated_refl():
     (2, 0, 0), (2, 2, 2)]) #don't change
   reflections['d'] = flex.double([0.8, 2.0, 2.0, 0.0]) #don't change
   reflections['lp'] = flex.double([1.0, 1.0, 1.0, 1.0])
+  reflections['dqe'] = flex.double([1.0, 1.0, 1.0, 1.0])
   reflections['partiality'] = flex.double([1.0, 1.0, 1.0, 1.0])
   reflections['xyzobs.px.value'] = flex.vec3_double([(0.0, 0.0, 0.0),
     (0.0, 0.0, 5.0), (0.0, 0.0, 10.0), (0.0, 0.0, 10.0)])
@@ -65,6 +68,8 @@ def generated_refl():
     (0.0, 0.1, 1.0), (0.0, 0.1, 1.0)])
   reflections.set_flags(flex.bool([True, True, False, False]),
     reflections.flags.integrated)
+  reflections.set_flags(flex.bool([False, False, True, True]),
+    reflections.flags.bad_for_scaling)
   return [reflections]
 
 def generated_exp(n=1):
@@ -126,14 +131,36 @@ def test_ScalerBase():
 
   with pytest.raises(AssertionError):
     scalerbase.Ih_table = [1.0]
+  # Set an Ih table with a mock that conforms to the id
+  Ih_table = Mock()
+  Ih_table.id_ = "IhTableBase"
+  scalerbase.Ih_table = Ih_table
+  assert scalerbase.Ih_table is Ih_table
 
   scalerbase_directory = dir(scalerbase)
   assert '_scaling_subset' in scalerbase_directory
 
-  # Test map indices to asu.
+  # Test setting space group.
+  new_sg = "P 1"
+  scalerbase.space_group = new_sg
+  assert scalerbase.space_group == space_group(new_sg)
+  new_sg = space_group("P 3")
+  scalerbase.space_group = new_sg
+  assert scalerbase.space_group is new_sg
+  with pytest.raises(AssertionError):
+    scalerbase.space_group = 1
+
   rt = flex.reflection_table()
-  rt['miller_index'] = flex.miller_index([(1, 0, 0), (0, 0, 1),
-    (1, 0, 0), (2, 2, 2)])
+  rt['inverse_scale_factor'] = flex.double([1.0])
+  rt['inverse_scale_factor_variance'] = flex.double([1.0])
+  rt['Ih_values'] = flex.double([1.0])
+  rt['extra junk'] = flex.double([4.0])
+  scalerbase._reflection_table = rt
+  scalerbase.clean_reflection_table()
+  assert not 'extra junk' in scalerbase.reflection_table
+  assert 'inverse_scale_factor' in scalerbase.reflection_table
+  assert 'inverse_scale_factor_variance' in scalerbase.reflection_table
+  assert 'Ih_values' in scalerbase.reflection_table
 
 def test_SingleScaler(test_reflections, test_experiments, test_params):
   """Test the single scaler class."""
@@ -160,13 +187,16 @@ def test_SingleScaler(test_reflections, test_experiments, test_params):
   assert list(rt['inverse_scale_factor']) == [1.0] * rt.size()
 
   # Test for correct choice of intensities.
-  new_rt = SingleScalerBase._select_optimal_intensities(rt, test_params)
+  new_rt = SingleScalerBase._select_optimal_intensities(rt, 'prf')
   assert list(new_rt['intensity']) == list(rt['intensity.prf.value'])
   assert list(new_rt['variance']) == list(rt['intensity.prf.variance'])
-  test_params.scaling_options.integration_method = 'sum'
-  new_rt = SingleScalerBase._select_optimal_intensities(rt, test_params)
+  new_rt = SingleScalerBase._select_optimal_intensities(rt, 'sum')
   assert list(new_rt['intensity']) == list(rt['intensity.sum.value'])
   assert list(new_rt['variance']) == list(rt['intensity.sum.variance'])
+  # If bad choice, currently return the prf values.
+  new_rt = SingleScalerBase._select_optimal_intensities(rt, 'bad')
+  assert list(new_rt['intensity']) == list(rt['intensity.prf.value'])
+  assert list(new_rt['variance']) == list(rt['intensity.prf.variance'])
 
   # Test that normalised Es are set (defer test of calculation to separate test)
   assert 'Esq' in rt
@@ -237,9 +267,69 @@ def test_SingleScaler(test_reflections, test_experiments, test_params):
   assert [1.0, 0.00] == singlescaler.experiments.scaling_model.configdict[
     'error_model_parameters']
 
+  new_sg = "P 1"
+  singlescaler.space_group = new_sg
+  assert singlescaler.space_group == space_group(new_sg)
+
   # Test restraints calculation calls? But should these be moved elsewhere?
   # Test outlier rejection call? Defer to test in scaling utilities?
 
+
+@pytest.fixture
+def mock_scaling_component():
+  """Mock scaling component to allow creation of a scaling model."""
+  component = Mock()
+  component.n_params = 2
+  return component
+
+def side_effect_config_table(*args):
+  """Side effect to mock configure reflection table
+  call during initialisation."""
+  return args[0]
+
+@pytest.fixture
+def mock_exp(mock_scaling_component):
+  exp = Mock()
+  exp.scaling_model.components = {'scale' : mock_scaling_component}
+  exp.scaling_model.configure_reflection_table.side_effect = side_effect_config_table
+  exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
+              "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
+              "space_group_hall_symbol": " C 2y"}
+  exp.crystal = Crystal.from_dict(exp_dict)
+  return exp
+
+def test_scaler_update_var_cov(test_reflections, mock_exp, test_params):
+  """Test the update variance covariance matrix."""
+  single_scaler = SingleScalerBase(test_params, mock_exp, test_reflections[0])
+  #single_scaler.var_cov_matrix = sparse.matrix(2, 2)
+  apm = Mock()
+  var_list = [1.0, 0.1, 0.1, 0.5]
+  apm.var_cov_matrix = flex.double(var_list)
+  apm.var_cov_matrix.reshape(flex.grid(2, 2))
+  apm.n_active_params = 2
+  single_scaler.update_var_cov(apm)
+  assert single_scaler.var_cov_matrix[0, 0] == var_list[0]
+  assert single_scaler.var_cov_matrix[0, 1] == var_list[1]
+  assert single_scaler.var_cov_matrix[1, 0] == var_list[2]
+  assert single_scaler.var_cov_matrix[1, 1] == var_list[3]
+  assert single_scaler.var_cov_matrix.non_zeroes == 4
+
+  #Repeat but only with setting a subset
+  single_scaler = SingleScalerBase(test_params, mock_exp, test_reflections[0])
+  apm = test_apm()
+  single_scaler.update_var_cov(apm)
+  assert single_scaler.var_cov_matrix.non_zeroes == 1
+  assert single_scaler.var_cov_matrix[0, 0] == apm.var_list[0]
+
+class test_apm(object):
+  """Mock-up of an apm for testing."""
+  def __init__(self):
+    self.var_list = [2.0]
+    self.var_cov_matrix = flex.double(self.var_list)
+    self.var_cov_matrix.reshape(flex.grid(1, 1))
+    self.n_active_params = 1
+    self.components_list = ['scale']
+    self.components = {'scale': {'n_params':1, 'start_idx':0}}
 
 def test_MultiScaler(two_test_reflections, two_test_experiments, test_params):
   """Test the MultiScaler class."""

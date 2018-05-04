@@ -111,23 +111,23 @@ class Script(object):
       self.reflections = parse_multiple_datasets(self.reflections)
       logger.info("Found %s reflection tables in total.", len(self.reflections))
       logger.info("Found %s experiments in total.", len(self.experiments))
-      if self.params.scaling_options.space_group:
-        for experiment in self.experiments:
-          sg_from_file = experiment.crystal.get_space_group().info()
-          s_g_symbol = self.params.scaling_options.space_group
-          crystal_symmetry = crystal.symmetry(space_group_symbol=s_g_symbol)
-          experiment.crystal.set_space_group(crystal_symmetry.space_group())
-          if crystal_symmetry.space_group() != sg_from_file:
-            msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
-              'If the reflection indexing in these space groups is different, {sep}'
-              'bad things may happen!!! {sep}').format(sg_from_file, s_g_symbol, sep='\n')
-            logger.info(msg)
-      s_g_1 = self.experiments[0].crystal.get_space_group()
+    if self.params.scaling_options.space_group:
       for experiment in self.experiments:
-        if experiment.crystal.get_space_group() != s_g_1:
-          raise Sorry('experiments have different space groups and cannot be'
-            'scaled together, please reanalyse the data so that the space groups'
-            'are consistent or manually specify a space group.')
+        sg_from_file = experiment.crystal.get_space_group().info()
+        s_g_symbol = self.params.scaling_options.space_group
+        crystal_symmetry = crystal.symmetry(space_group_symbol=s_g_symbol)
+        experiment.crystal.set_space_group(crystal_symmetry.space_group())
+        if crystal_symmetry.space_group() != sg_from_file:
+          msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
+            'If the reflection indexing in these space groups is different, {sep}'
+            'bad things may happen!!! {sep}').format(sg_from_file, s_g_symbol, sep='\n')
+          logger.info(msg)
+    s_g_1 = self.experiments[0].crystal.get_space_group()
+    for experiment in self.experiments:
+      if experiment.crystal.get_space_group() != s_g_1:
+        raise Sorry('experiments have different space groups and cannot be'
+          'scaled together, please reanalyse the data so that the space groups'
+          'are consistent or manually specify a space group.')
 
     if self.params.scaling_options.target_model:
       logger.info("Extracting data from structural model.")

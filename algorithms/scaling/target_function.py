@@ -109,7 +109,7 @@ class ScalingTarget(object):
     assert 0, "method not yet implemented."
     """Calculate the second derivatives"""
     # Make some shorthand notation
-    Ih_tab = self.scaler.Ih_table
+    '''Ih_tab = self.scaler.Ih_table
     w = Ih_tab.weights
     I = Ih_tab.intensities
     Ih = Ih_tab.Ih_values
@@ -173,7 +173,7 @@ class ScalingTarget(object):
       return curvs
     curvs = B + D2 + D3 + E + first_term
 
-    return curvs
+    return curvs'''
 
 
   # The following methods are for adaptlbfgs.

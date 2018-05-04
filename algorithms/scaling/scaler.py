@@ -10,7 +10,7 @@ A TargetScaler is used for targeted scaling.
 import abc
 import logging
 from dials.array_family import flex
-from cctbx import crystal
+from cctbx import crystal, sgtbx
 from scitbx import sparse
 from dials_scaling_helpers_ext import row_multiply
 from libtbx.table_utils import simple_table
@@ -42,7 +42,7 @@ class ScalerBase(object):
 
   def __init__(self):
     self._experiments = None
-    self.space_group = None
+    self._space_group = None
     self._params = None
     self._reflection_table = []
     self._Ih_table = None
@@ -66,6 +66,35 @@ class ScalerBase(object):
   def experiments(self):
     """The experiment object associated with the dataset."""
     return self._experiments
+
+  @property
+  def space_group(self):
+    """The space group associated with the dataset."""
+    return self._space_group
+
+  @space_group.setter
+  def space_group(self, new_sg):
+    """Take in either a space_group symbol or object """
+    if self._space_group:
+      current_sg = self._space_group.info()
+    else:
+      current_sg = None
+    if isinstance(new_sg, str):
+      crystal_symmetry = crystal.symmetry(space_group_symbol=new_sg)
+      self._space_group = crystal_symmetry.space_group()
+    elif isinstance(new_sg, sgtbx.space_group):
+      self._space_group = new_sg
+      new_sg = new_sg.info()
+    else:
+      raise AssertionError('''Space group not recognised as a space group symbol
+        or cctbx.sgtbx.space group object.''')
+    if self.experiments:
+      self.experiments.crystal.set_space_group(self._space_group)
+    if current_sg:
+      msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
+      'If the reflection indexing in these space groups is different, {sep}'
+      'bad things may happen!!! {sep}').format(current_sg, new_sg, sep='\n')
+      logger.info(msg)
 
   @property
   def reflection_table(self):
@@ -99,25 +128,11 @@ class ScalerBase(object):
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
     """Expand scales from a subset to all reflections."""
 
-  def _set_space_group(self):
-    if self.params.scaling_options.space_group:
-      sg_from_file = self.experiments.crystal.get_space_group().info()
-      s_g_symbol = self.params.scaling_options.space_group
-      crystal_symmetry = crystal.symmetry(space_group_symbol=s_g_symbol)
-      self.space_group = crystal_symmetry.space_group()
-      self.experiments.crystal.set_space_group(self.space_group)
-      msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
-        'If the reflection indexing in these space groups is different, {sep}'
-        'bad things may happen!!! {sep}').format(sg_from_file, s_g_symbol, sep='\n')
-      logger.info(msg)
-    else:
-      self.space_group = self.experiments.crystal.get_space_group()
-
   @classmethod
   def _scaling_subset(cls, reflection_table, params):
     """Select reflections with non-zero weight and update scale weights."""
-    sel = ~reflection_table.get_flags(reflection_table.flags.bad_for_scaling,
-      all=False)
+    sel = ~(reflection_table.get_flags(reflection_table.flags.bad_for_scaling,
+      all=False))
     sel1 = reflection_table['Esq'] > params.reflection_selection.E2_min
     sel2 = reflection_table['Esq'] < params.reflection_selection.E2_max
     sel3 = reflection_table['intensity']/(reflection_table['variance']**0.5) > (
@@ -171,7 +186,9 @@ class SingleScalerBase(ScalerBase):
     super(SingleScalerBase, self).__init__()
     self._experiments = experiment
     self._params = params
-    self._set_space_group()
+    self._space_group = self.experiments.crystal.get_space_group()
+    if self._params.scaling_options.space_group:
+      self.space_group = self._params.scaling_options.space_group
     n_model_params = sum([val.n_params for val in self.components.itervalues()])
     self._var_cov = sparse.matrix(n_model_params, n_model_params)
     # Rename the id for now so that we have unique dataset ids
@@ -181,7 +198,7 @@ class SingleScalerBase(ScalerBase):
     reflection_table = self._reflection_table_setup(self._initial_keys,
       reflection) #flag not integrated, bad d, bad partiality
     reflection_table = self._select_optimal_intensities(reflection_table,
-      self.params) #flag bad variance,
+      self.params.scaling_options.integration_method) #flag bad variance,
     # Calculate values for later filtering, but don't filter here!!!
     reflection_table = calc_normE2(reflection_table, self.experiments)
     #if 'centric_flag' in reflection_table: #If E2 values have been calculated
@@ -190,6 +207,7 @@ class SingleScalerBase(ScalerBase):
       reflection_table = self.round_of_outlier_rejection(reflection_table)
     self._reflection_table = reflection_table
     self._configure_reflection_table()
+    print(self._reflection_table)
     self.select_reflections_for_scaling(split_free_set=(not for_multi))
     logger.info('Completed configuration of Scaler. \n\n' + '='*80 + '\n')
 
@@ -223,18 +241,26 @@ class SingleScalerBase(ScalerBase):
         apm.n_active_params, apm.n_active_params), 0, 0)
     else: #need to set part of the var_cov matrix e.g. if only refined some params
       #first work out the order in self._var_cov
+      print('here')
       cumul_pos_dict = {}
       n_cumul_params = 0
       for name, component in self.components.iteritems():
         cumul_pos_dict[name] = n_cumul_params
         n_cumul_params += component.n_params
       #now get a var_cov_matrix subblock for pairs of parameters
+      print(cumul_pos_dict)
+      print(apm.components_list)
       for name in apm.components_list:
+        print('here2')
         for name2 in apm.components_list:
+          print('here3')
+          print(name)
           n_rows = apm.components[name]['n_params']
           n_cols = apm.components[name2]['n_params']
           start_row = apm.components[name]['start_idx']
           start_col = apm.components[name2]['start_idx']
+          print(n_rows)
+          print(start_row)
           sub = var_cov_list.matrix_copy_block(start_row, start_col, n_rows,
             n_cols)
           #now set this block into correct location in overall var_cov
@@ -273,11 +299,10 @@ class SingleScalerBase(ScalerBase):
     return reflections
 
   @classmethod
-  def _select_optimal_intensities(cls, reflection_table, params):
+  def _select_optimal_intensities(cls, reflection_table, integration_method):
     """Choose which intensities to use for scaling."""
-    if (params.scaling_options.integration_method == 'sum' or
-        params.scaling_options.integration_method == 'prf'):
-      intstr = params.scaling_options.integration_method
+    if (integration_method == 'sum' or integration_method == 'prf'):
+      intstr = integration_method
       conversion = flex.double(reflection_table.size(), 1.0)
       if 'partiality' in reflection_table:
         inverse_partiality = flex.double(reflection_table.size(), 1.0)
@@ -297,8 +322,11 @@ class SingleScalerBase(ScalerBase):
       logger.info('%s intensity values will be used for scaling. \n',
         'Profile fitted' if intstr == 'prf' else 'Summation integrated')
     #perform a combined prf/sum in a similar fashion to aimless
-    elif params.scaling_options.integration_method == 'combine':
-      int_prf = reflection_table['intensity.prf.value'] * conversion
+    else:
+      logger.info('Intensity selection choice does not have an implementation \n'
+        'using prf values.')
+      return cls._select_optimal_intensities(reflection_table, 'prf')
+      '''int_prf = reflection_table['intensity.prf.value'] * conversion
       int_sum = reflection_table['intensity.sum.value'] * conversion
       var_prf = reflection_table['intensity.prf.variance'] * (conversion**2)
       var_sum = reflection_table['intensity.sum.variance'] * (conversion**2)
@@ -310,7 +338,7 @@ class SingleScalerBase(ScalerBase):
         + ((1.0 - weight) * var_sum))
       msg = ('Combined profile/summation intensity values will be used for {sep}'
       'scaling, with an Imid of {0}. {sep}').format(Imid, sep='\n')
-      logger.info(msg)
+      logger.info(msg)'''
     variance_mask = reflection_table['variance'] <= 0.0
     reflection_table.set_flags(variance_mask,
       reflection_table.flags.excluded_for_scaling)
@@ -431,7 +459,7 @@ class MultiScalerBase(ScalerBase):
     '''initialise from a list of single scalers'''
     super(MultiScalerBase, self).__init__()
     self.single_scalers = single_scalers
-    self.space_group = single_scalers[0].space_group
+    self._space_group = single_scalers[0].space_group
     self.active_scalers = None
     self._initial_keys = self.single_scalers[0].initial_keys
     self._params = params
@@ -631,7 +659,9 @@ class NullScaler(ScalerBase):
     super(NullScaler, self).__init__()
     self._experiments = experiment
     self._params = params
-    self._set_space_group()
+    self._space_group = self.experiments.crystal.get_space_group()
+    if self._params.scaling_options.space_group:
+      self._space_group = self._params.scaling_options.space_group
     self._scaled_id = scaled_id
     self._reflection_table = reflection
     self._initial_keys = [key for key in self._reflection_table.keys()]

@@ -4,6 +4,7 @@ Test for the basis function and target function module.
 import copy
 import numpy as np
 import pytest
+from mock import Mock, MagicMock
 from scitbx import sparse
 from dials.array_family import flex
 from dials.util.options import OptionParser
@@ -14,7 +15,7 @@ from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.algorithms.scaling.scaler_factory import create_scaler
-from dials.algorithms.scaling.target_function import ScalingTarget
+from dials.algorithms.scaling.target_function import ScalingTarget, ScalingTargetFixedIH
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.model.components.scale_components import \
   SingleBScaleFactor, SingleScaleFactor
@@ -189,6 +190,8 @@ def test_basis_function(small_reflection_table):
   assert d is None
   assert c is None
 
+# For testing the targetfunction, need a real scaler instance and apm as
+# update_for_minimisation creates a strong binding between these objects.
 def test_target_function():
   """Test for the ScalingTarget class."""
 
@@ -257,6 +260,95 @@ def test_target_jacobian_calc(jacobian_gradient_input):
   for i in range(0, 3):
     for j in range(0, 2):
       assert approx_equal(jacobian[i, j], fd_jacobian[i, j])
+
+
+@pytest.fixture
+def mock_Ih_table():
+  """Mock Ih table to use for testing the target function."""
+  Ih_table = Mock()
+  Ih_table.inverse_scale_factors = flex.double([1.0, 1.0/1.1, 1.0])
+  Ih_table.intensities = flex.double([10.0, 10.0, 12.0])
+  Ih_table.Ih_values = flex.double([11.0, 11.0, 11.0])
+  # These values should give residuals of [-1.0, 0.0, 1.0]
+  Ih_table.weights = flex.double([1.0, 1.0, 1.0])
+  Ih_table.size = 3
+  return Ih_table
+
+@pytest.fixture()
+def mock_Ih_table_with_free():
+  """Mock Ih table with a copy set as the free Ih table."""
+  Ih_table = mock_Ih_table()
+  Ih_table.free_Ih_table = mock_Ih_table()
+  return Ih_table
+
+@pytest.fixture
+def mock_single_scaler(mock_Ih_table_with_free):
+  """Mock single scaler instance."""
+  scaler = Mock()
+  scaler.Ih_table = mock_Ih_table_with_free
+  return scaler
+
+@pytest.fixture
+def mock_targetscaler(mock_single_scaler):
+  """Mock a targetscaler instance."""
+  scaler = Mock()
+  scaler.unscaled_scalers = [mock_single_scaler, mock_single_scaler]
+  scaler.params.scaling_options.use_free_set = False
+  return scaler
+
+@pytest.fixture
+def mock_apm():
+  """A mock apm object to hold the derivatives."""
+  apm = Mock()
+  apm.derivatives = sparse.matrix(3, 1)
+  apm.derivatives[0, 0] = 1.0
+  apm.derivatives[1, 0] = 2.0
+  apm.derivatives[2, 0] = 3.0
+  apm.n_obs = 3
+  apm.n_active_params = 1
+  apm.x = flex.double([1.0])
+  return apm
+
+@pytest.fixture
+def mock_multiapm(mock_apm):
+  """Create a mock-up of the multi apm for testing."""
+
+  class mock_apm_class(object):
+    """A mock apm class to hold a list."""
+    def __init__(self, apm_list):
+      self.apm_list = apm_list
+      self.apm_data = {0 : {'start_idx' : 0}, 1: {'start_idx' : 1}}
+      self.n_active_params = len(apm_list)
+
+  apm = mock_apm_class([mock_apm, mock_apm])
+  return apm
+
+def test_target_fixedIh(mock_targetscaler, mock_multiapm):
+  """Test the target function for targeted scaling (where Ih is fixed)."""
+  target = ScalingTargetFixedIH(mock_targetscaler, mock_multiapm)
+  R = target.calculate_residuals()
+  expected_residuals = flex.double([-1.0, 0.0, 1.0] * 2)
+  assert list(R) == list(expected_residuals)
+  G = target.calculate_gradients()
+  assert list(G) == [-44.0, -44.0]
+  # Add in finite difference check
+
+  J = target.calculate_jacobian()
+  assert J.n_cols == 2
+  assert J.n_rows == 6
+  assert J.non_zeroes == 6
+  assert J[0, 0] == -11.0
+  assert J[1, 0] == -22.0
+  assert J[2, 0] == -33.0
+  assert J[3, 1] == -11.0
+  assert J[4, 1] == -22.0
+  assert J[5, 1] == -33.0
+
+  expected_rmsd = (expected_residuals**2 / len(expected_residuals))**0.5
+  assert target._rmsds is None
+  target._rmsds = []
+  target.calculate_free_rmsds()
+  assert target._rmsds == pytest.approx([expected_rmsd])
 
 
 def calculate_gradient_fd(target):
