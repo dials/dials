@@ -269,9 +269,11 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
       }
 """
   without_kapton_phil = templ_phil % ("nokapton", "nokapton",
-    os.path.join(dials_regression, "integration_test_data", "stills_PSII", "mask.pickle"), "False")
+    os.path.join(dials_regression, "integration_test_data", "stills_PSII", "mask.pickle").replace('\\', '\\\\'),
+    "False")
   with_kapton_phil = templ_phil % ("kapton", "kapton",
-    os.path.join(dials_regression, "integration_test_data", "stills_PSII", "mask.pickle"), "True")
+    os.path.join(dials_regression, "integration_test_data", "stills_PSII", "mask.pickle").replace('\\', '\\\\'),
+    "True")
 
   with open("integrate_without_kapton.phil", 'wb') as f:
     f.write(without_kapton_phil)
