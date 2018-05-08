@@ -2,7 +2,7 @@
 Tests for the scaling model classes.
 """
 import pytest
-from mock import Mock
+from mock import Mock, MagicMock
 from dials.array_family import flex
 from dials.algorithms.scaling.model.model import ScalingModelBase,\
   KBScalingModel, PhysicalScalingModel, ArrayScalingModel
@@ -36,12 +36,21 @@ def generated_refl():
   rt['d'] = flex.double([1.0, 1.0])
   return rt
 
-def test_ScalingModelBase():
+@pytest.fixture
+def mock_errormodel():
+  em = MagicMock()
+  em.refined_parameters = [1.0, 0.1]
+  em.update_variances.return_value = flex.double([1.0, 1.1, 1.0, 1.0])
+  return em
+
+def test_ScalingModelBase(mock_errormodel):
   """Test for base scaling model class"""
 
   class SM_base_filler(ScalingModelBase):
     """Fill in abstract methid"""
     def consecutive_refinement_order(self):
+      pass
+    def from_dict(self, obj):
       pass
 
   SM_base = SM_base_filler(configdict={})
@@ -53,8 +62,8 @@ def test_ScalingModelBase():
   assert SM_base.configdict == {}
   assert not SM_base.components
   _ = SM_base.to_dict()
-  SM_base.set_error_model([1.0])
-  assert SM_base.configdict['error_model_parameters'] == [1.0]
+  SM_base.set_error_model(mock_errormodel)
+  assert SM_base.configdict['error_model_parameters'] == mock_errormodel.refined_parameters
   _ = SM_base.configure_reflection_table(1.0, 2.0, 3.0) #Check method exists
 
 def test_KBScalingModel():

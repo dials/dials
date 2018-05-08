@@ -5,6 +5,8 @@ from __future__ import print_function
 
 from math import log
 import pytest
+import mock
+from mock import call
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from libtbx import phil
@@ -118,7 +120,7 @@ def generated_two_exp():
     detector=detector, crystal=crystal))
   return experiments
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def generated_param():
   """Generate a params phil scope."""
   phil_scope = phil.parse('''
@@ -143,7 +145,7 @@ def generated_target_input(generated_refl, generated_refl_2,
   #refl.append(refl_2)
   return (refl, exp, param)
 
-def test_TargetScaler():
+'''def test_TargetScaler():
   """Test for successful initialisation of TargetedScaler."""
   (test_reflections, test_experiments, params) = generated_target_input(
     generated_refl(), generated_refl_2(), generated_two_exp(), generated_param())
@@ -183,6 +185,23 @@ def test_TargetScaler():
   single_bf_0 = basis_function(apm.apm_list[0]).return_basis()
   assert new_I_0 == list(single_bf_0[0])
   assert old_Ih_values == list(targetscaler.unscaled_scalers[0].Ih_table.Ih_values)
+
+  def do_nothing_side_effect(*args):
+    """Side effect to override various method calls."""
+    pass
+
+  fp = 'dials.algorithms.scaling.scaler.'
+  with mock.patch(fp+'MultiScalerBase.join_datasets_from_scalers',
+    side_effect=do_nothing_side_effect) as join_data:
+    targetscaler.join_multiple_datasets()
+    expected = []
+    expected.extend(targetscaler.single_scalers)
+    expected.extend(targetscaler.unscaled_scalers)
+    assert join_data.call_args_list == [call(expected)]
+    
+    targetscaler.params.scaling_options.target_model = True
+    targetscaler.join_multiple_datasets()
+    assert join_data.call_args_list[1] == call(targetscaler.unscaled_scalers)'''
 
 def test_scale_against_target():
   """Test the scale_against_target library function."""

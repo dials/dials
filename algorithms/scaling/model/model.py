@@ -27,6 +27,7 @@ class ScalingModelBase(object):
     self._components = OrderedDict()
     self._configdict = configdict
     self._is_scaled = is_scaled
+    self._error_model = None
 
   @property
   def is_scaled(self):
@@ -48,6 +49,11 @@ class ScalingModelBase(object):
   def normalise_components(self):
     """Optionally define a normalisation of the parameters after scaling."""
     pass
+
+  @property
+  def error_model(self):
+    """An error model associated with the scaling model."""
+    return self._error_model
 
   @property
   def configdict(self):
@@ -85,9 +91,11 @@ class ScalingModelBase(object):
   def from_dict(cls, obj):
     """Create a scaling model object from a dictionary."""
 
-  def set_error_model(self, error_model_params):
+  def set_error_model(self, error_model):
     """Associate an error model with the dataset."""
-    self._configdict.update({'error_model_parameters' : error_model_params})
+    self._error_model = error_model
+    self._configdict.update({'error_model_parameters' :
+      error_model.refined_parameters})
 
 class PhysicalScalingModel(ScalingModelBase):
   """A scaling model for a physical parameterisation."""

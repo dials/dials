@@ -207,7 +207,6 @@ class SingleScalerBase(ScalerBase):
       reflection_table = self.round_of_outlier_rejection(reflection_table)
     self._reflection_table = reflection_table
     self._configure_reflection_table()
-    print(self._reflection_table)
     self.select_reflections_for_scaling(split_free_set=(not for_multi))
     logger.info('Completed configuration of Scaler. \n\n' + '='*80 + '\n')
 
@@ -241,26 +240,18 @@ class SingleScalerBase(ScalerBase):
         apm.n_active_params, apm.n_active_params), 0, 0)
     else: #need to set part of the var_cov matrix e.g. if only refined some params
       #first work out the order in self._var_cov
-      print('here')
       cumul_pos_dict = {}
       n_cumul_params = 0
       for name, component in self.components.iteritems():
         cumul_pos_dict[name] = n_cumul_params
         n_cumul_params += component.n_params
       #now get a var_cov_matrix subblock for pairs of parameters
-      print(cumul_pos_dict)
-      print(apm.components_list)
       for name in apm.components_list:
-        print('here2')
         for name2 in apm.components_list:
-          print('here3')
-          print(name)
           n_rows = apm.components[name]['n_params']
           n_cols = apm.components[name2]['n_params']
           start_row = apm.components[name]['start_idx']
           start_col = apm.components[name2]['start_idx']
-          print(n_rows)
-          print(start_row)
           sub = var_cov_list.matrix_copy_block(start_row, start_col, n_rows,
             n_cols)
           #now set this block into correct location in overall var_cov
@@ -291,7 +282,7 @@ class SingleScalerBase(ScalerBase):
     partials_mask = reflections['partiality'] < 0.6
     reflections.set_flags(mask or partials_mask or d_mask,
       reflections.flags.excluded_for_scaling)
-    print('%s reflections not suitable for scaling (low partiality,\n'
+    logger.info('%s reflections not suitable for scaling (low partiality,\n'
       'not integrated etc).\n' % reflections.get_flags(
       reflections.flags.excluded_for_scaling).count(True))
     if not 'inverse_scale_factor' in initial_keys:
@@ -373,24 +364,18 @@ class SingleScalerBase(ScalerBase):
     #if self.params.weighting.optimise_error_model:
     #  self.Ih_table = SingleIhTable(self._reflection_table, self.space_group)
 
-  def update_error_model(self, error_model_params):
+  def update_error_model(self, error_model):
     """Apply a correction to try to improve the error estimate."""
-    self.Ih_table.update_error_model(error_model_params)
-    self.experiments.scaling_model.set_error_model(list(error_model_params))
+    self.Ih_table.update_error_model(error_model.refined_parameters)
+    self.experiments.scaling_model.set_error_model(error_model)
 
   def compute_restraints_residuals_jacobian(self, apm):
     """Calculate a restraint for the jacobian."""
-    restraints = None
-    if self.experiments.scaling_model.id_ == 'physical':
-      restraints = ScalingRestraints(apm).calculate_jacobian_restraints()
-    return restraints
+    return ScalingRestraints(apm).calculate_jacobian_restraints()
 
   def calculate_restraints(self, apm):
     """Calculate a restraint for the residual and gradient."""
-    restraints = None
-    if self.experiments.scaling_model.id_ == 'physical':
-      restraints = ScalingRestraints(apm).calculate_restraints()
-    return restraints
+    return ScalingRestraints(apm).calculate_restraints()
 
   def round_of_outlier_rejection(self, reflection_table):
     """calculate outliers from the reflections in the Ih_table,
@@ -403,14 +388,13 @@ class SingleScalerBase(ScalerBase):
         reflection_table.get_flags(reflection_table.flags.outlier_in_scaling
         ).count(True), sep='\n'))
     logger.info(msg)
-    #exit()
     return reflection_table
 
   def apply_error_model_to_variances(self):
     """Apply an aimless-like error model to the variances."""
-    error_model = self.experiments.scaling_model.configdict['error_model_parameters']
-    self.reflection_table['variance'] = error_model[0] * (self.reflection_table['variance']
-      + ((error_model[1] * self.reflection_table['intensity'])**2))**0.5
+    error_model = self.experiments.scaling_model.error_model
+    self.reflection_table['variance'] = error_model.update_variances(
+      self.reflection_table['variance'])
     logger.info('The error model determined has been applied to the variances')
 
   def apply_selection_to_SFs(self, sel):
@@ -428,8 +412,8 @@ class SingleScalerBase(ScalerBase):
     if self.params.scaling_options.use_free_set and split_free_set:
       self._Ih_table.split_into_free_work(
         self.params.scaling_options.free_set_percentage)
-    if self.params.weighting.error_model_params:
-      self.update_error_model(self.params.weighting.error_model_params)
+    #if self.params.weighting.error_model_params:
+    #  self.update_error_model(self.params.weighting.error_model_params)
     for component in self.components.itervalues():
       component.update_reflection_data(self.reflection_table, selection)
 
@@ -440,7 +424,7 @@ class SingleScalerBase(ScalerBase):
       max_iterations=100)
     refinery.run()
     error_model = refinery.return_error_manager()
-    self.update_error_model(error_model.refined_parameters)
+    self.update_error_model(error_model)
 
   def _configure_reflection_table(self):
     """Calculate requried quantities"""
@@ -469,20 +453,11 @@ class MultiScalerBase(ScalerBase):
 
   def calculate_restraints(self, apm):
     """Calculate a restraints residuals/gradient vector for multiple datasets."""
-    scaler_ids = [scaler.experiments.scaling_model.id_ for scaler in
-      self.active_scalers]
-    if 'physical' in scaler_ids:
-      #Ok for now, but make more general? But will be slow for many datasets?
-      return MultiScalingRestraints(apm).calculate_restraints()
-    return None
+    return MultiScalingRestraints(apm).calculate_restraints()
 
   def compute_restraints_residuals_jacobian(self, apm):
     """Calculate a restraints residuals/jacobian for multiple datasets."""
-    scaler_ids = [scaler.experiments.scaling_model.id_ for scaler in
-      self.active_scalers]
-    if 'physical' in scaler_ids:
-      return MultiScalingRestraints(apm).calculate_jacobian_restraints()
-    return None
+    return MultiScalingRestraints(apm).calculate_jacobian_restraints()
 
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
     for scaler in self.active_scalers:
@@ -535,7 +510,7 @@ class MultiScalerBase(ScalerBase):
         max_iterations=100)
       refinery.run()
       error_model = refinery.return_error_manager()
-      s_scaler.update_error_model(error_model.refined_parameters)
+      s_scaler.update_error_model(error_model)
     self.Ih_table.update_weights_from_error_models()
 
 class MultiScaler(MultiScalerBase):
@@ -555,9 +530,9 @@ class MultiScaler(MultiScalerBase):
     self.active_scalers = self.single_scalers
     logger.info('Completed configuration of MultiScaler. \n\n' + '='*80 + '\n')
 
-  def update_error_model(self, error_model_params):
+  def update_error_model(self, error_model):
     """Update the error model in Ih table."""
-    self.Ih_table.update_error_model(error_model_params)
+    self.Ih_table.update_error_model(error_model)
 
   def update_for_minimisation(self, apm, curvatures=False):
     '''update the scale factors and Ih for the next iteration of minimisation,
