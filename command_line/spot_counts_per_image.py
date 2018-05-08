@@ -31,6 +31,8 @@ json = None
   .type = path
 split_json = False
   .type = bool
+joint_json = True
+  .type = bool
 individual_plots = False
   .type = bool
 id = None
@@ -104,7 +106,7 @@ def run(args):
         start, end = params.json.split('.')
         with open('%s_%s.%s' % (start, k, end), 'wb') as fp:
           json.dump(stats.__dict__[k], fp)
-    else:
+    if params.joint_json:
       with open(params.json, 'wb') as fp:
         json.dump(stats.__dict__, fp)
   if params.plot:

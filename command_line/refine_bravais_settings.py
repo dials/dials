@@ -214,11 +214,7 @@ def run(args):
   from dxtbx.serialize import dump
   import copy
   for subgroup in Lfat:
-    expts = copy.deepcopy(experiments)
-    for expt in expts:
-      expt.crystal.update(subgroup.refined_crystal)
-      expt.detector = subgroup.detector
-      expt.beam = subgroup.beam
+    expts = subgroup.refined_experiments
     soln = int(subgroup.setting_number)
     bs_json = '%sbravais_setting_%i.json' % (prefix, soln)
     logger.info('Saving solution %i as %s' %(soln, bs_json))
