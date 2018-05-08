@@ -272,7 +272,7 @@ def run(args):
   threshold = 1000
   if params.save_plot:
     from matplotlib import pyplot as plt
-    plt.figure("Andrews-Bernstein distance dendogram", figsize=(12, 8))
+    fig = plt.figure("Andrews-Bernstein distance dendogram", figsize=(12, 8))
     ax = plt.gca()
   else:
     ax = None
@@ -287,6 +287,7 @@ def run(args):
   if params.save_plot:
     plt.tight_layout()
     plt.savefig('%scluster_unit_cell.png' % params.plot_prefix)
+    plt.close(fig)
   logger.info(unit_cell_info(clusters))
   largest_cluster = None
   largest_cluster_lattice_ids = None

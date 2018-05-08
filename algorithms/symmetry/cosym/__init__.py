@@ -197,6 +197,7 @@ class analyse_datasets(object):
         plt.ylabel('Explained variance ratio')
         plt.savefig(
           '%sexplained_variance_ratio_vs_dimension.png' % params.plot_prefix)
+        plt.close(fig)
 
     self.optimise()
     self.principal_component_analysis()
@@ -690,7 +691,7 @@ def plot(coords, labels=None, plot_centroids=True, plot_all=True, show=False, pl
                 bbox_inches='tight')
   if show:
     plt.show()
-  plt.close()
+  plt.close(fig)
 
 
 def plot_angles(coords, labels=None, show=False, plot_name=None):
@@ -766,7 +767,7 @@ def plot_angles(coords, labels=None, show=False, plot_name=None):
                 bbox_inches='tight')
   if show:
     plt.show()
-  plt.close()
+  plt.close(fig)
 
 
 def plot_matrix(correlation_matrix, linkage_matrix, file_name, labels=None,
@@ -804,7 +805,7 @@ def plot_matrix(correlation_matrix, linkage_matrix, file_name, labels=None,
 
   # Display and save figure.
   fig.savefig(file_name)
-  fig.clear()
+  plt.close(fig)
 
 
 def plot_dendrogram(linkage_matrix, file_name, labels=None,
@@ -821,6 +822,7 @@ def plot_dendrogram(linkage_matrix, file_name, labels=None,
   locs, labels = plt.xticks()
   plt.setp(labels, rotation=70)
   fig.savefig(file_name)
+  plt.close(fig)
 
 
 def plot_silhouette(sample_silhouette_values, cluster_labels, file_name):
@@ -866,4 +868,4 @@ def plot_silhouette(sample_silhouette_values, cluster_labels, file_name):
   ax1.set_yticks([])  # Clear the yaxis labels / ticks
   ax1.set_xticks([-0.1, 0, 0.2, 0.4, 0.6, 0.8, 1])
   fig.savefig(file_name)
-  plt.clf()
+  plt.close(fig)
