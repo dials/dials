@@ -1,22 +1,16 @@
-
-#
-# options.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
-import cPickle
 import itertools
 import optparse
 import pickle
 import traceback
 from collections import defaultdict, namedtuple
+
+try:
+  import cPickle
+  pickle_errors = pickle.UnpicklingError, cPickle.UnpicklingError
+except ImportError:
+  pickle_errors = pickle.UnpicklingError,
 
 import libtbx.phil
 from libtbx.utils import Sorry
@@ -359,7 +353,7 @@ class Importer(object):
     for argument in args:
       try:
         self.reflections.append(converter.from_string(argument))
-      except (pickle.UnpicklingError, cPickle.UnpicklingError) as e:
+      except pickle_errors as e:
         self._handle_converter_error(argument, pickle.UnpicklingError("Appears to be an invalid pickle file"),
             type="Reflections", validation=True)
         unhandled.append(argument)
@@ -990,7 +984,7 @@ class OptionParser(OptionParserBase):
           subpaths[p[0]].append(p[1])
 
       # If there are prefixes with only one name beneath them, put them on the top level
-      for s in list(subpaths.iterkeys()):
+      for s in list(subpaths.keys()):
         if len(subpaths[s]) == 1:
           top_elements.remove("%s." % s)
           top_elements.add("%s.%s=" % (s, subpaths[s][0]))
@@ -998,7 +992,7 @@ class OptionParser(OptionParserBase):
 
       result = { '': top_elements }
       # Revursively process each group
-      for n, x in subpaths.iteritems():
+      for n, x in subpaths.items():
         result[n] = construct_completion_tree(x)
 
       return result
@@ -1006,7 +1000,7 @@ class OptionParser(OptionParserBase):
     print('function _dials_autocomplete_flags ()')
     print('{')
     print(' case "$1" in')
-    for p in parameter_choice_list.iterkeys():
+    for p in parameter_choice_list.keys():
       print('\n  %s)' % p)
       print('   _dials_autocomplete_values="%s";;' % ' '.join(parameter_choice_list[p]))
     print('\n  *)')
@@ -1017,7 +1011,7 @@ class OptionParser(OptionParserBase):
     print('function _dials_autocomplete_expansion ()')
     print('{')
     print(' case "$1" in')
-    for p, exp in parameter_expansion_list.iteritems():
+    for p, exp in parameter_expansion_list.items():
       if exp is not None:
         print('\n  %s=)' % p)
         print('   _dials_autocomplete_values="%s=";;' % exp)
@@ -1029,7 +1023,7 @@ class OptionParser(OptionParserBase):
     tree = construct_completion_tree(parameter_list)
 
     def _tree_to_bash(prefix, tree):
-      for subkey in tree.iterkeys():
+      for subkey in tree.keys():
         if subkey != '':
           _tree_to_bash(prefix + subkey + '.', tree[subkey])
           print('\n  %s*)' % (prefix + subkey + '.'))
@@ -1040,7 +1034,7 @@ class OptionParser(OptionParserBase):
     print(' case "$1" in')
     _tree_to_bash('', tree)
 
-    toplevelset = tree[''] | set([p + "=" for p, exp in parameter_expansion_list.iteritems() if exp is not None])
+    toplevelset = tree[''] | set([p + "=" for p, exp in parameter_expansion_list.items() if exp is not None])
 
     print('\n  *)')
     print('    _dials_autocomplete_values="%s";;' % " ".join(sorted(toplevelset)))
