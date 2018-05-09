@@ -8,6 +8,7 @@ from collections import OrderedDict
 import math
 
 from libtbx import Auto
+from libtbx.utils import Sorry
 from libtbx import table_utils
 from scitbx.array_family import flex
 from cctbx import sgtbx
@@ -86,6 +87,8 @@ cluster {
   seed {
     min_silhouette_score = 0.2
       .type = float(value_min=-1, value_max=1)
+    n_clusters = auto
+      .type = int(value_min=1)
   }
 }
 
@@ -520,6 +523,7 @@ class analyse_datasets(object):
     distances = np.insert(distances, 0, 0)
     silhouette_scores = flex.double()
     thresholds = flex.double()
+    n_clusters = flex.size_t()
     for threshold in distances[1:]:
       cluster_labels = self.cluster_labels.deep_copy()
       labels = hierarchy.fcluster(
@@ -529,8 +533,8 @@ class analyse_datasets(object):
         # only equal-sized clusters are valid
         continue
 
-      n_clusters = len(set(labels))
-      if n_clusters == 1: continue
+      n = len(set(labels))
+      if n == 1: continue
       for i in range(len(labels)):
         cluster_labels.set_selected(self.cluster_labels == i, int(labels[i]-1))
       silhouette_avg = metrics.silhouette_score(
@@ -541,10 +545,11 @@ class analyse_datasets(object):
       silhouette_avg = sample_silhouette_values.mean()
       silhouette_scores.append(silhouette_avg)
       thresholds.append(threshold)
+      n_clusters.append(n)
 
       count_negative = (sample_silhouette_values < 0).sum()
       logger.info('Clustering:')
-      logger.info('  Number of clusters: %i' % n_clusters)
+      logger.info('  Number of clusters: %i' % n)
       logger.info('  Threshold score: %.3f (%.1f deg)' % (
         threshold, math.degrees(math.acos(1-threshold))))
       logger.info('  Silhouette score: %.3f' % silhouette_avg)
@@ -554,10 +559,18 @@ class analyse_datasets(object):
       if self.params.save_plot:
         plot_silhouette(
           sample_silhouette_values, cluster_labels.as_numpy_array(),
-          file_name='silhouette_%i.png' % n_clusters)
+          file_name='%ssilhouette_%i.png' % (self.params.plot_prefix, n))
 
-    idx = flex.max_index(silhouette_scores)
-    if silhouette_scores[idx] < self.params.cluster.seed.min_silhouette_score:
+    if self.params.cluster.seed.n_clusters is Auto:
+      idx = flex.max_index(silhouette_scores)
+    else:
+      idx = flex.first_index(n_clusters, self.params.cluster.seed.n_clusters)
+      if idx is None:
+        raise Sorry('No valid clustering with %i clusters'
+                    % self.params.cluster.seed.n_clusters)
+
+    if (self.params.cluster.seed.n_clusters is Auto and
+        silhouette_scores[idx] < self.params.cluster.seed.min_silhouette_score):
       # assume single cluster
       self.cluster_labels = flex.int(self.cluster_labels.size(), 0)
     else:
