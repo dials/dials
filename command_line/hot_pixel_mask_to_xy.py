@@ -3,8 +3,9 @@ from __future__ import absolute_import, division, print_function
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.hot_pixel_mask_to_xy
 
 def hot_pixel_mask_to_xy(hot_pixel_mask):
-  import cPickle as pickle
-  mask = pickle.load(open(hot_pixel_mask, 'r'))
+  from six.moves import cPickle as pickle
+  with open(hot_pixel_mask, 'rb') as fh:
+    mask = pickle.load(fh)
   for j, module in enumerate(mask):
     if module.count(False) == 0:
       continue
