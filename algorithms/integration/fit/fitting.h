@@ -226,7 +226,6 @@ namespace dials { namespace algorithms {
           sump += p[i];
         }
       }
-      /* minI = -minI; */
       DIALS_ASSERT(sumb >= 0);
       DIALS_ASSERT(sumd >= 0);
       DIALS_ASSERT(sump > 0);
