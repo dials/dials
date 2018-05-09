@@ -308,14 +308,14 @@ class ManualGeometryUpdater(object):
     Override the parameters
 
     '''
-    from dxtbx.imageset import ImageSweep
+    from dxtbx.imageset import ImageSweep, ImageSetFactory
     from dxtbx.model import BeamFactory
     from dxtbx.model import DetectorFactory
     from dxtbx.model import GoniometerFactory
     from dxtbx.model import ScanFactory
     from copy import deepcopy
     if self.params.geometry.convert_sweeps_to_stills:
-      imageset = imageset.__class__(data=imageset.data())
+      imageset = ImageSetFactory.imageset_from_anyset(imageset)
     if not isinstance(imageset, ImageSweep):
       if self.params.geometry.convert_stills_to_sweeps:
         imageset = self.convert_stills_to_sweep(imageset)
