@@ -1,19 +1,11 @@
-#!/usr/bin/env python
-#
-# plot_scan_varying_crystal.py
-#
-#  Copyright (C) (2014) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David G. Waterman
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 import os
+from math import floor, ceil
 import matplotlib
 matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 
 from dials.algorithms.refinement.rotation_decomposition import \
   solve_r3_rotation_for_angles_given_axes
@@ -59,12 +51,12 @@ phil_scope = parse('''
 
 help_message = '''
 
-Generate plots of the scan-varying crystal orientation and unit cell from the
-input refined_experiments.json which must contain a scan-varying crystal model.
+Generate plots of scan-varying models, including crystal orientation, unit cell
+and beam centre, from the input refined_experiments.json
 
 Examples::
 
-  dials.plot_scan_varying_crystal refined_experiments.json
+  dials.plot_scan_varying_model refined_experiments.json
 
 '''
 
@@ -97,7 +89,7 @@ class Script(object):
 
     # Determine output path
     self._directory = os.path.join(params.output.directory,
-      "scan-varying_crystal")
+      "scan-varying_model")
     self._directory = os.path.abspath(self._directory)
     ensure_directory(self._directory)
     self._format = "." + params.output.format
@@ -194,15 +186,33 @@ class Script(object):
       dat.append(angle_dat)
     self.plot_orientation(dat)
 
-  def plot_cell(self, dat):
-    try:
-      import matplotlib.pyplot as plt
-      import matplotlib.gridspec as gridspec
-    except ImportError as e:
-      print("matplotlib modules not available", e)
-      return None
+    # beam centre plot
+    dat = []
+    for iexp, exp in enumerate(experiments):
 
-    from math import floor, ceil
+      beam = exp.beam
+      detector = exp.detector
+      scan = exp.scan
+
+      if beam.num_scan_points == 0:
+        print("Ignoring scan-static beam")
+        continue
+
+      scan_pts = range(beam.num_scan_points)
+      phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
+      p = detector.get_panel_intersection(beam.get_s0())
+      if p < 0:
+        print("Beam does not intersect a panel")
+        continue
+      panel = detector[p]
+      s0_scan_points = [beam.get_s0_at_scan_point(i) for i in range(
+          beam.num_scan_points)]
+      bc_scan_points = [panel.get_beam_centre_px(s0) for s0 in s0_scan_points]
+      bc_x, bc_y = zip(*bc_scan_points)
+      dat.append({'phi':phi, 'beam_centre_x':bc_x, 'beam_centre_y':bc_y})
+    self.plot_beam_centre(dat)
+
+  def plot_cell(self, dat):
     fig = plt.figure(figsize=(13, 10))
     gs = gridspec.GridSpec(4, 2, wspace=0.4, hspace=0.6)
 
@@ -301,14 +311,6 @@ class Script(object):
     plt.savefig(fullname)
 
   def plot_orientation(self, dat):
-    try:
-      import matplotlib.pyplot as plt
-      import matplotlib.gridspec as gridspec
-    except ImportError as e:
-      print("matplotlib modules not available", e)
-      return None
-
-    from math import floor, ceil
     fig = plt.figure(figsize=(13, 10))
     gs = gridspec.GridSpec(3, 1, wspace=0.4, hspace=0.6)
 
@@ -339,6 +341,39 @@ class Script(object):
     basename = os.path.join(self._directory, "orientation")
     fullname = basename + self._format
     print("Saving orientation plot to {0}".format(fullname))
+    plt.savefig(fullname)
+
+  def plot_beam_centre(self, dat):
+    fig = plt.figure(figsize=(13, 10))
+    gs = gridspec.GridSpec(2, 1, wspace=0.4, hspace=0.6)
+
+    ax = plt.subplot(gs[0, 0])
+    ax.ticklabel_format(useOffset=False)
+    ymin, ymax = 0.0, 0.0
+    for bc in dat:
+      plt.plot(bc['phi'], bc['beam_centre_x'])
+      ymin = max(ymin, min(bc['beam_centre_x']) - 0.1)
+      ymax = max(ymax, max(bc['beam_centre_x']) + 0.1)
+      plt.axis(ymin=ymin, ymax=ymax)
+    plt.xlabel(r'rotation angle $\left(^\circ\right)$')
+    plt.ylabel(r'angle $\left(^\circ\right)$')
+    plt.title(r'Beam centre X (pixels)')
+
+    ax = plt.subplot(gs[1, 0])
+    ax.ticklabel_format(useOffset=False)
+    ymin, ymax = 0.0, 0.0
+    for bc in dat:
+      plt.plot(bc['phi'], bc['beam_centre_y'])
+      ymin = max(ymin, min(bc['beam_centre_y']) - 0.1)
+      ymax = max(ymax, max(bc['beam_centre_y']) + 0.1)
+      plt.axis(ymin=ymin, ymax=ymax)
+    plt.xlabel(r'rotation angle $\left(^\circ\right)$')
+    plt.ylabel(r'angle $\left(^\circ\right)$')
+    plt.title(r'Beam centre Y (pixels)')
+
+    basename = os.path.join(self._directory, "beam_centre")
+    fullname = basename + self._format
+    print("Saving beam centre plot to {0}".format(fullname))
     plt.savefig(fullname)
 
 if __name__ == '__main__':
