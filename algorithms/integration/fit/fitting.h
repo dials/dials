@@ -218,32 +218,22 @@ namespace dials { namespace algorithms {
       double sumd = 0;
       double sumb = 0;
       double sump = 0;
-      /* double mind = -1; */
-      /* double minI = MASSIVE; */
       for (std::size_t i = 0; i < m.size(); ++i) {
         if (m[i]) {
           DIALS_ASSERT(p[i] >= 0);
-          /* DIALS_ASSERT(b[i] >= 0); */
-          /* DIALS_ASSERT(d[i] >= 0); */
           sumd += d[i];
           sumb += b[i];
           sump += p[i];
-          /* if (mind < 0 || d[i] < mind) mind = d[i]; */
-          /* if (p[i] > 0 && b[i] / p[i] < minI) minI = b[i] / p[i]; */
         }
       }
       /* minI = -minI; */
       DIALS_ASSERT(sumb >= 0);
       DIALS_ASSERT(sumd >= 0);
       DIALS_ASSERT(sump > 0);
-      /* DIALS_ASSERT(minI <= 0); */
 
       // Iterate to calculate the intensity. Exit if intensity goes less
       // than zero or if the tolerance or number of iteration is reached.
       double I0 = sumd - sumb;
-      /* if (I0 < minI + TINY) { */
-      /*   I0 = minI + TINY; */
-      /* } */
       double I = 0.0;
       double V = 0.0;
       for (niter_ = 0; niter_ < maxiter; ++niter_) {
@@ -263,12 +253,6 @@ namespace dials { namespace algorithms {
         if ((error_ = std::abs(I - I0)) < eps) {
           break;
         }
-        /* if (I < minI + TINY) { */
-        /*   I = (sumd - sumb) / sump; */
-        /*   V = std::abs(I) + sumb; */
-        /*   correlation_ = 0; */
-        /*   break; */
-        /* } */
         I0 = I;
       }
       DIALS_ASSERT(V >= 0);
