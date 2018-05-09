@@ -75,7 +75,8 @@ def test2(dials_regression, tmpdir):
     " reflections_per_degree=50"
     " outlier.algorithm=null close_to_spindle_cutoff=0.05"
     " crystal.orientation.smoother.interval_width_degrees=36.0"
-    " crystal.unit_cell.smoother.interval_width_degrees=36.0")
+    " crystal.unit_cell.smoother.interval_width_degrees=36.0"
+    " set_scan_varying_errors=True")
 
   result1 = easy_run.fully_buffered(command=cmd1).raise_if_errors()
   result2 = easy_run.fully_buffered(command=cmd2).raise_if_errors()
