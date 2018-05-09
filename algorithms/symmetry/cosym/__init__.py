@@ -276,8 +276,12 @@ class analyse_datasets(object):
       'Cophenetic correlation coefficient between heirarchical clustering and pairwise distance matrix: %.3f' % c)
 
     if self.params.save_plot:
-      plot_matrix(cos_angle, linkage_matrix, 'cos_angle_matrix.png')
-      plot_dendrogram(linkage_matrix, 'cos_angle_dendrogram.png')
+      plot_matrix(
+        cos_angle,
+        linkage_matrix, '%scos_angle_matrix.png' % self.params.plot_prefix)
+      plot_dendrogram(
+        linkage_matrix,
+        '%scos_angle_dendrogram.png' % self.params.plot_prefix)
 
     sym_ops = [sgtbx.rt_mx(s).new_denominators(1, 12) for s in self.target.get_sym_ops()]
 
@@ -316,15 +320,6 @@ class analyse_datasets(object):
     logger.info(
       'Analysis of cos(angle) between points corresponding to the same datasets:')
     logger.info(table_utils.format(rows, has_header=True))
-
-    #if self.params.save_plot:
-      #from matplotlib import pyplot as plt
-      #fig = plt.figure(figsize=(10,8))
-      #for i, p in enumerate(perm):
-        #op, ca = sym_ops_cos_angle.items()[p]
-        #plt.scatter(list(ca), [i+1]*len(ca), c='k', marker='|')
-      #plt.savefig('cos_angle.png')
-      #plt.clf()
 
   def cluster_analysis(self):
     from cctbx.sgtbx import cosets
@@ -585,10 +580,11 @@ class analyse_datasets(object):
     if self.params.save_plot:
       plot_matrix(
         1 - ssd.squareform(dist_mat), linkage_matrix,
-        'seed_clustering_cos_angle_matrix.png',
+        '%sseed_clustering_cos_angle_matrix.png' % self.params.plot_prefix,
         color_threshold=threshold)
       plot_dendrogram(
-        linkage_matrix, 'seed_clustering_cos_angle_dendrogram.png',
+        linkage_matrix,
+        '%sseed_clustering_cos_angle_dendrogram.png' % self.params.plot_prefix,
         color_threshold=threshold)
 
     return self.cluster_labels
