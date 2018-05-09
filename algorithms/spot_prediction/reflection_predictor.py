@@ -132,6 +132,9 @@ class ReflectionPredictor(object):
           if gn_nsp == nim + 1:
             S =  [experiment.goniometer.get_setting_rotation_at_scan_point(i)
                   for i in range(experiment.goniometer.num_scan_points)]
+          else:
+            S = [experiment.goniometer.get_setting_rotation()
+                 for i in range(nim + 1)]
           predict = Predictor(
             "scan varying model prediction",
             lambda: predictor.for_varying_models(
