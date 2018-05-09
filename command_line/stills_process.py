@@ -195,8 +195,9 @@ def do_import(filename):
   # Ensure the indexer and downstream applications treat this as set of stills
   reset_sets = []
 
+  from dxtbx.imageset import ImageSetFactory
   for imageset in datablocks[0].extract_imagesets():
-    imageset = imageset.__class__(imageset.data(), imageset.indices())
+    imageset = ImageSetFactory.imageset_from_anyset(imageset)
     imageset.set_scan(None)
     imageset.set_goniometer(None)
     reset_sets.append(imageset)
