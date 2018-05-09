@@ -468,7 +468,7 @@ def _write_columns(mtz_file, dataset, integrated_data, scale_partials,
     'LP': 'R',
     'FRACTIONCALC': 'R',
     'ROT': 'R',
-    'DQE': 'R',
+    'QE': 'R',
   }
 
   # derive index columns from original indices with
@@ -495,16 +495,16 @@ def _write_columns(mtz_file, dataset, integrated_data, scale_partials,
     lp = integrated_data['lp']
   else:
     lp = flex.double(nref, 1.0)
-  if 'dqe' in integrated_data:
-    dqe = integrated_data['dqe']
+  if 'qe' in integrated_data:
+    qe = integrated_data['qe']
   else:
-    dqe = flex.double(nref, 1.0)
+    qe = flex.double(nref, 1.0)
   I_profile = None
   V_profile = None
   I_sum = None
   V_sum = None
-  # FIXME errors in e.g. LP correction need to be propogated here
-  scl = lp / dqe
+  # FIXME errors in e.g. LP correction need to be propagated here
+  scl = lp / qe
 
   if apply_scales:
     scl = scl / integrated_data['inverse_scale_factor']
@@ -541,7 +541,7 @@ def _write_columns(mtz_file, dataset, integrated_data, scale_partials,
   dataset.add_column('YDET', type_table['YDET']).set_values(ydet.as_float())
   dataset.add_column('ROT', type_table['ROT']).set_values(integrated_data["ROT"].as_float())
   dataset.add_column('LP', type_table['LP']).set_values(lp.as_float())
-  dataset.add_column('DQE', type_table['DQE']).set_values(dqe.as_float())
+  dataset.add_column('QE', type_table['QE']).set_values(qe.as_float())
 
 
 def _next_epoch(val):

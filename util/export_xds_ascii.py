@@ -104,11 +104,11 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
     lp = integrated_data['lp']
   else:
     lp = flex.double(nref, 1.0)
-  if 'dqe' in integrated_data:
-    dqe = integrated_data['dqe']
+  if 'qe' in integrated_data:
+    qe = integrated_data['qe']
   else:
-    dqe = flex.double(nref, 1.0)
-  scl = lp / dqe
+    qe = flex.double(nref, 1.0)
+  scl = lp / qe
 
   # profile correlation
   if 'profile.correlation' in integrated_data:

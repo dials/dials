@@ -59,15 +59,15 @@ namespace dials { namespace algorithms {
   }
 
   /**
-   * Compute the DQE correction for a single reflection
+   * Compute the QE correction for a single reflection
    * @param mu attenuation coefficient in mm^-1
    * @param t0 thickness of sensor in mm
    * @param s1 direction of diffracted ray
    * @param n detector / panel normal for this reflection
-   * @returns DQE term which needs to be divided by (i.e. is efficiency)
+   * @returns QE term which needs to be divided by (i.e. is efficiency)
    */
 
-  double dqe_correction(
+  double qe_correction(
     double mu,
     double t0,
     vec3<double> s1,
@@ -127,13 +127,13 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Perform the DQE correction
+     * Perform the QE correction
      * @param s1 The incident beam vector
      * @param p The panel for this reflection
-     * @returns DQE term which needs to be divided by (i.e. is efficiency)
+     * @returns QE term which needs to be divided by (i.e. is efficiency)
      */
-    double dqe(vec3<double> s1, size_t p) const {
-      return dqe_correction(
+    double qe(vec3<double> s1, size_t p) const {
+      return qe_correction(
           det_[p].get_mu(),
           det_[p].get_thickness(),
           s1,
@@ -190,12 +190,12 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Perform the DQE correction.
+     * Perform the QE correction.
      * @param id The list of experiments ids
      * @param s1 The list of incident beam vectors
      * @param p The list of panels
      */
-    af::shared<double> dqe(
+    af::shared<double> qe(
         const af::const_ref<int> &id,
         const af::const_ref< vec3<double> > &s1,
         const af::const_ref<std::size_t> &p) const {
@@ -205,7 +205,7 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < id.size(); ++i) {
         DIALS_ASSERT(id[i] >= 0);
         DIALS_ASSERT(id[i] < compute_.size());
-        result[i] = compute_[id[i]].dqe(s1[i], p[i]);
+        result[i] = compute_[id[i]].qe(s1[i], p[i]);
       }
       return result;
     }

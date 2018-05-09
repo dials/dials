@@ -909,8 +909,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     lp = compute.lp(self['id'], self['s1'])
     self['lp'] = lp
     if experiment.detector[0].get_mu() > 0:
-      dqe = compute.dqe(self['id'], self['s1'], self['panel'])
-      self['dqe'] = dqe
+      qe = compute.qe(self['id'], self['s1'], self['panel'])
+      self['qe'] = qe
     return lp
 
   def integrate(self, experiments, profile_model, reference_selector=None):

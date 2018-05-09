@@ -142,11 +142,11 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
     lp = integrated_data['lp']
   else:
     lp = flex.double(nref, 1.0)
-  if 'dqe' in integrated_data:
-    dqe = integrated_data['dqe']
+  if 'qe' in integrated_data:
+    qe = integrated_data['qe']
   else:
-    dqe = flex.double(nref, 1.0)
-  scl = lp / dqe
+    qe = flex.double(nref, 1.0)
+  scl = lp / qe
 
   if summation:
     I = integrated_data['intensity.sum.value'] * scl

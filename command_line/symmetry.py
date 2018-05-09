@@ -120,11 +120,11 @@ def run(args):
         variances = refl['intensity.sum.variance']
       # FIXME probably need to do some filtering of intensities similar to that
       # done in export_mtz
-      if 'lp' in refl and 'dqe' in refl:
+      if 'lp' in refl and 'qe' in refl:
         lp = refl['lp']
-        dqe = refl['dqe']
-        assert dqe.all_gt(0)
-        scale = lp / dqe
+        qe = refl['qe']
+        assert qe.all_gt(0)
+        scale = lp / qe
         data *= scale
         variances *= (flex.pow2(scale))
       miller_indices = refl['miller_index']

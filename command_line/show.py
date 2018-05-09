@@ -308,7 +308,7 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
   formats = collections.OrderedDict((
     ('miller_index', '%i, %i, %i'),
     ('d','%.2f'),
-    ('dqe','%.3f'),
+    ('qe','%.3f'),
     ('id','%i'),
     ('imageset_id','%i'),
     ('panel','%i'),

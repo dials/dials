@@ -78,7 +78,7 @@ def random_vector_cone(vector, sd):
 
 def model_reflection_example(reflection, experiment, params):
   hkl = reflection['miller_index']
-  i0 = reflection['intensity.sum.value'] / reflection['dqe']
+  i0 = reflection['intensity.sum.value'] / reflection['qe']
   s1 = reflection['s1']
   xyz = reflection['xyzcal.px']
   pixels = reflection['shoebox']
@@ -349,10 +349,10 @@ def model_reflection_rt0(reflection, experiment, params):
   s1 = matrix.col(reflection['s1'])
   t = p.get_thickness() / math.cos(s1.angle(n))
   if params.debug:
-    print('dqe = %f' % reflection['dqe'])
+    print('qe = %f' % reflection['qe'])
 
   if params.physics:
-    i0 = reflection['intensity.sum.value'] / reflection['dqe']
+    i0 = reflection['intensity.sum.value'] / reflection['qe']
   else:
     i0 = reflection['intensity.sum.value']
 
@@ -447,7 +447,7 @@ def model_reflection_rt0(reflection, experiment, params):
       y -= bbox[2]
       # FIXME in here try to work out probability distribution along path
       # length through the detector sensitive surface i.e. deposit fractional
-      # counts along pixels (and allow for DQE i.e. photon passing right through
+      # counts along pixels (and allow for QE i.e. photon passing right through
       # the detector)
       patch[(int(y), int(x))] += 1.0 / scale
 
