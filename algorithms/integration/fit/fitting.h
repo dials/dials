@@ -201,9 +201,6 @@ namespace dials { namespace algorithms {
         double eps,
         std::size_t maxiter) {
 
-      const double TINY = 1e-10;
-      const double MASSIVE = 1e10;
-
       // Save the max iter
       maxiter_ = maxiter;
 
@@ -240,7 +237,7 @@ namespace dials { namespace algorithms {
         double sum2 = 0.0;
         for (std::size_t i = 0; i < p.size(); ++i) {
           if (m[i] && p[i] > 0) {
-            double v = TINY + std::abs(b[i]) + std::abs(I0 * p[i]);
+            double v = 1e-10 + std::abs(b[i]) + std::abs(I0 * p[i]);
             DIALS_ASSERT(v > 0);
             sum1 += (d[i] - b[i]) * p[i] / v;
             sum2 += p[i] * p[i] / v;
@@ -253,6 +250,12 @@ namespace dials { namespace algorithms {
           break;
         }
         I0 = I;
+      }
+
+      // If niter is too large replace with summation results
+      if (niter_ >= maxiter) {
+        I = sumd - sumb;
+        V = std::abs(I) + std::abs(sumb);
       }
       DIALS_ASSERT(V >= 0);
       DIALS_ASSERT(V >= I);

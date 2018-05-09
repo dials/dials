@@ -147,7 +147,7 @@ def test_gaussianrs_reciprocal_space_intensity_calculator(data):
       count += 1
 
   assert len(reflections) == 15193
-  assert count == 5295
+  assert count == 5296
 
 
 def test_gaussianrs_detector_space_intensity_calculator(data):
@@ -174,7 +174,7 @@ def test_gaussianrs_detector_space_intensity_calculator(data):
 
 
   assert len(reflections) == 15193
-  assert count == 4801
+  assert count == 4802
 
 
 
@@ -202,7 +202,7 @@ def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator(data)
     assert partiality_new < 1.0 and partiality_new >= 0
 
   assert len(reflections) == 15193
-  assert count == 4801
+  assert count == 4802
 
 def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator2(data):
   from scitbx import matrix
