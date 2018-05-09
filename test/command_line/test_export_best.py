@@ -1,28 +1,37 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-from libtbx import easy_run
+import procrunner
 
 def test_export_best(dials_regression, tmpdir):
   tmpdir.chdir()
   path = os.path.join(
-    dials_regression, "centroid_test_data/centroid_####.cbf")
+    dials_regression, "centroid_test_data", "centroid_####.cbf")
 
-  cmd = "dials.import template=%s" %path
-  result = easy_run.fully_buffered(cmd).raise_if_errors()
-  cmd = "dials.find_spots datablock.json"
-  result = easy_run.fully_buffered(cmd).raise_if_errors()
-  cmd = "dials.index datablock.json strong.pickle space_group=P422"
-  result = easy_run.fully_buffered(cmd).raise_if_errors()
-  cmd = "dials.integrate experiments.json indexed.pickle prediction.padding=0 sigma_m_algorithm=basic"
-  result = easy_run.fully_buffered(cmd).raise_if_errors()
-  cmd = "dials.export integrated_experiments.json integrated.pickle format=best"
-  result = easy_run.fully_buffered(cmd).raise_if_errors()
+  result = procrunner.run(["dials.import", "template=" + path])
+  assert not result['exitcode'] and not result['stderr']
+  result = procrunner.run(["dials.find_spots", "datablock.json"])
+  assert not result['exitcode'] and not result['stderr']
+  result = procrunner.run(["dials.index", "datablock.json", "strong.pickle", "space_group=P422"])
+  assert not result['exitcode'] and not result['stderr']
+  result = procrunner.run([
+      "dials.integrate",
+      "experiments.json",
+      "indexed.pickle",
+      "prediction.padding=0",
+      "sigma_m_algorithm=basic",
+  ])
+  assert not result['exitcode'] and not result['stderr']
+  result = procrunner.run(["dials.export", "integrated_experiments.json", "integrated.pickle", "format=best"])
+  assert not result['exitcode'] and not result['stderr']
 
   assert os.path.exists("best.dat")
-  with open("best.dat", "rb") as f:
+  assert os.path.exists("best.hkl")
+  assert os.path.exists("best.par")
+
+  with open("best.dat", "r") as f:
     lines = ''.join(f.readlines()[:10])
-    assert lines == """\
+  assert lines == """\
   191.5469       0.00       0.06
    63.8495       1.97       1.39
    38.3104       1.96       1.35
@@ -35,10 +44,9 @@ def test_export_best(dials_regression, tmpdir):
    10.0854       1.86       1.39
 """
 
-  assert os.path.exists("best.hkl")
-  with open("best.hkl", "rb") as f:
+  with open("best.hkl", "r") as f:
     lines = ''.join(f.readlines()[:10])
-    assert lines == """\
+  assert lines == """\
  -20   27   -8      22.61      15.76
  -20   27   -7      69.46      17.54
  -20   27   -6       0.55      15.56
@@ -51,10 +59,9 @@ def test_export_best(dials_regression, tmpdir):
  -20   28   -2       6.65      15.26
 """
 
-  assert os.path.exists("best.par")
-  with open("best.par", "rb") as f:
+  with open("best.par", "r") as f:
     lines = f.read()
-    assert lines == """\
+  assert lines == """\
 # parameter file for BEST
 TITLE          From DIALS
 DETECTOR       PILA
