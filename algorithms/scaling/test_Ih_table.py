@@ -160,9 +160,9 @@ def test_Ih_table_freework(large_reflection_table, test_sg):
   """Test the splitting of a single dataset into a work and free set."""
   reflection_table = large_reflection_table
   Ih_table = SingleIhTable(reflection_table, test_sg, weighting_scheme='unity')
-  
+
   old_Ih_values = deepcopy(Ih_table.Ih_values)
-  
+
   Ih_table.split_into_free_work(30.0)
 
   #Test that the Ih_table was split properly.

@@ -292,7 +292,7 @@ class SingleScalerBase(ScalerBase):
   @classmethod
   def _select_optimal_intensities(cls, reflection_table, integration_method):
     """Choose which intensities to use for scaling."""
-    if (integration_method == 'sum' or integration_method == 'prf'):
+    if integration_method == 'sum' or integration_method == 'prf':
       intstr = integration_method
       conversion = flex.double(reflection_table.size(), 1.0)
       if 'partiality' in reflection_table:

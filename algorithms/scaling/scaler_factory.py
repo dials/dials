@@ -8,7 +8,8 @@ from dials.algorithms.scaling.scaler import MultiScaler, TargetScaler,\
 logger = logging.getLogger('dials')
 
 def create_scaler(params, experiments, reflections):
-  'method to create the appropriate scaler'
+  """Read an experimentlist and list of reflection tables and return
+    an appropriate scaler."""
   if len(reflections) == 1:
     scaler = SingleScalerFactory.create(params, experiments[0], reflections[0])
   else:

@@ -36,18 +36,6 @@ def test_experiments():
   return generated_exp()
 
 @pytest.fixture
-def two_test_experiments():
-  """Make a test experiments list"""
-  return generated_exp(2)
-
-@pytest.fixture
-def two_test_reflections():
-  """Make a test experiments list"""
-  refl = generated_refl()
-  refl.append(generated_refl()[0])
-  return refl
-
-@pytest.fixture
 def test_params():
   """Make a test param phil scope."""
   return generated_param()
@@ -58,6 +46,7 @@ def test_sg():
   return space_group("C 2y")
 
 def generated_refl_Ihtable():
+  """A test reflection tale for instantiating a SingleIhTable"""
   reflections = flex.reflection_table()
   reflections['intensity'] = flex.double([1.0, 10.0, 100.0, 1.0])
   reflections['variance'] = flex.double([1.0, 10.0, 100.0, 1.0])
@@ -103,7 +92,7 @@ def generated_refl():
     reflections.flags.bad_for_scaling)
   return [reflections]
 
-def generated_exp(n=1):
+def generated_exp():
   """Generate an experiment list with two experiments."""
   experiments = ExperimentList()
   exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
@@ -113,14 +102,9 @@ def generated_exp(n=1):
   scan = Scan(image_range=[0, 90], oscillation=[0.0, 1.0])
   beam = Beam(s0=(0.0, 0.0, 1.01))
   goniometer = Goniometer((1.0, 0.0, 0.0))
-  goniometer_2 = Goniometer((1.0, 1.0, 0.0))
   detector = Detector()
   experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
     detector=detector, crystal=crystal))
-  if n > 1:
-    for _ in range(0, n-1):
-      experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer_2,
-        detector=detector, crystal=crystal))
   return experiments
 
 def generated_param():
@@ -144,15 +128,12 @@ def test_ScalerBase():
 
     def update_for_minimisation(self, apm, curvatures=False):
       """Fill in abstract method."""
-      pass
 
     def perform_error_optimisation(self):
       """Fill in abstract method."""
-      pass
 
     def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
       """Fill in abstract method."""
-      pass
 
   scalerbase = SB_filler()
   assert scalerbase.experiments is None
@@ -302,12 +283,13 @@ def test_SingleScaler(test_reflections, test_experiments, test_params,
     assert ScalingRestraints.call_count == 1
     _ = singlescaler.compute_restraints_residuals_jacobian(apm)
     assert ScalingRestraints.call_count == 2
-  
+
   # Test restraints calculation calls? But should these be moved elsewhere?
   # Test outlier rejection call? Defer to test in scaling utilities?
 
 @pytest.fixture
 def mock_errormodel():
+  """A mock error model."""
   em = MagicMock()
   em.refined_parameters = [1.0, 0.1]
   em.update_variances.return_value = flex.double([1.0, 1.1, 1.0, 1.0])
@@ -372,7 +354,7 @@ def mock_scaling_component():
 @pytest.fixture
 def mock_exp(mock_scaling_component):
   """Mock experiments object for initialising a scaler."""
-  
+
   def side_effect_config_table(*args):
     """Side effect to mock configure reflection table
     call during initialisation."""
@@ -390,6 +372,7 @@ def mock_exp(mock_scaling_component):
 
 @pytest.fixture
 def mock_explist_2(mock_exp):
+  """A mock experimentlist."""
   mock_explist = []
   mock_explist.append(mock_exp)
   mock_explist.append(mock_exp)
@@ -473,11 +456,9 @@ def test_MultiScalerBase(mock_singlescaler, mock_explist_2, test_params,
 
     def join_multiple_datasets(self):
       """Fill in abstract method."""
-      pass
 
     def update_for_minimisation(self, apm, curvatures=False):
       """Fill in abstract method."""
-      pass
 
   singlescalers = [mock_singlescaler, mock_singlescaler]
   multiscaler = MSB_filler(test_params, mock_explist_2, singlescalers)
@@ -593,7 +574,7 @@ def test_MultiScaler(mock_singlescaler, mock_explist_2, test_params,
   basis_output = basisfn_side_effect()
 
   with mock.patch(fp+'basis_function.return_basis',
-    side_effect=basisfn_side_effect) as calc_basis,\
+    side_effect=basisfn_side_effect),\
     mock.patch.object(multiscaler.Ih_table, 'calc_Ih', autospec=True,
     side_effect=do_nothing_side_effect) as calc_Ih:
       multiscaler.update_for_minimisation(mock_multiapm)
@@ -624,12 +605,12 @@ def test_MultiScaler(mock_singlescaler, mock_explist_2, test_params,
   # Test the udpate_for_minimisation. Expect to compose a derivatives of
   # n_refl x n_param, where n_refl is the number in the working set.
 
-  
+
 
   basis_output = basisfn_side_effect_free()
 
   with mock.patch(fp+'basis_function.return_basis',
-    side_effect=basisfn_side_effect_free) as calc_basis,\
+    side_effect=basisfn_side_effect_free),\
     mock.patch.object(multiscaler.Ih_table, 'calc_Ih', autospec=True,
     side_effect=do_nothing_side_effect) as calc_Ih:
       multiscaler.update_for_minimisation(mock_multiapm)
@@ -648,7 +629,7 @@ def test_MultiScaler(mock_singlescaler, mock_explist_2, test_params,
       assert mock_multiapm.derivatives.non_zeroes == 2
       assert calc_Ih.call_count == 1
 
-@pytest.mark.skip(reason='broken test')
+
 def test_TargetScaler(mock_singlescaler, mock_explist_2, test_params,
   mock_multiapm):
   """Test for successful initialisation of TargetedScaler."""
@@ -656,21 +637,22 @@ def test_TargetScaler(mock_singlescaler, mock_explist_2, test_params,
   #singlescalers = [mock_singlescaler, mock_singlescaler]
   targetscaler = TargetScaler(test_params, mock_explist_2, [mock_singlescaler],
     [mock_singlescaler])
-  
+
   assert targetscaler.unscaled_scalers == [mock_singlescaler]
   assert targetscaler.unscaled_scalers is targetscaler.active_scalers
 
+  # Test the update_for_minimisation method.
   basis_output = basisfn_side_effect()
   fp = 'dials.algorithms.scaling.scaler.'
   with mock.patch(fp+'basis_function.return_basis',
-    side_effect=basisfn_side_effect) as calc_basis,\
+    side_effect=basisfn_side_effect),\
     mock.patch.object(targetscaler.Ih_table, 'calc_Ih', autospec=True,
     side_effect=do_nothing_side_effect) as calc_Ih:
       targetscaler.update_for_minimisation(mock_multiapm)
       assert targetscaler.Ih_table.size == 2
       assert mock_multiapm.apm_list[0].derivatives.n_rows == 2
       assert mock_multiapm.apm_list[0].derivatives.n_cols == 2
-      for scaler in targetscaler.single_scalers:
+      for scaler in targetscaler.unscaled_scalers:
         assert scaler.Ih_table.inverse_scale_factors == basis_output[0]
       for i in range(basis_output[1].n_rows):
         for j in range(basis_output[1].n_cols):
@@ -678,78 +660,36 @@ def test_TargetScaler(mock_singlescaler, mock_explist_2, test_params,
       assert mock_multiapm.apm_list[0].derivatives.non_zeroes == basis_output[1].non_zeroes
       assert calc_Ih.call_count == 0
 
+  # For the target scaler - the free set selection applies to the individual
+  # unscaled scalers, the target scaler is not changed in size as this is not
+  # refined against.
   test_params.scaling_options.use_free_set = True
   test_params.scaling_options.free_set_percentage = 50.0
-  multiscaler = TargetScaler(test_params, mock_explist_2, [mock_singlescaler],
+  targetscaler = TargetScaler(test_params, mock_explist_2, [mock_singlescaler],
     [mock_singlescaler])
-  assert multiscaler.Ih_table.size == 2
-  # XXX ''' with these input, not enough data to make free set sel.'''
-  assert multiscaler.Ih_table.free_Ih_table.size == 2
+  assert targetscaler.Ih_table.size == 2
 
   # Test the udpate_for_minimisation. Expect to compose a derivatives of
   # n_refl x n_param, where n_refl is the number in the working set.
   basis_output = basisfn_side_effect_free()
 
   with mock.patch(fp+'basis_function.return_basis',
-    side_effect=basisfn_side_effect_free) as calc_basis,\
-    mock.patch.object(multiscaler.Ih_table, 'calc_Ih', autospec=True,
+    side_effect=basisfn_side_effect_free),\
+    mock.patch.object(targetscaler.Ih_table, 'calc_Ih', autospec=True,
     side_effect=do_nothing_side_effect) as calc_Ih:
-      multiscaler.update_for_minimisation(mock_multiapm)
-      assert multiscaler.Ih_table.size == 2
-      assert multiscaler.Ih_table.free_Ih_table.size == 2
-      assert mock_multiapm.derivatives.n_rows == 2
-      assert mock_multiapm.derivatives.n_cols == 4
-      for scaler in multiscaler.single_scalers:
-        assert scaler.Ih_table.inverse_scale_factors == basis_output[0]
-      offset_x = 1
-      offset_y = 2
-      for i in range(1):
-        for j in range(2):
-          assert mock_multiapm.derivatives[i, j] == basis_output[1][i, j]
-          assert mock_multiapm.derivatives[i+offset_x, j+offset_y] == basis_output[1][i, j]
-      assert mock_multiapm.derivatives.non_zeroes == 2
-      assert calc_Ih.call_count == 1
-
-  '''(test_reflections, test_experiments, params) = generated_target_input(
-    generated_refl(), generated_refl_2(), generated_two_exp(), generated_param())
-
-  assert len(test_reflections) == 2
-  experiments = create_scaling_model(params, test_experiments, test_reflections)
-  ss = SingleScalerBase(params, experiments[0], test_reflections[0])
-  ss2 = SingleScalerBase(params, experiments[0], test_reflections[1])
-  targetscaler = TargetScaler(params, experiments, [ss], [ss2])
-  assert isinstance(targetscaler, TargetScaler)
-  assert list(targetscaler.Ih_table.Ih_values) == [1.0, 10.0, 1.0]
-  assert list(targetscaler.unscaled_scalers[0].Ih_table.asu_miller_index) == (
-    list(flex.miller_index([(1, 0, 0)]))) #Only one matched across datasets.
-  assert list(targetscaler.unscaled_scalers[0].Ih_table.Ih_values) == [1.0]
-
-  # Test fixed Ih scaling target
-  apm_factory = create_apm_factory(targetscaler)
-  apm = apm_factory.make_next_apm()
-
-  # Create a scaling target and check gradients and residuals.
-  target_function = ScalingTargetFixedIH(targetscaler, apm)
-  target_function.predict()
-  resid = (target_function.calculate_residuals()**2) * target_function.weights
-  assert list(resid) == [1.0]#   (weight x (2.0 - (1.0 * 1.0))**2)
-  gradients = target_function.calculate_gradients()
-  fd_grad = calculate_gradient_fd(target_function)
-  assert approx_equal(list(fd_grad), list(gradients))
-
-  # Test update for minimisation
-  apm.set_param_vals(flex.double([1.1, 0.1]))
-  # Check individual Ih tables were updated and derivatives matrix correctly composed
-  old_Ih_values = list(targetscaler.unscaled_scalers[0].Ih_table.Ih_values)
-  targetscaler.update_for_minimisation(apm)
-  # Check Ih tables were updated.
-  new_I_0 = list(targetscaler.unscaled_scalers[0].Ih_table.inverse_scale_factors)
-  #targetscaler.update_for_minimisation(apm)
-  single_bf_0 = basis_function(apm.apm_list[0]).return_basis()
-  assert new_I_0 == list(single_bf_0[0])
-  assert old_Ih_values == list(targetscaler.unscaled_scalers[0].Ih_table.Ih_values)'''
-
-  
+      targetscaler.update_for_minimisation(mock_multiapm)
+      for k, scaler in enumerate(targetscaler.unscaled_scalers):
+        assert scaler.Ih_table.size == 1
+        assert scaler.Ih_table.free_Ih_table.size == 1
+        assert mock_multiapm.apm_list[k].derivatives.n_rows == 1
+        assert mock_multiapm.apm_list[k].derivatives.n_cols == 2
+        assert scaler.Ih_table.inverse_scale_factors == basis_output[0][0]
+        assert scaler.Ih_table.free_Ih_table.inverse_scale_factors == basis_output[0][1]
+        for i in range(1):
+          for j in range(2):
+            assert mock_multiapm.apm_list[k].derivatives[i, j] == basis_output[1][i, j]
+        assert mock_multiapm.apm_list[k].derivatives.non_zeroes == 1
+      assert calc_Ih.call_count == 0
 
   fp = 'dials.algorithms.scaling.scaler.'
   with mock.patch(fp+'MultiScalerBase.join_datasets_from_scalers',
@@ -759,7 +699,7 @@ def test_TargetScaler(mock_singlescaler, mock_explist_2, test_params,
     expected.extend(targetscaler.single_scalers)
     expected.extend(targetscaler.unscaled_scalers)
     assert join_data.call_args_list == [call(expected)]
-    
+
     targetscaler.params.scaling_options.target_model = True
     targetscaler.join_multiple_datasets()
     assert join_data.call_args_list[1] == call(targetscaler.unscaled_scalers)

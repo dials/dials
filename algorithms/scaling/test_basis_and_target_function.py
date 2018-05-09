@@ -186,7 +186,7 @@ def test_basis_function(small_reflection_table):
 
   apm = scaling_active_parameter_manager(components, [])
   basis_fn = basis_function(apm, curvatures=True)
-  s, d, c = basis_fn.return_basis()
+  _, d, c = basis_fn.return_basis()
   assert d is None
   assert c is None
 
@@ -398,4 +398,3 @@ def calculate_jacobian_fd(target):
     for j in range(fin_difference.size()):
       jacobian[j, i] = fin_difference[j]
   return jacobian
-
