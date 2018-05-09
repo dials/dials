@@ -781,6 +781,8 @@ def plot_angles(coords, labels=None, show=False, plot_name=None):
 
 def plot_matrix(correlation_matrix, linkage_matrix, file_name, labels=None,
                 color_threshold=0.05):
+  if correlation_matrix.shape[0] > 2000:
+    return
   from matplotlib import pyplot as plt
   from scipy.cluster import hierarchy
 
