@@ -134,6 +134,18 @@ class Script(object):
                   'beta':bb,
                   'gamma':cc,
                   'volume':vol}
+      try:
+        cell_esds = [crystal.get_cell_parameter_sd_at_scan_point(t) for t in scan_pts]
+        sig_a, sig_b, sig_c, sig_aa, sig_bb, sig_cc = zip(*cell_esds)
+        cell_dat['sig_a'] = sig_a
+        cell_dat['sig_b'] = sig_b
+        cell_dat['sig_c'] = sig_c
+        cell_dat['sig_aa'] = sig_aa
+        cell_dat['sig_bb'] = sig_bb
+        cell_dat['sig_cc'] = sig_cc
+      except RuntimeError:
+        pass
+
       if self._debug:
         print("Crystal in Experiment {0}".format(iexp))
         print("Phi\ta\tb\tc\talpha\tbeta\tgamma\tVolume")
@@ -197,6 +209,9 @@ class Script(object):
     ax = plt.subplot(gs[0, 0])
     ax.ticklabel_format(useOffset=False)
     for cell in dat:
+      if 'sig_a' in cell:
+        ax.errorbar(cell['phi'][0::20], cell['a'][0::20],
+                    yerr=cell['sig_a'][0::20])
       plt.plot(cell['phi'], cell['a'])
     plt.xlabel(r'rotation angle $\left(^\circ\right)$')
     plt.ylabel(r'length $\left(\AA\right)$')
@@ -206,10 +221,13 @@ class Script(object):
     ax.ticklabel_format(useOffset=False)
     ymin, ymax = 0.0, 0.0
     for cell in dat:
+      if 'sig_aa' in cell:
+        ax.errorbar(cell['phi'][0::20], cell['alpha'][0::20],
+                    yerr=cell['sig_aa'][0::20])
       plt.plot(cell['phi'], cell['alpha'])
       # choose the widest y range
-      ymin = max(ymin, floor(min(cell['alpha']) - 0.05))
-      ymax = max(ymax, ceil(max(cell['alpha']) + 0.05))
+      ymin = max(ymin, min(cell['alpha']) - 0.05)
+      ymax = max(ymax, max(cell['alpha']) + 0.05)
       plt.axis(ymin=ymin, ymax=ymax)
     plt.xlabel(r'rotation angle $\left(^\circ\right)$')
     plt.ylabel(r'angle $\left(^\circ\right)$')
@@ -218,6 +236,9 @@ class Script(object):
     ax = plt.subplot(gs[1, 0])
     ax.ticklabel_format(useOffset=False)
     for cell in dat:
+      if 'sig_b' in cell:
+        ax.errorbar(cell['phi'][0::20], cell['b'][0::20],
+                    yerr=cell['sig_b'][0::20])
       plt.plot(cell['phi'], cell['b'])
     plt.xlabel(r'rotation angle $\left(^\circ\right)$')
     plt.ylabel(r'length $\left(\AA\right)$')
@@ -227,10 +248,13 @@ class Script(object):
     ax.ticklabel_format(useOffset=False)
     ymin, ymax = 0.0, 0.0
     for cell in dat:
+      if 'sig_bb' in cell:
+        ax.errorbar(cell['phi'][0::20], cell['beta'][0::20],
+                    yerr=cell['sig_bb'][0::20])
       plt.plot(cell['phi'], cell['beta'])
       # choose the widest y range
-      ymin = max(ymin, floor(min(cell['beta']) - 0.05))
-      ymax = max(ymax, ceil(max(cell['beta']) + 0.05))
+      ymin = max(ymin, min(cell['beta']) - 0.05)
+      ymax = max(ymax, max(cell['beta']) + 0.05)
       plt.axis(ymin=ymin, ymax=ymax)
     plt.xlabel(r'rotation angle $\left(^\circ\right)$')
     plt.ylabel(r'angle $\left(^\circ\right)$')
@@ -239,6 +263,9 @@ class Script(object):
     ax = plt.subplot(gs[2, 0])
     ax.ticklabel_format(useOffset=False)
     for cell in dat:
+      if 'sig_c' in cell:
+        ax.errorbar(cell['phi'][0::20], cell['c'][0::20],
+                    yerr=cell['sig_c'][0::20])
       plt.plot(cell['phi'], cell['c'])
     plt.xlabel(r'rotation angle $\left(^\circ\right)$')
     plt.ylabel(r'length $\left(\AA\right)$')
@@ -248,10 +275,13 @@ class Script(object):
     ax.ticklabel_format(useOffset=False)
     ymin, ymax = 0.0, 0.0
     for cell in dat:
+      if 'sig_cc' in cell:
+        ax.errorbar(cell['phi'][0::20], cell['gamma'][0::20],
+                    yerr=cell['sig_cc'][0::20])
       plt.plot(cell['phi'], cell['gamma'])
       # choose the widest y range
-      ymin = max(ymin, floor(min(cell['gamma']) - 0.05))
-      ymax = max(ymax, ceil(max(cell['gamma']) + 0.05))
+      ymin = max(ymin, min(cell['gamma']) - 0.05)
+      ymax = max(ymax, max(cell['gamma']) + 0.05)
       plt.axis(ymin=ymin, ymax=ymax)
     plt.xlabel(r'rotation angle $\left(^\circ\right)$')
     plt.ylabel(r'angle $\left(^\circ\right)$')
