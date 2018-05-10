@@ -8,6 +8,7 @@ logger = logging.getLogger('dials.command_line.cosym')
 import os
 from libtbx.utils import Sorry
 import iotbx.phil
+from cctbx import crystal, miller
 from cctbx import sgtbx
 from iotbx.reflection_file_reader import any_reflection_file
 from dials.array_family import flex
@@ -130,7 +131,6 @@ def run(args):
 
     assert len(experiments) == len(reflections)
 
-    from cctbx import crystal, miller
     i_refl = 0
     for i_expt in enumerate(experiments):
       refl = reflections[i_refl]
@@ -172,7 +172,6 @@ def run(args):
   for file_name in files:
 
     try:
-      from cctbx import miller
       data = easy_pickle.load(file_name)
       intensities = data['observations'][0]
       intensities.set_info(miller.array_info(
@@ -260,8 +259,6 @@ def run(args):
         space_group_info = sgtbx.space_group_info('P1')
       intensities = intensities.customized_copy(space_group_info=space_group_info)
 
-    intensities = intensities.merge_equivalents().array()
-
     datasets.append(intensities)
 
   crystal_symmetries = [d.crystal_symmetry().niggli_cell() for d in datasets]
@@ -304,23 +301,29 @@ def run(args):
       'Selecting subset of data for cosym analysis: %s' %str(dataset_selection))
     datasets = [datasets[i] for i in dataset_selection]
 
-  if params.space_group is None:
-    # per-dataset change of basis operator to ensure all consistent
-    change_of_basis_ops = []
-    for i, dataset in enumerate(datasets):
-      metric_subgroups = sgtbx.lattice_symmetry.metric_subgroups(dataset, max_delta=5)
-      subgroup = metric_subgroups.result_groups[0]
-      cb_op_inp_best = subgroup['cb_op_inp_best']
-      datasets[i] = dataset.change_basis(cb_op_inp_best)
-      change_of_basis_ops.append(cb_op_inp_best)
+  # per-dataset change of basis operator to ensure all consistent
+  change_of_basis_ops = []
+  for i, dataset in enumerate(datasets):
+    metric_subgroups = sgtbx.lattice_symmetry.metric_subgroups(dataset, max_delta=5)
+    subgroup = metric_subgroups.result_groups[0]
+    cb_op_inp_best = subgroup['cb_op_inp_best']
+    datasets[i] = dataset.change_basis(cb_op_inp_best)
+    change_of_basis_ops.append(cb_op_inp_best)
 
-    cb_op_ref_min = datasets[0].change_of_basis_op_to_niggli_cell()
-    for i, dataset in enumerate(datasets):
+  cb_op_ref_min = datasets[0].change_of_basis_op_to_niggli_cell()
+  for i, dataset in enumerate(datasets):
+    if params.space_group is None:
       datasets[i] = dataset.change_basis(cb_op_ref_min).customized_copy(
         space_group_info=sgtbx.space_group_info('P1'))
-      change_of_basis_ops[i] = cb_op_ref_min * change_of_basis_ops[i]
-  else:
-    change_of_basis_ops = [sgtbx.change_of_basis_op()] * len(datasets)
+    else:
+      datasets[i] = dataset.change_basis(cb_op_ref_min)
+      datasets[i] = datasets[i].customized_copy(
+        crystal_symmetry=crystal.symmetry(
+          unit_cell=datasets[i].unit_cell(),
+          space_group_info=params.space_group.primitive_setting(),
+          assert_is_compatible_unit_cell=False))
+    datasets[i] = datasets[i].merge_equivalents().array()
+    change_of_basis_ops[i] = cb_op_ref_min * change_of_basis_ops[i]
 
   result = analyse_datasets(datasets, params)
 
