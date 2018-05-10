@@ -124,6 +124,8 @@ class installer(install_distribution.installer):
     rmdir('base/share/gtk-doc')
     rmdir('base/share/hdf5_examples')
     rmdir('base/share/man')
+    rmdir('build/xia2_regression/blend_tutorial')
+    rmdir('build/xia2_regression/test_data')
     for p in ['date_time', 'detail', 'filesystem', 'program_options', 'python', 'system', 'thread']:
       rmdir(os.path.join('modules/boost/libs', p, 'example'))
       rmdir(os.path.join('modules/boost/libs', p, 'doc'))
