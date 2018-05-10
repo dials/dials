@@ -239,7 +239,7 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
   shutil.copy(image_path, loc)
 
   with open(json_name, 'wb') as w, open(json_path, 'rb') as r:
-    w.write(r.read() % loc)
+    w.write(r.read() % loc.replace('\\', '\\\\'))
 
   templ_phil = """
       output {
