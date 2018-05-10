@@ -97,10 +97,13 @@ class Target(object):
     self._lattice_group = copy.deepcopy(self._data.space_group())
     for sym_op in self._sym_ops:
       self._lattice_group.expand_smx(sym_op)
+    self._patterson_group = self._lattice_group.build_derived_patterson_group()
 
     logger.debug(
       'Lattice group: %s (%i symops)' %(
         self._lattice_group.info().symbol_and_number(), len(self._lattice_group)))
+    logger.debug(
+      'Patterson group: %s' %self._patterson_group.info().symbol_and_number())
 
     import time
     t0 = time.time()
@@ -230,8 +233,10 @@ class Target(object):
               pairs = matches.pairs()
               isel_i = pairs.column(0)
               isel_j = pairs.column(1)
-              isel_i = isel_i.select(self._lattice_group.epsilon(indices_i.select(isel_i)) == 1)
-              isel_j = isel_j.select(self._lattice_group.epsilon(indices_j.select(isel_j)) == 1)
+              isel_i = isel_i.select(
+                self._patterson_group.epsilon(indices_i.select(isel_i)) == 1)
+              isel_j = isel_j.select(
+                self._patterson_group.epsilon(indices_j.select(isel_j)) == 1)
               corr = flex.linear_correlation(
                 intensities_i.select(isel_i),
                 intensities_j.select(isel_j))
