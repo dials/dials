@@ -67,7 +67,6 @@ class determine_space_group(object):
     elif normalisation == 'ml_aniso':
       self.ml_normalisation(aniso=True)
 
-
     self.estimate_cc_sig_fac()
     self.estimate_cc_true()
     self.score_symmetry_elements()

@@ -105,21 +105,32 @@ def run(args):
       crystal_symmetry = crystal.symmetry(
         unit_cell=expt.crystal.get_unit_cell(),
         space_group=expt.crystal.get_space_group())
-      if 0 and 'intensity.prf.value' in refl:
-        sel = refl.get_flags(refl.flags.integrated_prf)
-        assert sel.count(True) > 0
-        refl = refl.select(sel)
-        data = refl['intensity.prf.value']
-        variances = refl['intensity.prf.variance']
-      else:
-        assert 'intensity.sum.value' in refl
-        sel = refl.get_flags(refl.flags.integrated_sum)
-        if sel.count(True) > 0:
-          refl = refl.select(sel)
-        data = refl['intensity.sum.value']
-        variances = refl['intensity.sum.variance']
-      # FIXME probably need to do some filtering of intensities similar to that
-      # done in export_mtz
+
+      # filtering of intensities similar to that done in export_mtz
+      # FIXME this function should be renamed/moved elsewhere
+      from dials.util.export_mtz import _apply_data_filters
+      refl = _apply_data_filters(
+        refl,
+        ignore_profile_fitting=False,
+        filter_ice_rings=False,
+        min_isigi=-5,
+        include_partials=False,
+        keep_partials=False,
+        scale_partials=True)
+
+      assert 'intensity.sum.value' in refl
+      sel = refl.get_flags(refl.flags.integrated_sum)
+      data = refl['intensity.sum.value']
+      variances = refl['intensity.sum.variance']
+      if 'intensity.prf.value' in refl:
+        prf_sel = refl.get_flags(refl.flags.integrated_prf)
+        data.set_selected(prf_sel, refl['intensity.prf.value'])
+        variances.set_selected(prf_sel, refl['intensity.prf.variance'])
+        sel |= prf_sel
+      refl = refl.select(sel)
+      data = data.select(sel)
+      variances = variances.select(sel)
+
       if 'lp' in refl and 'qe' in refl:
         lp = refl['lp']
         qe = refl['qe']
@@ -131,7 +142,8 @@ def run(args):
       assert variances.all_gt(0)
       sigmas = flex.sqrt(variances)
 
-      miller_set = miller.set(crystal_symmetry, miller_indices, anomalous_flag=False)
+      miller_set = miller.set(
+        crystal_symmetry, miller_indices, anomalous_flag=True)
       intensities = miller.array(miller_set, data=data, sigmas=sigmas)
       intensities.set_observation_type_xray_intensity()
       intensities.set_info(miller.array_info(
@@ -146,8 +158,15 @@ def run(args):
     assert reader.file_type() == 'ccp4_mtz'
 
     as_miller_arrays = reader.as_miller_arrays(merge_equivalents=False)
-    intensities = [ma for ma in as_miller_arrays
-                   if ma.info().labels == ['I', 'SIGI']][0]
+    intensities_prf = [ma for ma in as_miller_arrays
+                       if ma.info().labels == ['IPR', 'SIGIPR']]
+    intensities_sum = [ma for ma in as_miller_arrays
+                       if ma.info().labels == ['I', 'SIGI']]
+    if len(intensities_prf):
+      intensities = intensities_prf[0]
+    else:
+      assert len(intensities_sum), 'No intensities found in input file.'
+      intensities = intensities_sum[0]
     batches = [ma for ma in as_miller_arrays
                if ma.info().labels == ['BATCH']]
     if len(batches):
