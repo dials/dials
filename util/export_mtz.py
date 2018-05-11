@@ -497,6 +497,8 @@ def _write_columns(mtz_file, dataset, integrated_data, scale_partials,
     lp = flex.double(nref, 1.0)
   if 'qe' in integrated_data:
     qe = integrated_data['qe']
+  elif 'dqe' in integrated_data:
+    qe = integrated_data['dqe']
   else:
     qe = flex.double(nref, 1.0)
   I_profile = None
