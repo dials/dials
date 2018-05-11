@@ -139,7 +139,7 @@ def calculate_single_merging_stats(reflection_table, experiment):
   #dataset_id = list(set(reflection_table['id']))[0]
   result = iotbx.merging_statistics.dataset_statistics(
     i_obs=i_obs, n_bins=20, anomalous=False, sigma_filtering=None,
-    use_internal_variance=True, eliminate_sys_absent=False)
+    use_internal_variance=False, eliminate_sys_absent=False)
   return result
 
 def intensity_array_from_cif_file(cif_file):

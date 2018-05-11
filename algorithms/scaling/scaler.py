@@ -306,6 +306,8 @@ class SingleScalerBase(ScalerBase):
         conversion *= reflection_table['lp']
       if 'dqe' in reflection_table:
         conversion /= reflection_table['dqe']
+      if 'qe' in reflection_table:
+        conversion /= reflection_table['qe']
       reflection_table['intensity'] = (
         reflection_table['intensity.'+intstr+'.value'] * conversion)
       reflection_table['variance'] = (

@@ -48,7 +48,6 @@ class ScalingModelBase(object):
 
   def normalise_components(self):
     """Optionally define a normalisation of the parameters after scaling."""
-    pass
 
   @property
   def error_model(self):

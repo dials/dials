@@ -264,16 +264,9 @@ class SingleIhTable(IhTableBase):
       Ih_table['Ih_values'] = flex.double(refl_table.size(), 0.0)
     nonzero_weights_sel = ~(refl_table.get_flags(refl_table.flags.bad_for_scaling,
       all=False))
-      #refl_table.get_flags(refl_table.flags.user_excluded_in_scaling)
-      #| refl_table.get_flags(refl_table.flags.excluded_for_scaling)
-      #| refl_table.get_flags(refl_table.flags.outlier_in_scaling))
     if selection:
       nonzero_weights_sel = nonzero_weights_sel & selection
     Ih_table = Ih_table.select(nonzero_weights_sel)
-    #if self.weighting_scheme == 'unity':
-    #  Ih_table['weights'] = flex.double(Ih_table.size(), 1.0)
-    #else:
-    #  Ih_table['weights'] = 1.0/Ih_table['variance']
     self._nonzero_weights = nonzero_weights_sel
     return Ih_table
 

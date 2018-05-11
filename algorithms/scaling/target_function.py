@@ -58,8 +58,9 @@ class ScalingTarget(object):
 
   def calculate_residuals(self):
     """Return the residual vector."""
-    Ih_tab = self.scaler.Ih_table
-    R = Ih_tab.intensities - (Ih_tab.inverse_scale_factors * Ih_tab.Ih_values)
+    Ih_table = self.scaler.Ih_table
+    R = Ih_table.intensities - (Ih_table.inverse_scale_factors
+      * Ih_table.Ih_values)
     return R
 
   def calculate_free_rmsds(self):
@@ -184,8 +185,12 @@ class ScalingTarget(object):
 
   def compute_functional_gradients_and_curvatures(self):
     """Return the functional, gradients and curvatures."""
-    return (flex.sum((self.calculate_residuals()**2) * self.weights),
-      self.calculate_gradients(), self.calculate_curvatures())
+    resids = self.calculate_residuals()
+    functional = flex.sum(resids * self.weights)
+    gradients = self.calculate_gradients()
+    curvatures = self.calculate_curvatures()
+
+    return functional, gradients, curvatures
 
   def compute_restraints_functional_gradients_and_curvatures(self):
     """Return the restrains for functional, gradients and curvatures."""

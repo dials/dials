@@ -61,6 +61,7 @@ def generated_param():
   optionparser = OptionParser(phil=phil_scope, check_format=False)
   parameters, _ = optionparser.parse_args(args=[], quick_parse=True,
     show_diff_phil=False)
+  parameters.parameterisation.modulation_term = True
   return parameters
 
 def test_ScalingModelfactories(default_params, mock_exp, test_reflections):

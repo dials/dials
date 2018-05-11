@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 import sys
 import numpy as np
 import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -13,7 +14,7 @@ from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets
 from libtbx import phil
 
-matplotlib.use('Agg')
+
 
 phil_scope = phil.parse('''
   debug = False

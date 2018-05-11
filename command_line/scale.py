@@ -42,7 +42,7 @@ from dials.algorithms.scaling.scaling_utilities import (
 
 
 logger = logging.getLogger('dials')
-
+info_handle = log.info_handle(logger)
 phil_scope = phil.parse('''
   debug = False
     .type = bool
@@ -198,8 +198,10 @@ class Script(object):
       self.minimised.reflection_table, self.experiments)
     if len(results) == 1:
       logger.info("")
-      results[0].show()#out=log.info_handle(logger))
-      results[0].show_estimated_cutoffs()#out=log.info_handle(logger))
+      #results[0].show()#out=log.info_handle(logger))
+      results[0].show(out=info_handle)
+      #results[0].show_estimated_cutoffs()
+      results[0].show_estimated_cutoffs(out=info_handle)
       plot_labels.append('Single dataset ')
     else:
       for result, data_id in zip(results, scaled_ids):
