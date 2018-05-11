@@ -141,27 +141,27 @@ def test_basis_function(small_reflection_table):
   basis_fn.update_scale_factors()
 
   # Now test that the inverse scale factor is correctly calculated.
-  calculated_sfs = basis_fn.calculate_scale_factors()
+  calculated_sfs = basis_fn.calculate_scale_factors()[0]
   assert list(calculated_sfs) == list(new_S * np.exp(new_B/
-    (2.0*(decay.d_values**2))))
+    (2.0*(decay.d_values[0]**2))))
 
   # Now check that the derivative matrix is correctly calculated.
-  calc_derivs = basis_fn.calculate_derivatives()
-  assert calc_derivs[0, 0] == scale.derivatives[0, 0] * decay.inverse_scales[0]
-  assert calc_derivs[1, 0] == scale.derivatives[1, 0] * decay.inverse_scales[1]
-  assert calc_derivs[2, 0] == scale.derivatives[2, 0] * decay.inverse_scales[2]
-  assert calc_derivs[0, 1] == decay.derivatives[0, 0] * scale.inverse_scales[0]
-  assert calc_derivs[1, 1] == decay.derivatives[1, 0] * scale.inverse_scales[1]
-  assert calc_derivs[2, 1] == decay.derivatives[2, 0] * scale.inverse_scales[2]
+  calc_derivs = basis_fn.calculate_derivatives()[0]
+  assert calc_derivs[0, 0] == scale.derivatives[0][0, 0] * decay.inverse_scales[0][0]
+  assert calc_derivs[1, 0] == scale.derivatives[0][1, 0] * decay.inverse_scales[0][1]
+  assert calc_derivs[2, 0] == scale.derivatives[0][2, 0] * decay.inverse_scales[0][2]
+  assert calc_derivs[0, 1] == decay.derivatives[0][0, 0] * scale.inverse_scales[0][0]
+  assert calc_derivs[1, 1] == decay.derivatives[0][1, 0] * scale.inverse_scales[0][1]
+  assert calc_derivs[2, 1] == decay.derivatives[0][2, 0] * scale.inverse_scales[0][2]
 
   # Test that the curvatures matrix is correctly composed.
-  calc_curvs = basis_fn.calculate_curvatures()
-  assert calc_curvs[0, 0] == scale.curvatures[0, 0] * decay.inverse_scales[0]
-  assert calc_curvs[1, 0] == scale.curvatures[1, 0] * decay.inverse_scales[1]
-  assert calc_curvs[2, 0] == scale.curvatures[2, 0] * decay.inverse_scales[2]
-  assert calc_curvs[0, 1] == decay.curvatures[0, 0] * scale.inverse_scales[0]
-  assert calc_curvs[1, 1] == decay.curvatures[1, 0] * scale.inverse_scales[1]
-  assert calc_curvs[2, 1] == decay.curvatures[2, 0] * scale.inverse_scales[2]
+  calc_curvs = basis_fn.calculate_curvatures()[0]
+  assert calc_curvs[0, 0] == scale.curvatures[0][0, 0] * decay.inverse_scales[0][0]
+  assert calc_curvs[1, 0] == scale.curvatures[0][1, 0] * decay.inverse_scales[0][1]
+  assert calc_curvs[2, 0] == scale.curvatures[0][2, 0] * decay.inverse_scales[0][2]
+  assert calc_curvs[0, 1] == decay.curvatures[0][0, 0] * scale.inverse_scales[0][0]
+  assert calc_curvs[1, 1] == decay.curvatures[0][1, 0] * scale.inverse_scales[0][1]
+  assert calc_curvs[2, 1] == decay.curvatures[0][2, 0] * scale.inverse_scales[0][2]
 
   # Repeat the test when there is only one active parameter.
   # First reset the parameters
@@ -174,19 +174,19 @@ def test_basis_function(small_reflection_table):
   apm = scaling_active_parameter_manager(components, ['scale'])
   new_S = 2.0
   apm.set_param_vals(flex.double(components['scale'].n_params, new_S))
-  basis_fn = basis_function(apm).return_basis()
-  #basis_fn = basis_func.return_basis() # All in one alternative call.
+  basis_fn = basis_function(apm).calculate_scales_and_derivatives()
+  #basis_fn = basis_func.calculate_scales_and_derivatives() # All in one alternative call.
 
   # Test that the scales and derivatives were correctly calculated
-  assert list(basis_fn[0]) == list([new_S] *
-    components['scale'].inverse_scales.size())
-  assert basis_fn[1][0, 0] == components['scale'].derivatives[0, 0]
-  assert basis_fn[1][1, 0] == components['scale'].derivatives[1, 0]
-  assert basis_fn[1][2, 0] == components['scale'].derivatives[2, 0]
+  assert list(basis_fn[0][0]) == list([new_S] *
+    components['scale'].inverse_scales[0].size())
+  assert basis_fn[1][0][0, 0] == components['scale'].derivatives[0][0, 0]
+  assert basis_fn[1][0][1, 0] == components['scale'].derivatives[0][1, 0]
+  assert basis_fn[1][0][2, 0] == components['scale'].derivatives[0][2, 0]
 
   apm = scaling_active_parameter_manager(components, [])
   basis_fn = basis_function(apm, curvatures=True)
-  _, d, c = basis_fn.return_basis()
+  _, d, c = basis_fn.calculate_scales_and_derivatives()
   assert d is None
   assert c is None
 
@@ -232,7 +232,7 @@ def test_target_function():
   _ = target.compute_functional_gradients()
   _ = target.achieved()
   _ = target.predict()
-  resid = (target.calculate_residuals()**2) * target.weights
+  resid = (target.calculate_residuals(target.scaler.Ih_table)**2) * target.weights
   # Note - activate two below when curvatures are implemented.
   #_ = target.compute_restraints_functional_gradients_and_curvatures()
   #_ = target.compute_functional_gradients_and_curvatures()
@@ -254,12 +254,34 @@ def test_target_jacobian_calc(jacobian_gradient_input):
   target = ScalingTarget(scaler, apm)
   target.predict()
 
-  fd_jacobian = calculate_jacobian_fd(target)
-  r, jacobian, w = target.compute_residuals_and_gradients()
-  r = (r/w)**0.5
+  fd_jacobian = calculate_jacobian_fd(target, target.scaler.Ih_table)
+  _, jacobian, _ = target.compute_residuals_and_gradients(target.scaler.Ih_table)
+  #r = (r/w)**0.5
   for i in range(0, 3):
     for j in range(0, 2):
       assert approx_equal(jacobian[i, j], fd_jacobian[i, j])
+
+def test_target_jacobian_calc_splitblocks(jacobian_gradient_input):
+  """Test for the target function calculation of the jacobian matrix."""
+  test_params, exp, test_refl = jacobian_gradient_input
+  test_params.scaling_options.n_proc=2
+  test_params.parameterisation.decay_term = False
+  experiments = create_scaling_model(test_params, exp, test_refl)
+  assert experiments[0].scaling_model.id_ == 'physical'
+  scaler = create_scaler(test_params, experiments, test_refl)
+
+  apm = scaling_active_parameter_manager(scaler.components, ['scale'])
+
+  target = ScalingTarget(scaler, apm)
+  target.predict()
+
+  for block in scaler.Ih_table.blocked_Ih_table.block_list:
+    fd_jacobian = calculate_jacobian_fd(target, block)
+    _, jacobian, _ = target.compute_residuals_and_gradients(block)
+    #r = (r/w)**0.5
+    for i in range(0, 3):
+      for j in range(0, 2):
+        assert approx_equal(jacobian[i, j], fd_jacobian[i, j])
 
 
 @pytest.fixture
@@ -272,6 +294,10 @@ def mock_Ih_table():
   # These values should give residuals of [-1.0, 0.0, 1.0]
   Ih_table.weights = flex.double([1.0, 1.0, 1.0])
   Ih_table.size = 3
+  Ih_table.derivatives = sparse.matrix(3, 1)
+  Ih_table.derivatives[0, 0] = 1.0
+  Ih_table.derivatives[1, 0] = 2.0
+  Ih_table.derivatives[2, 0] = 3.0
   return Ih_table
 
 @pytest.fixture()
@@ -326,10 +352,10 @@ def mock_multiapm(mock_apm):
 def test_target_fixedIh(mock_targetscaler, mock_multiapm):
   """Test the target function for targeted scaling (where Ih is fixed)."""
   target = ScalingTargetFixedIH(mock_targetscaler, mock_multiapm)
-  R = target.calculate_residuals()
+  R, _ = target.compute_residuals()
   expected_residuals = flex.double([-1.0, 0.0, 1.0] * 2)
   assert list(R) == list(expected_residuals)
-  G = target.calculate_gradients()
+  _, G = target.compute_functional_gradients()
   assert list(G) == [-44.0, -44.0]
   # Add in finite difference check
 
@@ -362,12 +388,12 @@ def calculate_gradient_fd(target):
     #target.apm.x[i] -= 0.5 * delta
     target.apm.set_param_vals(new_x)
     target.predict()
-    R_low = (target.calculate_residuals()**2) * target.weights
+    R_low = (target.calculate_residuals(target.scaler.Ih_table)**2) * target.weights
     #target.apm.x[i] += delta
     new_x[i] += delta
     target.apm.set_param_vals(new_x)
     target.predict()
-    R_upper = (target.calculate_residuals()**2) * target.weights
+    R_upper = (target.calculate_residuals(target.scaler.Ih_table)**2) * target.weights
     #target.apm.x[i] -= 0.5 * delta
     new_x[i] -= 0.5 * delta
     target.apm.set_param_vals(new_x)
@@ -375,7 +401,7 @@ def calculate_gradient_fd(target):
     gradients[i] = (flex.sum(R_upper) - flex.sum(R_low)) / delta
   return gradients
 
-def calculate_jacobian_fd(target):
+def calculate_jacobian_fd(target, Ih_table):
   """Calculate jacobian matrix with finite difference approach."""
   delta = 1.0e-8
   #apm = target.apm
@@ -386,11 +412,11 @@ def calculate_jacobian_fd(target):
     new_x[i] -= 0.5 * delta
     target.apm.set_param_vals(new_x)
     target.predict()
-    R_low = target.calculate_residuals()#unweighted unsquared residual
+    R_low = target.calculate_residuals(Ih_table)#unweighted unsquared residual
     new_x[i] += delta
     target.apm.set_param_vals(new_x)
     target.predict()
-    R_upper = target.calculate_residuals() #unweighted unsquared residual
+    R_upper = target.calculate_residuals(Ih_table) #unweighted unsquared residual
     new_x[i] -= 0.5 * delta
     target.apm.set_param_vals(new_x)
     target.predict()

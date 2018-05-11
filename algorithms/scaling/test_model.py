@@ -161,8 +161,8 @@ def test_PhysicalScalingModel(test_reflections, mock_exp, mock_params):
   physicalmodel.components['decay'].update_reflection_data(rt)
   physicalmodel.components['decay'].calculate_scales_and_derivatives()
   physicalmodel.normalise_components()
-  assert list(physicalmodel.components['scale'].inverse_scales) == [1.0, 1.0]
-  assert list(physicalmodel.components['decay'].inverse_scales) == [1.0, 1.0]
+  assert list(physicalmodel.components['scale'].inverse_scales[0]) == [1.0, 1.0]
+  assert list(physicalmodel.components['decay'].inverse_scales[0]) == [1.0, 1.0]
 
   # Test from_dict initialisation method.
   physical_dict = {"__id__": "physical", "is_scaled": True, "scale": {

@@ -9,9 +9,11 @@ A TargetScaler is used for targeted scaling.
 
 import abc
 import logging
+import time
 from dials.array_family import flex
 from cctbx import crystal, sgtbx
 from scitbx import sparse
+from libtbx import easy_mp
 from dials_scaling_helpers_ext import row_multiply
 from libtbx.table_utils import simple_table
 from dials.algorithms.scaling.basis_functions import basis_function
@@ -158,9 +160,12 @@ class ScalerBase(object):
         engine = self.params.scaling_refinery.engine
       if not max_iterations:
         max_iterations = self.params.scaling_refinery.max_iterations
+      st = time.time()
       refinery = scaling_refinery(engine=engine, target=target_type(self, apm),
         prediction_parameterisation=apm, max_iterations=max_iterations)
       refinery.run()
+      ft = time.time()
+      logger.info("Time taken for refinement %s" % (ft - st))
       self = refinery.return_scaler()
       logger.info('\n'+'='*80+'\n')
 
@@ -207,7 +212,9 @@ class SingleScalerBase(ScalerBase):
       reflection_table = self.round_of_outlier_rejection(reflection_table)
     self._reflection_table = reflection_table
     self._configure_reflection_table()
-    self.select_reflections_for_scaling(split_free_set=(not for_multi))
+    self.select_reflections_for_scaling(for_multi=for_multi)#split_free_set=(not for_multi))
+    #if self.params.scaling_options.n_proc > 1:
+    #  self.Ih_table.split_into_blocks(self.params.scaling_options.n_proc)
     logger.info('Completed configuration of Scaler. \n\n' + '='*80 + '\n')
 
   @property
@@ -260,14 +267,14 @@ class SingleScalerBase(ScalerBase):
 
   def update_for_minimisation(self, apm, curvatures=False):
     """Update the scale factors and Ih for the next minimisation iteration."""
-    basis_fn = basis_function(apm, curvatures).return_basis()
+    basis_fn = basis_function(apm, curvatures).calculate_scales_and_derivatives()
     if self.Ih_table.free_set_sel:
-      dervis_trans = basis_fn[1].transpose()
+      dervis_trans = basis_fn[1][0].transpose() #what about when also blocked?
       work_set = ~self.Ih_table.free_set_sel
       derivs = dervis_trans.select_columns(work_set.iselection())
-      apm.derivatives = derivs.transpose()
+      self.Ih_table.derivatives = [derivs.transpose()]
     else:
-      apm.derivatives = basis_fn[1]
+      self.Ih_table.derivatives = basis_fn[1]
     if curvatures:
       apm.curvatures = basis_fn[2]
     self.Ih_table.inverse_scale_factors = basis_fn[0]
@@ -349,7 +356,10 @@ class SingleScalerBase(ScalerBase):
     for component in self.components.itervalues():
       component.update_reflection_data(self.reflection_table, scaled_sel)
       component.calculate_scales_and_derivatives()
-      scaled_invsf *= component.inverse_scales
+      scales = flex.double([])
+      for inv_scale in component.inverse_scales:
+        scales.extend(inv_scale)
+      scaled_invsf *= scales
     self.reflection_table['inverse_scale_factor'].set_selected(scaled_isel,
       scaled_invsf)
     logger.info('Scale factors determined during minimisation have now been\n'
@@ -405,19 +415,28 @@ class SingleScalerBase(ScalerBase):
     for component in self.components.itervalues():
       component.update_reflection_data(self.reflection_table, sel)
 
-  def select_reflections_for_scaling(self, split_free_set=True):
+  def select_reflections_for_scaling(self, for_multi=True):
     """Select a subset of reflections, create and Ih table and update the
     model components."""
+    split_free_set=(not for_multi)
     selection = self._scaling_subset(self.reflection_table, self.params)
-    self._Ih_table = SingleIhTable(self.reflection_table, self.space_group,
-      selection, self.params.weighting.weighting_scheme)
+    if self.params.scaling_options.n_proc > 1 and not for_multi:
+      self._Ih_table = SingleIhTable(self.reflection_table, self.space_group,
+        selection, self.params.weighting.weighting_scheme,
+        self.params.scaling_options.n_proc)
+      block_selections = (self.Ih_table.blocked_Ih_table.permuted,
+        self.Ih_table.blocked_Ih_table.block_selection_list)
+    else:
+      self._Ih_table = SingleIhTable(self.reflection_table, self.space_group,
+        selection, self.params.weighting.weighting_scheme)
+      block_selections = None
     if self.params.scaling_options.use_free_set and split_free_set:
       self._Ih_table.split_into_free_work(
         self.params.scaling_options.free_set_percentage)
     #if self.params.weighting.error_model_params:
     #  self.update_error_model(self.params.weighting.error_model_params)
     for component in self.components.itervalues():
-      component.update_reflection_data(self.reflection_table, selection)
+      component.update_reflection_data(self.reflection_table, selection, block_selections)
 
   def perform_error_optimisation(self):
     self.Ih_table = SingleIhTable(self._reflection_table, self.space_group)
@@ -543,15 +562,32 @@ class MultiScaler(MultiScalerBase):
     n_matrix_rows = self.Ih_table.size
     if self.Ih_table.free_set_sel:
       n_matrix_rows += self.Ih_table.free_Ih_table.size
-    apm.derivatives = sparse.matrix(n_matrix_rows, apm.n_active_params)
+    self.Ih_table.derivatives = [sparse.matrix(n_matrix_rows, apm.n_active_params)]
     start_row_no = 0
+    '''# This parallelisation would work if sparse matrices were
+    # pickleable (I think!) - with more benefit for larger number of datasets.
+    def task_wrapper(block):
+      bf = basis_function(block)
+      s, d = bf.calculate_scales_and_derivatives()
+      return s, d
+    blocks = apm.apm_list
+    task_results = easy_mp.parallel_map(func=task_wrapper, iterable=blocks,
+      processes=n_datasets, method="multiprocessing",
+      preserve_exception_message=True)
+    scales, derivs = zip(*task_results)
     for i, scaler in enumerate(self.single_scalers):
-      basis_fn = basis_function(apm.apm_list[i], curvatures).return_basis()
+      scaler.Ih_table.inverse_scale_factors = scales[i]
+      self.Ih_table.derivatives.assign_block(derivs[i][0], start_row_no,
+          apm.apm_data[i]['start_idx'])
+      start_row_no += derivs[i][0].n_rows'''
+    for i, scaler in enumerate(self.single_scalers):
+      basis_fn = basis_function(apm.apm_list[i], curvatures
+        ).calculate_scales_and_derivatives()
       scaler.Ih_table.inverse_scale_factors = basis_fn[0]
       if basis_fn[1]:
-        apm.derivatives.assign_block(basis_fn[1], start_row_no,
+        self.Ih_table.derivatives.assign_block(basis_fn[1][0], start_row_no,
           apm.apm_data[i]['start_idx'])
-        start_row_no += basis_fn[1].n_rows
+        start_row_no += basis_fn[1][0].n_rows
     if self.Ih_table.free_set_sel:
       isel = (~self.Ih_table.free_set_sel).iselection()
       derivs_T = apm.derivatives.transpose()
@@ -600,14 +636,14 @@ class TargetScaler(MultiScalerBase):
   def update_for_minimisation(self, apm, curvatures=False):
     """Update the scale factors and Ih for the next iteration of minimisation."""
     for i, scaler in enumerate(self.unscaled_scalers):
-      basis_fn = basis_function(apm.apm_list[i]).return_basis()
+      basis_fn = basis_function(apm.apm_list[i]).calculate_scales_and_derivatives()
       if scaler.Ih_table.free_set_sel:
         dervis_trans = basis_fn[1].transpose()
         work_set = ~scaler.Ih_table.free_set_sel
         derivs = dervis_trans.select_columns(work_set.iselection())
         apm.apm_list[i].derivatives = derivs.transpose()
       else:
-        apm.apm_list[i].derivatives = basis_fn[1]
+        scaler.Ih_table.derivatives = basis_fn[1]
       scaler.Ih_table.inverse_scale_factors = basis_fn[0]
       scaler.Ih_table.update_weights()
 
@@ -671,15 +707,15 @@ def calc_sf_variances(components, var_cov):
   n_param = 0
   for component in components:
     n_param += components[component].n_params
-    n_refl = components[component].inverse_scales.size() #should all be same
+    n_refl = components[component].inverse_scales[0].size() #should all be same
   jacobian = sparse.matrix(n_refl, n_param)
   n_cumulative_param = 0
   for component in components:
-    block = components[component].derivatives
+    block = components[component].derivatives[0]
     n_param = components[component].n_params
     for component_2 in components:
       if component_2 != component:
-        block = row_multiply(block, components[component].inverse_scales)
+        block = row_multiply(block, components[component].inverse_scales[0])
     jacobian.assign_block(block, 0, n_cumulative_param)
     n_cumulative_param += n_param
   logger.info('Calculating error estimates of inverse scale factors. \n')

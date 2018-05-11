@@ -20,14 +20,21 @@ class scaling_active_parameter_manager(active_parameter_manager):
         if self.constant_g_values is None:
           self.constant_g_values = obj.inverse_scales
         else:
-          self.constant_g_values *= obj.inverse_scales
+          for i in range(len(obj.inverse_scales)):
+            self.constant_g_values[i] *= obj.inverse_scales[i]
     super(scaling_active_parameter_manager, self).__init__(components,
       selection_list)
     n_obs = []
     for component in components:
+      n_blocks = 0
+      for n_refl in components[component].n_refl:
+        n_obs.append(n_refl)
+        n_blocks += 1
+    assert len(set(n_obs)) == n_blocks # Assert same no of refl set in all components.
+    n_obs = []
+    for component in components:
       n_obs.append(components[component].n_refl)
-    assert len(set(n_obs)) == 1 # Assert same no of refl set in all components.
-    self.n_obs = n_obs[0]
+    self.n_obs = n_obs[0] #list of length n_blocks
 
 def create_apm_factory(scaler):
   """Create and return the appropriate apm factory for the scaler.

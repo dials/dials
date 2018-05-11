@@ -143,7 +143,7 @@ class PhysicalScalingModel(ScalingModelBase):
     return reflection_table
 
   def normalise_components(self):
-    if 'scale' in self.components:
+    """if 'scale' in self.components:
       # Do an invariant rescale of the scale at t=0 to one.'''
       sel = (self.components['scale'].normalised_values ==
         min(self.components['scale'].normalised_values))
@@ -160,7 +160,7 @@ class PhysicalScalingModel(ScalingModelBase):
         self.components['decay'].n_params, maxB)
       self.components['decay'].calculate_scales_and_derivatives()
       logger.info('The "decay" model component has been rescaled, so that the\n'
-        'maximum B-factor applied to any reflection is 0.0.')
+        'maximum B-factor applied to any reflection is 0.0.')"""
 
   @classmethod
   def from_dict(cls, obj):

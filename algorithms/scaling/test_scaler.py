@@ -26,6 +26,11 @@ def test_reflections():
   return generated_refl()
 
 @pytest.fixture
+def test_reflections_no_exclude():
+  """Make a test reflection table."""
+  return generated_refl_for_split()
+
+@pytest.fixture
 def test_reflections_Ihtable():
   """Make a test reflection table."""
   return generated_refl_Ihtable()
@@ -79,6 +84,7 @@ def generated_refl():
   reflections['miller_index'] = flex.miller_index([(1, 0, 0), (0, 0, 1),
     (2, 0, 0), (2, 2, 2)]) #don't change
   reflections['d'] = flex.double([0.8, 2.0, 2.0, 0.0]) #don't change
+  reflections['d'] = flex.double([0.8, 2.0, 2.1, 0.1]) 
   reflections['lp'] = flex.double([1.0, 1.0, 1.0, 1.0])
   reflections['dqe'] = flex.double([1.0, 1.0, 1.0, 1.0])
   reflections['partiality'] = flex.double([1.0, 1.0, 1.0, 1.0])
@@ -86,11 +92,38 @@ def generated_refl():
     (0.0, 0.0, 5.0), (0.0, 0.0, 10.0), (0.0, 0.0, 10.0)])
   reflections['s1'] = flex.vec3_double([(0.0, 0.1, 1.0), (0.0, 0.1, 1.0),
     (0.0, 0.1, 1.0), (0.0, 0.1, 1.0)])
-  reflections.set_flags(flex.bool([True, True, False, False]),
-    reflections.flags.integrated)
-  reflections.set_flags(flex.bool([False, False, True, True]),
-    reflections.flags.bad_for_scaling)
+  integrated_list = flex.bool([True, True, False, False])
+  bad_list = flex.bool([False, False, True, True])
+  reflections.set_flags(integrated_list, reflections.flags.integrated)
+  reflections.set_flags(bad_list, reflections.flags.bad_for_scaling)
   return [reflections]
+
+def generated_refl_for_split():
+  """Generate a reflection table."""
+  #these miller_idx/d_values don't make physical sense, but I didn't want to
+  #have to write the tests for lots of reflections.
+  reflections = flex.reflection_table()
+  reflections['intensity.prf.value'] = flex.double([1.0, 10.0, 100.0, 1.0])
+  reflections['intensity.prf.variance'] = flex.double([1.0, 10.0, 100.0, 1.0])
+  reflections['intensity.sum.value'] = flex.double([10.0, 100.0, 1000.0, 10.0])
+  reflections['intensity.sum.variance'] = flex.double([10.0, 100.0, 1000.0, 10.0])
+  reflections['miller_index'] = flex.miller_index([(1, 0, 0), (2, 0, 0), (0, 0, 1),
+    (2, 2, 2)]) #don't change
+  #reflections['d'] = flex.double([0.8, 2.0, 2.0, 0.0]) #don't change
+  reflections['d'] = flex.double([0.8, 2.1, 2.0, 0.1]) 
+  reflections['lp'] = flex.double([1.0, 1.0, 1.0, 1.0])
+  reflections['dqe'] = flex.double([1.0, 1.0, 1.0, 1.0])
+  reflections['partiality'] = flex.double([1.0, 1.0, 1.0, 1.0])
+  reflections['xyzobs.px.value'] = flex.vec3_double([(0.0, 0.0, 0.0),
+    (0.0, 0.0, 5.0), (0.0, 0.0, 8.0), (0.0, 0.0, 10.0)])
+  reflections['s1'] = flex.vec3_double([(0.0, 0.1, 1.0), (0.0, 0.1, 1.0),
+    (0.0, 0.1, 1.0), (0.0, 0.1, 1.0)])
+  integrated_list = flex.bool(4, True)
+  bad_list = flex.bool(4, False)
+  reflections.set_flags(integrated_list, reflections.flags.integrated)
+  reflections.set_flags(bad_list, reflections.flags.bad_for_scaling)
+  return [reflections]
+
 
 def generated_exp():
   """Generate an experiment list with two experiments."""
@@ -175,6 +208,28 @@ def test_ScalerBase():
   assert 'inverse_scale_factor_variance' in scalerbase.reflection_table
   assert 'Ih_values' in scalerbase.reflection_table
 
+def test_SingleScaler_splitintoblocks(test_reflections_no_exclude,
+  test_experiments, test_params):
+  test_params.model = 'physical'
+  exp = create_scaling_model(test_params, test_experiments, test_reflections_no_exclude)
+  test_params.scaling_options.n_proc = 2
+  singlescaler = SingleScalerBase(test_params, exp[0], test_reflections_no_exclude[0],
+    scaled_id=2)
+  '''print(list(test_reflections_no_exclude[0]['d']))
+  print(list(test_reflections_no_exclude[0]['miller_index']))
+  print('Ih_table order')
+  print(list(singlescaler.Ih_table.miller_index))'''
+  assert singlescaler.Ih_table.blocked_Ih_table
+  '''print(list(singlescaler.Ih_table.blocked_Ih_table.block_list[0].asu_miller_index))
+  print(list(singlescaler.Ih_table.blocked_Ih_table.block_list[1].asu_miller_index))
+  print(list(singlescaler.Ih_table.blocked_Ih_table.permuted))'''
+  assert list(singlescaler.components['decay'].d_values[0]) == [2.0, 0.8] #(#2 and #0)
+  assert list(singlescaler.components['decay'].d_values[1]) == [2.1, 0.1] #(#1 and #3)
+  shtt = singlescaler.components['absorption'].sph_harm_table.transpose()
+  expected_harm1 = shtt.select_columns(flex.size_t([2, 0])).transpose()
+  expected_harm2 = shtt.select_columns(flex.size_t([1, 3])).transpose()
+  assert singlescaler.components['absorption'].harmonic_values[0] == expected_harm1  
+  assert singlescaler.components['absorption'].harmonic_values[1] == expected_harm2
 
 def test_SingleScaler(test_reflections, test_experiments, test_params,
     mock_errormodel):
@@ -234,13 +289,13 @@ def test_SingleScaler(test_reflections, test_experiments, test_params,
   assert singlescaler.Ih_table.size == 2
   assert list(singlescaler.Ih_table.asu_miller_index) == (
     list(flex.miller_index([(1, 0, 0), (0, 0, 1)])))
-  assert singlescaler.components['scale'].n_refl == 2
-  assert singlescaler.components['decay'].n_refl == 2
+  assert singlescaler.components['scale'].n_refl == [2]
+  assert singlescaler.components['decay'].n_refl == [2]
 
   # Test apply selection - here select just first.
   singlescaler.apply_selection_to_SFs(flex.bool([True, False, False, False]))
-  assert singlescaler.components['scale'].n_refl == 1
-  assert singlescaler.components['decay'].n_refl == 1
+  assert singlescaler.components['scale'].n_refl == [1]
+  assert singlescaler.components['decay'].n_refl == [1]
   singlescaler.apply_selection_to_SFs(flex.bool([True, True, False, False]))
   singlescaler.components['scale'].parameters = flex.double([1.1])
 
@@ -306,15 +361,15 @@ def test_singlescaler_updateforminimisation(test_reflections,
   assert list(single_scaler.Ih_table.Ih_values) == [1.0, 10.0]
   single_scaler.update_for_minimisation(apm)
   #Should set new scale factors, and calculate Ih and weights.
-  bf = basis_function(apm).return_basis()
-  assert list(single_scaler.Ih_table.inverse_scale_factors) == list(bf[0])
+  bf = basis_function(apm).calculate_scales_and_derivatives()
+  assert list(single_scaler.Ih_table.inverse_scale_factors) == list(bf[0][0])
   assert list(single_scaler.Ih_table.Ih_values) != [1.0, 10.0]
   assert list(single_scaler.Ih_table.Ih_values) == list(
-    single_scaler.Ih_table.intensities / bf[0])
-  for i in range(apm.derivatives.n_rows):
-    for j in range(apm.derivatives.n_cols):
-      assert apm.derivatives[i, j] == bf[1][i, j]
-  assert apm.derivatives.non_zeroes == bf[1].non_zeroes
+    single_scaler.Ih_table.intensities / bf[0][0])
+  for i in range(single_scaler.Ih_table.derivatives.n_rows):
+    for j in range(single_scaler.Ih_table.derivatives.n_cols):
+      assert single_scaler.Ih_table.derivatives[i, j] == bf[1][0][i, j]
+  assert single_scaler.Ih_table.derivatives.non_zeroes == bf[1][0].non_zeroes
 
   # Now test for case when using free_Ih_table.
   test_params.scaling_options.use_free_set = True
@@ -325,29 +380,29 @@ def test_singlescaler_updateforminimisation(test_reflections,
   assert list(single_scaler.Ih_table.inverse_scale_factors) == [1.0]
   assert list(single_scaler.Ih_table.Ih_values) == [1.0]
   single_scaler.update_for_minimisation(apm)
-  bf = basis_function(apm).return_basis()
+  bf = basis_function(apm).calculate_scales_and_derivatives()
   #Should set new scale factors, and calculate Ih and weights.
   assert list(single_scaler.Ih_table.inverse_scale_factors) == [bf[0][0]]
   assert list(single_scaler.Ih_table.Ih_values) != [1.0]
   assert list(single_scaler.Ih_table.Ih_values) == [1.0 / bf[0][0]]
   assert list(single_scaler.Ih_table.free_Ih_table.inverse_scale_factors) == [
-    1.0 * bf[0][1]]
+    1.0 * bf[0][0][1]]
   assert list(single_scaler.Ih_table.free_Ih_table.Ih_values) != [1.0]
-  assert list(single_scaler.Ih_table.free_Ih_table.Ih_values) == [10.0 / bf[0][1]]
-  for i in range(apm.derivatives.n_rows):
-    for j in range(apm.derivatives.n_cols):
-      assert apm.derivatives[i, j] == bf[1][i, j]
-  assert apm.derivatives.non_zeroes == 1
+  assert list(single_scaler.Ih_table.free_Ih_table.Ih_values) == [10.0 / bf[0][0][1]]
+  for i in range(single_scaler.Ih_table.derivatives.n_rows):
+    for j in range(single_scaler.Ih_table.derivatives.n_cols):
+      assert single_scaler.Ih_table.derivatives[i, j] == bf[1][0][i, j]
+  assert single_scaler.Ih_table.derivatives.non_zeroes == 1
 
 @pytest.fixture
 def mock_scaling_component():
   """Mock scaling component to allow creation of a scaling model."""
   component = MagicMock()
   component.n_params = 2
-  component.inverse_scales = flex.double([0.9, 1.1])
-  component.derivatives = sparse.matrix(2, 2)
-  component.derivatives[0, 0] = 0.5
-  component.derivatives[1, 0] = 0.4
+  component.inverse_scales = [flex.double([0.9, 1.1])]
+  component.derivatives = [sparse.matrix(2, 2)]
+  component.derivatives[0][0, 0] = 0.5
+  component.derivatives[0][1, 0] = 0.4
   return component
 
 
@@ -387,9 +442,9 @@ class test_apm(object):
     self.var_cov_matrix.reshape(flex.grid(1, 1))
     self.n_active_params = 1
     self.curvatures = []
-    self.derivatives = sparse.matrix(1, 1)
-    self.n_obs = 2
-    self.constant_g_values = flex.double(2, 1.0)
+    self.derivatives = [sparse.matrix(1, 1)]
+    self.n_obs = [2]
+    self.constant_g_values = [flex.double(2, 1.0)]
     self.components_list = ['scale']
     self.components = {'scale': {'object' : mock_scaling_component(),
       'n_params' : 1, 'start_idx' : 0}}
@@ -573,7 +628,7 @@ def test_MultiScaler(mock_singlescaler, mock_explist_2, test_params,
 
   basis_output = basisfn_side_effect()
 
-  with mock.patch(fp+'basis_function.return_basis',
+  with mock.patch(fp+'basis_function.calculate_scales_and_derivatives',
     side_effect=basisfn_side_effect),\
     mock.patch.object(multiscaler.Ih_table, 'calc_Ih', autospec=True,
     side_effect=do_nothing_side_effect) as calc_Ih:
@@ -609,7 +664,7 @@ def test_MultiScaler(mock_singlescaler, mock_explist_2, test_params,
 
   basis_output = basisfn_side_effect_free()
 
-  with mock.patch(fp+'basis_function.return_basis',
+  with mock.patch(fp+'basis_function.calculate_scales_and_derivatives',
     side_effect=basisfn_side_effect_free),\
     mock.patch.object(multiscaler.Ih_table, 'calc_Ih', autospec=True,
     side_effect=do_nothing_side_effect) as calc_Ih:
@@ -644,7 +699,7 @@ def test_TargetScaler(mock_singlescaler, mock_explist_2, test_params,
   # Test the update_for_minimisation method.
   basis_output = basisfn_side_effect()
   fp = 'dials.algorithms.scaling.scaler.'
-  with mock.patch(fp+'basis_function.return_basis',
+  with mock.patch(fp+'basis_function.calculate_scales_and_derivatives',
     side_effect=basisfn_side_effect),\
     mock.patch.object(targetscaler.Ih_table, 'calc_Ih', autospec=True,
     side_effect=do_nothing_side_effect) as calc_Ih:
@@ -673,7 +728,7 @@ def test_TargetScaler(mock_singlescaler, mock_explist_2, test_params,
   # n_refl x n_param, where n_refl is the number in the working set.
   basis_output = basisfn_side_effect_free()
 
-  with mock.patch(fp+'basis_function.return_basis',
+  with mock.patch(fp+'basis_function.calculate_scales_and_derivatives',
     side_effect=basisfn_side_effect_free),\
     mock.patch.object(targetscaler.Ih_table, 'calc_Ih', autospec=True,
     side_effect=do_nothing_side_effect) as calc_Ih:
@@ -716,11 +771,11 @@ def test_sf_variance_calculation(test_experiments, test_params):
   rt['d'] = flex.double([d1, d2, d3])
   components['scale'].update_reflection_data(rt)
   components['scale'].calculate_scales_and_derivatives()
-  assert list(components['scale'].derivatives.col(0)) == [
+  assert list(components['scale'].derivatives[0].col(0)) == [
     (0, 1.0), (1, 1.0), (2, 1.0)]
   components['decay'].update_reflection_data(rt)
   components['decay'].calculate_scales_and_derivatives()
-  assert list(components['decay'].derivatives.col(0)) == [(0, 1.0/(2.0*d1*d1)),
+  assert list(components['decay'].derivatives[0].col(0)) == [(0, 1.0/(2.0*d1*d1)),
     (1, 1.0/(2.0*d2*d2)), (2, 1.0/(2.0*d3*d3))]
   var_cov = sparse.matrix(2, 2)
   a = 0.2

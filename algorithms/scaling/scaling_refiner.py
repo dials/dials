@@ -8,8 +8,12 @@ import logging
 from dials.algorithms.refinement.engine import SimpleLBFGS,\
  GaussNewtonIterations, LevenbergMarquardtIterations, LBFGScurvs
 from libtbx.phil import parse
+from libtbx import easy_mp
+from dials.array_family import flex
 #logger = logging.getLogger(__name__)
 logger = logging.getLogger('dials')
+import time
+from scitbx import sparse
 
 
 TARGET_ACHIEVED = "RMSD target achieved"
@@ -196,16 +200,29 @@ class ScalingSimpleLBFGS(SimpleLBFGS, ScalingRefinery):
     """overwrite method to avoid calls to 'blocks' methods of target"""
     self.prepare_for_step()
 
-    f, g = self._target.compute_functional_gradients()
-
-    # restraints terms
+    if self._scaler.params.scaling_options.n_proc > 1:
+      blocks = self._scaler.Ih_table.get_blocks()
+      task_results = easy_mp.parallel_map(
+        func=self._target.compute_functional_gradients,
+        iterable=blocks,
+        processes=self._scaler.params.scaling_options.n_proc,
+        method="multiprocessing",
+        preserve_exception_message=True
+        )
+      f, gi = zip(*task_results)
+      f = sum(f)
+      g = gi[0]
+      for i in range(1, len(gi)):
+        g += gi[i]
+    else:
+      f, g = self._target.compute_functional_gradients()
+    
     restraints = \
       self._target.compute_restraints_functional_gradients_and_curvatures()
 
     if restraints:
       f += restraints[0]
       g += restraints[1]
-
     return f, g, None
 
 class ScalingLBFGScurvs(LBFGScurvs, ScalingRefinery):
@@ -217,6 +234,7 @@ class ScalingLBFGScurvs(LBFGScurvs, ScalingRefinery):
 
   def compute_functional_gradients_and_curvatures(self):
     """overwrite method to avoid calls to 'blocks' methods of target"""
+
     self.prepare_for_step()
 
     f, g, curv = self._target.compute_functional_gradients_and_curvatures()
@@ -267,12 +285,34 @@ class ScalingLstbxBuildUpMixin(ScalingRefinery):
 
     # observation terms
     if objective_only:
-      residuals, weights = self._target.compute_residuals()
-      self.add_residuals(residuals, weights)
+      if self._scaler.params.scaling_options.n_proc > 1:
+        blocks = self._scaler.Ih_table.get_blocks()
+        for block in blocks:
+          residuals, weights = self._target.compute_residuals(block)
+          self.add_residuals(residuals, weights)
+      else:
+        residuals, weights = self._target.compute_residuals()
+        self.add_residuals(residuals, weights)
     else:
-      residuals, self._jacobian, weights = \
-            self._target.compute_residuals_and_gradients()
-      self.add_equations(residuals, self._jacobian, weights)
+      if self._scaler.params.scaling_options.n_proc > 1:
+
+        self._jacobian = None
+
+        blocks = self._scaler.Ih_table.get_blocks()
+        for block in blocks:
+          residuals, jacobian, weights = self._target.compute_residuals_and_gradients(block)
+          self.add_equations(residuals, jacobian, weights)
+        '''task_results = easy_mp.pool_map(
+          fixed_func=self._target.compute_residuals_and_gradients,
+          iterable=blocks,
+          processes=self._scaler.params.scaling_options.n_proc
+          )
+        for result in task_results:
+          self.add_equations(result[0], result[1], result[2])'''
+      else:
+        residuals, self._jacobian, weights = \
+              self._target.compute_residuals_and_gradients()
+        self.add_equations(residuals, self._jacobian, weights)
 
     restraints = self._target.compute_restraints_residuals_and_gradients()
     if restraints:
@@ -280,7 +320,6 @@ class ScalingLstbxBuildUpMixin(ScalingRefinery):
         self.add_residuals(restraints[0], restraints[2])
       else:
         self.add_equations(restraints[0], restraints[1], restraints[2])
-
     return
 
 class ScalingGaussNewtonIterations(ScalingLstbxBuildUpMixin, GaussNewtonIterations):

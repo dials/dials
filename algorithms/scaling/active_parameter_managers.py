@@ -56,12 +56,15 @@ class active_parameter_manager(object):
   def set_param_vals(self, x):
     """Set method for refinement engine access."""
     self.x = x
+    #print('setting params vals')
+    #print(list(self.x))
     for component in self.components:
       component_obj = self.components[component]['object']
       component_obj.parameters = self.select_parameters(component)
 
   def get_param_vals(self):
     """Get method for refinement engine access."""
+    #print('getting params vals')
     return self.x
 
   def calculate_model_state_uncertainties(self, var_cov):

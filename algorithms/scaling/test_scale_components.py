@@ -64,15 +64,15 @@ def test_SingleScaleFactor():
   rt = flex.reflection_table()
   rt['d'] = flex.double([1.0, 1.0])
   KSF.update_reflection_data(rt)
-  assert KSF.n_refl == 2
+  assert KSF.n_refl == [2]
   KSF.calculate_scales_and_derivatives()
-  assert list(KSF.inverse_scales) == list(flex.double([2.0, 2.0]))
-  assert KSF.derivatives[0, 0] == 1
-  assert KSF.derivatives[1, 0] == 1
+  assert list(KSF.inverse_scales[0]) == list(flex.double([2.0, 2.0]))
+  assert KSF.derivatives[0][0, 0] == 1
+  assert KSF.derivatives[0][1, 0] == 1
   KSF.calculate_scales_and_derivatives(curvatures=True)
-  assert KSF.curvatures.non_zeroes == 0
+  assert KSF.curvatures[0].non_zeroes == 0
   KSF.update_reflection_data(rt, flex.bool([True, False])) # Test selection.
-  assert KSF.n_refl == 1
+  assert KSF.n_refl[0] == 1
 
 def test_SingleBScaleFactor():
   """Test forSingleBScaleFactor class."""
@@ -82,17 +82,17 @@ def test_SingleBScaleFactor():
   rt = flex.reflection_table()
   rt['d'] = flex.double([1.0, 1.0])
   BSF.update_reflection_data(rt)
-  assert BSF.n_refl == 2
-  assert list(BSF.d_values) == list(flex.double([1.0, 1.0]))
+  assert BSF.n_refl == [2]
+  assert list(BSF.d_values[0]) == list(flex.double([1.0, 1.0]))
   BSF.calculate_scales_and_derivatives()
-  assert list(BSF.inverse_scales) == list(flex.double([1.0, 1.0]))
-  assert BSF.derivatives[0, 0] == 0.5
-  assert BSF.derivatives[1, 0] == 0.5
+  assert list(BSF.inverse_scales[0]) == list(flex.double([1.0, 1.0]))
+  assert BSF.derivatives[0][0, 0] == 0.5
+  assert BSF.derivatives[0][1, 0] == 0.5
   BSF.calculate_scales_and_derivatives(curvatures=True)
-  assert BSF.curvatures[0, 0] == 0.25
-  assert BSF.curvatures[1, 0] == 0.25
+  assert BSF.curvatures[0][0, 0] == 0.25
+  assert BSF.curvatures[0][1, 0] == 0.25
   BSF.update_reflection_data(rt, flex.bool([True, False])) # Test selection.
-  assert BSF.n_refl == 1
+  assert BSF.n_refl[0] == 1
 
 def test_SHScalefactor():
   """Test the spherical harmonic absorption component."""
@@ -111,15 +111,15 @@ def test_SHScalefactor():
   harmonic_values[0, 2] = initial_val
   SF.sph_harm_table = harmonic_values
   SF.update_reflection_data(None, flex.bool([True]))
-  assert SF.harmonic_values[0, 0] == initial_val
-  assert SF.harmonic_values[0, 1] == initial_val
-  assert SF.harmonic_values[0, 2] == initial_val
-  assert list(SF.inverse_scales) == [1.0 + (3.0 * initial_val * initial_param)]
-  assert SF.derivatives[0, 0] == initial_val
-  assert SF.derivatives[0, 1] == initial_val
-  assert SF.derivatives[0, 2] == initial_val
+  assert SF.harmonic_values[0][0, 0] == initial_val
+  assert SF.harmonic_values[0][0, 1] == initial_val
+  assert SF.harmonic_values[0][0, 2] == initial_val
+  assert list(SF.inverse_scales[0]) == [1.0 + (3.0 * initial_val * initial_param)]
+  assert SF.derivatives[0][0, 0] == initial_val
+  assert SF.derivatives[0][0, 1] == initial_val
+  assert SF.derivatives[0][0, 2] == initial_val
   SF.calculate_scales_and_derivatives(curvatures=True)
-  assert SF.curvatures.non_zeroes == 0
+  assert SF.curvatures[0].non_zeroes == 0
 
   # Test setting of restraints and that restraints are calculated.
   # Not testing actual calculation as may want to change the form.
@@ -149,26 +149,26 @@ def test_SmoothScaleFactor1D():
   rt = flex.reflection_table()
   rt['norm_rot'] = flex.double([0.5, 1.0, 2.5, 0.0])
   SF.update_reflection_data(rt)
-  assert list(SF.normalised_values) == list(flex.double([0.5, 1.0, 2.5, 0.0]))
-  assert list(SF.inverse_scales) == list(flex.double([1.0, 1.0, 1.0, 1.0]))
+  assert list(SF.normalised_values[0]) == list(flex.double([0.5, 1.0, 2.5, 0.0]))
+  assert list(SF.inverse_scales[0]) == list(flex.double([1.0, 1.0, 1.0, 1.0]))
   SF.smoother.set_smoothing(4, 1.0)
   assert list(SF.smoother.positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5]
   SF.calculate_scales()
-  assert approx_equal(list(SF.inverse_scales), [1.1, 1.1, 1.1, 1.1])
+  assert approx_equal(list(SF.inverse_scales[0]), [1.1, 1.1, 1.1, 1.1])
   SF.calculate_scales_and_derivatives()
-  assert approx_equal(SF.derivatives[0, 0]/SF.derivatives[0, 1],
+  assert approx_equal(SF.derivatives[0][0, 0]/SF.derivatives[0][0, 1],
     exp(-1.0)/exp(0.0))
   sumexp = exp(-1.0/1.0) + exp(-0.0/1.0) + exp(-1.0/1.0)# only averages 3 when
   # normalised position is exactly on a smoother position.
-  assert approx_equal(SF.derivatives[0, 1], (exp(0.0)/sumexp))
-  T = SF.derivatives.transpose()
+  assert approx_equal(SF.derivatives[0][0, 1], (exp(0.0)/sumexp))
+  T = SF.derivatives[0].transpose()
   assert sum(list(T[:, 0].as_dense_vector())) == 1.0 #should always be 1.0
   assert sum(list(T[:, 1].as_dense_vector())) == 1.0
   assert sum(list(T[:, 2].as_dense_vector())) == 1.0
-  assert SF.derivatives[1, 1] == SF.derivatives[1, 2]
-  assert SF.derivatives[1, 0] == SF.derivatives[1, 3]
+  assert SF.derivatives[0][1, 1] == SF.derivatives[0][1, 2]
+  assert SF.derivatives[0][1, 0] == SF.derivatives[0][1, 3]
   SF.calculate_scales_and_derivatives(curvatures=True)
-  assert SF.curvatures.non_zeroes == 0
+  assert SF.curvatures[0].non_zeroes == 0
 
 def test_SmoothBScaleFactor1D():
   'test for a gaussian smoothed 1D scalefactor object'
@@ -179,30 +179,30 @@ def test_SmoothBScaleFactor1D():
   rt['norm_rot'] = flex.double([0.5, 1.0, 2.5, 0.0])
   rt['d'] = flex.double([1.0, 1.0, 1.0, 1.0])
   SF.update_reflection_data(rt)
-  assert list(SF.normalised_values) == list(flex.double([0.5, 1.0, 2.5, 0.0]))
-  assert list(SF.d_values) == list(flex.double([1.0, 1.0, 1.0, 1.0]))
-  assert list(SF.inverse_scales) == list(flex.double([1.0, 1.0, 1.0, 1.0]))
+  assert list(SF.normalised_values[0]) == list(flex.double([0.5, 1.0, 2.5, 0.0]))
+  assert list(SF.d_values[0]) == list(flex.double([1.0, 1.0, 1.0, 1.0]))
+  assert list(SF.inverse_scales[0]) == list(flex.double([1.0, 1.0, 1.0, 1.0]))
   SF.smoother.set_smoothing(4, 1.0)
   SF.calculate_scales()
-  assert approx_equal(list(SF.inverse_scales), [1.0, 1.0, 1.0, 1.0])
+  assert approx_equal(list(SF.inverse_scales[0]), [1.0, 1.0, 1.0, 1.0])
   SF.calculate_scales_and_derivatives()
-  assert approx_equal(SF.derivatives[0, 0]/SF.derivatives[0, 1],
+  assert approx_equal(SF.derivatives[0][0, 0]/SF.derivatives[0][0, 1],
     exp(-1.0)/exp(0.0)) #derivative ratio of two adjacent params (at +-0.5)
   sumexp = exp(-1.0/1.0) + exp(-0.0/1.0) + exp(-1.0/1.0)
-  assert approx_equal(SF.derivatives[0, 1], (
-    (exp(0.0)/sumexp) * SF.inverse_scales[1]/2.0))
-  T = SF.derivatives.transpose()
+  assert approx_equal(SF.derivatives[0][0, 1], (
+    (exp(0.0)/sumexp) * SF.inverse_scales[0][1]/2.0))
+  T = SF.derivatives[0].transpose()
   assert sum(list(T[:, 0].as_dense_vector())) == 0.5 #value depends on d
   assert sum(list(T[:, 1].as_dense_vector())) == 0.5
   assert sum(list(T[:, 2].as_dense_vector())) == 0.5
-  assert SF.derivatives[1, 1] == SF.derivatives[1, 2]
-  assert SF.derivatives[1, 0] == SF.derivatives[1, 3]
+  assert SF.derivatives[0][1, 1] == SF.derivatives[0][1, 2]
+  assert SF.derivatives[0][1, 0] == SF.derivatives[0][1, 3]
   SF.calculate_scales_and_derivatives(curvatures=True)
-  assert not SF.curvatures.non_zeroes == 0
-  assert approx_equal(SF.curvatures[0, 0]/SF.curvatures[0, 1],
+  assert not SF.curvatures[0].non_zeroes == 0
+  assert approx_equal(SF.curvatures[0][0, 0]/SF.curvatures[0][0, 1],
     (exp(-1.0)/exp(0.0))**2)
-  assert approx_equal(SF.curvatures[0, 1], (
-    ((exp(0.0)/sumexp)**2) * SF.inverse_scales[1]/4.0))
+  assert approx_equal(SF.curvatures[0][0, 1], (
+    ((exp(0.0)/sumexp)**2) * SF.inverse_scales[0][1]/4.0))
 
 def test_SmoothScaleFactor2D():
   """Test the 2D smooth scale factor class."""

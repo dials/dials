@@ -129,7 +129,7 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
   def __init__(self, initial_values, col_name, parameter_esds=None):
     super(SmoothScaleComponent1D, self).__init__(initial_values,
       parameter_esds)
-    self._normalised_values = None
+    self._normalised_values = []
     self._col_name = col_name
 
   @property
@@ -147,36 +147,53 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
     reflection table."""
     return self._col_name
 
-  def update_reflection_data(self, reflection_table, selection=None):
+  def update_reflection_data(self, reflection_table, selection=None, block_selections=None):
     """Set the normalised coordinate values and configure the smoother."""
+    self._normalised_values = []
+    self._inverse_scales = []
+    self._n_refl = []
     normalised_values = reflection_table[self._col_name]
     if selection:
       normalised_values = normalised_values.select(selection)
     # Make sure zeroed correctly.
     normalised_values = normalised_values - min(normalised_values)
-    self._normalised_values = normalised_values
-    phi_range_deg = [int(min(self._normalised_values)//1),
-                     int(max(self._normalised_values)//1)+1]
+    phi_range_deg = [int(min(normalised_values)//1),
+                     int(max(normalised_values)//1)+1]
     self._smoother = GaussianSmoother1D(phi_range_deg,
       self.nparam_to_val(self._n_params))
-    self.inverse_scales = flex.double(normalised_values.size(), 1.0)
-    self._n_refl = self.inverse_scales.size()
+    if block_selections:
+      permuted, block_selection_list = block_selections
+      norm_vals_permuted = normalised_values.select(permuted)
+      for i, sel in enumerate(block_selection_list):
+        self._normalised_values.append(norm_vals_permuted.select(sel))
+        self._inverse_scales.append(flex.double(self._normalised_values[i].size(), 1.0))
+        self._n_refl.append(self.inverse_scales[i].size())
+    else:
+      self._normalised_values.append(normalised_values)
+      self._inverse_scales.append(flex.double(normalised_values.size(), 1.0))
+      self._n_refl.append(self._inverse_scales[0].size())
 
   def calculate_scales_and_derivatives(self, curvatures=False):
-    value, weight, sumweight = self._smoother.multi_value_weight(
-      self._normalised_values, self.value)
-    inv_sw = 1. / sumweight
-    dv_dp = row_multiply(weight, inv_sw)
-    self._inverse_scales = value
-    self._derivatives = dv_dp
-    if curvatures:
-      self._curvatures = sparse.matrix(self._inverse_scales.size(), self.n_params)
+    self._inverse_scales = []
+    self._derivatives = []
+    self._curvatures = []
+    for block_id in range(len(self._n_refl)):#the length of the list, not number of refl
+      value, weight, sumweight = self._smoother.multi_value_weight(
+        self._normalised_values[block_id], self.value)
+      inv_sw = 1. / sumweight
+      dv_dp = row_multiply(weight, inv_sw)
+      self._inverse_scales.append(value)
+      self._derivatives.append(dv_dp)
+      if curvatures:
+        self._curvatures.append(sparse.matrix(self._inverse_scales[block_id].size(), self.n_params))
 
   def calculate_scales(self):
     """"Only calculate the scales if needed, for performance."""
-    value, _, _ = self._smoother.multi_value_weight(self._normalised_values,
-      self.value)
-    self._inverse_scales = value
+    self._inverse_scales = []
+    for block_id in range(len(self._n_refl)):#the length of the list, not number of refl
+      value, _, _ = self._smoother.multi_value_weight(self._normalised_values[block_id],
+        self.value)
+      self._inverse_scales.append(value)
 
 
 class SmoothBScaleComponent1D(SmoothScaleComponent1D):
@@ -186,34 +203,46 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
   def __init__(self, initial_values, col_name, parameter_esds=None):
     super(SmoothBScaleComponent1D, self).__init__(initial_values, col_name,
       parameter_esds)
-    self._d_values = None
+    self._d_values = []
 
   @property
   def d_values(self):
     """The current set of d-values associated with this component."""
     return self._d_values
 
-  def update_reflection_data(self, reflection_table, selection=None):
+  def update_reflection_data(self, reflection_table, selection=None, block_selections=None):
     super(SmoothBScaleComponent1D, self).update_reflection_data(
-      reflection_table, selection)
-    self._d_values = reflection_table['d']
+      reflection_table, selection, block_selections)
+    #self._d_values = reflection_table['d']
+    self._d_values = []
     if selection:
-      self._d_values = self._d_values.select(selection)
+      d_values = reflection_table['d'].select(selection)
+    else:
+      d_values = reflection_table['d']
+    if block_selections:
+      perumted, block_selection_list = block_selections
+      perumted_d_values = d_values.select(perumted)
+      for sel in block_selection_list:
+        self._d_values.append(perumted_d_values.select(sel))
+    else:
+      self._d_values.append(d_values)
 
   def calculate_scales_and_derivatives(self, curvatures=False):
-    super(SmoothBScaleComponent1D, self).calculate_scales_and_derivatives()
-    self._inverse_scales = flex.double(np.exp(self._inverse_scales
-      /(2.0 * (self._d_values**2))))
-    self._derivatives = row_multiply(self._derivatives,
-      self._inverse_scales / (2.0 * (self._d_values**2)))
-    if curvatures:
-      self._curvatures = row_multiply(elementwise_square(self._derivatives),
-        1.0/self._inverse_scales)
+    super(SmoothBScaleComponent1D, self).calculate_scales_and_derivatives(curvatures=curvatures)
+    for block_id in range(len(self._n_refl)):#the length of the list, not number of refl
+      self._inverse_scales[block_id] = flex.double(np.exp(self._inverse_scales[block_id]
+        /(2.0 * (self._d_values[block_id]**2))))
+      self._derivatives[block_id] = row_multiply(self._derivatives[block_id],
+        self._inverse_scales[block_id] / (2.0 * (self._d_values[block_id]**2)))
+      if curvatures:
+        self._curvatures[block_id] = row_multiply(elementwise_square(self._derivatives[block_id]),
+          1.0/self._inverse_scales[block_id])
 
   def calculate_scales(self):
     super(SmoothBScaleComponent1D, self).calculate_scales()
-    self._inverse_scales = flex.double(np.exp(self._inverse_scales
-      /(2.0 * (self._d_values**2))))
+    for block_id in range(len(self._n_refl)):#the length of the list, not number of refl
+      self._inverse_scales[block_id] = flex.double(np.exp(self._inverse_scales[block_id]
+        /(2.0 * (self._d_values[block_id]**2))))
 
 
 class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):

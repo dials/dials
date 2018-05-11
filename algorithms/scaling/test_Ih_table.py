@@ -152,7 +152,7 @@ def test_Ih_table(large_reflection_table, test_sg):
 
   # Test for size checking when setting new weights, inverse scales
   with pytest.raises(AssertionError):
-    Ih_table.inverse_scale_factors = flex.double([1.0])
+    Ih_table.inverse_scale_factors = [flex.double([1.0])]
   with pytest.raises(AssertionError):
     Ih_table.weights = flex.double([1.0])
 
@@ -191,7 +191,7 @@ def test_Ih_table_freework(large_reflection_table, test_sg):
 
   # Now test setting of new inverse scales in the case of a free set
   new_scales = flex.double([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
-  Ih_table.inverse_scale_factors = new_scales
+  Ih_table.inverse_scale_factors = [new_scales]
   assert Ih_table.inverse_scale_factors == new_scales.select(
     ~Ih_table.free_set_sel)
   assert Ih_table.free_Ih_table.inverse_scale_factors == new_scales.select(
@@ -309,3 +309,17 @@ def test_new_joint_Ih_table(joint_test_input):
   expected_weights = 4.0/flex.double(
     [90.0, 100.0, 90.0, 60.0, 30.0, 50.0, 50.0, 60.0, 30.0, 10.0, 30.0])
   assert approx_equal(list(Ih_table.weights), list(expected_weights))
+
+def test_split_into_blocks(large_reflection_table, test_sg):
+  """Test the setting of iterative weights."""
+  rt = large_reflection_table
+  rt2 = deepcopy(large_reflection_table)
+  rt.extend(rt2)
+  Ih_table = SingleIhTable(rt, test_sg, split_blocks=2)
+  print(list(Ih_table.blocked_Ih_table.block_list[0].Ih_values))
+  print(list(Ih_table.blocked_Ih_table.block_list[1].Ih_values))
+  print(list(Ih_table.blocked_Ih_table.block_selection_list[0]))
+  print(list(Ih_table.blocked_Ih_table.block_selection_list[1]))
+  Ih_table = SingleIhTable(rt, test_sg)
+  print(list(Ih_table.Ih_values))
+  print(Ih_table.h_index_matrix)

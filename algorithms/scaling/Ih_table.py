@@ -38,6 +38,8 @@ class IhTableBase(object):
     self._free_Ih_table = None
     self._free_set_sel = flex.bool([])
     self._n_h = None
+    self._derivatives = None
+    self.blocked_Ih_table = None
 
   @abc.abstractmethod
   def _assign_h_matrices(self):
@@ -53,6 +55,17 @@ class IhTableBase(object):
   def size(self):
     """Return the length of the stored Ih_table (a reflection table)."""
     return self._Ih_table.size()
+
+  @property
+  def derivatives(self):
+    return self._derivatives
+
+  @derivatives.setter
+  def derivatives(self, new_derivs):
+    if self.blocked_Ih_table:
+      self.blocked_Ih_table.set_derivatives(new_derivs)
+    else:
+      self._derivatives = new_derivs[0]
 
   @property
   def weights(self):
@@ -84,20 +97,22 @@ class IhTableBase(object):
 
   @inverse_scale_factors.setter
   def inverse_scale_factors(self, new_scales):
-    if self._free_set_sel:
-      selected_new_scales = new_scales.select(~self._free_set_sel)
+    if self.blocked_Ih_table:
+      self.blocked_Ih_table.set_inverse_scale_factors(new_scales)# new_scales is a list
+    elif self._free_set_sel:
+      selected_new_scales = new_scales[0].select(~self._free_set_sel) # new_scales is a len-1 list
       assert selected_new_scales.size() == self.size, """attempting to set
       a new set of scale factors of different length than previous
       assignment: was %s, attempting %s""" % (self.size,
         selected_new_scales.size())
       self._Ih_table['inverse_scale_factor'] = selected_new_scales
-      self._free_Ih_table.inverse_scale_factors = new_scales.select(self._free_set_sel)
-    elif new_scales.size() != self.size:
+      self._free_Ih_table.inverse_scale_factors = [new_scales[0].select(self._free_set_sel)]
+    elif new_scales[0].size() != self.size:
       assert 0, """attempting to set a new set of scale factors of different
       length than previous assignment: was %s, attempting %s""" % (
-        self.inverse_scale_factors.size(), new_scales.size())
+        self.inverse_scale_factors.size(), new_scales[0].size())
     else:
-      self._Ih_table['inverse_scale_factor'] = new_scales
+      self._Ih_table['inverse_scale_factor'] = new_scales[0]
 
   @property
   def Ih_values(self):
@@ -207,6 +222,169 @@ class IhTableBase(object):
     self.size, self.h_index_matrix.n_cols))
     logger.info(msg)
 
+  '''def split_into_blocks(self, n_blocks):
+    n_groups = self.h_index_matrix.n_cols
+    group_boundaries = [int(i*n_groups/n_blocks) for i in range(n_blocks)]
+    group_boundaries.append(n_groups)
+    block_selections = []
+    r = flex.double(self.h_index_matrix.n_rows, 0.0)
+    group_no = 1
+    for i, col in enumerate(self.h_index_matrix.cols()):
+      if i < group_boundaries[group_no]:
+        r += col.as_dense_vector()
+      else:
+        block_selections.append(r > 0)
+        r = col.as_dense_vector()
+        group_no += 1
+    block_selections.append(r > 0)
+    self.blocked_Ih_table = blocked_IhTable()
+    for i in range(n_blocks):
+      new_matrix = self.h_index_matrix.select_columns(
+        flex.size_t(range(group_boundaries[i], group_boundaries[i+1])))
+      nmT = new_matrix.transpose()
+      nm = nmT.select_columns(block_selections[i].iselection())
+      sub_h_idx_matrix = nm.transpose()
+      sub_Ih_table = self.Ih_table.select(block_selections[i])
+      self.blocked_Ih_table.add_Ihtable_block(block_selections[i],
+        sub_Ih_table, sub_h_idx_matrix)'''
+
+  def get_blocks(self):
+    return self.blocked_Ih_table.block_list
+
+
+class SimpleIhTable(object):
+
+  def __init__(self, IhTable, h_index_matrix):
+    self._Ih_table = IhTable
+    self._h_index_matrix = h_index_matrix
+    self._h_expand_matrix = h_index_matrix.transpose()
+    self.derivatives = None
+
+  @property
+  def size(self):
+    """Return the length of the stored Ih_table (a reflection table)."""
+    return self._Ih_table.size()
+
+  @property
+  def weights(self):
+    """The weights that will be used in scaling."""
+    return self._Ih_table['weights']
+
+  @weights.setter
+  def weights(self, new_weights):
+    if new_weights.size() != self.size:
+      assert 0, '''attempting to set a new set of weights of different
+      length than previous assignment: was %s, attempting %s''' % (
+        self.size, new_weights.size())
+    self._Ih_table['weights'] = new_weights
+
+  @property
+  def variances(self):
+    """The initial variances of the reflections."""
+    return self._Ih_table['variance']
+
+  @property
+  def intensities(self):
+    """The unscaled reflection intensities."""
+    return self._Ih_table['intensity']
+
+  @property
+  def inverse_scale_factors(self):
+    """"The inverse scale factors of the reflections."""
+    return self._Ih_table['inverse_scale_factor']
+
+  @inverse_scale_factors.setter
+  def inverse_scale_factors(self, new_scales):
+    if new_scales.size() != self.size:
+      assert 0, """attempting to set a new set of scale factors of different
+      length than previous assignment: was %s, attempting %s""" % (
+        self.inverse_scale_factors.size(), new_scales.size())
+    else:
+      self._Ih_table['inverse_scale_factor'] = new_scales
+
+  @property
+  def Ih_values(self):
+    """The estimated intensities of symmetry equivalent reflections."""
+    return self._Ih_table['Ih_values']
+
+  @property
+  def Ih_table(self):
+    """A reflection table of all the data stored by the class."""
+    return self._Ih_table
+
+  @property
+  def asu_miller_index(self):
+    """The asymmetric miller indices."""
+    return self._Ih_table['asu_miller_index']
+
+  @property
+  def miller_index(self):
+    """The miller indices."""
+    return self._Ih_table['miller_index']
+
+  @property
+  def h_index_matrix(self):
+    return self._h_index_matrix
+
+  @property
+  def h_expand_matrix(self):
+    return self._h_expand_matrix
+
+  def calc_Ih(self):
+    """Calculate the current best estimate for I for each reflection group."""
+    scale_factors = self.inverse_scale_factors
+    gsq = (((scale_factors)**2) * self.weights)
+    sumgsq = gsq * self.h_index_matrix
+    gI = ((scale_factors * self.intensities) * self.weights)
+    sumgI = gI * self.h_index_matrix
+    Ih = sumgI/sumgsq
+    self._Ih_table['Ih_values'] = Ih * self.h_expand_matrix
+  
+
+class blocked_IhTable(object):
+
+  def __init__(self, permuted):
+    self._block_list = []
+    self._block_selection_list = []
+    self.permuted = permuted
+
+  
+  def add_Ihtable_block(self, selection, Ih_table, h_index_matrix):
+    """Add a new Ih table block to the list."""
+    self._block_list.append(SimpleIhTable(Ih_table, h_index_matrix))
+    self._block_selection_list.append(selection)
+
+  def set_derivatives(self, derivatives):
+    for deriv, Ih_table in zip(derivatives, self.block_list):
+      Ih_table.derivatives = deriv
+    '''derivs_T = derivatives.transpose()
+    for sel, Ih_table in zip(self._block_selection_list, self._block_list):
+      sel_derivs_T = derivs_T.select_columns(sel.iselection())
+      Ih_table.derivatives = sel_derivs_T.transpose()'''
+
+  def set_inverse_scale_factors(self, new_scales):
+    for scales, Ih_table in zip(new_scales, self._block_list):
+      Ih_table.inverse_scale_factors = scales
+    '''
+    for sel, Ih_table in zip(self._block_selection_list, self._block_list):
+      Ih_table.inverse_scale_factors = new_scales.select(sel)'''
+
+  def calc_Ih(self):
+    for Ih_table in self._block_list:
+      Ih_table.calc_Ih()
+
+  @property
+  def block_list(self):
+    """A list of SimpleIhTables"""
+    return self._block_list
+
+  @property
+  def block_selection_list(self):
+    """A list of selections relating the Ih tables to the initial table."""
+    print('accessing block selection list')
+    return self._block_selection_list
+
+
 class SingleIhTable(IhTableBase):
   """Class to create an Ih_table. This is the default
   data structure used for scaling a single sweep.
@@ -221,7 +399,7 @@ class SingleIhTable(IhTableBase):
   none then inverse variance weighting is used."""
 
   def __init__(self, reflection_table, space_group, selection=None,
-      weighting_scheme=None):
+      weighting_scheme=None, split_blocks=None):
     super(SingleIhTable, self).__init__()
     self._nonzero_weights = None
     self.space_group = space_group
@@ -230,7 +408,7 @@ class SingleIhTable(IhTableBase):
     self.weighting_scheme = get_weighting_scheme(self, weighting_scheme)
     self.weighting_scheme.calculate_initial_weights()
     self.map_indices_to_asu()
-    self._h_index_matrix, self._h_expand_matrix = self._assign_h_matrices()
+    self._h_index_matrix, self._h_expand_matrix = self._assign_h_matrices(split_blocks)
     if not 'Ih_values' in reflection_table.keys():
       self.calc_Ih() #calculate a first estimate of Ih
 
@@ -305,37 +483,103 @@ class SingleIhTable(IhTableBase):
       location_in_unscaled_array += n_in_group
     self.Ih_values.set_selected(permuted, new_Ih_values)
 
-  def _assign_h_matrices(self):
+  def _assign_h_matrices(self, split_blocks=None):
     """Assign the h_index and h_expand matrices."""
     # First sort by asu miller index to make loop quicker below.
     asu_miller_index, permuted = self.get_sorted_asu_indices()
+    #Order
     # Now populate the matrix.
     n_refl = asu_miller_index.size()
     n_unique_groups = len(set(asu_miller_index))
-    h_index_matrix = sparse.matrix(n_refl, n_unique_groups)
-    group_idx = 0
-    previous = asu_miller_index[0]
-    for refl_idx, asu_idx in enumerate(asu_miller_index):
-      if asu_idx != previous:
-        group_idx += 1
-      h_index_matrix[refl_idx, group_idx] = 1.0
-      previous = asu_idx
-    # Permute h_index_matrix to the unsorted asu_miller_index order.
-    h_index_matrix = h_index_matrix.permute_rows(permuted)
-    h_expand_matrix = h_index_matrix.transpose()
-    return h_index_matrix, h_expand_matrix
+    if split_blocks:
+      self._Ih_table = self.Ih_table.select(permuted)
+      self.blocked_Ih_table = blocked_IhTable(permuted)
+      n_blocks = split_blocks
+      group_boundaries = [int(i*n_unique_groups/n_blocks) for i in range(n_blocks)]
+      group_boundaries.append(n_unique_groups)
+      total_refl_group_idx = 0 # use to count iteration over all groups
+      refl_in_group_idx = 0
+      refl_group_idx = 0
+      block_idx = 0
+      previous = asu_miller_index[0]
+      prev_refl_idx = 0 #use to slice Ih table.
+      h_index_matrix = sparse.matrix(n_refl, group_boundaries[1] - group_boundaries[0])
+      for refl_idx, asu_idx in enumerate(asu_miller_index):
+        if asu_idx != previous:
+          total_refl_group_idx += 1
+          refl_group_idx += 1
+        if total_refl_group_idx == group_boundaries[block_idx + 1]:
+          #save the previous group
+          sub_Ih_table = self.Ih_table[prev_refl_idx:refl_idx]
+          sel1 = permuted >= prev_refl_idx
+          sel2 = permuted < refl_idx
+          block_sel = sel1 & sel2
+          #print('block_sel = %s' % list(block_sel))
+          permuted_isel = permuted.select(block_sel)
+          selector = flex.bool(block_sel.size(), False)
+          selector.set_selected(permuted_isel, True)
+          #print('selector = %s' % list(selector))
+          col_selector = flex.size_t(range(0,h_index_matrix.non_zeroes))
+          h_idx_T = h_index_matrix.transpose()
+          reduced_h_idx_T = h_idx_T.select_columns(col_selector)
+          reduced_h_idx = reduced_h_idx_T.transpose()
+          self.blocked_Ih_table.add_Ihtable_block(selector,
+            sub_Ih_table, reduced_h_idx) #get back to initial order.
+          #start the next h_idx_matrix
+          block_idx += 1
+          h_index_matrix = sparse.matrix(n_refl, (group_boundaries[block_idx+1]
+            - group_boundaries[block_idx]))
+          prev_refl_idx = refl_idx
+          refl_in_group_idx = 0
+          refl_group_idx = 0
+        #else:
+        h_index_matrix[refl_in_group_idx, refl_group_idx] = 1.0
+        previous = asu_idx
+        refl_in_group_idx += 1
+      sub_Ih_table = self.Ih_table[prev_refl_idx:]
+      block_sel = permuted >= prev_refl_idx
+      #print('block_sel = %s' % list(block_sel))
+      permuted_isel = permuted.select(block_sel)
+      selector = flex.bool(block_sel.size(), False)
+      selector.set_selected(permuted_isel, True)
+      #print('selector = %s' % list(selector))
+      col_selector = flex.size_t(range(0,h_index_matrix.non_zeroes))
+      h_idx_T = h_index_matrix.transpose()
+      reduced_h_idx_T = h_idx_T.select_columns(col_selector)
+      reduced_h_idx = reduced_h_idx_T.transpose()
+      self.blocked_Ih_table.add_Ihtable_block(selector,
+        sub_Ih_table, reduced_h_idx)
+      return [], []
+    else:
+      h_index_matrix = sparse.matrix(n_refl, n_unique_groups)
+      group_idx = 0
+      previous = asu_miller_index[0]
+      for refl_idx, asu_idx in enumerate(asu_miller_index):
+        if asu_idx != previous:
+          group_idx += 1
+        h_index_matrix[refl_idx, group_idx] = 1.0
+        previous = asu_idx
+      # Permute h_index_matrix to the unsorted asu_miller_index order.
+      h_index_matrix = h_index_matrix.permute_rows(permuted)
+      h_expand_matrix = h_index_matrix.transpose()
+      return h_index_matrix, h_expand_matrix
+
+
 
   def calc_Ih(self):
     """Calculate the current best estimate for I for each reflection group."""
-    scale_factors = self.inverse_scale_factors
-    gsq = (((scale_factors)**2) * self.weights)
-    sumgsq = gsq * self.h_index_matrix
-    gI = ((scale_factors * self.intensities) * self.weights)
-    sumgI = gI * self.h_index_matrix
-    Ih = sumgI/sumgsq
-    self._Ih_table['Ih_values'] = Ih * self.h_expand_matrix
-    if self._free_Ih_table:
-      self._free_Ih_table.calc_Ih()
+    if self.blocked_Ih_table:
+      self.blocked_Ih_table.calc_Ih()
+    else:
+      scale_factors = self.inverse_scale_factors
+      gsq = (((scale_factors)**2) * self.weights)
+      sumgsq = gsq * self.h_index_matrix
+      gI = ((scale_factors * self.intensities) * self.weights)
+      sumgI = gI * self.h_index_matrix
+      Ih = sumgI/sumgsq
+      self._Ih_table['Ih_values'] = Ih * self.h_expand_matrix
+      if self._free_Ih_table:
+        self._free_Ih_table.calc_Ih()
 
 class JointIhTable(IhTableBase):
   """Class to expand the datastructure for scaling multiple
@@ -384,7 +628,7 @@ class JointIhTable(IhTableBase):
     unique_indices = all_unique_indices.select(unique_permuted)
     return unique_indices, all_miller_indices
 
-  def _assign_h_matrices(self):
+  def _assign_h_matrices(self, split_blocks=False):
     """Assign the h_index and h_expand matrices."""
     all_unique_indices, all_miller_indices = self._determine_all_unique_indices()
     n_unique_groups = all_unique_indices.size()
@@ -420,6 +664,14 @@ class JointIhTable(IhTableBase):
           good_cols.append(i)
       total_h_idx_matrix = total_h_idx_matrix.select_columns(good_cols)
     total_h_expand_matrix = total_h_idx_matrix.transpose()
+    '''if split_blocks:
+      n_blocks = split_blocks
+      n_unique_groups = total_h_idx_matrix.n_cols
+      group_boundaries = [int(i*n_unique_groups/n_blocks) for i in range(n_blocks)]
+      group_boundaries.append(n_unique_groups)
+      for i in range(len(group_boundaries)-1):
+        col_selector = flex.size_t(range(group_boundaries[i],group_boundaries[i+1]))
+        sub_h_idx_matrix = total_h_idx_matrix.select_columns(col_selector)'''
     return total_h_idx_matrix, total_h_expand_matrix
 
   def calc_Ih(self):
@@ -429,7 +681,7 @@ class JointIhTable(IhTableBase):
       scales.extend(Ih_table.inverse_scale_factors)
     if self.free_set_sel:
       free_scales = scales.select(self.free_set_sel)
-      self.free_Ih_table.inverse_scale_factors = free_scales
+      self.free_Ih_table.inverse_scale_factors = [free_scales]
       scales = scales.select(~self.free_set_sel)
     sumgsq = (((scales)**2) * self.weights) * self.h_index_matrix
     sumgI = ((scales * self.intensities) * self.weights) * self.h_index_matrix

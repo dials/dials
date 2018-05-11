@@ -162,7 +162,7 @@ def plot_smooth_scales(params, experiments, reflections, outputfile=None):
     smoother_phis = [i * scale_rot_int for i in scale_SF.smoother.positions()]
     ax1 = plt.subplot(2, 1, 1)
     #plt.title('Smooth scale factors')
-    ax1.plot(rel_values*scale_rot_int, scale_SF.inverse_scales,
+    ax1.plot(rel_values*scale_rot_int, scale_SF.inverse_scales[0],
       label='smootly varying \ninverse scale factor')
     if params.output.with_errors:
       if params.output.limit_range_to_obs:
@@ -204,7 +204,7 @@ def plot_smooth_scales(params, experiments, reflections, outputfile=None):
       ax2 = plt.subplot(2, 1, 2)
     ax2.set_ylabel('Relative B factor (' + r'$\AA^{2}$'+')', fontsize=12)
     ax2.set_xlabel('Rotation angle (' + r'$^{\circ}$'+')', fontsize=12)
-    ax2.plot(rel_values * decay_rot_int, np.log(decay_SF.inverse_scales)*2.0,
+    ax2.plot(rel_values * decay_rot_int, np.log(decay_SF.inverse_scales[0])*2.0,
       label='smootly varying \nB-factor') #convert scales to B values
     if params.output.with_errors:
       if params.output.limit_range_to_obs:

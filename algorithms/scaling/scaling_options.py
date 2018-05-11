@@ -114,6 +114,9 @@ phil_scope = iotbx.phil.parse('''
       .type = path
       .help = "Path to cif file to use to calculate target intensities for
               scaling."
+    n_proc = 1
+      .type = int(value_min=1)
+      .help = "number of processes to use."
     use_free_set = False
       .type = bool
       .help = "Option to use a free set during scaling to check for overbiasing.
