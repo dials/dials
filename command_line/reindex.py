@@ -193,14 +193,14 @@ def run(args):
     change_of_basis_op = sgtbx.change_of_basis_op(params.change_of_basis_op)
 
   if len(experiments):
-    for experiment in experiments:
-      cryst_orig = copy.deepcopy(experiment.crystal)
+    for crystal in experiments.crystals():
+      cryst_orig = copy.deepcopy(crystal)
       cryst_reindexed = cryst_orig.change_basis(change_of_basis_op)
       if params.space_group is not None:
         a, b, c = cryst_reindexed.get_real_space_vectors()
         cryst_reindexed = Crystal(
           a, b, c, space_group=params.space_group.group())
-      experiment.crystal.update(cryst_reindexed)
+      crystal.update(cryst_reindexed)
 
       print("Old crystal:")
       print(cryst_orig)
