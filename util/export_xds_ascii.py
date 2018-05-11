@@ -106,6 +106,8 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
     lp = flex.double(nref, 1.0)
   if 'qe' in integrated_data:
     qe = integrated_data['qe']
+  elif 'dqe' in integrated_data:
+    qe = integrated_data['dqe']
   else:
     qe = flex.double(nref, 1.0)
   scl = lp / qe

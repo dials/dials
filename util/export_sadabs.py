@@ -144,6 +144,8 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
     lp = flex.double(nref, 1.0)
   if 'qe' in integrated_data:
     qe = integrated_data['qe']
+  elif 'dqe' in integrated_data:
+    qe = integrated_data['dqe']
   else:
     qe = flex.double(nref, 1.0)
   scl = lp / qe
