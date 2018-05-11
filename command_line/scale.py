@@ -22,6 +22,7 @@ dials_scratch.plot_scaling_models scaled.pickle scaled_experiments.json
 from __future__ import absolute_import, division, print_function
 import time
 import logging
+import sys
 #import libtbx.load_env
 from libtbx import phil
 from libtbx.utils import Sorry
@@ -92,7 +93,7 @@ class Script(object):
 
     if not self.params.input.experiments or not self.params.input.reflections:
       optionparser.print_help()
-      return
+      sys.exit()
 
     from dials.util.version import dials_version
     logger.info(dials_version())
