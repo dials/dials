@@ -47,6 +47,11 @@ class determine_space_group(object):
     self.lattice_group = self.subgroups.result_groups[0]['best_subsym'].space_group()
     self.lattice_group = self.lattice_group.change_basis(self.cb_op_min_best.inverse())
 
+    self.patterson_group = self.lattice_group.build_derived_patterson_group()
+    sel = self.patterson_group.epsilon(self.intensities.indices()) == 1
+    self.intensities = self.intensities.select(sel).set_info(
+      self.intensities.info())
+
     if d_min is not None or d_min is libtbx.Auto:
       self.resolution_filter(d_min, min_i_mean_over_sigma_mean, min_cc_half)
 
