@@ -104,7 +104,7 @@ def reference_poles_crystal(crystal_model, plane_normal=(0,0,1)):
   return tuple((B * h).normalize() for h in (h0, h1, h2))
 
 def stereographic_projection(points, reference_poles):
-  # http://dx.doi.org/10.1107/S0021889868005029
+  # https://doi.org/10.1107/S0021889868005029
   # J. Appl. Cryst. (1968). 1, 68-70
   # The construction of stereographic projections by computer
   # G. K. Stokes, S. R. Keown and D. J. Dyson

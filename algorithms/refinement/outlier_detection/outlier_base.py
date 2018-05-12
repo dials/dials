@@ -343,7 +343,7 @@ outlier
 
   sauter_poon
     .help = "Options for the outlier rejector described in Sauter & Poon (2010)"
-            "(http://dx.doi.org/10.1107/S0021889810010782)"
+            "(https://doi.org/10.1107/S0021889810010782)"
     .expert_level = 1
   {
     px_sz = Auto
