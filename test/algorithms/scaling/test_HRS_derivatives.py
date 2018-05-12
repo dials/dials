@@ -1,5 +1,5 @@
 """Test derivatives of the Hamilton, Rollett and Sparks least-squares target
-(http://doi.org/10.1107/S0365110X65000233)"""
+(https://doi.org/10.1107/S0365110X65000233)"""
 
 from __future__ import absolute_import, division, print_function
 

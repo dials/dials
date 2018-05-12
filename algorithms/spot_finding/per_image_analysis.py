@@ -331,7 +331,7 @@ def estimate_resolution_limit_distl_method1(
   # Implementation of Method 1 (section 2.4.4) of:
   # Z. Zhang, N. K. Sauter, H. van den Bedem, G. Snell and A. M. Deacon
   # J. Appl. Cryst. (2006). 39, 112-119
-  # http://dx.doi.org/10.1107/S0021889805040677
+  # https://doi.org/10.1107/S0021889805040677
 
   if ice_sel is None:
     ice_sel = flex.bool(len(reflections), False)
@@ -437,7 +437,7 @@ def estimate_resolution_limit_distl_method2(
   # Implementation of Method 2 (section 2.4.4) of:
   # Z. Zhang, N. K. Sauter, H. van den Bedem, G. Snell and A. M. Deacon
   # J. Appl. Cryst. (2006). 39, 112-119
-  # http://dx.doi.org/10.1107/S0021889805040677
+  # https://doi.org/10.1107/S0021889805040677
 
   if ice_sel is None:
     ice_sel = flex.bool(len(reflections), False)

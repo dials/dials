@@ -17,7 +17,7 @@ from dials.array_family import flex
 
 class SauterPoon(CentroidOutlier):
   """Implementation of the CentroidOutlier class using the algorithm of
-  Sauter & Poon (2010) (http://dx.doi.org/10.1107/S0021889810010782)."""
+  Sauter & Poon (2010) (https://doi.org/10.1107/S0021889810010782)."""
 
   def __init__(self, cols=None,
                min_num_obs=20,
