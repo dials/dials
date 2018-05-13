@@ -129,6 +129,7 @@ def test_elliptical_distortion(tmpdir):
   result = easy_run.fully_buffered(command=cmd).raise_if_errors()
 
   # Load the maps
+  from scitbx.array_family import flex # import dependency
   with open("dx.pickle", "rb") as f:
     dx = pickle.load(f)
   with open("dy.pickle", "rb") as f:
