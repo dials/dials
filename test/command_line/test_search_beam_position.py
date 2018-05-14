@@ -52,11 +52,22 @@ def test_thing_2(tmpdir, xia2_regression_build):
     pytest.skip('xia2_regression files not downloaded. Run xia2_regression.fetch_test_data first')
 
   tmpdir.chdir()
+
   # beam centre from image headers: 205.28,210.76 mm
   args = ["dials.import", "mosflm_beam_centre=207,212"] + g
   print(args)
-  result = procrunner.run_process(args)
-  assert result['stderr'] == '' and result['exitcode'] == 0
+  if os.name != 'nt':
+    result = procrunner.run_process(args)
+    assert result['stderr'] == '' and result['exitcode'] == 0
+  else:
+    # Can't run this command on Windows, as it will exceed the maximum Windows command length limits.
+    # So, instead:
+    import mock
+    import sys
+    with mock.patch.object(sys, 'argv', args):
+      import dials.command_line.dials_import
+      dials.command_line.dials_import.Script().run()
+
   assert os.path.exists('datablock.json')
 
   # spot-finding, just need a subset of the data
