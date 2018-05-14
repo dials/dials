@@ -73,6 +73,7 @@ class HelenSpotFinderThresholdExt(object):
     if self.params.spotfinder.threshold.helen.debug:
       from dials.array_family import flex
       corr = self._algorithm.correlation(image, mask)
-      import cPickle as pickle
-      pickle.dump(corr, open("correlation.pickle", "wb"))
+      import six.moves.cPickle as pickle
+      with open("correlation.pickle", "wb") as fh:
+        pickle.dump(corr, fh, pickle.HIGHEST_PROTOCOL)
     return result

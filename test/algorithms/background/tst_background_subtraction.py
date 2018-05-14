@@ -83,8 +83,9 @@ class TestSimulated:
 
       """ % (num, counts)])
     main(working_phil.extract())
-    import cPickle as pickle
-    return pickle.load(open("all_refl.pickle", "rb"))
+    import six.moves.cPickle as pickle
+    with open("all_refl.pickle", "rb") as fh:
+      return pickle.load(fh)
 
 if __name__ == '__main__':
   from dials.test import cd_auto

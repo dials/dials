@@ -198,7 +198,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     :return: The reflection table
 
     '''
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
     from libtbx import smart_open
 
     with smart_open.for_reading(filename, 'rb') as infile:
@@ -212,7 +212,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     '''
     import msgpack
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
     def encode(obj):
       if isinstance(obj, reflection_table):
         data_string = pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL)
@@ -227,7 +227,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     '''
     import msgpack
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
     def decode(obj):
       if "__dials.array_family.flex.reflection_table__" in obj:
         return pickle.loads(obj["__dials.array_family.flex.reflection_table__"])
@@ -362,7 +362,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     :param filename: The output filename
 
     '''
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
     from libtbx import smart_open
 
     with smart_open.for_writing(filename, 'wb') as outfile:

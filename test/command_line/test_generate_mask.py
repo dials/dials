@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-import cPickle as pickle
+import six.moves.cPickle as pickle
 import os
 import procrunner
 import pytest
@@ -84,7 +84,6 @@ def test_generate_mask_with_ice_rings(input_filename):
   assert os.path.exists("mask6.pickle")
 
 def test_generate_mask_with_untrusted_polygon_and_pixels(input_filename):
-  from scitbx.array_family import flex # import dependency
   result = procrunner.run_process([
       'dials.generate_mask',
       input_filename,

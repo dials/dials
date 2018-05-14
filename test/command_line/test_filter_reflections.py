@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-import cPickle as pickle
 import os
 
 from libtbx import easy_run

@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-import cPickle as pickle
+import six.moves.cPickle as pickle
 import math
 
 import pytest
@@ -21,7 +21,8 @@ def data(dials_regression): # read experiments and reflections
   experiments = ExperimentListFactory.from_json_file(experiments_filename,
                                                      check_format=False)
   reflections = flex.reflection_table.from_pickle(reflections_filename)
-  reference = pickle.load(open(reference_filename))
+  with open(reference_filename, 'rb') as fh:
+    reference = pickle.load(fh)
 
   Data = namedtuple("Data", ["experiments", "reflections", "reference"])
   return Data(

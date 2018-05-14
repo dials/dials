@@ -1,5 +1,4 @@
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 from libtbx.phil import parse
 
@@ -384,14 +383,17 @@ def main(params):
   underestimates = rlist.select(flex.size_t(underestimates))
   # now pickle these, perhaps
 
-  import cPickle as pickle
+  import six.moves.cPickle as pickle
 
   if params.output.under:
-    pickle.dump(underestimates, open(params.output.under, 'w'))
+    with open(params.output.under, 'wb') as fh:
+      pickle.dump(underestimates, fh, pickle.HIGHEST_PROTOCOL)
   if params.output.over:
-    pickle.dump(overestimates, open(params.output.over, 'w'))
+    with open(params.output.over, 'wb') as fh:
+      pickle.dump(overestimates, fh, pickle.HIGHEST_PROTOCOL)
   if params.output.all:
-    pickle.dump(rlist, open(params.output.all, 'w'))
+    with open(params.output.all, 'wb') as fh:
+      pickle.dump(rlist, fh, pickle.HIGHEST_PROTOCOL)
 
 if __name__ == '__main__':
   import sys

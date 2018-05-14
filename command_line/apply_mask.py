@@ -62,7 +62,6 @@ class Script(object):
     from dials.util.options import flatten_datablocks
     from dxtbx.datablock import DataBlockDumper
     from libtbx.utils import Sorry
-    import cPickle as pickle
 
     # Parse the command line arguments
     params, options = self.parser.parse_args(show_diff_phil=True)

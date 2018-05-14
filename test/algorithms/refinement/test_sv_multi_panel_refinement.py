@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-import cPickle as pickle
+import six.moves.cPickle as pickle
 import os
 import procrunner
 
@@ -22,7 +22,7 @@ def test_scan_varying_refinement_of_a_multiple_panel_detector(dials_regression, 
 
   # there are plenty of things we could do with the refinement history, but
   # here just check that final RMSDs are low enough
-  with open('history.pickle', 'r') as f:
+  with open('history.pickle', 'rb') as f:
     history = pickle.load(f)
   final_rmsd = history['rmsd'][-1]
   assert final_rmsd[0] < 0.05

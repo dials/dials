@@ -170,8 +170,8 @@ def test_constrained_refinement(dials_regression, tmpdir):
          "constraints.parameter=Dist")
   result = easy_run.fully_buffered(command=cmd).raise_if_errors()
   # load refinement history
-  import cPickle as pickle
-  with open('history.pickle') as f:
+  import six.moves.cPickle as pickle
+  with open('history.pickle', 'rb') as f:
     history = pickle.load(f)
   ref_exp = ExperimentListFactory.from_json_file('refined_experiments.json',
     check_format=False)

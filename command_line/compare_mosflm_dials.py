@@ -74,13 +74,13 @@ def integrate_mtz_to_unit_cell(integrate_mtz):
 
 def pull_calculated(integrate_pkl):
   from dials.array_family import flex # import dependency
-  import cPickle as pickle
-  #import cPickle as pickle
+  import six.moves.cPickle as pickle
   import math
 
   #table = pickle.load(open('integrated.pickle', 'rb'))
 
-  r_list = pickle.load(open(integrate_pkl, 'rb'))
+  with open(integrate_pkl, 'rb') as fh:
+    r_list = pickle.load(fh)
 
   strong_reflections = []
 

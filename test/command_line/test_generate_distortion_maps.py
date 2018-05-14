@@ -11,7 +11,7 @@ from dxtbx.format.Format import Reader
 from dxtbx.datablock import DataBlockFactory, DataBlockDumper
 
 from libtbx import easy_run
-import cPickle as pickle
+import six.moves.cPickle as pickle
 import os
 
 def make_detector():
@@ -129,7 +129,6 @@ def test_elliptical_distortion(tmpdir):
   result = easy_run.fully_buffered(command=cmd).raise_if_errors()
 
   # Load the maps
-  from scitbx.array_family import flex # import dependency
   with open("dx.pickle", "rb") as f:
     dx = pickle.load(f)
   with open("dy.pickle", "rb") as f:

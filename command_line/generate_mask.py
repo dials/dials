@@ -68,7 +68,7 @@ class Script(object):
     from dials.util.masking import MaskGenerator
     from dials.util.options import flatten_datablocks
     from libtbx.utils import Sorry
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
     from dials.util import log
     from dxtbx.format.image import ImageBool
 
@@ -98,7 +98,7 @@ class Script(object):
 
     # Save the mask to file
     print("Writing mask to %s" % params.output.mask)
-    with open(params.output.mask, "w") as fh:
+    with open(params.output.mask, "wb") as fh:
       pickle.dump(mask, fh)
 
     # Save the datablock

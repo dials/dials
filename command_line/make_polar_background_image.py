@@ -82,8 +82,9 @@ class Script(object):
     log.config()
 
     from dials.algorithms.background.gmodel import PolarTransform
-    import cPickle as pickle
-    model = pickle.load(open(params.model))
+    import six.moves.cPickle as pickle
+    with open(params.model, 'rb') as fh:
+      model = pickle.load(fh)
     image = model.data(0)
     mask = flex.bool(image.accessor(), True)
 
@@ -93,7 +94,8 @@ class Script(object):
     data = result.data()
     mask = result.mask()
 
-    pickle.dump((data, mask), open(params.output.data, "w"))
+    with open(params.output.data, 'wb') as fh:
+      pickle.dump((data, mask), fh, pickle.HIGHEST_PROTOCOL)
 
     from matplotlib import pylab
     vmax = sorted(list(data))[int(0.99 * len(data))]

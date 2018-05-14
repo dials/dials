@@ -143,7 +143,7 @@ def test_self_consistent():
 
 def test_pickle():
   from dials.algorithms.profile_model.modeller import SingleSampler
-  import cPickle as pickle
+  import six.moves.cPickle as pickle
   width = 1000
   height = 1000
   scan_range = (2, 12)

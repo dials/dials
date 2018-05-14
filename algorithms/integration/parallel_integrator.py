@@ -1308,7 +1308,7 @@ class ReferenceCalculatorProcessor(object):
     # Write the profiles to file
     if params.integration.debug.reference.output:
       with open(params.integration.debug.reference.filename, "wb") as outfile:
-        import cPickle as pickle
+        import six.moves.cPickle as pickle
         pickle.dump(self._profiles, outfile)
 
     # Print the profiles to the debug log

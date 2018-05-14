@@ -1,21 +1,11 @@
-#!/usr/bin/env python
-#
-# dials.model.serialize.dump.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 # Import to give access from here
 from dxtbx.serialize.dump import imageset as sweep # implicit import
 from dxtbx.serialize.dump import imageset_to_string as sweep_to_string # implicit import
 from dxtbx.serialize.dump import datablock # implicit import
 
+import six.moves.cPickle as pickle
 
 def reflections(obj, outfile):
   '''
@@ -23,10 +13,7 @@ def reflections(obj, outfile):
 
   :param obj: The reflection list to dump
   :param outfile: The output file name or file object
-
   '''
-  import cPickle as pickle
-
   if isinstance(outfile, str):
     with open(outfile, 'wb') as outfile:
       pickle.dump(obj, outfile, pickle.HIGHEST_PROTOCOL)
@@ -43,7 +30,6 @@ def reference(obj, outfile):
   :param outfile: The output file name or file object
 
   '''
-  import cPickle as pickle
 
   if isinstance(outfile, str):
     with open(outfile, 'wb') as outfile:

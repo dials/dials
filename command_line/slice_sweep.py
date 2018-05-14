@@ -229,7 +229,6 @@ class Script(object):
 
     from dials.util.options import flatten_reflections, flatten_experiments, \
       flatten_datablocks
-    import cPickle as pickle
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)

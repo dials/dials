@@ -290,7 +290,7 @@ def test_flatten():
     assert shoebox.is_consistent()
 
 def test_all_foreground_valid():
-  import cPickle as pickle
+  import six.moves.cPickle as pickle
   from dials.test.model.data.all_foreground_valid_data import data
   from dials.model.data import Shoebox
   shoeboxes = pickle.loads(data)

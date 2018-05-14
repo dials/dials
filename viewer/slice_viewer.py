@@ -8,8 +8,7 @@
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 import wx
 from dials.viewer.viewer_low_level_util import \
      flex_arr_img_panel, MyGrid, flex_3d_frame, grid_frame
@@ -44,7 +43,7 @@ class show_3d(object):
   Following there is an example of how to see a set of shoebox(es) from a pickle file,
   this is taken from  a test piece of code:
 
-  import cPickle as pickle
+  import six.moves.cPickle as pickle
   from dials.array_family import flex
   from dials.viewer.slice_viewer import show_3d
 

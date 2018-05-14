@@ -16,7 +16,7 @@ def test_pickle():
   assert pl.size() == size
   assert pl.frame() == sf
 
-  import cPickle as pickle
+  import six.moves.cPickle as pickle
 
   obj = pickle.dumps(pl)
   pl2 = pickle.loads(obj)

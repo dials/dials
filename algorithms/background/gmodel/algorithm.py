@@ -33,8 +33,8 @@ class ModelCache(object):
     try:
       model = self.model[name]
     except KeyError:
-      import cPickle as pickle
-      with open(name) as infile:
+      import six.moves.cPickle as pickle
+      with open(name, 'rb') as infile:
         model = pickle.load(infile)
         self.model[name] = model
     return model

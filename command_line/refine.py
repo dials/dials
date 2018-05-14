@@ -201,7 +201,7 @@ class Script(object):
   def run(self):
     '''Execute the script.'''
     from time import time
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
     from dials.util import log
     from dials.algorithms.refinement import RefinerFactory
     from dials.util.options import flatten_reflections, flatten_experiments
