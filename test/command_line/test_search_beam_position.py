@@ -7,22 +7,6 @@ import procrunner
 import pytest
 import scitbx
 
-# 20180129: Removed this import to see if it is still required
-#
-## this import required early to avoid seg fault on some systems
-#try:
-#  import scipy.linalg # import dependency
-#except ImportError:
-#  pass
-
-# 20180129: Removed following lines setting a random seed.
-#           If tests randomly crash then the problem is not with the
-#           seed, but with either the tests or the code.
-#
-# apply a random seed to avoid this randomly crashing... I hope
-#import random
-#random.seed(12345)
-
 def test_thing_1(tmpdir, dials_regression):
   '''Would you like to know more about what this test is supposed to do?
      I would love to. Always remember to use descriptive names.'''
