@@ -131,9 +131,12 @@ def run(args):
       data = data.select(sel)
       variances = variances.select(sel)
 
-      if 'lp' in refl and 'qe' in refl:
+      if 'lp' in refl and ('qe' in refl or 'dqe' in refl):
         lp = refl['lp']
-        qe = refl['qe']
+        if 'qe' in refl:
+          qe = refl['qe']
+        else:
+          qe = refl['dqe']
         assert qe.all_gt(0)
         scale = lp / qe
         data *= scale
