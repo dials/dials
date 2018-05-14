@@ -2,9 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 import pytest
 
-import matplotlib
-matplotlib.use('Agg')
-
 from cctbx import sgtbx
 
 from dials.algorithms.symmetry.cosym.generate_test_data import generate_test_data
@@ -13,7 +10,12 @@ from dials.algorithms.symmetry.cosym import analyse_datasets
 
 
 @pytest.mark.parametrize('space_group', ['P2', 'P3', 'I23'])
-def test_cosym_analyse_datasets(space_group):
+def test_cosym_analyse_datasets(space_group, tmpdir):
+  tmpdir.chdir()
+
+  import matplotlib
+  matplotlib.use('Agg')
+
   datasets, expected_reindexing_ops = generate_test_data(
     space_group=sgtbx.space_group_info(symbol=space_group).group())
   expected_space_group = sgtbx.space_group_info(symbol=space_group).group()
