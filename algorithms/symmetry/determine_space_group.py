@@ -363,7 +363,7 @@ class determine_space_group(object):
       'Reindex operator: %s' % (
         self.best_solution.subgroup['cb_op_inp_best'] * self.cb_op_inp_min))
     logger.info('Laue group probability: %.3f' % self.best_solution.likelihood)
-    logger.info('Laue group confidence: %.3f' % self.best_solution.likelihood)
+    logger.info('Laue group confidence: %.3f' % self.best_solution.confidence)
 
 class ScoreSymmetryElement(object):
 
