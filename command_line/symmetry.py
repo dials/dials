@@ -53,6 +53,8 @@ output {
     .type = path
   reflections = "reindexed_reflections.pickle"
     .type = path
+  json = dials.symmetry.json
+    .type = path
 }
 
 ''', process_includes=True)
@@ -199,6 +201,9 @@ def run(args):
     datasets[0], normalisation=params.normalisation,
     d_min=params.d_min,
     min_i_mean_over_sigma_mean=params.min_i_mean_over_sigma_mean)
+
+  if params.output.json is not None:
+    result.as_json(filename=params.output.json)
 
   if (len(experiments) and len(reflections) and
       params.output.reflections is not None and

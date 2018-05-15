@@ -365,6 +365,37 @@ class determine_space_group(object):
     logger.info('Laue group probability: %.3f' % self.best_solution.likelihood)
     logger.info('Laue group confidence: %.3f' % self.best_solution.confidence)
 
+  def as_dict(self):
+    d = {
+      'input_symmetry': {
+        'hall_symbol': self.input_intensities.space_group().type().hall_symbol(),
+        'unit_cell': self.input_intensities.unit_cell().parameters(),
+      },
+      'cb_op_inp_min': self.cb_op_inp_min.as_xyz(),
+      'min_cell_symmetry': {
+        'hall_symbol': self.intensities.space_group().type().hall_symbol(),
+        'unit_cell': self.intensities.unit_cell().parameters(),
+      },
+      'lattice_point_group': self.lattice_group.type().hall_symbol(),
+      'cc_unrelated_pairs': self.corr_unrelated.coefficient(),
+      'n_unrelated_pairs': self.corr_unrelated.n(),
+      'E_cc_true': self.E_cc_true,
+      'cc_sig_fac': self.cc_sig_fac,
+      'cc_true': self.cc_true,
+    }
+
+    d['sym_op_scores'] = [score.as_dict() for score in self.sym_op_scores]
+    d['subgroup_scores'] = [score.as_dict() for score in self.subgroup_scores]
+    return d
+
+  def as_json(self, filename=None, indent=2):
+    d = self.as_dict()
+    import json
+    if filename is not None:
+      return json.dump(d, open(filename, 'wb'), indent=indent)
+    else:
+      return json.dumps(d, indent=indent)
+
 class ScoreSymmetryElement(object):
 
   def __init__(self, intensities, sym_op, cc_true, cc_sig_fac):
@@ -426,6 +457,14 @@ class ScoreSymmetryElement(object):
                                      self.n_refs,
                                      self.sym_op.r().info())
 
+  def as_dict(self):
+    return {
+      'likelihood': self.likelihood,
+      'z_cc': self.z_cc,
+      'cc': self.cc.coefficient(),
+      'n_ref': self.n_refs,
+      'operator': self.sym_op.as_xyz(),
+    }
 
 class ScoreSubGroup(object):
   def __init__(self, subgroup, sym_op_scores):
@@ -480,6 +519,20 @@ class ScoreSubGroup(object):
       self.z_cc_against,
       self.cc_for.coefficient(),
       self.cc_against.coefficient())
+
+  def as_dict(self):
+    return {
+      'patterson_group': self.subgroup['best_subsym'].space_group().type().hall_symbol(),
+      'likelihood': self.likelihood,
+      'confidence': self.confidence,
+      'z_cc_net': '% .2f' % self.z_cc_net,
+      'z_cc_for': '% .2f' % self.z_cc_for,
+      'z_cc_against': '% .2f' % self.z_cc_against,
+      'cc_for': '% .2f' % self.cc_for.coefficient(),
+      'cc_against': '% .2f' % self.cc_against.coefficient(),
+      'max_angular_difference': '%.1f' % self.subgroup['max_angular_difference'],
+      'cb_op': '%s' % (self.subgroup['cb_op_inp_best'])
+    }
 
 
 # Single-pass formula for Pearson correlation coefficient
