@@ -1262,8 +1262,15 @@ class SpotFrame(XrayFrame) :
               if (self.settings.show_miller_indices and
                   'miller_index' in reflection and
                   reflection['miller_index'] != (0,0,0)):
-                miller_indices_data.append((x, y, str(reflection['miller_index']),
-                                            {'placement':'ne', 'radius':0}))
+                if self.settings.color_scheme > 1:  # heatmap or invert
+                  textcolour = 'white'
+                else:
+                  textcolour = 'black'
+                miller_indices_data.append((x, y, str(reflection['miller_index']), {
+                    'placement': 'ne',
+                    'radius': 0,
+                    'textcolour': textcolour
+                }))
 
     if len(overlapped_data) > 0:
       #show overlapped pixels in a different color
