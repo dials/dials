@@ -65,7 +65,7 @@ class SimpleNormDevOutlierRejection(OutlierRejectionBase):
 
   def round_of_outlier_rejection(self, reflection_table):
     """One round of outlier rejection for all data in reflection table."""
-    Ih_table = SingleIhTable(reflection_table, self.space_group)
+    Ih_table = SingleIhTable(reflection_table, self.space_group, split_blocks=None)
     I = Ih_table.intensities
     g = Ih_table.inverse_scale_factors
     w = Ih_table.weights
@@ -109,7 +109,7 @@ class NormDevOutlierRejection(OutlierRejectionBase):
 
   def round_of_outlier_rejection(self, reflection_table):
     """One round of outlier rejection for all data in reflection table."""
-    Ih_table = SingleIhTable(reflection_table, self.space_group)
+    Ih_table = SingleIhTable(reflection_table, self.space_group, split_blocks=None)
     I = Ih_table.intensities
     g = Ih_table.inverse_scale_factors
     w = Ih_table.weights

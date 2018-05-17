@@ -9,11 +9,7 @@ from dials.algorithms.refinement.engine import SimpleLBFGS,\
  GaussNewtonIterations, LevenbergMarquardtIterations, LBFGScurvs
 from libtbx.phil import parse
 from libtbx import easy_mp
-from dials.array_family import flex
-#logger = logging.getLogger(__name__)
 logger = logging.getLogger('dials')
-import time
-from scitbx import sparse
 
 
 TARGET_ACHIEVED = "RMSD target achieved"
@@ -200,7 +196,7 @@ class ScalingSimpleLBFGS(SimpleLBFGS, ScalingRefinery):
     """overwrite method to avoid calls to 'blocks' methods of target"""
     self.prepare_for_step()
 
-    if self._scaler.params.scaling_options.n_proc > 1:
+    if self._scaler.params.scaling_options.n_proc:
       blocks = self._scaler.Ih_table.get_blocks()
       task_results = easy_mp.parallel_map(
         func=self._target.compute_functional_gradients,
@@ -216,7 +212,7 @@ class ScalingSimpleLBFGS(SimpleLBFGS, ScalingRefinery):
         g += gi[i]
     else:
       f, g = self._target.compute_functional_gradients()
-    
+
     restraints = \
       self._target.compute_restraints_functional_gradients_and_curvatures()
 
@@ -274,7 +270,7 @@ class ErrorModelSimpleLBFGS(SimpleLBFGS, ErrorModelRefinery):
 
 class ScalingLstbxBuildUpMixin(ScalingRefinery):
   '''Mixin class to overwrite the build_up method in AdaptLstbx'''
-  
+
   def build_up(self, objective_only=False):
     'overwrite method from Adaptlstbx'
     # set current parameter values
@@ -285,7 +281,7 @@ class ScalingLstbxBuildUpMixin(ScalingRefinery):
 
     # observation terms
     if objective_only:
-      if self._scaler.params.scaling_options.n_proc > 1:
+      if self._scaler.params.scaling_options.n_proc:
         blocks = self._scaler.Ih_table.get_blocks()
         for block in blocks:
           residuals, weights = self._target.compute_residuals(block)
@@ -294,7 +290,7 @@ class ScalingLstbxBuildUpMixin(ScalingRefinery):
         residuals, weights = self._target.compute_residuals()
         self.add_residuals(residuals, weights)
     else:
-      if self._scaler.params.scaling_options.n_proc > 1:
+      if self._scaler.params.scaling_options.n_proc:
 
         self._jacobian = None
 

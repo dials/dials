@@ -93,7 +93,8 @@ def generated_param():
   parameters, _ = optionparser.parse_args(args=[], quick_parse=True,
     show_diff_phil=False)
   parameters.parameterisation.absorption_term = False
-  parameters.parameterisation.n_resolution_bins = 2
+  parameters.parameterisation.n_resolution_bins = 1 # to stop example dataset
+  # being overparameterised for array model refinement.
   return parameters
 
 @pytest.mark.parametrize('model', ['physical', 'array'])

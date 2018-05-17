@@ -224,7 +224,7 @@ def test_scaling_active_parameter_manager():
   scaling_apm = scaling_active_parameter_manager(components_2, ['1'])
   assert scaling_apm.constant_g_values == components_2['2'].inverse_scales
   assert scaling_apm.n_obs == [2]
-  
+
   # Test that no constant_g_values if both components selected
   scaling_apm = scaling_active_parameter_manager(components_2, ['1', '2'])
   assert scaling_apm.constant_g_values is None
@@ -248,7 +248,7 @@ def test_create_apm_factory():
   scaler.id_ = 'single'
   scaler.params.scaling_options.concurrent = True
   apm_factory = create_apm_factory(scaler)
-  assert isinstance(apm_factory.apm, active_parameter_manager) 
+  assert isinstance(apm_factory.apm, active_parameter_manager)
   assert isinstance(apm_factory, ConcurrentAPMFactory)
 
   #Consecutive single apm

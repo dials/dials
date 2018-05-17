@@ -50,21 +50,14 @@ class ScalingTarget(object):
         R.extend((self.calculate_residuals(block)**2) * block.weights)
         n += block.size
       restr = self.scaler.calculate_restraints(self.apm)
-      #restr = self.scaler.compute_restraints_residuals_jacobian(self.apm)
-      print(flex.sum(R))
       if restr:
         R.extend(restr[0])
-      print(flex.sum(R))
-      print(n)
       self._rmsds = [(flex.sum((R))/n)**0.5]
     else:
       R = (self.calculate_residuals(self.scaler.Ih_table)**2) * self.weights
       restr = self.scaler.calculate_restraints(self.apm)
-      print(flex.sum(R))
       if restr:
         R.extend(restr[0])
-      print(flex.sum(R))
-      print(self.scaler.Ih_table.size)
       self._rmsds = [(flex.sum((R))/self.scaler.Ih_table.size)**0.5]
     if self.scaler.params.scaling_options.use_free_set:
       self.calculate_free_rmsds()
@@ -275,9 +268,9 @@ class ScalingTargetFixedIH(ScalingTarget):
   def __init__(self, scaler, apm, curvatures=False):
     self.scaler = scaler
     self.apm = apm
-    self.weights = flex.double([])
-    for scaler in self.scaler.unscaled_scalers:
-      self.weights.extend(scaler.Ih_table.weights)
+    #self.weights = flex.double([])
+    #for scaler in self.scaler.unscaled_scalers:
+    #  self.weights.extend(scaler.Ih_table.weights)
     self.curvatures = curvatures
     if self.scaler.params.scaling_options.use_free_set:
       self.rmsd_names = ["RMSD_I", "Free RMSD_I"]
@@ -332,7 +325,7 @@ class ScalingTargetFixedIH(ScalingTarget):
     """Return the functional and gradients."""
     if block:
       # block is an Ih_table block
-      resids = self.calculate_residuals(block)
+      residuals = self.calculate_residuals(block)
       gradients = self.calculate_gradients(block)
       weights = block.weights
     else:
@@ -349,7 +342,7 @@ class ScalingTargetFixedIH(ScalingTarget):
   def compute_functional_gradients_and_curvatures(self, block=None):
     """Return the functional, gradients and curvatures."""
     if block:
-      resids = self.calculate_residuals(block)
+      residuals = self.calculate_residuals(block)
       gradients = self.calculate_gradients(block)
       curvatures = self.calculate_curvatures(block)
       weights = block.weights

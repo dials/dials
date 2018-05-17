@@ -13,12 +13,11 @@ import time
 from dials.array_family import flex
 from cctbx import crystal, sgtbx
 from scitbx import sparse
-from libtbx import easy_mp
 from dials_scaling_helpers_ext import row_multiply
+#from libtbx import easy_mp
 from libtbx.table_utils import simple_table
 from dials.algorithms.scaling.basis_functions import basis_function
-from dials.algorithms.scaling.scaling_utilities import (
-  set_wilson_outliers, calc_normE2)
+from dials.algorithms.scaling.scaling_utilities import calc_normE2
 from dials.algorithms.scaling.outlier_rejection import reject_outliers
 from dials.algorithms.scaling.Ih_table import SingleIhTable,\
   JointIhTable
@@ -165,7 +164,7 @@ class ScalerBase(object):
         prediction_parameterisation=apm, max_iterations=max_iterations)
       refinery.run()
       ft = time.time()
-      logger.info("Time taken for refinement %s" % (ft - st))
+      logger.info("Time taken for refinement %s", (ft - st))
       self = refinery.return_scaler()
       logger.info('\n'+'='*80+'\n')
 
@@ -290,7 +289,7 @@ class SingleScalerBase(ScalerBase):
     reflections.set_flags(mask or partials_mask or d_mask,
       reflections.flags.excluded_for_scaling)
     logger.info('%s reflections not suitable for scaling (low partiality,\n'
-      'not integrated etc).\n' % reflections.get_flags(
+      'not integrated etc).\n', reflections.get_flags(
       reflections.flags.excluded_for_scaling).count(True))
     if not 'inverse_scale_factor' in initial_keys:
       reflections['inverse_scale_factor'] = (flex.double(reflections.size(), 1.0))
@@ -418,25 +417,26 @@ class SingleScalerBase(ScalerBase):
   def select_reflections_for_scaling(self, for_multi=True):
     """Select a subset of reflections, create and Ih table and update the
     model components."""
-    split_free_set=(not for_multi)
+    split_free_set = (not for_multi)
     selection = self._scaling_subset(self.reflection_table, self.params)
-    if self.params.scaling_options.n_proc > 1 and not for_multi:
-      self._Ih_table = SingleIhTable(self.reflection_table, self.space_group,
-        selection, self.params.weighting.weighting_scheme,
-        self.params.scaling_options.n_proc)
-      block_selections = (self.Ih_table.blocked_Ih_table.permuted,
-        self.Ih_table.blocked_Ih_table.block_selection_list)
-    else:
-      self._Ih_table = SingleIhTable(self.reflection_table, self.space_group,
-        selection, self.params.weighting.weighting_scheme)
-      block_selections = None
-    if self.params.scaling_options.use_free_set and split_free_set:
-      self._Ih_table.split_into_free_work(
-        self.params.scaling_options.free_set_percentage)
-    #if self.params.weighting.error_model_params:
-    #  self.update_error_model(self.params.weighting.error_model_params)
-    for component in self.components.itervalues():
-      component.update_reflection_data(self.reflection_table, selection, block_selections)
+    self.scaling_selection = selection
+    if not for_multi:
+      if self.params.scaling_options.n_proc:
+        self._Ih_table = SingleIhTable(self.reflection_table, self.space_group,
+          selection, self.params.weighting.weighting_scheme,
+          split_blocks=self.params.scaling_options.n_proc)
+        block_selections = self.Ih_table.blocked_Ih_table.block_selection_list
+      else:
+        self._Ih_table = SingleIhTable(self.reflection_table, self.space_group,
+          selection, self.params.weighting.weighting_scheme)
+        block_selections = None
+      if self.params.scaling_options.use_free_set and split_free_set:
+        self._Ih_table.split_into_free_work(
+          self.params.scaling_options.free_set_percentage)
+      #if self.params.weighting.error_model_params:
+      #  self.update_error_model(self.params.weighting.error_model_params)
+      for component in self.components.itervalues():
+        component.update_reflection_data(self.reflection_table, selection, block_selections)
 
   def perform_error_optimisation(self):
     self.Ih_table = SingleIhTable(self._reflection_table, self.space_group)
@@ -469,8 +469,6 @@ class MultiScalerBase(ScalerBase):
     self._initial_keys = self.single_scalers[0].initial_keys
     self._params = params
     self._experiments = experiments[0]
-    logger.info('Determining symmetry equivalent reflections across datasets.\n')
-    self._Ih_table = JointIhTable([x.Ih_table for x in self.single_scalers])
 
   def calculate_restraints(self, apm):
     """Calculate a restraints residuals/gradient vector for multiple datasets."""
@@ -516,8 +514,49 @@ class MultiScalerBase(ScalerBase):
     for scaler in self.single_scalers:
       scaler.apply_error_model_to_variances()
 
+  def update_for_minimisation(self, apm, curvatures=False):
+    """Update the scale factors and Ih for the next iteration of minimisation."""
+    scales_list = []
+    derivs_list = []
+    for apm_i in apm.apm_list:
+      basis_fn = basis_function(apm_i, curvatures).calculate_scales_and_derivatives()
+      scales_list.append(basis_fn[0])
+      derivs_list.append(basis_fn[1])
+    scales = zip(*scales_list)
+    scale_list_for_Ih = []
+    for scales_tuple in scales:
+      scales_for_block = flex.double()
+      for array in scales_tuple:
+        scales_for_block.extend(array)
+      scale_list_for_Ih.append(scales_for_block)
+    derivs = zip(*derivs_list)
+    derivs_list_for_Ih = []
+    for i, derivs_tuple in enumerate(derivs):
+      deriv_matrix = sparse.matrix(scale_list_for_Ih[i].size(), apm.n_active_params)
+      start_row_no = 0
+      for j, deriv in enumerate(derivs_tuple):
+        deriv_matrix.assign_block(deriv, start_row_no, apm.apm_data[j]['start_idx'])
+        start_row_no += deriv.n_rows
+      derivs_list_for_Ih.append(deriv_matrix)
+    self.Ih_table.inverse_scale_factors = scale_list_for_Ih
+    self.Ih_table.derivatives = derivs_list_for_Ih
+    self.Ih_table.update_weights()
+    # The parallelisation below would work if sparse matrices were
+    # pickleable (I think!) - with more benefit for larger number of datasets.
+    '''def task_wrapper(block):
+      bf = basis_function(block)
+      s, d = bf.calculate_scales_and_derivatives()
+      return s, d
+    blocks = apm.apm_list
+    task_results = easy_mp.parallel_map(func=task_wrapper, iterable=blocks,
+      processes=n_datasets, method="multiprocessing",
+      preserve_exception_message=True)
+    scales_list, derivs_list = zip(*task_results)'''
+
+
   def select_reflections_for_scaling(self):
     """Select reflections for scaling in individual scalers."""
+    #Update the data from the Ih_table
     for scaler in self.active_scalers:
       scaler.select_reflections_for_scaling(split_free_set=False)
 
@@ -545,10 +584,20 @@ class MultiScaler(MultiScalerBase):
   def __init__(self, params, experiments, single_scalers):
     logger.info('Configuring a MultiScaler to handle the individual Scalers. \n')
     super(MultiScaler, self).__init__(params, experiments, single_scalers)
+    logger.info('Determining symmetry equivalent reflections across datasets.\n')
+    self._Ih_table = JointIhTable([(x.reflection_table, x.scaling_selection)
+      for x in self.single_scalers], self._space_group,
+      split_blocks=self.params.scaling_options.n_proc)
     if self.params.scaling_options.use_free_set:
       self._Ih_table.split_into_free_work(
         self.params.scaling_options.free_set_percentage)
     self.active_scalers = self.single_scalers
+    #now add data to scale components from datasets
+    block_selections_list = self.Ih_table.blocked_Ih_table.block_selection_list
+    for i, scaler in enumerate(self.active_scalers):
+      for component in scaler.components.itervalues():
+        component.update_reflection_data(scaler.reflection_table,
+          scaler.scaling_selection, block_selections_list[i])
     logger.info('Completed configuration of MultiScaler. \n\n' + '='*80 + '\n')
 
   def update_error_model(self, error_model):
@@ -559,41 +608,7 @@ class MultiScaler(MultiScalerBase):
     '''update the scale factors and Ih for the next iteration of minimisation,
     update the x values from the amp to the individual apms, as this is where
     basis functions, target functions etc get access to the parameters.'''
-    n_matrix_rows = self.Ih_table.size
-    if self.Ih_table.free_set_sel:
-      n_matrix_rows += self.Ih_table.free_Ih_table.size
-    self.Ih_table.derivatives = [sparse.matrix(n_matrix_rows, apm.n_active_params)]
-    start_row_no = 0
-    '''# This parallelisation would work if sparse matrices were
-    # pickleable (I think!) - with more benefit for larger number of datasets.
-    def task_wrapper(block):
-      bf = basis_function(block)
-      s, d = bf.calculate_scales_and_derivatives()
-      return s, d
-    blocks = apm.apm_list
-    task_results = easy_mp.parallel_map(func=task_wrapper, iterable=blocks,
-      processes=n_datasets, method="multiprocessing",
-      preserve_exception_message=True)
-    scales, derivs = zip(*task_results)
-    for i, scaler in enumerate(self.single_scalers):
-      scaler.Ih_table.inverse_scale_factors = scales[i]
-      self.Ih_table.derivatives.assign_block(derivs[i][0], start_row_no,
-          apm.apm_data[i]['start_idx'])
-      start_row_no += derivs[i][0].n_rows'''
-    for i, scaler in enumerate(self.single_scalers):
-      basis_fn = basis_function(apm.apm_list[i], curvatures
-        ).calculate_scales_and_derivatives()
-      scaler.Ih_table.inverse_scale_factors = basis_fn[0]
-      if basis_fn[1]:
-        self.Ih_table.derivatives.assign_block(basis_fn[1][0], start_row_no,
-          apm.apm_data[i]['start_idx'])
-        start_row_no += basis_fn[1][0].n_rows
-    if self.Ih_table.free_set_sel:
-      isel = (~self.Ih_table.free_set_sel).iselection()
-      derivs_T = apm.derivatives.transpose()
-      sel_derivs = derivs_T.select_columns(isel)
-      apm.derivatives = sel_derivs.transpose()
-    self.Ih_table.update_weights()
+    super(MultiScaler, self).update_for_minimisation(apm, curvatures)
     self.Ih_table.calc_Ih()
 
   def join_multiple_datasets(self):
@@ -613,39 +628,38 @@ class TargetScaler(MultiScalerBase):
     unscaled_scalers):
     logger.info('\nInitialising a TargetScaler instance. \n')
     super(TargetScaler, self).__init__(params, scaled_experiments, scaled_scalers)
+    logger.info('Determining symmetry equivalent reflections across datasets.\n')
     self.unscaled_scalers = unscaled_scalers
     self.active_scalers = self.unscaled_scalers
+    self._target_Ih_table = JointIhTable([(x.reflection_table, x.scaling_selection)
+      for x in self.single_scalers], self._space_group,
+      split_blocks=1)#Keep in one table for matching below
+    self._Ih_table = JointIhTable([(x.reflection_table, x.scaling_selection)
+      for x in self.unscaled_scalers], self._space_group,
+      split_blocks=params.scaling_options.n_proc)
     self._initial_keys = self.unscaled_scalers[0].initial_keys #needed for
     # scaling against calculated Is
     self.set_Ih_values_to_target()
+    block_selections_list = self.Ih_table.blocked_Ih_table.block_selection_list
+    for i, scaler in enumerate(self.active_scalers):
+      for component in scaler.components.itervalues():
+        component.update_reflection_data(scaler.reflection_table,
+          scaler.scaling_selection, block_selections_list[i])
+        #print(component.n_refl)
     logger.info('Completed initialisation of TargetScaler. \n' + '*'*40 + '\n')
 
   def set_Ih_values_to_target(self):
     """Match equivalent reflections between individual unscaled datasets and
     set target Ixh values in the Ih_table for each dataset."""
-    target_Ih_table = self.Ih_table
-    for scaler in self.unscaled_scalers:
-      scaler.Ih_table.set_Ih_values_to_target(target_Ih_table)
-      sel = scaler.Ih_table.Ih_values != 0.0
-      scaler.Ih_table = scaler.Ih_table.select(sel)
-      scaler.apply_selection_to_SFs(scaler.Ih_table.nonzero_weights)
-      if self.params.scaling_options.use_free_set:
+    target_Ih_table = self._target_Ih_table.blocked_Ih_table.block_list[0]
+    for i, block in enumerate(self._Ih_table.blocked_Ih_table.block_list):
+      block.set_Ih_values_to_target(target_Ih_table)
+      sel = block.Ih_values != 0.0
+      block = block.select(sel)
+      self._Ih_table.blocked_Ih_table.apply_selection_to_selection_list(i, sel)
+      '''if self.params.scaling_options.use_free_set:
         scaler.Ih_table.split_into_free_work(
-          self.params.scaling_options.free_set_percentage)
-
-  def update_for_minimisation(self, apm, curvatures=False):
-    """Update the scale factors and Ih for the next iteration of minimisation."""
-    for i, scaler in enumerate(self.unscaled_scalers):
-      basis_fn = basis_function(apm.apm_list[i]).calculate_scales_and_derivatives()
-      if scaler.Ih_table.free_set_sel:
-        dervis_trans = basis_fn[1].transpose()
-        work_set = ~scaler.Ih_table.free_set_sel
-        derivs = dervis_trans.select_columns(work_set.iselection())
-        apm.apm_list[i].derivatives = derivs.transpose()
-      else:
-        scaler.Ih_table.derivatives = basis_fn[1]
-      scaler.Ih_table.inverse_scale_factors = basis_fn[0]
-      scaler.Ih_table.update_weights()
+          self.params.scaling_options.free_set_percentage)'''
 
   def join_multiple_datasets(self):
     '''method to create a joint reflection table'''
@@ -686,10 +700,16 @@ class NullScaler(ScalerBase):
     #weights = self._reflection_table['intensity.calculated.value']
     self._reflection_table.set_flags(flex.bool(n_refl, False),
       self._reflection_table.flags.excluded_for_scaling)
-    self._Ih_table = SingleIhTable(self._reflection_table, self.space_group,
-      weighting_scheme='unity')
+    #self._Ih_table = SingleIhTable(self._reflection_table, self.space_group,
+    #  weighting_scheme='unity')
+    self.scaling_selection = None
     logger.info('NullScaler contains %s reflections', n_refl)
     logger.info('Completed configuration of NullScaler. \n\n' + '='*80 + '\n')
+
+  @property
+  def components(self):
+    """Shortcut to scaling model components."""
+    return self.experiments.scaling_model.components
 
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
     pass

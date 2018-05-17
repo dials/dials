@@ -38,7 +38,7 @@ def generate_refl_1():
 
 def test_errormodel(large_reflection_table, test_sg):
   """Test the initialisation and methods of the error model."""
-  Ih_table = SingleIhTable(large_reflection_table, test_sg)
+  Ih_table = SingleIhTable(large_reflection_table, test_sg, split_blocks=None)
 
   error_model = BasicErrorModel(Ih_table, n_bins=10)
   for i in range(error_model.summation_matrix.n_cols):
@@ -86,7 +86,7 @@ def test_errormodel(large_reflection_table, test_sg):
 
 def test_error_model_target(large_reflection_table, test_sg):
   """Test the error model target."""
-  Ih_table = SingleIhTable(large_reflection_table, test_sg)
+  Ih_table = SingleIhTable(large_reflection_table, test_sg, split_blocks=None)
 
   error_model = BasicErrorModel(Ih_table, n_bins=2)
   error_model.update_for_minimisation([1.0, 0.05])

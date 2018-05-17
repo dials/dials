@@ -143,24 +143,35 @@ class PhysicalScalingModel(ScalingModelBase):
     return reflection_table
 
   def normalise_components(self):
-    """if 'scale' in self.components:
+    if 'scale' in self.components:
       # Do an invariant rescale of the scale at t=0 to one.'''
-      sel = (self.components['scale'].normalised_values ==
-        min(self.components['scale'].normalised_values))
-      initial_scale = self.components['scale'].inverse_scales.select(sel)[0]
+      joined_norm_vals = flex.double([])
+      joined_inv_scales = flex.double([])
+      for norm_vals, inv_scales in zip(self.components['scale'].normalised_values,
+        self.components['scale'].inverse_scales):
+        joined_norm_vals.extend(norm_vals)
+        joined_inv_scales.extend(inv_scales)
+      sel = (joined_norm_vals == min(joined_norm_vals))
+      initial_scale = joined_inv_scales.select(sel)[0]
       self.components['scale'].parameters /= initial_scale
       self.components['scale'].calculate_scales_and_derivatives()
       logger.info('\nThe "scale" model component has been rescaled, so that the\n'
         'initial scale is 1.0.')
     if 'decay' in self.components:
       # Do an invariant rescale of the max B to zero.'''
-      maxB = max(flex.double(np.log(self.components['decay'].inverse_scales))
-                  * 2.0 * (self.components['decay'].d_values**2))
+      joined_d_vals = flex.double([])
+      joined_inv_scales = flex.double([])
+      for d_vals, inv_scales in zip(self.components['decay'].d_values,
+        self.components['decay'].inverse_scales):
+        joined_d_vals.extend(d_vals)
+        joined_inv_scales.extend(inv_scales)
+      maxB = max(flex.double(np.log(joined_inv_scales))
+                  * 2.0 * (joined_d_vals**2))
       self.components['decay'].parameters -= flex.double(
         self.components['decay'].n_params, maxB)
       self.components['decay'].calculate_scales_and_derivatives()
       logger.info('The "decay" model component has been rescaled, so that the\n'
-        'maximum B-factor applied to any reflection is 0.0.')"""
+        'maximum B-factor applied to any reflection is 0.0.')
 
   @classmethod
   def from_dict(cls, obj):

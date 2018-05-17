@@ -30,7 +30,9 @@ class scaling_active_parameter_manager(active_parameter_manager):
       for n_refl in components[component].n_refl:
         n_obs.append(n_refl)
         n_blocks += 1
-    assert len(set(n_obs)) == n_blocks # Assert same no of refl set in all components.
+    assert len(set(n_obs)) == n_blocks or len(set(n_obs)) == 1
+    # Assert same no of refl set in all components, or this is true and
+    # same for each dataset.
     n_obs = []
     for component in components:
       n_obs.append(components[component].n_refl)

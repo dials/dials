@@ -18,7 +18,8 @@ def test_ScaleComponentBase():
 
   class base_SF_filler(ScaleComponentBase):
     """Subclass to fill in the abstract method."""
-    def update_reflection_data(self, reflection_table, selection=None):
+    def update_reflection_data(self, reflection_table, selection=None,
+      block_selection=None):
       pass
     def calculate_scales_and_derivatives(self, curvatures=False):
       pass
@@ -232,10 +233,10 @@ def test_SmoothScaleFactor2D():
   assert list(SF.smoother.x_positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5, 4.5]
   assert list(SF.smoother.y_positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5]
   SF.calculate_scales_and_derivatives(curvatures=True)
-  assert SF.curvatures.non_zeroes == 0
-  assert approx_equal(list(SF.inverse_scales), [1.1]*30)
+  assert SF.curvatures[0].non_zeroes == 0
+  assert approx_equal(list(SF.inverse_scales[0]), [1.1]*30)
   sumexp = exp(0.0) + (4.0 * exp(-1.0/1.0)) + (4.0*exp(-2.0/1.0))
-  assert approx_equal(SF.derivatives[1, 7], (exp(-0.0)/sumexp))
+  assert approx_equal(SF.derivatives[0][1, 7], (exp(-0.0)/sumexp))
 
   # Test again with a small number of params to check different behaviour.
   SF = SmoothScaleComponent2D(flex.double(6, 1.1), shape=(3, 2),
@@ -253,7 +254,7 @@ def test_SmoothScaleFactor2D():
   assert list(SF.smoother.y_positions()) == [0.0, 1.0]
   SF.calculate_scales_and_derivatives(curvatures=True)
   sumexp = (4.0 * exp(-0.5/1.0)) + (2.0*exp(-2.5/1.0))
-  assert approx_equal(SF.derivatives[1, 1], (exp(-0.5)/sumexp))
+  assert approx_equal(SF.derivatives[0][1, 1], (exp(-0.5)/sumexp))
 
 def test_SmoothScaleFactor3D():
   """Test the 2D smooth scale factor class."""
@@ -284,8 +285,8 @@ def test_SmoothScaleFactor3D():
   assert list(SF.smoother.y_positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5]
   assert list(SF.smoother.z_positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5]
   SF.calculate_scales_and_derivatives(curvatures=True)
-  assert SF.curvatures.non_zeroes == 0
-  assert approx_equal(list(SF.inverse_scales), [1.1]*150)
+  assert SF.curvatures[0].non_zeroes == 0
+  assert approx_equal(list(SF.inverse_scales[0]), [1.1]*150)
   sumexp = (exp(-0.0) + (6.0 * exp(-1.0/1.0)) + (8.0*exp(-3.0/1.0)) +
     (12.0*exp(-2.0/1.0)))
-  assert approx_equal(SF.derivatives[1, 7], exp(-1.0)/sumexp) # Just check one
+  assert approx_equal(SF.derivatives[0][1, 7], exp(-1.0)/sumexp) # Just check one

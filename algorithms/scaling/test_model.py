@@ -187,8 +187,8 @@ def test_PhysicalScalingModel(test_reflections, mock_exp, mock_params):
     "est_standard_devs" : [0.01, 0.01]}, "absorption": {
     "n_parameters": 3, "parameters": [0.0, 0.1, 0.2],
     "est_standard_devs" : [0.01, 0.02, 0.03]}, "configuration_parameters": {
-      "corrections": ["scale", "decay","absorption"], "s_norm_fac": 0.1,
-        "scale_rot_interval": 10.0,"d_norm_fac": 0.2,
+      "corrections": ["scale", "decay", "absorption"], "s_norm_fac": 0.1,
+        "scale_rot_interval": 10.0, "d_norm_fac": 0.2,
         "decay_rot_interval": 20.0, "lmax":1}}
   physicalmodel = PhysicalScalingModel.from_dict(physical_dict)
   assert physicalmodel.id_ == 'physical'

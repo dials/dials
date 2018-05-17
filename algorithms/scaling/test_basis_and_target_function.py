@@ -214,7 +214,7 @@ def test_target_function():
 
   # Create a scaling target and check gradients
   target = ScalingTarget(scaler, apm)
-  res, grad = target.compute_functional_gradients()
+  res, grad = target.compute_functional_gradients(scaler.Ih_table.blocked_Ih_table.block_list[0])
   assert res > 1e-8, """residual should not be zero, or the gradient test
     below will not really be working!"""
   f_d_grad = calculate_gradient_fd(target)
@@ -227,18 +227,19 @@ def test_target_function():
   assert target.get_num_matches() == 3
   # Below methods needed for refinement engine calls
   _ = target.compute_restraints_residuals_and_gradients()
-  _ = target.compute_residuals_and_gradients()
-  _ = target.compute_residuals()
-  _ = target.compute_functional_gradients()
+  _ = target.compute_residuals_and_gradients(scaler.Ih_table.blocked_Ih_table.block_list[0])
+  _ = target.compute_residuals(scaler.Ih_table.blocked_Ih_table.block_list[0])
+  _ = target.compute_functional_gradients(scaler.Ih_table.blocked_Ih_table.block_list[0])
   _ = target.achieved()
   _ = target.predict()
-  resid = (target.calculate_residuals(target.scaler.Ih_table)**2) * target.weights
+  resid = (target.calculate_residuals(
+    scaler.Ih_table.blocked_Ih_table.block_list[0])**2) * target.weights
   # Note - activate two below when curvatures are implemented.
   #_ = target.compute_restraints_functional_gradients_and_curvatures()
   #_ = target.compute_functional_gradients_and_curvatures()
 
   # Calculate residuals explicitly and check RMSDS.
-  assert approx_equal(list(resid), [50.0/36.0, 0.0, 100.0/36.0])
+  assert approx_equal(list(resid), [0.0, 50.0/36.0, 100.0/36.0])
   assert approx_equal(target.rmsds()[0], (150.0/(36.0*3.0))**0.5)
 
 def test_target_jacobian_calc(jacobian_gradient_input):
@@ -254,8 +255,10 @@ def test_target_jacobian_calc(jacobian_gradient_input):
   target = ScalingTarget(scaler, apm)
   target.predict()
 
-  fd_jacobian = calculate_jacobian_fd(target, target.scaler.Ih_table)
-  _, jacobian, _ = target.compute_residuals_and_gradients(target.scaler.Ih_table)
+  fd_jacobian = calculate_jacobian_fd(target,
+    scaler.Ih_table.blocked_Ih_table.block_list[0])
+  _, jacobian, _ = target.compute_residuals_and_gradients(
+    scaler.Ih_table.blocked_Ih_table.block_list[0])
   #r = (r/w)**0.5
   for i in range(0, 3):
     for j in range(0, 2):
