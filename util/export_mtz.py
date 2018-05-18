@@ -633,7 +633,7 @@ def export_mtz(integrated_data, experiment_list, hklout,
       logger.warning("Warning: Experiment crystals differ. Using first experiment crystal for file-level data.")
 
     # We must match wavelengths (until multiple datasets supported)
-    if not all(isclose(x.beam.get_wavelength(), experiment_list[0].beam.get_wavelength(), rel_tol=1e-9) for x in experiment_list[1:]):
+    if not all(isclose(x.beam.get_wavelength(), experiment_list[0].beam.get_wavelength(), rel_tol=1e-4) for x in experiment_list[1:]):
       data = [x.beam.get_wavelength() for x in experiment_list]
       raise Sorry("Cannot export multiple experiments with different beam wavelengths ({})".format(data))
 
