@@ -5,7 +5,7 @@ the parameters
 """
 from __future__ import print_function
 from dials.array_family import flex
-from dials_scratch_scaling_ext import row_multiply
+from dials_scaling_ext import row_multiply
 from scitbx import sparse
 
 class basis_function(object):

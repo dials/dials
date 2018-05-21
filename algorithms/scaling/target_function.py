@@ -6,7 +6,7 @@ and have implementations of residual/gradient calculations for
 scaling.
 """
 from dials.array_family import flex
-from dials_scratch_scaling_ext import row_multiply
+from dials_scaling_ext import row_multiply
 
 class ScalingTarget(object):
   """

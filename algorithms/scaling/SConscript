@@ -1,7 +1,7 @@
 Import('env')
 
 env.SharedLibrary(
-  target='#/lib/dials_scratch_scaling_ext',
+  target='#/lib/dials_scaling_ext',
   source=['boost_python/scaling_helper.cc',
           'boost_python/scaling_ext.cc'],
   LIBS=env["LIBS"])

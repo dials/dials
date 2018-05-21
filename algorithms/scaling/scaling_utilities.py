@@ -10,7 +10,7 @@ from math import pi, acos
 from dials.array_family import flex
 from cctbx import miller, crystal
 from dxtbx.model.experiment_list import ExperimentListDumper
-from dials_scratch_scaling_ext import create_sph_harm_table, calc_theta_phi,\
+from dials_scaling_ext import create_sph_harm_table, calc_theta_phi,\
   rotate_vectors_about_axis
 
 logger = logging.getLogger('dials')
