@@ -19,8 +19,7 @@ from libtbx.table_utils import simple_table
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.scaling_utilities import calc_normE2
 from dials.algorithms.scaling.outlier_rejection import reject_outliers
-from dials.algorithms.scaling.Ih_table import SingleIhTable,\
-  JointIhTable
+from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.scaling_restraints import ScalingRestraints,\
   MultiScalingRestraints
 from dials.algorithms.scaling.target_function import ScalingTarget,\
@@ -60,7 +59,7 @@ class ScalerBase(object):
     msg = ('Attempting to set a new Ih_table with an object not recognised as \n'
       'a valid Ih_table')
     assert hasattr(new_Ih_table, 'id_'), msg
-    assert new_Ih_table.id_ == 'IhTableBase', msg
+    assert new_Ih_table.id_ == 'IhTable', msg
     self._Ih_table = new_Ih_table
 
   @property
@@ -211,7 +210,7 @@ class SingleScalerBase(ScalerBase):
       reflection_table = self.round_of_outlier_rejection(reflection_table)
     self._reflection_table = reflection_table
     self._configure_reflection_table()
-    self.select_reflections_for_scaling(for_multi=for_multi)#split_free_set=(not for_multi))
+    self.select_reflections_for_scaling(for_multi=for_multi)
     #if self.params.scaling_options.n_proc > 1:
     #  self.Ih_table.split_into_blocks(self.params.scaling_options.n_proc)
     logger.info('Completed configuration of Scaler. \n\n' + '='*80 + '\n')
@@ -273,10 +272,10 @@ class SingleScalerBase(ScalerBase):
       derivs = dervis_trans.select_columns(work_set.iselection())
       self.Ih_table.derivatives = [derivs.transpose()]
     else:
-      self.Ih_table.derivatives = basis_fn[1]
+      self.Ih_table.set_derivatives(basis_fn[1])
     if curvatures:
       apm.curvatures = basis_fn[2]
-    self.Ih_table.inverse_scale_factors = basis_fn[0]
+    self.Ih_table.set_inverse_scale_factors(basis_fn[0])
     self.Ih_table.update_weights()
     self.Ih_table.calc_Ih()
 
@@ -372,8 +371,6 @@ class SingleScalerBase(ScalerBase):
       not isinstance(caller, MultiScalerBase)):
       self._reflection_table = self.round_of_outlier_rejection(
         self._reflection_table)
-    #if self.params.weighting.optimise_error_model:
-    #  self.Ih_table = SingleIhTable(self._reflection_table, self.space_group)
 
   def update_error_model(self, error_model):
     """Apply a correction to try to improve the error estimate."""
@@ -408,40 +405,32 @@ class SingleScalerBase(ScalerBase):
       self.reflection_table['variance'])
     logger.info('The error model determined has been applied to the variances')
 
-  def apply_selection_to_SFs(self, sel):
+  '''def apply_selection_to_SFs(self, sel):
     """Updates data from within current SF objects using the given selection.
        Required for targeted scaling."""
     for component in self.components.itervalues():
-      component.update_reflection_data(self.reflection_table, sel)
+      component.update_reflection_data(self.reflection_table, sel)'''
 
   def select_reflections_for_scaling(self, for_multi=True):
     """Select a subset of reflections, create and Ih table and update the
     model components."""
-    split_free_set = (not for_multi)
     selection = self._scaling_subset(self.reflection_table, self.params)
     self.scaling_selection = selection
     if not for_multi:
-      if self.params.scaling_options.n_proc:
-        self._Ih_table = SingleIhTable(self.reflection_table, self.space_group,
-          selection, self.params.weighting.weighting_scheme,
-          split_blocks=self.params.scaling_options.n_proc)
-        block_selections = self.Ih_table.blocked_Ih_table.block_selection_list
-      else:
-        self._Ih_table = SingleIhTable(self.reflection_table, self.space_group,
-          selection, self.params.weighting.weighting_scheme)
-        block_selections = None
-      if self.params.scaling_options.use_free_set and split_free_set:
+      self._Ih_table = IhTable([(self.reflection_table, selection)],
+        self.space_group, n_blocks=self.params.scaling_options.n_proc,
+        weighting_scheme=self.params.weighting.weighting_scheme)
+      block_selections = self.Ih_table.blocked_selection_list[0]
+      '''if self.params.scaling_options.use_free_set and split_free_set:
         self._Ih_table.split_into_free_work(
-          self.params.scaling_options.free_set_percentage)
-      #if self.params.weighting.error_model_params:
-      #  self.update_error_model(self.params.weighting.error_model_params)
+          self.params.scaling_options.free_set_percentage)'''
       for component in self.components.itervalues():
         component.update_reflection_data(self.reflection_table, selection, block_selections)
 
   def perform_error_optimisation(self):
-    self.Ih_table = SingleIhTable(self._reflection_table, self.space_group)
+    self.Ih_table = IhTable([(self._reflection_table, None)], self.space_group)
     refinery = error_model_refinery(engine='SimpleLBFGS',
-      target=ErrorModelTarget(BasicErrorModel(self.Ih_table)),
+      target=ErrorModelTarget(BasicErrorModel(self.Ih_table.blocked_data_list[0])),
       max_iterations=100)
     refinery.run()
     error_model = refinery.return_error_manager()
@@ -538,8 +527,8 @@ class MultiScalerBase(ScalerBase):
         deriv_matrix.assign_block(deriv, start_row_no, apm.apm_data[j]['start_idx'])
         start_row_no += deriv.n_rows
       derivs_list_for_Ih.append(deriv_matrix)
-    self.Ih_table.inverse_scale_factors = scale_list_for_Ih
-    self.Ih_table.derivatives = derivs_list_for_Ih
+    self.Ih_table.set_inverse_scale_factors(scale_list_for_Ih)
+    self.Ih_table.set_derivatives(derivs_list_for_Ih)
     self.Ih_table.update_weights()
     # The parallelisation below would work if sparse matrices were
     # pickleable (I think!) - with more benefit for larger number of datasets.
@@ -558,16 +547,16 @@ class MultiScalerBase(ScalerBase):
     """Select reflections for scaling in individual scalers."""
     #Update the data from the Ih_table
     for scaler in self.active_scalers:
-      scaler.select_reflections_for_scaling(split_free_set=False)
+      scaler.select_reflections_for_scaling(for_multi=True)
 
   def perform_error_optimisation(self):
     """Perform an optimisation of the sigma values."""
     for s_scaler in self.active_scalers:
-      s_scaler.Ih_table = SingleIhTable(s_scaler.reflection_table,
+      s_scaler.Ih_table = IhTable([(s_scaler.reflection_table, None)],
         s_scaler.space_group)
       refinery = error_model_refinery(engine='SimpleLBFGS',
-        target=ErrorModelTarget(BasicErrorModel(s_scaler.Ih_table)),
-        max_iterations=100)
+        target=ErrorModelTarget(BasicErrorModel(
+          s_scaler.Ih_table.blocked_data_list[0])), max_iterations=100)
       refinery.run()
       error_model = refinery.return_error_manager()
       s_scaler.update_error_model(error_model)
@@ -585,19 +574,18 @@ class MultiScaler(MultiScalerBase):
     logger.info('Configuring a MultiScaler to handle the individual Scalers. \n')
     super(MultiScaler, self).__init__(params, experiments, single_scalers)
     logger.info('Determining symmetry equivalent reflections across datasets.\n')
-    self._Ih_table = JointIhTable([(x.reflection_table, x.scaling_selection)
+    self._Ih_table = IhTable([(x.reflection_table, x.scaling_selection)
       for x in self.single_scalers], self._space_group,
-      split_blocks=self.params.scaling_options.n_proc)
-    if self.params.scaling_options.use_free_set:
+      n_blocks=self.params.scaling_options.n_proc)
+    '''if self.params.scaling_options.use_free_set:
       self._Ih_table.split_into_free_work(
-        self.params.scaling_options.free_set_percentage)
+        self.params.scaling_options.free_set_percentage)'''
     self.active_scalers = self.single_scalers
     #now add data to scale components from datasets
-    block_selections_list = self.Ih_table.blocked_Ih_table.block_selection_list
     for i, scaler in enumerate(self.active_scalers):
       for component in scaler.components.itervalues():
         component.update_reflection_data(scaler.reflection_table,
-          scaler.scaling_selection, block_selections_list[i])
+          scaler.scaling_selection, self.Ih_table.blocked_selection_list[i])
     logger.info('Completed configuration of MultiScaler. \n\n' + '='*80 + '\n')
 
   def update_error_model(self, error_model):
@@ -631,32 +619,31 @@ class TargetScaler(MultiScalerBase):
     logger.info('Determining symmetry equivalent reflections across datasets.\n')
     self.unscaled_scalers = unscaled_scalers
     self.active_scalers = self.unscaled_scalers
-    self._target_Ih_table = JointIhTable([(x.reflection_table, x.scaling_selection)
+    self._target_Ih_table = IhTable([(x.reflection_table, x.scaling_selection)
       for x in self.single_scalers], self._space_group,
-      split_blocks=1)#Keep in one table for matching below
-    self._Ih_table = JointIhTable([(x.reflection_table, x.scaling_selection)
+      n_blocks=1)#Keep in one table for matching below
+    self._Ih_table = IhTable([(x.reflection_table, x.scaling_selection)
       for x in self.unscaled_scalers], self._space_group,
-      split_blocks=params.scaling_options.n_proc)
+      n_blocks=params.scaling_options.n_proc)
     self._initial_keys = self.unscaled_scalers[0].initial_keys #needed for
     # scaling against calculated Is
     self.set_Ih_values_to_target()
-    block_selections_list = self.Ih_table.blocked_Ih_table.block_selection_list
+    #block_selections_list = self.Ih_table.blocked_Ih_table.block_selection_list
     for i, scaler in enumerate(self.active_scalers):
       for component in scaler.components.itervalues():
         component.update_reflection_data(scaler.reflection_table,
-          scaler.scaling_selection, block_selections_list[i])
-        #print(component.n_refl)
+          scaler.scaling_selection, self.Ih_table.blocked_selection_list[i])
     logger.info('Completed initialisation of TargetScaler. \n' + '*'*40 + '\n')
 
   def set_Ih_values_to_target(self):
     """Match equivalent reflections between individual unscaled datasets and
     set target Ixh values in the Ih_table for each dataset."""
-    target_Ih_table = self._target_Ih_table.blocked_Ih_table.block_list[0]
-    for i, block in enumerate(self._Ih_table.blocked_Ih_table.block_list):
+    target_Ih_table = self._target_Ih_table.blocked_data_list[0]
+    for i, block in enumerate(self._Ih_table.blocked_data_list):
       block.set_Ih_values_to_target(target_Ih_table)
       sel = block.Ih_values != 0.0
       block = block.select(sel)
-      self._Ih_table.blocked_Ih_table.apply_selection_to_selection_list(i, sel)
+      self._Ih_table.apply_selection_to_selection_list(i, sel)
       '''if self.params.scaling_options.use_free_set:
         scaler.Ih_table.split_into_free_work(
           self.params.scaling_options.free_set_percentage)'''

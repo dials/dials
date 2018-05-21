@@ -6,7 +6,7 @@ import pytest
 from libtbx.test_utils import approx_equal
 from dials.algorithms.scaling.error_model.error_model import BasicErrorModel
 from dials.algorithms.scaling.error_model.error_model_target import ErrorModelTarget
-from dials.algorithms.scaling.Ih_table import SingleIhTable
+from dials.algorithms.scaling.Ih_table import IhTable
 from dials.array_family import flex
 from cctbx.sgtbx import space_group
 
@@ -38,21 +38,29 @@ def generate_refl_1():
 
 def test_errormodel(large_reflection_table, test_sg):
   """Test the initialisation and methods of the error model."""
-  Ih_table = SingleIhTable(large_reflection_table, test_sg, split_blocks=None)
-
-  error_model = BasicErrorModel(Ih_table, n_bins=10)
-  for i in range(error_model.summation_matrix.n_cols):
-    assert error_model.summation_matrix[i, i] == 1
+  Ih_table = IhTable([(large_reflection_table, None)], test_sg, n_blocks=1)
+  block = Ih_table.blocked_data_list[0]
+  error_model = BasicErrorModel(block, n_bins=10)
+  assert error_model.summation_matrix[0, 1] == 1
+  assert error_model.summation_matrix[1, 6] == 1
+  assert error_model.summation_matrix[2, 8] == 1
+  assert error_model.summation_matrix[3, 5] == 1
+  assert error_model.summation_matrix[4, 3] == 1
+  assert error_model.summation_matrix[5, 0] == 1
+  assert error_model.summation_matrix[6, 4] == 1
+  assert error_model.summation_matrix[7, 9] == 1
+  assert error_model.summation_matrix[8, 2] == 1
+  assert error_model.summation_matrix[9, 7] == 1
   assert error_model.summation_matrix.non_zeroes == large_reflection_table.size()
   assert error_model.bin_counts == flex.double(large_reflection_table.size(), 1)
-  assert error_model.n_h == Ih_table.n_h
+  assert error_model.n_h == block.n_h
 
   # Test calc sigmaprime
   x0 = 1.0
   x1 = 0.1
   error_model.sigmaprime = error_model.calc_sigmaprime([x0, x1])
-  assert error_model.sigmaprime == x0 * ((Ih_table.variances +
-    ((x1*Ih_table.intensities)**2))**0.5)
+  assert error_model.sigmaprime == x0 * ((block.variances +
+    ((x1 * block.intensities)**2))**0.5)
 
   # Test calc delta_hl
   error_model.sigmaprime = error_model.calc_sigmaprime([1.0, 0.0]) #Reset
@@ -60,16 +68,24 @@ def test_errormodel(large_reflection_table, test_sg):
   # variances 1, 5 and 10 using he formula
   # delta_hl = sqrt(n_h - 1 / n_h) * (Ihl/ghl - Ih) / sigmaprime
   error_model.delta_hl = error_model.calc_deltahl()
-  expected_deltas = [(-17.0/13.0) * sqrt(2.0/3.0), 0.0, 0.0, 0.0,
-    (7.0/13.0) * sqrt(10.0/3.0), 0.0, 0.0, 0.0, 0.0,
-    (10.0/13.0) * sqrt(20.0/3.0)]
+  expected_deltas = [0.0, 0.0, 0.0, 0.0, 0.0, (-17.0/13.0) * sqrt(2.0/3.0),
+    (7.0/13.0) * sqrt(10.0/3.0), (10.0/13.0) * sqrt(20.0/3.0), 0.0, 0.0]
   assert approx_equal(list(error_model.delta_hl), expected_deltas)
 
   # Test bin variance calculation on example with fewer bins.
-  error_model = BasicErrorModel(Ih_table, n_bins=2)
-  for i in range(5):
-    assert error_model.summation_matrix[i, 0] == 1
-    assert error_model.summation_matrix[i+5, 1] == 1
+  error_model = BasicErrorModel(block, n_bins=2)
+
+  assert error_model.summation_matrix[0, 0] == 1
+  assert error_model.summation_matrix[1, 1] == 1
+  assert error_model.summation_matrix[2, 1] == 1
+  assert error_model.summation_matrix[3, 1] == 1
+  assert error_model.summation_matrix[4, 0] == 1
+  assert error_model.summation_matrix[5, 0] == 1
+  assert error_model.summation_matrix[6, 0] == 1
+  assert error_model.summation_matrix[7, 1] == 1
+  assert error_model.summation_matrix[8, 0] == 1
+  assert error_model.summation_matrix[9, 1] == 1
+
   error_model.sigmaprime = error_model.calc_sigmaprime([1.0, 0.0])
   error_model.delta_hl = error_model.calc_deltahl()
   bin_vars = error_model.calculate_bin_variances()
@@ -80,15 +96,15 @@ def test_errormodel(large_reflection_table, test_sg):
   assert approx_equal(list(bin_vars), expected_bin_vars)
 
   # Test updating call
-  error_model = BasicErrorModel(Ih_table, n_bins=2)
+  error_model = BasicErrorModel(block, n_bins=2)
   error_model.update_for_minimisation([1.0, 0.0])
   assert approx_equal(list(error_model.bin_variances), expected_bin_vars)
 
 def test_error_model_target(large_reflection_table, test_sg):
   """Test the error model target."""
-  Ih_table = SingleIhTable(large_reflection_table, test_sg, split_blocks=None)
-
-  error_model = BasicErrorModel(Ih_table, n_bins=2)
+  Ih_table = IhTable([(large_reflection_table, None)], test_sg, n_blocks=1)
+  block = Ih_table.blocked_data_list[0]
+  error_model = BasicErrorModel(block, n_bins=2)
   error_model.update_for_minimisation([1.0, 0.05])
   target = ErrorModelTarget(error_model)
   # Test residual calculation

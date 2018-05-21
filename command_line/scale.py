@@ -258,9 +258,9 @@ class Script(object):
 
         scaler.expand_scales_to_all_reflections(calc_cov=True)
 
-        if scaler.params.weighting.optimise_error_model:
+        '''if scaler.params.weighting.optimise_error_model:
           scaler.perform_error_optimisation()
-          '''scaler.apply_error_model_to_variances()'''
+          #scaler.apply_error_model_to_variances()'''
 
         scaler.join_multiple_datasets()
         return scaler
@@ -273,11 +273,11 @@ class Script(object):
     scaler.perform_scaling()
 
     # Option to optimise the error model and then do another minimisation.
-    if scaler.params.weighting.optimise_error_model:
+    '''if scaler.params.weighting.optimise_error_model:
       scaler.expand_scales_to_all_reflections()
       scaler.perform_error_optimisation()
       scaler.select_reflections_for_scaling()
-      scaler.perform_scaling()
+      scaler.perform_scaling()'''
 
     # Now do one round of full matrix minimisation to determine errors.
     if scaler.params.scaling_options.full_matrix_round and (
@@ -290,9 +290,9 @@ class Script(object):
     # scale factors to the whole reflection table.
     scaler.expand_scales_to_all_reflections(calc_cov=True)
 
-    if scaler.params.weighting.optimise_error_model:
+    '''if scaler.params.weighting.optimise_error_model:
       scaler.perform_error_optimisation()
-      #scaler.apply_error_model_to_variances()
+      #scaler.apply_error_model_to_variances()'''
 
     if scaler.id_ == 'multi':
       scaler.join_multiple_datasets()

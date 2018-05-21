@@ -3,7 +3,7 @@ Module of uoutlier rejection algorithms.
 """
 from libtbx.utils import Sorry
 from dials.array_family import flex
-from dials.algorithms.scaling.Ih_table import SingleIhTable
+from dials.algorithms.scaling.Ih_table import IhTable
 
 
 def reject_outliers(reflection_table, space_group, method='standard', zmax=9.0):
@@ -65,7 +65,8 @@ class SimpleNormDevOutlierRejection(OutlierRejectionBase):
 
   def round_of_outlier_rejection(self, reflection_table):
     """One round of outlier rejection for all data in reflection table."""
-    Ih_table = SingleIhTable(reflection_table, self.space_group, split_blocks=None)
+    Ih_table = IhTable([(reflection_table, None)], self.space_group,
+      n_blocks=1).blocked_data_list[0]
     I = Ih_table.intensities
     g = Ih_table.inverse_scale_factors
     w = Ih_table.weights
@@ -75,7 +76,7 @@ class SimpleNormDevOutlierRejection(OutlierRejectionBase):
     z_score = (norm_dev**2)**0.5
     outliers_sel = z_score > self.zmax
 
-    nz_weights_isel = Ih_table.nonzero_weights.iselection()
+    nz_weights_isel = Ih_table.nonzero_weights#.iselection()
     outlier_indices = nz_weights_isel.select(outliers_sel)
     return outlier_indices
 
@@ -109,7 +110,8 @@ class NormDevOutlierRejection(OutlierRejectionBase):
 
   def round_of_outlier_rejection(self, reflection_table):
     """One round of outlier rejection for all data in reflection table."""
-    Ih_table = SingleIhTable(reflection_table, self.space_group, split_blocks=None)
+    Ih_table = IhTable([(reflection_table, None)], self.space_group, n_blocks=1
+      ).blocked_data_list[0]
     I = Ih_table.intensities
     g = Ih_table.inverse_scale_factors
     w = Ih_table.weights
@@ -150,7 +152,7 @@ class NormDevOutlierRejection(OutlierRejectionBase):
           other_potential_outliers.extend(other_indices)
 
     #Now determine location of outliers w.r.t initial reflection table order.
-    nz_weights_isel = Ih_table.nonzero_weights.iselection()
+    nz_weights_isel = Ih_table.nonzero_weights#.iselection()
     outlier_indices = nz_weights_isel.select(outliers)
     other_potential_outliers_indices = nz_weights_isel.select(
       other_potential_outliers)

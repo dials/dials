@@ -196,8 +196,8 @@ class ScalingSimpleLBFGS(SimpleLBFGS, ScalingRefinery):
     """overwrite method to avoid calls to 'blocks' methods of target"""
     self.prepare_for_step()
 
-    if self._scaler.params.scaling_options.n_proc:
-      blocks = self._scaler.Ih_table.get_blocks()
+    if self._scaler.params.scaling_options.n_proc > 1:
+      blocks = self._scaler.Ih_table.blocked_data_list
       task_results = easy_mp.parallel_map(
         func=self._target.compute_functional_gradients,
         iterable=blocks,
@@ -211,7 +211,16 @@ class ScalingSimpleLBFGS(SimpleLBFGS, ScalingRefinery):
       for i in range(1, len(gi)):
         g += gi[i]
     else:
-      f, g = self._target.compute_functional_gradients()
+      blocks = self._scaler.Ih_table.blocked_data_list
+      f = 0.0
+      g = None
+      for block in blocks:
+        fi, gi = self._target.compute_functional_gradients(block)
+        f += fi
+        if g:
+          g += gi
+        else:
+          g = gi
 
     restraints = \
       self._target.compute_restraints_functional_gradients_and_curvatures()
@@ -281,34 +290,27 @@ class ScalingLstbxBuildUpMixin(ScalingRefinery):
 
     # observation terms
     if objective_only:
-      if self._scaler.params.scaling_options.n_proc:
-        blocks = self._scaler.Ih_table.get_blocks()
-        for block in blocks:
-          residuals, weights = self._target.compute_residuals(block)
-          self.add_residuals(residuals, weights)
-      else:
-        residuals, weights = self._target.compute_residuals()
+      #if self._scaler.params.scaling_options.n_proc > 1: #no mp option yet
+      blocks = self._scaler.Ih_table.blocked_data_list
+      for block in blocks:
+        residuals, weights = self._target.compute_residuals(block)
         self.add_residuals(residuals, weights)
     else:
-      if self._scaler.params.scaling_options.n_proc:
+      #if self._scaler.params.scaling_options.n_proc: #no mp option yet
 
-        self._jacobian = None
+      self._jacobian = None
 
-        blocks = self._scaler.Ih_table.get_blocks()
-        for block in blocks:
-          residuals, jacobian, weights = self._target.compute_residuals_and_gradients(block)
-          self.add_equations(residuals, jacobian, weights)
-        '''task_results = easy_mp.pool_map(
-          fixed_func=self._target.compute_residuals_and_gradients,
-          iterable=blocks,
-          processes=self._scaler.params.scaling_options.n_proc
-          )
-        for result in task_results:
-          self.add_equations(result[0], result[1], result[2])'''
-      else:
-        residuals, self._jacobian, weights = \
-              self._target.compute_residuals_and_gradients()
-        self.add_equations(residuals, self._jacobian, weights)
+      blocks = self._scaler.Ih_table.blocked_data_list
+      for block in blocks:
+        residuals, jacobian, weights = self._target.compute_residuals_and_gradients(block)
+        self.add_equations(residuals, jacobian, weights)
+      '''task_results = easy_mp.pool_map(
+        fixed_func=self._target.compute_residuals_and_gradients,
+        iterable=blocks,
+        processes=self._scaler.params.scaling_options.n_proc
+        )
+      for result in task_results:
+        self.add_equations(result[0], result[1], result[2])'''
 
     restraints = self._target.compute_restraints_residuals_and_gradients()
     if restraints:

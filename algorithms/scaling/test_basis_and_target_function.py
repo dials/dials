@@ -4,19 +4,21 @@ Test for the basis function and target function module.
 import copy
 import numpy as np
 import pytest
-from mock import Mock, MagicMock
+from mock import Mock
 from scitbx import sparse
 from dials.array_family import flex
 from dials.util.options import OptionParser
-from dials.algorithms.scaling.parameter_handler import scaling_active_parameter_manager
 from libtbx import phil
 from libtbx.test_utils import approx_equal
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.algorithms.scaling.scaler_factory import create_scaler
-from dials.algorithms.scaling.target_function import ScalingTarget, ScalingTargetFixedIH
+from dials.algorithms.scaling.target_function import ScalingTarget, \
+  ScalingTargetFixedIH
 from dials.algorithms.scaling.basis_functions import basis_function
+from dials.algorithms.scaling.parameter_handler import \
+  scaling_active_parameter_manager
 from dials.algorithms.scaling.model.components.scale_components import \
   SingleBScaleFactor, SingleScaleFactor
 
@@ -110,6 +112,7 @@ def generated_param(model='KB'):
 
 @pytest.fixture
 def jacobian_gradient_input(large_reflection_table):
+  """Input for jacobian gradient calculation."""
   return generated_param(model='physical'), generated_single_exp(), large_reflection_table
 
 
@@ -214,7 +217,7 @@ def test_target_function():
 
   # Create a scaling target and check gradients
   target = ScalingTarget(scaler, apm)
-  res, grad = target.compute_functional_gradients(scaler.Ih_table.blocked_Ih_table.block_list[0])
+  res, grad = target.compute_functional_gradients(scaler.Ih_table.blocked_data_list[0])
   assert res > 1e-8, """residual should not be zero, or the gradient test
     below will not really be working!"""
   f_d_grad = calculate_gradient_fd(target)
@@ -227,13 +230,13 @@ def test_target_function():
   assert target.get_num_matches() == 3
   # Below methods needed for refinement engine calls
   _ = target.compute_restraints_residuals_and_gradients()
-  _ = target.compute_residuals_and_gradients(scaler.Ih_table.blocked_Ih_table.block_list[0])
-  _ = target.compute_residuals(scaler.Ih_table.blocked_Ih_table.block_list[0])
-  _ = target.compute_functional_gradients(scaler.Ih_table.blocked_Ih_table.block_list[0])
+  _ = target.compute_residuals_and_gradients(scaler.Ih_table.blocked_data_list[0])
+  _ = target.compute_residuals(scaler.Ih_table.blocked_data_list[0])
+  _ = target.compute_functional_gradients(scaler.Ih_table.blocked_data_list[0])
   _ = target.achieved()
   _ = target.predict()
   resid = (target.calculate_residuals(
-    scaler.Ih_table.blocked_Ih_table.block_list[0])**2) * target.weights
+    scaler.Ih_table.blocked_data_list[0])**2) * scaler.Ih_table.blocked_data_list[0].weights
   # Note - activate two below when curvatures are implemented.
   #_ = target.compute_restraints_functional_gradients_and_curvatures()
   #_ = target.compute_functional_gradients_and_curvatures()
@@ -256,9 +259,9 @@ def test_target_jacobian_calc(jacobian_gradient_input):
   target.predict()
 
   fd_jacobian = calculate_jacobian_fd(target,
-    scaler.Ih_table.blocked_Ih_table.block_list[0])
+    scaler.Ih_table.blocked_data_list[0])
   _, jacobian, _ = target.compute_residuals_and_gradients(
-    scaler.Ih_table.blocked_Ih_table.block_list[0])
+    scaler.Ih_table.blocked_data_list[0])
   #r = (r/w)**0.5
   for i in range(0, 3):
     for j in range(0, 2):
@@ -267,7 +270,7 @@ def test_target_jacobian_calc(jacobian_gradient_input):
 def test_target_jacobian_calc_splitblocks(jacobian_gradient_input):
   """Test for the target function calculation of the jacobian matrix."""
   test_params, exp, test_refl = jacobian_gradient_input
-  test_params.scaling_options.n_proc=2
+  test_params.scaling_options.n_proc = 2
   test_params.parameterisation.decay_term = False
   experiments = create_scaling_model(test_params, exp, test_refl)
   assert experiments[0].scaling_model.id_ == 'physical'
@@ -278,7 +281,7 @@ def test_target_jacobian_calc_splitblocks(jacobian_gradient_input):
   target = ScalingTarget(scaler, apm)
   target.predict()
 
-  for block in scaler.Ih_table.blocked_Ih_table.block_list:
+  for block in scaler.Ih_table.blocked_data_list:
     fd_jacobian = calculate_jacobian_fd(target, block)
     _, jacobian, _ = target.compute_residuals_and_gradients(block)
     #r = (r/w)**0.5
@@ -354,24 +357,24 @@ def mock_multiapm(mock_apm):
 
 def test_target_fixedIh(mock_targetscaler, mock_multiapm):
   """Test the target function for targeted scaling (where Ih is fixed)."""
+
   target = ScalingTargetFixedIH(mock_targetscaler, mock_multiapm)
-  R, _ = target.compute_residuals()
-  expected_residuals = flex.double([-1.0, 0.0, 1.0] * 2)
+  Ih_table = mock_Ih_table()
+  #print(dir(Ih_table))
+  R, _ = target.compute_residuals(Ih_table)
+  expected_residuals = flex.double([-1.0, 0.0, 1.0])
   assert list(R) == list(expected_residuals)
-  _, G = target.compute_functional_gradients()
-  assert list(G) == [-44.0, -44.0]
+  _, G = target.compute_functional_gradients(Ih_table)
+  assert list(G) == [-44.0]
   # Add in finite difference check
 
-  J = target.calculate_jacobian()
-  assert J.n_cols == 2
-  assert J.n_rows == 6
-  assert J.non_zeroes == 6
+  J = target.calculate_jacobian(Ih_table)
+  assert J.n_cols == 1
+  assert J.n_rows == 3
+  assert J.non_zeroes == 3
   assert J[0, 0] == -11.0
   assert J[1, 0] == -22.0
   assert J[2, 0] == -33.0
-  assert J[3, 1] == -11.0
-  assert J[4, 1] == -22.0
-  assert J[5, 1] == -33.0
 
   expected_rmsd = (expected_residuals**2 / len(expected_residuals))**0.5
   assert target._rmsds is None
@@ -384,6 +387,7 @@ def calculate_gradient_fd(target):
   """Calculate gradient array with finite difference approach."""
   delta = 1.0e-6
   gradients = flex.double([0.0] * target.apm.n_active_params)
+  Ih_table = target.scaler.Ih_table.blocked_data_list[0]
   #iterate over parameters, varying one at a time and calculating the gradient
   for i in range(target.apm.n_active_params):
     new_x = copy.copy(target.apm.x)
@@ -391,12 +395,12 @@ def calculate_gradient_fd(target):
     #target.apm.x[i] -= 0.5 * delta
     target.apm.set_param_vals(new_x)
     target.predict()
-    R_low = (target.calculate_residuals(target.scaler.Ih_table)**2) * target.weights
+    R_low = (target.calculate_residuals(Ih_table)**2) * Ih_table.weights
     #target.apm.x[i] += delta
     new_x[i] += delta
     target.apm.set_param_vals(new_x)
     target.predict()
-    R_upper = (target.calculate_residuals(target.scaler.Ih_table)**2) * target.weights
+    R_upper = (target.calculate_residuals(Ih_table)**2) * Ih_table.weights
     #target.apm.x[i] -= 0.5 * delta
     new_x[i] -= 0.5 * delta
     target.apm.set_param_vals(new_x)
