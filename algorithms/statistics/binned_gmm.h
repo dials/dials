@@ -125,7 +125,6 @@ namespace dials { namespace algorithms {
       af::shared<bool> use(a.size(), true);
       for (std::size_t i = 0; i < m.size(); ++i) {
         detail::Expectation e(a[i], b[i], mu_, sigma_);
-        double P = e.expectation0();
         if (m[i] < 1) {
           use[i] = false;
         }
