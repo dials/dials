@@ -328,12 +328,12 @@ def plot_2D_decay_correction(experiment, reflections, outputfile=None):
   rel_values_1 = np.arange(0, max_res+0.1, 0.1)
   #rel_values_2 = np.arange(0, max_time+0.1, 0.1)
   (n1, n2) = (len(rel_values_1), len(rel_values_2))
-  rel_values_1 = np.tile(rel_values_1, n2)
-  rel_values_2 = np.repeat(rel_values_2, n1)
+  rel_values_1 = flex.double(np.tile(rel_values_1, n2))
+  rel_values_2 = flex.double(np.repeat(rel_values_2, n1))
 
   rt = flex.reflection_table()
   rt['norm_time_values'] = rel_values_2
-  rt['norm_res_values'] = rel_values_1
+  rt['normalised_res_values'] = rel_values_1
 
   decay_factor = experiment.scaling_model.components['decay']
   decay_factor.update_reflection_data(rt)
@@ -381,8 +381,10 @@ def plot_2D_decay_correction(experiment, reflections, outputfile=None):
   plt.tight_layout()
   if outputfile:
     plt.savefig(outputfile)
+    print("Saving plot to %s" % outputfile)
   else:
     plt.savefig('decay_correction.png')
+    print("Saving plot to decay_correction.png")
 
 def plot_2D_modulation_correction(experiment, reflections, outputfile=None):
 
@@ -443,8 +445,10 @@ def plot_2D_modulation_correction(experiment, reflections, outputfile=None):
   plt.tight_layout()
   if outputfile:
     plt.savefig(outputfile)
+    print("Saving plot to %s" % outputfile)
   else:
     plt.savefig('modulation_correction.png')
+    print("Saving plot to modulation_correction.png")
 
 def plot_3D_absorption_correction(experiment, reflections, outputfile=None):
   '''produces a plot of the absorption correction model parameters
@@ -461,7 +465,7 @@ def plot_3D_absorption_correction(experiment, reflections, outputfile=None):
 
   rt = flex.reflection_table()
   rt['normalised_x_abs_values'] = nax
-  rt['normalised_y_abs_values'] = nay,
+  rt['normalised_y_abs_values'] = nay
   rt['norm_time_values'] = nt
 
   absorption_factor = experiment.scaling_model.components['absorption']
@@ -492,8 +496,10 @@ def plot_3D_absorption_correction(experiment, reflections, outputfile=None):
   plt.tight_layout()
   if outputfile:
     plt.savefig(outputfile)
+    print("Saving plot to %s" % outputfile)
   else:
     plt.savefig('absorption_correction.png')
+    print("Saving plot to absorption_correction.png")
 
 
 if __name__ == "__main__":
