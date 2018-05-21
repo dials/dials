@@ -9,9 +9,9 @@ libtbx.pkg_utils.define_entry_points({
     'gaussian_rs = dials.extensions.gaussian_rs_profile_model_ext:GaussianRSProfileModelExt',
   ],
   'dxtbx.scaling_model_ext': [
-    'physical = dials_scratch.jbe.scaling_code.model.scaling_model_ext:PhysicalScalingModelExt',
-    'KB = dials_scratch.jbe.scaling_code.model.scaling_model_ext:KBScalingModelExt',
-    'array = dials_scratch.jbe.scaling_code.model.scaling_model_ext:ArrayScalingModelExt',
+    'physical = dials.algorithms.scaling.model.scaling_model_ext:PhysicalScalingModelExt',
+    'KB = dials.algorithms.scaling.model.scaling_model_ext:KBScalingModelExt',
+    'array = dials.algorithms.scaling.model.scaling_model_ext:ArrayScalingModelExt',
   ]})
 
 
