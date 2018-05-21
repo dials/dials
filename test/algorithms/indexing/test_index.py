@@ -405,8 +405,8 @@ def test_index_imosflm_tutorial(dials_regression, tmpdir):
       result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
                                 expected_rmsds, expected_hall_symbol)
 
-def test_index_insulin(dials_regression, tmpdir):
-  data_dir = os.path.join(dials_regression, "xia2_demo_data")
+def test_index_insulin(xia2_regression_build, tmpdir):
+  data_dir = os.path.join(xia2_regression_build, "test_data", "insulin")
 
   tmpdir.chdir()
 
