@@ -1,12 +1,12 @@
-#ifndef DIALS_SCRATCH_SCALING_SCALING_HELPER_H
-#define DIALS_SCRATCH_SCALING_SCALING_HELPER_H
+#ifndef DIALS_SCALING_SCALING_HELPER_H
+#define DIALS_SCALING_SCALING_HELPER_H
 
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <scitbx/sparse/matrix.h>
 #include <scitbx/math/zernike.h>
 #include <dials/error.h>
 
-namespace dials_scratch { namespace scaling {
+namespace dials_scaling {
 
   /**
    * Elementwise squaring of a matrix
@@ -171,6 +171,6 @@ namespace dials_scratch { namespace scaling {
       return sph_harm_terms_;
       }
 
-}} // dials_scratch::scaling
+} // dials_scaling
 
-#endif // DIALS_SCRATCH_SCALING_SCALING_HELPER_H
+#endif // DIALS_SCALING_SCALING_HELPER_H
