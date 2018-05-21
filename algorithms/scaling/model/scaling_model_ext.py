@@ -4,9 +4,7 @@ Definitions of scaling model extensions.
 """
 from __future__ import absolute_import, division
 
-from dials.framework import interface
-
-class ScalingModelIface(interface.Interface):
+class ScalingModelIface(object):
     '''
     The interface definition for a scaling model.
     '''
