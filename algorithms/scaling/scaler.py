@@ -13,7 +13,7 @@ import time
 from dials.array_family import flex
 from cctbx import crystal, sgtbx
 from scitbx import sparse
-from dials_scaling_helpers_ext import row_multiply
+from dials_scratch_scaling_ext import row_multiply
 #from libtbx import easy_mp
 from libtbx.table_utils import simple_table
 from dials.algorithms.scaling.basis_functions import basis_function

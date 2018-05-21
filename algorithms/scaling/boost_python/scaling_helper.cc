@@ -43,4 +43,11 @@ namespace dials_scratch { namespace scaling { namespace boost_python {
       arg("var_cov")));
     }
 
+    void export_row_multiply()
+    {
+    def("row_multiply", &row_multiply, (
+      arg("m"),
+      arg("v")));
+    }
+
 }}} // namespace = dials_scratch::scaling::boost_python

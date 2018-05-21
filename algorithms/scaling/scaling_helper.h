@@ -1,8 +1,10 @@
 #ifndef DIALS_SCRATCH_SCALING_SCALING_HELPER_H
 #define DIALS_SCRATCH_SCALING_SCALING_HELPER_H
 
+#include <dials/array_family/scitbx_shared_and_versa.h>
 #include <scitbx/sparse/matrix.h>
 #include <scitbx/math/zernike.h>
+#include <dials/error.h>
 
 namespace dials_scratch { namespace scaling {
 
@@ -21,6 +23,29 @@ namespace dials_scratch { namespace scaling {
       {
         std::size_t i = p.index();
         result(i, j) = *p * *p;
+      }
+    }
+    return result;
+  }
+
+  scitbx::sparse::matrix<double> row_multiply(scitbx::sparse::matrix<double> m,
+                                              scitbx::af::const_ref<double> v){
+
+    DIALS_ASSERT(m.n_rows() == v.size());
+
+    // call compact to ensure that each elt of the matrix is only defined once
+    m.compact();
+
+    scitbx::sparse::matrix<double> result(m.n_rows(), m.n_cols());
+
+    // outer loop iterate over the columns
+    for (std::size_t j=0; j < m.n_cols(); j++) {
+
+      // inner loop iterate over the non-zero elements of the column
+      for (scitbx::sparse::matrix<double>::row_iterator p=m.col(j).begin(); p != m.col(j).end(); ++p)
+      {
+        std::size_t i = p.index();
+        result(i, j) = *p * v[i];
       }
     }
     return result;
