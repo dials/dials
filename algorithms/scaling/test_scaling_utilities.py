@@ -76,6 +76,7 @@ def test_sph_harm_table(test_reflection_table, mock_exp):
   """Simple test for the spherical harmonic table, constructing the table step
   by step, and verifying the values of a few easy-to-calculate entries.
   This also acts as a test for the calc_theta_phi function as well."""
+  from scitbx import sparse # Needed to be able to assign to sph_h_t
   rt, exp = test_reflection_table, mock_exp
   reflection_table = calc_crystal_frame_vectors(rt, exp)
   theta_phi = calc_theta_phi(reflection_table['s0c'])
