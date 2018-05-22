@@ -109,11 +109,11 @@ class CrystalUnitCellMixin(object):
     select between versions of the Parameter class"""
 
     # Set up symmetrizing object
-    self._S = symmetrize_reduce_enlarge(crystal.get_space_group())
-    self._S.set_orientation(orientation=crystal.get_B())
-    X = self._S.forward_independent_parameters()
-    dB_dp = self._S.forward_gradients()
-    B = self._S.backward_orientation(independent=X).reciprocal_matrix()
+    S = symmetrize_reduce_enlarge(crystal.get_space_group())
+    S.set_orientation(orientation=crystal.get_B())
+    X = S.forward_independent_parameters()
+    dB_dp = S.forward_gradients()
+    B = S.backward_orientation(independent=X).reciprocal_matrix()
 
     # Set up the independent parameters, with a change of scale
     p_list = [parameter_type(e * 1.e5, name = "g_param_%d" % i) \
@@ -127,9 +127,11 @@ class CrystalUnitCellMixin(object):
     vals = [v * 1.e-5 for v in raw_vals]
 
     # set parameter values in the symmetrizing object and obtain new B
+    S = symmetrize_reduce_enlarge(self._model.get_space_group())
+    S.set_orientation(orientation=self._model.get_B())
+    S.forward_independent_parameters() # Set Bconverter as side-effect
     try:
-      newB = matrix.sqr(
-            self._S.backward_orientation(vals).reciprocal_matrix())
+      newB = matrix.sqr(S.backward_orientation(vals).reciprocal_matrix())
     except RuntimeError as e:
       from libtbx.utils import Sorry
       # write original error to debug log
@@ -141,12 +143,12 @@ class CrystalUnitCellMixin(object):
 
     # returns the independent parameters given the set_orientation() B matrix
     # used here for side effects
-    self._S.forward_independent_parameters()
+    S.forward_independent_parameters()
 
     # get the derivatives of state wrt metrical matrix parameters on the
     # adjusted sale
     dB_dval = [matrix.sqr(e) * 1.e-5 \
-                       for e in self._S.forward_gradients()]
+                       for e in S.forward_gradients()]
 
     return newB, dB_dval
 
