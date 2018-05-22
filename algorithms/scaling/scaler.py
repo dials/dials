@@ -10,12 +10,13 @@ A TargetScaler is used for targeted scaling.
 import abc
 import logging
 import time
-from dials.array_family import flex
 from cctbx import crystal, sgtbx
 from scitbx import sparse
 from dials_scaling_ext import row_multiply
+from dials_scaling_ext import calc_sigmasq as cpp_calc_sigmasq
 #from libtbx import easy_mp
 from libtbx.table_utils import simple_table
+from dials.array_family import flex
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.scaling_utilities import calc_normE2
 from dials.algorithms.scaling.outlier_rejection import reject_outliers
@@ -31,7 +32,7 @@ from dials.algorithms.scaling.error_model.error_model import \
 from dials.algorithms.scaling.error_model.error_model_target import \
   ErrorModelTarget
 from dials.algorithms.scaling.parameter_handler import create_apm_factory
-from dials_scaling_ext import calc_sigmasq as cpp_calc_sigmasq
+
 logger = logging.getLogger('dials')
 
 

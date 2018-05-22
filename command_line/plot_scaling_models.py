@@ -1,10 +1,9 @@
+"""
+Plot the scaling models from a scaled_experiments.json and scaled.pickle
+"""
 from __future__ import absolute_import, division, print_function
 import sys
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from dials.array_family import flex
 from dials.util import halraiser
@@ -13,7 +12,10 @@ from dials.algorithms.scaling.model import model as Model
 from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets
 from libtbx import phil
-
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 
 
 phil_scope = phil.parse('''
@@ -135,6 +137,7 @@ def plot_multi(params, experiment, reflection, j):
         outputfile=str(params.output.modcorplot)+'_'+str(j+1)+'.png')
 
 def plot_smooth_scales(params, experiments, reflections, outputfile=None):
+  """Plot the scale and decay terms of a physical scaling model."""
   plt.figure(figsize=(8.5, 5))
   legends = []
   ax1 = None
@@ -186,8 +189,8 @@ def plot_smooth_scales(params, experiments, reflections, outputfile=None):
     decay_rot_int = experiments.scaling_model.configdict['decay_rot_interval']
     int_rel_max = int(max(reflections['norm_time_values'])) + 1
     int_rel_min = (int(min(reflections['norm_time_values'])))
-    rel_values = flex.double(np.linspace(0, int_rel_max-int_rel_min, ((int_rel_max-int_rel_min)/0.1)+1,
-      endpoint=True))
+    rel_values = flex.double(np.linspace(0, int_rel_max-int_rel_min,
+      ((int_rel_max-int_rel_min)/0.1)+1, endpoint=True))
     rel_values[-1] = rel_values[-1] - 0.0001
     #rel_values = rel_values# - rel_values[0]
     decay_SF = experiments.scaling_model.components['decay']
@@ -228,6 +231,7 @@ def plot_smooth_scales(params, experiments, reflections, outputfile=None):
     print("Saving plot to smooth_scale_factors.png")
 
 def plot_absorption_surface(experiment, outputfile=None):
+  """Plot a spherical harmonic absorption surface."""
   params = experiment.scaling_model.components['absorption'].parameters
 
   from scitbx import math
@@ -237,7 +241,7 @@ def plot_absorption_surface(experiment, outputfile=None):
   STEPS = 50
   phi = np.linspace(0, 2 * np.pi, 2*STEPS)
   theta = np.linspace(0, np.pi, STEPS)
-  THETA, PHI = np.meshgrid(theta, phi)
+  THETA, _ = np.meshgrid(theta, phi)
   lmax = int(-1.0 + ((1.0 + len(params))**0.5))
   Intensity = np.ones(THETA.shape)
   counter = 0
@@ -316,11 +320,11 @@ def plot_2D_decay_correction(experiment, reflections, outputfile=None):
   int_rel_max = int(max(reflections['norm_time_values'])) + 1
   int_rel_min = (int(min(reflections['norm_time_values'])))
 
-  rel_values = flex.double(np.linspace(0, int_rel_max - int_rel_min, ((int_rel_max-int_rel_min)/0.1)+1,
-    endpoint=True))
+  rel_values = flex.double(np.linspace(0, int_rel_max - int_rel_min,
+    ((int_rel_max-int_rel_min)/0.1)+1, endpoint=True))
   rel_values[-1] = rel_values[-1] - 0.0001
   rel_values_2 = rel_values - rel_values[0]
-  x_axis_vals = rel_values_2
+  #x_axis_vals = rel_values_2
 
   '''create a grid of x and y points and use these to generate scale factors'''
   max_res = int(max(reflections['normalised_res_values'])) + 1
@@ -355,7 +359,7 @@ def plot_2D_decay_correction(experiment, reflections, outputfile=None):
   im = ax1.imshow(scalefactor_2D, cmap='viridis', origin='upper', aspect='auto')
   divider = make_axes_locatable(ax1)
   cax1 = divider.append_axes("right", size="5%", pad=0.05)
-  cbar = plt.colorbar(im, cax=cax1)
+  _ = plt.colorbar(im, cax=cax1)
   ax1.set_ylabel('d ('+r'$\AA$'+')')
   ax1.set_xlabel('Rotation angle ('+r'$^{\circ}$'+')')
   ax1.set_yticks(np.arange(0, (max_res * 10)+0.01, 20))
@@ -387,7 +391,7 @@ def plot_2D_decay_correction(experiment, reflections, outputfile=None):
     print("Saving plot to decay_correction.png")
 
 def plot_2D_modulation_correction(experiment, reflections, outputfile=None):
-
+  """Plot the detector modulation correction for an array model."""
   configdict = experiment.scaling_model.configdict
   nxdet = ((reflections['xyzobs.px.value'].parts()[0] - configdict['xmin']) /
     configdict['x_det_bin_width'])
@@ -424,7 +428,7 @@ def plot_2D_modulation_correction(experiment, reflections, outputfile=None):
   im = ax1.imshow(scalefactor_2D, cmap='viridis', origin='lower')
   divider = make_axes_locatable(ax1)
   cax1 = divider.append_axes("right", size="5%", pad=0.05)
-  cbar = plt.colorbar(im, cax=cax1)
+  _ = plt.colorbar(im, cax=cax1)
   ax1.set_yticks(np.arange(0, (max_x * 5)+0.01, 10))
   ax1.set_yticklabels(np.arange(0, max_x+0.01, 2))
   ax1.set_xticks(np.arange(0, (max_y * 5)+0.01, 10))
@@ -483,7 +487,7 @@ def plot_3D_absorption_correction(experiment, reflections, outputfile=None):
   im = ax1.imshow(parameters_2D, cmap='viridis', origin='lower')
   divider = make_axes_locatable(ax1)
   cax1 = divider.append_axes("right", size="5%", pad=0.05)
-  cbar = plt.colorbar(im, cax=cax1)
+  _ = plt.colorbar(im, cax=cax1)
   ax1.set_ylabel('Detector position (n x n grid)')
   ax1.set_xlabel('Normalised time value')
   ax1.set_title('Model parameters for absorption correction', fontsize=10)

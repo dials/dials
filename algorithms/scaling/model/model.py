@@ -42,7 +42,7 @@ class ScalingModelBase(object):
     """Indicate that no scaled data is associated with this model."""
     self._is_scaled = False
 
-  def configure_reflection_table(self, reflection_table, experiment, params):
+  def configure_reflection_table(self, reflection_table, _, __):
     """Perform calculations necessary to update the reflection table."""
     return reflection_table
 
@@ -235,7 +235,7 @@ class ArrayScalingModel(ScalingModelBase):
   def consecutive_refinement_order(self):
     return [['decay'], ['absorption'], ['modulation']]
 
-  def configure_reflection_table(self, reflection_table, experiment, params):
+  def configure_reflection_table(self, reflection_table, _, __):
     refl_table = reflection_table
     xyz = refl_table['xyzobs.px.value'].parts()
     refl_table['norm_time_values'] = (xyz[2] * self.configdict['time_norm_fac'])

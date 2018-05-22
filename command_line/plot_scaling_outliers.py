@@ -1,12 +1,18 @@
+"""
+Plot the outliers determined during scaling from a scaled.pickle
+"""
+
 from __future__ import absolute_import, division, print_function
 import sys
-import matplotlib
 from dials.util import halraiser
 from dials.util.options import OptionParser, flatten_reflections
 from libtbx import phil
+import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+
+
 
 phil_scope = phil.parse('''
   output {
@@ -34,11 +40,16 @@ def main(argv):
     print('The following parameters have been modified:\n')
     print(diff_phil)
 
-  reflections = flatten_reflections(params.input.reflections)
+  reflections = flatten_reflections(params.input.reflections)[0]
+  if len(set(reflections['id'])) == 1:
+    plot_outliers(params, reflections, "outliers.png")
+  else:
+    ids = set(reflections['id'])
+    for i, id_val in enumerate(ids):
+      table = reflections.select(reflections['id'] == id_val)
+      plot_outliers(params, table, filename="outliers_"+str(i+1)+".png")
 
-  plot_outliers(params, reflections[0])
-
-def plot_outliers(params, reflections):
+def plot_outliers(params, reflections, filename=None):
   '''plots positions of outliers'''
   reflections = reflections.select(reflections.get_flags(
     reflections.flags.outlier_in_scaling))
@@ -55,8 +66,12 @@ def plot_outliers(params, reflections):
   ax2.set_ylabel('number of outliers')
   ax2.set_xlabel('image number')
   ax2.legend()
-  print("Saving plot to %s" % params.output.plot_out)
-  plt.savefig(params.output.plot_out)
+  if filename:
+    print("Saving plot to %s" % filename)
+    plt.savefig(filename)
+  else:
+    print("Saving plot to %s" % params.output.plot_out)
+    plt.savefig(params.output.plot_out)
 
 if __name__ == "__main__":
   try:

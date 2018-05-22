@@ -5,15 +5,15 @@ These classes use a gaussian smoother (1D, 2D or 3D) to calculate the
 inverse scale factors and derivatives with respect to the component
 parameters.
 """
-import numpy as np
 from scitbx import sparse
 from dials.array_family import flex
+from dials.algorithms.scaling.model.components.scale_components import \
+  ScaleComponentBase
 from dials_scaling_ext import elementwise_square, row_multiply
 from dials_refinement_helpers_ext import GaussianSmoother as GS1D
 from dials_refinement_helpers_ext import GaussianSmoother2D as GS2D
 from dials_refinement_helpers_ext import GaussianSmoother3D as GS3D
-from dials.algorithms.scaling.model.components.scale_components import \
-  ScaleComponentBase
+
 
 # The following gaussian smoother classes make the implementation
 # consistent with that used in dials.refinement.
@@ -236,8 +236,8 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
     super(SmoothBScaleComponent1D, self).calculate_scales_and_derivatives(
       curvatures=curvatures)
     for block_id in range(len(self._n_refl)):#len of the list, not numb of refl
-      self._inverse_scales[block_id] = flex.double(np.exp(
-        self._inverse_scales[block_id] /(2.0 * (self._d_values[block_id]**2))))
+      self._inverse_scales[block_id] = flex.exp(
+        self._inverse_scales[block_id] /(2.0 * (self._d_values[block_id]**2)))
       self._derivatives[block_id] = row_multiply(self._derivatives[block_id],
         self._inverse_scales[block_id] / (2.0 * (self._d_values[block_id]**2)))
       if curvatures:
@@ -247,8 +247,8 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
   def calculate_scales(self):
     super(SmoothBScaleComponent1D, self).calculate_scales()
     for block_id in range(len(self._n_refl)):#len of the list, not numb of refl
-      self._inverse_scales[block_id] = flex.double(np.exp(
-        self._inverse_scales[block_id] /(2.0 * (self._d_values[block_id]**2))))
+      self._inverse_scales[block_id] = flex.exp(
+        self._inverse_scales[block_id] /(2.0 * (self._d_values[block_id]**2)))
 
 
 class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):

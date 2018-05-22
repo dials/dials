@@ -20,6 +20,8 @@ class MultiScalingRestraints(object):
       if restr:
         R.extend(restr[0])
         G.extend(restr[1])
+      else:
+        G.extend(flex.double(single_apm.n_active_params, 0.0))
     if R:
       return [R, G]
     return None

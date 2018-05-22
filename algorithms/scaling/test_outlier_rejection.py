@@ -3,8 +3,8 @@ Tests for outlier rejection.
 '''
 import pytest
 from libtbx.utils import Sorry
-from dials.array_family import flex
 from cctbx.sgtbx import space_group
+from dials.array_family import flex
 from dials.algorithms.scaling.outlier_rejection import \
   NormDevOutlierRejection, SimpleNormDevOutlierRejection, reject_outliers
 
@@ -18,7 +18,7 @@ def outlier_reflection_table():
   """Create a reflection table with outliers."""
   rt = generate_outlier_table()
   return rt
-  
+
 def generate_outlier_table():
   """Generate a reflection table for outlier testing."""
   rt = flex.reflection_table()

@@ -133,7 +133,8 @@ phil_scope = iotbx.phil.parse('''
     concurrent = True
       .type = bool
       .help = "Option to allow consecutive scaling if concurrent is
-               set to False"
+               set to False. The consecutive order is defined (and fixed)
+               for each scaling model."
     full_matrix_round = True
       .type = bool
       .help = "Option to turn off GN/LM refinement round used to determine

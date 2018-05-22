@@ -16,9 +16,9 @@ and Ih_values.
 """
 import logging
 from libtbx.containers import OrderedSet
-from dials.array_family import flex
 from cctbx import miller, crystal
 from scitbx import sparse
+from dials.array_family import flex
 from dials.algorithms.scaling.weighting import get_weighting_scheme
 logger = logging.getLogger('dials')
 

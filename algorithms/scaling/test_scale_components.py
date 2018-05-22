@@ -19,7 +19,7 @@ def test_ScaleComponentBase():
   class base_SF_filler(ScaleComponentBase):
     """Subclass to fill in the abstract method."""
     def update_reflection_data(self, reflection_table, selection=None,
-      block_selection=None):
+      block_selections=None):
       pass
     def calculate_scales_and_derivatives(self, curvatures=False):
       pass

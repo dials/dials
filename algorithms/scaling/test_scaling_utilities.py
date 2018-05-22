@@ -4,9 +4,9 @@ Tests for scaling utilities module.
 from math import sqrt, pi
 import pytest
 from mock import Mock
-from dials.array_family import flex
 from libtbx.test_utils import approx_equal
 from cctbx.sgtbx import space_group
+from dials.array_family import flex
 from dials.algorithms.scaling.scaling_utilities import \
   calc_crystal_frame_vectors, calc_theta_phi, create_sph_harm_table,\
   sph_harm_table, align_rotation_axis_along_z, parse_multiple_datasets,\

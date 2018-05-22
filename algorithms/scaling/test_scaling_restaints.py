@@ -133,9 +133,11 @@ def test_MultiScalingRestraints(mock_multi_apm, mock_restrained_component,
   abs_restraints = mock_restrained_component.calculate_restraints()
   assert list(restraints[0]) == (list(abs_restraints[0]) +
     list(abs_restraints[0]))
+
   assert list(restraints[1]) == (list(abs_restraints[1]) +
     [0.0] * mock_unrestrained_component.n_params + list(abs_restraints[1]) +
     [0.0] * mock_unrestrained_component.n_params)
+
 
   # Test the call to calculate jacobian restraints. Again, the expected return
   # is the individual dataset vectors joined together.

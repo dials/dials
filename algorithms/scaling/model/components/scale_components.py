@@ -6,10 +6,8 @@ the inverse scale factors, as well as methods to calculate and
 set the inverse scale factors and derivatives.
 """
 import abc
-import numpy as np
 from dials.array_family import flex
 from scitbx import sparse
-
 
 
 class ScaleComponentBase(object):
@@ -205,9 +203,9 @@ class SingleBScaleFactor(ScaleComponentBase):
     self._derivatives = []
     self._curvatures = []
     for block_id in range(len(self._n_refl)):#len of the list, not num of refl
-      self._inverse_scales.append(flex.double(np.exp(flex.double(
+      self._inverse_scales.append(flex.exp(flex.double(
         [self._parameters[0]] * self._n_refl[block_id])
-        / (2.0 * (self._d_values[block_id]**2)))))
+        / (2.0 * (self._d_values[block_id]**2))))
       self._derivatives.append(sparse.matrix(self._n_refl[block_id], 1))
       for i in range(self._n_refl[block_id]):
         self._derivatives[block_id][i, 0] = (self._inverse_scales[block_id][i]
