@@ -9,6 +9,7 @@ import os
 from libtbx.utils import Keep
 from cctbx import miller
 from cctbx import sgtbx
+from cctbx import uctbx
 import iotbx.phil
 from iotbx.reflection_file_reader import any_reflection_file
 
@@ -41,6 +42,12 @@ lattice_group = None
 verbosity = 1
   .type = int(value_min=0)
   .help = "The verbosity level"
+
+relative_length_tolerance = 0.05
+  .type = float(value_min=0)
+
+absolute_angle_tolerance = 2
+  .type = float(value_min=0)
 
 output {
   log = dials.symmetry.log
@@ -99,6 +106,14 @@ def run(args):
       reflections = []
       for i in range(len(experiments)):
         reflections.append(reflections_input.select(reflections_input['id'] == i))
+
+    if len(experiments) > len(reflections):
+      flattened_reflections = []
+      for refl in reflections:
+        for i in range(0, flex.max(refl['id'])+1):
+          sel = refl['id'] == i
+          flattened_reflections.append(refl.select(sel))
+      reflections = flattened_reflections
 
     assert len(experiments) == len(reflections)
 
@@ -196,9 +211,26 @@ def run(args):
     datasets_input.append(intensities)
 
   datasets = datasets_input
-  assert len(datasets) == 1
+  uc_params = [flex.double() for i in range(6)]
+  for d in datasets:
+    for i, p in enumerate(d.unit_cell().parameters()):
+      uc_params[i].append(p)
+  median_uc = uctbx.unit_cell(parameters=[flex.median(p) for p in uc_params])
+  for d in datasets:
+    assert d.unit_cell().is_similar_to(
+      median_uc, params.relative_length_tolerance,
+      params.absolute_angle_tolerance), (
+        str(d.unit_cell()), str(median_uc))
+  intensities = datasets[0]
+  for d in datasets[1:10]:
+    intensities = intensities.concatenate(d, assert_is_similar_symmetry=False)
+  intensities = intensities.customized_copy(
+    crystal_symmetry=crystal.symmetry(
+      unit_cell=median_uc, space_group=intensities.space_group()),
+    info=datasets[0].info())
+  intensities.set_observation_type_xray_intensity()
   result = determine_space_group(
-    datasets[0], normalisation=params.normalisation,
+    intensities, normalisation=params.normalisation,
     d_min=params.d_min,
     min_i_mean_over_sigma_mean=params.min_i_mean_over_sigma_mean)
 
@@ -211,18 +243,21 @@ def run(args):
     from dxtbx.serialize import dump
     from rstbx.symmetry.constraints import parameter_reduction
     reindexed_experiments = copy.deepcopy(experiments)
-    reindexed_reflections = copy.deepcopy(reflections[0])
+    reindexed_reflections = flex.reflection_table()
     cb_op_inp_best = result.best_solution.subgroup['cb_op_inp_best'] * result.cb_op_inp_min
     best_subsym = result.best_solution.subgroup['best_subsym']
-    for expt in reindexed_experiments:
+    for i, expt in enumerate(reindexed_experiments):
       expt.crystal = expt.crystal.change_basis(cb_op_inp_best)
       expt.crystal.set_space_group(best_subsym.space_group().build_derived_acentric_group())
       S = parameter_reduction.symmetrize_reduce_enlarge(expt.crystal.get_space_group())
       S.set_orientation(expt.crystal.get_B())
       S.symmetrize()
       expt.crystal.set_B(S.orientation.reciprocal_matrix())
-      reindexed_reflections['miller_index'] = cb_op_inp_best.apply(
-        reindexed_reflections['miller_index'])
+      reindexed_refl = copy.deepcopy(reflections[i])
+      reindexed_refl['miller_index'] = cb_op_inp_best.apply(
+        reindexed_refl['miller_index'])
+      reindexed_refl['id'] = flex.int(len(reindexed_refl), i)
+      reindexed_reflections.extend(reindexed_refl)
     logger.info('Saving reindexed experiments to %s' % params.output.experiments)
     dump.experiment_list(reindexed_experiments, params.output.experiments)
     logger.info('Saving reindexed reflections to %s' % params.output.reflections)
