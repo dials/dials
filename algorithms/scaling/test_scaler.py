@@ -261,7 +261,7 @@ def test_SingleScaler_splitintoblocks(test_reflections_no_exclude,
   test_experiments, test_params):
   test_params.model = 'physical'
   exp = create_scaling_model(test_params, test_experiments, test_reflections_no_exclude)
-  test_params.scaling_options.n_proc = 2
+  test_params.scaling_options.nproc = 2
   singlescaler = SingleScalerBase(test_params, exp[0], test_reflections_no_exclude[0],
     scaled_id=2)
   assert singlescaler.Ih_table.blocked_data_list
@@ -609,7 +609,7 @@ def test_new_Multiscaler(test_2_reflections, test_2_experiments, test_params):
   """Test the setup of the Ih table and components for a multiscaler"""
   # Use the create_scaling_model and create_scaler helpers functions for ease.
 
-  test_params.scaling_options.n_proc = 2
+  test_params.scaling_options.nproc = 2
   test_params.model = 'physical'
   experiments = create_scaling_model(test_params, test_2_experiments,
     test_2_reflections)
@@ -705,7 +705,7 @@ def test_multiscaler_scaling(test_2_reflections, test_2_experiments, test_params
   still complete."""
   # Use the create_scaling_model and create_scaler helpers functions for ease.
   test_2_reflections[1]['miller_index'][4] = flex.miller_index([(5,7,9)])[0]
-  test_params.scaling_options.n_proc = 7
+  test_params.scaling_options.nproc = 7
   test_params.scaling_refinery.engine = 'LevMar'
   # should split into 5 unique groups, but each dataset won't necessarily have
   # data in each block - the algorithm should still work!
@@ -720,7 +720,7 @@ def test_new_TargetScaler(test_2_reflections, test_2_experiments, test_params):
   """Test the setup of the Ih table and components for a multiscaler"""
   # Use the create_scaling_model and create_scaler helpers functions for ease.
 
-  test_params.scaling_options.n_proc = 2
+  test_params.scaling_options.nproc = 2
   test_params.model = 'physical'
   experiments = create_scaling_model(test_params, test_2_experiments,
     test_2_reflections)

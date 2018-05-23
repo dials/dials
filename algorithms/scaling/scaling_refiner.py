@@ -196,12 +196,12 @@ class ScalingSimpleLBFGS(SimpleLBFGS, ScalingRefinery):
     """overwrite method to avoid calls to 'blocks' methods of target"""
     self.prepare_for_step()
 
-    if self._scaler.params.scaling_options.n_proc > 1:
+    if self._scaler.params.scaling_options.nproc > 1:
       blocks = self._scaler.Ih_table.blocked_data_list
       task_results = easy_mp.parallel_map(
         func=self._target.compute_functional_gradients,
         iterable=blocks,
-        processes=self._scaler.params.scaling_options.n_proc,
+        processes=self._scaler.params.scaling_options.nproc,
         method="multiprocessing",
         preserve_exception_message=True
         )
@@ -290,13 +290,13 @@ class ScalingLstbxBuildUpMixin(ScalingRefinery):
 
     # observation terms
     if objective_only:
-      #if self._scaler.params.scaling_options.n_proc > 1: #no mp option yet
+      #if self._scaler.params.scaling_options.nproc > 1: #no mp option yet
       blocks = self._scaler.Ih_table.blocked_data_list
       for block in blocks:
         residuals, weights = self._target.compute_residuals(block)
         self.add_residuals(residuals, weights)
     else:
-      #if self._scaler.params.scaling_options.n_proc: #no mp option yet
+      #if self._scaler.params.scaling_options.nproc: #no mp option yet
 
       self._jacobian = None
 
@@ -307,7 +307,7 @@ class ScalingLstbxBuildUpMixin(ScalingRefinery):
       '''task_results = easy_mp.pool_map(
         fixed_func=self._target.compute_residuals_and_gradients,
         iterable=blocks,
-        processes=self._scaler.params.scaling_options.n_proc
+        processes=self._scaler.params.scaling_options.nproc
         )
       for result in task_results:
         self.add_equations(result[0], result[1], result[2])'''

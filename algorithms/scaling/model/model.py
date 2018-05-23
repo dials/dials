@@ -2,7 +2,10 @@
 Definitions of scaling models - collections of scale components with appropriate
 methods to define how these are composed into one model.
 """
+from __future__ import print_function
+
 import abc
+import sys
 import logging
 from collections import OrderedDict
 import numpy as np
@@ -95,6 +98,21 @@ class ScalingModelBase(object):
     self._error_model = error_model
     self._configdict.update({'error_model_parameters' :
       error_model.refined_parameters})
+
+  def show(self):
+    """Print a representation of the scaling model."""
+    msg = ["Scaling model:"]
+    msg.append("  type : "+str(self.id_))
+    for name, component in self.components.iteritems():
+      msg.append("  "+str(name).capitalize()+" component:")
+      msg.append("    parameter (sigma)")
+      for p, e in zip(component.parameters, component.parameter_esds):
+        if p < 0.0:
+          msg.append("    "+"%.4f   (%.4f)" % (p, e))
+        else:
+          msg.append("     "+"%.4f   (%.4f)" % (p, e))
+    msg.append("")
+    return "\n".join(msg)
 
 class PhysicalScalingModel(ScalingModelBase):
   """A scaling model for a physical parameterisation."""

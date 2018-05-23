@@ -270,7 +270,7 @@ def test_target_jacobian_calc(jacobian_gradient_input):
 def test_target_jacobian_calc_splitblocks(jacobian_gradient_input):
   """Test for the target function calculation of the jacobian matrix."""
   test_params, exp, test_refl = jacobian_gradient_input
-  test_params.scaling_options.n_proc = 2
+  test_params.scaling_options.nproc = 2
   test_params.parameterisation.decay_term = False
   experiments = create_scaling_model(test_params, exp, test_refl)
   assert experiments[0].scaling_model.id_ == 'physical'

@@ -218,6 +218,8 @@ def show_experiments(experiments, show_panel_distance=False,
     #text.append('')
     if expt.profile is not None:
       text.append(str(expt.profile))
+    if expt.scaling_model is not None:
+      text.append(str(expt.scaling_model.show()))
   return '\n'.join(text)
 
 

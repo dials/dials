@@ -419,7 +419,7 @@ class SingleScalerBase(ScalerBase):
     self.scaling_selection = selection
     if not for_multi:
       self._Ih_table = IhTable([(self.reflection_table, selection)],
-        self.space_group, n_blocks=self.params.scaling_options.n_proc,
+        self.space_group, n_blocks=self.params.scaling_options.nproc,
         weighting_scheme=self.params.weighting.weighting_scheme)
       block_selections = self.Ih_table.blocked_selection_list[0]
       '''if self.params.scaling_options.use_free_set and split_free_set:
@@ -577,7 +577,7 @@ class MultiScaler(MultiScalerBase):
     logger.info('Determining symmetry equivalent reflections across datasets.\n')
     self._Ih_table = IhTable([(x.reflection_table, x.scaling_selection)
       for x in self.single_scalers], self._space_group,
-      n_blocks=self.params.scaling_options.n_proc)
+      n_blocks=self.params.scaling_options.nproc)
     '''if self.params.scaling_options.use_free_set:
       self._Ih_table.split_into_free_work(
         self.params.scaling_options.free_set_percentage)'''
@@ -625,7 +625,7 @@ class TargetScaler(MultiScalerBase):
       n_blocks=1)#Keep in one table for matching below
     self._Ih_table = IhTable([(x.reflection_table, x.scaling_selection)
       for x in self.unscaled_scalers], self._space_group,
-      n_blocks=params.scaling_options.n_proc)
+      n_blocks=params.scaling_options.nproc)
     self._initial_keys = self.unscaled_scalers[0].initial_keys #needed for
     # scaling against calculated Is
     self.set_Ih_values_to_target()
