@@ -135,6 +135,8 @@ def calculate_single_merging_stats(reflection_table, experiment):
     miller_set, data=r_t['intensity']/r_t['inverse_scale_factor'])
   i_obs.set_observation_type_xray_intensity()
   i_obs.set_sigmas((r_t['variance']**0.5)/r_t['inverse_scale_factor'])
+  i_obs.set_info(
+    miller.array_info(source='DIALS', source_type='reflection_tables'))
   #dataset_id = list(set(reflection_table['id']))[0]
   result = iotbx.merging_statistics.dataset_statistics(
     i_obs=i_obs, n_bins=20, anomalous=False, sigma_filtering=None,
