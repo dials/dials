@@ -128,12 +128,11 @@ def calculate_single_merging_stats(reflection_table, experiment):
   bad_refl_sel = reflection_table.get_flags(
     reflection_table.flags.bad_for_scaling, all=False)
   r_t = reflection_table.select(~bad_refl_sel)
-  u_c = experiment.crystal.get_unit_cell().parameters()
-  s_g = experiment.crystal.get_space_group()
-  miller_set = miller.set(crystal_symmetry=crystal.symmetry(unit_cell=u_c,
-    space_group=s_g), indices=r_t['miller_index'], anomalous_flag=False)
-  i_obs = miller.array(miller_set, data=r_t['intensity']/
-    r_t['inverse_scale_factor'])
+  miller_set = miller.set(
+    crystal_symmetry=experiment.crystal.get_crystal_symmetry(),
+    indices=r_t['miller_index'], anomalous_flag=False)
+  i_obs = miller.array(
+    miller_set, data=r_t['intensity']/r_t['inverse_scale_factor'])
   i_obs.set_observation_type_xray_intensity()
   i_obs.set_sigmas((r_t['variance']**0.5)/r_t['inverse_scale_factor'])
   #dataset_id = list(set(reflection_table['id']))[0]
