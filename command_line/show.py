@@ -311,6 +311,7 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
     ('miller_index', '%i, %i, %i'),
     ('d','%.2f'),
     ('qe','%.3f'),
+    ('dqe','%.3f'),
     ('id','%i'),
     ('imageset_id','%i'),
     ('panel','%i'),
