@@ -356,6 +356,7 @@ class IhTable(object):
 
     reflection_table = reflection_table.select(self._permutation_selection)
     nonzero_weights = nonzero_weights.select(self._permutation_selection)
+    n_blocks = min(n_unique_groups, n_blocks)
     group_boundaries = [int(i*n_unique_groups/n_blocks) for i in range(n_blocks)]
     group_boundaries.append(n_unique_groups)
     total_refl_group_idx = 0 # use to count iteration over all groups

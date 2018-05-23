@@ -192,6 +192,7 @@ def generated_param():
   """Generate a param phil scope."""
   phil_scope = phil.parse('''
       include scope dials.algorithms.scaling.scaling_options.phil_scope
+      include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
   ''', process_includes=True)
   optionparser = OptionParser(phil=phil_scope, check_format=False)
   parameters, _ = optionparser.parse_args(args=[], quick_parse=True,
@@ -698,7 +699,22 @@ def test_new_Multiscaler(test_2_reflections, test_2_experiments, test_params):
   assert block_list[0].derivatives == expected_derivatives_for_block_1
   assert block_list[1].derivatives == expected_derivatives_for_block_2
 
-
+def test_multiscaler_scaling(test_2_reflections, test_2_experiments, test_params):
+  """Test the setup of the Ih table and components for a multiscaler.
+  This should create some blocks with zero elements, but the algorithm should
+  still complete."""
+  # Use the create_scaling_model and create_scaler helpers functions for ease.
+  test_2_reflections[1]['miller_index'][4] = flex.miller_index([(5,7,9)])[0]
+  test_params.scaling_options.n_proc = 7
+  test_params.scaling_refinery.engine = 'LevMar'
+  # should split into 5 unique groups, but each dataset won't necessarily have
+  # data in each block - the algorithm should still work!
+  test_params.scaling_options.outlier_rejection = '0'
+  test_params.model = 'KB'
+  experiments = create_scaling_model(test_params, test_2_experiments,
+    test_2_reflections)
+  multiscaler = create_scaler(test_params, experiments, test_2_reflections)
+  multiscaler.perform_scaling()
 
 def test_new_TargetScaler(test_2_reflections, test_2_experiments, test_params):
   """Test the setup of the Ih table and components for a multiscaler"""
@@ -711,8 +727,6 @@ def test_new_TargetScaler(test_2_reflections, test_2_experiments, test_params):
   experiments[0].scaling_model.set_scaling_model_as_scaled()
   target = create_scaler(test_params, experiments, test_2_reflections)
   assert isinstance(target, TargetScaler)
-
-  #assert 0
 
 
 def test_sf_variance_calculation(test_experiments, test_params):
