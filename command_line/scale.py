@@ -248,7 +248,7 @@ class Script(object):
         scaler.select_reflections_for_scaling()
         scaler.perform_scaling()
 
-        if scaler.params.scaling_options.full_matrix_round and (
+        if scaler.params.scaling_options.full_matrix and (
           scaler.params.scaling_refinery.engine == 'SimpleLBFGS'):
           scaler.perform_scaling(
             engine=scaler.params.scaling_refinery.full_matrix_engine,
@@ -278,7 +278,7 @@ class Script(object):
       scaler.perform_scaling()'''
 
     # Now do one round of full matrix minimisation to determine errors.
-    if scaler.params.scaling_options.full_matrix_round and (
+    if scaler.params.scaling_options.full_matrix and (
       scaler.params.scaling_refinery.engine == 'SimpleLBFGS'):
       scaler.perform_scaling(
         engine=scaler.params.scaling_refinery.full_matrix_engine,

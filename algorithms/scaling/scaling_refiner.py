@@ -32,7 +32,11 @@ scaling_refinery
     .help = "Maximum number of iterations in refinement before termination."
             "None implies the engine supplies its own default."
     .type = int(value_min=1)
-
+  rmsd_tolerance = 0.0001
+    .type = float(value_min=1e-6)
+    .help = "Tolerance at which to stop scaling refinement. This is a relative
+            value, the convergence criterion is (rmsd[i] - rmsd[i-1])/rmsd[i] <
+            rmsd_tolerance."
   full_matrix_engine = GaussNewton *LevMar
     .help = "The minimisation engine to use for a full matrix round of
              minimisation after the main scaling, in order to determine
@@ -165,6 +169,23 @@ class ScalingRefinery(object):
   'mixin class to add extra return method'
   def __init__(self, scaler):
     self._scaler = scaler
+    self._rmsd_tolerance = scaler.params.scaling_refinery.rmsd_tolerance
+
+  def test_rmsd_convergence(self):
+    """Test for convergence of RMSDs"""
+
+    # http://en.wikipedia.org/wiki/
+    # Non-linear_least_squares#Convergence_criteria
+    try:
+      r1 = self.history["rmsd"][-1]
+      r2 = self.history["rmsd"][-2]
+    except IndexError:
+      return False
+
+    tests = [abs((e[1] - e[0])/e[1]) < self._rmsd_tolerance if e[1] > 0
+      else True for e in zip(r1, r2)]
+
+    return all(tests)
 
   def return_scaler(self):
     '''return scaler method'''
@@ -186,12 +207,12 @@ class ScalingRefinery(object):
     return self._scaler
 
 
-class ScalingSimpleLBFGS(SimpleLBFGS, ScalingRefinery):
+class ScalingSimpleLBFGS(ScalingRefinery, SimpleLBFGS):
   """Adapt Refinery for L-BFGS minimiser"""
   def __init__(self, *args, **kwargs):
-    super(ScalingSimpleLBFGS, self).__init__(*args, **kwargs)
+    SimpleLBFGS.__init__(self, *args, **kwargs)
     ScalingRefinery.__init__(self, self._target.scaler)
-
+    
   def compute_functional_gradients_and_curvatures(self):
     """overwrite method to avoid calls to 'blocks' methods of target"""
     self.prepare_for_step()
@@ -230,10 +251,10 @@ class ScalingSimpleLBFGS(SimpleLBFGS, ScalingRefinery):
       g += restraints[1]
     return f, g, None
 
-class ScalingLBFGScurvs(LBFGScurvs, ScalingRefinery):
+class ScalingLBFGScurvs(ScalingRefinery, LBFGScurvs):
   """Adapt Refinery for L-BFGS minimiser"""
   def __init__(self, *args, **kwargs):
-    super(ScalingLBFGScurvs, self).__init__(*args, **kwargs)
+    LBFGScurvs.__init__(self, *args, **kwargs)
     ScalingRefinery.__init__(self, self._target.scaler)
     self._target.curvatures = True
 

@@ -68,7 +68,7 @@ def test_scale_array(dials_regression, tmpdir):
   data_dir = os.path.join(dials_regression, "xia2-28",)
   pickle_path = os.path.join(data_dir, "20_integrated.pickle")
   sweep_path = os.path.join(data_dir, "20_integrated_experiments.json")
-  extra_args = ["model=array", "absorption_term=0", "full_matrix_round=0"]
+  extra_args = ["model=array", "absorption_term=0", "full_matrix=0"]
 
   with tmpdir.as_cwd():
     _ = run_one_scaling([pickle_path], [sweep_path], extra_args)

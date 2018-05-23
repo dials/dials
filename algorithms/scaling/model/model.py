@@ -5,7 +5,6 @@ methods to define how these are composed into one model.
 from __future__ import print_function
 
 import abc
-import sys
 import logging
 from collections import OrderedDict
 import numpy as np
