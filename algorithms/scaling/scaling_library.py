@@ -21,6 +21,7 @@ from dials.algorithms.scaling.scaler_factory import SingleScalerFactory,\
   TargetScalerFactory
 from dials.algorithms.scaling.model.scaling_model_factory import \
   KBSMFactory
+from dials.algorithms.scaling.Ih_table import IhTable
 
 def scale_against_target(reflection_table, experiment, target_reflection_table,
   target_experiment, params=None, model='KB'):
@@ -105,6 +106,29 @@ def create_scaling_model(params, experiments, reflections):
           factory = entry_point.load().factory()
           exp.scaling_model = factory.create(params, exp, refl)
   return experiments
+
+def create_Ih_table(experiments, reflections, selections=None, n_blocks=1,
+  weighting_scheme=None):
+  """Create an Ih table from a list of experiments and reflections. Optionally,
+  a selection list can also be given, to select data from each reflection table."""
+  if selections:
+    assert len(selections) == len(reflections), """Must have an equal number of
+    reflection tables and selections in the input lists."""
+  space_group_0 = experiments[0].crystal.get_space_group()
+  for experiment in experiments:
+    assert experiment.crystal.get_space_group() == space_group_0, """The space
+    groups of all experiments must be equal."""
+  refl_and_sel_list = []
+  for i, reflection in enumerate(reflections):
+    if not 'inverse_scale_factor' in reflection:
+      reflections['inverse_scale_factor'] = flex.double(reflection.size(), 1.0)
+    if selections:
+      refl_and_sel_list.append((reflection, selections[i]))
+    else:
+      refl_and_sel_list.append((reflection, None))
+  Ih_table = IhTable(refl_and_sel_list, space_group_0, n_blocks, weighting_scheme)
+  return Ih_table
+
 
 def calculate_merging_statistics(reflection_table, experiments, use_internal_variance):
   """Calculate merging statistics for scaled datasets. Datasets are selected

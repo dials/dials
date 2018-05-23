@@ -6,7 +6,9 @@ and have implementations of residual/gradient calculations for
 scaling.
 """
 from dials.array_family import flex
+from dials.algorithms.scaling.scaling_restraints import MultiScalingRestraints
 from dials_scaling_ext import row_multiply
+
 
 class ScalingTarget(object):
   """
@@ -18,38 +20,35 @@ class ScalingTarget(object):
   rmsd_names = ["RMSD_I"]
   rmsd_units = ["a.u"]
 
-  def __init__(self, scaler, apm, curvatures=False):
-    self.scaler = scaler
-    self.apm = apm
+  def __init__(self, curvatures=False, free_set=False):
+    self._restr = None
     self.curvatures = curvatures
-    '''if self.scaler.params.scaling_options.use_free_set:
+    if free_set:
       self.rmsd_names = ["RMSD_I", "Free RMSD_I"]
-      self.rmsd_units = ["a.u", "a.u"]'''
+      self.rmsd_units = ["a.u", "a.u"]
     # Quantities to cache each step
     self._rmsds = None
+    self.restraints_calculator = MultiScalingRestraints()
+    self._no_param_restraints = False # If one tests for restraints and None is
+    # returned, then this is set to True and restraints calculations are not
+    # attempted for the remainder of the mninimisation with this target function.
 
-  def predict(self):
-    """Calculate the current values of quantities for the minimisation. Defer
-    to the scaler to allow custom behaviour for single/multiple datasets."""
-    self.scaler.update_for_minimisation(self.apm, self.curvatures)
-
-  def get_num_matches(self):
-    """Return the number of reflections in current minimisation cycle."""
-    return self.scaler.Ih_table.size
-
-  def rmsds(self):
+  def rmsds(self, Ih_table, apm):
     """Calculate RMSDs for the matches."""
     R = flex.double([])
     n = 0
-    for block in self.scaler.Ih_table.blocked_data_list:
+    for block in Ih_table.blocked_data_list:
       R.extend((self.calculate_residuals(block)**2) * block.weights)
       n += block.size
-    restr = self.scaler.calculate_restraints(self.apm)
-    if restr:
-      R.extend(restr[0])
+    if not self._no_param_restraints:
+      restraints = self.restraints_calculator.calculate_restraints(apm)
+      if restraints:
+        R.extend(restraints[0])
+      else:
+        self._no_param_restraints = True
     self._rmsds = [(flex.sum((R))/n)**0.5]
-    '''if self.scaler.params.scaling_options.use_free_set:
-      self.calculate_free_rmsds()'''
+    if Ih_table.free_Ih_table:
+      self._rmsds.append(self.calculate_free_rmsds(Ih_table.free_Ih_table))
     return self._rmsds
 
   @staticmethod
@@ -57,19 +56,21 @@ class ScalingTarget(object):
     """Method required by refinement engine."""
     return False #implement a method here?
 
-  def calculate_residuals(self, Ih_table):
+  @staticmethod
+  def calculate_residuals(Ih_table):
     """Return the residual vector."""
     R = Ih_table.intensities - (Ih_table.inverse_scale_factors
       * Ih_table.Ih_values)
     return R
 
-  def calculate_free_rmsds(self):
+  @staticmethod
+  def calculate_free_rmsds(Ih_table):
     """Calculate an RMSD from the free set."""
-    Ih_tab = self.scaler.Ih_table.free_Ih_table
-    R = Ih_tab.intensities - (Ih_tab.inverse_scale_factors * Ih_tab.Ih_values)
-    self._rmsds.append((flex.sum((R**2) * Ih_tab.weights)/Ih_tab.size)**0.5)
+    R = Ih_table.intensities - (Ih_table.inverse_scale_factors * Ih_table.Ih_values)
+    return (flex.sum((R**2) * Ih_table.weights)/Ih_table.size)**0.5
 
-  def calculate_gradients(self, Ih_table):
+  @staticmethod
+  def calculate_gradients(Ih_table):
     """Return a gradient vector on length len(self.apm.x)."""
     gsq = ((Ih_table.inverse_scale_factors)**2) * Ih_table.weights
     sumgsq = gsq * Ih_table.h_index_matrix
@@ -87,7 +88,8 @@ class ScalingTarget(object):
     gradient = term_1 + term_2
     return gradient
 
-  def calculate_jacobian(self, Ih_table):
+  @staticmethod
+  def calculate_jacobian(Ih_table):
     """Calculate the jacobian matrix, size Ih_table.size by len(self.apm.x)."""
     invsumgsq = 1.0 / ((Ih_table.weights * ((Ih_table.inverse_scale_factors)**2))
       * Ih_table.h_index_matrix)
@@ -126,14 +128,17 @@ class ScalingTarget(object):
     functional = flex.sum(resids**2 * weights)
     return functional, gradients, curvatures
 
-  def compute_restraints_functional_gradients_and_curvatures(self):
+  def compute_restraints_functional_gradients_and_curvatures(self, apm):
     """Return the restrains for functional, gradients and curvatures."""
     restraints = None
-    restr = self.scaler.calculate_restraints(self.apm)
-    if restr:
-      resid_restr = flex.sum(restr[0]) #add to total functional here
-      grad_restr = restr[1]
-      restraints = [resid_restr, grad_restr, None]
+    if not self._no_param_restraints:
+      restr = self.restraints_calculator.calculate_restraints(apm)
+      if restr:
+        resid_restr = flex.sum(restr[0]) #add to total functional here
+        grad_restr = restr[1]
+        restraints = [resid_restr, grad_restr, None]
+      else:
+        self._no_param_restraints = True
     return restraints #list of restraints to add to resid, grads and curvs
 
   # The following methods are for adaptlstbx (GN/ LM algorithms)
@@ -150,33 +155,29 @@ class ScalingTarget(object):
     weights = Ih_table.weights
     return residuals, jacobian, weights
 
-  def compute_restraints_residuals_and_gradients(self):
+  def compute_restraints_residuals_and_gradients(self, apm):
     """Return the restraints for the residuals and jacobian."""
-    restraints = None
-    if 'absorption' in self.apm.components_list:
-      restraints = self.scaler.compute_restraints_residuals_jacobian(self.apm)
-    return restraints
+    if not self._no_param_restraints:
+      restr = self.restraints_calculator.calculate_jacobian_restraints(apm)
+      if not restr:
+        self._no_param_restraints = True
+      return restr
+    return None
+
 
 class ScalingTargetFixedIH(ScalingTarget):
   """An implementation of scaling target for when the scaling is to be
   done against a fixed reference Ih set (i.e scaler is a TargetScaler)
   """
 
-  def calculate_free_rmsds(self):
-    """Calculate an RMSD from the free set."""
-    RMSD = flex.double([])
-    for unscaled_scaler in self.scaler.unscaled_scalers:
-      Ih_tab = unscaled_scaler.Ih_table.free_Ih_table
-      R = Ih_tab.intensities - (Ih_tab.inverse_scale_factors * Ih_tab.Ih_values)
-      RMSD.extend((R**2) * Ih_tab.weights)
-    self._rmsds.append((flex.sum(RMSD)/RMSD.size())**0.5)
-
-  def calculate_gradients(self, Ih_table):
+  @staticmethod
+  def calculate_gradients(Ih_table):
     rhl = Ih_table.intensities - (Ih_table.Ih_values * Ih_table.inverse_scale_factors)
     G = -2.0 * rhl * Ih_table.weights * Ih_table.Ih_values * Ih_table.derivatives
     return G
 
-  def calculate_jacobian(self, Ih_table):
+  @staticmethod
+  def calculate_jacobian(Ih_table):
     """Calculate the jacobian matrix, size Ih_table.size by len(self.apm.x)."""
     jacobian = row_multiply(Ih_table.derivatives, -1.0 * Ih_table.Ih_values)
     return jacobian

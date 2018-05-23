@@ -87,23 +87,23 @@ scaling_refinery
 '''
 scaling_refinery_phil_scope = parse(scaling_refinery_phil_str)
 
-def scaling_refinery(engine, target, prediction_parameterisation,
+def scaling_refinery(engine, scaler, target, prediction_parameterisation,
     max_iterations):
   """Return the correct engine based on phil parameters."""
   if engine == 'SimpleLBFGS':
-    return ScalingSimpleLBFGS(target=target,
+    return ScalingSimpleLBFGS(scaler, target=target,
       prediction_parameterisation=prediction_parameterisation,
       max_iterations=max_iterations)
   elif engine == 'LBFGScurvs':
-    return ScalingLBFGScurvs(target=target,
+    return ScalingLBFGScurvs(scaler, target=target,
       prediction_parameterisation=prediction_parameterisation,
       max_iterations=max_iterations)
   elif engine == 'GaussNewton':
-    return ScalingGaussNewtonIterations(target=target,
+    return ScalingGaussNewtonIterations(scaler, target=target,
       prediction_parameterisation=prediction_parameterisation,
       max_iterations=max_iterations)
   elif engine == 'LevMar':
-    return ScalingLevenbergMarquardtIterations(target=target,
+    return ScalingLevenbergMarquardtIterations(scaler, target=target,
       prediction_parameterisation=prediction_parameterisation,
       max_iterations=max_iterations)
 
@@ -167,9 +167,11 @@ class ErrorModelRefinery(object):
 
 class ScalingRefinery(object):
   'mixin class to add extra return method'
-  def __init__(self, scaler):
+  def __init__(self, scaler, target, prediction_parameterisation, *args, **kwargs):
+    self._target = target
     self._scaler = scaler
     self._rmsd_tolerance = scaler.params.scaling_refinery.rmsd_tolerance
+    self._parameters = prediction_parameterisation
 
   def test_rmsd_convergence(self):
     """Test for convergence of RMSDs"""
@@ -187,14 +189,43 @@ class ScalingRefinery(object):
 
     return all(tests)
 
+  def prepare_for_step(self):
+    """Update the parameterisation and prepare the target function. Overwrites
+    the prepare_for_step method from refinery to direct the updating away from
+    the target function to the update_for_minimisation method."""
+
+    x = self.x
+
+    # set current parameter values
+    self._parameters.set_param_vals(x)
+
+    # do reflection prediction
+    self._scaler.update_for_minimisation(self._parameters)
+
+    return
+
+  def update_journal(self):
+    """Append latest step information to the journal attributes"""
+
+    # add step quantities to journal
+    self.history.add_row()
+    self.history.set_last_cell("num_reflections", self._scaler.Ih_table.size)
+    self.history.set_last_cell("rmsd", self._target.rmsds(
+      self._scaler.Ih_table, self._parameters))
+    self.history.set_last_cell("parameter_vector", self._parameters.get_param_vals())
+    self.history.set_last_cell("objective", self._f)
+    if "gradient" in self.history:
+      self.history.set_last_cell("gradient", self._g)
+    return
+
   def return_scaler(self):
     '''return scaler method'''
     from dials.algorithms.scaling.scaler import MultiScalerBase
     print_step_table(self)
 
     if self._scaler.id_ == 'single':
-      if self._parameters.var_cov_matrix:
-        self._scaler.update_var_cov(self._parameters)
+      if self._parameters.apm_list[0].var_cov_matrix:
+        self._scaler.update_var_cov(self._parameters.apm_list[0])
         self._scaler.experiments.scaling_model.set_scaling_model_as_scaled()
     elif self._scaler.id_ == 'multi' or self._scaler.id_ == 'target':
       if self._parameters.apm_list[0].var_cov_matrix: #test if has been set
@@ -209,10 +240,10 @@ class ScalingRefinery(object):
 
 class ScalingSimpleLBFGS(ScalingRefinery, SimpleLBFGS):
   """Adapt Refinery for L-BFGS minimiser"""
-  def __init__(self, *args, **kwargs):
+  def __init__(self, scaler, *args, **kwargs):
     logger.info('Performing a round of scaling with an LBFGS minimizer. \n')
+    ScalingRefinery.__init__(self, scaler, *args, **kwargs)
     SimpleLBFGS.__init__(self, *args, **kwargs)
-    ScalingRefinery.__init__(self, self._target.scaler)
 
   def compute_functional_gradients_and_curvatures(self):
     """overwrite method to avoid calls to 'blocks' methods of target"""
@@ -245,7 +276,7 @@ class ScalingSimpleLBFGS(ScalingRefinery, SimpleLBFGS):
           g = gi
 
     restraints = \
-      self._target.compute_restraints_functional_gradients_and_curvatures()
+      self._target.compute_restraints_functional_gradients_and_curvatures(self._parameters)
 
     if restraints:
       f += restraints[0]
@@ -254,10 +285,10 @@ class ScalingSimpleLBFGS(ScalingRefinery, SimpleLBFGS):
 
 class ScalingLBFGScurvs(ScalingRefinery, LBFGScurvs):
   """Adapt Refinery for L-BFGS minimiser"""
-  def __init__(self, *args, **kwargs):
+  def __init__(self, scaler, *args, **kwargs):
     logger.info('Performing a round of scaling with an LBFGS minimizer. \n')
     LBFGScurvs.__init__(self, *args, **kwargs)
-    ScalingRefinery.__init__(self, self._target.scaler)
+    ScalingRefinery.__init__(self, scaler, *args, **kwargs)
     self._target.curvatures = True
 
   def compute_functional_gradients_and_curvatures(self):
@@ -335,7 +366,7 @@ class ScalingLstbxBuildUpMixin(ScalingRefinery):
       for result in task_results:
         self.add_equations(result[0], result[1], result[2])'''
 
-    restraints = self._target.compute_restraints_residuals_and_gradients()
+    restraints = self._target.compute_restraints_residuals_and_gradients(self._parameters)
     if restraints:
       if objective_only:
         self.add_residuals(restraints[0], restraints[2])
@@ -343,7 +374,8 @@ class ScalingLstbxBuildUpMixin(ScalingRefinery):
         self.add_equations(restraints[0], restraints[1], restraints[2])
     return
 
-class ScalingGaussNewtonIterations(ScalingLstbxBuildUpMixin, GaussNewtonIterations):
+class ScalingGaussNewtonIterations(ScalingLstbxBuildUpMixin,
+  GaussNewtonIterations):
   """Refinery implementation, using lstbx Gauss Newton iterations"""
 
   # defaults that may be overridden
@@ -353,26 +385,27 @@ class ScalingGaussNewtonIterations(ScalingLstbxBuildUpMixin, GaussNewtonIteratio
   max_shift_over_esd = 15
   convergence_as_shift_over_esd = 1e-5
 
-  def __init__(self, target, prediction_parameterisation, constraints_manager=None,
+  def __init__(self, scaler, target, prediction_parameterisation, constraints_manager=None,
                log=None, verbosity=0, tracking=None,
                max_iterations=20):
     logger.info('Performing a round of scaling with a Gauss-Newton minimizer.\n')
+    ScalingLstbxBuildUpMixin.__init__(self, scaler, target, prediction_parameterisation)
     GaussNewtonIterations.__init__(
              self, target, prediction_parameterisation, constraints_manager,
              log=log, verbosity=verbosity, tracking=tracking,
              max_iterations=max_iterations)
-    ScalingLstbxBuildUpMixin.__init__(self, self._target.scaler)
 
-class ScalingLevenbergMarquardtIterations(ScalingLstbxBuildUpMixin, LevenbergMarquardtIterations):
+class ScalingLevenbergMarquardtIterations(ScalingLstbxBuildUpMixin,
+  LevenbergMarquardtIterations):
   """Refinery implementation, employing lstbx Levenberg Marquadt
   iterations"""
 
-  def __init__(self, target, prediction_parameterisation, constraints_manager=None,
+  def __init__(self, scaler, target, prediction_parameterisation, constraints_manager=None,
                log=None, verbosity=0, tracking=None,
                max_iterations=20):
     logger.info('Performing a round of scaling with a Levenberg-Marquardt minimizer.\n')
+    ScalingLstbxBuildUpMixin.__init__(self, scaler, target, prediction_parameterisation)
     LevenbergMarquardtIterations.__init__(
              self, target, prediction_parameterisation, constraints_manager,
              log=log, verbosity=verbosity, tracking=tracking,
              max_iterations=max_iterations)
-    ScalingLstbxBuildUpMixin.__init__(self, self._target.scaler)

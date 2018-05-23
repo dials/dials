@@ -202,6 +202,12 @@ def test_Ih_table(reflection_table_for_block, test_sg):
   with pytest.raises(AssertionError):
     block.weights = flex.double([1.0])
 
+  # test getting unique group
+  table = Ih_table.get_unique_group(flex.miller_index([(1, 0, 0)]))
+  assert table.size() == 2
+  table = Ih_table.get_unique_group(flex.miller_index([(5, 0, 0)]))
+  assert table is None
+
 @pytest.mark.skip(reason='Free set selection not yet implemented.')
 def test_Ih_table_freework(large_reflection_table, test_sg):
   """Test the splitting of a single dataset into a work and free set."""

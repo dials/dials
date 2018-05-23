@@ -131,7 +131,7 @@ def test_concurrent_apm_factory():
   apm_factory = ConcurrentAPMFactory([data_manager],
     apm_type=active_parameter_manager)
   apm = apm_factory.make_next_apm()
-  assert isinstance(apm, active_parameter_manager)
+  assert isinstance(apm, multi_active_parameter_manager)
   assert 'scale' in apm.components_list
   assert 'decay' in apm.components_list
   assert 'absorption' in apm.components_list
@@ -168,12 +168,12 @@ def test_consecutive_apm_factory():
     apm_type=active_parameter_manager)
   assert apm_factory.n_cycles == 2
   apm = apm_factory.make_next_apm()
-  assert isinstance(apm, active_parameter_manager)
+  assert isinstance(apm, multi_active_parameter_manager)
   assert 'scale' in apm.components_list
   assert 'decay' in apm.components_list
   assert 'absorption' not in apm.components_list
   apm = apm_factory.make_next_apm()
-  assert isinstance(apm, active_parameter_manager)
+  assert isinstance(apm, multi_active_parameter_manager)
   assert 'scale' not in apm.components_list
   assert 'decay' not in apm.components_list
   assert 'absorption' in apm.components_list
@@ -248,14 +248,14 @@ def test_create_apm_factory():
   scaler.id_ = 'single'
   scaler.params.scaling_options.concurrent = True
   apm_factory = create_apm_factory(scaler)
-  assert isinstance(apm_factory.apm, active_parameter_manager)
+  assert isinstance(apm_factory.apm, multi_active_parameter_manager)
   assert isinstance(apm_factory, ConcurrentAPMFactory)
 
   #Consecutive single apm
   scaler.params.scaling_options.concurrent = False
   scaler.consecutive_refinement_order = [['1'], ['2']]
   apm_factory = create_apm_factory(scaler)
-  assert apm_factory.multi_mode is False
+  #assert apm_factory.multi_mode is False
   assert isinstance(apm_factory, ConsecutiveAPMFactory)
 
   #Concurrent multi apm

@@ -245,7 +245,8 @@ class IhTable(object):
 
   id_ = "IhTable"
 
-  def __init__(self, refl_and_sel_list, space_group, n_blocks=1, weighting_scheme=None):
+  def __init__(self, refl_and_sel_list, space_group, n_blocks=1,
+    weighting_scheme=None):
     self.space_group = space_group
     self.weighting_scheme = weighting_scheme
     self._n_datasets = len(refl_and_sel_list)
@@ -261,6 +262,17 @@ class IhTable(object):
       n_blocks)
     self.sort_by_dataset_id()
     self._size = joint_refl_table.size()
+
+  def get_unique_group(self, asu_miller_index):
+    """Returns a reflection table of the data for a given asu miller index"""
+    assert len(asu_miller_index) == 1, "Only one group can be selected."
+    for block in self._blocked_data_list:
+      if asu_miller_index[0] in block.asu_miller_index:
+        # one reflection group should only ever be in one block!
+        sel = (asu_miller_index[0] == block.asu_miller_index)
+        data = block.Ih_table.select(sel)
+        return data
+    return None
 
   def update_error_model(self, error_model):
     """Update the error model in the blocks."""
@@ -348,38 +360,55 @@ class IhTable(object):
 
   def _split_data_into_blocks(self, reflection_table, nonzero_weights, n_blocks):
     """Assign the h_index and h_expand matrices."""
+    # Get a sorted array of asu_miller_indices and the flex size_t array that
+    # can be used to permute the reflection table to the sorted order.
     asu_miller_index, self._permutation_selection = \
       self.get_sorted_asu_indices(reflection_table)
     n_refl = asu_miller_index.size()
     n_unique_groups = len(set(asu_miller_index))
 
+    # Permute the reflection table and nonzero_weights array to sorted order.
     reflection_table = reflection_table.select(self._permutation_selection)
     nonzero_weights = nonzero_weights.select(self._permutation_selection)
     n_blocks = min(n_unique_groups, n_blocks)
     group_boundaries = [int(i*n_unique_groups/n_blocks) for i in range(n_blocks)]
     group_boundaries.append(n_unique_groups)
-    total_refl_group_idx = 0 # use to count iteration over all groups
-    refl_in_group_idx = 0
-    refl_group_idx = 0
-    block_idx = 0
-    previous = asu_miller_index[0]
-    prev_refl_idx = 0 #use to slice Ih table.
-    h_index_matrix = sparse.matrix(n_refl, group_boundaries[1] - group_boundaries[0])
+
+    # Define a few indices to keep track of reflections & groups during iteration.
+    total_refl_group_idx = 0 # index of unique group in the whole dataset
+    refl_in_group_idx = 0 # index of the reflection in the current block
+    refl_group_idx = 0 # index of unique group in the current block
+    block_idx = 0 # index of the current block
+    previous = asu_miller_index[0] # a miller index, to test if in a new group
+    prev_refl_idx = 0 # index of the start of the last block, use to slice Ih table.
+
+    h_index_matrix = sparse.matrix(n_refl, group_boundaries[1] - \
+      group_boundaries[0]) # a h_index_matrix for the first block. Have to create
+      # with n_refl rows, even though there will only be around n_refl/n_blocks
+      # rows, but the exact number is not known at this stage.
 
     for refl_idx, asu_idx in enumerate(asu_miller_index):
       if asu_idx != previous:
         total_refl_group_idx += 1
         refl_group_idx += 1
-      if total_refl_group_idx == group_boundaries[block_idx + 1]:
-        #save the previous group
+      if total_refl_group_idx == group_boundaries[block_idx + 1]:# have reached
+        # the block boundary, so save the data into the block list.
+        # First slice the arrays and determine the permuation indices
+
         sub_refl_table = reflection_table[prev_refl_idx:refl_idx]
         sub_nz_weights = nonzero_weights[prev_refl_idx:refl_idx]
         sel1 = self._permutation_selection >= prev_refl_idx
         sel2 = self._permutation_selection < refl_idx
-        block_sel = sel1 & sel2
-        permuted_isel = self._permutation_selection.select(block_sel)
+        block_sel = sel1 & sel2 # a flex bool array of size len(reflection_table) \
+        # of the reflections which make up this subset
+        permuted_isel = self._permutation_selection.select(block_sel) # a size_t \
+        # selection of size len(sub_refl_table) of the corresponding indices of the
+        # reflections making up the subset, relative to the initial data order
         selector = flex.bool(block_sel.size(), False)
-        selector.set_selected(permuted_isel, True)
+        selector.set_selected(permuted_isel, True) # a flex bool array, can be
+        # used to match the corresponding reflections from the input data.
+
+        # now reduce the h_index_matrix down to the correct number of rows
         col_selector = flex.size_t(range(0, h_index_matrix.non_zeroes))
         h_idx_T = h_index_matrix.transpose()
         reduced_h_idx_T = h_idx_T.select_columns(col_selector)

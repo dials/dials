@@ -18,11 +18,8 @@ from dials_scaling_ext import calc_sigmasq as cpp_calc_sigmasq
 from libtbx.table_utils import simple_table
 from dials.array_family import flex
 from dials.algorithms.scaling.basis_functions import basis_function
-from dials.algorithms.scaling.scaling_utilities import calc_normE2
 from dials.algorithms.scaling.outlier_rejection import reject_outliers
 from dials.algorithms.scaling.Ih_table import IhTable
-from dials.algorithms.scaling.scaling_restraints import ScalingRestraints,\
-  MultiScalingRestraints
 from dials.algorithms.scaling.target_function import ScalingTarget,\
   ScalingTargetFixedIH
 from dials.algorithms.scaling.scaling_refiner import scaling_refinery,\
@@ -47,6 +44,7 @@ class ScalerBase(object):
     self._reflection_table = []
     self._Ih_table = None
     self._initial_keys = []
+    self._basis_function = basis_function(curvatures=False)
 
   @property
   def Ih_table(self):
@@ -116,6 +114,8 @@ class ScalerBase(object):
     self._initial_keys.append('inverse_scale_factor')
     self._initial_keys.append('inverse_scale_factor_variance')
     self._initial_keys.append('Ih_values')
+    if 'Esq' in self.reflection_table:
+      del self.reflection_table['Esq']
     for key in self.reflection_table.keys():
       if not key in self._initial_keys:
         del self._reflection_table[key]
@@ -139,12 +139,18 @@ class ScalerBase(object):
       params.reflection_selection.Isigma_min)
     sel4 = reflection_table['d'] > params.reflection_selection.d_min
     selection = sel & sel1 & sel2 & sel3 & sel4
-    msg = ('{0} reflections were selected for scale factor determination {sep}'
-      'out of {5} reflections. This was based on selection criteria of {sep}'
-      'E2_min = {1}, E2_max = {2}, Isigma_min = {3}, dmin = {4}. {sep}').format(
-      selection.count(True), params.reflection_selection.E2_min,
-      params.reflection_selection.E2_max, params.reflection_selection.Isigma_min,
-      params.reflection_selection.d_min, reflection_table.size(), sep='\n')
+    msg = ('{0} reflections were selected for scale factor determination \n'
+      'out of {1} reflections. '.format(selection.count(True),
+      reflection_table.size()))
+    if reflection_table['Esq'].count(1.0) == reflection_table.size():
+      msg += ('This was based on selection criteria of \n'
+      'Isigma_min = {0}, dmin = {1}. \n').format(
+      params.reflection_selection.Isigma_min, params.reflection_selection.d_min)
+    else:
+      msg += ('This was based on selection criteria of \n'
+      'E2_min = {0}, E2_max = {1}, Isigma_min = {2}, dmin = {3}. \n').format(
+      params.reflection_selection.E2_min, params.reflection_selection.E2_max,
+      params.reflection_selection.Isigma_min, params.reflection_selection.d_min)
     logger.info(msg)
     return selection
 
@@ -159,7 +165,8 @@ class ScalerBase(object):
       if not max_iterations:
         max_iterations = self.params.scaling_refinery.max_iterations
       st = time.time()
-      refinery = scaling_refinery(engine=engine, target=target_type(self, apm),
+      refinery = scaling_refinery(engine=engine, scaler=self,
+        target=target_type(free_set=self.params.scaling_options.use_free_set),
         prediction_parameterisation=apm, max_iterations=max_iterations)
       refinery.run()
       ft = time.time()
@@ -171,8 +178,6 @@ class ScalerBase(object):
   def perform_error_optimisation(self):
     """Optimise an error model."""
 
-
-
 class SingleScalerBase(ScalerBase):
   """
   Parent class for single-dataset Scalers, containing a standard
@@ -182,11 +187,13 @@ class SingleScalerBase(ScalerBase):
 
   id_ = 'single'
 
-  def __init__(self, params, experiment, reflection, scaled_id=0, for_multi=False):
-    logger.info('Configuring a Scaler for a single dataset. \n')
-    logger.info('The dataset id assigned to this reflection table is %s, \n'
-      'the scaling model type being applied is %s. \n', scaled_id,
-      experiment.scaling_model.id_)
+  def __init__(self, params, experiment, reflection, for_multi=False):
+    """Initialise a single-dataset scaler. The reflection table needs the
+    columns 'inverse_scale_factor', 'Esq', 'intensity', 'variance', 'id',
+    which are guaranteed if the scaler is created using the SingleScalerFactory.
+    """
+    assert all(reflection.has_key(i) for i in ['inverse_scale_factor', 'Esq',
+      'intensity', 'variance', 'id'])
     super(SingleScalerBase, self).__init__()
     self._experiments = experiment
     self._params = params
@@ -196,26 +203,14 @@ class SingleScalerBase(ScalerBase):
       self.space_group = self._params.scaling_options.space_group
     n_model_params = sum([val.n_params for val in self.components.itervalues()])
     self._var_cov = sparse.matrix(n_model_params, n_model_params)
-    # Rename the id for now so that we have unique dataset ids
-    reflection['id'] = flex.int([scaled_id] * reflection.size())
     self._initial_keys = [key for key in reflection.keys()]
-    # Choose intensities, map to asu, assign unique refl. index
-    reflection_table = self._reflection_table_setup(self._initial_keys,
-      reflection) #flag not integrated, bad d, bad partiality
-    reflection_table = self._select_optimal_intensities(reflection_table,
-      self.params.scaling_options.integration_method) #flag bad variance,
-    # Calculate values for later filtering, but don't filter here!!!
-    reflection_table = calc_normE2(reflection_table, self.experiments)
-    #if 'centric_flag' in reflection_table: #If E2 values have been calculated
-    #  reflection_table = set_wilson_outliers(reflection_table)
-    if self.params.scaling_options.outlier_rejection != '0':
-      reflection_table = self.round_of_outlier_rejection(reflection_table)
-    self._reflection_table = reflection_table
+    self._reflection_table = reflection
     self._configure_reflection_table()
     self.select_reflections_for_scaling(for_multi=for_multi)
     #if self.params.scaling_options.n_proc > 1:
     #  self.Ih_table.split_into_blocks(self.params.scaling_options.n_proc)
-    logger.info('Completed configuration of Scaler. \n\n' + '='*80 + '\n')
+    logger.info('Completed preprocessing and initialisation for this dataset.\n'
+      '\n' + '='*80 + '\n')
 
   @property
   def components(self):
@@ -267,7 +262,8 @@ class SingleScalerBase(ScalerBase):
 
   def update_for_minimisation(self, apm, curvatures=False):
     """Update the scale factors and Ih for the next minimisation iteration."""
-    basis_fn = basis_function(apm, curvatures).calculate_scales_and_derivatives()
+    apm_i = apm.apm_list[0]
+    basis_fn = self._basis_function.calculate_scales_and_derivatives(apm_i)
     if self.Ih_table.free_set_sel:
       dervis_trans = basis_fn[1][0].transpose() #what about when also blocked?
       work_set = ~self.Ih_table.free_set_sel
@@ -280,71 +276,6 @@ class SingleScalerBase(ScalerBase):
     self.Ih_table.set_inverse_scale_factors(basis_fn[0])
     self.Ih_table.update_weights()
     self.Ih_table.calc_Ih()
-
-  @staticmethod
-  def _reflection_table_setup(initial_keys, reflections):
-    """Initial filter to select integrated reflections."""
-    mask = ~reflections.get_flags(reflections.flags.integrated)
-    d_mask = reflections['d'] <= 0.0
-    partials_mask = reflections['partiality'] < 0.6
-    reflections.set_flags(mask or partials_mask or d_mask,
-      reflections.flags.excluded_for_scaling)
-    logger.info('%s reflections not suitable for scaling (low partiality,\n'
-      'not integrated etc).\n', reflections.get_flags(
-      reflections.flags.excluded_for_scaling).count(True))
-    if not 'inverse_scale_factor' in initial_keys:
-      reflections['inverse_scale_factor'] = (flex.double(reflections.size(), 1.0))
-    return reflections
-
-  @classmethod
-  def _select_optimal_intensities(cls, reflection_table, integration_method):
-    """Choose which intensities to use for scaling."""
-    if integration_method == 'sum' or integration_method == 'prf':
-      intstr = integration_method
-      conversion = flex.double(reflection_table.size(), 1.0)
-      if 'partiality' in reflection_table:
-        inverse_partiality = flex.double(reflection_table.size(), 1.0)
-        nonzero_partiality_sel = reflection_table['partiality'] > 0.0
-        good_refl = reflection_table.select(reflection_table['partiality'] > 0.0)
-        inverse_partiality.set_selected(nonzero_partiality_sel.iselection(),
-          1.0/good_refl['partiality'])
-        conversion *= inverse_partiality
-      if 'lp' in reflection_table:
-        conversion *= reflection_table['lp']
-      if 'qe' in reflection_table:
-        conversion /= reflection_table['qe']
-      elif 'dqe' in reflection_table:
-        conversion /= reflection_table['dqe']
-      reflection_table['intensity'] = (
-        reflection_table['intensity.'+intstr+'.value'] * conversion)
-      reflection_table['variance'] = (
-        reflection_table['intensity.'+intstr+'.variance'] * (conversion**2))
-      msg = ('{0} intensity values will be used for scaling (and mtz \n'
-      'output if applicable). \n').format('Profile fitted' if intstr == 'prf'
-      else 'Summation integrated')
-      logger.info(msg)
-    #perform a combined prf/sum in a similar fashion to aimless
-    else:
-      logger.info('Intensity selection choice does not have an implementation \n'
-        'using prf values.')
-      return cls._select_optimal_intensities(reflection_table, 'prf')
-      '''int_prf = reflection_table['intensity.prf.value'] * conversion
-      int_sum = reflection_table['intensity.sum.value'] * conversion
-      var_prf = reflection_table['intensity.prf.variance'] * (conversion**2)
-      var_sum = reflection_table['intensity.sum.variance'] * (conversion**2)
-      Imid = max(int_sum)/2.0
-      weight = 1.0/(1.0 + ((int_prf/Imid)**3))
-      reflection_table['intensity'] = ((weight * int_prf)
-        + ((1.0 - weight) * int_sum))
-      reflection_table['variance'] = ((weight * var_prf)
-        + ((1.0 - weight) * var_sum))
-      msg = ('Combined profile/summation intensity values will be used for {sep}'
-      'scaling, with an Imid of {0}. {sep}').format(Imid, sep='\n')
-      logger.info(msg)'''
-    variance_mask = reflection_table['variance'] <= 0.0
-    reflection_table.set_flags(variance_mask,
-      reflection_table.flags.excluded_for_scaling)
-    return reflection_table
 
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
     self._reflection_table['inverse_scale_factor'] = flex.double(
@@ -376,34 +307,14 @@ class SingleScalerBase(ScalerBase):
         scaled_isel, scaled_invsfvar)
     if (self.params.scaling_options.outlier_rejection != '0' and
       not isinstance(caller, MultiScalerBase)):
-      self._reflection_table = self.round_of_outlier_rejection(
-        self._reflection_table)
+      self._reflection_table = reject_outliers(self._reflection_table,
+        self.space_group, self.params.scaling_options.outlier_rejection,
+        self.params.scaling_options.outlier_zmax)
 
   def update_error_model(self, error_model):
     """Apply a correction to try to improve the error estimate."""
     self.Ih_table.update_error_model(error_model)
     self.experiments.scaling_model.set_error_model(error_model)
-
-  def compute_restraints_residuals_jacobian(self, apm):
-    """Calculate a restraint for the jacobian."""
-    return ScalingRestraints(apm).calculate_jacobian_restraints()
-
-  def calculate_restraints(self, apm):
-    """Calculate a restraint for the residual and gradient."""
-    return ScalingRestraints(apm).calculate_restraints()
-
-  def round_of_outlier_rejection(self, reflection_table):
-    """calculate outliers from the reflections in the Ih_table,
-    and use these to filter the reflection table and Ih_table."""
-    reflection_table = reject_outliers(reflection_table, self.space_group,
-      self.params.scaling_options.outlier_rejection,
-      self.params.scaling_options.outlier_zmax)
-    msg = ('A round of outlier rejection has been performed, in total {0} {sep}'
-        'outliers have now been identified. {sep}'.format(
-        reflection_table.get_flags(reflection_table.flags.outlier_in_scaling
-        ).count(True), sep='\n'))
-    logger.info(msg)
-    return reflection_table
 
   def adjust_variances(self):
     """Apply an aimless-like error model to the variances."""
@@ -431,12 +342,6 @@ class SingleScalerBase(ScalerBase):
         self.reflection_table['id'][0])
       logger.info(msg)
 
-  '''def apply_selection_to_SFs(self, sel):
-    """Updates data from within current SF objects using the given selection.
-       Required for targeted scaling."""
-    for component in self.components.itervalues():
-      component.update_reflection_data(self.reflection_table, sel)'''
-
   def select_reflections_for_scaling(self, for_multi=True):
     """Select a subset of reflections, create and Ih table and update the
     model components."""
@@ -447,7 +352,7 @@ class SingleScalerBase(ScalerBase):
         self.space_group, n_blocks=self.params.scaling_options.nproc,
         weighting_scheme=self.params.weighting.weighting_scheme)
       # Now get the block selections for the first dataset (i.e. the only one!)
-      block_selections = self.Ih_table.blocked_selection_list[0] 
+      block_selections = self.Ih_table.blocked_selection_list[0]
       '''if self.params.scaling_options.use_free_set and split_free_set:
         self._Ih_table.split_into_free_work(
           self.params.scaling_options.free_set_percentage)'''
@@ -497,14 +402,6 @@ class MultiScalerBase(ScalerBase):
     self._experiments = experiments[0]
     self.verbosity = params.scaling_options.verbosity
 
-  def calculate_restraints(self, apm):
-    """Calculate a restraints residuals/gradient vector for multiple datasets."""
-    return MultiScalingRestraints(apm).calculate_restraints()
-
-  def compute_restraints_residuals_jacobian(self, apm):
-    """Calculate a restraints residuals/jacobian for multiple datasets."""
-    return MultiScalingRestraints(apm).calculate_jacobian_restraints()
-
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
     if self.verbosity <= 1 and calc_cov:
       logger.info('Calculating error estimates of inverse scale factors. \n')
@@ -525,21 +422,9 @@ class MultiScalerBase(ScalerBase):
     for scaler in scalers:
       self._reflection_table.extend(scaler.reflection_table)
     if self.params.scaling_options.outlier_rejection != '0':
-      self._reflection_table = self.round_of_outlier_rejection(
-        self._reflection_table)
-
-  def round_of_outlier_rejection(self, reflection_table):
-    """calculate outliers from the reflections in the Ih_table,
-    and use these to filter the reflection table and Ih_table."""
-    reflection_table = reject_outliers(reflection_table, self.space_group,
-      self.params.scaling_options.outlier_rejection,
-      self.params.scaling_options.outlier_zmax)
-    msg = ('Combined outlier rejection has been performed across all datasets, {sep}'
-      'in total {0} outliers have now been identified. {sep}'.format(
-        reflection_table.get_flags(reflection_table.flags.outlier_in_scaling
-        ).count(True), sep='\n'))
-    logger.info(msg)
-    return reflection_table
+      self._reflection_table = reject_outliers(self._reflection_table,
+        self.space_group, self.params.scaling_options.outlier_rejection,
+        self.params.scaling_options.outlier_zmax)
 
   def adjust_variances(self):
     """Update variances of individual reflection tables."""
@@ -555,13 +440,12 @@ class MultiScalerBase(ScalerBase):
       'in the scaling model for all datasets. \n')
       logger.info(msg)
 
-
-  def update_for_minimisation(self, apm, curvatures=False):
+  def update_for_minimisation(self, apm, curvatures=False, calc_Ih=True):
     """Update the scale factors and Ih for the next iteration of minimisation."""
     scales_list = []
     derivs_list = []
     for apm_i in apm.apm_list:
-      basis_fn = basis_function(apm_i, curvatures).calculate_scales_and_derivatives()
+      basis_fn = self._basis_function.calculate_scales_and_derivatives(apm_i)
       scales_list.append(basis_fn[0])
       derivs_list.append(basis_fn[1])
     scales = zip(*scales_list)
@@ -583,6 +467,8 @@ class MultiScalerBase(ScalerBase):
     self.Ih_table.set_inverse_scale_factors(scale_list_for_Ih)
     self.Ih_table.set_derivatives(derivs_list_for_Ih)
     self.Ih_table.update_weights()
+    if calc_Ih:
+      self.Ih_table.calc_Ih()
     # The parallelisation below would work if sparse matrices were
     # pickleable (I think!) - with more benefit for larger number of datasets.
     '''def task_wrapper(block):
@@ -600,12 +486,6 @@ class MultiScalerBase(ScalerBase):
     self.Ih_table.update_error_model(error_model)
     for scaler in self.active_scalers:
       scaler.experiments.scaling_model.set_error_model(error_model)
-
-  def select_reflections_for_scaling(self):
-    """Select reflections for scaling in individual scalers."""
-    #Update the data from the Ih_table
-    for scaler in self.active_scalers:
-      scaler.select_reflections_for_scaling(for_multi=True)
 
   def reselect_reflections_for_scaling(self):
     """Set the components data back to the scaling_selection. Intended for
@@ -659,15 +539,6 @@ class MultiScaler(MultiScalerBase):
           scaler.scaling_selection, self.Ih_table.blocked_selection_list[i])
     logger.info('Completed configuration of MultiScaler. \n\n' + '='*80 + '\n')
 
-
-
-  def update_for_minimisation(self, apm, curvatures=False):
-    '''update the scale factors and Ih for the next iteration of minimisation,
-    update the x values from the amp to the individual apms, as this is where
-    basis functions, target functions etc get access to the parameters.'''
-    super(MultiScaler, self).update_for_minimisation(apm, curvatures)
-    self.Ih_table.calc_Ih()
-
   def join_multiple_datasets(self):
     '''method to create a joint reflection table'''
     super(MultiScaler, self).join_datasets_from_scalers(self.single_scalers)
@@ -688,14 +559,12 @@ class TargetScaler(MultiScalerBase):
     logger.info('Determining symmetry equivalent reflections across datasets.\n')
     self.unscaled_scalers = unscaled_scalers
     self.active_scalers = self.unscaled_scalers
-    self._initial_keys = self.unscaled_scalers[0].initial_keys #needed for
-    # scaling against calculated Is???
     self._target_Ih_table = IhTable([(x.reflection_table, x.scaling_selection)
       for x in self.single_scalers], self._space_group,
       n_blocks=1)#Keep in one table for matching below
     self.initialise_targeted_Ih_table()
     logger.info('Completed initialisation of TargetScaler. \n' + '*'*40 + '\n')
-    
+
   def initialise_targeted_Ih_table(self):
     """Initialise an Ih_table, using self._target_Ih_table to set the Ih values"""
     self._Ih_table = IhTable([(x.reflection_table, x.scaling_selection)
@@ -709,7 +578,7 @@ class TargetScaler(MultiScalerBase):
 
   def set_Ih_values_to_target(self):
     """Match equivalent reflections between individual unscaled datasets and
-    set target Ixh values in the Ih_table for each dataset."""
+    set target I_h values in the Ih_table for each dataset."""
     target_Ih_table = self._target_Ih_table.blocked_data_list[0]
     for i, block in enumerate(self._Ih_table.blocked_data_list):
       block.set_Ih_values_to_target(target_Ih_table)
@@ -725,6 +594,11 @@ class TargetScaler(MultiScalerBase):
     for scaler in self.active_scalers:
       scaler.select_reflections_for_scaling(for_multi=True)
     self.initialise_targeted_Ih_table()
+
+  def update_for_minimisation(self, apm, curvatures=False, calc_Ih=False):
+    """Calcalate the new parameters but don't calculate a new Ih."""
+    super(TargetScaler, self).update_for_minimisation(apm, curvatures,
+      calc_Ih=calc_Ih)
 
   def join_multiple_datasets(self):
     '''method to create a joint reflection table'''

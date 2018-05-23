@@ -161,10 +161,10 @@ class ConcurrentAPMFactory(object):
   Data managers is a list of objects which have a components attribute.
   """
 
-  def __init__(self, data_managers, apm_type, multi_mode=False):
-    # One can optionally set multi_mode=True to force a multi_apm to be created
-    # for only one dataset - this is currently needed to handle refinement methods
-    # which expect either one or multiple datasets.
+  def __init__(self, data_managers, apm_type, multi_mode=True):
+    # One can optionally set multi_mode=False to force a single_apm to be created
+    # for only one dataset - however all scaling methods are designed to iterate
+    # over a multi_apm with an apm_list property.
     self.data_managers = data_managers
     self.apm = None
     self.multi_mode = multi_mode
@@ -214,10 +214,10 @@ class ConsecutiveAPMFactory(object):
   make_next_apm can be called n_cycles times.
   mode=single/multi returns a single/mutli active parameter manager.
   """
-  def __init__(self, data_managers, apm_type, multi_mode=False):
-    # One can optionally set multi_mode=True to force a multi_apm to be created
-    # for only one dataset - this is currently needed to handle refinement methods
-    # which expect either one or multiple datasets.
+  def __init__(self, data_managers, apm_type, multi_mode=True):
+    # One can optionally set multi_mode=False to force a single_apm to be created
+    # for only one dataset - however all scaling methods are designed to iterate
+    # over a multi_apm with an apm_list property.
     self.data_managers = data_managers
     self.multi_mode = multi_mode
     if len(data_managers) > 1:

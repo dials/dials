@@ -237,9 +237,11 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
       curvatures=curvatures)
     for block_id in range(len(self._n_refl)):#len of the list, not numb of refl
       self._inverse_scales[block_id] = flex.exp(
-        self._inverse_scales[block_id] /(2.0 * (self._d_values[block_id]**2)))
+        self._inverse_scales[block_id] /(2.0 * (
+        self._d_values[block_id] * self._d_values[block_id])))
       self._derivatives[block_id] = row_multiply(self._derivatives[block_id],
-        self._inverse_scales[block_id] / (2.0 * (self._d_values[block_id]**2)))
+        self._inverse_scales[block_id] / (2.0 * (
+        self._d_values[block_id] * self._d_values[block_id])))
       if curvatures:
         self._curvatures[block_id] = row_multiply(elementwise_square(
           self._derivatives[block_id]), 1.0/self._inverse_scales[block_id])
@@ -248,7 +250,8 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
     super(SmoothBScaleComponent1D, self).calculate_scales()
     for block_id in range(len(self._n_refl)):#len of the list, not numb of refl
       self._inverse_scales[block_id] = flex.exp(
-        self._inverse_scales[block_id] /(2.0 * (self._d_values[block_id]**2)))
+        self._inverse_scales[block_id] /(2.0 * (
+          self._d_values[block_id] * self._d_values[block_id])))
 
 
 class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):

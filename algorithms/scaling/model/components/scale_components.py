@@ -205,11 +205,11 @@ class SingleBScaleFactor(ScaleComponentBase):
     for block_id in range(len(self._n_refl)):#len of the list, not num of refl
       self._inverse_scales.append(flex.exp(flex.double(
         [self._parameters[0]] * self._n_refl[block_id])
-        / (2.0 * (self._d_values[block_id]**2))))
+        / (2.0 * (self._d_values[block_id]*self._d_values[block_id]))))
       self._derivatives.append(sparse.matrix(self._n_refl[block_id], 1))
       for i in range(self._n_refl[block_id]):
         self._derivatives[block_id][i, 0] = (self._inverse_scales[block_id][i]
-          / (2.0 * (self._d_values[block_id][i]**2)))
+          / (2.0 * (self._d_values[block_id][i]*self._d_values[block_id][i])))
       if curvatures:
         self._curvatures.append(sparse.matrix(self.n_refl[block_id], 1)
           ) #curatures are all zero.
@@ -262,7 +262,7 @@ class SHScaleComponent(ScaleComponentBase):
     self._parameter_restraints = restraints
 
   def calculate_restraints(self):
-    residual = self.parameter_restraints * (self._parameters**2)
+    residual = self.parameter_restraints * (self._parameters*self._parameters)
     gradient = 2.0 * self.parameter_restraints * self._parameters
     return residual, gradient
 

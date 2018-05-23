@@ -39,7 +39,7 @@ def parse_multiple_datasets(reflections):
     dataset_ids = set(refl_table['id']).difference(set([-1]))
     n_datasets = len(dataset_ids)
     if n_datasets > 1:
-      logger.info('\nDetected existence of a multi-dataset scaled reflection table \n'
+      logger.info('\nDetected existence of a multi-dataset reflection table \n'
         'containing %s datasets. \n', n_datasets)
       for dataset_id in dataset_ids:
         single_refl_table = refl_table.select(refl_table['id'] == dataset_id)
@@ -96,13 +96,12 @@ def sph_harm_table(reflection_table, experiments, lmax):
 
 def calc_normE2(reflection_table, experiments):
   '''calculate normalised intensity values for centric and acentric reflections'''
-  msg = ('Calculating normalised intensity values for outlier rejection. {sep}'
-    'Negative intensities are set to zero for the purpose of calculating {sep}'
-    'mean intensity values for resolution bins. This is to avoid spuriously {sep}'
-    'high E^2 values due to a mean close to zero and should only affect {sep}'
-    'the E^2 values of the highest resolution bins. {sep}'
-    ).format(sep='\n')
-  logger.info(msg)
+  logger.info('Calculating normalised intensity values to select a reflection \n'
+    'subset for scaling. \n')
+  logger.debug('Negative intensities are set to zero for the purpose of \n'
+    'calculating mean intensity values for resolution bins. This is to avoid \n'
+    'spuriously high E^2 values due to a mean close to zero and should only \n'
+    'affect the E^2 values of the highest resolution bins. \n')
 
   bad_refl_sel = reflection_table.get_flags(
     reflection_table.flags.bad_for_scaling, all=False)
@@ -133,6 +132,8 @@ def calc_normE2(reflection_table, experiments):
   elif n_acentrics < 10000:
     reflection_table['Esq'] = flex.double(reflection_table.size(), 1.0)
     del reflection_table['intensity_for_norm']
+    del reflection_table['centric_flag']
+    del reflection_table['resolution']
     msg = ('No normalised intensity values were calculated, as an {sep}'
     'insufficient number of reflections were detected. {sep}'
     ).format(sep='\n')
@@ -187,12 +188,14 @@ def calc_normE2(reflection_table, experiments):
       intensities = reflection_table['intensity'].select(sel)
       reflection_table['Esq'].set_selected(sel, intensities/ mean_acentric_values[i])
   del reflection_table['intensity_for_norm']
+  del reflection_table['centric_flag']
+  del reflection_table['resolution']
   reflection_table['d'].set_selected(d0_sel, 0.0)
   reflection_table['Esq'].set_selected(d0_sel, 0.0)
   msg = ('The number of centric & acentric reflections is {0} & {1}, {sep}'
     '{2} resolution bins were used for the E^2 calculation. {sep}'
     ).format(n_centrics, n_acentrics, n_refl_shells, sep='\n')
-  logger.info(msg)
+  logger.debug(msg)
   return reflection_table
 
 def set_wilson_outliers(reflection_table):

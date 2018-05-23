@@ -43,16 +43,11 @@ def create_apm_factory(scaler):
   consecutive scaling, where the consecutive order is defined by
   scaler.consecutive_refinement_order."""
   if scaler.id_ == 'single':
-    if scaler.params.scaling_options.concurrent:
-      return ConcurrentAPMFactory([scaler], scaling_active_parameter_manager)
-    return ConsecutiveAPMFactory([scaler], scaling_active_parameter_manager)
+    data_managers = [scaler]
+  elif scaler.id_ == 'target' or scaler.id_ == 'multi':
+    data_managers = scaler.active_scalers
   else:
-    if scaler.id_ == 'target' or scaler.id_ == 'multi':
-      data_managers = scaler.active_scalers
-    else:
-      assert 0, 'unrecognised scaler id_ for non-single scaler.'
-    if scaler.params.scaling_options.concurrent:
-      return ConcurrentAPMFactory(data_managers,
-        scaling_active_parameter_manager, multi_mode=True)
-    return ConsecutiveAPMFactory(data_managers,
-      scaling_active_parameter_manager, multi_mode=True)
+    assert 0, 'unrecognised scaler id_'
+  if scaler.params.scaling_options.concurrent:
+    return ConcurrentAPMFactory(data_managers, scaling_active_parameter_manager)
+  return ConsecutiveAPMFactory(data_managers, scaling_active_parameter_manager)
