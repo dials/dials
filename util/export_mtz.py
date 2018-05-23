@@ -204,7 +204,8 @@ def dials_u_to_mosflm(dials_U, uc):
 
 def _apply_data_filters(integrated_data,
                         ignore_profile_fitting, filter_ice_rings, min_isigi,
-                        include_partials, keep_partials, scale_partials):
+                        include_partials, keep_partials, scale_partials,
+                        apply_scales):
   """Apply filters to reflection data"""
 
   # select reflections that are assigned to an experiment (i.e. non-negative id)
@@ -270,6 +271,12 @@ def _apply_data_filters(integrated_data,
       integrated_data.del_selected(selection)
       logger.info('Removing %d profile reflections with I/Sig(I) < %s' %(
         selection.count(True), min_isigi))
+
+  if apply_scales:
+    selection = integrated_data.get_flags(integrated_data.flags.outlier_in_scaling)
+    integrated_data.del_selected(selection)
+    logger.info("Removing %d reflections determined as outliers in scaling" %
+                selection.count(True))
 
   # FIXME in here work on including partial reflections => at this stage best
   # to split off the partial refections into a different selection & handle
@@ -648,7 +655,8 @@ def export_mtz(integrated_data, experiment_list, hklout,
       filter_ice_rings=filter_ice_rings,
       include_partials=include_partials,
       keep_partials=keep_partials,
-      scale_partials=scale_partials)
+      scale_partials=scale_partials,
+      apply_scales=apply_scales)
 
 
   # Calculate and store the image range for each image
