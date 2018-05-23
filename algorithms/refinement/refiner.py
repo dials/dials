@@ -95,7 +95,7 @@ refinement
                 "initial values. If remove, parameters relating to that model"
                 "will be fixed, and in addition all reflections related to"
                 "that parameterisation will be removed. This will therefore"
-                "remove this reflections from other parameterisations of the"
+                "remove these reflections from other parameterisations of the"
                 "global model too. For example, if a crystal model could not"
                 "be parameterised it will be excised completely and not"
                 "contribute to the joint refinement of the detector and beam."
@@ -1413,6 +1413,12 @@ class RefinerFactory(object):
       gon_params = tmp
 
     elif options.auto_reduction.action == 'remove':
+      # if there is only one experiment, it should be multi-panel for remove to make sense
+      if len(experiments) == 1:
+        if not det_params[-1].is_multi_state():
+          raise Sorry("For single experiment, single panel refinement "
+            "auto_reduction.action=remove cannot be used as it could only "
+            "remove all reflections from refinement")
       warnmsg = 'Too few reflections to parameterise {0}'
       warnmsg += '\nAssociated reflections will be removed from the Reflection Manager'
       while True:
