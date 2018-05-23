@@ -355,6 +355,8 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
     ('y_resid2','%.3f'),
     ('kapton_absorption_correction','%.3f'),
     ('kapton_absorption_correction_sigmas','%.3f'),
+    ('inverse_scale_factor','%.3f'),
+    ('inverse_scale_factor_variance','%.3f'),
     ))
 
   for rlist in reflections:
