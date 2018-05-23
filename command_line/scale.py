@@ -58,6 +58,9 @@ phil_scope = phil.parse('''
     debug_log = dials_scratch.scaling.debug.log
       .type = str
       .help = "The debug log filename"
+    calculate_individual_merging_stats = False
+      .type = bool
+      .help = "Option to calculate merging stats for the individual datasets."
     plot_merging_stats = False
       .type = bool
       .help = "Option to switch on plotting of merging stats."
@@ -194,29 +197,24 @@ class Script(object):
     logger.info('\n'+'='*80+'\n')
     # Calculate merging stats.
     plot_labels = []
-    results, scaled_ids = calculate_merging_statistics(
-      self.minimised.reflection_table, self.experiments)
-    if len(results) == 1:
-      logger.info("")
-      #results[0].show()#out=log.info_handle(logger))
-      results[0].show(out=info_handle)
-      #results[0].show_estimated_cutoffs()
-      results[0].show_estimated_cutoffs(out=info_handle)
-      plot_labels.append('Single dataset ')
-    else:
+    if self.params.output.calculate_individual_merging_stats and (
+      len(set(self.minimised.reflection_table['id'])) > 1):
+      results, scaled_ids = calculate_merging_statistics(
+        self.minimised.reflection_table, self.experiments)
       for result, data_id in zip(results, scaled_ids):
         make_sub_header("Merging statistics for dataset " + str(data_id),
           out=log.info_handle(logger))
         result.show(header=0)#out=log.info_handle(logger))
         result.show_estimated_cutoffs()
         plot_labels.append('Dataset ' + str(data_id))
-      make_sub_header("Merging statistics for combined datasets",
-        out=log.info_handle(logger))
+    else:
+      make_sub_header("Overall merging statistics",
+          out=log.info_handle(logger))
       result = calculate_single_merging_stats(
         self.minimised.reflection_table, self.experiments[0])
       result.show(header=0)#out=log.info_handle(logger))
       result.show_estimated_cutoffs()
-      plot_labels.append('Combined datasets')
+      plot_labels.append('Overall dataset')
 
     # Plot merging stats if requested.
     if self.params.output.plot_merging_stats:
