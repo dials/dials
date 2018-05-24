@@ -134,7 +134,7 @@ namespace dials_scaling {
       {
         nss_spherical_harmonics<double> nsssphe(
           lmax, 50000, log_factorial_generator<double>((2 * lmax) + 1));
-        int n_abs_param = (2 * lmax) + (pow(lmax, 2));
+        int n_abs_param = (2 * lmax) + (pow(double(lmax), 2));
         int n_obs = s1_theta_phi.size();
         matrix<double> sph_harm_terms_(n_obs, n_abs_param);
         double sqrt2 = 1.414213562;
@@ -142,7 +142,7 @@ namespace dials_scaling {
         for (int l=1; l < lmax+1; l++) {
           for (int m=-1*l; m < l+1; m++) {
             if (m < 0) {
-              double prefactor = sqrt2 * pow(-1, m) / 2.0;
+              double prefactor = sqrt2 * pow(-1.0, m) / 2.0;
               for (int i=0; i < n_obs; i++){
                 sph_harm_terms_(i, counter) = prefactor * (
                   nsssphe.spherical_harmonic_direct(l, -1*m, s0_theta_phi[i][0], s0_theta_phi[i][1]).imag()
@@ -157,7 +157,7 @@ namespace dials_scaling {
               }
             }
             else {
-              double prefactor = sqrt2 * pow(-1, m) / 2.0;
+              double prefactor = sqrt2 * pow(-1.0, m) / 2.0;
               for (int i=0; i < n_obs; i++){
                 double val = prefactor * (
                   nsssphe.spherical_harmonic_direct(l, m, s0_theta_phi[i][0], s0_theta_phi[i][1]).real()
