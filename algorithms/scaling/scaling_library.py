@@ -106,7 +106,7 @@ def create_scaling_model(params, experiments, reflections):
           exp.scaling_model = factory.create(params, exp, refl)
   return experiments
 
-def calculate_merging_statistics(reflection_table, experiments):
+def calculate_merging_statistics(reflection_table, experiments, use_internal_variance):
   """Calculate merging statistics for scaled datasets. Datasets are selected
   from the reflection table based on their id, and a list of dataset statistics
   objects and dataset ids are returned."""
@@ -114,16 +114,19 @@ def calculate_merging_statistics(reflection_table, experiments):
   ids = []
   dataset_ids = list(set(reflection_table['id']))
   if len(dataset_ids) == 1:
-    results.append(calculate_single_merging_stats(reflection_table, experiments[0]))
+    results.append(calculate_single_merging_stats(reflection_table,
+      experiments[0], use_internal_variance))
     ids.append(dataset_ids[0])
   else:
     for dataset_id in dataset_ids:
       refls = reflection_table.select(reflection_table['id'] == dataset_id)
-      results.append(calculate_single_merging_stats(refls, experiments[0]))
+      results.append(calculate_single_merging_stats(refls, experiments[0],
+        use_internal_variance))
       ids.append(dataset_id)
   return results, ids
 
-def calculate_single_merging_stats(reflection_table, experiment):
+def calculate_single_merging_stats(reflection_table, experiment,
+  use_internal_variance):
   """Calculate the merging stats for a single dataset."""
   bad_refl_sel = reflection_table.get_flags(
     reflection_table.flags.bad_for_scaling, all=False)
@@ -140,7 +143,7 @@ def calculate_single_merging_stats(reflection_table, experiment):
   #dataset_id = list(set(reflection_table['id']))[0]
   result = iotbx.merging_statistics.dataset_statistics(
     i_obs=i_obs, n_bins=20, anomalous=False, sigma_filtering=None,
-    use_internal_variance=False, eliminate_sys_absent=False)
+    use_internal_variance=use_internal_variance, eliminate_sys_absent=False)
   return result
 
 def intensity_array_from_cif_file(cif_file):

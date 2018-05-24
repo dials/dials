@@ -81,6 +81,11 @@ phil_scope = phil.parse('''
     merged_mtz = None
       .type = path
       .help = "Filename to export a merged_mtz file."
+    use_internal_variance = False
+      .type = bool
+      .help = "Option to use internal spread of the intensities when merging
+              reflection groups and calculating sigI, rather than using the
+              sigmas of the individual reflections."
   }
   include scope dials.algorithms.scaling.scaling_options.phil_scope
   include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
@@ -225,7 +230,8 @@ class Script(object):
     if self.params.output.calculate_individual_merging_stats and (
       len(set(self.minimised.reflection_table['id'])) > 1):
       results, scaled_ids = calculate_merging_statistics(
-        self.minimised.reflection_table, self.experiments)
+        self.minimised.reflection_table, self.experiments,
+        use_internal_variance=self.params.output.use_internal_variance)
       for result, data_id in zip(results, scaled_ids):
         make_sub_header("Merging statistics for dataset " + str(data_id),
           out=log.info_handle(logger))
@@ -236,11 +242,12 @@ class Script(object):
     self.scaled_miller_array = self.scaled_data_as_miller_array(self.experiments[0],
       self.minimised.reflection_table, anomalous_flag=False)
 
-    make_sub_header("Overall merging statistics",
+    make_sub_header("Overall merging statistics (non-anomalous)",
         out=log.info_handle(logger))
     result = iotbx.merging_statistics.dataset_statistics(
-      i_obs=self.scaled_miller_array, n_bins=20, anomalous=False, sigma_filtering=None,
-      use_internal_variance=False, eliminate_sys_absent=False)
+      i_obs=self.scaled_miller_array, n_bins=20, anomalous=False,
+      sigma_filtering=None, eliminate_sys_absent=False,
+      use_internal_variance=self.params.output.use_internal_variance)
     result.show(header=0)#out=log.info_handle(logger))
     result.show_estimated_cutoffs()
     plot_labels.append('Overall dataset')
@@ -279,7 +286,8 @@ class Script(object):
         column_root_label='IMEAN') # what does column_root_label do?
       anomalous_scaled = self.scaled_data_as_miller_array(self.experiments[0],
         self.minimised.reflection_table, anomalous_flag=True)
-      merged_anom = anomalous_scaled.merge_equivalents().array()
+      merged_anom = anomalous_scaled.merge_equivalents(
+        use_internal_variance=self.params.output.use_internal_variance).array()
       multiplticies = merged_anom.multiplicities()
       mtz_dataset.add_miller_array(merged_anom, column_root_label='I',
         column_types='KM')

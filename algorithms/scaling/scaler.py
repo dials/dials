@@ -318,8 +318,10 @@ class SingleScalerBase(ScalerBase):
         reflection_table['intensity.'+intstr+'.value'] * conversion)
       reflection_table['variance'] = (
         reflection_table['intensity.'+intstr+'.variance'] * (conversion**2))
-      logger.info('%s intensity values will be used for scaling. \n',
-        'Profile fitted' if intstr == 'prf' else 'Summation integrated')
+      msg = ('{0} intensity values will be used for scaling (and mtz \n'
+      'output if applicable). \n').format('Profile fitted' if intstr == 'prf'
+      else 'Summation integrated')
+      logger.info(msg)
     #perform a combined prf/sum in a similar fashion to aimless
     else:
       logger.info('Intensity selection choice does not have an implementation \n'
