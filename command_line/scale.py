@@ -274,6 +274,8 @@ class Script(object):
       params, _ = parser.parse_args(args=[], show_diff_phil=False)
       params.mtz.apply_scales = True
       params.mtz.hklout = self.params.output.unmerged_mtz
+      if self.params.scaling_options.integration_method == 'sum':
+        params.mtz.ignore_profile_fitting = True #to make it export summation
       exporter = MTZExporter(params, self.experiments,
         [self.minimised.reflection_table])
       exporter.export()
