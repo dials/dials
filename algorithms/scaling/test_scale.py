@@ -39,6 +39,7 @@ class run_one_scaling(object):
       command = " ".join(args)
       print(command)
       _ = easy_run.fully_buffered(command=command).raise_if_errors()
+    
 
 def test_scale_physical(dials_regression, tmpdir):
   """Test standard scaling of two datasets."""
@@ -46,10 +47,13 @@ def test_scale_physical(dials_regression, tmpdir):
   data_dir = os.path.join(dials_regression, "xia2-28",)
   pickle_path = os.path.join(data_dir, "20_integrated.pickle")
   sweep_path = os.path.join(data_dir, "20_integrated_experiments.json")
-  extra_args = ["model=physical"]
+  extra_args = ["model=physical", "merged_mtz=merged.mtz",
+    "unmerged_mtz=unmerged.mtz"]
 
   with tmpdir.as_cwd():
     _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
+    assert os.path.exists("unmerged.mtz")
+    assert os.path.exists("merged.mtz")
 
   # run again with the concurrent scaling option turned off and the 'standard'
   # outlier rejection

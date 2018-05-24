@@ -27,14 +27,15 @@ import sys
 from libtbx import phil
 from libtbx.utils import Sorry
 from libtbx.str_utils import make_sub_header
-from cctbx.miller import crystal
+from cctbx import miller, crystal
+import iotbx.merging_statistics
 from dials.util import halraiser, log
 from dials.array_family import flex
 from dials.util.options import OptionParser, flatten_reflections,\
   flatten_experiments
+from dials.util.version import dials_version
 from dials.algorithms.scaling.scaling_library import create_scaling_model,\
-  calculate_merging_statistics, calculate_single_merging_stats,\
-  create_datastructures_for_structural_model
+  calculate_merging_statistics, create_datastructures_for_structural_model
 from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScalerFactory
 from dials.algorithms.scaling.scaling_utilities import (
@@ -74,6 +75,12 @@ phil_scope = phil.parse('''
       .type = str
       .help = "Option to set filepath for output pickle file of scaled
                intensities."
+    unmerged_mtz = None
+      .type = path
+      .help = "Filename to export an unmerged_mtz, calls dials.export internally."
+    merged_mtz = None
+      .type = path
+      .help = "Filename to export a merged_mtz file."
   }
   include scope dials.algorithms.scaling.scaling_options.phil_scope
   include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
@@ -90,6 +97,7 @@ class Script(object):
     self.params, _ = optionparser.parse_args(show_diff_phil=False)
     self.scaler = None
     self.minimised = None
+    self.scaled_miller_array = None
 
     log.config(verbosity=1, info=self.params.output.log,
       debug=self.params.output.debug_log)
@@ -98,7 +106,6 @@ class Script(object):
       optionparser.print_help()
       sys.exit()
 
-    from dials.util.version import dials_version
     logger.info(dials_version())
 
     diff_phil = optionparser.diff_phil.as_str()
@@ -157,7 +164,6 @@ class Script(object):
     logger.info("\nTotal time taken: {0:.4f}s ".format(finish_time - start_time))
     logger.info('\n'+'='*80+'\n')
 
-
   def prepare_input(self):
     """Perform any cutting of the dataset prior to creating scaling models."""
     for reflection in self.reflections:
@@ -191,12 +197,31 @@ class Script(object):
     self.scaler = create_scaler(self.params, self.experiments, self.reflections)
     self.minimised = self.scaling_algorithm(self.scaler)
 
+  def scaled_data_as_miller_array(self, experiment, reflection_table,
+    anomalous_flag=False):
+    """Get a scaled miller array from an experiment and reflection table."""
+    bad_refl_sel = reflection_table.get_flags(
+      reflection_table.flags.bad_for_scaling, all=False)
+    r_t = reflection_table.select(~bad_refl_sel)
+    miller_set = miller.set(
+      crystal_symmetry=experiment.crystal.get_crystal_symmetry(),
+      indices=r_t['miller_index'], anomalous_flag=anomalous_flag)
+    i_obs = miller.array(
+      miller_set, data=r_t['intensity']/r_t['inverse_scale_factor'])
+    i_obs.set_observation_type_xray_intensity()
+    i_obs.set_sigmas((r_t['variance']**0.5)/r_t['inverse_scale_factor'])
+    i_obs.set_info(
+      miller.array_info(source='DIALS', source_type='reflection_tables'))
+    return i_obs
+
 
   def merging_stats(self):
     """Calculate and print the merging statistics."""
     logger.info('\n'+'='*80+'\n')
     # Calculate merging stats.
     plot_labels = []
+
+
     if self.params.output.calculate_individual_merging_stats and (
       len(set(self.minimised.reflection_table['id'])) > 1):
       results, scaled_ids = calculate_merging_statistics(
@@ -207,14 +232,18 @@ class Script(object):
         result.show(header=0)#out=log.info_handle(logger))
         result.show_estimated_cutoffs()
         plot_labels.append('Dataset ' + str(data_id))
-    else:
-      make_sub_header("Overall merging statistics",
-          out=log.info_handle(logger))
-      result = calculate_single_merging_stats(
-        self.minimised.reflection_table, self.experiments[0])
-      result.show(header=0)#out=log.info_handle(logger))
-      result.show_estimated_cutoffs()
-      plot_labels.append('Overall dataset')
+
+    self.scaled_miller_array = self.scaled_data_as_miller_array(self.experiments[0],
+      self.minimised.reflection_table, anomalous_flag=False)
+
+    make_sub_header("Overall merging statistics",
+        out=log.info_handle(logger))
+    result = iotbx.merging_statistics.dataset_statistics(
+      i_obs=self.scaled_miller_array, n_bins=20, anomalous=False, sigma_filtering=None,
+      use_internal_variance=False, eliminate_sys_absent=False)
+    result.show(header=0)#out=log.info_handle(logger))
+    result.show_estimated_cutoffs()
+    plot_labels.append('Overall dataset')
 
     # Plot merging stats if requested.
     if self.params.output.plot_merging_stats:
@@ -224,8 +253,44 @@ class Script(object):
   def output(self):
     """Save the experiments json and scaled pickle file."""
     logger.info('\n'+'='*80+'\n')
+
     if self.params.scaling_options.target_model:
       self.experiments = self.experiments[:-1]
+
+    if self.params.output.unmerged_mtz:
+      logger.info("\nSaving output to an unmerged mtz file to %s.",
+        self.params.output.unmerged_mtz)
+      from dials.command_line.export import MTZExporter
+      from dials.command_line.export import phil_scope as export_phil_scope
+      parser = OptionParser(read_experiments=False, read_reflections=False,
+        read_datablocks=False, phil=export_phil_scope)
+      params, _ = parser.parse_args(args=[], show_diff_phil=False)
+      params.mtz.apply_scales = True
+      params.mtz.hklout = self.params.output.unmerged_mtz
+      exporter = MTZExporter(params, self.experiments,
+        [self.minimised.reflection_table])
+      exporter.export()
+
+    if self.params.output.merged_mtz:
+      logger.info("\nSaving output to a merged mtz file to %s.\n",
+        self.params.output.merged_mtz)
+      merged_scaled = self.scaled_miller_array.merge_equivalents().array()
+      mtz_dataset = merged_scaled.as_mtz_dataset(crystal_name='dials',
+        column_root_label='IMEAN') # what does column_root_label do?
+      anomalous_scaled = self.scaled_data_as_miller_array(self.experiments[0],
+        self.minimised.reflection_table, anomalous_flag=True)
+      merged_anom = anomalous_scaled.merge_equivalents().array()
+      multiplticies = merged_anom.multiplicities()
+      mtz_dataset.add_miller_array(merged_anom, column_root_label='I',
+        column_types='KM')
+      mtz_dataset.add_miller_array(multiplticies, column_root_label='N',
+        column_types='I')
+      mtz_file = mtz_dataset.mtz_object()
+      mtz_file.set_title('from dials.scale')
+      date_str = time.strftime('%d/%m/%Y at %H:%M:%S', time.gmtime())
+      mtz_file.add_history('From %s, run on %s' % (dials_version(), date_str))
+      mtz_file.write(self.params.output.merged_mtz)
+
     save_experiments(self.experiments, self.params.output.experiments)
     save_reflections(self.minimised, self.params.output.scaled)
 
