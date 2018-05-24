@@ -266,14 +266,14 @@ class MTZExporter(object):
       self.reflections,
       self.experiments,
       self.params.mtz.hklout,
-      include_partials=params.mtz.include_partials,
-      keep_partials=params.mtz.keep_partials,
-      scale_partials=params.mtz.scale_partials,
-      min_isigi=params.mtz.min_isigi,
-      force_static_model=params.mtz.force_static_model,
-      filter_ice_rings=params.mtz.filter_ice_rings,
-      ignore_profile_fitting=params.mtz.ignore_profile_fitting,
-      apply_scales=params.mtz.apply_scales)
+      include_partials=self.params.mtz.include_partials,
+      keep_partials=self.params.mtz.keep_partials,
+      scale_partials=self.params.mtz.scale_partials,
+      min_isigi=self.params.mtz.min_isigi,
+      force_static_model=self.params.mtz.force_static_model,
+      filter_ice_rings=self.params.mtz.filter_ice_rings,
+      ignore_profile_fitting=self.params.mtz.ignore_profile_fitting,
+      apply_scales=self.params.mtz.apply_scales)
     from cStringIO import StringIO
     summary = StringIO()
     m.show_summary(out=summary)
