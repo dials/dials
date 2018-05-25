@@ -153,16 +153,16 @@ def print_step_table(refinery):
 
 class ErrorModelRefinery(object):
   """Mixin class to add extra return method."""
-  def __init__(self, error_model_manager):
-    self.error_manager = error_model_manager
+  def __init__(self, error_model_target):
+    self.error_model_target = error_model_target
 
-  def return_error_manager(self):
+  def return_error_model(self):
     """Set error manager parameters and return error manager."""
     print_step_table(self)
-    self.error_manager.refined_parameters = self._target.x
+    self._target.error_model.refined_parameters = self._target.x
     logger.info("\nMinimised error model with parameters {0:.5f} and {1:.5f}. {sep}"
           .format(self._target.x[0], abs(self._target.x[1]), sep='\n'))
-    return self.error_manager
+    return self._target.error_model
 
 
 class ScalingRefinery(object):
@@ -210,9 +210,10 @@ class ScalingRefinery(object):
 class ScalingSimpleLBFGS(ScalingRefinery, SimpleLBFGS):
   """Adapt Refinery for L-BFGS minimiser"""
   def __init__(self, *args, **kwargs):
+    logger.info('Performing a round of scaling with an LBFGS minimizer. \n')
     SimpleLBFGS.__init__(self, *args, **kwargs)
     ScalingRefinery.__init__(self, self._target.scaler)
-    
+
   def compute_functional_gradients_and_curvatures(self):
     """overwrite method to avoid calls to 'blocks' methods of target"""
     self.prepare_for_step()
@@ -254,6 +255,7 @@ class ScalingSimpleLBFGS(ScalingRefinery, SimpleLBFGS):
 class ScalingLBFGScurvs(ScalingRefinery, LBFGScurvs):
   """Adapt Refinery for L-BFGS minimiser"""
   def __init__(self, *args, **kwargs):
+    logger.info('Performing a round of scaling with an LBFGS minimizer. \n')
     LBFGScurvs.__init__(self, *args, **kwargs)
     ScalingRefinery.__init__(self, self._target.scaler)
     self._target.curvatures = True
@@ -354,7 +356,7 @@ class ScalingGaussNewtonIterations(ScalingLstbxBuildUpMixin, GaussNewtonIteratio
   def __init__(self, target, prediction_parameterisation, constraints_manager=None,
                log=None, verbosity=0, tracking=None,
                max_iterations=20):
-
+    logger.info('Performing a round of scaling with a Gauss-Newton minimizer.\n')
     GaussNewtonIterations.__init__(
              self, target, prediction_parameterisation, constraints_manager,
              log=log, verbosity=verbosity, tracking=tracking,
@@ -368,7 +370,7 @@ class ScalingLevenbergMarquardtIterations(ScalingLstbxBuildUpMixin, LevenbergMar
   def __init__(self, target, prediction_parameterisation, constraints_manager=None,
                log=None, verbosity=0, tracking=None,
                max_iterations=20):
-
+    logger.info('Performing a round of scaling with a Levenberg-Marquardt minimizer.\n')
     LevenbergMarquardtIterations.__init__(
              self, target, prediction_parameterisation, constraints_manager,
              log=log, verbosity=verbosity, tracking=tracking,

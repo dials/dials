@@ -7,11 +7,11 @@ class ErrorModelTarget(object):
   rmsd_names = ["RMSD_deltahl"]
   rmsd_units = ["a.u"]
 
-  def __init__(self, error_manager, starting_values=None):
+  def __init__(self, error_model, starting_values=None):
     if not starting_values:
       starting_values = [1.0, 0.05]
     # Note - don't initialise with b = 0.0 or it gets stuck on 0.0!!
-    self.error_model = error_manager
+    self.error_model = error_model
     self.x = starting_values
 
     # Quantities to cache each step

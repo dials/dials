@@ -6,11 +6,11 @@ of a TargetScaler.
 
 from math import log
 import pytest
-from dials.array_family import flex
-from dials.util.options import OptionParser
 from libtbx import phil
 from libtbx.test_utils import approx_equal
 from dxtbx.model import Crystal, Experiment, ExperimentList
+from dials.array_family import flex
+from dials.util.options import OptionParser
 from dials.algorithms.scaling.scaler_factory import TargetScalerFactory
 from dials.algorithms.scaling.scaling_library import scale_against_target
 

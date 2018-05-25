@@ -56,15 +56,12 @@ class active_parameter_manager(object):
   def set_param_vals(self, x):
     """Set method for refinement engine access."""
     self.x = x
-    #print('setting params vals')
-    #print(list(self.x))
     for component in self.components:
       component_obj = self.components[component]['object']
       component_obj.parameters = self.select_parameters(component)
 
   def get_param_vals(self):
     """Get method for refinement engine access."""
-    #print('getting params vals')
     return self.x
 
   def calculate_model_state_uncertainties(self, var_cov):
@@ -100,9 +97,11 @@ class multi_active_parameter_manager(object):
     self.components_list = [] # A list of the component names.
     self.apm_list = []
     self.apm_data = OrderedDict()
-    for components, selection_list in zip(components_list, selection_lists):
+    for j, (components, selection_list) in enumerate(
+      zip(components_list, selection_lists)):
       self.apm_list.append(apm_class(components, selection_list))
-
+      logger.info('Components to be refined in this cycle for datasest %s: %s',
+        j, ''.join(str(i)+', ' for i in components).rstrip(', '))
     n_cumul_params = 0
     for i, apm in enumerate(self.apm_list):
       self.x.extend(apm.x)
@@ -115,8 +114,9 @@ class multi_active_parameter_manager(object):
     for apm in self.apm_list:
       for comp in apm.components:
         self.components_list.extend([comp])
-    logger.info('Configured a multi-dataset parameter manager for %s datasets.\n',
+    logger.info('\nConfigured a parameter manager for %s datasets.\n',
       len(self.apm_list))
+
 
   def select_parameters(self, apm_number):
     """Select the subset of self.x corresponding to the apm number."""

@@ -5,12 +5,12 @@ Tests for scaling library module.
 import pytest
 from libtbx import phil
 from mock import Mock, patch
-from dials.util.options import OptionParser
-from dials.array_family import flex
 from cctbx import miller, crystal
 from cctbx.sgtbx import space_group
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
+from dials.util.options import OptionParser
+from dials.array_family import flex
 from dials.algorithms.scaling.scaling_library import scale_single_dataset,\
   create_scaling_model, create_datastructures_for_structural_model
 from dials.algorithms.scaling.model.model import KBScalingModel

@@ -6,12 +6,12 @@ import numpy as np
 import pytest
 from mock import Mock
 from scitbx import sparse
-from dials.array_family import flex
-from dials.util.options import OptionParser
 from libtbx import phil
 from libtbx.test_utils import approx_equal
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
+from dials.array_family import flex
+from dials.util.options import OptionParser
 from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.algorithms.scaling.scaler_factory import create_scaler
 from dials.algorithms.scaling.target_function import ScalingTarget, \

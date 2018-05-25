@@ -27,8 +27,7 @@ from dials.algorithms.scaling.target_function import ScalingTarget,\
   ScalingTargetFixedIH
 from dials.algorithms.scaling.scaling_refiner import scaling_refinery,\
   error_model_refinery
-from dials.algorithms.scaling.error_model.error_model import \
-  BasicErrorModel
+from dials.algorithms.scaling.error_model.error_model import get_error_model
 from dials.algorithms.scaling.error_model.error_model_target import \
   ErrorModelTarget
 from dials.algorithms.scaling.parameter_handler import create_apm_factory
@@ -190,6 +189,7 @@ class SingleScalerBase(ScalerBase):
     super(SingleScalerBase, self).__init__()
     self._experiments = experiment
     self._params = params
+    self.verbosity = params.scaling_options.verbosity
     self._space_group = self.experiments.crystal.get_space_group()
     if self._params.scaling_options.space_group:
       self.space_group = self._params.scaling_options.space_group
@@ -310,10 +310,10 @@ class SingleScalerBase(ScalerBase):
         conversion *= inverse_partiality
       if 'lp' in reflection_table:
         conversion *= reflection_table['lp']
-      if 'dqe' in reflection_table:
-        conversion /= reflection_table['dqe']
       if 'qe' in reflection_table:
         conversion /= reflection_table['qe']
+      elif 'dqe' in reflection_table:
+        conversion /= reflection_table['dqe']
       reflection_table['intensity'] = (
         reflection_table['intensity.'+intstr+'.value'] * conversion)
       reflection_table['variance'] = (
@@ -363,10 +363,13 @@ class SingleScalerBase(ScalerBase):
       scaled_invsf *= scales
     self.reflection_table['inverse_scale_factor'].set_selected(scaled_isel,
       scaled_invsf)
-    logger.info('Scale factors determined during minimisation have now been\n'
-      'applied to all reflections for dataset %s.\n',
-      self.reflection_table['id'][0])
+    if self.verbosity > 1:
+      logger.info('Scale factors determined during minimisation have now been\n'
+        'applied to all reflections for dataset %s.\n',
+        self.reflection_table['id'][0])
     if self.var_cov_matrix and calc_cov:
+      if self.verbosity > 1:
+        logger.info('Calculating error estimates of inverse scale factors. \n')
       scaled_invsfvar = calc_sf_variances(self.components, self._var_cov)
       self.reflection_table['inverse_scale_factor_variance'].set_selected(
         scaled_isel, scaled_invsfvar)
@@ -401,12 +404,28 @@ class SingleScalerBase(ScalerBase):
     logger.info(msg)
     return reflection_table
 
-  def apply_error_model_to_variances(self):
+  def adjust_variances(self):
     """Apply an aimless-like error model to the variances."""
     error_model = self.experiments.scaling_model.error_model
-    self.reflection_table['variance'] = error_model.update_variances(
-      self.reflection_table['variance'])
-    logger.info('The error model determined has been applied to the variances')
+    if error_model and self.params.weighting.output_optimised_vars:
+      self.reflection_table['variance'] = error_model.update_variances(
+        self.reflection_table['variance'])
+      if self.verbosity > 1:
+        msg = ('The error model has been used to adjust the variances for dataset {0}. \n'
+          ).format(self.reflection_table['id'][0])
+        logger.info(msg)
+    # now increase the errors slightly to take into account the uncertainty in the
+    # inverse scale factors
+    fractional_error = (self.reflection_table['inverse_scale_factor_variance'] /
+      self.reflection_table['inverse_scale_factor'])
+    variance_scaling = (flex.double(self.reflection_table.size(), 1.0) +
+      fractional_error)
+    self.reflection_table['variance'] *= variance_scaling
+    if self.verbosity > 1:
+      msg = ('The variances have been adjusted to account for the uncertainty \n'
+      'in the scaling model for dataset {0}. \n').format(
+        self.reflection_table['id'][0])
+      logger.info(msg)
 
   '''def apply_selection_to_SFs(self, sel):
     """Updates data from within current SF objects using the given selection.
@@ -430,13 +449,22 @@ class SingleScalerBase(ScalerBase):
       for component in self.components.itervalues():
         component.update_reflection_data(self.reflection_table, selection, block_selections)
 
+  def reselect_reflections_for_scaling(self):
+    """Set the components data back to the scaling_selection."""
+    block_selections = self.Ih_table.blocked_selection_list[0]
+    for component in self.components.itervalues():
+      component.update_reflection_data(self.reflection_table, self.scaling_selection,
+        block_selections)
+
+
   def perform_error_optimisation(self):
-    self.Ih_table = IhTable([(self._reflection_table, None)], self.space_group)
+    Ih_table = IhTable([(self._reflection_table, None)], self.space_group)
+    error_model = get_error_model(self.params.weighting.error_model)
     refinery = error_model_refinery(engine='SimpleLBFGS',
-      target=ErrorModelTarget(BasicErrorModel(self.Ih_table.blocked_data_list[0])),
+      target=ErrorModelTarget(error_model(Ih_table.blocked_data_list[0])),
       max_iterations=100)
     refinery.run()
-    error_model = refinery.return_error_manager()
+    error_model = refinery.return_error_model()
     self.update_error_model(error_model)
 
   def _configure_reflection_table(self):
@@ -461,6 +489,7 @@ class MultiScalerBase(ScalerBase):
     self._initial_keys = self.single_scalers[0].initial_keys
     self._params = params
     self._experiments = experiments[0]
+    self.verbosity = params.scaling_options.verbosity
 
   def calculate_restraints(self, apm):
     """Calculate a restraints residuals/gradient vector for multiple datasets."""
@@ -471,8 +500,13 @@ class MultiScalerBase(ScalerBase):
     return MultiScalingRestraints(apm).calculate_jacobian_restraints()
 
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
+    if self.verbosity <= 1 and calc_cov:
+      logger.info('Calculating error estimates of inverse scale factors. \n')
     for scaler in self.active_scalers:
       scaler.expand_scales_to_all_reflections(caller=self, calc_cov=calc_cov)
+    if self.verbosity <= 1:
+      logger.info(('Scale factors determined during minimisation have now been\n'
+      'applied to all datasets.\n'))
 
   @abc.abstractmethod
   def join_multiple_datasets(self):
@@ -501,10 +535,20 @@ class MultiScalerBase(ScalerBase):
     logger.info(msg)
     return reflection_table
 
-  def apply_error_model_to_variances(self):
+  def adjust_variances(self):
     """Update variances of individual reflection tables."""
     for scaler in self.single_scalers:
-      scaler.apply_error_model_to_variances()
+      scaler.adjust_variances()
+    if self.verbosity <= 1:
+      if (self.single_scalers[0].experiments.scaling_model.error_model and
+        self.params.weighting.output_optimised_vars):
+        msg = ('The error model has been used to adjust the variances for all \n'
+         'applicable datasets. \n')
+        logger.info(msg)
+      msg = ('The variances have been adjusted to account for the uncertainty \n'
+      'in the scaling model for all datasets. \n')
+      logger.info(msg)
+
 
   def update_for_minimisation(self, apm, curvatures=False):
     """Update the scale factors and Ih for the next iteration of minimisation."""
@@ -554,16 +598,16 @@ class MultiScalerBase(ScalerBase):
 
   def perform_error_optimisation(self):
     """Perform an optimisation of the sigma values."""
-    for s_scaler in self.active_scalers:
-      s_scaler.Ih_table = IhTable([(s_scaler.reflection_table, None)],
-        s_scaler.space_group)
-      refinery = error_model_refinery(engine='SimpleLBFGS',
-        target=ErrorModelTarget(BasicErrorModel(
-          s_scaler.Ih_table.blocked_data_list[0])), max_iterations=100)
-      refinery.run()
-      error_model = refinery.return_error_manager()
-      s_scaler.update_error_model(error_model)
-    self.Ih_table.update_weights_from_error_models()
+    Ih_table = IhTable([(x.reflection_table, None)
+      for x in self.active_scalers], self._space_group,
+      n_blocks=1)
+    error_model = get_error_model(self.params.weighting.error_model)
+    refinery = error_model_refinery(engine='SimpleLBFGS',
+      target=ErrorModelTarget(error_model(Ih_table.blocked_data_list[0])),
+      max_iterations=100)
+    refinery.run()
+    error_model = refinery.return_error_model()
+    self.update_error_model(error_model)
 
 class MultiScaler(MultiScalerBase):
   """
@@ -584,6 +628,10 @@ class MultiScaler(MultiScalerBase):
       self._Ih_table.split_into_free_work(
         self.params.scaling_options.free_set_percentage)'''
     self.active_scalers = self.single_scalers
+    if len(self.active_scalers) > 2:
+      self.verbosity -= 1
+      for scaler in self.active_scalers:
+        scaler.verbosity -= 1
     #now add data to scale components from datasets
     for i, scaler in enumerate(self.active_scalers):
       for component in scaler.components.itervalues():
@@ -591,9 +639,18 @@ class MultiScaler(MultiScalerBase):
           scaler.scaling_selection, self.Ih_table.blocked_selection_list[i])
     logger.info('Completed configuration of MultiScaler. \n\n' + '='*80 + '\n')
 
+  def reselect_reflections_for_scaling(self):
+    for i, scaler in enumerate(self.active_scalers):
+      for component in scaler.components.itervalues():
+        component.update_reflection_data(scaler.reflection_table,
+          scaler.scaling_selection, self.Ih_table.blocked_selection_list[i])
+
   def update_error_model(self, error_model):
     """Update the error model in Ih table."""
-    self.Ih_table.update_error_model(error_model)
+    for block in self.Ih_table.blocked_data_list:
+      block.update_error_model(error_model.refined_parameters)
+    for scaler in self.active_scalers:
+      scaler.experiments.scaling_model.set_error_model(error_model)
 
   def update_for_minimisation(self, apm, curvatures=False):
     '''update the scale factors and Ih for the next iteration of minimisation,
@@ -676,6 +733,7 @@ class NullScaler(ScalerBase):
     super(NullScaler, self).__init__()
     self._experiments = experiment
     self._params = params
+    self.verbosity = params.scaling_options.verbosity
     self._space_group = self.experiments.crystal.get_space_group()
     if self._params.scaling_options.space_group:
       self._space_group = self._params.scaling_options.space_group
@@ -728,5 +786,4 @@ def calc_sf_variances(components, var_cov):
         block = row_multiply(block, components[component].inverse_scales[0])
     jacobian.assign_block(block, 0, n_cumulative_param)
     n_cumulative_param += n_param
-  logger.info('Calculating error estimates of inverse scale factors. \n')
   return cpp_calc_sigmasq(jacobian.transpose(), var_cov)

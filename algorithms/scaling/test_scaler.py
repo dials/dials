@@ -368,7 +368,7 @@ def test_SingleScaler(test_reflections, test_experiments, test_params,
   assert mock_em.refined_parameters == (
     singlescaler.experiments.scaling_model.configdict['error_model_parameters'])
 
-  singlescaler.apply_error_model_to_variances()
+  singlescaler.adjust_variances()
   assert singlescaler.reflection_table['variance'] == mock_em.update_variances()
 
   new_sg = "P 1"
@@ -570,8 +570,8 @@ def test_MultiScalerBase(mock_singlescaler, mock_explist_2, test_params,
     assert r == 'test_jacob'
 
   # Test calls for updating of individual error models.
-  multiscaler.apply_error_model_to_variances()
-  assert mock_singlescaler.apply_error_model_to_variances.call_count == 2
+  multiscaler.adjust_variances()
+  assert mock_singlescaler.adjust_variances.call_count == 2
 
   # Test calls for individual reflection selection.
   multiscaler.select_reflections_for_scaling()
@@ -650,10 +650,22 @@ def test_new_Multiscaler(test_2_reflections, test_2_experiments, test_params):
   assert list(block_sels[1][0]) == [2, 4]    #dataset 1, block 0
   assert list(block_sels[1][1]) == [1, 0, 3] #dataset 1, block 1
 
-  with mock.patch.object(multiscaler.Ih_table, 'update_error_model',
-    autospec=True, side_effect=do_nothing_side_effect) as update_em:
-    multiscaler.update_error_model(Mock())
-    assert update_em.call_count == 1
+  blocks = multiscaler.Ih_table.blocked_data_list
+  sscalers = multiscaler.active_scalers
+
+  with mock.patch.object(blocks[0], 'update_error_model', autospec=True,
+    side_effect=do_nothing_side_effect) as update_em_1:
+    with mock.patch.object(blocks[1], 'update_error_model', autospec=True,
+      side_effect=do_nothing_side_effect) as update_em_2:
+      with mock.patch.object(sscalers[0].experiments.scaling_model, 'set_error_model',
+        autospec=True, side_effect=do_nothing_side_effect) as update_em_3:
+        with mock.patch.object(sscalers[1].experiments.scaling_model, 'set_error_model',
+          autospec=True, side_effect=do_nothing_side_effect) as update_em_4:
+          multiscaler.update_error_model(Mock())
+          assert update_em_1.call_count == 1
+          assert update_em_2.call_count == 1
+          assert update_em_3.call_count == 1
+          assert update_em_4.call_count == 1
 
   # Test call to join multiple datasets - should call the method of
   # multiscalerbase with the single scalers.

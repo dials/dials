@@ -75,14 +75,23 @@ phil_scope = iotbx.phil.parse('''
               other than invvar and unity may trigger iterative reweighting
               during minimisation, which may be unstable for certain minimisation
               engines (LBFGS)."
-    optimise_error_model = False
+    optimise_errors = False
       .type = bool
       .help = "Option to allow optimisation of weights for scaling. Performs
                and additional scale factor minimisation after adjusting weights."
-    error_model_params = None
-      .type = floats(size=2)
-      .help = "Ability to force an error model adjustment, based on the model
-              used in aimless - factors are called SDFac, SDadd in aimless."
+    error_model = *basic
+      .type = choice
+      .help = "The name of the error model to use, if optimise_errors is True."
+    output_optimised_vars = True
+      .type = bool
+      .help = "If True, the error model determined will be applied to the
+              intensity variances in the output files. This may result in
+              a significant increase or decrease in the variances. The default
+              is True as with the default inverse variance weighting scheme,
+              the modified variances have been used as weights in scaling and
+              therefore should be used as the variances when calculating merged
+              intensities downstream. If this is distorting the data too much,
+              then it is likely that the chosen error model is inappropriate."
   }
   cut_data {
     exclude_image_range = None
@@ -148,7 +157,7 @@ phil_scope = iotbx.phil.parse('''
       .type = float(value_min=6.0)
       .help = "Cutoff z-score value for identifying outliers based on their
                normalised deviation within the group of equivalent reflections"
-    verbosity = 1
+    verbosity = 2
       .type = int(value_min=0)
       .help = "The verbosity level"
     integration_method = *prf sum

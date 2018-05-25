@@ -39,10 +39,10 @@ class run_one_scaling(object):
       command = " ".join(args)
       print(command)
       _ = easy_run.fully_buffered(command=command).raise_if_errors()
-    
+
 
 def test_scale_physical(dials_regression, tmpdir):
-  """Test standard scaling of two datasets."""
+  """Test standard scaling of one dataset."""
 
   data_dir = os.path.join(dials_regression, "xia2-28",)
   pickle_path = os.path.join(data_dir, "20_integrated.pickle")
@@ -63,6 +63,15 @@ def test_scale_physical(dials_regression, tmpdir):
     assert os.path.exists("scale_model.png")
     assert os.path.exists("absorption_surface.png")
     assert os.path.exists("outliers.png")
+
+def test_scale_optimise_errors(dials_regression, tmpdir):
+  """Test standard scaling of one dataset with error optimisation."""
+  data_dir = os.path.join(dials_regression, "xia2-28",)
+  pickle_path = os.path.join(data_dir, "20_integrated.pickle")
+  sweep_path = os.path.join(data_dir, "20_integrated_experiments.json")
+  extra_args = ["model=physical", "optimise_errors=True"]
+  with tmpdir.as_cwd():
+    _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
 
 def test_scale_array(dials_regression, tmpdir):
   """Test a standard dataset - ideally needs a large dataset or full matrix
@@ -98,6 +107,11 @@ def test_multi_scale(dials_regression, tmpdir):
     assert os.path.exists("absorption_surface_2.png")
     assert os.path.exists("outliers_1.png")
     assert os.path.exists("outliers_2.png")
+
+    #run again, optimising errors, and continuing from where last run left off.
+    extra_args = ["optimise_errors=True"]
+    _ = run_one_scaling(["scaled.pickle"], ["scaled_experiments.json"],
+      extra_args)
 
 def test_targeted_scaling(dials_regression, tmpdir):
   """Test the targeted scaling workflow."""

@@ -53,7 +53,7 @@ class ScalingModelBase(object):
 
   @property
   def error_model(self):
-    """An error model associated with the scaling model."""
+    """The error model associated with the scaling model."""
     return self._error_model
 
   @property
@@ -95,8 +95,9 @@ class ScalingModelBase(object):
   def set_error_model(self, error_model):
     """Associate an error model with the dataset."""
     self._error_model = error_model
-    self._configdict.update({'error_model_parameters' :
-      error_model.refined_parameters})
+    self._configdict.update({
+      'error_model_type' : self.error_model.__class__.__name__,
+      'error_model_parameters' : list(error_model.refined_parameters)})
 
   def show(self):
     """Print a representation of the scaling model."""

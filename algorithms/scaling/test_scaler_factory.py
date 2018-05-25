@@ -3,12 +3,12 @@ Tests for the scaler factory classes and helper functions.
 """
 from copy import deepcopy
 import pytest
-from dials.array_family import flex
-from dials.util.options import OptionParser
 from libtbx import phil
 from libtbx.utils import Sorry
 from dxtbx.model import Crystal
 from mock import Mock, MagicMock
+from dials.array_family import flex
+from dials.util.options import OptionParser
 from dials.algorithms.scaling.scaler_factory import SingleScalerFactory,\
   TargetScalerFactory, MultiScalerFactory, is_scaled, create_scaler
 from dials.algorithms.scaling.scaler import SingleScalerBase,\

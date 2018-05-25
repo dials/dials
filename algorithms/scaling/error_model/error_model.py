@@ -4,7 +4,16 @@ Error model classes for scaling.
 import logging
 from dials.array_family import flex
 from scitbx import sparse
+from libtbx.utils import Sorry
 logger = logging.getLogger('dials')
+
+def get_error_model(error_model_type):
+  """Return the correct error model class from a params option."""
+  if error_model_type == 'basic':
+    return BasicErrorModel
+  else:
+    raise Sorry("Invalid choice of error model.")
+
 
 class BasicErrorModel(object):
   """
