@@ -145,6 +145,11 @@ class Script(object):
     reflections = flex.reflection_table.from_observations(
       datablocks[0], params)
 
+    # Add n_signal column - before deleting shoeboxes
+    from dials.algorithms.shoebox import MaskCode
+    good = (MaskCode.Foreground | MaskCode.Valid)
+    reflections['n_signal'] = reflections['shoebox'].count_mask_values(good)
+
     # Delete the shoeboxes
     if not params.output.shoeboxes:
       del reflections['shoebox']
