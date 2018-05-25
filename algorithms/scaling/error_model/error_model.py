@@ -89,8 +89,8 @@ class BasicErrorModel(object):
     sum_delta_sq = (self.delta_hl * self.summation_matrix)**2
     return (sum_deltasq/self.bin_counts) - (sum_delta_sq/(self.bin_counts**2))
 
-  def update_variances(self, variances):
+  def update_variances(self, variances, intensities):
     """Use the error model parameter to calculate new values for the variances."""
     new_variance = self.refined_parameters[0] * (variances
-      + ((self.refined_parameters[1] * variances)**2))**0.5
+      + ((self.refined_parameters[1] * intensities)**2))**0.5
     return new_variance

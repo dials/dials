@@ -362,9 +362,13 @@ def test_SingleScaler(test_reflections, test_experiments, test_params,
   assert list(rt['inverse_scale_factor_variance']) == list(calc_sf_variances(
     singlescaler.components, singlescaler.var_cov_matrix)) + [0.0, 0.0]
 
-  # Test update error model
-  mock_em = mock_errormodel
-  singlescaler.update_error_model(mock_em)
+  # Test update error model - should save to experiments object and call update
+  # to Ih table
+  with mock.patch.object(singlescaler.Ih_table, 'update_error_model',
+    autospec=True, side_effect=do_nothing_side_effect) as update_em_1: 
+    mock_em = mock_errormodel
+    singlescaler.update_error_model(mock_em)
+    assert update_em_1.call_count == 1
   assert mock_em.refined_parameters == (
     singlescaler.experiments.scaling_model.configdict['error_model_parameters'])
 
@@ -389,7 +393,7 @@ def mock_errormodel():
   """A mock error model."""
   em = MagicMock()
   em.refined_parameters = [1.0, 0.1]
-  em.update_variances.return_value = flex.double([1.0, 1.1, 1.0, 1.0])
+  em.update_variances.return_value = flex.double([1.1, 1.0, 0.1, 0.5])
   return em
 
 
@@ -650,22 +654,18 @@ def test_new_Multiscaler(test_2_reflections, test_2_experiments, test_params):
   assert list(block_sels[1][0]) == [2, 4]    #dataset 1, block 0
   assert list(block_sels[1][1]) == [1, 0, 3] #dataset 1, block 1
 
-  blocks = multiscaler.Ih_table.blocked_data_list
   sscalers = multiscaler.active_scalers
 
-  with mock.patch.object(blocks[0], 'update_error_model', autospec=True,
-    side_effect=do_nothing_side_effect) as update_em_1:
-    with mock.patch.object(blocks[1], 'update_error_model', autospec=True,
-      side_effect=do_nothing_side_effect) as update_em_2:
+  with mock.patch.object(multiscaler.Ih_table, 'update_error_model',
+    autospec=True, side_effect=do_nothing_side_effect) as update_em_1:
       with mock.patch.object(sscalers[0].experiments.scaling_model, 'set_error_model',
-        autospec=True, side_effect=do_nothing_side_effect) as update_em_3:
+        autospec=True, side_effect=do_nothing_side_effect) as update_em_2:
         with mock.patch.object(sscalers[1].experiments.scaling_model, 'set_error_model',
-          autospec=True, side_effect=do_nothing_side_effect) as update_em_4:
+          autospec=True, side_effect=do_nothing_side_effect) as update_em_3:
           multiscaler.update_error_model(Mock())
           assert update_em_1.call_count == 1
           assert update_em_2.call_count == 1
           assert update_em_3.call_count == 1
-          assert update_em_4.call_count == 1
 
   # Test call to join multiple datasets - should call the method of
   # multiscalerbase with the single scalers.

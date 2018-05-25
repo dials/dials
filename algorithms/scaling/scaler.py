@@ -172,6 +172,7 @@ class ScalerBase(object):
     """Optimise an error model."""
 
 
+
 class SingleScalerBase(ScalerBase):
   """
   Parent class for single-dataset Scalers, containing a standard
@@ -380,7 +381,7 @@ class SingleScalerBase(ScalerBase):
 
   def update_error_model(self, error_model):
     """Apply a correction to try to improve the error estimate."""
-    self.Ih_table.update_error_model(error_model.refined_parameters)
+    self.Ih_table.update_error_model(error_model)
     self.experiments.scaling_model.set_error_model(error_model)
 
   def compute_restraints_residuals_jacobian(self, apm):
@@ -408,8 +409,11 @@ class SingleScalerBase(ScalerBase):
     """Apply an aimless-like error model to the variances."""
     error_model = self.experiments.scaling_model.error_model
     if error_model and self.params.weighting.output_optimised_vars:
+      """Note : this action has overwritten the variances, so no further
+      error model adjustment should take place, without reinitialising from
+      the input variances (i.e. intensity.prf.variance)."""
       self.reflection_table['variance'] = error_model.update_variances(
-        self.reflection_table['variance'])
+        self.reflection_table['variance'], self.reflection_table['intensity'])
       if self.verbosity > 1:
         msg = ('The error model has been used to adjust the variances for dataset {0}. \n'
           ).format(self.reflection_table['id'][0])
@@ -442,7 +446,8 @@ class SingleScalerBase(ScalerBase):
       self._Ih_table = IhTable([(self.reflection_table, selection)],
         self.space_group, n_blocks=self.params.scaling_options.nproc,
         weighting_scheme=self.params.weighting.weighting_scheme)
-      block_selections = self.Ih_table.blocked_selection_list[0]
+      # Now get the block selections for the first dataset (i.e. the only one!)
+      block_selections = self.Ih_table.blocked_selection_list[0] 
       '''if self.params.scaling_options.use_free_set and split_free_set:
         self._Ih_table.split_into_free_work(
           self.params.scaling_options.free_set_percentage)'''
@@ -450,12 +455,13 @@ class SingleScalerBase(ScalerBase):
         component.update_reflection_data(self.reflection_table, selection, block_selections)
 
   def reselect_reflections_for_scaling(self):
-    """Set the components data back to the scaling_selection."""
+    """Set the components data back to the scaling_selection. Intended for
+    use following the two operations expand_scales_to_all_reflections and
+    error model optimisation."""
     block_selections = self.Ih_table.blocked_selection_list[0]
     for component in self.components.itervalues():
       component.update_reflection_data(self.reflection_table, self.scaling_selection,
         block_selections)
-
 
   def perform_error_optimisation(self):
     Ih_table = IhTable([(self._reflection_table, None)], self.space_group)
@@ -537,7 +543,7 @@ class MultiScalerBase(ScalerBase):
 
   def adjust_variances(self):
     """Update variances of individual reflection tables."""
-    for scaler in self.single_scalers:
+    for scaler in self.active_scalers:
       scaler.adjust_variances()
     if self.verbosity <= 1:
       if (self.single_scalers[0].experiments.scaling_model.error_model and
@@ -589,12 +595,26 @@ class MultiScalerBase(ScalerBase):
       preserve_exception_message=True)
     scales_list, derivs_list = zip(*task_results)'''
 
+  def update_error_model(self, error_model):
+    """Update the error model in Ih table."""
+    self.Ih_table.update_error_model(error_model)
+    for scaler in self.active_scalers:
+      scaler.experiments.scaling_model.set_error_model(error_model)
 
   def select_reflections_for_scaling(self):
     """Select reflections for scaling in individual scalers."""
     #Update the data from the Ih_table
     for scaler in self.active_scalers:
       scaler.select_reflections_for_scaling(for_multi=True)
+
+  def reselect_reflections_for_scaling(self):
+    """Set the components data back to the scaling_selection. Intended for
+    use following the two operations expand_scales_to_all_reflections and
+    error model optimisation."""
+    for i, scaler in enumerate(self.active_scalers):
+      for component in scaler.components.itervalues():
+        component.update_reflection_data(scaler.reflection_table,
+          scaler.scaling_selection, self.Ih_table.blocked_selection_list[i])
 
   def perform_error_optimisation(self):
     """Perform an optimisation of the sigma values."""
@@ -639,18 +659,7 @@ class MultiScaler(MultiScalerBase):
           scaler.scaling_selection, self.Ih_table.blocked_selection_list[i])
     logger.info('Completed configuration of MultiScaler. \n\n' + '='*80 + '\n')
 
-  def reselect_reflections_for_scaling(self):
-    for i, scaler in enumerate(self.active_scalers):
-      for component in scaler.components.itervalues():
-        component.update_reflection_data(scaler.reflection_table,
-          scaler.scaling_selection, self.Ih_table.blocked_selection_list[i])
 
-  def update_error_model(self, error_model):
-    """Update the error model in Ih table."""
-    for block in self.Ih_table.blocked_data_list:
-      block.update_error_model(error_model.refined_parameters)
-    for scaler in self.active_scalers:
-      scaler.experiments.scaling_model.set_error_model(error_model)
 
   def update_for_minimisation(self, apm, curvatures=False):
     '''update the scale factors and Ih for the next iteration of minimisation,
@@ -679,21 +688,24 @@ class TargetScaler(MultiScalerBase):
     logger.info('Determining symmetry equivalent reflections across datasets.\n')
     self.unscaled_scalers = unscaled_scalers
     self.active_scalers = self.unscaled_scalers
+    self._initial_keys = self.unscaled_scalers[0].initial_keys #needed for
+    # scaling against calculated Is???
     self._target_Ih_table = IhTable([(x.reflection_table, x.scaling_selection)
       for x in self.single_scalers], self._space_group,
       n_blocks=1)#Keep in one table for matching below
+    self.initialise_targeted_Ih_table()
+    logger.info('Completed initialisation of TargetScaler. \n' + '*'*40 + '\n')
+    
+  def initialise_targeted_Ih_table(self):
+    """Initialise an Ih_table, using self._target_Ih_table to set the Ih values"""
     self._Ih_table = IhTable([(x.reflection_table, x.scaling_selection)
       for x in self.unscaled_scalers], self._space_group,
-      n_blocks=params.scaling_options.nproc)
-    self._initial_keys = self.unscaled_scalers[0].initial_keys #needed for
-    # scaling against calculated Is
+      n_blocks=self.params.scaling_options.nproc)
     self.set_Ih_values_to_target()
-    #block_selections_list = self.Ih_table.blocked_Ih_table.block_selection_list
     for i, scaler in enumerate(self.active_scalers):
       for component in scaler.components.itervalues():
         component.update_reflection_data(scaler.reflection_table,
           scaler.scaling_selection, self.Ih_table.blocked_selection_list[i])
-    logger.info('Completed initialisation of TargetScaler. \n' + '*'*40 + '\n')
 
   def set_Ih_values_to_target(self):
     """Match equivalent reflections between individual unscaled datasets and
@@ -707,6 +719,12 @@ class TargetScaler(MultiScalerBase):
       '''if self.params.scaling_options.use_free_set:
         scaler.Ih_table.split_into_free_work(
           self.params.scaling_options.free_set_percentage)'''
+
+  def select_reflections_for_scaling(self):
+    """Select reflections for scaling in individual scalers."""
+    for scaler in self.active_scalers:
+      scaler.select_reflections_for_scaling(for_multi=True)
+    self.initialise_targeted_Ih_table()
 
   def join_multiple_datasets(self):
     '''method to create a joint reflection table'''
@@ -740,16 +758,11 @@ class NullScaler(ScalerBase):
     self._scaled_id = scaled_id
     self._reflection_table = reflection
     self._initial_keys = [key for key in self._reflection_table.keys()]
-    #self._reflection_table['intensity'] = self._reflection_table[
-    #  'intensity.calculated.value']
     n_refl = self._reflection_table.size()
     self._reflection_table['inverse_scale_factor'] = flex.double(n_refl, 1.0)
     self._reflection_table['variance'] = flex.double(n_refl, 1.0)
-    #weights = self._reflection_table['intensity.calculated.value']
     self._reflection_table.set_flags(flex.bool(n_refl, False),
       self._reflection_table.flags.excluded_for_scaling)
-    #self._Ih_table = SingleIhTable(self._reflection_table, self.space_group,
-    #  weighting_scheme='unity')
     self.scaling_selection = None
     logger.info('NullScaler contains %s reflections', n_refl)
     logger.info('Completed configuration of NullScaler. \n\n' + '='*80 + '\n')
@@ -760,14 +773,13 @@ class NullScaler(ScalerBase):
     return self.experiments.scaling_model.components
 
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
-    pass
+    """Fill in abstract method"""
 
   def perform_error_optimisation(self):
-    pass
+    """Fill in abstract method"""
 
   def update_for_minimisation(self, apm, curvatures=False):
-    '''update the scale factors and Ih for the next iteration of minimisation'''
-    pass
+    """Fill in abstract method"""
 
 def calc_sf_variances(components, var_cov):
   """Use the parameter var_cov matrix to calculate the variances of the

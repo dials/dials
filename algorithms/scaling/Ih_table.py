@@ -43,10 +43,9 @@ class SingleIhTable(object):
     self.weighting_scheme.calculate_initial_weights()
     self.calc_Ih()
 
-  def update_error_model(self, error_params):
+  def update_error_model(self, error_model):
     """Update the scaling weights based on an error model."""
-    sigmaprime = (((self.variances) + ((error_params[1] * self.intensities)**2)
-                  )**0.5) * error_params[0]
+    sigmaprime = error_model.update_variances(self.variances, self.intensities)
     self.weights = 1.0/(sigmaprime**2)
 
   @property
@@ -263,10 +262,10 @@ class IhTable(object):
     self.sort_by_dataset_id()
     self._size = joint_refl_table.size()
 
-  def update_error_model(self, error_params):
+  def update_error_model(self, error_model):
     """Update the error model in the blocks."""
     for block in self.blocked_data_list:
-      block.update_error_model(error_params)
+      block.update_error_model(error_model)
 
   @property
   def size(self):
@@ -493,12 +492,6 @@ class IhTable(object):
     """Update weights in each block."""
     for block in self.blocked_data_list:
       block.update_weights()
-
-  def update_weights_from_error_models(self):
-    """Reset weights, to be used after the weights of individual Ih tables
-    have been modified."""
-    for block in self.blocked_data_list:
-      block.update_weights_from_error_models()
 
 
 '''def split_into_free_work(self, percentage, offset=0):

@@ -312,16 +312,16 @@ class Script(object):
     """The main scaling algorithm."""
 
     if scaler.id_ == 'target':
+      ### FIXME add in quick prescaling round if large scale difference?
       scaler.perform_scaling()
 
       if scaler.params.scaling_options.only_target or (
         scaler.params.scaling_options.target_model):
         #Do some rounds of targeted scaling and then exit the algorithm.
-        scaler.expand_scales_to_all_reflections()
-
+        #scaler.expand_scales_to_all_reflections()
         # Do another round so that more suitable weights are used.
-        scaler.select_reflections_for_scaling()
-        scaler.perform_scaling()
+        #scaler.select_reflections_for_scaling()
+        #scaler.perform_scaling() ##Note - were these helping?
 
         if scaler.params.scaling_options.full_matrix and (
           scaler.params.scaling_refinery.engine == 'SimpleLBFGS'):

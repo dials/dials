@@ -100,8 +100,8 @@ class multi_active_parameter_manager(object):
     for j, (components, selection_list) in enumerate(
       zip(components_list, selection_lists)):
       self.apm_list.append(apm_class(components, selection_list))
-      logger.info('Components to be refined in this cycle for datasest %s: %s',
-        j, ''.join(str(i)+', ' for i in components).rstrip(', '))
+      #logger.info('Components to be refined in this cycle for datasest %s: %s',
+      #  j, ''.join(str(i)+', ' for i in components).rstrip(', '))
     n_cumul_params = 0
     for i, apm in enumerate(self.apm_list):
       self.x.extend(apm.x)
