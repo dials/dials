@@ -11,7 +11,7 @@ def show_spots(strong_spots):
     vx, vy, vz = zip(*strong_spots['xyzobs.px.variance'])
   except RuntimeError as e:
     # convert RuntimeError into more appropriate exception
-    raise KeyError(e.message)
+    raise KeyError(str(e))
 
   dx = flex.sqrt(flex.double(vx))
   dy = flex.sqrt(flex.double(vy))

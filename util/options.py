@@ -234,7 +234,7 @@ class Importer(object):
     self.handling_errors[argument].append(ArgumentHandlingErrorInfo(
           name=argument,
           validation=validation,
-          message=exception.message,
+          message=str(exception),
           traceback=traceback.format_exc(),
           type=type,
           exception=exception)
