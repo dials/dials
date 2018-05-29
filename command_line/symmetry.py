@@ -7,6 +7,7 @@ import copy
 import os
 
 from libtbx.utils import Keep
+from cctbx import crystal
 from cctbx import miller
 from cctbx import sgtbx
 from cctbx import uctbx
@@ -117,7 +118,6 @@ def run(args):
 
     assert len(experiments) == len(reflections)
 
-    from cctbx import crystal, miller
     for expt, refl in zip(experiments, reflections):
       crystal_symmetry = crystal.symmetry(
         unit_cell=expt.crystal.get_unit_cell(),
@@ -133,7 +133,8 @@ def run(args):
         min_isigi=-5,
         include_partials=False,
         keep_partials=False,
-        scale_partials=True)
+        scale_partials=True,
+        apply_scales=True)
 
       assert 'intensity.sum.value' in refl
       sel = refl.get_flags(refl.flags.integrated_sum)
@@ -222,7 +223,7 @@ def run(args):
       params.absolute_angle_tolerance), (
         str(d.unit_cell()), str(median_uc))
   intensities = datasets[0]
-  for d in datasets[1:10]:
+  for d in datasets:
     intensities = intensities.concatenate(d, assert_is_similar_symmetry=False)
   intensities = intensities.customized_copy(
     crystal_symmetry=crystal.symmetry(
@@ -276,8 +277,8 @@ def run(args):
       if not cb_op_inp_best.is_identity_op():
         mtz_object.change_basis_in_place(cb_op_inp_best)
       mtz_object.set_space_group_info(space_group.info())
-      for crystal in mtz_object.crystals():
-        crystal.set_unit_cell_parameters(best_subsym.unit_cell().parameters())
+      for cryst in mtz_object.crystals():
+        cryst.set_unit_cell_parameters(best_subsym.unit_cell().parameters())
       mtz_object.write(out_name)
       logger.info('Saving reindexed reflections to %s' % out_name)
 
