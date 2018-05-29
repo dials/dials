@@ -36,7 +36,7 @@ def dials_regression():
 @pytest.fixture(scope="session")
 def xia2_regression():
   '''Return the absolute path to the xia2_regression module as a string.
-     Skip the test if dials_regression is not installed.'''
+     Skip the test if xia2_regression is not installed.'''
   try:
     import xia2_regression as xr
   except ImportError:
@@ -47,6 +47,16 @@ def xia2_regression():
 def xia2_regression_build():
   '''Return the absolute path to the xia2_regression directory within the build
      path as a string. Skip the test if xia2_regression is not installed.'''
+  try:
+    import xia2_regression as xr
+  except ImportError:
+    pytest.skip("xia2_regression required for this test")
+  try:
+    dls_common_copy = '/dls/science/groups/scisoft/DIALS/repositories/current/xia2_regression_data'
+    if os.path.exists(dls_common_copy):
+      return dls_common_copy
+  except Exception:
+    pass
   try:
     x2rpath = os.path.join(os.environ.get('LIBTBX_BUILD'), 'xia2_regression')
   except AttributeError:
