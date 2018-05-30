@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 """
-Usage: dials_scratch.scale integrated.pickle integrated_experiments.json
+Usage: dials.scale integrated.pickle integrated_experiments.json
 [integrated.pickle(2) integrated_experiments.json(2) ....] [options]
 
 This program performs scaling on the input datasets. The default
@@ -17,7 +17,7 @@ reflection intensities are left unscaled and unmerged in the output, but an
 the pickle file.
 
 To plot the scale factors determined by this program, one should run:
-dials_scratch.plot_scaling_models scaled.pickle scaled_experiments.json
+dials.plot_scaling_models scaled.pickle scaled_experiments.json
 """
 from __future__ import absolute_import, division, print_function
 import time
@@ -53,10 +53,10 @@ phil_scope = phil.parse('''
       .help = "Set scaling model to be applied to input datasets without
                an existing model. "
   output {
-    log = dials_scratch.scaling.log
+    log = dials.scaling.log
       .type = str
       .help = "The log filename"
-    debug_log = dials_scratch.scaling.debug.log
+    debug_log = dials.scaling.debug.log
       .type = str
       .help = "The debug log filename"
     calculate_individual_merging_stats = False
@@ -305,7 +305,7 @@ class Script(object):
     save_reflections(self.minimised, self.params.output.scaled)
 
     '''if params.output.plot_scaling_models:
-      from dials_scratch.command_line.plot_scaling_models import plot_scaling_models
+      from dials.command_line.plot_scaling_models import plot_scaling_models
       plot_scaling_models(params.output.scaled, params.output.experiments)'''
 
   def scaling_algorithm(self, scaler):
