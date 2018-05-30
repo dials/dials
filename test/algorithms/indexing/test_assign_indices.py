@@ -17,15 +17,10 @@ from dials.algorithms.indexing \
      import index_reflections, index_reflections_local
 from dials.algorithms.indexing.indexer import indexer_base
 
-# set random seeds so tests more reliable
-seed = 54321
-random.seed(seed)
-flex.set_random_seed(seed)
-
 
 def random_rotation(angle_min=0, angle_max=360):
   return euler_angles_as_matrix(
-    [random.uniform(angle_min,angle_max) for i in xrange(3)])
+    [random.uniform(angle_min,angle_max) for i in xrange(3)], deg=True)
 
 
 @pytest.mark.parametrize(
@@ -79,7 +74,6 @@ def test_assign_indices(dials_regression, space_group_info):
     predicted_reflections, sweep.get_detector(), sweep.get_beam(),
     sweep.get_goniometer())
 
-
   # check that local and global indexing worked equally well in absence of errors
   result = compare_global_local(experiment, predicted_reflections,
                                 miller_indices)
@@ -107,7 +101,7 @@ def test_assign_indices(dials_regression, space_group_info):
 
   # the reciprocal matrix
   A = matrix.sqr(cryst_model.get_A())
-  A = random_rotation(angle_max=0.03) * A
+  A = random_rotation(angle_max=0.5) * A
 
   direct_matrix = A.inverse()
   cryst_model2 = Crystal(direct_matrix[0:3],
@@ -123,7 +117,7 @@ def test_assign_indices(dials_regression, space_group_info):
   assert result.misindexed_local <= result.misindexed_global, (
     result.misindexed_local, result.misindexed_global)
   assert result.misindexed_local < 0.01 * result.correct_local
-  assert result.correct_local > result.correct_global
+  assert result.correct_local >= result.correct_global
   # usually the number misindexed is much smaller than this
   assert result.misindexed_local < (0.001 * len(result.reflections_local))
 
@@ -147,7 +141,6 @@ class compare_global_local(object):
         non_zero_sel).count(False)
     self.correct_global = (
       expected_miller_indices == self.reflections_global['miller_index']).count(True)
-
 
     # index reflections using xds-style "local" method
     self.reflections_local = copy.deepcopy(reflections)
