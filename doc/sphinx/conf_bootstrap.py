@@ -402,6 +402,6 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-  'http://docs.python.org/': None,
-  'http://cci.lbl.gov/cctbx_docs/': None
+  'https://docs.python.org/2.7/': None,
+  'https://cctbx.github.io/': None
 }
