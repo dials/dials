@@ -10,20 +10,23 @@ from dials.algorithms.scaling.scaling_utilities import calc_normE2
 from dials.algorithms.scaling.outlier_rejection import reject_outliers
 logger = logging.getLogger('dials')
 
-def create_scaler(params, experiments, reflections):
+def create_scaler(params, experiments, reflections, dataset_ids=None):
   """Read an experimentlist and list of reflection tables and return
     an appropriate scaler."""
   if len(reflections) == 1:
-    scaler = SingleScalerFactory.create(params, experiments[0], reflections[0])
+    if not dataset_ids:
+      dataset_ids = [0]
+    scaler = SingleScalerFactory.create(params, experiments[0], reflections[0],
+      scaled_id=dataset_ids[0])
   else:
     is_scaled_list = is_scaled(experiments)
     n_scaled = is_scaled_list.count(True)
     if (params.scaling_options.target_cycle and n_scaled < len(reflections)
         and n_scaled > 0): #if only some scaled and want to do targeted scaling
       scaler = TargetScalerFactory.create(params, experiments, reflections,
-        is_scaled_list)
+        is_scaled_list, dataset_ids)
     elif len(reflections) > 1: #else just make one multiscaler for all refls
-      scaler = MultiScalerFactory.create(params, experiments, reflections)
+      scaler = MultiScalerFactory.create(params, experiments, reflections, dataset_ids)
     else:
       raise Sorry("no reflection tables found to create a scaler")
   return scaler
@@ -155,13 +158,15 @@ class NullScalerFactory(object):
 class MultiScalerFactory(object):
   'Factory for creating a scaler for multiple datasets'
   @classmethod
-  def create(cls, params, experiments, reflections):
+  def create(cls, params, experiments, reflections, dataset_ids=None):
     '''create a list of single scalers to pass to a MultiScaler. For scaled_id,
     we just need unique values, not necessarily the same as previously.'''
     single_scalers = []
-    for i, (reflection, experiment) in enumerate(zip(reflections, experiments)):
+    if not dataset_ids:
+      dataset_ids = range(len(reflections))
+    for (data_id, reflection, experiment) in zip(dataset_ids, reflections, experiments):
       single_scalers.append(SingleScalerFactory.create(
-        params, experiment, reflection, scaled_id=i, for_multi=True))
+        params, experiment, reflection, scaled_id=data_id, for_multi=True))
     return MultiScaler(params, experiments, single_scalers)
 
   @classmethod
@@ -176,23 +181,25 @@ class MultiScalerFactory(object):
 class TargetScalerFactory(object):
   'Factory for creating a targeted scaler for multiple datasets'
   @classmethod
-  def create(cls, params, experiments, reflections, is_scaled_list):
+  def create(cls, params, experiments, reflections, is_scaled_list, dataset_ids=None):
     '''sort scaled and unscaled datasets to pass to TargetScaler'''
     scaled_experiments = []
     scaled_scalers = []
     unscaled_scalers = []
+    if not dataset_ids:
+      dataset_ids = range(len(reflections))
     for i, (experiment, reflection) in enumerate(zip(experiments, reflections)):
       if is_scaled_list[i] is True:
         if params.scaling_options.target_model:
           scaled_experiments.append(experiment)
           scaled_scalers.append(NullScalerFactory.create(params, experiment,
-            reflection, scaled_id=i))
+            reflection, scaled_id=dataset_ids[i]))
         else:
           scaled_experiments.append(experiment)
           scaled_scalers.append(SingleScalerFactory.create(params, experiment,
-            reflection, scaled_id=i, for_multi=True))
+            reflection, scaled_id=dataset_ids[i], for_multi=True))
       else:
         unscaled_scalers.append(SingleScalerFactory.create(params, experiment,
-          reflection, scaled_id=i, for_multi=True))
+          reflection, scaled_id=dataset_ids[i], for_multi=True))
     return TargetScaler(params, scaled_experiments, scaled_scalers,
       unscaled_scalers)

@@ -36,7 +36,9 @@ def generated_refl():
     reflections.flags.bad_for_scaling)
   return reflections
 
-def generate_refl_to_filter():
+@pytest.fixture
+def refl_to_filter():
+  """Generate a separate reflection table for filtering"""
   reflections = flex.reflection_table()
   reflections['partiality'] = flex.double([0.1, 1.0, 1.0, 1.0, 1.0, 1.0])
   reflections.set_flags(flex.bool([True, False, True, True, True, True]),
@@ -44,9 +46,6 @@ def generate_refl_to_filter():
   reflections['d'] = flex.double([1.0, 1.0, 0.0, 1.0, 1.0, 1.0])
   return reflections
 
-@pytest.fixture
-def refl_to_filter():
-  return generate_refl_to_filter()
 
 @pytest.fixture
 def test_refl():

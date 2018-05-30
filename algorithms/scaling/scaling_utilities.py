@@ -9,7 +9,7 @@ import copy
 from math import pi, acos
 from dials.array_family import flex
 from cctbx import miller, crystal
-from dxtbx.model.experiment_list import ExperimentListDumper
+from dxtbx.model.experiment_list import ExperimentListDumper, ExperimentList
 from dials_scaling_ext import create_sph_harm_table, calc_theta_phi,\
   rotate_vectors_about_axis
 
@@ -35,9 +35,11 @@ def save_reflections(scaler, filename):
 def parse_multiple_datasets(reflections):
   """Parse multiple datasets from single reflection tables, selecting on id."""
   single_reflection_tables = []
+  dataset_id_list = []
   for refl_table in reflections:
     dataset_ids = set(refl_table['id']).difference(set([-1]))
     n_datasets = len(dataset_ids)
+    dataset_id_list.extend(list(dataset_ids))
     if n_datasets > 1:
       logger.info('\nDetected existence of a multi-dataset reflection table \n'
         'containing %s datasets. \n', n_datasets)
@@ -46,7 +48,47 @@ def parse_multiple_datasets(reflections):
         single_reflection_tables.append(single_refl_table)
     else:
       single_reflection_tables.append(refl_table)
-  return single_reflection_tables
+    if len(dataset_id_list) != len(set(dataset_id_list)):
+      logger.warn('Duplicate dataset ids found in different reflection tables. \n'
+      'These will be treated as coming from separate datasets, and \n'
+      'new dataset ids will be assigned for the whole dataset. \n')
+      dataset_id_list = range(len(dataset_id_list))
+  return single_reflection_tables, dataset_id_list
+
+def select_datasets_on_ids(experiments, reflections, dataset_ids,
+  exclude_datasets=None, use_datasets=None):
+  """Select a subset of the dataset based on the use_datasets and
+  exclude_datasets params options."""
+  if use_datasets or exclude_datasets:
+    assert not (use_datasets and exclude_datasets), """
+      The options use_datasets and exclude_datasets cannot be used in conjuction."""
+    if exclude_datasets:
+      assert all(i in dataset_ids for i in exclude_datasets), """
+      id not found in reflection tables"""
+      reverse_ids = sorted(exclude_datasets,
+        reverse=True)
+      for id_ in reverse_ids:
+        logger.info("Deleting dataset %s.", id_)
+        index = dataset_ids.index(id_)
+        del experiments[index]
+        del reflections[index]
+        del dataset_ids[index]
+      return experiments, reflections, dataset_ids
+    elif use_datasets:
+      assert all(i in dataset_ids for i in use_datasets), """
+      id not found in reflection tables."""
+      new_experiments = ExperimentList()
+      new_reflections = []
+      new_dataset_ids = []
+      for id_ in use_datasets:
+        logger.info("Using dataset %s for scaling.", id_)
+        index = dataset_ids.index(id_)
+        new_experiments.append(experiments[index])
+        new_reflections.append(reflections[index])
+        new_dataset_ids.append(dataset_ids[index])
+      return new_experiments, new_reflections, new_dataset_ids
+  else:
+    return experiments, reflections, dataset_ids
 
 '''def calc_sigmasq(jacobian_transpose, var_cov):
   sigmasq = flex.float([])

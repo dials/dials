@@ -38,8 +38,8 @@ from dials.algorithms.scaling.scaling_library import create_scaling_model,\
   calculate_merging_statistics, create_datastructures_for_structural_model
 from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScalerFactory
-from dials.algorithms.scaling.scaling_utilities import (
-  parse_multiple_datasets, save_experiments, save_reflections)
+from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets,\
+  select_datasets_on_ids, save_experiments, save_reflections
 
 
 logger = logging.getLogger('dials')
@@ -103,6 +103,7 @@ class Script(object):
     self.scaler = None
     self.minimised = None
     self.scaled_miller_array = None
+    self.dataset_ids = []
 
     log.config(verbosity=1, info=self.params.output.log,
       debug=self.params.output.debug_log)
@@ -124,9 +125,14 @@ class Script(object):
     if len(self.experiments) != 1:
       logger.info('Checking for the existence of a reflection table \n'
         'containing multiple scaled datasets \n')
-      self.reflections = parse_multiple_datasets(self.reflections)
+      self.reflections, self.dataset_ids = parse_multiple_datasets(self.reflections)
       logger.info("Found %s reflection tables in total.", len(self.reflections))
       logger.info("Found %s experiments in total.", len(self.experiments))
+      self.experiments, self.reflections, self.dataset_ids = \
+        select_datasets_on_ids(self.experiments, self.reflections, self.dataset_ids,
+          use_datasets=self.params.dataset_selection.use_datasets,
+          exclude_datasets=self.params.dataset_selection.exclude_datasets)
+
     if self.params.scaling_options.space_group:
       for experiment in self.experiments:
         sg_from_file = experiment.crystal.get_space_group().info()
@@ -143,7 +149,8 @@ class Script(object):
       if experiment.crystal.get_space_group() != s_g_1:
         raise Sorry('experiments have different space groups and cannot be'
           'scaled together, please reanalyse the data so that the space groups'
-          'are consistent or manually specify a space group.')
+          'are consistent or manually specify a space group.'
+          'Alternatively, some datasets can be excluded using exclude_datasets=')
 
     if self.params.scaling_options.target_model:
       logger.info("Extracting data from structural model.")
@@ -174,11 +181,11 @@ class Script(object):
     for reflection in self.reflections:
       reflection.set_flags(flex.bool(reflection.size(), False),
         reflection.flags.user_excluded_in_scaling)
-      if self.params.cut_data.max_resolution:
-        reflection.set_flags(reflection['d'] < self.params.cut_data.max_resolution,
+      if self.params.cut_data.d_min:
+        reflection.set_flags(reflection['d'] < self.params.cut_data.d_min,
         reflection.flags.user_excluded_in_scaling)
-      if self.params.cut_data.min_resolution:
-        reflection.set_flags(reflection['d'] > self.params.cut_data.min_resolution,
+      if self.params.cut_data.d_max:
+        reflection.set_flags(reflection['d'] > self.params.cut_data.d_max,
         reflection.flags.user_excluded_in_scaling)
     if self.params.cut_data.exclude_image_range:
       if len(self.reflections) == 1:
@@ -199,7 +206,8 @@ class Script(object):
     logger.info('\nScaling models have been initialised for all experiments.')
     logger.info('\n' + '='*80 + '\n')
 
-    self.scaler = create_scaler(self.params, self.experiments, self.reflections)
+    self.scaler = create_scaler(self.params, self.experiments, self.reflections,
+      self.dataset_ids)
     self.minimised = self.scaling_algorithm(self.scaler)
 
   def scaled_data_as_miller_array(self, experiment, reflection_table,

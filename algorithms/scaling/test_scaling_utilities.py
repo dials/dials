@@ -4,13 +4,14 @@ Tests for scaling utilities module.
 from math import sqrt, pi
 import pytest
 from mock import Mock
+from dxtbx.model import Experiment
 from libtbx.test_utils import approx_equal
 from cctbx.sgtbx import space_group
 from dials.array_family import flex
 from dials.algorithms.scaling.scaling_utilities import \
   calc_crystal_frame_vectors, calc_theta_phi, create_sph_harm_table,\
   sph_harm_table, align_rotation_axis_along_z, parse_multiple_datasets,\
-  set_wilson_outliers
+  set_wilson_outliers, select_datasets_on_ids
 
 @pytest.fixture(scope='module')
 def test_space_group():
@@ -109,13 +110,75 @@ def test_parse_multiple_datasets():
   rt1 = flex.reflection_table()
   rt1['id'] = flex.int([0, 0, 0])
   rt2 = flex.reflection_table()
-  rt2['id'] = flex.int([1, 1, 2, 2])
-  single_tables = parse_multiple_datasets([rt2])
+  rt2['id'] = flex.int([2, 2, 4, 4])
+  single_tables, ids = parse_multiple_datasets([rt2])
+  assert list(ids) == [2, 4]
   assert len(single_tables) == 2
-  single_tables = parse_multiple_datasets([rt1, rt2])
+  single_tables, ids = parse_multiple_datasets([rt1, rt2])
+  assert list(ids) == [0, 2, 4]
   assert len(single_tables) == 3
-  single_tables = parse_multiple_datasets([rt1])
+  single_tables, ids = parse_multiple_datasets([rt1])
   assert len(single_tables) == 1
+  assert list(ids) == [0]
+
+  # if a duplicate id is given, then this should be detected and new ids
+  # determined for all datasets.
+  rt3 = flex.reflection_table()
+  rt3['id'] = flex.int([2, 2])
+  single_tables, ids = parse_multiple_datasets([rt1, rt2, rt3])
+  assert len(single_tables) == 4
+  assert list(ids) == [0, 1, 2, 3]
+
+def test_select_datasets_on_ids():
+  experiments = [Experiment(), Experiment(), Experiment()]
+  rt1 = flex.reflection_table()
+  rt1['id'] = flex.int([0, 0, 0])
+  rt2 = flex.reflection_table()
+  rt2['id'] = flex.int([2, 2])
+  rt3 = flex.reflection_table()
+  rt3['id'] = flex.int([4, 4])
+  use_datasets = [0, 2]
+  dataset_ids = [0, 2, 4]
+  reflections = [rt1, rt2, rt3]
+  exp, refl, ids = select_datasets_on_ids(experiments, reflections,
+    dataset_ids, use_datasets=use_datasets)
+  assert len(exp) == 2
+  assert len(refl) == 2
+  assert ids == [0, 2]
+
+  experiments = [Experiment(), Experiment(), Experiment()]
+  dataset_ids = [0, 2, 4]
+  exclude_datasets = [0]
+  exp, refl, ids = select_datasets_on_ids(experiments, reflections,
+    dataset_ids, exclude_datasets=exclude_datasets)
+  assert len(refl) == 2
+  assert ids == [2, 4]
+  assert len(exp) == 2
+
+  experiments = [Experiment(), Experiment(), Experiment()]
+  dataset_ids = [0, 2, 4]
+  exp, refl, ids = select_datasets_on_ids(experiments, reflections,
+    dataset_ids)
+  assert refl is reflections
+  assert ids is dataset_ids
+  assert exp is experiments
+
+  with pytest.raises(AssertionError):
+    exclude_datasets = [0]
+    use_datasets = [2, 4]
+    experiments = [Experiment(), Experiment(), Experiment()]
+    dataset_ids = [0, 2, 4]
+    exp, refl, ids = select_datasets_on_ids(experiments,
+      reflections, dataset_ids, use_datasets=use_datasets,
+      exclude_datasets=exclude_datasets)
+
+  with pytest.raises(AssertionError):
+    exclude_datasets = [1]
+    experiments = [Experiment(), Experiment(), Experiment()]
+    dataset_ids = [0, 2, 4]
+    exp, refl, ids = select_datasets_on_ids(experiments,
+      reflections, dataset_ids, exclude_datasets=exclude_datasets)
+
 
 def set_calculate_wilson_outliers(wilson_test_reflection_table):
   """Test the set wilson outliers function."""

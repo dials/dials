@@ -133,24 +133,33 @@ class ScalerBase(object):
     """Select reflections with non-zero weight and update scale weights."""
     sel = ~(reflection_table.get_flags(reflection_table.flags.bad_for_scaling,
       all=False))
-    sel1 = reflection_table['Esq'] > params.reflection_selection.E2_min
-    sel2 = reflection_table['Esq'] < params.reflection_selection.E2_max
-    sel3 = reflection_table['intensity']/(reflection_table['variance']**0.5) > (
-      params.reflection_selection.Isigma_min)
-    sel4 = reflection_table['d'] > params.reflection_selection.d_min
-    selection = sel & sel1 & sel2 & sel3 & sel4
+    sel1 = reflection_table['Esq'] > params.reflection_selection.E2_range[0]
+    sel2 = reflection_table['Esq'] < params.reflection_selection.E2_range[1]
+    Ioversigma = reflection_table['intensity']/reflection_table['variance']**0.5
+    sel3 = Ioversigma > params.reflection_selection.Isigma_range[0]
+    if params.reflection_selection.Isigma_range[1] != 0.0:
+      sel3 = sel3 & Ioversigma < params.reflection_selection.Isigma_range[1]
+    selection = sel & sel1 & sel2 & sel3
+    if params.reflection_selection.d_range:
+      d_sel = reflection_table['d'] > params.reflection_selection.d_range[0]
+      d_sel = d_sel & reflection_table['d'] < params.reflection_selection.d_range[1]
+      selection = selection & d_sel
     msg = ('{0} reflections were selected for scale factor determination \n'
       'out of {1} reflections. '.format(selection.count(True),
       reflection_table.size()))
     if reflection_table['Esq'].count(1.0) == reflection_table.size():
       msg += ('This was based on selection criteria of \n'
-      'Isigma_min = {0}, dmin = {1}. \n').format(
-      params.reflection_selection.Isigma_min, params.reflection_selection.d_min)
+      'Isigma_range = {0}, d_range = {1}. \n').format(params.reflection_selection.Isigma_range
+      if params.reflection_selection.Isigma_range[1] != 0.0 else
+      [params.reflection_selection.Isigma_range[0], 'No max'],
+      params.reflection_selection.d_range)
     else:
       msg += ('This was based on selection criteria of \n'
-      'E2_min = {0}, E2_max = {1}, Isigma_min = {2}, dmin = {3}. \n').format(
-      params.reflection_selection.E2_min, params.reflection_selection.E2_max,
-      params.reflection_selection.Isigma_min, params.reflection_selection.d_min)
+      'E2_range = {0}, Isigma_range = {1}, d_range = {2}. \n').format(
+      params.reflection_selection.E2_range, params.reflection_selection.Isigma_range
+      if params.reflection_selection.Isigma_range[1] != 0.0 else
+      [params.reflection_selection.Isigma_range[0], 'No max'],
+      params.reflection_selection.d_range)
     logger.info(msg)
     return selection
 

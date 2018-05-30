@@ -78,7 +78,7 @@ def plot_scaling_models(argv):
   if len(experiments) != 1:
     print(('Checking for the existence of a reflection table containing {sep}'
     'multiple scaled datasets. {sep}').format(sep='\n'))
-    reflections = parse_multiple_datasets(reflections)
+    reflections, ids = parse_multiple_datasets(reflections)
     print("Found %s experiments in total." % len(experiments))
     print('\n'+'*'*40)
 

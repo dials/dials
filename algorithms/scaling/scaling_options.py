@@ -55,18 +55,19 @@ phil_scope = iotbx.phil.parse('''
               array model."
   }
   reflection_selection {
-    E2_min = 0.8
-      .type = float
-      .help = "Minimum normalised E^2 value to select reflections for scaling"
-    E2_max = 5.0
-      .type = float
-      .help = "Maximum normalised E^2 value to select reflections for scaling"
-    Isigma_min = -5.0
-      .type = float
-      .help = "Option to use a I/sigma subset of reflections to determine scale factors"
-    d_min = 0.0
-      .type = float
-      .help = "Option to use a d-value subset of reflections to determine scale factors"
+    E2_range = 0.8, 5.0
+      .type = floats(size=2)
+      .help = "Minimum and maximum normalised E^2 value to used to select a
+              subset of reflections for minimising the scaling model."
+    Isigma_range = -5.0, 0.0
+      .type = floats(size=2)
+      .help = "Minimum and maximum I/sigma values used to subset of reflections
+              to determine the scaling model. Here a value of 0.0 for the max
+              means no limit applied."
+    d_range = None
+      .type = floats(size=2)
+      .help = "Minimum and maximum - values used to subset of reflections
+              to determine the scaling model."
   }
   weighting {
     weighting_scheme = *invvar unity GM cauchy huber
@@ -98,12 +99,24 @@ phil_scope = iotbx.phil.parse('''
       .type = floats(size=2)
       .help = "Exclude a range of image numbers (start, stop) from the dataset,
                only used if a single dataset present."
-    max_resolution = None
+    d_min = None
       .type = float
-      .help = "Option to apply a maximum resolution cutoff for the dataset."
-    min_resolution = None
+      .help = "Option to apply a high resolution cutoff for the dataset (i.e.
+               the chosen reflections have d > d_min)."
+    d_max = None
       .type = float
-      .help = "Option to apply a minimum resolution cutoff for the dataset."
+      .help = "Option to apply a low resolution cutoff for the dataset (i.e.
+               the chosen reflections have d < d_max)."
+  }
+  dataset_selection {
+    use_datasets = None
+      .type = ints
+      .help = "Choose a subset of datasets, based on the dataset id (as defined
+               in the reflection table), to use from a multi-dataset input."
+    exclude_datasets = None
+      .type = ints
+      .help = "Choose a subset of datasets, based on the dataset id (as defined
+               in the reflection table), to exclude from a multi-dataset input."
   }
   scaling_options {
     target_cycle = True
