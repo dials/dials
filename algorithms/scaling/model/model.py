@@ -105,12 +105,20 @@ class ScalingModelBase(object):
     msg.append("  type : "+str(self.id_))
     for name, component in self.components.iteritems():
       msg.append("  "+str(name).capitalize()+" component:")
-      msg.append("    parameter (sigma)")
-      for p, e in zip(component.parameters, component.parameter_esds):
-        if p < 0.0:
-          msg.append("    "+"%.4f   (%.4f)" % (p, e))
-        else:
-          msg.append("     "+"%.4f   (%.4f)" % (p, e))
+      if component.parameter_esds:
+        msg.append("    parameters (sigma)")
+        for p, e in zip(component.parameters, component.parameter_esds):
+          if p < 0.0:
+            msg.append("    "+"%.4f   (%.4f)" % (p, e))
+          else:
+            msg.append("     "+"%.4f   (%.4f)" % (p, e))
+      else:
+        msg.append("    parameters")
+        for p in component.parameters:
+          if p < 0.0:
+            msg.append("    "+"%.4f" % p)
+          else:
+            msg.append("     "+"%.4f" % p)
     msg.append("")
     return "\n".join(msg)
 
