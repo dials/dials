@@ -55,6 +55,57 @@ def parse_multiple_datasets(reflections):
       dataset_id_list = range(len(dataset_id_list))
   return single_reflection_tables, dataset_id_list
 
+def _get_next_unique_id(unique_id, used_ids):
+  """Test a list of used id strings to see if it contains str(unique_id),
+  where unique_id is an integer. Returns the input unique id if it is not in
+  the used_ids list, else it increments the unique_id by one until the value is
+  not found in the list and then returns that."""
+  if not str(unique_id) in used_ids:
+    return unique_id
+  else:
+    unique_id += 1
+    return _get_next_unique_id(unique_id, used_ids)
+
+def assign_unique_identifiers(experiments, reflections):
+  """Read in an experiment list and a list of reflection tables containing
+  single datasets. The returned list of reflection tables will always have
+  refl['id'] set to the position in the list.
+  If the experiments have unique identifiers set, then this will be set for the
+  reflection tables as well. If there are no unique identifiers, then this is
+  set as the string of the position in the list e.g '0', '1', etc. If some
+  experiments have identifiers, these will be maintined, and the other
+  experiments will be given string ids of increasing integers, but skipping
+  already existing values."""
+  used_ids = []
+  for exp, refl in zip(experiments, reflections):
+    if exp.identifier != '':
+      assert refl.are_experiment_identifiers_consistent()
+      used_ids.append(exp.identifier)
+  if len(set(used_ids)) == len(reflections):
+    #all experiments have unique ids, so don't need to assign any.
+    for i, (exp, refl) in enumerate(zip(experiments, reflections)):
+      refl.experiment_identifiers()[i] = exp.identifier
+      refl['id'] = flex.int(refl.size(), i) #make all unique
+  elif used_ids: #some identifiers set
+    unique_id = 0
+    for i, (exp, refl) in enumerate(zip(experiments, reflections)):
+      if exp.identifier != '':
+        refl.experiment_identifiers()[i] = exp.identifier
+      else:
+        unique_id = _get_next_unique_id(unique_id, used_ids)
+        strid = '%i' % unique_id
+        exp.identifier = strid
+        refl.experiment_identifiers()[i] = strid
+        unique_id += 1
+      refl['id'] = flex.int(refl.size(), i)
+  else: #no identifiers set, so set all as str(int) of location in list.
+    for i, (exp, refl) in enumerate(zip(experiments, reflections)):
+      strid = '%i' % i
+      exp.identifier = strid
+      refl.experiment_identifiers()[i] = strid
+      refl['id'] = flex.int(refl.size(), i)
+  return experiments, reflections
+
 def select_datasets_on_ids(experiments, reflections, dataset_ids,
   exclude_datasets=None, use_datasets=None):
   """Select a subset of the dataset based on the use_datasets and

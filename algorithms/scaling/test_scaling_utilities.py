@@ -4,14 +4,14 @@ Tests for scaling utilities module.
 from math import sqrt, pi
 import pytest
 from mock import Mock
-from dxtbx.model import Experiment
+from dxtbx.model import Experiment, ExperimentList
 from libtbx.test_utils import approx_equal
 from cctbx.sgtbx import space_group
 from dials.array_family import flex
 from dials.algorithms.scaling.scaling_utilities import \
   calc_crystal_frame_vectors, calc_theta_phi, create_sph_harm_table,\
   sph_harm_table, align_rotation_axis_along_z, parse_multiple_datasets,\
-  set_wilson_outliers, select_datasets_on_ids
+  set_wilson_outliers, select_datasets_on_ids, assign_unique_identifiers
 
 @pytest.fixture(scope='module')
 def test_space_group():
@@ -129,6 +129,94 @@ def test_parse_multiple_datasets():
   assert len(single_tables) == 4
   assert list(ids) == [0, 1, 2, 3]
 
+
+def empty_explist_3exp():
+  experiments = ExperimentList()
+  experiments.append(Experiment())
+  experiments.append(Experiment())
+  experiments.append(Experiment())
+  return experiments
+
+def new_reflections_3tables():
+  rt1 = flex.reflection_table()
+  rt1['id'] = flex.int([0, 0, 0])
+  rt2 = flex.reflection_table()
+  rt2['id'] = flex.int([1, 1])
+  rt3 = flex.reflection_table()
+  rt3['id'] = flex.int([4, 4])
+  reflections = [rt1, rt2, rt3]
+  return reflections
+
+def test_assign_unique_identifiers():
+  
+  # Test case where none are set but refl table ids are - use refl ids
+  experiments = empty_explist_3exp()
+  reflections = new_reflections_3tables()
+  assert list(experiments.identifiers()) == ['', '', '']
+  exp, rts = assign_unique_identifiers(experiments, reflections)
+  expected_identifiers = ['0', '1', '2']
+  # Check that identifiers are set in experiments and reflection table.
+  assert (list(exp.identifiers())) == expected_identifiers
+  for i, refl in enumerate(rts):
+    assert refl.experiment_identifiers()[i] == expected_identifiers[i]
+    assert list(set(refl['id'])) == [i]
+
+  # Test case where none are set but refl table ids have duplicates
+  experiments = empty_explist_3exp()
+  reflections = new_reflections_3tables()
+  reflections[2]['id'] = flex.int([0, 0])
+  exp, rts = assign_unique_identifiers(experiments, reflections)
+  expected_identifiers = ['0', '1', '2']
+  # Check that identifiers are set in experiments and reflection table.
+  assert (list(exp.identifiers())) == expected_identifiers
+  for i, refl in enumerate(rts):
+    assert refl.experiment_identifiers()[i] == expected_identifiers[i]
+    assert list(set(refl['id'])) == [i]
+
+  # Test case where identifiers are already set.
+  experiments = empty_explist_3exp()
+  experiments[0].identifier = '0'
+  experiments[1].identifier = '4'
+  experiments[2].identifier = '2'
+  reflections = new_reflections_3tables()
+  reflections[1].experiment_identifiers()[0] = '5'
+  # should raise an assertion error for inconsistent identifiers
+  with pytest.raises(AssertionError):
+    exp, rts = assign_unique_identifiers(experiments, reflections)
+  
+  experiments = empty_explist_3exp()
+  experiments[0].identifier = '0'
+  experiments[1].identifier = '4'
+  experiments[2].identifier = '2'
+  reflections = new_reflections_3tables()
+  reflections[0].experiment_identifiers()[0] = '0'
+  reflections[1].experiment_identifiers()[1] = '4'
+  reflections[2].experiment_identifiers()[4] = '2'
+  #should pass experiments back if identifiers all already set
+  exp, rts = assign_unique_identifiers(experiments, reflections)
+  expected_identifiers = ['0', '4', '2']
+  # Check that identifiers are set in experiments and reflection table.
+  assert exp is experiments
+  assert list(exp.identifiers()) == expected_identifiers
+  for i, refl in enumerate(rts):
+    id_ = refl['id'][0]
+    assert refl.experiment_identifiers()[id_] == expected_identifiers[i]
+    assert list(set(refl['id'])) == [i]
+
+  # Now test that if some are set, these are maintained and unique ids are
+  # set for the rest
+  experiments = empty_explist_3exp()
+  experiments[0].identifier = '1'
+  reflections = new_reflections_3tables()
+  reflections[0].experiment_identifiers()[0] = '1'
+  exp, rts = assign_unique_identifiers(experiments, reflections)
+  expected_identifiers = ['1', '0', '2']
+  assert list(exp.identifiers()) == expected_identifiers
+  for i, refl in enumerate(rts):
+    id_ = refl['id'][0]
+    assert refl.experiment_identifiers()[id_] == expected_identifiers[i]
+    assert list(set(refl['id'])) == [i]
+
 def test_select_datasets_on_ids():
   experiments = [Experiment(), Experiment(), Experiment()]
   rt1 = flex.reflection_table()
@@ -186,3 +274,6 @@ def set_calculate_wilson_outliers(wilson_test_reflection_table):
 
   assert list(reflection_table.get_flags(
     reflection_table.flags.outlier_in_scaling)) == [True, False, True, False]
+
+if __name__ == "__main__":
+  test_assign_unique_identifiers()
