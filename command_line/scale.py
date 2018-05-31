@@ -23,6 +23,7 @@ from __future__ import absolute_import, division, print_function
 import time
 import logging
 import sys
+from copy import deepcopy
 #import libtbx.load_env
 from libtbx import phil
 from libtbx.utils import Sorry
@@ -292,6 +293,11 @@ class Script(object):
 
     if self.params.scaling_options.target_model:
       self.experiments = self.experiments[:-1]
+
+    self.minimised.reflection_table['intensity.scale.value'] = deepcopy(
+      self.minimised.reflection_table['intensity'])
+    self.minimised.reflection_table['intensity.scale.variance'] = deepcopy(
+      self.minimised.reflection_table['variance'])
 
     if self.params.output.unmerged_mtz:
       logger.info("\nSaving output to an unmerged mtz file to %s.",

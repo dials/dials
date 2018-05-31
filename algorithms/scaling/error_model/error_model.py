@@ -92,5 +92,5 @@ class BasicErrorModel(object):
   def update_variances(self, variances, intensities):
     """Use the error model parameter to calculate new values for the variances."""
     new_variance = self.refined_parameters[0] * (variances
-      + ((self.refined_parameters[1] * intensities)**2))**0.5
+      + ((self.refined_parameters[1] * intensities)**2))
     return new_variance

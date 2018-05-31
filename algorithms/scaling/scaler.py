@@ -114,8 +114,12 @@ class ScalerBase(object):
     self._initial_keys.append('inverse_scale_factor')
     self._initial_keys.append('inverse_scale_factor_variance')
     self._initial_keys.append('Ih_values')
+    self._initial_keys.append('intensity.scale.value')
+    self._initial_keys.append('intensity.scale.variance')
     if 'Esq' in self.reflection_table:
       del self.reflection_table['Esq']
+    del self.reflection_table['intensity']
+    del self.reflection_table['variance']
     for key in self.reflection_table.keys():
       if not key in self._initial_keys:
         del self._reflection_table[key]
@@ -332,8 +336,9 @@ class SingleScalerBase(ScalerBase):
       """Note : this action has overwritten the variances, so no further
       error model adjustment should take place, without reinitialising from
       the input variances (i.e. intensity.prf.variance)."""
-      self.reflection_table['variance'] = error_model.update_variances(
+      new_var = error_model.update_variances(
         self.reflection_table['variance'], self.reflection_table['intensity'])
+      self.reflection_table['variance'] = new_var
       if self.verbosity > 1:
         msg = ('The error model has been used to adjust the variances for dataset {0}. \n'
           ).format(self.reflection_table['id'][0])

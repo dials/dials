@@ -273,9 +273,15 @@ def _apply_data_filters(integrated_data,
         selection.count(True), min_isigi))
 
   if apply_scales:
-    selection = integrated_data.get_flags(integrated_data.flags.outlier_in_scaling)
+    selection = integrated_data.get_flags(
+      integrated_data.flags.outlier_in_scaling)
     integrated_data.del_selected(selection)
     logger.info("Removing %d reflections determined as outliers in scaling" %
+                selection.count(True))
+    selection = integrated_data.get_flags(
+      integrated_data.flags.user_excluded_in_scaling)
+    integrated_data.del_selected(selection)
+    logger.info("Removing %d reflections that were excluded for scaling" %
                 selection.count(True))
 
   # FIXME in here work on including partial reflections => at this stage best
@@ -510,30 +516,44 @@ def _write_columns(mtz_file, dataset, integrated_data, scale_partials,
     qe = flex.double(nref, 1.0)
   I_profile = None
   V_profile = None
+  I_scaling = None
   I_sum = None
   V_sum = None
+  V_scaling = None
   # FIXME errors in e.g. LP correction need to be propagated here
   scl = lp / qe
 
   if apply_scales:
     scl = scl / integrated_data['inverse_scale_factor']
 
-  if 'intensity.prf.value' in integrated_data:
-    I_profile = integrated_data['intensity.prf.value'] * scl
-    V_profile = integrated_data['intensity.prf.variance'] * scl * scl
+  #if intensity values used in scaling exist, then just export these as I, SIGI
+  if 'intensity.scale.value' in integrated_data:
+    I_scaling = integrated_data['intensity.scale.value'] \
+      / integrated_data['inverse_scale_factor']
+    V_scaling = integrated_data['intensity.scale.variance'] \
+      / (integrated_data['inverse_scale_factor'] ** 2)
     # Trap negative variances
-    assert V_profile.all_gt(0)
-    dataset.add_column('IPR', type_table['I']).set_values(I_profile.as_float())
-    dataset.add_column('SIGIPR', type_table['SIGI']).set_values(
-      flex.sqrt(V_profile).as_float())
-  if 'intensity.sum.value' in integrated_data:
-    I_sum = integrated_data['intensity.sum.value'] * scl
-    V_sum = integrated_data['intensity.sum.variance'] * scl * scl
-    # Trap negative variances
-    assert V_sum.all_gt(0)
-    dataset.add_column('I', type_table['I']).set_values(I_sum.as_float())
+    assert V_scaling.all_gt(0)
+    dataset.add_column('I', type_table['I']).set_values(I_scaling.as_float())
     dataset.add_column('SIGI', type_table['SIGI']).set_values(
-      flex.sqrt(V_sum).as_float())
+      flex.sqrt(V_scaling).as_float())
+  else:
+    if 'intensity.prf.value' in integrated_data:
+      I_profile = integrated_data['intensity.prf.value'] * scl
+      V_profile = integrated_data['intensity.prf.variance'] * scl * scl
+      # Trap negative variances
+      assert V_profile.all_gt(0)
+      dataset.add_column('IPR', type_table['I']).set_values(I_profile.as_float())
+      dataset.add_column('SIGIPR', type_table['SIGI']).set_values(
+        flex.sqrt(V_profile).as_float())
+    if 'intensity.sum.value' in integrated_data:
+      I_sum = integrated_data['intensity.sum.value'] * scl
+      V_sum = integrated_data['intensity.sum.variance'] * scl * scl
+      # Trap negative variances
+      assert V_sum.all_gt(0)
+      dataset.add_column('I', type_table['I']).set_values(I_sum.as_float())
+      dataset.add_column('SIGI', type_table['SIGI']).set_values(
+        flex.sqrt(V_sum).as_float())
   if ('background.sum.value' in integrated_data and
       'background.sum.variance' in integrated_data):
     bg = integrated_data['background.sum.value']
