@@ -10,23 +10,20 @@ from dials.algorithms.scaling.scaling_utilities import calc_normE2
 from dials.algorithms.scaling.outlier_rejection import reject_outliers
 logger = logging.getLogger('dials')
 
-def create_scaler(params, experiments, reflections, dataset_ids=None):
+def create_scaler(params, experiments, reflections):
   """Read an experimentlist and list of reflection tables and return
     an appropriate scaler."""
   if len(reflections) == 1:
-    if not dataset_ids:
-      dataset_ids = [0]
-    scaler = SingleScalerFactory.create(params, experiments[0], reflections[0],
-      scaled_id=dataset_ids[0])
+    scaler = SingleScalerFactory.create(params, experiments[0], reflections[0])
   else:
     is_scaled_list = is_scaled(experiments)
     n_scaled = is_scaled_list.count(True)
     if (params.scaling_options.target_cycle and n_scaled < len(reflections)
         and n_scaled > 0): #if only some scaled and want to do targeted scaling
       scaler = TargetScalerFactory.create(params, experiments, reflections,
-        is_scaled_list, dataset_ids)
+        is_scaled_list)
     elif len(reflections) > 1: #else just make one multiscaler for all refls
-      scaler = MultiScalerFactory.create(params, experiments, reflections, dataset_ids)
+      scaler = MultiScalerFactory.create(params, experiments, reflections)
     else:
       raise Sorry("no reflection tables found to create a scaler")
   return scaler
@@ -48,11 +45,18 @@ class SingleScalerFactory(object):
   def create(cls, params, experiment, reflection_table, scaled_id=0, for_multi=False):
     """Perform reflection_table preprocessing and create a SingleScaler."""
 
-    reflection_table['id'] = flex.int(reflection_table.size(), scaled_id)
+    if experiment.identifier:
+      assert experiment.identifier == \
+        reflection_table.experiment_identifiers().values()[0]
+      if params.scaling_options.verbosity > 1:
+        logger.info('The experiment identifier for this dataset is %s',
+          experiment.identifier)
+    else:
+      reflection_table['id'] = flex.int(reflection_table.size(), scaled_id)
     if params.scaling_options.verbosity > 1:
       logger.info(('Preprocessing data for scaling. The id assigned to this \n'
         'dataset is {0}, and the scaling model type being applied is {1}. \n'
-        ).format(scaled_id, experiment.scaling_model.id_))
+        ).format(reflection_table['id'][0], experiment.scaling_model.id_))
 
     reflection_table = cls.filter_bad_reflections(reflection_table)
     if params.scaling_options.verbosity > 1:

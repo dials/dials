@@ -39,7 +39,7 @@ from dials.algorithms.scaling.scaling_library import create_scaling_model,\
 from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScalerFactory
 from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets,\
-  select_datasets_on_ids, save_experiments, save_reflections
+  select_datasets_on_ids, save_experiments, save_reflections, assign_unique_identifiers
 
 
 logger = logging.getLogger('dials')
@@ -128,10 +128,32 @@ class Script(object):
       self.reflections, self.dataset_ids = parse_multiple_datasets(self.reflections)
       logger.info("Found %s reflection tables in total.", len(self.reflections))
       logger.info("Found %s experiments in total.", len(self.experiments))
-      self.experiments, self.reflections, self.dataset_ids = \
-        select_datasets_on_ids(self.experiments, self.reflections, self.dataset_ids,
+
+    if (self.params.dataset_selection.use_datasets or
+     self.params.dataset_selection.exclude_datasets):
+     if self.experiments.identifiers().count('') > 0:
+      logger.warn('\nERROR: Attempting to choose datasets based on unique identifier,\n'
+        'but not all datasets currently have a unique identifier! Please make\n'
+        'sure all identifiers are set before attempting to select datasets.\n')
+      logger.info('Current identifiers set as: %s', list(
+        self.experiments.identifiers()))
+      sys.exit()
+
+    self.experiments, self.reflections = assign_unique_identifiers(
+      self.experiments, self.reflections)
+    logger.info("\nDataset unique identifiers are %s \n", list(
+      self.experiments.identifiers()))
+
+    if (self.params.dataset_selection.use_datasets or
+     self.params.dataset_selection.exclude_datasets):
+      self.experiments, self.reflections = \
+        select_datasets_on_ids(self.experiments, self.reflections,
           use_datasets=self.params.dataset_selection.use_datasets,
           exclude_datasets=self.params.dataset_selection.exclude_datasets)
+
+      logger.info("\nDataset unique identifiers for retained datasets are %s \n",
+        list(self.experiments.identifiers()))
+
 
     if self.params.scaling_options.space_group:
       for experiment in self.experiments:
@@ -206,8 +228,7 @@ class Script(object):
     logger.info('\nScaling models have been initialised for all experiments.')
     logger.info('\n' + '='*80 + '\n')
 
-    self.scaler = create_scaler(self.params, self.experiments, self.reflections,
-      self.dataset_ids)
+    self.scaler = create_scaler(self.params, self.experiments, self.reflections)
     self.minimised = self.scaling_algorithm(self.scaler)
 
   def scaled_data_as_miller_array(self, experiment, reflection_table,

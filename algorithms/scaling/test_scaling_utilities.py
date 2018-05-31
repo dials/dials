@@ -218,54 +218,39 @@ def test_assign_unique_identifiers():
     assert list(set(refl['id'])) == [i]
 
 def test_select_datasets_on_ids():
-  experiments = [Experiment(), Experiment(), Experiment()]
-  rt1 = flex.reflection_table()
-  rt1['id'] = flex.int([0, 0, 0])
-  rt2 = flex.reflection_table()
-  rt2['id'] = flex.int([2, 2])
-  rt3 = flex.reflection_table()
-  rt3['id'] = flex.int([4, 4])
-  use_datasets = [0, 2]
-  dataset_ids = [0, 2, 4]
-  reflections = [rt1, rt2, rt3]
-  exp, refl, ids = select_datasets_on_ids(experiments, reflections,
-    dataset_ids, use_datasets=use_datasets)
+  experiments = empty_explist_3exp()
+  reflections = new_reflections_3tables()
+  reflections[0].experiment_identifiers()[0] = '0'
+  experiments[0].identifier = '0'
+  reflections[1].experiment_identifiers()[1] = '2'
+  experiments[1].identifier = '2'
+  reflections[2].experiment_identifiers()[4] = '4'
+  experiments[2].identifier = '4'
+  use_datasets = ['0', '2']
+  exp, refl = select_datasets_on_ids(experiments, reflections,
+    use_datasets=use_datasets)
   assert len(exp) == 2
   assert len(refl) == 2
-  assert ids == [0, 2]
+  assert list(exp.identifiers()) == ['0', '2']
 
-  experiments = [Experiment(), Experiment(), Experiment()]
-  dataset_ids = [0, 2, 4]
-  exclude_datasets = [0]
-  exp, refl, ids = select_datasets_on_ids(experiments, reflections,
-    dataset_ids, exclude_datasets=exclude_datasets)
+  exclude_datasets = ['0']
+  exp, refl = select_datasets_on_ids(experiments, reflections,
+    exclude_datasets=exclude_datasets)
   assert len(refl) == 2
-  assert ids == [2, 4]
+  assert list(exp.identifiers()) == ['2', '4']
   assert len(exp) == 2
-
-  experiments = [Experiment(), Experiment(), Experiment()]
-  dataset_ids = [0, 2, 4]
-  exp, refl, ids = select_datasets_on_ids(experiments, reflections,
-    dataset_ids)
-  assert refl is reflections
-  assert ids is dataset_ids
-  assert exp is experiments
 
   with pytest.raises(AssertionError):
-    exclude_datasets = [0]
-    use_datasets = [2, 4]
-    experiments = [Experiment(), Experiment(), Experiment()]
-    dataset_ids = [0, 2, 4]
-    exp, refl, ids = select_datasets_on_ids(experiments,
-      reflections, dataset_ids, use_datasets=use_datasets,
+    exclude_datasets = ['0']
+    use_datasets = ['2', '4']
+    exp, refl = select_datasets_on_ids(experiments,
+      reflections, use_datasets=use_datasets,
       exclude_datasets=exclude_datasets)
 
   with pytest.raises(AssertionError):
-    exclude_datasets = [1]
-    experiments = [Experiment(), Experiment(), Experiment()]
-    dataset_ids = [0, 2, 4]
-    exp, refl, ids = select_datasets_on_ids(experiments,
-      reflections, dataset_ids, exclude_datasets=exclude_datasets)
+    exclude_datasets = ['1']
+    exp, refl = select_datasets_on_ids(experiments,
+      reflections, exclude_datasets=exclude_datasets)
 
 
 def set_calculate_wilson_outliers(wilson_test_reflection_table):

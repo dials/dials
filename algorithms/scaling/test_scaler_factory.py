@@ -91,6 +91,7 @@ def mock_exp(mock_scaling_component):
     return args[0]
 
   exp = Mock()
+  exp.identifier = ''
   exp.scaling_model.components = {'scale' : mock_scaling_component}
   exp.scaling_model.consecutive_refinement_order = ['scale']
   exp.scaling_model.is_scaled = False

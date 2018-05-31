@@ -41,7 +41,7 @@ def parse_multiple_datasets(reflections):
     n_datasets = len(dataset_ids)
     dataset_id_list.extend(list(dataset_ids))
     if n_datasets > 1:
-      logger.info('\nDetected existence of a multi-dataset reflection table \n'
+      logger.info('Detected existence of a multi-dataset reflection table \n'
         'containing %s datasets. \n', n_datasets)
       for dataset_id in dataset_ids:
         single_refl_table = refl_table.select(refl_table['id'] == dataset_id)
@@ -106,40 +106,41 @@ def assign_unique_identifiers(experiments, reflections):
       refl['id'] = flex.int(refl.size(), i)
   return experiments, reflections
 
-def select_datasets_on_ids(experiments, reflections, dataset_ids,
+def select_datasets_on_ids(experiments, reflections,
   exclude_datasets=None, use_datasets=None):
   """Select a subset of the dataset based on the use_datasets and
   exclude_datasets params options."""
+  unique_identifiers = list(experiments.identifiers())
   if use_datasets or exclude_datasets:
     assert not (use_datasets and exclude_datasets), """
       The options use_datasets and exclude_datasets cannot be used in conjuction."""
     if exclude_datasets:
-      assert all(i in dataset_ids for i in exclude_datasets), """
+      assert all(i in unique_identifiers for i in exclude_datasets), """
       id not found in reflection tables"""
       reverse_ids = sorted(exclude_datasets,
         reverse=True)
       for id_ in reverse_ids:
-        logger.info("Deleting dataset %s.", id_)
-        index = dataset_ids.index(id_)
+        logger.info("Removing dataset %s.", id_)
+        index = unique_identifiers.index(id_)
         del experiments[index]
         del reflections[index]
-        del dataset_ids[index]
-      return experiments, reflections, dataset_ids
+        #del dataset_ids[index]
+      return experiments, reflections#, dataset_ids
     elif use_datasets:
-      assert all(i in dataset_ids for i in use_datasets), """
+      assert all(i in unique_identifiers for i in use_datasets), """
       id not found in reflection tables."""
       new_experiments = ExperimentList()
       new_reflections = []
-      new_dataset_ids = []
+      #new_dataset_ids = []
       for id_ in use_datasets:
         logger.info("Using dataset %s for scaling.", id_)
-        index = dataset_ids.index(id_)
+        index = unique_identifiers.index(id_)
         new_experiments.append(experiments[index])
         new_reflections.append(reflections[index])
-        new_dataset_ids.append(dataset_ids[index])
-      return new_experiments, new_reflections, new_dataset_ids
+        #new_dataset_ids.append(dataset_ids[index])
+      return new_experiments, new_reflections#, new_dataset_ids
   else:
-    return experiments, reflections, dataset_ids
+    return experiments, reflections#, dataset_ids
 
 '''def calc_sigmasq(jacobian_transpose, var_cov):
   sigmasq = flex.float([])
