@@ -1113,7 +1113,7 @@ def test_experiment_identifiers():
 
   assert table.are_experiment_identifiers_consistent() == False
 
-  identifiers[4] = 'mnop'
+  identifiers[3] = 'mnop'
 
   import six.moves.cPickle as pickle
   pickled = pickle.dumps(table)
