@@ -268,19 +268,21 @@ def calc_normE2(reflection_table, experiments):
   if n_centrics:
     sel1 = reflection_table['centric_flag']
     for i in range(0, len(centric_bin_limits)-1):
-      sel2 = reflection_table['resolution'] > centric_bin_limits[i]
-      sel3 = reflection_table['resolution'] <= centric_bin_limits[i+1]
-      sel = sel1 & sel2 & sel3
-      intensities = reflection_table['intensity'].select(sel)
-      reflection_table['Esq'].set_selected(sel, intensities/ mean_centric_values[i])
+      if mean_centric_values[i] != 0.0:
+        sel2 = reflection_table['resolution'] > centric_bin_limits[i]
+        sel3 = reflection_table['resolution'] <= centric_bin_limits[i+1]
+        sel = sel1 & sel2 & sel3
+        intensities = reflection_table['intensity'].select(sel)
+        reflection_table['Esq'].set_selected(sel, intensities/ mean_centric_values[i])
   if n_acentrics:
     sel1 = ~reflection_table['centric_flag']
     for i in range(0, len(acentric_bin_limits)-1):
-      sel2 = reflection_table['resolution'] > acentric_bin_limits[i]
-      sel3 = reflection_table['resolution'] <= acentric_bin_limits[i+1]
-      sel = sel1 & sel2 & sel3
-      intensities = reflection_table['intensity'].select(sel)
-      reflection_table['Esq'].set_selected(sel, intensities/ mean_acentric_values[i])
+      if mean_acentric_values[i] != 0.0:
+        sel2 = reflection_table['resolution'] > acentric_bin_limits[i]
+        sel3 = reflection_table['resolution'] <= acentric_bin_limits[i+1]
+        sel = sel1 & sel2 & sel3
+        intensities = reflection_table['intensity'].select(sel)
+        reflection_table['Esq'].set_selected(sel, intensities/ mean_acentric_values[i])
   del reflection_table['intensity_for_norm']
   del reflection_table['centric_flag']
   del reflection_table['resolution']
