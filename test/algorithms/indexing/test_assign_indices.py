@@ -23,10 +23,9 @@ def random_rotation(angle_min=0, angle_max=360):
     [random.uniform(angle_min,angle_max) for i in xrange(3)], deg=True)
 
 
-@pytest.mark.parametrize(
-  'space_group_info',
-  [sgtbx.space_group_info(symbol=symbol) for symbol in bravais_types.acentric])
-def test_assign_indices(dials_regression, space_group_info):
+
+@pytest.mark.parametrize('space_group_symbol', bravais_types.acentric)
+def test_assign_indices(dials_regression, space_group_symbol):
   datablock_json = os.path.join(
     dials_regression, "indexing_test_data",
     "i04_weak_data", "datablock_orig.json")
@@ -36,6 +35,7 @@ def test_assign_indices(dials_regression, space_group_info):
 
   sweep = sweep[:20]
 
+  space_group_info = sgtbx.space_group_info(symbol=space_group_symbol)
   space_group = space_group_info.group()
   unit_cell = space_group_info.any_compatible_unit_cell(volume=random.uniform(1e4,1e6))
 
