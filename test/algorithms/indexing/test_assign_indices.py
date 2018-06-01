@@ -19,9 +19,9 @@ from dials.algorithms.indexing.indexer import indexer_base
 
 
 def random_rotation(angle_min=0, angle_max=360):
-  return euler_angles_as_matrix(
-    [random.uniform(angle_min,angle_max) for i in xrange(3)], deg=True)
-
+  angles = [random.uniform(angle_min,angle_max) for i in xrange(3)]
+  print("Rotation: ", angles)
+  return euler_angles_as_matrix(angles, deg=True)
 
 
 @pytest.mark.parametrize('space_group_symbol', bravais_types.acentric)
@@ -34,6 +34,11 @@ def test_assign_indices(dials_regression, space_group_symbol):
   sweep = datablock.extract_imagesets()[0]
 
   sweep = sweep[:20]
+
+  # set random seeds so tests more reliable
+  seed = 54321
+  random.seed(seed)
+  flex.set_random_seed(seed)
 
   space_group_info = sgtbx.space_group_info(symbol=space_group_symbol)
   space_group = space_group_info.group()
@@ -155,5 +160,7 @@ class compare_global_local(object):
     self.correct_local = (
       expected_miller_indices == self.reflections_local['miller_index']).count(True)
 
-    print(self.misindexed_global, self.correct_global, len(self.reflections_global))
-    print(self.misindexed_local, self.correct_local, len(self.reflections_local))
+    print("Global misindexed: %d, correct: %d, total: %d" %
+        (self.misindexed_global, self.correct_global, len(self.reflections_global)))
+    print(" Local misindexed: %d, correct: %d, total: %d" %
+        (self.misindexed_local, self.correct_local, len(self.reflections_local)))
