@@ -537,6 +537,10 @@ def _write_columns(mtz_file, dataset, integrated_data, scale_partials,
     dataset.add_column('I', type_table['I']).set_values(I_scaling.as_float())
     dataset.add_column('SIGI', type_table['SIGI']).set_values(
       flex.sqrt(V_scaling).as_float())
+    dataset.add_column('SCALEUSED', 'R').set_values(
+      integrated_data['inverse_scale_factor'].as_float())
+    dataset.add_column('SIGSCALEUSED', 'R').set_values(
+      flex.sqrt(integrated_data['inverse_scale_factor_variance']).as_float())
   else:
     if 'intensity.prf.value' in integrated_data:
       I_profile = integrated_data['intensity.prf.value'] * scl
