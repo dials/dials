@@ -648,17 +648,15 @@ class Model(ProfileModelExt):
 
   def show(self, out=None):
     if out is None:
+      # Consider throwing deprecation warning "use print(this_object) instead"
       import sys
       out = sys.stdout
-    print("Profile model:", file=out)
-    print("    type: gaussian_rs", file=out)
-    print("    delta_b (sigma_b): %f (%f)" %(
-      self.delta_b(), self.sigma_b()), file=out)
-    print("    delta_m (sigma_m): %f (%f)" %(
-      self.delta_m(), self.sigma_m()), file=out)
+    print(str(self), file=out)
 
   def __str__(self):
-    from cStringIO import StringIO
-    s = StringIO()
-    self.show(out=s)
-    return s.getvalue()
+    return "\n".join(
+        "Profile model:",
+        "    type: gaussian_rs",
+        "    delta_b (sigma_b): %f (%f)" % (self.delta_b(), self.sigma_b()),
+        "    delta_m (sigma_m): %f (%f)" % (self.delta_m(), self.sigma_m()),
+    )
