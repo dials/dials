@@ -160,8 +160,8 @@ class ErrorModelRefinery(object):
     """Set error manager parameters and return error manager."""
     print_step_table(self)
     self._target.error_model.refined_parameters = self._target.x
-    logger.info("\nMinimised error model with parameters {0:.5f} and {1:.5f}. {sep}"
-          .format(self._target.x[0], abs(self._target.x[1]), sep='\n'))
+    #logger.info("\nMinimised error model with parameters {0:.5f} and {1:.5f}. {sep}"
+    #      .format(self._target.x[0], abs(self._target.x[1]), sep='\n'))
     return self._target.error_model
 
 

@@ -44,8 +44,8 @@ class active_parameter_manager(object):
     self.n_active_params = len(self.x)
     for comp in self.components:
       self.components_list.extend([comp])
-    logger.info('Components to be refined in this cycle: %s \n',
-      ''.join(str(i)+', ' for i in self.components_list).rstrip(', '))
+    #logger.info('Components to be refined in this cycle: %s \n',
+    #  ''.join(str(i)+', ' for i in self.components_list).rstrip(', '))
 
   def select_parameters(self, component):
     """Select the subset of self.x corresponding to the component (a string)."""
@@ -97,11 +97,20 @@ class multi_active_parameter_manager(object):
     self.components_list = [] # A list of the component names.
     self.apm_list = []
     self.apm_data = OrderedDict()
+    verbosity = 1
+    if len(selection_lists) > 4:
+      verbosity -= 1
+    all_same_components = False
+    if all(i == selection_lists[0] for i in selection_lists):
+      logger.info('Components to be refined in this cycle for all datasets: %s',
+        ''.join(str(i)+', ' for i in selection_lists[0]).rstrip(', '))
+      all_same_components = True
     for j, (components, selection_list) in enumerate(
       zip(components_list, selection_lists)):
       self.apm_list.append(apm_class(components, selection_list))
-      #logger.info('Components to be refined in this cycle for datasest %s: %s',
-      #  j, ''.join(str(i)+', ' for i in components).rstrip(', '))
+      if verbosity or not all_same_components:
+        logger.info('Components to be refined in this cycle for datasest %s: %s',
+          j, ''.join(str(i)+', ' for i in components).rstrip(', '))
     n_cumul_params = 0
     for i, apm in enumerate(self.apm_list):
       self.x.extend(apm.x)

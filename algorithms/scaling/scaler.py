@@ -391,6 +391,7 @@ class SingleScalerBase(ScalerBase):
     refinery.run()
     error_model = refinery.return_error_model()
     self.update_error_model(error_model)
+    logger.info(error_model)
 
   def _configure_reflection_table(self):
     """Calculate requried quantities"""
@@ -542,7 +543,7 @@ class MultiScaler(MultiScalerBase):
       self._Ih_table.split_into_free_work(
         self.params.scaling_options.free_set_percentage)'''
     self.active_scalers = self.single_scalers
-    if len(self.active_scalers) > 2:
+    if len(self.active_scalers) > 4:
       self.verbosity -= 1
       for scaler in self.active_scalers:
         scaler.verbosity -= 1

@@ -148,7 +148,7 @@ def new_reflections_3tables():
   return reflections
 
 def test_assign_unique_identifiers():
-  
+  """Test the assignment of unique identifiers"""
   # Test case where none are set but refl table ids are - use refl ids
   experiments = empty_explist_3exp()
   reflections = new_reflections_3tables()
@@ -183,7 +183,7 @@ def test_assign_unique_identifiers():
   # should raise an assertion error for inconsistent identifiers
   with pytest.raises(AssertionError):
     exp, rts = assign_unique_identifiers(experiments, reflections)
-  
+
   experiments = empty_explist_3exp()
   experiments[0].identifier = '0'
   experiments[1].identifier = '4'
@@ -218,6 +218,7 @@ def test_assign_unique_identifiers():
     assert list(set(refl['id'])) == [i]
 
 def test_select_datasets_on_ids():
+  """Test the select_datasets_on_ids function."""
   experiments = empty_explist_3exp()
   reflections = new_reflections_3tables()
   reflections[0].experiment_identifiers()[0] = '0'
@@ -259,6 +260,3 @@ def set_calculate_wilson_outliers(wilson_test_reflection_table):
 
   assert list(reflection_table.get_flags(
     reflection_table.flags.outlier_in_scaling)) == [True, False, True, False]
-
-if __name__ == "__main__":
-  test_assign_unique_identifiers()

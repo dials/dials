@@ -1,6 +1,7 @@
 """
 Error model classes for scaling.
 """
+from __future__ import print_function
 import logging
 from dials.array_family import flex
 from scitbx import sparse
@@ -31,7 +32,23 @@ class BasicErrorModel(object):
     self.bin_variances = None
     self._summation_matrix = self.create_summation_matrix()
     self._bin_counts = flex.double(self.Ih_table.size, 1.0) * self.summation_matrix
-    self.refined_parameters = []
+    self.refined_parameters = [1.0, 0.0]
+
+  def __str__(self):
+    return "\n".join(("",
+      "Error model details:",
+      "  Type: basic",
+      "  Current parameters: a = %.5f, b = %.5f" % (abs(self.refined_parameters[0]),
+        abs(self.refined_parameters[1])),
+      "  Error model formula: "+u'\u03C3'+"'"+u'\xb2'+" = a("+\
+        u'\u03C3\xb2'" + (bI)"+u'\xb2'+")", ""))
+
+  def show(self, out=None):
+    """Print the string representation of the error model."""
+    if out is None:
+      import sys
+      out = sys.stdout
+    print(str(self), file=out)
 
   @property
   def summation_matrix(self):
@@ -91,6 +108,6 @@ class BasicErrorModel(object):
 
   def update_variances(self, variances, intensities):
     """Use the error model parameter to calculate new values for the variances."""
-    new_variance = self.refined_parameters[0] * (variances
+    new_variance = (self.refined_parameters[0]**2) * (variances
       + ((self.refined_parameters[1] * intensities)**2))
     return new_variance
