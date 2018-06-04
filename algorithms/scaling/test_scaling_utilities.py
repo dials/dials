@@ -7,11 +7,13 @@ from mock import Mock
 from dxtbx.model import Experiment, ExperimentList
 from libtbx.test_utils import approx_equal
 from cctbx.sgtbx import space_group
+from dxtbx.model import Crystal
 from dials.array_family import flex
 from dials.algorithms.scaling.scaling_utilities import \
   calc_crystal_frame_vectors, calc_theta_phi, create_sph_harm_table,\
   sph_harm_table, align_rotation_axis_along_z, parse_multiple_datasets,\
-  set_wilson_outliers, select_datasets_on_ids, assign_unique_identifiers
+  set_wilson_outliers, select_datasets_on_ids, assign_unique_identifiers,\
+  quasi_normalisation
 
 @pytest.fixture(scope='module')
 def test_space_group():
@@ -24,6 +26,17 @@ def mock_exp():
   exp = Mock()
   exp.beam.get_s0.return_value = (1.0, 0.0, 0.0)
   exp.goniometer.get_rotation_axis.return_value = (0.0, 0.0, 1.0)
+  return exp
+
+@pytest.fixture(scope='module')
+def test_exp_E2():
+  """Create a mock experiments object."""
+  exp = Experiment()
+  exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
+              "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
+              "space_group_hall_symbol": " P 1"}
+  crystal = Crystal.from_dict(exp_dict)
+  exp.crystal = crystal
   return exp
 
 @pytest.fixture(scope='module')
@@ -46,6 +59,37 @@ def generate_reflection_table():
   rt['s1'] = flex.vec3_double([s1_vec, s1_vec, s1_vec])
   rt['phi'] = flex.double([0.0, 45.0, 90.0])
   return rt
+
+@pytest.fixture
+def simple_reflection_table():
+  refl = flex.reflection_table()
+  refl['intensity'] = flex.double([1.0, 2.0, 3.0])
+  refl['d'] = flex.double([1.0, 2.0, 3.0])
+  refl['miller_index'] = flex.miller_index([(0, 0, 3), (0, 0, 2), (0, 0, 1)])
+  refl.set_flags(flex.bool(refl.size(), False), refl.flags.bad_for_scaling)
+  return refl
+
+@pytest.fixture
+def gen_E2_reflection_table():
+  reflections = flex.reflection_table()
+  reflections['intensity'] = flex.double()
+  reflections['d'] = flex.double()
+  reflections['miller_index'] = flex.miller_index()
+  for i in range(1, 12001):
+    reflections['intensity'].extend(flex.double([10.0]))#*float(i)))
+    reflections['d'].extend(flex.double([1.0 + (2.0*12000/float(i))]))
+    reflections['miller_index'].extend(flex.miller_index([(0, 0, i)] * 11000))
+  reflections.set_flags(flex.bool(reflections.size(), False),
+    reflections.flags.bad_for_scaling)
+  return reflections
+
+def test_quasi_normalisation(simple_reflection_table, test_exp_E2):
+  """Test the quasi_normalisation function."""
+  # Test that for small datasets, all Esq values are set to one.
+  refl = quasi_normalisation(simple_reflection_table, test_exp_E2)
+  assert list(refl['Esq']) == [1.0, 1.0, 1.0]
+
+  #How to test a larger set is correctly binned?
 
 def test_calc_crystal_frame_vectors(test_reflection_table, mock_exp):
   """Test the namesake function, to check that the vectors are correctly rotated

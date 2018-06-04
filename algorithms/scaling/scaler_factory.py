@@ -6,7 +6,7 @@ from libtbx.utils import Sorry
 from dials.array_family import flex
 from dials.algorithms.scaling.scaler import MultiScaler, TargetScaler,\
   SingleScalerBase
-from dials.algorithms.scaling.scaling_utilities import calc_normE2
+from dials.algorithms.scaling.scaling_utilities import quasi_normalisation
 from dials.algorithms.scaling.outlier_rejection import reject_outliers
 logger = logging.getLogger('dials')
 
@@ -79,7 +79,7 @@ class SingleScalerFactory(object):
   @classmethod
   def filter_outliers(cls, reflections, experiment, params):
     """Calculate normalised E2 values and perform outlier rejection."""
-    reflections = calc_normE2(reflections, experiment)
+    reflections = quasi_normalisation(reflections, experiment)
     if params.scaling_options.outlier_rejection != '0':
       reflections = reject_outliers(reflections,
         experiment.crystal.get_space_group(),

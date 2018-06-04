@@ -8,7 +8,7 @@ from time import time
 import copy
 from math import pi, acos
 from dials.array_family import flex
-from cctbx import miller, crystal
+from cctbx import miller
 from dxtbx.model.experiment_list import ExperimentListDumper, ExperimentList
 from dials_scaling_ext import create_sph_harm_table, calc_theta_phi,\
   rotate_vectors_about_axis
@@ -187,9 +187,12 @@ def sph_harm_table(reflection_table, experiments, lmax):
   sph_h_t = create_sph_harm_table(theta_phi, theta_phi_2, lmax)
   return sph_h_t
 
+def quasi_normalisation(reflection_table, experiment):
+  """Calculate normalised intensity (Esq) values for reflections, for the purpose
+  of selecting subsets based on Esq for scaling. If more involved analyses of
+  normalised intensities are needed, then it may be necessary to split this
+  procedure to handle acentric and centric reflections separately."""
 
-def calc_normE2(reflection_table, experiments):
-  '''calculate normalised intensity values for centric and acentric reflections'''
   logger.info('Calculating normalised intensity values to select a reflection \n'
     'subset for scaling. \n')
   logger.debug('Negative intensities are set to zero for the purpose of \n'
@@ -197,101 +200,45 @@ def calc_normE2(reflection_table, experiments):
     'spuriously high E^2 values due to a mean close to zero and should only \n'
     'affect the E^2 values of the highest resolution bins. \n')
 
-  bad_refl_sel = reflection_table.get_flags(
+  good_refl_sel = ~reflection_table.get_flags(
     reflection_table.flags.bad_for_scaling, all=False)
-  rt_subset = reflection_table.select(~bad_refl_sel)
+  rt_subset = reflection_table.select(good_refl_sel)
 
   # Scaling subset is data that has not been flagged as bad or excluded
-  crystal_symmetry = crystal.symmetry(
-    unit_cell=experiments.crystal.get_unit_cell().parameters(),
-    space_group=experiments.crystal.get_space_group())
-  miller_set = miller.set(crystal_symmetry=crystal_symmetry,
+  miller_set = miller.set(
+    crystal_symmetry=experiment.crystal.get_crystal_symmetry(),
     indices=rt_subset['miller_index'])
-  rt_subset['resolution'] = 1.0/rt_subset['d']**2
 
   #handle negative reflections to minimise effect on mean I values.
   rt_subset['intensity_for_norm'] = copy.deepcopy(rt_subset['intensity'])
   rt_subset['intensity_for_norm'].set_selected(rt_subset['intensity'] < 0.0, 0.0)
   miller_array = miller.array(miller_set, data=rt_subset['intensity_for_norm'])
+  n_refl = rt_subset.size()
 
   #set up binning objects
-  rt_subset['centric_flag'] = miller_array.centric_flags().data()
-  n_centrics = rt_subset['centric_flag'].count(True)
-  n_acentrics = rt_subset.size() - n_centrics
-
-  if n_acentrics > 20000 or n_centrics > 20000:
+  if n_refl > 20000:
     n_refl_shells = 20
-  elif n_acentrics > 15000 or n_centrics > 15000:
+  elif n_refl > 15000:
     n_refl_shells = 15
-  elif n_acentrics < 10000:
-    reflection_table['Esq'] = flex.double(reflection_table.size(), 1.0)
-    del reflection_table['intensity_for_norm']
-    del reflection_table['centric_flag']
-    del reflection_table['resolution']
-    msg = ('No normalised intensity values were calculated, as an {sep}'
-    'insufficient number of reflections were detected. {sep}'
-    ).format(sep='\n')
-    logger.info(msg)
-    return reflection_table
-  else:
+  elif n_refl > 10000:
     n_refl_shells = 10
+  else:
+    logger.info(('No normalised intensity values were calculated, as an insufficient\n'
+    'number of reflections were detected. All normalised intensity \n'
+    'values will be set to 1 to allow use in scaling model determination. \n'))
+    reflection_table['Esq'] = flex.double(reflection_table.size(), 1.0)
+    return reflection_table
 
-  #calculate normalised intensities: first calculate bin averages
-  step = ((max(rt_subset['resolution']) - min(rt_subset['resolution'])
-           + 1e-8) / n_refl_shells)
-  if n_centrics:
-    centrics_array = miller_array.select_centric()
-    centric_binner = centrics_array.setup_binner_d_star_sq_step(
-      d_star_sq_step=step)
-    mean_centric_values = centrics_array.mean(use_binning=centric_binner)
-    mean_centric_values = mean_centric_values.data[1:-1]
-    centric_bin_limits = centric_binner.limits()
+  d_star_sq = miller_array.d_star_sq().data()
+  step = (flex.max(d_star_sq) - flex.min(d_star_sq) + 1e-8) / n_refl_shells
+  _ = miller_array.setup_binner_d_star_sq_step(d_star_sq_step=step)
 
-  if n_acentrics:
-    acentrics_array = miller_array.select_acentric()
-    acentric_binner = acentrics_array.setup_binner_d_star_sq_step(
-      d_star_sq_step=step)
-    mean_acentric_values = acentrics_array.mean(use_binning=acentric_binner)
-    mean_acentric_values = mean_acentric_values.data[1:-1]
-    acentric_bin_limits = acentric_binner.limits()
-
-  #now calculate normalised intensity values for full reflection table
-  miller_set = miller.set(crystal_symmetry=crystal_symmetry,
-    indices=reflection_table['miller_index'])
+  normalisations = miller_array.intensity_quasi_normalisations()
+  normalised_intensities = miller_array.customized_copy(
+    data=(miller_array.data()/normalisations.data()))
   reflection_table['Esq'] = flex.double(reflection_table.size(), 0.0)
-  miller_array = miller.array(miller_set)
-  reflection_table['centric_flag'] = miller_array.centric_flags().data()
-  d0_sel = reflection_table['d'] == 0.0
-  reflection_table['d'].set_selected(d0_sel, 1.0)  #set for now, then set back to zero later
-  reflection_table['resolution'] = 1.0/reflection_table['d']**2
-
-  if n_centrics:
-    sel1 = reflection_table['centric_flag']
-    for i in range(0, len(centric_bin_limits)-1):
-      if mean_centric_values[i] != 0.0:
-        sel2 = reflection_table['resolution'] > centric_bin_limits[i]
-        sel3 = reflection_table['resolution'] <= centric_bin_limits[i+1]
-        sel = sel1 & sel2 & sel3
-        intensities = reflection_table['intensity'].select(sel)
-        reflection_table['Esq'].set_selected(sel, intensities/ mean_centric_values[i])
-  if n_acentrics:
-    sel1 = ~reflection_table['centric_flag']
-    for i in range(0, len(acentric_bin_limits)-1):
-      if mean_acentric_values[i] != 0.0:
-        sel2 = reflection_table['resolution'] > acentric_bin_limits[i]
-        sel3 = reflection_table['resolution'] <= acentric_bin_limits[i+1]
-        sel = sel1 & sel2 & sel3
-        intensities = reflection_table['intensity'].select(sel)
-        reflection_table['Esq'].set_selected(sel, intensities/ mean_acentric_values[i])
-  del reflection_table['intensity_for_norm']
-  del reflection_table['centric_flag']
-  del reflection_table['resolution']
-  reflection_table['d'].set_selected(d0_sel, 0.0)
-  reflection_table['Esq'].set_selected(d0_sel, 0.0)
-  msg = ('The number of centric & acentric reflections is {0} & {1}, {sep}'
-    '{2} resolution bins were used for the E^2 calculation. {sep}'
-    ).format(n_centrics, n_acentrics, n_refl_shells, sep='\n')
-  logger.debug(msg)
+  reflection_table['Esq'].set_selected(
+    good_refl_sel, normalised_intensities.data())
   return reflection_table
 
 def set_wilson_outliers(reflection_table):
@@ -318,31 +265,3 @@ def set_wilson_outliers(reflection_table):
     centric_cutoff, acentric_cutoff, sep='\n')
   logger.info(msg)
   return reflection_table
-
-'''def R_pim_meas(scaler):
-  #Calculate R_pim, R_meas from a scaler
-  Ihl = scaler.Ih_table.intensities
-  gvalues = scaler.Ih_table.inverse_scale_factors
-
-  ones = flex.double([1.0] * len(Ihl))
-  nh = ones * scaler.Ih_table.h_index_matrix
-
-  I_average = (((Ihl/gvalues) * scaler.Ih_table.h_index_matrix)/nh)
-  I_average_expanded = flex.double(np.repeat(I_average,
-    scaler.Ih_table.h_index_counter_array))
-
-  diff = abs((Ihl/gvalues) - I_average_expanded)
-  reduced_diff = diff * scaler.Ih_table.h_index_matrix
-
-  selection = (nh != 1.0)
-  sel_reduced_diff = reduced_diff.select(selection)
-  sel_nh = nh.select(selection)
-
-  Rpim_upper = flex.sum(((1.0/(sel_nh - 1.0))**0.5) * sel_reduced_diff)
-  Rmeas_upper = flex.sum(((sel_nh/(sel_nh - 1.0))**0.5) * sel_reduced_diff)
-  sumIh = I_average_expanded * scaler.Ih_table.h_index_matrix
-  sumIh = sumIh.select(selection)
-  Rpim_lower = flex.sum(sumIh)
-  Rpim = Rpim_upper/Rpim_lower
-  Rmeas = Rmeas_upper/Rpim_lower
-  return Rpim, Rmeas'''
