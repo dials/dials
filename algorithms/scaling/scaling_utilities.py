@@ -9,6 +9,7 @@ import copy
 from math import pi, acos
 from dials.array_family import flex
 from cctbx import miller
+from cctbx import uctbx
 from dxtbx.model.experiment_list import ExperimentListDumper, ExperimentList
 from dials_scaling_ext import create_sph_harm_table, calc_theta_phi,\
   rotate_vectors_about_axis
@@ -230,8 +231,19 @@ def quasi_normalisation(reflection_table, experiment):
     return reflection_table
 
   d_star_sq = miller_array.d_star_sq().data()
-  step = (flex.max(d_star_sq) - flex.min(d_star_sq) + 1e-8) / n_refl_shells
-  _ = miller_array.setup_binner_d_star_sq_step(d_star_sq_step=step)
+  d_star_sq_min = flex.min(d_star_sq)
+  d_star_sq_max = flex.max(d_star_sq)
+  span = d_star_sq_max - d_star_sq_min
+
+  relative_tolerance = 1e-6
+  d_star_sq_max += span * relative_tolerance
+  d_star_sq_min -= span * relative_tolerance
+  step = (d_star_sq_max - d_star_sq_min) / n_refl_shells
+  miller_array.setup_binner_d_star_sq_step(
+    auto_binning=False,
+    d_max=uctbx.d_star_sq_as_d(d_star_sq_max),
+    d_min=uctbx.d_star_sq_as_d(d_star_sq_min),
+    d_star_sq_step=step)
 
   normalisations = miller_array.intensity_quasi_normalisations()
   normalised_intensities = miller_array.customized_copy(
