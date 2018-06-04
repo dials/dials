@@ -20,16 +20,16 @@ class wxbmp_from_np_array(object):
 
   def __init__(self, lst_data_in, show_nums = True, palette = "black2white", lst_data_mask_in = None):
     self.wx_bmp_arr = rgb_img()
-    if lst_data_in == [None] and lst_data_mask_in == [None]:
+    if lst_data_in == None and lst_data_mask_in == None:
       self._ini_wx_bmp_lst = None
 
     else:
       self._ini_wx_bmp_lst = []
       for lst_pos in range(len(lst_data_in)):
-        #print "lst_pos =", lst_pos
         data_3d_in = lst_data_in[lst_pos]
         xmax = data_3d_in.shape[1]
         ymax = data_3d_in.shape[2]
+
         # remember to put here some assertion to check that
         # both arrays have the same shape
 

@@ -26,8 +26,8 @@ class wxbitmap_convert(object):
 
     if data_in_n1 is None and data_in_n2 is None:
 
-      self.lst_3d_data = [None]
-      self.lst_3d_mask = [None]
+      self.lst_3d_data = None
+      self.lst_3d_mask = None
 
     elif data_in_n1 is not None and data_in_n2 is None:
       self.lst_3d_mask = None
@@ -63,7 +63,6 @@ class wxbitmap_convert(object):
 
       elif not isinstance(data_in_n1, list) and not isinstance(data_in_n2, list):
         #Got two blocks
-
         self.lst_3d_data = []
         self.lst_3d_mask = []
 
@@ -78,8 +77,8 @@ class wxbitmap_convert(object):
            img1_np.shape[2] == 0 or img2_np.shape[0] == 0 or \
            img2_np.shape[1] == 0 or img2_np.shape[2] == 0:
 
-          self.lst_3d_data = [None]
-          self.lst_3d_mask = [None]
+          self.lst_3d_data = None
+          self.lst_3d_mask = None
 
       else:
         # might be a good idea to raise a runtime error here
