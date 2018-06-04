@@ -108,7 +108,7 @@ class determine_space_group(object):
     step = (flex.max(d_star_sq) - flex.min(d_star_sq) + 1e-8) / n_refl_shells
     binner = intensities.setup_binner_d_star_sq_step(d_star_sq_step=step)
 
-    normalisations = intensity_quasi_normalisations(intensities)
+    normalisations = intensities.intensity_quasi_normalisations()
     self.intensities = self.intensities.customized_copy(
       data=(self.intensities.data()/normalisations.data()),
       sigmas=(self.intensities.sigmas()/normalisations.data())
@@ -586,34 +586,3 @@ def trunccauchy_pdf(x, a, b, loc=0, scale=1):
   rv = scipy.stats.cauchy(loc=loc, scale=scale)
   return rv.pdf(x) / (rv.cdf(b) - rv.cdf(a))
 
-
-def intensity_quasi_normalisations(intensities, d_star_power=1):
-  """ A miller.array whose data N(h) are the normalisations to convert
-    between locally normalised E^2's and I's:
-    E^2(h) = I(h) / N(h)
-
-    Intensities are binned with the current binner
-    and N(h) is the average of I's in the bin h belongs to.
-    """
-
-  # see also cctbx.miller.array.amplitude_quasi_normalisations()
-
-  assert intensities.binner() is not None
-  assert intensities.binner().n_bin_d_too_large_or_small() == 0
-  assert intensities.data().all_ge(0)
-  assert intensities.observation_type() is None or intensities.is_xray_intensity_array()
-
-  epsilons = intensities.epsilons().data().as_double()
-  mean_f_sq_over_epsilon = flex.double()
-  for i_bin in intensities.binner().range_used():
-    sel = intensities.binner().selection(i_bin)
-    sel_f_sq = intensities.data().select(sel)
-    if (sel_f_sq.size() > 0):
-      sel_epsilons = epsilons.select(sel)
-      sel_f_sq_over_epsilon = sel_f_sq / sel_epsilons
-      mean_f_sq_over_epsilon.append(flex.mean(sel_f_sq_over_epsilon))
-    else:
-      mean_f_sq_over_epsilon.append(0)
-  mean_f_sq_over_epsilon_interp = intensities.binner().interpolate(
-    mean_f_sq_over_epsilon, d_star_power)
-  return miller.array(intensities, mean_f_sq_over_epsilon_interp)
