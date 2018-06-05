@@ -266,7 +266,7 @@ class Script(object):
         make_sub_header("Merging statistics for dataset " + str(data_id),
           out=log.info_handle(logger))
         result.show(header=0, out=log.info_handle(logger))
-        result.show_estimated_cutoffs()
+        result.show_estimated_cutoffs(out=log.info_handle(logger))
         plot_labels.append('Dataset ' + str(data_id))
 
     self.scaled_miller_array = self.scaled_data_as_miller_array(self.experiments[0],

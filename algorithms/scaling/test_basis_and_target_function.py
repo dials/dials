@@ -267,7 +267,7 @@ def test_basis_function(small_reflection_table):
 
 def test_finite_difference_gradient(small_reflection_table, single_exp, physical_param):
   # Need to initialise a scaler - then get an apm for parameters, then a target
-  # function for calculating gradient. Then check this against finite difference - 
+  # function for calculating gradient. Then check this against finite difference -
   # which should also mimic update for minimisation?
   (test_reflections, test_experiments, params) = (
     small_reflection_table, single_exp, physical_param)

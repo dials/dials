@@ -141,7 +141,6 @@ def test_SingleScalerFactory(generated_param, mock_exp, test_refl, refl_to_filte
   ss = SingleScalerFactory.create(generated_param, mock_exp, test_refl)
   assert isinstance(ss, SingleScalerBase)
   assert set(ss.reflection_table['id']) == set([0])
-  assert list(ss.Ih_table.free_set_sel) == []
   assert all(ss.reflection_table.has_key(i) for i in ['inverse_scale_factor', 'Esq',
       'intensity', 'variance', 'id'])
 

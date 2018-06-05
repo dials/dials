@@ -22,21 +22,62 @@ from dials.array_family import flex
 from dials.algorithms.scaling.weighting import get_weighting_scheme
 logger = logging.getLogger('dials')
 
-
-class SingleIhTable(object):
+class SortingMethods(object):
 
   """
-  A datastructure for storing a reflection table, with additional matrices for
-  efficiently performing sums over groups of equivalent reflections.
+  Class containing methods to allow one to map miller indices to the asu and
+  also to obtain a list of sorted miller indices and the permutation relating
+  the sorted order to the original order in the input reflection table.
   """
 
-  def __init__(self, IhTable, h_index_matrix, space_group, weighting_scheme,
-    nonzero_weights_isel):
-    self._Ih_table = IhTable
+  @classmethod
+  def map_indices_to_asu(cls, reflection_table, space_group):
+    """Map the indices to the asymmetric unit."""
+    crystal_symmetry = crystal.symmetry(space_group=space_group)
+    miller_set = miller.set(crystal_symmetry=crystal_symmetry,
+      indices=reflection_table['miller_index'], anomalous_flag=False)
+    miller_set_in_asu = miller_set.map_to_asu()
+    reflection_table['asu_miller_index'] = miller_set_in_asu.indices()
+    return reflection_table
+
+  @classmethod
+  def get_sorted_asu_indices(cls, reflection_table, space_group):
+    """Return the sorted asu indices and the permutation selection."""
+    if not 'asu_miller_index' in reflection_table:
+      reflection_table = cls.map_indices_to_asu(reflection_table, space_group)
+    crystal_symmetry = crystal.symmetry(space_group=space_group)
+    miller_set_in_asu = miller.set(crystal_symmetry=crystal_symmetry,
+      indices=reflection_table['asu_miller_index'], anomalous_flag=False)
+    permuted = miller_set_in_asu.sort_permutation(by_value='packed_indices')
+    sorted_asu_miller_index = reflection_table['asu_miller_index'].select(permuted)
+    return sorted_asu_miller_index, permuted
+
+class IhTableBlock(SortingMethods):
+
+  """
+  A datastructure for storing a sorted reflection table, with additional
+  matrices for efficiently performing sums over groups of equivalent
+  reflections. The reflection table must already be sorted by asu miller index,
+  and the nonzero weights_isel indicates the order of the sorted data relative
+  to the initial reflection table before sorting.
+  It is expected that instances of this class are initialised by the IhTable,
+  which performs the necessary sorting of the dataset and splitting into blocks.
+  An indexing matrix can be supplied, which is assumed to be correct, and should
+  be if initialised by an IhTable. Alternatively, this can be calculated if
+  None is supplied.
+  """
+
+  def __init__(self, reflections, space_group, h_index_matrix=None,
+    weighting_scheme=None, nonzero_weights_isel=None):
+    self._Ih_table = reflections
     self.space_group = space_group
+    self._nonzero_weights = None
+    if not h_index_matrix:
+      h_index_matrix = self.assign_h_index_matrix()
     self._h_index_matrix = h_index_matrix
     self._h_expand_matrix = h_index_matrix.transpose()
-    self._nonzero_weights = nonzero_weights_isel
+    if nonzero_weights_isel:
+      self.nonzero_weights = nonzero_weights_isel
     self.derivatives = None
     self._n_h = None
     self.weighting_scheme = get_weighting_scheme(self, weighting_scheme)
@@ -54,9 +95,30 @@ class SingleIhTable(object):
     for referring outliers back to initial input."""
     return self._nonzero_weights
 
+  @nonzero_weights.setter
+  def nonzero_weights(self, new_isel):
+    assert new_isel.size() == self.size
+    self._nonzero_weights = new_isel
+
+  def assign_h_index_matrix(self):
+    """Assign an indexing matrix for the reflection table."""
+    asu_miller_index, permutation_selection = \
+      self.get_sorted_asu_indices(self.Ih_table, self.space_group)
+    n_refl = asu_miller_index.size()
+    n_unique_groups = len(set(asu_miller_index))
+    h_index_matrix = sparse.matrix(n_refl, n_unique_groups)
+    previous = asu_miller_index[0]
+    refl_group_idx = 0
+    for refl_idx, asu_idx in enumerate(asu_miller_index):
+      if asu_idx != previous:
+        refl_group_idx += 1
+      h_index_matrix[refl_idx, refl_group_idx] = 1.0
+      previous = asu_idx
+    return h_index_matrix.permute_rows(permutation_selection)
+
   def select(self, sel):
-    """Select a subset of the """
-    self._Ih_table = self._Ih_table.select(sel)
+    """Select a subset of the data."""
+    self.Ih_table = self.Ih_table.select(sel)
     h_idx_T = self._h_index_matrix.transpose()
     h_idx_sel = h_idx_T.select_columns(sel.iselection())
     reduced_h_idx = h_idx_sel.transpose()
@@ -64,9 +126,10 @@ class SingleIhTable(object):
     for i, col in enumerate(reduced_h_idx.cols()):
       if col.non_zeroes == 0:
         nz_col_sel[i] = False
-    self._h_index_matrix = reduced_h_idx.select_columns(nz_col_sel.iselection())
-    self._h_expand_matrix = self._h_index_matrix.transpose()
-    self._nonzero_weights = self._nonzero_weights.select(sel)
+    self.h_index_matrix = reduced_h_idx.select_columns(nz_col_sel.iselection())
+    self.h_expand_matrix = self._h_index_matrix.transpose()
+    if self._nonzero_weights:
+      self.nonzero_weights = self._nonzero_weights.select(sel)
 
   @property
   def size(self):
@@ -196,15 +259,6 @@ class SingleIhTable(object):
     Ih = sumgI/sumgsq
     self._Ih_table['Ih_values'] = Ih * self.h_expand_matrix
 
-  def get_sorted_asu_indices(self):
-    """Return the sorted asu indices and the permutation selection."""
-    crystal_symmetry = crystal.symmetry(space_group=self.space_group)
-    miller_set_in_asu = miller.set(crystal_symmetry=crystal_symmetry,
-      indices=self.asu_miller_index, anomalous_flag=False)
-    permuted = miller_set_in_asu.sort_permutation(by_value='packed_indices')
-    sorted_asu_miller_index = self.asu_miller_index.select(permuted)
-    return sorted_asu_miller_index, permuted
-
   def set_Ih_values_to_target(self, target_Ih_table):
     """Given an Ih table as a target, the common reflections across the tables
     are determined and the Ih_values are set to those of the target. If no
@@ -213,7 +267,8 @@ class SingleIhTable(object):
       target_Ih_table.Ih_values))
     new_Ih_values = flex.double(self.size, 0.0)
     location_in_unscaled_array = 0
-    sorted_asu_indices, permuted = self.get_sorted_asu_indices()
+    sorted_asu_indices, permuted = self.get_sorted_asu_indices(self.Ih_table,
+      self.space_group)
     for j, miller_idx in enumerate(OrderedSet(sorted_asu_indices)):
       n_in_group = self.h_index_matrix.col(j).non_zeroes
       if miller_idx in target_asu_Ih_dict:
@@ -224,14 +279,14 @@ class SingleIhTable(object):
     self.Ih_values.set_selected(permuted, new_Ih_values)
 
 
-class IhTable(object):
+class IhTable(SortingMethods):
   """
   A organisational datastructure for storing reflection table data that is
   split into blocks to allow multiprocessing. The data is split by asu miller
   index, i.e. groups of symmetry equivalent reflections are stored in one
   block, even if they originate from different datasets.
 
-  The blocked_data_list attribute is a list of SingleIhTable instances, and
+  The blocked_data_list attribute is a list of IhTableBlock instances, and
   the blocked_selection_list contains information about the origin of the
   reflections, so that these can be matched back to the input data.
 
@@ -246,22 +301,24 @@ class IhTable(object):
   id_ = "IhTable"
 
   def __init__(self, refl_and_sel_list, space_group, n_blocks=1,
-    weighting_scheme=None):
+    weighting_scheme=None, free_set_percentage=None):
     self.space_group = space_group
     self.weighting_scheme = weighting_scheme
     self._n_datasets = len(refl_and_sel_list)
     self._blocked_data_list = []
     self._blocked_selection_list = []
-    self._free_Ih_table = None
-    self._free_set_sel = flex.bool([])
+    self.free_Ih_table = False
     self._permutation_selection = None
     joint_refl_table, joint_nonzero_weights = self._create_joint_structures(
       refl_and_sel_list)
-    joint_refl_table = self._map_indices_to_asu(joint_refl_table)
+    #joint_refl_table = self._map_indices_to_asu(joint_refl_table)
     self._split_data_into_blocks(joint_refl_table, joint_nonzero_weights,
       n_blocks)
     self.sort_by_dataset_id()
     self._size = joint_refl_table.size()
+    if free_set_percentage:
+      self.select_free_set(free_set_percentage)
+      self.free_Ih_table = True
 
   def get_unique_group(self, asu_miller_index):
     """Returns a reflection table of the data for a given asu miller index"""
@@ -291,23 +348,13 @@ class IhTable(object):
 
   @property
   def blocked_data_list(self):
-    """A list of SingleIhTables"""
+    """A list of IhTableBlocks"""
     return self._blocked_data_list
 
   @property
   def blocked_selection_list(self):
     """A list of selections relating the Single Ih tables to the initial table."""
     return self._blocked_selection_list
-
-  @property
-  def free_Ih_table(self):
-    """An Ih table of a subset of the data for a 'free' set in refinement."""
-    return self._free_Ih_table
-
-  @property
-  def free_set_sel(self):
-    """The selection used to split the data into a free and work set."""
-    return self._free_set_sel
 
   @staticmethod
   def _create_joint_structures(refl_and_sel_list):
@@ -326,10 +373,7 @@ class IhTable(object):
           assert 0, """Attempting to create an Ih_table object from a reflection
           table with no %s column""" % col
         Ih_table[col] = refl_table[col]
-      if 'Ih_values' in refl_table.keys():
-        Ih_table['Ih_values'] = refl_table['Ih_values']
-      else:
-        Ih_table['Ih_values'] = flex.double(refl_table.size(), 0.0)
+      Ih_table['Ih_values'] = flex.double(refl_table.size(), 0.0)
       Ih_table['dataset_id'] = flex.int(refl_table.size(), i)
       nonzero_weights_sel = ~(refl_table.get_flags(refl_table.flags.bad_for_scaling,
         all=False))
@@ -340,30 +384,12 @@ class IhTable(object):
       total_nonzero_weights_sel.extend(nonzero_weights_sel.iselection())
     return total_Ih_table, total_nonzero_weights_sel
 
-  def _map_indices_to_asu(self, reflection_table):
-    """Map the indices to the asymmetric unit."""
-    crystal_symmetry = crystal.symmetry(space_group=self.space_group)
-    miller_set = miller.set(crystal_symmetry=crystal_symmetry,
-      indices=reflection_table['miller_index'], anomalous_flag=False)
-    miller_set_in_asu = miller_set.map_to_asu()
-    reflection_table['asu_miller_index'] = miller_set_in_asu.indices()
-    return reflection_table
-
-  def get_sorted_asu_indices(self, reflection_table):
-    """Return the sorted asu indices and the permutation selection."""
-    crystal_symmetry = crystal.symmetry(space_group=self.space_group)
-    miller_set_in_asu = miller.set(crystal_symmetry=crystal_symmetry,
-      indices=reflection_table['asu_miller_index'], anomalous_flag=False)
-    permuted = miller_set_in_asu.sort_permutation(by_value='packed_indices')
-    sorted_asu_miller_index = reflection_table['asu_miller_index'].select(permuted)
-    return sorted_asu_miller_index, permuted
-
   def _split_data_into_blocks(self, reflection_table, nonzero_weights, n_blocks):
     """Assign the h_index and h_expand matrices."""
     # Get a sorted array of asu_miller_indices and the flex size_t array that
     # can be used to permute the reflection table to the sorted order.
     asu_miller_index, self._permutation_selection = \
-      self.get_sorted_asu_indices(reflection_table)
+      self.get_sorted_asu_indices(reflection_table, self.space_group)
     n_refl = asu_miller_index.size()
     n_unique_groups = len(set(asu_miller_index))
 
@@ -438,24 +464,48 @@ class IhTable(object):
     self.add_Ihtable_block(selector, sub_refl_table, reduced_h_idx,
       sub_nz_weights)
 
-    '''if self.free_set_sel:
-      isel = (~self.free_set_sel).iselection()
-      total_h_idx_matrix_T = total_h_idx_matrix.transpose()
-      total_h_idx_matrix_T = total_h_idx_matrix_T.select_columns(isel)
-      total_h_idx_matrix = total_h_idx_matrix_T.transpose()
-      good_cols = flex.size_t([])
-      for i, col in enumerate(total_h_idx_matrix.cols()):
-        if col.non_zeroes != 0:
-          good_cols.append(i)
-      total_h_idx_matrix = total_h_idx_matrix.select_columns(good_cols)
-    total_h_expand_matrix = total_h_idx_matrix.transpose()
-    return total_h_idx_matrix, total_h_expand_matrix'''
+  def select_free_set(self, percentage, offset=0):
+    """Extract a free set from the blocked data, adding a new block to the
+    end of the list and updating the selection lists."""
+    interval_between_groups = int(100/percentage)
+    overall_free_set_table = flex.reflection_table()
+    overall_nonzero_weights = flex.size_t()
+    self.add_free_set_sel_to_block_selection_list()
+    total_unique_groups = 0
+    # now loop over blocks, selecting out data
+    for i, block in enumerate(self.blocked_data_list):
+      free_set = flex.double(block.size, 0.0)
+      n_unique_groups = block.h_index_matrix.n_cols
+      total_unique_groups += n_unique_groups
+      groups_for_free_set = flex.int(
+        [x+offset for x in range(n_unique_groups-offset) if
+        (x % interval_between_groups == 0)])
+      for g in groups_for_free_set:
+        free_set += block.h_index_matrix.col(g).as_dense_vector()
+      free_set_sel = free_set != 0.0
+      free_set_table = block.Ih_table.select(free_set_sel)
+      free_set_nonzero_isel = block.nonzero_weights.select(free_set_sel)
+      overall_free_set_table.extend(free_set_table)
+      overall_nonzero_weights.extend(free_set_nonzero_isel)
+      self.split_selection_into_free_work(i, free_set_sel)
+      block = block.select(~free_set_sel)
+    free_set_Ih_table = IhTableBlock(overall_free_set_table, self.space_group, None,
+      self.weighting_scheme, overall_nonzero_weights)
+    self.blocked_data_list.append(free_set_Ih_table)
+    n_free_groups = self.blocked_data_list[-1].h_index_matrix.n_cols
+    msg = ('The dataset has been split into a working and free set. \n'
+      'The free set contains {0} reflections, in {1} unique groups,\n'
+      'and the working set contains {2} reflections in {3} unique groups.\n'
+      ).format(self.blocked_data_list[-1].size, n_free_groups,
+      sum([i.h_index_matrix.n_rows for i in self.blocked_data_list[:-1]]),
+      total_unique_groups - n_free_groups)
+    logger.info(msg)
 
   def add_Ihtable_block(self, selection, Ih_table, h_index_matrix,
     nonzero_weights_isel):
     """Add a new Ih table block to the list."""
-    self._blocked_data_list.append(SingleIhTable(Ih_table, h_index_matrix,
-      self.space_group, self.weighting_scheme, nonzero_weights_isel))
+    self._blocked_data_list.append(IhTableBlock(Ih_table, self.space_group,
+      h_index_matrix, self.weighting_scheme, nonzero_weights_isel))
     self._blocked_selection_list.append(selection)
 
   def apply_selection_to_selection_list(self, i, sel):
@@ -469,6 +519,25 @@ class IhTable(object):
       new_sel_list = current_sel_list.select(sel[start_idx:end_idx])
       self.blocked_selection_list[j][i] = new_sel_list
       start_idx += n
+
+  def add_free_set_sel_to_block_selection_list(self):
+    """Append an empty array to the end of each selection list."""
+    for selection_list in self.blocked_selection_list.itervalues():
+      selection_list.append(flex.size_t())
+
+  def split_selection_into_free_work(self, block_id, free_set_sel):
+    """Split a free set out of the selection list."""
+    start_idx = 0
+    for j, selection_list in self.blocked_selection_list.iteritems():
+      current_sel_list = selection_list[block_id]
+      n = len(current_sel_list)
+      end_idx = start_idx + n
+      free_set_sel_in_dataset = free_set_sel[start_idx:end_idx]
+      block_free_set_isel_list = current_sel_list.select(free_set_sel_in_dataset)
+      new_sel_list = current_sel_list.select(~free_set_sel_in_dataset)
+      self.blocked_selection_list[j][block_id] = new_sel_list
+      self.blocked_selection_list[j][-1].extend(block_free_set_isel_list)
+      start_idx = end_idx
 
   def sort_by_dataset_id(self):
     """Iterate through the blocks, sorting them to be ordered first by dataset
@@ -521,28 +590,3 @@ class IhTable(object):
     """Update weights in each block."""
     for block in self.blocked_data_list:
       block.update_weights()
-
-
-'''def split_into_free_work(self, percentage, offset=0):
-  """Split the dataset into a working and free set. The reflections chosen are
-  a percentage of the symmetry equivalent groups, chosen in even steps starting
-  at the offset, default 0."""
-  n_groups = self.h_index_matrix.n_cols
-  group_selection = [i for i in range(offset, n_groups, int(100/percentage))]
-  free_set = flex.double(self.size, 0.0)
-  for g in group_selection:
-    free_set += self.h_index_matrix.col(g).as_dense_vector()
-  free_set_sel = free_set != 0.0
-  #select out a reflection table, and use this to initialise a new Ih_table.
-  free_Ih_table = self._Ih_table.select(free_set_sel)
-  free_Ih_table.set_flags(flex.bool(free_Ih_table.size(), False),
-    free_Ih_table.flags.bad_for_scaling)
-  #self._free_Ih_table = SingleIhTable(free_Ih_table, self.space_group)
-  self._free_set_sel = free_set_sel
-  self = self.select(~free_set_sel)
-  msg = (('The dataset has been split into a working and free set. \n'
-    'The free set contains {0} reflections, in {1} unique groups,\n'
-    'and the working set contains {2} reflections in {3} unique groups.\n'
-    ).format(self.free_Ih_table.size, self.free_Ih_table.h_index_matrix.n_cols,
-  self.size, self.h_index_matrix.n_cols))
-  logger.info(msg)'''

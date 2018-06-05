@@ -220,8 +220,6 @@ class SingleScalerBase(ScalerBase):
     self._reflection_table = reflection
     self._configure_reflection_table()
     self.select_reflections_for_scaling(for_multi=for_multi)
-    #if self.params.scaling_options.n_proc > 1:
-    #  self.Ih_table.split_into_blocks(self.params.scaling_options.n_proc)
     logger.info('Completed preprocessing and initialisation for this dataset.\n'
       '\n' + '='*80 + '\n')
 
@@ -277,13 +275,7 @@ class SingleScalerBase(ScalerBase):
     """Update the scale factors and Ih for the next minimisation iteration."""
     apm_i = apm.apm_list[0]
     basis_fn = self._basis_function.calculate_scales_and_derivatives(apm_i)
-    if self.Ih_table.free_set_sel:
-      dervis_trans = basis_fn[1][0].transpose() #what about when also blocked?
-      work_set = ~self.Ih_table.free_set_sel
-      derivs = dervis_trans.select_columns(work_set.iselection())
-      self.Ih_table.derivatives = [derivs.transpose()]
-    else:
-      self.Ih_table.set_derivatives(basis_fn[1])
+    self.Ih_table.set_derivatives(basis_fn[1])
     if curvatures:
       apm.curvatures = basis_fn[2]
     self.Ih_table.set_inverse_scale_factors(basis_fn[0])
@@ -362,14 +354,15 @@ class SingleScalerBase(ScalerBase):
     selection = self._scaling_subset(self.reflection_table, self.params)
     self.scaling_selection = selection
     if not for_multi:
+      free_set_percentage = None
+      if self.params.scaling_options.use_free_set:
+        free_set_percentage = self.params.scaling_options.free_set_percentage
       self._Ih_table = IhTable([(self.reflection_table, selection)],
         self.space_group, n_blocks=self.params.scaling_options.nproc,
-        weighting_scheme=self.params.weighting.weighting_scheme)
+        weighting_scheme=self.params.weighting.weighting_scheme,
+        free_set_percentage=free_set_percentage)
       # Now get the block selections for the first dataset (i.e. the only one!)
       block_selections = self.Ih_table.blocked_selection_list[0]
-      '''if self.params.scaling_options.use_free_set and split_free_set:
-        self._Ih_table.split_into_free_work(
-          self.params.scaling_options.free_set_percentage)'''
       for component in self.components.itervalues():
         component.update_reflection_data(self.reflection_table, selection, block_selections)
 
@@ -523,6 +516,7 @@ class MultiScalerBase(ScalerBase):
     refinery.run()
     error_model = refinery.return_error_model()
     self.update_error_model(error_model)
+    logger.info(error_model)
 
 class MultiScaler(MultiScalerBase):
   """
@@ -536,12 +530,13 @@ class MultiScaler(MultiScalerBase):
     logger.info('Configuring a MultiScaler to handle the individual Scalers. \n')
     super(MultiScaler, self).__init__(params, experiments, single_scalers)
     logger.info('Determining symmetry equivalent reflections across datasets.\n')
+    free_set_percentage = None
+    if self.params.scaling_options.use_free_set:
+      free_set_percentage = self.params.scaling_options.free_set_percentage
     self._Ih_table = IhTable([(x.reflection_table, x.scaling_selection)
       for x in self.single_scalers], self._space_group,
-      n_blocks=self.params.scaling_options.nproc)
-    '''if self.params.scaling_options.use_free_set:
-      self._Ih_table.split_into_free_work(
-        self.params.scaling_options.free_set_percentage)'''
+      n_blocks=self.params.scaling_options.nproc,
+      free_set_percentage=free_set_percentage)
     self.active_scalers = self.single_scalers
     if len(self.active_scalers) > 4:
       self.verbosity -= 1
@@ -582,9 +577,13 @@ class TargetScaler(MultiScalerBase):
 
   def initialise_targeted_Ih_table(self):
     """Initialise an Ih_table, using self._target_Ih_table to set the Ih values"""
+    free_set_percentage = None
+    if self.params.scaling_options.use_free_set:
+      free_set_percentage = self.params.scaling_options.free_set_percentage
     self._Ih_table = IhTable([(x.reflection_table, x.scaling_selection)
       for x in self.unscaled_scalers], self._space_group,
-      n_blocks=self.params.scaling_options.nproc)
+      n_blocks=self.params.scaling_options.nproc,
+      free_set_percentage=free_set_percentage)
     self.set_Ih_values_to_target()
     for i, scaler in enumerate(self.active_scalers):
       for component in scaler.components.itervalues():
@@ -600,9 +599,6 @@ class TargetScaler(MultiScalerBase):
       sel = block.Ih_values != 0.0
       block = block.select(sel)
       self._Ih_table.apply_selection_to_selection_list(i, sel)
-      '''if self.params.scaling_options.use_free_set:
-        scaler.Ih_table.split_into_free_work(
-          self.params.scaling_options.free_set_percentage)'''
 
   def select_reflections_for_scaling(self):
     """Select reflections for scaling in individual scalers."""

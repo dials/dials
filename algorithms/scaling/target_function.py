@@ -37,7 +37,12 @@ class ScalingTarget(object):
     """Calculate RMSDs for the matches."""
     R = flex.double([])
     n = 0
-    for block in Ih_table.blocked_data_list:
+    if Ih_table.free_Ih_table:
+      work_blocks = Ih_table.blocked_data_list[:-1]
+      free_block = Ih_table.blocked_data_list[-1]
+    else:
+      work_blocks = Ih_table.blocked_data_list
+    for block in work_blocks:
       R.extend((self.calculate_residuals(block)**2) * block.weights)
       n += block.size
     if not self._no_param_restraints:
@@ -48,7 +53,8 @@ class ScalingTarget(object):
         self._no_param_restraints = True
     self._rmsds = [(flex.sum((R))/n)**0.5]
     if Ih_table.free_Ih_table:
-      self._rmsds.append(self.calculate_free_rmsds(Ih_table.free_Ih_table))
+      R = (self.calculate_residuals(free_block)**2) * free_block.weights
+      self._rmsds.append((flex.sum((R))/free_block.size)**0.5)
     return self._rmsds
 
   @staticmethod
@@ -62,12 +68,6 @@ class ScalingTarget(object):
     R = Ih_table.intensities - (Ih_table.inverse_scale_factors
       * Ih_table.Ih_values)
     return R
-
-  @staticmethod
-  def calculate_free_rmsds(Ih_table):
-    """Calculate an RMSD from the free set."""
-    R = Ih_table.intensities - (Ih_table.inverse_scale_factors * Ih_table.Ih_values)
-    return (flex.sum((R**2) * Ih_table.weights)/Ih_table.size)**0.5
 
   @staticmethod
   def calculate_gradients(Ih_table):

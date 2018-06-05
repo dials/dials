@@ -2,9 +2,9 @@
 Test for the scaling weighting module.
 """
 import pytest
-from dials.array_family import flex
 from mock import Mock
 from libtbx.utils import Sorry
+from dials.array_family import flex
 from dials.algorithms.scaling.weighting import get_weighting_scheme,\
   WeightingBase, UnityWeights, GemanMcClureWeights, HuberWeights, CauchyWeights
 

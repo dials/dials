@@ -249,8 +249,12 @@ class ScalingSimpleLBFGS(ScalingRefinery, SimpleLBFGS):
     """overwrite method to avoid calls to 'blocks' methods of target"""
     self.prepare_for_step()
 
-    if self._scaler.params.scaling_options.nproc > 1:
+    if self._scaler.Ih_table.free_Ih_table:
+      blocks = self._scaler.Ih_table.blocked_data_list[:-1]
+    else:
       blocks = self._scaler.Ih_table.blocked_data_list
+
+    if self._scaler.params.scaling_options.nproc > 1:
       task_results = easy_mp.parallel_map(
         func=self._target.compute_functional_gradients,
         iterable=blocks,
@@ -264,7 +268,6 @@ class ScalingSimpleLBFGS(ScalingRefinery, SimpleLBFGS):
       for i in range(1, len(gi)):
         g += gi[i]
     else:
-      blocks = self._scaler.Ih_table.blocked_data_list
       f = 0.0
       g = None
       for block in blocks:
@@ -342,10 +345,14 @@ class ScalingLstbxBuildUpMixin(ScalingRefinery):
     # Reset the state to construction time, i.e. no equations accumulated
     self.reset()
 
+    if self._scaler.Ih_table.free_Ih_table:
+      blocks = self._scaler.Ih_table.blocked_data_list[:-1]
+    else:
+      blocks = self._scaler.Ih_table.blocked_data_list
+
     # observation terms
     if objective_only:
       #if self._scaler.params.scaling_options.nproc > 1: #no mp option yet
-      blocks = self._scaler.Ih_table.blocked_data_list
       for block in blocks:
         residuals, weights = self._target.compute_residuals(block)
         self.add_residuals(residuals, weights)
@@ -354,7 +361,6 @@ class ScalingLstbxBuildUpMixin(ScalingRefinery):
 
       self._jacobian = None
 
-      blocks = self._scaler.Ih_table.blocked_data_list
       for block in blocks:
         residuals, jacobian, weights = self._target.compute_residuals_and_gradients(block)
         self.add_equations(residuals, jacobian, weights)
