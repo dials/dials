@@ -54,10 +54,10 @@ phil_scope = phil.parse('''
       .help = "Set scaling model to be applied to input datasets without
                an existing model. "
   output {
-    log = dials.scaling.log
+    log = dials.scale.log
       .type = str
       .help = "The log filename"
-    debug_log = dials.scaling.debug.log
+    debug_log = dials.scale.debug.log
       .type = str
       .help = "The debug log filename"
     calculate_individual_merging_stats = False
@@ -265,7 +265,7 @@ class Script(object):
       for result, data_id in zip(results, scaled_ids):
         make_sub_header("Merging statistics for dataset " + str(data_id),
           out=log.info_handle(logger))
-        result.show(header=0)#out=log.info_handle(logger))
+        result.show(header=0, out=log.info_handle(logger))
         result.show_estimated_cutoffs()
         plot_labels.append('Dataset ' + str(data_id))
 
@@ -278,8 +278,8 @@ class Script(object):
       i_obs=self.scaled_miller_array, n_bins=20, anomalous=False,
       sigma_filtering=None, eliminate_sys_absent=False,
       use_internal_variance=self.params.output.use_internal_variance)
-    result.show(header=0)#out=log.info_handle(logger))
-    result.show_estimated_cutoffs()
+    result.show(header=0, out=log.info_handle(logger))
+    result.show_estimated_cutoffs(out=log.info_handle(logger))
     plot_labels.append('Overall dataset')
 
     # Plot merging stats if requested.
