@@ -45,8 +45,8 @@ class SingleIhTable(object):
 
   def update_error_model(self, error_model):
     """Update the scaling weights based on an error model."""
-    sigmaprime = error_model.update_variances(self.variances, self.intensities)
-    self.weights = 1.0/(sigmaprime**2)
+    sigmaprimesq = error_model.update_variances(self.variances, self.intensities)
+    self.weights = 1.0/sigmaprimesq
 
   @property
   def nonzero_weights(self):
