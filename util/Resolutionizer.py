@@ -178,6 +178,11 @@ phil_str = '''
     .help = "Minimum completeness in the outer resolution shell"
     .short_caption = "Outer shell completeness"
     .expert_level = 1
+  cc_ref = 0.1
+    .type = float(value_min=0)
+    .help = "Minimum value of CC vs reference dataset in the outer resolution shell"
+    .short_caption = "Outer shell CCref"
+    .expert_level = 1
   cc_half = 0.5
     .type = float(value_min=0)
     .help = "Minimum value of CC1/2 in the outer resolution shell"
@@ -225,6 +230,8 @@ phil_str = '''
   space_group = None
     .type = space_group
     .expert_level = 1
+  reference = None
+    .type = path
 '''
 
 
@@ -252,9 +259,9 @@ class resolution_plot(object):
 
   def plot(self, d_star_sq, values, label):
     self.ax.plot(d_star_sq, values, label=label)
-    if label == 'CC1/2':
+    if label.startswith('CC'):
       ylim = self.ax.get_ylim()
-      self.ax.set_ylim(ylim[0], max(ylim[1], 1.05))
+      self.ax.set_ylim(0, max(ylim[1], 1.05))
 
   def plot_resolution_limit(self, d):
     from cctbx import uctbx
@@ -276,9 +283,14 @@ class resolution_plot(object):
 class resolutionizer(object):
   '''A class to calculate things from merging reflections.'''
 
-  def __init__(self, i_obs, batches, params):
+  def __init__(self, i_obs, batches, params, reference=None):
 
     self._params = params
+    self._reference = reference
+
+    if self._reference is not None:
+      self._reference = self._reference.merge_equivalents(
+        use_internal_variance=False).array()
 
     i_obs = i_obs.customized_copy(anomalous_flag=params.anomalous, info=i_obs.info())
 
@@ -292,6 +304,8 @@ class resolutionizer(object):
     if self._params.space_group is not None:
       i_obs = i_obs.customized_copy(space_group_info=self._params.space_group,
                                     info=i_obs.info())
+
+    self._intensities = i_obs
 
     import iotbx.merging_statistics
     self._merging_statistics = iotbx.merging_statistics.dataset_statistics(
@@ -309,42 +323,49 @@ class resolutionizer(object):
   @classmethod
   def from_unmerged_mtz(cls, scaled_unmerged, params):
 
+    def miller_array_from_mtz(unmerged_mtz):
+      from iotbx import reflection_file_reader
+      hkl_in = reflection_file_reader.any_reflection_file(scaled_unmerged)
+      miller_arrays = hkl_in.as_miller_arrays(merge_equivalents=False)
+      i_obs = None
+      batches = None
+      all_i_obs = []
+      for array in miller_arrays :
+        labels = array.info().label_string()
+        if (array.is_xray_intensity_array()) :
+          all_i_obs.append(array)
+        if (labels == 'BATCH'):
+          assert batches is None
+          batches = array
+      if (i_obs is None) :
+        if (len(all_i_obs) == 0) :
+          raise Sorry("No intensities found in %s." % file_name)
+        elif (len(all_i_obs) > 1) :
+          if params.labels is not None:
+            from iotbx.reflection_file_utils import label_table
+            lab_tab = label_table(all_i_obs)
+            i_obs = lab_tab.select_array(label=params.labels[0], command_line_switch='labels')
+          if i_obs is None:
+            raise Sorry("Multiple intensity arrays - please specify one:\n%s" %
+              "\n".join(["  labels=%s"%a.info().label_string() for a in all_i_obs]))
+        else :
+          i_obs = all_i_obs[0]
+      if hkl_in.file_type() == 'ccp4_mtz':
+        # need original miller indices otherwise we don't get correct anomalous
+        # merging statistics
+        mtz_object = hkl_in.file_content()
+        if "M_ISYM" in mtz_object.column_labels():
+          indices = mtz_object.extract_original_index_miller_indices()
+          i_obs = i_obs.customized_copy(indices=indices, info=i_obs.info())
+      return i_obs, batches
 
-    from iotbx import reflection_file_reader
-    hkl_in = reflection_file_reader.any_reflection_file(scaled_unmerged)
-    miller_arrays = hkl_in.as_miller_arrays(merge_equivalents=False)
-    i_obs = None
-    batches = None
-    all_i_obs = []
-    for array in miller_arrays :
-      labels = array.info().label_string()
-      if (array.is_xray_intensity_array()) :
-        all_i_obs.append(array)
-      if (labels == 'BATCH'):
-        assert batches is None
-        batches = array
-    if (i_obs is None) :
-      if (len(all_i_obs) == 0) :
-        raise Sorry("No intensities found in %s." % file_name)
-      elif (len(all_i_obs) > 1) :
-        if params.labels is not None:
-          from iotbx.reflection_file_utils import label_table
-          lab_tab = label_table(all_i_obs)
-          i_obs = lab_tab.select_array(label=params.labels[0], command_line_switch='labels')
-        if i_obs is None:
-          raise Sorry("Multiple intensity arrays - please specify one:\n%s" %
-            "\n".join(["  labels=%s"%a.info().label_string() for a in all_i_obs]))
-      else :
-        i_obs = all_i_obs[0]
-    if hkl_in.file_type() == 'ccp4_mtz':
-      # need original miller indices otherwise we don't get correct anomalous
-      # merging statistics
-      mtz_object = hkl_in.file_content()
-      if "M_ISYM" in mtz_object.column_labels():
-        indices = mtz_object.extract_original_index_miller_indices()
-        i_obs = i_obs.customized_copy(indices=indices, info=i_obs.info())
+    i_obs, batches = miller_array_from_mtz(scaled_unmerged)
+    if params.reference is not None:
+      reference, _ = miller_array_from_mtz(params.reference)
+    else:
+      reference = None
 
-    return cls(i_obs, batches, params)
+    return cls(i_obs, batches, params, reference=reference)
 
   def resolution_auto(self):
     '''Compute resolution limits based on the current self._params set.'''
@@ -360,6 +381,10 @@ class resolutionizer(object):
     if self._params.cc_half:
       stamp("ra: cc")
       print('Resolution cc_half     : %.2f' % self.resolution_cc_half())
+
+    if self._params.cc_ref and self._reference is not None:
+      stamp("ra: cc")
+      print('Resolution cc_ref      : %.2f' % self.resolution_cc_ref())
 
     if self._params.isigma:
       stamp("ra: isig")
@@ -684,6 +709,64 @@ class resolutionizer(object):
           s_s, cc_half_critical_value, label='Confidence limit (p=%g)' %p)
       plot.plot_resolution_limit(r_cc)
       plot.savefig('cc_half.png')
+
+    return r_cc
+
+  def resolution_cc_ref(self, limit=None, log=None):
+    '''Compute a resolution limit where cc_ref < 0.5 (limit if
+    set) or the full extent of the data.'''
+
+    if limit is None:
+      limit = self._params.cc_ref
+
+    intensities = self._intensities.merge_equivalents(
+      use_internal_variance=False).array()
+    cc_s = flex.double()
+    for b in self._merging_statistics.bins:
+      sel = intensities.resolution_filter_selection(
+        d_min=b.d_min, d_max=b.d_max)
+      sel_ref = self._reference.resolution_filter_selection(
+        d_min=b.d_min, d_max=b.d_max)
+      d = intensities.select(sel)
+      dref = self._reference.select(sel_ref)
+      d, dref = d.common_sets(dref)
+      cc = d.correlation(dref)
+      cc_s.append(cc.coefficient())
+    cc_s = cc_s.reversed()
+
+    s_s = flex.double(
+      [1/b.d_min**2 for b in self._merging_statistics.bins]).reversed()
+
+    if self._params.cc_half_fit == 'tanh':
+      cc_f = tanh_fit(s_s, cc_s, iqr_multiplier=4)
+    else:
+      cc_f = fit(s_s, cc_s, 6)
+
+    stamp("rch: fits")
+    rlimit = limit * max(cc_s)
+
+    if log:
+      fout = open(log, 'w')
+      for j, s in enumerate(s_s):
+        d = 1.0 / math.sqrt(s)
+        o = cc_s[j]
+        m = cc_f[j]
+        fout.write('%f %f %f %f\n' % (s, d, o, m))
+      fout.close()
+
+    try:
+      r_cc = 1.0 / math.sqrt(
+          interpolate_value(s_s[i:], cc_f, rlimit))
+    except Exception:
+      r_cc = 1.0 / math.sqrt(max(s_s))
+    stamp("rch: done : %s" % r_cc)
+
+    if self._params.plot:
+      plot = resolution_plot('CCref')
+      plot.plot(s_s, cc_f, label='fit')
+      plot.plot(s_s, cc_s, label='CCref')
+      plot.plot_resolution_limit(r_cc)
+      plot.savefig('cc_ref.png')
 
     return r_cc
 
