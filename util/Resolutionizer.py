@@ -729,8 +729,7 @@ class resolutionizer(object):
         d_min=b.d_min, d_max=b.d_max)
       d = intensities.select(sel)
       dref = self._reference.select(sel_ref)
-      d, dref = d.common_sets(dref)
-      cc = d.correlation(dref)
+      cc = d.correlation(dref, assert_is_similar_symmetry=False)
       cc_s.append(cc.coefficient())
     cc_s = cc_s.reversed()
 
