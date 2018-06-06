@@ -582,14 +582,13 @@ def test_MultiScalerBase(mock_singlescaler, mock_explist_2, test_params,
     assert rejout.call_args_list == [call(test_reflections_Ihtable[0],
       multiscaler.space_group, multiscaler.params.scaling_options.outlier_rejection,
       multiscaler.params.scaling_options.outlier_zmax)]'''
-  with mock.patch('dials.algorithms.scaling.scaler.reject_outliers',
-    side_effect=outlier_rej_side_effect) as rejout:
-    multiscaler.join_datasets_from_scalers(multiscaler.single_scalers)
-    assert rejout.call_count == 1
-    expected_rt = flex.reflection_table()
-    expected_rt.extend(mock_singlescaler.reflection_table)
-    expected_rt.extend(mock_singlescaler.reflection_table)
-    assert list(multiscaler.reflection_table) == list(expected_rt)
+  '''with mock.patch('dials.algorithms.scaling.scaler.reject_outliers',
+    side_effect=outlier_rej_side_effect) as rejout:'''
+  multiscaler.join_datasets_from_scalers(multiscaler.single_scalers)
+  expected_rt = flex.reflection_table()
+  expected_rt.extend(mock_singlescaler.reflection_table)
+  expected_rt.extend(mock_singlescaler.reflection_table)
+  assert list(multiscaler.reflection_table) == list(expected_rt)
 
 def do_nothing_side_effect(*args):
   """Side effect to override various method calls."""
@@ -707,7 +706,7 @@ def test_multiscaler_scaling(test_2_reflections, test_2_experiments, test_params
   test_params.scaling_refinery.engine = 'LevMar'
   # should split into 5 unique groups, but each dataset won't necessarily have
   # data in each block - the algorithm should still work!
-  test_params.scaling_options.outlier_rejection = '0'
+  test_params.scaling_options.outlier_rejection = None
   test_params.model = 'KB'
   experiments = create_scaling_model(test_params, test_2_experiments,
     test_2_reflections)

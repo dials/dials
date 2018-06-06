@@ -381,11 +381,14 @@ class Script(object):
     # or MultiScaler (not TargetScaler).
     scaler.perform_scaling()
 
+    #Do another round of outlier rejection and then another minimisation.
+    if scaler.params.scaling_options.outlier_rejection:
+      scaler.outlier_rejection_routine()
+      scaler.perform_scaling()
+
     # Option to optimise the error model and then do another minimisation.
     if scaler.params.weighting.optimise_errors:
-      scaler.expand_scales_to_all_reflections()
-      scaler.perform_error_optimisation()
-      scaler.reselect_reflections_for_scaling()
+      scaler.error_optimisation_routine()
       scaler.perform_scaling()
 
     # Now do one round of full matrix minimisation to determine errors.
@@ -398,8 +401,12 @@ class Script(object):
     # The minimisation has only been done on a subset on the data, so apply the
     # scale factors to the whole reflection table.
     scaler.expand_scales_to_all_reflections(calc_cov=True)
+    if scaler.params.scaling_options.outlier_rejection:
+      # Note just call the method, not the 'outlier_rejection_routine'
+      scaler.round_of_outlier_rejection() 
 
     if scaler.params.weighting.optimise_errors:
+      # Note just call the method, not the 'error_optimisation_routine'
       scaler.perform_error_optimisation()
 
     scaler.adjust_variances()

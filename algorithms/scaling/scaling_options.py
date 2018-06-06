@@ -161,13 +161,13 @@ phil_scope = iotbx.phil.parse('''
       .type = bool
       .help = "Option to turn off GN/LM refinement round used to determine
                error estimates on scale factors."
-    outlier_rejection = standard *simple 0
+    outlier_rejection = standard *simple
       .type = choice
       .help = "Choice of outlier rejection routine. Standard may take a
         significant amount of time to run for large datasets or high
         multiplicities, whereas simple should be quick for these datasets."
-    outlier_zmax = 9.0
-      .type = float(value_min=6.0)
+    outlier_zmax = 6.0
+      .type = float(value_min=3.0)
       .help = "Cutoff z-score value for identifying outliers based on their
                normalised deviation within the group of equivalent reflections"
     verbosity = 2
