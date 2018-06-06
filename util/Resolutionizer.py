@@ -756,7 +756,7 @@ class resolutionizer(object):
 
     try:
       r_cc = 1.0 / math.sqrt(
-          interpolate_value(s_s[i:], cc_f, rlimit))
+          interpolate_value(s_s, cc_f, rlimit))
     except Exception:
       r_cc = 1.0 / math.sqrt(max(s_s))
     stamp("rch: done : %s" % r_cc)
