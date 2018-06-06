@@ -20,18 +20,17 @@ class ScalingTarget(object):
   rmsd_names = ["RMSD_I"]
   rmsd_units = ["a.u"]
 
-  def __init__(self, curvatures=False, free_set=False):
+  def __init__(self, curvatures=False):
     self._restr = None
     self.curvatures = curvatures
-    if free_set:
-      self.rmsd_names = ["RMSD_I", "Free RMSD_I"]
-      self.rmsd_units = ["a.u", "a.u"]
+    self.rmsd_names = ["RMSD_I"]
+    self.rmsd_units = ["a.u"]
     # Quantities to cache each step
     self._rmsds = None
     self.restraints_calculator = MultiScalingRestraints()
-    self._no_param_restraints = False # If one tests for restraints and None is
-    # returned, then this is set to True and restraints calculations are not
-    # attempted for the remainder of the mninimisation with this target function.
+    self.param_restraints = True # If one tests for restraints and None is
+    # returned, then this is set to False and restraints calculations are not
+    # attempted for the remainder of the minimisation with this target function.
 
   def rmsds(self, Ih_table, apm):
     """Calculate RMSDs for the matches."""
@@ -40,20 +39,26 @@ class ScalingTarget(object):
     if Ih_table.free_Ih_table:
       work_blocks = Ih_table.blocked_data_list[:-1]
       free_block = Ih_table.blocked_data_list[-1]
+      self.rmsd_names = ["RMSD_I", "Free RMSD_I"]
+      self.rmsd_units = ["a.u", "a.u"]
     else:
       work_blocks = Ih_table.blocked_data_list
+      (self.rmsd_names, self.rmsd_units) = (["RMSD_I"], ["a.u"])
     for block in work_blocks:
       R.extend((self.calculate_residuals(block)**2) * block.weights)
       n += block.size
-    if not self._no_param_restraints:
+    if self.param_restraints:
       restraints = self.restraints_calculator.calculate_restraints(apm)
       if restraints:
         R.extend(restraints[0])
       else:
-        self._no_param_restraints = True
+        self.param_restraints = False
     self._rmsds = [(flex.sum((R))/n)**0.5]
     if Ih_table.free_Ih_table:
       R = (self.calculate_residuals(free_block)**2) * free_block.weights
+      if self.param_restraints:
+        if restraints:
+          R.extend(restraints[0])
       self._rmsds.append((flex.sum((R))/free_block.size)**0.5)
     return self._rmsds
 
@@ -131,14 +136,14 @@ class ScalingTarget(object):
   def compute_restraints_functional_gradients_and_curvatures(self, apm):
     """Return the restrains for functional, gradients and curvatures."""
     restraints = None
-    if not self._no_param_restraints:
+    if self.param_restraints:
       restr = self.restraints_calculator.calculate_restraints(apm)
       if restr:
         resid_restr = flex.sum(restr[0]) #add to total functional here
         grad_restr = restr[1]
         restraints = [resid_restr, grad_restr, None]
       else:
-        self._no_param_restraints = True
+        self.param_restraints = False
     return restraints #list of restraints to add to resid, grads and curvs
 
   # The following methods are for adaptlstbx (GN/ LM algorithms)
@@ -157,10 +162,10 @@ class ScalingTarget(object):
 
   def compute_restraints_residuals_and_gradients(self, apm):
     """Return the restraints for the residuals and jacobian."""
-    if not self._no_param_restraints:
+    if self.param_restraints:
       restr = self.restraints_calculator.calculate_jacobian_restraints(apm)
       if not restr:
-        self._no_param_restraints = True
+        self.param_restraints = False
       return restr
     return None
 

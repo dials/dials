@@ -179,8 +179,8 @@ class ScalerBase(object):
         max_iterations = self.params.scaling_refinery.max_iterations
       st = time.time()
       refinery = scaling_refinery(engine=engine, scaler=self,
-        target=target_type(free_set=self.params.scaling_options.use_free_set),
-        prediction_parameterisation=apm, max_iterations=max_iterations)
+        target=target_type(), prediction_parameterisation=apm,
+        max_iterations=max_iterations)
       refinery.run()
       ft = time.time()
       logger.info("Time taken for refinement %s", (ft - st))
