@@ -6,6 +6,7 @@ Publications
 DIALS Journal Articles
 ----------------------
 
+* .. pubmed:: 29872002 Electron diffraction
 * .. pubmed:: 29717711 Cosym
 * .. pubmed:: 29533234 DIALS
 * .. pubmed:: 28989718 Background
