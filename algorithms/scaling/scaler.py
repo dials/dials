@@ -147,11 +147,12 @@ class ScalerBase(object):
     Ioversigma = reflection_table['intensity']/reflection_table['variance']**0.5
     sel3 = Ioversigma > params.reflection_selection.Isigma_range[0]
     if params.reflection_selection.Isigma_range[1] != 0.0:
-      sel3 = sel3 & Ioversigma < params.reflection_selection.Isigma_range[1]
+      sel3 = sel3 & (Ioversigma < params.reflection_selection.Isigma_range[1])
     selection = sel & sel1 & sel2 & sel3
     if params.reflection_selection.d_range:
       d_sel = reflection_table['d'] > params.reflection_selection.d_range[0]
-      d_sel = d_sel & reflection_table['d'] < params.reflection_selection.d_range[1]
+      d_sel = d_sel & (reflection_table['d'] <
+        params.reflection_selection.d_range[1])
       selection = selection & d_sel
     msg = ('{0} reflections were selected for scale factor determination \n'
       'out of {1} reflections. '.format(selection.count(True),
@@ -385,6 +386,8 @@ class SingleScalerBase(ScalerBase):
     error model optimisation."""
     block_selections = self.Ih_table.blocked_selection_list[0]
     for component in self.components.itervalues():
+      print('scaling selection')
+      print(list(self.scaling_selection))
       component.update_reflection_data(self.reflection_table, self.scaling_selection,
         block_selections)
 
@@ -409,7 +412,7 @@ class SingleScalerBase(ScalerBase):
     st = simple_table(rows, ['correction', 'n_parameters'])
     logger.info('The following corrections will be applied to this dataset: \n')
     logger.info(st.format())
-  
+
   def error_optimisation_routine(self, make_ready_for_scaling=True):
     """Routine to perform error optimisation on scaled scaler."""
     self.expand_scales_to_all_reflections() #no outlier rej
@@ -421,7 +424,10 @@ class SingleScalerBase(ScalerBase):
     """Routine to perform outlier rejection on scaled scaler."""
     self.expand_scales_to_all_reflections() #no outlier rej
     self.round_of_outlier_rejection()
+    #Now update the scaling selection to account for outliers
     if make_ready_for_scaling:
+      self.scaling_selection = self._scaling_subset(self.reflection_table,
+        self.params)
       self.create_Ih_table()
       self.reselect_reflections_for_scaling()
 
@@ -590,7 +596,7 @@ class MultiScaler(MultiScalerBase):
     for i, scaler in enumerate(self.single_scalers):
       scaler.reflection_table = self.reflection_table[n_refl_in_each_table[i]:
         n_refl_in_each_table[i+1]]
-    
+
   def create_Ih_table(self):
     free_set_percentage = None
     if self.params.scaling_options.use_free_set:

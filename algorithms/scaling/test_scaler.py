@@ -29,7 +29,8 @@ def test_reflections():
 @pytest.fixture
 def test_2_reflections():
   """Make a test reflection table."""
-  return [generated_refl_for_splitting_1()[0], generated_refl_for_splitting_2()[0]]
+  return [generated_refl_for_splitting_1()[0],
+    generated_refl_for_splitting_2()[0]]
 
 @pytest.fixture
 def test_reflections_no_exclude():
@@ -83,6 +84,48 @@ def generated_refl_Ihtable():
   reflections.set_flags(flex.bool([False, False, True, True]),
     reflections.flags.bad_for_scaling)
   return [reflections]
+
+def refl_for_outlier_routine():
+  """Generate a reflection table."""
+  reflections = flex.reflection_table()
+  reflections['intensity'] = flex.double([1.0, 1.0, 100.0, 1.0, 1.0])
+  reflections['variance'] = flex.double([1.0, 1.0, 1.0, 1.0, 1.0])
+  reflections['miller_index'] = flex.miller_index([(1, 0, 0), (1, 0, 0),
+    (1, 0, 0), (1, 0, 0), (2, 0, 0)]) #don't change
+  reflections['d'] = flex.double([1.0, 2.0, 3.0, 4.0, 5.0])
+  reflections['Esq'] = flex.double([0.3, 1.0, 1.0, 1.0, 1.0])
+  reflections['inverse_scale_factor'] = flex.double(5, 1.0)
+  reflections['id'] = flex.int(5, 0)
+  reflections['xyzobs.px.value'] = flex.vec3_double([(0.0, 0.0, 0.0),
+    (0.0, 0.0, 5.0), (0.0, 0.0, 10.0), (0.0, 0.0, 10.0), (0.0, 0.0, 10.0)])
+  reflections['s1'] = flex.vec3_double([(0.0, 0.1, 1.0)] * 5)
+  integrated_list = flex.bool(5, True)
+  bad_list = flex.bool(5, False)
+  reflections.set_flags(integrated_list, reflections.flags.integrated)
+  reflections.set_flags(bad_list, reflections.flags.bad_for_scaling)
+  return reflections
+
+def refl_for_error_optimisation():
+  """Generate a reflection table."""
+  reflections = flex.reflection_table()
+  reflections['intensity'] = flex.double(range(0,100))
+  reflections['variance'] = flex.double(100, 1)
+  reflections['miller_index'] = flex.miller_index([(1, 0, 0)] * 100)
+  reflections['d'] = flex.double(100, 2.0)
+  Esq = flex.double(10, 0.1)
+  Esq.extend(flex.double(90, 1.0))
+  reflections['Esq'] = Esq
+  reflections['inverse_scale_factor'] = flex.double(100, 1.0)
+  reflections['id'] = flex.int(100, 0)
+  reflections['xyzobs.px.value'] = flex.vec3_double([(0.0, 0.0, float(i))
+    for i in range(0, 100)])
+  reflections['s1'] = flex.vec3_double([(0.0, 0.1, 1.0)] * 100)
+  integrated_list = flex.bool(100, True)
+  bad_list = flex.bool(100, False)
+  reflections.set_flags(integrated_list, reflections.flags.integrated)
+  reflections.set_flags(bad_list, reflections.flags.bad_for_scaling)
+  return reflections
+
 
 def generated_refl():
   """Generate a reflection table."""
@@ -151,8 +194,8 @@ def generated_refl_for_split():
   reflections = flex.reflection_table()
   reflections['intensity'] = flex.double([1.0, 10.0, 100.0, 1.0])
   reflections['variance'] = flex.double([1.0, 10.0, 100.0, 1.0])
-  reflections['miller_index'] = flex.miller_index([(1, 0, 0), (2, 0, 0), (0, 0, 1),
-    (2, 2, 2)]) #don't change
+  reflections['miller_index'] = flex.miller_index([(1, 0, 0), (2, 0, 0),
+    (0, 0, 1), (2, 2, 2)]) #don't change
   #reflections['d'] = flex.double([0.8, 2.0, 2.0, 0.0]) #don't change
   reflections['d'] = flex.double([0.8, 2.1, 2.0, 0.1])
   reflections['Esq'] = flex.double([1.0, 1.0, 1.0, 1.0])
@@ -201,8 +244,31 @@ def generated_param():
   parameters.scaling_options.space_group = 'P2'
   return parameters
 
+@pytest.fixture
+def mock_apm():
+  """mock parameter manager for testing var_cov_matrix setting."""
+  apm = MagicMock()
+  apm.var_cov_matrix = flex.double([2.0])
+  apm.var_cov_matrix.reshape(flex.grid(1, 1))
+  apm.n_active_params = 1
+  apm.n_obs = [2]
+  apm.curvatures = []
+  apm.derivatives = [sparse.matrix(1, 1)]
+  apm.components_list = ['scale']
+  apm.components = {'scale': {'object' : mock_scaling_component(),
+    'n_params' : 1, 'start_idx' : 0}}
+  apm.constant_g_values = [flex.double(2, 1.0)]
+  return apm
 
-def test_ScalerBase():
+@pytest.fixture
+def mock_errormodel():
+  """A mock error model."""
+  em = MagicMock()
+  em.refined_parameters = [1.0, 0.1]
+  em.update_variances.return_value = flex.double([1.1, 1.0, 0.1, 0.5])
+  return em
+
+def test_ScalerBase(test_params):
   """Test the Base Scaler Class."""
 
   class SB_filler(ScalerBase):
@@ -245,37 +311,49 @@ def test_ScalerBase():
   with pytest.raises(AssertionError):
     scalerbase.space_group = 1
 
-  rt = flex.reflection_table()
-  rt['inverse_scale_factor'] = flex.double([1.0])
-  rt['inverse_scale_factor_variance'] = flex.double([1.0])
-  rt['Ih_values'] = flex.double([1.0])
-  rt['extra junk'] = flex.double([4.0])
-  scalerbase._reflection_table = rt
+  rt1 = flex.reflection_table()
+  rt1['inverse_scale_factor'] = flex.double([1.0])
+  rt1['inverse_scale_factor_variance'] = flex.double([1.0])
+  rt1['Ih_values'] = flex.double([1.0])
+  rt1['Esq'] = flex.double([1.0])
+  rt1['extra junk'] = flex.double([4.0])
+  scalerbase._reflection_table = rt1
   scalerbase.clean_reflection_table()
   assert not 'extra junk' in scalerbase.reflection_table
+  assert not 'Esq' in scalerbase.reflection_table
   assert 'inverse_scale_factor' in scalerbase.reflection_table
   assert 'inverse_scale_factor_variance' in scalerbase.reflection_table
   assert 'Ih_values' in scalerbase.reflection_table
 
-def test_SingleScaler_splitintoblocks(test_reflections_no_exclude,
-  test_experiments, test_params):
-  test_params.model = 'physical'
-  exp = create_scaling_model(test_params, test_experiments,
-    test_reflections_no_exclude)
-  test_params.scaling_options.nproc = 2
-  singlescaler = SingleScalerBase(test_params, exp[0],
-    test_reflections_no_exclude[0])
-  assert singlescaler.Ih_table.blocked_data_list
-  assert list(singlescaler.components['decay'].d_values[0]) == [2.0, 0.8] #(#2 and #0)
-  assert list(singlescaler.components['decay'].d_values[1]) == [2.1, 0.1] #(#1 and #3)
-  shtt = singlescaler.components['absorption'].sph_harm_table.transpose()
-  expected_harm1 = shtt.select_columns(flex.size_t([2, 0])).transpose()
-  expected_harm2 = shtt.select_columns(flex.size_t([1, 3])).transpose()
-  assert singlescaler.components['absorption'].harmonic_values[0] == expected_harm1
-  assert singlescaler.components['absorption'].harmonic_values[1] == expected_harm2
+  # test scaling subset
+  rt = generated_refl_for_splitting_1()[0]
+  rt['intensity'] = rt['intensity.prf.value']
+  rt['variance'] = rt['intensity.prf.variance']
+  rt['Esq'] = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+  test_params.reflection_selection.E2_range = 0.8, 5.0
+  test_params.reflection_selection.d_range = 1.0, 5.0 #all but first
+  test_params.reflection_selection.Isigma_range = 0.9, 5.5 #all but last
+  sel = scalerbase._scaling_subset(rt, test_params)
+  assert list(sel) == [False, True, True, True, True, False]
+  rt['Esq'] = flex.double([1.0, 1.0, 1.0, 0.1, 6.0, 1.0])
+  sel = scalerbase._scaling_subset(rt, test_params)
+  assert list(sel) == [False, True, True, False, False, False]
+
+  # test perform scaling in another test.
+
+  # test round_of_outlier_rejection - should just call reject outliers
+  with mock.patch('dials.algorithms.scaling.scaler.reject_outliers') as \
+    outlier_rej:
+    scalerbase._params = test_params
+    scalerbase.round_of_outlier_rejection()
+    assert outlier_rej.call_count == 1
+    outlier_rej.assert_called_with(rt1, scalerbase.space_group,
+      scalerbase.params.scaling_options.outlier_rejection,
+      scalerbase.params.scaling_options.outlier_zmax)
+
 
 def test_SingleScaler(test_reflections, test_experiments, test_params,
-    mock_errormodel):
+    mock_errormodel, mock_apm):
   """Test the single scaler class."""
   exp = create_scaling_model(test_params, test_experiments, test_reflections)
   singlescaler = SingleScalerBase(test_params, exp[0], test_reflections[0])
@@ -290,17 +368,6 @@ def test_SingleScaler(test_reflections, test_experiments, test_params,
     singlescaler.experiments.scaling_model.consecutive_refinement_order)
 
   rt = singlescaler.reflection_table
-  # Test that an id has been given.
-
-  # Test that bad reflections are removed. - move to ScalerFactory
-  assert list(rt.get_flags(rt.flags.integrated)) == [True, True, False, False]
-  assert list(rt.get_flags(rt.flags.excluded_for_scaling)) == [
-    False, False, True, True]
-  #assert list(rt.get_flags(rt.flags.outlier_in_scaling)) == [
-  #  False, False, False, False]
-  #assert list(rt['inverse_scale_factor']) == [1.0] * rt.size()
-
-
 
   # Test that normalised Es are set (defer test of calculation to separate test)
   assert 'Esq' in rt
@@ -316,23 +383,20 @@ def test_SingleScaler(test_reflections, test_experiments, test_params,
   # # Need a non-KB model as it doesnt do anything here
 
   # Now test public methods.
-  # Test select reflections for scaling - should have selected two.
+  # Test that Ih table was correctly set up by initialisation.
   assert singlescaler.Ih_table.size == 2
   assert list(singlescaler.Ih_table.blocked_data_list[0].asu_miller_index) == (
     list(flex.miller_index([(0, 0, 1), (1, 0, 0)])))
   assert singlescaler.components['scale'].n_refl == [2]
   assert singlescaler.components['decay'].n_refl == [2]
 
-  '''# Test apply selection - here select just first.
-  singlescaler.apply_selection_to_SFs(flex.bool([True, False, False, False]))
-  assert singlescaler.components['scale'].n_refl == [1]
-  assert singlescaler.components['decay'].n_refl == [1]
-  singlescaler.apply_selection_to_SFs(flex.bool([True, True, False, False]))'''
   singlescaler.components['scale'].parameters = flex.double([1.1])
 
   rt = singlescaler.reflection_table
   assert list(rt['inverse_scale_factor']) == [1.0] * rt.size()
   assert 'inverse_scale_factor_variance' not in rt
+
+  # Test expand scales to all reflections
   singlescaler.expand_scales_to_all_reflections()
   rt = singlescaler.reflection_table
   assert list(rt['inverse_scale_factor']) == [1.1, 1.1, 1.0, 1.0]
@@ -340,21 +404,51 @@ def test_SingleScaler(test_reflections, test_experiments, test_params,
   assert list(rt['inverse_scale_factor_variance']) == [0.0] * rt.size()
 
   # Test update var cov.
-  apm = scaling_active_parameter_manager(singlescaler.components,
-    ['scale', 'decay'])
-  apm.var_cov_matrix = flex.double([1.0, 0.1, 0.1, 0.5])
+  # First case - when var_cov_matrix is the full matrix.
+  apm = Mock()
+  apm.n_active_params = 2
+  var_list = [1.0, 0.1, 0.1, 0.5]
+  apm.var_cov_matrix = flex.double(var_list)
   apm.var_cov_matrix.reshape(flex.grid(2, 2))
   singlescaler.update_var_cov(apm)
+  assert singlescaler.var_cov_matrix[0, 0] == var_list[0]
+  assert singlescaler.var_cov_matrix[0, 1] == var_list[1]
+  assert singlescaler.var_cov_matrix[1, 0] == var_list[2]
+  assert singlescaler.var_cov_matrix[1, 1] == var_list[3]
+  assert singlescaler.var_cov_matrix.non_zeroes == 4
   # Should calculate the var cov of the two valid reflections.
   singlescaler.expand_scales_to_all_reflections(calc_cov=True)
   rt = singlescaler.reflection_table
   assert list(rt['inverse_scale_factor_variance']) == list(calc_sf_variances(
     singlescaler.components, singlescaler.var_cov_matrix)) + [0.0, 0.0]
 
+  # Second case - when var_cov_matrix is only part of full matrix.
+  singlescaler = SingleScalerBase(test_params, exp[0], test_reflections[0])
+  apm = scaling_active_parameter_manager(singlescaler.components, ['scale'])
+  apm = mock_apm
+  singlescaler.update_var_cov(apm)
+  assert singlescaler.var_cov_matrix.non_zeroes == 1
+  assert singlescaler.var_cov_matrix[0, 0] == 2.0
+  assert singlescaler.var_cov_matrix.n_cols == 2
+  assert singlescaler.var_cov_matrix.n_rows == 2
+  assert singlescaler.var_cov_matrix.non_zeroes == 1
+  singlescaler.expand_scales_to_all_reflections(calc_cov=True)
+  assert list(rt['inverse_scale_factor_variance']) == list(calc_sf_variances(
+    singlescaler.components, singlescaler.var_cov_matrix)) + [0.0, 0.0]
+
+  #test create Ih table function with free set?
+
+  # test reselect reflections for scaling - manually modify block selection list
+  # and check components are updated
+  singlescaler.Ih_table.blocked_selection_list[0] = [flex.size_t([0])]
+  singlescaler.reselect_reflections_for_scaling()
+  assert singlescaler.components['scale'].n_refl == [1]
+  assert singlescaler.components['decay'].n_refl == [1]
+
   # Test update error model - should save to experiments object and call update
   # to Ih table
   with mock.patch.object(singlescaler.Ih_table, 'update_error_model',
-    autospec=True, side_effect=do_nothing_side_effect) as update_em_1: 
+    autospec=True, side_effect=do_nothing_side_effect) as update_em_1:
     mock_em = mock_errormodel
     singlescaler.update_error_model(mock_em)
     assert update_em_1.call_count == 1
@@ -368,22 +462,84 @@ def test_SingleScaler(test_reflections, test_experiments, test_params,
   singlescaler.space_group = new_sg
   assert singlescaler.space_group == space_group(new_sg)
 
-@pytest.fixture
-def mock_errormodel():
-  """A mock error model."""
-  em = MagicMock()
-  em.refined_parameters = [1.0, 0.1]
-  em.update_variances.return_value = flex.double([1.1, 1.0, 0.1, 0.5])
-  return em
 
+def test_SingleScaler_error_optimisation(test_experiments, test_params):
+  """Test perform error optimisation and error optimisation routine.
+  The purpose is not to verify that the error model itself is correct, just
+  that it is appropriately called and the scaler updated. Expect that the error
+  model is minimised and updated in the Ih_table, experiments"""
+  rt = refl_for_error_optimisation()
+  exp = create_scaling_model(test_params, test_experiments, [rt])
+  scaler = SingleScalerBase(test_params, exp[0], rt)
+  assert scaler.experiments.scaling_model.error_model is None
+  initial_Ih_weights = list(scaler.Ih_table.blocked_data_list[0].weights)
+  scaler.perform_error_optimisation()
+  # Test that an error model has been set in the experiments
+  assert scaler.experiments.scaling_model.error_model is not None
+  # Test that the Ih_table weights have been updated.
+  assert list(scaler.Ih_table.blocked_data_list[0].weights) != initial_Ih_weights
 
-def test_singlescaler_updateforminimisation(test_reflections,
-    mock_exp, test_params):
+  # Now test the error_optimisation_routine
+  rt = refl_for_error_optimisation()
+  exp = create_scaling_model(test_params, test_experiments, [rt])
+  scaler = SingleScalerBase(test_params, exp[0], rt)
+
+  with mock.patch.object(scaler, 'expand_scales_to_all_reflections'
+    ) as expand_patch:
+    with mock.patch.object(scaler, 'perform_error_optimisation'
+      ) as optimise_patch:
+      with mock.patch.object(scaler, 'reselect_reflections_for_scaling'
+        ) as reselect_patch:
+          scaler.error_optimisation_routine()
+          assert expand_patch.call_count == 1
+          assert optimise_patch.call_count == 1
+          assert reselect_patch.call_count == 1
+          scaler.error_optimisation_routine(make_ready_for_scaling=False)
+          assert expand_patch.call_count == 2
+          assert optimise_patch.call_count == 2
+          assert reselect_patch.call_count == 1
+
+def test_SingleScaler_outlier_rejection_routine(test_experiments, test_params):
+  """Test outlier rejection routine. This function expects a scaler that
+  has already been scaled - so first create this and check that outlier
+  rejection is performed, a new Ih_table is created and then the right
+  reflections reselected."""
+  rt = refl_for_outlier_routine()
+  test_params.scaling_options.outlier_rejection = 'standard'
+  exp = create_scaling_model(test_params, test_experiments, [rt])
+  scaler = SingleScalerBase(test_params, exp[0], rt)
+  # scaling_subset will select reflections [1, 2, 3, 4] then the rest will be
+  # put into the Ih_table, and the indices of the blocked selection list
+  # refers to selection from scaler.scaling_selection.
+  assert list(scaler.Ih_table.blocked_selection_list[0][0]) == [0, 1, 2, 3]
+  assert list(scaler.components['decay'].d_values[0]) == [2.0, 3.0, 4.0, 5.0]
+  assert list(scaler.Ih_table.blocked_data_list[0].nonzero_weights) == [1, 2, 3, 4]
+  # Now call outlier rejection routine - expect it to remove the reflection
+  # in position 1.
+  scaler.outlier_rejection_routine()
+  assert list(scaler.Ih_table.blocked_data_list[0].nonzero_weights) == [1, 3, 4]
+  assert list(scaler.Ih_table.blocked_selection_list[0][0]) == [0, 1, 2]
+  assert list(scaler.components['decay'].d_values[0]) == [2.0, 4.0, 5.0]
+
+  # Repeat but with make_ready_for_scaling=False
+  rt = refl_for_outlier_routine() # create a fresh copy
+  exp = create_scaling_model(test_params, test_experiments, [rt])
+  scaler = SingleScalerBase(test_params, exp[0], rt)
+  assert list(scaler.Ih_table.blocked_data_list[0].nonzero_weights) == [1, 2, 3, 4]
+  scaler.outlier_rejection_routine(make_ready_for_scaling=False)
+  # Should still have found outlier
+  assert list(scaler.reflection_table.get_flags(
+    scaler.reflection_table.flags.outlier_in_scaling)) == [False, False,
+      True, False, False]
+  # Should not have created or updated Ih_table
+  assert list(scaler.Ih_table.blocked_data_list[0].nonzero_weights) == [1, 2, 3, 4]
+
+def test_SingleScaler_update_for_minimisation(test_reflections,
+    mock_exp, test_params, mock_apm):
   """Test the update_for_minimisation method of the singlescaler."""
-  #First test the standard case.
   single_scaler = SingleScalerBase(test_params, mock_exp, test_reflections[0])
-  single_apm = test_apm()
-  apm = test_new_apm(single_apm)
+  apm = MagicMock()
+  apm.apm_list = [mock_apm]
   Ih_table = single_scaler.Ih_table.blocked_data_list[0]
   assert list(Ih_table.inverse_scale_factors) == [1.0, 1.0]
   assert list(Ih_table.Ih_values) == [10.0, 1.0]
@@ -399,29 +555,25 @@ def test_singlescaler_updateforminimisation(test_reflections,
       assert approx_equal(Ih_table.derivatives[i, j], bf[1][0][i, j])
   assert Ih_table.derivatives.non_zeroes == bf[1][0].non_zeroes
 
-  # Don't test for free Ih_table until fixed.
-  '''# Now test for case when using free_Ih_table.
-  test_params.scaling_options.use_free_set = True
-  test_params.scaling_options.free_set_percentage = 50.0
-  # Expect the first reflection in the Ih table and the second in the free table.
-  single_scaler = SingleScalerBase(test_params, mock_exp, test_reflections[0])
-  apm = test_apm()
-  assert list(single_scaler.Ih_table.inverse_scale_factors) == [1.0]
-  assert list(single_scaler.Ih_table.Ih_values) == [1.0]
-  single_scaler.update_for_minimisation(apm)
-  bf = basis_function(apm).calculate_scales_and_derivatives()
-  #Should set new scale factors, and calculate Ih and weights.
-  assert list(single_scaler.Ih_table.inverse_scale_factors) == [bf[0][0]]
-  assert list(single_scaler.Ih_table.Ih_values) != [1.0]
-  assert list(single_scaler.Ih_table.Ih_values) == [1.0 / bf[0][0]]
-  assert list(single_scaler.Ih_table.free_Ih_table.inverse_scale_factors) == [
-    1.0 * bf[0][0][1]]
-  assert list(single_scaler.Ih_table.free_Ih_table.Ih_values) != [1.0]
-  assert list(single_scaler.Ih_table.free_Ih_table.Ih_values) == [10.0 / bf[0][0][1]]
-  for i in range(single_scaler.Ih_table.derivatives.n_rows):
-    for j in range(single_scaler.Ih_table.derivatives.n_cols):
-      assert single_scaler.Ih_table.derivatives[i, j] == bf[1][0][i, j]
-  assert single_scaler.Ih_table.derivatives.non_zeroes == 1'''
+def test_SingleScaler_split_into_blocks(test_reflections_no_exclude,
+  test_experiments, test_params):
+  """Test the scaler initialisation when nproc > 1 - the data in the Ih_Table
+  and components should be correctly split into blocks."""
+  test_params.model = 'physical'
+  exp = create_scaling_model(test_params, test_experiments,
+    test_reflections_no_exclude)
+  test_params.scaling_options.nproc = 2
+  singlescaler = SingleScalerBase(test_params, exp[0],
+    test_reflections_no_exclude[0])
+  assert singlescaler.Ih_table.blocked_data_list[0].size == 2
+  assert singlescaler.Ih_table.blocked_data_list[1].size == 2
+  assert list(singlescaler.components['decay'].d_values[0]) == [2.0, 0.8] #(#2 and #0)
+  assert list(singlescaler.components['decay'].d_values[1]) == [2.1, 0.1] #(#1 and #3)
+  shtt = singlescaler.components['absorption'].sph_harm_table.transpose()
+  expected_harm1 = shtt.select_columns(flex.size_t([2, 0])).transpose()
+  expected_harm2 = shtt.select_columns(flex.size_t([1, 3])).transpose()
+  assert singlescaler.components['absorption'].harmonic_values[0] == expected_harm1
+  assert singlescaler.components['absorption'].harmonic_values[1] == expected_harm2
 
 @pytest.fixture
 def mock_scaling_component():
@@ -433,7 +585,6 @@ def mock_scaling_component():
   component.derivatives[0][0, 0] = 0.5
   component.derivatives[0][1, 0] = 0.4
   return component
-
 
 @pytest.fixture
 def mock_exp(mock_scaling_component):
@@ -461,51 +612,6 @@ def mock_explist_2(mock_exp):
   mock_explist.append(mock_exp)
   mock_explist.append(mock_exp)
   return mock_explist
-
-class test_new_apm(object):
-  def __init__(self, test_apm):
-    self.apm_list = [test_apm]
-
-class test_apm(object):
-  """Mock-up of an apm for testing."""
-  def __init__(self):
-    self.var_list = [2.0]
-    self.var_cov_matrix = flex.double(self.var_list)
-    self.var_cov_matrix.reshape(flex.grid(1, 1))
-    self.n_active_params = 1
-    self.curvatures = []
-    self.derivatives = [sparse.matrix(1, 1)]
-    self.n_obs = [2]
-    self.constant_g_values = [flex.double(2, 1.0)]
-    self.components_list = ['scale']
-    self.components = {'scale': {'object' : mock_scaling_component(),
-      'n_params' : 1, 'start_idx' : 0}}
-
-def test_scaler_update_var_cov(test_reflections, mock_exp, test_params):
-  """Test the update variance covariance matrix."""
-  single_scaler = SingleScalerBase(test_params, mock_exp, test_reflections[0])
-  #single_scaler.var_cov_matrix = sparse.matrix(2, 2)
-  apm = Mock()
-  var_list = [1.0, 0.1, 0.1, 0.5]
-  apm.var_cov_matrix = flex.double(var_list)
-  apm.var_cov_matrix.reshape(flex.grid(2, 2))
-  apm.n_active_params = 2
-  single_scaler.update_var_cov(apm)
-  assert single_scaler.var_cov_matrix[0, 0] == var_list[0]
-  assert single_scaler.var_cov_matrix[0, 1] == var_list[1]
-  assert single_scaler.var_cov_matrix[1, 0] == var_list[2]
-  assert single_scaler.var_cov_matrix[1, 1] == var_list[3]
-  assert single_scaler.var_cov_matrix.non_zeroes == 4
-
-  #Repeat but only with setting a subset - should only update one element
-  single_scaler = SingleScalerBase(test_params, mock_exp, test_reflections[0])
-  apm = test_apm()
-  single_scaler.update_var_cov(apm)
-  assert single_scaler.var_cov_matrix.non_zeroes == 1
-  assert single_scaler.var_cov_matrix[0, 0] == apm.var_list[0]
-  assert single_scaler.var_cov_matrix.n_cols == 2
-  assert single_scaler.var_cov_matrix.n_rows == 2
-  assert single_scaler.var_cov_matrix.non_zeroes == 1
 
 @pytest.fixture
 def mock_singlescaler(test_reflections_Ihtable, test_sg):
