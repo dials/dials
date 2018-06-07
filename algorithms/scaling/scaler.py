@@ -386,8 +386,6 @@ class SingleScalerBase(ScalerBase):
     error model optimisation."""
     block_selections = self.Ih_table.blocked_selection_list[0]
     for component in self.components.itervalues():
-      print('scaling selection')
-      print(list(self.scaling_selection))
       component.update_reflection_data(self.reflection_table, self.scaling_selection,
         block_selections)
 
