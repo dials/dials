@@ -86,7 +86,7 @@ this convention is then disconnected from the standard *real space*
 orthogonalisation convention, usually called the *PDB convention* [#PDB1992]_.
 This standard is essentially universal in crystallographic software for the
 transformation of fractional crystallographic coordinates to positions in
-orthogonal space, with units of :math:`\AA`. In particular, it is the convention
+orthogonal space, with units of :math:`\unicode{x212B}`. In particular, it is the convention
 used in the cctbx [#GrosseKunstleve2002]_. The convention states that the
 orthogonal coordinate :math:`x` is determined from a fractional coordinate
 :math:`u` by
