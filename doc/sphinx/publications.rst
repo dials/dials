@@ -17,6 +17,7 @@ DIALS Journal Articles
 * .. pubmed:: 24507780 diffuse
      :reprint-url: http://cci.lbl.gov/publications/download/diffuse.pdf
 * .. pubmed:: 23793153 cctbx
+* .. pubmed:: 22640868 FABLE
 
 DIALS Application to XFEL Crystallography
 -----------------------------------------
