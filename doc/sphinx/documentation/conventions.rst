@@ -28,7 +28,7 @@ The basic diffractometer equation relates a position :math:`\vec{h}` to a
 position :math:`\vec{r_\phi}` in *Cartesian reciprocal space*. This space is
 defined so that its axes coincide with the axes of the *laboratory frame*. The
 distinction is necessary because distances in reciprocal space are measured in
-units of :math:`\AA^{-1}`. However, for convenience it is often acceptable to
+units of :math:`\unicode{x212B}^{-1}`. However, for convenience it is often acceptable to
 refer to either Cartesian reciprocal space or the real space laboratory frame as
 the "lab frame", when the correct choice is clear by context. The diffractometer
 equation is
