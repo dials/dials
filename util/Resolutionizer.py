@@ -193,7 +193,7 @@ phil_str = '''
   cc_half_significance_level = None
     .type = float(value_min=0, value_max=1)
     .expert_level = 1
-  cc_half_fit = *polynomial tanh
+  cc_half_fit = polynomial *tanh
     .type = choice
     .expert_level = 1
   isigma = 0.25
