@@ -75,12 +75,17 @@ class SingleUnitCellTie(object):
     # calculate gradients of cell parameters wrt model parameters.
     grads = self._calculate_uc_gradients()
 
+    msg = ('Unit cell similarity restraints were requested for both the '
+           '{0} and {1} dimensions, however for the crystal in experiment '
+           '{2} these are constrained to be equal. Only the strongest '
+           'of these restraints will be retained.')
     # identify cell dimensions constrained to be equal
     a, b, c, aa, bb, cc = self._xlucp.get_model().get_unit_cell().parameters()
     if abs(a - b) < 1e-10:
       grad_diff = [abs(e1 - e2) for (e1, e2) in zip(grads[0], grads[1])]
       if max(grad_diff) < 1e-10:
         # a and b are equal, therefore keep only the strongest restraint
+        logger.debug(msg.format('a', 'b', self._xlucp.get_experiment_ids()[0]))
         strong, weak = sorted([sigma[0], sigma[1]])
         if strong == 0.0: strong = weak
         sigma[0] = strong
@@ -89,6 +94,7 @@ class SingleUnitCellTie(object):
       grad_diff = [abs(e1 - e2) for (e1, e2) in zip(grads[0], grads[2])]
       if max(grad_diff) < 1e-10:
         # a and c are equal, therefore keep only the strongest restraint
+        logger.debug(msg.format('a', 'c', self._xlucp.get_experiment_ids()[0]))
         strong, weak = sorted([sigma[0], sigma[2]])
         if strong == 0.0: strong = weak
         sigma[0] = strong
@@ -97,6 +103,7 @@ class SingleUnitCellTie(object):
       grad_diff = [abs(e1 - e2) for (e1, e2) in zip(grads[1], grads[2])]
       if max(grad_diff) < 1e-10:
         # b and c are equal, therefore keep only the strongest restraint
+        logger.debug(msg.format('b', 'c', self._xlucp.get_experiment_ids()[0]))
         strong, weak = sorted([sigma[1], sigma[2]])
         if strong == 0.0: strong = weak
         sigma[1] = strong
@@ -104,13 +111,18 @@ class SingleUnitCellTie(object):
 
     # A gradient of zero indicates that cell parameter is constrained and thus
     # to be ignored in restraints
+    msg = ('Unit cell similarity restraints were requested for the {0} '
+           'parameter, however for the crystal in experiment {1}, {0} is '
+           'constrained. This restraint will be removed.')
     _sigma = []
-    for sig, grad in zip(sigma, grads):
+    for i, (sig, grad, pname) in enumerate(zip(sigma, grads, ['a', 'b', 'c',
+        'alpha', 'beta', 'gamma'])):
       tst = [abs(g) > 1.e-10 for g in grad]
       if any(tst):
         if sig == 0.0: sig = None
         _sigma.append(sig)
       else:
+        logger.debug(msg.format(pname, self._xlucp.get_experiment_ids()[0]))
         _sigma.append(None)
 
     # For each non-zero sigma create a restraint between the relevant cell
@@ -223,7 +235,8 @@ class MeanUnitCellTie(object):
       B = xlucp.get_state()
       dB_dp = flex.mat3_double(xlucp.get_ds_dp())
       ccg = CalculateCellGradients(B, dB_dp)
-      grads = [ccg.da_dp(), ccg.db_dp(), ccg.dc_dp()]
+      grads = [ccg.da_dp(), ccg.db_dp(), ccg.dc_dp(),
+               ccg.daa_dp(), ccg.dbb_dp(), ccg.dcc_dp()]
       a, b, c, aa, bb, cc = xlucp.get_model().get_unit_cell().parameters()
       if abs(a - b) < 1e-10:
         grad_diff = [abs(e1 - e2) for (e1, e2) in zip(grads[0], grads[1])]
@@ -251,6 +264,7 @@ class MeanUnitCellTie(object):
           # b and c are equal for this crystal, therefore keep only the
           # strongest requested restraint
           if sigma[1] > 0.0 and sigma[2] > 0.0:
+            logger.debug(msg.format('b', 'c', xlucp.get_experiment_ids()[0]))
             strong, weak = sorted([sigma[1], sigma[2]])
             sigma[1] = strong
             sigma[2] = 0.0
