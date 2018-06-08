@@ -281,12 +281,13 @@ def test_target_rmsd_calculation(mock_Ih_table, mock_Ih_table_workfree,
   assert target.param_restraints is True
 
   rmsds = target.rmsds(mock_Ih_table_workfree, mock_multi_apm_withrestraints)
-  assert len(rmsds) == 2
+  assert len(rmsds) == 3
   assert rmsds[0] == pytest.approx((8.0/3.0)**0.5, abs=1e-6)
-  assert rmsds[1] == pytest.approx((8.0/3.0)**0.5, abs=1e-6)
+  assert rmsds[1] == pytest.approx((2.0/3.0)**0.5, abs=1e-6)
+  assert rmsds[2] == pytest.approx((2.0/3.0)**0.5, abs=1e-6)
   assert target.param_restraints is True
-  assert len(target.rmsd_names) == 2
-  assert len(target.rmsd_units) == 2
+  assert len(target.rmsd_names) == 3
+  assert len(target.rmsd_units) == 3
 
   rmsds = target.rmsds(mock_Ih_table, mock_multi_apm_withoutrestraints)
   assert len(rmsds) == 1

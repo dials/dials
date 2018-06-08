@@ -5,6 +5,7 @@ These are initialised with a scaler and an active parameter manager,
 and have implementations of residual/gradient calculations for
 scaling.
 """
+from copy import copy
 from dials.array_family import flex
 from dials.algorithms.scaling.scaling_restraints import MultiScalingRestraints
 from dials_scaling_ext import row_multiply
@@ -39,14 +40,15 @@ class ScalingTarget(object):
     if Ih_table.free_Ih_table:
       work_blocks = Ih_table.blocked_data_list[:-1]
       free_block = Ih_table.blocked_data_list[-1]
-      self.rmsd_names = ["RMSD_I", "Free RMSD_I"]
-      self.rmsd_units = ["a.u", "a.u"]
+      self.rmsd_names = ["RMSD_I", "Unrestrainted RMSD_I", "Free RMSD_I"]
+      self.rmsd_units = ["a.u", "a.u", "a.u"]
     else:
       work_blocks = Ih_table.blocked_data_list
       (self.rmsd_names, self.rmsd_units) = (["RMSD_I"], ["a.u"])
     for block in work_blocks:
       R.extend((self.calculate_residuals(block)**2) * block.weights)
       n += block.size
+    unrestr_R = copy(R)
     if self.param_restraints:
       restraints = self.restraints_calculator.calculate_restraints(apm)
       if restraints:
@@ -56,9 +58,7 @@ class ScalingTarget(object):
     self._rmsds = [(flex.sum((R))/n)**0.5]
     if Ih_table.free_Ih_table:
       R = (self.calculate_residuals(free_block)**2) * free_block.weights
-      if self.param_restraints:
-        if restraints:
-          R.extend(restraints[0])
+      self._rmsds.append((flex.sum((unrestr_R))/n)**0.5)
       self._rmsds.append((flex.sum((R))/free_block.size)**0.5)
     return self._rmsds
 
