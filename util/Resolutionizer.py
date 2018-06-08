@@ -183,7 +183,7 @@ phil_str = '''
     .help = "Minimum value of CC vs reference dataset in the outer resolution shell"
     .short_caption = "Outer shell CCref"
     .expert_level = 1
-  cc_half = 0.5
+  cc_half = 0.3
     .type = float(value_min=0)
     .help = "Minimum value of CC1/2 in the outer resolution shell"
     .short_caption = "Outer shell CC1/2"
