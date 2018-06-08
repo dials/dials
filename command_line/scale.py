@@ -69,10 +69,10 @@ phil_scope = phil.parse('''
     plot_scaling_models = False
       .type = bool
       .help = "Option to switch on plotting of the scaling models determined."
-    json = "scaled_experiments.json"
+    experiments = "scaled_experiments.json"
       .type = str
       .help = "Option to set filepath for output json."
-    scaled = "scaled.pickle"
+    reflections = "scaled.pickle"
       .type = str
       .help = "Option to set filepath for output pickle file of scaled
                intensities."
@@ -351,8 +351,8 @@ class Script(object):
       mtz_file.add_history('From %s, run on %s' % (dials_version(), date_str))
       mtz_file.write(self.params.output.merged_mtz)
 
-    save_experiments(self.experiments, self.params.output.json)
-    save_reflections(self.minimised, self.params.output.scaled)
+    save_experiments(self.experiments, self.params.output.experiments)
+    save_reflections(self.minimised, self.params.output.reflections)
 
     '''if params.output.plot_scaling_models:
       from dials.command_line.plot_scaling_models import plot_scaling_models
