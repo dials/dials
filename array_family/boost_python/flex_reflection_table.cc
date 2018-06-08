@@ -591,7 +591,7 @@ namespace dials { namespace af { namespace boost_python {
       if (found == self.experiment_identifiers()->end()) {
         (*self.experiment_identifiers())[it->first] = it->second;
       } else if (it->second != found->second) {
-        throw DIALS_ERROR("Experiment identifiers do now match");
+        throw DIALS_ERROR("Experiment identifiers do not match");
       }
     }
   }
