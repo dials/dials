@@ -235,6 +235,8 @@ class ScalingRefinery(object):
 
     if not isinstance(self._scaler, MultiScalerBase):
       self._scaler.experiments.scaling_model.normalise_components()
+
+    self._scaler.final_rmsds = self._target._rmsds
     return self._scaler
 
 

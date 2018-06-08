@@ -69,7 +69,7 @@ phil_scope = phil.parse('''
     plot_scaling_models = False
       .type = bool
       .help = "Option to switch on plotting of the scaling models determined."
-    experiments = "scaled_experiments.json"
+    json = "scaled_experiments.json"
       .type = str
       .help = "Option to set filepath for output json."
     scaled = "scaled.pickle"
@@ -96,11 +96,14 @@ phil_scope = phil.parse('''
 class Script(object):
   """Main script to run the scaling algorithm."""
 
-  def __init__(self):
-    optionparser = OptionParser(usage=__doc__.strip(), read_experiments=True,
-      read_reflections=True, read_datablocks=False, phil=phil_scope,
-      check_format=False)
-    self.params, _ = optionparser.parse_args(show_diff_phil=False)
+  def __init__(self, params=None, experiments=None, reflections=None):
+    if not params:
+      optionparser = OptionParser(usage=__doc__.strip(), read_experiments=True,
+        read_reflections=True, read_datablocks=False, phil=phil_scope,
+        check_format=False)
+      self.params, _ = optionparser.parse_args(show_diff_phil=False)
+    else:
+      self.params = params
     self.scaler = None
     self.minimised = None
     self.scaled_miller_array = None
@@ -108,20 +111,31 @@ class Script(object):
 
     log.config(verbosity=1, info=self.params.output.log,
       debug=self.params.output.debug_log)
+    if not params:
+      if not experiments:
+        if not self.params.input.experiments:
+          optionparser.print_help()
+          sys.exit()
+      if not reflections:
+        if not self.params.input.reflections:
+          optionparser.print_help()
+          sys.exit()
 
-    if not self.params.input.experiments or not self.params.input.reflections:
-      optionparser.print_help()
-      sys.exit()
+      logger.info(dials_version())
 
-    logger.info(dials_version())
+      diff_phil = optionparser.diff_phil.as_str()
+      if diff_phil is not '':
+        logger.info('The following parameters have been modified:\n')
+        logger.info(diff_phil)
 
-    diff_phil = optionparser.diff_phil.as_str()
-    if diff_phil is not '':
-      logger.info('The following parameters have been modified:\n')
-      logger.info(diff_phil)
-
-    self.reflections = flatten_reflections(self.params.input.reflections)
-    self.experiments = flatten_experiments(self.params.input.experiments)
+    if not reflections:
+      self.reflections = flatten_reflections(self.params.input.reflections)
+    else:
+      self.reflections = reflections
+    if not experiments:
+      self.experiments = flatten_experiments(self.params.input.experiments)
+    else:
+      self.experiments = experiments
 
     if len(self.experiments) != 1:
       logger.info('Checking for the existence of a reflection table \n'
@@ -187,13 +201,14 @@ class Script(object):
     if len(self.experiments) != len(self.reflections):
       raise Sorry("Mismatched number of experiments and reflection tables found.")
 
-  def run(self):
+  def run(self, save_data=True):
     """Run the scaling script."""
     start_time = time.time()
     self.prepare_input()
     self.scale()
     self.merging_stats()
-    self.output()
+    if save_data:
+      self.output()
     # All done!
     finish_time = time.time()
     logger.info("\nTotal time taken: {0:.4f}s ".format(finish_time - start_time))
@@ -336,7 +351,7 @@ class Script(object):
       mtz_file.add_history('From %s, run on %s' % (dials_version(), date_str))
       mtz_file.write(self.params.output.merged_mtz)
 
-    save_experiments(self.experiments, self.params.output.experiments)
+    save_experiments(self.experiments, self.params.output.json)
     save_reflections(self.minimised, self.params.output.scaled)
 
     '''if params.output.plot_scaling_models:
@@ -403,7 +418,7 @@ class Script(object):
     scaler.expand_scales_to_all_reflections(calc_cov=True)
     if scaler.params.scaling_options.outlier_rejection:
       # Note just call the method, not the 'outlier_rejection_routine'
-      scaler.round_of_outlier_rejection() 
+      scaler.round_of_outlier_rejection()
 
     if scaler.params.weighting.optimise_errors:
       # Note just call the method, not the 'error_optimisation_routine'

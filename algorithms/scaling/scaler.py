@@ -45,6 +45,15 @@ class ScalerBase(object):
     self._Ih_table = None
     self._initial_keys = []
     self._basis_function = basis_function(curvatures=False)
+    self._final_rmsds = []
+
+  @property
+  def final_rmsds(self):
+    return self._final_rmsds
+
+  @final_rmsds.setter
+  def final_rmsds(self, new_rmsds):
+    self._final_rmsds = new_rmsds
 
   @property
   def Ih_table(self):
