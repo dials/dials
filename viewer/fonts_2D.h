@@ -355,14 +355,8 @@ int get_digits( double nm, int (&dgt_num)[15]){
   char asc_str[15];
 
   std::string str;
-  //std::cout << "nm =" << nm << "\n";
   snprintf (asc_str, 15, "               ");
-  //snprintf ( char * s, size_t n, const char * format, ... );
   snprintf (asc_str, 15, "%g", nm);
-
-  /*
-    * cx = snprintf ( buffer, 100, "The half of %d is %d", 60, 60/2 );
-    */
 
   //std::cout << "asc_str = <<" << asc_str << ">>\n\n";
   str = asc_str;
