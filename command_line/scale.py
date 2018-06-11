@@ -5,7 +5,7 @@ Usage: dials.scale integrated.pickle integrated_experiments.json
 [integrated.pickle(2) integrated_experiments.json(2) ....] [options]
 
 This program performs scaling on the input datasets. The default
-parameterisationis a physical parameterisation based on that used in the program
+parameterisation is a physical parameterisation based on that used in the program
 Aimless. If multiple input files have been specified, the datasets will be
 jointly scaled against a common target of unique reflection intensities.
 
@@ -24,7 +24,6 @@ import time
 import logging
 import sys
 from copy import deepcopy
-#import libtbx.load_env
 from libtbx import phil
 from libtbx.utils import Sorry
 from libtbx.str_utils import make_sub_header
@@ -40,7 +39,8 @@ from dials.algorithms.scaling.scaling_library import create_scaling_model,\
 from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScalerFactory
 from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets,\
-  select_datasets_on_ids, save_experiments, save_reflections, assign_unique_identifiers
+  select_datasets_on_ids, save_experiments, save_reflections,\
+  assign_unique_identifiers
 
 
 logger = logging.getLogger('dials')
@@ -96,49 +96,30 @@ phil_scope = phil.parse('''
 class Script(object):
   """Main script to run the scaling algorithm."""
 
-  def __init__(self, params=None, experiments=None, reflections=None):
-    if not params:
-      optionparser = OptionParser(usage=__doc__.strip(), read_experiments=True,
-        read_reflections=True, read_datablocks=False, phil=phil_scope,
-        check_format=False)
-      self.params, _ = optionparser.parse_args(show_diff_phil=False)
-    else:
-      self.params = params
+  def __init__(self, params, experiments, reflections):
+    self.params = params
+    self.experiments = experiments
+    self.reflections = reflections
     self.scaler = None
     self.minimised = None
     self.scaled_miller_array = None
     self.dataset_ids = []
 
-    #log.config(verbosity=1, info=self.params.output.log,
-    #  debug=self.params.output.debug_log)
-    if not params:
-      log.config(verbosity=1, info=self.params.output.log,
-        debug=self.params.output.debug_log)
-      if not experiments:
-        if not self.params.input.experiments:
-          optionparser.print_help()
-          sys.exit()
-      if not reflections:
-        if not self.params.input.reflections:
-          optionparser.print_help()
-          sys.exit()
+  def run(self, save_data=True):
+    """Run the scaling script."""
+    start_time = time.time()
+    self.prepare_input()
+    self.scale()
+    self.merging_stats()
+    if save_data:
+      self.output()
+    # All done!
+    finish_time = time.time()
+    logger.info("\nTotal time taken: {0:.4f}s ".format(finish_time - start_time))
+    logger.info('\n'+'='*80+'\n')
 
-      logger.info(dials_version())
-
-      diff_phil = optionparser.diff_phil.as_str()
-      if diff_phil is not '':
-        logger.info('The following parameters have been modified:\n')
-        logger.info(diff_phil)
-
-    if not reflections:
-      self.reflections = flatten_reflections(self.params.input.reflections)
-    else:
-      self.reflections = reflections
-    if not experiments:
-      self.experiments = flatten_experiments(self.params.input.experiments)
-    else:
-      self.experiments = experiments
-
+  def prepare_input(self):
+    """Perform checks on the data and prepare the data for scaling."""
     if len(self.experiments) != 1:
       logger.info('Checking for the existence of a reflection table \n'
         'containing multiple scaled datasets \n')
@@ -203,21 +184,7 @@ class Script(object):
     if len(self.experiments) != len(self.reflections):
       raise Sorry("Mismatched number of experiments and reflection tables found.")
 
-  def run(self, save_data=True):
-    """Run the scaling script."""
-    start_time = time.time()
-    self.prepare_input()
-    self.scale()
-    self.merging_stats()
-    if save_data:
-      self.output()
-    # All done!
-    finish_time = time.time()
-    logger.info("\nTotal time taken: {0:.4f}s ".format(finish_time - start_time))
-    logger.info('\n'+'='*80+'\n')
-
-  def prepare_input(self):
-    """Perform any cutting of the dataset prior to creating scaling models."""
+    # Perform any cutting of the dataset prior to creating scaling models.
     for reflection in self.reflections:
       reflection.set_flags(flex.bool(reflection.size(), False),
         reflection.flags.user_excluded_in_scaling)
@@ -434,7 +401,28 @@ class Script(object):
 
 if __name__ == "__main__":
   try:
-    script = Script()
+    #Parse the command line and flatten reflections, experiments
+    optionparser = OptionParser(usage=__doc__.strip(), read_experiments=True,
+      read_reflections=True, read_datablocks=False, phil=phil_scope,
+      check_format=False)
+    params, _ = optionparser.parse_args(show_diff_phil=False)
+    if not params.input.experiments or not params.input.reflections:
+      optionparser.print_help()
+      sys.exit()
+    reflections = flatten_reflections(params.input.reflections)
+    experiments = flatten_experiments(params.input.experiments)
+
+    #Set up the log
+    log.config(verbosity=1, info=params.output.log,
+        debug=params.output.debug_log)
+    logger.info(dials_version())
+    diff_phil = optionparser.diff_phil.as_str()
+    if diff_phil is not '':
+      logger.info('The following parameters have been modified:\n')
+      logger.info(diff_phil)
+
+    script = Script(params, experiments, reflections)
     script.run()
+
   except Exception as e:
     halraiser(e)
