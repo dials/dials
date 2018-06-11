@@ -301,7 +301,7 @@ class IhTable(SortingMethods):
   id_ = "IhTable"
 
   def __init__(self, refl_and_sel_list, space_group, n_blocks=1,
-    weighting_scheme=None, free_set_percentage=None):
+    weighting_scheme=None, free_set_percentage=None, free_set_offset=0):
     self.space_group = space_group
     self.weighting_scheme = weighting_scheme
     self._n_datasets = len(refl_and_sel_list)
@@ -317,7 +317,7 @@ class IhTable(SortingMethods):
     self.sort_by_dataset_id()
     self._size = joint_refl_table.size()
     if free_set_percentage:
-      self.select_free_set(free_set_percentage)
+      self.select_free_set(free_set_percentage, offset=free_set_offset)
       self.free_Ih_table = True
 
   def get_unique_group(self, asu_miller_index):

@@ -387,7 +387,8 @@ class SingleScalerBase(ScalerBase):
     self._Ih_table = IhTable([(self.reflection_table, self.scaling_selection)],
       self.space_group, n_blocks=self.params.scaling_options.nproc,
       weighting_scheme=self.params.weighting.weighting_scheme,
-      free_set_percentage=free_set_percentage)
+      free_set_percentage=free_set_percentage,
+      free_set_offset=self.params.scaling_options.free_set_offset)
 
   def reselect_reflections_for_scaling(self):
     """Set the components data back to the scaling_selection. Intended for
@@ -611,7 +612,8 @@ class MultiScaler(MultiScalerBase):
     self._Ih_table = IhTable([(x.reflection_table, x.scaling_selection)
       for x in self.single_scalers], self._space_group,
       n_blocks=self.params.scaling_options.nproc,
-      free_set_percentage=free_set_percentage)
+      free_set_percentage=free_set_percentage,
+      free_set_offset=self.params.scaling_options.free_set_offset)
 
   def error_optimisation_routine(self, make_ready_for_scaling=True):
     """Routine to perform error optimisation on scaled scaler."""
@@ -658,7 +660,8 @@ class TargetScaler(MultiScalerBase):
     self._Ih_table = IhTable([(x.reflection_table, x.scaling_selection)
       for x in self.unscaled_scalers], self._space_group,
       n_blocks=self.params.scaling_options.nproc,
-      free_set_percentage=free_set_percentage)
+      free_set_percentage=free_set_percentage,
+      free_set_offset=self.params.scaling_options.free_set_offset)
     self.set_Ih_values_to_target()
     for i, scaler in enumerate(self.active_scalers):
       for component in scaler.components.itervalues():

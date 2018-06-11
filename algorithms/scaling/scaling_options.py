@@ -149,6 +149,10 @@ phil_scope = iotbx.phil.parse('''
       .type = float
       .help = "Percentage of symmetry equivalent groups to use for the free set,
               if use_free_set is True."
+    free_set_offset = 0
+      .type = int
+      .help = "Offset for choosing unique groups for the free set from the whole
+               set of unique groups."
     space_group = None
       .type = str
       .help = "Option to specify space group for scaling"
