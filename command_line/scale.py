@@ -109,9 +109,11 @@ class Script(object):
     self.scaled_miller_array = None
     self.dataset_ids = []
 
-    log.config(verbosity=1, info=self.params.output.log,
-      debug=self.params.output.debug_log)
+    #log.config(verbosity=1, info=self.params.output.log,
+    #  debug=self.params.output.debug_log)
     if not params:
+      log.config(verbosity=1, info=self.params.output.log,
+        debug=self.params.output.debug_log)
       if not experiments:
         if not self.params.input.experiments:
           optionparser.print_help()
