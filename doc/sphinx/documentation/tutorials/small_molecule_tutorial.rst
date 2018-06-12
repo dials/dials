@@ -88,9 +88,9 @@ At this stage the reciprocal lattice view will show a much improved level of agr
 
 .. code-block:: bash
 
-   dials.reciprocal_lattice_viewer refined_experiments.json refined.pickle 
+   dials.reciprocal_lattice_viewer refined_experiments.json refined.pickle
 
- 
+
 Integration
 -----------
 
@@ -112,7 +112,7 @@ After integration the unit cell for downstream analysis may be derived from refi
    dials.two_theta_refine integrated.pickle integrated_experiments.json p4p=integrated.p4p
 
 Here the results will be output to a p4p file for XPREP, which includes the standard uncertainties on the unit cell.
- 
+
 Output
 ------
 
@@ -126,4 +126,4 @@ After integration the data should be split before exporting to a format suitable
    dials.export format=sadabs reflections_2.pickle experiments_2.json sadabs.hklout=integrated_2.sad run=2
    dials.export format=sadabs reflections_3.pickle experiments_3.json sadabs.hklout=integrated_3.sad run=3
 
-If desired, p4p files for each combination of reflections_[0-3].pickle, experiments_[0-3].json could also be generated. 
+If desired, p4p files for each combination of reflections_[0-3].pickle, experiments_[0-3].json could also be generated.
