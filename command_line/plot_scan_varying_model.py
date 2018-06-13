@@ -146,7 +146,7 @@ class Script(object):
         for line in line_dat:
           print(msg.format(*line))
       dat.append(cell_dat)
-    self.plot_cell(dat)
+    if dat: self.plot_cell(dat)
 
     # orientation plot
     dat = []
@@ -184,7 +184,7 @@ class Script(object):
         for line in line_dat:
           print(msg.format(*line))
       dat.append(angle_dat)
-    self.plot_orientation(dat)
+    if dat: self.plot_orientation(dat)
 
     # beam centre plot
     dat = []
@@ -210,7 +210,7 @@ class Script(object):
       bc_scan_points = [panel.get_beam_centre_px(s0) for s0 in s0_scan_points]
       bc_x, bc_y = zip(*bc_scan_points)
       dat.append({'phi':phi, 'beam_centre_x':bc_x, 'beam_centre_y':bc_y})
-    self.plot_beam_centre(dat)
+    if dat: self.plot_beam_centre(dat)
 
   def plot_cell(self, dat):
     fig = plt.figure(figsize=(13, 10))
