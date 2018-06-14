@@ -5,20 +5,22 @@ import pytest
 import mock
 from mock import Mock, MagicMock, call
 from scitbx import sparse
-from dials.array_family import flex
-from dials.util.options import OptionParser
 from libtbx import phil
 from libtbx.test_utils import approx_equal
 from cctbx.sgtbx import space_group
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
+from dials.array_family import flex
+from dials.util.options import OptionParser
 from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.algorithms.scaling.scaler_factory import create_scaler
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.parameter_handler import \
   scaling_active_parameter_manager, create_apm_factory
+from dials.algorithms.scaling.target_function import ScalingTargetFixedIH
 from dials.algorithms.scaling.scaler import SingleScalerBase,\
-  calc_sf_variances, ScalerBase, MultiScalerBase, MultiScaler, TargetScaler
+  calc_sf_variances, ScalerBase, MultiScalerBase, MultiScaler, TargetScaler,\
+  NullScaler
 from dials.algorithms.scaling.Ih_table import IhTable
 
 @pytest.fixture
@@ -35,12 +37,12 @@ def test_2_reflections():
 @pytest.fixture
 def test_reflections_no_exclude():
   """Make a test reflection table."""
-  return generated_refl_for_split()
+  return generated_refl(exclude_refl=False)
 
 @pytest.fixture
 def test_reflections_Ihtable():
   """Make a test reflection table."""
-  return generated_refl_Ihtable()
+  return generated_refl()
 
 @pytest.fixture
 def test_experiments():
@@ -62,29 +64,6 @@ def test_sg():
   """Make a test param phil scope."""
   return space_group("C 2y")
 
-def generated_refl_Ihtable():
-  """A test reflection tale for instantiating a SingleIhTable"""
-  reflections = flex.reflection_table()
-  reflections['intensity'] = flex.double([1.0, 10.0, 100.0, 1.0])
-  reflections['variance'] = flex.double([1.0, 10.0, 100.0, 1.0])
-  reflections['inverse_scale_factor'] = flex.double(4, 1.0)
-  reflections['miller_index'] = flex.miller_index([(1, 0, 0), (0, 0, 1),
-    (2, 0, 0), (2, 2, 2)]) #don't change
-  reflections['d'] = flex.double([0.8, 2.0, 2.0, 0.0]) #don't change
-  reflections['lp'] = flex.double([1.0, 1.0, 1.0, 1.0])
-  reflections['dqe'] = flex.double([1.0, 1.0, 1.0, 1.0])
-  reflections['partiality'] = flex.double([1.0, 1.0, 1.0, 1.0])
-  reflections['id'] = flex.int(4, 0)
-  reflections['xyzobs.px.value'] = flex.vec3_double([(0.0, 0.0, 0.0),
-    (0.0, 0.0, 5.0), (0.0, 0.0, 10.0), (0.0, 0.0, 10.0)])
-  reflections['s1'] = flex.vec3_double([(0.0, 0.1, 1.0), (0.0, 0.1, 1.0),
-    (0.0, 0.1, 1.0), (0.0, 0.1, 1.0)])
-  reflections.set_flags(flex.bool([True, True, False, False]),
-    reflections.flags.integrated)
-  reflections.set_flags(flex.bool([False, False, True, True]),
-    reflections.flags.bad_for_scaling)
-  return [reflections]
-
 def refl_for_outlier_routine():
   """Generate a reflection table."""
   reflections = flex.reflection_table()
@@ -95,6 +74,7 @@ def refl_for_outlier_routine():
   reflections['d'] = flex.double([1.0, 2.0, 3.0, 4.0, 5.0])
   reflections['Esq'] = flex.double([0.3, 1.0, 1.0, 1.0, 1.0])
   reflections['inverse_scale_factor'] = flex.double(5, 1.0)
+  reflections['partiality'] = flex.double(5, 1.0)
   reflections['id'] = flex.int(5, 0)
   reflections['xyzobs.px.value'] = flex.vec3_double([(0.0, 0.0, 0.0),
     (0.0, 0.0, 5.0), (0.0, 0.0, 10.0), (0.0, 0.0, 10.0), (0.0, 0.0, 10.0)])
@@ -108,7 +88,7 @@ def refl_for_outlier_routine():
 def refl_for_error_optimisation():
   """Generate a reflection table."""
   reflections = flex.reflection_table()
-  reflections['intensity'] = flex.double(range(0,100))
+  reflections['intensity'] = flex.double(range(0, 100))
   reflections['variance'] = flex.double(100, 1)
   reflections['miller_index'] = flex.miller_index([(1, 0, 0)] * 100)
   reflections['d'] = flex.double(100, 2.0)
@@ -126,16 +106,13 @@ def refl_for_error_optimisation():
   reflections.set_flags(bad_list, reflections.flags.bad_for_scaling)
   return reflections
 
-
-def generated_refl():
+def generated_refl(exclude_refl=True):
   """Generate a reflection table."""
   #these miller_idx/d_values don't make physical sense, but I didn't want to
   #have to write the tests for lots of reflections.
   reflections = flex.reflection_table()
   reflections['intensity'] = flex.double([1.0, 10.0, 100.0, 1.0])
   reflections['variance'] = flex.double([1.0, 10.0, 100.0, 1.0])
-  #reflections['intensity.sum.value'] = flex.double([10.0, 100.0, 1000.0, 10.0])
-  #reflections['intensity.sum.variance'] = flex.double([10.0, 100.0, 1000.0, 10.0])
   reflections['miller_index'] = flex.miller_index([(1, 0, 0), (0, 0, 1),
     (2, 0, 0), (2, 2, 2)]) #don't change
   reflections['d'] = flex.double([0.8, 2.0, 2.0, 0.0]) #don't change
@@ -143,18 +120,22 @@ def generated_refl():
   reflections['Esq'] = flex.double([1.0, 1.0, 1.0, 1.0])
   reflections['inverse_scale_factor'] = flex.double([1.0, 1.0, 1.0, 1.0])
   reflections['id'] = flex.int(4, 0)
-  #reflections['partiality'] = flex.double([1.0, 1.0, 1.0, 1.0])
   reflections['xyzobs.px.value'] = flex.vec3_double([(0.0, 0.0, 0.0),
     (0.0, 0.0, 5.0), (0.0, 0.0, 10.0), (0.0, 0.0, 10.0)])
   reflections['s1'] = flex.vec3_double([(0.0, 0.1, 1.0), (0.0, 0.1, 1.0),
     (0.0, 0.1, 1.0), (0.0, 0.1, 1.0)])
-  integrated_list = flex.bool([True, True, False, False])
-  bad_list = flex.bool([False, False, True, True])
+  if exclude_refl:
+    integrated_list = flex.bool([True, True, False, False])
+    bad_list = flex.bool([False, False, True, True])
+  else:
+    integrated_list = flex.bool(4, True)
+    bad_list = flex.bool(4, False)
   reflections.set_flags(integrated_list, reflections.flags.integrated)
   reflections.set_flags(bad_list, reflections.flags.bad_for_scaling)
   return [reflections]
 
 def generated_refl_for_splitting_1():
+  """Create a reflection table suitable for splitting into blocks."""
   reflections = flex.reflection_table()
   reflections['intensity.prf.value'] = flex.double([1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
   reflections['intensity.prf.variance'] = flex.double(6, 1.0)
@@ -172,6 +153,7 @@ def generated_refl_for_splitting_1():
   return [reflections]
 
 def generated_refl_for_splitting_2():
+  """Create another reflection table suitable for splitting into blocks."""
   reflections = flex.reflection_table()
   reflections['intensity.prf.value'] = flex.double([7.0, 8.0, 9.0, 10.0, 11.0])
   reflections['intensity.prf.variance'] = flex.double(5, 1.0)
@@ -186,31 +168,6 @@ def generated_refl_for_splitting_2():
   reflections.set_flags(flex.bool(5, True), reflections.flags.integrated)
   reflections.set_flags(flex.bool(5, False), reflections.flags.bad_for_scaling)
   return [reflections]
-
-def generated_refl_for_split():
-  """Generate a reflection table."""
-  #these miller_idx/d_values don't make physical sense, but I didn't want to
-  #have to write the tests for lots of reflections.
-  reflections = flex.reflection_table()
-  reflections['intensity'] = flex.double([1.0, 10.0, 100.0, 1.0])
-  reflections['variance'] = flex.double([1.0, 10.0, 100.0, 1.0])
-  reflections['miller_index'] = flex.miller_index([(1, 0, 0), (2, 0, 0),
-    (0, 0, 1), (2, 2, 2)]) #don't change
-  #reflections['d'] = flex.double([0.8, 2.0, 2.0, 0.0]) #don't change
-  reflections['d'] = flex.double([0.8, 2.1, 2.0, 0.1])
-  reflections['Esq'] = flex.double([1.0, 1.0, 1.0, 1.0])
-  reflections['id'] = flex.int(4, 0)
-  reflections['inverse_scale_factor'] = flex.double([1.0, 1.0, 1.0, 1.0])
-  reflections['xyzobs.px.value'] = flex.vec3_double([(0.0, 0.0, 0.0),
-    (0.0, 0.0, 5.0), (0.0, 0.0, 8.0), (0.0, 0.0, 10.0)])
-  reflections['s1'] = flex.vec3_double([(0.0, 0.1, 1.0), (0.0, 0.1, 1.0),
-    (0.0, 0.1, 1.0), (0.0, 0.1, 1.0)])
-  integrated_list = flex.bool(4, True)
-  bad_list = flex.bool(4, False)
-  reflections.set_flags(integrated_list, reflections.flags.integrated)
-  reflections.set_flags(bad_list, reflections.flags.bad_for_scaling)
-  return [reflections]
-
 
 def generated_exp(n=1):
   """Generate an experiment list with two experiments."""
@@ -268,6 +225,56 @@ def mock_errormodel():
   em.update_variances.return_value = flex.double([1.1, 1.0, 0.1, 0.5])
   return em
 
+@pytest.fixture
+def mock_scaling_component():
+  """Mock scaling component to allow creation of a scaling model."""
+  component = MagicMock()
+  component.n_params = 2
+  component.inverse_scales = [flex.double([0.9, 1.1])]
+  component.derivatives = [sparse.matrix(2, 2)]
+  component.derivatives[0][0, 0] = 0.5
+  component.derivatives[0][1, 0] = 0.4
+  return component
+
+@pytest.fixture
+def mock_exp(mock_scaling_component):
+  """Mock experiments object for initialising a scaler."""
+
+  def side_effect_config_table(*args):
+    """Side effect to mock configure reflection table
+    call during initialisation."""
+    return args[0]
+
+  exp = Mock()
+  exp.scaling_model.components = {'scale' : mock_scaling_component}
+  exp.scaling_model.consecutive_refinement_order = ['scale']
+  exp.scaling_model.configure_reflection_table.side_effect = side_effect_config_table
+  exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
+              "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
+              "space_group_hall_symbol": " C 2y"}
+  exp.crystal = Crystal.from_dict(exp_dict)
+  return exp
+
+@pytest.fixture
+def mock_explist_2(mock_exp):
+  """A mock experimentlist."""
+  mock_explist = []
+  mock_explist.append(mock_exp)
+  mock_explist.append(mock_exp)
+  return mock_explist
+
+@pytest.fixture
+def mock_singlescaler(test_reflections_Ihtable, test_sg):
+  """Mock singlescaler to use for testing multiscalers."""
+  single_scaler = Mock()
+  single_scaler.space_group = test_sg
+  single_scaler.initial_keys = ['intensity', 'variance']
+  single_scaler.reflection_table = test_reflections_Ihtable[0]
+  single_scaler.Ih_table = IhTable([(test_reflections_Ihtable[0], None)], test_sg)
+  single_scaler.scaling_selection = flex.bool([True, True, False, False])
+  return single_scaler
+
+
 def test_ScalerBase(test_params):
   """Test the Base Scaler Class."""
 
@@ -275,9 +282,6 @@ def test_ScalerBase(test_params):
     """Class to fill in abstract methods."""
 
     def update_for_minimisation(self, apm, curvatures=False):
-      """Fill in abstract method."""
-
-    def perform_error_optimisation(self):
       """Fill in abstract method."""
 
     def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
@@ -448,7 +452,7 @@ def test_SingleScaler(test_reflections, test_experiments, test_params,
   # Test update error model - should save to experiments object and call update
   # to Ih table
   with mock.patch.object(singlescaler.Ih_table, 'update_error_model',
-    autospec=True, side_effect=do_nothing_side_effect) as update_em_1:
+    autospec=True) as update_em_1:
     mock_em = mock_errormodel
     singlescaler.update_error_model(mock_em)
     assert update_em_1.call_count == 1
@@ -575,58 +579,7 @@ def test_SingleScaler_split_into_blocks(test_reflections_no_exclude,
   assert singlescaler.components['absorption'].harmonic_values[0] == expected_harm1
   assert singlescaler.components['absorption'].harmonic_values[1] == expected_harm2
 
-@pytest.fixture
-def mock_scaling_component():
-  """Mock scaling component to allow creation of a scaling model."""
-  component = MagicMock()
-  component.n_params = 2
-  component.inverse_scales = [flex.double([0.9, 1.1])]
-  component.derivatives = [sparse.matrix(2, 2)]
-  component.derivatives[0][0, 0] = 0.5
-  component.derivatives[0][1, 0] = 0.4
-  return component
-
-@pytest.fixture
-def mock_exp(mock_scaling_component):
-  """Mock experiments object for initialising a scaler."""
-
-  def side_effect_config_table(*args):
-    """Side effect to mock configure reflection table
-    call during initialisation."""
-    return args[0]
-
-  exp = Mock()
-  exp.scaling_model.components = {'scale' : mock_scaling_component}
-  exp.scaling_model.consecutive_refinement_order = ['scale']
-  exp.scaling_model.configure_reflection_table.side_effect = side_effect_config_table
-  exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
-              "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
-              "space_group_hall_symbol": " C 2y"}
-  exp.crystal = Crystal.from_dict(exp_dict)
-  return exp
-
-@pytest.fixture
-def mock_explist_2(mock_exp):
-  """A mock experimentlist."""
-  mock_explist = []
-  mock_explist.append(mock_exp)
-  mock_explist.append(mock_exp)
-  return mock_explist
-
-@pytest.fixture
-def mock_singlescaler(test_reflections_Ihtable, test_sg):
-  """Mock singlescaler to use for testing multiscalers."""
-  single_scaler = Mock()
-  single_scaler.space_group = test_sg
-  single_scaler.initial_keys = ['intensity', 'variance']
-  single_scaler.reflection_table = test_reflections_Ihtable[0]
-  single_scaler.Ih_table = IhTable([(test_reflections_Ihtable[0], None)], test_sg)
-  single_scaler.scaling_selection = flex.bool([True, True, False, False])
-  return single_scaler
-
-
-def test_MultiScalerBase(mock_singlescaler, mock_explist_2, test_params,
-    test_reflections_Ihtable):
+def test_MultiScalerBase(mock_singlescaler, mock_explist_2, test_params):
   """Unit tests for the MultiScalerBase class."""
 
   class MSB_filler(MultiScalerBase):
@@ -637,6 +590,8 @@ def test_MultiScalerBase(mock_singlescaler, mock_explist_2, test_params,
 
     def update_for_minimisation(self, apm, curvatures=False):
       """Fill in abstract method."""
+
+  test_params.scaling_options.verbosity = 1
 
   singlescalers = [mock_singlescaler, mock_singlescaler]
   multiscaler = MSB_filler(test_params, mock_explist_2, singlescalers)
@@ -650,20 +605,6 @@ def test_MultiScalerBase(mock_singlescaler, mock_explist_2, test_params,
   # Set the scalers to active to allow calling of functions below
   multiscaler.active_scalers = multiscaler.single_scalers
 
-  apm = Mock()
-  fp = 'dials.algorithms.scaling.scaler.'
-  '''
-  with mock.patch(fp+'MultiScalingRestraints.calculate_restraints',
-    return_value='test_restr') as ScalingRestraints:
-    r = multiscaler.calculate_restraints(apm)
-    assert ScalingRestraints.call_count == 1
-    assert r == 'test_restr'
-  with mock.patch(fp+'MultiScalingRestraints.calculate_jacobian_restraints',
-    return_value='test_jacob') as ScalingRestraints:
-    r = multiscaler.compute_restraints_residuals_jacobian(apm)
-    assert ScalingRestraints.call_count == 1
-    assert r == 'test_jacob'''
-
   # Test calls for updating of individual error models.
   multiscaler.adjust_variances()
   assert mock_singlescaler.adjust_variances.call_count == 2
@@ -676,31 +617,17 @@ def test_MultiScalerBase(mock_singlescaler, mock_explist_2, test_params,
   multiscaler.expand_scales_to_all_reflections()
   assert mock_singlescaler.expand_scales_to_all_reflections.call_count == 2
 
-  def outlier_rej_side_effect(*args):
-    """Side effect for overriding the call to reject_outliers."""
-    return args[0]
-
-  '''with mock.patch('dials.algorithms.scaling.scaler.reject_outliers',
-    side_effect=outlier_rej_side_effect) as rejout:
-    rt = rejout(test_reflections_Ihtable[0])
-    assert rt is test_reflections_Ihtable[0]
-    assert rejout.call_count == 1
-    assert rejout.call_args_list == [call(test_reflections_Ihtable[0],
-      multiscaler.space_group, multiscaler.params.scaling_options.outlier_rejection,
-      multiscaler.params.scaling_options.outlier_zmax)]'''
-  '''with mock.patch('dials.algorithms.scaling.scaler.reject_outliers',
-    side_effect=outlier_rej_side_effect) as rejout:'''
   multiscaler.join_datasets_from_scalers(multiscaler.single_scalers)
   expected_rt = flex.reflection_table()
   expected_rt.extend(mock_singlescaler.reflection_table)
   expected_rt.extend(mock_singlescaler.reflection_table)
   assert list(multiscaler.reflection_table) == list(expected_rt)
 
-def do_nothing_side_effect(*args):
-  """Side effect to override various method calls."""
-  pass
+def outlier_rej_side_effect(*args):
+  """Side effect for overriding the call to reject_outliers."""
+  return args[0]
 
-def test_new_Multiscaler(test_2_reflections, test_2_experiments, test_params):
+def test_MultiScaler(test_2_reflections, test_2_experiments, test_params):
   """Test the setup of the Ih table and components for a multiscaler"""
   # Use the create_scaling_model and create_scaler helpers functions for ease.
 
@@ -748,11 +675,11 @@ def test_new_Multiscaler(test_2_reflections, test_2_experiments, test_params):
   sscalers = multiscaler.active_scalers
 
   with mock.patch.object(multiscaler.Ih_table, 'update_error_model',
-    autospec=True, side_effect=do_nothing_side_effect) as update_em_1:
+    autospec=True) as update_em_1:
       with mock.patch.object(sscalers[0].experiments.scaling_model, 'set_error_model',
-        autospec=True, side_effect=do_nothing_side_effect) as update_em_2:
+        autospec=True) as update_em_2:
         with mock.patch.object(sscalers[1].experiments.scaling_model, 'set_error_model',
-          autospec=True, side_effect=do_nothing_side_effect) as update_em_3:
+          autospec=True,) as update_em_3:
           multiscaler.update_error_model(Mock())
           assert update_em_1.call_count == 1
           assert update_em_2.call_count == 1
@@ -762,7 +689,7 @@ def test_new_Multiscaler(test_2_reflections, test_2_experiments, test_params):
   # multiscalerbase with the single scalers.
   fp = 'dials.algorithms.scaling.scaler.'
   with mock.patch(fp+'MultiScalerBase.join_datasets_from_scalers',
-    side_effect=do_nothing_side_effect) as join_data:
+    ) as join_data:
     multiscaler.join_multiple_datasets()
     assert join_data.call_args_list == [call(multiscaler.single_scalers)]
 
@@ -794,7 +721,6 @@ def test_new_Multiscaler(test_2_reflections, test_2_experiments, test_params):
   expected_derivatives_for_block_2.assign_block(bf2[1][1], bf1[1][1].n_rows,
     apm.apm_data[1]['start_idx'])
 
-
   block_list = multiscaler.Ih_table.blocked_data_list
 
   assert block_list[0].inverse_scale_factors == expected_scales_for_block_1
@@ -802,12 +728,79 @@ def test_new_Multiscaler(test_2_reflections, test_2_experiments, test_params):
   assert block_list[0].derivatives == expected_derivatives_for_block_1
   assert block_list[1].derivatives == expected_derivatives_for_block_2
 
+  # Test the round_of_outlier_rejection method.
+  assert multiscaler.reflection_table == []
+  with mock.patch('dials.algorithms.scaling.scaler.reject_outliers',
+    side_effect=outlier_rej_side_effect) as outlier_patch:
+    multiscaler.round_of_outlier_rejection()
+    assert multiscaler.reflection_table.size() == sum([i.reflection_table.size()
+      for i in multiscaler.single_scalers])
+    assert outlier_patch.call_count == 1
+
+def test_multiscaler_outlier_rejection_routine(test_params):
+  """Test outlier rejection routine. This function expects a scaler that
+  has already been scaled - so first create this and check that outlier
+  rejection is performed, a new Ih_table is created and then the right
+  reflections reselected."""
+  rt = refl_for_outlier_routine()
+  rt2 = refl_for_outlier_routine()
+  rt2['intensity'][2] = 1.0
+  test_params.scaling_options.outlier_rejection = 'standard'
+  exp = create_scaling_model(test_params, generated_exp(), [rt])
+  scaler = SingleScalerBase(test_params, exp[0], rt, for_multi=True)
+  exp = create_scaling_model(test_params, generated_exp(), [rt2])
+  scaler2 = SingleScalerBase(test_params, exp[0], rt2, for_multi=True)
+  multiscaler = MultiScaler(test_params, exp, [scaler, scaler2])
+  # scaling_subset will select reflections [1, 2, 3, 4] then the rest will be
+  # put into the Ih_table, and the indices of the blocked selection list
+  # refers to selection from scaler.scaling_selection.
+  assert list(multiscaler.Ih_table.blocked_selection_list[0][0]) == [0, 1, 2, 3]
+  assert list(multiscaler.Ih_table.blocked_selection_list[1][0]) == [0, 1, 2, 3]
+  assert list(multiscaler.single_scalers[0].components['decay'].d_values[0]
+    ) == [2.0, 3.0, 4.0, 5.0]
+  assert list(multiscaler.single_scalers[1].components['decay'].d_values[0]
+    ) == [2.0, 3.0, 4.0, 5.0]
+  assert list(multiscaler.Ih_table.blocked_data_list[0].nonzero_weights
+    ) == [1, 2, 3, 1, 2, 3, 4, 4]
+  assert multiscaler.Ih_table.blocked_data_list[0].size == 8
+  # Now call outlier rejection routine - expect it to remove the reflection
+  # in position 1.
+  multiscaler.outlier_rejection_routine()
+  assert list(multiscaler.Ih_table.blocked_data_list[0].nonzero_weights
+    ) == [1, 3, 1, 2, 3, 4, 4]
+  assert list(multiscaler.Ih_table.blocked_selection_list[0][0]) == [0, 1, 2]
+  assert list(multiscaler.Ih_table.blocked_selection_list[1][0]) == [0, 1, 2, 3]
+  assert list(multiscaler.single_scalers[0].components['decay'].d_values[0]
+    ) == [2.0, 4.0, 5.0]
+  assert list(multiscaler.single_scalers[1].components['decay'].d_values[0]
+    ) == [2.0, 3.0, 4.0, 5.0]
+
+  # Repeat but with make_ready_for_scaling=False - make a fresh copy of structures
+  rt = refl_for_outlier_routine()
+  rt2 = refl_for_outlier_routine()
+  rt2['intensity'][2] = 1.0
+  test_params.scaling_options.outlier_rejection = 'standard'
+  test_params.scaling_options.nproc = 1
+  exp = create_scaling_model(test_params, generated_exp(), [rt])
+  scaler = SingleScalerBase(test_params, exp[0], rt, for_multi=True)
+  exp = create_scaling_model(test_params, generated_exp(), [rt2])
+  scaler2 = SingleScalerBase(test_params, exp[0], rt2, for_multi=True)
+  multiscaler = MultiScaler(test_params, exp, [scaler, scaler2])
+  multiscaler.outlier_rejection_routine(make_ready_for_scaling=False)
+  # Should still have found outlier
+  assert list(multiscaler.single_scalers[0].reflection_table.get_flags(
+    scaler.reflection_table.flags.outlier_in_scaling)) == [False, False,
+      True, False, False]
+  # Should not have created or updated Ih_table
+  assert list(multiscaler.Ih_table.blocked_data_list[0].nonzero_weights
+    ) == [1, 2, 3, 1, 2, 3, 4, 4]
+
 def test_multiscaler_scaling(test_2_reflections, test_2_experiments, test_params):
   """Test the setup of the Ih table and components for a multiscaler.
   This should create some blocks with zero elements, but the algorithm should
   still complete."""
   # Use the create_scaling_model and create_scaler helpers functions for ease.
-  test_2_reflections[1]['miller_index'][4] = flex.miller_index([(5,7,9)])[0]
+  test_2_reflections[1]['miller_index'][4] = flex.miller_index([(5, 7, 9)])[0]
   test_params.scaling_options.nproc = 7
   test_params.scaling_refinery.engine = 'LevMar'
   # should split into 5 unique groups, but each dataset won't necessarily have
@@ -831,6 +824,33 @@ def test_new_TargetScaler(test_2_reflections, test_2_experiments, test_params):
   target = create_scaler(test_params, experiments, test_2_reflections)
   assert isinstance(target, TargetScaler)
 
+  #Test join_multiple_datasets
+  target.join_multiple_datasets()
+  assert target.reflection_table.size() == \
+    target.single_scalers[0].reflection_table.size() + \
+    target.unscaled_scalers[0].reflection_table.size()
+
+  #Test update for minimisation - should just call parent method with calc_Ih=False
+  #Check that Ih's have not been updated
+  mockapm = Mock()
+  with mock.patch(
+    'dials.algorithms.scaling.scaler.MultiScalerBase.update_for_minimisation'
+    ) as update_patch:
+    target.update_for_minimisation(mockapm)
+    update_patch.assert_called_once_with(mockapm, False, calc_Ih=False)
+
+  mockapm = Mock()
+  with mock.patch('dials.algorithms.scaling.scaler.ScalerBase.perform_scaling'
+    ) as scaling_patch:
+    target.perform_scaling()
+    scaling_patch.assert_called_once_with(target_type=ScalingTargetFixedIH,
+      engine=None, max_iterations=None)
+
+def test_NullScaler(test_reflections, test_experiments, test_params):
+  """Test for successful creation of NullScaler."""
+  exp = create_scaling_model(test_params, test_experiments, test_reflections[0])
+  _ = NullScaler(test_params, exp[0], test_reflections[0])
+  # What exactly should be tested here?
 
 def test_sf_variance_calculation(test_experiments, test_params):
   """Test the calculation of scale factor variances."""

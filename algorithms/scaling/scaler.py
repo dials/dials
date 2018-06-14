@@ -202,9 +202,26 @@ class ScalerBase(object):
       self = refinery.return_scaler()
       logger.info('\n'+'='*80+'\n')
 
-  @abc.abstractmethod
   def perform_error_optimisation(self):
-    """Optimise an error model."""
+    """Perform an optimisation of the sigma values."""
+    Ih_table = IhTable([(x.reflection_table, None)
+      for x in self.active_scalers], self._space_group,
+      n_blocks=1)
+    error_model = get_error_model(self.params.weighting.error_model)
+    refinery = error_model_refinery(engine='SimpleLBFGS',
+      target=ErrorModelTarget(error_model(Ih_table.blocked_data_list[0])),
+      max_iterations=100)
+    refinery.run()
+    error_model = refinery.return_error_model()
+    self.update_error_model(error_model)
+    logger.info(error_model)
+
+  def error_optimisation_routine(self, make_ready_for_scaling=True):
+    """Routine to perform error optimisation on scaled scaler."""
+    self.expand_scales_to_all_reflections() #no outlier rej
+    self.perform_error_optimisation()
+    if make_ready_for_scaling:
+      self.reselect_reflections_for_scaling()
 
   def round_of_outlier_rejection(self):
     self._reflection_table = reject_outliers(self._reflection_table,
@@ -230,6 +247,7 @@ class SingleScalerBase(ScalerBase):
     super(SingleScalerBase, self).__init__()
     self._experiments = experiment
     self._params = params
+    self.active_scalers = [self]
     self.verbosity = params.scaling_options.verbosity
     self._space_group = self.experiments.crystal.get_space_group()
     if self._params.scaling_options.space_group:
@@ -330,11 +348,6 @@ class SingleScalerBase(ScalerBase):
       scaled_invsfvar = calc_sf_variances(self.components, self._var_cov)
       self.reflection_table['inverse_scale_factor_variance'].set_selected(
         scaled_isel, scaled_invsfvar)
-    '''if (self.params.scaling_options.outlier_rejection and
-      not isinstance(caller, MultiScalerBase)):
-      self._reflection_table = reject_outliers(self._reflection_table,
-        self.space_group, self.params.scaling_options.outlier_rejection,
-        self.params.scaling_options.outlier_zmax)'''
 
   def update_error_model(self, error_model):
     """Apply a correction to try to improve the error estimate."""
@@ -399,17 +412,6 @@ class SingleScalerBase(ScalerBase):
       component.update_reflection_data(self.reflection_table, self.scaling_selection,
         block_selections)
 
-  def perform_error_optimisation(self):
-    Ih_table = IhTable([(self._reflection_table, None)], self.space_group)
-    error_model = get_error_model(self.params.weighting.error_model)
-    refinery = error_model_refinery(engine='SimpleLBFGS',
-      target=ErrorModelTarget(error_model(Ih_table.blocked_data_list[0])),
-      max_iterations=100)
-    refinery.run()
-    error_model = refinery.return_error_model()
-    self.update_error_model(error_model)
-    logger.info(error_model)
-
   def _configure_reflection_table(self):
     """Calculate requried quantities"""
     self._reflection_table = self.experiments.scaling_model.configure_reflection_table(
@@ -421,16 +423,9 @@ class SingleScalerBase(ScalerBase):
     logger.info('The following corrections will be applied to this dataset: \n')
     logger.info(st.format())
 
-  def error_optimisation_routine(self, make_ready_for_scaling=True):
-    """Routine to perform error optimisation on scaled scaler."""
-    self.expand_scales_to_all_reflections() #no outlier rej
-    self.perform_error_optimisation()
-    if make_ready_for_scaling:
-      self.reselect_reflections_for_scaling()
-
   def outlier_rejection_routine(self, make_ready_for_scaling=True):
     """Routine to perform outlier rejection on scaled scaler."""
-    self.expand_scales_to_all_reflections() #no outlier rej
+    self.expand_scales_to_all_reflections()
     self.round_of_outlier_rejection()
     #Now update the scaling selection to account for outliers
     if make_ready_for_scaling:
@@ -440,9 +435,9 @@ class SingleScalerBase(ScalerBase):
       self.reselect_reflections_for_scaling()
 
 class MultiScalerBase(ScalerBase):
-  '''Base class for Scalers handling multiple datasets'''
+  """Base class for Scalers handling multiple datasets"""
   def __init__(self, params, experiments, single_scalers):
-    '''initialise from a list of single scalers'''
+    """Initialise from a list of single scalers"""
     super(MultiScalerBase, self).__init__()
     self.single_scalers = single_scalers
     self._space_group = single_scalers[0].space_group
@@ -542,20 +537,6 @@ class MultiScalerBase(ScalerBase):
         component.update_reflection_data(scaler.reflection_table,
           scaler.scaling_selection, self.Ih_table.blocked_selection_list[i])
 
-  def perform_error_optimisation(self):
-    """Perform an optimisation of the sigma values."""
-    Ih_table = IhTable([(x.reflection_table, None)
-      for x in self.active_scalers], self._space_group,
-      n_blocks=1)
-    error_model = get_error_model(self.params.weighting.error_model)
-    refinery = error_model_refinery(engine='SimpleLBFGS',
-      target=ErrorModelTarget(error_model(Ih_table.blocked_data_list[0])),
-      max_iterations=100)
-    refinery.run()
-    error_model = refinery.return_error_model()
-    self.update_error_model(error_model)
-    logger.info(error_model)
-
 
 class MultiScaler(MultiScalerBase):
   """
@@ -583,7 +564,7 @@ class MultiScaler(MultiScalerBase):
     logger.info('Completed configuration of MultiScaler. \n\n' + '='*80 + '\n')
 
   def join_multiple_datasets(self):
-    '''method to create a joint reflection table'''
+    """Create a joint reflection table."""
     super(MultiScaler, self).join_datasets_from_scalers(self.single_scalers)
 
   def round_of_outlier_rejection(self):
@@ -615,18 +596,15 @@ class MultiScaler(MultiScalerBase):
       free_set_percentage=free_set_percentage,
       free_set_offset=self.params.scaling_options.free_set_offset)
 
-  def error_optimisation_routine(self, make_ready_for_scaling=True):
-    """Routine to perform error optimisation on scaled scaler."""
-    self.expand_scales_to_all_reflections() #no outlier rej
-    self.perform_error_optimisation()
-    if make_ready_for_scaling:
-      self.reselect_reflections_for_scaling()
 
   def outlier_rejection_routine(self, make_ready_for_scaling=True):
     """Routine to perform outlier rejection on scaled scaler."""
-    self.expand_scales_to_all_reflections() #no outlier rej
+    self.expand_scales_to_all_reflections()
     self.round_of_outlier_rejection()
     if make_ready_for_scaling:
+      for scaler in self.active_scalers:
+        scaler.scaling_selection = scaler._scaling_subset(
+          scaler.reflection_table, scaler.params)
       self.create_Ih_table()
       self.reselect_reflections_for_scaling()
 
@@ -690,7 +668,7 @@ class TargetScaler(MultiScalerBase):
       calc_Ih=calc_Ih)
 
   def join_multiple_datasets(self):
-    '''method to create a joint reflection table'''
+    """Create a joint reflection table."""
     scalers = []
     if not self.params.scaling_options.target_model:
       scalers.extend(self.single_scalers)
@@ -736,9 +714,6 @@ class NullScaler(ScalerBase):
     return self.experiments.scaling_model.components
 
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
-    """Fill in abstract method"""
-
-  def perform_error_optimisation(self):
     """Fill in abstract method"""
 
   def update_for_minimisation(self, apm, curvatures=False):
