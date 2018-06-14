@@ -30,7 +30,6 @@ def BBoxCalculator(crystal, beam, detector, goniometer, scan, delta_b, delta_m):
 def PartialityCalculator(crystal, beam, detector, goniometer, scan, sigma_m):
   ''' Return the relavent partiality calculator. '''
   if goniometer is None or scan is None or scan.get_oscillation()[1] == 0:
-    print("WARNING: Stills partiality is currently a placeholder")
     algorithm = PartialityCalculator2D(
       beam,
       sigma_m)
