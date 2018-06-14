@@ -50,9 +50,9 @@ def test_ScalingModelBase(mock_errormodel):
   class SM_base_filler(ScalingModelBase):
     """Fill in abstract methid"""
     def consecutive_refinement_order(self):
-      pass
+      """Fill in abstract method."""
     def from_dict(self, obj):
-      pass
+      """Fill in abstract method."""
 
   SM_base = SM_base_filler(configdict={})
   assert not SM_base.is_scaled
@@ -67,7 +67,7 @@ def test_ScalingModelBase(mock_errormodel):
   assert SM_base.configdict['error_model_parameters'] == mock_errormodel.refined_parameters
   assert SM_base.error_model is mock_errormodel
   _ = SM_base.configure_reflection_table(1.0, 2.0, 3.0) #Check method exists
-
+  SM_base.show()
 
 def test_KBScalingModel():
   """Test for the KB Scaling Model."""
@@ -125,6 +125,7 @@ def test_KBScalingModel():
     KBmodel = KBScalingModel.from_dict(KB_dict)
 
   assert KBmodel.consecutive_refinement_order == [['scale', 'decay']]
+  KBmodel.show()
 
 def test_PhysicalScalingModel(test_reflections, mock_exp, mock_params):
   """Test the PhysicalScalingModel class."""
@@ -141,6 +142,7 @@ def test_PhysicalScalingModel(test_reflections, mock_exp, mock_params):
   # Test standard factory initialisation
   physicalmodel = PhysicalScalingModel(parameters_dict, configdict)
   assert physicalmodel.id_ == 'physical'
+  physicalmodel.show() #test show works with no parameter esds.
   comps = physicalmodel.components
   assert 'scale' in comps
   assert 'absorption' in comps
@@ -210,6 +212,7 @@ def test_PhysicalScalingModel(test_reflections, mock_exp, mock_params):
     physicalmodel = PhysicalScalingModel.from_dict(physical_dict)
 
   assert len(physicalmodel.consecutive_refinement_order) == 2
+  physicalmodel.show()
 
 def test_ArrayScalingModel(test_reflections, mock_exp, mock_params):
   """Test the ArrayScalingModel class."""
@@ -284,3 +287,4 @@ def test_ArrayScalingModel(test_reflections, mock_exp, mock_params):
     arraymodel = ArrayScalingModel.from_dict(array_dict)
 
   assert len(arraymodel.consecutive_refinement_order) == 3
+  arraymodel.show()

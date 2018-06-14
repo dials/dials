@@ -3,22 +3,17 @@ Tests for scaling utilities module.
 '''
 from math import sqrt, pi
 import pytest
+import numpy as np
 from mock import Mock
-from dxtbx.model import Experiment, ExperimentList
+from dxtbx.model import Experiment, ExperimentList, Crystal
 from libtbx.test_utils import approx_equal
 from cctbx.sgtbx import space_group
-from dxtbx.model import Crystal
 from dials.array_family import flex
 from dials.algorithms.scaling.scaling_utilities import \
   calc_crystal_frame_vectors, calc_theta_phi, create_sph_harm_table,\
   sph_harm_table, align_rotation_axis_along_z, parse_multiple_datasets,\
   set_wilson_outliers, select_datasets_on_ids, assign_unique_identifiers,\
   quasi_normalisation
-
-@pytest.fixture(scope='module')
-def test_space_group():
-  """Create a space group object."""
-  return space_group("C 2y")
 
 @pytest.fixture(scope='module')
 def mock_exp():
@@ -34,6 +29,17 @@ def test_exp_E2():
   exp = Experiment()
   exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
               "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
+              "space_group_hall_symbol": " P 1"}
+  crystal = Crystal.from_dict(exp_dict)
+  exp.crystal = crystal
+  return exp
+
+@pytest.fixture(scope='module')
+def test_exp_P1():
+  """Create a mock experiments object."""
+  exp = Experiment()
+  exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
+              "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 1.0],
               "space_group_hall_symbol": " P 1"}
   crystal = Crystal.from_dict(exp_dict)
   exp.crystal = crystal
@@ -69,27 +75,39 @@ def simple_reflection_table():
   refl.set_flags(flex.bool(refl.size(), False), refl.flags.bad_for_scaling)
   return refl
 
-@pytest.fixture
-def gen_E2_reflection_table():
-  reflections = flex.reflection_table()
-  reflections['intensity'] = flex.double()
-  reflections['d'] = flex.double()
-  reflections['miller_index'] = flex.miller_index()
-  for i in range(1, 12001):
-    reflections['intensity'].extend(flex.double([10.0]))#*float(i)))
-    reflections['d'].extend(flex.double([1.0 + (2.0*12000/float(i))]))
-    reflections['miller_index'].extend(flex.miller_index([(0, 0, i)] * 11000))
-  reflections.set_flags(flex.bool(reflections.size(), False),
-    reflections.flags.bad_for_scaling)
-  return reflections
+def refl_for_norm():
+  """Create 11000 refelctions in 10 groups of 1100 approx equally spaced in
+  resolution."""
+  intensity_array = flex.double([])
+  miller_indices = flex.miller_index([])
+  # a set of miller indices with h2 + k2 + l2 = [2,3,4,5,6,8,9,10,11,12],
+  # which should split nicely into 10 resolution groups.
+  miller_array_list = [(1, 1, 0), (1, 1, 1), (2, 0, 0), (2, 1, 0), (2, 1, 1),
+    (2, 2, 0), (2, 2, 1), (3, 0, 1), (3, 1, 1), (2, 2, 2)]
+  for i in range(1, 11):
+    miller_indices.extend(flex.miller_index(1100, miller_array_list[i-1]))
+    intensity_array.extend(flex.double(np.linspace(90, 110, num=1100,
+    endpoint=True)))
+  rt = flex.reflection_table()
+  rt['intensity'] = intensity_array
+  rt['miller_index'] = miller_indices
+  rt.set_flags(flex.bool(11000, False), rt.flags.bad_for_scaling)
+  return rt
 
-def test_quasi_normalisation(simple_reflection_table, test_exp_E2):
+def test_quasi_normalisation(simple_reflection_table, test_exp_E2, test_exp_P1):
   """Test the quasi_normalisation function."""
   # Test that for small datasets, all Esq values are set to one.
   refl = quasi_normalisation(simple_reflection_table, test_exp_E2)
   assert list(refl['Esq']) == [1.0, 1.0, 1.0]
 
-  #How to test a larger set is correctly binned?
+  rt = refl_for_norm()
+  new_rt = quasi_normalisation(rt, test_exp_P1)
+  for i in range(0, 9):
+    assert list(new_rt['Esq'][i*1100:(i+1)*1100]) == pytest.approx(list(
+      np.linspace(0.9, 1.1, num=1100, endpoint=True)))
+  # FIXME Note, this test should actually be for i in range(0, 10):, however
+  # the binner appears to create an extra bin above the highest data,
+  # and then the call to interpolate causes the last values to be incorrect.
 
 def test_calc_crystal_frame_vectors(test_reflection_table, mock_exp):
   """Test the namesake function, to check that the vectors are correctly rotated
@@ -298,7 +316,7 @@ def test_select_datasets_on_ids():
       reflections, exclude_datasets=exclude_datasets)
 
 
-def set_calculate_wilson_outliers(wilson_test_reflection_table):
+def test_calculate_wilson_outliers(wilson_test_reflection_table):
   """Test the set wilson outliers function."""
   reflection_table = set_wilson_outliers(wilson_test_reflection_table)
 
