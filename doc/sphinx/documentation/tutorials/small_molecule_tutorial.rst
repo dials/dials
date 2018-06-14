@@ -1,5 +1,5 @@
-Small Molecule Tutorial 2
-=========================
+Small Molecule Tutorial
+=======================
 
 .. highlight:: none
 
