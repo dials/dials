@@ -102,6 +102,7 @@ def test_model_factory_utilities():
   assert calc_n_param_from_bins(0.0, 10.0, 5) == (7, 2.0)
   with pytest.raises(AssertionError):
     (_, _) = calc_n_param_from_bins(0.0, 1.0, 0)
+  with pytest.raises(AssertionError):
     (_, _) = calc_n_param_from_bins(0.0, 1.0, 0.5)
 
   # Test initialise_smooth_input(osc_range, one_osc_width, interval)

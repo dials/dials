@@ -12,7 +12,8 @@ from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.util.options import OptionParser
 from dials.array_family import flex
 from dials.algorithms.scaling.scaling_library import scale_single_dataset,\
-  create_scaling_model, create_datastructures_for_structural_model
+  create_scaling_model, create_datastructures_for_structural_model,\
+  create_Ih_table, calculate_merging_statistics, calculate_single_merging_stats
 from dials.algorithms.scaling.model.model import KBScalingModel
 from dials.algorithms.scaling.model.scaling_model_factory import \
   PhysicalSMFactory
@@ -105,6 +106,14 @@ def test_scale_single_dataset(test_reflections, test_experiments, test_params,
     test_params, model=model)
   assert 'inverse_scale_factor' in scaled_reflections
   assert 'inverse_scale_factor_variance' in scaled_reflections
+  #what about when no params supplied?
+
+def test_scale_single_dataset_no_params_supplied(test_reflections, test_experiments):
+  """Test when no params scope supplied."""
+  scaled_reflections = scale_single_dataset(test_reflections, test_experiments,
+    model='physical')
+  assert 'inverse_scale_factor' in scaled_reflections
+  assert 'inverse_scale_factor_variance' in scaled_reflections
 
 def test_create_scaling_model():
   """Test the create scaling model function."""
@@ -161,3 +170,76 @@ def test_get_intensities_from_cif(_, test_reflections, test_experiments, mock_ci
   assert list(refl['miller_index']) == [(1, 0, 0), (0, 0, 1),
     (1, 0, 0), (0, 0, 1)]
   assert exp.scaling_model.is_scaled is True
+
+def return_len_refl_side_effect(*args):
+  """Side effect for overriding the call to reject_outliers."""
+  return args[0].size()
+
+def test_calculate_merging_statistics():
+  """Test the calculate_merging_statistics function, which splits a reflection
+  table based on id and runs iotbx.merging stats on each reflection, returning
+  a list of results and ids."""
+  reflection_table = flex.reflection_table()
+  reflection_table['id'] = flex.int([0, 0, 1, 1, 1, 2])
+  experiments = [0, 0, 0]
+  # Patch the actual call, point to side effect that returns the size of the
+  # table. Then check that the result is the list of return values from the
+  # patch and the dataset ids.
+  with patch('dials.algorithms.scaling.scaling_library.calculate_single_merging_stats',
+    side_effect=return_len_refl_side_effect) as merging_patch:
+    res = calculate_merging_statistics(reflection_table, experiments, True)
+    assert res[0] == [2, 3, 1]
+    assert res[1] == [0, 1, 2]
+    assert merging_patch.call_count == 3
+
+  # repeat with only one dataset.
+  reflection_table = flex.reflection_table()
+  reflection_table['id'] = flex.int([0, 0])
+  experiments = [0]
+  with patch('dials.algorithms.scaling.scaling_library.calculate_single_merging_stats',
+    side_effect=return_len_refl_side_effect) as merging_patch:
+    res = calculate_merging_statistics(reflection_table, experiments, True)
+    assert res[0] == [2]
+    assert res[1] == [0]
+    assert merging_patch.call_count == 1
+
+def return_data_side_effect(*args, **kwargs):
+  """Side effect to return data from a miller array."""
+  return kwargs['i_obs'].data()
+
+def test_calculate_single_merging_stats(test_experiments):
+  reflection_table = flex.reflection_table()
+  reflection_table['intensity'] = flex.double([10.0, 5.0, 10.0, 5.0])
+  reflection_table['variance'] = flex.double([1.0, 1.0, 1.0, 1.0])
+  reflection_table['inverse_scale_factor'] = flex.double([2.0, 1.0, 2.0, 1.0])
+  reflection_table['miller_index'] = flex.miller_index([(1, 0, 0), (1, 0, 0),
+    (2, 0, 0), (2, 0, 0)])
+  reflection_table.set_flags(flex.bool([True, False, False, False]),
+    reflection_table.flags.bad_for_scaling)
+  with patch('iotbx.merging_statistics.dataset_statistics',
+    side_effect=return_data_side_effect):
+    res = calculate_single_merging_stats(reflection_table, test_experiments[0],
+      True)
+    #check bad was filtered and inv scales applied
+    assert list(res) == [5.0, 5.0, 5.0]
+
+def test_create_Ih_table(test_experiments, test_reflections):
+  """Test the create_Ih_table function."""
+  test_reflections['intensity'] = test_reflections['intensity.prf.value']
+  test_reflections['variance'] = test_reflections['intensity.prf.variance']
+
+  Ih_table = create_Ih_table(test_experiments, [test_reflections])
+
+  #Test data has been sorted into one block as expected.
+  assert list(Ih_table.blocked_data_list[0].miller_index) == (
+    [(0, 0, 1), (0, 0, 1), (0, 0, 2), (1, 0, 0), (1, 0, 0)])
+
+  selection = flex.bool([True, True, True, True, False])
+  Ih_table = create_Ih_table(test_experiments, [test_reflections], [selection])
+  assert list(Ih_table.blocked_data_list[0].miller_index) == (
+    [(0, 0, 1), (0, 0, 1), (1, 0, 0), (1, 0, 0)])
+
+  with pytest.raises(AssertionError):
+    # Should fail if length of exp, refl and selection are different
+    Ih_table = create_Ih_table(test_experiments, [test_reflections,
+      test_reflections], [selection])

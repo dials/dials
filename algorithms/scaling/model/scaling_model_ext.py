@@ -14,12 +14,10 @@ class ScalingModelIface(object):
     @classmethod
     def factory(cls):
         ''' Get the factory. '''
-        pass
 
     @staticmethod
     def from_dict(d):
         ''' Get from dictionary. '''
-        pass
 
 class PhysicalScalingModelExt(ScalingModelIface):
   """An extension class implementing a physical scaling model."""

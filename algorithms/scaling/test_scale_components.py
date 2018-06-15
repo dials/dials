@@ -20,9 +20,9 @@ def test_ScaleComponentBase():
     """Subclass to fill in the abstract method."""
     def update_reflection_data(self, reflection_table, selection=None,
       block_selections=None):
-      pass
+      """Fill in abstract method."""
     def calculate_scales_and_derivatives(self, curvatures=False):
-      pass
+      """Fill in abstract method."""
 
   # Test initialisation with no parameter esds.
   base_SF = base_SF_filler(flex.double([1.0] * 3))

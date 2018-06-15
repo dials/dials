@@ -25,10 +25,13 @@ def test_basis_function(small_reflection_table):
   # To test the basis function, need a scaling active parameter manager - to set
   # this up we need a components dictionary with some reflection data.
 
-  # Let's use KB model components for simplicity.
+  # Let's use KB model components for simplicity - and have an extra fake 'abs'
+  # component.
   rt = small_reflection_table
-  components = {'scale' : SingleScaleFactor(flex.double([1.0])), 'decay':
-    SingleBScaleFactor(flex.double([0.0]))} #Create empty components.
+  components = {
+    'scale' : SingleScaleFactor(flex.double([1.0])),
+    'decay' : SingleBScaleFactor(flex.double([0.0])),
+    'abs' : SingleScaleFactor(flex.double([1.0]))} #Create empty components.
   for component in components.itervalues():
     component.update_reflection_data(rt) #Add some data to components.
 
@@ -72,25 +75,43 @@ def test_basis_function(small_reflection_table):
   # First reset the parameters
   components['decay'].parameters = flex.double([0.0])
   components['scale'].parameters = flex.double([1.0])
+  components['abs'].parameters = flex.double([1.0])
   components['decay'].calculate_scales_and_derivatives()
   components['scale'].calculate_scales_and_derivatives()
+  components['abs'].calculate_scales_and_derivatives()
 
   # Now generate a parameter manager for a single component.
   apm = scaling_active_parameter_manager(components, ['scale'])
   new_S = 2.0
   apm.set_param_vals(flex.double(components['scale'].n_params, new_S))
-  basis_fn = basis_function().calculate_scales_and_derivatives(apm)
-  #basis_fn = basis_func.calculate_scales_and_derivatives() # All in one alternative call.
+  basis_fn = basis_function(curvatures=True)
+  s, d, c = basis_fn.calculate_scales_and_derivatives(apm)
 
   # Test that the scales and derivatives were correctly calculated
-  assert list(basis_fn[0][0]) == list([new_S] *
+  assert list(s[0]) == list([new_S] *
     components['scale'].inverse_scales[0].size())
-  assert basis_fn[1][0][0, 0] == components['scale'].derivatives[0][0, 0]
-  assert basis_fn[1][0][1, 0] == components['scale'].derivatives[0][1, 0]
-  assert basis_fn[1][0][2, 0] == components['scale'].derivatives[0][2, 0]
+  assert d[0][0, 0] == components['scale'].derivatives[0][0, 0]
+  assert d[0][1, 0] == components['scale'].derivatives[0][1, 0]
+  assert d[0][2, 0] == components['scale'].derivatives[0][2, 0]
 
+  # Test again for two components, with curvatures.
+  components['decay'].parameters = flex.double([0.0])
+  components['scale'].parameters = flex.double([1.0])
+  components['abs'].parameters = flex.double([1.0])
+  components['decay'].calculate_scales_and_derivatives(curvatures=True)
+  components['scale'].calculate_scales_and_derivatives(curvatures=True)
+  components['abs'].calculate_scales_and_derivatives(curvatures=True)
+
+  apm = scaling_active_parameter_manager(components, ['scale', 'decay'])
+  basis_fn = basis_function(curvatures=True)
+  _, __, ___ = basis_fn.calculate_scales_and_derivatives(apm)
+
+  #Test for no components
   apm = scaling_active_parameter_manager(components, [])
   basis_fn = basis_function(curvatures=True)
   _, d, c = basis_fn.calculate_scales_and_derivatives(apm)
   assert d is None
   assert c is None
+  basis_fn = basis_function()
+  _, d = basis_fn.calculate_scales_and_derivatives(apm)
+  assert d is None

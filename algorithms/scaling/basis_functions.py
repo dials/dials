@@ -91,6 +91,7 @@ class basis_function(object):
     curvatures to be used in minimisation."""
     self.update_scale_factors(apm)
     if self.curvatures:
-      return (self.calculate_scale_factors(apm), self.calculate_derivatives(apm), None)
-      #  self.calculate_curvatures(apm))
+      return (self.calculate_scale_factors(apm),
+       self.calculate_derivatives(apm),
+       self.calculate_curvatures(apm))
     return self.calculate_scale_factors(apm), self.calculate_derivatives(apm)

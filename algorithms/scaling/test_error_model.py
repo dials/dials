@@ -4,7 +4,9 @@ Tests for the error model.
 from math import sqrt
 import pytest
 from libtbx.test_utils import approx_equal
-from dials.algorithms.scaling.error_model.error_model import BasicErrorModel
+from libtbx.utils import Sorry
+from dials.algorithms.scaling.error_model.error_model import \
+  get_error_model, BasicErrorModel
 from dials.algorithms.scaling.error_model.error_model_target import ErrorModelTarget
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.array_family import flex
@@ -38,9 +40,14 @@ def generate_refl_1():
 
 def test_errormodel(large_reflection_table, test_sg):
   """Test the initialisation and methods of the error model."""
+
+  # first test get_error_model helper function.
+  with pytest.raises(Sorry):
+    em = get_error_model('bad')
+  em = get_error_model('basic')
   Ih_table = IhTable([(large_reflection_table, None)], test_sg, n_blocks=1)
   block = Ih_table.blocked_data_list[0]
-  error_model = BasicErrorModel(block, n_bins=10)
+  error_model = em(block, n_bins=10)
   assert error_model.summation_matrix[0, 1] == 1
   assert error_model.summation_matrix[1, 6] == 1
   assert error_model.summation_matrix[2, 8] == 1
@@ -108,13 +115,22 @@ def test_error_model_target(large_reflection_table, test_sg):
   error_model.update_for_minimisation([1.0, 0.05])
   target = ErrorModelTarget(error_model)
   # Test residual calculation
-  residuals = target.calculate_gradients()
+  residuals = target.calculate_residuals()
   assert residuals == (flex.double(2, 1.0) - error_model.bin_variances)**2
 
   # Test gradient calculation against finite differences.
   gradients = target.calculate_gradients()
   gradient_fd = calculate_gradient_fd(target)
   assert approx_equal(gradients, gradient_fd)
+
+  # Test the method calls
+  r, g = target.compute_functional_gradients()
+  assert r == residuals
+  assert list(gradients) == list(g)
+  r, g, c = target.compute_functional_gradients_and_curvatures()
+  assert r == residuals
+  assert list(gradients) == list(g)
+  assert c is None
 
 def calculate_gradient_fd(target):
   """Calculate gradient array with finite difference approach."""

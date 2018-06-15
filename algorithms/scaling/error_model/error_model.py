@@ -43,13 +43,6 @@ class BasicErrorModel(object):
       "  Error model formula: "+u'\u03C3'+"'"+u'\xb2'+" = a("+\
         u'\u03C3\xb2'" + (bI)"+u'\xb2'+")", ""))
 
-  def show(self, out=None):
-    """Print the string representation of the error model."""
-    if out is None:
-      import sys
-      out = sys.stdout
-    print(str(self), file=out)
-
   @property
   def summation_matrix(self):
     """A sparse matrix to allow summation over intensity groups."""

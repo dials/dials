@@ -71,19 +71,16 @@ def scale_single_dataset(reflection_table, experiment, params=None,
     ''', process_includes=True)
     optionparser = OptionParser(phil=phil_scope, check_format=False)
     params, _ = optionparser.parse_args(args=[], quick_parse=True)
-    params.__inject__('model', model)
-  else:
-    try:
-      params.__inject__('model', model)
-    except:
-      pass
+  params.__inject__('model', model)
 
   experiments = create_scaling_model(params, experiment, [reflection_table])
   scaler = SingleScalerFactory.create(params, experiments[0], reflection_table)
   scaler.perform_scaling()
+  scaler.outlier_rejection_routine()
   scaler.perform_scaling(engine=params.scaling_refinery.full_matrix_engine,
     max_iterations=params.scaling_refinery.full_matrix_max_iterations)
   scaler.expand_scales_to_all_reflections(calc_cov=True)
+  scaler.round_of_outlier_rejection()
   return scaler.reflection_table
 
 def create_scaling_model(params, experiments, reflections):
@@ -110,7 +107,9 @@ def create_scaling_model(params, experiments, reflections):
 def create_Ih_table(experiments, reflections, selections=None, n_blocks=1,
   weighting_scheme=None):
   """Create an Ih table from a list of experiments and reflections. Optionally,
-  a selection list can also be given, to select data from each reflection table."""
+  a selection list can also be given, to select data from each reflection table.
+  Allow an unequal number of experiments and reflections, as only need to
+  extract one space group value (can optionally check all same if many)."""
   if selections:
     assert len(selections) == len(reflections), """Must have an equal number of
     reflection tables and selections in the input lists."""
@@ -121,14 +120,13 @@ def create_Ih_table(experiments, reflections, selections=None, n_blocks=1,
   refl_and_sel_list = []
   for i, reflection in enumerate(reflections):
     if not 'inverse_scale_factor' in reflection:
-      reflections['inverse_scale_factor'] = flex.double(reflection.size(), 1.0)
+      reflection['inverse_scale_factor'] = flex.double(reflection.size(), 1.0)
     if selections:
       refl_and_sel_list.append((reflection, selections[i]))
     else:
       refl_and_sel_list.append((reflection, None))
   Ih_table = IhTable(refl_and_sel_list, space_group_0, n_blocks, weighting_scheme)
   return Ih_table
-
 
 def calculate_merging_statistics(reflection_table, experiments, use_internal_variance):
   """Calculate merging statistics for scaled datasets. Datasets are selected
@@ -164,7 +162,6 @@ def calculate_single_merging_stats(reflection_table, experiment,
   i_obs.set_sigmas((r_t['variance']**0.5)/r_t['inverse_scale_factor'])
   i_obs.set_info(
     miller.array_info(source='DIALS', source_type='reflection_tables'))
-  #dataset_id = list(set(reflection_table['id']))[0]
   result = iotbx.merging_statistics.dataset_statistics(
     i_obs=i_obs, n_bins=20, anomalous=False, sigma_filtering=None,
     use_internal_variance=use_internal_variance, eliminate_sys_absent=False)

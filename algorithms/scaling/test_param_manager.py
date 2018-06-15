@@ -4,6 +4,7 @@ Tests for the active parameter manager module.
 import pytest
 from mock import Mock
 from scitbx import sparse
+from libtbx.utils import Sorry
 from dials.array_family import flex
 from dials.algorithms.scaling.active_parameter_managers import \
   multi_active_parameter_manager, active_parameter_manager,\
@@ -136,6 +137,23 @@ def test_concurrent_apm_factory():
   assert 'decay' in apm.components_list
   assert 'absorption' in apm.components_list
 
+  # Test the multi-mode=False option
+  apm_factory = ConcurrentAPMFactory([data_manager],
+    apm_type=active_parameter_manager, multi_mode=False)
+  apm = apm_factory.make_next_apm()
+  assert isinstance(apm, active_parameter_manager)
+  assert 'scale' in apm.components_list
+  assert 'decay' in apm.components_list
+  assert 'absorption' in apm.components_list
+
+  data_manager = mock_data_manager({})
+  with pytest.raises(Sorry):
+    apm_factory = ConcurrentAPMFactory([data_manager],
+      apm_type=active_parameter_manager)
+  with pytest.raises(Sorry):
+    apm_factory = ConcurrentAPMFactory([data_manager],
+      apm_type=active_parameter_manager, multi_mode=False)
+
   components_1 = {'scale' : mock_component(), 'decay' : mock_component(),
     'absorption' : mock_component()}
   components_2 = {'1' : mock_component(), '2' : mock_component()}
@@ -174,6 +192,20 @@ def test_consecutive_apm_factory():
   assert 'absorption' not in apm.components_list
   apm = apm_factory.make_next_apm()
   assert isinstance(apm, multi_active_parameter_manager)
+  assert 'scale' not in apm.components_list
+  assert 'decay' not in apm.components_list
+  assert 'absorption' in apm.components_list
+
+  # Test the multi-mode=False option
+  apm_factory = ConsecutiveAPMFactory([data_manager],
+    apm_type=active_parameter_manager, multi_mode=False)
+  apm = apm_factory.make_next_apm()
+  assert isinstance(apm, active_parameter_manager)
+  assert 'scale' in apm.components_list
+  assert 'decay' in apm.components_list
+  assert 'absorption' not in apm.components_list
+  apm = apm_factory.make_next_apm()
+  assert isinstance(apm, active_parameter_manager)
   assert 'scale' not in apm.components_list
   assert 'decay' not in apm.components_list
   assert 'absorption' in apm.components_list

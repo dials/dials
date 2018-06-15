@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import cPickle as pickle
-
+import pytest
 from libtbx import easy_run
 from dxtbx.serialize import load
 
@@ -40,7 +40,7 @@ class run_one_scaling(object):
       print(command)
       _ = easy_run.fully_buffered(command=command).raise_if_errors()
 
-
+@pytest.mark.dataset_test
 def test_scale_physical(dials_regression, tmpdir):
   """Test standard scaling of one dataset."""
 
@@ -64,6 +64,7 @@ def test_scale_physical(dials_regression, tmpdir):
     assert os.path.exists("absorption_surface.png")
     assert os.path.exists("outliers.png")
 
+@pytest.mark.dataset_test
 def test_scale_optimise_errors(dials_regression, tmpdir):
   """Test standard scaling of one dataset with error optimisation."""
   data_dir = os.path.join(dials_regression, "xia2-28",)
@@ -73,6 +74,7 @@ def test_scale_optimise_errors(dials_regression, tmpdir):
   with tmpdir.as_cwd():
     _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
 
+@pytest.mark.dataset_test
 def test_scale_array(dials_regression, tmpdir):
   """Test a standard dataset - ideally needs a large dataset or full matrix
   round may fail. Currently turning off absorption term to avoid
@@ -88,6 +90,7 @@ def test_scale_array(dials_regression, tmpdir):
     assert os.path.exists("decay_correction.png")
     assert os.path.exists("outliers.png")
 
+@pytest.mark.dataset_test
 def test_multi_scale(dials_regression, tmpdir):
   """Test standard scaling of two datasets."""
 
@@ -113,6 +116,7 @@ def test_multi_scale(dials_regression, tmpdir):
     _ = run_one_scaling(["scaled.pickle"], ["scaled_experiments.json"],
       extra_args)
 
+@pytest.mark.dataset_test
 def test_targeted_scaling(dials_regression, tmpdir):
   """Test the targeted scaling workflow."""
   data_dir = os.path.join(dials_regression, "xia2-28",)
