@@ -12,6 +12,7 @@ python:
 cache:
   directories:
     - $HOME/build_dials
+  timeout: 1000
 
 jobs:
   include:
