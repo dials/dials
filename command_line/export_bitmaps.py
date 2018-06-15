@@ -1,7 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
+import os
 import iotbx.phil
 from dials.util.options import flatten_datablocks
+from dials.util.options import OptionParser
+import libtbx.load_env
+from libtbx.utils import Sorry
 
 help_message = '''
 
@@ -75,10 +79,6 @@ colour_schemes = {
 }
 
 def run(args):
-  import os
-  import libtbx.load_env
-  from libtbx.utils import Sorry
-  from dials.util.options import OptionParser
   usage = "%s [options] datablock.json | image.cbf" %libtbx.env.dispatcher_name
 
   parser = OptionParser(
@@ -98,110 +98,112 @@ def run(args):
 
   imagesets = datablocks[0].extract_imagesets()
 
+  for imageset in imagesets:
+    imageset_as_bitmaps(imageset, params)
+
+def imageset_as_bitmaps(imageset, params):
+  from rstbx.slip_viewer.tile_generation \
+       import _get_flex_image, _get_flex_image_multipanel
+
   brightness = params.brightness / 100
   vendortype = "made up"
-
   # check that binning is a power of 2
   binning = params.binning
   if not (binning > 0 and ((binning & (binning - 1)) == 0)):
     raise Sorry("binning must be a power of 2")
-
   output_dir = params.output_dir
   if output_dir is None:
     output_dir = "."
   elif not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
-  from rstbx.slip_viewer.tile_generation \
-       import _get_flex_image, _get_flex_image_multipanel
+  detector = imageset.get_detector()
 
-  for imageset in imagesets:
-    detector = imageset.get_detector()
+  if len(detector) > 1:
+    raise Sorry('Currently only single panel detectors are supported by %s'
+                %libtbx.env.dispatcher_name)
 
+  panel = detector[0]
+  scan = imageset.get_scan()
+  # XXX is this inclusive or exclusive?
+  saturation = panel.get_trusted_range()[1]
+  if params.saturation:
+    saturation = params.saturation
+  if scan is not None and scan.get_oscillation()[1] > 0:
+    start, end = scan.get_image_range()
+  else:
+    start, end = 0, len(imageset)
+  for i_image in range(start, end+1):
+    image = imageset.get_raw_data(i_image-start)
+
+    #if len(detector) == 1:
+      #image = [image]
+
+    trange = [p.get_trusted_range() for p in detector]
+    mask = imageset.get_mask(i_image-start)
+    if mask is None:
+      mask = [p.get_trusted_range_mask(im) for im, p in zip(image, detector)]
+
+    if params.show_mask:
+      for rd, m in zip(image, mask):
+        rd.set_selected(~m, -2)
+
+    image = image_filter(image, mask, display=params.display, gain_value=params.gain,
+                         nsigma_b=params.nsigma_b,
+                         nsigma_s=params.nsigma_s,
+                         global_threshold=params.global_threshold,
+                         min_local=params.min_local,
+                         kernel_size=params.kernel_size)
+
+    show_untrusted = params.show_mask
     if len(detector) > 1:
-      raise Sorry('Currently only single panel detectors are supported by %s'
-                  %libtbx.env.dispatcher_name)
-
-    panel = detector[0]
-    scan = imageset.get_scan()
-    # XXX is this inclusive or exclusive?
-    saturation = panel.get_trusted_range()[1]
-    if params.saturation:
-      saturation = params.saturation
-    if scan is not None and scan.get_oscillation()[1] > 0:
-      start, end = scan.get_image_range()
+      # FIXME This doesn't work properly, as flex_image.size2() is incorrect
+      # also binning doesn't work
+      assert binning == 1
+      flex_image = _get_flex_image_multipanel(
+        brightness=brightness,
+        panels=detector,
+        raw_data=image,
+        beam=imageset.get_beam(),
+        show_untrusted=show_untrusted)
     else:
-      start, end = 0, len(imageset)
-    for i_image in range(start, end+1):
-      image = imageset.get_raw_data(i_image-start)
+      flex_image = _get_flex_image(
+        brightness=brightness,
+        data=image[0],
+        binning=binning,
+        saturation=saturation,
+        vendortype=vendortype,
+        show_untrusted=show_untrusted)
 
-      #if len(detector) == 1:
-        #image = [image]
+    flex_image.setWindow(0, 0, 1)
+    flex_image.adjust(color_scheme=colour_schemes.get(params.colour_scheme))
 
-      trange = [p.get_trusted_range() for p in detector]
-      mask = imageset.get_mask(i_image-start)
-      if mask is None:
-        mask = [p.get_trusted_range_mask(im) for im, p in zip(image, detector)]
+    # now export as a bitmap
+    flex_image.prep_string()
+    try:
+      from PIL import Image
+    except ImportError:
+      import Image
+    # XXX is size//binning safe here?
+    try: # fromstring raises Exception in Pillow >= 3.0.0
+      pil_img = Image.fromstring('RGB',
+                      (flex_image.size2()//binning,
+                       flex_image.size1()//binning),
+                       flex_image.export_string)
+    except NotImplementedError:
+      pil_img = Image.frombytes('RGB',
+                      (flex_image.size2()//binning,
+                       flex_image.size1()//binning),
+                       flex_image.export_string)
+    path = os.path.join(
+      output_dir, params.prefix + ("%04d" % i_image) + '.' + params.format)
 
-      if params.show_mask:
-        for rd, m in zip(image, mask):
-          rd.set_selected(~m, -2)
+    print("Exporting %s" %path)
+    with open(path, 'wb') as tmp_stream:
+      pil_img.save(tmp_stream, format=params.format,
+                   compress_level=params.png.compress_level,
+                   quality=params.jpeg.quality)
 
-      image = image_filter(image, mask, display=params.display, gain_value=params.gain,
-                           nsigma_b=params.nsigma_b,
-                           nsigma_s=params.nsigma_s,
-                           global_threshold=params.global_threshold,
-                           min_local=params.min_local,
-                           kernel_size=params.kernel_size)
-
-      show_untrusted = params.show_mask
-      if len(detector) > 1:
-        # FIXME This doesn't work properly, as flex_image.size2() is incorrect
-        # also binning doesn't work
-        assert binning == 1
-        flex_image = _get_flex_image_multipanel(
-          brightness=brightness,
-          panels=detector,
-          raw_data=image,
-          beam=imageset.get_beam(),
-          show_untrusted=show_untrusted)
-      else:
-        flex_image = _get_flex_image(
-          brightness=brightness,
-          data=image[0],
-          binning=binning,
-          saturation=saturation,
-          vendortype=vendortype,
-          show_untrusted=show_untrusted)
-
-      flex_image.setWindow(0, 0, 1)
-      flex_image.adjust(color_scheme=colour_schemes.get(params.colour_scheme))
-
-      # now export as a bitmap
-      flex_image.prep_string()
-      try:
-        from PIL import Image
-      except ImportError:
-        import Image
-      # XXX is size//binning safe here?
-      try: # fromstring raises Exception in Pillow >= 3.0.0
-        pil_img = Image.fromstring('RGB',
-                        (flex_image.size2()//binning,
-                         flex_image.size1()//binning),
-                         flex_image.export_string)
-      except NotImplementedError:
-        pil_img = Image.frombytes('RGB',
-                        (flex_image.size2()//binning,
-                         flex_image.size1()//binning),
-                         flex_image.export_string)
-      path = os.path.join(
-        output_dir, params.prefix + ("%04d" % i_image) + '.' + params.format)
-
-      print("Exporting %s" %path)
-      with open(path, 'wb') as tmp_stream:
-        pil_img.save(tmp_stream, format=params.format,
-                     compress_level=params.png.compress_level,
-                     quality=params.jpeg.quality)
 
 def image_filter(raw_data, mask, display,
                  gain_value, nsigma_b, nsigma_s, global_threshold,
