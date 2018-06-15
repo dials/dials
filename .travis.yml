@@ -59,7 +59,7 @@ jobs:
       script:
          # Finally. Do what we are here for. Run tests. Yay.
          - cd $HOME/build_dials/modules/dials
-         - pytest -ra -n 2
+         - pytest -ra -n 2 --runslow
 
 before_cache:
   - $HOME/build_dials/modules/dials/.travis/clean-cctbx
