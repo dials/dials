@@ -309,6 +309,7 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
     ('miller_index', '%i, %i, %i'),
     ('d','%.2f'),
     ('qe','%.3f'),
+    ('dqe','%.3f'),
     ('id','%i'),
     ('imageset_id','%i'),
     ('panel','%i'),
@@ -352,6 +353,8 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
     ('y_resid2','%.3f'),
     ('kapton_absorption_correction','%.3f'),
     ('kapton_absorption_correction_sigmas','%.3f'),
+    ('inverse_scale_factor','%.3f'),
+    ('inverse_scale_factor_variance','%.3f'),
     ))
 
   for rlist in reflections:

@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-from dials.util import scale_down_array
+from dials.util.ext import scale_down_array
 
 def scale_down_array_py(image, scale_factor):
   '''Scale the data in image in a manner which retains the statistical structure

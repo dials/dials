@@ -588,7 +588,7 @@ namespace dials { namespace af { namespace boost_python {
     for (const_iterator it = other.experiment_identifiers()->begin();
          it != other.experiment_identifiers()->end(); ++it) {
       iterator found = self.experiment_identifiers()->find(it->first);
-      if (found != self.experiment_identifiers()->end()) {
+      if (found == self.experiment_identifiers()->end()) {
         (*self.experiment_identifiers())[it->first] = it->second;
       } else if (it->second != found->second) {
         throw DIALS_ERROR("Experiment identifiers do now match");
