@@ -20,6 +20,10 @@ significance_filter {
     .help=If enabled, the significance filter will, for every experiment, find \
           the highest resolution where the I/sigI remains above a certain point\
           (controlled by isigi_cutoff).
+  d_min = None
+    .type = float
+    .help = High resolution cutoff for binning. If None, use the highest \
+            resolution reflection as d_min.
   n_bins = 20
     .type = int
     .help = Number of bins to use when examining resolution falloff
@@ -33,6 +37,7 @@ significance_filter {
 class SignificanceFilter(object):
   def __init__(self, params):
     self.params = params.significance_filter
+    self.best_d_min = None
 
   def __call__(self, experiments, reflections):
     results = flex.reflection_table()
@@ -53,13 +58,16 @@ class SignificanceFilter(object):
       sym = symmetry(unit_cell = crystal.get_unit_cell(), space_group = crystal.get_space_group())
       d = crystal.get_unit_cell().d(refls['miller_index'])
       mset = sym.miller_set(indices = refls['miller_index'], anomalous_flag=False)
-      binner = mset.setup_binner(n_bins=self.params.n_bins)
+      binner = mset.setup_binner(n_bins=self.params.n_bins, d_min = self.params.d_min or 0)
       acceptable_resolution_bins = []
 
       # Iterate through the bins, examining I/sigI at each bin
       for i in binner.range_used():
         d_max, d_min = binner.bin_d_range(i)
-        sel = (d <= d_max) & (d > d_min)
+        if d_max < 0:
+          sel = d > d_min
+        else:
+          sel = (d <= d_max) & (d > d_min)
         sel &= refls['intensity.sum.value'] > 0
         bin_refls = refls.select(sel)
         n_refls = len(bin_refls)
@@ -100,11 +108,13 @@ class SignificanceFilter(object):
         best_index = acceptable_resolution_bins.count(True)-1
         best_row = table_data[best_index+2]
         d_min = binner.bin_d_range(binner.range_used()[best_index])[1]
+        self.best_d_min = d_min
         print("best row:", " ".join(best_row))
         if self.params.enable:
           results.extend(refls.select(d >= d_min))
       else:
         print("Data didn't pass cutoff")
+        self.best_d_min = None
     if self.params.enable:
       return results
     else:
