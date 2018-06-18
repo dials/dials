@@ -132,7 +132,7 @@ def imageset_as_bitmaps(imageset, params):
   if scan is not None and scan.get_oscillation()[1] > 0:
     start, end = scan.get_image_range()
   else:
-    start, end = 0, len(imageset)
+    start, end = 1, len(imageset)
   for i_image in range(start, end+1):
     image = imageset.get_raw_data(i_image-start)
 
