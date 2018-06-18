@@ -91,7 +91,7 @@ def plot_scaling_models(argv):
     if isinstance(experiment.scaling_model, Model.PhysicalScalingModel):
       if ('scale' in experiment.scaling_model.configdict['corrections'] or
         'decay' in experiment.scaling_model.configdict['corrections']):
-        plot_smooth_scales(params, experiment, reflection,
+        plot_smooth_scales(params, experiment,
           outputfile=str(params.output.scales_out)+'.png')
       if 'absorption' in experiment.scaling_model.configdict['corrections']:
         plot_absorption_surface(experiment,
@@ -120,7 +120,7 @@ def plot_multi(params, experiment, reflection, j):
   if isinstance(experiment.scaling_model, Model.PhysicalScalingModel):
     if ('scale' in experiment.scaling_model.configdict['corrections'] or
       'decay' in experiment.scaling_model.configdict['corrections']):
-      plot_smooth_scales(params, experiment, reflection,
+      plot_smooth_scales(params, experiment,
         outputfile=str(params.output.scales_out)+'_'+str(j+1)+'.png')
     if 'absorption' in experiment.scaling_model.configdict['corrections']:
       plot_absorption_surface(experiment,
@@ -136,36 +136,30 @@ def plot_multi(params, experiment, reflection, j):
       plot_2D_modulation_correction(experiment, reflection,
         outputfile=str(params.output.modcorplot)+'_'+str(j+1)+'.png')
 
-def plot_smooth_scales(params, experiments, reflections, outputfile=None):
+def plot_smooth_scales(params, experiment, outputfile=None):
   """Plot the scale and decay terms of a physical scaling model."""
   plt.figure(figsize=(8.5, 5))
   legends = []
   ax1 = None
-  reflections = reflections.select(~reflections.get_flags(
-    reflections.flags.user_excluded_in_scaling))
-  reflections = reflections.select(reflections.get_flags(
-    reflections.flags.integrated))
-  if 'scale' in experiments.scaling_model.configdict['corrections']:
-    reflections['norm_rot_angle'] = (reflections['xyzobs.px.value'].parts()[2]
-      * experiments.scaling_model.configdict['s_norm_fac'])
-    reflections['norm_rot_angle'] = (reflections['norm_rot_angle']
-      - min(reflections['norm_rot_angle']))
-    scale_rot_int = experiments.scaling_model.configdict['scale_rot_interval']
-    int_rel_max = int(max(reflections['norm_rot_angle'])) + 1
-    int_rel_min = (int(min(reflections['norm_rot_angle'])))
-    rel_values = flex.double(np.linspace(0, int_rel_max-int_rel_min,
-      ((int_rel_max-int_rel_min)/0.1)+1, endpoint=True))
-    rel_values[-1] = rel_values[-1] - 0.0001
+
+  configdict = experiment.scaling_model.configdict
+  valid_osc = configdict['valid_osc_range']
+  int_val_max = int(valid_osc[1]) + 1
+  int_val_min = int(valid_osc[0])
+  sample_values = flex.double(np.linspace(int_val_min, int_val_max,
+    ((int_val_max-int_val_min)/0.1)+1, endpoint=True)) # Make a grid of
+    #points with 10 points per degree.
+
+  if 'scale' in configdict['corrections']:
     rt = flex.reflection_table()
-    rt['norm_rot_angle'] = rel_values
-    #rel_values = rel_values - rel_values[0]
-    scale_SF = experiments.scaling_model.components['scale']
+    rt['norm_rot_angle'] = sample_values
+    scale_SF = experiment.scaling_model.components['scale']
     scale_SF.update_reflection_data(rt)
     scale_SF.calculate_scales()
-    smoother_phis = [i * scale_rot_int for i in scale_SF.smoother.positions()]
+    smoother_phis = [(i * configdict['scale_rot_interval']) + valid_osc[0]
+      for i in scale_SF.smoother.positions()]
     ax1 = plt.subplot(2, 1, 1)
-    #plt.title('Smooth scale factors')
-    ax1.plot(rel_values*scale_rot_int, scale_SF.inverse_scales[0],
+    ax1.plot(sample_values, scale_SF.inverse_scales[0],
       label='smootly varying \ninverse scale factor')
     if params.output.with_errors:
       if params.output.limit_range_to_obs:
@@ -181,33 +175,22 @@ def plot_smooth_scales(params, experiments, reflections, outputfile=None):
     leg1 = ax1.legend(bbox_to_anchor=(1.02, 1), loc=2, fontsize=12)
     legends.append(leg1)
 
-  if 'decay' in experiments.scaling_model.configdict['corrections']:
-    reflections['norm_time_values'] = (reflections['xyzobs.px.value'].parts()[2]
-      * experiments.scaling_model.configdict['d_norm_fac'])
-    reflections['norm_time_values'] = (reflections['norm_time_values']
-      - min(reflections['norm_time_values']))
-    decay_rot_int = experiments.scaling_model.configdict['decay_rot_interval']
-    int_rel_max = int(max(reflections['norm_time_values'])) + 1
-    int_rel_min = (int(min(reflections['norm_time_values'])))
-    rel_values = flex.double(np.linspace(0, int_rel_max-int_rel_min,
-      ((int_rel_max-int_rel_min)/0.1)+1, endpoint=True))
-    rel_values[-1] = rel_values[-1] - 0.0001
-    #rel_values = rel_values# - rel_values[0]
-    decay_SF = experiments.scaling_model.components['decay']
+  if 'decay' in configdict['corrections']:
     rt = flex.reflection_table()
-    rt['norm_time_values'] = rel_values
-    rt['d'] = flex.double(rel_values.size(), 1.0)
-    decay_SF.update_reflection_data(rt)#normalised_values=rel_values,
-    #  dvalues=flex.double(rel_values.size(), 1.0))
+    rt['norm_time_values'] = sample_values
+    rt['d'] = flex.double(sample_values.size(), 1.0)
+    decay_SF = experiment.scaling_model.components['decay']
+    decay_SF.update_reflection_data(rt)
     decay_SF.calculate_scales()
-    smoother_phis = [i * decay_rot_int for i in decay_SF._smoother.positions()]
+    smoother_phis = [(i * configdict['decay_rot_interval']) + valid_osc[0]
+      for i in decay_SF._smoother.positions()]
     if ax1:
       ax2 = plt.subplot(2, 1, 2, sharex=ax1)
     else:
       ax2 = plt.subplot(2, 1, 2)
     ax2.set_ylabel('Relative B factor (' + r'$\AA^{2}$'+')', fontsize=12)
     ax2.set_xlabel('Rotation angle (' + r'$^{\circ}$'+')', fontsize=12)
-    ax2.plot(rel_values * decay_rot_int, np.log(decay_SF.inverse_scales[0])*2.0,
+    ax2.plot(sample_values, np.log(decay_SF.inverse_scales[0])*2.0,
       label='smootly varying \nB-factor') #convert scales to B values
     if params.output.with_errors:
       if params.output.limit_range_to_obs:
