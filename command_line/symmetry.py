@@ -218,10 +218,12 @@ def run(args):
       uc_params[i].append(p)
   median_uc = uctbx.unit_cell(parameters=[flex.median(p) for p in uc_params])
   for d in datasets:
-    assert d.unit_cell().is_similar_to(
-      median_uc, params.relative_length_tolerance,
-      params.absolute_angle_tolerance), (
-        str(d.unit_cell()), str(median_uc))
+    if (params.relative_length_tolerance is not None and
+        params.absolute_angle_tolerance is not None):
+      assert d.unit_cell().is_similar_to(
+        median_uc, params.relative_length_tolerance,
+        params.absolute_angle_tolerance), (
+          str(d.unit_cell()), str(median_uc))
   intensities = datasets[0]
   for d in datasets:
     intensities = intensities.concatenate(d, assert_is_similar_symmetry=False)
