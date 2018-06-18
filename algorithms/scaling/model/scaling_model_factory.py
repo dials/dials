@@ -43,6 +43,7 @@ class PhysicalSMFactory(object):
 
     osc_range = osc_range_check_for_user_excluded(experiments, reflections)
     one_osc_width = experiments.scan.get_oscillation()[1]
+    configdict.update({'valid_osc_range' : osc_range})
 
     if params.parameterisation.scale_term:
       configdict['corrections'].append('scale')
@@ -67,6 +68,8 @@ class PhysicalSMFactory(object):
       lmax = params.parameterisation.lmax
       n_abs_param = (2*lmax) + (lmax**2)  #arithmetic sum formula (a1=3, d=2)
       configdict.update({'lmax' : lmax})
+      surface_weight = params.parameterisation.surface_weight
+      configdict.update({'abs_surface_weight' : surface_weight})
       parameters_dict['absorption'] = {'parameters' : flex.double(
         n_abs_param, 0.0), 'parameter_esds' : None}
 

@@ -13,13 +13,6 @@ def test_reflections():
   return generated_refl()
 
 @pytest.fixture
-def mock_params():
-  """Mock params phil scope."""
-  params = Mock()
-  params.parameterisation.surface_weight = 1e5
-  return params
-
-@pytest.fixture
 def mock_exp():
   """Mock experiments object."""
   exp = Mock()
@@ -66,7 +59,7 @@ def test_ScalingModelBase(mock_errormodel):
   SM_base.set_error_model(mock_errormodel)
   assert SM_base.configdict['error_model_parameters'] == mock_errormodel.refined_parameters
   assert SM_base.error_model is mock_errormodel
-  _ = SM_base.configure_reflection_table(1.0, 2.0, 3.0) #Check method exists
+  _ = SM_base.configure_reflection_table(1.0, 2.0) #Check method exists
   SM_base.show()
 
 def test_KBScalingModel():
@@ -127,11 +120,11 @@ def test_KBScalingModel():
   assert KBmodel.consecutive_refinement_order == [['scale', 'decay']]
   KBmodel.show()
 
-def test_PhysicalScalingModel(test_reflections, mock_exp, mock_params):
+def test_PhysicalScalingModel(test_reflections, mock_exp):
   """Test the PhysicalScalingModel class."""
   configdict = {'corrections': ['scale', 'decay', 'absorption'],
     's_norm_fac': 1.0, 'scale_rot_interval': 2.0, 'd_norm_fac': 1.0,
-    'decay_rot_interval': 2.0, 'lmax' : 1}
+    'decay_rot_interval': 2.0, 'lmax' : 1, "abs_surface_weight":1e6}
 
   parameters_dict = {
       'scale': {'parameters' : flex.double([1.2, 1.1]), 'parameter_esds' : None},
@@ -152,8 +145,7 @@ def test_PhysicalScalingModel(test_reflections, mock_exp, mock_params):
   assert list(comps['absorption'].parameters) == [0.01, 0.01, 0.01]
 
   # Test configure reflection table
-  rt = physicalmodel.configure_reflection_table(test_reflections, mock_exp,
-    mock_params)
+  rt = physicalmodel.configure_reflection_table(test_reflections, mock_exp)
   assert physicalmodel.components['scale'].col_name in rt
   assert physicalmodel.components['decay'].col_name in rt
 
@@ -191,7 +183,7 @@ def test_PhysicalScalingModel(test_reflections, mock_exp, mock_params):
     "est_standard_devs" : [0.01, 0.02, 0.03]}, "configuration_parameters": {
       "corrections": ["scale", "decay", "absorption"], "s_norm_fac": 0.1,
         "scale_rot_interval": 10.0, "d_norm_fac": 0.2,
-        "decay_rot_interval": 20.0, "lmax":1}}
+        "decay_rot_interval": 20.0, "lmax":1, "abs_surface_weight":1e6}}
   physicalmodel = PhysicalScalingModel.from_dict(physical_dict)
   assert physicalmodel.id_ == 'physical'
   assert 'scale' in physicalmodel.components
@@ -214,7 +206,7 @@ def test_PhysicalScalingModel(test_reflections, mock_exp, mock_params):
   assert len(physicalmodel.consecutive_refinement_order) == 2
   physicalmodel.show()
 
-def test_ArrayScalingModel(test_reflections, mock_exp, mock_params):
+def test_ArrayScalingModel(test_reflections, mock_exp):
   """Test the ArrayScalingModel class."""
 
   configdict = {'corrections':['decay', 'absorption', 'modulation'], 'n_res_param': 2,
@@ -244,8 +236,7 @@ def test_ArrayScalingModel(test_reflections, mock_exp, mock_params):
   assert list(arraymodel.components['modulation'].parameters) == 4 * [0.9]
 
   # Test configure reflection table
-  rt = arraymodel.configure_reflection_table(test_reflections, mock_exp,
-    mock_params)
+  rt = arraymodel.configure_reflection_table(test_reflections, mock_exp)
   for comp in ['decay', 'absorption', 'modulation']:
     for col_name in arraymodel.components[comp].col_names:
       assert col_name in rt

@@ -44,7 +44,7 @@ class ScalingModelBase(object):
     """Indicate that no scaled data is associated with this model."""
     self._is_scaled = False
 
-  def configure_reflection_table(self, reflection_table, _, __):
+  def configure_reflection_table(self, reflection_table, experiment):
     """Perform calculations necessary to update the reflection table."""
     return reflection_table
 
@@ -146,7 +146,7 @@ class PhysicalScalingModel(ScalingModelBase):
   def consecutive_refinement_order(self):
     return [['scale', 'decay'], ['absorption']]
 
-  def configure_reflection_table(self, reflection_table, experiment, params):
+  def configure_reflection_table(self, reflection_table, experiment):
     reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
       * experiment.scan.get_oscillation()[1])
     if 'scale' in self.components:
@@ -161,10 +161,11 @@ class PhysicalScalingModel(ScalingModelBase):
       lmax = self._configdict['lmax']
       self.components['absorption'].sph_harm_table = sph_harm_table(
         reflection_table, experiment, lmax)
+      surface_weight = self._configdict['abs_surface_weight']
       parameter_restraints = flex.double([])
       for i in range(1, lmax+1):
         parameter_restraints.extend(flex.double([1.0] * ((2*i)+1)))
-      parameter_restraints *= params.parameterisation.surface_weight
+      parameter_restraints *= surface_weight
       self.components['absorption'].parameter_restraints = parameter_restraints
     return reflection_table
 
@@ -261,7 +262,7 @@ class ArrayScalingModel(ScalingModelBase):
   def consecutive_refinement_order(self):
     return [['decay'], ['absorption'], ['modulation']]
 
-  def configure_reflection_table(self, reflection_table, _, __):
+  def configure_reflection_table(self, reflection_table, _):
     refl_table = reflection_table
     xyz = refl_table['xyzobs.px.value'].parts()
     refl_table['norm_time_values'] = (xyz[2] * self.configdict['time_norm_fac'])
