@@ -147,7 +147,7 @@ class TargetScalerFactory(object):
       dataset_ids = range(len(reflections))
     for i, (experiment, reflection) in enumerate(zip(experiments, reflections)):
       if is_scaled_list[i] is True:
-        if params.scaling_options.target_model:
+        if params.scaling_options.target_model or params.scaling_options.target_mtz:
           scaled_experiments.append(experiment)
           scaled_scalers.append(NullScalerFactory.create(params, experiment,
             reflection, scaled_id=dataset_ids[i]))

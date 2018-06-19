@@ -667,10 +667,10 @@ class TargetScaler(MultiScalerBase):
     super(TargetScaler, self).update_for_minimisation(apm, curvatures,
       calc_Ih=calc_Ih)
 
-  def join_multiple_datasets(self):
+  def join_multiple_datasets(self, include_target=True):
     """Create a joint reflection table."""
     scalers = []
-    if not self.params.scaling_options.target_model:
+    if include_target:
       scalers.extend(self.single_scalers)
     scalers.extend(self.unscaled_scalers)
     super(TargetScaler, self).join_datasets_from_scalers(scalers)
@@ -701,7 +701,8 @@ class NullScaler(ScalerBase):
     self._initial_keys = [key for key in self._reflection_table.keys()]
     n_refl = self._reflection_table.size()
     self._reflection_table['inverse_scale_factor'] = flex.double(n_refl, 1.0)
-    self._reflection_table['variance'] = flex.double(n_refl, 1.0)
+    if 'variance' not in self._reflection_table:
+      self._reflection_table['variance'] = flex.double(n_refl, 1.0)
     self._reflection_table.set_flags(flex.bool(n_refl, False),
       self._reflection_table.flags.excluded_for_scaling)
     self.scaling_selection = None

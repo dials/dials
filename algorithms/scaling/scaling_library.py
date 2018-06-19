@@ -13,13 +13,14 @@ import pkg_resources
 from libtbx import phil
 from mock import Mock
 import iotbx.merging_statistics
-from iotbx import cif
+from iotbx import cif, mtz
 from cctbx import miller, crystal
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.algorithms.scaling.model.scaling_model_factory import \
   KBSMFactory
 from dials.algorithms.scaling.Ih_table import IhTable
+from dials.algorithms.scaling.scaling_utilities import get_next_unique_id
 
 def calculate_prescaling_correction(reflection_table):
   """Calculate the multiplicative conversion factor for intensities."""
@@ -218,6 +219,65 @@ def intensity_array_from_cif_file(cif_file):
   ic = model.structure_factors(anomalous_flag=True, d_min=0.4,
     algorithm='direct').f_calc().as_intensity_array()
   return ic
+
+def create_datastructures_for_target_mtz(experiments, mtz_file):
+  """Read a merged mtz file and extract miller indices, intensities and
+  variances."""
+  m = mtz.object(mtz_file)
+  ind = m.extract_miller_indices()
+  cols = m.columns()
+  col_dict = {c.label() : c for c in cols}
+  r_t = flex.reflection_table()
+  if 'I' in col_dict: #nice and simple
+    r_t['miller_index'] = ind
+    r_t['intensity'] = col_dict['I'].extract_values().as_double()
+    r_t['variance'] = col_dict['SIGI'].extract_values().as_double()
+  elif 'I(+)' in col_dict: #need to combine I+ and I- together into target Ih
+    if col_dict['I(+)'].n_valid_values() == 0:#use I(-)
+      r_t['miller_index'] = ind
+      r_t['intensity'] = col_dict['I(-)'].extract_values().as_double()
+      r_t['variance'] = col_dict['SIGI(-)'].extract_values().as_double()
+    elif col_dict['I(-)'].n_valid_values() == 0:#use I(+)
+      r_t['miller_index'] = ind
+      r_t['intensity'] = col_dict['I(+)'].extract_values().as_double()
+      r_t['variance'] = col_dict['SIGI(+)'].extract_values().as_double()
+    else: #Combine both - add together then use Ih table to calculate I and sigma
+      r_tplus = flex.reflection_table()
+      r_tminus = flex.reflection_table()
+      r_tplus['miller_index'] = ind
+      r_tplus['intensity'] = col_dict['I(+)'].extract_values().as_double()
+      r_tplus['variance'] = col_dict['SIGI(+)'].extract_values().as_double()
+      r_tminus['miller_index'] = ind
+      r_tminus['intensity'] = col_dict['I(-)'].extract_values().as_double()
+      r_tminus['variance'] = col_dict['SIGI(-)'].extract_values().as_double()
+      r_tplus.extend(r_tminus)
+      r_tplus.set_flags(flex.bool(r_tplus.size(), False),
+        r_tplus.flags.bad_for_scaling)
+      r_tplus = r_tplus.select(r_tplus['variance'] != 0.0)
+      Ih_table = create_Ih_table([experiments[0]], [r_tplus]).blocked_data_list[0]
+      r_t['intensity'] = Ih_table.Ih_values
+      inv_var = (Ih_table.weights * Ih_table.h_index_matrix) * Ih_table.h_expand_matrix
+      r_t['variance'] = 1.0/inv_var
+      r_t['miller_index'] = Ih_table.miller_index
+  else:
+    assert 0, """Unrecognised intensities in mtz file."""
+
+  exp = deepcopy(experiments[0]) #copy exp for space group -
+    #any other necessary reason or can this attribute be added?
+  used_ids = experiments.identifiers()
+  unique_id = get_next_unique_id(0, used_ids)
+  exp.identifier = str(unique_id)
+  r_t.experiment_identifiers()[unique_id] = str(unique_id)
+
+  # create a new KB scaling model for the target and set as scaled to fix scale
+  # for targeted scaling.
+  params = Mock()
+  params.parameterisation.decay_term.return_value = False
+  params.parameterisation.scale_term.return_value = True
+  exp.scaling_model = KBSMFactory.create(params, [], []) 
+  exp.scaling_model.set_scaling_model_as_scaled() #Set as scaled to fix scale.
+
+  return exp, r_t
 
 def create_datastructures_for_structural_model(reflections, experiments,
     cif_file):

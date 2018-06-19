@@ -56,7 +56,7 @@ def parse_multiple_datasets(reflections):
       dataset_id_list = range(len(dataset_id_list))
   return single_reflection_tables, dataset_id_list
 
-def _get_next_unique_id(unique_id, used_ids):
+def get_next_unique_id(unique_id, used_ids):
   """Test a list of used id strings to see if it contains str(unique_id),
   where unique_id is an integer. Returns the input unique id if it is not in
   the used_ids list, else it increments the unique_id by one until the value is
@@ -65,7 +65,7 @@ def _get_next_unique_id(unique_id, used_ids):
     return unique_id
   else:
     unique_id += 1
-    return _get_next_unique_id(unique_id, used_ids)
+    return get_next_unique_id(unique_id, used_ids)
 
 def assign_unique_identifiers(experiments, reflections):
   """Read in an experiment list and a list of reflection tables containing
@@ -93,7 +93,7 @@ def assign_unique_identifiers(experiments, reflections):
       if exp.identifier != '':
         refl.experiment_identifiers()[i] = exp.identifier
       else:
-        unique_id = _get_next_unique_id(unique_id, used_ids)
+        unique_id = get_next_unique_id(unique_id, used_ids)
         strid = '%i' % unique_id
         exp.identifier = strid
         refl.experiment_identifiers()[i] = strid

@@ -35,7 +35,8 @@ from dials.util.options import OptionParser, flatten_reflections,\
   flatten_experiments
 from dials.util.version import dials_version
 from dials.algorithms.scaling.scaling_library import create_scaling_model,\
-  calculate_merging_statistics, create_datastructures_for_structural_model
+  calculate_merging_statistics, create_datastructures_for_structural_model,\
+  create_datastructures_for_target_mtz
 from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScalerFactory
 from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets,\
@@ -181,6 +182,15 @@ class Script(object):
       self.reflections[-1]['id'] = flex.int(self.reflections[-1].size(),
         len(self.reflections))
 
+    elif self.params.scaling_options.target_mtz:
+      logger.info("Extracting data from merged mtz.")
+      exp, reflections = create_datastructures_for_target_mtz(self.experiments,
+        self.params.scaling_options.target_mtz)
+      self.experiments.append(exp)
+      self.reflections.append(reflections)
+      self.reflections[-1]['id'] = flex.int(self.reflections[-1].size(),
+        len(self.reflections))
+
     if len(self.experiments) != len(self.reflections):
       raise Sorry("Mismatched number of experiments and reflection tables found.")
 
@@ -269,7 +279,7 @@ class Script(object):
     # Plot merging stats if requested.
     if self.params.output.plot_merging_stats:
       from xia2.command_line.compare_merging_stats import plot_merging_stats
-      plot_merging_stats(results, labels=plot_labels)
+      plot_merging_stats([result])
 
   def output(self):
     """Save the experiments json and scaled pickle file."""
@@ -334,8 +344,9 @@ class Script(object):
       ### FIXME add in quick prescaling round if large scale difference?
       scaler.perform_scaling()
 
-      if scaler.params.scaling_options.only_target or (
-        scaler.params.scaling_options.target_model):
+      if scaler.params.scaling_options.only_target or \
+        scaler.params.scaling_options.target_model or \
+        scaler.params.scaling_options.target_mtz:
         #Do some rounds of targeted scaling and then exit the algorithm.
         #scaler.expand_scales_to_all_reflections()
         # Do another round so that more suitable weights are used.
@@ -355,7 +366,11 @@ class Script(object):
 
         scaler.adjust_variances()
 
-        scaler.join_multiple_datasets()
+        if scaler.params.scaling_options.target_model or \
+          scaler.params.scaling_options.target_mtz:
+          scaler.join_multiple_datasets(include_target=False)
+        else:
+          scaler.join_multiple_datasets()
         return scaler
       # Now pass to a multiscaler ready for next round of scaling.
       scaler.expand_scales_to_all_reflections()

@@ -136,6 +136,9 @@ phil_scope = iotbx.phil.parse('''
       .type = path
       .help = "Path to cif file to use to calculate target intensities for
               scaling."
+    target_mtz = None
+      .type = path
+      .help = "Path to merged mtz file to use as a target for scaling."
     nproc = 1
       .type = int(value_min=1)
       .help = "number of processes to use."
