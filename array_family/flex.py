@@ -907,10 +907,15 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     from dials.algorithms.integration import Corrections, CorrectionsMulti
     compute = CorrectionsMulti()
     for experiment in experiments:
-      compute.append(Corrections(
-        experiment.beam,
-        experiment.goniometer,
-        experiment.detector))
+      if experiment.goniometer is not None:
+        compute.append(Corrections(
+          experiment.beam,
+          experiment.goniometer,
+          experiment.detector))
+      else:
+        compute.append(Corrections(
+          experiment.beam,
+          experiment.detector))
     lp = compute.lp(self['id'], self['s1'])
     self['lp'] = lp
     if experiment.detector[0].get_mu() > 0:

@@ -26,6 +26,12 @@ namespace dials { namespace algorithms { namespace boost_python {
           arg("pf"),
           arg("m2"),
           arg("s1")));
+    
+    def("lp_correction", &stills_lp_correction, (
+          arg("s0"),
+          arg("pn"),
+          arg("pf"),
+          arg("s1")));
 
     def("qe_correction", &qe_correction, (
           arg("mu"),
@@ -36,6 +42,8 @@ namespace dials { namespace algorithms { namespace boost_python {
     class_<Corrections>("Corrections", no_init)
       .def(init< const BeamBase&,
                  const Goniometer&,
+                 const Detector& >())
+      .def(init< const BeamBase&,
                  const Detector& >())
       .def("lp", &Corrections::lp, (
             arg("s1")))
