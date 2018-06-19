@@ -654,9 +654,9 @@ class Model(ProfileModelExt):
     print(str(self), file=out)
 
   def __str__(self):
-    return "\n".join(
+    return "\n".join([
         "Profile model:",
         "    type: gaussian_rs",
         "    delta_b (sigma_b): %f (%f)" % (self.delta_b(), self.sigma_b()),
         "    delta_m (sigma_m): %f (%f)" % (self.delta_m(), self.sigma_m()),
-    )
+    ])
