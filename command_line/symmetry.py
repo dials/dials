@@ -44,6 +44,9 @@ verbosity = 1
   .type = int(value_min=0)
   .help = "The verbosity level"
 
+seed = 230
+  .type = int(value_min=0)
+
 relative_length_tolerance = 0.05
   .type = float(value_min=0)
 
