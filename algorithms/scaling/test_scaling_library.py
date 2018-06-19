@@ -13,7 +13,8 @@ from dials.util.options import OptionParser
 from dials.array_family import flex
 from dials.algorithms.scaling.scaling_library import scale_single_dataset,\
   create_scaling_model, create_datastructures_for_structural_model,\
-  create_Ih_table, calculate_merging_statistics, calculate_single_merging_stats
+  create_Ih_table, calculate_merging_statistics, calculate_single_merging_stats,\
+  choose_scaling_intensities, calculate_prescaling_correction
 from dials.algorithms.scaling.model.model import KBScalingModel
 from dials.algorithms.scaling.model.scaling_model_factory import \
   PhysicalSMFactory
@@ -243,3 +244,39 @@ def test_create_Ih_table(test_experiments, test_reflections):
     # Should fail if length of exp, refl and selection are different
     Ih_table = create_Ih_table(test_experiments, [test_reflections,
       test_reflections], [selection])
+
+def test_choose_scaling_intensities(test_reflections):
+  """Test for correct choice of intensities."""
+  test_refl = test_reflections
+  intstr = 'prf'
+  new_rt = choose_scaling_intensities(test_refl, intstr)
+  assert list(new_rt['intensity']) == list(test_refl['intensity.prf.value'])
+  assert list(new_rt['variance']) == list(test_refl['intensity.prf.variance'])
+  intstr = 'sum'
+  new_rt = choose_scaling_intensities(test_refl, intstr)
+  assert list(new_rt['intensity']) == list(test_refl['intensity.sum.value'])
+  assert list(new_rt['variance']) == list(test_refl['intensity.sum.variance'])
+  # If bad choice, currently return the prf values.
+  intstr = 'bad'
+  new_rt = choose_scaling_intensities(test_refl, intstr)
+  assert list(new_rt['intensity']) == list(test_refl['intensity.prf.value'])
+  assert list(new_rt['variance']) == list(test_refl['intensity.prf.variance'])
+
+def test_calculate_prescaling_correction():
+  """Test the helper function that applies the lp, dqe and partiality corr."""
+  reflection_table = flex.reflection_table()
+  reflection_table['lp'] = flex.double([1.0, 0.9, 0.8])
+  reflection_table['qe'] = flex.double([0.6, 0.5, 0.4])
+
+  cor = calculate_prescaling_correction(reflection_table)
+  assert list(cor) == [1.0 / 0.6, 0.9 / 0.5, 0.8 / 0.4]
+
+  # Test compatibilty for old datasets
+  del reflection_table['qe']
+  reflection_table['dqe'] = flex.double([0.6, 0.5, 0.4])
+  cor = calculate_prescaling_correction(reflection_table)
+  assert list(cor) == [1.0 / 0.6, 0.9 / 0.5, 0.8 / 0.4]
+
+  reflection_table['partiality'] = flex.double([1.0, 0.5, 0.25])
+  cor = calculate_prescaling_correction(reflection_table)
+  assert list(cor) == [1.0 / 0.6, 0.9 / (0.5 * 0.5), 0.8 / (0.4 * 0.25)]

@@ -144,21 +144,6 @@ def test_SingleScalerFactory(generated_param, mock_exp, test_refl, refl_to_filte
   assert all(ss.reflection_table.has_key(i) for i in ['inverse_scale_factor', 'Esq',
       'intensity', 'variance', 'id'])
 
-  # Test for correct choice of intensities.
-  generated_param.scaling_options.integration_method = 'prf'
-  new_rt = SingleScalerFactory.select_optimal_intensities(test_refl, generated_param)
-  assert list(new_rt['intensity']) == list(test_refl['intensity.prf.value'])
-  assert list(new_rt['variance']) == list(test_refl['intensity.prf.variance'])
-  generated_param.scaling_options.integration_method = 'sum'
-  new_rt = SingleScalerFactory.select_optimal_intensities(test_refl, generated_param)
-  assert list(new_rt['intensity']) == list(test_refl['intensity.sum.value'])
-  assert list(new_rt['variance']) == list(test_refl['intensity.sum.variance'])
-  # If bad choice, currently return the prf values.
-  generated_param.scaling_options.integration_method = 'bad'
-  new_rt = SingleScalerFactory.select_optimal_intensities(test_refl, generated_param)
-  assert list(new_rt['intensity']) == list(test_refl['intensity.prf.value'])
-  assert list(new_rt['variance']) == list(test_refl['intensity.prf.variance'])
-
   # Test reflection filtering
   rt = SingleScalerFactory.filter_bad_reflections(refl_to_filter)
   assert list(rt.get_flags(rt.flags.excluded_for_scaling)) == [True, True, True,

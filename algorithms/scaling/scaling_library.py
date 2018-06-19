@@ -17,11 +17,52 @@ from iotbx import cif
 from cctbx import miller, crystal
 from dials.array_family import flex
 from dials.util.options import OptionParser
-from dials.algorithms.scaling.scaler_factory import SingleScalerFactory,\
-  TargetScalerFactory
 from dials.algorithms.scaling.model.scaling_model_factory import \
   KBSMFactory
 from dials.algorithms.scaling.Ih_table import IhTable
+
+def calculate_prescaling_correction(reflection_table):
+  """Calculate the multiplicative conversion factor for intensities."""
+  conversion = flex.double(reflection_table.size(), 1.0)
+  if 'partiality' in reflection_table:
+    inverse_partiality = flex.double(reflection_table.size(), 1.0)
+    nonzero_partiality_sel = reflection_table['partiality'] > 0.0
+    good_refl = reflection_table.select(reflection_table['partiality'] > 0.0)
+    inverse_partiality.set_selected(nonzero_partiality_sel.iselection(),
+      1.0/good_refl['partiality'])
+    conversion *= inverse_partiality
+  if 'lp' in reflection_table:
+    conversion *= reflection_table['lp']
+  if 'qe' in reflection_table:
+    conversion /= reflection_table['qe']
+  elif 'dqe' in reflection_table:
+    conversion /= reflection_table['dqe']
+  return conversion
+
+def choose_scaling_intensities(reflection_table, integration_method='prf'):
+  """Choose which intensities to use for scaling. The LP, QE and
+  partiality corrections are also applied. Two new columns are
+  added to the reflection table 'intensity' and 'variance', which have
+  all corrections applied except an inverse scale factor."""
+  conv = calculate_prescaling_correction(reflection_table)
+  intstr = 'intensity.'+integration_method+'.value'
+  if not intstr in reflection_table:
+    #Can't find selection, try to choose prf, if not then sum
+    if 'intensity.prf.value' in reflection_table:
+      intstr = 'intensity.prf.value'
+    else:
+      assert 'intensity.sum.value' in reflection_table, '''No recognised
+        intensity values found.'''
+      intstr = 'intensity.sum.value'
+  varstr = intstr.rstrip('value') + 'variance'
+
+  reflection_table['intensity'] = reflection_table[intstr] * conv
+  reflection_table['variance'] = reflection_table[varstr] * conv * conv
+
+  variance_mask = reflection_table['variance'] <= 0.0
+  reflection_table.set_flags(variance_mask,
+    reflection_table.flags.excluded_for_scaling)
+  return reflection_table
 
 def scale_against_target(reflection_table, experiment, target_reflection_table,
   target_experiment, params=None, model='KB'):
@@ -43,6 +84,8 @@ def scale_against_target(reflection_table, experiment, target_reflection_table,
     optionparser = OptionParser(phil=phil_scope, check_format=False)
     params, _ = optionparser.parse_args(args=[], quick_parse=True)
     params.__inject__('model', model)
+
+  from dials.algorithms.scaling.scaler_factory import TargetScalerFactory
 
   reflections = [reflection_table, target_reflection_table]
   experiment.append(target_experiment[0])
@@ -72,6 +115,8 @@ def scale_single_dataset(reflection_table, experiment, params=None,
     optionparser = OptionParser(phil=phil_scope, check_format=False)
     params, _ = optionparser.parse_args(args=[], quick_parse=True)
   params.__inject__('model', model)
+
+  from dials.algorithms.scaling.scaler_factory import SingleScalerFactory
 
   experiments = create_scaling_model(params, experiment, [reflection_table])
   scaler = SingleScalerFactory.create(params, experiments[0], reflection_table)
