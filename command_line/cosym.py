@@ -45,7 +45,7 @@ unit_cell_clustering {
 
 include scope dials.algorithms.symmetry.cosym.phil_scope
 
-seed = None
+seed = 230
   .type = int(value_min=0)
 
 output {

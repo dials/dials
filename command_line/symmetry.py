@@ -96,6 +96,11 @@ def run(args):
     logger.info('The following parameters have been modified:\n')
     logger.info(diff_phil)
 
+  if params.seed is not None:
+    import random
+    flex.set_random_seed(params.seed)
+    random.seed(params.seed)
+
   datasets_input = []
 
   experiments = flatten_experiments(params.input.experiments)
