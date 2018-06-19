@@ -56,7 +56,7 @@ absolute_angle_tolerance = 2
 output {
   log = dials.symmetry.log
     .type = str
-  debug_log = dials.symmetry.log
+  debug_log = dials.symmetry.debug.log
     .type = str
   suffix = "_reindexed"
     .type = str
