@@ -168,10 +168,12 @@ class Script(object):
     s_g_1 = self.experiments[0].crystal.get_space_group()
     for experiment in self.experiments:
       if experiment.crystal.get_space_group() != s_g_1:
-        raise Sorry('experiments have different space groups and cannot be'
-          'scaled together, please reanalyse the data so that the space groups'
-          'are consistent or manually specify a space group.'
-          'Alternatively, some datasets can be excluded using exclude_datasets=')
+        logger.info("Space groups not determined to be equal; %s and %s", s_g_1.info(),
+          experiment.crystal.get_space_group().info())
+        raise Sorry('experiments have different space groups and cannot be '
+          'scaled together, please reanalyse the data so that the space groups '
+          'are consistent or manually specify a space group. Alternatively, '
+          'some datasets can be excluded using the option exclude_datasets=')
 
     if self.params.scaling_options.target_model:
       logger.info("Extracting data from structural model.")
