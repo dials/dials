@@ -86,13 +86,14 @@ class TargetedOutlierRejection(OutlierRejectionBase):
     target_Ih_table = IhTable([(target, None)], self.space_group,
       n_blocks=1).blocked_data_list[0]
     target_asu_Ih_dict = dict(zip(target_Ih_table.asu_miller_index,
-      (target_Ih_table.Ih_values, target_Ih_table.variances)))
+      zip(target_Ih_table.Ih_values, target_Ih_table.variances)))
     Ih_table.Ih_table['target_Ih_value'] = flex.double(Ih_table.size, 0.0)
     Ih_table.Ih_table['target_Ih_sigmasq'] = flex.double(Ih_table.size, 0.0)
     for j, miller_idx in enumerate(Ih_table.asu_miller_index):
       if miller_idx in target_asu_Ih_dict:
         Ih_table.Ih_table['target_Ih_value'][j] = target_asu_Ih_dict[miller_idx][0]
         Ih_table.Ih_table['target_Ih_sigmasq'][j] = target_asu_Ih_dict[miller_idx][1]
+    Ih_table.select(Ih_table.Ih_table['target_Ih_value'] != 0.0)
     norm_dev = (Ih_table.intensities - (
       Ih_table.inverse_scale_factors * Ih_table.Ih_table['target_Ih_value']))/ \
       ((Ih_table.variances + ((Ih_table.inverse_scale_factors**2) * \

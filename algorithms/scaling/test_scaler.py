@@ -846,6 +846,56 @@ def test_new_TargetScaler(test_2_reflections, test_2_experiments, test_params):
     scaling_patch.assert_called_once_with(target_type=ScalingTargetFixedIH,
       engine=None, max_iterations=None)
 
+def test_targetscaler_outlier_rejection_routine(test_params):
+  """Test outlier rejection routine. This function expects a scaler that
+  has already been scaled - so first create this and check that outlier
+  rejection is performed, a new Ih_table is created and then the right
+  reflections reselected."""
+  rt = refl_for_outlier_routine()
+  rt2 = refl_for_outlier_routine()
+  rt['intensity'][2] = 1.0
+  test_params.scaling_options.outlier_rejection = 'standard'
+  exp = create_scaling_model(test_params, generated_exp(), [rt])
+  scaler = SingleScalerBase(test_params, exp[0], rt, for_multi=True)
+  exp = create_scaling_model(test_params, generated_exp(), [rt2])
+  scaler2 = SingleScalerBase(test_params, exp[0], rt2, for_multi=True)
+  targetscaler = TargetScaler(test_params, exp, [scaler], [scaler2])
+  # scaling_subset will select reflections [1, 2, 3, 4] then the rest will be
+  # put into the Ih_table, and the indices of the blocked selection list
+  # refers to selection from scaler.scaling_selection.
+  assert list(targetscaler.Ih_table.blocked_selection_list[0][0]) == [0, 1, 2, 3]
+  assert list(targetscaler.unscaled_scalers[0].components['decay'].d_values[0]
+    ) == [2.0, 3.0, 4.0, 5.0]
+  assert list(targetscaler.Ih_table.blocked_data_list[0].nonzero_weights
+    ) == [1, 2, 3, 4]
+  # Now call outlier rejection routine - expect it to remove the reflection
+  # in position 1.
+  targetscaler.outlier_rejection_routine()
+  assert list(targetscaler.Ih_table.blocked_data_list[0].nonzero_weights
+    ) == [1, 3, 4]
+  assert list(targetscaler.Ih_table.blocked_selection_list[0][0]) == [0, 1, 2]
+  assert list(targetscaler.unscaled_scalers[0].components['decay'].d_values[0]
+    ) == [2.0, 4.0, 5.0]
+
+  # Repeat but with make_ready_for_scaling=False - make a fresh copy of structures
+  rt = refl_for_outlier_routine()
+  rt2 = refl_for_outlier_routine()
+  rt['intensity'][2] = 1.0
+  test_params.scaling_options.nproc = 1
+  exp = create_scaling_model(test_params, generated_exp(), [rt])
+  scaler = SingleScalerBase(test_params, exp[0], rt, for_multi=True)
+  exp = create_scaling_model(test_params, generated_exp(), [rt2])
+  scaler2 = SingleScalerBase(test_params, exp[0], rt2, for_multi=True)
+  targetscaler = TargetScaler(test_params, exp, [scaler], [scaler2])
+  targetscaler.outlier_rejection_routine(make_ready_for_scaling=False)
+  # Should still have found outlier
+  assert list(targetscaler.unscaled_scalers[0].reflection_table.get_flags(
+    scaler.reflection_table.flags.outlier_in_scaling)) == [False, False,
+      True, False, False]
+  # Should not have created or updated Ih_table
+  assert list(targetscaler.Ih_table.blocked_data_list[0].nonzero_weights
+    ) == [1, 2, 3, 4]
+
 def test_NullScaler(test_reflections, test_experiments, test_params):
   """Test for successful creation of NullScaler."""
   exp = create_scaling_model(test_params, test_experiments, test_reflections[0])

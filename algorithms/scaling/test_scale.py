@@ -156,3 +156,12 @@ def test_targeted_scaling(dials_regression, tmpdir):
     assert len(experiments_list.scaling_models()) == 2
     assert experiments_list.scaling_models()[0].id_ == 'physical'
     assert experiments_list.scaling_models()[1].id_ == 'KB'
+
+    extra_args = ["model=KB", "only_target=True"]
+    args = ["dials.scale"] + ["scaled.pickle"] + ["scaled_experiments.json"] +\
+      [pickle_path_2] + [sweep_path_2] + extra_args
+    command = " ".join(args)
+    print(command)
+    _ = easy_run.fully_buffered(command=command).raise_if_errors()
+    assert os.path.exists("scaled_experiments.json")
+    assert os.path.exists("scaled.pickle")
