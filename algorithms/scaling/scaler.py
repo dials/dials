@@ -135,7 +135,7 @@ class ScalerBase(object):
     del self.reflection_table['intensity']
     del self.reflection_table['variance']
     for key in self.reflection_table.keys():
-      if not key in self._initial_keys:
+      if key not in self._initial_keys:
         del self._reflection_table[key]
 
   @abc.abstractmethod
@@ -673,6 +673,8 @@ class TargetScaler(MultiScalerBase):
     if include_target:
       scalers.extend(self.single_scalers)
     scalers.extend(self.unscaled_scalers)
+    if not include_target:
+      self._initial_keys = self.unscaled_scalers[0].initial_keys
     super(TargetScaler, self).join_datasets_from_scalers(scalers)
 
   def perform_scaling(self, target_type=ScalingTargetFixedIH, engine=None,
