@@ -176,7 +176,11 @@ class determine_space_group(object):
 
     # A1.1. Estimation of sigma(CC) as a function of sample size.
 
-    binner = self.intensities.setup_binner_counting_sorted(reflections_per_bin=200)
+    max_bins = 500
+    reflections_per_bin = max(
+      200, int(math.ceil(self.intensities.size()/max_bins)))
+    binner = self.intensities.setup_binner_counting_sorted(
+      reflections_per_bin=reflections_per_bin)
 
     a = flex.double()
     b = flex.double()
