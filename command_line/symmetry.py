@@ -6,11 +6,9 @@ logger = logging.getLogger('dials.command_line.symmetry')
 import copy
 import os
 
-from libtbx.utils import Keep
 from cctbx import crystal
 from cctbx import miller
 from cctbx import sgtbx
-from cctbx import uctbx
 import iotbx.phil
 from iotbx.reflection_file_reader import any_reflection_file
 
@@ -104,7 +102,7 @@ def run(args):
     flex.set_random_seed(params.seed)
     random.seed(params.seed)
 
-  datasets_input = []
+  datasets = []
 
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
@@ -179,7 +177,7 @@ def run(args):
         source='DIALS',
         source_type='pickle'
       ))
-      datasets_input.append(intensities)
+      datasets.append(intensities)
 
   files = args
   for file_name in files:
@@ -217,33 +215,14 @@ def run(args):
       assert sel.count(True) > 0
       intensities = intensities.select(sel)
 
-    datasets_input.append(intensities)
+    datasets.append(intensities)
 
-  datasets = datasets_input
-  uc_params = [flex.double() for i in range(6)]
-  for d in datasets:
-    for i, p in enumerate(d.unit_cell().parameters()):
-      uc_params[i].append(p)
-  median_uc = uctbx.unit_cell(parameters=[flex.median(p) for p in uc_params])
-  for d in datasets:
-    if (params.relative_length_tolerance is not None and
-        params.absolute_angle_tolerance is not None):
-      assert d.unit_cell().is_similar_to(
-        median_uc, params.relative_length_tolerance,
-        params.absolute_angle_tolerance), (
-          str(d.unit_cell()), str(median_uc))
-  intensities = datasets[0]
-  for d in datasets:
-    intensities = intensities.concatenate(d, assert_is_similar_symmetry=False)
-  intensities = intensities.customized_copy(
-    crystal_symmetry=crystal.symmetry(
-      unit_cell=median_uc, space_group=intensities.space_group()),
-    info=datasets[0].info())
-  intensities.set_observation_type_xray_intensity()
   result = determine_space_group(
-    intensities, normalisation=params.normalisation,
+    datasets, normalisation=params.normalisation,
     d_min=params.d_min,
-    min_i_mean_over_sigma_mean=params.min_i_mean_over_sigma_mean)
+    min_i_mean_over_sigma_mean=params.min_i_mean_over_sigma_mean,
+    relative_length_tolerance=params.relative_length_tolerance,
+    absolute_angle_tolerance=params.absolute_angle_tolerance)
 
   if params.output.json is not None:
     result.as_json(filename=params.output.json)

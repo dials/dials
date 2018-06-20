@@ -9,11 +9,14 @@ import math
 import scipy.stats
 
 import libtbx
+from libtbx.utils import Keep
 from libtbx import table_utils
 from scitbx.array_family import flex
 from cctbx import adptbx
+from cctbx import crystal
 from cctbx import miller
 from cctbx import sgtbx
+from cctbx import uctbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from mmtbx import scaling
 from mmtbx.scaling import absolute_scaling
@@ -27,11 +30,35 @@ class determine_space_group(object):
                lattice_symmetry_max_delta=2.0,
                d_min=libtbx.Auto,
                min_i_mean_over_sigma_mean=4,
-               min_cc_half=0.6):
+               min_cc_half=0.6,
+               relative_length_tolerance=None,
+               absolute_angle_tolerance=None):
 
-    self.intensities = intensities
-    self.input_intensities = intensities.deep_copy()
-    self.lattice_symmetry_max_delta = lattice_symmetry_max_delta
+
+    self.input_intensities = intensities
+
+    uc_params = [flex.double() for i in range(6)]
+    for d in self.input_intensities:
+      for i, p in enumerate(d.unit_cell().parameters()):
+        uc_params[i].append(p)
+    self.median_unit_cell = uctbx.unit_cell(parameters=[flex.median(p) for p in uc_params])
+    for d in self.input_intensities:
+      if (relative_length_tolerance is not None and
+          absolute_angle_tolerance is not None):
+        assert d.unit_cell().is_similar_to(
+          self.median_unit_cell, relative_length_tolerance,
+          absolute_angle_tolerance), (
+            str(d.unit_cell()), str(self.median_unit_cell))
+
+    self.intensities = self.input_intensities[0]
+    self.dataset_ids = flex.double(self.intensities.size(), 0)
+    for i, d in enumerate(self.input_intensities[1:]):
+      self.intensities = self.intensities.concatenate(
+        d, assert_is_similar_symmetry=False)
+      self.dataset_ids.extend(flex.double(d.size(), i+1))
+    self.intensities = self.intensities.customized_copy(
+      unit_cell=self.median_unit_cell, info=self.input_intensities[0].info())
+    self.intensities.set_observation_type_xray_intensity()
 
     self.cb_op_inp_min = self.intensities.change_of_basis_op_to_niggli_cell()
     self.intensities = self.intensities.change_basis(
@@ -39,6 +66,7 @@ class determine_space_group(object):
         space_group_info=sgtbx.space_group_info('P1')).map_to_asu().set_info(
           self.intensities.info())
 
+    self.lattice_symmetry_max_delta = lattice_symmetry_max_delta
     self.subgroups = metric_subgroups(
       self.intensities.crystal_symmetry(),
       max_delta=self.lattice_symmetry_max_delta,
@@ -46,11 +74,12 @@ class determine_space_group(object):
     self.cb_op_min_best = self.subgroups.result_groups[0]['cb_op_inp_best']
     self.lattice_group = self.subgroups.result_groups[0]['best_subsym'].space_group()
     self.lattice_group = self.lattice_group.change_basis(self.cb_op_min_best.inverse())
-
     self.patterson_group = self.lattice_group.build_derived_patterson_group()
+
     sel = self.patterson_group.epsilon(self.intensities.indices()) == 1
     self.intensities = self.intensities.select(sel).set_info(
       self.intensities.info())
+    self.dataset_ids = self.dataset_ids.select(sel)
 
     if d_min is not None or d_min is libtbx.Auto:
       self.resolution_filter(d_min, min_i_mean_over_sigma_mean, min_cc_half)
@@ -58,14 +87,25 @@ class determine_space_group(object):
     # Correct SDs by "typical" SD factors
     self.correct_sigmas(sd_fac=2.0, sd_b=0.0, sd_add=0.03)
 
-    if normalisation == 'kernel':
-      self.kernel_normalisation()
-    elif normalisation == 'quasi':
-      self.quasi_normalisation()
-    elif normalisation == 'ml_iso':
-      self.ml_normalisation(aniso=False)
-    elif normalisation == 'ml_aniso':
-      self.ml_normalisation(aniso=True)
+    if normalisation is not None:
+      if normalisation == 'kernel':
+        normalise = self.kernel_normalisation
+      elif normalisation == 'quasi':
+        normalise = self.quasi_normalisation
+      elif normalisation == 'ml_iso':
+        normalise = self.ml_iso_normalisation
+      elif normalisation == 'ml_aniso':
+        normalise = self.ml_aniso_normalisation
+
+      for i in range(int(flex.max(self.dataset_ids)+1)):
+        sel = self.dataset_ids == i
+        intensities = self.intensities.select(self.dataset_ids == i)
+        if i == 0:
+          normalised_intensities = normalise(intensities)
+        else:
+          normalised_intensities = normalised_intensities.concatenate(
+            normalise(intensities))
+      self.intensities = normalised_intensities
 
     self.estimate_cc_sig_fac()
     self.estimate_cc_true()
@@ -86,14 +126,15 @@ class determine_space_group(object):
     self.intensities = self.intensities.customized_copy(
       sigmas=sd, info=self.intensities.info())
 
-  def kernel_normalisation(self):
+  @staticmethod
+  def kernel_normalisation(intensities):
     normalisation = absolute_scaling.kernel_normalisation(
-      self.intensities, auto_kernel=True)
-    self.intensities = normalisation.normalised_miller.deep_copy().set_info(
-      self.intensities.info())
+      intensities, auto_kernel=True)
+    return normalisation.normalised_miller.deep_copy().set_info(
+      intensities.info())
 
-  def quasi_normalisation(self):
-    intensities = self.intensities.deep_copy()
+  @staticmethod
+  def quasi_normalisation(intensities):
     #handle negative reflections to minimise effect on mean I values.
     intensities.data().set_selected(intensities.data() < 0.0, 0.0)
 
@@ -109,38 +150,36 @@ class determine_space_group(object):
     binner = intensities.setup_binner_d_star_sq_step(d_star_sq_step=step)
 
     normalisations = intensities.intensity_quasi_normalisations()
-    self.intensities = self.intensities.customized_copy(
-      data=(self.intensities.data()/normalisations.data()),
-      sigmas=(self.intensities.sigmas()/normalisations.data())
-      ).set_info(self.intensities.info())
+    return intensities.customized_copy(
+      data=(intensities.data()/normalisations.data()),
+      sigmas=(intensities.sigmas()/normalisations.data())
+      ).set_info(intensities.info())
 
-  def ml_normalisation(self, aniso=False):
+  @staticmethod
+  def ml_aniso_normalisation(intensities):
+    return determine_space_group._ml_normalisation(intensities, aniso=True)
+
+  @staticmethod
+  def ml_iso_normalisation(intensities):
+    return determine_space_group._ml_normalisation(intensities, aniso=False)
+
+  @staticmethod
+  def _ml_normalisation(intensities, aniso):
     # estimate number of residues per unit cell
-    mr = matthews.matthews_rupp(self.intensities.crystal_symmetry())
+    mr = matthews.matthews_rupp(intensities.crystal_symmetry())
     n_residues = mr.n_residues
 
     # estimate B-factor and scale factors for normalisation
     if aniso:
       normalisation = absolute_scaling.ml_aniso_absolute_scaling(
-        self.intensities, n_residues=n_residues)
+        intensities, n_residues=n_residues)
       u_star = normalisation.u_star
     else:
       normalisation = absolute_scaling.ml_iso_absolute_scaling(
-        self.intensities, n_residues=n_residues)
+        intensities, n_residues=n_residues)
       u_star = adptbx.b_as_u(
         adptbx.u_iso_as_u_star(
-          self.intensities.unit_cell(), normalisation.b_wilson))
-
-    # apply scales
-    self.intensities = self.intensities.customized_copy(
-      data=scaling.ml_normalise_aniso(
-        self.intensities.indices(), self.intensities.data(),
-        normalisation.p_scale, self.intensities.unit_cell(),
-        u_star),
-      sigmas=scaling.ml_normalise_aniso(
-        self.intensities.indices(), self.intensities.sigmas(),
-        normalisation.p_scale, self.intensities.unit_cell(),
-        u_star)).set_info(self.intensities.info())
+          intensities.unit_cell(), normalisation.b_wilson))
 
     # record output in log file
     s = StringIO()
@@ -148,13 +187,24 @@ class determine_space_group(object):
     normalisation.show(out=s)
     logger.info(s.getvalue())
 
+    # apply scales
+    return intensities.customized_copy(
+      data=scaling.ml_normalise_aniso(
+        intensities.indices(), intensities.data(),
+        normalisation.p_scale, intensities.unit_cell(),
+        u_star),
+      sigmas=scaling.ml_normalise_aniso(
+        intensities.indices(), intensities.sigmas(),
+        normalisation.p_scale, intensities.unit_cell(),
+        u_star)).set_info(intensities.info())
+
   def resolution_filter(self, d_min, min_i_mean_over_sigma_mean, min_cc_half):
     if d_min is libtbx.Auto and (
         min_i_mean_over_sigma_mean is not None or min_cc_half is not None):
       from dials.util import Resolutionizer
       rparams = Resolutionizer.phil_defaults.extract().resolutionizer
       rparams.nbins = 20
-      resolutionizer = Resolutionizer.resolutionizer(self.intensities, None, rparams)
+      resolutionizer = Resolutionizer.resolutionizer(self.intensities, rparams)
       d_min_isigi = 0
       d_min_cc_half = 0
       if min_i_mean_over_sigma_mean is not None:
@@ -168,8 +218,10 @@ class determine_space_group(object):
       d_min = min(d_min_isigi, d_min_cc_half)
       logger.info('High resolution limit set to: %.2f' % d_min)
     if d_min is not None:
-      self.intensities = self.intensities.resolution_filter(d_min=d_min).set_info(
+      sel = self.intensities.resolution_filter_selection(d_min=d_min)
+      self.intensities = self.intensities.select(sel).set_info(
         self.intensities.info())
+      self.dataset_ids = self.dataset_ids.select(sel)
       logger.info('Selecting %i reflections with d > %.2f' % (self.intensities.size(), d_min))
 
   def estimate_cc_sig_fac(self):
@@ -303,8 +355,8 @@ class determine_space_group(object):
 
   def show(self):
     logger.info('Input crystal symmetry:')
-    logger.info(str(self.input_intensities.space_group_info()))
-    logger.info(str(self.input_intensities.unit_cell()))
+    logger.info(str(self.input_intensities[0].space_group_info()))
+    logger.info(str(self.median_unit_cell))
     logger.info('Change of basis op to minimum cell: %s', self.cb_op_inp_min)
     logger.info('Crystal symmetry in minimum cell:')
     logger.info(str(self.intensities.space_group_info()))
@@ -372,8 +424,8 @@ class determine_space_group(object):
   def as_dict(self):
     d = {
       'input_symmetry': {
-        'hall_symbol': self.input_intensities.space_group().type().hall_symbol(),
-        'unit_cell': self.input_intensities.unit_cell().parameters(),
+        'hall_symbol': self.input_intensities[0].space_group().type().hall_symbol(),
+        'unit_cell': self.median_unit_cell.parameters(),
       },
       'cb_op_inp_min': self.cb_op_inp_min.as_xyz(),
       'min_cell_symmetry': {
