@@ -253,7 +253,6 @@ class Script(object):
     # Calculate merging stats.
     plot_labels = []
 
-
     if self.params.output.calculate_individual_merging_stats and (
       len(set(self.minimised.reflection_table['id'])) > 1):
       results, scaled_ids = calculate_merging_statistics(
@@ -268,6 +267,11 @@ class Script(object):
 
     self.scaled_miller_array = self.scaled_data_as_miller_array(self.experiments[0],
       self.minimised.reflection_table, anomalous_flag=False)
+
+    if self.scaled_miller_array.is_unique_set_under_symmetry():
+      logger.info(("Dataset doesn't contain any equivalent reflections, \n"
+        "no merging statistics can be calculated."))
+      return
 
     make_sub_header("Overall merging statistics (non-anomalous)",
         out=log.info_handle(logger))
@@ -288,7 +292,7 @@ class Script(object):
     """Save the experiments json and scaled pickle file."""
     logger.info('\n'+'='*80+'\n')
 
-    if self.params.scaling_options.target_model:
+    if self.params.scaling_options.target_model or self.params.scaling_options.target_mtz:
       self.experiments = self.experiments[:-1]
 
     self.minimised.reflection_table['intensity.scale.value'] = deepcopy(

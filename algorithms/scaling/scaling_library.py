@@ -266,6 +266,7 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
   else:
     assert 0, """Unrecognised intensities in mtz file."""
 
+  r_t.set_flags(flex.bool(r_t.size(), True), r_t.flags.integrated)
   exp = deepcopy(experiments[0]) #copy exp for space group -
     #any other necessary reason or can this attribute be added?
   used_ids = experiments.identifiers()

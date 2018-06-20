@@ -39,7 +39,22 @@ def is_scaled(experiments):
       is_already_scaled.append(False)
   return is_already_scaled
 
-class SingleScalerFactory(object):
+class ScalerFactory(object):
+
+  @classmethod
+  def filter_bad_reflections(cls, reflections, min_partiality=0.6):
+    """Initial filter to select integrated reflections."""
+    mask = ~reflections.get_flags(reflections.flags.integrated, all=False)
+    if 'd' in reflections:
+      d_mask = reflections['d'] <= 0.0
+      mask = mask | d_mask
+    if 'partiality' in reflections:
+      partials_mask = reflections['partiality'] < min_partiality
+      mask = mask | partials_mask
+    reflections.set_flags(mask, reflections.flags.excluded_for_scaling)
+    return reflections
+
+class SingleScalerFactory(ScalerFactory):
   """Factory for creating a scaler for a single dataset."""
 
   @classmethod
@@ -76,7 +91,7 @@ class SingleScalerFactory(object):
     if not 'inverse_scale_factor' in reflection_table:
       reflection_table['inverse_scale_factor'] = flex.double(
         reflection_table.size(), 1.0)
-      print('Setting inverse scale factors to one.')
+      logger.info('Setting inverse scale factors to one.')
 
     reflection_table = cls.filter_outliers(reflection_table, experiment,
       params)
@@ -94,23 +109,19 @@ class SingleScalerFactory(object):
         params.scaling_options.outlier_zmax)
     return reflections
 
-  @classmethod
-  def filter_bad_reflections(cls, reflections, min_partiality=0.6):
-    """Initial filter to select integrated reflections."""
-    mask = ~reflections.get_flags(reflections.flags.integrated)
-    d_mask = reflections['d'] <= 0.0
-    partials_mask = reflections['partiality'] < min_partiality
-    reflections.set_flags(mask | partials_mask | d_mask,
-      reflections.flags.excluded_for_scaling)
-    return reflections
-
-
-class NullScalerFactory(object):
+class NullScalerFactory(ScalerFactory):
   'Factory for creating null scaler'
   @classmethod
   def create(cls, params, experiment, reflection, scaled_id=0):
     """Return Null Scaler."""
     from dials.algorithms.scaling.scaler import NullScaler
+    reflection = cls.filter_bad_reflections(reflection,
+      params.scaling_options.min_partiality)
+    variance_mask = reflection['variance'] <= 0.0
+    reflection.set_flags(variance_mask, reflection.flags.excluded_for_scaling)
+    logger.info('%s reflections not suitable for scaling (low partiality,\n'
+        'not integrated etc).\n', reflection.get_flags(
+        reflection.flags.excluded_for_scaling).count(True))
     return NullScaler(params, experiment, reflection, scaled_id)
 
 class MultiScalerFactory(object):
