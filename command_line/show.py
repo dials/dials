@@ -349,6 +349,7 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
     ('xyzobs.px.value','%.2f, %.2f, %.2f'),
     ('xyzobs.px.variance','%.4f, %.4f, %.4f'),
     ('s1','%.4f, %.4f, %.4f'),
+    ('s2','%.4f, %.4f, %.4f'),
     ('shoebox','%.1f'),
     ('rlp','%.4f, %.4f, %.4f'),
     ('zeta','%.3f'),
