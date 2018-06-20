@@ -148,6 +148,9 @@ phil_scope = iotbx.phil.parse('''
               This free set is used to calculate an RMSD, which is shown alongisde
               the 'working' RMSD during refinement, but is not currently used
               to terminate refinement or make any choices on the model."
+    min_partiality = 0.6
+      .type = float
+      .help = "Minimum partiality to use for scaling."
     free_set_percentage = 10.0
       .type = float
       .help = "Percentage of symmetry equivalent groups to use for the free set,

@@ -59,7 +59,8 @@ class SingleScalerFactory(object):
         'dataset is {0}, and the scaling model type being applied is {1}. \n'
         ).format(reflection_table['id'][0], experiment.scaling_model.id_))
 
-    reflection_table = cls.filter_bad_reflections(reflection_table)
+    reflection_table = cls.filter_bad_reflections(reflection_table,
+      params.scaling_options.min_partiality)
     if params.scaling_options.verbosity > 1:
       logger.info('%s reflections not suitable for scaling (low partiality,\n'
         'not integrated etc).\n', reflection_table.get_flags(
@@ -94,11 +95,11 @@ class SingleScalerFactory(object):
     return reflections
 
   @classmethod
-  def filter_bad_reflections(cls, reflections):
+  def filter_bad_reflections(cls, reflections, min_partiality=0.6):
     """Initial filter to select integrated reflections."""
     mask = ~reflections.get_flags(reflections.flags.integrated)
     d_mask = reflections['d'] <= 0.0
-    partials_mask = reflections['partiality'] < 0.6
+    partials_mask = reflections['partiality'] < min_partiality
     reflections.set_flags(mask | partials_mask | d_mask,
       reflections.flags.excluded_for_scaling)
     return reflections

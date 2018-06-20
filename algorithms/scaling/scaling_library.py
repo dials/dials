@@ -232,6 +232,10 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
     r_t['miller_index'] = ind
     r_t['intensity'] = col_dict['I'].extract_values().as_double()
     r_t['variance'] = col_dict['SIGI'].extract_values().as_double()
+  elif 'IMEAN' in col_dict: #nice and simple
+    r_t['miller_index'] = ind
+    r_t['intensity'] = col_dict['IMEAN'].extract_values().as_double()
+    r_t['variance'] = col_dict['SIGIMEAN'].extract_values().as_double()
   elif 'I(+)' in col_dict: #need to combine I+ and I- together into target Ih
     if col_dict['I(+)'].n_valid_values() == 0:#use I(-)
       r_t['miller_index'] = ind
@@ -274,7 +278,7 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
   params = Mock()
   params.parameterisation.decay_term.return_value = False
   params.parameterisation.scale_term.return_value = True
-  exp.scaling_model = KBSMFactory.create(params, [], []) 
+  exp.scaling_model = KBSMFactory.create(params, [], [])
   exp.scaling_model.set_scaling_model_as_scaled() #Set as scaled to fix scale.
 
   return exp, r_t

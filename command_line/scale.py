@@ -168,6 +168,7 @@ class Script(object):
     s_g_1 = self.experiments[0].crystal.get_space_group()
     for experiment in self.experiments:
       if experiment.crystal.get_space_group() != s_g_1:
+        print(dir(experiment.crystal.get_space_group()))
         logger.info("Space groups not determined to be equal; %s and %s", s_g_1.info(),
           experiment.crystal.get_space_group().info())
         raise Sorry('experiments have different space groups and cannot be '
