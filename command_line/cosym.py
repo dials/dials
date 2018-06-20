@@ -207,6 +207,10 @@ def run(args):
     raise Sorry('No valid reflection files provided on command line')
 
   datasets = []
+
+  # per-dataset change of basis operator to ensure all consistent
+  change_of_basis_ops = []
+
   for intensities in datasets_input:
 
     if params.batch is not None:
@@ -246,6 +250,7 @@ def run(args):
       intensities = normalisation.normalised_miller.deep_copy()
 
     cb_op_to_primitive = intensities.change_of_basis_op_to_primitive_setting()
+    change_of_basis_ops.append(cb_op_to_primitive)
     intensities = intensities.change_basis(cb_op_to_primitive)
     if params.mode == 'full' or params.space_group is not None:
       if params.space_group is not None:
@@ -301,14 +306,12 @@ def run(args):
       'Selecting subset of data for cosym analysis: %s' %str(dataset_selection))
     datasets = [datasets[i] for i in dataset_selection]
 
-  # per-dataset change of basis operator to ensure all consistent
-  change_of_basis_ops = []
   for i, dataset in enumerate(datasets):
     metric_subgroups = sgtbx.lattice_symmetry.metric_subgroups(dataset, max_delta=5)
     subgroup = metric_subgroups.result_groups[0]
     cb_op_inp_best = subgroup['cb_op_inp_best']
     datasets[i] = dataset.change_basis(cb_op_inp_best)
-    change_of_basis_ops.append(cb_op_inp_best)
+    change_of_basis_ops[i] = cb_op_inp_best * change_of_basis_ops[i]
 
   cb_op_ref_min = datasets[0].change_of_basis_op_to_niggli_cell()
   for i, dataset in enumerate(datasets):
