@@ -283,7 +283,7 @@ class resolution_plot(object):
 class resolutionizer(object):
   '''A class to calculate things from merging reflections.'''
 
-  def __init__(self, i_obs, batches, params, reference=None):
+  def __init__(self, i_obs, params, batches=None, reference=None):
 
     self._params = params
     self._reference = reference
@@ -294,11 +294,10 @@ class resolutionizer(object):
 
     i_obs = i_obs.customized_copy(anomalous_flag=params.anomalous, info=i_obs.info())
 
-    if self._params.batch_range is not None:
+    if self._params.batch_range is not None and batches is not None:
       batch_min, batch_max = self._params.batch_range
       assert batches is not None
       sel = (batches.data() >= batch_min) & (batches.data() <= batch_max)
-      batches = batches.select(sel).set_info(batches.info())
       i_obs = i_obs.select(sel).set_info(i_obs.info())
 
     if self._params.space_group is not None:
@@ -365,7 +364,7 @@ class resolutionizer(object):
     else:
       reference = None
 
-    return cls(i_obs, batches, params, reference=reference)
+    return cls(i_obs, params, batches=batches, reference=reference)
 
   def resolution_auto(self):
     '''Compute resolution limits based on the current self._params set.'''

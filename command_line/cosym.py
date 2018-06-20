@@ -226,7 +226,7 @@ def run(args):
       from xia2.Modules import Resolutionizer
       rparams = Resolutionizer.phil_defaults.extract().resolutionizer
       rparams.nbins = 20
-      resolutionizer = Resolutionizer.resolutionizer(intensities, None, rparams)
+      resolutionizer = Resolutionizer.resolutionizer(intensities, rparams, None)
       i_mean_over_sigma_mean = 4
       d_min = resolutionizer.resolution_i_mean_over_sigma_mean(i_mean_over_sigma_mean)
       if params.d_min is libtbx.Auto:
