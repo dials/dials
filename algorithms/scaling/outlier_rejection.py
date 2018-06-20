@@ -8,7 +8,8 @@ from dials.algorithms.scaling.Ih_table import IhTable
 
 logger = logging.getLogger('dials')
 
-def reject_outliers(reflection_table, space_group, method='standard', zmax=9.0):
+def reject_outliers(reflection_table, space_group, method='standard', zmax=9.0,
+  target=None):
   """Helper function to act as interface to outlier algorithms."""
   if method == 'standard':
     refl = NormDevOutlierRejection(reflection_table, space_group,
@@ -16,6 +17,10 @@ def reject_outliers(reflection_table, space_group, method='standard', zmax=9.0):
   elif method == 'simple':
     refl = SimpleNormDevOutlierRejection(reflection_table, space_group,
       zmax).return_reflection_table()
+  elif method == 'target':
+    assert target is not None
+    refl = TargetedOutlierRejection(reflection_table, space_group,
+      zmax, target).return_reflection_table()
   else:
     raise Sorry("Invalid choice of outlier rejection method.")
   if 'id' in refl and len(set(refl['id'])) > 1:
@@ -61,6 +66,43 @@ class OutlierRejectionBase(object):
     outlier_mask.set_selected(self.outliers_list, True)
     self.reflection_table.set_flags(outlier_mask,
       self.reflection_table.flags.outlier_in_scaling)
+
+class TargetedOutlierRejection(OutlierRejectionBase):
+
+  def __init__(self, reflection_table, space_group, zmax, target):
+    self.target_table = target
+    super(TargetedOutlierRejection, self).__init__(
+      reflection_table, space_group, zmax)
+
+  def do_outlier_rejection(self):
+    outlier_indices = self.round_of_outlier_rejection(self.reflection_table,
+      self.target_table)
+    self.outliers_list.extend(outlier_indices)
+
+  def round_of_outlier_rejection(self, reflection_table, target):
+    #calculate normalised deviations from target values
+    Ih_table = IhTable([(reflection_table, None)], self.space_group,
+      n_blocks=1).blocked_data_list[0]
+    target_Ih_table = IhTable([(target, None)], self.space_group,
+      n_blocks=1).blocked_data_list[0]
+    target_asu_Ih_dict = dict(zip(target_Ih_table.asu_miller_index,
+      (target_Ih_table.Ih_values, target_Ih_table.variances)))
+    Ih_table.Ih_table['target_Ih_value'] = flex.double(Ih_table.size, 0.0)
+    Ih_table.Ih_table['target_Ih_sigmasq'] = flex.double(Ih_table.size, 0.0)
+    for j, miller_idx in enumerate(Ih_table.asu_miller_index):
+      if miller_idx in target_asu_Ih_dict:
+        Ih_table.Ih_table['target_Ih_value'][j] = target_asu_Ih_dict[miller_idx][0]
+        Ih_table.Ih_table['target_Ih_sigmasq'][j] = target_asu_Ih_dict[miller_idx][1]
+    norm_dev = (Ih_table.intensities - (
+      Ih_table.inverse_scale_factors * Ih_table.Ih_table['target_Ih_value']))/ \
+      ((Ih_table.variances + ((Ih_table.inverse_scale_factors**2) * \
+      Ih_table.Ih_table['target_Ih_sigmasq']))**0.5)
+    z_score = (norm_dev**2)**0.5
+    outliers_sel = z_score > self.zmax
+
+    nz_weights_isel = Ih_table.nonzero_weights#.iselection()
+    outlier_indices = nz_weights_isel.select(outliers_sel)
+    return outlier_indices
 
 
 class SimpleNormDevOutlierRejection(OutlierRejectionBase):

@@ -662,6 +662,39 @@ class TargetScaler(MultiScalerBase):
       scaler.select_reflections_for_scaling(for_multi=True)
     self.initialise_targeted_Ih_table()
 
+  def round_of_outlier_rejection(self):
+    #First join the datasets
+    self._reflection_table = flex.reflection_table()
+    n_refl_in_each_table = [0]
+    cumulative_size = 0
+    for scaler in self.unscaled_scalers:
+      self._reflection_table.extend(scaler.reflection_table)
+      cumulative_size += scaler.reflection_table.size()
+      n_refl_in_each_table.append(cumulative_size)
+    # Now do outlier rejection of joint dataset
+    self._reflection_table = reject_outliers(self._reflection_table,
+      self.space_group, 'target', self.params.scaling_options.outlier_zmax,
+      target=self.single_scalers[0].reflection_table)
+    # Now split back out to individual reflection tables so that flags are
+    # updated.
+    for i, scaler in enumerate(self.unscaled_scalers):
+      scaler.reflection_table = self.reflection_table[n_refl_in_each_table[i]:
+        n_refl_in_each_table[i+1]]
+
+  def outlier_rejection_routine(self, make_ready_for_scaling=True):
+    """Routine to perform outlier rejection on scaled scaler."""
+    self.expand_scales_to_all_reflections()
+    self.round_of_outlier_rejection()
+    if make_ready_for_scaling:
+      for scaler in self.unscaled_scalers:
+        scaler.scaling_selection = scaler._scaling_subset(
+          scaler.reflection_table, scaler.params)
+      self._target_Ih_table = IhTable([(x.reflection_table, x.scaling_selection)
+        for x in self.single_scalers], self._space_group,
+        n_blocks=1)#Keep in one table for matching below
+      self.initialise_targeted_Ih_table()
+      self.reselect_reflections_for_scaling()
+
   def update_for_minimisation(self, apm, curvatures=False, calc_Ih=False):
     """Calcalate the new parameters but don't calculate a new Ih."""
     super(TargetScaler, self).update_for_minimisation(apm, curvatures,

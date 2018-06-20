@@ -355,10 +355,10 @@ class Script(object):
         scaler.params.scaling_options.target_model or \
         scaler.params.scaling_options.target_mtz:
         #Do some rounds of targeted scaling and then exit the algorithm.
-        #scaler.expand_scales_to_all_reflections()
-        # Do another round so that more suitable weights are used.
-        #scaler.select_reflections_for_scaling()
-        #scaler.perform_scaling() ##Note - were these helping?
+
+        if scaler.params.scaling_options.outlier_rejection:
+          scaler.outlier_rejection_routine()
+          scaler.perform_scaling()
 
         if scaler.params.scaling_options.full_matrix and (
           scaler.params.scaling_refinery.engine == 'SimpleLBFGS'):
@@ -367,7 +367,8 @@ class Script(object):
             max_iterations=scaler.params.scaling_refinery.full_matrix_max_iterations)
 
         scaler.expand_scales_to_all_reflections(calc_cov=True)
-
+        if scaler.params.scaling_options.outlier_rejection:
+          scaler.round_of_outlier_rejection()
         if scaler.params.weighting.optimise_errors:
           scaler.perform_error_optimisation()
 
