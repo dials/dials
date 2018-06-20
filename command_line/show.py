@@ -375,31 +375,41 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
 
     rows = [["Column", "min", "max", "mean"]]
     for k, col in rlist.cols():
-      if k in formats and not "%" in formats[k]:
+      if k in formats and not "%" in formats.get(k,"%s"):
         # Allow blanking out of entries that wouldn't make sense
-        rows.append([k, formats[k], formats[k], formats[k]])
+        rows.append([k, formats.get(k,"%s"), formats.get(k,"%s"), formats.get(k,"%s")])
       elif type(col) in (flex.double, flex.int, flex.size_t):
         if type(col) in (flex.int, flex.size_t):
           col = col.as_double()
-        rows.append([k, formats[k] %flex.min(col), formats[k] %flex.max(col),
-                     formats[k]%flex.mean(col)])
+        rows.append([k, 
+                     formats.get(k,"%s") % flex.min(col), 
+                     formats.get(k,"%s") % flex.max(col),
+                     formats.get(k,"%s") % flex.mean(col)])
       elif type(col) in (flex.vec3_double, flex.miller_index):
         if isinstance(col, flex.miller_index):
           col = col.as_vec3_double()
-        rows.append([k, formats[k] %col.min(), formats[k] %col.max(),
-                     formats[k]%col.mean()])
+        rows.append([k, 
+                     formats.get(k,"%s") % col.min(), 
+                     formats.get(k,"%s") % col.max(),
+                     formats.get(k,"%s") % col.mean()])
       elif isinstance(col, flex.shoebox):
         rows.append([k, "", "", ""])
         si = col.summed_intensity().observed_value()
-        rows.append(["  summed I", formats[k] %flex.min(si), formats[k] %flex.max(si),
-                     formats[k]%flex.mean(si)])
+        rows.append(["  summed I", 
+                     formats.get(k,"%s") % flex.min(si),
+                     formats.get(k,"%s") % flex.max(si),
+                     formats.get(k,"%s") % flex.mean(si)])
         x1, x2, y1, y2, z1, z2 = col.bounding_boxes().parts()
         bbox_sizes = ((z2-z1)*(y2-y1)*(x2-x1)).as_double()
-        rows.append(["  N pix", formats[k] %flex.min(bbox_sizes), formats[k] %flex.max(bbox_sizes),
-                     formats[k]%flex.mean(bbox_sizes)])
+        rows.append(["  N pix", 
+                     formats.get(k,"%s") % flex.min(bbox_sizes),
+                     formats.get(k,"%s") % flex.max(bbox_sizes),
+                     formats.get(k,"%s") % flex.mean(bbox_sizes)])
         fore_valid = col.count_mask_values(foreground_valid).as_double()
-        rows.append(["  N valid foreground pix", formats[k] %flex.min(fore_valid), formats[k] %flex.max(fore_valid),
-                     formats[k]%flex.mean(fore_valid)])
+        rows.append(["  N valid foreground pix", 
+                     formats.get(k,"%s") % flex.min(fore_valid),
+                     formats.get(k,"%s") % flex.max(fore_valid),
+                     formats.get(k,"%s") % flex.mean(fore_valid)])
 
     text.append(
       table_utils.format(rows, has_header=True, prefix="| ", postfix=" |"))
