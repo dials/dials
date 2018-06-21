@@ -98,6 +98,7 @@ class determine_space_group(object):
         normalise = self.ml_aniso_normalisation
 
       for i in range(int(flex.max(self.dataset_ids)+1)):
+        logger.info('Normalising intensities for dataset %i' % (i+1))
         sel = self.dataset_ids == i
         intensities = self.intensities.select(self.dataset_ids == i)
         if i == 0:
@@ -182,10 +183,25 @@ class determine_space_group(object):
           intensities.unit_cell(), normalisation.b_wilson))
 
     # record output in log file
+    if aniso:
+      b_cart = normalisation.b_cart
+      logger.info('ML estimate of overall B_cart value:')
+      logger.info('''\
+  %5.2f, %5.2f, %5.2f
+  %12.2f, %5.2f
+  %19.2f''' % (b_cart[0], b_cart[3], b_cart[4],
+                          b_cart[1], b_cart[5],
+                                     b_cart[2]))
+    else:
+      logger.info('ML estimate of overall B value:')
+      logger.info('   %5.2f A**2' %normalisation.b_wilson)
+    logger.info('ML estimate of  -log of scale factor:')
+    logger.info('  %5.2f' %(normalisation.p_scale))
+
     s = StringIO()
     mr.show(out=s)
     normalisation.show(out=s)
-    logger.info(s.getvalue())
+    logger.debug(s.getvalue())
 
     # apply scales
     return intensities.customized_copy(
