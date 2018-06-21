@@ -9,6 +9,7 @@ necessary), and return common dials objects such as reflection tables and
 ExperimentLists.
 """
 from copy import deepcopy
+import logging
 import pkg_resources
 from libtbx import phil
 from mock import Mock
@@ -21,6 +22,8 @@ from dials.algorithms.scaling.model.scaling_model_factory import \
   KBSMFactory
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.scaling_utilities import get_next_unique_id
+
+logger = logging.getLogger('dials')
 
 def calculate_prescaling_correction(reflection_table):
   """Calculate the multiplicative conversion factor for intensities."""
@@ -55,6 +58,8 @@ def choose_scaling_intensities(reflection_table, integration_method='prf'):
       assert 'intensity.sum.value' in reflection_table, '''No recognised
         intensity values found.'''
       intstr = 'intensity.sum.value'
+  logger.info(('{0} intensities will be used for scaling (and mtz \n'
+        'output if applicable). \n').format(intstr))
   varstr = intstr.rstrip('value') + 'variance'
 
   reflection_table['intensity'] = reflection_table[intstr] * conv

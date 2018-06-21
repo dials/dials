@@ -157,6 +157,9 @@ class ScalerBase(object):
     sel3 = Ioversigma > params.reflection_selection.Isigma_range[0]
     if params.reflection_selection.Isigma_range[1] != 0.0:
       sel3 = sel3 & (Ioversigma < params.reflection_selection.Isigma_range[1])
+    if 'partiality' in reflection_table:
+      sel3 = sel3 & (reflection_table['partiality'] > \
+        params.reflection_selection.min_partiality)
     selection = sel & sel1 & sel2 & sel3
     if params.reflection_selection.d_range:
       d_sel = reflection_table['d'] > params.reflection_selection.d_range[0]
@@ -168,17 +171,21 @@ class ScalerBase(object):
       reflection_table.size()))
     if reflection_table['Esq'].count(1.0) == reflection_table.size():
       msg += ('This was based on selection criteria of \n'
-      'Isigma_range = {0}, d_range = {1}. \n').format(params.reflection_selection.Isigma_range
-      if params.reflection_selection.Isigma_range[1] != 0.0 else
-      [params.reflection_selection.Isigma_range[0], 'No max'],
-      params.reflection_selection.d_range)
+      'Isigma_range = {0}, d_range = {1}, min_partiality = {2}.\n').format(
+        params.reflection_selection.Isigma_range
+        if params.reflection_selection.Isigma_range[1] != 0.0 else
+        [params.reflection_selection.Isigma_range[0], 'No max'],
+        params.reflection_selection.d_range,
+        params.reflection_selection.min_partiality)
     else:
       msg += ('This was based on selection criteria of \n'
-      'E2_range = {0}, Isigma_range = {1}, d_range = {2}. \n').format(
+      'E2_range = {0}, Isigma_range = {1}, d_range = {2}, \n'
+      'min_partiality = {3}. \n').format(
       params.reflection_selection.E2_range, params.reflection_selection.Isigma_range
       if params.reflection_selection.Isigma_range[1] != 0.0 else
       [params.reflection_selection.Isigma_range[0], 'No max'],
-      params.reflection_selection.d_range)
+      params.reflection_selection.d_range,
+      params.reflection_selection.min_partiality)
     logger.info(msg)
     return selection
 
@@ -628,7 +635,7 @@ class TargetScaler(MultiScalerBase):
       for x in self.single_scalers], self._space_group,
       n_blocks=1)#Keep in one table for matching below
     self.initialise_targeted_Ih_table()
-    logger.info('Completed initialisation of TargetScaler. \n' + '*'*40 + '\n')
+    logger.info('Completed initialisation of TargetScaler. \n\n' + '='*80 + '\n')
 
   def initialise_targeted_Ih_table(self):
     """Initialise an Ih_table, using self._target_Ih_table to set the Ih values"""
@@ -663,22 +670,29 @@ class TargetScaler(MultiScalerBase):
     self.initialise_targeted_Ih_table()
 
   def round_of_outlier_rejection(self):
-    #First join the datasets
-    self._reflection_table = flex.reflection_table()
+    """Perform a round of targeted outlier rejection. This performs rejection
+    based on the normalised deviation of the reflections of the datasets being
+    scaled from the values in the target datasets."""
+    # First join the datasets being scaled.
+    reflection_table = flex.reflection_table()
     n_refl_in_each_table = [0]
     cumulative_size = 0
     for scaler in self.unscaled_scalers:
-      self._reflection_table.extend(scaler.reflection_table)
+      reflection_table.extend(scaler.reflection_table)
       cumulative_size += scaler.reflection_table.size()
       n_refl_in_each_table.append(cumulative_size)
+    # Now join target datasets
+    target_table = flex.reflection_table()
+    for scaler in self.single_scalers:
+      target_table.extend(scaler.reflection_table)
     # Now do outlier rejection of joint dataset
-    self._reflection_table = reject_outliers(self._reflection_table,
+    reflection_table = reject_outliers(reflection_table,
       self.space_group, 'target', self.params.scaling_options.outlier_zmax,
-      target=self.single_scalers[0].reflection_table)
+      target=target_table)
     # Now split back out to individual reflection tables so that flags are
     # updated.
     for i, scaler in enumerate(self.unscaled_scalers):
-      scaler.reflection_table = self.reflection_table[n_refl_in_each_table[i]:
+      scaler.reflection_table = reflection_table[n_refl_in_each_table[i]:
         n_refl_in_each_table[i+1]]
 
   def outlier_rejection_routine(self, make_ready_for_scaling=True):
@@ -689,9 +703,6 @@ class TargetScaler(MultiScalerBase):
       for scaler in self.unscaled_scalers:
         scaler.scaling_selection = scaler._scaling_subset(
           scaler.reflection_table, scaler.params)
-      self._target_Ih_table = IhTable([(x.reflection_table, x.scaling_selection)
-        for x in self.single_scalers], self._space_group,
-        n_blocks=1)#Keep in one table for matching below
       self.initialise_targeted_Ih_table()
       self.reselect_reflections_for_scaling()
 
@@ -741,8 +752,9 @@ class NullScaler(ScalerBase):
     self._reflection_table.set_flags(flex.bool(n_refl, False),
       self._reflection_table.flags.excluded_for_scaling)
     self.scaling_selection = None
-    logger.info('NullScaler contains %s reflections', n_refl)
-    logger.info('Completed configuration of NullScaler. \n\n' + '='*80 + '\n')
+    logger.info('Target dataset contains %s reflections', n_refl)
+    logger.info(('Completed preprocessing and initialisation for this dataset.'
+      '\n\n' + '='*80 + '\n'))
 
   @property
   def components(self):

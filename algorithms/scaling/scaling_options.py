@@ -68,6 +68,10 @@ phil_scope = iotbx.phil.parse('''
       .type = floats(size=2)
       .help = "Minimum and maximum - values used to subset of reflections
               to determine the scaling model."
+    min_partiality = 0.6
+      .type = float
+      .help = "Minimum partiality to use when selecting subset of reflections
+               to determine the scaling model.."
   }
   weighting {
     weighting_scheme = *invvar unity GM cauchy huber
@@ -107,6 +111,10 @@ phil_scope = iotbx.phil.parse('''
       .type = float
       .help = "Option to apply a low resolution cutoff for the dataset (i.e.
                the chosen reflections have d < d_max)."
+    partiality_cutoff = 0.2
+      .type = float
+      .help = "Value below which reflections are removed from the dataset due
+               to low partiality."
   }
   dataset_selection {
     use_datasets = None
@@ -148,9 +156,6 @@ phil_scope = iotbx.phil.parse('''
               This free set is used to calculate an RMSD, which is shown alongisde
               the 'working' RMSD during refinement, but is not currently used
               to terminate refinement or make any choices on the model."
-    min_partiality = 0.6
-      .type = float
-      .help = "Minimum partiality to use for scaling."
     free_set_percentage = 10.0
       .type = float
       .help = "Percentage of symmetry equivalent groups to use for the free set,

@@ -207,6 +207,10 @@ class Script(object):
       if self.params.cut_data.d_max:
         reflection.set_flags(reflection['d'] > self.params.cut_data.d_max,
         reflection.flags.user_excluded_in_scaling)
+      if self.params.cut_data.partiality_cutoff and 'partiality' in reflection:
+        reflection.set_flags(reflection['partiality'] < \
+          self.params.cut_data.partiality_cutoff,
+          reflection.flags.user_excluded_in_scaling)
     if self.params.cut_data.exclude_image_range:
       if len(self.reflections) == 1:
         start_excl = self.params.cut_data.exclude_image_range[0]
