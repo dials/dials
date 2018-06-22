@@ -146,9 +146,6 @@ def imageset_as_bitmaps(imageset, params):
   for i_image in range(start, end+1):
     image = imageset.get_raw_data(i_image-start)
 
-    #if len(detector) == 1:
-      #image = [image]
-
     trange = [p.get_trusted_range() for p in detector]
     mask = imageset.get_mask(i_image-start)
     if mask is None:

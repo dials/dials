@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import pytest
 from libtbx import easy_run
 
 def test_export_bitmaps(dials_regression, tmpdir):
@@ -28,6 +29,16 @@ def test_export_bitmaps(dials_regression, tmpdir):
   cmd = 'dials.export_bitmaps %s/centroid_0001.cbf prefix=img_ padding=5' %data_dir
   result = easy_run.fully_buffered(cmd).raise_if_errors()
   assert os.path.exists('img_00001.png')
+
+  cmd = 'dials.export_bitmaps %s/centroid_0001.cbf output_file=kittens.png' %data_dir
+  result = easy_run.fully_buffered(cmd).raise_if_errors()
+  assert os.path.exists('kittens.png')
+
+  with pytest.raises(RuntimeError):
+    # setting output filename not allowed with >1 image
+    cmd = ' '.join([
+      'dials.export_bitmaps', '%s/datablock.json' %data_dir, 'output_file=kittens.png'])
+    result = easy_run.fully_buffered(cmd).raise_if_errors()
 
 def test_still_image(dials_regression, tmpdir):
   tmpdir.chdir()
