@@ -80,7 +80,8 @@ def run(args):
     #epilog=help_message
   )
 
-  params, options, args = parser.parse_args(show_diff_phil=False, return_unhandled=True)
+  params, options, args = parser.parse_args(
+    args=args, show_diff_phil=False, return_unhandled=True)
 
   # Configure the logging
   log.config(
