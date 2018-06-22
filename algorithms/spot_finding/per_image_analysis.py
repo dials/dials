@@ -44,6 +44,7 @@ class binner_equal_population(object):
 class binner_d_star_cubed(object):
 
   def __init__(self, d_spacings, target_n_per_bin=25, max_slots=40, min_slots=20):
+    d_spacings = flex.double(list(set(d_spacings)))
     d_spacings_sorted = flex.sorted(d_spacings, reverse=True)
     d_star_cubed_sorted = flex.pow(1/d_spacings_sorted, 3)
 
@@ -53,6 +54,7 @@ class binner_d_star_cubed(object):
       math.ceil(min(max(target_n_per_bin, 0.05*len(d_spacings)),
                     0.25*len(d_spacings))))
     bin_step = d_star_cubed_sorted[low_res_count] - d_star_cubed_sorted[0]
+    assert bin_step > 0
     n_slots = int(
       math.ceil((d_star_cubed_sorted[-1] - d_star_cubed_sorted[0])/bin_step))
 
