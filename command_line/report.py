@@ -677,8 +677,7 @@ ice rings, or poor spot-finding parameters.
           sel = (zsel >= i) & (zsel < (i+1))
           indexed_per_lattice_per_image[j].append(sel.count(True))
 
-      d.update({
-        'indexed_per_lattice_per_image': {
+      d['indexed_per_lattice_per_image'] = {
           'data': [],
           'layout': {
             'title': 'Indexed reflections per lattice per image',
@@ -688,8 +687,7 @@ ice rings, or poor spot-finding parameters.
               'rangemode': 'tozero'
             },
           },
-        },
-      })
+        }
 
       for j in range(flex.max(ids)+1):
         d['indexed_per_lattice_per_image']['data'].append({
@@ -976,8 +974,7 @@ class CentroidAnalyser(object):
     z2[:] = np.NAN
     z2[nonzeros] = (H2[nonzeros]/H[nonzeros])
 
-    d.update({
-      'centroid_differences_x': {
+    d['centroid_differences_x'] = {
         'data': [{
           'name': 'centroid_differences_x',
           'x': xedges.tolist(),
@@ -1005,11 +1002,9 @@ class CentroidAnalyser(object):
           'width': 500,
           'height': 450,
         },
-      },
-    })
+      }
 
-    d.update({
-      'centroid_differences_y': {
+    d['centroid_differences_y'] = {
         'data': [{
           'name': 'centroid_differences_y',
           'x': xedges.tolist(),
@@ -1037,8 +1032,7 @@ class CentroidAnalyser(object):
           'width': 500,
           'height': 450,
         },
-      },
-    })
+      }
     return d
 
   def centroid_diff_z(self, rlist, threshold):
@@ -1280,8 +1274,7 @@ class CentroidAnalyser(object):
     }
 
 
-    d.update({
-      'residuals_xy': {
+    d['residuals_xy'] = {
         'data': [
           #{
             #'x': list(dx),
@@ -1327,13 +1320,11 @@ class CentroidAnalyser(object):
         ],
         'layout': copy.deepcopy(density_hist_layout),
       }
-    })
     d['residuals_xy']['layout']['title'] = 'Centroid residuals in X and Y'
 
     if not is_stills:
 
-      d.update({
-        'residuals_zy': {
+      d['residuals_zy'] = {
           'data': [
             #{
               #'x': list(dz),
@@ -1379,12 +1370,10 @@ class CentroidAnalyser(object):
           ],
           'layout': copy.deepcopy(density_hist_layout),
         }
-      })
       d['residuals_zy']['layout']['title'] = 'Centroid residuals in Z and Y'
       d['residuals_zy']['layout']['xaxis']['title'] = 'Z'
 
-      d.update({
-        'residuals_xz': {
+      d['residuals_xz'] = {
           'data': [
             #{
               #'x': list(dx),
@@ -1430,7 +1419,6 @@ class CentroidAnalyser(object):
           ],
           'layout': copy.deepcopy(density_hist_layout),
         }
-      })
       d['residuals_xz']['layout']['title'] = 'Centroid residuals in X and Z'
       d['residuals_xz']['layout']['yaxis']['title'] = 'Z'
 
@@ -2375,12 +2363,10 @@ class ScalingModelAnalyser(object):
             if model.id_ == 'physical':
               if 'scale' in model.components or 'decay' in model.components:
                 smooth = self.plot_smooth_model(exp)
-                d.update({
-                  'smooth_scale_model_'+str(i) : smooth['smooth_scale_model']})
+                d['smooth_scale_model_'+str(i)] = smooth['smooth_scale_model']
               if 'absorption' in model.components:
                 absorption = self.plot_absorption_surface(exp)
-                d.update({
-                  'absorption_surface_'+str(i):absorption['absorption_surface']})
+                d['absorption_surface_'+str(i)] = absorption['absorption_surface']
       else:
         model = experiments[0].scaling_model
         if model is not None:
