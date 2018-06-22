@@ -38,6 +38,10 @@ prefix = "image"
   .type = str
 output_dir = None
   .type = path
+output_file = None
+  .type = str
+  .help = "Full name of the output file. Overrides 'prefix' and the default "
+          "file extension. Only makes sense if a single file is written."
 display = *image mean variance dispersion sigma_b \
           sigma_s threshold global_threshold
   .type = choice
@@ -134,6 +138,9 @@ def imageset_as_bitmaps(imageset, params):
     start, end = scan.get_image_range()
   else:
     start, end = 1, len(imageset)
+  if params.output_file:
+    if start != end:
+      sys.exit('output_file can only be specified if a single image is exported')
   for i_image in range(start, end+1):
     image = imageset.get_raw_data(i_image-start)
 
@@ -196,8 +203,11 @@ def imageset_as_bitmaps(imageset, params):
                       (flex_image.size2()//binning,
                        flex_image.size1()//binning),
                        flex_image.export_string)
-    path = os.path.join(
-      output_dir, params.prefix + ("%04d" % i_image) + '.' + params.format)
+    if params.output_file:
+      path = os.path.join(output_dir, params.output_file)
+    else:
+      path = os.path.join(
+          output_dir, "%s%04d.%s" % (params.prefix, i_image, params.format))
 
     print("Exporting %s" %path)
     output_files.append(path)
