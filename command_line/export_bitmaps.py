@@ -116,6 +116,7 @@ def imageset_as_bitmaps(imageset, params):
     output_dir = "."
   elif not os.path.exists(output_dir):
     os.makedirs(output_dir)
+  output_files = []
 
   detector = imageset.get_detector()
 
@@ -199,11 +200,13 @@ def imageset_as_bitmaps(imageset, params):
       output_dir, params.prefix + ("%04d" % i_image) + '.' + params.format)
 
     print("Exporting %s" %path)
+    output_files.append(path)
     with open(path, 'wb') as tmp_stream:
       pil_img.save(tmp_stream, format=params.format,
                    compress_level=params.png.compress_level,
                    quality=params.jpeg.quality)
 
+  return output_files
 
 def image_filter(raw_data, mask, display,
                  gain_value, nsigma_b, nsigma_s, global_threshold,
