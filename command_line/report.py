@@ -2532,8 +2532,6 @@ class ScalingModelAnalyser(object):
     return d
 
 def scaling_model_tables(reflections, experiments):
-  if experiments.scaling_models()[0] is None:
-    return [], [], []
   if not 'inverse_scale_factor' in reflections:
     return [], [], []
   from dials.algorithms.scaling.scaling_library import \
@@ -2557,17 +2555,21 @@ def scaling_model_tables(reflections, experiments):
     ('R-meas', '{:.4f}'.format(result.r_meas)),
     ('R-pim', '{:.4f}'.format(result.r_pim))]
   #Summary of scaling model.
-  scaling_models = [exp.scaling_model.id_ for exp in experiments]
-  if len(set(scaling_models)) == 1:
-    scaling_models = [scaling_models[0]]
-  summary = [('Number of datasets', len(experiments)), ('Scaling model(s) applied',
-    ', '.join(i.capitalize() for i in scaling_models))]
-  if 'error_model_type' in experiments[0].scaling_model.configdict:
-    conf = experiments[0].scaling_model.configdict
-    typ = conf['error_model_type']
-    summary.append(('Error model applied', str(conf['error_model_type'])+\
-      ': parameters = '+ ', '.join('{:.3f}'.format(i) for i in \
-      conf['error_model_parameters'])))
+  scaling_models = [exp.scaling_model.id_ if
+    exp.scaling_model is not None else None for exp in experiments]
+  if all([i is None for i in scaling_models]): #no scaling models.
+    summary = []
+  else:
+    if len(set(scaling_models)) == 1: #all scaling models same.
+      scaling_models = [scaling_models[0]]
+    summary = [('Number of datasets', len(experiments)), ('Scaling model(s) applied',
+      ', '.join(i.capitalize() for i in scaling_models))]
+    if 'error_model_type' in experiments[0].scaling_model.configdict:
+      conf = experiments[0].scaling_model.configdict
+      typ = conf['error_model_type']
+      summary.append(('Error model applied', str(conf['error_model_type'])+\
+        ': parameters = '+ ', '.join('{:.3f}'.format(i) for i in \
+        conf['error_model_parameters'])))
 
   return summary, summary_table, results_table
 
