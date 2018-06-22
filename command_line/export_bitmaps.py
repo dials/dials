@@ -36,6 +36,8 @@ format = jpeg *png tiff
   .type = choice
 prefix = "image"
   .type = str
+padding = 4
+  .type = int(value_min=0)
 output_dir = None
   .type = path
 output_file = None
@@ -207,7 +209,7 @@ def imageset_as_bitmaps(imageset, params):
       path = os.path.join(output_dir, params.output_file)
     else:
       path = os.path.join(
-          output_dir, "%s%04d.%s" % (params.prefix, i_image, params.format))
+          output_dir, "{p.prefix}{image:0{p.padding}}.{p.format}".format(p=params, image=i_image))
 
     print("Exporting %s" %path)
     output_files.append(path)
