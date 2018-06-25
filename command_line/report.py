@@ -2433,10 +2433,11 @@ class ScalingModelAnalyser(object):
         'type' : 'scatter',
         'mode' : 'markers',
         'name' : 'scale term parameters',
-        'error_y' : dict(type='data', array=list(scale_SF.parameter_esds)),
         'xaxis' : 'x',
         'yaxis' : 'y2'
       })
+      if scale_SF.parameter_esds:
+        data[-1]['error_y'] = {'type':'data', 'array':list(scale_SF.parameter_esds)}
 
     if 'decay' in configdict['corrections']:
       rt = flex.reflection_table()
@@ -2462,10 +2463,11 @@ class ScalingModelAnalyser(object):
         'type' : 'scatter',
         'mode' : 'markers',
         'name' : 'decay term parameters',
-        'error_y' : dict(type='data', array=list(decay_SF.parameter_esds)),
         'xaxis' : 'x',
         'yaxis' : 'y'
       })
+      if decay_SF.parameter_esds:
+        data[-1]['error_y'] = {'type':'data', 'array':list(decay_SF.parameter_esds)}
     d['smooth_scale_model']['data'].extend(data)
     return d
 
