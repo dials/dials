@@ -38,6 +38,10 @@ prefix = "image"
   .type = str
 output_dir = None
   .type = path
+output_file = None
+  .type = str
+  .help = "Full name of the output file. Overrides 'prefix' and the default "
+          "file extension. Only makes sense if a single file is written."
 display = *image mean variance dispersion sigma_b \
           sigma_s threshold global_threshold
   .type = choice
@@ -116,6 +120,7 @@ def imageset_as_bitmaps(imageset, params):
     output_dir = "."
   elif not os.path.exists(output_dir):
     os.makedirs(output_dir)
+  output_files = []
 
   detector = imageset.get_detector()
 
@@ -132,7 +137,10 @@ def imageset_as_bitmaps(imageset, params):
   if scan is not None and scan.get_oscillation()[1] > 0:
     start, end = scan.get_image_range()
   else:
-    start, end = 0, len(imageset)
+    start, end = 1, len(imageset)
+  if params.output_file:
+    if start != end:
+      sys.exit('output_file can only be specified if a single image is exported')
   for i_image in range(start, end+1):
     image = imageset.get_raw_data(i_image-start)
 
@@ -195,15 +203,20 @@ def imageset_as_bitmaps(imageset, params):
                       (flex_image.size2()//binning,
                        flex_image.size1()//binning),
                        flex_image.export_string)
-    path = os.path.join(
-      output_dir, params.prefix + ("%04d" % i_image) + '.' + params.format)
+    if params.output_file:
+      path = os.path.join(output_dir, params.output_file)
+    else:
+      path = os.path.join(
+          output_dir, "%s%04d.%s" % (params.prefix, i_image, params.format))
 
     print("Exporting %s" %path)
+    output_files.append(path)
     with open(path, 'wb') as tmp_stream:
       pil_img.save(tmp_stream, format=params.format,
                    compress_level=params.png.compress_level,
                    quality=params.jpeg.quality)
 
+  return output_files
 
 def image_filter(raw_data, mask, display,
                  gain_value, nsigma_b, nsigma_s, global_threshold,
