@@ -25,6 +25,8 @@ class BasicErrorModel(object):
     logger.info("Initialising an error model for refinement.")
     self.Ih_table = Ih_table
     self.n_bins = n_bins
+    #First select on initial delta
+    self.filter_large_deviants(cutoff=6.0)
     self.Ih_table.calc_nh()
     self.n_h = self.Ih_table.n_h
     self.sigmaprime = None
@@ -52,6 +54,17 @@ class BasicErrorModel(object):
   def bin_counts(self):
     """An array of the number of intensities assigned to each bin."""
     return self._bin_counts
+
+  def filter_large_deviants(self, cutoff=6.0):
+    """Do a first pass to calculate delta_hl and filter out the largest
+    deviants, so that the error model is not misled by these and instead
+    operates on the central ~90% of the data."""
+    self.Ih_table.calc_nh()
+    self.n_h = self.Ih_table.n_h
+    self.sigmaprime = self.calc_sigmaprime([1.0, 0.0])
+    delta_hl = self.calc_deltahl()
+    sel = flex.abs(delta_hl) < cutoff
+    self.Ih_table.select(sel)
 
   def calc_sigmaprime(self, x):
     """Calculate the error from the model."""
