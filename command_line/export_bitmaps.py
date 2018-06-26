@@ -126,10 +126,6 @@ def imageset_as_bitmaps(imageset, params):
 
   detector = imageset.get_detector()
 
-  if len(detector) > 1:
-    raise Sorry('Currently only single panel detectors are supported by %s'
-                %libtbx.env.dispatcher_name)
-
   panel = detector[0]
   scan = imageset.get_scan()
   # XXX is this inclusive or exclusive?
@@ -194,13 +190,13 @@ def imageset_as_bitmaps(imageset, params):
     # XXX is size//binning safe here?
     try: # fromstring raises Exception in Pillow >= 3.0.0
       pil_img = Image.fromstring('RGB',
-                      (flex_image.size2()//binning,
-                       flex_image.size1()//binning),
+                      (flex_image.ex_size2()//binning,
+                       flex_image.ex_size1()//binning),
                        flex_image.export_string)
     except NotImplementedError:
       pil_img = Image.frombytes('RGB',
-                      (flex_image.size2()//binning,
-                       flex_image.size1()//binning),
+                      (flex_image.ex_size2()//binning,
+                       flex_image.ex_size1()//binning),
                        flex_image.export_string)
     if params.output_file:
       path = os.path.join(output_dir, params.output_file)
