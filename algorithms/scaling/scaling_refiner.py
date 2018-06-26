@@ -184,8 +184,8 @@ class ScalingRefinery(object):
     except IndexError:
       return False
 
-    tests = [abs((e[1] - e[0])/e[1]) < self._rmsd_tolerance if e[1] > 0
-      else True for e in zip(r1, r2)]
+    tests = [abs((r2[0] - r1[0])/r2[0]) < self._rmsd_tolerance if r2[0] > 0
+      else True]
 
     return all(tests)
 

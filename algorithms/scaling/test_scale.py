@@ -48,7 +48,7 @@ def test_scale_physical(dials_regression, tmpdir):
   pickle_path = os.path.join(data_dir, "20_integrated.pickle")
   sweep_path = os.path.join(data_dir, "20_integrated_experiments.json")
   extra_args = ["model=physical", "merged_mtz=merged.mtz",
-    "unmerged_mtz=unmerged.mtz"]
+    "unmerged_mtz=unmerged.mtz", "use_free_set=1"]
 
   with tmpdir.as_cwd():
     _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
