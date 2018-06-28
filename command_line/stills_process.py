@@ -283,6 +283,12 @@ class Script(object):
       info='dials.process.log',
       debug='dials.process.debug.log')
 
+    bad_phils = [f for f in all_paths if os.path.splitext(f)[1] == ".phil"]
+    if len(bad_phils) > 0:
+      self.parser.print_help()
+      logger.error('Error: the following phil files were not understood: %s'%(", ".join(bad_phils)))
+      return
+
     # Log the diff phil
     diff_phil = self.parser.diff_phil.as_str()
     if diff_phil is not '':
