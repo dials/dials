@@ -10,6 +10,7 @@ A TargetScaler is used for targeted scaling.
 import abc
 import logging
 import time
+from mock import MagicMock
 from cctbx import crystal, sgtbx
 from scitbx import sparse
 from dials_scaling_ext import row_multiply
@@ -209,7 +210,7 @@ class ScalerBase(object):
       self = refinery.return_scaler()
       logger.info('\n'+'='*80+'\n')
 
-  def perform_error_optimisation(self):
+  def perform_error_optimisation(self, update_Ih=True):
     """Perform an optimisation of the sigma values."""
     Ih_table = IhTable([(x.reflection_table, None)
       for x in self.active_scalers], self._space_group,
@@ -220,17 +221,20 @@ class ScalerBase(object):
       max_iterations=100)
     refinery.run()
     error_model = refinery.return_error_model()
-    self.update_error_model(error_model)
+    self.update_error_model(error_model, update_Ih=update_Ih)
     logger.info(error_model)
 
-  def error_optimisation_routine(self, make_ready_for_scaling=True):
+  def error_optimisation_routine(self, make_ready_for_scaling=True, update_Ih=True):
     """Routine to perform error optimisation on scaled scaler."""
     self.expand_scales_to_all_reflections() #no outlier rej
-    self.perform_error_optimisation()
+    self.perform_error_optimisation(update_Ih=update_Ih)
     if make_ready_for_scaling:
       self.reselect_reflections_for_scaling()
 
   def round_of_outlier_rejection(self):
+    self._Ih_table = []
+    import gc
+    gc.collect()
     self._reflection_table = reject_outliers(self._reflection_table,
       self.space_group, self.params.scaling_options.outlier_rejection,
       self.params.scaling_options.outlier_zmax)
@@ -316,16 +320,19 @@ class SingleScalerBase(ScalerBase):
           self._var_cov.assign_block(sub, cumul_pos_dict[name],
             cumul_pos_dict[name2])
 
-  def update_for_minimisation(self, apm, curvatures=False):
+  def update_for_minimisation(self, apm, block_id, curvatures=False):
     """Update the scale factors and Ih for the next minimisation iteration."""
     apm_i = apm.apm_list[0]
-    basis_fn = self._basis_function.calculate_scales_and_derivatives(apm_i)
-    self.Ih_table.set_derivatives(basis_fn[1])
+    basis_fn = self._basis_function.calculate_scales_and_derivatives(apm_i, block_id)
+    self.Ih_table.set_derivatives(basis_fn[1], block_id)
     if curvatures:
       apm.curvatures = basis_fn[2]
-    self.Ih_table.set_inverse_scale_factors(basis_fn[0])
-    self.Ih_table.update_weights()
-    self.Ih_table.calc_Ih()
+    self.Ih_table.set_inverse_scale_factors(basis_fn[0], block_id)
+    self.Ih_table.update_weights(block_id)
+    self.Ih_table.calc_Ih(block_id)
+
+  def clear_memory_from_derivs(self, block_id):
+    del self.Ih_table.blocked_data_list[block_id].derivatives
 
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
     self._reflection_table['inverse_scale_factor'] = flex.double(
@@ -336,29 +343,65 @@ class SingleScalerBase(ScalerBase):
       self.reflection_table.flags.bad_for_scaling, all=False)
     scaled_isel = scaled_sel.iselection()
     scaled_invsf = self._reflection_table['inverse_scale_factor'].select(scaled_sel)
-    for component in self.components.itervalues():
-      component.update_reflection_data(self.reflection_table, scaled_sel)
-      component.calculate_scales_and_derivatives()
-      scales = flex.double([])
-      for inv_scale in component.inverse_scales:
-        scales.extend(inv_scale)
-      scaled_invsf *= scales
+    n_blocks = self.params.scaling_options.nproc
+    n_sel = scaled_isel.size()
+    n_start = 0
+    all_scales = flex.double([])
+    all_invsfvars = flex.double([])
+    n_param_tot = sum([c.n_params for c in self.components.itervalues()])
+    for i in range(1, n_blocks+1):
+      n_end = int(i * n_sel / n_blocks)
+      #print(n_start, n_end)
+      block_isel = flex.size_t(range(n_start, n_end))
+      n_start = n_end
+      scales = flex.double(block_isel.size(), 1.0)
+      scales_list = []
+      derivs_list = []
+      jacobian = sparse.matrix(block_isel.size(), n_param_tot)
+      for component in self.components.itervalues():
+        component.update_reflection_data(self.reflection_table, scaled_sel, [block_isel])
+        comp_scales, d = component.calculate_scales_and_derivatives(block_id=0)
+        scales_list.append(comp_scales)
+        if calc_cov:
+          derivs_list.append(d)
+        scales *= comp_scales
+      all_scales.extend(scales)
+      #print(list(all_scales))
+      if calc_cov and self.var_cov_matrix.non_zeroes > 0:
+        n_cumulative_param = 0
+        for i, component in enumerate(self.components):
+          d_block = derivs_list[i]
+          n_param = self.components[component].n_params
+          for i, component_2 in enumerate(self.components):
+            if component_2 != component:
+              d_block = row_multiply(d_block, scales_list[i])
+          jacobian.assign_block(d_block, 0, n_cumulative_param)
+          n_cumulative_param += n_param
+        all_invsfvars.extend(cpp_calc_sigmasq(jacobian.transpose(), self._var_cov))
+      #print(list(all_invsfvars))
+    scaled_invsf *= all_scales
     self.reflection_table['inverse_scale_factor'].set_selected(scaled_isel,
       scaled_invsf)
+    if calc_cov and self.var_cov_matrix.non_zeroes > 0:
+      self.reflection_table['inverse_scale_factor_variance'].set_selected(
+          scaled_isel, all_invsfvars)
     if self.verbosity > 1:
       logger.info('Scale factors determined during minimisation have now been\n'
         'applied to all reflections for dataset %s.\n',
         self.reflection_table['id'][0])
-    if self.var_cov_matrix and calc_cov:
+    '''if self.var_cov_matrix.non_zeroes > 0 and calc_cov:
       if self.verbosity > 1:
         logger.info('Calculating error estimates of inverse scale factors. \n')
+      #for component in self.components.itervalues():
+      #  component.update_reflection_data(self.reflection_table, scaled_sel)
       scaled_invsfvar = calc_sf_variances(self.components, self._var_cov)
       self.reflection_table['inverse_scale_factor_variance'].set_selected(
-        scaled_isel, scaled_invsfvar)
+        scaled_isel, scaled_invsfvar)'''
 
-  def update_error_model(self, error_model):
+  def update_error_model(self, error_model, update_Ih=True):
     """Apply a correction to try to improve the error estimate."""
-    self.Ih_table.update_error_model(error_model)
+    if update_Ih:
+      self.Ih_table.update_error_model(error_model)
     self.experiments.scaling_model.set_error_model(error_model)
 
   def adjust_variances(self):
@@ -432,6 +475,9 @@ class SingleScalerBase(ScalerBase):
 
   def outlier_rejection_routine(self, make_ready_for_scaling=True):
     """Routine to perform outlier rejection on scaled scaler."""
+    self._Ih_table = []
+    import gc
+    gc.collect()
     self.expand_scales_to_all_reflections()
     self.round_of_outlier_rejection()
     #Now update the scaling selection to account for outliers
@@ -440,6 +486,11 @@ class SingleScalerBase(ScalerBase):
         self.params)
       self.create_Ih_table()
       self.reselect_reflections_for_scaling()
+
+  def clear_Ih_tables(self):
+    self._Ih_table = []
+    import gc
+    gc.collect()
 
 class MultiScalerBase(ScalerBase):
   """Base class for Scalers handling multiple datasets"""
@@ -488,12 +539,36 @@ class MultiScalerBase(ScalerBase):
       'in the scaling model for all datasets. \n')
       logger.info(msg)
 
-  def update_for_minimisation(self, apm, curvatures=False, calc_Ih=True):
+  def clear_memory_from_derivs(self, block_id):
+    del self.Ih_table.blocked_data_list[block_id].derivatives
+
+  def clear_Ih_tables(self):
+    for scaler in self.active_scalers:
+      scaler.clear_Ih_tables()
+
+  def update_for_minimisation(self, apm, block_id, curvatures=False, calc_Ih=True):
     """Update the scale factors and Ih for the next iteration of minimisation."""
-    scales_list = []
+    scales = flex.double([])
+    derivs = []
+    for apm_i in apm.apm_list:
+      basis_fn = self._basis_function.calculate_scales_and_derivatives(apm_i, block_id)
+      scales.extend(basis_fn[0])
+      derivs.append(basis_fn[1])
+    deriv_matrix = sparse.matrix(scales.size(), apm.n_active_params)
+    start_row_no = 0
+    for j, deriv in enumerate(derivs):
+      deriv_matrix.assign_block(deriv, start_row_no, apm.apm_data[j]['start_idx'])
+      start_row_no += deriv.n_rows
+    self.Ih_table.set_inverse_scale_factors(scales, block_id)
+    self.Ih_table.set_derivatives(deriv_matrix, block_id)
+    self.Ih_table.update_weights(block_id)
+    if calc_Ih:
+      self.Ih_table.calc_Ih(block_id)
+    
+    '''scales_list = []
     derivs_list = []
     for apm_i in apm.apm_list:
-      basis_fn = self._basis_function.calculate_scales_and_derivatives(apm_i)
+      basis_fn = self._basis_function.calculate_scales_and_derivatives(apm_i, block_id)
       scales_list.append(basis_fn[0])
       derivs_list.append(basis_fn[1])
     scales = zip(*scales_list)
@@ -518,7 +593,7 @@ class MultiScalerBase(ScalerBase):
     if calc_Ih:
       self.Ih_table.calc_Ih()
     # The parallelisation below would work if sparse matrices were
-    # pickleable (I think!) - with more benefit for larger number of datasets.
+    # pickleable (I think!) - with more benefit for larger number of datasets.'''
     '''def task_wrapper(block):
       bf = basis_function(block)
       s, d = bf.calculate_scales_and_derivatives()
@@ -529,9 +604,10 @@ class MultiScalerBase(ScalerBase):
       preserve_exception_message=True)
     scales_list, derivs_list = zip(*task_results)'''
 
-  def update_error_model(self, error_model):
+  def update_error_model(self, error_model, update_Ih=True):
     """Update the error model in Ih table."""
-    self.Ih_table.update_error_model(error_model)
+    if update_Ih:
+      self.Ih_table.update_error_model(error_model)
     for scaler in self.active_scalers:
       scaler.experiments.scaling_model.set_error_model(error_model)
 
@@ -576,6 +652,9 @@ class MultiScaler(MultiScalerBase):
 
   def round_of_outlier_rejection(self):
     #First join the datasets
+    self._Ih_table = []
+    import gc
+    gc.collect()
     self._reflection_table = flex.reflection_table()
     n_refl_in_each_table = [0]
     cumulative_size = 0
@@ -606,6 +685,9 @@ class MultiScaler(MultiScalerBase):
 
   def outlier_rejection_routine(self, make_ready_for_scaling=True):
     """Routine to perform outlier rejection on scaled scaler."""
+    self._Ih_table = []
+    import gc
+    gc.collect()
     self.expand_scales_to_all_reflections()
     self.round_of_outlier_rejection()
     if make_ready_for_scaling:
@@ -674,6 +756,9 @@ class TargetScaler(MultiScalerBase):
     based on the normalised deviation of the reflections of the datasets being
     scaled from the values in the target datasets."""
     # First join the datasets being scaled.
+    self._Ih_table = []
+    import gc
+    gc.collect()
     reflection_table = flex.reflection_table()
     n_refl_in_each_table = [0]
     cumulative_size = 0
@@ -697,6 +782,9 @@ class TargetScaler(MultiScalerBase):
 
   def outlier_rejection_routine(self, make_ready_for_scaling=True):
     """Routine to perform outlier rejection on scaled scaler."""
+    self._Ih_table = []
+    import gc
+    gc.collect()
     self.expand_scales_to_all_reflections()
     self.round_of_outlier_rejection()
     if make_ready_for_scaling:
@@ -770,18 +858,25 @@ class NullScaler(ScalerBase):
 def calc_sf_variances(components, var_cov):
   """Use the parameter var_cov matrix to calculate the variances of the
   inverse scales."""
+  # note - can we do this calculation blockwise as well - takes quite a bit of memory?
   n_param = 0
   for component in components:
     n_param += components[component].n_params
-    n_refl = components[component].inverse_scales[0].size() #should all be same
+    n_refl = sum(components[component].n_refl) #should all be same
   jacobian = sparse.matrix(n_refl, n_param)
   n_cumulative_param = 0
+  scales_list = []
+  derivs_list = []
   for component in components:
-    block = components[component].derivatives[0]
+    s, d = components[component].calculate_scales_and_derivatives(block_id=0)
+    scales_list.append(s)
+    derivs_list.append(d)
+  for i, component in enumerate(components):
+    d_block = derivs_list[i]
     n_param = components[component].n_params
-    for component_2 in components:
+    for i, component_2 in enumerate(components):
       if component_2 != component:
-        block = row_multiply(block, components[component].inverse_scales[0])
-    jacobian.assign_block(block, 0, n_cumulative_param)
+        d_block = row_multiply(d_block, scales_list[i])
+    jacobian.assign_block(d_block, 0, n_cumulative_param)
     n_cumulative_param += n_param
   return cpp_calc_sigmasq(jacobian.transpose(), var_cov)

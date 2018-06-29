@@ -364,11 +364,11 @@ def test_IhTable(reflection_table_for_block, test_sg):
   # Try to set derivatives and inverse scales
   derivs = sparse.matrix(2, 3)
   derivs[1, 0] = 2.0
-  Ih_table.set_derivatives([derivs])
+  Ih_table.set_derivatives(derivs, 0)
   assert block.derivatives is derivs
 
   inv_scales = flex.double([1.0, 2.0, 3.0, 4.0, 5.0])
-  Ih_table.set_inverse_scale_factors([inv_scales])
+  Ih_table.set_inverse_scale_factors(inv_scales, 0)
   assert list(block.inverse_scale_factors) == list(inv_scales)
 
   Ih_table.calc_Ih()

@@ -200,7 +200,7 @@ class ScalingRefinery(object):
     self._parameters.set_param_vals(x)
 
     # do reflection prediction
-    self._scaler.update_for_minimisation(self._parameters)
+    
 
     return
 
@@ -256,20 +256,28 @@ class ScalingSimpleLBFGS(ScalingRefinery, SimpleLBFGS):
     else:
       blocks = self._scaler.Ih_table.blocked_data_list
 
-    if self._scaler.params.scaling_options.nproc > 1:
-      task_results = easy_mp.parallel_map(
-        func=self._target.compute_functional_gradients,
-        iterable=blocks,
-        processes=self._scaler.params.scaling_options.nproc,
-        method="multiprocessing",
-        preserve_exception_message=True
-        )
-      f, gi = zip(*task_results)
-      f = sum(f)
-      g = gi[0]
-      for i in range(1, len(gi)):
-        g += gi[i]
-    else:
+    #if self._scaler.params.scaling_options.nproc > 1:
+    f = []
+    gi = []
+    for block_id, block in enumerate(blocks):
+      self._scaler.update_for_minimisation(self._parameters, block_id)
+      fb, gb = self._target.compute_functional_gradients(block)
+      f.append(fb)
+      gi.append(gb)
+      self._scaler.clear_memory_from_derivs(block_id)
+    '''task_results = easy_mp.parallel_map(
+      func=self._target.compute_functional_gradients,
+      iterable=blocks,
+      processes=self._scaler.params.scaling_options.nproc,
+      method="multiprocessing",
+      preserve_exception_message=True
+      )
+    f, gi = zip(*task_results)'''
+    f = sum(f)
+    g = gi[0]
+    for i in range(1, len(gi)):
+      g += gi[i]
+    '''else:
       f = 0.0
       g = None
       for block in blocks:
@@ -278,7 +286,7 @@ class ScalingSimpleLBFGS(ScalingRefinery, SimpleLBFGS):
         if g:
           g += gi
         else:
-          g = gi
+          g = gi'''
 
     restraints = \
       self._target.compute_restraints_functional_gradients_and_curvatures(self._parameters)
@@ -355,7 +363,8 @@ class ScalingLstbxBuildUpMixin(ScalingRefinery):
     # observation terms
     if objective_only:
       #if self._scaler.params.scaling_options.nproc > 1: #no mp option yet
-      for block in blocks:
+      for block_id, block in enumerate(blocks):
+        self._scaler.update_for_minimisation(self._parameters, block_id)
         residuals, weights = self._target.compute_residuals(block)
         self.add_residuals(residuals, weights)
     else:
@@ -363,7 +372,8 @@ class ScalingLstbxBuildUpMixin(ScalingRefinery):
 
       self._jacobian = None
 
-      for block in blocks:
+      for block_id, block in enumerate(blocks):
+        self._scaler.update_for_minimisation(self._parameters, block_id)
         residuals, jacobian, weights = self._target.compute_residuals_and_gradients(block)
         self.add_equations(residuals, jacobian, weights)
       '''task_results = easy_mp.pool_map(

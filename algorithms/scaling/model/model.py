@@ -174,29 +174,31 @@ class PhysicalScalingModel(ScalingModelBase):
       # Do an invariant rescale of the scale at t=0 to one.'''
       joined_norm_vals = flex.double([])
       joined_inv_scales = flex.double([])
-      for norm_vals, inv_scales in zip(self.components['scale'].normalised_values,
-        self.components['scale'].inverse_scales):
+      for i in range(len(self.components['scale'].normalised_values)):
+        scales, _ = self.components['scale'].calculate_scales_and_derivatives(block_id=i)
+        norm_vals = self.components['scale'].normalised_values[i]
         joined_norm_vals.extend(norm_vals)
-        joined_inv_scales.extend(inv_scales)
+        joined_inv_scales.extend(scales)
       sel = (joined_norm_vals == min(joined_norm_vals))
       initial_scale = joined_inv_scales.select(sel)[0]
       self.components['scale'].parameters /= initial_scale
-      self.components['scale'].calculate_scales_and_derivatives()
+      #self.components['scale'].calculate_scales_and_derivatives()
       logger.info('\nThe "scale" model component has been rescaled, so that the\n'
         'initial scale is 1.0.')
     if 'decay' in self.components:
       # Do an invariant rescale of the max B to zero.'''
       joined_d_vals = flex.double([])
       joined_inv_scales = flex.double([])
-      for d_vals, inv_scales in zip(self.components['decay'].d_values,
-        self.components['decay'].inverse_scales):
+      for i in range(len(self.components['decay'].d_values)):
+        scales, _ = self.components['decay'].calculate_scales_and_derivatives(block_id=i)
+        d_vals = self.components['decay'].d_values[i]
         joined_d_vals.extend(d_vals)
-        joined_inv_scales.extend(inv_scales)
+        joined_inv_scales.extend(scales)
       maxB = max(flex.double(np.log(joined_inv_scales))
                   * 2.0 * (joined_d_vals**2))
       self.components['decay'].parameters -= flex.double(
         self.components['decay'].n_params, maxB)
-      self.components['decay'].calculate_scales_and_derivatives()
+      #self.components['decay'].calculate_scales_and_derivatives()
       logger.info('The "decay" model component has been rescaled, so that the\n'
         'maximum B-factor applied to any reflection is 0.0.')
 

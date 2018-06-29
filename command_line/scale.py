@@ -291,7 +291,7 @@ class Script(object):
     if self.params.output.plot_merging_stats:
       from xia2.command_line.compare_merging_stats import plot_merging_stats
       plot_merging_stats([result])
-
+  #@profile
   def output(self):
     """Save the experiments json and scaled pickle file."""
     logger.info('\n'+'='*80+'\n')
@@ -411,6 +411,7 @@ class Script(object):
 
     # The minimisation has only been done on a subset on the data, so apply the
     # scale factors to the whole reflection table.
+    scaler.clear_Ih_tables()
     scaler.expand_scales_to_all_reflections(calc_cov=True)
     if scaler.params.scaling_options.outlier_rejection:
       # Note just call the method, not the 'outlier_rejection_routine'
@@ -418,7 +419,7 @@ class Script(object):
 
     if scaler.params.weighting.optimise_errors:
       # Note just call the method, not the 'error_optimisation_routine'
-      scaler.perform_error_optimisation()
+      scaler.perform_error_optimisation(update_Ih=False)
 
     scaler.adjust_variances()
 

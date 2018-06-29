@@ -151,20 +151,20 @@ def test_sph_harm_table(test_reflection_table, mock_exp):
   sph_h_t = create_sph_harm_table(theta_phi, theta_phi_2, 2)
   Y10 = ((3.0/(8.0*pi))**0.5)/2.0
   Y20 = -1.0*((5.0/(256.0*pi))**0.5)
-  assert approx_equal(sph_h_t[0, 1], Y10)
+  assert approx_equal(sph_h_t[1, 0], Y10)
   assert approx_equal(sph_h_t[1, 1], Y10)
-  assert approx_equal(sph_h_t[2, 1], Y10)
-  assert approx_equal(sph_h_t[0, 5], Y20)
-  assert approx_equal(sph_h_t[1, 5], Y20)
-  assert approx_equal(sph_h_t[2, 5], Y20)
+  assert approx_equal(sph_h_t[1, 2], Y10)
+  assert approx_equal(sph_h_t[5, 0], Y20)
+  assert approx_equal(sph_h_t[5, 1], Y20)
+  assert approx_equal(sph_h_t[5, 2], Y20)
   # Now test that you get the same by just calling the function.
   sht = sph_harm_table(rt, exp, 2)
-  assert approx_equal(sht[0, 1], Y10)
+  assert approx_equal(sht[1, 0], Y10)
   assert approx_equal(sht[1, 1], Y10)
-  assert approx_equal(sht[2, 1], Y10)
-  assert approx_equal(sht[0, 5], Y20)
-  assert approx_equal(sht[1, 5], Y20)
-  assert approx_equal(sht[2, 5], Y20)
+  assert approx_equal(sht[1, 2], Y10)
+  assert approx_equal(sht[5, 0], Y20)
+  assert approx_equal(sht[5, 1], Y20)
+  assert approx_equal(sht[5, 2], Y20)
 
 def test_parse_multiple_datasets():
   """Test the namesake function. This expects a list of reflection tables, and

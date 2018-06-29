@@ -175,20 +175,22 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
       self._inverse_scales.append(flex.double(normalised_values.size(), 1.0))
       self._n_refl.append(self._inverse_scales[0].size())
 
-  def calculate_scales_and_derivatives(self, curvatures=False):
-    self._inverse_scales = []
-    self._derivatives = []
-    self._curvatures = []
-    for block_id in range(len(self._n_refl)):#len of the list, not num of refl
-      value, weight, sumweight = self._smoother.multi_value_weight(
-        self._normalised_values[block_id], self.value)
-      inv_sw = 1. / sumweight
-      dv_dp = row_multiply(weight, inv_sw)
-      self._inverse_scales.append(value)
-      self._derivatives.append(dv_dp)
-      if curvatures:
-        self._curvatures.append(sparse.matrix(
-          self._inverse_scales[block_id].size(), self.n_params))
+  def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
+    #self._inverse_scales = []
+    #self._derivatives = []
+    #self._curvatures = []
+    #for block_id in range(len(self._n_refl)):#len of the list, not num of refl
+    value, weight, sumweight = self._smoother.multi_value_weight(
+      self._normalised_values[block_id], self.value)
+    inv_sw = 1. / sumweight
+    dv_dp = row_multiply(weight, inv_sw)
+    
+    #self._inverse_scales.append(value)
+    #self._derivatives.append(dv_dp)
+    if curvatures:
+      curvatures = sparse.matrix(value.size(), self.n_params)
+      return value, dv_dp, curvatures
+    return value, dv_dp
 
   def calculate_scales(self):
     """"Only calculate the scales if needed, for performance."""
@@ -232,10 +234,20 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
     else:
       self._d_values.append(d_values)
 
-  def calculate_scales_and_derivatives(self, curvatures=False):
-    super(SmoothBScaleComponent1D, self).calculate_scales_and_derivatives(
-      curvatures=curvatures)
-    for block_id in range(len(self._n_refl)):#len of the list, not numb of refl
+  def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
+    sdctuple = super(SmoothBScaleComponent1D, self).calculate_scales_and_derivatives(block_id,
+      curvatures)
+    s = flex.exp(
+        sdctuple[0] /(2.0 * (self._d_values[block_id] * self._d_values[block_id])))
+    d = row_multiply(sdctuple[1],
+        s / (2.0 * (self._d_values[block_id] * self._d_values[block_id])))
+    if curvatures:
+      curvatures = row_multiply(elementwise_square(
+          d), 1.0/s)
+      return s, d, curvatures
+    return s, d
+
+    '''for block_id in range(len(self._n_refl)):#len of the list, not numb of refl
       self._inverse_scales[block_id] = flex.exp(
         self._inverse_scales[block_id] /(2.0 * (
         self._d_values[block_id] * self._d_values[block_id])))
@@ -244,7 +256,7 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
         self._d_values[block_id] * self._d_values[block_id])))
       if curvatures:
         self._curvatures[block_id] = row_multiply(elementwise_square(
-          self._derivatives[block_id]), 1.0/self._inverse_scales[block_id])
+          self._derivatives[block_id]), 1.0/self._inverse_scales[block_id])'''
 
   def calculate_scales(self):
     super(SmoothBScaleComponent1D, self).calculate_scales()
@@ -333,21 +345,16 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
       self._inverse_scales.append(flex.double(normalised_x_values.size(), 1.0))
       self._n_refl.append(self._inverse_scales[0].size())
 
-  def calculate_scales_and_derivatives(self, curvatures=False):
-    self._inverse_scales = []
-    self._derivatives = []
-    self._curvatures = []
-    for block_id in range(len(self._n_refl)):
-      value, weight, sumweight = self._smoother.multi_value_weight(
-        self._normalised_x_values[block_id],
-        self._normalised_y_values[block_id], self.value)
-      inv_sw = 1. / sumweight
-      dv_dp = row_multiply(weight, inv_sw)
-      self._inverse_scales.append(value)
-      self._derivatives.append(dv_dp)
-      if curvatures:
-        self._curvatures.append(sparse.matrix(
-          self._inverse_scales[block_id].size(), self.n_params))
+  def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
+    value, weight, sumweight = self._smoother.multi_value_weight(
+      self._normalised_x_values[block_id],
+      self._normalised_y_values[block_id], self.value)
+    inv_sw = 1. / sumweight
+    dv_dp = row_multiply(weight, inv_sw)
+    if curvatures:
+      curvs = sparse.matrix(value.size(), self.n_params)
+      return value, dv_dp, curvs
+    return value, dv_dp
 
   def calculate_scales(self):
     """"Only calculate the scales if needed, for performance."""
@@ -460,21 +467,18 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
       self._n_refl.append(self._inverse_scales[0].size())
 
 
-  def calculate_scales_and_derivatives(self, curvatures=False):
-    self._inverse_scales = []
-    self._derivatives = []
-    self._curvatures = []
-    for block_id in range(len(self._n_refl)):
-      value, weight, sumweight = self._smoother.multi_value_weight(
-        self._normalised_x_values[block_id], self._normalised_y_values[block_id],
-        self._normalised_z_values[block_id], self.value)
-      inv_sw = 1. / sumweight
-      dv_dp = row_multiply(weight, inv_sw)
-      self._inverse_scales.append(value)
-      self._derivatives.append(dv_dp)
-      if curvatures:
-        self._curvatures.append(sparse.matrix(
-          self._inverse_scales[block_id].size(), self.n_params))
+  def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
+    value, weight, sumweight = self._smoother.multi_value_weight(
+      self._normalised_x_values[block_id], self._normalised_y_values[block_id],
+      self._normalised_z_values[block_id], self.value)
+    inv_sw = 1. / sumweight
+    dv_dp = row_multiply(weight, inv_sw)
+    #self._inverse_scales.append(value)
+    #self._derivatives.append(dv_dp)
+    if curvatures:
+      curvs = sparse.matrix(value.size(), self.n_params)
+      return value, dv_dp, curvs
+    return value, dv_dp
 
   def calculate_scales(self):
     """"Only calculate the scales if needed, for performance."""

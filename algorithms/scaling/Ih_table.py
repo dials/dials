@@ -571,22 +571,30 @@ class IhTable(SortingMethods):
       cumulative_size += sum(k.size() for k in block_selections[i])
     self._blocked_selection_list = block_selections
 
-  def set_derivatives(self, derivatives):
+  def set_derivatives(self, derivatives, block_id):
     """Set the derivatives for each block."""
-    for deriv, block in zip(derivatives, self.blocked_data_list):
-      block.derivatives = deriv
+    self.blocked_data_list[block_id].derivatives = derivatives
+    #for deriv, block in zip(derivatives, self.blocked_data_list):
+    #  block.derivatives = deriv
 
-  def set_inverse_scale_factors(self, new_scales):
+  def set_inverse_scale_factors(self, new_scales, block_id):
     """Set the inverse scale factors for each block."""
-    for scales, block in zip(new_scales, self.blocked_data_list):
-      block.inverse_scale_factors = scales
+    self.blocked_data_list[block_id].inverse_scale_factors = new_scales
+    #for scales, block in zip(new_scales, self.blocked_data_list):
+    #  block.inverse_scale_factors = scales
 
-  def calc_Ih(self):
+  def calc_Ih(self, block_id=None):
     """Calculate the latest value of Ih in each block."""
-    for block in self._blocked_data_list:
-      block.calc_Ih()
+    if block_id:
+      self.blocked_data_list[block_id].calc_Ih()
+    else:
+      for block in self.blocked_data_list:
+        block.calc_Ih()
 
-  def update_weights(self):
+  def update_weights(self, block_id=None):
     """Update weights in each block."""
-    for block in self.blocked_data_list:
-      block.update_weights()
+    if block_id:
+      self.blocked_data_list[block_id].update_weights()
+    else:
+      for block in self.blocked_data_list:
+        block.update_weights()

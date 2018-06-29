@@ -136,7 +136,7 @@ namespace dials_scaling {
           lmax, 50000, log_factorial_generator<double>((2 * lmax) + 1));
         int n_abs_param = (2 * lmax) + (pow(double(lmax), 2));
         int n_obs = s1_theta_phi.size();
-        matrix<double> sph_harm_terms_(n_obs, n_abs_param);
+        matrix<double> sph_harm_terms_(n_abs_param, n_obs);
         double sqrt2 = 1.414213562;
         int counter = 0;
         for (int l=1; l < lmax+1; l++) {
@@ -144,14 +144,14 @@ namespace dials_scaling {
             if (m < 0) {
               double prefactor = sqrt2 * pow(-1.0, m) / 2.0;
               for (int i=0; i < n_obs; i++){
-                sph_harm_terms_(i, counter) = prefactor * (
+                sph_harm_terms_(counter, i) = prefactor * (
                   nsssphe.spherical_harmonic_direct(l, -1*m, s0_theta_phi[i][0], s0_theta_phi[i][1]).imag()
                   + nsssphe.spherical_harmonic_direct(l, -1*m, s1_theta_phi[i][0], s1_theta_phi[i][1]).imag());
                 }
               }
             else if (m == 0) {
               for (int i=0; i < n_obs; i++){
-                sph_harm_terms_(i, counter) = (0.5 * (
+                sph_harm_terms_(counter, i) = (0.5 * (
                   nsssphe.spherical_harmonic_direct(l, 0, s0_theta_phi[i][0], s0_theta_phi[i][1]).real()
                   + nsssphe.spherical_harmonic_direct(l, 0, s1_theta_phi[i][0], s1_theta_phi[i][1]).real()));
               }
@@ -162,7 +162,7 @@ namespace dials_scaling {
                 double val = prefactor * (
                   nsssphe.spherical_harmonic_direct(l, m, s0_theta_phi[i][0], s0_theta_phi[i][1]).real()
                   + nsssphe.spherical_harmonic_direct(l, m, s1_theta_phi[i][0], s1_theta_phi[i][1]).real());
-                sph_harm_terms_(i, counter) = val;
+                sph_harm_terms_(counter, i) = val;
               }
             }
           counter += 1;

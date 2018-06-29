@@ -353,7 +353,7 @@ def test_target_gradient_calculation_finite_difference(small_reflection_table,
 
   # Now do finite difference check.
   target = ScalingTarget()
-  scaler.update_for_minimisation(apm)
+  scaler.update_for_minimisation(apm, 0)
   grad = target.calculate_gradients(scaler.Ih_table.blocked_data_list[0])
   res = target.calculate_residuals(scaler.Ih_table.blocked_data_list[0])
 
@@ -384,7 +384,7 @@ def test_target_jacobian_calculation_finite_difference(physical_param,
     scaling_active_parameter_manager)
 
   target = ScalingTarget()
-  scaler.update_for_minimisation(apm)
+  scaler.update_for_minimisation(apm, 0)
 
   fd_jacobian = calculate_jacobian_fd(target,
     scaler, apm)
@@ -411,15 +411,15 @@ def calculate_gradient_fd(target, scaler, apm):
     new_x = copy.copy(apm.x)
     new_x[i] -= 0.5 * delta
     apm.set_param_vals(new_x)
-    scaler.update_for_minimisation(apm)
+    scaler.update_for_minimisation(apm, 0)
     R_low = (target.calculate_residuals(Ih_table)**2) * Ih_table.weights
     new_x[i] += delta
     apm.set_param_vals(new_x)
-    scaler.update_for_minimisation(apm)
+    scaler.update_for_minimisation(apm, 0)
     R_upper = (target.calculate_residuals(Ih_table)**2) * Ih_table.weights
     new_x[i] -= 0.5 * delta
     apm.set_param_vals(new_x)
-    scaler.update_for_minimisation(apm)
+    scaler.update_for_minimisation(apm, 0)
     gradients[i] = (flex.sum(R_upper) - flex.sum(R_low)) / delta
   return gradients
 
@@ -434,15 +434,15 @@ def calculate_jacobian_fd(target, scaler, apm, block_id=0):
     new_x = copy.copy(apm.x)
     new_x[i] -= 0.5 * delta
     apm.set_param_vals(new_x)
-    scaler.update_for_minimisation(apm)
+    scaler.update_for_minimisation(apm, 0)
     R_low = target.calculate_residuals(Ih_table)#unweighted unsquared residual
     new_x[i] += delta
     apm.set_param_vals(new_x)
-    scaler.update_for_minimisation(apm)
+    scaler.update_for_minimisation(apm, 0)
     R_upper = target.calculate_residuals(Ih_table) #unweighted unsquared residual
     new_x[i] -= 0.5 * delta
     apm.set_param_vals(new_x)
-    scaler.update_for_minimisation(apm)
+    scaler.update_for_minimisation(apm, 0)
     fin_difference = (R_upper - R_low) / delta
     for j in range(fin_difference.size()):
       jacobian[j, i] = fin_difference[j]
