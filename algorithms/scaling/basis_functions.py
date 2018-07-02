@@ -21,7 +21,8 @@ class basis_function(object):
     derivatives = []
     curvatures = []
     for component in apm.components.itervalues():
-      sdc = component['object'].calculate_scales_and_derivatives(block_id, self.curvatures)
+      sdc = component['object'].calculate_scales_and_derivatives(block_id,
+        self.curvatures)
       scales.append(sdc[0])
       derivatives.append(sdc[1])
       if self.curvatures:
@@ -32,20 +33,14 @@ class basis_function(object):
   def calculate_scale_factors(apm, block_id, scales):
     """Calculate the overall scale factor for each reflection from individual
     components."""
-    #msf_list = []
-    #for block_id in range(len(apm.n_obs)):
     if not scales:
       return None
     multiplied_scale_factors = flex.double(scales[0].size(), 1.0)
     for s in scales:
       multiplied_scale_factors *= s
-    #for component in apm.components.itervalues():
-    #  multiplied_scale_factors *= component['object'].inverse_scales[block_id]
     if apm.constant_g_values:
       multiplied_scale_factors *= apm.constant_g_values[block_id]
     return multiplied_scale_factors
-    #msf_list.append(multiplied_scale_factors)
-    #return msf_list
 
   @staticmethod
   def calculate_derivatives(apm, block_id, scales, derivatives_list):
@@ -56,9 +51,6 @@ class basis_function(object):
       #only one active parameter, so don't need to chain rule any derivatives
       #for block_id in range(len(apm.n_obs)):
       return derivatives_list[0]
-        #deriv_list.append(apm.components.values()[0]['object'].derivatives[block_id])
-      #return deriv_list
-    #for block_id in range(len(apm.n_obs)):
     derivatives = sparse.matrix(apm.n_obs[block_id], apm.n_active_params)
     col_idx = 0
     for i, d in enumerate(derivatives_list):
@@ -72,19 +64,6 @@ class basis_function(object):
       derivatives.assign_block(next_deriv, 0, col_idx)
       col_idx += d.n_cols
     return derivatives
-    '''for comp_name, component in apm.components.iteritems():
-      derivs = component['object'].derivatives[block_id]
-      scale_multipliers = flex.double(apm.n_obs[block_id], 1.0)
-      for comp, obj in apm.components.iteritems():
-        if comp != comp_name:
-          scale_multipliers *= obj['object'].inverse_scales[block_id]
-      if apm.constant_g_values:
-        scale_multipliers *= apm.constant_g_values[block_id]
-      next_deriv = row_multiply(derivs, scale_multipliers)
-      derivatives.assign_block(next_deriv, 0, component['start_idx'])
-    return derivatives'''
-    #deriv_list.append(derivatives)
-    #return deriv_list
 
   @staticmethod
   def calculate_curvatures(apm, block_id, scales, curvatures_list):
@@ -110,8 +89,8 @@ class basis_function(object):
   def calculate_scales_and_derivatives(self, apm, block_id):
     """Calculate and return scale factors, derivatives and optionally
     curvatures to be used in minimisation."""
-    scales, derivatives, curvs = self.calc_component_scales_derivatives(apm, block_id)
-    #self.update_scale_factors(apm, block_id)
+    scales, derivatives, curvs = self.calc_component_scales_derivatives(
+      apm, block_id)
     if self.curvatures:
       return (self.calculate_scale_factors(apm, block_id, scales),
        self.calculate_derivatives(apm, block_id, scales, derivatives),

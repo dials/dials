@@ -149,7 +149,9 @@ phil_scope = iotbx.phil.parse('''
       .help = "Path to merged mtz file to use as a target for scaling."
     nproc = 1
       .type = int(value_min=1)
-      .help = "number of processes to use."
+      .help = "Number of blocks to divide the data into for minimisation.
+              This also sets the number of processes to use if the option is
+              available."
     use_free_set = False
       .type = bool
       .help = "Option to use a free set during scaling to check for overbiasing.

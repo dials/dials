@@ -315,20 +315,6 @@ def test_ScalerBase(test_params):
   with pytest.raises(AssertionError):
     scalerbase.space_group = 1
 
-  rt1 = flex.reflection_table()
-  rt1['inverse_scale_factor'] = flex.double([1.0])
-  rt1['inverse_scale_factor_variance'] = flex.double([1.0])
-  rt1['Ih_values'] = flex.double([1.0])
-  rt1['Esq'] = flex.double([1.0])
-  rt1['extra junk'] = flex.double([4.0])
-  scalerbase._reflection_table = rt1
-  scalerbase.clean_reflection_table()
-  assert not 'extra junk' in scalerbase.reflection_table
-  assert not 'Esq' in scalerbase.reflection_table
-  assert 'inverse_scale_factor' in scalerbase.reflection_table
-  assert 'inverse_scale_factor_variance' in scalerbase.reflection_table
-  assert 'Ih_values' in scalerbase.reflection_table
-
   # test scaling subset
   rt = generated_refl_for_splitting_1()[0]
   rt['intensity'] = rt['intensity.prf.value']
@@ -344,14 +330,15 @@ def test_ScalerBase(test_params):
   assert list(sel) == [False, True, True, False, False, False]
 
   # test perform scaling in another test.
-
+  rt1 = flex.reflection_table()
+  scalerbase._reflection_table = rt1
   # test round_of_outlier_rejection - should just call reject outliers
   with mock.patch('dials.algorithms.scaling.scaler.reject_outliers') as \
     outlier_rej:
     scalerbase._params = test_params
     scalerbase.round_of_outlier_rejection()
     assert outlier_rej.call_count == 1
-    outlier_rej.assert_called_with(rt1, scalerbase.space_group,
+    outlier_rej.assert_called_with([rt1], scalerbase.space_group,
       scalerbase.params.scaling_options.outlier_rejection,
       scalerbase.params.scaling_options.outlier_zmax)
 
@@ -465,6 +452,22 @@ def test_SingleScaler(test_reflections, test_experiments, test_params,
   new_sg = "P 1"
   singlescaler.space_group = new_sg
   assert singlescaler.space_group == space_group(new_sg)
+
+  rt1 = flex.reflection_table()
+  rt1['inverse_scale_factor'] = flex.double([1.0])
+  rt1['inverse_scale_factor_variance'] = flex.double([1.0])
+  rt1['Ih_values'] = flex.double([1.0])
+  rt1['Esq'] = flex.double([1.0])
+  rt1['intensity'] = flex.double([1.0])
+  rt1['variance'] = flex.double([1.0])
+  rt1['extra junk'] = flex.double([4.0])
+  singlescaler._reflection_table = rt1
+  singlescaler.clean_reflection_tables()
+  assert 'extra junk' not in singlescaler.reflection_table
+  assert 'Esq' not in singlescaler.reflection_table
+  assert 'inverse_scale_factor' in singlescaler.reflection_table
+  assert 'inverse_scale_factor_variance' in singlescaler.reflection_table
+  assert 'Ih_values' in singlescaler.reflection_table
 
 
 def test_SingleScaler_error_optimisation(test_experiments, test_params):
@@ -740,8 +743,6 @@ def test_MultiScaler(test_2_reflections, test_2_experiments, test_params):
   with mock.patch('dials.algorithms.scaling.scaler.reject_outliers',
     side_effect=outlier_rej_side_effect) as outlier_patch:
     multiscaler.round_of_outlier_rejection()
-    assert multiscaler.reflection_table.size() == sum([i.reflection_table.size()
-      for i in multiscaler.single_scalers])
     assert outlier_patch.call_count == 1
 
 def test_multiscaler_outlier_rejection_routine(test_params):
@@ -768,13 +769,13 @@ def test_multiscaler_outlier_rejection_routine(test_params):
   assert list(multiscaler.single_scalers[1].components['decay'].d_values[0]
     ) == [2.0, 3.0, 4.0, 5.0]
   assert list(multiscaler.Ih_table.blocked_data_list[0].nonzero_weights
-    ) == [1, 2, 3, 1, 2, 3, 4, 4]
+    ) == [1, 2, 3, 4, 1, 2, 3, 4]
   assert multiscaler.Ih_table.blocked_data_list[0].size == 8
   # Now call outlier rejection routine - expect it to remove the reflection
   # in position 1.
   multiscaler.outlier_rejection_routine()
   assert list(multiscaler.Ih_table.blocked_data_list[0].nonzero_weights
-    ) == [1, 3, 1, 2, 3, 4, 4]
+    ) == [1, 3, 4, 1, 2, 3, 4]
   assert list(multiscaler.Ih_table.blocked_selection_list[0][0]) == [0, 1, 2]
   assert list(multiscaler.Ih_table.blocked_selection_list[1][0]) == [0, 1, 2, 3]
   assert list(multiscaler.single_scalers[0].components['decay'].d_values[0]
@@ -922,7 +923,7 @@ def test_sf_variance_calculation(test_experiments, test_params):
   d3 = 3.0
   rt['d'] = flex.double([d1, d2, d3])
   components['scale'].update_reflection_data(rt)
-  s, d = components['scale'].calculate_scales_and_derivatives()
+  _, d = components['scale'].calculate_scales_and_derivatives()
   assert list(d.col(0)) == [
     (0, 1.0), (1, 1.0), (2, 1.0)]
   components['decay'].update_reflection_data(rt)

@@ -40,7 +40,7 @@ def test_basis_function(small_reflection_table):
   # First test that scale factors can be successfully updated.
   # Manually change the parameters in the apm.
   decay = components['decay'] # Define alias
-  scale = components['scale'] # Define alias
+  _ = components['scale'] # Define alias
   # Note, order of params in apm.x depends on order in scaling model components.
   new_B = 1.0
   new_S = 2.0

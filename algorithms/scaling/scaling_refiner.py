@@ -199,9 +199,6 @@ class ScalingRefinery(object):
     # set current parameter values
     self._parameters.set_param_vals(x)
 
-    # do reflection prediction
-    
-
     return
 
   def update_journal(self):

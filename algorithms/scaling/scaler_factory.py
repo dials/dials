@@ -40,7 +40,7 @@ def is_scaled(experiments):
   return is_already_scaled
 
 class ScalerFactory(object):
-
+  """Base class for Scaler Factories"""
   @classmethod
   def filter_bad_reflections(cls, reflections):
     """Initial filter to select integrated reflections."""
@@ -67,9 +67,9 @@ class SingleScalerFactory(ScalerFactory):
     else:
       reflection_table['id'] = flex.int(reflection_table.size(), scaled_id)
     if params.scaling_options.verbosity > 1:
-      logger.info(('Preprocessing data for scaling. The id assigned to this \n'
-        'dataset is {0}, and the scaling model type being applied is {1}. \n'
-        ).format(reflection_table['id'][0], experiment.scaling_model.id_))
+      logger.info('Preprocessing data for scaling. The id assigned to this \n'
+        'dataset is %s, and the scaling model type being applied is %s. \n' %
+        (reflection_table['id'][0], experiment.scaling_model.id_))
 
     reflection_table = cls.filter_bad_reflections(reflection_table)
     if params.scaling_options.verbosity > 1:
@@ -94,10 +94,10 @@ class SingleScalerFactory(ScalerFactory):
     """Calculate normalised E2 values and perform outlier rejection."""
     reflections = quasi_normalisation(reflections, experiment)
     if params.scaling_options.outlier_rejection:
-      reflections = reject_outliers(reflections,
+      reflections = reject_outliers([reflections],
         experiment.crystal.get_space_group(),
         params.scaling_options.outlier_rejection,
-        params.scaling_options.outlier_zmax)
+        params.scaling_options.outlier_zmax)[0]
     return reflections
 
 class NullScalerFactory(ScalerFactory):

@@ -7,7 +7,6 @@ import numpy as np
 from mock import Mock
 from dxtbx.model import Experiment, ExperimentList, Crystal
 from libtbx.test_utils import approx_equal
-from cctbx.sgtbx import space_group
 from dials.array_family import flex
 from dials.algorithms.scaling.scaling_utilities import \
   calc_crystal_frame_vectors, calc_theta_phi, create_sph_harm_table,\
@@ -68,6 +67,7 @@ def generate_reflection_table():
 
 @pytest.fixture
 def simple_reflection_table():
+  """Create a small reflection table"""
   refl = flex.reflection_table()
   refl['intensity'] = flex.double([1.0, 2.0, 3.0])
   refl['d'] = flex.double([1.0, 2.0, 3.0])
@@ -193,6 +193,7 @@ def test_parse_multiple_datasets():
 
 
 def empty_explist_3exp():
+  """Make a list of three empty experiments"""
   experiments = ExperimentList()
   experiments.append(Experiment())
   experiments.append(Experiment())
@@ -200,6 +201,7 @@ def empty_explist_3exp():
   return experiments
 
 def new_reflections_3tables():
+  """Make a list of three reflection tables"""
   rt1 = flex.reflection_table()
   rt1['id'] = flex.int([0, 0, 0])
   rt2 = flex.reflection_table()

@@ -37,10 +37,17 @@ def calculate_prescaling_correction(reflection_table):
     conversion *= inverse_partiality
   if 'lp' in reflection_table:
     conversion *= reflection_table['lp']
+  qe = None
   if 'qe' in reflection_table:
-    conversion /= reflection_table['qe']
+    qe = reflection_table['qe']
   elif 'dqe' in reflection_table:
-    conversion /= reflection_table['dqe']
+    qe = reflection_table['dqe']
+  if qe:
+    inverse_qe = flex.double(reflection_table.size(), 1.0)
+    nonzero_qe_sel = qe > 0.0
+    good_qe = qe.select(qe > 0.0)
+    inverse_qe.set_selected(nonzero_qe_sel.iselection(), 1.0/good_qe)
+    conversion *= inverse_qe
   return conversion
 
 def choose_scaling_intensities(reflection_table, integration_method='prf'):

@@ -548,6 +548,9 @@ class IhTable(SortingMethods):
         dataset_sort = flex.sort_permutation(block.Ih_table['dataset_id'])
         block.dataset_sort = dataset_sort
         block.Ih_table = block.Ih_table.select(dataset_sort)
+        #block.Ih_table = block.Ih_table.select(dataset_sort)
+        if block.nonzero_weights:
+          block.nonzero_weights = block.nonzero_weights.select(dataset_sort)
         h_idx_T = block.h_index_matrix.transpose()
         per_h_idx_T = h_idx_T.select_columns(dataset_sort)
         block.h_index_matrix = per_h_idx_T.transpose()

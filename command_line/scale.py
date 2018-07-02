@@ -23,7 +23,7 @@ from __future__ import absolute_import, division, print_function
 import time
 import logging
 import sys
-from copy import deepcopy
+import gc
 from libtbx import phil
 from libtbx.utils import Sorry
 from libtbx.str_utils import make_sub_header
@@ -102,7 +102,6 @@ class Script(object):
     self.experiments = experiments
     self.reflections = reflections
     self.scaler = None
-    self.minimised = None
     self.scaled_miller_array = None
     self.dataset_ids = []
 
@@ -231,21 +230,36 @@ class Script(object):
     logger.info('\n' + '='*80 + '\n')
 
     self.scaler = create_scaler(self.params, self.experiments, self.reflections)
-    self.minimised = self.scaling_algorithm(self.scaler)
+    self.scaler = self.scaling_algorithm(self.scaler)
 
-  def scaled_data_as_miller_array(self, experiment, reflection_table,
+  def scaled_data_as_miller_array(self, crystal_symmetry, reflection_table=None,
     anomalous_flag=False):
     """Get a scaled miller array from an experiment and reflection table."""
-    bad_refl_sel = reflection_table.get_flags(
-      reflection_table.flags.bad_for_scaling, all=False)
-    r_t = reflection_table.select(~bad_refl_sel)
-    miller_set = miller.set(
-      crystal_symmetry=experiment.crystal.get_crystal_symmetry(),
-      indices=r_t['miller_index'], anomalous_flag=anomalous_flag)
+    if not reflection_table:
+      joint_table = flex.reflection_table()
+      for reflection_table in self.reflections:
+        #better to just create many miller arrays and join them?
+        refl_for_joint_table = flex.reflection_table()
+        for col in ['miller_index', 'intensity.scale.value',
+          'inverse_scale_factor', 'intensity.scale.variance']:
+          refl_for_joint_table[col] = reflection_table[col]
+        good_refl_sel = ~reflection_table.get_flags(
+          reflection_table.flags.bad_for_scaling, all=False)
+        refl_for_joint_table = refl_for_joint_table.select(good_refl_sel)
+        joint_table.extend(refl_for_joint_table)
+    else:
+      good_refl_sel = ~reflection_table.get_flags(
+        reflection_table.flags.bad_for_scaling, all=False)
+      joint_table = reflection_table.select(good_refl_sel)
+
+    miller_set = miller.set(crystal_symmetry=crystal_symmetry,
+      indices=joint_table['miller_index'], anomalous_flag=anomalous_flag)
     i_obs = miller.array(
-      miller_set, data=r_t['intensity']/r_t['inverse_scale_factor'])
+      miller_set, data=joint_table['intensity.scale.value']/ \
+      joint_table['inverse_scale_factor'])
     i_obs.set_observation_type_xray_intensity()
-    i_obs.set_sigmas((r_t['variance']**0.5)/r_t['inverse_scale_factor'])
+    i_obs.set_sigmas((joint_table['intensity.scale.variance']**0.5)/ \
+      joint_table['inverse_scale_factor'])
     i_obs.set_info(
       miller.array_info(source='DIALS', source_type='reflection_tables'))
     return i_obs
@@ -258,9 +272,9 @@ class Script(object):
     plot_labels = []
 
     if self.params.output.calculate_individual_merging_stats and (
-      len(set(self.minimised.reflection_table['id'])) > 1):
+      len(set(self.scaler.reflection_table['id'])) > 1):
       results, scaled_ids = calculate_merging_statistics(
-        self.minimised.reflection_table, self.experiments,
+        self.scaler.reflection_table, self.experiments,
         use_internal_variance=self.params.output.use_internal_variance)
       for result, data_id in zip(results, scaled_ids):
         make_sub_header("Merging statistics for dataset " + str(data_id),
@@ -269,8 +283,8 @@ class Script(object):
         result.show_estimated_cutoffs(out=log.info_handle(logger))
         plot_labels.append('Dataset ' + str(data_id))
 
-    self.scaled_miller_array = self.scaled_data_as_miller_array(self.experiments[0],
-      self.minimised.reflection_table, anomalous_flag=False)
+    self.scaled_miller_array = self.scaled_data_as_miller_array(
+      self.experiments[0].crystal.get_crystal_symmetry(), anomalous_flag=False)
 
     if self.scaled_miller_array.is_unique_set_under_symmetry():
       logger.info(("Dataset doesn't contain any equivalent reflections, \n"
@@ -291,18 +305,37 @@ class Script(object):
     if self.params.output.plot_merging_stats:
       from xia2.command_line.compare_merging_stats import plot_merging_stats
       plot_merging_stats([result])
-  #@profile
+
+  def delete_datastructures(self):
+    """Delete the data in the scaling datastructures to save RAM before
+    combinining datasets for output."""
+    del self.scaler
+    for experiment in self.experiments:
+      for component in experiment.scaling_model.components.iterkeys():
+        experiment.scaling_model.components[component] = []
+    gc.collect()
+
   def output(self):
     """Save the experiments json and scaled pickle file."""
     logger.info('\n'+'='*80+'\n')
 
     if self.params.scaling_options.target_model or self.params.scaling_options.target_mtz:
       self.experiments = self.experiments[:-1]
+    save_experiments(self.experiments, self.params.output.experiments)
 
-    self.minimised.reflection_table['intensity.scale.value'] = deepcopy(
-      self.minimised.reflection_table['intensity'])
-    self.minimised.reflection_table['intensity.scale.variance'] = deepcopy(
-      self.minimised.reflection_table['variance'])
+    crystal_symmetry = self.experiments[0].crystal.get_crystal_symmetry() # save for later
+
+    # Now create a joint reflection table. Delete all other data before
+    # joining reflection tables - just need experiments for mtz export
+    # and a reflection table.
+    self.delete_datastructures()
+
+    joint_table = flex.reflection_table()
+    for i in range(len(self.reflections)):
+      joint_table.extend(self.reflections[i])
+      #del reflection_table
+      self.reflections[i] = 0
+      gc.collect()
 
     if self.params.output.unmerged_mtz:
       logger.info("\nSaving output to an unmerged mtz file to %s.",
@@ -317,7 +350,7 @@ class Script(object):
       if self.params.scaling_options.integration_method == 'sum':
         params.mtz.ignore_profile_fitting = True #to make it export summation
       exporter = MTZExporter(params, self.experiments,
-        [self.minimised.reflection_table])
+        [joint_table])
       exporter.export()
 
     if self.params.output.merged_mtz:
@@ -326,8 +359,9 @@ class Script(object):
       merged_scaled = self.scaled_miller_array.merge_equivalents().array()
       mtz_dataset = merged_scaled.as_mtz_dataset(crystal_name='dials',
         column_root_label='IMEAN') # what does column_root_label do?
-      anomalous_scaled = self.scaled_data_as_miller_array(self.experiments[0],
-        self.minimised.reflection_table, anomalous_flag=True)
+
+      anomalous_scaled = self.scaled_data_as_miller_array(crystal_symmetry,
+        reflection_table=joint_table, anomalous_flag=True)
       merged_anom = anomalous_scaled.merge_equivalents(
         use_internal_variance=self.params.output.use_internal_variance).array()
       multiplticies = merged_anom.multiplicities()
@@ -341,12 +375,7 @@ class Script(object):
       mtz_file.add_history('From %s, run on %s' % (dials_version(), date_str))
       mtz_file.write(self.params.output.merged_mtz)
 
-    save_experiments(self.experiments, self.params.output.experiments)
-    save_reflections(self.minimised, self.params.output.reflections)
-
-    '''if params.output.plot_scaling_models:
-      from dials.command_line.plot_scaling_models import plot_scaling_models
-      plot_scaling_models(params.output.scaled, params.output.experiments)'''
+    save_reflections(joint_table, self.params.output.reflections)
 
   def scaling_algorithm(self, scaler):
     """The main scaling algorithm."""
@@ -378,11 +407,7 @@ class Script(object):
 
         scaler.adjust_variances()
 
-        if scaler.params.scaling_options.target_model or \
-          scaler.params.scaling_options.target_mtz:
-          scaler.join_multiple_datasets(include_target=False)
-        else:
-          scaler.join_multiple_datasets()
+        scaler.clean_reflection_tables()
         return scaler
       # Now pass to a multiscaler ready for next round of scaling.
       scaler.expand_scales_to_all_reflections()
@@ -411,7 +436,7 @@ class Script(object):
 
     # The minimisation has only been done on a subset on the data, so apply the
     # scale factors to the whole reflection table.
-    scaler.clear_Ih_tables()
+    scaler.clear_Ih_table()
     scaler.expand_scales_to_all_reflections(calc_cov=True)
     if scaler.params.scaling_options.outlier_rejection:
       # Note just call the method, not the 'outlier_rejection_routine'
@@ -422,9 +447,7 @@ class Script(object):
       scaler.perform_error_optimisation(update_Ih=False)
 
     scaler.adjust_variances()
-
-    if scaler.id_ == 'multi':
-      scaler.join_multiple_datasets()
+    scaler.clean_reflection_tables()
     return scaler
 
 if __name__ == "__main__":

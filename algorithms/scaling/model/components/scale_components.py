@@ -118,7 +118,7 @@ class ScaleComponentBase(object):
     The input data will be specific to the component."""
 
   @abc.abstractmethod
-  def calculate_scales_and_derivatives(self, curvatures=False):
+  def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
     """Use the component parameters to calculate and set
     self._inverse_scales and self._derivatives."""
 
@@ -150,10 +150,6 @@ class SingleScaleFactor(ScaleComponentBase):
       self._n_refl.append(reflections.size())
 
   def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
-    #self._inverse_scales = []
-    #self._derivatives = []
-    #self._curvatures = []
-    #for block_id in range(len(self._n_refl)):#len of the list, not num of refl
     scales = flex.double(self.n_refl[block_id],
         self._parameters[0])
     derivatives = sparse.matrix(self.n_refl[block_id], 1)

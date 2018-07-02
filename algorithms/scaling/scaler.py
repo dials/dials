@@ -10,7 +10,7 @@ A TargetScaler is used for targeted scaling.
 import abc
 import logging
 import time
-from mock import MagicMock
+import gc
 from cctbx import crystal, sgtbx
 from scitbx import sparse
 from dials_scaling_ext import row_multiply
@@ -50,6 +50,7 @@ class ScalerBase(object):
 
   @property
   def final_rmsds(self):
+    """Holder for final R-factors from last minimisation."""
     return self._final_rmsds
 
   @final_rmsds.setter
@@ -124,23 +125,8 @@ class ScalerBase(object):
     """A list of initial reflection table keys."""
     return self._initial_keys
 
-  def clean_reflection_table(self):
-    """Remove additional added columns that are not required for output."""
-    self._initial_keys.append('inverse_scale_factor')
-    self._initial_keys.append('inverse_scale_factor_variance')
-    self._initial_keys.append('Ih_values')
-    self._initial_keys.append('intensity.scale.value')
-    self._initial_keys.append('intensity.scale.variance')
-    if 'Esq' in self.reflection_table:
-      del self.reflection_table['Esq']
-    del self.reflection_table['intensity']
-    del self.reflection_table['variance']
-    for key in self.reflection_table.keys():
-      if key not in self._initial_keys:
-        del self._reflection_table[key]
-
   @abc.abstractmethod
-  def update_for_minimisation(self, apm, curvatures=False):
+  def update_for_minimisation(self, apm, block_id, curvatures=False):
     """Update the scale factors and Ih for the next minimisation iteration."""
 
   @abc.abstractmethod
@@ -232,12 +218,20 @@ class ScalerBase(object):
       self.reselect_reflections_for_scaling()
 
   def round_of_outlier_rejection(self):
+    """Perform an outlier rejection cycle on the current reflection table."""
     self._Ih_table = []
-    import gc
     gc.collect()
-    self._reflection_table = reject_outliers(self._reflection_table,
+    self._reflection_table = reject_outliers([self._reflection_table],
       self.space_group, self.params.scaling_options.outlier_rejection,
-      self.params.scaling_options.outlier_zmax)
+      self.params.scaling_options.outlier_zmax)[0]
+
+  def clear_memory_from_derivs(self, block_id):
+    """Remove derivatives from Ih_table if no longer needed."""
+    del self.Ih_table.blocked_data_list[block_id].derivatives
+
+  def clear_Ih_table(self):
+    """Delete the data from the current Ih_table."""
+    self._Ih_table = []
 
 class SingleScalerBase(ScalerBase):
   """
@@ -331,9 +325,6 @@ class SingleScalerBase(ScalerBase):
     self.Ih_table.update_weights(block_id)
     self.Ih_table.calc_Ih(block_id)
 
-  def clear_memory_from_derivs(self, block_id):
-    del self.Ih_table.blocked_data_list[block_id].derivatives
-
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
     self._reflection_table['inverse_scale_factor'] = flex.double(
       self.reflection_table.size(), 1.0)
@@ -351,7 +342,6 @@ class SingleScalerBase(ScalerBase):
     n_param_tot = sum([c.n_params for c in self.components.itervalues()])
     for i in range(1, n_blocks+1):
       n_end = int(i * n_sel / n_blocks)
-      #print(n_start, n_end)
       block_isel = flex.size_t(range(n_start, n_end))
       n_start = n_end
       scales = flex.double(block_isel.size(), 1.0)
@@ -366,7 +356,6 @@ class SingleScalerBase(ScalerBase):
           derivs_list.append(d)
         scales *= comp_scales
       all_scales.extend(scales)
-      #print(list(all_scales))
       if calc_cov and self.var_cov_matrix.non_zeroes > 0:
         n_cumulative_param = 0
         for i, component in enumerate(self.components):
@@ -378,7 +367,6 @@ class SingleScalerBase(ScalerBase):
           jacobian.assign_block(d_block, 0, n_cumulative_param)
           n_cumulative_param += n_param
         all_invsfvars.extend(cpp_calc_sigmasq(jacobian.transpose(), self._var_cov))
-      #print(list(all_invsfvars))
     scaled_invsf *= all_scales
     self.reflection_table['inverse_scale_factor'].set_selected(scaled_isel,
       scaled_invsf)
@@ -389,14 +377,6 @@ class SingleScalerBase(ScalerBase):
       logger.info('Scale factors determined during minimisation have now been\n'
         'applied to all reflections for dataset %s.\n',
         self.reflection_table['id'][0])
-    '''if self.var_cov_matrix.non_zeroes > 0 and calc_cov:
-      if self.verbosity > 1:
-        logger.info('Calculating error estimates of inverse scale factors. \n')
-      #for component in self.components.itervalues():
-      #  component.update_reflection_data(self.reflection_table, scaled_sel)
-      scaled_invsfvar = calc_sf_variances(self.components, self._var_cov)
-      self.reflection_table['inverse_scale_factor_variance'].set_selected(
-        scaled_isel, scaled_invsfvar)'''
 
   def update_error_model(self, error_model, update_Ih=True):
     """Apply a correction to try to improve the error estimate."""
@@ -444,6 +424,7 @@ class SingleScalerBase(ScalerBase):
           self.scaling_selection, block_selections)
 
   def create_Ih_table(self):
+    """Create an Ih_Table from the current reflection table."""
     free_set_percentage = None
     if self.params.scaling_options.use_free_set:
       free_set_percentage = self.params.scaling_options.free_set_percentage
@@ -476,7 +457,6 @@ class SingleScalerBase(ScalerBase):
   def outlier_rejection_routine(self, make_ready_for_scaling=True):
     """Routine to perform outlier rejection on scaled scaler."""
     self._Ih_table = []
-    import gc
     gc.collect()
     self.expand_scales_to_all_reflections()
     self.round_of_outlier_rejection()
@@ -487,10 +467,20 @@ class SingleScalerBase(ScalerBase):
       self.create_Ih_table()
       self.reselect_reflections_for_scaling()
 
-  def clear_Ih_tables(self):
-    self._Ih_table = []
-    import gc
-    gc.collect()
+  def clean_reflection_tables(self):
+    """Remove additional added columns that are not required for output."""
+    self._initial_keys.append('inverse_scale_factor')
+    self._initial_keys.append('inverse_scale_factor_variance')
+    self._initial_keys.append('Ih_values')
+    self._initial_keys.append('intensity.scale.value')
+    self._initial_keys.append('intensity.scale.variance')
+    self.reflection_table['intensity.scale.value'] = self.reflection_table['intensity']
+    self.reflection_table['intensity.scale.variance'] = self.reflection_table['variance']
+    if 'Esq' in self.reflection_table:
+      del self.reflection_table['Esq']
+    for key in self.reflection_table.keys():
+      if key not in self._initial_keys:
+        del self._reflection_table[key]
 
 class MultiScalerBase(ScalerBase):
   """Base class for Scalers handling multiple datasets"""
@@ -539,12 +529,10 @@ class MultiScalerBase(ScalerBase):
       'in the scaling model for all datasets. \n')
       logger.info(msg)
 
-  def clear_memory_from_derivs(self, block_id):
-    del self.Ih_table.blocked_data_list[block_id].derivatives
-
-  def clear_Ih_tables(self):
+  def clean_reflection_tables(self):
+    """Remove unneccesary columns added to reflection tables."""
     for scaler in self.active_scalers:
-      scaler.clear_Ih_tables()
+      scaler.clean_reflection_tables()
 
   def update_for_minimisation(self, apm, block_id, curvatures=False, calc_Ih=True):
     """Update the scale factors and Ih for the next iteration of minimisation."""
@@ -564,34 +552,6 @@ class MultiScalerBase(ScalerBase):
     self.Ih_table.update_weights(block_id)
     if calc_Ih:
       self.Ih_table.calc_Ih(block_id)
-    
-    '''scales_list = []
-    derivs_list = []
-    for apm_i in apm.apm_list:
-      basis_fn = self._basis_function.calculate_scales_and_derivatives(apm_i, block_id)
-      scales_list.append(basis_fn[0])
-      derivs_list.append(basis_fn[1])
-    scales = zip(*scales_list)
-    scale_list_for_Ih = []
-    for scales_tuple in scales:
-      scales_for_block = flex.double()
-      for array in scales_tuple:
-        scales_for_block.extend(array)
-      scale_list_for_Ih.append(scales_for_block)
-    derivs = zip(*derivs_list)
-    derivs_list_for_Ih = []
-    for i, derivs_tuple in enumerate(derivs):
-      deriv_matrix = sparse.matrix(scale_list_for_Ih[i].size(), apm.n_active_params)
-      start_row_no = 0
-      for j, deriv in enumerate(derivs_tuple):
-        deriv_matrix.assign_block(deriv, start_row_no, apm.apm_data[j]['start_idx'])
-        start_row_no += deriv.n_rows
-      derivs_list_for_Ih.append(deriv_matrix)
-    self.Ih_table.set_inverse_scale_factors(scale_list_for_Ih)
-    self.Ih_table.set_derivatives(derivs_list_for_Ih)
-    self.Ih_table.update_weights()
-    if calc_Ih:
-      self.Ih_table.calc_Ih()
     # The parallelisation below would work if sparse matrices were
     # pickleable (I think!) - with more benefit for larger number of datasets.'''
     '''def task_wrapper(block):
@@ -653,26 +613,25 @@ class MultiScaler(MultiScalerBase):
   def round_of_outlier_rejection(self):
     #First join the datasets
     self._Ih_table = []
-    import gc
     gc.collect()
-    self._reflection_table = flex.reflection_table()
     n_refl_in_each_table = [0]
     cumulative_size = 0
+    reflection_tables = []
     for scaler in self.single_scalers:
-      self._reflection_table.extend(scaler.reflection_table)
+      reflection_tables.append(scaler.reflection_table)
       cumulative_size += scaler.reflection_table.size()
       n_refl_in_each_table.append(cumulative_size)
     # Now do outlier rejection of joint dataset
-    self._reflection_table = reject_outliers(self._reflection_table,
+    reflection_tables = reject_outliers(reflection_tables,
       self.space_group, self.params.scaling_options.outlier_rejection,
       self.params.scaling_options.outlier_zmax)
     # Now split back out to individual reflection tables so that flags are
     # updated.
     for i, scaler in enumerate(self.single_scalers):
-      scaler.reflection_table = self.reflection_table[n_refl_in_each_table[i]:
-        n_refl_in_each_table[i+1]]
+      scaler.reflection_table = reflection_tables[i]
 
   def create_Ih_table(self):
+    """Create a new Ih table from the reflection tables."""
     free_set_percentage = None
     if self.params.scaling_options.use_free_set:
       free_set_percentage = self.params.scaling_options.free_set_percentage
@@ -686,7 +645,6 @@ class MultiScaler(MultiScalerBase):
   def outlier_rejection_routine(self, make_ready_for_scaling=True):
     """Routine to perform outlier rejection on scaled scaler."""
     self._Ih_table = []
-    import gc
     gc.collect()
     self.expand_scales_to_all_reflections()
     self.round_of_outlier_rejection()
@@ -757,33 +715,25 @@ class TargetScaler(MultiScalerBase):
     scaled from the values in the target datasets."""
     # First join the datasets being scaled.
     self._Ih_table = []
-    import gc
     gc.collect()
-    reflection_table = flex.reflection_table()
-    n_refl_in_each_table = [0]
-    cumulative_size = 0
+    reflection_tables = []
     for scaler in self.unscaled_scalers:
-      reflection_table.extend(scaler.reflection_table)
-      cumulative_size += scaler.reflection_table.size()
-      n_refl_in_each_table.append(cumulative_size)
+      reflection_tables.append(scaler.reflection_table)
     # Now join target datasets
-    target_table = flex.reflection_table()
+    target_tables = []
     for scaler in self.single_scalers:
-      target_table.extend(scaler.reflection_table)
+      target_tables.append(scaler.reflection_table)
     # Now do outlier rejection of joint dataset
-    reflection_table = reject_outliers(reflection_table,
+    reflection_tables = reject_outliers(reflection_tables,
       self.space_group, 'target', self.params.scaling_options.outlier_zmax,
-      target=target_table)
-    # Now split back out to individual reflection tables so that flags are
-    # updated.
+      target=target_tables)
+    # Now update references
     for i, scaler in enumerate(self.unscaled_scalers):
-      scaler.reflection_table = reflection_table[n_refl_in_each_table[i]:
-        n_refl_in_each_table[i+1]]
+      scaler.reflection_table = reflection_tables[i]
 
   def outlier_rejection_routine(self, make_ready_for_scaling=True):
     """Routine to perform outlier rejection on scaled scaler."""
     self._Ih_table = []
-    import gc
     gc.collect()
     self.expand_scales_to_all_reflections()
     self.round_of_outlier_rejection()
@@ -852,7 +802,7 @@ class NullScaler(ScalerBase):
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
     """Fill in abstract method"""
 
-  def update_for_minimisation(self, apm, curvatures=False):
+  def update_for_minimisation(self, apm, block_id=0, curvatures=False):
     """Fill in abstract method"""
 
 def calc_sf_variances(components, var_cov):
