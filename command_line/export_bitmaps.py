@@ -190,13 +190,13 @@ def imageset_as_bitmaps(imageset, params):
     # XXX is size//binning safe here?
     try: # fromstring raises Exception in Pillow >= 3.0.0
       pil_img = Image.fromstring('RGB',
-                      (flex_image.ex_size2()//binning,
-                       flex_image.ex_size1()//binning),
+                      (flex_image.ex_size2(),
+                       flex_image.ex_size1()),
                        flex_image.export_string)
     except NotImplementedError:
       pil_img = Image.frombytes('RGB',
-                      (flex_image.ex_size2()//binning,
-                       flex_image.ex_size1()//binning),
+                      (flex_image.ex_size2(),
+                       flex_image.ex_size1()),
                        flex_image.export_string)
     if params.output_file:
       path = os.path.join(output_dir, params.output_file)
