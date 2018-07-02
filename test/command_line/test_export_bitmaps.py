@@ -63,3 +63,14 @@ def test_export_still_image(dials_regression, tmpdir):
   result = easy_run.fully_buffered(cmd).raise_if_errors()
 
   assert os.path.exists('image0001.png')
+
+def test_export_multi_panel(dials_regression, tmpdir):
+  tmpdir.chdir()
+  image = os.path.join(dials_regression, 'image_examples', 'DLS_I23', 'germ_13KeV_0001.cbf')
+
+  for binning in (1, 4):
+    cmd = 'dials.export_bitmaps %s binning=%i prefix=binning_%i_' % (
+      image, binning, binning)
+    result = easy_run.fully_buffered(cmd).raise_if_errors()
+
+    assert os.path.exists('binning_%i_0001.png' % binning)
