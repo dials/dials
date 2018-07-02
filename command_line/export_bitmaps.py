@@ -162,11 +162,11 @@ def imageset_as_bitmaps(imageset, params):
     if len(detector) > 1:
       # FIXME This doesn't work properly, as flex_image.size2() is incorrect
       # also binning doesn't work
-      assert binning == 1
       flex_image = _get_flex_image_multipanel(
         brightness=brightness,
         panels=detector,
         raw_data=image,
+        binning=binning,
         beam=imageset.get_beam(),
         show_untrusted=show_untrusted)
     else:
