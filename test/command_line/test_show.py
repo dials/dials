@@ -11,7 +11,7 @@ def test_dials_show(dials_regression):
   cmd = "dials.show %s/experiment_1.json" % path
   result = easy_run.fully_buffered(cmd).raise_if_errors()
   output = list(filter(None, (s.rstrip() for s in result.stdout_lines if not s.startswith('#'))))
-  assert "\n".join(output[4:]) == """
+  assert "\n".join(output[5:]) == """
 Experiment 0:
 Detector:
 Panel:
@@ -69,7 +69,7 @@ def test_dials_show_i04_weak_data(dials_regression):
   cmd = "dials.show %s/datablock_orig.json" %path
   result = easy_run.fully_buffered(cmd).raise_if_errors()
   output = list(filter(None, (s.rstrip() for s in result.stdout_lines if not s.startswith('#'))))
-  assert "\n".join(output[6:]) == """
+  assert "\n".join(output[7:]) == """
 Detector:
 Panel:
   name: Panel
@@ -118,7 +118,7 @@ def test_dials_show_centroid_test_data(dials_regression):
     "Format: <class 'dxtbx.format.FormatCBFMiniPilatus.FormatCBFMiniPilatus'>"
     in result.stdout_lines), result.show_stdout()
   output = list(filter(None, (s.rstrip() for s in result.stdout_lines if not s.startswith('#'))))
-  assert "\n".join(output[6:]) == """
+  assert "\n".join(output[7:]) == """
 Detector:
 Panel:
   name: Panel
