@@ -346,6 +346,7 @@ def test_ScalerBase(test_params):
 def test_SingleScaler(test_reflections, test_experiments, test_params,
     mock_errormodel, mock_apm):
   """Test the single scaler class."""
+  test_params.scaling_options.nproc = 1
   exp = create_scaling_model(test_params, test_experiments, test_reflections)
   singlescaler = SingleScalerBase(test_params, exp[0], test_reflections[0])
 
@@ -476,6 +477,7 @@ def test_SingleScaler_error_optimisation(test_experiments, test_params):
   that it is appropriately called and the scaler updated. Expect that the error
   model is minimised and updated in the Ih_table, experiments"""
   rt = refl_for_error_optimisation()
+  test_params.scaling_options.nproc = 1
   exp = create_scaling_model(test_params, test_experiments, [rt])
   scaler = SingleScalerBase(test_params, exp[0], rt)
   assert scaler.experiments.scaling_model.error_model is None
@@ -511,6 +513,7 @@ def test_SingleScaler_outlier_rejection_routine(test_experiments, test_params):
   has already been scaled - so first create this and check that outlier
   rejection is performed, a new Ih_table is created and then the right
   reflections reselected."""
+  test_params.scaling_options.nproc = 1
   rt = refl_for_outlier_routine()
   test_params.scaling_options.outlier_rejection = 'standard'
   exp = create_scaling_model(test_params, test_experiments, [rt])
@@ -545,6 +548,7 @@ def test_SingleScaler_outlier_rejection_routine(test_experiments, test_params):
 def test_SingleScaler_update_for_minimisation(test_reflections,
     test_experiments, test_params):
   """Test the update_for_minimisation method of the singlescaler."""
+  test_params.scaling_options.nproc = 1
   exp = create_scaling_model(test_params, test_experiments, test_reflections[0])
   single_scaler = SingleScalerBase(test_params, exp[0], test_reflections[0])
   apm_fac = create_apm_factory(single_scaler)
@@ -750,6 +754,7 @@ def test_multiscaler_outlier_rejection_routine(test_params):
   has already been scaled - so first create this and check that outlier
   rejection is performed, a new Ih_table is created and then the right
   reflections reselected."""
+  test_params.scaling_options.nproc = 1
   rt = refl_for_outlier_routine()
   rt2 = refl_for_outlier_routine()
   rt2['intensity'][2] = 1.0
@@ -860,6 +865,7 @@ def test_targetscaler_outlier_rejection_routine(test_params):
   has already been scaled - so first create this and check that outlier
   rejection is performed, a new Ih_table is created and then the right
   reflections reselected."""
+  test_params.scaling_options.nproc = 1
   rt = refl_for_outlier_routine()
   rt2 = refl_for_outlier_routine()
   rt['intensity'][2] = 1.0

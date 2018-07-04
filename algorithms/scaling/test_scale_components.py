@@ -28,20 +28,20 @@ def test_ScaleComponentBase():
   base_SF = base_SF_filler(flex.double([1.0] * 3))
   assert base_SF.n_params == 3
   assert base_SF.parameter_esds is None
-  assert list(base_SF.parameters) == list(flex.double([1.0, 1.0, 1.0]))
+  assert list(base_SF.parameters) == [1.0, 1.0, 1.0]
 
   # Test updating of parameters
   base_SF.parameters = flex.double([2.0, 2.0, 2.0])
-  assert list(base_SF.parameters) == list(flex.double([2.0, 2.0, 2.0]))
+  assert list(base_SF.parameters) == [2.0, 2.0, 2.0]
   with pytest.raises(AssertionError):
     # Try to change the number of parameters - should fail
     base_SF.parameters = flex.double([2.0, 2.0, 2.0, 2.0])
 
   # Test setting of inverse scales and updating to a list of different length.
   base_SF.inverse_scales = flex.double([1.0, 1.0])
-  assert list(base_SF.inverse_scales) == list(flex.double([1.0, 1.0]))
+  assert list(base_SF.inverse_scales) == [1.0, 1.0]
   base_SF.inverse_scales = flex.double([1.0, 1.0, 1.0, 1.0])
-  assert list(base_SF.inverse_scales) == list(flex.double([1.0, 1.0, 1.0, 1.0]))
+  assert list(base_SF.inverse_scales) == [1.0, 1.0, 1.0, 1.0]
 
   # Test setting of var_cov matrix.
   assert base_SF.var_cov_matrix is None
@@ -55,13 +55,13 @@ def test_ScaleComponentBase():
   assert base_SF.calculate_jacobian_restraints() is None
 
   base_SF = base_SF_filler(flex.double(3, 1.0), flex.double(3, 0.1))
-  assert list(base_SF.parameter_esds) == list(flex.double(3, 0.1))
+  assert list(base_SF.parameter_esds) == [0.1] * 3
 
 def test_SingleScaleFactor():
   """Test for SingleScaleFactor class."""
   KSF = SingleScaleFactor(flex.double([2.0]))
   assert KSF.n_params == 1
-  assert list(KSF.parameters) == list(flex.double([2.0]))
+  assert list(KSF.parameters) == [2.0]
   rt = flex.reflection_table()
   rt['d'] = flex.double([1.0, 1.0])
   KSF.update_reflection_data(rt)
@@ -79,12 +79,12 @@ def test_SingleBScaleFactor():
   """Test forSingleBScaleFactor class."""
   BSF = SingleBScaleFactor(flex.double([0.0]))
   assert BSF.n_params == 1
-  assert list(BSF.parameters) == list(flex.double([0.0]))
+  assert list(BSF.parameters) == [0.0]
   rt = flex.reflection_table()
   rt['d'] = flex.double([1.0, 1.0])
   BSF.update_reflection_data(rt)
   assert BSF.n_refl == [2]
-  assert list(BSF.d_values[0]) == list(flex.double([1.0, 1.0]))
+  assert list(BSF.d_values[0]) == [1.0, 1.0]
   s, d = BSF.calculate_scales_and_derivatives()
   assert list(s) == [1.0, 1.0]
   assert d[0, 0] == 0.5
@@ -102,7 +102,7 @@ def test_SHScalefactor():
 
   SF = SHScaleComponent(flex.double([initial_param] * 3))
   assert SF.n_params == 3
-  assert list(SF.parameters) == list(flex.double([initial_param]*3))
+  assert list(SF.parameters) == [initial_param]*3
 
   # Test functionality just by setting sph_harm_table directly and calling
   # update_reflection_data to initialise the harmonic values.
@@ -148,12 +148,12 @@ def test_SmoothScaleFactor1D():
   """Test for the gaussian smoothed 1D scalefactor class."""
   SF = SmoothScaleComponent1D(flex.double(5, 1.1), col_name='norm_rot')
   assert SF.n_params == 5
-  assert list(SF.parameters) == list(flex.double([1.1, 1.1, 1.1, 1.1, 1.1]))
+  assert list(SF.parameters) == [1.1, 1.1, 1.1, 1.1, 1.1]
   rt = flex.reflection_table()
   rt['norm_rot'] = flex.double([0.5, 1.0, 2.5, 0.0])
   SF.update_reflection_data(rt)
-  assert list(SF.normalised_values[0]) == list(flex.double([0.5, 1.0, 2.5, 0.0]))
-  assert list(SF.inverse_scales[0]) == list(flex.double([1.0, 1.0, 1.0, 1.0]))
+  assert list(SF.normalised_values[0]) == [0.5, 1.0, 2.5, 0.0]
+  assert list(SF.inverse_scales[0]) == [1.0, 1.0, 1.0, 1.0]
   SF.smoother.set_smoothing(4, 1.0)
   assert list(SF.smoother.positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5]
   SF.calculate_scales()
@@ -173,18 +173,25 @@ def test_SmoothScaleFactor1D():
   s, d, c = SF.calculate_scales_and_derivatives(curvatures=True)
   assert c.non_zeroes == 0
 
+  #Test that if one or none in block, then doesn't fail but returns sensible value
+  #SF.update_reflection_data(rt, selection=flex.bool([True, False, False, False]))
+  SF._normalised_values = [flex.double([0.5])]
+  SF._n_refl = [1]
+  assert list(SF.normalised_values[0]) == [0.5]
+  s, d = SF.calculate_scales_and_derivatives()
+
 def test_SmoothBScaleFactor1D():
   'test for a gaussian smoothed 1D scalefactor object'
   SF = SmoothBScaleComponent1D(flex.double(5, 0.0), col_name='norm_rot')
   assert SF.n_params == 5
-  assert list(SF.parameters) == list(flex.double(5, 0.0))
+  assert list(SF.parameters) == [0.0] * 5
   rt = flex.reflection_table()
   rt['norm_rot'] = flex.double([0.5, 1.0, 2.5, 0.0])
   rt['d'] = flex.double([1.0, 1.0, 1.0, 1.0])
   SF.update_reflection_data(rt)
-  assert list(SF.normalised_values[0]) == list(flex.double([0.5, 1.0, 2.5, 0.0]))
-  assert list(SF.d_values[0]) == list(flex.double([1.0, 1.0, 1.0, 1.0]))
-  assert list(SF.inverse_scales[0]) == list(flex.double([1.0, 1.0, 1.0, 1.0]))
+  assert list(SF.normalised_values[0]) == [0.5, 1.0, 2.5, 0.0]
+  assert list(SF.d_values[0]) == [1.0, 1.0, 1.0, 1.0]
+  assert list(SF.inverse_scales[0]) == [1.0, 1.0, 1.0, 1.0]
   SF.smoother.set_smoothing(4, 1.0)
   SF.calculate_scales()
   assert approx_equal(list(SF.inverse_scales[0]), [1.0, 1.0, 1.0, 1.0])
@@ -206,6 +213,12 @@ def test_SmoothBScaleFactor1D():
     (exp(-1.0)/exp(0.0))**2)
   assert approx_equal(c[0, 1], (
     ((exp(0.0)/sumexp)**2) * s[1]/4.0))
+
+  SF._normalised_values = [flex.double([0.5])]
+  SF._n_refl = [1]
+  SF._d_values = [flex.double([1.0])]
+  assert list(SF.normalised_values[0]) == [0.5]
+  s, d = SF.calculate_scales_and_derivatives()
 
 def test_SmoothScaleFactor2D():
   """Test the 2D smooth scale factor class."""

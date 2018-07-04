@@ -23,15 +23,12 @@ class GaussianSmoother1D(GS1D):
 
   def value_weight(self, x, value):
     """Return the value, weight and sumweight at a single point."""
-    result = super(GaussianSmoother1D, self).value_weight(x,
-      flex.double(value))
+    result = super(GaussianSmoother1D, self).value_weight(x, value)
     return (result.get_value(), result.get_weight(), result.get_sumweight())
 
   def multi_value_weight(self, x, value):
     """Return the value, weight and sumweight at multiple points."""
-    result = super(GaussianSmoother1D, self).multi_value_weight(
-      flex.double(x),
-      flex.double(value))
+    result = super(GaussianSmoother1D, self).multi_value_weight(x, value)
     return (result.get_value(), result.get_weight(), result.get_sumweight())
 
   def positions(self):
@@ -43,15 +40,12 @@ class GaussianSmoother2D(GS2D):
 
   def value_weight(self, x, y, value):
     """Return the value, weight and sumweight at a single point."""
-    result = super(GaussianSmoother2D, self).value_weight(x, y,
-      flex.double(value))
+    result = super(GaussianSmoother2D, self).value_weight(x, y, value)
     return (result.get_value(), result.get_weight(), result.get_sumweight())
 
   def multi_value_weight(self, x, y, value):
     """Return the value, weight and sumweight at multiple points."""
-    result = super(GaussianSmoother2D, self).multi_value_weight(
-      flex.double(x), flex.double(y),
-      flex.double(value))
+    result = super(GaussianSmoother2D, self).multi_value_weight(x, y, value)
     return (result.get_value(), result.get_weight(), result.get_sumweight())
 
   def x_positions(self):
@@ -67,15 +61,12 @@ class GaussianSmoother3D(GS3D):
 
   def value_weight(self, x, y, z, value):
     """Return the value, weight and sumweight at a single point."""
-    result = super(GaussianSmoother3D, self).value_weight(x, y, z,
-      flex.double(value))
+    result = super(GaussianSmoother3D, self).value_weight(x, y, z, value)
     return (result.get_value(), result.get_weight(), result.get_sumweight())
 
   def multi_value_weight(self, x, y, z, value):
     """Return the value, weight and sumweight at multiple points."""
-    result = super(GaussianSmoother3D, self).multi_value_weight(
-      flex.double(x), flex.double(y), flex.double(z),
-      flex.double(value))
+    result = super(GaussianSmoother3D, self).multi_value_weight(x, y, z, value)
     return (result.get_value(), result.get_weight(), result.get_sumweight())
 
   def x_positions(self):
@@ -179,15 +170,23 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
     if self._n_refl[block_id] > 1:
       value, weight, sumweight = self._smoother.multi_value_weight(
         self._normalised_values[block_id], self.value)
+      inv_sw = 1. / sumweight
+      dv_dp = row_multiply(weight, inv_sw)
+      if curvatures:
+        curvatures = sparse.matrix(value.size(), self.n_params)
     elif self._n_refl[block_id] == 1:
       value, weight, sumweight = self._smoother.value_weight(
-        self._normalised_values[block_id], self.value)
+        self._normalised_values[block_id][0], self.value)
+      dv_dp = sparse.matrix(1, weight.size)
+      b = flex.double(weight.as_dense_vector() / sumweight)
+      b.reshape(flex.grid(1, b.size()))
+      dv_dp.assign_block(b, 0, 0)
+      if curvatures:
+        curvatures = sparse.matrix(1, self.n_params)
+      value = flex.double(1, value)
     else:
       return flex.double([]), sparse.matrix(0, 0)
-    inv_sw = 1. / sumweight
-    dv_dp = row_multiply(weight, inv_sw)
     if curvatures:
-      curvatures = sparse.matrix(value.size(), self.n_params)
       return value, dv_dp, curvatures
     return value, dv_dp
 
@@ -235,10 +234,9 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
       curvatures)
     if self._n_refl[block_id] == 0:
       return flex.double([]), sparse.matrix(0, 0)
-    s = flex.exp(
-        sdctuple[0] /(2.0 * (self._d_values[block_id] * self._d_values[block_id])))
-    d = row_multiply(sdctuple[1],
-        s / (2.0 * (self._d_values[block_id] * self._d_values[block_id])))
+    prefac = 1.0 /(2.0 * (self._d_values[block_id] * self._d_values[block_id]))
+    s = flex.exp(sdctuple[0] * prefac)
+    d = row_multiply(sdctuple[1], s * prefac)
     if curvatures:
       curvatures = row_multiply(elementwise_square(
           d), 1.0/s)
@@ -337,16 +335,24 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
       value, weight, sumweight = self._smoother.multi_value_weight(
         self._normalised_x_values[block_id],
         self._normalised_y_values[block_id], self.value)
+      inv_sw = 1. / sumweight
+      dv_dp = row_multiply(weight, inv_sw)
+      if curvatures:
+        curvs = sparse.matrix(value.size(), self.n_params)
     elif self._n_refl[block_id] == 1:
       value, weight, sumweight = self._smoother.value_weight(
-        self._normalised_x_values[block_id],
-        self._normalised_y_values[block_id], self.value)
+        self._normalised_x_values[block_id][0],
+        self._normalised_y_values[block_id][0], self.value)
+      dv_dp = sparse.matrix(1, weight.size)
+      b = flex.double(weight.as_dense_vector() / sumweight)
+      b.reshape(flex.grid(1, b.size()))
+      dv_dp.assign_block(b, 0, 0)
+      if curvatures:
+        curvatures = sparse.matrix(1, self.n_params)
+      value = flex.double(1, value)
     else:
       return flex.double([]), sparse.matrix(0, 0)
-    inv_sw = 1. / sumweight
-    dv_dp = row_multiply(weight, inv_sw)
     if curvatures:
-      curvs = sparse.matrix(value.size(), self.n_params)
       return value, dv_dp, curvs
     return value, dv_dp
 
@@ -464,18 +470,30 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
   def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
     if self._n_refl[block_id] > 1:
       value, weight, sumweight = self._smoother.multi_value_weight(
-      self._normalised_x_values[block_id], self._normalised_y_values[block_id],
-      self._normalised_z_values[block_id], self.value)
+        self._normalised_x_values[block_id],
+        self._normalised_y_values[block_id],
+        self._normalised_z_values[block_id],
+        self.value)
+      inv_sw = 1. / sumweight
+      dv_dp = row_multiply(weight, inv_sw)
+      if curvatures:
+        curvs = sparse.matrix(value.size(), self.n_params)
     elif self._n_refl[block_id] == 1:
       value, weight, sumweight = self._smoother.value_weight(
-      self._normalised_x_values[block_id], self._normalised_y_values[block_id],
-      self._normalised_z_values[block_id], self.value)
+        self._normalised_x_values[block_id][0],
+        self._normalised_y_values[block_id][0],
+        self._normalised_z_values[block_id][0],
+        self.value)
+      dv_dp = sparse.matrix(1, weight.size)
+      b = flex.double(weight.as_dense_vector() / sumweight)
+      b.reshape(flex.grid(1, b.size()))
+      dv_dp.assign_block(b, 0, 0)
+      if curvatures:
+        curvatures = sparse.matrix(1, self.n_params)
+      value = flex.double(1, value)
     else:
       return flex.double([]), sparse.matrix(0, 0)
-    inv_sw = 1. / sumweight
-    dv_dp = row_multiply(weight, inv_sw)
     if curvatures:
-      curvs = sparse.matrix(value.size(), self.n_params)
       return value, dv_dp, curvs
     return value, dv_dp
 
