@@ -7,9 +7,13 @@ from __future__ import absolute_import, division
 import logging
 from dials.algorithms.refinement.engine import SimpleLBFGS,\
  GaussNewtonIterations, LevenbergMarquardtIterations, LBFGScurvs
+from dials.algorithms.scaling.scaling_utilities import log_memory_usage
 from libtbx.phil import parse
 from libtbx import easy_mp
+from libtbx.table_utils import simple_table
 logger = logging.getLogger('dials')
+
+
 
 
 TARGET_ACHIEVED = "RMSD target achieved"
@@ -132,8 +136,6 @@ def error_model_refinery(engine, target, max_iterations):
 def print_step_table(refinery):
   """print useful output about refinement steps in the form of a simple table"""
 
-  from libtbx.table_utils import simple_table
-
   logger.info("\nRefinement steps:")
 
   header = ["Step", "Nref"]
@@ -233,7 +235,25 @@ class ScalingRefinery(object):
     if not isinstance(self._scaler, MultiScalerBase):
       self._scaler.experiments.scaling_model.normalise_components()
 
-    self._scaler.final_rmsds = self._target._rmsds
+    from dials.algorithms.scaling.scaling_library import calculate_single_merging_stats
+    if self._scaler.Ih_table.free_Ih_table:
+      res = calculate_single_merging_stats(self._scaler.Ih_table.blocked_data_list[-1].Ih_table,
+        self._scaler.experiments, use_internal_variance=False)
+      free_rmeas = res.overall.r_meas
+      free_cc12 = res.overall.cc_one_half
+      res = calculate_single_merging_stats(self._scaler.Ih_table.blocked_data_list[0].Ih_table,
+        self._scaler.experiments, use_internal_variance=False)
+      work_rmeas = res.overall.r_meas
+      work_cc12 = res.overall.cc_one_half
+
+      self._scaler.final_rmsds = [work_rmeas, free_rmeas, work_cc12, free_cc12]
+      header = ['','Work', 'Free']
+      rows = [['Rmeas', str(round(work_rmeas, 5)), str(round(free_rmeas, 5))],
+        ['CC1/2', str(round(work_cc12, 5)), str(round(free_cc12, 5))]]
+      logger.info('\nWork/Free set quality indicators:')
+      st = simple_table(rows, header)
+      logger.info(st.format())
+
     return self._scaler
 
 
@@ -250,6 +270,9 @@ class ScalingSimpleLBFGS(ScalingRefinery, SimpleLBFGS):
 
     if self._scaler.Ih_table.free_Ih_table:
       blocks = self._scaler.Ih_table.blocked_data_list[:-1]
+      free_block_id = len(self._scaler.Ih_table.blocked_data_list) - 1
+      self._scaler.update_for_minimisation(self._parameters, free_block_id)
+      self._scaler.clear_memory_from_derivs(free_block_id)
     else:
       blocks = self._scaler.Ih_table.blocked_data_list
 
@@ -291,6 +314,10 @@ class ScalingSimpleLBFGS(ScalingRefinery, SimpleLBFGS):
     if restraints:
       f += restraints[0]
       g += restraints[1]
+    logger.debug('Functional : %s' % f)
+    logger.debug('Gradients : %s' % list(g))
+    log_memory_usage()
+    logger.debug('\n')
     return f, g, None
 
 class ScalingLBFGScurvs(ScalingRefinery, LBFGScurvs):
@@ -354,6 +381,9 @@ class ScalingLstbxBuildUpMixin(ScalingRefinery):
 
     if self._scaler.Ih_table.free_Ih_table:
       blocks = self._scaler.Ih_table.blocked_data_list[:-1]
+      free_block_id = len(self._scaler.Ih_table.blocked_data_list) - 1
+      self._scaler.update_for_minimisation(self._parameters, free_block_id)
+      self._scaler.clear_memory_from_derivs(free_block_id)
     else:
       blocks = self._scaler.Ih_table.blocked_data_list
 
@@ -387,6 +417,9 @@ class ScalingLstbxBuildUpMixin(ScalingRefinery):
         self.add_residuals(restraints[0], restraints[2])
       else:
         self.add_equations(restraints[0], restraints[1], restraints[2])
+    logger.debug('added equations for all blocks')
+    log_memory_usage()
+    logger.debug('\n')
     return
 
 class ScalingGaussNewtonIterations(ScalingLstbxBuildUpMixin,

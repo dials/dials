@@ -29,6 +29,7 @@ from dials.algorithms.scaling.error_model.error_model import get_error_model
 from dials.algorithms.scaling.error_model.error_model_target import \
   ErrorModelTarget
 from dials.algorithms.scaling.parameter_handler import create_apm_factory
+from dials.algorithms.scaling.scaling_utilities import log_memory_usage
 
 logger = logging.getLogger('dials')
 
@@ -224,6 +225,8 @@ class ScalerBase(object):
     self._reflection_table = reject_outliers([self._reflection_table],
       self.space_group, self.params.scaling_options.outlier_rejection,
       self.params.scaling_options.outlier_zmax)[0]
+    logger.debug('Finished outlier rejection.')
+    log_memory_usage()
 
   def clear_memory_from_derivs(self, block_id):
     """Remove derivatives from Ih_table if no longer needed."""
@@ -265,6 +268,7 @@ class SingleScalerBase(ScalerBase):
     self.select_reflections_for_scaling(for_multi=for_multi)
     logger.info('Completed preprocessing and initialisation for this dataset.\n'
       '\n' + '='*80 + '\n')
+    log_memory_usage()
 
   @property
   def components(self):
@@ -605,6 +609,7 @@ class MultiScaler(MultiScalerBase):
         component.update_reflection_data(scaler.reflection_table,
           scaler.scaling_selection, self.Ih_table.blocked_selection_list[i])
     logger.info('Completed configuration of MultiScaler. \n\n' + '='*80 + '\n')
+    log_memory_usage()
 
   def join_multiple_datasets(self):
     """Create a joint reflection table."""
@@ -629,6 +634,8 @@ class MultiScaler(MultiScalerBase):
     # updated.
     for i, scaler in enumerate(self.single_scalers):
       scaler.reflection_table = reflection_tables[i]
+    logger.debug('Finished outlier rejection.')
+    log_memory_usage()
 
   def create_Ih_table(self):
     """Create a new Ih table from the reflection tables."""
@@ -676,6 +683,7 @@ class TargetScaler(MultiScalerBase):
       n_blocks=1)#Keep in one table for matching below
     self.initialise_targeted_Ih_table()
     logger.info('Completed initialisation of TargetScaler. \n\n' + '='*80 + '\n')
+    log_memory_usage()
 
   def initialise_targeted_Ih_table(self):
     """Initialise an Ih_table, using self._target_Ih_table to set the Ih values"""
@@ -730,6 +738,8 @@ class TargetScaler(MultiScalerBase):
     # Now update references
     for i, scaler in enumerate(self.unscaled_scalers):
       scaler.reflection_table = reflection_tables[i]
+    logger.debug('Finished outlier rejection.')
+    log_memory_usage()
 
   def outlier_rejection_routine(self, make_ready_for_scaling=True):
     """Routine to perform outlier rejection on scaled scaler."""

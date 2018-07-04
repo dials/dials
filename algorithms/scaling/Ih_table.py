@@ -83,6 +83,8 @@ class IhTableBlock(SortingMethods):
     self.weighting_scheme = get_weighting_scheme(self, weighting_scheme)
     self.weighting_scheme.calculate_initial_weights()
     self.calc_Ih()
+    self._Ih_table.set_flags(flex.bool(self.size, False),
+      self._Ih_table.flags.bad_for_scaling)
 
   def update_error_model(self, error_model):
     """Update the scaling weights based on an error model."""

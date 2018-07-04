@@ -276,31 +276,24 @@ def test_target_rmsd_calculation(mock_Ih_table, mock_Ih_table_workfree,
   # with input, expect residuals of [-1, 0, 1], weights of [1, 1, 1],
   # restraints of [1, 2, 3], so expect residual of sqrt((2+6)/3)
   rmsds = target.rmsds(mock_Ih_table, mock_multi_apm_withrestraints)
-  assert len(rmsds) == 2
-  assert rmsds[0] == pytest.approx((8.0/3.0)**0.5, abs=1e-6)#RMSD
-  R_work_expected = ((12**0.5 - 11**0.5) + (11**0.5 - 10**0.5))/ \
-    (12**0.5 + 11**0.5 + 10**0.5)
-  assert rmsds[1] == pytest.approx(R_work_expected, abs=1e-6)#R-factor
+  assert len(rmsds) == 1
   assert target.param_restraints is True
 
   rmsds = target.rmsds(mock_Ih_table_workfree, mock_multi_apm_withrestraints)
-  assert len(rmsds) == 5
+  assert len(rmsds) == 3
   assert rmsds[0] == pytest.approx((8.0/3.0)**0.5, abs=1e-6)
   assert rmsds[1] == pytest.approx((2.0/3.0)**0.5, abs=1e-6)
   assert rmsds[2] == pytest.approx((2.0/3.0)**0.5, abs=1e-6)
-  assert rmsds[3] == pytest.approx(R_work_expected, abs=1e-6)
-  assert rmsds[4] == pytest.approx(R_work_expected, abs=1e-6) #both are same in test
   assert target.param_restraints is True
-  assert len(target.rmsd_names) == 5
-  assert len(target.rmsd_units) == 5
+  assert len(target.rmsd_names) == 3
+  assert len(target.rmsd_units) == 3
 
   rmsds = target.rmsds(mock_Ih_table, mock_multi_apm_withoutrestraints)
-  assert len(rmsds) == 2
+  assert len(rmsds) == 1
   assert rmsds[0] == pytest.approx((2.0/3.0)**0.5, abs=1e-6)
-  assert rmsds[1] == pytest.approx(R_work_expected, abs=1e-6)
   assert target.param_restraints is False
-  assert len(target.rmsd_names) == 2
-  assert len(target.rmsd_units) == 2
+  assert len(target.rmsd_names) == 1
+  assert len(target.rmsd_units) == 1
 
 def test_target_fixedIh(mock_multi_apm_withoutrestraints, mock_Ih_table):
   """Test the target function for targeted scaling (where Ih is fixed)."""
@@ -326,9 +319,7 @@ def test_target_fixedIh(mock_multi_apm_withoutrestraints, mock_Ih_table):
   assert target._rmsds is None
   target._rmsds = []
   target.rmsds(mock_Ih_table, mock_multi_apm_withoutrestraints)
-  R_work_expected = ((12**0.5 - 11**0.5) + (11**0.5 - 10**0.5))/ \
-    (12**0.5 + 11**0.5 + 10**0.5)
-  assert target._rmsds == pytest.approx([expected_rmsd, R_work_expected])
+  assert target._rmsds == pytest.approx([expected_rmsd])
 
 # For testing the targetfunction calculations using finite difference methods,
 # need to initialise real instances of the scaling datastructures to allow

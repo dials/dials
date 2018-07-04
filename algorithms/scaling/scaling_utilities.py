@@ -16,6 +16,20 @@ from dials_scaling_ext import create_sph_harm_table, calc_theta_phi,\
 
 logger = logging.getLogger('dials')
 
+try:
+  import resource
+  import platform
+  def log_memory_usage():
+    # getrusage returns kb on linux, bytes on mac
+    units_per_mb = 1024
+    if platform.system() == "Darwin":
+      units_per_mb = 1024*1024
+    logger.debug('Memory usage: %.1f MB' % (int(resource.getrusage(
+      resource.RUSAGE_SELF).ru_maxrss) / units_per_mb))
+except ImportError:
+  def log_memory_usage():
+    pass
+
 def save_experiments(experiments, filename):
   """Save the experiments json."""
   st = time()

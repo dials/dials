@@ -41,7 +41,7 @@ from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScalerFactory
 from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets,\
   select_datasets_on_ids, save_experiments, save_reflections,\
-  assign_unique_identifiers
+  assign_unique_identifiers, log_memory_usage
 
 
 logger = logging.getLogger('dials')
@@ -104,6 +104,8 @@ class Script(object):
     self.scaler = None
     self.scaled_miller_array = None
     self.dataset_ids = []
+    logger.debug('Initialised scaling script object')
+    log_memory_usage()
 
   def run(self, save_data=True):
     """Run the scaling script."""

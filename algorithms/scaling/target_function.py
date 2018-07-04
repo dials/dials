@@ -36,24 +36,17 @@ class ScalingTarget(object):
   def rmsds(self, Ih_table, apm):
     """Calculate RMSDs for the matches. Also calculate R-factors."""
     R = flex.double([])
-    Rworknum = flex.double([])
-    Rworkdenom = flex.double([])
     n = 0
     if Ih_table.free_Ih_table:
       work_blocks = Ih_table.blocked_data_list[:-1]
       free_block = Ih_table.blocked_data_list[-1]
-      self.rmsd_names = ["RMSD_I", "RMSD_I (no restraints)", "Free RMSD_I",
-        "Rwork", "Rfree"]
-      self.rmsd_units = ["a.u", "a.u", "a.u", "a.u", "a.u"]
+      self.rmsd_names = ["RMSD_I", "RMSD_I (no restraints)", "Free RMSD_I"]
+      self.rmsd_units = ["a.u", "a.u", "a.u"]
     else:
       work_blocks = Ih_table.blocked_data_list
-      self.rmsd_names = ["RMSD_I", "R-factor"]
-      self.rmsd_units = ["a.u", "a.u"]
+      self.rmsd_names = ["RMSD_I"]
+      self.rmsd_units = ["a.u"]
     for block in work_blocks:
-      Fobs = flex.abs(block.intensities/block.inverse_scale_factors) ** 0.5
-      Fcalc = flex.abs(block.Ih_values) ** 0.5
-      Rworknum.extend(flex.abs(Fobs - Fcalc))
-      Rworkdenom.extend(Fobs)
       R.extend((self.calculate_residuals(block)**2) * block.weights)
       n += block.size
     unrestr_R = copy(R)
@@ -63,16 +56,11 @@ class ScalingTarget(object):
         R.extend(restraints[0])
       else:
         self.param_restraints = False
-    self._rmsds = [(flex.sum((R))/n)**0.5,
-      flex.sum(Rworknum)/flex.sum(Rworkdenom)]
+    self._rmsds = [(flex.sum((R))/n)**0.5]
     if Ih_table.free_Ih_table:
+      self._rmsds.append((flex.sum((unrestr_R))/n)**0.5)
       Rmsdfree = (self.calculate_residuals(free_block)**2) * free_block.weights
-      self._rmsds.insert(1, (flex.sum((unrestr_R))/n)**0.5)
-      self._rmsds.insert(2, (flex.sum((Rmsdfree))/free_block.size)**0.5)
-      Fobs = flex.abs(free_block.intensities/free_block.inverse_scale_factors) ** 0.5
-      Fcalc = flex.abs(free_block.Ih_values) ** 0.5
-      Rfree = flex.sum(flex.abs(Fobs - Fcalc))/flex.sum(Fobs)
-      self._rmsds.append(Rfree)
+      self._rmsds.append((flex.sum((Rmsdfree))/free_block.size)**0.5)
     return self._rmsds
 
   @staticmethod
