@@ -182,7 +182,7 @@ class NormDevOutlierRejection(OutlierRejectionBase):
         new_outlier_indices = outl_list.select(
           internal_outlier_indices[i])
         new_other_potential_outliers_list.append(outl_list.select(
-          internal_other_potential_outliers[0]))
+          internal_other_potential_outliers[i]))
         self.outliers_lists[i].extend(new_outlier_indices)
       self.check_for_more_outliers(reflection_tables,
         new_other_potential_outliers_list)
