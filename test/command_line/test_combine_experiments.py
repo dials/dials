@@ -8,10 +8,16 @@ import copy
 import os
 import procrunner
 
-def test(dials_regression, tmpdir):
-  from dials.array_family import flex
-  from dxtbx.model.experiment_list import ExperimentListFactory
+import pytest
 
+from libtbx.utils import Sorry
+from dxtbx.model.experiment_list import ExperimentListFactory
+from dxtbx.serialize import dump
+
+from dials.array_family import flex
+import dials.command_line.combine_experiments as combine_experiments
+
+def test(dials_regression, tmpdir):
   tmpdir.chdir()
 
   data_dir = os.path.join(dials_regression, "refinement_test_data",
@@ -106,7 +112,6 @@ def test(dials_regression, tmpdir):
   # Set half of the experiments to the new detector
   for i in xrange(len(exp)//2):
     exp[i].detector = detector
-  from dxtbx.serialize import dump
   dump.experiment_list(exp, "modded_experiments.json")
 
   result = procrunner.run_process([
@@ -125,3 +130,33 @@ def test(dials_regression, tmpdir):
     assert os.path.exists("test_by_detector_%03d.pickle" % i)
   assert not os.path.exists("test_by_detector_%03d.json" % 2)
   assert not os.path.exists("test_by_detector_%03d.pickle" % 2)
+
+
+def test_failed_tolerance_error(dials_regression, monkeypatch):
+  """Test that we get a sensible error message on tolerance failures"""
+  # Select some experiments to use for combining
+  jsons = os.path.join(dials_regression, "refinement_test_data",
+                       "multi_narrow_wedges", "data", "sweep_{:03d}",
+                       "{}")
+  files = [jsons.format(2, "experiments.json"), jsons.format(2, "reflections.pickle"),
+           jsons.format(3, "experiments.json"), jsons.format(3, "reflections.pickle")]
+
+  # Use the combine script
+  script = combine_experiments.Script()
+  # Disable writing output
+  monkeypatch.setattr(script, '_save_output', lambda *args: None)
+  # Parse arguments and configure
+  params, options = script.parser.parse_args(files)
+  params.reference_from_experiment.beam = 0
+
+  # Validate that these pass
+  script.run_with_preparsed(params, options)
+
+  # Now, alter the beam to check it doesn't pass
+  exp_2 = params.input.experiments[1].data[0]
+  exp_2.beam.set_wavelength(exp_2.beam.get_wavelength()*2)
+
+  with pytest.raises(Sorry) as exc:
+    script.run_with_preparsed(params, options)
+  assert "Beam" in exc.value.message
+  print("Got error message:", exc.value.message)
