@@ -66,6 +66,7 @@ def dispatcher_outer(name):
 def dispatcher_inner(name):
   return os.path.join(libtbx.env.dist_path('dials'), 'command_line', '%%s.py' %% name.partition('.')[2])
 env.Append( BUILDERS={'AutoComplete': Builder(action='-$SOURCE --export-autocomplete-hints > $TARGET')} )
+env['ENV']['DIALS_NOBANNER'] = '1'
 for cmd in [%s]:
   ac = env.AutoComplete(cmd, [dispatcher_outer(cmd), dispatcher_inner(cmd)])
   Requires(ac, Dir(libtbx.env.under_build('lib')))

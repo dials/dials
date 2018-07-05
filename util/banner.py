@@ -20,8 +20,7 @@ super_annoying_banner = '''
 
 less_annoying_banner = 'DIALS (2018) Acta Cryst. D74, 85-97. https://doi.org/10.1107/S2059798317017235'
 
-be_super_annoying = not os.getenv('DIALS_NOBANNER') and \
-                    (time.time() < 1533081599 or \
+be_super_annoying = (time.time() < 1533081599 or \
                      '1.14-' in os.getenv('PHENIX_VERSION', '')) # Become less annoying at end of July 2018
 if be_super_annoying:
   banner = super_annoying_banner
@@ -29,6 +28,8 @@ else:
   banner = less_annoying_banner
 
 def print_banner():
+  if os.getenv('DIALS_NOBANNER'):
+    return
   d = logging.getLogger('dials')
   d.info(banner)
   logging_to_stdout = any(map(lambda h: isinstance(h, logging.StreamHandler), d.handlers))
