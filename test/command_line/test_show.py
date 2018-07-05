@@ -3,15 +3,14 @@ from __future__ import absolute_import, division, print_function
 import glob
 import os
 
-from libtbx import easy_run
-from libtbx.test_utils import show_diff
+import procrunner
 
 def test_dials_show(dials_regression):
-  path = os.path.join(dials_regression, "experiment_test_data")
-  cmd = "dials.show %s/experiment_1.json" % path
-  result = easy_run.fully_buffered(cmd).raise_if_errors()
-  output = list(filter(None, (s.rstrip() for s in result.stdout_lines if not s.startswith('#'))))
-  assert "\n".join(output[5:]) == """
+  path = os.path.join(dials_regression, "experiment_test_data", "experiment_1.json")
+  result = procrunner.run(['dials.show', path], environment_override={'DIALS_NOBANNER': '1'})
+  assert not result['exitcode'] and not result['stderr']
+  output = list(filter(None, (s.rstrip() for s in result['stdout'].split('\n'))))
+  assert "\n".join(output[4:]) == """
 Experiment 0:
 Detector:
 Panel:
@@ -65,11 +64,11 @@ Crystal:
 
 def test_dials_show_i04_weak_data(dials_regression):
   path = os.path.join(
-    dials_regression, "indexing_test_data", "i04_weak_data")
-  cmd = "dials.show %s/datablock_orig.json" %path
-  result = easy_run.fully_buffered(cmd).raise_if_errors()
-  output = list(filter(None, (s.rstrip() for s in result.stdout_lines if not s.startswith('#'))))
-  assert "\n".join(output[7:]) == """
+    dials_regression, "indexing_test_data", "i04_weak_data", "datablock_orig.json")
+  result = procrunner.run(["dials.show", path], environment_override={'DIALS_NOBANNER': '1'})
+  assert not result['exitcode'] and not result['stderr']
+  output = list(filter(None, (s.rstrip() for s in result['stdout'].split('\n'))))
+  assert "\n".join(output[6:]) == """
 Detector:
 Panel:
   name: Panel
@@ -111,14 +110,14 @@ def test_dials_show_centroid_test_data(dials_regression):
   path = os.path.join(
     dials_regression, "centroid_test_data", "centroid_*.cbf")
   g = glob.glob(path)
-  assert len(g) > 0, path
-  cmd = "dials.show %s" %(' '.join(g))
-  result = easy_run.fully_buffered(cmd).raise_if_errors()
+  assert g, path
+  result = procrunner.run(["dials.show"] + g, environment_override={'DIALS_NOBANNER': '1'})
+  assert not result['exitcode'] and not result['stderr']
   assert (
     "Format: <class 'dxtbx.format.FormatCBFMiniPilatus.FormatCBFMiniPilatus'>"
-    in result.stdout_lines), result.show_stdout()
-  output = list(filter(None, (s.rstrip() for s in result.stdout_lines if not s.startswith('#'))))
-  assert "\n".join(output[7:]) == """
+    in result['stdout'])
+  output = list(filter(None, (s.rstrip() for s in result['stdout'].split('\n'))))
+  assert "\n".join(output[6:]) == """
 Detector:
 Panel:
   name: Panel
