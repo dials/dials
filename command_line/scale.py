@@ -4,20 +4,33 @@
 Usage: dials.scale integrated.pickle integrated_experiments.json
 [integrated.pickle(2) integrated_experiments.json(2) ....] [options]
 
-This program performs scaling on the input datasets. The default
-parameterisation is a physical parameterisation based on that used in the program
-Aimless. If multiple input files have been specified, the datasets will be
-jointly scaled against a common target of unique reflection intensities.
+This program performs scaling on the input datasets, which attempts to improve
+the internal consistency of the reflection intensities by correcting for
+various experimental effects. By default, a physical scaling model is used,
+with a scale, decay and absorption components. If multiple input files have been
+specified, the datasets will be jointly scaled against a common target of
+unique reflection intensities.
 
-By default, a scale, decay and absorption correction parameterisation for each
-dataset is used. One scaled.pickle and scaled_experiments.json files are output,
+One scaled.pickle and scaled_experiments.json files are output,
 which may contain data and scale models from multiple experiments. The
 reflection intensities are left unscaled and unmerged in the output, but an
-'inverse_scale_factor' and 'inverse_scale_factor_variance' column is added to
-the pickle file.
+'inverse_scale_factor' and 'inverse_scale_factor_variance' column is added.
 
 To plot the scale factors determined by this program, one should run:
 dials.plot_scaling_models scaled.pickle scaled_experiments.json
+
+Examples:
+
+Regular single-sweep scaling
+dials.scale integrated.pickle integrated_experiments absorption_term=False
+
+Scaling multiple datasets
+dials.scale 1_integrated.pickle 1_integrated_experiments 2_integrated.pickle
+  2_integrated_experiments scale_interval=10.0
+
+Scaling many small-wedge datasets
+dials.scale *_integrated.pickle *_integrated_experiments model=KB
+
 """
 from __future__ import absolute_import, division, print_function
 import time
@@ -35,13 +48,14 @@ from dials.util.options import OptionParser, flatten_reflections,\
   flatten_experiments
 from dials.util.version import dials_version
 from dials.algorithms.scaling.scaling_library import create_scaling_model,\
-  calculate_merging_statistics, create_datastructures_for_structural_model,\
-  create_datastructures_for_target_mtz
+  create_datastructures_for_structural_model, create_datastructures_for_target_mtz
 from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScalerFactory
 from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets,\
   select_datasets_on_ids, save_experiments, save_reflections,\
   assign_unique_identifiers, log_memory_usage
+from dials.algorithms.scaling.post_scaling_analysis import \
+  exclude_on_batch_rmerge, exclude_on_image_scale
 
 
 logger = logging.getLogger('dials')
@@ -88,6 +102,25 @@ phil_scope = phil.parse('''
       .help = "Option to use internal spread of the intensities when merging
               reflection groups and calculating sigI, rather than using the
               sigmas of the individual reflections."
+    exclude_on_image_scale = None
+      .type = float
+      .help = "If set, images where the image inverse scale (defined by the
+              scale component of the relevant model) is below this
+              value will be set as outliers, and not included in merging stats
+              or output for downstream processing. This is performed after the
+              scaling algorithm has been run in the 'post-scaling' step.
+              This option is intended as a quick way to exclude radiation
+              damaged images, based on the principle that images that need
+              to be significantly scaled up (relative to others) are likely to
+              have unreliable intensities and scales. This option should be most
+              appropriate for scaling multi-dataset thin-wedge datasets that
+              are expected to have significant radiation damage."
+    exclude_on_batch_rmerge = None
+      .type = float
+      .help = "If set, images which have an Rmerge above this value will be set
+              as outliers, and not included in merging stats or output for
+              downstream processing. This is performed after the scaling
+              algorithm has been run in the 'post-scaling' step."
   }
   include scope dials.algorithms.scaling.scaling_options.phil_scope
   include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
@@ -176,6 +209,8 @@ class Script(object):
           'scaled together, please reanalyse the data so that the space groups '
           'are consistent or manually specify a space group. Alternatively, '
           'some datasets can be excluded using the option exclude_datasets=')
+
+    logger.info("Space group being used during scaling is %s" % s_g_1.info())
 
     if self.params.scaling_options.target_model:
       logger.info("Extracting data from structural model.")
@@ -266,24 +301,20 @@ class Script(object):
       miller.array_info(source='DIALS', source_type='reflection_tables'))
     return i_obs
 
-
   def merging_stats(self):
     """Calculate and print the merging statistics."""
     logger.info('\n'+'='*80+'\n')
     # Calculate merging stats.
-    plot_labels = []
 
-    if self.params.output.calculate_individual_merging_stats and (
-      len(set(self.scaler.reflection_table['id'])) > 1):
-      results, scaled_ids = calculate_merging_statistics(
-        self.scaler.reflection_table, self.experiments,
-        use_internal_variance=self.params.output.use_internal_variance)
-      for result, data_id in zip(results, scaled_ids):
-        make_sub_header("Merging statistics for dataset " + str(data_id),
-          out=log.info_handle(logger))
-        result.show(header=0, out=log.info_handle(logger))
-        result.show_estimated_cutoffs(out=log.info_handle(logger))
-        plot_labels.append('Dataset ' + str(data_id))
+    if self.params.output.exclude_on_batch_rmerge:
+      self.reflections = exclude_on_batch_rmerge(self.reflections, self.experiments,
+        self.params.output.exclude_on_batch_rmerge)
+
+    if self.params.output.exclude_on_image_scale:
+      self.reflections = exclude_on_image_scale(self.reflections, self.experiments,
+        self.params.output.exclude_on_image_scale)
+
+    plot_labels = []
 
     self.scaled_miller_array = self.scaled_data_as_miller_array(
       self.experiments[0].crystal.get_crystal_symmetry(), anomalous_flag=False)
