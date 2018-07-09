@@ -1,6 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
+__all__ = ["progress"]
+
 import sys
+
+from ._progress import progress
 
 def debug_console():
   '''Start python console at the current code point.'''
