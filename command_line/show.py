@@ -471,6 +471,8 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
     rows = [keys]
     if max_reflections is not None:
       max_reflections = min(len(rlist), max_reflections)
+    else:
+      max_reflections = len(rlist)
 
     columns = []
 
