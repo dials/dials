@@ -1,10 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
+import sys
+import os
 import itertools
 import optparse
 import pickle
 import traceback
 from collections import defaultdict, namedtuple
+
+from orderedset import OrderedSet
 
 try:
   import cPickle
@@ -449,7 +453,6 @@ class PhilCommandParser(object):
     :return: The options and parameters and (optionally) unhandled arguments
 
     '''
-    import os.path
     from dxtbx.datablock import BeamComparison
     from dxtbx.datablock import DetectorComparison
     from dxtbx.datablock import GoniometerComparison
@@ -687,6 +690,15 @@ class OptionParserBase(optparse.OptionParser, object):
       dest='verbose',
       help='Increase verbosity')
 
+    # Add an option for PHIL file to parse - PHIL files passed as
+    # positional arguments are also read but this allows the user to
+    # explicitly specify STDIN
+    self.add_option(
+      '--phil',
+      action="append",
+      metavar="FILE",
+      help="PHIL files to read. Pass '-' for STDIN. Can be specified multiple times, but duplicates ignored.")
+
   def parse_args(self, args=None, quick_parse=False):
     '''
     Parse the command line arguments and get system configuration.
@@ -695,22 +707,24 @@ class OptionParserBase(optparse.OptionParser, object):
     :returns: The options and phil parameters
 
     '''
-    import sys
-    import select
-    import os
 
     # Parse the command line arguments, this will separate out
     # options (e.g. -o, --option) and positional arguments, in
     # which phil options will be included.
     options, args = super(OptionParserBase, self).parse_args(args=args)
 
-    # Read stdin if data is available
-    try:
-      if not quick_parse and not sys.stdin.isatty():
-        args.extend(l.strip() for l in sys.stdin.readlines())
-    except IOError as e:
-      if e.errno != 9:
-        raise # Ignore 'bad file descriptor' errors, which may be caused by nohup et al.
+    # Read any argument-specified PHIL file. Ignore duplicates.
+    if options.phil:
+      for philfile in OrderedSet(options.phil):
+        # Should we read STDIN?
+        if philfile == "-":
+          lines = sys.stdin.readlines()
+        else:
+          # Otherwise, assume we've been given a path
+          with open(philfile) as phil_input:
+            lines = phil_input.readlines()
+        # Add these to the unparsed argument list
+        args.extend(l.strip() for l in lines)
 
     # Maybe sort the data
     if hasattr(options, "sort") and options.sort:
