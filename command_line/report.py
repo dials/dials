@@ -978,7 +978,7 @@ class CentroidAnalyser(object):
         'data': [{
           'name': 'centroid_differences_x',
           'x': xedges.tolist(),
-          'y': xedges.tolist(),
+          'y': yedges.tolist(),
           'z': z1.transpose().tolist(),
           'type': 'heatmap',
           'colorbar': {
@@ -1008,7 +1008,7 @@ class CentroidAnalyser(object):
         'data': [{
           'name': 'centroid_differences_y',
           'x': xedges.tolist(),
-          'y': xedges.tolist(),
+          'y': yedges.tolist(),
           'z': z2.transpose().tolist(),
           'type': 'heatmap',
           'colorbar': {
@@ -1060,7 +1060,7 @@ class CentroidAnalyser(object):
       'centroid_differences_z': {
         'data': [{
           'x': xedges.tolist(),
-          'y': xedges.tolist(),
+          'y': yedges.tolist(),
           'z': H.transpose().tolist(),
           'type': 'heatmap',
           'name': 'centroid_differences_z',
@@ -1776,7 +1776,7 @@ class IntensityAnalyser(object):
       'i_over_sigma_%s_vs_xy' %intensity_type: {
         'data': [{
           'x': xedges.tolist(),
-          'y': xedges.tolist(),
+          'y': yedges.tolist(),
           'z': z.transpose().tolist(),
           'zmin': -1,
           'zauto': False,
