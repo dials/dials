@@ -12,7 +12,8 @@
 #ifndef DIALS_MASK_LOW_LEVEL_H
 #define DIALS_MASK_LOW_LEVEL_H
 #define PX_SCALE 85
-#define DST_BTW_LIN 14
+//#define DST_BTW_LIN 14
+#define DST_BTW_LIN 43
 #include <iostream>
 #include <string>
 #include <scitbx/array_family/flex_types.h>
@@ -47,7 +48,7 @@ int get_mask_img_array( int (&mask_bw_img)[PX_SCALE][PX_SCALE][4]){
   for(int row = 0; row < PX_SCALE; row++){
     for(int col = 0; col < PX_SCALE; col++){
       for(int dg_pos = -84; dg_pos < 85; dg_pos += DST_BTW_LIN){
-        if(row == col + dg_pos){
+        if(row == dg_pos + col){
           mask_bw_img[col][row][0] = 1;
         }
       }
@@ -58,7 +59,7 @@ int get_mask_img_array( int (&mask_bw_img)[PX_SCALE][PX_SCALE][4]){
   for(int row = 0; row < PX_SCALE; row++){
     for(int col = 0; col < PX_SCALE; col++){
       for(int dg_pos = 0; dg_pos < 175; dg_pos += DST_BTW_LIN){
-        if(row == -col + dg_pos){
+        if(row == dg_pos - col){
           mask_bw_img[col][row][1] = 1;
         }
       }
