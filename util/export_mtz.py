@@ -708,7 +708,9 @@ def export_mtz(integrated_data, experiment_list, hklout,
   # Create the mtz file
   mtz_file = mtz.object()
   mtz_file.set_title('from dials.export_mtz')
-  date_str = time.strftime('%d/%m/%Y at %H:%M:%S', time.gmtime())
+  date_str = time.strftime('%Y-%m-%d at %H:%M:%S %Z')
+  if time.strftime('%Z') != 'GMT':
+    date_str += time.strftime('  (%Y-%m-%d at %H:%M:%S %Z)', time.gmtime())
   mtz_file.add_history('From %s, run on %s' % (dials_version(), date_str))
 
   # FIXME TODO for more than one experiment into an MTZ file:

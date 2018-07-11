@@ -22,7 +22,7 @@ help_message = '''
 This program computes the profile model from the input reflections. It then
 saves a modified experiments.json file with the additional profile model
 information. Usually this is performed during integration; however, on some
-occasions it may be desirable to compute the profile model independantly.
+occasions it may be desirable to compute the profile model independently.
 
 Examples::
 
