@@ -25,6 +25,8 @@ phil_scope = iotbx.phil.parse(
 '''
 space_group = None
   .type = space_group
+use_space_group_from_experiments = False
+  .type = bool
 output {
   xoalign = None
     .type = path
@@ -37,6 +39,7 @@ def run(args):
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments
   import libtbx.load_env
+  from libtbx.utils import Sorry
 
   usage = "%s [options] experiments.json" %libtbx.env.dispatcher_name
 
@@ -48,6 +51,9 @@ def run(args):
     epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
+  if not params.use_space_group_from_experiments and params.space_group is None:
+    raise Sorry(
+      "Either space_group must be specified or set the parameter use_space_group_from_experiments=True")
   experiments = flatten_experiments(params.input.experiments)
   if len(experiments) <= 1:
     parser.print_help()
