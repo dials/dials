@@ -100,8 +100,9 @@ def assign_unique_identifiers(experiments, reflections):
     #all experiments have unique ids, so don't need to assign any.
     for i, (exp, refl) in enumerate(zip(experiments, reflections)):
       refl.experiment_identifiers()[i] = exp.identifier
-      refl['id'] = flex.int(refl.size(), i) #make all unique
+      #refl['id'] = flex.int(refl.size(), i) #make all unique
   elif used_ids: #some identifiers set
+    #FIXME not working correctly
     unique_id = 0
     for i, (exp, refl) in enumerate(zip(experiments, reflections)):
       if exp.identifier != '':
@@ -111,8 +112,9 @@ def assign_unique_identifiers(experiments, reflections):
         strid = '%i' % unique_id
         exp.identifier = strid
         refl.experiment_identifiers()[i] = strid
+        refl['id'] = flex.int(refl.size(), unique_id)
         unique_id += 1
-      refl['id'] = flex.int(refl.size(), i)
+      #refl['id'] = flex.int(refl.size(), i)
   else: #no identifiers set, so set all as str(int) of location in list.
     for i, (exp, refl) in enumerate(zip(experiments, reflections)):
       strid = '%i' % i
@@ -139,23 +141,20 @@ def select_datasets_on_ids(experiments, reflections,
         index = unique_identifiers.index(id_)
         del experiments[index]
         del reflections[index]
-        #del dataset_ids[index]
-      return experiments, reflections#, dataset_ids
+      return experiments, reflections
     elif use_datasets:
       assert all(i in unique_identifiers for i in use_datasets), """
       id not found in reflection tables."""
       new_experiments = ExperimentList()
       new_reflections = []
-      #new_dataset_ids = []
       for id_ in use_datasets:
         logger.info("Using dataset %s for scaling.", id_)
         index = unique_identifiers.index(id_)
         new_experiments.append(experiments[index])
         new_reflections.append(reflections[index])
-        #new_dataset_ids.append(dataset_ids[index])
-      return new_experiments, new_reflections#, new_dataset_ids
+      return new_experiments, new_reflections
   else:
-    return experiments, reflections#, dataset_ids
+    return experiments, reflections
 
 '''def calc_sigmasq(jacobian_transpose, var_cov):
   sigmasq = flex.float([])

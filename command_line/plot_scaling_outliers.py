@@ -51,13 +51,13 @@ def main(argv):
 
 def plot_outliers(params, reflections, filename=None):
   '''plots positions of outliers'''
-  reflections = reflections.select(reflections.get_flags(
+  outliers = reflections.select(reflections.get_flags(
     reflections.flags.outlier_in_scaling))
   plt.figure(figsize=(11, 6))
   gs = gridspec.GridSpec(1, 2)
   ax1 = plt.subplot(gs[0, 0])
   ax2 = plt.subplot(gs[0, 1])
-  x, y, z = reflections['xyzobs.px.value'].parts()
+  x, y, z = outliers['xyzobs.px.value'].parts()
   n_bins = 100
   ax1.scatter(x, y, s=0.5)
   ax1.set_ylabel('detector y-position')
@@ -66,6 +66,7 @@ def plot_outliers(params, reflections, filename=None):
   ax2.set_ylabel('number of outliers')
   ax2.set_xlabel('image number')
   ax2.legend()
+
   if filename:
     print("Saving plot to %s" % filename)
     plt.savefig(filename)

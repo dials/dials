@@ -349,8 +349,9 @@ def plot_2D_decay_correction(experiment, reflections, outputfile=None):
   ax1.set_yticklabels(dbin_boundaries)
   #ax1.set_xticks(x_axis_vals)
   #ax1.set_xticklabels(x_axis_vals*time_rot_int)
-  ax1.set_xticks(np.arange(0, ((int_rel_max - int_rel_min) * 10)+0.01, 10))
-  xlabels = np.arange(0, (time_rot_int*(int_rel_max-int_rel_min))+0.001, time_rot_int)
+
+  ax1.set_xticks(np.arange(0, ((int_rel_max - int_rel_min) * 10)+0.01, 30))
+  xlabels = np.arange(0, (time_rot_int*(int_rel_max-int_rel_min))+0.001, time_rot_int*3)
   xlabels = np.around(xlabels, 1)
   ax1.set_xticklabels(xlabels)
 

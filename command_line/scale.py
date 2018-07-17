@@ -72,7 +72,7 @@ phil_scope = phil.parse('''
     log = dials.scale.log
       .type = str
       .help = "The log filename"
-    debug_log = dials.scale.debug.log
+    debug.log = dials.scale.debug.log
       .type = str
       .help = "The debug log filename"
     calculate_individual_merging_stats = False
@@ -327,7 +327,7 @@ class Script(object):
     make_sub_header("Overall merging statistics (non-anomalous)",
         out=log.info_handle(logger))
     result = iotbx.merging_statistics.dataset_statistics(
-      i_obs=self.scaled_miller_array, n_bins=20, anomalous=False,
+      i_obs=self.scaled_miller_array, n_bins=10, anomalous=False,
       sigma_filtering=None, eliminate_sys_absent=False,
       use_internal_variance=self.params.output.use_internal_variance)
     result.show(header=0, out=log.info_handle(logger))
@@ -370,6 +370,15 @@ class Script(object):
       self.reflections[i] = 0
       gc.collect()
 
+    # remove reflections with neg sigma
+    sel = joint_table['inverse_scale_factor'] > 0.0
+    n_neg = sel.count(False)
+    if n_neg > 0:
+      logger.warning('Warning: %s reflections were assigned negative scale factors, \n'
+        'it may be best to adjust model parameters to try to avoid this!' % n_neg)
+      joint_table = joint_table.select(sel)
+      logger.warning('Warning: %s reflections removed due to negative scale factors \n' % n_neg)
+
     if self.params.output.unmerged_mtz:
       logger.info("\nSaving output to an unmerged mtz file to %s.",
         self.params.output.unmerged_mtz)
@@ -380,6 +389,7 @@ class Script(object):
       params, _ = parser.parse_args(args=[], show_diff_phil=False)
       params.mtz.apply_scales = True
       params.mtz.hklout = self.params.output.unmerged_mtz
+      params.mtz.keep_partials = True
       if self.params.scaling_options.integration_method == 'sum':
         params.mtz.ignore_profile_fitting = True #to make it export summation
       exporter = MTZExporter(params, self.experiments,
@@ -498,7 +508,7 @@ if __name__ == "__main__":
 
     #Set up the log
     log.config(verbosity=1, info=params.output.log,
-        debug=params.output.debug_log)
+        debug=params.output.debug.log)
     logger.info(dials_version())
     diff_phil = optionparser.diff_phil.as_str()
     if diff_phil is not '':
