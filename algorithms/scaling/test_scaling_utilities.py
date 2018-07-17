@@ -267,8 +267,7 @@ def test_assign_unique_identifiers():
     assert refl.experiment_identifiers()[id_] == expected_identifiers[i]
     assert list(set(refl['id'])) == [id_]
 
-  #FIXME not working correctly
-  '''# Now test that if some are set, these are maintained and unique ids are
+  # Now test that if some are set, these are maintained and unique ids are
   # set for the rest
   experiments = empty_explist_3exp()
   experiments[0].identifier = '1'
@@ -280,7 +279,7 @@ def test_assign_unique_identifiers():
   for i, refl in enumerate(rts):
     id_ = refl['id'][0]
     assert refl.experiment_identifiers()[id_] == expected_identifiers[i]
-    assert list(set(refl['id'])) == [i]'''
+    assert list(set(refl['id'])) == [id_]
 
 def test_select_datasets_on_ids():
   """Test the select_datasets_on_ids function."""

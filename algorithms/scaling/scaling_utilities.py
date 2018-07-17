@@ -100,9 +100,8 @@ def assign_unique_identifiers(experiments, reflections):
     #all experiments have unique ids, so don't need to assign any.
     for i, (exp, refl) in enumerate(zip(experiments, reflections)):
       refl.experiment_identifiers()[i] = exp.identifier
-      #refl['id'] = flex.int(refl.size(), i) #make all unique
+      refl['id'] = flex.int(refl.size(), i) #make all unique
   elif used_ids: #some identifiers set
-    #FIXME not working correctly
     unique_id = 0
     for i, (exp, refl) in enumerate(zip(experiments, reflections)):
       if exp.identifier != '':
@@ -114,7 +113,7 @@ def assign_unique_identifiers(experiments, reflections):
         refl.experiment_identifiers()[i] = strid
         refl['id'] = flex.int(refl.size(), unique_id)
         unique_id += 1
-      #refl['id'] = flex.int(refl.size(), i)
+      refl['id'] = flex.int(refl.size(), i)
   else: #no identifiers set, so set all as str(int) of location in list.
     for i, (exp, refl) in enumerate(zip(experiments, reflections)):
       strid = '%i' % i
