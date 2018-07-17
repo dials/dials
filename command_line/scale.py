@@ -75,9 +75,6 @@ phil_scope = phil.parse('''
     debug.log = dials.scale.debug.log
       .type = str
       .help = "The debug log filename"
-    calculate_individual_merging_stats = False
-      .type = bool
-      .help = "Option to calculate merging stats for the individual datasets."
     plot_merging_stats = False
       .type = bool
       .help = "Option to switch on plotting of merging stats."
@@ -102,6 +99,9 @@ phil_scope = phil.parse('''
       .help = "Option to use internal spread of the intensities when merging
               reflection groups and calculating sigI, rather than using the
               sigmas of the individual reflections."
+    merging.nbins = 20
+      .type = int
+      .help = "Number of bins to use for calculating and plotting merging stats."
     exclude_on_image_scale = None
       .type = float
       .help = "If set, images where the image inverse scale (defined by the
@@ -327,8 +327,8 @@ class Script(object):
     make_sub_header("Overall merging statistics (non-anomalous)",
         out=log.info_handle(logger))
     result = iotbx.merging_statistics.dataset_statistics(
-      i_obs=self.scaled_miller_array, n_bins=10, anomalous=False,
-      sigma_filtering=None, eliminate_sys_absent=False,
+      i_obs=self.scaled_miller_array, n_bins=self.params.output.merging.nbins,
+      anomalous=False, sigma_filtering=None, eliminate_sys_absent=False,
       use_internal_variance=self.params.output.use_internal_variance)
     result.show(header=0, out=log.info_handle(logger))
     result.show_estimated_cutoffs(out=log.info_handle(logger))
