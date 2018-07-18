@@ -19,13 +19,13 @@ phil_scope = iotbx.phil.parse('''\
 d_min = Auto
   .type = float(value_min=0)
 
-min_i_mean_over_sigma_mean = None
+min_i_mean_over_sigma_mean = 4
   .type = float(value_min=0)
 
 batch = None
   .type = ints(value_min=0, size=2)
 
-normalisation = kernel
+normalisation = kernel quasi *ml_iso ml_aniso
   .type = choice
 
 mode = *full ambiguity
@@ -140,6 +140,20 @@ def run(args):
       crystal_symmetry = crystal.symmetry(
         unit_cell=expt.crystal.get_unit_cell(),
         space_group=expt.crystal.get_space_group())
+
+      # filtering of intensities similar to that done in export_mtz
+      # FIXME this function should be renamed/moved elsewhere
+      from dials.util.export_mtz import _apply_data_filters
+      refl = _apply_data_filters(
+        refl,
+        ignore_profile_fitting=False,
+        filter_ice_rings=False,
+        min_isigi=-5,
+        include_partials=False,
+        keep_partials=True,
+        scale_partials=False,
+        apply_scales=False)
+
       if 0 and 'intensity.prf.value' in refl:
         sel = refl.get_flags(refl.flags.integrated_prf)
         assert sel.count(True) > 0
@@ -153,8 +167,7 @@ def run(args):
         refl = refl.select(sel)
         data = refl['intensity.sum.value']
         variances = refl['intensity.sum.variance']
-      # FIXME probably need to do some filtering of intensities similar to that
-      # done in export_mtz
+
       miller_indices = refl['miller_index']
       assert variances.all_gt(0)
       sigmas = flex.sqrt(variances)
@@ -213,6 +226,7 @@ def run(args):
   change_of_basis_ops = []
 
   for intensities in datasets_input:
+    info = intensities.info()
 
     if params.batch is not None:
       assert batches is not None
@@ -222,33 +236,19 @@ def run(args):
       assert sel.count(True) > 0
       intensities = intensities.select(sel)
 
-    if params.min_i_mean_over_sigma_mean is not None and (
-         params.d_min is libtbx.Auto or params.d_min is not None):
-      from xia2.Modules import Resolutionizer
-      rparams = Resolutionizer.phil_defaults.extract().resolutionizer
-      rparams.nbins = 20
-      resolutionizer = Resolutionizer.resolutionizer(intensities, rparams, None)
-      i_mean_over_sigma_mean = 4
-      d_min = resolutionizer.resolution_i_mean_over_sigma_mean(i_mean_over_sigma_mean)
-      if params.d_min is libtbx.Auto:
-        intensities = intensities.resolution_filter(d_min=d_min).set_info(
-          intensities.info())
-        if params.verbose:
-          logger.info('Selecting reflections with d > %.2f' %d_min)
-      elif d_min > params.d_min:
-        logger.info(
-          'Rejecting dataset %s as d_min too low (%.2f)' %(file_name, d_min))
-        continue
-      else:
-        logger.info('Estimated d_min for %s: %.2f' %(file_name, d_min))
-    elif params.d_min not in (None, libtbx.Auto):
-      intensities = intensities.resolution_filter(d_min=params.d_min).set_info(
-        intensities.info())
+    if params.normalisation is not None:
+      from dials.algorithms.symmetry.determine_space_group import determine_space_group
+      if params.normalisation == 'kernel':
+        normalise = determine_space_group.kernel_normalisation
+      elif params.normalisation == 'quasi':
+        normalise = determine_space_group.quasi_normalisation
+      elif params.normalisation == 'ml_iso':
+        normalise = determine_space_group.ml_iso_normalisation
+      elif params.normalisation == 'ml_aniso':
+        normalise = determine_space_group.ml_aniso_normalisation
 
-    if params.normalisation == 'kernel':
-      from mmtbx.scaling import absolute_scaling
-      normalisation = absolute_scaling.kernel_normalisation(intensities, auto_kernel=True)
-      intensities = normalisation.normalised_miller.deep_copy()
+      logger.info('Normalising intensities')
+      intensities = normalise(intensities)
 
     cb_op_to_primitive = intensities.change_of_basis_op_to_primitive_setting()
     change_of_basis_ops.append(cb_op_to_primitive)
@@ -263,8 +263,9 @@ def run(args):
           continue
       else:
         space_group_info = sgtbx.space_group_info('P1')
-      intensities = intensities.customized_copy(space_group_info=space_group_info)
-
+      intensities = intensities.customized_copy(
+        space_group_info=space_group_info)
+    intensities.set_info(info).set_observation_type_xray_intensity()
     datasets.append(intensities)
 
   crystal_symmetries = [d.crystal_symmetry().niggli_cell() for d in datasets]
@@ -311,7 +312,7 @@ def run(args):
     metric_subgroups = sgtbx.lattice_symmetry.metric_subgroups(dataset, max_delta=5)
     subgroup = metric_subgroups.result_groups[0]
     cb_op_inp_best = subgroup['cb_op_inp_best']
-    datasets[i] = dataset.change_basis(cb_op_inp_best)
+    datasets[i] = dataset.change_basis(cb_op_inp_best).set_info(dataset.info())
     change_of_basis_ops[i] = cb_op_inp_best * change_of_basis_ops[i]
 
   cb_op_ref_min = datasets[0].change_of_basis_op_to_niggli_cell()
@@ -325,9 +326,28 @@ def run(args):
         crystal_symmetry=crystal.symmetry(
           unit_cell=datasets[i].unit_cell(),
           space_group_info=params.space_group.primitive_setting(),
-          assert_is_compatible_unit_cell=False))
-    datasets[i] = datasets[i].merge_equivalents().array()
+          assert_is_compatible_unit_cell=False,
+          ))
+    datasets[i] = datasets[i].merge_equivalents().array().set_info(dataset.info())
     change_of_basis_ops[i] = cb_op_ref_min * change_of_basis_ops[i]
+
+  if params.min_i_mean_over_sigma_mean is not None and params.d_min is libtbx.Auto:
+    intensities = datasets[0]
+    for d in datasets[1:]:
+      intensities = intensities.concatenate(d, assert_is_similar_symmetry=False)
+    intensities.set_info(datasets[0].info()).set_observation_type_xray_intensity()
+    from dials.util import Resolutionizer
+    rparams = Resolutionizer.phil_defaults.extract().resolutionizer
+    rparams.nbins = 20
+    resolutionizer = Resolutionizer.resolutionizer(intensities, rparams, None)
+    d_min = resolutionizer.resolution_i_mean_over_sigma_mean(params.min_i_mean_over_sigma_mean)
+    if params.d_min is libtbx.Auto:
+      logger.info('Estimated d_min: %.2f' %d_min)
+      params.d_min = d_min
+  if params.d_min not in (None, libtbx.Auto):
+    logger.info('Selecting reflections with d > %.2f' %params.d_min)
+    datasets = [intensities.resolution_filter(d_min=params.d_min).set_info(
+                intensities.info()) for intensities in datasets]
 
   result = analyse_datasets(datasets, params)
 
