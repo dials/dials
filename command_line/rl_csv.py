@@ -58,6 +58,8 @@ def run(args):
     unique_ids = set(reflection['id'])
     for unique_id in sorted(unique_ids):
       spots.append(reflection.select(reflection['id'] == unique_id))
+    if not reflection: # If there are no reflections then export an empty list
+      spots.append(reflection)
 
   assert len(imagesets) == len(spots)
 
