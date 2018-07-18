@@ -81,9 +81,6 @@ class determine_space_group(object):
       self.intensities.info())
     self.dataset_ids = self.dataset_ids.select(sel)
 
-    if d_min is not None or d_min is libtbx.Auto:
-      self.resolution_filter(d_min, min_i_mean_over_sigma_mean, min_cc_half)
-
     # Correct SDs by "typical" SD factors
     self.correct_sigmas(sd_fac=2.0, sd_b=0.0, sd_add=0.03)
 
@@ -106,7 +103,11 @@ class determine_space_group(object):
         else:
           normalised_intensities = normalised_intensities.concatenate(
             normalise(intensities))
-      self.intensities = normalised_intensities
+      self.intensities = normalised_intensities.set_info(
+        self.intensities.info()).set_observation_type_xray_intensity()
+
+    if d_min is not None or d_min is libtbx.Auto:
+      self.resolution_filter(d_min, min_i_mean_over_sigma_mean, min_cc_half)
 
     self.estimate_cc_sig_fac()
     self.estimate_cc_true()

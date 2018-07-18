@@ -139,8 +139,8 @@ def run(args):
         filter_ice_rings=False,
         min_isigi=-5,
         include_partials=False,
-        keep_partials=False,
-        scale_partials=True,
+        keep_partials=True,
+        scale_partials=False,
         apply_scales=True)
 
       assert 'intensity.sum.value' in refl
