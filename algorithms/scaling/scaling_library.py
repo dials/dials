@@ -28,13 +28,6 @@ logger = logging.getLogger('dials')
 def calculate_prescaling_correction(reflection_table):
   """Calculate the multiplicative conversion factor for intensities."""
   conversion = flex.double(reflection_table.size(), 1.0)
-  if 'partiality' in reflection_table:
-    inverse_partiality = flex.double(reflection_table.size(), 1.0)
-    nonzero_partiality_sel = reflection_table['partiality'] > 0.0
-    good_refl = reflection_table.select(reflection_table['partiality'] > 0.0)
-    inverse_partiality.set_selected(nonzero_partiality_sel.iselection(),
-      1.0/good_refl['partiality'])
-    conversion *= inverse_partiality
   if 'lp' in reflection_table:
     conversion *= reflection_table['lp']
   qe = None
@@ -68,6 +61,15 @@ def choose_scaling_intensities(reflection_table, integration_method='prf'):
   logger.info(('{0} intensities will be used for scaling (and mtz \n'
         'output if applicable). \n').format(intstr))
   varstr = intstr.rstrip('value') + 'variance'
+
+  #prf partial intensities are the 'full' intensity values but sum are not
+  if 'partiality' in reflection_table and integration_method == 'sum':
+    inverse_partiality = flex.double(reflection_table.size(), 1.0)
+    nonzero_partiality_sel = reflection_table['partiality'] > 0.0
+    good_refl = reflection_table.select(reflection_table['partiality'] > 0.0)
+    inverse_partiality.set_selected(nonzero_partiality_sel.iselection(),
+      1.0/good_refl['partiality'])
+    conv *= inverse_partiality
 
   reflection_table['intensity'] = reflection_table[intstr] * conv
   reflection_table['variance'] = reflection_table[varstr] * conv * conv
