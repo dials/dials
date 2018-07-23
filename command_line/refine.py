@@ -14,9 +14,10 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-
-from dials.array_family import flex
 from libtbx.utils import Sorry
+from libtbx import Auto
+from dials.array_family import flex
+from dials.algorithms.refinement import RefinerFactory
 
 logger = logging.getLogger('dials.command_line.refine')
 
@@ -198,12 +199,30 @@ class Script(object):
     # FIXME add other things to be checked here
     return
 
+  @staticmethod
+  def run_macrocycle(params, reflections, experiments):
+
+    # Get the refiner
+    logger.info('Configuring refiner')
+    refiner = RefinerFactory.from_parameters_data_experiments(params,
+        reflections, experiments)
+
+    # Refine the geometry
+    nexp = len(experiments)
+    if nexp == 1:
+      logger.info('Performing refinement of a single Experiment...')
+    else:
+      logger.info('Performing refinement of {0} Experiments...'.format(nexp))
+
+    # Refine and get the refinement history
+    history = refiner.run()
+    return refiner, history
+
   def run(self):
     '''Execute the script.'''
     from time import time
     import six.moves.cPickle as pickle
     from dials.util import log
-    from dials.algorithms.refinement import RefinerFactory
     from dials.util.options import flatten_reflections, flatten_experiments
 
     start_time = time()
@@ -241,29 +260,29 @@ class Script(object):
       logger.info('The following parameters have been modified:\n')
       logger.info(diff_phil)
 
-    # Modify options if necessary
-    if params.output.correlation_plot.filename is not None:
-      params.refinement.refinery.journal.track_parameter_correlation = True
-
     # Warn about potentially unhelpful options
     if params.refinement.mp.nproc > 1:
       logger.warning("WARNING: setting nproc > 1 is only helpful in rare "
         "circumstances. It is not recommended for typical data processing "
         "tasks.\n")
 
-    # Get the refiner
-    logger.info('Configuring refiner')
-    refiner = RefinerFactory.from_parameters_data_experiments(params,
-        reflections, experiments)
+    # Modify options if necessary
+    if params.output.correlation_plot.filename is not None:
+      params.refinement.refinery.journal.track_parameter_correlation = True
+    do_sv_macrocycle = False
+    if params.refinement.parameterisation.scan_varying is Auto:
+      params.refinement.parameterisation.scan_varying = False
+      do_sv_macrocycle = True
 
-    # Refine the geometry
-    if nexp == 1:
-      logger.info('Performing refinement of a single Experiment...')
+    # Do refinement
+    if do_sv_macrocycle:
+      logger.info("\nScan-static refinement")
+      refiner, history = self.run_macrocycle(params, reflections, experiments)
+      logger.info("\nScan-varying refinement")
+      params.refinement.parameterisation.scan_varying = True
+      refiner, history = self.run_macrocycle(params, reflections, experiments)
     else:
-      logger.info('Performing refinement of {0} Experiments...'.format(nexp))
-
-    # Refine and get the refinement history
-    history = refiner.run()
+      refiner, history = self.run_macrocycle(params, reflections, experiments)
 
     if params.output.centroids:
       logger.info("Writing table of centroids to '{0}'".format(
