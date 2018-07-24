@@ -1,16 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-
-from dials.util.export_mtz import (scale_partial_reflections,
-                                   sum_partial_reflections)
+from libtbx.utils import Sorry
+from dials.util.filter_and_reduce_reflections import filter_for_export
 
 logger = logging.getLogger(__name__)
 
 
-def export_sadabs(integrated_data, experiment_list, hklout, run=0,
-                  summation=False, include_partials=False, keep_partials=False,
-                  debug=False, predict=True):
+def export_sadabs(integrated_data, experiment_list, params):
   '''Export data from integrated_data corresponding to experiment_list to a
   file for input to SADABS. FIXME probably need to make a .p4p file as
   well...'''
@@ -28,45 +25,11 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
   integrated_data = integrated_data.select(integrated_data['id'] >= 0)
   assert max(integrated_data['id']) == 0
 
-  if not summation:
-    assert('intensity.prf.value' in integrated_data)
-
-  # strip out negative variance reflections: these should not really be there
-  # FIXME Doing select on summation results. Should do on profile result if
-  # present? Yes
-
-  if 'intensity.prf.variance' in integrated_data:
-    selection = integrated_data.get_flags(
-      integrated_data.flags.integrated,
-      all=True)
-  else:
-    selection = integrated_data.get_flags(
-      integrated_data.flags.integrated_sum)
-  integrated_data = integrated_data.select(selection)
-
-  selection = integrated_data['intensity.sum.variance'] <= 0
-  if selection.count(True) > 0:
-    integrated_data.del_selected(selection)
-    logger.info('Removing %d reflections with negative variance' % \
-          selection.count(True))
-
-  if 'intensity.prf.variance' in integrated_data:
-    selection = integrated_data['intensity.prf.variance'] <= 0
-    if selection.count(True) > 0:
-      integrated_data.del_selected(selection)
-      logger.info('Removing %d profile reflections with negative variance' % \
-            selection.count(True))
-
-  if include_partials:
-    integrated_data = sum_partial_reflections(integrated_data)
-    integrated_data = scale_partial_reflections(integrated_data)
-
-  if 'partiality' in integrated_data:
-    selection = integrated_data['partiality'] < 0.99
-    if selection.count(True) > 0 and not keep_partials:
-      integrated_data.del_selected(selection)
-      logger.info('Removing %d incomplete reflections' % \
-        selection.count(True))
+  integrated_data = filter_for_export(integrated_data,
+    intensity_choice=params.intensity,
+    partiality_threshold=params.mtz.partiality_threshold,
+    combine_partials=params.mtz.combine_partials,
+    min_isigi=params.mtz.min_isigi, filter_ice_rings=params.mtz.filter_ice_rings)
 
   experiment = experiment_list[0]
   assert(not experiment.scan is None)
@@ -88,7 +51,7 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
   S = matrix.sqr(experiment.goniometer.get_setting_rotation())
   unit_cell = experiment.crystal.get_unit_cell()
 
-  if debug:
+  if params.debug:
     m_format = '%6.3f%6.3f%6.3f\n%6.3f%6.3f%6.3f\n%6.3f%6.3f%6.3f'
     c_format = '%.2f %.2f %.2f %.2f %.2f %.2f'
 
@@ -112,7 +75,7 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
   detector2t = s0.angle(normal, deg=True)
   origin = matrix.col(panel.get_origin())
 
-  if debug:
+  if params.debug:
     logger.info('Detector fast, slow axes:')
     logger.info('%6.3f%6.3f%6.3f' % (fast_axis.elems))
     logger.info('%6.3f%6.3f%6.3f' % (slow_axis.elems))
@@ -133,39 +96,24 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
 
   miller_index = integrated_data['miller_index']
 
-  I = None
-  sigI = None
-
-  # export including scale factors
-
-  if 'lp' in integrated_data:
-    lp = integrated_data['lp']
-  else:
-    lp = flex.double(nref, 1.0)
-  if 'qe' in integrated_data:
-    qe = integrated_data['qe']
-  elif 'dqe' in integrated_data:
-    qe = integrated_data['dqe']
-  else:
-    qe = flex.double(nref, 1.0)
-  scl = lp / qe
-
-  if summation:
-    I = integrated_data['intensity.sum.value'] * scl
-    V = integrated_data['intensity.sum.variance'] * scl * scl
+  if 'intensity.sum.value' in integrated_data:
+    I = integrated_data['intensity.sum.value']
+    V = integrated_data['intensity.sum.variance']
+    assert V.all_gt(0)
+    sigI = flex.sqrt(V)
+  elif 'intensity.prf.value' in integrated_data:
+    I = integrated_data['intensity.prf.value']
+    V = integrated_data['intensity.prf.variance']
     assert V.all_gt(0)
     sigI = flex.sqrt(V)
   else:
-    I = integrated_data['intensity.prf.value'] * scl
-    V = integrated_data['intensity.prf.variance'] * scl * scl
-    assert V.all_gt(0)
-    sigI = flex.sqrt(V)
+    raise Sorry("""Data does not contain sum or prf reflections.""")
 
   # figure out scaling to make sure data fit into format 2F8.2 i.e. Imax < 1e5
 
   Imax = flex.max(I)
 
-  if debug:
+  if params.debug:
     logger.info('Maximum intensity in file: %8.2f' % Imax)
 
   if Imax > 99999.0:
@@ -175,7 +123,7 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
 
   phi_start, phi_range = experiment.scan.get_image_oscillation(image_range[0])
 
-  if predict:
+  if params.sadabs.predict:
     logger.info('Using scan static predicted spot locations')
     from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
     predictor = ScanStaticReflectionPredictor(experiment)
@@ -188,13 +136,13 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
   else:
     static = False
 
-  fout = open(hklout, 'w')
+  fout = open(params.sadabs.hklout, 'w')
 
   for j in range(nref):
 
     h, k, l = miller_index[j]
 
-    if predict:
+    if params.sadabs.predict:
       x_mm, y_mm, z_rad = integrated_data['xyzcal.mm'][j]
     else:
       x_mm, y_mm, z_rad = integrated_data['xyzobs.mm.value'][j]
@@ -202,7 +150,7 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
     z0 = integrated_data['xyzcal.px'][j][2]
     istol = int(round(10000 * unit_cell.stol((h, k, l))))
 
-    if predict or static:
+    if params.sadabs.predict or static:
       # work from a scan static model & assume perfect goniometer
       # FIXME maybe should work back in the option to predict spot positions
       UB = matrix.sqr(experiment.crystal.get_A())
@@ -239,8 +187,8 @@ def export_sadabs(integrated_data, experiment_list, hklout, run=0,
     z = (z_rad * 180 / math.pi - phi_start) / phi_range
 
     fout.write('%4d%4d%4d%8.2f%8.2f%4d%8.5f%8.5f%8.5f%8.5f%8.5f%8.5f' % \
-               (h, k, l, I[j], sigI[j], run, ix, dx, iy, dy, iz, dz))
+               (h, k, l, I[j], sigI[j], params.sadabs.run, ix, dx, iy, dy, iz, dz))
     fout.write('%7.2f%7.2f%8.2f%7.2f%5d\n' % (x, y, z, detector2t, istol))
 
   fout.close()
-  logger.info('Output %d reflections to %s' % (nref, hklout))
+  logger.info('Output %d reflections to %s' % (nref, params.sadabs.hklout))

@@ -79,10 +79,11 @@ phil_scope = parse('''
   format = *mtz sadabs nxs mmcif mosflm xds best xds_ascii json
     .type = choice
     .help = "The output file format"
-
-  summation = False
-    .type = bool
-    .help = "Output summation integrated data (default profile fitted)"
+  
+  intensity = *prf sum scale
+    .type = choice(multi=True)
+    .help = "Choice of which intensities to export. Allowed combinations:
+            scale, prf, sum, or prf and sum."
 
   debug = False
     .type = bool
@@ -90,25 +91,21 @@ phil_scope = parse('''
 
   mtz {
 
+    combine_partials = True
+      .type = bool
+      .help = "Combine partials that have the same partial id into one
+        reflection, with an updated partiality given by the sum of the
+        individual partialities."
+
+    partiality_threshold=0.5
+      .type = float
+      .help = "All reflections with partiality values above the partiality
+        threshold will be retained. This is done after any combination of
+        partials if applicable."
+
     ignore_panels = False
       .type = bool
       .help = "Ignore multiple panels / detectors in output (deprecated)"
-
-    include_partials = False
-      .type = bool
-      .help = "Include partial reflections (scaled) in output"
-
-    keep_partials = False
-      .type = bool
-      .help = "Keep low partiality reflections"
-
-    scale_partials = True
-      .type = bool
-      .help = "Scale partial reflections to 100% (unreliable if partiality low)"
-
-    apply_scales = False
-      .type = bool
-      .help = "Apply scale factors in inverse_scale_factor column if present"
 
     min_isigi = -5
       .type = float
@@ -121,12 +118,6 @@ phil_scope = parse('''
     filter_ice_rings = False
       .type = bool
       .help = "Filter reflections at ice ring resolutions"
-
-    ignore_profile_fitting = False
-      .type = bool
-      .help = "Ignore profile fitted intensities. Sometimes necessary for narrow"
-              "wedges or other situations where profile fitting has failed for"
-              "all reflections and we only have summation intensities."
 
     hklout = integrated.mtz
       .type = path
@@ -283,15 +274,7 @@ class MTZExporter(object):
     m = export_mtz(
       self.reflections,
       self.experiments,
-      self.params.mtz.hklout,
-      include_partials=self.params.mtz.include_partials,
-      keep_partials=self.params.mtz.keep_partials,
-      scale_partials=self.params.mtz.scale_partials,
-      min_isigi=self.params.mtz.min_isigi,
-      force_static_model=self.params.mtz.force_static_model,
-      filter_ice_rings=self.params.mtz.filter_ice_rings,
-      ignore_profile_fitting=self.params.mtz.ignore_profile_fitting,
-      apply_scales=self.params.mtz.apply_scales)
+      self.params)
     from cStringIO import StringIO
     summary = StringIO()
     m.show_summary(out=summary)
@@ -330,13 +313,7 @@ class SadabsExporter(object):
     export_sadabs(
       self.reflections,
       self.experiments,
-      self.params.sadabs.hklout,
-      run=self.params.sadabs.run,
-      summation=self.params.summation,
-      include_partials=params.mtz.include_partials,
-      keep_partials=params.mtz.keep_partials,
-      debug=params.debug,
-      predict=params.sadabs.predict)
+      self.params)
 
 class XDSASCIIExporter(object):
   '''
@@ -370,10 +347,7 @@ class XDSASCIIExporter(object):
     export_xds_ascii(
       self.reflections,
       self.experiments,
-      self.params.xds_ascii.hklout,
-      summation=self.params.summation,
-      include_partials=params.mtz.include_partials,
-      keep_partials=params.mtz.keep_partials)
+      self.params)
 
 class NexusExporter(object):
   '''

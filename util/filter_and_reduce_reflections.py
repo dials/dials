@@ -50,7 +50,8 @@ def filter_for_export(reflection_table, intensity_choice=['scale'],
     return SumAndPrfIntensityReducer.filter_for_export(
       reflection_table, *args, **kwargs)
   else:
-    raise Sorry("Unrecognised intensity choice for filter_for_export")
+    raise Sorry("""Unrecognised intensity choice for filter_for_export,\n
+      must be either: 'scale', 'prf', 'sum', or 'prf sum' """)
 
 class FilteringReductionMethods(object):
 
@@ -81,6 +82,7 @@ class FilteringReductionMethods(object):
 
   @staticmethod
   def calculate_lp_qe_correction_and_filter(reflection_table):
+    # FIXME errors in e.g. LP correction need to be propagated here?
     qe = None
     if 'qe' in reflection_table:
       reflection_table = reflection_table.select(reflection_table['qe'] > 0.0)
