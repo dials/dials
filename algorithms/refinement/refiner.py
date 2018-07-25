@@ -390,6 +390,16 @@ refinement
       .type = float(value_min = 0)
       .expert_level = 1
 
+    trim_scan_edges = 0.0
+      .help = "Reflections within this value in degrees from the centre of the"
+              "first or last image of the scan will be removed before"
+              "refinement, unless doing so would result in too few remaining"
+              "reflections. Reflections that are truncated at the scan edges"
+              "have poorly-determined centroids and can bias the refined model"
+              "if they are included."
+      .type = float(value_min=0,value_max=1)
+      .expert_level = 1
+
     block_width = 1.0
       .help = "Width of a reflection 'block' (in degrees) determining how fine-"
               "grained the model used for scan-varying prediction during"
@@ -1735,6 +1745,7 @@ class RefinerFactory(object):
             max_sample_size = options.maximum_sample_size,
             min_sample_size = options.minimum_sample_size,
             close_to_spindle_cutoff=options.close_to_spindle_cutoff,
+            trim_scan_edges=options.trim_scan_edges,
             outlier_detector=outlier_detector,
             weighting_strategy_override=weighting_strategy,
             verbosity=verbosity)
