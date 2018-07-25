@@ -208,6 +208,8 @@ class NormDevOutlierRejection(OutlierRejectionBase):
     I_sel = I.select(sel)
     w_sel = w.select(sel)
 
+    assert w_sel.all_gt(0) # guard against division by zero
+    assert wg2sum_others_sel.all_gt(0) # guard against division by zero
     norm_dev = (I_sel - (g_sel * wgIsum_others_sel/wg2sum_others_sel))/(
       ((1.0/w_sel)+((g_sel/wg2sum_others_sel)**2))**0.5)
     z_score = flex.abs(norm_dev)
