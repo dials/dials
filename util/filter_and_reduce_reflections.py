@@ -37,21 +37,38 @@ logger = logging.getLogger('dials')
 
 def filter_for_export(reflection_table, intensity_choice=['scale'],
   *args, **kwargs):
+  """Filter the data and delete unneeded intensity columns."""
+  return _filter_function(reflection_table, intensity_choice=intensity_choice,
+    remove_other_intensity_columns=True, *args, **kwargs)
+
+def filter_for_processing(reflection_table, intensity_choice=['scale'],
+  *args, **kwargs):
+  """Filter the data but keep unneeded intensity columns, to allow the
+  possibility of further processing within DIALS"""
+  return _filter_function(reflection_table, intensity_choice=intensity_choice,
+    remove_other_intensity_columns=False, *args, **kwargs)
+
+def _filter_function(reflection_table, intensity_choice,
+  remove_other_intensity_columns=True, *args, **kwargs):
   if intensity_choice == ['scale']:
-    return ScaleIntensityReducer.filter_for_export(
-      reflection_table, *args, **kwargs)
+    reducer = ScaleIntensityReducer
   elif intensity_choice == ['sum']:
-    return SumIntensityReducer.filter_for_export(
-      reflection_table, *args, **kwargs)
+    reducer = SumIntensityReducer
   elif intensity_choice == ['prf']:
-    return PrfIntensityReducer.filter_for_export(
-      reflection_table, *args, **kwargs)
-  elif intensity_choice == ['sum', 'prf'] or intensity_choice == ['prf', 'sum']:
-    return SumAndPrfIntensityReducer.filter_for_export(
-      reflection_table, *args, **kwargs)
+    reducer = PrfIntensityReducer
+  elif all([i in intensity_choice for i in ['sum', 'scale', 'prf']]):
+    reducer = AllSumPrfScaleIntensityReducer
+  elif all([i in intensity_choice for i in ['sum', 'prf']]):
+    reducer = SumAndPrfIntensityReducer
   else:
-    raise Sorry("""Unrecognised intensity choice for filter_for_export,\n
-      must be either: 'scale', 'prf', 'sum', or 'prf sum' """)
+    raise Sorry(("Unrecognised intensity choice for filter_for_export,\n"
+      "value read: {0}\n"
+      "must be either: 'scale', 'prf', 'sum', 'prf sum' or 'prf sum scale'\n"
+      "(if parsing from command line, multiple choices passed as e.g. prf+sum"
+      ).format(intensity_choice))
+  if remove_other_intensity_columns:
+    reflection_table = reducer.delete_other_intensity_columns(reflection_table)
+  return reducer.filter_for_export(reflection_table, *args, **kwargs)
 
 class FilteringReductionMethods(object):
 
@@ -147,17 +164,24 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
   # of a subset of the allowed intensities.
 
   @classmethod
-  def _filter_for_export(cls, reflection_table, min_isigi=None,
-    filter_ice_rings=False, combine_partials=True, partiality_threshold=0.99):
-    """Designed to be called by subclasses"""
-    assert reflection_table.size() > 0, \
-      """Empty reflection table given to reduce_data_for_export function"""
-
+  def delete_other_intensity_columns(cls, reflection_table):
     for intensity in cls.allowed_intensities:
       if intensity not in cls.intensities:
         if 'intensity.'+intensity+'.value' in reflection_table:
           del reflection_table['intensity.'+intensity+'.value']
           del reflection_table['intensity.'+intensity+'.variance']
+      else:
+        msg = ('No intensity.'+intensity+' values found in reflection table')
+        assert 'intensity.'+intensity+'.value' in reflection_table, msg
+        assert 'intensity.'+intensity+'.variance' in reflection_table, msg
+    return reflection_table
+
+  @classmethod
+  def _filter_for_export(cls, reflection_table, min_isigi=None,
+    filter_ice_rings=False, combine_partials=True, partiality_threshold=0.99):
+    """Designed to be called by subclasses"""
+    assert reflection_table.size() > 0, \
+      """Empty reflection table given to reduce_data_for_export function"""
 
     reflection_table = cls.filter_unassigned_reflections(reflection_table)
     reflection_table = cls.reduce_on_intensities(reflection_table)
@@ -304,9 +328,8 @@ class SumAndPrfIntensityReducer(FilterForExportAlgorithm):
   @classmethod
   def filter_for_export(cls, reflection_table, min_isigi=None, filter_ice_rings=False,
       combine_partials=True, partiality_threshold=0.99):
-    return cls._filter_for_export(
-      reflection_table, min_isigi=None, filter_ice_rings=False,
-      combine_partials=True, partiality_threshold=0.99)
+    return cls._filter_for_export(reflection_table, min_isigi, filter_ice_rings,
+      combine_partials, partiality_threshold)
 
   @classmethod
   def filter_on_min_isigi(cls, reflection_table, min_isigi=None):
@@ -388,8 +411,8 @@ class ScaleIntensityReducer(FilterForExportAlgorithm):
   @classmethod
   def filter_for_export(cls, reflection_table, min_isigi=None,
     filter_ice_rings=False, combine_partials=True, partiality_threshold=0.99):
-    return cls._filter_for_export(reflection_table, min_isigi=None,
-      filter_ice_rings=False, combine_partials=True, partiality_threshold=0.99)
+    return cls._filter_for_export(reflection_table, min_isigi, filter_ice_rings,
+      combine_partials, partiality_threshold)
 
   @classmethod
   def filter_on_min_isigi(cls, reflection_table, min_isigi=None):
@@ -410,8 +433,11 @@ class ScaleIntensityReducer(FilterForExportAlgorithm):
     logger.info("Selected %d scaled reflections" % reflection_table.size())
     if not 'inverse_scale_factor' in reflection_table:
       raise Sorry('Inverse scale factor required to output scale intensities.')
-    reflection_table = reflection_table.select(
-      reflection_table['inverse_scale_factor'] > 0.0)
+    selection = reflection_table['inverse_scale_factor'] <= 0.0
+    if selection.count(True) > 0:
+      reflection_table.del_selected(selection)
+      logger.info("Removed %s reflections with zero or negative inverse scale factors"\
+        % selection.count(True))
     return reflection_table
 
   @staticmethod
@@ -427,6 +453,31 @@ class ScaleIntensityReducer(FilterForExportAlgorithm):
       reflection_table['inverse_scale_factor']
     reflection_table['intensity.scale.variance'] /= \
       reflection_table['inverse_scale_factor']**2
+    return reflection_table
+
+
+class AllSumPrfScaleIntensityReducer(SumAndPrfIntensityReducer):
+
+  """A class to implement methods to reduce data where both prf, sum and scale
+  intensities are defined. Only reflections with valid values for all intensity
+  types are retained."""
+
+  intensities = ['sum', 'prf', 'scale']
+
+  @staticmethod
+  def reduce_on_intensities(reflection_table):
+    """Select those with valid reflections for all values."""
+    selection = reflection_table.get_flags(reflection_table.flags.integrated,
+      all=True)
+    reflection_table = reflection_table.select(selection)
+    logger.info("Selected %d integrated reflections" % reflection_table.size())
+    reflection_table = ScaleIntensityReducer.reduce_on_intensities(reflection_table)
+    return reflection_table
+
+  @classmethod
+  def apply_scaling_factors(cls, reflection_table):
+    reflection_table = SumAndPrfIntensityReducer.apply_scaling_factors(reflection_table)
+    reflection_table = ScaleIntensityReducer.apply_scaling_factors(reflection_table)
     return reflection_table
 
 def sum_partial_reflections(reflection_table):

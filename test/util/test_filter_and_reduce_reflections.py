@@ -35,7 +35,8 @@ from dials.util.filter_and_reduce_reflections import \
   FilteringReductionMethods, FilterForExportAlgorithm, SumIntensityReducer, \
   PrfIntensityReducer, SumAndPrfIntensityReducer, ScaleIntensityReducer, \
   filter_for_export, sum_partial_reflections, _sum_prf_partials, \
-  _sum_sum_partials, _sum_scale_partials
+  _sum_sum_partials, _sum_scale_partials, AllSumPrfScaleIntensityReducer, \
+  filter_for_processing
 
 def generate_simple_table():
   """Generate a simple table for testing export function."""
@@ -60,7 +61,7 @@ def generate_integrated_test_reflections():
   r['intensity.prf.variance'] = flex.double([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
   r['intensity.sum.variance'] = flex.double([1.1, 1.2, 1.3, 1.4, 1.5, 1.6])
   r['intensity.scale.variance'] = flex.double([2.1, 2.2, 2.3, 2.4, 2.5, 2.6])
-  r['inverse_scale_factor'] = flex.double([5.0, 5.0, 5.0, 10.0, 10.0, 10.0])
+  r['inverse_scale_factor'] = flex.double([5.0, 5.0, 5.0, 10.0, 10.0, -10.0])
   r['inverse_scale_factor_variance'] = flex.double([1.0, 1.0, 1.0, 2.0, 2.0, 2.0])
   r.set_flags(flex.bool([True, True, True, False, False, True]),
     r.flags.integrated_prf)
@@ -206,6 +207,7 @@ def test_PrfIntensityReducer():
 
   assert list(reflections['fractioncalc']) == [1.0] * 4
 
+  reflections = PrfIntensityReducer.delete_other_intensity_columns(reflections)
   assert not 'intensity.sum.value' in reflections
   assert not 'intensity.scale.value' in reflections
   assert not 'intensity.sum.variance' in reflections
@@ -252,6 +254,7 @@ def test_SumIntensityReducer():
   assert list(reflections['intensity.sum.variance']) == pytest.approx(
     [4.4, 4.8, 20.8])
 
+  reflections = SumIntensityReducer.delete_other_intensity_columns(reflections)
   assert not 'intensity.prf.value' in reflections
   assert not 'intensity.scale.value' in reflections
   assert not 'intensity.prf.variance' in reflections
@@ -296,7 +299,7 @@ def test_SumAndPrfIntensityReducer():
   # test filtering for export
   reflections = generate_integrated_test_reflections()
   reflections = SumAndPrfIntensityReducer.filter_for_export(reflections)
-
+  reflections = SumAndPrfIntensityReducer.delete_other_intensity_columns(reflections)
   assert not 'intensity.scale.value' in reflections
   assert not 'intensity.scale.variance' in reflections
 
@@ -305,9 +308,9 @@ def test_ScaleIntensityReducer():
   reflections = generate_integrated_test_reflections()
   reflections = ScaleIntensityReducer.reduce_on_intensities(reflections)
   assert list(reflections['intensity.scale.value']) == pytest.approx(
-    [23.0, 24.0, 25.0, 26.0])
+    [23.0, 24.0, 25.0])
   assert list(reflections['intensity.scale.variance']) == pytest.approx(
-    [2.3, 2.4, 2.5, 2.6])
+    [2.3, 2.4, 2.5])
   del reflections['inverse_scale_factor']
   with pytest.raises(Sorry):
     reflections = ScaleIntensityReducer.reduce_on_intensities(reflections)
@@ -342,14 +345,32 @@ def test_ScaleIntensityReducer():
   reflections = ScaleIntensityReducer.filter_for_export(reflections)
 
   assert list(reflections['intensity.scale.value']) == pytest.approx(
-    [23.0/5.0, 24.0/10.0, 25.0/10.0, 26.0/10.0])
+    [23.0/5.0, 24.0/10.0, 25.0/10.0])
   assert list(reflections['intensity.scale.variance']) == pytest.approx(
-    [2.3/25.0, 0.024, 0.025, 0.026])
+    [2.3/25.0, 0.024, 0.025])
 
+  reflections = ScaleIntensityReducer.delete_other_intensity_columns(reflections)
   assert not 'intensity.prf.value' in reflections
   assert not 'intensity.sum.value' in reflections
   assert not 'intensity.prf.variance' in reflections
   assert not 'intensity.sum.variance' in reflections
+
+def test_AllSumPrfScaleIntensityReducer():
+  reflections = generate_integrated_test_reflections()
+  reflections = AllSumPrfScaleIntensityReducer.reduce_on_intensities(reflections)
+  assert list(reflections['intensity.scale.value']) == [23.0]
+  assert list(reflections['intensity.scale.variance']) == [2.3]
+  assert list(reflections['intensity.prf.value']) == [3.0]
+  assert list(reflections['intensity.prf.variance']) == [0.3]
+  assert list(reflections['intensity.sum.value']) == [13.0]
+  assert list(reflections['intensity.sum.variance']) == [1.3]
+  reflections = AllSumPrfScaleIntensityReducer.apply_scaling_factors(reflections)
+  assert list(reflections['intensity.scale.value']) == [23.0/5.0]
+  assert list(reflections['intensity.scale.variance']) == [2.3/25.0]
+  assert list(reflections['intensity.prf.value']) == [3.0]
+  assert list(reflections['intensity.prf.variance']) == [0.3]
+  assert list(reflections['intensity.sum.value']) == [13.0]
+  assert list(reflections['intensity.sum.variance']) == [1.3]
 
 def test_filter_for_export():
   """Test the interface function"""
@@ -373,8 +394,31 @@ def test_filter_for_export():
   assert  'intensity.sum.value' in reflections
   assert  'intensity.prf.value' in reflections
   assert not 'intensity.scale.value' in reflections
+  reflections = generate_integrated_test_reflections()
+  reflections = filter_for_export(reflections, ['sum', 'prf', 'scale'])
+  assert 'intensity.sum.value' in reflections
+  assert 'intensity.prf.value' in reflections
+  assert 'intensity.scale.value' in reflections
   with pytest.raises(Sorry):
     reflections = filter_for_export(reflections, ['bad'])
+
+def test_filter_for_processing():
+  """Test the interface function"""
+  intensities = ['intensity.sum.value', 'intensity.prf.value',
+    'intensity.scale.value']
+  reflections = generate_integrated_test_reflections()
+  reflections = filter_for_processing(reflections, ['sum'])
+  assert all([i in reflections for i in intensities])
+  reflections = filter_for_processing(reflections, ['prf'])
+  assert all([i in reflections for i in intensities])
+  reflections = generate_integrated_test_reflections()
+  reflections = filter_for_processing(reflections, ['scale'])
+  assert all([i in reflections for i in intensities])
+  reflections = generate_integrated_test_reflections()
+  reflections = filter_for_processing(reflections, ['sum', 'prf'])
+  assert all([i in reflections for i in intensities])
+  with pytest.raises(Sorry):
+    reflections = filter_for_processing(reflections, ['bad'])
 
 def return_reflections_side_effect(reflections, *args, **kwargs):
   """Side effect for overriding the call to reject_outliers."""
@@ -385,6 +429,8 @@ def test_checks_in_reduce_data_for_export():
   # If no valid ids, should raise sorry
   r = flex.reflection_table()
   r['id'] = flex.int([-1, -1, -1])
+  r['intensity.prf.value'] = flex.double(3, 1.0)
+  r['intensity.prf.variance'] = flex.double(3, 1.0)
   with pytest.raises(Sorry):
     r = PrfIntensityReducer.filter_for_export(r)
 

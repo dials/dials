@@ -80,7 +80,7 @@ phil_scope = parse('''
     .type = choice
     .help = "The output file format"
   
-  intensity = *prf sum scale
+  intensity = *prf *sum scale
     .type = choice(multi=True)
     .help = "Choice of which intensities to export. Allowed combinations:
             scale, prf, sum, or prf and sum."
@@ -420,7 +420,7 @@ class MMCIFExporter(object):
 
     '''
     from dials.util.export_mmcif import MMCIFOutputFile
-    outfile = MMCIFOutputFile(self.params.mmcif.hklout)
+    outfile = MMCIFOutputFile(self.params)
     outfile.write(self.experiments, self.reflections)
 
 
