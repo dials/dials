@@ -195,10 +195,6 @@ class SingleBScaleFactor(ScaleComponentBase):
       self._n_refl.append(reflections.size())
 
   def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
-    #self._inverse_scales = []
-    #self._derivatives = []
-    #self._curvatures = []
-    #for block_id in range(len(self._n_refl)):#len of the list, not num of refl
     scales = flex.exp(flex.double(
       [self._parameters[0]] * self._n_refl[block_id])
       / (2.0 * (self._d_values[block_id]*self._d_values[block_id])))
@@ -207,7 +203,7 @@ class SingleBScaleFactor(ScaleComponentBase):
       derivatives[i, 0] = (scales[i]
         / (2.0 * (self._d_values[block_id][i]*self._d_values[block_id][i])))
     if curvatures:
-      curvatures = sparse.matrix(self.n_refl[block_id], 1) #curatures are all zero.
+      curvatures = sparse.matrix(self.n_refl[block_id], 1) #curvatures are all zero.
       for i in range(self._n_refl[block_id]):
         curvatures[i, 0] = (scales[i]
           / ((2.0 * (self._d_values[block_id][i]**2))**2))
@@ -273,16 +269,12 @@ class SHScaleComponent(ScaleComponentBase):
     self._n_refl = []
     self._harmonic_values = []
     if selection:
-      #sph_harm_table_T = self.sph_harm_table.transpose()
       sel_sph_harm_table = self.sph_harm_table.select_columns(
         selection.iselection())
       if block_selections:
         block_selection_list = block_selections
-        #perm_sph_harm_tab = sht.permute_rows(permuted)
-        #perm_shtt = perm_sph_harm_tab.transpose()
         for i, sel in enumerate(block_selection_list):
           block_sph_harm_table = sel_sph_harm_table.select_columns(sel)
-          #block_sph_harm_table = perm_shtt.select_columns(sel.iselection())
           self._harmonic_values.append(block_sph_harm_table.transpose())
           self.n_refl.append(self._harmonic_values[i].n_rows)
       else:
@@ -291,22 +283,12 @@ class SHScaleComponent(ScaleComponentBase):
     else:
       self._harmonic_values.append(self.sph_harm_table.transpose())
       self._n_refl.append(self._harmonic_values[0].n_rows)
-      #del self._sph_harm_table
-      #self.calculate_scales_and_derivatives()
 
   def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
-    #self._inverse_scales = []
-    #self._derivatives = []
-    #self._curvatures = []
-    #for block_id in range(len(self._n_refl)):#len of the list, not num of refl
     abs_scale = flex.double(self._harmonic_values[block_id].n_rows, 1.0
       ) #Unity term
-    #print('here')
     for i, col in enumerate(self._harmonic_values[block_id].cols()):
       abs_scale += flex.double(col.as_dense_vector() * self._parameters[i])
-    #return abs_scale, self._harmonic_values[block_id]
-    #self._inverse_scales.append(abs_scale)
-    #self._derivatives.append(self._harmonic_values[block_id])
     if curvatures:
       curvatures = sparse.matrix(
         abs_scale.size(), self._n_params)
