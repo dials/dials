@@ -41,6 +41,9 @@ phil_scope= libtbx.phil.parse("""
   show_panel_axes = False
     .type = bool
     .help = "Plot the fast, slow and normal vectors for each panel."
+  show_crystal_axes = True
+    .type = bool
+    .help = "Plot the crystal reciprocal cell axes"
   require_images = True
     .type = bool
     .help = "Flag which can be set to False to launch image viewer without
@@ -326,6 +329,11 @@ class settings_window(wxtbx.utils.SettingsPanel) :
       label="Show panel axes")
     self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
 
+    ctrls = self.create_controls(
+      setting="show_crystal_axes",
+      label="Show crystal axes")
+    self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
+
   def add_goniometer_controls(self, goniometer):
     from wx.lib.agw import floatspin
 
@@ -474,7 +482,7 @@ class GeometryWindow(wx_viewer.show_points_and_lines_mixin):
       self.draw_axis(axis.elems, "phi")
     self.draw_axis(beam.get_s0(), "beam")
     crystal = self.parent.crystal
-    if crystal is not None:
+    if self.settings.show_crystal_axes and crystal is not None:
       crystal = copy.deepcopy(crystal)
       scan = self.parent.imageset.get_scan()
       fixed_rotation = matrix.sqr(gonio.get_fixed_rotation())
