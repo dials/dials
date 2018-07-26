@@ -137,7 +137,17 @@ class SimpleNormDevOutlierRejection(OutlierRejectionBase):
     w = Ih_table.weights
     wgIsum = ((w * g * I) * Ih_table.h_index_matrix) * Ih_table.h_expand_matrix
     wg2sum = ((w * g * g) * Ih_table.h_index_matrix) * Ih_table.h_expand_matrix
+
+    # guard against zero divison errors - can happen due to rounding errors
+    # or bad data giving g values are very small
+    zero_sel = (wg2sum == 0.0)
+    # set as one for now, then mark as outlier below. This will only affect if
+    # g is near zero, if w is zero then throw an assertionerror.
+    wg2sum.set_selected(zero_sel, 1.0)
+
+    assert w.all_gt(0) # guard against division by zero
     norm_dev = (I - (g * wgIsum/wg2sum))/(((1.0/w)+((g/wg2sum)**2))**0.5)
+    norm_dev.set_selected(zero_sel, 1000) # to trigger rejection
     outliers_sel = flex.abs(norm_dev) > self.zmax
 
     nz_weights_isel = Ih_table.nonzero_weights#.iselection()
