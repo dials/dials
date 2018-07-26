@@ -43,7 +43,7 @@ phil_scope= libtbx.phil.parse("""
     .help = "Plot the fast, slow and normal vectors for each panel."
   require_images = True
     .type = bool
-    .help = "Flag which can be set to False to launch image viewer without 
+    .help = "Flag which can be set to False to launch image viewer without
       checking the image format (needed for some image format classes).
       Alternative to DIALS_EXPORT_DO_NOT_CHECK_FORMAT environment variable."
 """)
@@ -320,9 +320,11 @@ class settings_window(wxtbx.utils.SettingsPanel) :
     self.GetParent().viewer.OnChar(event)
 
   def add_controls(self) :
-    pass
-    # d_min control
-    #from wx.lib.agw import floatspin
+
+    ctrls = self.create_controls(
+      setting="show_panel_axes",
+      label="Show panel axes")
+    self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
 
   def add_goniometer_controls(self, goniometer):
     from wx.lib.agw import floatspin
