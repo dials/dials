@@ -204,14 +204,21 @@ class NormDevOutlierRejection(OutlierRejectionBase):
     sel = nh > 2 #could be > 1 if we want to calculate z_score for groups of 2
     wg2sum_others_sel = wg2sum_others.select(sel)
     wgIsum_others_sel = wgIsum_others.select(sel)
+
+    # guard against zero divison errors - can happen due to rounding errors
+    # or bad data giving g values are very small
+    zero_sel = (wg2sum_others_sel == 0.0)
+    # set as one for now, then mark as outlier below. This will only affect if
+    # g is near zero, if w is zero then throw an assertionerror.
+    wg2sum_others_sel.set_selected(zero_sel, 1.0)
     g_sel = g.select(sel)
     I_sel = I.select(sel)
     w_sel = w.select(sel)
 
     assert w_sel.all_gt(0) # guard against division by zero
-    assert wg2sum_others_sel.all_gt(0) # guard against division by zero
     norm_dev = (I_sel - (g_sel * wgIsum_others_sel/wg2sum_others_sel))/(
       ((1.0/w_sel)+((g_sel/wg2sum_others_sel)**2))**0.5)
+    norm_dev.set_selected(zero_sel, 1000) # to trigger rejection
     z_score = flex.abs(norm_dev)
     # Want an array same size as Ih table.
     all_z_scores = flex.double(Ih_table.size, 0.0)
