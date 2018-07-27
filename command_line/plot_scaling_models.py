@@ -160,7 +160,7 @@ def plot_smooth_scales(params, experiment, outputfile=None):
       for i in scale_SF.smoother.positions()]
     ax1 = plt.subplot(2, 1, 1)
     ax1.plot(sample_values, s,
-      label='smootly varying \ninverse scale factor')
+      label='smoothly varying \ninverse scale factor')
     if params.output.with_errors:
       if params.output.limit_range_to_obs:
         ax1.errorbar(smoother_phis[1:-1], scale_SF.parameters[1:-1],
@@ -191,7 +191,7 @@ def plot_smooth_scales(params, experiment, outputfile=None):
     ax2.set_ylabel('Relative B factor (' + r'$\AA^{2}$'+')', fontsize=12)
     ax2.set_xlabel('Rotation angle (' + r'$^{\circ}$'+')', fontsize=12)
     ax2.plot(sample_values, np.log(s)*2.0,
-      label='smootly varying \nB-factor') #convert scales to B values
+      label='smoothly varying \nB-factor') #convert scales to B values
     if params.output.with_errors:
       if params.output.limit_range_to_obs:
         ax2.errorbar(smoother_phis[1:-1], decay_SF.parameters[1:-1],
