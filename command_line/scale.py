@@ -22,14 +22,14 @@ dials.plot_scaling_models scaled.pickle scaled_experiments.json
 Examples:
 
 Regular single-sweep scaling
-dials.scale integrated.pickle integrated_experiments absorption_term=False
+dials.scale integrated.pickle integrated_experiments.json absorption_term=False
 
 Scaling multiple datasets
-dials.scale 1_integrated.pickle 1_integrated_experiments 2_integrated.pickle
-  2_integrated_experiments scale_interval=10.0
+dials.scale 1_integrated.pickle 1_integrated_experiments.json
+  2_integrated.pickle 2_integrated_experiments.json scale_interval=10.0
 
 Scaling many small-wedge datasets
-dials.scale *_integrated.pickle *_integrated_experiments model=KB
+dials.scale *_integrated.pickle *_integrated_experiments.json model=KB
 
 """
 from __future__ import absolute_import, division, print_function
