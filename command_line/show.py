@@ -91,7 +91,8 @@ def show_beam(detector, beam):
     impacts = [beam_centre_mm(detector, s0) for s0 in sv_s0]
     pnl, xy = zip(*impacts)
     uniq_pnls = set(pnl)
-    if len(uniq_pnls) > 1 or min(uniq_pnls) < 0: return static_str + sv_str
+    if len(uniq_pnls) > 1 or min(uniq_pnls) < 0: return s
+    if any([e == (None,None) for e in xy]): return s
     pnl = list(uniq_pnls)[0]
     x_mm, y_mm = zip(*xy)
 
@@ -381,32 +382,32 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
       elif type(col) in (flex.double, flex.int, flex.size_t):
         if type(col) in (flex.int, flex.size_t):
           col = col.as_double()
-        rows.append([k, 
-                     formats.get(k,"%s") % flex.min(col), 
+        rows.append([k,
+                     formats.get(k,"%s") % flex.min(col),
                      formats.get(k,"%s") % flex.max(col),
                      formats.get(k,"%s") % flex.mean(col)])
       elif type(col) in (flex.vec3_double, flex.miller_index):
         if isinstance(col, flex.miller_index):
           col = col.as_vec3_double()
-        rows.append([k, 
-                     formats.get(k,"%s") % col.min(), 
+        rows.append([k,
+                     formats.get(k,"%s") % col.min(),
                      formats.get(k,"%s") % col.max(),
                      formats.get(k,"%s") % col.mean()])
       elif isinstance(col, flex.shoebox):
         rows.append([k, "", "", ""])
         si = col.summed_intensity().observed_value()
-        rows.append(["  summed I", 
+        rows.append(["  summed I",
                      formats.get(k,"%s") % flex.min(si),
                      formats.get(k,"%s") % flex.max(si),
                      formats.get(k,"%s") % flex.mean(si)])
         x1, x2, y1, y2, z1, z2 = col.bounding_boxes().parts()
         bbox_sizes = ((z2-z1)*(y2-y1)*(x2-x1)).as_double()
-        rows.append(["  N pix", 
+        rows.append(["  N pix",
                      formats.get(k,"%s") % flex.min(bbox_sizes),
                      formats.get(k,"%s") % flex.max(bbox_sizes),
                      formats.get(k,"%s") % flex.mean(bbox_sizes)])
         fore_valid = col.count_mask_values(foreground_valid).as_double()
-        rows.append(["  N valid foreground pix", 
+        rows.append(["  N valid foreground pix",
                      formats.get(k,"%s") % flex.min(fore_valid),
                      formats.get(k,"%s") % flex.max(fore_valid),
                      formats.get(k,"%s") % flex.mean(fore_valid)])
