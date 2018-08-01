@@ -12,26 +12,32 @@ from protein nanocrystals. Extensions to the software and protocols for dealing
 with the peculiarities of electron diffraction data are described in a
 publication:
 
-* .. pubmed:: 29872002 Electron diffraction
+.. pubmed:: 29872002 Electron diffraction
 
-This tutorial reproduces the data processing results described in that paper.
-The commands listed here assume the use of a Bash shell on a POSIX-compliant
-system, and would have to be adjusted appropriately for use on other systems
+This tutorial reproduces the data processing results described in that paper,
+which were produced by DIALS version ``1.dev.2084-g06727c3`` and CCP4 version
+``7.0.051``. Results may differ with other versions of the software. The
+commands listed here assume the use of a Bash shell on a POSIX-compliant
+system, so would have to be adjusted appropriately for use on other systems
 such as Windows.
 
 Data
 ====
 
-The data for this tutorial are on Zenodo at https://zenodo.org/record/1250447.
-There are seven datasets from different lysozyme nanocrystals stored as gzipped
-tar archives. These should be downloaded and expanded to create seven
-directories containing the images, ``Lys_ED_Dataset_{1..7}``. We recommend
-doing data processing for each dataset in a separate directory from the images,
-for example ``Lys_ED_Dataset_1-dials-proc``. When referring to the data
-directories in commands listed in this tutorial we shall use an environment
-variable pointing to the parent directory. Assuming the current directory
-contains all of the dataset directories, we set that variable as follows in a
-bash shell:
+The data for this tutorial are available online at
+|lysozyme_nano|. There are seven datasets from different
+lysozyme nanocrystals stored as gzipped tar archives. These should be
+downloaded and expanded to create seven directories containing the images,
+``Lys_ED_Dataset_{1..7}``. We recommend doing data processing for each dataset
+in its own directory, separate from the images, for example
+``Lys_ED_Dataset_1-dials-proc``. When referring to the data directories in
+commands listed in this tutorial, we shall use an environment variable pointing
+to the parent directory. Assuming the current directory contains all of the
+downloaded and unpacked dataset directories, we set that variable as follows in
+a bash shell:
+
+.. |lysozyme_nano| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.1250447.svg
+                  :target: https://doi.org/10.5281/zenodo.1250447
 
 .. code-block:: bash
 
@@ -47,11 +53,10 @@ repository here: https://github.com/dials/dxtbx_ED_formats.
 
 We can make use of the dxtbx runtime plug-in system to pick the format class
 up automatically by saving it in a special directory, ``$HOME/.dxtbx/`` (for
-POSIX-compliant systems). For example (may require installation of curl),
+POSIX-compliant systems). For example (may require installation of curl):
 
 .. code-block:: bash
 
-  # Download the format class if needed
   if [ ! -f ~/.dxtbx/FormatCBFMiniTimepix.py ]; then
     mkdir -p ~/.dxtbx
     curl -o ~/.dxtbx/FormatCBFMiniTimepix.py https://raw.githubusercontent.com/dials/dxtbx_ED_formats/master/FormatCBFMiniTimepix.py
@@ -59,24 +64,27 @@ POSIX-compliant systems). For example (may require installation of curl),
 
 With the format class in place, we can look at images using
 :doc:`dials.image_viewer<../programs/dials_image_viewer>` and import them to
-create ``datablock.json``. However, for reasons outlined in the paper, the
+create a ``datablock.json``. However, for reasons outlined in the paper, the
 files have incomplete metadata. For successful processing, various aspects of
 the experimental geometry must be described during import so they override the
 dummy values supplied by the format class.
 
 One feature that is specific to electron diffraction is the possibility
-of distortion to the diffraction pattern introduced by the electron microscope
+of distortion of the diffraction pattern introduced by the electron microscope
 lens system. Previous investigation (https://doi.org/10.1107/S2059798317010348)
 determined that elliptical distortion affected six of the seven datasets. This
 distortion was constant across the affected datasets and the ellipse parameters
 were determined by calibration using powder ring patterns. DIALS can handle
 distortion in the image plane using a pair of look-up tables. To generate
 appropriate tables for the distortion correction required here, run the
-command::
+command:
 
-  dials.generate_distortion_maps Lys_ED_Dataset_2/frame_value_018.cbf mode=ellipse ellipse.phi=-21.0 ellipse.l1=1.0 ellipse.l2=0.956 ellipse.centre_xy=33.2475,33.2475
+.. code-block:: bash
 
-This will create the pair of files, ``dx.pickle`` and ``dy.pickle``. Import
+  dials.generate_distortion_maps Lys_ED_Dataset_2/frame_value_018.cbf mode=ellipse ellipse.phi=-21.0 \
+    ellipse.l1=1.0 ellipse.l2=0.956 ellipse.centre_xy=33.2475,33.2475
+
+This will create a pair of files, ``dx.pickle`` and ``dy.pickle``. Import
 commands for each dataset are then described in the following subsections,
 in each case assuming the directory has been changed to a specific processing
 directory.
@@ -100,14 +108,16 @@ file with parameters for :doc:`dials.import<../programs/dials_import>`
   }
   EOF
 
-Then we can import the dataset::
+Then we can import the dataset:
+
+.. code-block:: bash
 
   dials.import template=$DATA_PARENT/Lys_ED_Dataset_1/frame_value_###.cbf site.phil
 
 For this dataset, tests with spot-finding indicated a tendency to pick up noise
 along panel edges close to the beam centre. We created a mask interactively
 using the image viewer and saved its definition to another PHIL file. We can
-recreate that file as follows
+recreate that file now as follows:
 
 .. code-block:: bash
 
@@ -122,7 +132,9 @@ recreate that file as follows
   EOF
 
 We can now generate the mask using the ``datablock.json`` created earlier, then
-re-import including the mask::
+re-import including the mask:
+
+.. code-block:: bash
 
   dials.generate_mask mask.phil datablock.json
   dials.import template=$DATA_PARENT/Lys_ED_Dataset_1/frame_value_###.cbf site.phil mask=mask.pickle
@@ -234,7 +246,7 @@ Dataset 6
 
 Spot-finding settings for this weak dataset tended to pick up noise in the
 cross at the centre of Timepix quads. A mask was defined to blank these regions
-out
+out:
 
 .. code-block:: bash
 
@@ -257,7 +269,7 @@ out
   }
   EOF
 
-then a mask was generated, and used during re-import of the images
+then the mask was generated, and used during re-import of the images
 
 .. code-block:: bash
 
@@ -348,7 +360,7 @@ Dataset 3
   EOF
 
   dials.find_spots nproc=8 min_spot_size=10 filter.d_min=3.0 filter.d_max=25 \
-    initial_datablock.json find_spots.phil
+    datablock.json find_spots.phil
 
 Dataset 4
 ---------
@@ -368,7 +380,7 @@ Dataset 4
   EOF
 
   dials.find_spots nproc=8 min_spot_size=6 filter.d_min=2.5 filter.d_max=25 \
-    initial_datablock.json find_spots.phil
+    datablock.json find_spots.phil
 
 Dataset 5
 ---------
@@ -407,8 +419,8 @@ Dataset 6
   }
   EOF
 
-  dials.find_spots nproc=8 min_spot_size=8 max_spot_size=300 filter.d_min=3.0 \
-      filter.d_max=25 datablock.json find_spots.phil
+  dials.find_spots nproc=8 min_spot_size=8 max_spot_size=300 filter.d_min=3.0 filter.d_max=25 \
+    datablock.json find_spots.phil
 
 Dataset 7
 ---------
@@ -434,9 +446,9 @@ Indexing
 ========
 
 Refinement of the experimental geometry was stabilised by fixing the detector
-distance, and 'tilt' and 'twist' rotations. To do this, a PHIL parameter file
-was created in each processing directory for use in indexing and refinement
-steps.
+distance, and :math:`\tau_2` and :math:`\tau_3` rotations. To do this, a PHIL
+parameter file was created in each processing directory for use in indexing and
+refinement steps.
 
 .. code-block:: bash
 
@@ -453,8 +465,8 @@ steps.
 Datasets 1-5 & 7
 ----------------
 
-With that in place, an orthorhombic crystal model was determined and refined
-for all datasets, except dataset 6, with the following commands
+An orthorhombic crystal model was determined and refined for all datasets,
+except dataset 6, with the following commands:
 
 .. code-block:: bash
 
@@ -466,7 +478,7 @@ Dataset 6
 ---------
 
 This dataset has particularly poor diffraction. We found it was necessary to
-additionally fix the beam parameters, as well as provide the expected unit cell
+fix the beam parameters, as well as provide the expected unit cell
 during indexing and a fairly soft restraint to stop the cell constants
 drifting away from these values. The unit cell restraint was set up using a file
 of PHIL definitions:
@@ -496,7 +508,7 @@ of PHIL definitions:
   }
   EOF
 
-at this stage we did not impose additional lattice symmetry and kept the
+at this stage we did not impose additional lattice symmetry, so kept the
 triclinic solution from indexing and refinement::
 
   dials.index datablock.json strong.pickle refine.phil beam.fix=all restraint.phil unit_cell=32.05,68.05,104.56,90,90,90
@@ -509,24 +521,65 @@ For all these datasets there is significant uncertainty in the initial
 experimental model. Although indexing was successful in each case, the refined
 geometry shows some quite large differences compared with the initial geometry.
 This is immediately obvious from viewing the ``refined_experiments.json`` with
-the :doc:`dials.image_viewer<../programs/dials_image_viewer>`. We did not allow
-the orientation of the rotation axis to refine, so errors in that will have
-been compensated by changes in the detector orientation. The fact that the
-detector "fast" and "slow" are no longer aligned with the laboratory X and -Y
-axes does not negatively affect processing, but the fact that such large
-changes occurred means we chose to repeat indexing starting from
-the refined geometry. This is done by re-importing the dataset using the refined
-geometry as a reference. On re-import, the ``site.phil`` files are no longer
-required, except for the oscillation which is not taken from the reference
-file. The import commands differ for each dataset as follows:
+the :doc:`dials.image_viewer<../programs/dials_image_viewer>`. For example, here
+is one image from the first dataset:
 
-1. ``dials.import template=$DATA_PARENT/Lys_ED_Dataset_1/frame_value_###.cbf mask=mask.pickle reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.076``
-2. ``dials.import template=$DATA_PARENT/Lys_ED_Dataset_2/frame_value_###.cbf reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.1615 lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle``
-3. ``dials.import template=$DATA_PARENT/Lys_ED_Dataset_3/frame_value_###.cbf reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.0344 lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle``
-4. ``dials.import template=$DATA_PARENT/Lys_ED_Dataset_4/frame_value_###.cbf reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.0481 lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle``
-5. ``dials.import template=$DATA_PARENT/Lys_ED_Dataset_5/frame_value_###.cbf reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.0481 lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle``
-6. ``dials.import template=$DATA_PARENT/Lys_ED_Dataset_6/frame_value_###.cbf mask=mask.pickle reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.0481 lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle``
-7. ``dials.import template=$DATA_PARENT/Lys_ED_Dataset_7/frame_value_###.cbf reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.0481 lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle``
+.. image:: /figures/dials_for_ed/frame_value_438.png
+
+We did not allow the orientation of the rotation axis to refine, so errors in
+that will have been compensated by changes in the detector orientation. The
+:doc:`dials.image_viewer<../programs/dials_image_viewer>` displays the image as
+seen in the laboratory frame rather than the detector frame, so the image looks
+rotated. The fact that the detector "fast" and "slow" axes are no longer
+aligned with the laboratory X and -Y axes would not in itself negatively affect
+processing, but the fact that such large changes occurred during indexing meant
+we chose to repeat this process starting from the refined geometry. This can be
+done by re-importing the dataset using the refined geometry as a reference. On
+re-import, the ``site.phil`` files are no longer required, except for the
+oscillation which is not taken from the reference file. The import commands
+differ for each dataset as follows:
+
+1. .. code-block:: bash
+
+    dials.import template=$DATA_PARENT/Lys_ED_Dataset_1/frame_value_###.cbf mask=mask.pickle \
+      reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.076
+
+2. .. code-block:: bash
+
+    dials.import template=$DATA_PARENT/Lys_ED_Dataset_2/frame_value_###.cbf \
+      reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.1615 \
+      lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle
+
+3. .. code-block:: bash
+
+    dials.import template=$DATA_PARENT/Lys_ED_Dataset_3/frame_value_###.cbf \
+      reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.0344 \
+      lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle
+
+4. .. code-block:: bash
+
+    dials.import template=$DATA_PARENT/Lys_ED_Dataset_4/frame_value_###.cbf \
+      reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.0481 \
+      lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle
+
+5. .. code-block:: bash
+
+    dials.import template=$DATA_PARENT/Lys_ED_Dataset_5/frame_value_###.cbf \
+      reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.0481 \
+      lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle
+
+6. .. code-block:: bash
+
+    dials.import template=$DATA_PARENT/Lys_ED_Dataset_6/frame_value_###.cbf mask=mask.pickle \
+      reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.0481 \
+      lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle
+
+7. .. code-block:: bash
+
+    dials.import template=$DATA_PARENT/Lys_ED_Dataset_7/frame_value_###.cbf \
+      reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.0481 \
+      lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle
+
 
 After re-importing with refined geometry, indexing and refinement of an
 orthorhombic solution was done as before.
@@ -538,7 +591,8 @@ Datasets 1-5 & 7
 
   dials.index datablock.json strong.pickle refine.phil
   dials.refine_bravais_settings indexed.pickle experiments.json refine.phil
-  dials.refine bravais_setting_5.json indexed.pickle refine.phil output.experiments=static.json output.reflections=static.pickle
+  dials.refine bravais_setting_5.json indexed.pickle refine.phil \
+    output.experiments=static.json output.reflections=static.pickle
 
 Dataset 6
 ---------
@@ -551,7 +605,8 @@ restraint was still used.
 
   dials.index datablock.json strong.pickle refine.phil restraint.phil
   dials.refine_bravais_settings experiments.json indexed.pickle refine.phil
-  dials.refine bravais_setting_5.json indexed.pickle refine.phil restraint.phil output.experiments=static.json output.reflections=static.pickle
+  dials.refine bravais_setting_5.json indexed.pickle refine.phil restraint.phil \
+    output.experiments=static.json output.reflections=static.pickle
 
 Scan-varying refinement
 =======================
@@ -667,20 +722,99 @@ Varying beam, unit cell and crystal orientation:
     output.experiments=varying.json \
     output.reflections=varying.pickle
 
-Integration and MTZ export
-==========================
+Integration
+===========
 
-Integration varied for each dataset by resolution limit, but otherwise used
-default parameters:
+Integration differed for each dataset by resolution limit, but otherwise used
+default parameters. After integration MTZs were exported for downstream
+processing with CCP4.
 
-1. ``dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.0``
-2. ``dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.3``
-3. ``dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.3``
-4. ``dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.2``
-5. ``dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.2``
-6. ``dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.5``
-7. ``dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.5``
+1. .. code-block:: bash
 
-Following integration, MTZs were exported for each case using::
+    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.0
+    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_1.mtz
 
-  dials.export integrated_experiments.json integrated.pickle
+2. .. code-block:: bash
+
+    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.3
+    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_2.mtz
+
+3. .. code-block:: bash
+
+    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.3
+    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_3.mtz
+
+4. .. code-block:: bash
+
+    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.2
+    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_4.mtz
+
+5. .. code-block:: bash
+
+    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.2
+    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_5.mtz
+
+6. .. code-block:: bash
+
+    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.5
+    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_6.mtz
+
+7. .. code-block:: bash
+
+    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.5
+    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_7.mtz
+
+Scaling and merging
+===================
+
+The following commands assume the exported MTZs have been copied into a new
+directory together. Resolution limits were determined for each dataset
+individually, as described in the publication. These limits were then applied
+to the unscaled MTZs, while reindexing them to obtain the correct space group,
+:math:`P 2_1 2_1 2`:
+
+.. code-block:: bash
+
+  declare -A RES
+  RES[1]=2.0
+  RES[2]=2.89
+  RES[3]=2.85
+  RES[4]=2.77
+  RES[5]=2.64
+  RES[6]=3.20
+  RES[7]=3.0
+
+  for i in {1..7}
+  do
+    pointless hklin integrated_$i.mtz \
+      hklout sorted_$i.mtz > pointless_reindex_$i.log <<+
+  RESOLUTION HIGH ${RES[$i]}
+  REINDEX L,-K,H
+  SPACEGROUP 18
+  +
+  done
+
+The reindexed MTZs were combined and then scaled together with AIMLESS, setting
+an overall resolution limit of :math:`2.1 \unicode{x212B}`:
+
+.. code-block:: bash
+
+  pointless hklin sorted_1.mtz \
+            hklin sorted_2.mtz \
+            hklin sorted_3.mtz \
+            hklin sorted_4.mtz \
+            hklin sorted_5.mtz \
+            hklin sorted_6.mtz \
+            hklin sorted_7.mtz \
+      hklout combined.mtz > pointless_combine.log <<+
+  COPY
+  TOLERANCE 4
+  ALLOW OUTOFSEQUENCEFILES
+  +
+
+  aimless hklin combined.mtz hklout scaled.mtz > aimless.log <<+
+  resolution low 60 high 2.1
+  +
+
+The scaled, merged MTZ is now ready for structure solution by molecular
+replacement.
