@@ -34,6 +34,7 @@ contains all of the dataset directories, we set that variable as follows in a
 bash shell:
 
 .. code-block:: bash
+
   export DATA_PARENT=$(pwd)
 
 Import
@@ -57,7 +58,7 @@ POSIX-compliant systems). For example (may require installation of curl),
   fi
 
 With the format class in place, we can look at images using
-:doc:`dials.image_viewer<../programs/dials.image_viewer>` and import them to
+:doc:`dials.image_viewer<../programs/dials_image_viewer>` and import them to
 create ``datablock.json``. However, for reasons outlined in the paper, the
 files have incomplete metadata. For successful processing, various aspects of
 the experimental geometry must be described during import so they override the
@@ -101,7 +102,7 @@ file with parameters for :doc:`dials.import<../programs/dials_import>`
 
 Then we can import the dataset::
 
-dials.import template=$DATA_PARENT/Lys_ED_Dataset_1/frame_value_###.cbf site.phil
+  dials.import template=$DATA_PARENT/Lys_ED_Dataset_1/frame_value_###.cbf site.phil
 
 For this dataset, tests with spot-finding indicated a tendency to pick up noise
 along panel edges close to the beam centre. We created a mask interactively
@@ -156,7 +157,7 @@ Dataset 3
 For subsequent datasets the orientation of the rotation axis remains the same,
 but the oscillation widths and beam centres vary.
 
-.. code-block::bash
+.. code-block:: bash
 
   cat << EOF >site.phil
   geometry.scan.oscillation=0,0.0344
@@ -177,7 +178,7 @@ but the oscillation widths and beam centres vary.
 Dataset 4
 ---------
 
-.. code-block::bash
+.. code-block:: bash
 
   cat << EOF >site.phil
   geometry.scan.oscillation=0,0.0481
@@ -196,7 +197,7 @@ Dataset 4
 Dataset 5
 ---------
 
-.. code-block::bash
+.. code-block:: bash
 
   cat << EOF >site.phil
   geometry.scan.oscillation=0,0.0481
@@ -215,7 +216,7 @@ Dataset 5
 Dataset 6
 ---------
 
-.. code-block::bash
+.. code-block:: bash
 
   cat << EOF >site.phil
   geometry.scan.oscillation=0,0.0481
@@ -235,7 +236,7 @@ Spot-finding settings for this weak dataset tended to pick up noise in the
 cross at the centre of Timepix quads. A mask was defined to blank these regions
 out
 
-.. code-block::bash
+.. code-block:: bash
 
   cat <<EOF >mask.phil
   untrusted {
@@ -258,7 +259,7 @@ out
 
 then a mask was generated, and used during re-import of the images
 
-.. code-block::bash
+.. code-block:: bash
 
   dials.generate_mask mask.phil datablock.json
   dials.import template=$DATA_PARENT/Lys_ED_Dataset_6/frame_value_###.cbf site.phil mask=mask.pickle
@@ -266,7 +267,7 @@ then a mask was generated, and used during re-import of the images
 Dataset 7
 ---------
 
-.. code-block::bash
+.. code-block:: bash
 
   cat << EOF >site.phil
   geometry.scan.oscillation=0,0.0481
@@ -286,13 +287,13 @@ Spot-finding
 ============
 
 Suitable spot-finding settings were found interactively using the
-:doc:`dials.image_viewer<../programs/dials.image_viewer>`. The parameters used
+:doc:`dials.image_viewer<../programs/dials_image_viewer>`. The parameters used
 varied a little between datasets.
 
 Dataset 1
 ---------
 
-.. code-block::bash
+.. code-block:: bash
 
   cat <<EOF >find_spots.phil
   spotfinder {
@@ -312,7 +313,7 @@ Dataset 1
 Dataset 2
 ---------
 
-.. code-block::bash
+.. code-block:: bash
 
   cat <<EOF >find_spots.phil
   spotfinder {
@@ -332,7 +333,7 @@ Dataset 2
 Dataset 3
 ---------
 
-.. code-block::bash
+.. code-block:: bash
 
   cat <<EOF >find_spots.phil
   spotfinder {
@@ -352,7 +353,7 @@ Dataset 3
 Dataset 4
 ---------
 
-.. code-block::bash
+.. code-block:: bash
 
   cat <<EOF >find_spots.phil
   spotfinder {
@@ -372,7 +373,7 @@ Dataset 4
 Dataset 5
 ---------
 
-.. code-block::bash
+.. code-block:: bash
 
   cat <<EOF >find_spots.phil
   spotfinder {
@@ -392,7 +393,7 @@ Dataset 5
 Dataset 6
 ---------
 
-.. code-block::bash
+.. code-block:: bash
 
   cat <<EOF >find_spots.phil
   spotfinder {
@@ -412,7 +413,7 @@ Dataset 6
 Dataset 7
 ---------
 
-.. code-block::bash
+.. code-block:: bash
 
   cat <<EOF >find_spots.phil
   spotfinder {
@@ -437,7 +438,7 @@ distance, and 'tilt' and 'twist' rotations. To do this, a PHIL parameter file
 was created in each processing directory for use in indexing and refinement
 steps.
 
-.. code-block::bash
+.. code-block:: bash
 
   cat <<EOF >refine.phil
   refinement {
@@ -455,7 +456,7 @@ Datasets 1-5 & 7
 With that in place, an orthorhombic crystal model was determined and refined
 for all datasets, except dataset 6, with the following commands
 
-.. code-block::bash
+.. code-block:: bash
 
   dials.index datablock.json strong.pickle refine.phil
   dials.refine_bravais_settings indexed.pickle experiments.json refine.phil
@@ -470,7 +471,7 @@ during indexing and a fairly soft restraint to stop the cell constants
 drifting away from these values. The unit cell restraint was set up using a file
 of PHIL definitions:
 
-.. code-block::bash
+.. code-block:: bash
 
   cat <<EOF >restraint.phil
   refinement
@@ -493,7 +494,7 @@ of PHIL definitions:
       }
     }
   }
-EOF
+  EOF
 
 at this stage we did not impose additional lattice symmetry and kept the
 triclinic solution from indexing and refinement::
@@ -508,7 +509,7 @@ For all these datasets there is significant uncertainty in the initial
 experimental model. Although indexing was successful in each case, the refined
 geometry shows some quite large differences compared with the initial geometry.
 This is immediately obvious from viewing the ``refined_experiments.json`` with
-the :doc:`dials.image_viewer<../programs/dials.image_viewer>`. We did not allow
+the :doc:`dials.image_viewer<../programs/dials_image_viewer>`. We did not allow
 the orientation of the rotation axis to refine, so errors in that will have
 been compensated by changes in the detector orientation. The fact that the
 detector "fast" and "slow" are no longer aligned with the laboratory X and -Y
@@ -533,7 +534,7 @@ orthorhombic solution was done as before.
 Datasets 1-5 & 7
 ----------------
 
-.. code-block::bash
+.. code-block:: bash
 
   dials.index datablock.json strong.pickle refine.phil
   dials.refine_bravais_settings indexed.pickle experiments.json refine.phil
@@ -546,7 +547,7 @@ Starting from the refined geometry, it was no longer necessary to fix the
 beam parameters or provide the unit cell for indexing. However, the unit cell
 restraint was still used.
 
-.. code-block::bash
+.. code-block:: bash
 
   dials.index datablock.json strong.pickle refine.phil restraint.phil
   dials.refine_bravais_settings experiments.json indexed.pickle refine.phil
@@ -563,108 +564,108 @@ Dataset 1
 
 Varying beam, unit cell and crystal orientation:
 
-.. code-block::bash
+.. code-block:: bash
 
-dials.refine static.json static.pickle scan_varying=True \
-  detector.fix=all \
-  reflections.block_width=0.25 \
-  beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
-  beam.force_static=False \
-  beam.smoother.absolute_num_intervals=1 \
-  output.experiments=varying.json \
-  output.reflections=varying.pickle
+  dials.refine static.json static.pickle scan_varying=True \
+    detector.fix=all \
+    reflections.block_width=0.25 \
+    beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
+    beam.force_static=False \
+    beam.smoother.absolute_num_intervals=1 \
+    output.experiments=varying.json \
+    output.reflections=varying.pickle
 
 Dataset 2
 ---------
 
 Varying beam, unit cell and crystal orientation:
 
-.. code-block::bash
+.. code-block:: bash
 
-dials.refine static.json static.pickle scan_varying=True \
-  detector.fix=all \
-  reflections.block_width=0.25 \
-  beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
-  beam.force_static=False \
-  output.experiments=varying.json \
-  output.reflections=varying.pickle
+  dials.refine static.json static.pickle scan_varying=True \
+    detector.fix=all \
+    reflections.block_width=0.25 \
+    beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
+    beam.force_static=False \
+    output.experiments=varying.json \
+    output.reflections=varying.pickle
 
 Dataset 3
 ---------
 
 Varying beam and crystal orientation:
 
-.. code-block::bash
+.. code-block:: bash
 
-dials.refine static.json static.pickle scan_varying=True \
-  detector.fix=all \
-  reflections.block_width=0.25 \
-  beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
-  beam.force_static=False \
-  crystal.unit_cell.force_static=True \
-  output.experiments=varying.json \
-  output.reflections=varying.pickle
+  dials.refine static.json static.pickle scan_varying=True \
+    detector.fix=all \
+    reflections.block_width=0.25 \
+    beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
+    beam.force_static=False \
+    crystal.unit_cell.force_static=True \
+    output.experiments=varying.json \
+    output.reflections=varying.pickle
 
 Dataset 4
 ---------
 
 Varying crystal orientation:
 
-.. code-block::bash
+.. code-block:: bash
 
-dials.refine static.json static.pickle scan_varying=True \
-  detector.fix=all \
-  reflections.block_width=0.25 \
-  beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
-  crystal.unit_cell.force_static=True \
-  output.experiments=varying.json \
-  output.reflections=varying.pickle
+  dials.refine static.json static.pickle scan_varying=True \
+    detector.fix=all \
+    reflections.block_width=0.25 \
+    beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
+    crystal.unit_cell.force_static=True \
+    output.experiments=varying.json \
+    output.reflections=varying.pickle
 
 Dataset 5
 ---------
 
 Varying crystal orientation:
 
-.. code-block::bash
+.. code-block:: bash
 
-dials.refine static.json static.pickle scan_varying=True \
-  detector.fix=all \
-  reflections.block_width=0.25 \
-  beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
-  output.experiments=varying.json \
-  output.reflections=varying.pickle
+  dials.refine static.json static.pickle scan_varying=True \
+    detector.fix=all \
+    reflections.block_width=0.25 \
+    beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
+    output.experiments=varying.json \
+    output.reflections=varying.pickle
 
 Dataset 6
 ---------
 
 Varying beam and crystal orientation with static, restrained cell:
 
-.. code-block::bash
+.. code-block:: bash
 
-dials.refine static.json static.pickle scan_varying=True \
-  detector.fix=all \
-  reflections.block_width=0.25 \
-  beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
-  beam.force_static=False \
-  crystal.unit_cell.force_static=True \
-  restraint.phil \
-  output.experiments=varying.json \
-  output.reflections=varying.pickle
+  dials.refine static.json static.pickle scan_varying=True \
+    detector.fix=all \
+    reflections.block_width=0.25 \
+    beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
+    beam.force_static=False \
+    crystal.unit_cell.force_static=True \
+    restraint.phil \
+    output.experiments=varying.json \
+    output.reflections=varying.pickle
 
 Dataset 7
 ---------
 
 Varying beam, unit cell and crystal orientation:
 
-.. code-block::bash
+.. code-block:: bash
 
-dials.refine static.json static.pickle scan_varying=True \
-  detector.fix=all \
-  reflections.block_width=0.25 \
-  beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
-  beam.force_static=False \
-  output.experiments=varying.json \
-  output.reflections=varying.pickle
+  dials.refine static.json static.pickle scan_varying=True \
+    detector.fix=all \
+    reflections.block_width=0.25 \
+    beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
+    beam.force_static=False \
+    output.experiments=varying.json \
+    output.reflections=varying.pickle
 
 Integration and MTZ export
 ==========================
