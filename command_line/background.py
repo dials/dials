@@ -92,9 +92,12 @@ def run(args):
   if params.plot:
     from matplotlib import pyplot
     fig = pyplot.figure()
+    ax = fig.add_subplot(111)
+    ax.set_xlabel(r'$1/d^2$')
+    ax.set_ylabel(r'$\langle I_b \rangle$')
     for d, I, sig in zip(d_spacings, intensities, sigmas):
       ds2 = 1/flex.pow2(d)
-      pyplot.plot(ds2, I)
+      ax.plot(ds2, I)
 
     pyplot.show()
 
