@@ -21,6 +21,13 @@ n_bins = 100
 frames = None
   .type = int
   .multiple = True
+exclude_negative = True
+  .type = bool
+  .help = "Choose whether to exclude negative-valued pixels from the"
+          "calculation. This is appropriate for e.g. counting detectors where"
+          "negative-value pixels may be used as a flag to indicate bad data."
+          "For detector types where negative values are a valid measurement,"
+          "set this option to false to avoid excluding these pixels"
 plot = False
   .type = bool
 """, process_includes=True)
@@ -71,7 +78,8 @@ def run(args):
 
   for indx in images:
     print('For frame %d:' % indx)
-    d, I, sig = background(imageset, indx, n_bins=params.n_bins)
+    d, I, sig = background(imageset, indx, n_bins=params.n_bins,
+        exclude_negative=params.exclude_negative)
 
     print('%8s %8s %8s' % ('d', 'I', 'sig'))
     for j in range(len(I)):
@@ -90,7 +98,7 @@ def run(args):
 
     pyplot.show()
 
-def background(imageset, indx, n_bins):
+def background(imageset, indx, n_bins, exclude_negative=True):
   from dials.array_family import flex
   from libtbx.phil import parse
   from scitbx import matrix
@@ -115,7 +123,10 @@ def background(imageset, indx, n_bins):
   data = data[0]
   negative = (data < 0)
   hot = (data > int(round(trusted[1])))
-  bad = negative | hot
+  if exclude_negative:
+    bad = negative | hot
+  else:
+    bad = hot
 
   from dials.algorithms.spot_finding.factory import SpotFinderFactory
   from dials.algorithms.spot_finding.factory import phil_scope
