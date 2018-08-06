@@ -159,8 +159,9 @@ def background(imageset, indx, n_bins, exclude_negative=True):
 
   data = data.as_1d()
   two_theta_array = detector.get_two_theta_array(beam.get_s0())
-  two_theta_array.set_selected((bad | peak_pixels).iselection(), 0.0)
-  data.set_selected((bad | peak_pixels).iselection(), 0.0)
+  sel = (~(bad | peak_pixels)).iselection()
+  two_theta_array = two_theta_array.as_1d().select(sel)
+  data = data.select(sel)
 
   # new fangled flex.weighted_histogram :-)
   h0 = flex.weighted_histogram(two_theta_array, n_slots=n_bins)
