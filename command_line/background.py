@@ -153,9 +153,7 @@ def background(imageset, indx, n_bins, exclude_negative=True):
   # compute histogram of two-theta values, then same weighted
   # by pixel values, finally divide latter by former to get
   # the radial profile out, need to set the number of bins
-  # sensibly; flex.histogram does not allow weights so use
-  # numpy.histogram to get the same effect... inspired by
-  # method in PyFAI
+  # sensibly; inspired by method in PyFAI
 
   data = data.as_1d()
   two_theta_array = detector.get_two_theta_array(beam.get_s0())
@@ -163,7 +161,7 @@ def background(imageset, indx, n_bins, exclude_negative=True):
   two_theta_array = two_theta_array.as_1d().select(sel)
   data = data.select(sel)
 
-  # new fangled flex.weighted_histogram :-)
+  # Use flex.weighted_histogram
   h0 = flex.weighted_histogram(two_theta_array, n_slots=n_bins)
   h1 = flex.weighted_histogram(two_theta_array, data, n_slots=n_bins)
   h2 = flex.weighted_histogram(two_theta_array, data * data, n_slots=n_bins)
