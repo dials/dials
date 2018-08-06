@@ -1,31 +1,43 @@
 """
-Define classes to handle filtering and reduction of reflection table data from
-integrated/scaled pickle files to columns for export.
-Intended to replace the 'apply data filters' function of export_mtz.
+Module defining methods for filtering reflection tables, which are combined
+into functions to perform the relevant filtering on a reflection table, to
+produce a filtered reflection table ready for export or further processing.
 
-FilteringReductionMethod defines general filtering methods on reflection tables
-as staticmethods, which can be used elsewhere to exporting.
+The set of classes defined in this module have filtering methods implemented as
+classmethods/staticmethods, to allow easy use of individual methods. The
+different classes are to handle filtering of different intensity types - prf,
+scale, sum, prf + sum, etc. All functions and classmethods/staticmethods act on
+a reflection table, returning a reflection table that is typically a new object,
+due to the use of flex selections.
 
-FilterForExportAlgorithm defines a filter_for_export method/algorithm, and
-defines the abstract methods which must be defined for individual cases.
+Functions:
+  - filter_for_processing:
+      performs a full filtering algorithm for a given intensity choice
+  - filter_for_export:
+      as above, but unneeded intensity data columns are also removed
+  - sum_partial_reflections:
+      combines matching partials, replacing them with a single combined value
 
-Four cases are defined as separate classes for clarity, as there are subtleties
-to each case. The main differences are reduce_on_intensities and
-apply_scaling_factors. The filter_for_export method calls the namesake in
-FilterForExportAlgorithm, while allowing for different parameters to be defined
-for each case or even replacement of the algorithm for one case if required.
-Methods are implemented as class methods to allow general filtering/reduction
-of reflection tables for given intensity types.
+  the filtering functions take in the following parameters: min_isigi=float,
+  filter_ice_rings=bool, combine_partials=bool, partiality_threshold=float,
+  intensity_choice=strings (passed in as a list e.g. ['sum', 'prf'])
 
-Phil parameters needed to operate:
- - filter_ice_rings=False
- - min_isigi=None
- - combine_partials=True; flag to switch on/off partial combining
- - partiality_threshold=0.99; partials are summed (and scaled if summation int)
-    and if the total is below the partiality threshold then
- - intensities: *prf, sum, scale - choice, allow choice of both prf+sum, choice of
-    which intensities will be exported. scale is for exporting after scaling,
-    prf/sum for exporting after integration.
+Classes:
+  - FilteringReductionMethods:
+      a collection of staticmethods applicable to any kind of intensity values
+  - FilterForExportAlgorithm:
+      defines a full, general filtering algorithm for a reflection table
+  - PrfIntensityReducer:
+      implements methods specific to filtering of profile fitted (prf) intensities
+  - SumIntensityReducer
+      implements methods specific to filtering of summation (sum) intensities
+  - SumAndPrfIntensityReducer
+      implements filtering methods when using prf intensities if present, else
+      sum (per reflection)
+  - ScaleIntensityReducer
+      implements filtering methods for intensities output from scaling
+  - AllSumPrfScaleIntensityReducer
+      implements filtering methods for using all of prf, sum and scale intensities
 """
 import logging
 import abc
@@ -239,9 +251,9 @@ class PrfIntensityReducer(FilterForExportAlgorithm):
 
   @classmethod
   def filter_on_min_isigi(cls, reflection_table, min_isigi=None):
-    reflections = cls._filter_on_min_isigi(reflection_table,
+    reflection_table = cls._filter_on_min_isigi(reflection_table,
       cls.intensities[0], min_isigi)
-    return reflections
+    return reflection_table
 
   @classmethod
   def filter_bad_variances(cls, reflection_table):
