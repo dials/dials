@@ -70,8 +70,8 @@ def run(args):
     imagesets = experiments.imagesets()
 
   if len(imagesets) != 1:
-    raise Sorry("Please pass a datablock or an experiment list that contains "
-      "a single imageset")
+    raise Sorry("Please pass a datablock or experiment list that contains a "
+      "single imageset")
   imageset = imagesets[0]
 
   images = imageset.indices()
@@ -149,7 +149,8 @@ def background(imageset, indx, n_bins, exclude_negative=True):
     spot_params, datablock.DataBlock([imageset]))
   peak_pixels = threshold_function.compute_threshold(data, ~bad)
   signal = data.select(peak_pixels.iselection())
-  background = data.select((~bad & ~peak_pixels).iselection())
+  background_pixels = (~bad & ~peak_pixels)
+  background = data.select(background_pixels.iselection())
 
   # print some summary information
   print('Mean background: %.3f' % (flex.sum(background) / background.size()))
@@ -164,16 +165,13 @@ def background(imageset, indx, n_bins, exclude_negative=True):
   # the radial profile out, need to set the number of bins
   # sensibly; inspired by method in PyFAI
 
-  data = data.as_1d()
   two_theta_array = detector.get_two_theta_array(beam.get_s0())
-  sel = (~(bad | peak_pixels)).iselection()
-  two_theta_array = two_theta_array.as_1d().select(sel)
-  data = data.select(sel)
+  two_theta_array = two_theta_array.as_1d().select(background_pixels.iselection())
 
   # Use flex.weighted_histogram
   h0 = flex.weighted_histogram(two_theta_array, n_slots=n_bins)
-  h1 = flex.weighted_histogram(two_theta_array, data, n_slots=n_bins)
-  h2 = flex.weighted_histogram(two_theta_array, data * data, n_slots=n_bins)
+  h1 = flex.weighted_histogram(two_theta_array, background, n_slots=n_bins)
+  h2 = flex.weighted_histogram(two_theta_array, background * background, n_slots=n_bins)
 
   d0 = h0.slots()
   d1 = h1.slots()
