@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from libtbx.utils import Sorry
-from dials.util.filter_and_reduce_reflections import filter_for_export
+from dials.util.filter_reflections import filter_reflection_table
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ def export_sadabs(integrated_data, experiment_list, params):
   integrated_data = integrated_data.select(integrated_data['id'] >= 0)
   assert max(integrated_data['id']) == 0
 
-  integrated_data = filter_for_export(integrated_data,
+  integrated_data = filter_reflection_table(integrated_data,
     intensity_choice=params.intensity,
     partiality_threshold=params.mtz.partiality_threshold,
     combine_partials=params.mtz.combine_partials,

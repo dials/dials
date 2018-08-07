@@ -9,7 +9,7 @@ from math import ceil, cos, floor, log, pi, sin, sqrt
 
 from dials.array_family import flex
 from dials.util.version import dials_version
-from dials.util.filter_and_reduce_reflections import filter_for_export
+from dials.util.filter_reflections import filter_reflection_table
 from iotbx import mtz
 from libtbx.utils import Sorry
 from scitbx import matrix
@@ -290,6 +290,8 @@ def _write_columns(mtz_file, dataset, integrated_data):
     dataset.add_column('QE', type_table['QE']).set_values(integrated_data['qe'].as_float())
   elif 'dqe' in integrated_data:
     dataset.add_column('QE', type_table['QE']).set_values(integrated_data['dqe'].as_float())
+  else:
+    dataset.add_column('QE', type_table['QE']).set_values(flex.double(nref, 1.0).as_float())
 
 def _next_epoch(val):
   """Find a reasonably round epoch a small number above an existing one.
@@ -381,7 +383,7 @@ def export_mtz(integrated_data, experiment_list, params):
     logger.warning('Warning: Ignoring multiple panels in output MTZ')
 
   # Clean up the data with the passed in options
-  integrated_data = filter_for_export(integrated_data,
+  integrated_data = filter_reflection_table(integrated_data,
     intensity_choice=params.intensity, 
     partiality_threshold=params.mtz.partiality_threshold,
     combine_partials=params.mtz.combine_partials,

@@ -31,12 +31,11 @@ import pytest
 import mock
 from libtbx.utils import Sorry
 from dials.array_family import flex
-from dials.util.filter_and_reduce_reflections import \
+from dials.util.filter_reflections import \
   FilteringReductionMethods, FilterForExportAlgorithm, SumIntensityReducer, \
   PrfIntensityReducer, SumAndPrfIntensityReducer, ScaleIntensityReducer, \
-  filter_for_export, sum_partial_reflections, _sum_prf_partials, \
-  _sum_sum_partials, _sum_scale_partials, AllSumPrfScaleIntensityReducer, \
-  filter_for_processing
+  filter_reflection_table, sum_partial_reflections, _sum_prf_partials, \
+  _sum_sum_partials, _sum_scale_partials, AllSumPrfScaleIntensityReducer
 
 def generate_simple_table():
   """Generate a simple table for testing export function."""
@@ -93,7 +92,7 @@ def generate_test_reflections_for_scaling():
   r['partial_id'] = flex.int([0, 1, 2, 3, 4, 5, 6])
   return r
 
-fpath = 'dials.util.filter_and_reduce_reflections'
+fpath = 'dials.util.filter_reflections'
 
 def test_IntensityReducer_instantiations():
   """Test that all classes can be instantiated (have the required implemented
@@ -207,7 +206,6 @@ def test_PrfIntensityReducer():
 
   assert list(reflections['fractioncalc']) == [1.0] * 4
 
-  reflections = PrfIntensityReducer.delete_other_intensity_columns(reflections)
   assert not 'intensity.sum.value' in reflections
   assert not 'intensity.scale.value' in reflections
   assert not 'intensity.sum.variance' in reflections
@@ -254,7 +252,6 @@ def test_SumIntensityReducer():
   assert list(reflections['intensity.sum.variance']) == pytest.approx(
     [4.4, 4.8, 20.8])
 
-  reflections = SumIntensityReducer.delete_other_intensity_columns(reflections)
   assert not 'intensity.prf.value' in reflections
   assert not 'intensity.scale.value' in reflections
   assert not 'intensity.prf.variance' in reflections
@@ -299,7 +296,6 @@ def test_SumAndPrfIntensityReducer():
   # test filtering for export
   reflections = generate_integrated_test_reflections()
   reflections = SumAndPrfIntensityReducer.filter_for_export(reflections)
-  reflections = SumAndPrfIntensityReducer.delete_other_intensity_columns(reflections)
   assert not 'intensity.scale.value' in reflections
   assert not 'intensity.scale.variance' in reflections
 
@@ -349,7 +345,6 @@ def test_ScaleIntensityReducer():
   assert list(reflections['intensity.scale.variance']) == pytest.approx(
     [2.3/25.0, 0.024, 0.025])
 
-  reflections = ScaleIntensityReducer.delete_other_intensity_columns(reflections)
   assert not 'intensity.prf.value' in reflections
   assert not 'intensity.sum.value' in reflections
   assert not 'intensity.prf.variance' in reflections
@@ -372,53 +367,35 @@ def test_AllSumPrfScaleIntensityReducer():
   assert list(reflections['intensity.sum.value']) == [13.0]
   assert list(reflections['intensity.sum.variance']) == [1.3]
 
-def test_filter_for_export():
+def test_filter_reflection_table():
   """Test the interface function"""
   reflections = generate_integrated_test_reflections()
-  reflections = filter_for_export(reflections, ['sum'])
+  reflections = filter_reflection_table(reflections, ['sum'])
   assert  'intensity.sum.value' in reflections
   assert not 'intensity.prf.value' in reflections
   assert not 'intensity.scale.value' in reflections
   reflections = generate_integrated_test_reflections()
-  reflections = filter_for_export(reflections, ['prf'])
+  reflections = filter_reflection_table(reflections, ['prf'])
   assert  'intensity.prf.value' in reflections
   assert not 'intensity.sum.value' in reflections
   assert not 'intensity.scale.value' in reflections
   reflections = generate_integrated_test_reflections()
-  reflections = filter_for_export(reflections, ['scale'])
+  reflections = filter_reflection_table(reflections, ['scale'])
   assert  'intensity.scale.value' in reflections
   assert not 'intensity.prf.value' in reflections
   assert not 'intensity.sum.value' in reflections
   reflections = generate_integrated_test_reflections()
-  reflections = filter_for_export(reflections, ['sum', 'prf'])
+  reflections = filter_reflection_table(reflections, ['sum', 'prf'])
   assert  'intensity.sum.value' in reflections
   assert  'intensity.prf.value' in reflections
   assert not 'intensity.scale.value' in reflections
   reflections = generate_integrated_test_reflections()
-  reflections = filter_for_export(reflections, ['sum', 'prf', 'scale'])
+  reflections = filter_reflection_table(reflections, ['sum', 'prf', 'scale'])
   assert 'intensity.sum.value' in reflections
   assert 'intensity.prf.value' in reflections
   assert 'intensity.scale.value' in reflections
   with pytest.raises(Sorry):
-    reflections = filter_for_export(reflections, ['bad'])
-
-def test_filter_for_processing():
-  """Test the interface function"""
-  intensities = ['intensity.sum.value', 'intensity.prf.value',
-    'intensity.scale.value']
-  reflections = generate_integrated_test_reflections()
-  reflections = filter_for_processing(reflections, ['sum'])
-  assert all([i in reflections for i in intensities])
-  reflections = filter_for_processing(reflections, ['prf'])
-  assert all([i in reflections for i in intensities])
-  reflections = generate_integrated_test_reflections()
-  reflections = filter_for_processing(reflections, ['scale'])
-  assert all([i in reflections for i in intensities])
-  reflections = generate_integrated_test_reflections()
-  reflections = filter_for_processing(reflections, ['sum', 'prf'])
-  assert all([i in reflections for i in intensities])
-  with pytest.raises(Sorry):
-    reflections = filter_for_processing(reflections, ['bad'])
+    reflections = filter_reflection_table(reflections, ['bad'])
 
 def return_reflections_side_effect(reflections, *args, **kwargs):
   """Side effect for overriding the call to reject_outliers."""

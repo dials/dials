@@ -51,6 +51,10 @@ relative_length_tolerance = 0.05
 absolute_angle_tolerance = 2
   .type = float(value_min=0)
 
+partiality_threshold = 0.99
+  .type = float
+  .help = "Use reflections with a partiality above the threshold."
+
 output {
   log = dials.symmetry.log
     .type = str
@@ -130,7 +134,7 @@ def run(args):
         unit_cell=expt.crystal.get_unit_cell(),
         space_group=expt.crystal.get_space_group())
 
-      from dials.util.filter_and_reduce_reflections import filter_for_processing
+      from dials.util.filter_reflections import filter_reflection_table
       if 'intensity.scale.value' in refl:
         intensity_choice = ['scale']
         intensity_to_use = 'scale'
@@ -143,9 +147,9 @@ def run(args):
         else:
           intensity_to_use = 'sum'
 
-      refl = filter_for_processing(refl, intensity_choice, min_isigi=-5,
+      refl = filter_reflection_table(refl, intensity_choice, min_isigi=-5,
         filter_ice_rings=False, combine_partials=True,
-        partiality_threshold=0.5)
+        partiality_threshold=params.partiality_threshold)
       data = refl['intensity.'+intensity_to_use+'.value']
       variances = refl['intensity.'+intensity_to_use+'.variance']
 

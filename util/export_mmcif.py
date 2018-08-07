@@ -6,7 +6,7 @@ import math
 
 import dials.util.version
 from dials.array_family import flex
-from dials.util.filter_and_reduce_reflections import filter_for_export
+from dials.util.filter_reflections import filter_reflection_table
 import iotbx.cif.model
 from cctbx.sgtbx import bravais_types
 
@@ -40,7 +40,7 @@ class MMCIFOutputFile(object):
 
     ### Assumes you want to apply the lp and dqe corrections to sum and prf
     ### Do we want to combine partials?
-    reflections = filter_for_export(reflections, self.params.intensity,
+    reflections = filter_reflection_table(reflections, self.params.intensity,
       combine_partials=False, partiality_threshold=0.0)
 
     # Get the cif block

@@ -11,14 +11,12 @@ a reflection table, returning a reflection table that is typically a new object,
 due to the use of flex selections.
 
 Functions:
-  - filter_for_processing:
+  - filter_reflection_table:
       performs a full filtering algorithm for a given intensity choice
-  - filter_for_export:
-      as above, but unneeded intensity data columns are also removed
   - sum_partial_reflections:
       combines matching partials, replacing them with a single combined value
 
-  the filtering functions take in the following parameters: min_isigi=float,
+  filter_reflection_table takes in the following parameters: min_isigi=float,
   filter_ice_rings=bool, combine_partials=bool, partiality_threshold=float,
   intensity_choice=strings (passed in as a list e.g. ['sum', 'prf'])
 
@@ -43,25 +41,13 @@ import logging
 import abc
 from collections import defaultdict
 from libtbx.utils import Sorry
+from libtbx.table_utils import simple_table
 from dials.array_family import flex
 
 logger = logging.getLogger('dials')
 
-def filter_for_export(reflection_table, intensity_choice=['scale'],
-  *args, **kwargs):
+def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs):
   """Filter the data and delete unneeded intensity columns."""
-  return _filter_function(reflection_table, intensity_choice=intensity_choice,
-    remove_other_intensity_columns=True, *args, **kwargs)
-
-def filter_for_processing(reflection_table, intensity_choice=['scale'],
-  *args, **kwargs):
-  """Filter the data but keep unneeded intensity columns, to allow the
-  possibility of further processing within DIALS"""
-  return _filter_function(reflection_table, intensity_choice=intensity_choice,
-    remove_other_intensity_columns=False, *args, **kwargs)
-
-def _filter_function(reflection_table, intensity_choice,
-  remove_other_intensity_columns=True, *args, **kwargs):
   if intensity_choice == ['scale']:
     reducer = ScaleIntensityReducer
   elif intensity_choice == ['sum']:
@@ -78,9 +64,8 @@ def _filter_function(reflection_table, intensity_choice,
       "must be either: 'scale', 'prf', 'sum', 'prf sum' or 'prf sum scale'\n"
       "(if parsing from command line, multiple choices passed as e.g. prf+sum"
       ).format(intensity_choice))
-  if remove_other_intensity_columns:
-    reflection_table = reducer.delete_other_intensity_columns(reflection_table)
-  return reducer.filter_for_export(reflection_table, *args, **kwargs)
+  reflection_table = reducer.filter_for_export(reflection_table, *args, **kwargs)
+  return reflection_table
 
 class FilteringReductionMethods(object):
 
@@ -153,7 +138,16 @@ class FilteringReductionMethods(object):
     if 'partiality' in reflection_table:
       reflection_table['fractioncalc'] = reflection_table['partiality']
       if combine_partials:
-        reflection_table = sum_partial_reflections(reflection_table)
+        dataset_ids = set(reflection_table['id'])
+        n_datasets = len(dataset_ids)
+        if n_datasets > 1:
+          total_reflection_table = flex.reflection_table()
+          for id_ in dataset_ids:
+            single_table = reflection_table.select(reflection_table['id'] == id_)
+            total_reflection_table.extend(sum_partial_reflections(single_table))
+          reflection_table = total_reflection_table
+        else:
+          reflection_table = sum_partial_reflections(reflection_table)
         reflection_table['fractioncalc'] = reflection_table['partiality']
       selection = reflection_table['partiality'] < partiality_threshold
       if selection.count(True) > 0:
@@ -176,21 +170,8 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
   # of a subset of the allowed intensities.
 
   @classmethod
-  def delete_other_intensity_columns(cls, reflection_table):
-    for intensity in cls.allowed_intensities:
-      if intensity not in cls.intensities:
-        if 'intensity.'+intensity+'.value' in reflection_table:
-          del reflection_table['intensity.'+intensity+'.value']
-          del reflection_table['intensity.'+intensity+'.variance']
-      else:
-        msg = ('No intensity.'+intensity+' values found in reflection table')
-        assert 'intensity.'+intensity+'.value' in reflection_table, msg
-        assert 'intensity.'+intensity+'.variance' in reflection_table, msg
-    return reflection_table
-
-  @classmethod
-  def _filter_for_export(cls, reflection_table, min_isigi=None,
-    filter_ice_rings=False, combine_partials=True, partiality_threshold=0.99):
+  def _filter_for_export(cls, reflection_table, min_isigi=None, filter_ice_rings=False,
+    combine_partials=True, partiality_threshold=0.99):
     """Designed to be called by subclasses"""
     assert reflection_table.size() > 0, \
       """Empty reflection table given to reduce_data_for_export function"""
@@ -201,6 +182,16 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
     if reflection_table.size() == 0:
       raise Sorry('No suitable reflections found for intensity choice: %s' % \
         ' '.join(['intensity.'+i+'.value' for i in cls.intensities]))
+
+    for intensity in cls.allowed_intensities:
+      if intensity not in cls.intensities:
+        if 'intensity.'+intensity+'.value' in reflection_table:
+          del reflection_table['intensity.'+intensity+'.value']
+          del reflection_table['intensity.'+intensity+'.variance']
+      else:
+        msg = ('No intensity.'+intensity+' values found in reflection table')
+        assert 'intensity.'+intensity+'.value' in reflection_table, msg
+        assert 'intensity.'+intensity+'.variance' in reflection_table, msg
 
     reflection_table = cls.filter_bad_variances(reflection_table)
     if filter_ice_rings:
@@ -519,9 +510,21 @@ def sum_partial_reflections(reflection_table):
     if len(partial_map[p_id]) > 1:
       partial_ids.append(p_id)
 
+  header = ["Partial id", "Partiality"]
+  for i in intensities:
+    header.extend([str(i)+" intensity", str(i)+" variance"])
+  rows = []
+
   # Now loop through 'matched' partials, summing and then deleting before return
   for p_id in partial_ids:
     j = partial_map[p_id]
+    for i in j:
+      data = [str(p_id), str(reflection_table['partiality'][i])]
+      for intensity in intensities:
+        data.extend([str(reflection_table['intensity.'+intensity+'.value'][i]),
+          str(reflection_table['intensity.'+intensity+'.variance'][i])])
+      rows.append(data)
+
     # do the summing of the partiality values separately to allow looping
     # over multiple times 
     total_partiality = sum([reflection_table['partiality'][i] for i in j])
@@ -535,7 +538,16 @@ def sum_partial_reflections(reflection_table):
     # to one (except for summation case?)
     reflection_table['partiality'][j[0]] = total_partiality
     delete.extend(flex.size_t(j[1:]))
+    data = ['combined '+str(p_id), str(total_partiality)]
+    for intensity in intensities:
+      data.extend([str(reflection_table['intensity.'+intensity+'.value'][j[0]]),
+        str(reflection_table['intensity.'+intensity+'.variance'][j[0]])])
+    rows.append(data)
   reflection_table.del_selected(delete)
+
+  logger.debug('\nSummary of combination of partial reflections')
+  st = simple_table(rows, header)
+  logger.debug(st.format())
   return reflection_table
 
 # FIXME what are the correct weights to use for the different cases? - why

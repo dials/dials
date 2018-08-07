@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from libtbx.utils import Sorry
-from dials.util.filter_and_reduce_reflections import filter_for_export, \
+from dials.util.filter_reflections import filter_reflection_table, \
   FilteringReductionMethods
 
 logger = logging.getLogger(__name__)
@@ -23,14 +23,14 @@ def export_xds_ascii(integrated_data, experiment_list, params, var_model=(1,0)):
   integrated_data = integrated_data.select(integrated_data['id'] >= 0)
   assert max(integrated_data['id']) == 0
 
-  integrated_data = filter_for_export(integrated_data,
+  integrated_data = filter_reflection_table(integrated_data,
     intensity_choice=params.intensity,
     partiality_threshold=params.mtz.partiality_threshold,
     combine_partials=params.mtz.combine_partials,
     min_isigi=params.mtz.min_isigi, filter_ice_rings=params.mtz.filter_ice_rings)
   
   # calculate the scl = lp/dqe correction for outputting but don't apply it as
-  # it has already been applied in filter_for_export
+  # it has already been applied in filter_reflection_table
   integrated_data, scl = FilteringReductionMethods.calculate_lp_qe_correction_and_filter(
     integrated_data) 
 
