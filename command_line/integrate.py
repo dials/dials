@@ -359,10 +359,25 @@ class Script(object):
 
     if params.significance_filter.enable:
       from dials.algorithms.integration.stills_significance_filter import SignificanceFilter
+      from dxtbx.model.experiment_list import ExperimentList
       sig_filter = SignificanceFilter(params)
-      refls = sig_filter(experiments, reflections)
-      logger.info("Removed %d reflections out of %d when applying significance filter"%(len(reflections)-len(refls), len(reflections)))
-      reflections = refls
+      filtered_refls = sig_filter(experiments, reflections)
+      accepted_expts = ExperimentList()
+      accepted_refls = flex.reflection_table()
+      logger.info("Removed %d reflections out of %d when applying significance filter"%(len(reflections)-len(filtered_refls), len(reflections)))
+      for expt_id, expt in enumerate(experiments):
+        refls = filtered_refls.select(filtered_refls['id'] == expt_id)
+        if len(refls) > 0:
+          accepted_expts.append(expt)
+          refls['id'] = flex.int(len(refls), len(accepted_expts)-1)
+          accepted_refls.extend(refls)
+        else:
+          logger.info("Removed experiment %d which has no reflections left after applying significance filter"%expt_id)
+
+      if len(accepted_refls) == 0:
+        raise Sorry("No reflections left after applying significance filter")
+      experiments = accepted_expts
+      reflections = accepted_refls
 
     # Delete the shoeboxes used for intermediate calculations, if requested
     if params.integration.debug.delete_shoeboxes and 'shoebox' in reflections:
