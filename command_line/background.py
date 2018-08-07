@@ -99,11 +99,16 @@ def run(args):
     from matplotlib import pyplot
     fig = pyplot.figure()
     ax = fig.add_subplot(111)
-    ax.set_xlabel(r'$1/d^2$')
+    ax.set_xlabel(r'resolution ($\AA$)')
     ax.set_ylabel(r'$\langle I_b \rangle$')
     for d, I, sig in zip(d_spacings, intensities, sigmas):
       ds2 = 1/flex.pow2(d)
       ax.plot(ds2, I)
+    xticks = ax.get_xticks()
+    from math import sqrt
+    x_tick_labs = ["" if e <= 0.0 else "{:.2f}".format(sqrt(1./e))
+                   for e in xticks]
+    ax.set_xticklabels(x_tick_labs)
 
     pyplot.show()
 
