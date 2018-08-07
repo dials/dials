@@ -21,15 +21,12 @@ n_bins = 100
 frames = None
   .type = int
   .multiple = True
-exclude_negative = True
-  .type = bool
-  .help = "Choose whether to exclude negative-valued pixels from the"
-          "calculation. This is appropriate for e.g. counting detectors where"
-          "negative-value pixels may be used as a flag to indicate bad data."
-          "For detector types where negative values are a valid measurement,"
-          "set this option to false to avoid excluding these pixels"
 plot = False
   .type = bool
+
+masking {
+  include scope dials.util.masking.phil_scope
+}
 """, process_includes=True)
 
 def main():
@@ -85,7 +82,7 @@ def run(args):
   for indx in images:
     print('For frame %d:' % indx)
     d, I, sig = background(imageset, indx, n_bins=params.n_bins,
-        exclude_negative=params.exclude_negative)
+        mask_params=params.masking)
 
     print('%8s %8s %8s' % ('d', 'I', 'sig'))
     for j in range(len(I)):
@@ -112,17 +109,29 @@ def run(args):
 
     pyplot.show()
 
-def background(imageset, indx, n_bins, exclude_negative=True):
+def background(imageset, indx, n_bins, mask_params=None):
   from dials.array_family import flex
   from libtbx.phil import parse
   from scitbx import matrix
   import math
 
+  if mask_params is None:
+    # Default mask params for trusted range
+    mask_params = phil_scope.extract().masking
+    # Work around different result from extract() vs the OptionParser
+    if mask_params.resolution_range == [None]:
+      mask_params.resolution_range = []
+
+  from dials.util.masking import MaskGenerator
+  mask_generator = MaskGenerator(mask_params)
+  mask = mask_generator.generate(imageset)
+
   detector = imageset.get_detector()
   beam = imageset.get_beam()
+  # Only working with single panel detector for now
   assert(len(detector) == 1)
   detector = detector[0]
-  trusted = detector.get_trusted_range()
+  mask = mask[0]
 
   n = matrix.col(detector.get_normal()).normalize()
   b = matrix.col(beam.get_s0()).normalize()
@@ -135,35 +144,29 @@ def background(imageset, indx, n_bins, exclude_negative=True):
   data = imageset.get_raw_data(indx)
   assert(len(data) == 1)
   data = data[0]
-  negative = (data < 0)
-  hot = (data > int(round(trusted[1])))
-  if exclude_negative:
-    bad = negative | hot
-  else:
-    bad = hot
 
   from dials.algorithms.spot_finding.factory import SpotFinderFactory
-  from dials.algorithms.spot_finding.factory import phil_scope
+  from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
 
   data = data.as_double()
 
   from dxtbx import datablock
 
-  spot_params = phil_scope.fetch(source=parse("")).extract()
+  spot_params = spot_phil.fetch(source=parse("")).extract()
   threshold_function = SpotFinderFactory.configure_threshold(
     spot_params, datablock.DataBlock([imageset]))
-  peak_pixels = threshold_function.compute_threshold(data, ~bad)
+  peak_pixels = threshold_function.compute_threshold(data, mask)
   signal = data.select(peak_pixels.iselection())
-  background_pixels = (~bad & ~peak_pixels)
+  background_pixels = (mask & ~peak_pixels)
   background = data.select(background_pixels.iselection())
 
   # print some summary information
   print('Mean background: %.3f' % (flex.sum(background) / background.size()))
   print('Max/total signal pixels: %.0f / %.0f' % (flex.max(signal),
                                                   flex.sum(signal)))
-  print('Peak/background/hot pixels: %d / %d / %d' % (peak_pixels.count(True),
+  print('Peak/background/masked pixels: %d / %d / %d' % (peak_pixels.count(True),
                                                       background.size(),
-                                                      hot.count(True)))
+                                                      mask.count(False)))
 
   # compute histogram of two-theta values, then same weighted
   # by pixel values, finally divide latter by former to get
