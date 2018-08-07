@@ -39,7 +39,7 @@ def main():
 def run(args):
 
   from dials.util.options import OptionParser
-  from dials.util.options import flatten_datablocks
+  from dials.util.options import flatten_datablocks, flatten_experiments
   import libtbx.load_env
 
   usage = "%s [options] image_*.cbf" % (
@@ -50,22 +50,28 @@ def run(args):
     phil=phil_scope,
     read_datablocks=True,
     read_datablocks_from_images=True,
+    read_experiments=True,
     epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
+
+  # Ensure we have either a data block or an experiment list
+  experiments = flatten_experiments(params.input.experiments)
   datablocks = flatten_datablocks(params.input.datablock)
+  if [len(datablocks), len(experiments)].count(1) != 1:
+      self.parser.print_help()
+      print("Please pass either a datablock or an experiment list\n")
+      return
 
-  if len(datablocks) == 0 and len(experiments) == 0 and len(reflections) == 0:
-    parser.print_help()
-    exit()
+  if datablocks:
+    datablock = datablocks[0]
+    imagesets = datablock.extract_imagesets()
+  else:
+    imagesets = experiments.imagesets()
 
-  assert(len(datablocks) == 1)
-
-  datablock = datablocks[0]
-  imagesets = datablock.extract_imagesets()
-
-  assert(len(imagesets) == 1)
-
+  if len(imagesets) != 1:
+    raise Sorry("Please pass a datablock or an experiment list that contains "
+      "a single imageset")
   imageset = imagesets[0]
 
   images = imageset.indices()
