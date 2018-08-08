@@ -117,10 +117,7 @@ def background(imageset, indx, n_bins, mask_params=None):
 
   if mask_params is None:
     # Default mask params for trusted range
-    mask_params = phil_scope.extract().masking
-    # Work around different result from extract() vs the OptionParser
-    if mask_params.resolution_range == [None]:
-      mask_params.resolution_range = []
+    mask_params = phil_scope.fetch(parse("")).extract().masking
 
   from dials.util.masking import MaskGenerator
   mask_generator = MaskGenerator(mask_params)
