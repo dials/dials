@@ -127,10 +127,10 @@ def background(imageset, indx, n_bins, mask_params=None):
   beam = imageset.get_beam()
   # Only working with single panel detector for now
   assert(len(detector) == 1)
-  detector = detector[0]
+  panel = detector[0]
   mask = mask[0]
 
-  n = matrix.col(detector.get_normal()).normalize()
+  n = matrix.col(panel.get_normal()).normalize()
   b = matrix.col(beam.get_s0()).normalize()
   wavelength = beam.get_wavelength()
 
@@ -170,7 +170,7 @@ def background(imageset, indx, n_bins, mask_params=None):
   # the radial profile out, need to set the number of bins
   # sensibly; inspired by method in PyFAI
 
-  two_theta_array = detector.get_two_theta_array(beam.get_s0())
+  two_theta_array = panel.get_two_theta_array(beam.get_s0())
   two_theta_array = two_theta_array.as_1d().select(background_pixels.iselection())
 
   # Use flex.weighted_histogram
