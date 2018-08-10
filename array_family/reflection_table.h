@@ -153,6 +153,11 @@ namespace dials { namespace af {
     OutlierInScaling = (1 << 23),
     ExcludedForScaling = (1 << 24),
     BadForScaling = UserExcludedInScaling | OutlierInScaling | ExcludedForScaling,
+
+    // Excluded by refinement
+    ExcludedForRefinement = (1 << 25),
+    BadForRefinement = ExcludedForRefinement | CentroidOutlier,
+
   };
 
 }} // namespace dials::af

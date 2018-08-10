@@ -971,6 +971,8 @@ namespace dials { namespace af { namespace boost_python {
         .value("outlier_in_scaling", OutlierInScaling)
         .value("excluded_for_scaling", ExcludedForScaling)
         .value("bad_for_scaling", BadForScaling)
+        .value("excluded_for_refinement", ExcludedForRefinement)
+        .value("bad_for_refinement", BadForRefinement)
         ;
 
       // return the wrapped class
