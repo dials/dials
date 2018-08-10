@@ -225,7 +225,13 @@ class ReflectionManager(object):
     # put full list of indexed reflections aside and select only the reflections
     # that were not excluded to manage
     self._indexed = reflections
-    self._reflections = reflections.select(flex.size_t(refs_to_keep))
+    self._reflections = reflections.select(refs_to_keep)
+
+    # set exclusion flag for reflections that failed the tests
+    refs_to_excl = flex.bool(len(self._indexed), True)
+    refs_to_excl.set_selected(refs_to_keep, False)
+    self._indexed.set_flags(refs_to_excl,
+        self._indexed.flags.excluded_for_refinement)
 
     # set weights for all kept reflections
     if weighting_strategy_override is not None:

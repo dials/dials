@@ -341,14 +341,21 @@ class Script(object):
       if 'entering' in preds:
         reflections['entering'] = preds['entering']
 
-      # set used_in_refinement and centroid_outlier flags
+      # set refinement flags
       assert len(preds) == len(reflections)
       reflections.unset_flags(flex.size_t_range(len(reflections)),
-        reflections.flags.used_in_refinement | reflections.flags.centroid_outlier)
-      mask = preds.get_flags(preds.flags.centroid_outlier)
-      reflections.set_flags(mask, reflections.flags.centroid_outlier)
-      mask = preds.get_flags(preds.flags.used_in_refinement)
-      reflections.set_flags(mask, reflections.flags.used_in_refinement)
+          reflections.flags.excluded_for_refinement |
+          reflections.flags.used_in_refinement |
+          reflections.flags.centroid_outlier |
+          reflections.flags.predicted)
+      reflections.set_flags(preds.get_flags(preds.flags.excluded_for_refinement),
+          reflections.flags.excluded_for_refinement)
+      reflections.set_flags(preds.get_flags(preds.flags.centroid_outlier),
+          reflections.flags.centroid_outlier)
+      reflections.set_flags(preds.get_flags(preds.flags.used_in_refinement),
+          reflections.flags.used_in_refinement)
+      reflections.set_flags(preds.get_flags(preds.flags.predicted),
+          reflections.flags.predicted)
 
       logger.info('Saving reflections with updated predictions to {0}'.format(
         params.output.reflections))
