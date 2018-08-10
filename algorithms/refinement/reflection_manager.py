@@ -285,6 +285,7 @@ class ReflectionManager(object):
     # set the centroid_outlier flag in the original indexed reflections
     ioutliers = self._reflections.get_flags(self._reflections.flags.centroid_outlier)
     ioutliers = self._reflections['iobs'].select(ioutliers)
+    self._indexed.sort('iobs') # re-sort the indexed reflections
     self._indexed.set_flags(ioutliers, self._indexed.flags.centroid_outlier)
 
     msg = "Removing reflections not matched to predictions"
