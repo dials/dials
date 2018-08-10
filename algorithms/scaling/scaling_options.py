@@ -71,7 +71,22 @@ phil_scope = iotbx.phil.parse('''
     min_partiality = 0.6
       .type = float
       .help = "Minimum partiality to use when selecting subset of reflections
-               to determine the scaling model.."
+               to determine the scaling model."
+    intensity_choice = *prf sum combine
+      .type = choice
+      .help = "Option to choose from profile fitted or summation intensities, or
+               an optimised combination of prf/sum."
+    combine.Imid = None
+      .type = floats
+      .help = "A list of values to try for the midpoint, for prf/sum combination
+               calculation: the value with the lowest Rmeas will be chosen.
+               0 and 1 are special values that can be supplied to include prf
+               and sum respectively in the comparison."
+    combine.joint_analysis = False
+      .type = bool
+      .help = "Option of whether to do intensity combination optimisation
+              separately (i.e. different Imid per dataset) or joint for
+              multiple datasets"
   }
   weighting {
     weighting_scheme = *invvar unity GM cauchy huber
@@ -190,9 +205,6 @@ phil_scope = iotbx.phil.parse('''
     verbosity = 2
       .type = int(value_min=0)
       .help = "The verbosity level"
-    integration_method = *prf sum
-      .type = choice
-      .help = "Option to choose from profile fitted or summation intensities."
   }
 
   ''')

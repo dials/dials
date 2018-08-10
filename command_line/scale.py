@@ -390,7 +390,7 @@ class Script(object):
       params.mtz.apply_scales = True
       params.mtz.hklout = self.params.output.unmerged_mtz
       params.mtz.keep_partials = True
-      if self.params.scaling_options.integration_method == 'sum':
+      if self.params.reflection_selection.intensity_choice == 'sum':
         params.mtz.ignore_profile_fitting = True #to make it export summation
       exporter = MTZExporter(params, self.experiments,
         [joint_table])
@@ -461,8 +461,18 @@ class Script(object):
     scaler.perform_scaling()
 
     #Do another round of outlier rejection and then another minimisation.
+    rescale = False
     if scaler.params.scaling_options.outlier_rejection:
       scaler.outlier_rejection_routine()
+      rescale = True
+
+    if scaler.params.reflection_selection.intensity_choice == 'combine':
+      scaler.combine_intensities()
+      if scaler.params.scaling_options.outlier_rejection:
+        scaler.outlier_rejection_routine()
+      rescale = True
+
+    if rescale:
       scaler.perform_scaling()
 
     # Option to optimise the error model and then do another minimisation.

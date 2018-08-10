@@ -77,12 +77,12 @@ class SingleScalerFactory(ScalerFactory):
         'not integrated etc).\n', reflection_table.get_flags(
         reflection_table.flags.excluded_for_scaling).count(True))
 
-    intstr = params.scaling_options.integration_method
-    reflection_table = choose_scaling_intensities(reflection_table, intstr)
-
     if not 'inverse_scale_factor' in reflection_table:
       reflection_table['inverse_scale_factor'] = flex.double(
         reflection_table.size(), 1.0)
+
+    reflection_table = choose_scaling_intensities(reflection_table,
+      params.reflection_selection.intensity_choice)
 
     reflection_table = cls.filter_outliers(reflection_table, experiment,
       params)

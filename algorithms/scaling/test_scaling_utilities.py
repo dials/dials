@@ -12,7 +12,8 @@ from dials.algorithms.scaling.scaling_utilities import \
   calc_crystal_frame_vectors, calc_theta_phi, create_sph_harm_table,\
   sph_harm_table, align_rotation_axis_along_z, parse_multiple_datasets,\
   set_wilson_outliers, select_datasets_on_ids, assign_unique_identifiers,\
-  quasi_normalisation
+  quasi_normalisation, combine_intensities, calculate_prescaling_correction,\
+  apply_prescaling_correction
 
 @pytest.fixture(scope='module')
 def mock_exp():
@@ -324,3 +325,72 @@ def test_calculate_wilson_outliers(wilson_test_reflection_table):
 
   assert list(reflection_table.get_flags(
     reflection_table.flags.outlier_in_scaling)) == [True, False, True, False]
+
+
+def test_combine_intensities(test_exp_P1):
+  reflections = flex.reflection_table()
+  reflections['miller_index'] = flex.miller_index([
+    (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1),
+    (0, 0, 2), (0, 0, 2), (0, 0, 2), (0, 0, 2), (0, 0, 2),
+    (0, 0, 3), (0, 0, 3), (0, 0, 3), (0, 0, 3), (0, 0, 3),
+    (0, 0, 4), (0, 0, 4), (0, 0, 4), (0, 0, 4), (0, 0, 4),
+    (0, 0, 5), (0, 0, 5), (0, 0, 5), (0, 0, 5), (0, 0, 5)])
+  reflections['inverse_scale_factor'] = flex.double(25, 1.0)
+  #Contrive an example that should give the best cc12 when combined.
+  #make sum intensities agree well at high intensity but terribly at low
+  # and vice versa for profile intensities.
+  #profile less consistent at high intensity here
+  reflections['intensity.prf.value'] = flex.double([
+    10000.0, 16000.0, 12000.0, 6000.0, 9000.0,
+    5000.0, 2000.0, 1500.0, 1300.0, 9000.0,
+    100.0, 80.0, 120.0, 90.0, 100.0,
+    30.0, 40.0, 50.0, 30.0, 30.0,
+    10.0, 12.0, 9.0, 8.0, 10.0])
+  reflections['intensity.prf.variance'] = flex.double(
+    [10000]*5 + [5000]*5 + [100]*5 + [30]*5 + [10]*5)
+  #sumless consistent at low intensity here
+  reflections['intensity.sum.value'] = flex.double([
+    10000.0, 11000.0, 9000.0, 8000.0, 12000.0,
+    500.0, 5600.0, 5500.0, 2000.0, 6000.0,
+    100.0, 50.0, 150.0, 75.0, 125.0,
+    30.0, 10.0, 2.0, 35.0, 79.0,
+    1.0, 10.0, 20.0, 10.0, 5.0])
+  reflections['intensity.sum.variance'] = flex.double(
+    [10000]*5 + [5000]*5 + [100]*5 + [30]*5 + [10]*5)
+  # Imid being the average should be best - around 2500.
+
+  reflections.set_flags(flex.bool(25, False), reflections.flags.outlier_in_scaling)
+  reflections_list, results = combine_intensities([reflections], test_exp_P1)
+  reflections = reflections_list[0]
+  # Imid being 1200.0 should be best for this contrived example
+  assert pytest.approx(min(results, key=results.get)) == 1200.0
+
+  #Due to nature of crossover, just require 2% tolerance for this example
+  assert list(reflections['intensity'][0:5]) == pytest.approx(list(
+    reflections['intensity.sum.value'][0:5]), rel=2e-2)
+  assert list(reflections['intensity'][20:25]) == pytest.approx(list(
+    reflections['intensity.prf.value'][20:25]), rel=2e-2)
+
+def test_calculate_prescaling_correction():
+  """Test the helper function that applies the lp, dqe and partiality corr."""
+  reflection_table = flex.reflection_table()
+  reflection_table['lp'] = flex.double([1.0, 0.9, 0.8])
+  reflection_table['qe'] = flex.double([0.6, 0.5, 0.4])
+
+  cor = calculate_prescaling_correction(reflection_table)
+  assert list(cor) == [1.0 / 0.6, 0.9 / 0.5, 0.8 / 0.4]
+
+  # Test compatibilty for old datasets
+  del reflection_table['qe']
+  reflection_table['dqe'] = flex.double([0.6, 0.5, 0.4])
+  cor = calculate_prescaling_correction(reflection_table)
+  assert list(cor) == [1.0 / 0.6, 0.9 / 0.5, 0.8 / 0.4]
+
+  #test the apply prescaling correction
+  reflection_table = flex.reflection_table()
+  reflection_table['intensity'] = flex.double([1.0, 2.0])
+  reflection_table['variance'] = flex.double([1.0, 2.0])
+  conv = flex.double([2.0, 4.0])
+  reflection_table = apply_prescaling_correction(reflection_table, conv)
+  assert list(reflection_table['intensity']) == [2.0, 8.0]
+  assert list(reflection_table['variance']) == [4.0, 32.0]

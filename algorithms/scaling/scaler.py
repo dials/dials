@@ -25,11 +25,12 @@ from dials.algorithms.scaling.target_function import ScalingTarget,\
   ScalingTargetFixedIH
 from dials.algorithms.scaling.scaling_refiner import scaling_refinery,\
   error_model_refinery
+from dials.algorithms.scaling.scaling_library import choose_scaling_intensities
 from dials.algorithms.scaling.error_model.error_model import get_error_model
 from dials.algorithms.scaling.error_model.error_model_target import \
   ErrorModelTarget
 from dials.algorithms.scaling.parameter_handler import create_apm_factory
-from dials.algorithms.scaling.scaling_utilities import log_memory_usage
+from dials.algorithms.scaling.scaling_utilities import log_memory_usage, combine_intensities
 
 logger = logging.getLogger('dials')
 
@@ -329,6 +330,12 @@ class SingleScalerBase(ScalerBase):
     self.Ih_table.update_weights(block_id)
     self.Ih_table.calc_Ih(block_id)
 
+  def combine_intensities(self):
+    """Combine prf and sum intensities to give optimal intensities."""
+    table_list, _ = combine_intensities([self._reflection_table],
+      self._experiments, self._params.reflection_selection.combine.Imid)
+    self._reflection_table = table_list[0]
+
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
     self._reflection_table['inverse_scale_factor'] = flex.double(
       self.reflection_table.size(), 1.0)
@@ -610,6 +617,16 @@ class MultiScaler(MultiScalerBase):
           scaler.scaling_selection, self.Ih_table.blocked_selection_list[i])
     logger.info('Completed configuration of MultiScaler. \n\n' + '='*80 + '\n')
     log_memory_usage()
+
+  def combine_intensities(self):
+    """Combine reflection intensities, either jointly or separately."""
+    if self.params.reflection_selection.combine.joint_analysis:
+      reflection_tables = [s.reflection_table for s in self.single_scalers]
+      self._reflection_table, _ = combine_intensities(reflection_tables,
+        self._experiments, self._params.reflection_selection.combine.Imid)
+    else:
+      for scaler in self.single_scalers:
+        scaler.combine_intensities()
 
   def join_multiple_datasets(self):
     """Create a joint reflection table."""
