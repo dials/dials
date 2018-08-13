@@ -39,9 +39,6 @@ show_flags = False
 max_reflections = None
   .type = int
   .help = "Limit the number of reflections in the output."
-show_panel_distance = False
-  .type = bool
-  .help = "Show distance to individual panels along normal."
 """, process_includes=True)
 
 
@@ -151,12 +148,10 @@ def run(args):
 
   if len(experiments):
     print(show_experiments(
-      experiments, show_panel_distance=params.show_panel_distance,
-      show_scan_varying=params.show_scan_varying))
+      experiments, show_scan_varying=params.show_scan_varying))
 
   if len(datablocks):
-    print(show_datablocks(
-      datablocks, show_panel_distance=params.show_panel_distance))
+    print(show_datablocks(datablocks))
 
   if len(reflections):
     print(show_reflections(
@@ -168,8 +163,7 @@ def run(args):
       max_reflections=params.max_reflections))
 
 
-def show_experiments(experiments, show_panel_distance=False,
-                     show_scan_varying=False):
+def show_experiments(experiments, show_scan_varying=False):
 
   text = []
 
@@ -180,19 +174,6 @@ def show_experiments(experiments, show_panel_distance=False,
       expt.detector.get_max_resolution(expt.beam.get_s0())))
     text.append('Max resolution (inscribed):  %f' % (
       expt.detector.get_max_inscribed_resolution(expt.beam.get_s0())))
-    if show_panel_distance:
-      for ipanel, panel in enumerate(expt.detector):
-        from scitbx import matrix
-        fast = matrix.col(panel.get_fast_axis())
-        slow = matrix.col(panel.get_slow_axis())
-        normal = fast.cross(slow).normalize()
-        origin = matrix.col(panel.get_origin())
-        distance = origin.dot(normal)
-        fast_origin = - (origin - distance * normal).dot(fast)
-        slow_origin = - (origin - distance * normal).dot(slow)
-        text.append('Panel %d: distance %.2f origin %.2f %.2f' % \
-          (ipanel, distance, fast_origin, slow_origin))
-      text.append('')
     text.append('')
     text.append(show_beam(expt.detector, expt.beam))
     if expt.scan is not None:
@@ -224,7 +205,7 @@ def show_experiments(experiments, show_panel_distance=False,
   return '\n'.join(text)
 
 
-def show_datablocks(datablocks, show_panel_distance=False):
+def show_datablocks(datablocks):
   text = []
   for datablock in datablocks:
     if datablock.format_class() is not None:
@@ -240,19 +221,6 @@ def show_datablocks(datablocks, show_panel_distance=False):
           detector.get_max_resolution(imageset.get_beam().get_s0())))
         text.append('Max resolution (inscribed):  %f' % (
           detector.get_max_inscribed_resolution(imageset.get_beam().get_s0())))
-        if show_panel_distance:
-          for ipanel, panel in enumerate(detector):
-            from scitbx import matrix
-            fast = matrix.col(panel.get_fast_axis())
-            slow = matrix.col(panel.get_slow_axis())
-            normal = fast.cross(slow)
-            origin = matrix.col(panel.get_origin())
-            distance = origin.dot(normal)
-            fast_origin = - (origin - distance * normal).dot(fast)
-            slow_origin = - (origin - distance * normal).dot(slow)
-            text.append('Panel %d: distance %.2f origin %.2f %.2f' % \
-              (ipanel, distance, fast_origin, slow_origin))
-          text.append('')
         text.append('')
         text.append(show_beam(detector, imageset.get_beam()))
       if imageset.get_scan() is not None:
