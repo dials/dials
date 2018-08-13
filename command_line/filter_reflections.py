@@ -27,7 +27,7 @@ reflection file.
 
 Examples::
 
-  dials.filter_reflections integrated.pickle \
+  dials.filter_reflections refined.pickle \
     flag_expression=used_in_refinement
 
   dials.filter_reflections integrated.pickle \
@@ -36,6 +36,8 @@ Examples::
   dials.filter_reflections integrated.pickle \
     flag_expression="indexed & (failed_during_summation | failed_during_profile_fitting)"
 
+  dials.filter_reflections indexed.pickle experiments.json \
+    d_max=20 d_min=2.5
 '''
 
 class Script(object):
