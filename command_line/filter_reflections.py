@@ -85,6 +85,19 @@ class Script(object):
         .help = "Combined filter to select only fully integrated and"
                 "trustworthy intensities"
 
+      dead_time
+      {
+        value = 0
+          .help = "Detector dead time in ms, assumed to be at the end of the"
+                  "exposure time."
+          .type = float(value_min=0)
+
+        reject_fraction = 0
+          .help = "Reject reflections which overlap by more than the given"
+                  "fraction with the dead region of the image."
+          .type = float(value_min=0, value_max=1)
+      }
+
       include scope dials.util.masking.ice_rings_phil_scope
 
     '''
@@ -186,19 +199,6 @@ class Script(object):
     params, options = self.parser.parse_args(show_diff_phil=True)
     reflections = flatten_reflections(params.input.reflections)
 
-    if params.input.datablock is not None and len(params.input.datablock):
-      datablocks = flatten_datablocks(params.input.datablock)
-      assert len(datablocks) == 1
-      imagesets = datablocks[0].extract_imagesets()
-      assert len(imagesets) == 1
-      imageset = imagesets[0]
-    elif params.input.experiments is not None and len(params.input.experiments):
-      experiments = flatten_experiments(params.input.experiments)
-      assert len(datablocks) == 1
-      imageset = experiments[0].imageset
-    else:
-      imageset = None
-
     if len(reflections) == 0:
       self.parser.print_help()
       raise Sorry('No valid reflection file given')
@@ -206,6 +206,26 @@ class Script(object):
       self.parser.print_help()
       raise Sorry('Exactly 1 reflection file must be specified')
     reflections = reflections[0]
+
+    experiments = flatten_experiments(params.input.experiments)
+    datablocks = flatten_datablocks(params.input.datablock)
+    if len(experiments) > 1 or datablocks:
+      if [len(datablocks), len(experiments)].count(1) != 1:
+          self.parser.print_help()
+          raise Sorry("Either a datablock or an experiment list may be provided"
+                      " but not both together.")
+    if datablocks:
+      datablock = datablocks[0]
+      imagesets = datablock.extract_imagesets()
+    if len(experiments) > 1:
+      imagesets = experiments.imagesets()
+
+    # Check if any filter has been set using diff_phil
+    filter_def = [o for o in self.parser.diff_phil.objects
+                  if o.name not in ['input', 'output']]
+    if not filter_def:
+      print("No filter specified. Performing analysis instead.")
+      return self.analysis(reflections)
 
     # Check params
     if params.d_min is not None and params.d_max is not None:
@@ -224,13 +244,6 @@ class Script(object):
         raise Sorry("Reflection table has no partiality information")
 
     print("{0} reflections loaded".format(len(reflections)))
-
-    # Check if any filter has been set using diff_phil
-    filter_def = [o for o in self.parser.diff_phil.objects
-                  if o.name not in ['input', 'output']]
-    if not filter_def:
-      print("No filter specified. Performing analysis instead.")
-      return self.analysis(reflections)
 
     # Filter by logical expression using flags
     if params.flag_expression is not None:
@@ -266,6 +279,11 @@ class Script(object):
     # 'Good' intensity selection
     if params.select_good_intensities:
       reflections = select_good_intensities(reflections)
+
+    # Dead time filter
+    if params.dead_time.value > 0:
+      reflections = filter_by_dead_time(reflections, experiments,
+          params.dead_time.value, params.dead_time.reject_fraction)
 
     # Filter powder rings
     if params.ice_rings.filter:
@@ -310,7 +328,7 @@ def select_good_intensities(integrated_data):
     raise Sorry("reflection file is missing required keys")
 
   if not (min(integrated_data['id']) == max(integrated_data['id']) == 0):
-    raise Sorry("only a single experiment supported in this mode")
+    raise Sorry("only a single experiment is supported in this mode")
 
   selection = integrated_data['intensity.sum.variance'] <= 0
   if selection.count(True) > 0:
@@ -333,6 +351,71 @@ def select_good_intensities(integrated_data):
         selection.count(True))
 
   return integrated_data
+
+def filter_by_dead_time(reflections, experiments,
+    dead_time=0, reject_fraction=0):
+  """Combined filter, originally in dev.dials.filter_dead_time"""
+
+  if len(experiments) == 0:
+    raise Sorry("an experiment list must be provided to filter by dead time")
+
+  if len(experiments) > 1:
+    raise Sorry("only a single experiment is supported in this mode")
+  experiment = experiments[0]
+
+  sel = reflections.get_flags(reflections.flags.integrated)
+  reflections = reflections.select(sel)
+
+  if len(reflections) == 0:
+    raise Sorry("no integrated reflections present")
+
+  goniometer = experiment.goniometer
+  beam = experiment.beam
+
+  m2 = goniometer.get_rotation_axis()
+  s0 = beam.get_s0()
+
+  from dials.array_family import flex
+  phi1 = flex.double()
+  phi2 = flex.double()
+
+  phi_range = reflections.compute_phi_range(
+    goniometer.get_rotation_axis(),
+    beam.get_s0(),
+    experiment.profile.sigma_m(deg=False),
+    experiment.profile.n_sigma())
+  phi1, phi2 = phi_range.parts()
+
+  scan = experiment.scan
+  exposure_time = scan.get_exposure_times()[0]
+  assert scan.get_exposure_times().all_eq(exposure_time)
+  phi_start, phi_width = scan.get_oscillation(deg=False)
+  phi_range_dead = phi_width * (dead_time/1000) / exposure_time
+
+  sel_good = flex.bool(len(reflections), True)
+
+  start, end = scan.get_array_range()
+  for i in range(start, end):
+    phi_dead_start = phi_start + (i+1) * phi_width - phi_range_dead
+    phi_dead_end = phi_dead_start + phi_range_dead
+
+    left = phi1.deep_copy()
+    left.set_selected(left < phi_dead_start, phi_dead_start)
+
+    right = phi2.deep_copy()
+    right.set_selected(right > phi_dead_end, phi_dead_end)
+
+    overlap = (right - left)/(phi2-phi1)
+
+    sel = overlap > reject_fraction
+
+    sel_good.set_selected(sel, False)
+    print('Rejecting %i reflections from image %i' %(sel.count(True), i))
+
+  print('Keeping %i reflections (rejected %i)' %(
+    sel_good.count(True), sel_good.count(False)))
+
+  return reflections.select(sel_good)
 
 if __name__ == '__main__':
   from dials.util import halraiser
