@@ -80,6 +80,11 @@ class Script(object):
           .help = "The maximum reflection partiality for inclusion."
       }
 
+      select_good_intensities = False
+        .type = bool
+        .help = "Combined filter to select only fully integrated and"
+                "trustworthy intensities"
+
       include scope dials.util.masking.ice_rings_phil_scope
 
     '''
@@ -258,6 +263,10 @@ class Script(object):
       reflections = reflections.select(selection)
       print("Selected %d reflections with partiality <= %f" % (len(reflections), params.partiality.max))
 
+    # 'Good' intensity selection
+    if params.select_good_intensities:
+      reflections = select_good_intensities(reflections)
+
     # Filter powder rings
     if params.ice_rings.filter:
       from dials.algorithms.integration import filtering
@@ -293,6 +302,37 @@ class Script(object):
       reflections.as_pickle(params.output.reflections)
 
     return
+
+def select_good_intensities(integrated_data):
+  """Combined filter, originally in dev.dials.filter_good_intensities"""
+  if not (integrated_data.has_key('id') and
+          integrated_data.has_key('intensity.sum.variance')):
+    raise Sorry("reflection file is missing required keys")
+
+  if not (min(integrated_data['id']) == max(integrated_data['id']) == 0):
+    raise Sorry("only a single experiment supported in this mode")
+
+  selection = integrated_data['intensity.sum.variance'] <= 0
+  if selection.count(True) > 0:
+    integrated_data.del_selected(selection)
+    print('Removing %d reflections with negative variance' % \
+          selection.count(True))
+
+  if 'intensity.prf.variance' in integrated_data:
+    selection = integrated_data['intensity.prf.variance'] <= 0
+    if selection.count(True) > 0:
+      integrated_data.del_selected(selection)
+      print('Removing %d profile reflections with negative variance' % \
+            selection.count(True))
+
+  if 'partiality' in integrated_data:
+    selection = integrated_data['partiality'] < 0.99
+    if selection.count(True) > 0:
+      integrated_data.del_selected(selection)
+      print('Removing %d incomplete reflections' % \
+        selection.count(True))
+
+  return integrated_data
 
 if __name__ == '__main__':
   from dials.util import halraiser
