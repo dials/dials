@@ -156,6 +156,10 @@ if __name__ == '__main__':
             #  ''' from iotbx.detectors.cbf import CBFImage '''
             # and the wx import must happen before that import.
 
+  # HACK: Monkeypatch this renamed function so we can trick wxtbx's IntCtrl
+  #       without having to alter the package
+  wx.SystemSettings_GetColour = wx.SystemSettings.GetColour
+
   from dials.util.options import OptionParser
   from dials.util.options import flatten_datablocks
   from dials.util.options import flatten_experiments

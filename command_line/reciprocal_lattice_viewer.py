@@ -75,6 +75,19 @@ phil_scope= libtbx.phil.parse("""
     .help = "Switch between black or white background"
 """)
 
+# WX4 compatibility
+def _rewrite_event(unbound):
+  """Decorator to intercept the event and add missing instance methods"""
+  def _wrapp(self, event):
+    event.GetPositionTuple = event.GetPosition
+    return unbound(self, event)
+  return _wrapp
+
+# HACK: Monkeypatch wxtbx so that we don't use old interfaces
+from wxtbx import segmentedctrl
+segmentedctrl.SegmentedControl.HitTest = _rewrite_event(segmentedctrl.SegmentedControl.HitTest)
+segmentedctrl.SegmentedControl.OnMotion = _rewrite_event(segmentedctrl.SegmentedControl.OnMotion)
+
 def settings():
   return phil_scope.fetch().extract()
 
