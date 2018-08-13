@@ -367,7 +367,7 @@ def combine_intensities(reflection_tables, experiment, Imids=None):
       elif Is == 1: #special value to trigger sum
         if 'partiality' in reflections:
           reflections['intensity'] = reflections['intensity.sum.value']/reflections['partiality']
-          reflections['variance'] = reflections['intensity.sum.variance']/reflections['partiality']
+          reflections['variance'] = reflections['intensity.sum.variance']/(reflections['partiality']**2)
         else:
           reflections['intensity'] = reflections['intensity.sum.value']
           reflections['variance'] = reflections['intensity.sum.variance']
@@ -459,6 +459,7 @@ def combine_intensities(reflection_tables, experiment, Imids=None):
 def calculate_combined_raw_intensities(reflection_table, Imid):
   #if Isum >> Imid, W > 0, intensity is sum intenisty
   w = 1.0/(1.0 + (reflection_table['intensity.sum.value']/Imid)**3)
+  w.set_selected(reflection_table['intensity.sum.value'] <= 0, 1.0)
   inverse_partiality = flex.double(reflection_table.size(), 1.0)
   if 'partiality' in reflection_table:
     nonzero_partiality_sel = reflection_table['partiality'] > 0.0
