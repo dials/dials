@@ -3,7 +3,7 @@
 
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 from __future__ import absolute_import, division, print_function
-from gltbx import wx_viewer
+from dials.util import wx_viewer
 import copy
 import wx
 import wxtbx.utils

@@ -89,7 +89,7 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
 
     if hasattr(wx.glcanvas, 'WX_GL_DOUBLEBUFFER'):
       try:
-        if self.IsDisplaySupported(wx.glcanvas.WX_GL_DOUBLEBUFFER):
+        if self.IsDisplaySupported([wx.glcanvas.WX_GL_DOUBLEBUFFER]):
           kw['attribList'].append(wx.glcanvas.WX_GL_DOUBLEBUFFER)
       except AttributeError:
         # IsDisplaySupported may not be present for wxPython < 2.9
@@ -173,7 +173,7 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
     self.w, self.h = self.GetClientSize()
     if (self.GetParent().IsShown()) :
       if (self.context is not None) :
-        if wx.VERSION[0] < 3:
+        if wx.VERSION[0] != 3:
           self.SetCurrent(self.context)
         else:
           self.SetCurrent()
@@ -847,8 +847,8 @@ class show_points_and_lines_mixin(wxGLWindow):
       self.labels_display_list.end()
     self.labels_display_list.call()
 
-  def draw_cross_at(self, xxx_todo_changeme, color=(1,1,1), f=0.1):
-    (x,y,z) = xxx_todo_changeme
+  def draw_cross_at(self, position_tuple, color=(1,1,1), f=0.1):
+    (x,y,z) = position_tuple
     glBegin(GL_LINES)
     glColor3f(*color)
     glVertex3f(x-f,y,z)
