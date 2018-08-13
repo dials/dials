@@ -365,8 +365,8 @@ def combine_intensities(reflection_tables, experiment, Imids=None):
         reflections['intensity'] = reflections['intensity.prf.value']
         reflections['variance'] = reflections['intensity.prf.variance']
       elif Is == 1: #special value to trigger sum
-        reflections['intensity'] = reflections['intensity.prf.value']
-        reflections['variance'] = reflections['intensity.prf.variance']
+        reflections['intensity'] = reflections['intensity.sum.value']/reflections['partiality']
+        reflections['variance'] = reflections['intensity.sum.variance']/reflections['partiality']
       else:
         reflections = calculate_combined_raw_intensities(reflections, Is)
       reflections = apply_prescaling_correction(reflections, prescaling_corrections[i])
@@ -412,8 +412,8 @@ def combine_intensities(reflection_tables, experiment, Imids=None):
       reflection_tables[i]['intensity'] = reflection_tables[i]['intensity.prf.value']
       reflection_tables[i]['variance'] = reflection_tables[i]['intensity.prf.variance']
     elif max_key == 1:
-      reflection_tables[i]['intensity'] = reflection_tables[i]['intensity.sum.value']
-      reflection_tables[i]['variance'] = reflection_tables[i]['intensity.sum.variance']
+      reflection_tables[i]['intensity'] = reflection_tables[i]['intensity.sum.value']/reflections['partiality']
+      reflection_tables[i]['variance'] = reflection_tables[i]['intensity.sum.variance']/reflections['partiality']
       reflection_tables[i].set_flags(reflection_tables[i]['variance'] <= 0.0,
         reflection_tables[i].flags.excluded_for_scaling)
     else:
@@ -427,8 +427,8 @@ def combine_intensities(reflection_tables, experiment, Imids=None):
       reflection_tables[i]['intensity'] = reflection_tables[i]['intensity.prf.value']
       reflection_tables[i]['variance'] = reflection_tables[i]['intensity.prf.variance']
     else:
-      reflection_tables[i]['intensity'] = reflection_tables[i]['intensity.sum.value']
-      reflection_tables[i]['variance'] = reflection_tables[i]['intensity.sum.variance']
+      reflection_tables[i]['intensity'] = reflection_tables[i]['intensity.sum.value']/ reflections['partiality']
+      reflection_tables[i]['variance'] = reflection_tables[i]['intensity.sum.variance'] / reflections['partiality']
       reflection_tables[i].set_flags(reflection_tables[i]['variance'] <= 0.0,
         reflection_tables[i].flags.excluded_for_scaling)
     conv = calculate_prescaling_correction(reflection_tables[i])
