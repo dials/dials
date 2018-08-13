@@ -425,7 +425,7 @@ def combine_intensities(reflection_tables, experiment, Imids=None):
       reflection_tables[i]['intensity'] = \
         reflection_tables[i]['intensity.sum.value'] * inverse_partiality
       reflection_tables[i]['variance'] = \
-        reflection_tables[i]['intensity.sum.variance'] * inverse_partiality
+        reflection_tables[i]['intensity.sum.variance'] * (inverse_partiality**2)
       reflection_tables[i].set_flags(reflection_tables[i]['variance'] <= 0.0,
         reflection_tables[i].flags.excluded_for_scaling)
     else:
@@ -449,7 +449,7 @@ def combine_intensities(reflection_tables, experiment, Imids=None):
       reflection_tables[i]['intensity'] = \
         reflection_tables[i]['intensity.sum.value'] * inverse_partiality
       reflection_tables[i]['variance'] = \
-        reflection_tables[i]['intensity.sum.variance'] * inverse_partiality
+        reflection_tables[i]['intensity.sum.variance'] * (inverse_partiality**2)
       reflection_tables[i].set_flags(reflection_tables[i]['variance'] <= 0.0,
         reflection_tables[i].flags.excluded_for_scaling)
     conv = calculate_prescaling_correction(reflection_tables[i])
