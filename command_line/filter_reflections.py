@@ -241,7 +241,18 @@ class Script(object):
         raise Sorry("d_min must be less than d_max")
     if params.d_min is not None or params.d_max is not None:
       if 'd' not in reflections:
-        raise Sorry("Reflection table has no resolution information")
+        if len(experiments) > 0:
+          print("Reflection table does not have resolution information. "
+                "Attempting to calculate this from the experiment list")
+          sel = reflections['id'] >= 0
+          if sel.count(False) > 0:
+            print("Removing {0} reflections with negative experiment id".format(
+                sel.count(False)))
+          reflections = reflections.select(sel)
+          reflections.compute_d(experiments)
+        else:
+          raise Sorry("reflection table has no resolution information "
+                      "and no experiment list provided to calculate it")
 
     # Check params
     if params.partiality.min is not None and params.partiality.max is not None:
