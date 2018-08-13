@@ -63,6 +63,14 @@ class Script(object):
         .type = str
         .help = "Boolean expression to select reflections based on flag values"
 
+      id = None
+        .type = ints(value_min=0)
+        .help = "Select reflections by experiment IDs"
+
+      panel = None
+        .type = ints(value_min=0)
+        .help = "Select reflections by panels they intersect"
+
       d_min = None
         .type = float
         .help = "The maximum resolution"
@@ -251,6 +259,22 @@ class Script(object):
       reflections = reflections.select(inc)
 
     print("Selected {0} reflections by flags".format(len(reflections)))
+
+    # Filter based on experiment ID
+    if params.id:
+      selection = reflections['id'] == params.id[0]
+      for exp_id in params.id[1:]:
+        selection = selection | (reflections['id'] == exp_id)
+      reflections = reflections.select(selection)
+      print("Selected %d reflections by experiment id" % (len(reflections)))
+
+    # Filter based on panel number
+    if params.panel:
+      selection = reflections['panel'] == params.panel[0]
+      for pnl_id in params.panel[1:]:
+        selection = selection | (reflections['panel'] == pnl_id)
+      reflections = reflections.select(selection)
+      print("Selected %d reflections by panel number" % (len(reflections)))
 
     # Filter based on resolution
     if params.d_min is not None:
