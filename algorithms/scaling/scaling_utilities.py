@@ -365,8 +365,12 @@ def combine_intensities(reflection_tables, experiment, Imids=None):
         reflections['intensity'] = reflections['intensity.prf.value']
         reflections['variance'] = reflections['intensity.prf.variance']
       elif Is == 1: #special value to trigger sum
-        reflections['intensity'] = reflections['intensity.sum.value']/reflections['partiality']
-        reflections['variance'] = reflections['intensity.sum.variance']/reflections['partiality']
+        if 'partiality' in reflections:
+          reflections['intensity'] = reflections['intensity.sum.value']/reflections['partiality']
+          reflections['variance'] = reflections['intensity.sum.variance']/reflections['partiality']
+        else:
+          reflections['intensity'] = reflections['intensity.sum.value']
+          reflections['variance'] = reflections['intensity.sum.variance']
       else:
         reflections = calculate_combined_raw_intensities(reflections, Is)
       reflections = apply_prescaling_correction(reflections, prescaling_corrections[i])
@@ -412,12 +416,21 @@ def combine_intensities(reflection_tables, experiment, Imids=None):
       reflection_tables[i]['intensity'] = reflection_tables[i]['intensity.prf.value']
       reflection_tables[i]['variance'] = reflection_tables[i]['intensity.prf.variance']
     elif max_key == 1:
-      reflection_tables[i]['intensity'] = reflection_tables[i]['intensity.sum.value']/reflections['partiality']
-      reflection_tables[i]['variance'] = reflection_tables[i]['intensity.sum.variance']/reflections['partiality']
+      inverse_partiality = flex.double(reflection_tables[i].size(), 1.0)
+      if 'partiality' in reflection_tables[i]:
+        nonzero_partiality_sel = reflection_tables[i]['partiality'] > 0.0
+        good_refl = reflection_tables[i].select(nonzero_partiality_sel)
+        inverse_partiality.set_selected(nonzero_partiality_sel.iselection(),
+          1.0/good_refl['partiality'])
+      reflection_tables[i]['intensity'] = \
+        reflection_tables[i]['intensity.sum.value'] * inverse_partiality
+      reflection_tables[i]['variance'] = \
+        reflection_tables[i]['intensity.sum.variance'] * inverse_partiality
       reflection_tables[i].set_flags(reflection_tables[i]['variance'] <= 0.0,
         reflection_tables[i].flags.excluded_for_scaling)
     else:
-      reflection_tables[i] = calculate_combined_raw_intensities(reflection_tables[i], max_key)
+      reflection_tables[i] = calculate_combined_raw_intensities(
+        reflection_tables[i], max_key)
       reflection_tables[i].set_flags(reflection_tables[i]['variance'] <= 0.0,
         reflection_tables[i].flags.excluded_for_scaling)
     conv = calculate_prescaling_correction(reflection_tables[i])
@@ -427,8 +440,16 @@ def combine_intensities(reflection_tables, experiment, Imids=None):
       reflection_tables[i]['intensity'] = reflection_tables[i]['intensity.prf.value']
       reflection_tables[i]['variance'] = reflection_tables[i]['intensity.prf.variance']
     else:
-      reflection_tables[i]['intensity'] = reflection_tables[i]['intensity.sum.value']/ reflections['partiality']
-      reflection_tables[i]['variance'] = reflection_tables[i]['intensity.sum.variance'] / reflections['partiality']
+      inverse_partiality = flex.double(reflection_tables[i].size(), 1.0)
+      if 'partiality' in reflection_tables[i]:
+        nonzero_partiality_sel = reflection_tables[i]['partiality'] > 0.0
+        good_refl = reflection_tables[i].select(nonzero_partiality_sel)
+        inverse_partiality.set_selected(nonzero_partiality_sel.iselection(),
+          1.0/good_refl['partiality'])
+      reflection_tables[i]['intensity'] = \
+        reflection_tables[i]['intensity.sum.value'] * inverse_partiality
+      reflection_tables[i]['variance'] = \
+        reflection_tables[i]['intensity.sum.variance'] * inverse_partiality
       reflection_tables[i].set_flags(reflection_tables[i]['variance'] <= 0.0,
         reflection_tables[i].flags.excluded_for_scaling)
     conv = calculate_prescaling_correction(reflection_tables[i])
