@@ -312,10 +312,13 @@ def combine_intensities(reflection_tables, experiment, Imids=None):
       intensities.extend(table['intensity.sum.value'].as_double())
       indices_to_use.append(i)
     else:
+      assert 'intensity.sum.value' in table
       indices_to_skip.append(i)
   if len(indices_to_skip) == len(reflection_tables):
     logger.info('No reflection tables found with both prf and sum values,'
       'no intensity combination can be performed')
+    for i, table in enumerate(reflection_tables):
+      reflection_tables[i]['intensity'] = reflection_tables[i]['intensity.sum.value']
     return reflection_tables, None
 
   if Imids:
@@ -435,23 +438,19 @@ def combine_intensities(reflection_tables, experiment, Imids=None):
         reflection_tables[i].flags.excluded_for_scaling)
     conv = calculate_prescaling_correction(reflection_tables[i])
     reflection_tables[i] = apply_prescaling_correction(reflection_tables[i], conv)
-  for i in indices_to_skip: #choose prf, then sum if not both
-    if 'intensity.prf.value' in reflection_tables[i]:
-      reflection_tables[i]['intensity'] = reflection_tables[i]['intensity.prf.value']
-      reflection_tables[i]['variance'] = reflection_tables[i]['intensity.prf.variance']
-    else:
-      inverse_partiality = flex.double(reflection_tables[i].size(), 1.0)
-      if 'partiality' in reflection_tables[i]:
-        nonzero_partiality_sel = reflection_tables[i]['partiality'] > 0.0
-        good_refl = reflection_tables[i].select(nonzero_partiality_sel)
-        inverse_partiality.set_selected(nonzero_partiality_sel.iselection(),
-          1.0/good_refl['partiality'])
-      reflection_tables[i]['intensity'] = \
-        reflection_tables[i]['intensity.sum.value'] * inverse_partiality
-      reflection_tables[i]['variance'] = \
-        reflection_tables[i]['intensity.sum.variance'] * (inverse_partiality**2)
-      reflection_tables[i].set_flags(reflection_tables[i]['variance'] <= 0.0,
-        reflection_tables[i].flags.excluded_for_scaling)
+  for i in indices_to_skip:
+    inverse_partiality = flex.double(reflection_tables[i].size(), 1.0)
+    if 'partiality' in reflection_tables[i]:
+      nonzero_partiality_sel = reflection_tables[i]['partiality'] > 0.0
+      good_refl = reflection_tables[i].select(nonzero_partiality_sel)
+      inverse_partiality.set_selected(nonzero_partiality_sel.iselection(),
+        1.0/good_refl['partiality'])
+    reflection_tables[i]['intensity'] = \
+      reflection_tables[i]['intensity.sum.value'] * inverse_partiality
+    reflection_tables[i]['variance'] = \
+      reflection_tables[i]['intensity.sum.variance'] * (inverse_partiality**2)
+    reflection_tables[i].set_flags(reflection_tables[i]['variance'] <= 0.0,
+      reflection_tables[i].flags.excluded_for_scaling)
     conv = calculate_prescaling_correction(reflection_tables[i])
     reflection_tables[i] = apply_prescaling_correction(reflection_tables[i], conv)
   return reflection_tables, results
