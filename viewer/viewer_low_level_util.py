@@ -46,7 +46,7 @@ class grid_frame(wx.Frame):
     self.Bind(wx.EVT_CLOSE, self.OnCloseWindow)
 
   def OnCloseWindow(self, event):
-    wx.GetApp().Exit()
+    wx.Exit()
 
 
 
@@ -84,7 +84,7 @@ class flex_3d_frame(wx.Frame):
       event.Skip()
     else:
       #print "from flex_3d_frame self.myGrid .NEQ. None"
-      wx.GetApp().Exit()
+      wx.Exit()
 
 
 class TupTable(gridlib.PyGridTableBase):
@@ -106,7 +106,7 @@ class TupTable(gridlib.PyGridTableBase):
 
   def GetRowLabelValue(self, row):
     if self.rowLabels:
-      return self.rowLabels[row]
+      return str(self.rowLabels[row])
 
   def IsEmptyCell(self, row, col):
     return False

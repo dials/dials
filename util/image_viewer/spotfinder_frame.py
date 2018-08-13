@@ -1431,7 +1431,7 @@ class SpotSettingsPanel (wx.Panel) :
     self._sizer = wx.BoxSizer(wx.VERTICAL)
     s = self._sizer
     self.SetSizer(self._sizer)
-    grid = wx.FlexGridSizer(cols=2, rows=2)
+    grid = wx.FlexGridSizer(cols=2, rows=2, vgap=0, hgap=0)
     s.Add(grid)
     txt1 = wx.StaticText(self, -1, "Zoom level:")
     grid.Add(txt1, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
@@ -1453,7 +1453,7 @@ class SpotSettingsPanel (wx.Panel) :
 
     box = wx.BoxSizer(wx.HORIZONTAL)
     s.Add(box)
-    grid = wx.FlexGridSizer(cols=1, rows=2)
+    grid = wx.FlexGridSizer(cols=1, rows=2, vgap=0, hgap=0)
     box.Add(grid)
     txt2 = wx.StaticText(self, -1, "Brightness:")
     grid.Add(txt2, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
@@ -1472,7 +1472,7 @@ class SpotSettingsPanel (wx.Panel) :
     self.brightness_ctrl.SetTickFreq(25)
     box.Add(self.brightness_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
-    grid = wx.FlexGridSizer(cols=2, rows=8)
+    grid = wx.FlexGridSizer(cols=2, rows=8, vgap=0, hgap=0)
     s.Add(grid)
 
     # Resolution rings control
@@ -1540,7 +1540,7 @@ class SpotSettingsPanel (wx.Panel) :
     self.integrated.SetValue(self.settings.show_integrated)
     grid.Add(self.integrated, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
-    grid = wx.FlexGridSizer(cols=2, rows=1)
+    grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
     self.clear_all_button = wx.Button(self, -1, "Clear all")
     grid.Add(self.clear_all_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self.Bind(wx.EVT_BUTTON, self.OnClearAll, self.clear_all_button)
@@ -1559,7 +1559,7 @@ class SpotSettingsPanel (wx.Panel) :
     #s.Add(box)
 
     # DispersionThreshold thresholding parameters
-    grid1 = wx.FlexGridSizer(cols=2, rows=7)
+    grid1 = wx.FlexGridSizer(cols=2, rows=7, vgap=0, hgap=0)
     s.Add(grid1)
 
     from wxtbx.phil_controls.floatctrl import FloatCtrl
@@ -1627,7 +1627,7 @@ class SpotSettingsPanel (wx.Panel) :
     grid1.Add(self.save_params_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self.Bind(wx.EVT_BUTTON, self.OnSaveFindSpotsParams, self.save_params_button)
 
-    grid2 = wx.FlexGridSizer(cols=4, rows=2)
+    grid2 = wx.FlexGridSizer(cols=4, rows=2, vgap=0, hgap=0)
     s.Add(grid2)
 
     self.kabsch_buttons = []
