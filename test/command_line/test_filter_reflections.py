@@ -18,7 +18,7 @@ def test_filter_reflections(tmpdir):
   rt_name = "test_refs.pickle"
   rt.as_pickle(rt_name)
 
-  cmd = ("dev.dials.filter_reflections " + rt_name + " flag_expression="
+  cmd = ("dials.filter_reflections " + rt_name + " flag_expression="
          "'integrated & ~reference_spot'")
 
   result = easy_run.fully_buffered(command=cmd).raise_if_errors()

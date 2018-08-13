@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# LIBTBX_SET_DISPATCHER_NAME dev.dials.filter_reflections
+# LIBTBX_SET_DISPATCHER_NAME dials.filter_reflections
 
 from __future__ import absolute_import, division, print_function
 
@@ -27,13 +27,13 @@ reflection file.
 
 Examples::
 
-  dev.dials.filter_reflections integrated.pickle \
+  dials.filter_reflections integrated.pickle \
     flag_expression=used_in_refinement
 
-  dev.dials.filter_reflections integrated.pickle \
+  dials.filter_reflections integrated.pickle \
     flag_expression="integrated & ~reference_spot"
 
-  dev.dials.filter_reflections integrated.pickle \
+  dials.filter_reflections integrated.pickle \
     flag_expression="indexed & (failed_during_summation | failed_during_profile_fitting)"
 
 '''
