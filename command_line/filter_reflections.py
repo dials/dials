@@ -1,18 +1,10 @@
 #!/usr/bin/env python
-#
-# dials.filter_reflections.py
-#
-#  Copyright (C) 2015 STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.filter_reflections
 
 from __future__ import absolute_import, division, print_function
 
+from libtbx.utils import Sorry
 from dials.array_family import flex
 
 help_message = '''
@@ -20,17 +12,29 @@ help_message = '''
 This program takes reflection files as input and filters them based on user-
 specified criteria, to write out a subset of the original file.
 
-Currently, only filtering by reflection flags is supported. Inclusions are
-processed first and are combined by logical OR. Specifying no inclusions is a
-special case in which all reflections are included for further filtering.
-Exclusions are then processed, such that reflections are removed only if none of
-the specified flags are set. Different results, such as filtering to include
-only reflections with both flag1 AND flag2 set may be achieved by multiple runs
-of the program.
+Filtering is first done by evaluating the optional boolean 'flag_expression'
+using reflection flag values. The operators allowed are '&' for 'and', '|' for
+'or', and '~' for 'not'. Expressions may contain nested sub-expressions using
+parentheses.
 
-Example::
+Following this, optional additional filters are applied according to values in
+the reflection table, such as by resolution or user-defined masks.
 
-  dev.dials.filter_reflections refined.pickle inclusions.flag=used_in_refinement
+If a reflection file is passed in to the program but no filtering parameters
+are set, a table will be printed, giving the flag values present in the
+reflection file.
+
+
+Examples::
+
+  dev.dials.filter_reflections integrated.pickle \
+    flag_expression=used_in_refinement
+
+  dev.dials.filter_reflections integrated.pickle \
+    flag_expression="integrated & ~reference_spot"
+
+  dev.dials.filter_reflections integrated.pickle \
+    flag_expression="indexed & (failed_during_summation | failed_during_profile_fitting)"
 
 '''
 
@@ -55,19 +59,9 @@ class Script(object):
           .help = "The filtered reflections output filename"
       }
 
-      inclusions {
-        flag = %s
-          .type = choice
-          .help = "Include reflections with this flag to form the working set."
-          .multiple = True
-      }
-
-      exclusions {
-        flag = %s
-          .type = choice
-          .help = "Exclude reflections from the working set with this flag."
-          .multiple = True
-      }
+      flag_expression = None
+        .type = str
+        .help = "Boolean expression to select reflections based on flag values"
 
       d_min = None
         .type = float
@@ -88,10 +82,9 @@ class Script(object):
 
       include scope dials.util.masking.ice_rings_phil_scope
 
-    ''' % tuple([' '.join(self.flag_names)] * 2)
+    '''
 
     phil_scope = parse(phil_str, process_includes=True)
-
 
     # The script usage
     usage  = "usage: %s [options] experiment.json" % libtbx.env.dispatcher_name
@@ -122,13 +115,67 @@ class Script(object):
 
     return
 
+  def eval_flag_expression(self, expression, reflections):
+    """Test a Boolean expression of reflection flags for validity then
+    evaluate it"""
+
+    import token
+    from tokenize import generate_tokens, TokenError, untokenize
+    from StringIO import StringIO
+
+    result = []
+    g = generate_tokens(StringIO(expression).readline)
+
+    flags = list(flex.reflection_table.flags.names.iteritems())
+
+    # define shorthand function
+    def get_flag(flag):
+      return reflections.get_flags(getattr(reflections.flags, flag))
+
+    while True:
+
+      # Extract next token, catching unmatched brackets
+      try:
+        toknum, tokval, _, _, _ = g.next()
+      except TokenError:
+        raise Sorry("errors found in {0}".format(expression))
+      except StopIteration:
+        break
+
+      # Catch unwanted token types
+      if toknum not in [token.OP, token.NAME, token.ENDMARKER]:
+        raise Sorry("invalid tokens found in {0}".format(expression))
+
+      # Catch unwanted operators
+      if toknum is token.OP and tokval not in "()|&~":
+        raise Sorry("unrecognised operators found in {0}".format(expression))
+
+      # Catch unrecognised flag names
+      if toknum is token.NAME and tokval not in self.flag_names:
+        raise Sorry("unrecognised flag name: {0}".format(tokval))
+
+      # Replace names with valid lookups in the reflection table
+      if toknum is token.NAME:
+        ('NAME', 'get_flags')
+        ('OP', '(')
+        ('STRING', "'indexed'")
+        ('OP', ')')
+        result.extend([(token.NAME, 'get_flag'),
+                       (token.OP, '('),
+                       (token.STRING, repr(tokval)),
+                       (token.OP, ')')])
+      else:
+        result.append((toknum, tokval))
+
+    # Evaluate and return the result
+    return eval(untokenize(result), {'get_flag': get_flag, '__builtins__':None},{})
+
   def run(self):
     '''Execute the script.'''
     from dials.array_family import flex
     from dials.util.options import flatten_reflections
     from dials.util.options import flatten_datablocks
     from dials.util.options import flatten_experiments
-    from libtbx.utils import Sorry
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
@@ -173,33 +220,19 @@ class Script(object):
 
     print("{0} reflections loaded".format(len(reflections)))
 
-    if (len(params.inclusions.flag) == 0 and
-        len(params.exclusions.flag) == 0 and
-        params.d_min is None and params.d_max is None and
-        params.partiality.min is None and params.partiality.max is None and
-        not params.ice_rings.filter):
+    # Check if any filter has been set using diff_phil
+    filter_def = [o for o in self.parser.diff_phil.objects
+                  if o.name not in ['input', 'output']]
+    if not filter_def:
       print("No filter specified. Performing analysis instead.")
       return self.analysis(reflections)
 
-    # Build up the initial inclusion selection
-    inc = flex.bool(len(reflections), True)
-    # 2016/07/06 GW logic here not right should be && for each flag not or?
-    for flag in params.inclusions.flag:
-      sel = reflections.get_flags(getattr(reflections.flags, flag))
-      inc = inc & sel
-    reflections = reflections.select(inc)
+    # Filter by logical expression using flags
+    if params.flag_expression is not None:
+      inc = self.eval_flag_expression(params.flag_expression, reflections)
+      reflections = reflections.select(inc)
 
-    print("{0} reflections selected to form the working set".format(len(reflections)))
-
-    # Make requested exclusions from the current selection
-    exc = flex.bool(len(reflections))
-    for flag in params.exclusions.flag:
-      print(flag)
-      sel = reflections.get_flags(getattr(reflections.flags, flag))
-      exc = exc | sel
-    reflections = reflections.select(~exc)
-
-    print("{0} reflections excluded from the working set".format(exc.count(True)))
+    print("Selected {0} reflections by flags".format(len(reflections)))
 
     # Filter based on resolution
     if params.d_min is not None:
@@ -226,7 +259,6 @@ class Script(object):
       print("Selected %d reflections with partiality <= %f" % (len(reflections), params.partiality.max))
 
     # Filter powder rings
-
     if params.ice_rings.filter:
       from dials.algorithms.integration import filtering
       if 'd' in reflections:
@@ -253,7 +285,6 @@ class Script(object):
 
       print("Rejecting %i reflections at ice ring resolution" %ice_sel.count(True))
       reflections = reflections.select(~ice_sel)
-      #reflections = reflections.select(ice_sel)
 
     # Save filtered reflections to file
     if params.output.reflections:

@@ -14,12 +14,12 @@ def test_filter_reflections(tmpdir):
   mask1 = flex.bool([True] * 3 + [False] * 3)
   mask2 = flex.bool([True, False] * 3)
   rt.set_flags(mask1, rt.flags.integrated)
-  rt.set_flags(mask2, rt.flags.bad_spot)
+  rt.set_flags(mask2, rt.flags.reference_spot)
   rt_name = "test_refs.pickle"
   rt.as_pickle(rt_name)
 
-  cmd = "dev.dials.filter_reflections " + rt_name + " inclusions.flag=integrated" + \
-    " exclusions.flag=bad_spot"
+  cmd = ("dev.dials.filter_reflections " + rt_name + " flag_expression="
+         "'integrated & ~reference_spot'")
 
   result = easy_run.fully_buffered(command=cmd).raise_if_errors()
   # load results
