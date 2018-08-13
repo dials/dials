@@ -87,9 +87,9 @@ class flex_3d_frame(wx.Frame):
       wx.Exit()
 
 
-class TupTable(gridlib.PyGridTableBase):
+class TupTable(gridlib.GridTableBase):
   def __init__(self, data, rowLabels=None, colLabels=None):
-    gridlib.PyGridTableBase.__init__(self)
+    gridlib.GridTableBase.__init__(self)
     self.data = data
     self.rowLabels = rowLabels
     self.colLabels = colLabels
@@ -212,7 +212,7 @@ class MyGrid(gridlib.Grid):
     tableBase = TupTable(tupldata, rowLabels, colLabels)
 
     #self.AutoSizeColumns(False)
-    self.SetTable(tableBase)
+    self.SetTable(tableBase, takeOwnership=True)
     self.Refresh()
     #self.AutoSizeColumn(1)
     for i in range(len(self.lst_keys)):

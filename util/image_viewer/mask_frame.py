@@ -610,7 +610,7 @@ class MaskSettingsPanel(wx.Panel):
 
   def OnLeftDown(self, event):
     if not event.ShiftDown():
-      click_posn = event.GetPositionTuple()
+      click_posn = event.GetPosition()
       if self._mode_rectangle:
         self._rectangle_x0y0 = click_posn
         self._rectangle_x1y1 = None
@@ -626,7 +626,7 @@ class MaskSettingsPanel(wx.Panel):
 
   def OnLeftUp(self, event):
     if not event.ShiftDown():
-      click_posn = event.GetPositionTuple()
+      click_posn = event.GetPosition()
 
       if self._mode_rectangle and self._rectangle_x0y0 is not None:
         self._rectangle_x1y1 = click_posn
@@ -661,14 +661,14 @@ class MaskSettingsPanel(wx.Panel):
       if self._mode_rectangle:
         if self._rectangle_x0y0 is not None:
           x0, y0 = self._rectangle_x0y0
-          x1, y1 = event.GetPositionTuple()
+          x1, y1 = event.GetPosition()
           self.DrawRectangle(x0, y0, x1, y1)
           return
 
       elif self._mode_circle:
         if self._circle_xy is not None:
           xc, yc = self._circle_xy
-          xedge, yedge = event.GetPositionTuple()
+          xedge, yedge = event.GetPosition()
           self.DrawCircle(xc, yc, xedge, yedge)
           return
     event.Skip()

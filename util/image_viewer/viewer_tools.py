@@ -90,9 +90,9 @@ class ImageChooserControl(wx.Control):
     self._label = wx.StaticText(self, -1, "Some Text")
 
     # Work out the maximum size of the text so that we can cut off the slider to allow room
-    _, size_y = self._label.GetAdjustedBestSize()
+    _, size_y = self._label.GetEffectiveMinSize()
     self._label.SetFont(self._label.GetFont().Italic())
-    self.size_y = max(size_y, self._label.GetAdjustedBestSize()[1])
+    self.size_y = max(size_y, self._label.GetEffectiveMinSize()[1])
 
     # Use a horizontal box to control vertical alignment
     labelSizer = wx.BoxSizer(wx.HORIZONTAL)

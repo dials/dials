@@ -239,7 +239,7 @@ class SpotFrame(XrayFrame) :
 
     # Don't update whilst dragging the slider
     if event.EventType == wx.EVT_SLIDER.typeId:
-      if wx.GetMouseState().LeftDown():
+      if wx.GetMouseState().LeftIsDown():
         return
 
     # Once we've stopped scrolling, load the selected item
@@ -1741,7 +1741,7 @@ class SpotSettingsPanel (wx.Panel) :
 
     # Don't update whilst dragging the slider
     if (event.GetEventType() == wx.EVT_SLIDER.typeId):
-      if wx.GetMouseState().LeftDown():
+      if wx.GetMouseState().LeftIsDown():
         return
 
     # For e.g. IntCtrl check the value is valid

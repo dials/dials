@@ -260,14 +260,14 @@ class XrayFrame (wx.Frame) :
     file_name = wx.FileSelector("Reflections file",
       wildcard=wildcard_str,
       default_path="",
-      flags=wx.OPEN)
+      flags=wx.FD_OPEN)
     if (file_name != "") :
       self.load_image(file_name)
 
   def OnLoadLabelitResult (self, event) :
     file_name = wx.FileSelector("Labelit result",
       default_path="",
-      flags=wx.OPEN)
+      flags=wx.FD_OPEN)
     if (file_name != "") :
       self.load_image(file_name)
 
