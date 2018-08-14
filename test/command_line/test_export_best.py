@@ -22,7 +22,8 @@ def test_export_best(dials_regression, tmpdir):
       "sigma_m_algorithm=basic",
   ])
   assert not result['exitcode'] and not result['stderr']
-  result = procrunner.run(["dials.export", "integrated_experiments.json", "integrated.pickle", "format=best"])
+  result = procrunner.run(["dials.export", "integrated_experiments.json", "integrated.pickle", "format=best",
+    "partiality_threshold=0.99"])
   assert not result['exitcode'] and not result['stderr']
 
   assert os.path.exists("best.dat")
@@ -32,20 +33,21 @@ def test_export_best(dials_regression, tmpdir):
   with open("best.dat", "r") as f:
     lines = ''.join(f.readlines()[:10])
   assert lines == """\
-  183.7743       0.77       1.60
-   63.4130       1.57       1.80
-   38.3180       1.87       1.71
-   27.4540       1.84       1.55
-   21.3900       1.89       1.51
-   17.5206       1.89       1.52
-   14.8370       1.89       1.45
-   12.8665       1.90       1.45
-   11.3584       1.89       1.42
-   10.1669       1.87       1.46
+  181.9319       1.87       1.34
+   62.7551       1.96       1.38
+   37.9177       1.96       1.35
+   27.1664       1.57       1.41
+   21.1656       1.52       1.41
+   17.3365       1.84       2.86
+   14.6810       1.86       1.49
+   12.7312       1.88       1.47
+   11.2389       1.91       2.04
+   10.0599       1.85       1.39
 """
 
   with open("best.hkl", "r") as f:
     lines = ''.join(f.readlines()[:10])
+  print(lines)
   assert lines == """\
  -20   27   -8      22.61      15.76
  -20   27   -7      69.46      17.54
