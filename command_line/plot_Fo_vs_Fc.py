@@ -144,16 +144,21 @@ class Script(object):
     except RuntimeError:
       raise Sorry('Could not read {0}'.format(self.params.hklin))
 
-    try:
-      fobs = m.extract_reals(self.params.Fo)
-      fc = m.extract_reals(self.params.Fc)
-    except RuntimeError:
+    mad = m.as_miller_arrays_dict()
+    mad = {k[-1]: v for (k,v) in mad.items()}
+    fobs = mad.get(self.params.Fo)
+    fc = mad.get(self.params.Fc)
+
+    if [fobs, fc].count(None) > 0:
       raise Sorry('Columns {0} not found in available labels: {1}'.format(
         ", ".join([self.params.Fo, self.params.Fc]),
         ", ".join(m.column_labels())))
 
-    self.fobs = fobs.data
-    self.fc = fc.data
+    # Find common reflections (some fobs might be missing)
+    fobs, fc = fobs.common_sets(fc)
+
+    self.fobs = fobs.data()
+    self.fc = fc.amplitudes().data()
 
     return
 
