@@ -17,7 +17,10 @@ from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.array_family import flex
 from mock import Mock
+import mock
 from dials.util.options import OptionParser
+from dials.command_line.scale import Script
+from dials.algorithms.scaling.scaling_library import create_scaling_model
 
 class run_one_scaling(object):
   """Class to run the dials.scale algorithm."""
@@ -108,24 +111,89 @@ def generate_test_input(n=1):
     reflections.append(test_reflections())
   return generated_param(), generated_exp(n), reflections
 
+def return_first_arg_side_effect(*args):
+  """Side effect for overriding the call to reject_outliers."""
+  return args[0]
+
+def test_scale_merging_stats():
+  """Test the merging stats method of dials.scale script"""
+  params = generated_param()
+  exp = generated_exp()
+  reflections = flex.reflection_table()
+  reflections['intensity.scale.value'] = flex.double([1.0, 2.0, 3.0, 4.0])
+  reflections['intensity.scale.variance'] = flex.double([1.0, 2.0, 3.0, 4.0])
+  reflections['miller_index'] = flex.miller_index([(0, 0, 1), (0, 0, 1),
+    (0, 0, 2), (0, 0, 2)])
+  reflections['id'] = flex.int([0, 0, 0, 0])
+  reflections['inverse_scale_factor'] = flex.double([0.5, 0.4, 0.9, 1.0])
+  reflections['xyzobs.px.value'] = flex.vec3_double([(0, 0, 0.5), (0, 0, 1.5),
+    (0, 0, 2.5), (0, 0, 3.5)])
+  reflections.set_flags(flex.bool(4, False), reflections.flags.bad_for_scaling)
+  params.output.merging.nbins = 1
+  script = Script(params, exp, [reflections])
+  script.merging_stats()
+  assert script.merging_statistics_result is not None
+
+  # test for sensible return if small dataset with no equivalent reflections
+  reflections['miller_index'] = flex.miller_index([(0, 0, 1), (0, 0, 2),
+    (0, 0, 3), (0, 0, 4)])
+  script = Script(params, exp, [reflections])
+  script.merging_stats()
+  assert script.merging_statistics_result is None
+
+  #test expected behaviour of excluding methods
+  #these methods require a scaling model, so make a simple Kb model
+  reflections['miller_index'] = flex.miller_index([(0, 0, 1), (0, 0, 1),
+    (0, 0, 2), (0, 0, 2)])
+  with mock.patch('dials.command_line.scale.exclude_on_image_scale',
+    side_effect=return_first_arg_side_effect) as \
+    exclude_patch:
+    params.output.exclude_on_image_scale = 0.6
+    params.model = 'KB'
+    script = Script(params, exp, [reflections])
+    script.experiments = create_scaling_model(script.params, script.experiments,
+      script.reflections)
+    script.merging_stats()
+    assert exclude_patch.call_count == 1
+    assert exclude_patch.called_with(script.reflections, script.experiments,
+      script.params.output.exclude_on_image_scale)
+  with mock.patch('dials.command_line.scale.exclude_on_batch_rmerge',
+    side_effect=return_first_arg_side_effect) as \
+    exclude_patch:
+    params.output.exclude_on_batch_rmerge = 2.0
+    params.model = 'KB'
+    script = Script(params, exp, [reflections])
+    script.experiments = create_scaling_model(script.params, script.experiments,
+      script.reflections)
+    script.merging_stats()
+    assert exclude_patch.call_count == 1
+    assert exclude_patch.called_with(script.reflections, script.experiments,
+      script.params.output.exclude_on_batch_rmerge)
+
 def test_scale_script_prepare_input():
   """Test prepare_input method of scaling script."""
-  from dials.command_line.scale import Script
+
    #test the components of the scaling script directly with a test reflection
    #table, experiments list and params.
 
   params, exp, reflections = generate_test_input()
+  #try to pass in unequal number of reflections and experiments
+  reflections.append(test_reflections())
+  script = Script(params, exp, reflections)
+  with pytest.raises(Sorry):
+    script.prepare_input()
 
+  params, exp, reflections = generate_test_input()
   #Try to use use_datasets when not identifiers set
   params.dataset_selection.use_datasets = ['0']
+  script = Script(params, exp, reflections)
   with pytest.raises(SystemExit):
-    script = Script(params, exp, [reflections])
     script.prepare_input()
   #Try to use use_datasets when not identifiers set
   params.dataset_selection.use_datasets = None
   params.dataset_selection.exclude_datasets = ['0']
+  script = Script(params, exp, reflections)
   with pytest.raises(SystemExit):
-    script = Script(params, exp, [reflections])
     script.prepare_input()
 
   #Now make two experiments with identifiers and select on them

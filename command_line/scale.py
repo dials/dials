@@ -134,6 +134,7 @@ class Script(object):
     self.scaler = None
     self.scaled_miller_array = None
     self.dataset_ids = []
+    self.merging_statistics_result = None
     logger.debug('Initialised scaling script object')
     log_memory_usage()
 
@@ -306,7 +307,6 @@ class Script(object):
   def merging_stats(self):
     """Calculate and print the merging statistics."""
     logger.info('\n'+'='*80+'\n')
-    # Calculate merging stats.
 
     if self.params.output.exclude_on_batch_rmerge:
       self.reflections = exclude_on_batch_rmerge(self.reflections, self.experiments,
@@ -315,8 +315,6 @@ class Script(object):
     if self.params.output.exclude_on_image_scale:
       self.reflections = exclude_on_image_scale(self.reflections, self.experiments,
         self.params.output.exclude_on_image_scale)
-
-    plot_labels = []
 
     self.scaled_miller_array = self.scaled_data_as_miller_array(
       self.experiments[0].crystal.get_crystal_symmetry(), anomalous_flag=False)
@@ -334,7 +332,7 @@ class Script(object):
       use_internal_variance=self.params.output.use_internal_variance)
     result.show(header=0, out=log.info_handle(logger))
     result.show_estimated_cutoffs(out=log.info_handle(logger))
-    plot_labels.append('Overall dataset')
+    self.merging_statistics_result = result
 
   def delete_datastructures(self):
     """Delete the data in the scaling datastructures to save RAM before
@@ -349,7 +347,9 @@ class Script(object):
     """Save the experiments json and scaled pickle file."""
     logger.info('\n'+'='*80+'\n')
 
-    if self.params.scaling_options.target_model or self.params.scaling_options.target_mtz:
+    if self.params.scaling_options.target_model or \
+      self.params.scaling_options.target_mtz or \
+      self.params.scaling_options.only_target:
       self.experiments = self.experiments[:-1]
     save_experiments(self.experiments, self.params.output.experiments)
 
@@ -368,13 +368,13 @@ class Script(object):
       gc.collect()
 
     # remove reflections with neg sigma
-    sel = joint_table['inverse_scale_factor'] > 0.0
-    n_neg = sel.count(False)
+    sel = joint_table['inverse_scale_factor'] <= 0.0
+    n_neg = sel.count(True)
     if n_neg > 0:
-      logger.warning('Warning: %s reflections were assigned negative scale factors, \n'
-        'it may be best to adjust model parameters to try to avoid this!' % n_neg)
-      joint_table = joint_table.select(sel)
-      logger.warning('Warning: %s reflections removed due to negative scale factors \n' % n_neg)
+      logger.warning(
+        'Warning: %s reflections were assigned negative scale factors. \n'
+        'It may be best to rerun scaling from this point for an improved model.' % n_neg)
+      joint_table.set_flags(sel, joint_table.flags.excluded_for_scaling)
 
     if self.params.output.unmerged_mtz:
       logger.info("\nSaving output to an unmerged mtz file to %s.",
