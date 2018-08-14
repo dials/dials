@@ -34,6 +34,10 @@ mode = *full ambiguity
 space_group = None
   .type = space_group
 
+partiality_threshold = 0.99
+  .type = float
+  .help = "Use reflections with a partiality above the threshold."
+
 unit_cell_clustering {
   threshold = 5000
     .type = float(value_min=0)
@@ -141,32 +145,25 @@ def run(args):
         unit_cell=expt.crystal.get_unit_cell(),
         space_group=expt.crystal.get_space_group())
 
-      # filtering of intensities similar to that done in export_mtz
-      # FIXME this function should be renamed/moved elsewhere
-      from dials.util.export_mtz import _apply_data_filters
-      refl = _apply_data_filters(
-        refl,
-        ignore_profile_fitting=False,
-        filter_ice_rings=False,
-        min_isigi=-5,
-        include_partials=False,
-        keep_partials=True,
-        scale_partials=False,
-        apply_scales=False)
-
-      if 0 and 'intensity.prf.value' in refl:
-        sel = refl.get_flags(refl.flags.integrated_prf)
-        assert sel.count(True) > 0
-        refl = refl.select(sel)
-        data = refl['intensity.prf.value']
-        variances = refl['intensity.prf.variance']
+      from dials.util.filter_reflections import filter_reflection_table
+      if 'intensity.scale.value' in refl:
+        intensity_choice = ['scale']
+        intensity_to_use = 'scale'
       else:
         assert 'intensity.sum.value' in refl
-        sel = refl.get_flags(refl.flags.integrated_sum)
-        assert sel.count(True) > 0
-        refl = refl.select(sel)
-        data = refl['intensity.sum.value']
-        variances = refl['intensity.sum.variance']
+        intensity_choice = ['sum']
+        if 'intensity.prf.value' in refl:
+          intensity_choice.append('prf')
+          intensity_to_use = 'prf'
+        else:
+          intensity_to_use = 'sum'
+
+      refl = filter_reflection_table(refl, intensity_choice, min_isigi=-5,
+        filter_ice_rings=False, combine_partials=True,
+        partiality_threshold=params.partiality_threshold)
+      assert refl.size() > 0
+      data = refl['intensity.'+intensity_to_use+'.value']
+      variances = refl['intensity.'+intensity_to_use+'.variance']
 
       miller_indices = refl['miller_index']
       assert variances.all_gt(0)

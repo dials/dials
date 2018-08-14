@@ -24,13 +24,8 @@ phil_scope = parse('''
   hklout = hklout.mtz
     .type = str
     .help = "The output mtz file"
-  ignore_panels = False
-    .type = bool
-    .help = "Ignore multiple panels / detectors in output"
-  include_partials = False
-    .type = bool
-    .help = "Include partial reflections (scaled) in output"
-''')
+  include scope dials.command_line.export.phil_scope
+''', process_includes=True)
 
 def run(args):
   from dials.util.nexus import load
@@ -41,22 +36,15 @@ def run(args):
   usage = '%s hklin=hklin.nxs hklout=hklout.mtz [options]' % (
               libtbx.env.dispatcher_name)
 
-  parser = OptionParser(
-    usage = usage,
-    phil=phil_scope,
-    epilog=help_message)
-  params, options = parser.parse_args(show_diff_phil=True)
+  parser = OptionParser(usage=usage, phil=phil_scope, epilog=help_message)
+  params, _ = parser.parse_args(show_diff_phil=True)
+  params.mtz.hklout = params.hklout
 
   # Load the experiments and reflections from the NXmx file
   experiments, reflections = load(params.hklin)
 
   # Export the experiments and reflections to the MTZ file
-  m = export_mtz(
-    reflections,
-    experiments,
-    params.hklout,
-    params.ignore_panels,
-    params.include_partials)
+  m = export_mtz(reflections, experiments, params)
   m.show_summary()
 
 if __name__ == '__main__':
