@@ -7,10 +7,17 @@ dials.plot_scaling_outliers
 from __future__ import absolute_import, division, print_function
 
 import os
+import sys
 import cPickle as pickle
 import pytest
-from libtbx import easy_run
+from libtbx import easy_run, phil
+from libtbx.utils import Sorry
 from dxtbx.serialize import load
+from dxtbx.model.experiment_list import ExperimentList
+from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
+from dials.array_family import flex
+from mock import Mock
+from dials.util.options import OptionParser
 
 class run_one_scaling(object):
   """Class to run the dials.scale algorithm."""
@@ -56,6 +63,159 @@ def get_merging_stats(scaled_unmerged_mtz, anomalous=False, n_bins=20,
   )
   return result
 
+def generated_exp(n=1):
+  """Generate an experiment list with two experiments."""
+  experiments = ExperimentList()
+  exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
+              "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
+              "space_group_hall_symbol": " C 2y"}
+  crystal = Crystal.from_dict(exp_dict)
+  scan = Scan(image_range=[0, 90], oscillation=[0.0, 1.0])
+  beam = Beam(s0=(0.0, 0.0, 1.01))
+  goniometer = Goniometer((1.0, 0.0, 0.0))
+  detector = Detector()
+  experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
+    detector=detector, crystal=crystal))
+  if n > 1:
+    for _ in range(n-1):
+      experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
+        detector=detector, crystal=crystal))
+  return experiments
+
+def generated_param():
+  """Generate the default scaling parameters object."""
+  phil_scope = phil.parse('''
+      include scope dials.command_line.scale.phil_scope
+  ''', process_includes=True)
+
+  optionparser = OptionParser(phil=phil_scope, check_format=False)
+  parameters, _ = optionparser.parse_args(args=[], quick_parse=True,
+    show_diff_phil=False)
+  return parameters
+
+def test_reflections():
+  reflections = flex.reflection_table()
+  reflections['intensity.sum.value'] = flex.double([1.0, 2.0, 3.0, 4.0])
+  reflections['intensity.sum.variance'] = flex.double([1.0, 2.0, 3.0, 4.0])
+  reflections['miller_index'] = flex.miller_index([(0, 0, 1), (0, 0, 1),
+    (0, 0, 2), (0, 0, 2)])
+  reflections['id'] = flex.int([0, 0, 0, 0])
+  return reflections
+
+def generate_test_input(n=1):
+  reflections = []
+  for _ in range(n):
+    reflections.append(test_reflections())
+  return generated_param(), generated_exp(n), reflections
+
+def test_scale_script_prepare_input():
+  """Test prepare_input method of scaling script."""
+  from dials.command_line.scale import Script
+   #test the components of the scaling script directly with a test reflection
+   #table, experiments list and params.
+
+  params, exp, reflections = generate_test_input()
+
+  #Try to use use_datasets when not identifiers set
+  params.dataset_selection.use_datasets = ['0']
+  with pytest.raises(SystemExit):
+    script = Script(params, exp, [reflections])
+    script.prepare_input()
+  #Try to use use_datasets when not identifiers set
+  params.dataset_selection.use_datasets = None
+  params.dataset_selection.exclude_datasets = ['0']
+  with pytest.raises(SystemExit):
+    script = Script(params, exp, [reflections])
+    script.prepare_input()
+
+  #Now make two experiments with identifiers and select on them
+  params, exp, reflections = generate_test_input(n=2)
+  exp[0].identifier = '0'
+  reflections[0].experiment_identifiers()[0] = '0'
+  exp[1].identifier = '1'
+  reflections[1].experiment_identifiers()[0] = '1'
+  assert reflections[0].are_experiment_identifiers_consistent([exp[0]])
+  assert reflections[1].are_experiment_identifiers_consistent([exp[1]])
+  params.dataset_selection.use_datasets = ['0']
+  script = Script(params, exp, reflections)
+  script.prepare_input()
+
+  assert len(script.reflections) == 1
+  assert script.reflections[0] is reflections[0]
+
+  #Try again, this time excluding
+  params, exp, reflections = generate_test_input(n=2)
+  exp[0].identifier = '0'
+  reflections[0].experiment_identifiers()[0] = '0'
+  exp[1].identifier = '1'
+  reflections[1].experiment_identifiers()[0] = '1'
+  params.dataset_selection.exclude_datasets = ['0']
+  script = Script(params, exp, reflections)
+  script.prepare_input()
+
+  assert len(script.reflections) == 1
+  assert script.reflections[0] is reflections[1]
+
+  #Try setting space group
+  params, exp, reflections = generate_test_input(n=1)
+  params.scaling_options.space_group = 'P1'
+  script = Script(params, exp, reflections)
+  script.prepare_input()
+  assert script.experiments[0].crystal.get_space_group().type().number() == 1
+
+  #Try having two unequal space groups
+  params, exp, reflections = generate_test_input(n=2)
+  exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
+              "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
+              "space_group_hall_symbol": " P 1"}
+  crystal = Crystal.from_dict(exp_dict)
+  exp[0].crystal = crystal
+  script = Script(params, exp, reflections)
+  with pytest.raises(Sorry):
+    script.prepare_input()
+
+  # Test cutting data
+  params, exp, reflections = generate_test_input(n=1)
+  reflections[0]['d'] = flex.double([2.5, 2.0, 1.0, 1.0])
+  params.cut_data.d_min = 1.5
+  script = Script(params, exp, reflections)
+  script.prepare_input()
+  r = script.reflections[0]
+  assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [
+    False, False, True, True]
+  params.cut_data.d_max = 2.25
+  script = Script(params, exp, reflections)
+  script.prepare_input()
+  r = script.reflections[0]
+  assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [
+    True, False, True, True]
+
+  params, exp, reflections = generate_test_input(n=1)
+  reflections[0]['partiality'] = flex.double([0.5, 0.8, 1.0, 1.0])
+  params.cut_data.partiality_cutoff = 0.75
+  script = Script(params, exp, reflections)
+  script.prepare_input()
+  r = script.reflections[0]
+  assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [
+    True, False, False, False]
+
+  params, exp, reflections = generate_test_input(n=1)
+  reflections[0]['xyzobs.px.value'] = flex.vec3_double([(0, 0, 0.5), (0, 0, 2.5),
+    (0, 0, 4.5), (0, 0, 6.5)])
+  params.cut_data.exclude_image_range = [0.0, 3.0]
+  #print(params.cut_data.exclude_image_range)
+  script = Script(params, exp, reflections)
+  script.prepare_input()
+  r = script.reflections[0]
+  assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [True, True, False, False]
+
+  params, exp, reflections = generate_test_input(n=2)
+  params.cut_data.exclude_image_range = [0.0, 3.0]
+  script = Script(params, exp, reflections)
+  with pytest.raises(Sorry):
+    script.prepare_input()
+
+
 @pytest.mark.dataset_test
 def test_scale_physical(dials_regression, tmpdir):
   """Test standard scaling of one dataset."""
@@ -78,11 +238,21 @@ def test_scale_physical(dials_regression, tmpdir):
     assert result.overall.cc_one_half > 0.9955 # at 07/08/18, value was 0.99597
     assert result.overall.n_obs > 2300 # at 07/08/18, was 2309
 
+    # Try running again with the merged.mtz as a target, to trigger the
+    # target_mtz option
+    extra_args.append("target_mtz=merged.mtz")
+    _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
+    result = get_merging_stats("unmerged.mtz")
+    assert result.overall.r_pim < 0.024 #at 14/08/18, value was 0.023
+    assert result.overall.cc_one_half > 0.9955 # at 14/08/18, value was 0.999
+    assert result.overall.n_obs > 2100 # at 14/08/18, was 2123
+    #FIXME in target_mtz, why are many more outliers rejected?
+
   # run again with the concurrent scaling option turned off and the 'standard'
   # outlier rejection
   extra_args = ["model=physical", "merged_mtz=merged.mtz",
     "unmerged_mtz=unmerged.mtz", "use_free_set=1", "outlier_rejection=standard",
-    "concurrent=False"]
+    "concurrent=False", "intensity_choice=combine"]
   with tmpdir.as_cwd():
     _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
     assert os.path.exists("scale_model.png")

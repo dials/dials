@@ -75,9 +75,6 @@ phil_scope = phil.parse('''
     debug.log = dials.scale.debug.log
       .type = str
       .help = "The debug log filename"
-    plot_merging_stats = False
-      .type = bool
-      .help = "Option to switch on plotting of merging stats."
     plot_scaling_models = False
       .type = bool
       .help = "Option to switch on plotting of the scaling models determined."
@@ -247,6 +244,7 @@ class Script(object):
         reflection.set_flags(reflection['partiality'] < \
           self.params.cut_data.partiality_cutoff,
           reflection.flags.user_excluded_in_scaling)
+
     if self.params.cut_data.exclude_image_range:
       if len(self.reflections) == 1:
         start_excl = self.params.cut_data.exclude_image_range[0]
@@ -274,6 +272,10 @@ class Script(object):
     """Get a scaled miller array from an experiment and reflection table."""
     if not reflection_table:
       joint_table = flex.reflection_table()
+      if self.params.scaling_options.only_target or \
+        self.params.scaling_options.target_model or \
+        self.params.scaling_options.target_mtz:
+        self.reflections = self.reflections[:-1]
       for reflection_table in self.reflections:
         #better to just create many miller arrays and join them?
         refl_for_joint_table = flex.reflection_table()
@@ -333,11 +335,6 @@ class Script(object):
     result.show(header=0, out=log.info_handle(logger))
     result.show_estimated_cutoffs(out=log.info_handle(logger))
     plot_labels.append('Overall dataset')
-
-    # Plot merging stats if requested.
-    if self.params.output.plot_merging_stats:
-      from xia2.command_line.compare_merging_stats import plot_merging_stats
-      plot_merging_stats([result])
 
   def delete_datastructures(self):
     """Delete the data in the scaling datastructures to save RAM before
