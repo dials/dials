@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function
 
 import iotbx.phil
 from scitbx.array_family import flex
+from libtbx.utils import Sorry
 
 help_message = '''
 
@@ -18,9 +19,9 @@ Examples::
 phil_scope = iotbx.phil.parse("""\
 n_bins = 100
   .type = int
-frames = None
-  .type = int
-  .multiple = True
+images = None
+  .type = ints
+  .help = "Images on which to perform the analysis (otherwise use all images)"
 plot = False
   .type = bool
 
@@ -71,16 +72,21 @@ def run(args):
       "single imageset")
   imageset = imagesets[0]
 
-  images = imageset.indices()
-  if params.frames:
-    images = params.frames
+  first, last = imageset.get_scan().get_image_range()
+  images = range(first, last + 1)
+
+  if params.images:
+    if min(params.images) < first or max(params.images) > last:
+      raise Sorry("image outside of scan range")
+    images = params.images
 
   d_spacings = []
   intensities = []
   sigmas = []
 
   for indx in images:
-    print('For frame %d:' % indx)
+    print('For image %d:' % indx)
+    indx -= first # indices passed to imageset.get_raw_data start from zero
     d, I, sig = background(imageset, indx, n_bins=params.n_bins,
         mask_params=params.masking)
 
@@ -135,7 +141,6 @@ def background(imageset, indx, n_bins, mask_params=None):
   wavelength = beam.get_wavelength()
 
   if math.fabs(b.dot(n)) < 0.95:
-    from libtbx.utils import Sorry
     raise Sorry('Detector not perpendicular to beam')
 
   data = imageset.get_raw_data(indx)
