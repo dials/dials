@@ -72,7 +72,7 @@ phil_scope = iotbx.phil.parse('''
       .type = float
       .help = "Minimum partiality to use when selecting subset of reflections
                to determine the scaling model."
-    intensity_choice = *prf sum combine
+    intensity_choice = prf sum *combine
       .type = choice
       .help = "Option to choose from profile fitted or summation intensities, or
                an optimised combination of prf/sum."
@@ -82,7 +82,7 @@ phil_scope = iotbx.phil.parse('''
                calculation: the value with the lowest Rmeas will be chosen.
                0 and 1 are special values that can be supplied to include prf
                and sum respectively in the comparison."
-    combine.joint_analysis = False
+    combine.joint_analysis = True
       .type = bool
       .help = "Option of whether to do intensity combination optimisation
               separately (i.e. different Imid per dataset) or joint for
@@ -95,7 +95,7 @@ phil_scope = iotbx.phil.parse('''
               other than invvar and unity may trigger iterative reweighting
               during minimisation, which may be unstable for certain minimisation
               engines (LBFGS)."
-    optimise_errors = False
+    optimise_errors = True
       .type = bool
       .help = "Option to allow optimisation of weights for scaling. Performs
                and additional scale factor minimisation after adjusting weights."
@@ -193,7 +193,7 @@ phil_scope = iotbx.phil.parse('''
       .type = bool
       .help = "Option to turn off GN/LM refinement round used to determine
                error estimates on scale factors."
-    outlier_rejection = standard *simple
+    outlier_rejection = *standard simple
       .type = choice
       .help = "Choice of outlier rejection routine. Standard may take a
         significant amount of time to run for large datasets or high

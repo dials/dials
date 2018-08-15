@@ -292,7 +292,8 @@ def test_scale_physical(dials_regression, tmpdir):
   pickle_path = os.path.join(data_dir, "20_integrated.pickle")
   sweep_path = os.path.join(data_dir, "20_integrated_experiments.json")
   extra_args = ["model=physical", "merged_mtz=merged.mtz",
-    "unmerged_mtz=unmerged.mtz", "use_free_set=1", "outlier_rejection=simple"]
+    "optimise_errors=False", "intensity_choice=prf", "unmerged_mtz=unmerged.mtz",
+    "use_free_set=1", "outlier_rejection=simple"]
 
   with tmpdir.as_cwd():
     _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
@@ -369,7 +370,8 @@ def test_multi_scale(dials_regression, tmpdir):
   sweep_path_1 = os.path.join(data_dir, "20_integrated_experiments.json")
   pickle_path_2 = os.path.join(data_dir, "25_integrated.pickle")
   sweep_path_2 = os.path.join(data_dir, "25_integrated_experiments.json")
-  extra_args = ["unmerged_mtz=unmerged.mtz"]
+  extra_args = ["unmerged_mtz=unmerged.mtz", "optimise_errors=False",
+    "intensity_choice=prf", "outlier_rejection=simple"]
 
   with tmpdir.as_cwd():
     _ = run_one_scaling([pickle_path_1, pickle_path_2],
@@ -397,7 +399,7 @@ def test_multi_scale(dials_regression, tmpdir):
     # that the new behaviour is more correct and update test accordingly.
     # Note: error optimisation currently appears to give worse results here!
     result = get_merging_stats("unmerged.mtz")
-    expected_nobs = 5459
+    expected_nobs = 5520
     assert abs(result.overall.n_obs - expected_nobs) < 10
     assert result.overall.r_pim < 0.023 #at 07/08/18, value was 0.022722
     assert result.overall.cc_one_half > 0.9965 # at 07/08/18, value was 0.996925

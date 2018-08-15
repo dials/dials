@@ -450,7 +450,7 @@ class Script(object):
         if scaler.params.scaling_options.outlier_rejection:
           scaler.round_of_outlier_rejection()
         if scaler.params.weighting.optimise_errors:
-          scaler.perform_error_optimisation()
+          scaler.perform_error_optimisation(update_Ih=False)
 
         scaler.adjust_variances()
 
