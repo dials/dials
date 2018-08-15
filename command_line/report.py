@@ -1896,6 +1896,89 @@ class IntensityAnalyser(object):
       pyplot.close()
 
 
+class ZScoreAnalyser(object):
+  """
+  Analyse the distribution of intensity z-scores.
+
+  z-scores are calculated as z = (I - <I>) / σ, where I is intensity,
+  <I> is a weighted mean and σ is the measurement error in intensity,
+  as calculated by dials.util.intensity_explorer.
+  """
+
+  def __init__(self):
+    from os.path import join
+
+    # Set the required fields
+    self.required = [
+      "intensity.sum.value",
+      "intensity.sum.variance",
+      "xyzobs.px.value",
+    ]
+
+  def __call__(self, rlist, experiments):
+    """
+    :param rlist: A reflection table containing, at the least, the following
+    fields:
+      * ``miller_index``
+      * ``intensity.sum.value``
+      * ``intensity.sum.variance``
+      * ``xyzobs.px.value``
+    :type rlist: `dials_array_family_flex_ext.reflection_table`
+    :return: A dictionary describing a Plotly plot.
+    :rtype:`dict`
+    """
+
+    # Check we have the required fields
+    print("Analysing reflection intensities")
+    if not ensure_required(rlist, self.required):
+      return {}
+
+    selection = rlist['intensity.sum.variance'] <= 0
+    if selection.count(True) > 0:
+      rlist.del_selected(selection)
+      print(u" Removing %d reflections with variance ≤ 0" % \
+            selection.count(True))
+
+    selection = rlist['intensity.sum.value'] <= 0
+    if selection.count(True) > 0:
+      rlist.del_selected(selection)
+      print(u" Removing %d reflections with intensity ≤ 0" % \
+            selection.count(True))
+
+    d = OrderedDict()
+
+    print(" Analysing distribution of intensity z-scores")
+    d.update(self.z_score_hist(rlist, experiments))
+
+    return d
+
+  def z_score_hist(self, rlist, experiments):
+    """
+    Plot a histogram of z-scores.
+    """
+    from dials.util.intensity_explorer import IntensityDist
+
+    z_scores = IntensityDist(
+        rtable=rlist, elist=experiments).rtable['intensity.z_scores']
+    hist = flex.histogram(z_scores, -5, 5, 100)
+
+    return {
+      'z_score_histogram': {
+        'data'  : [{
+          'x'   : list(hist.slot_centers()),
+          'y'   : list(hist.slots()),
+          'type': 'bar',
+          'name': 'z_hist',
+        }],
+        'layout': {
+          'title' : 'Histogram of z-scores',
+          'xaxis' : {'title': 'z-score', 'range': [-5, 5]},
+          'yaxis' : {'title': 'Number of reflections'},
+          'bargap': 0,
+        },
+      },
+    }
+
 class ReferenceProfileAnalyser(object):
   ''' Analyse the reference profiles. '''
 
@@ -2612,6 +2695,8 @@ class Analyser(object):
     crystal_table = None
     expt_geom_table = None
     if experiments is not None:
+      analyse = ZScoreAnalyser()
+      json_data['intensity'].update(analyse(rlist, experiments))
       analyse = ScanVaryingCrystalAnalyser(self.params.orientation_decomposition)
       json_data.update(analyse(experiments))
       crystal_table, expt_geom_table = self.experiments_table(experiments)
@@ -2781,7 +2866,7 @@ class Script(object):
     # Parse the command line arguments
     params, options = self.parser.parse_args(show_diff_phil=True)
 
-    # Shoe the help
+    # Show the help
     if len(params.input.reflections) != 1 and not len(params.input.experiments):
       self.parser.print_help()
       exit(0)
