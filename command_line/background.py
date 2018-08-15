@@ -164,8 +164,11 @@ def background(imageset, indx, n_bins, mask_params=None):
 
   # print some summary information
   print('Mean background: %.3f' % (flex.sum(background) / background.size()))
-  print('Max/total signal pixels: %.0f / %.0f' % (flex.max(signal),
-                                                  flex.sum(signal)))
+  if len(signal) > 0:
+    print('Max/total signal pixels: %.0f / %.0f' % (flex.max(signal),
+                                                    flex.sum(signal)))
+  else:
+    print('No signal pixels on this image')
   print('Peak/background/masked pixels: %d / %d / %d' % (peak_pixels.count(True),
                                                       background.size(),
                                                       mask.count(False)))
