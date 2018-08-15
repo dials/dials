@@ -1,38 +1,45 @@
 #!/usr/bin/env python
 # coding: utf-8
-"""
-Usage: dials.scale integrated.pickle integrated_experiments.json
-[integrated.pickle(2) integrated_experiments.json(2) ....] [options]
+from __future__ import absolute_import, division, print_function
 
-This program performs scaling on the input datasets, which attempts to improve
+help_message =  """
+This program performs scaling on integrated datasets, which attempts to improve
 the internal consistency of the reflection intensities by correcting for
 various experimental effects. By default, a physical scaling model is used,
-with a scale, decay and absorption components. If multiple input files have been
+with scale, decay and absorption components. If multiple input files have been
 specified, the datasets will be jointly scaled against a common target of
 unique reflection intensities.
 
-One scaled.pickle and scaled_experiments.json files are output,
-which may contain data and scale models from multiple experiments. The
-reflection intensities are left unscaled and unmerged in the output, but an
-'inverse_scale_factor' and 'inverse_scale_factor_variance' column is added.
+The program outputs one scaled.pickle and scaled_experiments.json file, which
+contains reflection data and scale models, from one or more experiments.
+The output pickle file contains intensity.scale.value, the unscaled intensity
+values used to determine the scaling model, and a inverse scale factor per
+reflection. These values can then be used to merge the data for downstream
+structural solution. Alternatively, the scaled_experiments.json and 
+scaled.pickle files can be passed back to dials.scale, and further scaling will
+be performed, starting from where the previous job finished.
 
-To plot the scale factors determined by this program, one should run:
+The scaling models determined by this program can be plotted with:
 dials.plot_scaling_models scaled.pickle scaled_experiments.json
 
-Examples:
+Example use cases:
 
-Regular single-sweep scaling
-dials.scale integrated.pickle integrated_experiments.json absorption_term=False
+| Regular single-sweep scaling, with no absorption correction:
+| dials.scale integrated.pickle integrated_experiments.json absorption_term=False
 
-Scaling multiple datasets
-dials.scale 1_integrated.pickle 1_integrated_experiments.json
-  2_integrated.pickle 2_integrated_experiments.json scale_interval=10.0
+| Scaling multiple datasets, specifying scale parameter interval:
+| dials.scale 1_integrated.pickle 1_integrated_experiments.json /
+|    2_integrated.pickle 2_integrated_experiments.json scale_interval=10.0
 
-Scaling many small-wedge datasets
-dials.scale *_integrated.pickle *_integrated_experiments.json model=KB
+| Scaling many small-wedge datasets, using a KB scaling model:
+| dials.scale *_integrated.pickle *_integrated_experiments.json model=KB
+
+| Incremental scaling (with different options per dataset):
+| dials.scale integrated.pickle integrated_experiments.json scale_interval=10.0
+| dials.scale integrated_2.pickle integrated_experiments_2.json scaled.pickle /
+|    scaled_experiments.json scale_interval=15.0
 
 """
-from __future__ import absolute_import, division, print_function
 import time
 import logging
 import sys
@@ -503,9 +510,11 @@ class Script(object):
 if __name__ == "__main__":
   try:
     #Parse the command line and flatten reflections, experiments
-    optionparser = OptionParser(usage=__doc__.strip(), read_experiments=True,
+    usage = '''Usage: dials.scale integrated.pickle integrated_experiments.json
+[integrated.pickle(2) integrated_experiments.json(2) ....] [options]'''
+    optionparser = OptionParser(usage=usage, read_experiments=True,
       read_reflections=True, read_datablocks=False, phil=phil_scope,
-      check_format=False)
+      check_format=False, epilog=help_message)
     params, _ = optionparser.parse_args(show_diff_phil=False)
     if not params.input.experiments or not params.input.reflections:
       optionparser.print_help()
