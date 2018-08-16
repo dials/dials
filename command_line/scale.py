@@ -19,25 +19,25 @@ structural solution. Alternatively, the scaled_experiments.json and
 scaled.pickle files can be passed back to dials.scale, and further scaling will
 be performed, starting from where the previous job finished.
 
-The scaling models determined by this program can be plotted with:
-dials.plot_scaling_models scaled.pickle scaled_experiments.json
+The scaling models determined by this program can be plotted with::
 
-Example use cases:
+  dials.plot_scaling_models scaled.pickle scaled_experiments.json
 
-| Regular single-sweep scaling, with no absorption correction:
-| dials.scale integrated.pickle integrated_experiments.json absorption_term=False
+Example use cases
 
-| Scaling multiple datasets, specifying scale parameter interval:
-| dials.scale 1_integrated.pickle 1_integrated_experiments.json /
-|    2_integrated.pickle 2_integrated_experiments.json scale_interval=10.0
+Regular single-sweep scaling, with no absorption correction::
 
-| Scaling many small-wedge datasets, using a KB scaling model:
-| dials.scale *_integrated.pickle *_integrated_experiments.json model=KB
+  dials.scale integrated.pickle integrated_experiments.json absorption_term=False
 
-| Incremental scaling (with different options per dataset):
-| dials.scale integrated.pickle integrated_experiments.json scale_interval=10.0
-| dials.scale integrated_2.pickle integrated_experiments_2.json scaled.pickle /
-|    scaled_experiments.json scale_interval=15.0
+Scaling multiple datasets, specifying scale parameter interval::
+
+  dials.scale 1_integrated.pickle 1_integrated_experiments.json 2_integrated.pickle 2_integrated_experiments.json scale_interval=10.0
+
+Incremental scaling (with different options per dataset)::
+
+  dials.scale integrated.pickle integrated_experiments.json scale_interval=10.0
+
+  dials.scale integrated_2.pickle integrated_experiments_2.json scaled.pickle scaled_experiments.json scale_interval=15.0
 
 """
 import time
