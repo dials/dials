@@ -59,7 +59,7 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
   elif all([i in intensity_choice for i in ['sum', 'prf']]):
     reducer = SumAndPrfIntensityReducer
   else:
-    raise Sorry(("Unrecognised intensity choice for filter_for_export,\n"
+    raise Sorry(("Unrecognised intensity choice for filter_reflection_table,\n"
       "value read: {0}\n"
       "must be either: 'scale', 'prf', 'sum', 'prf sum' or 'prf sum scale'\n"
       "(if parsing from command line, multiple choices passed as e.g. prf+sum"
@@ -323,7 +323,7 @@ class SumIntensityReducer(FilterForExportAlgorithm):
 class SumAndPrfIntensityReducer(FilterForExportAlgorithm):
 
   """A class to implement methods to reduce sum and prf intensity data and to
-  implement filtering for export. Reflections are kept if either a prf or
+  implement filtering for export. Reflections are kept both a prf and
   sum intensity is defined."""
 
   intensities = ['sum', 'prf']
@@ -352,36 +352,15 @@ class SumAndPrfIntensityReducer(FilterForExportAlgorithm):
 
   @staticmethod
   def reduce_on_intensities(reflection_table):
-  # First select the reflections which have successfully been integrated by
-  # either method
+    """First select the reflections which have successfully been integrated by
+    both methods"""
     selection = reflection_table.get_flags(reflection_table.flags.integrated,
-      all=False)
+      all=True)
     reflection_table = reflection_table.select(selection)
+    if reflection_table.size() == 0:
+      raise Sorry('No reflections found with both prf and sum intensities,'
+        'try selecting a different filtering option - sum perhaps?')
     logger.info("Selected %d integrated reflections" % reflection_table.size())
-    # Want to ensure that sensible intensities are in both columns. So if there is
-    # no value for prf or sum for a given reflection, set the value to be equal
-    # to the one that does exist. In effect the prf intensity column then becomes
-    # "prf intensity if prf fitting successful else summation" and vice versa.
-    profile_selection = reflection_table.get_flags(
-      reflection_table.flags.integrated_prf)
-    if profile_selection.count(True) < reflection_table.size():
-      sum_for_prf_sel = ~profile_selection
-      sum_int_for_prf = reflection_table['intensity.sum.value'].select(sum_for_prf_sel)
-      reflection_table['intensity.prf.value'].set_selected(
-        sum_for_prf_sel.iselection(), sum_int_for_prf)
-      sum_var_for_prf = reflection_table['intensity.sum.variance'].select(sum_for_prf_sel)
-      reflection_table['intensity.prf.variance'].set_selected(
-        sum_for_prf_sel.iselection(), sum_var_for_prf)
-    summation_selection = reflection_table.get_flags(
-    reflection_table.flags.integrated_sum)
-    if summation_selection.count(True) < reflection_table.size():
-      prf_for_sum_sel = ~summation_selection
-      prf_int_for_sum = reflection_table['intensity.prf.value'].select(prf_for_sum_sel)
-      reflection_table['intensity.sum.value'].set_selected(
-        prf_for_sum_sel.iselection(), prf_int_for_sum)
-      prf_var_for_sum = reflection_table['intensity.prf.variance'].select(prf_for_sum_sel)
-      reflection_table['intensity.sum.variance'].set_selected(
-        prf_for_sum_sel.iselection(), prf_var_for_sum)
     return reflection_table
 
   @classmethod

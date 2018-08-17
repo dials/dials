@@ -254,12 +254,17 @@ def _write_columns(mtz_file, dataset, integrated_data):
       flex.sqrt(integrated_data['inverse_scale_factor_variance']).as_float())
   else:
     if 'intensity.prf.value' in integrated_data:
+      if 'intensity.sum.value' in integrated_data:
+        col_names = ('IPR', 'SIGIPR')
+      else:
+        col_names = ('I', 'SIGI')
       I_profile = integrated_data['intensity.prf.value']
       V_profile = integrated_data['intensity.prf.variance']
       # Trap negative variances
       assert V_profile.all_gt(0)
-      dataset.add_column('IPR', type_table['I']).set_values(I_profile.as_float())
-      dataset.add_column('SIGIPR', type_table['SIGI']).set_values(
+      dataset.add_column(col_names[0], type_table['I']).set_values(
+        I_profile.as_float())
+      dataset.add_column(col_names[1], type_table['SIGI']).set_values(
         flex.sqrt(V_profile).as_float())
     if 'intensity.sum.value' in integrated_data:
       I_sum = integrated_data['intensity.sum.value']
@@ -472,7 +477,7 @@ def export_mtz(integrated_data, experiment_list, params):
       merged_data[k].extend(v)
   # ALL columns must be the same length
   assert len(set(len(v) for v in merged_data.values())) == 1, "Column length mismatch"
-  assert len(merged_data["id"] == len(integrated_data["id"])), "Lost rows in split/combine"
+  assert len(merged_data["id"]) == len(integrated_data["id"]), "Lost rows in split/combine"
 
   # Write all the data and columns to the mtz file
   _write_columns(mtz_file, mtz_dataset, merged_data)

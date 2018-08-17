@@ -261,19 +261,18 @@ def test_SumAndPrfIntensityReducer():
   """Test that the reflection table is reduced on prf and sum intensities"""
   reflections = generate_integrated_test_reflections()
   reflections = SumAndPrfIntensityReducer.reduce_on_intensities(reflections)
-  assert list(reflections['intensity.prf.value']) == [1.0, 2.0, 3.0, 14.0, 6.0]
-  assert list(reflections['intensity.prf.variance']) == [0.1, 0.2, 0.3, 1.4, 0.6]
-  assert list(reflections['intensity.sum.value']) == [11.0, 12.0, 13.0, 14.0, 6.0]
-  assert list(reflections['intensity.sum.variance']) == [1.1, 1.2, 1.3, 1.4, 0.6]
+  assert list(reflections['intensity.prf.value']) == [1.0, 2.0, 3.0]
+  assert list(reflections['intensity.prf.variance']) == [0.1, 0.2, 0.3]
+  assert list(reflections['intensity.sum.value']) == [11.0, 12.0, 13.0]
+  assert list(reflections['intensity.sum.variance']) == [1.1, 1.2, 1.3]
 
-  #reflections = generate_integrated_test_reflections()
-  reflections['lp'] = flex.double([0.5, 0.5, 1.0, 1.0, 1.0])
-  reflections['partiality'] = flex.double([0.0, 1.0, 1.0, 0.25, 1.0])
+  reflections['lp'] = flex.double([0.5, 0.5, 1.0])
+  reflections['partiality'] = flex.double([0.0, 1.0, 1.0])
   reflections = SumAndPrfIntensityReducer.apply_scaling_factors(reflections)
-  assert list(reflections['intensity.prf.value']) == [1.0, 3.0, 14.0, 6.0]
-  assert list(reflections['intensity.prf.variance']) == [0.2*0.25, 0.3, 1.4, 0.6]
-  assert list(reflections['intensity.sum.value']) == [6.0, 13.0, 14.0*4.0, 6.0]
-  assert list(reflections['intensity.sum.variance']) == [0.3, 1.3, 1.4*16, 0.6]
+  assert list(reflections['intensity.prf.value']) == [1.0, 3.0]
+  assert list(reflections['intensity.prf.variance']) == [0.2*0.25, 0.3]
+  assert list(reflections['intensity.sum.value']) == [6.0, 13.0]
+  assert list(reflections['intensity.sum.variance']) == [0.3, 1.3]
 
   #test IsgiI selecting
   r = flex.reflection_table()

@@ -83,7 +83,7 @@ phil_scope = parse('''
   intensity = *prf *sum scale
     .type = choice(multi=True)
     .help = "Choice of which intensities to export. Allowed combinations:
-            scale, prf, sum, or prf and sum."
+            scale, prf, sum, prf+sum, sum+prf+scale."
 
   debug = False
     .type = bool
@@ -97,7 +97,7 @@ phil_scope = parse('''
         reflection, with an updated partiality given by the sum of the
         individual partialities."
 
-    partiality_threshold=0.5
+    partiality_threshold=0.99
       .type = float
       .help = "All reflections with partiality values above the partiality
         threshold will be retained. This is done after any combination of
