@@ -53,7 +53,7 @@ absolute_angle_tolerance = 2
 
 partiality_threshold = 0.99
   .type = float
-  .help = "Use reflections with a partiality above the threshold."
+  .help = "Use only reflections with a partiality above this threshold."
 
 output {
   log = dials.symmetry.log

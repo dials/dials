@@ -232,11 +232,11 @@ class BaseExporter(object):
 
   def check(self):
     '''Check the input provided was sane.'''
-    raise RuntimeError('Overload check()')
+    raise NotImplementedError('Function check() must be overloaded')
 
   def export(self):
     '''Export the data in the desired format.'''
-    raise RuntimeError('Overload export()')
+    raise NotImplementedError('Function export() must be overloaded')
 
 class MTZExporter(object):
   '''

@@ -47,7 +47,6 @@ def test_export_best(dials_regression, tmpdir):
 
   with open("best.hkl", "r") as f:
     lines = ''.join(f.readlines()[:10])
-  print(lines)
   assert lines == """\
  -20   27   -8      22.61      15.76
  -20   27   -7      69.46      17.54

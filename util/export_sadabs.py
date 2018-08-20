@@ -136,59 +136,59 @@ def export_sadabs(integrated_data, experiment_list, params):
   else:
     static = False
 
-  fout = open(params.sadabs.hklout, 'w')
+  with open(params.sadabs.hklout, 'w') as fout:
 
-  for j in range(nref):
+    for j in range(nref):
 
-    h, k, l = miller_index[j]
+      h, k, l = miller_index[j]
 
-    if params.sadabs.predict:
-      x_mm, y_mm, z_rad = integrated_data['xyzcal.mm'][j]
-    else:
-      x_mm, y_mm, z_rad = integrated_data['xyzobs.mm.value'][j]
+      if params.sadabs.predict:
+        x_mm, y_mm, z_rad = integrated_data['xyzcal.mm'][j]
+      else:
+        x_mm, y_mm, z_rad = integrated_data['xyzobs.mm.value'][j]
 
-    z0 = integrated_data['xyzcal.px'][j][2]
-    istol = int(round(10000 * unit_cell.stol((h, k, l))))
+      z0 = integrated_data['xyzcal.px'][j][2]
+      istol = int(round(10000 * unit_cell.stol((h, k, l))))
 
-    if params.sadabs.predict or static:
-      # work from a scan static model & assume perfect goniometer
-      # FIXME maybe should work back in the option to predict spot positions
-      UB = matrix.sqr(experiment.crystal.get_A())
-      phi = phi_start + z0 * phi_range
-      R = axis.axis_and_angle_as_r3_rotation_matrix(phi, deg=True)
-      RUB = S * R * F * UB
-    else:
-      # properly compute RUB for every reflection
-      UB = matrix.sqr(experiment.crystal.get_A_at_scan_point(int(round(z0))))
-      phi = phi_start + z0 * phi_range
-      R = axis.axis_and_angle_as_r3_rotation_matrix(phi, deg=True)
-      RUB = S * R * F * UB
+      if params.sadabs.predict or static:
+        # work from a scan static model & assume perfect goniometer
+        # FIXME maybe should work back in the option to predict spot positions
+        UB = matrix.sqr(experiment.crystal.get_A())
+        phi = phi_start + z0 * phi_range
+        R = axis.axis_and_angle_as_r3_rotation_matrix(phi, deg=True)
+        RUB = S * R * F * UB
+      else:
+        # properly compute RUB for every reflection
+        UB = matrix.sqr(experiment.crystal.get_A_at_scan_point(int(round(z0))))
+        phi = phi_start + z0 * phi_range
+        R = axis.axis_and_angle_as_r3_rotation_matrix(phi, deg=True)
+        RUB = S * R * F * UB
 
-    x = RUB * (h, k, l)
-    s = (s0 + x).normalize()
+      x = RUB * (h, k, l)
+      s = (s0 + x).normalize()
 
-    # can also compute s based on centre of mass of spot
-    # s = (origin + x_mm * fast_axis + y_mm * slow_axis).normalize()
+      # can also compute s based on centre of mass of spot
+      # s = (origin + x_mm * fast_axis + y_mm * slow_axis).normalize()
 
-    astar = (RUB * (1, 0, 0)).normalize()
-    bstar = (RUB * (0, 1, 0)).normalize()
-    cstar = (RUB * (0, 0, 1)).normalize()
+      astar = (RUB * (1, 0, 0)).normalize()
+      bstar = (RUB * (0, 1, 0)).normalize()
+      cstar = (RUB * (0, 0, 1)).normalize()
 
-    ix = beam.dot(astar)
-    iy = beam.dot(bstar)
-    iz = beam.dot(cstar)
+      ix = beam.dot(astar)
+      iy = beam.dot(bstar)
+      iz = beam.dot(cstar)
 
-    dx = s.dot(astar)
-    dy = s.dot(bstar)
-    dz = s.dot(cstar)
+      dx = s.dot(astar)
+      dy = s.dot(bstar)
+      dz = s.dot(cstar)
 
-    x = x_mm * scl_x
-    y = y_mm * scl_y
-    z = (z_rad * 180 / math.pi - phi_start) / phi_range
+      x = x_mm * scl_x
+      y = y_mm * scl_y
+      z = (z_rad * 180 / math.pi - phi_start) / phi_range
 
-    fout.write('%4d%4d%4d%8.2f%8.2f%4d%8.5f%8.5f%8.5f%8.5f%8.5f%8.5f' % \
-               (h, k, l, I[j], sigI[j], params.sadabs.run, ix, dx, iy, dy, iz, dz))
-    fout.write('%7.2f%7.2f%8.2f%7.2f%5d\n' % (x, y, z, detector2t, istol))
+      fout.write('%4d%4d%4d%8.2f%8.2f%4d%8.5f%8.5f%8.5f%8.5f%8.5f%8.5f' % \
+                (h, k, l, I[j], sigI[j], params.sadabs.run, ix, dx, iy, dy, iz, dz))
+      fout.write('%7.2f%7.2f%8.2f%7.2f%5d\n' % (x, y, z, detector2t, istol))
 
   fout.close()
   logger.info('Output %d reflections to %s' % (nref, params.sadabs.hklout))

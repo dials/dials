@@ -57,10 +57,7 @@ class MMCIFOutputFile(object):
     cif_block["_pdbx_diffrn_data_section.id"] = 'dials'
     cif_block["_pdbx_diffrn_data_section.type_scattering"] = "x-ray"
     cif_block["_pdbx_diffrn_data_section.type_merged"] = "false"
-    if 'scale' in self.params.intensity:
-      cif_block["_pdbx_diffrn_data_section.type_scaled"] = "true"
-    else:
-      cif_block["_pdbx_diffrn_data_section.type_scaled"] = "false"
+    cif_block["_pdbx_diffrn_data_section.type_scaled"] = str('scale' in self.params.intensity).lower()
 
     # FIXME Haven't put in any of these bits yet
     #
@@ -161,13 +158,14 @@ class MMCIFOutputFile(object):
 
     # Write reflection data
     # Required columns
-    header=("_pdbx_diffrn_unmerged_refln.reflection_id",
-            "_pdbx_diffrn_unmerged_refln.scan_id",
-            "_pdbx_diffrn_unmerged_refln.image_id_begin",
-            "_pdbx_diffrn_unmerged_refln.image_id_end",
-            "_pdbx_diffrn_unmerged_refln.index_h",
-            "_pdbx_diffrn_unmerged_refln.index_k",
-            "_pdbx_diffrn_unmerged_refln.index_l")
+    header = (
+      "_pdbx_diffrn_unmerged_refln.reflection_id",
+      "_pdbx_diffrn_unmerged_refln.scan_id",
+      "_pdbx_diffrn_unmerged_refln.image_id_begin",
+      "_pdbx_diffrn_unmerged_refln.image_id_end",
+      "_pdbx_diffrn_unmerged_refln.index_h",
+      "_pdbx_diffrn_unmerged_refln.index_k",
+      "_pdbx_diffrn_unmerged_refln.index_l")
 
     headernames = {'scales' : "_pdbx_diffrn_unmerged_refln.scale_value",
       'intensity.scale.value' : "_pdbx_diffrn_unmerged_refln.intensity_meas",
@@ -177,7 +175,7 @@ class MMCIFOutputFile(object):
       'intensity.prf.value' : "_pdbx_diffrn_unmerged_refln.intensity_prf",
       'intensity.prf.sigma' : "_pdbx_diffrn_unmerged_refln.intensity_prf_sigma",
       'angle' : "_pdbx_diffrn_unmerged_refln.scan_angle_reflection",
-      'partiality' : "_pdbx_diffrn_unmerged_refln.partiality"
+      'partiality' : "_pdbx_diffrn_unmerged_refln.partiality",
     }
 
     variables_present = []

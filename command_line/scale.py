@@ -389,11 +389,7 @@ class Script(object):
       params, _ = parser.parse_args(args=[], show_diff_phil=False)
       params.intensity = ['scale']
       params.mtz.partiality_threshold = self.params.cut_data.partiality_cutoff
-      #params.mtz.apply_scales = True
       params.mtz.hklout = self.params.output.unmerged_mtz
-      #params.mtz.keep_partials = True
-      #if self.params.scaling_options.integration_method == 'sum':
-      #  params.mtz.ignore_profile_fitting = True #to make it export summation
       exporter = MTZExporter(params, self.experiments,
         [joint_table])
       exporter.export()
