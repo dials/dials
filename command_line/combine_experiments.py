@@ -191,6 +191,7 @@ class CombineWithReference(object):
     self.ref_crystal = crystal
     self.ref_detector = detector
     self.tolerance = None
+    self._last_imageset = None
     if params:
       if params.reference_from_experiment.compare_models:
         self.tolerance = params.reference_from_experiment.tolerance
@@ -261,13 +262,19 @@ class CombineWithReference(object):
     else:
       crystal = experiment.crystal
 
+    if self._last_imageset == experiment.imageset:
+      imageset = self._last_imageset
+    else:
+      imageset = experiment.imageset
+      self._last_imageset = imageset
+
     from dxtbx.model.experiment_list import Experiment
     return Experiment(beam=beam,
                       detector=detector,
                       scan=scan,
                       goniometer=goniometer,
                       crystal=crystal,
-                      imageset=experiment.imageset)
+                      imageset=imageset)
 
 class Cluster(object):
 
