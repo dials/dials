@@ -7,12 +7,14 @@ fi
 
 if [ ! -e $HOME/build_dials/modules/cctbx_project ]; then
   echo Cloning cctbx_project from scratch
-  git clone https://github.com/cctbx/cctbx_project.git --depth=1 $HOME/build_dials/modules/cctbx_project
+  git clone https://github.com/dials/cctbx.git -b dials-next --depth=1 $HOME/build_dials/modules/cctbx_project
 fi
 
 echo Checking out latest cctbx_project commit
 cd $HOME/build_dials/modules/cctbx_project || exit 1
-git fetch origin master --depth=1 || exit 2
+git remote rm origin
+git remote add origin https://github.com/dials/cctbx.git
+git fetch origin dials-next --depth=1 || exit 2
 git checkout FETCH_HEAD || exit 3
 echo CCTBX is at commit:
 git show --oneline -s --no-abbrev-commit || exit 4
