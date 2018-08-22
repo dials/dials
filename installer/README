@@ -1,0 +1,25 @@
+To compile DIALS you need to run
+
+  python bootstrap.py --builder=dials base
+
+which will install python and third party python packages to the directory 'base',
+followed by
+
+  python bootstrap.py --builder=dials build
+
+to configure and compile DIALS and cctbx.
+Alternatively you can also run 
+
+  make
+
+to the same effect
+
+
+Once built you can load DIALS by running
+
+  . build/setpaths.sh
+
+
+If you encounter any errors running the bootstrap script, try adding the parameter '-v' to get more verbose output.
+
+For more information please go to https://dials.github.io/
