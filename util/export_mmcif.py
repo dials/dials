@@ -5,6 +5,8 @@ import logging
 import math
 
 import dials.util.version
+from dials.array_family import flex
+from dials.util.filter_reflections import filter_reflection_table
 import iotbx.cif.model
 from cctbx.sgtbx import bravais_types
 
@@ -16,12 +18,13 @@ class MMCIFOutputFile(object):
   Class to output experiments and reflections as MMCIF file
   '''
 
-  def __init__(self, filename):
+  def __init__(self, params):
     '''
     Init with the filename
     '''
     self._cif = iotbx.cif.model.cif()
-    self.filename = filename
+    self.params = params
+    self.filename = params.mmcif.hklout
 
   def write(self, experiments, reflections):
     '''
@@ -31,6 +34,14 @@ class MMCIFOutputFile(object):
     # Select reflections
     selection = reflections.get_flags(reflections.flags.integrated, all=True)
     reflections = reflections.select(selection)
+
+    # Filter out bad variances and other issues, but don't filter on ice rings
+    # or alter partialities.
+
+    ### Assumes you want to apply the lp and dqe corrections to sum and prf
+    ### Do we want to combine partials?
+    reflections = filter_reflection_table(reflections, self.params.intensity,
+      combine_partials=False, partiality_threshold=0.0)
 
     # Get the cif block
     cif_block = iotbx.cif.model.block()
@@ -46,7 +57,7 @@ class MMCIFOutputFile(object):
     cif_block["_pdbx_diffrn_data_section.id"] = 'dials'
     cif_block["_pdbx_diffrn_data_section.type_scattering"] = "x-ray"
     cif_block["_pdbx_diffrn_data_section.type_merged"] = "false"
-    cif_block["_pdbx_diffrn_data_section.type_scaled"] = "false"
+    cif_block["_pdbx_diffrn_data_section.type_scaled"] = str('scale' in self.params.intensity).lower()
 
     # FIXME Haven't put in any of these bits yet
     #
@@ -146,40 +157,59 @@ class MMCIFOutputFile(object):
     #cif_block.add_loop(cif_loop)
 
     # Write reflection data
-    # FIXME there are three intensity fields. I've put summation in I and Isum
-    cif_loop = iotbx.cif.model.loop(
-      header=("_pdbx_diffrn_unmerged_refln.reflection_id",
-              "_pdbx_diffrn_unmerged_refln.scan_id",
-              "_pdbx_diffrn_unmerged_refln.image_id_begin",
-              "_pdbx_diffrn_unmerged_refln.image_id_end",
-              "_pdbx_diffrn_unmerged_refln.index_h",
-              "_pdbx_diffrn_unmerged_refln.index_k",
-              "_pdbx_diffrn_unmerged_refln.index_l",
-              "_pdbx_diffrn_unmerged_refln.intensity_meas",
-              "_pdbx_diffrn_unmerged_refln.intensity_sigma",
-              "_pdbx_diffrn_unmerged_refln.intensity_sum",
-              "_pdbx_diffrn_unmerged_refln.intensity_sum_sigma",
-              "_pdbx_diffrn_unmerged_refln.intensity_profile",
-              "_pdbx_diffrn_unmerged_refln.intensity_profile_sigma",
-              "_pdbx_diffrn_unmerged_refln.scan_angle_reflection",
-              "_pdbx_diffrn_unmerged_refln.partiality",
-              "_pdbx_diffrn_unmerged_refln.scale_value"))
+    # Required columns
+    header = (
+      "_pdbx_diffrn_unmerged_refln.reflection_id",
+      "_pdbx_diffrn_unmerged_refln.scan_id",
+      "_pdbx_diffrn_unmerged_refln.image_id_begin",
+      "_pdbx_diffrn_unmerged_refln.image_id_end",
+      "_pdbx_diffrn_unmerged_refln.index_h",
+      "_pdbx_diffrn_unmerged_refln.index_k",
+      "_pdbx_diffrn_unmerged_refln.index_l")
+
+    headernames = {'scales' : "_pdbx_diffrn_unmerged_refln.scale_value",
+      'intensity.scale.value' : "_pdbx_diffrn_unmerged_refln.intensity_meas",
+      'intensity.scale.sigma' : "_pdbx_diffrn_unmerged_refln.intensity_sigma",
+      'intensity.sum.value' : "_pdbx_diffrn_unmerged_refln.intensity_sum",
+      'intensity.sum.sigma': "_pdbx_diffrn_unmerged_refln.intensity_sum_sigma",
+      'intensity.prf.value' : "_pdbx_diffrn_unmerged_refln.intensity_prf",
+      'intensity.prf.sigma' : "_pdbx_diffrn_unmerged_refln.intensity_prf_sigma",
+      'angle' : "_pdbx_diffrn_unmerged_refln.scan_angle_reflection",
+      'partiality' : "_pdbx_diffrn_unmerged_refln.partiality",
+    }
+
+    variables_present = []
+    if 'scale' in self.params.intensity:
+      reflections['scales'] = 1.0/reflections['inverse_scale_factor']
+      reflections['intensity.scale.sigma'] = reflections['intensity.scale.variance'] ** 0.5
+      variables_present.extend(['scales', 'intensity.scale.value', 'intensity.scale.sigma'])
+    if 'sum' in self.params.intensity:
+      reflections['intensity.sum.sigma'] = reflections['intensity.sum.variance'] ** 0.5
+      variables_present.extend(['intensity.sum.value', 'intensity.sum.sigma'])
+    if 'prf' in self.params.intensity:
+      reflections['intensity.prf.sigma'] = reflections['intensity.prf.variance'] ** 0.5
+      variables_present.extend(['intensity.prf.value', 'intensity.prf.sigma'])
+
+    #Should always exist
+    reflections['angle'] = reflections['xyzcal.mm'].parts()[2] * RAD2DEG
+    variables_present.extend(['angle'])
+
+    if 'partiality' in reflections:
+      variables_present.extend(['partiality'])
+
+    for name in variables_present:
+      if name in reflections:
+        header += (headernames[name],)
+
+    cif_loop = iotbx.cif.model.loop(header=header)
+
     for i, r in enumerate(reflections):
       refl_id       = i + 1
       scan_id       = r['id'] + 1
       _,_,_,_,z0,z1 = r['bbox']
       h, k, l       = r['miller_index']
-      I             = r['intensity.sum.value']
-      sigI          = r['intensity.sum.variance']
-      Isum          = r['intensity.sum.value']
-      sigIsum       = r['intensity.sum.variance']
-      Iprf          = r['intensity.prf.value']
-      sigIprf       = r['intensity.prf.variance']
-      phi           = r['xyzcal.mm'][2] * RAD2DEG
-      partiality    = r['partiality']
-      scale         = 1.0
-      cif_loop.add_row((refl_id, scan_id, z0, z1, h, k, l, I, sigI, Isum,
-          sigIsum, Iprf, sigIprf, phi, partiality, scale))
+      variable_values = tuple((r[name]) for name in variables_present)
+      cif_loop.add_row((refl_id, scan_id, z0, z1, h, k, l) + variable_values)
     cif_block.add_loop(cif_loop)
 
     # Add the block

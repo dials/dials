@@ -19,7 +19,7 @@ def test_1(xia2_regression_build, tmpdir):
     "dials.index datablock_80_90.json strong.pickle space_group=P41212",
     "dials.refine experiments.json indexed.pickle scan_varying=True",
     "dials.integrate refined_experiments.json indexed.pickle",
-    "dials.export refined_experiments.json integrated.pickle"
+    "dials.export refined_experiments.json integrated.pickle partiality_threshold=0.99"
   ]
 
   for cmd in commands:

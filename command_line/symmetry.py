@@ -51,6 +51,10 @@ relative_length_tolerance = 0.05
 absolute_angle_tolerance = 2
   .type = float(value_min=0)
 
+partiality_threshold = 0.99
+  .type = float
+  .help = "Use only reflections with a partiality above this threshold."
+
 output {
   log = dials.symmetry.log
     .type = str
@@ -130,42 +134,25 @@ def run(args):
         unit_cell=expt.crystal.get_unit_cell(),
         space_group=expt.crystal.get_space_group())
 
-      # filtering of intensities similar to that done in export_mtz
-      # FIXME this function should be renamed/moved elsewhere
-      from dials.util.export_mtz import _apply_data_filters
-      refl = _apply_data_filters(
-        refl,
-        ignore_profile_fitting=False,
-        filter_ice_rings=False,
-        min_isigi=-5,
-        include_partials=False,
-        keep_partials=True,
-        scale_partials=False,
-        apply_scales=True)
-
-      assert 'intensity.sum.value' in refl
-      sel = refl.get_flags(refl.flags.integrated_sum)
-      data = refl['intensity.sum.value']
-      variances = refl['intensity.sum.variance']
-      if 'intensity.prf.value' in refl:
-        prf_sel = refl.get_flags(refl.flags.integrated_prf)
-        data.set_selected(prf_sel, refl['intensity.prf.value'])
-        variances.set_selected(prf_sel, refl['intensity.prf.variance'])
-        sel |= prf_sel
-      refl = refl.select(sel)
-      data = data.select(sel)
-      variances = variances.select(sel)
-
-      if 'lp' in refl and ('qe' in refl or 'dqe' in refl):
-        lp = refl['lp']
-        if 'qe' in refl:
-          qe = refl['qe']
+      from dials.util.filter_reflections import filter_reflection_table
+      if 'intensity.scale.value' in refl:
+        intensity_choice = ['scale']
+        intensity_to_use = 'scale'
+      else:
+        assert 'intensity.sum.value' in refl
+        intensity_choice = ['sum']
+        if 'intensity.prf.value' in refl:
+          intensity_choice.append('prf')
+          intensity_to_use = 'prf'
         else:
-          qe = refl['dqe']
-        assert qe.all_gt(0)
-        scale = lp / qe
-        data *= scale
-        variances *= (flex.pow2(scale))
+          intensity_to_use = 'sum'
+
+      refl = filter_reflection_table(refl, intensity_choice, min_isigi=-5,
+        filter_ice_rings=False, combine_partials=True,
+        partiality_threshold=params.partiality_threshold)
+      data = refl['intensity.'+intensity_to_use+'.value']
+      variances = refl['intensity.'+intensity_to_use+'.variance']
+
       miller_indices = refl['miller_index']
       assert variances.all_gt(0)
       sigmas = flex.sqrt(variances)

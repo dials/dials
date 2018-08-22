@@ -391,11 +391,9 @@ class Script(object):
       parser = OptionParser(read_experiments=False, read_reflections=False,
         read_datablocks=False, phil=export_phil_scope)
       params, _ = parser.parse_args(args=[], show_diff_phil=False)
-      params.mtz.apply_scales = True
+      params.intensity = ['scale']
+      params.mtz.partiality_threshold = self.params.cut_data.partiality_cutoff
       params.mtz.hklout = self.params.output.unmerged_mtz
-      params.mtz.keep_partials = True
-      if self.params.reflection_selection.intensity_choice == 'sum':
-        params.mtz.ignore_profile_fitting = True #to make it export summation
       exporter = MTZExporter(params, self.experiments,
         [joint_table])
       exporter.export()

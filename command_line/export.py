@@ -79,10 +79,11 @@ phil_scope = parse('''
   format = *mtz sadabs nxs mmcif mosflm xds best xds_ascii json
     .type = choice
     .help = "The output file format"
-
-  summation = False
-    .type = bool
-    .help = "Output summation integrated data (default profile fitted)"
+  
+  intensity = *prf *sum scale
+    .type = choice(multi=True)
+    .help = "Choice of which intensities to export. Allowed combinations:
+            scale, prf, sum, prf+sum, sum+prf+scale."
 
   debug = False
     .type = bool
@@ -90,25 +91,21 @@ phil_scope = parse('''
 
   mtz {
 
+    combine_partials = True
+      .type = bool
+      .help = "Combine partials that have the same partial id into one
+        reflection, with an updated partiality given by the sum of the
+        individual partialities."
+
+    partiality_threshold=0.99
+      .type = float
+      .help = "All reflections with partiality values above the partiality
+        threshold will be retained. This is done after any combination of
+        partials if applicable."
+
     ignore_panels = False
       .type = bool
       .help = "Ignore multiple panels / detectors in output (deprecated)"
-
-    include_partials = False
-      .type = bool
-      .help = "Include partial reflections (scaled) in output"
-
-    keep_partials = False
-      .type = bool
-      .help = "Keep low partiality reflections"
-
-    scale_partials = True
-      .type = bool
-      .help = "Scale partial reflections to 100% (unreliable if partiality low)"
-
-    apply_scales = False
-      .type = bool
-      .help = "Apply scale factors in inverse_scale_factor column if present"
 
     min_isigi = -5
       .type = float
@@ -121,12 +118,6 @@ phil_scope = parse('''
     filter_ice_rings = False
       .type = bool
       .help = "Filter reflections at ice ring resolutions"
-
-    ignore_profile_fitting = False
-      .type = bool
-      .help = "Ignore profile fitted intensities. Sometimes necessary for narrow"
-              "wedges or other situations where profile fitting has failed for"
-              "all reflections and we only have summation intensities."
 
     hklout = integrated.mtz
       .type = path
@@ -228,10 +219,28 @@ phil_scope = parse('''
   }
 ''')
 
+class BaseExporter(object):
+  '''
+  A base class for export reflections - though do we need a class here
+  - could just have entry points registered?
+  '''
+
+  def __init__(self, params, experiments, reflections):
+    self.params = params
+    self.experiments = experiments
+    self.reflections = reflections
+
+  def check(self):
+    '''Check the input provided was sane.'''
+    raise NotImplementedError('Function check() must be overloaded')
+
+  def export(self):
+    '''Export the data in the desired format.'''
+    raise NotImplementedError('Function export() must be overloaded')
 
 class MTZExporter(object):
   '''
-  A class to export stuff in MTZ format
+  A class to export reflections in MTZ format
 
   '''
 
@@ -251,7 +260,7 @@ class MTZExporter(object):
     if len(reflections) != 1:
       raise Sorry('MTZ exporter requires 1 reflection table')
 
-    # Save the stuff
+    # Save the input
     self.params = params
     self.experiments = experiments
     self.reflections = reflections[0]
@@ -265,15 +274,7 @@ class MTZExporter(object):
     m = export_mtz(
       self.reflections,
       self.experiments,
-      self.params.mtz.hklout,
-      include_partials=self.params.mtz.include_partials,
-      keep_partials=self.params.mtz.keep_partials,
-      scale_partials=self.params.mtz.scale_partials,
-      min_isigi=self.params.mtz.min_isigi,
-      force_static_model=self.params.mtz.force_static_model,
-      filter_ice_rings=self.params.mtz.filter_ice_rings,
-      ignore_profile_fitting=self.params.mtz.ignore_profile_fitting,
-      apply_scales=self.params.mtz.apply_scales)
+      self.params)
     from cStringIO import StringIO
     summary = StringIO()
     m.show_summary(out=summary)
@@ -282,7 +283,7 @@ class MTZExporter(object):
 
 class SadabsExporter(object):
   '''
-  A class to export stuff in HKL format
+  A class to export data in HKL format
 
   '''
 
@@ -302,7 +303,7 @@ class SadabsExporter(object):
     if len(reflections) != 1:
       raise Sorry('SADABS exporter requires 1 reflection table')
 
-    # Save the stuff
+    # Save the data
     self.params = params
     self.experiments = experiments
     self.reflections = reflections[0]
@@ -312,17 +313,11 @@ class SadabsExporter(object):
     export_sadabs(
       self.reflections,
       self.experiments,
-      self.params.sadabs.hklout,
-      run=self.params.sadabs.run,
-      summation=self.params.summation,
-      include_partials=params.mtz.include_partials,
-      keep_partials=params.mtz.keep_partials,
-      debug=params.debug,
-      predict=params.sadabs.predict)
+      self.params)
 
 class XDSASCIIExporter(object):
   '''
-  A class to export stuff in XDS_ASCII format
+  A class to export data in XDS_ASCII format
 
   '''
 
@@ -342,7 +337,7 @@ class XDSASCIIExporter(object):
     if len(reflections) != 1:
       raise Sorry('XDS_ASCII exporter requires 1 reflection table')
 
-    # Save the stuff
+    # Save the input
     self.params = params
     self.experiments = experiments
     self.reflections = reflections[0]
@@ -352,14 +347,11 @@ class XDSASCIIExporter(object):
     export_xds_ascii(
       self.reflections,
       self.experiments,
-      self.params.xds_ascii.hklout,
-      summation=self.params.summation,
-      include_partials=params.mtz.include_partials,
-      keep_partials=params.mtz.keep_partials)
+      self.params)
 
 class NexusExporter(object):
   '''
-  A class to export stuff in Nexus format
+  A class to export data in Nexus format
 
   '''
 
@@ -379,7 +371,7 @@ class NexusExporter(object):
     if len(reflections) != 1:
       raise Sorry('Nexus exporter requires 1 reflection table')
 
-    # Save the stuff
+    # Save the input
     self.params = params
     self.experiments = experiments
     self.reflections = reflections[0]
@@ -397,7 +389,7 @@ class NexusExporter(object):
 
 class MMCIFExporter(object):
   '''
-  A class to export stuff in CIF format
+  A class to export data in CIF format
 
   '''
 
@@ -417,7 +409,7 @@ class MMCIFExporter(object):
     if len(reflections) != 1:
       raise Sorry('CIF exporter requires 1 reflection table')
 
-    # Save the stuff
+    # Save the input
     self.params = params
     self.experiments = experiments
     self.reflections = reflections[0]
@@ -428,7 +420,7 @@ class MMCIFExporter(object):
 
     '''
     from dials.util.export_mmcif import MMCIFOutputFile
-    outfile = MMCIFOutputFile(self.params.mmcif.hklout)
+    outfile = MMCIFOutputFile(self.params)
     outfile.write(self.experiments, self.reflections)
 
 

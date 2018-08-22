@@ -1,15 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-
-from dials.util.export_mtz import (scale_partial_reflections,
-                                   sum_partial_reflections)
+from libtbx.utils import Sorry
+from dials.util.filter_reflections import filter_reflection_table, \
+  FilteringReductionMethods
 
 logger = logging.getLogger(__name__)
 
 
-def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
-                     include_partials=False, keep_partials=False, var_model=(1,0)):
+def export_xds_ascii(integrated_data, experiment_list, params, var_model=(1,0)):
   '''Export data from integrated_data corresponding to experiment_list to
   an XDS_ASCII.HKL formatted text file.'''
 
@@ -24,41 +23,16 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
   integrated_data = integrated_data.select(integrated_data['id'] >= 0)
   assert max(integrated_data['id']) == 0
 
-  if not summation:
-    assert('intensity.prf.value' in integrated_data)
-
-  if 'intensity.prf.variance' in integrated_data:
-    selection = integrated_data.get_flags(
-      integrated_data.flags.integrated,
-      all=True)
-  else:
-    selection = integrated_data.get_flags(
-      integrated_data.flags.integrated_sum)
-  integrated_data = integrated_data.select(selection)
-
-  selection = integrated_data['intensity.sum.variance'] <= 0
-  if selection.count(True) > 0:
-    integrated_data.del_selected(selection)
-    logger.info('Removing %d reflections with negative variance' % \
-          selection.count(True))
-
-  if 'intensity.prf.variance' in integrated_data:
-    selection = integrated_data['intensity.prf.variance'] <= 0
-    if selection.count(True) > 0:
-      integrated_data.del_selected(selection)
-      logger.info('Removing %d profile reflections with negative variance' % \
-            selection.count(True))
-
-  if include_partials:
-    integrated_data = sum_partial_reflections(integrated_data)
-    integrated_data = scale_partial_reflections(integrated_data)
-
-  if 'partiality' in integrated_data:
-    selection = integrated_data['partiality'] < 0.99
-    if selection.count(True) > 0 and not keep_partials:
-      integrated_data.del_selected(selection)
-      logger.info('Removing %d incomplete reflections' % \
-        selection.count(True))
+  integrated_data = filter_reflection_table(integrated_data,
+    intensity_choice=params.intensity,
+    partiality_threshold=params.mtz.partiality_threshold,
+    combine_partials=params.mtz.combine_partials,
+    min_isigi=params.mtz.min_isigi, filter_ice_rings=params.mtz.filter_ice_rings)
+  
+  # calculate the scl = lp/dqe correction for outputting but don't apply it as
+  # it has already been applied in filter_reflection_table
+  integrated_data, scl = FilteringReductionMethods.calculate_lp_qe_correction_and_filter(
+    integrated_data) 
 
   experiment = experiment_list[0]
 
@@ -95,23 +69,6 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
 
   miller_index = integrated_data['miller_index']
 
-  I = None
-  sigI = None
-
-  # export including scale factors
-
-  if 'lp' in integrated_data:
-    lp = integrated_data['lp']
-  else:
-    lp = flex.double(nref, 1.0)
-  if 'qe' in integrated_data:
-    qe = integrated_data['qe']
-  elif 'dqe' in integrated_data:
-    qe = integrated_data['dqe']
-  else:
-    qe = flex.double(nref, 1.0)
-  scl = lp / qe
-
   # profile correlation
   if 'profile.correlation' in integrated_data:
     prof_corr = 100.0 * integrated_data['profile.correlation']
@@ -124,20 +81,22 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
   else:
     prof_corr = flex.double(nref, 100.0)
 
-  if summation:
-    I = integrated_data['intensity.sum.value'] * scl
-    V = integrated_data['intensity.sum.variance'] * scl * scl
+  if 'intensity.sum.value' in integrated_data:
+    I = integrated_data['intensity.sum.value']
+    V = integrated_data['intensity.sum.variance']
+    assert V.all_gt(0)
+    V = var_model[0] * (V + var_model[1] * I * I)
+    sigI = flex.sqrt(V)
+  elif 'intensity.prf.value' in integrated_data:
+    I = integrated_data['intensity.prf.value']
+    V = integrated_data['intensity.prf.variance']
     assert V.all_gt(0)
     V = var_model[0] * (V + var_model[1] * I * I)
     sigI = flex.sqrt(V)
   else:
-    I = integrated_data['intensity.prf.value'] * scl
-    V = integrated_data['intensity.prf.variance'] * scl * scl
-    assert V.all_gt(0)
-    V = var_model[0] * (V + var_model[1] * I * I)
-    sigI = flex.sqrt(V)
+    raise Sorry("""Data does not contain sum or prf reflections.""")
 
-  fout = open(hklout, 'w')
+  fout = open(params.xds_ascii.hklout, 'w')
 
   # first write the header - in the "standard" coordinate frame...
 
@@ -236,4 +195,4 @@ def export_xds_ascii(integrated_data, experiment_list, hklout, summation=False,
 
   fout.write('!END_OF_DATA\n')
   fout.close()
-  logger.info('Output %d reflections to %s' % (nref, hklout))
+  logger.info('Output %d reflections to %s' % (nref, params.xds_ascii.hklout))

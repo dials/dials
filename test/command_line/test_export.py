@@ -42,7 +42,7 @@ def test_xds_ascii(dials_regression, tmpdir):
   # Call dials.export
   result = procrunner.run_process([
       'dials.export',
-      'summation=true',
+      'intensity=sum',
       'format=xds_ascii',
       os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
       os.path.join(dials_regression, "centroid_test_data", "integrated.pickle"),
@@ -74,7 +74,8 @@ def test_sadabs(dials_regression, tmpdir):
   # Call dials.export
   result = procrunner.run_process([
     'dials.export',
-    'summation=true',
+    'intensity=sum',
+    'mtz.partiality_threshold=0.99',
     'format=sadabs',
       os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
       os.path.join(dials_regression, "centroid_test_data", "integrated.pickle"),
