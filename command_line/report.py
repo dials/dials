@@ -1959,8 +1959,8 @@ class ZScoreAnalyser(object):
     from dials.util.intensity_explorer import IntensityDist
 
     z_scores = IntensityDist(
-        rtable=rlist, elist=experiments).rtable['intensity.z_scores']
-    hist = flex.histogram(z_scores, -5, 5, 100)
+        rtable=rlist, elist=experiments).rtable['intensity.z_score']
+    hist = flex.histogram(z_scores, -10, 10, 100)
 
     return {
       'z_score_histogram': {
@@ -1972,7 +1972,7 @@ class ZScoreAnalyser(object):
         }],
         'layout': {
           'title' : 'Histogram of z-scores',
-          'xaxis' : {'title': 'z-score', 'range': [-5, 5]},
+          'xaxis' : {'title': 'z-score', 'range': [-10, 10]},
           'yaxis' : {'title': 'Number of reflections'},
           'bargap': 0,
         },
