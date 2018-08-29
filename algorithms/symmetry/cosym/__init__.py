@@ -127,7 +127,8 @@ class analyse_datasets(symmetry_base):
 
     self.params = params
     self.intensities = self.intensities.customized_copy(
-      space_group_info=self.input_space_group.info())
+      space_group_info=self.input_space_group.change_basis(
+        self.cb_op_inp_min).info())
     if self.params.dimensions is Auto:
       dimensions = None
     else:
