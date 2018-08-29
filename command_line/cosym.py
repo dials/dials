@@ -16,17 +16,8 @@ from dials.util.options import flatten_experiments, flatten_reflections
 from dials.algorithms.symmetry.cosym import analyse_datasets
 
 phil_scope = iotbx.phil.parse('''\
-d_min = Auto
-  .type = float(value_min=0)
-
-min_i_mean_over_sigma_mean = 4
-  .type = float(value_min=0)
-
 batch = None
   .type = ints(value_min=0, size=2)
-
-normalisation = kernel quasi *ml_iso ml_aniso
-  .type = choice
 
 mode = *full ambiguity
   .type = choice
@@ -55,9 +46,9 @@ seed = 230
 output {
   suffix = "_reindexed"
     .type = str
-  log = cosym.log
+  log = dials.cosym.log
     .type = str
-  debug_log = cosym.debug.log
+  debug_log = dials.cosym.debug.log
     .type = str
   experiments = "reindexed_experiments.json"
     .type = path
@@ -71,7 +62,6 @@ verbosity = 1
 ''', process_includes=True)
 
 def run(args):
-  import libtbx
   from libtbx import easy_pickle
   from dials.util import log
   from dials.util.options import OptionParser
@@ -233,20 +223,6 @@ def run(args):
       assert sel.count(True) > 0
       intensities = intensities.select(sel)
 
-    if params.normalisation is not None:
-      from dials.algorithms.symmetry.determine_space_group import determine_space_group
-      if params.normalisation == 'kernel':
-        normalise = determine_space_group.kernel_normalisation
-      elif params.normalisation == 'quasi':
-        normalise = determine_space_group.quasi_normalisation
-      elif params.normalisation == 'ml_iso':
-        normalise = determine_space_group.ml_iso_normalisation
-      elif params.normalisation == 'ml_aniso':
-        normalise = determine_space_group.ml_aniso_normalisation
-
-      logger.info('Normalising intensities')
-      intensities = normalise(intensities)
-
     cb_op_to_primitive = intensities.change_of_basis_op_to_primitive_setting()
     change_of_basis_ops.append(cb_op_to_primitive)
     intensities = intensities.change_basis(cb_op_to_primitive)
@@ -327,24 +303,6 @@ def run(args):
           ))
     datasets[i] = datasets[i].merge_equivalents().array().set_info(dataset.info())
     change_of_basis_ops[i] = cb_op_ref_min * change_of_basis_ops[i]
-
-  if params.min_i_mean_over_sigma_mean is not None and params.d_min is libtbx.Auto:
-    intensities = datasets[0]
-    for d in datasets[1:]:
-      intensities = intensities.concatenate(d, assert_is_similar_symmetry=False)
-    intensities.set_info(datasets[0].info()).set_observation_type_xray_intensity()
-    from dials.util import Resolutionizer
-    rparams = Resolutionizer.phil_defaults.extract().resolutionizer
-    rparams.nbins = 20
-    resolutionizer = Resolutionizer.resolutionizer(intensities, rparams, None)
-    d_min = resolutionizer.resolution_i_mean_over_sigma_mean(params.min_i_mean_over_sigma_mean)
-    if params.d_min is libtbx.Auto:
-      logger.info('Estimated d_min: %.2f' %d_min)
-      params.d_min = d_min
-  if params.d_min not in (None, libtbx.Auto):
-    logger.info('Selecting reflections with d > %.2f' %params.d_min)
-    datasets = [intensities.resolution_filter(d_min=params.d_min).set_info(
-                intensities.info()) for intensities in datasets]
 
   result = analyse_datasets(datasets, params)
 

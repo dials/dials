@@ -16,8 +16,21 @@ import iotbx.phil
 
 from dials.algorithms.symmetry.cosym import target
 from dials.algorithms.symmetry.cosym import engine
+from dials.algorithms.symmetry import symmetry_base
 
 phil_scope = iotbx.phil.parse('''\
+
+normalisation = kernel quasi *ml_iso ml_aniso
+  .type = choice
+
+d_min = Auto
+  .type = float(value_min=0)
+
+min_i_mean_over_sigma_mean = 4
+  .type = float(value_min=0)
+
+min_cc_half = 0.6
+  .type = float(value_min=0, value_max=1)
 
 lattice_group = None
   .type = space_group
@@ -98,19 +111,23 @@ nproc = 1
 
 ''')
 
-class analyse_datasets(object):
+class analyse_datasets(symmetry_base):
 
-  def __init__(self, datasets, params):
-    self.datasets = datasets
+  def __init__(self, intensities, params):
+    self.input_space_group = intensities[0].space_group()
+    super(analyse_datasets, self).__init__(
+      intensities,
+      normalisation=params.normalisation,
+      lattice_symmetry_max_delta=5.0,
+      d_min=params.d_min,
+      min_i_mean_over_sigma_mean=params.min_i_mean_over_sigma_mean,
+      min_cc_half=params.min_cc_half,
+      relative_length_tolerance=None,
+      absolute_angle_tolerance=None)
+
     self.params = params
-
-    self.input_space_group = None
-    for dataset in datasets:
-      if self.input_space_group is None:
-        self.input_space_group = dataset.space_group()
-      else:
-        assert dataset.space_group() == self.input_space_group
-
+    self.intensities = self.intensities.customized_copy(
+      space_group_info=self.input_space_group.info())
     if self.params.dimensions is Auto:
       dimensions = None
     else:
@@ -119,7 +136,8 @@ class analyse_datasets(object):
     if self.params.lattice_group is not None:
       lattice_group = self.params.lattice_group.group()
     self.target = target.Target(
-      self.datasets,
+      self.intensities,
+      self.dataset_ids,
       min_pairs=self.params.min_pairs,
       lattice_group=lattice_group,
       dimensions=dimensions,
@@ -212,7 +230,7 @@ class analyse_datasets(object):
 
   def optimise(self):
 
-    NN = len(self.datasets)
+    NN = len(self.input_intensities)
     dim = self.target.dim
     n_sym_ops = len(self.target.get_sym_ops())
     coords = flex.random_double(NN * n_sym_ops * dim)
@@ -287,7 +305,7 @@ class analyse_datasets(object):
 
     sym_ops_cos_angle = OrderedDict()
 
-    for dataset_id in range(len(self.datasets)):
+    for dataset_id in range(len(self.input_intensities)):
       ref_sym_op_id = None
       ref_cluster_id = None
       for sym_op_id in range(len(sym_ops)):
@@ -297,8 +315,8 @@ class analyse_datasets(object):
         op = sym_ops[ref_sym_op_id].inverse().multiply(sym_ops[sym_op_id])
         op = op.new_denominators(1, 12)
 
-        ref_idx = len(self.datasets) * ref_sym_op_id + dataset_id
-        comp_idx = len(self.datasets) * sym_op_id + dataset_id
+        ref_idx = len(self.input_intensities) * ref_sym_op_id + dataset_id
+        comp_idx = len(self.input_intensities) * sym_op_id + dataset_id
         sym_ops_cos_angle.setdefault(op, flex.double())
         sym_ops_cos_angle[op].append(cos_angle[ref_idx, comp_idx])
 
@@ -348,12 +366,12 @@ class analyse_datasets(object):
     reindexing_ops = {}
     space_groups = {}
 
-    for dataset_id in range(len(self.datasets)):
+    for dataset_id in range(len(self.input_intensities)):
       sg = copy.deepcopy(self.input_space_group)
       ref_sym_op_id = None
       ref_cluster_id = None
       for sym_op_id in range(len(sym_ops)):
-        i_cluster = self.cluster_labels[len(self.datasets) * sym_op_id + dataset_id]
+        i_cluster = self.cluster_labels[len(self.input_intensities) * sym_op_id + dataset_id]
         if i_cluster < 0:
           continue
         if ref_sym_op_id is None:
@@ -375,13 +393,13 @@ class analyse_datasets(object):
 
       for i_cluster in range(n_clusters):
         isel = (self.cluster_labels == i_cluster).iselection()
-        dataset_ids = isel % len(self.datasets)
+        dataset_ids = isel % len(self.input_intensities)
         idx = flex.first_index(dataset_ids, dataset_id)
         sel = (dataset_ids == dataset_id).iselection()
         if idx >= 0:
-          sym_op_id = isel[idx] // len(self.datasets)
+          sym_op_id = isel[idx] // len(self.input_intensities)
         for s in sel:
-          sym_op_id = isel[s] // len(self.datasets)
+          sym_op_id = isel[s] // len(self.input_intensities)
 
           for partition in coset.partitions:
             if sym_ops[sym_op_id] in partition:
@@ -450,7 +468,7 @@ class analyse_datasets(object):
     cluster_id = 0
     while self.cluster_labels.count(-1) > 0:
       dataset_ids = (flex.int_range(
-        len(self.datasets) * len(self.target.get_sym_ops())) % len(self.datasets)
+        len(self.input_intensities) * len(self.target.get_sym_ops())) % len(self.input_intensities)
                      ).as_numpy_array()
       coord_ids = flex.int_range(dataset_ids.size).as_numpy_array()
 
@@ -472,7 +490,7 @@ class analyse_datasets(object):
       cluster_dataset_ids = np.array([d_id])
       xis = np.array([X[i]])
 
-      for j in range(len(self.datasets)-1):
+      for j in range(len(self.input_intensities)-1):
         # select only those rows that don't correspond to a dataset already
         # present in current cluster
         sel = np.where(dataset_ids != d_id)

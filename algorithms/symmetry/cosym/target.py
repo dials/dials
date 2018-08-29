@@ -19,11 +19,10 @@ import cctbx.sgtbx.cosets
 
 class Target(object):
 
-  def __init__(self, miller_arrays, weights=None, min_pairs=None,
+  def __init__(self, intensities, lattice_ids, weights=None, min_pairs=None,
                lattice_group=None, dimensions=None, verbose=False,
                nproc=1):
 
-    self._miller_arrays = miller_arrays
     self.verbose = verbose
     if weights is not None:
       assert weights in ('count', 'standard_error')
@@ -31,50 +30,16 @@ class Target(object):
     self._min_pairs = min_pairs
     self._nproc = nproc
 
-    miller_array_all = None
-    lattice_ids = None
-    space_group = None
-    lattice_id = -1
-
-    for intensities in miller_arrays:
-      assert intensities.is_unique_set_under_symmetry()
-      lattice_id += 1
-      if space_group is None:
-        space_group = intensities.space_group()
-      else:
-        assert intensities.space_group() == space_group
-
-      ids = intensities.customized_copy(
-        data=flex.double(intensities.size(), lattice_id), sigmas=None)
-      assert ids.size() == intensities.size()
-      if miller_array_all is None:
-        miller_array_all = intensities
-        lattice_ids = ids
-      else:
-        miller_array_all = miller_array_all.customized_copy(
-          indices=miller_array_all.indices().concatenate(intensities.indices()),
-          data=miller_array_all.data().concatenate(intensities.data()),
-          sigmas=None)
-        lattice_ids = lattice_ids.customized_copy(
-          indices=lattice_ids.indices().concatenate(ids.indices()),
-          data=lattice_ids.data().concatenate(ids.data()))
-      assert miller_array_all.size() == lattice_ids.size()
-
-    data = miller_array_all.customized_copy(anomalous_flag=False)
+    data = intensities.customized_copy(anomalous_flag=False)
     cb_op_to_primitive = data.change_of_basis_op_to_primitive_setting()
     data = data.change_basis(cb_op_to_primitive).map_to_asu()
 
-    resort = True
-    if resort:
-      order = flex.sort_permutation(lattice_ids.data())
-      sorted_lattice_id = flex.select(lattice_ids.data(), order)
-      sorted_data = data.data().select( order)
-      sorted_indices = data.indices().select( order)
-      self._lattice_ids = sorted_lattice_id
-      self._data = data.customized_copy(indices = sorted_indices, data=sorted_data)
-    else:
-      self._lattice_ids = self._lattice_ids.data() # type flex int
-      self._data = data # type miller array with flex double data
+    order = flex.sort_permutation(lattice_ids)
+    sorted_lattice_id = flex.select(lattice_ids, order)
+    sorted_data = data.data().select( order)
+    sorted_indices = data.indices().select( order)
+    self._lattice_ids = sorted_lattice_id
+    self._data = data.customized_copy(indices=sorted_indices, data=sorted_data)
     assert isinstance(self._data.indices(), type(flex.miller_index()))
     assert isinstance(self._data.data(), type(flex.double()))
 

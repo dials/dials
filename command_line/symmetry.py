@@ -8,7 +8,6 @@ import os
 
 from cctbx import crystal
 from cctbx import miller
-from cctbx import sgtbx
 import iotbx.phil
 from iotbx.reflection_file_reader import any_reflection_file
 
@@ -161,10 +160,6 @@ def run(args):
         crystal_symmetry, miller_indices, anomalous_flag=True)
       intensities = miller.array(miller_set, data=data, sigmas=sigmas)
       intensities.set_observation_type_xray_intensity()
-      intensities.set_info(miller.array_info(
-        source='DIALS',
-        source_type='pickle'
-      ))
       datasets.append(intensities)
 
   files = args
@@ -191,8 +186,7 @@ def run(args):
     mtz_object = reader.file_content()
     intensities = intensities.customized_copy(
       anomalous_flag=True,
-      indices=mtz_object.extract_original_index_miller_indices()).set_info(
-        intensities.info())
+      indices=mtz_object.extract_original_index_miller_indices())
 
     intensities.set_observation_type_xray_intensity()
     if params.batch is not None:
