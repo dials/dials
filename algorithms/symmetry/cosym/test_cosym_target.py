@@ -15,9 +15,17 @@ def test_cosym_target(space_group):
   datasets, expected_reindexing_ops = generate_test_data(
     space_group=sgtbx.space_group_info(symbol=space_group).group())
 
+  intensities = datasets[0]
+  dataset_ids = flex.double(intensities.size(), 0)
+  for i, d in enumerate(datasets[1:]):
+    intensities = intensities.concatenate(
+      d, assert_is_similar_symmetry=False)
+    dataset_ids.extend(flex.double(d.size(), i+1))
+
   for weights in [None, 'count', 'standard_error']:
 
-    t = target.Target(datasets,
+    t = target.Target(intensities,
+                      dataset_ids,
                       weights=weights,
                       )
     m = len(t.get_sym_ops())
