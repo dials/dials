@@ -26,11 +26,13 @@ from dials.algorithms.scaling.scaling_utilities import get_next_unique_id, \
 
 logger = logging.getLogger('dials')
 
-def choose_scaling_intensities(reflection_table, intensity_choice='prf'):
+def choose_scaling_intensities(reflection_table, intensity_choice='profile'):
   """Choose which intensities to use for scaling. The LP, QE and
   partiality corrections are also applied. Two new columns are
   added to the reflection table 'intensity' and 'variance', which have
   all corrections applied except an inverse scale factor."""
+  if intensity_choice == 'profile':
+    intensity_choice = 'prf' #rename to allow string matching with refl table
   conv = calculate_prescaling_correction(reflection_table)
   intstr = 'intensity.'+intensity_choice+'.value'
   if not intstr in reflection_table:

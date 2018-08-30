@@ -374,7 +374,7 @@ def test_filter_reflection_table():
   assert not 'intensity.prf.value' in reflections
   assert not 'intensity.scale.value' in reflections
   reflections = generate_integrated_test_reflections()
-  reflections = filter_reflection_table(reflections, ['prf'])
+  reflections = filter_reflection_table(reflections, ['profile'])
   assert  'intensity.prf.value' in reflections
   assert not 'intensity.sum.value' in reflections
   assert not 'intensity.scale.value' in reflections
@@ -384,12 +384,12 @@ def test_filter_reflection_table():
   assert not 'intensity.prf.value' in reflections
   assert not 'intensity.sum.value' in reflections
   reflections = generate_integrated_test_reflections()
-  reflections = filter_reflection_table(reflections, ['sum', 'prf'])
+  reflections = filter_reflection_table(reflections, ['sum', 'profile'])
   assert  'intensity.sum.value' in reflections
   assert  'intensity.prf.value' in reflections
   assert not 'intensity.scale.value' in reflections
   reflections = generate_integrated_test_reflections()
-  reflections = filter_reflection_table(reflections, ['sum', 'prf', 'scale'])
+  reflections = filter_reflection_table(reflections, ['sum', 'profile', 'scale'])
   assert 'intensity.sum.value' in reflections
   assert 'intensity.prf.value' in reflections
   assert 'intensity.scale.value' in reflections
