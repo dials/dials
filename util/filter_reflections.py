@@ -5,8 +5,8 @@ produce a filtered reflection table ready for export or further processing.
 
 The set of classes defined in this module have filtering methods implemented as
 classmethods/staticmethods, to allow easy use of individual methods. The
-different classes are to handle filtering of different intensity types - prf,
-scale, sum, prf + sum, etc. All functions and classmethods/staticmethods act on
+different classes are to handle filtering of different intensity types - profile,
+scale, sum, profile + sum, etc. All functions and classmethods/staticmethods act on
 a reflection table, returning a reflection table that is typically a new object,
 due to the use of flex selections.
 
@@ -18,7 +18,7 @@ Functions:
 
   filter_reflection_table takes in the following parameters: min_isigi=float,
   filter_ice_rings=bool, combine_partials=bool, partiality_threshold=float,
-  intensity_choice=strings (passed in as a list e.g. ['sum', 'prf'])
+  intensity_choice=strings (passed in as a list e.g. ['sum', 'profile'])
 
 Classes:
   - FilteringReductionMethods:
@@ -52,17 +52,17 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
     reducer = ScaleIntensityReducer
   elif intensity_choice == ['sum']:
     reducer = SumIntensityReducer
-  elif intensity_choice == ['prf']:
+  elif intensity_choice == ['profile']:
     reducer = PrfIntensityReducer
-  elif all([i in intensity_choice for i in ['sum', 'scale', 'prf']]):
+  elif all([i in intensity_choice for i in ['sum', 'scale', 'profile']]):
     reducer = AllSumPrfScaleIntensityReducer
-  elif all([i in intensity_choice for i in ['sum', 'prf']]):
+  elif all([i in intensity_choice for i in ['sum', 'profile']]):
     reducer = SumAndPrfIntensityReducer
   else:
     raise Sorry(("Unrecognised intensity choice for filter_reflection_table,\n"
       "value read: {0}\n"
-      "must be either: 'scale', 'prf', 'sum', 'prf sum' or 'prf sum scale'\n"
-      "(if parsing from command line, multiple choices passed as e.g. prf+sum"
+      "must be either: 'scale', 'profile', 'sum', 'profile sum' or 'profile sum scale'\n"
+      "(if parsing from command line, multiple choices passed as e.g. profile+sum"
       ).format(intensity_choice))
   reflection_table = reducer.filter_for_export(reflection_table, *args, **kwargs)
   return reflection_table

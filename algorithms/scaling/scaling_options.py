@@ -72,15 +72,15 @@ phil_scope = iotbx.phil.parse('''
       .type = float
       .help = "Minimum partiality to use when selecting subset of reflections
                to determine the scaling model."
-    intensity_choice = prf sum *combine
+    intensity_choice = profile sum *combine
       .type = choice
       .help = "Option to choose from profile fitted or summation intensities, or
-               an optimised combination of prf/sum."
+               an optimised combination of profile/sum."
     combine.Imid = None
       .type = floats
-      .help = "A list of values to try for the midpoint, for prf/sum combination
+      .help = "A list of values to try for the midpoint, for profile/sum combination
                calculation: the value with the lowest Rmeas will be chosen.
-               0 and 1 are special values that can be supplied to include prf
+               0 and 1 are special values that can be supplied to include profile
                and sum respectively in the comparison."
     combine.joint_analysis = True
       .type = bool
