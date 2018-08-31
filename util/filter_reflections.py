@@ -358,8 +358,8 @@ class SumAndPrfIntensityReducer(FilterForExportAlgorithm):
       all=True)
     reflection_table = reflection_table.select(selection)
     if reflection_table.size() == 0:
-      raise Sorry('No reflections found with both prf and sum intensities,'
-        'try selecting a different filtering option - sum perhaps?')
+      raise Sorry('No reflections found with both profile and sum intensities,'
+        'try selecting a different intensity choice - sum perhaps?')
     logger.info("Selected %d integrated reflections" % reflection_table.size())
     return reflection_table
 
