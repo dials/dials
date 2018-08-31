@@ -186,7 +186,7 @@ class MMCIFOutputFile(object):
     if 'sum' in self.params.intensity:
       reflections['intensity.sum.sigma'] = reflections['intensity.sum.variance'] ** 0.5
       variables_present.extend(['intensity.sum.value', 'intensity.sum.sigma'])
-    if 'prf' in self.params.intensity:
+    if 'profile' in self.params.intensity:
       reflections['intensity.prf.sigma'] = reflections['intensity.prf.variance'] ** 0.5
       variables_present.extend(['intensity.prf.value', 'intensity.prf.sigma'])
 
