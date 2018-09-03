@@ -80,10 +80,10 @@ phil_scope = parse('''
     .type = choice
     .help = "The output file format"
   
-  intensity = *prf *sum scale
+  intensity = *profile *sum scale
     .type = choice(multi=True)
     .help = "Choice of which intensities to export. Allowed combinations:
-            scale, prf, sum, prf+sum, sum+prf+scale."
+            scale, profile, sum, profile+sum, sum+profile+scale."
 
   debug = False
     .type = bool
