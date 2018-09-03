@@ -143,7 +143,7 @@ def run(args):
         assert 'intensity.sum.value' in refl
         intensity_choice = ['sum']
         if 'intensity.prf.value' in refl:
-          intensity_choice.append('prf')
+          intensity_choice.append('profile')
           intensity_to_use = 'prf'
         else:
           intensity_to_use = 'sum'
