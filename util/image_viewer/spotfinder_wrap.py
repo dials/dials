@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-from rstbx.slip_viewer.frame import chooser_wrapper as _chooser_wrapper
+from .slip_viewer.frame import chooser_wrapper as _chooser_wrapper
 
 try:
   import resource

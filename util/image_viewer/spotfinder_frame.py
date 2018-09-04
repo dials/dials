@@ -3,7 +3,10 @@ from __future__ import print_function
 import rstbx.viewer.display
 import wx
 from wx.lib.intctrl import IntCtrl
-from rstbx.slip_viewer.frame import XrayFrame
+
+from .slip_viewer.frame import XrayFrame
+from .slip_viewer import pyslip
+
 from rstbx.viewer.frame import SettingsFrame, SettingsPanel
 from scitbx import matrix
 from dials.array_family import flex
@@ -205,7 +208,7 @@ class SpotFrame(XrayFrame) :
     self.Bind(wx.EVT_MENU, self.OnMask, source=item)
 
   def OnMask(self, event):
-    from rstbx.slip_viewer.score_frame import ScoreSettingsFrame
+    from .slip_viewer.score_frame import ScoreSettingsFrame
     from dials.util.image_viewer.mask_frame import MaskSettingsFrame
 
     if not self._mask_frame:
@@ -263,7 +266,6 @@ class SpotFrame(XrayFrame) :
     self.init_pyslip_select()
 
   def init_pyslip_select(self):
-    from rstbx.slip_viewer import pyslip
     #self.pyslip.Bind(pyslip.EVT_PYSLIP_SELECT, self.handle_select_event)
 
     #self.TypeMask = 100
@@ -282,6 +284,7 @@ class SpotFrame(XrayFrame) :
     #self.pyslip.SetLayerSelectable(self._xxx_layer, True)
 
     #self.pyslip.layerBSelHandler[self.TypeMask] = self.GetBoxCorners
+    pass
 
   def GetBoxCorners(self, layer, p1, p2):
     """Get list of points inside box.
