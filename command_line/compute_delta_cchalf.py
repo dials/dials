@@ -11,7 +11,7 @@
 #
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.compute_delta_cchalf
 
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 import sys
 from iotbx.reflection_file_reader import any_reflection_file
 from iotbx import merging_statistics
@@ -39,7 +39,7 @@ class ResolutionBinner(object):
     :param nbins: The number of bins
 
     '''
-    print "Resolution bins"
+    print("Resolution bins")
     assert dmin < dmax
     dmin_inv_sq = 1.0 / dmin**2
     dmax_inv_sq = 1.0 / dmax**2
@@ -53,7 +53,7 @@ class ResolutionBinner(object):
     self._bins = []
     for i in range(self._nbins):
       b0, b1 = self._xmin + i * self._bin_size, self._xmin + (i+1)*self._bin_size
-      print "%d: %.3f, %.3f" % (i, sqrt(1/b0**2), sqrt(1/b1**2))
+      print("%d: %.3f, %.3f" % (i, sqrt(1/b0**2), sqrt(1/b1**2)))
       self._bins.append((b0,b1))
 
   def nbins(self):
@@ -222,14 +222,14 @@ class PerImageCChalfStatistics(object):
     self._num_reflections = len(miller_index)
     self._num_unique = len(reflection_sums.keys())
     
-    print ""
-    print "# Batches: ", self._num_batches
-    print "# Reflections: ", self._num_reflections
-    print "# Unique: ", self._num_unique
+    print("")
+    print("# Batches: ", self._num_batches)
+    print("# Reflections: ", self._num_reflections)
+    print("# Unique: ", self._num_unique)
    
     # Compute the CC 1/2 for all the data
     self._cchalf_mean = self._compute_cchalf(reflection_sums, binner)
-    print "CC 1/2 mean: %.3f" % (100*self._cchalf_mean)
+    print("CC 1/2 mean: %.3f" % (100*self._cchalf_mean))
    
     # Compute the CC 1/2 excluding each batch in turn
     self._cchalf = self._compute_cchalf_excluding_each_batch(
@@ -304,7 +304,7 @@ class PerImageCChalfStatistics(object):
       # Compute the CC 1/2 without the reflections from the current batch
       cchalf = self._compute_cchalf(batch_reflection_sums, binner)
       cchalf_i[batch] = cchalf
-      print "CC 1/2 excluding batch %d: %.3f" % (batch, 100*cchalf)
+      print("CC 1/2 excluding batch %d: %.3f" % (batch, 100*cchalf))
 
     return cchalf_i
 
@@ -348,7 +348,7 @@ class PerImageCChalfStatistics(object):
     Return the Delta CC 1/2 for each image excluded
 
     '''
-    return dict((k, v - self._cchalf_mean) for k, v in self._cchalf.iteritems())
+    return dict((k, self._cchalf_mean - v) for k, v in self._cchalf.iteritems())
 
 
 if __name__ == '__main__':
@@ -388,11 +388,18 @@ if __name__ == '__main__':
   batches = list(delta_cchalf_i.keys())
   sorted_index = sorted(range(len(batches)), key=lambda x: delta_cchalf_i[batches[x]])
   for i in sorted_index:
-    print "Batch: %d, Delta CC 1/2: %.3f" % (batches[i], 100*delta_cchalf_i[batches[i]])
+    print("Batch: %d, Delta CC 1/2: %.3f" % (batches[i], 100*delta_cchalf_i[batches[i]]))
 
   # Make a plot of delta cc 1/2
   from matplotlib import pylab
-  pylab.hist(statistics.delta_cchalf_i().values())
+  pylab.hist(delta_cchalf_i.values())
   pylab.xlabel("Delta CC 1/2")
+  pylab.show()
+
+  X = list(delta_cchalf_i.keys())
+  Y = list(delta_cchalf_i.values())
+  pylab.plot(X, Y)
+  pylab.xlabel("Batch number")
+  pylab.ylabel("Delta CC 1/2")
   pylab.show()
     
