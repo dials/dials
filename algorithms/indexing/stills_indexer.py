@@ -305,18 +305,25 @@ class stills_indexer(indexer_base):
         experiments = isoform_experiments
         reflections_for_refinement = isoform_reflections
 
-      try:
-        refined_experiments, refined_reflections = self.refine(
-          experiments, reflections_for_refinement)
-      except Exception as e:
-        s = str(e)
-        if len(experiments) == 1:
-          raise Sorry(e)
-        had_refinement_error = True
-        logger.info("Refinement failed:")
-        logger.info(s)
-        del experiments[-1]
-        break
+      if self.params.refinement_protocol.mode == 'repredict_only':
+        refined_experiments, refined_reflections = experiments, reflections_for_refinement
+        from dials.algorithms.refinement.prediction import ExperimentsPredictor
+        ref_predictor = ExperimentsPredictor(experiments, spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
+        ref_predictor(refined_reflections)
+
+      else:
+        try:
+          refined_experiments, refined_reflections = self.refine(
+            experiments, reflections_for_refinement)
+        except Exception as e:
+          s = str(e)
+          if len(experiments) == 1:
+            raise Sorry(e)
+          had_refinement_error = True
+          logger.info("Refinement failed:")
+          logger.info(s)
+          del experiments[-1]
+          break
 
       # sanity check for unrealistic unit cell volume increase during refinement
       # usually this indicates too many parameters are being refined given the
