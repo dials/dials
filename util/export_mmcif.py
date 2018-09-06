@@ -41,7 +41,8 @@ class MMCIFOutputFile(object):
     ### Assumes you want to apply the lp and dqe corrections to sum and prf
     ### Do we want to combine partials?
     reflections = filter_reflection_table(reflections, self.params.intensity,
-      combine_partials=False, partiality_threshold=0.0)
+      combine_partials=False, partiality_threshold=0.0,
+      d_min=self.params.mtz.d_min)
 
     # Get the cif block
     cif_block = iotbx.cif.model.block()

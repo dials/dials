@@ -121,6 +121,14 @@ class FilteringReductionMethods(object):
     return reflection_table
 
   @staticmethod
+  def filter_on_d_min(reflection_table, d_min):
+    selection = reflection_table['d'] < d_min
+    logger.info("Removing %d reflections below a resolution of %s" %
+                (selection.count(True), d_min))
+    reflection_table.del_selected(selection)
+    return reflection_table
+
+  @staticmethod
   def filter_unassigned_reflections(reflection_table):
     """"Select reflections that are assigned to an experiment (i.e.
     non-negative id). This step will need to be looked at again once UIDS
@@ -171,7 +179,7 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
 
   @classmethod
   def _filter_for_export(cls, reflection_table, min_isigi=None, filter_ice_rings=False,
-    combine_partials=True, partiality_threshold=0.99):
+    combine_partials=True, partiality_threshold=0.99, d_min=None):
     """Designed to be called by subclasses"""
     assert reflection_table.size() > 0, \
       """Empty reflection table given to reduce_data_for_export function"""
@@ -196,6 +204,8 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
     reflection_table = cls.filter_bad_variances(reflection_table)
     if filter_ice_rings:
       reflection_table = cls.filter_ice_rings(reflection_table)
+    if d_min:
+      reflection_table = cls.filter_on_d_min(reflection_table, d_min)
 
     reflection_table = cls.apply_scaling_factors(reflection_table)
 
@@ -236,9 +246,10 @@ class PrfIntensityReducer(FilterForExportAlgorithm):
 
   @classmethod
   def filter_for_export(cls, reflection_table, min_isigi=None,
-    filter_ice_rings=False, combine_partials=True, partiality_threshold=0.99):
+    filter_ice_rings=False, combine_partials=True, partiality_threshold=0.99,
+    d_min=None):
     return cls._filter_for_export(reflection_table, min_isigi, filter_ice_rings,
-      combine_partials, partiality_threshold)
+      combine_partials, partiality_threshold, d_min)
 
   @classmethod
   def filter_on_min_isigi(cls, reflection_table, min_isigi=None):
@@ -281,9 +292,10 @@ class SumIntensityReducer(FilterForExportAlgorithm):
 
   @classmethod
   def filter_for_export(cls, reflection_table, min_isigi=None,
-    filter_ice_rings=False, combine_partials=True, partiality_threshold=0.99):
+    filter_ice_rings=False, combine_partials=True, partiality_threshold=0.99,
+    d_min=None):
     return cls._filter_for_export(reflection_table, min_isigi, filter_ice_rings,
-      combine_partials, partiality_threshold)
+      combine_partials, partiality_threshold, d_min)
 
   @classmethod
   def filter_on_min_isigi(cls, reflection_table, min_isigi=None):
@@ -330,9 +342,9 @@ class SumAndPrfIntensityReducer(FilterForExportAlgorithm):
 
   @classmethod
   def filter_for_export(cls, reflection_table, min_isigi=None, filter_ice_rings=False,
-      combine_partials=True, partiality_threshold=0.99):
+      combine_partials=True, partiality_threshold=0.99, d_min=None):
     return cls._filter_for_export(reflection_table, min_isigi, filter_ice_rings,
-      combine_partials, partiality_threshold)
+      combine_partials, partiality_threshold, d_min)
 
   @classmethod
   def filter_on_min_isigi(cls, reflection_table, min_isigi=None):
@@ -392,9 +404,10 @@ class ScaleIntensityReducer(FilterForExportAlgorithm):
 
   @classmethod
   def filter_for_export(cls, reflection_table, min_isigi=None,
-    filter_ice_rings=False, combine_partials=True, partiality_threshold=0.99):
+    filter_ice_rings=False, combine_partials=True, partiality_threshold=0.99,
+    d_min=None):
     return cls._filter_for_export(reflection_table, min_isigi, filter_ice_rings,
-      combine_partials, partiality_threshold)
+      combine_partials, partiality_threshold, d_min)
 
   @classmethod
   def filter_on_min_isigi(cls, reflection_table, min_isigi=None):

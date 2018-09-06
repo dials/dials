@@ -127,6 +127,12 @@ def test_FilteringReductionMethods():
     reflections, 'prf')
   assert list(reflections['intensity.prf.value']) == [2.0, 3.0]
 
+  # Test filtering on dmin
+  reflections = generate_simple_table()
+  reflections['d'] = flex.double([1.0, 2.0, 3.0])
+  reflections = FilteringReductionMethods.filter_on_d_min(reflections, 1.5)
+  assert list(reflections['d']) == [2.0, 3.0]
+
   # test calculate_lp_qe_correction_and_filter - should be lp/qe
   # cases, qe, dqe , lp , qe zero
   r = flex.reflection_table()
@@ -244,13 +250,14 @@ def test_SumIntensityReducer():
   reflections = generate_integrated_test_reflections()
   reflections['lp'] = flex.double(6, 2)
   reflections['partiality'] = flex.double([1.0, 1.0, 0.5, 0.1, 1.0, 1.0])
+  reflections['d'] = flex.double([5.0, 5.0, 0.1, 5.0, 5.0, 5.0])
   reflections = SumIntensityReducer.filter_for_export(reflections,
-    partiality_threshold=0.25)
+    partiality_threshold=0.25, d_min=1.0)
 
   assert list(reflections['intensity.sum.value']) == pytest.approx(
-    [22.0, 24.0, 52.0])
+    [22.0, 24.0])
   assert list(reflections['intensity.sum.variance']) == pytest.approx(
-    [4.4, 4.8, 20.8])
+    [4.4, 4.8])
 
   assert not 'intensity.prf.value' in reflections
   assert not 'intensity.scale.value' in reflections

@@ -383,6 +383,8 @@ class Script(object):
         'It may be best to rerun scaling from this point for an improved model.' % n_neg)
       joint_table.set_flags(sel, joint_table.flags.excluded_for_scaling)
 
+    save_reflections(joint_table, self.params.output.reflections)
+
     if self.params.output.unmerged_mtz:
       logger.info("\nSaving output to an unmerged mtz file to %s.",
         self.params.output.unmerged_mtz)
@@ -394,6 +396,8 @@ class Script(object):
       params.intensity = ['scale']
       params.mtz.partiality_threshold = self.params.cut_data.partiality_cutoff
       params.mtz.hklout = self.params.output.unmerged_mtz
+      if self.params.cut_data.d_min:
+        params.mtz.d_min = self.params.cut_data.d_min
       exporter = MTZExporter(params, self.experiments,
         [joint_table])
       exporter.export()
@@ -419,8 +423,6 @@ class Script(object):
       date_str = time.strftime('%d/%m/%Y at %H:%M:%S', time.gmtime())
       mtz_file.add_history('From %s, run on %s' % (dials_version(), date_str))
       mtz_file.write(self.params.output.merged_mtz)
-
-    save_reflections(joint_table, self.params.output.reflections)
 
   def scaling_algorithm(self, scaler):
     """The main scaling algorithm."""

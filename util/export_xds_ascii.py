@@ -27,7 +27,8 @@ def export_xds_ascii(integrated_data, experiment_list, params, var_model=(1,0)):
     intensity_choice=params.intensity,
     partiality_threshold=params.mtz.partiality_threshold,
     combine_partials=params.mtz.combine_partials,
-    min_isigi=params.mtz.min_isigi, filter_ice_rings=params.mtz.filter_ice_rings)
+    min_isigi=params.mtz.min_isigi, filter_ice_rings=params.mtz.filter_ice_rings,
+    d_min=params.mtz.d_min)
   
   # calculate the scl = lp/dqe correction for outputting but don't apply it as
   # it has already been applied in filter_reflection_table
