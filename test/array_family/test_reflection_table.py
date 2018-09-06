@@ -1083,47 +1083,6 @@ def test_to_from_msgpack():
   assert(all(tuple(a == b for a, b in zip(new_table['col10'], c10))))
   assert(all(tuple(compare(a, b) for a, b in zip(new_table['col11'], c11))))
 
-def test_to_from_msgpack2(dials_regression):
-
-  from dials.array_family import flex
-
-  from os.path import join
-  filename = join(dials_regression, "centroid_test_data", "integrated.pickle")
-  reflections = flex.reflection_table.from_pickle(filename)
-  reflections.as_msgpack_file("reflections.mpack")
-
-  reflections2 = flex.reflection_table.from_msgpack_file("reflections.mpack")
-
-  for key in reflections.keys():
-
-    col1 = reflections[key]
-    col2 = reflections2[key]
-
-    assert len(col1) == len(col2)
-
-    if type(col1) == flex.int:
-      assert all(a == b for a, b in zip(col1, col2))
-    elif type(col1) == flex.double:
-      assert all(abs(a-b) < 1e-9 for a, b in zip(col1, col2))
-    elif type(col1) == flex.vec2_double:
-      assert all(all(abs(aa-bb) < 1e-9 for aa, bb in zip(a, b)) for a, b in zip(col1, col2))
-    elif type(col1) == flex.vec3_double:
-      assert all(all(abs(aa-bb) < 1e-9 for aa, bb in zip(a, b)) for a, b in zip(col1, col2))
-    elif type(col1) == flex.mat3_double:
-      assert all(all(abs(aa-bb) < 1e-9 for aa, bb in zip(a, b)) for a, b in zip(col1, col2))
-    elif type(col1) == flex.miller_index:
-      assert all(a == b for a, b in zip(col1, col2))
-    elif type(col1) == flex.int6:
-      assert all(a == b for a, b in zip(col1, col2))
-  obj = table.as_msgpack_file("test.mpack")
-  new_table = flex.reflection_table.from_msgpack_file("test.mpack")
-  assert(new_table.is_consistent())
-  assert(new_table.nrows() == 10)
-  assert(new_table.ncols() == 3)
-  assert(all(a == b for a, b in zip(new_table['col1'], c1)))
-  assert(all(a == b for a, b in zip(new_table['col2'], c2)))
-  assert(all(a == b for a, b in zip(new_table['col3'], c3)))
-
 def test_experiment_identifiers():
 
   from dials.array_family import flex
