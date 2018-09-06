@@ -543,6 +543,10 @@ class MetaDataUpdater(object):
 
       # Append to new imageset list
       experiment.imageset = imageset
+      experiment.beam = imageset.get_beam()
+      experiment.detector = imageset.get_detector()
+      experiment.goniometer = imageset.get_goniometer()
+      experiment.scan = imageset.get_scan()
 
     # Return the datablock
     return experiments

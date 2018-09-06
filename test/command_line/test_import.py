@@ -14,7 +14,7 @@ def test_multiple_sweep_import_fails_without_allow_parameter(dials_regression, t
   del image_files[4] # Delete filename to force two sweeps
 
   # run without allowing multiple sweeps
-  result = run_process(['dials.import'] + image_files + ['output.datablock=datablock_multiple_sweeps.json'])
+  result = run_process(['dials.import'] + image_files + ['output.experiments=datablock_multiple_sweeps.json'])
   assert result['exitcode'] == 1
   assert 'ore than 1 sweep' in result['stderr']
   assert not os.path.exists("datablock_multiple_sweeps.json")
@@ -26,15 +26,14 @@ def test_multiple_sweep_import_suceeds_with_allow_parameter(dials_regression, tm
   image_files = sorted(glob(os.path.join(dials_regression, "centroid_test_data", "centroid*.cbf")))
   del image_files[4] # Delete filename to force two sweeps
 
-  result = run_process(['dials.import'] + image_files + ['output.datablock=datablock_multiple_sweeps.json', 'allow_multiple_sweeps=True'])
+  result = run_process(['dials.import'] + image_files + ['output.experiments=datablock_multiple_sweeps.json', 'allow_multiple_sweeps=True'])
   assert result['exitcode'] == 0
   assert result['stderr'] == ''
   assert os.path.exists("datablock_multiple_sweeps.json")
 
   from dxtbx.serialize import load
-  datablock = load.datablock("datablock_multiple_sweeps.json")[0]
-  imgset = datablock.extract_imagesets()
-  assert len(imgset) == 2
+  experiments = load.experiment_list("datablock_multiple_sweeps.json")
+  assert len(experiments) == 2
 
 def test_with_mask(dials_regression, tmpdir):
   tmpdir.chdir()
@@ -43,15 +42,14 @@ def test_with_mask(dials_regression, tmpdir):
   image_files = glob(os.path.join(dials_regression, "centroid_test_data", "centroid*.cbf"))
   mask_filename = os.path.join(dials_regression, "centroid_test_data", "mask.pickle")
 
-  result = run_process(['dials.import'] + image_files + ['mask=' + mask_filename, 'output.datablock=datablock_with_mask.json'])
+  result = run_process(['dials.import'] + image_files + ['mask=' + mask_filename, 'output.experiments=datablock_with_mask.json'])
   assert result['exitcode'] == 0
   assert result['stderr'] == ''
   assert os.path.exists("datablock_with_mask.json")
 
   from dxtbx.serialize import load
-  datablock = load.datablock("datablock_with_mask.json")[0]
-  imgset = datablock.extract_imagesets()[0]
-  assert imgset.external_lookup.mask.filename == mask_filename
+  experiments = load.experiment_list("datablock_with_mask.json")
+  assert experiments[0].imageset.external_lookup.mask.filename == mask_filename
 
 def test_override_geometry(dials_regression, tmpdir):
   tmpdir.chdir()
@@ -94,14 +92,14 @@ def test_override_geometry(dials_regression, tmpdir):
       }
   ''')
 
-  result = run_process(['dials.import'] + image_files + ['geometry.phil', 'output.datablock=override_geometry.json'])
+  result = run_process(['dials.import'] + image_files + ['geometry.phil', 'output.experiments=override_geometry.json'])
   assert result['exitcode'] == 0
   assert result['stderr'] == ''
   assert os.path.exists("override_geometry.json")
 
   from dxtbx.serialize import load
-  datablock = load.datablock("override_geometry.json")[0]
-  imgset = datablock.extract_imagesets()[0]
+  experiments = load.experiment_list("override_geometry.json")
+  imgset = experiments[0].imageset
 
   beam = imgset.get_beam()
   detector = imgset.get_detector()
@@ -134,24 +132,24 @@ def tst_import_beam_centre(dials_regression, tmpdir):
   image_files = ' '.join(image_files)
 
   # provide mosflm beam centre to dials.import
-  result = run_process(['dials.import', 'mosflm_beam_centre=100,200', 'output.datablock=mosflm_beam_centre.json'] + image_files)
+  result = run_process(['dials.import', 'mosflm_beam_centre=100,200', 'output.experiments=mosflm_beam_centre.json'] + image_files)
   assert result['exitcode'] == 0
   assert result['stderr'] == ''
   assert os.path.exists("mosflm_beam_centre.json")
 
   from dxtbx.serialize import load
-  datablock = load.datablock("mosflm_beam_centre.json")[0]
-  imgset = datablock.extract_imagesets()[0]
+  experiments = load.experiment_list("mosflm_beam_centre.json")
+  imgset = experiments[0].imageset
   beam_centre = imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0())
   assert beam_centre == pytest.approx((200,100))
 
   # provide an alternative datablock.json to get geometry from
-  result = run_process(['dials.import', 'reference_geometry=mosflm_beam_centre.json', 'output.datablock=mosflm_beam_centre2.json'] + image_files)
+  result = run_process(['dials.import', 'reference_geometry=mosflm_beam_centre.json', 'output.experiments=mosflm_beam_centre2.json'] + image_files)
   assert result['exitcode'] == 0
   assert result['stderr'] == ''
   assert os.path.exists("mosflm_beam_centre2.json")
-  datablock = load.datablock("mosflm_beam_centre2.json")[0]
-  imgset = datablock.extract_imagesets()[0]
+  experiments = load.experiment_list("mosflm_beam_centre2.json")
+  imgset = experiments[0].imageset
   beam_centre = imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0())
   assert beam_centre == pytest.approx((200,100))
 
@@ -161,14 +159,14 @@ def test_slow_fast_beam_centre(dials_regression, tmpdir):
   # test slow_fast_beam_centre with a multi-panel CS-PAD image
   impath = os.path.join(dials_regression, "image_examples",
       "LCLS_cspad_nexus", "idx-20130301060858401.cbf")
-  result = run_process(['dials.import', 'slow_fast_beam_centre=134,42,18', 'output.datablock=slow_fast_beam_centre.json', impath])
+  result = run_process(['dials.import', 'slow_fast_beam_centre=134,42,18', 'output.experiments=slow_fast_beam_centre.json', impath])
   assert result['exitcode'] == 0
   assert result['stderr'] == ''
   assert os.path.exists('slow_fast_beam_centre.json')
 
   from dxtbx.serialize import load
-  datablock = load.datablock('slow_fast_beam_centre.json')[0]
-  imgset = datablock.extract_imagesets()[0]
+  experiments = load.experiment_list('slow_fast_beam_centre.json')
+  imgset = experiments[0].imageset
   # beam centre on 18th panel
   s0 = imgset.get_beam().get_s0()
   beam_centre = imgset.get_detector()[18].get_beam_centre_px(s0)
@@ -182,13 +180,13 @@ def test_slow_fast_beam_centre(dials_regression, tmpdir):
     intra_pnl = o - matrix.col(p.get_origin())
     offsets.append(intra_pnl.length())
 
-  result = run_process(['dials.import', 'output.datablock=reference.json', impath])
+  result = run_process(['dials.import', 'output.experiments=reference.json', impath])
   assert result['exitcode'] == 0
   assert result['stderr'] == ''
   assert os.path.exists('reference.json')
 
-  ref_db = load.datablock('reference.json')[0]
-  ref_imset = ref_db.extract_imagesets()[0]
+  ref_exp = load.experiment_list('reference.json')
+  ref_imset = ref_exp[0].imageset
   o = matrix.col(ref_imset.get_detector()[0].get_origin())
   ref_offsets = []
   for p in ref_imset.get_detector():
@@ -203,7 +201,7 @@ def test_from_image_files(dials_regression, tmpdir):
   image_files = glob(os.path.join(dials_regression, "centroid_test_data", "centroid*.cbf"))
 
   # Import from the image files
-  result = run_process(['dials.import'] + image_files + ['output.datablock=import_datablock.json'])
+  result = run_process(['dials.import'] + image_files + ['output.experiments=import_datablock.json'])
   assert result['exitcode'] == 0
   assert os.path.exists("import_datablock.json")
 
@@ -214,7 +212,7 @@ def test_from_template(dials_regression, tmpdir):
   template = os.path.join(dials_regression, "centroid_test_data", "centroid_####.cbf")
 
   # Import from the image files
-  result = run_process(['dials.import', 'template=' + template, 'output.datablock=import_datablock.json'])
+  result = run_process(['dials.import', 'template=' + template, 'output.experiments=import_datablock.json'])
   assert result['exitcode'] == 0
   assert os.path.exists("import_datablock.json")
 
@@ -224,6 +222,6 @@ def test_extrapolate_scan(dials_regression, tmpdir):
   # First image file
   image = os.path.join(dials_regression, "centroid_test_data", "centroid_0001.cbf")
 
-  result = run_process(['dials.import', image, 'output.datablock=import_extrapolate.json', 'geometry.scan.image_range=1,900', 'geometry.scan.extrapolate_scan=True'])
+  result = run_process(['dials.import', image, 'output.experiments=import_extrapolate.json', 'geometry.scan.image_range=1,900', 'geometry.scan.extrapolate_scan=True'])
   assert result['exitcode'] == 0
   assert os.path.exists("import_extrapolate.json")
