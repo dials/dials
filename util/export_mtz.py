@@ -392,7 +392,8 @@ def export_mtz(integrated_data, experiment_list, params):
     intensity_choice=params.intensity, 
     partiality_threshold=params.mtz.partiality_threshold,
     combine_partials=params.mtz.combine_partials,
-    min_isigi=params.mtz.min_isigi, filter_ice_rings=params.mtz.filter_ice_rings)
+    min_isigi=params.mtz.min_isigi, filter_ice_rings=params.mtz.filter_ice_rings,
+    d_min=params.mtz.d_min)
 
   # Calculate and store the image range for each image
   for experiment in experiment_list:

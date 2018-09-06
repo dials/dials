@@ -29,7 +29,8 @@ def export_sadabs(integrated_data, experiment_list, params):
     intensity_choice=params.intensity,
     partiality_threshold=params.mtz.partiality_threshold,
     combine_partials=params.mtz.combine_partials,
-    min_isigi=params.mtz.min_isigi, filter_ice_rings=params.mtz.filter_ice_rings)
+    min_isigi=params.mtz.min_isigi, filter_ice_rings=params.mtz.filter_ice_rings,
+    d_min=params.mtz.d_min)
 
   experiment = experiment_list[0]
   assert(not experiment.scan is None)

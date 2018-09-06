@@ -119,6 +119,10 @@ phil_scope = parse('''
       .type = bool
       .help = "Filter reflections at ice ring resolutions"
 
+    d_min = None
+      .type = float
+      .help = "Filter out reflections with d-spacing below d_min"
+
     hklout = integrated.mtz
       .type = path
       .help = "The output MTZ file"
