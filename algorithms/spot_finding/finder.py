@@ -749,7 +749,7 @@ class SpotFinder(object):
     self.no_shoeboxes_2d = no_shoeboxes_2d
     self.min_chunksize = min_chunksize
 
-  def __call__(self, datablock):
+  def __call__(self, experiments):
     '''
     Do the spot finding.
 
@@ -763,7 +763,9 @@ class SpotFinder(object):
 
     # Loop through all the imagesets and find the strong spots
     reflections = flex.reflection_table()
-    for i, imageset in enumerate(datablock.extract_imagesets()):
+    for i, experiment in enumerate(experiments):
+
+      imageset = experiment.imageset
 
       # Find the strong spots in the sweep
       logger.info('-' * 80)
@@ -795,7 +797,7 @@ class SpotFinder(object):
       reflections.flags.strong)
 
     # Check for overloads
-    reflections.is_overloaded(datablock)
+    reflections.is_overloaded(experiments)
 
     # Return the reflections
     return reflections

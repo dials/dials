@@ -152,11 +152,11 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     return result
 
   @staticmethod
-  def from_observations(datablock, params=None):
+  def from_observations(experiments, params=None):
     '''
     Construct a reflection table from observations.
 
-    :param datablock: The datablock
+    :param experiments: The experiments
     :param params: The input parameters
     :return: The reflection table of observations
 
@@ -171,7 +171,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       params = phil_scope.fetch(source=parse("")).extract()
 
     if params.spotfinder.filter.min_spot_size is Auto:
-      detector = datablock.extract_imagesets()[0].get_detector()
+      detector = experiments[0].imageset.get_detector()
       if detector[0].get_type() == 'SENSOR_PAD':
         # smaller default value for pixel array detectors
         params.spotfinder.filter.min_spot_size = 3
@@ -183,11 +183,11 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     # Get the integrator from the input parameters
     logger.info('Configuring spot finder from input parameters')
     find_spots = SpotFinderFactory.from_parameters(
-      datablock=datablock,
+      experiments=experiments,
       params=params)
 
     # Find the spots
-    return find_spots(datablock)
+    return find_spots(experiments)
 
   @staticmethod
   def from_pickle(filename):
