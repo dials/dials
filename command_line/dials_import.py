@@ -759,9 +759,9 @@ class Script(object):
     logger.info("-" * 80)
     for f in format_list:
       logger.info("  format: %s" % f)
+    logger.info("  num images: %d" % num_images)
     logger.info("  num sweeps: %d" % num_sweeps)
     logger.info("  num stills: %d" % num_stills)
-    logger.info("  num images: %d" % num_images)
 
     # Print out info for all experiments
     for experiment in experiments:
