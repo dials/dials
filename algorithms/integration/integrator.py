@@ -1120,7 +1120,7 @@ class Integrator(object):
                 p.append(None)
           reference_debug.append(p)
           with open(self.params.debug_reference_filename, "wb") as outfile:
-            import cPickle as pickle
+            import six.moves.cPickle as pickle
             pickle.dump(reference_debug, outfile)
 
         for i in range(len(finalized_profile_fitter)):
@@ -1563,7 +1563,7 @@ class IntegratorFactory(object):
     import dials.extensions
     from dials.array_family import flex
     from libtbx.utils import Sorry
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
 
     # Check each experiment has an imageset
     for exp in experiments:
@@ -1576,7 +1576,7 @@ class IntegratorFactory(object):
     # Read the mask in if necessary
     if params.integration.lookup.mask is not None:
       if isinstance(params.integration.lookup.mask, str):
-        with open(params.integration.lookup.mask) as infile:
+        with open(params.integration.lookup.mask, 'rb') as infile:
           params.integration.lookup.mask = pickle.load(infile)
 
     # Initialise the strategy classes

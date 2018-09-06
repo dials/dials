@@ -758,7 +758,7 @@ class SpotFinder(object):
 
     '''
     from dials.array_family import flex
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
     from dxtbx.format.image import ImageBool
 
     # Loop through all the imagesets and find the strong spots

@@ -42,7 +42,7 @@ if __name__ == '__main__':
   import traceback
   from os.path import join, exists
   from time import sleep
-  import cPickle as pickle
+  import six.moves.cPickle as pickle
 
   # Get the task id and the current working directory
   tid = get_tid()
@@ -59,7 +59,7 @@ if __name__ == '__main__':
   # Try to run the function, otherwise return an exception
   try:
     with open(input_fn, "rb") as infile:
-      function, element = pickle.load(open(input_fn))
+      function, element = pickle.load(infile)
 
     result = function(element)
   except Exception as e:

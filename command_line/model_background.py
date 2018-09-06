@@ -380,8 +380,8 @@ class Script(object):
     static_model = StaticBackgroundModel()
     for i in range(len(model)):
       static_model.add(model[i].model)
-    with open(params.output.model, "w") as outfile:
-      import cPickle as pickle
+    with open(params.output.model, "wb") as outfile:
+      import six.moves.cPickle as pickle
       pickle.dump(static_model, outfile, protocol=pickle.HIGHEST_PROTOCOL)
 
     # Output some diagnostic images

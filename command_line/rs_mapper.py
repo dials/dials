@@ -25,9 +25,11 @@ Examples::
 
   dials.rs_mapper image1.cbf
 
-  dials.rs_mapper imager_00*.cbf
+  dials.rs_mapper image_00*.cbf
 
   dials.rs_mapper datablock.json
+
+  dials.rs_mapper experiments.json
 
 '''
 
@@ -63,7 +65,7 @@ class Script(object):
         # The script usage
         usage = "usage: %s map_file=output.ccp4 [max_resolution=6] [grid_size=192] "\
                 "[reverse_phi=False] [param.phil] "\
-                "{datablock.json | image1.file [image2.file ...]}" \
+                "{datablock.json | image1.file [image2.file ...]} | experiments.json" \
                 % libtbx.env.dispatcher_name
 
         # Initialise the base class
@@ -71,31 +73,28 @@ class Script(object):
             usage=usage,
             phil=phil_scope,
             epilog=help_message,
+            read_experiments=True,
             read_datablocks=True,
             read_datablocks_from_images=True)
 
     def run(self):
         from dials.util.options import flatten_datablocks
+        from dials.util.options import flatten_experiments
 
         # Parse the command line
         params, options = self.parser.parse_args(show_diff_phil=True)
-
-        # Ensure we have a data block
-        datablocks = flatten_datablocks(params.input.datablock)
-        if len(datablocks) == 0:
-            self.parser.print_help()
-            return
-        elif len(datablocks) != 1:
-            raise RuntimeError('only 1 datablock can be processed at a time')
 
         if not params.rs_mapper.map_file:
             raise RuntimeError('Please specify output map file (map_file=)')
         else:
             self.map_file = params.rs_mapper.map_file
 
+        # Ensure we have either a data block or an experiment list
+        self.experiments = flatten_experiments(params.input.experiments)
         self.datablocks = flatten_datablocks(params.input.datablock)
-        if len(self.datablocks) == 0:
+        if [len(self.datablocks), len(self.experiments)].count(1) != 1:
             self.parser.print_help()
+            print("Please pass either a datablock or an experiment list\n")
             return
 
         self.reverse_phi = params.rs_mapper.reverse_phi
@@ -108,6 +107,9 @@ class Script(object):
         for datablock in self.datablocks:
             for imageset in datablock.extract_imagesets():
                 self.process_imageset(imageset)
+
+        for experiment in self.experiments:
+            self.process_imageset(experiment.imageset)
 
         recviewer.normalize_voxels(self.grid, self.cnts)
         # Let's use 1/(100A) as the unit so that the absolute numbers in the

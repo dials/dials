@@ -1,19 +1,20 @@
 from __future__ import absolute_import, division, print_function
 
+import json
 import os
 
-def test_export_mosflm(dials_regression, tmpdir):
-  from libtbx import easy_run
+import procrunner
 
+def test_export_mosflm(dials_regression, tmpdir):
+  dials_regression_escaped = json.dumps(dials_regression).strip('"')
   with open(os.path.join(dials_regression, "experiment_test_data/experiment_1.json"), 'r') as fi:
     with (tmpdir / 'experiments.json').open('w') as fo:
-      for line in fi.readlines():
-        fo.write(line.replace('$DIALS_REGRESSION', dials_regression))
+      fo.write(fi.read().replace('$DIALS_REGRESSION', dials_regression_escaped))
 
   tmpdir.chdir()
 
-  cmd = "dials.export format=mosflm experiments.json"
-  result = easy_run.fully_buffered(cmd).raise_if_errors()
+  result = procrunner.run(['dials.export', 'format=mosflm', 'experiments.json'])
+  assert not result['exitcode'] and not result['stderr']
 
   assert os.path.exists("mosflm/index.mat")
   with open("mosflm/index.mat", "rb") as f:
@@ -33,10 +34,10 @@ def test_export_mosflm(dials_regression, tmpdir):
   with open("mosflm/mosflm.in", "rb") as f:
     lines = f.read()
   assert lines == """
-DIRECTORY %s/centroid_test_data
+DIRECTORY %s%scentroid_test_data
 TEMPLATE centroid_####.cbf
 SYMMETRY 89
 BEAM 220.002 212.478
 DISTANCE 190.1800
 MATRIX index.mat
-""".strip("\n") % dials_regression
+""".strip("\n") % (dials_regression, os.path.sep)

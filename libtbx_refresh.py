@@ -7,7 +7,13 @@ import libtbx.pkg_utils
 libtbx.pkg_utils.define_entry_points({
   'dxtbx.profile_model': [
     'gaussian_rs = dials.extensions.gaussian_rs_profile_model_ext:GaussianRSProfileModelExt',
+  ],
+  'dxtbx.scaling_model_ext': [
+    'physical = dials.algorithms.scaling.model.scaling_model_ext:PhysicalScalingModelExt',
+    'KB = dials.algorithms.scaling.model.scaling_model_ext:KBScalingModelExt',
+    'array = dials.algorithms.scaling.model.scaling_model_ext:ArrayScalingModelExt',
   ]})
+
 
 try:
   from dials.util.version import dials_version
@@ -20,7 +26,7 @@ libtbx.pkg_utils.require('mock', '>=2.0')
 libtbx.pkg_utils.require('orderedset')
 libtbx.pkg_utils.require('pytest', '>=3.1')
 libtbx.pkg_utils.require('Jinja2')
-libtbx.pkg_utils.require('procrunner')
+libtbx.pkg_utils.require('procrunner', '>=0.6')
 libtbx.pkg_utils.require('scipy')
 libtbx.pkg_utils.require('scikit_learn[alldeps]')
 
@@ -60,6 +66,7 @@ def dispatcher_outer(name):
 def dispatcher_inner(name):
   return os.path.join(libtbx.env.dist_path('dials'), 'command_line', '%%s.py' %% name.partition('.')[2])
 env.Append( BUILDERS={'AutoComplete': Builder(action='-$SOURCE --export-autocomplete-hints > $TARGET')} )
+env['ENV']['DIALS_NOBANNER'] = '1'
 for cmd in [%s]:
   ac = env.AutoComplete(cmd, [dispatcher_outer(cmd), dispatcher_inner(cmd)])
   Requires(ac, Dir(libtbx.env.under_build('lib')))

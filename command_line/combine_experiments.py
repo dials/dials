@@ -2,6 +2,7 @@
 from __future__ import absolute_import, division, print_function
 
 from libtbx.phil import parse
+from libtbx.utils import Sorry
 
 help_message = '''
 
@@ -155,6 +156,30 @@ phil_scope = parse('''
   }
 ''', process_includes=True)
 
+def find_experiment_in(experiment, all_experiments):
+  """Search the phil experiment list and find where an experiment came from.
+
+  :param Experiment experiment: The experiment to search for
+  :param all_experiments:       The list of all experiments from phil
+  :type  all_experiments:       list[dials.util.phil.FilenameDataWrapper[ExperimentList]]
+  :returns:                     The filename and experiment ID
+  :rtype:                       (str, int)
+  """
+  for source in all_experiments:
+    try:
+      experiment_list = list(source.data)
+      index = experiment_list.index(experiment)
+      return (source.filename, index)
+    except ValueError:
+      pass
+  raise ValueError("Experiment not found")
+
+class ComparisonError(Exception):
+  """Exception to indicate problem with tolerance comparisons"""
+  def __init__(self, model="unspecified"):
+    super(ComparisonError, self).__init__("Failed tolerance check on {}".format(model))
+    self.model = model
+
 class CombineWithReference(object):
 
   def __init__(self, beam=None, goniometer=None, scan=None,
@@ -166,6 +191,7 @@ class CombineWithReference(object):
     self.ref_crystal = crystal
     self.ref_detector = detector
     self.tolerance = None
+    self._last_imageset = None
     if params:
       if params.reference_from_experiment.compare_models:
         self.tolerance = params.reference_from_experiment.tolerance
@@ -202,7 +228,8 @@ class CombineWithReference(object):
 
     if self.ref_beam:
       if compare_beam:
-        assert(compare_beam(self.ref_beam, experiment.beam))
+        if not compare_beam(self.ref_beam, experiment.beam):
+          raise ComparisonError("Beam")
       beam = self.ref_beam
     else:
       beam = experiment.beam
@@ -211,14 +238,16 @@ class CombineWithReference(object):
       detector = self.ref_detector
     elif self.ref_detector and not self.average_detector:
       if compare_detector:
-        assert(compare_detector(self.ref_detector, experiment.detector))
+        if not compare_detector(self.ref_detector, experiment.detector):
+          raise ComparisonError("Detector")
       detector = self.ref_detector
     else:
       detector = experiment.detector
 
     if self.ref_goniometer:
       if compare_goniometer:
-        assert(compare_goniometer(self.ref_goniometer, experiment.goniometer))
+        if not compare_goniometer(self.ref_goniometer, experiment.goniometer):
+          raise ComparisonError("Goniometer")
       goniometer = self.ref_goniometer
     else:
       goniometer = experiment.goniometer
@@ -233,13 +262,19 @@ class CombineWithReference(object):
     else:
       crystal = experiment.crystal
 
+    if self._last_imageset == experiment.imageset:
+      imageset = self._last_imageset
+    else:
+      imageset = experiment.imageset
+      self._last_imageset = imageset
+
     from dxtbx.model.experiment_list import Experiment
     return Experiment(beam=beam,
                       detector=detector,
                       scan=scan,
                       goniometer=goniometer,
                       crystal=crystal,
-                      imageset=experiment.imageset)
+                      imageset=imageset)
 
 class Cluster(object):
 
@@ -292,12 +327,12 @@ class Script(object):
 
   def run(self):
     '''Execute the script.'''
-
-    from dials.util.options import flatten_experiments
-    from libtbx.utils import Sorry
-
-    # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
+    self.run_with_preparsed(params, options)
+
+  def run_with_preparsed(self, params, options):
+    '''Run combine_experiments, but allow passing in of parameters'''
+    from dials.util.options import flatten_experiments
 
     # Try to load the models and data
     if len(params.input.experiments) == 0:
@@ -422,7 +457,16 @@ class Script(object):
         if params.output.delete_shoeboxes and 'shoebox' in sub_ref:
           del sub_ref['shoebox']
         reflections.extend(sub_ref)
-        experiments.append(combine(exp))
+        try:
+          experiments.append(combine(exp))
+        except ComparisonError as e:
+          # When we failed tolerance checks, give a useful error message
+          (path, index) = find_experiment_in(exp, params.input.experiments)
+          raise Sorry(
+              "{} didn't match reference within required tolerance for experiment {} in {}\n"
+              "       Adjust tolerances or set compare_models=False to ignore differences.".
+              format(e.model, index, path))
+
         global_id += 1
 
     if params.output.min_reflections_per_experiment is not None and \
@@ -477,15 +521,6 @@ class Script(object):
       experiments = subset_exp
       reflections = subset_refls
 
-    def save_output(experiments, reflections, exp_name, refl_name):
-      # save output
-      from dxtbx.model.experiment_list import ExperimentListDumper
-      print('Saving combined experiments to {0}'.format(exp_name))
-      dump = ExperimentListDumper(experiments)
-      dump.as_json(exp_name)
-      print('Saving combined reflections to {0}'.format(refl_name))
-      reflections.as_pickle(refl_name)
-
     def save_in_batches(experiments, reflections, exp_name, refl_name, batch_size=1000):
       from dxtbx.command_line.image_average import splitit
       import os
@@ -500,7 +535,7 @@ class Script(object):
           batch_refls.extend(sub_refls)
         exp_filename = os.path.splitext(exp_name)[0] + "_%03d.json"%i
         ref_filename = os.path.splitext(refl_name)[0] + "_%03d.pickle"%i
-        save_output(batch_expts, batch_refls, exp_filename, ref_filename)
+        self._save_output(batch_expts, batch_refls, exp_filename, ref_filename)
 
     def combine_in_clusters(experiments_l, reflections_l, exp_name, refl_name, end_count):
       import os
@@ -544,16 +579,26 @@ class Script(object):
       for i in xrange(len(list_of_combined)):
         savable_tuple = list_of_combined[i]
         if params.output.max_batch_size is None:
-          save_output(*savable_tuple)
+          self._save_output(*savable_tuple)
         else:
           save_in_batches(*savable_tuple, batch_size=params.output.max_batch_size)
     else:
       if params.output.max_batch_size is None:
-        save_output(experiments, reflections, params.output.experiments_filename, params.output.reflections_filename)
+        self._save_output(experiments, reflections, params.output.experiments_filename, params.output.reflections_filename)
       else:
         save_in_batches(experiments, reflections, params.output.experiments_filename, params.output.reflections_filename,
           batch_size=params.output.max_batch_size)
     return
+
+  def _save_output(self, experiments, reflections, exp_name, refl_name):
+    # save output
+    from dxtbx.model.experiment_list import ExperimentListDumper
+    print('Saving combined experiments to {0}'.format(exp_name))
+    dump = ExperimentListDumper(experiments)
+    dump.as_json(exp_name)
+    print('Saving combined reflections to {0}'.format(refl_name))
+    reflections.as_pickle(refl_name)
+
 
 if __name__ == "__main__":
   from dials.util import halraiser

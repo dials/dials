@@ -44,6 +44,25 @@
         {{ macros.panel('Analysis of reflection intensities', 'intensity', intensity_graphs) }}
         {{ macros.panel('Analysis of reference profiles', 'reference', reference_graphs) }}
     </div>
+    <div class="panel-group">
+        <div class="panel panel-default">
+            <div class="panel-heading" data-toggle="collapse" data-target="#collapse_scaling">
+                <h4 class="panel-title">
+                    <a>Analysis of scaling model</a>
+                </h4>
+            </div>
+            <div id="collapse_scaling" class="panel-collapse collapse">
+        <div class="panel-body">
+            <p><b>Summary of scaling models</b></p>
+            {{ macros.table(scaling_tables[0]) }}
+            <p><b>Summary of merging statistics</b></p>
+            {{ macros.table(scaling_tables[1]) }}
+            <p><b>Merging statistics by resolution bin</b></p>
+            {{ macros.table(scaling_tables[2]) }}
+        </div>
+    {{ macros.panel('Scaling model plots',
+                    'scaling_model', scaling_model_graphs) }}
+    </div>
 
 </div>
 

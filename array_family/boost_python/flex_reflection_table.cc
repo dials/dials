@@ -103,40 +103,46 @@ namespace dials { namespace af { namespace boost_python {
       " General properties\n"
       " ------------------\n"
       "\n"
-      "  flags:                  bit mask status flags\n"
-      "  id:                     experiment id\n"
-      "  panel:                  the detector panel index\n"
+      "  flags:                         bit mask status flags\n"
+      "  id:                            experiment id\n"
+      "  panel:                         the detector panel index\n"
       "\n"
       " Predicted properties\n"
       " --------------------\n"
       "\n"
-      "  miller_index:           miller indices\n"
-      "  entering:               reflection entering/exiting\n"
-      "  s1:                     the diffracted beam vector\n"
-      "  xyzcal.mm:              the predicted location (mm, mm, rad)\n"
-      "  xyzcal.px:              the predicted location (px, px, frame)\n"
-      "  ub_matrix:              predicted crystal setting\n"
+      "  miller_index:                  miller indices\n"
+      "  entering:                      reflection entering/exiting\n"
+      "  s1:                            the diffracted beam vector\n"
+      "  xyzcal.mm:                     the predicted location (mm, mm, rad)\n"
+      "  xyzcal.px:                     the predicted location (px, px, frame)\n"
+      "  ub_matrix:                     predicted crystal setting\n"
       "\n"
       " Observed properties\n"
       " -------------------\n"
       "\n"
-      "  xyzobs.px.value:        centroid pixel position\n"
-      "  xyzobs.px.variance:     centroid pixel variance\n"
-      "  xyzobs.mm.value:        centroid millimetre position\n"
-      "  xyzobs.mm.variance:     centroid millimetre variance\n"
-      "  rlp:                    reciprocal lattice point\n"
-      "  intensity.sum.value:    raw intensity value\n"
-      "  intensity.sum.variance: raw intensity variance\n"
-      "  intensity.prf.value:    profile fitted intensity value\n"
-      "  intensity.prf.variance: profile fitted intensity variance\n"
-      "  lp:                     LP correction (multiplicative)\n"
-      "  profile.correlation:    correlation in profile fitting\n"
+      "  xyzobs.px.value:               centroid pixel position (px, px, frame)\n"
+      "  xyzobs.px.variance:            centroid pixel variance\n"
+      "  xyzobs.mm.value:               centroid millimetre position (mm, mm, rad)\n"
+      "  xyzobs.mm.variance:            centroid millimetre variance\n"
+      "  rlp:                           reciprocal lattice point\n"
+      "  intensity.sum.value:           raw intensity value\n"
+      "  intensity.sum.variance:        raw intensity variance\n"
+      "  intensity.prf.value:           profile fitted intensity value\n"
+      "  intensity.prf.variance:        profile fitted intensity variance\n"
+      "  intensity.scale.value:         intensity value used for scaling (without inverse scale factor applied)\n"
+      "  intensity.scale.variance:      variance of intensity value used for scaling\n"
+      "  inverse_scale_factor:          scale factor determined by scaling (divisory)\n"
+      "  inverse_scale_factor_variance: variance of inverse scale factor\n"
+      "  lp:                            LP correction (multiplicative)\n"
+      "  qe:                            detector quantum efficiency correction (divisory)\n"
+      "  profile.correlation:           correlation in profile fitting\n"
+      "  partiality:                    fraction of reflection measured (i.e. Ifull = Isum/partiality)\n"
       "\n"
       " Shoebox properties\n"
       " ------------------\n"
       "\n"
-      "  bbox:                   bounding box\n"
-      "  shoebox:                shoebox data/mask/background struct\n"
+      "  bbox:                          bounding box\n"
+      "  shoebox:                       shoebox data/mask/background struct\n"
       "\n"
       ;
     return result;
@@ -579,6 +585,45 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Extend the identifiers
+   */
+  void reflection_table_extend_identifiers(
+      reflection_table &self,
+      const reflection_table &other) {
+    typedef reflection_table::experiment_map_type::const_iterator const_iterator;
+    typedef reflection_table::experiment_map_type::iterator iterator;
+    for (const_iterator it = other.experiment_identifiers()->begin();
+         it != other.experiment_identifiers()->end(); ++it) {
+      iterator found = self.experiment_identifiers()->find(it->first);
+      if (found == self.experiment_identifiers()->end()) {
+        (*self.experiment_identifiers())[it->first] = it->second;
+      } else if (it->second != found->second) {
+        throw DIALS_ERROR("Experiment identifiers do not match");
+      }
+    }
+  }
+
+  /**
+   * Extend the reflection table
+   */
+  void reflection_table_extend(
+      reflection_table &self,
+      const reflection_table &other) {
+    reflection_table_extend_identifiers(self, other);
+    flex_table_suite::extend(self, other);
+  }
+
+  /**
+   * Update the reflection table
+   */
+  void reflection_table_update(
+      reflection_table &self,
+      const reflection_table &other) {
+    reflection_table_extend_identifiers(self, other);
+    flex_table_suite::update(self, other);
+  }
+
+  /**
    * A visitor to convert an item to an object
    */
   struct item_to_object_visitor : public boost::static_visitor<object> {
@@ -923,6 +968,10 @@ namespace dials { namespace af { namespace boost_python {
         .staticmethod("from_msgpack")
         .def("experiment_identifiers",
           &T::experiment_identifiers)
+        .def("extend",
+          reflection_table_extend)
+        .def("update",
+          reflection_table_update)
         .def_pickle(flex_reflection_table_pickle_suite())
         ;
 
@@ -958,6 +1007,8 @@ namespace dials { namespace af { namespace boost_python {
         .value("outlier_in_scaling", OutlierInScaling)
         .value("excluded_for_scaling", ExcludedForScaling)
         .value("bad_for_scaling", BadForScaling)
+        .value("excluded_for_refinement", ExcludedForRefinement)
+        .value("bad_for_refinement", BadForRefinement)
         ;
 
       // return the wrapped class

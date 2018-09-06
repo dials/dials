@@ -24,7 +24,7 @@ def npp(values, input_mean_variance):
 
 def semisynthetic_variance_analysis(semisynthetic_integrated_data_files,
                                     value_column):
-  import cPickle as pickle
+  import six.moves.cPickle as pickle
   import math
   from dials.array_family import flex
   from dials.util.add_hash import add_hash

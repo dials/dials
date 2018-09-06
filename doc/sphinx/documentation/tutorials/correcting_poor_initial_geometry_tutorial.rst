@@ -11,7 +11,7 @@ was collected at beamline 19-ID at the APS. This dataset is available for
 download from |DPF3|.
 
 .. |DPF3| image:: https://zenodo.org/badge/doi/10.5281/zenodo.45756.svg
-          :target: http://dx.doi.org/10.5281/zenodo.45756
+          :target: https://doi.org/10.5281/zenodo.45756
 
 This is a challenging dataset to process. There are a combination of problems,
 including:
@@ -203,7 +203,7 @@ to refine compatible Bravais lattices::
 It turns out that quite a few lattices can be forced to fit the putative
 indexing solution, but again there are warnings everywhere that imply none
 of these are right. First look at the ``Metric fit`` column. This value is
-the `Le Page <http://dx.doi.org/10.1107/S0021889882011959>`_ :math:`\delta`
+the `Le Page <https://doi.org/10.1107/S0021889882011959>`_ :math:`\delta`
 value. For a correct indexing solution with a good dataset this should be a
 small number, less than 0.1 say, such as in the
 :doc:`processing_in_detail_tutorial` tutorial. The ``rmsd`` column reports an
@@ -285,7 +285,7 @@ mis-indexed solution. The typical culprit in such cases is a badly wrong
 beam centre. DIALS provides the
 :program:`dials.search_beam_position`, which can help out
 here. This performs a grid search to improve the direct beam position using
-the `methods <http://dx.doi.org/10.1107%2FS0021889804005874>`_ also
+the `methods <https://doi.org/10.1107%2FS0021889804005874>`_ also
 implemented in :program:`LABELIT`.
 
 This sits in between the spot finding and the indexing operations, so that

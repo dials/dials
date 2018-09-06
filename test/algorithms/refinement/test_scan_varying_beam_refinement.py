@@ -1,6 +1,9 @@
 from __future__ import absolute_import, division, print_function
+
 import os
-from libtbx import easy_run
+import sys
+
+import procrunner
 import pytest
 from dxtbx.model.detector import DetectorFactory
 from dxtbx.model.beam import BeamFactory
@@ -32,13 +35,17 @@ def test_refinement_and_compare_with_known_truth(dials_regression, tmpdir):
     assert os.path.exists(pth)
 
   # Run refinement and load models
-  cmd = ("dials.refine " + experiments_path + " " + pickle_path + " "
-    "scan_varying=True "
-    "crystal.orientation.force_static=True "
-    "crystal.unit_cell.force_static=True "
-    "beam.force_static=False "
-    "beam.fix='all in_spindle_plane out_spindle_plane *wavelength'")
-  result = easy_run.fully_buffered(command=cmd).raise_if_errors()
+  result = procrunner.run([
+      "dials.refine",
+      experiments_path,
+      pickle_path,
+      "scan_varying=True",
+      "crystal.orientation.force_static=True",
+      "crystal.unit_cell.force_static=True",
+      "beam.force_static=False",
+      "beam.fix=wavelength",
+  ])
+  assert not result['exitcode'] and not result['stderr']
   exp = ExperimentListFactory.from_json_file("refined_experiments.json",
               check_format=False)[0]
   beam, detector = exp.beam, exp.detector
@@ -49,7 +56,6 @@ def test_refinement_and_compare_with_known_truth(dials_regression, tmpdir):
   bc_scan_points = [detector[0].get_beam_centre_px(s0) for s0 in s0_scan_points]
 
   # Set up the nanoBragg object as used in the simulation
-  import sys
   sys.path.append(data_dir)
   from sim_images import Simulation
   sim = Simulation()
@@ -74,5 +80,3 @@ def test_refinement_and_compare_with_known_truth(dials_regression, tmpdir):
   # Compare the results.
   for bc1, bc2 in zip(sim_bc_scan_points, bc_scan_points):
     assert bc2 == pytest.approx(bc1, abs=0.15)
-
-  return

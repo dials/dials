@@ -3,10 +3,14 @@ from __future__ import absolute_import, division, print_function
 import logging
 logger = logging.getLogger(__name__)
 
+import math
+
 from dials.util import log
 
 debug_handle = log.debug_handle(logger)
 info_handle = log.info_handle(logger)
+
+from libtbx.utils import time_log
 
 from cctbx.array_family import flex
 from cctbx import sgtbx
@@ -15,60 +19,27 @@ import cctbx.sgtbx.cosets
 
 class Target(object):
 
-  def __init__(self, miller_arrays, weights=None, min_pairs=None,
-               lattice_group=None, dimensions=None, verbose=False):
+  def __init__(self, intensities, lattice_ids, weights=None, min_pairs=None,
+               lattice_group=None, dimensions=None, verbose=False,
+               nproc=1):
 
-    self._miller_arrays = miller_arrays
     self.verbose = verbose
     if weights is not None:
       assert weights in ('count', 'standard_error')
     self._weights = weights
     self._min_pairs = min_pairs
+    self._nproc = nproc
 
-    miller_array_all = None
-    lattice_ids = None
-    space_group = None
-    lattice_id = -1
-
-    for intensities in miller_arrays:
-      assert intensities.is_unique_set_under_symmetry()
-      lattice_id += 1
-      if space_group is None:
-        space_group = intensities.space_group()
-      else:
-        assert intensities.space_group() == space_group
-
-      ids = intensities.customized_copy(
-        data=flex.double(intensities.size(), lattice_id), sigmas=None)
-      assert ids.size() == intensities.size()
-      if miller_array_all is None:
-        miller_array_all = intensities
-        lattice_ids = ids
-      else:
-        miller_array_all = miller_array_all.customized_copy(
-          indices=miller_array_all.indices().concatenate(intensities.indices()),
-          data=miller_array_all.data().concatenate(intensities.data()),
-          sigmas=None)
-        lattice_ids = lattice_ids.customized_copy(
-          indices=lattice_ids.indices().concatenate(ids.indices()),
-          data=lattice_ids.data().concatenate(ids.data()))
-      assert miller_array_all.size() == lattice_ids.size()
-
-    data = miller_array_all.customized_copy(anomalous_flag=False)
+    data = intensities.customized_copy(anomalous_flag=False)
     cb_op_to_primitive = data.change_of_basis_op_to_primitive_setting()
     data = data.change_basis(cb_op_to_primitive).map_to_asu()
 
-    resort = True
-    if resort:
-      order = flex.sort_permutation(lattice_ids.data())
-      sorted_lattice_id = flex.select(lattice_ids.data(), order)
-      sorted_data = data.data().select( order)
-      sorted_indices = data.indices().select( order)
-      self._lattice_ids = sorted_lattice_id
-      self._data = data.customized_copy(indices = sorted_indices, data=sorted_data)
-    else:
-      self._lattice_ids = self._lattice_ids.data() # type flex int
-      self._data = data # type miller array with flex double data
+    order = flex.sort_permutation(lattice_ids)
+    sorted_lattice_id = flex.select(lattice_ids, order)
+    sorted_data = data.data().select( order)
+    sorted_indices = data.indices().select( order)
+    self._lattice_ids = sorted_lattice_id
+    self._data = data.customized_copy(indices=sorted_indices, data=sorted_data)
     assert isinstance(self._data.indices(), type(flex.miller_index()))
     assert isinstance(self._data.data(), type(flex.double()))
 
@@ -91,10 +62,13 @@ class Target(object):
     self._lattice_group = copy.deepcopy(self._data.space_group())
     for sym_op in self._sym_ops:
       self._lattice_group.expand_smx(sym_op)
+    self._patterson_group = self._lattice_group.build_derived_patterson_group()
 
     logger.debug(
       'Lattice group: %s (%i symops)' %(
         self._lattice_group.info().symbol_and_number(), len(self._lattice_group)))
+    logger.debug(
+      'Patterson group: %s' %self._patterson_group.info().symbol_and_number())
 
     import time
     t0 = time.time()
@@ -175,12 +149,36 @@ class Target(object):
       miller.map_to_asu(space_group_type, False, indices_reindexed)
       indices[cb_op.as_xyz()] = indices_reindexed
 
-    rij_cache = {}
+    def _compute_rij_matrix_one_row_block(i):
+      rij_cache = {}
 
-    for i in xrange(n_lattices):
-      for j in xrange(i, n_lattices):
+      n_sym_ops = len(self._sym_ops)
+      NN = n_lattices * n_sym_ops
+
+      from scipy import sparse
+      rij_row = []
+      rij_col = []
+      rij_data = []
+      if self._weights is not None:
+        wij_row = []
+        wij_col = []
+        wij_data = []
+      else:
+        wij = None
+
+      i_lower, i_upper = self.lattice_lower_upper_index(i)
+      intensities_i = self._data.data()[i_lower:i_upper]
+
+      for j in range(i, n_lattices):
+
+        j_lower, j_upper = self.lattice_lower_upper_index(j)
+        intensities_j = self._data.data()[j_lower:j_upper]
+
         for k, cb_op_k in enumerate(self._sym_ops):
           cb_op_k = sgtbx.change_of_basis_op(cb_op_k)
+
+          indices_i = indices[cb_op_k.as_xyz()][i_lower:i_upper]
+
           for kk, cb_op_kk in enumerate(self._sym_ops):
             if i == j and k == kk:
               # don't include correlation of dataset with itself
@@ -194,20 +192,16 @@ class Target(object):
             if use_cache and key in rij_cache:
               cc, n = rij_cache[key]
             else:
-              i_lower, i_upper = self.lattice_lower_upper_index(i)
-              j_lower, j_upper = self.lattice_lower_upper_index(j)
-
-              indices_i = indices[cb_op_k.as_xyz()][i_lower:i_upper]
               indices_j = indices[cb_op_kk.as_xyz()][j_lower:j_upper]
-              intensities_i = self._data.data()[i_lower:i_upper]
-              intensities_j = self._data.data()[j_lower:j_upper]
 
               matches = miller.match_indices(indices_i, indices_j)
               pairs = matches.pairs()
               isel_i = pairs.column(0)
               isel_j = pairs.column(1)
-              isel_i = isel_i.select(self._lattice_group.epsilon(indices_i.select(isel_i)) == 1)
-              isel_j = isel_j.select(self._lattice_group.epsilon(indices_j.select(isel_j)) == 1)
+              isel_i = isel_i.select(
+                self._patterson_group.epsilon(indices_i.select(isel_i)) == 1)
+              isel_j = isel_j.select(
+                self._patterson_group.epsilon(indices_j.select(isel_j)) == 1)
               corr = flex.linear_correlation(
                 intensities_i.select(isel_i),
                 intensities_j.select(isel_j))
@@ -225,19 +219,64 @@ class Target(object):
 
             if cc is not None and n is not None:
               if self._weights == 'count':
-                self.wij_matrix[(ik, jk)] = n
-                self.wij_matrix[(jk, ik)] = n
+                wij_row.extend([ik, jk])
+                wij_col.extend([jk, ik])
+                wij_data.extend([n, n])
               elif self._weights == 'standard_error':
                 assert n > 2
                 # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
-                import math
                 se = math.sqrt((1-cc**2)/(n-2))
                 wij = 1/se
-                self.wij_matrix[(ik, jk)] = wij
-                self.wij_matrix[(jk, ik)] = wij
+                wij_row.extend([ik, jk])
+                wij_col.extend([jk, ik])
+                wij_data.extend([wij, wij])
 
-              self.rij_matrix[(ik, jk)] = cc
-              self.rij_matrix[(jk, ik)] = cc
+              rij_row.extend([ik, jk])
+              rij_col.extend([jk, ik])
+              rij_data.extend([cc, cc])
+
+      rij = sparse.coo_matrix((rij_data, (rij_row, rij_col)), shape=(NN, NN))
+      if self._weights is not None:
+        wij = sparse.coo_matrix((wij_data, (wij_row, wij_col)), shape=(NN, NN))
+
+      return rij, wij
+
+    timer_mp = time_log('parallel_map', use_wall_clock=True)
+    timer_mp.start()
+    from libtbx import easy_mp
+    args = [(i,) for i in range(n_lattices)]
+    results = easy_mp.parallel_map(
+      _compute_rij_matrix_one_row_block,
+      args,
+      processes=self._nproc,
+      iterable_type=easy_mp.posiargs,
+      method='multiprocessing')
+    timer_mp.stop()
+
+    timer_collate = time_log('collate', use_wall_clock=True)
+    timer_collate.start()
+    rij_matrix = None
+    wij_matrix = None
+    for i, (rij, wij) in enumerate(results):
+      if rij_matrix is None:
+        rij_matrix = rij
+      else:
+        rij_matrix += rij
+      if wij is not None:
+        if wij_matrix is None:
+          wij_matrix = wij
+        else:
+          wij_matrix += wij
+
+    self.rij_matrix = flex.double(rij_matrix.todense())
+    if wij_matrix is not None:
+      import numpy as np
+      self.wij_matrix = flex.double(wij_matrix.todense().astype(np.float64))
+    timer_collate.stop()
+
+    logger.debug(time_log.legend)
+    logger.debug(timer_mp.report())
+    logger.debug(timer_collate.report())
 
     return self.rij_matrix, self.wij_matrix
 

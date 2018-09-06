@@ -38,9 +38,10 @@ if __name__ == '__main__':
   if len(sys.argv) != 2:
     raise RuntimeError('%s indexed.pickle' % sys.argv[0])
 
-  import cPickle as pickle
+  import six.moves.cPickle as pickle
 
-  data = pickle.load(open(sys.argv[1], 'rb'))
+  with open(sys.argv[1], 'rb') as fh:
+    data = pickle.load(fh)
 
   if 'miller_index' in data:
     show_indexed_strong(data)

@@ -10,7 +10,7 @@ def strip_not_integrated(integrated_data):
   return integrated_data
 
 def saturation_analysis(data_files, value_column):
-  import cPickle as pickle
+  import six.moves.cPickle as pickle
   import math
   from dials.array_family import flex
   from dials.util.add_hash import add_hash, dehash
@@ -19,7 +19,8 @@ def saturation_analysis(data_files, value_column):
   reference = data_files[0]
   rest = data_files[1:]
 
-  reference_data = pickle.load(open(reference, 'rb'))
+  with open(reference, 'rb') as fh:
+    reference_data = pickle.load(fh)
 
   assert value_column in reference_data
   variance_column = None
@@ -51,7 +52,8 @@ def saturation_analysis(data_files, value_column):
     x = flex.double()
     y = flex.double()
     fout = open('matches%02d.dat' % qpno, 'w')
-    query_data = strip_not_integrated(pickle.load(open(query_pickle, 'rb')))
+    with open(query_pickle, 'rb') as fh:
+      query_data = strip_not_integrated(pickle.load(fh))
     qxyz = query_data['xyzcal.px'].as_double()
     ann.query(qxyz)
     matches = 0

@@ -46,6 +46,12 @@ phil_scope= libtbx.phil.parse("""
     .type = float
   z_max = None
     .type = float
+  n_min = 0
+    .type = int
+    .help = "Minimum size of spot in pixels"
+  n_max = 0
+    .type = int
+    .help = "Maximum size of spot in pixels"
   partiality_min = None
     .type = float
   partiality_max = None
@@ -215,12 +221,30 @@ class render_3d(object):
     else:
       z = reflections[use_column].parts()[2]
       self.settings.z_max = flex.max(z)
+
+    # N.B. 0 sensible NULL value here as cannot have 0 signal and still be spot
+
+    if 'n_signal' in reflections:
+      if self.settings.n_min != 0:
+        _ns = reflections['n_signal']
+        reflections = reflections.select(_ns >= self.settings.n_min)
+      else:
+        _ns = reflections['n_signal']
+        self.settings.n_min = int(flex.min(_ns))
+
+      if self.settings.n_max != 0:
+        _ns = reflections['n_signal']
+        reflections = reflections.select(_ns <= self.settings.n_max)
+      else:
+        _ns = reflections['n_signal']
+        self.settings.n_max = int(flex.max(_ns))
+
     if 'partiality' in reflections:
       p = reflections['partiality']
       if self.settings.partiality_min is not None:
         reflections = reflections.select(p >= self.settings.partiality_min)
       else:
-        self.settings.z_min = flex.min(p)
+        self.settings.partiality_min = flex.min(p)
       if self.settings.partiality_max is not None:
         reflections = reflections.select(p <= self.settings.partiality_max)
       else:
@@ -356,6 +380,8 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
     self.settings_panel.d_min_ctrl.SetValue(self.settings.d_min)
     self.settings_panel.z_min_ctrl.SetValue(self.settings.z_min)
     self.settings_panel.z_max_ctrl.SetValue(self.settings.z_max)
+    self.settings_panel.n_min_ctrl.SetValue(self.settings.n_min)
+    self.settings_panel.n_max_ctrl.SetValue(self.settings.n_max)
     if self.settings.partiality_min is not None:
       self.settings_panel.partiality_min_ctrl.SetValue(self.settings.partiality_min)
     if self.settings.partiality_max is not None:
@@ -453,6 +479,34 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     box.Add(self.z_max_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.z_max_ctrl)
+
+    # Control for spot size (utility depends on n_signal column in reflection
+    # file - will be ignored if not in file
+
+    self.n_min_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=0)
+    self.n_min_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
+    if wx.VERSION >= (2,9): # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
+      self.n_min_ctrl.SetBackgroundColour(self.GetBackgroundColour())
+    box = wx.BoxSizer(wx.HORIZONTAL)
+    self.panel_sizer.Add(box)
+    label = wx.StaticText(self,-1,"Min Pixels")
+    box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    box.Add(self.n_min_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.n_min_ctrl)
+
+    self.n_max_ctrl = floatspin.FloatSpin(parent=self, increment=1, digits=0)
+    self.n_max_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
+    if wx.VERSION >= (2,9): # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
+      self.n_max_ctrl.SetBackgroundColour(self.GetBackgroundColour())
+    box = wx.BoxSizer(wx.HORIZONTAL)
+    self.panel_sizer.Add(box)
+    label = wx.StaticText(self,-1,"Max Pixels")
+    box.Add(label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    box.Add(self.n_max_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.n_max_ctrl)
+
+    # end new control
+
 
     self.partiality_min_ctrl = floatspin.FloatSpin(
       parent=self, increment=0.01, digits=3, min_val=0, max_val=1)
@@ -610,6 +664,8 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     self.settings.d_min = self.d_min_ctrl.GetValue()
     self.settings.z_min = self.z_min_ctrl.GetValue()
     self.settings.z_max = self.z_max_ctrl.GetValue()
+    self.settings.n_min = int(self.n_min_ctrl.GetValue())
+    self.settings.n_max = int(self.n_max_ctrl.GetValue())
     self.settings.partiality_min = self.partiality_min_ctrl.GetValue()
     self.settings.partiality_max = self.partiality_max_ctrl.GetValue()
     self.settings.beam_centre = (

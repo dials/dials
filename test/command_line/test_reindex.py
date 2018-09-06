@@ -78,3 +78,30 @@ def test_reindex(dials_regression, tmpdir):
     'P4_reindexed2.json', check_format=False)
   assert new_experiments1[0].crystal.get_A() == pytest.approx(
     new_experiments2[0].crystal.get_A())
+
+def test_reindex_multi_sweep(dials_regression, tmpdir):
+  tmpdir.chdir()
+
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
+  pickle_path = os.path.join(data_dir, "indexed.pickle")
+  experiments_path = os.path.join(data_dir, "experiments.json")
+  commands = ["dials.reindex",
+              pickle_path,
+              experiments_path,
+              "change_of_basis_op=x+y,x-z,y-z"]
+  command = " ".join(commands)
+  print(command)
+
+  result = easy_run.fully_buffered(command=command).raise_if_errors()
+  old_reflections = easy_pickle.load(pickle_path)
+  assert os.path.exists('reindexed_reflections.pickle')
+  new_reflections = easy_pickle.load('reindexed_reflections.pickle')
+  old_experiments = load.experiment_list(experiments_path, check_format=False)
+  assert os.path.exists('reindexed_experiments.json')
+  new_experiments = load.experiment_list(
+    'reindexed_experiments.json', check_format=False)
+  new_cs = new_experiments[0].crystal.get_crystal_symmetry()
+  assert new_cs.unit_cell().parameters() == pytest.approx(
+    (6.189939294071243, 6.189939294071243, 6.189939294071242,
+     113.16417286469935, 107.65690626466579, 107.65690626466579))
+  assert new_experiments[0].crystal.get_space_group().type().hall_symbol() == ' I 4 (x+y,y+z,x+z)'

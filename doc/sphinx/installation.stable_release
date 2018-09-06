@@ -1,6 +1,30 @@
-Stable Release
-==============
+Stable Release: DIALS 1.10
+==========================
 
 The current stable release can be downloaded from `Github <https://github.com/dials/dials/releases/latest>`_,
 where you can also find further `release notes <https://github.com/dials/dials/releases/latest>`_.
+
+.. button::
+   :text: DIALS 1.10.4 Linux installer
+   :link: https://github.com/dials/dials/releases/download/v1.10.0/dials-v1-10-4-linux-x86_64.tar.xz
+
+.. button::
+   :text: DIALS 1.10.4 Mac installer
+   :link: https://github.com/dials/dials/releases/download/v1.10.0/dials-v1-10-4-macosx.pkg
+
+.. button::
+   :text: DIALS 1.10.4 Mac installer (OS X 10.6)
+   :link: https://github.com/dials/dials/releases/download/v1.10.0/dials-v1-10-4-macosx-10.6.pkg
+
+.. button::
+   :text: DIALS 1.10.4 Mac tar archive
+   :link: https://github.com/dials/dials/releases/download/v1.10.0/dials-v1-10-4-macosx.tar.gz
+
+.. button::
+   :text: DIALS 1.10.4 Mac tar archive (OS X 10.6)
+   :link: https://github.com/dials/dials/releases/download/v1.10.0/dials-v1-10-4-macosx-10.6.tar.gz
+
+.. button::
+   :text: DIALS 1.10.4 Source installer
+   :link: https://github.com/dials/dials/releases/download/v1.10.0/dials-v1-10-4-source.tar.xz
 

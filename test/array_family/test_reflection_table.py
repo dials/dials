@@ -673,7 +673,7 @@ def test_serialize():
   table['col3'] = flex.std_string(c3)
 
   # Pickle, then unpickle
-  import cPickle as pickle
+  import six.moves.cPickle as pickle
   obj = pickle.dumps(table)
   new_table = pickle.loads(obj)
   assert(new_table.is_consistent())
@@ -1091,6 +1091,7 @@ def test_experiment_identifiers():
   table = flex.reflection_table()
   table['id'] = flex.int([0,1,2,3])
 
+  table.assert_experiment_identifiers_are_consistent()
   assert table.are_experiment_identifiers_consistent() == True
 
   identifiers = table.experiment_identifiers()
@@ -1118,6 +1119,7 @@ def test_experiment_identifiers():
   assert tuple(identifiers.values()) == ("abcd", "efgh", "ijkl", "mnop")
 
 
+  table.assert_experiment_identifiers_are_consistent()
   assert table.are_experiment_identifiers_consistent() == True
 
   experiments = ExperimentList()
@@ -1126,6 +1128,7 @@ def test_experiment_identifiers():
   experiments.append(Experiment(identifier="ijkl"))
   experiments.append(Experiment(identifier="mnop"))
 
+  table.assert_experiment_identifiers_are_consistent()
   assert table.are_experiment_identifiers_consistent(experiments) == True
 
   experiments = ExperimentList()
@@ -1135,6 +1138,8 @@ def test_experiment_identifiers():
   experiments.append(Experiment(identifier="mnop"))
   experiments[3].identifier = "ijkl"
 
+  with pytest.raises(AssertionError):
+    table.assert_experiment_identifiers_are_consistent(experiments)
   assert table.are_experiment_identifiers_consistent(experiments) == False
 
   identifiers = table.experiment_identifiers()
@@ -1143,9 +1148,13 @@ def test_experiment_identifiers():
   identifiers[2] = 'ijkl'
   identifiers[3] = 'ijkl'
 
+  with pytest.raises(AssertionError):
+    table.assert_experiment_identifiers_are_consistent()
   assert table.are_experiment_identifiers_consistent() == False
 
-  import cPickle as pickle
+  identifiers[3] = 'mnop'
+
+  import six.moves.cPickle as pickle
   pickled = pickle.dumps(table)
   table2 = pickle.loads(pickled)
 
@@ -1154,3 +1163,23 @@ def test_experiment_identifiers():
 
   for i in id1.keys():
     assert id1[i] == id2[i]
+
+  other_table = flex.reflection_table()
+  other_table['id'] = flex.int([3, 4])
+
+  table.assert_experiment_identifiers_are_consistent()
+  assert other_table.are_experiment_identifiers_consistent() == True
+
+  identifiers = other_table.experiment_identifiers()
+  identifiers[3] = 'mnop'
+  identifiers[4] = 'qrst'
+
+  table.extend(other_table)
+
+  assert len(table.experiment_identifiers()) == 5
+  assert table.experiment_identifiers()[0] == 'abcd'
+  assert table.experiment_identifiers()[1] == 'efgh'
+  assert table.experiment_identifiers()[2] == 'ijkl'
+  assert table.experiment_identifiers()[3] == 'mnop'
+  assert table.experiment_identifiers()[4] == 'qrst'
+

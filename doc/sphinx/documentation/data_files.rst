@@ -19,22 +19,26 @@ below.
 The data files input and output from the main dials programs are described
 below.
 
-+------------------+------------------------------+------------------------------+
-| Program          | Reads                        | Writes                       |
-+==================+==============================+==============================+
-| dials.import     | N/A                          | datablock.json               |
-+------------------+------------------------------+------------------------------+
-| dials.find_spots | datablock.json               | strong.pickle                |
-+------------------+------------------------------+------------------------------+
-| dials.index      | | datablock.json             | | experiments.json           |
-|                  | | strong.pickle              | | indexed.pickle             |
-+------------------+------------------------------+------------------------------+
-| dials.refine     | | experiments.json           | | refined_experiments.json   |
-|                  | | indexed.pickled            | | refined_reflections.pickle |
-+------------------+------------------------------+------------------------------+
-| dials.integrate  | | refined_experiments.json   | | profile_model.phil         |
-|                  | | refined_reflections.pickle | | integrated.pickle          |
-+------------------+------------------------------+------------------------------+
++------------------+-------------------------------+-------------------------------+
+| Program          | Reads                         | Writes                        |
++==================+===============================+===============================+
+| dials.import     | N/A                           | datablock.json                |
++------------------+-------------------------------+-------------------------------+
+| dials.find_spots | datablock.json                | strong.pickle                 |
++------------------+-------------------------------+-------------------------------+
+| dials.index      | | datablock.json              | | experiments.json            |
+|                  | | strong.pickle               | | indexed.pickle              |
++------------------+-------------------------------+-------------------------------+
+| dials.refine     | | experiments.json            | | refined_experiments.json    |
+|                  | | indexed.pickled             | | refined_reflections.pickle  |
++------------------+-------------------------------+-------------------------------+
+| dials.integrate  | | refined_experiments.json    | | integrated_experiments.json |
+|                  | | refined_reflections.pickle  | | integrated.pickle           |
+|                  | |                             | | profile_model.phil          |
++------------------+-------------------------------+-------------------------------+
+| dials.scale      | | integrated_experiments.json | | scaled_experiments.json     |
+|                  | | integrated.pickle           | | scaled.pickle               |
++------------------+-------------------------------+-------------------------------+
 
 .. _datablock-json:
 
@@ -362,50 +366,64 @@ format that is convenient for serializing python classes. The reflection files
 will contain a table with some or all of the following columns.
 
 
-+------------------------+----------------------------------------+
-| Column                 | Description                            |
-+========================+========================================+
-| flags                  | bit mask status flags                  |
-+------------------------+----------------------------------------+
-| id                     | experiment id                          |
-+------------------------+----------------------------------------+
-| panel                  | the detector panel index               |
-+------------------------+----------------------------------------+
-| miller_index           | miller indices                         |
-+------------------------+----------------------------------------+
-| entering               | reflection entering/exiting            |
-+------------------------+----------------------------------------+
-| s1                     | the diffracted beam vector             |
-+------------------------+----------------------------------------+
-| xyzcal.mm              | the predicted location (mm, mm, rad)   |
-+------------------------+----------------------------------------+
-| xyzcal.px              | the predicted location (px, px, frame) |
-+------------------------+----------------------------------------+
-| ub_matrix              | predicted crystal setting              |
-+------------------------+----------------------------------------+
-| xyzobs.px.value        | centroid pixel position                |
-+------------------------+----------------------------------------+
-| xyzobs.px.variance     | centroid pixel variance                |
-+------------------------+----------------------------------------+
-| xyzobs.mm.value        | centroid millimetre position           |
-+------------------------+----------------------------------------+
-| xyzobs.mm.variance     | centroid millimetre variance           |
-+------------------------+----------------------------------------+
-| rlp                    | reciprocal lattice point               |
-+------------------------+----------------------------------------+
-| intensity.sum.value    | raw intensity value                    |
-+------------------------+----------------------------------------+
-| intensity.sum.variance | raw intensity variance                 |
-+------------------------+----------------------------------------+
-| intensity.prf.value    | profile fitted intensity value         |
-+------------------------+----------------------------------------+
-| intensity.prf.variance | profile fitted intensity variance      |
-+------------------------+----------------------------------------+
-| lp                     | LP correction (multiplicative)         |
-+------------------------+----------------------------------------+
-| profile.correlation    | correlation in profile fitting         |
-+------------------------+----------------------------------------+
-| bbox                   | bounding box                           |
-+------------------------+----------------------------------------+
-| shoebox                | shoebox data/mask/background struct    |
-+------------------------+----------------------------------------+
++-------------------------------+------------------------------------------------------+
+| Column                        | Description                                          |
++===============================+======================================================+
+| flags                         | bit mask status flags                                |
++-------------------------------+------------------------------------------------------+
+| id                            | experiment id                                        |
++-------------------------------+------------------------------------------------------+
+| panel                         | the detector panel index                             |
++-------------------------------+------------------------------------------------------+
+| miller_index                  | miller indices                                       |
++-------------------------------+------------------------------------------------------+
+| entering                      | reflection entering/exiting                          |
++-------------------------------+------------------------------------------------------+
+| s1                            | the diffracted beam vector                           |
++-------------------------------+------------------------------------------------------+
+| xyzcal.mm                     | the predicted location (mm, mm, rad)                 |
++-------------------------------+------------------------------------------------------+
+| xyzcal.px                     | the predicted location (px, px, frame)               |
++-------------------------------+------------------------------------------------------+
+| ub_matrix                     | predicted crystal setting                            |
++-------------------------------+------------------------------------------------------+
+| xyzobs.px.value               | centroid pixel position  (px, px, frame)             |
++-------------------------------+------------------------------------------------------+
+| xyzobs.px.variance            | centroid pixel variance                              |
++-------------------------------+------------------------------------------------------+
+| xyzobs.mm.value               | centroid millimetre position (mm, mm, rad)           |
++-------------------------------+------------------------------------------------------+
+| xyzobs.mm.variance            | centroid millimetre variance                         |
++-------------------------------+------------------------------------------------------+
+| rlp                           | reciprocal lattice point                             |
++-------------------------------+------------------------------------------------------+
+| intensity.sum.value           | raw intensity value                                  |
++-------------------------------+------------------------------------------------------+
+| intensity.sum.variance        | raw intensity variance                               |
++-------------------------------+------------------------------------------------------+
+| intensity.prf.value           | profile fitted intensity value                       |
++-------------------------------+------------------------------------------------------+
+| intensity.prf.variance        | profile fitted intensity variance                    |
++-------------------------------+------------------------------------------------------+
+| | intensity.scale.value       | | intensity value used for scaling                   |
+| |                             | | (without scale factor applied)                     |
++-------------------------------+------------------------------------------------------+
+| intensity.scale.variance      | variance of intensity value used for scaling         |
++-------------------------------+------------------------------------------------------+
+| inverse_scale_factor          | scale factor determined by scaling (divisory)        |
++-------------------------------+------------------------------------------------------+
+| inverse_scale_factor_variance | variance of inverse scale factor                     |
++-------------------------------+------------------------------------------------------+
+| lp                            | LP correction (multiplicative)                       |
++-------------------------------+------------------------------------------------------+
+| qe                            | detector quantum efficiency correction (divisory)    |
++-------------------------------+------------------------------------------------------+
+| profile.correlation           | correlation in profile fitting                       |
++-------------------------------+------------------------------------------------------+
+| | partiality                  | | fraction of reflection measured                    | 
+| |                             | | (i.e. I\ :sub:`full` = I\ :sub:`sum`\ /partiality) |
++-------------------------------+------------------------------------------------------+
+| bbox                          | bounding box                                         |
++-------------------------------+------------------------------------------------------+
+| shoebox                       | shoebox data/mask/background struct                  |
++-------------------------------+------------------------------------------------------+

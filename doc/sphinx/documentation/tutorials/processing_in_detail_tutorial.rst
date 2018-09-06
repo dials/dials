@@ -1,5 +1,5 @@
-Processing in Detail
-====================
+Processing in Detail (Thaumatin)
+================================
 
 .. highlight:: none
 
@@ -19,7 +19,7 @@ The following example uses a Thaumatin dataset collected using beamline I04
 at Diamond Light Source, which is available for download from |thaumatin|.
 
 .. |thaumatin| image:: https://zenodo.org/badge/doi/10.5281/zenodo.10271.svg
-               :target: http://dx.doi.org/10.5281/zenodo.10271
+               :target: https://doi.org/10.5281/zenodo.10271
 
 Import
 ^^^^^^

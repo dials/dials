@@ -39,7 +39,7 @@ def any_compatible_unit_cell(space_group, volume=None, asu_volume=None):
     gamma = random.uniform(0, 180)
 
     # Allowed combinations of angles for a triclinic cell:
-    #   http://dx.doi.org/10.1107/S0108767310044296
+    #   https://doi.org/10.1107/S0108767310044296
     if ((alpha + beta + gamma) > 0 and
         (alpha + beta + gamma) < 360 and
         (alpha + beta - gamma) > 0 and

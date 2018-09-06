@@ -24,7 +24,7 @@ def test_determine_space_group(space_group):
     source='fake',
     source_type='mtz'
   ))
-  result = determine_space_group(intensities, normalisation=None)
+  result = determine_space_group([intensities], normalisation=None)
   #import logging
   #logging.basicConfig(level=logging.INFO)
   #result.show()

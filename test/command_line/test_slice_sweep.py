@@ -1,10 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
+import six.moves.cPickle as pickle
 import pytest
 import os
 from libtbx import easy_run
 from dxtbx.model.experiment_list import ExperimentListFactory
-import cPickle as pickle
 
 def test_slice_sweep_and_compare_with_expected_results(dials_regression, tmpdir):
   tmpdir.chdir()
@@ -24,7 +24,7 @@ def test_slice_sweep_and_compare_with_expected_results(dials_regression, tmpdir)
   # load results
   sliced_exp = ExperimentListFactory.from_json_file("experiments_1_20.json",
               check_format=False)[0]
-  with open("indexed_strong_1_20.pickle", "r") as f:
+  with open("indexed_strong_1_20.pickle", "rb") as f:
     sliced_refs = pickle.load(f)
 
   # simple test of results

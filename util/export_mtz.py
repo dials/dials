@@ -9,6 +9,7 @@ from math import ceil, cos, floor, log, pi, sin, sqrt
 
 from dials.array_family import flex
 from dials.util.version import dials_version
+from dials.util.filter_reflections import filter_reflection_table
 from iotbx import mtz
 from libtbx.utils import Sorry
 from scitbx import matrix
@@ -21,162 +22,6 @@ except ImportError:
       return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
 logger = logging.getLogger(__name__)
-
-
-def sum_partial_reflections(integrated_data, min_total_partiality=0.5):
-  '''Sum partial reflections; weighted sum for summation integration; weighted
-  average for profile fitted reflections. N.B. this will report total
-  partiality for the summed reflection.'''
-
-  if not 'partiality' in integrated_data:
-    return integrated_data
-
-  # rest of the columns are pretty well defined - these are all uniform for the
-  # reflection so can just ignore other values:
-  #
-  # d
-  # id
-  # entering
-  # flags
-  # lp
-  # miller_index
-  # panel
-  # partial_id
-  # s1
-  # xyzcal.mm
-  # xyzcal.px
-  # zeta
-  #
-  # Then finally these need a weighted average:
-  #
-  # intensity.prf.value
-  # intensity.prf.variance
-  # intensity.sum.value
-  # intensity.sum.variance
-  # partiality
-  # bbox - this is not used...
-  #
-  # now just need to worry about those that I am actually outputting to the MTZ
-  # file...
-
-  isel = (integrated_data['partiality'] < 0.99).iselection()
-
-  if len(isel) == 0:
-    return integrated_data
-
-  delete = flex.size_t()
-  partial_map = defaultdict(list)
-
-  # create map of partial_id to reflections j
-
-  for j in isel:
-    partial_map[integrated_data['partial_id'][j]].append(j)
-
-  # now work through this map - get total partiality for every reflection;
-  # here only consider reflections with > 1 component; if total partiality
-  # less than min_total_partiality discard all parts.
-
-  partial_ids = []
-
-  for p_id in partial_map:
-    if len(partial_map[p_id]) > 1:
-      partial_ids.append(p_id)
-
-  # work through multipart partials; compute those weighted values I need
-  # if total partiality less than min, delete. if summing, delete extra parts
-
-  we_got_profiles = 'intensity.prf.value' in integrated_data
-  logger.info('Profile fitted reflections: %s' % we_got_profiles)
-
-  for p_id in partial_ids:
-    p_tot = sum([integrated_data['partiality'][j] for j in partial_map[p_id]])
-    if p_tot < min_total_partiality:
-      for j in partial_map[p_id]:
-        delete.append(j)
-      continue
-
-    j0 = partial_map[p_id][0]
-    jrest = partial_map[p_id][1:]
-
-    # FIXME revisiting this calculation am not sure it is correct - why
-    # weighting by (I/sig(I))^2 not just 1/variance?
-    if we_got_profiles:
-      prf_value = integrated_data['intensity.prf.value'][j0]
-      prf_variance = integrated_data['intensity.prf.variance'][j0]
-      weight = prf_value * prf_value / prf_variance
-      prf_value *= weight
-      prf_variance *= weight
-      total_weight = weight
-    sum_value = integrated_data['intensity.sum.value'][j0]
-    sum_variance = integrated_data['intensity.sum.variance'][j0]
-    partiality = integrated_data['partiality'][j0]
-
-    # weight profile fitted intensity and variance computed from weights
-    # proportional to (I/sig(I))^2; schedule for deletion spare parts
-
-    for j in jrest:
-      delete.append(j)
-
-      sum_value += integrated_data['intensity.sum.value'][j]
-      sum_variance += integrated_data['intensity.sum.variance'][j]
-      partiality += integrated_data['partiality'][j]
-
-      if we_got_profiles:
-        _prf_value = integrated_data['intensity.prf.value'][j]
-        _prf_variance = integrated_data['intensity.prf.variance'][j]
-
-        _weight = _prf_value * _prf_value / _prf_variance
-        prf_value += _weight * _prf_value
-        prf_variance += _weight * _prf_variance
-        total_weight += _weight
-
-    # now write these back into original reflection
-    if we_got_profiles:
-      prf_value /= total_weight
-      prf_variance /= total_weight
-      integrated_data['intensity.prf.value'][j0] = prf_value
-      integrated_data['intensity.prf.variance'][j0] = prf_variance
-    integrated_data['intensity.sum.value'][j0] = sum_value
-    integrated_data['intensity.sum.variance'][j0] = sum_variance
-    integrated_data['partiality'][j0] = partiality
-
-  integrated_data.del_selected(delete)
-
-  return integrated_data
-
-
-def scale_partial_reflections(integrated_data, min_partiality=0.5):
-  '''Scale partial reflections (after summation) according to their estimated
-  partiality - for profile fitted reflections this will result in no change,
-  for summation integrated reflections will be scaled up by 1 / partiality
-  with error accordingly scaled. N.B. this will report the scaled up partiality
-  for the output reflection.'''
-
-  # assert: in here there will be no multi-part partial reflections
-
-  if not 'partiality' in integrated_data:
-    return integrated_data
-
-  isel = (integrated_data['partiality'] < 1.0).iselection()
-
-  if len(isel) == 0:
-    return integrated_data
-
-  delete = flex.size_t()
-
-  for j in isel:
-    if integrated_data['partiality'][j] < min_partiality:
-      delete.append(j)
-      continue
-    inv_p = 1.0 / integrated_data['partiality'][j]
-    integrated_data['intensity.sum.value'][j] *= inv_p
-    integrated_data['intensity.sum.variance'][j] *= inv_p
-    integrated_data['partiality'][j] *= 1.0
-
-  integrated_data.del_selected(delete)
-
-  return integrated_data
-
 
 def dials_u_to_mosflm(dials_U, uc):
   '''Compute the mosflm U matrix i.e. the U matrix from same UB definition
@@ -200,95 +45,6 @@ def dials_u_to_mosflm(dials_U, uc):
   mosflm_U = dials_UB * mosflm_B.inverse()
 
   return mosflm_U
-
-
-def _apply_data_filters(integrated_data,
-                        ignore_profile_fitting, filter_ice_rings, min_isigi,
-                        include_partials, keep_partials, scale_partials):
-  """Apply filters to reflection data"""
-
-  # select reflections that are assigned to an experiment (i.e. non-negative id)
-  integrated_data = integrated_data.select(integrated_data['id'] >= 0)
-  assert len(integrated_data), "No experiment-assigned reflections"
-  logger.info('Read %s predicted reflections' % len(integrated_data))
-
-  # Ignore profile fitted
-  if ignore_profile_fitting:
-    del integrated_data['intensity.prf.value']
-    del integrated_data['intensity.prf.variance']
-
-  if 'intensity.prf.variance' in integrated_data:
-    selection = integrated_data.get_flags(
-      integrated_data.flags.integrated,
-      all=True)
-  else:
-    selection = integrated_data.get_flags(
-      integrated_data.flags.integrated_sum)
-  integrated_data = integrated_data.select(selection)
-  logger.info("Selected %d integrated reflections" % len(integrated_data))
-
-  # check we have reflections left - see #357
-  if len(integrated_data) == 0:
-    if ignore_profile_fitting:
-      raise Sorry("All reflections excluded based on flags.integrated")
-    else:
-      raise Sorry("No profile fitted reflections, "
-                  "please try ignore_profile_fitting=True")
-
-  selection = integrated_data['intensity.sum.variance'] <= 0
-  if selection.count(True) > 0:
-    integrated_data.del_selected(selection)
-    logger.info('Removing %d reflections with negative variance' % \
-          selection.count(True))
-
-  if 'intensity.prf.variance' in integrated_data:
-    selection = integrated_data['intensity.prf.variance'] <= 0
-    if selection.count(True) > 0:
-      integrated_data.del_selected(selection)
-      logger.info('Removing %d profile reflections with negative variance' % \
-            selection.count(True))
-
-  if filter_ice_rings:
-    selection = integrated_data.get_flags(integrated_data.flags.in_powder_ring)
-    integrated_data.del_selected(selection)
-    logger.info("Removing %d reflections in ice ring resolutions" %
-                selection.count(True))
-
-  if min_isigi is not None:
-
-    selection = (
-      integrated_data['intensity.sum.value']/
-      flex.sqrt(integrated_data['intensity.sum.variance'])) < min_isigi
-    integrated_data.del_selected(selection)
-    logger.info('Removing %d reflections with I/Sig(I) < %s' %(
-      selection.count(True), min_isigi))
-
-    if 'intensity.prf.variance' in integrated_data:
-      selection = (
-        integrated_data['intensity.prf.value'] /
-        flex.sqrt(integrated_data['intensity.prf.variance'])) < min_isigi
-      integrated_data.del_selected(selection)
-      logger.info('Removing %d profile reflections with I/Sig(I) < %s' %(
-        selection.count(True), min_isigi))
-
-  # FIXME in here work on including partial reflections => at this stage best
-  # to split off the partial refections into a different selection & handle
-  # gracefully... better to work on a short list as will need to "pop" them &
-  # find matching parts to combine.
-
-  if include_partials:
-    integrated_data = sum_partial_reflections(integrated_data)
-    if scale_partials:
-      integrated_data = scale_partial_reflections(integrated_data)
-
-  if 'partiality' in integrated_data:
-    selection = integrated_data['partiality'] < 0.99
-    if selection.count(True) > 0 and not keep_partials:
-      integrated_data.del_selected(selection)
-      logger.info('Removing %d incomplete reflections' % \
-        selection.count(True))
-
-  return integrated_data
 
 
 def _add_batch(mtz, experiment, batch_number, image_number, force_static_model):
@@ -412,8 +168,7 @@ def _add_batch(mtz, experiment, batch_number, image_number, force_static_model):
   return o
 
 
-def _write_columns(mtz_file, dataset, integrated_data, scale_partials,
-                   apply_scales):
+def _write_columns(mtz_file, dataset, integrated_data):
   """Write the column definitions AND data for a single dataset."""
 
   # now create the actual data structures - first keep a track of the columns
@@ -435,13 +190,6 @@ def _write_columns(mtz_file, dataset, integrated_data, scale_partials,
   #                        +1     because FORTRAN counting; zdet+1=image_index
   #                        +off   because            image_index+o=batch
   batch = (flex.floor(zdet).iround() + 1) + integrated_data["batch_offset"]
-
-  # we're working with full reflections so... #388 no longer guaranteed
-  if scale_partials:
-    fractioncalc = flex.double(nref, 1.0)
-  else:
-    fractioncalc = integrated_data['partiality']
-
 
   # now add column information...
 
@@ -468,7 +216,7 @@ def _write_columns(mtz_file, dataset, integrated_data, scale_partials,
     'LP': 'R',
     'FRACTIONCALC': 'R',
     'ROT': 'R',
-    'DQE': 'R',
+    'QE': 'R',
   }
 
   # derive index columns from original indices with
@@ -491,40 +239,41 @@ def _write_columns(mtz_file, dataset, integrated_data, scale_partials,
   dataset.add_column('BATCH', type_table['BATCH']).set_values(
     batch.as_double().as_float())
 
-  if 'lp' in integrated_data:
-    lp = integrated_data['lp']
-  else:
-    lp = flex.double(nref, 1.0)
-  if 'dqe' in integrated_data:
-    dqe = integrated_data['dqe']
-  else:
-    dqe = flex.double(nref, 1.0)
-  I_profile = None
-  V_profile = None
-  I_sum = None
-  V_sum = None
-  # FIXME errors in e.g. LP correction need to be propogated here
-  scl = lp / dqe
-
-  if apply_scales:
-    scl = scl / integrated_data['inverse_scale_factor']
-
-  if 'intensity.prf.value' in integrated_data:
-    I_profile = integrated_data['intensity.prf.value'] * scl
-    V_profile = integrated_data['intensity.prf.variance'] * scl * scl
+  #if intensity values used in scaling exist, then just export these as I, SIGI
+  if 'intensity.scale.value' in integrated_data:
+    I_scaling = integrated_data['intensity.scale.value']
+    V_scaling = integrated_data['intensity.scale.variance']
     # Trap negative variances
-    assert V_profile.all_gt(0)
-    dataset.add_column('IPR', type_table['I']).set_values(I_profile.as_float())
-    dataset.add_column('SIGIPR', type_table['SIGI']).set_values(
-      flex.sqrt(V_profile).as_float())
-  if 'intensity.sum.value' in integrated_data:
-    I_sum = integrated_data['intensity.sum.value'] * scl
-    V_sum = integrated_data['intensity.sum.variance'] * scl * scl
-    # Trap negative variances
-    assert V_sum.all_gt(0)
-    dataset.add_column('I', type_table['I']).set_values(I_sum.as_float())
+    assert V_scaling.all_gt(0)
+    dataset.add_column('I', type_table['I']).set_values(I_scaling.as_float())
     dataset.add_column('SIGI', type_table['SIGI']).set_values(
-      flex.sqrt(V_sum).as_float())
+      flex.sqrt(V_scaling).as_float())
+    dataset.add_column('SCALEUSED', 'R').set_values(
+      integrated_data['inverse_scale_factor'].as_float())
+    dataset.add_column('SIGSCALEUSED', 'R').set_values(
+      flex.sqrt(integrated_data['inverse_scale_factor_variance']).as_float())
+  else:
+    if 'intensity.prf.value' in integrated_data:
+      if 'intensity.sum.value' in integrated_data:
+        col_names = ('IPR', 'SIGIPR')
+      else:
+        col_names = ('I', 'SIGI')
+      I_profile = integrated_data['intensity.prf.value']
+      V_profile = integrated_data['intensity.prf.variance']
+      # Trap negative variances
+      assert V_profile.all_gt(0)
+      dataset.add_column(col_names[0], type_table['I']).set_values(
+        I_profile.as_float())
+      dataset.add_column(col_names[1], type_table['SIGI']).set_values(
+        flex.sqrt(V_profile).as_float())
+    if 'intensity.sum.value' in integrated_data:
+      I_sum = integrated_data['intensity.sum.value']
+      V_sum = integrated_data['intensity.sum.variance']
+      # Trap negative variances
+      assert V_sum.all_gt(0)
+      dataset.add_column('I', type_table['I']).set_values(I_sum.as_float())
+      dataset.add_column('SIGI', type_table['SIGI']).set_values(
+        flex.sqrt(V_sum).as_float())
   if ('background.sum.value' in integrated_data and
       'background.sum.variance' in integrated_data):
     bg = integrated_data['background.sum.value']
@@ -535,14 +284,19 @@ def _write_columns(mtz_file, dataset, integrated_data, scale_partials,
     dataset.add_column('SIGBG', type_table['SIGBG']).set_values(sigbg.as_float())
 
   dataset.add_column('FRACTIONCALC', type_table['FRACTIONCALC']).set_values(
-    fractioncalc.as_float())
+    integrated_data['fractioncalc'].as_float())
 
   dataset.add_column('XDET', type_table['XDET']).set_values(xdet.as_float())
   dataset.add_column('YDET', type_table['YDET']).set_values(ydet.as_float())
   dataset.add_column('ROT', type_table['ROT']).set_values(integrated_data["ROT"].as_float())
-  dataset.add_column('LP', type_table['LP']).set_values(lp.as_float())
-  dataset.add_column('DQE', type_table['DQE']).set_values(dqe.as_float())
-
+  if 'lp' in integrated_data:
+    dataset.add_column('LP', type_table['LP']).set_values(integrated_data['lp'].as_float())
+  if 'qe' in integrated_data:
+    dataset.add_column('QE', type_table['QE']).set_values(integrated_data['qe'].as_float())
+  elif 'dqe' in integrated_data:
+    dataset.add_column('QE', type_table['QE']).set_values(integrated_data['dqe'].as_float())
+  else:
+    dataset.add_column('QE', type_table['QE']).set_values(flex.double(nref, 1.0).as_float())
 
 def _next_epoch(val):
   """Find a reasonably round epoch a small number above an existing one.
@@ -608,10 +362,7 @@ def _calculate_batch_offsets(experiments):
   return batch_offsets
 
 
-def export_mtz(integrated_data, experiment_list, hklout,
-               include_partials=False, keep_partials=False, scale_partials=True,
-               min_isigi=None, force_static_model=False, filter_ice_rings=False,
-               ignore_profile_fitting=False, apply_scales=False):
+def export_mtz(integrated_data, experiment_list, params):
   '''Export data from integrated_data corresponding to experiment_list to an
   MTZ file hklout.'''
 
@@ -621,9 +372,6 @@ def export_mtz(integrated_data, experiment_list, hklout,
   # And assumptions about added attributes break
   experiment_list = list(experiment_list)
 
-  if apply_scales:
-    assert('inverse_scale_factor' in integrated_data)
-
   # Validate multi-experiment assumptions
   if len(experiment_list) > 1:
     # All experiments should match crystals, or else we need multiple crystals/datasets
@@ -631,7 +379,7 @@ def export_mtz(integrated_data, experiment_list, hklout,
       logger.warning("Warning: Experiment crystals differ. Using first experiment crystal for file-level data.")
 
     # We must match wavelengths (until multiple datasets supported)
-    if not all(isclose(x.beam.get_wavelength(), experiment_list[0].beam.get_wavelength(), rel_tol=1e-9) for x in experiment_list[1:]):
+    if not all(isclose(x.beam.get_wavelength(), experiment_list[0].beam.get_wavelength(), rel_tol=1e-4) for x in experiment_list[1:]):
       data = [x.beam.get_wavelength() for x in experiment_list]
       raise Sorry("Cannot export multiple experiments with different beam wavelengths ({})".format(data))
 
@@ -640,14 +388,12 @@ def export_mtz(integrated_data, experiment_list, hklout,
     logger.warning('Warning: Ignoring multiple panels in output MTZ')
 
   # Clean up the data with the passed in options
-  integrated_data = _apply_data_filters(integrated_data,
-      ignore_profile_fitting=ignore_profile_fitting,
-      min_isigi=min_isigi,
-      filter_ice_rings=filter_ice_rings,
-      include_partials=include_partials,
-      keep_partials=keep_partials,
-      scale_partials=scale_partials)
-
+  integrated_data = filter_reflection_table(integrated_data,
+    intensity_choice=params.intensity, 
+    partiality_threshold=params.mtz.partiality_threshold,
+    combine_partials=params.mtz.combine_partials,
+    min_isigi=params.mtz.min_isigi, filter_ice_rings=params.mtz.filter_ice_rings,
+    d_min=params.mtz.d_min)
 
   # Calculate and store the image range for each image
   for experiment in experiment_list:
@@ -674,7 +420,9 @@ def export_mtz(integrated_data, experiment_list, hklout,
   # Create the mtz file
   mtz_file = mtz.object()
   mtz_file.set_title('from dials.export_mtz')
-  date_str = time.strftime('%d/%m/%Y at %H:%M:%S', time.gmtime())
+  date_str = time.strftime('%Y-%m-%d at %H:%M:%S %Z')
+  if time.strftime('%Z') != 'GMT':
+    date_str += time.strftime('  (%Y-%m-%d at %H:%M:%S %Z)', time.gmtime())
   mtz_file.add_history('From %s, run on %s' % (dials_version(), date_str))
 
   # FIXME TODO for more than one experiment into an MTZ file:
@@ -703,11 +451,12 @@ def export_mtz(integrated_data, experiment_list, hklout,
       _add_batch(mtz_file, experiment,
         batch_number=i+experiment.scan.get_batch_offset(),
         image_number=i,
-        force_static_model=force_static_model)
+        force_static_model=params.mtz.force_static_model)
 
     # Create the batch offset array. This gives us an experiment (id)-dependent
     # batch offset to calculate the correct batch from image number.
-    experiment.data["batch_offset"] = flex.int(len(experiment.data["id"]), experiment.scan.get_batch_offset())
+    experiment.data["batch_offset"] = flex.int(len(experiment.data["id"]),
+      experiment.scan.get_batch_offset())
 
     # Calculate whether we have a ROT value for this experiment, and set the column
     _, _, z = experiment.data['xyzcal.px'].parts()
@@ -729,13 +478,13 @@ def export_mtz(integrated_data, experiment_list, hklout,
       merged_data[k].extend(v)
   # ALL columns must be the same length
   assert len(set(len(v) for v in merged_data.values())) == 1, "Column length mismatch"
-  assert len(merged_data["id"] == len(integrated_data["id"])), "Lost rows in split/combine"
+  assert len(merged_data["id"]) == len(integrated_data["id"]), "Lost rows in split/combine"
 
   # Write all the data and columns to the mtz file
-  _write_columns(mtz_file, mtz_dataset, merged_data,
-    scale_partials=scale_partials, apply_scales=apply_scales)
+  _write_columns(mtz_file, mtz_dataset, merged_data)
 
-  logger.info("Saving {} integrated reflections to {}".format(len(merged_data['id']), hklout))
-  mtz_file.write(hklout)
+  logger.info("Saving {} integrated reflections to {}".format(
+    len(merged_data['id']), params.mtz.hklout))
+  mtz_file.write(params.mtz.hklout)
 
   return mtz_file

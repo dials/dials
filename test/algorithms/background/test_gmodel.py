@@ -22,8 +22,9 @@ def test_run(dials_regression, tmpdir):
   data = flex.double(flex.grid(ysize, xsize), 1)
   model = StaticBackgroundModel()
   model.add(data)
-  import cPickle as pickle
-  pickle.dump(model, open("model.pickle", "w"))
+  import six.moves.cPickle as pickle
+  with open("model.pickle", "wb") as fh:
+    pickle.dump(model, fh, pickle.HIGHEST_PROTOCOL)
 
   # Call dials.integrate
   easy_run.fully_buffered([

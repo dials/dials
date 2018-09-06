@@ -104,7 +104,7 @@ namespace dials { namespace algorithms {
   Högbom, J. A. 1974, A&AS, 15, 417.
 
   See also:
-    http://dx.doi.org/10.1051/0004-6361/200912148
+    https://doi.org/10.1051/0004-6361/200912148
   */
   af::shared<vec3<int> > clean_3d(
     af::const_ref<double, af::c_grid<3> > const & dirty_beam,

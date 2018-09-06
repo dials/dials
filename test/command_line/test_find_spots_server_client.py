@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import glob
 import multiprocessing
 import os
+import procrunner
 import pytest
 import socket
 import time
@@ -11,22 +12,21 @@ from xml.dom import minidom
 
 from libtbx import easy_run
 
+def start_server(server_command):
+  procrunner.run(server_command)
+
 def test_find_spots_server_client(dials_regression, tmpdir):
   tmpdir.chdir()
 
-  def start_server(server_command):
-    result = easy_run.fully_buffered(command=server_command)
-    result.show_stdout()
-    result.show_stderr()
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   s.bind(("",0))
   port = s.getsockname()[1]
-  s.close()
-  server_command = "dials.find_spots_server port=%i nproc=3" %port
+  server_command = ["dials.find_spots_server", "port=%i" % port, "nproc=3"]
   print(server_command)
 
   p = multiprocessing.Process(target=start_server, args=(server_command,))
   p.daemon = True
+  s.close()
   p.start()
   wait_for_server(port) # need to give server chance to start
 

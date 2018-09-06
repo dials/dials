@@ -308,15 +308,14 @@ class ManualGeometryUpdater(object):
     Override the parameters
 
     '''
-    from dxtbx.imageset import ImageSet
-    from dxtbx.imageset import ImageSweep
+    from dxtbx.imageset import ImageSweep, ImageSetFactory
     from dxtbx.model import BeamFactory
     from dxtbx.model import DetectorFactory
     from dxtbx.model import GoniometerFactory
     from dxtbx.model import ScanFactory
     from copy import deepcopy
     if self.params.geometry.convert_sweeps_to_stills:
-      imageset = ImageSet(data=imageset.data())
+      imageset = ImageSetFactory.imageset_from_anyset(imageset)
     if not isinstance(imageset, ImageSweep):
       if self.params.geometry.convert_stills_to_sweeps:
         imageset = self.convert_stills_to_sweep(imageset)
@@ -559,7 +558,7 @@ class MetaDataUpdater(object):
 
     '''
     from collections import namedtuple
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
     # Check the lookup inputs
     mask_filename = None
     gain_filename = None
@@ -574,13 +573,15 @@ class MetaDataUpdater(object):
     lookup_size = None
     if params.lookup.mask is not None:
       mask_filename = params.lookup.mask
-      mask = pickle.load(open(mask_filename))
+      with open(mask_filename, 'rb') as fh:
+        mask = pickle.load(fh)
       if not isinstance(mask, tuple):
         mask = (mask,)
       lookup_size = [m.all() for m in mask]
     if params.lookup.gain is not None:
       gain_filename = params.lookup.gain
-      gain = pickle.load(open(gain_filename))
+      with open(gain_filename, 'rb') as fh:
+        gain = pickle.load(fh)
       if not isinstance(gain, tuple):
         gain = (gain,)
       if lookup_size is None:
@@ -591,7 +592,8 @@ class MetaDataUpdater(object):
           assert s == g.all(), "Incompatible size"
     if params.lookup.pedestal is not None:
       dark_filename = params.lookup.pedestal
-      dark = pickle.load(open(dark_filename))
+      with open(dark_filename, 'rb') as fh:
+        dark = pickle.load(fh)
       if not isinstance(dark, tuple):
         dark = (dark,)
       if lookup_size is None:
@@ -602,7 +604,8 @@ class MetaDataUpdater(object):
           assert s == d.all(), "Incompatible size"
     if params.lookup.dx is not None:
       dx_filename = params.lookup.dx
-      dx = pickle.load(open(dx_filename))
+      with open(dx_filename, 'rb') as fh:
+        dx = pickle.load(fh)
       if not isinstance(dx, tuple):
         dx = (dx,)
       if lookup_size is None:
@@ -613,7 +616,8 @@ class MetaDataUpdater(object):
           assert s == d.all(), "Incompatible size"
     if params.lookup.dy is not None:
       dy_filename = params.lookup.dy
-      dy = pickle.load(open(dy_filename))
+      with open(dx_filename, 'rb') as fh:
+        dy = pickle.load(fh)
       if not isinstance(dy, tuple):
         dy = (dy,)
       if lookup_size is None:

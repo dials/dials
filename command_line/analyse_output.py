@@ -125,15 +125,7 @@ class per_panel_plot(object):
       else:
         suffix = ''
       crystal_sel = (crystal_ids == i_crystal)
-      fig, axes = pyplot.subplots(
-        n_rows, n_cols)
-
-      if n_panels == 1:
-        axes = [[axes]]
-      elif n_cols == 1:
-        axes = [[ax] for ax in axes]
-      elif n_rows == 1:
-        axes = [axes]
+      fig, axes = pyplot.subplots(n_rows, n_cols, squeeze=False)
 
       self.gridsize = tuple(
         int(math.ceil(i))

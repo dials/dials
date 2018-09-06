@@ -165,6 +165,11 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       import SpotFinderFactory
     from libtbx import Auto
 
+    if params is None:
+      from dials.command_line.find_spots import phil_scope
+      from dials.util.phil import parse
+      params = phil_scope.fetch(source=parse("")).extract()
+
     if params.spotfinder.filter.min_spot_size is Auto:
       detector = datablock.extract_imagesets()[0].get_detector()
       if detector[0].get_type() == 'SENSOR_PAD':
@@ -193,7 +198,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     :return: The reflection table
 
     '''
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
     from libtbx import smart_open
 
     with smart_open.for_reading(filename, 'rb') as infile:
@@ -329,7 +334,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     :param filename: The output filename
 
     '''
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
     from libtbx import smart_open
 
     with smart_open.for_writing(filename, 'wb') as outfile:
@@ -874,15 +879,20 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     from dials.algorithms.integration import Corrections, CorrectionsMulti
     compute = CorrectionsMulti()
     for experiment in experiments:
-      compute.append(Corrections(
-        experiment.beam,
-        experiment.goniometer,
-        experiment.detector))
+      if experiment.goniometer is not None:
+        compute.append(Corrections(
+          experiment.beam,
+          experiment.goniometer,
+          experiment.detector))
+      else:
+        compute.append(Corrections(
+          experiment.beam,
+          experiment.detector))
     lp = compute.lp(self['id'], self['s1'])
     self['lp'] = lp
     if experiment.detector[0].get_mu() > 0:
-      dqe = compute.dqe(self['id'], self['s1'], self['panel'])
-      self['dqe'] = dqe
+      qe = compute.qe(self['id'], self['s1'], self['panel'])
+      self['qe'] = qe
     return lp
 
   def integrate(self, experiments, profile_model, reference_selector=None):
@@ -1094,7 +1104,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       result[i] = (1.0*mask.count(True)) / mask.size()
     return result
 
-  def are_experiment_identifiers_consistent(self, experiments=None):
+  def assert_experiment_identifiers_are_consistent(self, experiments=None):
     '''
     Check the experiment identifiers
 
@@ -1102,20 +1112,26 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     identifiers = self.experiment_identifiers()
     if len(identifiers) > 0:
       values = identifiers.values()
-      if len(set(values)) != len(values):
-        return False
+      assert len(set(values)) == len(values), (len(set(values)), len(values))
       if "id" in self:
         index = set(self['id'])
         for i in index:
-          if i not in identifiers:
-            return False
+          assert i in identifiers, (i, identifiers)
     if experiments is not None:
       if len(identifiers) > 0:
-        if len(identifiers) != len(experiments):
-          return False
+        assert len(identifiers) == len(experiments), (len(identifiers), len(experiments))
         for i in range(len(experiments)):
-          if identifiers[i] != experiments[i].identifier:
-            return False
+          assert identifiers[i] == experiments[i].identifier, (identifiers[i], experiments[i].identifier)
+
+  def are_experiment_identifiers_consistent(self, experiments=None):
+    '''
+    Check the experiment identifiers
+
+    '''
+    try:
+      self.assert_experiment_identifiers_are_consistent(experiments)
+    except AssertionError:
+      return False
     return True
 
 

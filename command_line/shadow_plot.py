@@ -3,6 +3,8 @@
 
 from __future__ import absolute_import, division, print_function
 
+import sys
+
 import libtbx
 import libtbx.phil
 from libtbx.utils import Sorry
@@ -60,7 +62,7 @@ def run(args):
 
   if len(datablocks) == 0:
     parser.print_help()
-    exit(0)
+    sys.exit(0)
 
   assert len(datablocks) == 1
   imagesets = datablocks[0].extract_imagesets()
@@ -154,13 +156,13 @@ def run(args):
       else:
         plt.ylim(0, plt.ylim()[1])
     else:
-      plt.imshow(fraction_shadowed.as_numpy_array() * 100, interpolation='bicubic')
+      fig = plt.imshow(fraction_shadowed.as_numpy_array() * 100, interpolation='bicubic')
       plt.xlabel('%s angle (degrees)' %names[2])
       plt.ylabel('%s angle (degrees)' %names[1])
       plt.xlim(0, 360/step)
       plt.ylim(0, 360/step)
-      plt.axes().set_xticklabels(["%.0f" %(step * t) for t in plt.xticks()[0]])
-      plt.axes().set_yticklabels(["%.0f" %(step * t) for t in plt.yticks()[0]])
+      fig.axes.set_xticklabels(["%.0f" %(step * t) for t in plt.xticks()[0]])
+      fig.axes.set_yticklabels(["%.0f" %(step * t) for t in plt.yticks()[0]])
       cbar = plt.colorbar()
       cbar.set_label('Shadowed area (%)')
 
@@ -184,5 +186,4 @@ def polygon_area(points):
 
 
 if __name__ == '__main__':
-  import sys
   run(sys.argv[1:])

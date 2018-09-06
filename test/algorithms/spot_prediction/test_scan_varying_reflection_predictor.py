@@ -192,6 +192,7 @@ def test_scan_varying_results_are_close_to_static_prediction_when_model_is_stati
   scan = static_test.experiments[0].scan
   crystal = static_test.experiments[0].crystal
   beam = static_test.experiments[0].beam
+  goniometer = static_test.experiments[0].goniometer
   n_scan_points = scan.get_num_images() + 1
   static_preds = static_test.predict_new()
   static_preds.sort('miller_index')
@@ -216,11 +217,13 @@ def test_scan_varying_results_are_close_to_static_prediction_when_model_is_stati
   result1.sort('miller_index')
   compare(static_preds, result1)
 
-  # Prediction for UB matrix and s0 vectors expressed as arrays of static
-  # model states
+  # Prediction for UB matrix, s0 vectors and goniometer setting rotation
+  # matrices expressed as arrays of static model states
   s0 = [beam.get_s0() for i in range(n_scan_points)]
+  S = [goniometer.get_setting_rotation() for i in range(n_scan_points)]
   result2 = predict.for_varying_models(flex.mat3_double(A),
-      flex.vec3_double(s0))
+                                       flex.vec3_double(s0),
+                                       flex.mat3_double(S))
   result2.sort('miller_index')
   compare(static_preds, result2)
 
@@ -232,9 +235,10 @@ def test_scan_varying_results_are_close_to_static_prediction_when_model_is_stati
   result3.sort('miller_index')
   compare(static_preds_frame0, result3)
 
-  # First frame only, start and end UB and s0
+  # First frame only, start and end UB, s0 and S
   s0 = beam.get_s0()
-  result4 = predict.for_varying_models_on_single_image(0, A, A, s0, s0)
+  S = goniometer.get_setting_rotation()
+  result4 = predict.for_varying_models_on_single_image(0, A, A, s0, s0, S, S)
   result4.sort('miller_index')
   compare(static_preds_frame0, result4)
 

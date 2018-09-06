@@ -68,7 +68,7 @@ class Script(object):
     from dials.util.masking import MaskGenerator
     from dials.util.options import flatten_datablocks
     from libtbx.utils import Sorry
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
     from dials.util import log
     from dxtbx.format.image import ImageBool
 
@@ -88,8 +88,20 @@ class Script(object):
       raise Sorry('exactly 1 datablock must be specified')
     datablock = datablocks[0]
     imagesets = datablock.extract_imagesets()
-    if len(imagesets) != 1:
-      raise Sorry('datablock must contain exactly 1 imageset')
+    if len(imagesets) > 1:
+      # Check beams (for resolution) and detectors are equivalent in each case
+      # otherwise the mask may not be appropriate across all imagesets
+      detectors = datablock.unique_detectors()
+      beams = datablock.unique_beams()
+      for d in detectors[1:]:
+        if not d.is_similar_to(detectors[0]):
+          raise Sorry('multiple imagesets are present, but their detector'
+                      ' models differ')
+      for b in beams[1:]:
+        if not b.is_similar_to(beams[0]):
+          raise Sorry('multiple imagesets are present, but their beam'
+                      ' models differ')
+
     imageset = imagesets[0]
 
     # Generate the mask
@@ -98,13 +110,14 @@ class Script(object):
 
     # Save the mask to file
     print("Writing mask to %s" % params.output.mask)
-    with open(params.output.mask, "w") as fh:
+    with open(params.output.mask, "wb") as fh:
       pickle.dump(mask, fh)
 
     # Save the datablock
     if params.output.datablock is not None:
-      imageset.external_lookup.mask.data = ImageBool(mask)
-      imageset.external_lookup.mask.filename = params.output.mask
+      for imageset in imagesets:
+        imageset.external_lookup.mask.data = ImageBool(mask)
+        imageset.external_lookup.mask.filename = params.output.mask
       from dxtbx.datablock import DataBlockDumper
       print('Saving datablocks to {0}'.format(
         params.output.datablock))

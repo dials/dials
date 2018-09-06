@@ -36,6 +36,7 @@ class Job(object):
   @staticmethod
   def run_process(command):
     """Runs a command, prints running info and results the result, if success"""
+    os.environ["DIALS_NOBANNER"] = "1"
     result = run_process(shlex.split(command))
     print("running command took {0:.2f} seconds\n".format(result['runtime']))
     assert result['exitcode'] == 0, "Command execution failed"
@@ -224,6 +225,10 @@ def generate_processing_detail_text_ccp4():
       # Write a copy of the command, and the output log
       job_writer("{}.cmd".format(name), "{}.log".format(name),{'cmd':command,'result': result})
 
+    # Because it's hard to robustly extract the *final* unindexed count
+    # using sphinx's built-in literalinclude, we extract it specially here
+    extract_last_indexed_spot_count(os.path.join(OUTPUT_DIR, "dials.index.log"))
+
     # Report step is special; we want the dials-report.html file instead
     shutil.copy("dials-report.html", OUTPUT_DIR)
 
@@ -233,6 +238,48 @@ def generate_processing_detail_text_ccp4():
     # Remove our intermediatary files
     os.chdir(cwd)
     shutil.rmtree(tmp_dir)
+
+def find_in_line(string, lines, start=0):
+  """Find the next line index containing a given string"""
+  for n, line in enumerate(lines[start:], start):
+    if string in line:
+      return n
+  raise RuntimeError("Could not find line '{}' in lines".format(string))
+
+def write_extract(filename, start, end, lines):
+  """Write lines to a file, in the correct line position, with markers.
+
+  This can be used to provide sphinx with an easily extractable literalinclude
+  block, that preserves the correct line numbers from the original file.
+  """
+  assert start > 0
+  out_lines = []
+  for n, line in enumerate(lines):
+    if n == start-1:
+      out_lines.append("[START_EXTRACT]")
+    elif n >= start and n <= end:
+      out_lines.append(line.strip())
+    elif n == end+1:
+      out_lines.append("[END_EXTRACT]")
+    else:
+      out_lines.append("")
+
+  with open(filename, "wt") as f:
+    f.write("\n".join(out_lines))
+
+def extract_last_indexed_spot_count(path):
+  """Extract the last 'unindexed' entry from an index log."""
+  with open(path) as f:
+    lines = f.readlines()
+
+  # Find the last entry for #unindexed
+  next_ui = len(lines) - find_in_line("#unindexed", list(reversed(lines))) - 1
+
+  # We now have the last entry for #unindexed. Find the end of the table
+  end_ui = find_in_line("---", lines, next_ui+2)
+  # Range to extract = (next_ui, end_ui)
+  dest = os.path.dirname(path)
+  write_extract(os.path.join(dest, "dials.index.log.extract_unindexed"), next_ui-1, end_ui, lines)
 
 if __name__ == "__main__":
   # As a quick development hack, add option for only the newer process

@@ -234,7 +234,7 @@ def corrgram(corrmat, labels):
   from math import pi, sqrt
   try:
     import matplotlib
-    matplotlib.use('Agg')
+    matplotlib.use('Agg', warn=False)
     import matplotlib.pyplot as plt
     import matplotlib.cm as cm
   except ImportError as e:

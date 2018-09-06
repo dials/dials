@@ -43,7 +43,7 @@ def print_refl(row):
 
 
 if __name__ == '__main__':
-  import cPickle as pickle
+  import six.moves.cPickle as pickle
   import sys
   from dials.array_family import flex # import dependency
   from libtbx.utils import Sorry
@@ -52,7 +52,8 @@ if __name__ == '__main__':
     raise Sorry('exactly 1 reflection table must be specified')
 
   try:
-    table = pickle.load(open(sys.argv[1]))
+    with open(sys.argv[1], 'rb') as fh:
+      table = pickle.load(fh)
   except Exception:
     raise Sorry('Error loading reflection table')
 

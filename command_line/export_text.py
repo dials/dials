@@ -8,7 +8,8 @@ if __name__ == '__main__':
   if len(sys.argv) != 2:
     raise RuntimeError('%s integrated.pickle')
 
-  import cPickle as pickle
+  import six.moves.cPickle as pickle
 
-  integrated_data = pickle.load(open(sys.argv[1], 'rb'))
+  with open(sys.argv[1], 'rb') as fh:
+    integrated_data = pickle.load(fh)
   export_text(integrated_data)

@@ -27,10 +27,10 @@ def test(dials_regression, tmpdir):
   stdin_lines = [
     "refine",
     "integrate profile.fitting=False",
-    "export ignore_profile_fitting=True keep_partials=True include_partials=True",
+    "export intensity='sum' partiality_threshold=0.1",
     "goto 7",
     "integrate profile.fitting=False",
-    "export ignore_profile_fitting=True keep_partials=True include_partials=True",
+    "export intensity='sum' partiality_threshold=0.1",
   ]
 
   easy_run.fully_buffered('idials',

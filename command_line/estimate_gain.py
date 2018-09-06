@@ -99,10 +99,10 @@ def estimate_gain(imageset, kernel_size=(10,10), output_gain_map=None, max_image
     if len(gains) > 1:
       raw_data = imageset.get_raw_data(0)
     # write the gain map
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
     gain_map = flex.double(flex.grid(raw_data[0].all()), gain0)
-    pickle.dump(gain_map, open(output_gain_map, "w"),
-                protocol=pickle.HIGHEST_PROTOCOL)
+    with open(output_gain_map, "wb") as fh:
+      pickle.dump(gain_map, fh, protocol=pickle.HIGHEST_PROTOCOL)
 
   if 0:
     sel = flex.random_selection(population_size=len(sorted_dispersion), sample_size=10000)

@@ -16,12 +16,12 @@
 namespace dials { namespace algorithms {
 
   /**
-   * Compute the manhatten distance transform of a binary image
+   * Compute the manhattan distance transform of a binary image
    * @param data The image
    * @return The distance transform
    */
   inline
-  af::versa< int, af::c_grid<2> > manhatten_distance(
+  af::versa< int, af::c_grid<2> > manhattan_distance(
       const af::const_ref< bool, af::c_grid<2> > &data) {
 
     // Initialise stuff

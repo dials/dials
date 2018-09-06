@@ -95,7 +95,7 @@ refinement
                 "initial values. If remove, parameters relating to that model"
                 "will be fixed, and in addition all reflections related to"
                 "that parameterisation will be removed. This will therefore"
-                "remove this reflections from other parameterisations of the"
+                "remove these reflections from other parameterisations of the"
                 "global model too. For example, if a crystal model could not"
                 "be parameterised it will be excised completely and not"
                 "contribute to the joint refinement of the detector and beam."
@@ -201,6 +201,14 @@ refinement
           .help = "Force a static parameterisation for the crystal unit cell"
                   "when doing scan-varying refinement"
           .expert_level = 1
+
+        set_scan_varying_errors = False
+          .type = bool
+          .help = "If scan-varying refinement is done, and if the estimated"
+                  "covariance of the B matrix has been calculated by the"
+                  "minimiser, choose whether to return this to the model or"
+                  "not. The default is not to, in order to keep the file size"
+                  "of the serialized model small."
 
         %(sv_phil_str)s
       }
@@ -380,6 +388,16 @@ refinement
               "In detector space, these are the reflections located close"
               "to the rotation axis."
       .type = float(value_min = 0)
+      .expert_level = 1
+
+    trim_scan_edges = 0.0
+      .help = "Reflections within this value in degrees from the centre of the"
+              "first or last image of the scan will be removed before"
+              "refinement, unless doing so would result in too few remaining"
+              "reflections. Reflections that are truncated at the scan edges"
+              "have poorly-determined centroids and can bias the refined model"
+              "if they are included."
+      .type = float(value_min=0,value_max=1)
       .expert_level = 1
 
     block_width = 1.0
@@ -807,10 +825,10 @@ class RefinerFactory(object):
               abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
 
           xl_ori_param = par.ScanVaryingCrystalOrientationParameterisation(
-                                              crystal,
-                                              array_range,
-                                              n_intervals,
-                                              experiment_ids=exp_ids)
+              crystal,
+              array_range,
+              n_intervals,
+              experiment_ids=exp_ids)
         else: # force model to be static
           xl_ori_param = par.CrystalOrientationParameterisation(crystal,
                                                           experiment_ids=exp_ids)
@@ -828,11 +846,13 @@ class RefinerFactory(object):
             n_intervals = max(int(
               abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
 
+          set_errors = options.crystal.unit_cell.set_scan_varying_errors
           xl_uc_param = par.ScanVaryingCrystalUnitCellParameterisation(
-                                              crystal,
-                                              array_range,
-                                              n_intervals,
-                                              experiment_ids=exp_ids)
+              crystal,
+              array_range,
+              n_intervals,
+              experiment_ids=exp_ids,
+              set_state_uncertainties=set_errors)
         else: # force model to be static
           xl_uc_param = par.CrystalUnitCellParameterisation(crystal,
                                                           experiment_ids=exp_ids)
@@ -1403,6 +1423,12 @@ class RefinerFactory(object):
       gon_params = tmp
 
     elif options.auto_reduction.action == 'remove':
+      # if there is only one experiment, it should be multi-panel for remove to make sense
+      if len(experiments) == 1:
+        if not det_params[-1].is_multi_state():
+          raise Sorry("For single experiment, single panel refinement "
+            "auto_reduction.action=remove cannot be used as it could only "
+            "remove all reflections from refinement")
       warnmsg = 'Too few reflections to parameterise {0}'
       warnmsg += '\nAssociated reflections will be removed from the Reflection Manager'
       while True:
@@ -1719,6 +1745,7 @@ class RefinerFactory(object):
             max_sample_size = options.maximum_sample_size,
             min_sample_size = options.minimum_sample_size,
             close_to_spindle_cutoff=options.close_to_spindle_cutoff,
+            trim_scan_edges=options.trim_scan_edges,
             outlier_detector=outlier_detector,
             weighting_strategy_override=weighting_strategy,
             verbosity=verbosity)
@@ -2163,16 +2190,23 @@ class Refiner(object):
     if isinstance(self._pred_param, ScanVaryingPredictionParameterisation):
       for iexp, exp in enumerate(self._experiments):
         ar_range = exp.scan.get_array_range()
+        obs_image_numbers = range(ar_range[0], ar_range[1]+1)
 
         # write scan-varying s0 vectors back to beam models
-        s0_list = [self._pred_param.get_s0(t, iexp) for t in range(ar_range[0],
-                                                            ar_range[1]+1)]
-        exp.beam.set_s0_at_scan_points(s0_list)
+        s0_list = self._pred_param.get_varying_s0(obs_image_numbers, iexp)
+        if s0_list is not None:
+          exp.beam.set_s0_at_scan_points(s0_list)
 
-        # write scan-varying setting matrices back to crystal models
-        A_list = [self._pred_param.get_UB(t, iexp) for t in range(ar_range[0],
-                                                            ar_range[1]+1)]
-        exp.crystal.set_A_at_scan_points(A_list)
+        # write scan-varying setting rotation matrices back to goniometer models
+        S_list = self._pred_param.get_varying_setting_rotation(
+            obs_image_numbers, iexp)
+        if S_list is not None:
+          exp.goniometer.set_setting_rotation_at_scan_points(S_list)
+
+        # write scan-varying crystal setting matrices back to crystal models
+        A_list = self._pred_param.get_varying_UB(obs_image_numbers, iexp)
+        if A_list is not None:
+          exp.crystal.set_A_at_scan_points(A_list)
 
         # get state covariance matrices the whole range of images. We select
         # the first element of this at each image because crystal scan-varying

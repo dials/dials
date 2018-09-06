@@ -39,9 +39,6 @@ show_flags = False
 max_reflections = None
   .type = int
   .help = "Limit the number of reflections in the output."
-show_panel_distance = False
-  .type = bool
-  .help = "Show distance to individual panels along normal."
 """, process_includes=True)
 
 
@@ -91,7 +88,8 @@ def show_beam(detector, beam):
     impacts = [beam_centre_mm(detector, s0) for s0 in sv_s0]
     pnl, xy = zip(*impacts)
     uniq_pnls = set(pnl)
-    if len(uniq_pnls) > 1 or min(uniq_pnls) < 0: return static_str + sv_str
+    if len(uniq_pnls) > 1 or min(uniq_pnls) < 0: return s
+    if any([e == (None,None) for e in xy]): return s
     pnl = list(uniq_pnls)[0]
     x_mm, y_mm = zip(*xy)
 
@@ -106,6 +104,17 @@ def show_beam(detector, beam):
 
   return s
 
+def show_goniometer(goniometer):
+
+  # standard static goniometer model string
+  s = str(goniometer)
+
+  # report whether the goniometer is scan-varying
+  if goniometer.num_scan_points > 0:
+     s += ("    Setting rotation sampled at " +
+     str(goniometer.num_scan_points) + " scan points\n")
+
+  return s
 
 def run(args):
   import dials.util.banner
@@ -139,12 +148,10 @@ def run(args):
 
   if len(experiments):
     print(show_experiments(
-      experiments, show_panel_distance=params.show_panel_distance,
-      show_scan_varying=params.show_scan_varying))
+      experiments, show_scan_varying=params.show_scan_varying))
 
   if len(datablocks):
-    print(show_datablocks(
-      datablocks, show_panel_distance=params.show_panel_distance))
+    print(show_datablocks(datablocks))
 
   if len(reflections):
     print(show_reflections(
@@ -156,8 +163,7 @@ def run(args):
       max_reflections=params.max_reflections))
 
 
-def show_experiments(experiments, show_panel_distance=False,
-                     show_scan_varying=False):
+def show_experiments(experiments, show_scan_varying=False):
 
   text = []
 
@@ -168,25 +174,12 @@ def show_experiments(experiments, show_panel_distance=False,
       expt.detector.get_max_resolution(expt.beam.get_s0())))
     text.append('Max resolution (inscribed):  %f' % (
       expt.detector.get_max_inscribed_resolution(expt.beam.get_s0())))
-    if show_panel_distance:
-      for ipanel, panel in enumerate(expt.detector):
-        from scitbx import matrix
-        fast = matrix.col(panel.get_fast_axis())
-        slow = matrix.col(panel.get_slow_axis())
-        normal = fast.cross(slow).normalize()
-        origin = matrix.col(panel.get_origin())
-        distance = origin.dot(normal)
-        fast_origin = - (origin - distance * normal).dot(fast)
-        slow_origin = - (origin - distance * normal).dot(slow)
-        text.append('Panel %d: distance %.2f origin %.2f %.2f' % \
-          (ipanel, distance, fast_origin, slow_origin))
-      text.append('')
     text.append('')
     text.append(show_beam(expt.detector, expt.beam))
     if expt.scan is not None:
       text.append(str(expt.scan))
     if expt.goniometer is not None:
-      text.append(str(expt.goniometer))
+      text.append(show_goniometer(expt.goniometer))
     from cStringIO import StringIO
     s = StringIO()
     expt.crystal.show(show_scan_varying=show_scan_varying, out=s)
@@ -207,10 +200,12 @@ def show_experiments(experiments, show_panel_distance=False,
     #text.append('')
     if expt.profile is not None:
       text.append(str(expt.profile))
+    if expt.scaling_model is not None:
+      text.append(str(expt.scaling_model.show()))
   return '\n'.join(text)
 
 
-def show_datablocks(datablocks, show_panel_distance=False):
+def show_datablocks(datablocks):
   text = []
   for datablock in datablocks:
     if datablock.format_class() is not None:
@@ -226,19 +221,6 @@ def show_datablocks(datablocks, show_panel_distance=False):
           detector.get_max_resolution(imageset.get_beam().get_s0())))
         text.append('Max resolution (inscribed):  %f' % (
           detector.get_max_inscribed_resolution(imageset.get_beam().get_s0())))
-        if show_panel_distance:
-          for ipanel, panel in enumerate(detector):
-            from scitbx import matrix
-            fast = matrix.col(panel.get_fast_axis())
-            slow = matrix.col(panel.get_slow_axis())
-            normal = fast.cross(slow)
-            origin = matrix.col(panel.get_origin())
-            distance = origin.dot(normal)
-            fast_origin = - (origin - distance * normal).dot(fast)
-            slow_origin = - (origin - distance * normal).dot(slow)
-            text.append('Panel %d: distance %.2f origin %.2f %.2f' % \
-              (ipanel, distance, fast_origin, slow_origin))
-          text.append('')
         text.append('')
         text.append(show_beam(detector, imageset.get_beam()))
       if imageset.get_scan() is not None:
@@ -297,6 +279,7 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
   formats = collections.OrderedDict((
     ('miller_index', '%i, %i, %i'),
     ('d','%.2f'),
+    ('qe','%.3f'),
     ('dqe','%.3f'),
     ('id','%i'),
     ('imageset_id','%i'),
@@ -313,6 +296,9 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
     ('intensity.sum.variance','%.1f'),
     ('intensity.cor.value','%.1f'),
     ('intensity.cor.variance','%.1f'),
+    ('intensity.scale.value','%.1f'),
+    ('intensity.scale.variance','%.1f'),
+    ('Ih_values','%.1f'),
     ('lp','%.3f'),
     ('num_pixels.background','%i'),
     ('num_pixels.background_used','%i'),
@@ -332,6 +318,7 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
     ('xyzobs.px.value','%.2f, %.2f, %.2f'),
     ('xyzobs.px.variance','%.4f, %.4f, %.4f'),
     ('s1','%.4f, %.4f, %.4f'),
+    ('s2','%.4f, %.4f, %.4f'),
     ('shoebox','%.1f'),
     ('rlp','%.4f, %.4f, %.4f'),
     ('zeta','%.3f'),
@@ -341,6 +328,8 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
     ('y_resid2','%.3f'),
     ('kapton_absorption_correction','%.3f'),
     ('kapton_absorption_correction_sigmas','%.3f'),
+    ('inverse_scale_factor','%.3f'),
+    ('inverse_scale_factor_variance','%.3f'),
     ))
 
   for rlist in reflections:
@@ -355,31 +344,41 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
 
     rows = [["Column", "min", "max", "mean"]]
     for k, col in rlist.cols():
-      if k in formats and not "%" in formats[k]:
+      if k in formats and not "%" in formats.get(k,"%s"):
         # Allow blanking out of entries that wouldn't make sense
-        rows.append([k, formats[k], formats[k], formats[k]])
+        rows.append([k, formats.get(k,"%s"), formats.get(k,"%s"), formats.get(k,"%s")])
       elif type(col) in (flex.double, flex.int, flex.size_t):
         if type(col) in (flex.int, flex.size_t):
           col = col.as_double()
-        rows.append([k, formats[k] %flex.min(col), formats[k] %flex.max(col),
-                     formats[k]%flex.mean(col)])
+        rows.append([k,
+                     formats.get(k,"%s") % flex.min(col),
+                     formats.get(k,"%s") % flex.max(col),
+                     formats.get(k,"%s") % flex.mean(col)])
       elif type(col) in (flex.vec3_double, flex.miller_index):
         if isinstance(col, flex.miller_index):
           col = col.as_vec3_double()
-        rows.append([k, formats[k] %col.min(), formats[k] %col.max(),
-                     formats[k]%col.mean()])
+        rows.append([k,
+                     formats.get(k,"%s") % col.min(),
+                     formats.get(k,"%s") % col.max(),
+                     formats.get(k,"%s") % col.mean()])
       elif isinstance(col, flex.shoebox):
         rows.append([k, "", "", ""])
         si = col.summed_intensity().observed_value()
-        rows.append(["  summed I", formats[k] %flex.min(si), formats[k] %flex.max(si),
-                     formats[k]%flex.mean(si)])
+        rows.append(["  summed I",
+                     formats.get(k,"%s") % flex.min(si),
+                     formats.get(k,"%s") % flex.max(si),
+                     formats.get(k,"%s") % flex.mean(si)])
         x1, x2, y1, y2, z1, z2 = col.bounding_boxes().parts()
         bbox_sizes = ((z2-z1)*(y2-y1)*(x2-x1)).as_double()
-        rows.append(["  N pix", formats[k] %flex.min(bbox_sizes), formats[k] %flex.max(bbox_sizes),
-                     formats[k]%flex.mean(bbox_sizes)])
+        rows.append(["  N pix",
+                     formats.get(k,"%s") % flex.min(bbox_sizes),
+                     formats.get(k,"%s") % flex.max(bbox_sizes),
+                     formats.get(k,"%s") % flex.mean(bbox_sizes)])
         fore_valid = col.count_mask_values(foreground_valid).as_double()
-        rows.append(["  N valid foreground pix", formats[k] %flex.min(fore_valid), formats[k] %flex.max(fore_valid),
-                     formats[k]%flex.mean(fore_valid)])
+        rows.append(["  N valid foreground pix",
+                     formats.get(k,"%s") % flex.min(fore_valid),
+                     formats.get(k,"%s") % flex.max(fore_valid),
+                     formats.get(k,"%s") % flex.mean(fore_valid)])
 
     text.append(
       table_utils.format(rows, has_header=True, prefix="| ", postfix=" |"))
@@ -441,6 +440,8 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
     rows = [keys]
     if max_reflections is not None:
       max_reflections = min(len(rlist), max_reflections)
+    else:
+      max_reflections = len(rlist)
 
     columns = []
 

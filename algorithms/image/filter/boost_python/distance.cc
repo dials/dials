@@ -18,8 +18,8 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_distance()
   {
-    def("manhatten_distance",
-      &manhatten_distance, (
+    def("manhattan_distance",
+      &manhattan_distance, (
         arg("data")));
   }
 

@@ -277,8 +277,9 @@ def test_P1_crystal_indexing(reflections, experiment, params):
 
   if params.reference:
     from dials.array_family import flex # implicit dependency
-    import cPickle as pickle
-    reference = pickle.load(open(params.reference))
+    import six.moves.cPickle as pickle
+    with open(params.reference, 'rb') as fh:
+      reference = pickle.load(fh)
   else:
     reference = None
 

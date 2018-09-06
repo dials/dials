@@ -503,7 +503,7 @@ namespace dials { namespace algorithms {
                 p,
                 1e-3,
                 100);
-            DIALS_ASSERT(fit.niter() < 100);
+            //DIALS_ASSERT(fit.niter() < 100);
 
             // Set the data in the reflection
             intensity_val[i] = fit.intensity()[0];
@@ -616,7 +616,7 @@ namespace dials { namespace algorithms {
                 m.const_ref(),
                 p,
                 1e-3, 100);
-            DIALS_ASSERT(fit.niter() < 100);
+            //DIALS_ASSERT(fit.niter() < 100);
 
             // Set the data in the reflection
             intensity_val[i] = fit.intensity()[0];

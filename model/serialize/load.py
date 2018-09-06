@@ -1,20 +1,10 @@
-#!/usr/bin/env python
-#
-# dials.model.serialize.load.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 # Import to give access from here
 from dxtbx.serialize.load import imageset as sweep # implicit import
 from dxtbx.serialize.load import datablock # implicit import
 
+import six.moves.cPickle as pickle
 
 def reflections(infile):
   '''
@@ -22,9 +12,7 @@ def reflections(infile):
 
   :params infile: The input filename or file object
   :returns: The reflection list
-
   '''
-  import cPickle as pickle
 
   # If the input is a string then open and read from that file
   if isinstance(infile, str):
@@ -41,9 +29,7 @@ def reference(infile):
 
   :params infile: The input filename or file object
   :returns: The reference list
-
   '''
-  import cPickle as pickle
 
   # If the input is a string then open and read from that file
   if isinstance(infile, str):

@@ -110,13 +110,19 @@ namespace dials { namespace refinement {
     void set_smoothing(std::size_t num_average, double sigma) {
 
       // naverage cannot be greater than the number of values
-      naverage = std::min(num_average, nxvalues);
-      naverage = std::min(naverage, nyvalues);
-      naverage = std::min(naverage, nzvalues);
+      n_x_average = std::min(num_average, nxvalues);
+      n_y_average = std::min(num_average, nyvalues);
+      n_z_average = std::min(num_average, nzvalues);
 
       // In addition, like Aimless, limit it to the range [1,5]
-      if (naverage < 1 || naverage > 5) {
-        throw DIALS_ERROR("GaussianSmoother3D:: num_average must be between 1 & 5");
+      if (n_x_average < 1 || n_x_average > 5) {
+        throw DIALS_ERROR("GaussianSmoother3D:: n_x_average must be between 1 & 5");
+      }
+      if (n_y_average < 1 || n_y_average > 5) {
+        throw DIALS_ERROR("GaussianSmoother3D:: n_y_average must be between 1 & 5");
+      }
+      if (n_z_average < 1 || n_z_average > 5) {
+        throw DIALS_ERROR("GaussianSmoother3D:: n_z_average must be between 1 & 5");
       }
 
       // sigma cannot be set to zero
@@ -124,12 +130,16 @@ namespace dials { namespace refinement {
         throw DIALS_ERROR("GaussianSmoother3D:: sigma cannot be set equal to zero");
       }
 
-      half_naverage = (double)naverage / 2.0;
+      half_nxaverage = (double)n_x_average / 2.0;
+      half_nyaverage = (double)n_y_average / 2.0;
+      half_nzaverage = (double)n_z_average / 2.0;
+      std::size_t naverage = std::min(n_x_average, n_y_average);
+      std::size_t min_naverage = std::min(naverage, n_z_average);
       sigma_ = sigma;
 
       if (sigma_ < 0.0) {
         //  Default values 0.65, 0.7, 0.75, 0.8 for nav = 2,3,4,5
-          sigma_ = 0.65 + 0.05 * (naverage - 2);
+          sigma_ = 0.65 + 0.05 * (min_naverage - 2);
       }
     }
 
@@ -159,9 +169,17 @@ namespace dials { namespace refinement {
       return nzsample;
     }
 
-    // Get number of points averaged - in each dim?
-    std::size_t num_average(){
-      return naverage;
+    // Get number of points averaged in each dimension
+    std::size_t num_x_average(){
+      return n_x_average;
+    }
+
+    std::size_t num_y_average(){
+      return n_y_average;
+    }
+
+    std::size_t num_z_average(){
+      return n_z_average;
     }
 
     // Get sigma smoothing factor
@@ -214,9 +232,9 @@ namespace dials { namespace refinement {
       double sumwv = 0.0;
       double sumweight = 0.0;
 
-      vec2<int> irange = idx_range(z1, nxvalues);
-      vec2<int> jrange = idx_range(z2, nyvalues);
-      vec2<int> krange = idx_range(z3, nzvalues);
+      vec2<int> irange = idx_range(z1, nxvalues, half_nxaverage, n_x_average);
+      vec2<int> jrange = idx_range(z2, nyvalues, half_nyaverage, n_y_average);
+      vec2<int> krange = idx_range(z3, nzvalues, half_nzaverage, n_z_average);
 
       for (int i = irange[0]; i < irange[1]; ++i) {
         for (int j = jrange[0]; j < jrange[1]; ++j) {
@@ -281,9 +299,9 @@ namespace dials { namespace refinement {
         double sumw = 0.0;
         double sumwv = 0.0;
 
-        vec2<int> irange = idx_range(z1, nxvalues);
-        vec2<int> jrange = idx_range(z2, nyvalues);
-        vec2<int> krange = idx_range(z3, nzvalues);
+        vec2<int> irange = idx_range(z1, nxvalues, half_nxaverage, n_x_average);
+        vec2<int> jrange = idx_range(z2, nyvalues, half_nyaverage, n_y_average);
+        vec2<int> krange = idx_range(z3, nzvalues, half_nzaverage, n_z_average);
 
         for (int icol = irange[0]; icol < irange[1]; ++icol) {
           for (int jcol = jrange[0]; jcol < jrange[1]; ++jcol) {
@@ -314,7 +332,8 @@ namespace dials { namespace refinement {
 
   private:
 
-    vec2<int> idx_range(double z, std::size_t nvalues){
+    vec2<int> idx_range(double z, std::size_t nvalues, double half_naverage,
+      std::size_t naverage){
 
       int i1, i2;
       if (nvalues <= 3){
@@ -341,7 +360,9 @@ namespace dials { namespace refinement {
     double x_spacing_;
     double y_spacing_;
     double z_spacing_;
-    double half_naverage; //keep same?
+    double half_nxaverage;
+    double half_nyaverage;
+    double half_nzaverage;
     double sigma_; //keep same?
     std::size_t nxsample;
     std::size_t nysample;
@@ -349,7 +370,9 @@ namespace dials { namespace refinement {
     std::size_t nxvalues;
     std::size_t nyvalues;
     std::size_t nzvalues;
-    std::size_t naverage; //keep same?
+    std::size_t n_x_average;
+    std::size_t n_y_average;
+    std::size_t n_z_average;
     af::shared<double> x_positions_;
     af::shared<double> y_positions_;
     af::shared<double> z_positions_;

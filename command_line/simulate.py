@@ -53,7 +53,7 @@ class Script(object):
 
   def main(self):
     # FIXME import simulation code
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
     import math
     from dials.util.command_line import Importer
     from dials.algorithms.integration import ReflectionPredictor
@@ -223,9 +223,8 @@ class Script(object):
 
     p.finished('Generated %d backgrounds' % len(useful))
     if params.output.all:
-      pickle.dump(useful, open(params.output.all, 'w'))
-
-    return
+      with open(params.output.all, 'wb') as fh:
+        pickle.dump(useful, fh, pickle.HIGHEST_PROTOCOL)
 
 if __name__ == '__main__':
   from dials.util import halraiser

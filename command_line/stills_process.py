@@ -39,6 +39,19 @@ control_phil_str = '''
       .type = bool
       .help = If True, if an image fails to process, continue to the next image. \
               otherwise, halt processing and show the error.
+    find_spots = True
+      .expert_level = 2
+      .type = bool
+      .help = Whether to do spotfinding. Needed for indexing/integration
+    index = True
+      .expert_level = 2
+      .type = bool
+      .help = Attempt to index images. find_spots also needs to be True for this to work
+    integrate = True
+      .expert_level = 2
+      .type = bool
+      .help = Integrate indexed images. Ignored if index=False or find_spots=False
+
   }
 
   output {
@@ -180,11 +193,11 @@ def do_import(filename):
     raise Abort("Got multiple datablocks from file %s"%filename)
 
   # Ensure the indexer and downstream applications treat this as set of stills
-  from dxtbx.imageset import ImageSet
   reset_sets = []
 
+  from dxtbx.imageset import ImageSetFactory
   for imageset in datablocks[0].extract_imagesets():
-    imageset = ImageSet(imageset.data(), imageset.indices())
+    imageset = ImageSetFactory.imageset_from_anyset(imageset)
     imageset.set_scan(None)
     imageset.set_goniometer(None)
     reset_sets.append(imageset)
@@ -270,6 +283,12 @@ class Script(object):
       info='dials.process.log',
       debug='dials.process.debug.log')
 
+    bad_phils = [f for f in all_paths if os.path.splitext(f)[1] == ".phil"]
+    if len(bad_phils) > 0:
+      self.parser.print_help()
+      logger.error('Error: the following phil files were not understood: %s'%(", ".join(bad_phils)))
+      return
+
     # Log the diff phil
     diff_phil = self.parser.diff_phil.as_str()
     if diff_phil is not '':
@@ -296,18 +315,6 @@ class Script(object):
       # frame using its index
 
       datablocks = [do_import(path) for path in all_paths]
-      if self.reference_detector is not None:
-        from dxtbx.model import Detector
-        for datablock in datablocks:
-          for imageset in datablock.extract_imagesets():
-            for i in range(len(imageset)):
-              imageset.set_detector(
-                Detector.from_dict(self.reference_detector.to_dict()),
-                index=i)
-
-      for datablock in datablocks:
-        for imageset in datablock.extract_imagesets():
-          update_geometry(imageset)
 
       indices = []
       basenames = []
@@ -332,6 +339,20 @@ class Script(object):
         processor = Processor(copy.deepcopy(params), composite_tag = "%04d"%i)
 
         for item in item_list:
+          try:
+            for imageset in item[1].extract_imagesets():
+              update_geometry(imageset)
+          except RuntimeError as e:
+            logger.warning("Error updating geometry on item %s, %s"%(str(item[0]), str(e)))
+            continue
+
+          if self.reference_detector is not None:
+            from dxtbx.model import Detector
+            for i in range(len(imageset)):
+              imageset.set_detector(
+                Detector.from_dict(self.reference_detector.to_dict()),
+                index=i)
+
           processor.process_datablock(item[0], item[1])
         processor.finalize()
 
@@ -362,11 +383,15 @@ class Script(object):
           if len(imagesets[0]) > 1:
             raise Abort("Found a multi-image file. Run again with pre_import=True")
 
+          try:
+            update_geometry(imagesets[0])
+          except RuntimeError as e:
+            logger.warning("Error updating geometry on item %s, %s"%(tag, str(e)))
+            continue
+
           if self.reference_detector is not None:
             from dxtbx.model import Detector
             imagesets[0].set_detector(Detector.from_dict(self.reference_detector.to_dict()))
-
-          update_geometry(imagesets[0])
 
           processor.process_datablock(tag, datablock)
         processor.finalize()
@@ -465,13 +490,21 @@ class Processor(object):
       if not self.params.dispatch.squash_errors: raise
       return
     try:
-      observed = self.find_spots(datablock)
+      if self.params.dispatch.find_spots:
+        observed = self.find_spots(datablock)
+      else:
+        print("Spot Finding turned off. Exiting")
+        return
     except Exception as e:
       print("Error spotfinding", tag, str(e))
       if not self.params.dispatch.squash_errors: raise
       return
     try:
-      experiments, indexed = self.index(datablock, observed)
+      if self.params.dispatch.index:
+        experiments, indexed = self.index(datablock, observed)
+      else:
+        print("Indexing turned off. Exiting")
+        return
     except Exception as e:
       print("Couldn't index", tag, str(e))
       if not self.params.dispatch.squash_errors: raise
@@ -483,7 +516,11 @@ class Processor(object):
       if not self.params.dispatch.squash_errors: raise
       return
     try:
-      integrated = self.integrate(experiments, indexed)
+      if self.params.dispatch.integrate:
+        integrated = self.integrate(experiments, indexed)
+      else:
+        print("Integration turned off. Exiting")
+        return
     except Exception as e:
       print("Error integrating", tag, str(e))
       if not self.params.dispatch.squash_errors: raise
@@ -694,12 +731,25 @@ class Processor(object):
 
     if self.params.significance_filter.enable:
       from dials.algorithms.integration.stills_significance_filter import SignificanceFilter
+      from dxtbx.model.experiment_list import ExperimentList
       sig_filter = SignificanceFilter(self.params)
-      refls = sig_filter(experiments, integrated)
-      logger.info("Removed %d reflections out of %d when applying significance filter"%(len(integrated)-len(refls), len(integrated)))
-      if len(refls) == 0:
+      filtered_refls = sig_filter(experiments, integrated)
+      accepted_expts = ExperimentList()
+      accepted_refls = flex.reflection_table()
+      logger.info("Removed %d reflections out of %d when applying significance filter"%(len(integrated)-len(filtered_refls), len(integrated)))
+      for expt_id, expt in enumerate(experiments):
+        refls = filtered_refls.select(filtered_refls['id'] == expt_id)
+        if len(refls) > 0:
+          accepted_expts.append(expt)
+          refls['id'] = flex.int(len(refls), len(accepted_expts)-1)
+          accepted_refls.extend(refls)
+        else:
+          logger.info("Removed experiment %d which has no reflections left after applying significance filter"%expt_id)
+
+      if len(accepted_refls) == 0:
         raise Sorry("No reflections left after applying significance filter")
-      integrated = refls
+      experiments = accepted_expts
+      integrated = accepted_refls
 
     # Delete the shoeboxes used for intermediate calculations, if requested
     if self.params.integration.debug.delete_shoeboxes and 'shoebox' in integrated:

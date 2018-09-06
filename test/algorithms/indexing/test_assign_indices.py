@@ -17,21 +17,15 @@ from dials.algorithms.indexing \
      import index_reflections, index_reflections_local
 from dials.algorithms.indexing.indexer import indexer_base
 
-# set random seeds so tests more reliable
-seed = 54321
-random.seed(seed)
-flex.set_random_seed(seed)
-
 
 def random_rotation(angle_min=0, angle_max=360):
-  return euler_angles_as_matrix(
-    [random.uniform(angle_min,angle_max) for i in xrange(3)])
+  angles = [random.uniform(angle_min,angle_max) for i in xrange(3)]
+  print("Rotation: ", angles)
+  return euler_angles_as_matrix(angles, deg=True)
 
 
-@pytest.mark.parametrize(
-  'space_group_info',
-  [sgtbx.space_group_info(symbol=symbol) for symbol in bravais_types.acentric])
-def test_assign_indices(dials_regression, space_group_info):
+@pytest.mark.parametrize('space_group_symbol', bravais_types.acentric)
+def test_assign_indices(dials_regression, space_group_symbol):
   datablock_json = os.path.join(
     dials_regression, "indexing_test_data",
     "i04_weak_data", "datablock_orig.json")
@@ -41,6 +35,12 @@ def test_assign_indices(dials_regression, space_group_info):
 
   sweep = sweep[:20]
 
+  # set random seeds so tests more reliable
+  seed = 54321
+  random.seed(seed)
+  flex.set_random_seed(seed)
+
+  space_group_info = sgtbx.space_group_info(symbol=space_group_symbol)
   space_group = space_group_info.group()
   unit_cell = space_group_info.any_compatible_unit_cell(volume=random.uniform(1e4,1e6))
 
@@ -79,7 +79,6 @@ def test_assign_indices(dials_regression, space_group_info):
     predicted_reflections, sweep.get_detector(), sweep.get_beam(),
     sweep.get_goniometer())
 
-
   # check that local and global indexing worked equally well in absence of errors
   result = compare_global_local(experiment, predicted_reflections,
                                 miller_indices)
@@ -107,7 +106,7 @@ def test_assign_indices(dials_regression, space_group_info):
 
   # the reciprocal matrix
   A = matrix.sqr(cryst_model.get_A())
-  A = random_rotation(angle_max=0.03) * A
+  A = random_rotation(angle_max=0.5) * A
 
   direct_matrix = A.inverse()
   cryst_model2 = Crystal(direct_matrix[0:3],
@@ -123,7 +122,7 @@ def test_assign_indices(dials_regression, space_group_info):
   assert result.misindexed_local <= result.misindexed_global, (
     result.misindexed_local, result.misindexed_global)
   assert result.misindexed_local < 0.01 * result.correct_local
-  assert result.correct_local > result.correct_global
+  assert result.correct_local >= result.correct_global
   # usually the number misindexed is much smaller than this
   assert result.misindexed_local < (0.001 * len(result.reflections_local))
 
@@ -148,7 +147,6 @@ class compare_global_local(object):
     self.correct_global = (
       expected_miller_indices == self.reflections_global['miller_index']).count(True)
 
-
     # index reflections using xds-style "local" method
     self.reflections_local = copy.deepcopy(reflections)
     self.reflections_local['id'] = flex.int(len(self.reflections_local), -1)
@@ -162,5 +160,7 @@ class compare_global_local(object):
     self.correct_local = (
       expected_miller_indices == self.reflections_local['miller_index']).count(True)
 
-    print(self.misindexed_global, self.correct_global, len(self.reflections_global))
-    print(self.misindexed_local, self.correct_local, len(self.reflections_local))
+    print("Global misindexed: %d, correct: %d, total: %d" %
+        (self.misindexed_global, self.correct_global, len(self.reflections_global)))
+    print(" Local misindexed: %d, correct: %d, total: %d" %
+        (self.misindexed_local, self.correct_local, len(self.reflections_local)))

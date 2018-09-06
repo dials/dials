@@ -1,0 +1,68 @@
+sudo: false
+
+addons:
+  apt:
+    packages:
+      - libjpeg62
+
+language: python
+python:
+  - "2.7"
+
+cache:
+  directories:
+    - $HOME/build_dials
+  timeout: 1000
+
+jobs:
+  include:
+    - stage: build
+      install:
+         # Setup a base installation
+         - ./.travis/setup-base
+
+         # Inject DIALS
+         - rm -rf $HOME/build_dials/modules/dials
+         - mv $HOME/build/dials/dials $HOME/build_dials/modules/dials
+
+         # Update CCTBX
+         - $HOME/build_dials/modules/dials/.travis/clean-cctbx
+         - $HOME/build_dials/modules/dials/.travis/update-cctbx
+
+      before_script:
+         # Enter CCTBX environment
+         - cat $HOME/build_dials/build/setpaths.sh
+         - cd $HOME/build_dials/build
+         - . setpaths.sh
+
+         # Prepare for the build step
+         - libtbx.configure .
+
+      script:
+         # Parallel builds do not work. Only spend at most 40 minutes on a build.
+         # This allows incremental building, so if the build can't be finished within the allotted time
+         # it will be resumed from that point in the next build.
+         - $HOME/build_dials/modules/dials/.travis/build-for 40m
+
+    - stage: test
+      before_script:
+         # Inject DIALS. Again.
+         - rm -rf $HOME/build_dials/modules/dials
+         - mv $HOME/build/dials/dials $HOME/build_dials/modules/dials
+
+         # Enter CCTBX environment
+         - cd $HOME/build_dials/build
+         - . setpaths.sh
+
+         # If needed allow up to further 30 minutes worth of building time
+         - $HOME/build_dials/modules/dials/.travis/build-for 30m if_required
+
+      script:
+         # Finally. Do what we are here for. Run tests. Yay.
+         - cd $HOME/build_dials/modules/dials
+         - pytest -ra -n 2 --runslow
+
+before_cache:
+  - $HOME/build_dials/modules/dials/.travis/clean-cctbx
+  - cd $HOME
+  - rm -rf $HOME/build_dials/modules/dials

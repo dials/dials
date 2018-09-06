@@ -12,9 +12,10 @@ def main(args):
   working_phil = cmd.process_and_fetch(args = sys.argv[1:])
   params = working_phil.extract()
   rlist = simple_gaussian_spots(params)
-  import cPickle as pickle
+  import six.moves.cPickle as pickle
   if params.output.all:
-    pickle.dump(rlist, open(params.output.all, 'w'))
+    with open(params.output.all, 'wb') as fh:
+      pickle.dump(rlist, fh, pickle.HIGHEST_PROTOCOL)
 
 if __name__ == '__main__':
   import sys

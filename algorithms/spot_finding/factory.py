@@ -580,7 +580,7 @@ class SpotFinderFactory(object):
     :return: The image or None
 
     '''
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
 
     # If no filename is set then return None
     if not filename_or_data:
@@ -591,7 +591,8 @@ class SpotFinderFactory(object):
       return filename_or_data
 
     # Read the image and return the image data
-    image = pickle.load(open(filename_or_data))
+    with open(filename_or_data, 'rb') as fh:
+      image = pickle.load(fh)
     if not isinstance(image, tuple):
       image = (image,)
     return image

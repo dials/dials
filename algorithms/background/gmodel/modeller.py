@@ -128,10 +128,10 @@ class Creator(object):
     self.background = self.modeller.compute()
     self.modeller = None
     if self.params.debug.output:
-      import cPickle as pickle
+      import six.moves.cPickle as pickle
       filename = self.params.debug.filename
       logger.info("Writing background model to %s" % filename)
-      with open(filename, "w") as outfile:
+      with open(filename, "wb") as outfile:
         pickle.dump(self.background, outfile, protocol=pickle.HIGHEST_PROTOCOL)
 
   def compute(self, reflections):

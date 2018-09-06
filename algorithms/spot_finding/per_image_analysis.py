@@ -44,6 +44,7 @@ class binner_equal_population(object):
 class binner_d_star_cubed(object):
 
   def __init__(self, d_spacings, target_n_per_bin=25, max_slots=40, min_slots=20):
+    d_spacings = flex.double(list(set(d_spacings)))
     d_spacings_sorted = flex.sorted(d_spacings, reverse=True)
     d_star_cubed_sorted = flex.pow(1/d_spacings_sorted, 3)
 
@@ -53,6 +54,7 @@ class binner_d_star_cubed(object):
       math.ceil(min(max(target_n_per_bin, 0.05*len(d_spacings)),
                     0.25*len(d_spacings))))
     bin_step = d_star_cubed_sorted[low_res_count] - d_star_cubed_sorted[0]
+    assert bin_step > 0
     n_slots = int(
       math.ceil((d_star_cubed_sorted[-1] - d_star_cubed_sorted[0])/bin_step))
 
@@ -331,7 +333,7 @@ def estimate_resolution_limit_distl_method1(
   # Implementation of Method 1 (section 2.4.4) of:
   # Z. Zhang, N. K. Sauter, H. van den Bedem, G. Snell and A. M. Deacon
   # J. Appl. Cryst. (2006). 39, 112-119
-  # http://dx.doi.org/10.1107/S0021889805040677
+  # https://doi.org/10.1107/S0021889805040677
 
   if ice_sel is None:
     ice_sel = flex.bool(len(reflections), False)
@@ -437,7 +439,7 @@ def estimate_resolution_limit_distl_method2(
   # Implementation of Method 2 (section 2.4.4) of:
   # Z. Zhang, N. K. Sauter, H. van den Bedem, G. Snell and A. M. Deacon
   # J. Appl. Cryst. (2006). 39, 112-119
-  # http://dx.doi.org/10.1107/S0021889805040677
+  # https://doi.org/10.1107/S0021889805040677
 
   if ice_sel is None:
     ice_sel = flex.bool(len(reflections), False)

@@ -117,7 +117,11 @@ class ScanVaryingCrystalUnitCellParameterisation(
   ScanVaryingModelParameterisation, CrystalUnitCellMixin):
   """Scan-varying parameterisation for the crystal unit cell"""
 
-  def __init__(self, crystal, t_range, num_intervals, experiment_ids=None):
+  def __init__(self, crystal, t_range, num_intervals, experiment_ids=None,
+      set_state_uncertainties=False):
+
+    self._set_state_uncertainties = set_state_uncertainties
+
     from scitbx import matrix
     if experiment_ids is None:
       experiment_ids = [0]
@@ -180,3 +184,20 @@ class ScanVaryingCrystalUnitCellParameterisation(
     # argument is allowed
 
     return self._B_at_t
+
+  def set_state_uncertainties(self, var_cov_list):
+    """Send the calculated variance-covariance of the elements of the B matrix
+    for all scan points back to the crystal model, if required
+    """
+    if not self._set_state_uncertainties: return
+
+    # Convert list of 9*9 matrices to a 3d array
+    from scitbx.array_family import flex
+    B_cov = flex.double(flex.grid(len(var_cov_list), 9, 9))
+    for i, v in enumerate(var_cov_list):
+      v = v.as_flex_double_matrix()
+      v.reshape(flex.grid(1, 9, 9))
+      B_cov[i:(i+1), :, :] = v
+
+    # Pass it back to the model
+    self._model.set_B_covariance_at_scan_points(B_cov)

@@ -135,8 +135,9 @@ class BlockCalculator(object):
 
       for f_num, f in enumerate(frame_range):
         sub_isel = isel.select(frames == f)
+        f_cent = f + 0.5
         self._reflections['block'].set_selected(sub_isel, f_num)
-        self._reflections['block_centre'].set_selected(sub_isel, f_num)
+        self._reflections['block_centre'].set_selected(sub_isel, f_cent)
 
     return self._reflections
 
@@ -158,6 +159,7 @@ class ReflectionManager(object):
                      max_sample_size=None,
                      min_sample_size=0,
                      close_to_spindle_cutoff=0.02,
+                     trim_scan_edges=0.0,
                      outlier_detector=None,
                      weighting_strategy_override=None,
                      verbosity=0):
@@ -199,11 +201,12 @@ class ReflectionManager(object):
         break
 
     # set up the reflection inclusion criteria
-    self._close_to_spindle_cutoff = close_to_spindle_cutoff #too close to spindle
-    self._outlier_detector = outlier_detector #for outlier rejection
-    self._nref_per_degree = nref_per_degree #random subsets
-    self._max_sample_size = max_sample_size #sample size ceiling
-    self._min_sample_size = min_sample_size #sample size floor
+    self._close_to_spindle_cutoff = close_to_spindle_cutoff # close to spindle
+    self._trim_scan_edges = DEG2RAD * trim_scan_edges # close to the scan edge
+    self._outlier_detector = outlier_detector # for outlier rejection
+    self._nref_per_degree = nref_per_degree # random subsets
+    self._max_sample_size = max_sample_size # sample size ceiling
+    self._min_sample_size = min_sample_size # sample size floor
 
     # exclude reflections that fail some inclusion criteria
     refs_to_keep = self._id_refs_to_keep(reflections)
@@ -222,7 +225,13 @@ class ReflectionManager(object):
     # put full list of indexed reflections aside and select only the reflections
     # that were not excluded to manage
     self._indexed = reflections
-    self._reflections = reflections.select(flex.size_t(refs_to_keep))
+    self._reflections = reflections.select(refs_to_keep)
+
+    # set exclusion flag for reflections that failed the tests
+    refs_to_excl = flex.bool(len(self._indexed), True)
+    refs_to_excl.set_selected(refs_to_keep, False)
+    self._indexed.set_flags(refs_to_excl,
+        self._indexed.flags.excluded_for_refinement)
 
     # set weights for all kept reflections
     if weighting_strategy_override is not None:
@@ -276,6 +285,7 @@ class ReflectionManager(object):
     # set the centroid_outlier flag in the original indexed reflections
     ioutliers = self._reflections.get_flags(self._reflections.flags.centroid_outlier)
     ioutliers = self._reflections['iobs'].select(ioutliers)
+    self._indexed.sort('iobs') # re-sort the indexed reflections
     self._indexed.set_flags(ioutliers, self._indexed.flags.centroid_outlier)
 
     msg = "Removing reflections not matched to predictions"
@@ -349,8 +359,29 @@ class ReflectionManager(object):
         raise Sorry("Experiment id {0} contains no reflections with valid "
                     "scan angles".format(iexp))
 
-      # combine tests
+      # combine tests so far
       to_update = passed1 & passed2
+
+      # third test: reject reflections close to the centres of the first and
+      # last images in the scan
+      if self._trim_scan_edges > 0.0:
+        edge1, edge2 = [e + 0.5 for e in exp.scan.get_image_range()]
+        edge1 = exp.scan.get_angle_from_image_index(edge1, deg=False)
+        edge1 += (self._trim_scan_edges)
+        edge2 = exp.scan.get_angle_from_image_index(edge2, deg=False)
+        edge2 -= (self._trim_scan_edges)
+        passed3 = ((edge1 <= phi) & (phi <= edge2))
+
+        # combine the last test only if there would be a reasonable number of
+        # reflections left for refinement
+        tmp = to_update
+        to_update = to_update & passed3
+        if to_update.count(True) < 40:
+          logger.warning("Too few reflections to trim centroids from the scan "
+            "edges. Resetting trim_scan_edges=0.0")
+          to_update = tmp
+
+      # make selection
       to_keep.set_selected(sel, to_update)
 
     inc = inc.select(to_keep)

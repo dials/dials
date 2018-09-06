@@ -28,7 +28,7 @@ The basic diffractometer equation relates a position :math:`\vec{h}` to a
 position :math:`\vec{r_\phi}` in *Cartesian reciprocal space*. This space is
 defined so that its axes coincide with the axes of the *laboratory frame*. The
 distinction is necessary because distances in reciprocal space are measured in
-units of :math:`\AA^{-1}`. However, for convenience it is often acceptable to
+units of :math:`\unicode{x212B}^{-1}`. However, for convenience it is often acceptable to
 refer to either Cartesian reciprocal space or the real space laboratory frame as
 the "lab frame", when the correct choice is clear by context. The diffractometer
 equation is
@@ -86,7 +86,7 @@ this convention is then disconnected from the standard *real space*
 orthogonalisation convention, usually called the *PDB convention* [#PDB1992]_.
 This standard is essentially universal in crystallographic software for the
 transformation of fractional crystallographic coordinates to positions in
-orthogonal space, with units of :math:`\AA`. In particular, it is the convention
+orthogonal space, with units of :math:`\unicode{x212B}`. In particular, it is the convention
 used in the cctbx [#GrosseKunstleve2002]_. The convention states that the
 orthogonal coordinate :math:`x` is determined from a fractional coordinate
 :math:`u` by

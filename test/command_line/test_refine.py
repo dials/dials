@@ -10,7 +10,7 @@ have not changed format and so on.
 from __future__ import absolute_import, division, print_function
 
 import copy
-import cPickle as pickle
+import six.moves.cPickle as pickle
 import os
 from libtbx import easy_run
 from libtbx.test_utils import approx_equal
@@ -75,13 +75,15 @@ def test2(dials_regression, tmpdir):
     " reflections_per_degree=50"
     " outlier.algorithm=null close_to_spindle_cutoff=0.05"
     " crystal.orientation.smoother.interval_width_degrees=36.0"
-    " crystal.unit_cell.smoother.interval_width_degrees=36.0")
+    " crystal.unit_cell.smoother.interval_width_degrees=36.0"
+    " set_scan_varying_errors=True")
 
   result1 = easy_run.fully_buffered(command=cmd1).raise_if_errors()
   result2 = easy_run.fully_buffered(command=cmd2).raise_if_errors()
 
   # load and check results
-  history=pickle.load(open("history.pickle", "r"))
+  with open("history.pickle", "rb") as fh:
+    history=pickle.load(fh)
 
   expected_rmsds = [(0.088488398, 0.114583571, 0.001460382),
                     (0.080489334, 0.086406517, 0.001284069),
@@ -122,7 +124,8 @@ def test3(dials_regression, tmpdir):
   result1 = easy_run.fully_buffered(command=cmd1).raise_if_errors()
 
   # load and check results
-  history=pickle.load(open("history.pickle", "r"))
+  with open("history.pickle", "rb") as fh:
+    history=pickle.load(fh)
 
   expected_rmsds = [[0.619507829, 0.351326044, 0.006955399],
                     [0.174024575, 0.113486044, 0.004704006],

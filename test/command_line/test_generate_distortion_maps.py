@@ -11,7 +11,7 @@ from dxtbx.format.Format import Reader
 from dxtbx.datablock import DataBlockFactory, DataBlockDumper
 
 from libtbx import easy_run
-import cPickle as pickle
+import six.moves.cPickle as pickle
 import os
 
 def make_detector():

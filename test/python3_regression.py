@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import procrunner
 
 def find_new_python3_incompatible_code(module_under_test):
   '''
@@ -27,10 +28,9 @@ def find_new_python3_incompatible_code(module_under_test):
   # Mask all *PYTHON* variables from environment - Python3 will not like cctbx python settings
   environ_override = { k: '' for k in list(os.environ) if 'PYTHON' in k }
 
-  from procrunner import run_process
   module_path = module_under_test.__path__[0]
   try:
-    result = run_process(['python3', '-m', 'compileall', '-x', '\.git', '-q', module_path], environment_override=environ_override, print_stdout=False)
+    result = procrunner.run(['python3', '-m', 'compileall', '-x', '\.git', '-q', module_path], environment_override=environ_override, print_stdout=False)
   except OSError as e:
     if e.errno == 2:
       return None

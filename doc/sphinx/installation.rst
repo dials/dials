@@ -10,8 +10,7 @@ Development Builds
 Nightly build installers are available for Linux and Mac OS and may be
 downloaded from `LBL <http://cci.lbl.gov/dials/installers/>`_ or
 `Diamond <http://dials.diamond.ac.uk/diamond_builds/>`_.
-Builds for Microsoft Windows are not currently available, but will be added in
-the near future.
+Builds for Microsoft Windows are experimental and may not work as expected.
 For instructions on compiling from source or setting up a DIALS development
 environment, see :doc:`/documentation/installation_developer`.
 
@@ -26,6 +25,10 @@ environment, see :doc:`/documentation/installation_developer`.
 .. button::
    :text: Linux installer
    :link: http://dials.diamond.ac.uk/diamond_builds/dials-linux-x86_64.tar.xz
+
+.. button::
+   :text: Windows archive
+   :link: http://dials.diamond.ac.uk/diamond_builds/dials-windows.zip
 
 .. button::
    :text: Source installer
@@ -81,9 +84,16 @@ To use DIALS, open a new terminal window and type, e.g.::
   source /path/to/installation/directory/dials-dev/dials_env.sh
 
 
-Windows binary installers
--------------------------
+Windows installation
+--------------------
 
-Unfortunately we don't currently provide Windows binaries, although we do plan
-to add them in due course. For instructions on building DIALS from source, see
+DIALS support on Windows is currently experimental and we do not provide Windows binaries.
+We plan to support Windows in the near future and add binary installers in due course.
+
+To use DIALS you need to unpack the .zip archive, open a command prompt,
+navigate to the dials-installer directory, and run::
+
+  dials_env
+
+For instructions on building DIALS from source, see
 :ref:`build_dials_windows`

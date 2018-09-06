@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [ "$2" == "if_required" ] && [ -e $HOME/build_dials/.build_complete ]; then
+  echo Build step not required, skipping.
+  exit 0
+fi
+cd $HOME/build_dials/build
+timeout $1 libtbx.scons -j 1
+exit_status=$?
+if [ $exit_status -eq 124 ]; then
+  echo Timeout encountered.
+  rm -f $HOME/build_dials/.build_complete
+  exit 0
+fi
+touch $HOME/build_dials/.build_complete
+exit $exit_status

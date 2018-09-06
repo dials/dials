@@ -104,7 +104,7 @@ def reference_poles_crystal(crystal_model, plane_normal=(0,0,1)):
   return tuple((B * h).normalize() for h in (h0, h1, h2))
 
 def stereographic_projection(points, reference_poles):
-  # http://dx.doi.org/10.1107/S0021889868005029
+  # https://doi.org/10.1107/S0021889868005029
   # J. Appl. Cryst. (1968). 1, 68-70
   # The construction of stereographic projections by computer
   # G. K. Stokes, S. R. Keown and D. J. Dyson
@@ -355,7 +355,7 @@ def plot_projections(projections, filename=None, show=None,
           if (flex.sqrt(flex.pow2(p1)+flex.pow2(p2)) < 1e-3).iselection()[0] != j:
             continue
           pyplot.text(proj[0], proj[1], str(hkl), fontsize=font_size)
-  pyplot.axes().set_aspect('equal')
+  fig.axes[0].set_aspect('equal')
   pyplot.xlim(-1.1,1.1)
   pyplot.ylim(-1.1,1.1)
   if filename is not None:

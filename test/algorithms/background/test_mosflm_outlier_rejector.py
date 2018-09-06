@@ -1,10 +1,12 @@
 from __future__ import absolute_import, division, print_function
 
+import os
+import six.moves.cPickle as pickle
+
 def test_run(dials_regression):
   from dials.algorithms.background.simple import Creator
   from dials.algorithms.background.simple import MosflmOutlierRejector
   from dials.algorithms.background.simple import Linear2dModeller
-  import os.path
 
   # The directory path
   path = os.path.join(
@@ -25,13 +27,12 @@ def test_run(dials_regression):
     outlier_rejector)
 
   from dials.array_family import flex
-  import cPickle as pickle
   from math import sqrt
   from dials.algorithms.shoebox import MaskCode
   print(shoebox_filename)
   # Read the data
   rtable = flex.reflection_table.from_pickle(reflection_filename)
-  with open(shoebox_filename, "r") as fh:
+  with open(shoebox_filename, "rb") as fh:
     shoeboxes, masks = pickle.load(fh)
   assert len(rtable) == len(shoeboxes)
   assert len(rtable) == len(masks)

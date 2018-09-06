@@ -14,6 +14,7 @@ Main processing commands:
    dials_reindex
    dials_refine
    dials_integrate
+   dials_scale
    dials_export
    idials
 
@@ -30,7 +31,7 @@ Utilities:
    dials_check_indexing_symmetry
    dials_search_beam_position
    dials_report
-   dials_plot_scan_varying_crystal
+   dials_plot_scan_varying_model
    dials_find_spots_server
    dials_find_spots_apache_server
    dials_apply_mask

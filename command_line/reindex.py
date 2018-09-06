@@ -131,8 +131,6 @@ def run(args):
   if len(experiments) == 0 and len(reflections) == 0:
     parser.print_help()
     return
-  elif len(experiments.crystals()) > 1:
-    raise Sorry("Only one crystal can be processed at a time")
   if params.change_of_basis_op is None:
     raise Sorry("Please provide a change_of_basis_op.")
 
@@ -146,6 +144,8 @@ def run(args):
 
   if len(experiments) and params.change_of_basis_op is libtbx.Auto:
     if reference_crystal is not None:
+      if len(experiments.crystals()) > 1:
+        raise Sorry("Only one crystal can be processed at a time")
       from dials.algorithms.indexing.compare_orientation_matrices \
            import difference_rotation_matrix_axis_angle
 
@@ -193,21 +193,21 @@ def run(args):
     change_of_basis_op = sgtbx.change_of_basis_op(params.change_of_basis_op)
 
   if len(experiments):
-    experiment = experiments[0]
-    cryst_orig = copy.deepcopy(experiment.crystal)
-    cryst_reindexed = cryst_orig.change_basis(change_of_basis_op)
-    if params.space_group is not None:
-      a, b, c = cryst_reindexed.get_real_space_vectors()
-      cryst_reindexed = Crystal(
-        a, b, c, space_group=params.space_group.group())
-    experiment.crystal.update(cryst_reindexed)
+    for crystal in experiments.crystals():
+      cryst_orig = copy.deepcopy(crystal)
+      cryst_reindexed = cryst_orig.change_basis(change_of_basis_op)
+      if params.space_group is not None:
+        a, b, c = cryst_reindexed.get_real_space_vectors()
+        cryst_reindexed = Crystal(
+          a, b, c, space_group=params.space_group.group())
+      crystal.update(cryst_reindexed)
 
-    print("Old crystal:")
-    print(cryst_orig)
-    print()
-    print("New crystal:")
-    print(cryst_reindexed)
-    print()
+      print("Old crystal:")
+      print(cryst_orig)
+      print()
+      print("New crystal:")
+      print(cryst_reindexed)
+      print()
 
     print("Saving reindexed experimental models to %s" %params.output.experiments)
     dump.experiment_list(experiments, params.output.experiments)

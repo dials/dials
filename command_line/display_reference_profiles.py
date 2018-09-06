@@ -20,10 +20,11 @@ def display_reference_profiles(reference_pickle_file, profile_number,
   '''Display the reference profiles found in the reference_pickle_file generated
   by dials integration using intensity.algorithm=fitrs'''
 
-  import cPickle as pickle
+  import six.moves.cPickle as pickle
   from dials.array_family import flex
 
-  profiles = pickle.load(open(reference_pickle_file))
+  with open(reference_pickle_file, 'rb') as fh:
+    profiles = pickle.load(fh)
   central_profile = profiles.profile(profile_number)
 
   # cast to integer range 0 - 100

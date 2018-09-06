@@ -23,7 +23,7 @@ class InputWriter(object):
     Call this to write input files
 
     '''
-    import cPickle as pickle
+    import six.moves.cPickle as pickle
     for i, item in enumerate(self.iterable, start=1):
       with open(os.path.join(self.directory, "%d.input" % i), "wb") as outfile:
         pickle.dump(
@@ -49,7 +49,7 @@ def cluster_map(
 
   '''
   import multiprocessing
-  import cPickle as pickle
+  import six.moves.cPickle as pickle
   import tempfile
   import drmaa
 

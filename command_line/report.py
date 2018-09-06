@@ -590,6 +590,8 @@ class StrongSpotsAnalyser(object):
     d.update(self.spot_count_per_image(rlist))
     # Look at distribution of unindexed spots with detector position
     d.update(self.unindexed_count_xy(rlist))
+    # Look at distribution of indexed spots with detector position
+    d.update(self.indexed_count_xy(rlist))
     #self.spot_count_per_panel(rlist)
     return {'strong': d}
 
@@ -675,8 +677,7 @@ ice rings, or poor spot-finding parameters.
           sel = (zsel >= i) & (zsel < (i+1))
           indexed_per_lattice_per_image[j].append(sel.count(True))
 
-      d.update({
-        'indexed_per_lattice_per_image': {
+      d['indexed_per_lattice_per_image'] = {
           'data': [],
           'layout': {
             'title': 'Indexed reflections per lattice per image',
@@ -686,8 +687,7 @@ ice rings, or poor spot-finding parameters.
               'rangemode': 'tozero'
             },
           },
-        },
-      })
+        }
 
       for j in range(flex.max(ids)+1):
         d['indexed_per_lattice_per_image']['data'].append({
@@ -731,6 +731,53 @@ ice rings, or poor spot-finding parameters.
         }],
         'layout': {
           'title': 'Number of unindexed reflections binned in X/Y',
+          'xaxis': {
+            'domain': [0, 0.85],
+            'title': 'X',
+            'showgrid': False,
+          },
+          'yaxis': {
+            'title': 'Y',
+            'autorange': 'reversed',
+            'showgrid': False,
+          },
+          'width': 500,
+          'height': 450,
+        },
+      },
+    }
+
+  def indexed_count_xy(self, rlist):
+    '''Analyse the indexed spot count in x/y. '''
+    from os.path import join
+    x,y,z = rlist['xyzobs.px.value'].parts()
+
+    indexed_sel = rlist.get_flags(rlist.flags.indexed)
+    if indexed_sel.count(True) == 0 or indexed_sel.count(False) == 0:
+      return {}
+
+    x = x.select(indexed_sel).as_numpy_array()
+    y = y.select(indexed_sel).as_numpy_array()
+
+    import numpy as np
+    H, xedges, yedges = np.histogram2d(x, y, bins=(self.nbinsx, self.nbinsy))
+
+    return {
+      'n_indexed_vs_xy': {
+        'data': [{
+          'x': xedges.tolist(),
+          'y': yedges.tolist(),
+          'z': H.transpose().tolist(),
+          'type': 'heatmap',
+          'name': 'n_indexed',
+          'colorbar': {
+            'title': 'Number of reflections',
+            'titleside': 'right',
+          },
+          'colorscale': 'Jet',
+        }],
+        'layout': {
+          'title': 'Number of indexed reflections binned in X/Y',
           'xaxis': {
             'domain': [0, 0.85],
             'title': 'X',
@@ -927,12 +974,11 @@ class CentroidAnalyser(object):
     z2[:] = np.NAN
     z2[nonzeros] = (H2[nonzeros]/H[nonzeros])
 
-    d.update({
-      'centroid_differences_x': {
+    d['centroid_differences_x'] = {
         'data': [{
           'name': 'centroid_differences_x',
           'x': xedges.tolist(),
-          'y': xedges.tolist(),
+          'y': yedges.tolist(),
           'z': z1.transpose().tolist(),
           'type': 'heatmap',
           'colorbar': {
@@ -956,15 +1002,13 @@ class CentroidAnalyser(object):
           'width': 500,
           'height': 450,
         },
-      },
-    })
+      }
 
-    d.update({
-      'centroid_differences_y': {
+    d['centroid_differences_y'] = {
         'data': [{
           'name': 'centroid_differences_y',
           'x': xedges.tolist(),
-          'y': xedges.tolist(),
+          'y': yedges.tolist(),
           'z': z2.transpose().tolist(),
           'type': 'heatmap',
           'colorbar': {
@@ -988,8 +1032,7 @@ class CentroidAnalyser(object):
           'width': 500,
           'height': 450,
         },
-      },
-    })
+      }
     return d
 
   def centroid_diff_z(self, rlist, threshold):
@@ -1017,7 +1060,7 @@ class CentroidAnalyser(object):
       'centroid_differences_z': {
         'data': [{
           'x': xedges.tolist(),
-          'y': xedges.tolist(),
+          'y': yedges.tolist(),
           'z': H.transpose().tolist(),
           'type': 'heatmap',
           'name': 'centroid_differences_z',
@@ -1231,8 +1274,7 @@ class CentroidAnalyser(object):
     }
 
 
-    d.update({
-      'residuals_xy': {
+    d['residuals_xy'] = {
         'data': [
           #{
             #'x': list(dx),
@@ -1278,13 +1320,11 @@ class CentroidAnalyser(object):
         ],
         'layout': copy.deepcopy(density_hist_layout),
       }
-    })
     d['residuals_xy']['layout']['title'] = 'Centroid residuals in X and Y'
 
     if not is_stills:
 
-      d.update({
-        'residuals_zy': {
+      d['residuals_zy'] = {
           'data': [
             #{
               #'x': list(dz),
@@ -1330,12 +1370,10 @@ class CentroidAnalyser(object):
           ],
           'layout': copy.deepcopy(density_hist_layout),
         }
-      })
       d['residuals_zy']['layout']['title'] = 'Centroid residuals in Z and Y'
       d['residuals_zy']['layout']['xaxis']['title'] = 'Z'
 
-      d.update({
-        'residuals_xz': {
+      d['residuals_xz'] = {
           'data': [
             #{
               #'x': list(dx),
@@ -1381,7 +1419,6 @@ class CentroidAnalyser(object):
           ],
           'layout': copy.deepcopy(density_hist_layout),
         }
-      })
       d['residuals_xz']['layout']['title'] = 'Centroid residuals in X and Z'
       d['residuals_xz']['layout']['yaxis']['title'] = 'Z'
 
@@ -1739,7 +1776,7 @@ class IntensityAnalyser(object):
       'i_over_sigma_%s_vs_xy' %intensity_type: {
         'data': [{
           'x': xedges.tolist(),
-          'y': xedges.tolist(),
+          'y': yedges.tolist(),
           'z': z.transpose().tolist(),
           'zmin': -1,
           'zauto': False,
@@ -2308,6 +2345,236 @@ class ReferenceProfileAnalyser(object):
       pyplot.savefig(join(self.directory, "ideal_%s_corr_vs_ios.png" % filename))
       pyplot.close()
 
+class ScalingModelAnalyser(object):
+  """Analyse a scaling-model."""
+
+  def __call__(self, experiments):
+    ''' Analyse the strong spots. '''
+
+    print("Analysing scaling model")
+
+    d = OrderedDict()
+
+    if experiments is not None and len(experiments):
+      if len(experiments) > 1:
+        for i, exp in enumerate(experiments):
+          model = exp.scaling_model
+          if model is not None:
+            if model.id_ == 'physical':
+              if 'scale' in model.components or 'decay' in model.components:
+                smooth = self.plot_smooth_model(exp)
+                d['smooth_scale_model_'+str(i)] = smooth['smooth_scale_model']
+              if 'absorption' in model.components:
+                absorption = self.plot_absorption_surface(exp)
+                d['absorption_surface_'+str(i)] = absorption['absorption_surface']
+      else:
+        model = experiments[0].scaling_model
+        if model is not None:
+          if model.id_ == 'physical':
+            if 'scale' in model.components or 'decay' in model.components:
+              d.update(self.plot_smooth_model(experiments[0]))
+            if 'absorption' in model.components:
+              d.update(self.plot_absorption_surface(experiments[0]))
+    return {'scaling_model': d}
+
+  def plot_smooth_model(self, experiment):
+    """Plot a smooth scaling model for a physical scaling model."""
+
+    d = {'smooth_scale_model': {
+      'data' : [],
+      'layout' : {
+        'title' : 'Smoothly varying corrections',
+        'xaxis' : {
+          'domain' :[0, 1],
+          'anchor' : 'y',
+          'title' : 'rotation angle (°)'},
+        'yaxis' : {
+          'domain' :[0, 0.45],
+          'anchor' : 'x',
+          'title' : 'relative B-factor'},
+        'yaxis2' : {
+          'domain' :[0.5, 0.95],
+          'anchor' : 'x',
+          'title' : 'inverse <br> scale factor'}
+        }
+      }
+    }
+
+    import numpy as np
+    data = []
+    configdict = experiment.scaling_model.configdict
+    valid_osc = configdict['valid_osc_range']
+    int_val_max = int(valid_osc[1]) + 1
+    int_val_min = int(valid_osc[0])
+    sample_values = flex.double(np.linspace(int_val_min, int_val_max,
+      ((int_val_max-int_val_min)/0.1)+1, endpoint=True)) # Make a grid of
+      #points with 10 points per degree.
+
+    if 'scale' in configdict['corrections']:
+      rt = flex.reflection_table()
+      rt['norm_rot_angle'] = sample_values
+      scale_SF = experiment.scaling_model.components['scale']
+      scale_SF.update_reflection_data(rt)
+      scale_SF.calculate_scales()
+      smoother_phis = [(i * configdict['scale_rot_interval']) + valid_osc[0]
+        for i in scale_SF.smoother.positions()]
+
+      data.append({
+        'x' : list(sample_values),
+        'y' : list(scale_SF.inverse_scales[0]),
+        'type' : 'line',
+        'name' : 'smooth scale term',
+        'xaxis' : 'x',
+        'yaxis' : 'y2'
+      })
+      data.append({
+        'x' : list(smoother_phis),
+        'y' : list(scale_SF.parameters),
+        'type' : 'scatter',
+        'mode' : 'markers',
+        'name' : 'scale term parameters',
+        'xaxis' : 'x',
+        'yaxis' : 'y2'
+      })
+      if scale_SF.parameter_esds:
+        data[-1]['error_y'] = {'type':'data', 'array':list(scale_SF.parameter_esds)}
+
+    if 'decay' in configdict['corrections']:
+      rt = flex.reflection_table()
+      rt['norm_time_values'] = sample_values
+      rt['d'] = flex.double(sample_values.size(), 1.0)
+      decay_SF = experiment.scaling_model.components['decay']
+      decay_SF.update_reflection_data(rt)
+      decay_SF.calculate_scales()
+      smoother_phis = [(i * configdict['decay_rot_interval']) + valid_osc[0]
+        for i in decay_SF.smoother.positions()]
+
+      data.append({
+        'x' : list(sample_values),
+        'y' : list(np.log(decay_SF.inverse_scales[0])*2.0),
+        'type' : 'line',
+        'name' : 'smooth decay term',
+        'xaxis' : 'x',
+        'yaxis' : 'y'
+      })
+      data.append({
+        'x' : list(smoother_phis),
+        'y' : list(decay_SF.parameters),
+        'type' : 'scatter',
+        'mode' : 'markers',
+        'name' : 'decay term parameters',
+        'xaxis' : 'x',
+        'yaxis' : 'y'
+      })
+      if decay_SF.parameter_esds:
+        data[-1]['error_y'] = {'type':'data', 'array':list(decay_SF.parameter_esds)}
+    d['smooth_scale_model']['data'].extend(data)
+    return d
+
+  def plot_absorption_surface(self, experiment):
+    """Plot an absorption surface for a physical scaling model."""
+
+    d = {'absorption_surface': {
+      'data' : [],
+      'layout' : {
+        'title' : 'Absorption correction surface',
+        'xaxis' : {
+          'domain' :[0, 1],
+          'anchor' : 'y',
+          'title' : 'theta (°)'},
+        'yaxis' : {
+          'domain' :[0, 1],
+          'anchor' : 'x',
+          'title' : 'phi (°)'}
+        }
+      }
+    }
+
+    params = experiment.scaling_model.components['absorption'].parameters
+
+    from scitbx import math
+    import math as pymath
+    import numpy as np
+    order = int(-1.0 + ((1.0 + len(params))**0.5))
+    lfg = math.log_factorial_generator(2 * order + 1)
+    STEPS = 50
+    phi = np.linspace(0, 2 * np.pi, 2*STEPS)
+    theta = np.linspace(0, np.pi, STEPS)
+    THETA, _ = np.meshgrid(theta, phi)
+    lmax = int(-1.0 + ((1.0 + len(params))**0.5))
+    Intensity = np.ones(THETA.shape)
+    counter = 0
+    sqrt2 = pymath.sqrt(2)
+    nsssphe = math.nss_spherical_harmonics(order, 50000, lfg)
+    for l in range(1, lmax+1):
+      for m in range(-l, l+1):
+        for it, t in enumerate(theta):
+          for ip, p in enumerate(phi):
+            Ylm = nsssphe.spherical_harmonic(l, abs(m), t, p)
+            if m < 0:
+              r = sqrt2 * ((-1) ** m) * Ylm.imag
+            elif m == 0:
+              assert Ylm.imag == 0.0
+              r = Ylm.real
+            else:
+              r = sqrt2 * ((-1) ** m) * Ylm.real
+            Intensity[ip, it] += params[counter] * r
+        counter += 1
+    d['absorption_surface']['data'].append({
+      'x' : list(theta*180.0/np.pi),
+      'y' : list(phi*180.0/np.pi),
+      'z' : list(Intensity.T.tolist()),
+      'type' : 'heatmap',
+      'colorscale' : 'Viridis',
+      'colorbar' : {'title' : 'inverse <br>scale factor'},
+      'name' : 'absorption surface',
+      'xaxis' : 'x',
+      'yaxis' : 'y'
+    })
+    return d
+
+def scaling_model_tables(reflections, experiments):
+  if not 'inverse_scale_factor' in reflections:
+    return [], [], []
+  from dials.algorithms.scaling.scaling_library import \
+    calculate_single_merging_stats, choose_scaling_intensities
+  reflections = choose_scaling_intensities(reflections)
+  result = calculate_single_merging_stats(reflections, experiments[0],
+    use_internal_variance=False)
+  results_table = [('d_max', 'd_min', 'n_obs', 'n_uniq', 'mult', 'comp', '&ltI&gt',
+    '&ltI/sI&gt', 'r_merge', 'r_meas', 'r_pim', 'cc1/2', 'cc_anom')]
+  for bin_stats in result.bins:
+    results_table.append(tuple(bin_stats.format().split()))
+  result = result.overall
+  summary_table = [('Resolution',
+    '{0:.3f} - {1:.3f}'.format(result.d_max, result.d_min)),
+    ('Observations', result.n_obs), ('Unique Reflections', result.n_uniq),
+    ('Redundancy', '{:.2f}'.format(result.mean_redundancy)),
+    ('Completeness', '{:.2f}'.format(result.completeness*100)),
+    ('Mean intensity', '{:.1f}'.format(result.i_mean)),
+    ('Mean I/sigma(I)', '{:.1f}'.format(result.i_over_sigma_mean)),
+    ('R-merge', '{:.4f}'.format(result.r_merge)),
+    ('R-meas', '{:.4f}'.format(result.r_meas)),
+    ('R-pim', '{:.4f}'.format(result.r_pim))]
+  #Summary of scaling model.
+  scaling_models = [exp.scaling_model.id_ if
+    exp.scaling_model is not None else None for exp in experiments]
+  if all([i is None for i in scaling_models]): #no scaling models.
+    summary = []
+  else:
+    if len(set(scaling_models)) == 1: #all scaling models same.
+      scaling_models = [scaling_models[0]]
+    summary = [('Number of datasets', len(experiments)), ('Scaling model(s) applied',
+      ', '.join(i.capitalize() for i in scaling_models))]
+    if 'error_model_type' in experiments[0].scaling_model.configdict:
+      conf = experiments[0].scaling_model.configdict
+      typ = conf['error_model_type']
+      summary.append(('Error model applied', str(conf['error_model_type'])+\
+        ': parameters = '+ ', '.join('{:.3f}'.format(i) for i in \
+        conf['error_model_parameters'])))
+
+  return summary, summary_table, results_table
+
 
 class Analyser(object):
   ''' Helper class to do all the analysis. '''
@@ -2348,6 +2615,10 @@ class Analyser(object):
       analyse = ScanVaryingCrystalAnalyser(self.params.orientation_decomposition)
       json_data.update(analyse(experiments))
       crystal_table, expt_geom_table = self.experiments_table(experiments)
+      analyse = ScalingModelAnalyser()
+      json_data.update(analyse(experiments))
+      summary, scaling_table_by_resolution, scaling_summary_table = \
+        scaling_model_tables(rlist, experiments)
 
     if self.params.output.html is not None:
 
@@ -2369,12 +2640,15 @@ class Analyser(object):
         template = env.get_template('report.html')
       html = template.render(page_title='DIALS analysis report',
                              scan_varying_graphs=graphs['scan_varying'],
+                             scaling_model_graphs=graphs['scaling_model'],
                              strong_graphs=graphs['strong'],
                              centroid_graphs=graphs['centroid'],
                              intensity_graphs=graphs['intensity'],
                              reference_graphs=graphs['reference'],
                              crystal_table=crystal_table,
                              geometry_table=expt_geom_table,
+                             scaling_tables=(summary, scaling_table_by_resolution,
+                              scaling_summary_table),
                              static_dir=static_dir)
 
       print("Writing html report to: %s" %self.params.output.html)

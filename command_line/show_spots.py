@@ -11,7 +11,7 @@ def show_spots(strong_spots):
     vx, vy, vz = zip(*strong_spots['xyzobs.px.variance'])
   except RuntimeError as e:
     # convert RuntimeError into more appropriate exception
-    raise KeyError(e.message)
+    raise KeyError(str(e))
 
   dx = flex.sqrt(flex.double(vx))
   dy = flex.sqrt(flex.double(vy))
@@ -40,10 +40,11 @@ if __name__ == '__main__':
   if len(sys.argv) != 2:
     raise RuntimeError('%s strong.pickle')
 
-  import cPickle as pickle
+  import six.moves.cPickle as pickle
   from dials.array_family import flex
 
-  strong_spots = pickle.load(open(sys.argv[1], 'rb'))
+  with open(sys.argv[1], 'rb') as fh:
+    strong_spots = pickle.load(fh)
   try:
     show_spots(strong_spots)
   except KeyError:

@@ -1,7 +1,7 @@
 from __future__ import division, print_function
 from iotbx import phil
 from dials.array_family import flex
-import cPickle as pickle
+import six.moves.cPickle as pickle
 from libtbx.utils import Sorry
 from scitbx import matrix
 import libtbx.load_env
@@ -176,12 +176,12 @@ def main():
     parser.print_help()
     exit()
 
-  assert(len(datablocks) == 1)
+  assert len(datablocks) == 1
 
   datablock = datablocks[0]
   imagesets = datablock.extract_imagesets()
 
-  assert(len(imagesets) == 1)
+  assert len(imagesets) == 1
 
   imageset = imagesets[0]
 
@@ -194,11 +194,11 @@ def main():
   else:
     raise Sorry("Unrecognised mode")
 
-  with open('dx.pickle', 'w') as f:
-    pickle.dump(dx, f)
+  with open('dx.pickle', 'wb') as f:
+    pickle.dump(dx, f, pickle.HIGHEST_PROTOCOL)
 
-  with open('dy.pickle', 'w') as f:
-    pickle.dump(dy, f)
+  with open('dy.pickle', 'wb') as f:
+    pickle.dump(dy, f, pickle.HIGHEST_PROTOCOL)
 
 if __name__ == '__main__':
   main()

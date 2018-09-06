@@ -43,7 +43,7 @@ def run(args):
   import libtbx.load_env
   from libtbx.utils import Sorry
   from dials.util import log
-  import cPickle as pickle
+  import six.moves.cPickle as pickle
   usage = "%s [options] datablock.json strong.pickle" % \
     libtbx.env.dispatcher_name
 
@@ -87,14 +87,14 @@ def run(args):
   if len(reflections) > 1:
     raise Sorry("Multiple reflections lists provided in input")
 
-  assert(len(reflections) == 1)
+  assert len(reflections) == 1
   reflections = reflections[0]
 
   mask = hot_pixel_mask(imagesets[0], reflections)
-  pickle.dump(mask, open(params.output.mask, 'w'), pickle.HIGHEST_PROTOCOL)
+  with open(params.output.mask, 'wb') as fh:
+    pickle.dump(mask, fh, pickle.HIGHEST_PROTOCOL)
 
   print('Wrote hot pixel mask to %s' % params.output.mask)
-  return
 
 def hot_pixel_mask(imageset, reflections):
   depth = imageset.get_array_range()[1] - imageset.get_array_range()[0]

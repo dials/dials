@@ -42,10 +42,11 @@ if __name__ == '__main__':
   if len(sys.argv) != 2:
     raise RuntimeError('%s strong.pickle' % sys.argv[0])
 
-  import cPickle as pickle
+  import six.moves.cPickle as pickle
   from dials.array_family import flex
 
-  integrated_data = pickle.load(open(sys.argv[1], 'rb'))
+  with open(sys.argv[1], 'rb') as fh:
+    integrated_data = pickle.load(fh)
 
   # keep only flagged as integrated reflections
   sel = integrated_data.get_flags(integrated_data.flags.integrated)

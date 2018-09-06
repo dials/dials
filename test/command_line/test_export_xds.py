@@ -34,7 +34,7 @@ def test_spots_xds(tmpdir):
   assert result['stderr'] == ''
   assert os.path.exists(output_pickle)
 
-  import cPickle as pickle
+  import six.moves.cPickle as pickle
   with open(output_pickle, "rb") as f:
     reflections = pickle.load(f)
   assert len(reflections) == 5

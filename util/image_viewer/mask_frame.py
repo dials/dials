@@ -7,6 +7,12 @@ from wxtbx.phil_controls.floatctrl import FloatCtrl as _FloatCtrl
 #
 # $Id
 
+from wx.lib.agw.floatspin import EVT_FLOATSPIN, FloatSpin
+from wxtbx.phil_controls import EVT_PHIL_CONTROL
+from wxtbx.phil_controls.intctrl import IntCtrl
+from wxtbx.phil_controls.strctrl import StrCtrl
+from wxtbx import metallicbutton
+import wxtbx
 
 
 
@@ -78,14 +84,6 @@ class MaskSettingsPanel(wx.Panel):
     self._pyslip.Unbind(wx.EVT_MOTION, handler=self.OnMove)
 
   def draw_settings(self):
-
-    from wx.lib.agw.floatspin import EVT_FLOATSPIN, FloatSpin
-    from wxtbx.phil_controls import EVT_PHIL_CONTROL
-    from wxtbx.phil_controls.intctrl import IntCtrl
-    from wxtbx.phil_controls.strctrl import StrCtrl
-    from wxtbx import metallicbutton
-    import wxtbx
-
     for child in self.GetChildren():
       if not isinstance(child, FloatSpin):
         # don't destroy FloatSpin controls otherwise bad things happen
@@ -97,25 +95,28 @@ class MaskSettingsPanel(wx.Panel):
       self.SetSizer(sizer)
 
     sizer.Clear()
-    box = wx.BoxSizer(wx.HORIZONTAL)
+    # Put the border, d_min, d_max in an aligned grid
+    box = wx.FlexGridSizer(cols=4, hgap=0, vgap=0)
+
 
     # border control
     if self.border_ctrl is None:
       self.border_ctrl = FloatSpin(
         self, digits=0, name='mask_border', min_val=0)
-    box.Add(wx.StaticText(self, label='border'),
+    box.Add(wx.StaticText(self, label='Border'),
             0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
     box.Add(self.border_ctrl,
             0, wx.RIGHT | wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL, 5)
+    box.Add(wx.StaticText(self, label="px"), 0, wx.ALIGN_CENTER_VERTICAL)
     self.Bind(EVT_FLOATSPIN, self.OnUpdate, self.border_ctrl)
-    sizer.Add(box)
+    # Empty cell after border controls
+    box.Add((0,0))
 
     # d_min control
     if self.params.masking.d_min is not None:
       self.d_min = self.params.masking.d_min
     else:
       self.d_min = 0
-    box = wx.BoxSizer(wx.HORIZONTAL)
     if self.d_min_ctrl is None:
       self.d_min_ctrl = FloatSpin(
             self, digits=2, name='d_min', value=self.d_min, min_val=0,
@@ -144,7 +145,7 @@ class MaskSettingsPanel(wx.Panel):
 
     # resolution rings control
 
-    grid = wx.FlexGridSizer(cols=2, rows=len(self.params.masking.resolution_range)+2)
+    grid = wx.FlexGridSizer(cols=2, rows=len(self.params.masking.resolution_range)+2, vgap=0, hgap=0)
     sizer.Add(grid)
     text = wx.StaticText(self, -1, "Resolution range:")
     grid.Add(text)
@@ -238,7 +239,7 @@ class MaskSettingsPanel(wx.Panel):
         self._circle_to_untrusted_id.append(i)
 
     # untrusted rectangles
-    grid = wx.FlexGridSizer(cols=3, rows=len(untrusted_rectangles)+2)
+    grid = wx.FlexGridSizer(cols=3, rows=len(untrusted_rectangles)+2, vgap=0, hgap=0)
     sizer.Add(grid)
     text = wx.StaticText(self, -1, "Panel:")
     text.GetFont().SetWeight(wx.BOLD)
@@ -276,7 +277,7 @@ class MaskSettingsPanel(wx.Panel):
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdate, self.untrusted_rectangle_ctrl)
 
     # untrusted polygons
-    grid = wx.FlexGridSizer(cols=3, rows=len(untrusted_polygons)+2)
+    grid = wx.FlexGridSizer(cols=3, rows=len(untrusted_polygons)+2, vgap=0, hgap=0)
     sizer.Add(grid)
     text = wx.StaticText(self, -1, "Panel:")
     text.GetFont().SetWeight(wx.BOLD)
@@ -316,7 +317,7 @@ class MaskSettingsPanel(wx.Panel):
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdate, self.untrusted_polygon_ctrl)
 
     # untrusted circles
-    grid = wx.FlexGridSizer(cols=3, rows=len(untrusted_circles)+2)
+    grid = wx.FlexGridSizer(cols=3, rows=len(untrusted_circles)+2, vgap=0, hgap=0)
     sizer.Add(grid)
     text = wx.StaticText(self, -1, "Panel:")
     text.GetFont().SetWeight(wx.BOLD)
@@ -354,7 +355,7 @@ class MaskSettingsPanel(wx.Panel):
     self.Bind(EVT_PHIL_CONTROL, self.OnUpdate, self.untrusted_circle_ctrl)
 
     # Draw rectangle/circle mode buttons
-    grid = wx.FlexGridSizer(cols=4, rows=1)
+    grid = wx.FlexGridSizer(cols=4, rows=1, vgap=0, hgap=0)
     sizer.Add(grid)
 
     grid.Add( wx.StaticText(self, label='Mode:'))
@@ -374,7 +375,7 @@ class MaskSettingsPanel(wx.Panel):
     self.Bind(wx.EVT_TOGGLEBUTTON, self.OnUpdate, self.mode_polygon_button)
 
     # show/save mask controls
-    grid = wx.FlexGridSizer(cols=3, rows=2)
+    grid = wx.FlexGridSizer(cols=3, rows=2, vgap=0, hgap=0)
     sizer.Add(grid)
 
     self.show_mask_ctrl = wx.CheckBox(self, -1, "Show mask")
@@ -555,7 +556,9 @@ class MaskSettingsPanel(wx.Panel):
         untrusted.circle = circle
         self.params.masking.untrusted.append(untrusted)
 
-    self.draw_settings()
+    # Refresh the UI *after* the event is finished
+    wx.CallAfter(self.draw_settings)
+
     self.UpdateMask()
 
     # Force re-drawing of mask

@@ -8,6 +8,7 @@ from collections import OrderedDict
 import math
 
 from libtbx import Auto
+from libtbx.utils import Sorry
 from libtbx import table_utils
 from scitbx.array_family import flex
 from cctbx import sgtbx
@@ -15,8 +16,21 @@ import iotbx.phil
 
 from dials.algorithms.symmetry.cosym import target
 from dials.algorithms.symmetry.cosym import engine
+from dials.algorithms.symmetry import symmetry_base
 
 phil_scope = iotbx.phil.parse('''\
+
+normalisation = kernel quasi *ml_iso ml_aniso
+  .type = choice
+
+d_min = Auto
+  .type = float(value_min=0)
+
+min_i_mean_over_sigma_mean = 4
+  .type = float(value_min=0)
+
+min_cc_half = 0.6
+  .type = float(value_min=0, value_max=1)
 
 lattice_group = None
   .type = space_group
@@ -43,6 +57,9 @@ min_pairs = 3
 save_plot = True
   .type = bool
 
+plot_prefix = ''
+  .type = str
+
 verbose = False
   .type = bool
 
@@ -64,7 +81,7 @@ termination_params {
 }
 
 cluster {
-  method = dbscan bisect minimize_divide *agglomerative seed
+  method = dbscan bisect minimize_divide agglomerative *seed
     .type = choice
   dbscan {
     eps = 0.5
@@ -83,24 +100,35 @@ cluster {
   seed {
     min_silhouette_score = 0.2
       .type = float(value_min=-1, value_max=1)
+    n_clusters = auto
+      .type = int(value_min=1)
   }
 }
 
+nproc = 1
+  .type = int(value_min=1)
+  .help = "The number of processes to use."
+
 ''')
 
-class analyse_datasets(object):
+class analyse_datasets(symmetry_base):
 
-  def __init__(self, datasets, params):
-    self.datasets = datasets
+  def __init__(self, intensities, params):
+    self.input_space_group = intensities[0].space_group()
+    super(analyse_datasets, self).__init__(
+      intensities,
+      normalisation=params.normalisation,
+      lattice_symmetry_max_delta=5.0,
+      d_min=params.d_min,
+      min_i_mean_over_sigma_mean=params.min_i_mean_over_sigma_mean,
+      min_cc_half=params.min_cc_half,
+      relative_length_tolerance=None,
+      absolute_angle_tolerance=None)
+
     self.params = params
-
-    self.input_space_group = None
-    for dataset in datasets:
-      if self.input_space_group is None:
-        self.input_space_group = dataset.space_group()
-      else:
-        assert dataset.space_group() == self.input_space_group
-
+    self.intensities = self.intensities.customized_copy(
+      space_group_info=self.input_space_group.change_basis(
+        self.cb_op_inp_min).info())
     if self.params.dimensions is Auto:
       dimensions = None
     else:
@@ -109,12 +137,14 @@ class analyse_datasets(object):
     if self.params.lattice_group is not None:
       lattice_group = self.params.lattice_group.group()
     self.target = target.Target(
-      self.datasets,
+      self.intensities,
+      self.dataset_ids,
       min_pairs=self.params.min_pairs,
       lattice_group=lattice_group,
       dimensions=dimensions,
       verbose=self.params.verbose,
-      weights=self.params.weights
+      weights=self.params.weights,
+      nproc=self.params.nproc,
     )
     if self.params.dimensions is Auto:
       dimensions = []
@@ -171,7 +201,7 @@ class analyse_datasets(object):
         plt.plot([x_g, x_g], plt.ylim())
         plt.xlabel('Dimensions')
         plt.ylabel('Functional')
-        plt.savefig('functional_vs_dimension.png')
+        plt.savefig('%sfunctional_vs_dimension.png' % params.plot_prefix)
 
         plt.clf()
         for dim, expl_var in zip(dimensions, explained_variance):
@@ -179,7 +209,7 @@ class analyse_datasets(object):
         plt.plot([x_g, x_g], plt.ylim())
         plt.xlabel('Dimension')
         plt.ylabel('Explained variance')
-        plt.savefig('explained_variance_vs_dimension.png')
+        plt.savefig('%sexplained_variance_vs_dimension.png' % params.plot_prefix)
 
         plt.clf()
         for dim, expl_var_ratio in zip(dimensions, explained_variance_ratio):
@@ -187,7 +217,9 @@ class analyse_datasets(object):
         plt.plot([x_g, x_g], plt.ylim())
         plt.xlabel('Dimension')
         plt.ylabel('Explained variance ratio')
-        plt.savefig('explained_variance_ratio_vs_dimension.png')
+        plt.savefig(
+          '%sexplained_variance_ratio_vs_dimension.png' % params.plot_prefix)
+        plt.close(fig)
 
     self.optimise()
     self.principal_component_analysis()
@@ -199,7 +231,7 @@ class analyse_datasets(object):
 
   def optimise(self):
 
-    NN = len(self.datasets)
+    NN = len(self.input_intensities)
     dim = self.target.dim
     n_sym_ops = len(self.target.get_sym_ops())
     coords = flex.random_double(NN * n_sym_ops * dim)
@@ -263,14 +295,18 @@ class analyse_datasets(object):
       'Cophenetic correlation coefficient between heirarchical clustering and pairwise distance matrix: %.3f' % c)
 
     if self.params.save_plot:
-      plot_matrix(cos_angle, linkage_matrix, 'cos_angle_matrix.png')
-      plot_dendrogram(linkage_matrix, 'cos_angle_dendrogram.png')
+      plot_matrix(
+        cos_angle,
+        linkage_matrix, '%scos_angle_matrix.png' % self.params.plot_prefix)
+      plot_dendrogram(
+        linkage_matrix,
+        '%scos_angle_dendrogram.png' % self.params.plot_prefix)
 
     sym_ops = [sgtbx.rt_mx(s).new_denominators(1, 12) for s in self.target.get_sym_ops()]
 
     sym_ops_cos_angle = OrderedDict()
 
-    for dataset_id in range(len(self.datasets)):
+    for dataset_id in range(len(self.input_intensities)):
       ref_sym_op_id = None
       ref_cluster_id = None
       for sym_op_id in range(len(sym_ops)):
@@ -280,8 +316,8 @@ class analyse_datasets(object):
         op = sym_ops[ref_sym_op_id].inverse().multiply(sym_ops[sym_op_id])
         op = op.new_denominators(1, 12)
 
-        ref_idx = len(self.datasets) * ref_sym_op_id + dataset_id
-        comp_idx = len(self.datasets) * sym_op_id + dataset_id
+        ref_idx = len(self.input_intensities) * ref_sym_op_id + dataset_id
+        comp_idx = len(self.input_intensities) * sym_op_id + dataset_id
         sym_ops_cos_angle.setdefault(op, flex.double())
         sym_ops_cos_angle[op].append(cos_angle[ref_idx, comp_idx])
 
@@ -304,15 +340,6 @@ class analyse_datasets(object):
       'Analysis of cos(angle) between points corresponding to the same datasets:')
     logger.info(table_utils.format(rows, has_header=True))
 
-    #if self.params.save_plot:
-      #from matplotlib import pyplot as plt
-      #fig = plt.figure(figsize=(10,8))
-      #for i, p in enumerate(perm):
-        #op, ca = sym_ops_cos_angle.items()[p]
-        #plt.scatter(list(ca), [i+1]*len(ca), c='k', marker='|')
-      #plt.savefig('cos_angle.png')
-      #plt.clf()
-
   def cluster_analysis(self):
     from cctbx.sgtbx import cosets
 
@@ -334,21 +361,18 @@ class analyse_datasets(object):
 
     space_groups = []
 
-    reindexing_ops = []
-
     sym_ops = [sgtbx.rt_mx(s).new_denominators(1, 12) for s in self.target.get_sym_ops()]
     self.space_groups = space_groups
-    self.reindexing_ops = reindexing_ops
 
     reindexing_ops = {}
     space_groups = {}
 
-    for dataset_id in range(len(self.datasets)):
+    for dataset_id in range(len(self.input_intensities)):
       sg = copy.deepcopy(self.input_space_group)
       ref_sym_op_id = None
       ref_cluster_id = None
       for sym_op_id in range(len(sym_ops)):
-        i_cluster = self.cluster_labels[len(self.datasets) * sym_op_id + dataset_id]
+        i_cluster = self.cluster_labels[len(self.input_intensities) * sym_op_id + dataset_id]
         if i_cluster < 0:
           continue
         if ref_sym_op_id is None:
@@ -370,13 +394,13 @@ class analyse_datasets(object):
 
       for i_cluster in range(n_clusters):
         isel = (self.cluster_labels == i_cluster).iselection()
-        dataset_ids = isel % len(self.datasets)
+        dataset_ids = isel % len(self.input_intensities)
         idx = flex.first_index(dataset_ids, dataset_id)
         sel = (dataset_ids == dataset_id).iselection()
         if idx >= 0:
-          sym_op_id = isel[idx] // len(self.datasets)
+          sym_op_id = isel[idx] // len(self.input_intensities)
         for s in sel:
-          sym_op_id = isel[s] // len(self.datasets)
+          sym_op_id = isel[s] // len(self.input_intensities)
 
           for partition in coset.partitions:
             if sym_ops[sym_op_id] in partition:
@@ -445,7 +469,7 @@ class analyse_datasets(object):
     cluster_id = 0
     while self.cluster_labels.count(-1) > 0:
       dataset_ids = (flex.int_range(
-        len(self.datasets) * len(self.target.get_sym_ops())) % len(self.datasets)
+        len(self.input_intensities) * len(self.target.get_sym_ops())) % len(self.input_intensities)
                      ).as_numpy_array()
       coord_ids = flex.int_range(dataset_ids.size).as_numpy_array()
 
@@ -467,7 +491,7 @@ class analyse_datasets(object):
       cluster_dataset_ids = np.array([d_id])
       xis = np.array([X[i]])
 
-      for j in range(len(self.datasets)-1):
+      for j in range(len(self.input_intensities)-1):
         # select only those rows that don't correspond to a dataset already
         # present in current cluster
         sel = np.where(dataset_ids != d_id)
@@ -491,6 +515,10 @@ class analyse_datasets(object):
       self.cluster_labels.set_selected(flex.size_t(cluster.tolist()), cluster_id)
       cluster_id += 1
 
+    if flex.max(self.cluster_labels) == 0:
+      # assume single cluster
+      return self.cluster_labels
+
     cluster_centroids = []
     X = self.coords.as_numpy_array()
     for i in set(self.cluster_labels):
@@ -509,6 +537,7 @@ class analyse_datasets(object):
     distances = np.insert(distances, 0, 0)
     silhouette_scores = flex.double()
     thresholds = flex.double()
+    n_clusters = flex.size_t()
     for threshold in distances[1:]:
       cluster_labels = self.cluster_labels.deep_copy()
       labels = hierarchy.fcluster(
@@ -518,8 +547,8 @@ class analyse_datasets(object):
         # only equal-sized clusters are valid
         continue
 
-      n_clusters = len(set(labels))
-      if n_clusters == 1: continue
+      n = len(set(labels))
+      if n == 1: continue
       for i in range(len(labels)):
         cluster_labels.set_selected(self.cluster_labels == i, int(labels[i]-1))
       silhouette_avg = metrics.silhouette_score(
@@ -530,10 +559,11 @@ class analyse_datasets(object):
       silhouette_avg = sample_silhouette_values.mean()
       silhouette_scores.append(silhouette_avg)
       thresholds.append(threshold)
+      n_clusters.append(n)
 
       count_negative = (sample_silhouette_values < 0).sum()
       logger.info('Clustering:')
-      logger.info('  Number of clusters: %i' % n_clusters)
+      logger.info('  Number of clusters: %i' % n)
       logger.info('  Threshold score: %.3f (%.1f deg)' % (
         threshold, math.degrees(math.acos(1-threshold))))
       logger.info('  Silhouette score: %.3f' % silhouette_avg)
@@ -543,10 +573,18 @@ class analyse_datasets(object):
       if self.params.save_plot:
         plot_silhouette(
           sample_silhouette_values, cluster_labels.as_numpy_array(),
-          file_name='silhouette_%i.png' % n_clusters)
+          file_name='%ssilhouette_%i.png' % (self.params.plot_prefix, n))
 
-    idx = flex.max_index(silhouette_scores)
-    if silhouette_scores[idx] < self.params.cluster.seed.min_silhouette_score:
+    if self.params.cluster.seed.n_clusters is Auto:
+      idx = flex.max_index(silhouette_scores)
+    else:
+      idx = flex.first_index(n_clusters, self.params.cluster.seed.n_clusters)
+      if idx is None:
+        raise Sorry('No valid clustering with %i clusters'
+                    % self.params.cluster.seed.n_clusters)
+
+    if (self.params.cluster.seed.n_clusters is Auto and
+        silhouette_scores[idx] < self.params.cluster.seed.min_silhouette_score):
       # assume single cluster
       self.cluster_labels = flex.int(self.cluster_labels.size(), 0)
     else:
@@ -561,38 +599,51 @@ class analyse_datasets(object):
     if self.params.save_plot:
       plot_matrix(
         1 - ssd.squareform(dist_mat), linkage_matrix,
-        'seed_clustering_cos_angle_matrix.png',
+        '%sseed_clustering_cos_angle_matrix.png' % self.params.plot_prefix,
         color_threshold=threshold)
       plot_dendrogram(
-        linkage_matrix, 'seed_clustering_cos_angle_dendrogram.png',
+        linkage_matrix,
+        '%sseed_clustering_cos_angle_dendrogram.png' % self.params.plot_prefix,
         color_threshold=threshold)
 
     return self.cluster_labels
 
   def plot(self):
-    self.target.plot_rij_matrix(plot_name='rij.png')
-    self.target.plot_rij_histogram(plot_name='rij_hist.png')
-    self.target.plot_rij_cumulative_frequency(plot_name='rij_sorted.png')
-    self.target.plot_wij_matrix(plot_name='wij.png')
-    self.target.plot_wij_histogram(plot_name='wij_hist.png')
-    self.target.plot_wij_cumulative_frequency(plot_name='wij_sorted.png')
+    self.target.plot_rij_matrix(plot_name='%srij.png' % self.params.plot_prefix)
+    self.target.plot_rij_histogram(
+      plot_name='%srij_hist.png' % self.params.plot_prefix)
+    self.target.plot_rij_cumulative_frequency(
+      plot_name='%srij_sorted.png' % self.params.plot_prefix)
+    self.target.plot_wij_matrix(plot_name='%swij.png' % self.params.plot_prefix)
+    self.target.plot_wij_histogram(
+      plot_name='%swij_hist.png' % self.params.plot_prefix)
+    self.target.plot_wij_cumulative_frequency(
+      plot_name='%swij_sorted.png' % self.params.plot_prefix)
 
     coord_x = self.coords[:,0:1].as_1d()
     coord_y = self.coords[:,1:2].as_1d()
     coord_reduced_x = self.coords_reduced[:,0:1].as_1d()
     coord_reduced_y = self.coords_reduced[:,1:2].as_1d()
-    plot((coord_x, coord_y), labels=self.cluster_labels, plot_name='xy.png')
-    plot((coord_reduced_x, coord_reduced_y), labels=self.cluster_labels, plot_name='xy_pca.png')
-    plot_angles((coord_x, coord_y), labels=self.cluster_labels, plot_name='phi_r.png')
-    plot_angles((coord_reduced_x, coord_reduced_y), labels=self.cluster_labels, plot_name='phi_r_pca.png')
+    plot((coord_x, coord_y), labels=self.cluster_labels,
+         plot_name='%sxy.png' % self.params.plot_prefix)
+    plot((coord_reduced_x, coord_reduced_y), labels=self.cluster_labels,
+         plot_name='%sxy_pca.png' % self.params.plot_prefix)
+    plot_angles((coord_x, coord_y), labels=self.cluster_labels,
+                plot_name='%sphi_r.png' % self.params.plot_prefix)
+    plot_angles((coord_reduced_x, coord_reduced_y), labels=self.cluster_labels,
+                plot_name='%sphi_r_pca.png' % self.params.plot_prefix)
 
     if self.coords_reduced.all()[1] > 2:
       coord_z = self.coords[:,2:3].as_1d()
       coord_reduced_z = self.coords_reduced[:,2:3].as_1d()
-      plot((coord_x, coord_y, coord_z), labels=self.cluster_labels, plot_name='xyz.png')
-      plot((coord_reduced_x, coord_reduced_y, coord_reduced_z), labels=self.cluster_labels, plot_name='xyz_pca.png')
+      plot((coord_x, coord_y, coord_z), labels=self.cluster_labels,
+           plot_name='%sxyz.png' % self.params.plot_prefix)
+      plot((coord_reduced_x, coord_reduced_y, coord_reduced_z),
+           labels=self.cluster_labels,
+           plot_name='%sxyz_pca.png' % self.params.plot_prefix)
 
-def plot(coords, labels=None, show=False, plot_name=None):
+def plot(coords, labels=None, plot_centroids=True, plot_all=True, show=False, plot_name=None):
+  assert plot_centroids or plot_all
   assert len(coords) >= 2
 
   coord_x = coords[0]
@@ -630,10 +681,12 @@ def plot(coords, labels=None, show=False, plot_name=None):
       col = '0.25' # mid-grey
       markersize = 1
       marker = '+'
+      alpha = 0.1
       #continue
     else:
       markersize = 2
       marker = 'o'
+      alpha = 0.5
     if 0 and not isinstance(col, basestring) and len(col) == 4:
       # darken the edges
       frac = 0.75
@@ -641,15 +694,17 @@ def plot(coords, labels=None, show=False, plot_name=None):
     else:
       edgecolor = col
     if coord_z is None:
-      ax.scatter(coord_x.select(isel), coord_y.select(isel),
-                 s=markersize, marker=marker, c=col, edgecolor=edgecolor, alpha=0.5)
-      if k >= 0:
+      if plot_all:
+        ax.scatter(coord_x.select(isel), coord_y.select(isel),
+                   s=markersize, marker=marker, c=col, edgecolor=edgecolor, alpha=alpha)
+      if plot_centroids and k >= 0:
         ax.scatter(flex.mean(coord_x.select(isel)), flex.mean(coord_y.select(isel)),
                    s=markersize*10, marker=marker, c=col, edgecolor='black')
     else:
-      ax.scatter(coord_x.select(isel), coord_y.select(isel), coord_z.select(isel),
-                 s=markersize, marker=marker, c=col, edgecolor=edgecolor)
-      if k >= 0:
+      if plot_all:
+        ax.scatter(coord_x.select(isel), coord_y.select(isel), coord_z.select(isel),
+                   s=markersize, marker=marker, c=col, edgecolor=edgecolor, alpha=alpha)
+      if plot_centroids and k >= 0:
         ax.scatter(flex.mean(coord_x.select(isel)), flex.mean(coord_y.select(isel)),
                    flex.mean(coord_z.select(isel)),
                    s=markersize*10, marker=marker, c=col, edgecolor='black')
@@ -664,7 +719,7 @@ def plot(coords, labels=None, show=False, plot_name=None):
                 bbox_inches='tight')
   if show:
     plt.show()
-  plt.close()
+  plt.close(fig)
 
 
 def plot_angles(coords, labels=None, show=False, plot_name=None):
@@ -740,11 +795,13 @@ def plot_angles(coords, labels=None, show=False, plot_name=None):
                 bbox_inches='tight')
   if show:
     plt.show()
-  plt.close()
+  plt.close(fig)
 
 
 def plot_matrix(correlation_matrix, linkage_matrix, file_name, labels=None,
                 color_threshold=0.05):
+  if correlation_matrix.shape[0] > 2000:
+    return
   from matplotlib import pyplot as plt
   from scipy.cluster import hierarchy
 
@@ -778,7 +835,7 @@ def plot_matrix(correlation_matrix, linkage_matrix, file_name, labels=None,
 
   # Display and save figure.
   fig.savefig(file_name)
-  fig.clear()
+  plt.close(fig)
 
 
 def plot_dendrogram(linkage_matrix, file_name, labels=None,
@@ -795,6 +852,7 @@ def plot_dendrogram(linkage_matrix, file_name, labels=None,
   locs, labels = plt.xticks()
   plt.setp(labels, rotation=70)
   fig.savefig(file_name)
+  plt.close(fig)
 
 
 def plot_silhouette(sample_silhouette_values, cluster_labels, file_name):
@@ -840,4 +898,4 @@ def plot_silhouette(sample_silhouette_values, cluster_labels, file_name):
   ax1.set_yticks([])  # Clear the yaxis labels / ticks
   ax1.set_xticks([-0.1, 0, 0.2, 0.4, 0.6, 0.8, 1])
   fig.savefig(file_name)
-  plt.clf()
+  plt.close(fig)
