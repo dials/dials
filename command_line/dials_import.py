@@ -165,7 +165,7 @@ phil_scope = parse('''
 ''', process_includes=True)
 
 
-class ExperimentListImporter(object):
+class ImageSetImporter(object):
   '''
   A class to manage the import of the experiments
 
@@ -227,19 +227,8 @@ class ExperimentListImporter(object):
     for db in datablocks:
       imageset_list.extend(db.extract_imagesets())
 
-    # Create the experiments
-    experiments = ExperimentList()
-    for imageset in imageset_list:
-      experiments.append(
-        Experiment(
-          imageset   = imageset,
-          beam       = imageset.get_beam(),
-          detector   = imageset.get_detector(),
-          goniometer = imageset.get_goniometer(),
-          scan       = imageset.get_scan(),
-          crystal    = None))
-    # Return the datablocks
-    return experiments
+    # Return the experiments
+    return imageset_list
 
 
 class ReferenceGeometryUpdater(object):
@@ -493,7 +482,7 @@ class MetaDataUpdater(object):
         logger.info("  %d. %s" % (i, item))
       logger.info("")
 
-  def __call__(self, experiments):
+  def __call__(self, imageset_list):
     '''
     Transform the metadata
 
@@ -503,16 +492,16 @@ class MetaDataUpdater(object):
 
     # Convert all to ImageGrid
     if self.params.input.as_grid_scan:
-      experiments = self.convert_to_grid_scan(experiments, self.params)
+      imageset_list = self.convert_to_grid_scan(imageset_list, self.params)
 
-    # Init imageset list
-    imageset_list = []
+    # Create the experiments
+    experiments = ExperimentList()
 
     # Loop through imagesets
-    for experiment in experiments:
+    for imageset in imageset_list:
 
       # Set the external lookups
-      imageset = self.update_lookup(experiment.imageset, lookup)
+      imageset = self.update_lookup(imageset, lookup)
 
       # Update the geometry
       for updater in self.update_geometry:
@@ -542,11 +531,25 @@ class MetaDataUpdater(object):
         ''')
 
       # Append to new imageset list
-      experiment.imageset = imageset
-      experiment.beam = imageset.get_beam()
-      experiment.detector = imageset.get_detector()
-      experiment.goniometer = imageset.get_goniometer()
-      experiment.scan = imageset.get_scan()
+      if isinstance(imageset, ImageSweep):
+        experiments.append(
+          Experiment(
+            imageset   = imageset,
+            beam       = imageset.get_beam(),
+            detector   = imageset.get_detector(),
+            goniometer = imageset.get_goniometer(),
+            scan       = imageset.get_scan(),
+            crystal    = None))
+      else:
+        for i in range(len(imageset)):
+          experiments.append(
+            Experiment(
+              imageset   = imageset[i:i+1],
+              beam       = imageset.get_beam(i),
+              detector   = imageset.get_detector(i),
+              goniometer = imageset.get_goniometer(i),
+              scan       = imageset.get_scan(i),
+              crystal    = None))
 
     # Return the datablock
     return experiments
@@ -659,16 +662,17 @@ class MetaDataUpdater(object):
       dx=Item(data=dx, filename=dx_filename),
       dy=Item(data=dy, filename=dy_filename))
 
-  def convert_to_grid_scan(self, experiments, params):
+  def convert_to_grid_scan(self, imageset_list, params):
     '''
     Convert the imagesets to grid scans
 
     '''
     if params.input.grid_size is None:
       raise Sorry("The input.grid_size parameter is required")
-    for experiment in experiments:
-      experiment.imageset = ImageGrid.from_imageset(experiment.imageset, params.input.grid_size)
-    return experiments
+    result = []
+    for imageset in imageset_list:
+      result.append(ImageGrid.from_imageset(imageset.as_imageset(), params.input.grid_size))
+    return result
 
 
 class Script(object):
@@ -731,13 +735,35 @@ class Script(object):
       return
 
     # Setup the datablock importer
-    experiments_importer = ExperimentListImporter(params)
+    imageset_importer = ImageSetImporter(params)
 
     # Setup the metadata updater
     metadata_updater = MetaDataUpdater(params)
 
     # Extract the datablocks and loop through
-    experiments = metadata_updater(experiments_importer())
+    experiments = metadata_updater(imageset_importer())
+
+    # Compute some numbers
+    num_sweeps = 0
+    num_stills = 0
+    num_images = 0
+    for e in experiments:
+      if isinstance(e.imageset, ImageSweep):
+        num_sweeps += 1
+      else:
+        num_stills += 1
+      num_images += len(e.imageset)
+    format_list = set(str(e.imageset.get_format_class()) for e in experiments)
+
+    # Print out some bulk info
+    logger.info("-" * 80)
+    for f in format_list:
+      logger.info("  format: %s" % f)
+    logger.info("  num sweeps: %d" % num_sweeps)
+    logger.info("  num stills: %d" % num_stills)
+    logger.info("  num images: %d" % num_images)
+
+    # Print out info for all experiments
     for experiment in experiments:
 
       # Print some experiment info - override the output of image range
@@ -748,13 +774,13 @@ class Script(object):
       else:
         imageset_type = "stills"
 
-      logger.info("-" * 80)
-      logger.info("  format: %s" % str(experiment.imageset.get_format_class()))
-      logger.info("  imageset type: %s" % imageset_type)
+      logger.debug("-" * 80)
+      logger.debug("  format: %s" % str(experiment.imageset.get_format_class()))
+      logger.debug("  imageset type: %s" % imageset_type)
       if image_range is None:
-        logger.info("  num images:    %d" % len(experiment.imageset))
+        logger.debug("  num images:    %d" % len(experiment.imageset))
       else:
-        logger.info("  num images:    %d" % (image_range[1] - image_range[0] + 1))
+        logger.debug("  num images:    %d" % (image_range[1] - image_range[0] + 1))
 
       logger.debug("")
       logger.debug(experiment.imageset.get_beam())
