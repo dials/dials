@@ -296,9 +296,11 @@ namespace adaptor {
    * [
    *  "dials::af::reflection_table",
    *  VERSION,
-   *  N_ROWS,
-   *  DATA
-   *  ]
+   *  {
+   *    "nrows" : N_ROWS,
+   *    "data" : DATA
+   *  }
+   * ]
    *
    * The first entry identifies the data as a reflection table.
    * The second entry gives the version number in case this changes
@@ -314,11 +316,12 @@ namespace adaptor {
         msgpack::packer<Stream>& o,
         const dials::af::reflection_table& v) const {
       typedef dials::af::reflection_table::const_iterator iterator;
-      o.pack_map(4);
-      o.pack("filetype");
-      o.pack("dials::af::reflection_table");
-      o.pack("version");
-      o.pack(1);
+      std::string filetype = "dials::af::reflection_table";
+      std::size_t version = 1;
+      o.pack_array(3);
+      o.pack(filetype);
+      o.pack(version);
+      o.pack_map(2);
       o.pack("nrows");
       o.pack(v.nrows());
       o.pack("data");
@@ -585,15 +588,15 @@ namespace adaptor {
    * [
    *  "dials::af::reflection_table",
    *  VERSION,
-   *  N_ROWS,
-   *  DATA
-   *  ]
+   *  {
+   *    "nrows" : N_ROWS,
+   *    "data" : DATA
+   *  }
+   * ]
    *
    * The first entry identifies the data as a reflection table.
    * The second entry gives the version number in case this changes
-   * The third entry gives the expected number of rows in the table
-   * The fourth entry is a map with key value pairs corresponding to the names
-   * and arrays of the column data.
+   * The third entry is a dictionary containing data and metadata
    */
   template <>
   struct convert<dials::af::reflection_table> {
@@ -604,58 +607,53 @@ namespace adaptor {
       typedef dials::af::reflection_table::mapped_type mapped_type;
 
       // Check the type is an array
-      if (o.type != msgpack::type::MAP) {
-        throw DIALS_ERROR("msgpack type is not an map");
+      if (o.type != msgpack::type::ARRAY) {
+        throw DIALS_ERROR("msgpack type is not an array");
       }
 
       // Check there are 4 elements
-      if (o.via.map.size != 4) {
-        throw DIALS_ERROR("msgpack map does not have correct dimensions");
+      if (o.via.array.size != 3) {
+        throw DIALS_ERROR("msgpack array does not have correct dimensions");
+      }
+    
+      // Check the file type
+      std::string filetype;
+      o.via.array.ptr[0].convert(filetype);
+      if (filetype != "dials::af::reflection_table") {
+        throw DIALS_ERROR("Expected dials::af::reflection_table, got something else");
+      }
+      
+      // Check the version
+      std::size_t version;
+      o.via.array.ptr[1].convert(version);
+      if (version != 1) {
+        throw DIALS_ERROR("Expected version 1, got something else");
+      }
+
+      // Get the header object
+      msgpack::object *header_object = &o.via.array.ptr[2];
+
+      // Check the type is an array
+      if (header_object->type != msgpack::type::MAP) {
+        throw DIALS_ERROR("msgpack type is not an map");
       }
 
       // Set the the column map object to NULL
       msgpack::object *map_object = NULL;
 
       // Required colulmns
-      bool found_filetype = false;
-      bool found_version = false;
       bool found_nrows = false;
 
       // Loop through the meta data
-      msgpack::object_kv* first = o.via.map.ptr;
-      msgpack::object_kv* last = first + o.via.map.size;
+      msgpack::object_kv* first = header_object->via.map.ptr;
+      msgpack::object_kv* last = first + header_object->via.map.size;
       for (msgpack::object_kv *it = first; it != last; ++it) {
 
         // Get the item name
         std::string name;
         it->key.convert(name);
 
-        // Read the meta data columns
-        if (name == "filetype") {
-
-          // Check this is a reflection table
-          std::string type;
-          it->val.convert(type);
-          if (type != "dials::af::reflection_table") {
-            throw DIALS_ERROR("Expected dials::af::reflection_table, got something else");
-          }
-
-          // Filetype is required
-          found_filetype = true;
-
-        } else if (name == "version") {
-
-          // Check the version is what we expect
-          std::size_t version;
-          it->val.convert(version);
-          if (version != 1) {
-            throw DIALS_ERROR("Expected version 1, got something else");
-          }
-
-          // Version is required
-          found_version = true;
-
-        } else if (name == "nrows") {
+        if (name == "nrows") {
 
           // Resize the expected number of rows
           std::size_t nrows;
@@ -673,16 +671,6 @@ namespace adaptor {
         } else {
           throw DIALS_ERROR("unknown key in reflection file");
         }
-      }
-
-      // Check filetype has been found
-      if (!found_filetype) {
-        throw DIALS_ERROR("File type not found");
-      }
-
-      // Check version has been found
-      if (!found_version) {
-        throw DIALS_ERROR("Version not found");
       }
 
       // Check the number of rows has been found
