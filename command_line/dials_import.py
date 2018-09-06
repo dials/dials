@@ -14,8 +14,16 @@ from __future__ import absolute_import, division, print_function
 import logging
 
 import libtbx.load_env
-from dxtbx.datablock import DataBlockDumper, DataBlockFactory
 from libtbx.utils import Sorry
+from dxtbx.datablock import DataBlockFactory
+from dxtbx.model.experiment_list import ExperimentList
+from dxtbx.model.experiment_list import Experiment
+from dxtbx.model.experiment_list import ExperimentListDumper
+from dxtbx.datablock import DataBlockTemplateImporter
+from dxtbx.datablock import DataBlockFactory
+from dxtbx.imageset import ImageGrid
+from dxtbx.imageset import ImageSweep
+from dials.util.options import flatten_datablocks
 
 logger = logging.getLogger('dials.command_line.import')
 
@@ -68,7 +76,7 @@ phil_scope = parse('''
 
   output {
 
-    datablock = datablock.json
+    experiments = datablock.json
       .type = str
       .help = "The output JSON or pickle file"
 
@@ -157,9 +165,9 @@ phil_scope = parse('''
 ''', process_includes=True)
 
 
-class DataBlockImporter(object):
+class ExperimentListImporter(object):
   '''
-  A class to manage the import of the datablocks
+  A class to manage the import of the experiments
 
   '''
 
@@ -175,9 +183,6 @@ class DataBlockImporter(object):
     Import the datablocks
 
     '''
-    from dxtbx.datablock import DataBlockTemplateImporter
-    from dxtbx.datablock import DataBlockFactory
-    from dials.util.options import flatten_datablocks
 
     # Get the datablocks
     datablocks = flatten_datablocks(self.params.input.datablock)
@@ -217,8 +222,24 @@ class DataBlockImporter(object):
     # if len(datablocks) > 1:
     #   raise Sorry("More than 1 datablock found")
 
+    # Get a list of all imagesets
+    imageset_list = []
+    for db in datablocks:
+      imageset_list.extend(db.extract_imagesets())
+
+    # Create the experiments
+    experiments = ExperimentList()
+    for imageset in imageset_list:
+      experiments.append(
+        Experiment(
+          imageset   = imageset,
+          beam       = imageset.get_beam(),
+          detector   = imageset.get_detector(),
+          goniometer = imageset.get_goniometer(),
+          scan       = imageset.get_scan(),
+          crystal    = None))
     # Return the datablocks
-    return datablocks
+    return experiments
 
 
 class ReferenceGeometryUpdater(object):
@@ -472,28 +493,26 @@ class MetaDataUpdater(object):
         logger.info("  %d. %s" % (i, item))
       logger.info("")
 
-  def __call__(self, datablock):
+  def __call__(self, experiments):
     '''
     Transform the metadata
 
     '''
-    from dxtbx.datablock import DataBlock
-
     # Import the lookup data
     lookup = self.import_lookup_data(self.params)
 
     # Convert all to ImageGrid
     if self.params.input.as_grid_scan:
-      datablock = self.convert_to_grid_scan(datablock, self.params)
+      experiments = self.convert_to_grid_scan(experiments, self.params)
 
     # Init imageset list
     imageset_list = []
 
     # Loop through imagesets
-    for imageset in datablock.extract_imagesets():
+    for experiment in experiments:
 
       # Set the external lookups
-      imageset = self.update_lookup(imageset, lookup)
+      imageset = self.update_lookup(experiment.imageset, lookup)
 
       # Update the geometry
       for updater in self.update_geometry:
@@ -523,10 +542,10 @@ class MetaDataUpdater(object):
         ''')
 
       # Append to new imageset list
-      imageset_list.append(imageset)
+      experiment.imageset = imageset
 
     # Return the datablock
-    return DataBlock(imageset_list)
+    return experiments
 
   def update_lookup(self, imageset, lookup):
     from dxtbx.format.image import ImageBool, ImageDouble
@@ -636,21 +655,16 @@ class MetaDataUpdater(object):
       dx=Item(data=dx, filename=dx_filename),
       dy=Item(data=dy, filename=dy_filename))
 
-  def convert_to_grid_scan(self, datablock, params):
+  def convert_to_grid_scan(self, experiments, params):
     '''
     Convert the imagesets to grid scans
 
     '''
-    from dxtbx.datablock import DataBlock
-    from dxtbx.imageset import ImageGrid
     if params.input.grid_size is None:
       raise Sorry("The input.grid_size parameter is required")
-    sweeps = datablock.extract_sweeps()
-    stills = datablock.extract_stills()
-    imagesets = []
-    for iset in sweeps + stills:
-      imagesets.append(ImageGrid.from_imageset(iset, params.input.grid_size))
-    return DataBlock(imagesets)
+    for experiment in experiments:
+      experiment.imageset = ImageGrid.from_imageset(experiment.imageset, params.input.grid_size)
+    return experiments
 
 
 class Script(object):
@@ -713,70 +727,61 @@ class Script(object):
       return
 
     # Setup the datablock importer
-    datablock_importer = DataBlockImporter(params)
+    experiments_importer = ExperimentListImporter(params)
 
     # Setup the metadata updater
     metadata_updater = MetaDataUpdater(params)
 
     # Extract the datablocks and loop through
-    datablocks = map(metadata_updater, datablock_importer())
-    for datablock in datablocks:
+    experiments = metadata_updater(experiments_importer())
+    for experiment in experiments:
 
-      # Extract any sweeps
-      sweeps = datablock.extract_sweeps()
-
-      # Extract any stills
-      stills = datablock.extract_stills()
-      if not stills:
-        num_stills = 0
-      else:
-        num_stills = sum([len(s) for s in stills])
-
-      # Print some data block info - override the output of image range
+      # Print some experiment info - override the output of image range
       # if appropriate
       image_range = params.geometry.scan.image_range
+      if isinstance(experiment.imageset, ImageSweep):
+        imageset_type = "sweep"
+      else:
+        imageset_type = "stills"
 
       logger.info("-" * 80)
-      logger.info("  format: %s" % str(datablock.format_class()))
+      logger.info("  format: %s" % str(experiment.imageset.get_format_class()))
+      logger.info("  imageset type: %s" % imageset_type)
       if image_range is None:
-        logger.info("  num images: %d" % datablock.num_images())
+        logger.info("  num images:    %d" % len(experiment.imageset))
       else:
-        logger.info("  num images: %d" % (image_range[1] - image_range[0] + 1))
-      logger.info("  num sweeps: %d" % len(sweeps))
-      logger.info("  num stills: %d" % num_stills)
+        logger.info("  num images:    %d" % (image_range[1] - image_range[0] + 1))
 
-      # Loop through all the sweeps
-      for j, sweep in enumerate(sweeps):
-        logger.debug("")
-        logger.debug("Sweep %d" % j)
-        logger.debug("  Length %d" % len(sweep))
-        logger.debug(sweep.get_beam())
-        logger.debug(sweep.get_goniometer())
-        logger.debug(sweep.get_detector())
-        logger.debug(sweep.get_scan())
+      logger.debug("")
+      logger.debug(experiment.imageset.get_beam())
+      logger.debug(experiment.imageset.get_goniometer())
+      logger.debug(experiment.imageset.get_detector())
+      logger.debug(experiment.imageset.get_scan())
 
       # Only allow a single sweep
       if params.input.allow_multiple_sweeps is False:
-        self.assert_single_sweep(sweeps, params)
+        self.assert_single_sweep(experiments, params)
 
-    # Write the datablocks to file
-    self.write_datablocks(datablocks, params)
+    # Write the experiments to file
+    self.write_experiments(experiments, params)
 
-  def write_datablocks(self, datablocks, params):
+  def write_experiments(self, experiments, params):
     '''
-    Output the datablock to file.
+    Output the experiments to file.
 
     '''
-    if params.output.datablock:
+    if params.output.experiments:
       logger.info("-" * 80)
-      logger.info('Writing datablocks to %s' % params.output.datablock)
-      dump = DataBlockDumper(datablocks)
-      dump.as_file(params.output.datablock, compact=params.output.compact)
+      logger.info('Writing experiments to %s' % params.output.experiments)
+      dump = ExperimentListDumper(experiments)
+      dump.as_file(params.output.experiments, compact=params.output.compact)
 
-  def assert_single_sweep(self, sweeps, params):
+  def assert_single_sweep(self, experiments, params):
     '''
     Print an error message if more than 1 sweep
     '''
+    sweeps = [e.imageset for e in experiments if isinstance(e.imageset,  ImageSweep)]
+
     if len(sweeps) > 1:
 
       # Print some info about multiple sweeps
