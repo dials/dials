@@ -226,6 +226,23 @@ namespace adaptor {
   };
 
   /**
+   * Pack the c_grid accessor into a message pack array
+   */
+  template <std::size_t N>
+  struct pack< scitbx::af::c_grid<N> > {
+    template <typename Stream>
+    msgpack::packer<Stream>& operator()(
+        msgpack::packer<Stream>& o,
+        const scitbx::af::c_grid<N>& v) const {
+      o.pack_array(N);
+      for (std::size_t i = 0; i < N; ++i) {
+        o.pack(v[i]);
+      }
+      return o;
+    }
+  };
+
+  /**
    * Pack a versa into a msgpack array and preserve accessor size
    */
   template <typename T, typename Accessor>
@@ -235,7 +252,7 @@ namespace adaptor {
         msgpack::packer<Stream>& o,
         const scitbx::af::versa<T, Accessor>& v) const {
       o.pack_array(2);
-      o.pack(v.accessor().const_ref());
+      o.pack(v.accessor());
       o.pack(scitbx::af::const_ref<T>(&v[0], v.size()));
       return o;
     }
@@ -250,7 +267,11 @@ namespace adaptor {
     msgpack::packer<Stream>& operator()(
         msgpack::packer<Stream>& o,
         const scitbx::af::tiny<T,N>& v) const {
-      return o.pack(v.const_ref());
+      o.pack_array(N);
+      for (std::size_t i = 0; i < N; ++i) {
+        o.pack(v[i]);
+      }
+      return o;
     }
   };
 
@@ -463,8 +484,7 @@ namespace adaptor {
 
       // Read the accessor element
       Accessor grid;
-      scitbx::af::ref<std::size_t> grid_ref = grid.ref();
-      o.via.array.ptr[0].convert(grid_ref);
+      o.via.array.ptr[0].convert(grid);
 
       // Resize the versa
       v = scitbx::af::versa<T, Accessor>(grid);
@@ -477,15 +497,57 @@ namespace adaptor {
   };
 
   /**
-   * Convert a msgpack array to an int6
+   * Convert a msgpack array to a c_grid<N>
+   */
+  template <std::size_t N>
+  struct convert< scitbx::af::c_grid<N> > {
+    msgpack::object const& operator()(
+        msgpack::object const& o,
+        scitbx::af::c_grid<N>& v) const {
+
+      // Ensure type is an array
+      if (o.type != msgpack::type::ARRAY) {
+        throw DIALS_ERROR("msgpack type is not an array");
+      }
+
+      // Ensure that we have an accessor and data element
+      if (o.via.array.size != N) {
+        throw DIALS_ERROR("msgpack array does not have correct dimensions");
+      }
+
+      // Convert the elements
+      for (std::size_t i = 0; i < N; ++i) {
+        o.via.array.ptr[i].convert(v[i]);
+      }
+
+      return o;
+    }
+  };
+
+  /**
+   * Convert a msgpack array to an tiny<T,N>
    */
   template <typename T, std::size_t N>
   struct convert< scitbx::af::tiny<T,N> > {
     msgpack::object const& operator()(
         msgpack::object const& o,
         scitbx::af::tiny<T,N>& v) const {
-      scitbx::af::ref<T> r = v.ref();
-      o.convert(r);
+
+      // Ensure type is an array
+      if (o.type != msgpack::type::ARRAY) {
+        throw DIALS_ERROR("msgpack type is not an array");
+      }
+
+      // Ensure that we have an accessor and data element
+      if (o.via.array.size != N) {
+        throw DIALS_ERROR("msgpack array does not have correct dimensions");
+      }
+
+      // Convert the elements
+      for (std::size_t i = 0; i < N; ++i) {
+        o.via.array.ptr[i].convert(v[i]);
+      }
+
       return o;
     }
   };
@@ -615,14 +677,14 @@ namespace adaptor {
       if (o.via.array.size != 3) {
         throw DIALS_ERROR("msgpack array does not have correct dimensions");
       }
-    
+
       // Check the file type
       std::string filetype;
       o.via.array.ptr[0].convert(filetype);
       if (filetype != "dials::af::reflection_table") {
         throw DIALS_ERROR("Expected dials::af::reflection_table, got something else");
       }
-      
+
       // Check the version
       std::size_t version;
       o.via.array.ptr[1].convert(version);
