@@ -104,6 +104,15 @@ control_phil_str = '''
       .type = str
       .help = For MPI, for multifile data, mandatory blobs giving file paths
       .multiple = True
+    composite_stride = None
+      .type = int
+      .help = For MPI, if using composite mode, specify how many ranks to    \
+              aggregate data from.  For example, if you have 100 processes,  \
+              composite mode will output N*100 files, where N is the number  \
+              of file types (json, pickle, etc). If you specify stride = 25, \
+              then each group of 25 process will send their results to 4     \
+              processes and only N*4 files will be created. Ideally, match   \
+              stride to the number of processors per node.
   }
 '''
 
@@ -477,7 +486,7 @@ class Processor(object):
       self.setup_filenames(tag)
     self.tag = tag
 
-    if self.params.output.datablock_filename:
+    if not self.params.output.composite_output and self.params.output.datablock_filename:
       from dxtbx.datablock import DataBlockDumper
       dump = DataBlockDumper(datablock)
       dump.as_json(self.params.output.datablock_filename)
@@ -906,6 +915,47 @@ class Processor(object):
   def finalize(self):
     ''' Perform any final operations '''
     if self.params.output.composite_output:
+      if self.params.mp.composite_stride is not None:
+        assert self.params.mp.method == 'mpi'
+        stride = self.params.mp.composite_stride
+
+        from mpi4py import MPI
+        comm = MPI.COMM_WORLD
+        rank = comm.Get_rank() # each process in MPI has a unique id, 0-indexed
+        size = comm.Get_size() # size: number of processes running in this job
+
+        if rank%stride == 0:
+          subranks = [rank + i for i in xrange(1, stride) if rank + i < size]
+          for i in xrange(len(subranks)):
+            logger.info("Rank %d waiting for sender"%rank)
+            sender, indexed_experiments, indexed_reflections, \
+              integrated_experiments, integrated_reflections, \
+              int_pickles, int_pickle_filenames = comm.recv(source=MPI.ANY_SOURCE)
+            logger.info("Rank %d recieved data from rank %d"%(rank, sender))
+
+            indexed_reflections['id'] += len(self.all_indexed_experiments)
+            self.all_indexed_reflections.extend(indexed_reflections)
+            self.all_indexed_experiments.extend(indexed_experiments)
+
+            integrated_reflections['id'] += len(self.all_integrated_experiments)
+            self.all_integrated_reflections.extend(integrated_reflections)
+            self.all_integrated_experiments.extend(integrated_experiments)
+
+            self.all_int_pickles.extend(int_pickles)
+            self.all_int_pickle_filenames.extend(int_pickle_filenames)
+
+        else:
+          destrank = (rank//stride)*stride
+          logger.info("Rank %d sending results to rank %d"%(rank, (rank//stride)*stride))
+          comm.send((rank, self.all_indexed_experiments, self.all_indexed_reflections,
+                     self.all_integrated_experiments, self.all_integrated_reflections,
+                     self.all_int_pickles,self.all_int_pickle_filenames),
+                     dest=destrank)
+
+          self.all_indexed_experiments = self.all_indexed_reflections = \
+            self.all_integrated_experiments = self.all_integrated_reflections = \
+            self.all_int_pickles =self.all_integrated_reflections = []
+
       # Dump composite files to disk
       if len(self.all_indexed_experiments) > 0 and self.params.output.refined_experiments_filename:
         from dxtbx.model.experiment_list import ExperimentListDumper
