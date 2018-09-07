@@ -182,22 +182,22 @@ def show_experiments(experiments, show_scan_varying=False):
       text.append(show_goniometer(expt.goniometer))
     from cStringIO import StringIO
     s = StringIO()
-    expt.crystal.show(show_scan_varying=show_scan_varying, out=s)
-    text.append(s.getvalue())
-    if expt.crystal.num_scan_points:
-      from scitbx.array_family import flex
-      from cctbx import uctbx
-      abc = flex.vec3_double()
-      angles = flex.vec3_double()
-      for n in range(expt.crystal.num_scan_points):
-        a, b, c, alpha, beta, gamma = expt.crystal.get_unit_cell_at_scan_point(n).parameters()
-        abc.append((a, b, c))
-        angles.append((alpha, beta, gamma))
-      a, b, c = abc.mean()
-      alpha, beta, gamma = angles.mean()
-      mean_unit_cell = uctbx.unit_cell((a, b, c, alpha, beta, gamma))
-      text.append('  Average unit cell: %s' %mean_unit_cell)
-    #text.append('')
+    if expt.crystal is not None:
+      expt.crystal.show(show_scan_varying=show_scan_varying, out=s)
+      text.append(s.getvalue())
+      if expt.crystal.num_scan_points:
+        from scitbx.array_family import flex
+        from cctbx import uctbx
+        abc = flex.vec3_double()
+        angles = flex.vec3_double()
+        for n in range(expt.crystal.num_scan_points):
+          a, b, c, alpha, beta, gamma = expt.crystal.get_unit_cell_at_scan_point(n).parameters()
+          abc.append((a, b, c))
+          angles.append((alpha, beta, gamma))
+        a, b, c = abc.mean()
+        alpha, beta, gamma = angles.mean()
+        mean_unit_cell = uctbx.unit_cell((a, b, c, alpha, beta, gamma))
+        text.append('  Average unit cell: %s' %mean_unit_cell)
     if expt.profile is not None:
       text.append(str(expt.profile))
     if expt.scaling_model is not None:
