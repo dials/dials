@@ -105,3 +105,63 @@ def test_reindex_multi_sweep(dials_regression, tmpdir):
     (6.189939294071243, 6.189939294071243, 6.189939294071242,
      113.16417286469935, 107.65690626466579, 107.65690626466579))
   assert new_experiments[0].crystal.get_space_group().type().hall_symbol() == ' I 4 (x+y,y+z,x+z)'
+
+def test_reindex_against_reference(dials_regression, tmpdir):
+  """Test the reindexing against a reference dataset functionality."""
+  tmpdir.chdir()
+
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
+  pickle_path = os.path.join(data_dir, "indexed.pickle")
+  experiments_path = os.path.join(data_dir, "experiments.json")
+
+  commands = ["dials.reindex", pickle_path, experiments_path,
+    "change_of_basis_op=a,b,c", "space_group=P4",
+    "output.reflections=P4_reflections.pickle",
+    "output.experiments=P4_experiments.json"]
+  command = " ".join(commands)
+  print(command)
+
+  _ = easy_run.fully_buffered(command=command).raise_if_errors()
+  assert os.path.exists('P4_reflections.pickle')
+  assert os.path.exists('P4_experiments.json')
+  new_experiments = load.experiment_list(
+    'P4_experiments.json', check_format=False)
+  assert new_experiments[0].crystal.get_space_group().type().hall_symbol() == ' P 4'
+
+  # Now have something in P4, get another dataset in a different indexing scheme
+
+  cb_op = sgtbx.change_of_basis_op('a,-b,-c')
+  commands = ["dials.reindex", "P4_reflections.pickle", 'P4_experiments.json',
+    "change_of_basis_op=%s" %str(cb_op),
+    "output.experiments=P4_reindexed.json",
+    "output.reflections=P4_reindexed.pickle"]
+  command = " ".join(commands)
+  print(command)
+  _ = easy_run.fully_buffered(command=command).raise_if_errors()
+
+  # now run reference reindexing
+  commands = ["dials.reindex", "P4_reflections.pickle", 'P4_experiments.json',
+    "reference=P4_reindexed.json", "reference_reflections=P4_reindexed.pickle"]
+  command = " ".join(commands)
+  print(command)
+  _ = easy_run.fully_buffered(command=command).raise_if_errors()
+
+  #expect reindexed_reflections to be same as P4_reindexed, not P4_reflections
+  reindexed_reflections = easy_pickle.load('reindexed_reflections.pickle')
+  P4_reindexed = easy_pickle.load('P4_reindexed.pickle')
+  P4_reflections = easy_pickle.load('P4_reflections.pickle')
+
+  h1, k1, l1 = reindexed_reflections['miller_index'].as_vec3_double().parts()
+  h2, k2, l2 = P4_reindexed['miller_index'].as_vec3_double().parts()
+  h3, k3, l3 = P4_reflections['miller_index'].as_vec3_double().parts()
+
+  #hkl1 and hkl2 should be same, as should have been reindexed by against the
+  # reference, with the program determing a reindexing operator of a,-b,-c
+  assert list(h1) == pytest.approx(list(h2))
+  assert list(l1) == pytest.approx(list(l2))
+  assert list(k1) == pytest.approx(list(k2))
+  # h1 and h3 should be same, but not l and k, as these dataset should differ
+  # by an a twinning operator of a,-b,-c
+  assert list(h1) == pytest.approx(list(h3))
+  assert list(l1) != pytest.approx(list(l3))
+  assert list(k1) != pytest.approx(list(k3))

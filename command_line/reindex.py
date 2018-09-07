@@ -14,6 +14,7 @@ from __future__ import absolute_import, division
 from __future__ import print_function
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
+import os
 import copy
 from libtbx.phil import command_line
 from libtbx import easy_pickle
@@ -25,6 +26,7 @@ from dxtbx.serialize import dump
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections, flatten_experiments
+from dials.util.filter_reflections import integrated_data_to_filtered_miller_array
 
 help_message = '''
 
@@ -34,6 +36,11 @@ provided in h,k,l, or a,b,c or x,y,z conventions. By default the change of
 basis operator will also be applied to the space group in the experiments.json
 file, however, optionally, a space group (including setting) to be applied
 AFTER applying the change of basis operator can be provided.
+Alternatively, to reindex an integated dataset in the case of indexing abiguity,
+a reference dataset (experiments.json and reflection.pickle) in the same space
+group can be specified. In this case, any potential twin operators are tested,
+and the dataset is reindexed to the setting that gives the highest correlation
+with the reference dataset.
 
 Examples::
 
@@ -42,6 +49,9 @@ Examples::
   dials.reindex indexed.pickle change_of_basis_op=-b,a+b+2*c,-a
 
   dials.reindex experiments.json index.pickle change_of_basis_op=l,h,k
+
+  dials.reindex experiments.json index.pickle reference=ref_experiments.json
+    reference_reflections=ref_reflections.pickle
 
 '''
 
@@ -57,6 +67,9 @@ space_group = None
 reference = None
   .type = path
   .help = "Reference experiment for determination of change of basis operator."
+reference_reflections = None
+  .type = path
+  .help = "Reference dataset (pickle) to allow reindexing to consistent index between datasets."
 output {
   experiments = reindexed_experiments.json
     .type = str
@@ -142,7 +155,51 @@ def run(args):
     assert len(reference_experiments.crystals()) == 1
     reference_crystal = reference_experiments.crystals()[0]
 
-  if len(experiments) and params.change_of_basis_op is libtbx.Auto:
+  if params.reference_reflections is not None:
+    # First check that we have everything as expected for the reference reindexing
+    # Currently only supports reindexing one dataset at a time
+    if params.reference is None:
+      raise Sorry("""For reindexing against a reference dataset, a reference
+experiments file must also be specified with the option: reference= """)
+    if not os.path.exists(params.reference_reflections):
+      raise Sorry("Could not locate reference dataset reflection file")
+    if len(experiments) != 1 or len(reflections) != 1:
+      raise Sorry("Only one dataset can be reindexed to a reference at a time")
+
+    reference_reflections = flex.reflection_table().from_pickle(
+      params.reference_reflections)
+
+    test_crystal = experiments.crystals()[0]
+    test_reflections = reflections[0]
+
+    # Set some flags to allow filtering, if wanting to reindex against
+    # reference with data that has not yet been through integration
+    if test_reflections.get_flags(
+      test_reflections.flags.integrated_sum).count(True) == 0:
+      assert 'intensity.sum.value' in test_reflections, \
+        "No 'intensity.sum.value in reflections"
+      test_reflections.set_flags(flex.bool(test_reflections.size(), True),
+         test_reflections.flags.integrated_sum)
+    if reference_reflections.get_flags(
+      reference_reflections.flags.integrated_sum).count(True) == 0:
+      assert 'intensity.sum.value' in test_reflections, \
+        "No 'intensity.sum.value in reference reflections"
+      reference_reflections.set_flags(flex.bool(reference_reflections.size(), True),
+         reference_reflections.flags.integrated_sum)
+
+    # Make miller array of the two datasets
+    test_miller_set = integrated_data_to_filtered_miller_array(
+      test_reflections, test_crystal)
+    reference_miller_set = integrated_data_to_filtered_miller_array(
+      reference_reflections, reference_crystal)
+
+    from dials.algorithms.symmetry.reindex_to_reference import \
+      determine_reindex_operator_against_reference
+
+    change_of_basis_op = determine_reindex_operator_against_reference(
+      test_miller_set, reference_miller_set)
+
+  elif len(experiments) and params.change_of_basis_op is libtbx.Auto:
     if reference_crystal is not None:
       if len(experiments.crystals()) > 1:
         raise Sorry("Only one crystal can be processed at a time")
