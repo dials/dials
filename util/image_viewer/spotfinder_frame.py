@@ -1279,7 +1279,8 @@ class SpotFrame(XrayFrame) :
       #show overlapped pixels in a different color
       all_pix_data[max(all_pix_data.keys())+1] = overlapped_data
 
-    if self.settings.show_basis_vectors and self.crystals is not None:
+    if (self.settings.show_basis_vectors and self.crystals is not None
+        and self.crystals[0] is not None):
       from cctbx import crystal
       crystal_model = self.crystals[0]
       cs = crystal.symmetry(unit_cell=crystal_model.get_unit_cell(), space_group=crystal_model.get_space_group())
