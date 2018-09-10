@@ -23,57 +23,13 @@ detector position, of measured multiplicity, of absolute intensity and of
 I/sigma.
 """
 
-# TODO Docstrings are in Google-ish format — move to Sphinx-ish.
-# TODO Once ∃ a dials tool for (unmerged MTZ) –> (exp list, refl table), use it
 
 from dials.array_family import flex
 
 
 class IntensityDist(object):
-  # TODO Finish updating docstring.
-  """
-  Store intensity data and generate associated normal probability plot data.
-
-  :ivar outfile: Filename root for generated plots.  Default value: None
-  :type outfile: str
-  Attributes:
-    ind
-      (cctbx_array_family_flex_ext.miller_index): Miller indices.
-    I (cctbx_array_family_flex_ext.double):       Measured intensity data.
-    sigI (cctbx_array_family_flex_ext.double):    Measured intensity standard
-                                                    deviations.
-    x (cctbx_array_family_flex_ext.double):       Detector position, x (fast)
-                                                    axis component.
-    y (cctbx_array_family_flex_ext.double):       Detector position, y (slow)
-                                                    axis component.
-    frame (cctbx_array_family_flex_ext.int):      Batch (frame) number.
-    multis (cctbx_array_family_flex_ext.int):     Measured multiplicity of
-                                                    symmetry-equivalent spots.
-    i_means (cctbx_array_family_flex_ext.double):  Weighted means of symmetry-
-                                                    equivalent reflection
-                                                    intensities.
-    sig_i_means
-      (cctbx_array_family_flex_ext.double):   Standard deviation on the
-                                                weighted mean intensities.
-    variances
-      (cctbx_array_family_flex_ext.double):   Unbiased weighted sample
-                                                variances of symmetry-
-                                                equivalent reflection
-                                                intensities.
-    z (cctbx_array_family_flex_ext.double):   z-scores of weighted mean
-                                                intensities.
-    order
-      (scitbx_array_family_flex_ext.size_t):  Index with which to sort the
-                                                z-scores in ascending order.
-                                                Useful for making a normal
-                                                probability plot.
-    osm (cctbx_array_family_flex_ext.double): Normal order statistic medians of
-                                                the z-scores.
-  """
-
   def __init__(self, rtable, elist, calculate_variances=False,
                keep_singles=False, uncertainty='sigma', outfile=None):
-    # TODO Finish updating docstring
     """
     Generate z-scores and a normal probability plot from a DIALS
     reflection_table and a dxtbx ExperimentList, containing the observations
@@ -87,43 +43,67 @@ class IntensityDist(object):
     :type rtable: dials.array_family_flex_ext.reflection_table
     :param elist: A corresponding experiment list.
     :type elist: dxtbx_model_ext.ExperimentList
-    :param keep_singles: Choose whether to keep multiplicity-1
-                          reflections.
-                          Defaults to False.
+    :param calculate_variances: Choose whether to calculate weighted
+    aggregate variances.  Doing so incurs a performance penalty.
+    Defaullts to False.
+    :type calculate_variances: bool
+    :param keep_singles: Choose whether to keep multiplicity-1 reflections.
+    Defaults to False.
     :type keep_singles: bool
     :param uncertainty: Measure of spread to use in normalising the
-                        z-scores, i.e. z = (I - <I>) / uncertainty.
-    :type uncertainty: str
-
+    z-scores, i.e. z = (I - <I>) / uncertainty.
     Possible values for uncertainty:
     * 'sigma':    Use measured sigma values;
     * 'stddev':   Use sample standard deviations calculated as
                   square-root of unbiased weighted sample variances
                   of symmetry-equivalent reflection intensities;
     Defaults to 'sigma'.
+    :type uncertainty: str
+    :param outfile: Filename root for output PNG plots.
+    Defaults to None.
+    :type: outfile: str
     """
 
+    from dxtbx.model import ExperimentList
     from cctbx import miller
 
-    if not (rtable and elist):
+    try:
+      assert(isinstance(rtable, flex.reflection_table))
+      assert(isinstance(elist, ExperimentList))
+    except AssertionError:
       raise TypeError(
-          "Must be called with a reflection table and experiment list.")
+          "Must be called with a reflection table and an experiment list.")
 
-    # FIXME Handle ExperimentList with length > 1 properly.
-    self.rtable = rtable
-    self.sg_type = elist.crystals()[0].get_space_group().type()
+    rtable = rtable.copy()
+    # Discard unindexed reflections (only necessary because of
+    # https://github.com/dials/dials/issues/615 —
+    # TODO remove the line below when issue #615 is fixed).
+    rtable.del_selected(rtable["id"] == -1)
+    rtable['miller_index.asu'] = rtable['miller_index']
 
+    # Divide reflections by the space group to which they have been indexed.
+    self.rtables = { expt.crystal.get_space_group().make_tidy():
+                      flex.reflection_table() for expt in elist }
+    for expt, sel in rtable.iterate_experiments_and_indices(elist):
+      sg = expt.crystal.get_space_group().make_tidy()
+      self.rtables[sg].extend(rtable.select(sel))
     # Map Miller indices to asymmetric unit.
-    self.rtable['miller_index.asu'] = self.rtable['miller_index'].deep_copy()
-    # TODO Handle anomalous flag sensibly.  Currently assumes not anomalous.
-    miller.map_to_asu(self.sg_type, False, self.rtable['miller_index.asu'])
+    for space_group, rtable in self.rtables.items():
+      # TODO Handle anomalous flag sensibly.  Currently assumes not anomalous.
+      miller.map_to_asu(space_group.type(), False, rtable['miller_index.asu'])
 
     # Calculate normal probability plot data.
     self._multiplicity_mean_error_stddev(
-      calculate_variances=calculate_variances, keep_singles=keep_singles)
+        calculate_variances=calculate_variances, keep_singles=keep_singles)
     self._make_z(uncertainty)
     self._probplot_data()
 
+    self.rtable = flex.reflection_table()
+    for rtable in self.rtables.values():
+      self.rtable.extend(rtable)
+
+    if not outfile:
+      outfile = ''
     self.outfile = outfile
 
   def _multiplicity_mean_error_stddev(self, calculate_variances=False,
@@ -153,133 +133,136 @@ class IntensityDist(object):
     :type keep_singles: bool
     """
 
-    # Sort the reflection table for speedier iteration.
-    self.rtable.sort('miller_index.asu')
-    # Record the positions of any multiplicity-1 reflections.
-    if not keep_singles:
-      singles = flex.size_t()
-    # Record the multiplicities.
-    multiplicity = flex.int()
-    # For weighted averaging.
-    weights = 1 / self.rtable['intensity.sum.variance']
-    sum_weights = flex.double()
-    if calculate_variances:
-      sum_square_weights = flex.double()
-    # Calculate the weighted mean intensities.
-    i_means = flex.double()
-    # Calculate the standard deviations from unbiased weighted variances.
-    variances = flex.double()
-
-    # Iterate over the reflections, grouping by equivalent Miller index,
-    # to calculate multiplicities, weighted mean intensities, etc..
-    # Some time can be saved by only calculating variances if necessary.
-    # Initial values:
-    prev_index = None
-    count = 1
-    # One big loop through the entire reflection table:
-    for j in range(self.rtable.size()):
-      index = self.rtable['miller_index.asu'][j]
-      weight = weights[j]
-      # Aggregate within a symmetry-equivalent group of reflections:
-      if index == prev_index:
-        count += 1
-        i_sum += weight * self.rtable['intensity.sum.value'][j]
-        sum_weight += weight
-        if calculate_variances:
-          sum_square_weight += weight * weight
-      # Record the aggregated values for the group:
-      elif prev_index:
-        if count == 1 and not keep_singles:
-          singles.append(j-1)
-        multiplicity.extend(flex.int(count, count))
-        i_means.extend(flex.double(count, i_sum / sum_weight))
-        sum_weights.extend(flex.double(count, sum_weight))
-        if calculate_variances:
-          sum_square_weights.extend(flex.double(count, sum_square_weight))
-        # And reinitialise:
-        prev_index = index
-        count = 1
-        i_sum = weight * self.rtable['intensity.sum.value'][j]
-        sum_weight = weight
-        if calculate_variances:
-          sum_square_weight = weight * weight
-      # Handle the first row:
-      else:
-        prev_index = self.rtable['miller_index.asu'][j]
-        i_sum = weight * self.rtable['intensity.sum.value'][j]
-        sum_weight = weight
-        if calculate_variances:
-          sum_square_weight = weight * weight
-    # Record the aggregated values for the last group:
-    if count == 1 and not keep_singles:
-      singles.append(self.rtable.size() - 1)
-    multiplicity.extend(flex.int(count, count))
-    i_means.extend(flex.double(count, i_sum / sum_weight))
-    sum_weights.extend(flex.double(count, sum_weight))
-    if calculate_variances:
-      sum_square_weights.extend(flex.double(count, sum_square_weight))
-
-    # Discard singletons:
-    if not keep_singles:
-      singles_del = flex.bool(self.rtable.size(), True)
-      singles_del.set_selected(singles, False)
-      multiplicity, weights, sum_weights, i_means = [ a.select(singles_del)
-        for a in multiplicity, weights, sum_weights, i_means ]
-      self.rtable.del_selected(singles)
+    for key, rtable in self.rtables.items():
+      # Sort the reflection table for speedier iteration.
+      rtable.sort('miller_index.asu')
+      # Record the positions of any multiplicity-1 reflections.
+      if not keep_singles:
+        singles = flex.size_t()
+      # Record the multiplicities.
+      multiplicity = flex.int()
+      # For weighted averaging.
+      weights = 1 / rtable['intensity.sum.variance']
+      sum_weights = flex.double()
       if calculate_variances:
-        sum_square_weights = sum_square_weights.select(singles_del)
+        sum_square_weights = flex.double()
+      # Calculate the weighted mean intensities.
+      i_means = flex.double()
+      # Calculate the standard deviations from unbiased weighted variances.
+      variances = flex.double()
 
-    # Record the multiplicities in the reflection table.
-    self.rtable['multiplicity'] = multiplicity
-    # Record the weighted mean intensities in the reflection table.
-    self.rtable['intensity.mean.value'] = i_means
-    # Record the standard errors on the means in the reflection table.
-    self.rtable['intensity.mean.std_error'] = flex.sqrt(1 / sum_weights)
-
-    if calculate_variances:
-      #Initialise values:
+      # Iterate over the reflections, grouping by equivalent Miller index,
+      # to calculate multiplicities, weighted mean intensities, etc..
+      # Some time can be saved by only calculating variances if necessary.
+      # Initial values:
       prev_index = None
-      for j in range(self.rtable.size()):
-        index = self.rtable['miller_index.asu'][j]
+      count = 1
+      # One big loop through the entire reflection table:
+      for j in range(rtable.size()):
+        index = rtable['miller_index.asu'][j]
         weight = weights[j]
-        residual = self.rtable['intensity.sum.value'][j] - i_means[j]
         # Aggregate within a symmetry-equivalent group of reflections:
         if index == prev_index:
           count += 1
-          weighted_sum_square_residual += weight * residual * residual
-        # Record the aggregated value for the group:
+          i_sum += weight * rtable['intensity.sum.value'][j]
+          sum_weight += weight
+          if calculate_variances:
+            sum_square_weight += weight * weight
+        # Record the aggregated values for the group:
         elif prev_index:
-          # The weighted variance is undefined for multiplicity=1,
-          # use the measured variance instead in this case.
-          if count == 1:
-            variances.append(self.rtable['intensity.sum.variance'][j-1])
-          else:
-            sum_weight = sum_weights[j-1]
-            var_weight = 1 / (sum_weight -
-                              sum_square_weights[j-1] / sum_weight)
-            variances.extend(
-                flex.double(count, weighted_sum_square_residual * var_weight))
-          # Reinitialise:
+          if count == 1 and not keep_singles:
+            singles.append(j-1)
+          multiplicity.extend(flex.int(count, count))
+          i_means.extend(flex.double(count, i_sum / sum_weight))
+          sum_weights.extend(flex.double(count, sum_weight))
+          if calculate_variances:
+            sum_square_weights.extend(flex.double(count, sum_square_weight))
+          # And reinitialise:
           prev_index = index
           count = 1
-          weighted_sum_square_residual = weight * residual * residual
+          i_sum = weight * rtable['intensity.sum.value'][j]
+          sum_weight = weight
+          if calculate_variances:
+            sum_square_weight = weight * weight
         # Handle the first row:
         else:
-          prev_index = self.rtable['miller_index.asu'][j]
-          count = 1
-          weighted_sum_square_residual = weight * residual * residual
+          prev_index = rtable['miller_index.asu'][j]
+          i_sum = weight * rtable['intensity.sum.value'][j]
+          sum_weight = weight
+          if calculate_variances:
+            sum_square_weight = weight * weight
       # Record the aggregated values for the last group:
-      # The weighted variance is undefined for multiplicity=1,
-      # use the measured variance instead in this case.
-      if count == 1:
-        variances.append(self.rtable['intensity.sum.variance'][-1])
-      else:
-        sum_weight = sum_weights[-1]
-        var_weight = 1 / (sum_weight - sum_square_weights[-1] / sum_weight)
-        variances.extend(
-            flex.double(count, weighted_sum_square_residual * var_weight))
-      # Record the variances in the reflection table.
-      self.rtable['intensity.mean.variance'] = variances
+      if count == 1 and not keep_singles:
+        singles.append(rtable.size() - 1)
+      multiplicity.extend(flex.int(count, count))
+      i_means.extend(flex.double(count, i_sum / sum_weight))
+      sum_weights.extend(flex.double(count, sum_weight))
+      if calculate_variances:
+        sum_square_weights.extend(flex.double(count, sum_square_weight))
+
+      # Discard singletons:
+      if not keep_singles:
+        singles_del = flex.bool(rtable.size(), True)
+        singles_del.set_selected(singles, False)
+        multiplicity, weights, sum_weights, i_means = [ a.select(singles_del)
+          for a in multiplicity, weights, sum_weights, i_means ]
+        rtable.del_selected(singles)
+        if calculate_variances:
+          sum_square_weights = sum_square_weights.select(singles_del)
+
+      # Record the multiplicities in the reflection table.
+      rtable['multiplicity'] = multiplicity
+      # Record the weighted mean intensities in the reflection table.
+      rtable['intensity.mean.value'] = i_means
+      # Record the standard errors on the means in the reflection table.
+      rtable['intensity.mean.std_error'] = flex.sqrt(1 / sum_weights)
+
+      if calculate_variances:
+        #Initialise values:
+        prev_index = None
+        for j in range(rtable.size()):
+          index = rtable['miller_index.asu'][j]
+          weight = weights[j]
+          residual = rtable['intensity.sum.value'][j] - i_means[j]
+          # Aggregate within a symmetry-equivalent group of reflections:
+          if index == prev_index:
+            count += 1
+            weighted_sum_square_residual += weight * residual * residual
+          # Record the aggregated value for the group:
+          elif prev_index:
+            # The weighted variance is undefined for multiplicity=1,
+            # use the measured variance instead in this case.
+            if count == 1:
+              variances.append(rtable['intensity.sum.variance'][j-1])
+            else:
+              sum_weight = sum_weights[j-1]
+              var_weight = 1 / (sum_weight -
+                                sum_square_weights[j-1] / sum_weight)
+              variances.extend(
+                flex.double(count, weighted_sum_square_residual * var_weight))
+            # Reinitialise:
+            prev_index = index
+            count = 1
+            weighted_sum_square_residual = weight * residual * residual
+          # Handle the first row:
+          else:
+            prev_index = rtable['miller_index.asu'][j]
+            count = 1
+            weighted_sum_square_residual = weight * residual * residual
+        # Record the aggregated values for the last group:
+        # The weighted variance is undefined for multiplicity=1,
+        # use the measured variance instead in this case.
+        if count == 1:
+          variances.append(rtable['intensity.sum.variance'][-1])
+        else:
+          sum_weight = sum_weights[-1]
+          var_weight = 1 / (sum_weight - sum_square_weights[-1] / sum_weight)
+          variances.extend(
+              flex.double(count, weighted_sum_square_residual * var_weight))
+        # Record the variances in the reflection table.
+        rtable['intensity.mean.variance'] = variances
+
+      self.rtables[key] = rtable
 
   def _make_z(self, uncertainty='sigma'):
     u"""
@@ -300,30 +283,37 @@ class IntensityDist(object):
       'sigma': 'intensity.sum.variance',
       'stddev': 'intensity.mean.variance'
     }[uncertainty]
-    try:
-      uncertainty_value = flex.sqrt(self.rtable[uncertainty_name])
-    except KeyError:
-      from logging import warn
-      uncertainty_value = flex.sqrt(self.rtable['intensity.sum.variance'])
-      warn(u"""Weighted variances haven't been calculated,
-    be sure to specify calculate_variances=True to use them.
-    Defaulting to measured σ values as a measure of uncertainty instead.""")
 
-    z = (self.rtable['intensity.sum.value']
-         - self.rtable['intensity.mean.value']) / uncertainty_value
-    self.rtable['intensity.z_score'] = z
+    for key, rtable in self.rtables.items():
+      try:
+        uncertainty_value = flex.sqrt(rtable[uncertainty_name])
+      except KeyError:
+        from logging import warn
+        uncertainty_value = flex.sqrt(rtable['intensity.sum.variance'])
+        warn(u"""Weighted variances haven't been calculated,
+      be sure to specify calculate_variances=True to use them.
+      Defaulting to measured σ values as a measure of uncertainty instead.""")
+
+      z = (rtable['intensity.sum.value']
+           - rtable['intensity.mean.value']) / uncertainty_value
+      rtable['intensity.z_score'] = z
+
+      self.rtables[key] = rtable
 
   def _probplot_data(self):
     """Generate the data for a normal probability plot of z-scores."""
 
     from scipy import stats as ss
 
-    order = flex.sort_permutation(self.rtable['intensity.z_score'])
-    osm = flex.double(self.rtable.size(), 0)
-    osm.set_selected(order,
-                     flex.double(ss.probplot(self.rtable['intensity.z_score'],
-                                             fit=False)[0]))
-    self.rtable['intensity.order_statistic_medians'] = osm
+    for key, rtable in self.rtables.items():
+      order = flex.sort_permutation(rtable['intensity.z_score'])
+      osm = flex.double(rtable.size(), 0)
+      osm.set_selected(order,
+                       flex.double(ss.probplot(rtable['intensity.z_score'],
+                                               fit=False)[0]))
+      rtable['intensity.order_statistic_medians'] = osm
+
+      self.rtables[key] = rtable
 
   def plot_z_histogram(self):
     """Plot a histogram of the z-scores of the weighted mean intensities."""
@@ -521,48 +511,107 @@ def data_from_unmerged_mtz(filename):
     * ``intensity.sum.value``
     * ``intensity.sum.variance``
     * ``xyzobs.px.value``
+    * ``id``
   :rtype: dials.array_family_flex_ext.reflection_table
   """
 
   from iotbx import mtz
+  from dxtbx.model import Crystal, Experiment, ExperimentList
 
-  m = mtz.object(filename)  # Parse MTZ, with lots of useful methods.
+  m = mtz.object(filename).crystals() # Parse MTZ, with lots of useful methods.
 
-  ind = m.extract_miller_indices()  # A flex array of Miller indices.
-
-  cols = m.columns()  # Generates columns (augmented flex arrays).
+  # Get some data and turn it into a reflection table and experiment list.
+  #First, the reflection table
+  cols = m[0].datasets()[0].columns()  # Gets column objects.
   col_dict = {c.label(): c for c in cols}  # A dict of all the columns.
-  I, sigI, x, y = (
+  h, k, l = (
+    col_dict[label].extract_values().as_double().iround()
+    for label in ('H', 'K', 'L')
+  )
+  intensity, sigI, x, y = (
     col_dict[label].extract_values().as_double()
     for label in ('I', 'SIGI', 'XDET', 'YDET')
   )
+  # Honestly flex?!  Oh well, for now, we have to go round the houses:
   frame = col_dict['BATCH'].extract_values().as_double().iround().as_double()
-  # Honestly flex?!  Oh well, for now, we have to go round the houses.
 
   rtable = flex.reflection_table()
-  rtable['miller_index'] = ind
-  rtable['intensity.sum.value'] = I
+  rtable['miller_index'] = flex.miller_index(h, k, l)
+  rtable['intensity.sum.value'] = intensity
   rtable['intensity.sum.variance'] = flex.pow2(sigI)
   rtable['xyzobs.px.value'] = flex.vec3_double(x, y, frame)
+  rtable['id'] = flex.int(rtable.size(), 0)
 
-  return rtable
-  # TODO Make this produce a minimal experiment list too.
+  # Now generate a corresponding experiment list.
+  id = flex.vec3_double([(1, 0, 0),
+                         (0, 1, 0),
+                         (0, 0, 1)])
+  # Each Crystal object needs to be constructed from xyz unit cell
+  # parameters and a space group.
+  abc = [ m[0].unit_cell().orthogonalize(vec) for vec in id ]
+  space_group = m[0].crystal_symmetry().space_group()
+  crystal_params = abc + [space_group]
+
+  elist = ExperimentList([Experiment(crystal=Crystal(*crystal_params))])
+
+  return rtable, elist
 
 
 def data_from_pickle_and_json():
-  pass
+    from dials.util.options import OptionParser, flatten_reflections,\
+      flatten_experiments
+    import libtbx.load_env
+
+    help_message = '''
+
+  Generates a dials.array_family.flex.reflection_table and a 
+  dxtbx.model.experiment_list.ExperimentList from a reflections.pickle and an
+  experiments.json.
+
+  Examples:
+
+    dials.util.intensity_explorer indexed.pickle experiments.json
+
+    dials.util.intensity_explorer integrated.pickle integrated_experiments.json
+
+    '''
+
+    # Create the parser
+    usage = ("usage: %s [options] reflections.pickle experiments.json" %
+             libtbx.env.dispatcher_name)
+    parser = OptionParser(
+      usage=usage,
+      read_reflections=True,
+      read_experiments=True,
+      check_format=True,
+      epilog=help_message)
+
+    # Parse the command line arguments
+    params, options = parser.parse_args(show_diff_phil=True)
+
+    # Show the help
+    if (len(params.input.reflections) != 1
+        or len(params.input.experiments) != 1):
+      parser.print_help()
+      exit(0)
+
+    rtable = flatten_reflections(params.input.reflections)
+    elist = flatten_experiments(params.input.experiments)
+
+    rtable.del_selected(rtable['intensity.sum.variance'] <= 0)
+
+    return rtable, elist
 
 
 if __name__ == "__main__":
-  import sys
-  from dials.util.phil import ReflectionTableConverters
-  from dxtbx.model.experiment_list import ExperimentListFactory
-
-  # TODO Handle multiple input MTZ files/pairs of pickle & json files.
+  # FIXME Now ∃ a dials tool for (unmerged MTZ) –> (exp list, refl table),
+  # use it!
   # TODO Allow determination of output filename root.
-  # Give a pickle and a json file as arguments:
-  rtable = ReflectionTableConverters().from_string(sys.argv[1]).data
-  elist = ExperimentListFactory.from_json_file(sys.argv[2])
+  # FIXME Give a pickle and a json file as arguments:
+
+  import sys
+
+  data_from_pickle_and_json(sys.argv[1:])
 
   data = IntensityDist(rtable, elist, outfile='Test')
   data.plot_z_histogram()

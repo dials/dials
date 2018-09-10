@@ -1924,9 +1924,13 @@ class ZScoreAnalyser(object):
       * ``intensity.sum.variance``
       * ``xyzobs.px.value``
     :type rlist: `dials_array_family_flex_ext.reflection_table`
-    :return: A dictionary describing a Plotly plot.
+    :param experiments: An experiment list with space group information.
+    :type experiments: `dxtbx_model_ext.ExperimentList`
+    :return: A dictionary describing several Plotly plots.
     :rtype:`dict`
     """
+
+    from dials.util.intensity_explorer import IntensityDist
 
     # Check we have the required fields
     print("Analysing reflection intensities")
@@ -1946,38 +1950,201 @@ class ZScoreAnalyser(object):
             selection.count(True))
 
     d = OrderedDict()
+    self.z_score_data = IntensityDist(rlist, experiments).rtable
 
     print(" Analysing distribution of intensity z-scores")
-    d.update(self.z_score_hist(rlist, experiments))
+    d.update(self.z_score_hist())
+    print(" Constructing normal probability plot of intensity z-scores")
+    d.update(self.normal_probability_plot())
+    print(" Plotting intensity z-scores against multiplicity")
+    d.update(self.z_vs_multiplicity())
+    print(" Plotting time series of intensity z-scores")
+    d.update(self.z_time_series())
+    print(u" Plotting intensity z-scores versus weighted mean intensity")
+    d.update(self.z_vs_I())
+    print(u" Plotting intensity z-scores versus I/σ")
+    d.update(self.z_vs_I_over_sigma())
 
     return d
 
-  def z_score_hist(self, rlist, experiments):
+  def z_score_hist(self):
     """
     Plot a histogram of z-scores.
-    """
-    from dials.util.intensity_explorer import IntensityDist
 
-    z_scores = IntensityDist(
-        rtable=rlist, elist=experiments).rtable['intensity.z_score']
+    :return: A dictionary describing a Plotly plot.
+    :rtype:`dict`
+    """
+
+    z_scores = self.z_score_data['intensity.z_score']
     hist = flex.histogram(z_scores, -10, 10, 100)
 
     return {
       'z_score_histogram': {
-        'data'  : [{
-          'x'   : list(hist.slot_centers()),
-          'y'   : list(hist.slots()),
+        'data': [{
+          'x':    hist.slot_centers().as_numpy_array().tolist(),
+          'y':    hist.slots().as_numpy_array().tolist(),
           'type': 'bar',
           'name': 'z_hist',
         }],
         'layout': {
-          'title' : 'Histogram of z-scores',
-          'xaxis' : {'title': 'z-score', 'range': [-10, 10]},
-          'yaxis' : {'title': 'Number of reflections'},
+          'title':  'Histogram of z-scores',
+          'xaxis':  {'title': 'z-score', 'range': [-10, 10]},
+          'yaxis':  {'title': 'Number of reflections'},
           'bargap': 0,
         },
       },
     }
+
+  def normal_probability_plot(self):
+    """
+    Display a normal probability plot of the z-scores of the intensities.
+
+    :return: A dictionary describing a Plotly plot.
+    :rtype:`dict`
+    """
+
+    z_scores = self.z_score_data['intensity.z_score']
+    osm = self.z_score_data['intensity.order_statistic_medians']
+
+    return {
+      'normal_probability_plot': {
+        'data': [{
+          'x'   : osm.as_numpy_array().tolist(),
+          'y'   : z_scores.as_numpy_array().tolist(),
+          'type': 'scattergl',
+          'mode': 'markers',
+          'name': 'Data',
+        },
+        {
+          'x'   : [-5, 5],
+          'y'   : [-5, 5],
+          'type': 'scatter',
+          'mode': 'lines',
+          'name': 'z = m',
+        }],
+        'layout': {
+          'title': 'Normal probability plot',
+          'xaxis': {'title': 'z-score order statistic medians, m'},
+          'yaxis': {'title': 'Ordered z-score responses, z',
+                    'range': [-10, 10]}
+        }
+      }
+    }
+
+  def z_vs_multiplicity(self):
+    """
+    Plot z-score as a function of multiplicity of observation.
+
+    :return: A dictionary describing a Plotly plot.
+    :rtype:`dict`
+    """
+
+    multiplicity = self.z_score_data['multiplicity']
+    z_scores = self.z_score_data['intensity.z_score']
+
+    return {
+      'z_score_vs_multiplicity': {
+        'data'  : [{
+          'x'   : multiplicity.as_numpy_array().tolist(),
+          'y'   : z_scores.as_numpy_array().tolist(),
+          'type': 'scattergl',
+          'mode': 'markers',
+          'name': 'Data',
+        }],
+        'layout': {
+          'title': 'z-scores versus multiplicity',
+          'xaxis': {'title': 'Multiplicity'},
+          'yaxis': {'title': 'z-score'},
+        }
+      }
+    }
+
+  def z_time_series(self):
+    """
+    Plot a crude time-series of z-scores, with image number serving as a
+    proxy for time.
+
+    :return: A dictionary describing a Plotly plot.
+    :rtype:`dict`
+    """
+
+    batch_number = self.z_score_data['xyzobs.px.value'].parts()[2]
+    z_scores = self.z_score_data['intensity.z_score']
+
+    return {
+      'z_score_time_series': {
+        'data'  : [{
+          'x'   : batch_number.as_numpy_array().tolist(),
+          'y'   : z_scores.as_numpy_array().tolist(),
+          'type': 'scattergl',
+          'mode': 'markers',
+          'name': 'Data',
+        }],
+        'layout': {
+          'title': 'z-scores versus image number',
+          'xaxis': {'title': 'Image number'},
+          'yaxis': {'title': 'z-score'},
+        }
+      }
+    }
+
+  def z_vs_I(self):
+    """
+    Plot z-scores versus intensity.
+
+    :return: A dictionary describing a Plotly plot.
+    :rtype:`dict`
+    """
+
+    intensity = self.z_score_data['intensity.mean.value']
+    z_scores = self.z_score_data['intensity.z_score']
+
+    return {
+      'z_score_vs_I': {
+        'data'  : [{
+          'x'   : intensity.as_numpy_array().tolist(),
+          'y'   : z_scores.as_numpy_array().tolist(),
+          'type': 'scattergl',
+          'mode': 'markers',
+          'name': 'Data',
+        }],
+        'layout': {
+          'title': 'z-scores versus weighted mean intensity',
+          'xaxis': {'title': 'Intensity (photon count)', 'type': 'log'},
+          'yaxis': {'title': 'z-score'},
+        }
+      }
+    }
+
+  def z_vs_I_over_sigma(self):
+    """
+    Plot z-scores versus intensity.
+
+    :return: A dictionary describing a Plotly plot.
+    :rtype:`dict`
+    """
+
+    i_over_sigma = (self.z_score_data['intensity.mean.value']
+                    / self.z_score_data['intensity.mean.std_error'])
+    z_scores = self.z_score_data['intensity.z_score']
+
+    return {
+      'z_score_vs_I_over_sigma': {
+        'data'  : [{
+          'x'   : i_over_sigma.as_numpy_array().tolist(),
+          'y'   : z_scores.as_numpy_array().tolist(),
+          'type': 'scattergl',
+          'mode': 'markers',
+          'name': 'Data',
+        }],
+        'layout': {
+          'title': u'z-scores versus I/σ',
+          'xaxis': {'title': u'I/σ', 'type': 'log'},
+          'yaxis': {'title': 'z-score'},
+        }
+      }
+    }
+
 
 class ReferenceProfileAnalyser(object):
   ''' Analyse the reference profiles. '''
