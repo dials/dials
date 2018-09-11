@@ -1,6 +1,16 @@
 from __future__ import absolute_import, division, print_function
 
+import contextlib
 import sys
+
+fcntl, msvcrt = None, None
+try:
+  import fcntl
+except ImportError:
+  try:
+    import msvcrt
+  except ImportError:
+    pass
 
 def debug_console():
   '''Start python console at the current code point.'''
@@ -102,3 +112,35 @@ def halraiser(e):
   else:
     e.args = (text,) + e.args
   raise
+
+@contextlib.contextmanager
+def locked(file_handle):
+  """
+  Cross-platform file locking. Open a file for writing or appending. Then a
+  file lock can be obtained with:
+
+  import dials.util
+  with open(filename, 'w') as fh:
+    with dials.util.locked(fh):
+      (..)
+  """
+  if not fcntl and not msvcrt:
+    raise NotImplementedError("File locking not supported on this platform")
+  lock = False
+  try:
+    if fcntl:
+      flags = fcntl.LOCK_EX
+      fcntl.lockf(file_handle, fcntl.LOCK_EX)
+    else:
+      file_handle.seek(0)
+      msvcrt.locking(file_handle, msvcrt.LK_LOCK, 1)
+      # note: says is only blocking for 10 sec
+    lock = True
+    yield
+  finally:
+    if lock:
+      if fcntl:
+        fcntl.lockf(file_handle, fcntl.LOCK_UN)
+      else:
+        file_handle.seek(0)
+        msvcrt.locking(file_handle, LK_UNLCK, 1)
