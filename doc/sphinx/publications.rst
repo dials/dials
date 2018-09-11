@@ -12,7 +12,7 @@ DIALS Journal Articles
 * .. pubmed:: 28989718 Background
 * | `Robust background modelling in DIALS <https://doi.org/10.1107/S1600576716013595>`_
   | Parkhurst JM, Winter G, Waterman DG, Fuentes-Montero L, Gildea RJ, Murshudov GN, Evans G.
-  | *J Appl Crystallogr* **47**, 1912-1921 (01 Dec 2016). [PMID:27980508] [PMC reprint: `PMC5139990 <http://ncbi.nlm.nih.gov/pmc/articles/PMC5139990/>`_]
+  | *J Appl Crystallogr* **49**, 1912-1921 (01 Dec 2016). [PMID:27980508] [PMC reprint: `PMC5139990 <http://ncbi.nlm.nih.gov/pmc/articles/PMC5139990/>`_]
 * .. pubmed:: 27050135 Refinement
 * .. pubmed:: 25286849 Multilattice
 * .. pubmed:: 25242914 dxtbx
