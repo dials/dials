@@ -146,7 +146,7 @@ def imageset_as_bitmaps(imageset, params):
       sys.exit('output_file can only be specified if a single image is exported')
   for i_image in range(start, end+1):
     # If the user specified an image range index, only export those
-    if params.imageset_index is not None and not i_image in params.imageset_index:
+    if params.imageset_index and not i_image in params.imageset_index:
       continue
     image = imageset.get_raw_data(i_image-start)
 

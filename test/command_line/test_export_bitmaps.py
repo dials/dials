@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import pytest
 from libtbx import easy_run
+import glob
 
 def test_export_single_bitmap(dials_regression, tmpdir):
   tmpdir.chdir()
@@ -74,3 +75,13 @@ def test_export_multi_panel(dials_regression, tmpdir):
     result = easy_run.fully_buffered(cmd).raise_if_errors()
 
     assert os.path.exists('binning_%i_0001.png' % binning)
+
+def test_export_restricted_multiimage(dials_regression, tmpdir):
+  "Test exporting a subset of an imageset"
+  tmpdir.chdir()
+  data_dir = os.path.join(dials_regression, 'centroid_test_data')
+
+  cmd = ' '.join([
+    'dials.export_bitmaps', '%s/datablock.json' %data_dir, 'imageset_index=2'])
+  easy_run.fully_buffered(cmd).raise_if_errors()
+  assert glob.glob("*.png") == ["image0002.png"], "Only one image exported"
