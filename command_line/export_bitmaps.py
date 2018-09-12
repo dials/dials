@@ -44,6 +44,11 @@ output_file = None
   .type = str
   .help = "Full name of the output file. Overrides 'prefix' and the default "
           "file extension. Only makes sense if a single file is written."
+imageset_index = None
+  .type = int
+  .multiple = True
+  .help = "The index/indices from an imageset to export"
+  .expert_level=2
 display = *image mean variance dispersion sigma_b \
           sigma_s threshold global_threshold
   .type = choice
@@ -140,6 +145,9 @@ def imageset_as_bitmaps(imageset, params):
     if start != end:
       sys.exit('output_file can only be specified if a single image is exported')
   for i_image in range(start, end+1):
+    # If the user specified an image range index, only export those
+    if params.imageset_index is not None and not i_image in params.imageset_index:
+      continue
     image = imageset.get_raw_data(i_image-start)
 
     trange = [p.get_trusted_range() for p in detector]
