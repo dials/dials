@@ -4,10 +4,8 @@ import six.moves.cPickle as pickle
 import os
 import procrunner
 
-def test_scan_varying_refinement_of_a_multiple_panel_detector(dials_regression, tmpdir):
+def test_scan_varying_refinement_of_a_multiple_panel_detector(dials_regression, run_in_tmpdir):
   from dials.array_family import flex
-
-  tmpdir.chdir()
 
   result = procrunner.run_process([
       "dials.refine",

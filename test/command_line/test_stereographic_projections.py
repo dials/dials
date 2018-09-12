@@ -4,9 +4,7 @@ import json
 import os
 from libtbx import easy_run
 
-def test_stereographic_projectsion(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_stereographic_projectsion(dials_regression, run_in_tmpdir):
   path = os.path.join(dials_regression, "experiment_test_data")
   cmd = " ".join((
     "dials.stereographic_projection",

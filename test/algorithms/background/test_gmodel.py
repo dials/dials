@@ -1,10 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
-def test_run(dials_regression, tmpdir):
+def test_run(dials_regression, run_in_tmpdir):
   import os
   path = os.path.join(dials_regression, "centroid_test_data")
-
-  tmpdir.chdir()
 
   from libtbx import easy_run
 

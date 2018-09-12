@@ -4,9 +4,7 @@ from glob import glob
 import os
 import procrunner
 
-def test(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test(dials_regression, run_in_tmpdir):
   images = glob(os.path.join(dials_regression, "centroid_test_data", "centroid*.cbf"))
 
   result = procrunner.run_process([

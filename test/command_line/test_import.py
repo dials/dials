@@ -6,9 +6,7 @@ import os
 from procrunner import run_process
 import pytest
 
-def test_multiple_sweep_import_fails_without_allow_parameter(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_multiple_sweep_import_fails_without_allow_parameter(dials_regression, run_in_tmpdir):
   # Find the image files
   image_files = sorted(glob(os.path.join(dials_regression, "centroid_test_data", "centroid*.cbf")))
   del image_files[4] # Delete filename to force two sweeps
@@ -19,9 +17,7 @@ def test_multiple_sweep_import_fails_without_allow_parameter(dials_regression, t
   assert 'ore than 1 sweep' in result['stderr']
   assert not os.path.exists("datablock_multiple_sweeps.json")
 
-def test_multiple_sweep_import_suceeds_with_allow_parameter(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_multiple_sweep_import_suceeds_with_allow_parameter(dials_regression, run_in_tmpdir):
   # Find the image files
   image_files = sorted(glob(os.path.join(dials_regression, "centroid_test_data", "centroid*.cbf")))
   del image_files[4] # Delete filename to force two sweeps
@@ -36,9 +32,7 @@ def test_multiple_sweep_import_suceeds_with_allow_parameter(dials_regression, tm
   imgset = datablock.extract_imagesets()
   assert len(imgset) == 2
 
-def test_with_mask(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_with_mask(dials_regression, run_in_tmpdir):
   # Find the image files
   image_files = glob(os.path.join(dials_regression, "centroid_test_data", "centroid*.cbf"))
   mask_filename = os.path.join(dials_regression, "centroid_test_data", "mask.pickle")
@@ -53,9 +47,7 @@ def test_with_mask(dials_regression, tmpdir):
   imgset = datablock.extract_imagesets()[0]
   assert imgset.external_lookup.mask.filename == mask_filename
 
-def test_override_geometry(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_override_geometry(dials_regression, run_in_tmpdir):
   # Find the image files
   image_files = glob(os.path.join(dials_regression, "centroid_test_data", "centroid*.cbf"))
 
@@ -126,9 +118,7 @@ def test_override_geometry(dials_regression, tmpdir):
   assert scan.get_image_range() == (1,4)
   assert scan.get_oscillation() == (1,2)
 
-def tst_import_beam_centre(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def tst_import_beam_centre(dials_regression, run_in_tmpdir):
   # Find the image files
   image_files = glob(os.path.join(dials_regression, "centroid_test_data", "centroid*.cbf"))
   image_files = ' '.join(image_files)
@@ -155,9 +145,7 @@ def tst_import_beam_centre(dials_regression, tmpdir):
   beam_centre = imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0())
   assert beam_centre == pytest.approx((200,100))
 
-def test_slow_fast_beam_centre(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_slow_fast_beam_centre(dials_regression, run_in_tmpdir):
   # test slow_fast_beam_centre with a multi-panel CS-PAD image
   impath = os.path.join(dials_regression, "image_examples",
       "LCLS_cspad_nexus", "idx-20130301060858401.cbf")
@@ -196,9 +184,7 @@ def test_slow_fast_beam_centre(dials_regression, tmpdir):
     ref_offsets.append(intra_pnl.length())
   assert offsets == pytest.approx(ref_offsets)
 
-def test_from_image_files(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_from_image_files(dials_regression, run_in_tmpdir):
   # Find the image files
   image_files = glob(os.path.join(dials_regression, "centroid_test_data", "centroid*.cbf"))
 
@@ -207,9 +193,7 @@ def test_from_image_files(dials_regression, tmpdir):
   assert result['exitcode'] == 0
   assert os.path.exists("import_datablock.json")
 
-def test_from_template(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_from_template(dials_regression, run_in_tmpdir):
   # Find the image files
   template = os.path.join(dials_regression, "centroid_test_data", "centroid_####.cbf")
 
@@ -218,9 +202,7 @@ def test_from_template(dials_regression, tmpdir):
   assert result['exitcode'] == 0
   assert os.path.exists("import_datablock.json")
 
-def test_extrapolate_scan(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_extrapolate_scan(dials_regression, run_in_tmpdir):
   # First image file
   image = os.path.join(dials_regression, "centroid_test_data", "centroid_0001.cbf")
 

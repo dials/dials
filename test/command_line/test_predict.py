@@ -17,9 +17,7 @@ def plausible(table):
     assert row['id'] == 0
   return True
 
-def test_static_prediction(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_static_prediction(dials_regression, run_in_tmpdir):
   result = procrunner.run_process([
       'dials.predict',
       os.path.join(dials_regression, "prediction_test_data", 'experiments_scan_static_crystal.json'),
@@ -32,9 +30,7 @@ def test_static_prediction(dials_regression, tmpdir):
   assert len(table) == 1996
   assert plausible(table)
 
-def test_scan_varying_prediction(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_scan_varying_prediction(dials_regression, run_in_tmpdir):
   result = procrunner.run_process([
       'dials.predict',
       os.path.join(dials_regression, "prediction_test_data", 'experiments_scan_varying_crystal.json'),
@@ -47,9 +43,7 @@ def test_scan_varying_prediction(dials_regression, tmpdir):
   assert len(table) == 1934
   assert plausible(table)
 
-def test_force_static_prediction(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_force_static_prediction(dials_regression, run_in_tmpdir):
   result = procrunner.run_process([
       'dials.predict',
       os.path.join(dials_regression, "prediction_test_data", 'experiments_scan_varying_crystal.json'),

@@ -15,9 +15,7 @@ from libtbx import easy_run
 def start_server(server_command):
   procrunner.run(server_command)
 
-def test_find_spots_server_client(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_find_spots_server_client(dials_regression, run_in_tmpdir):
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   s.bind(("",0))
   port = s.getsockname()[1]

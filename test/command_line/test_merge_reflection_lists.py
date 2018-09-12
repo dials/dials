@@ -2,9 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import procrunner
 
-def test(tmpdir):
-  tmpdir.chdir()
-
+def test(run_in_tmpdir):
   from dials.array_family import flex
 
   table = flex.reflection_table()

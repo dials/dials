@@ -3,9 +3,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import procrunner
 
-def test(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test(dials_regression, run_in_tmpdir):
   result = procrunner.run_process([
       'dials.plot_scan_varying_model',
       os.path.join(

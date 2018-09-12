@@ -7,9 +7,7 @@ from libtbx import easy_pickle
 from cctbx import sgtbx
 from dxtbx.serialize import load
 
-def test_reindex(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_reindex(dials_regression, run_in_tmpdir):
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "indexed.pickle")
   experiments_path = os.path.join(data_dir, "experiments.json")
@@ -79,9 +77,7 @@ def test_reindex(dials_regression, tmpdir):
   assert new_experiments1[0].crystal.get_A() == pytest.approx(
     new_experiments2[0].crystal.get_A())
 
-def test_reindex_multi_sweep(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_reindex_multi_sweep(dials_regression, run_in_tmpdir):
   data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
   pickle_path = os.path.join(data_dir, "indexed.pickle")
   experiments_path = os.path.join(data_dir, "experiments.json")

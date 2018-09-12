@@ -57,8 +57,7 @@ def test_dynamic_shadowing(dials_regression):
     count_mask_no_shadow=527314
   )
 
-def test_shadow_plot(dials_regression, tmpdir):
-  tmpdir.chdir()
+def test_shadow_plot(dials_regression, run_in_tmpdir):
   path = os.path.join(
     dials_regression, "shadow_test_data/DLS_I04_SmarGon/Th_3_O45_C45_P48_1_0500.cbf")
 

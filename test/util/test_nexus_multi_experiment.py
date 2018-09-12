@@ -170,7 +170,7 @@ def run_single(experiments1, filename):
       else:
         assert(crystal2[i] != crystal2[j])
 
-def test_run(tmpdir, dials_regression):
+def test_run(run_in_tmpdir, dials_regression):
   from dxtbx.model.experiment_list import ExperimentListFactory
   from os.path import join
   path = join(dials_regression, "nexus_test_data", "shared_models")
@@ -182,7 +182,6 @@ def test_run(tmpdir, dials_regression):
     'multiple_sweeps',
     'stills'
   ]
-  tmpdir.chdir()
   for filename in filename_list:
     filename_in = join(path, "%s.json" % filename)
     filename_out = "%s.nxs" % filename

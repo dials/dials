@@ -7,7 +7,7 @@ import procrunner
 import pytest
 import scitbx
 
-def test_thing_1(tmpdir, dials_regression):
+def test_thing_1(run_in_tmpdir, dials_regression):
   '''Would you like to know more about what this test is supposed to do?
      I would love to. Always remember to use descriptive names.'''
 
@@ -16,8 +16,6 @@ def test_thing_1(tmpdir, dials_regression):
   pickle_path2 = os.path.join(data_dir, "strong_P1_X6_2_0-1.pickle")
   datablock_path1 = os.path.join(data_dir, "datablock_P1_X6_1.json")
   datablock_path2 = os.path.join(data_dir, "datablock_P1_X6_2.json")
-
-  tmpdir.chdir()
 
   args = ["dials.search_beam_position",
           datablock_path1,
@@ -110,15 +108,13 @@ def test_thing_2(tmpdir, xia2_regression_build):
     (tmpdir / 'optimized_datablock.json').strpath, [],
     expected_unit_cell, expected_rmsds, expected_hall_symbol)
 
-def test_thing_3(tmpdir, dials_regression):
+def test_thing_3(run_in_tmpdir, dials_regression):
   '''Would you like to know more about what this test is supposed to do?
      I would love to. Always remember to use descriptive names.'''
 
   data_dir = os.path.join(dials_regression, "indexing_test_data", "phi_scan")
   pickle_path = os.path.join(data_dir, "strong.pickle")
   datablock_path = os.path.join(data_dir, "datablock.json")
-
-  tmpdir.chdir()
 
   args = ["dials.search_beam_position",
           datablock_path, pickle_path]

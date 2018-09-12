@@ -10,9 +10,7 @@ from dials.algorithms.symmetry.cosym import analyse_datasets
 
 
 @pytest.mark.parametrize('space_group', ['P2', 'P3', 'I23'])
-def test_cosym_analyse_datasets(space_group, tmpdir):
-  tmpdir.chdir()
-
+def test_cosym_analyse_datasets(space_group, run_in_tmpdir):
   import matplotlib
   matplotlib.use('Agg')
 

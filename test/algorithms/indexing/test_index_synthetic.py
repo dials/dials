@@ -151,9 +151,7 @@ def add_random_noise_xyz(datablock, strong_spots, rmsds):
 
 @pytest.mark.skip('Skipping test as it is unstable, cf. dials/dials#518')
 @pytest.mark.parametrize(('space_group', 'unit_cell_volume'), [('P1', 1000), ('P2', 10000), ('P222', 10000), ('P23', 10000)])
-def test_index_synthetic(space_group, unit_cell_volume, dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_index_synthetic(space_group, unit_cell_volume, dials_regression, run_in_tmpdir):
   space_group = sgtbx.space_group_info(symbol=space_group).group()
   unit_cell = any_compatible_unit_cell(
     space_group, volume=unit_cell_volume)

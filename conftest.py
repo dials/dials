@@ -66,3 +66,10 @@ def xia2_regression_build():
   if 'test_data' not in os.listdir(x2rpath):
     pytest.skip("xia2_regression files need to be downloaded for this test. Run xia2_regression.fetch_test_data")
   return x2rpath
+
+@pytest.fixture
+def run_in_tmpdir(tmpdir):
+  '''Shortcut to create a temporary directory and then run the test inside
+     this directory.'''
+  tmpdir.chdir()
+  return tmpdir
