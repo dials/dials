@@ -69,7 +69,7 @@ def test_reindex(dials_regression, tmpdir):
   commands = ["dials.reindex",
               "P4.json",
               "change_of_basis_op=auto",
-              "reference=P4_reindexed.json",
+              "reference.experiments=P4_reindexed.json",
               "output.experiments=P4_reindexed2.json"]
   command = " ".join(commands)
   print(command)
@@ -141,7 +141,7 @@ def test_reindex_against_reference(dials_regression, tmpdir):
 
   # now run reference reindexing
   commands = ["dials.reindex", "P4_reflections.pickle", 'P4_experiments.json',
-    "reference=P4_reindexed.json", "reference_reflections=P4_reindexed.pickle"]
+    "reference.experiments=P4_reindexed.json", "reference.reflections=P4_reindexed.pickle"]
   command = " ".join(commands)
   print(command)
   _ = easy_run.fully_buffered(command=command).raise_if_errors()

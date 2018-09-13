@@ -50,8 +50,8 @@ Examples::
 
   dials.reindex experiments.json index.pickle change_of_basis_op=l,h,k
 
-  dials.reindex experiments.json index.pickle reference=ref_experiments.json
-    reference_reflections=ref_reflections.pickle
+  dials.reindex experiments.json index.pickle reference.experiments=ref_experiments.json
+    reference.reflections=ref_reflections.pickle
 
 '''
 
@@ -64,12 +64,14 @@ space_group = None
   .type = space_group
   .help = "The space group to be applied AFTER applying the change of basis "
            "operator."
-reference = None
-  .type = path
-  .help = "Reference experiment for determination of change of basis operator."
-reference_reflections = None
-  .type = path
-  .help = "Reference dataset (pickle) to allow reindexing to consistent index between datasets."
+reference {
+  experiments = None
+    .type = path
+    .help = "Reference experiment for determination of change of basis operator."
+  reflections = None
+    .type = path
+    .help = "Reference reflections to allow reindexing to consistent index between datasets."
+}
 output {
   experiments = reindexed_experiments.json
     .type = str
@@ -148,26 +150,26 @@ def run(args):
     raise Sorry("Please provide a change_of_basis_op.")
 
   reference_crystal = None
-  if params.reference is not None:
+  if params.reference.experiments is not None:
     from dxtbx.serialize import load
     reference_experiments = load.experiment_list(
-      params.reference, check_format=False)
+      params.reference.experiments, check_format=False)
     assert len(reference_experiments.crystals()) == 1
     reference_crystal = reference_experiments.crystals()[0]
 
-  if params.reference_reflections is not None:
+  if params.reference.reflections is not None:
     # First check that we have everything as expected for the reference reindexing
     # Currently only supports reindexing one dataset at a time
-    if params.reference is None:
+    if params.reference.experiments is None:
       raise Sorry("""For reindexing against a reference dataset, a reference
 experiments file must also be specified with the option: reference= """)
-    if not os.path.exists(params.reference_reflections):
+    if not os.path.exists(params.reference.reflections):
       raise Sorry("Could not locate reference dataset reflection file")
     if len(experiments) != 1 or len(reflections) != 1:
       raise Sorry("Only one dataset can be reindexed to a reference at a time")
 
     reference_reflections = flex.reflection_table().from_pickle(
-      params.reference_reflections)
+      params.reference.reflections)
 
     test_crystal = experiments.crystals()[0]
     test_reflections = reflections[0]
@@ -177,7 +179,7 @@ experiments file must also be specified with the option: reference= """)
     if test_reflections.get_flags(
       test_reflections.flags.integrated_sum).count(True) == 0:
       assert 'intensity.sum.value' in test_reflections, \
-        "No 'intensity.sum.value in reflections"
+        "No 'intensity.sum.value' in reflections"
       test_reflections.set_flags(flex.bool(test_reflections.size(), True),
          test_reflections.flags.integrated_sum)
     if reference_reflections.get_flags(
