@@ -55,7 +55,7 @@ Examples::
 phil_scope = iotbx.phil.parse("""\
 include scope dials.algorithms.indexing.indexer.master_phil_scope
 output {
-  experiments = experiments.json
+  experiments = indexed_experiments.json
     .type = path
   split_experiments = False
     .type = bool
@@ -107,21 +107,14 @@ def run(args):
     logger.info('The following parameters have been modified:\n')
     logger.info(diff_phil)
 
-  datablocks = flatten_datablocks(params.input.datablock)
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
 
-  if len(datablocks) == 0:
-    if len(experiments) > 0:
-      imagesets = experiments.imagesets()
-    else:
-      parser.print_help()
-      return
-  else:
-    imagesets = []
-    for datablock in datablocks:
-      imagesets.extend(datablock.extract_imagesets())
-  if len(experiments):
+  if len(experiments) == 0:
+    parser.print_help()
+    return
+
+  if experiments.crystals()[0] is not None:
     known_crystal_models = experiments.crystals()
   else:
     known_crystal_models = None
@@ -129,7 +122,7 @@ def run(args):
   if len(reflections) == 0:
     raise Sorry("No reflection lists found in input")
   if len(reflections) > 1:
-    assert len(reflections) == len(imagesets)
+    assert len(reflections) == len(experiments)
     from scitbx.array_family import flex
     for i in range(len(reflections)):
       reflections[i]['imageset_id'] = flex.int(len(reflections[i]), i)
@@ -138,16 +131,16 @@ def run(args):
 
   reflections = reflections[0]
 
-  for imageset in imagesets:
-    if (imageset.get_goniometer() is not None and
-        imageset.get_scan() is not None and
-        imageset.get_scan().get_oscillation()[1] == 0):
-      imageset.set_goniometer(None)
-      imageset.set_scan(None)
+  for expt in experiments:
+    if (expt.goniometer is not None and
+        expt.scan is not None and
+        expt.scan.get_oscillation()[1] == 0):
+      expt.goniometer = None
+      expt.scan = None
 
   from dials.algorithms.indexing.indexer import indexer_base
   idxr = indexer_base.from_parameters(
-    reflections, imagesets,
+    reflections, experiments,
     known_crystal_models=known_crystal_models,
     params=params)
   idxr.index()

@@ -459,9 +459,9 @@ deg_to_radians = math.pi/180
 
 class indexer_base(object):
 
-  def __init__(self, reflections, imagesets, params=None):
+  def __init__(self, reflections, experiments, params=None):
     self.reflections = reflections
-    self.imagesets = imagesets
+    self.experiments = experiments
 
     if params is None: params = master_params
 
@@ -471,7 +471,7 @@ class indexer_base(object):
     self.hkl_offset = None
 
     if self.all_params.refinement.reflections.outlier.algorithm in ('auto', libtbx.Auto):
-      if self.imagesets[0].get_goniometer() is None:
+      if self.experiments[0].goniometer is None:
         self.all_params.refinement.reflections.outlier.algorithm = 'sauter_poon'
       else:
         # different default to dials.refine
@@ -479,22 +479,22 @@ class indexer_base(object):
         self.all_params.refinement.reflections.outlier.algorithm = 'tukey'
 
     if self.params.refinement_protocol.n_macro_cycles in ('auto', libtbx.Auto):
-      if self.imagesets[0].get_goniometer() is None:
+      if self.experiments[0].goniometer is None:
         self.params.refinement_protocol.n_macro_cycles = 1
       else:
         self.params.refinement_protocol.n_macro_cycles = 5
 
-    for imageset in imagesets[1:]:
-      if imageset.get_detector().is_similar_to(self.imagesets[0].get_detector()):
-        imageset.set_detector(self.imagesets[0].get_detector())
-      if imageset.get_goniometer().is_similar_to(self.imagesets[0].get_goniometer()):
-        imageset.set_goniometer(self.imagesets[0].get_goniometer())
+    for expt in self.experiments[1:]:
+      if expt.detector.is_similar_to(self.experiments[0].detector):
+        expt.detector = self.experiments[0].detector
+      if expt.goniometer.is_similar_to(self.experiments[0].goniometer):
+        expt.goniometer = self.experiments[0].goniometer
         # can only share a beam if we share a goniometer?
-        if imageset.get_beam().is_similar_to(self.imagesets[0].get_beam()):
-          imageset.set_beam(self.imagesets[0].get_beam())
+        if expt.beam.is_similar_to(self.experiments[0].beam):
+          expt.beam = self.experiments[0].beam
         if (self.params.combine_scans and
-            imageset.get_scan() == self.imagesets[0].get_scan()):
-          imageset.set_scan(self.imagesets[0].get_scan())
+            expt.scan == self.experiments[0].scan):
+          expt.scan = self.experiments[0].scan
 
     if 'flags' in self.reflections:
       strong_sel = self.reflections.get_flags(self.reflections.flags.strong)
@@ -511,7 +511,7 @@ class indexer_base(object):
     self.setup_indexing()
 
   @staticmethod
-  def from_parameters(reflections, imagesets,
+  def from_parameters(reflections, experiments,
                       known_crystal_models=None, params=None):
 
     if params is None:
@@ -521,13 +521,13 @@ class indexer_base(object):
       from dials.algorithms.indexing.known_orientation \
            import indexer_known_orientation
       idxr = indexer_known_orientation(
-        reflections, imagesets, params, known_crystal_models)
+        reflections, experiments, params, known_crystal_models)
     else:
       has_stills = False
       has_sweeps = False
-      for imageset in imagesets:
-        if imageset.get_goniometer() is None or imageset.get_scan() is None or \
-            imageset.get_scan().get_oscillation()[1] == 0:
+      for expt in experiments:
+        if expt.goniometer is None or expt.scan is None or \
+            expt.scan.get_oscillation()[1] == 0:
           if has_sweeps:
             raise Sorry("Please provide only stills or only sweeps, not both")
           has_stills = True
@@ -575,14 +575,14 @@ class indexer_base(object):
             import stills_indexer_fft3d as indexer_fft3d
         else:
           from dials.algorithms.indexing.fft3d import indexer_fft3d
-        idxr = indexer_fft3d(reflections, imagesets, params=params)
+        idxr = indexer_fft3d(reflections, experiments, params=params)
       elif params.indexing.method == "fft1d":
         if use_stills_indexer:
           from dials.algorithms.indexing.stills_indexer \
             import stills_indexer_fft1d as indexer_fft1d
         else:
           from dials.algorithms.indexing.fft1d import indexer_fft1d
-        idxr = indexer_fft1d(reflections, imagesets, params=params)
+        idxr = indexer_fft1d(reflections, experiments, params=params)
       elif params.indexing.method == "real_space_grid_search":
         if use_stills_indexer:
           from dials.algorithms.indexing.stills_indexer import \
@@ -590,7 +590,7 @@ class indexer_base(object):
         else:
           from dials.algorithms.indexing.real_space_grid_search \
             import indexer_real_space_grid_search
-        idxr = indexer_real_space_grid_search(reflections, imagesets, params=params)
+        idxr = indexer_real_space_grid_search(reflections, experiments, params=params)
 
     return idxr
 
@@ -692,13 +692,13 @@ class indexer_base(object):
   def setup_indexing(self):
     reflections_input = self.reflections
     self.reflections = flex.reflection_table()
-    for i, imageset in enumerate(self.imagesets):
+    for i, expt in enumerate(self.experiments):
       if 'imageset_id' not in reflections_input:
         reflections_input['imageset_id'] = reflections_input['id']
       sel = (reflections_input['imageset_id'] == i)
       self.reflections.extend(self.map_spots_pixel_to_mm_rad(
         reflections_input.select(sel),
-        imageset.get_detector(), imageset.get_scan()))
+        expt.detector, expt.scan))
     self.filter_reflections_by_scan_range()
     if len(self.reflections) == 0:
       raise Sorry("No reflections left to index!")
@@ -706,14 +706,13 @@ class indexer_base(object):
     spots_mm = self.reflections
     self.reflections = flex.reflection_table()
 
-    for i, imageset in enumerate(self.imagesets):
+    for i, expt in enumerate(self.experiments):
       spots_sel = spots_mm.select(spots_mm['imageset_id'] == i)
       self.map_centroids_to_reciprocal_space(
-        spots_sel, imageset.get_detector(), imageset.get_beam(),
-        imageset.get_goniometer())
+        spots_sel, expt.detector, expt.beam, expt.goniometer)
       spots_sel['entering'] = self.calculate_entering_flags(
-        spots_sel, beam=imageset.get_beam(),
-        goniometer=imageset.get_goniometer())
+        spots_sel, beam=expt.beam,
+        goniometer=expt.goniometer)
       self.reflections.extend(spots_sel)
 
     try:
@@ -928,17 +927,17 @@ class indexer_base(object):
           self.refined_reflections['id'] < 0,
           self.refined_reflections.flags.indexed)
 
-        for i, imageset in enumerate(self.imagesets):
+        for i, expt in enumerate(self.experiments):
           ref_sel = self.refined_reflections.select(
             self.refined_reflections['imageset_id'] == i)
           ref_sel = ref_sel.select(ref_sel['id'] >= 0)
           for i_expt in set(ref_sel['id']):
-            expt = refined_experiments[i_expt]
-            imageset.set_detector(expt.detector)
-            imageset.set_beam(expt.beam)
-            imageset.set_goniometer(expt.goniometer)
-            imageset.set_scan(expt.scan)
-            expt.imageset = imageset
+            refined_expt = refined_experiments[i_expt]
+            expt.detector = refined_expt.detector
+            expt.beam = refined_expt.beam
+            expt.goniometer = refined_expt.goniometer
+            expt.scan = refined_expt.scan
+            refined_expt.imageset = expt.imageset
 
         if not (self.all_params.refinement.parameterisation.beam.fix == 'all'
                 and self.all_params.refinement.parameterisation.detector.fix == 'all'):
@@ -947,11 +946,10 @@ class indexer_base(object):
 
           spots_mm = self.reflections
           self.reflections = flex.reflection_table()
-          for i, imageset in enumerate(self.imagesets):
+          for i, expt in enumerate(self.experiments):
             spots_sel = spots_mm.select(spots_mm['imageset_id'] == i)
             self.map_centroids_to_reciprocal_space(
-              spots_sel, imageset.get_detector(), imageset.get_beam(),
-              imageset.get_goniometer())
+              spots_sel, expt.detector, expt.beam, expt.goniometer)
             self.reflections.extend(spots_sel)
 
         # update for next cycle
@@ -978,7 +976,7 @@ class indexer_base(object):
 
     self.refined_reflections['xyzcal.px'] = flex.vec3_double(
       len(self.refined_reflections))
-    for i, imageset in enumerate(self.imagesets):
+    for i, expt in enumerate(self.experiments):
       imgset_sel = self.refined_reflections['imageset_id'] == i
       # set xyzcal.px field in self.refined_reflections
       refined_reflections = self.refined_reflections.select(imgset_sel)
@@ -987,17 +985,16 @@ class indexer_base(object):
       x_mm, y_mm, z_rad = xyzcal_mm.parts()
       xy_cal_mm = flex.vec2_double(x_mm, y_mm)
       xy_cal_px = flex.vec2_double(len(xy_cal_mm))
-      for i_panel in range(len(imageset.get_detector())):
-        panel = imageset.get_detector()[i_panel]
+      for i_panel in range(len(expt.detector)):
+        panel = expt.detector[i_panel]
         sel = (panel_numbers == i_panel)
         isel = sel.iselection()
         ref_panel = refined_reflections.select(panel_numbers == i_panel)
         xy_cal_px.set_selected(
           sel, panel.millimeter_to_pixel(xy_cal_mm.select(sel)))
       x_px, y_px = xy_cal_px.parts()
-      scan = imageset.get_scan()
-      if scan is not None:
-        z_px = scan.get_array_index_from_angle(z_rad, deg=False)
+      if expt.scan is not None:
+        z_px = expt.scan.get_array_index_from_angle(z_rad, deg=False)
       else:
         # must be a still image, z centroid not meaningful
         z_px = z_rad
@@ -1416,19 +1413,19 @@ class indexer_base(object):
       xo, yo, zo = self.reflections['xyzobs.mm.value'].parts()
       imageset_id = self.reflections['imageset_id']
       experiments = ExperimentList()
-      for i_imageset, imageset in enumerate(self.imagesets):
-        scan = imageset.get_scan()
-        if scan is not None:
-          start, end = scan.get_oscillation_range()
+      for i_expt, expt in enumerate(self.experiments):
+        # XXX Not sure if we still need this loop over self.experiments
+        if expt.scan is not None:
+          start, end = expt.scan.get_oscillation_range()
           if (end - start) > 360:
             # only use reflections from the first 360 degrees of the scan
             sel.set_selected(
-              (imageset_id == i_imageset) & (zo > ((start * math.pi/180) + 2 * math.pi)), False)
-        experiments.append(Experiment(imageset=imageset,
-                                      beam=imageset.get_beam(),
-                                      detector=imageset.get_detector(),
-                                      goniometer=imageset.get_goniometer(),
-                                      scan=scan,
+              (imageset_id == i_expt) & (zo > ((start * math.pi/180) + 2 * math.pi)), False)
+        experiments.append(Experiment(imageset=expt.imageset,
+                                      beam=expt.beam,
+                                      detector=expt.detector,
+                                      goniometer=expt.goniometer,
+                                      scan=expt.scan,
                                       crystal=cm))
       refl = self.reflections.select(sel)
       self.index_reflections(experiments, refl)
@@ -1710,8 +1707,8 @@ class indexer_base(object):
       self, file_name='reciprocal_lattice.pdb'):
     from cctbx import crystal, xray
     cs = crystal.symmetry(unit_cell=(1000,1000,1000,90,90,90), space_group="P1")
-    for i_panel in range(len(self.imagesets[0].get_detector())):
-      if len(self.imagesets[0].get_detector()) > 1:
+    for i_panel in range(len(self.experiments[0].detector)):
+      if len(self.experiments[0].detector) > 1:
         file_name = 'reciprocal_lattice_%i.pdb' %i_panel
       with open(file_name, 'wb') as f:
         xs = xray.structure(crystal_symmetry=cs)
@@ -1735,7 +1732,7 @@ class indexer_base(object):
       map_data=map_data,
       labels=flex.std_string(labels))
 
-  def export_as_json(self, experiments, file_name="experiments.json",
+  def export_as_json(self, experiments, file_name="indexed_experiments.json",
                      compact=False):
     from dxtbx.serialize import dump
     assert experiments.is_consistent()

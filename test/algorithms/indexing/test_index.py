@@ -47,9 +47,9 @@ class run_one_indexing(object):
     command = " ".join(args)
     print(command)
     result = easy_run.fully_buffered(command=command).raise_if_errors()
-    assert os.path.exists("experiments.json")
+    assert os.path.exists("indexed_experiments.json")
     experiments_list = load.experiment_list(
-      "experiments.json", check_format=False)
+      "indexed_experiments.json", check_format=False)
     assert len(experiments_list.crystals()) == n_expected_lattices, (
       len(experiments_list.crystals()), n_expected_lattices)
     assert os.path.exists("indexed.pickle")
@@ -92,7 +92,7 @@ def test_index_i04_weak_data_fft3d(dials_regression, tmpdir):
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
-  sweep_path = os.path.join(data_dir, "datablock_orig.json")
+  sweep_path = os.path.join(data_dir, "experiments_import.json")
   extra_args = ["bin_size_fraction=0.25",
                 "scan_range=1,20",
                 "scan_range=250,270",
@@ -114,7 +114,7 @@ def test_index_cluster_analysis_search(dials_regression, tmpdir):
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
-  sweep_path = os.path.join(data_dir, "datablock_orig.json")
+  sweep_path = os.path.join(data_dir, "experiments_import.json")
   extra_args = ["cluster_analysis_search=True",
                 "n_macro_cycles=3",
                 "bin_size_fraction=0.25",
@@ -136,7 +136,7 @@ def test_index_cluster_analysis_search_with_symmetry(dials_regression, tmpdir):
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
-  sweep_path = os.path.join(data_dir, "datablock_orig.json")
+  sweep_path = os.path.join(data_dir, "experiments_import.json")
   extra_args = ["cluster_analysis_search=True",
                 "n_macro_cycles=3",
                 "bin_size_fraction=0.25",
@@ -168,7 +168,7 @@ def test_index_trypsin_single_lattice(dials_regression, tmpdir):
   # trypsin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1.pickle")
-  sweep_path = os.path.join(data_dir, "datablock_P1_X6_1.json")
+  sweep_path = os.path.join(data_dir, "experiments_P1_X6_1.json")
   extra_args = ["cluster_analysis_search=True",
                 "n_macro_cycles=3",
                 "reciprocal_space_grid.d_min=4",
@@ -193,7 +193,7 @@ def test_index_trypsin_two_lattice(dials_regression, tmpdir):
   # synthetic trypsin multi-lattice dataset (2 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2.pickle")
-  sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2.json")
+  sweep_path = os.path.join(data_dir, "experiments_P1_X6_1_2.json")
   extra_args = ["cluster_analysis_search=True",
                 "reflections_per_degree=10",
                 "n_macro_cycles=2",
@@ -224,7 +224,7 @@ def test_index_trypsin_three_lattice(dials_regression, tmpdir):
   # synthetic trypsin multi-lattice dataset (3 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3.pickle")
-  sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2_3.json")
+  sweep_path = os.path.join(data_dir, "experiments_P1_X6_1_2_3.json")
   extra_args = ["cluster_analysis_search=True",
                 "reflections_per_degree=10",
                 "n_macro_cycles=2",
@@ -252,7 +252,7 @@ def test_index_trypsin_four_lattice_P1(dials_regression, tmpdir):
   # synthetic trypsin multi-lattice dataset (4 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3_4.pickle")
-  sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2_3_4.json")
+  sweep_path = os.path.join(data_dir, "experiments_P1_X6_1_2_3_4.json")
   extra_args = ["cluster_analysis_search=True",
                 "reflections_per_degree=10",
                 "n_macro_cycles=2",
@@ -277,7 +277,7 @@ def test_index_trypsin_four_lattice_P212121(dials_regression, tmpdir):
   # synthetic trypsin multi-lattice dataset (4 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3_4.pickle")
-  sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2_3_4.json")
+  sweep_path = os.path.join(data_dir, "experiments_P1_X6_1_2_3_4.json")
   extra_args = ["indexing.method=real_space_grid_search",
                 "reflections_per_degree=10",
                 "n_macro_cycles=5",
@@ -304,7 +304,7 @@ def test_index_i04_weak_data_fft1d(dials_regression, tmpdir):
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
-  sweep_path = os.path.join(data_dir, "datablock_orig.json")
+  sweep_path = os.path.join(data_dir, "experiments_import.json")
   extra_args = ["n_macro_cycles=2",
                 "indexing.method=fft1d",
                 "bin_size_fraction=0.25",
@@ -324,7 +324,7 @@ def test_index_trypsin_index_assignment_local(dials_regression, tmpdir):
   # synthetic trypsin multi-lattice dataset (3 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3.pickle")
-  sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2_3.json")
+  sweep_path = os.path.join(data_dir, "experiments_P1_X6_1_2_3.json")
   extra_args = ["indexing.method=real_space_grid_search",
                 "d_min_start=3",
                 "n_macro_cycles=3",
@@ -358,7 +358,7 @@ def test_index_peak_search_clean(dials_regression, tmpdir):
   # test indexing from single image of i04_weak_data
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "first_image.pickle")
-  sweep_path = os.path.join(data_dir, "datablock_orig.json")
+  sweep_path = os.path.join(data_dir, "experiments_import.json")
   extra_args = ["indexing.method=fft3d",
                 "known_symmetry.space_group=P4",
                 "known_symmetry.unit_cell=57.8,57.8,150,90,90,90",
@@ -382,7 +382,7 @@ def test_index_imosflm_tutorial(dials_regression, tmpdir):
   # http://www.ccp4.ac.uk/courses/BCA2005/tutorials/dataproc-tutorial.html
   data_dir = os.path.join(dials_regression, "indexing_test_data", "imosflm_hg_mar")
   pickle_path = os.path.join(data_dir, "strong.pickle")
-  sweep_path = os.path.join(data_dir, "datablock.json")
+  sweep_path = os.path.join(data_dir, "experiments.json")
 
   unit_cell = uctbx.unit_cell((58.373, 58.373, 155.939, 90, 90, 120))
   hall_symbol = '-R 3 2"'
@@ -416,14 +416,14 @@ def test_index_insulin(xia2_regression_build, tmpdir):
       os.path.join(data_dir, image_path), "image_00%i.img" %(i+1))
 
   args = ["dials.import", ' '.join(glob.glob("image_00*.img")),
-          "output.datablock=datablock.json", "allow_multiple_sweeps=True"]
+          "output.experiments=experiments.json", "allow_multiple_sweeps=True"]
   command = " ".join(args)
   #print(command)
   result = easy_run.fully_buffered(command=command).raise_if_errors()
 
-  datablock_json = "datablock.json"
+  experiments_json = "experiments.json"
 
-  args = ["dials.find_spots", datablock_json]
+  args = ["dials.find_spots", experiments_json]
 
   command = " ".join(args)
   print(command)
@@ -444,13 +444,13 @@ def test_index_insulin(xia2_regression_build, tmpdir):
     extra_args.append("treat_single_image_as_still=False")
 
     with tmpdir.as_cwd():
-      result = run_one_indexing(pickle_path, datablock_json, extra_args, expected_unit_cell,
+      result = run_one_indexing(pickle_path, experiments_json, extra_args, expected_unit_cell,
                                 expected_rmsds, expected_hall_symbol)
 
 def test_index_4rotation(dials_regression, tmpdir):
   data_dir = os.path.join(dials_regression, "indexing_test_data", "4rotation")
   pickle_path = os.path.join(data_dir, "strong.pickle")
-  sweep_path = os.path.join(data_dir, "datablock_import.json")
+  sweep_path = os.path.join(data_dir, "experiments.json")
   extra_args = ["max_refine=10", "reflections_per_degree=50",
                 "known_symmetry.space_group=R3",
                 "n_macro_cycles=3"]
@@ -471,7 +471,7 @@ def test_index_small_molecule_multi_sweep_4(dials_regression, tmpdir):
     glob.glob(os.path.join(data_dir, "SWEEP%i" %(i+1), "index", "*_strong.pickle"))[0]
     for i in range(4)]
   sweep_paths = [
-    glob.glob(os.path.join(data_dir, "SWEEP%i" %(i+1), "index", "*_datablock_import.json"))[0]
+    glob.glob(os.path.join(data_dir, "SWEEP%i" %(i+1), "index", "experiments.json"))[0]
     for i in range(4)]
   extra_args = ["known_symmetry.space_group=I4", "filter_ice=False"]
   expected_unit_cell = uctbx.unit_cell(
@@ -493,7 +493,7 @@ def test_index_small_molecule_multi_sweep_3(dials_regression, tmpdir):
     glob.glob(os.path.join(data_dir, "*SWEEP%i*_strong.pickle" %(i+1)))[0]
     for i in range(3)]
   sweep_paths = [
-    glob.glob(os.path.join(data_dir, "*SWEEP%i*_datablock.json" %(i+1)))[0]
+    glob.glob(os.path.join(data_dir, "*SWEEP%i*_experiments.json" %(i+1)))[0]
     for i in range(3)]
   extra_args = ["filter_ice=False"]
   expected_unit_cell = uctbx.unit_cell(
@@ -515,7 +515,7 @@ def test_index_small_molecule_ice_max_cell(dials_regression, tmpdir):
   # estimation tricky
   data_dir = os.path.join(dials_regression, "indexing_test_data", "MXSW-904")
   pickle_path = os.path.join(data_dir, "1_SWEEP1_strong.pickle")
-  datablock = os.path.join(data_dir, "1_SWEEP1_datablock.json")
+  experiments = os.path.join(data_dir, "1_SWEEP1_experiments.json")
   extra_args = ["filter_ice=False"]
   expected_unit_cell = uctbx.unit_cell(
     (11.72, 11.72, 11.74, 109.08, 109.24, 108.99))
@@ -523,7 +523,7 @@ def test_index_small_molecule_ice_max_cell(dials_regression, tmpdir):
   expected_hall_symbol = ' P 1'
 
   with tmpdir.as_cwd():
-    result = run_one_indexing(pickle_path, datablock,
+    result = run_one_indexing(pickle_path, experiments,
                               extra_args, expected_unit_cell,
                               expected_rmsds, expected_hall_symbol)
     assert len(result.indexed_reflections) > 1300, len(result.indexed_reflections)

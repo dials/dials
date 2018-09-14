@@ -32,8 +32,8 @@ logger = logging.getLogger(__name__)
 
 class indexer_fft3d(indexer_base):
 
-  def __init__(self, reflections, imagesets, params):
-    super(indexer_fft3d, self).__init__(reflections, imagesets, params)
+  def __init__(self, reflections, experiments, params):
+    super(indexer_fft3d, self).__init__(reflections, experiments, params)
 
   def find_lattices(self):
     if self.params.multiple_lattice_search.cluster_analysis_search:
@@ -60,12 +60,12 @@ class indexer_fft3d(indexer_base):
         crystal_models = []
     experiments = ExperimentList()
     for cm in crystal_models:
-      for imageset in self.imagesets:
-        experiments.append(Experiment(imageset=imageset,
-                                      beam=imageset.get_beam(),
-                                      detector=imageset.get_detector(),
-                                      goniometer=imageset.get_goniometer(),
-                                      scan=imageset.get_scan(),
+      for expt in self.experiments:
+        experiments.append(Experiment(imageset=expt.imageset,
+                                      beam=expt.beam,
+                                      detector=expt.detector,
+                                      goniometer=expt.goniometer,
+                                      scan=expt.scan,
                                       crystal=cm))
     return experiments
 
@@ -599,25 +599,25 @@ class indexer_fft3d(indexer_base):
     rlgrid = 2 / (d_min * self.gridding[0])
 
     frame_number = self.reflections['xyzobs.px.value'].parts()[2]
+    scan = self.experiments[0].scan # XXX what about multiple imagesets?
     scan_range_min = max(
       int(math.floor(flex.min(frame_number))),
-      self.imagesets[0].get_array_range()[0]) # XXX what about multiple imagesets?
+      scan.get_array_range()[0]) # XXX what about multiple imagesets?
     scan_range_max = min(
       int(math.ceil(flex.max(frame_number))),
-      self.imagesets[0].get_array_range()[1]) # XXX what about multiple imagesets?
+      scan.get_array_range()[1]) # XXX what about multiple imagesets?
     scan_range = self.params.scan_range
     if not len(scan_range):
       scan_range = [[scan_range_min, scan_range_max]]
 
-    scan = self.imagesets[0].get_scan() # XXX what about multiple imagesets?
     angle_ranges = [
       [scan.get_angle_from_array_index(i, deg=False) for i in range_]
       for range_ in scan_range]
 
     grid = flex.double(flex.grid(self.gridding), 0)
     sampling_volume_map(grid, flex.vec2_double(angle_ranges),
-                        self.imagesets[0].get_beam().get_s0(),
-                        self.imagesets[0].get_goniometer().get_rotation_axis(),
+                        self.experiments[0].beam.get_s0(),
+                        self.experiments[0].goniometer.get_rotation_axis(),
                         rlgrid, d_min, self.params.b_iso)
 
     fft = fftpack.complex_to_complex_3d(self.gridding)

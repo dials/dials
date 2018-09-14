@@ -18,8 +18,8 @@ from scitbx.array_family import flex
 
 class indexer_fft1d(indexer_base):
 
-  def __init__(self, reflections, imagesets, params):
-    super(indexer_fft1d, self).__init__(reflections, imagesets, params)
+  def __init__(self, reflections, experiments, params):
+    super(indexer_fft1d, self).__init__(reflections, experiments, params)
 
   def find_candidate_basis_vectors(self):
     self.d_min = self.params.refinement_protocol.d_min_start
@@ -54,12 +54,12 @@ class indexer_fft1d(indexer_base):
       crystal_models = []
     experiments = ExperimentList()
     for cm in crystal_models:
-      for imageset in self.imagesets:
-        experiments.append(Experiment(imageset=imageset,
-                                      beam=imageset.get_beam(),
-                                      detector=imageset.get_detector(),
-                                      goniometer=imageset.get_goniometer(),
-                                      scan=imageset.get_scan(),
+      for expt in self.experiments:
+        experiments.append(Experiment(imageset=expt.imageset,
+                                      beam=expt.beam,
+                                      detector=expt.detector,
+                                      goniometer=expt.goniometer,
+                                      scan=expt.scan,
                                       crystal=cm))
     return experiments
 
