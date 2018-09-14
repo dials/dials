@@ -385,7 +385,7 @@ def run(args):
         refl = reflections[dataset_selection[dataset_id]]
         reindexed_expt = copy.deepcopy(expt)
         refl_reindexed = copy.deepcopy(refl)
-        cb_op_this = cb_op * change_of_basis_ops[dataset_id]
+        cb_op_this = cb_op * change_of_basis_ops[dataset_id].inverse()
         reindexed_expt.crystal = reindexed_expt.crystal.change_basis(cb_op_this)
         refl_reindexed['miller_index'] = cb_op_this.apply(
           refl_reindexed['miller_index'])
