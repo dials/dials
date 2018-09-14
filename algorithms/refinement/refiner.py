@@ -139,6 +139,14 @@ refinement
       .type = choice
       .expert_level = 1
 
+    block_width = 1.0
+      .help = "Width of a reflection 'block' (in degrees) determining how fine-"
+              "grained the model used for scan-varying prediction during"
+              "refinement is. Currently only has any effect if the crystal"
+              "parameterisation is set to use compose_model_per=block"
+      .type = float(value_min = 0.)
+      .expert_level = 1
+
     debug_centroid_analysis = False
       .help = "Set True to write out a file containing the reflections used"
               "for centroid analysis for automatic setting of the  scan-varying"
@@ -399,14 +407,6 @@ refinement
               "have poorly-determined centroids and can bias the refined model"
               "if they are included."
       .type = float(value_min=0,value_max=1)
-      .expert_level = 1
-
-    block_width = 1.0
-      .help = "Width of a reflection 'block' (in degrees) determining how fine-"
-              "grained the model used for scan-varying prediction during"
-              "refinement is. Currently only has any effect if the crystal"
-              "parameterisation is set to use compose_model_per=block"
-      .type = float(value_min = 0.)
       .expert_level = 1
 
     weighting_strategy
@@ -1779,7 +1779,8 @@ class RefinerFactory(object):
       from dials.algorithms.refinement.reflection_manager import BlockCalculator
       block_calculator = BlockCalculator(experiments, reflections)
       if params.refinement.parameterisation.compose_model_per == "block":
-        reflections = block_calculator.per_width(options.block_width, deg=True)
+        reflections = block_calculator.per_width(
+          params.refinement.parameterisation.block_width, deg=True)
       elif params.refinement.parameterisation.compose_model_per == "image":
         reflections = block_calculator.per_image()
 
