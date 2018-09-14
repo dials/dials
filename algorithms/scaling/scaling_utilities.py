@@ -33,6 +33,18 @@ except ImportError:
   def log_memory_usage():
     pass
 
+class Reasons(object):
+
+  def __init__(self):
+    self.reasons = {}
+
+  def add_reason(self, text, number):
+    self.reasons[text] = number
+
+  def __repr__(self):
+    reasonlist = ['criterion: %s, reflections: %s\n' % (k, v) for (k, v) in self.reasons.iteritems()]
+    return 'Reflections passing individual criteria:\n'+''.join(reasonlist)
+
 def save_experiments(experiments, filename):
   """Save the experiments json."""
   st = time()
