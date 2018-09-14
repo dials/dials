@@ -18,6 +18,7 @@ import wx.lib.scrolledpanel as scroll_pan
 import wx.grid as gridlib
 import math
 
+WX3 = wx.VERSION[0] == 3
 
 class grid_frame(wx.Frame):
   def __init__(self, parent, title):
@@ -87,9 +88,11 @@ class flex_3d_frame(wx.Frame):
       wx.Exit()
 
 
-class TupTable(gridlib.PyGridTableBase):
+_baseClass = gridlib.PyGridTableBase if WX3 else gridlib.GridTableBase
+class TupTable(_baseClass):
   def __init__(self, data, rowLabels=None, colLabels=None):
-    gridlib.PyGridTableBase.__init__(self)
+    # Not super() because not always new-style class in WX3
+    _baseClass.__init__(self)
     self.data = data
     self.rowLabels = rowLabels
     self.colLabels = colLabels
@@ -212,7 +215,10 @@ class MyGrid(gridlib.Grid):
     tableBase = TupTable(tupldata, rowLabels, colLabels)
 
     #self.AutoSizeColumns(False)
-    self.SetTable(tableBase)
+    if WX3:
+      self.SetTable(tableBase)
+    else:
+      self.SetTable(tableBase, takeOwnership=True)
     self.Refresh()
     #self.AutoSizeColumn(1)
     for i in range(len(self.lst_keys)):
