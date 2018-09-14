@@ -34,10 +34,6 @@ from dials.algorithms.refinement.outlier_detection.outlier_base \
   import phil_str as outlier_phil_str
 format_data = {'outlier_phil':outlier_phil_str,}
 phil_str = '''
-  reflections
-    .help = "Parameters used by the reflection manager"
-  {
-
     reflections_per_degree = None
       .help = "The number of centroids per degree of the sweep to use in"
               "refinement. Set to None to use all suitable reflections."
@@ -102,8 +98,6 @@ phil_str = '''
     }
 
     %(outlier_phil)s
-
-  }
 '''%format_data
 phil_scope = parse(phil_str)
 
@@ -219,6 +213,107 @@ class BlockCalculator(object):
         self._reflections['block_centre'].set_selected(sub_isel, f_cent)
 
     return self._reflections
+
+class ReflectionManagerFactory(object):
+
+  @staticmethod
+  def from_parameters_reflections_experiments(params, reflections, experiments,
+      do_stills=False, verbosity=0):
+
+    """Given a set of parameters and models, build a reflection manager
+
+    Params:
+        params The input parameters
+
+    Returns:
+        The reflection manager instance
+    """
+
+    # While a random subset of reflections is used, continue to
+    # set random.seed to get consistent behaviour
+    if params.random_seed is not None:
+      import random
+      random.seed(params.random_seed)
+      flex.set_random_seed(params.random_seed)
+      logger.debug("Random seed set to %d", params.random_seed)
+
+    # check whether we deal with stills or scans
+    if do_stills:
+      refman = StillsReflectionManager
+      # check incompatible weighting strategy
+      if params.weighting_strategy.override == "statistical":
+        raise Sorry('The "statistical" weighting strategy is not compatible '
+                    'with stills refinement')
+    else:
+      refman = ReflectionManager
+      # check incompatible weighting strategy
+      if params.weighting_strategy.override in ["stills", "external_deltapsi"]:
+        msg = ('The "{0}" weighting strategy is not compatible with '
+               'scan refinement').format(params.weighting_strategy.override)
+        raise Sorry(msg)
+
+    # set automatic outlier rejection options
+    if params.outlier.algorithm in ('auto', libtbx.Auto):
+      if do_stills:
+        params.outlier.algorithm = 'sauter_poon'
+      else:
+        params.outlier.algorithm = 'mcd'
+
+    if params.outlier.separate_panels is libtbx.Auto:
+      if do_stills:
+        params.outlier.separate_panels = False
+      else:
+        params.outlier.separate_panels = True
+
+    if params.outlier.algorithm == 'sauter_poon':
+      if params.outlier.sauter_poon.px_sz is libtbx.Auto:
+        # get this from the first panel of the first detector
+        params.outlier.sauter_poon.px_sz = experiments.detectors()[0][0].get_pixel_size()
+
+    # do outlier rejection?
+    if params.outlier.algorithm in ("null", None):
+      outlier_detector = None
+    else:
+      if do_stills:
+        colnames = ["x_resid", "y_resid"]
+        params.outlier.block_width=None
+      else:
+        colnames = ["x_resid", "y_resid", "phi_resid"]
+      from dials.algorithms.refinement.outlier_detection import CentroidOutlierFactory
+      outlier_detector = CentroidOutlierFactory.from_parameters_and_colnames(
+        params, colnames, verbosity)
+
+    # override default weighting strategy?
+    weighting_strategy = None
+    if params.weighting_strategy.override == "statistical":
+      from dials.algorithms.refinement.weighting_strategies \
+        import StatisticalWeightingStrategy
+      weighting_strategy = StatisticalWeightingStrategy()
+    elif params.weighting_strategy.override == "stills":
+      from dials.algorithms.refinement.weighting_strategies \
+        import StillsWeightingStrategy
+      weighting_strategy = StillsWeightingStrategy(
+        params.weighting_strategy.delpsi_constant)
+    elif params.weighting_strategy.override == "external_deltapsi":
+      from dials.algorithms.refinement.weighting_strategies \
+        import ExternalDelPsiWeightingStrategy
+      weighting_strategy = ExternalDelPsiWeightingStrategy()
+    elif params.weighting_strategy.override == "constant":
+      from dials.algorithms.refinement.weighting_strategies \
+        import ConstantWeightingStrategy
+      weighting_strategy = ConstantWeightingStrategy(
+        *params.weighting_strategy.constants, stills=do_stills)
+
+    return refman(reflections=reflections,
+            experiments=experiments,
+            nref_per_degree=params.reflections_per_degree,
+            max_sample_size = params.maximum_sample_size,
+            min_sample_size = params.minimum_sample_size,
+            close_to_spindle_cutoff=params.close_to_spindle_cutoff,
+            trim_scan_edges=params.trim_scan_edges,
+            outlier_detector=outlier_detector,
+            weighting_strategy_override=weighting_strategy,
+            verbosity=verbosity)
 
 class ReflectionManager(object):
   """A class to maintain information about observed and predicted

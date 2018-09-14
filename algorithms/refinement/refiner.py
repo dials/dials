@@ -363,7 +363,11 @@ refinement
 
   }
 
-  %(reflections_phil)s
+  reflections
+    .help = "Parameters used by the reflection manager"
+  {
+    %(reflections_phil)s
+  }
 
 }
 '''%format_data, process_includes=True)
@@ -514,7 +518,9 @@ class RefinerFactory(object):
     logger.debug("Input reflection list size = %d observations", len(reflections))
 
     # create reflection manager
-    refman = cls.config_refman(params, reflections, experiments, do_stills, verbosity)
+    from dials.algorithms.refinement.reflection_manager import ReflectionManagerFactory
+    refman = ReflectionManagerFactory.from_parameters_reflections_experiments(
+        params.refinement.reflections, reflections, experiments, do_stills, verbosity)
 
     logger.debug("Number of observations that pass initial inclusion criteria = %d",
           refman.get_accepted_refs_size())
@@ -1625,107 +1631,6 @@ class RefinerFactory(object):
           nproc, options.engine))
 
     return engine
-
-  @staticmethod
-  def config_refman(params, reflections, experiments, do_stills, verbosity):
-    """Given a set of parameters and models, build a reflection manager
-
-    Params:
-        params The input parameters
-
-    Returns:
-        The reflection manager instance
-    """
-
-    # Shorten parameter path
-    options = params.refinement.reflections
-
-    # While a random subset of reflections is used, continue to
-    # set random.seed to get consistent behaviour
-    if options.random_seed is not None:
-      import random
-      random.seed(options.random_seed)
-      flex.set_random_seed(options.random_seed)
-      logger.debug("Random seed set to %d", options.random_seed)
-
-    # check whether we deal with stills or scans
-    if do_stills:
-      from dials.algorithms.refinement.reflection_manager import \
-          StillsReflectionManager as refman
-      # check incompatible weighting strategy
-      if options.weighting_strategy.override == "statistical":
-        raise Sorry('The "statistical" weighting strategy is not compatible '
-                    'with stills refinement')
-    else:
-      from dials.algorithms.refinement.reflection_manager import ReflectionManager as refman
-      # check incompatible weighting strategy
-      if options.weighting_strategy.override in ["stills", "external_deltapsi"]:
-        msg = ('The "{0}" weighting strategy is not compatible with '
-               'scan refinement').format(options.weighting_strategy.override)
-        raise Sorry(msg)
-
-    # set automatic outlier rejection options
-    if options.outlier.algorithm in ('auto', libtbx.Auto):
-      if do_stills:
-        options.outlier.algorithm = 'sauter_poon'
-      else:
-        options.outlier.algorithm = 'mcd'
-
-    if options.outlier.separate_panels is libtbx.Auto:
-      if do_stills:
-        options.outlier.separate_panels = False
-      else:
-        options.outlier.separate_panels = True
-
-    if options.outlier.algorithm == 'sauter_poon':
-      if options.outlier.sauter_poon.px_sz is libtbx.Auto:
-        # get this from the first panel of the first detector
-        options.outlier.sauter_poon.px_sz = experiments.detectors()[0][0].get_pixel_size()
-
-    # do outlier rejection?
-    if options.outlier.algorithm in ("null", None):
-      outlier_detector = None
-    else:
-      if do_stills:
-        colnames = ["x_resid", "y_resid"]
-        options.outlier.block_width=None
-      else:
-        colnames = ["x_resid", "y_resid", "phi_resid"]
-      from dials.algorithms.refinement.outlier_detection import CentroidOutlierFactory
-      outlier_detector = CentroidOutlierFactory.from_parameters_and_colnames(
-        options, colnames, verbosity)
-
-    # override default weighting strategy?
-    weighting_strategy = None
-    if options.weighting_strategy.override == "statistical":
-      from dials.algorithms.refinement.weighting_strategies \
-        import StatisticalWeightingStrategy
-      weighting_strategy = StatisticalWeightingStrategy()
-    elif options.weighting_strategy.override == "stills":
-      from dials.algorithms.refinement.weighting_strategies \
-        import StillsWeightingStrategy
-      weighting_strategy = StillsWeightingStrategy(
-        options.weighting_strategy.delpsi_constant)
-    elif options.weighting_strategy.override == "external_deltapsi":
-      from dials.algorithms.refinement.weighting_strategies \
-        import ExternalDelPsiWeightingStrategy
-      weighting_strategy = ExternalDelPsiWeightingStrategy()
-    elif options.weighting_strategy.override == "constant":
-      from dials.algorithms.refinement.weighting_strategies \
-        import ConstantWeightingStrategy
-      weighting_strategy = ConstantWeightingStrategy(
-        *options.weighting_strategy.constants, stills=do_stills)
-
-    return refman(reflections=reflections,
-            experiments=experiments,
-            nref_per_degree=options.reflections_per_degree,
-            max_sample_size = options.maximum_sample_size,
-            min_sample_size = options.minimum_sample_size,
-            close_to_spindle_cutoff=options.close_to_spindle_cutoff,
-            trim_scan_edges=options.trim_scan_edges,
-            outlier_detector=outlier_detector,
-            weighting_strategy_override=weighting_strategy,
-            verbosity=verbosity)
 
   @staticmethod
   def config_target(params, experiments, refman, do_stills):
