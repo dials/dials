@@ -568,6 +568,16 @@ class RefinerFactory(object):
       raise Sorry('Cannot refine a mixture of stills and scans')
     do_stills = exps_are_stills[0]
 
+    # calculate reflection block_width if required for scan-varying refinement
+    if params.refinement.parameterisation.scan_varying:
+      from dials.algorithms.refinement.reflection_manager import BlockCalculator
+      block_calculator = BlockCalculator(experiments, reflections)
+      if params.refinement.parameterisation.compose_model_per == "block":
+        reflections = block_calculator.per_width(
+          params.refinement.parameterisation.block_width, deg=True)
+      elif params.refinement.parameterisation.compose_model_per == "image":
+        reflections = block_calculator.per_image()
+
     logger.debug("\nBuilding reflection manager")
     logger.debug("Input reflection list size = %d observations", len(reflections))
 
@@ -1773,16 +1783,6 @@ class RefinerFactory(object):
         import ConstantWeightingStrategy
       weighting_strategy = ConstantWeightingStrategy(
         *options.weighting_strategy.constants, stills=do_stills)
-
-    # calculate reflection block_width?
-    if params.refinement.parameterisation.scan_varying:
-      from dials.algorithms.refinement.reflection_manager import BlockCalculator
-      block_calculator = BlockCalculator(experiments, reflections)
-      if params.refinement.parameterisation.compose_model_per == "block":
-        reflections = block_calculator.per_width(
-          params.refinement.parameterisation.block_width, deg=True)
-      elif params.refinement.parameterisation.compose_model_per == "image":
-        reflections = block_calculator.per_image()
 
     return refman(reflections=reflections,
             experiments=experiments,
