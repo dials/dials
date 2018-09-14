@@ -28,6 +28,85 @@ from dials.algorithms.refinement.refinement_helpers import \
 RAD2DEG = 180. / pi
 DEG2RAD = pi / 180.
 
+# PHIL
+from libtbx.phil import parse
+from dials.algorithms.refinement.outlier_detection.outlier_base \
+  import phil_str as outlier_phil_str
+format_data = {'outlier_phil':outlier_phil_str,}
+phil_str = '''
+  reflections
+    .help = "Parameters used by the reflection manager"
+  {
+
+    reflections_per_degree = None
+      .help = "The number of centroids per degree of the sweep to use in"
+              "refinement. Set to None to use all suitable reflections."
+      .type = float(value_min=0.)
+
+    minimum_sample_size = 1000
+      .help = "cutoff that determines whether subsetting of the input"
+              "reflection list is done"
+      .type = int
+
+    maximum_sample_size = None
+      .help = "The maximum number of reflections to use in refinement."
+              "Overrides reflections_per_degree if that produces a"
+              "larger sample size."
+      .type = int(value_min=1)
+
+    random_seed = 42
+      .help = "Random seed to use when sampling to create a working set of"
+              "reflections. May be int or None."
+      .type = int
+      .expert_level = 1
+
+    close_to_spindle_cutoff = 0.02
+      .help = "The inclusion criterion currently uses the volume of the"
+              "parallelepiped formed by the spindle axis, the incident"
+              "beam and the scattered beam. If this is lower than some"
+              "value then the reflection is excluded from refinement."
+              "In detector space, these are the reflections located close"
+              "to the rotation axis."
+      .type = float(value_min = 0)
+      .expert_level = 1
+
+    trim_scan_edges = 0.0
+      .help = "Reflections within this value in degrees from the centre of the"
+              "first or last image of the scan will be removed before"
+              "refinement, unless doing so would result in too few remaining"
+              "reflections. Reflections that are truncated at the scan edges"
+              "have poorly-determined centroids and can bias the refined model"
+              "if they are included."
+      .type = float(value_min=0,value_max=1)
+      .expert_level = 1
+
+    weighting_strategy
+      .help = "Parameters to configure weighting strategy overrides"
+      .expert_level = 1
+    {
+      override = statistical stills constant external_deltapsi
+        .help = "selection of a strategy to override default weighting behaviour"
+        .type = choice
+
+      delpsi_constant = 1000000
+        .help = "used by the stills strategy to choose absolute weight value"
+                "for the angular distance from Ewald sphere term of the target"
+                "function, whilst the X and Y parts use statistical weights"
+        .type = float(value_min = 0)
+
+      constants = 1.0 1.0 1.0
+        .help = "constant weights for three parts of the target function,"
+                "whether the case is for stills or scans. The default gives"
+                "unit weighting."
+        .type = floats(size = 3, value_min = 0)
+    }
+
+    %(outlier_phil)s
+
+  }
+'''%format_data
+phil_scope = parse(phil_str)
+
 # helper functions
 def calculate_entering_flags(reflections, experiments):
   """calculate entering flags for all reflections, and set them as a column
@@ -140,7 +219,6 @@ class BlockCalculator(object):
         self._reflections['block_centre'].set_selected(sub_isel, f_cent)
 
     return self._reflections
-
 
 class ReflectionManager(object):
   """A class to maintain information about observed and predicted
