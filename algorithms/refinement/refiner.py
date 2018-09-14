@@ -38,15 +38,15 @@ from dials_refinement_helpers_ext import mnmn_iter as mnmn
 #   AttributeError: 'module' object has no attribute 'refinement'
 #
 # to work around this, just include external phil scopes as strings
-from dials.algorithms.refinement.outlier_detection.outlier_base \
-  import phil_str as outlier_phil_str
+from dials.algorithms.refinement.reflection_manager \
+  import phil_str as reflections_phil_str
 from dials.algorithms.refinement.restraints.restraints_parameterisation \
   import uc_phil_str as uc_restraints_phil_str
 from dials.algorithms.refinement.constraints import phil_str as constr_phil_str
 from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \
   import phil_str as sv_phil_str
 from dials.algorithms.refinement.engine import refinery_phil_str
-format_data = {'outlier_phil':outlier_phil_str,
+format_data = {'reflections_phil':reflections_phil_str,
                'uc_restraints_phil':uc_restraints_phil_str,
                'constr_phil':constr_phil_str,
                'sv_phil_str':sv_phil_str,
@@ -137,6 +137,14 @@ refinement
               "reflections parameters. When this block width is larger than the"
               "image width the result is faster, with a trade-off in accuracy"
       .type = choice
+      .expert_level = 1
+
+    block_width = 1.0
+      .help = "Width of a reflection 'block' (in degrees) determining how fine-"
+              "grained the model used for scan-varying prediction during"
+              "refinement is. Currently only has any effect if the crystal"
+              "parameterisation is set to use compose_model_per=block"
+      .type = float(value_min = 0.)
       .expert_level = 1
 
     debug_centroid_analysis = False
@@ -358,81 +366,9 @@ refinement
   reflections
     .help = "Parameters used by the reflection manager"
   {
-
-    reflections_per_degree = None
-      .help = "The number of centroids per degree of the sweep to use in"
-              "refinement. Set to None to use all suitable reflections."
-      .type = float(value_min=0.)
-
-    minimum_sample_size = 1000
-      .help = "cutoff that determines whether subsetting of the input"
-              "reflection list is done"
-      .type = int
-
-    maximum_sample_size = None
-      .help = "The maximum number of reflections to use in refinement."
-              "Overrides reflections_per_degree if that produces a"
-              "larger sample size."
-      .type = int(value_min=1)
-
-    random_seed = 42
-      .help = "Random seed to use when sampling to create a working set of"
-              "reflections. May be int or None."
-      .type = int
-      .expert_level = 1
-
-    close_to_spindle_cutoff = 0.02
-      .help = "The inclusion criterion currently uses the volume of the"
-              "parallelepiped formed by the spindle axis, the incident"
-              "beam and the scattered beam. If this is lower than some"
-              "value then the reflection is excluded from refinement."
-              "In detector space, these are the reflections located close"
-              "to the rotation axis."
-      .type = float(value_min = 0)
-      .expert_level = 1
-
-    trim_scan_edges = 0.0
-      .help = "Reflections within this value in degrees from the centre of the"
-              "first or last image of the scan will be removed before"
-              "refinement, unless doing so would result in too few remaining"
-              "reflections. Reflections that are truncated at the scan edges"
-              "have poorly-determined centroids and can bias the refined model"
-              "if they are included."
-      .type = float(value_min=0,value_max=1)
-      .expert_level = 1
-
-    block_width = 1.0
-      .help = "Width of a reflection 'block' (in degrees) determining how fine-"
-              "grained the model used for scan-varying prediction during"
-              "refinement is. Currently only has any effect if the crystal"
-              "parameterisation is set to use compose_model_per=block"
-      .type = float(value_min = 0.)
-      .expert_level = 1
-
-    weighting_strategy
-      .help = "Parameters to configure weighting strategy overrides"
-      .expert_level = 1
-    {
-      override = statistical stills constant external_deltapsi
-        .help = "selection of a strategy to override default weighting behaviour"
-        .type = choice
-
-      delpsi_constant = 1000000
-        .help = "used by the stills strategy to choose absolute weight value"
-                "for the angular distance from Ewald sphere term of the target"
-                "function, whilst the X and Y parts use statistical weights"
-        .type = float(value_min = 0)
-
-      constants = 1.0 1.0 1.0
-        .help = "constant weights for three parts of the target function,"
-                "whether the case is for stills or scans. The default gives"
-                "unit weighting."
-        .type = floats(size = 3, value_min = 0)
-    }
-
-    %(outlier_phil)s
-
+    %(reflections_phil)s
   }
+
 }
 '''%format_data, process_includes=True)
 
@@ -566,11 +502,23 @@ class RefinerFactory(object):
       raise Sorry('Cannot refine a mixture of stills and scans')
     do_stills = exps_are_stills[0]
 
+    # calculate reflection block_width if required for scan-varying refinement
+    if params.refinement.parameterisation.scan_varying:
+      from dials.algorithms.refinement.reflection_manager import BlockCalculator
+      block_calculator = BlockCalculator(experiments, reflections)
+      if params.refinement.parameterisation.compose_model_per == "block":
+        reflections = block_calculator.per_width(
+          params.refinement.parameterisation.block_width, deg=True)
+      elif params.refinement.parameterisation.compose_model_per == "image":
+        reflections = block_calculator.per_image()
+
     logger.debug("\nBuilding reflection manager")
     logger.debug("Input reflection list size = %d observations", len(reflections))
 
     # create reflection manager
-    refman = cls.config_refman(params, reflections, experiments, do_stills, verbosity)
+    from dials.algorithms.refinement.reflection_manager import ReflectionManagerFactory
+    refman = ReflectionManagerFactory.from_parameters_reflections_experiments(
+        params.refinement.reflections, reflections, experiments, do_stills, verbosity)
 
     logger.debug("Number of observations that pass initial inclusion criteria = %d",
           refman.get_accepted_refs_size())
@@ -1681,116 +1629,6 @@ class RefinerFactory(object):
           nproc, options.engine))
 
     return engine
-
-  @staticmethod
-  def config_refman(params, reflections, experiments, do_stills, verbosity):
-    """Given a set of parameters and models, build a reflection manager
-
-    Params:
-        params The input parameters
-
-    Returns:
-        The reflection manager instance
-    """
-
-    # Shorten parameter path
-    options = params.refinement.reflections
-
-    # While a random subset of reflections is used, continue to
-    # set random.seed to get consistent behaviour
-    if options.random_seed is not None:
-      import random
-      random.seed(options.random_seed)
-      flex.set_random_seed(options.random_seed)
-      logger.debug("Random seed set to %d", options.random_seed)
-
-    # check whether we deal with stills or scans
-    if do_stills:
-      from dials.algorithms.refinement.reflection_manager import \
-          StillsReflectionManager as refman
-      # check incompatible weighting strategy
-      if options.weighting_strategy.override == "statistical":
-        raise Sorry('The "statistical" weighting strategy is not compatible '
-                    'with stills refinement')
-    else:
-      from dials.algorithms.refinement.reflection_manager import ReflectionManager as refman
-      # check incompatible weighting strategy
-      if options.weighting_strategy.override in ["stills", "external_deltapsi"]:
-        msg = ('The "{0}" weighting strategy is not compatible with '
-               'scan refinement').format(options.weighting_strategy.override)
-        raise Sorry(msg)
-
-    # set automatic outlier rejection options
-    if options.outlier.algorithm in ('auto', libtbx.Auto):
-      if do_stills:
-        options.outlier.algorithm = 'sauter_poon'
-      else:
-        options.outlier.algorithm = 'mcd'
-
-    if options.outlier.separate_panels is libtbx.Auto:
-      if do_stills:
-        options.outlier.separate_panels = False
-      else:
-        options.outlier.separate_panels = True
-
-    if options.outlier.algorithm == 'sauter_poon':
-      if options.outlier.sauter_poon.px_sz is libtbx.Auto:
-        # get this from the first panel of the first detector
-        options.outlier.sauter_poon.px_sz = experiments.detectors()[0][0].get_pixel_size()
-
-    # do outlier rejection?
-    if options.outlier.algorithm in ("null", None):
-      outlier_detector = None
-    else:
-      if do_stills:
-        colnames = ["x_resid", "y_resid"]
-        options.outlier.block_width=None
-      else:
-        colnames = ["x_resid", "y_resid", "phi_resid"]
-      from dials.algorithms.refinement.outlier_detection import CentroidOutlierFactory
-      outlier_detector = CentroidOutlierFactory.from_parameters_and_colnames(
-        options, colnames, verbosity)
-
-    # override default weighting strategy?
-    weighting_strategy = None
-    if options.weighting_strategy.override == "statistical":
-      from dials.algorithms.refinement.weighting_strategies \
-        import StatisticalWeightingStrategy
-      weighting_strategy = StatisticalWeightingStrategy()
-    elif options.weighting_strategy.override == "stills":
-      from dials.algorithms.refinement.weighting_strategies \
-        import StillsWeightingStrategy
-      weighting_strategy = StillsWeightingStrategy(
-        options.weighting_strategy.delpsi_constant)
-    elif options.weighting_strategy.override == "external_deltapsi":
-      from dials.algorithms.refinement.weighting_strategies \
-        import ExternalDelPsiWeightingStrategy
-      weighting_strategy = ExternalDelPsiWeightingStrategy()
-    elif options.weighting_strategy.override == "constant":
-      from dials.algorithms.refinement.weighting_strategies \
-        import ConstantWeightingStrategy
-      weighting_strategy = ConstantWeightingStrategy(
-        *options.weighting_strategy.constants, stills=do_stills)
-
-    # calculate reflection block_width?
-    if params.refinement.parameterisation.scan_varying:
-      from dials.algorithms.refinement.reflection_manager import BlockCalculator
-      block_calculator = BlockCalculator(experiments, reflections)
-      if params.refinement.parameterisation.compose_model_per == "block":
-        reflections = block_calculator.per_width(options.block_width, deg=True)
-      elif params.refinement.parameterisation.compose_model_per == "image":
-        reflections = block_calculator.per_image()
-
-    return refman(reflections=reflections,
-            experiments=experiments,
-            nref_per_degree=options.reflections_per_degree,
-            max_sample_size = options.maximum_sample_size,
-            min_sample_size = options.minimum_sample_size,
-            close_to_spindle_cutoff=options.close_to_spindle_cutoff,
-            trim_scan_edges=options.trim_scan_edges,
-            outlier_detector=outlier_detector,
-            weighting_strategy_override=weighting_strategy,
-            verbosity=verbosity)
 
   @staticmethod
   def config_target(params, experiments, refman, do_stills):
