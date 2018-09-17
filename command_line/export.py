@@ -119,6 +119,10 @@ phil_scope = parse('''
       .type = bool
       .help = "Filter reflections at ice ring resolutions"
 
+    d_min = None
+      .type = float
+      .help = "Filter out reflections with d-spacing below d_min"
+
     hklout = integrated.mtz
       .type = path
       .help = "The output MTZ file"
@@ -634,33 +638,25 @@ if __name__ == '__main__':
               libtbx.env.dispatcher_name)
 
   # Create the option parser
-  parser = OptionParser(
-    usage=usage,
-    read_experiments=True,
-    read_reflections=True,
-    read_datablocks=True,
-    check_format=False,
-    phil=phil_scope,
-    epilog=help_message)
-
-  # Do a quick parse first to get the phil scope parameters, so that we can
-  # decide if we need to check_format when we parse the data.
-
-  params, options = parser.parse_args(quick_parse=True, show_diff_phil=False)
-
-  # Now parse the data given that we know what the phil params are
-  if params.format == 'best': #Need to check format
-    check_format = True
+  if 'DIALS_EXPORT_DO_NOT_CHECK_FORMAT' in os.environ:
+    parser = OptionParser(
+      usage=usage,
+      read_experiments=True,
+      read_reflections=True,
+      read_datablocks=True,
+      check_format=False,
+      phil=phil_scope,
+      epilog=help_message)
   else:
-    check_format = False
-  parser = OptionParser(
-    usage=usage,
-    read_experiments=True,
-    read_reflections=True,
-    read_datablocks=True,
-    check_format=check_format,
-    phil=phil_scope,
-    epilog=help_message)
+    parser = OptionParser(
+      usage=usage,
+      read_experiments=True,
+      read_reflections=True,
+      read_datablocks=True,
+      phil=phil_scope,
+      epilog=help_message)
+
+  # Get the parameters
   params, options = parser.parse_args(show_diff_phil=False)
 
   # Configure the logging
