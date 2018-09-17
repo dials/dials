@@ -531,6 +531,7 @@ class RefinerFactory(object):
 
     # configure use of sparse data types
     params = cls.config_sparse(params, experiments)
+    do_sparse = params.refinement.parameterisation.sparse
 
     # create managed reflection predictor
     from dials.algorithms.refinement.prediction import ExperimentsPredictor
@@ -540,8 +541,8 @@ class RefinerFactory(object):
     logger.debug("Building target function")
 
     # create target function
-    target = cls.config_target(params, experiments, refman, do_stills,
-        ref_predictor)
+    target = cls.config_target(params.refinement.target, experiments, refman,
+        ref_predictor, do_stills, do_sparse)
 
     logger.debug("Target function built")
 
@@ -1639,7 +1640,8 @@ class RefinerFactory(object):
     return engine
 
   @staticmethod
-  def config_target(params, experiments, refman, do_stills, predictor):
+  def config_target(params, experiments, refman, predictor,
+      do_stills, do_sparse):
     """Given a set of parameters, configure a factory to build a
     target function
 
@@ -1650,28 +1652,24 @@ class RefinerFactory(object):
         The target factory instance
     """
 
-    # Shorten parameter paths
-    options = params.refinement.target
-    sparse = params.refinement.parameterisation.sparse
-
-    if options.rmsd_cutoff == "fraction_of_bin_size":
+    if params.rmsd_cutoff == "fraction_of_bin_size":
       absolute_cutoffs = None
-    elif options.rmsd_cutoff == "absolute":
-      absolute_cutoffs = options.absolute_cutoffs
+    elif params.rmsd_cutoff == "absolute":
+      absolute_cutoffs = params.absolute_cutoffs
     else:
       raise RuntimeError("Target function rmsd_cutoff option" +
-          options.rmsd_cutoff + " not recognised")
+          params.rmsd_cutoff + " not recognised")
 
     # Determine whether the target is in X, Y, Phi space or just X, Y.
     if do_stills:
-      if sparse:
+      if do_sparse:
         from dials.algorithms.refinement.target_stills \
           import LeastSquaresStillsResidualWithRmsdCutoffSparse as targ
       else:
         from dials.algorithms.refinement.target_stills \
           import LeastSquaresStillsResidualWithRmsdCutoff as targ
     else:
-      if sparse:
+      if do_sparse:
         from dials.algorithms.refinement.target \
           import LeastSquaresPositionalResidualWithRmsdCutoffSparse as targ
       else:
@@ -1685,9 +1683,9 @@ class RefinerFactory(object):
                   ref_man=refman,
                   prediction_parameterisation=None,
                   restraints_parameterisation=None,
-                  frac_binsize_cutoff=options.bin_size_fraction,
+                  frac_binsize_cutoff=params.bin_size_fraction,
                   absolute_cutoffs=absolute_cutoffs,
-                  gradient_calculation_blocksize=options.gradient_calculation_blocksize)
+                  gradient_calculation_blocksize=params.gradient_calculation_blocksize)
 
     return target
 
