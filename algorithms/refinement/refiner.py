@@ -532,10 +532,16 @@ class RefinerFactory(object):
     # configure use of sparse data types
     params = cls.config_sparse(params, experiments)
 
+    # create managed reflection predictor
+    from dials.algorithms.refinement.prediction import ExperimentsPredictor
+    ref_predictor = ExperimentsPredictor(experiments, do_stills,
+        spherical_relp=params.refinement.parameterisation.spherical_relp_model)
+
     logger.debug("Building target function")
 
     # create target function
-    target = cls.config_target(params, experiments, refman, do_stills)
+    target = cls.config_target(params, experiments, refman, do_stills,
+        ref_predictor)
 
     logger.debug("Target function built")
 
@@ -1633,7 +1639,7 @@ class RefinerFactory(object):
     return engine
 
   @staticmethod
-  def config_target(params, experiments, refman, do_stills):
+  def config_target(params, experiments, refman, do_stills, predictor):
     """Given a set of parameters, configure a factory to build a
     target function
 
@@ -1647,7 +1653,6 @@ class RefinerFactory(object):
     # Shorten parameter paths
     options = params.refinement.target
     sparse = params.refinement.parameterisation.sparse
-    srm = params.refinement.parameterisation.spherical_relp_model
 
     if options.rmsd_cutoff == "fraction_of_bin_size":
       absolute_cutoffs = None
@@ -1656,11 +1661,6 @@ class RefinerFactory(object):
     else:
       raise RuntimeError("Target function rmsd_cutoff option" +
           options.rmsd_cutoff + " not recognised")
-
-    # build managed reflection predictors
-    from dials.algorithms.refinement.prediction import ExperimentsPredictor
-    ref_predictor = ExperimentsPredictor(experiments, do_stills,
-                                         spherical_relp=srm)
 
     # Determine whether the target is in X, Y, Phi space or just X, Y.
     if do_stills:
@@ -1681,7 +1681,7 @@ class RefinerFactory(object):
     # Here we pass in None for prediction_parameterisation and
     # restraints_parameterisation, as these will be linked to the object later
     target = targ(experiments=experiments,
-                  reflection_predictor=ref_predictor,
+                  reflection_predictor=predictor,
                   ref_man=refman,
                   prediction_parameterisation=None,
                   restraints_parameterisation=None,

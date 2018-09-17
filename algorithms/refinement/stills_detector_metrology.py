@@ -164,7 +164,7 @@ class StillsDetectorRefinerFactory(RefinerFactory):
     return pred_param, param_reporter, restraints_param
 
   @staticmethod
-  def config_target(params, experiments, refman, do_stills):
+  def config_target(params, experiments, refman, do_stills, predictor):
     """Given a set of parameters, configure a factory to build a
     target function
 
@@ -191,10 +191,6 @@ class StillsDetectorRefinerFactory(RefinerFactory):
     goniometer = experiments[0].goniometer
     for e in experiments: assert e.goniometer is goniometer
 
-    # build managed reflection predictors
-    from dials.algorithms.refinement.prediction import ExperimentsPredictor
-    ref_predictor = ExperimentsPredictor(experiments, do_stills)
-
     # Determine whether the target is in X, Y, Phi space or just X, Y.
     if do_stills:
       if sparse:
@@ -215,7 +211,7 @@ class StillsDetectorRefinerFactory(RefinerFactory):
     # Here we pass in None for prediction_parameterisation and
     # restraints_parameterisation, as these will be linked to the object later
     target = targ(experiments=experiments,
-                  reflection_predictor=ref_predictor,
+                  reflection_predictor=predictor,
                   ref_man=refman,
                   prediction_parameterisation=None,
                   restraints_parameterisation=None,
