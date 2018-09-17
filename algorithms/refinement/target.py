@@ -18,8 +18,91 @@ from scitbx import sparse
 import abc
 
 # constants
-TWO_PI = 2.0 * pi
 RAD_TO_DEG = 180. / pi
+
+# PHIL
+from libtbx.phil import parse
+phil_str = '''
+    rmsd_cutoff = *fraction_of_bin_size absolute
+      .help = "Method to choose rmsd cutoffs. This is currently either as a"
+              "fraction of the discrete units of the spot positional data, i.e."
+              "(pixel width, pixel height, image thickness in phi), or a tuple"
+              "of absolute values to use as the cutoffs"
+      .type = choice
+
+    bin_size_fraction = 0.0
+      .help = "Set this to a fractional value, say 0.2, to make a cut off in"
+              "the natural discrete units of positional data, viz.,"
+              "(pixel width, pixel height, image thickness in phi). This would"
+              "then determine when the RMSD target is achieved. Only used if"
+              "rmsd_cutoff = fraction_of_bin_size."
+      .type = float(value_min=0.)
+
+    absolute_cutoffs = None
+      .help = "Absolute Values for the RMSD target achieved cutoffs in X, Y and"
+              "Phi. The units are (mm, mm, rad)."
+      .type = floats(size=3, value_min=0.)
+
+    gradient_calculation_blocksize = None
+      .help = "Maximum number of reflections to use for gradient calculation."
+              "If there are more reflections than this in the manager then"
+              "the minimiser must do the full calculation in blocks."
+      .type = int(value_min=1)
+'''
+phil_scope = parse(phil_str)
+
+class TargetFactory(object):
+
+  @staticmethod
+  def from_parameters_and_experiments(params, experiments,
+      reflection_manager, predictor, pred_param, restraints_param,
+      do_stills=False, do_sparse=False):
+
+    """Given a set of parameters, configure a factory to build a
+    target function
+
+    Params:
+        params The input parameters
+
+    Returns:
+        The target factory instance
+    """
+
+    if params.rmsd_cutoff == "fraction_of_bin_size":
+      absolute_cutoffs = None
+    elif params.rmsd_cutoff == "absolute":
+      absolute_cutoffs = params.absolute_cutoffs
+    else:
+      raise RuntimeError("Target function rmsd_cutoff option" +
+          params.rmsd_cutoff + " not recognised")
+
+    # Determine whether the target is in X, Y, Phi space or just X, Y to choose
+    # the right Target to instantiate
+    if do_stills:
+      if do_sparse:
+        from dials.algorithms.refinement.target_stills \
+          import LeastSquaresStillsResidualWithRmsdCutoffSparse as targ
+      else:
+        from dials.algorithms.refinement.target_stills \
+          import LeastSquaresStillsResidualWithRmsdCutoff as targ
+    else:
+      if do_sparse:
+        targ = LeastSquaresPositionalResidualWithRmsdCutoffSparse
+      else:
+        targ = LeastSquaresPositionalResidualWithRmsdCutoff
+
+    # Here we pass in None for prediction_parameterisation and
+    # restraints_parameterisation, as these are not required for initialisation
+    # and will be linked to the object later
+    return targ(experiments=experiments,
+                predictor=predictor,
+                reflection_manager=reflection_manager,
+                prediction_parameterisation=pred_param,
+                restraints_parameterisation=restraints_param,
+                frac_binsize_cutoff=params.bin_size_fraction,
+                absolute_cutoffs=absolute_cutoffs,
+                gradient_calculation_blocksize=params.gradient_calculation_blocksize)
+
 
 class Target(object):
   """Abstract interface for a target function class
@@ -46,13 +129,13 @@ class Target(object):
   rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_Phi"]
   rmsd_units = ["mm", "mm", "rad"]
 
-  def __init__(self, experiments, reflection_predictor, ref_manager,
+  def __init__(self, experiments, predictor, reflection_manager,
                prediction_parameterisation, restraints_parameterisation=None,
                gradient_calculation_blocksize=None):
 
-    self._reflection_predictor = reflection_predictor
     self._experiments = experiments
-    self._reflection_manager = ref_manager
+    self._reflection_predictor = predictor
+    self._reflection_manager = reflection_manager
     self._prediction_parameterisation = prediction_parameterisation
     self._restraints_parameterisation = restraints_parameterisation
 
@@ -64,20 +147,6 @@ class Target(object):
     # a cutoff is required
     self._gradient_calculation_blocksize = gradient_calculation_blocksize
 
-    return
-
-  def set_prediction_parameterisation(self, prediction_parameterisation):
-    """For circumstances where the PredictionParameterisation object was not
-    available at initialisation, set it with this method"""
-
-    self._prediction_parameterisation = prediction_parameterisation
-    return
-
-  def set_restraints_parameterisation(self, restraints_parameterisation):
-    """For circumstances where the RestraintsParameterisation object was not
-    available at initialisation, set it with this method"""
-
-    self._restraints_parameterisation = restraints_parameterisation
     return
 
   def _predict_core(self, reflections, skip_derivatives=False):
@@ -97,28 +166,6 @@ class Target(object):
 
     x_obs, y_obs, phi_obs = reflections['xyzobs.mm.value'].parts()
     x_calc, y_calc, phi_calc = reflections['xyzcal.mm'].parts()
-    # do not wrap around multiples of 2*pi; keep the full rotation
-    # from zero to differentiate repeat observations.
-    resid = phi_calc - (flex.fmod_positive(phi_obs, TWO_PI))
-    # ensure this is the smaller of two possibilities
-    resid = flex.fmod_positive((resid + pi), TWO_PI) - pi
-    phi_calc = phi_obs + resid
-    # put back in the reflections
-    reflections['xyzcal.mm'] = flex.vec3_double(x_calc, y_calc, phi_calc)
-
-    # update xyzcal.px with the correct z_px values in keeping with above
-    experiments = self._reflection_predictor._experiments
-    for i, expt in enumerate(experiments):
-      scan = expt.scan
-      sel = (reflections['id'] == i)
-      x_px, y_px, z_px = reflections['xyzcal.px'].select(sel).parts()
-      if scan is not None:
-        z_px = scan.get_array_index_from_angle(phi_calc.select(sel), deg=False)
-      else:
-        # must be a still image, z centroid not meaningful
-        z_px = phi_calc.select(sel)
-      xyzcal_px = flex.vec3_double(x_px, y_px, z_px)
-      reflections['xyzcal.px'].set_selected(sel, xyzcal_px)
 
     # calculate residuals and assign columns
     reflections['x_resid'] = x_calc - x_obs
@@ -493,19 +540,15 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
   in terms of detector impact position X, Y and phi, terminating on achieved
   rmsd (or on intrisic convergence of the chosen minimiser)"""
 
-  def __init__(self, experiments, reflection_predictor, ref_man,
+  def __init__(self, experiments, predictor, reflection_manager,
                prediction_parameterisation, restraints_parameterisation,
                frac_binsize_cutoff=0.33333,
                absolute_cutoffs=None,
                gradient_calculation_blocksize=None):
 
-    Target.__init__(self,
-                    experiments=experiments,
-                    reflection_predictor=reflection_predictor,
-                    ref_manager=ref_man,
-                    prediction_parameterisation=prediction_parameterisation,
-                    restraints_parameterisation=restraints_parameterisation,
-                    gradient_calculation_blocksize=gradient_calculation_blocksize)
+    Target.__init__(self, experiments, predictor, reflection_manager,
+                    prediction_parameterisation, restraints_parameterisation,
+                    gradient_calculation_blocksize)
 
     # Set up the RMSD achieved criterion. For simplicity, we take models from
     # the first Experiment only. If this is not appropriate for refinement over
@@ -526,9 +569,6 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     else:
       assert len(absolute_cutoffs) == 3
       self._binsize_cutoffs = absolute_cutoffs
-
-    # predict reflections and finalise reflection manager
-    self.predict()
 
     return
 

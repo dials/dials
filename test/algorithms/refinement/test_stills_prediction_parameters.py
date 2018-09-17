@@ -173,8 +173,8 @@ def test_stills_pred_param(tc):
 
   # Predict the reflections in place. Must do this ahead of calculating
   # the analytical gradients so quantities like s1 are correct
-  from dials.algorithms.refinement.prediction import ExperimentsPredictor
-  ref_predictor = ExperimentsPredictor(tc.stills_experiments)
+  from dials.algorithms.refinement.prediction import StillsExperimentsPredictor
+  ref_predictor = StillsExperimentsPredictor(tc.stills_experiments)
   ref_predictor(tc.reflections)
 
   # get analytical gradients
@@ -281,9 +281,9 @@ def test_spherical_relp_stills_pred_param(tc):
 
   # Predict the reflections in place. Must do this ahead of calculating
   # the analytical gradients so quantities like s1 are correct
-  from dials.algorithms.refinement.prediction import ExperimentsPredictor
-  ref_predictor = ExperimentsPredictor(tc.stills_experiments,
-    spherical_relp=True)
+  from dials.algorithms.refinement.prediction import ExperimentsPredictorFactory
+  ref_predictor = ExperimentsPredictorFactory.from_experiments(
+      tc.stills_experiments, force_stills=True, spherical_relp=True)
   ref_predictor(tc.reflections)
 
   # get analytical gradients

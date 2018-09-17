@@ -26,7 +26,7 @@ from dials.algorithms.refinement.parameterisation.crystal_parameters import \
     CrystalOrientationParameterisation, \
     CrystalUnitCellParameterisation
 
-# Create modified version of ExperimentsPredictor class from refinement
+# Create a reflection predictor specific for this test
 from dials.algorithms.spot_prediction import StillsReflectionPredictor
 class Predictor(object):
 

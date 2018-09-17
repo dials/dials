@@ -883,9 +883,9 @@ class indexer_base(object):
           self.indexed_reflections)
         if self.params.refinement_protocol.mode == 'repredict_only':
           refined_experiments, refined_reflections = experiments, reflections_for_refinement
-          from dials.algorithms.refinement.prediction import ExperimentsPredictor
-          ref_predictor = ExperimentsPredictor(experiments,
-                                               spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
+          from dials.algorithms.refinement.prediction import ExperimentsPredictorFactory
+          ref_predictor = ExperimentsPredictorFactory.from_experiments(
+              experiments, spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
           ref_predictor(refined_reflections)
         else:
           try:

@@ -40,6 +40,8 @@ from dials_refinement_helpers_ext import mnmn_iter as mnmn
 # to work around this, just include external phil scopes as strings
 from dials.algorithms.refinement.reflection_manager \
   import phil_str as reflections_phil_str
+from dials.algorithms.refinement.target \
+  import phil_str as target_phil_str
 from dials.algorithms.refinement.restraints.restraints_parameterisation \
   import uc_phil_str as uc_restraints_phil_str
 from dials.algorithms.refinement.constraints import phil_str as constr_phil_str
@@ -47,6 +49,7 @@ from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters 
   import phil_str as sv_phil_str
 from dials.algorithms.refinement.engine import refinery_phil_str
 format_data = {'reflections_phil':reflections_phil_str,
+               'target_phil':target_phil_str,
                'uc_restraints_phil':uc_restraints_phil_str,
                'constr_phil':constr_phil_str,
                'sv_phil_str':sv_phil_str,
@@ -334,33 +337,7 @@ refinement
     .help = "Parameters to configure the target function"
     .expert_level = 1
   {
-
-    rmsd_cutoff = *fraction_of_bin_size absolute
-      .help = "Method to choose rmsd cutoffs. This is currently either as a"
-              "fraction of the discrete units of the spot positional data, i.e."
-              "(pixel width, pixel height, image thickness in phi), or a tuple"
-              "of absolute values to use as the cutoffs"
-      .type = choice
-
-    bin_size_fraction = 0.0
-      .help = "Set this to a fractional value, say 0.2, to make a cut off in"
-              "the natural discrete units of positional data, viz.,"
-              "(pixel width, pixel height, image thickness in phi). This would"
-              "then determine when the RMSD target is achieved. Only used if"
-              "rmsd_cutoff = fraction_of_bin_size."
-      .type = float(value_min=0.)
-
-    absolute_cutoffs = None
-      .help = "Absolute Values for the RMSD target achieved cutoffs in X, Y and"
-              "Phi. The units are (mm, mm, rad)."
-      .type = floats(size=3, value_min=0.)
-
-    gradient_calculation_blocksize = None
-      .help = "Maximum number of reflections to use for gradient calculation."
-              "If there are more reflections than this in the manager then"
-              "the minimiser must do the full calculation in blocks."
-      .type = int(value_min=1)
-
+    %(target_phil)s
   }
 
   reflections
@@ -529,13 +506,25 @@ class RefinerFactory(object):
 
     # configure use of sparse data types
     params = cls.config_sparse(params, experiments)
+    do_sparse = params.refinement.parameterisation.sparse
+
+    # create managed reflection predictor
+    from dials.algorithms.refinement.prediction import ExperimentsPredictorFactory
+    ref_predictor = ExperimentsPredictorFactory.from_experiments(experiments,
+        force_stills=do_stills,
+        spherical_relp=params.refinement.parameterisation.spherical_relp_model)
+
+    # Predict for the managed observations, set columns for residuals and set
+    # the used_in_refinement flag to the predictions
+    obs = refman.get_obs()
+    ref_predictor(obs)
+    x_obs, y_obs, phi_obs = obs['xyzobs.mm.value'].parts()
+    x_calc, y_calc, phi_calc = obs['xyzcal.mm'].parts()
+    obs['x_resid'] = x_calc - x_obs
+    obs['y_resid'] = y_calc - y_obs
+    obs['phi_resid'] = phi_calc - phi_obs
 
     logger.debug("Building target function")
-
-    # create target function
-    target = cls.config_target(params, experiments, refman, do_stills)
-
-    logger.debug("Target function built")
 
     # determine whether to do basic centroid analysis to automatically
     # determine outlier rejection block
@@ -558,15 +547,17 @@ class RefinerFactory(object):
     for i, e in enumerate(pred_param.get_param_names()):
       logger.debug("Parameter %03d : %s", i + 1, e)
 
-    # Set the prediction equation and restraints parameterisations
-    # in the target object
-    target.set_prediction_parameterisation(pred_param)
-    target.set_restraints_parameterisation(restraints_parameterisation)
-
     # Build a constraints manager, if requested
     from dials.algorithms.refinement.constraints import ConstraintManagerFactory
     cmf = ConstraintManagerFactory(params, pred_param, verbosity)
     constraints_manager = cmf()
+
+    # Create target function
+    target = cls.config_target(params.refinement.target, experiments, refman,
+        ref_predictor, pred_param, restraints_parameterisation,
+        do_stills, do_sparse)
+
+    logger.debug("Target function built")
 
     logger.debug("Building refinement engine")
 
@@ -1630,63 +1621,16 @@ class RefinerFactory(object):
 
     return engine
 
+  # Overload to allow subclasses of RefinerFactory to use a different
+  # TargetFactory
   @staticmethod
-  def config_target(params, experiments, refman, do_stills):
-    """Given a set of parameters, configure a factory to build a
-    target function
+  def config_target(params, experiments, reflection_manager, predictor,
+      pred_param, restraints_param, do_stills, do_sparse):
 
-    Params:
-        params The input parameters
-
-    Returns:
-        The target factory instance
-    """
-
-    # Shorten parameter paths
-    options = params.refinement.target
-    sparse = params.refinement.parameterisation.sparse
-    srm = params.refinement.parameterisation.spherical_relp_model
-
-    if options.rmsd_cutoff == "fraction_of_bin_size":
-      absolute_cutoffs = None
-    elif options.rmsd_cutoff == "absolute":
-      absolute_cutoffs = options.absolute_cutoffs
-    else:
-      raise RuntimeError("Target function rmsd_cutoff option" +
-          options.rmsd_cutoff + " not recognised")
-
-    # build managed reflection predictors
-    from dials.algorithms.refinement.prediction import ExperimentsPredictor
-    ref_predictor = ExperimentsPredictor(experiments, do_stills,
-                                         spherical_relp=srm)
-
-    # Determine whether the target is in X, Y, Phi space or just X, Y.
-    if do_stills:
-      if sparse:
-        from dials.algorithms.refinement.target_stills \
-          import LeastSquaresStillsResidualWithRmsdCutoffSparse as targ
-      else:
-        from dials.algorithms.refinement.target_stills \
-          import LeastSquaresStillsResidualWithRmsdCutoff as targ
-    else:
-      if sparse:
-        from dials.algorithms.refinement.target \
-          import LeastSquaresPositionalResidualWithRmsdCutoffSparse as targ
-      else:
-        from dials.algorithms.refinement.target \
-          import LeastSquaresPositionalResidualWithRmsdCutoff as targ
-
-    # Here we pass in None for prediction_parameterisation and
-    # restraints_parameterisation, as these will be linked to the object later
-    target = targ(experiments=experiments,
-                  reflection_predictor=ref_predictor,
-                  ref_man=refman,
-                  prediction_parameterisation=None,
-                  restraints_parameterisation=None,
-                  frac_binsize_cutoff=options.bin_size_fraction,
-                  absolute_cutoffs=absolute_cutoffs,
-                  gradient_calculation_blocksize=options.gradient_calculation_blocksize)
-
+    from dials.algorithms.refinement.target import TargetFactory
+    target = TargetFactory.from_parameters_and_experiments(params, experiments,
+        reflection_manager, predictor, pred_param, restraints_param,
+        do_stills, do_sparse)
     return target
 
 class Refiner(object):
