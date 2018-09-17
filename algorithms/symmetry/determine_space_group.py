@@ -321,14 +321,19 @@ class determine_space_group(object):
     x, y = self.intensities.common_sets(
       reindexed_intensities, assert_is_similar_symmetry=False)
     self.cc_identity = CorrelationCoefficientAccumulator(x.data(), y.data())
-    n_identity = self.cc_identity.n()
 
     min_sd = 0.05
+    min_sample = 10
     sigma_1 = max(min_sd, self.cc_sig_fac/200**0.5)
-    sigma_2 = max(min_sd, self.cc_sig_fac/n_identity**0.5)
-    w1 = 1/sigma_1**2
-    w2 = 1/sigma_2**2
+    w1 = 0
+    w2 = 0
+    if sigma_1 > 0.0001:
+      w1 = 1/sigma_1**2
+    if self.cc_identity.n() > min_sample:
+      sigma_2 = max(min_sd, self.cc_sig_fac/self.cc_identity.n()**0.5)
+      w2 = 1/sigma_2**2
 
+    assert (w1 + w2) > 0
     self.cc_true = (w1 * self.E_cc_true + w2 * self.cc_identity.coefficient())/(w1 + w2)
 
     logger.debug('cc_true = w1 * E_cc_true + w2 * cc_identity)/(w1 + w2)')
@@ -493,6 +498,11 @@ class ScoreSymmetryElement(object):
       self.cc += CorrelationCoefficientAccumulator(x.data(), y.data())
 
     self.n_refs = self.cc.n()
+    if self.n_refs <= 0:
+      self.likelihood = 0
+      self.z_cc = 0
+      return
+
     self.sigma_cc = max(0.1, cc_sig_fac/self.n_refs**0.5)
     self.z_cc = self.cc.coefficient()/self.sigma_cc
 
@@ -565,6 +575,8 @@ class ScoreSubGroup(object):
     PL_against = 0
     power = 2
     for score in sym_op_scores:
+      if score.n_refs <= 2:
+        continue
       if score.sym_op in patterson_group:
         self.z_cc_for += score.z_cc**power
         n_for += 1
@@ -579,7 +591,8 @@ class ScoreSubGroup(object):
 
     if n_against > 0:
       self.z_cc_against = (self.z_cc_against/n_against)**(1/power)
-    self.z_cc_for = (self.z_cc_for/n_for)**(1/power)
+    if n_for > 0:
+      self.z_cc_for = (self.z_cc_for/n_for)**(1/power)
     self.z_cc_net = self.z_cc_for - self.z_cc_against
     self.confidence = 0
 
