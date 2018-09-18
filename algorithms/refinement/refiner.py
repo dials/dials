@@ -40,6 +40,8 @@ from dials_refinement_helpers_ext import mnmn_iter as mnmn
 # to work around this, just include external phil scopes as strings
 from dials.algorithms.refinement.reflection_manager \
   import phil_str as reflections_phil_str
+from dials.algorithms.refinement.target \
+  import phil_str as target_phil_str
 from dials.algorithms.refinement.restraints.restraints_parameterisation \
   import uc_phil_str as uc_restraints_phil_str
 from dials.algorithms.refinement.constraints import phil_str as constr_phil_str
@@ -47,6 +49,7 @@ from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters 
   import phil_str as sv_phil_str
 from dials.algorithms.refinement.engine import refinery_phil_str
 format_data = {'reflections_phil':reflections_phil_str,
+               'target_phil':target_phil_str,
                'uc_restraints_phil':uc_restraints_phil_str,
                'constr_phil':constr_phil_str,
                'sv_phil_str':sv_phil_str,
@@ -334,33 +337,7 @@ refinement
     .help = "Parameters to configure the target function"
     .expert_level = 1
   {
-
-    rmsd_cutoff = *fraction_of_bin_size absolute
-      .help = "Method to choose rmsd cutoffs. This is currently either as a"
-              "fraction of the discrete units of the spot positional data, i.e."
-              "(pixel width, pixel height, image thickness in phi), or a tuple"
-              "of absolute values to use as the cutoffs"
-      .type = choice
-
-    bin_size_fraction = 0.0
-      .help = "Set this to a fractional value, say 0.2, to make a cut off in"
-              "the natural discrete units of positional data, viz.,"
-              "(pixel width, pixel height, image thickness in phi). This would"
-              "then determine when the RMSD target is achieved. Only used if"
-              "rmsd_cutoff = fraction_of_bin_size."
-      .type = float(value_min=0.)
-
-    absolute_cutoffs = None
-      .help = "Absolute Values for the RMSD target achieved cutoffs in X, Y and"
-              "Phi. The units are (mm, mm, rad)."
-      .type = floats(size=3, value_min=0.)
-
-    gradient_calculation_blocksize = None
-      .help = "Maximum number of reflections to use for gradient calculation."
-              "If there are more reflections than this in the manager then"
-              "the minimiser must do the full calculation in blocks."
-      .type = int(value_min=1)
-
+    %(target_phil)s
   }
 
   reflections

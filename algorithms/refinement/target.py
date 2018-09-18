@@ -21,6 +21,37 @@ import abc
 TWO_PI = 2.0 * pi
 RAD_TO_DEG = 180. / pi
 
+# PHIL
+from libtbx.phil import parse
+phil_str = '''
+    rmsd_cutoff = *fraction_of_bin_size absolute
+      .help = "Method to choose rmsd cutoffs. This is currently either as a"
+              "fraction of the discrete units of the spot positional data, i.e."
+              "(pixel width, pixel height, image thickness in phi), or a tuple"
+              "of absolute values to use as the cutoffs"
+      .type = choice
+
+    bin_size_fraction = 0.0
+      .help = "Set this to a fractional value, say 0.2, to make a cut off in"
+              "the natural discrete units of positional data, viz.,"
+              "(pixel width, pixel height, image thickness in phi). This would"
+              "then determine when the RMSD target is achieved. Only used if"
+              "rmsd_cutoff = fraction_of_bin_size."
+      .type = float(value_min=0.)
+
+    absolute_cutoffs = None
+      .help = "Absolute Values for the RMSD target achieved cutoffs in X, Y and"
+              "Phi. The units are (mm, mm, rad)."
+      .type = floats(size=3, value_min=0.)
+
+    gradient_calculation_blocksize = None
+      .help = "Maximum number of reflections to use for gradient calculation."
+              "If there are more reflections than this in the manager then"
+              "the minimiser must do the full calculation in blocks."
+      .type = int(value_min=1)
+'''
+phil_scope = parse(phil_str)
+
 class Target(object):
   """Abstract interface for a target function class
 
