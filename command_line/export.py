@@ -126,6 +126,10 @@ phil_scope = parse('''
     hklout = integrated.mtz
       .type = path
       .help = "The output MTZ file"
+
+    crystal_name = XTAL
+      .type = str
+      .help = "The name of the crystal, for the mtz file metadata"
   }
 
   sadabs {

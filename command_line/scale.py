@@ -98,6 +98,9 @@ phil_scope = phil.parse('''
     merged_mtz = None
       .type = path
       .help = "Filename to export a merged_mtz file."
+    crystal_name = XTAL
+      .type = str
+      .help = "The crystal name to be exported in the mtz file metadata"
     use_internal_variance = False
       .type = bool
       .help = "Option to use internal spread of the intensities when merging
@@ -396,6 +399,7 @@ class Script(object):
       params.intensity = ['scale']
       params.mtz.partiality_threshold = self.params.cut_data.partiality_cutoff
       params.mtz.hklout = self.params.output.unmerged_mtz
+      params.mtz.crystal_name = self.params.output.crystal_name
       if self.params.cut_data.d_min:
         params.mtz.d_min = self.params.cut_data.d_min
       exporter = MTZExporter(params, self.experiments,

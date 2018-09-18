@@ -468,7 +468,7 @@ def export_mtz(integrated_data, experiment_list, params):
   # Update the mtz general information now we've processed the experiments
   mtz_file.set_space_group_info(experiment_list[0].crystal.get_space_group().info())
   unit_cell = experiment_list[0].crystal.get_unit_cell()
-  mtz_crystal = mtz_file.add_crystal('XTAL', 'DIALS', unit_cell.parameters())
+  mtz_crystal = mtz_file.add_crystal(params.mtz.crystal_name, 'DIALS', unit_cell.parameters())
   mtz_dataset = mtz_crystal.add_dataset('FROMDIALS', experiment_list[0].beam.get_wavelength())
 
   # Combine all of the experiment data columns before writing
