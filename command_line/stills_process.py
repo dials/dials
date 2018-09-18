@@ -933,13 +933,15 @@ class Processor(object):
               int_pickles, int_pickle_filenames = comm.recv(source=MPI.ANY_SOURCE)
             logger.info("Rank %d recieved data from rank %d"%(rank, sender))
 
-            indexed_reflections['id'] += len(self.all_indexed_experiments)
-            self.all_indexed_reflections.extend(indexed_reflections)
-            self.all_indexed_experiments.extend(indexed_experiments)
+            if len(indexed_experiments) > 0:
+              indexed_reflections['id'] += len(self.all_indexed_experiments)
+              self.all_indexed_reflections.extend(indexed_reflections)
+              self.all_indexed_experiments.extend(indexed_experiments)
 
-            integrated_reflections['id'] += len(self.all_integrated_experiments)
-            self.all_integrated_reflections.extend(integrated_reflections)
-            self.all_integrated_experiments.extend(integrated_experiments)
+            if len(integrated_experiments) > 0:
+              integrated_reflections['id'] += len(self.all_integrated_experiments)
+              self.all_integrated_reflections.extend(integrated_reflections)
+              self.all_integrated_experiments.extend(integrated_experiments)
 
             self.all_int_pickles.extend(int_pickles)
             self.all_int_pickle_filenames.extend(int_pickle_filenames)
