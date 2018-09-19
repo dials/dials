@@ -1616,54 +1616,15 @@ class RefinerFactory(object):
 
     return engine
 
+  # Overload to allow subclasses of RefinerFactory to use a different
+  # TargetFactory
   @staticmethod
   def config_target(params, experiments, refman, predictor,
       do_stills, do_sparse):
-    """Given a set of parameters, configure a factory to build a
-    target function
 
-    Params:
-        params The input parameters
-
-    Returns:
-        The target factory instance
-    """
-
-    if params.rmsd_cutoff == "fraction_of_bin_size":
-      absolute_cutoffs = None
-    elif params.rmsd_cutoff == "absolute":
-      absolute_cutoffs = params.absolute_cutoffs
-    else:
-      raise RuntimeError("Target function rmsd_cutoff option" +
-          params.rmsd_cutoff + " not recognised")
-
-    # Determine whether the target is in X, Y, Phi space or just X, Y.
-    if do_stills:
-      if do_sparse:
-        from dials.algorithms.refinement.target_stills \
-          import LeastSquaresStillsResidualWithRmsdCutoffSparse as targ
-      else:
-        from dials.algorithms.refinement.target_stills \
-          import LeastSquaresStillsResidualWithRmsdCutoff as targ
-    else:
-      if do_sparse:
-        from dials.algorithms.refinement.target \
-          import LeastSquaresPositionalResidualWithRmsdCutoffSparse as targ
-      else:
-        from dials.algorithms.refinement.target \
-          import LeastSquaresPositionalResidualWithRmsdCutoff as targ
-
-    # Here we pass in None for prediction_parameterisation and
-    # restraints_parameterisation, as these will be linked to the object later
-    target = targ(experiments=experiments,
-                  reflection_predictor=predictor,
-                  ref_man=refman,
-                  prediction_parameterisation=None,
-                  restraints_parameterisation=None,
-                  frac_binsize_cutoff=params.bin_size_fraction,
-                  absolute_cutoffs=absolute_cutoffs,
-                  gradient_calculation_blocksize=params.gradient_calculation_blocksize)
-
+    from dials.algorithms.refinement.target import TargetFactory
+    target = TargetFactory.from_parameters_and_experiments(params, experiments,
+      refman, predictor, do_stills, do_sparse)
     return target
 
 class Refiner(object):
