@@ -195,7 +195,11 @@ class ScalerBase(object):
       refinery = scaling_refinery(engine=engine, scaler=self,
         target=target_type(), prediction_parameterisation=apm,
         max_iterations=max_iterations)
-      refinery.run()
+      try:
+        refinery.run()
+      except Exception as e:
+        logger.warn('WARNING: A round of scaling failed with the following error message:')
+        logger.info(e)
       ft = time.time()
       logger.info("Time taken for refinement %s", (ft - st))
       self = refinery.return_scaler()
@@ -210,7 +214,11 @@ class ScalerBase(object):
     refinery = error_model_refinery(engine='SimpleLBFGS',
       target=ErrorModelTarget(error_model(Ih_table.blocked_data_list[0])),
       max_iterations=100)
-    refinery.run()
+    try:
+      refinery.run()
+    except Exception as e:
+      logger.warn('WARNING: A round of scaling failed with the following error message:')
+      logger.info(e)
     error_model = refinery.return_error_model()
     self.update_error_model(error_model, update_Ih=update_Ih)
     logger.info(error_model)
