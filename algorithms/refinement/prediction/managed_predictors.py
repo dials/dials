@@ -19,11 +19,14 @@
 from __future__ import absolute_import, division
 
 from math import pi
+from scitbx.array_family import flex
 from dials.algorithms.spot_prediction import ScanStaticRayPredictor
-
 from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor as sc
 from dials.algorithms.spot_prediction import ScanVaryingReflectionPredictor as sv
 from dials.algorithms.spot_prediction import StillsReflectionPredictor as st
+
+# constants
+TWO_PI = 2.0 * pi
 
 class ScansRayPredictor(object):
   """
@@ -79,14 +82,6 @@ class ExperimentsPredictor(object):
   def __call__(self, reflections):
     """Predict for all reflections at the current model geometry"""
 
-    if self._force_stills:
-      predictors = [st(e, spherical_relp=self._spherical_relp) \
-                          for e in self._experiments]
-    else:
-      predictors = [sc(e) if e.goniometer else st(e,
-        spherical_relp=self._spherical_relp) for e in self._experiments]
-    self._UBs = [e.crystal.get_A() for e in self._experiments]
-
     for iexp, e in enumerate(self._experiments):
 
       # select the reflections for this experiment only
@@ -115,5 +110,33 @@ class ExperimentsPredictor(object):
       # write predictions back to overall reflections
       reflections.set_selected(sel, refs)
 
+    # Do not wrap around multiples of 2*pi; update prediction to keep the full
+    # rotation from zero in order to differentiate repeat observations.
+    if reflections.has_key('xyzobs.mm.value'):
+      reflections = self.match_full_turns(reflections)
+
     return reflections
 
+  def match_full_turns(self, reflections):
+    x_obs, y_obs, phi_obs = reflections['xyzobs.mm.value'].parts()
+    x_calc, y_calc, phi_calc = reflections['xyzcal.mm'].parts()
+    resid = phi_calc - (flex.fmod_positive(phi_obs, TWO_PI))
+    # ensure this is the smaller of two possibilities
+    resid = flex.fmod_positive((resid + pi), TWO_PI) - pi
+    phi_calc = phi_obs + resid
+    reflections['xyzcal.mm'] = flex.vec3_double(x_calc, y_calc, phi_calc)
+
+    # Update xyzcal.px with the correct z_px values in keeping with above
+    for iexp, e in enumerate(self._experiments):
+      sel = (reflections['id'] == iexp)
+      x_px, y_px, z_px = reflections['xyzcal.px'].select(sel).parts()
+      scan = e.scan
+      if scan is not None:
+        z_px = scan.get_array_index_from_angle(phi_calc.select(sel), deg=False)
+      else:
+        # must be a still image, z centroid not meaningful
+        z_px = phi_calc.select(sel)
+      xyzcal_px = flex.vec3_double(x_px, y_px, z_px)
+      reflections['xyzcal.px'].set_selected(sel, xyzcal_px)
+
+    return reflections
