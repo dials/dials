@@ -470,9 +470,11 @@ class ReflectionManager(object):
 
     # delete all reflections from the manager that do not have a prediction
     # or were flagged as outliers
-    has_pred = self._reflections.get_flags(self._reflections.flags.used_in_refinement)
+    has_pred = self._reflections.get_flags(self._reflections.flags.predicted)
     inlier = ~self._reflections.get_flags(self._reflections.flags.centroid_outlier)
     self._reflections = self._reflections.select(has_pred & inlier)
+    self._reflections.set_flags(flex.bool(len(self._reflections), True),
+        self._reflections.flags.used_in_refinement)
 
     logger.debug("%d reflections remain in the manager", len(self._reflections))
 

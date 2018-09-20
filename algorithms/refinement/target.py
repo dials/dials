@@ -587,9 +587,6 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
       assert len(absolute_cutoffs) == 3
       self._binsize_cutoffs = absolute_cutoffs
 
-    # predict reflections and finalise reflection manager
-    self.predict()
-
     return
 
   @staticmethod

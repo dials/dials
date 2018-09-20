@@ -516,6 +516,16 @@ class RefinerFactory(object):
         force_stills=do_stills,
         spherical_relp=params.refinement.parameterisation.spherical_relp_model)
 
+    # Predict for the managed observations, set columns for residuals and set
+    # the used_in_refinement flag to the predictions
+    obs = refman.get_obs()
+    ref_predictor(obs)
+    x_obs, y_obs, phi_obs = obs['xyzobs.mm.value'].parts()
+    x_calc, y_calc, phi_calc = obs['xyzcal.mm'].parts()
+    obs['x_resid'] = x_calc - x_obs
+    obs['y_resid'] = y_calc - y_obs
+    obs['phi_resid'] = phi_calc - phi_obs
+
     logger.debug("Building target function")
 
     # create target function

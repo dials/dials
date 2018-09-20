@@ -50,9 +50,6 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
     else:
       self._binsize_cutoffs = absolute_cutoffs[:2]
 
-    # predict reflections and finalise reflection manager
-    self.predict()
-
     return
 
   def  _predict_core(self, reflections):

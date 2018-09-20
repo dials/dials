@@ -122,19 +122,13 @@ def test(cmdline_overrides=[]):
   # use a ReflectionManager to exclude reflections too close to the spindle,
   # plus set the frame numbers
   from dials.algorithms.refinement.reflection_manager import ReflectionManager
-  refman = ReflectionManager(reflections, tc.experiments,
-    outlier_detector=None)
+  refman = ReflectionManager(reflections, tc.experiments, outlier_detector=None)
+  refman.finalise()
 
   # create prediction parameterisation of the requested type
   pred_param = ScanVaryingPredictionParameterisation(tc.experiments,
       [tc.det_param], [tc.s0_param], [tc.xlo_param], [tc.xluc_param],
       [tc.gon_param])
-
-  # make a target to ensure reflections are predicted and refman is finalised
-  from dials.algorithms.refinement.target import \
-    LeastSquaresPositionalResidualWithRmsdCutoff
-  target = LeastSquaresPositionalResidualWithRmsdCutoff(tc.experiments,
-      tc.ref_predictor, refman, pred_param, restraints_parameterisation=None)
 
   # keep only those reflections that pass inclusion criteria and have predictions
   reflections = refman.get_matches()

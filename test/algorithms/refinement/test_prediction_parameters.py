@@ -63,7 +63,6 @@ def test():
                         deg = True)
 
   #### Create parameterisations of these models
-
   det_param = DetectorParameterisationSinglePanel(mydetector)
   s0_param = BeamParameterisation(mybeam, mygonio)
   xlo_param = CrystalOrientationParameterisation(mycrystal)
@@ -121,15 +120,10 @@ def test():
   # use a ReflectionManager to exclude reflections too close to the spindle
   from dials.algorithms.refinement.reflection_manager import ReflectionManager
   refman = ReflectionManager(obs_refs, experiments, outlier_detector=None)
+  refman.finalise()
 
   # Redefine the reflection predictor to use the type expected by the Target class
   ref_predictor = ScansExperimentsPredictor(experiments)
-
-  # make a target to ensure reflections are predicted and refman is finalised
-  from dials.algorithms.refinement.target import \
-    LeastSquaresPositionalResidualWithRmsdCutoff
-  target = LeastSquaresPositionalResidualWithRmsdCutoff(experiments,
-      ref_predictor, refman, pred_param, restraints_parameterisation=None)
 
   # keep only those reflections that pass inclusion criteria and have predictions
   reflections = refman.get_matches()
