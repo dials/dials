@@ -528,8 +528,10 @@ if __name__ == "__main__":
     experiments = flatten_experiments(params.input.experiments)
 
     if params.cross_validation.cross_validation_mode:
-      from dials.algorithms.scaling.cross_validation.cross_validate import cross_validate
-      from dials.algorithms.scaling.cross_validation.crossvalidator import DialsScaleCrossValidator
+      from dials.algorithms.scaling.cross_validation.cross_validate import \
+        cross_validate
+      from dials.algorithms.scaling.cross_validation.crossvalidator import \
+        DialsScaleCrossValidator
 
       log.config(verbosity=1, info=params.cross_validation.log,
         debug=params.cross_validation.debug.log)
