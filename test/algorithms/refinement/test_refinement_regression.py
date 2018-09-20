@@ -37,7 +37,7 @@ def test():
   # Reflection prediction
   from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
   from dials.algorithms.refinement.prediction import ScansRayPredictor, \
-    ExperimentsPredictor
+    ScansExperimentsPredictor
   from cctbx.sgtbx import space_group, space_group_symbols
 
   # Parameterisation of the prediction equation
@@ -185,7 +185,7 @@ def test():
 
   # Make a reflection predictor and re-predict for all these reflections. The
   # result is the same, but we gain also the flags and xyzcal.px columns
-  ref_predictor = ExperimentsPredictor(experiments)
+  ref_predictor = ScansExperimentsPredictor(experiments)
   obs_refs['id'] = flex.int(len(obs_refs), 0)
   obs_refs = ref_predictor(obs_refs)
 

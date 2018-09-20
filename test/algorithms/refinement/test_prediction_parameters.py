@@ -19,7 +19,7 @@ def test():
   from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
   from dxtbx.model.experiment_list import ExperimentList, Experiment
   from dials.algorithms.refinement.prediction import ScansRayPredictor, \
-    ExperimentsPredictor
+      ScansExperimentsPredictor
 
   #### Import model parameterisations
 
@@ -103,7 +103,7 @@ def test():
 
   # Make a reflection predictor and re-predict for all these reflections. The
   # result is the same, but we gain also the flags and xyzcal.px columns
-  ref_predictor = ExperimentsPredictor(experiments)
+  ref_predictor = ScansExperimentsPredictor(experiments)
   obs_refs['id'] = flex.int(len(obs_refs), 0)
   obs_refs = ref_predictor(obs_refs)
 
@@ -123,7 +123,7 @@ def test():
   refman = ReflectionManager(obs_refs, experiments, outlier_detector=None)
 
   # Redefine the reflection predictor to use the type expected by the Target class
-  ref_predictor = ExperimentsPredictor(experiments)
+  ref_predictor = ScansExperimentsPredictor(experiments)
 
   # make a target to ensure reflections are predicted and refman is finalised
   from dials.algorithms.refinement.target import \

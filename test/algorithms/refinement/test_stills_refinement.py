@@ -34,7 +34,7 @@ def test(args=[]):
   # Reflection prediction
   from dials.algorithms.spot_prediction import IndexGenerator
   from dials.algorithms.refinement.prediction import ScansRayPredictor, \
-    ExperimentsPredictor
+    StillsExperimentsPredictor
   from dials.algorithms.spot_prediction import ray_intersection
   from cctbx.sgtbx import space_group, space_group_symbols
 
@@ -153,7 +153,7 @@ def test(args=[]):
   obs_refs['xyzobs.mm.variance'] = flex.vec3_double(var_x, var_y, var_phi)
 
   # Re-predict using the stills reflection predictor
-  stills_ref_predictor = ExperimentsPredictor(stills_experiments)
+  stills_ref_predictor = StillsExperimentsPredictor(stills_experiments)
   obs_refs_stills = stills_ref_predictor(obs_refs)
 
   # Set 'observed' centroids from the predicted ones

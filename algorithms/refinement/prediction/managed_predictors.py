@@ -72,12 +72,10 @@ class ExperimentsPredictor(object):
   predictor in each case.
   """
 
-  def __init__(self, experiments, force_stills=False, spherical_relp=False):
+  def __init__(self, experiments):
     """Construct by linking to instances of experimental model classes"""
 
     self._experiments = experiments
-    self._force_stills = force_stills
-    self._spherical_relp = spherical_relp
 
   def __call__(self, reflections):
     """Predict for all reflections at the current model geometry"""
@@ -88,36 +86,54 @@ class ExperimentsPredictor(object):
       sel = reflections['id'] == iexp
       refs = reflections.select(sel)
 
-      # stills
-      if not e.goniometer or self._force_stills:
-        predictor = st(e, spherical_relp=self._spherical_relp)
-        UB = e.crystal.get_A()
-        predictor.for_reflection_table(refs, UB)
-      # scan-varying
-      elif 'ub_matrix' in refs:
-        predictor = sv(e)
-        UB = refs['ub_matrix']
-        s0 = refs['s0_vector']
-        dmat = refs['d_matrix']
-        Smat = refs['S_matrix']
-        predictor.for_reflection_table(refs, UB, s0, dmat, Smat)
-      # scan static
-      else:
-        predictor = sc(e)
-        UB = e.crystal.get_A()
-        predictor.for_reflection_table(refs, UB)
+      self._predict_one_experiment(e, refs)
 
       # write predictions back to overall reflections
       reflections.set_selected(sel, refs)
 
-    # Do not wrap around multiples of 2*pi; update prediction to keep the full
-    # rotation from zero in order to differentiate repeat observations.
-    if reflections.has_key('xyzobs.mm.value'):
-      reflections = self.match_full_turns(reflections)
+    reflections = self._post_prediction(reflections)
 
     return reflections
 
-  def match_full_turns(self, reflections):
+  def _predict_one_experiment(self, experiment, reflections):
+
+    raise NotImplementedError()
+
+  def _post_prediction(self, reflections):
+    """Perform tasks on the whole reflection list after prediction before
+    returning."""
+
+    return reflections
+
+class ScansExperimentsPredictor(ExperimentsPredictor):
+
+  def _predict_one_experiment(self, experiment, reflections):
+
+    # scan-varying
+    if 'ub_matrix' in reflections:
+      predictor = sv(experiment)
+      UB = reflections['ub_matrix']
+      s0 = reflections['s0_vector']
+      dmat = reflections['d_matrix']
+      Smat = reflections['S_matrix']
+      predictor.for_reflection_table(reflections, UB, s0, dmat, Smat)
+    # scan static
+    else:
+      predictor = sc(experiment)
+      UB = experiment.crystal.get_A()
+      predictor.for_reflection_table(reflections, UB)
+
+  def _post_prediction(self, reflections):
+
+    if reflections.has_key('xyzobs.mm.value'):
+      reflections = self._match_full_turns(reflections)
+
+    return reflections
+
+  def _match_full_turns(self, reflections):
+    """Modify the calculated phi values so that they match the full rotation
+    from zero taken from the the observations, rather than being modulo 2*pi."""
+
     x_obs, y_obs, phi_obs = reflections['xyzobs.mm.value'].parts()
     x_calc, y_calc, phi_calc = reflections['xyzcal.mm'].parts()
     resid = phi_calc - (flex.fmod_positive(phi_obs, TWO_PI))
@@ -140,3 +156,26 @@ class ExperimentsPredictor(object):
       reflections['xyzcal.px'].set_selected(sel, xyzcal_px)
 
     return reflections
+
+class StillsExperimentsPredictor(ExperimentsPredictor):
+
+  spherical_relp_model = False
+
+  def _predict_one_experiment(self, experiment, reflections):
+
+    predictor = st(experiment, spherical_relp=self.spherical_relp_model)
+    UB = experiment.crystal.get_A()
+    predictor.for_reflection_table(reflections, UB)
+
+class ExperimentsPredictorFactory(object):
+
+  @staticmethod
+  def from_experiments(experiments, do_stills=False, spherical_relp=False):
+
+    if do_stills:
+      predictor = StillsExperimentsPredictor(experiments)
+      predictor.spherical_relp_model = spherical_relp
+    else:
+      predictor = ScansExperimentsPredictor(experiments)
+
+    return predictor

@@ -7,7 +7,7 @@ from math import pi
 from scitbx.array_family import flex
 from dxtbx.model.experiment_list import ExperimentList, Experiment
 from dials.algorithms.refinement.prediction import ScansRayPredictor, \
-  ExperimentsPredictor
+  ScansExperimentsPredictor
 from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters import \
     ScanVaryingPredictionParameterisation
 from dials.algorithms.refinement.parameterisation.scan_varying_crystal_parameters \
@@ -53,7 +53,7 @@ geometry.parameters.crystal.c.length.range = 10 50"""
           scan=self.scan, crystal=self.crystal, imageset=None))
 
     # Create a reflection predictor for the experiments
-    self.ref_predictor = ExperimentsPredictor(self.experiments)
+    self.ref_predictor = ScansExperimentsPredictor(self.experiments)
 
     # Create scan-varying parameterisations of these models, with 5 samples
     self.det_param = ScanVaryingDetectorParameterisationSinglePanel(
