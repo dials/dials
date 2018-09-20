@@ -198,8 +198,7 @@ class ScalerBase(object):
       try:
         refinery.run()
       except Exception as e:
-        logger.warn('WARNING: A round of scaling failed with the following error message:')
-        logger.info(e)
+        logger.error(e, exc_info=True)
       ft = time.time()
       logger.info("Time taken for refinement %s", (ft - st))
       self = refinery.return_scaler()
@@ -217,8 +216,7 @@ class ScalerBase(object):
     try:
       refinery.run()
     except Exception as e:
-      logger.warn('WARNING: A round of scaling failed with the following error message:')
-      logger.info(e)
+      logger.error(e, exc_info=True)
     error_model = refinery.return_error_model()
     self.update_error_model(error_model, update_Ih=update_Ih)
     logger.info(error_model)
