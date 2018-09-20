@@ -283,7 +283,7 @@ def test_spherical_relp_stills_pred_param(tc):
   # the analytical gradients so quantities like s1 are correct
   from dials.algorithms.refinement.prediction import ExperimentsPredictorFactory
   ref_predictor = ExperimentsPredictorFactory.from_experiments(
-      tc.stills_experiments, do_stills=True, spherical_relp=True)
+      tc.stills_experiments, force_stills=True, spherical_relp=True)
   ref_predictor(tc.reflections)
 
   # get analytical gradients

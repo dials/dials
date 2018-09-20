@@ -513,7 +513,7 @@ class RefinerFactory(object):
     # create managed reflection predictor
     from dials.algorithms.refinement.prediction import ExperimentsPredictorFactory
     ref_predictor = ExperimentsPredictorFactory.from_experiments(experiments,
-        do_stills=do_stills,
+        force_stills=do_stills,
         spherical_relp=params.refinement.parameterisation.spherical_relp_model)
 
     logger.debug("Building target function")

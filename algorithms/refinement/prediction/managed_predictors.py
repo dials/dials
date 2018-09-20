@@ -170,9 +170,17 @@ class StillsExperimentsPredictor(ExperimentsPredictor):
 class ExperimentsPredictorFactory(object):
 
   @staticmethod
-  def from_experiments(experiments, do_stills=False, spherical_relp=False):
+  def from_experiments(experiments, force_stills=False, spherical_relp=False):
 
-    if do_stills:
+    # Determine whether or not to use a stills predictor
+    if not force_stills:
+      for exp in experiments:
+        if exp.goniometer is None:
+          force_stills = True
+          break
+
+    # Construct the predictor
+    if force_stills:
       predictor = StillsExperimentsPredictor(experiments)
       predictor.spherical_relp_model = spherical_relp
     else:
