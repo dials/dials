@@ -39,6 +39,7 @@ import logging
 import itertools
 import time
 from libtbx import phil
+from libtbx.utils import Sorry
 from dials.util import log
 
 logger = logging.getLogger('dials')
@@ -96,7 +97,7 @@ def cross_validate(params, cross_validator):
   elif params.cross_validation.cross_validation_mode == 'multi':
     # run each option nfolds times
     if params.cross_validation.parameter is None:
-      assert 0, "parameter= must be set to specify what command line option should be optimised"
+      raise Sorry("parameter= must be set to specify what command line option should be optimised")
 
     choice = params.cross_validation.parameter
     # #TODO extract allowed values to allow checking of user input
@@ -109,7 +110,7 @@ def cross_validate(params, cross_validator):
       options_dict[choice] = [True, False]
     else:
       if not params.cross_validation.parameter_values:
-        assert 0, "parameter_values= must be set to specify what options should be tested"
+        raise Sorry("parameter_values= must be set to specify what options should be tested")
       options_dict[choice] = []
       if typ == 'bool':
         if 'true' in params.cross_validation.parameter_values or \
@@ -128,7 +129,7 @@ def cross_validate(params, cross_validator):
         for value in params.cross_validation.parameter_values:
           options_dict[choice].append(float(value))
       else:
-        assert 0, "Error in interpreting parameter and parameter_values"
+        raise Sorry("Error in interpreting parameter and parameter_values")
 
     # this code below should work for more than one parameter to be optimised,
     # but one cannot specify this yet from the command line
@@ -147,7 +148,7 @@ def cross_validate(params, cross_validator):
           cross_validator.run_script(params, config_no=i)
 
   else:
-    assert 0, "Error in interpreting mode and options."
+    raise Sorry("Error in interpreting mode and options.")
 
   st = cross_validator.interpret_results()
   logger.info('Summary of the cross validation analysis: \n %s', st.format())

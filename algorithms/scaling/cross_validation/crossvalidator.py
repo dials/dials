@@ -78,6 +78,7 @@ class CrossValidator(object):
 
   def set_results_dict_configuration(self, keys, values):
     """Add configuration information to the results dict"""
+    assert len(keys) == len(values)
     for i, v in enumerate(itertools.product(*values)):
       e = dict(zip(keys, v))
       for k, v in e.iteritems():
@@ -135,7 +136,8 @@ class DialsScaleCrossValidator(CrossValidator):
 
   def get_results_from_script(self, script):
     """Return the work/free results list from the command line script object"""
-    return script.scaler.final_rmsds[0:4]
+    result = script.scaler.final_rmsds
+    return result
 
   def get_parameter_type(self, name):
     """Find the parameter type for a discreet phil option - bool or choice."""
