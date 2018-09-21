@@ -9,6 +9,7 @@ Tutorials
    :maxdepth: 1
 
    processing_in_detail_betalactamase
+   scaling_beta_lactamase
    small_molecule_tutorial
    correcting_poor_initial_geometry_tutorial
    centring_vs_pseudocentring
