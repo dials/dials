@@ -528,12 +528,6 @@ class RefinerFactory(object):
 
     logger.debug("Building target function")
 
-    # create target function
-    target = cls.config_target(params.refinement.target, experiments, refman,
-        ref_predictor, do_stills, do_sparse)
-
-    logger.debug("Target function built")
-
     # determine whether to do basic centroid analysis to automatically
     # determine outlier rejection block
     if params.refinement.reflections.outlier.block_width is libtbx.Auto:
@@ -555,15 +549,17 @@ class RefinerFactory(object):
     for i, e in enumerate(pred_param.get_param_names()):
       logger.debug("Parameter %03d : %s", i + 1, e)
 
-    # Set the prediction equation and restraints parameterisations
-    # in the target object
-    target.set_prediction_parameterisation(pred_param)
-    target.set_restraints_parameterisation(restraints_parameterisation)
-
     # Build a constraints manager, if requested
     from dials.algorithms.refinement.constraints import ConstraintManagerFactory
     cmf = ConstraintManagerFactory(params, pred_param, verbosity)
     constraints_manager = cmf()
+
+    # Create target function
+    target = cls.config_target(params.refinement.target, experiments, refman,
+        ref_predictor, pred_param, restraints_parameterisation,
+        do_stills, do_sparse)
+
+    logger.debug("Target function built")
 
     logger.debug("Building refinement engine")
 
@@ -1630,12 +1626,13 @@ class RefinerFactory(object):
   # Overload to allow subclasses of RefinerFactory to use a different
   # TargetFactory
   @staticmethod
-  def config_target(params, experiments, refman, predictor,
-      do_stills, do_sparse):
+  def config_target(params, experiments, reflection_manager, predictor,
+      pred_param, restraints_param, do_stills, do_sparse):
 
     from dials.algorithms.refinement.target import TargetFactory
     target = TargetFactory.from_parameters_and_experiments(params, experiments,
-      refman, predictor, do_stills, do_sparse)
+        reflection_manager, predictor, pred_param, restraints_param,
+        do_stills, do_sparse)
     return target
 
 class Refiner(object):

@@ -120,9 +120,9 @@ class TwoThetaTarget(Target):
   rmsd_names = ["RMSD_2theta"]
   rmsd_units = ["rad"]
 
-  def __init__(self, experiments, reflection_predictor, ref_man,
+  def __init__(self, experiments, predictor, reflection_manager,
                prediction_parameterisation):
-    Target.__init__(self, experiments, reflection_predictor, ref_man,
+    Target.__init__(self, experiments, predictor, reflection_manager,
                     prediction_parameterisation)
 
     # set the single cutoff for 2theta residual to essentially zero

@@ -164,7 +164,8 @@ class StillsDetectorRefinerFactory(RefinerFactory):
     return pred_param, param_reporter, restraints_param
 
   @staticmethod
-  def config_target(params, experiments, refman, predictor, do_stills, do_sparse):
+  def config_target(params, experiments, refman, predictor,
+      pred_param, restraints_param, do_stills, do_sparse):
     """Given a set of parameters, configure a factory to build a
     target function
 
@@ -204,13 +205,11 @@ class StillsDetectorRefinerFactory(RefinerFactory):
       #  #from dials.algorithms.refinement.target \
       #  #  import LeastSquaresPositionalResidualWithRmsdCutoff as targ
 
-    # Here we pass in None for prediction_parameterisation and
-    # restraints_parameterisation, as these will be linked to the object later
     target = targ(experiments=experiments,
-                  reflection_predictor=predictor,
-                  ref_man=refman,
-                  prediction_parameterisation=None,
-                  restraints_parameterisation=None,
+                  predictor=predictor,
+                  reflection_manager=refman,
+                  prediction_parameterisation=pred_param,
+                  restraints_parameterisation=restraints_param,
                   frac_binsize_cutoff=params.bin_size_fraction,
                   absolute_cutoffs=absolute_cutoffs,
                   gradient_calculation_blocksize=params.gradient_calculation_blocksize)

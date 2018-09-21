@@ -55,7 +55,8 @@ class TargetFactory(object):
 
   @staticmethod
   def from_parameters_and_experiments(params, experiments,
-      reflection_manager, predictor, do_stills=False, do_sparse=False):
+      reflection_manager, predictor, pred_param, restraints_param,
+      do_stills=False, do_sparse=False):
 
     """Given a set of parameters, configure a factory to build a
     target function
@@ -94,10 +95,10 @@ class TargetFactory(object):
     # restraints_parameterisation, as these are not required for initialisation
     # and will be linked to the object later
     return targ(experiments=experiments,
-                reflection_predictor=predictor,
-                ref_man=reflection_manager,
-                prediction_parameterisation=None,
-                restraints_parameterisation=None,
+                predictor=predictor,
+                reflection_manager=reflection_manager,
+                prediction_parameterisation=pred_param,
+                restraints_parameterisation=restraints_param,
                 frac_binsize_cutoff=params.bin_size_fraction,
                 absolute_cutoffs=absolute_cutoffs,
                 gradient_calculation_blocksize=params.gradient_calculation_blocksize)
@@ -128,13 +129,13 @@ class Target(object):
   rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_Phi"]
   rmsd_units = ["mm", "mm", "rad"]
 
-  def __init__(self, experiments, reflection_predictor, ref_manager,
+  def __init__(self, experiments, predictor, reflection_manager,
                prediction_parameterisation, restraints_parameterisation=None,
                gradient_calculation_blocksize=None):
 
-    self._reflection_predictor = reflection_predictor
     self._experiments = experiments
-    self._reflection_manager = ref_manager
+    self._reflection_predictor = predictor
+    self._reflection_manager = reflection_manager
     self._prediction_parameterisation = prediction_parameterisation
     self._restraints_parameterisation = restraints_parameterisation
 
@@ -146,20 +147,6 @@ class Target(object):
     # a cutoff is required
     self._gradient_calculation_blocksize = gradient_calculation_blocksize
 
-    return
-
-  def set_prediction_parameterisation(self, prediction_parameterisation):
-    """For circumstances where the PredictionParameterisation object was not
-    available at initialisation, set it with this method"""
-
-    self._prediction_parameterisation = prediction_parameterisation
-    return
-
-  def set_restraints_parameterisation(self, restraints_parameterisation):
-    """For circumstances where the RestraintsParameterisation object was not
-    available at initialisation, set it with this method"""
-
-    self._restraints_parameterisation = restraints_parameterisation
     return
 
   def _predict_core(self, reflections, skip_derivatives=False):
@@ -553,19 +540,15 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
   in terms of detector impact position X, Y and phi, terminating on achieved
   rmsd (or on intrisic convergence of the chosen minimiser)"""
 
-  def __init__(self, experiments, reflection_predictor, ref_man,
+  def __init__(self, experiments, predictor, reflection_manager,
                prediction_parameterisation, restraints_parameterisation,
                frac_binsize_cutoff=0.33333,
                absolute_cutoffs=None,
                gradient_calculation_blocksize=None):
 
-    Target.__init__(self,
-                    experiments=experiments,
-                    reflection_predictor=reflection_predictor,
-                    ref_manager=ref_man,
-                    prediction_parameterisation=prediction_parameterisation,
-                    restraints_parameterisation=restraints_parameterisation,
-                    gradient_calculation_blocksize=gradient_calculation_blocksize)
+    Target.__init__(self, experiments, predictor, reflection_manager,
+                    prediction_parameterisation, restraints_parameterisation,
+                    gradient_calculation_blocksize)
 
     # Set up the RMSD achieved criterion. For simplicity, we take models from
     # the first Experiment only. If this is not appropriate for refinement over
