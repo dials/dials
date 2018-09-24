@@ -37,5 +37,6 @@ if __name__ == '__main__':
 
     outfile = outfile_template % (e_number+1)
 
+    print("Writing %s" % outfile)
     easy_pickle.dump(outfile, frame)
 
