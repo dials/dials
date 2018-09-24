@@ -5,9 +5,7 @@ import os
 
 import pytest
 
-def test(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test(dials_regression, run_in_tmpdir):
   from scitbx import matrix
   from iotbx.xds import xparm, integrate_hkl
   from dials.util import ioutil

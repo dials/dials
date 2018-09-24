@@ -10,6 +10,9 @@ from libtbx import easy_pickle
 import wx
 import os
 
+# Temporary: Make a variable to allow dual API
+WX3 = wx.VERSION[0] == 3
+
 # Instance to bind external update event to an event handler
 EVT_EXTERNAL_UPDATE = wx.PyEventBinder(wx.NewEventType(), 0)
 
@@ -260,14 +263,14 @@ class XrayFrame (wx.Frame) :
     file_name = wx.FileSelector("Reflections file",
       wildcard=wildcard_str,
       default_path="",
-      flags=wx.OPEN)
+      flags=(wx.OPEN if WX3 else wx.FD_OPEN))
     if (file_name != "") :
       self.load_image(file_name)
 
   def OnLoadLabelitResult (self, event) :
     file_name = wx.FileSelector("Labelit result",
       default_path="",
-      flags=wx.OPEN)
+      flags=(wx.OPEN if WX3 else wx.FD_OPEN))
     if (file_name != "") :
       self.load_image(file_name)
 

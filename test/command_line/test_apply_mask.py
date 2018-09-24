@@ -3,9 +3,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import procrunner
 
-def test(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test(dials_regression, run_in_tmpdir):
   input_filename = os.path.join(dials_regression, "centroid_test_data", "datablock.json")
   mask_filename = os.path.join(dials_regression, "centroid_test_data", "lookup_mask.pickle")
   output_filename = "output_datablock.json"

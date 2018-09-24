@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-def test_dials_cluster_unit_cell_command_line(dials_regression, tmpdir):
+def test_dials_cluster_unit_cell_command_line(dials_regression, run_in_tmpdir):
   pytest.importorskip("scipy")
 
   data_dir = os.path.join(dials_regression, 'refinement_test_data',
@@ -12,8 +12,6 @@ def test_dials_cluster_unit_cell_command_line(dials_regression, tmpdir):
   import glob
   experiments = glob.glob(
     os.path.join(data_dir, 'data/sweep_*/experiments.json'))
-
-  tmpdir.chdir()
 
   import procrunner
   result = procrunner.run_process(

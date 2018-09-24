@@ -2,9 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 
-def test(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test(dials_regression, run_in_tmpdir):
   from libtbx import easy_run
 
   # Run a few commands from stdin

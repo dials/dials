@@ -113,7 +113,7 @@ def test_contraints_manager_simple_test():
   assert constr_dL_dp[6] == dL_dp[5] + dL_dp[6] + dL_dp[7]
 
 
-def test_constrained_refinement(dials_regression, tmpdir):
+def test_constrained_refinement(dials_regression, run_in_tmpdir):
   """Test joint refinement where two detectors are constrained to enforce a
   differential distance (along the shared initial normal vector) of 1 mm.
   This test can be constructed on the fly from data already in
@@ -126,9 +126,6 @@ def test_constrained_refinement(dials_regression, tmpdir):
   data_dir = os.path.join(dials_regression, "refinement_test_data", "centroid")
   experiments_path = os.path.join(data_dir, "experiments_XPARM_REGULARIZED.json")
   pickle_path = os.path.join(data_dir, "spot_1000_xds.pickle")
-
-  # work in a temporary directory
-  tmpdir.chdir()
 
   # load the experiments and spots
   el = ExperimentListFactory.from_json_file(experiments_path, check_format=False)

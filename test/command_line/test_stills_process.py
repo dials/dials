@@ -14,8 +14,7 @@ from libtbx.phil import parse
 
 from dials.command_line.stills_process import phil_scope, Processor
 
-def test_cspad_cbf_in_memory(dials_regression, tmpdir):
-  tmpdir.chdir()
+def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):
   # Check the data files for this test exist
   image_path = os.path.join(dials_regression, "image_examples",
                             "LCLS_cspad_nexus", 'idx-20130301060858801.cbf')
@@ -65,12 +64,10 @@ def test_cspad_cbf_in_memory(dials_regression, tmpdir):
   assert (table['id'] == 0).count(False) == 0
 
 @pytest.mark.parametrize("use_mpi", [True, False])
-def test_sacla_h5(dials_regression, tmpdir, use_mpi, in_memory=False):
+def test_sacla_h5(dials_regression, run_in_tmpdir, use_mpi, in_memory=False):
   # Only allow MPI tests if we've got MPI capabilities
   if use_mpi:
     pytest.importorskip("mpi4py")
-
-  tmpdir.chdir()
 
   # Check the data files for this test exist
   sacla_path = os.path.join(dials_regression, "image_examples", "SACLA_MPCCD_Cheetah")

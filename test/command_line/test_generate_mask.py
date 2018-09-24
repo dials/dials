@@ -6,10 +6,9 @@ import procrunner
 import pytest
 
 @pytest.fixture
-def input_filename(dials_regression, tmpdir):
-  tmpdir.chdir()
+def input_filename(dials_regression, run_in_tmpdir):
   yield os.path.join(dials_regression, "centroid_test_data", "datablock.json")
-  print("temporary directory=", tmpdir.strpath)
+  print("temporary directory=", run_in_tmpdir.strpath)
 
 def test_generate_mask(input_filename):
   result = procrunner.run_process([

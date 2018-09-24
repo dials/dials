@@ -6,7 +6,7 @@ import os
 import procrunner
 import pytest
 
-def test_joint_refinement(dials_regression, tmpdir):
+def test_joint_refinement(dials_regression, run_in_tmpdir):
   """A basic test of joint refinement of the CS-PAD detector at hierarchy level 2
      with 300 crystals."""
   from dials.array_family import flex
@@ -14,8 +14,6 @@ def test_joint_refinement(dials_regression, tmpdir):
   bevington = pytest.importorskip("scitbx.examples.bevington")
   if not hasattr(bevington, 'non_linear_ls_eigen_wrapper'):
     pytest.skip("Skipping test as SparseLevMar engine not available")
-
-  tmpdir.chdir()
 
   data_dir = os.path.join(dials_regression, "refinement_test_data", "xfel_metrology")
 

@@ -40,6 +40,7 @@ Classes:
 import logging
 import abc
 from collections import defaultdict
+from cctbx import crystal, miller
 from libtbx.utils import Sorry
 from libtbx.table_utils import simple_table
 from dials.array_family import flex
@@ -66,6 +67,39 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
       ).format(intensity_choice))
   reflection_table = reducer.filter_for_export(reflection_table, *args, **kwargs)
   return reflection_table
+
+def integrated_data_to_filtered_miller_array(reflections, exp_crystal):
+  crystal_symmetry = crystal.symmetry(
+    unit_cell=exp_crystal.get_unit_cell(),
+    space_group=exp_crystal.get_space_group())
+
+  if 'intensity.scale.value' in reflections:
+    intensity_choice = ['scale']
+    intensity_to_use = 'scale'
+  else:
+    assert 'intensity.sum.value' in reflections
+    intensity_choice = ['sum']
+    if 'intensity.prf.value' in reflections:
+      intensity_choice.append('profile')
+      intensity_to_use = 'prf'
+    else:
+      intensity_to_use = 'sum'
+
+  reflections = filter_reflection_table(reflections, intensity_choice, min_isigi=-5,
+    filter_ice_rings=False, combine_partials=True,
+    partiality_threshold=0.2)
+  data = reflections['intensity.'+intensity_to_use+'.value']
+  variances = reflections['intensity.'+intensity_to_use+'.variance']
+
+  miller_indices = reflections['miller_index']
+  assert variances.all_gt(0)
+  sigmas = flex.sqrt(variances)
+
+  miller_set = miller.set(
+    crystal_symmetry, miller_indices, anomalous_flag=True)
+  intensities = miller.array(miller_set, data=data, sigmas=sigmas)
+  intensities.set_observation_type_xray_intensity()
+  return intensities
 
 class FilteringReductionMethods(object):
 

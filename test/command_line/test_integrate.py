@@ -9,9 +9,7 @@ import shutil
 from dials.array_family import flex  # import dependency
 import procrunner
 
-def test2(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test2(dials_regression, run_in_tmpdir):
   # Call dials.integrate
   result = procrunner.run_process([
       'dials.integrate',
@@ -88,9 +86,7 @@ def test2(dials_regression, tmpdir):
   assert(flex.abs(diff_Obs_Z).all_lt(1e-7))
   # assert(flex.abs(diff_Obs_P).all_lt(1e-7))
 
-def test_integration_with_sampling(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_integration_with_sampling(dials_regression, run_in_tmpdir):
   # Call dials.integrate
   result = procrunner.run_process([
       'dials.integrate',
@@ -106,9 +102,7 @@ def test_integration_with_sampling(dials_regression, tmpdir):
     table = pickle.load(fh)
   assert len(table) == 1000
 
-def test_integration_with_sample_size(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_integration_with_sample_size(dials_regression, run_in_tmpdir):
   # Call dials.integrate
   result = procrunner.run_process([
       'dials.integrate',
@@ -125,9 +119,7 @@ def test_integration_with_sample_size(dials_regression, tmpdir):
     table = pickle.load(fh)
   assert len(table) == 500
 
-def test_multi_sweep(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_multi_sweep(dials_regression, run_in_tmpdir):
   # Call dials.integrate
   result = procrunner.run_process([
       'dials.integrate',
@@ -161,9 +153,7 @@ def test_multi_sweep(dials_regression, tmpdir):
   I2 = I2.select(F2)
   assert flex.abs(I1 - I2) < 1e-6
 
-def test_multi_lattice(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_multi_lattice(dials_regression, run_in_tmpdir):
   # Call dials.integrate
   result = procrunner.run_process([
       'dials.integrate',
@@ -189,9 +179,7 @@ def test_multi_lattice(dials_regression, tmpdir):
   exp_id = list(set(table['id']))
   assert len(exp_id) == 2
 
-def test_output_rubbish(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_output_rubbish(dials_regression, run_in_tmpdir):
   result = procrunner.run_process([
       'dials.index',
       os.path.join(dials_regression, "centroid_test_data", 'datablock.json'),

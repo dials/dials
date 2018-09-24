@@ -20,6 +20,8 @@ from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
 
 from .viewer_tools import LegacyChooserAdapter, ImageCollectionWithSelection, ImageChooserControl
 
+WX3 = wx.VERSION[0] == 3
+
 myEVT_LOADIMG = wx.NewEventType()
 EVT_LOADIMG = wx.PyEventBinder(myEVT_LOADIMG, 1)
 class LoadImageEvent(wx.PyCommandEvent):
@@ -239,7 +241,7 @@ class SpotFrame(XrayFrame) :
 
     # Don't update whilst dragging the slider
     if event.EventType == wx.EVT_SLIDER.typeId:
-      if wx.GetMouseState().LeftDown():
+      if wx.GetMouseState().LeftDown() if WX3 else wx.GetMouseState().LeftIsDown():
         return
 
     # Once we've stopped scrolling, load the selected item
@@ -1742,7 +1744,7 @@ class SpotSettingsPanel (wx.Panel) :
 
     # Don't update whilst dragging the slider
     if (event.GetEventType() == wx.EVT_SLIDER.typeId):
-      if wx.GetMouseState().LeftDown():
+      if wx.GetMouseState().LeftIsDown():
         return
 
     # For e.g. IntCtrl check the value is valid

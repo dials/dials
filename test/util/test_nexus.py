@@ -1,8 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-def test_run(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_run(dials_regression, run_in_tmpdir):
   from dials.util.nexus import dump, load
   from dxtbx.model.experiment_list import ExperimentListFactory
   from dials.array_family import flex

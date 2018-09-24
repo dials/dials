@@ -13,7 +13,7 @@ from dials.algorithms.scaling.scaling_utilities import \
   sph_harm_table, align_rotation_axis_along_z, parse_multiple_datasets,\
   set_wilson_outliers, select_datasets_on_ids, assign_unique_identifiers,\
   quasi_normalisation, combine_intensities, calculate_prescaling_correction,\
-  apply_prescaling_correction
+  apply_prescaling_correction, Reasons
 
 @pytest.fixture(scope='module')
 def mock_exp():
@@ -430,3 +430,15 @@ def test_calculate_prescaling_correction():
   reflection_table = apply_prescaling_correction(reflection_table, conv)
   assert list(reflection_table['intensity']) == [2.0, 8.0]
   assert list(reflection_table['variance']) == [4.0, 32.0]
+
+def test_reasons():
+  """Test the reasons class, which is basically a dictionary with a nice
+    printed output"""
+  reasons = Reasons()
+  reasons.add_reason('test reason', 100)
+  assert reasons.reasons['test reason'] == 100
+  print(reasons)
+  expected_output = """Reflections passing individual criteria:
+criterion: test reason, reflections: 100
+"""
+  assert reasons.__repr__() == expected_output

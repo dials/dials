@@ -27,9 +27,7 @@ def gaussian(size, a, x0, sx):
       if j == len(size) - 1:
         return result
 
-def test_forward(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_forward(dials_regression, run_in_tmpdir):
   filename = os.path.join(dials_regression, 'centroid_test_data', 'sweep.json')
 
   from dials.model.serialize import load
@@ -437,9 +435,7 @@ def test_forward(dials_regression, tmpdir):
 #        # Test passed
 #        print 'OK'
 
-def test_forward_no_model(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_forward_no_model(dials_regression, run_in_tmpdir):
   filename = os.path.join(dials_regression, 'centroid_test_data', 'sweep.json')
 
   from dials.model.serialize import load

@@ -5,9 +5,7 @@ import os
 from libtbx import easy_run
 from dials.array_family import flex
 
-def test_filter_reflections(tmpdir):
-  tmpdir.chdir()
-
+def test_filter_reflections(run_in_tmpdir):
   # Make a dummy reflection table for the test setting some values and flags
   rt = flex.reflection_table.empty_standard(6)
   rt['iobs'] = flex.size_t_range(len(rt))

@@ -5,8 +5,7 @@ from libtbx import easy_run
 from libtbx.test_utils import approx_equal
 from cctbx import uctbx
 
-def test_1(xia2_regression_build, tmpdir):
-  tmpdir.chdir()
+def test_1(xia2_regression_build, run_in_tmpdir):
   data_dir = os.path.join(xia2_regression_build, "test_data", "X4_wide")
 
   g = sorted(glob.glob(os.path.join(data_dir, "X4_wide_M1S4_2_00*.cbf")))

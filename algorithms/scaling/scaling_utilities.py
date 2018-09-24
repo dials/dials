@@ -33,6 +33,18 @@ except ImportError:
   def log_memory_usage():
     pass
 
+class Reasons(object):
+
+  def __init__(self):
+    self.reasons = {}
+
+  def add_reason(self, text, number):
+    self.reasons[text] = number
+
+  def __repr__(self):
+    reasonlist = ['criterion: %s, reflections: %s\n' % (k, v) for (k, v) in self.reasons.iteritems()]
+    return 'Reflections passing individual criteria:\n'+''.join(reasonlist)
+
 def save_experiments(experiments, filename):
   """Save the experiments json."""
   st = time()
@@ -78,11 +90,9 @@ def get_next_unique_id(unique_id, used_ids):
   where unique_id is an integer. Returns the input unique id if it is not in
   the used_ids list, else it increments the unique_id by one until the value is
   not found in the list and then returns that."""
-  if not str(unique_id) in used_ids:
-    return unique_id
-  else:
+  while str(unique_id) in used_ids:
     unique_id += 1
-    return get_next_unique_id(unique_id, used_ids)
+  return unique_id
 
 def assign_unique_identifiers(experiments, reflections):
   """Read in an experiment list and a list of reflection tables containing

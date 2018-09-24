@@ -98,6 +98,9 @@ phil_scope = phil.parse('''
     merged_mtz = None
       .type = path
       .help = "Filename to export a merged_mtz file."
+    crystal_name = XTAL
+      .type = str
+      .help = "The crystal name to be exported in the mtz file metadata"
     use_internal_variance = False
       .type = bool
       .help = "Option to use internal spread of the intensities when merging
@@ -127,6 +130,7 @@ phil_scope = phil.parse('''
               algorithm has been run in the 'post-scaling' step."
   }
   include scope dials.algorithms.scaling.scaling_options.phil_scope
+  include scope dials.algorithms.scaling.cross_validation.cross_validate.phil_scope
   include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
 ''', process_includes=True)
 
@@ -396,6 +400,7 @@ class Script(object):
       params.intensity = ['scale']
       params.mtz.partiality_threshold = self.params.cut_data.partiality_cutoff
       params.mtz.hklout = self.params.output.unmerged_mtz
+      params.mtz.crystal_name = self.params.output.crystal_name
       if self.params.cut_data.d_min:
         params.mtz.d_min = self.params.cut_data.d_min
       exporter = MTZExporter(params, self.experiments,
@@ -522,17 +527,44 @@ if __name__ == "__main__":
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
 
-    #Set up the log
-    log.config(verbosity=1, info=params.output.log,
-        debug=params.output.debug.log)
-    logger.info(dials_version())
-    diff_phil = optionparser.diff_phil.as_str()
-    if diff_phil is not '':
-      logger.info('The following parameters have been modified:\n')
-      logger.info(diff_phil)
+    if params.cross_validation.cross_validation_mode:
+      from dials.algorithms.scaling.cross_validation.cross_validate import \
+        cross_validate
+      from dials.algorithms.scaling.cross_validation.crossvalidator import \
+        DialsScaleCrossValidator
 
-    script = Script(params, experiments, reflections)
-    script.run()
+      log.config(verbosity=1, info=params.cross_validation.log,
+        debug=params.cross_validation.debug.log)
+      logger.info(dials_version())
+      diff_phil = optionparser.diff_phil
+      if diff_phil.as_str() is not '':
+        logger.info('The following parameters have been modified:\n')
+        logger.info(diff_phil.as_str())
+      diff_phil.objects = [obj for obj in diff_phil.objects if not (
+        obj.name == 'input' or obj.name == 'cross_validation')]
+
+      cross_validator = DialsScaleCrossValidator(experiments, reflections)
+      cross_validate(params, cross_validator)
+
+      if diff_phil.objects:
+        logger.info("\nAdditional configuration for all runs: \n%s", diff_phil.as_str())
+
+      logger.info("Cross validation analysis does not produce scaling output files, rather\n"
+        "it gives insight into the dataset. Choose an appropriate parameterisation\n"
+        "and rerun scaling without cross_validation_mode.\n")
+
+    else:
+      #Set up the log
+      log.config(verbosity=1, info=params.output.log,
+          debug=params.output.debug.log)
+      logger.info(dials_version())
+      diff_phil = optionparser.diff_phil.as_str()
+      if diff_phil is not '':
+        logger.info('The following parameters have been modified:\n')
+        logger.info(diff_phil)
+
+      script = Script(params, experiments, reflections)
+      script.run()
 
   except Exception as e:
     halraiser(e)

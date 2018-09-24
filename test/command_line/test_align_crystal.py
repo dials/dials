@@ -4,9 +4,7 @@ import os
 
 from libtbx import easy_run
 
-def test_align_crystal(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_align_crystal(dials_regression, run_in_tmpdir):
   path = os.path.join(dials_regression, "experiment_test_data")
   cmd = "dials.align_crystal %s/kappa_experiments.json" %path
   result = easy_run.fully_buffered(cmd).raise_if_errors()

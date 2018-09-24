@@ -9,9 +9,7 @@ import procrunner
 import pytest
 
 @pytest.mark.parametrize('averaged_reference_detector', [True, False])
-def test(dials_regression, tmpdir, averaged_reference_detector):
-  tmpdir.chdir()
-
+def test(dials_regression, run_in_tmpdir, averaged_reference_detector):
   # use 20 indexed pickles from CXI for this test
   data_dir = os.path.join(dials_regression, "stills_test_data", "cspad_indexing_results", "cxid9114_r0097")
 

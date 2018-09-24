@@ -31,11 +31,14 @@ import pytest
 import mock
 from libtbx.utils import Sorry
 from dials.array_family import flex
+from dxtbx.model import Crystal
+from cctbx import miller
 from dials.util.filter_reflections import \
   FilteringReductionMethods, FilterForExportAlgorithm, SumIntensityReducer, \
   PrfIntensityReducer, SumAndPrfIntensityReducer, ScaleIntensityReducer, \
   filter_reflection_table, sum_partial_reflections, _sum_prf_partials, \
-  _sum_sum_partials, _sum_scale_partials, AllSumPrfScaleIntensityReducer
+  _sum_sum_partials, _sum_scale_partials, AllSumPrfScaleIntensityReducer, \
+  integrated_data_to_filtered_miller_array
 
 def generate_simple_table():
   """Generate a simple table for testing export function."""
@@ -93,6 +96,33 @@ def generate_test_reflections_for_scaling():
   return r
 
 fpath = 'dials.util.filter_reflections'
+
+def test_integrated_data_to_filtered_miller_array():
+  """Test the creating of a miller array from crystal and reflection table."""
+  refl = generate_integrated_test_reflections()
+  refl['miller_index'] = flex.miller_index([(1, 0, 0), (2, 0, 0), (3, 0, 0),
+    (4, 0, 0), (5, 0, 0), (6, 0, 0)])
+  exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
+              "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
+              "space_group_hall_symbol": " C 2y"}
+  crystal = Crystal.from_dict(exp_dict)
+
+  miller_set = integrated_data_to_filtered_miller_array(refl, crystal)
+  assert isinstance(miller_set, miller.set)
+  assert list(miller_set.data()) == [4.6, 2.4, 2.5] # same as calling filter
+  # for export on scale intensity reducer.
+  #now try for prf
+  del refl['intensity.scale.value']
+  miller_set = integrated_data_to_filtered_miller_array(refl, crystal)
+  assert isinstance(miller_set, miller.set)
+  assert list(miller_set.data()) == [1.0, 2.0, 3.0] #same as calling filter
+  # for export on prf + sum intensity reducer.
+  #now just for sum
+  del refl['intensity.prf.value']
+  miller_set = integrated_data_to_filtered_miller_array(refl, crystal)
+  assert isinstance(miller_set, miller.set)
+  assert list(miller_set.data()) == [11.0, 12.0, 13.0, 14.0] #same as calling
+  # filter for export on prf intensity reducer.
 
 def test_IntensityReducer_instantiations():
   """Test that all classes can be instantiated (have the required implemented

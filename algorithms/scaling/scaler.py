@@ -17,6 +17,7 @@ from dials_scaling_ext import row_multiply
 from dials_scaling_ext import calc_sigmasq as cpp_calc_sigmasq
 #from libtbx import easy_mp
 from libtbx.table_utils import simple_table
+from libtbx.utils import Sorry
 from dials.array_family import flex
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.outlier_rejection import reject_outliers
@@ -30,7 +31,8 @@ from dials.algorithms.scaling.error_model.error_model import get_error_model
 from dials.algorithms.scaling.error_model.error_model_target import \
   ErrorModelTarget
 from dials.algorithms.scaling.parameter_handler import create_apm_factory
-from dials.algorithms.scaling.scaling_utilities import log_memory_usage, combine_intensities
+from dials.algorithms.scaling.scaling_utilities import log_memory_usage, \
+  combine_intensities, Reasons
 
 logger = logging.getLogger('dials')
 
@@ -138,44 +140,45 @@ class ScalerBase(object):
   @classmethod
   def _scaling_subset(cls, reflection_table, params):
     """Select reflections with non-zero weight and update scale weights."""
-    sel = ~(reflection_table.get_flags(reflection_table.flags.bad_for_scaling,
+    reasons = Reasons()
+    selection = ~(reflection_table.get_flags(reflection_table.flags.bad_for_scaling,
       all=False))
-    sel1 = reflection_table['Esq'] > params.reflection_selection.E2_range[0]
-    sel2 = reflection_table['Esq'] < params.reflection_selection.E2_range[1]
+    reasons.add_reason('suitable/selected for scaling', selection.count(True))
+    if reflection_table['Esq'].count(1.0) != reflection_table.size():
+      Elow, Ehigh = params.reflection_selection.E2_range
+      sel1 = reflection_table['Esq'] > Elow
+      sel2 = reflection_table['Esq'] < Ehigh
+      Esq_sel = sel1 & sel2
+      reasons.add_reason('in E^2 range (%s > E^2 > %s)' % (Ehigh, Elow), Esq_sel.count(True))
+      selection = selection & Esq_sel
     Ioversigma = reflection_table['intensity']/reflection_table['variance']**0.5
-    sel3 = Ioversigma > params.reflection_selection.Isigma_range[0]
-    if params.reflection_selection.Isigma_range[1] != 0.0:
-      sel3 = sel3 & (Ioversigma < params.reflection_selection.Isigma_range[1])
+    Isiglow, Isighigh = params.reflection_selection.Isigma_range
+    sel3 = Ioversigma > Isiglow
+    if Isighigh != 0.0:
+      sel3 = sel3 & (Ioversigma < Isighigh)
+      Isigreason = 'in I/sigma range (%s > I/sig > %s)' % (Isighigh, Isiglow)
+    else:
+      Isigreason = 'in I/sigma range (I/sig > %s)' % Isiglow
+    selection = selection & sel3
+    reasons.add_reason(Isigreason, sel3.count(True))
     if 'partiality' in reflection_table:
-      sel3 = sel3 & (reflection_table['partiality'] > \
-        params.reflection_selection.min_partiality)
-    selection = sel & sel1 & sel2 & sel3
+      min_partiality = params.reflection_selection.min_partiality
+      sel4 = reflection_table['partiality'] > min_partiality
+      reasons.add_reason('above min partiality ( > %s)' % min_partiality, sel4.count(True))
+      selection = selection & sel4
     if params.reflection_selection.d_range:
-      d_sel = reflection_table['d'] > params.reflection_selection.d_range[0]
-      d_sel = d_sel & (reflection_table['d'] <
-        params.reflection_selection.d_range[1])
+      d_min, d_max = params.reflection_selection.d_range
+      d_sel = reflection_table['d'] > d_min
+      d_sel = d_sel & (reflection_table['d'] < d_max)
       selection = selection & d_sel
+      reasons.add_reason('in d range (%s > d > %s)' % (d_max, d_min), d_sel.count(True))
     msg = ('{0} reflections were selected for scale factor determination \n'
       'out of {1} reflections. '.format(selection.count(True),
       reflection_table.size()))
-    if reflection_table['Esq'].count(1.0) == reflection_table.size():
-      msg += ('This was based on selection criteria of \n'
-      'Isigma_range = {0}, d_range = {1}, min_partiality = {2}.\n').format(
-        params.reflection_selection.Isigma_range
-        if params.reflection_selection.Isigma_range[1] != 0.0 else
-        [params.reflection_selection.Isigma_range[0], 'No max'],
-        params.reflection_selection.d_range,
-        params.reflection_selection.min_partiality)
-    else:
-      msg += ('This was based on selection criteria of \n'
-      'E2_range = {0}, Isigma_range = {1}, d_range = {2}, \n'
-      'min_partiality = {3}. \n').format(
-      params.reflection_selection.E2_range, params.reflection_selection.Isigma_range
-      if params.reflection_selection.Isigma_range[1] != 0.0 else
-      [params.reflection_selection.Isigma_range[0], 'No max'],
-      params.reflection_selection.d_range,
-      params.reflection_selection.min_partiality)
     logger.info(msg)
+    logger.info(reasons)
+    if selection.count(True) == 0:
+      raise Sorry('No reflections pass all user-controllable selection criteria')
     return selection
 
   def perform_scaling(self, target_type=ScalingTarget, engine=None,
@@ -192,7 +195,10 @@ class ScalerBase(object):
       refinery = scaling_refinery(engine=engine, scaler=self,
         target=target_type(), prediction_parameterisation=apm,
         max_iterations=max_iterations)
-      refinery.run()
+      try:
+        refinery.run()
+      except Exception as e:
+        logger.error(e, exc_info=True)
       ft = time.time()
       logger.info("Time taken for refinement %s", (ft - st))
       self = refinery.return_scaler()
@@ -207,7 +213,10 @@ class ScalerBase(object):
     refinery = error_model_refinery(engine='SimpleLBFGS',
       target=ErrorModelTarget(error_model(Ih_table.blocked_data_list[0])),
       max_iterations=100)
-    refinery.run()
+    try:
+      refinery.run()
+    except Exception as e:
+      logger.error(e, exc_info=True)
     error_model = refinery.return_error_model()
     self.update_error_model(error_model, update_Ih=update_Ih)
     logger.info(error_model)
