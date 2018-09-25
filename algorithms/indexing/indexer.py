@@ -556,6 +556,7 @@ class indexer_base(object):
         # Ensure the indexer and downstream applications treat this as set of stills
         from dxtbx.imageset import ImageSet#, MemImageSet
         reset_sets = []
+        imagesets = experiments.imagesets()
         for i in xrange(len(imagesets)):
           imagesweep = imagesets.pop(0)
           imageset = ImageSet(imagesweep.data(), imagesweep.indices())

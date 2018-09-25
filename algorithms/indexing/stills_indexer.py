@@ -358,7 +358,7 @@ class stills_indexer(indexer_base):
       self.refined_reflections = refined_reflections.select(
         refined_reflections['id'] > -1)
 
-      for i, imageset in enumerate(self.imagesets):
+      for i, imageset in enumerate(self.experiments.imagesets()):
         ref_sel = self.refined_reflections.select(
           self.refined_reflections['imageset_id'] == i)
         ref_sel = ref_sel.select(ref_sel['id'] >= 0)
@@ -377,7 +377,7 @@ class stills_indexer(indexer_base):
 
         spots_mm = self.reflections
         self.reflections = flex.reflection_table()
-        for i, imageset in enumerate(self.imagesets):
+        for i, imageset in enumerate(self.experiments.imagesets()):
           spots_sel = spots_mm.select(spots_mm['imageset_id'] == i)
           self.map_centroids_to_reciprocal_space(
             spots_sel, imageset.get_detector(), imageset.get_beam(),
@@ -421,7 +421,7 @@ class stills_indexer(indexer_base):
     if 'xyzcal.mm' in self.refined_reflections: # won't be there if refine_all_candidates = False and no isoforms
       self.refined_reflections['xyzcal.px'] = flex.vec3_double(
         len(self.refined_reflections))
-      for i, imageset in enumerate(self.imagesets):
+      for i, imageset in enumerate(self.experiments.imagesets()):
         imgset_sel = self.refined_reflections['imageset_id'] == i
         # set xyzcal.px field in self.refined_reflections
         refined_reflections = self.refined_reflections.select(imgset_sel)
@@ -449,7 +449,7 @@ class stills_indexer(indexer_base):
 
   def experiment_list_for_crystal(self, crystal):
     experiments = ExperimentList()
-    for imageset in self.imagesets:
+    for imageset in self.experiments.imagesets():
       experiments.append(Experiment(imageset=imageset,
                                     beam=imageset.get_beam(),
                                     detector=imageset.get_detector(),

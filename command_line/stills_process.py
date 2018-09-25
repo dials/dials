@@ -8,6 +8,7 @@ import logging
 import os
 
 from dxtbx.model.experiment_list import ExperimentListFactory
+from dxtbx.model.experiment_list import ExperimentList
 from libtbx.utils import Abort, Sorry
 
 logger = logging.getLogger('dials.command_line.stills_process')
@@ -198,20 +199,17 @@ def do_import(filename):
 
   if len(experiments) == 0:
     raise Abort("Could not load %s"%filename)
-  if len(experiments) > 1:
-    raise Abort("Got multiple experiments from file %s"%filename)
-
-  # Ensure the indexer and downstream applications treat this as set of stills
-  reset_sets = []
 
   from dxtbx.imageset import ImageSetFactory
-  for imageset in experiments.imagesets():
-    imageset = ImageSetFactory.imageset_from_anyset(imageset)
+  for experiment in experiments:
+    imageset = ImageSetFactory.imageset_from_anyset(experiment.imageset)
     imageset.set_scan(None)
     imageset.set_goniometer(None)
-    reset_sets.append(imageset)
+    experiment.imageset = imageset
+    experiment.scan = None
+    experiment.goniometer = None
 
-  return ExperimentListFactory.from_imageset(reset_sets)[0]
+  return experiments
 
 class Script(object):
   '''A class for running the script.'''
@@ -323,18 +321,19 @@ class Script(object):
       # Further handle single file still imagesets (like HDF5) by tagging each
       # frame using its index
 
-      experiments = [do_import(path) for path in all_paths]
+      experiments = ExperimentList()
+      for path in all_paths:
+        experiments.extend(do_import(path))
 
       indices = []
       basenames = []
       split_experiments = []
-      for imageset in experiments.imagesets():
+      for i, imageset in enumerate(experiments.imagesets()):
+        assert len(imageset) == 1
         paths = imageset.paths()
-        for i in xrange(len(imageset)):
-          subset = imageset[i:i+1]
-          split_experiments.append(ExperimentListFactory.from_imageset(subset)[0])
-          indices.append(i)
-          basenames.append(os.path.splitext(os.path.basename(paths[i]))[0])
+        indices.append(i)
+        basenames.append(os.path.splitext(os.path.basename(paths[0]))[0])
+        split_experiments.append(experiments[i:i+1])
       tags = []
       for i, basename in zip(indices, basenames):
         if basenames.count(basename) > 1:
@@ -348,7 +347,7 @@ class Script(object):
 
         for item in item_list:
           try:
-            for imageset in item[1].extract_imagesets():
+            for imageset in item[1].imagesets():
               update_geometry(imageset)
           except RuntimeError as e:
             logger.warning("Error updating geometry on item %s, %s"%(str(item[0]), str(e)))
@@ -580,8 +579,6 @@ class Processor(object):
     logger.info('Indexing Strong Spots')
     logger.info('*' * 80)
 
-    imagesets = experiments.imagesets()
-
     params = copy.deepcopy(self.params)
     # don't do scan-varying refinement during indexing
     params.refinement.parameterisation.scan_varying = False
@@ -593,7 +590,7 @@ class Processor(object):
 
     if params.indexing.stills.method_list is None:
       idxr = indexer_base.from_parameters(
-        reflections, imagesets, known_crystal_models=known_crystal_models,
+        reflections, experiments, known_crystal_models=known_crystal_models,
         params=params)
       idxr.index()
     else:
@@ -602,7 +599,7 @@ class Processor(object):
         params.indexing.method = method
         try:
           idxr = indexer_base.from_parameters(
-            reflections, imagesets,
+            reflections, experiments,
             params=params)
           idxr.index()
         except Exception as e:

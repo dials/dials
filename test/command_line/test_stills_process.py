@@ -52,7 +52,7 @@ def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):
       MemMasker([mem_img])))
   imgset.set_beam(mem_img.get_beam())
   imgset.set_detector(mem_img.get_detector())
-  experiments = ExperimentListFactory.from_imageset(imgset)[0]
+  experiments = ExperimentListFactory.from_imageset_and_crystal(imgset, None)
   processor.process_experiments("20130301060858801", experiments) # index/integrate the image
 
   result = "idx-20130301060858801_integrated.pickle"
