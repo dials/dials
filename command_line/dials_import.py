@@ -15,15 +15,15 @@ import logging
 
 import libtbx.load_env
 from libtbx.utils import Sorry
-from dxtbx.datablock import DataBlockFactory
+from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model.experiment_list import Experiment
 from dxtbx.model.experiment_list import ExperimentListDumper
-from dxtbx.datablock import DataBlockTemplateImporter
-from dxtbx.datablock import DataBlockFactory
+from dxtbx.model.experiment_list import ExperimentListTemplateImporter
+from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.imageset import ImageGrid
 from dxtbx.imageset import ImageSweep
-from dials.util.options import flatten_datablocks
+from dials.util.options import flatten_experiments
 
 logger = logging.getLogger('dials.command_line.import')
 
@@ -32,7 +32,7 @@ help_message = '''
 This program is used to import image data files into a format that can be used
 within dials. The program looks at the metadata for each image along with the
 filenames to determine the relationship between sets of images. Once all the
-images have been analysed, a datablock object is written to file which specifies
+images have been analysed, a experiments object is written to file which specifies
 the relationship between files. For example if two sets of images which belong
 to two rotation scans have been given, two image sweeps will be saved. Images to
 be processed are specified as command line arguments. Sometimes, there is a
@@ -42,7 +42,7 @@ as shown in the examples below. Alternatively a template can be specified using
 the template= parameter where the consecutive digits representing the image
 numbers in the filenames are replaced with '#' characters.
 
-The geometry can be set manually by either specifying a datablock.json file
+The geometry can be set manually by either specifying a experiments.json file
 containing the reference geometry, by setting the mosflm beam centre or by
 setting each variable to be overridden.
 
@@ -76,7 +76,7 @@ phil_scope = parse('''
 
   output {
 
-    experiments = datablock.json
+    experiments = imported_experiments.json
       .type = str
       .help = "The output JSON or pickle file"
 
@@ -116,7 +116,7 @@ phil_scope = parse('''
 
     reference_geometry = None
       .type = path
-      .help = "Experimental geometry from this datablock.json or "
+      .help = "Experimental geometry from this experiments.json or "
               "experiments.json will override the geometry from the "
               "image headers."
 
@@ -180,15 +180,15 @@ class ImageSetImporter(object):
 
   def __call__(self):
     '''
-    Import the datablocks
+    Import the experiments
 
     '''
 
-    # Get the datablocks
-    datablocks = flatten_datablocks(self.params.input.datablock)
+    # Get the experiments
+    experiments = flatten_experiments(self.params.input.experiments)
 
     # Check we have some filenames
-    if len(datablocks) == 0:
+    if len(experiments) == 0:
 
       # FIXME Should probably make this smarter since it requires editing here
       # and in dials.import phil scope
@@ -203,29 +203,25 @@ class ImageSetImporter(object):
       # Check if a template has been set and print help if not, otherwise try to
       # import the images based on the template input
       if len(self.params.input.template) > 0:
-        importer = DataBlockTemplateImporter(
+        importer = ExperimentListTemplateImporter(
           self.params.input.template,
           max(self.params.verbosity-1, 0),
           format_kwargs=format_kwargs)
-        datablocks = importer.datablocks
-        if len(datablocks) == 0:
-          raise Sorry('No datablocks found matching template %s' % self.params.input.template)
+        experiments = importer.experiments
+        if len(experiments) == 0:
+          raise Sorry('No experiments found matching template %s' % self.params.input.experiments)
       elif len(self.params.input.directory) > 0:
-        datablocks = DataBlockFactory.from_filenames(
+        experiments = ExperimentListFactory.from_filenames(
           self.params.input.directory,
           max(self.params.verbosity-1, 0),
           format_kwargs=format_kwargs)
-        if len(datablocks) == 0:
-          raise Sorry('No datablocks found in directories %s' % self.params.input.directory)
+        if len(experiments) == 0:
+          raise Sorry('No experiments found in directories %s' % self.params.input.directory)
       else:
-        raise Sorry('No datablocks found')
-    # if len(datablocks) > 1:
-    #   raise Sorry("More than 1 datablock found")
+        raise Sorry('No experimetns found')
 
     # Get a list of all imagesets
-    imageset_list = []
-    for db in datablocks:
-      imageset_list.extend(db.extract_imagesets())
+    imageset_list = experiments.imagesets()
 
     # Return the experiments
     return imageset_list
@@ -271,29 +267,18 @@ class ReferenceGeometryUpdater(object):
     reference_beam = None
     if params.input.reference_geometry is not None:
       from dxtbx.serialize import load
-      experiments, datablock = None, None
-      try:
-        experiments = load.experiment_list(
-          params.input.reference_geometry, check_format=False)
-      except Exception:
-        datablock = load.datablock(params.input.reference_geometry)
-      assert experiments or datablock, 'Could not import reference geometry'
-      if experiments:
-        assert len(experiments.detectors()) >= 1
-        assert len(experiments.beams()) >= 1
-        if len(experiments.detectors()) > 1:
-          raise Sorry('The reference geometry file contains %d detector definitions, but only a single definition is allowed.' % len(experiments.detectors()))
-        if len(experiments.beams()) > 1:
-          raise Sorry('The reference geometry file contains %d beam definitions, but only a single definition is allowed.' % len(experiments.beams()))
-        reference_detector = experiments.detectors()[0]
-        reference_beam = experiments.beams()[0]
-        reference_goniometer = experiments.goniometers()[0]
-      else:
-        assert len(datablock) == 1
-        imageset = datablock[0].extract_imagesets()[0]
-        reference_detector = imageset.get_detector()
-        reference_beam = imageset.get_beam()
-        reference_goniometer = imageset.get_goniometer()
+      experiments = None
+      experiments = load.experiment_list(params.input.reference_geometry, check_format=False)
+      assert experiments, 'Could not import reference geometry'
+      assert len(experiments.detectors()) >= 1
+      assert len(experiments.beams()) >= 1
+      if len(experiments.detectors()) > 1:
+        raise Sorry('The reference geometry file contains %d detector definitions, but only a single definition is allowed.' % len(experiments.detectors()))
+      if len(experiments.beams()) > 1:
+        raise Sorry('The reference geometry file contains %d beam definitions, but only a single definition is allowed.' % len(experiments.beams()))
+      reference_detector = experiments.detectors()[0]
+      reference_beam = experiments.beams()[0]
+      reference_goniometer = experiments.goniometers()[0]
     Reference = namedtuple("Reference", ["detector", "beam", "goniometer"])
     return Reference(
       detector=reference_detector,
@@ -447,7 +432,7 @@ class ManualGeometryUpdater(object):
 
 class MetaDataUpdater(object):
   '''
-  A class to manage updating the datablock metadata
+  A class to manage updating the experiments metadata
 
   '''
   def __init__(self, params):
@@ -551,7 +536,7 @@ class MetaDataUpdater(object):
               scan       = imageset.get_scan(i),
               crystal    = None))
 
-    # Return the datablock
+    # Return the experiments
     return experiments
 
   def update_lookup(self, imageset, lookup):
@@ -688,7 +673,7 @@ class Script(object):
       usage=usage,
       sort_options=True,
       phil=phil_scope,
-      read_datablocks_from_images=True,
+      read_experiments_from_images=True,
       epilog=help_message)
 
   def run(self):
@@ -729,18 +714,18 @@ class Script(object):
       logger.warn(msg)
 
     # Print help if no input
-    if (len(params.input.datablock) == 0 and not
+    if (len(params.input.experiments) == 0 and not
         (params.input.template or params.input.directory)):
       self.parser.print_help()
       return
 
-    # Setup the datablock importer
+    # Setup the experiments importer
     imageset_importer = ImageSetImporter(params)
 
     # Setup the metadata updater
     metadata_updater = MetaDataUpdater(params)
 
-    # Extract the datablocks and loop through
+    # Extract the experiments and loop through
     experiments = metadata_updater(imageset_importer())
 
     # Compute some numbers
@@ -851,7 +836,7 @@ class Script(object):
     Print a diff between sweeps.
 
     '''
-    from dxtbx.datablock import SweepDiff
+    from dxtbx.model.experiment_list import SweepDiff
     diff = SweepDiff(params.input.tolerance)
     text = diff(sweep1, sweep2)
     logger.info("\n".join(text))

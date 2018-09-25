@@ -10,8 +10,6 @@ help_message = '''
 
 Examples::
 
-  dials.show datablock.json
-
   dials.show experiments.json
 
   dials.show image_*.cbf
@@ -120,38 +118,33 @@ def run(args):
   import dials.util.banner
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments
-  from dials.util.options import flatten_datablocks
+  from dials.util.options import flatten_experiments
   from dials.util.options import flatten_reflections
   import libtbx.load_env
 
-  usage = "%s [options] datablock.json | experiments.json | image_*.cbf" %(
+  usage = "%s [options] experiments.json | image_*.cbf" %(
     libtbx.env.dispatcher_name)
 
   parser = OptionParser(
     usage=usage,
     phil=phil_scope,
     read_experiments=True,
-    read_datablocks=True,
-    read_datablocks_from_images=True,
+    read_experiments_from_images=True,
     read_reflections=True,
     check_format=False,
     epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
   experiments = flatten_experiments(params.input.experiments)
-  datablocks = flatten_datablocks(params.input.datablock)
   reflections = flatten_reflections(params.input.reflections)
 
-  if len(datablocks) == 0 and len(experiments) == 0 and len(reflections) == 0:
+  if len(experiments) == 0 and len(reflections) == 0:
     parser.print_help()
     exit()
 
   if len(experiments):
     print(show_experiments(
       experiments, show_scan_varying=params.show_scan_varying))
-
-  if len(datablocks):
-    print(show_datablocks(datablocks))
 
   if len(reflections):
     print(show_reflections(
@@ -202,31 +195,6 @@ def show_experiments(experiments, show_scan_varying=False):
       text.append(str(expt.profile))
     if expt.scaling_model is not None:
       text.append(str(expt.scaling_model.show()))
-  return '\n'.join(text)
-
-
-def show_datablocks(datablocks):
-  text = []
-  for datablock in datablocks:
-    if datablock.format_class() is not None:
-      text.append('Format: %s' %datablock.format_class())
-    imagesets = datablock.extract_imagesets()
-    for imageset in imagesets:
-      try: text.append(imageset.get_template())
-      except Exception: pass
-      detector = imageset.get_detector()
-      if detector is not None:
-        text.append(str(detector))
-        text.append('Max resolution (at corners): %f' % (
-          detector.get_max_resolution(imageset.get_beam().get_s0())))
-        text.append('Max resolution (inscribed):  %f' % (
-          detector.get_max_inscribed_resolution(imageset.get_beam().get_s0())))
-        text.append('')
-        text.append(show_beam(detector, imageset.get_beam()))
-      if imageset.get_scan() is not None:
-        text.append(str(imageset.get_scan()))
-      if imageset.get_goniometer() is not None:
-        text.append(str(imageset.get_goniometer()))
   return '\n'.join(text)
 
 

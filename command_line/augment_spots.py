@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 import iotbx.phil
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections
-from dials.util.options import flatten_datablocks
+from dials.util.options import flatten_experiments
 from dials.util.options import flatten_experiments
 from dials.array_family import flex
 
@@ -42,14 +42,14 @@ def add_max_pixels_to_reflections(reflections):
   reflections['max_valid'] = max_valid
   return
 
-def add_resolution_to_reflections(reflections, datablock):
+def add_resolution_to_reflections(reflections, experiments):
   '''Add column d to reflection list'''
 
   # will assume everything from the first detector at the moment - clearly this
   # could be incorrect, will have to do something a little smarter, later
 
   from dials.algorithms.indexing.indexer import indexer_base
-  imageset = datablock.extract_imagesets()[0]
+  imageset = experiments.imagesets()[0]
 
   if 'imageset_id' not in reflections:
     reflections['imageset_id'] = reflections['id']
@@ -66,7 +66,7 @@ def add_resolution_to_reflections(reflections, datablock):
 
   reflections['d'] = d_spacings
 
-def augment_reflections(reflections, params, datablock=None):
+def augment_reflections(reflections, params, experiments=None):
   '''Add extra columns of derived data.'''
 
   from dials.algorithms.shoebox import MaskCode
@@ -88,8 +88,8 @@ def augment_reflections(reflections, params, datablock=None):
   reflections['dy'] = dy
   reflections['n_signal'] = n_signal
 
-  if datablock:
-    add_resolution_to_reflections(reflections, datablock)
+  if experiments:
+    add_resolution_to_reflections(reflections, experiments)
 
 
   return reflections
@@ -98,32 +98,28 @@ def run(args):
   import libtbx.load_env
   from libtbx.utils import Sorry
   from dials.util import log
-  usage = "%s [options] [datablock.json] strong.pickle" % \
+  usage = "%s [options] [experiments.json] strong.pickle" % \
     libtbx.env.dispatcher_name
 
   parser = OptionParser(
     usage=usage,
     phil=phil_scope,
     read_reflections=True,
-    read_datablocks=True,
+    read_experiments=True,
     check_format=False,
     epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
 
-  datablocks = flatten_datablocks(params.input.datablock)
+  experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
 
   if len(reflections) != 1:
     raise Sorry("Exactly one reflection file needed")
-  if len(datablocks) > 1:
-    raise Sorry("0, 1 datablocks required")
+  if len(experiments) > 1:
+    raise Sorry("0, 1 experiments required")
 
-  datablock = None
-  if len(datablocks) == 1:
-    datablock = datablocks[0]
-
-  stronger = augment_reflections(reflections[0], params, datablock=datablock)
+  stronger = augment_reflections(reflections[0], params, experiments=experiments)
   stronger.as_pickle(params.output.reflections)
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@ from dials.algorithms.statistics.delta_cchalf import PerImageCChalfStatistics
 from os.path import join
 
 def test_compute_delta_cchalf(dials_regression):
-  
+
   filename = join(dials_regression, "delta_cchalf_test_data", "test.XDS_ASCII.mtz")
 
   # Read the mtz file
@@ -28,7 +28,7 @@ def test_compute_delta_cchalf(dials_regression):
 
   # Get the unit cell and space group
   unit_cell = intensities.unit_cell()
-  space_group = intensities.crystal_symmetry().space_group() 
+  space_group = intensities.crystal_symmetry().space_group()
 
   # The reflection data
   miller_index = intensities.indices()
@@ -58,4 +58,3 @@ def test_compute_delta_cchalf(dials_regression):
   assert abs(100*mean_cchalf - 94.582) < 1e-3
   assert abs(100*cchalf_i[0] - 79.587) < 1e-3
   assert abs(100*cchalf_i[1] - 94.238) < 1e-3
-

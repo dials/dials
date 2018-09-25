@@ -16,7 +16,7 @@ def test_export_single_bitmap(dials_regression, run_in_tmpdir):
 def test_export_multiple_bitmaps(dials_regression, run_in_tmpdir):
   data_dir = os.path.join(dials_regression, 'centroid_test_data')
   cmd = ' '.join([
-    'dials.export_bitmaps', '%s/datablock.json' %data_dir, 'prefix=variance_',
+    'dials.export_bitmaps', '%s/experiments.json' %data_dir, 'prefix=variance_',
     'binning=2', 'display=variance', 'colour_scheme=inverse_greyscale',
     'brightness=25', 'kernel_size=5,5'])
   result = easy_run.fully_buffered(cmd).raise_if_errors()
@@ -47,7 +47,7 @@ def test_export_multiple_bitmaps_with_specified_output_filename_fails(dials_regr
   with pytest.raises(RuntimeError):
     # setting output filename not allowed with >1 image
     cmd = ' '.join([
-      'dials.export_bitmaps', '%s/datablock.json' %data_dir, 'output_file=kittens.png'])
+      'dials.export_bitmaps', '%s/experiments.json' %data_dir, 'output_file=kittens.png'])
     result = easy_run.fully_buffered(cmd).raise_if_errors()
 
 def test_export_still_image(dials_regression, run_in_tmpdir):
@@ -73,6 +73,6 @@ def test_export_restricted_multiimage(dials_regression, run_in_tmpdir):
   data_dir = os.path.join(dials_regression, 'centroid_test_data')
 
   cmd = ' '.join([
-    'dials.export_bitmaps', '%s/datablock.json' %data_dir, 'imageset_index=2'])
+    'dials.export_bitmaps', '%s/experiments.json' %data_dir, 'imageset_index=2'])
   easy_run.fully_buffered(cmd).raise_if_errors()
   assert glob.glob("*.png") == ["image0002.png"], "Only one image exported"

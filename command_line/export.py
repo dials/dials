@@ -79,7 +79,7 @@ phil_scope = parse('''
   format = *mtz sadabs nxs mmcif mosflm xds best xds_ascii json
     .type = choice
     .help = "The output file format"
-  
+
   intensity = *profile *sum scale
     .type = choice(multi=True)
     .help = "Choice of which intensities to export. Allowed combinations:
@@ -570,7 +570,7 @@ class JsonExporter(object):
 
   '''
 
-  def __init__(self, params, reflections, datablocks=None, experiments=None):
+  def __init__(self, params, reflections, experiments=None):
     '''
     Initialise the exporter
 
@@ -581,14 +581,13 @@ class JsonExporter(object):
     '''
 
     # Check the input
-    if datablocks is None and experiments is None:
-      raise Sorry('json exporter requires a datablock or an experiment list')
+    if experiments is None:
+      raise Sorry('json exporter requires an experiment list')
     if len(reflections) == 0:
       raise Sorry('json exporter require a reflection table')
 
     # Save the stuff
     self.params = params
-    self.datablocks = datablocks
     self.experiments = experiments
     self.reflections = reflections
 
@@ -600,12 +599,7 @@ class JsonExporter(object):
     from dials.util import export_json
     from scitbx.array_family import flex
 
-    if self.experiments is not None and len(self.experiments) > 0:
-      imagesets = [expt.imageset for expt in self.experiments]
-    else:
-      imagesets = []
-      for datablock in self.datablocks:
-        imagesets.extend(datablock.extract_imagesets())
+    imagesets = [expt.imageset for expt in self.experiments]
 
     reflections = None
     assert len(self.reflections) == len(imagesets), (len(self.reflections), len(imagesets))
@@ -624,13 +618,13 @@ class JsonExporter(object):
     exporter.load_models(imagesets, reflections)
     exporter.as_json(
       filename=params.json.filename, compact=params.json.compact,
-      n_digits=params.json.n_digits, datablocks=datablocks)
+      n_digits=params.json.n_digits, experiments=experiments)
 
 
 if __name__ == '__main__':
   import libtbx.load_env
   from dials.util.options import OptionParser
-  from dials.util.options import flatten_datablocks
+  from dials.util.options import flatten_experiments
   from dials.util.options import flatten_experiments
   from dials.util.options import flatten_reflections
   from dials.util.version import dials_version
@@ -647,7 +641,6 @@ if __name__ == '__main__':
       usage=usage,
       read_experiments=True,
       read_reflections=True,
-      read_datablocks=True,
       check_format=False,
       phil=phil_scope,
       epilog=help_message)
@@ -656,7 +649,6 @@ if __name__ == '__main__':
       usage=usage,
       read_experiments=True,
       read_reflections=True,
-      read_datablocks=True,
       phil=phil_scope,
       epilog=help_message)
 
@@ -678,11 +670,11 @@ if __name__ == '__main__':
     logger.info(diff_phil)
 
   # Get the experiments and reflections
-  datablocks = flatten_datablocks(params.input.datablock)
+  experiments = flatten_experiments(params.input.experiments)
 
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
-  if len(reflections) == 0 and len(experiments) == 0 and len(datablocks) == 0:
+  if len(reflections) == 0 and len(experiments) == 0:
     parser.print_help()
     exit(0)
 
@@ -705,7 +697,7 @@ if __name__ == '__main__':
     exporter = BestExporter(params, experiments, reflections)
   elif params.format == 'json':
     exporter = JsonExporter(
-      params, reflections, datablocks=datablocks, experiments=experiments)
+      params, reflections, experiments=experiments)
   else:
     raise Sorry('Unknown format: %s' % params.format)
 

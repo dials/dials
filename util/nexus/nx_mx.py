@@ -407,7 +407,7 @@ def dump_details(entry):
   nx_note['date'] = strftime('%Y-%m-%dT%H:%M:%S')
   nx_note['type'] = 'text/plain'
   nx_note['description'] = 'Spot finding parameters'
-  nx_note['data'] = 'dials.find_spots datablock.json'
+  nx_note['data'] = 'dials.find_spots experiments.json'
   nx_note['sequence_index'] = 0
 
   nx_note = get_nx_note(nx_process, 'indexing')
@@ -415,7 +415,7 @@ def dump_details(entry):
   nx_note['date'] = strftime('%Y-%m-%dT%H:%M:%S')
   nx_note['type'] = 'text/plain'
   nx_note['description'] = 'Indexing parameters'
-  nx_note['data'] = 'dials.index datablock.json strong.pickle'
+  nx_note['data'] = 'dials.index experiments.json strong.pickle'
   nx_note['sequence_index'] = 1
 
   nx_note = get_nx_note(nx_process, 'refinement')

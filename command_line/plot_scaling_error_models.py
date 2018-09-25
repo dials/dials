@@ -39,7 +39,7 @@ def main(argv):
   '''the plotting script'''
 
   optionparser = OptionParser(usage=None, read_experiments=True,
-    read_reflections=True, read_datablocks=False, phil=phil_scope,
+    read_reflections=True, phil=phil_scope,
     check_format=False)
   params, _ = optionparser.parse_args(argv, show_diff_phil=False)
 
@@ -68,7 +68,7 @@ def main(argv):
   if params.output.plot_labels:
     if len(params.output.plot_labels) != len(reflections):
       print("Length of plot labels not equal to number of datasets, exiting")
-      sys.exit() 
+      sys.exit()
 
   experiments, reflections = assign_unique_identifiers(
       experiments, reflections)
@@ -127,7 +127,7 @@ def main(argv):
       label = None
     normal_probability_plot(error_model, filename=params.output.plot_out, label=label)
 
-def normal_probability_plot(error_model, filename, mode='full', gs='none', 
+def normal_probability_plot(error_model, filename, mode='full', gs='none',
   opacity=1.0, label=None, color='b'):
   from scitbx.math import distributions
   import numpy as np

@@ -9,13 +9,13 @@ def test_export_best(dials_regression, run_in_tmpdir):
 
   result = procrunner.run(["dials.import", "template=" + path])
   assert not result['exitcode'] and not result['stderr']
-  result = procrunner.run(["dials.find_spots", "datablock.json"])
+  result = procrunner.run(["dials.find_spots", "imported_experiments.json"])
   assert not result['exitcode'] and not result['stderr']
-  result = procrunner.run(["dials.index", "datablock.json", "strong.pickle", "space_group=P422"])
+  result = procrunner.run(["dials.index", "imported_experiments.json", "strong.pickle", "space_group=P422"])
   assert not result['exitcode'] and not result['stderr']
   result = procrunner.run([
       "dials.integrate",
-      "experiments.json",
+      "indexed_experiments.json",
       "indexed.pickle",
       "prediction.padding=0",
       "sigma_m_algorithm=basic",

@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import iotbx.phil
-from dials.util.options import flatten_datablocks
+from dials.util.options import flatten_experiments
 from dials.util.options import OptionParser
 import libtbx.load_env
 from libtbx.utils import Sorry
@@ -19,7 +19,7 @@ Examples::
 
   dials.export_bitmaps image.cbf
 
-  dials.export_bitmaps datablock.json
+  dials.export_bitmaps experiments.json
 
   dials.export_bitmaps image.cbf display=variance colour_scheme=inverse_greyscale
 
@@ -90,24 +90,24 @@ colour_schemes = {
 }
 
 def run(args):
-  usage = "%s [options] datablock.json | image.cbf" %libtbx.env.dispatcher_name
+  usage = "%s [options] experiments.json | image.cbf" %libtbx.env.dispatcher_name
 
   parser = OptionParser(
     usage=usage,
     phil=phil_scope,
-    read_datablocks=True,
-    read_datablocks_from_images=True,
+    read_experiments=True,
+    read_experiments_from_images=True,
     check_format=True,
     epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
 
-  datablocks = flatten_datablocks(params.input.datablock)
-  if len(datablocks) == 0:
+  experiments = flatten_experiments(params.input.experiments)
+  if len(experiments) == 0:
     parser.print_help()
     exit(0)
 
-  imagesets = datablocks[0].extract_imagesets()
+  imagesets = experiments.imagesets()
 
   for imageset in imagesets:
     imageset_as_bitmaps(imageset, params)

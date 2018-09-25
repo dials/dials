@@ -12,7 +12,8 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
-from dxtbx.datablock import DataBlockDumper
+from dxtbx.model.experiment_list import ExperimentListDumper
+from dxtbx.model.experiment_list import ExperimentList
 from libtbx.utils import Sorry
 
 logger = logging.getLogger('dials.command_line.import_stream')
@@ -28,7 +29,7 @@ phil_scope = parse('''
 
   output {
 
-    datablock = datablock.json
+    experiments = experiments.json
       .type = str
       .help = "The output JSON or pickle file"
 
@@ -100,7 +101,6 @@ class Script(object):
     from os.path import join, exists
     import os
     import json
-    from dxtbx.datablock import DataBlock
 
     # Parse the command line arguments in two passes to set up logging early
     params, options = self.parser.parse_args(show_diff_phil=False, quick_parse=True)
@@ -159,8 +159,8 @@ class Script(object):
         with open(filename, "w") as outfile:
           json.dump(obj.header, outfile)
         imageset = obj.as_imageset(filename)
-        datablocks = [DataBlock([imageset])]
-        self.write_datablocks(datablocks, params)
+        experiments = ExperimentListFactory.from_imageset(imageset)
+        self.write_experiments(experiments, params)
       elif obj.is_image():
         assert imageset is not None
         filename = join(
@@ -182,16 +182,16 @@ class Script(object):
     # Close the stream
     stream.close()
 
-  def write_datablocks(self, datablocks, params):
+  def write_experiments(self, experiments, params):
     '''
-    Output the datablock to file.
+    Output the experiments to file.
 
     '''
-    if params.output.datablock:
+    if params.output.experiments:
       logger.info("-" * 80)
-      logger.info('Writing datablocks to %s' % params.output.datablock)
-      dump = DataBlockDumper(datablocks)
-      dump.as_file(params.output.datablock, compact=params.output.compact)
+      logger.info('Writing experiments to %s' % params.output.experiments)
+      dump = ExperimentListDumper(experiments)
+      dump.as_file(params.output.experiments, compact=params.output.compact)
 
 
 

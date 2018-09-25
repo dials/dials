@@ -14,8 +14,6 @@ from dials.array_family import flex
 from wxtbx.phil_controls.intctrl import IntCtrl as PhilIntCtrl
 from wxtbx.phil_controls import EVT_PHIL_CONTROL
 
-from dxtbx.datablock import DataBlockFilenameImporter
-
 from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
 
 from .viewer_tools import LegacyChooserAdapter, ImageCollectionWithSelection, ImageChooserControl
@@ -40,12 +38,8 @@ def create_load_image_event(destination, filename):
 
 class SpotFrame(XrayFrame) :
   def __init__ (self, *args, **kwds) :
-    self.datablock = kwds["datablock"]
     self.experiments = kwds["experiments"]
-    if self.datablock is not None:
-      self.imagesets = self.datablock.extract_imagesets()
-      self.crystals = None
-    elif len(self.experiments.imagesets()) > 0:
+    if len(self.experiments.imagesets()) > 0:
       assert(len(self.experiments.imagesets()) == 1)
       self.imagesets = self.experiments.imagesets()
       self.crystals = self.experiments.crystals()
@@ -53,7 +47,7 @@ class SpotFrame(XrayFrame) :
       raise RuntimeError("No imageset could be constructed")
 
     self.reflections = kwds["reflections"]
-    del kwds["datablock"]; del kwds["experiments"]; del kwds["reflections"] #otherwise wx complains
+    del kwds["experiments"]; del kwds["reflections"] #otherwise wx complains
 
     # Store the list of images we can view
     self.images = ImageCollectionWithSelection()
@@ -515,9 +509,9 @@ class SpotFrame(XrayFrame) :
       # dxtbx/Boost cannot currently handle unicode here
       if isinstance(file_name_or_data, unicode):
         file_name_or_data = file_name_or_data.encode("utf-8")
-      importer = DataBlockFilenameImporter([file_name_or_data])
-      assert len(importer.datablocks) == 1
-      imagesets = importer.datablocks[0].extract_imagesets()
+      importer = ExperimentsFilenameImporter([file_name_or_data])
+      assert len(importer.experiments) == 1
+      imagesets = importer.experiments.imagesets()
       imageset = imagesets[0]
       file_name_or_data = chooser_wrapper(imageset, imageset.indices()[0])
       self.add_file_name_or_data(file_name_or_data)

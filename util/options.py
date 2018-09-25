@@ -165,10 +165,9 @@ class Importer(object):
   ''' A class to import the command line arguments. '''
 
   def __init__(self, args,
-               read_datablocks=False,
                read_experiments=False,
                read_reflections=False,
-               read_datablocks_from_images=False,
+               read_experiments_from_images=False,
                check_format=True,
                verbose=False,
                compare_beam=None,
@@ -186,21 +185,18 @@ class Importer(object):
     These are the types we can import:
      - images: a list of images
      - reflections : a list of reflections
-     - datablocks : a list of datablocks
      - experiments: a list of experiments
 
     :param args: The arguments to parse
-    :param read_datablocks: Try to read the datablocks
     :param read_experiments: Try to read the experiments
     :param read_reflections: Try to read the reflections
-    :param read_datablocks_from_images: Try to read the datablocks from images
+    :param read_experiments_from_images: Try to read the experiments from images
     :param check_format: Check the format when reading images
     :param verbose: True/False print out some stuff
 
     '''
 
     # Initialise output
-    self.datablocks = []
     self.experiments = []
     self.reflections = []
     self.unhandled = args
@@ -208,8 +204,8 @@ class Importer(object):
     self.handling_errors =  defaultdict(list)
 
     # First try to read image files
-    if read_datablocks_from_images:
-      self.unhandled = self.try_read_datablocks_from_images(
+    if read_experiments_from_images:
+      self.unhandled = self.try_read_experiments_from_images(
         self.unhandled,
         verbose,
         compare_beam,
@@ -218,17 +214,12 @@ class Importer(object):
         scan_tolerance,
         format_kwargs)
 
-    # Second try to read data block files
-    if read_datablocks:
-      self.unhandled = self.try_read_datablocks(
-        self.unhandled, check_format, verbose)
-
-    # Third try to read experiment files
+    # Second try to read experiment files
     if read_experiments:
       self.unhandled = self.try_read_experiments(
         self.unhandled, check_format, verbose)
 
-    # Fourth try to read reflection files
+    # Third try to read reflection files
     if read_reflections:
       self.unhandled = self.try_read_reflections(
         self.unhandled, verbose)
@@ -244,7 +235,7 @@ class Importer(object):
           exception=exception)
     )
 
-  def try_read_datablocks_from_images(self,
+  def try_read_experiments_from_images(self,
                                       args,
                                       verbose,
                                       compare_beam,
@@ -260,8 +251,8 @@ class Importer(object):
     :return: Unhandled arguments
 
     '''
-    from dxtbx.datablock import DataBlockFactory
-    from dials.util.phil import FilenameDataWrapper, DataBlockConverters
+    from dxtbx.model.experiment_list import ExperimentListFactory
+    from dials.util.phil import FilenameDataWrapper, ExperimentListConverters
     from glob import glob
 
     # If filenames contain wildcards, expand
@@ -274,7 +265,7 @@ class Importer(object):
     args = args_new
 
     unhandled = []
-    datablocks = DataBlockFactory.from_filenames(
+    experiments = ExperimentListFactory.from_filenames(
       args,
       verbose=verbose,
       unhandled=unhandled,
@@ -283,37 +274,11 @@ class Importer(object):
       compare_goniometer=compare_goniometer,
       scan_tolerance=scan_tolerance,
       format_kwargs=format_kwargs)
-    if len(datablocks) > 0:
+    if len(experiments) > 0:
       filename = "<image files>"
-      obj = FilenameDataWrapper(filename, datablocks)
-      DataBlockConverters.cache[filename] = obj
-      self.datablocks.append(obj)
-    return unhandled
-
-  def try_read_datablocks(self, args, check_format, verbose):
-    '''
-    Try to import imagesets.
-
-    :param args: The input arguments
-    :param check_format: True/False check the image format
-    :param verbose: Print verbose output
-    :returns: Unhandled arguments
-
-    '''
-    from dials.util.phil import DataBlockConverters
-    from dxtbx.datablock import InvalidDataBlockError
-
-    converter = DataBlockConverters(check_format)
-    unhandled = []
-    for argument in args:
-      try:
-        self.datablocks.append(converter.from_string(argument))
-      except InvalidDataBlockError as e:
-        unhandled.append(argument)
-        self._handle_converter_error(argument, e, type="DataBlock", validation=True)
-      except Exception as e:
-        self._handle_converter_error(argument, e, type="DataBlock")
-        unhandled.append(argument)
+      obj = FilenameDataWrapper(filename, experiments)
+      ExperimentListConverters.cache[filename] = obj
+      self.experiments.append(obj)
     return unhandled
 
   def try_read_experiments(self, args, check_format, verbose):
@@ -372,19 +337,17 @@ class PhilCommandParser(object):
 
   def __init__(self,
                phil=None,
-               read_datablocks=False,
                read_experiments=False,
                read_reflections=False,
-               read_datablocks_from_images=False,
+               read_experiments_from_images=False,
                check_format=True):
     '''
     Initialise the parser.
 
     :param phil: The phil scope
-    :param read_datablocks: Try to read the datablocks
     :param read_experiments: Try to read the experiments
     :param read_reflections: Try to read the reflections
-    :param read_datablocks_from_images: Try to read the datablocks from images
+    :param read_experiments_from_images: Try to read the experiments from images
     :param check_format: Check the format when reading images
 
     '''
@@ -397,10 +360,9 @@ class PhilCommandParser(object):
       self._system_phil = phil
 
     # Set the flags
-    self._read_datablocks = read_datablocks
     self._read_experiments = read_experiments
     self._read_reflections = read_reflections
-    self._read_datablocks_from_images = read_datablocks_from_images
+    self._read_experiments_from_images = read_experiments_from_images
     self._check_format = check_format
 
     # Adopt the input scope
@@ -453,9 +415,9 @@ class PhilCommandParser(object):
     :return: The options and parameters and (optionally) unhandled arguments
 
     '''
-    from dxtbx.datablock import BeamComparison
-    from dxtbx.datablock import DetectorComparison
-    from dxtbx.datablock import GoniometerComparison
+    from dxtbx.model.experiment_list import BeamComparison
+    from dxtbx.model.experiment_list import DetectorComparison
+    from dxtbx.model.experiment_list import GoniometerComparison
     from dials.util.phil import parse
 
     # Parse the command line phil parameters
@@ -505,7 +467,7 @@ class PhilCommandParser(object):
       return params, unhandled
 
     # Create some comparison functions
-    if self._read_datablocks_from_images:
+    if self._read_experiments_from_images:
       compare_beam = BeamComparison(
         wavelength_tolerance=params.input.tolerance.beam.wavelength,
         direction_tolerance=params.input.tolerance.beam.direction,
@@ -540,10 +502,9 @@ class PhilCommandParser(object):
     # Try to import everything
     importer = Importer(
       unhandled,
-      read_datablocks=self._read_datablocks,
       read_experiments=self._read_experiments,
       read_reflections=self._read_reflections,
-      read_datablocks_from_images=self._read_datablocks_from_images,
+      read_experiments_from_images=self._read_experiments_from_images,
       check_format=self._check_format,
       verbose=verbose,
       compare_beam=compare_beam,
@@ -556,8 +517,6 @@ class PhilCommandParser(object):
     self.handling_errors = importer.handling_errors
 
     # Add the cached arguments
-    for obj in importer.datablocks:
-      params.input.datablock.append(obj)
     for obj in importer.experiments:
       params.input.experiments.append(obj)
     for obj in importer.reflections:
@@ -579,10 +538,9 @@ class PhilCommandParser(object):
 
     # Create the input scope
     require_input_scope = (
-      self._read_datablocks or
       self._read_experiments or
       self._read_reflections or
-      self._read_datablocks_from_images)
+      self._read_experiments_from_images)
     if not require_input_scope:
       return None
     input_phil_scope = parse('input {}')
@@ -590,22 +548,8 @@ class PhilCommandParser(object):
     assert(len(main_scope) == 1)
     main_scope = main_scope[0]
 
-    # Add the datablock phil scope
-    if self._read_datablocks or self._read_datablocks_from_images:
-      phil_scope = parse('''
-        datablock = None
-          .type = datablock(check_format=%r)
-          .multiple = True
-          .help = "The datablock file path"
-      ''' % self._check_format)
-      main_scope.adopt_scope(phil_scope)
-
-    # If reading images, add some more parameters
-    if self._read_datablocks_from_images:
-      main_scope.adopt_scope(tolerance_phil_scope)
-
     # Add the experiments phil scope
-    if self._read_experiments:
+    if self._read_experiments or self._read_experiments_from_images:
       phil_scope = parse('''
         experiments = None
           .type = experiment_list(check_format=%r)
@@ -613,6 +557,10 @@ class PhilCommandParser(object):
           .help = "The experiment list file path"
       ''' % self._check_format)
       main_scope.adopt_scope(phil_scope)
+
+    # If reading images, add some more parameters
+    if self._read_experiments_from_images:
+      main_scope.adopt_scope(tolerance_phil_scope)
 
     # Add the reflections scope
     if self._read_reflections:
@@ -747,10 +695,9 @@ class OptionParser(OptionParserBase):
 
   def __init__(self,
                phil=None,
-               read_datablocks=False,
                read_experiments=False,
                read_reflections=False,
-               read_datablocks_from_images=False,
+               read_experiments_from_images=False,
                check_format=True,
                sort_options=False,
                **kwargs):
@@ -758,10 +705,9 @@ class OptionParser(OptionParserBase):
     Initialise the class.
 
     :param phil: The phil scope
-    :param read_datablocks: Try to read the datablocks
     :param read_experiments: Try to read the experiments
     :param read_reflections: Try to read the reflections
-    :param read_datablocks_from_images: Try to read the datablocks from images
+    :param read_experiments_from_images: Try to read the experiments from images
     :param check_format: Check the format when reading images
     :param sort_options: Show argument sorting options
 
@@ -771,10 +717,9 @@ class OptionParser(OptionParserBase):
     # Create the phil parser
     self._phil_parser = PhilCommandParser(
       phil=phil,
-      read_datablocks=read_datablocks,
       read_experiments=read_experiments,
       read_reflections=read_reflections,
-      read_datablocks_from_images=read_datablocks_from_images,
+      read_experiments_from_images=read_experiments_from_images,
       check_format=check_format)
 
     # Initialise the option parser
@@ -1067,19 +1012,6 @@ def flatten_reflections(filename_object_list):
   result = []
   for i in range(len(filename_object_list)):
     result.append(filename_object_list[i].data)
-  return result
-
-def flatten_datablocks(filename_object_list):
-  '''
-  Flatten a list of datablocks
-
-  :param filename_object_list: The parameter item
-  :return: The flattened list of datablocks
-
-  '''
-  result = []
-  for i in range(len(filename_object_list)):
-    result.extend(filename_object_list[i].data)
   return result
 
 def flatten_experiments(filename_object_list):

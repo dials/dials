@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import iotbx.phil
-from dials.util.options import OptionParser, flatten_datablocks
+from dials.util.options import OptionParser, flatten_experiments
 from libtbx.utils import Sorry
 from scitbx.array_family import flex
 
@@ -16,7 +16,7 @@ noise being identified as diffraction spots.
 
 Examples::
 
-  dials.estimate_gain datablock.json
+  dials.estimate_gain experiments.json
 
 '''
 
@@ -119,14 +119,14 @@ def estimate_gain(imageset, kernel_size=(10,10), output_gain_map=None, max_image
 def run(args):
   import libtbx.load_env
   from libtbx.utils import Sorry
-  usage = "%s [options] datablock.json" %libtbx.env.dispatcher_name
+  usage = "%s [options] experiments.json" %libtbx.env.dispatcher_name
 
   parser = OptionParser(
     usage=usage,
     phil=phil_scope,
-    read_datablocks=True,
+    read_experiments=True,
     check_format=True,
-    read_datablocks_from_images=True,
+    read_experiments_from_images=True,
     epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=False)
@@ -141,17 +141,15 @@ def run(args):
     print('The following parameters have been modified:\n')
     print(diff_phil)
 
-  datablocks = flatten_datablocks(params.input.datablock)
+  experiments = flatten_experiments(params.input.experiments)
 
-  if len(datablocks) == 0:
+  if len(experiments) == 0:
     parser.print_help()
     return
-  elif len(datablocks) > 1:
-    raise Sorry("Only one DataBlock can be processed at a time")
+  elif len(experiments) > 1:
+    raise Sorry("Only one experiment can be processed at a time")
   else:
-    imagesets = []
-    for datablock in datablocks:
-      imagesets.extend(datablock.extract_imagesets())
+    imagesets = experiments.imagesets()
 
   assert len(imagesets) == 1
   imageset = imagesets[0]

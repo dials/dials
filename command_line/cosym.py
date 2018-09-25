@@ -70,7 +70,6 @@ def run(args):
     #usage=usage,
     phil=phil_scope,
     read_reflections=True,
-    read_datablocks=False,
     read_experiments=True,
     check_format=False,
     #epilog=help_message

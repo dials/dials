@@ -26,12 +26,12 @@ def random_rotation(angle_min=0, angle_max=360):
 
 @pytest.mark.parametrize('space_group_symbol', bravais_types.acentric)
 def test_assign_indices(dials_regression, space_group_symbol):
-  datablock_json = os.path.join(
+  experiments_json = os.path.join(
     dials_regression, "indexing_test_data",
     "i04_weak_data", "datablock_orig.json")
 
-  datablock = load.datablock(datablock_json, check_format=False)[0]
-  sweep = datablock.extract_imagesets()[0]
+  experiments = load.experiment_list(experiments_json, check_format=False)
+  sweep = experiments.imagesets()[0]
 
   sweep = sweep[:20]
 

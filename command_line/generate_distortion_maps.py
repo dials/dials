@@ -9,13 +9,13 @@ import libtbx.load_env
 help_message = '''
 
 Generate dx.pickle, dy.pickle distortion maps for a detector model picked up
-from either an image file or a datablock.json. These maps can be used to
+from an image file or experiment.json. These maps can be used to
 represent distortion within the millimetre to pixel mapping
 
 Examples::
 
   {0} image_001.cbf dx=0.5 dy=1.5
-  {0} datablock.json mode=ellipse phi=0 l2=0.95
+  {0} experiments.json mode=ellipse phi=0 l2=0.95
 
 '''.format(libtbx.env.dispatcher_name)
 
@@ -155,7 +155,7 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
 
 def main():
   from dials.util.options import OptionParser
-  from dials.util.options import flatten_datablocks
+  from dials.util.options import flatten_experiments
   import libtbx.load_env
 
   usage = "%s [options] image_*.cbf" % (
@@ -164,22 +164,21 @@ def main():
   parser = OptionParser(
     usage=usage,
     phil=scope,
-    read_datablocks=True,
-    read_datablocks_from_images=True,
+    read_experiments=True,
+    read_experiments_from_images=True,
     check_format=False,
     epilog=help_message)
 
   params, options = parser.parse_args()
-  datablocks = flatten_datablocks(params.input.datablock)
+  experiments = flatten_experiments(params.input.experiments)
 
-  if len(datablocks) == 0:
+  if len(experiments) == 0:
     parser.print_help()
     exit()
 
-  assert len(datablocks) == 1
+  assert len(experiments) == 1
 
-  datablock = datablocks[0]
-  imagesets = datablock.extract_imagesets()
+  imagesets = experiments.imagesets()
 
   assert len(imagesets) == 1
 

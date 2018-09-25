@@ -123,8 +123,7 @@ class Script(object):
       phil=phil_scope,
       epilog=help_message,
       read_reflections=True,
-      read_experiments=True,
-      read_datablocks=True)
+      read_experiments=True)
 
   def analysis(self, reflections):
     '''Print a table of flags present in the reflections file'''
@@ -202,7 +201,7 @@ class Script(object):
     '''Execute the script.'''
     from dials.array_family import flex
     from dials.util.options import flatten_reflections
-    from dials.util.options import flatten_datablocks
+    from dials.util.options import flatten_experiments
     from dials.util.options import flatten_experiments
 
     # Parse the command line
@@ -218,15 +217,6 @@ class Script(object):
     reflections = reflections[0]
 
     experiments = flatten_experiments(params.input.experiments)
-    datablocks = flatten_datablocks(params.input.datablock)
-    if len(experiments) > 1 or datablocks:
-      if [len(datablocks), len(experiments)].count(1) != 1:
-          self.parser.print_help()
-          raise Sorry("Either a datablock or an experiment list may be provided"
-                      " but not both together.")
-    if datablocks:
-      datablock = datablocks[0]
-      imagesets = datablock.extract_imagesets()
     if len(experiments) > 1:
       imagesets = experiments.imagesets()
 

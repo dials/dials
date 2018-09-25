@@ -7,6 +7,9 @@ from __future__ import absolute_import, division, print_function
 import iotbx.phil
 from scitbx.array_family import flex
 from libtbx.utils import Sorry
+from dials.algorithms.spot_finding.factory import SpotFinderFactory
+from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
+from dxtbx.model.experiment_list import ExperimentList, Experiment
 
 help_message = '''
 
@@ -37,7 +40,7 @@ def main():
 def run(args):
 
   from dials.util.options import OptionParser
-  from dials.util.options import flatten_datablocks, flatten_experiments
+  from dials.util.options import flatten_experiments
   import libtbx.load_env
 
   usage = "%s [options] image_*.cbf" % (
@@ -46,8 +49,6 @@ def run(args):
   parser = OptionParser(
     usage=usage,
     phil=phil_scope,
-    read_datablocks=True,
-    read_datablocks_from_images=True,
     read_experiments=True,
     epilog=help_message)
 
@@ -55,20 +56,15 @@ def run(args):
 
   # Ensure we have either a data block or an experiment list
   experiments = flatten_experiments(params.input.experiments)
-  datablocks = flatten_datablocks(params.input.datablock)
-  if [len(datablocks), len(experiments)].count(1) != 1:
+  if len(experiments) != 1:
       self.parser.print_help()
-      print("Please pass either a datablock or an experiment list\n")
+      print("Please pass an experiment list\n")
       return
 
-  if datablocks:
-    datablock = datablocks[0]
-    imagesets = datablock.extract_imagesets()
-  else:
-    imagesets = experiments.imagesets()
+  imagesets = experiments.imagesets()
 
   if len(imagesets) != 1:
-    raise Sorry("Please pass a datablock or experiment list that contains a "
+    raise Sorry("Please pass an experiment list that contains a "
       "single imageset")
   imageset = imagesets[0]
 
@@ -147,16 +143,18 @@ def background(imageset, indx, n_bins, mask_params=None):
   assert(len(data) == 1)
   data = data[0]
 
-  from dials.algorithms.spot_finding.factory import SpotFinderFactory
-  from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
-
   data = data.as_double()
-
-  from dxtbx import datablock
 
   spot_params = spot_phil.fetch(source=parse("")).extract()
   threshold_function = SpotFinderFactory.configure_threshold(
-    spot_params, datablock.DataBlock([imageset]))
+    spot_params,
+    ExperimentList(
+      [Experiment(
+        beam=imageset.get_beam(),
+        detector=imageset.get_detector(),
+        goniometer=imageset.get_goniometer(),
+        scan=imageset.get_scan(),
+        imageset=imageset)]))
   peak_pixels = threshold_function.compute_threshold(data, mask)
   signal = data.select(peak_pixels.iselection())
   background_pixels = (mask & ~peak_pixels)

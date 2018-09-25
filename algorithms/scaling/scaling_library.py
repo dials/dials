@@ -62,6 +62,8 @@ def choose_scaling_intensities(reflection_table, intensity_choice='profile'):
 
   reflection_table['intensity'] = reflection_table[intstr] * conv
   reflection_table['variance'] = reflection_table[varstr] * conv * conv
+  if 'partiality.inv.variance' in reflection_table and intstr == 'intensity.sum.value':
+    reflection_table['variance'] += reflection_table[intstr] * reflection_table['partiality.inv.variance']
 
   variance_mask = reflection_table['variance'] <= 0.0
   reflection_table.set_flags(variance_mask,

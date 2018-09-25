@@ -20,8 +20,7 @@ Just display the mask for the specified image
 from __future__ import absolute_import, division, print_function
 
 from dials.array_family import flex
-from dials.util.options import flatten_datablocks, flatten_reflections
-from dxtbx.datablock import DataBlock, DataBlockDumper
+from dials.util.options import flatten_experiments, flatten_reflections
 from libtbx.phil import parse
 from libtbx.utils import Sorry
 
@@ -40,7 +39,7 @@ Utility to just display the mask for the desired image
 
 Examples::
 
-  dev.dials.show_mask datablock.json image=1
+  dev.dials.show_mask experiments.json image=1
 
 '''
 
@@ -61,7 +60,7 @@ class Script(object):
     self.parser = OptionParser(
       usage=usage,
       phil=phil_scope,
-      read_datablocks=True,
+      read_experiments=True,
       epilog=help_message)
 
   def run(self):
@@ -70,11 +69,9 @@ class Script(object):
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
 
-    datablocks = flatten_datablocks(params.input.datablock)
-    assert len(datablocks) == 1
-    imagesets = datablocks[0].extract_imagesets()
-    assert len(imagesets) == 1
-    imageset = imagesets[0]
+    experiments = flatten_experiments(params.input.experiments)
+    assert len(experiments) == 1
+    imageset = experiments[0].imageset
 
     mask = imageset.get_mask(params.image)
 

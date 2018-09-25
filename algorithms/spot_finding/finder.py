@@ -753,7 +753,7 @@ class SpotFinder(object):
     '''
     Do the spot finding.
 
-    :param datablock: The datablock to process
+    :param experiments: The experiments to process
     :return: The observed spots
 
     '''

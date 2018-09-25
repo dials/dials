@@ -389,7 +389,7 @@ def export_mtz(integrated_data, experiment_list, params):
 
   # Clean up the data with the passed in options
   integrated_data = filter_reflection_table(integrated_data,
-    intensity_choice=params.intensity, 
+    intensity_choice=params.intensity,
     partiality_threshold=params.mtz.partiality_threshold,
     combine_partials=params.mtz.combine_partials,
     min_isigi=params.mtz.min_isigi, filter_ice_rings=params.mtz.filter_ice_rings,

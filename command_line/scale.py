@@ -15,7 +15,7 @@ contains reflection data and scale models, from one or more experiments.
 The output pickle file contains intensity.scale.value, the unscaled intensity
 values used to determine the scaling model, and a inverse scale factor per
 reflection. These values can then be used to merge the data for downstream
-structural solution. Alternatively, the scaled_experiments.json and 
+structural solution. Alternatively, the scaled_experiments.json and
 scaled.pickle files can be passed back to dials.scale, and further scaling will
 be performed, starting from where the previous job finished.
 
@@ -395,7 +395,7 @@ class Script(object):
       from dials.command_line.export import MTZExporter
       from dials.command_line.export import phil_scope as export_phil_scope
       parser = OptionParser(read_experiments=False, read_reflections=False,
-        read_datablocks=False, phil=export_phil_scope)
+        phil=export_phil_scope)
       params, _ = parser.parse_args(args=[], show_diff_phil=False)
       params.intensity = ['scale']
       params.mtz.partiality_threshold = self.params.cut_data.partiality_cutoff
@@ -518,7 +518,7 @@ if __name__ == "__main__":
     usage = '''Usage: dials.scale integrated.pickle integrated_experiments.json
 [integrated.pickle(2) integrated_experiments.json(2) ....] [options]'''
     optionparser = OptionParser(usage=usage, read_experiments=True,
-      read_reflections=True, read_datablocks=False, phil=phil_scope,
+      read_reflections=True, phil=phil_scope,
       check_format=False, epilog=help_message)
     params, _ = optionparser.parse_args(show_diff_phil=False)
     if not params.input.experiments or not params.input.reflections:

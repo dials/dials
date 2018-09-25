@@ -22,9 +22,9 @@ This program attempts to find sets of images with shared models
 
 Examples::
 
-  dials.find_shared_models datablock.json
+  dials.find_shared_models experiments.json
 
-  dials.find_shared_models datablock1.json datablock2.json
+  dials.find_shared_models experiments1.json experiments2.json
 
 '''
 
@@ -57,7 +57,7 @@ class Script(object):
 
     # The script usage
     usage = "usage: %s [options] [param.phil] "\
-            "datablocks.json " \
+            "experiments.json " \
             % libtbx.env.dispatcher_name
 
     # Initialise the base class
@@ -65,11 +65,12 @@ class Script(object):
       usage=usage,
       phil=phil_scope,
       epilog=help_message,
-      read_datablocks=True)
+      read_experiments=True)
 
   def run(self):
     '''Execute the script.'''
-    from dials.util.options import flatten_datablocks
+    from dials.util.options import flatten_experiments
+    from dxtbx.imageset import ImageSweep
     from time import time
     from dials.util import log
     from libtbx.utils import Sorry
@@ -95,23 +96,16 @@ class Script(object):
       logger.info(diff_phil)
 
     # Ensure we have a data block
-    datablocks = flatten_datablocks(params.input.datablock)
-    if len(datablocks) == 0:
+    experiments = flatten_experiments(params.input.experiments)
+    if len(experiments) == 0:
       self.parser.print_help()
       return
 
-    # Extend the first datablock
-    datablock = datablocks[0]
-    for db in datablocks[1:]:
-      if datablock.format_class() != db.format_class():
-        raise Sorry("Datablocks must have the same format")
-      datablock.extend(db)
-
-    # Get the imagesets and sweeps
-    stills = datablock.extract_stills()
-    sweeps = datablock.extract_sweeps()
-    if len(stills) > 0:
-      raise Sorry("Sets of still images are currently unsupported")
+    # Get the list of sweeps
+    sweeps = []
+    for experiment in experiments:
+      if isinstance(experiment.imageset, ImageSweep):
+        sweeps.append(experiment.imageset)
     logger.info("Number of sweeps = %d" % len(sweeps))
 
     # Sort the sweeps by timestamps

@@ -105,7 +105,7 @@ def compute_cchalf(mean, var):
   :param mean: The list of mean intensities
   :param var: The list of variances on the half set of mean intensities
   :returns: The CC 1/2
-  
+
   '''
   assert len(mean) == len(var)
   n = len(mean)
@@ -119,7 +119,7 @@ def compute_cchalf(mean, var):
 def compute_mean_cchalf_in_bins(bin_data):
   '''
   Compute the mean cchalf averaged across resolution bins
-  
+
   :param bin_data: The mean and variance in each bin
   :returns: The mean CC 1/2
 
@@ -144,15 +144,15 @@ class PerImageCChalfStatistics(object):
 
   '''
 
-  def __init__(self, 
+  def __init__(self,
                miller_index,
                dataset,
                intensity,
                variance,
                unit_cell,
                space_group,
-               nbins=10, 
-               dmin=None, 
+               nbins=10,
+               dmin=None,
                dmax=None):
     '''
     Initialise
@@ -166,9 +166,9 @@ class PerImageCChalfStatistics(object):
     :param nbins: The number of bins
     :param dmin: The maximum resolution
     :param dmax: The minimum resolution
-      
+
     '''
-    
+
     assert max(dataset) < len(unit_cell)
 
     # Reject reflections with negative variance
@@ -193,7 +193,7 @@ class PerImageCChalfStatistics(object):
     # Map the miller indices to the ASU
     D = flex.double(len(dataset), 0)
     for i, uc in enumerate(unit_cell):
-      
+
       # Select reflections
       selection = dataset == i
       hkl = miller_index.select(selection)
@@ -201,7 +201,7 @@ class PerImageCChalfStatistics(object):
       # Compute resolution
       d = flex.double([uc.d(h) for h in hkl])
       D.set_selected(selection, d)
-      
+
       # Compute asu miller index
       cs = crystal.symmetry(uc, space_group=space_group)
       ms = miller.set(cs, hkl)
@@ -209,7 +209,7 @@ class PerImageCChalfStatistics(object):
       miller_index.set_selected(selection, ms_asu.indices())
 
     assert all(d > 0 for d in D)
-   
+
     # Filter by dmin and dmax
     if dmin is not None:
       selection = D > dmin
@@ -244,7 +244,7 @@ class PerImageCChalfStatistics(object):
     index_lookup = defaultdict(list)
     for i, h in enumerate(miller_index):
       index_lookup[h].append(i)
-    
+
     # Compute the Overall Sum(X) and Sum(X^2) for each unique reflection
     reflection_sums = defaultdict(ReflectionSum)
     for h in index_lookup.keys():
@@ -258,19 +258,19 @@ class PerImageCChalfStatistics(object):
     self._num_datasets = len(set(dataset))
     self._num_reflections = len(miller_index)
     self._num_unique = len(reflection_sums.keys())
-    
+
     print("")
     print("# Datasets: ", self._num_datasets)
     print("# Reflections: ", self._num_reflections)
     print("# Unique: ", self._num_unique)
-   
+
     # Compute the CC 1/2 for all the data
     self._cchalf_mean = self._compute_cchalf(reflection_sums, binner)
     print("CC 1/2 mean: %.3f" % (100*self._cchalf_mean))
-   
+
     # Compute the CC 1/2 excluding each dataset in turn
     self._cchalf = self._compute_cchalf_excluding_each_dataset(
-      reflection_sums, binner, miller_index, dataset, intensity) 
+      reflection_sums, binner, miller_index, dataset, intensity)
 
   def _compute_cchalf(self, reflection_sums, binner):
     '''
@@ -296,8 +296,8 @@ class PerImageCChalfStatistics(object):
     # Compute the mean cchalf in resolution bins
     return compute_mean_cchalf_in_bins(bin_data)
 
-  def _compute_cchalf_excluding_each_dataset(self, 
-                                           reflection_sums, 
+  def _compute_cchalf_excluding_each_dataset(self,
+                                           reflection_sums,
                                            binner,
                                            miller_index,
                                            dataset,
@@ -309,7 +309,7 @@ class PerImageCChalfStatistics(object):
     and then compute the CC 1/2 of the remaining data
 
     '''
-   
+
     # Create a lookup table for each reflection by dataset
     dataset_lookup = defaultdict(list)
     for i, b in enumerate(dataset):
@@ -337,7 +337,7 @@ class PerImageCChalfStatistics(object):
           sum_x2 -= self._intensity[i]**2
           n -= 1
         dataset_reflection_sums[h] = ReflectionSum(sum_x, sum_x2, n)
-    
+
       # Compute the CC 1/2 without the reflections from the current dataset
       cchalf = self._compute_cchalf(dataset_reflection_sums, binner)
       cchalf_i[dataset] = cchalf
@@ -386,4 +386,3 @@ class PerImageCChalfStatistics(object):
 
     '''
     return dict((k, self._cchalf_mean - v) for k, v in self._cchalf.iteritems())
-    

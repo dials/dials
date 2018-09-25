@@ -32,9 +32,9 @@ output {
 def run(args):
   import libtbx.load_env
   usage = """\
-%s datablock.json reflections.pickle [options]""" %libtbx.env.dispatcher_name
+%s experiments.json reflections.pickle [options]""" %libtbx.env.dispatcher_name
   from dials.util.options import OptionParser
-  from dials.util.options import flatten_datablocks
+  from dials.util.options import flatten_experiments
   from dials.util.options import flatten_experiments
   from dials.util.options import flatten_reflections
   from scitbx.array_family import flex
@@ -43,20 +43,14 @@ def run(args):
   parser = OptionParser(
     usage=usage,
     phil=master_phil_scope,
-    read_datablocks=True,
     read_experiments=True,
     read_reflections=True,
     check_format=False)
 
   params, options = parser.parse_args(show_diff_phil=True)
-  datablocks = flatten_datablocks(params.input.datablock)
   reflections = flatten_reflections(params.input.reflections)
   experiments = flatten_experiments(params.input.experiments)
-  if len(datablocks) == 1:
-    imageset = datablocks[0].extract_imagesets()[0]
-  elif len(datablocks) > 1:
-    raise Sorry("Only one DataBlock can be processed at a time")
-  elif len(experiments.imagesets()) > 0:
+  if len(experiments.imagesets()) > 0:
     imageset = experiments.imagesets()[0]
     imageset.set_detector(experiments[0].detector)
     imageset.set_beam(experiments[0].beam)

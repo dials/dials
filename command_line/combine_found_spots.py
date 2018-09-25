@@ -12,6 +12,7 @@
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 from __future__ import absolute_import, division, print_function
+from dxtbx.model.experiment_list import ExperimentListFactory
 
 import logging
 
@@ -31,9 +32,9 @@ phil_scope = parse('''
       .type = str
       .help = "The output filename"
 
-    datablock = 'combined_datablock.json'
+    experiments = 'combined_experiments.json'
       .type = str
-      .help = "Save the modified datablock."
+      .help = "Save the modified experiments."
 
     log = 'dials.combine_found_spots.log'
       .type = str
@@ -118,26 +119,21 @@ phil_scope = parse('''
 ''', process_includes=True)
 
 
-def combine(datablock_list, reflections_list, params):
+def combine(experiments, reflections_list, params):
   '''
   Combine the found spots.
 
   '''
-  from dxtbx.datablock import BeamComparison
-  from dxtbx.datablock import DetectorComparison
-  from dxtbx.datablock import GoniometerComparison
-  from dxtbx.datablock import DataBlock
+  from dxtbx.model.experiment_list import BeamComparison
+  from dxtbx.model.experiment_list import DetectorComparison
+  from dxtbx.model.experiment_list import GoniometerComparison
   from dxtbx.imageset import ImageSetFactory
   from dials.algorithms.spot_finding import StrongSpotCombiner
   from dials.array_family import flex
-  assert len(datablock_list) == len(reflections_list)
+  assert len(experiments) == len(reflections_list)
 
   # Get a list of imagesets
-  imageset_list = []
-  for db in datablock_list:
-    iset = db.extract_imagesets()
-    assert len(iset) == 1
-    imageset_list.append(iset[0])
+  imageset_list = experiments.imagesets()
 
   compare_beam = BeamComparison(
     wavelength_tolerance=params.input.tolerance.beam.wavelength,
@@ -223,8 +219,8 @@ def combine(datablock_list, reflections_list, params):
     flex.size_t_range(len(reflections)),
     reflections.flags.strong)
 
-  # Return the datablock and reflections
-  return DataBlock([imageset]), reflections
+  # Return the experiments and reflections
+  return ExperimentListFactory.from_imageset_and_crystal(imageset, None), reflections
 
 
 class Script(object):
@@ -237,7 +233,7 @@ class Script(object):
 
     # The script usage
     usage = "usage: %s [options] [param.phil] "\
-            "datablock.json" \
+            "experiments.json" \
             % libtbx.env.dispatcher_name
 
     # Initialise the base class
@@ -245,13 +241,13 @@ class Script(object):
       usage=usage,
       phil=phil_scope,
       epilog=help_message,
-      read_datablocks=True,
+      read_experiments=True,
       read_reflections=True)
 
   def run(self):
     '''Execute the script.'''
     from dials.array_family import flex
-    from dials.util.options import flatten_datablocks
+    from dials.util.options import flatten_experiments
     from dials.util.options import flatten_reflections
     from time import time
     from dials.util import log
@@ -277,17 +273,17 @@ class Script(object):
       logger.info(diff_phil)
 
     # Ensure we have a data block
-    datablocks = flatten_datablocks(params.input.datablock)
+    experiments = flatten_experiments(params.input.experiments)
     reflections = flatten_reflections(params.input.reflections)
-    if len(datablocks) == 0 and len(reflections) == 0:
+    if len(experiments) == 0 and len(reflections) == 0:
       self.parser.print_help()
       return
-    elif len(datablocks) != len(reflections):
-      raise Sorry("Must have same number of datablocks and reflection tables")
+    elif len(experiments) != len(reflections):
+      raise Sorry("Must have same number of experiments and reflection tables")
 
-    # Combine the datablocks and reflections
-    datablock, reflections = combine(
-      datablocks,
+    # Combine the experiments and reflections
+    experiments, reflections = combine(
+      experiments,
       reflections,
       params)
 
@@ -297,12 +293,12 @@ class Script(object):
     logger.info('Saved {0} reflections to {1}'.format(
         len(reflections), params.output.reflections))
 
-    # Save the datablock
-    from dxtbx.datablock import DataBlockDumper
-    logger.info('Saving datablocks to {0}'.format(
-      params.output.datablock))
-    dump = DataBlockDumper(datablocks)
-    dump.as_file(params.output.datablock)
+    # Save the experiments
+    from dxtbx.model.experiment_list import ExperimentListDumper
+    logger.info('Saving experiments to {0}'.format(
+      params.output.experiments))
+    dump = ExperimentListDumper(experiments)
+    dump.as_file(params.output.experiments)
 
 
     # Print the time

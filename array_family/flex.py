@@ -982,7 +982,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     logger.info('  extract time: %g seconds' % extract_time)
     return read_time, extract_time
 
-  def is_overloaded(self, experiments_or_datablock):
+  def is_overloaded(self, experiments):
     '''
     Check if the shoebox contains overloaded pixels.
 
@@ -994,11 +994,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     from dials.algorithms.shoebox import OverloadChecker
     assert('shoebox' in self)
     assert('id' in self)
-    if isinstance(experiments_or_datablock, ExperimentList):
-      detectors = [expr.detector for expr in experiments_or_datablock]
-    else:
-      imagesets = experiments_or_datablock.extract_imagesets()
-      detectors = [iset.get_detector() for iset in imagesets]
+    detectors = [expr.detector for expr in experiments]
     checker = OverloadChecker()
     for detector in detectors:
       checker.add(flex.double((p.get_trusted_range()[1] for p in detector)))

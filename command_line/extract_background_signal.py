@@ -39,14 +39,13 @@ class Script(object):
       phil=phil_scope,
       epilog=help_message,
       read_experiments=True,
-      read_reflections=True,
-      read_datablocks=True)
+      read_reflections=True)
 
   def run(self):
     ''' Extract the shoeboxes. '''
     from dials.util.options import flatten_reflections
     from dials.util.options import flatten_experiments
-    from dials.util.options import flatten_datablocks
+    from dials.util.options import flatten_experiments
     from dials.util import log
     from dials.array_family import flex
     from libtbx.utils import Sorry
@@ -66,23 +65,13 @@ class Script(object):
     # Get the data
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
-    datablocks = flatten_datablocks(params.input.datablock)
-    if not any([experiments, datablocks, reflections]):
+    if not any([experiments, reflections]):
       self.parser.print_help()
       exit(0)
-    elif experiments and datablocks:
-      raise Sorry('Both experiment list and datablocks set')
     elif len(experiments) > 1:
       raise Sorry('More than 1 experiment set')
-    elif len(datablocks) > 1:
-      raise Sorry('More than 1 datablock set')
     elif len(experiments) == 1:
       imageset = experiments[0].imageset
-    elif len(datablocks) == 1:
-      imagesets = datablocks[0].extract_imagesets()
-      if len(imagesets) != 1:
-        raise Sorry('Need 1 imageset, got %d' % len(imagesets))
-      imageset = imagesets[0]
     if len(reflections) != 1:
       raise Sorry('Need 1 reflection table, got %d' % len(reflections))
     else:

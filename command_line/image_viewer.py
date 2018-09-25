@@ -27,13 +27,11 @@ Examples::
 
   dials.image_viewer image.cbf
 
-  dials.image_viewer datablock.json
-
-  dials.image_viewer datablock.json strong.pickle
-
-  dials.image_viewer datablock.json integrated.pickle
-
   dials.image_viewer experiments.json
+
+  dials.image_viewer experiments.json strong.pickle
+
+  dials.image_viewer experiments.json integrated.pickle
 
 '''
 
@@ -122,12 +120,11 @@ include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
 class Script(object):
   '''Class to run script.'''
 
-  def __init__(self, params, datablock, experiments, reflections):
+  def __init__(self, params, experiments, reflections):
     '''Setup the script.'''
 
     # Filename data
     self.params = params
-    self.datablock = datablock
     self.experiments = experiments
     self.reflections = reflections
     self.wrapper = None
@@ -142,7 +139,6 @@ class Script(object):
     from dials.util.image_viewer.spotfinder_wrap import spot_wrapper
     self.wrapper = spot_wrapper(params=self.params)
     self.wrapper.display(
-      datablock=self.datablock,
       experiments=self.experiments,
       reflections=self.reflections)
 
@@ -162,35 +158,27 @@ if __name__ == '__main__':
     wx.SystemSettings_GetColour = wx.SystemSettings.GetColour
 
   from dials.util.options import OptionParser
-  from dials.util.options import flatten_datablocks
+  from dials.util.options import flatten_experiments
   from dials.util.options import flatten_experiments
   from dials.util.options import flatten_reflections
   import libtbx.load_env
   usage_message = """
-    %s datablock.json [reflections.pickle]
+    %s experiments.json [reflections.pickle]
   """ %libtbx.env.dispatcher_name
   parser = OptionParser(
     usage=usage_message,
     phil=phil_scope,
-    read_datablocks=True,
     read_experiments=True,
     read_reflections=True,
-    read_datablocks_from_images=True,
+    read_experiments_from_images=True,
     epilog=help_message)
   params, options = parser.parse_args(show_diff_phil=True)
-  datablocks = flatten_datablocks(params.input.datablock)
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
 
-  if len(datablocks) == 0 and len(experiments) == 0:
+  if len(experiments) == 0:
     parser.print_help()
     exit(0)
-
-  if len(datablocks) > 0:
-    assert len(datablocks) == 1
-    datablock = datablocks[0]
-  else:
-    datablock = None
 
   if params.mask is not None:
     from libtbx import easy_pickle
@@ -199,7 +187,6 @@ if __name__ == '__main__':
   runner = Script(
     params=params,
     reflections=reflections,
-    datablock=datablock,
     experiments=experiments
   )
 

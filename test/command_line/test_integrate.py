@@ -187,13 +187,13 @@ def test_output_rubbish(dials_regression, run_in_tmpdir):
   ])
   assert result['exitcode'] == 0
   assert result['stderr'] == ''
-  assert os.path.exists('experiments.json')
+  assert os.path.exists('indexed_experiments.json')
   assert os.path.exists('indexed.pickle')
 
   # Call dials.integrate
   result = procrunner.run_process([
       'dials.integrate',
-      'experiments.json',
+      'indexed_experiments.json',
       'indexed.pickle',
       'profile.fitting=False',
       'prediction.padding=0',

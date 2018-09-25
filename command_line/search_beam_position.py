@@ -6,7 +6,7 @@ import iotbx.phil
 from scitbx import matrix
 from cctbx.array_family import flex
 from dials.util.options import OptionParser
-from dials.util.options import flatten_datablocks, flatten_reflections
+from dials.util.options import flatten_experiments, flatten_reflections
 from dials.algorithms.indexing.indexer \
      import indexer_base, filter_reflections_by_scan_range
 
@@ -21,7 +21,7 @@ method of Sauter et al., J. Appl. Cryst. 37, 399-409 (2004).
 
 Examples::
 
-  %s datablock.json strong.pickle
+  %s experiments.json strong.pickle
 
 ''' % libtbx.env.dispatcher_name
 
@@ -59,7 +59,7 @@ seed = 42
   .type = int(value_min=0)
 
 output {
-  datablock = optimized_datablock.json
+  experiments = optimized_experiments.json
     .type = path
   log = "dials.search_beam_position.log"
     .type = str
@@ -441,21 +441,21 @@ def discover_better_experimental_model(
 
 def run(args):
   from dials.util import log
-  usage = "%s [options] datablock.json strong.pickle" % libtbx.env.dispatcher_name
+  usage = "%s [options] experiments.json strong.pickle" % libtbx.env.dispatcher_name
 
   parser = OptionParser(
     usage=usage,
     phil=phil_scope,
-    read_datablocks=True,
+    read_experiments=True,
     read_reflections=True,
     check_format=False,
     epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=False)
-  datablocks = flatten_datablocks(params.input.datablock)
+  experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
 
-  if len(datablocks) == 0 or len(reflections) == 0:
+  if len(experiments) == 0 or len(reflections) == 0:
     parser.print_help()
     exit(0)
 
@@ -475,9 +475,7 @@ def run(args):
     flex.set_random_seed(params.seed)
     random.seed(params.seed)
 
-  imagesets = []
-  for datablock in datablocks:
-    imagesets.extend(datablock.extract_imagesets())
+  imagesets = experiments.imagesets()
 
   assert len(imagesets) > 0
   assert len(reflections) == len(imagesets)
@@ -498,14 +496,14 @@ def run(args):
     new_detector, new_beam = discover_better_experimental_model(
       imagesets, reflections, params, dps_params, nproc=params.nproc,
       wide_search_binning=params.wide_search_binning)
-    for imageset in imagesets:
-      imageset.set_detector(new_detector)
-      imageset.set_beam(new_beam)
+    for experiment in experiments:
+      experiment.beam = new_beam
+      experiment.detector = new_detector
     logger.info('')
 
   from dxtbx.serialize import dump
-  logger.info("Saving optimized datablock to %s" %params.output.datablock)
-  dump.datablock(datablock, params.output.datablock)
+  logger.info("Saving optimized experiments to %s" %params.output.experiments)
+  dump.experiment_list(experiments, params.output.experiments)
 
 
 if __name__ == '__main__':

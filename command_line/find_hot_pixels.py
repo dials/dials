@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 
 import iotbx.phil
-from dials.util.options import (OptionParser, flatten_datablocks,
+from dials.util.options import (OptionParser, flatten_experiments,
                                 flatten_reflections)
 
 logger = logging.getLogger('dials.command_line.find_hot_pixels')
@@ -35,7 +35,7 @@ help_message = '''
   with True pixels being OK and False pixels being "hot" pixels.
 
   Examples::
-    dials.find_hot_pixels datablock.json strong.pickle
+    dials.find_hot_pixels experiments.json strong.pickle
 
 '''
 
@@ -44,7 +44,7 @@ def run(args):
   from libtbx.utils import Sorry
   from dials.util import log
   import six.moves.cPickle as pickle
-  usage = "%s [options] datablock.json strong.pickle" % \
+  usage = "%s [options] experiments.json strong.pickle" % \
     libtbx.env.dispatcher_name
 
   # Create the option parser
@@ -52,7 +52,7 @@ def run(args):
     usage=usage,
     phil=phil_scope,
     read_reflections=True,
-    read_datablocks=True,
+    read_experiments=True,
     check_format=False,
     epilog=help_message)
 
@@ -71,17 +71,17 @@ def run(args):
     logger.info('The following parameters have been modified:\n')
     logger.info(diff_phil)
 
-  datablocks = flatten_datablocks(params.input.datablock)
+  experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
 
-  if len(datablocks) == 0 and len(reflections) == 0:
+  if len(experiments) == 0 and len(reflections) == 0:
     parser.print_help()
     exit(0)
 
-  if len(datablocks) > 1:
-    raise Sorry("Only one DataBlock can be processed at a time")
+  if len(experiments) > 1:
+    raise Sorry("Only one experiment can be processed at a time")
   else:
-    imagesets = datablocks[0].extract_imagesets()
+    imagesets = experiments.imagesets()
   if len(reflections) == 0:
     raise Sorry("No reflection lists found in input")
   if len(reflections) > 1:

@@ -9,18 +9,18 @@ def test(dials_regression, run_in_tmpdir):
 
   result = procrunner.run_process([
       "dials.find_spots",
-      "output.datablock=datablock.json",
+      "output.experiments=experiments.json",
       "output.reflections=spotfinder.pickle",
       "output.shoeboxes=True",
   ] + images)
   assert result['exitcode'] == 0
   assert result['stderr'] == ''
-  assert os.path.exists("datablock.json")
+  assert os.path.exists("experiments.json")
   assert os.path.exists("spotfinder.pickle")
 
   result = procrunner.run_process([
       "dials.find_hot_pixels",
-      "input.datablock=datablock.json",
+      "input.experiments=experiments.json",
       "input.reflections=spotfinder.pickle",
       "output.mask=hot_mask.pickle"
   ])

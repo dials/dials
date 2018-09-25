@@ -35,9 +35,9 @@ This program computes the delta cchalf excluding images
 
 # Set the phil scope
 phil_scope = parse('''
-  
+
   input {
-    
+
     mtzfile = None
       .type = str
       .help = "We can also import an MTZ file"
@@ -45,15 +45,15 @@ phil_scope = parse('''
   }
 
   output {
-    
+
     experiments = "filtered_experiments.json"
       .type = str
       .help = "The filtered experiments file"
-    
+
     reflections = "filtered_reflections.json"
       .type = str
       .help = "The filtered reflections file"
-  } 
+  }
 
   nbins = 10
     .type = int(value_min=1)
@@ -129,11 +129,11 @@ class Script(object):
 
     # Setup a named tuple
     self.DataRecord = collections.namedtuple("DataRecord", (
-      "unit_cell", 
-      "space_group", 
+      "unit_cell",
+      "space_group",
       "miller_index",
-      "dataset", 
-      "intensity", 
+      "dataset",
+      "intensity",
       "variance"))
 
     # Ensure we have an experiment list
@@ -166,12 +166,12 @@ class Script(object):
     sorted_index = sorted(range(len(datasets)), key=lambda x: delta_cchalf_i[datasets[x]])
     for i in sorted_index:
       print("Dataset: %d, Delta CC 1/2: %.3f" % (datasets[i], 100*delta_cchalf_i[datasets[i]]))
-    
+
     # Remove datasets based on delta cc1/2
     if len(experiments) > 0:
       self.write_experiments_and_reflections(
-        experiments, 
-        reflections[0], 
+        experiments,
+        reflections[0],
         params,
         delta_cchalf_i)
 
@@ -216,7 +216,7 @@ class Script(object):
     selection = inv_scale_factor > 0
     reflections = reflections.select(selection)
     inv_scale_factor = reflections['inverse_scale_factor']
-    
+
     # Get the reflection data
     index = reflections['id']
     miller_index = reflections['miller_index']
@@ -257,7 +257,7 @@ class Script(object):
 
     # Get the unit cell and space group
     unit_cell = intensities.unit_cell()
-    space_group = intensities.crystal_symmetry().space_group() 
+    space_group = intensities.crystal_symmetry().space_group()
 
     # The reflection data
     miller_index = intensities.indices()
@@ -279,10 +279,10 @@ class Script(object):
       dataset      = dataset,
       intensity    = intensity,
       variance     = variance)
-  
-  def write_experiments_and_reflections(self, 
-                                        experiments, 
-                                        reflections, 
+
+  def write_experiments_and_reflections(self,
+                                        experiments,
+                                        reflections,
                                         params,
                                         delta_cchalf_i):
     '''
@@ -311,7 +311,7 @@ class Script(object):
     # Write the experiments and reflections to file
     self.write_reflections(output_reflections, params.output.reflections)
     self.write_experiments(output_experiments, params.output.experiments)
-  
+
   def write_reflections(self, reflections, filename):
     ''' Save the reflections to file. '''
     print('Saving %d reflections to %s' % (len(reflections), filename))
@@ -332,4 +332,3 @@ if __name__ == '__main__':
     script.run()
   except Exception as e:
     halraiser(e)
-

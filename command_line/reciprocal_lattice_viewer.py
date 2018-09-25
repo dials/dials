@@ -23,7 +23,7 @@ Visualise the strong spots from spotfinding in reciprocal space.
 
 Examples::
 
-  dials.reciprocal_lattice_viewer datablock.json strong.pickle
+  dials.reciprocal_lattice_viewer experiments.json strong.pickle
 
   dials.reciprocal_lattice_viewer experiments.json indexed.pickle
 
@@ -894,40 +894,32 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
 def run(args):
 
   from dials.util.options import OptionParser
-  from dials.util.options import flatten_datablocks
+  from dials.util.options import flatten_experiments
   from dials.util.options import flatten_experiments
   from dials.util.options import flatten_reflections
   import libtbx.load_env
 
-  usage = "%s [options] datablock.json reflections.pickle" %(
+  usage = "%s [options] experiments.json reflections.pickle" %(
     libtbx.env.dispatcher_name)
 
   parser = OptionParser(
     usage=usage,
     phil=phil_scope,
-    read_datablocks=True,
     read_experiments=True,
     read_reflections=True,
     check_format=False,
     epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
-  datablocks = flatten_datablocks(params.input.datablock)
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
 
-  if (len(datablocks) == 0 and len(experiments) == 0) or len(reflections) == 0:
+  if len(experiments) == 0 or len(reflections) == 0:
     parser.print_help()
     exit(0)
 
-  if len(datablocks) == 0 and len(experiments) > 0:
-    imagesets = experiments.imagesets()
-    crystals = experiments.crystals()
-  else:
-    imagesets = []
-    crystals = None
-    for datablock in datablocks:
-      imagesets.extend(datablock.extract_imagesets())
+  imagesets = experiments.imagesets()
+  crystals = experiments.crystals()
 
   if len(reflections) > 1:
     assert len(reflections) == len(imagesets)
