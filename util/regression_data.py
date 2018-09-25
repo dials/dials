@@ -296,12 +296,19 @@ class DataFetcher():
 
   def __call__(self, test_data):
     if test_data not in self._cache:
-      with download_lock(self._target_dir):
+      if self._read_only:
         self._cache[test_data] = fetch_test_data(
             self._target_dir, pre_scan=True,
-            file_group=test_data, read_only=self._read_only
+            file_group=test_data, read_only=True,
         )
-        if self._cache[test_data]:
-          self._cache[test_data] = str(self._cache[test_data]) # https://github.com/cctbx/cctbx_project/issues/234
-          self._cache[test_data] = py.path.local(self._cache[test_data])
+      else:
+        with download_lock(self._target_dir):
+          # Need to acquire lock as files may be downloaded/written.
+          self._cache[test_data] = fetch_test_data(
+              self._target_dir, pre_scan=True,
+              file_group=test_data, read_only=False,
+          )
+      if self._cache[test_data]:
+        self._cache[test_data] = str(self._cache[test_data]) # https://github.com/cctbx/cctbx_project/issues/234
+        self._cache[test_data] = py.path.local(self._cache[test_data])
     return self.result_filter(self._cache[test_data])
