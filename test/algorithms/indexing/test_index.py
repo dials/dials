@@ -405,24 +405,20 @@ def test_index_imosflm_tutorial(dials_regression, tmpdir):
       result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
                                 expected_rmsds, expected_hall_symbol)
 
-def test_index_insulin(xia2_regression_build, tmpdir):
-  data_dir = os.path.join(xia2_regression_build, "test_data", "insulin")
+def test_index_insulin(regression_data, run_in_tmpdir):
+  data_dir = regression_data('insulin')
 
-  tmpdir.chdir()
-
-  import shutil
+  args = ["dials.import", "output.datablock=datablock.json", "allow_multiple_sweeps=True"]
   for i, image_path in enumerate(("insulin_1_001.img", "insulin_1_045.img")):
-    shutil.copyfile(
-      os.path.join(data_dir, image_path), "image_00%i.img" %(i+1))
+    target = 'image_00%i.img' % (i+1)
+    data_dir.join(image_path).copy(run_in_tmpdir.join(target))
+    args.append(target)
 
-  args = ["dials.import", ' '.join(glob.glob("image_00*.img")),
-          "output.datablock=datablock.json", "allow_multiple_sweeps=True"]
   command = " ".join(args)
   #print(command)
   result = easy_run.fully_buffered(command=command).raise_if_errors()
 
   datablock_json = "datablock.json"
-
   args = ["dials.find_spots", datablock_json]
 
   command = " ".join(args)
@@ -443,9 +439,8 @@ def test_index_insulin(xia2_regression_build, tmpdir):
     extra_args.append("indexing.method=%s" %method)
     extra_args.append("treat_single_image_as_still=False")
 
-    with tmpdir.as_cwd():
-      result = run_one_indexing(pickle_path, datablock_json, extra_args, expected_unit_cell,
-                                expected_rmsds, expected_hall_symbol)
+    result = run_one_indexing(pickle_path, datablock_json, extra_args, expected_unit_cell,
+                              expected_rmsds, expected_hall_symbol)
 
 def test_index_4rotation(dials_regression, tmpdir):
   data_dir = os.path.join(dials_regression, "indexing_test_data", "4rotation")

@@ -1,14 +1,11 @@
 from __future__ import absolute_import, division, print_function
-import glob
-import os
+
 from libtbx import easy_run
 from libtbx.test_utils import approx_equal
 from cctbx import uctbx
 
-def test_1(xia2_regression_build, run_in_tmpdir):
-  data_dir = os.path.join(xia2_regression_build, "test_data", "X4_wide")
-
-  g = sorted(glob.glob(os.path.join(data_dir, "X4_wide_M1S4_2_00*.cbf")))
+def test_1(regression_data, run_in_tmpdir):
+  g = [f.strpath for f in regression_data('X4_wide').listdir(sort=True)]
   assert len(g) == 90
 
   commands = [
@@ -26,7 +23,7 @@ def test_1(xia2_regression_build, run_in_tmpdir):
     result = easy_run.fully_buffered(cmd).raise_if_errors()
 
   integrated_mtz = "integrated.mtz"
-  assert os.path.exists(integrated_mtz)
+  assert run_in_tmpdir.join(integrated_mtz).check(file=1)
   from iotbx.reflection_file_reader import any_reflection_file
   reader = any_reflection_file(integrated_mtz)
   mtz_object = reader.file_content()

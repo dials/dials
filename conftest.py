@@ -6,6 +6,8 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+
+import py
 import pytest
 
 def pytest_addoption(parser):
@@ -66,6 +68,38 @@ def xia2_regression_build():
   if 'test_data' not in os.listdir(x2rpath):
     pytest.skip("xia2_regression files need to be downloaded for this test. Run xia2_regression.fetch_test_data")
   return x2rpath
+
+@pytest.fixture(scope="session")
+def regression_data():
+  '''Return the location of a regression data set as py.path object.
+     Skip the test if the data are not present.
+  '''
+  dls_dir = '/dls/science/groups/scisoft/DIALS/regression_data'
+  if os.getenv('REGRESSIONDATA'):
+    target_dir = os.getenv('REGRESSIONDATA')
+  elif os.path.exists(os.path.join(dls_dir, 'filelist.json')):
+    target_dir = dls_dir
+  elif os.getenv('LIBTBX_BUILD'):
+    target_dir = os.path.join(os.getenv('LIBTBX_BUILD'), 'regression_data')
+  else:
+    pytest.skip('Can not determine regression data location. Use environment variable REGRESSIONDATA')
+
+  from xia2.Test.fetch_test_data import download_lock, fetch_test_data
+  class DataFetcher():
+    _cache = {}
+    def __call__(self, test_data):
+      if test_data not in self._cache:
+        with download_lock(target_dir):
+          self._cache[test_data] = fetch_test_data(target_dir, pre_scan=True, file_group=test_data, read_only=True)
+          if self._cache[test_data]:
+            self._cache[test_data] = str(self._cache[test_data]) # https://github.com/cctbx/cctbx_project/issues/234
+      if not self._cache[test_data]:
+        pytest.skip('Regression data is required to run this test. Run xia2.fetch_test_data')
+      return py.path.local(self._cache[test_data])
+    def __repr__(self):
+      return "<R/O DataFetcher: %s>" % target_dir
+
+  return DataFetcher()
 
 @pytest.fixture
 def run_in_tmpdir(tmpdir):
