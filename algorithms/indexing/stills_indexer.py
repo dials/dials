@@ -357,7 +357,7 @@ class stills_indexer(indexer_base):
 
       self.refined_reflections = refined_reflections.select(
         refined_reflections['id'] > -1)
-        
+
       for i, expt in enumerate(self.experiments):
         ref_sel = self.refined_reflections.select(
           self.refined_reflections['imageset_id'] == i)

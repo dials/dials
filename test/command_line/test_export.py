@@ -4,6 +4,7 @@ import json
 import os
 import procrunner
 import pytest
+from dxtbx.serialize.load import _decode_dict
 
 # Tests used to check for h5py
 # May need to add this again if lack of this check causes issues.
@@ -133,7 +134,7 @@ def test_json(dials_regression, tmpdir):
 
   from dxtbx.model.experiment_list import ExperimentListFactory
   with open('rlp.json', 'rb') as f:
-    d = json.load(f)
+    d = json.load(f, object_hook=_decode_dict)
   assert d.keys() == ['imageset_id', 'experiments', 'rlp', 'experiment_id'], d.keys()
   assert d['rlp'][:3] == [0.123454, 0.57687, 0.186465], d['rlp'][:3]
   assert d['imageset_id'][0] == 0
