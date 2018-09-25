@@ -1439,6 +1439,8 @@ class indexer_base(object):
                          self.target_symmetry_primitive.unit_cell() is None)):
         try:
           self.correct_non_primitive_basis(experiments, refl, threshold)
+          if refl.get_flags(refl.flags.indexed).count(True) == 0:
+            continue
         except SmallUnitCellVolume:
           logger.debug("correct_non_primitive_basis SmallUnitCellVolume error for unit cell %s:"
                        %experiments[0].crystal.get_unit_cell())
@@ -1536,6 +1538,8 @@ class indexer_base(object):
       crystal_model.update(crystal_model.change_basis(cb_op))
 
       reflections['id'] = flex.int(len(reflections), -1)
+      reflections.unset_flags(flex.bool(len(reflections), True),
+        reflections.flags.indexed)
       self.index_reflections(experiments, reflections)
 
   def apply_symmetry(self, crystal_model, target_space_group):
