@@ -14,6 +14,7 @@
 what should usually be used to construct a Refiner."""
 
 from __future__ import absolute_import, division
+import copy
 import logging
 logger = logging.getLogger(__name__)
 
@@ -435,6 +436,52 @@ refinement
 }
 '''%format_data, process_includes=True)
 
+def _copy_experiments_for_refining(experiments):
+  """
+  Make a partial copy of experiments, copying properties used in refinement.
+
+  Any experiment property that can be altered by refinement e.g. Beam,
+  Detector and Goniometer will be deep-copied, whereas anything that the
+  refiner doesn't touch (e.g. Scan, ImageSet) will be left as original
+  references.
+
+  This makes it safe to pass an object into the refiner or get an object
+  out of the refiner without having to worry about your copy being
+  unexpectedly altered, but saves time by avoiding the copying of potentially
+  expensive experiment properties (e.g. ImageSet and it's attributes).
+
+  Args
+    experiments (Experiment or ExperimentList or Iterable[Experiment]):
+
+  Returns:
+    ExperimentList: The copied experiments in new ExperimentList
+  """
+  # Look for a non-list e.g. a single experiment and convert to a list
+  if not hasattr(experiments, "__iter__"):
+    experiments = [experiments]
+  out_list = ExperimentList()
+  # Save a map of object id to copies so shared objects remain shared
+  id_memo = {}
+
+  # Copy each experiment individually
+  for experiment in experiments:
+    # Be inclusive about the initial copy
+    new_exp = copy.copy(experiment)
+
+    # Ensure every 'refined' attribute is uniquely copied
+    for model in ["beam", "goniometer", "detector", "crystal"]:
+      original = getattr(experiment, model)
+      if id(original) not in id_memo:
+        id_memo[id(original)] = copy.deepcopy(original)
+      # assign the new copy to the experiment
+      setattr(new_exp, model, id_memo[id(original)])
+
+    # Collect this together
+    out_list.append(new_exp)
+
+  return out_list
+
+
 class RefinerFactory(object):
   """Factory class to create refiners"""
 
@@ -464,8 +511,7 @@ class RefinerFactory(object):
                                        params,
                                        reflections,
                                        experiments,
-                                       verbosity=None,
-                                       copy_experiments=True):
+                                       verbosity=None):
 
     #TODO Checks on the input
     #E.g. does every experiment contain at least one overlapping model with at
@@ -476,10 +522,8 @@ class RefinerFactory(object):
     if verbosity is None:
       verbosity = params.refinement.verbosity
 
-    if copy_experiments:
-      # copy the experiments
-      import copy
-      experiments = copy.deepcopy(experiments)
+    # copy the experiments
+    experiments = _copy_experiments_for_refining(experiments)
 
     # copy and filter the reflections
     reflections = cls._filter_reflections(reflections)
@@ -487,12 +531,10 @@ class RefinerFactory(object):
     return cls._build_components(params,
                                  reflections,
                                  experiments,
-                                 verbosity=verbosity,
-                                 copy_experiments=copy_experiments)
+                                 verbosity=verbosity)
 
   @classmethod
-  def _build_components(cls, params, reflections, experiments,
-                        verbosity, copy_experiments=True):
+  def _build_components(cls, params, reflections, experiments, verbosity):
     """low level build"""
 
     if verbosity == 0:
@@ -589,7 +631,7 @@ class RefinerFactory(object):
     # build refiner interface and return
     return Refiner(reflections, experiments,
                     pred_param, param_reporter, refman, target, refinery,
-                    verbosity=verbosity, copy_experiments=copy_experiments)
+                    verbosity=verbosity)
 
   @staticmethod
   def config_sparse(params, experiments):
@@ -1837,7 +1879,7 @@ class Refiner(object):
 
   def __init__(self, reflections, experiments,
                pred_param, param_reporter, refman, target, refinery,
-               verbosity=0, copy_experiments=True):
+               verbosity=0):
     """
     Mandatory arguments:
       reflections - Input ReflectionList data
@@ -1855,7 +1897,6 @@ class Refiner(object):
 
     # the experimental models
     self._experiments = experiments
-    self.copy_experiments = copy_experiments
 
     # refinement module main objects
     self._pred_param = pred_param
@@ -1873,12 +1914,8 @@ class Refiner(object):
     return
 
   def get_experiments(self):
-
-    if self.copy_experiments:
-      from copy import deepcopy
-      return deepcopy(self._experiments)
-    else:
-      return self._experiments
+    """Return a copy of the current refiner experiments"""
+    return _copy_experiments_for_refining(self._experiments)
 
   def rmsds(self):
     """Return rmsds of the current model"""
