@@ -7,7 +7,6 @@ from __future__ import absolute_import, division, print_function
 
 import os
 
-import py
 import pytest
 
 def pytest_addoption(parser):
@@ -84,22 +83,14 @@ def regression_data():
   else:
     pytest.skip('Can not determine regression data location. Use environment variable REGRESSIONDATA')
 
-  from xia2.Test.fetch_test_data import download_lock, fetch_test_data
-  class DataFetcher():
-    _cache = {}
-    def __call__(self, test_data):
-      if test_data not in self._cache:
-        with download_lock(target_dir):
-          self._cache[test_data] = fetch_test_data(target_dir, pre_scan=True, file_group=test_data, read_only=True)
-          if self._cache[test_data]:
-            self._cache[test_data] = str(self._cache[test_data]) # https://github.com/cctbx/cctbx_project/issues/234
-      if not self._cache[test_data]:
-        pytest.skip('Regression data is required to run this test. Run xia2.fetch_test_data')
-      return py.path.local(self._cache[test_data])
-    def __repr__(self):
-      return "<R/O DataFetcher: %s>" % target_dir
-
-  return DataFetcher()
+  import dials.util.regression_data
+  df = dials.util.regression_data.DataFetcher(target_dir, read_only=True)
+  def skip_test_if_lookup_failed(result):
+    if not result:
+      pytest.skip('Regression data is required to run this test. Run xia2.fetch_test_data')
+    return result
+  setattr(df, 'result_filter', skip_test_if_lookup_failed)
+  return df
 
 @pytest.fixture
 def run_in_tmpdir(tmpdir):
