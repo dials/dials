@@ -310,7 +310,11 @@ class RefinerFactory(object):
     logger.debug("Refinement engine built")
 
     # build refiner interface and return
-    return Refiner(reflections, experiments,
+    if params.refinement.parameterisation.scan_varying:
+      refiner = ScanVaryingRefiner
+    else:
+      refiner = Refiner
+    return refiner(reflections, experiments,
                     pred_param, param_reporter, refman, target, refinery,
                     verbosity=verbosity)
 
@@ -846,50 +850,8 @@ class Refiner(object):
     if any(n > 1 for n in det_npanels):
       self.print_panel_rmsd_table()
 
-    # write scan-varying states back to their models
-    #FIXME tidy up
-    from dials.algorithms.refinement.parameterisation import \
-      ScanVaryingPredictionParameterisation
-    if isinstance(self._pred_param, ScanVaryingPredictionParameterisation):
-      for iexp, exp in enumerate(self._experiments):
-        ar_range = exp.scan.get_array_range()
-        obs_image_numbers = range(ar_range[0], ar_range[1]+1)
-
-        # write scan-varying s0 vectors back to beam models
-        s0_list = self._pred_param.get_varying_s0(obs_image_numbers, iexp)
-        if s0_list is not None:
-          exp.beam.set_s0_at_scan_points(s0_list)
-
-        # write scan-varying setting rotation matrices back to goniometer models
-        S_list = self._pred_param.get_varying_setting_rotation(
-            obs_image_numbers, iexp)
-        if S_list is not None:
-          exp.goniometer.set_setting_rotation_at_scan_points(S_list)
-
-        # write scan-varying crystal setting matrices back to crystal models
-        A_list = self._pred_param.get_varying_UB(obs_image_numbers, iexp)
-        if A_list is not None:
-          exp.crystal.set_A_at_scan_points(A_list)
-
-        # get state covariance matrices the whole range of images. We select
-        # the first element of this at each image because crystal scan-varying
-        # parameterisations are not multi-state
-        state_cov_list = [self._pred_param.calculate_model_state_uncertainties(
-          obs_image_number=t, experiment_id=iexp) for t in range(ar_range[0],
-                                                            ar_range[1]+1)]
-        if 'U_cov' in state_cov_list[0]:
-          u_cov_list = [e['U_cov'] for e in state_cov_list]
-        else:
-          u_cov_list = None
-
-        if 'B_cov' in state_cov_list[0]:
-          b_cov_list = [e['B_cov'] for e in state_cov_list]
-        else:
-          b_cov_list = None
-
-        # return these to the model parameterisations to be set in the models
-        self._pred_param.set_model_state_uncertainties(
-          u_cov_list, b_cov_list, iexp)
+    # Perform post-run tasks to write the refined states back to the models
+    self._update_models()
 
     if self._verbosity > 1:
       logger.debug("\nExperimental models after refinement:")
@@ -911,6 +873,11 @@ class Refiner(object):
 
     # Return the refinement history
     return self._refinery.history
+
+  def _update_models(self):
+    """Perform any extra tasks required to update the models after refinement.
+    Does nothing here, but used by subclasses"""
+    pass
 
   def selection_used_for_refinement(self):
     """Return a selection as a flex.bool in terms of the input reflection
@@ -948,3 +915,49 @@ class Refiner(object):
 
     # delegate to the target object, which has access to the predictor
     return self._target.predict_for_reflection_table(reflections, skip_derivatives)
+
+
+class ScanVaryingRefiner(Refiner):
+  """Includes functionality to update the models with their states at
+  scan-points after scan-varying refinement"""
+
+  def _update_models(self):
+    for iexp, exp in enumerate(self._experiments):
+      ar_range = exp.scan.get_array_range()
+      obs_image_numbers = range(ar_range[0], ar_range[1]+1)
+
+      # write scan-varying s0 vectors back to beam models
+      s0_list = self._pred_param.get_varying_s0(obs_image_numbers, iexp)
+      if s0_list is not None:
+        exp.beam.set_s0_at_scan_points(s0_list)
+
+      # write scan-varying setting rotation matrices back to goniometer models
+      S_list = self._pred_param.get_varying_setting_rotation(
+          obs_image_numbers, iexp)
+      if S_list is not None:
+        exp.goniometer.set_setting_rotation_at_scan_points(S_list)
+
+      # write scan-varying crystal setting matrices back to crystal models
+      A_list = self._pred_param.get_varying_UB(obs_image_numbers, iexp)
+      if A_list is not None:
+        exp.crystal.set_A_at_scan_points(A_list)
+
+      # get state covariance matrices the whole range of images. We select
+      # the first element of this at each image because crystal scan-varying
+      # parameterisations are not multi-state
+      state_cov_list = [self._pred_param.calculate_model_state_uncertainties(
+        obs_image_number=t, experiment_id=iexp) for t in range(ar_range[0],
+                                                          ar_range[1]+1)]
+      if 'U_cov' in state_cov_list[0]:
+        u_cov_list = [e['U_cov'] for e in state_cov_list]
+      else:
+        u_cov_list = None
+
+      if 'B_cov' in state_cov_list[0]:
+        b_cov_list = [e['B_cov'] for e in state_cov_list]
+      else:
+        b_cov_list = None
+
+      # return these to the model parameterisations to be set in the models
+      self._pred_param.set_model_state_uncertainties(
+        u_cov_list, b_cov_list, iexp)
