@@ -42,10 +42,10 @@ class StillsDetectorRefinerFactory(RefinerFactory):
     """
 
     # Shorten parameter paths
-    beam_options = params.refinement.parameterisation.beam
-    crystal_options = params.refinement.parameterisation.crystal
-    detector_options = params.refinement.parameterisation.detector
-    sparse = params.refinement.parameterisation.sparse
+    beam_options = params.beam
+    crystal_options = params.crystal
+    detector_options = params.detector
+    sparse = params.sparse
 
     # Shorten paths
     import dials.algorithms.refinement.parameterisation as par
@@ -108,16 +108,6 @@ class StillsDetectorRefinerFactory(RefinerFactory):
 
       det_params.append(det_param)
 
-    # Now we have the final list of model parameterisations, build a restraints
-    # parameterisation (if requested). Only unit cell restraints are supported
-    # at the moment.
-    if any([crystal_options.unit_cell.restraints.tie_to_target,
-            crystal_options.unit_cell.restraints.tie_to_group]):
-      restraints_param = cls.config_restraints(params, det_params, beam_params,
-        xl_ori_params, xl_uc_params)
-    else:
-      restraints_param = None
-
     # Prediction equation parameterisation
     if do_stills: # doing stills
       if sparse:
@@ -129,39 +119,12 @@ class StillsDetectorRefinerFactory(RefinerFactory):
 
     else: # doing scans
       raise NotImplementedError("currently only for stills")
-      #if crystal_options.scan_varying:
-      #  if crystal_options.UB_model_per == "reflection":
-      #    #from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
-      #    #  import ScanVaryingPredictionParameterisation as PredParam
-      #    raise NotImplementedError("currently only for stills")
-      #  elif crystal_options.UB_model_per == "image":
-      #    #from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
-      #    #  import ScanVaryingPredictionParameterisationFast as PredParam
-      #    raise NotImplementedError("currently only for stills")
-      #  else:
-      #    raise RuntimeError("UB_model_per=" + crystal_options.scan_varying +
-      #                       " is not a recognised option")
-      #  pred_param = PredParam(
-      #        experiments,
-      #        det_params, beam_params, xl_ori_params, xl_uc_params)
-      #else:
-      #  if sparse:
-      #    #from dials.algorithms.refinement.parameterisation.prediction_parameters \
-      #    #  import XYPhiPredictionParameterisationSparse as PredParam
-      #    raise NotImplementedError("currently only for stills")
-      #  else:
-      #    #from dials.algorithms.refinement.parameterisation.prediction_parameters \
-      #    #  import XYPhiPredictionParameterisation as PredParam
-      #    raise NotImplementedError("currently only for stills")
-      #  pred_param = PredParam(
-      #      experiments,
-      #      det_params, beam_params, xl_ori_params, xl_uc_params)
 
     # Parameter reporting
     param_reporter = par.ParameterReporter(det_params, beam_params,
                                            xl_ori_params, xl_uc_params)
 
-    return pred_param, param_reporter, restraints_param
+    return pred_param, param_reporter
 
   @staticmethod
   def config_target(params, experiments, refman, predictor,
