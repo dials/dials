@@ -858,7 +858,6 @@ def plot_dendrogram(linkage_matrix, file_name, labels=None,
 def plot_silhouette(sample_silhouette_values, cluster_labels, file_name):
   import numpy as np
   from matplotlib import pyplot as plt
-  import matplotlib.cm as cm
 
   fig = plt.figure()
   ax1 = fig.gca()
@@ -877,7 +876,7 @@ def plot_silhouette(sample_silhouette_values, cluster_labels, file_name):
     size_cluster_i = ith_cluster_silhouette_values.shape[0]
     y_upper = y_lower + size_cluster_i
 
-    color = cm.spectral(float(i) / n_clusters)
+    color = plt.cm.Spectral(float(i) / n_clusters)
     ax1.fill_betweenx(np.arange(y_lower, y_upper),
                       0, ith_cluster_silhouette_values,
                       facecolor=color, edgecolor=color, alpha=0.7)
