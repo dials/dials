@@ -235,28 +235,20 @@ class Script(object):
   def load_reference_geometry(self):
     if self.params.input.reference_geometry is None: return
 
+    from dxtbx.model.experiment_list import ExperimentListFactory
     try:
       ref_experiments = ExperimentListFactory.from_json_file(self.params.input.reference_geometry, check_format=False)
     except Exception:
-      ref_experiments = None
-    if ref_experiments is None:
-      from dxtbx.model.experiment_list import ExperimentListFactory
       try:
-        ref_experiments = ExperimentListFactory.from_json_file(self.params.input.reference_geometry, check_format=False)
+        import dxtbx
+        img = dxtbx.load(self.params.input.reference_geometry)
       except Exception:
-        try:
-          import dxtbx
-          img = dxtbx.load(self.params.input.reference_geometry)
-        except Exception:
-          raise Sorry("Couldn't load geometry file %s"%self.params.input.reference_geometry)
-        else:
-          self.reference_detector = img.get_detector()
+        raise Sorry("Couldn't load geometry file %s"%self.params.input.reference_geometry)
       else:
-        assert len(ref_experiments.detectors()) == 1
-        self.reference_detector = ref_experiments.detectors()[0]
+        self.reference_detector = img.get_detector()
     else:
-      assert len(ref_experiments) == 1 and len(ref_experiments[0].unique_detectors()) == 1
-      self.reference_detector = ref_experiments[0].unique_detectors()[0]
+      assert len(ref_experiments.detectors()) == 1
+      self.reference_detector = ref_experiments.detectors()[0]
 
   def run(self):
     '''Execute the script.'''
@@ -347,18 +339,22 @@ class Script(object):
 
         for item in item_list:
           try:
-            for imageset in item[1].imagesets():
-              update_geometry(imageset)
+            assert len(item[1]) == 1
+            experiment = item[1][0]
+            imageset = experiment.imageset
+            update_geometry(imageset)
+            experiment.beam = imageset.get_beam()
+            experiment.detector = imageset.get_detector()
           except RuntimeError as e:
             logger.warning("Error updating geometry on item %s, %s"%(str(item[0]), str(e)))
             continue
 
           if self.reference_detector is not None:
             from dxtbx.model import Detector
-            for i in range(len(imageset)):
-              imageset.set_detector(
-                Detector.from_dict(self.reference_detector.to_dict()),
-                index=i)
+            experiment = item[1][0]
+            imageset = experiment.imageset
+            imageset.set_detector(Detector.from_dict(self.reference_detector.to_dict()))
+            experiment.detector = imageset.get_detector()
 
           processor.process_experiments(item[0], item[1])
         processor.finalize()
@@ -392,13 +388,18 @@ class Script(object):
 
           try:
             update_geometry(imagesets[0])
+            experiment = experiments[0]
+            experiment.beam = imagesets[0].get_beam()
+            experiment.detector = imagesets[0].get_detector()
           except RuntimeError as e:
             logger.warning("Error updating geometry on item %s, %s"%(tag, str(e)))
             continue
 
           if self.reference_detector is not None:
             from dxtbx.model import Detector
-            imagesets[0].set_detector(Detector.from_dict(self.reference_detector.to_dict()))
+            imageset = experiments[0].imageset
+            imageset.set_detector(Detector.from_dict(self.reference_detector.to_dict()))
+            experiments[0].detector = imageset.get_detector()
 
           processor.process_experiments(tag, experiments)
         processor.finalize()

@@ -555,20 +555,18 @@ class indexer_base(object):
       if use_stills_indexer:
         # Ensure the indexer and downstream applications treat this as set of stills
         from dxtbx.imageset import ImageSet#, MemImageSet
-        reset_sets = []
-        imagesets = experiments.imagesets()
-        for i in xrange(len(imagesets)):
-          imagesweep = imagesets.pop(0)
-          imageset = ImageSet(imagesweep.data(), imagesweep.indices())
+        for experiment in experiments:
+          experiment.imageset = ImageSet(experiment.imageset.data(),
+                                         experiment.imageset.indices())
           # if isinstance(imageset, MemImageSet):
           #   imageset = MemImageSet(imagesweep._images, imagesweep.indices())
           # else:
           #   imageset = ImageSet(imagesweep.reader(), imagesweep.indices())
           #   imageset._models = imagesweep._models
-          imageset.set_scan(None)
-          imageset.set_goniometer(None)
-          reset_sets.append(imageset)
-        imagesets.extend(reset_sets)
+          experiment.imageset.set_scan(None)
+          experiment.imageset.set_goniometer(None)
+          experiment.scan = None
+          experiment.goniometer = None
 
       if params.indexing.method == "fft3d":
         if use_stills_indexer:

@@ -88,7 +88,7 @@ class stills_indexer(indexer_base):
   ''' Class for indexing stills '''
 
   @staticmethod
-  def from_parameters(reflections, imagesets,
+  def from_parameters(reflections, experiments,
                       known_crystal_models=None, params=None):
 
     if params is None:
@@ -96,21 +96,21 @@ class stills_indexer(indexer_base):
 
     if known_crystal_models is not None:
       idxr = stills_indexer_known_orientation(
-        reflections, imagesets, params, known_crystal_models)
+        reflections, experiments, params, known_crystal_models)
     elif params.indexing.method == "fft3d":
-      idxr = stills_indexer_fft3d(reflections, imagesets, params=params)
+      idxr = stills_indexer_fft3d(reflections, experiments, params=params)
     elif params.indexing.method == "fft1d":
-      idxr = stills_indexer_fft1d(reflections, imagesets, params=params)
+      idxr = stills_indexer_fft1d(reflections, experiments, params=params)
     elif params.indexing.method == "real_space_grid_search":
-      idxr = stills_indexer_real_space_grid_search(reflections, imagesets, params=params)
+      idxr = stills_indexer_real_space_grid_search(reflections, experiments, params=params)
 
     return idxr
 
-  def __init__(self, reflections, imagesets, params=None):
+  def __init__(self, reflections, experiments, params=None):
     if params.refinement.reflections.outlier.algorithm in ('auto', libtbx.Auto):
       # The stills_indexer provides it's own outlier rejection
       params.refinement.reflections.outlier.algorithm = 'null'
-    indexer_base.__init__(self, reflections, imagesets, params)
+    indexer_base.__init__(self, reflections, experiments, params)
 
   def index(self):
     # most of this is the same as dials.algorithms.indexing.indexer.indexer_base.index(), with some stills
@@ -357,18 +357,18 @@ class stills_indexer(indexer_base):
 
       self.refined_reflections = refined_reflections.select(
         refined_reflections['id'] > -1)
-
-      for i, imageset in enumerate(self.experiments.imagesets()):
+        
+      for i, expt in enumerate(self.experiments):
         ref_sel = self.refined_reflections.select(
           self.refined_reflections['imageset_id'] == i)
         ref_sel = ref_sel.select(ref_sel['id'] >= 0)
         for i_expt in set(ref_sel['id']):
-          expt = refined_experiments[i_expt]
-          imageset.set_detector(expt.detector)
-          imageset.set_beam(expt.beam)
-          imageset.set_goniometer(expt.goniometer)
-          imageset.set_scan(expt.scan)
-          expt.imageset = imageset
+          refined_expt = refined_experiments[i_expt]
+          expt.detector = refined_expt.detector
+          expt.beam = refined_expt.beam
+          expt.goniometer = refined_expt.goniometer
+          expt.scan = refined_expt.scan
+          refined_expt.imageset = expt.imageset
 
       if not (self.all_params.refinement.parameterisation.beam.fix == 'all'
               and self.all_params.refinement.parameterisation.detector.fix == 'all'):
@@ -377,11 +377,10 @@ class stills_indexer(indexer_base):
 
         spots_mm = self.reflections
         self.reflections = flex.reflection_table()
-        for i, imageset in enumerate(self.experiments.imagesets()):
+        for i, expt in enumerate(self.experiments):
           spots_sel = spots_mm.select(spots_mm['imageset_id'] == i)
           self.map_centroids_to_reciprocal_space(
-            spots_sel, imageset.get_detector(), imageset.get_beam(),
-            imageset.get_goniometer())
+            spots_sel, expt.detector, expt.beam, expt.goniometer)
           self.reflections.extend(spots_sel)
 
       # update for next cycle
