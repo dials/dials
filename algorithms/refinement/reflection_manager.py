@@ -164,6 +164,9 @@ class ReflectionManager(object):
                      weighting_strategy_override=None,
                      verbosity=0):
 
+    if len(reflections) == 0:
+      raise ValueError("Empty reflections table provided to ReflectionManager")
+
     # set verbosity
     if verbosity == 0:
       logger.disabled = True
