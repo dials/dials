@@ -154,7 +154,7 @@ def fetch_test_data(target_dir, retry_limit=3, verify_threads=8, download_thread
             pass
         success = True
         try:
-          download_to_file(item['url'], os.path.join(target_dir, item['filename']))
+          download_to_file(item['url'], item['filename'])
           item['status'] = 'Downloaded'
           if file_md5(item['filename']) != item['checksum']:
             item['error'] = 'failed validation with hash mismatch'
