@@ -169,7 +169,7 @@ class SpotFrame(XrayFrame) :
     # Create a sub-control with our image selection slider and label
     # Manually tune the height for now - don't understand toolbar sizing
     panel = ImageChooserControl(self.toolbar, size=(300,40))
-    # The Toolbar doesn't call layout for it's children?!
+    # The Toolbar doesn't call layout for its children?!
     panel.Layout()
     # Platform support for slider events seems a little inconsistent
     # with wxPython 3, so we just trap all EVT_SLIDER events.

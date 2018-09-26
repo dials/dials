@@ -108,7 +108,7 @@ class stills_indexer(indexer_base):
 
   def __init__(self, reflections, imagesets, params=None):
     if params.refinement.reflections.outlier.algorithm in ('auto', libtbx.Auto):
-      # The stills_indexer provides it's own outlier rejection
+      # The stills_indexer provides its own outlier rejection
       params.refinement.reflections.outlier.algorithm = 'null'
     indexer_base.__init__(self, reflections, imagesets, params)
 

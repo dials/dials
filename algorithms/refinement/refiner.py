@@ -448,7 +448,7 @@ def _copy_experiments_for_refining(experiments):
   This makes it safe to pass an object into the refiner or get an object
   out of the refiner without having to worry about your copy being
   unexpectedly altered, but saves time by avoiding the copying of potentially
-  expensive experiment properties (e.g. ImageSet and it's attributes).
+  expensive experiment properties (e.g. ImageSet and its attributes).
 
   Args
     experiments (Experiment or ExperimentList or Iterable[Experiment]):
