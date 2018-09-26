@@ -4,11 +4,12 @@ Testing for other refiner/refinement small utilities that can be tested
 alone.
 """
 
+from __future__ import absolute_import, division, print_function
+
 from mock import Mock, patch
 from dials.algorithms.refinement.refiner import _copy_experiments_for_refining
 
-def test_experiment_copying():
-  """Test that the Experiment reduced-copier works as intended"""
+def test_that_the_experiment_reduced_copier_works_as_intended():
   sample = Mock()
   with patch('dials.algorithms.refinement.refiner.ExperimentList', new=list):
     dupe = _copy_experiments_for_refining(sample)[0]
