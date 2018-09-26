@@ -4,9 +4,7 @@ import os
 import math
 import random
 
-def test_run(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_run(dials_regression, run_in_tmpdir):
   from dials.algorithms.profile_model.gaussian_rs import transform
   from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
   from scitbx import matrix

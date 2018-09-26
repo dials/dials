@@ -3,8 +3,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import procrunner
 
-def test_export_best(dials_regression, tmpdir):
-  tmpdir.chdir()
+def test_export_best(dials_regression, run_in_tmpdir):
   path = os.path.join(
     dials_regression, "centroid_test_data", "centroid_####.cbf")
 

@@ -2415,13 +2415,13 @@ class ScalingModelAnalyser(object):
       rt['norm_rot_angle'] = sample_values
       scale_SF = experiment.scaling_model.components['scale']
       scale_SF.update_reflection_data(rt)
-      scale_SF.calculate_scales()
+      s = scale_SF.calculate_scales()
       smoother_phis = [(i * configdict['scale_rot_interval']) + valid_osc[0]
         for i in scale_SF.smoother.positions()]
 
       data.append({
         'x' : list(sample_values),
-        'y' : list(scale_SF.inverse_scales[0]),
+        'y' : list(s),
         'type' : 'line',
         'name' : 'smooth scale term',
         'xaxis' : 'x',
@@ -2445,13 +2445,13 @@ class ScalingModelAnalyser(object):
       rt['d'] = flex.double(sample_values.size(), 1.0)
       decay_SF = experiment.scaling_model.components['decay']
       decay_SF.update_reflection_data(rt)
-      decay_SF.calculate_scales()
+      s = decay_SF.calculate_scales()
       smoother_phis = [(i * configdict['decay_rot_interval']) + valid_osc[0]
         for i in decay_SF.smoother.positions()]
 
       data.append({
         'x' : list(sample_values),
-        'y' : list(np.log(decay_SF.inverse_scales[0])*2.0),
+        'y' : list(np.log(s)*2.0),
         'type' : 'line',
         'name' : 'smooth decay term',
         'xaxis' : 'x',

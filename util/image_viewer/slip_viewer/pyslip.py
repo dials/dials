@@ -73,6 +73,8 @@ __version__ = '2.2'
 
 __all__ = ['PySlip']
 
+WX3 = wx.VERSION[0] == 3
+
 # type of SELECT events
 EventPointSelect = 0
 EventBoxSelect = 1
@@ -168,10 +170,12 @@ class _BufferedCanvas(wx.Panel):
         """Causes the canvas to be updated."""
 
         dc = wx.BufferedDC(wx.ClientDC(self), self.buffer)
-        dc.BeginDrawing()
+        if WX3:
+            dc.BeginDrawing()
         dc.Clear()
         self.Draw(dc)
-        dc.EndDrawing()
+        if WX3:
+            dc.EndDrawing()
 
     def OnPaint(self, event):
         """Paint the canvas to the screen."""
@@ -182,7 +186,7 @@ class _BufferedCanvas(wx.Panel):
     def OnSize(self, event=None):
         """Create a new off-screen buffer to hold drawn data."""
 
-        (width, height) = self.GetClientSizeTuple()
+        (width, height) = self.GetClientSizeTuple() if WX3 else self.GetClientSize()
         if width == 0:
             width = 1
         if height == 0:
@@ -1821,7 +1825,7 @@ class PySlip(_BufferedCanvas):
             self.SetFocus()
 
         # get current mouse position
-        (x, y) = event.GetPositionTuple()
+        (x, y) = event.GetPositionTuple() if WX3 else event.GetPosition()
 
         self.RaiseMousePositionEvent((x, y))
 
@@ -1853,7 +1857,7 @@ class PySlip(_BufferedCanvas):
     def OnLeftDown(self, event):
         """Left mouse button down. Prepare for possible drag."""
 
-        click_posn = event.GetPositionTuple()
+        click_posn = event.GetPositionTuple() if WX3 else event.GetPosition()
 
         if event.ShiftDown():
             self.is_box_select = True
@@ -1918,7 +1922,7 @@ class PySlip(_BufferedCanvas):
                 self.is_box_select = False
             else:
                 # possible point selection
-                clickpt_v = event.GetPositionTuple()
+                clickpt_v = event.GetPositionTuple() if WX3 else event.GetPosition()
                 clickpt_m = self.ConvertView2Geo(clickpt_v)
                 # check each layer for a point select callback
                 # we work on a copy as user callback could change order
@@ -1965,7 +1969,7 @@ class PySlip(_BufferedCanvas):
         # a possible workaround is to limit minimum view level
 
         # get view coords of mouse double click, want same centre afterwards
-        xy = event.GetPositionTuple()
+        xy = event.GetPositionTuple() if WX3 else event.GetPosition()
 
         if event.ShiftDown():
             # zoom out if shift key also down
@@ -1992,7 +1996,7 @@ class PySlip(_BufferedCanvas):
     def OnRightDown(self, event):
         """Right mouse button down. Prepare for right select (no drag)."""
 
-        click_posn = event.GetPositionTuple()
+        click_posn = event.GetPositionTuple() if WX3 else event.GetPosition()
 
         if event.ShiftDown():
             self.is_box_select = True
@@ -2047,7 +2051,7 @@ class PySlip(_BufferedCanvas):
             self.is_box_select = False
         else:
             # possible point selection
-            clickpt_v = event.GetPositionTuple()
+            clickpt_v = event.GetPositionTuple() if WX3 else event.GetPosition()
             clickpt_m = self.ConvertView2Geo(clickpt_v)
             # check each layer for a point select callback
             # we work on a copy as user callback could change order
@@ -2084,7 +2088,7 @@ class PySlip(_BufferedCanvas):
         """Mouse wheel event."""
 
         # get current mouse position
-        mouse_x, mouse_y = event.GetPositionTuple()
+        mouse_x, mouse_y = event.GetPositionTuple() if WX3 else event.GetPosition()
         mouse_latlon = self.ConvertView2Geo((mouse_x, mouse_y))
         # get center of view in map coords
         x, y = self.view_width/2, self.view_height/2
@@ -2104,7 +2108,7 @@ class PySlip(_BufferedCanvas):
         self.GotoPosition(self.ConvertView2Geo(new_center))
 
         # Raise position event to update the status text.
-        self.RaiseMousePositionEvent(event.GetPositionTuple())
+        self.RaiseMousePositionEvent(event.GetPositionTuple() if WX3 else event.GetPosition())
 
     ######
     # Method that overrides _BufferedCanvas.Draw() method.
@@ -2218,7 +2222,7 @@ class PySlip(_BufferedCanvas):
         """
 
         # get new size of the view
-        (self.view_width, self.view_height) = self.GetClientSizeTuple()
+        (self.view_width, self.view_height) = self.GetClientSizeTuple() if WX3 else self.GetClientSize()
 
         # if map > view in X axis
         if self.map_width > self.view_width:

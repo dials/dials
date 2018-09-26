@@ -306,8 +306,19 @@ class stills_indexer(indexer_base):
         reflections_for_refinement = isoform_reflections
 
       if self.params.refinement_protocol.mode == 'repredict_only':
-        refined_experiments, refined_reflections = experiments, reflections_for_refinement
+
+        from dials.algorithms.indexing.nave_parameters import nave_parameters
         from dials.algorithms.refinement.prediction import ExperimentsPredictor
+        refined_experiments, refined_reflections = experiments, reflections_for_refinement
+        ref_predictor = ExperimentsPredictor(experiments, spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
+        ref_predictor(refined_reflections)
+        refined_reflections['delpsical2'] = refined_reflections['delpsical.rad']**2
+        for expt_id in range(len(refined_experiments)):
+          refls = refined_reflections.select(refined_reflections['id'] == expt_id)
+          nv = nave_parameters(params=self.all_params,
+                               experiments=refined_experiments[expt_id:expt_id+1],
+                               reflections=refls, refinery=None, graph_verbose=False)
+          experiments[expt_id].crystal = nv()
         ref_predictor = ExperimentsPredictor(experiments, spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
         ref_predictor(refined_reflections)
 

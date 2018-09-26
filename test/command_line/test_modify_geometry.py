@@ -6,9 +6,7 @@ from libtbx import easy_run
 from dxtbx.serialize import load
 
 
-def test_modify_geometry(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_modify_geometry(dials_regression, run_in_tmpdir):
   orig_expt_json = os.path.join(
     dials_regression, "experiment_test_data/kappa_experiments.json")
 

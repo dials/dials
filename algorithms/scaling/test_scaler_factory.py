@@ -145,7 +145,7 @@ def test_SingleScalerFactory(generated_param, mock_exp, test_refl, refl_to_filte
       'intensity', 'variance', 'id'])
 
   # Test reflection filtering
-  rt = SingleScalerFactory.filter_bad_reflections(refl_to_filter)
+  rt, reasons = SingleScalerFactory.filter_bad_reflections(refl_to_filter)
   assert list(rt.get_flags(rt.flags.excluded_for_scaling)) == [False, True, True,
     False, False, False]
 

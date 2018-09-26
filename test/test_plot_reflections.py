@@ -4,8 +4,7 @@ import os
 
 from libtbx import easy_run
 
-def test_run(dials_regression, tmpdir):
-  tmpdir.chdir()
+def test_run(dials_regression, run_in_tmpdir):
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
 
   cmd = " ".join(["dials.plot_reflections",

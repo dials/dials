@@ -11,9 +11,7 @@ import pytest
 from cctbx import uctbx
 from dials.test.algorithms.indexing.test_index import run_one_indexing
 
-def test_run(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_run(dials_regression, run_in_tmpdir):
   expected_unit_cell = uctbx.unit_cell(
     (11.624, 13.550, 30.103, 89.964, 93.721, 90.132))
   expected_rmsds = (0.039, 0.035, 0.002)

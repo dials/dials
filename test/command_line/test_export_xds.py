@@ -3,9 +3,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import procrunner
 
-def test_spots_xds(tmpdir):
-  tmpdir.chdir()
-
+def test_spots_xds(run_in_tmpdir):
   xds_input = 'SPOT.XDS'
   output_pickle = "spot.pickle"
 
@@ -64,9 +62,7 @@ def test_spots_xds(tmpdir):
 """.split('\n')]
 
 
-def test_export_xds(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_export_xds(dials_regression, run_in_tmpdir):
   result = procrunner.run_process([
       "dials.find_spots",
       os.path.join(dials_regression, "centroid_test_data", "datablock.json"),

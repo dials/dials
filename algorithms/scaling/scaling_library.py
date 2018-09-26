@@ -12,6 +12,7 @@ from copy import deepcopy
 import logging
 import pkg_resources
 from libtbx import phil
+from libtbx.utils import Sorry
 from mock import Mock
 import iotbx.merging_statistics
 from iotbx import cif, mtz
@@ -150,6 +151,8 @@ def create_scaling_model(params, experiments, reflections):
           #finds relevant extension in dials.extensions.scaling_model_ext
           factory = entry_point.load().factory()
           exp.scaling_model = factory.create(params, exp, refl)
+      if not exp.scaling_model:
+        raise Sorry('Unable to create scaling model of type %s' % params.model)
   return experiments
 
 def create_Ih_table(experiments, reflections, selections=None, n_blocks=1,

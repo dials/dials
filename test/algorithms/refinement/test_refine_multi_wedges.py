@@ -11,9 +11,7 @@ from libtbx.test_utils import open_tmp_directory
 from scitbx import matrix
 from dxtbx.model.experiment_list import ExperimentListFactory
 
-def test(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test(dials_regression, run_in_tmpdir):
   data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_narrow_wedges")
 
   selection = (2,3,4,5,6,7,9,11,12,13,14,17,18,19,20)

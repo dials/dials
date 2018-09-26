@@ -332,14 +332,13 @@ class Script(object):
       logger.info('Updating predictions for indexed reflections')
       preds = refiner.predict_for_indexed()
 
-      # just copy over the columns of interest, leaving behind things
-      # added by e.g. scan-varying refinement such as 'block', the
-      # U, B and UB matrices and gradients.
-      reflections['s1'] = preds['s1']
-      reflections['xyzcal.mm'] = preds['xyzcal.mm']
-      reflections['xyzcal.px'] = preds['xyzcal.px']
-      if 'entering' in preds:
-        reflections['entering'] = preds['entering']
+      # just copy over the columns of interest or columns that may have been
+      # updated, leaving behind things added by e.g. scan-varying refinement
+      # such as 'block', the U, B and UB matrices and gradients.
+      for key in preds.keys():
+        if key in reflections.keys() or key in \
+            ['s1', 'xyzcal.mm', 'xyzcal.px', 'entering', 'delpsical.rad']:
+          reflections[key] = preds[key]
 
       # set refinement flags
       assert len(preds) == len(reflections)

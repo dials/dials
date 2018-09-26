@@ -453,3 +453,37 @@ def test_targeted_scaling(dials_regression, tmpdir):
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
     assert os.path.exists("scaled_experiments.json")
     assert os.path.exists("scaled.pickle")
+
+@pytest.mark.dataset_test
+def test_scale_cross_validate(dials_regression, tmpdir):
+  """Test standard scaling of one dataset."""
+
+  data_dir = os.path.join(dials_regression, "xia2-28",)
+  pickle_path = os.path.join(data_dir, "20_integrated.pickle")
+  sweep_path = os.path.join(data_dir, "20_integrated_experiments.json")
+  extra_args = ["cross_validation_mode=single", "nfolds=2", "full_matrix=0",
+    "optimise_errors=0"]
+
+  with tmpdir.as_cwd():
+    args = ["dials.scale"] + [pickle_path] + [sweep_path] + extra_args
+    command = " ".join(args)
+    print(command)
+    _ = easy_run.fully_buffered(command=command).raise_if_errors()
+
+  extra_args = ["cross_validation_mode=multi", "nfolds=2", "full_matrix=0",
+    "optimise_errors=0", "parameter=absorption_term"]
+
+  with tmpdir.as_cwd():
+    args = ["dials.scale"] + [pickle_path] + [sweep_path] + extra_args
+    command = " ".join(args)
+    print(command)
+    _ = easy_run.fully_buffered(command=command).raise_if_errors()
+
+  extra_args = ["cross_validation_mode=multi", "nfolds=2", "full_matrix=0",
+    "optimise_errors=0", "parameter=model", 'parameter_values="physical array"']
+
+  with tmpdir.as_cwd():
+    args = ["dials.scale"] + [pickle_path] + [sweep_path] + extra_args
+    command = " ".join(args)
+    print(command)
+    _ = easy_run.fully_buffered(command=command).raise_if_errors()

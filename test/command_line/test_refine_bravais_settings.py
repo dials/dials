@@ -7,9 +7,7 @@ import pytest
 from cctbx import uctbx
 from libtbx import easy_run
 
-def test_refine_bravais_settings(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_refine_bravais_settings(dials_regression, run_in_tmpdir):
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "indexed.pickle")
   experiments_path = os.path.join(data_dir, "experiments.json")
@@ -49,9 +47,7 @@ def test_refine_bravais_settings(dials_regression, tmpdir):
   assert bravais_summary['9']['recommended'] == True
   assert bravais_summary['9']['rmsd'] == pytest.approx(0.047, abs=1e-2)
 
-def test_refine_bravais_settings_2(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_refine_bravais_settings_2(dials_regression, run_in_tmpdir):
   data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
   pickle_path = os.path.join(data_dir, "indexed.pickle")
   experiments_path = os.path.join(data_dir, "experiments.json")
@@ -81,9 +77,7 @@ def test_refine_bravais_settings_2(dials_regression, tmpdir):
   assert bravais_summary['9']['rmsd'] == pytest.approx(0.103, abs=1e-2)
   assert bravais_summary['9']['recommended'] == True
 
-def test_refine_bravais_settings_3(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_refine_bravais_settings_3(dials_regression, run_in_tmpdir):
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "indexed.pickle")
   experiments_path = os.path.join(data_dir, "experiments.json")
@@ -118,9 +112,7 @@ def test_refine_bravais_settings_3(dials_regression, tmpdir):
   assert bravais_summary['5']['recommended'] == True
   assert bravais_summary['9']['recommended'] == False
 
-def test_refine_bravais_settings_554(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_refine_bravais_settings_554(dials_regression, run_in_tmpdir):
   data_dir = os.path.join(dials_regression, "dials-554")
   pickle_path = os.path.join(data_dir, "indexed.pickle")
   experiments_path = os.path.join(data_dir, "experiments.json")

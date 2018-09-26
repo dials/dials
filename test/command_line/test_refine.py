@@ -18,9 +18,7 @@ from dxtbx.model.experiment_list import ExperimentListFactory
 from dials.array_family import flex
 import pytest
 
-def test1(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test1(dials_regression, run_in_tmpdir):
   # use the i04_weak_data for this test
   data_dir = os.path.join(dials_regression, "refinement_test_data", "i04_weak_data")
   experiments_path = os.path.join(data_dir, "experiments.json")
@@ -51,12 +49,10 @@ def test1(dials_regression, tmpdir):
       pytest.approx((0.0009903, 0.0009903, 0.0021227, 0.0, 0.0, 0.0), abs=1e-6)
   assert ref_exp.crystal.get_cell_volume_sd() == pytest.approx(23.8063382, abs=1e-6)
 
-def test2(dials_regression, tmpdir):
+def test2(dials_regression, run_in_tmpdir):
   """Run scan-varying refinement, comparing RMSD table with expected values.
   This test automates what was manually done periodically and recorded in
   dials_regression/refinement_test_data/centroid/README.txt"""
-
-  tmpdir.chdir()
 
   # use the i04_weak_data for this test
   data_dir = os.path.join(dials_regression, "refinement_test_data", "centroid")
@@ -104,10 +100,9 @@ def test2(dials_regression, tmpdir):
   uir = rt.get_flags(rt.flags.used_in_refinement)
   assert uir.count(True) == history['num_reflections'][-1]
 
-def test3(dials_regression, tmpdir):
+def test3(dials_regression, run_in_tmpdir):
   """Strict check for scan-varying refinement using automated outlier rejection
   block width and interval width setting"""
-  tmpdir.chdir()
 
   # use the i04_weak_data for this test
   data_dir = os.path.join(dials_regression, "refinement_test_data", "centroid")

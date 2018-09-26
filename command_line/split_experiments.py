@@ -42,6 +42,13 @@ class Script(object):
         reflections_prefix = reflections
           .type = str
           .help = "Filename prefix for the split reflections"
+
+        chunk_size = None
+          .type = int
+          .expert_level = 2
+          .help = "If not None, instead of creating many individual"
+                  "files, create composite files with no more than"
+                  "chunk_size experiments per file."
       }
     ''', process_includes=True)
 
@@ -97,6 +104,8 @@ class Script(object):
     from dxtbx.model.experiment_list import ExperimentList
     from dxtbx.serialize import dump
     if params.by_detector:
+      assert not params.output.chunk_size, \
+        "chunk_size + by_detector is not implemented"
       if reflections is None:
         split_data = {detector:{'experiments': ExperimentList()}
                       for detector in experiments.detectors()}
@@ -126,6 +135,41 @@ class Script(object):
           reflections_filename = reflections_template %i
           print('Saving reflections for experiment %d to %s' %(i, reflections_filename))
           split_data[detector]['reflections'].as_pickle(reflections_filename)
+    elif params.output.chunk_size:
+      from dxtbx.model.experiment_list import ExperimentList
+      from dxtbx.serialize import dump
+
+      def save_chunk(chunk_id, expts, refls):
+        experiment_filename = experiments_template%chunk_id
+        print('Saving chunk %d to %s' %(chunk_id, experiment_filename))
+        dump.experiment_list(expts, experiment_filename)
+        if refls is not None:
+          reflections_filename = reflections_template%chunk_id
+          print('Saving reflections for chunk %d to %s' %(chunk_id, reflections_filename))
+          refls.as_pickle(reflections_filename)
+
+      chunk_counter = 0
+      chunk_expts = ExperimentList()
+      if reflections:
+        chunk_refls = flex.reflection_table()
+      else:
+        chunk_refls = None
+      for i, experiment in enumerate(experiments):
+        chunk_expts.append(experiment)
+        if reflections:
+          ref_sel = reflections.select(reflections['id'] == i)
+          ref_sel['id'] = flex.int(len(ref_sel), len(chunk_expts)-1)
+          chunk_refls.extend(ref_sel)
+        if len(chunk_expts) == params.output.chunk_size:
+          save_chunk(chunk_counter, chunk_expts, chunk_refls)
+          chunk_counter += 1
+          chunk_expts = ExperimentList()
+          if reflections:
+            chunk_refls = flex.reflection_table()
+          else:
+            chunk_refls = None
+      if len(chunk_expts) > 0:
+          save_chunk(chunk_counter, chunk_expts, chunk_refls)
     else:
       for i, experiment in enumerate(experiments):
         from dxtbx.model.experiment_list import ExperimentList

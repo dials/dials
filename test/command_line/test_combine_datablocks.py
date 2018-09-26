@@ -6,9 +6,7 @@ from dials.array_family import flex
 from dxtbx.datablock import DataBlockFactory
 from libtbx import easy_run
 
-def test_combination_of_multiple_datablocks_and_strong_spots_files(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_combination_of_multiple_datablocks_and_strong_spots_files(dials_regression, run_in_tmpdir):
   path = os.path.join(dials_regression, "centroid_test_data/centroid_####.cbf")
 
   # example combined two different spot-finding settings for the same dataset

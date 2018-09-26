@@ -7,9 +7,8 @@ import os
 from dxtbx.model.experiment_list import ExperimentListFactory
 import procrunner
 
-def test1(dials_regression, tmpdir):
+def test1(dials_regression, run_in_tmpdir):
   from scitbx import matrix
-  tmpdir.chdir()
 
   data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
 
@@ -46,9 +45,7 @@ def test1(dials_regression, tmpdir):
       fast_axis_tolerance=1e-4, slow_axis_tolerance=1e-4, origin_tolerance=1e-2)
 
 
-def test_multi_process_refinement_gives_same_results_as_single_process_refinement(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_multi_process_refinement_gives_same_results_as_single_process_refinement(dials_regression, run_in_tmpdir):
   data_dir = os.path.join(dials_regression, "refinement_test_data",
                           "multi_stills")
   cmd = [

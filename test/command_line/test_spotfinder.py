@@ -9,9 +9,7 @@ import pytest
 
 from dials.array_family import flex # import dependency
 
-def test_find_spots_from_images(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_find_spots_from_images(dials_regression, run_in_tmpdir):
   result = procrunner.run_process([
       "dials.find_spots",
       "output.reflections=spotfinder.pickle",
@@ -30,9 +28,7 @@ def test_find_spots_from_images(dials_regression, tmpdir):
   assert refl['xyzobs.px.value'] == pytest.approx((1399.1190476190477, 514.2142857142857, 0.5))
   assert "shoebox" in reflections
 
-def test_find_spots_with_resolution_filter(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_find_spots_with_resolution_filter(dials_regression, run_in_tmpdir):
   result = procrunner.run_process([
       "dials.find_spots",
       "output.reflections=spotfinder.pickle",
@@ -49,9 +45,7 @@ def test_find_spots_with_resolution_filter(dials_regression, tmpdir):
   assert len(reflections) == 467
   assert "shoebox" not in reflections
 
-def test_find_spots_with_hot_mask(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_find_spots_with_hot_mask(dials_regression, run_in_tmpdir):
   # now write a hot mask
   result = procrunner.run_process([
       "dials.find_spots",
@@ -74,9 +68,7 @@ def test_find_spots_with_hot_mask(dials_regression, tmpdir):
   assert len(mask) == 1
   assert mask[0].count(False) == 12
 
-def test_find_spots_with_hot_mask_with_prefix(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_find_spots_with_hot_mask_with_prefix(dials_regression, run_in_tmpdir):
   # now write a hot mask
   result = procrunner.run_process([
       "dials.find_spots",
@@ -99,9 +91,7 @@ def test_find_spots_with_hot_mask_with_prefix(dials_regression, tmpdir):
   assert len(mask) == 1
   assert mask[0].count(False) == 12
 
-def test_find_spots_with_generous_parameters(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_find_spots_with_generous_parameters(dials_regression, run_in_tmpdir):
   # now with more generous parameters
   result = procrunner.run_process([
       "dials.find_spots",
@@ -117,9 +107,7 @@ def test_find_spots_with_generous_parameters(dials_regression, tmpdir):
     reflections = pickle.load(f)
   assert len(reflections) == 678
 
-def test_find_spots_with_user_defined_mask(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_find_spots_with_user_defined_mask(dials_regression, run_in_tmpdir):
   # Now with a user defined mask
   result = procrunner.run_process([
       "dials.find_spots",
@@ -145,9 +133,7 @@ def test_find_spots_with_user_defined_mask(dials_regression, tmpdir):
     d = detector[0].get_resolution_at_pixel(beam.get_s0(), (x, y))
     assert d >= 3
 
-def test_find_spots_with_user_defined_region(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_find_spots_with_user_defined_region(dials_regression, run_in_tmpdir):
   result = procrunner.run_process([
       "dials.find_spots",
       "output.reflections=spotfinder.pickle",
@@ -166,9 +152,7 @@ def test_find_spots_with_user_defined_region(dials_regression, tmpdir):
   assert x.all_lt(1200)
   assert y.all_lt(1200)
 
-def test_find_spots_with_xfel_stills(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_find_spots_with_xfel_stills(dials_regression, run_in_tmpdir):
   # now with XFEL stills
   result = procrunner.run_process([
       "dials.find_spots",
