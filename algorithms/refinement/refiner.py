@@ -528,10 +528,12 @@ class RefinerFactory(object):
     # copy and filter the reflections
     reflections = cls._filter_reflections(reflections)
 
-    return cls._build_components(params,
-                                 reflections,
-                                 experiments,
-                                 verbosity=verbosity)
+    refiner =  cls._build_components(params,
+                                     reflections,
+                                     experiments,
+                                     verbosity=verbosity)
+    if not copy_experiments: refiner.copy_experiments = False
+    return refiner
 
   @classmethod
   def _build_components(cls, params, reflections, experiments, verbosity):
@@ -1910,6 +1912,10 @@ class Refiner(object):
     self._verbosity = verbosity
     if verbosity == 0:
       logger.disabled = True
+
+    # May be set to False for performance reasons
+    # (see https://github.com/dials/dials/issues/258)
+    self.copy_experiments = True
 
     return
 
