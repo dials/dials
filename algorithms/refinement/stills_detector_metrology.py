@@ -16,10 +16,14 @@ from __future__ import absolute_import, division
 from dials.algorithms.refinement.refiner import RefinerFactory
 from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
   import StillsPredictionParameterisation
-from dials.algorithms.refinement.parameterisation.prediction_parameters \
-  import SparseGradientVectorMixin
-from dials.algorithms.refinement.target_stills import \
-  LeastSquaresStillsResidualWithRmsdCutoff
+from dials.algorithms.refinement.parameterisation.detector_parameters \
+  import DetectorParameterisationHierarchical
+from dials.algorithms.refinement.parameterisation.detector_parameters \
+  import DetectorParameterisationMultiPanel
+from dials.algorithms.refinement.parameterisation.detector_parameters \
+  import DetectorParameterisationSinglePanel
+from dials.algorithms.refinement.parameterisation.parameter_report \
+  import ParameterReporter
 from dials.algorithms.refinement.target import SparseGradientsMixin
 from dials.array_family import flex
 
@@ -47,9 +51,6 @@ class StillsDetectorRefinerFactory(RefinerFactory):
     detector_options = params.detector
     sparse = params.sparse
 
-    # Shorten paths
-    import dials.algorithms.refinement.parameterisation as par
-
     # Parameterise unique Beams
     beam_params = []
 
@@ -67,22 +68,22 @@ class StillsDetectorRefinerFactory(RefinerFactory):
         if len(detector) > 1:
           try:
             h = detector.hierarchy()
-            det_param = par.DetectorParameterisationHierarchical(detector,
+            det_param = DetectorParameterisationHierarchical(detector,
                 experiment_ids=exp_ids, level=detector_options.hierarchy_level)
           except AttributeError:
-            det_param = par.DetectorParameterisationMultiPanel(detector, beam,
+            det_param = DetectorParameterisationMultiPanel(detector, beam,
                                                         experiment_ids=exp_ids)
         else:
-          det_param = par.DetectorParameterisationSinglePanel(detector,
+          det_param = DetectorParameterisationSinglePanel(detector,
                                                         experiment_ids=exp_ids)
       elif detector_options.panels == "single":
-        det_param = par.DetectorParameterisationSinglePanel(detector,
+        det_param = DetectorParameterisationSinglePanel(detector,
                                                         experiment_ids=exp_ids)
       elif detector_options.panels == "multiple":
-        det_param = par.DetectorParameterisationMultiPanel(detector, beam,
+        det_param = DetectorParameterisationMultiPanel(detector, beam,
                                                         experiment_ids=exp_ids)
       elif detector_options.panels == "hierarchical":
-        det_param = par.DetectorParameterisationHierarchical(detector, beam,
+        det_param = DetectorParameterisationHierarchical(detector, beam,
                 experiment_ids=exp_ids, level=detector_options.hierarchy_level)
       else: # can only get here if refinement.phil is broken
         raise RuntimeError("detector_options.panels value not recognised")
@@ -121,7 +122,7 @@ class StillsDetectorRefinerFactory(RefinerFactory):
       raise NotImplementedError("currently only for stills")
 
     # Parameter reporting
-    param_reporter = par.ParameterReporter(det_params, beam_params,
+    param_reporter = ParameterReporter(det_params, beam_params,
                                            xl_ori_params, xl_uc_params)
 
     return pred_param, param_reporter
@@ -344,11 +345,14 @@ class StillsDetectorPredictionParameterisation(StillsPredictionParameterisation)
 
     return results
 
+from dials.algorithms.refinement.parameterisation.prediction_parameters \
+  import SparseGradientVectorMixin
 class StillsDetectorPredictionParameterisationSparse(SparseGradientVectorMixin,
   StillsDetectorPredictionParameterisation):
   pass
 
-
+from dials.algorithms.refinement.target_stills import \
+  LeastSquaresStillsResidualWithRmsdCutoff
 class LeastSquaresStillsDetector(LeastSquaresStillsResidualWithRmsdCutoff):
 
   _first_predict = True

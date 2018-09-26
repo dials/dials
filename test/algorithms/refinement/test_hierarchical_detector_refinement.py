@@ -100,7 +100,7 @@ def test1(dials_regression):
   refs, ref_predictor = generate_reflections(experiments)
 
   # move the detector quadrants apart by 2mm both horizontally and vertically
-  from dials.algorithms.refinement.parameterisation \
+  from dials.algorithms.refinement.parameterisation.detector_parameters \
     import DetectorParameterisationHierarchical
   det_param = DetectorParameterisationHierarchical(detector, level=1)
   det_p_vals = det_param.get_param_vals()

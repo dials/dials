@@ -9,6 +9,22 @@ from dials_refinement_helpers_ext import mnmn_iter as mnmn
 import libtbx # for libtbx.Auto
 from scitbx.array_family import flex
 
+# Import parameterisations
+from .beam_parameters import BeamParameterisation
+from .scan_varying_beam_parameters import ScanVaryingBeamParameterisation
+from .crystal_parameters import CrystalOrientationParameterisation
+from .scan_varying_crystal_parameters import ScanVaryingCrystalOrientationParameterisation
+from .crystal_parameters import CrystalUnitCellParameterisation
+from .scan_varying_crystal_parameters import ScanVaryingCrystalUnitCellParameterisation
+from .detector_parameters import DetectorParameterisationHierarchical
+from .detector_parameters import DetectorParameterisationMultiPanel
+from .detector_parameters import DetectorParameterisationSinglePanel
+from .scan_varying_detector_parameters import ScanVaryingDetectorParameterisationSinglePanel
+from .goniometer_parameters import GoniometerParameterisation
+from .scan_varying_goniometer_parameters import ScanVaryingGoniometerParameterisation
+from .scan_varying_prediction_parameters import ScanVaryingPredictionParameterisation
+from .parameter_report import ParameterReporter
+
 # PHIL
 from libtbx.phil import parse
 from dials.algorithms.refinement.restraints.restraints_parameterisation \
@@ -296,9 +312,6 @@ class ParameterisationFactory(object):
         parameter reporter object.
     """
 
-    # Shorten module paths
-    import dials.algorithms.refinement.parameterisation as par
-
     # function to convert fix_lists into to_fix selections
     from dials.algorithms.refinement.refinement_helpers import string_sel
 
@@ -397,20 +410,18 @@ class ParameterisationFactory(object):
               deg_per_interval = 36.0
             n_intervals = max(int(
               abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
-
-          beam_param = par.ScanVaryingBeamParameterisation(
-                                              beam,
-                                              array_range,
-                                              n_intervals,
-                                              goniometer=goniometer,
-                                              experiment_ids=exp_ids)
-        else: # force model to be static
-          beam_param = par.BeamParameterisation(beam, goniometer,
+          beam_param = ScanVaryingBeamParameterisation(beam,
+                                                       array_range,
+                                                       n_intervals,
+                                                       goniometer=goniometer,
                                                        experiment_ids=exp_ids)
+        else: # force model to be static
+          beam_param = BeamParameterisation(beam, goniometer,
+              experiment_ids=exp_ids)
       else:
         # Parameterise scan static beam, passing the goniometer
-        beam_param = par.BeamParameterisation(beam, goniometer,
-                                                       experiment_ids=exp_ids)
+        beam_param = BeamParameterisation(beam, goniometer,
+            experiment_ids=exp_ids)
 
       # get number of fixable units, either parameters or parameter sets in
       # the scan-varying case
@@ -486,14 +497,14 @@ class ParameterisationFactory(object):
             n_intervals = max(int(
               abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
 
-          xl_ori_param = par.ScanVaryingCrystalOrientationParameterisation(
+          xl_ori_param = ScanVaryingCrystalOrientationParameterisation(
               crystal,
               array_range,
               n_intervals,
               experiment_ids=exp_ids)
         else: # force model to be static
-          xl_ori_param = par.CrystalOrientationParameterisation(crystal,
-                                                          experiment_ids=exp_ids)
+          xl_ori_param = CrystalOrientationParameterisation(
+              crystal, experiment_ids=exp_ids)
 
         # unit cell parameterisation
         if not options.crystal.unit_cell.force_static:
@@ -509,20 +520,20 @@ class ParameterisationFactory(object):
               abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
 
           set_errors = options.crystal.unit_cell.set_scan_varying_errors
-          xl_uc_param = par.ScanVaryingCrystalUnitCellParameterisation(
+          xl_uc_param = ScanVaryingCrystalUnitCellParameterisation(
               crystal,
               array_range,
               n_intervals,
               experiment_ids=exp_ids,
               set_state_uncertainties=set_errors)
         else: # force model to be static
-          xl_uc_param = par.CrystalUnitCellParameterisation(crystal,
-                                                          experiment_ids=exp_ids)
+          xl_uc_param = CrystalUnitCellParameterisation(crystal,
+              experiment_ids=exp_ids)
       else: # all models scan-static
-        xl_ori_param = par.CrystalOrientationParameterisation(crystal,
-                                                        experiment_ids=exp_ids)
-        xl_uc_param = par.CrystalUnitCellParameterisation(crystal,
-                                                        experiment_ids=exp_ids)
+        xl_ori_param = CrystalOrientationParameterisation(crystal,
+            experiment_ids=exp_ids)
+        xl_uc_param = CrystalUnitCellParameterisation(crystal,
+            experiment_ids=exp_ids)
 
       # get number of fixable units, either parameters or parameter sets in
       # the scan-varying case
@@ -591,11 +602,11 @@ class ParameterisationFactory(object):
                         'currently supported')
           try:
             h = detector.hierarchy()
-            det_param = par.DetectorParameterisationHierarchical(detector,
+            det_param = DetectorParameterisationHierarchical(detector,
                 experiment_ids=exp_ids, level=options.detector.hierarchy_level)
           except AttributeError:
-            det_param = par.DetectorParameterisationMultiPanel(detector, beam,
-                                                        experiment_ids=exp_ids)
+            det_param = DetectorParameterisationMultiPanel(detector,
+                beam, experiment_ids=exp_ids)
         elif options.scan_varying and not options.detector.force_static:
           # If a detector is scan-varying, then it must always be found alongside
           # the same Scan and Goniometer in any Experiments in which it appears
@@ -619,13 +630,13 @@ class ParameterisationFactory(object):
             n_intervals = max(int(
               abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
 
-          det_param = par.ScanVaryingDetectorParameterisationSinglePanel(
+          det_param = ScanVaryingDetectorParameterisationSinglePanel(
               detector,
               array_range,
               n_intervals,
               experiment_ids=exp_ids)
         else:
-          det_param = par.DetectorParameterisationSinglePanel(detector,
+          det_param = DetectorParameterisationSinglePanel(detector,
                                                         experiment_ids=exp_ids)
       elif options.detector.panels == "single":
         if options.scan_varying and not options.detector.force_static:
@@ -654,26 +665,26 @@ class ParameterisationFactory(object):
             n_intervals = max(int(
               abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
 
-          det_param = par.ScanVaryingDetectorParameterisationSinglePanel(
+          det_param = ScanVaryingDetectorParameterisationSinglePanel(
               detector,
               array_range,
               n_intervals,
               experiment_ids=exp_ids)
         else:
-          det_param = par.DetectorParameterisationSinglePanel(detector,
-                                                        experiment_ids=exp_ids)
+          det_param = DetectorParameterisationSinglePanel(detector,
+              experiment_ids=exp_ids)
       elif options.detector.panels == "multiple":
         if options.scan_varying and not options.detector.force_static:
           raise Sorry('Scan-varying multiple panel detectors are not '
                       'currently supported')
-        det_param = par.DetectorParameterisationMultiPanel(detector, beam,
-                                                        experiment_ids=exp_ids)
+        det_param = DetectorParameterisationMultiPanel(detector,
+            beam, experiment_ids=exp_ids)
       elif options.detector.panels == "hierarchical":
         if options.scan_varying and not options.detector.force_static:
           raise Sorry('Scan-varying hierarchical detectors are not '
                       'currently supported')
-        det_param = par.DetectorParameterisationHierarchical(detector, beam,
-                experiment_ids=exp_ids, level=options.detector.hierarchy_level)
+        det_param = DetectorParameterisationHierarchical(detector, beam,
+            experiment_ids=exp_ids, level=options.detector.hierarchy_level)
       else: # can only get here if refinement.phil is broken
         raise RuntimeError("detector.panels value not recognised")
 
@@ -745,19 +756,15 @@ class ParameterisationFactory(object):
             n_intervals = max(int(
               abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
 
-          gon_param = par.ScanVaryingGoniometerParameterisation(
-                                              goniometer,
-                                              array_range,
-                                              n_intervals,
-                                              beam=beam,
-                                              experiment_ids=exp_ids)
+          gon_param = ScanVaryingGoniometerParameterisation(goniometer,
+              array_range, n_intervals, beam=beam, experiment_ids=exp_ids)
         else: # force model to be static
-          gon_param = par.GoniometerParameterisation(goniometer, beam,
+          gon_param = GoniometerParameterisation(goniometer, beam,
                                                        experiment_ids=exp_ids)
       else:
         # Parameterise scan static goniometer
-        gon_param = par.GoniometerParameterisation(goniometer, beam,
-                                                       experiment_ids=exp_ids)
+        gon_param = GoniometerParameterisation(goniometer, beam,
+            experiment_ids=exp_ids)
 
       # get number of fixable units, either parameters or parameter sets in
       # the scan-varying case
@@ -1140,46 +1147,45 @@ class ParameterisationFactory(object):
     if do_stills: # doing stills
       if options.sparse:
         if options.spherical_relp_model:
-          from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
-            import SphericalRelpStillsPredictionParameterisationSparse as StillsPredictionParameterisation
+          from .prediction_parameters_stills \
+            import SphericalRelpStillsPredictionParameterisationSparse as spp
         else:
-          from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
-            import StillsPredictionParameterisationSparse as StillsPredictionParameterisation
+          from .prediction_parameters_stills \
+            import StillsPredictionParameterisationSparse as spp
       else:
         if options.spherical_relp_model:
-          from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
-            import SphericalRelpStillsPredictionParameterisation as StillsPredictionParameterisation
+          from .prediction_parameters_stills \
+            import SphericalRelpStillsPredictionParameterisation as spp
         else:
-          from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
-              import StillsPredictionParameterisation
-      pred_param = StillsPredictionParameterisation(
-          experiments,
-          det_params, beam_params, xl_ori_params, xl_uc_params)
+          from .prediction_parameters_stills \
+              import StillsPredictionParameterisation as spp
+      pred_param = spp(experiments, det_params, beam_params, xl_ori_params,
+          xl_uc_params)
 
     else: # doing scans
       if options.scan_varying:
         if options.sparse:
-          from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
+          from .scan_varying_prediction_parameters \
             import ScanVaryingPredictionParameterisationSparse as PredParam
         else:
-          from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
+          from .scan_varying_prediction_parameters \
             import ScanVaryingPredictionParameterisation as PredParam
         pred_param = PredParam(
               experiments,
               det_params, beam_params, xl_ori_params, xl_uc_params, gon_params)
       else:
         if options.sparse:
-          from dials.algorithms.refinement.parameterisation.prediction_parameters \
+          from .prediction_parameters \
             import XYPhiPredictionParameterisationSparse as PredParam
         else:
-          from dials.algorithms.refinement.parameterisation.prediction_parameters \
+          from .prediction_parameters \
             import XYPhiPredictionParameterisation as PredParam
         pred_param = PredParam(
             experiments,
             det_params, beam_params, xl_ori_params, xl_uc_params, gon_params)
 
     # Parameter reporting
-    param_reporter = par.ParameterReporter(det_params, beam_params,
+    param_reporter = ParameterReporter(det_params, beam_params,
         xl_ori_params, xl_uc_params, gon_params)
 
     return pred_param, param_reporter
