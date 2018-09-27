@@ -34,6 +34,7 @@ def test(DataBlockFactory, ExperimentListFactory, flex):
          experiments_path))
 
   params = phil_scope.extract()
+
   # Check the right filenames were parsed
   assert(params.input.reflections.filename == reflections_path)
   assert(params.input.datablock.filename == datablock_path)
@@ -43,6 +44,6 @@ def test(DataBlockFactory, ExperimentListFactory, flex):
   assert isinstance(params.input.datablock.data, mock.Mock)
   assert isinstance(params.input.experiments.data, mock.Mock)
   # Check we had the correct calls made
-  flex.reflection_table.from_pickle.assert_called_once_with(reflections_path)
+  flex.reflection_table.from_msgpack_file.assert_called_once_with(reflections_path)
   assert DataBlockFactory.from_json_file.call_args[0] == (datablock_path,)
   assert ExperimentListFactory.from_json_file.call_args[0] == (experiments_path,)
