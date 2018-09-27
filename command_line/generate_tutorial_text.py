@@ -9,6 +9,7 @@ import shlex
 import shutil
 import sys
 
+import dials.util.regression_data
 import libtbx.load_env  # required for libtbx.env.find_in_repositories
 from libtbx.test_utils import open_tmp_directory
 from procrunner import run_process
@@ -70,31 +71,12 @@ class Processing_Tutorial(object):
   """Command steps for generating the logs for the processing tutorial"""
 
   class dials_import(Job):
-
     def __init__(self):
-      # find i04 bag training data, this may be part of dials_regression or xia2_regression
-      if not libtbx.env.has_module("dials_regression") and not libtbx.env.has_module('xia2_regression'):
-        raise RuntimeError("No dials_regression or xia2_regression module available!")
+      # find i04 bag training data
+      df = dials.util.regression_data.DataFetcher()
+      dataset = df('i04_bag_training').join('th_8_2_0*cbf').strpath
 
-      data_dir = None
-
-      # use the i04_weak_data for this test
-      try:
-        dials_regression = os.path.join(
-          libtbx.env.dist_path('dials_regression'),
-          "data", "i04-BAG-training")
-        if os.path.isdir(dials_regression): data_dir = dials_regression
-      except Exception:
-        pass
-
-      xia2_regression = os.path.join(
-        abs(libtbx.env.build_path),
-        'xia2_regression', 'test_data', 'i04_bag_training')
-      if os.path.isdir(xia2_regression): data_dir = xia2_regression
-
-      if data_dir is None:
-        raise RuntimeError("Cannot find i04 data in either %s or %s" % (dials_regression, xia2_regression))
-      self.cmd = "dials.import {0}".format(os.path.join(data_dir,"th_8_2_0*cbf"))
+      self.cmd = "dials.import {0}".format(dataset)
 
   class dials_find_spots(Job):
     cmd = "dials.find_spots datablock.json nproc=4"
