@@ -179,7 +179,7 @@ class FilteringReductionMethods(object):
     combine_partials=True):
     if 'partiality' in reflection_table:
       reflection_table['fractioncalc'] = reflection_table['partiality']
-      if combine_partials:
+      if combine_partials and 'partial_id' in reflection_table:
         dataset_ids = set(reflection_table['id'])
         n_datasets = len(dataset_ids)
         if n_datasets > 1:
