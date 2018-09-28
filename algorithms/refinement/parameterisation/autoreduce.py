@@ -56,174 +56,167 @@ phil_str = '''
         .expert_level = 1
 '''
 
-# Parameter auto reduction options
-def model_nparam_minus_nref(options, p, reflections):
-  cutoff = options.auto_reduction.min_nref_per_parameter * p.num_free()
+class AutoReduce(object):
+  """Checks for over-parameterisation of models and acts in that case.
 
-  #Replaced Python code
-  '''
-  exp_ids = p.get_experiment_ids()
-  # Do we have enough reflections to support this parameterisation?
-  nparam = p.num_free()
-  cutoff = options.auto_reduction.min_nref_per_parameter * nparam
-  isel = flex.size_t()
-  for exp_id in exp_ids:
-    isel.extend((reflections['id'] == exp_id).iselection())
-  nref = len(isel)
-  return nref - cutoff
-  '''
-  return mnmn(reflections["id"],p.get_experiment_ids()).result - cutoff
+  Tests each provided model parameterisation to ensure there are enough
+  reflections in refinement to support that parameterisation. If there are
+  not then some action is taken. More details are given in documentation
+  within the phil_str alongside this class definition.
 
-def unit_cell_nparam_minus_nref(options, p, reflections):
-  '''Special version of model_nparam_minus_nref for crystal unit cell
-  parameterisations. In some cases certain parameters of a unit cell
-  parameterisation may affect only some subset of the total number of
-  reflections. For example, for an orthorhombic cell the g_param_0 parameter
-  has no effect on predictions in the plane (0,k,l). Here, take the number
-  of affected reflections for each parameter into account.'''
+  Attributes:
+      det_params (list): A list of DetectorParameterisation objects
+      beam_params (list): A list of BeamParameterisation objects
+      xl_ori_params (list): A list of CrystalOrientationParameterisation objects
+      xl_uc_params (list): A list of CrystalUnitCellParameterisation objects
+      gon_params (list): A list of GoniometerParameterisation objects
+      reflections: A reflection table
+  """
 
-  F_dbdp=flex.mat3_double( p.get_ds_dp() )
-  min_nref = options.auto_reduction.min_nref_per_parameter
-  # if no free parameters, do as model_nparam_minus_nref
-  if len(F_dbdp) == 0:
-    exp_ids = p.get_experiment_ids()
+  def __init__(self, options, det_params, beam_params, xl_ori_params,
+      xl_uc_params, gon_params, reflections, scan_varying=False):
+    """Initialise the AutoReduce object
+
+    Args:
+        options: A PHIL scope containing the auto reduction options
+        det_params (list): A list of DetectorParameterisation objects
+        beam_params (list): A list of BeamParameterisation objects
+        xl_ori_params (list): A list of CrystalOrientationParameterisation
+            objects
+        xl_uc_params (list): A list of CrystalUnitCellParameterisation objects
+        gon_params (list): A list of GoniometerParameterisation objects
+        reflections: The reflection table containing observations to refine
+            against
+        scan_varying (bool): Whether preparing for scan-varying refinement or
+            scan static refinement
+
+    """
+
+    self.det_params = det_params
+    self.beam_params = beam_params
+    self.xl_ori_params = xl_ori_params
+    self.xl_uc_params = xl_uc_params
+    self.gon_params = gon_params
+    self.reflections = reflections
+
+    self._options = options
+    self._scan_varying = scan_varying
+
+  # Parameter auto reduction options
+  def _model_nparam_minus_nref(self, p):
+    cutoff = self._options.min_nref_per_parameter * p.num_free()
+    return mnmn(self.reflections["id"],p.get_experiment_ids()).result - cutoff
+
+  def _unit_cell_nparam_minus_nref(self, p):
+    """Special version of _model_nparam_minus_nref for crystal unit cell
+    parameterisations. In some cases certain parameters of a unit cell
+    parameterisation may affect only some subset of the total number of
+    reflections. For example, for an orthorhombic cell the g_param_0 parameter
+    has no effect on predictions in the plane (0,k,l). Here, take the number
+    of affected reflections for each parameter into account."""
+
+    F_dbdp=flex.mat3_double( p.get_ds_dp() )
+    min_nref = self._options.min_nref_per_parameter
+    # if no free parameters, do as _model_nparam_minus_nref
+    if len(F_dbdp) == 0:
+      exp_ids = p.get_experiment_ids()
+      isel = flex.size_t()
+      for exp_id in exp_ids:
+        isel.extend((self.reflections['id'] == exp_id).iselection())
+      return len(isel)
+    return ucnmn(self.reflections["id"], self.reflections["miller_index"],
+        p.get_experiment_ids(), F_dbdp).result - min_nref
+
+  def _panel_gp_nparam_minus_nref(self, p, pnl_ids, group, verbose=False):
+    """
+    :param p: ModelParameterisation; parameters in model
+    :param pnl_ids: panel IDs
+    :param group: group ID
+    :panel reflections: flex table of reflections
+    :panel verbose:
+    :return: returns surplus {int}
+    """
+    exp_ids = p.get_experiment_ids() #Experiments parameterised by this ModelParameterisation
+    # Do we have enough reflections to support this parameterisation?
+    gp_params = [gp == group for gp in p.get_param_panel_groups()] #select the group ids for each param that matches the arg 'group'
+    fixlist = p.get_fixed() # Get the fixed parameters; list says yes or no over all
+    free_gp_params = [a and not b for a,b in zip(gp_params, fixlist)] #Free params is the total less the fixed
+    nparam = free_gp_params.count(True)
+    cutoff = self._options.min_nref_per_parameter * nparam
     isel = flex.size_t()
-    for exp_id in exp_ids:
-      isel.extend((reflections['id'] == exp_id).iselection())
-    return len(isel)
+    surplus = pgnmn(self.reflections["id"], self.reflections["panel"], pnl_ids,
+        exp_ids, cutoff).result
 
-  #Replaced Python code
-  '''
-  exp_ids = p.get_experiment_ids()
-  isel = flex.size_t()
-  for exp_id in exp_ids:
-    isel.extend((reflections['id'] == exp_id).iselection())
-  ref = reflections.select(isel)
-  h = ref['miller_index'].as_vec3_double()
-  dB_dp = p.get_ds_dp()
-  # if no free parameters, do as model_nparam_minus_nref
-  if len(dB_dp) == 0: return len(isel)
-  nref_each_param = []
-  min_nref = options.auto_reduction.min_nref_per_parameter
-  for der in dB_dp:
-    der_mat = flex.mat3_double(len(h), der.elems)
-    tst = (der_mat * h).norms()
-    nref_each_param.append((tst > 0.0).count(True))
+    if surplus < 0 and verbose:
+      logger.warning('{0} reflections on panels {1} '
+                     'with a cutoff of {2}'.format(nref, pnl_ids, cutoff))
+    return surplus
 
-  return min([nref - min_nref for nref in nref_each_param])
-  '''
-  return ucnmn(reflections["id"], reflections["miller_index"], p.get_experiment_ids(), F_dbdp).result - min_nref
-
-def panel_gp_nparam_minus_nref(options, p, pnl_ids, group, reflections, verbose=False):
-  """
-  :param p: ModelParameterisation; parameters in model
-  :param pnl_ids: panel IDs
-  :param group: group ID
-  :panel reflections: flex table of reflections
-  :panel verbose:
-  :return: returns surplus {int}
-  """
-  exp_ids = p.get_experiment_ids() #Experiments parameterised by this ModelParameterisation
-  # Do we have enough reflections to support this parameterisation?
-  gp_params = [gp == group for gp in p.get_param_panel_groups()] #select the group ids for each param that matches the arg 'group'
-  fixlist = p.get_fixed() # Get the fixed parameters; list says yes or no over all
-  free_gp_params = [a and not b for a,b in zip(gp_params, fixlist)] #Free params is the total less the fixed
-  nparam = free_gp_params.count(True)
-  cutoff = options.auto_reduction.min_nref_per_parameter * nparam
-  isel = flex.size_t()
-  #Use Boost.Python extension module to replace below code
-  surplus = pgnmn(reflections["id"], reflections["panel"], pnl_ids, exp_ids, cutoff).result
-
-  #Replaced Python code
-  '''
-  for exp_id in exp_ids:
-    sub_expID = (reflections['id'] == exp_id).iselection()
-    sub_panels_expID = reflections['panel'].select(sub_expID)
-    for pnl in pnl_ids:
-      isel.extend(sub_expID.select(sub_panels_expID == pnl))
-  nref = len(isel)
-  surplus = nref - cutoff
-  '''
-  if surplus < 0 and verbose:
-    logger.warning('{0} reflections on panels {1} with a cutoff of {2}'.format(nref, pnl_ids, cutoff))
-  return surplus
-
-def weak_parameterisation_search(options, beam_params, xl_ori_params, xl_uc_params,
-  det_params, gon_params, reflections):
-  weak = None
-  nref_deficit = 0
-  panels = None
-  pnl_gp = None
-  name = None
-  for i, p in enumerate(beam_params):
-    net_nref = model_nparam_minus_nref(options, p, reflections)
-    if net_nref < nref_deficit:
-      nref_deficit = net_nref
-      weak = p
-      name = 'Beam{0}'.format(i + 1)
-  for i, p in enumerate(xl_ori_params):
-    net_nref = model_nparam_minus_nref(options, p, reflections)
-    if net_nref < nref_deficit:
-      nref_deficit = net_nref
-      weak = p
-      name = 'Crystal{0} orientation'.format(i + 1)
-  for i, p in enumerate(xl_uc_params):
-    net_nref = unit_cell_nparam_minus_nref(options, p, reflections)
-    if net_nref < nref_deficit:
-      nref_deficit = net_nref
-      weak = p
-      name = 'Crystal{0} unit cell'.format(i + 1)
-  for i, p in enumerate(det_params):
-    try:
-      pnl_groups = p.get_panel_ids_by_group()
-      for igp, gp in enumerate(pnl_groups):
-        net_nref = panel_gp_nparam_minus_nref(options, p, gp, igp, reflections)
-        if net_nref < nref_deficit:
-          nref_deficit = net_nref
-          weak = p
-          panels = gp
-          pnl_gp = igp
-          name = 'Detector{0}PanelGroup{1}'.format(i + 1, pnl_gp + 1)
-    except Exception:
-      net_nref = model_nparam_minus_nref(options, p, reflections)
+  def _weak_parameterisation_search(self):
+    weak = None
+    nref_deficit = 0
+    panels = None
+    pnl_gp = None
+    name = None
+    for i, p in enumerate(self.beam_params):
+      net_nref = self._model_nparam_minus_nref(p)
       if net_nref < nref_deficit:
         nref_deficit = net_nref
         weak = p
-        panels = None
-        pnl_gp = None
-        name = 'Detector{0}'.format(i + 1)
-  for i, p in enumerate(gon_params):
-    net_nref = model_nparam_minus_nref(options, p, reflections)
-    if net_nref < nref_deficit:
-      nref_deficit = net_nref
-      weak = p
-      name = 'Goniometer{0}'.format(i + 1)
-  return {'parameterisation':weak,
-          'panels':panels,
-          'panel_group_id':pnl_gp,
-          'name':name}
+        name = 'Beam{0}'.format(i + 1)
+    for i, p in enumerate(self.xl_ori_params):
+      net_nref = self._model_nparam_minus_nref(p)
+      if net_nref < nref_deficit:
+        nref_deficit = net_nref
+        weak = p
+        name = 'Crystal{0} orientation'.format(i + 1)
+    for i, p in enumerate(self.xl_uc_params):
+      net_nref = self._unit_cell_nparam_minus_nref(p)
+      if net_nref < nref_deficit:
+        nref_deficit = net_nref
+        weak = p
+        name = 'Crystal{0} unit cell'.format(i + 1)
+    for i, p in enumerate(self.det_params):
+      try:
+        pnl_groups = p.get_panel_ids_by_group()
+        for igp, gp in enumerate(pnl_groups):
+          net_nref = self._panel_gp_nparam_minus_nref(p, gp, igp)
+          if net_nref < nref_deficit:
+            nref_deficit = net_nref
+            weak = p
+            panels = gp
+            pnl_gp = igp
+            name = 'Detector{0}PanelGroup{1}'.format(i + 1, pnl_gp + 1)
+      except Exception:
+        net_nref = self._model_nparam_minus_nref(p)
+        if net_nref < nref_deficit:
+          nref_deficit = net_nref
+          weak = p
+          panels = None
+          pnl_gp = None
+          name = 'Detector{0}'.format(i + 1)
+    for i, p in enumerate(self.gon_params):
+      net_nref = self._model_nparam_minus_nref(p)
+      if net_nref < nref_deficit:
+        nref_deficit = net_nref
+        weak = p
+        name = 'Goniometer{0}'.format(i + 1)
+    return {'parameterisation':weak,
+            'panels':panels,
+            'panel_group_id':pnl_gp,
+            'name':name}
 
-def autoreduce(options, det_params, beam_params, xl_ori_params, xl_uc_params,
-    gon_params, reflections):
+  def detector_reduce(self):
+    """Reduce detector parameters.
 
-  # In the scan-varying case we can't calculate dB_dp before composing the
-  # model, so revert to the original function
-  if options.scan_varying:
-    _unit_cell_nparam_minus_nref = model_nparam_minus_nref
-  else:
-    _unit_cell_nparam_minus_nref = unit_cell_nparam_minus_nref
-
-  # As a special case for detector metrology, try reducing the number of
-  # detector parameters if there are too few for some panel group. If this is
-  # unsuccessful, fail outright.
-  if options.auto_reduction.detector_reduce:
-    reduce_list = options.auto_reduction.detector_reduce_list
-    for i, dp in enumerate(det_params):
+    Special case intended for metrology refinement of multi-panel detectors."""
+    reduce_list = self._options.detector_reduce_list
+    for i, dp in enumerate(self.det_params):
       to_fix = flex.bool(dp.get_fixed())
       try: # test for hierarchical detector parameterisation
         pnl_groups = dp.get_panel_ids_by_group()
         for igp, gp in enumerate(pnl_groups):
-          surplus = panel_gp_nparam_minus_nref(options, dp, gp, igp, reflections, verbose=True)
+          surplus = self._panel_gp_nparam_minus_nref(dp, gp, igp, verbose=True)
           if surplus < 0:
             msg = ('Require {0} more reflections to parameterise Detector{1} '
                    'panel group {2}').format(-1*surplus, i + 1, igp + 1)
@@ -233,98 +226,98 @@ def autoreduce(options, det_params, beam_params, xl_ori_params, xl_uc_params,
             reduce_this_group = [prefix + e for e in reduce_list]
             to_fix |= flex.bool(string_sel(reduce_this_group, names))
             # try again, and fail if still unsuccessful
-            surplus = panel_gp_nparam_minus_nref(options, dp, gp, igp, reflections, verbose=True)
+            surplus = self._panel_gp_nparam_minus_nref(dp, gp, igp, verbose=True)
             if surplus < 0:
               msg = msg.format(-1*surplus, i + 1, igp + 1)
               raise Sorry(msg + '\nFailing.')
       except AttributeError:
-        if model_nparam_minus_nref(options, dp, reflections) < 0:
+        if self._model_nparam_minus_nref(dp) < 0:
           mdl = 'Detector{0}'.format(i + 1)
           msg = failmsg.format(mdl)
           raise Sorry(msg)
       dp.set_fixed(to_fix)
 
-  if options.auto_reduction.action == 'fail':
+  def check_and_fail(self):
     failmsg = 'Too few reflections to parameterise {0}'
     failmsg += '\nTry modifying refinement.parameterisation.auto_reduction options'
-    for i, bp in enumerate(beam_params):
-      if model_nparam_minus_nref(options, bp, reflections) < 0:
+    for i, bp in enumerate(self.beam_params):
+      if self._model_nparam_minus_nref(bp) < 0:
         mdl = 'Beam{0}'.format(i + 1)
         msg = failmsg.format(mdl)
         raise Sorry(msg)
 
-    for i, xlo in enumerate(xl_ori_params):
-      if model_nparam_minus_nref(options, xlo, reflections) < 0:
+    for i, xlo in enumerate(self.xl_ori_params):
+      if self._model_nparam_minus_nref(xlo) < 0:
         mdl = 'Crystal{0} orientation'.format(i + 1)
         msg = failmsg.format(mdl)
         raise Sorry(msg)
 
-    for i, xluc in enumerate(xl_uc_params):
-      if _unit_cell_nparam_minus_nref(options, xluc, reflections) < 0:
+    for i, xluc in enumerate(self.xl_uc_params):
+      if self._unit_cell_nparam_minus_nref(xluc) < 0:
         mdl = 'Crystal{0} unit cell'.format(i + 1)
         msg = failmsg.format(mdl)
         raise Sorry(msg)
 
-    for i, dp in enumerate(det_params):
+    for i, dp in enumerate(self.det_params):
       try: # test for hierarchical detector parameterisation
         pnl_groups = dp.get_panel_ids_by_group()
         for igp, gp in enumerate(pnl_groups):
-          if panel_gp_nparam_minus_nref(options, dp, gp, igp, reflections) < 0:
+          if self._panel_gp_nparam_minus_nref(dp, gp, igp) < 0:
             msg = 'Too few reflections to parameterise Detector{0} panel group {1}'
             msg = msg.format(i + 1, igp + 1)
             msg += '\nTry modifying refinement.parameterisation.auto_reduction options'
             raise Sorry(msg)
       except AttributeError:
-        if model_nparam_minus_nref(options, dp, reflections) < 0:
+        if self._model_nparam_minus_nref(dp) < 0:
           mdl = 'Detector{0}'.format(i + 1)
           msg = failmsg.format(mdl)
           raise Sorry(msg)
 
-    for i, gonp in enumerate(gon_params):
-      if model_nparam_minus_nref(options, gonp, reflections) < 0:
+    for i, gonp in enumerate(self.gon_params):
+      if self._model_nparam_minus_nref(gonp) < 0:
         mdl = 'Goniometer{0}'.format(i + 1)
         msg = failmsg.format(mdl)
         raise Sorry(msg)
 
-  elif options.auto_reduction.action == 'fix':
+  def check_and_fix(self):
     warnmsg = 'Too few reflections to parameterise {0}'
     tmp = []
-    for i, bp in enumerate(beam_params):
-      if model_nparam_minus_nref(options, bp, reflections) >= 0:
+    for i, bp in enumerate(self.beam_params):
+      if self._model_nparam_minus_nref(bp) >= 0:
         tmp.append(bp)
       else:
         mdl = 'Beam{0}'.format(i + 1)
         msg = warnmsg.format(mdl)
         logger.warning(msg)
-    beam_params = tmp
+    self.beam_params = tmp
 
     tmp = []
-    for i, xlo in enumerate(xl_ori_params):
-      if model_nparam_minus_nref(options, xlo, reflections) >= 0:
+    for i, xlo in enumerate(self.xl_ori_params):
+      if self._model_nparam_minus_nref(xlo) >= 0:
         tmp.append(xlo)
       else:
         mdl = 'Crystal{0} orientation'.format(i + 1)
         msg = warnmsg.format(mdl)
         logger.warning(msg)
-    xl_ori_params = tmp
+    self.xl_ori_params = tmp
 
     tmp = []
-    for i, xluc in enumerate(xl_uc_params):
-      if _unit_cell_nparam_minus_nref(options, xluc, reflections) >= 0:
+    for i, xluc in enumerate(self.xl_uc_params):
+      if self._unit_cell_nparam_minus_nref(xluc) >= 0:
         tmp.append(xluc)
       else:
         mdl = 'Crystal{0} unit cell'.format(i + 1)
         msg = warnmsg.format(mdl)
         logger.warning(msg)
-    xl_uc_params = tmp
+    self.xl_uc_params = tmp
 
     tmp = []
-    for i, dp in enumerate(det_params):
+    for i, dp in enumerate(self.det_params):
       fixlist = dp.get_fixed()
       try: # test for hierarchical detector parameterisation
         pnl_groups = dp.get_panel_ids_by_group()
         for igp, gp in enumerate(pnl_groups):
-          if panel_gp_nparam_minus_nref(options, dp, gp, igp, reflections) < 0:
+          if self._panel_gp_nparam_minus_nref(dp, gp, igp) < 0:
             msg = 'Too few reflections to parameterise Detector{0}PanelGroup{1}'
             msg = msg.format(i + 1, igp + 1)
             logger.warning(msg)
@@ -338,36 +331,35 @@ def autoreduce(options, det_params, beam_params, xl_ori_params, xl_uc_params,
           msg = 'No parameters remain free for Detector{0}'.format(i + 1)
           logger.warning(msg)
       except AttributeError:
-        if model_nparam_minus_nref(options, dp, reflections) >= 0:
+        if self._model_nparam_minus_nref(dp) >= 0:
           tmp.append(dp)
         else:
           mdl = 'Detector{0}'.format(i + 1)
           msg = warnmsg.format(mdl)
           logger.warning(msg)
-    det_params = tmp
+    self.det_params = tmp
 
     tmp = []
-    for i, gonp in enumerate(gon_params):
-      if model_nparam_minus_nref(options, gonp, reflections) >= 0:
+    for i, gonp in enumerate(self.gon_params):
+      if self._model_nparam_minus_nref(gonp) >= 0:
         tmp.append(gonp)
       else:
         mdl = 'Goniometer{0}'.format(i + 1)
         msg = warnmsg.format(mdl)
         logger.warning(msg)
-    gon_params = tmp
+    self.gon_params = tmp
 
-  elif options.auto_reduction.action == 'remove':
-    # if there is only one experiment, it should be multi-panel for remove to make sense
-    if len(experiments) == 1:
-      if not det_params[-1].is_multi_state():
+  def check_and_remove(self):
+    # if there is only one detector, it should be multi-panel for remove to make sense
+    if len(self.det_params) == 1:
+      if not self.det_params[0].is_multi_state():
         raise Sorry("For single experiment, single panel refinement "
           "auto_reduction.action=remove cannot be used as it could only "
           "remove all reflections from refinement")
     warnmsg = 'Too few reflections to parameterise {0}'
     warnmsg += '\nAssociated reflections will be removed from the Reflection Manager'
     while True:
-      dat = weak_parameterisation_search(options, beam_params, xl_ori_params,
-          xl_uc_params, det_params, gon_params, reflections)
+      dat = self._weak_parameterisation_search()
       if dat['parameterisation'] is None: break
       exp_ids = dat['parameterisation'].get_experiment_ids()
       if dat['panels'] is not None:
@@ -398,14 +390,34 @@ def autoreduce(options, det_params, beam_params, xl_ori_params, xl_uc_params,
       sel = flex.bool(len(obs), True)
       sel.set_selected(isel, False)
       reflection_manager.filter_obs(sel)
-      reflections = reflection_manager.get_matches()
+      self.reflections = reflection_manager.get_matches()
       logger.warning(msg)
 
     # Strip out parameterisations with zero free parameters
-    beam_params = [p for p in beam_params if p.num_free() > 0]
-    xl_ori_params = [p for p in xl_ori_params if p.num_free() > 0]
-    xl_uc_params = [p for p in xl_uc_params if p.num_free() > 0]
-    det_params = [p for p in det_params if p.num_free() > 0]
-    gon_params = [p for p in gon_params if p.num_free() > 0]
+    self.beam_params = [p for p in self.beam_params if p.num_free() > 0]
+    self.xl_ori_params = [p for p in self.xl_ori_params if p.num_free() > 0]
+    self.xl_uc_params = [p for p in self.xl_uc_params if p.num_free() > 0]
+    self.det_params = [p for p in self.det_params if p.num_free() > 0]
+    self.gon_params = [p for p in self.gon_params if p.num_free() > 0]
 
-  return det_params, beam_params, xl_ori_params, xl_uc_params, gon_params
+  def __call__(self):
+
+    # In the scan-varying case we can't calculate dB_dp before composing the
+    # model, so revert to the original function
+    if self._scan_varying:
+      self._unit_cell_nparam_minus_nref = self._model_nparam_minus_nref
+
+    # As a special case for detector metrology, try reducing the number of
+    # detector parameters if there are too few for some panel group. If this is
+    # unsuccessful, fail outright.
+    if self._options.detector_reduce:
+      self.detector_reduce()
+
+    if self._options.action == 'fail':
+      self.check_and_fail()
+
+    elif self._options.action == 'fix':
+      self.check_and_fix()
+
+    elif self._options.action == 'remove':
+      self.check_and_remove()

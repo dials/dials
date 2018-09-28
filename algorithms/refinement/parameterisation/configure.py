@@ -610,20 +610,17 @@ class ParameterisationFactory(object):
       if gon_param.num_free() > 0:
         gon_params.append(gon_param)
 
-    from .autoreduce import autoreduce
-    (det_params, beam_params, xl_ori_params, xl_uc_params,
-        gon_params) = autoreduce(options, det_params, beam_params,
-        xl_ori_params, xl_uc_params, gon_params, reflections)
-
-    # Now we have the final list of model parameterisations, build a restraints
-    # parameterisation (if requested). Only unit cell restraints are supported
-    # at the moment.
-    if any([options.crystal.unit_cell.restraints.tie_to_target,
-            options.crystal.unit_cell.restraints.tie_to_group]):
-      restraints_param = cls.config_restraints(params, det_params, beam_params,
-        xl_ori_params, xl_uc_params, gon_params)
-    else:
-      restraints_param = None
+    from .autoreduce import AutoReduce
+    autoreduce = AutoReduce(options.auto_reduction,
+      det_params, beam_params, xl_ori_params, xl_uc_params, gon_params,
+      reflections, scan_varying=options.scan_varying)
+    autoreduce()
+    det_params = autoreduce.det_params
+    beam_params = autoreduce.beam_params
+    xl_ori_params = autoreduce.xl_ori_params
+    xl_uc_params = autoreduce.xl_uc_params
+    gon_params = autoreduce.gon_params
+    reflections = autoreduce.reflections
 
     # Prediction equation parameterisation
     if do_stills: # doing stills
