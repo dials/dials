@@ -42,7 +42,7 @@ class Reasons(object):
     self.reasons[text] = number
 
   def __repr__(self):
-    reasonlist = ['criterion: %s, reflections: %s\n' % (k, v) for (k, v) in self.reasons.iteritems()]
+    reasonlist = ['criterion: %s, reflections: %s\n' % (k, v) for (k, v) in self.reasons.iteritems() if v > 0]
     return 'Reflections passing individual criteria:\n'+''.join(reasonlist)
 
 def save_experiments(experiments, filename):
