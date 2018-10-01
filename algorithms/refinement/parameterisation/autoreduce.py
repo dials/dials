@@ -2,9 +2,9 @@ from __future__ import absolute_import, division
 import logging
 logger = logging.getLogger(__name__)
 
-from dials_refinement_helpers_ext import pgnmn_iter as pgnmn
-from dials_refinement_helpers_ext import ucnmn_iter as ucnmn
-from dials_refinement_helpers_ext import mnmn_iter as mnmn
+from dials_refinement_helpers_ext import pg_surpl_iter as pg_surpl
+from dials_refinement_helpers_ext import uc_surpl_iter as uc_surpl
+from dials_refinement_helpers_ext import surpl_iter as surpl
 
 from scitbx.array_family import flex
 
@@ -102,41 +102,40 @@ class AutoReduce(object):
     self._options = options
     self._scan_varying = scan_varying
 
-  # Parameter auto reduction options
-  def _model_nparam_minus_nref(self, p):
+  # Determine if there are enough reflections to support a particular
+  # parameterisation. First, a minimum number of reflections is determined,
+  # by the product of the number of free parameters and a user-provided
+  # minimum number of reflections per parameter. The total number of reflections
+  # affected by this parameterisation is calculated, and the difference between
+  # that and the minimum number of reflections is returned.
+  def _surplus_reflections(self, p):
     cutoff = self._options.min_nref_per_parameter * p.num_free()
-    return mnmn(self.reflections["id"],p.get_experiment_ids()).result - cutoff
+    return surpl(self.reflections["id"],p.get_experiment_ids()).result - cutoff
 
-  def _unit_cell_nparam_minus_nref(self, p):
-    """Special version of _model_nparam_minus_nref for crystal unit cell
-    parameterisations. In some cases certain parameters of a unit cell
-    parameterisation may affect only some subset of the total number of
-    reflections. For example, for an orthorhombic cell the g_param_0 parameter
-    has no effect on predictions in the plane (0,k,l). Here, take the number
-    of affected reflections for each parameter into account."""
-
+  # Special version of _surplus_reflections for crystal unit cell
+  # parameterisations. In some cases certain parameters of a unit cell
+  # parameterisation may affect only some subset of the total number of
+  # reflections. For example, for an orthorhombic cell the g_param_0 parameter
+  # has no effect on predictions in the plane (0,k,l). Here, take the number
+  # of affected reflections for each parameter individually into account.
+  def _unit_cell_surplus_reflections(self, p):
     F_dbdp=flex.mat3_double( p.get_ds_dp() )
     min_nref = self._options.min_nref_per_parameter
-    # if no free parameters, do as _model_nparam_minus_nref
+    # if no free parameters, do as _surplus_reflections
     if len(F_dbdp) == 0:
       exp_ids = p.get_experiment_ids()
       isel = flex.size_t()
       for exp_id in exp_ids:
         isel.extend((self.reflections['id'] == exp_id).iselection())
       return len(isel)
-    return ucnmn(self.reflections["id"], self.reflections["miller_index"],
+    return uc_surpl(self.reflections["id"], self.reflections["miller_index"],
         p.get_experiment_ids(), F_dbdp).result - min_nref
 
-  def _panel_gp_nparam_minus_nref(self, p, pnl_ids, group, verbose=False):
-    """
-    :param p: ModelParameterisation; parameters in model
-    :param pnl_ids: panel IDs
-    :param group: group ID
-    :panel reflections: flex table of reflections
-    :panel verbose:
-    :return: returns surplus {int}
-    """
-    exp_ids = p.get_experiment_ids() #Experiments parameterised by this ModelParameterisation
+  # Special version of _surplus_reflections for multi-panel detector
+  # parameterisations. In that case, certain parameters affect only the
+  # reflections that fall on a particular panel group of the detector.
+  def _panel_gp_surplus_reflections(self, p, pnl_ids, group, verbose=False):
+    exp_ids = p.get_experiment_ids()
     # Do we have enough reflections to support this parameterisation?
     gp_params = [gp == group for gp in p.get_param_panel_groups()] #select the group ids for each param that matches the arg 'group'
     fixlist = p.get_fixed() # Get the fixed parameters; list says yes or no over all
@@ -144,7 +143,7 @@ class AutoReduce(object):
     nparam = free_gp_params.count(True)
     cutoff = self._options.min_nref_per_parameter * nparam
     isel = flex.size_t()
-    surplus = pgnmn(self.reflections["id"], self.reflections["panel"], pnl_ids,
+    surplus = pg_surpl(self.reflections["id"], self.reflections["panel"], pnl_ids,
         exp_ids, cutoff).result
 
     if surplus < 0 and verbose:
@@ -159,19 +158,19 @@ class AutoReduce(object):
     pnl_gp = None
     name = None
     for i, p in enumerate(self.beam_params):
-      net_nref = self._model_nparam_minus_nref(p)
+      net_nref = self._surplus_reflections(p)
       if net_nref < nref_deficit:
         nref_deficit = net_nref
         weak = p
         name = 'Beam{0}'.format(i + 1)
     for i, p in enumerate(self.xl_ori_params):
-      net_nref = self._model_nparam_minus_nref(p)
+      net_nref = self._surplus_reflections(p)
       if net_nref < nref_deficit:
         nref_deficit = net_nref
         weak = p
         name = 'Crystal{0} orientation'.format(i + 1)
     for i, p in enumerate(self.xl_uc_params):
-      net_nref = self._unit_cell_nparam_minus_nref(p)
+      net_nref = self._unit_cell_surplus_reflections(p)
       if net_nref < nref_deficit:
         nref_deficit = net_nref
         weak = p
@@ -180,7 +179,7 @@ class AutoReduce(object):
       try:
         pnl_groups = p.get_panel_ids_by_group()
         for igp, gp in enumerate(pnl_groups):
-          net_nref = self._panel_gp_nparam_minus_nref(p, gp, igp)
+          net_nref = self._panel_gp_surplus_reflections(p, gp, igp)
           if net_nref < nref_deficit:
             nref_deficit = net_nref
             weak = p
@@ -188,7 +187,7 @@ class AutoReduce(object):
             pnl_gp = igp
             name = 'Detector{0}PanelGroup{1}'.format(i + 1, pnl_gp + 1)
       except Exception:
-        net_nref = self._model_nparam_minus_nref(p)
+        net_nref = self._surplus_reflections(p)
         if net_nref < nref_deficit:
           nref_deficit = net_nref
           weak = p
@@ -196,7 +195,7 @@ class AutoReduce(object):
           pnl_gp = None
           name = 'Detector{0}'.format(i + 1)
     for i, p in enumerate(self.gon_params):
-      net_nref = self._model_nparam_minus_nref(p)
+      net_nref = self._surplus_reflections(p)
       if net_nref < nref_deficit:
         nref_deficit = net_nref
         weak = p
@@ -216,7 +215,7 @@ class AutoReduce(object):
       try: # test for hierarchical detector parameterisation
         pnl_groups = dp.get_panel_ids_by_group()
         for igp, gp in enumerate(pnl_groups):
-          surplus = self._panel_gp_nparam_minus_nref(dp, gp, igp, verbose=True)
+          surplus = self._panel_gp_surplus_reflections(dp, gp, igp, verbose=True)
           if surplus < 0:
             msg = ('Require {0} more reflections to parameterise Detector{1} '
                    'panel group {2}').format(-1*surplus, i + 1, igp + 1)
@@ -226,12 +225,12 @@ class AutoReduce(object):
             reduce_this_group = [prefix + e for e in reduce_list]
             to_fix |= flex.bool(string_sel(reduce_this_group, names))
             # try again, and fail if still unsuccessful
-            surplus = self._panel_gp_nparam_minus_nref(dp, gp, igp, verbose=True)
+            surplus = self._panel_gp_surplus_reflections(dp, gp, igp, verbose=True)
             if surplus < 0:
               msg = msg.format(-1*surplus, i + 1, igp + 1)
               raise Sorry(msg + '\nFailing.')
       except AttributeError:
-        if self._model_nparam_minus_nref(dp) < 0:
+        if self._surplus_reflections(dp) < 0:
           mdl = 'Detector{0}'.format(i + 1)
           msg = failmsg.format(mdl)
           raise Sorry(msg)
@@ -241,19 +240,19 @@ class AutoReduce(object):
     failmsg = 'Too few reflections to parameterise {0}'
     failmsg += '\nTry modifying refinement.parameterisation.auto_reduction options'
     for i, bp in enumerate(self.beam_params):
-      if self._model_nparam_minus_nref(bp) < 0:
+      if self._surplus_reflections(bp) < 0:
         mdl = 'Beam{0}'.format(i + 1)
         msg = failmsg.format(mdl)
         raise Sorry(msg)
 
     for i, xlo in enumerate(self.xl_ori_params):
-      if self._model_nparam_minus_nref(xlo) < 0:
+      if self._surplus_reflections(xlo) < 0:
         mdl = 'Crystal{0} orientation'.format(i + 1)
         msg = failmsg.format(mdl)
         raise Sorry(msg)
 
     for i, xluc in enumerate(self.xl_uc_params):
-      if self._unit_cell_nparam_minus_nref(xluc) < 0:
+      if self._unit_cell_surplus_reflections(xluc) < 0:
         mdl = 'Crystal{0} unit cell'.format(i + 1)
         msg = failmsg.format(mdl)
         raise Sorry(msg)
@@ -262,19 +261,19 @@ class AutoReduce(object):
       try: # test for hierarchical detector parameterisation
         pnl_groups = dp.get_panel_ids_by_group()
         for igp, gp in enumerate(pnl_groups):
-          if self._panel_gp_nparam_minus_nref(dp, gp, igp) < 0:
+          if self._panel_gp_surplus_reflections(dp, gp, igp) < 0:
             msg = 'Too few reflections to parameterise Detector{0} panel group {1}'
             msg = msg.format(i + 1, igp + 1)
             msg += '\nTry modifying refinement.parameterisation.auto_reduction options'
             raise Sorry(msg)
       except AttributeError:
-        if self._model_nparam_minus_nref(dp) < 0:
+        if self._surplus_reflections(dp) < 0:
           mdl = 'Detector{0}'.format(i + 1)
           msg = failmsg.format(mdl)
           raise Sorry(msg)
 
     for i, gonp in enumerate(self.gon_params):
-      if self._model_nparam_minus_nref(gonp) < 0:
+      if self._surplus_reflections(gonp) < 0:
         mdl = 'Goniometer{0}'.format(i + 1)
         msg = failmsg.format(mdl)
         raise Sorry(msg)
@@ -283,7 +282,7 @@ class AutoReduce(object):
     warnmsg = 'Too few reflections to parameterise {0}'
     tmp = []
     for i, bp in enumerate(self.beam_params):
-      if self._model_nparam_minus_nref(bp) >= 0:
+      if self._surplus_reflections(bp) >= 0:
         tmp.append(bp)
       else:
         mdl = 'Beam{0}'.format(i + 1)
@@ -293,7 +292,7 @@ class AutoReduce(object):
 
     tmp = []
     for i, xlo in enumerate(self.xl_ori_params):
-      if self._model_nparam_minus_nref(xlo) >= 0:
+      if self._surplus_reflections(xlo) >= 0:
         tmp.append(xlo)
       else:
         mdl = 'Crystal{0} orientation'.format(i + 1)
@@ -303,7 +302,7 @@ class AutoReduce(object):
 
     tmp = []
     for i, xluc in enumerate(self.xl_uc_params):
-      if self._unit_cell_nparam_minus_nref(xluc) >= 0:
+      if self._unit_cell_surplus_reflections(xluc) >= 0:
         tmp.append(xluc)
       else:
         mdl = 'Crystal{0} unit cell'.format(i + 1)
@@ -317,7 +316,7 @@ class AutoReduce(object):
       try: # test for hierarchical detector parameterisation
         pnl_groups = dp.get_panel_ids_by_group()
         for igp, gp in enumerate(pnl_groups):
-          if self._panel_gp_nparam_minus_nref(dp, gp, igp) < 0:
+          if self._panel_gp_surplus_reflections(dp, gp, igp) < 0:
             msg = 'Too few reflections to parameterise Detector{0}PanelGroup{1}'
             msg = msg.format(i + 1, igp + 1)
             logger.warning(msg)
@@ -331,7 +330,7 @@ class AutoReduce(object):
           msg = 'No parameters remain free for Detector{0}'.format(i + 1)
           logger.warning(msg)
       except AttributeError:
-        if self._model_nparam_minus_nref(dp) >= 0:
+        if self._surplus_reflections(dp) >= 0:
           tmp.append(dp)
         else:
           mdl = 'Detector{0}'.format(i + 1)
@@ -341,7 +340,7 @@ class AutoReduce(object):
 
     tmp = []
     for i, gonp in enumerate(self.gon_params):
-      if self._model_nparam_minus_nref(gonp) >= 0:
+      if self._surplus_reflections(gonp) >= 0:
         tmp.append(gonp)
       else:
         mdl = 'Goniometer{0}'.format(i + 1)
@@ -405,7 +404,7 @@ class AutoReduce(object):
     # In the scan-varying case we can't calculate dB_dp before composing the
     # model, so revert to the original function
     if self._scan_varying:
-      self._unit_cell_nparam_minus_nref = self._model_nparam_minus_nref
+      self._unit_cell_surplus_reflections = self._surplus_reflections
 
     # As a special case for detector metrology, try reducing the number of
     # detector parameters if there are too few for some panel group. If this is
