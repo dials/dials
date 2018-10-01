@@ -2,9 +2,10 @@ from __future__ import absolute_import, division
 import logging
 logger = logging.getLogger(__name__)
 
-from dials_refinement_helpers_ext import pg_surpl_iter as pg_surpl
-from dials_refinement_helpers_ext import uc_surpl_iter as uc_surpl
+# Parameterisation auto reduction helpers
 from dials_refinement_helpers_ext import surpl_iter as surpl
+from dials_refinement_helpers_ext import uc_surpl_iter as uc_surpl
+from dials_refinement_helpers_ext import pg_surpl_iter as pg_surpl
 
 from scitbx.array_family import flex
 
@@ -136,10 +137,9 @@ class AutoReduce(object):
   # reflections that fall on a particular panel group of the detector.
   def _panel_gp_surplus_reflections(self, p, pnl_ids, group, verbose=False):
     exp_ids = p.get_experiment_ids()
-    # Do we have enough reflections to support this parameterisation?
-    gp_params = [gp == group for gp in p.get_param_panel_groups()] #select the group ids for each param that matches the arg 'group'
-    fixlist = p.get_fixed() # Get the fixed parameters; list says yes or no over all
-    free_gp_params = [a and not b for a,b in zip(gp_params, fixlist)] #Free params is the total less the fixed
+    gp_params = [gp == group for gp in p.get_param_panel_groups()]
+    fixlist = p.get_fixed()
+    free_gp_params = [a and not b for a,b in zip(gp_params, fixlist)]
     nparam = free_gp_params.count(True)
     cutoff = self._options.min_nref_per_parameter * nparam
     isel = flex.size_t()
@@ -237,6 +237,16 @@ class AutoReduce(object):
       dp.set_fixed(to_fix)
 
   def check_and_fail(self):
+    """Check for too few reflections to support the model parameterisation.
+
+    Test each parameterisation of each type against the reflections it affects.
+
+    Returns:
+        None
+
+    Raises:
+        Sorry: If there are too few reflections to support a parameterisation.
+    """
     failmsg = 'Too few reflections to parameterise {0}'
     failmsg += '\nTry modifying refinement.parameterisation.auto_reduction options'
     for i, bp in enumerate(self.beam_params):
@@ -279,6 +289,15 @@ class AutoReduce(object):
         raise Sorry(msg)
 
   def check_and_fix(self):
+    """Fix parameters when there are too few reflections.
+
+    Test each parameterisation of each type against the reflections it affects.
+    If there are too few reflections to support that parameterisation, fix the
+    parameters.
+
+    Returns:
+        None
+    """
     warnmsg = 'Too few reflections to parameterise {0}'
     tmp = []
     for i, bp in enumerate(self.beam_params):
@@ -349,6 +368,19 @@ class AutoReduce(object):
     self.gon_params = tmp
 
   def check_and_remove(self):
+    """Fix parameters and remove reflections when there are too few reflections.
+
+    Test each parameterisation of each type against the reflections it affects.
+    If there are too few reflections to support that parameterisation, fix the
+    parameters and remove those reflections so that they will not be included
+    in refinement.
+
+    Returns:
+        None
+
+    Raises:
+        Sorry: error if only one single panel detector is present.
+    """
     # if there is only one detector, it should be multi-panel for remove to make sense
     if len(self.det_params) == 1:
       if not self.det_params[0].is_multi_state():
@@ -400,6 +432,11 @@ class AutoReduce(object):
     self.gon_params = [p for p in self.gon_params if p.num_free() > 0]
 
   def __call__(self):
+    """Perform checks and parameter reduction according to the selected option.
+
+    Returns:
+        None
+    """
 
     # In the scan-varying case we can't calculate dB_dp before composing the
     # model, so revert to the original function
