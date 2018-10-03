@@ -186,7 +186,7 @@ class AutoReduce(object):
             panels = gp
             pnl_gp = igp
             name = 'Detector{0}PanelGroup{1}'.format(i + 1, pnl_gp + 1)
-      except Exception:
+      except AttributeError: # non-hierarchical detector parameterisation
         net_nref = self._surplus_reflections(p)
         if net_nref < nref_deficit:
           nref_deficit = net_nref
