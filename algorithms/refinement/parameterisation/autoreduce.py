@@ -139,7 +139,7 @@ class AutoReduce(object):
   # Special version of _surplus_reflections for multi-panel detector
   # parameterisations. In that case, certain parameters affect only the
   # reflections that fall on a particular panel group of the detector.
-  def _panel_gp_surplus_reflections(self, p, pnl_ids, group, verbose=False):
+  def _panel_gp_surplus_reflections(self, p, pnl_ids, group):
     exp_ids = p.get_experiment_ids()
     gp_params = [gp == group for gp in p.get_param_panel_groups()]
     fixlist = p.get_fixed()
@@ -149,10 +149,6 @@ class AutoReduce(object):
     isel = flex.size_t()
     surplus = pg_surpl(self.reflections["id"], self.reflections["panel"], pnl_ids,
         exp_ids, cutoff).result
-
-    if surplus < 0 and verbose:
-      logger.warning('{0} reflections on panels {1} '
-                     'with a cutoff of {2}'.format(nref, pnl_ids, cutoff))
     return surplus
 
   def _weak_parameterisation_search(self):
@@ -219,7 +215,7 @@ class AutoReduce(object):
       try: # test for hierarchical detector parameterisation
         pnl_groups = dp.get_panel_ids_by_group()
         for igp, gp in enumerate(pnl_groups):
-          surplus = self._panel_gp_surplus_reflections(dp, gp, igp, verbose=True)
+          surplus = self._panel_gp_surplus_reflections(dp, gp, igp)
           if surplus < 0:
             msg = ('Require {0} more reflections to parameterise Detector{1} '
                    'panel group {2}')
@@ -230,7 +226,7 @@ class AutoReduce(object):
             reduce_this_group = [prefix + e for e in reduce_list]
             to_fix |= flex.bool(string_sel(reduce_this_group, names))
             # try again, and fail if still unsuccessful
-            surplus = self._panel_gp_surplus_reflections(dp, gp, igp, verbose=True)
+            surplus = self._panel_gp_surplus_reflections(dp, gp, igp)
             if surplus < 0:
               msg = msg.format(-1*surplus, i + 1, igp + 1)
               raise Sorry(msg + '\nFailing.')
@@ -385,42 +381,47 @@ class AutoReduce(object):
     Raises:
         Sorry: error if only one single panel detector is present.
     """
-    # if there is only one detector, it should be multi-panel for remove to make sense
+
+    # If there is only one detector, it should be multi-panel for remove to make sense
     if len(self.det_params) == 1:
       if not self.det_params[0].is_multi_state():
         raise Sorry("For single experiment, single panel refinement "
           "auto_reduction.action=remove cannot be used as it could only "
           "remove all reflections from refinement")
+
+    # Define a warning message template to use each search iteration
     warnmsg = 'Too few reflections to parameterise {0}'
     warnmsg += '\nAssociated reflections will be removed from the Reflection Manager'
+
     while True:
+      # Identify a poorly-supported parameterisation
       dat = self._weak_parameterisation_search()
       if dat['parameterisation'] is None: break
       exp_ids = dat['parameterisation'].get_experiment_ids()
+      msg = warnmsg.format(dat['name'])
+
+      # Fix relevant parameters and identify observations to remove
+      obs = reflection_manager.get_obs()
+      isel=flex.size_t()
       if dat['panels'] is not None:
-        msg = warnmsg.format(dat['name'])
         fixlist = dat['parameterisation'].get_fixed()
         pnl_gps = dat['parameterisation'].get_param_panel_groups()
         for i, gp in enumerate(pnl_gps):
           if gp == dat['panel_group_id']: fixlist[i] = True
         dat['parameterisation'].set_fixed(fixlist)
         # identify observations on this panel group from associated experiments
-        obs = reflection_manager.get_obs()
-        isel=flex.size_t()
         for exp_id in exp_ids:
           subsel = (obs['id'] == exp_id).iselection()
           panels_this_exp = obs['panel'].select(subsel)
           for pnl in dat['panels']:
             isel.extend(subsel.select(panels_this_exp == pnl))
       else:
-        msg = warnmsg.format(dat['name'])
         fixlist = [True] * dat['parameterisation'].num_total()
         dat['parameterisation'].set_fixed(fixlist)
         # identify observations from the associated experiments
-        obs = reflection_manager.get_obs()
-        isel=flex.size_t()
         for exp_id in exp_ids:
           isel.extend((obs['id'] == exp_id).iselection())
+
       # Now remove the selected reflections
       sel = flex.bool(len(obs), True)
       sel.set_selected(isel, False)
