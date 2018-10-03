@@ -248,7 +248,7 @@ class RefinerFactory(object):
     do_sparse = params.refinement.parameterisation.sparse
 
     # create managed reflection predictor
-    from dials.algorithms.refinement.prediction import ExperimentsPredictorFactory
+    from dials.algorithms.refinement.prediction.managed_predictors import ExperimentsPredictorFactory
     ref_predictor = ExperimentsPredictorFactory.from_experiments(experiments,
         force_stills=do_stills,
         spherical_relp=params.refinement.parameterisation.spherical_relp_model)

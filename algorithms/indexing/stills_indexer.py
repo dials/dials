@@ -308,7 +308,7 @@ class stills_indexer(indexer_base):
       if self.params.refinement_protocol.mode == 'repredict_only':
 
         from dials.algorithms.indexing.nave_parameters import nave_parameters
-        from dials.algorithms.refinement.prediction import ExperimentsPredictorFactory
+        from dials.algorithms.refinement.prediction.managed_predictors import ExperimentsPredictorFactory
         refined_experiments, refined_reflections = experiments, reflections_for_refinement
         ref_predictor = ExperimentsPredictorFactory.from_experiments(
             experiments, do_stills=True, spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
@@ -551,7 +551,7 @@ class stills_indexer(indexer_base):
                                            indexed = indexed,
                                            experiments = ref_experiments))
       else:
-        from dials.algorithms.refinement.prediction import ExperimentsPredictorFactory
+        from dials.algorithms.refinement.prediction.managed_predictors import ExperimentsPredictorFactory
         ref_predictor = ExperimentsPredictorFactory.from_experiments(
             experiments, do_stills=True, spherical_relp=params.refinement.parameterisation.spherical_relp_model)
         rmsd, _ = calc_2D_rmsd_and_displacements(ref_predictor(indexed))

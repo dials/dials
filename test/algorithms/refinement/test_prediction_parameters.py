@@ -18,7 +18,7 @@ def test():
 
   from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
   from dxtbx.model.experiment_list import ExperimentList, Experiment
-  from dials.algorithms.refinement.prediction import ScansRayPredictor, \
+  from dials.algorithms.refinement.prediction.managed_predictors import ScansRayPredictor, \
       ScansExperimentsPredictor
 
   #### Import model parameterisations

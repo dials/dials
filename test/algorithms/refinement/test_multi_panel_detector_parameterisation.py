@@ -44,7 +44,7 @@ from rstbx.symmetry.constraints.parameter_reduction import \
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
-from dials.algorithms.refinement.prediction import ScansRayPredictor, ScansExperimentsPredictor
+from dials.algorithms.refinement.prediction.managed_predictors import ScansRayPredictor, ScansExperimentsPredictor
 from dials.algorithms.spot_prediction import ray_intersection
 from cctbx.sgtbx import space_group, space_group_symbols
 

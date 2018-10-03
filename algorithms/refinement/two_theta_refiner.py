@@ -19,7 +19,7 @@ from scitbx import matrix
 from math import sqrt, pi
 
 from dials.algorithms.refinement.reflection_manager import ReflectionManager
-from dials.algorithms.refinement.prediction import ExperimentsPredictor
+from dials.algorithms.refinement.prediction.managed_predictors import ExperimentsPredictor
 from dials.algorithms.refinement.target import Target
 from dials.algorithms.refinement.parameterisation.prediction_parameters import \
       PredictionParameterisation
