@@ -24,7 +24,12 @@ I/sigma.
 """
 
 
+import sys
+import logging
 from dials.array_family import flex
+
+
+log = logging.getLogger('dials.util.intensity_explorer')
 
 
 class IntensityDist(object):
@@ -67,10 +72,8 @@ class IntensityDist(object):
     from dxtbx.model import ExperimentList
     from cctbx import miller
 
-    try:
-      assert(isinstance(rtable, flex.reflection_table))
-      assert(isinstance(elist, ExperimentList))
-    except AssertionError:
+    if (not isinstance(rtable, flex.reflection_table)
+        or not isinstance(elist, ExperimentList)):
       raise TypeError(
           "Must be called with a reflection table and an experiment list.")
 
@@ -288,9 +291,8 @@ class IntensityDist(object):
       try:
         uncertainty_value = flex.sqrt(rtable[uncertainty_name])
       except KeyError:
-        from logging import warn
         uncertainty_value = flex.sqrt(rtable['intensity.sum.variance'])
-        warn(u"""Weighted variances haven't been calculated,
+        log.warn(u"""Weighted variances haven't been calculated,
       be sure to specify calculate_variances=True to use them.
       Defaulting to measured σ values as a measure of uncertainty instead.""")
 
@@ -303,198 +305,17 @@ class IntensityDist(object):
   def _probplot_data(self):
     """Generate the data for a normal probability plot of z-scores."""
 
-    from scipy import stats as ss
+    import scipy.stats
 
     for key, rtable in self.rtables.items():
       order = flex.sort_permutation(rtable['intensity.z_score'])
       osm = flex.double(rtable.size(), 0)
-      osm.set_selected(order,
-                       flex.double(ss.probplot(rtable['intensity.z_score'],
-                                               fit=False)[0]))
+      probplot = scipy.stats.probplot(rtable['intensity.z_score'],
+                                      fit=False)
+      osm.set_selected(order, flex.double(probplot[0]))
       rtable['intensity.order_statistic_medians'] = osm
 
       self.rtables[key] = rtable
-
-  def plot_z_histogram(self):
-    """Plot a histogram of the z-scores of the weighted mean intensities."""
-
-    from matplotlib import pyplot as plt
-
-    fig, ax = plt.subplots()
-
-    ax.set_title(r'$z$ histogram')
-    ax.set_xlabel(r'$z$')
-    ax.set_ylabel(r'$N$')
-    ax.hist(self.rtable['intensity.z_score'],
-            label='$z$', bins=100, range=(-5, 5))
-    fig.savefig(self.outfile + '_zhistogram', transparent=True)
-    plt.close()
-
-  def _plot_symmetry_equivalents(self,
-                                 overlay_mean=False,
-                                 overlay_uncertainty=False):
-    """Really just a test plot.  Slow.  You probably don't want to use."""
-
-    from matplotlib import pyplot as plt
-
-    ind_unique = set(self.rtable['miller_index.asu'])
-
-    fig, ax = plt.subplots()
-
-    for hkl in ind_unique:
-      sel = (self.rtable['miller_index.asu'] == hkl).iselection()
-      rtable_selected = self.rtable.select(sel)
-
-      if overlay_uncertainty == 'sigImean':
-        yerr = rtable_selected['intensity.mean.std_error']
-      elif overlay_uncertainty:
-        yerr = flex.sqrt(rtable_selected['intensity.mean.variance'])
-      else:
-        yerr = None
-
-      plt.errorbar(sel,
-                   rtable_selected['intensity.sum.value'],
-                   yerr=flex.sqrt(rtable_selected['intensity.sum.variance']),
-                   ls="--")
-      if overlay_mean:
-        plt.errorbar(sel,
-                     rtable_selected['intensity.mean.value'],
-                     yerr=yerr,
-                     ls="-",
-                     color="k",
-                     lw=.5)
-
-    #fig.savefig(self.outfile + 'testfig')
-    #plt.close()
-    plt.show()
-
-  def probplot(self, **kwargs):
-    """Create a normal probability plot from the z-scores."""
-
-    from matplotlib import pyplot as plt
-
-    fig, ax = plt.subplots()
-
-    ax.set_title('Normal probability plot')
-    ax.set_xlabel('Order statistic medians, $m$')
-    ax.set_ylabel(r'Ordered responses, $z$')
-    ax.set_ylim(-10, 10)
-    ax.plot(self.rtable['intensity.order_statistic_medians'],
-            self.rtable['intensity.z_score'],
-            '.b', **kwargs)
-    ax.plot([-5, 5], [-5, 5], '-g')
-
-    fig.savefig(self.outfile + '_probplot', transparent=True)
-    plt.close()
-
-  def plot_z_vs_multiplicity(self, **kwargs):
-    """Plot intensity z-scores versus multiplicity."""
-
-    from matplotlib import pyplot as plt
-
-    fig, ax = plt.subplots()
-
-    ax.set_title(r'$z$-scores versus multiplicity')
-    ax.set_xlabel('Multiplicity')
-    ax.set_ylabel(r'$z$')
-    ax.plot(self.rtable['multiplicity'], self.rtable['intensity.z_score'],
-            '.', **kwargs)
-
-    fig.savefig(self.outfile + '_z_vs_multiplicity', transparent=True)
-    plt.close()
-
-  def plot_z_map(self, minimum=0):
-    """
-    Plot a z-score heatmap of the detector.
-
-    Beware, this is only meaningful if the data have a single geometry model.
-    """
-
-    import math
-    from matplotlib import colors, pyplot as plt
-
-    sel = (flex.abs(self.rtable['intensity.z_score']) >= minimum).iselection()
-    x, y, z = self.rtable.select(sel)['xyzobs.px.value'].parts()
-
-    extreme = math.ceil(flex.max(flex.abs(self.rtable['intensity.z_score'])))
-    norm = colors.SymLogNorm(vmin=-extreme, vmax=extreme,
-                             linthresh=.02, linscale=1,)
-    cmap_kws = {'cmap': 'coolwarm_r', 'norm': norm}
-
-    fig, ax = plt.subplots()
-
-    ax.set_title(r'$z$-scores versus detector position')
-    ax.set_xlabel('Detector x position (pixels)')
-    ax.set_ylabel('Detector y position (pixels)')
-    ax.set_aspect('equal', 'box')
-    ax.set_xlim(flex.min(x) - 5, flex.max(x) + 5)
-    ax.set_ylim(flex.min(y) - 5, flex.max(y) + 5)
-    det_map = ax.scatter(x, y, c=z, marker=',', s=0.5, **cmap_kws)
-    cbar = fig.colorbar(det_map, ax=ax, **cmap_kws)
-    cbar.set_label(r'$z$')
-
-    fig.savefig(self.outfile + '_z_detector_map', transparent=True)
-    plt.close()
-
-  def plot_time_series(self, **kwargs):
-    """
-    Plot a crude time series of z-scores.
-
-    Batch (frame) number is used as a proxy for time."""
-
-    from matplotlib import pyplot as plt
-
-    fig, ax = plt.subplots()
-
-    ax.set_title(r'Time series of $z$-scores')
-    ax.set_xlabel('Approximate chronology (frame number)')
-    ax.set_ylabel(r'$z$')
-
-    ax.plot(self.rtable['xyzobs.px.value'].parts()[2],
-            self.rtable['intensity.z_score'],
-            '.', **kwargs)
-
-    fig.savefig(self.outfile + '_z_time_series', transparent=True)
-    plt.close()
-
-  def plot_z_vs_IsigI(self, **kwargs):
-    """Plot z-scores versus I/sigma."""
-
-    from matplotlib import pyplot as plt
-
-    fig, ax = plt.subplots()
-
-    ax.set_title(r'$z$-scores versus spot intensity')
-    ax.set_xlabel(r'$\bar{I}_\mathbf{h} / \sigma_\mathbf{h}$')
-    ax.set_ylabel(r'$z$')
-    ax.set_ylim(-10, 10)
-    ax.set_xscale('log')
-    ax.plot(flex.abs(self.rtable['intensity.mean.value']
-                     / self.rtable['intensity.mean.std_error']),
-            self.rtable['intensity.z_score'],
-            '.', **kwargs)
-
-    fig.savefig(self.outfile + '_z_vs_I_over_sigma', transparent=True)
-    plt.close()
-
-  def plot_z_vs_I(self, **kwargs):
-    """Plot z-scores versus absolute intensity."""
-
-    from matplotlib import pyplot as plt
-
-    fig, ax = plt.subplots()
-
-    ax.set_title(r'$z$-scores versus spot intensity')
-    ax.set_xlabel(r'$\bar{I}_\mathbf{h}$')
-    ax.set_ylabel(r'$z$')
-    ax.set_ylim(-10, 10)
-    ax.set_xscale('log')
-    ax.plot(flex.abs(self.rtable['intensity.mean.value']),
-            self.rtable['intensity.z_score'],
-            '.', **kwargs)
-
-    fig.savefig(self.outfile + '_z_vs_I', transparent=True)
-    plt.close()
 
 
 def data_from_unmerged_mtz(filename):
@@ -560,7 +381,6 @@ def data_from_unmerged_mtz(filename):
 def data_from_pickle_and_json():
     from dials.util.options import OptionParser, flatten_reflections,\
       flatten_experiments
-    import libtbx.load_env
 
     help_message = '''
 
@@ -577,8 +397,8 @@ def data_from_pickle_and_json():
     '''
 
     # Create the parser
-    usage = ("usage: %s [options] reflections.pickle experiments.json" %
-             libtbx.env.dispatcher_name)
+    usage = ("usage: dials.util.intensity_explorer [options] "
+             "reflections.pickle experiments.json")
     parser = OptionParser(
       usage=usage,
       read_reflections=True,
@@ -608,8 +428,6 @@ if __name__ == "__main__":
   # use it!
   # TODO Allow determination of output filename root.
   # FIXME Give a pickle and a json file as arguments:
-
-  import sys
 
   data_from_pickle_and_json(sys.argv[1:])
 

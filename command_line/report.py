@@ -1906,8 +1906,6 @@ class ZScoreAnalyser(object):
   """
 
   def __init__(self):
-    from os.path import join
-
     # Set the required fields
     self.required = [
       "intensity.sum.value",
