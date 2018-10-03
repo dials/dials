@@ -119,7 +119,6 @@ class GoniometerParameterisation(ModelParameterisation, GoniometerMixin):
     return
 
   def compose(self):
-    """See base class."""
 
     # extract setting matrix from the initial state
     iS = self._initial_state
@@ -137,7 +136,6 @@ class GoniometerParameterisation(ModelParameterisation, GoniometerMixin):
     return
 
   def get_state(self):
-    """See base class."""
 
     # only a single setting matrix exists, so no multi_state_elt argument is
     # allowed

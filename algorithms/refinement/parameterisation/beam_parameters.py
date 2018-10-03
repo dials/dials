@@ -124,7 +124,6 @@ class BeamParameterisation(ModelParameterisation, BeamMixin):
     return
 
   def compose(self):
-    """See base class."""
 
     # extract direction from the initial state
     is0 = self._initial_state
@@ -142,7 +141,6 @@ class BeamParameterisation(ModelParameterisation, BeamMixin):
     return
 
   def get_state(self):
-    """See base class."""
 
     # only a single beam exists, so no multi_state_elt argument is allowed
     return matrix.col(self._model.get_s0())

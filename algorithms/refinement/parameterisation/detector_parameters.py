@@ -363,7 +363,6 @@ class DetectorParameterisationSinglePanel(ModelParameterisation, DetectorMixin):
     return
 
   def compose(self):
-    """See base class."""
 
     # extract parameters from the internal list
     dist, shift1, shift2, tau1, tau2, tau3 = self._param
@@ -380,7 +379,6 @@ class DetectorParameterisationSinglePanel(ModelParameterisation, DetectorMixin):
     return
 
   def get_state(self):
-    """See base class."""
 
     # only a single panel exists, so no multi_state_elt argument is allowed
     panel = (self._model)[0]
@@ -513,7 +511,6 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
     return
 
   def compose(self):
-    """See base class."""
 
     # extract parameters from the internal list
     dist, shift1, shift2, tau1, tau2, tau3 = self._param
@@ -556,7 +553,6 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
     return
 
   def get_state(self, multi_state_elt=0):
-    """See base class."""
 
     # There is only one detector, but the req. panel must be specified
     panel = (self._model)[multi_state_elt]
@@ -569,7 +565,6 @@ class PyDetectorParameterisationMultiPanel(DetectorParameterisationMultiPanel):
   the base class for more details"""
 
   def compose(self):
-    """See base class."""
 
     # extract items from the initial state
     id1 = self._initial_state['d1']
@@ -1042,7 +1037,6 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
     return self._group_ids_by_parameter
 
   def compose(self):
-    """See base class."""
 
     # reset the list that holds derivatives
     for i in range(len(self._model)):
