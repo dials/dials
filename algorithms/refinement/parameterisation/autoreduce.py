@@ -103,6 +103,10 @@ class AutoReduce(object):
     self._options = options
     self._scan_varying = scan_varying
 
+    # A template logging message to fill in when failing
+    self._failmsg = ('Too few reflections to parameterise {0}\nTry modifying '
+                     'refinement.parameterisation.auto_reduction options')
+
   # Determine if there are enough reflections to support a particular
   # parameterisation. First, a minimum number of reflections is determined,
   # by the product of the number of free parameters and a user-provided
@@ -233,7 +237,7 @@ class AutoReduce(object):
       except AttributeError:
         if self._surplus_reflections(dp) < 0:
           mdl = 'Detector{0}'.format(i + 1)
-          msg = failmsg.format(mdl)
+          msg = self._failmsg.format(mdl)
           raise Sorry(msg)
       dp.set_fixed(to_fix)
 
@@ -248,24 +252,23 @@ class AutoReduce(object):
     Raises:
         Sorry: If there are too few reflections to support a parameterisation.
     """
-    failmsg = 'Too few reflections to parameterise {0}'
-    failmsg += '\nTry modifying refinement.parameterisation.auto_reduction options'
+
     for i, bp in enumerate(self.beam_params):
       if self._surplus_reflections(bp) < 0:
         mdl = 'Beam{0}'.format(i + 1)
-        msg = failmsg.format(mdl)
+        msg = self._failmsg.format(mdl)
         raise Sorry(msg)
 
     for i, xlo in enumerate(self.xl_ori_params):
       if self._surplus_reflections(xlo) < 0:
         mdl = 'Crystal{0} orientation'.format(i + 1)
-        msg = failmsg.format(mdl)
+        msg = self._failmsg.format(mdl)
         raise Sorry(msg)
 
     for i, xluc in enumerate(self.xl_uc_params):
       if self._unit_cell_surplus_reflections(xluc) < 0:
         mdl = 'Crystal{0} unit cell'.format(i + 1)
-        msg = failmsg.format(mdl)
+        msg = self._failmsg.format(mdl)
         raise Sorry(msg)
 
     for i, dp in enumerate(self.det_params):
@@ -280,13 +283,13 @@ class AutoReduce(object):
       except AttributeError:
         if self._surplus_reflections(dp) < 0:
           mdl = 'Detector{0}'.format(i + 1)
-          msg = failmsg.format(mdl)
+          msg = self._failmsg.format(mdl)
           raise Sorry(msg)
 
     for i, gonp in enumerate(self.gon_params):
       if self._surplus_reflections(gonp) < 0:
         mdl = 'Goniometer{0}'.format(i + 1)
-        msg = failmsg.format(mdl)
+        msg = self._failmsg.format(mdl)
         raise Sorry(msg)
 
   def check_and_fix(self):
