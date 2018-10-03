@@ -218,8 +218,9 @@ class AutoReduce(object):
           surplus = self._panel_gp_surplus_reflections(dp, gp, igp, verbose=True)
           if surplus < 0:
             msg = ('Require {0} more reflections to parameterise Detector{1} '
-                   'panel group {2}').format(-1*surplus, i + 1, igp + 1)
-            logger.warning(msg + '\nAttempting reduction of non-essential parameters')
+                   'panel group {2}')
+            logger.warning(msg.format(-1*surplus, i + 1, igp + 1) +
+                '\nAttempting reduction of non-essential parameters')
             names = cls._filter_parameter_names(dp)
             prefix = 'Group{0}'.format(igp + 1)
             reduce_this_group = [prefix + e for e in reduce_list]
