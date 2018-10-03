@@ -9,8 +9,6 @@ class GlobalSpotFinderThresholdExt(object):
 
   name = 'single'
 
-  default = False
-
   @classmethod
   def phil(cls):
     from libtbx.phil import parse
