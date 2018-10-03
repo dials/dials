@@ -16,7 +16,7 @@ from dials.test.algorithms.refinement.setup_geometry import Extract
 ##### Imports for reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
 from dxtbx.model.experiment_list import ExperimentList, Experiment
-from dials.algorithms.refinement.prediction import ScansRayPredictor
+from dials.algorithms.refinement.prediction.managed_predictors import ScansRayPredictor
 
 #### Import model parameterisations
 from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
@@ -173,7 +173,7 @@ def test_stills_pred_param(tc):
 
   # Predict the reflections in place. Must do this ahead of calculating
   # the analytical gradients so quantities like s1 are correct
-  from dials.algorithms.refinement.prediction import StillsExperimentsPredictor
+  from dials.algorithms.refinement.prediction.managed_predictors import StillsExperimentsPredictor
   ref_predictor = StillsExperimentsPredictor(tc.stills_experiments)
   ref_predictor(tc.reflections)
 
@@ -281,7 +281,7 @@ def test_spherical_relp_stills_pred_param(tc):
 
   # Predict the reflections in place. Must do this ahead of calculating
   # the analytical gradients so quantities like s1 are correct
-  from dials.algorithms.refinement.prediction import ExperimentsPredictorFactory
+  from dials.algorithms.refinement.prediction.managed_predictors import ExperimentsPredictorFactory
   ref_predictor = ExperimentsPredictorFactory.from_experiments(
       tc.stills_experiments, force_stills=True, spherical_relp=True)
   ref_predictor(tc.reflections)

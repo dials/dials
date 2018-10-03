@@ -82,7 +82,6 @@ class CrystalOrientationParameterisation(ModelParameterisation,
     return
 
   def compose(self):
-    """See base class."""
 
     # Extract orientation from the initial state
     U0 = self._initial_state
@@ -104,7 +103,6 @@ class CrystalOrientationParameterisation(ModelParameterisation,
     return
 
   def get_state(self):
-    """See base class."""
 
     # only a single crystal is parameterised here, so no multi_state_elt
     # argument is allowed
@@ -204,7 +202,6 @@ class CrystalUnitCellParameterisation(ModelParameterisation, CrystalUnitCellMixi
     return
 
   def compose(self):
-    """See base class."""
 
     # calculate new B and derivatives
     newB, self._dstate_dp = self._compose_core([p.value for p in self._param])
@@ -215,14 +212,12 @@ class CrystalUnitCellParameterisation(ModelParameterisation, CrystalUnitCellMixi
     return
 
   def get_state(self):
-    """See base class."""
 
     # only a single crystal is parameterised here, so no multi_state_elt
     # argument is allowed
     return matrix.sqr(self._model.get_B())
 
   def set_state_uncertainties(self, var_cov, multi_state_elt=None):
-    """See base class."""
 
     self._model.set_B_covariance(var_cov)
 

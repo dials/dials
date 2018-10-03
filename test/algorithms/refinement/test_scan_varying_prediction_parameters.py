@@ -6,7 +6,7 @@ import pytest
 from math import pi
 from scitbx.array_family import flex
 from dxtbx.model.experiment_list import ExperimentList, Experiment
-from dials.algorithms.refinement.prediction import ScansRayPredictor, \
+from dials.algorithms.refinement.prediction.managed_predictors import ScansRayPredictor, \
   ScansExperimentsPredictor
 from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters import \
     ScanVaryingPredictionParameterisation

@@ -26,7 +26,7 @@ from dials.algorithms.refinement.two_theta_refiner import ( TwoThetaTarget,
 def generate_reflections(experiments):
 
   from dials.algorithms.spot_prediction import IndexGenerator
-  from dials.algorithms.refinement.prediction import \
+  from dials.algorithms.refinement.prediction.managed_predictors import \
     ScansRayPredictor, ScansExperimentsPredictor
   from dials.algorithms.spot_prediction import ray_intersection
   from cctbx.sgtbx import space_group, space_group_symbols

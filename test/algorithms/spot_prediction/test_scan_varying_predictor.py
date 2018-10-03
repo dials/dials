@@ -22,7 +22,7 @@ from dxtbx.model.experiment_list import ExperimentList, Experiment
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
 from dials.algorithms.spot_prediction import ray_intersection
-from dials.algorithms.refinement.prediction import ScansRayPredictor, \
+from dials.algorithms.refinement.prediction.managed_predictors import ScansRayPredictor, \
   ScansExperimentsPredictor
 from cctbx.sgtbx import space_group, space_group_symbols
 
