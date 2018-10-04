@@ -28,14 +28,15 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
   rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_DeltaPsi"]
   rmsd_units = ["mm", "mm", "rad"]
 
-  def __init__(self, experiments, reflection_predictor, ref_man,
+  def __init__(self, experiments, predictor, reflection_manager,
                prediction_parameterisation, restraints_parameterisation,
                frac_binsize_cutoff=0.33333,
                absolute_cutoffs=None,
                gradient_calculation_blocksize=None):
 
-    Target.__init__(self, experiments, reflection_predictor, ref_man,
-                    prediction_parameterisation, gradient_calculation_blocksize)
+    Target.__init__(self, experiments, predictor, reflection_manager,
+                    prediction_parameterisation, restraints_parameterisation,
+                    gradient_calculation_blocksize)
 
     # Set up the RMSD achieved criterion. For simplicity, we take models from
     # the first Experiment only. If this is not appropriate for refinement over
@@ -49,9 +50,6 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
                                min_px_size_y * frac_binsize_cutoff]
     else:
       self._binsize_cutoffs = absolute_cutoffs[:2]
-
-    # predict reflections and finalise reflection manager
-    self.predict()
 
     return
 

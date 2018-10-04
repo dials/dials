@@ -15,7 +15,7 @@ from dials.algorithms.refinement.refinement_helpers \
     import get_fd_gradients, random_param_shift
 from math import pi
 from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
-from dials.algorithms.refinement.parameterisation \
+from dials.algorithms.refinement.parameterisation.crystal_parameters \
     import CrystalOrientationParameterisation, CrystalUnitCellParameterisation
 
 def test():

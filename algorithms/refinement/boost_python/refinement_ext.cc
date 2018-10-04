@@ -15,9 +15,9 @@ namespace dials { namespace refinement { namespace boost_python {
   void export_gaussian_smoother();
   void export_gaussian_smoother_2D();
   void export_gaussian_smoother_3D();
-  void export_pgnmn_iter();
-  void export_ucnmn_iter();
-  void export_mnmn_iter();
+  void export_pg_surpl_iter();
+  void export_uc_surpl_iter();
+  void export_surpl_iter();
 
   BOOST_PYTHON_MODULE(dials_refinement_helpers_ext)
   {
@@ -30,8 +30,8 @@ namespace dials { namespace refinement { namespace boost_python {
     export_gaussian_smoother();
     export_gaussian_smoother_2D();
     export_gaussian_smoother_3D();
-    export_pgnmn_iter();
-    export_ucnmn_iter();
-    export_mnmn_iter();
+    export_pg_surpl_iter();
+    export_uc_surpl_iter();
+    export_surpl_iter();
   }
 }}} // namespace dials::refinement::boost_python

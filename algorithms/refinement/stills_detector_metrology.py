@@ -16,10 +16,14 @@ from __future__ import absolute_import, division
 from dials.algorithms.refinement.refiner import RefinerFactory
 from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
   import StillsPredictionParameterisation
-from dials.algorithms.refinement.parameterisation.prediction_parameters \
-  import SparseGradientVectorMixin
-from dials.algorithms.refinement.target_stills import \
-  LeastSquaresStillsResidualWithRmsdCutoff
+from dials.algorithms.refinement.parameterisation.detector_parameters \
+  import DetectorParameterisationHierarchical
+from dials.algorithms.refinement.parameterisation.detector_parameters \
+  import DetectorParameterisationMultiPanel
+from dials.algorithms.refinement.parameterisation.detector_parameters \
+  import DetectorParameterisationSinglePanel
+from dials.algorithms.refinement.parameterisation.parameter_report \
+  import ParameterReporter
 from dials.algorithms.refinement.target import SparseGradientsMixin
 from dials.array_family import flex
 
@@ -42,13 +46,10 @@ class StillsDetectorRefinerFactory(RefinerFactory):
     """
 
     # Shorten parameter paths
-    beam_options = params.refinement.parameterisation.beam
-    crystal_options = params.refinement.parameterisation.crystal
-    detector_options = params.refinement.parameterisation.detector
-    sparse = params.refinement.parameterisation.sparse
-
-    # Shorten paths
-    import dials.algorithms.refinement.parameterisation as par
+    beam_options = params.beam
+    crystal_options = params.crystal
+    detector_options = params.detector
+    sparse = params.sparse
 
     # Parameterise unique Beams
     beam_params = []
@@ -67,22 +68,22 @@ class StillsDetectorRefinerFactory(RefinerFactory):
         if len(detector) > 1:
           try:
             h = detector.hierarchy()
-            det_param = par.DetectorParameterisationHierarchical(detector,
+            det_param = DetectorParameterisationHierarchical(detector,
                 experiment_ids=exp_ids, level=detector_options.hierarchy_level)
           except AttributeError:
-            det_param = par.DetectorParameterisationMultiPanel(detector, beam,
+            det_param = DetectorParameterisationMultiPanel(detector, beam,
                                                         experiment_ids=exp_ids)
         else:
-          det_param = par.DetectorParameterisationSinglePanel(detector,
+          det_param = DetectorParameterisationSinglePanel(detector,
                                                         experiment_ids=exp_ids)
       elif detector_options.panels == "single":
-        det_param = par.DetectorParameterisationSinglePanel(detector,
+        det_param = DetectorParameterisationSinglePanel(detector,
                                                         experiment_ids=exp_ids)
       elif detector_options.panels == "multiple":
-        det_param = par.DetectorParameterisationMultiPanel(detector, beam,
+        det_param = DetectorParameterisationMultiPanel(detector, beam,
                                                         experiment_ids=exp_ids)
       elif detector_options.panels == "hierarchical":
-        det_param = par.DetectorParameterisationHierarchical(detector, beam,
+        det_param = DetectorParameterisationHierarchical(detector, beam,
                 experiment_ids=exp_ids, level=detector_options.hierarchy_level)
       else: # can only get here if refinement.phil is broken
         raise RuntimeError("detector_options.panels value not recognised")
@@ -108,16 +109,6 @@ class StillsDetectorRefinerFactory(RefinerFactory):
 
       det_params.append(det_param)
 
-    # Now we have the final list of model parameterisations, build a restraints
-    # parameterisation (if requested). Only unit cell restraints are supported
-    # at the moment.
-    if any([crystal_options.unit_cell.restraints.tie_to_target,
-            crystal_options.unit_cell.restraints.tie_to_group]):
-      restraints_param = cls.config_restraints(params, det_params, beam_params,
-        xl_ori_params, xl_uc_params)
-    else:
-      restraints_param = None
-
     # Prediction equation parameterisation
     if do_stills: # doing stills
       if sparse:
@@ -129,42 +120,16 @@ class StillsDetectorRefinerFactory(RefinerFactory):
 
     else: # doing scans
       raise NotImplementedError("currently only for stills")
-      #if crystal_options.scan_varying:
-      #  if crystal_options.UB_model_per == "reflection":
-      #    #from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
-      #    #  import ScanVaryingPredictionParameterisation as PredParam
-      #    raise NotImplementedError("currently only for stills")
-      #  elif crystal_options.UB_model_per == "image":
-      #    #from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
-      #    #  import ScanVaryingPredictionParameterisationFast as PredParam
-      #    raise NotImplementedError("currently only for stills")
-      #  else:
-      #    raise RuntimeError("UB_model_per=" + crystal_options.scan_varying +
-      #                       " is not a recognised option")
-      #  pred_param = PredParam(
-      #        experiments,
-      #        det_params, beam_params, xl_ori_params, xl_uc_params)
-      #else:
-      #  if sparse:
-      #    #from dials.algorithms.refinement.parameterisation.prediction_parameters \
-      #    #  import XYPhiPredictionParameterisationSparse as PredParam
-      #    raise NotImplementedError("currently only for stills")
-      #  else:
-      #    #from dials.algorithms.refinement.parameterisation.prediction_parameters \
-      #    #  import XYPhiPredictionParameterisation as PredParam
-      #    raise NotImplementedError("currently only for stills")
-      #  pred_param = PredParam(
-      #      experiments,
-      #      det_params, beam_params, xl_ori_params, xl_uc_params)
 
     # Parameter reporting
-    param_reporter = par.ParameterReporter(det_params, beam_params,
+    param_reporter = ParameterReporter(det_params, beam_params,
                                            xl_ori_params, xl_uc_params)
 
-    return pred_param, param_reporter, restraints_param
+    return pred_param, param_reporter
 
   @staticmethod
-  def config_target(params, experiments, refman, do_stills):
+  def config_target(params, experiments, refman, predictor,
+      pred_param, restraints_param, do_stills, do_sparse):
     """Given a set of parameters, configure a factory to build a
     target function
 
@@ -175,29 +140,21 @@ class StillsDetectorRefinerFactory(RefinerFactory):
         The target factory instance
     """
 
-    # Shorten parameter paths
-    options = params.refinement.target
-    sparse = params.refinement.parameterisation.sparse
-
-    if options.rmsd_cutoff == "fraction_of_bin_size":
+    if params.rmsd_cutoff == "fraction_of_bin_size":
       absolute_cutoffs = None
-    elif options.rmsd_cutoff == "absolute":
-      absolute_cutoffs = options.absolute_cutoffs
+    elif params.rmsd_cutoff == "absolute":
+      absolute_cutoffs = params.absolute_cutoffs
     else:
       raise RuntimeError("Target function rmsd_cutoff option" +
-          options.rmsd_cutoff + " not recognised")
+          params.rmsd_cutoff + " not recognised")
 
     # all experiments have the same (or no) goniometer
     goniometer = experiments[0].goniometer
     for e in experiments: assert e.goniometer is goniometer
 
-    # build managed reflection predictors
-    from dials.algorithms.refinement.prediction import ExperimentsPredictor
-    ref_predictor = ExperimentsPredictor(experiments, do_stills)
-
     # Determine whether the target is in X, Y, Phi space or just X, Y.
     if do_stills:
-      if sparse:
+      if do_sparse:
         targ = LeastSquaresStillsDetectorSparse
       else:
         targ = LeastSquaresStillsDetector
@@ -212,16 +169,14 @@ class StillsDetectorRefinerFactory(RefinerFactory):
       #  #from dials.algorithms.refinement.target \
       #  #  import LeastSquaresPositionalResidualWithRmsdCutoff as targ
 
-    # Here we pass in None for prediction_parameterisation and
-    # restraints_parameterisation, as these will be linked to the object later
     target = targ(experiments=experiments,
-                  reflection_predictor=ref_predictor,
-                  ref_man=refman,
-                  prediction_parameterisation=None,
-                  restraints_parameterisation=None,
-                  frac_binsize_cutoff=options.bin_size_fraction,
+                  predictor=predictor,
+                  reflection_manager=refman,
+                  prediction_parameterisation=pred_param,
+                  restraints_parameterisation=restraints_param,
+                  frac_binsize_cutoff=params.bin_size_fraction,
                   absolute_cutoffs=absolute_cutoffs,
-                  gradient_calculation_blocksize=options.gradient_calculation_blocksize)
+                  gradient_calculation_blocksize=params.gradient_calculation_blocksize)
 
     return target
 
@@ -390,11 +345,14 @@ class StillsDetectorPredictionParameterisation(StillsPredictionParameterisation)
 
     return results
 
+from dials.algorithms.refinement.parameterisation.prediction_parameters \
+  import SparseGradientVectorMixin
 class StillsDetectorPredictionParameterisationSparse(SparseGradientVectorMixin,
   StillsDetectorPredictionParameterisation):
   pass
 
-
+from dials.algorithms.refinement.target_stills import \
+  LeastSquaresStillsResidualWithRmsdCutoff
 class LeastSquaresStillsDetector(LeastSquaresStillsResidualWithRmsdCutoff):
 
   _first_predict = True

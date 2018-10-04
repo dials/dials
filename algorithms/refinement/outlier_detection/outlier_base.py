@@ -82,7 +82,7 @@ class CentroidOutlier(object):
     # check the columns are present
     for col in self._cols: assert col in reflections
 
-    sel = reflections.get_flags(reflections.flags.used_in_refinement)
+    sel = reflections.get_flags(reflections.flags.predicted)
     all_data = reflections.select(sel)
     all_data_indices = sel.iselection()
     nexp = flex.max(all_data['id']) + 1
