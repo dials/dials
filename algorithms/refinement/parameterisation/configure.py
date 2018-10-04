@@ -1,13 +1,14 @@
 from __future__ import absolute_import, division
+import re
 import logging
 logger = logging.getLogger(__name__)
 
 import libtbx # for libtbx.Auto
 
-# function to convert fix_lists into to_fix selections
+# Function to convert fix_lists into to_fix selections
 from dials.algorithms.refinement.refinement_helpers import string_sel
 
-# Import parameterisations
+# Import model parameterisations
 from .beam_parameters import BeamParameterisation
 from .scan_varying_beam_parameters import ScanVaryingBeamParameterisation
 from .crystal_parameters import CrystalOrientationParameterisation
@@ -20,7 +21,18 @@ from .detector_parameters import DetectorParameterisationSinglePanel
 from .scan_varying_detector_parameters import ScanVaryingDetectorParameterisationSinglePanel
 from .goniometer_parameters import GoniometerParameterisation
 from .scan_varying_goniometer_parameters import ScanVaryingGoniometerParameterisation
+
+# Import parameterisations of the prediction equation
+from .prediction_parameters import XYPhiPredictionParameterisation
+from .prediction_parameters import XYPhiPredictionParameterisationSparse
 from .scan_varying_prediction_parameters import ScanVaryingPredictionParameterisation
+from .scan_varying_prediction_parameters import ScanVaryingPredictionParameterisationSparse
+from .prediction_parameters_stills import StillsPredictionParameterisation
+from .prediction_parameters_stills import StillsPredictionParameterisationSparse
+from .prediction_parameters_stills import SphericalRelpStillsPredictionParameterisation
+from .prediction_parameters_stills import SphericalRelpStillsPredictionParameterisationSparse
+
+from .autoreduce import AutoReduce
 from .parameter_report import ParameterReporter
 
 # PHIL
@@ -597,7 +609,6 @@ class ParameterisationFactory(object):
       if gon_param.num_free() > 0:
         gon_params.append(gon_param)
 
-    from .autoreduce import AutoReduce
     autoreduce = AutoReduce(options.auto_reduction,
       det_params, beam_params, xl_ori_params, xl_uc_params, gon_params,
       reflections, scan_varying=options.scan_varying)
@@ -613,39 +624,31 @@ class ParameterisationFactory(object):
     if do_stills: # doing stills
       if options.sparse:
         if options.spherical_relp_model:
-          from .prediction_parameters_stills \
-            import SphericalRelpStillsPredictionParameterisationSparse as spp
+          PredParam = SphericalRelpStillsPredictionParameterisationSparse
         else:
-          from .prediction_parameters_stills \
-            import StillsPredictionParameterisationSparse as spp
+          PredParam = StillsPredictionParameterisationSparse
       else:
         if options.spherical_relp_model:
-          from .prediction_parameters_stills \
-            import SphericalRelpStillsPredictionParameterisation as spp
+          PredParam = SphericalRelpStillsPredictionParameterisation
         else:
-          from .prediction_parameters_stills \
-              import StillsPredictionParameterisation as spp
-      pred_param = spp(experiments, det_params, beam_params, xl_ori_params,
+          PredParam = StillsPredictionParameterisation
+      pred_param = PredParam(experiments, det_params, beam_params, xl_ori_params,
           xl_uc_params)
 
     else: # doing scans
       if options.scan_varying:
         if options.sparse:
-          from .scan_varying_prediction_parameters \
-            import ScanVaryingPredictionParameterisationSparse as PredParam
+          PredParam = ScanVaryingPredictionParameterisationSparse
         else:
-          from .scan_varying_prediction_parameters \
-            import ScanVaryingPredictionParameterisation as PredParam
+          PredParam = ScanVaryingPredictionParameterisation
         pred_param = PredParam(
               experiments,
               det_params, beam_params, xl_ori_params, xl_uc_params, gon_params)
       else:
         if options.sparse:
-          from .prediction_parameters \
-            import XYPhiPredictionParameterisationSparse as PredParam
+          PredParam = XYPhiPredictionParameterisationSparse
         else:
-          from .prediction_parameters \
-            import XYPhiPredictionParameterisation as PredParam
+          PredParam = XYPhiPredictionParameterisation
         pred_param = PredParam(
             experiments,
             det_params, beam_params, xl_ori_params, xl_uc_params, gon_params)
@@ -661,7 +664,6 @@ class ParameterisationFactory(object):
   def _filter_parameter_names(parameterisation):
     # scan-varying suffixes like '_sample1' should be removed from
     # the list of parameter names so that it is num_free in length
-    import re
     pattern = re.compile(r"_sample[0-9]+$")
     names = [pattern.sub('', e) for e in parameterisation.get_param_names(only_free=False)]
     filtered_names = []
