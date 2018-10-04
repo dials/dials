@@ -311,10 +311,7 @@ class ParameterisationFactory(object):
 
       # get number of fixable units, either parameters or parameter sets in
       # the scan-varying case
-      try:
-        num_beam = beam_param.num_sets()
-      except AttributeError:
-        num_beam = beam_param.num_total()
+      num_beam = getattr(beam_param, 'num_sets', getattr(beam_param, 'num_total'))()
 
       fix_list = []
       if options.beam.fix_list:
@@ -400,14 +397,8 @@ class ParameterisationFactory(object):
 
       # get number of fixable units, either parameters or parameter sets in
       # the scan-varying case
-      try:
-        num_ori = xl_ori_param.num_sets()
-      except AttributeError:
-        num_ori = xl_ori_param.num_total()
-      try:
-        num_uc = xl_uc_param.num_sets()
-      except AttributeError:
-        num_uc = xl_uc_param.num_total()
+      num_ori = getattr(xl_ori_param, 'num_sets', getattr(xl_ori_param, 'num_total'))()
+      num_uc = getattr(xl_uc_param, 'num_sets', getattr(xl_uc_param, 'num_total'))()
 
       ori_fix_list = []
       if options.crystal.orientation.fix_list:
@@ -491,11 +482,12 @@ class ParameterisationFactory(object):
       else:
         if options.detector.panels == "automatic":
           if len(detector) > 1:
-            try: # Use hierarchy in parameterisation if the detector has one
+            if hasattr(detector, 'hierarchy'):
+              # Use hierarchy in parameterisation if the detector has one
               h = detector.hierarchy()
               det_param = DetectorParameterisationHierarchical(detector,
                   experiment_ids=exp_ids, level=options.detector.hierarchy_level)
-            except AttributeError:
+            else:
               det_param = DetectorParameterisationMultiPanel(detector,
                   beam, experiment_ids=exp_ids)
           else:
@@ -521,10 +513,7 @@ class ParameterisationFactory(object):
 
       # get number of fixable units, either parameters or parameter sets in
       # the scan-varying case
-      try:
-        num_det = det_param.num_sets()
-      except AttributeError:
-        num_det = det_param.num_total()
+      num_det = getattr(det_param, 'num_sets', getattr(det_param, 'num_total'))()
 
       fix_list = []
       if options.detector.fix_list:
@@ -583,10 +572,7 @@ class ParameterisationFactory(object):
 
       # get number of fixable units, either parameters or parameter sets in
       # the scan-varying case
-      try:
-        num_gon = gon_param.num_sets()
-      except AttributeError:
-        num_gon = gon_param.num_total()
+      num_gon = getattr(gon_param, 'num_sets', getattr(gon_param, 'num_total'))()
 
       fix_list = []
       if options.goniometer.fix_list:
