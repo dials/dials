@@ -288,11 +288,11 @@ class ParameterisationFactory(object):
       goniometer, scan = assoc_models[0]
 
       if sv_beam:
-        # If a beam is scan-varying, then it must always be found alongside
-        # the same Scan and Goniometer in any Experiments in which it appears
-        if [goniometer, scan].count(None) != 0:
+        if not all((goniometer, scan)):
           raise Sorry('A scan-varying beam model cannot be created because '
                       'a scan or goniometer model is missing')
+        # If a beam is scan-varying, then it must always be found alongside
+        # the same Scan and Goniometer in any Experiments in which it appears
         if not all(g is goniometer and s is scan for (g, s) in assoc_models):
           raise Sorry('A single scan-varying beam model cannot be refined '
                       'when associated with more than one scan or goniometer')
@@ -354,16 +354,17 @@ class ParameterisationFactory(object):
                       for i in exp_ids]
       goniometer, scan = assoc_models[0]
       if goniometer is None:
-        if not all(g is None and s is None for (g, s) in assoc_models):
+        # There should be no associated goniometer and scan models
+        if any(g or s for (g, s) in assoc_models):
           raise Sorry('A crystal model appears in a mixture of scan and still '
                       'experiments, which is not supported')
 
       if sv_xl_ori or sv_xl_uc:
-        # If a crystal is scan-varying, then it must always be found alongside
-        # the same Scan and Goniometer in any Experiments in which it appears
-        if [goniometer, scan].count(None) != 0:
+        if not all((goniometer, scan)):
           raise Sorry('A scan-varying crystal model cannot be created because '
                       'a scan or goniometer model is missing')
+        # If a crystal is scan-varying, then it must always be found alongside
+        # the same Scan and Goniometer in any Experiments in which it appears
         if not all(g is goniometer and s is scan for (g, s) in assoc_models):
           raise Sorry('A single scan-varying crystal model cannot be refined '
                       'when associated with more than one scan or goniometer')
@@ -459,11 +460,11 @@ class ParameterisationFactory(object):
       goniometer, scan = assoc_models[0]
 
       if sv_det:
-        # If a detector is scan-varying, then it must always be found alongside
-        # the same Scan and Goniometer in any Experiments in which it appears
-        if [goniometer, scan].count(None) != 0:
+        if not all((goniometer, scan)):
           raise Sorry('A scan-varying detector model cannot be created '
                       'because a scan or goniometer model is missing')
+        # If a detector is scan-varying, then it must always be found alongside
+        # the same Scan and Goniometer in any Experiments in which it appears
         if not all(g is goniometer and s is scan for (g, s) in assoc_models):
           raise Sorry('A single scan-varying detector model cannot be '
             'refined when associated with more than one scan or goniometer')
