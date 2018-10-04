@@ -34,8 +34,15 @@ def convert_to_cbf(imageset, template):
   import binascii
   start_tag = binascii.unhexlify('0c1a04d5')
 
+  trusted = imageset.get_detector()[0].get_trusted_range()
+
   for i in range(len(imageset)):
     data = imageset.get_raw_data(i)[0]
+
+    # apply mask
+
+    good = data.as_1d() < int(round(trusted[1]))
+    data.as_1d().set_selected(~good, -2)
     compressed = compress(data)
 
     header = '''###CBF: VERSION 3.14 from DIALS conversion
