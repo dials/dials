@@ -496,7 +496,6 @@ class ParameterisationFactory(object):
           if len(detector) > 1:
             if hasattr(detector, 'hierarchy'):
               # Use hierarchy in parameterisation if the detector has one
-              h = detector.hierarchy()
               det_param = DetectorParameterisationHierarchical(detector,
                   experiment_ids=exp_ids, level=options.detector.hierarchy_level)
             else:
