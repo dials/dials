@@ -16,6 +16,7 @@ from dials.util import log
 from dials.util.options import OptionParser
 from dials.util.options import flatten_experiments, flatten_reflections
 from dials.algorithms.symmetry.determine_space_group import determine_space_group
+from dials.algorithms.scaling.outlier_rejection import reject_outliers
 
 
 phil_scope = iotbx.phil.parse('''\
@@ -149,6 +150,13 @@ def run(args):
       refl = filter_reflection_table(refl, intensity_choice, min_isigi=-5,
         filter_ice_rings=False, combine_partials=True,
         partiality_threshold=params.partiality_threshold)
+      if intensity_to_use != 'scale':
+        refl['intensity'] = refl['intensity.'+intensity_to_use+'.value']
+        refl['variance'] = refl['intensity.'+intensity_to_use+'.variance']
+        refl = reject_outliers([refl], expt.crystal.get_space_group(),
+          method='simple', zmax=12.0)[0]
+        refl = refl.select(~refl.get_flags(refl.flags.outlier_in_scaling))
+
       data = refl['intensity.'+intensity_to_use+'.value']
       variances = refl['intensity.'+intensity_to_use+'.variance']
 

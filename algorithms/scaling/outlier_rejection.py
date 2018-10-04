@@ -38,6 +38,9 @@ class OutlierRejectionBase(object):
   Ih_table datastructure."""
 
   def __init__(self, reflection_tables, space_group, zmax):
+    for table in reflection_tables:
+      if not 'inverse_scale_factor' in table:
+        table['inverse_scale_factor'] = flex.double(table.size(), 1.0)
     self.reflection_tables = reflection_tables
     self.space_group = space_group
     self.zmax = zmax
