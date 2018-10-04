@@ -702,7 +702,7 @@ class ParameterisationFactory(object):
                    a.get('y_interval'),
                    a.get('phi_interval')]
       try:
-        min_interval = min([e for e in intervals if e is not None])
+        min_interval = min(filter(None, intervals))
       except ValueError:
         # empty list - analysis was unable to suggest a suitable interval
         # width. Default to the safest case
