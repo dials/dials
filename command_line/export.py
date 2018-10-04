@@ -79,7 +79,7 @@ phil_scope = parse('''
   format = *mtz sadabs nxs mmcif mosflm xds best xds_ascii json
     .type = choice
     .help = "The output file format"
-  
+
   intensity = *profile *sum scale
     .type = choice(multi=True)
     .help = "Choice of which intensities to export. Allowed combinations:

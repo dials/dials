@@ -15,7 +15,7 @@ contains reflection data and scale models, from one or more experiments.
 The output pickle file contains intensity.scale.value, the unscaled intensity
 values used to determine the scaling model, and a inverse scale factor per
 reflection. These values can then be used to merge the data for downstream
-structural solution. Alternatively, the scaled_experiments.json and 
+structural solution. Alternatively, the scaled_experiments.json and
 scaled.pickle files can be passed back to dials.scale, and further scaling will
 be performed, starting from where the previous job finished.
 
