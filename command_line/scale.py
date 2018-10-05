@@ -60,7 +60,7 @@ from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScalerFactory
 from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets,\
   select_datasets_on_ids, save_experiments, save_reflections,\
-  assign_unique_identifiers, log_memory_usage
+  assign_unique_identifiers, log_memory_usage, DialsMergingStatisticsError
 from dials.algorithms.scaling.post_scaling_analysis import \
   exclude_on_batch_rmerge, exclude_on_image_scale
 
@@ -154,7 +154,10 @@ class Script(object):
     start_time = time.time()
     self.prepare_input()
     self.scale()
-    self.merging_stats()
+    try:
+      self.merging_stats()
+    except DialsMergingStatisticsError as e:
+      logger.info(e)
     if save_data:
       self.output()
     # All done!
@@ -337,13 +340,16 @@ class Script(object):
 
     make_sub_header("Overall merging statistics (non-anomalous)",
         out=log.info_handle(logger))
-    result = iotbx.merging_statistics.dataset_statistics(
-      i_obs=self.scaled_miller_array, n_bins=self.params.output.merging.nbins,
-      anomalous=False, sigma_filtering=None, eliminate_sys_absent=False,
-      use_internal_variance=self.params.output.use_internal_variance)
-    result.show(header=0, out=log.info_handle(logger))
-    result.show_estimated_cutoffs(out=log.info_handle(logger))
-    self.merging_statistics_result = result
+    try:
+      result = iotbx.merging_statistics.dataset_statistics(
+        i_obs=self.scaled_miller_array, n_bins=self.params.output.merging.nbins,
+        anomalous=False, sigma_filtering=None, eliminate_sys_absent=False,
+        use_internal_variance=self.params.output.use_internal_variance)
+      result.show(header=0, out=log.info_handle(logger))
+      result.show_estimated_cutoffs(out=log.info_handle(logger))
+      self.merging_statistics_result = result
+    except RuntimeError:
+      raise DialsMergingStatisticsError("Failure during merging statistics calculation")
 
   def delete_datastructures(self):
     """Delete the data in the scaling datastructures to save RAM before

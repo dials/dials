@@ -33,6 +33,9 @@ except ImportError:
   def log_memory_usage():
     pass
 
+class DialsMergingStatisticsError(Exception):
+  pass
+
 class Reasons(object):
 
   def __init__(self):
@@ -398,9 +401,12 @@ def combine_intensities(reflection_tables, experiment, Imids=None):
     i_obs.set_observation_type_xray_intensity()
     i_obs.set_sigmas((combined_variances**0.5)/combined_scales)
     n_bins = min(20, int(combined_intensities.size()/100)+1)
-    res = iotbx.merging_statistics.dataset_statistics(i_obs=i_obs, n_bins=n_bins,
-      anomalous=False, sigma_filtering=None, use_internal_variance=False,
-      eliminate_sys_absent=False)
+    try:
+      res = iotbx.merging_statistics.dataset_statistics(i_obs=i_obs, n_bins=n_bins,
+        anomalous=False, sigma_filtering=None, use_internal_variance=False,
+        eliminate_sys_absent=False)
+    except RuntimeError:
+      raise DialsMergingStatisticsError("Unable to merge for intensity combination")
     # record the results
     results[Is] = res.overall.r_meas
     if Is == 0:

@@ -32,7 +32,7 @@ from dials.algorithms.scaling.error_model.error_model_target import \
   ErrorModelTarget
 from dials.algorithms.scaling.parameter_handler import create_apm_factory
 from dials.algorithms.scaling.scaling_utilities import log_memory_usage, \
-  combine_intensities, Reasons
+  combine_intensities, Reasons, DialsMergingStatisticsError
 
 logger = logging.getLogger('dials')
 
@@ -341,9 +341,12 @@ class SingleScalerBase(ScalerBase):
 
   def combine_intensities(self):
     """Combine prf and sum intensities to give optimal intensities."""
-    table_list, _ = combine_intensities([self._reflection_table],
-      self._experiments, self._params.reflection_selection.combine.Imid)
-    self._reflection_table = table_list[0]
+    try:
+      table_list, _ = combine_intensities([self._reflection_table],
+        self._experiments, self._params.reflection_selection.combine.Imid)
+      self._reflection_table = table_list[0]
+    except DialsMergingStatisticsError as e:
+      logger.info("Intensity combination failed with the error %s", e)
 
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
     self._reflection_table['inverse_scale_factor'] = flex.double(
@@ -631,8 +634,11 @@ class MultiScaler(MultiScalerBase):
     """Combine reflection intensities, either jointly or separately."""
     if self.params.reflection_selection.combine.joint_analysis:
       reflection_tables = [s.reflection_table for s in self.single_scalers]
-      self._reflection_table, _ = combine_intensities(reflection_tables,
-        self._experiments, self._params.reflection_selection.combine.Imid)
+      try:
+        self._reflection_table, _ = combine_intensities(reflection_tables,
+          self._experiments, self._params.reflection_selection.combine.Imid)
+      except DialsMergingStatisticsError as e:
+        logger.info("Intensity combination failed with the error %s", e)
     else:
       for scaler in self.single_scalers:
         scaler.combine_intensities()
