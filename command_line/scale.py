@@ -75,6 +75,7 @@ phil_scope = phil.parse('''
       .type = choice
       .help = "Set scaling model to be applied to input datasets without
                an existing model. "
+      .expert_level = 0
   output {
     log = dials.scale.log
       .type = str
@@ -101,14 +102,17 @@ phil_scope = phil.parse('''
     crystal_name = XTAL
       .type = str
       .help = "The crystal name to be exported in the mtz file metadata"
+      .expert_level = 1
     use_internal_variance = False
       .type = bool
       .help = "Option to use internal spread of the intensities when merging
               reflection groups and calculating sigI, rather than using the
               sigmas of the individual reflections."
+      .expert_level = 1
     merging.nbins = 20
       .type = int
       .help = "Number of bins to use for calculating and plotting merging stats."
+      .expert_level = 1
     exclude_on_image_scale = None
       .type = float
       .help = "If set, images where the image inverse scale (defined by the
@@ -122,12 +126,14 @@ phil_scope = phil.parse('''
               have unreliable intensities and scales. This option should be most
               appropriate for scaling multi-dataset thin-wedge datasets that
               are expected to have significant radiation damage."
+      .expert_level = 2
     exclude_on_batch_rmerge = None
       .type = float
       .help = "If set, images which have an Rmerge above this value will be set
               as outliers, and not included in merging stats or output for
               downstream processing. This is performed after the scaling
               algorithm has been run in the 'post-scaling' step."
+      .expert_level = 2
   }
   include scope dials.algorithms.scaling.scaling_options.phil_scope
   include scope dials.algorithms.scaling.cross_validation.cross_validate.phil_scope
