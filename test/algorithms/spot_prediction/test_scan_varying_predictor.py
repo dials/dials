@@ -22,8 +22,8 @@ from dxtbx.model.experiment_list import ExperimentList, Experiment
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
 from dials.algorithms.spot_prediction import ray_intersection
-from dials.algorithms.refinement.prediction import ScansRayPredictor, \
-  ExperimentsPredictor
+from dials.algorithms.refinement.prediction.managed_predictors import ScansRayPredictor, \
+  ScansExperimentsPredictor
 from cctbx.sgtbx import space_group, space_group_symbols
 
 def setup_models(args):
@@ -86,7 +86,7 @@ def ref_gen_static(experiments):
 
   # Make a reflection predictor and re-predict for these reflections. The
   # result is the same, but we gain also the flags and xyzcal.px columns
-  ref_predictor = ExperimentsPredictor(experiments)
+  ref_predictor = ScansExperimentsPredictor(experiments)
   refs['id'] = flex.int(len(refs), 0)
   refs = ref_predictor(refs)
 

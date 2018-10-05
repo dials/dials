@@ -26,8 +26,8 @@ from dials.algorithms.refinement.two_theta_refiner import ( TwoThetaTarget,
 def generate_reflections(experiments):
 
   from dials.algorithms.spot_prediction import IndexGenerator
-  from dials.algorithms.refinement.prediction import \
-    ScansRayPredictor, ExperimentsPredictor
+  from dials.algorithms.refinement.prediction.managed_predictors import \
+    ScansRayPredictor, ScansExperimentsPredictor
   from dials.algorithms.spot_prediction import ray_intersection
   from cctbx.sgtbx import space_group, space_group_symbols
   from scitbx.array_family import flex
@@ -53,7 +53,7 @@ def generate_reflections(experiments):
 
   # Make a reflection predictor and re-predict for all these reflections. The
   # result is the same, but we gain also the flags and xyzcal.px columns
-  ref_predictor = ExperimentsPredictor(experiments)
+  ref_predictor = ScansExperimentsPredictor(experiments)
   obs_refs['id'] = flex.int(len(obs_refs), 0)
   obs_refs = ref_predictor(obs_refs)
 

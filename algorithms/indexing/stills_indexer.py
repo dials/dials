@@ -308,9 +308,10 @@ class stills_indexer(indexer_base):
       if self.params.refinement_protocol.mode == 'repredict_only':
 
         from dials.algorithms.indexing.nave_parameters import nave_parameters
-        from dials.algorithms.refinement.prediction import ExperimentsPredictor
+        from dials.algorithms.refinement.prediction.managed_predictors import ExperimentsPredictorFactory
         refined_experiments, refined_reflections = experiments, reflections_for_refinement
-        ref_predictor = ExperimentsPredictor(experiments, spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
+        ref_predictor = ExperimentsPredictorFactory.from_experiments(
+            experiments, do_stills=True, spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
         ref_predictor(refined_reflections)
         refined_reflections['delpsical2'] = refined_reflections['delpsical.rad']**2
         for expt_id in range(len(refined_experiments)):
@@ -319,7 +320,8 @@ class stills_indexer(indexer_base):
                                experiments=refined_experiments[expt_id:expt_id+1],
                                reflections=refls, refinery=None, graph_verbose=False)
           experiments[expt_id].crystal = nv()
-        ref_predictor = ExperimentsPredictor(experiments, spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
+        ref_predictor = ExperimentsPredictorFactory.from_experiments(
+          experiments, do_stills=True, spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
         ref_predictor(refined_reflections)
 
       else:
@@ -549,9 +551,9 @@ class stills_indexer(indexer_base):
                                            indexed = indexed,
                                            experiments = ref_experiments))
       else:
-        from dials.algorithms.refinement.prediction import ExperimentsPredictor
-        ref_predictor = ExperimentsPredictor(experiments, force_stills=True,
-                                             spherical_relp=params.refinement.parameterisation.spherical_relp_model)
+        from dials.algorithms.refinement.prediction.managed_predictors import ExperimentsPredictorFactory
+        ref_predictor = ExperimentsPredictorFactory.from_experiments(
+            experiments, do_stills=True, spherical_relp=params.refinement.parameterisation.spherical_relp_model)
         rmsd, _ = calc_2D_rmsd_and_displacements(ref_predictor(indexed))
         candidates.append(candidate_info(crystal = cm,
                                          n_indexed = len(indexed),

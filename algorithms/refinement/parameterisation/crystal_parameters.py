@@ -42,10 +42,19 @@ class CrystalOrientationMixin(object):
 
 class CrystalOrientationParameterisation(ModelParameterisation,
   CrystalOrientationMixin):
-  """Parameterisation for crystal orientation, with angles expressed in
-  mrad"""
+  """A parameterisation of the orientation of a Crystal model.
+
+  The Crystal orientation matrix U is parameterised by three Tait-Bryan angles
+  expressed in mrad"""
 
   def __init__(self, crystal, experiment_ids=None):
+    """Initialise the CrystalOrientationParameterisation object
+
+    Args:
+        crystal: A dxtbx Crystal object to be parameterised.
+        experiment_ids (list): The experiment IDs affected by this
+            parameterisation. Defaults to None, which is replaced by [0].
+    """
 
     # The state of a crystal orientation parameterisation is an orientation
     # matrix '[U]'. The initial state is a snapshot of the crystal
@@ -73,7 +82,6 @@ class CrystalOrientationParameterisation(ModelParameterisation,
     return
 
   def compose(self):
-    """calculate state and derivatives"""
 
     # Extract orientation from the initial state
     U0 = self._initial_state
@@ -153,9 +161,20 @@ class CrystalUnitCellMixin(object):
     return newB, dB_dval
 
 class CrystalUnitCellParameterisation(ModelParameterisation, CrystalUnitCellMixin):
-  """Parameterisation for the unit cell"""
+  """A parameterisation for the unit cell of a Crystal model.
+
+  The Crystal reciprocal space orthogonalisation matrix B is parameterised
+  using up to 6 metrical matrix elements, rescaled by a multiplicative factor.
+  """
 
   def __init__(self, crystal, experiment_ids=None):
+    """Initialise the CrystalUnitCellParameterisation object
+
+    Args:
+        crystal: A dxtbx Crystal object to be parameterised.
+        experiment_ids (list): The experiment IDs affected by this
+            parameterisation. Defaults to None, which is replaced by [0].
+    """
 
     # The state of the unit cell parameterisation is the reciprocal space
     # orthogonalisation matrix 'B'. The initial state is irrelevant for
@@ -183,7 +202,6 @@ class CrystalUnitCellParameterisation(ModelParameterisation, CrystalUnitCellMixi
     return
 
   def compose(self):
-    """calculate state and derivatives"""
 
     # calculate new B and derivatives
     newB, self._dstate_dp = self._compose_core([p.value for p in self._param])
