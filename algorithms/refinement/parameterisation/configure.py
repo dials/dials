@@ -610,14 +610,13 @@ class ParameterisationFactory(object):
 
     autoreduce = AutoReduce(options.auto_reduction,
       det_params, beam_params, xl_ori_params, xl_uc_params, gon_params,
-      reflections, scan_varying=options.scan_varying)
+      reflection_manager, scan_varying=options.scan_varying)
     autoreduce()
     det_params = autoreduce.det_params
     beam_params = autoreduce.beam_params
     xl_ori_params = autoreduce.xl_ori_params
     xl_uc_params = autoreduce.xl_uc_params
     gon_params = autoreduce.gon_params
-    reflections = autoreduce.reflections
 
     # Prediction equation parameterisation
     if do_stills: # doing stills

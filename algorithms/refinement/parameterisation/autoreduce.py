@@ -76,7 +76,7 @@ class AutoReduce(object):
   """
 
   def __init__(self, options, det_params, beam_params, xl_ori_params,
-      xl_uc_params, gon_params, reflections, scan_varying=False):
+      xl_uc_params, gon_params, reflection_manager, scan_varying=False):
     """Initialise the AutoReduce object
 
     Args:
@@ -87,8 +87,8 @@ class AutoReduce(object):
             objects
         xl_uc_params (list): A list of CrystalUnitCellParameterisation objects
         gon_params (list): A list of GoniometerParameterisation objects
-        reflections: The reflection table containing observations to refine
-            against
+        reflection_manager: The ReflectionManager object handling reflection
+            data for refinement
         scan_varying (bool): Whether preparing for scan-varying refinement or
             scan static refinement
 
@@ -99,7 +99,7 @@ class AutoReduce(object):
     self.xl_ori_params = xl_ori_params
     self.xl_uc_params = xl_uc_params
     self.gon_params = gon_params
-    self.reflections = reflections
+    self.reflection_manager = reflection_manager
 
     self._options = options
     self._scan_varying = scan_varying
@@ -115,8 +115,9 @@ class AutoReduce(object):
   # affected by this parameterisation is calculated, and the difference between
   # that and the minimum number of reflections is returned.
   def _surplus_reflections(self, p):
+    reflections = self.reflection_manager.get_obs()
     cutoff = self._options.min_nref_per_parameter * p.num_free()
-    return surpl(self.reflections["id"],p.get_experiment_ids()).result - cutoff
+    return surpl(reflections["id"],p.get_experiment_ids()).result - cutoff
 
   # Special version of _surplus_reflections for crystal unit cell
   # parameterisations. In some cases certain parameters of a unit cell
@@ -127,14 +128,15 @@ class AutoReduce(object):
   def _unit_cell_surplus_reflections(self, p):
     F_dbdp=flex.mat3_double( p.get_ds_dp() )
     min_nref = self._options.min_nref_per_parameter
+    reflections = self.reflection_manager.get_obs()
     # if no free parameters, do as _surplus_reflections
     if len(F_dbdp) == 0:
       exp_ids = p.get_experiment_ids()
       isel = flex.size_t()
       for exp_id in exp_ids:
-        isel.extend((self.reflections['id'] == exp_id).iselection())
+        isel.extend((reflections['id'] == exp_id).iselection())
       return len(isel)
-    return uc_surpl(self.reflections["id"], self.reflections["miller_index"],
+    return uc_surpl(reflections["id"], reflections["miller_index"],
         p.get_experiment_ids(), F_dbdp).result - min_nref
 
   # Special version of _surplus_reflections for multi-panel detector
@@ -148,7 +150,8 @@ class AutoReduce(object):
     nparam = free_gp_params.count(True)
     cutoff = self._options.min_nref_per_parameter * nparam
     isel = flex.size_t()
-    surplus = pg_surpl(self.reflections["id"], self.reflections["panel"], pnl_ids,
+    reflections = self.reflection_manager.get_obs()
+    surplus = pg_surpl(reflections["id"], reflections["panel"], pnl_ids,
         exp_ids, cutoff).result
     return surplus
 
@@ -402,7 +405,7 @@ class AutoReduce(object):
       msg = warnmsg.format(dat['name'])
 
       # Fix relevant parameters and identify observations to remove
-      obs = reflection_manager.get_obs()
+      obs = self.reflection_manager.get_obs()
       isel=flex.size_t()
       if dat['panels'] is not None:
         fixlist = dat['parameterisation'].get_fixed()
@@ -426,8 +429,7 @@ class AutoReduce(object):
       # Now remove the selected reflections
       sel = flex.bool(len(obs), True)
       sel.set_selected(isel, False)
-      reflection_manager.filter_obs(sel)
-      self.reflections = reflection_manager.get_matches()
+      self.reflection_manager.filter_obs(sel)
       logger.warning(msg)
 
     # Strip out parameterisations with zero free parameters
