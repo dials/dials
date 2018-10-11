@@ -432,6 +432,10 @@ class ReflectionManager(object):
 
     logger.debug("Finalising the Reflection Manager")
 
+    # Initially, assume all reflections with predictions can be used
+    mask = self._reflections.get_flags(self._reflections.flags.predicted)
+    self._reflections.set_flags(mask, self._reflections.flags.used_in_refinement)
+
     # print summary before outlier rejection
     if self._verbosity > 1: self.print_stats_on_matches()
 
