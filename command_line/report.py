@@ -1908,7 +1908,7 @@ class ZScoreAnalyser(object):
   def __init__(self):
     # Set the required fields
     self.required = [
-      "miller_index"
+      "miller_index",
       "intensity.sum.value",
       "intensity.sum.variance",
       "xyzobs.px.value",
