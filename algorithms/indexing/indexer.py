@@ -520,6 +520,9 @@ class indexer_base(object):
     if known_crystal_models is not None:
       from dials.algorithms.indexing.known_orientation \
            import indexer_known_orientation
+      if params.indexing.known_symmetry.space_group is None:
+        params.indexing.known_symmetry.space_group \
+          = known_crystal_models[0].get_space_group().info()
       idxr = indexer_known_orientation(
         reflections, imagesets, params, known_crystal_models)
     else:
