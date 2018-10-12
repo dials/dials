@@ -1939,13 +1939,13 @@ class ZScoreAnalyser(object):
     selection = rlist['intensity.sum.variance'] <= 0
     if selection.count(True) > 0:
       rlist.del_selected(selection)
-      print(u" Removing %d reflections with variance ≤ 0" % \
+      print(" Removing %d reflections with variance <= 0" % \
             selection.count(True))
 
     selection = rlist['intensity.sum.value'] <= 0
     if selection.count(True) > 0:
       rlist.del_selected(selection)
-      print(u" Removing %d reflections with intensity ≤ 0" % \
+      print(" Removing %d reflections with intensity <= 0" % \
             selection.count(True))
 
     d = OrderedDict()
@@ -1959,9 +1959,9 @@ class ZScoreAnalyser(object):
     d.update(self.z_vs_multiplicity())
     print(" Plotting time series of intensity z-scores")
     d.update(self.z_time_series())
-    print(u" Plotting intensity z-scores versus weighted mean intensity")
+    print(" Plotting intensity z-scores versus weighted mean intensity")
     d.update(self.z_vs_I())
-    print(u" Plotting intensity z-scores versus I/σ")
+    print(" Plotting intensity z-scores versus I/sigma")
     d.update(self.z_vs_I_over_sigma())
 
     return d
