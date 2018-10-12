@@ -48,7 +48,8 @@ class symmetry_base(object):
         d, assert_is_similar_symmetry=False)
       self.dataset_ids.extend(flex.double(d.size(), i+1))
     self.intensities = self.intensities.customized_copy(
-      unit_cell=self.median_unit_cell)
+      unit_cell=self.median_unit_cell).set_info(
+          self.intensities.info())
     self.intensities.set_observation_type_xray_intensity()
 
     self.cb_op_inp_min = self.intensities.change_of_basis_op_to_niggli_cell()
@@ -111,7 +112,7 @@ class symmetry_base(object):
     ssc.set_selected(ssc < MINVARINFRAC * variance, MINVARINFRAC * variance)
     sd = sd_fac * flex.sqrt(ssc)
     self.intensities = self.intensities.customized_copy(
-      sigmas=sd)
+      sigmas=sd).set_info(self.intensities.info())
 
   @staticmethod
   def kernel_normalisation(intensities):
