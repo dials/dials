@@ -11,6 +11,7 @@ from scitbx.array_family import flex
 from libtbx.utils import Sorry
 
 # PHIL
+from libtbx.phil import parse
 phil_str = '''
       min_nref_per_parameter = 5
         .help = "the smallest number of reflections per parameter for a"
@@ -57,6 +58,7 @@ phil_str = '''
                 "groups only."
         .expert_level = 1
 '''
+phil_scope = parse(phil_str)
 
 class AutoReduce(object):
   """Checks for over-parameterisation of models and acts in that case.
