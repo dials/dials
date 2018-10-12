@@ -20,7 +20,7 @@ def determine_reindex_operator_against_reference(test_miller_set,
     raise Sorry("""Space groups are not equal. Can only reindex against a
 reference dataset if both dataset are in the same spacegroup.""")
 
-  twin_ops = twin_laws(miller_array=test_miller_set).operators
+  twin_ops = twin_laws(miller_array=test_miller_set.eliminate_sys_absent()).operators
   twin_ops = [sgtbx.change_of_basis_op(op.operator.as_xyz()) for op in twin_ops]
 
   if twin_ops:
@@ -53,7 +53,7 @@ reference dataset if both dataset are in the same spacegroup.""")
       change_of_basis_op = sgtbx.change_of_basis_op("a,b,c")
     else:
       print('Reindexing required with the twin operator:',
-        twin_ops[best_solution_idx-1], '\n')
+        twin_ops[best_solution_idx-1].as_hkl(), '\n')
       change_of_basis_op = twin_ops[best_solution_idx-1]
   else:
     print("No twin operators found, no reindexing required \n")
