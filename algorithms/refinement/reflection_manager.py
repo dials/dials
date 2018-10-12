@@ -38,17 +38,20 @@ phil_str = '''
       .help = "The number of centroids per degree of the sweep to use in"
               "refinement. Set to None to use all suitable reflections."
       .type = float(value_min=0.)
+      .expert_level = 1
 
     minimum_sample_size = 1000
       .help = "cutoff that determines whether subsetting of the input"
               "reflection list is done"
       .type = int
+      .expert_level = 1
 
     maximum_sample_size = None
       .help = "The maximum number of reflections to use in refinement."
               "Overrides reflections_per_degree if that produces a"
               "larger sample size."
       .type = int(value_min=1)
+      .expert_level = 1
 
     random_seed = 42
       .help = "Random seed to use when sampling to create a working set of"

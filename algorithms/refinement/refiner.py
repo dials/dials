@@ -63,6 +63,7 @@ refinement
   verbosity = 0
     .help = "verbosity level"
     .type = int(value_min=0)
+    .expert_level = 1
 
   parameterisation
     .help = "Parameters to control the parameterisation of experimental models"

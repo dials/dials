@@ -54,6 +54,7 @@ phil_str = '''
     auto_reduction
       .help = "determine behaviour when there are too few reflections to"
               "reasonably produce a full parameterisation of the experiment list"
+      .expert_level = 1
     {
       %(autoreduce_phil)s
     }
@@ -62,6 +63,7 @@ phil_str = '''
       .help = "Allow models that are not forced to be static to vary during the
                scan"
       .type = bool
+      .short_caption = "Scan-varying refinement"
 
     compose_model_per = image *block
       .help = "For scan-varying parameterisations, compose a new model either"
@@ -99,6 +101,7 @@ phil_str = '''
                 "Wavelength is also fixed by default, to allow refinement of"
                 "the unit cell volume."
         .type = choice(multi=True)
+        .short_caption = "Fix beam parameters"
 
       fix_list = None
         .type = strings
@@ -123,6 +126,7 @@ phil_str = '''
       fix = all cell orientation
         .help = "Fix crystal parameters"
         .type = choice
+        .short_caption = "Fix crystal parameters"
 
       unit_cell
         .expert_level = 1
@@ -196,6 +200,7 @@ phil_str = '''
         .help = "Fix detector parameters. The translational parameters"
                 "(position) may be set separately to the orientation."
         .type = choice
+        .short_caption = "Fix detector parameters"
 
       fix_list = None
         .type = strings
@@ -224,6 +229,7 @@ phil_str = '''
                 "or to allow rotation only around an axis that lies in that"
                 "plane. Set to None to refine the in two orthogonal directions."
         .type = choice(multi=True)
+        .short_caption = "Fix goniometer parameters"
 
       fix_list = None
         .type = strings
