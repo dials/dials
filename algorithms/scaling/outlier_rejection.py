@@ -38,6 +38,9 @@ class OutlierRejectionBase(object):
   Ih_table datastructure."""
 
   def __init__(self, reflection_tables, space_group, zmax):
+    for table in reflection_tables:
+      if not 'inverse_scale_factor' in table:
+        table['inverse_scale_factor'] = flex.double(table.size(), 1.0)
     self.reflection_tables = reflection_tables
     self.space_group = space_group
     self.zmax = zmax
@@ -137,7 +140,17 @@ class SimpleNormDevOutlierRejection(OutlierRejectionBase):
     w = Ih_table.weights
     wgIsum = ((w * g * I) * Ih_table.h_index_matrix) * Ih_table.h_expand_matrix
     wg2sum = ((w * g * g) * Ih_table.h_index_matrix) * Ih_table.h_expand_matrix
+
+    # guard against zero divison errors - can happen due to rounding errors
+    # or bad data giving g values are very small
+    zero_sel = (wg2sum == 0.0)
+    # set as one for now, then mark as outlier below. This will only affect if
+    # g is near zero, if w is zero then throw an assertionerror.
+    wg2sum.set_selected(zero_sel, 1.0)
+
+    assert w.all_gt(0) # guard against division by zero
     norm_dev = (I - (g * wgIsum/wg2sum))/(((1.0/w)+((g/wg2sum)**2))**0.5)
+    norm_dev.set_selected(zero_sel, 1000) # to trigger rejection
     outliers_sel = flex.abs(norm_dev) > self.zmax
 
     nz_weights_isel = Ih_table.nonzero_weights#.iselection()
@@ -204,12 +217,21 @@ class NormDevOutlierRejection(OutlierRejectionBase):
     sel = nh > 2 #could be > 1 if we want to calculate z_score for groups of 2
     wg2sum_others_sel = wg2sum_others.select(sel)
     wgIsum_others_sel = wgIsum_others.select(sel)
+
+    # guard against zero divison errors - can happen due to rounding errors
+    # or bad data giving g values are very small
+    zero_sel = (wg2sum_others_sel == 0.0)
+    # set as one for now, then mark as outlier below. This will only affect if
+    # g is near zero, if w is zero then throw an assertionerror.
+    wg2sum_others_sel.set_selected(zero_sel, 1.0)
     g_sel = g.select(sel)
     I_sel = I.select(sel)
     w_sel = w.select(sel)
 
+    assert w_sel.all_gt(0) # guard against division by zero
     norm_dev = (I_sel - (g_sel * wgIsum_others_sel/wg2sum_others_sel))/(
       ((1.0/w_sel)+((g_sel/wg2sum_others_sel)**2))**0.5)
+    norm_dev.set_selected(zero_sel, 1000) # to trigger rejection
     z_score = flex.abs(norm_dev)
     # Want an array same size as Ih table.
     all_z_scores = flex.double(Ih_table.size, 0.0)

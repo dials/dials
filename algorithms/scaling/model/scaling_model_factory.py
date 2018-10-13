@@ -119,16 +119,15 @@ def osc_range_check_for_user_excluded(experiments, reflections):
     reflections_for_scaling = reflections.select(~user_excluded)
     reflections_for_scaling = reflections_for_scaling.select(
       reflections_for_scaling.get_flags(reflections_for_scaling.flags.integrated))
+      #FIXME should this use bad_for_scaling flag?
     max_osc = (max(reflections_for_scaling['xyzobs.px.value'].parts()[2]
       * one_osc_width) + experiments.scan.get_oscillation()[0])
     min_osc = (min(reflections_for_scaling['xyzobs.px.value'].parts()[2]
       * one_osc_width) + experiments.scan.get_oscillation()[0])
     if max_osc < osc_range[1] - one_osc_width: #some end frames excluded
-      min_osc = osc_range[0]
-      osc_range = (min_osc, max_osc + 0.001)
-    elif min_osc > osc_range[0] + one_osc_width: #some beginning frames excluded
-      max_osc = osc_range[1]
-      osc_range = (min_osc, max_osc)
+      osc_range = (osc_range[0], max_osc + 0.001)
+    if min_osc > osc_range[0] + one_osc_width: #some beginning frames excluded
+      osc_range = (min_osc, osc_range[1])
   return osc_range
 
 class ArraySMFactory(object):

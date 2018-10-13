@@ -27,6 +27,7 @@ Panel:
   fast_axis: {1,0,0}
   slow_axis: {0,-1,0}
   origin: {-212.478,220.002,-190.18}
+  distance: 190.18
   pixel to millimeter strategy: SimplePxMmStrategy
 Max resolution (at corners): 1.008178
 Max resolution (inscribed):  1.204283
@@ -84,6 +85,7 @@ Panel:
   fast_axis: {1,0,0}
   slow_axis: {0,-1,0}
   origin: {-210.76,205.277,-265.27}
+  distance: 265.27
   pixel to millimeter strategy: SimplePxMmStrategy
 Max resolution (at corners): 1.161261
 Max resolution (inscribed):  1.509475
@@ -133,6 +135,7 @@ Panel:
   fast_axis: {1,0,0}
   slow_axis: {0,-1,0}
   origin: {-212.478,220.002,-190.18}
+  distance: 190.18
   pixel to millimeter strategy: ParallaxCorrectedPxMmStrategy
     mu: 3.96038
     t0: 0.32
@@ -156,3 +159,25 @@ Goniometer:
     Fixed rotation:  {1,0,0,0,1,0,0,0,1}
     Setting rotation:{1,0,0,0,1,0,0,0,1}
 """.strip()
+
+def test_dials_show_reflection_table(dials_regression):
+  """Test the output of dials.show on a reflection_table pickle file"""
+  path = os.path.join(dials_regression, "centroid_test_data", "integrated.pickle")
+  result = procrunner.run(["dials.show", path], environment_override={'DIALS_NOBANNER': '1'})
+  assert not result['exitcode'] and not result['stderr']
+  output = list(filter(None, (s.rstrip() for s in result['stdout'].split('\n'))))
+  assert output[4] == 'Reflection list contains 2269 reflections'
+  headers = ['Column', 'min', 'max', 'mean']
+  for header in headers:
+    assert header in output[6]
+  row_names = ['background.mean', 'background.sum.value',
+    'background.sum.variance', 'd', 'dqe', 'flags', 'id', 'imageset_id',
+    'intensity.prf.value', 'intensity.prf.variance', 'intensity.sum.value',
+    'intensity.sum.variance', 'lp', 'miller_index', 'num_pixels.background',
+    'num_pixels.background_used', 'num_pixels.foreground', 'num_pixels.valid',
+    'panel', 'partial_id', 'partiality', 'profile.correlation', 'profile.rmsd',
+    'rlp', 's1', 'shoebox', 'summed I', 'N pix', 'N valid foreground pix',
+    'xyzcal.mm', 'xyzcal.px', 'xyzobs.mm.value', 'xyzobs.mm.variance',
+    'xyzobs.px.value', 'xyzobs.px.variance', 'zeta']
+  for (name, out) in zip(row_names, output[8:-1]):
+    assert name in out

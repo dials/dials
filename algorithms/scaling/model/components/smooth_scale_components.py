@@ -190,13 +190,18 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
       return value, dv_dp, curvatures
     return value, dv_dp
 
-  def calculate_scales(self):
+  def calculate_scales(self, block_id=0):
     """"Only calculate the scales if needed, for performance."""
-    self._inverse_scales = []
-    for block_id in range(len(self._n_refl)):#len of the list, not numof refl
-      value, _, _ = self._smoother.multi_value_weight(
+    if self._n_refl[block_id] > 1:
+      value, _, __ = self._smoother.multi_value_weight(
         self._normalised_values[block_id], self.value)
-      self._inverse_scales.append(value)
+    elif self._n_refl[block_id] == 1:
+      value, _, __ = self._smoother.value_weight(
+        self._normalised_values[block_id][0], self.value)
+      value = flex.double(1, value)
+    else:
+      value = flex.double([])
+    return value
 
 
 class SmoothBScaleComponent1D(SmoothScaleComponent1D):
@@ -243,12 +248,9 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
       return s, d, curvatures
     return s, d
 
-  def calculate_scales(self):
-    super(SmoothBScaleComponent1D, self).calculate_scales()
-    for block_id in range(len(self._n_refl)):#len of the list, not numb of refl
-      self._inverse_scales[block_id] = flex.exp(
-        self._inverse_scales[block_id] /(2.0 * (
-          self._d_values[block_id] * self._d_values[block_id])))
+  def calculate_scales(self, block_id=0):
+    s = super(SmoothBScaleComponent1D, self).calculate_scales(block_id)
+    return flex.exp(s /(2.0 * (self._d_values[block_id] **2)))
 
 
 class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
@@ -356,14 +358,20 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
       return value, dv_dp, curvs
     return value, dv_dp
 
-  def calculate_scales(self):
-    """"Only calculate the scales if needed, for performance."""
-    self._inverse_scales = []
-    for block_id in range(len(self._n_refl)):
-      value, _, _ = self._smoother.multi_value_weight(
+  def calculate_scales(self, block_id=0):
+    """Only calculate the scales if needed, for performance."""
+    if self._n_refl[block_id] > 1:
+      value, _, __ = self._smoother.multi_value_weight(
         self._normalised_x_values[block_id],
         self._normalised_y_values[block_id], self.value)
-      self._inverse_scales.append(value)
+    elif self._n_refl[block_id] == 1:
+      value, _, __ = self._smoother.value_weight(
+        self._normalised_x_values[block_id][0],
+        self._normalised_y_values[block_id][0], self.value)
+      value = flex.double(1, value)
+    else:
+      value = flex.double([])
+    return value
 
 
 class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
@@ -497,11 +505,19 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
       return value, dv_dp, curvs
     return value, dv_dp
 
-  def calculate_scales(self):
+  def calculate_scales(self, block_id=0):
     """"Only calculate the scales if needed, for performance."""
-    self._inverse_scales = []
-    for block_id in range(len(self._n_refl)):
-      value, _, _ = self._smoother.multi_value_weight(
-        self._normalised_x_values[block_id], self._normalised_y_values[block_id],
+    if self._n_refl[block_id] > 1:
+      value, _, __ = self._smoother.multi_value_weight(
+        self._normalised_x_values[block_id],
+        self._normalised_y_values[block_id],
         self._normalised_z_values[block_id], self.value)
-      self._inverse_scales.append(value)
+    elif self._n_refl[block_id] == 1:
+      value, _, __ = self._smoother.value_weight(
+        self._normalised_x_values[block_id][0],
+        self._normalised_y_values[block_id][0],
+        self._normalised_z_values[block_id][0], self.value)
+      value = flex.double(1, value)
+    else:
+      value = flex.double([])
+    return value

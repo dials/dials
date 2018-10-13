@@ -28,6 +28,82 @@ from dials.algorithms.refinement.refinement_helpers import \
 RAD2DEG = 180. / pi
 DEG2RAD = pi / 180.
 
+# PHIL
+from libtbx.phil import parse
+from dials.algorithms.refinement.outlier_detection.outlier_base \
+  import phil_str as outlier_phil_str
+format_data = {'outlier_phil':outlier_phil_str,}
+phil_str = '''
+    reflections_per_degree = None
+      .help = "The number of centroids per degree of the sweep to use in"
+              "refinement. Set to None to use all suitable reflections."
+      .type = float(value_min=0.)
+      .expert_level = 1
+
+    minimum_sample_size = 1000
+      .help = "cutoff that determines whether subsetting of the input"
+              "reflection list is done"
+      .type = int
+      .expert_level = 1
+
+    maximum_sample_size = None
+      .help = "The maximum number of reflections to use in refinement."
+              "Overrides reflections_per_degree if that produces a"
+              "larger sample size."
+      .type = int(value_min=1)
+      .expert_level = 1
+
+    random_seed = 42
+      .help = "Random seed to use when sampling to create a working set of"
+              "reflections. May be int or None."
+      .type = int
+      .expert_level = 1
+
+    close_to_spindle_cutoff = 0.02
+      .help = "The inclusion criterion currently uses the volume of the"
+              "parallelepiped formed by the spindle axis, the incident"
+              "beam and the scattered beam. If this is lower than some"
+              "value then the reflection is excluded from refinement."
+              "In detector space, these are the reflections located close"
+              "to the rotation axis."
+      .type = float(value_min = 0)
+      .expert_level = 1
+
+    trim_scan_edges = 0.0
+      .help = "Reflections within this value in degrees from the centre of the"
+              "first or last image of the scan will be removed before"
+              "refinement, unless doing so would result in too few remaining"
+              "reflections. Reflections that are truncated at the scan edges"
+              "have poorly-determined centroids and can bias the refined model"
+              "if they are included."
+      .type = float(value_min=0,value_max=1)
+      .expert_level = 1
+
+    weighting_strategy
+      .help = "Parameters to configure weighting strategy overrides"
+      .expert_level = 1
+    {
+      override = statistical stills constant external_deltapsi
+        .help = "selection of a strategy to override default weighting behaviour"
+        .type = choice
+
+      delpsi_constant = 1000000
+        .help = "used by the stills strategy to choose absolute weight value"
+                "for the angular distance from Ewald sphere term of the target"
+                "function, whilst the X and Y parts use statistical weights"
+        .type = float(value_min = 0)
+
+      constants = 1.0 1.0 1.0
+        .help = "constant weights for three parts of the target function,"
+                "whether the case is for stills or scans. The default gives"
+                "unit weighting."
+        .type = floats(size = 3, value_min = 0)
+    }
+
+    %(outlier_phil)s
+'''%format_data
+phil_scope = parse(phil_str)
+
 # helper functions
 def calculate_entering_flags(reflections, experiments):
   """calculate entering flags for all reflections, and set them as a column
@@ -141,6 +217,106 @@ class BlockCalculator(object):
 
     return self._reflections
 
+class ReflectionManagerFactory(object):
+
+  @staticmethod
+  def from_parameters_reflections_experiments(params, reflections, experiments,
+      do_stills=False, verbosity=0):
+
+    """Given a set of parameters and models, build a reflection manager
+
+    Params:
+        params The input parameters
+
+    Returns:
+        The reflection manager instance
+    """
+
+    # While a random subset of reflections is used, continue to
+    # set random.seed to get consistent behaviour
+    if params.random_seed is not None:
+      import random
+      random.seed(params.random_seed)
+      flex.set_random_seed(params.random_seed)
+      logger.debug("Random seed set to %d", params.random_seed)
+
+    # check whether we deal with stills or scans
+    if do_stills:
+      refman = StillsReflectionManager
+      # check incompatible weighting strategy
+      if params.weighting_strategy.override == "statistical":
+        raise Sorry('The "statistical" weighting strategy is not compatible '
+                    'with stills refinement')
+    else:
+      refman = ReflectionManager
+      # check incompatible weighting strategy
+      if params.weighting_strategy.override in ["stills", "external_deltapsi"]:
+        msg = ('The "{0}" weighting strategy is not compatible with '
+               'scan refinement').format(params.weighting_strategy.override)
+        raise Sorry(msg)
+
+    # set automatic outlier rejection options
+    if params.outlier.algorithm in ('auto', libtbx.Auto):
+      if do_stills:
+        params.outlier.algorithm = 'sauter_poon'
+      else:
+        params.outlier.algorithm = 'mcd'
+
+    if params.outlier.separate_panels is libtbx.Auto:
+      if do_stills:
+        params.outlier.separate_panels = False
+      else:
+        params.outlier.separate_panels = True
+
+    if params.outlier.algorithm == 'sauter_poon':
+      if params.outlier.sauter_poon.px_sz is libtbx.Auto:
+        # get this from the first panel of the first detector
+        params.outlier.sauter_poon.px_sz = experiments.detectors()[0][0].get_pixel_size()
+
+    # do outlier rejection?
+    if params.outlier.algorithm in ("null", None):
+      outlier_detector = None
+    else:
+      if do_stills:
+        colnames = ["x_resid", "y_resid"]
+        params.outlier.block_width=None
+      else:
+        colnames = ["x_resid", "y_resid", "phi_resid"]
+      from dials.algorithms.refinement.outlier_detection import CentroidOutlierFactory
+      outlier_detector = CentroidOutlierFactory.from_parameters_and_colnames(
+        params, colnames, verbosity)
+
+    # override default weighting strategy?
+    weighting_strategy = None
+    if params.weighting_strategy.override == "statistical":
+      from dials.algorithms.refinement.weighting_strategies \
+        import StatisticalWeightingStrategy
+      weighting_strategy = StatisticalWeightingStrategy()
+    elif params.weighting_strategy.override == "stills":
+      from dials.algorithms.refinement.weighting_strategies \
+        import StillsWeightingStrategy
+      weighting_strategy = StillsWeightingStrategy(
+        params.weighting_strategy.delpsi_constant)
+    elif params.weighting_strategy.override == "external_deltapsi":
+      from dials.algorithms.refinement.weighting_strategies \
+        import ExternalDelPsiWeightingStrategy
+      weighting_strategy = ExternalDelPsiWeightingStrategy()
+    elif params.weighting_strategy.override == "constant":
+      from dials.algorithms.refinement.weighting_strategies \
+        import ConstantWeightingStrategy
+      weighting_strategy = ConstantWeightingStrategy(
+        *params.weighting_strategy.constants, stills=do_stills)
+
+    return refman(reflections=reflections,
+            experiments=experiments,
+            nref_per_degree=params.reflections_per_degree,
+            max_sample_size = params.maximum_sample_size,
+            min_sample_size = params.minimum_sample_size,
+            close_to_spindle_cutoff=params.close_to_spindle_cutoff,
+            trim_scan_edges=params.trim_scan_edges,
+            outlier_detector=outlier_detector,
+            weighting_strategy_override=weighting_strategy,
+            verbosity=verbosity)
 
 class ReflectionManager(object):
   """A class to maintain information about observed and predicted
@@ -159,9 +335,13 @@ class ReflectionManager(object):
                      max_sample_size=None,
                      min_sample_size=0,
                      close_to_spindle_cutoff=0.02,
+                     trim_scan_edges=0.0,
                      outlier_detector=None,
                      weighting_strategy_override=None,
                      verbosity=0):
+
+    if len(reflections) == 0:
+      raise ValueError("Empty reflections table provided to ReflectionManager")
 
     # set verbosity
     if verbosity == 0:
@@ -200,11 +380,12 @@ class ReflectionManager(object):
         break
 
     # set up the reflection inclusion criteria
-    self._close_to_spindle_cutoff = close_to_spindle_cutoff #too close to spindle
-    self._outlier_detector = outlier_detector #for outlier rejection
-    self._nref_per_degree = nref_per_degree #random subsets
-    self._max_sample_size = max_sample_size #sample size ceiling
-    self._min_sample_size = min_sample_size #sample size floor
+    self._close_to_spindle_cutoff = close_to_spindle_cutoff # close to spindle
+    self._trim_scan_edges = DEG2RAD * trim_scan_edges # close to the scan edge
+    self._outlier_detector = outlier_detector # for outlier rejection
+    self._nref_per_degree = nref_per_degree # random subsets
+    self._max_sample_size = max_sample_size # sample size ceiling
+    self._min_sample_size = min_sample_size # sample size floor
 
     # exclude reflections that fail some inclusion criteria
     refs_to_keep = self._id_refs_to_keep(reflections)
@@ -223,7 +404,13 @@ class ReflectionManager(object):
     # put full list of indexed reflections aside and select only the reflections
     # that were not excluded to manage
     self._indexed = reflections
-    self._reflections = reflections.select(flex.size_t(refs_to_keep))
+    self._reflections = reflections.select(refs_to_keep)
+
+    # set exclusion flag for reflections that failed the tests
+    refs_to_excl = flex.bool(len(self._indexed), True)
+    refs_to_excl.set_selected(refs_to_keep, False)
+    self._indexed.set_flags(refs_to_excl,
+        self._indexed.flags.excluded_for_refinement)
 
     # set weights for all kept reflections
     if weighting_strategy_override is not None:
@@ -247,6 +434,10 @@ class ReflectionManager(object):
     block widths"""
 
     logger.debug("Finalising the Reflection Manager")
+
+    # Initially, assume all reflections with predictions can be used
+    mask = self._reflections.get_flags(self._reflections.flags.predicted)
+    self._reflections.set_flags(mask, self._reflections.flags.used_in_refinement)
 
     # print summary before outlier rejection
     if self._verbosity > 1: self.print_stats_on_matches()
@@ -277,6 +468,7 @@ class ReflectionManager(object):
     # set the centroid_outlier flag in the original indexed reflections
     ioutliers = self._reflections.get_flags(self._reflections.flags.centroid_outlier)
     ioutliers = self._reflections['iobs'].select(ioutliers)
+    self._indexed.sort('iobs') # re-sort the indexed reflections
     self._indexed.set_flags(ioutliers, self._indexed.flags.centroid_outlier)
 
     msg = "Removing reflections not matched to predictions"
@@ -285,9 +477,11 @@ class ReflectionManager(object):
 
     # delete all reflections from the manager that do not have a prediction
     # or were flagged as outliers
-    has_pred = self._reflections.get_flags(self._reflections.flags.used_in_refinement)
+    has_pred = self._reflections.get_flags(self._reflections.flags.predicted)
     inlier = ~self._reflections.get_flags(self._reflections.flags.centroid_outlier)
     self._reflections = self._reflections.select(has_pred & inlier)
+    self._reflections.set_flags(flex.bool(len(self._reflections), True),
+        self._reflections.flags.used_in_refinement)
 
     logger.debug("%d reflections remain in the manager", len(self._reflections))
 
@@ -350,8 +544,29 @@ class ReflectionManager(object):
         raise Sorry("Experiment id {0} contains no reflections with valid "
                     "scan angles".format(iexp))
 
-      # combine tests
+      # combine tests so far
       to_update = passed1 & passed2
+
+      # third test: reject reflections close to the centres of the first and
+      # last images in the scan
+      if self._trim_scan_edges > 0.0:
+        edge1, edge2 = [e + 0.5 for e in exp.scan.get_image_range()]
+        edge1 = exp.scan.get_angle_from_image_index(edge1, deg=False)
+        edge1 += (self._trim_scan_edges)
+        edge2 = exp.scan.get_angle_from_image_index(edge2, deg=False)
+        edge2 -= (self._trim_scan_edges)
+        passed3 = ((edge1 <= phi) & (phi <= edge2))
+
+        # combine the last test only if there would be a reasonable number of
+        # reflections left for refinement
+        tmp = to_update
+        to_update = to_update & passed3
+        if to_update.count(True) < 40:
+          logger.warning("Too few reflections to trim centroids from the scan "
+            "edges. Resetting trim_scan_edges=0.0")
+          to_update = tmp
+
+      # make selection
       to_keep.set_selected(sel, to_update)
 
     inc = inc.select(to_keep)

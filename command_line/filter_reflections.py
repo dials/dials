@@ -1,18 +1,10 @@
 #!/usr/bin/env python
-#
-# dials.filter_reflections.py
-#
-#  Copyright (C) 2015 STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
 
-# LIBTBX_SET_DISPATCHER_NAME dev.dials.filter_reflections
+# LIBTBX_SET_DISPATCHER_NAME dials.filter_reflections
 
 from __future__ import absolute_import, division, print_function
 
+from libtbx.utils import Sorry
 from dials.array_family import flex
 
 help_message = '''
@@ -20,18 +12,32 @@ help_message = '''
 This program takes reflection files as input and filters them based on user-
 specified criteria, to write out a subset of the original file.
 
-Currently, only filtering by reflection flags is supported. Inclusions are
-processed first and are combined by logical OR. Specifying no inclusions is a
-special case in which all reflections are included for further filtering.
-Exclusions are then processed, such that reflections are removed only if none of
-the specified flags are set. Different results, such as filtering to include
-only reflections with both flag1 AND flag2 set may be achieved by multiple runs
-of the program.
+Filtering is first done by evaluating the optional boolean 'flag_expression'
+using reflection flag values. The operators allowed are '&' for 'and', '|' for
+'or', and '~' for 'not'. Expressions may contain nested sub-expressions using
+parentheses.
 
-Example::
+Following this, optional additional filters are applied according to values in
+the reflection table, such as by resolution or user-defined masks.
 
-  dev.dials.filter_reflections refined.pickle inclusions.flag=used_in_refinement
+If a reflection file is passed in to the program but no filtering parameters
+are set, a table will be printed, giving the flag values present in the
+reflection file.
 
+
+Examples::
+
+  dials.filter_reflections refined.pickle \
+    flag_expression=used_in_refinement
+
+  dials.filter_reflections integrated.pickle \
+    flag_expression="integrated & ~reference_spot"
+
+  dials.filter_reflections integrated.pickle \
+    flag_expression="indexed & (failed_during_summation | failed_during_profile_fitting)"
+
+  dials.filter_reflections indexed.pickle experiments.json \
+    d_max=20 d_min=2.5
 '''
 
 class Script(object):
@@ -55,19 +61,17 @@ class Script(object):
           .help = "The filtered reflections output filename"
       }
 
-      inclusions {
-        flag = %s
-          .type = choice
-          .help = "Include reflections with this flag to form the working set."
-          .multiple = True
-      }
+      flag_expression = None
+        .type = str
+        .help = "Boolean expression to select reflections based on flag values"
 
-      exclusions {
-        flag = %s
-          .type = choice
-          .help = "Exclude reflections from the working set with this flag."
-          .multiple = True
-      }
+      id = None
+        .type = ints(value_min=0)
+        .help = "Select reflections by experiment IDs"
+
+      panel = None
+        .type = ints(value_min=0)
+        .help = "Select reflections by panels they intersect"
 
       d_min = None
         .type = float
@@ -86,12 +90,29 @@ class Script(object):
           .help = "The maximum reflection partiality for inclusion."
       }
 
+      select_good_intensities = False
+        .type = bool
+        .help = "Combined filter to select only fully integrated and"
+                "trustworthy intensities"
+
+      dead_time
+      {
+        value = 0
+          .help = "Detector dead time in ms, assumed to be at the end of the"
+                  "exposure time."
+          .type = float(value_min=0)
+
+        reject_fraction = 0
+          .help = "Reject reflections which overlap by more than the given"
+                  "fraction with the dead region of the image."
+          .type = float(value_min=0, value_max=1)
+      }
+
       include scope dials.util.masking.ice_rings_phil_scope
 
-    ''' % tuple([' '.join(self.flag_names)] * 2)
+    '''
 
     phil_scope = parse(phil_str, process_includes=True)
-
 
     # The script usage
     usage  = "usage: %s [options] experiment.json" % libtbx.env.dispatcher_name
@@ -122,30 +143,71 @@ class Script(object):
 
     return
 
+  def eval_flag_expression(self, expression, reflections):
+    """Test a Boolean expression of reflection flags for validity then
+    evaluate it"""
+
+    import token
+    from tokenize import generate_tokens, TokenError, untokenize
+    from StringIO import StringIO
+
+    result = []
+    g = generate_tokens(StringIO(expression).readline)
+
+    flags = list(flex.reflection_table.flags.names.iteritems())
+
+    # define shorthand function
+    def get_flag(flag):
+      return reflections.get_flags(getattr(reflections.flags, flag))
+
+    while True:
+
+      # Extract next token, catching unmatched brackets
+      try:
+        toknum, tokval, _, _, _ = g.next()
+      except TokenError:
+        raise Sorry("errors found in {0}".format(expression))
+      except StopIteration:
+        break
+
+      # Catch unwanted token types
+      if toknum not in [token.OP, token.NAME, token.ENDMARKER]:
+        raise Sorry("invalid tokens found in {0}".format(expression))
+
+      # Catch unwanted operators
+      if toknum is token.OP and tokval not in "()|&~":
+        raise Sorry("unrecognised operators found in {0}".format(expression))
+
+      # Catch unrecognised flag names
+      if toknum is token.NAME and tokval not in self.flag_names:
+        raise Sorry("unrecognised flag name: {0}".format(tokval))
+
+      # Replace names with valid lookups in the reflection table
+      if toknum is token.NAME:
+        ('NAME', 'get_flags')
+        ('OP', '(')
+        ('STRING', "'indexed'")
+        ('OP', ')')
+        result.extend([(token.NAME, 'get_flag'),
+                       (token.OP, '('),
+                       (token.STRING, repr(tokval)),
+                       (token.OP, ')')])
+      else:
+        result.append((toknum, tokval))
+
+    # Evaluate and return the result
+    return eval(untokenize(result), {'get_flag': get_flag, '__builtins__':None},{})
+
   def run(self):
     '''Execute the script.'''
     from dials.array_family import flex
     from dials.util.options import flatten_reflections
     from dials.util.options import flatten_datablocks
     from dials.util.options import flatten_experiments
-    from libtbx.utils import Sorry
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
     reflections = flatten_reflections(params.input.reflections)
-
-    if params.input.datablock is not None and len(params.input.datablock):
-      datablocks = flatten_datablocks(params.input.datablock)
-      assert len(datablocks) == 1
-      imagesets = datablocks[0].extract_imagesets()
-      assert len(imagesets) == 1
-      imageset = imagesets[0]
-    elif params.input.experiments is not None and len(params.input.experiments):
-      experiments = flatten_experiments(params.input.experiments)
-      assert len(datablocks) == 1
-      imageset = experiments[0].imageset
-    else:
-      imageset = None
 
     if len(reflections) == 0:
       self.parser.print_help()
@@ -155,13 +217,44 @@ class Script(object):
       raise Sorry('Exactly 1 reflection file must be specified')
     reflections = reflections[0]
 
+    experiments = flatten_experiments(params.input.experiments)
+    datablocks = flatten_datablocks(params.input.datablock)
+    if len(experiments) > 1 or datablocks:
+      if [len(datablocks), len(experiments)].count(1) != 1:
+          self.parser.print_help()
+          raise Sorry("Either a datablock or an experiment list may be provided"
+                      " but not both together.")
+    if datablocks:
+      datablock = datablocks[0]
+      imagesets = datablock.extract_imagesets()
+    if len(experiments) > 1:
+      imagesets = experiments.imagesets()
+
+    # Check if any filter has been set using diff_phil
+    filter_def = [o for o in self.parser.diff_phil.objects
+                  if o.name not in ['input', 'output']]
+    if not filter_def:
+      print("No filter specified. Performing analysis instead.")
+      return self.analysis(reflections)
+
     # Check params
     if params.d_min is not None and params.d_max is not None:
       if params.d_min > params.d_max:
         raise Sorry("d_min must be less than d_max")
     if params.d_min is not None or params.d_max is not None:
       if 'd' not in reflections:
-        raise Sorry("Reflection table has no resolution information")
+        if len(experiments) > 0:
+          print("Reflection table does not have resolution information. "
+                "Attempting to calculate this from the experiment list")
+          sel = reflections['id'] >= 0
+          if sel.count(False) > 0:
+            print("Removing {0} reflections with negative experiment id".format(
+                sel.count(False)))
+          reflections = reflections.select(sel)
+          reflections.compute_d(experiments)
+        else:
+          raise Sorry("reflection table has no resolution information "
+                      "and no experiment list provided to calculate it")
 
     # Check params
     if params.partiality.min is not None and params.partiality.max is not None:
@@ -173,33 +266,28 @@ class Script(object):
 
     print("{0} reflections loaded".format(len(reflections)))
 
-    if (len(params.inclusions.flag) == 0 and
-        len(params.exclusions.flag) == 0 and
-        params.d_min is None and params.d_max is None and
-        params.partiality.min is None and params.partiality.max is None and
-        not params.ice_rings.filter):
-      print("No filter specified. Performing analysis instead.")
-      return self.analysis(reflections)
+    # Filter by logical expression using flags
+    if params.flag_expression is not None:
+      inc = self.eval_flag_expression(params.flag_expression, reflections)
+      reflections = reflections.select(inc)
 
-    # Build up the initial inclusion selection
-    inc = flex.bool(len(reflections), True)
-    # 2016/07/06 GW logic here not right should be && for each flag not or?
-    for flag in params.inclusions.flag:
-      sel = reflections.get_flags(getattr(reflections.flags, flag))
-      inc = inc & sel
-    reflections = reflections.select(inc)
+    print("Selected {0} reflections by flags".format(len(reflections)))
 
-    print("{0} reflections selected to form the working set".format(len(reflections)))
+    # Filter based on experiment ID
+    if params.id:
+      selection = reflections['id'] == params.id[0]
+      for exp_id in params.id[1:]:
+        selection = selection | (reflections['id'] == exp_id)
+      reflections = reflections.select(selection)
+      print("Selected %d reflections by experiment id" % (len(reflections)))
 
-    # Make requested exclusions from the current selection
-    exc = flex.bool(len(reflections))
-    for flag in params.exclusions.flag:
-      print(flag)
-      sel = reflections.get_flags(getattr(reflections.flags, flag))
-      exc = exc | sel
-    reflections = reflections.select(~exc)
-
-    print("{0} reflections excluded from the working set".format(exc.count(True)))
+    # Filter based on panel number
+    if params.panel:
+      selection = reflections['panel'] == params.panel[0]
+      for pnl_id in params.panel[1:]:
+        selection = selection | (reflections['panel'] == pnl_id)
+      reflections = reflections.select(selection)
+      print("Selected %d reflections by panel number" % (len(reflections)))
 
     # Filter based on resolution
     if params.d_min is not None:
@@ -225,8 +313,16 @@ class Script(object):
       reflections = reflections.select(selection)
       print("Selected %d reflections with partiality <= %f" % (len(reflections), params.partiality.max))
 
-    # Filter powder rings
+    # 'Good' intensity selection
+    if params.select_good_intensities:
+      reflections = select_good_intensities(reflections)
 
+    # Dead time filter
+    if params.dead_time.value > 0:
+      reflections = filter_by_dead_time(reflections, experiments,
+          params.dead_time.value, params.dead_time.reject_fraction)
+
+    # Filter powder rings
     if params.ice_rings.filter:
       from dials.algorithms.integration import filtering
       if 'd' in reflections:
@@ -253,7 +349,6 @@ class Script(object):
 
       print("Rejecting %i reflections at ice ring resolution" %ice_sel.count(True))
       reflections = reflections.select(~ice_sel)
-      #reflections = reflections.select(ice_sel)
 
     # Save filtered reflections to file
     if params.output.reflections:
@@ -262,6 +357,102 @@ class Script(object):
       reflections.as_pickle(params.output.reflections)
 
     return
+
+def select_good_intensities(integrated_data):
+  """Combined filter, originally in dev.dials.filter_good_intensities"""
+  if not (integrated_data.has_key('id') and
+          integrated_data.has_key('intensity.sum.variance')):
+    raise Sorry("reflection file is missing required keys")
+
+  if not (min(integrated_data['id']) == max(integrated_data['id']) == 0):
+    raise Sorry("only a single experiment is supported in this mode")
+
+  selection = integrated_data['intensity.sum.variance'] <= 0
+  if selection.count(True) > 0:
+    integrated_data.del_selected(selection)
+    print('Removing %d reflections with negative variance' % \
+          selection.count(True))
+
+  if 'intensity.prf.variance' in integrated_data:
+    selection = integrated_data['intensity.prf.variance'] <= 0
+    if selection.count(True) > 0:
+      integrated_data.del_selected(selection)
+      print('Removing %d profile reflections with negative variance' % \
+            selection.count(True))
+
+  if 'partiality' in integrated_data:
+    selection = integrated_data['partiality'] < 0.99
+    if selection.count(True) > 0:
+      integrated_data.del_selected(selection)
+      print('Removing %d incomplete reflections' % \
+        selection.count(True))
+
+  return integrated_data
+
+def filter_by_dead_time(reflections, experiments,
+    dead_time=0, reject_fraction=0):
+  """Combined filter, originally in dev.dials.filter_dead_time"""
+
+  if len(experiments) == 0:
+    raise Sorry("an experiment list must be provided to filter by dead time")
+
+  if len(experiments) > 1:
+    raise Sorry("only a single experiment is supported in this mode")
+  experiment = experiments[0]
+
+  sel = reflections.get_flags(reflections.flags.integrated)
+  reflections = reflections.select(sel)
+
+  if len(reflections) == 0:
+    raise Sorry("no integrated reflections present")
+
+  goniometer = experiment.goniometer
+  beam = experiment.beam
+
+  m2 = goniometer.get_rotation_axis()
+  s0 = beam.get_s0()
+
+  from dials.array_family import flex
+  phi1 = flex.double()
+  phi2 = flex.double()
+
+  phi_range = reflections.compute_phi_range(
+    goniometer.get_rotation_axis(),
+    beam.get_s0(),
+    experiment.profile.sigma_m(deg=False),
+    experiment.profile.n_sigma())
+  phi1, phi2 = phi_range.parts()
+
+  scan = experiment.scan
+  exposure_time = scan.get_exposure_times()[0]
+  assert scan.get_exposure_times().all_eq(exposure_time)
+  phi_start, phi_width = scan.get_oscillation(deg=False)
+  phi_range_dead = phi_width * (dead_time/1000) / exposure_time
+
+  sel_good = flex.bool(len(reflections), True)
+
+  start, end = scan.get_array_range()
+  for i in range(start, end):
+    phi_dead_start = phi_start + (i+1) * phi_width - phi_range_dead
+    phi_dead_end = phi_dead_start + phi_range_dead
+
+    left = phi1.deep_copy()
+    left.set_selected(left < phi_dead_start, phi_dead_start)
+
+    right = phi2.deep_copy()
+    right.set_selected(right > phi_dead_end, phi_dead_end)
+
+    overlap = (right - left)/(phi2-phi1)
+
+    sel = overlap > reject_fraction
+
+    sel_good.set_selected(sel, False)
+    print('Rejecting %i reflections from image %i' %(sel.count(True), i))
+
+  print('Keeping %i reflections (rejected %i)' %(
+    sel_good.count(True), sel_good.count(False)))
+
+  return reflections.select(sel_good)
 
 if __name__ == '__main__':
   from dials.util import halraiser

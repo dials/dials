@@ -11,6 +11,7 @@ from __future__ import absolute_import, division, print_function
 
 from dials.array_family import flex
 from scitbx import matrix
+from libtbx.utils import Sorry
 
 """The PredictionParameterisation class ties together parameterisations for
 individual experimental models: beam, crystal orientation, crystal unit cell
@@ -89,7 +90,7 @@ class PredictionParameterisation(object):
     # Check there are free parameters to refine
     self._length = self._len()
     if self._length == 0:
-      raise RuntimeError("There are no free parameters for refinement")
+      raise Sorry("There are no free parameters for refinement")
 
     # Calculate Experiment to parameterisation mapping
     e2bp = {ids: i for i, p in enumerate(beam_parameterisations) \

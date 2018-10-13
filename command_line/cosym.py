@@ -16,23 +16,18 @@ from dials.util.options import flatten_experiments, flatten_reflections
 from dials.algorithms.symmetry.cosym import analyse_datasets
 
 phil_scope = iotbx.phil.parse('''\
-d_min = Auto
-  .type = float(value_min=0)
-
-min_i_mean_over_sigma_mean = None
-  .type = float(value_min=0)
-
 batch = None
   .type = ints(value_min=0, size=2)
-
-normalisation = kernel
-  .type = choice
 
 mode = *full ambiguity
   .type = choice
 
 space_group = None
   .type = space_group
+
+partiality_threshold = 0.99
+  .type = float
+  .help = "Use reflections with a partiality above the threshold."
 
 unit_cell_clustering {
   threshold = 5000
@@ -51,9 +46,9 @@ seed = 230
 output {
   suffix = "_reindexed"
     .type = str
-  log = cosym.log
+  log = dials.cosym.log
     .type = str
-  debug_log = cosym.debug.log
+  debug_log = dials.cosym.debug.log
     .type = str
   experiments = "reindexed_experiments.json"
     .type = path
@@ -67,7 +62,6 @@ verbosity = 1
 ''', process_includes=True)
 
 def run(args):
-  import libtbx
   from libtbx import easy_pickle
   from dials.util import log
   from dials.util.options import OptionParser
@@ -140,21 +134,27 @@ def run(args):
       crystal_symmetry = crystal.symmetry(
         unit_cell=expt.crystal.get_unit_cell(),
         space_group=expt.crystal.get_space_group())
-      if 0 and 'intensity.prf.value' in refl:
-        sel = refl.get_flags(refl.flags.integrated_prf)
-        assert sel.count(True) > 0
-        refl = refl.select(sel)
-        data = refl['intensity.prf.value']
-        variances = refl['intensity.prf.variance']
+
+      from dials.util.filter_reflections import filter_reflection_table
+      if 'intensity.scale.value' in refl:
+        intensity_choice = ['scale']
+        intensity_to_use = 'scale'
       else:
         assert 'intensity.sum.value' in refl
-        sel = refl.get_flags(refl.flags.integrated_sum)
-        assert sel.count(True) > 0
-        refl = refl.select(sel)
-        data = refl['intensity.sum.value']
-        variances = refl['intensity.sum.variance']
-      # FIXME probably need to do some filtering of intensities similar to that
-      # done in export_mtz
+        intensity_choice = ['sum']
+        if 'intensity.prf.value' in refl:
+          intensity_choice.append('profile')
+          intensity_to_use = 'prf'
+        else:
+          intensity_to_use = 'sum'
+
+      refl = filter_reflection_table(refl, intensity_choice, min_isigi=-5,
+        filter_ice_rings=False, combine_partials=True,
+        partiality_threshold=params.partiality_threshold)
+      assert refl.size() > 0
+      data = refl['intensity.'+intensity_to_use+'.value']
+      variances = refl['intensity.'+intensity_to_use+'.variance']
+
       miller_indices = refl['miller_index']
       assert variances.all_gt(0)
       sigmas = flex.sqrt(variances)
@@ -213,6 +213,7 @@ def run(args):
   change_of_basis_ops = []
 
   for intensities in datasets_input:
+    info = intensities.info()
 
     if params.batch is not None:
       assert batches is not None
@@ -221,34 +222,6 @@ def run(args):
       sel = (batches.data() >= bmin) & (batches.data() <= bmax)
       assert sel.count(True) > 0
       intensities = intensities.select(sel)
-
-    if params.min_i_mean_over_sigma_mean is not None and (
-         params.d_min is libtbx.Auto or params.d_min is not None):
-      from xia2.Modules import Resolutionizer
-      rparams = Resolutionizer.phil_defaults.extract().resolutionizer
-      rparams.nbins = 20
-      resolutionizer = Resolutionizer.resolutionizer(intensities, rparams, None)
-      i_mean_over_sigma_mean = 4
-      d_min = resolutionizer.resolution_i_mean_over_sigma_mean(i_mean_over_sigma_mean)
-      if params.d_min is libtbx.Auto:
-        intensities = intensities.resolution_filter(d_min=d_min).set_info(
-          intensities.info())
-        if params.verbose:
-          logger.info('Selecting reflections with d > %.2f' %d_min)
-      elif d_min > params.d_min:
-        logger.info(
-          'Rejecting dataset %s as d_min too low (%.2f)' %(file_name, d_min))
-        continue
-      else:
-        logger.info('Estimated d_min for %s: %.2f' %(file_name, d_min))
-    elif params.d_min not in (None, libtbx.Auto):
-      intensities = intensities.resolution_filter(d_min=params.d_min).set_info(
-        intensities.info())
-
-    if params.normalisation == 'kernel':
-      from mmtbx.scaling import absolute_scaling
-      normalisation = absolute_scaling.kernel_normalisation(intensities, auto_kernel=True)
-      intensities = normalisation.normalised_miller.deep_copy()
 
     cb_op_to_primitive = intensities.change_of_basis_op_to_primitive_setting()
     change_of_basis_ops.append(cb_op_to_primitive)
@@ -263,8 +236,9 @@ def run(args):
           continue
       else:
         space_group_info = sgtbx.space_group_info('P1')
-      intensities = intensities.customized_copy(space_group_info=space_group_info)
-
+      intensities = intensities.customized_copy(
+        space_group_info=space_group_info)
+    intensities.set_info(info).set_observation_type_xray_intensity()
     datasets.append(intensities)
 
   crystal_symmetries = [d.crystal_symmetry().niggli_cell() for d in datasets]
@@ -311,7 +285,7 @@ def run(args):
     metric_subgroups = sgtbx.lattice_symmetry.metric_subgroups(dataset, max_delta=5)
     subgroup = metric_subgroups.result_groups[0]
     cb_op_inp_best = subgroup['cb_op_inp_best']
-    datasets[i] = dataset.change_basis(cb_op_inp_best)
+    datasets[i] = dataset.change_basis(cb_op_inp_best).set_info(dataset.info())
     change_of_basis_ops[i] = cb_op_inp_best * change_of_basis_ops[i]
 
   cb_op_ref_min = datasets[0].change_of_basis_op_to_niggli_cell()
@@ -325,8 +299,9 @@ def run(args):
         crystal_symmetry=crystal.symmetry(
           unit_cell=datasets[i].unit_cell(),
           space_group_info=params.space_group.primitive_setting(),
-          assert_is_compatible_unit_cell=False))
-    datasets[i] = datasets[i].merge_equivalents().array()
+          assert_is_compatible_unit_cell=False,
+          ))
+    datasets[i] = datasets[i].merge_equivalents().array().set_info(dataset.info())
     change_of_basis_ops[i] = cb_op_ref_min * change_of_basis_ops[i]
 
   result = analyse_datasets(datasets, params)
@@ -368,7 +343,7 @@ def run(args):
         refl = reflections[dataset_selection[dataset_id]]
         reindexed_expt = copy.deepcopy(expt)
         refl_reindexed = copy.deepcopy(refl)
-        cb_op_this = cb_op * change_of_basis_ops[dataset_id]
+        cb_op_this = cb_op * change_of_basis_ops[dataset_id].inverse()
         reindexed_expt.crystal = reindexed_expt.crystal.change_basis(cb_op_this)
         refl_reindexed['miller_index'] = cb_op_this.apply(
           refl_reindexed['miller_index'])

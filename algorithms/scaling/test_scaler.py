@@ -690,8 +690,8 @@ def test_MultiScaler(test_2_reflections, test_2_experiments, test_params):
       with mock.patch.object(sscalers[0].experiments.scaling_model, 'set_error_model',
         autospec=True) as update_em_2:
         with mock.patch.object(sscalers[1].experiments.scaling_model, 'set_error_model',
-          autospec=True,) as update_em_3:
-          multiscaler.update_error_model(Mock())
+          autospec=True) as update_em_3:
+          multiscaler.update_error_model(1.0)
           assert update_em_1.call_count == 1
           assert update_em_2.call_count == 1
           assert update_em_3.call_count == 1

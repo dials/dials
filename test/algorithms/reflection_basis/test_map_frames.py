@@ -3,9 +3,7 @@ from __future__ import absolute_import, division, print_function
 import math
 import os
 
-def test_map_frames_forward(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_map_frames_forward(dials_regression, run_in_tmpdir):
   filename = os.path.join(dials_regression, 'centroid_test_data', 'sweep.json')
 
   from dials.model.serialize import load
@@ -107,9 +105,7 @@ def test_map_frames_forward(dials_regression, tmpdir):
           assert(curr <= last)
         last = curr
 
-def test_map_frames_reverse(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_map_frames_reverse(dials_regression, run_in_tmpdir):
   filename = os.path.join(dials_regression, 'centroid_test_data', 'sweep.json')
 
   from dials.model.serialize import load
@@ -215,9 +211,7 @@ def test_map_frames_reverse(dials_regression, tmpdir):
           assert(curr <= last)
         last = curr
 
-def test_map_forward_reverse(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_map_forward_reverse(dials_regression, run_in_tmpdir):
   filename = os.path.join(dials_regression, 'centroid_test_data', 'sweep.json')
 
   from dials.model.serialize import load

@@ -1,18 +1,16 @@
 """
 Test command line program dials.two_theta_refine by running a job with saved
 data and comparing with expected output.
-
 """
 
 from __future__ import absolute_import, division, print_function
+
 import os
 from libtbx import easy_run
 from libtbx.test_utils import approx_equal
 from dxtbx.model.experiment_list import ExperimentListFactory
 
-def test1(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test(dials_regression, run_in_tmpdir):
   # use multiple scan small molecule data for this test
   data_dir = os.path.join(dials_regression, "xia2-28")
   prefix = ["20", "25", "30", "35"]

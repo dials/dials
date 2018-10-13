@@ -4,9 +4,7 @@ import os
 
 from libtbx import easy_run
 
-def test_compare_orientation_matrices(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_compare_orientation_matrices(dials_regression, run_in_tmpdir):
   path = os.path.join(dials_regression, "refinement_test_data", "i04_weak_data")
   cmd = "dials.compare_orientation_matrices %s/experiments.json %s/regression_experiments.json" %(path, path)
   result = easy_run.fully_buffered(cmd).raise_if_errors()

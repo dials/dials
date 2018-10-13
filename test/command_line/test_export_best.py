@@ -3,8 +3,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import procrunner
 
-def test_export_best(dials_regression, tmpdir):
-  tmpdir.chdir()
+def test_export_best(dials_regression, run_in_tmpdir):
   path = os.path.join(
     dials_regression, "centroid_test_data", "centroid_####.cbf")
 
@@ -32,16 +31,16 @@ def test_export_best(dials_regression, tmpdir):
   with open("best.dat", "r") as f:
     lines = ''.join(f.readlines()[:10])
   assert lines == """\
-  191.5469       0.00       0.06
-   63.8495       1.97       1.39
-   38.3104       1.96       1.35
-   27.3653       1.59       1.41
-   21.2848       1.52       1.41
-   17.4156       1.84       2.86
-   14.7371       1.86       1.50
-   12.7729       1.88       1.47
-   11.2710       1.91       2.04
-   10.0854       1.86       1.39
+  183.7743       0.77       1.60
+   63.4130       1.57       1.80
+   38.3180       1.87       1.71
+   27.4540       1.84       1.55
+   21.3900       1.89       1.51
+   17.5206       1.89       1.52
+   14.8370       1.89       1.45
+   12.8665       1.90       1.45
+   11.3584       1.89       1.42
+   10.1669       1.87       1.46
 """
 
   with open("best.hkl", "r") as f:

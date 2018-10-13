@@ -82,14 +82,22 @@ class BeamMixin(object):
     return s0, ds0_dval
 
 class BeamParameterisation(ModelParameterisation, BeamMixin):
-  """Implementation of parameterisation for the beam with angles expressed in
-  mrad and wavenumber in inverse Angstroms.
+  """A parameterisation of a Beam model.
 
-  Pass in a goniometer (if present) to ensure consistent definition of the
-  beam rotation angles with respect to the spindle-beam plane."""
+  The Beam direction and energy are parameterised using angles expressed in
+  mrad and wavenumber in inverse Angstroms. A goniometer can be provided (if
+  present in the experiment) to ensure a consistent definition of the beam
+  rotation angles with respect to the spindle-beam plane."""
 
   def __init__(self, beam, goniometer=None, experiment_ids=None):
+    """Initialise the BeamParameterisation object
 
+    Args:
+        beam: A dxtbx Beam object to be parameterised.
+        goniometer: An optional dxtbx Goniometer object. Defaults to None.
+        experiment_ids (list): The experiment IDs affected by this
+            parameterisation. Defaults to None, which is replaced by [0].
+    """
     # The state of the beam model consists of the s0 vector that it is
     # modelling. The initial state is the direction of this vector at the point
     # of initialisation. Future states are composed by rotations around axes
@@ -135,5 +143,4 @@ class BeamParameterisation(ModelParameterisation, BeamMixin):
   def get_state(self):
 
     # only a single beam exists, so no multi_state_elt argument is allowed
-
     return matrix.col(self._model.get_s0())

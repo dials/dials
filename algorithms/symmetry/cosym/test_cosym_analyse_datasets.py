@@ -10,14 +10,13 @@ from dials.algorithms.symmetry.cosym import analyse_datasets
 
 
 @pytest.mark.parametrize('space_group', ['P2', 'P3', 'I23'])
-def test_cosym_analyse_datasets(space_group, tmpdir):
-  tmpdir.chdir()
-
+def test_cosym_analyse_datasets(space_group, run_in_tmpdir):
   import matplotlib
   matplotlib.use('Agg')
 
   datasets, expected_reindexing_ops = generate_test_data(
-    space_group=sgtbx.space_group_info(symbol=space_group).group())
+    space_group=sgtbx.space_group_info(symbol=space_group).group(),
+    unit_cell_volume=10000, d_min=1.5)
   expected_space_group = sgtbx.space_group_info(symbol=space_group).group()
 
   params = phil_scope.extract()

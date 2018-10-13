@@ -1,38 +1,45 @@
 #!/usr/bin/env python
 # coding: utf-8
-"""
-Usage: dials.scale integrated.pickle integrated_experiments.json
-[integrated.pickle(2) integrated_experiments.json(2) ....] [options]
+from __future__ import absolute_import, division, print_function
 
-This program performs scaling on the input datasets, which attempts to improve
+help_message =  """
+This program performs scaling on integrated datasets, which attempts to improve
 the internal consistency of the reflection intensities by correcting for
 various experimental effects. By default, a physical scaling model is used,
-with a scale, decay and absorption components. If multiple input files have been
+with scale, decay and absorption components. If multiple input files have been
 specified, the datasets will be jointly scaled against a common target of
 unique reflection intensities.
 
-One scaled.pickle and scaled_experiments.json files are output,
-which may contain data and scale models from multiple experiments. The
-reflection intensities are left unscaled and unmerged in the output, but an
-'inverse_scale_factor' and 'inverse_scale_factor_variance' column is added.
+The program outputs one scaled.pickle and scaled_experiments.json file, which
+contains reflection data and scale models, from one or more experiments.
+The output pickle file contains intensity.scale.value, the unscaled intensity
+values used to determine the scaling model, and a inverse scale factor per
+reflection. These values can then be used to merge the data for downstream
+structural solution. Alternatively, the scaled_experiments.json and
+scaled.pickle files can be passed back to dials.scale, and further scaling will
+be performed, starting from where the previous job finished.
 
-To plot the scale factors determined by this program, one should run:
-dials.plot_scaling_models scaled.pickle scaled_experiments.json
+The scaling models determined by this program can be plotted with::
 
-Examples:
+  dials.plot_scaling_models scaled.pickle scaled_experiments.json
 
-Regular single-sweep scaling
-dials.scale integrated.pickle integrated_experiments absorption_term=False
+Example use cases
 
-Scaling multiple datasets
-dials.scale 1_integrated.pickle 1_integrated_experiments 2_integrated.pickle
-  2_integrated_experiments scale_interval=10.0
+Regular single-sweep scaling, with no absorption correction::
 
-Scaling many small-wedge datasets
-dials.scale *_integrated.pickle *_integrated_experiments model=KB
+  dials.scale integrated.pickle integrated_experiments.json absorption_term=False
+
+Scaling multiple datasets, specifying scale parameter interval::
+
+  dials.scale 1_integrated.pickle 1_integrated_experiments.json 2_integrated.pickle 2_integrated_experiments.json scale_interval=10.0
+
+Incremental scaling (with different options per dataset)::
+
+  dials.scale integrated.pickle integrated_experiments.json scale_interval=10.0
+
+  dials.scale integrated_2.pickle integrated_experiments_2.json scaled.pickle scaled_experiments.json scale_interval=15.0
 
 """
-from __future__ import absolute_import, division, print_function
 import time
 import logging
 import sys
@@ -53,7 +60,7 @@ from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScalerFactory
 from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets,\
   select_datasets_on_ids, save_experiments, save_reflections,\
-  assign_unique_identifiers, log_memory_usage
+  assign_unique_identifiers, log_memory_usage, DialsMergingStatisticsError
 from dials.algorithms.scaling.post_scaling_analysis import \
   exclude_on_batch_rmerge, exclude_on_image_scale
 
@@ -68,19 +75,14 @@ phil_scope = phil.parse('''
       .type = choice
       .help = "Set scaling model to be applied to input datasets without
                an existing model. "
+      .expert_level = 0
   output {
     log = dials.scale.log
       .type = str
       .help = "The log filename"
-    debug_log = dials.scale.debug.log
+    debug.log = dials.scale.debug.log
       .type = str
       .help = "The debug log filename"
-    calculate_individual_merging_stats = False
-      .type = bool
-      .help = "Option to calculate merging stats for the individual datasets."
-    plot_merging_stats = False
-      .type = bool
-      .help = "Option to switch on plotting of merging stats."
     plot_scaling_models = False
       .type = bool
       .help = "Option to switch on plotting of the scaling models determined."
@@ -97,11 +99,20 @@ phil_scope = phil.parse('''
     merged_mtz = None
       .type = path
       .help = "Filename to export a merged_mtz file."
+    crystal_name = XTAL
+      .type = str
+      .help = "The crystal name to be exported in the mtz file metadata"
+      .expert_level = 1
     use_internal_variance = False
       .type = bool
       .help = "Option to use internal spread of the intensities when merging
               reflection groups and calculating sigI, rather than using the
               sigmas of the individual reflections."
+      .expert_level = 1
+    merging.nbins = 20
+      .type = int
+      .help = "Number of bins to use for calculating and plotting merging stats."
+      .expert_level = 1
     exclude_on_image_scale = None
       .type = float
       .help = "If set, images where the image inverse scale (defined by the
@@ -115,14 +126,17 @@ phil_scope = phil.parse('''
               have unreliable intensities and scales. This option should be most
               appropriate for scaling multi-dataset thin-wedge datasets that
               are expected to have significant radiation damage."
+      .expert_level = 2
     exclude_on_batch_rmerge = None
       .type = float
       .help = "If set, images which have an Rmerge above this value will be set
               as outliers, and not included in merging stats or output for
               downstream processing. This is performed after the scaling
               algorithm has been run in the 'post-scaling' step."
+      .expert_level = 2
   }
   include scope dials.algorithms.scaling.scaling_options.phil_scope
+  include scope dials.algorithms.scaling.cross_validation.cross_validate.phil_scope
   include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
 ''', process_includes=True)
 
@@ -137,6 +151,7 @@ class Script(object):
     self.scaler = None
     self.scaled_miller_array = None
     self.dataset_ids = []
+    self.merging_statistics_result = None
     logger.debug('Initialised scaling script object')
     log_memory_usage()
 
@@ -145,7 +160,10 @@ class Script(object):
     start_time = time.time()
     self.prepare_input()
     self.scale()
-    self.merging_stats()
+    try:
+      self.merging_stats()
+    except DialsMergingStatisticsError as e:
+      logger.info(e)
     if save_data:
       self.output()
     # All done!
@@ -247,6 +265,7 @@ class Script(object):
         reflection.set_flags(reflection['partiality'] < \
           self.params.cut_data.partiality_cutoff,
           reflection.flags.user_excluded_in_scaling)
+
     if self.params.cut_data.exclude_image_range:
       if len(self.reflections) == 1:
         start_excl = self.params.cut_data.exclude_image_range[0]
@@ -274,6 +293,10 @@ class Script(object):
     """Get a scaled miller array from an experiment and reflection table."""
     if not reflection_table:
       joint_table = flex.reflection_table()
+      if self.params.scaling_options.only_target or \
+        self.params.scaling_options.target_model or \
+        self.params.scaling_options.target_mtz:
+        self.reflections = self.reflections[:-1]
       for reflection_table in self.reflections:
         #better to just create many miller arrays and join them?
         refl_for_joint_table = flex.reflection_table()
@@ -304,7 +327,6 @@ class Script(object):
   def merging_stats(self):
     """Calculate and print the merging statistics."""
     logger.info('\n'+'='*80+'\n')
-    # Calculate merging stats.
 
     if self.params.output.exclude_on_batch_rmerge:
       self.reflections = exclude_on_batch_rmerge(self.reflections, self.experiments,
@@ -313,8 +335,6 @@ class Script(object):
     if self.params.output.exclude_on_image_scale:
       self.reflections = exclude_on_image_scale(self.reflections, self.experiments,
         self.params.output.exclude_on_image_scale)
-
-    plot_labels = []
 
     self.scaled_miller_array = self.scaled_data_as_miller_array(
       self.experiments[0].crystal.get_crystal_symmetry(), anomalous_flag=False)
@@ -326,18 +346,16 @@ class Script(object):
 
     make_sub_header("Overall merging statistics (non-anomalous)",
         out=log.info_handle(logger))
-    result = iotbx.merging_statistics.dataset_statistics(
-      i_obs=self.scaled_miller_array, n_bins=20, anomalous=False,
-      sigma_filtering=None, eliminate_sys_absent=False,
-      use_internal_variance=self.params.output.use_internal_variance)
-    result.show(header=0, out=log.info_handle(logger))
-    result.show_estimated_cutoffs(out=log.info_handle(logger))
-    plot_labels.append('Overall dataset')
-
-    # Plot merging stats if requested.
-    if self.params.output.plot_merging_stats:
-      from xia2.command_line.compare_merging_stats import plot_merging_stats
-      plot_merging_stats([result])
+    try:
+      result = iotbx.merging_statistics.dataset_statistics(
+        i_obs=self.scaled_miller_array, n_bins=self.params.output.merging.nbins,
+        anomalous=False, sigma_filtering=None, eliminate_sys_absent=False,
+        use_internal_variance=self.params.output.use_internal_variance)
+      result.show(header=0, out=log.info_handle(logger))
+      result.show_estimated_cutoffs(out=log.info_handle(logger))
+      self.merging_statistics_result = result
+    except RuntimeError:
+      raise DialsMergingStatisticsError("Failure during merging statistics calculation")
 
   def delete_datastructures(self):
     """Delete the data in the scaling datastructures to save RAM before
@@ -352,7 +370,9 @@ class Script(object):
     """Save the experiments json and scaled pickle file."""
     logger.info('\n'+'='*80+'\n')
 
-    if self.params.scaling_options.target_model or self.params.scaling_options.target_mtz:
+    if self.params.scaling_options.target_model or \
+      self.params.scaling_options.target_mtz or \
+      self.params.scaling_options.only_target:
       self.experiments = self.experiments[:-1]
     save_experiments(self.experiments, self.params.output.experiments)
 
@@ -370,6 +390,17 @@ class Script(object):
       self.reflections[i] = 0
       gc.collect()
 
+    # remove reflections with neg sigma
+    sel = joint_table['inverse_scale_factor'] <= 0.0
+    n_neg = sel.count(True)
+    if n_neg > 0:
+      logger.warning(
+        'Warning: %s reflections were assigned negative scale factors. \n'
+        'It may be best to rerun scaling from this point for an improved model.' % n_neg)
+      joint_table.set_flags(sel, joint_table.flags.excluded_for_scaling)
+
+    save_reflections(joint_table, self.params.output.reflections)
+
     if self.params.output.unmerged_mtz:
       logger.info("\nSaving output to an unmerged mtz file to %s.",
         self.params.output.unmerged_mtz)
@@ -378,10 +409,12 @@ class Script(object):
       parser = OptionParser(read_experiments=False, read_reflections=False,
         read_datablocks=False, phil=export_phil_scope)
       params, _ = parser.parse_args(args=[], show_diff_phil=False)
-      params.mtz.apply_scales = True
+      params.intensity = ['scale']
+      params.mtz.partiality_threshold = self.params.cut_data.partiality_cutoff
       params.mtz.hklout = self.params.output.unmerged_mtz
-      if self.params.scaling_options.integration_method == 'sum':
-        params.mtz.ignore_profile_fitting = True #to make it export summation
+      params.mtz.crystal_name = self.params.output.crystal_name
+      if self.params.cut_data.d_min:
+        params.mtz.d_min = self.params.cut_data.d_min
       exporter = MTZExporter(params, self.experiments,
         [joint_table])
       exporter.export()
@@ -407,8 +440,6 @@ class Script(object):
       date_str = time.strftime('%d/%m/%Y at %H:%M:%S', time.gmtime())
       mtz_file.add_history('From %s, run on %s' % (dials_version(), date_str))
       mtz_file.write(self.params.output.merged_mtz)
-
-    save_reflections(joint_table, self.params.output.reflections)
 
   def scaling_algorithm(self, scaler):
     """The main scaling algorithm."""
@@ -436,7 +467,7 @@ class Script(object):
         if scaler.params.scaling_options.outlier_rejection:
           scaler.round_of_outlier_rejection()
         if scaler.params.weighting.optimise_errors:
-          scaler.perform_error_optimisation()
+          scaler.perform_error_optimisation(update_Ih=False)
 
         scaler.adjust_variances()
 
@@ -451,8 +482,18 @@ class Script(object):
     scaler.perform_scaling()
 
     #Do another round of outlier rejection and then another minimisation.
+    rescale = False
     if scaler.params.scaling_options.outlier_rejection:
       scaler.outlier_rejection_routine()
+      rescale = True
+
+    if scaler.params.reflection_selection.intensity_choice == 'combine':
+      scaler.combine_intensities()
+      if scaler.params.scaling_options.outlier_rejection:
+        scaler.outlier_rejection_routine()
+      rescale = True
+
+    if rescale:
       scaler.perform_scaling()
 
     # Option to optimise the error model and then do another minimisation.
@@ -486,9 +527,11 @@ class Script(object):
 if __name__ == "__main__":
   try:
     #Parse the command line and flatten reflections, experiments
-    optionparser = OptionParser(usage=__doc__.strip(), read_experiments=True,
+    usage = '''Usage: dials.scale integrated.pickle integrated_experiments.json
+[integrated.pickle(2) integrated_experiments.json(2) ....] [options]'''
+    optionparser = OptionParser(usage=usage, read_experiments=True,
       read_reflections=True, read_datablocks=False, phil=phil_scope,
-      check_format=False)
+      check_format=False, epilog=help_message)
     params, _ = optionparser.parse_args(show_diff_phil=False)
     if not params.input.experiments or not params.input.reflections:
       optionparser.print_help()
@@ -496,17 +539,44 @@ if __name__ == "__main__":
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
 
-    #Set up the log
-    log.config(verbosity=1, info=params.output.log,
-        debug=params.output.debug_log)
-    logger.info(dials_version())
-    diff_phil = optionparser.diff_phil.as_str()
-    if diff_phil is not '':
-      logger.info('The following parameters have been modified:\n')
-      logger.info(diff_phil)
+    if params.cross_validation.cross_validation_mode:
+      from dials.algorithms.scaling.cross_validation.cross_validate import \
+        cross_validate
+      from dials.algorithms.scaling.cross_validation.crossvalidator import \
+        DialsScaleCrossValidator
 
-    script = Script(params, experiments, reflections)
-    script.run()
+      log.config(verbosity=1, info=params.cross_validation.log,
+        debug=params.cross_validation.debug.log)
+      logger.info(dials_version())
+      diff_phil = optionparser.diff_phil
+      if diff_phil.as_str() is not '':
+        logger.info('The following parameters have been modified:\n')
+        logger.info(diff_phil.as_str())
+      diff_phil.objects = [obj for obj in diff_phil.objects if not (
+        obj.name == 'input' or obj.name == 'cross_validation')]
+
+      cross_validator = DialsScaleCrossValidator(experiments, reflections)
+      cross_validate(params, cross_validator)
+
+      if diff_phil.objects:
+        logger.info("\nAdditional configuration for all runs: \n%s", diff_phil.as_str())
+
+      logger.info("Cross validation analysis does not produce scaling output files, rather\n"
+        "it gives insight into the dataset. Choose an appropriate parameterisation\n"
+        "and rerun scaling without cross_validation_mode.\n")
+
+    else:
+      #Set up the log
+      log.config(verbosity=1, info=params.output.log,
+          debug=params.output.debug.log)
+      logger.info(dials_version())
+      diff_phil = optionparser.diff_phil.as_str()
+      if diff_phil is not '':
+        logger.info('The following parameters have been modified:\n')
+        logger.info(diff_phil)
+
+      script = Script(params, experiments, reflections)
+      script.run()
 
   except Exception as e:
     halraiser(e)

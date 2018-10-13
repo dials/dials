@@ -524,28 +524,29 @@ in the outer shell. Here is the summary from aimless.log:
 
     Summary data for        Project: DIALS Crystal: XTAL Dataset: FROMDIALS
 
-                                               Overall  InnerShell  OuterShell
+                                              Overall  InnerShell  OuterShell
     Low resolution limit                       69.19     69.19      1.42
-    High resolution limit                       1.40      7.67      1.40
+    High resolution limit                       1.40      7.54      1.40
 
-    Rmerge  (within I+/I-)                     0.055     0.028     0.467
-    Rmerge  (all I+ and I-)                    0.065     0.039     0.534
-    Rmeas (within I+/I-)                       0.066     0.033     0.571
-    Rmeas (all I+ & I-)                        0.071     0.042     0.587
-    Rpim (within I+/I-)                        0.035     0.017     0.324
-    Rpim (all I+ & I-)                         0.027     0.016     0.239
+    Rmerge  (within I+/I-)                     0.056     0.028     0.598
+    Rmerge  (all I+ and I-)                    0.066     0.039     0.670
+    Rmeas (within I+/I-)                       0.067     0.033     0.733
+    Rmeas (all I+ & I-)                        0.072     0.043     0.737
+    Rpim (within I+/I-)                        0.036     0.017     0.417
+    Rpim (all I+ & I-)                         0.027     0.017     0.302
     Rmerge in top intensity bin                0.029        -         -
-    Total number of observations              275780      1919     11036
-    Total number unique                        41072       284      1908
-    Mean((I)/sd(I))                             14.7      48.7       2.5
-    Mn(I) half-set correlation CC(1/2)         0.999     0.999     0.887
-    Completeness                                94.2      99.2      90.3
-    Multiplicity                                 6.7       6.8       5.8
+    Total number of observations              276017      2016     11442
+    Total number unique                        41113       300      1980
+    Mean((I)/sd(I))                             14.4      47.7       2.1
+    Mn(I) half-set correlation CC(1/2)         0.999     0.998     0.808
+    Completeness                                94.3      99.3      90.5
+    Multiplicity                                 6.7       6.7       5.8
+    Mean(Chi^2)                                 0.92      0.77      0.83
 
-    Anomalous completeness                      94.1     100.0      89.2
+    Anomalous completeness                      94.3     100.0      89.0
     Anomalous multiplicity                       3.4       3.7       2.9
-    DelAnom correlation between half-sets      0.336     0.541     0.026
-    Mid-Slope of Anom Normal Probability       1.097       -         -
+    DelAnom correlation between half-sets      0.363     0.683     0.033
+    Mid-Slope of Anom Normal Probability       1.140       -         -
 
 
 

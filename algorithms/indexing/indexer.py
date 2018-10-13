@@ -520,6 +520,9 @@ class indexer_base(object):
     if known_crystal_models is not None:
       from dials.algorithms.indexing.known_orientation \
            import indexer_known_orientation
+      if params.indexing.known_symmetry.space_group is None:
+        params.indexing.known_symmetry.space_group \
+          = known_crystal_models[0].get_space_group().info()
       idxr = indexer_known_orientation(
         reflections, imagesets, params, known_crystal_models)
     else:
@@ -883,9 +886,9 @@ class indexer_base(object):
           self.indexed_reflections)
         if self.params.refinement_protocol.mode == 'repredict_only':
           refined_experiments, refined_reflections = experiments, reflections_for_refinement
-          from dials.algorithms.refinement.prediction import ExperimentsPredictor
-          ref_predictor = ExperimentsPredictor(experiments,
-                                               spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
+          from dials.algorithms.refinement.prediction.managed_predictors import ExperimentsPredictorFactory
+          ref_predictor = ExperimentsPredictorFactory.from_experiments(
+              experiments, spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
           ref_predictor(refined_reflections)
         else:
           try:
@@ -1441,6 +1444,8 @@ class indexer_base(object):
                          self.target_symmetry_primitive.unit_cell() is None)):
         try:
           self.correct_non_primitive_basis(experiments, refl, threshold)
+          if refl.get_flags(refl.flags.indexed).count(True) == 0:
+            continue
         except SmallUnitCellVolume:
           logger.debug("correct_non_primitive_basis SmallUnitCellVolume error for unit cell %s:"
                        %experiments[0].crystal.get_unit_cell())
@@ -1538,6 +1543,8 @@ class indexer_base(object):
       crystal_model.update(crystal_model.change_basis(cb_op))
 
       reflections['id'] = flex.int(len(reflections), -1)
+      reflections.unset_flags(flex.bool(len(reflections), True),
+        reflections.flags.indexed)
       self.index_reflections(experiments, reflections)
 
   def apply_symmetry(self, crystal_model, target_space_group):

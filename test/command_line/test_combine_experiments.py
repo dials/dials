@@ -17,9 +17,7 @@ from dxtbx.serialize import dump
 from dials.array_family import flex
 import dials.command_line.combine_experiments as combine_experiments
 
-def test(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test(dials_regression, run_in_tmpdir):
   data_dir = os.path.join(dials_regression, "refinement_test_data",
                           "multi_narrow_wedges")
 

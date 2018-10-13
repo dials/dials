@@ -155,12 +155,12 @@ def plot_smooth_scales(params, experiment, outputfile=None):
     rt['norm_rot_angle'] = sample_values
     scale_SF = experiment.scaling_model.components['scale']
     scale_SF.update_reflection_data(rt)
-    scale_SF.calculate_scales()
+    s = scale_SF.calculate_scales()
     smoother_phis = [(i * configdict['scale_rot_interval']) + valid_osc[0]
       for i in scale_SF.smoother.positions()]
     ax1 = plt.subplot(2, 1, 1)
-    ax1.plot(sample_values, scale_SF.inverse_scales[0],
-      label='smootly varying \ninverse scale factor')
+    ax1.plot(sample_values, s,
+      label='smoothly varying \ninverse scale factor')
     if params.output.with_errors:
       if params.output.limit_range_to_obs:
         ax1.errorbar(smoother_phis[1:-1], scale_SF.parameters[1:-1],
@@ -181,7 +181,7 @@ def plot_smooth_scales(params, experiment, outputfile=None):
     rt['d'] = flex.double(sample_values.size(), 1.0)
     decay_SF = experiment.scaling_model.components['decay']
     decay_SF.update_reflection_data(rt)
-    decay_SF.calculate_scales()
+    s = decay_SF.calculate_scales()
     smoother_phis = [(i * configdict['decay_rot_interval']) + valid_osc[0]
       for i in decay_SF._smoother.positions()]
     if ax1:
@@ -190,8 +190,8 @@ def plot_smooth_scales(params, experiment, outputfile=None):
       ax2 = plt.subplot(2, 1, 2)
     ax2.set_ylabel('Relative B factor (' + r'$\AA^{2}$'+')', fontsize=12)
     ax2.set_xlabel('Rotation angle (' + r'$^{\circ}$'+')', fontsize=12)
-    ax2.plot(sample_values, np.log(decay_SF.inverse_scales[0])*2.0,
-      label='smootly varying \nB-factor') #convert scales to B values
+    ax2.plot(sample_values, np.log(s)*2.0,
+      label='smoothly varying \nB-factor') #convert scales to B values
     if params.output.with_errors:
       if params.output.limit_range_to_obs:
         ax2.errorbar(smoother_phis[1:-1], decay_SF.parameters[1:-1],
@@ -324,8 +324,7 @@ def plot_2D_decay_correction(experiment, reflections, outputfile=None):
 
   decay_factor = experiment.scaling_model.components['decay']
   decay_factor.update_reflection_data(rt)
-  decay_factor.calculate_scales()
-  scales = decay_factor.inverse_scales
+  scales = decay_factor.calculate_scales()
   scalefactor_2D = np.reshape(list(scales), (n2, n1)).T
 
   '''generate a plot'''
@@ -349,8 +348,9 @@ def plot_2D_decay_correction(experiment, reflections, outputfile=None):
   ax1.set_yticklabels(dbin_boundaries)
   #ax1.set_xticks(x_axis_vals)
   #ax1.set_xticklabels(x_axis_vals*time_rot_int)
-  ax1.set_xticks(np.arange(0, ((int_rel_max - int_rel_min) * 10)+0.01, 10))
-  xlabels = np.arange(0, (time_rot_int*(int_rel_max-int_rel_min))+0.001, time_rot_int)
+
+  ax1.set_xticks(np.arange(0, ((int_rel_max - int_rel_min) * 10)+0.01, 30))
+  xlabels = np.arange(0, (time_rot_int*(int_rel_max-int_rel_min))+0.001, time_rot_int*3)
   xlabels = np.around(xlabels, 1)
   ax1.set_xticklabels(xlabels)
 
@@ -358,9 +358,9 @@ def plot_2D_decay_correction(experiment, reflections, outputfile=None):
 
   '''recalculate scales for plotting distribution in dataset'''
   decay_factor.update_reflection_data(rt)
-  decay_factor.calculate_scales()
+  s = decay_factor.calculate_scales()
 
-  ax2.hist(list(decay_factor.inverse_scales), 40, log=False)
+  ax2.hist(list(s), 40, log=False)
   ax2.set_xlabel('inverse scale factor')
   ax2.set_ylabel('Counts')
   ax2.set_title('Distribution of dataset reflection corrections\n', fontsize=10)
@@ -399,8 +399,7 @@ def plot_2D_modulation_correction(experiment, reflections, outputfile=None):
 
   modulation_factor = experiment.scaling_model.components['decay']
   modulation_factor.update_reflection_data(rt)
-  modulation_factor.calculate_scales()
-  scales = modulation_factor.inverse_scales
+  scales = modulation_factor.calculate_scales()
   scalefactor_2D = np.reshape(list(scales), (n2, n1))
 
   plt.figure(figsize=(8, 4))
@@ -422,9 +421,9 @@ def plot_2D_modulation_correction(experiment, reflections, outputfile=None):
 
   '''recalculate scales for plotting distribution in dataset'''
   modulation_factor.update_reflection_data(rt)
-  modulation_factor.calculate_scales()
+  s = modulation_factor.calculate_scales()
 
-  ax2.hist(list(modulation_factor.inverse_scales), 40, log=False)
+  ax2.hist(list(s), 40, log=False)
   ax2.set_xlabel('Detector correction inverse scale factor')
   ax2.set_ylabel('Counts')
   ax2.set_title('Distribution of dataset reflection corrections', fontsize=10)
@@ -457,7 +456,7 @@ def plot_3D_absorption_correction(experiment, reflections, outputfile=None):
 
   absorption_factor = experiment.scaling_model.components['absorption']
   absorption_factor.update_reflection_data(rt)
-  absorption_factor.calculate_scales()
+  s = absorption_factor.calculate_scales()
   parameters_2D = np.reshape(list(absorption_factor.parameters),
     (n_time_bins, n_abs_bins)).T
 
@@ -475,7 +474,7 @@ def plot_3D_absorption_correction(experiment, reflections, outputfile=None):
   ax1.set_xlabel('Normalised time value')
   ax1.set_title('Model parameters for absorption correction', fontsize=10)
 
-  ax2.hist(list(absorption_factor.inverse_scales), 40, log=False)
+  ax2.hist(list(s), 40, log=False)
   ax2.set_xlabel('Absorption correction inverse scale factor')
   ax2.set_ylabel('Counts')
   ax2.set_title('Distribution of dataset reflection corrections', fontsize=10)

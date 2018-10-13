@@ -332,23 +332,29 @@ class Script(object):
       logger.info('Updating predictions for indexed reflections')
       preds = refiner.predict_for_indexed()
 
-      # just copy over the columns of interest, leaving behind things
-      # added by e.g. scan-varying refinement such as 'block', the
-      # U, B and UB matrices and gradients.
-      reflections['s1'] = preds['s1']
-      reflections['xyzcal.mm'] = preds['xyzcal.mm']
-      reflections['xyzcal.px'] = preds['xyzcal.px']
-      if 'entering' in preds:
-        reflections['entering'] = preds['entering']
+      # just copy over the columns of interest or columns that may have been
+      # updated, leaving behind things added by e.g. scan-varying refinement
+      # such as 'block', the U, B and UB matrices and gradients.
+      for key in preds.keys():
+        if key in reflections.keys() or key in \
+            ['s1', 'xyzcal.mm', 'xyzcal.px', 'entering', 'delpsical.rad']:
+          reflections[key] = preds[key]
 
-      # set used_in_refinement and centroid_outlier flags
+      # set refinement flags
       assert len(preds) == len(reflections)
       reflections.unset_flags(flex.size_t_range(len(reflections)),
-        reflections.flags.used_in_refinement | reflections.flags.centroid_outlier)
-      mask = preds.get_flags(preds.flags.centroid_outlier)
-      reflections.set_flags(mask, reflections.flags.centroid_outlier)
-      mask = preds.get_flags(preds.flags.used_in_refinement)
-      reflections.set_flags(mask, reflections.flags.used_in_refinement)
+          reflections.flags.excluded_for_refinement |
+          reflections.flags.used_in_refinement |
+          reflections.flags.centroid_outlier |
+          reflections.flags.predicted)
+      reflections.set_flags(preds.get_flags(preds.flags.excluded_for_refinement),
+          reflections.flags.excluded_for_refinement)
+      reflections.set_flags(preds.get_flags(preds.flags.centroid_outlier),
+          reflections.flags.centroid_outlier)
+      reflections.set_flags(preds.get_flags(preds.flags.used_in_refinement),
+          reflections.flags.used_in_refinement)
+      reflections.set_flags(preds.get_flags(preds.flags.predicted),
+          reflections.flags.predicted)
 
       logger.info('Saving reflections with updated predictions to {0}'.format(
         params.output.reflections))

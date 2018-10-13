@@ -19,7 +19,7 @@ from scitbx import matrix
 from math import sqrt, pi
 
 from dials.algorithms.refinement.reflection_manager import ReflectionManager
-from dials.algorithms.refinement.prediction import ExperimentsPredictor
+from dials.algorithms.refinement.prediction.managed_predictors import ExperimentsPredictor
 from dials.algorithms.refinement.target import Target
 from dials.algorithms.refinement.parameterisation.prediction_parameters import \
       PredictionParameterisation
@@ -103,39 +103,26 @@ class TwoThetaReflectionManager(ReflectionManager):
 
 class TwoThetaExperimentsPredictor(ExperimentsPredictor):
 
-  def __call__(self, reflections):
-    """Predict 2theta angles for all reflections at the current model geometry"""
+  def _predict_one_experiment(self, experiment, reflections):
 
-    for iexp, e in enumerate(self._experiments):
+    B = flex.mat3_double(len(reflections), experiment.crystal.get_B())
+    r0 = B * reflections['miller_index'].as_vec3_double()
+    r0len = r0.norms()
+    wl = experiment.beam.get_wavelength()
 
-      # select the reflections for this experiment only
-      sel = reflections['id'] == iexp
-      refs = reflections.select(sel)
+    # 2theta = 2 * arcsin( |r0| / (2 * |s0| ) )
+    reflections['2theta_cal.rad'] = 2.0 * flex.asin(0.5 * r0len * wl)
 
-      B = flex.mat3_double(len(reflections), e.crystal.get_B())
-      r0 = B * reflections['miller_index'].as_vec3_double()
-      r0len = r0.norms()
-      wl = e.beam.get_wavelength()
-
-      # 2theta = 2 * arcsin( |r0| / (2 * |s0| ) )
-      twotheta = 2.0 * flex.asin(0.5 * r0len * wl)
-
-      # write predictions back to overall reflections
-      reflections['2theta_cal.rad'].set_selected(sel, twotheta)
-
-      # set predicted flag
-      reflections.set_flags(sel, reflections.flags.predicted)
-
-    return reflections
+    reflections.set_flags(flex.size_t(len(reflections)), reflections.flags.predicted)
 
 class TwoThetaTarget(Target):
   _grad_names = ['d2theta_dp']
   rmsd_names = ["RMSD_2theta"]
   rmsd_units = ["rad"]
 
-  def __init__(self, experiments, reflection_predictor, ref_man,
+  def __init__(self, experiments, predictor, reflection_manager,
                prediction_parameterisation):
-    Target.__init__(self, experiments, reflection_predictor, ref_man,
+    Target.__init__(self, experiments, predictor, reflection_manager,
                     prediction_parameterisation)
 
     # set the single cutoff for 2theta residual to essentially zero

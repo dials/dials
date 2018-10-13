@@ -36,13 +36,29 @@ def test_mtz(dials_regression, tmpdir):
   assert result['stderr'] == ''
   assert os.path.exists("integrated.mtz")
 
+def test_mmcif(dials_regression, tmpdir):
+  tmpdir.chdir()
+
+  # Call dials.export after integration
+  result = procrunner.run_process([
+      'dials.export',
+      'format=mmcif',
+      os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
+      os.path.join(dials_regression, "centroid_test_data", "integrated.pickle"),
+  ])
+  assert result['exitcode'] == 0
+  assert result['stderr'] == ''
+  assert os.path.exists("integrated.cif")
+
+  #TODO include similar test for exporting scaled data in mmcif format
+
 def test_xds_ascii(dials_regression, tmpdir):
   tmpdir.chdir()
 
   # Call dials.export
   result = procrunner.run_process([
       'dials.export',
-      'summation=true',
+      'intensity=sum',
       'format=xds_ascii',
       os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
       os.path.join(dials_regression, "centroid_test_data", "integrated.pickle"),
@@ -74,7 +90,8 @@ def test_sadabs(dials_regression, tmpdir):
   # Call dials.export
   result = procrunner.run_process([
     'dials.export',
-    'summation=true',
+    'intensity=sum',
+    'mtz.partiality_threshold=0.99',
     'format=sadabs',
       os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
       os.path.join(dials_regression, "centroid_test_data", "integrated.pickle"),

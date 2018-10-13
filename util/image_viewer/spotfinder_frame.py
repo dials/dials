@@ -3,7 +3,10 @@ from __future__ import print_function
 import rstbx.viewer.display
 import wx
 from wx.lib.intctrl import IntCtrl
-from rstbx.slip_viewer.frame import XrayFrame
+
+from .slip_viewer.frame import XrayFrame
+from .slip_viewer import pyslip
+
 from rstbx.viewer.frame import SettingsFrame, SettingsPanel
 from scitbx import matrix
 from dials.array_family import flex
@@ -16,6 +19,8 @@ from dxtbx.datablock import DataBlockFilenameImporter
 from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
 
 from .viewer_tools import LegacyChooserAdapter, ImageCollectionWithSelection, ImageChooserControl
+
+WX3 = wx.VERSION[0] == 3
 
 myEVT_LOADIMG = wx.NewEventType()
 EVT_LOADIMG = wx.PyEventBinder(myEVT_LOADIMG, 1)
@@ -164,7 +169,7 @@ class SpotFrame(XrayFrame) :
     # Create a sub-control with our image selection slider and label
     # Manually tune the height for now - don't understand toolbar sizing
     panel = ImageChooserControl(self.toolbar, size=(300,40))
-    # The Toolbar doesn't call layout for it's children?!
+    # The Toolbar doesn't call layout for its children?!
     panel.Layout()
     # Platform support for slider events seems a little inconsistent
     # with wxPython 3, so we just trap all EVT_SLIDER events.
@@ -205,7 +210,7 @@ class SpotFrame(XrayFrame) :
     self.Bind(wx.EVT_MENU, self.OnMask, source=item)
 
   def OnMask(self, event):
-    from rstbx.slip_viewer.score_frame import ScoreSettingsFrame
+    from .slip_viewer.score_frame import ScoreSettingsFrame
     from dials.util.image_viewer.mask_frame import MaskSettingsFrame
 
     if not self._mask_frame:
@@ -236,7 +241,7 @@ class SpotFrame(XrayFrame) :
 
     # Don't update whilst dragging the slider
     if event.EventType == wx.EVT_SLIDER.typeId:
-      if wx.GetMouseState().LeftDown():
+      if wx.GetMouseState().LeftDown() if WX3 else wx.GetMouseState().LeftIsDown():
         return
 
     # Once we've stopped scrolling, load the selected item
@@ -263,7 +268,6 @@ class SpotFrame(XrayFrame) :
     self.init_pyslip_select()
 
   def init_pyslip_select(self):
-    from rstbx.slip_viewer import pyslip
     #self.pyslip.Bind(pyslip.EVT_PYSLIP_SELECT, self.handle_select_event)
 
     #self.TypeMask = 100
@@ -282,6 +286,7 @@ class SpotFrame(XrayFrame) :
     #self.pyslip.SetLayerSelectable(self._xxx_layer, True)
 
     #self.pyslip.layerBSelHandler[self.TypeMask] = self.GetBoxCorners
+    pass
 
   def GetBoxCorners(self, layer, p1, p2):
     """Get list of points inside box.
@@ -1431,7 +1436,7 @@ class SpotSettingsPanel (wx.Panel) :
     self._sizer = wx.BoxSizer(wx.VERTICAL)
     s = self._sizer
     self.SetSizer(self._sizer)
-    grid = wx.FlexGridSizer(cols=2, rows=2)
+    grid = wx.FlexGridSizer(cols=2, rows=2, vgap=0, hgap=0)
     s.Add(grid)
     txt1 = wx.StaticText(self, -1, "Zoom level:")
     grid.Add(txt1, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
@@ -1453,7 +1458,7 @@ class SpotSettingsPanel (wx.Panel) :
 
     box = wx.BoxSizer(wx.HORIZONTAL)
     s.Add(box)
-    grid = wx.FlexGridSizer(cols=1, rows=2)
+    grid = wx.FlexGridSizer(cols=1, rows=2, vgap=0, hgap=0)
     box.Add(grid)
     txt2 = wx.StaticText(self, -1, "Brightness:")
     grid.Add(txt2, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
@@ -1472,7 +1477,7 @@ class SpotSettingsPanel (wx.Panel) :
     self.brightness_ctrl.SetTickFreq(25)
     box.Add(self.brightness_ctrl, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
-    grid = wx.FlexGridSizer(cols=2, rows=8)
+    grid = wx.FlexGridSizer(cols=2, rows=8, vgap=0, hgap=0)
     s.Add(grid)
 
     # Resolution rings control
@@ -1540,7 +1545,7 @@ class SpotSettingsPanel (wx.Panel) :
     self.integrated.SetValue(self.settings.show_integrated)
     grid.Add(self.integrated, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
-    grid = wx.FlexGridSizer(cols=2, rows=1)
+    grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
     self.clear_all_button = wx.Button(self, -1, "Clear all")
     grid.Add(self.clear_all_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self.Bind(wx.EVT_BUTTON, self.OnClearAll, self.clear_all_button)
@@ -1559,7 +1564,7 @@ class SpotSettingsPanel (wx.Panel) :
     #s.Add(box)
 
     # DispersionThreshold thresholding parameters
-    grid1 = wx.FlexGridSizer(cols=2, rows=7)
+    grid1 = wx.FlexGridSizer(cols=2, rows=7, vgap=0, hgap=0)
     s.Add(grid1)
 
     from wxtbx.phil_controls.floatctrl import FloatCtrl
@@ -1627,7 +1632,7 @@ class SpotSettingsPanel (wx.Panel) :
     grid1.Add(self.save_params_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self.Bind(wx.EVT_BUTTON, self.OnSaveFindSpotsParams, self.save_params_button)
 
-    grid2 = wx.FlexGridSizer(cols=4, rows=2)
+    grid2 = wx.FlexGridSizer(cols=4, rows=2, vgap=0, hgap=0)
     s.Add(grid2)
 
     self.kabsch_buttons = []
@@ -1738,7 +1743,7 @@ class SpotSettingsPanel (wx.Panel) :
 
     # Don't update whilst dragging the slider
     if (event.GetEventType() == wx.EVT_SLIDER.typeId):
-      if wx.GetMouseState().LeftDown():
+      if wx.GetMouseState().LeftIsDown():
         return
 
     # For e.g. IntCtrl check the value is valid

@@ -18,8 +18,8 @@ def test():
 
   from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
   from dxtbx.model.experiment_list import ExperimentList, Experiment
-  from dials.algorithms.refinement.prediction import ScansRayPredictor, \
-    ExperimentsPredictor
+  from dials.algorithms.refinement.prediction.managed_predictors import ScansRayPredictor, \
+      ScansExperimentsPredictor
 
   #### Import model parameterisations
 
@@ -63,7 +63,6 @@ def test():
                         deg = True)
 
   #### Create parameterisations of these models
-
   det_param = DetectorParameterisationSinglePanel(mydetector)
   s0_param = BeamParameterisation(mybeam, mygonio)
   xlo_param = CrystalOrientationParameterisation(mycrystal)
@@ -103,7 +102,7 @@ def test():
 
   # Make a reflection predictor and re-predict for all these reflections. The
   # result is the same, but we gain also the flags and xyzcal.px columns
-  ref_predictor = ExperimentsPredictor(experiments)
+  ref_predictor = ScansExperimentsPredictor(experiments)
   obs_refs['id'] = flex.int(len(obs_refs), 0)
   obs_refs = ref_predictor(obs_refs)
 
@@ -121,15 +120,10 @@ def test():
   # use a ReflectionManager to exclude reflections too close to the spindle
   from dials.algorithms.refinement.reflection_manager import ReflectionManager
   refman = ReflectionManager(obs_refs, experiments, outlier_detector=None)
+  refman.finalise()
 
   # Redefine the reflection predictor to use the type expected by the Target class
-  ref_predictor = ExperimentsPredictor(experiments)
-
-  # make a target to ensure reflections are predicted and refman is finalised
-  from dials.algorithms.refinement.target import \
-    LeastSquaresPositionalResidualWithRmsdCutoff
-  target = LeastSquaresPositionalResidualWithRmsdCutoff(experiments,
-      ref_predictor, refman, pred_param, restraints_parameterisation=None)
+  ref_predictor = ScansExperimentsPredictor(experiments)
 
   # keep only those reflections that pass inclusion criteria and have predictions
   reflections = refman.get_matches()

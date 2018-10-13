@@ -4,8 +4,7 @@ import os
 from libtbx import easy_run
 from glob import glob
 
-def test_spot_counts_per_image(dials_regression, tmpdir):
-  tmpdir.chdir()
+def test_spot_counts_per_image(dials_regression, run_in_tmpdir):
   path = os.path.join(dials_regression, "centroid_test_data")
 
   # import the data

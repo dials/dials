@@ -4,9 +4,7 @@ import six.moves.cPickle as pickle
 import os
 import procrunner
 
-def test_import_integrate_hkl(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_import_integrate_hkl(dials_regression, run_in_tmpdir):
   from dials.array_family import flex # import dependency
 
   result = procrunner.run_process([
@@ -30,9 +28,7 @@ def test_import_integrate_hkl(dials_regression, tmpdir):
   assert 'intensity.cor.variance' in table
   assert len(table) == 174911
 
-def test_import_spot_xds(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_import_spot_xds(dials_regression, run_in_tmpdir):
   result = procrunner.run_process([
       'dials.import_xds',
       'input.method=reflections',
@@ -51,9 +47,7 @@ def test_import_spot_xds(dials_regression, tmpdir):
   assert 'intensity.sum.value' in table
   assert len(table) == 742
 
-def test_import_spot_xds_with_filtering(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_import_spot_xds_with_filtering(dials_regression, run_in_tmpdir):
   result = procrunner.run_process([
       'dials.import_xds',
       'input.method=reflections',
@@ -73,9 +67,7 @@ def test_import_spot_xds_with_filtering(dials_regression, tmpdir):
   assert 'intensity.sum.value' in table
   assert len(table) == 664
 
-def test_from_xds_files(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_from_xds_files(dials_regression, run_in_tmpdir):
   # Import from the image files
   result = procrunner.run_process([
       'dials.import_xds',

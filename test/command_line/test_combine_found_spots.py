@@ -4,9 +4,7 @@ from glob import glob
 import os
 from procrunner import run_process
 
-def test_combining_spots(dials_regression, tmpdir):
-  tmpdir.chdir()
-
+def test_combining_spots(dials_regression, run_in_tmpdir):
   images = sorted(glob(os.path.join(dials_regression, 'centroid_test_data', "centroid*.cbf")))
   images_1 = images[0:int(len(images)/2)]
   images_2 = images[int(len(images)/2):]

@@ -57,6 +57,9 @@ def test_ScaleComponentBase():
   base_SF = base_SF_filler(flex.double(3, 1.0), flex.double(3, 0.1))
   assert list(base_SF.parameter_esds) == [0.1] * 3
 
+  assert base_SF.derivatives == base_SF._derivatives
+  assert base_SF.curvatures == base_SF._curvatures
+
 def test_SingleScaleFactor():
   """Test for SingleScaleFactor class."""
   KSF = SingleScaleFactor(flex.double([2.0]))
@@ -111,7 +114,7 @@ def test_SHScalefactor():
   harmonic_values[1, 0] = initial_val
   harmonic_values[2, 0] = initial_val
   SF.sph_harm_table = harmonic_values
-  SF.update_reflection_data(None, flex.bool([True]))
+  SF.update_reflection_data(None, None)
   print(SF.harmonic_values)
   assert SF.harmonic_values[0][0, 0] == initial_val
   assert SF.harmonic_values[0][0, 1] == initial_val
@@ -123,6 +126,17 @@ def test_SHScalefactor():
   assert d[0, 2] == initial_val
   s, d, c = SF.calculate_scales_and_derivatives(curvatures=True)
   assert c.non_zeroes == 0
+
+  #Test functionality of passing in a selection
+  harmonic_values = sparse.matrix(3, 2)
+  harmonic_values[0, 0] = initial_val
+  harmonic_values[0, 1] = initial_val
+  harmonic_values[2, 0] = initial_val
+  SF.sph_harm_table = harmonic_values
+  SF.update_reflection_data(None, flex.bool([False, True]))
+  assert SF.harmonic_values[0].n_rows == 1
+  assert SF.harmonic_values[0].n_cols == 3
+  assert SF.n_refl[0] == 1
 
   # Test setting of restraints and that restraints are calculated.
   # Not testing actual calculation as may want to change the form.
@@ -156,9 +170,10 @@ def test_SmoothScaleFactor1D():
   assert list(SF.inverse_scales[0]) == [1.0, 1.0, 1.0, 1.0]
   SF.smoother.set_smoothing(4, 1.0)
   assert list(SF.smoother.positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5]
-  SF.calculate_scales()
-  assert approx_equal(list(SF.inverse_scales[0]), [1.1, 1.1, 1.1, 1.1])
   s, d = SF.calculate_scales_and_derivatives()
+  s2 = SF.calculate_scales()
+  assert list(s) == list(s2)
+  assert approx_equal(list(s), [1.1, 1.1, 1.1, 1.1])
   assert approx_equal(d[0, 0]/d[0, 1],
     exp(-1.0)/exp(0.0))
   sumexp = exp(-1.0/1.0) + exp(-0.0/1.0) + exp(-1.0/1.0)# only averages 3 when
@@ -174,11 +189,18 @@ def test_SmoothScaleFactor1D():
   assert c.non_zeroes == 0
 
   #Test that if one or none in block, then doesn't fail but returns sensible value
-  #SF.update_reflection_data(rt, selection=flex.bool([True, False, False, False]))
   SF._normalised_values = [flex.double([0.5])]
   SF._n_refl = [1]
   assert list(SF.normalised_values[0]) == [0.5]
   s, d = SF.calculate_scales_and_derivatives()
+  s2 = SF.calculate_scales()
+  assert list(s) == list(s2)
+  SF._normalised_values = [flex.double()]
+  SF._n_refl = [0]
+  assert list(SF.normalised_values[0]) == []
+  s, d = SF.calculate_scales_and_derivatives()
+  s2 = SF.calculate_scales()
+  assert list(s) == list(s2)
 
 def test_SmoothBScaleFactor1D():
   'test for a gaussian smoothed 1D scalefactor object'
@@ -193,9 +215,10 @@ def test_SmoothBScaleFactor1D():
   assert list(SF.d_values[0]) == [1.0, 1.0, 1.0, 1.0]
   assert list(SF.inverse_scales[0]) == [1.0, 1.0, 1.0, 1.0]
   SF.smoother.set_smoothing(4, 1.0)
-  SF.calculate_scales()
-  assert approx_equal(list(SF.inverse_scales[0]), [1.0, 1.0, 1.0, 1.0])
   s, d = SF.calculate_scales_and_derivatives()
+  s2 = SF.calculate_scales()
+  assert list(s) == list(s2)
+  assert approx_equal(list(s), [1.0, 1.0, 1.0, 1.0])
   assert approx_equal(d[0, 0]/d[0, 1],
     exp(-1.0)/exp(0.0)) #derivative ratio of two adjacent params (at +-0.5)
   sumexp = exp(-1.0/1.0) + exp(-0.0/1.0) + exp(-1.0/1.0)
@@ -219,6 +242,8 @@ def test_SmoothBScaleFactor1D():
   SF._d_values = [flex.double([1.0])]
   assert list(SF.normalised_values[0]) == [0.5]
   s, d = SF.calculate_scales_and_derivatives()
+  s2 = SF.calculate_scales()
+  assert list(s) == list(s2)
 
 def test_SmoothScaleFactor2D():
   """Test the 2D smooth scale factor class."""
@@ -268,8 +293,31 @@ def test_SmoothScaleFactor2D():
   assert list(SF.smoother.x_positions()) == [0.0, 1.0, 2.0]
   assert list(SF.smoother.y_positions()) == [0.0, 1.0]
   s, d, c = SF.calculate_scales_and_derivatives(curvatures=True)
+  s2 = SF.calculate_scales()
+  assert list(s) == list(s2)
   sumexp = (4.0 * exp(-0.5/1.0)) + (2.0*exp(-2.5/1.0))
   assert approx_equal(d[1, 1], (exp(-0.5)/sumexp))
+
+  #Test that if one or none in block, then doesn't fail but returns sensible value
+  SF._normalised_x_values = [flex.double([0.5])]
+  SF._normalised_y_values = [flex.double([0.5])]
+  SF._n_refl = [1]
+  assert list(SF.normalised_x_values[0]) == [0.5]
+  assert list(SF.normalised_y_values[0]) == [0.5]
+  s, d = SF.calculate_scales_and_derivatives()
+  s2 = SF.calculate_scales()
+  assert list(s) == list(s2)
+  assert list(s) == pytest.approx([1.1])
+  SF._normalised_x_values = [flex.double()]
+  SF._normalised_y_values = [flex.double()]
+  SF._n_refl = [0]
+  assert list(SF.normalised_x_values[0]) == []
+  assert list(SF.normalised_y_values[0]) == []
+  s, d = SF.calculate_scales_and_derivatives()
+  s2 = SF.calculate_scales()
+  assert list(s) == list(s2)
+  assert list(s) == []
+  assert d == sparse.matrix(0, 0)
 
 def test_SmoothScaleFactor3D():
   """Test the 2D smooth scale factor class."""
@@ -300,8 +348,35 @@ def test_SmoothScaleFactor3D():
   assert list(SF.smoother.y_positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5]
   assert list(SF.smoother.z_positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5]
   s, d, c = SF.calculate_scales_and_derivatives(curvatures=True)
+  s2 = SF.calculate_scales()
+  assert list(s) == list(s2)
   assert c.non_zeroes == 0
   assert approx_equal(list(s), [1.1]*150)
   sumexp = (exp(-0.0) + (6.0 * exp(-1.0/1.0)) + (8.0*exp(-3.0/1.0)) +
     (12.0*exp(-2.0/1.0)))
   assert approx_equal(d[1, 7], exp(-1.0)/sumexp) # Just check one
+
+  #Test that if one or none in block, then doesn't fail but returns sensible value
+  SF._normalised_x_values = [flex.double([0.5])]
+  SF._normalised_y_values = [flex.double([0.5])]
+  SF._normalised_z_values = [flex.double([0.5])]
+  SF._n_refl = [1]
+  assert list(SF.normalised_x_values[0]) == [0.5]
+  assert list(SF.normalised_y_values[0]) == [0.5]
+  assert list(SF.normalised_z_values[0]) == [0.5]
+  s, d = SF.calculate_scales_and_derivatives()
+  s2 = SF.calculate_scales()
+  assert list(s) == list(s2)
+  assert list(s) == pytest.approx([1.1])
+  SF._normalised_x_values = [flex.double()]
+  SF._normalised_y_values = [flex.double()]
+  SF._normalised_z_values = [flex.double()]
+  SF._n_refl = [0]
+  assert list(SF.normalised_x_values[0]) == []
+  assert list(SF.normalised_y_values[0]) == []
+  assert list(SF.normalised_z_values[0]) == []
+  s, d = SF.calculate_scales_and_derivatives()
+  assert list(s) == []
+  s2 = SF.calculate_scales()
+  assert list(s) == list(s2)
+  assert d == sparse.matrix(0, 0)

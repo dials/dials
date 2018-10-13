@@ -69,7 +69,7 @@ def e_refine(params, experiments, reflections, graph_verbose=False):
 
     from dials.algorithms.refinement.refiner import RefinerFactory
     refiner = RefinerFactory.from_parameters_data_experiments(params,
-      reflections, experiments, verbosity=1, copy_experiments=True)
+      reflections, experiments, verbosity=1)
 
     history = refiner.run()
 
@@ -108,7 +108,7 @@ class stills_indexer(indexer_base):
 
   def __init__(self, reflections, imagesets, params=None):
     if params.refinement.reflections.outlier.algorithm in ('auto', libtbx.Auto):
-      # The stills_indexer provides it's own outlier rejection
+      # The stills_indexer provides its own outlier rejection
       params.refinement.reflections.outlier.algorithm = 'null'
     indexer_base.__init__(self, reflections, imagesets, params)
 
@@ -305,18 +305,38 @@ class stills_indexer(indexer_base):
         experiments = isoform_experiments
         reflections_for_refinement = isoform_reflections
 
-      try:
-        refined_experiments, refined_reflections = self.refine(
-          experiments, reflections_for_refinement)
-      except Exception as e:
-        s = str(e)
-        if len(experiments) == 1:
-          raise Sorry(e)
-        had_refinement_error = True
-        logger.info("Refinement failed:")
-        logger.info(s)
-        del experiments[-1]
-        break
+      if self.params.refinement_protocol.mode == 'repredict_only':
+
+        from dials.algorithms.indexing.nave_parameters import nave_parameters
+        from dials.algorithms.refinement.prediction.managed_predictors import ExperimentsPredictorFactory
+        refined_experiments, refined_reflections = experiments, reflections_for_refinement
+        ref_predictor = ExperimentsPredictorFactory.from_experiments(
+            experiments, do_stills=True, spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
+        ref_predictor(refined_reflections)
+        refined_reflections['delpsical2'] = refined_reflections['delpsical.rad']**2
+        for expt_id in range(len(refined_experiments)):
+          refls = refined_reflections.select(refined_reflections['id'] == expt_id)
+          nv = nave_parameters(params=self.all_params,
+                               experiments=refined_experiments[expt_id:expt_id+1],
+                               reflections=refls, refinery=None, graph_verbose=False)
+          experiments[expt_id].crystal = nv()
+        ref_predictor = ExperimentsPredictorFactory.from_experiments(
+          experiments, do_stills=True, spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
+        ref_predictor(refined_reflections)
+
+      else:
+        try:
+          refined_experiments, refined_reflections = self.refine(
+            experiments, reflections_for_refinement)
+        except Exception as e:
+          s = str(e)
+          if len(experiments) == 1:
+            raise Sorry(e)
+          had_refinement_error = True
+          logger.info("Refinement failed:")
+          logger.info(s)
+          del experiments[-1]
+          break
 
       # sanity check for unrealistic unit cell volume increase during refinement
       # usually this indicates too many parameters are being refined given the
@@ -531,9 +551,9 @@ class stills_indexer(indexer_base):
                                            indexed = indexed,
                                            experiments = ref_experiments))
       else:
-        from dials.algorithms.refinement.prediction import ExperimentsPredictor
-        ref_predictor = ExperimentsPredictor(experiments, force_stills=True,
-                                             spherical_relp=params.refinement.parameterisation.spherical_relp_model)
+        from dials.algorithms.refinement.prediction.managed_predictors import ExperimentsPredictorFactory
+        ref_predictor = ExperimentsPredictorFactory.from_experiments(
+            experiments, do_stills=True, spherical_relp=params.refinement.parameterisation.spherical_relp_model)
         rmsd, _ = calc_2D_rmsd_and_displacements(ref_predictor(indexed))
         candidates.append(candidate_info(crystal = cm,
                                          n_indexed = len(indexed),

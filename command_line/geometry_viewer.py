@@ -4,7 +4,7 @@
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 from __future__ import absolute_import, division
 from __future__ import print_function
-from gltbx import wx_viewer
+from dials.util import wx_viewer
 import copy
 import wx
 import wxtbx.utils
@@ -41,6 +41,14 @@ phil_scope= libtbx.phil.parse("""
   show_panel_axes = False
     .type = bool
     .help = "Plot the fast, slow and normal vectors for each panel."
+  show_crystal_axes = True
+    .type = bool
+    .help = "Plot the crystal reciprocal cell axes"
+  require_images = True
+    .type = bool
+    .help = "Flag which can be set to False to launch image viewer without
+      checking the image format (needed for some image format classes).
+      Alternative to DIALS_EXPORT_DO_NOT_CHECK_FORMAT environment variable."
 """)
 
 def settings():
@@ -315,9 +323,16 @@ class settings_window(wxtbx.utils.SettingsPanel) :
     self.GetParent().viewer.OnChar(event)
 
   def add_controls(self) :
-    pass
-    # d_min control
-    #from wx.lib.agw import floatspin
+
+    ctrls = self.create_controls(
+      setting="show_panel_axes",
+      label="Show panel axes")
+    self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
+
+    ctrls = self.create_controls(
+      setting="show_crystal_axes",
+      label="Show crystal axes")
+    self.panel_sizer.Add(ctrls[0], 0, wx.ALL, 5)
 
   def add_goniometer_controls(self, goniometer):
     from wx.lib.agw import floatspin
@@ -467,7 +482,7 @@ class GeometryWindow(wx_viewer.show_points_and_lines_mixin):
       self.draw_axis(axis.elems, "phi")
     self.draw_axis(beam.get_s0(), "beam")
     crystal = self.parent.crystal
-    if crystal is not None:
+    if self.settings.show_crystal_axes and crystal is not None:
       crystal = copy.deepcopy(crystal)
       scan = self.parent.imageset.get_scan()
       fixed_rotation = matrix.sqr(gonio.get_fixed_rotation())
@@ -550,13 +565,12 @@ def run(args):
   from dials.util.options import flatten_datablocks
   from dials.util.options import flatten_experiments
   import libtbx.load_env
+  import os
 
   usage = "%s [options] datablock.json" %(
     libtbx.env.dispatcher_name)
 
-  import os
-  if 'DIALS_EXPORT_DO_NOT_CHECK_FORMAT' in os.environ:
-    parser = OptionParser(
+  parser = OptionParser(
       usage=usage,
       phil=phil_scope,
       read_datablocks=True,
@@ -564,18 +578,35 @@ def run(args):
       check_format=False,
       epilog=help_message)
 
+  params, options = parser.parse_args(quick_parse=True, show_diff_phil=True)
+
+  if 'DIALS_EXPORT_DO_NOT_CHECK_FORMAT' in os.environ:
+    print('\nWarning: use of DIALS_EXPORT_DO_NOT_CHECK_FORMAT environment variable'
+      '\nis no longer recommended, the recommended command is require_images=False')
+  if not params.require_images or 'DIALS_EXPORT_DO_NOT_CHECK_FORMAT' in os.environ:
+    check_format = False
   else:
-    parser = OptionParser(
+    check_format = True
+
+  parser = OptionParser(
       usage=usage,
       phil=phil_scope,
       read_datablocks=True,
       read_experiments=True,
-      check_format=True,
+      check_format=check_format,
       epilog=help_message)
 
-  params, options = parser.parse_args(show_diff_phil=True)
+  try:
+    params, options = parser.parse_args(show_diff_phil=False)
+  except Exception as e:
+    print(e)
+    print('dials.geometry_viewer help: Error in parsing data may be due to missing \n'
+      'files. If so, this may be overcome by require_images=False\n')
+    sys.exit()
+
   datablocks = flatten_datablocks(params.input.datablock)
   experiments = flatten_experiments(params.input.experiments)
+
 
   if (len(datablocks) == 0 and len(experiments) == 0):
     parser.print_help()

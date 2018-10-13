@@ -1059,6 +1059,7 @@ def test_experiment_identifiers():
   table = flex.reflection_table()
   table['id'] = flex.int([0,1,2,3])
 
+  table.assert_experiment_identifiers_are_consistent()
   assert table.are_experiment_identifiers_consistent() == True
 
   identifiers = table.experiment_identifiers()
@@ -1086,6 +1087,7 @@ def test_experiment_identifiers():
   assert tuple(identifiers.values()) == ("abcd", "efgh", "ijkl", "mnop")
 
 
+  table.assert_experiment_identifiers_are_consistent()
   assert table.are_experiment_identifiers_consistent() == True
 
   experiments = ExperimentList()
@@ -1094,6 +1096,7 @@ def test_experiment_identifiers():
   experiments.append(Experiment(identifier="ijkl"))
   experiments.append(Experiment(identifier="mnop"))
 
+  table.assert_experiment_identifiers_are_consistent()
   assert table.are_experiment_identifiers_consistent(experiments) == True
 
   experiments = ExperimentList()
@@ -1103,6 +1106,8 @@ def test_experiment_identifiers():
   experiments.append(Experiment(identifier="mnop"))
   experiments[3].identifier = "ijkl"
 
+  with pytest.raises(AssertionError):
+    table.assert_experiment_identifiers_are_consistent(experiments)
   assert table.are_experiment_identifiers_consistent(experiments) == False
 
   identifiers = table.experiment_identifiers()
@@ -1111,6 +1116,8 @@ def test_experiment_identifiers():
   identifiers[2] = 'ijkl'
   identifiers[3] = 'ijkl'
 
+  with pytest.raises(AssertionError):
+    table.assert_experiment_identifiers_are_consistent()
   assert table.are_experiment_identifiers_consistent() == False
 
   identifiers[3] = 'mnop'
@@ -1128,6 +1135,7 @@ def test_experiment_identifiers():
   other_table = flex.reflection_table()
   other_table['id'] = flex.int([3, 4])
 
+  table.assert_experiment_identifiers_are_consistent()
   assert other_table.are_experiment_identifiers_consistent() == True
 
   identifiers = other_table.experiment_identifiers()

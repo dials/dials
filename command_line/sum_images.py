@@ -11,7 +11,7 @@ def sum_images(in_template, out_image, start, end):
 if __name__ == '__main__':
   import sys
   if len(sys.argv) != 5:
-    raise RuntimeError('%s in_\%d_0001.cbf out_1_0001.cbf start end' % \
+    raise RuntimeError('%s in_%%d_0001.cbf out_1_0001.cbf start end' % \
       sys.argv[0])
   in_template = sys.argv[1]
   out_image = sys.argv[2]

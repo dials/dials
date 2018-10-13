@@ -6,7 +6,7 @@ from libtbx.utils import Sorry
 from dials.array_family import flex
 from dials.algorithms.scaling.scaler import MultiScaler, TargetScaler,\
   SingleScalerBase
-from dials.algorithms.scaling.scaling_utilities import quasi_normalisation
+from dials.algorithms.scaling.scaling_utilities import quasi_normalisation, Reasons
 from dials.algorithms.scaling.scaling_library import choose_scaling_intensities
 from dials.algorithms.scaling.outlier_rejection import reject_outliers
 logger = logging.getLogger('dials')
@@ -44,12 +44,15 @@ class ScalerFactory(object):
   @classmethod
   def filter_bad_reflections(cls, reflections):
     """Initial filter to select integrated reflections."""
+    reasons = Reasons()
     mask = ~reflections.get_flags(reflections.flags.integrated, all=False)
+    reasons.add_reason('not integrated', mask.count(True))
     if 'd' in reflections:
       d_mask = reflections['d'] <= 0.0
+      reasons.add_reason('bad d-value', d_mask.count(True))
       mask = mask | d_mask
     reflections.set_flags(mask, reflections.flags.excluded_for_scaling)
-    return reflections
+    return reflections, reasons
 
 class SingleScalerFactory(ScalerFactory):
   """Factory for creating a scaler for a single dataset."""
@@ -71,18 +74,18 @@ class SingleScalerFactory(ScalerFactory):
         'dataset is %s, and the scaling model type being applied is %s. \n' %
         (reflection_table['id'][0], experiment.scaling_model.id_))
 
-    reflection_table = cls.filter_bad_reflections(reflection_table)
+    reflection_table, reasons = cls.filter_bad_reflections(reflection_table)
     if params.scaling_options.verbosity > 1:
-      logger.info('%s reflections not suitable for scaling (bad d-value,\n'
-        'not integrated etc).\n', reflection_table.get_flags(
-        reflection_table.flags.excluded_for_scaling).count(True))
-
-    intstr = params.scaling_options.integration_method
-    reflection_table = choose_scaling_intensities(reflection_table, intstr)
+      logger.info('%s reflections not suitable for scaling',
+        reflection_table.get_flags(reflection_table.flags.excluded_for_scaling).count(True))
+      logger.info(reasons)
 
     if not 'inverse_scale_factor' in reflection_table:
       reflection_table['inverse_scale_factor'] = flex.double(
         reflection_table.size(), 1.0)
+
+    reflection_table = choose_scaling_intensities(reflection_table,
+      params.reflection_selection.intensity_choice)
 
     reflection_table = cls.filter_outliers(reflection_table, experiment,
       params)
@@ -107,12 +110,12 @@ class NullScalerFactory(ScalerFactory):
     """Return Null Scaler."""
     from dials.algorithms.scaling.scaler import NullScaler
     logger.info('Preprocessing target dataset for scaling. \n')
-    reflection = cls.filter_bad_reflections(reflection)
+    reflection, reasons = cls.filter_bad_reflections(reflection)
     variance_mask = reflection['variance'] <= 0.0
     reflection.set_flags(variance_mask, reflection.flags.excluded_for_scaling)
-    logger.info('%s reflections not suitable for scaling (bad d-value,\n'
-        'not integrated etc).\n', reflection.get_flags(
+    logger.info('%s reflections not suitable for scaling\n', reflection.get_flags(
         reflection.flags.excluded_for_scaling).count(True))
+    logger.info(reasons)
     return NullScaler(params, experiment, reflection, scaled_id)
 
 class MultiScalerFactory(object):

@@ -60,11 +60,10 @@ def make_detector():
   return d
 
 @pytest.mark.xfail(reason="dx,dy maps not loaded from json")
-def test_translate(dials_regression, tmpdir):
+def test_translate(dials_regression, run_in_tmpdir):
   """Test as written in https://github.com/dials/dials/issues/471. This
   is pretty slow!"""
 
-  tmpdir.chdir()
   dials_regression="~/sw/cctbx/modules/dials_regression"
 
   # use the i04_weak_data for this test
@@ -95,11 +94,9 @@ def test_translate(dials_regression, tmpdir):
   # FIXME finish test by comparing px to mm positions for det1, det2
 
 
-def test_elliptical_distortion(tmpdir):
+def test_elliptical_distortion(run_in_tmpdir):
   """Create distortion maps for elliptical distortion using a dummy datablock
   with a small detector, for speed. Check those maps seem sensible"""
-
-  tmpdir.chdir()
 
   # Make a detector model
   d = make_detector()
