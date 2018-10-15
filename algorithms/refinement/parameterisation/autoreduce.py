@@ -141,7 +141,7 @@ class AutoReduce(object):
     return uc_surpl(reflections["id"], reflections["miller_index"],
         p.get_experiment_ids(), F_dbdp).result - min_nref
 
-  # Special version of _surplus_reflections for multi-panel detector
+  # Special version of _surplus_reflections for hierarchical multi-panel detector
   # parameterisations. In that case, certain parameters affect only the
   # reflections that fall on a particular panel group of the detector.
   def _panel_gp_surplus_reflections(self, p, pnl_ids, group):
