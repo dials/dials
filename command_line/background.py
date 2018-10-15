@@ -57,7 +57,7 @@ def run(args):
   experiments = flatten_experiments(params.input.experiments)
   datablocks = flatten_datablocks(params.input.datablock)
   if [len(datablocks), len(experiments)].count(1) != 1:
-      self.parser.print_help()
+      parser.print_help()
       print("Please pass either a datablock or an experiment list\n")
       return
 
