@@ -60,8 +60,8 @@ phil_str = '''
     }
 
     scan_varying = False
-      .help = "Allow models that are not forced to be static to vary during the
-               scan"
+      .help = "Allow models that are not forced to be static to vary during the"
+              "scan"
       .type = bool
       .short_caption = "Scan-varying refinement"
 
