@@ -340,11 +340,19 @@ def data_from_unmerged_mtz(filename):
   from dxtbx.model import Crystal, Experiment, ExperimentList
 
   m = mtz.object(filename).crystals() # Parse MTZ, with lots of useful methods.
-
   # Get some data and turn it into a reflection table and experiment list.
   #First, the reflection table
-  cols = m[0].datasets()[0].columns()  # Gets column objects.
-  col_dict = {c.label(): c for c in cols}  # A dict of all the columns.
+  col_dict = {}
+  for crystal in m:
+    for dataset in crystal.datasets():
+      cols = dataset.columns()  # Gets column objects.
+      col_dict = {c.label(): c for c in cols}  # A dict of all the columns.
+      if col_dict:
+        break
+    if col_dict:
+      break
+  if not col_dict:
+    raise RuntimeError('Unable to read data from mtz file %s' % filename)
   h, k, l = (
     col_dict[label].extract_values().as_double().iround()
     for label in ('H', 'K', 'L')
