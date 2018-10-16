@@ -388,9 +388,11 @@ class AutoReduce(object):
         Sorry: error if only one single panel detector is present.
     """
 
-    # If there is only one detector, it should be multi-panel for remove to make sense
+    # If there is only one detector in a single experiment, the detector should
+    # be multi-panel for remove to make sense
     if len(self.det_params) == 1:
-      if not self.det_params[0].is_multi_state():
+      n_exp = len(self.det_params[0].get_experiment_ids())
+      if n_exp == 1 and not self.det_params[0].is_multi_state():
         raise Sorry("For single experiment, single panel refinement "
           "auto_reduction.action=remove cannot be used as it could only "
           "remove all reflections from refinement")
