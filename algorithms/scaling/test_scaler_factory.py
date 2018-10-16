@@ -14,7 +14,7 @@ from dials.algorithms.scaling.scaler_factory import SingleScalerFactory,\
 from dials.algorithms.scaling.scaler import SingleScalerBase,\
   MultiScaler, TargetScaler, NullScaler
 
-def generated_refl():
+def generated_refl(not_integrated=False):
   """Generate a test reflection table."""
   reflections = flex.reflection_table()
   reflections['intensity.prf.value'] = flex.double([1.0, 10.0, 100.0, 1.0])
@@ -30,8 +30,12 @@ def generated_refl():
     (0.0, 0.0, 5.0), (0.0, 0.0, 10.0), (0.0, 0.0, 10.0)])
   reflections['s1'] = flex.vec3_double([(0.0, 0.1, 1.0), (0.0, 0.1, 1.0),
     (0.0, 0.1, 1.0), (0.0, 0.1, 1.0)])
-  reflections.set_flags(flex.bool([True, True, False, False]),
-    reflections.flags.integrated)
+  if not_integrated:
+    reflections.set_flags(flex.bool([False, False, False, False]),
+      reflections.flags.integrated)
+  else:
+    reflections.set_flags(flex.bool([True, True, False, False]),
+      reflections.flags.integrated)
   reflections.set_flags(flex.bool([False, False, True, True]),
     reflections.flags.bad_for_scaling)
   return reflections
@@ -149,21 +153,6 @@ def test_SingleScalerFactory(generated_param, mock_exp, test_refl, refl_to_filte
   assert list(rt.get_flags(rt.flags.excluded_for_scaling)) == [False, True, True,
     False, False, False]
 
-
-  #Remove free set tests for now to get everything else working for multiproc.
-  '''# Now set the free set option and give an id
-  generated_param.scaling_options.use_free_set = True
-  ss = SingleScalerFactory.create(generated_param, mock_exp, test_refl,
-    scaled_id=1)
-  assert set(ss.reflection_table['id']) == set([1])
-  assert list(ss.Ih_table.free_set_sel) != []
-
-  # Nowflag that the single scaler is being created for a multiscaler -
-  # therefore the Ih table should not be split into a free set.
-  ss = SingleScalerFactory.create(generated_param, mock_exp, test_refl,
-    scaled_id=1, for_multi=True)
-  assert list(ss.Ih_table.free_set_sel) == []'''
-
 def test_TargetScalerFactory(generated_param, mock_explist_3exp, refl_list):
   """Test the target scaler factory."""
 
@@ -177,15 +166,6 @@ def test_TargetScalerFactory(generated_param, mock_explist_3exp, refl_list):
   assert set(target.single_scalers[0].reflection_table['id']) == set([0])
   assert set(target.single_scalers[1].reflection_table['id']) == set([1])
   assert set(target.unscaled_scalers[0].reflection_table['id']) == set([2])
-
-  #Remove free set tests for now to get everything else working for multiproc.
-  '''# Test initialisation with free set option - still should not cause free
-  # set splitting in single scalers.
-  generated_param.scaling_options.use_free_set = True
-  target = TargetScalerFactory.create(generated_param, mock_explist_3exp,
-    refl_list, is_scaled_list=[True, True, False])
-  assert list(target.single_scalers[0].Ih_table.free_set_sel) == []
-  assert list(target.single_scalers[1].Ih_table.free_set_sel) == []'''
 
   # Test for correct initialisation hen scaling against a target model.
   generated_param.scaling_options.target_model = True
@@ -209,11 +189,19 @@ def test_MultiScalerFactory(generated_param, mock_explist_3exp, refl_list):
   for i in range(3):
     assert set(multiscaler.single_scalers[i].reflection_table['id']) == set([i])
 
-  #Remove free set tests for now to get everything else working for multiproc.
-  '''generated_param.scaling_options.use_free_set = True
+  # This time make one dataset bad, and check it gets removed
+  r1 = generated_refl(not_integrated=True)
+  r2 = generated_refl()
+  r3 = generated_refl()
+  new_list = [r1, r2, r3]
   multiscaler = MultiScalerFactory.create(generated_param, mock_explist_3exp,
-    refl_list)
-  assert list(multiscaler.single_scalers[0].Ih_table.free_set_sel) == []'''
+    new_list)
+  assert isinstance(multiscaler, MultiScaler)
+  assert len(multiscaler.single_scalers) == 2
+  r1 = multiscaler.single_scalers[0].reflection_table
+  assert list(r1.get_flags(r1.flags.integrated)) == [True, True, False, False]
+  r2 = multiscaler.single_scalers[1].reflection_table
+  assert list(r2.get_flags(r2.flags.integrated)) == [True, True, False, False]
 
 def test_scaler_factory_helper_functions(mock_experimentlist, mock_exp,
   mock_explist_3exp, generated_param, test_refl, refl_list):

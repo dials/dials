@@ -17,7 +17,6 @@ from dials_scaling_ext import row_multiply
 from dials_scaling_ext import calc_sigmasq as cpp_calc_sigmasq
 #from libtbx import easy_mp
 from libtbx.table_utils import simple_table
-from libtbx.utils import Sorry
 from dials.array_family import flex
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.outlier_rejection import reject_outliers
@@ -32,7 +31,7 @@ from dials.algorithms.scaling.error_model.error_model_target import \
   ErrorModelTarget
 from dials.algorithms.scaling.parameter_handler import create_apm_factory
 from dials.algorithms.scaling.scaling_utilities import log_memory_usage, \
-  combine_intensities, Reasons, DialsMergingStatisticsError
+  combine_intensities, Reasons, DialsMergingStatisticsError, BadDatasetForScalingException
 
 logger = logging.getLogger('dials')
 
@@ -178,7 +177,10 @@ class ScalerBase(object):
     logger.info(msg)
     logger.info(reasons)
     if selection.count(True) == 0:
-      raise Sorry('No reflections pass all user-controllable selection criteria')
+      raise BadDatasetForScalingException(
+        """No reflections pass all user-controllable selection criteria""")
+      # This is only caught when initialising a scaler, not if subsequent
+      # selections cause no reflections to be left.
     return selection
 
   def perform_scaling(self, target_type=ScalingTarget, engine=None,

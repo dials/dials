@@ -6,7 +6,8 @@ from libtbx.utils import Sorry
 from dials.array_family import flex
 from dials.algorithms.scaling.scaler import MultiScaler, TargetScaler,\
   SingleScalerBase
-from dials.algorithms.scaling.scaling_utilities import quasi_normalisation, Reasons
+from dials.algorithms.scaling.scaling_utilities import quasi_normalisation, \
+  Reasons, BadDatasetForScalingException
 from dials.algorithms.scaling.scaling_library import choose_scaling_intensities
 from dials.algorithms.scaling.outlier_rejection import reject_outliers
 logger = logging.getLogger('dials')
@@ -75,11 +76,16 @@ class SingleScalerFactory(ScalerFactory):
         (reflection_table['id'][0], experiment.scaling_model.id_))
 
     reflection_table, reasons = cls.filter_bad_reflections(reflection_table)
-    if params.scaling_options.verbosity > 1:
+    n_excluded = reflection_table.get_flags(
+      reflection_table.flags.excluded_for_scaling).count(True)
+    if n_excluded == reflection_table.size():
+      logger.info("All reflections were determined to be unsuitable for scaling.")
+      logger.info(reasons)
+      raise BadDatasetForScalingException("""Unable to use this dataset for scaling""")
+    elif params.scaling_options.verbosity > 1:
       logger.info('%s reflections not suitable for scaling',
         reflection_table.get_flags(reflection_table.flags.excluded_for_scaling).count(True))
       logger.info(reasons)
-
     if not 'inverse_scale_factor' in reflection_table:
       reflection_table['inverse_scale_factor'] = flex.double(
         reflection_table.size(), 1.0)
@@ -127,9 +133,25 @@ class MultiScalerFactory(object):
     single_scalers = []
     if not dataset_ids:
       dataset_ids = range(len(reflections))
-    for (data_id, reflection, experiment) in zip(dataset_ids, reflections, experiments):
-      single_scalers.append(SingleScalerFactory.create(
-        params, experiment, reflection, scaled_id=data_id, for_multi=True))
+    # Important!! - if deleting an experiment, need to delete it before creating
+    # a scaling model, hence the unusual looping below
+    offset = 0
+    for i in range(len(dataset_ids)): # order in experimentlist if dataset_ids specified
+      # Remove bad datasets that literally have no integrated reflections
+      try:
+        scaler = SingleScalerFactory.create(
+          params, experiments[i-offset], reflections[i-offset],
+          scaled_id=dataset_ids[i-offset], for_multi=True)
+        single_scalers.append(scaler)
+      except BadDatasetForScalingException as e:
+        logger.info(e)
+        logger.info('Removing experiment ' + str(i) +'\n' + '='*80 + '\n')
+        del experiments[i - offset]
+        del reflections[i - offset]
+        del dataset_ids[i - offset]
+        offset += 1
+    assert len(experiments) == len(single_scalers)
+    assert len(experiments) == len(reflections)
     return MultiScaler(params, experiments, single_scalers)
 
   @classmethod

@@ -34,6 +34,11 @@ except ImportError:
     pass
 
 class DialsMergingStatisticsError(Exception):
+  """Raised when iotbx merging statistics fails."""
+  pass
+
+class BadDatasetForScalingException(Exception):
+  """Raised when a selection leaves no further good reflections."""
   pass
 
 class Reasons(object):
