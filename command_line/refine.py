@@ -114,6 +114,12 @@ phil_scope = parse('''
       .expert_level = 1
   }
 
+  do_scan_varying_macrocycle = False
+    .type = bool
+    .help = "Override whatever scan_varying is set to and force one round of"
+            "static refinement followed by one round of scan-varying refinement"
+    .expert_level = 3
+
   include scope dials.algorithms.refinement.refiner.phil_scope
 ''', process_includes=True)
 
@@ -270,7 +276,7 @@ class Script(object):
     if params.output.correlation_plot.filename is not None:
       params.refinement.refinery.journal.track_parameter_correlation = True
     do_sv_macrocycle = False
-    if params.refinement.parameterisation.scan_varying is Auto:
+    if params.do_scan_varying_macrocycle:
       params.refinement.parameterisation.scan_varying = False
       do_sv_macrocycle = True
 
