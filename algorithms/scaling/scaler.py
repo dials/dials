@@ -50,6 +50,7 @@ class ScalerBase(object):
     self._initial_keys = []
     self._basis_function = basis_function(curvatures=False)
     self._final_rmsds = []
+    self._removed_datasets = []
 
   @property
   def final_rmsds(self):
@@ -59,6 +60,10 @@ class ScalerBase(object):
   @final_rmsds.setter
   def final_rmsds(self, new_rmsds):
     self._final_rmsds = new_rmsds
+
+  @property
+  def removed_datasets(self):
+    return self._removed_datasets
 
   @property
   def Ih_table(self):
@@ -179,8 +184,6 @@ class ScalerBase(object):
     if selection.count(True) == 0:
       raise BadDatasetForScalingException(
         """No reflections pass all user-controllable selection criteria""")
-      # This is only caught when initialising a scaler, not if subsequent
-      # selections cause no reflections to be left.
     return selection
 
   def perform_scaling(self, target_type=ScalingTarget, engine=None,
@@ -520,6 +523,21 @@ class MultiScalerBase(ScalerBase):
     self._experiments = experiments[0]
     self.verbosity = params.scaling_options.verbosity
 
+  def remove_datasets(self, scalers, n_list):
+    """Delete a scaler from the dataset. Code in this module does not necessarily
+    have access to all references of experiments and reflections, so log the
+    position in the list so that they can be deleted later. Scaling algorithm
+    code should only depends on the scalers."""
+    initial_number = len(scalers)
+    n_already_removed = len(self._removed_datasets)
+    for n in n_list[::-1]:
+      del scalers[n]
+      self._removed_datasets.append(n + n_already_removed)
+    if 0 in n_list:
+      self._experiments = scalers[0].experiments
+    assert len(scalers) == initial_number - len(n_list)
+    logger.info("Removed datasets: %s" % n_list)
+
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
     if self.verbosity <= 1 and calc_cov:
       logger.info('Calculating error estimates of inverse scale factors. \n')
@@ -690,9 +708,15 @@ class MultiScaler(MultiScalerBase):
     self.expand_scales_to_all_reflections()
     self.round_of_outlier_rejection()
     if make_ready_for_scaling:
-      for scaler in self.active_scalers:
-        scaler.scaling_selection = scaler._scaling_subset(
-          scaler.reflection_table, scaler.params)
+      datasets_to_remove = []
+      for i, scaler in enumerate(self.active_scalers):
+        try:
+          scaler.scaling_selection = scaler._scaling_subset(
+            scaler.reflection_table, scaler.params)
+        except BadDatasetForScalingException:
+          datasets_to_remove.append(i)
+      if datasets_to_remove:
+        self.remove_datasets(self.active_scalers, datasets_to_remove)
       self.create_Ih_table()
       self.reselect_reflections_for_scaling()
 
@@ -782,9 +806,15 @@ class TargetScaler(MultiScalerBase):
     self.expand_scales_to_all_reflections()
     self.round_of_outlier_rejection()
     if make_ready_for_scaling:
-      for scaler in self.unscaled_scalers:
-        scaler.scaling_selection = scaler._scaling_subset(
-          scaler.reflection_table, scaler.params)
+      datasets_to_remove = []
+      for i, scaler in enumerate(self.unscaled_scalers):
+        try:
+          scaler.scaling_selection = scaler._scaling_subset(
+            scaler.reflection_table, scaler.params)
+        except BadDatasetForScalingException:
+          datasets_to_remove.append(i)
+      if datasets_to_remove:
+        self.remove_datasets(self.unscaled_scalers, datasets_to_remove)
       self.initialise_targeted_Ih_table()
       self.reselect_reflections_for_scaling()
 

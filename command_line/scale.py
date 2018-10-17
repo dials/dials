@@ -287,6 +287,13 @@ class Script(object):
 
     self.scaler = create_scaler(self.params, self.experiments, self.reflections)
     self.scaler = self.scaling_algorithm(self.scaler)
+    #remove any bad datasets:
+    if self.scaler.removed_datasets:
+      s = sorted(self.scaler.removed_datasets)
+      logger.info('deleting removed datasets from memory: %s' % s)
+      for i in s[::-1]:
+        del self.reflections[i]
+        del self.experiments[i]
 
   def scaled_data_as_miller_array(self, crystal_symmetry, reflection_table=None,
     anomalous_flag=False):

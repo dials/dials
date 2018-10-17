@@ -157,10 +157,11 @@ class MultiScalerFactory(object):
   @classmethod
   def create_from_targetscaler(cls, targetscaler):
     '''method to pass scalers from TargetScaler to a MultiScaler'''
-    single_scalers = targetscaler.single_scalers
+    single_scalers = []
     for scaler in targetscaler.unscaled_scalers:
       scaler.select_reflections_for_scaling(for_multi=True)
       single_scalers.append(scaler)
+    single_scalers.extend(targetscaler.single_scalers)
     return MultiScaler(targetscaler.params, [targetscaler.experiments], single_scalers)
 
 class TargetScalerFactory(object):

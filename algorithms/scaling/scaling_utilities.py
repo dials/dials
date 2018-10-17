@@ -9,6 +9,7 @@ import copy
 from math import pi, acos
 from dials.array_family import flex
 from libtbx.table_utils import simple_table
+from libtbx.utils import Sorry
 import iotbx.merging_statistics
 from cctbx import miller
 from cctbx import uctbx
@@ -112,6 +113,9 @@ def assign_unique_identifiers(experiments, reflections):
   experiments have identifiers, these will be maintined, and the other
   experiments will be given string ids of increasing integers, but skipping
   already existing values."""
+  if len(experiments) != len(reflections):
+    raise Sorry('''This function must take in a list of experiments and reflection
+tables of equal length''')
   used_ids = []
   for exp, refl in zip(experiments, reflections):
     if exp.identifier != '':
