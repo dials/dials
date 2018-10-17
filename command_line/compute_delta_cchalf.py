@@ -50,7 +50,7 @@ phil_scope = parse('''
       .type = str
       .help = "The filtered experiments file"
 
-    reflections = "filtered_reflections.json"
+    reflections = "filtered_reflections.pickle"
       .type = str
       .help = "The filtered reflections file"
   }
@@ -66,6 +66,10 @@ phil_scope = parse('''
   dmax = None
     .type = float
     .help = "The minimum resolution"
+
+  stdcutoff = 4.0
+    .type = float
+    .help = "Datasets with a delta cc half below (mean - stdcutoff*std) are removed"
 
   output {
 
@@ -295,9 +299,13 @@ class Script(object):
     sdev = sqrt(sum((yy-mean)**2 for yy in Y)/len(Y))
     output_experiments = ExperimentList()
     output_reflections = reflections
+    print("\nmean delta_cc_half %s" % (mean*100))
+    print("stddev delta_cc_half %s" % (sdev*100))
+    cutoff_value = mean - params.stdcutoff*sdev
+    print("cutoff value: %s \n" % (cutoff_value*100))
     for x in sorted(delta_cchalf_i.keys()):
       y = delta_cchalf_i[x]
-      if y < mean - 4*sdev:
+      if y < cutoff_value:
         print("Removing dataset %d" % x)
         output_reflections.del_selected(output_reflections['id'] == x)
         selection = output_reflections['id'] > x
