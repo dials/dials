@@ -45,12 +45,14 @@ class SpotFrame(XrayFrame) :
     if self.datablock is not None:
       self.imagesets = self.datablock.extract_imagesets()
       self.crystals = None
-    elif len(self.experiments.imagesets()) > 0:
-      assert(len(self.experiments.imagesets()) == 1)
-      self.imagesets = self.experiments.imagesets()
-      self.crystals = self.experiments.crystals()
     else:
-      raise RuntimeError("No imageset could be constructed")
+      self.imagesets = []
+      self.crystals = []
+      for expt_list in self.experiments:
+        self.imagesets.extend(expt_list.imagesets())
+        self.crystals.extend(expt_list.crystals())
+      if len(self.imagesets) == 0:
+        raise RuntimeError("No imageset could be constructed")
 
     self.reflections = kwds["reflections"]
     del kwds["datablock"]; del kwds["experiments"]; del kwds["reflections"] #otherwise wx complains
@@ -1126,7 +1128,21 @@ class SpotFrame(XrayFrame) :
     self.prediction_colours = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3",
                                "#ff7f00", "#ffff33", "#a65628", "#f781bf",
                                "#999999"] * 10
-    for ref_list in self.reflections:
+    for ref_list_id, ref_list in enumerate(self.reflections):
+      if len(self.experiments) > 0:
+        experiments = self.experiments[ref_list_id]
+        expt_ids = flex.int()
+        for expt_id, experiment in enumerate(experiments):
+          if experiment.imageset == imageset:
+            expt_ids.append(expt_id)
+        if len(expt_ids) > 0:
+          sel = flex.bool(len(ref_list), False)
+          for expt_id in expt_ids:
+            sel |= ref_list['id'] == expt_id
+          ref_list = ref_list.select(sel)
+          if len(ref_list) == 0: continue
+        else: continue
+
       if self.settings.show_indexed:
         indexed_sel = ref_list.get_flags(ref_list.flags.indexed,
                                             all=False)
@@ -1355,24 +1371,25 @@ class SpotFrame(XrayFrame) :
   def predict(self):
     from dxtbx.model.experiment_list import ExperimentList
     predicted_all = []
-    for i_expt, expt in enumerate(self.experiments):
-      imageset = self.imagesets[0]
-
-      # Populate the reflection table with predictions
-      params = self.params.prediction
-      predicted = flex.reflection_table.from_predictions(
-        expt,
-        force_static=params.force_static,
-        dmin=params.d_min
-      )
-      predicted['id'] = flex.int(len(predicted), i_expt)
-      if expt.profile is not None:
-        expt.profile.params = self.params.profile
-      try:
-        predicted.compute_bbox(ExperimentList([expt]))
-      except Exception:
-        pass
-      predicted_all.append(predicted)
+    for experiments in self.experiments:
+      this_predicted = flex.reflection_table()
+      for i_expt, expt in enumerate(experiments):
+        # Populate the reflection table with predictions
+        params = self.params.prediction
+        predicted = flex.reflection_table.from_predictions(
+          expt,
+          force_static=params.force_static,
+          dmin=params.d_min
+        )
+        predicted['id'] = flex.int(len(predicted), i_expt)
+        if expt.profile is not None:
+          expt.profile.params = self.params.profile
+        try:
+          predicted.compute_bbox(ExperimentList([expt]))
+        except Exception:
+          pass
+        this_predicted.extend(predicted)
+      predicted_all.append(this_predicted)
 
     return predicted_all
 
