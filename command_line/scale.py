@@ -320,6 +320,16 @@ class Script(object):
         reflection_table.flags.bad_for_scaling, all=False)
       joint_table = reflection_table.select(good_refl_sel)
 
+    # Filter out negative scale factors to avoid merging statistics errors.
+    # These are not removed from the output data, as it is likely one would
+    # want to do further analysis e.g. delta cc1/2 and rescaling, to exclude
+    # certain data and get better scale factors for all reflections.
+    pos_scales = joint_table['inverse_scale_factor'] > 0
+    if pos_scales.count(False) > 0:
+      logger.info("""There are %s reflections with non-positive scale factors which
+will not be used for calculating merging statistics""")
+      joint_table = joint_table.select(pos_scales)
+
     miller_set = miller.set(crystal_symmetry=crystal_symmetry,
       indices=joint_table['miller_index'], anomalous_flag=anomalous_flag)
     i_obs = miller.array(
