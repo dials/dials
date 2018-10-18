@@ -140,6 +140,7 @@ def create_scaling_model(params, experiments, reflections):
     for entry_point in pkg_resources.iter_entry_points('dxtbx.scaling_model_ext'):
       if entry_point.name == params.model:
         factory = entry_point.load().factory()
+        break
     if not factory:
       raise Sorry('Unable to create scaling model of type %s' % params.model)
     for i, (exp, refl) in enumerate(zip(experiments, reflections)):

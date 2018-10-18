@@ -41,7 +41,7 @@ class PhysicalSMFactory(object):
     configdict = OrderedDict({'corrections':[]})
     parameters_dict = {}
 
-    osc_range = osc_range_check_for_user_excluded(experiments, reflections)
+    osc_range = experiments.scan.get_oscillation_range()
     one_osc_width = experiments.scan.get_oscillation()[1]
     configdict.update({'valid_osc_range' : osc_range})
 
@@ -111,6 +111,7 @@ def calc_n_param_from_bins(value_min, value_max, n_bins):
 
 def osc_range_check_for_user_excluded(experiments, reflections):
   """Determine the oscillation range, allowing for user excluded range."""
+  #FIXME this is incorrect, replace with proper batch handling
   osc_range = experiments.scan.get_oscillation_range()
   one_osc_width = experiments.scan.get_oscillation()[1]
   user_excluded = reflections.get_flags(

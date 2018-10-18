@@ -267,11 +267,12 @@ def test_scale_script_prepare_input():
   assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [
     True, False, False, False]
 
+@pytest.mark.skip(reason='Feature currently broken')
+def test_scale_script_prepare_input_exclude_images():
   params, exp, reflections = generate_test_input(n=1)
   reflections[0]['xyzobs.px.value'] = flex.vec3_double([(0, 0, 0.5), (0, 0, 2.5),
     (0, 0, 4.5), (0, 0, 6.5)])
   params.cut_data.exclude_image_range = [0.0, 3.0]
-  #print(params.cut_data.exclude_image_range)
   script = Script(params, exp, reflections)
   script.prepare_input()
   r = script.reflections[0]
@@ -282,7 +283,6 @@ def test_scale_script_prepare_input():
   script = Script(params, exp, reflections)
   with pytest.raises(Sorry):
     script.prepare_input()
-
 
 @pytest.mark.dataset_test
 def test_scale_physical(dials_regression, tmpdir):

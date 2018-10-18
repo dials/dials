@@ -267,6 +267,7 @@ class Script(object):
           reflection.flags.user_excluded_in_scaling)
 
     if self.params.cut_data.exclude_image_range:
+      raise NotImplementedError('Excluding image range currently unavailable')
       if len(self.reflections) == 1:
         start_excl = self.params.cut_data.exclude_image_range[0]
         end_excl = self.params.cut_data.exclude_image_range[1]
