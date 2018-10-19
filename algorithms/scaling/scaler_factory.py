@@ -174,18 +174,39 @@ class TargetScalerFactory(object):
     unscaled_scalers = []
     if not dataset_ids:
       dataset_ids = range(len(reflections))
-    for i, (experiment, reflection) in enumerate(zip(experiments, reflections)):
+    # Important!! - if deleting an experiment, need to delete it before creating
+    # a scaling model, hence the unusual looping below
+    offset = 0
+    for i in range(len(dataset_ids)):
       if is_scaled_list[i] is True:
         if params.scaling_options.target_model or params.scaling_options.target_mtz:
-          scaled_experiments.append(experiment)
-          scaled_scalers.append(NullScalerFactory.create(params, experiment,
-            reflection, scaled_id=dataset_ids[i]))
+          scaled_experiments.append(experiments[i-offset])
+          scaled_scalers.append(NullScalerFactory.create(params, experiments[i-offset],
+            reflections[i-offset], scaled_id=dataset_ids[i-offset]))
         else:
-          scaled_experiments.append(experiment)
-          scaled_scalers.append(SingleScalerFactory.create(params, experiment,
-            reflection, scaled_id=dataset_ids[i], for_multi=True))
+          try:
+            scaled_scalers.append(SingleScalerFactory.create(params, experiments[i-offset],
+              reflections[i-offset], scaled_id=dataset_ids[i-offset], for_multi=True))
+            scaled_experiments.append(experiments[i-offset])
+          except BadDatasetForScalingException as e:
+            logger.info(e)
+            logger.info('Removing experiment ' + str(i) +'\n' + '='*80 + '\n')
+            del experiments[i - offset]
+            del reflections[i - offset]
+            del dataset_ids[i - offset]
+            offset += 1
       else:
-        unscaled_scalers.append(SingleScalerFactory.create(params, experiment,
-          reflection, scaled_id=dataset_ids[i], for_multi=True))
+        try:
+          unscaled_scalers.append(SingleScalerFactory.create(params, experiments[i-offset],
+            reflections[i-offset], scaled_id=dataset_ids[i-offset], for_multi=True))
+        except BadDatasetForScalingException as e:
+          logger.info(e)
+          logger.info('Removing experiment ' + str(i) +'\n' + '='*80 + '\n')
+          del experiments[i - offset]
+          del reflections[i - offset]
+          del dataset_ids[i - offset]
+          offset += 1
+    assert len(experiments) == len(scaled_scalers) + len(unscaled_scalers)
+    assert len(experiments) == len(reflections)
     return TargetScaler(params, scaled_experiments, scaled_scalers,
       unscaled_scalers)
