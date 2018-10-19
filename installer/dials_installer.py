@@ -3,8 +3,9 @@ from __future__ import absolute_import, division, print_function
 import os
 import shutil
 import sys
-libtbx_path = os.path.join(
-  os.path.abspath(os.path.dirname(os.path.dirname(__file__))), "lib")
+
+installer_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+libtbx_path = os.path.join(installer_path, "lib")
 if libtbx_path not in sys.path:
   sys.path.append(libtbx_path)
 from libtbx.auto_build import install_distribution
@@ -16,7 +17,7 @@ class installer(install_distribution.installer):
   configure_modules = ["dials", "xia2", "iota", "prime"]
   include_gui_packages = True
   base_package_options = ["--dials"]
-  installer_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+  installer_dir = installer_path
   modules = [
     # hot
     'annlib',
@@ -42,6 +43,15 @@ class installer(install_distribution.installer):
     flags.remove('create_versioned_dispatchers')
   except ValueError:
     pass
+
+  def product_specific_preinstallation_hook(self):
+    prefix = os.path.abspath(self.options.prefix)
+    if prefix.startswith(installer_path):
+      sys.exit("Invalid installation option: --prefix={givenprefix}\n\n"
+               "Please install DIALS to a location outside of the installer directory.\n"
+               "Suggested alternative: --prefix={suggestedprefix}".format(
+          givenprefix=self.options.prefix,
+          suggestedprefix=os.path.dirname(prefix)))
 
   def product_specific_prepackage_hook(self, directory):
     """
