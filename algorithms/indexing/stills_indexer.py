@@ -311,7 +311,7 @@ class stills_indexer(indexer_base):
         from dials.algorithms.refinement.prediction.managed_predictors import ExperimentsPredictorFactory
         refined_experiments, refined_reflections = experiments, reflections_for_refinement
         ref_predictor = ExperimentsPredictorFactory.from_experiments(
-            experiments, do_stills=True, spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
+            experiments, force_stills=True, spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
         ref_predictor(refined_reflections)
         refined_reflections['delpsical2'] = refined_reflections['delpsical.rad']**2
         for expt_id in range(len(refined_experiments)):
@@ -321,7 +321,7 @@ class stills_indexer(indexer_base):
                                reflections=refls, refinery=None, graph_verbose=False)
           experiments[expt_id].crystal = nv()
         ref_predictor = ExperimentsPredictorFactory.from_experiments(
-          experiments, do_stills=True, spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
+          experiments, force_stills=True, spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
         ref_predictor(refined_reflections)
 
       else:
@@ -553,7 +553,7 @@ class stills_indexer(indexer_base):
       else:
         from dials.algorithms.refinement.prediction.managed_predictors import ExperimentsPredictorFactory
         ref_predictor = ExperimentsPredictorFactory.from_experiments(
-            experiments, do_stills=True, spherical_relp=params.refinement.parameterisation.spherical_relp_model)
+            experiments, force_stills=True, spherical_relp=params.refinement.parameterisation.spherical_relp_model)
         rmsd, _ = calc_2D_rmsd_and_displacements(ref_predictor(indexed))
         candidates.append(candidate_info(crystal = cm,
                                          n_indexed = len(indexed),
