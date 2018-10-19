@@ -50,8 +50,8 @@ def test_basis_function(small_reflection_table):
   slist, dlist, clist = basis_fn.calc_component_scales_derivatives(apm, 0)
   # Now test that the inverse scale factor is correctly calculated.
   calculated_sfs = s
-  assert list(calculated_sfs) == list(new_S * flex.exp(new_B/
-    (2.0*(decay.d_values[0]**2))))
+  assert list(calculated_sfs) == pytest.approx(list(new_S * flex.exp(new_B/
+    (2.0*(decay.d_values[0]**2)))))
 
   # Now check that the derivative matrix is correctly calculated.
   calc_derivs = d
