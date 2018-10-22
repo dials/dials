@@ -1148,8 +1148,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     if experiments is not None:
       if len(identifiers) > 0:
         assert len(identifiers) == len(experiments), (len(identifiers), len(experiments))
-        for i in range(len(experiments)):
-          assert identifiers[i] == experiments[i].identifier, (identifiers[i], experiments[i].identifier)
+        assert len(identifiers) == len(set(experiments.identifiers()))
+        for experiment in experiments:
+          assert experiment.identifier in identifiers.values(), (experiment.identifier)
 
   def are_experiment_identifiers_consistent(self, experiments=None):
     '''
