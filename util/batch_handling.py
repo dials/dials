@@ -52,6 +52,7 @@ def _calculate_batch_offsets(experiments):
       batch_offsets[i] = ilow-experiment.image_range[0]
       existing_ranges.add((ilow, ihigh))
       maximum_batch_number = max(maximum_batch_number, ihigh)
+      experiment.batch_offset = ilow-experiment.image_range[0]
   # Now handle all the experiments that overlapped by pushing them higher
   for i, experiment in experiments_to_shift:
     start_number = _next_epoch(maximum_batch_number)

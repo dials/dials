@@ -302,6 +302,17 @@ def export_mtz(integrated_data, experiment_list, params):
   '''Export data from integrated_data corresponding to experiment_list to an
   MTZ file hklout.'''
 
+  #First get the experiment identifier information out of the data
+  expids_in_table = integrated_data.experiment_identifiers()
+  if not list(expids_in_table.keys()):
+    from dials.algorithms.scaling.scaling_utilities import assign_unique_identifiers
+    experiment_list, refl_list = assign_unique_identifiers(
+      experiment_list, [integrated_data])
+    integrated_data = refl_list[0]
+    expids_in_table = integrated_data.experiment_identifiers()
+  assert integrated_data.are_experiment_identifiers_consistent(experiment_list)
+  expids_in_list = list(experiment_list.identifiers())
+
   # Convert experiment_list to a real python list or else identity assumptions
   # fail like:
   #   assert experiment_list[0] is experiment_list[0]
@@ -335,7 +346,6 @@ def export_mtz(integrated_data, experiment_list, params):
   for experiment in experiment_list:
     assign_image_range_to_experiment(experiment)
 
-
   batch_offsets = flex.int(
     expt.scan.get_batch_offset() if expt.scan else 0 for expt in experiment_list)
   if batch_offsets.all_eq(0):
@@ -365,9 +375,12 @@ def export_mtz(integrated_data, experiment_list, params):
   # ✓ decide a sensible BATCH increment to apply to the BATCH value between
   #   experiments and add this
 
-  for experiment_index, experiment in enumerate(experiment_list):
+  for id_ in expids_in_table.keys():
     # Grab our subset of the data
-    experiment.data = dict(integrated_data.select(integrated_data["id"] == experiment_index))
+    loc = expids_in_list.index(expids_in_table[id_]) #get strid and use to find loc in list
+    experiment = experiment_list[loc]
+    experiment.data = dict(integrated_data.select(
+      integrated_data["id"] == id_))
 
     # Do any crystal transformations for the experiment
     cb_op_to_ref = experiment.crystal.get_space_group().info(
@@ -380,15 +393,13 @@ def export_mtz(integrated_data, experiment_list, params):
     logger.debug('Beam vector: %.4f %.4f %.4f' % s0n)
 
     for i in range(experiment.image_range[0], experiment.image_range[1]+1):
-      _add_batch(mtz_file, experiment,
-        batch_number=i+batch_offsets[experiment_index],#experiment.batch_offset,#scan.get_batch_offset(),
-        image_number=i,
-        force_static_model=params.mtz.force_static_model)
+      _add_batch(mtz_file, experiment, batch_number=i+experiment.batch_offset,
+        image_number=i, force_static_model=params.mtz.force_static_model)
 
     # Create the batch offset array. This gives us an experiment (id)-dependent
     # batch offset to calculate the correct batch from image number.
     experiment.data["batch_offset"] = flex.int(len(experiment.data["id"]),
-      batch_offsets[experiment_index])#experiment.batch_offset)#scan.get_batch_offset())
+      experiment.batch_offset)
 
     # Calculate whether we have a ROT value for this experiment, and set the column
     _, _, z = experiment.data['xyzcal.px'].parts()
