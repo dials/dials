@@ -1151,3 +1151,12 @@ def test_experiment_identifiers():
   assert table.experiment_identifiers()[3] == 'mnop'
   assert table.experiment_identifiers()[4] == 'qrst'
 
+  new_table = table.select(flex.size_t([0, 2]))
+  assert len(table.experiment_identifiers()) == 5
+  assert table.experiment_identifiers()[0] == 'abcd'
+  assert table.experiment_identifiers()[1] == 'efgh'
+  assert table.experiment_identifiers()[2] == 'ijkl'
+  assert table.experiment_identifiers()[3] == 'mnop'
+  assert table.experiment_identifiers()[4] == 'qrst'
+  
+
