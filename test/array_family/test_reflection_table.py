@@ -1107,6 +1107,7 @@ def test_experiment_identifiers():
     table.assert_experiment_identifiers_are_consistent(experiments)
 
   experiments[2].identifier = "mnop"
+  table.assert_experiment_identifiers_are_consistent(experiments)
 
   identifiers = table.experiment_identifiers()
   identifiers[0] = 'abcd'
