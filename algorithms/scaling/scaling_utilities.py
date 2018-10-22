@@ -114,8 +114,14 @@ def assign_unique_identifiers(experiments, reflections):
   experiments will be given string ids of increasing integers, but skipping
   already existing values."""
   if len(experiments) != len(reflections):
-    raise Sorry('''This function must take in a list of experiments and reflection
-tables of equal length''')
+    if len(reflections) == 1: #try to split this table into a list
+      reflections, _ = parse_multiple_datasets(reflections)
+      assert len(reflections) == len(experiments), """Unable to split single reflection table
+to be the same length as the experiments list."""
+    else:
+      raise Sorry('''This function must take in a list of experiments and reflection
+tables of equal length (or a composite single reflection table and corresponding
+experiment list that matches number of tables once split).''')
   used_ids = []
   for exp, refl in zip(experiments, reflections):
     if exp.identifier != '':
