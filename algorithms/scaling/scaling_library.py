@@ -267,6 +267,9 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
   else:
     assert 0, """Unrecognised intensities in mtz file."""
 
+  r_t['d'] = miller.set(crystal_symmetry=crystal.symmetry(
+    space_group=m.space_group(), unit_cell=m.crystals()[0].unit_cell()),
+    indices=r_t['miller_index']).d_spacings().data()
   r_t.set_flags(flex.bool(r_t.size(), True), r_t.flags.integrated)
   exp = deepcopy(experiments[0]) #copy exp for space group -
     #any other necessary reason or can this attribute be added?
