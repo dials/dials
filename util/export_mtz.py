@@ -308,7 +308,9 @@ def export_mtz(integrated_data, experiment_list, params):
     from dials.algorithms.scaling.scaling_utilities import assign_unique_identifiers
     experiment_list, refl_list = assign_unique_identifiers(
       experiment_list, [integrated_data])
-    integrated_data = refl_list[0]
+    integrated_data = flex.reflection_table()
+    for reflections in refl_list:
+      integrated_data.extend(reflections)
     expids_in_table = integrated_data.experiment_identifiers()
   assert integrated_data.are_experiment_identifiers_consistent(experiment_list)
   expids_in_list = list(experiment_list.identifiers())
