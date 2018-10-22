@@ -601,6 +601,58 @@ namespace dials { namespace af { namespace boost_python {
       }
     }
   }
+  
+  /**
+   * Select a number of rows from the table via an index array
+   * @param self The current table
+   * @param index The index array
+   * @returns The new table with the requested rows
+   */
+  template <typename T>
+  T reflection_table_select_rows_index(const T &self, const af::const_ref<std::size_t> &index) {
+    T result = flex_table_suite::select_rows_index<T>(self, index);
+    reflection_table_extend_identifiers(result, self);
+    return result;
+  }
+
+  /**
+   * Select a number of rows from the table via an index array
+   * @param self The current table
+   * @param flags The flag array
+   * @returns The new table with the requested rows
+   */
+  template <typename T>
+  T reflection_table_select_rows_flags(const T &self, const af::const_ref<bool> &flags) {
+    T result = flex_table_suite::select_rows_flags<T>(self, flags);
+    reflection_table_extend_identifiers(result, self);
+    return result;
+  }
+
+  /**
+   * Select a number of columns from the table via an key array
+   * @param self The current table
+   * @param keys The key array
+   * @returns The new table with the requested columns
+   */
+  template <typename T>
+  T reflection_table_select_cols_keys(const T &self, const af::const_ref<std::string> &keys) {
+    T result = flex_table_suite::select_cols_keys<T>(self, keys);
+    reflection_table_extend_identifiers(result, self);
+    return result;
+  }
+
+  /**
+   * Select a number of columns from the table via an key array
+   * @param self The current table
+   * @param keys The key array
+   * @returns The new table with the requested columns
+   */
+  template <typename T>
+  T reflection_table_select_cols_tuple(const T &self, boost::python::tuple keys) {
+    T result = flex_table_suite::select_cols_tuple<T>(self, keys);
+    reflection_table_extend_identifiers(result, self);
+    return result;
+  }
 
   /**
    * Extend the reflection table
@@ -938,6 +990,10 @@ namespace dials { namespace af { namespace boost_python {
           &compute_phi_range<flex_table_type>)
         .def("experiment_identifiers",
           &T::experiment_identifiers)
+        .def("select", &reflection_table_select_rows_index<flex_table_type>)
+        .def("select", &reflection_table_select_rows_flags<flex_table_type>)
+        .def("select", &reflection_table_select_cols_keys<flex_table_type>)
+        .def("select", &reflection_table_select_cols_tuple<flex_table_type>)
         .def("extend",
           reflection_table_extend)
         .def("update",
