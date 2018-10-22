@@ -312,7 +312,7 @@ def export_mtz(integrated_data, experiment_list, params):
     for reflections in refl_list:
       integrated_data.extend(reflections)
     expids_in_table = integrated_data.experiment_identifiers()
-  assert integrated_data.are_experiment_identifiers_consistent(experiment_list)
+  integrated_data.assert_experiment_identifiers_are_consistent(experiment_list)
   expids_in_list = list(experiment_list.identifiers())
 
   # Convert experiment_list to a real python list or else identity assumptions
