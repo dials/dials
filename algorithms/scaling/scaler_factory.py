@@ -63,8 +63,8 @@ class SingleScalerFactory(ScalerFactory):
     """Perform reflection_table preprocessing and create a SingleScaler."""
 
     if experiment.identifier:
-      assert experiment.identifier == \
-        reflection_table.experiment_identifiers().values()[0]
+      assert experiment.identifier in \
+        reflection_table.experiment_identifiers().values()
       if params.scaling_options.verbosity > 1:
         logger.info('The experiment identifier for this dataset is %s',
           experiment.identifier)
