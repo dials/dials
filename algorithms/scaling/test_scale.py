@@ -202,8 +202,10 @@ def test_scale_script_prepare_input():
   reflections[0].experiment_identifiers()[0] = '0'
   exp[1].identifier = '1'
   reflections[1].experiment_identifiers()[0] = '1'
-  assert reflections[0].are_experiment_identifiers_consistent([exp[0]])
-  assert reflections[1].are_experiment_identifiers_consistent([exp[1]])
+  list1 = ExperimentList().append(exp[0])
+  list2 = ExperimentList().append(exp[1])
+  assert reflections[0].are_experiment_identifiers_consistent(list1)
+  assert reflections[1].are_experiment_identifiers_consistent(list2)
   params.dataset_selection.use_datasets = ['0']
   script = Script(params, exp, reflections)
   script.prepare_input()
