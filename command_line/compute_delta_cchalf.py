@@ -53,7 +53,11 @@ phil_scope = parse('''
     reflections = "filtered_reflections.pickle"
       .type = str
       .help = "The filtered reflections file"
-  }
+
+    table = "delta_cchalf.dat"
+      .type = str
+      .help = "A file with delta cchalf values"
+  } 
 
   nbins = 10
     .type = int(value_min=1)
@@ -171,6 +175,9 @@ class Script(object):
     for i in sorted_index:
       print("Dataset: %d, Delta CC 1/2: %.3f" % (datasets[i], 100*delta_cchalf_i[datasets[i]]))
 
+    # Write a text file with delta cchalf values
+    self.write_delta_cchalf_file(datasets, delta_cchalf_i, params)
+    
     # Remove datasets based on delta cc1/2
     if len(experiments) > 0:
       self.write_experiments_and_reflections(
@@ -184,7 +191,8 @@ class Script(object):
     fig, ax = pylab.subplots()
     ax.hist(delta_cchalf_i.values())
     ax.set_xlabel("Delta CC 1/2")
-    pylab.show()
+    fig.savefig("plot1.png")
+    #pylab.show()
 
     X = list(delta_cchalf_i.keys())
     Y = list(delta_cchalf_i.values())
@@ -192,7 +200,19 @@ class Script(object):
     ax.plot(X, Y)
     ax.set_xlabel("Dataset number")
     ax.set_ylabel("Delta CC 1/2")
-    pylab.show()
+    fig.savefig("plot2.png")
+    #pylab.show()
+
+  def write_delta_cchalf_file(self, datasets, delta_cchalf_i, params):
+    '''
+    Write values to file
+
+    '''
+    print("Writing table to %s" % params.output.table)
+    with open(params.output.table, "w") as outfile:
+      sorted_index = sorted(range(len(datasets)), key=lambda x: delta_cchalf_i[datasets[x]])
+      for i in sorted_index:
+        outfile.write("%d %f\n" % (datasets[i], 100*delta_cchalf_i[datasets[i]]))
 
   def read_experiments(self, experiments, reflections):
     '''
@@ -303,17 +323,17 @@ class Script(object):
     print("stddev delta_cc_half %s" % (sdev*100))
     cutoff_value = mean - params.stdcutoff*sdev
     print("cutoff value: %s \n" % (cutoff_value*100))
+    count = 0
     for x in sorted(delta_cchalf_i.keys()):
       y = delta_cchalf_i[x]
       if y < cutoff_value:
         print("Removing dataset %d" % x)
-        output_reflections.del_selected(output_reflections['id'] == x)
-        selection = output_reflections['id'] > x
-        indices = output_reflections['id'].select(selection)
-        indices -= 1
-        output_reflections['id'].set_selected(selection, indices)
       else:
+        subset = reflections.select(reflections['id'] == x)
+        subset['id'] = flex.int(len(subset), count)
+        output_reflections.extend(subset)
         output_experiments.append(experiments[x])
+        count += 1
     assert max(output_reflections['id']) < len(output_experiments)
 
     # Write the experiments and reflections to file

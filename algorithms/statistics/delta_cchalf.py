@@ -49,7 +49,7 @@ class ResolutionBinner(object):
     self._bins = []
     for i in range(self._nbins):
       b0, b1 = self._xmin + i * self._bin_size, self._xmin + (i+1)*self._bin_size
-      print("%d: %.3f, %.3f" % (i, sqrt(1/b0**2), sqrt(1/b1**2)))
+      print("%d: %.3f, %.3f" % (i, sqrt(1/b0), sqrt(1/b1)))
       self._bins.append((b0,b1))
 
   def nbins(self):
@@ -217,12 +217,15 @@ class PerImageCChalfStatistics(object):
       dataset = dataset.select(selection)
       intensity = intensity.select(selection)
       variance = variance.select(selection)
+      D = D.select(selection)
+
     if dmax is not None:
       selection = D < dmax
       miller_index = miller_index.select(selection)
       dataset = dataset.select(selection)
       intensity = intensity.select(selection)
       variance = variance.select(selection)
+      D = D.select(selection)
 
     # Save the arrays
     self._miller_index = miller_index
