@@ -1152,18 +1152,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         for experiment in experiments:
           assert experiment.identifier in identifiers.values(), (experiment.identifier)
 
-  def are_experiment_identifiers_consistent(self, experiments=None):
-    '''
-    Check the experiment identifiers
-
-    '''
-    try:
-      self.assert_experiment_identifiers_are_consistent(experiments)
-    except AssertionError:
-      return False
-    return True
-
-
 
 class reflection_table_selector(object):
   '''

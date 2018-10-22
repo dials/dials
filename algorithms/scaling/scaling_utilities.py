@@ -125,7 +125,7 @@ experiment list that matches number of tables once split).''')
   used_ids = []
   for exp, refl in zip(experiments, reflections):
     if exp.identifier != '':
-      assert refl.are_experiment_identifiers_consistent()
+      refl.assert_experiment_identifiers_are_consistent()
       used_ids.append(exp.identifier)
   if len(set(used_ids)) == len(reflections):
     #all experiments have unique ids, so don't need to assign any.
