@@ -319,7 +319,6 @@ class Script(object):
       good_refl_sel = ~reflection_table.get_flags(
         reflection_table.flags.bad_for_scaling, all=False)
       joint_table = reflection_table.select(good_refl_sel)
-
     # Filter out negative scale factors to avoid merging statistics errors.
     # These are not removed from the output data, as it is likely one would
     # want to do further analysis e.g. delta cc1/2 and rescaling, to exclude
@@ -481,14 +480,14 @@ will not be used for calculating merging statistics""")
             engine=scaler.params.scaling_refinery.full_matrix_engine,
             max_iterations=scaler.params.scaling_refinery.full_matrix_max_iterations)
 
-        scaler.expand_scales_to_all_reflections(calc_cov=True)
+        scaler.expand_scales_to_all_reflections()
         if scaler.params.scaling_options.outlier_rejection:
           scaler.round_of_outlier_rejection()
+        scaler.expand_scales_to_all_reflections(calc_cov=True)
         if scaler.params.weighting.optimise_errors:
           scaler.perform_error_optimisation(update_Ih=False)
 
         scaler.adjust_variances()
-
         scaler.clean_reflection_tables()
         return scaler
       # Now pass to a multiscaler ready for next round of scaling.
@@ -528,12 +527,14 @@ will not be used for calculating merging statistics""")
 
     # The minimisation has only been done on a subset on the data, so apply the
     # scale factors to the whole reflection table.
+
     scaler.clear_Ih_table()
-    scaler.expand_scales_to_all_reflections(calc_cov=True)
+    scaler.expand_scales_to_all_reflections()
     if scaler.params.scaling_options.outlier_rejection:
       # Note just call the method, not the 'outlier_rejection_routine'
       scaler.round_of_outlier_rejection()
 
+    scaler.expand_scales_to_all_reflections(calc_cov=True)
     if scaler.params.weighting.optimise_errors:
       # Note just call the method, not the 'error_optimisation_routine'
       scaler.perform_error_optimisation(update_Ih=False)
