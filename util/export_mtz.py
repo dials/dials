@@ -354,6 +354,8 @@ def export_mtz(integrated_data, experiment_list, params):
     # Calculate any offset to the image numbers
     batch_offsets = calculate_batch_offsets(experiment_list)
   else:
+    for expt, b in zip(experiment_list, batch_offsets):
+      expt.batch_offset = b
     unique_offsets = set(batch_offsets)
     if len(unique_offsets) != len(batch_offsets):
       import collections
