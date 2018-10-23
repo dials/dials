@@ -1071,6 +1071,15 @@ namespace dials { namespace af { namespace boost_python {
     }
 
     /**
+     * Del an item
+     */
+    void delitem(
+        reflection_table::experiment_map_type &self,
+        std::size_t index) {
+      self.erase(index);
+    }
+
+    /**
      * Check if the map contains an item
      */
     bool contains(
@@ -1188,6 +1197,7 @@ namespace dials { namespace af { namespace boost_python {
       .def("__len__", &reflection_table::experiment_map_type::size)
       .def("__getitem__", &experiment_map_type_detail::getitem)
       .def("__setitem__", &experiment_map_type_detail::setitem)
+      .def("__delitem__", &experiment_map_type_detail::delitem)
       .def("__contains__", &experiment_map_type_detail::contains)
       .def("keys", &experiment_map_type_detail::keys)
       .def("values", &experiment_map_type_detail::values)
