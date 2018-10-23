@@ -175,22 +175,30 @@ class determine_space_group(symmetry_base):
 
     self.best_solution = self.subgroup_scores[0]
 
-  def show(self):
-    logger.info('Input crystal symmetry:')
-    logger.info(str(self.input_intensities[0].space_group_info()))
-    logger.info(str(self.median_unit_cell))
-    logger.info('Change of basis op to minimum cell: %s', self.cb_op_inp_min)
-    logger.info('Crystal symmetry in minimum cell:')
-    logger.info(str(self.intensities.space_group_info()))
-    logger.info(str(self.intensities.unit_cell()))
-    logger.info('Lattice point group: %s' % self.lattice_group.info())
-    logger.info('Overall CC for %i unrelated pairs: %.3f' %(
+  def show(self, out=None):
+    if out is None:
+      import sys
+      out = sys.stdout
+    print("Warning: Use of the .show() method is deprecated. Use print(object) instead.", file=out)
+    print(str(self), file=out)
+
+  def __str__(self):
+    output = []
+    output.append('Input crystal symmetry:')
+    output.append(str(self.input_intensities[0].space_group_info()))
+    output.append(str(self.median_unit_cell))
+    output.append('Change of basis op to minimum cell: %s' % self.cb_op_inp_min)
+    output.append('Crystal symmetry in minimum cell:')
+    output.append(str(self.intensities.space_group_info()))
+    output.append(str(self.intensities.unit_cell()))
+    output.append('Lattice point group: %s' % self.lattice_group.info())
+    output.append('Overall CC for %i unrelated pairs: %.3f' % (
       self.corr_unrelated.n(), self.corr_unrelated.coefficient()))
-    logger.info(
+    output.append(
       'Estimated expectation value of true correlation coefficient E(CC) = %.3f'
       % self.E_cc_true)
-    logger.info('Estimated sd(CC) = %.3f / sqrt(N)' %self.cc_sig_fac)
-    logger.info(
+    output.append('Estimated sd(CC) = %.3f / sqrt(N)' % self.cc_sig_fac)
+    output.append(
       'Estimated E(CC) of true correlation coefficient from identity = %.3f'
       % self.cc_true)
 
@@ -208,8 +216,8 @@ class determine_space_group(symmetry_base):
         '%i' % score.n_refs,
         stars,
         '%s' % score.sym_op.r().info()))
-    logger.info('Scoring individual symmetry elements')
-    logger.info(table_utils.format(rows, has_header=True, delim='  '))
+    output.append('Scoring individual symmetry elements')
+    output.append(table_utils.format(rows, has_header=True, delim='  '))
 
     header = ('Patterson group', '', 'Likelihood', 'NetZcc', 'Zcc+', 'Zcc-',
               'CC', 'CC-', 'delta', 'Reindex operator')
@@ -230,18 +238,19 @@ class determine_space_group(symmetry_base):
         '% .2f' % score.cc_against.coefficient(),
         '%.1f' % score.subgroup['max_angular_difference'],
         '%s' % (score.subgroup['cb_op_inp_best'] * self.cb_op_inp_min)))
-    logger.info('Scoring all possible sub-groups')
-    logger.info(table_utils.format(rows, has_header=True, delim='  '))
+    output.append('Scoring all possible sub-groups')
+    output.append(table_utils.format(rows, has_header=True, delim='  '))
 
-    logger.info(
+    output.append(
       'Best solution: %s' % self.best_solution.subgroup['best_subsym'].space_group_info())
-    logger.info(
+    output.append(
       'Unit cell: %s' % self.best_solution.subgroup['best_subsym'].unit_cell())
-    logger.info(
+    output.append(
       'Reindex operator: %s' % (
         self.best_solution.subgroup['cb_op_inp_best'] * self.cb_op_inp_min))
-    logger.info('Laue group probability: %.3f' % self.best_solution.likelihood)
-    logger.info('Laue group confidence: %.3f' % self.best_solution.confidence)
+    output.append('Laue group probability: %.3f' % self.best_solution.likelihood)
+    output.append('Laue group confidence: %.3f' % self.best_solution.confidence)
+    return "\n".join(output)
 
   def as_dict(self):
     d = {

@@ -8,7 +8,7 @@ import copy
 
 import iotbx.phil
 from cctbx import sgtbx
-from libtbx.containers import OrderedSet
+from orderedset import OrderedSet
 from scitbx import matrix
 
 help_message = '''
@@ -232,27 +232,6 @@ class align_crystal(object):
       vstr = str(v)
     return vstr
 
-  def show(self):
-    from libtbx import table_utils
-    self.info()
-
-    rows = []
-    names = self.experiment.goniometer.get_names()
-
-    space_group = self.experiment.crystal.get_space_group()
-    reciprocal = self.frame == 'reciprocal'
-    for angles, vector_pairs in self.unique_solutions.iteritems():
-      v1, v2 = list(vector_pairs)[0]
-      rows.append((
-        describe(v1, space_group, reciprocal=reciprocal),
-        describe(v2, space_group, reciprocal=reciprocal),
-        '% 7.3f' %angles[0], '% 7.3f' %angles[1],
-      ))
-    rows = [('Primary axis', 'Secondary axis', names[1], names[0])] + \
-           sorted(rows)
-    print('Independent solutions:')
-    print(table_utils.format(rows=rows, has_header=True))
-
   def as_json(self, filename=None):
     names = self.experiment.goniometer.get_names()
     solutions = []
@@ -270,12 +249,18 @@ class align_crystal(object):
     d = {'solutions': solutions,
          'goniometer': self.experiment.goniometer.to_dict()}
     import json
-    if filename is not None:
-      return json.dump(d, open(filename, 'wb'), indent=2)
+    if filename:
+      with open(filename, 'wb') as fh:
+        return json.dump(d, fh, indent=2)
     else:
       return json.dumps(d, indent=2)
 
-  def info(self):
+  def show(self):
+    print("Warning: Use of the .show() method is deprecated. Use print(object) instead.")
+    print(str(self))
+  info = show
+
+  def __str__(self):
     from libtbx import table_utils
 
     U = matrix.sqr(self.experiment.crystal.get_U())
@@ -303,9 +288,11 @@ class align_crystal(object):
     rows.append([names[2]] + [
       '%.3f' %smallest_angle(axis.angle(matrix.col(axes[2]), deg=True))
       for axis in (a_star_, b_star_, c_star_)])
-    print('Angles between reciprocal cell axes and principal experimental axes:')
-    print(table_utils.format(rows=rows, has_header=True))
-    print()
+
+    output = []
+    output.append('Angles between reciprocal cell axes and principal experimental axes:')
+    output.append(table_utils.format(rows=rows, has_header=True))
+    output.append('')
 
     rows = [['Experimental axis', 'a', 'b', 'c']]
     rows.append([names[0]] + [
@@ -317,13 +304,30 @@ class align_crystal(object):
     rows.append([names[2]] + [
       '%.3f' %smallest_angle(axis.angle(matrix.col(axes[2]), deg=True))
       for axis in (a_, b_, c_)])
-    print('Angles between unit cell axes and principal experimental axes:')
-    print(table_utils.format(rows=rows, has_header=True))
-    print()
+    output.append('Angles between unit cell axes and principal experimental axes:')
+    output.append(table_utils.format(rows=rows, has_header=True))
+    output.append('')
 
+    names = self.experiment.goniometer.get_names()
+
+    space_group = self.experiment.crystal.get_space_group()
+    reciprocal = self.frame == 'reciprocal'
+    rows = []
+    for angles, vector_pairs in self.unique_solutions.iteritems():
+      v1, v2 = list(vector_pairs)[0]
+      rows.append((
+        describe(v1, space_group, reciprocal=reciprocal),
+        describe(v2, space_group, reciprocal=reciprocal),
+        '% 7.3f' %angles[0], '% 7.3f' %angles[1],
+      ))
+    rows = [('Primary axis', 'Secondary axis', names[1], names[0])] + \
+           sorted(rows)
+    output.append('Independent solutions:')
+    output.append(table_utils.format(rows=rows, has_header=True))
+
+    return "\n".join(output)
 
 def run(args):
-
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments
   import libtbx.load_env
@@ -403,7 +407,7 @@ def run(args):
               )
 
   result = align_crystal(expt, vectors, frame=frame, mode=params.align.mode)
-  result.show()
+  print(result)
   if params.output.json is not None:
     result.as_json(filename=params.output.json)
 

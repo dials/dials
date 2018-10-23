@@ -101,24 +101,28 @@ class ScalingModelBase(object):
 
   def show(self):
     """Print a representation of the scaling model."""
+    print("Warning: Use of the .show() method is deprecated. Use print(object) instead.")
+    print(str(self))
+
+  def __str__(self):
     msg = ["Scaling model:"]
-    msg.append("  type : "+str(self.id_))
+    msg.append("  type : " + str(self.id_))
     for name, component in self.components.iteritems():
-      msg.append("  "+str(name).capitalize()+" component:")
+      msg.append("  " + str(name).capitalize() + " component:")
       if component.parameter_esds:
         msg.append("    parameters (sigma)")
         for p, e in zip(component.parameters, component.parameter_esds):
           if p < 0.0:
-            msg.append("    "+"%.4f   (%.4f)" % (p, e))
+            msg.append("    %.4f   (%.4f)" % (p, e))
           else:
-            msg.append("     "+"%.4f   (%.4f)" % (p, e))
+            msg.append("     %.4f   (%.4f)" % (p, e))
       else:
         msg.append("    parameters")
         for p in component.parameters:
           if p < 0.0:
-            msg.append("    "+"%.4f" % p)
+            msg.append("    %.4f" % p)
           else:
-            msg.append("     "+"%.4f" % p)
+            msg.append("     %.4f" % p)
     msg.append("")
     return "\n".join(msg)
 
