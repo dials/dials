@@ -318,7 +318,7 @@ class Script(object):
     mean = sum(Y) / len(Y)
     sdev = sqrt(sum((yy-mean)**2 for yy in Y)/len(Y))
     output_experiments = ExperimentList()
-    output_reflections = reflections
+    output_reflections = flex.reflection_table()
     print("\nmean delta_cc_half %s" % (mean*100))
     print("stddev delta_cc_half %s" % (sdev*100))
     cutoff_value = mean - params.stdcutoff*sdev
