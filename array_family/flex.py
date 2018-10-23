@@ -13,6 +13,8 @@ from dials.model import data
 from dials_array_family_flex_ext import *
 from cctbx.array_family.flex import *
 from cctbx.array_family import flex
+import cctbx
+import cctbx.miller
 
 import logging
 logger = logging.getLogger(__name__)
@@ -1151,6 +1153,42 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         assert len(identifiers) == len(set(experiments.identifiers()))
         for experiment in experiments:
           assert experiment.identifier in identifiers.values(), (experiment.identifier)
+
+  def are_experiment_identifiers_consistent(self, experiments=None):
+    '''
+    Check the experiment identifiers
+
+    '''
+    try:
+      self.assert_experiment_identifiers_are_consistent(experiments)
+    except AssertionError:
+      return False
+    return True
+
+  def compute_miller_indices_in_asu(self, experiments):
+    '''
+    Compute miller indices in the asu
+
+    '''
+    self['miller_index_asu'] = miller_index(len(self))
+    for idx, experiment in enumerate(experiments):
+ 
+      # Create the crystal symmetry object
+      uc = experiment.crystal.get_unit_cell()
+      sg = experiment.crystal.get_space_group()
+      cs = cctbx.crystal.symmetry(uc, space_group=sg)
+      
+      # Get the selection and compute the miller indices
+      selection = self['id'] == idx
+      h = self['miller_index'].select(selection)
+      ms = cctbx.miller.set(cs, h)
+      ms_asu = ms.map_to_asu()
+      h_asu = ms_asu.indices()
+     
+      # Set the miller indices
+      self['miller_index_asu'].set_selected(selection, h_asu)
+
+    return self['miller_index_asu']
 
 
 class reflection_table_selector(object):
