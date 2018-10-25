@@ -487,7 +487,8 @@ class indexer_base(object):
     for expt in self.experiments[1:]:
       if expt.detector.is_similar_to(self.experiments[0].detector):
         expt.detector = self.experiments[0].detector
-      if expt.goniometer.is_similar_to(self.experiments[0].goniometer):
+      if (expt.goniometer is not None and
+          expt.goniometer.is_similar_to(self.experiments[0].goniometer)):
         expt.goniometer = self.experiments[0].goniometer
         # can only share a beam if we share a goniometer?
         if expt.beam.is_similar_to(self.experiments[0].beam):
