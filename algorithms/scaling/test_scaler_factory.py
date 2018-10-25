@@ -14,7 +14,7 @@ from dials.algorithms.scaling.scaler_factory import SingleScalerFactory,\
 from dials.algorithms.scaling.scaler import SingleScalerBase,\
   MultiScaler, TargetScaler, NullScaler
 
-def generated_refl(not_integrated=False):
+def generated_refl(not_integrated=False, idval=0):
   """Generate a test reflection table."""
   reflections = flex.reflection_table()
   reflections['intensity.prf.value'] = flex.double([1.0, 10.0, 100.0, 1.0])
@@ -38,6 +38,8 @@ def generated_refl(not_integrated=False):
       reflections.flags.integrated)
   reflections.set_flags(flex.bool([False, False, True, True]),
     reflections.flags.bad_for_scaling)
+  reflections['id'] = flex.int(4, idval)
+  reflections.experiment_identifiers()[idval] = str(idval)
   return reflections
 
 @pytest.fixture
@@ -50,11 +52,22 @@ def refl_to_filter():
   reflections['d'] = flex.double([1.0, 1.0, 0.0, 1.0, 1.0, 1.0])
   return reflections
 
+def test_refl_and_exp(mock_scaling_component, idval=0):
+  r = test_refl(idval=idval)
+  exp = mock_exp(mock_scaling_component, idval=idval)
+  return r, exp
 
-@pytest.fixture
-def test_refl():
+def test_refl_and_exp_list(mock_scaling_component, n=1):
+  rlist = []
+  explist = []
+  for i in range(n):
+    rlist.append(test_refl(idval=i))
+    explist.append(mock_exp(mock_scaling_component, idval=i))
+  return rlist, explist
+
+def test_refl(idval=0):
   """Generate a test reflection table."""
-  return generated_refl()
+  return generated_refl(idval=idval)
 
 @pytest.fixture
 def refl_list():
@@ -85,7 +98,7 @@ def mock_scaling_component():
   component.inverse_scales = flex.double([0.9, 1.1])
   return component
 
-def mock_exp(mock_scaling_component):
+def mock_exp(mock_scaling_component, idval=0):
   """Mock experiments object for initialising a scaler."""
 
   def side_effect_config_table(*args):
@@ -94,7 +107,7 @@ def mock_exp(mock_scaling_component):
     return args[0]
 
   exp = Mock()
-  exp.identifier = ''
+  exp.identifier = str(idval)
   exp.scaling_model.components = {'scale' : mock_scaling_component}
   exp.scaling_model.consecutive_refinement_order = ['scale']
   exp.scaling_model.is_scaled = False
@@ -133,31 +146,32 @@ def mock_experimentlist(mock_scaled_exp, mock_unscaled_exp):
     mock_unscaled_exp, mock_scaled_exp, mock_unscaled_exp]
   return explist
 
-def test_SingleScalerFactory(generated_param, test_refl, refl_to_filter, mock_scaling_component):
+def test_SingleScalerFactory(generated_param, refl_to_filter, mock_scaling_component):
   """Test the single scaler factory."""
-
+  test_refl, exp = test_refl_and_exp(mock_scaling_component)
   # Test that all required attributes get added with standard params.
   assert all((not test_refl.has_key(i)) for i in ['inverse_scale_factor', 'Esq',
-      'intensity', 'variance', 'id'])
-  #Test default, (id = 0, no split into free set)
-  ss = SingleScalerFactory.create(generated_param, mock_exp(mock_scaling_component), test_refl)
+      'intensity', 'variance'])
+  #Test default, (no split into free set)
+  ss = SingleScalerFactory.create(generated_param, exp, test_refl)
   assert isinstance(ss, SingleScalerBase)
-  assert set(ss.reflection_table['id']) == set([0])
   assert all(ss.reflection_table.has_key(i) for i in ['inverse_scale_factor', 'Esq',
-      'intensity', 'variance', 'id'])
+      'intensity', 'variance'])
 
   # Test reflection filtering
   rt, reasons = SingleScalerFactory.filter_bad_reflections(refl_to_filter)
   assert list(rt.get_flags(rt.flags.excluded_for_scaling)) == [False, True, True,
     False, False, False]
 
-def test_TargetScalerFactory(generated_param, mock_scaling_component, refl_list):
+def test_TargetScalerFactory(generated_param, mock_scaling_component):
   """Test the target scaler factory."""
+
+  refl_list, explist = test_refl_and_exp_list(mock_scaling_component, 3)
 
   # Test standard initialisation.
   assert generated_param.scaling_options.use_free_set is False #just to check
-  target = TargetScalerFactory.create(generated_param, mock_explist_3exp(mock_scaling_component),
-    refl_list, is_scaled_list=[True, True, False])
+  target = TargetScalerFactory.create(generated_param, explist, refl_list,
+    is_scaled_list=[True, True, False])
   assert isinstance(target, TargetScaler)
   assert len(target.single_scalers) == 2
   assert len(target.unscaled_scalers) == 1
@@ -167,8 +181,8 @@ def test_TargetScalerFactory(generated_param, mock_scaling_component, refl_list)
 
   # Test for correct initialisation hen scaling against a target model.
   generated_param.scaling_options.target_model = True
-  target = TargetScalerFactory.create(generated_param, mock_explist_3exp(mock_scaling_component),
-    refl_list, is_scaled_list=[True, True, False])
+  target = TargetScalerFactory.create(generated_param, explist, refl_list,
+    is_scaled_list=[True, True, False])
   assert isinstance(target.single_scalers[0], NullScaler)
   assert isinstance(target.single_scalers[1], NullScaler)
 
@@ -180,8 +194,9 @@ def test_TargetScalerFactory(generated_param, mock_scaling_component, refl_list)
 def test_MultiScalerFactory(generated_param, mock_scaling_component, refl_list):
   """Test the MultiScalerFactory."""
 
-  multiscaler = MultiScalerFactory.create(generated_param, mock_explist_3exp(mock_scaling_component),
-    refl_list)
+  refl_list, explist = test_refl_and_exp_list(mock_scaling_component, 3)
+
+  multiscaler = MultiScalerFactory.create(generated_param, explist, refl_list)
   assert isinstance(multiscaler, MultiScaler)
   assert len(multiscaler.single_scalers) == 3
   for i in range(3):
@@ -202,8 +217,10 @@ def test_MultiScalerFactory(generated_param, mock_scaling_component, refl_list):
   assert list(r2.get_flags(r2.flags.integrated)) == [True, True, False, False]
 
 def test_scaler_factory_helper_functions(mock_experimentlist, generated_param,
-  test_refl, refl_list, mock_scaling_component):
+  refl_list, mock_scaling_component):
   """Test the helper functions."""
+
+  test_refl, exp = test_refl_and_exp(mock_scaling_component)
 
   #Test is_scaled function
   scaled_list = is_scaled(mock_experimentlist)
@@ -211,7 +228,7 @@ def test_scaler_factory_helper_functions(mock_experimentlist, generated_param,
 
   #Test create_scaler
   #Test case for single refl and exp
-  scaler = create_scaler(generated_param, [mock_exp(mock_scaling_component)], [test_refl])
+  scaler = create_scaler(generated_param, [exp], [test_refl])
   assert isinstance(scaler, SingleScalerBase)
 
   #If none or allscaled
@@ -221,7 +238,8 @@ def test_scaler_factory_helper_functions(mock_experimentlist, generated_param,
 
   explist[0].scaling_model.is_scaled = False
   # ^ changes all in list as same instance of exp.
-  scaler = create_scaler(generated_param, mock_explist_3exp(mock_scaling_component), refl_list)
+  scaler = create_scaler(generated_param,
+    mock_explist_3exp(mock_scaling_component), refl_list)
   assert isinstance(scaler, MultiScaler)
 
   #If only some scaled

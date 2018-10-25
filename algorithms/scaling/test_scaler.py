@@ -150,6 +150,8 @@ def generated_refl_for_splitting_1():
     (0.0, 0.1, 1.0), (0.0, 0.1, 1.0), (0.0, 0.1, 1.0), (0.0, 0.1, 1.0)])
   reflections.set_flags(flex.bool(6, True), reflections.flags.integrated)
   reflections.set_flags(flex.bool(6, False), reflections.flags.bad_for_scaling)
+  reflections['id'] = flex.int(6, 1)
+  reflections.experiment_identifiers()[0] = '0'
   return [reflections]
 
 def generated_refl_for_splitting_2():
@@ -167,6 +169,8 @@ def generated_refl_for_splitting_2():
     (0.0, 0.1, 1.0), (0.0, 0.1, 1.0), (0.0, 0.1, 1.0)])
   reflections.set_flags(flex.bool(5, True), reflections.flags.integrated)
   reflections.set_flags(flex.bool(5, False), reflections.flags.bad_for_scaling)
+  reflections['id'] = flex.int(5, 2)
+  reflections.experiment_identifiers()[1] = '1'
   return [reflections]
 
 def generated_exp(n=1):
@@ -182,10 +186,12 @@ def generated_exp(n=1):
   detector = Detector()
   experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
     detector=detector, crystal=crystal))
+  experiments[0].identifier = '0'
   if n > 1:
-    for _ in range(n-1):
+    for i in range(n-1):
       experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
         detector=detector, crystal=crystal))
+      experiments[i+1].identifier = str(i+1)
   return experiments
 
 def generated_param():

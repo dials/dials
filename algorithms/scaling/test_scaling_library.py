@@ -63,6 +63,8 @@ def generated_refl():
     (0.0, 0.1, 1.0), (0.0, 0.1, 1.0), (0.0, 0.1, 1.0)])
   reflections.set_flags(flex.bool(5, True),
     reflections.flags.integrated)
+  reflections['id'] = flex.int(5, 0)
+  reflections.experiment_identifiers()[0] = str(0)
   return reflections
 
 def generated_exp(n=1):
@@ -79,10 +81,12 @@ def generated_exp(n=1):
   detector = Detector()
   experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
     detector=detector, crystal=crystal))
+  experiments[0].identifier = '0'
   if n > 1:
-    for _ in range(0, n-1):
+    for i in range(0, n-1):
       experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer_2,
         detector=detector, crystal=crystal))
+      experiments[i+1].identifier = str(i+1)
   return experiments
 
 def generated_param():

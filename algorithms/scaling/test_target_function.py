@@ -55,6 +55,8 @@ def generated_10_refl():
     (0.0, 0.1, 20.0), (0.0, 0.1, 20.0), (0.0, 0.1, 20.0), (0.0, 0.1, 20.0),
     (0.0, 0.1, 20.0), (0.0, 0.1, 20.0), (0.0, 0.1, 20.0), (0.0, 0.1, 20.0)])
   reflections.set_flags(flex.bool(10, True), reflections.flags.integrated)
+  reflections['id'] = flex.int(10, 0)
+  reflections.experiment_identifiers()[0] = str(0)
   return [reflections]
 
 def generated_refl():
@@ -76,6 +78,8 @@ def generated_refl():
     (0.0, 0.1, 20.0)])
   reflections.set_flags(flex.bool([True, True, True]),
     reflections.flags.integrated)
+  reflections['id'] = flex.int(3, 0)
+  reflections.experiment_identifiers()[0] = str(0)
   return [reflections]
 
 def generated_single_exp():
@@ -91,6 +95,7 @@ def generated_single_exp():
   detector = Detector()
   experiments.append(Experiment(beam=beam, scan=scan, goniometer=goniometer,
     detector=detector, crystal=crystal))
+  experiments[0].identifier = '0'
   return experiments
 
 def generated_param(model='KB'):

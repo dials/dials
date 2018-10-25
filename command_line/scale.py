@@ -151,7 +151,6 @@ class Script(object):
     self.reflections = reflections
     self.scaler = None
     self.scaled_miller_array = None
-    self.dataset_ids = []
     self.merging_statistics_result = None
     logger.debug('Initialised scaling script object')
     log_memory_usage()
@@ -236,7 +235,6 @@ class Script(object):
         self.reflections, self.experiments, self.params.scaling_options.target_model)
       self.experiments.append(exp)
       self.reflections.append(reflections)
-      self.dataset_ids.append(self.reflections[-1].experiment_identifiers().values()[0])
 
     elif self.params.scaling_options.target_mtz:
       logger.info("Extracting data from merged mtz.")
@@ -244,7 +242,6 @@ class Script(object):
         self.params.scaling_options.target_mtz)
       self.experiments.append(exp)
       self.reflections.append(reflections)
-      self.dataset_ids.append(self.reflections[-1].experiment_identifiers().values()[0])
 
     if len(self.experiments) != len(self.reflections):
       raise Sorry("Mismatched number of experiments and reflection tables found.")
@@ -284,7 +281,7 @@ class Script(object):
     logger.info('\nScaling models have been initialised for all experiments.')
     logger.info('\n' + '='*80 + '\n')
 
-    self.scaler = create_scaler(self.params, self.experiments, self.reflections, self.dataset_ids)
+    self.scaler = create_scaler(self.params, self.experiments, self.reflections)
     self.scaler = self.scaling_algorithm(self.scaler)
     #remove any bad datasets:
     if self.scaler.removed_datasets:

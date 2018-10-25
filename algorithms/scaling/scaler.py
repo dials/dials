@@ -846,7 +846,7 @@ class NullScaler(ScalerBase):
 
   id_ = 'null'
 
-  def __init__(self, params, experiment, reflection, scaled_id=0):
+  def __init__(self, params, experiment, reflection):
     super(NullScaler, self).__init__()
     self._experiments = experiment
     self._params = params
@@ -854,7 +854,6 @@ class NullScaler(ScalerBase):
     self._space_group = self.experiments.crystal.get_space_group()
     if self._params.scaling_options.space_group:
       self._space_group = self._params.scaling_options.space_group
-    self._scaled_id = scaled_id
     self._reflection_table = reflection
     self._initial_keys = [key for key in self._reflection_table.keys()]
     n_refl = self._reflection_table.size()

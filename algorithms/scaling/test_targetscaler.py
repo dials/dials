@@ -26,6 +26,8 @@ def generated_target_refl():
   reflections['partiality'] = flex.double([1.0, 1.0, 1.0])
   reflections.set_flags(flex.bool([True, True, True]),
     reflections.flags.integrated)
+  reflections['id'] = flex.int(3, 0)
+  reflections.experiment_identifiers()[0] = str(0)
   return reflections
 
 def generated_refl_to_scale():
@@ -39,6 +41,8 @@ def generated_refl_to_scale():
   reflections['partiality'] = flex.double([1.0, 1.0, 1.0, 1.0])
   reflections.set_flags(flex.bool([True, True, True, True]),
     reflections.flags.integrated)
+  reflections['id'] = flex.int(4, 1)
+  reflections.experiment_identifiers()[1] = str(1)
   return reflections
 
 def test_target_refl():
@@ -49,7 +53,7 @@ def test_refl_to_scale():
   """Return the reflection table to scale."""
   return generated_refl_to_scale()
 
-def test_exp():
+def test_exp(idval=0):
   """Test experiments object."""
   experiments = ExperimentList()
   exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
@@ -57,6 +61,7 @@ def test_exp():
               "space_group_hall_symbol": " C 2y"}
   crystal = Crystal.from_dict(exp_dict)
   experiments.append(Experiment(crystal=crystal))
+  experiments[0].identifier = str(idval)
   return experiments
 
 @pytest.fixture
@@ -86,14 +91,14 @@ def test_scale_against_target(KB_test_param):
   target_reflections = test_target_refl()
   reflections = test_refl_to_scale()
   target_experiments = test_exp()
-  experiments = test_exp()
+  experiments = test_exp(idval=1)
   scaled_reflections = scale_against_target(reflections, experiments,
     target_reflections, target_experiments)
   assert approx_equal(list(scaled_reflections['inverse_scale_factor']),
     [2.0, 0.5, 2.0, 2.0 * (4.0 **(-1.0/3.0))])
 
   experiments = test_exp()
-  experiments.append(test_exp()[0])
+  experiments.append(test_exp(idval=1)[0])
   experiments[0].scaling_model = KBSMFactory.create(KB_test_param, [], [])
   experiments[1].scaling_model = KBSMFactory.create(KB_test_param, [], [])
   target_reflections = test_target_refl()

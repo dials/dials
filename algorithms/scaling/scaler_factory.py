@@ -12,9 +12,10 @@ from dials.algorithms.scaling.scaling_library import choose_scaling_intensities
 from dials.algorithms.scaling.outlier_rejection import reject_outliers
 logger = logging.getLogger('dials')
 
-def create_scaler(params, experiments, reflections, dataset_ids=None):
+def create_scaler(params, experiments, reflections):
   """Read an experimentlist and list of reflection tables and return
-    an appropriate scaler."""
+    an appropriate scaler. Requires experiment identifiers are correctly set in
+    the experiments and reflections."""
   if len(reflections) == 1:
     scaler = SingleScalerFactory.create(params, experiments[0], reflections[0])
   else:
@@ -23,9 +24,9 @@ def create_scaler(params, experiments, reflections, dataset_ids=None):
     if (params.scaling_options.target_cycle and n_scaled < len(reflections)
         and n_scaled > 0): #if only some scaled and want to do targeted scaling
       scaler = TargetScalerFactory.create(params, experiments, reflections,
-        is_scaled_list, dataset_ids)
+        is_scaled_list)
     elif len(reflections) > 1: #else just make one multiscaler for all refls
-      scaler = MultiScalerFactory.create(params, experiments, reflections, dataset_ids)
+      scaler = MultiScalerFactory.create(params, experiments, reflections)
     else:
       raise Sorry("no reflection tables found to create a scaler")
   return scaler
@@ -56,31 +57,24 @@ class ScalerFactory(object):
     return reflections, reasons
 
   @classmethod
-  def ensure_experiment_identifier(cls, params, experiment, reflection_table, scaled_id):
+  def ensure_experiment_identifier(cls, params, experiment, reflection_table):
     """Check for consistent experiment identifier, and if not set then set it
     using scaled_id."""
-    if experiment.identifier:
-      assert experiment.identifier in \
-        reflection_table.experiment_identifiers().values(), (
-          experiment.identifier, list(reflection_table.experiment_identifiers().values()))
-      if params.scaling_options.verbosity > 1:
-        logger.info('The experiment identifier for this dataset is %s',
-          experiment.identifier)
-    else:
-      reflection_table['id'] = flex.int(reflection_table.size(), scaled_id)
-      reflection_table.experiment_identifiers()[scaled_id] = str(scaled_id)
-      experiment.identifier = str(scaled_id)
-    assert len(reflection_table.experiment_identifiers().values()) == 1, \
-      list(reflection_table.experiment_identifiers().values())
+    id_vals = reflection_table.experiment_identifiers().values()
+    assert experiment.identifier in id_vals, (experiment.identifier, list(id_vals))
+    assert len(id_vals) == 1, list(id_vals)
+    if params.scaling_options.verbosity > 1:
+      logger.info('The experiment identifier for this dataset is %s',
+        experiment.identifier)
 
 class SingleScalerFactory(ScalerFactory):
   """Factory for creating a scaler for a single dataset."""
 
   @classmethod
-  def create(cls, params, experiment, reflection_table, scaled_id=0, for_multi=False):
+  def create(cls, params, experiment, reflection_table, for_multi=False):
     """Perform reflection_table preprocessing and create a SingleScaler."""
 
-    cls.ensure_experiment_identifier(params, experiment, reflection_table, scaled_id)
+    cls.ensure_experiment_identifier(params, experiment, reflection_table)
 
     if params.scaling_options.verbosity > 1:
       logger.info('Preprocessing data for scaling. The id assigned to this \n'
@@ -124,7 +118,7 @@ class SingleScalerFactory(ScalerFactory):
 class NullScalerFactory(ScalerFactory):
   'Factory for creating null scaler'
   @classmethod
-  def create(cls, params, experiment, reflection_table, scaled_id=0):
+  def create(cls, params, experiment, reflection_table):
     """Return Null Scaler."""
     from dials.algorithms.scaling.scaler import NullScaler
     logger.info('Preprocessing target dataset for scaling. \n')
@@ -135,34 +129,27 @@ class NullScalerFactory(ScalerFactory):
     logger.info('%s reflections not suitable for scaling\n', reflection_table.get_flags(
         reflection_table.flags.excluded_for_scaling).count(True))
     logger.info(reasons)
-    cls.ensure_experiment_identifier(params, experiment, reflection_table, scaled_id)
-    return NullScaler(params, experiment, reflection_table, scaled_id)
+    cls.ensure_experiment_identifier(params, experiment, reflection_table)
+    return NullScaler(params, experiment, reflection_table)
 
 class MultiScalerFactory(object):
   'Factory for creating a scaler for multiple datasets'
   @classmethod
-  def create(cls, params, experiments, reflections, dataset_ids=None):
-    '''create a list of single scalers to pass to a MultiScaler. For scaled_id,
-    we just need unique values, not necessarily the same as previously.'''
+  def create(cls, params, experiments, reflections):
+    '''create a list of single scalers to pass to a MultiScaler.'''
     single_scalers = []
-    if not dataset_ids:
-      dataset_ids = range(len(reflections))
-    # Important!! - if deleting an experiment, need to delete it before creating
-    # a scaling model, hence the unusual looping below
     offset = 0
-    for i in range(len(dataset_ids)): # order in experimentlist if dataset_ids specified
+    for i in range(len(reflections)):
       # Remove bad datasets that literally have no integrated reflections
       try:
         scaler = SingleScalerFactory.create(
-          params, experiments[i-offset], reflections[i-offset],
-          scaled_id=dataset_ids[i-offset], for_multi=True)
+          params, experiments[i-offset], reflections[i-offset], for_multi=True)
         single_scalers.append(scaler)
       except BadDatasetForScalingException as e:
         logger.info(e)
         logger.info('Removing experiment ' + str(i) +'\n' + '='*80 + '\n')
         del experiments[i - offset]
         del reflections[i - offset]
-        del dataset_ids[i - offset]
         offset += 1
     assert len(experiments) == len(single_scalers), (len(experiments), len(single_scalers))
     assert len(experiments) == len(reflections), (len(experiments), len(reflections))
@@ -181,44 +168,38 @@ class MultiScalerFactory(object):
 class TargetScalerFactory(object):
   'Factory for creating a targeted scaler for multiple datasets'
   @classmethod
-  def create(cls, params, experiments, reflections, is_scaled_list, dataset_ids=None):
+  def create(cls, params, experiments, reflections, is_scaled_list):
     '''sort scaled and unscaled datasets to pass to TargetScaler'''
     scaled_experiments = []
     scaled_scalers = []
     unscaled_scalers = []
-    if not dataset_ids:
-      dataset_ids = range(len(reflections))
-    # Important!! - if deleting an experiment, need to delete it before creating
-    # a scaling model, hence the unusual looping below
     offset = 0
-    for i in range(len(dataset_ids)):
+    for i in range(len(reflections)):
       if is_scaled_list[i] is True:
         if params.scaling_options.target_model or params.scaling_options.target_mtz:
           scaled_experiments.append(experiments[i-offset])
           scaled_scalers.append(NullScalerFactory.create(params, experiments[i-offset],
-            reflections[i-offset], scaled_id=dataset_ids[i-offset]))
+            reflections[i-offset]))
         else:
           try:
-            scaled_scalers.append(SingleScalerFactory.create(params, experiments[i-offset],
-              reflections[i-offset], scaled_id=dataset_ids[i-offset], for_multi=True))
+            scaled_scalers.append(SingleScalerFactory.create(params,
+              experiments[i-offset], reflections[i-offset], for_multi=True))
             scaled_experiments.append(experiments[i-offset])
           except BadDatasetForScalingException as e:
             logger.info(e)
             logger.info('Removing experiment ' + str(i) +'\n' + '='*80 + '\n')
             del experiments[i - offset]
             del reflections[i - offset]
-            del dataset_ids[i - offset]
             offset += 1
       else:
         try:
-          unscaled_scalers.append(SingleScalerFactory.create(params, experiments[i-offset],
-            reflections[i-offset], scaled_id=dataset_ids[i-offset], for_multi=True))
+          unscaled_scalers.append(SingleScalerFactory.create(params,
+            experiments[i-offset], reflections[i-offset], for_multi=True))
         except BadDatasetForScalingException as e:
           logger.info(e)
           logger.info('Removing experiment ' + str(i) +'\n' + '='*80 + '\n')
           del experiments[i - offset]
           del reflections[i - offset]
-          del dataset_ids[i - offset]
           offset += 1
     assert len(experiments) == len(scaled_scalers) + len(unscaled_scalers), (
       len(experiments), str(len(scaled_scalers)) + ' + ' + str(len(unscaled_scalers)))
