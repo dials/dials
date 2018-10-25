@@ -12,6 +12,8 @@
 from __future__ import absolute_import, division, print_function
 import sys
 from iotbx.reflection_file_reader import any_reflection_file
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib import pylab
 from matplotlib import cm
 from math import sqrt, floor
