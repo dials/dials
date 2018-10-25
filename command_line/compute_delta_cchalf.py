@@ -142,7 +142,8 @@ class Script(object):
       "miller_index",
       "dataset",
       "intensity",
-      "variance"))
+      "variance",
+      "identifiers"))
 
     # Ensure we have an experiment list
     experiments = flatten_experiments(params.input.experiments)
@@ -159,6 +160,7 @@ class Script(object):
     # Create the statistics object
     statistics = PerImageCChalfStatistics(
       data.miller_index,
+      data.identifiers,
       data.dataset,
       data.intensity,
       data.variance,
@@ -173,11 +175,11 @@ class Script(object):
     datasets = list(delta_cchalf_i.keys())
     sorted_index = sorted(range(len(datasets)), key=lambda x: delta_cchalf_i[datasets[x]])
     for i in sorted_index:
-      print("Dataset: %d, Delta CC 1/2: %.3f" % (datasets[i], 100*delta_cchalf_i[datasets[i]]))
+      logger.info("Dataset: %d, Delta CC 1/2: %.3f" % (datasets[i], 100*delta_cchalf_i[datasets[i]]))
 
     # Write a text file with delta cchalf values
     self.write_delta_cchalf_file(datasets, delta_cchalf_i, params)
-    
+
     # Remove datasets based on delta cc1/2
     if len(experiments) > 0:
       self.write_experiments_and_reflections(
@@ -208,7 +210,7 @@ class Script(object):
     Write values to file
 
     '''
-    print("Writing table to %s" % params.output.table)
+    logger.info("Writing table to %s" % params.output.table)
     with open(params.output.table, "w") as outfile:
       sorted_index = sorted(range(len(datasets)), key=lambda x: delta_cchalf_i[datasets[x]])
       for i in sorted_index:
@@ -223,12 +225,21 @@ class Script(object):
     # Get space group and unit cell
     space_group = None
     unit_cell = []
+    exp_identifiers = []
     for e in experiments:
       if space_group is None:
         space_group = e.crystal.get_space_group()
       else:
         assert space_group.type().number() == e.crystal.get_space_group().type().number()
       unit_cell.append(e.crystal.get_unit_cell())
+      exp_identifiers.append(e.identifier)
+    # get a list of the ids from the reflection table corresponding to exp_ids
+    identifiers = []
+    for expit in exp_identifiers:
+      for k in reflections.experiment_identifiers().keys():
+        if reflections.experiment_identifiers()[k] == expit:
+          identifiers.append(k)
+          break
 
     # Selection of reflections
     selection = ~(reflections.get_flags(reflections.flags.bad_for_scaling, all=False))
@@ -254,7 +265,8 @@ class Script(object):
       miller_index = miller_index,
       dataset      = index,
       intensity    = intensity,
-      variance     = variance)
+      variance     = variance,
+      identifiers  = identifiers)
 
   def read_mtzfile(self, filename):
     '''
@@ -318,23 +330,22 @@ class Script(object):
     mean = sum(Y) / len(Y)
     sdev = sqrt(sum((yy-mean)**2 for yy in Y)/len(Y))
     output_experiments = ExperimentList()
-    output_reflections = flex.reflection_table()
-    print("\nmean delta_cc_half %s" % (mean*100))
-    print("stddev delta_cc_half %s" % (sdev*100))
+    output_reflections = reflections#flex.reflection_table()
+    logger.info("\nmean delta_cc_half %s" % (mean*100))
+    logger.info("stddev delta_cc_half %s" % (sdev*100))
     cutoff_value = mean - params.stdcutoff*sdev
-    print("cutoff value: %s \n" % (cutoff_value*100))
-    count = 0
+    logger.info("cutoff value: %s \n" % (cutoff_value*100))
+    expids = list(experiments.identifiers())
     for x in sorted(delta_cchalf_i.keys()):
       y = delta_cchalf_i[x]
       if y < cutoff_value:
-        print("Removing dataset %d" % x)
+        logger.info("Removing dataset %d" % x)
+        output_reflections.del_selected(output_reflections['id'] == x)
+        del output_reflections.experiment_identifiers()[x]
       else:
-        subset = reflections.select(reflections['id'] == x)
-        subset['id'] = flex.int(len(subset), count)
-        output_reflections.extend(subset)
-        output_experiments.append(experiments[x])
-        count += 1
-    assert max(output_reflections['id']) < len(output_experiments)
+        strid = output_reflections.experiment_identifiers()[x]
+        output_experiments.append(experiments[expids.index(strid)])
+    output_reflections.assert_experiment_identifiers_are_consistent(output_experiments)
 
     # Write the experiments and reflections to file
     self.write_reflections(output_reflections, params.output.reflections)
@@ -342,13 +353,13 @@ class Script(object):
 
   def write_reflections(self, reflections, filename):
     ''' Save the reflections to file. '''
-    print('Saving %d reflections to %s' % (len(reflections), filename))
+    logger.info('Saving %d reflections to %s' % (len(reflections), filename))
     reflections.as_pickle(filename)
 
   def write_experiments(self, experiments, filename):
     ''' Save the profile model parameters. '''
     from dxtbx.model.experiment_list import ExperimentListDumper
-    print('Saving the experiments to %s' % filename)
+    logger.info('Saving the experiments to %s' % filename)
     dump = ExperimentListDumper(experiments)
     with open(filename, "w") as outfile:
       outfile.write(dump.as_json())
