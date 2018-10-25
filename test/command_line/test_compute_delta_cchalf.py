@@ -41,10 +41,12 @@ def test_compute_delta_cchalf(dials_regression):
   dataset = batch - min_batch
   num_datasets = max(dataset)+1
   unit_cell_list = [unit_cell for i in range(num_datasets)]
+  identifiers = list(set(dataset))
 
   # Compute the CC 1/2 Stats
   statistics = PerImageCChalfStatistics(
     miller_index,
+    identifiers,
     dataset,
     intensity,
     variance,
@@ -58,4 +60,3 @@ def test_compute_delta_cchalf(dials_regression):
   assert abs(100*mean_cchalf - 94.582) < 1e-3
   assert abs(100*cchalf_i[0] - 79.587) < 1e-3
   assert abs(100*cchalf_i[1] - 94.238) < 1e-3
-
