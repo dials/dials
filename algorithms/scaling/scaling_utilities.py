@@ -84,6 +84,12 @@ def parse_multiple_datasets(reflections):
         'containing %s datasets. \n', n_datasets)
       for dataset_id in dataset_ids:
         single_refl_table = refl_table.select(refl_table['id'] == dataset_id)
+        if refl_table.experiment_identifiers().keys():
+          #if it has experiment identifiers, handle this here
+          strid = refl_table.experiment_identifiers()[dataset_id]
+          for key in single_refl_table.experiment_identifiers().keys():
+            del single_refl_table.experiment_identifiers()[key]
+          single_refl_table.experiment_identifiers()[dataset_id] = strid
         single_reflection_tables.append(single_refl_table)
     else:
       single_reflection_tables.append(refl_table)
@@ -127,11 +133,8 @@ experiment list that matches number of tables once split).''')
     if exp.identifier != '':
       refl.assert_experiment_identifiers_are_consistent()
       used_ids.append(exp.identifier)
-  if len(set(used_ids)) == len(reflections):
-    #all experiments have unique ids, so don't need to assign any.
-    for i, (exp, refl) in enumerate(zip(experiments, reflections)):
-      refl.experiment_identifiers()[i] = exp.identifier
-      refl['id'] = flex.int(refl.size(), i) #make all unique
+  if len(set(used_ids)) == len(reflections): #all have them set, don't do anything
+    pass
   elif used_ids: #some identifiers set
     unique_id = 0
     for i, (exp, refl) in enumerate(zip(experiments, reflections)):

@@ -12,7 +12,7 @@ from dials.algorithms.scaling.scaling_library import choose_scaling_intensities
 from dials.algorithms.scaling.outlier_rejection import reject_outliers
 logger = logging.getLogger('dials')
 
-def create_scaler(params, experiments, reflections):
+def create_scaler(params, experiments, reflections, dataset_ids=None):
   """Read an experimentlist and list of reflection tables and return
     an appropriate scaler."""
   if len(reflections) == 1:
@@ -23,9 +23,9 @@ def create_scaler(params, experiments, reflections):
     if (params.scaling_options.target_cycle and n_scaled < len(reflections)
         and n_scaled > 0): #if only some scaled and want to do targeted scaling
       scaler = TargetScalerFactory.create(params, experiments, reflections,
-        is_scaled_list)
+        is_scaled_list, dataset_ids)
     elif len(reflections) > 1: #else just make one multiscaler for all refls
-      scaler = MultiScalerFactory.create(params, experiments, reflections)
+      scaler = MultiScalerFactory.create(params, experiments, reflections, dataset_ids)
     else:
       raise Sorry("no reflection tables found to create a scaler")
   return scaler
@@ -55,6 +55,24 @@ class ScalerFactory(object):
     reflections.set_flags(mask, reflections.flags.excluded_for_scaling)
     return reflections, reasons
 
+  @classmethod
+  def ensure_experiment_identifier(cls, params, experiment, reflection_table, scaled_id):
+    """Check for consistent experiment identifier, and if not set then set it
+    using scaled_id."""
+    if experiment.identifier:
+      assert experiment.identifier in \
+        reflection_table.experiment_identifiers().values(), (
+          experiment.identifier, list(reflection_table.experiment_identifiers().values()))
+      if params.scaling_options.verbosity > 1:
+        logger.info('The experiment identifier for this dataset is %s',
+          experiment.identifier)
+    else:
+      reflection_table['id'] = flex.int(reflection_table.size(), scaled_id)
+      reflection_table.experiment_identifiers()[scaled_id] = str(scaled_id)
+      experiment.identifier = str(scaled_id)
+    assert len(reflection_table.experiment_identifiers().values()) == 1, \
+      list(reflection_table.experiment_identifiers().values())
+
 class SingleScalerFactory(ScalerFactory):
   """Factory for creating a scaler for a single dataset."""
 
@@ -62,18 +80,12 @@ class SingleScalerFactory(ScalerFactory):
   def create(cls, params, experiment, reflection_table, scaled_id=0, for_multi=False):
     """Perform reflection_table preprocessing and create a SingleScaler."""
 
-    if experiment.identifier:
-      assert experiment.identifier in \
-        reflection_table.experiment_identifiers().values()
-      if params.scaling_options.verbosity > 1:
-        logger.info('The experiment identifier for this dataset is %s',
-          experiment.identifier)
-    else:
-      reflection_table['id'] = flex.int(reflection_table.size(), scaled_id)
+    cls.ensure_experiment_identifier(params, experiment, reflection_table, scaled_id)
+
     if params.scaling_options.verbosity > 1:
       logger.info('Preprocessing data for scaling. The id assigned to this \n'
         'dataset is %s, and the scaling model type being applied is %s. \n' %
-        (reflection_table['id'][0], experiment.scaling_model.id_))
+        (reflection_table.experiment_identifiers().values()[0], experiment.scaling_model.id_))
 
     reflection_table, reasons = cls.filter_bad_reflections(reflection_table)
     n_excluded = reflection_table.get_flags(
@@ -112,17 +124,19 @@ class SingleScalerFactory(ScalerFactory):
 class NullScalerFactory(ScalerFactory):
   'Factory for creating null scaler'
   @classmethod
-  def create(cls, params, experiment, reflection, scaled_id=0):
+  def create(cls, params, experiment, reflection_table, scaled_id=0):
     """Return Null Scaler."""
     from dials.algorithms.scaling.scaler import NullScaler
     logger.info('Preprocessing target dataset for scaling. \n')
-    reflection, reasons = cls.filter_bad_reflections(reflection)
-    variance_mask = reflection['variance'] <= 0.0
-    reflection.set_flags(variance_mask, reflection.flags.excluded_for_scaling)
-    logger.info('%s reflections not suitable for scaling\n', reflection.get_flags(
-        reflection.flags.excluded_for_scaling).count(True))
+    reflection_table, reasons = cls.filter_bad_reflections(reflection_table)
+    variance_mask = reflection_table['variance'] <= 0.0
+    reflection_table.set_flags(variance_mask,
+      reflection_table.flags.excluded_for_scaling)
+    logger.info('%s reflections not suitable for scaling\n', reflection_table.get_flags(
+        reflection_table.flags.excluded_for_scaling).count(True))
     logger.info(reasons)
-    return NullScaler(params, experiment, reflection, scaled_id)
+    cls.ensure_experiment_identifier(params, experiment, reflection_table, scaled_id)
+    return NullScaler(params, experiment, reflection_table, scaled_id)
 
 class MultiScalerFactory(object):
   'Factory for creating a scaler for multiple datasets'
@@ -150,8 +164,8 @@ class MultiScalerFactory(object):
         del reflections[i - offset]
         del dataset_ids[i - offset]
         offset += 1
-    assert len(experiments) == len(single_scalers)
-    assert len(experiments) == len(reflections)
+    assert len(experiments) == len(single_scalers), (len(experiments), len(single_scalers))
+    assert len(experiments) == len(reflections), (len(experiments), len(reflections))
     return MultiScaler(params, experiments, single_scalers)
 
   @classmethod
@@ -206,7 +220,8 @@ class TargetScalerFactory(object):
           del reflections[i - offset]
           del dataset_ids[i - offset]
           offset += 1
-    assert len(experiments) == len(scaled_scalers) + len(unscaled_scalers)
-    assert len(experiments) == len(reflections)
+    assert len(experiments) == len(scaled_scalers) + len(unscaled_scalers), (
+      len(experiments), str(len(scaled_scalers)) + ' + ' + str(len(unscaled_scalers)))
+    assert len(experiments) == len(reflections), (len(experiments), len(reflections))
     return TargetScaler(params, scaled_experiments, scaled_scalers,
       unscaled_scalers)

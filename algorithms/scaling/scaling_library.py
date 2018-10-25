@@ -274,9 +274,10 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
   exp = deepcopy(experiments[0]) #copy exp for space group -
     #any other necessary reason or can this attribute be added?
   used_ids = experiments.identifiers()
-  unique_id = get_next_unique_id(0, used_ids)
+  unique_id = get_next_unique_id(len(used_ids), used_ids)
   exp.identifier = str(unique_id)
   r_t.experiment_identifiers()[unique_id] = str(unique_id)
+  r_t['id'] = flex.int(r_t.size(), unique_id)
 
   # create a new KB scaling model for the target and set as scaled to fix scale
   # for targeted scaling.
@@ -332,5 +333,11 @@ def create_datastructures_for_structural_model(reflections, experiments,
   rt = flex.reflection_table()
   rt['intensity'] = icalc
   rt['miller_index'] = miller_idx
+
+  used_ids = experiments.identifiers()
+  unique_id = get_next_unique_id(len(used_ids), used_ids)
+  exp.identifier = str(unique_id)
+  rt.experiment_identifiers()[unique_id] = str(unique_id)
+  rt['id'] = flex.int(rt.size(), unique_id)
 
   return exp, rt

@@ -60,7 +60,8 @@ from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScalerFactory
 from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets,\
   select_datasets_on_ids, save_experiments, save_reflections,\
-  assign_unique_identifiers, log_memory_usage, DialsMergingStatisticsError
+  assign_unique_identifiers, log_memory_usage, DialsMergingStatisticsError,\
+  get_next_unique_id
 from dials.algorithms.scaling.post_scaling_analysis import \
   exclude_on_batch_rmerge, exclude_on_image_scale
 
@@ -173,12 +174,12 @@ class Script(object):
 
   def prepare_input(self):
     """Perform checks on the data and prepare the data for scaling."""
-    if len(self.experiments) != 1:
-      logger.info('Checking for the existence of a reflection table \n'
-        'containing multiple scaled datasets \n')
-      self.reflections, self.dataset_ids = parse_multiple_datasets(self.reflections)
-      logger.info("Found %s reflection tables in total.", len(self.reflections))
-      logger.info("Found %s experiments in total.", len(self.experiments))
+
+    logger.info('Checking for the existence of a reflection table \n'
+      'containing multiple datasets \n')
+    self.reflections, self.dataset_ids = parse_multiple_datasets(self.reflections)
+    logger.info("Found %s reflection tables in total.", len(self.reflections))
+    logger.info("Found %s experiments in total.", len(self.experiments))
 
     if (self.params.dataset_selection.use_datasets or
      self.params.dataset_selection.exclude_datasets):
@@ -204,7 +205,6 @@ class Script(object):
 
       logger.info("\nDataset unique identifiers for retained datasets are %s \n",
         list(self.experiments.identifiers()))
-
 
     if self.params.scaling_options.space_group:
       for experiment in self.experiments:
@@ -236,8 +236,7 @@ class Script(object):
         self.reflections, self.experiments, self.params.scaling_options.target_model)
       self.experiments.append(exp)
       self.reflections.append(reflections)
-      self.reflections[-1]['id'] = flex.int(self.reflections[-1].size(),
-        len(self.reflections))
+      self.dataset_ids.append(self.reflections[-1].experiment_identifiers().values()[0])
 
     elif self.params.scaling_options.target_mtz:
       logger.info("Extracting data from merged mtz.")
@@ -245,8 +244,7 @@ class Script(object):
         self.params.scaling_options.target_mtz)
       self.experiments.append(exp)
       self.reflections.append(reflections)
-      self.reflections[-1]['id'] = flex.int(self.reflections[-1].size(),
-        len(self.reflections))
+      self.dataset_ids.append(self.reflections[-1].experiment_identifiers().values()[0])
 
     if len(self.experiments) != len(self.reflections):
       raise Sorry("Mismatched number of experiments and reflection tables found.")
@@ -286,7 +284,7 @@ class Script(object):
     logger.info('\nScaling models have been initialised for all experiments.')
     logger.info('\n' + '='*80 + '\n')
 
-    self.scaler = create_scaler(self.params, self.experiments, self.reflections)
+    self.scaler = create_scaler(self.params, self.experiments, self.reflections, self.dataset_ids)
     self.scaler = self.scaling_algorithm(self.scaler)
     #remove any bad datasets:
     if self.scaler.removed_datasets:
@@ -326,7 +324,7 @@ class Script(object):
     pos_scales = joint_table['inverse_scale_factor'] > 0
     if pos_scales.count(False) > 0:
       logger.info("""There are %s reflections with non-positive scale factors which
-will not be used for calculating merging statistics""")
+will not be used for calculating merging statistics""" % pos_scales.count(False))
       joint_table = joint_table.select(pos_scales)
 
     miller_set = miller.set(crystal_symmetry=crystal_symmetry,

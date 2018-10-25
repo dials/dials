@@ -22,6 +22,15 @@ from dials.util.options import OptionParser
 from dials.command_line.scale import Script
 from dials.algorithms.scaling.scaling_library import create_scaling_model
 
+class run_delta_cchalf(object):
+  def __init__(self,  pickle_path_list, sweep_path_list, extra_args):
+    args = ["dials.compute_delta_cchalf"] + pickle_path_list + sweep_path_list + extra_args
+    command = " ".join(args)
+    print(command)
+    _ = easy_run.fully_buffered(command=command).raise_if_errors()
+    assert os.path.exists("filtered_experiments.json")
+    assert os.path.exists("filtered_reflections.pickle")
+
 class run_one_scaling(object):
   """Class to run the dials.scale algorithm."""
   def __init__(self, pickle_path_list, sweep_path_list, extra_args, plot=True):
@@ -405,6 +414,11 @@ def test_multi_scale(dials_regression, tmpdir):
     assert abs(result.overall.n_obs - expected_nobs) < 10
     assert result.overall.r_pim < 0.023 #at 07/08/18, value was 0.022722
     assert result.overall.cc_one_half > 0.9965 # at 07/08/18, value was 0.996925
+
+    # until scaled data is available in dials_regression, test the command
+    # line script dials.compute_delta_cchalf here
+    _ = run_delta_cchalf(["scaled.pickle"], ["scaled_experiments.json"],
+      extra_args=['stdcutoff=0.0'])# set 0.0 to force one to be 'rejected'
 
 @pytest.mark.dataset_test
 def test_targeted_scaling(dials_regression, tmpdir):
