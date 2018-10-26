@@ -478,6 +478,9 @@ def run(args):
   imagesets = []
   for datablock in datablocks:
     imagesets.extend(datablock.extract_imagesets())
+  # Split all the refln tables by ID, corresponding to the respective imagesets
+  reflections = [refl_unique_id for refl in reflections
+                 for refl_unique_id in refl.split_by_experiment_id()]
 
   assert len(imagesets) > 0
   assert len(reflections) == len(imagesets)
