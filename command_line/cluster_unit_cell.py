@@ -72,6 +72,11 @@ def run(args):
 
 def do_cluster_analysis(crystal_symmetries, params):
 
+  try:
+    import xfel
+  except ImportError:
+    raise Sorry("cluster_unit_cell requires xfel module but is not available")
+
   from xfel.clustering.cluster import Cluster
   from xfel.clustering.cluster_groups import unit_cell_info
 
