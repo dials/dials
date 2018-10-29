@@ -176,7 +176,8 @@ class Script(object):
                                         scan=exp.scan,
                                         goniometer=exp.goniometer,
                                         crystal=ref_crystal,
-                                        imageset=exp.imageset))
+                                        imageset=exp.imageset,
+                                        identifier=exp.identifier))
     return new_experiments
 
   @staticmethod
