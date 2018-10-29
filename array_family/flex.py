@@ -27,9 +27,6 @@ elif get_real_type() == "double":
 else:
   raise TypeError('unknown "real" type')
 
-class IdentifierNotInMapException(Exception):
-  pass
-
 def strategy(cls, params=None):
   '''
   Wrap a class that takes params and experiments as a strategy.
@@ -1207,7 +1204,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
           id_values.append(k)
           break
     if len(id_values) != len(list_of_identifiers):
-      raise IdentifierNotInMapException("""Not all requested identifiers
+      raise KeyError("""Not all requested identifiers
 found in the table's map, has the experiment_identifiers() map been created?
 Requested %s:
 Found %s""" % (list_of_identifiers, id_values))
@@ -1237,7 +1234,7 @@ Found %s""" % (list_of_identifiers, id_values))
           id_values.append(k)
           break
     if len(id_values) != len(list_of_identifiers):
-      raise IdentifierNotInMapException("""Not all requested identifiers
+      raise KeyError("""Not all requested identifiers
 found in the table's map, has the experiment_identifiers() map been created?
 Requested %s:
 Found %s""" % (list_of_identifiers, id_values))

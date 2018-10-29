@@ -1190,15 +1190,15 @@ def test_select_remove_on_experiment_identifiers():
   assert list(table.experiment_identifiers().values()) == ["abcd", "mnop"]
 
   # Test exception is raised if bad choice
-  with pytest.raises(flex.IdentifierNotInMapException):
+  with pytest.raises(KeyError):
     table.remove_on_experiment_identifiers(["efgh"])
-  with pytest.raises(flex.IdentifierNotInMapException):
+  with pytest.raises(KeyError):
     table.select_on_experiment_identifiers(["efgh"])
 
   table = flex.reflection_table()
   table['id'] = flex.int([0, 1, 2, 3])
   # Test exception is raised if identifiers map not set
-  with pytest.raises(flex.IdentifierNotInMapException):
+  with pytest.raises(KeyError):
     table.remove_on_experiment_identifiers(["efgh"])
-  with pytest.raises(flex.IdentifierNotInMapException):
+  with pytest.raises(KeyError):
     table.select_on_experiment_identifiers(["abcd", "mnop"])
