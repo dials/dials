@@ -333,24 +333,20 @@ def run(args):
     import copy
     from dxtbx.model import ExperimentList
     from dxtbx.serialize import dump
-    reindexed_experiments = ExperimentList()
+    reindexed_experiments = copy.deepcopy(experiments)
     reindexed_reflections = flex.reflection_table()
-    expt_id = 0
     for cb_op, dataset_ids in reindexing_ops.iteritems():
       cb_op = sgtbx.change_of_basis_op(cb_op)
       for dataset_id in dataset_ids:
-        expt = experiments[dataset_selection[dataset_id]]
+        expt = reindexed_experiments[dataset_selection[dataset_id]]
         refl = reflections[dataset_selection[dataset_id]]
         reindexed_expt = copy.deepcopy(expt)
         refl_reindexed = copy.deepcopy(refl)
         cb_op_this = cb_op * change_of_basis_ops[dataset_id].inverse()
-        reindexed_expt.crystal = reindexed_expt.crystal.change_basis(cb_op_this)
+        expt.crystal = reindexed_expt.crystal.change_basis(cb_op_this)
         refl_reindexed['miller_index'] = cb_op_this.apply(
           refl_reindexed['miller_index'])
-        reindexed_experiments.append(reindexed_expt)
-        refl_reindexed['id'] = flex.int(refl_reindexed.size(), expt_id)
         reindexed_reflections.extend(refl_reindexed)
-        expt_id += 1
 
     logger.info('Saving reindexed experiments to %s' % params.output.experiments)
     dump.experiment_list(reindexed_experiments, params.output.experiments)
