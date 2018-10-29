@@ -27,6 +27,9 @@ elif get_real_type() == "double":
 else:
   raise TypeError('unknown "real" type')
 
+class IdentifierNotInMapException(Exception):
+  pass
+
 def strategy(cls, params=None):
   '''
   Wrap a class that takes params and experiments as a strategy.
@@ -1146,7 +1149,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       if "id" in self:
         index = set(self['id'])
         for i in index:
-          assert i in identifiers, (i, identifiers)
+          assert i in identifiers.keys(), (i, identifiers.keys())
     if experiments is not None:
       if len(identifiers) > 0:
         assert len(identifiers) == len(experiments), (len(identifiers), len(experiments))
@@ -1190,6 +1193,60 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     return self['miller_index_asu']
 
+  def select_on_experiment_identifiers(self, list_of_identifiers):
+    '''
+    Given a list of experiment identifiers (strings), perform a selection
+    and return a reflection table with properly configured experiment_identifiers
+    map.
+    '''
+    #First get the reverse of the map i.e. ids for a given exp_identifier
+    id_values = []
+    for exp_id in list_of_identifiers:
+      for k in self.experiment_identifiers().keys():
+        if self.experiment_identifiers()[k] == exp_id:
+          id_values.append(k)
+          break
+    if len(id_values) != len(list_of_identifiers):
+      raise IdentifierNotInMapException("""Not all requested identifiers
+found in the table's map, has the experiment_identifiers() map been created?
+Requested %s:
+Found %s""" % (list_of_identifiers, id_values))
+    # Build up a selection and use this
+    sel = flex.bool(self.size(), False)
+    for id_val, exp_id in zip(id_values, list_of_identifiers):
+      id_sel = (self['id'] == id_val)
+      sel.set_selected(id_sel, True)
+    self = self.select(sel)
+    # Remove entries from the experiment_identifiers map
+    for k in self.experiment_identifiers().keys():
+      if k not in id_values:
+        del self.experiment_identifiers()[k]
+    return self
+
+  def remove_on_experiment_identifiers(self, list_of_identifiers):
+    '''
+    Remove datasets from the table, given a list of experiment
+    identifiers (strings).
+    '''
+    #First get the reverse of the map i.e. ids for a given exp_identifier
+    assert 'id' in self
+    id_values = []
+    for exp_id in list_of_identifiers:
+      for k in self.experiment_identifiers().keys():
+        if self.experiment_identifiers()[k] == exp_id:
+          id_values.append(k)
+          break
+    if len(id_values) != len(list_of_identifiers):
+      raise IdentifierNotInMapException("""Not all requested identifiers
+found in the table's map, has the experiment_identifiers() map been created?
+Requested %s:
+Found %s""" % (list_of_identifiers, id_values))
+    #Now delete the selections, also removing the entry from the map
+    for id_val in id_values:
+      sel = (self['id'] == id_val)
+      self.del_selected(sel)
+      del self.experiment_identifiers()[id_val]
+    return self
 
 class reflection_table_selector(object):
   '''

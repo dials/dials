@@ -1155,5 +1155,50 @@ def test_experiment_identifiers():
   assert table.experiment_identifiers()[2] == 'ijkl'
   assert table.experiment_identifiers()[3] == 'mnop'
   assert table.experiment_identifiers()[4] == 'qrst'
-  
 
+def test_select_remove_on_experiment_identifiers():
+
+  from dials.array_family import flex
+  from dxtbx.model import ExperimentList, Experiment
+
+  table = flex.reflection_table()
+  table['id'] = flex.int([0, 1, 2, 3])
+
+  experiments = ExperimentList()
+  experiments.append(Experiment(identifier="abcd"))
+  experiments.append(Experiment(identifier="efgh"))
+  experiments.append(Experiment(identifier="ijkl"))
+  experiments.append(Experiment(identifier="mnop"))
+  table.experiment_identifiers()[0] = "abcd"
+  table.experiment_identifiers()[1] = "efgh"
+  table.experiment_identifiers()[2] = "ijkl"
+  table.experiment_identifiers()[3] = "mnop"
+
+  table.assert_experiment_identifiers_are_consistent(experiments)
+
+  table = table.remove_on_experiment_identifiers(["efgh"])
+  del experiments[1]
+  table.assert_experiment_identifiers_are_consistent(experiments)
+
+  assert list(table.experiment_identifiers().keys()) == [0, 2, 3]
+  assert list(table.experiment_identifiers().values()) == ["abcd", "ijkl", "mnop"]
+
+  table = table.select_on_experiment_identifiers(["abcd", "mnop"])
+  del experiments[1] #now ijkl
+  table.assert_experiment_identifiers_are_consistent(experiments)
+  assert list(table.experiment_identifiers().keys()) == [0, 3]
+  assert list(table.experiment_identifiers().values()) == ["abcd", "mnop"]
+
+  # Test exception is raised if bad choice
+  with pytest.raises(flex.IdentifierNotInMapException):
+    table.remove_on_experiment_identifiers(["efgh"])
+  with pytest.raises(flex.IdentifierNotInMapException):
+    table.select_on_experiment_identifiers(["efgh"])
+
+  table = flex.reflection_table()
+  table['id'] = flex.int([0, 1, 2, 3])
+  # Test exception is raised if identifiers map not set
+  with pytest.raises(flex.IdentifierNotInMapException):
+    table.remove_on_experiment_identifiers(["efgh"])
+  with pytest.raises(flex.IdentifierNotInMapException):
+    table.select_on_experiment_identifiers(["abcd", "mnop"])
