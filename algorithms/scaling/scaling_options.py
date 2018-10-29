@@ -31,6 +31,10 @@ phil_scope = iotbx.phil.parse('''
       .help = "Number of resolution bins to use for the decay term in the
                array-based model."
       .expert_level = 1
+    decay_restraint = 1e-1
+      .type = float(value_min=0.0)
+      .help = "Weight to weakly restrain B-values to 0 for physical model."
+      .expert_level = 2
     absorption_term = True
       .type = bool
       .help = "Option to turn off absorption correction (for physical/array

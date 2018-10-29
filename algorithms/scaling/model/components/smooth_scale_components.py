@@ -252,6 +252,16 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
     s = super(SmoothBScaleComponent1D, self).calculate_scales(block_id)
     return flex.exp(s /(2.0 * (self._d_values[block_id] **2)))
 
+  def calculate_restraints(self):
+    residual = self.parameter_restraints * (self._parameters*self._parameters)
+    gradient = 2.0 * self.parameter_restraints * self._parameters
+    return residual, gradient
+
+  def calculate_jacobian_restraints(self):
+    jacobian = sparse.matrix(self.n_params, self.n_params)
+    for i in range(self.n_params):
+      jacobian[i, i] = +1.0
+    return self._parameters, jacobian, self.parameter_restraints
 
 class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
   """Implementation of a 2D array-based smoothly varying scale factor.

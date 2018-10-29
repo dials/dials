@@ -124,7 +124,8 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
   """Test the PhysicalScalingModel class."""
   configdict = {'corrections': ['scale', 'decay', 'absorption'],
     's_norm_fac': 1.0, 'scale_rot_interval': 2.0, 'd_norm_fac': 1.0,
-    'decay_rot_interval': 2.0, 'lmax' : 1, "abs_surface_weight":1e6}
+    'decay_rot_interval': 2.0, 'lmax' : 1, "abs_surface_weight": 1e6,
+    "decay_restraint": 1e-1}
 
   parameters_dict = {
       'scale': {'parameters' : flex.double([1.2, 1.1]), 'parameter_esds' : None},
@@ -162,7 +163,7 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
   physical_dict = {"__id__": "physical", "is_scaled": True, "scale": {
     "n_parameters": 2, "parameters": [0.5, 1.0], "est_standard_devs" : [0.05, 0.1]},
     "configuration_parameters": {"corrections": ["scale"], "s_norm_fac": 0.1,
-        "scale_rot_interval": 10.0}}
+        "scale_rot_interval": 10.0, "decay_restaint" : 1e-1}}
   physicalmodel = PhysicalScalingModel.from_dict(physical_dict)
   assert physicalmodel.id_ == 'physical'
   assert 'scale' in physicalmodel.components
@@ -183,7 +184,8 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
     "est_standard_devs" : [0.01, 0.02, 0.03]}, "configuration_parameters": {
       "corrections": ["scale", "decay", "absorption"], "s_norm_fac": 0.1,
         "scale_rot_interval": 10.0, "d_norm_fac": 0.2,
-        "decay_rot_interval": 20.0, "lmax":1, "abs_surface_weight":1e6}}
+        "decay_rot_interval": 20.0, "lmax":1, "abs_surface_weight":1e6,
+        "decay_restraint" : 1e-1}}
   physicalmodel = PhysicalScalingModel.from_dict(physical_dict)
   assert physicalmodel.id_ == 'physical'
   assert 'scale' in physicalmodel.components

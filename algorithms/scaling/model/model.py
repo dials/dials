@@ -141,6 +141,8 @@ class PhysicalScalingModel(ScalingModelBase):
       decay_setup = parameters_dict['decay']
       self._components.update({'decay' : SmoothBScaleComponent1D(
         decay_setup['parameters'], 'norm_time_values', decay_setup['parameter_esds'])})
+      self.components['decay'].parameter_restraints = flex.double(
+        self.components['decay'].parameters.size(), configdict['decay_restraint'])
     if 'absorption' in configdict['corrections']:
       absorption_setup = parameters_dict['absorption']
       self._components.update({'absorption' : SHScaleComponent(

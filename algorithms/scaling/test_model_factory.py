@@ -40,6 +40,7 @@ def mock_physical_params():
   params.parameterisation.decay_interval = 15.0
   params.parameterisation.absorption_term = True
   params.parameterisation.lmax = 4
+  params.parameterisation.decay_restraint = 1e-1
   return params
 
 def generated_refl():

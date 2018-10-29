@@ -59,7 +59,8 @@ class PhysicalSMFactory(object):
       n_decay_param, d_norm_fac, decay_rot_int = initialise_smooth_input(
         osc_range, one_osc_width, params.parameterisation.decay_interval)
       configdict.update({'d_norm_fac' : d_norm_fac,
-        'decay_rot_interval' : decay_rot_int})
+        'decay_rot_interval' : decay_rot_int,
+        'decay_restraint': params.parameterisation.decay_restraint})
       parameters_dict['decay'] = {'parameters' : flex.double(n_decay_param, 0.0),
         'parameter_esds' : None}
 

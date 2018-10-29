@@ -36,6 +36,18 @@ class ScaleComponentBase(object):
     self._inverse_scales = []
     self._derivatives = []
     self._curvatures = []
+    self._parameter_restraints = None
+
+  @property
+  def parameter_restraints(self):
+    """Restraint weights for the component parameters."""
+    return self._parameter_restraints
+
+  @parameter_restraints.setter
+  def parameter_restraints(self, restraints):
+    assert restraints.size() == self.parameters.size()
+    """Set Restraint weights for the component parameters."""
+    self._parameter_restraints = restraints
 
   @property
   def n_params(self):
@@ -241,17 +253,6 @@ class SHScaleComponent(ScaleComponentBase):
   def sph_harm_table(self, sht):
     """Set the spherical harmonic table."""
     self._sph_harm_table = sht
-
-  @property
-  def parameter_restraints(self):
-    """Restraint weights for the component parameters."""
-    return self._parameter_restraints
-
-  @parameter_restraints.setter
-  def parameter_restraints(self, restraints):
-    assert restraints.size() == self.parameters.size()
-    """Set Restraint weights for the component parameters."""
-    self._parameter_restraints = restraints
 
   def calculate_restraints(self):
     residual = self.parameter_restraints * (self._parameters*self._parameters)
