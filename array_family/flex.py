@@ -16,6 +16,7 @@ from cctbx.array_family import flex
 import cctbx
 import cctbx.miller
 
+from collections import OrderedDict
 import logging
 logger = logging.getLogger(__name__)
 
@@ -1244,6 +1245,21 @@ Found %s""" % (list_of_identifiers, id_values))
       self.del_selected(sel)
       del self.experiment_identifiers()[id_val]
     return self
+
+  def reset_ids(self):
+    '''
+    Reset the 'id' column such that the experiment identifiers are
+    numbered 0 .. n-1.
+    '''
+    reverse_map = OrderedDict(
+      (v, k) for k, v in self.experiment_identifiers())
+    orig_id = self['id'].deep_copy()
+    for k in self.experiment_identifiers().keys():
+      del self.experiment_identifiers()[k]
+    for i_exp, exp_id in enumerate(reverse_map.keys()):
+      sel_exp = orig_id == reverse_map[exp_id]
+      self['id'].set_selected(sel_exp, i_exp)
+      self.experiment_identifiers()[i_exp] = exp_id
 
 class reflection_table_selector(object):
   '''

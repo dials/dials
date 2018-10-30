@@ -1204,6 +1204,18 @@ def test_select_remove_on_experiment_identifiers():
   assert list(table.experiment_identifiers().keys()) == [0, 3]
   assert list(table.experiment_identifiers().values()) == ["abcd", "mnop"]
 
+  # reset 'id' column such that they are numbered 0 .. n-1
+  table.reset_ids()
+  table.assert_experiment_identifiers_are_consistent(experiments)
+  assert list(table.experiment_identifiers().keys()) == [0, 1]
+  assert list(table.experiment_identifiers().values()) == ["abcd", "mnop"]
+  # test that the function doesn't fail if no identifiers set
+  table1 = copy.deepcopy(table)
+  for k in table1.experiment_identifiers().keys():
+    del table1.experiment_identifiers()[k]
+  table1.reset_ids()
+  assert list(table1.experiment_identifiers().keys()) == []
+
   # Test exception is raised if bad choice
   with pytest.raises(KeyError):
     table.remove_on_experiment_identifiers(["efgh"])
