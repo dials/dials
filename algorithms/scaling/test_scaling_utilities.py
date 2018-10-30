@@ -172,25 +172,39 @@ def test_parse_multiple_datasets():
   selects on the column named 'id'."""
   rt1 = flex.reflection_table()
   rt1['id'] = flex.int([0, 0, 0])
+  rt1.experiment_identifiers()[0] = '0'
   rt2 = flex.reflection_table()
   rt2['id'] = flex.int([2, 2, 4, 4])
-  single_tables, ids = parse_multiple_datasets([rt2])
-  assert list(ids) == [2, 4]
+  rt2.experiment_identifiers()[2] = '2'
+  rt2.experiment_identifiers()[4] = '4'
+  single_tables = parse_multiple_datasets([rt2])
   assert len(single_tables) == 2
-  single_tables, ids = parse_multiple_datasets([rt1, rt2])
-  assert list(ids) == [0, 2, 4]
+  assert list(set(single_tables[0]['id'])) == [2]
+  assert list(set(single_tables[1]['id'])) == [4]
+  single_tables = parse_multiple_datasets([rt1, rt2])
+  assert list(set(single_tables[0]['id'])) == [0]
+  assert list(set(single_tables[1]['id'])) == [2]
+  assert list(set(single_tables[2]['id'])) == [4]
   assert len(single_tables) == 3
-  single_tables, ids = parse_multiple_datasets([rt1])
+  single_tables = parse_multiple_datasets([rt1])
   assert len(single_tables) == 1
-  assert list(ids) == [0]
+  assert list(set(single_tables[0]['id'])) == [0]
 
   # if a duplicate id is given, then this should be detected and new ids
   # determined for all datasets.
   rt3 = flex.reflection_table()
   rt3['id'] = flex.int([2, 2])
-  single_tables, ids = parse_multiple_datasets([rt1, rt2, rt3])
+  rt3.experiment_identifiers()[2] = '5'
+  single_tables = parse_multiple_datasets([rt1, rt2, rt3])
   assert len(single_tables) == 4
-  assert list(ids) == [0, 1, 2, 3]
+  assert list(set(single_tables[0]['id'])) == [0]
+  assert single_tables[0].experiment_identifiers()[0] == '0'
+  assert list(set(single_tables[1]['id'])) == [1]
+  assert single_tables[1].experiment_identifiers()[1] == '2'
+  assert list(set(single_tables[2]['id'])) == [2]
+  assert single_tables[2].experiment_identifiers()[2] == '4'
+  assert list(set(single_tables[3]['id'])) == [3]
+  assert single_tables[3].experiment_identifiers()[3] == '5'
 
 
 def empty_explist_3exp():
@@ -220,11 +234,13 @@ def test_assign_unique_identifiers():
   assert list(experiments.identifiers()) == ['', '', '']
   exp, rts = assign_unique_identifiers(experiments, reflections)
   expected_identifiers = ['0', '1', '2']
+  expected_ids = [0, 1, 2]
   # Check that identifiers are set in experiments and reflection table.
   assert (list(exp.identifiers())) == expected_identifiers
   for i, refl in enumerate(rts):
     assert refl.experiment_identifiers()[i] == expected_identifiers[i]
     assert list(set(refl['id'])) == [i]
+    assert i == expected_ids[i]
 
   # Test case where none are set but refl table ids have duplicates
   experiments = empty_explist_3exp()
@@ -234,9 +250,11 @@ def test_assign_unique_identifiers():
   expected_identifiers = ['0', '1', '2']
   # Check that identifiers are set in experiments and reflection table.
   assert (list(exp.identifiers())) == expected_identifiers
+  expected_ids = [0, 1, 2]
   for i, refl in enumerate(rts):
     assert refl.experiment_identifiers()[i] == expected_identifiers[i]
     assert list(set(refl['id'])) == [i]
+    assert i == expected_ids[i]
 
   # Test case where identifiers are already set.
   experiments = empty_explist_3exp()
@@ -263,10 +281,12 @@ def test_assign_unique_identifiers():
   # Check that identifiers are set in experiments and reflection table.
   assert exp is experiments
   assert list(exp.identifiers()) == expected_identifiers
+  expected_ids = [0, 1, 4]
   for i, refl in enumerate(rts):
     id_ = refl['id'][0]
     assert refl.experiment_identifiers()[id_] == expected_identifiers[i]
     assert list(set(refl['id'])) == [id_]
+    assert id_ == expected_ids[i]
 
   # Now test that if some are set, these are maintained and unique ids are
   # set for the rest
@@ -277,10 +297,12 @@ def test_assign_unique_identifiers():
   exp, rts = assign_unique_identifiers(experiments, reflections)
   expected_identifiers = ['1', '0', '2']
   assert list(exp.identifiers()) == expected_identifiers
+  expected_ids = [0, 1, 2]
   for i, refl in enumerate(rts):
     id_ = refl['id'][0]
     assert refl.experiment_identifiers()[id_] == expected_identifiers[i]
     assert list(set(refl['id'])) == [id_]
+    assert id_ == expected_ids[i]
 
 def test_select_datasets_on_ids():
   """Test the select_datasets_on_ids function."""

@@ -73,26 +73,34 @@ def save_reflections(reflection_table, filename):
   logger.info('Time taken: %g', (time() - st))
 
 def parse_multiple_datasets(reflections):
-  """Parse multiple datasets from single reflection tables, selecting on id."""
+  """Parse multiple datasets from single reflection tables, selecting on id.
+  If duplicate ids are found, renumber from 0..n-1, taking care of experiment
+  identifiers if these are set."""
   single_reflection_tables = []
   dataset_id_list = []
   for refl_table in reflections:
     dataset_ids = set(refl_table['id']).difference(set([-1]))
-    n_datasets = len(dataset_ids)
     dataset_id_list.extend(list(dataset_ids))
-    if n_datasets > 1:
+    if len(dataset_ids) > 1:
       logger.info('Detected existence of a multi-dataset reflection table \n'
-        'containing %s datasets. \n', n_datasets)
+        'containing %s datasets. \n', len(dataset_ids))
       result = refl_table.split_by_experiment_id()
       single_reflection_tables.extend(result)
     else:
       single_reflection_tables.append(refl_table)
-    if len(dataset_id_list) != len(set(dataset_id_list)):
-      logger.warn('Duplicate dataset ids found in different reflection tables. \n'
-      'These will be treated as coming from separate datasets, and \n'
-      'new dataset ids will be assigned for the whole dataset. \n')
-      dataset_id_list = range(len(dataset_id_list))
-  return single_reflection_tables, dataset_id_list
+  if len(dataset_id_list) != len(set(dataset_id_list)): # need to reset some ids
+    logger.warn('Duplicate dataset ids found in different reflection tables. \n'
+    'These will be treated as coming from separate datasets, and \n'
+    'new dataset ids will be assigned for the whole dataset. \n')
+    new_id_list = range(len(dataset_id_list))
+    for r, old_id, new_id in zip(single_reflection_tables, dataset_id_list,
+      new_id_list):
+      r['id'] = flex.int(r.size(), new_id)
+      if list(r.experiment_identifiers()):# if identifiers, need to update
+        expid = r.experiment_identifiers()[old_id]
+        del r.experiment_identifiers()[old_id]
+        r.experiment_identifiers()[new_id] = expid
+  return single_reflection_tables
 
 def get_next_unique_id(unique_id, used_ids):
   """Test a list of used id strings to see if it contains str(unique_id),
@@ -114,33 +122,32 @@ def assign_unique_identifiers(experiments, reflections):
   experiments will be given string ids of increasing integers, but skipping
   already existing values."""
   if len(experiments) != len(reflections):
-    if len(reflections) == 1: #try to split this table into a list
-      reflections, _ = parse_multiple_datasets(reflections)
-      assert len(reflections) == len(experiments), """Unable to split single reflection table
-to be the same length as the experiments list."""
-    else:
-      raise Sorry('''This function must take in a list of experiments and reflection
-tables of equal length (or a composite single reflection table and corresponding
-experiment list that matches number of tables once split).''')
-  used_ids = []
+    reflections = parse_multiple_datasets(reflections)
+    if len(reflections) != len(experiments):
+      raise Sorry("""Unable to split a list of reflection tables to be the same
+length as the experiments list. Please check the input data.""")
+  used_str_ids = []
   for exp, refl in zip(experiments, reflections):
     if exp.identifier != '':
-      refl.assert_experiment_identifiers_are_consistent()
-      used_ids.append(exp.identifier)
-  if len(set(used_ids)) == len(reflections): #all have them set, don't do anything
+      assert list(refl.experiment_identifiers().values()) == [exp.identifier]
+      used_str_ids.append(exp.identifier)
+  if len(set(used_str_ids)) == len(reflections): #all have them set, don't do anything
     pass
-  elif used_ids: #some identifiers set
+  elif used_str_ids: #some identifiers set - will reset all the ids in the table
+    # to be numbered sequentially, but originial str ids kept.
     unique_id = 0
     for i, (exp, refl) in enumerate(zip(experiments, reflections)):
-      if exp.identifier != '':
-        refl.experiment_identifiers()[i] = exp.identifier
-      else:
-        unique_id = get_next_unique_id(unique_id, used_ids)
+      if exp.identifier == '':
+        unique_id = get_next_unique_id(unique_id, used_str_ids)
         strid = '%i' % unique_id
         exp.identifier = strid
         refl.experiment_identifiers()[i] = strid
-        refl['id'] = flex.int(refl.size(), unique_id)
         unique_id += 1
+      else:
+        k = refl.experiment_identifiers().keys()[0]
+        expid = refl.experiment_identifiers().values()[0]
+        del refl.experiment_identifiers()[k]
+        refl.experiment_identifiers()[i] = expid
       refl['id'] = flex.int(refl.size(), i)
   else: #no identifiers set, so set all as str(int) of location in list.
     for i, (exp, refl) in enumerate(zip(experiments, reflections)):

@@ -61,7 +61,7 @@ def main(argv):
   if len(experiments) != 1:
     print(('Checking for the existence of a reflection table {sep}'
       'containing multiple scaled datasets {sep}').format(sep='\n'))
-    reflections, _ = parse_multiple_datasets(reflections)
+    reflections = parse_multiple_datasets(reflections)
     print("Found %s reflection tables in total." % len(reflections))
     print("Found %s experiments in total." % len(experiments))
 

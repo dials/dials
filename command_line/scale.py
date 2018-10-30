@@ -184,7 +184,7 @@ class Script(object):
 
     logger.info('Checking for the existence of a reflection table \n'
       'containing multiple datasets \n')
-    self.reflections, self.dataset_ids = parse_multiple_datasets(self.reflections)
+    self.reflections = parse_multiple_datasets(self.reflections)
     logger.info("Found %s reflection tables in total.", len(self.reflections))
     logger.info("Found %s experiments in total.", len(self.experiments))
 
