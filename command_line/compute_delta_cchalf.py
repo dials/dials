@@ -331,27 +331,23 @@ class Script(object):
     Y = list(delta_cchalf_i.values())
     mean = sum(Y) / len(Y)
     sdev = sqrt(sum((yy-mean)**2 for yy in Y)/len(Y))
-    output_experiments = ExperimentList()
-    output_reflections = reflections#flex.reflection_table()
     logger.info("\nmean delta_cc_half %s" % (mean*100))
     logger.info("stddev delta_cc_half %s" % (sdev*100))
     cutoff_value = mean - params.stdcutoff*sdev
     logger.info("cutoff value: %s \n" % (cutoff_value*100))
-    expids = list(experiments.identifiers())
+    datasets_to_remove = []
     for x in sorted(delta_cchalf_i.keys()):
       y = delta_cchalf_i[x]
       if y < cutoff_value:
         logger.info("Removing dataset %d" % x)
-        output_reflections.del_selected(output_reflections['id'] == x)
-        del output_reflections.experiment_identifiers()[x]
-      else:
-        strid = output_reflections.experiment_identifiers()[x]
-        output_experiments.append(experiments[expids.index(strid)])
-    output_reflections.assert_experiment_identifiers_are_consistent(output_experiments)
+        datasets_to_remove.append(reflections.experiment_identifiers()[x])
+    output_reflections = reflections.remove_on_experiment_identifiers(datasets_to_remove)
+    experiments.remove_on_experiment_identifiers(datasets_to_remove)
+    output_reflections.assert_experiment_identifiers_are_consistent(experiments)
 
     # Write the experiments and reflections to file
     self.write_reflections(output_reflections, params.output.reflections)
-    self.write_experiments(output_experiments, params.output.experiments)
+    self.write_experiments(experiments, params.output.experiments)
 
   def write_reflections(self, reflections, filename):
     ''' Save the reflections to file. '''
