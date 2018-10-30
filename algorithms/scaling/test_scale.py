@@ -220,7 +220,6 @@ def test_scale_script_prepare_input():
   script.prepare_input()
 
   assert len(script.reflections) == 1
-  assert script.reflections[0] is reflections[0]
 
   #Try again, this time excluding
   params, exp, reflections = generate_test_input(n=2)

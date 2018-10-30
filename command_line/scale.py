@@ -59,9 +59,8 @@ from dials.algorithms.scaling.scaling_library import create_scaling_model,\
 from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScalerFactory
 from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets,\
-  select_datasets_on_ids, save_experiments, save_reflections,\
-  assign_unique_identifiers, log_memory_usage, DialsMergingStatisticsError,\
-  get_next_unique_id
+  save_experiments, save_reflections, select_datasets_on_ids,\
+  assign_unique_identifiers, log_memory_usage, DialsMergingStatisticsError
 from dials.algorithms.scaling.post_scaling_analysis import \
   exclude_on_batch_rmerge, exclude_on_image_scale
 
@@ -174,36 +173,25 @@ class Script(object):
   def prepare_input(self):
     """Perform checks on the data and prepare the data for scaling."""
 
+    #Select or exclude by experiment identifier if the option is requested
+    use_datasets = self.params.dataset_selection.use_datasets
+    exclude_datasets = self.params.dataset_selection.exclude_datasets
+    if (use_datasets or exclude_datasets):
+      self.experiments, self.reflections = select_datasets_on_ids(
+        self.experiments, self.reflections, exclude_datasets, use_datasets)
+      logger.info("\nDataset unique identifiers for retained datasets are %s \n",
+        list(self.experiments.identifiers()))
+
     logger.info('Checking for the existence of a reflection table \n'
       'containing multiple datasets \n')
     self.reflections, self.dataset_ids = parse_multiple_datasets(self.reflections)
     logger.info("Found %s reflection tables in total.", len(self.reflections))
     logger.info("Found %s experiments in total.", len(self.experiments))
 
-    if (self.params.dataset_selection.use_datasets or
-     self.params.dataset_selection.exclude_datasets):
-     if self.experiments.identifiers().count('') > 0:
-      logger.warn('\nERROR: Attempting to choose datasets based on unique identifier,\n'
-        'but not all datasets currently have a unique identifier! Please make\n'
-        'sure all identifiers are set before attempting to select datasets.\n')
-      logger.info('Current identifiers set as: %s', list(
-        self.experiments.identifiers()))
-      sys.exit()
-
     self.experiments, self.reflections = assign_unique_identifiers(
       self.experiments, self.reflections)
     logger.info("\nDataset unique identifiers are %s \n", list(
       self.experiments.identifiers()))
-
-    if (self.params.dataset_selection.use_datasets or
-     self.params.dataset_selection.exclude_datasets):
-      self.experiments, self.reflections = \
-        select_datasets_on_ids(self.experiments, self.reflections,
-          use_datasets=self.params.dataset_selection.use_datasets,
-          exclude_datasets=self.params.dataset_selection.exclude_datasets)
-
-      logger.info("\nDataset unique identifiers for retained datasets are %s \n",
-        list(self.experiments.identifiers()))
 
     if self.params.scaling_options.space_group:
       for experiment in self.experiments:

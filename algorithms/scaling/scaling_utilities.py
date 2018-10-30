@@ -3,6 +3,7 @@ Module of utility functions for scaling.
 """
 
 from __future__ import print_function
+import sys
 import logging
 from time import time
 import copy
@@ -82,15 +83,8 @@ def parse_multiple_datasets(reflections):
     if n_datasets > 1:
       logger.info('Detected existence of a multi-dataset reflection table \n'
         'containing %s datasets. \n', n_datasets)
-      for dataset_id in dataset_ids:
-        single_refl_table = refl_table.select(refl_table['id'] == dataset_id)
-        if refl_table.experiment_identifiers().keys():
-          #if it has experiment identifiers, handle this here
-          strid = refl_table.experiment_identifiers()[dataset_id]
-          for key in single_refl_table.experiment_identifiers().keys():
-            del single_refl_table.experiment_identifiers()[key]
-          single_refl_table.experiment_identifiers()[dataset_id] = strid
-        single_reflection_tables.append(single_refl_table)
+      result = refl_table.split_by_experiment_id()
+      single_reflection_tables.extend(result)
     else:
       single_reflection_tables.append(refl_table)
     if len(dataset_id_list) != len(set(dataset_id_list)):
@@ -156,38 +150,47 @@ experiment list that matches number of tables once split).''')
       refl['id'] = flex.int(refl.size(), i)
   return experiments, reflections
 
-def select_datasets_on_ids(experiments, reflections,
+def select_datasets_on_ids(experiments, reflection_table_list,
   exclude_datasets=None, use_datasets=None):
-  """Select a subset of the dataset based on the use_datasets and
-  exclude_datasets params options."""
-  unique_identifiers = list(experiments.identifiers())
+  """Given an list of experiments and reflections (each table may contain
+  multiple reflections), select a subset based on the experiment identifiers
+  and use_datasets/exclude_datasets (which are lists of strings)."""
   if use_datasets or exclude_datasets:
     assert not (use_datasets and exclude_datasets), """
       The options use_datasets and exclude_datasets cannot be used in conjuction."""
-    if exclude_datasets:
-      assert all(i in unique_identifiers for i in exclude_datasets), """
-      id not found in reflection tables"""
-      reverse_ids = sorted(exclude_datasets,
-        reverse=True)
-      for id_ in reverse_ids:
-        logger.info("Removing dataset %s.", id_)
-        index = unique_identifiers.index(id_)
-        del experiments[index]
-        del reflections[index]
-      return experiments, reflections
-    elif use_datasets:
-      assert all(i in unique_identifiers for i in use_datasets), """
-      id not found in reflection tables."""
-      new_experiments = ExperimentList()
-      new_reflections = []
-      for id_ in use_datasets:
-        logger.info("Using dataset %s for scaling.", id_)
-        index = unique_identifiers.index(id_)
-        new_experiments.append(experiments[index])
-        new_reflections.append(reflections[index])
-      return new_experiments, new_reflections
+    if experiments.identifiers().count('') > 0:
+      logger.warn('\nERROR: Attempting to choose datasets based on unique identifier,\n'
+        'but not all datasets currently have a unique identifier! Please make\n'
+        'sure all identifiers are set before attempting to select datasets.\n')
+      logger.info('Current identifiers set as: %s', list(experiments.identifiers()))
+      sys.exit()
+    list_of_reflections = []
+    if use_datasets:
+      for reflection_table in reflection_table_list:
+        expids = list(reflection_table.experiment_identifiers().values())
+        expids_in_this_table = list(set(use_datasets).intersection(set(expids)))
+        if expids_in_this_table: #if none, then no datasets wanted from table
+          list_of_reflections.append(reflection_table.select_on_experiment_identifiers(
+            expids_in_this_table))
+      experiments.select_on_experiment_identifiers(use_datasets)
+    elif exclude_datasets:
+      assert len(set(exclude_datasets).intersection(set(experiments.identifiers()))) == \
+        len(set(exclude_datasets)), """Attempting to exclude datasets based on identifiers that
+are not found in the experiment list."""
+      for reflection_table in reflection_table_list:
+        expids = list(reflection_table.experiment_identifiers().values())
+        expids_in_this_table = list(set(exclude_datasets).intersection(set(expids)))
+        if expids_in_this_table: #only append if data left after removing
+          r_table = reflection_table.remove_on_experiment_identifiers(
+            expids_in_this_table)
+          if r_table.size() > 0:
+            list_of_reflections.append(r_table)
+        else:
+          list_of_reflections.append(reflection_table)
+      experiments.remove_on_experiment_identifiers(exclude_datasets)
+    return experiments, list_of_reflections
   else:
-    return experiments, reflections
+    return experiments, reflection_table_list
 
 '''def calc_sigmasq(jacobian_transpose, var_cov):
   sigmasq = flex.float([])

@@ -293,29 +293,33 @@ def test_select_datasets_on_ids():
   reflections[2].experiment_identifiers()[4] = '4'
   experiments[2].identifier = '4'
   use_datasets = ['0', '2']
-  exp, refl = select_datasets_on_ids(experiments, reflections,
+  experiments, refl = select_datasets_on_ids(experiments, reflections,
     use_datasets=use_datasets)
-  assert len(exp) == 2
+  assert len(experiments) == 2
   assert len(refl) == 2
-  assert list(exp.identifiers()) == ['0', '2']
+  assert list(experiments.identifiers()) == ['0', '2']
 
+  experiments = empty_explist_3exp()
+  experiments[0].identifier = '0'
+  experiments[1].identifier = '2'
+  experiments[2].identifier = '4'
   exclude_datasets = ['0']
-  exp, refl = select_datasets_on_ids(experiments, reflections,
+  experiments, refl = select_datasets_on_ids(experiments, reflections,
     exclude_datasets=exclude_datasets)
   assert len(refl) == 2
-  assert list(exp.identifiers()) == ['2', '4']
-  assert len(exp) == 2
+  assert list(experiments.identifiers()) == ['2', '4']
+  assert len(experiments) == 2
 
   with pytest.raises(AssertionError):
     exclude_datasets = ['0']
     use_datasets = ['2', '4']
-    exp, refl = select_datasets_on_ids(experiments,
+    experiments, refl = select_datasets_on_ids(experiments,
       reflections, use_datasets=use_datasets,
       exclude_datasets=exclude_datasets)
 
   with pytest.raises(AssertionError):
     exclude_datasets = ['1']
-    exp, refl = select_datasets_on_ids(experiments,
+    experiments, refl = select_datasets_on_ids(experiments,
       reflections, exclude_datasets=exclude_datasets)
 
 
