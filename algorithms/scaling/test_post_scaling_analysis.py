@@ -83,7 +83,9 @@ def test_exclude_on_image_scale(mock_exp, mock_2_KB_exps, test_2_refls):
   # The scale component is parameterised by 5 values, at normalised rotation of
   # -0.5, 0.5, 1.5, 2.5 3.5 (i.e. for data spanning 0>3 normalised rot)
   test_refl = generate_test_refl()
-  test_refl = mock_exp.scaling_model.configure_reflection_table(test_refl, mock_exp)
+  mock_params = Mock()
+  mock_params.parameterisation.decay_restraint = 0.0
+  test_refl = mock_exp.scaling_model.configure_reflection_table(test_refl, mock_exp, mock_params)
   mock_exp.scaling_model.components['scale'].update_reflection_data(test_refl)
   new_refl = exclude_on_image_scale([test_refl], [mock_exp], 0.5)[0]
   # Excluding below 0.5 should only pick out the last reflection.

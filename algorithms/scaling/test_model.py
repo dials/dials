@@ -59,7 +59,7 @@ def test_ScalingModelBase(mock_errormodel):
   SM_base.set_error_model(mock_errormodel)
   assert SM_base.configdict['error_model_parameters'] == mock_errormodel.refined_parameters
   assert SM_base.error_model is mock_errormodel
-  _ = SM_base.configure_reflection_table(1.0, 2.0) #Check method exists
+  _ = SM_base.configure_reflection_table(1.0, 2.0, 0.0) #Check method exists
   SM_base.show()
 
 def test_KBScalingModel():
@@ -146,7 +146,9 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
   assert list(comps['absorption'].parameters) == [0.01, 0.01, 0.01]
 
   # Test configure reflection table
-  rt = physicalmodel.configure_reflection_table(test_reflections, mock_exp)
+  mock_params = Mock()
+  mock_params.parameterisation.decay_restraint = 0.0
+  rt = physicalmodel.configure_reflection_table(test_reflections, mock_exp, mock_params)
   assert physicalmodel.components['scale'].col_name in rt
   assert physicalmodel.components['decay'].col_name in rt
 
@@ -238,7 +240,7 @@ def test_ArrayScalingModel(test_reflections, mock_exp):
   assert list(arraymodel.components['modulation'].parameters) == 4 * [0.9]
 
   # Test configure reflection table
-  rt = arraymodel.configure_reflection_table(test_reflections, mock_exp)
+  rt = arraymodel.configure_reflection_table(test_reflections, mock_exp, [])
   for comp in ['decay', 'absorption', 'modulation']:
     for col_name in arraymodel.components[comp].col_names:
       assert col_name in rt

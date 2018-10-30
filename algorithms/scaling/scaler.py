@@ -474,7 +474,7 @@ class SingleScalerBase(ScalerBase):
   def _configure_reflection_table(self):
     """Calculate requried quantities"""
     self._reflection_table = self.experiments.scaling_model.configure_reflection_table(
-      self._reflection_table, self.experiments)
+      self._reflection_table, self.experiments, self.params)
     rows = []
     for key, val in self.components.iteritems():
       rows.append([key, str(val.n_params)])

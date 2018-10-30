@@ -44,7 +44,7 @@ class ScalingModelBase(object):
     """Indicate that no scaled data is associated with this model."""
     self._is_scaled = False
 
-  def configure_reflection_table(self, reflection_table, experiment):
+  def configure_reflection_table(self, reflection_table, experiment, params):
     """Perform calculations necessary to update the reflection table."""
     return reflection_table
 
@@ -141,8 +141,6 @@ class PhysicalScalingModel(ScalingModelBase):
       decay_setup = parameters_dict['decay']
       self._components.update({'decay' : SmoothBScaleComponent1D(
         decay_setup['parameters'], 'norm_time_values', decay_setup['parameter_esds'])})
-      self.components['decay'].parameter_restraints = flex.double(
-        self.components['decay'].parameters.size(), configdict['decay_restraint'])
     if 'absorption' in configdict['corrections']:
       absorption_setup = parameters_dict['absorption']
       self._components.update({'absorption' : SHScaleComponent(
@@ -152,7 +150,7 @@ class PhysicalScalingModel(ScalingModelBase):
   def consecutive_refinement_order(self):
     return [['scale', 'decay'], ['absorption']]
 
-  def configure_reflection_table(self, reflection_table, experiment):
+  def configure_reflection_table(self, reflection_table, experiment, params):
     reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
       * experiment.scan.get_oscillation()[1])
     if 'scale' in self.components:
@@ -163,6 +161,9 @@ class PhysicalScalingModel(ScalingModelBase):
       reflection_table[self.components['decay'].col_name] = (
         reflection_table['xyzobs.px.value'].parts()[2]
         * self._configdict['d_norm_fac'])
+      self.components['decay'].parameter_restraints = flex.double(
+        self.components['decay'].parameters.size(),
+        params.parameterisation.decay_restraint)
     if 'absorption' in self.components:
       lmax = self._configdict['lmax']
       self.components['absorption'].sph_harm_table = sph_harm_table(
@@ -270,7 +271,7 @@ class ArrayScalingModel(ScalingModelBase):
   def consecutive_refinement_order(self):
     return [['decay'], ['absorption'], ['modulation']]
 
-  def configure_reflection_table(self, reflection_table, _):
+  def configure_reflection_table(self, reflection_table, _, __):
     refl_table = reflection_table
     xyz = refl_table['xyzobs.px.value'].parts()
     refl_table['norm_time_values'] = (xyz[2] * self.configdict['time_norm_fac'])
