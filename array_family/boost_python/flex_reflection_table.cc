@@ -461,7 +461,6 @@ namespace dials { namespace af { namespace boost_python {
       DIALS_ASSERT(off2 > off1);
       DIALS_ASSERT(off2 <= indices.size());
       std::size_t k = off1 + num[j];
-      DIALS_ASSERT(j < off2);
       num[j]++;
       indices[k] = i;
     }
@@ -530,7 +529,6 @@ namespace dials { namespace af { namespace boost_python {
       DIALS_ASSERT(off2 > off1);
       DIALS_ASSERT(off2 <= indices.size());
       std::size_t k = off1 + num[exp_id];
-      DIALS_ASSERT(k < off2);
       num[exp_id]++;
       indices[k] = i;
     }
