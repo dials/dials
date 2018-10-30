@@ -232,7 +232,6 @@ def run(args):
       reindexed_refl = copy.deepcopy(reflections[i])
       reindexed_refl['miller_index'] = cb_op_inp_best.apply(
         reindexed_refl['miller_index'])
-      reindexed_refl['id'] = flex.int(len(reindexed_refl), i)
       reindexed_reflections.extend(reindexed_refl)
     logger.info('Saving reindexed experiments to %s' % params.output.experiments)
     dump.experiment_list(reindexed_experiments, params.output.experiments)
