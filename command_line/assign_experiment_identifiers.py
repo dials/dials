@@ -39,7 +39,7 @@ experiments.json'''
       sys.exit()
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
-    reflections, _ = parse_multiple_datasets(reflections)
+    reflections = parse_multiple_datasets(reflections)
     experiments, reflections = assign_unique_identifiers(experiments, reflections)
     save_experiments(experiments, params.output.experiments)
     joint_table = flex.reflection_table()
