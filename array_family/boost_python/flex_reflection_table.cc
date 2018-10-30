@@ -476,8 +476,19 @@ namespace dials { namespace af { namespace boost_python {
       std::size_t num = off2 - off1;
       if (num > 0) {
         DIALS_ASSERT(off + num <= indices.size());
-        result.append(flex_table_suite::select_rows_index(
-              self, const_ref<std::size_t>(&indices[off], num)));
+        reflection_table table = flex_table_suite::select_rows_index(
+          self, const_ref<std::size_t>(&indices[off], num));
+        typedef reflection_table::experiment_map_type::const_iterator const_iterator;
+        for (const_iterator it = self.experiment_identifiers()->begin();
+          it != self.experiment_identifiers()->end(); ++it) {
+            int first_elem = 0;
+            af::const_ref<int> id = table["id"];
+            const_iterator found = self.experiment_identifiers()->find(id[first_elem]);
+            if (found != self.experiment_identifiers()->end()) {
+              (*table.experiment_identifiers())[found->first] = found->second;
+            }
+          }
+        result.append(table);
       }
     }
 

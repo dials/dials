@@ -823,6 +823,21 @@ def test_split_by_experiment_id():
     assert(len(res) == 100)
     assert(res['id'].count(exp) == 100)
 
+  # test the same but with experiment_identifiers() set - keep separate as
+  # function must work with and without experiment_identifiers() set
+  r.experiment_identifiers()[0] = '0'
+  r.experiment_identifiers()[1] = '1'
+  r.experiment_identifiers()[2] = '2'
+  r.experiment_identifiers()[3] = '3'
+  r.experiment_identifiers()[5] = '5'
+  result = r.split_by_experiment_id()
+  assert(len(result) == 5)
+  for res, exp in zip(result, [0, 1, 2, 3, 5]):
+    assert(len(res) == 100)
+    assert(res['id'].count(exp) == 100)
+    assert(list(res.experiment_identifiers().keys()) == [exp])
+    assert(list(res.experiment_identifiers().values()) == [str(exp)])
+
 def test_split_indices_by_experiment_id():
   from dials.array_family import flex
   r = flex.reflection_table()
