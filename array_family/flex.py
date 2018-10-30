@@ -1146,7 +1146,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       if "id" in self:
         index = set(self['id'])
         for i in index:
-          assert i in identifiers.keys(), (i, identifiers.keys())
+          assert i in identifiers.keys(), (i, list(identifiers.keys()))
     if experiments is not None:
       if len(identifiers) > 0:
         assert len(identifiers) == len(experiments), (len(identifiers), len(experiments))
