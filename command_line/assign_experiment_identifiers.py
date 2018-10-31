@@ -19,6 +19,10 @@ to reflections and experiments and saves them back to disk.
 """
 
 phil_scope = phil.parse('''
+  identifiers = None
+    .type = strings
+    .help = "User specified identifiers to use, must be a list of strings equal"
+            "to the number of datasets."
   output {
     reflections = assigned_reflections.pickle
       .type = str
@@ -42,7 +46,9 @@ experiments.json'''
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
     reflections = parse_multiple_datasets(reflections)
-    experiments, reflections = assign_unique_identifiers(experiments, reflections)
+    experiments, reflections = assign_unique_identifiers(
+      experiments, reflections, params.identifiers)
+    print('assigned identifiers: %s' % list(experiments.identifiers()))
     save_experiments(experiments, params.output.experiments)
     joint_table = flex.reflection_table()
     for reflection_table in reflections:

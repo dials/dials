@@ -68,7 +68,7 @@ def get_next_unique_id(unique_id, used_ids):
     unique_id += 1
   return unique_id
 
-def assign_unique_identifiers(experiments, reflections):
+def assign_unique_identifiers(experiments, reflections, identifiers=None):
   """
   Assign unique experiment identifiers to experiments and reflections lists.
   
@@ -94,6 +94,16 @@ def assign_unique_identifiers(experiments, reflections):
     if len(reflections) != len(experiments):
       raise Sorry("""Unable to split a list of reflection tables to be the same
 length as the experiments list. Please check the input data.""")
+  if identifiers:
+    if len(identifiers) != len(reflections):
+      raise Sorry("""Number of provided identifiers (%s) not the same length as
+number of datasets (%s)""" % (len(identifiers), len(reflections)))
+    for i, (exp, refl) in enumerate(zip(experiments, reflections)):
+      exp.identifier = identifiers[i]
+      for k in refl.experiment_identifiers().keys():
+        del refl.experiment_identifiers()[k]
+      refl.experiment_identifiers()[i] = identifiers[i]
+      refl['id'] = flex.int(refl.size(), i)
   used_str_ids = []
   for exp, refl in zip(experiments, reflections):
     if exp.identifier != '':

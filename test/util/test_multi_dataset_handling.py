@@ -194,6 +194,25 @@ def test_assign_unique_identifiers():
     assert list(set(refl['id'])) == [id_]
     assert id_ == expected_ids[i]
 
+  # Test the case where identifiers are specified
+  experiments = empty_explist_3()
+  reflections = reflection_list_3()
+  reflections[0].experiment_identifiers()[0] = '5'
+  reflections[1].experiment_identifiers()[1] = '6'
+  reflections[1].experiment_identifiers()[4] = '7'
+  input_identifiers = ['0', '1', '10']
+  exp, rts = assign_unique_identifiers(experiments, reflections, input_identifiers)
+  assert list(exp.identifiers()) == input_identifiers
+  assert rts[0].experiment_identifiers()[0] == '0'
+  assert rts[0]['id'][0] == 0
+  assert rts[1].experiment_identifiers()[1] == '1'
+  assert rts[1]['id'][0] == 1
+  assert rts[2].experiment_identifiers()[2] == '10'
+  assert rts[2]['id'][0] == 2
+
+  # Test raises Sorry when wrong number of identifiers given
+  with pytest.raises(Sorry):
+    exp, rts = assign_unique_identifiers(experiments, reflections, ['0', '1'])
 
 def test_parse_multiple_datasets():
   """Test the namesake function. This expects a list of reflection tables, and
