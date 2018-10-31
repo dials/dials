@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 from dials.util import log
 
 debug_handle = log.debug_handle(logger)
-info_handle = log.info_handle(logger)
 
 import libtbx
 from libtbx.utils import Sorry
@@ -975,9 +974,9 @@ class indexer_base(object):
 
     if len(self.refined_experiments) > 1:
       from dials.algorithms.indexing.compare_orientation_matrices \
-           import show_rotation_matrix_differences
-      show_rotation_matrix_differences(
-        self.refined_experiments.crystals(), out=info_handle)
+           import rotation_matrix_differences
+      logger.info(
+        rotation_matrix_differences(self.refined_experiments.crystals()))
 
     self.refined_reflections['xyzcal.px'] = flex.vec3_double(
       len(self.refined_reflections))
