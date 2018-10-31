@@ -5,6 +5,7 @@ import math
 import iotbx.phil
 from scitbx import matrix
 from cctbx.array_family import flex
+from libtbx.utils import Sorry
 from dials.util.options import OptionParser
 from dials.util.options import flatten_datablocks, flatten_reflections
 from dials.algorithms.indexing.indexer \
@@ -132,6 +133,8 @@ class better_experimental_model_discovery(object):
       # if there are several similarly high scores, then choose the closest
       # one to the current beam centre
       potential_offsets = flex.vec3_double()
+      if scores.all_eq(0):
+        raise Sorry("No valid scores")
       sel = scores > (0.9*flex.max(scores))
       for i in sel.iselection():
         offset = (idxs[i%widegrid])*beamr1 + (idxs[i//widegrid])*beamr2
