@@ -39,7 +39,6 @@ class determine_space_group(symmetry_base):
     self.estimate_cc_true()
     self.score_symmetry_elements()
     self.score_laue_groups()
-    self.show()
 
   def estimate_cc_sig_fac(self):
 
@@ -174,13 +173,6 @@ class determine_space_group(symmetry_base):
         score.confidence = confidence
 
     self.best_solution = self.subgroup_scores[0]
-
-  def show(self, out=None):
-    if out is None:
-      import sys
-      out = sys.stdout
-    print("Warning: Use of the .show() method is deprecated. Use print(object) instead.", file=out)
-    print(str(self), file=out)
 
   def __str__(self):
     output = []

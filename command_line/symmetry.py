@@ -209,6 +209,7 @@ def run(args):
     min_i_mean_over_sigma_mean=params.min_i_mean_over_sigma_mean,
     relative_length_tolerance=params.relative_length_tolerance,
     absolute_angle_tolerance=params.absolute_angle_tolerance)
+  logger.info(result)
 
   if params.output.json is not None:
     result.as_json(filename=params.output.json)
