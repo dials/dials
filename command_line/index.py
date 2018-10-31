@@ -46,7 +46,7 @@ Examples::
 
   dials.index datablock.json strong.pickle
 
-  dials.index datablock.json strong.pickle unit_cell=37,79,79,90,90,90 space_group=P43212
+  dials.index datablock.json strong.pickle unit_cell=79,79,37,90,90,90 space_group=P43212
 
   dials.index datablock.json strong.pickle indexing.method=fft1d
 
