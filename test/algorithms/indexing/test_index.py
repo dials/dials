@@ -523,7 +523,6 @@ def test_index_small_molecule_ice_max_cell(dials_regression, tmpdir):
                               expected_rmsds, expected_hall_symbol)
     assert len(result.indexed_reflections) > 1300, len(result.indexed_reflections)
 
-@pytest.mark.xfail
 def test_refinement_failure_on_max_lattices_a15(dials_regression, run_in_tmpdir):
   """Problem: Sometimes there is enough data to index, but not enough to
   refine. If this happens in the (N>1)th crystal of max_lattices, then

@@ -893,18 +893,14 @@ class indexer_base(object):
           try:
             refined_experiments, refined_reflections = self.refine(
               experiments, reflections_for_refinement)
-          except RuntimeError as e:
-            s = str(e)
-            if ("below the configured limit" in s or
-                "Insufficient matches for crystal" in s):
-              if len(experiments) == 1:
-                raise Sorry(e)
-              had_refinement_error = True
-              logger.info("Refinement failed:")
-              logger.info(s)
-              del experiments[-1]
-              break
-            raise
+          except Sorry as e:
+            if len(experiments) == 1:
+              raise
+            had_refinement_error = True
+            logger.info("Refinement failed:")
+            logger.info(e)
+            del experiments[-1]
+            break
 
         # sanity check for unrealistic unit cell volume increase during refinement
         # usually this indicates too many parameters are being refined given the
