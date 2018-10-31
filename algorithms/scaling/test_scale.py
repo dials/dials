@@ -196,13 +196,13 @@ def test_scale_script_prepare_input():
   #Try to use use_datasets when not identifiers set
   params.dataset_selection.use_datasets = ['0']
   script = Script(params, exp, reflections)
-  with pytest.raises(SystemExit):
+  with pytest.raises(Sorry):
     script.prepare_input()
   #Try to use use_datasets when not identifiers set
   params.dataset_selection.use_datasets = None
   params.dataset_selection.exclude_datasets = ['0']
   script = Script(params, exp, reflections)
-  with pytest.raises(SystemExit):
+  with pytest.raises(Sorry):
     script.prepare_input()
 
   #Now make two experiments with identifiers and select on them

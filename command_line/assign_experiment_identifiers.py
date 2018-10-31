@@ -9,8 +9,10 @@ from dials.util import halraiser
 from dials.util.options import OptionParser, flatten_reflections,\
   flatten_experiments
 from dials.array_family import flex
-from dials.algorithms.scaling.scaling_utilities import assign_unique_identifiers,\
-  parse_multiple_datasets, save_experiments, save_reflections
+from dials.algorithms.scaling.scaling_utilities import \
+  save_experiments, save_reflections
+from dials.util.multi_dataset_handling import assign_unique_identifiers,\
+  parse_multiple_datasets
 
 help_message = """Command line script which assigns experiment identifiers
 to reflections and experiments and saves them back to disk.

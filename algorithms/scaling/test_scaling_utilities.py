@@ -5,13 +5,12 @@ from math import sqrt, pi
 import pytest
 import numpy as np
 from mock import Mock
-from dxtbx.model import Experiment, ExperimentList, Crystal
+from dxtbx.model import Experiment, Crystal
 from libtbx.test_utils import approx_equal
 from dials.array_family import flex
 from dials.algorithms.scaling.scaling_utilities import \
   calc_crystal_frame_vectors, calc_theta_phi, create_sph_harm_table,\
-  sph_harm_table, align_rotation_axis_along_z, parse_multiple_datasets,\
-  set_wilson_outliers, select_datasets_on_ids, assign_unique_identifiers,\
+  sph_harm_table, align_rotation_axis_along_z, set_wilson_outliers,\
   quasi_normalisation, combine_intensities, calculate_prescaling_correction,\
   apply_prescaling_correction, Reasons
 
@@ -167,184 +166,6 @@ def test_sph_harm_table(test_reflection_table, mock_exp):
   assert approx_equal(sht[5, 1], Y20)
   assert approx_equal(sht[5, 2], Y20)
 
-def test_parse_multiple_datasets():
-  """Test the namesake function. This expects a list of reflection tables, and
-  selects on the column named 'id'."""
-  rt1 = flex.reflection_table()
-  rt1['id'] = flex.int([0, 0, 0])
-  rt1.experiment_identifiers()[0] = '0'
-  rt2 = flex.reflection_table()
-  rt2['id'] = flex.int([2, 2, 4, 4])
-  rt2.experiment_identifiers()[2] = '2'
-  rt2.experiment_identifiers()[4] = '4'
-  single_tables = parse_multiple_datasets([rt2])
-  assert len(single_tables) == 2
-  assert list(set(single_tables[0]['id'])) == [2]
-  assert list(set(single_tables[1]['id'])) == [4]
-  single_tables = parse_multiple_datasets([rt1, rt2])
-  assert list(set(single_tables[0]['id'])) == [0]
-  assert list(set(single_tables[1]['id'])) == [2]
-  assert list(set(single_tables[2]['id'])) == [4]
-  assert len(single_tables) == 3
-  single_tables = parse_multiple_datasets([rt1])
-  assert len(single_tables) == 1
-  assert list(set(single_tables[0]['id'])) == [0]
-
-  # if a duplicate id is given, then this should be detected and new ids
-  # determined for all datasets.
-  rt3 = flex.reflection_table()
-  rt3['id'] = flex.int([2, 2])
-  rt3.experiment_identifiers()[2] = '5'
-  single_tables = parse_multiple_datasets([rt1, rt2, rt3])
-  assert len(single_tables) == 4
-  assert list(set(single_tables[0]['id'])) == [0]
-  assert single_tables[0].experiment_identifiers()[0] == '0'
-  assert list(set(single_tables[1]['id'])) == [1]
-  assert single_tables[1].experiment_identifiers()[1] == '2'
-  assert list(set(single_tables[2]['id'])) == [2]
-  assert single_tables[2].experiment_identifiers()[2] == '4'
-  assert list(set(single_tables[3]['id'])) == [3]
-  assert single_tables[3].experiment_identifiers()[3] == '5'
-
-
-def empty_explist_3exp():
-  """Make a list of three empty experiments"""
-  experiments = ExperimentList()
-  experiments.append(Experiment())
-  experiments.append(Experiment())
-  experiments.append(Experiment())
-  return experiments
-
-def new_reflections_3tables():
-  """Make a list of three reflection tables"""
-  rt1 = flex.reflection_table()
-  rt1['id'] = flex.int([0, 0, 0])
-  rt2 = flex.reflection_table()
-  rt2['id'] = flex.int([1, 1])
-  rt3 = flex.reflection_table()
-  rt3['id'] = flex.int([4, 4])
-  reflections = [rt1, rt2, rt3]
-  return reflections
-
-def test_assign_unique_identifiers():
-  """Test the assignment of unique identifiers"""
-  # Test case where none are set but refl table ids are - use refl ids
-  experiments = empty_explist_3exp()
-  reflections = new_reflections_3tables()
-  assert list(experiments.identifiers()) == ['', '', '']
-  exp, rts = assign_unique_identifiers(experiments, reflections)
-  expected_identifiers = ['0', '1', '2']
-  expected_ids = [0, 1, 2]
-  # Check that identifiers are set in experiments and reflection table.
-  assert (list(exp.identifiers())) == expected_identifiers
-  for i, refl in enumerate(rts):
-    assert refl.experiment_identifiers()[i] == expected_identifiers[i]
-    assert list(set(refl['id'])) == [i]
-    assert i == expected_ids[i]
-
-  # Test case where none are set but refl table ids have duplicates
-  experiments = empty_explist_3exp()
-  reflections = new_reflections_3tables()
-  reflections[2]['id'] = flex.int([0, 0])
-  exp, rts = assign_unique_identifiers(experiments, reflections)
-  expected_identifiers = ['0', '1', '2']
-  # Check that identifiers are set in experiments and reflection table.
-  assert (list(exp.identifiers())) == expected_identifiers
-  expected_ids = [0, 1, 2]
-  for i, refl in enumerate(rts):
-    assert refl.experiment_identifiers()[i] == expected_identifiers[i]
-    assert list(set(refl['id'])) == [i]
-    assert i == expected_ids[i]
-
-  # Test case where identifiers are already set.
-  experiments = empty_explist_3exp()
-  experiments[0].identifier = '0'
-  experiments[1].identifier = '4'
-  experiments[2].identifier = '2'
-  reflections = new_reflections_3tables()
-  reflections[1].experiment_identifiers()[0] = '5'
-  # should raise an assertion error for inconsistent identifiers
-  with pytest.raises(AssertionError):
-    exp, rts = assign_unique_identifiers(experiments, reflections)
-
-  experiments = empty_explist_3exp()
-  experiments[0].identifier = '0'
-  experiments[1].identifier = '4'
-  experiments[2].identifier = '2'
-  reflections = new_reflections_3tables()
-  reflections[0].experiment_identifiers()[0] = '0'
-  reflections[1].experiment_identifiers()[1] = '4'
-  reflections[2].experiment_identifiers()[4] = '2'
-  #should pass experiments back if identifiers all already set
-  exp, rts = assign_unique_identifiers(experiments, reflections)
-  expected_identifiers = ['0', '4', '2']
-  # Check that identifiers are set in experiments and reflection table.
-  assert exp is experiments
-  assert list(exp.identifiers()) == expected_identifiers
-  expected_ids = [0, 1, 4]
-  for i, refl in enumerate(rts):
-    id_ = refl['id'][0]
-    assert refl.experiment_identifiers()[id_] == expected_identifiers[i]
-    assert list(set(refl['id'])) == [id_]
-    assert id_ == expected_ids[i]
-
-  # Now test that if some are set, these are maintained and unique ids are
-  # set for the rest
-  experiments = empty_explist_3exp()
-  experiments[0].identifier = '1'
-  reflections = new_reflections_3tables()
-  reflections[0].experiment_identifiers()[0] = '1'
-  exp, rts = assign_unique_identifiers(experiments, reflections)
-  expected_identifiers = ['1', '0', '2']
-  assert list(exp.identifiers()) == expected_identifiers
-  expected_ids = [0, 1, 2]
-  for i, refl in enumerate(rts):
-    id_ = refl['id'][0]
-    assert refl.experiment_identifiers()[id_] == expected_identifiers[i]
-    assert list(set(refl['id'])) == [id_]
-    assert id_ == expected_ids[i]
-
-def test_select_datasets_on_ids():
-  """Test the select_datasets_on_ids function."""
-  experiments = empty_explist_3exp()
-  reflections = new_reflections_3tables()
-  reflections[0].experiment_identifiers()[0] = '0'
-  experiments[0].identifier = '0'
-  reflections[1].experiment_identifiers()[1] = '2'
-  experiments[1].identifier = '2'
-  reflections[2].experiment_identifiers()[4] = '4'
-  experiments[2].identifier = '4'
-  use_datasets = ['0', '2']
-  experiments, refl = select_datasets_on_ids(experiments, reflections,
-    use_datasets=use_datasets)
-  assert len(experiments) == 2
-  assert len(refl) == 2
-  assert list(experiments.identifiers()) == ['0', '2']
-
-  experiments = empty_explist_3exp()
-  experiments[0].identifier = '0'
-  experiments[1].identifier = '2'
-  experiments[2].identifier = '4'
-  exclude_datasets = ['0']
-  experiments, refl = select_datasets_on_ids(experiments, reflections,
-    exclude_datasets=exclude_datasets)
-  assert len(refl) == 2
-  assert list(experiments.identifiers()) == ['2', '4']
-  assert len(experiments) == 2
-
-  with pytest.raises(AssertionError):
-    exclude_datasets = ['0']
-    use_datasets = ['2', '4']
-    experiments, refl = select_datasets_on_ids(experiments,
-      reflections, use_datasets=use_datasets,
-      exclude_datasets=exclude_datasets)
-
-  with pytest.raises(AssertionError):
-    exclude_datasets = ['1']
-    experiments, refl = select_datasets_on_ids(experiments,
-      reflections, exclude_datasets=exclude_datasets)
-
-
 def test_calculate_wilson_outliers(wilson_test_reflection_table):
   """Test the set wilson outliers function."""
   reflection_table = set_wilson_outliers(wilson_test_reflection_table)
@@ -391,6 +212,7 @@ def generate_simple_table(prf=True):
   return reflections
 
 def test_combine_intensities(test_exp_P1):
+  """Test the combine intensities function for a single dataset"""
   reflections = generate_simple_table()
   reflections_list, results = combine_intensities([reflections], test_exp_P1)
   reflections = reflections_list[0]
@@ -404,6 +226,7 @@ def test_combine_intensities(test_exp_P1):
     reflections['intensity.prf.value'][20:25]), rel=2e-2)
 
 def test_combine_intensities_multi_dataset(test_exp_P1):
+  """Test the combine intensities function for multiple datasets"""
   r1 = generate_simple_table()
   r1['partiality'] = flex.double(25, 1.0)
   r2 = generate_simple_table(prf=False)

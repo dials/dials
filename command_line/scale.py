@@ -58,9 +58,10 @@ from dials.algorithms.scaling.scaling_library import create_scaling_model,\
   create_datastructures_for_structural_model, create_datastructures_for_target_mtz
 from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScalerFactory
-from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets,\
-  save_experiments, save_reflections, select_datasets_on_ids,\
-  assign_unique_identifiers, log_memory_usage, DialsMergingStatisticsError
+from dials.algorithms.scaling.scaling_utilities import save_experiments,\
+  save_reflections, log_memory_usage, DialsMergingStatisticsError
+from dials.util.multi_dataset_handling import assign_unique_identifiers,\
+  parse_multiple_datasets, select_datasets_on_ids
 from dials.algorithms.scaling.post_scaling_analysis import \
   exclude_on_batch_rmerge, exclude_on_image_scale
 

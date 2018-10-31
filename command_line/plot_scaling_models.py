@@ -10,7 +10,7 @@ from dials.util import halraiser
 from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
 from dials.algorithms.scaling.model import model as Model
 from dials.algorithms.scaling.scaling_library import create_scaling_model
-from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets
+from dials.util.multi_dataset_handling import parse_multiple_datasets
 from libtbx import phil
 import matplotlib
 matplotlib.use('Agg')

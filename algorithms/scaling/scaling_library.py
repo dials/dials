@@ -22,8 +22,9 @@ from dials.util.options import OptionParser
 from dials.algorithms.scaling.model.scaling_model_factory import \
   KBSMFactory
 from dials.algorithms.scaling.Ih_table import IhTable
-from dials.algorithms.scaling.scaling_utilities import get_next_unique_id, \
+from dials.algorithms.scaling.scaling_utilities import \
   calculate_prescaling_correction
+from dials.util.multi_dataset_handling import get_next_unique_id
 
 logger = logging.getLogger('dials')
 
