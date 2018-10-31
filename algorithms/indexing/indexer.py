@@ -312,6 +312,15 @@ indexing {
         .type = float(value_min=0.0, value_max=1.0)
     }
   }
+  fft1d
+    .expert_level = 1
+  {
+    characteristic_grid = None
+      .help = Sampling frequency in radians. See Steller 1997. If None, \
+              determine a grid sampling automatically using the input \
+              reflections, using at most 0.029 radians.
+      .type = float(value_min=0)
+  }
   real_space_grid_search
     .expert_level = 1
   {
