@@ -1365,7 +1365,7 @@ class indexer_base(object):
               indexed_reflections['miller_index'], best_offset)
 
       from dials.algorithms.refinement import RefinerFactory
-      logger = logging.getLogger('dials.algorithms.refinement.refiner')
+      logger = logging.getLogger('dials.algorithms.refinement')
       level = logger.getEffectiveLevel()
       logger.setLevel(logging.ERROR)
       disabled = logger.disabled
