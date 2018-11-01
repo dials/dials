@@ -290,11 +290,11 @@ class Script(object):
       frac_high_uncertainty = (log_p_sigmas < 1.0).count(True) / len(log_p_sigmas)
       if frac_high_uncertainty > 0:
         if frac_high_uncertainty > 0.5:
-          logger.warn("""Warning: Over half (%s%%) of model parameters have signficant
+          logger.warn("""Warning: Over half (%.2f%%) of model parameters have signficant
 uncertainty (sigma/abs(parameter) > 0.5), which could indicate a
 poorly-determined scaling problem or overparameterisation.""" % (frac_high_uncertainty * 100))
         else:
-          logger.info("""%s%% of model parameters have signficant uncertainty
+          logger.info("""%.2f%% of model parameters have signficant uncertainty
 (sigma/abs(parameter) > 0.5)""" % (frac_high_uncertainty * 100))
         logger.info("Plots of parameter uncertainties can be seen in dials report")
 
