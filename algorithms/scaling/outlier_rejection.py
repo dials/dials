@@ -21,6 +21,8 @@ def reject_outliers(reflection_tables, space_group, method='standard', zmax=9.0,
     assert target is not None
     refls = TargetedOutlierRejection(reflection_tables, space_group,
       zmax, target).return_reflection_tables()
+  elif method is None:
+    return reflection_tables
   else:
     raise Sorry("Invalid choice of outlier rejection method.")
   if len(reflection_tables) > 1:

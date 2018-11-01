@@ -465,6 +465,7 @@ class IhTable(SortingMethods):
     reduced_h_idx = reduced_h_idx_T.transpose()
     self.add_Ihtable_block(selector, sub_refl_table, reduced_h_idx,
       sub_nz_weights)
+    assert n_refl == sum([i.size for i in self.blocked_data_list])
 
   def select_free_set(self, percentage, offset=0):
     """Extract a free set from the blocked data, adding a new block to the
