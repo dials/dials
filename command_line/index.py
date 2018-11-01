@@ -74,6 +74,15 @@ verbosity = 1
   .help = "The verbosity level"
 """, process_includes=True)
 
+# local overrides for refiner.phil_scope
+phil_overrides = iotbx.phil.parse('''
+refinement
+{
+  verbosity = 1
+}
+''')
+
+working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 def run(args):
   import libtbx.load_env
@@ -83,7 +92,7 @@ def run(args):
 
   parser = OptionParser(
     usage=usage,
-    phil=phil_scope,
+    phil=working_phil,
     read_reflections=True,
     read_datablocks=True,
     read_experiments=True,
