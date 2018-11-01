@@ -2,6 +2,33 @@
 Functions to help with calculating batch properties for experiments objects.
 """
 from math import ceil, floor, log
+from dials.array_family import flex
+
+def assign_batches_to_reflections(reflections, batch_offsets):
+
+  for batch_offset, refl in zip(batch_offsets, reflections):
+    xdet, ydet, zdet = [flex.double(x) for x in refl['xyzobs.px.value'].parts()]
+    # compute BATCH values - floor() to get (fortran) image captured within
+    #                        +1     because FORTRAN counting; zdet+1=image_index
+    #                        +off   because            image_index+o=batch
+    refl['batch'] = (flex.floor(zdet).iround() + 1) + batch_offset
+  return reflections
+
+def get_batch_ranges(experiments, batch_offsets):
+  batch_ranges = []
+  assert len(experiments) == len(batch_offsets)
+  for i, experiment in enumerate(experiments):
+    assign_image_range_to_experiment(experiment)
+    batch_ranges.append((experiment.image_range[0] + batch_offsets[i],
+      experiment.image_range[1] + batch_offsets[i]))
+  return batch_ranges
+
+def get_image_ranges(experiments):
+  image_ranges = []
+  for experiment in experiments:
+    assign_image_range_to_experiment(experiment)
+    image_ranges.append(experiment.image_range)
+  return image_ranges
 
 def calculate_batch_offsets(experiment_list):
   """Take a list of experiments and resolve and return the batch offsets.
@@ -64,12 +91,12 @@ def _calculate_batch_offsets(experiments):
   return batch_offsets
 
 def _next_epoch(val):
-  """Find the next number divisible by 10 above existing value, that is
+  """Find the next number above the existing value that ends in 1, that is
   not consecutive with the current value."""
-  if val % 10 == 9:
-    return val + 11
-  elif val % 10 == 0:
-    return val + 10
+  if val % 100 == 99:
+    return val + 2
+  elif val % 100 == 0:
+    return val + 101
   else:
-    rem = val % 10
-    return val - rem + 10
+    rem = val % 100
+    return val - rem + 101
