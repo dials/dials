@@ -2624,6 +2624,10 @@ class ScalingModelAnalyser(object):
               d.update(self.plot_smooth_model(experiments[0]))
             if 'absorption' in model.components:
               d.update(self.plot_absorption_surface(experiments[0]))
+      if experiments.scaling_models().count(None) < len(experiments.scaling_models()):
+        uncertainties = self.plot_parameter_uncertainties(experiments)
+        if uncertainties:
+          d.update(uncertainties)
     return {'scaling_model': d}
 
   def plot_smooth_model(self, experiment):
@@ -2780,6 +2784,33 @@ class ScalingModelAnalyser(object):
       'xaxis' : 'x',
       'yaxis' : 'y'
     })
+    return d
+
+  def plot_parameter_uncertainties(self, experiments):
+    d = None
+    if experiments[0].scaling_model.components.values()[0].parameter_esds:
+      p_sigmas = flex.double()
+      for experiment in experiments:
+        for component in experiment.scaling_model.components.itervalues():
+          if component.parameter_esds:
+            p_sigmas.extend(flex.abs(component.parameters) / component.parameter_esds)
+      log_p_sigmas = flex.log(p_sigmas)
+      hist = flex.histogram(log_p_sigmas, n_slots=min(20, int(len(log_p_sigmas)/2)))
+      d = {'uncertainties_plot': {
+          'data' : [{
+            'x': list(hist.slot_centers()),
+            'y': list(hist.slots()),
+            'type': 'bar',
+            'name': 'uncertainties_plot',
+          }],
+          'layout': {
+          'title': 'Distribution of relative uncertainties of scaling model parameters',
+          'xaxis': {'title': 'log ( | parameter value | / standard uncertainty (sigma) )'},
+          'yaxis': {'title': 'count'},
+          'bargap': 0,
+          },
+        },
+      }
     return d
 
 def scaling_model_tables(reflections, experiments):

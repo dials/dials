@@ -279,6 +279,24 @@ class Script(object):
       for i in s[::-1]:
         del self.reflections[i]
         del self.experiments[i]
+    # print out information on model errors
+    if self.experiments[0].scaling_model.components.values()[0].parameter_esds:
+      p_sigmas = flex.double()
+      for experiment in self.experiments:
+        for component in experiment.scaling_model.components.itervalues():
+          if component.parameter_esds:
+            p_sigmas.extend(flex.abs(component.parameters) / component.parameter_esds)
+      log_p_sigmas = flex.log(p_sigmas)
+      frac_high_uncertainty = (log_p_sigmas < 1.0).count(True) / len(log_p_sigmas)
+      if frac_high_uncertainty > 0:
+        if frac_high_uncertainty > 0.5:
+          logger.warn("""Warning: Over half (%s%%) of model parameters have signficant
+uncertainty (sigma/abs(parameter) > 0.5), which could indicate a
+poorly-determined scaling problem or overparameterisation.""" % (frac_high_uncertainty * 100))
+        else:
+          logger.info("""%s%% of model parameters have signficant uncertainty
+(sigma/abs(parameter) > 0.5)""" % (frac_high_uncertainty * 100))
+        logger.info("Plots of parameter uncertainties can be seen in dials report")
 
   def scaled_data_as_miller_array(self, crystal_symmetry, reflection_table=None,
     anomalous_flag=False):

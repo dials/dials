@@ -114,6 +114,21 @@ def plot_scaling_models(argv):
         plot_multi(params, experiment, reflection, j)
   print("\nFinished plotting graphs of scale factors. \n")
 
+  # now print a histogram of model uncertainties
+  if experiments[0].scaling_model.components.values()[0].parameter_esds:
+    p_sigmas = flex.double()
+    for experiment in experiments:
+      for component in experiment.scaling_model.components.itervalues():
+        if component.parameter_esds:
+          p_sigmas.extend(flex.abs(component.parameters) / component.parameter_esds)
+    log_p_sigmas = flex.log(p_sigmas)
+    plt.figure(figsize=(8, 4))
+    plt.title("Distribution of relative uncertainties of scaling model parameters")
+    plt.hist(log_p_sigmas)
+    plt.xlabel("log ( | parameter value | / standard uncertainty (sigma) )")
+    plt.ylabel("Count")
+    plt.savefig("parameter_uncertainties.png")
+    print("Plotted histogram of distribution of parameter uncertainties")
 
 def plot_multi(params, experiment, reflection, j):
   '''subscript to plot a single instance of a multi-dataset file'''
