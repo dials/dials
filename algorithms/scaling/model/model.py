@@ -36,6 +36,10 @@ class ScalingModelBase(object):
     """Indictor as to whether this model has previously been refined."""
     return self._is_scaled
 
+  def limit_batch_range(self, new_batch_range, reflection_table):
+    """Modify the model if necessary due to excluding batches."""
+    pass
+
   def set_scaling_model_as_scaled(self):
     """Indicate a scaling process has been performed on the data."""
     self._is_scaled = True
@@ -47,6 +51,10 @@ class ScalingModelBase(object):
   def configure_reflection_table(self, reflection_table, experiment, params):
     """Perform calculations necessary to update the reflection table."""
     return reflection_table
+
+  def set_valid_batch_range(self, batch_range):
+    """Track the batch range for which the model corresponds to."""
+    self._configdict['valid_batch_range'] = batch_range
 
   def normalise_components(self):
     """Optionally define a normalisation of the parameters after scaling."""
@@ -176,6 +184,44 @@ class PhysicalScalingModel(ScalingModelBase):
       self.components['absorption'].parameter_restraints = parameter_restraints
     return reflection_table
 
+  def limit_batch_range(self, new_batch_range, reflection_table):
+    """Change the model to be suitable for a reduced batch range"""
+    conf = self.configdict
+    if 'scale' in self.components:
+      reflection_table[self.components['scale'].col_name] = (
+        reflection_table['xyzobs.px.value'].parts()[2]
+        * conf['s_norm_fac'])
+      old_range_scale = (min(reflection_table[self.components['scale'].col_name]),
+        max(reflection_table[self.components['scale'].col_name]))
+    if 'decay' in self.components:
+      reflection_table[self.components['decay'].col_name] = (
+        reflection_table['xyzobs.px.value'].parts()[2]
+        * conf['d_norm_fac'])
+      old_range_decay = (min(reflection_table[self.components['decay'].col_name]),
+        max(reflection_table[self.components['decay'].col_name]))
+    sel1 = reflection_table['batch'] >= new_batch_range[0]
+    sel2 = reflection_table['batch'] <= new_batch_range[1]
+    reflection_table = reflection_table.select(sel1 & sel2)
+    if 'scale' in self.components:
+      new_range_scale = (min(reflection_table[self.components['scale'].col_name]),
+        max(reflection_table[self.components['scale'].col_name]))
+      offset, n_param = map_old_to_new_range(old_range_scale, new_range_scale)
+      params = self.components['scale'].parameters
+      new_params = params[offset:offset+n_param]
+      self.components['scale'].set_new_parameters(new_params)
+    if 'decay' in self.components:
+      new_range_decay = (min(reflection_table[self.components['decay'].col_name]),
+        max(reflection_table[self.components['decay'].col_name]))
+      offset, n_param = map_old_to_new_range(old_range_decay, new_range_decay)
+      params = self.components['decay'].parameters
+      new_params = params[offset:offset+n_param]
+      self.components['decay'].set_new_parameters(new_params)
+    one_osc = (conf['valid_osc_range'][1] - conf['valid_osc_range'][0])/(
+        (conf['valid_batch_range'][1] - (conf['valid_batch_range'][0] - 1)))
+    self._configdict['valid_osc_range'] = ((new_batch_range[0] - 1) * one_osc,
+      (new_batch_range[1] * one_osc))
+    self.set_valid_batch_range(new_batch_range)
+
   def normalise_components(self):
     if 'scale' in self.components:
       # Do an invariant rescale of the scale at t=0 to one.'''
@@ -294,6 +340,41 @@ class ArrayScalingModel(ScalingModelBase):
         - self.configdict['ymin']) / self.configdict['y_det_bin_width'])
     return refl_table
 
+  def limit_batch_range(self, new_batch_range, reflection_table):
+    """Change the model to be suitable for a reduced batch range"""
+    reflection_table['norm_time_values'] = (
+      reflection_table['xyzobs.px.value'].parts()[2] * \
+      self.configdict['time_norm_fac'])
+    old_range_time = (min(reflection_table['norm_time_values']),
+      max(reflection_table['norm_time_values']))
+    sel1 = reflection_table['batch'] >= new_batch_range[0]
+    sel2 = reflection_table['batch'] <= new_batch_range[1]
+    reflection_table = reflection_table.select(sel1 & sel2)
+    new_range_time = (min(reflection_table['norm_time_values']),
+      max(reflection_table['norm_time_values']))
+    offset, n_param = map_old_to_new_range(old_range_time, new_range_time)
+    if 'absorption' in self.components:
+      params = self.components['absorption'].parameters
+      n_x_params = self.components['decay'].n_x_params
+      n_y_params = self.components['decay'].n_y_params
+      #can't do simple slice as 3-dim array
+      time_offset = offset * n_x_params * n_y_params
+      new_params = params[time_offset : time_offset + \
+        (n_param * n_x_params * n_y_params)]
+      self.components['absorption'].set_new_parameters(new_params,
+        shape=(n_x_params * n_y_params, n_param))
+    if 'decay' in self.components:
+      params = self.components['decay'].parameters
+      n_decay_params = self.components['decay'].n_x_params
+      #can't do simple slice as 2-dim array
+      decay_offset = offset * n_decay_params
+      new_params = params[decay_offset : decay_offset + \
+        (n_param * n_decay_params)]
+      self.components['decay'].set_new_parameters(new_params,
+        shape=(n_decay_params, n_param))
+    self._configdict['n_time_param'] = n_param
+    self.set_valid_batch_range(new_batch_range)
+
   @classmethod
   def from_dict(cls, obj):
     """Create a scaling model object from a dictionary."""
@@ -366,3 +447,37 @@ class KBScalingModel(ScalingModelBase):
       'decay': {'parameters' : d_params, 'parameter_esds' : d_params_sds}}
 
     return cls(parameters_dict, configdict, is_scaled)
+
+def map_old_to_new_range(old_range, new_range):
+  """Calculate the offset and number of params needed for the new dataset"""
+  offset = 0
+  n_param = range_to_n_param(new_range)
+  n_old_param = range_to_n_param(old_range)
+  if n_old_param == n_param: #would only work for using function to reduce range
+    return 0, n_param
+  if new_range[0] > 0.0:
+    #might need to shift
+    if n_param > 3 and n_old_param > 3:
+      offset = int((new_range[0] - 0.5) //1) + 1
+    elif n_param < 4 and n_old_param > 3:
+      # want to use parameter nearest to new_range[0]
+      if new_range[0] % 1.0 < 0.5:
+        offset = int((new_range[0] - 0.5) //1) + 2
+      else:
+        offset = int((new_range[0] - 0.5) //1) + 1
+    else:
+      if new_range[0] % 1.0 < 0.5:
+        offset = int(new_range[0]//1)
+      else:
+        offset = int(new_range[0] //1) + 1
+  return offset, n_param
+
+def range_to_n_param(range_):
+  """Calculate the number of smoother parameters from a range"""
+  if (range_[1] - range_[0]) < 1.0:
+    n_param = 2
+  elif (range_[1] - range_[0]) < 2.0:
+    n_param = 3
+  else:
+    n_param = max(int(range_[1] - range_[0])+1, 3) + 2
+  return n_param

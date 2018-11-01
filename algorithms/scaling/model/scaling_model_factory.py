@@ -13,7 +13,7 @@ class KBSMFactory(object):
   Factory for creating a KB scaling model.
   '''
   @classmethod
-  def create(cls, params, __, ____):
+  def create(cls, params, _, __):
     '''create the simple KB scaling model.'''
     configdict = OrderedDict({'corrections': []})
     parameters_dict = {}
@@ -35,7 +35,7 @@ class PhysicalSMFactory(object):
   """
 
   @classmethod
-  def create(cls, params, experiments, reflections):
+  def create(cls, params, experiments, _):
     """Create the scaling model defined by the params."""
 
     configdict = OrderedDict({'corrections':[]})
@@ -109,7 +109,7 @@ def calc_n_param_from_bins(value_min, value_max, n_bins):
     n_param = n_bins + 2
   return n_param, bin_width
 
-def osc_range_check_for_user_excluded(experiments, reflections):
+'''def osc_range_check_for_user_excluded(experiments, reflections):
   """Determine the oscillation range, allowing for user excluded range."""
   #FIXME this is incorrect, replace with proper batch handling
   osc_range = experiments.scan.get_oscillation_range()
@@ -129,7 +129,7 @@ def osc_range_check_for_user_excluded(experiments, reflections):
       osc_range = (osc_range[0], max_osc + 0.001)
     if min_osc > osc_range[0] + one_osc_width: #some beginning frames excluded
       osc_range = (min_osc, osc_range[1])
-  return osc_range
+  return osc_range'''
 
 class ArraySMFactory(object):
   """
@@ -142,8 +142,8 @@ class ArraySMFactory(object):
     reflections = reflections.select(reflections['d'] > 0.0)
 
     # First initialise things common to more than one correction.
-    osc_range = osc_range_check_for_user_excluded(experiments, reflections)
     one_osc_width = experiments.scan.get_oscillation()[1]
+    osc_range = experiments.scan.get_oscillation_range()
     n_time_param, time_norm_fac, time_rot_int = initialise_smooth_input(
       osc_range, one_osc_width, params.parameterisation.decay_interval)
     (xvalues, yvalues, _) = reflections['xyzobs.px.value'].parts()

@@ -5,7 +5,7 @@ import pytest
 from mock import Mock, MagicMock
 from dials.array_family import flex
 from dials.algorithms.scaling.model.model import ScalingModelBase,\
-  KBScalingModel, PhysicalScalingModel, ArrayScalingModel
+  KBScalingModel, PhysicalScalingModel, ArrayScalingModel, map_old_to_new_range
 
 @pytest.fixture(scope='module')
 def test_reflections():
@@ -281,3 +281,63 @@ def test_ArrayScalingModel(test_reflections, mock_exp):
 
   assert len(arraymodel.consecutive_refinement_order) == 3
   arraymodel.show()
+
+def test_map_old_to_new_range():
+  old_range = (0, 8.0)
+  new_range = (0, 5.6)
+
+  offset, nparam = map_old_to_new_range(old_range, new_range)
+  assert offset == 0
+  assert nparam == 8
+
+  new_range = (0.7, 5.6)
+  offset, nparam = map_old_to_new_range(old_range, new_range)
+  assert offset == 1
+  assert nparam == 7
+
+  new_range = (0.4, 5.6)
+  offset, nparam = map_old_to_new_range(old_range, new_range)
+  assert offset == 0
+  assert nparam == 8
+
+  old_range = (0, 1.99)
+  new_range = (0, 0.8)
+
+  offset, nparam = map_old_to_new_range(old_range, new_range)
+  assert offset == 0
+  assert nparam == 2
+
+  old_range = (0, 7.99)
+  new_range = (1.4, 2.3)
+
+  offset, nparam = map_old_to_new_range(old_range, new_range)
+  assert offset == 2
+  assert nparam == 2
+
+  old_range = (0, 7.99)
+  new_range = (0.9, 1.8)
+
+  offset, nparam = map_old_to_new_range(old_range, new_range)
+  assert offset == 1
+  assert nparam == 2
+
+  old_range = (0, 7.99)
+  new_range = (0.9, 1.95)
+
+  offset, nparam = map_old_to_new_range(old_range, new_range)
+  assert offset == 1
+  assert nparam == 3
+
+  old_range = (0, 1.99)
+  new_range = (0.95, 1.9)
+
+  offset, nparam = map_old_to_new_range(old_range, new_range)
+  assert offset == 1
+  assert nparam == 2
+
+  old_range = (0, 1.99)
+  new_range = (0.45, 1.4)
+
+  offset, nparam = map_old_to_new_range(old_range, new_range)
+  assert offset == 0
+  assert nparam == 2

@@ -122,6 +122,12 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
     self._normalised_values = []
     self._col_name = col_name
 
+  def set_new_parameters(self, new_parameters):
+    """Set new parameters of a different length i.e. after batch handling"""
+    self._parameters = new_parameters
+    self._parameter_esds = None
+    self._n_params = len(self._parameters)
+
   @property
   def normalised_values(self):
     """This is a list of the relevant data needed to calculate the
@@ -283,6 +289,15 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
     self._normalised_x_values = None
     self._normalised_y_values = None
 
+  def set_new_parameters(self, new_parameters, shape):
+    """Set new parameters of a different length i.e. after batch handling"""
+    assert len(new_parameters) == shape[0] * shape[1]
+    self._parameters = new_parameters
+    self._parameter_esds = None
+    self._n_params = len(self._parameters)
+    self._n_x_params = shape[0]
+    self._n_y_params = shape[1]
+
   @property
   def col_names(self):
     """The column names used to obtain normalised coordinates from a
@@ -406,6 +421,16 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
     self._normalised_y_values = None
     self._normalised_z_values = None
     self._col_names = col_names
+
+  def set_new_parameters(self, new_parameters, shape):
+    """Set new parameters of a different length i.e. after batch handling"""
+    assert len(new_parameters) == shape[0] * shape[1] * shape[2]
+    self._parameters = new_parameters
+    self._parameter_esds = None
+    self._n_params = len(self._parameters)
+    self._n_x_params = shape[0]
+    self._n_y_params = shape[1]
+    self._n_z_params = shape[2]
 
   @property
   def col_names(self):

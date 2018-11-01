@@ -136,7 +136,7 @@ def scale_single_dataset(reflection_table, experiment, params=None,
 def create_scaling_model(params, experiments, reflections):
   """Create or load a scaling model for multiple datasets."""
   models = experiments.scaling_models()
-  if None in models:#don't need to anything if all have models
+  if None in models:#else, don't need to anything if all have models
     factory = None
     for entry_point in pkg_resources.iter_entry_points('dxtbx.scaling_model_ext'):
       if entry_point.name == params.model:
@@ -146,9 +146,7 @@ def create_scaling_model(params, experiments, reflections):
       raise Sorry('Unable to create scaling model of type %s' % params.model)
     for i, (exp, refl) in enumerate(zip(experiments, reflections)):
       model = experiments.scaling_models()[i]
-      if model is not None:
-        exp.scaling_model = model
-      else:
+      if not model:
         exp.scaling_model = factory.create(params, exp, refl)
   return experiments
 

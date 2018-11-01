@@ -24,6 +24,7 @@ def get_batch_ranges(experiments, batch_offsets):
   return batch_ranges
 
 def get_image_ranges(experiments):
+  #experiments must be passed in as list(experiments), not an ExperimentList
   image_ranges = []
   for experiment in experiments:
     assign_image_range_to_experiment(experiment)
@@ -39,6 +40,13 @@ def calculate_batch_offsets(experiment_list):
   offsets = _calculate_batch_offsets(experiment_list)
   return offsets
 
+def set_batch_offsets(experiment_list, batch_offsets):
+  """Set batch offsets in scan objects. Don't need to set anything for
+  scanless experiments, as these are not used with the batch system."""
+  for exp, offset in zip(experiment_list, batch_offsets):
+    if exp.scan:
+      exp.scan.set_batch_offset(offset)
+
 def assign_image_range_to_experiment(experiment):
   if not hasattr(experiment, 'image_range'):
     if experiment.scan:
@@ -46,6 +54,58 @@ def assign_image_range_to_experiment(experiment):
     else:
       experiment.image_range = 0, 0
       # Note, if set to 1,1, then first batch offset is zero below, bad!
+
+def calculate_new_batch_ranges(in_use_batch_ranges, exclude_batches):
+  """Determine the new batch ranges.
+  Exclude batches is a list of tuples e.g. [(101,200), (301,400)]"""
+  valid_batch_ranges = [] #list of valid batch ranges after excluding
+  n_ranges_excluded = 0
+  for batch_range in in_use_batch_ranges:
+    excluded_from_dataset_i = []
+    for exclude_pair in exclude_batches:
+      if list(batch_range) == exclude_pair: #raise, else very tricky to implement!
+        raise ValueError("Trying to exclude a whole dataset")
+      if exclude_pair[1] <= batch_range[1] and exclude_pair[0] >= batch_range[0]:
+        excluded_from_dataset_i.extend(list(exclude_pair))
+        n_ranges_excluded += 1
+    if excluded_from_dataset_i:
+      #calculate min-max range that valid batches span (may include 'gaps')
+      new_batch_0, new_batch_1 = batch_range
+      s = sorted(excluded_from_dataset_i)
+      if batch_range[0] == s[0]:
+        new_batch_0 = s[1]+1
+      if batch_range[1] == s[-1]:
+        new_batch_1 = s[-2]-1
+      valid_batch_ranges.append((new_batch_0, new_batch_1))
+    else:
+      valid_batch_ranges.append(batch_range)
+  if n_ranges_excluded != len(exclude_batches):
+    logger.warn("Warning: not all requested ranges were excluded, please check input")
+  return valid_batch_ranges
+
+def exclude_batches_in_reflections(reflections, experiments,
+  valid_batch_ranges, in_use_batch_ranges):
+  """Exclude batches from the tables by setting user_excluded_in_scaling flag."""
+  for (exp, refl, valid, in_use) in zip(experiments, reflections,
+    valid_batch_ranges, in_use_batch_ranges):
+    if valid != in_use:
+      assert valid[0] >= in_use[0]
+      assert valid[1] <= in_use[1]
+      mask1 = refl['batch'] < valid[0]
+      mask2 = refl['batch'] > valid[1]
+      refl.set_flags(mask1 & mask2, refl.flags.user_excluded_in_scaling)
+      logger.info("""Reduced batch range for dataset %s to %s""",
+        exp.identifier, valid)
+  return reflections
+
+def get_current_batch_ranges_for_scaling(experiments, batch_ranges):
+  """Inspect scaling model to see if the batch range has already been reduced"""
+  in_use_batch_ranges = copy.deepcopy(batch_ranges)
+  for i, experiment in enumerate(experiments):
+    if experiment.scaling_model is not None:
+      if 'valid_batch_range' in experiment.scaling_model.configdict:
+        in_use_batch_ranges[i] = experiment.scaling_model.configdict['valid_batch_range']
+  return in_use_batch_ranges
 
 def _calculate_batch_offsets(experiments):
   """Take a list of (modified) experiments and resolve and return the batch

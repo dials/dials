@@ -44,6 +44,7 @@ import time
 import logging
 import sys
 import gc
+import copy as copy
 from libtbx import phil
 from libtbx.utils import Sorry
 from libtbx.str_utils import make_sub_header
@@ -64,6 +65,10 @@ from dials.util.multi_dataset_handling import assign_unique_identifiers,\
   parse_multiple_datasets, select_datasets_on_ids
 from dials.algorithms.scaling.post_scaling_analysis import \
   exclude_on_batch_rmerge, exclude_on_image_scale
+from dials.util.batch_handling import assign_batches_to_reflections, \
+  calculate_batch_offsets, get_batch_ranges, get_image_ranges, set_batch_offsets,\
+  get_current_batch_ranges_for_scaling, exclude_batches_in_reflections,\
+  calculate_new_batch_ranges
 
 
 logger = logging.getLogger('dials')
@@ -152,6 +157,10 @@ class Script(object):
     self.scaler = None
     self.scaled_miller_array = None
     self.merging_statistics_result = None
+    self.image_ranges = None
+    self.batch_ranges = None
+    self.valid_batch_ranges = []
+    self.all_single_images = False # flag if all dataset are single images
     logger.debug('Initialised scaling script object')
     log_memory_usage()
 
@@ -174,7 +183,8 @@ class Script(object):
   def prepare_input(self):
     """Perform checks on the data and prepare the data for scaling."""
 
-    #Select or exclude by experiment identifier if the option is requested
+    #### First exclude any datasets before the dataset is split into
+    #### individual reflection tables (only if expids set).
     use_datasets = self.params.dataset_selection.use_datasets
     exclude_datasets = self.params.dataset_selection.exclude_datasets
     if (use_datasets or exclude_datasets):
@@ -183,41 +193,64 @@ class Script(object):
       logger.info("\nDataset unique identifiers for retained datasets are %s \n",
         list(self.experiments.identifiers()))
 
+    #### Split the reflections tables into a list of reflection tables,
+    #### with one table per experiment.
     logger.info('Checking for the existence of a reflection table \n'
       'containing multiple datasets \n')
     self.reflections = parse_multiple_datasets(self.reflections)
     logger.info("Found %s reflection tables in total.", len(self.reflections))
     logger.info("Found %s experiments in total.", len(self.experiments))
 
+    if len(self.experiments) != len(self.reflections):
+      raise Sorry("Mismatched number of experiments and reflection tables found.")
+
+    #### Assign experiment identifiers.
     self.experiments, self.reflections = assign_unique_identifiers(
       self.experiments, self.reflections)
     logger.info("\nDataset unique identifiers are %s \n", list(
       self.experiments.identifiers()))
 
-    if self.params.scaling_options.space_group:
-      for experiment in self.experiments:
-        sg_from_file = experiment.crystal.get_space_group().info()
-        s_g_symbol = self.params.scaling_options.space_group
-        crystal_symmetry = crystal.symmetry(space_group_symbol=s_g_symbol)
-        experiment.crystal.set_space_group(crystal_symmetry.space_group())
-        if crystal_symmetry.space_group() != sg_from_file:
-          msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
-            'If the reflection indexing in these space groups is different, {sep}'
-            'bad things may happen!!! {sep}').format(sg_from_file, s_g_symbol, sep='\n')
-          logger.info(msg)
-    s_g_1 = self.experiments[0].crystal.get_space_group()
-    for experiment in self.experiments:
-      if experiment.crystal.get_space_group().type().number() \
-        != s_g_1.type().number():
-        logger.info("Space groups not determined to be equal; %s and %s", s_g_1.info(),
-          experiment.crystal.get_space_group().info())
-        raise Sorry('experiments have different space groups and cannot be '
-          'scaled together, please reanalyse the data so that the space groups '
-          'are consistent or manually specify a space group. Alternatively, '
-          'some datasets can be excluded using the option exclude_datasets=')
+    #### Ensure all space groups are the same
+    self.experiments = ensure_consistent_space_groups(self.experiments, self.params)
 
-    logger.info("Space group being used during scaling is %s" % s_g_1.info())
+    #### Batch handling code only applies if not all single-image datasets
+    self.image_ranges = get_image_ranges(list(self.experiments))
+    if all([i == (0, 0) for i in self.image_ranges]):
+      self.all_single_images = True
 
+    #### Calculate batch offsets based on the image ranges of the experiments
+    #### batch offsets do not change between runs even if batches are excluded
+    if not self.all_single_images:
+      batch_offsets = calculate_batch_offsets(list(self.experiments))
+      set_batch_offsets(self.experiments, batch_offsets) # set in exp.scan
+      self.batch_ranges = get_batch_ranges(list(self.experiments), batch_offsets)
+      logger.info("\nBatch numbers assigned to datasets:")
+      for i, exp in enumerate(self.experiments):
+        logger.info("Experiment identifier: %s, image_range: %s, batch_range: %s",
+          exp.identifier, self.image_ranges[i], self.batch_ranges[i])
+      self.reflections = assign_batches_to_reflections(self.reflections, batch_offsets)
+
+      #### Calculate new batch ranges and exclude data from the reflection tables
+      #### Delay modification of the scaling models until later.
+      if self.params.cut_data.exclude_batches:
+        in_use_batch_ranges = get_current_batch_ranges_for_scaling(
+          self.experiments, self.batch_ranges)
+        # now calculate reduced batch ranges and exclude data
+        try:
+          self.valid_batch_ranges = calculate_new_batch_ranges(
+            in_use_batch_ranges, self.params.cut_data.exclude_batches)
+        except ValueError:
+          raise Sorry("""Trying to exclude a whole dataset, please use the
+  exclude_datasets= option instead, specifying experiment identifiers""")
+        self.reflections = exclude_batches_in_reflections(self.reflections,
+          self.experiments, self.valid_batch_ranges, in_use_batch_ranges)
+
+    elif self.params.cut_data.exclude_batches:
+      raise Sorry("""All datasets contain single images, please use the
+exclude_datasets= option rather than exclude_batches, specifying experiment identifiers""")
+
+    #### If doing targeted scaling, extract data and append an experiment
+    #### and reflection table to the lists
     if self.params.scaling_options.target_model:
       logger.info("Extracting data from structural model.")
       exp, reflections = create_datastructures_for_structural_model(
@@ -232,36 +265,18 @@ class Script(object):
       self.experiments.append(exp)
       self.reflections.append(reflections)
 
-    if len(self.experiments) != len(self.reflections):
-      raise Sorry("Mismatched number of experiments and reflection tables found.")
-
-    # Perform any cutting of the dataset prior to creating scaling models.
+    #### Perform any non-batch cutting of the datasets, including the target dataset
     for reflection in self.reflections:
-      reflection.set_flags(flex.bool(reflection.size(), False),
-        reflection.flags.user_excluded_in_scaling)
       if self.params.cut_data.d_min:
         reflection.set_flags(reflection['d'] < self.params.cut_data.d_min,
-        reflection.flags.user_excluded_in_scaling)
+          reflection.flags.user_excluded_in_scaling)
       if self.params.cut_data.d_max:
         reflection.set_flags(reflection['d'] > self.params.cut_data.d_max,
-        reflection.flags.user_excluded_in_scaling)
+          reflection.flags.user_excluded_in_scaling)
       if self.params.cut_data.partiality_cutoff and 'partiality' in reflection:
         reflection.set_flags(reflection['partiality'] < \
           self.params.cut_data.partiality_cutoff,
           reflection.flags.user_excluded_in_scaling)
-
-    if self.params.cut_data.exclude_image_range:
-      raise NotImplementedError('Excluding image range currently unavailable')
-      if len(self.reflections) == 1:
-        start_excl = self.params.cut_data.exclude_image_range[0]
-        end_excl = self.params.cut_data.exclude_image_range[1]
-        mask1 = start_excl < self.reflections[0]['xyzobs.px.value'].parts()[2]
-        mask2 = end_excl > self.reflections[0]['xyzobs.px.value'].parts()[2]
-        self.reflections[0].set_flags(mask1 & mask2,
-          self.reflections[0].flags.user_excluded_in_scaling)
-      else:
-        raise Sorry("""exclude_image_range can only be used with one dataset,
-        not multiple datasets.""")
 
   def scale(self):
     """Create the scaling models and perform scaling."""
@@ -270,14 +285,45 @@ class Script(object):
     logger.info('\nScaling models have been initialised for all experiments.')
     logger.info('\n' + '='*80 + '\n')
 
+    if self.valid_batch_ranges:
+      #modify_scaling_models
+      for experiment, refl, valid_batch, batch_range in zip(
+        self.experiments, self.reflections, self.valid_batch_ranges, self.batch_ranges):
+        if experiment.scan:
+          if valid_batch != experiment.scan.get_batch_range():
+            if not 'valid_batch_range' in experiment.scaling_model.configdict:
+              #only set if not currently set i.e. set initial
+              experiment.scaling_model.set_valid_batch_range(batch_range)
+            experiment.scaling_model.limit_batch_range(valid_batch, refl)
+
     self.scaler = create_scaler(self.params, self.experiments, self.reflections)
     self.scaler = self.scaling_algorithm(self.scaler)
+
+    # first remove target refl/exps
+    if self.params.scaling_options.target_model or \
+      self.params.scaling_options.target_mtz or \
+      self.params.scaling_options.only_target:
+      self.experiments = self.experiments[:-1]
+      self.reflections = self.reflections[:-1]
+
     #remove any bad datasets:
     removed_ids = self.scaler.removed_datasets
     if removed_ids:
       logger.info('deleting removed datasets from memory: %s', removed_ids)
+      expids = list(self.experiments.identifiers())
+      locs_in_list = []
+      for id_ in removed_ids:
+        locs_in_list.append(expids.index(id_))
       self.experiments, self.reflections = select_datasets_on_ids(
         self.experiments, self.reflections, exclude_datasets=removed_ids)
+      sorted_locs = sorted(locs_in_list)
+      if not self.all_single_images:
+        for i in sorted_locs[::-1]:
+          del self.image_ranges[i]
+          del self.batch_ranges[i]
+          if self.valid_batch_ranges:
+            del self.valid_batch_ranges[i]
+
     # print out information on model errors
     if self.experiments[0].scaling_model.components.values()[0].parameter_esds:
       p_sigmas = flex.double()
@@ -302,10 +348,10 @@ poorly-determined scaling problem or overparameterisation.""" % (frac_high_uncer
     """Get a scaled miller array from an experiment and reflection table."""
     if not reflection_table:
       joint_table = flex.reflection_table()
-      if self.params.scaling_options.only_target or \
+      '''if self.params.scaling_options.only_target or \
         self.params.scaling_options.target_model or \
         self.params.scaling_options.target_mtz:
-        self.reflections = self.reflections[:-1]
+        self.reflections = self.reflections[:-1]'''
       for reflection_table in self.reflections:
         #better to just create many miller arrays and join them?
         refl_for_joint_table = flex.reflection_table()
@@ -346,13 +392,13 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
     """Calculate and print the merging statistics."""
     logger.info('\n'+'='*80+'\n')
 
-    if self.params.output.exclude_on_batch_rmerge:
+    '''if self.params.output.exclude_on_batch_rmerge:
       self.reflections = exclude_on_batch_rmerge(self.reflections, self.experiments,
         self.params.output.exclude_on_batch_rmerge)
 
     if self.params.output.exclude_on_image_scale:
       self.reflections = exclude_on_image_scale(self.reflections, self.experiments,
-        self.params.output.exclude_on_image_scale)
+        self.params.output.exclude_on_image_scale)'''
 
     self.scaled_miller_array = self.scaled_data_as_miller_array(
       self.experiments[0].crystal.get_crystal_symmetry(), anomalous_flag=False)
@@ -375,6 +421,23 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
     except RuntimeError:
       raise DialsMergingStatisticsError("Failure during merging statistics calculation")
 
+    if not self.all_single_images:
+      #calculate again for safety in case any datasets removed
+      batch_offsets = calculate_batch_offsets(list(self.experiments))
+      batch_ranges = get_batch_ranges(list(self.experiments), batch_offsets)
+      image_ranges = get_image_ranges(list(self.experiments))
+      logger.info("\nFor reference, batch numbers assigned to datasets were:")
+      for i, image_range in enumerate(image_ranges): #use image_ranges as
+        # experiments list can be longer if target option selected
+        batch_str = str(batch_ranges[i])
+        if self.valid_batch_ranges:
+          if self.valid_batch_ranges[i] != batch_ranges[i]:
+            batch_str = str(batch_ranges[i]) + ' (selected ' + str(self.valid_batch_ranges[i])+')'
+        logger.info("Experiment identifier: %s, image_range: %s, batch_range: %s",
+          self.experiments[i].identifier, image_range, batch_str)
+      logger.info("""To exclude batch ranges, one can use multiple exclude_batches= commands,
+    using these batch numbers for the datasets.""")
+
   def delete_datastructures(self):
     """Delete the data in the scaling datastructures to save RAM before
     combinining datasets for output."""
@@ -388,10 +451,10 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
     """Save the experiments json and scaled pickle file."""
     logger.info('\n'+'='*80+'\n')
 
-    if self.params.scaling_options.target_model or \
+    '''if self.params.scaling_options.target_model or \
       self.params.scaling_options.target_mtz or \
       self.params.scaling_options.only_target:
-      self.experiments = self.experiments[:-1]
+      self.experiments = self.experiments[:-1]'''
     save_experiments(self.experiments, self.params.output.experiments)
 
     crystal_symmetry = self.experiments[0].crystal.get_crystal_symmetry() # save for later
@@ -543,6 +606,33 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
     scaler.adjust_variances()
     scaler.clean_reflection_tables()
     return scaler
+
+def ensure_consistent_space_groups(experiments, params):
+  """Make all space groups the same, and raise an error if not."""
+  if params.scaling_options.space_group:
+      s_g_symbol = params.scaling_options.space_group
+      for experiment in experiments:
+        sg_from_file = experiment.crystal.get_space_group().info()
+        user_sg = crystal.symmetry(space_group_symbol=s_g_symbol).space_group()
+        if user_sg != sg_from_file:
+          msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
+            'If the reflection indexing in these space groups is different, {sep}'
+            'bad things may happen!!! {sep}').format(sg_from_file, s_g_symbol, sep='\n')
+          logger.info(msg)
+          experiment.crystal.set_space_group(user_sg)
+  else:
+    sgs = [e.crystal.get_space_group().type().number() for e in experiments]
+    if len(set(sgs)) > 1:
+      logger.info("""The space groups are not the same for all datasets;
+space groups numbers found: %s""", set(sgs))
+      raise Sorry('experiments have different space groups and cannot be '
+        'scaled together, please reanalyse the data so that the space groups '
+        'are consistent or manually specify a space group. Alternatively, '
+        'some datasets can be excluded using the option exclude_datasets=')
+  logger.info("Space group being used during scaling is %s",
+    experiments[0].crystal.get_space_group().info())
+  return experiments
+
 
 if __name__ == "__main__":
   try:

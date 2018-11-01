@@ -140,10 +140,10 @@ phil_scope = iotbx.phil.parse('''
       .expert_level = 2
   }
   cut_data {
-    exclude_image_range = None
-      .type = floats(size=2)
-      .help = "Exclude a range of image numbers (start, stop) from the dataset,
-               only used if a single dataset present."
+    exclude_batches = None
+      .type = ints(size=2, value_min=0)
+      .multiple = True
+      .help = "Exclude a range of batch numbers (start, stop) from the dataset."
       .expert_level = 1
     d_min = None
       .type = float
