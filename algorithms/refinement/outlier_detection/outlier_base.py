@@ -61,7 +61,6 @@ class CentroidOutlier(object):
     self._block_width = block_width
 
   def set_verbosity(self, verbosity):
-    logger.disabled = (verbosity == 0)
     self._verbosity = verbosity
 
   def _detect_outliers(cols):

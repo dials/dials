@@ -190,9 +190,6 @@ class RefinerFactory(object):
   def _build_components(cls, params, reflections, experiments, verbosity):
     """low level build"""
 
-    if verbosity == 0:
-      logger.disabled = True
-
     # Currently a refinement job can only have one parameterisation of the
     # prediction equation. This can either be of the XYDelPsi (stills) type, the
     # XYPhi (scans) type or the scan-varying XYPhi type with a varying crystal
@@ -533,8 +530,6 @@ class Refiner(object):
     self._param_report = param_reporter
 
     self._verbosity = verbosity
-    if verbosity == 0:
-      logger.disabled = True
 
     return
 
@@ -834,8 +829,7 @@ class Refiner(object):
 
     self._refinery.run()
 
-    # These involve calculation, so skip them when verbosity is zero, even
-    # though the logger is disabled
+    # These involve calculation, so skip them when verbosity is zero
     if self._verbosity > 0:
       self.print_step_table()
       self.print_out_of_sample_rmsd_table()

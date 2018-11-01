@@ -344,8 +344,6 @@ class ReflectionManager(object):
       raise ValueError("Empty reflections table provided to ReflectionManager")
 
     # set verbosity
-    if verbosity == 0:
-      logger.disabled = True
     self._verbosity = verbosity
 
     # keep track of models
