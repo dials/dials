@@ -11,6 +11,7 @@ if libtbx_path not in sys.path:
 from libtbx.auto_build import install_distribution
 
 class installer(install_distribution.installer):
+  organization = 'dials'
   product_name = "DIALS"
   dest_dir_prefix = "dials"
   make_apps = []
