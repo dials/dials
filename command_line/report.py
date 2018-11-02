@@ -2892,8 +2892,6 @@ class Analyser(object):
     crystal_table = None
     expt_geom_table = None
     if experiments is not None:
-      analyse = ZScoreAnalyser()
-      json_data['intensity'].update(analyse(rlist, experiments))
       analyse = ScanVaryingCrystalAnalyser(self.params.orientation_decomposition)
       json_data.update(analyse(experiments))
       crystal_table, expt_geom_table = self.experiments_table(experiments)
