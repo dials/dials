@@ -11,8 +11,11 @@ import pytest
 
 def pytest_addoption(parser):
   '''Add a '--runslow' option to py.test.'''
-  parser.addoption("--regression", action="store_true", default=False,
-                   help="run regression tests")
+  try:
+    parser.addoption("--regression", action="store_true", default=False,
+                     help="run regression tests")
+  except ValueError:
+    pass # Thrown in case the command line option is already defined
   parser.addoption("--runslow", action="store_true", default=False,
                    help="run slow tests")
 
