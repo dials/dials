@@ -180,12 +180,12 @@ class Script(object):
       ax.set_ylim((0, self.params.max_Fc))
 
     if self.params.show_y_eq_x:
-      ax.plot(ax.get_xlim(), ax.get_ylim(), ls="--", c="0.0", linewidth=0.1)
+      ax.plot(ax.get_xlim(), ax.get_ylim(), ls="--", c="0.0", linewidth=0.8)
 
     if self.model_fit:
       x = flex.double_range(0, int(ax.get_xlim()[1]))
       y = self.model_fit(x)
-      ax.plot(x, y, c="0.0", linewidth=0.1)
+      ax.plot(x, y, c="0.0", linewidth=0.8)
 
     print("Saving plot to {0}".format(self.params.plot_filename))
     plt.savefig(self.params.plot_filename)
