@@ -122,7 +122,9 @@ class NullScalerFactory(ScalerFactory):
     """Return Null Scaler."""
     from dials.algorithms.scaling.scaler import NullScaler
     logger.info('Preprocessing target dataset for scaling. \n')
+    print(reflection_table.size())
     reflection_table, reasons = cls.filter_bad_reflections(reflection_table)
+    print(reflection_table.size())
     variance_mask = reflection_table['variance'] <= 0.0
     reflection_table.set_flags(variance_mask,
       reflection_table.flags.excluded_for_scaling)

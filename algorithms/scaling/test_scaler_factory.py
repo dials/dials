@@ -191,6 +191,29 @@ def test_TargetScalerFactory(generated_param, mock_scaling_component):
   assert isinstance(multiscaler, MultiScaler)
   assert len(multiscaler.single_scalers) == 3
 
+  # This time make one dataset bad, and check it gets removed
+  refl_list, explist = test_refl_and_exp_list(mock_scaling_component, 3)
+  generated_param.scaling_options.target_model = False
+  refl_list[1]['partiality'] = flex.double([0.1, 0.1, 0.1, 0.1])
+  target = TargetScalerFactory.create(generated_param, explist, refl_list,
+    is_scaled_list=[True, False, False])
+  assert isinstance(target, TargetScaler)
+  assert len(target.single_scalers) == 1
+  assert len(target.unscaled_scalers) == 1
+  assert set(target.single_scalers[0].reflection_table['id']) == set([0])
+  assert set(target.unscaled_scalers[0].reflection_table['id']) == set([2])
+
+  refl_list, explist = test_refl_and_exp_list(mock_scaling_component, 3)
+  refl_list[0]['partiality'] = flex.double([0.1, 0.1, 0.1, 0.1])
+  target = TargetScalerFactory.create(generated_param, explist, refl_list,
+    is_scaled_list=[True, True, False])
+  assert isinstance(target, TargetScaler)
+  assert len(target.single_scalers) == 1
+  assert len(target.unscaled_scalers) == 1
+  assert set(target.single_scalers[0].reflection_table['id']) == set([1])
+  assert set(target.unscaled_scalers[0].reflection_table['id']) == set([2])
+
+
 def test_MultiScalerFactory(generated_param, mock_scaling_component, refl_list):
   """Test the MultiScalerFactory."""
 
@@ -215,6 +238,7 @@ def test_MultiScalerFactory(generated_param, mock_scaling_component, refl_list):
   assert list(r1.get_flags(r1.flags.integrated)) == [True, True, False, False]
   r2 = multiscaler.single_scalers[1].reflection_table
   assert list(r2.get_flags(r2.flags.integrated)) == [True, True, False, False]
+
 
 def test_scaler_factory_helper_functions(mock_experimentlist, generated_param,
   refl_list, mock_scaling_component):

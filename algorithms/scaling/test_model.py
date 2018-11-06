@@ -25,8 +25,9 @@ def generated_refl():
   """Create a reflection table."""
   rt = flex.reflection_table()
   rt['xyzobs.px.value'] = flex.vec3_double([(0.1, 0.1, 0.1), (0.1, 0.1, 0.1)])
-  rt['s1'] = flex.vec3_double([(0.1, 0.1, 1.1), (0.1, 0.1, 1.1)])
+  rt['s1'] = flex.vec3_double([(0.1, 0.1, 0.1), (0.1, 0.1, 1.1)])
   rt['d'] = flex.double([1.0, 1.0])
+  rt['batch'] = flex.int([0, 1])
   return rt
 
 @pytest.fixture
@@ -208,6 +209,28 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
   assert len(physicalmodel.consecutive_refinement_order) == 2
   physicalmodel.show()
 
+  # test limit batch range
+  parameters_dict = { "scale": {"n_parameters": 11,
+      "parameters": [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5],
+      'parameter_esds' : None},
+    "decay": {"n_parameters": 11,
+      "parameters": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1],
+      'parameter_esds' : None}}
+  configdict = {
+      "corrections": ["scale", "decay"], "s_norm_fac": 0.1,
+        "scale_rot_interval": 10.0, "d_norm_fac": 0.1,
+        "decay_rot_interval": 10.0, "valid_batch_range": (1,90),
+        "valid_osc_range":(0, 90)}
+  physical = PhysicalScalingModel(parameters_dict, configdict)
+  reflection_table = flex.reflection_table()
+  reflection_table['batch'] = flex.int([5, 15, 25, 35, 45, 55, 65, 75, 85])
+  reflection_table['xyzobs.px.value'] = flex.vec3_double([(0, 0, i-0.5) for i in range(5,95, 10)])
+  physical.limit_batch_range((1, 50), reflection_table)
+  assert list(physical.components['scale'].parameters) == [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
+  assert list(physical.components['decay'].parameters) == [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
+  assert physical.configdict['valid_osc_range'] == (0, 50)
+  assert physical.configdict['valid_batch_range'] == (1, 50)
+
 def test_ArrayScalingModel(test_reflections, mock_exp):
   """Test the ArrayScalingModel class."""
 
@@ -281,6 +304,32 @@ def test_ArrayScalingModel(test_reflections, mock_exp):
 
   assert len(arraymodel.consecutive_refinement_order) == 3
   arraymodel.show()
+
+  # test limit batch range
+  configdict = {'corrections':['decay', 'absorption'], 'n_res_param': 2,
+    'n_time_param': 3, 'resmin' : 1.0, 'res_bin_width' : 1.0,
+    'time_norm_fac' : 0.1, 'time_rot_interval' : 1.0, 'n_x_param' : 2,
+    'n_y_param' : 2, 'xmin' : 0.0, 'ymin' : 0.0, 'x_bin_width' : 1.0,
+    'y_bin_width' : 2.0, 'n_x_mod_param' : 2, 'n_y_mod_param' : 2,
+    'x_det_bin_width' : 2.0, 'y_det_bin_width' : 2.0}
+
+  parameters_dict = {
+      'decay': {'parameters' : flex.double([1.2, 1.1, 1.0, 0.9, 0.8, 0.7]),
+        'parameter_esds' : None},
+      'absorption': {'parameters' : flex.double([0.1, 0.2, 0.1, 0.2, 0.1, 0.2,
+        0.1, 0.2, 0.3, 0.4, 0.3, 0.4]), 'parameter_esds' : None}
+      }
+  array = ArrayScalingModel(parameters_dict, configdict)
+  reflection_table = flex.reflection_table()
+  reflection_table['batch'] = flex.int([2, 4, 6, 8, 10, 12, 14, 16, 18])
+  reflection_table['xyzobs.px.value'] = flex.vec3_double(
+    [(0, 0, i-0.5) for i in range(2, 20, 2)])
+  array.limit_batch_range((1, 10), reflection_table)
+  assert list(array.components['decay'].parameters) == [1.2, 1.1, 1.0, 0.9]
+  assert list(array.components['absorption'].parameters) == [0.1, 0.2, 0.1, 0.2, 0.1, 0.2,
+        0.1, 0.2]
+  assert array.configdict['n_time_param'] == 2
+  assert array.configdict['valid_batch_range'] == (1, 10)
 
 def test_map_old_to_new_range():
   old_range = (0, 8.0)

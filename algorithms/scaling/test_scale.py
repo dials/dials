@@ -156,39 +156,6 @@ def test_scale_merging_stats():
   script.merging_stats()
   assert script.merging_statistics_result is None
 
-  '''#test expected behaviour of excluding methods
-  #these methods require a scaling model, so make a simple Kb model
-  reflections['miller_index'] = flex.miller_index([(0, 0, 1), (0, 0, 1),
-    (0, 0, 2), (0, 0, 2)])
-  with mock.patch('dials.command_line.scale.exclude_on_image_scale',
-    side_effect=return_first_arg_side_effect) as \
-    exclude_patch:
-    params.output.exclude_on_image_scale = 0.6
-    params.model = 'KB'
-    script = Script(params, exp, [reflections])
-    script.experiments = create_scaling_model(script.params, script.experiments,
-      script.reflections)
-    script.image_ranges = [(1, 100)]
-    script.batch_ranges = [(1, 100)]
-    script.merging_stats()
-    assert exclude_patch.call_count == 1
-    assert exclude_patch.called_with(script.reflections, script.experiments,
-      script.params.output.exclude_on_image_scale)
-  with mock.patch('dials.command_line.scale.exclude_on_batch_rmerge',
-    side_effect=return_first_arg_side_effect) as \
-    exclude_patch:
-    params.output.exclude_on_batch_rmerge = 2.0
-    params.model = 'KB'
-    script = Script(params, exp, [reflections])
-    script.experiments = create_scaling_model(script.params, script.experiments,
-      script.reflections)
-    script.image_ranges = [(1, 100)]
-    script.batch_ranges = [(1, 100)]
-    script.merging_stats()
-    assert exclude_patch.call_count == 1
-    assert exclude_patch.called_with(script.reflections, script.experiments,
-      script.params.output.exclude_on_batch_rmerge)'''
-
 def test_scale_script_prepare_input():
   """Test prepare_input method of scaling script."""
 
@@ -287,25 +254,8 @@ def test_scale_script_prepare_input():
   assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [
     True, False, False, False]
 
-@pytest.mark.skip(reason='Feature currently broken')
-def test_scale_script_prepare_input_exclude_images():
-  params, exp, reflections = generate_test_input(n=1)
-  reflections[0]['xyzobs.px.value'] = flex.vec3_double([(0, 0, 0.5), (0, 0, 2.5),
-    (0, 0, 4.5), (0, 0, 6.5)])
-  params.cut_data.exclude_image_range = [0.0, 3.0]
-  script = Script(params, exp, reflections)
-  script.prepare_input()
-  r = script.reflections[0]
-  assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [True, True, False, False]
-
-  params, exp, reflections = generate_test_input(n=2)
-  params.cut_data.exclude_image_range = [0.0, 3.0]
-  script = Script(params, exp, reflections)
-  with pytest.raises(Sorry):
-    script.prepare_input()
-
 @pytest.mark.dataset_test
-def test_scale_physical(dials_regression, tmpdir):
+def test_scale_physical(dials_regression, run_in_tmpdir):
   """Test standard scaling of one dataset."""
 
   data_dir = os.path.join(dials_regression, "xia2-28",)
@@ -315,58 +265,55 @@ def test_scale_physical(dials_regression, tmpdir):
     "optimise_errors=False", "intensity_choice=profile", "unmerged_mtz=unmerged.mtz",
     "use_free_set=1", "outlier_rejection=simple"]
 
-  with tmpdir.as_cwd():
-    _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
-    assert os.path.exists("unmerged.mtz")
-    assert os.path.exists("merged.mtz")
+  _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
+  assert os.path.exists("unmerged.mtz")
+  assert os.path.exists("merged.mtz")
 
-    # Now inspect output, check it hasn't changed drastically, or if so verify
-    # that the new behaviour is more correct and update test accordingly.
-    result = get_merging_stats("unmerged.mtz")
-    assert result.overall.r_pim < 0.024 #at 07/08/18, value was 0.0234517
-    assert result.overall.cc_one_half > 0.9955 # at 07/08/18, value was 0.99597
-    assert result.overall.n_obs > 2300 # at 07/08/18, was 2309
+  # Now inspect output, check it hasn't changed drastically, or if so verify
+  # that the new behaviour is more correct and update test accordingly.
+  result = get_merging_stats("unmerged.mtz")
+  assert result.overall.r_pim < 0.024 #at 07/08/18, value was 0.0234517
+  assert result.overall.cc_one_half > 0.9955 # at 07/08/18, value was 0.99597
+  assert result.overall.n_obs > 2300 # at 07/08/18, was 2309
 
-    # Try running again with the merged.mtz as a target, to trigger the
-    # target_mtz option
-    extra_args.append("target_mtz=merged.mtz")
-    _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
-    result = get_merging_stats("unmerged.mtz")
-    assert result.overall.r_pim < 0.024 #at 14/08/18, value was 0.023
-    assert result.overall.cc_one_half > 0.9955 # at 14/08/18, value was 0.999
-    assert result.overall.n_obs > 2100 # at 14/08/18, was 2123
-    #FIXME in target_mtz, why are many more outliers rejected?
+  # Try running again with the merged.mtz as a target, to trigger the
+  # target_mtz option
+  extra_args.append("target_mtz=merged.mtz")
+  _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
+  result = get_merging_stats("unmerged.mtz")
+  assert result.overall.r_pim < 0.024 #at 14/08/18, value was 0.023
+  assert result.overall.cc_one_half > 0.9955 # at 14/08/18, value was 0.999
+  assert result.overall.n_obs > 2100 # at 14/08/18, was 2123
+  #FIXME in target_mtz, why are many more outliers rejected?
 
   # run again with the concurrent scaling option turned off and the 'standard'
   # outlier rejection
   extra_args = ["model=physical", "merged_mtz=merged.mtz",
     "unmerged_mtz=unmerged.mtz", "use_free_set=1", "outlier_rejection=standard",
     "concurrent=False", "intensity_choice=combine"]
-  with tmpdir.as_cwd():
-    _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
-    assert os.path.exists("scale_model.png")
-    assert os.path.exists("absorption_surface.png")
-    assert os.path.exists("outliers.png")
+  _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
+  assert os.path.exists("scale_model.png")
+  assert os.path.exists("absorption_surface.png")
+  assert os.path.exists("outliers.png")
 
-    # Now inspect output, check it hasn't changed drastically, or if so verify
-    # that the new behaviour is more correct and update test accordingly.
-    result = get_merging_stats("unmerged.mtz")
-    assert result.overall.r_pim < 0.035 #at 07/08/18, value was 0.034104
-    assert result.overall.cc_one_half > 0.9935 # at 07/08/18, value was 0.99388
-    assert result.overall.n_obs > 2310 # at 07/08/18, was 2319
+  # Now inspect output, check it hasn't changed drastically, or if so verify
+  # that the new behaviour is more correct and update test accordingly.
+  result = get_merging_stats("unmerged.mtz")
+  assert result.overall.r_pim < 0.035 #at 07/08/18, value was 0.034104
+  assert result.overall.cc_one_half > 0.9935 # at 07/08/18, value was 0.99388
+  assert result.overall.n_obs > 2310 # at 07/08/18, was 2319
 
 @pytest.mark.dataset_test
-def test_scale_optimise_errors(dials_regression, tmpdir):
+def test_scale_optimise_errors(dials_regression, run_in_tmpdir):
   """Test standard scaling of one dataset with error optimisation."""
   data_dir = os.path.join(dials_regression, "xia2-28",)
   pickle_path = os.path.join(data_dir, "20_integrated.pickle")
   sweep_path = os.path.join(data_dir, "20_integrated_experiments.json")
   extra_args = ["model=physical", "optimise_errors=True"]
-  with tmpdir.as_cwd():
-    _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
+  _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
 
 @pytest.mark.dataset_test
-def test_scale_array(dials_regression, tmpdir):
+def test_scale_array(dials_regression, run_in_tmpdir):
   """Test a standard dataset - ideally needs a large dataset or full matrix
   round may fail. Currently turning off absorption term to avoid
   overparameterisation and failure of full matrix minimisation."""
@@ -376,13 +323,12 @@ def test_scale_array(dials_regression, tmpdir):
   sweep_path = os.path.join(data_dir, "20_integrated_experiments.json")
   extra_args = ["model=array", "absorption_term=0", "full_matrix=0"]
 
-  with tmpdir.as_cwd():
-    _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
-    assert os.path.exists("decay_correction.png")
-    assert os.path.exists("outliers.png")
+  _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
+  assert os.path.exists("decay_correction.png")
+  assert os.path.exists("outliers.png")
 
 @pytest.mark.dataset_test
-def test_multi_scale(dials_regression, tmpdir):
+def test_multi_scale(dials_regression, run_in_tmpdir):
   """Test standard scaling of two datasets."""
 
   data_dir = os.path.join(dials_regression, "xia2-28",)
@@ -393,44 +339,79 @@ def test_multi_scale(dials_regression, tmpdir):
   extra_args = ["unmerged_mtz=unmerged.mtz", "optimise_errors=False",
     "intensity_choice=profile", "outlier_rejection=simple"]
 
-  with tmpdir.as_cwd():
-    _ = run_one_scaling([pickle_path_1, pickle_path_2],
-      [sweep_path_1, sweep_path_2], extra_args)
-    assert os.path.exists("scale_model_1.png")
-    assert os.path.exists("scale_model_2.png")
-    assert os.path.exists("absorption_surface_1.png")
-    assert os.path.exists("absorption_surface_2.png")
-    assert os.path.exists("outliers_1.png")
-    assert os.path.exists("outliers_2.png")
+  _ = run_one_scaling([pickle_path_1, pickle_path_2],
+    [sweep_path_1, sweep_path_2], extra_args)
+  assert os.path.exists("scale_model_1.png")
+  assert os.path.exists("scale_model_2.png")
+  assert os.path.exists("absorption_surface_1.png")
+  assert os.path.exists("absorption_surface_2.png")
+  assert os.path.exists("outliers_1.png")
+  assert os.path.exists("outliers_2.png")
 
-    # Now inspect output, check it hasn't changed drastically, or if so verify
-    # that the new behaviour is more correct and update test accordingly.
-    result = get_merging_stats("unmerged.mtz")
-    expected_nobs = 5460
-    assert abs(result.overall.n_obs - expected_nobs) < 10
-    assert result.overall.r_pim < 0.0221 #at 22/10/18, value was 0.22037
-    assert result.overall.cc_one_half > 0.9975 # at 07/08/18, value was 0.99810
+  # Now inspect output, check it hasn't changed drastically, or if so verify
+  # that the new behaviour is more correct and update test accordingly.
+  result = get_merging_stats("unmerged.mtz")
+  expected_nobs = 5460
+  assert abs(result.overall.n_obs - expected_nobs) < 10
+  assert result.overall.r_pim < 0.0221 #at 22/10/18, value was 0.22037
+  assert result.overall.cc_one_half > 0.9975 # at 07/08/18, value was 0.99810
 
-    #run again, optimising errors, and continuing from where last run left off.
-    extra_args = ["optimise_errors=True", "unmerged_mtz=unmerged.mtz"]
-    _ = run_one_scaling(["scaled.pickle"], ["scaled_experiments.json"],
-      extra_args)
-    # Now inspect output, check it hasn't changed drastically, or if so verify
-    # that the new behaviour is more correct and update test accordingly.
-    # Note: error optimisation currently appears to give worse results here!
-    result = get_merging_stats("unmerged.mtz")
-    expected_nobs = 5520
-    assert abs(result.overall.n_obs - expected_nobs) < 10
-    assert result.overall.r_pim < 0.023 #at 07/08/18, value was 0.022722
-    assert result.overall.cc_one_half > 0.9965 # at 07/08/18, value was 0.996925
+  #run again, optimising errors, and continuing from where last run left off.
+  extra_args = ["optimise_errors=True", "unmerged_mtz=unmerged.mtz"]
+  _ = run_one_scaling(["scaled.pickle"], ["scaled_experiments.json"],
+    extra_args)
+  # Now inspect output, check it hasn't changed drastically, or if so verify
+  # that the new behaviour is more correct and update test accordingly.
+  # Note: error optimisation currently appears to give worse results here!
+  result = get_merging_stats("unmerged.mtz")
+  expected_nobs = 5520
+  assert abs(result.overall.n_obs - expected_nobs) < 10
+  assert result.overall.r_pim < 0.023 #at 07/08/18, value was 0.022722
+  assert result.overall.cc_one_half > 0.9965 # at 07/08/18, value was 0.996925
 
-    # until scaled data is available in dials_regression, test the command
-    # line script dials.compute_delta_cchalf here
-    _ = run_delta_cchalf(["scaled.pickle"], ["scaled_experiments.json"],
-      extra_args=['stdcutoff=0.0'])# set 0.0 to force one to be 'rejected'
+  # until scaled data is available in dials_regression, test the command
+  # line script dials.compute_delta_cchalf here
+  _ = run_delta_cchalf(["scaled.pickle"], ["scaled_experiments.json"],
+    extra_args=['stdcutoff=0.0'])# set 0.0 to force one to be 'rejected'
 
 @pytest.mark.dataset_test
-def test_targeted_scaling(dials_regression, tmpdir):
+def test_multi_scale_exclude_batches(dials_regression, run_in_tmpdir):
+
+  data_dir = os.path.join(dials_regression, "xia2-28",)
+  pickle_path_1 = os.path.join(data_dir, "20_integrated.pickle")
+  sweep_path_1 = os.path.join(data_dir, "20_integrated_experiments.json")
+  pickle_path_2 = os.path.join(data_dir, "25_integrated.pickle")
+  sweep_path_2 = os.path.join(data_dir, "25_integrated_experiments.json")
+  #Expect this dataset to be given batches 1-1800 and 1901-3600
+  #Try excluding last two batches
+  extra_args = ["optimise_errors=False", "intensity_choice=profile",
+    "outlier_rejection=simple", "exclude_batches=1601,1800",
+    "exclude_batches=3401,3600"]
+
+  _ = run_one_scaling([pickle_path_1, pickle_path_2],
+    [sweep_path_1, sweep_path_2], extra_args)
+
+  experiments_list = load.experiment_list(
+    "scaled_experiments.json", check_format=False)
+  assert experiments_list.scaling_models()[0].configdict['valid_batch_range'] == [1, 1600]
+  assert experiments_list.scaling_models()[1].configdict['valid_batch_range'] == [1901, 3400]
+  assert pytest.approx(experiments_list.scaling_models()[0].configdict['valid_osc_range'], [0, 160.0])
+  assert pytest.approx(experiments_list.scaling_models()[1].configdict['valid_osc_range'], [-145.0, 5.0])
+
+  extra_args = ["optimise_errors=False", "intensity_choice=profile",
+    "outlier_rejection=simple", "exclude_batches=1401,1600"]
+  _ = run_one_scaling(["scaled.pickle"], ["scaled_experiments.json"],
+      extra_args)
+  experiments_list = load.experiment_list(
+    "scaled_experiments.json", check_format=False)
+  assert experiments_list.scaling_models()[0].configdict['valid_batch_range'] == [1, 1400]
+  assert experiments_list.scaling_models()[1].configdict['valid_batch_range'] == [1901, 3400]
+  assert pytest.approx(experiments_list.scaling_models()[0].configdict['valid_osc_range'], [0, 140.0])
+  assert pytest.approx(experiments_list.scaling_models()[1].configdict['valid_osc_range'], [-145.0, 5.0])
+
+
+@pytest.mark.dataset_test
+def test_targeted_scaling(dials_regression, run_in_tmpdir):
   """Test the targeted scaling workflow."""
   data_dir = os.path.join(dials_regression, "xia2-28",)
   pickle_path_1 = os.path.join(data_dir, "20_integrated.pickle")
@@ -440,47 +421,42 @@ def test_targeted_scaling(dials_regression, tmpdir):
 
   extra_args = ["model=physical"]
 
-  with tmpdir.as_cwd():
+  args = ["dials.scale"] + [pickle_path_1] + [sweep_path_1] + extra_args
+  command = " ".join(args)
+  _ = easy_run.fully_buffered(command=command).raise_if_errors()
+  assert os.path.exists("scaled_experiments.json")
+  assert os.path.exists("scaled.pickle")
 
-    args = ["dials.scale"] + [pickle_path_1] + [sweep_path_1] + extra_args
-    command = " ".join(args)
-    print(command)
-    _ = easy_run.fully_buffered(command=command).raise_if_errors()
-    assert os.path.exists("scaled_experiments.json")
-    assert os.path.exists("scaled.pickle")
+  experiments_list = load.experiment_list(
+    "scaled_experiments.json", check_format=False)
+  assert len(experiments_list.scaling_models()) == 1
 
-    experiments_list = load.experiment_list(
-      "scaled_experiments.json", check_format=False)
-    assert len(experiments_list.scaling_models()) == 1
+  # Once individual has run, do targeted scaling of second dataset.
+  # Use this as a chance to test the KB model as well.
+  extra_args = ["model=KB"]
+  args = ["dials.scale"] + ["scaled.pickle"] + ["scaled_experiments.json"] +\
+    [pickle_path_2] + [sweep_path_2] + extra_args
+  command = " ".join(args)
+  _ = easy_run.fully_buffered(command=command).raise_if_errors()
+  assert os.path.exists("scaled_experiments.json")
+  assert os.path.exists("scaled.pickle")
 
-    # Once individual has run, do targeted scaling of second dataset.
-    # Use this as a chance to test the KB model as well.
-    extra_args = ["model=KB"]
-    args = ["dials.scale"] + ["scaled.pickle"] + ["scaled_experiments.json"] +\
-      [pickle_path_2] + [sweep_path_2] + extra_args
-    command = " ".join(args)
-    print(command)
-    _ = easy_run.fully_buffered(command=command).raise_if_errors()
-    assert os.path.exists("scaled_experiments.json")
-    assert os.path.exists("scaled.pickle")
+  experiments_list = load.experiment_list(
+    "scaled_experiments.json", check_format=False)
+  assert len(experiments_list.scaling_models()) == 2
+  assert experiments_list.scaling_models()[0].id_ == 'physical'
+  assert experiments_list.scaling_models()[1].id_ == 'KB'
 
-    experiments_list = load.experiment_list(
-      "scaled_experiments.json", check_format=False)
-    assert len(experiments_list.scaling_models()) == 2
-    assert experiments_list.scaling_models()[0].id_ == 'physical'
-    assert experiments_list.scaling_models()[1].id_ == 'KB'
-
-    extra_args = ["model=KB", "only_target=True"]
-    args = ["dials.scale"] + ["scaled.pickle"] + ["scaled_experiments.json"] +\
-      [pickle_path_2] + [sweep_path_2] + extra_args
-    command = " ".join(args)
-    print(command)
-    _ = easy_run.fully_buffered(command=command).raise_if_errors()
-    assert os.path.exists("scaled_experiments.json")
-    assert os.path.exists("scaled.pickle")
+  extra_args = ["model=KB", "only_target=True"]
+  args = ["dials.scale"] + ["scaled.pickle"] + ["scaled_experiments.json"] +\
+    [pickle_path_2] + [sweep_path_2] + extra_args
+  command = " ".join(args)
+  _ = easy_run.fully_buffered(command=command).raise_if_errors()
+  assert os.path.exists("scaled_experiments.json")
+  assert os.path.exists("scaled.pickle")
 
 @pytest.mark.dataset_test
-def test_scale_cross_validate(dials_regression, tmpdir):
+def test_scale_cross_validate(dials_regression, run_in_tmpdir):
   """Test standard scaling of one dataset."""
 
   data_dir = os.path.join(dials_regression, "xia2-28",)
@@ -489,26 +465,20 @@ def test_scale_cross_validate(dials_regression, tmpdir):
   extra_args = ["cross_validation_mode=single", "nfolds=2", "full_matrix=0",
     "optimise_errors=0"]
 
-  with tmpdir.as_cwd():
-    args = ["dials.scale"] + [pickle_path] + [sweep_path] + extra_args
-    command = " ".join(args)
-    print(command)
-    _ = easy_run.fully_buffered(command=command).raise_if_errors()
+  args = ["dials.scale"] + [pickle_path] + [sweep_path] + extra_args
+  command = " ".join(args)
+  _ = easy_run.fully_buffered(command=command).raise_if_errors()
 
   extra_args = ["cross_validation_mode=multi", "nfolds=2", "full_matrix=0",
     "optimise_errors=0", "parameter=absorption_term"]
 
-  with tmpdir.as_cwd():
-    args = ["dials.scale"] + [pickle_path] + [sweep_path] + extra_args
-    command = " ".join(args)
-    print(command)
-    _ = easy_run.fully_buffered(command=command).raise_if_errors()
+  args = ["dials.scale"] + [pickle_path] + [sweep_path] + extra_args
+  command = " ".join(args)
+  _ = easy_run.fully_buffered(command=command).raise_if_errors()
 
   extra_args = ["cross_validation_mode=multi", "nfolds=2", "full_matrix=0",
     "optimise_errors=0", "parameter=model", 'parameter_values="physical array"']
 
-  with tmpdir.as_cwd():
-    args = ["dials.scale"] + [pickle_path] + [sweep_path] + extra_args
-    command = " ".join(args)
-    print(command)
-    _ = easy_run.fully_buffered(command=command).raise_if_errors()
+  args = ["dials.scale"] + [pickle_path] + [sweep_path] + extra_args
+  command = " ".join(args)
+  _ = easy_run.fully_buffered(command=command).raise_if_errors()

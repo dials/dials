@@ -9,7 +9,7 @@ from dials.algorithms.scaling.model.model import KBScalingModel,\
   PhysicalScalingModel, ArrayScalingModel
 from dials.algorithms.scaling.model.scaling_model_factory import \
   KBSMFactory, PhysicalSMFactory, ArraySMFactory, calc_n_param_from_bins,\
-  initialise_smooth_input, osc_range_check_for_user_excluded
+  initialise_smooth_input
 from libtbx import phil
 
 @pytest.fixture
@@ -124,19 +124,3 @@ def test_model_factory_utilities(mock_exp):
   n_param, norm_fac, rot_int = initialise_smooth_input([0, 10], 2.0, 4.99)
   assert (n_param, norm_fac, rot_int) == (5, 6.0/10.0, 10.0/3.0)
 
-  # Test check for user excluded
-  #oscillation 0>90, add some data and exclude
-  r = flex.reflection_table()
-  r['xyzobs.px.value'] = flex.vec3_double([
-    (0, 0, 0.5), (0, 0, 1.5), (0, 0, 2.5), (0, 0, 3.5),
-    (0, 0, 86.5), (0, 0, 87.5), (0, 0, 88.5), (0, 0, 89.5)])
-  sel = flex.bool(8, False)
-  sel[0] = True
-  r.set_flags(sel, r.flags.user_excluded_in_scaling)
-  r.set_flags(flex.bool(8, True), r.flags.integrated)
-  osc_range = osc_range_check_for_user_excluded(mock_exp, r)
-  assert osc_range == (1.5, 90)
-  sel[7] = True
-  r.set_flags(sel, r.flags.user_excluded_in_scaling)
-  osc_range = osc_range_check_for_user_excluded(mock_exp, r)
-  assert osc_range == (1.5, 88.501) #Should we really be adding 0.001 on?

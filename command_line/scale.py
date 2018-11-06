@@ -67,8 +67,7 @@ from dials.algorithms.scaling.post_scaling_analysis import \
   exclude_on_batch_rmerge, exclude_on_image_scale
 from dials.util.batch_handling import assign_batches_to_reflections, \
   calculate_batch_offsets, get_batch_ranges, get_image_ranges, set_batch_offsets,\
-  get_current_batch_ranges_for_scaling, exclude_batches_in_reflections,\
-  calculate_new_batch_ranges
+  get_current_batch_ranges_for_scaling, exclude_batches_in_reflections
 
 
 logger = logging.getLogger('dials')
@@ -237,13 +236,12 @@ class Script(object):
           self.experiments, self.batch_ranges)
         # now calculate reduced batch ranges and exclude data
         try:
-          self.valid_batch_ranges = calculate_new_batch_ranges(
-            in_use_batch_ranges, self.params.cut_data.exclude_batches)
+          self.reflections, self.valid_batch_ranges = exclude_batches_in_reflections(
+            self.reflections, self.experiments, in_use_batch_ranges,
+            self.params.cut_data.exclude_batches)
         except ValueError:
           raise Sorry("""Trying to exclude a whole dataset, please use the
   exclude_datasets= option instead, specifying experiment identifiers""")
-        self.reflections = exclude_batches_in_reflections(self.reflections,
-          self.experiments, self.valid_batch_ranges, in_use_batch_ranges)
 
     elif self.params.cut_data.exclude_batches:
       raise Sorry("""All datasets contain single images, please use the

@@ -216,10 +216,13 @@ class PhysicalScalingModel(ScalingModelBase):
       params = self.components['decay'].parameters
       new_params = params[offset:offset+n_param]
       self.components['decay'].set_new_parameters(new_params)
+    current_batch_range = conf['valid_batch_range']
+    current_osc_range = self._configdict['valid_osc_range']
     one_osc = (conf['valid_osc_range'][1] - conf['valid_osc_range'][0])/(
         (conf['valid_batch_range'][1] - (conf['valid_batch_range'][0] - 1)))
-    self._configdict['valid_osc_range'] = ((new_batch_range[0] - 1) * one_osc,
-      (new_batch_range[1] * one_osc))
+    new_osc_range_0 = current_osc_range[0] + ((new_batch_range[0] - current_batch_range[0]) * one_osc)
+    new_osc_range_1 = current_osc_range[1] + ((new_batch_range[1] - current_batch_range[1]) * one_osc)
+    self._configdict['valid_osc_range'] = (new_osc_range_0, new_osc_range_1)
     self.set_valid_batch_range(new_batch_range)
 
   def normalise_components(self):
@@ -355,14 +358,14 @@ class ArrayScalingModel(ScalingModelBase):
     offset, n_param = map_old_to_new_range(old_range_time, new_range_time)
     if 'absorption' in self.components:
       params = self.components['absorption'].parameters
-      n_x_params = self.components['decay'].n_x_params
-      n_y_params = self.components['decay'].n_y_params
+      n_x_params = self.components['absorption'].n_x_params
+      n_y_params = self.components['absorption'].n_y_params
       #can't do simple slice as 3-dim array
       time_offset = offset * n_x_params * n_y_params
       new_params = params[time_offset : time_offset + \
         (n_param * n_x_params * n_y_params)]
       self.components['absorption'].set_new_parameters(new_params,
-        shape=(n_x_params * n_y_params, n_param))
+        shape=(n_x_params, n_y_params, n_param))
     if 'decay' in self.components:
       params = self.components['decay'].parameters
       n_decay_params = self.components['decay'].n_x_params
