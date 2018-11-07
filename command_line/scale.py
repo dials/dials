@@ -56,13 +56,13 @@ from dials.util.options import OptionParser, flatten_reflections,\
   flatten_experiments
 from dials.util.version import dials_version
 from dials.algorithms.scaling.scaling_library import create_scaling_model,\
-  create_datastructures_for_structural_model, create_datastructures_for_target_mtz
+  create_datastructures_for_structural_model, create_datastructures_for_target_mtz,\
+  prepare_multiple_datasets_for_scaling
 from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScalerFactory
+from dials.util.multi_dataset_handling import select_datasets_on_ids
 from dials.algorithms.scaling.scaling_utilities import save_experiments,\
   save_reflections, log_memory_usage, DialsMergingStatisticsError
-from dials.util.multi_dataset_handling import assign_unique_identifiers,\
-  parse_multiple_datasets, select_datasets_on_ids
 from dials.algorithms.scaling.post_scaling_analysis import \
   exclude_on_batch_rmerge, exclude_on_image_scale
 from dials.util.batch_handling import assign_batches_to_reflections, \
@@ -145,6 +145,8 @@ phil_scope = phil.parse('''
   include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
 ''', process_includes=True)
 
+batch_info_dict = {'all_single_images' : False, 'image_ranges' : [],
+  'batch_ranges' : [], 'new_batch_ranges_to_use' : []}
 
 class Script(object):
   """Main script to run the scaling algorithm."""
@@ -156,10 +158,7 @@ class Script(object):
     self.scaler = None
     self.scaled_miller_array = None
     self.merging_statistics_result = None
-    self.image_ranges = None
-    self.batch_ranges = None
-    self.valid_batch_ranges = []
-    self.all_single_images = False # flag if all dataset are single images
+    self.batch_info = batch_info_dict
     logger.debug('Initialised scaling script object')
     log_memory_usage()
 
@@ -168,10 +167,13 @@ class Script(object):
     start_time = time.time()
     self.prepare_input()
     self.scale()
+    self.remove_unwanted_datasets()
+    print_scaling_model_error_info(self.experiments)
     try:
       self.merging_stats()
     except DialsMergingStatisticsError as e:
       logger.info(e)
+    print_batch_info(self.batch_info, self.experiments)
     if save_data:
       self.output()
     # All done!
@@ -182,63 +184,43 @@ class Script(object):
   def prepare_input(self):
     """Perform checks on the data and prepare the data for scaling."""
 
-    #### First exclude any datasets before the dataset is split into
-    #### individual reflection tables (only if expids set).
-    use_datasets = self.params.dataset_selection.use_datasets
-    exclude_datasets = self.params.dataset_selection.exclude_datasets
-    if (use_datasets or exclude_datasets):
-      self.experiments, self.reflections = select_datasets_on_ids(
-        self.experiments, self.reflections, exclude_datasets, use_datasets)
-      logger.info("\nDataset unique identifiers for retained datasets are %s \n",
-        list(self.experiments.identifiers()))
-
-    #### Split the reflections tables into a list of reflection tables,
-    #### with one table per experiment.
-    logger.info('Checking for the existence of a reflection table \n'
-      'containing multiple datasets \n')
-    self.reflections = parse_multiple_datasets(self.reflections)
-    logger.info("Found %s reflection tables in total.", len(self.reflections))
-    logger.info("Found %s experiments in total.", len(self.experiments))
-
-    if len(self.experiments) != len(self.reflections):
-      raise Sorry("Mismatched number of experiments and reflection tables found.")
-
-    #### Assign experiment identifiers.
-    self.experiments, self.reflections = assign_unique_identifiers(
-      self.experiments, self.reflections)
-    logger.info("\nDataset unique identifiers are %s \n", list(
-      self.experiments.identifiers()))
+    #### First exclude any datasets, before the dataset is split into
+    #### individual reflection tables and expids set.
+    self.experiments, self.reflections = prepare_multiple_datasets_for_scaling(
+      self.experiments, self.reflections,
+      self.params.dataset_selection.exclude_datasets,
+      self.params.dataset_selection.use_datasets)
 
     #### Ensure all space groups are the same
     self.experiments = ensure_consistent_space_groups(self.experiments, self.params)
 
     #### Batch handling code only applies if not all single-image datasets
-    self.image_ranges = get_image_ranges(list(self.experiments))
-    if all([i == (0, 0) for i in self.image_ranges]):
-      self.all_single_images = True
+    self.batch_info['image_ranges'] = get_image_ranges(list(self.experiments))
+    if all([i == (0, 0) for i in self.batch_info['image_ranges']]):
+      self.batch_info['all_single_images'] = True
 
     #### Calculate batch offsets based on the image ranges of the experiments
     #### batch offsets do not change between runs even if batches are excluded
-    if not self.all_single_images:
+    if not self.batch_info['all_single_images']:
       batch_offsets = calculate_batch_offsets(list(self.experiments))
       set_batch_offsets(self.experiments, batch_offsets) # set in exp.scan
-      self.batch_ranges = get_batch_ranges(list(self.experiments), batch_offsets)
+      self.batch_info['batch_ranges'] = get_batch_ranges(list(self.experiments), batch_offsets)
       logger.info("\nBatch numbers assigned to datasets:")
       for i, exp in enumerate(self.experiments):
         logger.info("Experiment identifier: %s, image_range: %s, batch_range: %s",
-          exp.identifier, self.image_ranges[i], self.batch_ranges[i])
+          exp.identifier, self.batch_info['image_ranges'][i], self.batch_info['batch_ranges'][i])
       self.reflections = assign_batches_to_reflections(self.reflections, batch_offsets)
 
       #### Calculate new batch ranges and exclude data from the reflection tables
       #### Delay modification of the scaling models until later.
       if self.params.cut_data.exclude_batches:
         in_use_batch_ranges = get_current_batch_ranges_for_scaling(
-          self.experiments, self.batch_ranges)
+          self.experiments, self.batch_info['batch_ranges'])
         # now calculate reduced batch ranges and exclude data
         try:
-          self.reflections, self.valid_batch_ranges = exclude_batches_in_reflections(
-            self.reflections, self.experiments, in_use_batch_ranges,
-            self.params.cut_data.exclude_batches)
+          self.reflections, self.batch_info['new_batch_ranges_to_use'] = \
+            exclude_batches_in_reflections(self.reflections, self.experiments,
+            in_use_batch_ranges, self.params.cut_data.exclude_batches)
         except ValueError:
           raise Sorry("""Trying to exclude a whole dataset, please use the
   exclude_datasets= option instead, specifying experiment identifiers""")
@@ -283,20 +265,16 @@ exclude_datasets= option rather than exclude_batches, specifying experiment iden
     logger.info('\nScaling models have been initialised for all experiments.')
     logger.info('\n' + '='*80 + '\n')
 
-    if self.valid_batch_ranges:
-      #modify_scaling_models
-      for experiment, refl, valid_batch, batch_range in zip(
-        self.experiments, self.reflections, self.valid_batch_ranges, self.batch_ranges):
-        if experiment.scan:
-          if valid_batch != experiment.scan.get_batch_range():
-            if not 'valid_batch_range' in experiment.scaling_model.configdict:
-              #only set if not currently set i.e. set initial
-              experiment.scaling_model.set_valid_batch_range(batch_range)
-            experiment.scaling_model.limit_batch_range(valid_batch, refl)
+    if self.batch_info['new_batch_ranges_to_use']:
+      self.experiments = limit_batch_ranges_in_scaling_models(self.experiments,
+        self.reflections, self.batch_info)
 
     self.scaler = create_scaler(self.params, self.experiments, self.reflections)
     self.scaler = self.scaling_algorithm(self.scaler)
 
+  def remove_unwanted_datasets(self):
+    """Remove any target model/mtz data and any datasets which were removed
+    from the scaler during scaling."""
     # first remove target refl/exps
     if self.params.scaling_options.target_model or \
       self.params.scaling_options.target_mtz or \
@@ -315,31 +293,12 @@ exclude_datasets= option rather than exclude_batches, specifying experiment iden
       self.experiments, self.reflections = select_datasets_on_ids(
         self.experiments, self.reflections, exclude_datasets=removed_ids)
       sorted_locs = sorted(locs_in_list)
-      if not self.all_single_images:
+      if not self.batch_info['all_single_images']:
         for i in sorted_locs[::-1]:
-          del self.image_ranges[i]
-          del self.batch_ranges[i]
-          if self.valid_batch_ranges:
-            del self.valid_batch_ranges[i]
-
-    # print out information on model errors
-    if self.experiments[0].scaling_model.components.values()[0].parameter_esds:
-      p_sigmas = flex.double()
-      for experiment in self.experiments:
-        for component in experiment.scaling_model.components.itervalues():
-          if component.parameter_esds:
-            p_sigmas.extend(flex.abs(component.parameters) / component.parameter_esds)
-      log_p_sigmas = flex.log(p_sigmas)
-      frac_high_uncertainty = (log_p_sigmas < 1.0).count(True) / len(log_p_sigmas)
-      if frac_high_uncertainty > 0:
-        if frac_high_uncertainty > 0.5:
-          logger.warn("""Warning: Over half (%.2f%%) of model parameters have signficant
-uncertainty (sigma/abs(parameter) > 0.5), which could indicate a
-poorly-determined scaling problem or overparameterisation.""" % (frac_high_uncertainty * 100))
-        else:
-          logger.info("""%.2f%% of model parameters have signficant uncertainty
-(sigma/abs(parameter) > 0.5)""" % (frac_high_uncertainty * 100))
-        logger.info("Plots of parameter uncertainties can be seen in dials report")
+          del self.batch_info['image_ranges'][i]
+          del self.batch_info['batch_ranges'][i]
+          if self.batch_info['new_batch_ranges_to_use']:
+            del self.batch_info['new_batch_ranges_to_use'][i]
 
   def scaled_data_as_miller_array(self, crystal_symmetry, reflection_table=None,
     anomalous_flag=False):
@@ -418,23 +377,6 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
       self.merging_statistics_result = result
     except RuntimeError:
       raise DialsMergingStatisticsError("Failure during merging statistics calculation")
-
-    if not self.all_single_images:
-      #calculate again for safety in case any datasets removed
-      batch_offsets = calculate_batch_offsets(list(self.experiments))
-      batch_ranges = get_batch_ranges(list(self.experiments), batch_offsets)
-      image_ranges = get_image_ranges(list(self.experiments))
-      logger.info("\nFor reference, batch numbers assigned to datasets were:")
-      for i, image_range in enumerate(image_ranges): #use image_ranges as
-        # experiments list can be longer if target option selected
-        batch_str = str(batch_ranges[i])
-        if self.valid_batch_ranges:
-          if self.valid_batch_ranges[i] != batch_ranges[i]:
-            batch_str = str(batch_ranges[i]) + ' (selected ' + str(self.valid_batch_ranges[i])+')'
-        logger.info("Experiment identifier: %s, image_range: %s, batch_range: %s",
-          self.experiments[i].identifier, image_range, batch_str)
-      logger.info("""To exclude batch ranges, one can use multiple exclude_batches= commands,
-    using these batch numbers for the datasets.""")
 
   def delete_datastructures(self):
     """Delete the data in the scaling datastructures to save RAM before
@@ -631,6 +573,59 @@ space groups numbers found: %s""", set(sgs))
     experiments[0].crystal.get_space_group().info())
   return experiments
 
+def print_batch_info(batch_info, experiments):
+  """Print useful information about batch ranges assigned and ranges in use."""
+  if not batch_info['all_single_images']:
+    #calculate again for safety in case any datasets removed
+    batch_offsets = calculate_batch_offsets(list(experiments))
+    batch_ranges = get_batch_ranges(list(experiments), batch_offsets)
+    image_ranges = get_image_ranges(list(experiments))
+    logger.info("\nFor reference, batch numbers assigned to datasets were:")
+    for i, image_range in enumerate(image_ranges): #use image_ranges as
+      # experiments list can be longer if target option selected
+      batch_str = str(batch_ranges[i])
+      #if self.batch_info['new_batch_ranges_to_use']:
+      in_use_batch_ranges = get_current_batch_ranges_for_scaling(
+        experiments, batch_info['batch_ranges'])
+      if in_use_batch_ranges[i] != batch_ranges[i]:
+        batch_str = str(batch_ranges[i]) + ' (range in use: ' + str(in_use_batch_ranges[i])+')'
+      logger.info("Experiment identifier: %s, image_range: %s, batch_range: %s",
+        experiments[i].identifier, image_range, batch_str)
+    logger.info("""To exclude batch ranges, one can use multiple exclude_batches= commands,
+  using these batch numbers for the datasets.""")
+
+def print_scaling_model_error_info(experiments):
+  """Print out information on model errors"""
+  if experiments[0].scaling_model.components.values()[0].parameter_esds:
+    p_sigmas = flex.double()
+    for experiment in experiments:
+      for component in experiment.scaling_model.components.itervalues():
+        if component.parameter_esds:
+          p_sigmas.extend(flex.abs(component.parameters) / component.parameter_esds)
+    log_p_sigmas = flex.log(p_sigmas)
+    frac_high_uncertainty = (log_p_sigmas < 1.0).count(True) / len(log_p_sigmas)
+    if frac_high_uncertainty > 0:
+      if frac_high_uncertainty > 0.5:
+        logger.warn("""Warning: Over half (%.2f%%) of model parameters have signficant
+uncertainty (sigma/abs(parameter) > 0.5), which could indicate a
+poorly-determined scaling problem or overparameterisation.""" % (frac_high_uncertainty * 100))
+      else:
+        logger.info("""%.2f%% of model parameters have signficant uncertainty
+(sigma/abs(parameter) > 0.5)""" % (frac_high_uncertainty * 100))
+      logger.info("Plots of parameter uncertainties can be seen in dials report")
+
+def limit_batch_ranges_in_scaling_models(experiments, reflections, batch_info):
+  """Update the scaling models for new batch range."""
+  for experiment, refl, valid_batch, batch_range in zip(
+    experiments, reflections, batch_info['new_batch_ranges_to_use'],
+      batch_info['batch_ranges']):
+    if experiment.scan:
+      if not 'valid_batch_range' in experiment.scaling_model.configdict:
+        #only set if not currently set i.e. set initial
+        experiment.scaling_model.set_valid_batch_range(batch_range)
+      if valid_batch != experiment.scaling_model.configdict['valid_batch_range']:
+        experiment.scaling_model.limit_batch_range(valid_batch, refl)
+  return experiments
 
 if __name__ == "__main__":
   try:

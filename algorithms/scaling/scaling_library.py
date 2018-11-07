@@ -24,9 +24,40 @@ from dials.algorithms.scaling.model.scaling_model_factory import \
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.scaling_utilities import \
   calculate_prescaling_correction
+from dials.util.multi_dataset_handling import assign_unique_identifiers,\
+  parse_multiple_datasets, select_datasets_on_ids
 from dials.util.multi_dataset_handling import get_next_unique_id
 
 logger = logging.getLogger('dials')
+
+def prepare_multiple_datasets_for_scaling(experiments, reflections,
+  exclude_datasets=None, include_datasets=None):
+  """Prepare an ExperimentList and list of reflection tables for scaling, by
+  splitting the data into individual datasets, assigning identifiers and
+  including/excluding on experiment identifier if already set."""
+  if (include_datasets or exclude_datasets):
+    experiments, reflections = select_datasets_on_ids(
+      experiments, reflections, exclude_datasets, include_datasets)
+    logger.info("\nDataset unique identifiers for retained datasets are %s \n",
+      list(experiments.identifiers()))
+
+  #### Split the reflections tables into a list of reflection tables,
+  #### with one table per experiment.
+  logger.info('Checking for the existence of a reflection table \n'
+    'containing multiple datasets \n')
+  reflections = parse_multiple_datasets(reflections)
+  logger.info("Found %s reflection tables in total.", len(reflections))
+  logger.info("Found %s experiments in total.", len(experiments))
+
+  if len(experiments) != len(reflections):
+    raise Sorry("Mismatched number of experiments and reflection tables found.")
+
+  #### Assign experiment identifiers.
+  experiments, reflections = assign_unique_identifiers(experiments, reflections)
+  logger.info("\nDataset unique identifiers are %s \n", list(
+    experiments.identifiers()))
+
+  return experiments, reflections
 
 def choose_scaling_intensities(reflection_table, intensity_choice='profile'):
   """Choose which intensities to use for scaling. The LP, QE and
