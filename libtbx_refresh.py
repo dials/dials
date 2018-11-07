@@ -24,7 +24,7 @@ except Exception:
 import libtbx.pkg_utils
 libtbx.pkg_utils.require('mock', '>=2.0')
 libtbx.pkg_utils.require('orderedset')
-libtbx.pkg_utils.require('pytest', '>=3.1')
+libtbx.pkg_utils.require('pytest', '>=3.1,<3.7')
 libtbx.pkg_utils.require('Jinja2')
 libtbx.pkg_utils.require('procrunner', '>=0.6')
 libtbx.pkg_utils.require('scipy')
