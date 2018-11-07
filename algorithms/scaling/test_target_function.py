@@ -320,10 +320,9 @@ def test_target_fixedIh(mock_multi_apm_withoutrestraints, mock_Ih_table):
   assert J[1, 0] == -22.0
   assert J[2, 0] == -33.0
 
-  expected_rmsd = (expected_residuals**2 / len(expected_residuals))**0.5
+  expected_rmsd = (flex.sum(expected_residuals**2) / len(expected_residuals))**0.5
   assert target._rmsds is None
-  target._rmsds = []
-  target.rmsds(mock_Ih_table, mock_multi_apm_withoutrestraints)
+  rmsd = target.rmsds(mock_Ih_table, mock_multi_apm_withoutrestraints)
   assert target._rmsds == pytest.approx([expected_rmsd])
 
 # For testing the targetfunction calculations using finite difference methods,
