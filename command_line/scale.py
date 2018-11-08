@@ -67,7 +67,8 @@ from dials.algorithms.scaling.post_scaling_analysis import \
   exclude_on_batch_rmerge, exclude_on_image_scale
 from dials.util.batch_handling import assign_batches_to_reflections, \
   calculate_batch_offsets, get_batch_ranges, get_image_ranges, set_batch_offsets,\
-  get_current_batch_ranges_for_scaling, exclude_batches_in_reflections
+  get_current_batch_ranges_for_scaling, exclude_batches_in_reflections,\
+  are_all_batch_ranges_set_by_scaling
 
 
 logger = logging.getLogger('dials')
@@ -203,8 +204,12 @@ class Script(object):
     #### batch offsets do not change between runs even if batches are excluded
     if not self.batch_info['all_single_images']:
       batch_offsets = calculate_batch_offsets(list(self.experiments))
-      set_batch_offsets(self.experiments, batch_offsets) # set in exp.scan
-      self.batch_info['batch_ranges'] = get_batch_ranges(list(self.experiments), batch_offsets)
+      # ^^ will return previously set offsets by scaling
+      if not are_all_batch_ranges_set_by_scaling(self.experiments):
+        set_batch_offsets(self.experiments, batch_offsets) # set in exp.scan,
+        # will set in scaling model later
+      self.batch_info['batch_ranges'] = get_batch_ranges(
+        list(self.experiments), batch_offsets)
       logger.info("\nBatch numbers assigned to datasets:")
       for i, exp in enumerate(self.experiments):
         logger.info("Experiment identifier: %s, image_range: %s, batch_range: %s",
@@ -213,17 +218,16 @@ class Script(object):
 
       #### Calculate new batch ranges and exclude data from the reflection tables
       #### Delay modification of the scaling models until later.
-      if self.params.cut_data.exclude_batches:
-        in_use_batch_ranges = get_current_batch_ranges_for_scaling(
-          self.experiments, self.batch_info['batch_ranges'])
-        # now calculate reduced batch ranges and exclude data
-        try:
-          self.reflections, self.batch_info['new_batch_ranges_to_use'] = \
-            exclude_batches_in_reflections(self.reflections, self.experiments,
-            in_use_batch_ranges, self.params.cut_data.exclude_batches)
-        except ValueError:
-          raise Sorry("""Trying to exclude a whole dataset, please use the
-  exclude_datasets= option instead, specifying experiment identifiers""")
+      in_use_batch_ranges = get_current_batch_ranges_for_scaling(
+        self.experiments, self.batch_info['batch_ranges'])
+      # now calculate reduced batch ranges and exclude data
+      try:
+        self.reflections, self.batch_info['new_batch_ranges_to_use'] = \
+          exclude_batches_in_reflections(self.reflections, self.experiments,
+          in_use_batch_ranges, self.params.cut_data.exclude_batches)
+      except ValueError:
+        raise Sorry("""Trying to exclude a whole dataset, please use the
+exclude_datasets= option instead, specifying experiment identifiers""")
 
     elif self.params.cut_data.exclude_batches:
       raise Sorry("""All datasets contain single images, please use the
@@ -265,7 +269,7 @@ exclude_datasets= option rather than exclude_batches, specifying experiment iden
     logger.info('\nScaling models have been initialised for all experiments.')
     logger.info('\n' + '='*80 + '\n')
 
-    if self.batch_info['new_batch_ranges_to_use']:
+    if not self.batch_info['all_single_images']:
       self.experiments = limit_batch_ranges_in_scaling_models(self.experiments,
         self.reflections, self.batch_info)
 
