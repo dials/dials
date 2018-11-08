@@ -10,7 +10,8 @@ from math import ceil, cos, floor, log, pi, sin, sqrt
 from dials.array_family import flex
 from dials.util.version import dials_version
 from dials.util.filter_reflections import filter_reflection_table
-from dials.util.batch_handling import calculate_batch_offsets, assign_image_range_to_experiment
+from dials.util.batch_handling import calculate_batch_offsets, \
+  assign_batches_to_reflections, get_image_ranges
 from iotbx import mtz
 from libtbx.utils import Sorry
 from scitbx import matrix
@@ -94,7 +95,7 @@ def _add_batch(mtz, experiment, batch_number, image_number, force_static_model):
   # refinement was used
   if not force_static_model and experiment.crystal.num_scan_points > 0:
     # Get the index of the image in the sequence e.g. first => 0, second => 1
-    image_index = image_number - experiment.image_range[0]
+    image_index = image_number - experiment.scan.get_image_range()[0]
     _unit_cell = experiment.crystal.get_unit_cell_at_scan_point(image_index)
     _U = matrix.sqr(experiment.crystal.get_U_at_scan_point(image_index))
   else:
@@ -185,10 +186,6 @@ def _write_columns(mtz_file, dataset, integrated_data):
   if nref == 0:
     raise Sorry('no reflections for export')
   xdet, ydet, zdet = [flex.double(x) for x in integrated_data['xyzobs.px.value'].parts()]
-  # compute BATCH values - floor() to get (fortran) image captured within
-  #                        +1     because FORTRAN counting; zdet+1=image_index
-  #                        +off   because            image_index+o=batch
-  batch = (flex.floor(zdet).iround() + 1) + integrated_data["batch_offset"]
 
   # now add column information...
 
@@ -236,7 +233,7 @@ def _write_columns(mtz_file, dataset, integrated_data):
   mtz_file.replace_original_index_miller_indices(integrated_data['miller_index_rebase'])
 
   dataset.add_column('BATCH', type_table['BATCH']).set_values(
-    batch.as_double().as_float())
+    integrated_data['batch'].as_double().as_float())
 
   #if intensity values used in scaling exist, then just export these as I, SIGI
   if 'intensity.scale.value' in integrated_data:
@@ -344,24 +341,15 @@ def export_mtz(integrated_data, experiment_list, params):
     min_isigi=params.mtz.min_isigi, filter_ice_rings=params.mtz.filter_ice_rings,
     d_min=params.mtz.d_min)
 
-  # Calculate and store the image range for each image
-  for experiment in experiment_list:
-    assign_image_range_to_experiment(experiment)
-
-  batch_offsets = flex.int(
-    expt.scan.get_batch_offset() if expt.scan else 0 for expt in experiment_list)
-  if batch_offsets.all_eq(0):
-    # Calculate any offset to the image numbers
-    batch_offsets = calculate_batch_offsets(experiment_list)
-  else:
-    for expt, b in zip(experiment_list, batch_offsets):
-      expt.batch_offset = b
-    unique_offsets = set(batch_offsets)
-    if len(unique_offsets) != len(batch_offsets):
-      import collections
-      raise Sorry('Duplicate batch offsets detected: %s' %', '.join(
-        str(item) for item, count in collections.Counter(batch_offsets).items()
-        if count > 1))
+  #get batch offsets and image ranges - even for scanless experiments
+  batch_offsets = calculate_batch_offsets(experiment_list)
+  image_ranges = get_image_ranges(experiment_list)
+  unique_offsets = set(batch_offsets)
+  if len(unique_offsets) != len(batch_offsets):
+    import collections
+    raise Sorry('Duplicate batch offsets detected: %s' %', '.join(
+      str(item) for item, count in collections.Counter(batch_offsets).items()
+      if count > 1))
 
   # Create the mtz file
   mtz_file = mtz.object()
@@ -383,8 +371,12 @@ def export_mtz(integrated_data, experiment_list, params):
     # Grab our subset of the data
     loc = expids_in_list.index(expids_in_table[id_]) #get strid and use to find loc in list
     experiment = experiment_list[loc]
-    experiment.data = dict(integrated_data.select(
-      integrated_data["id"] == id_))
+    reflections = integrated_data.select(
+      integrated_data["id"] == id_)
+    batch_offset = batch_offsets[loc]
+    image_range = image_ranges[loc]
+    reflections = assign_batches_to_reflections([reflections], [batch_offset])[0]
+    experiment.data = dict(reflections)
 
     # Do any crystal transformations for the experiment
     cb_op_to_ref = experiment.crystal.get_space_group().info(
@@ -396,14 +388,14 @@ def export_mtz(integrated_data, experiment_list, params):
     s0n = matrix.col(s0).normalize().elems
     logger.debug('Beam vector: %.4f %.4f %.4f' % s0n)
 
-    for i in range(experiment.image_range[0], experiment.image_range[1]+1):
-      _add_batch(mtz_file, experiment, batch_number=i+experiment.batch_offset,
+    for i in range(image_range[0], image_range[1]+1):
+      _add_batch(mtz_file, experiment, batch_number=i+batch_offset,
         image_number=i, force_static_model=params.mtz.force_static_model)
 
     # Create the batch offset array. This gives us an experiment (id)-dependent
     # batch offset to calculate the correct batch from image number.
     experiment.data["batch_offset"] = flex.int(len(experiment.data["id"]),
-      experiment.batch_offset)
+      batch_offset)
 
     # Calculate whether we have a ROT value for this experiment, and set the column
     _, _, z = experiment.data['xyzcal.px'].parts()

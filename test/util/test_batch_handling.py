@@ -128,19 +128,6 @@ def test_get_current_batch_ranges_for_scaling():
   in_use_ranges = get_current_batch_ranges_for_scaling([exp, exp2, exp3], batch_ranges)
   assert in_use_ranges == [(1, 50), (1, 25), (1, 200)]
 
-def test_assign_image_range_to_experiment():
-  """Test namesake function. Should add an image_range property to the
-  experiment, which is the image range for a scan or (0, 0) for a single
-  image (scanless experiment)."""
-  scan = Scan(image_range=[1, 200], oscillation=[0.0, 1.0])
-  exp = Experiment(scan=scan)
-  assign_image_range_to_experiment(exp)
-  assert exp.image_range == (1, 200)
-
-  exp = Experiment()
-  assign_image_range_to_experiment(exp)
-  assert exp.image_range == (0, 0)
-
 def test_calculate_batch_offsets():
   """Test offset calculation. Offset is next number ending in 01 bigger than
   previous batch numbers which is not consecutive"""

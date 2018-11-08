@@ -22,26 +22,34 @@ def get_batch_ranges(experiments, batch_offsets):
   """Get batch ranges for a list of experiments and offsets"""
   batch_ranges = []
   assert len(experiments) == len(batch_offsets)
-  for i, experiment in enumerate(experiments):
-    assign_image_range_to_experiment(experiment)
-    batch_ranges.append((experiment.image_range[0] + batch_offsets[i],
-      experiment.image_range[1] + batch_offsets[i]))
+  image_ranges = get_image_ranges(experiments)
+  for batch_offset, image_range in zip(batch_offsets, image_ranges):
+    batch_ranges.append((image_range[0] + batch_offset,
+      image_range[1] + batch_offset))
   return batch_ranges
 
 def get_image_ranges(experiments):
   """Get image ranges for a list of experiments (including scanless exp.)"""
-  image_ranges = []
+  # Note, if set to 1,1,for scanless experiments then first batch offset in
+  # _calculate_batch_offsets is zero below, bad!
+  return [e.scan.get_image_range() if e.scan else (0, 0) for e in experiments]
+
+def are_all_batch_ranges_set_by_scaling(experiments):
   for experiment in experiments:
-    assign_image_range_to_experiment(experiment)
-    image_ranges.append(experiment.image_range)
-  return image_ranges
+    if experiment.scaling_model:
+      if not 'valid_batch_range' in experiment.scaling_model.configdict:
+        return False
+    else:
+      return False
+  return True
 
 def calculate_batch_offsets(experiment_list):
   """Take a list of experiments and resolve and return the batch offsets.
   First adds an image_range property as not all experiments have scans."""
-  for experiment in experiment_list:
-    assign_image_range_to_experiment(experiment)
-  offsets = _calculate_batch_offsets(experiment_list)
+  if are_all_batch_ranges_set_by_scaling(experiment_list):
+    return [e.scan.get_batch_offset() for e in experiment_list]
+  image_ranges = get_image_ranges(experiment_list)
+  offsets = _calculate_batch_offsets(image_ranges)
   return offsets
 
 def set_batch_offsets(experiment_list, batch_offsets):
@@ -50,16 +58,6 @@ def set_batch_offsets(experiment_list, batch_offsets):
   for exp, offset in zip(experiment_list, batch_offsets):
     if exp.scan:
       exp.scan.set_batch_offset(offset)
-
-def assign_image_range_to_experiment(experiment):
-  """Assign experiment.image_range"""
-  if not hasattr(experiment, 'image_range'):
-    if experiment.scan:
-      experiment.image_range = experiment.scan.get_image_range()
-    else:
-      experiment.image_range = 0, 0
-      # Note, if set to 1,1, then first batch offset in
-      # _calculate_batch_offsets is zero below, bad!
 
 def exclude_batches_in_reflections(reflections, experiments,
   in_use_batch_ranges, exclude_batches):
@@ -105,7 +103,7 @@ def get_current_batch_ranges_for_scaling(experiments, batch_ranges):
         in_use_batch_ranges[i] = experiment.scaling_model.configdict['valid_batch_range']
   return in_use_batch_ranges
 
-def _calculate_batch_offsets(experiments):
+def _calculate_batch_offsets(image_ranges):
   """Take a list of (modified) experiments and resolve and return the batch
   offsets.
 
@@ -119,11 +117,11 @@ def _calculate_batch_offsets(experiments):
   experiments_to_shift = []
   existing_ranges = set()
   maximum_batch_number = 0
-  batch_offsets = [0]*len(experiments)
+  batch_offsets = [0]*len(image_ranges)
 
   # Handle zeroth shifts and kept ranges
-  for i, experiment in enumerate(experiments):
-    ilow, ihigh = experiment.image_range
+  for i, image_range in enumerate(image_ranges):
+    ilow, ihigh = image_range
     # Check assumptions
     assert ilow <= ihigh, "Inverted image order!?"
     assert ilow >= 0, "Negative image indices are not expected"
@@ -132,20 +130,18 @@ def _calculate_batch_offsets(experiments):
       ilow, ihigh = ilow+1, ihigh+1
     # If we overlap with anything, then process later
     if any( ilow <= high+1 and ihigh >= low-1 for low, high in existing_ranges):
-      experiments_to_shift.append((i, experiment))
+      experiments_to_shift.append((i, image_range))
     else:
-      batch_offsets[i] = ilow-experiment.image_range[0]
+      batch_offsets[i] = ilow-image_range[0]
       existing_ranges.add((ilow, ihigh))
       maximum_batch_number = max(maximum_batch_number, ihigh)
-      experiment.batch_offset = ilow-experiment.image_range[0]
   # Now handle all the experiments that overlapped by pushing them higher
-  for i, experiment in experiments_to_shift:
+  for i, image_range in experiments_to_shift:
     start_number = _next_epoch(maximum_batch_number)
-    range_width = experiment.image_range[1]-experiment.image_range[0]+1
+    range_width = image_range[1]-image_range[0]+1
     end_number = start_number + range_width - 1
-    batch_offsets[i] = start_number - experiment.image_range[0]
+    batch_offsets[i] = start_number - image_range[0]
     maximum_batch_number = end_number
-    experiment.batch_offset = batch_offsets[i]
   return batch_offsets
 
 def _next_epoch(val):
