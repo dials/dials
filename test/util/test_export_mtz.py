@@ -54,7 +54,7 @@ class TestBatchRangeCalculations(object):
   class MockExperiment(object):
     def __init__(self, image_range, scan=True):
       assert len(image_range) == 2
-      #self.image_range = tuple(image_range)
+      self.scaling_model = None
       if scan:
         self.scan = TestBatchRangeCalculations.MockScan(image_range)
       else:

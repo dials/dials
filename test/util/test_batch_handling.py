@@ -8,7 +8,7 @@ have a scan object.
 
 from dials.util.batch_handling import exclude_batches_in_reflections, \
   assign_batches_to_reflections, get_current_batch_ranges_for_scaling, \
-  assign_image_range_to_experiment, calculate_batch_offsets, set_batch_offsets, \
+  calculate_batch_offsets, set_batch_offsets, \
   get_batch_ranges, get_image_ranges, _next_epoch
 from mock import Mock
 from dials.array_family import flex
