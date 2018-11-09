@@ -140,11 +140,6 @@ phil_scope = iotbx.phil.parse('''
       .expert_level = 2
   }
   cut_data {
-    exclude_batches = None
-      .type = ints(size=2, value_min=0)
-      .multiple = True
-      .help = "Exclude a range of batch numbers (start, stop) from the dataset."
-      .expert_level = 1
     d_min = None
       .type = float
       .help = "Option to apply a high resolution cutoff for the dataset (i.e.

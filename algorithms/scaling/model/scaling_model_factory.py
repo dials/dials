@@ -47,7 +47,7 @@ class PhysicalSMFactory(object):
 
     if params.parameterisation.scale_term:
       configdict['corrections'].append('scale')
-      n_scale_param, s_norm_fac, scale_rot_int = initialise_smooth_input(
+      n_scale_param, s_norm_fac, scale_rot_int = Model.initialise_smooth_input(
         osc_range, one_osc_width, params.parameterisation.scale_interval)
       configdict.update({'s_norm_fac' : s_norm_fac,
         'scale_rot_interval' : scale_rot_int})
@@ -56,7 +56,7 @@ class PhysicalSMFactory(object):
 
     if params.parameterisation.decay_term:
       configdict['corrections'].append('decay')
-      n_decay_param, d_norm_fac, decay_rot_int = initialise_smooth_input(
+      n_decay_param, d_norm_fac, decay_rot_int = Model.initialise_smooth_input(
         osc_range, one_osc_width, params.parameterisation.decay_interval)
       configdict.update({'d_norm_fac' : d_norm_fac,
         'decay_rot_interval' : decay_rot_int})
@@ -75,25 +75,6 @@ class PhysicalSMFactory(object):
 
     return Model.PhysicalScalingModel(parameters_dict, configdict)
 
-
-def initialise_smooth_input(osc_range, one_osc_width, interval):
-  """Calculate the number of parameters and norm_fac/rot_int."""
-  interval += 0.00001
-  if (osc_range[1] - osc_range[0]) < (2.0 * interval):
-    if (osc_range[1] - osc_range[0]) <= interval:
-      rot_int = osc_range[1] - osc_range[0]
-      n_param = 2
-    else:
-      rot_int = ((osc_range[1] - osc_range[0])/2.0)
-      n_param = 3
-  else:
-    n_bins = max(int((osc_range[1] - osc_range[0])/ interval)+1, 3)
-    rot_int = (osc_range[1] - osc_range[0])/float(n_bins)
-    n_param = n_bins + 2
-  norm_fac = one_osc_width / rot_int
-  #norm_fac = 0.9999 * one_osc_width / rot_int #to make sure normalise values
-  #fall within range of smoother.
-  return n_param, norm_fac, rot_int
 
 def calc_n_param_from_bins(value_min, value_max, n_bins):
   """Return the correct number of bins for initialising the gaussian
@@ -118,17 +99,17 @@ class ArraySMFactory(object):
   def create(cls, params, experiments, reflections):
     '''create an array-based scaling model.'''
     reflections = reflections.select(reflections['d'] > 0.0)
-
+    configdict = OrderedDict({'corrections': []})
     # First initialise things common to more than one correction.
     one_osc_width = experiments.scan.get_oscillation()[1]
     osc_range = experiments.scan.get_oscillation_range()
-    n_time_param, time_norm_fac, time_rot_int = initialise_smooth_input(
+    configdict.update({'valid_osc_range' : osc_range})
+    n_time_param, time_norm_fac, time_rot_int = Model.initialise_smooth_input(
       osc_range, one_osc_width, params.parameterisation.decay_interval)
     (xvalues, yvalues, _) = reflections['xyzobs.px.value'].parts()
     (xmax, xmin) = (max(xvalues) + 0.001, min(xvalues) - 0.001)
     (ymax, ymin) = (max(yvalues) + 0.001, min(yvalues) - 0.001)
 
-    configdict = OrderedDict({'corrections': []})
     parameters_dict = {}
 
     if params.parameterisation.decay_term:

@@ -6,8 +6,7 @@ include both sweep experiments and single image datasets, which do not
 have a scan object.
 """
 
-from dials.util.batch_handling import exclude_batches_in_reflections, \
-  assign_batches_to_reflections, get_current_batch_ranges_for_scaling, \
+from dials.util.batch_handling import assign_batches_to_reflections, \
   calculate_batch_offsets, set_batch_offsets, \
   get_batch_ranges, get_image_ranges, _next_epoch
 from mock import Mock
@@ -63,7 +62,7 @@ def test_assign_batches_to_reflections():
   assert list(reflections[0]['batch']) == [1, 2]
   assert list(reflections[1]['batch']) == [101, 102]
 
-def test_exclude_batches_in_reflections():
+'''def test_exclude_batches_in_reflections():
   """Tests for namesake function"""
   # Simple case
   explist = mock_experiments()
@@ -117,16 +116,7 @@ def test_exclude_batches_in_reflections():
   assert list(reflections[0].get_flags(reflections[0].flags.user_excluded_in_scaling)) == \
     [False] * 10
   assert list(reflections[1].get_flags(reflections[1].flags.user_excluded_in_scaling)) == \
-    [False] * 10
-
-def test_get_current_batch_ranges_for_scaling():
-  """Test for namesake function"""
-  batch_ranges = [(1, 100), (1, 50), (1, 200)]
-  exp = mock_experiment_with_scaling_model(batch_range=(1, 50))
-  exp2 = mock_experiment_with_scaling_model(batch_range=(1, 25))
-  exp3 = mock_experiment_without_scaling_model()
-  in_use_ranges = get_current_batch_ranges_for_scaling([exp, exp2, exp3], batch_ranges)
-  assert in_use_ranges == [(1, 50), (1, 25), (1, 200)]
+    [False] * 10'''
 
 def test_calculate_batch_offsets():
   """Test offset calculation. Offset is next number ending in 01 bigger than

@@ -5,6 +5,7 @@ from math import ceil, floor, log
 import logging
 import copy as copy
 from dials.array_family import flex
+from libtbx.utils import Sorry
 
 logger = logging.getLogger('dials')
 
@@ -34,20 +35,9 @@ def get_image_ranges(experiments):
   # _calculate_batch_offsets is zero below, bad!
   return [e.scan.get_image_range() if e.scan else (0, 0) for e in experiments]
 
-def are_all_batch_ranges_set_by_scaling(experiments):
-  for experiment in experiments:
-    if experiment.scaling_model:
-      if not 'valid_batch_range' in experiment.scaling_model.configdict:
-        return False
-    else:
-      return False
-  return True
-
 def calculate_batch_offsets(experiment_list):
   """Take a list of experiments and resolve and return the batch offsets.
   First adds an image_range property as not all experiments have scans."""
-  if are_all_batch_ranges_set_by_scaling(experiment_list):
-    return [e.scan.get_batch_offset() for e in experiment_list]
   image_ranges = get_image_ranges(experiment_list)
   offsets = _calculate_batch_offsets(image_ranges)
   return offsets
@@ -58,50 +48,6 @@ def set_batch_offsets(experiment_list, batch_offsets):
   for exp, offset in zip(experiment_list, batch_offsets):
     if exp.scan:
       exp.scan.set_batch_offset(offset)
-
-def exclude_batches_in_reflections(reflections, experiments,
-  in_use_batch_ranges, exclude_batches):
-  """Determine the new batch ranges when some batches are excluded.
-  Exclude batches is a list of tuples e.g. [(101,200), (301,400)].
-  Also set the relevant flag in the reflection tables."""
-  valid_batch_ranges = [] #list of valid batch ranges after excluding
-  n_ranges_excluded = 0
-  for exp, refl, batch_range in zip(experiments, reflections, in_use_batch_ranges):
-    excluded_from_dataset_i = []
-    for exclude_pair in exclude_batches:
-      if list(batch_range) == exclude_pair: #raise, else very tricky to implement!
-        raise ValueError("Trying to exclude a whole dataset")
-      if exclude_pair[1] <= batch_range[1] and exclude_pair[0] >= batch_range[0]:
-        mask1 = refl['batch'] <= exclude_pair[1]
-        mask2 = refl['batch'] >= exclude_pair[0]
-        refl.set_flags(mask1 & mask2, refl.flags.user_excluded_in_scaling)
-        logger.info("""Excluded batch range %s for dataset %s""",
-          exclude_pair, exp.identifier)
-        excluded_from_dataset_i.extend(list(exclude_pair))
-        n_ranges_excluded += 1
-    if excluded_from_dataset_i:
-      #calculate min-max range that valid batches span (may include 'gaps')
-      new_batch_0, new_batch_1 = batch_range
-      s = sorted(excluded_from_dataset_i)
-      if batch_range[0] == s[0]:
-        new_batch_0 = s[1]+1
-      if batch_range[1] == s[-1]:
-        new_batch_1 = s[-2]-1
-      valid_batch_ranges.append((new_batch_0, new_batch_1))
-    else:
-      valid_batch_ranges.append(batch_range)
-  if n_ranges_excluded != len(exclude_batches):
-    logger.warn("Warning: not all requested ranges were excluded, please check input")
-  return reflections, valid_batch_ranges
-
-def get_current_batch_ranges_for_scaling(experiments, batch_ranges):
-  """Inspect scaling model to see if the batch range has already been reduced"""
-  in_use_batch_ranges = copy.deepcopy(batch_ranges)
-  for i, experiment in enumerate(experiments):
-    if experiment.scaling_model is not None:
-      if 'valid_batch_range' in experiment.scaling_model.configdict:
-        in_use_batch_ranges[i] = experiment.scaling_model.configdict['valid_batch_range']
-  return in_use_batch_ranges
 
 def _calculate_batch_offsets(image_ranges):
   """Take a list of (modified) experiments and resolve and return the batch

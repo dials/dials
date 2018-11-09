@@ -375,7 +375,7 @@ def test_multi_scale(dials_regression, run_in_tmpdir):
     extra_args=['stdcutoff=0.0'])# set 0.0 to force one to be 'rejected'
 
 @pytest.mark.dataset_test
-def test_multi_scale_exclude_batches(dials_regression, run_in_tmpdir):
+def test_multi_scale_exclude_images(dials_regression, run_in_tmpdir):
 
   data_dir = os.path.join(dials_regression, "xia2-28",)
   pickle_path_1 = os.path.join(data_dir, "20_integrated.pickle")
@@ -385,27 +385,27 @@ def test_multi_scale_exclude_batches(dials_regression, run_in_tmpdir):
   #Expect this dataset to be given batches 1-1800 and 1901-3600
   #Try excluding last two batches
   extra_args = ["optimise_errors=False", "intensity_choice=profile",
-    "outlier_rejection=simple", "exclude_batches=1601,1800",
-    "exclude_batches=3401,3600"]
+    "outlier_rejection=simple", "exclude_images=0:1601:1800",
+    "exclude_images=1:1501:1700"]
 
   _ = run_one_scaling([pickle_path_1, pickle_path_2],
     [sweep_path_1, sweep_path_2], extra_args)
 
   experiments_list = load.experiment_list(
     "scaled_experiments.json", check_format=False)
-  assert experiments_list.scaling_models()[0].configdict['valid_batch_range'] == [1, 1600]
-  assert experiments_list.scaling_models()[1].configdict['valid_batch_range'] == [1901, 3400]
+  assert experiments_list.scaling_models()[0].configdict['valid_image_range'] == [1, 1600]
+  assert experiments_list.scaling_models()[1].configdict['valid_image_range'] == [1, 1500]
   assert pytest.approx(experiments_list.scaling_models()[0].configdict['valid_osc_range'], [0, 160.0])
   assert pytest.approx(experiments_list.scaling_models()[1].configdict['valid_osc_range'], [-145.0, 5.0])
 
   extra_args = ["optimise_errors=False", "intensity_choice=profile",
-    "outlier_rejection=simple", "exclude_batches=1401,1600"]
+    "outlier_rejection=simple", "exclude_images=0:1401:1600"]
   _ = run_one_scaling(["scaled.pickle"], ["scaled_experiments.json"],
       extra_args)
   experiments_list = load.experiment_list(
     "scaled_experiments.json", check_format=False)
-  assert experiments_list.scaling_models()[0].configdict['valid_batch_range'] == [1, 1400]
-  assert experiments_list.scaling_models()[1].configdict['valid_batch_range'] == [1901, 3400]
+  assert experiments_list.scaling_models()[0].configdict['valid_image_range'] == [1, 1400]
+  assert experiments_list.scaling_models()[1].configdict['valid_image_range'] == [1, 1500]
   assert pytest.approx(experiments_list.scaling_models()[0].configdict['valid_osc_range'], [0, 140.0])
   assert pytest.approx(experiments_list.scaling_models()[1].configdict['valid_osc_range'], [-145.0, 5.0])
 

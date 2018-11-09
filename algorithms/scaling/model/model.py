@@ -36,7 +36,7 @@ class ScalingModelBase(object):
     """Indictor as to whether this model has previously been refined."""
     return self._is_scaled
 
-  def limit_batch_range(self, new_batch_range, reflection_table):
+  def limit_image_range(self, new_image_range):
     """Modify the model if necessary due to excluding batches."""
     pass
 
@@ -52,9 +52,9 @@ class ScalingModelBase(object):
     """Perform calculations necessary to update the reflection table."""
     return reflection_table
 
-  def set_valid_batch_range(self, batch_range):
+  def set_valid_image_range(self, image_range):
     """Track the batch range for which the model corresponds to."""
-    self._configdict['valid_batch_range'] = batch_range
+    self._configdict['valid_image_range'] = image_range
 
   def normalise_components(self):
     """Optionally define a normalisation of the parameters after scaling."""
@@ -184,46 +184,43 @@ class PhysicalScalingModel(ScalingModelBase):
       self.components['absorption'].parameter_restraints = parameter_restraints
     return reflection_table
 
-  def limit_batch_range(self, new_batch_range, reflection_table):
+  def limit_image_range(self, new_image_range):
     """Change the model to be suitable for a reduced batch range"""
     conf = self.configdict
+    current_image_range = conf['valid_image_range']
+    current_osc_range = conf['valid_osc_range']
+    # calculate one osc as don't have access to scan object here
+    one_osc = (conf['valid_osc_range'][1] - conf['valid_osc_range'][0])/(
+        (conf['valid_image_range'][1] - (conf['valid_image_range'][0] - 1)))
+    new_osc_range = ((new_image_range[0] - current_image_range[0]) * one_osc,
+        (new_image_range[1] - current_image_range[0] + 1) * one_osc)
     if 'scale' in self.components:
-      reflection_table[self.components['scale'].col_name] = (
-        reflection_table['xyzobs.px.value'].parts()[2]
-        * conf['s_norm_fac'])
-      old_range_scale = (min(reflection_table[self.components['scale'].col_name]),
-        max(reflection_table[self.components['scale'].col_name]))
-    if 'decay' in self.components:
-      reflection_table[self.components['decay'].col_name] = (
-        reflection_table['xyzobs.px.value'].parts()[2]
-        * conf['d_norm_fac'])
-      old_range_decay = (min(reflection_table[self.components['decay'].col_name]),
-        max(reflection_table[self.components['decay'].col_name]))
-    sel1 = reflection_table['batch'] >= new_batch_range[0]
-    sel2 = reflection_table['batch'] <= new_batch_range[1]
-    reflection_table = reflection_table.select(sel1 & sel2)
-    if 'scale' in self.components:
-      new_range_scale = (min(reflection_table[self.components['scale'].col_name]),
-        max(reflection_table[self.components['scale'].col_name]))
-      offset, n_param = map_old_to_new_range(old_range_scale, new_range_scale)
-      params = self.components['scale'].parameters
-      new_params = params[offset:offset+n_param]
+      n_param, s_norm_fac, scale_rot_int = initialise_smooth_input(
+        new_osc_range, one_osc, conf['scale_rot_interval'])
+      n_old_params = len(self.components['scale'].parameters)
+      conf['scale_rot_interval'] = scale_rot_int
+      conf['s_norm_fac'] = s_norm_fac
+      offset = calculate_new_offset(current_image_range[0], new_image_range[0],
+        s_norm_fac, n_old_params, n_param)
+      new_params = self.components['scale'].parameters[offset : offset + n_param]
       self.components['scale'].set_new_parameters(new_params)
     if 'decay' in self.components:
-      new_range_decay = (min(reflection_table[self.components['decay'].col_name]),
-        max(reflection_table[self.components['decay'].col_name]))
-      offset, n_param = map_old_to_new_range(old_range_decay, new_range_decay)
-      params = self.components['decay'].parameters
-      new_params = params[offset:offset+n_param]
+      n_param, d_norm_fac, decay_rot_int = initialise_smooth_input(
+        new_osc_range, one_osc, conf['decay_rot_interval'])
+      n_old_params = len(self.components['decay'].parameters)
+      conf['decay_rot_interval'] = decay_rot_int
+      conf['d_norm_fac'] = d_norm_fac
+      offset = calculate_new_offset(current_image_range[0], new_image_range[0],
+        d_norm_fac, n_old_params, n_param)
+      new_params = self.components['decay'].parameters[offset : offset + n_param]
       self.components['decay'].set_new_parameters(new_params)
-    current_batch_range = conf['valid_batch_range']
-    current_osc_range = self._configdict['valid_osc_range']
-    one_osc = (conf['valid_osc_range'][1] - conf['valid_osc_range'][0])/(
-        (conf['valid_batch_range'][1] - (conf['valid_batch_range'][0] - 1)))
-    new_osc_range_0 = current_osc_range[0] + ((new_batch_range[0] - current_batch_range[0]) * one_osc)
-    new_osc_range_1 = current_osc_range[1] + ((new_batch_range[1] - current_batch_range[1]) * one_osc)
+
+    new_osc_range_0 = current_osc_range[0] + (
+      (new_image_range[0] - current_image_range[0]) * one_osc)
+    new_osc_range_1 = current_osc_range[1] + (
+      (new_image_range[1] - current_image_range[1]) * one_osc)
     self._configdict['valid_osc_range'] = (new_osc_range_0, new_osc_range_1)
-    self.set_valid_batch_range(new_batch_range)
+    self.set_valid_image_range(new_image_range)
 
   def normalise_components(self):
     if 'scale' in self.components:
@@ -343,19 +340,25 @@ class ArrayScalingModel(ScalingModelBase):
         - self.configdict['ymin']) / self.configdict['y_det_bin_width'])
     return refl_table
 
-  def limit_batch_range(self, new_batch_range, reflection_table):
+  ##FIXME update to not use reflection table
+  def limit_image_range(self, new_image_range):
     """Change the model to be suitable for a reduced batch range"""
-    reflection_table['norm_time_values'] = (
-      reflection_table['xyzobs.px.value'].parts()[2] * \
-      self.configdict['time_norm_fac'])
-    old_range_time = (min(reflection_table['norm_time_values']),
-      max(reflection_table['norm_time_values']))
-    sel1 = reflection_table['batch'] >= new_batch_range[0]
-    sel2 = reflection_table['batch'] <= new_batch_range[1]
-    reflection_table = reflection_table.select(sel1 & sel2)
-    new_range_time = (min(reflection_table['norm_time_values']),
-      max(reflection_table['norm_time_values']))
-    offset, n_param = map_old_to_new_range(old_range_time, new_range_time)
+    conf = self.configdict
+    current_image_range = conf['valid_image_range']
+    current_osc_range = conf['valid_osc_range']
+    # calculate one osc as don't have access to scan object here
+    one_osc = (conf['valid_osc_range'][1] - conf['valid_osc_range'][0])/(
+        (conf['valid_image_range'][1] - (conf['valid_image_range'][0] - 1)))
+    new_osc_range = ((new_image_range[0] - current_image_range[0]) * one_osc,
+        (new_image_range[1] - current_image_range[0] + 1) * one_osc)
+
+    n_param, time_norm_fac, time_rot_int = initialise_smooth_input(
+        new_osc_range, one_osc, conf['time_rot_interval'])
+    n_old_time_params = int(len(self.components['decay'].parameters)/
+      self.components['decay'].n_x_params)
+    offset = calculate_new_offset(current_image_range[0], new_image_range[0],
+        time_norm_fac, n_old_time_params, n_param)
+
     if 'absorption' in self.components:
       params = self.components['absorption'].parameters
       n_x_params = self.components['absorption'].n_x_params
@@ -376,7 +379,14 @@ class ArrayScalingModel(ScalingModelBase):
       self.components['decay'].set_new_parameters(new_params,
         shape=(n_decay_params, n_param))
     self._configdict['n_time_param'] = n_param
-    self.set_valid_batch_range(new_batch_range)
+    self._configdict['time_norm_fac'] = time_norm_fac
+    self._configdict['time_rot_interval'] = time_rot_int
+    new_osc_range_0 = current_osc_range[0] + (
+      (new_image_range[0] - current_image_range[0]) * one_osc)
+    new_osc_range_1 = current_osc_range[1] + (
+      (new_image_range[1] - current_image_range[1]) * one_osc)
+    self._configdict['valid_osc_range'] = (new_osc_range_0, new_osc_range_1)
+    self.set_valid_image_range(new_image_range)
 
   @classmethod
   def from_dict(cls, obj):
@@ -475,6 +485,17 @@ def map_old_to_new_range(old_range, new_range):
         offset = int(new_range[0] //1) + 1
   return offset, n_param
 
+def calculate_new_offset(old_batch_0, new_batch_0, new_norm_fac, n_old_param,
+  n_new_param):
+  if n_old_param == 2:
+    return 0 #cant have less than two params
+  batch_difference = (new_batch_0 - old_batch_0) * new_norm_fac
+  n_to_shift = int(batch_difference // 1)
+  if batch_difference % 1 > 0.5:
+    n_to_shift += 1
+  return min(n_old_param - n_new_param, n_to_shift) #cant shift by more
+  #than difference between old and new
+
 def range_to_n_param(range_):
   """Calculate the number of smoother parameters from a range"""
   if (range_[1] - range_[0]) < 1.0:
@@ -484,3 +505,21 @@ def range_to_n_param(range_):
   else:
     n_param = max(int(range_[1] - range_[0])+1, 3) + 2
   return n_param
+
+def initialise_smooth_input(osc_range, one_osc_width, interval):
+  """Calculate the number of parameters and norm_fac/rot_int."""
+  interval += 0.00001
+  if (osc_range[1] - osc_range[0]) < (2.0 * interval):
+    if (osc_range[1] - osc_range[0]) <= interval:
+      rot_int = osc_range[1] - osc_range[0]
+      n_param = 2
+    else:
+      rot_int = ((osc_range[1] - osc_range[0])/2.0)
+      n_param = 3
+  else:
+    n_bins = max(int((osc_range[1] - osc_range[0])/ interval)+1, 3)
+    rot_int = (osc_range[1] - osc_range[0])/float(n_bins)
+    n_param = n_bins + 2
+  norm_fac = 0.999 * one_osc_width / rot_int #to make sure normalise values
+  #fall within range of smoother.
+  return n_param, norm_fac, rot_int

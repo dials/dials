@@ -65,10 +65,8 @@ from dials.algorithms.scaling.scaling_utilities import save_experiments,\
   save_reflections, log_memory_usage, DialsMergingStatisticsError
 from dials.algorithms.scaling.post_scaling_analysis import \
   exclude_on_batch_rmerge, exclude_on_image_scale
-from dials.util.batch_handling import assign_batches_to_reflections, \
-  calculate_batch_offsets, get_batch_ranges, get_image_ranges, set_batch_offsets,\
-  get_current_batch_ranges_for_scaling, exclude_batches_in_reflections,\
-  are_all_batch_ranges_set_by_scaling
+from dials.util.batch_handling import get_image_ranges
+from dials.util.exclude_images import exclude_image_ranges_for_scaling, get_valid_image_ranges
 
 
 logger = logging.getLogger('dials')
@@ -119,35 +117,12 @@ phil_scope = phil.parse('''
       .type = int
       .help = "Number of bins to use for calculating and plotting merging stats."
       .expert_level = 1
-    exclude_on_image_scale = None
-      .type = float
-      .help = "If set, images where the image inverse scale (defined by the
-              scale component of the relevant model) is below this
-              value will be set as outliers, and not included in merging stats
-              or output for downstream processing. This is performed after the
-              scaling algorithm has been run in the 'post-scaling' step.
-              This option is intended as a quick way to exclude radiation
-              damaged images, based on the principle that images that need
-              to be significantly scaled up (relative to others) are likely to
-              have unreliable intensities and scales. This option should be most
-              appropriate for scaling multi-dataset thin-wedge datasets that
-              are expected to have significant radiation damage."
-      .expert_level = 2
-    exclude_on_batch_rmerge = None
-      .type = float
-      .help = "If set, images which have an Rmerge above this value will be set
-              as outliers, and not included in merging stats or output for
-              downstream processing. This is performed after the scaling
-              algorithm has been run in the 'post-scaling' step."
-      .expert_level = 2
   }
   include scope dials.algorithms.scaling.scaling_options.phil_scope
   include scope dials.algorithms.scaling.cross_validation.cross_validate.phil_scope
   include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
+  include scope dials.util.exclude_images.phil_scope
 ''', process_includes=True)
-
-batch_info_dict = {'all_single_images' : False, 'image_ranges' : [],
-  'batch_ranges' : [], 'new_batch_ranges_to_use' : []}
 
 class Script(object):
   """Main script to run the scaling algorithm."""
@@ -159,7 +134,6 @@ class Script(object):
     self.scaler = None
     self.scaled_miller_array = None
     self.merging_statistics_result = None
-    self.batch_info = batch_info_dict
     logger.debug('Initialised scaling script object')
     log_memory_usage()
 
@@ -174,7 +148,15 @@ class Script(object):
       self.merging_stats()
     except DialsMergingStatisticsError as e:
       logger.info(e)
-    print_batch_info(self.batch_info, self.experiments)
+
+    valid_ranges = get_valid_image_ranges(self.experiments)
+    image_ranges = get_image_ranges(self.experiments)
+    for (img, valid, exp) in zip(image_ranges, valid_ranges, self.experiments):
+      if valid:
+        if len(valid) != len(img) or valid[0] != img[0] or valid[1] != img[1]:
+          logger.info("Excluded images for experiment identifier: %s, image range: %s, limited range: %s",
+            exp.identifier, list(img), list(valid))
+
     if save_data:
       self.output()
     # All done!
@@ -192,46 +174,11 @@ class Script(object):
       self.params.dataset_selection.exclude_datasets,
       self.params.dataset_selection.use_datasets)
 
+    self.reflections, self.experiments = exclude_image_ranges_for_scaling(
+      self.reflections, self.experiments, self.params.exclude_images)
+
     #### Ensure all space groups are the same
     self.experiments = ensure_consistent_space_groups(self.experiments, self.params)
-
-    #### Batch handling code only applies if not all single-image datasets
-    self.batch_info['image_ranges'] = get_image_ranges(list(self.experiments))
-    if all([i == (0, 0) for i in self.batch_info['image_ranges']]):
-      self.batch_info['all_single_images'] = True
-
-    #### Calculate batch offsets based on the image ranges of the experiments
-    #### batch offsets do not change between runs even if batches are excluded
-    if not self.batch_info['all_single_images']:
-      batch_offsets = calculate_batch_offsets(list(self.experiments))
-      # ^^ will return previously set offsets by scaling
-      if not are_all_batch_ranges_set_by_scaling(self.experiments):
-        set_batch_offsets(self.experiments, batch_offsets) # set in exp.scan,
-        # will set in scaling model later
-      self.batch_info['batch_ranges'] = get_batch_ranges(
-        list(self.experiments), batch_offsets)
-      logger.info("\nBatch numbers assigned to datasets:")
-      for i, exp in enumerate(self.experiments):
-        logger.info("Experiment identifier: %s, image_range: %s, batch_range: %s",
-          exp.identifier, self.batch_info['image_ranges'][i], self.batch_info['batch_ranges'][i])
-      self.reflections = assign_batches_to_reflections(self.reflections, batch_offsets)
-
-      #### Calculate new batch ranges and exclude data from the reflection tables
-      #### Delay modification of the scaling models until later.
-      in_use_batch_ranges = get_current_batch_ranges_for_scaling(
-        self.experiments, self.batch_info['batch_ranges'])
-      # now calculate reduced batch ranges and exclude data
-      try:
-        self.reflections, self.batch_info['new_batch_ranges_to_use'] = \
-          exclude_batches_in_reflections(self.reflections, self.experiments,
-          in_use_batch_ranges, self.params.cut_data.exclude_batches)
-      except ValueError:
-        raise Sorry("""Trying to exclude a whole dataset, please use the
-exclude_datasets= option instead, specifying experiment identifiers""")
-
-    elif self.params.cut_data.exclude_batches:
-      raise Sorry("""All datasets contain single images, please use the
-exclude_datasets= option rather than exclude_batches, specifying experiment identifiers""")
 
     #### If doing targeted scaling, extract data and append an experiment
     #### and reflection table to the lists
@@ -269,9 +216,7 @@ exclude_datasets= option rather than exclude_batches, specifying experiment iden
     logger.info('\nScaling models have been initialised for all experiments.')
     logger.info('\n' + '='*80 + '\n')
 
-    if not self.batch_info['all_single_images']:
-      self.experiments = limit_batch_ranges_in_scaling_models(self.experiments,
-        self.reflections, self.batch_info)
+    self.experiments = set_image_ranges_in_scaling_models(self.experiments)
 
     self.scaler = create_scaler(self.params, self.experiments, self.reflections)
     self.scaler = self.scaling_algorithm(self.scaler)
@@ -296,23 +241,12 @@ exclude_datasets= option rather than exclude_batches, specifying experiment iden
         locs_in_list.append(expids.index(id_))
       self.experiments, self.reflections = select_datasets_on_ids(
         self.experiments, self.reflections, exclude_datasets=removed_ids)
-      sorted_locs = sorted(locs_in_list)
-      if not self.batch_info['all_single_images']:
-        for i in sorted_locs[::-1]:
-          del self.batch_info['image_ranges'][i]
-          del self.batch_info['batch_ranges'][i]
-          if self.batch_info['new_batch_ranges_to_use']:
-            del self.batch_info['new_batch_ranges_to_use'][i]
 
   def scaled_data_as_miller_array(self, crystal_symmetry, reflection_table=None,
     anomalous_flag=False):
     """Get a scaled miller array from an experiment and reflection table."""
     if not reflection_table:
       joint_table = flex.reflection_table()
-      '''if self.params.scaling_options.only_target or \
-        self.params.scaling_options.target_model or \
-        self.params.scaling_options.target_mtz:
-        self.reflections = self.reflections[:-1]'''
       for reflection_table in self.reflections:
         #better to just create many miller arrays and join them?
         refl_for_joint_table = flex.reflection_table()
@@ -352,14 +286,6 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
   def merging_stats(self):
     """Calculate and print the merging statistics."""
     logger.info('\n'+'='*80+'\n')
-
-    '''if self.params.output.exclude_on_batch_rmerge:
-      self.reflections = exclude_on_batch_rmerge(self.reflections, self.experiments,
-        self.params.output.exclude_on_batch_rmerge)
-
-    if self.params.output.exclude_on_image_scale:
-      self.reflections = exclude_on_image_scale(self.reflections, self.experiments,
-        self.params.output.exclude_on_image_scale)'''
 
     self.scaled_miller_array = self.scaled_data_as_miller_array(
       self.experiments[0].crystal.get_crystal_symmetry(), anomalous_flag=False)
@@ -577,27 +503,6 @@ space groups numbers found: %s""", set(sgs))
     experiments[0].crystal.get_space_group().info())
   return experiments
 
-def print_batch_info(batch_info, experiments):
-  """Print useful information about batch ranges assigned and ranges in use."""
-  if not batch_info['all_single_images']:
-    #calculate again for safety in case any datasets removed
-    batch_offsets = calculate_batch_offsets(list(experiments))
-    batch_ranges = get_batch_ranges(list(experiments), batch_offsets)
-    image_ranges = get_image_ranges(list(experiments))
-    logger.info("\nFor reference, batch numbers assigned to datasets were:")
-    for i, image_range in enumerate(image_ranges): #use image_ranges as
-      # experiments list can be longer if target option selected
-      batch_str = str(batch_ranges[i])
-      #if self.batch_info['new_batch_ranges_to_use']:
-      in_use_batch_ranges = get_current_batch_ranges_for_scaling(
-        experiments, batch_info['batch_ranges'])
-      if in_use_batch_ranges[i] != batch_ranges[i]:
-        batch_str = str(batch_ranges[i]) + ' (range in use: ' + str(in_use_batch_ranges[i])+')'
-      logger.info("Experiment identifier: %s, image_range: %s, batch_range: %s",
-        experiments[i].identifier, image_range, batch_str)
-    logger.info("""To exclude batch ranges, one can use multiple exclude_batches= commands,
-  using these batch numbers for the datasets.""")
-
 def print_scaling_model_error_info(experiments):
   """Print out information on model errors"""
   if experiments[0].scaling_model.components.values()[0].parameter_esds:
@@ -618,17 +523,18 @@ poorly-determined scaling problem or overparameterisation.""" % (frac_high_uncer
 (sigma/abs(parameter) > 0.5)""" % (frac_high_uncertainty * 100))
       logger.info("Plots of parameter uncertainties can be seen in dials report")
 
-def limit_batch_ranges_in_scaling_models(experiments, reflections, batch_info):
-  """Update the scaling models for new batch range."""
-  for experiment, refl, valid_batch, batch_range in zip(
-    experiments, reflections, batch_info['new_batch_ranges_to_use'],
-      batch_info['batch_ranges']):
-    if experiment.scan:
-      if not 'valid_batch_range' in experiment.scaling_model.configdict:
+def set_image_ranges_in_scaling_models(experiments):
+  """Set the batch range in scaling models if not already set."""
+  for exp in experiments:
+    if exp.scan:
+      valid_image_range = exp.scan.get_valid_image_ranges(exp.identifier)
+      if not 'valid_image_range' in exp.scaling_model.configdict:
         #only set if not currently set i.e. set initial
-        experiment.scaling_model.set_valid_batch_range(batch_range)
-      if valid_batch != experiment.scaling_model.configdict['valid_batch_range']:
-        experiment.scaling_model.limit_batch_range(valid_batch, refl)
+        exp.scaling_model.set_valid_image_range(exp.scan.get_image_range())
+      if exp.scaling_model.configdict['valid_image_range'] != (
+        valid_image_range[0], valid_image_range[-1]):
+        exp.scaling_model.limit_image_range(
+          (valid_image_range[0], valid_image_range[-1]))
   return experiments
 
 if __name__ == "__main__":

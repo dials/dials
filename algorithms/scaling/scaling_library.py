@@ -303,6 +303,9 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
   r_t.set_flags(flex.bool(r_t.size(), True), r_t.flags.integrated)
   exp = deepcopy(experiments[0]) #copy exp for space group -
     #any other necessary reason or can this attribute be added?
+  from dxtbx.model import Experiment
+  exp = Experiment()
+  exp.crystal = deepcopy(experiments[0].crystal)
   used_ids = experiments.identifiers()
   unique_id = get_next_unique_id(len(used_ids), used_ids)
   exp.identifier = str(unique_id)

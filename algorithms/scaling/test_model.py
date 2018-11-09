@@ -2,6 +2,7 @@
 Tests for the scaling model classes.
 """
 import pytest
+import copy
 from mock import Mock, MagicMock
 from dials.array_family import flex
 from dials.algorithms.scaling.model.model import ScalingModelBase,\
@@ -219,17 +220,34 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
   configdict = {
       "corrections": ["scale", "decay"], "s_norm_fac": 0.1,
         "scale_rot_interval": 10.0, "d_norm_fac": 0.1,
-        "decay_rot_interval": 10.0, "valid_batch_range": (1,90),
+        "decay_rot_interval": 10.0, "valid_image_range": (1, 90),
         "valid_osc_range":(0, 90)}
   physical = PhysicalScalingModel(parameters_dict, configdict)
-  reflection_table = flex.reflection_table()
-  reflection_table['batch'] = flex.int([5, 15, 25, 35, 45, 55, 65, 75, 85])
-  reflection_table['xyzobs.px.value'] = flex.vec3_double([(0, 0, i-0.5) for i in range(5,95, 10)])
-  physical.limit_batch_range((1, 50), reflection_table)
+  physical.limit_image_range((1, 50))
   assert list(physical.components['scale'].parameters) == [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
   assert list(physical.components['decay'].parameters) == [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
   assert physical.configdict['valid_osc_range'] == (0, 50)
-  assert physical.configdict['valid_batch_range'] == (1, 50)
+  assert physical.configdict['valid_image_range'] == (1, 50)
+
+  #try edge cases
+  # if restricted by > rot int, then reduce number of params and shift offset
+  # if necessary
+  physical = PhysicalScalingModel(copy.deepcopy(parameters_dict), copy.deepcopy(configdict))
+  physical.limit_image_range((7, 45))
+  assert list(physical.components['scale'].parameters) == [1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
+  assert list(physical.components['decay'].parameters) == [0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
+  assert physical.configdict['valid_osc_range'] == (6, 45)
+  assert physical.configdict['valid_image_range'] == (7, 45)
+
+  # if not restricted by > rot int, then should 'squeeze' the parameters closer
+  # in rotation angle, leaving the same number of params (as reducing number of
+  # params would give parameter spacing greater than initially specified rot int)
+  physical = PhysicalScalingModel(copy.deepcopy(parameters_dict), copy.deepcopy(configdict))
+  physical.limit_image_range((5, 45))
+  assert list(physical.components['scale'].parameters) == [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
+  assert list(physical.components['decay'].parameters) == [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
+  assert physical.configdict['valid_osc_range'] == (4, 45)
+  assert physical.configdict['valid_image_range'] == (5, 45)
 
 def test_ArrayScalingModel(test_reflections, mock_exp):
   """Test the ArrayScalingModel class."""
@@ -308,10 +326,11 @@ def test_ArrayScalingModel(test_reflections, mock_exp):
   # test limit batch range
   configdict = {'corrections':['decay', 'absorption'], 'n_res_param': 2,
     'n_time_param': 3, 'resmin' : 1.0, 'res_bin_width' : 1.0,
-    'time_norm_fac' : 0.1, 'time_rot_interval' : 1.0, 'n_x_param' : 2,
+    'time_norm_fac' : 0.1, 'time_rot_interval' : 10.0, 'n_x_param' : 2,
     'n_y_param' : 2, 'xmin' : 0.0, 'ymin' : 0.0, 'x_bin_width' : 1.0,
     'y_bin_width' : 2.0, 'n_x_mod_param' : 2, 'n_y_mod_param' : 2,
-    'x_det_bin_width' : 2.0, 'y_det_bin_width' : 2.0}
+    'x_det_bin_width' : 2.0, 'y_det_bin_width' : 2.0, 'valid_image_range' : (1,20),
+    'valid_osc_range' : (0, 20)}
 
   parameters_dict = {
       'decay': {'parameters' : flex.double([1.2, 1.1, 1.0, 0.9, 0.8, 0.7]),
@@ -321,15 +340,13 @@ def test_ArrayScalingModel(test_reflections, mock_exp):
       }
   array = ArrayScalingModel(parameters_dict, configdict)
   reflection_table = flex.reflection_table()
-  reflection_table['batch'] = flex.int([2, 4, 6, 8, 10, 12, 14, 16, 18])
-  reflection_table['xyzobs.px.value'] = flex.vec3_double(
-    [(0, 0, i-0.5) for i in range(2, 20, 2)])
-  array.limit_batch_range((1, 10), reflection_table)
+  array.limit_image_range((1, 10))
   assert list(array.components['decay'].parameters) == [1.2, 1.1, 1.0, 0.9]
   assert list(array.components['absorption'].parameters) == [0.1, 0.2, 0.1, 0.2, 0.1, 0.2,
         0.1, 0.2]
   assert array.configdict['n_time_param'] == 2
-  assert array.configdict['valid_batch_range'] == (1, 10)
+  assert array.configdict['valid_image_range'] == (1, 10)
+  assert array.configdict['valid_osc_range'] == (0, 10)
 
 def test_map_old_to_new_range():
   old_range = (0, 8.0)
