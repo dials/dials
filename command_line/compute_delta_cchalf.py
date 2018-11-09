@@ -59,7 +59,7 @@ phil_scope = parse('''
     table = "delta_cchalf.dat"
       .type = str
       .help = "A file with delta cchalf values"
-  } 
+  }
 
   nbins = 10
     .type = int(value_min=1)
