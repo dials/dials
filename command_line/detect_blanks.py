@@ -10,8 +10,6 @@ from scitbx.array_family import flex
 
 logger = logging.getLogger('dials.command_line.detect_blanks')
 
-
-
 phil_scope= libtbx.phil.parse('''\
 phi_step = 5
   .type = float(value_min=0)
@@ -54,9 +52,10 @@ def blank_counts_analysis(reflections, scan, phi_step, fractional_loss):
   phi_max = scan.get_angle_from_array_index(array_range[1])
   assert phi_min <= flex.min(phi)
   assert phi_max >= flex.max(phi)
-  n_steps = iceil((phi_max - phi_min)/phi_step)
-
-  hist = flex.histogram(z_px, n_slots=n_steps)
+  n_steps = int(round((phi_max - phi_min)/phi_step))
+  hist = flex.histogram(z_px, data_min=array_range[0], data_max=array_range[1], n_slots=n_steps)
+  logger.debug("Histogram:")
+  logger.debug(hist.as_str())
 
   counts = hist.slots()
   fractional_counts = counts.as_double()/flex.max(counts)
@@ -113,9 +112,10 @@ def blank_integrated_analysis(reflections, scan, phi_step, fractional_loss):
 
   phi_min = flex.min(phi)
   phi_max = flex.max(phi)
-  n_steps = iceil((phi_max - phi_min)/phi_step)
-
-  hist = flex.histogram(z_px, n_slots=n_steps)
+  n_steps = int(round((phi_max - phi_min)/phi_step))
+  hist = flex.histogram(z_px, data_min=array_range[0], data_max=array_range[1], n_slots=n_steps)
+  logger.debug("Histogram:")
+  logger.debug(hist.as_str())
 
   mean_i_sigi = flex.double()
   for i, slot_info in enumerate(hist.slot_infos()):
