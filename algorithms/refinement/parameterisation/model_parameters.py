@@ -392,7 +392,7 @@ class ModelParameterisation(object):
     # elements wrt the n parameters
     state_covs = []
     for grads_one_state in grads:
-      jacobian_t = flex.double([e for g in grads_one_state for e in g])
+      jacobian_t = flex.double(e for g in grads_one_state for e in g)
       jacobian_t.reshape(flex.grid(len(grads_one_state),
                                    len(grads_one_state[0].elems)))
 
