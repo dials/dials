@@ -11,14 +11,14 @@ from scitbx.array_family import flex
 logger = logging.getLogger('dials.command_line.detect_blanks')
 
 phil_scope= libtbx.phil.parse('''\
-phi_step = 5
+phi_step = 2
   .type = float(value_min=0)
   .help = "Width of bins in degrees."
-counts_fractional_loss = 0.05
+counts_fractional_loss = 0.1
   .type = float(value_min=0, value_max=1)
   .help = "Fractional loss (relative to the bin with the most counts) after "
           "which a bin is flagged as potentially containing blank images."
-misigma_fractional_loss = 0.05
+misigma_fractional_loss = 0.1
   .type = float(value_min=0, value_max=1)
   .help = "Fractional loss (relative to the bin with the highest misigma) after "
           "which a bin is flagged as potentially containing blank images."
