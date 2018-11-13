@@ -1062,12 +1062,8 @@ def flatten_reflections(filename_object_list):
 
   :param filename_object_list: The parameter item
   :return: The flattened reflection table
-
   '''
-  result = []
-  for i in range(len(filename_object_list)):
-    result.append(filename_object_list[i].data)
-  return result
+  return [o.data for o in filename_object_list]
 
 def flatten_datablocks(filename_object_list):
   '''
@@ -1075,11 +1071,10 @@ def flatten_datablocks(filename_object_list):
 
   :param filename_object_list: The parameter item
   :return: The flattened list of datablocks
-
   '''
   result = []
-  for i in range(len(filename_object_list)):
-    result.extend(filename_object_list[i].data)
+  for o in filename_object_list:
+    result.extend(o.data)
   return result
 
 def flatten_experiments(filename_object_list):
@@ -1088,10 +1083,9 @@ def flatten_experiments(filename_object_list):
 
   :param filename_object_list: The parameter item
   :return: The flattened experiment lists
-
   '''
   from dxtbx.model.experiment_list import ExperimentList
   result = ExperimentList()
-  for i in range(len(filename_object_list)):
-    result.extend(filename_object_list[i].data)
+  for o in filename_object_list:
+    result.extend(o.data)
   return result
