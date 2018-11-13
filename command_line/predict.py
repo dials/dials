@@ -44,7 +44,7 @@ phil_scope = parse('''
   buffer_size = 0
     .type = int
     .help = "Calculate predictions within a buffer zone of n images either"
-            "size of the scan"
+            " side of the scan"
 
   d_min = None
     .type = float
@@ -60,7 +60,6 @@ class Script(object):
   def __init__(self):
     '''Initialise the script.'''
     from dials.util.options import OptionParser
-    from libtbx.phil import parse
     import libtbx.load_env
 
     # The script usage
