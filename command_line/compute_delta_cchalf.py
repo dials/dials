@@ -28,7 +28,8 @@ from libtbx.utils import Sorry
 import collections
 import logging
 from dials.util.exclude_images import exclude_image_ranges_for_scaling
-from dials.command_line.scale import set_image_ranges_in_scaling_models
+from dials.util.multi_dataset_handling import select_datasets_on_ids
+from dials.algorithms.scaling.scaling_library import set_image_ranges_in_scaling_models
 
 logger = logging.getLogger('dials.command_line.compute_delta_cchalf')
 
@@ -394,15 +395,14 @@ class Script(object):
       if -1 in reflections['id']:
         reflections = reflections.select(reflections['id'] != -1)
       reflection_list = reflections.split_by_experiment_id()
-      reflection_list, experiments = exclude_image_ranges_for_scaling(reflection_list,
-        experiments, exclude_images)
+      reflection_list, experiments = exclude_image_ranges_for_scaling(
+        reflection_list, experiments, exclude_images)
       #if a whole experiment has been excluded: need to remove it here
       experiments_to_delete = []
       for exp in experiments:
-        if not exp.scan.get_valid_image_ranges(exp.identifier):
+        if not exp.scan.get_valid_image_ranges(exp.identifier): #if all removed above
           experiments_to_delete.append(exp.identifier)
       if experiments_to_delete:
-        from dials.util.multi_dataset_handling import select_datasets_on_ids
         experiments, reflection_list = select_datasets_on_ids(
           experiments, reflection_list, exclude_datasets=experiments_to_delete)
       assert len(reflection_list) == len(experiments)

@@ -57,16 +57,15 @@ from dials.util.options import OptionParser, flatten_reflections,\
 from dials.util.version import dials_version
 from dials.algorithms.scaling.scaling_library import create_scaling_model,\
   create_datastructures_for_structural_model, create_datastructures_for_target_mtz,\
-  prepare_multiple_datasets_for_scaling
+  prepare_multiple_datasets_for_scaling, set_image_ranges_in_scaling_models
 from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScalerFactory
 from dials.util.multi_dataset_handling import select_datasets_on_ids
 from dials.algorithms.scaling.scaling_utilities import save_experiments,\
   save_reflections, log_memory_usage, DialsMergingStatisticsError
-from dials.algorithms.scaling.post_scaling_analysis import \
-  exclude_on_batch_rmerge, exclude_on_image_scale
 from dials.util.batch_handling import get_image_ranges
-from dials.util.exclude_images import exclude_image_ranges_for_scaling, get_valid_image_ranges
+from dials.util.exclude_images import exclude_image_ranges_for_scaling, \
+  get_valid_image_ranges
 
 
 logger = logging.getLogger('dials')
@@ -153,7 +152,7 @@ class Script(object):
     image_ranges = get_image_ranges(self.experiments)
     for (img, valid, exp) in zip(image_ranges, valid_ranges, self.experiments):
       if valid:
-        if len(valid) != len(img) or valid[0] != img[0] or valid[1] != img[1]:
+        if len(valid) > 1 or valid[0][0] != img[0] or valid[-1][1] != img[1]:
           logger.info("Excluded images for experiment identifier: %s, image range: %s, limited range: %s",
             exp.identifier, list(img), list(valid))
 
@@ -523,19 +522,6 @@ poorly-determined scaling problem or overparameterisation.""" % (frac_high_uncer
 (sigma/abs(parameter) > 0.5)""" % (frac_high_uncertainty * 100))
       logger.info("Plots of parameter uncertainties can be seen in dials report")
 
-def set_image_ranges_in_scaling_models(experiments):
-  """Set the batch range in scaling models if not already set."""
-  for exp in experiments:
-    if exp.scan:
-      valid_image_range = exp.scan.get_valid_image_ranges(exp.identifier)
-      if not 'valid_image_range' in exp.scaling_model.configdict:
-        #only set if not currently set i.e. set initial
-        exp.scaling_model.set_valid_image_range(exp.scan.get_image_range())
-      if exp.scaling_model.configdict['valid_image_range'] != (
-        valid_image_range[0], valid_image_range[-1]):
-        exp.scaling_model.limit_image_range(
-          (valid_image_range[0], valid_image_range[-1]))
-  return experiments
 
 if __name__ == "__main__":
   try:

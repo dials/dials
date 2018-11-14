@@ -59,6 +59,21 @@ def prepare_multiple_datasets_for_scaling(experiments, reflections,
 
   return experiments, reflections
 
+def set_image_ranges_in_scaling_models(experiments):
+  """Set the batch range in scaling models if not already set."""
+  for exp in experiments:
+    if exp.scan:
+      valid_image_ranges = exp.scan.get_valid_image_ranges(exp.identifier)
+      if not 'valid_image_range' in exp.scaling_model.configdict:
+        #only set if not currently set i.e. set initial
+        exp.scaling_model.set_valid_image_range(exp.scan.get_image_range())
+      if exp.scaling_model.configdict['valid_image_range'] != (
+        valid_image_ranges[0][0], valid_image_ranges[-1][1]):
+        #first and last values in whole list of tuples
+        exp.scaling_model.limit_image_range(
+          (valid_image_ranges[0][0], valid_image_ranges[-1][1]))
+  return experiments
+
 def choose_scaling_intensities(reflection_table, intensity_choice='profile'):
   """Choose which intensities to use for scaling. The LP, QE and
   partiality corrections are also applied. Two new columns are
