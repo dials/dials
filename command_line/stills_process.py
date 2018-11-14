@@ -327,19 +327,21 @@ class Script(object):
 
       indices = []
       basenames = []
-      split_datablocks = []
+      datablock_references = []
       for datablock in datablocks:
-        for imageset in datablock.extract_imagesets():
+        for j, imageset in enumerate(datablock.extract_imagesets()):
           paths = imageset.paths()
           for i in xrange(len(imageset)):
-            subset = imageset[i:i+1]
-            split_datablocks.append(DataBlockFactory.from_imageset(subset)[0])
-            indices.append(i)
+            datablock_references.append(datablock)
+            indices.append((j,i))
             basenames.append(os.path.splitext(os.path.basename(paths[i]))[0])
       tags = []
-      for i, basename in zip(indices, basenames):
+      for (j,i), basename in zip(indices, basenames):
         if basenames.count(basename) > 1:
-          tags.append("%s_%05d"%(basename, i))
+          if len(set([idx[0] for idx in indices if idx[0]==j])) > 1:
+            tags.append("%s_%05d_%05d"%(basename, j, i))
+          else:
+            tags.append("%s_%05d"%(basename, i))
         else:
           tags.append(basename)
 
@@ -348,27 +350,29 @@ class Script(object):
         processor = Processor(copy.deepcopy(params), composite_tag = "%04d"%i, rank = i)
 
         for item in item_list:
+          tag, (imgset_id, img_id), datablock = item
+          imageset = datablock.extract_imagesets()[imgset_id]
+          subset = imageset[img_id:img_id+1]
           try:
-            for imageset in item[1].extract_imagesets():
-              update_geometry(imageset)
+            update_geometry(subset)
           except RuntimeError as e:
-            logger.warning("Error updating geometry on item %s, %s"%(str(item[0]), str(e)))
+            logger.warning("Error updating geometry on item %s, %s"%(str(tag), str(e)))
             continue
 
           if self.reference_detector is not None:
             from dxtbx.model import Detector
-            for i in range(len(imageset)):
-              imageset.set_detector(
-                Detector.from_dict(self.reference_detector.to_dict()),
-                index=i)
+            subset.set_detector(
+              Detector.from_dict(self.reference_detector.to_dict()),
+              index=0)
+          datablock = DataBlockFactory.from_imageset(subset)[0]
 
           try:
-            processor.process_datablock(item[0], item[1])
+            processor.process_datablock(tag, datablock)
           except Exception as e:
-            logger.warning("Unhandled error on item %s, %s"%(item[0], str(e)))
+            logger.warning("Unhandled error on item %s, %s"%(str(tag), str(e)))
         processor.finalize()
 
-      iterable = zip(tags, split_datablocks)
+      iterable = zip(tags, indices, datablock_references)
 
     else:
       basenames = [os.path.splitext(os.path.basename(filename))[0] for filename in all_paths]
