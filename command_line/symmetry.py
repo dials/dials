@@ -115,11 +115,16 @@ def run(args):
   if len(experiments) or len(reflections):
     if len(reflections) == 1:
       reflections_input = reflections[0]
+      if -1 in reflections_input['id']:
+        reflections_input = reflections_input.select(
+          reflections_input.get_flags(reflections_input.flags.indexed))
       reflections = reflections_input.split_by_experiment_id()
 
     if len(experiments) > len(reflections):
       flattened_reflections = []
       for refl in reflections:
+        if -1 in refl['id']:
+          refl = refl.select(refl.get_flags(refl.flags.indexed))
         flattened_reflections.extend(refl.split_by_experiment_id())
       reflections = flattened_reflections
 
