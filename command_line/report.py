@@ -2657,11 +2657,9 @@ class ScalingModelAnalyser(object):
     data = []
     configdict = experiment.scaling_model.configdict
     valid_osc = configdict['valid_osc_range']
-    int_val_max = int(valid_osc[1]) + 1
-    int_val_min = int(valid_osc[0])
-    sample_values = flex.double(np.linspace(int_val_min, int_val_max,
-      ((int_val_max-int_val_min)/0.1)+1, endpoint=True)) # Make a grid of
-      #points with 10 points per degree.
+    sample_values = flex.double(np.linspace(valid_osc[0], valid_osc[1],
+      ((valid_osc[1]-valid_osc[0])/0.1)+1, endpoint=True)) # Make a grid of
+    #points with 10 points per degree.
 
     if 'scale' in configdict['corrections']:
       rt = flex.reflection_table()
