@@ -34,6 +34,8 @@ def parse_multiple_datasets(reflections):
     if len(dataset_ids) > 1:
       logger.info('Detected existence of a multi-dataset reflection table \n'
         'containing %s datasets. \n', len(dataset_ids))
+      refl_table = refl_table.select(
+        refl_table.get_flags(refl_table.flags.indexed))
       result = refl_table.split_by_experiment_id()
       single_reflection_tables.extend(result)
     else:
