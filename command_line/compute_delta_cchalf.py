@@ -24,8 +24,11 @@ from dials.algorithms.statistics.delta_cchalf import PerImageCChalfStatistics
 from dials.array_family import flex
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx.phil import parse
+from libtbx.utils import Sorry
 import collections
 import logging
+from dials.util.exclude_images import exclude_image_ranges_for_scaling
+from dials.command_line.scale import set_image_ranges_in_scaling_models
 
 logger = logging.getLogger('dials.command_line.compute_delta_cchalf')
 
@@ -45,6 +48,15 @@ phil_scope = parse('''
       .help = "We can also import an MTZ file"
 
   }
+
+  mode = *dataset image_group
+    .type = choice
+    .help = "Perform analysis on whole datasets or batch groups"
+
+  group_size = 10
+    .type = int(value_min=1)
+    .help = "The number of images to group together when calculating delta"
+            "cchalf in image_group mode"
 
   output {
 
@@ -145,11 +157,17 @@ class Script(object):
       "dataset",
       "intensity",
       "variance",
-      "identifiers"))
+      "identifiers",
+      "images"))
 
     # Ensure we have an experiment list
     experiments = flatten_experiments(params.input.experiments)
     reflections = flatten_reflections(params.input.reflections)
+
+    if params.mode == 'image_group':
+      for exp in experiments:
+        if not exp.scan:
+          raise Sorry("Cannot use mode=image_group with scanless experiments")
     if len(experiments) > 0:
       assert len(reflections) == 1
       data = self.read_experiments(experiments, reflections[0])
@@ -164,13 +182,20 @@ class Script(object):
       data.miller_index,
       data.identifiers,
       data.dataset,
+      data.images,
       data.intensity,
       data.variance,
       data.unit_cell,
       data.space_group,
       nbins = params.nbins,
       dmin  = params.dmin,
-      dmax  = params.dmax)
+      dmax  = params.dmax,
+      mode = params.mode,
+      image_group = params.group_size)
+
+    if params.mode == 'image_group':
+      self.image_group_to_id = statistics.image_group_to_id
+      self.image_group_to_image_range = statistics.image_group_to_image_range
 
     # Print out the datasets in order of delta cc 1/2
     delta_cchalf_i = statistics.delta_cchalf_i()
@@ -259,7 +284,8 @@ class Script(object):
     miller_index = reflections['miller_index']
     intensity = reflections['intensity.scale.value'] / inv_scale_factor
     variance = reflections['intensity.scale.variance'] / inv_scale_factor**2
-
+    # calculate image number of observation (e.g 0.0 <= z < 1.0), image = 1
+    images = flex.floor(reflections['xyzobs.px.value'].parts()[2]).iround() + 1
     # Get the MTZ file
     return self.DataRecord(
       unit_cell    = unit_cell,
@@ -268,7 +294,8 @@ class Script(object):
       dataset      = index,
       intensity    = intensity,
       variance     = variance,
-      identifiers  = identifiers)
+      identifiers  = identifiers,
+      images = images)
 
   def read_mtzfile(self, filename):
     '''
@@ -336,14 +363,54 @@ class Script(object):
     cutoff_value = mean - params.stdcutoff*sdev
     logger.info("cutoff value: %s \n" % (cutoff_value*100))
     datasets_to_remove = []
-    for x in sorted(delta_cchalf_i.keys()):
-      y = delta_cchalf_i[x]
-      if y < cutoff_value:
-        logger.info("Removing dataset %d" % x)
-        datasets_to_remove.append(reflections.experiment_identifiers()[x])
-    output_reflections = reflections.remove_on_experiment_identifiers(datasets_to_remove)
-    experiments.remove_on_experiment_identifiers(datasets_to_remove)
-    output_reflections.assert_experiment_identifiers_are_consistent(experiments)
+    if params.mode == 'dataset':
+      datasets_to_remove = []
+      for x in sorted(delta_cchalf_i.keys()):
+        y = delta_cchalf_i[x]
+        if y < cutoff_value:
+          logger.info("Removing dataset %d" % x)
+          datasets_to_remove.append(reflections.experiment_identifiers()[x])
+      output_reflections = reflections.remove_on_experiment_identifiers(datasets_to_remove)
+      experiments.remove_on_experiment_identifiers(datasets_to_remove)
+      output_reflections.assert_experiment_identifiers_are_consistent(experiments)
+
+    elif params.mode == 'image_group':
+      datasets_to_remove = []
+      exclude_images = []
+
+      for x in sorted(delta_cchalf_i.keys()):
+        y = delta_cchalf_i[x]
+        if y < cutoff_value:
+          exp_id = self.image_group_to_id[x] #numerical id
+          identifier = reflections.experiment_identifiers()[exp_id]
+          image_range = self.image_group_to_image_range[x]
+          datasets_to_remove.append(exp_id)
+          logger.info("Removing image range %s from experiment %s",
+            image_range, identifier)
+          exclude_images.append(
+            [identifier+':'+str(image_range[0])+':'+str(image_range[1])])
+
+      # Now remove individual batches
+      if -1 in reflections['id']:
+        reflections = reflections.select(reflections['id'] != -1)
+      reflection_list = reflections.split_by_experiment_id()
+      reflection_list, experiments = exclude_image_ranges_for_scaling(reflection_list,
+        experiments, exclude_images)
+      #if a whole experiment has been excluded: need to remove it here
+      experiments_to_delete = []
+      for exp in experiments:
+        if not exp.scan.get_valid_image_ranges(exp.identifier):
+          experiments_to_delete.append(exp.identifier)
+      if experiments_to_delete:
+        from dials.util.multi_dataset_handling import select_datasets_on_ids
+        experiments, reflection_list = select_datasets_on_ids(
+          experiments, reflection_list, exclude_datasets=experiments_to_delete)
+      assert len(reflection_list) == len(experiments)
+      experiments = set_image_ranges_in_scaling_models(experiments)
+
+      output_reflections = flex.reflection_table()
+      for r in reflection_list:
+        output_reflections.extend(r)
 
     # Write the experiments and reflections to file
     self.write_reflections(output_reflections, params.output.reflections)

@@ -151,13 +151,16 @@ class PerImageCChalfStatistics(object):
                miller_index,
                identifiers,
                dataset,
+               images,
                intensity,
                variance,
                unit_cell,
                space_group,
                nbins=10,
                dmin=None,
-               dmax=None):
+               dmax=None,
+               mode='dataset',
+               image_group=10):
     '''
     Initialise
 
@@ -181,6 +184,7 @@ class PerImageCChalfStatistics(object):
     dataset = dataset.select(selection)
     intensity = intensity.select(selection)
     variance = variance.select(selection)
+    images = images.select(selection)
 
     # Compute mean unit_cell
     if len(unit_cell) == 1:
@@ -222,6 +226,7 @@ class PerImageCChalfStatistics(object):
       intensity = intensity.select(selection)
       variance = variance.select(selection)
       D = D.select(selection)
+      images = images.select(selection)
 
     if dmax is not None:
       selection = D < dmax
@@ -230,6 +235,7 @@ class PerImageCChalfStatistics(object):
       intensity = intensity.select(selection)
       variance = variance.select(selection)
       D = D.select(selection)
+      images = images.select(selection)
 
     # Save the arrays
     self._miller_index = miller_index
@@ -275,9 +281,30 @@ class PerImageCChalfStatistics(object):
     self._cchalf_mean = self._compute_cchalf(reflection_sums, binner)
     logger.info("CC 1/2 mean: %.3f" % (100*self._cchalf_mean))
 
-    # Compute the CC 1/2 excluding each dataset in turn
-    self._cchalf = self._compute_cchalf_excluding_each_dataset(
-      reflection_sums, binner, miller_index, dataset, intensity)
+    #override dataset here with a batched-dependent
+    if mode == "image_group":
+      image_groups = flex.int(dataset.size(), 0)
+      self.image_group_to_id = {}
+      self.image_group_to_image_range = {}
+      counter = 0
+      for id_ in set(dataset):
+        sel = dataset == id_
+        images_in_dataset = images.select(sel)
+        unique_images = set(images_in_dataset)
+        min_img, max_img = (min(unique_images), max(unique_images))
+        for i in range(min_img, max_img, image_group):
+          group_sel = (images_in_dataset >= i) & (images_in_dataset < i+image_group)
+          image_groups.set_selected((sel.iselection().select(group_sel)), counter)
+          self.image_group_to_id[counter] = id_
+          self.image_group_to_image_range[counter] = (i, i + image_group - 1)
+          counter += 1
+
+      self._cchalf = self._compute_cchalf_excluding_each_dataset(
+        reflection_sums, binner, miller_index, image_groups, intensity)
+
+    else:
+      self._cchalf = self._compute_cchalf_excluding_each_dataset(
+        reflection_sums, binner, miller_index, dataset, intensity)
 
   def _compute_cchalf(self, reflection_sums, binner):
     '''
