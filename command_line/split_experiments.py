@@ -2,6 +2,7 @@
 from __future__ import absolute_import, division, print_function
 
 from libtbx.phil import parse
+from libtbx.utils import Sorry
 
 help_message = """
 
@@ -122,8 +123,27 @@ class Script(object):
         if reflections is not None:
           reflections_filename = reflections_template % split_expt_id
           print('Adding reflections for experiment %d to %s' %(i, reflections_filename))
-          ref_sel = reflections.select(reflections['id'] == i)
-          ref_sel['id'] = flex.int(len(ref_sel), len(split_data[experiment.detector]['experiments'])-1)
+          if reflections.experiment_identifiers().keys():
+            #first find which id value corresponds to experiment in question
+            identifier = experiment.identifier
+            id_ = None
+            for k in reflections.experiment_identifiers().keys():
+              if reflections.experiment_identifiers()[k] == identifier:
+                id_ = k
+                break
+            if id_ is None:
+              raise Sorry("Unable to find id matching experiment identifier in reflection table.")
+            ref_sel = reflections.select(reflections['id'] == id_)
+            #now reset ids and reset/update identifiers map
+            for k in ref_sel.experiment_identifiers().keys():
+              del ref_sel.experiment_identifiers()[k]
+            new_id = len(split_data[experiment.detector]['experiments'])-1
+            ref_sel['id'] = flex.int(len(ref_sel), new_id)
+            ref_sel.experiment_identifiers()[new_id] = identifier
+          else:
+            ref_sel = reflections.select(reflections['id'] == i)
+            ref_sel['id'] = flex.int(len(ref_sel),
+              len(split_data[experiment.detector]['experiments'])-1)
           split_data[experiment.detector]['reflections'].extend(ref_sel)
 
       for i, detector in enumerate(experiments.detectors()):
@@ -157,8 +177,26 @@ class Script(object):
       for i, experiment in enumerate(experiments):
         chunk_expts.append(experiment)
         if reflections:
-          ref_sel = reflections.select(reflections['id'] == i)
-          ref_sel['id'] = flex.int(len(ref_sel), len(chunk_expts)-1)
+          if reflections.experiment_identifiers().keys():
+            #first find which id value corresponds to experiment in question
+            identifier = experiment.identifier
+            id_ = None
+            for k in reflections.experiment_identifiers().keys():
+              if reflections.experiment_identifiers()[k] == identifier:
+                id_ = k
+                break
+            if id_ is None:
+              raise Sorry("Unable to find id matching experiment identifier in reflection table.")
+            ref_sel = reflections.select(reflections['id'] == id_)
+            #now reset ids and reset/update identifiers map
+            for k in ref_sel.experiment_identifiers().keys():
+              del ref_sel.experiment_identifiers()[k]
+            new_id = len(chunk_expts)-1
+            ref_sel['id'] = flex.int(len(ref_sel), new_id)
+            ref_sel.experiment_identifiers()[new_id] = identifier
+          else:
+            ref_sel = reflections.select(reflections['id'] == i)
+            ref_sel['id'] = flex.int(len(ref_sel), len(chunk_expts)-1)
           chunk_refls.extend(ref_sel)
         if len(chunk_expts) == params.output.chunk_size:
           save_chunk(chunk_counter, chunk_expts, chunk_refls)
@@ -182,7 +220,14 @@ class Script(object):
           reflections_filename = reflections_template %i
           print('Saving reflections for experiment %d to %s' %(i, reflections_filename))
           ref_sel = reflections.select(reflections['id'] == i)
-          ref_sel['id'] = flex.int(len(ref_sel), 0)
+          if ref_sel.experiment_identifiers().keys():
+            identifier = ref_sel.experiment_identifiers()[i]
+            for k in ref_sel.experiment_identifiers().keys():
+              del ref_sel.experiment_identifiers()[k]
+            ref_sel['id'] = flex.int(ref_sel.size(), 0)
+            ref_sel.experiment_identifiers()[0] = identifier
+          else:
+            ref_sel['id'] = flex.int(len(ref_sel), 0)
           ref_sel.as_pickle(reflections_filename)
 
     return
