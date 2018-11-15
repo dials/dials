@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 from iotbx.reflection_file_reader import any_reflection_file
 from dials.algorithms.statistics.delta_cchalf import PerImageCChalfStatistics
 from os.path import join
+import copy
 
 def test_compute_delta_cchalf(dials_regression):
   
@@ -42,12 +43,15 @@ def test_compute_delta_cchalf(dials_regression):
   num_datasets = max(dataset)+1
   unit_cell_list = [unit_cell for i in range(num_datasets)]
   identifiers = list(set(dataset))
+  # Add in dummy images for now
+  images = copy.deepcopy(batch)
 
   # Compute the CC 1/2 Stats
   statistics = PerImageCChalfStatistics(
     miller_index,
     identifiers,
     dataset,
+    images,
     intensity,
     variance,
     unit_cell_list,
