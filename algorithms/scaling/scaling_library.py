@@ -179,6 +179,45 @@ def scale_single_dataset(reflection_table, experiment, params=None,
   scaler.round_of_outlier_rejection()
   return scaler.reflection_table
 
+def create_auto_scaling_model(params, experiments, reflections):
+  """Create a scaling model with auto determined parameterisation."""
+  models = experiments.scaling_models()
+  if None in models:
+    for i, (exp, refl) in enumerate(zip(experiments, reflections)):
+      model = experiments.scaling_models()[i]
+      if not model:
+
+        if not exp.scan:
+          params.model = 'KB'
+        else: # set model physical unless scan < 1.0 degree
+          osc_range = (exp.scan.get_oscillation_range()[1] -
+            exp.scan.get_oscillation_range()[0])
+          params.model = 'physical'
+          if osc_range < 1.0:
+            params.model = 'KB'
+          elif osc_range < 10.0:
+            scale_interval, decay_interval = (2.0, 3.0)
+          elif osc_range < 25.0:
+            scale_interval, decay_interval = (4.0, 5.0)
+          elif osc_range < 90.0:
+            scale_interval, decay_interval = (8.0, 10.0)
+          else:
+            scale_interval, decay_interval = (15.0, 20.0)
+          if params.model == 'physical':
+            params.parameterisation.scale_interval = scale_interval
+            params.parameterisation.decay_interval = decay_interval
+            if osc_range < 60.0:
+              params.parameterisation.absorption_term = False
+
+        # now load correct factory and make scaling model.
+        factory = None
+        for entry_point in pkg_resources.iter_entry_points('dxtbx.scaling_model_ext'):
+          if entry_point.name == params.model:
+            factory = entry_point.load().factory()
+            break
+        exp.scaling_model = factory.create(params, exp, refl)
+  return experiments
+
 def create_scaling_model(params, experiments, reflections):
   """Create or load a scaling model for multiple datasets."""
   models = experiments.scaling_models()

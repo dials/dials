@@ -57,7 +57,8 @@ from dials.util.options import OptionParser, flatten_reflections,\
 from dials.util.version import dials_version
 from dials.algorithms.scaling.scaling_library import create_scaling_model,\
   create_datastructures_for_structural_model, create_datastructures_for_target_mtz,\
-  prepare_multiple_datasets_for_scaling, set_image_ranges_in_scaling_models
+  prepare_multiple_datasets_for_scaling, create_auto_scaling_model,\
+  set_image_ranges_in_scaling_models
 from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScalerFactory
 from dials.util.multi_dataset_handling import select_datasets_on_ids
@@ -74,7 +75,7 @@ phil_scope = phil.parse('''
   debug = False
     .type = bool
     .help = "Output additional debugging information"
-  model = *physical array KB
+  model = physical array KB *auto
       .type = choice
       .help = "Set scaling model to be applied to input datasets without
                an existing model. "
@@ -210,8 +211,12 @@ class Script(object):
 
   def scale(self):
     """Create the scaling models and perform scaling."""
-    self.experiments = create_scaling_model(self.params, self.experiments,
-      self.reflections)
+    if self.params.model == 'auto':
+      self.experiments = create_auto_scaling_model(self.params, self.experiments,
+        self.reflections)
+    else:
+      self.experiments = create_scaling_model(self.params, self.experiments,
+        self.reflections)
     logger.info('\nScaling models have been initialised for all experiments.')
     logger.info('\n' + '='*80 + '\n')
 

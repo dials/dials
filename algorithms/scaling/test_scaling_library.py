@@ -14,7 +14,7 @@ from dials.array_family import flex
 from dials.algorithms.scaling.scaling_library import scale_single_dataset,\
   create_scaling_model, create_datastructures_for_structural_model,\
   create_Ih_table, calculate_merging_statistics, calculate_single_merging_stats,\
-  choose_scaling_intensities
+  choose_scaling_intensities, create_auto_scaling_model
 from dials.algorithms.scaling.model.model import KBScalingModel
 from dials.algorithms.scaling.model.scaling_model_factory import \
   PhysicalSMFactory
@@ -67,14 +67,17 @@ def generated_refl():
   reflections.experiment_identifiers()[0] = str(0)
   return reflections
 
-def generated_exp(n=1):
+def generated_exp(n=1, scan=True, image_range = [0, 10]):
   """Generate an experiment list with two experiments."""
   experiments = ExperimentList()
   exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
               "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
               "space_group_hall_symbol": " C 2y"}
   crystal = Crystal.from_dict(exp_dict)
-  scan = Scan(image_range=[0, 10], oscillation=[0.0, 1.0])
+  if scan:
+    scan = Scan(image_range=image_range, oscillation=[0.0, 1.0])
+  else:
+    scan = None
   beam = Beam(s0=(0.0, 0.0, 1.01))
   goniometer = Goniometer((1.0, 0.0, 0.0))
   goniometer_2 = Goniometer((1.0, 1.0, 0.0))
@@ -89,7 +92,7 @@ def generated_exp(n=1):
       experiments[i+1].identifier = str(i+1)
   return experiments
 
-def generated_param():
+def generated_param(absorption_term=False):
   """Generate a param phil scope."""
   phil_scope = phil.parse('''
       include scope dials.algorithms.scaling.scaling_options.phil_scope
@@ -98,7 +101,7 @@ def generated_param():
   optionparser = OptionParser(phil=phil_scope, check_format=False)
   parameters, _ = optionparser.parse_args(args=[], quick_parse=True,
     show_diff_phil=False)
-  parameters.parameterisation.absorption_term = False
+  parameters.parameterisation.absorption_term = absorption_term
   parameters.parameterisation.n_resolution_bins = 1 # to stop example dataset
   # being overparameterised for array model refinement.
   return parameters
@@ -267,3 +270,38 @@ def test_choose_scaling_intensities(test_reflections):
   new_rt = choose_scaling_intensities(test_refl, intstr)
   assert list(new_rt['intensity']) == list(test_refl['intensity.prf.value'])
   assert list(new_rt['variance']) == list(test_refl['intensity.prf.variance'])
+
+def test_auto_scaling_model():
+  params = generated_param()
+  exp = generated_exp(scan=False)
+  rt = generated_refl()
+  params.__inject__('model', 'auto')
+  new_exp = create_auto_scaling_model(params, exp, [rt])
+  assert new_exp[0].scaling_model.id_ == 'KB'
+
+  params = generated_param(absorption_term=True)
+  exp = generated_exp(image_range=[1, 5]) # 5 degree wedge
+  params.__inject__('model', 'auto')
+  new_exp = create_auto_scaling_model(params, exp, [rt])
+  assert new_exp[0].scaling_model.id_ == 'physical'
+  assert len(new_exp[0].scaling_model.components['scale'].parameters) == 5
+  assert len(new_exp[0].scaling_model.components['decay'].parameters) == 3
+  assert 'absorption' not in new_exp[0].scaling_model.components
+
+  params = generated_param(absorption_term=True)
+  exp = generated_exp(image_range=[1, 20]) # 20 degree wedge
+  params.__inject__('model', 'auto')
+  new_exp = create_auto_scaling_model(params, exp, [rt])
+  assert new_exp[0].scaling_model.id_ == 'physical'
+  assert len(new_exp[0].scaling_model.components['scale'].parameters) == 7
+  assert len(new_exp[0].scaling_model.components['decay'].parameters) == 6
+  assert 'absorption' not in new_exp[0].scaling_model.components
+
+  params = generated_param(absorption_term=True)
+  exp = generated_exp(image_range=[1, 75]) # 20 degree wedge
+  params.__inject__('model', 'auto')
+  new_exp = create_auto_scaling_model(params, exp, [rt])
+  assert new_exp[0].scaling_model.id_ == 'physical'
+  assert len(new_exp[0].scaling_model.components['scale'].parameters) == 12
+  assert len(new_exp[0].scaling_model.components['decay'].parameters) == 10
+  assert 'absorption' in new_exp[0].scaling_model.components
