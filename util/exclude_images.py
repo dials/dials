@@ -46,7 +46,7 @@ def set_initial_valid_image_ranges(experiments):
   for exp in experiments:
     if exp.scan:
       if not exp.scan.get_valid_image_ranges(exp.identifier):
-        exp.scan.set_valid_image_ranges(exp.identifier, exp.scan.get_image_range())
+        exp.scan.set_valid_image_ranges(exp.identifier, [exp.scan.get_image_range()])
   return experiments
 
 def get_selection_for_valid_image_ranges(reflection_table, experiment):
@@ -57,10 +57,10 @@ def get_selection_for_valid_image_ranges(reflection_table, experiment):
     if valid_ranges:
       valid_mask = flex.bool(reflection_table.size(), False)
       z = reflection_table['xyzobs.px.value'].parts()[2]
-      for i in range(0, len(valid_ranges), 2):
-        mask1 = (z >= valid_ranges[i] - 1.0) # -1.0 as image valid_ranges[i] \
+      for valid_range in valid_ranges:#i in range(0, len(valid_ranges), 2):
+        mask1 = (z >= valid_range[0] - 1.0) # -1.0 as image valid_ranges[i] \
         #has z is valid_ranges[i] - 1 to valid_ranges[i]
-        mask2 = (z <= valid_ranges[i+1])
+        mask2 = (z <= valid_range[1])
         valid_mask.set_selected(mask1 & mask2, True)
       return valid_mask
   return flex.bool(reflection_table.size(), True) # else say all valid
@@ -85,27 +85,33 @@ def _remove_ranges_from_valid_image_ranges(experiments, ranges_to_remove):
     exp = experiments[experiments.find(r[0])]
     if not exp.scan:
       raise Sorry("Trying to exclude a scanless experiment")
-    current_range = exp.scan.get_valid_image_ranges(exp.identifier) #list of start:stop values
+    current_range = exp.scan.get_valid_image_ranges(exp.identifier) #list of tuples
     # use set arithmetic on image numbers to work out images to keep
     exclude = OrderedSet(range(r[1][0], r[1][1]+1))
-    current_sets = [OrderedSet(range(current_range[i], current_range[i+1]+1)) for \
-      i in range(0, len(current_range), 2)]
+    current_sets = [OrderedSet(range(current_range[i][0], current_range[i][1]+1)) for \
+      i in range(0, len(current_range))]
     current_images = OrderedSet()
     for s in current_sets:
       current_images = current_images | s
     new_valid_images = list(current_images - exclude)
     # now convert images to ranges for storing in the scan
-    new_valid_ranges = [new_valid_images[0]]
-    previous = new_valid_images[0]
-    for i in new_valid_images[1:]:
-      if i - previous > 1:
-        new_valid_ranges.append(previous)
-        new_valid_ranges.append(i)
-      previous = i
-    if new_valid_ranges[-1] != new_valid_images[-1]:
-      new_valid_ranges.append(new_valid_images[-1])
-    assert len(new_valid_ranges) % 2 == 0
-    exp.scan.set_valid_image_ranges(exp.identifier, flex.int(new_valid_ranges))
+    if new_valid_images:
+      new_valid_ranges = [new_valid_images[0]]
+      previous = new_valid_images[0]
+      for i in new_valid_images[1:]:
+        if i - previous > 1:
+          new_valid_ranges.append(previous)
+          new_valid_ranges.append(i)
+        previous = i
+      if new_valid_ranges[-1] != new_valid_images[-1]:
+        new_valid_ranges.append(new_valid_images[-1])
+      assert len(new_valid_ranges) % 2 == 0
+    #convert to list of tuples
+      valid_ranges = [(new_valid_ranges[i], new_valid_ranges[i+1]) for i in
+        range(0, len(new_valid_ranges), 2)]
+    else:
+      valid_ranges = []
+    exp.scan.set_valid_image_ranges(exp.identifier, valid_ranges)
   return experiments
 
 """
