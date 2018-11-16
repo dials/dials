@@ -529,14 +529,13 @@ class MultiScalerBase(ScalerBase):
     position in the list so that they can be deleted later. Scaling algorithm
     code should only depends on the scalers."""
     initial_number = len(scalers)
-    n_already_removed = len(self._removed_datasets)
     for n in n_list[::-1]:
+      self._removed_datasets.append(scalers[n].experiments.identifier)
       del scalers[n]
-      self._removed_datasets.append(n + n_already_removed)
     if 0 in n_list:
       self._experiments = scalers[0].experiments
     assert len(scalers) == initial_number - len(n_list)
-    logger.info("Removed datasets: %s" % n_list)
+    logger.info("Removed datasets: %s", n_list)
 
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
     if self.verbosity <= 1 and calc_cov:

@@ -273,12 +273,11 @@ class Script(object):
     self.scaler = create_scaler(self.params, self.experiments, self.reflections)
     self.scaler = self.scaling_algorithm(self.scaler)
     #remove any bad datasets:
-    if self.scaler.removed_datasets:
-      s = sorted(self.scaler.removed_datasets)
-      logger.info('deleting removed datasets from memory: %s' % s)
-      for i in s[::-1]:
-        del self.reflections[i]
-        del self.experiments[i]
+    removed_ids = self.scaler.removed_datasets
+    if removed_ids:
+      logger.info('deleting removed datasets from memory: %s', removed_ids)
+      self.experiments, self.reflections = select_datasets_on_ids(
+        self.experiments, self.reflections, exclude_datasets=removed_ids)
     # print out information on model errors
     if self.experiments[0].scaling_model.components.values()[0].parameter_esds:
       p_sigmas = flex.double()
