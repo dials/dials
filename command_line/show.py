@@ -36,6 +36,9 @@ show_profile_fit = False
 show_flags = False
   .type = bool
   .help = "Show a summary table of reflection flags"
+show_identifiers = False
+  .type = bool
+  .help = "Show experiment identifiers map if set"
 max_reflections = None
   .type = int
   .help = "Limit the number of reflections in the output."
@@ -160,7 +163,8 @@ def run(args):
       show_centroids=params.show_centroids,
       show_all_reflection_data=params.show_all_reflection_data,
       show_flags=params.show_flags,
-      max_reflections=params.max_reflections))
+      max_reflections=params.max_reflections,
+      show_identifiers=params.show_identifiers))
 
 
 def show_experiments(experiments, show_scan_varying=False):
@@ -270,7 +274,8 @@ def _create_flag_count_table(table):
 
 def show_reflections(reflections, show_intensities=False, show_profile_fit=False,
                      show_centroids=False, show_all_reflection_data=False,
-                     show_flags=False, max_reflections=None):
+                     show_flags=False, max_reflections=None,
+                     show_identifiers=False):
 
   text = []
 
@@ -385,6 +390,13 @@ def show_reflections(reflections, show_intensities=False, show_profile_fit=False
 
     if show_flags:
       text.append(_create_flag_count_table(rlist))
+
+    if show_identifiers:
+      if rlist.experiment_identifiers().keys():
+        text.append("""Experiment identifiers id-map values:\n%s""" % (
+          '\n'.join("id:"+str(k)+" -> experiment identifier:"+str(
+          rlist.experiment_identifiers()[k]) for k in
+          rlist.experiment_identifiers().keys())))
 
   intensity_keys = (
     'miller_index', 'd', 'intensity.prf.value', 'intensity.prf.variance',
