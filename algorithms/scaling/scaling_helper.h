@@ -6,7 +6,11 @@
 #include <scitbx/math/zernike.h>
 #include <dials/error.h>
 
+typedef typename scitbx::sparse::matrix<double>::column_type col_type;
+
 namespace dials_scaling {
+
+  using namespace boost::python;
 
   /**
    * Elementwise squaring of a matrix
@@ -61,6 +65,38 @@ namespace dials_scaling {
           std::atan2(xyz[i][1], xyz[i][0]));
       }
       return theta_phi;
+    }
+
+  boost::python::tuple determine_outlier_indices(
+    scitbx::sparse::matrix<double> h_index_mat, scitbx::af::shared<double> z_scores,
+    double zmax){
+      scitbx::af::shared<std::size_t> outlier_indices;
+      scitbx::af::shared<std::size_t> other_potential_outlier_indices;
+      for (int i = 0; i < h_index_mat.n_cols(); ++i){
+        const col_type column = h_index_mat.col(i);
+        column.compact();
+        double max_z = zmax; //copy value//
+        int n_elem = 0;
+        int index_of_max = 0;
+        for (col_type::const_iterator it = column.begin(); it != column.end(); ++it){
+          double val = z_scores[it.index()];
+          if (val > max_z){
+            max_z = val;
+            index_of_max = it.index();
+          }
+          ++n_elem;
+        }
+        if (n_elem > 2 && max_z > zmax) {
+          //want to get indices of other potential outliers too
+          outlier_indices.push_back(index_of_max);
+          for (col_type::const_iterator it = column.begin(); it != column.end(); ++it){
+            if (it.index() != index_of_max){
+              other_potential_outlier_indices.push_back(it.index());
+            }
+          }
+        }
+      }
+    return boost::python::make_tuple(outlier_indices, other_potential_outlier_indices);
     }
 
   scitbx::af::shared<double> calc_sigmasq(
