@@ -6,7 +6,7 @@
 #include <scitbx/math/zernike.h>
 #include <dials/error.h>
 
-typedef typename scitbx::sparse::matrix<double>::column_type col_type;
+typedef scitbx::sparse::matrix<double>::column_type col_type;
 
 namespace dials_scaling {
 
