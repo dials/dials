@@ -13,11 +13,17 @@ This guide includes:
 Guide to the different scaling models
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 There are three available scaling models available in dials.scale, accessible
-by the command line option :samp:`model = physical array KB`.
+by the command line option :samp:`model = physical array KB *auto`.
 The physical model is similar to the scaling model used in the program aimless_,
 the array model is based on the approach taken in xscale_, while the KB model is
 a simple two-component model suitable for still-image datasets or very small
 rotation datasets (~ < 3 degrees).
+
+The auto option automatically chooses a default model and sensible parameterisation
+based on the oscillation range of the experiment. model=auto will choose the
+physical model unless the oscillation range is < 1.0 degree, when the KB model
+will be chosen. The auto parameterisation rules are given at the bottom of this
+section.
 
 The physical model consists of up to three components - a smoothly varying
 scale term, a smoothly varying B-factor term and an absorption surface
@@ -55,7 +61,16 @@ although this is off by default. The array model is only suitable for
 wide-rotation datasets with a high number of reflections and it should be tested
 whether the absorption term is suitable, as it may lead to overparameterisation.
 
-Excluding data/batch handling after initial scaling
+| Auto model rules:
+| if oscillation range < 1.0 degrees - use KB model, else use physical model
+| if oscillation range < 60.0 degrees, absorption_term = False
+| scale and decay parameter intervals based on oscillation range:
+| if 1.0 <= oscillation range < 10.0 degrees; intervals 2.0, 3.0
+| if 10.0 <= oscillation range < 25.0 degrees; intervals 4.0, 5.0
+| if 25.0 <= oscillation range < 90.0 degrees; intervals 8.0, 10.0
+| if oscillation range >= 90.0 degrees; intervals 15.0, 20.0
+
+Excluding data/image handling after initial scaling
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 After a first round of scaling, it may be apparant that there are datasets,
 or regions of datasets, that are in poor agreement with the rest of the
@@ -85,37 +100,26 @@ These datasets are removed at the start of the program before scaling occurs,
 and will not be contained in the output :samp:`scaled.pickle` and
 :samp:`scaled_experiments.json`.
 
-To help with excluding parts of a dataset, 'batch' labelling is used. Here,
-each image of a dataset is given a batch number, which is unique between
-multiple datasets. The batches assigned can also be seen in the scaling log / 
-terminal output, for example, for a four-experiment dataset::
+To help with excluding parts of a dataset, image exclusion can be performed
+using the command-line syntax :samp:`exclude_images="exp_id:start:stop"`. Here
+exp_id is the experiment identifier (a string) indicating the dataset,
+and start and stop are integers that define the image range to exclude (the
+excluding region includes start and stop) i.e. to exclude images 101 to 200 from
+experiment "0", one would use :samp:`exclude_images="0:101:200"`.
 
-  Batch numbers assigned to datasets:
-  Experiment identifier: 0, image_range: (1, 1800), batch_range: (1, 1800)
-  Experiment identifier: 1, image_range: (1, 1700), batch_range: (1901, 3600)
-  Experiment identifier: 2, image_range: (1, 1700), batch_range: (3701, 5400)
-  Experiment identifier: 3, image_range: (1, 1700), batch_range: (5501, 7200)
-
-To exclude parts of the dataset, one can use multiple :samp:`exclude_batches=`
-commands. For example, to exclude the last 200 images from experiments  2 & 3::
-
-  dials.scale scaled_experiments.json scaled.pickle exclude_batches=7001,7200
-    exclude_batches=5201,5400
-
-In the reflection_table, the reflections corresponding to these batches are
+In the reflection_table, the reflections corresponding to these imags are
 marked with the :samp:`user_excluded_for_scaling` flag, and the parameters of the
-scaling models are adjusted to span the new batch range. These data will not
-be included in future scaling or data export, and further batch exclusion
-can be performed. The batch ranges should not change between runs of dials.scale.
+scaling models are adjusted to span the new image range. These data will not
+be included in future scaling or data export, and further image exclusion
+can be performed in subsequent scaling jobs.
 
-Note that it is recommended to only use the exclude_batches option to exclude
-data at the beginning or end of a sweep. One can use it to exclude data in
-the middle of a sweep, however care must be taken that only a short batch
-range is excluded. If the interior excluded range is of the order of the
-scaling model parameter spacing, this can cause the scaling model minimisation
-to fail. In this case it would be better to split the experiment with
-:samp:`dials.slice_sweep` and then proceed with excluding batches at the
-edge of the new experiments.
+Note that it is recommended to only exclude data at the beginning or end of a
+sweep. One can use it to exclude data in the middle of a sweep, however care
+must be taken that only a short image range is excluded. If the interior
+excluded range is of the order of the scaling model parameter spacing, this can
+cause the scaling model minimisation to fail. In this case it would be better to
+split the experiment with :samp:`dials.slice_sweep` and then proceed with
+excluding images at the edge of the new experiments.
 
 
 Practicalities for large datasets
