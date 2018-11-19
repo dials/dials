@@ -8,6 +8,14 @@ namespace dials_scaling { namespace boost_python {
 
   using scitbx::sparse::matrix;
 
+    void export_determine_outlier_indices()
+    {
+    def("determine_outlier_indices", &determine_outlier_indices, (
+      arg("h_index_matrix"),
+      arg("z_scores"),
+      arg("zmax")));
+    }
+
     void export_elementwise_square()
     {
     def("elementwise_square", &elementwise_square, (

@@ -11,6 +11,7 @@ namespace dials_scaling { namespace boost_python {
   void export_calc_theta_phi();
   void export_calc_sigmasq();
   void export_row_multiply();
+  void export_determine_outlier_indices();
 
   BOOST_PYTHON_MODULE(dials_scaling_ext)
   {
@@ -20,6 +21,7 @@ namespace dials_scaling { namespace boost_python {
     export_calc_theta_phi();
     export_calc_sigmasq();
     export_row_multiply();
+    export_determine_outlier_indices();
   }
 
 }} // namespace dials_scaling::boost_python
