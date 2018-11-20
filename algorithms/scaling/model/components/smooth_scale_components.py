@@ -147,9 +147,9 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
     if selection:
       normalised_values = normalised_values.select(selection)
     # Make sure zeroed correctly.
-    normalised_values = normalised_values - min(normalised_values)
-    phi_range_deg = [int(min(normalised_values)//1),
-                     int(max(normalised_values)//1)+1]
+    normalised_values = normalised_values - flex.min(normalised_values)
+    phi_range_deg = [int(flex.min(normalised_values)//1),
+                     int(flex.max(normalised_values)//1)+1]
     self._smoother = GaussianSmoother1D(phi_range_deg,
       self.nparam_to_val(self._n_params))
     if block_selections:
@@ -321,12 +321,12 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
       reflection_table = reflection_table.select(selection)
     normalised_x_values = reflection_table[self._col_names[0]]
     normalised_y_values = reflection_table[self._col_names[1]]
-    normalised_x_values = normalised_x_values - min(normalised_x_values)
-    normalised_y_values = normalised_y_values - min(normalised_y_values)
-    x_range = [int(min(normalised_x_values)//1),
-               int(max(normalised_x_values)//1)+1]
-    y_range = [int(min(normalised_y_values)//1),
-               int(max(normalised_y_values)//1)+1]
+    normalised_x_values = normalised_x_values - flex.min(normalised_x_values)
+    normalised_y_values = normalised_y_values - flex.min(normalised_y_values)
+    x_range = [int(flex.min(normalised_x_values)//1),
+               int(flex.max(normalised_x_values)//1)+1]
+    y_range = [int(flex.min(normalised_y_values)//1),
+               int(flex.max(normalised_y_values)//1)+1]
     self._smoother = GaussianSmoother2D(x_range, self.nparam_to_val(
       self._n_x_params), y_range, self.nparam_to_val(self._n_y_params))
     if block_selections:
@@ -457,15 +457,15 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
     normalised_y_values = reflection_table[self._col_names[1]]
     normalised_z_values = reflection_table[self._col_names[2]]
     """Set the normalised coordinate values and configure the smoother."""
-    normalised_x_values = normalised_x_values - min(normalised_x_values)
-    normalised_y_values = normalised_y_values - min(normalised_y_values)
-    normalised_z_values = normalised_z_values - min(normalised_z_values)
-    x_range = [int(min(normalised_x_values)//1),
-               int(max(normalised_x_values)//1)+1]
-    y_range = [int(min(normalised_y_values)//1),
-               int(max(normalised_y_values)//1)+1]
-    z_range = [int(min(normalised_z_values)//1),
-               int(max(normalised_z_values)//1)+1]
+    normalised_x_values = normalised_x_values - flex.min(normalised_x_values)
+    normalised_y_values = normalised_y_values - flex.min(normalised_y_values)
+    normalised_z_values = normalised_z_values - flex.min(normalised_z_values)
+    x_range = [int(flex.min(normalised_x_values)//1),
+               int(flex.max(normalised_x_values)//1)+1]
+    y_range = [int(flex.min(normalised_y_values)//1),
+               int(flex.max(normalised_y_values)//1)+1]
+    z_range = [int(flex.min(normalised_z_values)//1),
+               int(flex.max(normalised_z_values)//1)+1]
     self._smoother = GaussianSmoother3D(x_range, self.nparam_to_val(
       self._n_x_params), y_range, self.nparam_to_val(self._n_y_params),
       z_range, self.nparam_to_val(self._n_z_params))
