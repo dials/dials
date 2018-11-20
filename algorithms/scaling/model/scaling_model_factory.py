@@ -107,15 +107,15 @@ class ArraySMFactory(object):
     n_time_param, time_norm_fac, time_rot_int = Model.initialise_smooth_input(
       osc_range, one_osc_width, params.parameterisation.decay_interval)
     (xvalues, yvalues, _) = reflections['xyzobs.px.value'].parts()
-    (xmax, xmin) = (max(xvalues) + 0.001, min(xvalues) - 0.001)
-    (ymax, ymin) = (max(yvalues) + 0.001, min(yvalues) - 0.001)
+    (xmax, xmin) = (flex.max(xvalues) + 0.001, flex.min(xvalues) - 0.001)
+    (ymax, ymin) = (flex.max(yvalues) + 0.001, flex.min(yvalues) - 0.001)
 
     parameters_dict = {}
 
     if params.parameterisation.decay_term:
       configdict['corrections'].append('decay')
-      resmax = (1.0 / (min(reflections['d'])**2)) + 0.001
-      resmin = (1.0 / (max(reflections['d'])**2)) - 0.001
+      resmax = (1.0 / (flex.min(reflections['d'])**2)) + 0.001
+      resmin = (1.0 / (flex.max(reflections['d'])**2)) - 0.001
       n_res_bins = params.parameterisation.n_resolution_bins
       n_res_param, res_bin_width = calc_n_param_from_bins(resmin, resmax,
         n_res_bins)
