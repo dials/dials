@@ -8,7 +8,7 @@ Introduction
 
 This tutorial follows the same steps as the command line tutorial
 :doc:`processing_in_detail_betalactamase`, but here processing will be driven
-graphically through the DIALS User Interface, DUI_
+graphically through the DIALS User Interface, DUI_.
 
 .. _DUI: https://github.com/ccp4/DUI
 
@@ -28,7 +28,7 @@ these tutorials.
     If you are physically at Diamond on the BAG-training or CCP4 workshop
     sessions, then this data is already available in your training data area.
     After typing :samp:`module load bagtraining` or :samp:`module load ccp4-workshop`
-    you'll be moved to a working folder, with the data already located in the
+    as appropriate, you'll be moved to a working folder, with the data already located in the
     :samp:`tutorial_data/` subdirectory.
 
 The data is otherwise available for download from |lactamase|.
@@ -56,10 +56,10 @@ importing the images. Otherwise, just click the "Run" button to proceed.
 
 .. image:: /figures/process_detail_betalactamase_dui/import.png
 
-What happens when you do this is that that the metadata are read for all the
+What happens then is that that the metadata are read for all the
 images in the dataset. If these are consistent, then the dataset is imported
 and initial models for the "Beam", "Scan" and "Detector" are created. The images
-are now displayed within the "Image View" tab. You can adjust the contrast
+are now also displayed within the "Image View" tab. You can adjust the contrast
 and colour scheme by controls under the "Palette Tuning" pull-down.
 
 .. image:: /figures/process_detail_betalactamase_dui/image_view_palette.png
@@ -118,7 +118,7 @@ In particular, the effect of changing the spot-finding parameters can be explore
 interactively with the :doc:`dials.image_viewer<../programs/dials_image_viewer>`.
 The image mode buttons at the bottom of the "Settings" window allow a preview
 of how the parameters affect the spot finding algorithm. The final image,
-(‘threshold’) is the one on which spots were found, so ensuring this produces
+("threshold") is the one on which spots were found, so ensuring this produces
 peaks at real diffraction spot positions will give the best chance of success.
 
 The second external viewer, the :doc:`dials.reciprocal_lattice_viewer<../programs/dials_reciprocal_lattice_viewer>`,
@@ -131,7 +131,7 @@ orientation that shows off the periodicity in reciprocal lattice positions.
 .. image:: /figures/process_detail_betalactamase/reciprocal_lattice_strong.png
 
 Although the reciprocal spacing is visible, in this data, there are clearly
-some systematic distortions. These will be solved in the indexing.
+some systematic distortions. These will be solved during indexing.
 
 Indexing
 ^^^^^^^^
@@ -141,7 +141,7 @@ to move on to this step, and form a new node in the history tree. Here we see
 that the simple parameters allow only to select between different "Indexing
 Methods", the default of which is the 3D FFT algorithm. The other options are
 the 1D FFT (DPS) algorithm and a special version of the 3D FFT called
-`real_space_grid_search`, which is particularly useful for narrow wedges
+:samp:`real_space_grid_search`, which is particularly useful for narrow wedges
 containing multiple lattices, but requires a known cell and space group to be
 set under the "Advanced" parameters. If we do know the cell and space group,
 these can also be set as hints for either of the other two indexing algorithms.
@@ -150,7 +150,7 @@ during refinement. Otherwise
 indexing and refinement will be carried out in the primitive lattice
 using space group P1.
 
-In this case, keep the method set to the default `fft3d` and click "Run" to
+In this case, keep the method set to the default :samp:`fft3d` and click "Run" to
 start the indexing job. Once the job has finished running, you will see that
 the experimental models have now been completed with a "Crystal" model.
 
@@ -183,7 +183,7 @@ an initial estimate for the unit cell parameters.
 What then follows are 'macro-cycles' of refinement where the experimental model
 is first tuned to get the best possible fit from the data, and then the
 resolution limit is reduced to cover more data than the previous cycle. 16
-parameters of the diffraction geometry are tuned - 6 for the detector, one for
+parameters of the diffraction geometry are tuned: 6 for the detector, one for
 beam angle, 3 crystal orientation angles and the 6 triclinic cell parameters.
 At each stage only 36000 reflections are used in the refinement job. In order
 to save time, a subset of the input reflections are used - by default using 100
