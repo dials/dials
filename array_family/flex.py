@@ -357,7 +357,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                 [s[1] for s in spots],c='blue',linewidth=0)
     plt.show()
 
-
   def as_pickle(self, filename):
     '''
     Write the reflection table as a pickle file.
@@ -367,6 +366,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     '''
     import six.moves.cPickle as pickle
     from libtbx import smart_open
+
+    #Clean up any removed experiments from the identifiers map
+    self.clean_experiment_identifiers_map()
 
     with smart_open.for_writing(filename, 'wb') as outfile:
       pickle.dump(self, outfile, protocol=pickle.HIGHEST_PROTOCOL)
@@ -380,6 +382,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     '''
     from dials.util.nexus_old import NexusFile
     handle = NexusFile(filename, 'w')
+    #Clean up any removed experiments from the identifiers map
+    self.clean_experiment_identifiers_map()
     handle.set_reflections(self)
     handle.close()
 
@@ -1245,6 +1249,18 @@ Found %s""" % (list_of_identifiers, id_values))
       self.del_selected(sel)
       del self.experiment_identifiers()[id_val]
     return self
+
+  def clean_experiment_identifiers_map(self):
+    '''
+    Remove any entries from the identifier map that do not have any
+    data in the table. Primarily to call as saving data to give a
+    consistent table and map.
+    '''
+    dataset_ids_in_table = set(self['id']).difference(set([-1]))
+    dataset_ids_in_map = set(self.experiment_identifiers().keys())
+    ids_to_remove = dataset_ids_in_map.difference(dataset_ids_in_table)
+    for i in ids_to_remove:
+      del self.experiment_identifiers()[i]
 
   def reset_ids(self):
     '''
