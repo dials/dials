@@ -108,7 +108,7 @@ class Processing_Tutorial(object):
   class dials_export(Job):
     cmd = "dials.export integrated.pickle integrated_experiments.json"
 
-def generate_processing_detail_text():
+def generate_processing_detail_text_thaumatin():
   cwd = os.path.abspath(os.curdir)
   tmp_dir = open_tmp_directory(suffix="generate_tutorial_text")
   os.chdir(tmp_dir)
@@ -159,8 +159,8 @@ def generate_processing_detail_text():
     # clean up tmp dir
     shutil.rmtree(tmp_dir)
 
-def generate_processing_detail_text_ccp4():
-  """Generate the text for CCP4-versions of detail processing tutorial"""
+def generate_processing_detail_text_betalactamase():
+  """Generate the text for Beta-lactamase versions of detail processing tutorial"""
 
   # Move to a temporary directory for processing
   cwd = os.path.abspath(os.curdir)
@@ -169,12 +169,24 @@ def generate_processing_detail_text_ccp4():
 
   # Find/validate the data input - until we've decided to integrate this
   # into the main release, have a DLS default or otherwise let it be
-  # specified via a CCP4_TUTORIAL_DATA environment variable.
+  # specified via an environment variable.
   DATA_PATH = "/dls/i03/data/2017/mx19576-1/tutorial_data/summed/summed/C2sum_1*.cbf.gz"
-  DATA_PATH = os.environ.get("CCP4_TUTORIAL_DATA", DATA_PATH)
-  if not any(glob.glob(DATA_PATH)):
-    sys.exit("Error: Could not find CCP4-2017 data; skipping text generation")
+  # If not on dls systems, look for an environment variable
+  if not glob.glob(DATA_PATH):
+    # Firstly, look for the old path
+    if "CCP4_TUTORIAL_DATA" in os.environ:
+      DATA_PATH = os.environ.get("CCP4_TUTORIAL_DATA")
+    # Otherwise, look for the new path that we tell the user about
+    elif "BETALACTAMASE_TUTORIAL_DATA" in os.environ:
+      base_path = os.environ.get("BETALACTAMASE_TUTORIAL_DATA")
+      DATA_PATH = os.path.join(base_path, "C2sum_1*.cbf.gz")
 
+  if not DATA_PATH or not any(glob.glob(DATA_PATH)):
+    sys.exit("""Error:  Could not find Betalactamase data: skipping text generation.
+        Please download C2sum_1 from https://zenodo.org/record/1014387 and extract,
+        then set environment variable BETALACTAMASE_TUTORIAL_DATA to the folder with C2sum_1_*.cbf.gz""")
+
+  print("Using data: {}".format(DATA_PATH))
   # Work out where we are writing the output files to; in-source
   dials_dir = libtbx.env.find_in_repositories("dials")
   OUTPUT_DIR = os.path.join(dials_dir, "doc", "sphinx", "documentation",
@@ -182,6 +194,7 @@ def generate_processing_detail_text_ccp4():
   # Ensure this output path exists
   if not os.path.isdir(OUTPUT_DIR):
     os.makedirs(OUTPUT_DIR)
+  print("Writing output logs to {}".format(OUTPUT_DIR))
 
   # Make an ordered list of named steps and associated commands
   commands = [
@@ -264,8 +277,14 @@ def extract_last_indexed_spot_count(path):
   write_extract(os.path.join(dest, "dials.index.log.extract_unindexed"), next_ui-1, end_ui, lines)
 
 if __name__ == "__main__":
+  if "-h" in sys.argv or "--help" in sys.argv:
+    print("Usage: dev.dials.generate_tutorial_text [--beta | --thaum]")
+    sys.exit(0)
+
   # As a quick development hack, add option for only the newer process
-  if not "--ccp4" in sys.argv:
-    generate_processing_detail_text()
-  if not "--detail" in sys.argv:
-    generate_processing_detail_text_ccp4()
+  if not "--beta" in sys.argv:
+    print("Generating thaumatin tutorial")
+    generate_processing_detail_text_thaumatin()
+  if not "--thaum" in sys.argv:
+    print("Generating betalactamase tutorial")
+    generate_processing_detail_text_betalactamase()
