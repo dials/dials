@@ -172,8 +172,6 @@ dataset; 1.84 Å:
 .. literalinclude:: logs_detail_betalactamase/dials.index.log
     :start-at: Found max_cell
     :lines: 1-3
-    :lineno-match:
-    :linenos:
 
 The resolution limit of data that can be used in indexing is determined
 by the size of the 3D FFT grid, and the likely maximum cell dimension.
@@ -195,8 +193,6 @@ the positional RMSDs:
 .. literalinclude:: logs_detail_betalactamase/dials.index.log
    :start-after: Refinement steps
    :end-before: RMSD no longer decreasing
-   :lineno-match:
-   :linenos:
 
 Second and subsequent macrocycles are refined using the same number of
 reflections, but after extending to higher resolution. The RMSDs at the
@@ -222,8 +218,6 @@ be assigned an index:
 .. literalinclude:: logs_detail_betalactamase/dials.index.log.extract_unindexed
    :start-after: [START_EXTRACT]
    :end-before:  [END_EXTRACT]
-   :lineno-match:
-   :linenos:
 
 because this can be an indication of poor data quality or a sign that more
 care needs to be taken in selecting the indexing parameters.
@@ -253,8 +247,8 @@ Bravais Lattice Refinement
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Since we didn't know the Bravais lattice before indexing, we can now determine
-likely candidates by taking the results of the P1 autoindexing and running
-refinement with all of the possible Bravais settings applied, allowing you to
+likely candidates - by taking the results of the P1 autoindexing, and running
+refinement with all of the possible Bravais settings applied. You can then
 choose your preferred solution. This step is accessed by the "Lattice" button
 on the left of the DUI window. As before, run this without altering any of
 the defaults, as they are suitable for the majority of data sets.
@@ -262,22 +256,23 @@ the defaults, as they are suitable for the majority of data sets.
 Once the job has run, a window will pop up containing scoring data and the unit
 cell for each Bravais setting.
 
-.. image:: /figures/process_detail_betalactamase/reindex_table.png
+.. image:: /figures/process_detail_betalactamase_dui/reindex_table.png
 
-The scores include max δ (a metric fit measured in degrees), RMSDs (in mm), and
-the best and worse correlation coefficients for data related by symmetry
-elements implied by the lowest symmetry space group from the Bravais setting.
-This uses the raw spot intensity measurement from the spot-finding procedure
-(uncorrected and unscaled) but provides a very useful check to see if the data
-does appear to adhere to the proposed symmetry operators.
+The scores for each setting include max δ (a metric fit measured in degrees),
+RMSDs (in mm), and the best and worse correlation coefficients for data related
+by symmetry elements (the symmetry elements implied by the lowest symmetry
+space group from the Bravais setting). This uses the raw spot intensity
+measurement from the spot-finding procedure (uncorrected and unscaled) but
+provides a very useful check to see if the data does appear to adhere to the
+proposed symmetry operators.
 
 DIALS uses an heuristic to determine which solutions are acceptable or not,
 indicated on this window by either a green highlighted "Y" or a red highlighted
 "N". In addition, the single "best" solution (the highest symmetry of the
 acceptable results) is pre-selected (highlighted in blue). To pick this
-solution to continue processing, simply click "OK" while the chosen solution is
-highlighted. This will automatically apply the symmetry constraints and will
-reindex the reflections ready for further refinement.
+solution, simply click "OK" while the chosen solution is highlighted. This will
+automatically apply the symmetry constraints and will reindex the reflections
+ready for further refinement.
 
 Refinement
 ^^^^^^^^^^
@@ -322,8 +317,6 @@ The log output shows a decrease in each dimension, but especially in Y.
 .. literalinclude:: logs_detail_betalactamase/dials.sv_refine.log
    :start-after: Refinement steps
    :end-before: RMSD no longer decreasing
-   :lineno-match:
-   :linenos:
 
 The final RMSDs are less than a quarter of a pixel in both X and Y, and just
 under a fifth of a pixel in φ. This is about as good as we can expect from
@@ -367,7 +360,7 @@ After the refinement is done the next step is integration. Click on the
 "integrate" button to move to this job. Mostly,
 the default parameters are fine for Pilatus data, which will perform
 XDS-like 3D profile fitting while using a generalized linear model in order
-to fit a Poisson-distributed background model. As for spot-finding, the
+to fit a Poisson-distributed background model. As with spot-finding, the
 number of processes can be set >1 to speed the job up (but DUI will have
 selected a suitable default). Click "Run" to start integration. This is the
 most computationally-demanding stage of processing, so it will take a while to
