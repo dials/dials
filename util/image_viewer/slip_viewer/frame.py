@@ -368,7 +368,7 @@ class XrayFrame(XFBaseClass):
             if not ("DXTBX_ASSERT(" in str(e) and ") failure" in str(e)):
                 # unknown exception from dxtbx
                 raise e
-            if len(detector) > 1:
+            if True:  # len(detector) > 1:
                 # find the panel whose center is closest to the beam.
                 panel_id = 0
                 lowest_res = 0
@@ -466,7 +466,7 @@ class XrayFrame(XFBaseClass):
         if abs(detector[0].get_distance()) > 0:
 
             def map_coords(x, y, p):
-                if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
+                if True:  # len(self.pyslip.tiles.raw_image.get_detector()) > 1:
                     y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
                         p, y - 0.5, x - 0.5
                     )
@@ -769,8 +769,10 @@ class XrayFrame(XFBaseClass):
             data = raw_img.get_image_data()
             if not isinstance(data, tuple):  # XXX should not need this test
                 data = (data,)
-            if len(detector) > 1:
-                flex_img = tile_generation.get_flex_image_multipanel(
+            if True:  # len(detector) > 1:
+                from .tile_generation import _get_flex_image_multipanel
+
+                flex_img = _get_flex_image_multipanel(
                     brightness=self.settings.brightness / 100,
                     panels=detector,
                     raw_data=data,
@@ -915,8 +917,10 @@ class XrayFrame(XFBaseClass):
             data = raw_img.get_image_data()
             if not isinstance(data, tuple):  # XXX should not need this test
                 data = (data,)
-            if len(detector) > 1:
-                flex_img = tile_generation.get_flex_image_multipanel(
+            if True:  # len(detector) > 1:
+                from .tile_generation import _get_flex_image_multipanel
+
+                flex_img = _get_flex_image_multipanel(
                     brightness=self.settings.brightness / 100,
                     panels=detector,
                     raw_data=data,
