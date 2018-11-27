@@ -174,6 +174,10 @@ experiments file must also be specified with the option: reference= """)
     test_crystal = experiments.crystals()[0]
     test_reflections = reflections[0]
 
+    if reference_crystal.get_space_group().type().number() != \
+      test_crystal.get_space_group().type().number():
+      raise Sorry("Space group of input does not match reference")
+
     # Set some flags to allow filtering, if wanting to reindex against
     # reference with data that has not yet been through integration
     if test_reflections.get_flags(
