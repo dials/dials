@@ -606,7 +606,8 @@ an unmerged mtz file, for further symmetry analysis with pointless_ or to start
 structural solution.
 
 To do this, click on the "export" button. This gives the option of an mtz output
-name.
+name and the option to output scaled intensities. Make sure that box is
+ticked otherwise the exported MTZ will only contain intensities from integration.
 
 .. _pointless: http://www.ccp4.ac.uk/html/pointless.html
 .. _aimless: http://www.ccp4.ac.uk/html/aimless.html
