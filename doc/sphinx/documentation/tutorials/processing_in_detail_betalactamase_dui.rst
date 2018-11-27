@@ -608,10 +608,6 @@ structural solution.
 To do this, click on the "export" button. This gives the option of an mtz output
 name.
 
-.. todo::
-
-  Need to export with intensity=scale option.
-
 .. _pointless: http://www.ccp4.ac.uk/html/pointless.html
 .. _aimless: http://www.ccp4.ac.uk/html/aimless.html
 .. _ctruncate: http://www.ccp4.ac.uk/html/ctruncate.html
