@@ -7,10 +7,10 @@ Introduction
 ------------
 
 DIALS processing may be performed by either running the individual tools (spot
-finding, indexing, refinement, integration, exporting to MTZ) or you can run
-:samp:`xia2 pipeline=dials`, which makes informed choices for you at each stage. In
-this tutorial we will run through each of the steps in turn, checking the output
-as we go. We will also enforce the correct lattice symmetry.
+finding, indexing, refinement, integration, symmetry, scaling, exporting to MTZ)
+or you can run :samp:`xia2 pipeline=dials`, which makes informed choices for you
+at each stage. In this tutorial we will run through each of the steps in turn,
+checking the output as we go. We will also enforce the correct lattice symmetry.
 
 
 Tutorial data
@@ -421,6 +421,155 @@ includes the application of the LP correction to the intensities. Then
 summary tables are printed giving quality statistics first by frame, and
 then by resolution bin.
 
+Symmetry and Scaling
+^^^^^^^^^^^^^^^^^^^^
+
+At this point, we have the option to continue processing with dials or to
+export the integrated data to do the symmetry and scaling steps with the
+CCP4 programs pointless_ and aimless_. For instructions on how to export the
+data for further processing, see `Exporting as MTZ`_. In this tutorial we shall
+continue to process with dials.
+
+Checking the symmetry
+^^^^^^^^^^^^^^^^^^^^^
+
+After integration we can return to our hypothesis of the space group of the
+crystal. Although we made an assessment of that when we chose a Bravais lattice
+after indexing, we now have better, background-subtracted, values for the
+intensities, and for all reflections, not just the strong spots. So, it is
+prudent to repeat the assessment to see if there is any indication that our
+initial assessment should be revised.::
+
+  dials.symmetry integrated_experiments.json integrated.pickle
+
+The symmetry analysis scores all possible symmetry operations by looking at
+the intensities of reflections that would be equivalent under that operation.
+Then the symmetry operations are combined to score potential space groups::
+
+  Scoring all possible sub-groups
+  ---------------------------------------------------------------------------------------------
+  Patterson group       Likelihood  NetZcc  Zcc+   Zcc-   CC     CC-    delta  Reindex operator
+  ---------------------------------------------------------------------------------------------
+  C 1 2/m 1        ***  0.909        9.72    9.72   0.00   0.97   0.00  0.0    -a,b,-c
+  P -1                  0.091        0.11    9.77   9.66   0.98   0.97  0.0    -x-y,-x+y,-z
+  ---------------------------------------------------------------------------------------------
+  Best solution: C 1 2/m 1
+
+Here we see clearly that the best solution is given by :samp:`C 1 2/m 1`, with
+a high likelihood, in agreement with the result from
+:samp:`dials.refine_bravais_settings`. As we remain confident with this choice,
+we now continue to scaling.
+
+Scaling
+^^^^^^^
+
+Before the data can be reduced for structure solution, the intensity values must be corrected for
+experimental effects which occur prior to the reflection being measured on the
+detector. These primarily include sample illumination/absorption effects
+and radiation damage, which result in symmetry-equivalent reflections having
+unequal measured intensities (i.e. a systematic effect in addition to any
+variance due to counting statistics). Thus the purpose of scaling is to determine
+a scale factor to apply to each reflection, such that the scaled intensities are
+representative of the 'true' scattering intensity from the contents of the unit
+cell.
+
+During scaling, a scaling model is be created, from which scale factors are calculated
+for each reflection. By default, three components are used to create a physical model
+for scaling, in a similar manner to that used in the program aimless_.
+This model consists of a smoothly varying scale factor as a
+function of rotation angle, a smoothly varying B-factor to
+account for radiation damage as a function of rotation angle
+and an absorption surface correction, dependent on the direction of the incoming
+and scattered beam vector relative to the crystal. In this example, we shall
+scale the dataset using the output of dials.symmetry with a resolution cutoff of
+1.4 Angstrom::
+
+  dials.scale reindexed_experiments.json reindexed_reflections.pickle d_min=1.4
+
+As can be seen from the output text, 70 parameters are used to parameterise the
+scaling model for this dataset. Outlier rejection is performed at several stages,
+as outliers have a disproportionately large effect during scaling and can lead
+to poor scaling results. During scaling, the distribution of the intensity
+uncertainties are also analysed and an error model is optimised to transform the
+intensity errors to an expected normal distribution. At the end of the output,
+a table and summary of the merging statistics are presented, which give indications
+of the quality of the scaled dataset::
+
+             ----------Overall merging statistics (non-anomalous)----------
+
+  Resolution: 69.19 - 1.40
+
+  Observations: 274771
+
+  Unique reflections: 41140
+
+  Redundancy: 6.7
+
+  Completeness: 94.11%
+
+  Mean intensity: 80.0
+
+  Mean I/sigma(I): 15.6
+
+  R-merge: 0.065
+
+  R-meas:  0.070
+
+  R-pim:   0.027
+
+To see what the scaling is telling us about the dataset, plots of the scaling
+model should be viewed. These can be generated by passing the output files to
+the utility program :samp:`dials.plot_scaling_models`::
+
+  dials.plot_scaling_models scaled_experiments.json scaled.pickle
+  open scale_model.png absorption_surface.png
+
+.. image:: /figures/process_detail_betalactamase/scaling.png
+
+What is immediately apparent is the periodic nature of the scale term, with peaks
+and troughs 90° apart. This indicates that the illumated volume was changing
+significantly during the experiment: a reflection would be measured as twice as
+intense if it was measured at rotation angle of ~120° compared to at ~210°.
+The absorption surface also shows a similar periodicity, as may be expected.
+What is less clear is the form of the relative B-factor, which also has a
+periodic nature. As a B-factor can be understood to represent radiation damage,
+this would not be expected to be periodic, and it is likely that this model
+component is accounting for variation that could be described only by a scale
+and absorption term. To test this, we can repeat the scaling process but turn
+off the :samp:`decay_term`::
+
+  dials.scale reindexed_experiments.json reindexed_reflections.pickle d_min=1.4 decay_term=False
+
+::
+
+             ----------Overall merging statistics (non-anomalous)----------
+
+  Resolution: 69.19 - 1.40
+
+  Observations: 274624
+
+  Unique reflections: 41140
+
+  Redundancy: 6.7
+
+  Completeness: 94.11%
+
+  Mean intensity: 76.6
+
+  Mean I/sigma(I): 16.1
+
+  R-merge: 0.063
+
+  R-meas:  0.069
+
+  R-pim:   0.027
+
+
+By inspecting the statistics in the output, we can see that removing the decay
+term has had the effect of causing around 150 more reflections to be marked as
+outliers (taking the outlier count from 0.75% to 0.80% of the data), while
+improving some of the R-factors and mean I/sigma(I). Therefore it is probably
+best to exclude the decay correction for this dataset.
 
 .. _betalactamase-html-report:
 
@@ -430,9 +579,9 @@ HTML report
 Much more information from the various steps of data processing can be found
 within an HTML report generated using the program
 :doc:`dials.report <../programs/dials_report>`.
-This is run simply with:
+This is run simply with::
 
-.. literalinclude:: logs_detail_betalactamase/dials.report.cmd
+  dials.report scaled_experiments.json scaled.pickle
 
 which produces the file :download:`dials-report.html <logs_detail_betalactamase/dials-report.html>`.
 
@@ -482,21 +631,26 @@ Some of the most useful plots are
 Exporting as MTZ
 ^^^^^^^^^^^^^^^^
 
-The final step of dials processing is to export the integrated results to mtz
+The final step of dials processing is to either 1) export the integrated results to mtz
 format, suitable for input to downstream processing programs such as pointless_
 and aimless_.
 
 .. literalinclude:: logs_detail_betalactamase/dials.export.cmd
 
-And this is the output, showing the reflection file statistics.
+2) export the scaled intensities for further downstream processing, making sure to
+include the :samp:`intensity=scale` option::
+
+  dials.export scaled.pickle scaled_experiments intensity=scale
+
+Here is the output for exporting after integration, showing the reflection file statistics.
 
 .. literalinclude:: logs_detail_betalactamase/dials.export.log
     :linenos:
 
-What to do Next
----------------
+Alternative processing with pointless and aimless
+-------------------------------------------------
 
-The following demonstrates how to take the output of dials processing and
+The following demonstrates how to take the output of dials processing after integration and
 continue with downstream analysis using the CCP4 programs pointless_, to sort the data and assign
 the correct symmetry, followed by scaling with aimless_ and intensity analysis
 using ctruncate_::
