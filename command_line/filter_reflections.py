@@ -108,7 +108,7 @@ class Script(object):
           .type = float(value_min=0, value_max=1)
       }
 
-      include scope dials.util.masking.ice_rings_phil_scope
+      include scope dials.util.masking.phil_scope ice_rings
 
     '''
 
