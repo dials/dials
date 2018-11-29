@@ -473,7 +473,7 @@ a scale factor to apply to each reflection, such that the scaled intensities are
 representative of the 'true' scattering intensity from the contents of the unit
 cell.
 
-During scaling, a scaling model is be created, from which scale factors are calculated
+During scaling, a scaling model is created, from which scale factors are calculated
 for each reflection. By default, three components are used to create a physical model
 for scaling, in a similar manner to that used in the program aimless_.
 This model consists of a smoothly varying scale factor as a
@@ -499,7 +499,7 @@ of the quality of the scaled dataset::
 
   Resolution: 69.19 - 1.40
 
-  Observations: 274771
+  Observations: 274799
 
   Unique reflections: 41140
 
@@ -507,13 +507,13 @@ of the quality of the scaled dataset::
 
   Completeness: 94.11%
 
-  Mean intensity: 80.0
+  Mean intensity: 80.7
 
-  Mean I/sigma(I): 15.6
+  Mean I/sigma(I): 15.4
 
   R-merge: 0.065
 
-  R-meas:  0.070
+  R-meas:  0.071
 
   R-pim:   0.027
 
@@ -546,7 +546,7 @@ off the :samp:`decay_term`::
 
   Resolution: 69.19 - 1.40
 
-  Observations: 274624
+  Observations: 274578
 
   Unique reflections: 41140
 
@@ -556,18 +556,18 @@ off the :samp:`decay_term`::
 
   Mean intensity: 76.6
 
-  Mean I/sigma(I): 16.1
+  Mean I/sigma(I): 16.0
 
-  R-merge: 0.063
+  R-merge: 0.064
 
-  R-meas:  0.069
+  R-meas:  0.070
 
   R-pim:   0.027
 
 
 By inspecting the statistics in the output, we can see that removing the decay
-term has had the effect of causing around 150 more reflections to be marked as
-outliers (taking the outlier count from 0.75% to 0.80% of the data), while
+term has had the effect of causing around 200 more reflections to be marked as
+outliers (taking the outlier count from 0.72% to 0.80% of the data), while
 improving some of the R-factors and mean I/sigma(I). Therefore it is probably
 best to exclude the decay correction for this dataset.
 

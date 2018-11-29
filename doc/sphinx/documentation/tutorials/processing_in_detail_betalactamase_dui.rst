@@ -457,13 +457,7 @@ we now continue to scaling.
 Scaling
 ^^^^^^^
 
-An overview
-"""""""""""
-
-Once the reflections have been integrated, a miller index, intensity and
-intensity error estimate have been determined for each measured reflection, in
-addition to information on the unit cell properties. However, before the data
-can be reduced for structure solution, the intensity values must be corrected for
+Before the data can be reduced for structure solution, the intensity values must be corrected for
 experimental effects which occur prior to the reflection being measured on the
 detector. These primarily include sample illumination/absorption effects
 and radiation damage, which result in symmetry-equivalent reflections having
@@ -473,10 +467,7 @@ a scale factor to apply to each reflection, such that the scaled intensities are
 representative of the 'true' scattering intensity from the contents of the unit
 cell.
 
-The scaling process
-"""""""""""""""""""
-
-First, a scaling model must be created, from which we derive scale factors for
+During scaling, a scaling model is created, from which we derive scale factors for
 each reflection. By default, three components are used to create a physical model
 for scaling (:samp:`model=physical`), in a similar manner to that used in the
 program aimless_. This model consists of a smoothly varying scale factor as a
@@ -486,24 +477,21 @@ and an absorption surface correction, dependent on the direction of the incoming
 and scattered beam vector relative to the crystal.
 
 Let's scale the Beta-lactamase dataset, after setting a resolution cutoff (`d_min`)
-of 1.4.
+of 1.4. This job is created by clicking the "scale" button. Enter 1.4 in the
+`d_min` field in the "simple" tab and click "Run" to start the job.
 
-As can be seen from the "Log Text", a subset of reflections are selected to be used in
-scale factor determination, which helps to speed up the algorithm. In a typical
-rotation dataset, between 10 and 40 parameters will be used for each term of the
-model, therefore the problem is overdetermined and a subset of reflections
-can be used to determine the model components. Outlier rejection is
-performed at several stages, as outliers have a disproportionately large effect
-during scaling and can lead to poor scaling results.
-
-Once the model has been initialised and a reflection subset chosen, the model
-parameters are be refined to give the best fit to the data, and then are used
-to calculate the scale factor for all reflections in the dataset. An error model
-is also optimised, to transform the intensity errors to an expected normal
-distribution.
-An error estimate for each scale factor is also determined based on the covariances
-of the model parameters. Finally, a table and summary of the merging statistics
-are presented, which give indications of the quality of the scaled dataset.
+As can be seen from the "Log Text", 70 parameters are used to parameterise the
+scaling model for this dataset. A subset of reflections are selected to be used in
+scaling model minimisation, which helps to speed up the algorithm (the model is
+used to calculate scales for all reflections at the end).
+Outlier rejection is performed at several stages, as outliers have a
+disproportionately large effect during scaling and can lead to poor scaling results.
+During scaling, the distribution of the intensity uncertainties are also
+analysed and an error model is optimised to transform the intensity errors
+to an expected normal distribution. An error estimate for each scale factor is
+also determined based on the covariances of the model parameters.
+At the end of the output, a table and summary of the merging statistics are
+presented, which give indications of the quality of the scaled dataset.
 
 ::
 
@@ -511,7 +499,7 @@ are presented, which give indications of the quality of the scaled dataset.
 
   Resolution: 69.19 - 1.40
 
-  Observations: 274776
+  Observations: 274799
 
   Unique reflections: 41140
 
@@ -519,9 +507,9 @@ are presented, which give indications of the quality of the scaled dataset.
 
   Completeness: 94.11%
 
-  Mean intensity: 80.0
+  Mean intensity: 80.7
 
-  Mean I/sigma(I): 15.5
+  Mean I/sigma(I): 15.4
 
   R-merge: 0.065
 
@@ -562,7 +550,7 @@ click "Run" to start the job.
 
   Resolution: 69.19 - 1.40
 
-  Observations: 274585
+  Observations: 274578
 
   Unique reflections: 41140
 
@@ -572,18 +560,18 @@ click "Run" to start the job.
 
   Mean intensity: 76.6
 
-  Mean I/sigma(I): 16.1
+  Mean I/sigma(I): 16.0
 
-  R-merge: 0.063
+  R-merge: 0.064
 
-  R-meas:  0.069
+  R-meas:  0.070
 
   R-pim:   0.027
 
 
 By inspecting the statistics in the output, we can see that removing the decay
 term has had the effect of causing around 200 more reflections to be marked as
-outliers (taking the outlier count from 0.75% to 0.82% of the data), while
+outliers (taking the outlier count from 0.72% to 0.80% of the data), while
 improving some of the R-factors and mean I/sigma(I). Therefore it is probably
 best to exclude the decay correction for this dataset. Other options which
 could be explored under the "Advanced" tab are the numbers of parameters used
