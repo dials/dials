@@ -640,7 +640,7 @@ and aimless_.
 2) export the scaled intensities for further downstream processing, making sure to
 include the :samp:`intensity=scale` option::
 
-  dials.export scaled.pickle scaled_experiments intensity=scale
+  dials.export scaled.pickle scaled_experiments.json intensity=scale
 
 Here is the output for exporting after integration, showing the reflection file statistics.
 
