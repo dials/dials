@@ -159,7 +159,7 @@ class RingSettingsPanel(wx.Panel):
         beam = self._pyslip.tiles.raw_image.get_beam()
         # FIXME assumes all detector elements use the same millimeter-to-pixel convention
         if detector[0].get_distance() > 0:
-            if len(detector) > 1:
+            if True:  # len(detector) > 1:
                 h = detector.hierarchy()
                 if len(h) > 0:
                     beam_pixel_fast, beam_pixel_slow = detector[0].millimeter_to_pixel(
@@ -289,11 +289,8 @@ class RingSettingsPanel(wx.Panel):
         xrayframe = self.GetParent().GetParent()
         panel_id, beam_pixel_fast, beam_pixel_slow = xrayframe.get_beam_center_px()
 
-        if len(detector) > 1:
-            (
-                beam_pixel_slow,
-                beam_pixel_fast,
-            ) = xrayframe.pyslip.tiles.flex_image.tile_readout_to_picture(
+        if True:  # len(detector) > 1:
+            beam_pixel_slow, beam_pixel_fast = xrayframe.pyslip.tiles.flex_image.tile_readout_to_picture(
                 panel_id, beam_pixel_slow - 0.5, beam_pixel_fast - 0.5
             )
 
