@@ -29,11 +29,11 @@ these tutorials.
     sessions, then this data is already available in your training data area.
     After typing :samp:`module load bagtraining` or :samp:`module load ccp4-workshop`
     as appropriate, you'll be moved to a working folder, with the data already located in the
-    :samp:`tutorial_data/` subdirectory.
+    :samp:`tutorial_data/summed` subdirectory.
 
 The data is otherwise available for download from |lactamase|.
 We'll only be using the first run of data in this tutorial,
-:samp:`C2sum_1.tar`, extracted to a :samp:`tutorial_data` subdirectory.
+:samp:`C2sum_1.tar`, extracted to a :samp:`tutorial_data/summed` subdirectory.
 
 .. |lactamase|  image::  https://zenodo.org/badge/DOI/10.5281/zenodo.1014387.svg
                 :target: https://doi.org/10.5281/zenodo.1014387
