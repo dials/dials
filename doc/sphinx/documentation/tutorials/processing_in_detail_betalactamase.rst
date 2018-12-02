@@ -21,15 +21,15 @@ beamline I04 at Diamond Light Source, and reprocessed especially for
 these tutorials.
 
 ..  hint::
-    If you are physically at Diamond on the BAG-training sessions, then
+    If you are physically at Diamond on the CCP4 Workshop, then
     this data is already available in your training data area. After
-    typing :samp:`module load bagtraining` you'll be moved to a working
-    folder, with the data already located in the :samp:`tutorial_data/summed`
+    typing :samp:`module load ccp4-workshop` you'll be moved to a working
+    folder, with the data already located in the :samp:`tutorial-data/summed`
     subdirectory.
 
 The data is otherwise available for download from |lactamase|.
 We'll only be using the first run of data in this tutorial,
-:samp:`C2sum_1.tar`, extracted to a :samp:`tutorial_data/summed` subdirectory.
+:samp:`C2sum_1.tar`, extracted to a :samp:`tutorial-data/summed` subdirectory.
 
 .. |lactamase|  image::  https://zenodo.org/badge/DOI/10.5281/zenodo.1014387.svg
                 :target: https://doi.org/10.5281/zenodo.1014387
@@ -41,7 +41,7 @@ The first stage of step-by-step DIALS processing is to import the data - all
 that happens here is that metadata are read for all the images, and a file
 describing their contents (:ref:`datablock.json <datablock-json>`) is written::
 
-    dials.import tutorial_data/summed/C2sum_1*.cbf.gz
+    dials.import tutorial-data/summed/C2sum_1*.cbf.gz
 
 The output just describes what the software understands of the images it was
 passed, in this case one sweep of data containing 720 images:
