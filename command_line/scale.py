@@ -45,6 +45,7 @@ import logging
 import sys
 import gc
 import copy as copy
+import libtbx
 from libtbx import phil
 from libtbx.utils import Sorry
 from libtbx.str_utils import make_sub_header
@@ -75,7 +76,7 @@ phil_scope = phil.parse('''
   debug = False
     .type = bool
     .help = "Output additional debugging information"
-  model = physical array KB *auto
+  model = physical array KB
       .type = choice
       .help = "Set scaling model to be applied to input datasets without
                an existing model. "
@@ -211,7 +212,7 @@ class Script(object):
 
   def scale(self):
     """Create the scaling models and perform scaling."""
-    if self.params.model == 'auto':
+    if self.params.model in (None, libtbx.Auto):
       self.experiments = create_auto_scaling_model(self.params, self.experiments,
         self.reflections)
     else:
