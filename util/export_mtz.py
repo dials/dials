@@ -342,9 +342,17 @@ def export_mtz(integrated_data, experiment_list, params):
     d_min=params.mtz.d_min)
 
   #get batch offsets and image ranges - even for scanless experiments
-  batch_offsets = calculate_batch_offsets(experiment_list)
-  image_ranges = get_image_ranges(experiment_list)
+  batch_offsets = [
+    expt.scan.get_batch_offset()
+    for expt in experiment_list if expt.scan is not None]
   unique_offsets = set(batch_offsets)
+  if len(set(unique_offsets)) == 1:
+    logger.debug('Calculating new batches')
+    batch_offsets = calculate_batch_offsets(experiment_list)
+    unique_offsets = set(batch_offsets)
+  else:
+    logger.debug('Keeping existing batches')
+  image_ranges = get_image_ranges(experiment_list)
   if len(unique_offsets) != len(batch_offsets):
     import collections
     raise Sorry('Duplicate batch offsets detected: %s' %', '.join(
