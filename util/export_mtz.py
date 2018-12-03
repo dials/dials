@@ -335,7 +335,7 @@ def export_mtz(integrated_data, experiment_list, params):
 
   # Clean up the data with the passed in options
   integrated_data = filter_reflection_table(integrated_data,
-    intensity_choice=params.intensity, 
+    intensity_choice=params.intensity,
     partiality_threshold=params.mtz.partiality_threshold,
     combine_partials=params.mtz.combine_partials,
     min_isigi=params.mtz.min_isigi, filter_ice_rings=params.mtz.filter_ice_rings,
@@ -346,7 +346,7 @@ def export_mtz(integrated_data, experiment_list, params):
     expt.scan.get_batch_offset()
     for expt in experiment_list if expt.scan is not None]
   unique_offsets = set(batch_offsets)
-  if len(set(unique_offsets)) == 1:
+  if len(set(unique_offsets)) <= 1:
     logger.debug('Calculating new batches')
     batch_offsets = calculate_batch_offsets(experiment_list)
     unique_offsets = set(batch_offsets)
