@@ -201,7 +201,7 @@ class PhysicalScalingModel(ScalingModelBase):
         d_vals = self.components['decay'].d_values[i]
         joined_d_vals.extend(d_vals)
         joined_inv_scales.extend(scales)
-      maxB = max(flex.double(np.log(joined_inv_scales))
+      maxB = flex.max(flex.double(np.log(joined_inv_scales))
                   * 2.0 * (joined_d_vals**2))
       self.components['decay'].parameters -= flex.double(
         self.components['decay'].n_params, maxB)

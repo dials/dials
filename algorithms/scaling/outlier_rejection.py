@@ -5,6 +5,7 @@ import logging
 from libtbx.utils import Sorry
 from dials.array_family import flex
 from dials.algorithms.scaling.Ih_table import IhTable
+from dials_scaling_ext import determine_outlier_indices
 
 logger = logging.getLogger('dials')
 
@@ -239,20 +240,10 @@ class NormDevOutlierRejection(OutlierRejectionBase):
     all_z_scores = flex.double(Ih_table.size, 0.0)
     all_z_scores.set_selected(sel.iselection(), z_score)
 
+    outlier_index, other_potential_outliers = determine_outlier_indices(
+      Ih_table.h_index_matrix, all_z_scores, self.zmax)
     outliers = flex.bool(sel.size(), False)
-    other_potential_outliers = flex.size_t([])
-    for col in Ih_table.h_index_matrix.cols():
-      if col.non_zeroes > 2:
-        sel = col.as_dense_vector() > 0
-        indices_of_group = sel.iselection()
-        z_scores = all_z_scores.select(indices_of_group)
-        max_z = max(z_scores)
-        if max_z > self.zmax:
-          max_selecter = z_scores == max_z
-          outlier_index = indices_of_group.select(max_selecter)
-          outliers.set_selected(outlier_index, True)
-          other_indices = indices_of_group.select(~max_selecter)
-          other_potential_outliers.extend(other_indices)
+    outliers.set_selected(outlier_index, True)
 
     #Now determine location of outliers w.r.t initial reflection table order.
     nz_weights_isel = Ih_table.nonzero_weights#.iselection()
@@ -267,7 +258,6 @@ class NormDevOutlierRejection(OutlierRejectionBase):
     outliers_list = []
     other_potential_list = []
     for i in range(len(reflection_tables)):
-      #sel = outlier_ids == i
       outliers_list.append(outlier_indices.select(outlier_ids == i))
       other_potential_list.append(other_potential_outliers_indices.select(
         other_potential_ids == i))

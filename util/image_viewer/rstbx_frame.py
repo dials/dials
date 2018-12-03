@@ -260,7 +260,7 @@ class XrayFrame (wx.Frame) :
     if (wx.PlatformInfo[4] != "wxOSX-cocoa") :
       from iotbx import file_reader
       wildcard_str = file_reader.get_wildcard_string("img")
-    file_name = wx.FileSelector("Reflections file",
+    file_name = wx.FileSelector("Image file",
       wildcard=wildcard_str,
       default_path="",
       flags=(wx.OPEN if WX3 else wx.FD_OPEN))

@@ -331,25 +331,30 @@ def run(args):
       params.output.reflections is not None and
       params.output.experiments is not None):
     import copy
-    from dxtbx.model import ExperimentList
     from dxtbx.serialize import dump
-    reindexed_experiments = copy.deepcopy(experiments)
     reindexed_reflections = flex.reflection_table()
+    indices = []
     for cb_op, dataset_ids in reindexing_ops.iteritems():
       cb_op = sgtbx.change_of_basis_op(cb_op)
       for dataset_id in dataset_ids:
-        expt = reindexed_experiments[dataset_selection[dataset_id]]
+        indices.append(dataset_selection[dataset_id])
+        expt = experiments[dataset_selection[dataset_id]]
         refl = reflections[dataset_selection[dataset_id]]
-        reindexed_expt = copy.deepcopy(expt)
         refl_reindexed = copy.deepcopy(refl)
         cb_op_this = cb_op * change_of_basis_ops[dataset_id].inverse()
-        expt.crystal = reindexed_expt.crystal.change_basis(cb_op_this)
+        expt.crystal = expt.crystal.change_basis(cb_op_this)
         refl_reindexed['miller_index'] = cb_op_this.apply(
           refl_reindexed['miller_index'])
         reindexed_reflections.extend(refl_reindexed)
+    exp_to_remove = list(set(range(len(experiments))).difference(set(indices)))
+    if exp_to_remove:
+      exp_to_remove.sort(reverse=True)
+      for i in exp_to_remove:
+        del experiments[i]
 
+    reindexed_reflections.reset_ids()
     logger.info('Saving reindexed experiments to %s' % params.output.experiments)
-    dump.experiment_list(reindexed_experiments, params.output.experiments)
+    dump.experiment_list(experiments, params.output.experiments)
     logger.info('Saving reindexed reflections to %s' % params.output.reflections)
     reindexed_reflections.as_pickle(params.output.reflections)
 

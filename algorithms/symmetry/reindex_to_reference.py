@@ -30,11 +30,13 @@ reference dataset if both dataset are in the same spacegroup.""")
     for op in twin_ops:
       print(op)
     # Loop through twin operators, calculating cc between two datasets
-    cc = test_miller_set.correlation(reference_miller_set)
+    cc = test_miller_set.correlation(reference_miller_set,
+      assert_is_similar_symmetry=False)
     correlations.append(cc.coefficient())
     for op in twin_ops:
       reindexed = test_miller_set.change_basis(op)
-      cc = reindexed.correlation(reference_miller_set)
+      cc = reindexed.correlation(reference_miller_set,
+        assert_is_similar_symmetry=False)
       correlations.append(cc.coefficient())
 
     #print out table of results and choose best
