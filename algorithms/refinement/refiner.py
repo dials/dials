@@ -190,6 +190,9 @@ class RefinerFactory(object):
   def _build_components(cls, params, reflections, experiments, verbosity):
     """low level build"""
 
+    if verbosity == 0:
+      logging.getLogger("dials.algorithms.refinement").setLevel(logging.WARNING)
+
     # Currently a refinement job can only have one parameterisation of the
     # prediction equation. This can either be of the XYDelPsi (stills) type, the
     # XYPhi (scans) type or the scan-varying XYPhi type with a varying crystal
