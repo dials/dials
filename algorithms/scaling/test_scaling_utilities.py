@@ -11,8 +11,7 @@ from dials.array_family import flex
 from dials.algorithms.scaling.scaling_utilities import \
   calc_crystal_frame_vectors, calc_theta_phi, create_sph_harm_table,\
   sph_harm_table, align_rotation_axis_along_z, set_wilson_outliers,\
-  quasi_normalisation, combine_intensities, calculate_prescaling_correction,\
-  apply_prescaling_correction, Reasons
+  quasi_normalisation, combine_intensities, calculate_prescaling_correction, Reasons
 
 @pytest.fixture(scope='module')
 def mock_exp():
@@ -270,15 +269,6 @@ def test_calculate_prescaling_correction():
   reflection_table['dqe'] = flex.double([0.6, 0.5, 0.4])
   cor = calculate_prescaling_correction(reflection_table)
   assert list(cor) == [1.0 / 0.6, 0.9 / 0.5, 0.8 / 0.4]
-
-  #test the apply prescaling correction
-  reflection_table = flex.reflection_table()
-  reflection_table['intensity'] = flex.double([1.0, 2.0])
-  reflection_table['variance'] = flex.double([1.0, 2.0])
-  conv = flex.double([2.0, 4.0])
-  reflection_table = apply_prescaling_correction(reflection_table, conv)
-  assert list(reflection_table['intensity']) == [2.0, 8.0]
-  assert list(reflection_table['variance']) == [4.0, 32.0]
 
 def test_reasons():
   """Test the reasons class, which is basically a dictionary with a nice
