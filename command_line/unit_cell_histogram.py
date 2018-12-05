@@ -1,5 +1,9 @@
 from __future__ import absolute_import, division, print_function
 import libtbx.phil
+from dials.util import log
+
+import logging
+logger = logging.getLogger('dials.unit_cell_histogram')
 
 help_message = '''
 
@@ -34,7 +38,7 @@ def outlier_selection(uc_params, iqr_ratio=1.5):
   for p in uc_params:
     from scitbx.math import five_number_summary
     min_x, q1_x, med_x, q3_x, max_x = five_number_summary(p)
-    print("Five number summary: min %.2f, q1 %.2f, med %.2f, q3 %.2f, max %.2f"
+    logger.info("Five number summary: min %.2f, q1 %.2f, med %.2f, q3 %.2f, max %.2f"
           % (min_x, q1_x, med_x, q3_x, max_x))
     iqr_x = q3_x - q1_x
     if iqr_x < 1e-6:
@@ -42,7 +46,7 @@ def outlier_selection(uc_params, iqr_ratio=1.5):
     cut_x = iqr_ratio * iqr_x
     outliers.set_selected(p > q3_x + cut_x, True)
     outliers.set_selected(p < q1_x - cut_x, True)
-  print("Identified %i unit cell outliers" % outliers.count(True))
+  logger.info("Identified %i unit cell outliers" % outliers.count(True))
   return outliers
 
 def run(args):
@@ -61,12 +65,23 @@ def run(args):
     check_format=False,
     epilog=help_message)
 
-  params, options = parser.parse_args(show_diff_phil=True)
+  from dials.util.version import dials_version
+  logger.info(dials_version())
+
+  params, options = parser.parse_args(show_diff_phil=False)
   experiments = flatten_experiments(params.input.experiments)
 
   if len(experiments) == 0:
     parser.print_help()
     exit(0)
+
+  log.config()
+
+  # Log the diff phil
+  diff_phil = parser.diff_phil.as_str()
+  if diff_phil is not '':
+    logger.info('The following parameters have been modified:\n')
+    logger.info(diff_phil)
 
   uc_params = uc_params_from_experiments(experiments)
   panel_distances = panel_distances_from_experiments(experiments)
