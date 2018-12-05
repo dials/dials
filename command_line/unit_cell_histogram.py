@@ -75,7 +75,8 @@ def run(args):
   plot_uc_vs_detector_distance(uc_params, panel_distances, outliers, params.steps_per_angstrom)
   plot_number_of_crystals(experiments)
 
-def plot_uc_histograms(uc_params, outliers, steps_per_angstrom=20, filename='uc_histograms.png'):
+def plot_uc_histograms(uc_params, outliers, steps_per_angstrom=20,
+                       plot_name='uc_histograms.png'):
   from matplotlib import pyplot as plt
   plt.style.use('ggplot')
   uc_labels = ['a', 'b', 'c']
@@ -101,15 +102,23 @@ def plot_uc_histograms(uc_params, outliers, steps_per_angstrom=20, filename='uc_
     steps_per_A = steps_per_angstrom
     Amin = math.floor(mmm.min * steps_per_A)/steps_per_A
     Amax = math.floor(mmm.max * steps_per_A)/steps_per_A
-    n_slots = int((Amax - Amin) * steps_per_A)
+    n_slots = max(1, int((Amax - Amin) * steps_per_A))
+    if Amin == Amax:
+      eps = 0.05
+      Amin -= eps
+      Amax += eps
     hist = flex.histogram(uc_params[i], Amin, Amax, n_slots=n_slots)
-    hist_inliers = flex.histogram(uc_params[i].select(~outliers), Amin, Amax, n_slots=n_slots)
-    ax[1][i].bar(hist.slot_centers(), hist.slots(), align='center',
-              width=hist.slot_width(), zorder=10, color='black', edgecolor=None,
-              linewidth=0)
-    ax[1][i].bar(hist_inliers.slot_centers(), hist_inliers.slots(), align='center',
-              width=hist_inliers.slot_width(), zorder=10, color='red', edgecolor=None,
-              linewidth=0)
+    hist_inliers = flex.histogram(
+      uc_params[i].select(~outliers), Amin, Amax, n_slots=n_slots)
+    ax[1][i].bar(
+      hist.slot_centers(), hist.slots(), align='center',
+      width=hist.slot_width(), zorder=10, color='black', edgecolor=None,
+      linewidth=0)
+    ax[1][i].bar(
+      hist_inliers.slot_centers(), hist_inliers.slots(), align='center',
+      width=hist_inliers.slot_width(), zorder=10, color='red', edgecolor=None,
+      linewidth=0)
+    ax[0][i].set_xlim(ax[1][i].get_xlim())
 
   ax[0][0].set_ylabel('b ($\AA$)')
   ax[0][1].set_ylabel('c ($\AA$)')
@@ -118,9 +127,9 @@ def plot_uc_histograms(uc_params, outliers, steps_per_angstrom=20, filename='uc_
   ax[1][1].set_xlabel('b ($\AA$)')
   ax[1][2].set_xlabel('c ($\AA$)')
 
-  f.savefig(filename)
+  f.savefig(plot_name)
   plt.tight_layout()
-  f.clf()
+  plt.close(f)
 
 
 def plot_uc_vs_detector_distance(uc_params, panel_distances, outliers, steps_per_angstrom=20, filename='uc_vs_distance.png'):
