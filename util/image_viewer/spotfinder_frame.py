@@ -1128,24 +1128,23 @@ class SpotFrame(XrayFrame) :
     self.prediction_colours = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3",
                                "#ff7f00", "#ffff33", "#a65628", "#f781bf",
                                "#999999"] * 10
+
     for ref_list_id, ref_list in enumerate(self.reflections):
-      if len(self.experiments) > 0:
-        experiments = self.experiments[ref_list_id]
-        expt_ids = flex.int()
-        for expt_id, experiment in enumerate(experiments):
-          if experiment.imageset == imageset:
-            expt_ids.append(expt_id)
-        if len(expt_ids) > 0:
-          # Start selection by allowing anything unindexed through
-          sel = ref_list["id"] == -1
-          # Also allow anything through that matches any experiment ID
-          for expt_id in expt_ids:
-            sel |= ref_list["id"] == expt_id
-          ref_list = ref_list.select(sel)
-          if len(ref_list) == 0:
-            continue
-        else:
+
+      # If we have experiments, we could have imagesets that do not apply
+      if self.experiments:
+        # Get the matching experiments list for this reflection table
+        experimentlist = self.experiments[ref_list_id]
+
+        # Only choose reflections from the current imageset
+        # If this imageset is not in this experiment, then skip
+        if imageset not in experimentlist.imagesets():
           continue
+
+        # Only choose reflections that match this imageset
+        imageset_id = experimentlist.imagesets().index(imageset)
+        ref_list = ref_list.select(ref_list["imageset_id"] == imageset_id)
+
 
       if self.settings.show_indexed:
         indexed_sel = ref_list.get_flags(ref_list.flags.indexed,
@@ -1156,7 +1155,11 @@ class SpotFrame(XrayFrame) :
         integrated_sel = ref_list.get_flags(ref_list.flags.integrated,
                                             all=False)
         ref_list = ref_list.select(integrated_sel)
-      if ref_list.size() == 0: continue
+
+      # Fast-fail if there's no reflections after filtering
+      if len(ref_list) == 0:
+        continue
+
       if 'bbox' in ref_list:
         bbox = ref_list['bbox']
         x0, x1, y0, y1, z0, z1 = bbox.parts()
