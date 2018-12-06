@@ -1217,12 +1217,17 @@ class SpotFrame(XrayFrame) :
             self.show_shoebox_timer.start()
             x0_, y0_ = map_coords(x0, y0, panel)
             x1_, y1_ = map_coords(x1, y1, panel)
-            lines = [(((x0_, y0_), (x0_, y1_)), shoebox_dict),
-                     (((x0_, y1_), (x1_, y1_)), shoebox_dict),
-                     (((x1_, y1_), (x1_, y0_)), shoebox_dict),
-                     (((x1_, y0_), (x0_, y0_)), shoebox_dict)]
+            # Change shoebox colour depending on index id
+            my_attrs = dict(shoebox_dict)
+            if reflection["id"] >= 0:
+              my_attrs["color"] = self.prediction_colours[reflection['id']]
+            lines = [(((x0_, y0_), (x0_, y1_)), my_attrs),
+                     (((x0_, y1_), (x1_, y1_)), my_attrs),
+                     (((x1_, y1_), (x1_, y0_)), my_attrs),
+                     (((x1_, y0_), (x0_, y0_)), my_attrs)]
             shoebox_data.extend(lines)
             self.show_shoebox_timer.stop()
+
 
           if (self.settings.show_max_pix and 'shoebox' in reflection
               and reflection['shoebox'].data.size() > 0):
