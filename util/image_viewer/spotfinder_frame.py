@@ -1136,12 +1136,16 @@ class SpotFrame(XrayFrame) :
           if experiment.imageset == imageset:
             expt_ids.append(expt_id)
         if len(expt_ids) > 0:
-          sel = flex.bool(len(ref_list), False)
+          # Start selection by allowing anything unindexed through
+          sel = ref_list["id"] == -1
+          # Also allow anything through that matches any experiment ID
           for expt_id in expt_ids:
-            sel |= ref_list['id'] == expt_id
+            sel |= ref_list["id"] == expt_id
           ref_list = ref_list.select(sel)
-          if len(ref_list) == 0: continue
-        else: continue
+          if len(ref_list) == 0:
+            continue
+        else:
+          continue
 
       if self.settings.show_indexed:
         indexed_sel = ref_list.get_flags(ref_list.flags.indexed,
