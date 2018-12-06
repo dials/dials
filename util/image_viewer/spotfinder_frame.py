@@ -1219,7 +1219,7 @@ class SpotFrame(XrayFrame) :
             x1_, y1_ = map_coords(x1, y1, panel)
             # Change shoebox colour depending on index id
             my_attrs = dict(shoebox_dict)
-            if reflection["id"] >= 0:
+            if reflection["flags"] & ref_list.flags.indexed > 0:
               my_attrs["color"] = self.prediction_colours[reflection['id']]
             lines = [(((x0_, y0_), (x0_, y1_)), my_attrs),
                      (((x0_, y1_), (x1_, y1_)), my_attrs),
