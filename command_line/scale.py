@@ -451,6 +451,8 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
 
     if rescale:
       scaler.perform_scaling()
+      if scaler.params.scaling_options.outlier_rejection:
+        scaler.outlier_rejection_routine()
 
     # Option to optimise the error model and then do another minimisation.
     if scaler.params.weighting.optimise_errors:
