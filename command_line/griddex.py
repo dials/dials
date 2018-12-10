@@ -1,3 +1,4 @@
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.griddex
 from __future__ import absolute_import, division, print_function
 
 import libtbx.phil
