@@ -5,11 +5,13 @@ from __future__ import absolute_import, division, print_function
 import logging
 logger = logging.getLogger('dials.command_line.cosym')
 
+import copy
 import os
 from libtbx.utils import Sorry
 import iotbx.phil
 from cctbx import crystal, miller
 from cctbx import sgtbx
+from dxtbx.serialize import dump
 from iotbx.reflection_file_reader import any_reflection_file
 from dials.array_family import flex
 from dials.util.options import flatten_experiments, flatten_reflections
@@ -330,8 +332,6 @@ def run(args):
   if (len(experiments) and len(reflections) and
       params.output.reflections is not None and
       params.output.experiments is not None):
-    import copy
-    from dxtbx.serialize import dump
     reindexed_reflections = flex.reflection_table()
     indices = []
     for cb_op, dataset_ids in reindexing_ops.iteritems():
@@ -340,8 +340,9 @@ def run(args):
         indices.append(dataset_selection[dataset_id])
         expt = experiments[dataset_selection[dataset_id]]
         refl = reflections[dataset_selection[dataset_id]]
-        refl_reindexed = copy.deepcopy(refl)
-        cb_op_this = cb_op * change_of_basis_ops[dataset_id].inverse()
+        refl_reindexed = copy.deepcopy(refl).select(
+          ~expt.crystal.get_space_group().is_sys_absent(refl['miller_index']))
+        cb_op_this = cb_op * change_of_basis_ops[dataset_id]
         expt.crystal = expt.crystal.change_basis(cb_op_this)
         refl_reindexed['miller_index'] = cb_op_this.apply(
           refl_reindexed['miller_index'])
