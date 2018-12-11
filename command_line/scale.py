@@ -436,7 +436,10 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
 
     # From here onwards, scaler should only be a SingleScaler
     # or MultiScaler (not TargetScaler).
-    scaler.perform_scaling()
+    from dials.algorithms.scaling.subprocesses import scaling_algorithm
+    scaler = scaling_algorithm(scaler)
+    return scaler
+    """scaler.perform_scaling()
 
     #Do another round of outlier rejection and then another minimisation.
     rescale = False
@@ -483,7 +486,7 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
 
     scaler.adjust_variances()
     scaler.clean_reflection_tables()
-    return scaler
+    return scaler"""
 
 def ensure_consistent_space_groups(experiments, params):
   """Make all space groups the same, and raise an error if not."""
