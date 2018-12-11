@@ -223,8 +223,9 @@ class ScalerBase(object):
     except Exception as e:
       logger.error(e, exc_info=True)
     error_model = refinery.return_error_model()
-    self.update_error_model(error_model, update_Ih=update_Ih)
+    #self.update_error_model(error_model, update_Ih=update_Ih)
     logger.info(error_model)
+    return error_model
 
   def error_optimisation_routine(self, make_ready_for_scaling=True, update_Ih=True):
     """Routine to perform error optimisation on scaled scaler."""
@@ -482,6 +483,17 @@ class SingleScalerBase(ScalerBase):
     logger.info('The following corrections will be applied to this dataset: \n')
     logger.info(st.format())
 
+  def make_ready_for_scaling(self, Isigma=True, outlier=True):
+    if outlier or Isigma:
+      if outlier:
+        self.scaling_selection &= ~self.reflection_table.get_flags(
+          self.reflection_table.flags.outlier_in_scaling)
+    else:
+      self.scaling_selection = self._scaling_subset(self.reflection_table,
+        self.params)
+    self.create_Ih_table()
+    self.reselect_reflections_for_scaling()
+
   def outlier_rejection_routine(self, make_ready_for_scaling=True):
     """Routine to perform outlier rejection on scaled scaler."""
     self._Ih_table = []
@@ -490,10 +502,11 @@ class SingleScalerBase(ScalerBase):
     self.round_of_outlier_rejection()
     #Now update the scaling selection to account for outliers
     if make_ready_for_scaling:
-      self.scaling_selection = self._scaling_subset(self.reflection_table,
+      self.make_ready_for_scaling()
+      '''self.scaling_selection = self._scaling_subset(self.reflection_table,
         self.params)
       self.create_Ih_table()
-      self.reselect_reflections_for_scaling()
+      self.reselect_reflections_for_scaling()'''
 
   def clean_reflection_tables(self):
     """Remove additional added columns that are not required for output."""
@@ -699,6 +712,18 @@ class MultiScaler(MultiScalerBase):
       free_set_percentage=free_set_percentage,
       free_set_offset=self.params.scaling_options.free_set_offset)
 
+  def make_ready_for_scaling(self, Isigma=True, outlier=True):
+    datasets_to_remove = []
+    for i, scaler in enumerate(self.active_scalers):
+      try:
+        scaler.scaling_selection = scaler._scaling_subset(
+          scaler.reflection_table, scaler.params)
+      except BadDatasetForScalingException:
+        datasets_to_remove.append(i)
+    if datasets_to_remove:
+      self.remove_datasets(self.active_scalers, datasets_to_remove)
+    self.create_Ih_table()
+    self.reselect_reflections_for_scaling()
 
   def outlier_rejection_routine(self, make_ready_for_scaling=True):
     """Routine to perform outlier rejection on scaled scaler."""
@@ -707,7 +732,8 @@ class MultiScaler(MultiScalerBase):
     self.expand_scales_to_all_reflections()
     self.round_of_outlier_rejection()
     if make_ready_for_scaling:
-      datasets_to_remove = []
+      self.make_ready_for_scaling()
+      """datasets_to_remove = []
       for i, scaler in enumerate(self.active_scalers):
         try:
           scaler.scaling_selection = scaler._scaling_subset(
@@ -717,7 +743,7 @@ class MultiScaler(MultiScalerBase):
       if datasets_to_remove:
         self.remove_datasets(self.active_scalers, datasets_to_remove)
       self.create_Ih_table()
-      self.reselect_reflections_for_scaling()
+      self.reselect_reflections_for_scaling()"""
 
 class TargetScaler(MultiScalerBase):
   """
@@ -798,6 +824,19 @@ class TargetScaler(MultiScalerBase):
     logger.debug('Finished outlier rejection.')
     log_memory_usage()
 
+  def make_ready_for_scaling(self, Isigma=True, outlier=True):
+    datasets_to_remove = []
+    for i, scaler in enumerate(self.unscaled_scalers):
+      try:
+        scaler.scaling_selection = scaler._scaling_subset(
+          scaler.reflection_table, scaler.params)
+      except BadDatasetForScalingException:
+        datasets_to_remove.append(i)
+    if datasets_to_remove:
+      self.remove_datasets(self.unscaled_scalers, datasets_to_remove)
+    self.initialise_targeted_Ih_table()
+    self.reselect_reflections_for_scaling()
+
   def outlier_rejection_routine(self, make_ready_for_scaling=True):
     """Routine to perform outlier rejection on scaled scaler."""
     self._Ih_table = []
@@ -805,17 +844,7 @@ class TargetScaler(MultiScalerBase):
     self.expand_scales_to_all_reflections()
     self.round_of_outlier_rejection()
     if make_ready_for_scaling:
-      datasets_to_remove = []
-      for i, scaler in enumerate(self.unscaled_scalers):
-        try:
-          scaler.scaling_selection = scaler._scaling_subset(
-            scaler.reflection_table, scaler.params)
-        except BadDatasetForScalingException:
-          datasets_to_remove.append(i)
-      if datasets_to_remove:
-        self.remove_datasets(self.unscaled_scalers, datasets_to_remove)
-      self.initialise_targeted_Ih_table()
-      self.reselect_reflections_for_scaling()
+      self.make_ready_for_scaling()
 
   def update_for_minimisation(self, apm, curvatures=False, calc_Ih=False):
     """Calcalate the new parameters but don't calculate a new Ih."""
