@@ -136,7 +136,7 @@ class analyse_datasets(symmetry_base):
     lattice_group = None
     if self.params.lattice_group is not None:
       lattice_group = self.params.lattice_group.group() \
-        .build_derived_patterson_group()
+        .build_derived_patterson_group().info().primitive_setting().group()
     self.target = target.Target(
       self.intensities,
       self.dataset_ids,
