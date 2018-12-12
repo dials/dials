@@ -48,9 +48,11 @@ class symmetry_base(object):
         d, assert_is_similar_symmetry=False)
       self.dataset_ids.extend(flex.double(d.size(), i+1))
     self.intensities = self.intensities.customized_copy(
-      unit_cell=self.median_unit_cell).set_info(
-          self.intensities.info())
+      unit_cell=self.median_unit_cell)
     self.intensities.set_observation_type_xray_intensity()
+    sys_absent_flags = self.intensities.sys_absent_flags(integral_only=True).data()
+    self.intensities = self.intensities.select(~sys_absent_flags)
+    self.dataset_ids = self.dataset_ids.select(~sys_absent_flags)
 
     self.cb_op_inp_min = self.intensities.change_of_basis_op_to_niggli_cell()
     self.intensities = self.intensities.change_basis(
@@ -69,8 +71,7 @@ class symmetry_base(object):
     self.patterson_group = self.lattice_group.build_derived_patterson_group()
 
     sel = self.patterson_group.epsilon(self.intensities.indices()) == 1
-    self.intensities = self.intensities.select(sel).set_info(
-      self.intensities.info())
+    self.intensities = self.intensities.select(sel)
     self.dataset_ids = self.dataset_ids.select(sel)
 
     # Correct SDs by "typical" SD factors
