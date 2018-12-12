@@ -12,6 +12,8 @@ namespace dials_scaling { namespace boost_python {
   void export_calc_sigmasq();
   void export_row_multiply();
   void export_determine_outlier_indices();
+  void export_calc_dIh_by_dpi();
+  void export_calc_jacobian();
 
   BOOST_PYTHON_MODULE(dials_scaling_ext)
   {
@@ -22,6 +24,8 @@ namespace dials_scaling { namespace boost_python {
     export_calc_sigmasq();
     export_row_multiply();
     export_determine_outlier_indices();
+    export_calc_dIh_by_dpi();
+    export_calc_jacobian();
   }
 
 }} // namespace dials_scaling::boost_python

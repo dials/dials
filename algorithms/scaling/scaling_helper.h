@@ -32,6 +32,111 @@ namespace dials_scaling {
     return result;
   }
 
+  scitbx::sparse::matrix<double> calculate_dIh_by_dpi(
+    scitbx::af::shared<double> dIh,
+    scitbx::af::shared<double> sumgsq,
+    scitbx::sparse::matrix<double> h_index_mat,
+    scitbx::sparse::matrix<double> derivatives){
+    //derivatives is a matrix where rows are params and cols are reflections
+    int n_params = derivatives.n_rows();
+    int n_groups = h_index_mat.n_cols();
+    scitbx::sparse::matrix<double > dIh_by_dpi(n_groups, n_params);
+
+    for (int i = 0; i < h_index_mat.n_cols(); ++i){
+      const col_type column = h_index_mat.col(i);
+      // loop over reflection groups
+      column.compact();
+      for (col_type::const_iterator it = column.begin(); it != column.end(); ++it){
+        //so it.index gives index of a refl from group i
+        int refl_idx = it.index();
+        const col_type dgidx_by_dpi = derivatives.col(refl_idx);
+        //deriv of one refl wrt all params
+        for (col_type::const_iterator dgit = dgidx_by_dpi.begin();
+          dgit != dgidx_by_dpi.end(); ++dgit){
+          // dgit.index indicates which params have nonzero derivs
+          dIh_by_dpi(i, dgit.index()) += (dIh[refl_idx] * *dgit / sumgsq[i]);
+        }
+      }
+    }
+    dIh_by_dpi.compact();
+    return dIh_by_dpi;
+  }
+
+  scitbx::sparse::matrix<double> calculate_dIh_by_dpi_transpose(
+    scitbx::af::shared<double> dIh,
+    scitbx::af::shared<double> sumgsq,
+    scitbx::sparse::matrix<double> h_index_mat,
+    scitbx::sparse::matrix<double> derivatives){
+    //derivatives is a matrix where rows are params and cols are reflections
+    int n_params = derivatives.n_rows();
+    int n_groups = h_index_mat.n_cols();
+    scitbx::sparse::matrix<double > dIh_by_dpi(n_params, n_groups);
+
+    for (int i = 0; i < h_index_mat.n_cols(); ++i){
+      const col_type column = h_index_mat.col(i);
+      // first loop over h_idx to get indices for a reflection group
+      column.compact();
+      scitbx::sparse::vector<double> deriv_of_group_by_params(n_params);
+      for (col_type::const_iterator it = column.begin(); it != column.end(); ++it){
+        //it.index gives index of a refl from group i
+        int refl_idx = it.index();
+        const col_type dgidx_by_dpi = derivatives.col(refl_idx);
+        //deriv of one refl wrt all params
+        for (col_type::const_iterator dgit = dgidx_by_dpi.begin(); dgit != dgidx_by_dpi.end(); ++dgit){
+          // dgit.index indicates which params have nonzero derivs
+          dIh_by_dpi(dgit.index(), i) += (dIh[refl_idx] * *dgit / sumgsq[i]);
+        }
+      }
+    }
+    dIh_by_dpi.compact();
+    return dIh_by_dpi;
+  }
+
+  scitbx::sparse::matrix<double> calc_jacobian(
+    scitbx::sparse::matrix<double> derivatives,
+    scitbx::sparse::matrix<double> h_index_mat,
+    scitbx::af::shared<double> Ih,
+    scitbx::af::shared<double> g,
+    scitbx::af::shared<double> dIh,
+    scitbx::af::shared<double> sumgsq){
+    //derivatives is a matrix where rows are params and cols are reflections
+    int n_params = derivatives.n_rows();
+    int n_refl = derivatives.n_cols();
+
+    scitbx::sparse::matrix<double> dIhbydpiT = calculate_dIh_by_dpi_transpose(
+      dIh, sumgsq, h_index_mat, derivatives);
+    scitbx::sparse::matrix<double> Jacobian(n_refl, n_params);
+
+    for (int i = 0; i < h_index_mat.n_cols(); ++i){
+      const col_type column = h_index_mat.col(i);
+      //first loop over h_idx to get indices for a reflection group
+      column.compact();
+      for (col_type::const_iterator it = column.begin(); it != column.end(); ++it){
+        //it.index gives index of a refl from group i
+        int refl_idx = it.index();
+        const col_type dgidx_by_dpi = derivatives.col(refl_idx);
+        //deriv of one refl wrt all params
+        dgidx_by_dpi.compact();
+        // loop over nonzero elements of dgidx by dpi
+        for (col_type::const_iterator dgit = dgidx_by_dpi.begin();
+          dgit != dgidx_by_dpi.end(); ++dgit){
+          // dgit.index indicates which params have nonzero derivs
+          Jacobian(refl_idx, dgit.index()) -= *dgit * Ih[refl_idx];
+        }
+        // now loop over nonzero elements of dIhbydpi
+        //get col corresponding to group
+        const col_type dIh_col = dIhbydpiT.col(i);
+        // now loop over nonzero params
+        for (col_type::const_iterator dIit = dIh_col.begin();
+          dIit != dIh_col.end(); ++dIit){
+          Jacobian(refl_idx, dIit.index()) -= g[refl_idx] * *dIit;
+        }
+      }
+    }
+    Jacobian.compact();
+    return Jacobian;
+  }
+
   scitbx::sparse::matrix<double> row_multiply(scitbx::sparse::matrix<double> m,
                                               scitbx::af::const_ref<double> v){
 

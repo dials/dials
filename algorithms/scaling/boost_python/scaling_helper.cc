@@ -22,6 +22,26 @@ namespace dials_scaling { namespace boost_python {
       arg("m")));
     }
 
+    void export_calc_dIh_by_dpi()
+    {
+      def("calc_dIh_by_dpi", &calculate_dIh_by_dpi,(
+        arg("a"),
+        arg("sumgsq"),
+        arg("h_index_mat"),
+        arg("derivatives")));
+    }
+
+    void export_calc_jacobian()
+    {
+      def("calc_jacobian", &calc_jacobian,(
+        arg("derivatives"),
+        arg("h_index_mat"),
+        arg("Ih"),
+        arg("g"),
+        arg("dIh"),
+        arg("sumgsq")));
+    }
+
     void export_sph_harm_table()
     {
     def("create_sph_harm_table", &create_sph_harm_table, (

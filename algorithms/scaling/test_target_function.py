@@ -64,21 +64,21 @@ def generated_refl():
   #these miller_idx/d_values don't make physical sense, but I didn't want to
   #have to write the tests for lots of reflections.
   reflections = flex.reflection_table()
-  reflections['intensity.prf.value'] = flex.double([75.0, 10.0, 100.0])
-  reflections['intensity.prf.variance'] = flex.double([50.0, 10.0, 100.0])
+  reflections['intensity.prf.value'] = flex.double([75.0, 10.0, 100.0, 50.0, 65.0])
+  reflections['intensity.prf.variance'] = flex.double([50.0, 10.0, 100.0, 50.0, 65.0])
   reflections['miller_index'] = flex.miller_index([(1, 0, 0), (0, 0, 1),
-    (1, 0, 0)]) #don't change
-  reflections['d'] = flex.double([2.0, 0.8, 2.0]) #don't change
-  reflections['lp'] = flex.double([1.0, 1.0, 1.0])
-  reflections['dqe'] = flex.double([1.0, 1.0, 1.0])
-  reflections['partiality'] = flex.double([1.0, 1.0, 1.0])
+    (1, 0, 0), (0, 0, 1), (0, 0, 2)]) #don't change
+  reflections['d'] = flex.double([2.0, 0.8, 2.0, 0.8, 1.5]) #don't change
+  #reflections['lp'] = flex.double([1.0, 1.0, 1.0])
+  #reflections['dqe'] = flex.double([1.0, 1.0, 1.0])
+  #reflections['partiality'] = flex.double([1.0, 1.0, 1.0])
   reflections['xyzobs.px.value'] = flex.vec3_double([(0.0, 0.0, 0.0),
-    (0.0, 0.0, 5.0), (0.0, 0.0, 10.0)])
+    (0.0, 0.0, 5.0), (0.0, 0.0, 10.0), (0.0, 0.0, 2.0), (0.0, 0.0, 8.0)])
   reflections['s1'] = flex.vec3_double([(0.0, 0.1, 1.0), (0.0, 0.1, 1.0),
-    (0.0, 0.1, 20.0)])
-  reflections.set_flags(flex.bool([True, True, True]),
+    (0.0, 0.1, 20.0), (0.0, 0.1, 20.0), (0.0, 0.1, 20.0)])
+  reflections.set_flags(flex.bool([True, True, True, True, True]),
     reflections.flags.integrated)
-  reflections['id'] = flex.int(3, 0)
+  reflections['id'] = flex.int(5, 0)
   reflections.experiment_identifiers()[0] = str(0)
   return [reflections]
 
@@ -371,6 +371,7 @@ def test_target_jacobian_calculation_finite_difference(physical_param,
   """Test the calculated jacobian against a finite difference calculation."""
   test_params, exp, test_refl = physical_param, single_exp, large_reflection_table
   test_params.parameterisation.decay_term = False
+  test_params.model = 'physical'
   experiments = create_scaling_model(test_params, exp, test_refl)
   assert experiments[0].scaling_model.id_ == 'physical'
   scaler = create_scaler(test_params, experiments, test_refl)
@@ -420,7 +421,7 @@ def calculate_gradient_fd(target, scaler, apm):
 
 def calculate_jacobian_fd(target, scaler, apm, block_id=0):
   """Calculate jacobian matrix with finite difference approach."""
-  delta = 1.0e-8
+  delta = 1.0e-7
   jacobian = sparse.matrix(scaler.Ih_table.blocked_data_list[block_id].size,
     apm.n_active_params)
   Ih_table = scaler.Ih_table.blocked_data_list[block_id]
