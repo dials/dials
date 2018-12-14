@@ -293,7 +293,11 @@ class ScoreSymmetryElement(object):
       reindexed_intensities = intensities.change_basis(cb_op).map_to_asu()
       x, y = intensities.common_sets(
         reindexed_intensities, assert_is_similar_symmetry=False)
-      sel = sgtbx.space_group().expand_smx(self.sym_op).epsilon(x.indices()) == 1
+      tmp_sg = sgtbx.space_group().expand_smx(self.sym_op) \
+        .info().as_reference_setting().group()
+      sel = tmp_sg.is_sys_absent(x.indices())
+      sel = flex.bool(x.size(), True)
+      sel &= tmp_sg.epsilon(x.indices()) == 1
       x = x.select(sel)
       y = y.select(sel)
       self.cc += CorrelationCoefficientAccumulator(x.data(), y.data())
