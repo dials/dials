@@ -67,8 +67,9 @@ class symmetry_base(object):
       bravais_types_only=False)
     self.cb_op_min_best = self.subgroups.result_groups[0]['cb_op_inp_best']
     self.lattice_group = self.subgroups.result_groups[0]['best_subsym'].space_group()
-    self.lattice_group = self.lattice_group.change_basis(self.cb_op_min_best.inverse())
-    self.patterson_group = self.lattice_group.build_derived_patterson_group()
+    self.lattice_group = self.lattice_group.change_basis(self.cb_op_min_best.inverse()).make_tidy()
+    self.patterson_group = self.lattice_group.build_derived_patterson_group().make_tidy()
+    logger.info('Patterson group: %s' % self.patterson_group.info())
 
     sel = self.patterson_group.epsilon(self.intensities.indices()) == 1
     self.intensities = self.intensities.select(sel)
