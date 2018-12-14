@@ -234,8 +234,7 @@ def run(args):
       S.set_orientation(expt.crystal.get_B())
       S.symmetrize()
       expt.crystal.set_B(S.orientation.reciprocal_matrix())
-      reindexed_refl = copy.deepcopy(reflections[i]).select(
-        ~expt.crystal.get_space_group().is_sys_absent(reflections[i]['miller_index']))
+      reindexed_refl = copy.deepcopy(reflections[i])
       reindexed_refl['miller_index'] = cb_op_inp_best.apply(
         reindexed_refl['miller_index'])
       reindexed_reflections.extend(reindexed_refl)
