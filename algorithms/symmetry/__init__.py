@@ -207,7 +207,8 @@ class symmetry_base(object):
         min_i_mean_over_sigma_mean is not None or min_cc_half is not None):
       from dials.util import Resolutionizer
       rparams = Resolutionizer.phil_defaults.extract().resolutionizer
-      rparams.nbins = 20
+      rparams.nbins = 100
+      rparams.plot = False
       resolutionizer = Resolutionizer.resolutionizer(self.intensities, rparams)
       d_min_isigi = 0
       d_min_cc_half = 0
