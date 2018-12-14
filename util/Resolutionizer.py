@@ -484,7 +484,10 @@ class resolutionizer(object):
       try:
         r_isigma = 1.0 / math.sqrt(interpolate_value(s_s, isigma_f, limit))
       except Exception:
-        r_isigma = 1.0 / math.sqrt(flex.max(s_s))
+        if limit > max(isigma_f):
+          r_isigma = 1.0 / math.sqrt(flex.min(s_s))
+        else:
+          r_isigma = 1.0 / math.sqrt(flex.max(s_s))
 
     if self._params.plot:
       plot = resolution_plot(ylabel='Unmerged <I>/<sigma>')
