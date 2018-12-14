@@ -55,12 +55,17 @@ class SpotFrame(XrayFrame) :
         raise RuntimeError("No imageset could be constructed")
 
     self.reflections = kwds["reflections"]
+
     del kwds["datablock"]; del kwds["experiments"]; del kwds["reflections"] #otherwise wx complains
 
     # Store the list of images we can view
     self.images = ImageCollectionWithSelection()
 
     super(SpotFrame, self).__init__(*args, **kwds)
+
+    # If we have only one imageset, unindexed filtering becomes easier
+    self.have_one_imageset = len(set(self.imagesets)) <= 1
+
     self.viewer.reflections = self.reflections
     self.viewer.frames = self.imagesets
     self.dials_spotfinder_layers = []
@@ -1086,6 +1091,54 @@ class SpotFrame(XrayFrame) :
     for rd, m in zip(raw_data, mask):
       rd.set_selected(~m, -2)
 
+  def __get_imageset_filter(self, reflections, imageset):
+    """Get a filter to ensure only reflections from an imageset.
+
+    This is not a well-defined problem because of unindexed reflections
+    - any unindexed reflections never get assigned an experiment. Using the
+    imageset_id column you can disentangle this, but but at integration this
+    data is currently not copied. This means that you can separate, but only if
+    there is a single imageset.
+
+    Args:
+        reflections (dials.array_family.flex.reflection_table):
+            The reflections table to filter
+        imageset (dxtbx.imageset.ImageSet):
+            The imageset to filter reflections to
+
+    Returns:
+        (scitbx.array_family.flex.bool or None):
+            The selection, or None if there is nothing to select
+    """
+    reflections_id = self.reflections.index(reflections)
+    experimentlist = self.experiments[reflections_id]
+
+    # If this imageset is not in this experiment, then skip
+    if imageset not in experimentlist.imagesets():
+      return None
+
+    if "imageset_id" in reflections:
+      # Only choose reflections that match this imageset
+      imageset_id = experimentlist.imagesets().index(imageset)
+      selection = (reflections["imageset_id"] == imageset_id)
+    elif self.have_one_imageset:
+      # If one imageset, no filtering is necessary
+      selection = flex.bool(len(reflections), True)
+    else:
+      # Fallback:
+      # Do filtering in a way that cannot handle complex unindexed reflections
+      # Get the experiment IDs of every experiment with this imageset
+      exp_ids = [
+        i for i, exp in enumerate(experimentlist) if exp.imageset == imageset
+      ]
+      # No way to tell - don't show any unindexed
+      selection = flex.bool(len(reflections), False)
+      # OR together selections for all ids that have this imageset
+      for eid in exp_ids:
+        selection = selection | (reflections["id"] == eid)
+
+    return selection
+
   def get_spotfinder_data(self):
     from scitbx.array_family import flex
     import math
@@ -1131,20 +1184,12 @@ class SpotFrame(XrayFrame) :
 
     for ref_list_id, ref_list in enumerate(self.reflections):
 
-      # If we have experiments, we could have imagesets that do not apply
-      if self.experiments:
-        # Get the matching experiments list for this reflection table
-        experimentlist = self.experiments[ref_list_id]
-
-        # Only choose reflections from the current imageset
-        # If this imageset is not in this experiment, then skip
-        if imageset not in experimentlist.imagesets():
+      # If we have more than one imageset, then we could be on the wrong one
+      if not self.have_one_imageset:
+        exp_filter = self.__get_imageset_filter(ref_list, imageset)
+        if exp_filter is None:
           continue
-
-        # Only choose reflections that match this imageset
-        imageset_id = experimentlist.imagesets().index(imageset)
-        ref_list = ref_list.select(ref_list["imageset_id"] == imageset_id)
-
+        ref_list = ref_list.select(exp_filter)
 
       if self.settings.show_indexed:
         indexed_sel = ref_list.get_flags(ref_list.flags.indexed,
@@ -1219,7 +1264,8 @@ class SpotFrame(XrayFrame) :
             x1_, y1_ = map_coords(x1, y1, panel)
             # Change shoebox colour depending on index id
             my_attrs = dict(shoebox_dict)
-            if reflection["flags"] & ref_list.flags.indexed > 0:
+            # Reflections with *only* strong set should get default
+            if not (reflection["flags"] == ref_list.flags.strong):
               my_attrs["color"] = self.prediction_colours[reflection['id']]
             lines = [(((x0_, y0_), (x0_, y1_)), my_attrs),
                      (((x0_, y1_), (x1_, y1_)), my_attrs),
