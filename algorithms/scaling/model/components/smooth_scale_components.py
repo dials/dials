@@ -116,11 +116,10 @@ class SmoothMixin(object):
 class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
   """A smoothly varying scale component in one dimension."""
 
-  def __init__(self, initial_values, col_name, parameter_esds=None):
+  def __init__(self, initial_values, parameter_esds=None):
     super(SmoothScaleComponent1D, self).__init__(initial_values,
       parameter_esds)
     self._normalised_values = []
-    self._col_name = col_name
 
   def set_new_parameters(self, new_parameters):
     """Set new parameters of a different length i.e. after batch handling"""
@@ -137,19 +136,18 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
     a spacing of 1."""
     return self._normalised_values
 
-  @property
-  def col_name(self):
-    """The column name to use to obtain normalised coordinates from a
-    reflection table."""
-    return self._col_name
+  @ScaleComponentBase.data.setter
+  def data(self, data):
+    assert set(data.keys()) == set(['x']), set(data.keys())
+    self._data = data
 
-  def update_reflection_data(self, reflection_table, selection=None,
+  def update_reflection_data(self, selection=None,
     block_selections=None):
     """Set the normalised coordinate values and configure the smoother."""
     self._normalised_values = []
     self._inverse_scales = []
     self._n_refl = []
-    normalised_values = reflection_table[self._col_name]
+    normalised_values = self.data['x']
     if selection:
       normalised_values = normalised_values.select(selection)
     # Make sure zeroed correctly.
@@ -214,8 +212,8 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
   '''Subclass of SmoothScaleComponent1D to implement a smoothly
   varying B-factor correction.'''
 
-  def __init__(self, initial_values, col_name, parameter_esds=None):
-    super(SmoothBScaleComponent1D, self).__init__(initial_values, col_name,
+  def __init__(self, initial_values, parameter_esds=None):
+    super(SmoothBScaleComponent1D, self).__init__(initial_values,
       parameter_esds)
     self._d_values = []
 
@@ -224,21 +222,24 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
     """The current set of d-values associated with this component."""
     return self._d_values
 
-  def update_reflection_data(self, reflection_table, selection=None,
+  @ScaleComponentBase.data.setter
+  def data(self, data):
+    assert set(data.keys()) == set(['x', 'd']), set(data.keys())
+    self._data = data
+
+  def update_reflection_data(self, selection=None,
     block_selections=None):
     super(SmoothBScaleComponent1D, self).update_reflection_data(
-      reflection_table, selection, block_selections)
+      selection, block_selections)
     self._d_values = []
+    data = self.data['d']
     if selection:
-      d_values = reflection_table['d'].select(selection)
-    else:
-      d_values = reflection_table['d']
+      data = data.select(selection)
     if block_selections:
-      block_selection_list = block_selections
-      for sel in block_selection_list:
-        self._d_values.append(d_values.select(sel))
+      for sel in block_selections:
+        self._d_values.append(data.select(sel))
     else:
-      self._d_values.append(d_values)
+      self._d_values.append(data)
 
   def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
     sdctuple = super(SmoothBScaleComponent1D, self).calculate_scales_and_derivatives(block_id,
@@ -278,16 +279,20 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
   initial values are passed as a 1D array, and shape is a 2-tuple
   indicating the number of parameters in each dimension."""
 
-  def __init__(self, initial_values, shape, col_names, parameter_esds=None):
+  def __init__(self, initial_values, shape, parameter_esds=None):
     assert len(initial_values) == (shape[0] * shape[1]), '''The shape
     information to initialise a 2D smoother is inconsistent with the length
     of the initial parameter list.'''
     super(SmoothScaleComponent2D, self).__init__(initial_values, parameter_esds)
     self._n_x_params = shape[0]
     self._n_y_params = shape[1]
-    self._col_names = col_names
     self._normalised_x_values = None
     self._normalised_y_values = None
+
+  @ScaleComponentBase.data.setter
+  def data(self, data):
+    assert set(data.keys()) == set(['x', 'y']), set(data.keys())
+    self._data = data
 
   def set_new_parameters(self, new_parameters, shape):
     """Set new parameters of a different length i.e. after batch handling"""
@@ -297,12 +302,6 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
     self._n_params = len(self._parameters)
     self._n_x_params = shape[0]
     self._n_y_params = shape[1]
-
-  @property
-  def col_names(self):
-    """The column names used to obtain normalised coordinates from a
-    reflection table."""
-    return self._col_names
 
   @property
   def n_x_params(self):
@@ -324,7 +323,7 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
     """The normalised coordinate values in the second dimension."""
     return self._normalised_y_values
 
-  def update_reflection_data(self, reflection_table, selection=None,
+  def update_reflection_data(self, selection=None,
     block_selections=None):
     '''control access to setting all of reflection data at once'''
 
@@ -332,10 +331,11 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
     self._normalised_y_values = []
     self._inverse_scales = []
     self._n_refl = []
+    normalised_x_values = self.data['x']
+    normalised_y_values = self.data['y']
     if selection:
-      reflection_table = reflection_table.select(selection)
-    normalised_x_values = reflection_table[self._col_names[0]]
-    normalised_y_values = reflection_table[self._col_names[1]]
+      normalised_x_values = normalised_x_values.select(selection)
+      normalised_y_values = normalised_y_values.select(selection)
     normalised_x_values = normalised_x_values - flex.min(normalised_x_values)
     normalised_y_values = normalised_y_values - flex.min(normalised_y_values)
     x_range = [int(flex.min(normalised_x_values)//1),
@@ -408,7 +408,7 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
   initial values are passed as a 1D array, and shape is a 3-tuple
   indicating the number of parameters in each dimension."""
 
-  def __init__(self, initial_values, shape, col_names, parameter_esds=None):
+  def __init__(self, initial_values, shape, parameter_esds=None):
     assert len(initial_values) == (shape[0] * shape[1] * shape[2]), '''The
     shape information to initialise a 3D smoother is inconsistent with the
     length of the initial parameter list.'''
@@ -420,7 +420,6 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
     self._normalised_x_values = None
     self._normalised_y_values = None
     self._normalised_z_values = None
-    self._col_names = col_names
 
   def set_new_parameters(self, new_parameters, shape):
     """Set new parameters of a different length i.e. after batch handling"""
@@ -432,11 +431,10 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
     self._n_y_params = shape[1]
     self._n_z_params = shape[2]
 
-  @property
-  def col_names(self):
-    """The column names used to obtain normalised coordinates from a
-    reflection table."""
-    return self._col_names
+  @ScaleComponentBase.data.setter
+  def data(self, data):
+    assert set(data.keys()) == set(['x', 'y', 'z']), set(data.keys())
+    self._data = data
 
   @property
   def n_x_params(self):
@@ -468,7 +466,7 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
     """The normalised coordinate values in the third dimension."""
     return self._normalised_z_values
 
-  def update_reflection_data(self, reflection_table, selection=None,
+  def update_reflection_data(self, selection=None,
     block_selections=None):
     '''control access to setting all of reflection data at once'''
     self._normalised_x_values = []
@@ -476,11 +474,13 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
     self._normalised_z_values = []
     self._inverse_scales = []
     self._n_refl = []
+    normalised_x_values = self.data['x']
+    normalised_y_values = self.data['y']
+    normalised_z_values = self.data['z']
     if selection:
-      reflection_table = reflection_table.select(selection)
-    normalised_x_values = reflection_table[self._col_names[0]]
-    normalised_y_values = reflection_table[self._col_names[1]]
-    normalised_z_values = reflection_table[self._col_names[2]]
+      normalised_x_values = normalised_x_values.select(selection)
+      normalised_y_values = normalised_y_values.select(selection)
+      normalised_z_values = normalised_z_values.select(selection)
     """Set the normalised coordinate values and configure the smoother."""
     normalised_x_values = normalised_x_values - flex.min(normalised_x_values)
     normalised_y_values = normalised_y_values - flex.min(normalised_y_values)
