@@ -67,7 +67,9 @@ def test_SingleScaleFactor():
   assert list(KSF.parameters) == [2.0]
   rt = flex.reflection_table()
   rt['d'] = flex.double([1.0, 1.0])
-  KSF.update_reflection_data(rt)
+  rt['id'] = flex.int([0, 0])
+  KSF.data = {'id' : rt['id']}
+  KSF.update_reflection_data()
   assert KSF.n_refl == [2]
   s, d = KSF.calculate_scales_and_derivatives()
   assert list(s) == [2.0, 2.0]
@@ -75,7 +77,7 @@ def test_SingleScaleFactor():
   assert d[1, 0] == 1
   s, d, c = KSF.calculate_scales_and_derivatives(curvatures=True)
   assert c.non_zeroes == 0
-  KSF.update_reflection_data(rt, flex.bool([True, False])) # Test selection.
+  KSF.update_reflection_data(flex.bool([True, False])) # Test selection.
   assert KSF.n_refl[0] == 1
 
 def test_SingleBScaleFactor():
@@ -85,7 +87,9 @@ def test_SingleBScaleFactor():
   assert list(BSF.parameters) == [0.0]
   rt = flex.reflection_table()
   rt['d'] = flex.double([1.0, 1.0])
-  BSF.update_reflection_data(rt)
+  rt['id'] = flex.int([0, 0])
+  BSF.data = {'d' : rt['d'], 'id' : rt['id']}
+  BSF.update_reflection_data()
   assert BSF.n_refl == [2]
   assert list(BSF.d_values[0]) == [1.0, 1.0]
   s, d = BSF.calculate_scales_and_derivatives()
@@ -95,7 +99,7 @@ def test_SingleBScaleFactor():
   s, d, c = BSF.calculate_scales_and_derivatives(curvatures=True)
   assert c[0, 0] == 0.25
   assert c[1, 0] == 0.25
-  BSF.update_reflection_data(rt, flex.bool([True, False])) # Test selection.
+  BSF.update_reflection_data(flex.bool([True, False])) # Test selection.
   assert BSF.n_refl[0] == 1
 
 def test_SHScalefactor():
@@ -113,8 +117,8 @@ def test_SHScalefactor():
   harmonic_values[0, 0] = initial_val
   harmonic_values[1, 0] = initial_val
   harmonic_values[2, 0] = initial_val
-  SF.sph_harm_table = harmonic_values
-  SF.update_reflection_data(None, None)
+  SF.data = {'sph_harm_table' : harmonic_values}
+  SF.update_reflection_data()
   print(SF.harmonic_values)
   assert SF.harmonic_values[0][0, 0] == initial_val
   assert SF.harmonic_values[0][0, 1] == initial_val
@@ -132,8 +136,8 @@ def test_SHScalefactor():
   harmonic_values[0, 0] = initial_val
   harmonic_values[0, 1] = initial_val
   harmonic_values[2, 0] = initial_val
-  SF.sph_harm_table = harmonic_values
-  SF.update_reflection_data(None, flex.bool([False, True]))
+  SF.data = {'sph_harm_table' : harmonic_values}
+  SF.update_reflection_data(flex.bool([False, True]))
   assert SF.harmonic_values[0].n_rows == 1
   assert SF.harmonic_values[0].n_cols == 3
   assert SF.n_refl[0] == 1
@@ -160,12 +164,12 @@ def test_SmoothMixin():
 
 def test_SmoothScaleFactor1D():
   """Test for the gaussian smoothed 1D scalefactor class."""
-  SF = SmoothScaleComponent1D(flex.double(5, 1.1), col_name='norm_rot')
+  SF = SmoothScaleComponent1D(flex.double(5, 1.1))
   assert SF.n_params == 5
   assert list(SF.parameters) == [1.1, 1.1, 1.1, 1.1, 1.1]
-  rt = flex.reflection_table()
-  rt['norm_rot'] = flex.double([0.5, 1.0, 2.5, 0.0])
-  SF.update_reflection_data(rt)
+  norm_rot = flex.double([0.5, 1.0, 2.5, 0.0])
+  SF.data = {'x' : norm_rot}
+  SF.update_reflection_data()
   assert list(SF.normalised_values[0]) == [0.5, 1.0, 2.5, 0.0]
   assert list(SF.inverse_scales[0]) == [1.0, 1.0, 1.0, 1.0]
   SF.smoother.set_smoothing(4, 1.0)
@@ -204,13 +208,13 @@ def test_SmoothScaleFactor1D():
 
 def test_SmoothBScaleFactor1D():
   'test for a gaussian smoothed 1D scalefactor object'
-  SF = SmoothBScaleComponent1D(flex.double(5, 0.0), col_name='norm_rot')
+  SF = SmoothBScaleComponent1D(flex.double(5, 0.0))
   assert SF.n_params == 5
   assert list(SF.parameters) == [0.0] * 5
-  rt = flex.reflection_table()
-  rt['norm_rot'] = flex.double([0.5, 1.0, 2.5, 0.0])
-  rt['d'] = flex.double([1.0, 1.0, 1.0, 1.0])
-  SF.update_reflection_data(rt)
+  norm_rot = flex.double([0.5, 1.0, 2.5, 0.0])
+  d = flex.double([1.0, 1.0, 1.0, 1.0])
+  SF.data = {'x' : norm_rot, 'd' : d}
+  SF.update_reflection_data()
   assert list(SF.normalised_values[0]) == [0.5, 1.0, 2.5, 0.0]
   assert list(SF.d_values[0]) == [1.0, 1.0, 1.0, 1.0]
   assert list(SF.inverse_scales[0]) == [1.0, 1.0, 1.0, 1.0]
@@ -248,23 +252,22 @@ def test_SmoothBScaleFactor1D():
 def test_SmoothScaleFactor2D():
   """Test the 2D smooth scale factor class."""
   with pytest.raises(AssertionError): # Test incorrect shape initialisation
-    SF = SmoothScaleComponent2D(flex.double(30, 1.1), shape=(5, 5),
-    col_names=['norm_rot', 'norm_time'])
-  SF = SmoothScaleComponent2D(flex.double(30, 1.1), shape=(6, 5),
-    col_names=['norm_rot', 'norm_time'])
+    SF = SmoothScaleComponent2D(flex.double(30, 1.1), shape=(5, 5))
+  SF = SmoothScaleComponent2D(flex.double(30, 1.1), shape=(6, 5))
   assert SF.n_x_params == 6
   assert SF.n_y_params == 5
   assert SF.n_params == 30
 
   assert list(SF.parameters) == [1.1]*30
   rt = flex.reflection_table()
-  rt['norm_rot'] = flex.double(30, 0.5)
-  rt['norm_time'] = flex.double(30, 0.5)
-  rt['norm_rot'][0] = 0.0
-  rt['norm_time'][0] = 0.0
-  rt['norm_rot'][29] = 3.99
-  rt['norm_time'][29] = 2.99
-  SF.update_reflection_data(rt)
+  norm_rot = flex.double(30, 0.5)
+  norm_time = flex.double(30, 0.5)
+  norm_rot[0] = 0.0
+  norm_time[0] = 0.0
+  norm_rot[29] = 3.99
+  norm_time[29] = 2.99
+  SF.data = {'x' : norm_rot, 'y' : norm_time}
+  SF.update_reflection_data()
   #assert list(SF.normalised_x_values) == list(flex.double(
   #  [0.5, 0.5, 0.5, 0.0, 0.0, 0.0]))
   #assert list(SF.normalised_y_values) == list(flex.double(
@@ -279,16 +282,16 @@ def test_SmoothScaleFactor2D():
   assert approx_equal(d[1, 7], (exp(-0.0)/sumexp))
 
   # Test again with a small number of params to check different behaviour.
-  SF = SmoothScaleComponent2D(flex.double(6, 1.1), shape=(3, 2),
-    col_names=['norm_rot', 'norm_time'])
+  SF = SmoothScaleComponent2D(flex.double(6, 1.1), shape=(3, 2))
   rt = flex.reflection_table()
-  rt['norm_rot'] = flex.double(6, 0.5)
-  rt['norm_time'] = flex.double(6, 0.5)
-  rt['norm_rot'][0] = 0.0
-  rt['norm_time'][0] = 0.0
-  rt['norm_rot'][5] = 1.99
-  rt['norm_time'][5] = 0.99
-  SF.update_reflection_data(rt)
+  norm_rot = flex.double(6, 0.5)
+  norm_time = flex.double(6, 0.5)
+  norm_rot[0] = 0.0
+  norm_time[0] = 0.0
+  norm_rot[5] = 1.99
+  norm_time[5] = 0.99
+  SF.data = {'x' : norm_rot, 'y' : norm_time}
+  SF.update_reflection_data()
   SF.smoother.set_smoothing(4, 1.0) #will average 3,2 in x,y dims.
   assert list(SF.smoother.x_positions()) == [0.0, 1.0, 2.0]
   assert list(SF.smoother.y_positions()) == [0.0, 1.0]
@@ -322,27 +325,25 @@ def test_SmoothScaleFactor2D():
 def test_SmoothScaleFactor3D():
   """Test the 2D smooth scale factor class."""
   with pytest.raises(AssertionError): # Test incorrect shape initialisation
-    SF = SmoothScaleComponent3D(flex.double(150, 1.1), shape=(5, 5, 5),
-    col_names=['norm_rot', 'norm_time', 'norm_z'])
-  SF = SmoothScaleComponent3D(flex.double(150, 1.1), shape=(6, 5, 5),
-    col_names=['norm_rot', 'norm_time', 'norm_z'])
+    SF = SmoothScaleComponent3D(flex.double(150, 1.1), shape=(5, 5, 5))
+  SF = SmoothScaleComponent3D(flex.double(150, 1.1), shape=(6, 5, 5))
   assert SF.n_x_params == 6
   assert SF.n_y_params == 5
   assert SF.n_z_params == 5
   assert SF.n_params == 150
 
   assert list(SF.parameters) == [1.1]*150
-  rt = flex.reflection_table()
-  rt['norm_rot'] = flex.double(150, 0.5)
-  rt['norm_time'] = flex.double(150, 0.5)
-  rt['norm_z'] = flex.double(150, 0.5)
-  rt['norm_rot'][0] = 0.0
-  rt['norm_time'][0] = 0.0
-  rt['norm_z'][0] = 0.0
-  rt['norm_rot'][149] = 3.99
-  rt['norm_time'][149] = 2.99
-  rt['norm_z'][149] = 2.99
-  SF.update_reflection_data(rt)
+  norm_rot = flex.double(150, 0.5)
+  norm_time = flex.double(150, 0.5)
+  norm_z = flex.double(150, 0.5)
+  norm_rot[0] = 0.0
+  norm_time[0] = 0.0
+  norm_z[0] = 0.0
+  norm_rot[149] = 3.99
+  norm_time[149] = 2.99
+  norm_z[149] = 2.99
+  SF.data = {'x' : norm_rot, 'y' : norm_time, 'z' : norm_z}
+  SF.update_reflection_data()
   SF.smoother.set_smoothing(3, 1.0) #will average 3 in x,y,z dims for test.
   assert list(SF.smoother.x_positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5, 4.5]
   assert list(SF.smoother.y_positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5]

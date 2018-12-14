@@ -144,11 +144,11 @@ class PhysicalScalingModel(ScalingModelBase):
     if 'scale' in configdict['corrections']:
       scale_setup = parameters_dict['scale']
       self._components.update({'scale' : SmoothScaleComponent1D(
-        scale_setup['parameters'], 'norm_rot_angle', scale_setup['parameter_esds'])})
+        scale_setup['parameters'], scale_setup['parameter_esds'])})
     if 'decay' in configdict['corrections']:
       decay_setup = parameters_dict['decay']
       self._components.update({'decay' : SmoothBScaleComponent1D(
-        decay_setup['parameters'], 'norm_time_values', decay_setup['parameter_esds'])})
+        decay_setup['parameters'], decay_setup['parameter_esds'])})
     if 'absorption' in configdict['corrections']:
       absorption_setup = parameters_dict['absorption']
       self._components.update({'absorption' : SHScaleComponent(
@@ -161,21 +161,26 @@ class PhysicalScalingModel(ScalingModelBase):
   def configure_reflection_table(self, reflection_table, experiment, params):
     reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
       * experiment.scan.get_oscillation()[1])
+    user_excl = reflection_table.get_flags(
+      reflection_table.flags.user_excluded_in_scaling)
+    excl_for_scale = reflection_table.get_flags(
+      reflection_table.flags.excluded_for_scaling)
+    possible_refl = ~(user_excl | excl_for_scale)
     if 'scale' in self.components:
-      reflection_table[self.components['scale'].col_name] = (
-        reflection_table['xyzobs.px.value'].parts()[2]
-        * self._configdict['s_norm_fac'])
+      norm = reflection_table['xyzobs.px.value'].parts()[2] * self._configdict['s_norm_fac']
+      self.components['scale'].data = {'x': norm.select(possible_refl)}
     if 'decay' in self.components:
-      reflection_table[self.components['decay'].col_name] = (
-        reflection_table['xyzobs.px.value'].parts()[2]
-        * self._configdict['d_norm_fac'])
+      norm = reflection_table['xyzobs.px.value'].parts()[2] * self._configdict['d_norm_fac']
       self.components['decay'].parameter_restraints = flex.double(
         self.components['decay'].parameters.size(),
         params.parameterisation.decay_restraint)
+      self.components['decay'].data = {'x' : norm.select(possible_refl),
+        'd' : reflection_table['d'].select(possible_refl)}
     if 'absorption' in self.components:
       lmax = self._configdict['lmax']
-      self.components['absorption'].sph_harm_table = sph_harm_table(
-        reflection_table, experiment, lmax)
+      #here just pass in good reflections
+      self.components['absorption'].data['sph_harm_table'] = sph_harm_table(
+        reflection_table.select(possible_refl), experiment, lmax)
       surface_weight = self._configdict['abs_surface_weight']
       parameter_restraints = flex.double([])
       for i in range(1, lmax+1):
@@ -235,7 +240,6 @@ class PhysicalScalingModel(ScalingModelBase):
       sel = (joined_norm_vals == min(joined_norm_vals))
       initial_scale = joined_inv_scales.select(sel)[0]
       self.components['scale'].parameters /= initial_scale
-      #self.components['scale'].calculate_scales_and_derivatives()
       logger.info('\nThe "scale" model component has been rescaled, so that the\n'
         'initial scale is 1.0.')
     if 'decay' in self.components:
@@ -251,7 +255,6 @@ class PhysicalScalingModel(ScalingModelBase):
                   * 2.0 * (joined_d_vals**2))
       self.components['decay'].parameters -= flex.double(
         self.components['decay'].n_params, maxB)
-      #self.components['decay'].calculate_scales_and_derivatives()
       logger.info('The "decay" model component has been rescaled, so that the\n'
         'maximum B-factor applied to any reflection is 0.0.')
 
@@ -296,49 +299,50 @@ class ArrayScalingModel(ScalingModelBase):
       decay_setup = parameters_dict['decay']
       self._components.update({'decay' : SmoothScaleComponent2D(
         decay_setup['parameters'], shape=(configdict['n_res_param'],
-        configdict['n_time_param']), col_names=['normalised_res_values',
-        'norm_time_values'], parameter_esds=decay_setup['parameter_esds'])})
+        configdict['n_time_param']), parameter_esds=decay_setup['parameter_esds'])})
     if 'absorption' in configdict['corrections']:
       abs_setup = parameters_dict['absorption']
       self._components.update({'absorption' : SmoothScaleComponent3D(
         abs_setup['parameters'], shape=(configdict['n_x_param'],
         configdict['n_y_param'], configdict['n_time_param']),
-        col_names=['normalised_x_abs_values', 'normalised_y_abs_values',
-          'norm_time_values'],
         parameter_esds=abs_setup['parameter_esds'])})
     if 'modulation' in configdict['corrections']:
       mod_setup = parameters_dict['modulation']
       self._components.update({'modulation' : SmoothScaleComponent2D(
         mod_setup['parameters'], shape=(configdict['n_x_mod_param'],
-        configdict['n_y_mod_param']), col_names=['normalised_x_det_values',
-        'normalised_y_det_values'], parameter_esds=mod_setup['parameter_esds'])})
+        configdict['n_y_mod_param']), parameter_esds=mod_setup['parameter_esds'])})
 
   @property
   def consecutive_refinement_order(self):
     return [['decay'], ['absorption'], ['modulation']]
 
   def configure_reflection_table(self, reflection_table, _, __):
-    refl_table = reflection_table
-    xyz = refl_table['xyzobs.px.value'].parts()
-    refl_table['norm_time_values'] = (xyz[2] * self.configdict['time_norm_fac'])
+    xyz = reflection_table['xyzobs.px.value'].parts()
+    user_excl = reflection_table.get_flags(
+      reflection_table.flags.user_excluded_in_scaling)
+    excl_for_scale = reflection_table.get_flags(
+      reflection_table.flags.excluded_for_scaling)
+    possible_refl = ~(user_excl | excl_for_scale)
+    norm_time = (xyz[2] * self.configdict['time_norm_fac']).select(possible_refl)
     if 'decay' in self.components:
-      d0_sel = refl_table['d'] == 0.0
-      refl_table['d'].set_selected(d0_sel, 1.0)  #set for now, then set back to zero later
-      refl_table['normalised_res_values'] = (((1.0 / (refl_table['d']**2))
-        - self.configdict['resmin']) / self.configdict['res_bin_width'])
-      refl_table['normalised_res_values'].set_selected(d0_sel, 0.0001)
-      refl_table['d'].set_selected(d0_sel, 0.0)
+      d = reflection_table['d'].select(possible_refl)
+      norm_res = (((1.0 / (d**2)) - self.configdict['resmin'])
+        / self.configdict['res_bin_width'])
+      self.components['decay'].data = {'x' : norm_res, 'y': norm_time}
     if 'absorption' in self.components:
-      refl_table['normalised_x_abs_values'] = ((xyz[0]
-        - self.configdict['xmin']) / self.configdict['x_bin_width'])
-      refl_table['normalised_y_abs_values'] = ((xyz[1]
-        - self.configdict['ymin']) / self.configdict['y_bin_width'])
+      norm_x_abs = ((xyz[0] - self.configdict['xmin']) /
+        self.configdict['x_bin_width']).select(possible_refl)
+      norm_y_abs = ((xyz[1] - self.configdict['ymin']) /
+        self.configdict['y_bin_width']).select(possible_refl)
+      self.components['absorption'].data = {'x' : norm_x_abs,
+        'y' : norm_y_abs, 'z': norm_time}
     if 'modulation' in self.components:
-      refl_table['normalised_x_det_values'] = ((xyz[0]
-        - self.configdict['xmin']) / self.configdict['x_det_bin_width'])
-      refl_table['normalised_y_det_values'] = ((xyz[1]
-        - self.configdict['ymin']) / self.configdict['y_det_bin_width'])
-    return refl_table
+      norm_x_det = ((xyz[0] - self.configdict['xmin']) /
+        self.configdict['x_det_bin_width']).select(possible_refl)
+      norm_y_det = ((xyz[1] - self.configdict['ymin']) /
+        self.configdict['y_det_bin_width']).select(possible_refl)
+      self.components['modulation'].data = {'x' : norm_x_det, 'y': norm_y_det}
+    return reflection_table
 
   ##FIXME update to not use reflection table
   def limit_image_range(self, new_image_range):
@@ -432,6 +436,17 @@ class KBScalingModel(ScalingModelBase):
       self._components.update({'decay' : SingleBScaleFactor(
         parameters_dict['decay']['parameters'],
         parameters_dict['decay']['parameter_esds'])})
+
+  def configure_reflection_table(self, reflection_table, experiment, params):
+    user_excl = reflection_table.get_flags(
+      reflection_table.flags.user_excluded_in_scaling)
+    excl_for_scale = reflection_table.get_flags(
+      reflection_table.flags.excluded_for_scaling)
+    possible_refl = ~(user_excl | excl_for_scale)
+    if 'scale' in self.components:
+      self.components['scale'].data = {'id': reflection_table['id'].select(possible_refl)}
+    if 'decay' in self.components:
+      self.components['decay'].data = {'d': reflection_table['d'].select(possible_refl)}
 
   @property
   def consecutive_refinement_order(self):

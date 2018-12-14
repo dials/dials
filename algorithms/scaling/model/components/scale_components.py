@@ -37,6 +37,18 @@ class ScaleComponentBase(object):
     self._derivatives = []
     self._curvatures = []
     self._parameter_restraints = None
+    self._data = {}
+
+  @property
+  def data(self):
+    """A dictionary to hold the data relevant to the particular component.
+    This is designed to be a dict of arrays which can be selected from when
+    updating the component (i.e. selecting subsets)"""
+    return self._data
+
+  @data.setter
+  def data(self, data):
+    self._data = data
 
   @property
   def parameter_restraints(self):
@@ -121,7 +133,7 @@ class ScaleComponentBase(object):
     return self._curvatures
 
   @abc.abstractmethod
-  def update_reflection_data(self, reflection_table, selection=None,
+  def update_reflection_data(self, selection=None,
     block_selections=None):
     """Add or change the relevant reflection data for the component.
 
@@ -146,20 +158,23 @@ class SingleScaleFactor(ScaleComponentBase):
       for a single global scale component'''
     super(SingleScaleFactor, self).__init__(initial_values, parameter_esds)
 
-  def update_reflection_data(self, reflection_table, selection=None,
+  @ScaleComponentBase.data.setter
+  def data(self, data):
+    assert set(data.keys()) == set(['id']), set(data.keys())
+    self._data = data
+
+  def update_reflection_data(self, selection=None,
     block_selections=None):
     """Add reflection data to the component, only n_reflections needed."""
     self._n_refl = []
+    data = self.data['id']
     if selection:
-      reflections = reflection_table.select(selection)
-    else:
-      reflections = reflection_table
+      data = data.select(selection)
     if block_selections:
-      block_selection_list = block_selections
-      for sel in block_selection_list:
-        self._n_refl.append(reflections.select(sel).size())
+      for sel in block_selections:
+        self._n_refl.append(data.select(sel).size())
     else:
-      self._n_refl.append(reflections.size())
+      self._n_refl.append(data.size())
 
   def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
     scales = flex.double(self.n_refl[block_id],
@@ -187,24 +202,27 @@ class SingleBScaleFactor(ScaleComponentBase):
     """The current set of d-values associated with this component."""
     return self._d_values
 
-  def update_reflection_data(self, reflection_table, selection=None,
+  @ScaleComponentBase.data.setter
+  def data(self, data):
+    assert set(data.keys()) == set(['id', 'd']), set(data.keys())
+    self._data = data
+
+  def update_reflection_data(self, selection=None,
     block_selections=None):
     """"Add reflection data to the component, only the d-values and number
     of reflections are needed."""
     self._n_refl = []
     self._d_values = []
+    data = self.data['d']
     if selection:
-      reflections = reflection_table.select(selection)
-    else:
-      reflections = reflection_table
+      data = data.select(selection)
     if block_selections:
-      block_selection_list = block_selections
-      for i, sel in enumerate(block_selection_list):
-        self._d_values.append(reflections['d'].select(sel))
+      for i, sel in enumerate(block_selections):
+        self._d_values.append(data.select(sel))
         self._n_refl.append(self._d_values[i].size())
     else:
-      self._d_values.append(reflections['d'])
-      self._n_refl.append(reflections.size())
+      self._d_values.append(data)
+      self._n_refl.append(data.size())
 
   def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
     scales = flex.exp(flex.double(
@@ -236,7 +254,6 @@ class SHScaleComponent(ScaleComponentBase):
   def __init__(self, initial_values, parameter_esds=None):
     super(SHScaleComponent, self).__init__(initial_values, parameter_esds)
     self._harmonic_values = []
-    self._sph_harm_table = None
     self._parameter_restraints = None
 
   @property
@@ -247,12 +264,17 @@ class SHScaleComponent(ScaleComponentBase):
   @property
   def sph_harm_table(self):
     """A matrix of the full harmonic coefficient for a reflection table."""
-    return self._sph_harm_table
+    return self._data['sph_harm_table']
 
   @sph_harm_table.setter
   def sph_harm_table(self, sht):
     """Set the spherical harmonic table."""
-    self._sph_harm_table = sht
+    self._data['sph_harm_table'] = sht
+
+  @ScaleComponentBase.data.setter
+  def data(self, data):
+    assert set(data.keys()) == set(['sph_harm_table']), set(data.keys())
+    self._data = data
 
   def calculate_restraints(self):
     residual = self.parameter_restraints * (self._parameters*self._parameters)
@@ -265,12 +287,12 @@ class SHScaleComponent(ScaleComponentBase):
       jacobian[i, i] = +1.0
     return self._parameters, jacobian, self._parameter_restraints
 
-  def update_reflection_data(self, _, selection=None, block_selections=None):
+  def update_reflection_data(self, selection=None, block_selections=None):
     """Update the spherical harmonic coefficients."""
     self._n_refl = []
     self._harmonic_values = []
     if selection:
-      sel_sph_harm_table = self.sph_harm_table.select_columns(
+      sel_sph_harm_table = self.data['sph_harm_table'].select_columns(
         selection.iselection())
       if block_selections:
         block_selection_list = block_selections
@@ -281,8 +303,14 @@ class SHScaleComponent(ScaleComponentBase):
       else:
         self._harmonic_values.append(sel_sph_harm_table.transpose())
         self._n_refl.append(self._harmonic_values[0].n_rows)
+    elif block_selections:
+      block_selection_list = block_selections
+      for i, sel in enumerate(block_selection_list):
+        block_sph_harm_table = self.data['sph_harm_table'].select_columns(sel)
+        self._harmonic_values.append(block_sph_harm_table.transpose())
+        self.n_refl.append(self._harmonic_values[i].n_rows)
     else:
-      self._harmonic_values.append(self.sph_harm_table.transpose())
+      self._harmonic_values.append(self.data['sph_harm_table'].transpose())
       self._n_refl.append(self._harmonic_values[0].n_rows)
 
   def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
