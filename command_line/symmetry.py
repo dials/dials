@@ -240,7 +240,8 @@ def run(args):
       reindexed_reflections.extend(reindexed_refl)
     logger.info('Saving reindexed experiments to %s' % params.output.experiments)
     dump.experiment_list(reindexed_experiments, params.output.experiments)
-    logger.info('Saving reindexed reflections to %s' % params.output.reflections)
+    logger.info('Saving %s reindexed reflections to %s' % (
+      len(reindexed_reflections), params.output.reflections))
     reindexed_reflections.as_pickle(params.output.reflections)
 
   elif params.output.suffix is not None:
