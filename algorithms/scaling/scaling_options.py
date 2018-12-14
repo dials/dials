@@ -4,7 +4,10 @@ Phil scope of options for scaling.
 import iotbx.phil
 
 phil_scope = iotbx.phil.parse('''
-
+  overwrite_existing_models = False
+    .type = bool
+    .help = "If True, create new scaling models for all datasets"
+    .expert_level = 0
   parameterisation {
     scale_term = True
       .type = bool

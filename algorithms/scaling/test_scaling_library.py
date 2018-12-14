@@ -15,7 +15,7 @@ from dials.algorithms.scaling.scaling_library import scale_single_dataset,\
   create_scaling_model, create_datastructures_for_structural_model,\
   create_Ih_table, calculate_merging_statistics, calculate_single_merging_stats,\
   choose_scaling_intensities, create_auto_scaling_model
-from dials.algorithms.scaling.model.model import KBScalingModel
+from dials.algorithms.scaling.model.model import KBScalingModel, PhysicalScalingModel
 from dials.algorithms.scaling.model.scaling_model_factory import \
   PhysicalSMFactory
 
@@ -159,6 +159,12 @@ def test_create_scaling_model():
   assert isinstance(new_exp[1].scaling_model, KBScalingModel)
   assert isinstance(new_exp[2].scaling_model, KBScalingModel)
 
+  #Now test overwrite_existing_models option
+  params.overwrite_existing_models = True
+  params.model = 'physical'
+  newer_exp = create_scaling_model(params, new_exp, [rt, rt_2, rt_3])
+  for exp in newer_exp:
+    assert isinstance(exp.scaling_model, PhysicalScalingModel)
 
 def mock_intensity_array_from_cif_file(cif):
   """Mock cif-intensity converter to replace call in create_datastructures..."""
@@ -305,3 +311,9 @@ def test_auto_scaling_model():
   assert len(new_exp[0].scaling_model.components['scale'].parameters) == 12
   assert len(new_exp[0].scaling_model.components['decay'].parameters) == 10
   assert 'absorption' in new_exp[0].scaling_model.components
+
+  #Now test overwrite_existing_models option
+  params.overwrite_existing_models = True
+  params.model = 'KB'
+  newer_exp = create_scaling_model(params, new_exp, [rt])
+  assert isinstance(newer_exp[0].scaling_model, KBScalingModel)

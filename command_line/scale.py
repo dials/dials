@@ -77,10 +77,10 @@ phil_scope = phil.parse('''
     .type = bool
     .help = "Output additional debugging information"
   model = physical array KB
-      .type = choice
-      .help = "Set scaling model to be applied to input datasets without
-               an existing model. "
-      .expert_level = 0
+    .type = choice
+    .help = "Set scaling model to be applied to input datasets without
+            an existing model. "
+    .expert_level = 0
   output {
     log = dials.scale.log
       .type = str

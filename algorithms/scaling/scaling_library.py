@@ -182,11 +182,10 @@ def scale_single_dataset(reflection_table, experiment, params=None,
 def create_auto_scaling_model(params, experiments, reflections):
   """Create a scaling model with auto determined parameterisation."""
   models = experiments.scaling_models()
-  if None in models:
+  if None in models or params.overwrite_existing_models:
     for i, (exp, refl) in enumerate(zip(experiments, reflections)):
       model = experiments.scaling_models()[i]
-      if not model:
-
+      if not model or params.overwrite_existing_models:
         if not exp.scan:
           params.model = 'KB'
         else: # set model physical unless scan < 1.0 degree
@@ -221,7 +220,7 @@ def create_auto_scaling_model(params, experiments, reflections):
 def create_scaling_model(params, experiments, reflections):
   """Create or load a scaling model for multiple datasets."""
   models = experiments.scaling_models()
-  if None in models:#else, don't need to anything if all have models
+  if None in models or params.overwrite_existing_models:#else, don't need to anything if all have models
     factory = None
     for entry_point in pkg_resources.iter_entry_points('dxtbx.scaling_model_ext'):
       if entry_point.name == params.model:
@@ -231,7 +230,7 @@ def create_scaling_model(params, experiments, reflections):
       raise Sorry('Unable to create scaling model of type %s' % params.model)
     for i, (exp, refl) in enumerate(zip(experiments, reflections)):
       model = experiments.scaling_models()[i]
-      if not model:
+      if not model or params.overwrite_existing_models:
         exp.scaling_model = factory.create(params, exp, refl)
   return experiments
 
