@@ -295,8 +295,7 @@ class ScoreSymmetryElement(object):
         reindexed_intensities, assert_is_similar_symmetry=False)
       tmp_sg = sgtbx.space_group().expand_smx(self.sym_op) \
         .info().as_reference_setting().group()
-      sel = tmp_sg.is_sys_absent(x.indices())
-      sel = flex.bool(x.size(), True)
+      sel = ~(tmp_sg.is_sys_absent(x.indices()))
       sel &= tmp_sg.epsilon(x.indices()) == 1
       x = x.select(sel)
       y = y.select(sel)
