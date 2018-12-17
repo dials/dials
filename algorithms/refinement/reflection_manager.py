@@ -12,6 +12,7 @@ principally ReflectionManager."""
 from __future__ import absolute_import, division
 
 from math import pi
+from math import ceil
 import logging
 logger = logging.getLogger(__name__)
 
@@ -34,9 +35,13 @@ from dials.algorithms.refinement.outlier_detection.outlier_base \
   import phil_str as outlier_phil_str
 format_data = {'outlier_phil':outlier_phil_str,}
 phil_str = '''
-    reflections_per_degree = None
+    reflections_per_degree = Auto
       .help = "The number of centroids per degree of the sweep to use in"
-              "refinement. Set to None to use all suitable reflections."
+              "refinement. The default (Auto) uses all reflections unless"
+              "the dataset is wider than a single turn. Then the number of"
+              "reflections may be reduced until a minimum of 100 per degree of"
+              "the sweep is reached to speed up calculations. Set this to None"
+              "to force use all of suitable reflections."
       .type = float(value_min=0.)
       .expert_level = 1
 
@@ -587,8 +592,15 @@ class ReflectionManager(object):
         sweep_range_rad = exp.scan.get_oscillation_range(deg=False)
         width = abs(sweep_range_rad[1] -
                     sweep_range_rad[0]) * RAD2DEG
-        sample_size = int(self._nref_per_degree * width)
-      else: sweep_range_rad = None
+        if self._nref_per_degree is libtbx.Auto:
+          # For multi-turn, set sample size to the greater of the approx nref
+          # in a single turn and 100 reflections per degree
+          turns = width / 360.
+          if turns > 1:
+            approx_nref_1_turn = int(ceil(nrefs / turns))
+            sample_size = int(max(approx_nref_1_turn, 100. * width))
+        else:
+          sample_size = int(self._nref_per_degree * width)
 
       # adjust sample size if below the chosen limit
       sample_size = max(sample_size, self._min_sample_size)
