@@ -341,8 +341,45 @@ class analyse_datasets(symmetry_base):
       'Analysis of cos(angle) between points corresponding to the same datasets:')
     logger.info(table_utils.format(rows, has_header=True))
 
+  def space_group_for_dataset(self, dataset_id, sym_ops):
+    sg = copy.deepcopy(self.input_space_group)
+    ref_sym_op_id = None
+    ref_cluster_id = None
+    for sym_op_id in range(len(sym_ops)):
+      i_cluster = self.cluster_labels[len(self.input_intensities) * sym_op_id + dataset_id]
+      if i_cluster < 0:
+        continue
+      if ref_sym_op_id is None:
+        ref_sym_op_id = sym_op_id
+        ref_cluster_id = i_cluster
+        continue
+      op = sym_ops[ref_sym_op_id].inverse().multiply(sym_ops[sym_op_id])
+      if i_cluster == ref_cluster_id:
+        sg.expand_smx(op.new_denominators(1, 12))
+    return sg.make_tidy()
+
+  def reindexing_ops_for_dataset(self, dataset_id, sym_ops, cosets):
+    reindexing_ops = {}
+    # Number of clusters in labels, ignoring noise if present.
+    n_clusters = len(set(self.cluster_labels)) - (1 if -1 in self.cluster_labels else 0)
+
+    for i_cluster in range(n_clusters):
+      isel = (self.cluster_labels == i_cluster).iselection()
+      dataset_ids = isel % len(self.input_intensities)
+      idx = flex.first_index(dataset_ids, dataset_id)
+      sel = (dataset_ids == dataset_id).iselection()
+      if idx >= 0:
+        sym_op_id = isel[idx] // len(self.input_intensities)
+      for s in sel:
+        sym_op_id = isel[s] // len(self.input_intensities)
+        for partition in cosets.partitions:
+          if sym_ops[sym_op_id] in partition:
+            if i_cluster not in reindexing_ops:
+              reindexing_ops[i_cluster] = partition[0].as_xyz()
+
+    return reindexing_ops
+
   def cluster_analysis(self):
-    from cctbx.sgtbx import cosets
 
     if self.params.cluster.method == 'dbscan':
       self.dbscan_clustering()
@@ -355,9 +392,6 @@ class analyse_datasets(symmetry_base):
     elif self.params.cluster.method == 'seed':
       self.seed_clustering()
 
-    # Number of clusters in labels, ignoring noise if present.
-    n_clusters = len(set(self.cluster_labels)) - (1 if -1 in self.cluster_labels else 0)
-
     cluster_miller_arrays = []
 
     space_groups = []
@@ -369,46 +403,15 @@ class analyse_datasets(symmetry_base):
     space_groups = {}
 
     for dataset_id in range(len(self.input_intensities)):
-      sg = copy.deepcopy(self.input_space_group)
-      ref_sym_op_id = None
-      ref_cluster_id = None
-      for sym_op_id in range(len(sym_ops)):
-        i_cluster = self.cluster_labels[len(self.input_intensities) * sym_op_id + dataset_id]
-        if i_cluster < 0:
-          continue
-        if ref_sym_op_id is None:
-          ref_sym_op_id = sym_op_id
-          ref_cluster_id = i_cluster
-          continue
-        op = sym_ops[ref_sym_op_id].inverse().multiply(sym_ops[sym_op_id])
-        if i_cluster == ref_cluster_id:
-          sg.expand_smx(op.new_denominators(1, 12))
+      space_groups[dataset_id] = self.space_group_for_dataset(
+        dataset_id, sym_ops)
 
-      sg.make_tidy()
-      space_groups[dataset_id] = sg
-
-      coset = cosets.left_decomposition(
+      cosets = sgtbx.cosets.left_decomposition(
         self.target._lattice_group,
-        sg.info().primitive_setting().group())
+        space_groups[dataset_id].info().primitive_setting().group())
 
-      reindexing_ops[dataset_id] = {}
-
-      for i_cluster in range(n_clusters):
-        isel = (self.cluster_labels == i_cluster).iselection()
-        dataset_ids = isel % len(self.input_intensities)
-        idx = flex.first_index(dataset_ids, dataset_id)
-        sel = (dataset_ids == dataset_id).iselection()
-        if idx >= 0:
-          sym_op_id = isel[idx] // len(self.input_intensities)
-        for s in sel:
-          sym_op_id = isel[s] // len(self.input_intensities)
-
-          for partition in coset.partitions:
-            if sym_ops[sym_op_id] in partition:
-              if i_cluster not in reindexing_ops[dataset_id]:
-                reindexing_ops[dataset_id][i_cluster] = partition[0].as_xyz()
-              #else:
-                #assert reindexing_ops[dataset_id][i_cluster] == partition[0].as_xyz()
+      reindexing_ops[dataset_id] = self.reindexing_ops_for_dataset(
+        dataset_id, sym_ops, cosets)
 
     self.space_groups = space_groups
     self.reindexing_ops = reindexing_ops
