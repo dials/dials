@@ -381,16 +381,7 @@ class analyse_datasets(symmetry_base):
 
   def cluster_analysis(self):
 
-    if self.params.cluster.method == 'dbscan':
-      self.dbscan_clustering()
-    elif self.params.cluster.method == 'bisect':
-      self.bisect_clustering()
-    elif self.params.cluster.method == 'minimize_divide':
-      self.minimize_divide_clustering()
-    elif self.params.cluster.method == 'agglomerative':
-      self.agglomerative_clustering()
-    elif self.params.cluster.method == 'seed':
-      self.seed_clustering()
+    self.cluster_labels = self.do_clustering(self.params.cluster.method)
 
     cluster_miller_arrays = []
 
@@ -416,6 +407,19 @@ class analyse_datasets(symmetry_base):
     self.space_groups = space_groups
     self.reindexing_ops = reindexing_ops
 
+  def do_clustering(self, method):
+    if method == 'dbscan':
+      clustering = self.dbscan_clustering
+    elif method == 'bisect':
+      clustering = self.bisect_clustering
+    elif method == 'minimize_divide':
+      clustering = self.minimize_divide_clustering
+    elif method == 'agglomerative':
+      clustering = self.agglomerative_clustering
+    elif method == 'seed':
+      clustering = self.seed_clustering
+    return clustering()
+
   def dbscan_clustering(self):
     from sklearn.preprocessing import StandardScaler
     X = self.coords_reduced.as_numpy_array()
@@ -428,22 +432,24 @@ class analyse_datasets(symmetry_base):
       min_samples=self.params.cluster.dbscan.min_samples
     ).fit(X)
     import numpy as np
-    self.cluster_labels = flex.int(db.labels_.astype(np.int32))
+    return flex.int(db.labels_.astype(np.int32))
 
   def bisect_clustering(self):
     axis = self.params.cluster.bisect.axis
     assert axis < self.coords_reduced.all()[1]
     x = self.coords_reduced[:,axis:axis+1].as_1d()
-    self.cluster_labels = flex.int(x.size(), 0)
-    self.cluster_labels.set_selected(x > 0, 1)
+    cluster_labels = flex.int(x.size(), 0)
+    cluster_labels.set_selected(x > 0, 1)
+    return cluster_labels
 
   def minimize_divide_clustering(self):
     x = self.coords_reduced[:,:1].as_1d()
     y = self.coords_reduced[:,1:2].as_1d()
     from cctbx.merging.brehm_diederichs import minimize_divide
     selection = minimize_divide(x, y).plus_minus()
-    self.cluster_labels = flex.int(x.size(), 0)
-    self.cluster_labels.set_selected(selection, 1)
+    cluster_labels = flex.int(x.size(), 0)
+    cluster_labels.set_selected(selection, 1)
+    return cluster_labels
 
   def agglomerative_clustering(self):
     X = self.coords.as_numpy_array()
@@ -455,7 +461,7 @@ class analyse_datasets(symmetry_base):
       n_clusters=self.params.cluster.agglomerative.n_clusters,
       linkage='average', affinity='cosine')
     model.fit(X)
-    self.cluster_labels = flex.int(model.labels_.astype(np.int32))
+    return flex.int(model.labels_.astype(np.int32))
 
   def seed_clustering(self):
     from dials.algorithms.symmetry.cosym.seed_clustering import seed_clustering
@@ -467,8 +473,7 @@ class analyse_datasets(symmetry_base):
       n_clusters=self.params.cluster.seed.n_clusters,
       plot_prefix=self.params.plot_prefix if self.params.save_plot else None
     )
-    self.cluster_labels = clustering.cluster_labels
-    return self.cluster_labels
+    return clustering.cluster_labels
 
   def plot(self):
     self.target.plot_rij_matrix(plot_name='%srij.png' % self.params.plot_prefix)
