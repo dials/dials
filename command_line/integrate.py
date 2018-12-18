@@ -271,6 +271,7 @@ class Script(object):
     # Match reference with predicted
     if reference:
       all_reference = flex.reflection_table()
+      all_predicted = flex.reflection_table()
       for ii in range(len(experiments)):
         preds = predicted.select(predicted['id']==ii)
         refs = reference.select(reference['id']==ii)
@@ -292,6 +293,8 @@ class Script(object):
           logger.info('')
         rubbish.extend(unmatched)
         all_reference.extend(refs)
+        all_predicted.extend(preds)
+      predicted=all_predicted
       reference=all_reference
 
       if len(experiments) > 1:
