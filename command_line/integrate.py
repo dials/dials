@@ -270,22 +270,29 @@ class Script(object):
 
     # Match reference with predicted
     if reference:
-      matched, reference, unmatched = predicted.match_with_reference(reference)
-      assert(len(matched) == len(predicted))
-      assert(matched.count(True) <= len(reference))
-      if matched.count(True) == 0:
-        raise Sorry('''
-          Invalid input for reference reflections.
-          Zero reference spots were matched to predictions
-        ''')
-      elif len(unmatched) != 0:
-        logger.info('')
-        logger.info('*' * 80)
-        logger.info('Warning: %d reference spots were not matched to predictions' % (
-          len(unmatched)))
-        logger.info('*' * 80)
-        logger.info('')
-      rubbish.extend(unmatched)
+      all_reference = flex.reflection_table()
+      for ii in range(len(experiments)):
+        preds = predicted.select(predicted['id']==ii)
+        refs = reference.select(reference['id']==ii)
+        matched, refs, unmatched = preds.match_with_reference(refs)
+      #matched, reference, unmatched = predicted.match_with_reference(reference)
+        assert(len(matched) == len(preds))
+        assert(matched.count(True) <= len(refs))
+        if matched.count(True) == 0:
+          raise Sorry('''
+            Invalid input for reference reflections.
+            Zero reference spots were matched to predictions
+          ''')
+        elif len(unmatched) != 0:
+          logger.info('')
+          logger.info('*' * 80)
+          logger.info('Warning: %d reference spots were not matched to predictions' % (
+            len(unmatched)))
+          logger.info('*' * 80)
+          logger.info('')
+        rubbish.extend(unmatched)
+        all_reference.extend(refs)
+      reference=all_reference
 
       if len(experiments) > 1:
         # filter out any experiments without matched reference reflections
@@ -335,13 +342,39 @@ class Script(object):
     # Compute the bounding box
     predicted.compute_bbox(experiments)
 
+    all_reflections = flex.reflection_table()
     # Create the integrator
     logger.info("")
-    integrator = IntegratorFactory.create(params, experiments, predicted)
+    # ----------------------------------------------------------------------
+    for ii,experiment in enumerate(experiments):
+      expt = experiments[ii:ii+1]
+      refl = predicted.select(predicted['id']==ii)
+      refl['id'] = flex.int(len(refl),0)
+      integrator = IntegratorFactory.create(params, expt,refl)
 
-    # Integrate the reflections
-    reflections = integrator.integrate()
+      # Integrate the reflections
+      reflections = integrator.integrate()
+      reflections['id'] = flex.int(len(reflections),ii)
 
+
+      # Correct integrated intensities for absorption correction, if necessary
+      for abs_params in params.absorption_correction:
+        if abs_params.apply and abs_params.algorithm == "fuller_kapton":
+          from dials.algorithms.integration.kapton_correction import multi_kapton_correction
+          expt, reflections = multi_kapton_correction(expt, reflections,
+            abs_params.fuller_kapton, logger=logger)()
+
+      # Delete the shoeboxes used for intermediate calculations, if requested
+      if params.integration.debug.delete_shoeboxes and 'shoebox' in reflections:
+        del reflections['shoebox']
+
+      all_reflections.extend(reflections)
+      # Write a report if requested
+      if params.output.report is not None:
+        integrator.report().as_file(params.output.report)
+
+    reflections = all_reflections
+    # ------------------------------------------------------------------------
     # Append rubbish data onto the end
     if rubbish is not None and params.output.include_bad_reference:
       mask = flex.bool(len(rubbish), True)
@@ -350,12 +383,6 @@ class Script(object):
       rubbish.set_flags(mask, rubbish.flags.bad_reference)
       reflections.extend(rubbish)
 
-    # Correct integrated intensities for absorption correction, if necessary
-    for abs_params in params.absorption_correction:
-      if abs_params.apply and abs_params.algorithm == "fuller_kapton":
-        from dials.algorithms.integration.kapton_correction import multi_kapton_correction
-        experiments, reflections = multi_kapton_correction(experiments, reflections,
-          abs_params.fuller_kapton, logger=logger)()
 
     if params.significance_filter.enable:
       from dials.algorithms.integration.stills_significance_filter import SignificanceFilter
@@ -379,17 +406,11 @@ class Script(object):
       experiments = accepted_expts
       reflections = accepted_refls
 
-    # Delete the shoeboxes used for intermediate calculations, if requested
-    if params.integration.debug.delete_shoeboxes and 'shoebox' in reflections:
-      del reflections['shoebox']
 
     # Save the reflections
     self.save_reflections(reflections, params.output.reflections)
     self.save_experiments(experiments, params.output.experiments)
 
-    # Write a report if requested
-    if params.output.report is not None:
-      integrator.report().as_file(params.output.report)
 
     # Print the total time taken
     logger.info("\nTotal time taken: %f" % (time() - start_time))
