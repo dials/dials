@@ -121,15 +121,18 @@ class IhTableBlock(SortingMethods):
   def select(self, sel):
     """Select a subset of the data."""
     self.Ih_table = self.Ih_table.select(sel)
-    h_idx_T = self._h_index_matrix.transpose()
-    h_idx_sel = h_idx_T.select_columns(sel.iselection())
+    #h_idx_T = self._h_index_matrix.transpose()
+    h_idx_sel = self.h_expand_matrix.select_columns(sel.iselection())
     reduced_h_idx = h_idx_sel.transpose()
-    nz_col_sel = flex.bool(reduced_h_idx.n_cols, True)
-    for i, col in enumerate(reduced_h_idx.cols()):
-      if col.non_zeroes == 0:
-        nz_col_sel[i] = False
+    #nz_col_sel = flex.bool(reduced_h_idx.n_cols, True)
+    unity = flex.double(reduced_h_idx.n_rows, 1.0)
+    nz_col_sel = (unity * reduced_h_idx) > 0
+    #for i, col in enumerate(reduced_h_idx.cols()):
+    #  if col.non_zeroes == 0:
+    #    nz_col_sel[i] = False
     self.h_index_matrix = reduced_h_idx.select_columns(nz_col_sel.iselection())
-    self.h_expand_matrix = self._h_index_matrix.transpose()
+    h_expand = self._h_index_matrix.transpose()
+    self.h_expand_matrix = h_expand
     if self._nonzero_weights:
       self.nonzero_weights = self._nonzero_weights.select(sel)
 

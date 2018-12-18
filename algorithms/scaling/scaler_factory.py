@@ -108,11 +108,11 @@ class SingleScalerFactory(ScalerFactory):
   def filter_outliers(cls, reflections, experiment, params):
     """Calculate normalised E2 values and perform outlier rejection."""
     reflections = quasi_normalisation(reflections, experiment)
-    if params.scaling_options.outlier_rejection:
+    '''if params.scaling_options.outlier_rejection:
       reflections = reject_outliers([reflections],
         experiment.crystal.get_space_group(),
         params.scaling_options.outlier_rejection,
-        params.scaling_options.outlier_zmax)[0]
+        params.scaling_options.outlier_zmax)[0]'''
     return reflections
 
 class NullScalerFactory(ScalerFactory):

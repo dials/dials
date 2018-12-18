@@ -50,7 +50,6 @@ class ScalingModelBase(object):
 
   def configure_reflection_table(self, reflection_table, experiment, params):
     """Perform calculations necessary to update the reflection table."""
-    return reflection_table
 
   def set_valid_image_range(self, image_range):
     """Track the batch range for which the model corresponds to."""
@@ -159,35 +158,27 @@ class PhysicalScalingModel(ScalingModelBase):
     return [['scale', 'decay'], ['absorption']]
 
   def configure_reflection_table(self, reflection_table, experiment, params):
-    reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
-      * experiment.scan.get_oscillation()[1])
-    user_excl = reflection_table.get_flags(
-      reflection_table.flags.user_excluded_in_scaling)
-    excl_for_scale = reflection_table.get_flags(
-      reflection_table.flags.excluded_for_scaling)
-    possible_refl = ~(user_excl | excl_for_scale)
+
     if 'scale' in self.components:
       norm = reflection_table['xyzobs.px.value'].parts()[2] * self._configdict['s_norm_fac']
-      self.components['scale'].data = {'x': norm.select(possible_refl)}
+      self.components['scale'].data = {'x': norm}
     if 'decay' in self.components:
       norm = reflection_table['xyzobs.px.value'].parts()[2] * self._configdict['d_norm_fac']
       self.components['decay'].parameter_restraints = flex.double(
         self.components['decay'].parameters.size(),
         params.parameterisation.decay_restraint)
-      self.components['decay'].data = {'x' : norm.select(possible_refl),
-        'd' : reflection_table['d'].select(possible_refl)}
+      self.components['decay'].data = {'x' : norm, 'd' : reflection_table['d']}
     if 'absorption' in self.components:
       lmax = self._configdict['lmax']
       #here just pass in good reflections
       self.components['absorption'].data['sph_harm_table'] = sph_harm_table(
-        reflection_table.select(possible_refl), experiment, lmax)
+        reflection_table, experiment, lmax)
       surface_weight = self._configdict['abs_surface_weight']
       parameter_restraints = flex.double([])
       for i in range(1, lmax+1):
         parameter_restraints.extend(flex.double([1.0] * ((2*i)+1)))
       parameter_restraints *= surface_weight
       self.components['absorption'].parameter_restraints = parameter_restraints
-    return reflection_table
 
   def limit_image_range(self, new_image_range):
     """Change the model to be suitable for a reduced batch range"""
@@ -318,31 +309,25 @@ class ArrayScalingModel(ScalingModelBase):
 
   def configure_reflection_table(self, reflection_table, _, __):
     xyz = reflection_table['xyzobs.px.value'].parts()
-    user_excl = reflection_table.get_flags(
-      reflection_table.flags.user_excluded_in_scaling)
-    excl_for_scale = reflection_table.get_flags(
-      reflection_table.flags.excluded_for_scaling)
-    possible_refl = ~(user_excl | excl_for_scale)
-    norm_time = (xyz[2] * self.configdict['time_norm_fac']).select(possible_refl)
+    norm_time = (xyz[2] * self.configdict['time_norm_fac'])
     if 'decay' in self.components:
-      d = reflection_table['d'].select(possible_refl)
+      d = reflection_table['d']
       norm_res = (((1.0 / (d**2)) - self.configdict['resmin'])
         / self.configdict['res_bin_width'])
       self.components['decay'].data = {'x' : norm_res, 'y': norm_time}
     if 'absorption' in self.components:
       norm_x_abs = ((xyz[0] - self.configdict['xmin']) /
-        self.configdict['x_bin_width']).select(possible_refl)
+        self.configdict['x_bin_width'])
       norm_y_abs = ((xyz[1] - self.configdict['ymin']) /
-        self.configdict['y_bin_width']).select(possible_refl)
+        self.configdict['y_bin_width'])
       self.components['absorption'].data = {'x' : norm_x_abs,
         'y' : norm_y_abs, 'z': norm_time}
     if 'modulation' in self.components:
       norm_x_det = ((xyz[0] - self.configdict['xmin']) /
-        self.configdict['x_det_bin_width']).select(possible_refl)
+        self.configdict['x_det_bin_width'])
       norm_y_det = ((xyz[1] - self.configdict['ymin']) /
-        self.configdict['y_det_bin_width']).select(possible_refl)
+        self.configdict['y_det_bin_width'])
       self.components['modulation'].data = {'x' : norm_x_det, 'y': norm_y_det}
-    return reflection_table
 
   ##FIXME update to not use reflection table
   def limit_image_range(self, new_image_range):
@@ -438,15 +423,10 @@ class KBScalingModel(ScalingModelBase):
         parameters_dict['decay']['parameter_esds'])})
 
   def configure_reflection_table(self, reflection_table, experiment, params):
-    user_excl = reflection_table.get_flags(
-      reflection_table.flags.user_excluded_in_scaling)
-    excl_for_scale = reflection_table.get_flags(
-      reflection_table.flags.excluded_for_scaling)
-    possible_refl = ~(user_excl | excl_for_scale)
     if 'scale' in self.components:
-      self.components['scale'].data = {'id': reflection_table['id'].select(possible_refl)}
+      self.components['scale'].data = {'id': reflection_table['id']}
     if 'decay' in self.components:
-      self.components['decay'].data = {'d': reflection_table['d'].select(possible_refl)}
+      self.components['decay'].data = {'d': reflection_table['d']}
 
   @property
   def consecutive_refinement_order(self):
