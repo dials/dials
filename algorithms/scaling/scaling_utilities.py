@@ -110,6 +110,8 @@ def align_rotation_axis_along_z(exp_rot_axis, vectors):
 def sph_harm_table(reflection_table, experiments, lmax):
   """Calculate the spherical harmonic table for a spherical
     harmonic absorption correction."""
+  reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
+    * experiments.scan.get_oscillation()[1])
   reflection_table = calc_crystal_frame_vectors(reflection_table, experiments)
   theta_phi = calc_theta_phi(reflection_table['s0c'])
   theta_phi_2 = calc_theta_phi(reflection_table['s1c'])
