@@ -96,6 +96,9 @@ if __name__ == "__main__":
   parser.add_option("-i", "--ignore", dest="strict",
       action="store_false",
       help="Ignore any errors or warnings")
+  parser.add_option("--no-clean", dest="clean",
+      action="store_false", default=True,
+      help="Don't run 'make clean' before building the documentation")
   options, args = parser.parse_args()
 
   update_dials_download_links()
@@ -110,9 +113,10 @@ if __name__ == "__main__":
   if options.strict:
     env['SPHINXOPTS'] = '-W'
 
-  result = run_process(["make", "clean"], environment_override=env)
-  assert result['exitcode'] == 0, \
-      'make clean failed with exit code %d' % result['exitcode']
+  if options.clean:
+    result = run_process(["make", "clean"], environment_override=env)
+    assert result['exitcode'] == 0, \
+        'make clean failed with exit code %d' % result['exitcode']
   result = run_process(["make", "html"], environment_override=env)
   assert result['exitcode'] == 0, \
       'make html failed with exit code %d' % result['exitcode']
