@@ -2,8 +2,6 @@
 dials.algorithms.symmetry
 =========================
 
-.. contents:: Table of Contents
-
 .. automodule:: dials.algorithms.symmetry
     :members:
     :undoc-members:
