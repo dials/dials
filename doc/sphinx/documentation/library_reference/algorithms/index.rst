@@ -11,3 +11,4 @@ Algorithms
    dials.algorithms.refinement
    dials.algorithms.spot_finding
    dials.algorithms.spot_prediction
+   dials.algorithms.symmetry
