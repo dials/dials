@@ -88,7 +88,7 @@ phil_scope = parse('''
 class Script(object):
   '''A class for running the script.'''
 
-  def __init__(self):
+  def __init__(self, phil=phil_scope):
     '''Initialise the script.'''
     from dials.util.options import OptionParser
     import libtbx.load_env
@@ -101,12 +101,12 @@ class Script(object):
     # Initialise the base class
     self.parser = OptionParser(
       usage=usage,
-      phil=phil_scope,
+      phil=phil,
       epilog=help_message,
       read_datablocks=True,
       read_datablocks_from_images=True)
 
-  def run(self):
+  def run(self, args=None):
     '''Execute the script.'''
     from dials.array_family import flex
     from dials.util.options import flatten_datablocks
@@ -116,7 +116,7 @@ class Script(object):
     start_time = time()
 
     # Parse the command line
-    params, options = self.parser.parse_args(show_diff_phil=False)
+    params, options = self.parser.parse_args(args=args, show_diff_phil=False)
 
     # Configure the logging
     log.config(

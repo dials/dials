@@ -84,7 +84,7 @@ refinement
 
 working_phil = phil_scope.fetch(sources=[phil_overrides])
 
-def run(args):
+def run(args=None):
   import libtbx.load_env
   from libtbx.utils import Sorry
   from dials.util import log
@@ -99,7 +99,7 @@ def run(args):
     check_format=False,
     epilog=help_message)
 
-  params, options = parser.parse_args(show_diff_phil=False)
+  params, options = parser.parse_args(args=args, show_diff_phil=False)
 
   # Configure the logging
   log.config(
@@ -186,5 +186,4 @@ def run(args):
 
 
 if __name__ == '__main__':
-  import sys
-  run(sys.argv[1:])
+  run()
