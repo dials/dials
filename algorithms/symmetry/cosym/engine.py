@@ -7,14 +7,25 @@ import scitbx.lbfgs
 
 
 class lbfgs_with_curvs(object):
+  """Minimise a target function using the LBFGS minimiser.
+
+  Implementation of an LBFGS minimiser using curvature information, according
+  to the interface defined by :module:`scitbx.lbfgs`.
+
+  Args:
+    target (dials.algorithms.target.Target): The target function to minimise.
+    coords (scitbx.array_family.flex.double): The starting coordinates for
+      minimisation.
+    use_curvatures (bool): Whether or not to use curvature information in the
+      minimisation. Defaults to True.
+    termination_params (scitbx.lbfgs.termination_parameters):
+      Override the default termination parameters for the minimisation.
+  """
+
   def __init__(self, target, coords,
-               animate=False,
-               save_intermediate_plots=False,
                use_curvatures=True,
                termination_params=None):
     self.target = target
-    self.animate = animate
-    self.save_intermediate_plots = save_intermediate_plots
 
     self.dim = len(coords)
     self.x = coords
@@ -52,24 +63,4 @@ class lbfgs_with_curvs(object):
   def callback_after_step(self, minimizer):
     logger.debug('minimization step: f, iter, nfun:')
     logger.debug('%s %s %s' %(self.f, minimizer.iter(), minimizer.nfun()))
-
-    if self.animate:
-      from matplotlib import pyplot as plt
-      NN = self.x.size() // self.dim
-      coord_x = self.x[0:NN]
-      coord_y = self.x[NN:2*NN]
-      plt.clf()
-      plt.ion()
-      plt.scatter(coord_x, coord_y, c="r", marker='+', s=3)
-      plt.axes().set_aspect("equal")
-      plt.xlim(-1, 1)
-      plt.ylim(-1, 1)
-      plt.pause(0.005)
-
-    if self.save_intermediate_plots:
-      from dials.algorithms.symmetry import cosym
-      NN = self.x.size() // self.dim
-      coord_x = self.x[0:NN]
-      coord_y = self.x[NN:2*NN]
-      cosym.plot((coord_x, coord_y), plot_name='xy_step_%02i.png' %minimizer.iter())
 

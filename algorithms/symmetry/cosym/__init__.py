@@ -35,12 +35,6 @@ min_cc_half = 0.6
 lattice_group = None
   .type = space_group
 
-animate = False
-  .type = bool
-
-save_intermediate_plots = False
-  .type = bool
-
 dimensions = None
   .type = int(value_min=2)
 
@@ -247,8 +241,7 @@ class analyse_datasets(symmetry_base):
     )
 
     M = engine.lbfgs_with_curvs(
-      self.target, coords, animate=self.params.animate,
-      save_intermediate_plots=self.params.save_intermediate_plots,
+      self.target, coords,
       use_curvatures=self.params.use_curvatures,
       termination_params=termination_params
     )
