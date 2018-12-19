@@ -509,27 +509,21 @@ class analyse_datasets(symmetry_base):
            labels=self.cluster_labels,
            plot_name='%sxyz_pca.png' % self.params.plot_prefix)
 
-def plot(coords, labels=None, plot_centroids=True, plot_all=True, show=False, plot_name=None):
-  assert plot_centroids or plot_all
-  assert len(coords) >= 2
-
-  coord_x = coords[0]
-  coord_y = coords[1]
-  if len(coords) > 2:
-    coord_z = coords[2]
-  else:
-    coord_z = None
-
+def plot(coords, labels=None, plot_name='xy.png'):
   from matplotlib import pyplot as plt
   import numpy
 
-  fig = plt.figure()
+  coord_x = coords[0]
+  coord_y = coords[1]
 
-  if coord_z is not None:
+  fig = plt.figure()
+  if len(coords) > 2:
     from mpl_toolkits.mplot3d import Axes3D # import dependency
     ax = fig.add_subplot(111, projection='3d')
+    coord_z = coords[2]
   else:
     ax = fig.add_subplot(111)
+    coord_z = None
 
   if labels is None:
     labels = flex.int(len(coord_x), -1)
@@ -549,29 +543,23 @@ def plot(coords, labels=None, plot_centroids=True, plot_all=True, show=False, pl
       markersize = 1
       marker = '+'
       alpha = 0.1
-      #continue
     else:
       markersize = 2
       marker = 'o'
       alpha = 0.5
-    if 0 and not isinstance(col, basestring) and len(col) == 4:
-      # darken the edges
-      frac = 0.75
-      edgecolor = [col[0]*frac, col[1]*frac, col[2]*frac, col[3]]
-    else:
-      edgecolor = col
+    edgecolor = col
     if coord_z is None:
-      if plot_all:
-        ax.scatter(coord_x.select(isel), coord_y.select(isel),
-                   s=markersize, marker=marker, c=col, edgecolor=edgecolor, alpha=alpha)
-      if plot_centroids and k >= 0:
+      ax.scatter(coord_x.select(isel), coord_y.select(isel),
+                 s=markersize, marker=marker, c=col, edgecolor=edgecolor, alpha=alpha)
+      if k >= 0:
+        # plot cluster centroid
         ax.scatter(flex.mean(coord_x.select(isel)), flex.mean(coord_y.select(isel)),
                    s=markersize*10, marker=marker, c=col, edgecolor='black')
     else:
-      if plot_all:
-        ax.scatter(coord_x.select(isel), coord_y.select(isel), coord_z.select(isel),
-                   s=markersize, marker=marker, c=col, edgecolor=edgecolor, alpha=alpha)
-      if plot_centroids and k >= 0:
+      ax.scatter(coord_x.select(isel), coord_y.select(isel), coord_z.select(isel),
+                 s=markersize, marker=marker, c=col, edgecolor=edgecolor, alpha=alpha)
+      if k >= 0:
+        # plot cluster centroid
         ax.scatter(flex.mean(coord_x.select(isel)), flex.mean(coord_y.select(isel)),
                    flex.mean(coord_z.select(isel)),
                    s=markersize*10, marker=marker, c=col, edgecolor='black')
@@ -579,26 +567,15 @@ def plot(coords, labels=None, plot_centroids=True, plot_all=True, show=False, pl
   ax.set_xlim(-1,1)
   ax.set_ylim(-1,1)
   ax.set_aspect("equal")
-  if plot_name is not None:
-    plt.savefig(plot_name,
-                size_inches=(10,10),
-                dpi=300,
-                bbox_inches='tight')
-  if show:
-    plt.show()
+  plt.savefig(plot_name,
+              size_inches=(10,10),
+              dpi=300,
+              bbox_inches='tight')
   plt.close(fig)
 
 
-def plot_angles(coords, labels=None, show=False, plot_name=None):
-  assert len(coords) >= 2
-
-  coord_x = coords[0]
-  coord_y = coords[1]
-
-  if len(coords) > 2:
-    coord_z = coords[2]
-  else:
-    coord_z = None
+def plot_angles(coords, labels=None, plot_name='phi_r.png'):
+  coord_x, coord_y = coords
 
   r = flex.sqrt(flex.pow2(coord_x) + flex.pow2(coord_y))
   phi = flex.atan2(coord_y, coord_x)
@@ -610,12 +587,7 @@ def plot_angles(coords, labels=None, show=False, plot_name=None):
   import numpy
 
   fig = plt.figure()
-
-  if 0 and coord_z is not None:
-    from mpl_toolkits.mplot3d import Axes3D # import dependency
-    ax = fig.add_subplot(111, projection='3d')
-  else:
-    ax = fig.add_subplot(111)
+  ax = fig.add_subplot(111)
 
   if labels is None:
     labels = flex.int(len(coord_x), -1)
@@ -634,7 +606,6 @@ def plot_angles(coords, labels=None, show=False, plot_name=None):
       col = '0.25' # mid-grey
       markersize = 1
       marker = '+'
-      #continue
     else:
       markersize = 2
       marker = 'o'
@@ -644,24 +615,17 @@ def plot_angles(coords, labels=None, show=False, plot_name=None):
       edgecolor = [col[0]*frac, col[1]*frac, col[2]*frac, col[3]]
     else:
       edgecolor = col
-    if coord_z is None:
-      ax.scatter(phi_deg.select(isel), r.select(isel),
-                 s=markersize, marker=marker, c=col, edgecolor=edgecolor)
-    else:
-      ax.scatter(phi_deg.select(isel), r.select(isel), coord_z.select(isel),
-                 s=markersize, marker=marker, c=col, edgecolor=edgecolor)
+    ax.scatter(phi_deg.select(isel), r.select(isel),
+               s=markersize, marker=marker, c=col, edgecolor=edgecolor)
 
   ax.set_xlim(-180,180)
   ax.set_ylim(0,ax.get_ylim()[1])
   ax.set_xlabel('Angle ($^{\circ}$)')
   ax.set_ylabel('Magnitude')
-  if plot_name is not None:
-    plt.savefig(plot_name,
-                size_inches=(10,10),
-                dpi=300,
-                bbox_inches='tight')
-  if show:
-    plt.show()
+  plt.savefig(plot_name,
+              size_inches=(10,10),
+              dpi=300,
+              bbox_inches='tight')
   plt.close(fig)
 
 
