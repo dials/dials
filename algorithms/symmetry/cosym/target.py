@@ -20,10 +20,8 @@ import cctbx.sgtbx.cosets
 class Target(object):
 
   def __init__(self, intensities, lattice_ids, weights=None, min_pairs=None,
-               lattice_group=None, dimensions=None, verbose=False,
-               nproc=1):
+               lattice_group=None, dimensions=None, nproc=1):
 
-    self.verbose = verbose
     if weights is not None:
       assert weights in ('count', 'standard_error')
     self._weights = weights

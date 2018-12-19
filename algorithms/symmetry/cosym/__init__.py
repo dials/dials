@@ -60,9 +60,6 @@ save_plot = True
 plot_prefix = ''
   .type = str
 
-verbose = False
-  .type = bool
-
 termination_params {
   max_iterations = 100
     .type = int(value_min=0)
@@ -143,7 +140,6 @@ class analyse_datasets(symmetry_base):
       min_pairs=self.params.min_pairs,
       lattice_group=lattice_group,
       dimensions=dimensions,
-      verbose=self.params.verbose,
       weights=self.params.weights,
       nproc=self.params.nproc,
     )
@@ -251,7 +247,7 @@ class analyse_datasets(symmetry_base):
     )
 
     M = engine.lbfgs_with_curvs(
-      self.target, coords, verbose=True, animate=self.params.animate,
+      self.target, coords, animate=self.params.animate,
       save_intermediate_plots=self.params.save_intermediate_plots,
       use_curvatures=self.params.use_curvatures,
       termination_params=termination_params

@@ -44,7 +44,6 @@ def test_cosym_target(space_group):
 
     M = engine.lbfgs_with_curvs(
       target=t, coords=x,
-      verbose=False,
     )
     t.compute_functional(x)
     # check functional has decreased and gradients are approximately zero

@@ -7,13 +7,12 @@ import scitbx.lbfgs
 
 
 class lbfgs_with_curvs(object):
-  def __init__(self, target, coords, verbose,
+  def __init__(self, target, coords,
                animate=False,
                save_intermediate_plots=False,
                use_curvatures=True,
                termination_params=None):
     self.target = target
-    self.verbose = verbose
     self.animate = animate
     self.save_intermediate_plots = save_intermediate_plots
 
