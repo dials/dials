@@ -156,7 +156,7 @@ class analyse_datasets(symmetry_base):
         self.target.set_dimensions(dim)
         self.optimise()
         logger.info('Functional: %g' % self.minimizer.f)
-        self.principal_component_analysis()
+        self._principal_component_analysis()
         dimensions.append(dim)
         functional.append(self.minimizer.f)
         explained_variance.append(self.explained_variance)
@@ -222,15 +222,15 @@ class analyse_datasets(symmetry_base):
           '%sexplained_variance_ratio_vs_dimension.png' % params.plot_prefix)
         plt.close(fig)
 
-    self.optimise()
-    self.principal_component_analysis()
+    self._optimise()
+    self._principal_component_analysis()
 
-    self.cosine_analysis()
-    self.cluster_analysis()
+    self._cosine_analysis()
+    self._cluster_analysis()
     if self.params.save_plot:
       self.plot()
 
-  def optimise(self):
+  def _optimise(self):
 
     NN = len(self.input_intensities)
     dim = self.target.dim
@@ -263,7 +263,7 @@ class analyse_datasets(symmetry_base):
     coords.matrix_transpose_in_place()
     self.coords = coords
 
-  def principal_component_analysis(self):
+  def _principal_component_analysis(self):
     # Perform PCA
     from sklearn.decomposition import PCA
     X = self.coords.as_numpy_array()
@@ -282,7 +282,7 @@ class analyse_datasets(symmetry_base):
     import numpy
     self.coords_reduced = flex.double(numpy.ascontiguousarray(x_reduced))
 
-  def cosine_analysis(self):
+  def _cosine_analysis(self):
     from scipy.cluster import hierarchy
     import scipy.spatial.distance as ssd
 
@@ -341,7 +341,7 @@ class analyse_datasets(symmetry_base):
       'Analysis of cos(angle) between points corresponding to the same datasets:')
     logger.info(table_utils.format(rows, has_header=True))
 
-  def space_group_for_dataset(self, dataset_id, sym_ops):
+  def _space_group_for_dataset(self, dataset_id, sym_ops):
     sg = copy.deepcopy(self.input_space_group)
     ref_sym_op_id = None
     ref_cluster_id = None
@@ -358,7 +358,7 @@ class analyse_datasets(symmetry_base):
         sg.expand_smx(op.new_denominators(1, 12))
     return sg.make_tidy()
 
-  def reindexing_ops_for_dataset(self, dataset_id, sym_ops, cosets):
+  def _reindexing_ops_for_dataset(self, dataset_id, sym_ops, cosets):
     reindexing_ops = {}
     # Number of clusters in labels, ignoring noise if present.
     n_clusters = len(set(self.cluster_labels)) - (1 if -1 in self.cluster_labels else 0)
@@ -379,9 +379,9 @@ class analyse_datasets(symmetry_base):
 
     return reindexing_ops
 
-  def cluster_analysis(self):
+  def _cluster_analysis(self):
 
-    self.cluster_labels = self.do_clustering(self.params.cluster.method)
+    self.cluster_labels = self._do_clustering(self.params.cluster.method)
 
     cluster_miller_arrays = []
 
@@ -394,33 +394,33 @@ class analyse_datasets(symmetry_base):
     space_groups = {}
 
     for dataset_id in range(len(self.input_intensities)):
-      space_groups[dataset_id] = self.space_group_for_dataset(
+      space_groups[dataset_id] = self._space_group_for_dataset(
         dataset_id, sym_ops)
 
       cosets = sgtbx.cosets.left_decomposition(
         self.target._lattice_group,
         space_groups[dataset_id].info().primitive_setting().group())
 
-      reindexing_ops[dataset_id] = self.reindexing_ops_for_dataset(
+      reindexing_ops[dataset_id] = self._reindexing_ops_for_dataset(
         dataset_id, sym_ops, cosets)
 
     self.space_groups = space_groups
     self.reindexing_ops = reindexing_ops
 
-  def do_clustering(self, method):
+  def _do_clustering(self, method):
     if method == 'dbscan':
-      clustering = self.dbscan_clustering
+      clustering = self._dbscan_clustering
     elif method == 'bisect':
-      clustering = self.bisect_clustering
+      clustering = self._bisect_clustering
     elif method == 'minimize_divide':
-      clustering = self.minimize_divide_clustering
+      clustering = self._minimize_divide_clustering
     elif method == 'agglomerative':
-      clustering = self.agglomerative_clustering
+      clustering = self._agglomerative_clustering
     elif method == 'seed':
-      clustering = self.seed_clustering
+      clustering = self._seed_clustering
     return clustering()
 
-  def dbscan_clustering(self):
+  def _dbscan_clustering(self):
     from sklearn.preprocessing import StandardScaler
     X = self.coords_reduced.as_numpy_array()
     X = StandardScaler().fit_transform(X)
@@ -434,7 +434,7 @@ class analyse_datasets(symmetry_base):
     import numpy as np
     return flex.int(db.labels_.astype(np.int32))
 
-  def bisect_clustering(self):
+  def _bisect_clustering(self):
     axis = self.params.cluster.bisect.axis
     assert axis < self.coords_reduced.all()[1]
     x = self.coords_reduced[:,axis:axis+1].as_1d()
@@ -442,7 +442,7 @@ class analyse_datasets(symmetry_base):
     cluster_labels.set_selected(x > 0, 1)
     return cluster_labels
 
-  def minimize_divide_clustering(self):
+  def _minimize_divide_clustering(self):
     x = self.coords_reduced[:,:1].as_1d()
     y = self.coords_reduced[:,1:2].as_1d()
     from cctbx.merging.brehm_diederichs import minimize_divide
@@ -451,7 +451,7 @@ class analyse_datasets(symmetry_base):
     cluster_labels.set_selected(selection, 1)
     return cluster_labels
 
-  def agglomerative_clustering(self):
+  def _agglomerative_clustering(self):
     X = self.coords.as_numpy_array()
 
     # Perform cluster analysis
@@ -463,7 +463,7 @@ class analyse_datasets(symmetry_base):
     model.fit(X)
     return flex.int(model.labels_.astype(np.int32))
 
-  def seed_clustering(self):
+  def _seed_clustering(self):
     from dials.algorithms.symmetry.cosym.seed_clustering import seed_clustering
     clustering = seed_clustering(
       self.coords,
