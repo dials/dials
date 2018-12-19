@@ -333,9 +333,10 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
 
-
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-  'https://docs.python.org/2.7/': None,
-  'https://cctbx.github.io/': None
+  'python': ('https://docs.python.org/2', None),
+  'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+  'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
+  'cctbx': ('https://cctbx.github.io/', None),
 }
