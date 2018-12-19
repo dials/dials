@@ -16,9 +16,31 @@ from scitbx.array_family import flex
 from dials.algorithms.symmetry.cosym import plot_matrix, plot_dendrogram
 
 class seed_clustering(object):
+  """Perform seed clustering of coordinates.
+
+    Labels points into clusters such that cluster contains exactly one copy
+    of each dataset, then performs silhouettete analysis on the resulting
+    clusters to determine the true number of clusters present.
+
+    Args:
+      coordinates (scitbx.array_family.flex.double): The input array of coordinates
+        on which to perform the analysis. The dimensions of the array should
+        be (dim, `n_datasets` * `n_sym_ops`), where dim is the number of
+        dimensions being used for the analysis.
+      n_datasets (int): The number of datasets.
+      n_sym_ops (int): The number of symmetry operations.
+      min_silhouette_score (float): The minimum silhouette score to be used
+        in automatic determination of the number of clusters.
+      n_clusters (int): Optionally override the automatic determination of the
+        number of clusters.
+
+    Attributes:
+      cluster_labels (scitbx.array_family.flex.int): A label for each coordinate.
+  """
 
   def __init__(self, coordinates, n_datasets, n_sym_ops,
                min_silhouette_score, n_clusters=Auto, plot_prefix=None):
+    """Initialise the class."""
     self.coords = coordinates
 
     self.cluster_labels = self.label_clusters_first_pass(n_datasets, n_sym_ops)
@@ -45,8 +67,18 @@ class seed_clustering(object):
         color_threshold=threshold)
 
   def label_clusters_first_pass(self, n_datasets, n_sym_ops):
-    """Labels points into clusters such that cluster contains exactly one copy
-       of each dataset.
+    """First pass labelling of clusters.
+
+    Labels points into clusters such that cluster contains exactly one copy
+    of each dataset.
+
+    Args:
+      n_datasets (int): The number of datasets.
+      n_sym_ops (int): The number of symmetry operations.
+
+    Returns:
+      cluster_labels (scitbx.array_family.flex.int): A label for each coordinate, labelled from
+      0 .. n_sym_ops.
     """
 
     # initialise cluster labels: -1 signifies doesn't belong to a cluster
@@ -103,6 +135,16 @@ class seed_clustering(object):
     return cluster_labels
 
   def hierarchical_clustering(self):
+    """
+    Perform hierarchical clustering on cluster centroids.
+
+    Returns:
+      Tuple[numpy.ndarray, numpy.ndarray]:
+        A tuple containing
+        the distance matrix as output by :func:`scipy.spatial.distance.pdist` and
+        the linkage matrix as output by :func:`scipy.cluster.hierarchy.linkage`.
+    """
+
     cluster_centroids = []
     X = self.coords.as_numpy_array()
     for i in set(self.cluster_labels):
@@ -118,10 +160,26 @@ class seed_clustering(object):
                           n_clusters, min_silhouette_score,
                           plot_prefix=None):
     """
-    Compare valid equal-sized clustering using silhouette scores
+    Compare valid equal-sized clustering using silhouette scores.
 
-    https://en.wikipedia.org/wiki/Silhouette_(clustering)
-    http://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_silhouette_analysis.html
+    See also:
+      https://en.wikipedia.org/wiki/Silhouette_(clustering)
+      http://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_silhouette_analysis.html
+
+    Args:
+      cluster_labels (scitbx.array_family.flex.int):
+      linkage_matrix (numpy.ndarray): The hierarchical clustering of centroids of the
+        initial clustering as produced by
+        :func:`scipy.cluster.hierarchy.linkage`.
+      n_clusters (int): Optionally override the automatic determination of the
+        number of clusters.
+      min_silhouette_score (float): The minimum silhouette score to be used
+        in automatic determination of the number of clusters.
+      plot_prefix (bool): Optional plot_prefix to plot the silhouette analysis
+        for each possible clustering.
+
+    Returns:
+      cluster_labels (scitbx.array_family.flex.int): A label for each coordinate.
     """
 
     eps = 1e-6
