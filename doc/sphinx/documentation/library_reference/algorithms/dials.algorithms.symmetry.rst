@@ -9,7 +9,22 @@ dials.algorithms.symmetry
     :undoc-members:
     :show-inheritance:
 
+.. automodule:: dials.algorithms.symmetry.determine_space_group
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 .. automodule:: dials.algorithms.symmetry.cosym
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: dials.algorithms.symmetry.cosym.target
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: dials.algorithms.symmetry.cosym.engine
     :members:
     :undoc-members:
     :show-inheritance:
