@@ -345,10 +345,20 @@ class RefinerFactory(object):
 
   @staticmethod
   def config_parameterisation(params, experiments, refman, do_stills=False):
-    from dials.algorithms.refinement.parameterisation import ParameterisationFactory
-    pred_param, param_reporter = \
-        ParameterisationFactory.from_parameters_and_experiments(params,
-        experiments, refman, do_stills)
+    from dials.algorithms.refinement.parameterisation import build_prediction_parameterisation
+    pred_param = build_prediction_parameterisation(params, experiments, refman,
+        do_stills)
+
+    # Parameter reporting
+    from dials.algorithms.refinement.parameterisation.parameter_report \
+      import ParameterReporter
+    param_reporter = ParameterReporter(
+        pred_param.get_detector_parameterisations(),
+        pred_param.get_beam_parameterisations(),
+        pred_param.get_crystal_orientation_parameterisations(),
+        pred_param.get_crystal_unit_cell_parameterisations(),
+        pred_param.get_goniometer_parameterisations())
+
     return pred_param, param_reporter
 
   @staticmethod

@@ -268,479 +268,470 @@ phil_str = '''
 '''%format_data
 phil_scope = parse(phil_str)
 
-class ParameterisationFactory(object):
+# A helper function for parameter fixing
+def _filter_parameter_names(parameterisation):
+  # scan-varying suffixes like '_sample1' should be removed from
+  # the list of parameter names so that it is num_free in length
+  pattern = re.compile(r"_sample[0-9]+$")
+  names = [pattern.sub('', e) for e in parameterisation.get_param_names(only_free=False)]
+  filtered_names = []
+  for name in names:
+    if name not in filtered_names: filtered_names.append(name)
+  return filtered_names
 
-  @classmethod
-  def from_parameters_and_experiments(cls, options, experiments,
-      reflection_manager, do_stills=False):
-    """Given a set of parameters, create a parameterisation from a set of
-    experimental models.
+# Helper function to perform centroid analysis
+def _centroid_analysis(options, experiments, reflection_manager):
 
-    Params:
-        options: The input parameters
-        experiments: An ExperimentList object
-        reflection_manager: A ReflectionManager object
-        do_stills (bool)
-
-    Returns:
-        A tuple containing a prediction equation parameterisation and
-        parameter reporter object.
-    """
-
-    # Get the working set of reflections
-    reflections = reflection_manager.get_matches()
-
-    # If required, do full centroid analysis on the reflections (assumes
-    # outlier-rejection has been done already) to determine suitable interval
-    # widths for scan-varying refinement
-    analysis = cls._centroid_analysis(options, experiments, reflection_manager)
-
-    # Parameterise unique Beams
-    beam_params = []
-    sv_beam = options.scan_varying and not options.beam.force_static
-    for ibeam, beam in enumerate(experiments.beams()):
-      # The Beam is parameterised with reference to a goniometer axis (or None).
-      # Use the first (if any) Goniometers this Beam is associated with.
-      exp_ids = experiments.indices(beam)
-      assoc_models = [(experiments[i].goniometer, experiments[i].scan) \
-                      for i in exp_ids]
-      goniometer, scan = assoc_models[0]
-
-      if sv_beam:
-        if not all((goniometer, scan)):
-          raise Sorry('A scan-varying beam model cannot be created because '
-                      'a scan or goniometer model is missing')
-        # If a beam is scan-varying, then it must always be found alongside
-        # the same Scan and Goniometer in any Experiments in which it appears
-        if not all(g is goniometer and s is scan for (g, s) in assoc_models):
-          raise Sorry('A single scan-varying beam model cannot be refined '
-                      'when associated with more than one scan or goniometer')
-        array_range = scan.get_array_range()
-        n_intervals = cls._set_n_intervals(options.beam.smoother,
-            analysis, scan, exp_ids)
-        beam_param = ScanVaryingBeamParameterisation(beam,
-                                                     array_range,
-                                                     n_intervals,
-                                                     goniometer=goniometer,
-                                                     experiment_ids=exp_ids)
-      else:
-        # Parameterise scan static beam, passing the goniometer
-        beam_param = BeamParameterisation(beam, goniometer,
-            experiment_ids=exp_ids)
-
-      # get number of fixable units, either parameters or parameter sets in
-      # the scan-varying case
-      num_beam = getattr(beam_param, 'num_sets', getattr(beam_param, 'num_total'))()
-
-      fix_list = []
-      if options.beam.fix_list:
-        fix_list.extend(options.beam.fix_list)
-
-      if options.beam.fix:
-        if "all" in options.beam.fix:
-          beam_param.set_fixed([True] * num_beam)
-        if "in_spindle_plane" in options.beam.fix:
-          fix_list.append('Mu1')
-        if "out_spindle_plane" in options.beam.fix:
-          fix_list.append('Mu2')
-        if "wavelength" in options.beam.fix:
-          fix_list.append('nu')
-
-      if fix_list:
-        names = cls._filter_parameter_names(beam_param)
-        assert len(names) == num_beam
-        to_fix = string_sel(fix_list,
-                            names,
-                            "Beam{0}".format(ibeam + 1))
-        beam_param.set_fixed(to_fix)
-
-      if beam_param.num_free() > 0:
-        beam_params.append(beam_param)
-
-    # Parameterise unique Crystals
-    xl_ori_params = []
-    xl_uc_params = []
-    sv_xl_ori = options.scan_varying and not options.crystal.orientation.force_static
-    sv_xl_uc = options.scan_varying and not options.crystal.unit_cell.force_static
-    for icrystal, crystal in enumerate(experiments.crystals()):
-      # This crystal can only ever appear either in scans or in stills
-      # (otherwise it requires a different crystal model)
-      exp_ids = experiments.indices(crystal)
-      assoc_models = [(experiments[i].goniometer, experiments[i].scan) \
-                      for i in exp_ids]
-      goniometer, scan = assoc_models[0]
-      if goniometer is None:
-        # There should be no associated goniometer and scan models
-        if any(g or s for (g, s) in assoc_models):
-          raise Sorry('A crystal model appears in a mixture of scan and still '
-                      'experiments, which is not supported')
-
-      if sv_xl_ori or sv_xl_uc:
-        if not all((goniometer, scan)):
-          raise Sorry('A scan-varying crystal model cannot be created because '
-                      'a scan or goniometer model is missing')
-        # If a crystal is scan-varying, then it must always be found alongside
-        # the same Scan and Goniometer in any Experiments in which it appears
-        if not all(g is goniometer and s is scan for (g, s) in assoc_models):
-          raise Sorry('A single scan-varying crystal model cannot be refined '
-                      'when associated with more than one scan or goniometer')
-        array_range = scan.get_array_range()
-
-      # orientation parameterisation
-      if sv_xl_ori:
-        n_intervals = cls._set_n_intervals(options.crystal.orientation.smoother,
-            analysis, scan, exp_ids)
-        xl_ori_param = ScanVaryingCrystalOrientationParameterisation(
-            crystal,
-            array_range,
-            n_intervals,
-            experiment_ids=exp_ids)
-      else: # force model to be static
-        xl_ori_param = CrystalOrientationParameterisation(
-            crystal, experiment_ids=exp_ids)
-
-      # unit cell parameterisation
-      if sv_xl_uc:
-        n_intervals = cls._set_n_intervals(options.crystal.unit_cell.smoother,
-            analysis, scan, exp_ids)
-        set_errors = options.crystal.unit_cell.set_scan_varying_errors
-        xl_uc_param = ScanVaryingCrystalUnitCellParameterisation(
-            crystal,
-            array_range,
-            n_intervals,
-            experiment_ids=exp_ids,
-            set_state_uncertainties=set_errors)
-      else: # force model to be static
-        xl_uc_param = CrystalUnitCellParameterisation(crystal,
-            experiment_ids=exp_ids)
-
-      # get number of fixable units, either parameters or parameter sets in
-      # the scan-varying case
-      num_ori = getattr(xl_ori_param, 'num_sets', getattr(xl_ori_param, 'num_total'))()
-      num_uc = getattr(xl_uc_param, 'num_sets', getattr(xl_uc_param, 'num_total'))()
-
-      ori_fix_list = []
-      if options.crystal.orientation.fix_list:
-        ori_fix_list.extend(options.crystal.orientation.fix_list)
-
-      cell_fix_list = []
-      if options.crystal.unit_cell.fix_list:
-        cell_fix_list.extend(options.crystal.unit_cell.fix_list)
-
-      if options.crystal.fix:
-        if options.crystal.fix == "all":
-          xl_ori_param.set_fixed([True] * num_ori)
-          xl_uc_param.set_fixed([True] * num_uc)
-        elif options.crystal.fix == "cell":
-          xl_uc_param.set_fixed([True] * num_uc)
-        elif options.crystal.fix == "orientation":
-          xl_ori_param.set_fixed([True] * num_ori)
-        else: # can only get here if refinement.phil is broken
-          raise RuntimeError("crystal.fix value not recognised")
-
-      if cell_fix_list:
-        names = cls._filter_parameter_names(xl_uc_param)
-        assert len(names) == num_uc
-        to_fix = string_sel(cell_fix_list,
-                            names,
-                            "Crystal{0}".format(icrystal + 1))
-        xl_uc_param.set_fixed(to_fix)
-
-      if ori_fix_list:
-        names = cls._filter_parameter_names(xl_ori_param)
-        assert len(names) == num_ori
-        to_fix = string_sel(ori_fix_list,
-                            names,
-                            "Crystal{0}".format(icrystal + 1))
-        xl_ori_param.set_fixed(to_fix)
-
-      if xl_ori_param.num_free() > 0:
-        xl_ori_params.append(xl_ori_param)
-      if xl_uc_param.num_free() > 0:
-        xl_uc_params.append(xl_uc_param)
-
-    # Parameterise unique Detectors
-    det_params = []
-    sv_det = options.scan_varying and not options.detector.force_static
-    for idetector, detector in enumerate(experiments.detectors()):
-      # keep associated gonio and scan in case we are scan-varying
-      exp_ids = experiments.indices(detector)
-      assoc_models = [(experiments[i].goniometer, experiments[i].scan) \
-                      for i in exp_ids]
-      goniometer, scan = assoc_models[0]
-
-      if sv_det:
-        if not all((goniometer, scan)):
-          raise Sorry('A scan-varying detector model cannot be created '
-                      'because a scan or goniometer model is missing')
-        # If a detector is scan-varying, then it must always be found alongside
-        # the same Scan and Goniometer in any Experiments in which it appears
-        if not all(g is goniometer and s is scan for (g, s) in assoc_models):
-          raise Sorry('A single scan-varying detector model cannot be '
-            'refined when associated with more than one scan or goniometer')
-
-        # Additional checks on whether a scan-varying parameterisation is allowed
-        if options.detector.panels == "automatic" and len(detector) > 1:
-          raise Sorry('Scan-varying multiple panel detectors are not '
-                      'currently supported')
-        if options.detector.panels == "multiple":
-          raise Sorry('Scan-varying multiple panel detectors are not '
-                      'currently supported')
-        if options.detector.panels == "hierarchical":
-          raise Sorry('Scan-varying hierarchical detectors are not '
-                      'currently supported')
-
-        array_range = scan.get_array_range()
-        n_intervals = cls._set_n_intervals(options.detector.smoother,
-            analysis, scan, exp_ids)
-        det_param = ScanVaryingDetectorParameterisationSinglePanel(
-            detector,
-            array_range,
-            n_intervals,
-            experiment_ids=exp_ids)
-      else:
-        if options.detector.panels == "automatic":
-          if len(detector) > 1:
-            if hasattr(detector, 'hierarchy'):
-              # Use hierarchy in parameterisation if the detector has one
-              det_param = DetectorParameterisationHierarchical(detector,
-                  experiment_ids=exp_ids, level=options.detector.hierarchy_level)
-            else:
-              det_param = DetectorParameterisationMultiPanel(detector,
-                  beam, experiment_ids=exp_ids)
-          else:
-            det_param = DetectorParameterisationSinglePanel(detector,
-                experiment_ids=exp_ids)
-        elif options.detector.panels == "single":
-          if len(detector) > 1:
-            raise Sorry('A single panel parameterisation cannot be created '
-                        'for a multiple panel detector')
-          det_param = DetectorParameterisationSinglePanel(detector,
-              experiment_ids=exp_ids)
-        elif options.detector.panels == "multiple":
-          det_param = DetectorParameterisationMultiPanel(detector,
-              beam, experiment_ids=exp_ids)
-        else: #options.detector.panels == "hierarchical"
-          try: # Use hierarchy in parameterisation if the detector has one
-            h = detector.hierarchy()
-            det_param = DetectorParameterisationHierarchical(detector,
-                experiment_ids=exp_ids, level=options.detector.hierarchy_level)
-          except AttributeError:
-            raise Sorry('A hierarchical detector parameterisation cannot be '
-              'created for a detector without a hierarchy')
-
-      # get number of fixable units, either parameters or parameter sets in
-      # the scan-varying case
-      num_det = getattr(det_param, 'num_sets', getattr(det_param, 'num_total'))()
-
-      fix_list = []
-      if options.detector.fix_list:
-        fix_list.extend(options.detector.fix_list)
-
-      if options.detector.fix:
-        if options.detector.fix == "all":
-          det_param.set_fixed([True] * num_det)
-        elif options.detector.fix == "position":
-          fix_list.extend(['Dist', 'Shift1', 'Shift2'])
-        elif options.detector.fix == "orientation":
-          fix_list.extend(['Tau'])
-        else: # can only get here if refinement.phil is broken
-          raise RuntimeError("detector.fix value not recognised")
-
-      if fix_list:
-        names = cls._filter_parameter_names(det_param)
-        assert len(names) == num_det
-        to_fix = string_sel(fix_list,
-                            names,
-                            "Detector{0}".format(idetector + 1))
-        det_param.set_fixed(to_fix)
-
-      if det_param.num_free() > 0:
-        det_params.append(det_param)
-
-    # Parameterise unique Goniometer setting matrices
-    gon_params = []
-    sv_gon = options.scan_varying and not options.goniometer.force_static
-    for igoniometer, goniometer in enumerate(experiments.goniometers()):
-      if goniometer is None: continue
-      # A Goniometer is parameterised with reference to the beam axis.
-      # Use the first Beam this Goniometer is associated with.
-      exp_ids = experiments.indices(goniometer)
-      assoc_models = [(experiments[i].beam, experiments[i].scan) \
-                      for i in exp_ids]
-      beam, scan = assoc_models[0]
-
-      if sv_gon:
-        # If a goniometer is scan-varying, then it must always be found
-        # alongside the same Scan in any Experiments in which it appears
-        if not scan:
-          raise Sorry('A scan-varying goniometer model cannot be created '
-                      'because a scan model is missing')
-        if not all(s is scan for (g, s) in assoc_models):
-          raise Sorry('A single scan-varying goniometer model cannot be '
-                      'refined when associated with more than one scan')
-        array_range = scan.get_array_range()
-        n_intervals = cls._set_n_intervals(options.goniometer.smoother,
-                    analysis, scan, exp_ids)
-        gon_param = ScanVaryingGoniometerParameterisation(goniometer,
-            array_range, n_intervals, beam=beam, experiment_ids=exp_ids)
-      else: # force model to be static
-        gon_param = GoniometerParameterisation(goniometer, beam,
-                                                     experiment_ids=exp_ids)
-
-      # get number of fixable units, either parameters or parameter sets in
-      # the scan-varying case
-      num_gon = getattr(gon_param, 'num_sets', getattr(gon_param, 'num_total'))()
-
-      fix_list = []
-      if options.goniometer.fix_list:
-        fix_list.extend(options.goniometer.fix_list)
-
-      if options.goniometer.fix:
-        if "all" in options.goniometer.fix:
-          gon_param.set_fixed([True] * num_gon)
-        if "in_beam_plane" in options.goniometer.fix:
-          fix_list.append('Gamma1')
-        if "out_beam_plane" in options.goniometer.fix:
-          fix_list.append('Gamma2')
-
-      if fix_list:
-        names = cls._filter_parameter_names(gon_param)
-        assert len(names) == num_gon
-        to_fix = string_sel(fix_list,
-                            names,
-                            "Goniometer{0}".format(igoniometer + 1))
-        gon_param.set_fixed(to_fix)
-
-      if gon_param.num_free() > 0:
-        gon_params.append(gon_param)
-
-    autoreduce = AutoReduce(options.auto_reduction,
-      det_params, beam_params, xl_ori_params, xl_uc_params, gon_params,
-      reflection_manager, scan_varying=options.scan_varying)
-    autoreduce()
-    det_params = autoreduce.det_params
-    beam_params = autoreduce.beam_params
-    xl_ori_params = autoreduce.xl_ori_params
-    xl_uc_params = autoreduce.xl_uc_params
-    gon_params = autoreduce.gon_params
-
-    # Prediction equation parameterisation
-    if do_stills: # doing stills
-      if options.sparse:
-        if options.spherical_relp_model:
-          PredParam = SphericalRelpStillsPredictionParameterisationSparse
-        else:
-          PredParam = StillsPredictionParameterisationSparse
-      else:
-        if options.spherical_relp_model:
-          PredParam = SphericalRelpStillsPredictionParameterisation
-        else:
-          PredParam = StillsPredictionParameterisation
-      pred_param = PredParam(experiments, det_params, beam_params, xl_ori_params,
-          xl_uc_params)
-
-    else: # doing scans
-      if options.scan_varying:
-        if options.sparse:
-          PredParam = ScanVaryingPredictionParameterisationSparse
-        else:
-          PredParam = ScanVaryingPredictionParameterisation
-        pred_param = PredParam(
-              experiments,
-              det_params, beam_params, xl_ori_params, xl_uc_params, gon_params)
-      else:
-        if options.sparse:
-          PredParam = XYPhiPredictionParameterisationSparse
-        else:
-          PredParam = XYPhiPredictionParameterisation
-        pred_param = PredParam(
-            experiments,
-            det_params, beam_params, xl_ori_params, xl_uc_params, gon_params)
-
-    # Parameter reporting
-    param_reporter = ParameterReporter(det_params, beam_params,
-        xl_ori_params, xl_uc_params, gon_params)
-
-    return pred_param, param_reporter
-
-  # A helper function for parameter fixing
-  @staticmethod
-  def _filter_parameter_names(parameterisation):
-    # scan-varying suffixes like '_sample1' should be removed from
-    # the list of parameter names so that it is num_free in length
-    pattern = re.compile(r"_sample[0-9]+$")
-    names = [pattern.sub('', e) for e in parameterisation.get_param_names(only_free=False)]
-    filtered_names = []
-    for name in names:
-      if name not in filtered_names: filtered_names.append(name)
-    return filtered_names
-
-  @staticmethod
-  def _centroid_analysis(options, experiments, reflection_manager):
-
-    analysis = None
-    if not options.scan_varying:
-      return analysis
-
-    tst = [options.beam.smoother,
-           options.crystal.orientation.smoother,
-           options.crystal.unit_cell.smoother,
-           options.detector.smoother,
-           options.goniometer.smoother]
-    tst = [(e.absolute_num_intervals is None and
-            e.interval_width_degrees is libtbx.Auto) for e in tst]
-    if any(tst):
-      logger.info('Doing centroid analysis to '
-        'automatically determine scan-varying interval widths')
-      ca = reflection_manager.get_centroid_analyser(
-          debug=options.debug_centroid_analysis)
-      analysis = ca()
-    if analysis is None: return analysis
-
-    # Use the results of centroid analysis to suggest suitable interval widths
-    # for each experiment. This will be the smallest of the proposed intervals
-    # for each of the residuals in x, y and phi, as long as this is not smaller
-    # than either the outlier rejection block width, or 9.0 degrees.
-    for i, a in enumerate(analysis):
-      intervals = [a.get('x_interval'),
-                   a.get('y_interval'),
-                   a.get('phi_interval')]
-      try:
-        min_interval = min(filter(None, intervals))
-      except ValueError:
-        # empty list - analysis was unable to suggest a suitable interval
-        # width. Default to the safest case
-        phi_min, phi_max  = experiments[i].scan.get_oscillation_range(deg=True)
-        a['interval_width'] = abs(phi_max - phi_min)
-        logger.info('Exp id {0} suggested interval width could not be '
-            'determined and will be reset to the scan width of '
-            '{1:.1f} degrees'.format(i, a['interval_width']))
-        continue
-      min_interval = max(min_interval, 9.0)
-      block_size = a.get('block_size')
-      if block_size is not None:
-        min_interval = max(min_interval, block_size)
-      a['interval_width'] = min_interval
-      logger.info('Exp id {0} suggested interval width = {1:.1f} degrees'.format(
-          i, min_interval))
-
+  analysis = None
+  if not options.scan_varying:
     return analysis
 
-  @staticmethod
-  def _set_n_intervals(smoother_params, analysis, scan, exp_ids):
-    n_intervals = smoother_params.absolute_num_intervals
-    if n_intervals is not None:
-      return n_intervals
+  tst = [options.beam.smoother,
+         options.crystal.orientation.smoother,
+         options.crystal.unit_cell.smoother,
+         options.detector.smoother,
+         options.goniometer.smoother]
+  tst = [(e.absolute_num_intervals is None and
+          e.interval_width_degrees is libtbx.Auto) for e in tst]
+  if any(tst):
+    logger.info('Doing centroid analysis to '
+      'automatically determine scan-varying interval widths')
+    ca = reflection_manager.get_centroid_analyser(
+        debug=options.debug_centroid_analysis)
+    analysis = ca()
+  if analysis is None: return analysis
 
-    deg_per_interval = smoother_params.interval_width_degrees
-    if deg_per_interval is libtbx.Auto and analysis is not None:
-      intervals = [analysis[i]['interval_width'] for i in exp_ids]
-      deg_per_interval = min(intervals)
-    if deg_per_interval is None:
-      deg_per_interval = 36.0
+  # Use the results of centroid analysis to suggest suitable interval widths
+  # for each experiment. This will be the smallest of the proposed intervals
+  # for each of the residuals in x, y and phi, as long as this is not smaller
+  # than either the outlier rejection block width, or 9.0 degrees.
+  for i, a in enumerate(analysis):
+    intervals = [a.get('x_interval'),
+                 a.get('y_interval'),
+                 a.get('phi_interval')]
+    try:
+      min_interval = min(filter(None, intervals))
+    except ValueError:
+      # empty list - analysis was unable to suggest a suitable interval
+      # width. Default to the safest case
+      phi_min, phi_max  = experiments[i].scan.get_oscillation_range(deg=True)
+      a['interval_width'] = abs(phi_max - phi_min)
+      logger.info('Exp id {0} suggested interval width could not be '
+          'determined and will be reset to the scan width of '
+          '{1:.1f} degrees'.format(i, a['interval_width']))
+      continue
+    min_interval = max(min_interval, 9.0)
+    block_size = a.get('block_size')
+    if block_size is not None:
+      min_interval = max(min_interval, block_size)
+    a['interval_width'] = min_interval
+    logger.info('Exp id {0} suggested interval width = {1:.1f} degrees'.format(
+        i, min_interval))
 
-    sweep_range_deg = scan.get_oscillation_range(deg=True)
-    n_intervals = max(int(
-      abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
+  return analysis
+
+# Helper function to choose the number of intervals for the smoother
+def _set_n_intervals(smoother_params, analysis, scan, exp_ids):
+  n_intervals = smoother_params.absolute_num_intervals
+  if n_intervals is not None:
     return n_intervals
+
+  deg_per_interval = smoother_params.interval_width_degrees
+  if deg_per_interval is libtbx.Auto and analysis is not None:
+    intervals = [analysis[i]['interval_width'] for i in exp_ids]
+    deg_per_interval = min(intervals)
+  if deg_per_interval is None:
+    deg_per_interval = 36.0
+
+  sweep_range_deg = scan.get_oscillation_range(deg=True)
+  n_intervals = max(int(
+    abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
+  return n_intervals
+
+def build_prediction_parameterisation(options, experiments,
+    reflection_manager, do_stills=False):
+  """Given a set of parameters, create a parameterisation from a set of
+  experimental models.
+
+  Params:
+      options: The input parameters
+      experiments: An ExperimentList object
+      reflection_manager: A ReflectionManager object
+      do_stills (bool)
+
+  Returns:
+      A prediction equation parameterisation object
+  """
+
+  # Get the working set of reflections
+  reflections = reflection_manager.get_matches()
+
+  # If required, do full centroid analysis on the reflections (assumes
+  # outlier-rejection has been done already) to determine suitable interval
+  # widths for scan-varying refinement
+  analysis = _centroid_analysis(options, experiments, reflection_manager)
+
+  # Parameterise unique Beams
+  beam_params = []
+  sv_beam = options.scan_varying and not options.beam.force_static
+  for ibeam, beam in enumerate(experiments.beams()):
+    # The Beam is parameterised with reference to a goniometer axis (or None).
+    # Use the first (if any) Goniometers this Beam is associated with.
+    exp_ids = experiments.indices(beam)
+    assoc_models = [(experiments[i].goniometer, experiments[i].scan) \
+                    for i in exp_ids]
+    goniometer, scan = assoc_models[0]
+
+    if sv_beam:
+      if not all((goniometer, scan)):
+        raise Sorry('A scan-varying beam model cannot be created because '
+                    'a scan or goniometer model is missing')
+      # If a beam is scan-varying, then it must always be found alongside
+      # the same Scan and Goniometer in any Experiments in which it appears
+      if not all(g is goniometer and s is scan for (g, s) in assoc_models):
+        raise Sorry('A single scan-varying beam model cannot be refined '
+                    'when associated with more than one scan or goniometer')
+      array_range = scan.get_array_range()
+      n_intervals = _set_n_intervals(options.beam.smoother,
+          analysis, scan, exp_ids)
+      beam_param = ScanVaryingBeamParameterisation(beam,
+                                                   array_range,
+                                                   n_intervals,
+                                                   goniometer=goniometer,
+                                                   experiment_ids=exp_ids)
+    else:
+      # Parameterise scan static beam, passing the goniometer
+      beam_param = BeamParameterisation(beam, goniometer,
+          experiment_ids=exp_ids)
+
+    # get number of fixable units, either parameters or parameter sets in
+    # the scan-varying case
+    num_beam = getattr(beam_param, 'num_sets', getattr(beam_param, 'num_total'))()
+
+    fix_list = []
+    if options.beam.fix_list:
+      fix_list.extend(options.beam.fix_list)
+
+    if options.beam.fix:
+      if "all" in options.beam.fix:
+        beam_param.set_fixed([True] * num_beam)
+      if "in_spindle_plane" in options.beam.fix:
+        fix_list.append('Mu1')
+      if "out_spindle_plane" in options.beam.fix:
+        fix_list.append('Mu2')
+      if "wavelength" in options.beam.fix:
+        fix_list.append('nu')
+
+    if fix_list:
+      names = _filter_parameter_names(beam_param)
+      assert len(names) == num_beam
+      to_fix = string_sel(fix_list,
+                          names,
+                          "Beam{0}".format(ibeam + 1))
+      beam_param.set_fixed(to_fix)
+
+    if beam_param.num_free() > 0:
+      beam_params.append(beam_param)
+
+  # Parameterise unique Crystals
+  xl_ori_params = []
+  xl_uc_params = []
+  sv_xl_ori = options.scan_varying and not options.crystal.orientation.force_static
+  sv_xl_uc = options.scan_varying and not options.crystal.unit_cell.force_static
+  for icrystal, crystal in enumerate(experiments.crystals()):
+    # This crystal can only ever appear either in scans or in stills
+    # (otherwise it requires a different crystal model)
+    exp_ids = experiments.indices(crystal)
+    assoc_models = [(experiments[i].goniometer, experiments[i].scan) \
+                    for i in exp_ids]
+    goniometer, scan = assoc_models[0]
+    if goniometer is None:
+      # There should be no associated goniometer and scan models
+      if any(g or s for (g, s) in assoc_models):
+        raise Sorry('A crystal model appears in a mixture of scan and still '
+                    'experiments, which is not supported')
+
+    if sv_xl_ori or sv_xl_uc:
+      if not all((goniometer, scan)):
+        raise Sorry('A scan-varying crystal model cannot be created because '
+                    'a scan or goniometer model is missing')
+      # If a crystal is scan-varying, then it must always be found alongside
+      # the same Scan and Goniometer in any Experiments in which it appears
+      if not all(g is goniometer and s is scan for (g, s) in assoc_models):
+        raise Sorry('A single scan-varying crystal model cannot be refined '
+                    'when associated with more than one scan or goniometer')
+      array_range = scan.get_array_range()
+
+    # orientation parameterisation
+    if sv_xl_ori:
+      n_intervals = _set_n_intervals(options.crystal.orientation.smoother,
+          analysis, scan, exp_ids)
+      xl_ori_param = ScanVaryingCrystalOrientationParameterisation(
+          crystal,
+          array_range,
+          n_intervals,
+          experiment_ids=exp_ids)
+    else: # force model to be static
+      xl_ori_param = CrystalOrientationParameterisation(
+          crystal, experiment_ids=exp_ids)
+
+    # unit cell parameterisation
+    if sv_xl_uc:
+      n_intervals = _set_n_intervals(options.crystal.unit_cell.smoother,
+          analysis, scan, exp_ids)
+      set_errors = options.crystal.unit_cell.set_scan_varying_errors
+      xl_uc_param = ScanVaryingCrystalUnitCellParameterisation(
+          crystal,
+          array_range,
+          n_intervals,
+          experiment_ids=exp_ids,
+          set_state_uncertainties=set_errors)
+    else: # force model to be static
+      xl_uc_param = CrystalUnitCellParameterisation(crystal,
+          experiment_ids=exp_ids)
+
+    # get number of fixable units, either parameters or parameter sets in
+    # the scan-varying case
+    num_ori = getattr(xl_ori_param, 'num_sets', getattr(xl_ori_param, 'num_total'))()
+    num_uc = getattr(xl_uc_param, 'num_sets', getattr(xl_uc_param, 'num_total'))()
+
+    ori_fix_list = []
+    if options.crystal.orientation.fix_list:
+      ori_fix_list.extend(options.crystal.orientation.fix_list)
+
+    cell_fix_list = []
+    if options.crystal.unit_cell.fix_list:
+      cell_fix_list.extend(options.crystal.unit_cell.fix_list)
+
+    if options.crystal.fix:
+      if options.crystal.fix == "all":
+        xl_ori_param.set_fixed([True] * num_ori)
+        xl_uc_param.set_fixed([True] * num_uc)
+      elif options.crystal.fix == "cell":
+        xl_uc_param.set_fixed([True] * num_uc)
+      elif options.crystal.fix == "orientation":
+        xl_ori_param.set_fixed([True] * num_ori)
+      else: # can only get here if refinement.phil is broken
+        raise RuntimeError("crystal.fix value not recognised")
+
+    if cell_fix_list:
+      names = _filter_parameter_names(xl_uc_param)
+      assert len(names) == num_uc
+      to_fix = string_sel(cell_fix_list,
+                          names,
+                          "Crystal{0}".format(icrystal + 1))
+      xl_uc_param.set_fixed(to_fix)
+
+    if ori_fix_list:
+      names = _filter_parameter_names(xl_ori_param)
+      assert len(names) == num_ori
+      to_fix = string_sel(ori_fix_list,
+                          names,
+                          "Crystal{0}".format(icrystal + 1))
+      xl_ori_param.set_fixed(to_fix)
+
+    if xl_ori_param.num_free() > 0:
+      xl_ori_params.append(xl_ori_param)
+    if xl_uc_param.num_free() > 0:
+      xl_uc_params.append(xl_uc_param)
+
+  # Parameterise unique Detectors
+  det_params = []
+  sv_det = options.scan_varying and not options.detector.force_static
+  for idetector, detector in enumerate(experiments.detectors()):
+    # keep associated gonio and scan in case we are scan-varying
+    exp_ids = experiments.indices(detector)
+    assoc_models = [(experiments[i].goniometer, experiments[i].scan) \
+                    for i in exp_ids]
+    goniometer, scan = assoc_models[0]
+
+    if sv_det:
+      if not all((goniometer, scan)):
+        raise Sorry('A scan-varying detector model cannot be created '
+                    'because a scan or goniometer model is missing')
+      # If a detector is scan-varying, then it must always be found alongside
+      # the same Scan and Goniometer in any Experiments in which it appears
+      if not all(g is goniometer and s is scan for (g, s) in assoc_models):
+        raise Sorry('A single scan-varying detector model cannot be '
+          'refined when associated with more than one scan or goniometer')
+
+      # Additional checks on whether a scan-varying parameterisation is allowed
+      if options.detector.panels == "automatic" and len(detector) > 1:
+        raise Sorry('Scan-varying multiple panel detectors are not '
+                    'currently supported')
+      if options.detector.panels == "multiple":
+        raise Sorry('Scan-varying multiple panel detectors are not '
+                    'currently supported')
+      if options.detector.panels == "hierarchical":
+        raise Sorry('Scan-varying hierarchical detectors are not '
+                    'currently supported')
+
+      array_range = scan.get_array_range()
+      n_intervals = _set_n_intervals(options.detector.smoother,
+          analysis, scan, exp_ids)
+      det_param = ScanVaryingDetectorParameterisationSinglePanel(
+          detector,
+          array_range,
+          n_intervals,
+          experiment_ids=exp_ids)
+    else:
+      if options.detector.panels == "automatic":
+        if len(detector) > 1:
+          if hasattr(detector, 'hierarchy'):
+            # Use hierarchy in parameterisation if the detector has one
+            det_param = DetectorParameterisationHierarchical(detector,
+                experiment_ids=exp_ids, level=options.detector.hierarchy_level)
+          else:
+            det_param = DetectorParameterisationMultiPanel(detector,
+                beam, experiment_ids=exp_ids)
+        else:
+          det_param = DetectorParameterisationSinglePanel(detector,
+              experiment_ids=exp_ids)
+      elif options.detector.panels == "single":
+        if len(detector) > 1:
+          raise Sorry('A single panel parameterisation cannot be created '
+                      'for a multiple panel detector')
+        det_param = DetectorParameterisationSinglePanel(detector,
+            experiment_ids=exp_ids)
+      elif options.detector.panels == "multiple":
+        det_param = DetectorParameterisationMultiPanel(detector,
+            beam, experiment_ids=exp_ids)
+      else: #options.detector.panels == "hierarchical"
+        try: # Use hierarchy in parameterisation if the detector has one
+          h = detector.hierarchy()
+          det_param = DetectorParameterisationHierarchical(detector,
+              experiment_ids=exp_ids, level=options.detector.hierarchy_level)
+        except AttributeError:
+          raise Sorry('A hierarchical detector parameterisation cannot be '
+            'created for a detector without a hierarchy')
+
+    # get number of fixable units, either parameters or parameter sets in
+    # the scan-varying case
+    num_det = getattr(det_param, 'num_sets', getattr(det_param, 'num_total'))()
+
+    fix_list = []
+    if options.detector.fix_list:
+      fix_list.extend(options.detector.fix_list)
+
+    if options.detector.fix:
+      if options.detector.fix == "all":
+        det_param.set_fixed([True] * num_det)
+      elif options.detector.fix == "position":
+        fix_list.extend(['Dist', 'Shift1', 'Shift2'])
+      elif options.detector.fix == "orientation":
+        fix_list.extend(['Tau'])
+      else: # can only get here if refinement.phil is broken
+        raise RuntimeError("detector.fix value not recognised")
+
+    if fix_list:
+      names = _filter_parameter_names(det_param)
+      assert len(names) == num_det
+      to_fix = string_sel(fix_list,
+                          names,
+                          "Detector{0}".format(idetector + 1))
+      det_param.set_fixed(to_fix)
+
+    if det_param.num_free() > 0:
+      det_params.append(det_param)
+
+  # Parameterise unique Goniometer setting matrices
+  gon_params = []
+  sv_gon = options.scan_varying and not options.goniometer.force_static
+  for igoniometer, goniometer in enumerate(experiments.goniometers()):
+    if goniometer is None: continue
+    # A Goniometer is parameterised with reference to the beam axis.
+    # Use the first Beam this Goniometer is associated with.
+    exp_ids = experiments.indices(goniometer)
+    assoc_models = [(experiments[i].beam, experiments[i].scan) \
+                    for i in exp_ids]
+    beam, scan = assoc_models[0]
+
+    if sv_gon:
+      # If a goniometer is scan-varying, then it must always be found
+      # alongside the same Scan in any Experiments in which it appears
+      if not scan:
+        raise Sorry('A scan-varying goniometer model cannot be created '
+                    'because a scan model is missing')
+      if not all(s is scan for (g, s) in assoc_models):
+        raise Sorry('A single scan-varying goniometer model cannot be '
+                    'refined when associated with more than one scan')
+      array_range = scan.get_array_range()
+      n_intervals = _set_n_intervals(options.goniometer.smoother,
+                  analysis, scan, exp_ids)
+      gon_param = ScanVaryingGoniometerParameterisation(goniometer,
+          array_range, n_intervals, beam=beam, experiment_ids=exp_ids)
+    else: # force model to be static
+      gon_param = GoniometerParameterisation(goniometer, beam,
+                                                   experiment_ids=exp_ids)
+
+    # get number of fixable units, either parameters or parameter sets in
+    # the scan-varying case
+    num_gon = getattr(gon_param, 'num_sets', getattr(gon_param, 'num_total'))()
+
+    fix_list = []
+    if options.goniometer.fix_list:
+      fix_list.extend(options.goniometer.fix_list)
+
+    if options.goniometer.fix:
+      if "all" in options.goniometer.fix:
+        gon_param.set_fixed([True] * num_gon)
+      if "in_beam_plane" in options.goniometer.fix:
+        fix_list.append('Gamma1')
+      if "out_beam_plane" in options.goniometer.fix:
+        fix_list.append('Gamma2')
+
+    if fix_list:
+      names = _filter_parameter_names(gon_param)
+      assert len(names) == num_gon
+      to_fix = string_sel(fix_list,
+                          names,
+                          "Goniometer{0}".format(igoniometer + 1))
+      gon_param.set_fixed(to_fix)
+
+    if gon_param.num_free() > 0:
+      gon_params.append(gon_param)
+
+  autoreduce = AutoReduce(options.auto_reduction,
+    det_params, beam_params, xl_ori_params, xl_uc_params, gon_params,
+    reflection_manager, scan_varying=options.scan_varying)
+  autoreduce()
+  det_params = autoreduce.det_params
+  beam_params = autoreduce.beam_params
+  xl_ori_params = autoreduce.xl_ori_params
+  xl_uc_params = autoreduce.xl_uc_params
+  gon_params = autoreduce.gon_params
+
+  # Prediction equation parameterisation
+  if do_stills: # doing stills
+    if options.sparse:
+      if options.spherical_relp_model:
+        PredParam = SphericalRelpStillsPredictionParameterisationSparse
+      else:
+        PredParam = StillsPredictionParameterisationSparse
+    else:
+      if options.spherical_relp_model:
+        PredParam = SphericalRelpStillsPredictionParameterisation
+      else:
+        PredParam = StillsPredictionParameterisation
+    pred_param = PredParam(experiments, det_params, beam_params, xl_ori_params,
+        xl_uc_params)
+
+  else: # doing scans
+    if options.scan_varying:
+      if options.sparse:
+        PredParam = ScanVaryingPredictionParameterisationSparse
+      else:
+        PredParam = ScanVaryingPredictionParameterisation
+      pred_param = PredParam(
+            experiments,
+            det_params, beam_params, xl_ori_params, xl_uc_params, gon_params)
+    else:
+      if options.sparse:
+        PredParam = XYPhiPredictionParameterisationSparse
+      else:
+        PredParam = XYPhiPredictionParameterisation
+      pred_param = PredParam(
+          experiments,
+          det_params, beam_params, xl_ori_params, xl_uc_params, gon_params)
+
+  return pred_param
