@@ -20,7 +20,13 @@ class seed_clustering(object):
 
     Labels points into clusters such that cluster contains exactly one copy
     of each dataset, then performs silhouettete analysis on the resulting
-    clusters to determine the true number of clusters present.
+    clusters to determine the true number of clusters present, under the
+    constraint that only equal-sized clusterings are valid, i.e. each
+    dataset should appear an equal number of times in each cluster.
+
+    See also:
+      https://en.wikipedia.org/wiki/Silhouette_(clustering)
+      http://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_silhouette_analysis.html
 
     Args:
       coordinates (scitbx.array_family.flex.double): The input array of coordinates
@@ -40,17 +46,16 @@ class seed_clustering(object):
 
   def __init__(self, coordinates, n_datasets, n_sym_ops,
                min_silhouette_score, n_clusters=Auto, plot_prefix=None):
-    """Initialise the class."""
     self.coords = coordinates
 
-    self.cluster_labels = self.label_clusters_first_pass(n_datasets, n_sym_ops)
+    self.cluster_labels = self._label_clusters_first_pass(n_datasets, n_sym_ops)
 
     if flex.max(self.cluster_labels) == 0:
       # assume single cluster
       return
 
-    dist_mat, linkage_matrix = self.hierarchical_clustering()
-    self.cluster_labels, threshold = self.silhouette_analysis(
+    dist_mat, linkage_matrix = self._hierarchical_clustering()
+    self.cluster_labels, threshold = self._silhouette_analysis(
       self.cluster_labels, linkage_matrix, 
       n_clusters=n_clusters,
       min_silhouette_score=min_silhouette_score,
@@ -66,7 +71,7 @@ class seed_clustering(object):
         '%sseed_clustering_cos_angle_dendrogram.png' % plot_prefix,
         color_threshold=threshold)
 
-  def label_clusters_first_pass(self, n_datasets, n_sym_ops):
+  def _label_clusters_first_pass(self, n_datasets, n_sym_ops):
     """First pass labelling of clusters.
 
     Labels points into clusters such that cluster contains exactly one copy
@@ -134,7 +139,7 @@ class seed_clustering(object):
       cluster_id += 1
     return cluster_labels
 
-  def hierarchical_clustering(self):
+  def _hierarchical_clustering(self):
     """
     Perform hierarchical clustering on cluster centroids.
 
@@ -156,15 +161,11 @@ class seed_clustering(object):
     dist_mat = ssd.pdist(cluster_centroids, metric='cosine')
     return dist_mat, hierarchy.linkage(dist_mat, method='average')
 
-  def silhouette_analysis(self, cluster_labels, linkage_matrix,
-                          n_clusters, min_silhouette_score,
-                          plot_prefix=None):
+  def _silhouette_analysis(self, cluster_labels, linkage_matrix,
+                           n_clusters, min_silhouette_score,
+                           plot_prefix=None):
     """
     Compare valid equal-sized clustering using silhouette scores.
-
-    See also:
-      https://en.wikipedia.org/wiki/Silhouette_(clustering)
-      http://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_silhouette_analysis.html
 
     Args:
       cluster_labels (scitbx.array_family.flex.int):
