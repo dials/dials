@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import pytest
 
+import libtbx
 from cctbx import sgtbx
 
 from dials.algorithms.symmetry.cosym.generate_test_data import generate_test_data
@@ -9,8 +10,9 @@ from dials.algorithms.symmetry.cosym import phil_scope
 from dials.algorithms.symmetry.cosym import analyse_datasets
 
 
-@pytest.mark.parametrize('space_group', ['P2', 'P3', 'I23'])
-def test_cosym_analyse_datasets(space_group, run_in_tmpdir):
+@pytest.mark.parametrize(('space_group', 'dimensions'),
+                         [('P2', None), ('P3', None), ('I23', libtbx.Auto)])
+def test_cosym_analyse_datasets(space_group, dimensions, run_in_tmpdir):
   import matplotlib
   matplotlib.use('Agg')
 
@@ -21,6 +23,7 @@ def test_cosym_analyse_datasets(space_group, run_in_tmpdir):
 
   params = phil_scope.extract()
   params.cluster.agglomerative.n_clusters = len(expected_reindexing_ops)
+  params.dimensions = dimensions
 
   result = analyse_datasets(datasets, params)
 

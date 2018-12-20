@@ -144,7 +144,7 @@ class analyse_datasets(symmetry_base):
       explained_variance_ratio = []
       for dim in range(1, self.target.dim + 1):
         self.target.set_dimensions(dim)
-        self.optimise()
+        self._optimise()
         logger.info('Functional: %g' % self.minimizer.f)
         self._principal_component_analysis()
         dimensions.append(dim)
