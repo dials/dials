@@ -48,7 +48,7 @@ class ScalingModelBase(object):
     """Indicate that no scaled data is associated with this model."""
     self._is_scaled = False
 
-  def configure_reflection_table(self, reflection_table, experiment, params):
+  def configure_components(self, reflection_table, experiment, params):
     """Perform calculations necessary to update the reflection table."""
 
   def set_valid_image_range(self, image_range):
@@ -157,7 +157,7 @@ class PhysicalScalingModel(ScalingModelBase):
   def consecutive_refinement_order(self):
     return [['scale', 'decay'], ['absorption']]
 
-  def configure_reflection_table(self, reflection_table, experiment, params):
+  def configure_components(self, reflection_table, experiment, params):
 
     if 'scale' in self.components:
       norm = reflection_table['xyzobs.px.value'].parts()[2] * self._configdict['s_norm_fac']
@@ -224,10 +224,8 @@ class PhysicalScalingModel(ScalingModelBase):
       joined_norm_vals = flex.double([])
       joined_inv_scales = flex.double([])
       for i in range(len(self.components['scale'].normalised_values)):
-        scales, _ = self.components['scale'].calculate_scales_and_derivatives(block_id=i)
-        norm_vals = self.components['scale'].normalised_values[i]
-        joined_norm_vals.extend(norm_vals)
-        joined_inv_scales.extend(scales)
+        joined_norm_vals.extend(self.components['scale'].normalised_values[i])
+        joined_inv_scales.extend(self.components['scale'].calculate_scales(block_id=i))
       sel = (joined_norm_vals == min(joined_norm_vals))
       initial_scale = joined_inv_scales.select(sel)[0]
       self.components['scale'].parameters /= initial_scale
@@ -238,10 +236,8 @@ class PhysicalScalingModel(ScalingModelBase):
       joined_d_vals = flex.double([])
       joined_inv_scales = flex.double([])
       for i in range(len(self.components['decay'].d_values)):
-        scales, _ = self.components['decay'].calculate_scales_and_derivatives(block_id=i)
-        d_vals = self.components['decay'].d_values[i]
-        joined_d_vals.extend(d_vals)
-        joined_inv_scales.extend(scales)
+        joined_d_vals.extend(self.components['decay'].d_values[i])
+        joined_inv_scales.extend(self.components['decay'].calculate_scales(block_id=i))
       maxB = flex.max(flex.double(np.log(joined_inv_scales))
                   * 2.0 * (joined_d_vals**2))
       self.components['decay'].parameters -= flex.double(
@@ -307,7 +303,7 @@ class ArrayScalingModel(ScalingModelBase):
   def consecutive_refinement_order(self):
     return [['decay'], ['absorption'], ['modulation']]
 
-  def configure_reflection_table(self, reflection_table, _, __):
+  def configure_components(self, reflection_table, _, __):
     xyz = reflection_table['xyzobs.px.value'].parts()
     norm_time = (xyz[2] * self.configdict['time_norm_fac'])
     if 'decay' in self.components:
@@ -422,11 +418,12 @@ class KBScalingModel(ScalingModelBase):
         parameters_dict['decay']['parameters'],
         parameters_dict['decay']['parameter_esds'])})
 
-  def configure_reflection_table(self, reflection_table, experiment, params):
+  def configure_components(self, reflection_table, experiment, params):
     if 'scale' in self.components:
       self.components['scale'].data = {'id': reflection_table['id']}
     if 'decay' in self.components:
-      self.components['decay'].data = {'d': reflection_table['d']}
+      self.components['decay'].data = {'d': reflection_table['d'],
+        'id': reflection_table['id']}
 
   @property
   def consecutive_refinement_order(self):

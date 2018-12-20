@@ -16,6 +16,7 @@ def small_reflection_table():
   reflections['d'] = flex.double([2.0, 0.8, 2.0]) #don't change
   reflections['xyzobs.px.value'] = flex.vec3_double([(0.0, 0.0, 0.0),
     (0.0, 0.0, 5.0), (0.0, 0.0, 10.0)])
+  reflections['id'] = flex.int(3, 0)
   return reflections
 
 def test_basis_function(small_reflection_table):
@@ -32,8 +33,11 @@ def test_basis_function(small_reflection_table):
     'scale' : SingleScaleFactor(flex.double([1.0])),
     'decay' : SingleBScaleFactor(flex.double([0.0])),
     'abs' : SingleScaleFactor(flex.double([1.0]))} #Create empty components.
+  components['scale'].data = {'id': rt['id']}
+  components['decay'].data = {'d': rt['d'], 'id': rt['id']}
+  components['abs'].data = {'id': rt['id']}
   for component in components.itervalues():
-    component.update_reflection_data(rt) #Add some data to components.
+    component.update_reflection_data() #Add some data to components.
 
   apm = scaling_active_parameter_manager(components, ['decay', 'scale'])
 

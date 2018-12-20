@@ -145,7 +145,6 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
     block_selections=None):
     """Set the normalised coordinate values and configure the smoother."""
     self._normalised_values = []
-    self._inverse_scales = []
     self._n_refl = []
     normalised_values = self.data['x']
     if selection:
@@ -158,17 +157,12 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
       self.nparam_to_val(self._n_params))
     if block_selections:
       block_selection_list = block_selections
-      #norm_vals_permuted = normalised_values.select(permuted)
       for i, sel in enumerate(block_selection_list):
-        #self._normalised_values.append(norm_vals_permuted.select(sel))
         self._normalised_values.append(normalised_values.select(sel))
-        self._inverse_scales.append(flex.double(
-          self._normalised_values[i].size(), 1.0))
-        self._n_refl.append(self.inverse_scales[i].size())
+        self._n_refl.append(self._normalised_values[i].size())
     else:
       self._normalised_values.append(normalised_values)
-      self._inverse_scales.append(flex.double(normalised_values.size(), 1.0))
-      self._n_refl.append(self._inverse_scales[0].size())
+      self._n_refl.append(normalised_values.size())
 
   def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
     if self._n_refl[block_id] > 1:
@@ -329,7 +323,6 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
 
     self._normalised_x_values = []
     self._normalised_y_values = []
-    self._inverse_scales = []
     self._n_refl = []
     normalised_x_values = self.data['x']
     normalised_y_values = self.data['y']
@@ -348,14 +341,11 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
       for i, sel in enumerate(block_selections):
         self._normalised_x_values.append(normalised_x_values.select(sel))
         self._normalised_y_values.append(normalised_y_values.select(sel))
-        self._inverse_scales.append(flex.double(
-          self._normalised_x_values[i].size(), 1.0))
-        self._n_refl.append(self.inverse_scales[i].size())
+        self._n_refl.append(self._normalised_x_values[i].size())
     else:
       self._normalised_x_values.append(normalised_x_values)
       self._normalised_y_values.append(normalised_y_values)
-      self._inverse_scales.append(flex.double(normalised_x_values.size(), 1.0))
-      self._n_refl.append(self._inverse_scales[0].size())
+      self._n_refl.append(normalised_x_values.size())
 
   def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
     if self._n_refl[block_id] > 1:
@@ -472,7 +462,6 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
     self._normalised_x_values = []
     self._normalised_y_values = []
     self._normalised_z_values = []
-    self._inverse_scales = []
     self._n_refl = []
     normalised_x_values = self.data['x']
     normalised_y_values = self.data['y']
@@ -499,15 +488,12 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
         self._normalised_x_values.append(normalised_x_values.select(sel))
         self._normalised_y_values.append(normalised_y_values.select(sel))
         self._normalised_z_values.append(normalised_z_values.select(sel))
-        self._inverse_scales.append(flex.double(
-          self._normalised_x_values[i].size(), 1.0))
-        self._n_refl.append(self.inverse_scales[i].size())
+        self._n_refl.append(self._normalised_x_values[i].size())
     else:
       self._normalised_x_values.append(normalised_x_values)
       self._normalised_y_values.append(normalised_y_values)
       self._normalised_z_values.append(normalised_z_values)
-      self._inverse_scales.append(flex.double(normalised_x_values.size(), 1.0))
-      self._n_refl.append(self._inverse_scales[0].size())
+      self._n_refl.append(normalised_x_values.size())
 
 
   def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):

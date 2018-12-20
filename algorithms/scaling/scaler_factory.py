@@ -82,15 +82,17 @@ class SingleScalerFactory(ScalerFactory):
         (reflection_table.experiment_identifiers().values()[0], experiment.scaling_model.id_))
 
     reflection_table, reasons = cls.filter_bad_reflections(reflection_table)
-    n_excluded = reflection_table.get_flags(
-      reflection_table.flags.excluded_for_scaling).count(True)
+    excluded_for_scaling = reflection_table.get_flags(
+      reflection_table.flags.excluded_for_scaling)
+    user_excluded = reflection_table.get_flags(
+      reflection_table.flags.user_excluded_in_scaling)
+    n_excluded = (excluded_for_scaling | user_excluded).count(True)
     if n_excluded == reflection_table.size():
       logger.info("All reflections were determined to be unsuitable for scaling.")
       logger.info(reasons)
       raise BadDatasetForScalingException("""Unable to use this dataset for scaling""")
     elif params.scaling_options.verbosity > 1:
-      logger.info('%s reflections not suitable for scaling',
-        reflection_table.get_flags(reflection_table.flags.excluded_for_scaling).count(True))
+      logger.info('%s reflections not suitable for scaling', n_excluded)
       logger.info(reasons)
     if not 'inverse_scale_factor' in reflection_table:
       reflection_table['inverse_scale_factor'] = flex.double(
@@ -160,7 +162,7 @@ class MultiScalerFactory(object):
     '''method to pass scalers from TargetScaler to a MultiScaler'''
     single_scalers = []
     for scaler in targetscaler.unscaled_scalers:
-      scaler.select_reflections_for_scaling(for_multi=True)
+      #scaler.select_reflections_for_scaling(for_multi=True)
       single_scalers.append(scaler)
     single_scalers.extend(targetscaler.single_scalers)
     return MultiScaler(targetscaler.params, [targetscaler.experiments], single_scalers)

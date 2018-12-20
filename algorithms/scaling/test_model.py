@@ -61,7 +61,7 @@ def test_ScalingModelBase(mock_errormodel):
   SM_base.set_error_model(mock_errormodel)
   assert SM_base.configdict['error_model_parameters'] == mock_errormodel.refined_parameters
   assert SM_base.error_model is mock_errormodel
-  _ = SM_base.configure_reflection_table(1.0, 2.0, 0.0) #Check method exists
+  _ = SM_base.configure_components(1.0, 2.0, 0.0) #Check method exists
   SM_base.show()
 
 def test_KBScalingModel():
@@ -149,9 +149,7 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
   # Test configure reflection table
   mock_params = Mock()
   mock_params.parameterisation.decay_restraint = 0.0
-  rt = physicalmodel.configure_reflection_table(test_reflections, mock_exp, mock_params)
-  assert physicalmodel.components['scale'].col_name in rt
-  assert physicalmodel.components['decay'].col_name in rt
+  rt = physicalmodel.configure_components(test_reflections, mock_exp, mock_params)
 
   # Test normalise components.
   physicalmodel.components['scale'].update_reflection_data(rt)
@@ -159,8 +157,10 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
   physicalmodel.components['decay'].update_reflection_data(rt)
   physicalmodel.components['decay'].calculate_scales_and_derivatives()
   physicalmodel.normalise_components()
-  assert list(physicalmodel.components['scale'].inverse_scales[0]) == [1.0, 1.0]
-  assert list(physicalmodel.components['decay'].inverse_scales[0]) == [1.0, 1.0]
+  assert list(physicalmodel.components['scale'].parameters) == pytest.approx(
+    [1.007195, 0.923262], 1e-4)
+  assert list(physicalmodel.components['decay'].parameters) == pytest.approx(
+    [-0.008573, 0.0914265], 1e-4)
 
   # Test from_dict initialisation method.
   physical_dict = {"__id__": "physical", "is_scaled": True, "scale": {
@@ -279,10 +279,7 @@ def test_ArrayScalingModel(test_reflections, mock_exp):
   assert list(arraymodel.components['modulation'].parameters) == 4 * [0.9]
 
   # Test configure reflection table
-  rt = arraymodel.configure_reflection_table(test_reflections, mock_exp, [])
-  for comp in ['decay', 'absorption', 'modulation']:
-    for col_name in arraymodel.components[comp].col_names:
-      assert col_name in rt
+  rt = arraymodel.configure_components(test_reflections, mock_exp, [])
 
   # Test from_dict initialisation method for previous model case.
   init_dict = arraymodel.to_dict()

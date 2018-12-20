@@ -23,6 +23,8 @@ def test_ScaleComponentBase():
       """Fill in abstract method."""
     def calculate_scales_and_derivatives(self, curvatures=False):
       """Fill in abstract method."""
+    def calculate_scales(self):
+      """Fill in abstract method."""
 
   # Test initialisation with no parameter esds.
   base_SF = base_SF_filler(flex.double([1.0] * 3))
@@ -37,28 +39,16 @@ def test_ScaleComponentBase():
     # Try to change the number of parameters - should fail
     base_SF.parameters = flex.double([2.0, 2.0, 2.0, 2.0])
 
-  # Test setting of inverse scales and updating to a list of different length.
-  base_SF.inverse_scales = flex.double([1.0, 1.0])
-  assert list(base_SF.inverse_scales) == [1.0, 1.0]
-  base_SF.inverse_scales = flex.double([1.0, 1.0, 1.0, 1.0])
-  assert list(base_SF.inverse_scales) == [1.0, 1.0, 1.0, 1.0]
-
   # Test setting of var_cov matrix.
   assert base_SF.var_cov_matrix is None
   base_SF.var_cov_matrix = [1.0, 0.0, 0.0]
   assert base_SF.var_cov_matrix == [1.0, 0.0, 0.0]
-
-  assert hasattr(base_SF, '_derivatives')
-  assert hasattr(base_SF, '_curvatures')
 
   assert base_SF.calculate_restraints() is None
   assert base_SF.calculate_jacobian_restraints() is None
 
   base_SF = base_SF_filler(flex.double(3, 1.0), flex.double(3, 0.1))
   assert list(base_SF.parameter_esds) == [0.1] * 3
-
-  assert base_SF.derivatives == base_SF._derivatives
-  assert base_SF.curvatures == base_SF._curvatures
 
 def test_SingleScaleFactor():
   """Test for SingleScaleFactor class."""
@@ -171,7 +161,6 @@ def test_SmoothScaleFactor1D():
   SF.data = {'x' : norm_rot}
   SF.update_reflection_data()
   assert list(SF.normalised_values[0]) == [0.5, 1.0, 2.5, 0.0]
-  assert list(SF.inverse_scales[0]) == [1.0, 1.0, 1.0, 1.0]
   SF.smoother.set_smoothing(4, 1.0)
   assert list(SF.smoother.positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5]
   s, d = SF.calculate_scales_and_derivatives()
@@ -217,7 +206,6 @@ def test_SmoothBScaleFactor1D():
   SF.update_reflection_data()
   assert list(SF.normalised_values[0]) == [0.5, 1.0, 2.5, 0.0]
   assert list(SF.d_values[0]) == [1.0, 1.0, 1.0, 1.0]
-  assert list(SF.inverse_scales[0]) == [1.0, 1.0, 1.0, 1.0]
   SF.smoother.set_smoothing(4, 1.0)
   s, d = SF.calculate_scales_and_derivatives()
   s2 = SF.calculate_scales()

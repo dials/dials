@@ -33,8 +33,6 @@ class ScaleComponentBase(object):
     # Store the below properties as lists, to allow splitting into blocks
     # for multiprocessing.
     self._n_refl = []
-    self._inverse_scales = []
-    self._derivatives = []
     self._curvatures = []
     self._parameter_restraints = None
     self._data = {}
@@ -112,21 +110,6 @@ class ScaleComponentBase(object):
     return self._n_refl
 
   @property
-  def inverse_scales(self):
-    """The inverse scale factors associated with the data."""
-    return self._inverse_scales
-
-  @inverse_scales.setter
-  def inverse_scales(self, new_inverse_scales):
-    self._inverse_scales = new_inverse_scales
-
-  @property
-  def derivatives(self):
-    """A spares matrix of the derivatives of the inverse scale
-    factors with respect to the component parameters."""
-    return self._derivatives
-
-  @property
   def curvatures(self):
     """A spares matrix of the curvatures of the inverse scale
     factors with respect to the component parameters."""
@@ -143,8 +126,11 @@ class ScaleComponentBase(object):
 
   @abc.abstractmethod
   def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
-    """Use the component parameters to calculate and set
-    self._inverse_scales and self._derivatives."""
+    """Use the component parameters to calculate and inverse_scales and derivatives."""
+
+  @abc.abstractmethod
+  def calculate_scales(self, block_id=0):
+    """Use the component parameters to calculate the inverse scale factors."""
 
 
 class SingleScaleFactor(ScaleComponentBase):
@@ -177,8 +163,7 @@ class SingleScaleFactor(ScaleComponentBase):
       self._n_refl.append(data.size())
 
   def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
-    scales = flex.double(self.n_refl[block_id],
-        self._parameters[0])
+    scales = flex.double(self.n_refl[block_id], self._parameters[0])
     derivatives = sparse.matrix(self.n_refl[block_id], 1)
     for i in range(self.n_refl[block_id]):
       derivatives[i, 0] = 1.0
@@ -186,6 +171,9 @@ class SingleScaleFactor(ScaleComponentBase):
       curvatures = sparse.matrix(self.n_refl[block_id], 1)#curvatures are all zero.
       return scales, derivatives, curvatures
     return scales, derivatives
+
+  def calculate_scales(self, block_id=0):
+    return flex.double(self.n_refl[block_id], self._parameters[0])
 
 class SingleBScaleFactor(ScaleComponentBase):
   """A model component for a single global B-factor parameter.
@@ -239,6 +227,11 @@ class SingleBScaleFactor(ScaleComponentBase):
           / ((2.0 * (self._d_values[block_id][i]**2))**2))
       return scales, derivatives, curvatures
     return scales, derivatives
+
+  def calculate_scales(self, block_id=0):
+    scales = flex.exp(flex.double([self._parameters[0]] * self._n_refl[block_id])
+      / (2.0 * (self._d_values[block_id]*self._d_values[block_id])))
+    return scales
 
 class SHScaleComponent(ScaleComponentBase):
   """A model component for a spherical harmonic absorption correction.
@@ -323,3 +316,10 @@ class SHScaleComponent(ScaleComponentBase):
         abs_scale.size(), self._n_params)
       return abs_scale, self._harmonic_values[block_id], curvatures
     return abs_scale, self._harmonic_values[block_id]
+
+  def calculate_scales(self, block_id=0):
+    abs_scale = flex.double(self._harmonic_values[block_id].n_rows, 1.0
+      ) #Unity term
+    for i, col in enumerate(self._harmonic_values[block_id].cols()):
+      abs_scale += flex.double(col.as_dense_vector() * self._parameters[i])
+    return abs_scale
