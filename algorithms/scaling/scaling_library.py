@@ -171,12 +171,8 @@ def scale_single_dataset(reflection_table, experiment, params=None,
 
   experiments = create_scaling_model(params, experiment, [reflection_table])
   scaler = SingleScalerFactory.create(params, experiments[0], reflection_table)
-  scaler.perform_scaling()
-  scaler.outlier_rejection_routine()
-  scaler.perform_scaling(engine=params.scaling_refinery.full_matrix_engine,
-    max_iterations=params.scaling_refinery.full_matrix_max_iterations)
-  scaler.expand_scales_to_all_reflections(calc_cov=True)
-  scaler.round_of_outlier_rejection()
+  from dials.algorithms.scaling.subprocesses import scaling_algorithm
+  scaler = scaling_algorithm(scaler)
   return scaler.reflection_table
 
 def create_auto_scaling_model(params, experiments, reflections):

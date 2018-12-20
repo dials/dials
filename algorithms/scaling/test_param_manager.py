@@ -24,7 +24,7 @@ def mock_component():
 def mock_scaling_component(n_refl):
   """Return a mock component of a general model."""
   component = mock_component()
-  component.inverse_scales = [flex.double(n_refl, 1.0)]
+  component.calculate_scales.return_value = flex.double(n_refl, 1.0)
   component.n_refl = [n_refl]
   return component
 
@@ -254,7 +254,8 @@ def test_scaling_active_parameter_manager():
   """Test the scaling-specific parameter manager."""
   components_2 = {'1' : mock_scaling_component(2), '2' : mock_scaling_component(2)}
   scaling_apm = scaling_active_parameter_manager(components_2, ['1'])
-  assert scaling_apm.constant_g_values == components_2['2'].inverse_scales
+  assert list(scaling_apm.constant_g_values[0]) == list(components_2['2'].calculate_scales())
+  assert len(scaling_apm.constant_g_values) == 1
   assert scaling_apm.n_obs == [2]
 
   # Test that no constant_g_values if both components selected

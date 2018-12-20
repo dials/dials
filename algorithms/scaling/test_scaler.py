@@ -562,6 +562,7 @@ def test_SingleScaler_update_for_minimisation(test_reflections,
   apm = apm_fac.make_next_apm()
 
   Ih_table = single_scaler.Ih_table.blocked_data_list[0]
+  Ih_table.calc_Ih()
   assert list(Ih_table.inverse_scale_factors) == [1.0, 1.0]
   assert list(Ih_table.Ih_values) == [10.0, 1.0]
   single_scaler.update_for_minimisation(apm, 0)
@@ -934,11 +935,13 @@ def test_sf_variance_calculation(test_experiments, test_params):
   d2 = 2.0
   d3 = 3.0
   rt['d'] = flex.double([d1, d2, d3])
-  components['scale'].update_reflection_data(rt)
+  rt['id'] = flex.int([0, 0, 0])
+  experiments[0].scaling_model.configure_components(rt, experiments[0], test_params)
+  components['scale'].update_reflection_data()
   _, d = components['scale'].calculate_scales_and_derivatives()
   assert list(d.col(0)) == [
     (0, 1.0), (1, 1.0), (2, 1.0)]
-  components['decay'].update_reflection_data(rt)
+  components['decay'].update_reflection_data()
   s, d = components['decay'].calculate_scales_and_derivatives()
   assert list(d.col(0)) == [(0, 1.0/(2.0*d1*d1)),
     (1, 1.0/(2.0*d2*d2)), (2, 1.0/(2.0*d3*d3))]

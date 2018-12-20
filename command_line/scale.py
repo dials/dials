@@ -408,27 +408,9 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
       if scaler.params.scaling_options.only_target or \
         scaler.params.scaling_options.target_model or \
         scaler.params.scaling_options.target_mtz:
-        #Do some rounds of targeted scaling and then exit the algorithm.
 
-        if scaler.params.scaling_options.outlier_rejection:
-          scaler.outlier_rejection_routine()
-          scaler.perform_scaling()
-
-        if scaler.params.scaling_options.full_matrix and (
-          scaler.params.scaling_refinery.engine == 'SimpleLBFGS'):
-          scaler.perform_scaling(
-            engine=scaler.params.scaling_refinery.full_matrix_engine,
-            max_iterations=scaler.params.scaling_refinery.full_matrix_max_iterations)
-
-        scaler.expand_scales_to_all_reflections()
-        if scaler.params.scaling_options.outlier_rejection:
-          scaler.round_of_outlier_rejection()
-        scaler.expand_scales_to_all_reflections(calc_cov=True)
-        if scaler.params.weighting.optimise_errors:
-          scaler.perform_error_optimisation(update_Ih=False)
-
-        scaler.adjust_variances()
-        scaler.clean_reflection_tables()
+        from dials.algorithms.scaling.subprocesses import targeted_scaling_algorithm
+        scaler = targeted_scaling_algorithm(scaler)
         return scaler
       # Now pass to a multiscaler ready for next round of scaling.
       scaler.expand_scales_to_all_reflections()
@@ -439,54 +421,6 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
     from dials.algorithms.scaling.subprocesses import scaling_algorithm
     scaler = scaling_algorithm(scaler)
     return scaler
-    """scaler.perform_scaling()
-
-    #Do another round of outlier rejection and then another minimisation.
-    rescale = False
-    if scaler.params.scaling_options.outlier_rejection:
-      scaler.outlier_rejection_routine()
-      rescale = True
-
-    if scaler.params.reflection_selection.intensity_choice == 'combine':
-      scaler.combine_intensities()
-      if scaler.params.scaling_options.outlier_rejection:
-        scaler.outlier_rejection_routine()
-      rescale = True
-
-    if rescale:
-      scaler.perform_scaling()
-      if scaler.params.scaling_options.outlier_rejection:
-        scaler.outlier_rejection_routine()
-
-    # Option to optimise the error model and then do another minimisation.
-    if scaler.params.weighting.optimise_errors:
-      scaler.error_optimisation_routine()
-      scaler.perform_scaling()
-
-    # Now do one round of full matrix minimisation to determine errors.
-    if scaler.params.scaling_options.full_matrix and (
-      scaler.params.scaling_refinery.engine == 'SimpleLBFGS'):
-      scaler.perform_scaling(
-        engine=scaler.params.scaling_refinery.full_matrix_engine,
-        max_iterations=scaler.params.scaling_refinery.full_matrix_max_iterations)
-
-    # The minimisation has only been done on a subset on the data, so apply the
-    # scale factors to the whole reflection table.
-
-    scaler.clear_Ih_table()
-    scaler.expand_scales_to_all_reflections()
-    if scaler.params.scaling_options.outlier_rejection:
-      # Note just call the method, not the 'outlier_rejection_routine'
-      scaler.round_of_outlier_rejection()
-
-    scaler.expand_scales_to_all_reflections(calc_cov=True)
-    if scaler.params.weighting.optimise_errors:
-      # Note just call the method, not the 'error_optimisation_routine'
-      scaler.perform_error_optimisation(update_Ih=False)
-
-    scaler.adjust_variances()
-    scaler.clean_reflection_tables()
-    return scaler"""
 
 def ensure_consistent_space_groups(experiments, params):
   """Make all space groups the same, and raise an error if not."""

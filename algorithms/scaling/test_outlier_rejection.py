@@ -27,14 +27,14 @@ def mock_exp_with_sg(test_sg):
 def generated_Ih_table(test_sg):
   """Generate an Ih_table"""
   rt = generate_outlier_table()
-  Ih_table = simple_Ih_table([(rt, None)], test_sg, nblocks=1)
+  Ih_table = simple_Ih_table([rt], test_sg, nblocks=1)
   return Ih_table
 
 @pytest.fixture
 def outlier_target_table(test_sg):
   """Generate an Ih_table for targeted outlier rejection"""
   target = generate_target_table()
-  target_Ih = simple_Ih_table([(target, None)], test_sg, nblocks=1)
+  target_Ih = simple_Ih_table([target], test_sg, nblocks=1)
   return target_Ih
 
 def generate_target_table():
@@ -107,7 +107,7 @@ def test_multi_dataset_outlier_rejection(test_sg):
   rt2.set_flags(flex.bool([False, False, False]),
     rt1.flags.excluded_for_scaling)
   rt2.set_flags(flex.bool(3, False), rt2.flags.user_excluded_in_scaling)
-  Ih_table = simple_Ih_table([(rt1, None), (rt2, None)], test_sg, nblocks=1)
+  Ih_table = simple_Ih_table([rt1, rt2], test_sg, nblocks=1)
   zmax = 6.0
   outliers = SimpleNormDevOutlierRejection(Ih_table, zmax).final_outlier_arrays
   assert len(outliers) == 2

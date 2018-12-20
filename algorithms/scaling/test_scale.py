@@ -283,8 +283,7 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
   result = get_merging_stats("unmerged.mtz")
   assert result.overall.r_pim < 0.024 #at 14/08/18, value was 0.023
   assert result.overall.cc_one_half > 0.9955 # at 14/08/18, value was 0.999
-  assert result.overall.n_obs > 2100 # at 14/08/18, was 2123
-  #FIXME in target_mtz, why are many more outliers rejected?
+  assert result.overall.n_obs > 2300 # at 07/01/19, was 2321
 
   # run again with the concurrent scaling option turned off and the 'standard'
   # outlier rejection
@@ -299,9 +298,9 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
   # Now inspect output, check it hasn't changed drastically, or if so verify
   # that the new behaviour is more correct and update test accordingly.
   result = get_merging_stats("unmerged.mtz")
-  assert result.overall.r_pim < 0.035 #at 07/08/18, value was 0.034104
-  assert result.overall.cc_one_half > 0.9935 # at 07/08/18, value was 0.99388
-  assert result.overall.n_obs > 2310 # at 07/08/18, was 2319
+  assert result.overall.r_pim < 0.024 #at 07/01/19, value was 0.02372
+  assert result.overall.cc_one_half > 0.995 # at 07/01/19, value was 0.99568
+  assert result.overall.n_obs > 2320 # at 07/01/19, was 2336
 
 @pytest.mark.dataset_test
 def test_scale_optimise_errors(dials_regression, run_in_tmpdir):
@@ -352,9 +351,11 @@ def test_multi_scale(dials_regression, run_in_tmpdir):
   # that the new behaviour is more correct and update test accordingly.
   result = get_merging_stats("unmerged.mtz")
   expected_nobs = 5460
-  assert abs(result.overall.n_obs - expected_nobs) < 10
+  assert abs(result.overall.n_obs - expected_nobs) < 30
   assert result.overall.r_pim < 0.0221 #at 22/10/18, value was 0.22037
   assert result.overall.cc_one_half > 0.9975 # at 07/08/18, value was 0.99810
+  print(result.overall.r_pim )
+  print(result.overall.cc_one_half)
 
   #run again, optimising errors, and continuing from where last run left off.
   extra_args = ["optimise_errors=True", "unmerged_mtz=unmerged.mtz"]
@@ -365,7 +366,9 @@ def test_multi_scale(dials_regression, run_in_tmpdir):
   # Note: error optimisation currently appears to give worse results here!
   result = get_merging_stats("unmerged.mtz")
   expected_nobs = 5520
-  assert abs(result.overall.n_obs - expected_nobs) < 10
+  print(result.overall.r_pim )
+  print(result.overall.cc_one_half)
+  assert abs(result.overall.n_obs - expected_nobs) < 100
   assert result.overall.r_pim < 0.023 #at 07/08/18, value was 0.022722
   assert result.overall.cc_one_half > 0.9965 # at 07/08/18, value was 0.996925
 

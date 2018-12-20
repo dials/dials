@@ -45,7 +45,7 @@ def reject_outliers(reflection_table, experiment, method='standard', zmax=6.0):
     reflection_table['inverse_scale_factor'] = flex.double(
       reflection_table.size(), 1.0)
 
-  Ih_table = IhTable([(reflection_table, None)],
+  Ih_table = IhTable([reflection_table],
     experiment.crystal.get_space_group(), nblocks=1)
   outlier_indices = determine_outlier_index_arrays(
     Ih_table, method=method, zmax=zmax)[0]
@@ -133,7 +133,7 @@ class OutlierRejectionBase(object):
   __metaclass__ = abc.ABCMeta
 
   def __init__(self, Ih_table, zmax):
-    assert Ih_table.nblocks == 1, """
+    assert Ih_table.n_work_blocks == 1, """
 Outlier rejection algorithms require an Ih_table with nblocks = 1"""
     # Note: could be possible to code for nblocks > 1
     self.Ih_table_block = Ih_table.blocked_data_list[0]
@@ -177,7 +177,7 @@ class TargetedOutlierRejection(OutlierRejectionBase):
   """Outlier rejection routine with a target of 'ideal' intensities."""
 
   def __init__(self, reflection_tables, zmax, target):
-    assert target.nblocks == 1, """
+    assert target.n_work_blocks == 1, """
 Targeted outlier rejection requires a target Ih_table with nblocks = 1"""
     self.target_Ih_table_block = target.blocked_data_list[0]
     self.target_Ih_table_block.calc_Ih()
