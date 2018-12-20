@@ -101,7 +101,7 @@ def run(args):
     flex.set_random_seed(params.seed)
     random.seed(params.seed)
 
-  if params.save_plot and not params.animate:
+  if params.save_plot:
     import matplotlib
     # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
     matplotlib.use('Agg') # use a non-interactive backend
