@@ -715,8 +715,9 @@ class Script(object):
       logger.warn(msg)
 
     # Print help if no input
-    if (not params.input.datablock
-        and not (params.input.template or params.input.directory)):
+    if not any(
+      [params.input.datablock, params.input.template, params.input.directory]
+    ):
       self.parser.print_help()
       return
 
