@@ -348,30 +348,7 @@ def _set_n_intervals(smoother_params, analysis, scan, exp_ids):
     abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1)
   return n_intervals
 
-def build_prediction_parameterisation(options, experiments,
-    reflection_manager, do_stills=False):
-  """Given a set of parameters, create a parameterisation from a set of
-  experimental models.
-
-  Params:
-      options: The input parameters
-      experiments: An ExperimentList object
-      reflection_manager: A ReflectionManager object
-      do_stills (bool)
-
-  Returns:
-      A prediction equation parameterisation object
-  """
-
-  # Get the working set of reflections
-  reflections = reflection_manager.get_matches()
-
-  # If required, do full centroid analysis on the reflections (assumes
-  # outlier-rejection has been done already) to determine suitable interval
-  # widths for scan-varying refinement
-  analysis = _centroid_analysis(options, experiments, reflection_manager)
-
-  # Parameterise unique Beams
+def _parameterise_beams(options, experiments, analysis):
   beam_params = []
   sv_beam = options.scan_varying and not options.beam.force_static
   for ibeam, beam in enumerate(experiments.beams()):
@@ -433,7 +410,9 @@ def build_prediction_parameterisation(options, experiments,
     if beam_param.num_free() > 0:
       beam_params.append(beam_param)
 
-  # Parameterise unique Crystals
+  return beam_params
+
+def _parameterise_crystals(options, experiments, analysis):
   xl_ori_params = []
   xl_uc_params = []
   sv_xl_ori = options.scan_varying and not options.crystal.orientation.force_static
@@ -535,7 +514,9 @@ def build_prediction_parameterisation(options, experiments,
     if xl_uc_param.num_free() > 0:
       xl_uc_params.append(xl_uc_param)
 
-  # Parameterise unique Detectors
+  return xl_ori_params, xl_uc_params
+
+def _parameterise_detectors(options, experiments, analysis):
   det_params = []
   sv_det = options.scan_varying and not options.detector.force_static
   for idetector, detector in enumerate(experiments.detectors()):
@@ -634,7 +615,9 @@ def build_prediction_parameterisation(options, experiments,
     if det_param.num_free() > 0:
       det_params.append(det_param)
 
-  # Parameterise unique Goniometer setting matrices
+  return det_params
+
+def _parameterise_goniometers(options, experiments, analysis):
   gon_params = []
   sv_gon = options.scan_varying and not options.goniometer.force_static
   for igoniometer, goniometer in enumerate(experiments.goniometers()):
@@ -691,6 +674,38 @@ def build_prediction_parameterisation(options, experiments,
     if gon_param.num_free() > 0:
       gon_params.append(gon_param)
 
+  return gon_params
+
+def build_prediction_parameterisation(options, experiments,
+    reflection_manager, do_stills=False):
+  """Given a set of parameters, create a parameterisation from a set of
+  experimental models.
+
+  Params:
+      options: The input parameters
+      experiments: An ExperimentList object
+      reflection_manager: A ReflectionManager object
+      do_stills (bool)
+
+  Returns:
+      A prediction equation parameterisation object
+  """
+
+  # Get the working set of reflections
+  reflections = reflection_manager.get_matches()
+
+  # If required, do full centroid analysis on the reflections (assumes
+  # outlier-rejection has been done already) to determine suitable interval
+  # widths for scan-varying refinement
+  analysis = _centroid_analysis(options, experiments, reflection_manager)
+
+  # Parameterise each unique model
+  beam_params = _parameterise_beams(options, experiments, analysis)
+  xl_ori_params, xl_uc_params = _parameterise_crystals(options, experiments, analysis)
+  det_params = _parameterise_detectors(options, experiments, analysis)
+  gon_params = _parameterise_goniometers(options, experiments, analysis)
+
+  # Check for too many parameters and reduce if requested
   autoreduce = AutoReduce(options.auto_reduction,
     det_params, beam_params, xl_ori_params, xl_uc_params, gon_params,
     reflection_manager, scan_varying=options.scan_varying)
@@ -701,7 +716,7 @@ def build_prediction_parameterisation(options, experiments,
   xl_uc_params = autoreduce.xl_uc_params
   gon_params = autoreduce.gon_params
 
-  # Prediction equation parameterisation
+  # Build the prediction equation parameterisation
   if do_stills: # doing stills
     if options.sparse:
       if options.spherical_relp_model:
