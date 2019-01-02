@@ -307,8 +307,9 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
         i_obs=self.scaled_miller_array, n_bins=self.params.output.merging.nbins,
         anomalous=False, sigma_filtering=None, eliminate_sys_absent=False,
         use_internal_variance=self.params.output.use_internal_variance)
-      result.show(header=0, out=log.info_handle(logger))
-      result.show_estimated_cutoffs(out=log.info_handle(logger))
+      show_merging_summary(result.overall)
+      show_merging_stats_by_resolution(result)
+      show_estimated_cutoffs(result)
       self.merging_statistics_result = result
     except RuntimeError:
       raise DialsMergingStatisticsError("Failure during merging statistics calculation")
@@ -530,6 +531,59 @@ poorly-determined scaling problem or overparameterisation.""" % (frac_high_uncer
 (sigma/abs(parameter) > 0.5)""" % (frac_high_uncertainty * 100))
       logger.info("Plots of parameter uncertainties can be seen in dials report")
 
+def show_merging_summary(overall):
+  """Output a summary of merging statistics"""
+  logger.info(('Resolution: {0:.2f} - {1:.2f} {sep}Observations: {2:d} {sep}'
+  'Unique reflections: {3:d} {sep}Redundancy: {4:.1f} {sep}'
+  'Completeness: {5:.2f}% {sep}Mean intensity: {6:.1f} {sep}'
+  'Mean I/sigma(I): {7:.1f}'
+  ).format(overall.d_max, overall.d_min, overall.n_obs, overall.n_uniq,
+    overall.mean_redundancy, overall.completeness*100, overall.i_mean,
+    overall.i_over_sigma_mean, sep='\n'))
+  if overall.n_neg_sigmas > 0:
+    logger.info("SigI < 0 (rejected): %d observations", overall.n_neg_sigmas)
+  if overall.n_rejected_before_merge > 0:
+    logger.info("I < -3*SigI (rejected): %d observations", \
+    overall.n_rejected_before_merge)
+  if overall.n_rejected_after_merge > 0:
+    logger.info("I < -3*SigI (rejected): %d reflections", \
+    overall.n_rejected_after_merge)
+  logger.info((
+    'R-merge: {0:5.3f}{sep}R-meas:  {1:5.3f}{sep}R-pim:   {2:5.3f}{sep}').format(
+      overall.r_merge, overall.r_meas, overall.r_pim, sep='\n'))
+
+def show_merging_stats_by_resolution(result):
+  """Output merging statistics by resolution bin"""
+  logger.info('Statistics by resolution bin:')
+  logger.info(
+ ' d_max  d_min   #obs  #uniq   mult.  %%comp       <I>  <I/sI>    r_mrg   r_meas    r_pim   %scc1/2  cc_ano',
+    (' ' if result.overall.cc_one_half_significance is not None else ''))
+  for bin_stats in result.bins:
+    logger.info(bin_stats.format())
+  logger.info(result.overall.format())
+
+def show_estimated_cutoffs(result):
+  """Show estimated cutoffs based on iotbx code"""
+  def format_d_min(value):
+    """Format result values"""
+    if value is None:
+      return "(use all data)"
+    return "%7.3f" % value
+  cc_one_half_cut = result.estimate_d_min(min_cc_one_half=0.33)
+  i_over_sigma_cut = result.estimate_d_min(min_i_over_sigma=2.0)
+  r_merge_cut = result.estimate_d_min(max_r_merge=0.5)
+  r_meas_cut = result.estimate_d_min(max_r_meas=0.5)
+  completeness_cut_conservative = result.estimate_d_min(min_completeness=0.9)
+  completeness_cut_permissive = result.estimate_d_min(min_completeness=0.5)
+  logger.info("\nResolution cutoff estimates:")
+  logger.info('resolution of all data          : %7.3f', result.overall.d_min)
+  logger.info('based on CC(1/2) >= 0.33        : %s', format_d_min(cc_one_half_cut))
+  logger.info('based on mean(I/sigma) >= 2.0   : %s', format_d_min(i_over_sigma_cut))
+  logger.info('based on R-merge < 0.5          : %s', format_d_min(r_merge_cut))
+  logger.info('based on R-meas < 0.5           : %s', format_d_min(r_meas_cut))
+  logger.info('based on completeness >= 90%%    : %s', format_d_min(completeness_cut_conservative))
+  logger.info('based on completeness >= 50%%    : %s', format_d_min(completeness_cut_permissive))
+  logger.info('NOTE: we recommend using all data out to the CC(1/2) limit for refinement')
 
 if __name__ == "__main__":
   try:
