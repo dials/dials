@@ -478,6 +478,7 @@ class analyse_datasets(symmetry_base):
 
     coord_x = self.coords[:,0:1].as_1d()
     coord_y = self.coords[:,1:2].as_1d()
+    assert coord_x.size() == coord_y.size(), (coord_x.size(), coord_y.size())
     coord_reduced_x = self.coords_reduced[:,0:1].as_1d()
     coord_reduced_y = self.coords_reduced[:,1:2].as_1d()
     plot((coord_x, coord_y), labels=self.cluster_labels,
