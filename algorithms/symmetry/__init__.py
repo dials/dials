@@ -33,13 +33,8 @@ class symmetry_base(object):
       for i, p in enumerate(d.unit_cell().parameters()):
         uc_params[i].append(p)
     self.median_unit_cell = uctbx.unit_cell(parameters=[flex.median(p) for p in uc_params])
-    for d in self.input_intensities:
-      if (relative_length_tolerance is not None and
-          absolute_angle_tolerance is not None):
-        assert d.unit_cell().is_similar_to(
-          self.median_unit_cell, relative_length_tolerance,
-          absolute_angle_tolerance), (
-            str(d.unit_cell()), str(self.median_unit_cell))
+    self._check_unit_cell_consistency(
+      relative_length_tolerance, absolute_angle_tolerance)
 
     self.intensities = self.input_intensities[0]
     self.dataset_ids = flex.double(self.intensities.size(), 0)
@@ -76,34 +71,45 @@ class symmetry_base(object):
     self.dataset_ids = self.dataset_ids.select(sel)
 
     # Correct SDs by "typical" SD factors
-    self.correct_sigmas(sd_fac=2.0, sd_b=0.0, sd_add=0.03)
+    self._correct_sigmas(sd_fac=2.0, sd_b=0.0, sd_add=0.03)
 
-    if normalisation is not None:
-      if normalisation == 'kernel':
-        normalise = self.kernel_normalisation
-      elif normalisation == 'quasi':
-        normalise = self.quasi_normalisation
-      elif normalisation == 'ml_iso':
-        normalise = self.ml_iso_normalisation
-      elif normalisation == 'ml_aniso':
-        normalise = self.ml_aniso_normalisation
+    self._resolution_filter(d_min, min_i_mean_over_sigma_mean, min_cc_half)
 
-      for i in range(int(flex.max(self.dataset_ids)+1)):
-        logger.info('Normalising intensities for dataset %i' % (i+1))
-        sel = self.dataset_ids == i
-        intensities = self.intensities.select(self.dataset_ids == i)
-        if i == 0:
-          normalised_intensities = normalise(intensities)
-        else:
-          normalised_intensities = normalised_intensities.concatenate(
-            normalise(intensities))
-      self.intensities = normalised_intensities.set_info(
-        self.intensities.info()).set_observation_type_xray_intensity()
+  def _check_unit_cell_consistency(
+      self, relative_length_tolerance, absolute_angle_tolerance):
+    for d in self.input_intensities:
+      if (relative_length_tolerance is not None and
+          absolute_angle_tolerance is not None):
+        assert d.unit_cell().is_similar_to(
+          self.median_unit_cell, relative_length_tolerance,
+          absolute_angle_tolerance), (
+            str(d.unit_cell()), str(self.median_unit_cell))
 
-    if d_min is not None or d_min is libtbx.Auto:
-      self.resolution_filter(d_min, min_i_mean_over_sigma_mean, min_cc_half)
+  def _normalise(self):
+    if normalisation is None:
+      return
+    elif normalisation == 'kernel':
+      normalise = self.kernel_normalisation
+    elif normalisation == 'quasi':
+      normalise = self.quasi_normalisation
+    elif normalisation == 'ml_iso':
+      normalise = self.ml_iso_normalisation
+    elif normalisation == 'ml_aniso':
+      normalise = self.ml_aniso_normalisation
 
-  def correct_sigmas(self, sd_fac, sd_b, sd_add):
+    for i in range(int(flex.max(self.dataset_ids)+1)):
+      logger.info('Normalising intensities for dataset %i' % (i+1))
+      sel = self.dataset_ids == i
+      intensities = self.intensities.select(self.dataset_ids == i)
+      if i == 0:
+        normalised_intensities = normalise(intensities)
+      else:
+        normalised_intensities = normalised_intensities.concatenate(
+          normalise(intensities))
+    self.intensities = normalised_intensities.set_info(
+      self.intensities.info()).set_observation_type_xray_intensity()
+
+  def _correct_sigmas(self, sd_fac, sd_b, sd_add):
     # sd' = SDfac * Sqrt(sd^2 + SdB * I + (SDadd * I)^2)
     sigmas = sd_fac * flex.sqrt(
       flex.pow2(self.intensities.sigmas() + (sd_b * self.intensities.data()) + flex.pow2(sd_add * self.intensities.data())))
@@ -202,7 +208,7 @@ class symmetry_base(object):
         normalisation.p_scale, intensities.unit_cell(),
         u_star))
 
-  def resolution_filter(self, d_min, min_i_mean_over_sigma_mean, min_cc_half):
+  def _resolution_filter(self, d_min, min_i_mean_over_sigma_mean, min_cc_half):
     if d_min is libtbx.Auto and (
         min_i_mean_over_sigma_mean is not None or min_cc_half is not None):
       from dials.util import Resolutionizer
