@@ -137,7 +137,9 @@ class analyse_datasets(symmetry_base):
       weights=self.params.weights,
       nproc=self.params.nproc,
     )
-    if self.params.dimensions is Auto:
+    if self.params.dimensions is Auto and self.target.dim == 2:
+      self.params.dimensions = 2
+    elif self.params.dimensions is Auto:
       dimensions = []
       functional = []
       explained_variance = []
