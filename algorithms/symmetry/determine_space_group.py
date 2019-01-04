@@ -18,6 +18,37 @@ from dials.algorithms.symmetry import symmetry_base
 
 class determine_space_group(symmetry_base):
 
+  """Determination of Laue group symmetry using algorithms similar to POINTLESS.
+
+    See also::
+      `Evans, P. (2006). Acta Cryst. D62, 72-82.
+      <https://doi.org/10.1107/S0907444905036693>`_ and
+      `Evans, P. R. (2011). Acta Cryst. D67, 282-292.
+      <https://doi.org/10.1107/S090744491003982X>`_) for.
+
+    Args:
+      intensities (cctbx.miller.array): The intensities on which to perform
+        cosym anaylsis.
+      normalisation (str): The normalisation method to use. Possible choices are
+        'kernel', 'quasi', 'ml_iso' and 'ml_aniso'. Set to None to switch off
+        normalisation altogether.
+      lattice_symmetry_max_delta (float): The maximum value of delta for
+        determining the lattice symmetry using the algorithm of Le Page (1982).
+      d_min (float): Optional resolution cutoff to be applied to the input
+        intensities. If set to `libtbx.Auto` then d_min will be automatically
+        determined according to the parameters `min_i_mean_over_sigma_mean` and
+        `min_cc_half`.
+      min_i_mean_over_sigma_mean (float): minimum value of |I|/|sigma(i)| for
+        automatic determination of resolution cutoff.
+      min_cc_half (float): minimum value of CC1/2 for automatic determination of
+        resolution cutoff.
+      relative_length_tolerance (float): Relative length tolerance in checking
+        consistency of input unit cells against the median unit cell.
+      absolute_angle_tolerance (float): Absolute angle tolerance in checking
+        consistency of input unit cells against the median unit cell.
+
+  """
+
   def __init__(self, intensities,
                normalisation='ml_aniso',
                lattice_symmetry_max_delta=2.0,
@@ -37,12 +68,12 @@ class determine_space_group(symmetry_base):
       relative_length_tolerance=relative_length_tolerance,
       absolute_angle_tolerance=absolute_angle_tolerance)
 
-    self.estimate_cc_sig_fac()
-    self.estimate_cc_true()
-    self.score_symmetry_elements()
-    self.score_laue_groups()
+    self._estimate_cc_sig_fac()
+    self._estimate_cc_true()
+    self._score_symmetry_elements()
+    self._score_laue_groups()
 
-  def estimate_cc_sig_fac(self):
+  def _estimate_cc_sig_fac(self):
 
     # A1.1. Estimation of sigma(CC) as a function of sample size.
 
@@ -103,7 +134,7 @@ class determine_space_group(symmetry_base):
         plt.xlim(), [fit.slope() * x_ + fit.y_intercept() for x_ in plt.xlim()])
       plt.show()
 
-  def estimate_cc_true(self):
+  def _estimate_cc_true(self):
 
     # A1.2. Estimation of E(CC; S).
 
@@ -144,14 +175,14 @@ class determine_space_group(symmetry_base):
     logger.debug('cc_identity: %g', self.cc_identity.coefficient())
     logger.debug('cc_true: %g', self.cc_true)
 
-  def score_symmetry_elements(self):
+  def _score_symmetry_elements(self):
     self.sym_op_scores = []
     for smx in self.lattice_group.smx():
       if smx.r().info().sense() < 0: continue
       self.sym_op_scores.append(
         ScoreSymmetryElement(self.intensities, smx, self.cc_true, self.cc_sig_fac))
 
-  def score_laue_groups(self):
+  def _score_laue_groups(self):
     subgroup_scores = [
       ScoreSubGroup(subgrp, self.sym_op_scores) for subgrp in self.subgroups.result_groups]
     total_likelihood = sum(score.likelihood for score in subgroup_scores)
@@ -247,6 +278,11 @@ class determine_space_group(symmetry_base):
     return "\n".join(output)
 
   def as_dict(self):
+    """Return a dictionary representation of the results.
+
+    Returns:
+      dict
+    """
     d = {
       'input_symmetry': {
         'hall_symbol': self.input_intensities[0].space_group().type().hall_symbol(),
@@ -270,14 +306,52 @@ class determine_space_group(symmetry_base):
     return d
 
   def as_json(self, filename=None, indent=2):
+    """Return a json representation of the results.
+
+    Args:
+      filename (str): Optional filename to export the json representation of
+        the results.
+      indent (int): The indent level for pretty-printing of the json. If `None`
+        is the most compact representation.
+
+    Returns:
+      str
+    """
     d = self.as_dict()
     import json
+    json_str = json.dumps(d, indent=indent)
     if filename is not None:
-      return json.dump(d, open(filename, 'wb'), indent=indent)
-    else:
-      return json.dumps(d, indent=indent)
+      with open(filename, 'wb') as f:
+        f.write(json_str)
+    return json.dumps(d, indent=indent)
 
 class ScoreSymmetryElement(object):
+  """Analyse intensities for presence of a given symmetry operation.
+
+  1) Calculate the correlation coefficient, CC, for the given sym op.
+
+  2) Calculate the probability of observing this CC if the sym op is present,
+     p(CC; S), modelled by a Cauchy distribution centred on cc_true and width
+     gamma = sigma_cc.
+
+  3) Calculate the probability of observing this CC if the sym op is
+     NOT present, p(CC; !S).
+
+  4) Calculate the likelihood of symmetry element being present,
+     p(S; CC) = p(CC; S) / (p(CC; S) + p(CC; !S))
+
+  See appendix A1 of `Evans, P. R. (2011). Acta Cryst. D67, 282-292.
+  <https://doi.org/10.1107/S090744491003982X>`_
+
+  Args:
+    intensities (cctbx.miller.array): The intensities on which to perform
+      symmetry anaylsis.
+    sym_op (cctbx.sgtbx.rt_mx): The symmetry operation for analysis.
+    cc_true (float): the expected value of CC if the symmetry element is present,
+      E(CC; S)
+    cc_sig_fac (float): Estimation of sigma(CC) as a function of sample size.
+
+  """
 
   def __init__(self, intensities, sym_op, cc_true, cc_sig_fac):
 
@@ -360,6 +434,20 @@ class ScoreSymmetryElement(object):
                                      self.sym_op.r().info())
 
   def as_dict(self):
+    """Return a dictionary representation of the symmetry element scoring.
+
+    The `dict` will contain the following keys:
+      - likelihood: The likelihood of the symmetry element being present
+      - z_cc: The Z-score for the correlation coefficent
+      - cc: The correlation coefficient for the symmetry element
+      - n_ref: The number of reflections contributing to the correlation
+        coefficient
+      - operator: The xyz representation of the symmetry element
+
+    Returns:
+      dict
+    """
+
     return {
       'likelihood': self.likelihood,
       'z_cc': self.z_cc,
@@ -369,6 +457,27 @@ class ScoreSymmetryElement(object):
     }
 
 class ScoreSubGroup(object):
+  """Score the probability of a given subgroup being the true subgroup.
+
+  1) Calculates the combined correlation coefficients for symmetry operations
+     present/absent from the subgroup.
+
+  2) Calculates overall Zcc scores for symmetry elements present/absent from
+     the subgroup.
+
+  3) Calculates the overall likelihood for this subgroup.
+
+  See appendix A2 of `Evans, P. R. (2011). Acta Cryst. D67, 282-292.
+  <https://doi.org/10.1107/S090744491003982X>`_
+
+  Args:
+    subgroup (dict): A dictionary describing the subgroup as generated by
+      `cctbx.sgtbx.lattice_symmetry.metric_subgroups`.
+    sym_op_scores (list): A list of `ScoreSymmetryElement` objects for each
+      symmetry element possibly in the lattice symmetry.
+
+  """
+
   def __init__(self, subgroup, sym_op_scores):
 
     # Combined correlation coefficients for symmetry operations
@@ -426,6 +535,30 @@ class ScoreSubGroup(object):
       self.cc_against.coefficient())
 
   def as_dict(self):
+    """Return a dictionary representation of the subgroup scoring.
+
+    The `dict` will contain the following keys:
+      - patterson_group: The current subgroup
+      - likelihood: The likelihood of the subgroup being correct
+      - confidence: The confidence of the subgroup being correct
+      - z_cc_for: The combined Z-scores for all symmetry elements present in the
+        subgroup
+      - z_cc_against: The combined Z-scores for all symmetry elements present in
+        the lattice group but not in the subgroup
+      - z_cc_net: The net Z-score, i.e. z_cc_for - z_cc_against
+      - cc_for: The overall correlation coefficient for all symmetry elements
+        present in the subgroup
+      - cc_against: The overall correlation coefficient for all symmetry
+        elements present in the lattice group but not in the subgroup
+      - max_angular_difference: The maximum angular difference between the
+        symmetrised unit cell and the P1 unit cell.
+      - cb_op: The change of basis operation from the input unit cell to the
+        'best' unit cell.
+
+    Returns:
+      dict
+    """
+
     return {
       'patterson_group': self.subgroup['best_subsym'].space_group().type().hall_symbol(),
       'likelihood': self.likelihood,
@@ -440,9 +573,18 @@ class ScoreSubGroup(object):
     }
 
 
-# Single-pass formula for Pearson correlation coefficient
-# https://en.wikipedia.org/wiki/Pearson_correlation_coefficient#For_a_sample
 class CorrelationCoefficientAccumulator(object):
+  """Class for incremental computation of correlation coefficients.
+
+  Uses the single-pass formula for Pearson correlation coefficient::
+    https://en.wikipedia.org/wiki/Pearson_correlation_coefficient#For_a_sample
+
+  Args:
+    x (list): Optional list of `x` values to initialise the accumulator.
+    y (list): Optional list of `y` values to initialise the accumulator.
+
+  """
+
   def __init__(self, x=None, y=None):
     self._n = 0
     self._sum_x = 0
@@ -454,6 +596,14 @@ class CorrelationCoefficientAccumulator(object):
       self.accumulate(x, y)
 
   def accumulate(self, x, y):
+    """Accumulate the `x` and `y` values provided.
+
+    Args:
+      x (list): The list of `x` values to accumulate.
+      y (list): The list of `y` values to accumulate.
+
+    """
+
     assert x.size() == y.size()
     self._n += x.size()
     self._sum_x += flex.sum(x)
@@ -463,20 +613,57 @@ class CorrelationCoefficientAccumulator(object):
     self._sum_y_sq += flex.sum(flex.pow2(y))
 
   def coefficient(self):
+    """Calculate the correlation coefficient.
+
+    Returns:
+      float: The correlation coefficient.
+    """
+
     if self._n == 0: return 0
     return self.numerator()/self.denominator()
 
   def n(self):
+    """The number of values contributing to the correlation coefficient.
+
+    Returns:
+      n (int)"""
+
     return self._n
 
   def numerator(self):
+    """Calculate the numerator of the correlation coefficient formula.
+
+    .. math:: n \sum{x y} - \sum{x} \sum{y}
+
+    Returns:
+      float: The value of the numerator.
+    """
+
     return self._n * self._sum_xy - self._sum_x * self._sum_y
 
   def denominator(self):
+    """Calculate the denominator of the correlation coefficient formula.
+
+    .. math:: \sqrt{n \sum{x^2} - \sum{x}^2} \sqrt{n \sum{y^2} - \sum{y}^2}
+
+    Returns:
+      float: The value of the denominator.
+    """
+
     return (math.sqrt(self._n * self._sum_x_sq - self._sum_x**2) *
             math.sqrt(self._n * self._sum_y_sq - self._sum_y**2))
 
   def __iadd__(self, other):
+    """Add together two instances of `CorrelationCoefficientAccumulator`.
+
+    Args:
+      other (CorrelationCoefficientAccumulator):
+        The `CorrelationCoefficientAccumualator` to add to the current object.
+
+    Returns:
+      self (CorrelationCoefficientAccumulator): The current object.
+    """
+
     self._n += other._n
     self._sum_x += other._sum_x
     self._sum_y += other._sum_y
@@ -487,6 +674,19 @@ class CorrelationCoefficientAccumulator(object):
 
 
 def trunccauchy_pdf(x, a, b, loc=0, scale=1):
+  """Calculate a truncated Cauchy probability density function.
+
+  Args:
+    x (float): The point at which to calculate the PDF.
+    a (float): The lower bound of the truncated distribution.
+    b (float): The upper bound of the truncated distribution.
+    loc (float): The location parameter for the Cauchy distribution.
+    scale (float): The scale parameter for the Cauchy distribution.
+
+  Returns:
+    float: The value of the probability density function.
+  """
+
   assert b > a
   rv = scipy.stats.cauchy(loc=loc, scale=scale)
   return rv.pdf(x) / (rv.cdf(b) - rv.cdf(a))
