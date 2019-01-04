@@ -28,9 +28,9 @@ class symmetry_base(object):
       lattice_symmetry_max_delta (float): The maximum value of delta for
         determining the lattice symmetry using the algorithm of Le Page (1982).
       d_min (float): Optional resolution cutoff to be applied to the input
-        intensities. If set to `libtbx.Auto` then d_min will be automatically
-        determined according to the parameters `min_i_mean_over_sigma_mean` and
-        `min_cc_half`.
+        intensities. If set to :class:`libtbx.Auto` then d_min will be
+        automatically determined according to the parameters
+        ``min_i_mean_over_sigma_mean`` and ``min_cc_half``.
       min_i_mean_over_sigma_mean (float): minimum value of |I|/|sigma(I)| for
         automatic determination of resolution cutoff.
       min_cc_half (float): minimum value of CC1/2 for automatic determination of
