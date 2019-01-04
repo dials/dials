@@ -1,6 +1,7 @@
 """
 Tests for the reindex_to_reference module.
 """
+from __future__ import absolute_import, division, print_function
 import pytest
 from libtbx.utils import Sorry
 

@@ -15,7 +15,6 @@ from collections import OrderedDict
 import math
 
 from libtbx import Auto
-from libtbx.utils import Sorry
 from libtbx import table_utils
 from scitbx.array_family import flex
 from cctbx import sgtbx
