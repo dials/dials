@@ -14,7 +14,7 @@ from sklearn import metrics
 
 from libtbx import Auto
 from scitbx.array_family import flex
-from dials.algorithms.symmetry.cosym import _plot_matrix, _plot_dendrogram
+from dials.algorithms.symmetry.cosym import plot_matrix, plot_dendrogram
 
 class seed_clustering(object):
   """Perform seed clustering of coordinates.
@@ -67,11 +67,11 @@ class seed_clustering(object):
       plot_prefix=plot_prefix)
 
     if plot_prefix is not None:
-      _plot_matrix(
+      plot_matrix(
         1 - ssd.squareform(dist_mat), linkage_matrix,
         '%sseed_clustering_cos_angle_matrix.png' % plot_prefix,
         color_threshold=threshold)
-      _plot_dendrogram(
+      plot_dendrogram(
         linkage_matrix,
         '%sseed_clustering_cos_angle_dendrogram.png' % plot_prefix,
         color_threshold=threshold)

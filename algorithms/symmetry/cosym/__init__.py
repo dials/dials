@@ -309,10 +309,10 @@ class analyse_datasets(symmetry_base):
       'Cophenetic correlation coefficient between heirarchical clustering and pairwise distance matrix: %.3f' % c)
 
     if self.params.save_plot:
-      _plot_matrix(
+      plot_matrix(
         cos_angle,
         linkage_matrix, '%scos_angle_matrix.png' % self.params.plot_prefix)
-      _plot_dendrogram(
+      plot_dendrogram(
         linkage_matrix,
         '%scos_angle_dendrogram.png' % self.params.plot_prefix)
 
@@ -643,8 +643,22 @@ def _plot_angles(coords, labels=None, plot_name='phi_r.png'):
   plt.close(fig)
 
 
-def _plot_matrix(correlation_matrix, linkage_matrix, file_name, labels=None,
+def plot_matrix(correlation_matrix, linkage_matrix, file_name, labels=None,
                 color_threshold=0.05):
+  """Plot correlation and linkage matrices.
+
+  Args:
+    correlation_matrix (numpy.ndarray): The distance matrix used to generate
+      the ``linkage_matrix``.
+    linkage_matrix (numpy.ndarray): The hierarchical clustering of centroids of
+      the initial clustering as produced by
+      :func:`scipy.cluster.hierarchy.linkage`.
+    file_name (str): The output file name.
+    labels (list): Optional labels for the leaves of the dendrogram.
+    color_threshold (float): The color threshold passed to the
+      :func:scipy.cluster.hierarchy.dendrogram` function.
+
+  """
   if correlation_matrix.shape[0] > 2000:
     return
   from matplotlib import pyplot as plt
@@ -683,8 +697,20 @@ def _plot_matrix(correlation_matrix, linkage_matrix, file_name, labels=None,
   plt.close(fig)
 
 
-def _plot_dendrogram(linkage_matrix, file_name, labels=None,
+def plot_dendrogram(linkage_matrix, file_name, labels=None,
                     color_threshold=0.05):
+  """Plot dendrogram from a linkage matrix.
+
+  Args:
+    linkage_matrix (numpy.ndarray): The hierarchical clustering of centroids of
+      the initial clustering as produced by
+      :func:`scipy.cluster.hierarchy.linkage`.
+    file_name (str): The output file name.
+    labels (list): Optional labels for the leaves of the dendrogram.
+    color_threshold (float): The color threshold passed to the
+      :func:scipy.cluster.hierarchy.dendrogram` function.
+
+  """
   from matplotlib import pyplot as plt
 
   fig = plt.figure(dpi=200, figsize=(16,12))
