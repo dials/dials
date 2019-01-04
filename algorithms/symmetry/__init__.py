@@ -1,3 +1,7 @@
+"""Methods for symmetry determination.
+
+This module provides a base class for symmetry determination algorithms.
+"""
 from __future__ import division, absolute_import, print_function
 
 import logging

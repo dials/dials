@@ -12,6 +12,10 @@ dials.algorithms.symmetry
     :undoc-members:
     :show-inheritance:
 
+===============================
+dials.algorithms.symmetry.cosym
+===============================
+
 .. automodule:: dials.algorithms.symmetry.cosym
     :members:
     :undoc-members:

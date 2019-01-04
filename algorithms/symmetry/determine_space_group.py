@@ -1,3 +1,4 @@
+"""Algorithms for determination of Laue group symmetry."""
 from __future__ import division, absolute_import, print_function
 
 import logging
@@ -39,7 +40,7 @@ class determine_space_group(symmetry_base):
 
     Args:
       intensities (cctbx.miller.array): The intensities on which to perform
-        cosym anaylsis.
+        symmetry anaylsis.
       normalisation (str): The normalisation method to use. Possible choices are
         'kernel', 'quasi', 'ml_iso' and 'ml_aniso'. Set to None to switch off
         normalisation altogether.

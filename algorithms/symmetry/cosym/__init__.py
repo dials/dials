@@ -1,3 +1,10 @@
+"""Methods for symmetry determination from partial datasets.
+
+This module implements the methods of `Gildea, R. J. & Winter, G. (2018).
+Acta Cryst. D74, 405-410 <https://doi.org/10.1107/S2059798318002978>`_ for
+determination of Patterson group symmetry from sparse multi-crystal data sets in
+the presence of an indexing ambiguity.
+"""
 from __future__ import absolute_import, division, print_function
 
 import logging
