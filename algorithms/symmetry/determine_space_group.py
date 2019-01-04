@@ -20,11 +20,11 @@ class determine_space_group(symmetry_base):
 
   """Determination of Laue group symmetry using algorithms similar to POINTLESS.
 
-    See also::
-      `Evans, P. (2006). Acta Cryst. D62, 72-82.
+    See also:
+      `Evans, P. (2006). Acta Cryst. D62, 72-82
       <https://doi.org/10.1107/S0907444905036693>`_ and
-      `Evans, P. R. (2011). Acta Cryst. D67, 282-292.
-      <https://doi.org/10.1107/S090744491003982X>`_) for.
+      `Evans, P. R. (2011). Acta Cryst. D67, 282-292
+      <https://doi.org/10.1107/S090744491003982X>`_.
 
     Args:
       intensities (cctbx.miller.array): The intensities on which to perform
@@ -315,7 +315,7 @@ class determine_space_group(symmetry_base):
         is the most compact representation.
 
     Returns:
-      str
+      str:
     """
     d = self.as_dict()
     import json
@@ -445,7 +445,7 @@ class ScoreSymmetryElement(object):
       - operator: The xyz representation of the symmetry element
 
     Returns:
-      dict
+      dict:
     """
 
     return {
@@ -556,7 +556,7 @@ class ScoreSubGroup(object):
         'best' unit cell.
 
     Returns:
-      dict
+      dict:
     """
 
     return {
@@ -576,7 +576,7 @@ class ScoreSubGroup(object):
 class CorrelationCoefficientAccumulator(object):
   """Class for incremental computation of correlation coefficients.
 
-  Uses the single-pass formula for Pearson correlation coefficient::
+  Uses the single-pass formula for Pearson correlation coefficient:
     https://en.wikipedia.org/wiki/Pearson_correlation_coefficient#For_a_sample
 
   Args:
