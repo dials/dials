@@ -6,7 +6,7 @@ from libtbx.utils import Sorry
 
 from cctbx import sgtbx
 
-from dials.algorithms.symmetry.cosym.generate_test_data import generate_test_data
+from dials.algorithms.symmetry.cosym._generate_test_data import generate_test_data
 from dials.algorithms.symmetry.reindex_to_reference import \
   determine_reindex_operator_against_reference
 
