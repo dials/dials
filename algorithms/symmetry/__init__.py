@@ -17,7 +17,17 @@ from mmtbx.scaling import matthews
 
 
 class symmetry_base(object):
-  """Base class for symmetry analysis.
+  """Base class for symmetry analysis."""
+
+  def __init__(self, intensities,
+               normalisation='ml_aniso',
+               lattice_symmetry_max_delta=2.0,
+               d_min=libtbx.Auto,
+               min_i_mean_over_sigma_mean=4,
+               min_cc_half=0.6,
+               relative_length_tolerance=None,
+               absolute_angle_tolerance=None):
+    """Initialise a symmetry_base object.
 
     Args:
       intensities (cctbx.miller.array): The intensities on which to perform
@@ -28,7 +38,7 @@ class symmetry_base(object):
       lattice_symmetry_max_delta (float): The maximum value of delta for
         determining the lattice symmetry using the algorithm of Le Page (1982).
       d_min (float): Optional resolution cutoff to be applied to the input
-        intensities. If set to :class:`libtbx.Auto` then d_min will be
+        intensities. If set to :data:`libtbx.Auto` then d_min will be
         automatically determined according to the parameters
         ``min_i_mean_over_sigma_mean`` and ``min_cc_half``.
       min_i_mean_over_sigma_mean (float): minimum value of |I|/|sigma(I)| for
@@ -40,17 +50,7 @@ class symmetry_base(object):
       absolute_angle_tolerance (float): Absolute angle tolerance in checking
         consistency of input unit cells against the median unit cell.
 
-  """
-
-  def __init__(self, intensities,
-               normalisation='ml_aniso',
-               lattice_symmetry_max_delta=2.0,
-               d_min=libtbx.Auto,
-               min_i_mean_over_sigma_mean=4,
-               min_cc_half=0.6,
-               relative_length_tolerance=None,
-               absolute_angle_tolerance=None):
-
+    """
     self.input_intensities = intensities
 
     uc_params = [flex.double() for i in range(6)]
@@ -156,6 +156,7 @@ class symmetry_base(object):
 
     Returns:
       cctbx.miller.array: The normalised intensities.
+
     """
     normalisation = absolute_scaling.kernel_normalisation(
       intensities, auto_kernel=True)
@@ -171,8 +172,8 @@ class symmetry_base(object):
 
     Returns:
       cctbx.miller.array: The normalised intensities.
-    """
 
+    """
     #handle negative reflections to minimise effect on mean I values.
     intensities.data().set_selected(intensities.data() < 0.0, 0.0)
 
@@ -201,6 +202,7 @@ class symmetry_base(object):
 
     Returns:
       cctbx.miller.array: The normalised intensities.
+
     """
     return symmetry_base._ml_normalisation(intensities, aniso=True)
 
@@ -213,6 +215,7 @@ class symmetry_base(object):
 
     Returns:
       cctbx.miller.array: The normalised intensities.
+
     """
     return symmetry_base._ml_normalisation(intensities, aniso=False)
 

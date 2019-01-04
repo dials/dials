@@ -13,20 +13,29 @@ from sklearn import metrics
 
 from libtbx import Auto
 from scitbx.array_family import flex
-from dials.algorithms.symmetry.cosym import plot_matrix, plot_dendrogram
+from dials.algorithms.symmetry.cosym import _plot_matrix, _plot_dendrogram
 
 class seed_clustering(object):
   """Perform seed clustering of coordinates.
 
-    Labels points into clusters such that cluster contains exactly one copy
-    of each dataset, then performs silhouettete analysis on the resulting
-    clusters to determine the true number of clusters present, under the
-    constraint that only equal-sized clusterings are valid, i.e. each
-    dataset should appear an equal number of times in each cluster.
+  Labels points into clusters such that cluster contains exactly one copy
+  of each dataset, then performs silhouettete analysis on the resulting
+  clusters to determine the true number of clusters present, under the
+  constraint that only equal-sized clusterings are valid, i.e. each
+  dataset should appear an equal number of times in each cluster.
 
-    See also:
-      https://en.wikipedia.org/wiki/Silhouette_(clustering)
-      http://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_silhouette_analysis.html
+  See also:
+    https://en.wikipedia.org/wiki/Silhouette_(clustering)
+    http://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_silhouette_analysis.html
+
+  Attributes:
+    cluster_labels (scitbx.array_family.flex.int): A label for each coordinate.
+
+  """
+
+  def __init__(self, coordinates, n_datasets, n_sym_ops,
+               min_silhouette_score, n_clusters=Auto, plot_prefix=None):
+    """Initialise a seed_clustering object.
 
     Args:
       coordinates (scitbx.array_family.flex.double): The input array of coordinates
@@ -40,12 +49,7 @@ class seed_clustering(object):
       n_clusters (int): Optionally override the automatic determination of the
         number of clusters.
 
-    Attributes:
-      cluster_labels (scitbx.array_family.flex.int): A label for each coordinate.
-  """
-
-  def __init__(self, coordinates, n_datasets, n_sym_ops,
-               min_silhouette_score, n_clusters=Auto, plot_prefix=None):
+    """
     self.coords = coordinates
 
     self.cluster_labels = self._label_clusters_first_pass(n_datasets, n_sym_ops)
@@ -56,17 +60,17 @@ class seed_clustering(object):
 
     dist_mat, linkage_matrix = self._hierarchical_clustering()
     self.cluster_labels, threshold = self._silhouette_analysis(
-      self.cluster_labels, linkage_matrix, 
+      self.cluster_labels, linkage_matrix,
       n_clusters=n_clusters,
       min_silhouette_score=min_silhouette_score,
       plot_prefix=plot_prefix)
 
     if plot_prefix is not None:
-      plot_matrix(
+      _plot_matrix(
         1 - ssd.squareform(dist_mat), linkage_matrix,
         '%sseed_clustering_cos_angle_matrix.png' % plot_prefix,
         color_threshold=threshold)
-      plot_dendrogram(
+      _plot_dendrogram(
         linkage_matrix,
         '%sseed_clustering_cos_angle_dendrogram.png' % plot_prefix,
         color_threshold=threshold)
@@ -84,8 +88,8 @@ class seed_clustering(object):
     Returns:
       cluster_labels (scitbx.array_family.flex.int): A label for each coordinate, labelled from
       0 .. n_sym_ops.
-    """
 
+    """
     # initialise cluster labels: -1 signifies doesn't belong to a cluster
     cluster_labels = flex.int(self.coords.all()[0], -1)
     X_orig = self.coords.as_numpy_array()
@@ -140,16 +144,15 @@ class seed_clustering(object):
     return cluster_labels
 
   def _hierarchical_clustering(self):
-    """
-    Perform hierarchical clustering on cluster centroids.
+    """Perform hierarchical clustering on cluster centroids.
 
     Returns:
       Tuple[numpy.ndarray, numpy.ndarray]:
         A tuple containing
         the distance matrix as output by :func:`scipy.spatial.distance.pdist` and
         the linkage matrix as output by :func:`scipy.cluster.hierarchy.linkage`.
-    """
 
+    """
     cluster_centroids = []
     X = self.coords.as_numpy_array()
     for i in set(self.cluster_labels):
@@ -164,8 +167,7 @@ class seed_clustering(object):
   def _silhouette_analysis(self, cluster_labels, linkage_matrix,
                            n_clusters, min_silhouette_score,
                            plot_prefix=None):
-    """
-    Compare valid equal-sized clustering using silhouette scores.
+    """Compare valid equal-sized clustering using silhouette scores.
 
     Args:
       cluster_labels (scitbx.array_family.flex.int):
@@ -181,8 +183,8 @@ class seed_clustering(object):
 
     Returns:
       cluster_labels (scitbx.array_family.flex.int): A label for each coordinate.
-    """
 
+    """
     eps = 1e-6
     X = self.coords.as_numpy_array()
 
@@ -225,7 +227,7 @@ class seed_clustering(object):
         100 * count_negative/sample_silhouette_values.size))
 
       if plot_prefix is not None:
-        plot_silhouette(
+        _plot_silhouette(
           sample_silhouette_values, cluster_labels.as_numpy_array(),
           file_name='%ssilhouette_%i.png' % (plot_prefix, n))
 
@@ -251,7 +253,7 @@ class seed_clustering(object):
 
     return cluster_labels, threshold
 
-def plot_silhouette(sample_silhouette_values, cluster_labels, file_name):
+def _plot_silhouette(sample_silhouette_values, cluster_labels, file_name):
   from matplotlib import pyplot as plt
 
   fig = plt.figure()

@@ -19,6 +19,15 @@ import cctbx.sgtbx.cosets
 class Target(object):
   """Target function for cosym analysis.
 
+  Attributes:
+    dim (int): The number of dimensions used in the analysis.
+
+  """
+
+  def __init__(self, intensities, lattice_ids, weights=None, min_pairs=None,
+               lattice_group=None, dimensions=None, nproc=1):
+    r"""Intialise a Target object.
+
     Args:
       intensities (cctbx.miller.array): The intensities on which to perform
         cosym anaylsis.
@@ -41,14 +50,7 @@ class Target(object):
         lattice group.
       nproc (int): number of processors to use for computing the rij matrix.
 
-    Attributes:
-      dim (int): The number of dimensions used in the analysis.
-
-  """
-
-  def __init__(self, intensities, lattice_ids, weights=None, min_pairs=None,
-               lattice_group=None, dimensions=None, nproc=1):
-
+    """
     if weights is not None:
       assert weights in ('count', 'standard_error')
     self._weights = weights
@@ -101,8 +103,8 @@ class Target(object):
 
     Args:
       dimensions (int): The number of dimensions to be used.
-    """
 
+    """
     self.dim = dimensions
     logger.info('Using %i dimensions for analysis' %self.dim)
 
@@ -144,9 +146,7 @@ class Target(object):
     return lower_index, upper_index
 
   def _compute_rij_wij(self, use_cache=True):
-    """Compute the rij_wij matrix
-    """
-
+    """Compute the rij_wij matrix."""
     group = flex.bool(self._lattices.size(), True)
 
     n_lattices = group.count(True)
@@ -301,8 +301,8 @@ class Target(object):
 
     Returns:
       f (float): The value of the target function at coordinates `x`.
-    """
 
+    """
     assert (x.size() // self.dim) == (self._lattices.size() * len(self._sym_ops))
     inner = self.rij_matrix.deep_copy()
     NN = x.size() // self.dim
@@ -330,8 +330,8 @@ class Target(object):
     Returns:
       grad (scitbx.array_family.flex.double):
       The gradients of the target function with respect to the parameters.
-    """
 
+    """
     grad = flex.double(x.size(), 0)
     for i in range(grad.size()):
       x[i] += eps # x + eps
@@ -355,8 +355,8 @@ class Target(object):
       Tuple[float, scitbx.array_family.flex.double]:
       f: The value of the target function at coordinates `x`.
       grad: The gradients of the target function with respect to the parameters.
-    """
 
+    """
     f = self.compute_functional(x)
     grad = flex.double()
     if self.wij_matrix is not None:
@@ -400,8 +400,8 @@ class Target(object):
     Returns:
       curvs (scitbx.array_family.flex.double):
       The curvature of the target function with respect to the parameters.
-    """
 
+    """
     coords = []
     NN = x.size() // self.dim
     for i in range(self.dim):
@@ -432,8 +432,8 @@ class Target(object):
     Returns:
       curvs (scitbx.array_family.flex.double):
       The curvature of the target function with respect to the parameters.
-    """
 
+    """
     f = self.compute_functional(x)
     curvs = flex.double(x.size(), 0)
     for i in range(curvs.size()):
@@ -451,8 +451,8 @@ class Target(object):
     Args:
       plot_name (str): The file name to save the plot to.
         If this is not defined then the plot is displayed in interactive mode.
-    """
 
+    """
     if self.rij_matrix.all()[0] > 2000:
       return
     from matplotlib import pyplot as plt
@@ -471,8 +471,8 @@ class Target(object):
     Args:
       plot_name (str): The file name to save the plot to.
         If this is not defined then the plot is displayed in interactive mode.
-    """
 
+    """
     if self._weights is None or self.wij_matrix.all()[0] > 2000:
       return
     from matplotlib import pyplot as plt
@@ -491,8 +491,8 @@ class Target(object):
     Args:
       plot_name (str): The file name to save the plot to.
         If this is not defined then the plot is displayed in interactive mode.
-    """
 
+    """
     rij = self.rij_matrix.as_1d()
     rij = rij.select(rij != 0)
     hist = flex.histogram(rij, data_min=-1, data_max=1, n_slots=100)
@@ -518,8 +518,8 @@ class Target(object):
     Args:
       plot_name (str): The file name to save the plot to.
         If this is not defined then the plot is displayed in interactive mode.
-    """
 
+    """
     if self._weights is None:
       return
     wij = self.wij_matrix.as_1d()
@@ -544,8 +544,8 @@ class Target(object):
     Args:
       plot_name (str): The file name to save the plot to.
         If this is not defined then the plot is displayed in interactive mode.
-    """
 
+    """
     rij = self.rij_matrix.as_1d()
     perm = flex.sort_permutation(rij)
     from matplotlib import pyplot as plt
@@ -565,8 +565,8 @@ class Target(object):
     Args:
       plot_name (str): The file name to save the plot to.
         If this is not defined then the plot is displayed in interactive mode.
-    """
 
+    """
     if self._weights is None:
       return
     wij = self.wij_matrix.as_1d()
@@ -592,5 +592,6 @@ class Target(object):
 
     Returns:
       List[cctbx.sgtbx.rt_mx]: The list of symmetry operations.
+
     """
     return self._sym_ops

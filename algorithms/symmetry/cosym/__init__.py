@@ -103,8 +103,25 @@ nproc = 1
 ''')
 
 class analyse_datasets(symmetry_base):
+  """Peform cosym analysis.
+
+  Peform cosym analysis on the input intensities using the methods of
+  `Gildea, R. J. & Winter, G. (2018). Acta Cryst. D74, 405-410
+  <https://doi.org/10.1107/S2059798318002978>`_ for
+  determination of Patterson group symmetry from sparse multi-crystal data sets in
+  the presence of an indexing ambiguity.
+
+  """
 
   def __init__(self, intensities, params):
+    """Initialise an analyse_datasets object.
+
+    Args:
+      intensities (cctbx.miller.array): The intensities on which to perform
+        cosym anaylsis.
+      params (libtbx.phil.scope_extract): Parameters for the analysis.
+
+    """
     self.input_space_group = intensities[0].space_group()
     super(analyse_datasets, self).__init__(
       intensities,
@@ -220,10 +237,9 @@ class analyse_datasets(symmetry_base):
     self._cosine_analysis()
     self._cluster_analysis()
     if self.params.save_plot:
-      self.plot()
+      self._plot()
 
   def _optimise(self):
-
     NN = len(self.input_intensities)
     dim = self.target.dim
     n_sym_ops = len(self.target.get_sym_ops())
@@ -287,10 +303,10 @@ class analyse_datasets(symmetry_base):
       'Cophenetic correlation coefficient between heirarchical clustering and pairwise distance matrix: %.3f' % c)
 
     if self.params.save_plot:
-      plot_matrix(
+      _plot_matrix(
         cos_angle,
         linkage_matrix, '%scos_angle_matrix.png' % self.params.plot_prefix)
-      plot_dendrogram(
+      _plot_dendrogram(
         linkage_matrix,
         '%scos_angle_dendrogram.png' % self.params.plot_prefix)
 
@@ -466,7 +482,7 @@ class analyse_datasets(symmetry_base):
     )
     return clustering.cluster_labels
 
-  def plot(self):
+  def _plot(self):
     self.target.plot_rij_matrix(plot_name='%srij.png' % self.params.plot_prefix)
     self.target.plot_rij_histogram(
       plot_name='%srij_hist.png' % self.params.plot_prefix)
@@ -483,25 +499,25 @@ class analyse_datasets(symmetry_base):
     assert coord_x.size() == coord_y.size(), (coord_x.size(), coord_y.size())
     coord_reduced_x = self.coords_reduced[:,0:1].as_1d()
     coord_reduced_y = self.coords_reduced[:,1:2].as_1d()
-    plot((coord_x, coord_y), labels=self.cluster_labels,
-         plot_name='%sxy.png' % self.params.plot_prefix)
-    plot((coord_reduced_x, coord_reduced_y), labels=self.cluster_labels,
-         plot_name='%sxy_pca.png' % self.params.plot_prefix)
-    plot_angles((coord_x, coord_y), labels=self.cluster_labels,
-                plot_name='%sphi_r.png' % self.params.plot_prefix)
-    plot_angles((coord_reduced_x, coord_reduced_y), labels=self.cluster_labels,
-                plot_name='%sphi_r_pca.png' % self.params.plot_prefix)
+    _plot((coord_x, coord_y), labels=self.cluster_labels,
+          plot_name='%sxy.png' % self.params.plot_prefix)
+    _plot((coord_reduced_x, coord_reduced_y), labels=self.cluster_labels,
+          plot_name='%sxy_pca.png' % self.params.plot_prefix)
+    _plot_angles((coord_x, coord_y), labels=self.cluster_labels,
+                 plot_name='%sphi_r.png' % self.params.plot_prefix)
+    _plot_angles((coord_reduced_x, coord_reduced_y), labels=self.cluster_labels,
+                 plot_name='%sphi_r_pca.png' % self.params.plot_prefix)
 
     if self.coords_reduced.all()[1] > 2:
       coord_z = self.coords[:,2:3].as_1d()
       coord_reduced_z = self.coords_reduced[:,2:3].as_1d()
-      plot((coord_x, coord_y, coord_z), labels=self.cluster_labels,
-           plot_name='%sxyz.png' % self.params.plot_prefix)
-      plot((coord_reduced_x, coord_reduced_y, coord_reduced_z),
-           labels=self.cluster_labels,
-           plot_name='%sxyz_pca.png' % self.params.plot_prefix)
+      _plot((coord_x, coord_y, coord_z), labels=self.cluster_labels,
+            plot_name='%sxyz.png' % self.params.plot_prefix)
+      _plot((coord_reduced_x, coord_reduced_y, coord_reduced_z),
+            labels=self.cluster_labels,
+            plot_name='%sxyz_pca.png' % self.params.plot_prefix)
 
-def plot(coords, labels=None, plot_name='xy.png'):
+def _plot(coords, labels=None, plot_name='xy.png'):
   from matplotlib import pyplot as plt
   import numpy
 
@@ -566,7 +582,7 @@ def plot(coords, labels=None, plot_name='xy.png'):
   plt.close(fig)
 
 
-def plot_angles(coords, labels=None, plot_name='phi_r.png'):
+def _plot_angles(coords, labels=None, plot_name='phi_r.png'):
   coord_x, coord_y = coords
 
   r = flex.sqrt(flex.pow2(coord_x) + flex.pow2(coord_y))
@@ -621,7 +637,7 @@ def plot_angles(coords, labels=None, plot_name='phi_r.png'):
   plt.close(fig)
 
 
-def plot_matrix(correlation_matrix, linkage_matrix, file_name, labels=None,
+def _plot_matrix(correlation_matrix, linkage_matrix, file_name, labels=None,
                 color_threshold=0.05):
   if correlation_matrix.shape[0] > 2000:
     return
@@ -661,7 +677,7 @@ def plot_matrix(correlation_matrix, linkage_matrix, file_name, labels=None,
   plt.close(fig)
 
 
-def plot_dendrogram(linkage_matrix, file_name, labels=None,
+def _plot_dendrogram(linkage_matrix, file_name, labels=None,
                     color_threshold=0.05):
   from matplotlib import pyplot as plt
 
