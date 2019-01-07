@@ -11,7 +11,7 @@ class lbfgs_with_curvs(object):
   """Minimise a target function using the LBFGS minimiser.
 
   Implementation of an LBFGS minimiser using curvature information, according
-  to the interface defined by :module:`scitbx.lbfgs`.
+  to the interface defined by :mod:`scitbx.lbfgs`.
 
   """
 
