@@ -175,11 +175,9 @@ class symmetry(object):
 help_message = '''
 This program implements the methods of
 `POINTLESS <http://www.ccp4.ac.uk/html/pointless.html>`_ (
-`Evans, P. (2006). Acta Cryst. D62, 72-82.
- <https://doi.org/10.1107/S0907444905036693>`_ and
- `Evans, P. R. (2011). Acta Cryst. D67, 282-292.
- <https://doi.org/10.1107/S090744491003982X>`_) for
-scoring and determination of Laue group symmetry.
+`Evans, P. (2006). Acta Cryst. D62, 72-82. <https://doi.org/10.1107/S0907444905036693>`_ and
+`Evans, P. R. (2011). Acta Cryst. D67, 282-292. <https://doi.org/10.1107/S090744491003982X>`_)
+for scoring and determination of Laue group symmetry.
 
 The program takes as input a set of one or more integrated experiments and
 reflections.
