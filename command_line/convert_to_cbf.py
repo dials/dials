@@ -30,51 +30,16 @@ output {
 """, process_includes=True)
 
 def convert_to_cbf(imageset, template):
-  from cbflib_adaptbx import compress
-  import binascii
-  start_tag = binascii.unhexlify('0c1a04d5')
-
-  trusted = imageset.get_detector()[0].get_trusted_range()
+  from dxtbx.format.FormatCBFMini import FormatCBFMini
 
   for i in range(len(imageset)):
-    data = imageset.get_raw_data(i)[0]
-
-    # apply mask
-
-    good = data.as_1d() < int(round(trusted[1]))
-    data.as_1d().set_selected(~good, -2)
-    compressed = compress(data)
-
-    header = '''###CBF: VERSION 3.14 from DIALS conversion
-
-data_data_%06d
-
-_array_data.header_convention "SLS_1.0"
-_array_data.header_contents
-;
-# WARNING: FOR XDS PROCESSING ONLY. MAY EAT YOUR KITTEN. YOU HAVE BEEN WARNED
-;
-
-_array_data.data
-;
---CIF-BINARY-FORMAT-SECTION--
-Content-Type: application/octet-stream;
-     conversions="x-CBF_BYTE_OFFSET"
-Content-Transfer-Encoding: BINARY
-X-Binary-Size: %d
-X-Binary-ID: 1
-X-Binary-Element-Type: "signed 32-bit integer"
-X-Binary-Element-Byte-Order: LITTLE_ENDIAN
-X-Binary-Number-of-Elements: %d
-X-Binary-Size-Fastest-Dimension: %d
-X-Binary-Size-Second-Dimension: %d
-X-Binary-Size-Padding: 0
-
-''' % (i, len(compressed), data.size(), data.focus()[1], data.focus()[0])
-
-    with open(template % (i + 1), 'wb') as f:
-      print(template % (i + 1))
-      f.write(''.join(header) + start_tag + compressed)
+    print(template % (i + 1))
+    FormatCBFMini.as_file(imageset.get_detector(),
+                          imageset.get_beam(),
+                          imageset.get_goniometer(),
+                          imageset.get_scan()[i],
+                          imageset.get_raw_data(i)[0],
+                          template % (i + 1))
 
   return
 
@@ -90,6 +55,7 @@ def run():
     usage=usage,
     phil=phil_scope,
     read_datablocks=True,
+    read_datablocks_from_images=True,
     epilog=help_message
   )
 
