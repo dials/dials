@@ -2,6 +2,8 @@
 Tests for scale components module.
 """
 from math import exp
+import pytest
+from scitbx import sparse
 from libtbx.test_utils import approx_equal
 from dials.array_family import flex
 from dials.algorithms.scaling.model.components.scale_components import \
@@ -9,8 +11,7 @@ from dials.algorithms.scaling.model.components.scale_components import \
 from dials.algorithms.scaling.model.components.smooth_scale_components import \
   SmoothScaleComponent1D, SmoothBScaleComponent1D, SmoothScaleComponent2D,\
   SmoothScaleComponent3D, SmoothMixin
-import pytest
-from scitbx import sparse
+
 
 
 def test_ScaleComponentBase():
@@ -18,12 +19,12 @@ def test_ScaleComponentBase():
 
   class base_SF_filler(ScaleComponentBase):
     """Subclass to fill in the abstract method."""
-    def update_reflection_data(self, reflection_table, selection=None,
+    def update_reflection_data(self, selection=None,
       block_selections=None):
       """Fill in abstract method."""
-    def calculate_scales_and_derivatives(self, curvatures=False):
+    def calculate_scales_and_derivatives(self, block_id=0):
       """Fill in abstract method."""
-    def calculate_scales(self):
+    def calculate_scales(self, block_id=0):
       """Fill in abstract method."""
 
   # Test initialisation with no parameter esds.
@@ -65,8 +66,7 @@ def test_SingleScaleFactor():
   assert list(s) == [2.0, 2.0]
   assert d[0, 0] == 1
   assert d[1, 0] == 1
-  s, d, c = KSF.calculate_scales_and_derivatives(curvatures=True)
-  assert c.non_zeroes == 0
+  s, d = KSF.calculate_scales_and_derivatives()
   KSF.update_reflection_data(flex.bool([True, False])) # Test selection.
   assert KSF.n_refl[0] == 1
 
@@ -86,9 +86,7 @@ def test_SingleBScaleFactor():
   assert list(s) == [1.0, 1.0]
   assert d[0, 0] == 0.5
   assert d[1, 0] == 0.5
-  s, d, c = BSF.calculate_scales_and_derivatives(curvatures=True)
-  assert c[0, 0] == 0.25
-  assert c[1, 0] == 0.25
+  s, d = BSF.calculate_scales_and_derivatives()
   BSF.update_reflection_data(flex.bool([True, False])) # Test selection.
   assert BSF.n_refl[0] == 1
 
@@ -118,8 +116,7 @@ def test_SHScalefactor():
   assert d[0, 0] == initial_val
   assert d[0, 1] == initial_val
   assert d[0, 2] == initial_val
-  s, d, c = SF.calculate_scales_and_derivatives(curvatures=True)
-  assert c.non_zeroes == 0
+  s, d = SF.calculate_scales_and_derivatives()
 
   #Test functionality of passing in a selection
   harmonic_values = sparse.matrix(3, 2)
@@ -178,8 +175,7 @@ def test_SmoothScaleFactor1D():
   assert sum(list(T[:, 2].as_dense_vector())) == 1.0
   assert d[1, 1] == d[1, 2]
   assert d[1, 0] == d[1, 3]
-  s, d, c = SF.calculate_scales_and_derivatives(curvatures=True)
-  assert c.non_zeroes == 0
+  s, d = SF.calculate_scales_and_derivatives()
 
   #Test that if one or none in block, then doesn't fail but returns sensible value
   SF._normalised_values = [flex.double([0.5])]
@@ -222,12 +218,7 @@ def test_SmoothBScaleFactor1D():
   assert sum(list(T[:, 2].as_dense_vector())) == 0.5
   assert d[1, 1] == d[1, 2]
   assert d[1, 0] == d[1, 3]
-  s, d, c = SF.calculate_scales_and_derivatives(curvatures=True)
-  assert not c.non_zeroes == 0
-  assert approx_equal(c[0, 0]/c[0, 1],
-    (exp(-1.0)/exp(0.0))**2)
-  assert approx_equal(c[0, 1], (
-    ((exp(0.0)/sumexp)**2) * s[1]/4.0))
+  s, d = SF.calculate_scales_and_derivatives()
 
   SF._normalised_values = [flex.double([0.5])]
   SF._n_refl = [1]
@@ -247,7 +238,6 @@ def test_SmoothScaleFactor2D():
   assert SF.n_params == 30
 
   assert list(SF.parameters) == [1.1]*30
-  rt = flex.reflection_table()
   norm_rot = flex.double(30, 0.5)
   norm_time = flex.double(30, 0.5)
   norm_rot[0] = 0.0
@@ -263,8 +253,7 @@ def test_SmoothScaleFactor2D():
   SF.smoother.set_smoothing(4, 1.0) #will average 3 in x,y dims.
   assert list(SF.smoother.x_positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5, 4.5]
   assert list(SF.smoother.y_positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5]
-  s, d, c = SF.calculate_scales_and_derivatives(curvatures=True)
-  assert c.non_zeroes == 0
+  s, d = SF.calculate_scales_and_derivatives()
   assert approx_equal(list(s), [1.1]*30)
   sumexp = exp(0.0) + (4.0 * exp(-1.0/1.0)) + (4.0*exp(-2.0/1.0))
   assert approx_equal(d[1, 7], (exp(-0.0)/sumexp))
@@ -283,7 +272,7 @@ def test_SmoothScaleFactor2D():
   SF.smoother.set_smoothing(4, 1.0) #will average 3,2 in x,y dims.
   assert list(SF.smoother.x_positions()) == [0.0, 1.0, 2.0]
   assert list(SF.smoother.y_positions()) == [0.0, 1.0]
-  s, d, c = SF.calculate_scales_and_derivatives(curvatures=True)
+  s, d = SF.calculate_scales_and_derivatives()
   s2 = SF.calculate_scales()
   assert list(s) == list(s2)
   sumexp = (4.0 * exp(-0.5/1.0)) + (2.0*exp(-2.5/1.0))
@@ -336,10 +325,9 @@ def test_SmoothScaleFactor3D():
   assert list(SF.smoother.x_positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5, 4.5]
   assert list(SF.smoother.y_positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5]
   assert list(SF.smoother.z_positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5]
-  s, d, c = SF.calculate_scales_and_derivatives(curvatures=True)
+  s, d = SF.calculate_scales_and_derivatives()
   s2 = SF.calculate_scales()
   assert list(s) == list(s2)
-  assert c.non_zeroes == 0
   assert approx_equal(list(s), [1.1]*150)
   sumexp = (exp(-0.0) + (6.0 * exp(-1.0/1.0)) + (8.0*exp(-3.0/1.0)) +
     (12.0*exp(-2.0/1.0)))

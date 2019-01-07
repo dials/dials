@@ -164,14 +164,12 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
       self._normalised_values.append(normalised_values)
       self._n_refl.append(normalised_values.size())
 
-  def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
+  def calculate_scales_and_derivatives(self, block_id=0):
     if self._n_refl[block_id] > 1:
       value, weight, sumweight = self._smoother.multi_value_weight(
         self._normalised_values[block_id], self.value)
       inv_sw = 1. / sumweight
       dv_dp = row_multiply(weight, inv_sw)
-      if curvatures:
-        curvatures = sparse.matrix(value.size(), self.n_params)
     elif self._n_refl[block_id] == 1:
       value, weight, sumweight = self._smoother.value_weight(
         self._normalised_values[block_id][0], self.value)
@@ -179,13 +177,9 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
       b = flex.double(weight.as_dense_vector() / sumweight)
       b.reshape(flex.grid(1, b.size()))
       dv_dp.assign_block(b, 0, 0)
-      if curvatures:
-        curvatures = sparse.matrix(1, self.n_params)
       value = flex.double(1, value)
     else:
       return flex.double([]), sparse.matrix(0, 0)
-    if curvatures:
-      return value, dv_dp, curvatures
     return value, dv_dp
 
   def calculate_scales(self, block_id=0):
@@ -235,18 +229,13 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
     else:
       self._d_values.append(data)
 
-  def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
-    sdctuple = super(SmoothBScaleComponent1D, self).calculate_scales_and_derivatives(block_id,
-      curvatures)
+  def calculate_scales_and_derivatives(self, block_id=0):
+    sdctuple = super(SmoothBScaleComponent1D, self).calculate_scales_and_derivatives(block_id)
     if self._n_refl[block_id] == 0:
       return flex.double([]), sparse.matrix(0, 0)
     prefac = 1.0 /(2.0 * (self._d_values[block_id] * self._d_values[block_id]))
     s = flex.exp(sdctuple[0] * prefac)
     d = row_multiply(sdctuple[1], s * prefac)
-    if curvatures:
-      curvatures = row_multiply(elementwise_square(
-          d), 1.0/s)
-      return s, d, curvatures
     return s, d
 
   def calculate_scales(self, block_id=0):
@@ -347,15 +336,13 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
       self._normalised_y_values.append(normalised_y_values)
       self._n_refl.append(normalised_x_values.size())
 
-  def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
+  def calculate_scales_and_derivatives(self, block_id=0):
     if self._n_refl[block_id] > 1:
       value, weight, sumweight = self._smoother.multi_value_weight(
         self._normalised_x_values[block_id],
         self._normalised_y_values[block_id], self.value)
       inv_sw = 1. / sumweight
       dv_dp = row_multiply(weight, inv_sw)
-      if curvatures:
-        curvs = sparse.matrix(value.size(), self.n_params)
     elif self._n_refl[block_id] == 1:
       value, weight, sumweight = self._smoother.value_weight(
         self._normalised_x_values[block_id][0],
@@ -364,13 +351,9 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
       b = flex.double(weight.as_dense_vector() / sumweight)
       b.reshape(flex.grid(1, b.size()))
       dv_dp.assign_block(b, 0, 0)
-      if curvatures:
-        curvatures = sparse.matrix(1, self.n_params)
       value = flex.double(1, value)
     else:
       return flex.double([]), sparse.matrix(0, 0)
-    if curvatures:
-      return value, dv_dp, curvs
     return value, dv_dp
 
   def calculate_scales(self, block_id=0):
@@ -496,7 +479,7 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
       self._n_refl.append(normalised_x_values.size())
 
 
-  def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
+  def calculate_scales_and_derivatives(self, block_id=0):
     if self._n_refl[block_id] > 1:
       value, weight, sumweight = self._smoother.multi_value_weight(
         self._normalised_x_values[block_id],
@@ -505,8 +488,6 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
         self.value)
       inv_sw = 1. / sumweight
       dv_dp = row_multiply(weight, inv_sw)
-      if curvatures:
-        curvs = sparse.matrix(value.size(), self.n_params)
     elif self._n_refl[block_id] == 1:
       value, weight, sumweight = self._smoother.value_weight(
         self._normalised_x_values[block_id][0],
@@ -517,13 +498,9 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
       b = flex.double(weight.as_dense_vector() / sumweight)
       b.reshape(flex.grid(1, b.size()))
       dv_dp.assign_block(b, 0, 0)
-      if curvatures:
-        curvatures = sparse.matrix(1, self.n_params)
       value = flex.double(1, value)
     else:
       return flex.double([]), sparse.matrix(0, 0)
-    if curvatures:
-      return value, dv_dp, curvs
     return value, dv_dp
 
   def calculate_scales(self, block_id=0):
