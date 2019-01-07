@@ -53,7 +53,7 @@ class ScalerBase(object):
     self._Ih_table = None
     self.global_Ih_table = None
     self._initial_keys = []
-    self._basis_function = basis_function(curvatures=False)
+    self._basis_function = basis_function()
     self._final_rmsds = []
     self._removed_datasets = []
 

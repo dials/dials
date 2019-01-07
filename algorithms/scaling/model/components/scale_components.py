@@ -1,9 +1,24 @@
-""""
-Classes that each define one component of a scaling model.
+"""
+Classes that define a component of a scaling model.
 
-These classes hold the component parameters and a component of
-the inverse scale factors, as well as methods to calculate and
-set the inverse scale factors and derivatives.
+Each class holds the parameters and relevant data, as a list of
+arrays, from which to calculate inverse scale factors and
+derivatives.
+The components are initialised without any data, which is added
+by setting the data dict. In order to update the internal data
+lists in order to calculate the scales and derivatives, the
+update_reflection_data method should be called, which can optionally
+be provided with selection arrays to split the data for blockwise/parallel
+calculations.
+
+The scaling algorithm makes use of the components in the following way.
+First, the data for all 'suitable' reflections are added to the components.
+Then, at different stages of the algorithm, selection lists are provided
+to select a subset of this data (e.g. a small subset to prepare the
+component for minimisation calculation, or a large subset for calculating
+the scales for all reflections). The selection lists typically come from
+the Ih_table datastructures so that the data in the components is split in
+the same way as the data in the Ih_table datastructure.
 """
 import abc
 from dials.array_family import flex
@@ -11,7 +26,8 @@ from scitbx import sparse
 
 
 class ScaleComponentBase(object):
-  """Base scale component class.
+  """
+  Base scale component class.
 
   This defines an interface to access the parameters, the component
   of the inverse scale factor and it's derivatives with respect to
@@ -21,27 +37,29 @@ class ScaleComponentBase(object):
   standard deviations. The relevant data from a reflection table is
   added later by a Scaler using the update_reflection_data method.
   This behaviour allows data to easily be added/changed after selecting
-  subsets of the data."""
+  subsets of the data.
+  """
 
   __metaclass__ = abc.ABCMeta
 
   def __init__(self, initial_values, parameter_esds=None):
+    """Set the initial parameter values, parameter esds and n_params."""
     self._parameters = initial_values
     self._parameter_esds = parameter_esds
     self._n_params = len(self._parameters)
     self._var_cov = None
-    # Store the below properties as lists, to allow splitting into blocks
-    # for multiprocessing.
-    self._n_refl = []
-    self._curvatures = []
+    self._n_refl = [] #store as a list, to allow holding of data in blocks
     self._parameter_restraints = None
     self._data = {}
 
   @property
   def data(self):
-    """A dictionary to hold the data relevant to the particular component.
+    """
+    Return a dictionary of reflection data relevant to the particular component.
+
     This is designed to be a dict of arrays which can be selected from when
-    updating the component (i.e. selecting subsets)"""
+    updating the component (i.e. selecting subsets).
+    """
     return self._data
 
   @data.setter
@@ -56,30 +74,28 @@ class ScaleComponentBase(object):
   @parameter_restraints.setter
   def parameter_restraints(self, restraints):
     assert restraints.size() == self.parameters.size()
-    """Set Restraint weights for the component parameters."""
     self._parameter_restraints = restraints
 
   @property
   def n_params(self):
-    """The number of parameters that parameterise the component."""
+    """Get the number of parameters of the component (read-only)."""
     return self._n_params
 
   @property
   def parameters(self):
-    """The parameters of the component."""
+    """Parameters of the component."""
     return self._parameters
 
   @parameters.setter
-  def parameters(self, values):
-    if len(values) != len(self._parameters):
-      assert 0, '''attempting to set a new set of parameters of different
-      length than previous assignment: was %s, attempting %s''' % (
-        len(self._parameters), len(values))
-    self._parameters = values
+  def parameters(self, new_parameters):
+    assert len(new_parameters) == len(self._parameters), """
+attempting to set a new set of parameters of different length than previous
+assignment: was %s, attempting %s""" % (len(self._parameters), len(new_parameters))
+    self._parameters = new_parameters
 
   @property
   def parameter_esds(self):
-    """The estimated standard deviations of the parameters."""
+    """Return the estimated standard deviations of the parameters."""
     return self._parameter_esds
 
   @parameter_esds.setter
@@ -97,7 +113,7 @@ class ScaleComponentBase(object):
 
   @property
   def var_cov_matrix(self):
-    """The variance/covariance matrix of the parameters."""
+    """Return the variance-covariance matrix of the parameters."""
     return self._var_cov
 
   @var_cov_matrix.setter
@@ -106,135 +122,162 @@ class ScaleComponentBase(object):
 
   @property
   def n_refl(self):
-    """The current number of reflections associated with this component."""
+    """Return a list of the number of reflections in each block."""
     return self._n_refl
-
-  @property
-  def curvatures(self):
-    """A spares matrix of the curvatures of the inverse scale
-    factors with respect to the component parameters."""
-    return self._curvatures
 
   @abc.abstractmethod
   def update_reflection_data(self, selection=None,
     block_selections=None):
-    """Add or change the relevant reflection data for the component.
+    """
+    Update the internal data arrays.
 
-    No restrictions should be placed on the data remaining the same
-    size, to allow easy changing of the data contained during scaling.
-    The input data will be specific to the component."""
+    Use the data stored in self.data, optionally with a selection array
+    or list of selections, to populate a list of internal arrays e.g n_refl,
+    normalised_values etc. to allow scale and derivative calculations. If no
+    selection arrays are provided, the internal arrays will be lists
+    containing one array/value, depending on the data type needed for
+    derivative and scale calculation.
+
+    Args:
+        selection: A flex.bool selection array to select a subset of the
+            internal data.
+        block_selections (list): A list of flex.size_t arrays to select
+            subsets of the internal data.
+    """
 
   @abc.abstractmethod
-  def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
-    """Use the component parameters to calculate and inverse_scales and derivatives."""
+  def calculate_scales_and_derivatives(self, block_id=0):
+    """Calculate and return inverse scales and derivatives for a given block."""
 
   @abc.abstractmethod
   def calculate_scales(self, block_id=0):
-    """Use the component parameters to calculate the inverse scale factors."""
+    """Calculate and return inverse scales for a given block."""
 
 
 class SingleScaleFactor(ScaleComponentBase):
-  """A model component consisting of a single global scale parameter.
+  """
+  A model component consisting of a single global scale parameter.
 
   The inverse scale factor for every reflection is the parameter
-  value and the derivatives are all 1.0."""
+  value itself and the derivatives are therefore all 1.0.
+  """
 
   def __init__(self, initial_values, parameter_esds=None):
-    assert len(initial_values) == 1, '''This model component is only designed
-      for a single global scale component'''
+    """Set the initial parameter values, parameter esds and n_params."""
+    assert len(initial_values) == 1, """
+This model component can only hold a single parameter."""
     super(SingleScaleFactor, self).__init__(initial_values, parameter_esds)
 
   @ScaleComponentBase.data.setter
   def data(self, data):
+    """Set the data dict in the parent class."""
     assert set(data.keys()) == set(['id']), set(data.keys())
     self._data = data
 
   def update_reflection_data(self, selection=None,
     block_selections=None):
-    """Add reflection data to the component, only n_reflections needed."""
-    self._n_refl = []
+    """
+    Update the internal n_refl list.
+
+    Use the data stored in self.data, optionally with a boolean selection array
+    or list of flex.size_t index selections, to make a list of n_refl (of length
+    1 or len(block_selections)) by inspecting the size of the selection result,
+    in order to allow scale and derivative calculations.
+
+    Args:
+        selection: Optional, a flex.bool selection array to select a subset of
+            the internal data.
+        block_selections (list): Optional, a list of flex.size_t arrays to
+            select subsets of the internal data.
+    """
     data = self.data['id']
     if selection:
-      data = data.select(selection)
-    if block_selections:
-      for sel in block_selections:
-        self._n_refl.append(data.select(sel).size())
+      self._n_refl = [data.select(selection).size()]
+    elif block_selections:
+      self._n_refl = [data.select(sel).size() for sel in block_selections]
     else:
-      self._n_refl.append(data.size())
+      self._n_refl = [data.size()]
 
-  def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
+  def calculate_scales_and_derivatives(self, block_id=0):
+    """Calculate and return inverse scales and derivatives for a given block."""
     scales = flex.double(self.n_refl[block_id], self._parameters[0])
     derivatives = sparse.matrix(self.n_refl[block_id], 1)
     for i in range(self.n_refl[block_id]):
       derivatives[i, 0] = 1.0
-    if curvatures:
-      curvatures = sparse.matrix(self.n_refl[block_id], 1)#curvatures are all zero.
-      return scales, derivatives, curvatures
     return scales, derivatives
 
   def calculate_scales(self, block_id=0):
+    """Calculate and return inverse scales for a given block."""
     return flex.double(self.n_refl[block_id], self._parameters[0])
 
 class SingleBScaleFactor(ScaleComponentBase):
-  """A model component for a single global B-factor parameter.
+  """
+  A model component for a single global B-factor parameter.
 
   The inverse scale factor for each reflection is given by
-  S = exp(B/(2 * d^2)), the derivatives are S/(2 * d^2)."""
+  S = exp(B/(2 * d^2)), the derivatives are S/(2 * d^2).
+  """
 
   def __init__(self, initial_values, parameter_esds=None):
+    """Set the initial parameter values, parameter esds and n_params."""
     super(SingleBScaleFactor, self).__init__(initial_values, parameter_esds)
     self._d_values = []
 
   @property
   def d_values(self):
-    """The current set of d-values associated with this component."""
+    """Return a list of arrays of d-values associated with this component."""
     return self._d_values
 
   @ScaleComponentBase.data.setter
   def data(self, data):
+    """Set the data dict in the parent class."""
     assert set(data.keys()) == set(['id', 'd']), set(data.keys())
     self._data = data
 
   def update_reflection_data(self, selection=None,
     block_selections=None):
-    """"Add reflection data to the component, only the d-values and number
-    of reflections are needed."""
-    self._n_refl = []
-    self._d_values = []
+    """
+    Update the internal n_refl and d_values lists.
+
+    Use the data stored in self.data, optionally with a boolean selection array
+    or list of flex.size_t index selections, to make a lists of n_refl and
+    d_value arrays (of length 1 or len(block_selections)), in order to allow
+    scale and derivative calculations.
+
+    Args:
+        selection: Optional, a flex.bool selection array to select a subset of
+            the internal data.
+        block_selections (list): Optional, a list of flex.size_t arrays to
+            select subsets of the internal data.
+    """
     data = self.data['d']
     if selection:
-      data = data.select(selection)
-    if block_selections:
-      for i, sel in enumerate(block_selections):
-        self._d_values.append(data.select(sel))
-        self._n_refl.append(self._d_values[i].size())
+      self._d_values = [data.select(selection)]
+    elif block_selections:
+      self._d_values = [data.select(sel) for sel in block_selections]
     else:
-      self._d_values.append(data)
-      self._n_refl.append(data.size())
+      self._d_values = [data]
+    self._n_refl = [dvalues.size() for dvalues in self._d_values]
 
-  def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
-    scales = flex.exp(flex.double(
-      [self._parameters[0]] * self._n_refl[block_id])
-      / (2.0 * (self._d_values[block_id]*self._d_values[block_id])))
+  def calculate_scales_and_derivatives(self, block_id=0):
+    """Calculate and return inverse scales and derivatives for a given block."""
+    d_squared = self._d_values[block_id] * self._d_values[block_id]
+    scales = flex.exp(flex.double(self._n_refl[block_id], self._parameters[0])
+      / (2.0 * d_squared))
     derivatives = sparse.matrix(self._n_refl[block_id], 1)
     for i in range(self._n_refl[block_id]):
-      derivatives[i, 0] = (scales[i]
-        / (2.0 * (self._d_values[block_id][i]*self._d_values[block_id][i])))
-    if curvatures:
-      curvatures = sparse.matrix(self.n_refl[block_id], 1) #curvatures are all zero.
-      for i in range(self._n_refl[block_id]):
-        curvatures[i, 0] = (scales[i]
-          / ((2.0 * (self._d_values[block_id][i]**2))**2))
-      return scales, derivatives, curvatures
+      derivatives[i, 0] = scales[i] / (2.0 * d_squared[i])
     return scales, derivatives
 
   def calculate_scales(self, block_id=0):
-    scales = flex.exp(flex.double([self._parameters[0]] * self._n_refl[block_id])
-      / (2.0 * (self._d_values[block_id]*self._d_values[block_id])))
+    """Calculate and return inverse scales for a given block."""
+    scales = flex.exp(flex.double(self._n_refl[block_id], self._parameters[0])
+      / (2.0 * (self._d_values[block_id] * self._d_values[block_id])))
     return scales
 
 class SHScaleComponent(ScaleComponentBase):
-  """A model component for a spherical harmonic absorption correction.
+  """
+  A model component for a spherical harmonic absorption correction.
 
   This component uses a set of spherical harmonic functions to define
   an absorption surface for the crystal. A matrix of spherical harmonic
@@ -242,82 +285,84 @@ class SHScaleComponent(ScaleComponentBase):
   used to calculate the scales and derivatives.
   The scale is given by S = 1 + (sum_l sum_m Clm * Ylm) where Clm are
   the model parameters and Ylm are the spherical harmonic coefficients,
-  the derivatives are then simply the coefficients Ylm."""
+  the derivatives are then simply the coefficients Ylm.
+  """
 
   def __init__(self, initial_values, parameter_esds=None):
+    """Set the initial parameter values, parameter esds and n_params."""
     super(SHScaleComponent, self).__init__(initial_values, parameter_esds)
     self._harmonic_values = []
-    self._parameter_restraints = None
 
   @property
   def harmonic_values(self):
-    """A matrix of harmonic coefficients for the data."""
+    """Return the matrix of harmonic coefficients for the internal data."""
     return self._harmonic_values
 
   @property
   def sph_harm_table(self):
-    """A matrix of the full harmonic coefficient for a reflection table."""
+    """Return the matrix of the full harmonic coefficient for a reflection table."""
     return self._data['sph_harm_table']
 
   @sph_harm_table.setter
   def sph_harm_table(self, sht):
-    """Set the spherical harmonic table."""
     self._data['sph_harm_table'] = sht
 
   @ScaleComponentBase.data.setter
   def data(self, data):
+    """Set the data dict in the parent class."""
     assert set(data.keys()) == set(['sph_harm_table']), set(data.keys())
     self._data = data
 
   def calculate_restraints(self):
-    residual = self.parameter_restraints * (self._parameters*self._parameters)
+    """Calculate residual and gradient restraints for the component."""
+    residual = self.parameter_restraints * self._parameters * self._parameters
     gradient = 2.0 * self.parameter_restraints * self._parameters
     return residual, gradient
 
   def calculate_jacobian_restraints(self):
+    """Calculate residual and jacobian restraints for the component."""
     jacobian = sparse.matrix(self.n_params, self.n_params)
     for i in range(self.n_params):
-      jacobian[i, i] = +1.0
+      jacobian[i, i] = 1.0
     return self._parameters, jacobian, self._parameter_restraints
 
   def update_reflection_data(self, selection=None, block_selections=None):
-    """Update the spherical harmonic coefficients."""
-    self._n_refl = []
-    self._harmonic_values = []
+    """
+    Update the internal n_refl and harmonic_values lists.
+
+    Use the harmonic values matrix stored in self.data, optionally with a
+    boolean selection array or list of flex.size_t index selections, to make
+    lists of n_refl and harmonic_value arrays (of length 1 or
+    len(block_selections)), in order to allow scale and derivative calculations.
+
+    Args:
+        selection: Optional, a flex.bool selection array to select a subset of
+            the internal data.
+        block_selections (list): Optional, a list of flex.size_t arrays to
+            select subsets of the internal data.
+    """
     if selection:
       sel_sph_harm_table = self.data['sph_harm_table'].select_columns(
         selection.iselection())
-      if block_selections:
-        block_selection_list = block_selections
-        for i, sel in enumerate(block_selection_list):
-          block_sph_harm_table = sel_sph_harm_table.select_columns(sel)
-          self._harmonic_values.append(block_sph_harm_table.transpose())
-          self.n_refl.append(self._harmonic_values[i].n_rows)
-      else:
-        self._harmonic_values.append(sel_sph_harm_table.transpose())
-        self._n_refl.append(self._harmonic_values[0].n_rows)
+      self._harmonic_values = [sel_sph_harm_table.transpose()]
     elif block_selections:
-      block_selection_list = block_selections
-      for i, sel in enumerate(block_selection_list):
+      self._harmonic_values = []
+      for sel in block_selections:
         block_sph_harm_table = self.data['sph_harm_table'].select_columns(sel)
         self._harmonic_values.append(block_sph_harm_table.transpose())
-        self.n_refl.append(self._harmonic_values[i].n_rows)
     else:
-      self._harmonic_values.append(self.data['sph_harm_table'].transpose())
-      self._n_refl.append(self._harmonic_values[0].n_rows)
+      self._harmonic_values = [self.data['sph_harm_table'].transpose()]
+    self._n_refl = [val.n_rows for val in self._harmonic_values]
 
-  def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
-    abs_scale = flex.double(self._harmonic_values[block_id].n_rows, 1.0
-      ) #Unity term
+  def calculate_scales_and_derivatives(self, block_id=0):
+    """Calculate and return inverse scales and derivatives for a given block."""
+    abs_scale = flex.double(self._harmonic_values[block_id].n_rows, 1.0) #Unity term
     for i, col in enumerate(self._harmonic_values[block_id].cols()):
       abs_scale += flex.double(col.as_dense_vector() * self._parameters[i])
-    if curvatures:
-      curvatures = sparse.matrix(
-        abs_scale.size(), self._n_params)
-      return abs_scale, self._harmonic_values[block_id], curvatures
     return abs_scale, self._harmonic_values[block_id]
 
   def calculate_scales(self, block_id=0):
+    """Calculate and return inverse scales for a given block."""
     abs_scale = flex.double(self._harmonic_values[block_id].n_rows, 1.0
       ) #Unity term
     for i, col in enumerate(self._harmonic_values[block_id].cols()):
