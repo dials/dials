@@ -1,5 +1,5 @@
 '''
-This code tests the data managers and active parameter managers.
+This code trests the data managers and active parameter managers.
 '''
 import pytest
 import mock
@@ -18,50 +18,50 @@ from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.parameter_handler import \
   scaling_active_parameter_manager, create_apm_factory
 from dials.algorithms.scaling.target_function import ScalingTargetFixedIH
-from dials.algorithms.scaling.scaler import SingleScalerBase,\
+from dials.algorithms.scaling.scaler import SingleScaler,\
   calc_sf_variances, ScalerBase, MultiScalerBase, MultiScaler, TargetScaler,\
   NullScaler
 from dials.algorithms.scaling.Ih_table import IhTable
 
 @pytest.fixture
-def test_reflections():
-  """Make a test reflection table."""
+def trest_reflections():
+  """Make a trest reflection table."""
   return generated_refl()
 
 @pytest.fixture
-def test_2_reflections():
-  """Make a test reflection table."""
+def trest_2_reflections():
+  """Make a trest reflection table."""
   return [generated_refl_for_splitting_1()[0],
     generated_refl_for_splitting_2()[0]]
 
 @pytest.fixture
-def test_reflections_no_exclude():
-  """Make a test reflection table."""
+def trest_reflections_no_exclude():
+  """Make a trest reflection table."""
   return generated_refl(exclude_refl=False)
 
 @pytest.fixture
-def test_reflections_Ihtable():
-  """Make a test reflection table."""
+def trest_reflections_Ihtable():
+  """Make a trest reflection table."""
   return generated_refl()
 
 @pytest.fixture
-def test_experiments():
-  """Make a test experiments list"""
+def trest_experiments():
+  """Make a trest experiments list"""
   return generated_exp()
 
 @pytest.fixture
-def test_2_experiments():
-  """Make a test experiments list"""
+def trest_2_experiments():
+  """Make a trest experiments list"""
   return generated_exp(2)
 
 @pytest.fixture
-def test_params():
-  """Make a test param phil scope."""
+def trest_params():
+  """Make a trest param phil scope."""
   return generated_param()
 
 @pytest.fixture
-def test_sg():
-  """Make a test param phil scope."""
+def trest_sg():
+  """Make a trest param phil scope."""
   return space_group("C 2y")
 
 def refl_for_outlier_routine():
@@ -109,7 +109,7 @@ def refl_for_error_optimisation():
 def generated_refl(exclude_refl=True):
   """Generate a reflection table."""
   #these miller_idx/d_values don't make physical sense, but I didn't want to
-  #have to write the tests for lots of reflections.
+  #have to write the trests for lots of reflections.
   reflections = flex.reflection_table()
   reflections['intensity'] = flex.double([1.0, 10.0, 100.0, 1.0])
   reflections['variance'] = flex.double([1.0, 10.0, 100.0, 1.0])
@@ -209,7 +209,7 @@ def generated_param():
 
 @pytest.fixture
 def mock_apm():
-  """mock parameter manager for testing var_cov_matrix setting."""
+  """mock parameter manager for tresting var_cov_matrix setting."""
   apm = MagicMock()
   apm.var_cov_matrix = flex.double([2.0])
   apm.var_cov_matrix.reshape(flex.grid(1, 1))
@@ -270,18 +270,18 @@ def mock_explist_2(mock_exp):
   return mock_explist
 
 @pytest.fixture
-def mock_singlescaler(test_reflections_Ihtable, test_sg):
-  """Mock singlescaler to use for testing multiscalers."""
+def mock_singlescaler(trest_reflections_Ihtable, trest_sg):
+  """Mock singlescaler to use for tresting multiscalers."""
   single_scaler = Mock()
-  single_scaler.space_group = test_sg
+  single_scaler.space_group = trest_sg
   single_scaler.initial_keys = ['intensity', 'variance']
-  single_scaler.reflection_table = test_reflections_Ihtable[0]
-  single_scaler.Ih_table = IhTable([(test_reflections_Ihtable[0], None)], test_sg)
+  single_scaler.reflection_table = trest_reflections_Ihtable[0]
+  single_scaler.Ih_table = IhTable([(trest_reflections_Ihtable[0], None)], trest_sg)
   single_scaler.scaling_selection = flex.bool([True, True, False, False])
   return single_scaler
 
 
-def test_ScalerBase(test_params):
+def trest_ScalerBase(trest_params):
   """Test the Base Scaler Class."""
 
   class SB_filler(ScalerBase):
@@ -321,27 +321,27 @@ def test_ScalerBase(test_params):
   with pytest.raises(AssertionError):
     scalerbase.space_group = 1
 
-  # test scaling subset
+  # trest scaling subset
   rt = generated_refl_for_splitting_1()[0]
   rt['intensity'] = rt['intensity.prf.value']
   rt['variance'] = rt['intensity.prf.variance']
   rt['Esq'] = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-  test_params.reflection_selection.E2_range = 0.8, 5.0
-  test_params.reflection_selection.d_range = 1.0, 5.0 #all but first
-  test_params.reflection_selection.Isigma_range = 0.9, 5.5 #all but last
-  sel = scalerbase._scaling_subset(rt, test_params)
+  trest_params.reflection_selection.E2_range = 0.8, 5.0
+  trest_params.reflection_selection.d_range = 1.0, 5.0 #all but first
+  trest_params.reflection_selection.Isigma_range = 0.9, 5.5 #all but last
+  sel = scalerbase._scaling_subset(rt, trest_params)
   assert list(sel) == [False, True, True, True, True, False]
   rt['Esq'] = flex.double([1.0, 1.0, 1.0, 0.1, 6.0, 1.0])
-  sel = scalerbase._scaling_subset(rt, test_params)
+  sel = scalerbase._scaling_subset(rt, trest_params)
   assert list(sel) == [False, True, True, False, False, False]
 
-  # test perform scaling in another test.
+  # trest perform scaling in another trest.
   rt1 = flex.reflection_table()
   scalerbase._reflection_table = rt1
-  # test round_of_outlier_rejection - should just call reject outliers
+  # trest round_of_outlier_rejection - should just call reject outliers
   with mock.patch('dials.algorithms.scaling.scaler.reject_outliers') as \
     outlier_rej:
-    scalerbase._params = test_params
+    scalerbase._params = trest_params
     scalerbase.round_of_outlier_rejection()
     assert outlier_rej.call_count == 1
     outlier_rej.assert_called_with([rt1], scalerbase.space_group,
@@ -349,14 +349,14 @@ def test_ScalerBase(test_params):
       scalerbase.params.scaling_options.outlier_zmax)
 
 
-def test_SingleScaler(test_reflections, test_experiments, test_params,
+def trest_SingleScaler(trest_reflections, trest_experiments, trest_params,
     mock_errormodel, mock_apm):
   """Test the single scaler class."""
-  test_params.scaling_options.nproc = 1
-  exp = create_scaling_model(test_params, test_experiments, test_reflections)
-  singlescaler = SingleScalerBase(test_params, exp[0], test_reflections[0])
+  trest_params.scaling_options.nproc = 1
+  exp = create_scaling_model(trest_params, trest_experiments, trest_reflections)
+  singlescaler = SingleScaler(trest_params, exp[0], trest_reflections[0])
 
-  # First test for things that are required upon initialisation.
+  # First trest for things that are required upon initialisation.
   # Test that the var_cov matrix has been initialised to zero with the correct size
   assert singlescaler.var_cov_matrix.n_rows == 2
   assert singlescaler.var_cov_matrix.n_cols == 2
@@ -367,20 +367,20 @@ def test_SingleScaler(test_reflections, test_experiments, test_params,
 
   rt = singlescaler.reflection_table
 
-  # Test that normalised Es are set (defer test of calculation to separate test)
+  # Test that normalised Es are set (defer trest of calculation to separate trest)
   assert 'Esq' in rt
   assert 'intensity' in rt
   assert 'variance' in rt
 
   assert singlescaler.components == exp[0].scaling_model.components
   assert singlescaler.experiments == exp[0]
-  assert singlescaler.params == test_params
+  assert singlescaler.params == trest_params
 
   # Test configure_reflection_table?
   assert '_configure_reflection_table' in dir(singlescaler)
   # # Need a non-KB model as it doesnt do anything here
 
-  # Now test public methods.
+  # Now trest public methods.
   # Test that Ih table was correctly set up by initialisation.
   assert singlescaler.Ih_table.size == 2
   assert list(singlescaler.Ih_table.blocked_data_list[0].asu_miller_index) == (
@@ -422,7 +422,7 @@ def test_SingleScaler(test_reflections, test_experiments, test_params,
     # a separate function, but behaviour changed so copied the verified result.
 
   # Second case - when var_cov_matrix is only part of full matrix.
-  singlescaler = SingleScalerBase(test_params, exp[0], test_reflections[0])
+  singlescaler = SingleScaler(trest_params, exp[0], trest_reflections[0])
   apm = scaling_active_parameter_manager(singlescaler.components, ['scale'])
   apm = mock_apm
   singlescaler.update_var_cov(apm)
@@ -434,9 +434,9 @@ def test_SingleScaler(test_reflections, test_experiments, test_params,
   singlescaler.expand_scales_to_all_reflections(calc_cov=True)
   assert list(rt['inverse_scale_factor_variance']) == [2.0, 2.0, 0.0, 0.0]
 
-  #test create Ih table function with free set?
+  #trest create Ih table function with free set?
 
-  # test reselect reflections for scaling - manually modify block selection list
+  # trest reselect reflections for scaling - manually modify block selection list
   # and check components are updated
   singlescaler.Ih_table.blocked_selection_list[0] = [flex.size_t([0])]
   singlescaler.reselect_reflections_for_scaling()
@@ -477,15 +477,15 @@ def test_SingleScaler(test_reflections, test_experiments, test_params,
   assert 'Ih_values' in singlescaler.reflection_table
 
 
-def test_SingleScaler_error_optimisation(test_experiments, test_params):
+def trest_SingleScaler_error_optimisation(trest_experiments, trest_params):
   """Test perform error optimisation and error optimisation routine.
   The purpose is not to verify that the error model itself is correct, just
   that it is appropriately called and the scaler updated. Expect that the error
   model is minimised and updated in the Ih_table, experiments"""
   rt = refl_for_error_optimisation()
-  test_params.scaling_options.nproc = 1
-  exp = create_scaling_model(test_params, test_experiments, [rt])
-  scaler = SingleScalerBase(test_params, exp[0], rt)
+  trest_params.scaling_options.nproc = 1
+  exp = create_scaling_model(trest_params, trest_experiments, [rt])
+  scaler = SingleScaler(trest_params, exp[0], rt)
   assert scaler.experiments.scaling_model.error_model is None
   initial_Ih_weights = list(scaler.Ih_table.blocked_data_list[0].weights)
   scaler.perform_error_optimisation()
@@ -494,10 +494,10 @@ def test_SingleScaler_error_optimisation(test_experiments, test_params):
   # Test that the Ih_table weights have been updated.
   assert list(scaler.Ih_table.blocked_data_list[0].weights) != initial_Ih_weights
 
-  # Now test the error_optimisation_routine
+  # Now trest the error_optimisation_routine
   rt = refl_for_error_optimisation()
-  exp = create_scaling_model(test_params, test_experiments, [rt])
-  scaler = SingleScalerBase(test_params, exp[0], rt)
+  exp = create_scaling_model(trest_params, trest_experiments, [rt])
+  scaler = SingleScaler(trest_params, exp[0], rt)
 
   with mock.patch.object(scaler, 'expand_scales_to_all_reflections'
     ) as expand_patch:
@@ -514,16 +514,16 @@ def test_SingleScaler_error_optimisation(test_experiments, test_params):
           assert optimise_patch.call_count == 2
           assert reselect_patch.call_count == 1
 
-def test_SingleScaler_outlier_rejection_routine(test_experiments, test_params):
+def trest_SingleScaler_outlier_rejection_routine(trest_experiments, trest_params):
   """Test outlier rejection routine. This function expects a scaler that
   has already been scaled - so first create this and check that outlier
   rejection is performed, a new Ih_table is created and then the right
   reflections reselected."""
-  test_params.scaling_options.nproc = 1
+  trest_params.scaling_options.nproc = 1
   rt = refl_for_outlier_routine()
-  test_params.scaling_options.outlier_rejection = 'standard'
-  exp = create_scaling_model(test_params, test_experiments, [rt])
-  scaler = SingleScalerBase(test_params, exp[0], rt)
+  trest_params.scaling_options.outlier_rejection = 'standard'
+  exp = create_scaling_model(trest_params, trest_experiments, [rt])
+  scaler = SingleScaler(trest_params, exp[0], rt)
   # scaling_subset will select reflections [1, 2, 3, 4] then the rest will be
   # put into the Ih_table, and the indices of the blocked selection list
   # refers to selection from scaler.scaling_selection.
@@ -539,8 +539,8 @@ def test_SingleScaler_outlier_rejection_routine(test_experiments, test_params):
 
   # Repeat but with make_ready_for_scaling=False
   rt = refl_for_outlier_routine() # create a fresh copy
-  exp = create_scaling_model(test_params, test_experiments, [rt])
-  scaler = SingleScalerBase(test_params, exp[0], rt)
+  exp = create_scaling_model(trest_params, trest_experiments, [rt])
+  scaler = SingleScaler(trest_params, exp[0], rt)
   assert list(scaler.Ih_table.blocked_data_list[0].nonzero_weights) == [1, 2, 3, 4]
   scaler.outlier_rejection_routine(make_ready_for_scaling=False)
   # Should still have found outlier
@@ -551,12 +551,12 @@ def test_SingleScaler_outlier_rejection_routine(test_experiments, test_params):
   assert scaler.Ih_table == []
   #assert list(scaler.Ih_table.blocked_data_list[0].nonzero_weights) == [1, 2, 3, 4]
 
-def test_SingleScaler_update_for_minimisation(test_reflections,
-    test_experiments, test_params):
+def trest_SingleScaler_update_for_minimisation(trest_reflections,
+    trest_experiments, trest_params):
   """Test the update_for_minimisation method of the singlescaler."""
-  test_params.scaling_options.nproc = 1
-  exp = create_scaling_model(test_params, test_experiments, test_reflections[0])
-  single_scaler = SingleScalerBase(test_params, exp[0], test_reflections[0])
+  trest_params.scaling_options.nproc = 1
+  exp = create_scaling_model(trest_params, trest_experiments, trest_reflections[0])
+  single_scaler = SingleScaler(trest_params, exp[0], trest_reflections[0])
   apm_fac = create_apm_factory(single_scaler)
   single_scaler.components['scale'].parameters /= 2.0
   apm = apm_fac.make_next_apm()
@@ -577,16 +577,16 @@ def test_SingleScaler_update_for_minimisation(test_reflections,
       assert approx_equal(Ih_table.derivatives[i, j], bf[1][i, j])
   assert Ih_table.derivatives.non_zeroes == bf[1].non_zeroes
 
-def test_SingleScaler_split_into_blocks(test_reflections_no_exclude,
-  test_experiments, test_params):
+def trest_SingleScaler_split_into_blocks(trest_reflections_no_exclude,
+  trest_experiments, trest_params):
   """Test the scaler initialisation when nproc > 1 - the data in the Ih_Table
   and components should be correctly split into blocks."""
-  test_params.model = 'physical'
-  exp = create_scaling_model(test_params, test_experiments,
-    test_reflections_no_exclude)
-  test_params.scaling_options.nproc = 2
-  singlescaler = SingleScalerBase(test_params, exp[0],
-    test_reflections_no_exclude[0])
+  trest_params.model = 'physical'
+  exp = create_scaling_model(trest_params, trest_experiments,
+    trest_reflections_no_exclude)
+  trest_params.scaling_options.nproc = 2
+  singlescaler = SingleScaler(trest_params, exp[0],
+    trest_reflections_no_exclude[0])
   assert singlescaler.Ih_table.blocked_data_list[0].size == 2
   assert singlescaler.Ih_table.blocked_data_list[1].size == 2
   assert list(singlescaler.components['decay'].d_values[0]) == [2.0, 0.8] #(#2 and #0)
@@ -597,8 +597,8 @@ def test_SingleScaler_split_into_blocks(test_reflections_no_exclude,
   assert singlescaler.components['absorption'].harmonic_values[0] == expected_harm1
   assert singlescaler.components['absorption'].harmonic_values[1] == expected_harm2
 
-def test_MultiScalerBase(mock_singlescaler, mock_explist_2, test_params):
-  """Unit tests for the MultiScalerBase class."""
+def trest_MultiScalerBase(mock_singlescaler, mock_explist_2, trest_params):
+  """Unit trests for the MultiScalerBase class."""
 
   class MSB_filler(MultiScalerBase):
     """Class to fill in abstract methods."""
@@ -609,15 +609,15 @@ def test_MultiScalerBase(mock_singlescaler, mock_explist_2, test_params):
     def update_for_minimisation(self, apm, curvatures=False):
       """Fill in abstract method."""
 
-  test_params.scaling_options.verbosity = 1
+  trest_params.scaling_options.verbosity = 1
 
   singlescalers = [mock_singlescaler, mock_singlescaler]
-  multiscaler = MSB_filler(test_params, mock_explist_2, singlescalers)
+  multiscaler = MSB_filler(trest_params, mock_explist_2, singlescalers)
 
   assert multiscaler.single_scalers is singlescalers
   assert multiscaler.space_group is singlescalers[0].space_group
   assert multiscaler.active_scalers is None
-  assert multiscaler.params is test_params
+  assert multiscaler.params is trest_params
   assert multiscaler.experiments is mock_explist_2[0]
 
   # Set the scalers to active to allow calling of functions below
@@ -645,15 +645,15 @@ def outlier_rej_side_effect(*args):
   """Side effect for overriding the call to reject_outliers."""
   return args[0]
 
-def test_MultiScaler(test_2_reflections, test_2_experiments, test_params):
+def trest_MultiScaler(trest_2_reflections, trest_2_experiments, trest_params):
   """Test the setup of the Ih table and components for a multiscaler"""
   # Use the create_scaling_model and create_scaler helpers functions for ease.
 
-  test_params.scaling_options.nproc = 2
-  test_params.model = 'physical'
-  experiments = create_scaling_model(test_params, test_2_experiments,
-    test_2_reflections)
-  multiscaler = create_scaler(test_params, experiments, test_2_reflections)
+  trest_params.scaling_options.nproc = 2
+  trest_params.model = 'physical'
+  experiments = create_scaling_model(trest_params, trest_2_experiments,
+    trest_2_reflections)
+  multiscaler = create_scaler(trest_params, experiments, trest_2_reflections)
 
   block_list = multiscaler.Ih_table.blocked_data_list
   block_sels = multiscaler.Ih_table.blocked_selection_list
@@ -711,7 +711,7 @@ def test_MultiScaler(test_2_reflections, test_2_experiments, test_params):
     multiscaler.join_multiple_datasets()
     assert join_data.call_args_list == [call(multiscaler.single_scalers)]
 
-  # Now test update_for_minimisation method. Make all
+  # Now trest update_for_minimisation method. Make all
   # the parameters not one so that one can check the correct composition of
   # the inverse scales and derivatives by the method.
   apm_fac = create_apm_factory(multiscaler)
@@ -756,21 +756,21 @@ def test_MultiScaler(test_2_reflections, test_2_experiments, test_params):
     multiscaler.round_of_outlier_rejection()
     assert outlier_patch.call_count == 1
 
-def test_multiscaler_outlier_rejection_routine(test_params):
+def trest_multiscaler_outlier_rejection_routine(trest_params):
   """Test outlier rejection routine. This function expects a scaler that
   has already been scaled - so first create this and check that outlier
   rejection is performed, a new Ih_table is created and then the right
   reflections reselected."""
-  test_params.scaling_options.nproc = 1
+  trest_params.scaling_options.nproc = 1
   rt = refl_for_outlier_routine()
   rt2 = refl_for_outlier_routine()
   rt2['intensity'][2] = 1.0
-  test_params.scaling_options.outlier_rejection = 'standard'
-  exp = create_scaling_model(test_params, generated_exp(), [rt])
-  scaler = SingleScalerBase(test_params, exp[0], rt, for_multi=True)
-  exp = create_scaling_model(test_params, generated_exp(), [rt2])
-  scaler2 = SingleScalerBase(test_params, exp[0], rt2, for_multi=True)
-  multiscaler = MultiScaler(test_params, exp, [scaler, scaler2])
+  trest_params.scaling_options.outlier_rejection = 'standard'
+  exp = create_scaling_model(trest_params, generated_exp(), [rt])
+  scaler = SingleScaler(trest_params, exp[0], rt, for_multi=True)
+  exp = create_scaling_model(trest_params, generated_exp(), [rt2])
+  scaler2 = SingleScaler(trest_params, exp[0], rt2, for_multi=True)
+  multiscaler = MultiScaler(trest_params, exp, [scaler, scaler2])
   # scaling_subset will select reflections [1, 2, 3, 4] then the rest will be
   # put into the Ih_table, and the indices of the blocked selection list
   # refers to selection from scaler.scaling_selection.
@@ -799,13 +799,13 @@ def test_multiscaler_outlier_rejection_routine(test_params):
   rt = refl_for_outlier_routine()
   rt2 = refl_for_outlier_routine()
   rt2['intensity'][2] = 1.0
-  test_params.scaling_options.outlier_rejection = 'standard'
-  test_params.scaling_options.nproc = 1
-  exp = create_scaling_model(test_params, generated_exp(), [rt])
-  scaler = SingleScalerBase(test_params, exp[0], rt, for_multi=True)
-  exp = create_scaling_model(test_params, generated_exp(), [rt2])
-  scaler2 = SingleScalerBase(test_params, exp[0], rt2, for_multi=True)
-  multiscaler = MultiScaler(test_params, exp, [scaler, scaler2])
+  trest_params.scaling_options.outlier_rejection = 'standard'
+  trest_params.scaling_options.nproc = 1
+  exp = create_scaling_model(trest_params, generated_exp(), [rt])
+  scaler = SingleScaler(trest_params, exp[0], rt, for_multi=True)
+  exp = create_scaling_model(trest_params, generated_exp(), [rt2])
+  scaler2 = SingleScaler(trest_params, exp[0], rt2, for_multi=True)
+  multiscaler = MultiScaler(trest_params, exp, [scaler, scaler2])
   multiscaler.outlier_rejection_routine(make_ready_for_scaling=False)
   # Should still have found outlier
   assert list(multiscaler.single_scalers[0].reflection_table.get_flags(
@@ -816,33 +816,33 @@ def test_multiscaler_outlier_rejection_routine(test_params):
   #assert list(multiscaler.Ih_table.blocked_data_list[0].nonzero_weights
   ##  ) == [1, 2, 3, 1, 2, 3, 4, 4]
 
-def test_multiscaler_scaling(test_2_reflections, test_2_experiments, test_params):
+def trest_multiscaler_scaling(trest_2_reflections, trest_2_experiments, trest_params):
   """Test the setup of the Ih table and components for a multiscaler.
   This should create some blocks with zero elements, but the algorithm should
   still complete."""
   # Use the create_scaling_model and create_scaler helpers functions for ease.
-  test_2_reflections[1]['miller_index'][4] = flex.miller_index([(5, 7, 9)])[0]
-  test_params.scaling_options.nproc = 7
-  test_params.scaling_refinery.engine = 'LevMar'
+  trest_2_reflections[1]['miller_index'][4] = flex.miller_index([(5, 7, 9)])[0]
+  trest_params.scaling_options.nproc = 7
+  trest_params.scaling_refinery.engine = 'LevMar'
   # should split into 5 unique groups, but each dataset won't necessarily have
   # data in each block - the algorithm should still work!
-  test_params.scaling_options.outlier_rejection = None
-  test_params.model = 'KB'
-  experiments = create_scaling_model(test_params, test_2_experiments,
-    test_2_reflections)
-  multiscaler = create_scaler(test_params, experiments, test_2_reflections)
+  trest_params.scaling_options.outlier_rejection = None
+  trest_params.model = 'KB'
+  experiments = create_scaling_model(trest_params, trest_2_experiments,
+    trest_2_reflections)
+  multiscaler = create_scaler(trest_params, experiments, trest_2_reflections)
   multiscaler.perform_scaling()
 
-def test_new_TargetScaler(test_2_reflections, test_2_experiments, test_params):
+def trest_new_TargetScaler(trest_2_reflections, trest_2_experiments, trest_params):
   """Test the setup of the Ih table and components for a multiscaler"""
   # Use the create_scaling_model and create_scaler helpers functions for ease.
 
-  test_params.scaling_options.nproc = 2
-  test_params.model = 'physical'
-  experiments = create_scaling_model(test_params, test_2_experiments,
-    test_2_reflections)
+  trest_params.scaling_options.nproc = 2
+  trest_params.model = 'physical'
+  experiments = create_scaling_model(trest_params, trest_2_experiments,
+    trest_2_reflections)
   experiments[0].scaling_model.set_scaling_model_as_scaled()
-  target = create_scaler(test_params, experiments, test_2_reflections)
+  target = create_scaler(trest_params, experiments, trest_2_reflections)
   assert isinstance(target, TargetScaler)
 
   #Test join_multiple_datasets
@@ -867,21 +867,21 @@ def test_new_TargetScaler(test_2_reflections, test_2_experiments, test_params):
     scaling_patch.assert_called_once_with(target_type=ScalingTargetFixedIH,
       engine=None, max_iterations=None)
 
-def test_targetscaler_outlier_rejection_routine(test_params):
+def trest_targetscaler_outlier_rejection_routine(trest_params):
   """Test outlier rejection routine. This function expects a scaler that
   has already been scaled - so first create this and check that outlier
   rejection is performed, a new Ih_table is created and then the right
   reflections reselected."""
-  test_params.scaling_options.nproc = 1
+  trest_params.scaling_options.nproc = 1
   rt = refl_for_outlier_routine()
   rt2 = refl_for_outlier_routine()
   rt['intensity'][2] = 1.0
-  test_params.scaling_options.outlier_rejection = 'standard'
-  exp = create_scaling_model(test_params, generated_exp(), [rt])
-  scaler = SingleScalerBase(test_params, exp[0], rt, for_multi=True)
-  exp = create_scaling_model(test_params, generated_exp(), [rt2])
-  scaler2 = SingleScalerBase(test_params, exp[0], rt2, for_multi=True)
-  targetscaler = TargetScaler(test_params, exp, [scaler], [scaler2])
+  trest_params.scaling_options.outlier_rejection = 'standard'
+  exp = create_scaling_model(trest_params, generated_exp(), [rt])
+  scaler = SingleScaler(trest_params, exp[0], rt, for_multi=True)
+  exp = create_scaling_model(trest_params, generated_exp(), [rt2])
+  scaler2 = SingleScaler(trest_params, exp[0], rt2, for_multi=True)
+  targetscaler = TargetScaler(trest_params, exp, [scaler], [scaler2])
   # scaling_subset will select reflections [1, 2, 3, 4] then the rest will be
   # put into the Ih_table, and the indices of the blocked selection list
   # refers to selection from scaler.scaling_selection.
@@ -903,12 +903,12 @@ def test_targetscaler_outlier_rejection_routine(test_params):
   rt = refl_for_outlier_routine()
   rt2 = refl_for_outlier_routine()
   rt['intensity'][2] = 1.0
-  test_params.scaling_options.nproc = 1
-  exp = create_scaling_model(test_params, generated_exp(), [rt])
-  scaler = SingleScalerBase(test_params, exp[0], rt, for_multi=True)
-  exp = create_scaling_model(test_params, generated_exp(), [rt2])
-  scaler2 = SingleScalerBase(test_params, exp[0], rt2, for_multi=True)
-  targetscaler = TargetScaler(test_params, exp, [scaler], [scaler2])
+  trest_params.scaling_options.nproc = 1
+  exp = create_scaling_model(trest_params, generated_exp(), [rt])
+  scaler = SingleScaler(trest_params, exp[0], rt, for_multi=True)
+  exp = create_scaling_model(trest_params, generated_exp(), [rt2])
+  scaler2 = SingleScaler(trest_params, exp[0], rt2, for_multi=True)
+  targetscaler = TargetScaler(trest_params, exp, [scaler], [scaler2])
   targetscaler.outlier_rejection_routine(make_ready_for_scaling=False)
   # Should still have found outlier
   assert list(targetscaler.unscaled_scalers[0].reflection_table.get_flags(
@@ -918,42 +918,3 @@ def test_targetscaler_outlier_rejection_routine(test_params):
   assert targetscaler.Ih_table == []
   #assert list(targetscaler.Ih_table.blocked_data_list[0].nonzero_weights
   #  ) == [1, 2, 3, 4]
-
-def test_NullScaler(test_reflections, test_experiments, test_params):
-  """Test for successful creation of NullScaler."""
-  exp = create_scaling_model(test_params, test_experiments, test_reflections[0])
-  _ = NullScaler(test_params, exp[0], test_reflections[0])
-  # What exactly should be tested here?
-
-def test_sf_variance_calculation(test_experiments, test_params):
-  """Test the calculation of scale factor variances."""
-  assert len(test_experiments) == 1
-  experiments = create_scaling_model(test_params, test_experiments, [None])
-  components = experiments[0].scaling_model.components
-  rt = flex.reflection_table()
-  d1 = 1.0
-  d2 = 2.0
-  d3 = 3.0
-  rt['d'] = flex.double([d1, d2, d3])
-  rt['id'] = flex.int([0, 0, 0])
-  experiments[0].scaling_model.configure_components(rt, experiments[0], test_params)
-  components['scale'].update_reflection_data()
-  _, d = components['scale'].calculate_scales_and_derivatives()
-  assert list(d.col(0)) == [
-    (0, 1.0), (1, 1.0), (2, 1.0)]
-  components['decay'].update_reflection_data()
-  s, d = components['decay'].calculate_scales_and_derivatives()
-  assert list(d.col(0)) == [(0, 1.0/(2.0*d1*d1)),
-    (1, 1.0/(2.0*d2*d2)), (2, 1.0/(2.0*d3*d3))]
-  var_cov = sparse.matrix(2, 2)
-  a = 0.2
-  b = 0.3
-  c = 0.1
-  var_cov[0, 0] = a
-  var_cov[0, 1] = c
-  var_cov[1, 0] = c
-  var_cov[1, 1] = b
-  variances = calc_sf_variances(components, var_cov)
-  assert approx_equal(list(variances), [b/(4.0*(d1**4.0)) + c/((d1**2.0)) + a,
-    b/(4.0*(d2**4.0)) + c/((d2**2.0)) + a,
-    b/(4.0*(d3**4.0)) + c/((d3**2.0)) + a])

@@ -21,7 +21,7 @@ from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.algorithms.scaling.model.scaling_model_factory import \
   KBSMFactory
-from dials.algorithms.scaling.Ih_table import IhTable
+from dials.algorithms.scaling.simple_Ih_table import simple_Ih_table
 from dials.algorithms.scaling.scaling_utilities import \
   calculate_prescaling_correction
 from dials.util.multi_dataset_handling import assign_unique_identifiers,\
@@ -230,8 +230,7 @@ def create_scaling_model(params, experiments, reflections):
         exp.scaling_model = factory.create(params, exp, refl)
   return experiments
 
-def create_Ih_table(experiments, reflections, selections=None, n_blocks=1,
-  weighting_scheme=None):
+def create_Ih_table(experiments, reflections, selections=None, n_blocks=1):
   """Create an Ih table from a list of experiments and reflections. Optionally,
   a selection list can also be given, to select data from each reflection table.
   Allow an unequal number of experiments and reflections, as only need to
@@ -243,15 +242,18 @@ def create_Ih_table(experiments, reflections, selections=None, n_blocks=1,
   for experiment in experiments:
     assert experiment.crystal.get_space_group() == space_group_0, """The space
     groups of all experiments must be equal."""
-  refl_and_sel_list = []
+  input_tables = []
+  indices_lists = []
   for i, reflection in enumerate(reflections):
     if not 'inverse_scale_factor' in reflection:
       reflection['inverse_scale_factor'] = flex.double(reflection.size(), 1.0)
     if selections:
-      refl_and_sel_list.append((reflection, selections[i]))
+      input_tables.append(reflection.select(selections[i]))
+      indices_lists.append(selections[i].iselection())
     else:
-      refl_and_sel_list.append((reflection, None))
-  Ih_table = IhTable(refl_and_sel_list, space_group_0, n_blocks, weighting_scheme)
+      input_tables.append(reflection)
+      indices_lists = None
+  Ih_table = simple_Ih_table(input_tables, space_group_0, indices_lists, nblocks=n_blocks)
   return Ih_table
 
 def calculate_merging_statistics(reflection_table, experiments, use_internal_variance):

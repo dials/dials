@@ -114,7 +114,7 @@ phil_scope = iotbx.phil.parse('''
       .expert_level = 2
   }
   weighting {
-    weighting_scheme = *invvar unity GM cauchy huber
+    weighting_scheme = *invvar
       .type = choice
       .help = "Weighting scheme used during Ih calculation. Weighting schemes
               other than invvar and unity may trigger iterative reweighting

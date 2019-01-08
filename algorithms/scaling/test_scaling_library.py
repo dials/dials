@@ -245,12 +245,12 @@ def test_create_Ih_table(test_experiments, test_reflections):
   Ih_table = create_Ih_table(test_experiments, [test_reflections])
 
   #Test data has been sorted into one block as expected.
-  assert list(Ih_table.blocked_data_list[0].miller_index) == (
+  assert list(Ih_table.blocked_data_list[0].asu_miller_index) == (
     [(0, 0, 1), (0, 0, 1), (0, 0, 2), (1, 0, 0), (1, 0, 0)])
 
   selection = flex.bool([True, True, True, True, False])
   Ih_table = create_Ih_table(test_experiments, [test_reflections], [selection])
-  assert list(Ih_table.blocked_data_list[0].miller_index) == (
+  assert list(Ih_table.blocked_data_list[0].asu_miller_index) == (
     [(0, 0, 1), (0, 0, 1), (1, 0, 0), (1, 0, 0)])
 
   with pytest.raises(AssertionError):
