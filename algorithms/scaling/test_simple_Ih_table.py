@@ -294,6 +294,19 @@ def test_IhTable_split_into_blocks(large_reflection_table,
   assert list(block_list[1].block_selections[0]) == [4, 0, 2]
   assert list(block_list[1].block_selections[1]) == [3, 0, 2]
 
+  # test the 'get_block_selections_for_dataset' method
+  block_sels_0 = Ih_table.get_block_selections_for_dataset(dataset=0)
+  assert len(block_sels_0) == 2
+  assert list(block_sels_0[0]) == [1, 5, 3]
+  assert list(block_sels_0[1]) == [4, 0, 2]
+  block_sels_1 = Ih_table.get_block_selections_for_dataset(dataset=1)
+  assert len(block_sels_1) == 2
+  assert list(block_sels_1[0]) == []
+  assert list(block_sels_1[1]) == [3, 0, 2]
+
+  # test the size method
+  assert Ih_table.size == 9
+
   expected_h_idx_matrix = sparse.matrix(4, 3)
   expected_h_idx_matrix[0, 0] = 1
   expected_h_idx_matrix[1, 1] = 1
@@ -358,7 +371,57 @@ def test_IhTable_freework(large_reflection_table,
   assert list(block_list[2].block_selections[0]) == [1, 3, 4]
   assert list(block_list[2].block_selections[1]) == [3, 2]
 
+  # test get_block_selections_for_dataset
+  block_sels_0 = Ih_table.get_block_selections_for_dataset(0)
+  assert len(block_sels_0) == 3
+  assert list(block_sels_0[0]) == [5]
+  assert list(block_sels_0[1]) == [0, 2]
+  assert list(block_sels_0[2]) == [1, 3, 4]
+  block_sels_1 = Ih_table.get_block_selections_for_dataset(1)
+  assert len(block_sels_1) == 3
+  assert list(block_sels_1[0]) == []
+  assert list(block_sels_1[1]) == [0]
+  assert list(block_sels_1[2]) == [3, 2]
+  with pytest.raises(AssertionError):
+    _ = Ih_table.get_block_selections_for_dataset(2)
+
   Ih_table.calc_Ih()
+
+  # test setting data
+  # set intensities
+  new_I_block_1 = flex.double([4.0, 5.0, 6.0])
+  Ih_table.set_intensities(new_I_block_1, 1)
+  assert list(Ih_table.Ih_table_blocks[1].intensities) == list(new_I_block_1)
+  # set scale factors
+  new_s_block_2 = flex.double(range(1, 6))
+  Ih_table.set_inverse_scale_factors(new_s_block_2, 2)
+  assert list(Ih_table.Ih_table_blocks[2].inverse_scale_factors) == list(new_s_block_2)
+  # set derivatives
+  derivs = Mock()
+  Ih_table.set_derivatives(derivs, 0)
+  assert Ih_table.Ih_table_blocks[0].derivatives is derivs
+  # set variances
+  new_var_block_1 = flex.double([1.0, 2.0, 3.0])
+  Ih_table.set_variances(new_var_block_1, 1)
+  assert list(Ih_table.Ih_table_blocks[1].variances) == list(new_var_block_1)
+  assert list(Ih_table.Ih_table_blocks[1].weights) == list(1.0/new_var_block_1)
+
+  def update_vars_side_effect(*args):
+    return flex.double([0.5]*len(args[0]))
+
+  # test setting an error model
+  em = Mock()
+  em.update_variances.side_effect = update_vars_side_effect
+
+  Ih_table.update_error_model(em)
+  for block in Ih_table.Ih_table_blocks:
+    assert list(block.weights) == [2.0] * block.size
+  Ih_table.reset_error_model()
+  for block in Ih_table.Ih_table_blocks:
+    assert list(block.weights) != [2.0] * block.size
+
+  Ih_table.calc_Ih(1)
+
 
   # now test free set with offset
   Ih_table = simple_Ih_table(
@@ -425,7 +488,7 @@ def test_set_Ih_values_to_target(test_sg):
   assert list(block_list[0].Ih_values) == [0.1, 0.2, 0.2, 0.1, 0.2]
   assert list(block_list[1].Ih_values) == [0.4, 0.4, 0.4]
 
-@pytest.mark.xfail(reason='not yet updated code')
+'''@pytest.mark.xfail(reason='not yet updated code')
 def test_apply_iterative_weighting(reflection_table_for_block, test_sg):
   """Test the setting of iterative weights."""
 
@@ -445,11 +508,11 @@ def test_apply_iterative_weighting(reflection_table_for_block, test_sg):
   assert list(Ihtableblock.weights) == list(1.0/(1.0 + t**2)**2)
 
 
-  Ih_table = simple_Ih_table([(reflection_table_for_block[0], None)], test_sg,
+  Ih_table = simple_Ih_table([reflection_table_for_block[0]], test_sg,
     weighting_scheme='GM')
   block = Ih_table.blocked_data_list[0]
   assert list(block.weights) == [1.0] * 6
   Ih_table.update_weights()
   gIh = block.inverse_scale_factors * block.Ih_values
   t = (block.intensities - gIh) / gIh
-  assert list(block.weights) == list(1.0/(1.0 + t**2)**2)
+  assert list(block.weights) == list(1.0/(1.0 + t**2)**2)'''

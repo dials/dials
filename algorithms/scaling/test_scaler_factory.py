@@ -11,7 +11,7 @@ from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.algorithms.scaling.scaler_factory import SingleScalerFactory,\
   TargetScalerFactory, MultiScalerFactory, is_scaled, create_scaler
-from dials.algorithms.scaling.scaler import SingleScalerBase,\
+from dials.algorithms.scaling.scaler import SingleScaler,\
   MultiScaler, TargetScaler, NullScaler
 
 def generated_refl(not_integrated=False, idval=0):
@@ -154,7 +154,7 @@ def test_SingleScalerFactory(generated_param, refl_to_filter, mock_scaling_compo
       'intensity', 'variance'])
   #Test default, (no split into free set)
   ss = SingleScalerFactory.create(generated_param, exp, test_refl)
-  assert isinstance(ss, SingleScalerBase)
+  assert isinstance(ss, SingleScaler)
   assert all(ss.reflection_table.has_key(i) for i in ['inverse_scale_factor', 'Esq',
       'intensity', 'variance'])
 
@@ -253,7 +253,7 @@ def test_scaler_factory_helper_functions(mock_experimentlist, generated_param,
   #Test create_scaler
   #Test case for single refl and exp
   scaler = create_scaler(generated_param, [exp], [test_refl])
-  assert isinstance(scaler, SingleScalerBase)
+  assert isinstance(scaler, SingleScaler)
 
   #If none or allscaled
   explist = mock_explist_3exp(mock_scaling_component)

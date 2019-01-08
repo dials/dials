@@ -71,7 +71,6 @@ class simple_Ih_table(object):
     self.n_datasets = len(reflection_tables)
     self.Ih_table_blocks = []
     self.blocked_selection_list = []
-    #self.size = None
     self.properties_dict = {
       'n_unique_in_each_block' : [],
       'n_reflections_in_each_block' : {},
@@ -114,7 +113,7 @@ class simple_Ih_table(object):
     self.blocked_selection_list = [block.block_selections for block in self.Ih_table_blocks]
 
   def update_weights(self, block_id=None):
-    pass
+    """Iteratively update weights (not implemented)."""
 
   def update_error_model(self, error_model):
     """Update the error model in the blocks."""
@@ -147,7 +146,7 @@ class simple_Ih_table(object):
 
   def calc_Ih(self, block_id=None):
     """Calculate the latest value of Ih in each block."""
-    if block_id:
+    if block_id is not None:
       self.Ih_table_blocks[block_id].calc_Ih()
     else:
       for block in self.Ih_table_blocks:
@@ -164,10 +163,8 @@ class simple_Ih_table(object):
       joint_asu_indices.extend(table['asu_miller_index'])
     sorted_joint_asu_indices, _ = get_sorted_asu_indices(
       joint_asu_indices, self.space_group)
-    #self.size = sorted_joint_asu_indices.size()
     asu_index_set = OrderedSet(sorted_joint_asu_indices)
     n_unique_groups = len(asu_index_set)
-
     # also record how many unique groups go into each block
     group_boundaries = [int(i*n_unique_groups/nblocks) for i in range(nblocks)]
     group_boundaries.append(n_unique_groups)
@@ -186,7 +183,7 @@ class simple_Ih_table(object):
       group_id_in_block_i += 1
     # record the number in the last block
     self.properties_dict['n_unique_in_each_block'].append(group_id_in_block_i)
-    self.properties_dict['miller_index_boundaries'].append((0, 0, 0))
+    self.properties_dict['miller_index_boundaries'].append((10000, 10000, 10000))
     # ^ to avoid bounds checking when in last group
     # need to know how many reflections will be in each block also
 
@@ -234,15 +231,13 @@ class simple_Ih_table(object):
     boundaries_for_this_datset = [0]#use to slice
     # make this a c++ method for speed?
     for i, index in enumerate(sorted_asu_indices):
-      if index == boundary:
+      if index >= boundary:
         boundaries_for_this_datset.append(i)
         boundary_id += 1
         boundary = self.properties_dict['miller_index_boundaries'][boundary_id]
       group_id, _ = self.asu_index_dict[index]
       group_ids.append(group_id)
     boundaries_for_this_datset.append(len(sorted_asu_indices))
-
-    ##FIXME make add_data a c++ method as constructing h_index matrix
     # so now have group ids as well for individual dataset
     for i, val in enumerate(boundaries_for_this_datset[:-1]):
       start = val

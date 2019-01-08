@@ -5,7 +5,7 @@ import logging
 from libtbx.utils import Sorry
 from dials.array_family import flex
 from dials.algorithms.scaling.scaler import MultiScaler, TargetScaler,\
-  SingleScalerBase
+  SingleScaler
 from dials.algorithms.scaling.scaling_utilities import quasi_normalisation, \
   Reasons, BadDatasetForScalingException
 from dials.algorithms.scaling.scaling_library import choose_scaling_intensities
@@ -104,7 +104,7 @@ class SingleScalerFactory(ScalerFactory):
     reflection_table = cls.filter_outliers(reflection_table, experiment,
       params)
 
-    return SingleScalerBase(params, experiment, reflection_table, for_multi)
+    return SingleScaler(params, experiment, reflection_table, for_multi)
 
   @classmethod
   def filter_outliers(cls, reflections, experiment, params):
