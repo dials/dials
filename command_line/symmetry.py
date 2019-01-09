@@ -122,8 +122,7 @@ class symmetry(object):
       if intensity_to_use != 'scale':
         refl['intensity'] = refl['intensity.'+intensity_to_use+'.value']
         refl['variance'] = refl['intensity.'+intensity_to_use+'.variance']
-        refl = reject_outliers([refl], expt.crystal.get_space_group(),
-          method='simple', zmax=12.0)[0]
+        refl = reject_outliers(refl, expt, method='simple', zmax=12.0)
         refl = refl.select(~refl.get_flags(refl.flags.outlier_in_scaling))
       data = refl['intensity.'+intensity_to_use+'.value']
       variances = refl['intensity.'+intensity_to_use+'.variance']
