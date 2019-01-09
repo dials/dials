@@ -171,7 +171,7 @@ def scale_single_dataset(reflection_table, experiment, params=None,
 
   experiments = create_scaling_model(params, experiment, [reflection_table])
   scaler = SingleScalerFactory.create(params, experiments[0], reflection_table)
-  from dials.algorithms.scaling.subprocesses import scaling_algorithm
+  from dials.algorithms.scaling.algorithm import scaling_algorithm
   scaler = scaling_algorithm(scaler)
   return scaler.reflection_table
 
@@ -347,7 +347,7 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
       r_t['miller_index'] = Ih_table.miller_index
   else:
     assert 0, """Unrecognised intensities in mtz file."""
-
+  r_t = r_t.select(r_t['variance'] > 0.0)
   r_t['d'] = miller.set(crystal_symmetry=crystal.symmetry(
     space_group=m.space_group(), unit_cell=m.crystals()[0].unit_cell()),
     indices=r_t['miller_index']).d_spacings().data()

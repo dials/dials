@@ -1,18 +1,19 @@
-
-
-#Processes - each cycle of scaling should do scaling and call \
-# scaler.expand_scales_to_all_reflections
-
+"""
+Definitions of the scaling algorithm.
+"""
 
 def expand_and_do_outlier_rejection(scaler, calc_cov=False):
+  """Calculate scales for all reflections and do outlier rejection."""
   scaler.expand_scales_to_all_reflections(calc_cov=calc_cov)
   if scaler.params.scaling_options.outlier_rejection:
-    # Note just call the method, not the 'outlier_rejection_routine'
     scaler.round_of_outlier_rejection()
 
 def do_intensity_combination(scaler, reselect=True):
-  """Do prf/sum intensity combination, optionally reselecting reflections to
-  prepare for another minimisation round."""
+  """
+  Do prf/sum intensity combination.
+
+  Optionally reselect reflections to prepare for another minimisation round.
+  """
   if scaler.params.reflection_selection.intensity_choice == 'combine':
     scaler.combine_intensities()
     if scaler.params.scaling_options.outlier_rejection:
@@ -21,17 +22,19 @@ def do_intensity_combination(scaler, reselect=True):
     scaler.make_ready_for_scaling()
 
 def do_error_analysis(scaler, reselect=True, apply_to_reflection_table=False):
-  """Do error analysis, optionally reselecting reflections to
-  prepare for another minimisation round."""
+  """
+  Do error model analysis.
+
+  Optionally reselect reflections to prepare for another minimisation round.
+  """
   if scaler.params.weighting.optimise_errors:
-    error_model = scaler.perform_error_optimisation(
+    _ = scaler.perform_error_optimisation(
       apply_to_reflection_table=apply_to_reflection_table)
   if reselect:
     scaler.make_ready_for_scaling()
 
-
 def scaling_algorithm(scaler):
-  """Main algorithm for scaling"""
+  """Main algorithm for scaling."""
   scaler.perform_scaling()
 
   if scaler.params.reflection_selection.intensity_choice == 'combine' or \
@@ -71,7 +74,7 @@ def scaling_algorithm(scaler):
   return scaler
 
 def targeted_scaling_algorithm(scaler):
-  #Do some rounds of targeted scaling and then exit the algorithm.
+  """Main algorithm for targeted scaling."""
 
   if scaler.params.scaling_options.outlier_rejection:
     expand_and_do_outlier_rejection(scaler)

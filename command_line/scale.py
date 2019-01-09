@@ -68,6 +68,8 @@ from dials.algorithms.scaling.scaling_utilities import save_experiments,\
 from dials.util.batch_handling import get_image_ranges
 from dials.util.exclude_images import exclude_image_ranges_for_scaling, \
   get_valid_image_ranges
+from dials.algorithms.scaling.algorithm import targeted_scaling_algorithm, \
+  scaling_algorithm
 
 
 logger = logging.getLogger('dials')
@@ -409,7 +411,6 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
         scaler.params.scaling_options.target_model or \
         scaler.params.scaling_options.target_mtz:
 
-        from dials.algorithms.scaling.subprocesses import targeted_scaling_algorithm
         scaler = targeted_scaling_algorithm(scaler)
         return scaler
       # Now pass to a multiscaler ready for next round of scaling.
@@ -418,7 +419,6 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
 
     # From here onwards, scaler should only be a SingleScaler
     # or MultiScaler (not TargetScaler).
-    from dials.algorithms.scaling.subprocesses import scaling_algorithm
     scaler = scaling_algorithm(scaler)
     return scaler
 

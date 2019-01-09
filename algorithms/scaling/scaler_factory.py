@@ -9,7 +9,6 @@ from dials.algorithms.scaling.scaler import MultiScaler, TargetScaler,\
 from dials.algorithms.scaling.scaling_utilities import quasi_normalisation, \
   Reasons, BadDatasetForScalingException
 from dials.algorithms.scaling.scaling_library import choose_scaling_intensities
-from dials.algorithms.scaling.outlier_rejection import reject_outliers
 logger = logging.getLogger('dials')
 
 def create_scaler(params, experiments, reflections):
@@ -78,14 +77,16 @@ class SingleScalerFactory(ScalerFactory):
 
     if params.scaling_options.verbosity > 1:
       logger.info('Preprocessing data for scaling. The id assigned to this \n'
-        'dataset is %s, and the scaling model type being applied is %s. \n' %
-        (reflection_table.experiment_identifiers().values()[0], experiment.scaling_model.id_))
+        'dataset is %s, and the scaling model type being applied is %s. \n',
+        reflection_table.experiment_identifiers().values()[0],
+        experiment.scaling_model.id_)
 
     reflection_table, reasons = cls.filter_bad_reflections(reflection_table)
     excluded_for_scaling = reflection_table.get_flags(
       reflection_table.flags.excluded_for_scaling)
     user_excluded = reflection_table.get_flags(
       reflection_table.flags.user_excluded_in_scaling)
+    reasons.add_reason('user excluded', user_excluded.count(True))
     n_excluded = (excluded_for_scaling | user_excluded).count(True)
     if n_excluded == reflection_table.size():
       logger.info("All reflections were determined to be unsuitable for scaling.")
@@ -101,21 +102,9 @@ class SingleScalerFactory(ScalerFactory):
     reflection_table = choose_scaling_intensities(reflection_table,
       params.reflection_selection.intensity_choice)
 
-    reflection_table = cls.filter_outliers(reflection_table, experiment,
-      params)
+    reflection_table = quasi_normalisation(reflection_table, experiment)
 
     return SingleScaler(params, experiment, reflection_table, for_multi)
-
-  @classmethod
-  def filter_outliers(cls, reflections, experiment, params):
-    """Calculate normalised E2 values and perform outlier rejection."""
-    reflections = quasi_normalisation(reflections, experiment)
-    '''if params.scaling_options.outlier_rejection:
-      reflections = reject_outliers([reflections],
-        experiment.crystal.get_space_group(),
-        params.scaling_options.outlier_rejection,
-        params.scaling_options.outlier_zmax)[0]'''
-    return reflections
 
 class NullScalerFactory(ScalerFactory):
   'Factory for creating null scaler'

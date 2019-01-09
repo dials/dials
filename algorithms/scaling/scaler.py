@@ -352,32 +352,7 @@ class SingleScaler(ScalerBase):
     all_scales = flex.double([])
     all_invsfvars = flex.double([])
     n_param_tot = sum([c.n_params for c in self.components.itervalues()])
-    scales = flex.double(self.n_suitable_refl, 1.0)
-    scales_list = []
-    derivs_list = []
-    jacobian = sparse.matrix(self.n_suitable_refl, n_param_tot)
-    for component in self.components.itervalues():
-      component.update_reflection_data()#block_selections=[block_isel])
-      comp_scales, d = component.calculate_scales_and_derivatives(block_id=0)
-      scales_list.append(comp_scales)
-      if calc_cov:
-        derivs_list.append(d)
-      scales *= comp_scales
-    all_scales.extend(scales)
-    if calc_cov and self.var_cov_matrix.non_zeroes > 0:
-      n_cumulative_param = 0
-      for i, component in enumerate(self.components):
-        d_block = derivs_list[i]
-        n_param = self.components[component].n_params
-        for i, component_2 in enumerate(self.components):
-          if component_2 != component:
-            d_block = row_multiply(d_block, scales_list[i])
-        jacobian.assign_block(d_block, 0, n_cumulative_param)
-        n_cumulative_param += n_param
-      all_invsfvars.extend(cpp_calc_sigmasq(jacobian.transpose(), self._var_cov))
-
-
-    ''''for i in range(1, n_blocks+1): #do calc in blocks for speed/memory
+    for i in range(1, n_blocks+1): #do calc in blocks for speed/memory
       n_end = int(i * self.n_suitable_refl / n_blocks)
       block_isel = flex.size_t(range(n_start, n_end))
       n_start = n_end
@@ -403,7 +378,7 @@ class SingleScaler(ScalerBase):
               d_block = row_multiply(d_block, scales_list[i])
           jacobian.assign_block(d_block, 0, n_cumulative_param)
           n_cumulative_param += n_param
-        all_invsfvars.extend(cpp_calc_sigmasq(jacobian.transpose(), self._var_cov))'''
+        all_invsfvars.extend(cpp_calc_sigmasq(jacobian.transpose(), self._var_cov))
     scaled_isel = self.suitable_refl_for_scaling_sel.iselection()
     self.reflection_table['inverse_scale_factor'].set_selected(
       scaled_isel, all_scales)
@@ -817,7 +792,6 @@ class TargetScaler(MultiScalerBase):
     self._create_global_Ih_table()
     tables = [s.reflection_table.select(s.suitable_refl_for_scaling_sel).select(
       s.scaling_selection) for s in self.single_scalers]
-    #indices_lists = [s.scaling_selection.iselection() for s in self.single_scalers]
     self._target_Ih_table = simple_Ih_table(tables, self.space_group,
       nblocks=1)#Keep in one table for matching below
     self._create_Ih_table()

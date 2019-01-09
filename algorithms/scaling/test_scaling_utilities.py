@@ -158,17 +158,6 @@ def test_create_sph_harm_table(test_reflection_table, mock_exp):
   assert approx_equal(sph_h_t[5, 2], Y20)
   # Now test that you get the same by just calling the function.
 
-@pytest.mark.xfail(reason="need to update input reflection table")
-def test_sph_harm_table(test_reflection_table, mock_exp):
-  #reflection table needs xyzobs.px.value
-  sht = sph_harm_table(test_reflection_table, mock_exp, 2)
-  assert approx_equal(sht[1, 0], Y10)
-  assert approx_equal(sht[1, 1], Y10)
-  assert approx_equal(sht[1, 2], Y10)
-  assert approx_equal(sht[5, 0], Y20)
-  assert approx_equal(sht[5, 1], Y20)
-  assert approx_equal(sht[5, 2], Y20)
-
 def test_calculate_wilson_outliers(wilson_test_reflection_table):
   """Test the set wilson outliers function."""
   reflection_table = set_wilson_outliers(wilson_test_reflection_table)
