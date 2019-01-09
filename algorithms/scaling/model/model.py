@@ -325,7 +325,6 @@ class ArrayScalingModel(ScalingModelBase):
         self.configdict['y_det_bin_width'])
       self.components['modulation'].data = {'x' : norm_x_det, 'y': norm_y_det}
 
-  ##FIXME update to not use reflection table
   def limit_image_range(self, new_image_range):
     """Change the model to be suitable for a reduced batch range"""
     conf = self.configdict
@@ -479,6 +478,7 @@ def map_old_to_new_range(old_range, new_range):
 
 def calculate_new_offset(old_batch_0, new_batch_0, new_norm_fac, n_old_param,
   n_new_param):
+  """Calculate offset for the new batch and params."""
   if n_old_param == 2:
     return 0 #cant have less than two params
   batch_difference = (new_batch_0 - old_batch_0) * new_norm_fac

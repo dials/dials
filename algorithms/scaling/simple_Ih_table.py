@@ -63,6 +63,21 @@ class simple_Ih_table(object):
 
   def __init__(self, reflection_tables, space_group, indices_lists=None,
     nblocks=1, free_set_percentage=0, free_set_offset=0):
+    """
+    Distribute the input data into the required structure.
+
+    The reflection data can be split into blocks, while the relevant
+    metadata is also generated.
+
+    A list of flex.size_t indices can be provided - this allows the
+    reflection table data to maintain a reference to a dataset from which
+    it was selecte; these will be used when making the block selections.
+    e.g selection = flex.bool([True, False, True])
+        r_1 = r_master.select(selection)
+        indices_list = selection.iselection() = flex.size_t([0, 2])
+        then the block selection will contain 0 and 2 to refer back
+        to the location of the data in r_master.
+    """
     if indices_lists:
       assert len(indices_lists) == len(reflection_tables)
     self.asu_index_dict = {}
@@ -90,6 +105,13 @@ class simple_Ih_table(object):
     self.calc_Ih()
 
   def update_data_in_blocks(self, data, dataset_id, column='intensity'):
+    """
+    Update a given column across all blocks for a given dataset.
+
+    Given an array of data (of the same size as the input reflection
+    table) and the name of the column, use the internal data to split
+    this up and set in individual blocks.
+    """
     assert column in ['intensity', 'variance', 'inverse_scale_factor']
     assert dataset_id in range(0, self.n_datasets)
     #split up data for blocks
@@ -97,9 +119,11 @@ class simple_Ih_table(object):
       data_for_block = data.select(block.block_selections[dataset_id])
       start = block.dataset_info[dataset_id]['start_index']
       end = block.dataset_info[dataset_id]['end_index']
-      block.Ih_table[column].set_selected(flex.size_t(range(start, end)), data_for_block)
+      block.Ih_table[column].set_selected(
+        flex.size_t(range(start, end)), data_for_block)
 
   def get_block_selections_for_dataset(self, dataset):
+    """Generate the block selection list for a given dataset."""
     assert dataset in range(self.n_datasets)
     if self.free_Ih_table:
       return [self.blocked_selection_list[i][dataset] for i in range(self.n_work_blocks+1)]
@@ -107,13 +131,15 @@ class simple_Ih_table(object):
 
   @property
   def size(self):
+    """Sum the sizes of all blocks to give the total number of reflections."""
     return sum([block.size for block in self.Ih_table_blocks])
 
   def generate_block_selections(self):
+    """Generate and set an updated blocked_selection_list."""
     self.blocked_selection_list = [block.block_selections for block in self.Ih_table_blocks]
 
   def update_weights(self, block_id=None):
-    """Iteratively update weights (not implemented)."""
+    """Update weights (to allow iterative updating, not implemented)."""
 
   def update_error_model(self, error_model):
     """Update the error model in the blocks."""
@@ -121,31 +147,34 @@ class simple_Ih_table(object):
       block.update_error_model(error_model)
 
   def reset_error_model(self):
+    """Reset the weights in the blocks."""
     for block in self.Ih_table_blocks:
       block.reset_error_model()
 
   @property
   def blocked_data_list(self):
+    """Return the list of Ih_table_block instances."""
     return self.Ih_table_blocks
 
   def set_intensities(self, intensities, block_id):
+    """Set the intensities for a given block."""
     self.Ih_table_blocks[block_id].Ih_table['intensity'] = intensities
 
   def set_derivatives(self, derivatives, block_id):
-    """Set the derivatives for each block."""
+    """Set the derivatives matrix for a given block."""
     self.Ih_table_blocks[block_id].derivatives = derivatives
 
   def set_inverse_scale_factors(self, new_scales, block_id):
-    """Set the inverse scale factors for each block."""
+    """Set the inverse scale factors for a given block."""
     self.Ih_table_blocks[block_id].inverse_scale_factors = new_scales
 
   def set_variances(self, new_variances, block_id):
-    """Set the inverse scale factors for each block."""
+    """Set the variances and weights for a given block."""
     self.Ih_table_blocks[block_id].Ih_table['variance'] = new_variances
     self.Ih_table_blocks[block_id].Ih_table['weights'] = 1.0 / new_variances
 
   def calc_Ih(self, block_id=None):
-    """Calculate the latest value of Ih in each block."""
+    """Calculate the latest value of Ih, for a given block or for all blocks."""
     if block_id is not None:
       self.Ih_table_blocks[block_id].calc_Ih()
     else:
@@ -153,8 +182,12 @@ class simple_Ih_table(object):
         block.calc_Ih()
 
   def _determine_required_block_structures(self, reflection_tables, nblocks=1):
-    """Extract the asu miller indices from the reflection table and
-    add data to the asu_index_dict and properties dict."""
+    """
+    Inspect the input to determine how to split into blocks.
+
+    Extract the asu miller indices from the reflection table and
+    add data to the asu_index_dict and properties dict.
+    """
     joint_asu_indices = flex.miller_index()
     for table in reflection_tables:
       if not 'asu_miller_index' in table:
@@ -276,10 +309,8 @@ class simple_Ih_table(object):
 
 
 class Ih_table_block(object):
-
   """
-  The Ih_table_block is a datastructure for efficiently calculating sums over
-  groups of symmetry equivalent reflections, as well as additional bookkeeping.
+  A datastructure for efficient summations over symmetry equivalent reflections.
 
   This contains a reflection table, sorted by dataset, called the Ih_table,
   a h_index_matrix (sparse) for efficiently calculating sums over symmetry
@@ -303,9 +334,11 @@ class Ih_table_block(object):
           parameters.
       n_h: A flex.double array of size n_refl, indicating the number of
           reflections in the symmetry group to which each reflection belongs.
+
   """
 
   def __init__(self, n_groups, n_refl, n_datasets=1):
+    """Create empty datastructures to which data can later be added."""
     self.Ih_table = flex.reflection_table()
     self.block_selections = [None] * n_datasets
     self.h_index_matrix = sparse.matrix(n_refl, n_groups)
@@ -318,8 +351,12 @@ class Ih_table_block(object):
     self.derivatives = None
 
   def add_data(self, dataset_id, group_ids, reflections):
-    """Add data to the Ih_table, write data to the h_index_matrix and
-    add the loc indices to the block_selections list."""
+    """
+    Add data to all blocks for a given dataset.
+
+    Add data to the Ih_table, write data to the h_index_matrix and
+    add the loc indices to the block_selections list.
+    """
     assert not self._setup_info['setup_complete'], """
 No further data can be added to the Ih_table_block as setup marked complete."""
     assert self._setup_info['next_row'] + len(group_ids) <= self.h_index_matrix.n_rows, """
@@ -375,15 +412,14 @@ Not all rows of h_index_matrix appear to be filled in Ih_table_block setup."""
     return newtable
 
   def select_on_groups(self, sel):
-    """Select a subset of the data by selecting groups,
-    returning a new Ih_table_block object."""
+    """Select a subset of the unique groups, returning a new Ih_table_block."""
     reduced_h_idx = self.h_index_matrix.select_columns(sel.iselection())
     unity = flex.double(reduced_h_idx.n_cols, 1.0)
     nz_row_sel = (unity * reduced_h_idx.transpose()) > 0
     return self.select(nz_row_sel)
 
   def calc_Ih(self):
-    """Calculate the current best estimate for I for each reflection group."""
+    """Calculate the current best estimate for Ih for each reflection group."""
     scale_factors = self.Ih_table['inverse_scale_factor']
     gsq = ((scale_factors**2) * self.Ih_table['weights'])
     sumgsq = gsq * self.h_index_matrix
@@ -399,8 +435,7 @@ Not all rows of h_index_matrix appear to be filled in Ih_table_block setup."""
     self.Ih_table['weights'] = 1.0/sigmaprimesq
 
   def reset_error_model(self):
-    """Reset the weights to their initial value to allow another
-    round of error model analysis."""
+    """Reset the weights to their initial value."""
     self.Ih_table['weights'] = 1.0/self.Ih_table['variance']
 
   def calc_nh(self):
@@ -409,16 +444,20 @@ Not all rows of h_index_matrix appear to be filled in Ih_table_block setup."""
       * self.h_expand_matrix)
 
   def match_Ih_values_to_target(self, target_Ih_table):
-    """Given an Ih table as a target, the common reflections across the tables
+    """
+    Use an Ih_table as a target to set Ih values in this table.
+
+    Given an Ih table as a target, the common reflections across the tables
     are determined and the Ih_values are set to those of the target. If no
-    matching reflection is found, then the values are removed from the table."""
+    matching reflection is found, then the values are removed from the table.
+    """
     assert target_Ih_table.n_work_blocks == 1
     target_asu_Ih_dict = dict(zip(target_Ih_table.blocked_data_list[0].asu_miller_index,
       target_Ih_table.blocked_data_list[0].Ih_values))
     new_Ih_values = flex.double(self.size, 0.0)
     location_in_unscaled_array = 0
-    sorted_asu_indices, permuted = get_sorted_asu_indices(self.Ih_table['asu_miller_index'],
-      target_Ih_table.space_group)
+    sorted_asu_indices, permuted = get_sorted_asu_indices(
+      self.Ih_table['asu_miller_index'], target_Ih_table.space_group)
     for j, miller_idx in enumerate(OrderedSet(sorted_asu_indices)):
       n_in_group = self.h_index_matrix.col(j).non_zeroes
       if miller_idx in target_asu_Ih_dict:
@@ -437,7 +476,7 @@ Not all rows of h_index_matrix appear to be filled in Ih_table_block setup."""
 
   @property
   def inverse_scale_factors(self):
-    """"The inverse scale factors of the reflections."""
+    """The inverse scale factors of the reflections."""
     return self.Ih_table['inverse_scale_factor']
 
   @inverse_scale_factors.setter
@@ -451,15 +490,17 @@ Not all rows of h_index_matrix appear to be filled in Ih_table_block setup."""
 
   @property
   def n_h(self):
-    """A vector of length n_refl, containing the number of reflections in
-    the respective symmetry group.
+    """
+    The number of refls in the unique group to which each reflection belongs.
 
-    Not calculated by default, as only needed for certain calculations."""
+    This is a vector of length n_refl, not calculated by default, as only
+    needed for certain calculations.
+    """
     return self._n_h
 
   @property
   def variances(self):
-    """The initial variances of the reflections."""
+    """The variances of the reflections."""
     return self.Ih_table['variance']
 
   @property
@@ -469,7 +510,7 @@ Not all rows of h_index_matrix appear to be filled in Ih_table_block setup."""
 
   @property
   def Ih_values(self):
-    """The estimated intensities of symmetry equivalent reflections."""
+    """The bset-estimated intensities of symmetry equivalent reflections."""
     return self.Ih_table['Ih_values']
 
   @property
@@ -492,5 +533,5 @@ Not all rows of h_index_matrix appear to be filled in Ih_table_block setup."""
 
   @property
   def asu_miller_index(self):
-    """Return the length of the stored Ih_table (a reflection table)."""
+    """Return the miller indices in the asymmetric unit."""
     return self.Ih_table['asu_miller_index']

@@ -3,18 +3,14 @@ Module of utility functions for scaling.
 """
 
 from __future__ import print_function
-import sys
 import logging
 from time import time
 import copy
 from math import pi, acos
 from dials.array_family import flex
-from libtbx.table_utils import simple_table
-from libtbx.utils import Sorry
-import iotbx.merging_statistics
 from cctbx import miller
 from cctbx import uctbx
-from dxtbx.model.experiment_list import ExperimentListDumper, ExperimentList
+from dxtbx.model.experiment_list import ExperimentListDumper
 from dials_scaling_ext import create_sph_harm_table, calc_theta_phi,\
   rotate_vectors_about_axis
 
@@ -29,8 +25,8 @@ try:
     units_per_mb = 1024
     if platform.system() == "Darwin":
       units_per_mb = 1024*1024
-    logger.debug('Memory usage: %.1f MB' % (int(resource.getrusage(
-      resource.RUSAGE_SELF).ru_maxrss) / units_per_mb))
+    logger.debug('Memory usage: %.1f MB', int(resource.getrusage(
+      resource.RUSAGE_SELF).ru_maxrss) / units_per_mb)
 except ImportError:
   def log_memory_usage():
     pass

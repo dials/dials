@@ -3,9 +3,9 @@ Optimise the combination of profile and summation intensity values.
 """
 from __future__ import print_function
 import logging
-from dials.array_family import flex
 from libtbx.table_utils import simple_table
 from cctbx import miller
+from dials.array_family import flex
 from dials.algorithms.scaling.scaling_utilities import \
   DialsMergingStatisticsError, calculate_prescaling_correction
 
@@ -120,7 +120,7 @@ def _single_table_combination(reflections, experiment, Imid_list):
     miller_set = miller.set(crystal_symmetry=experiment.crystal.get_crystal_symmetry(),
       indices=reflections['miller_index'], anomalous_flag=False)
     i_obs = miller.array(miller_set,
-      data = Int * prescaling_corrections / reflections['inverse_scale_factor'])
+      data=(Int * prescaling_corrections / reflections['inverse_scale_factor']))
     i_obs.set_observation_type_xray_intensity()
     i_obs.set_sigmas((Var**0.5) * prescaling_corrections / reflections['inverse_scale_factor'])
     array = i_obs.customized_copy(anomalous_flag=False).map_to_asu()
@@ -275,5 +275,3 @@ def _calculate_combined_raw_intensities(Iprf, Isum, Vprf, Vsum, Imid):
   Icomb = (w * Iprf) + ((1.0 - w) * Isum)
   Vcomb = (w * Vprf) + ((1.0 - w) * Vsum)
   return Icomb, Vcomb
-
-
