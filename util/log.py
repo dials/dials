@@ -14,9 +14,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 
 
-def config(verbosity=1, name='dials',
-           info=None, info_mode='w',
-           debug=None, debug_mode='w'):
+def config(verbosity=1, name='dials', info=None, debug=None):
   """
   Configure the logging.
 
@@ -30,23 +28,9 @@ def config(verbosity=1, name='dials',
   :param info: Filename for info log output.  If False, no info log file is
                written.
   :type info: str
-  :param info_mode: Writing mode for info log file.  Possible values:
-                      * 'w': Write.  Overwrite any pre-existing log file with
-                        the same name.
-                      * 'a': Append.  If a log file with the same name
-                        already exists, append to it.  Otherwise, write a
-                        new one.
-  :type info_mode: str
   :param debug: Filename for debug log output.  If False, no debug log file is
                 written.
   :type debug: str
-  :param debug_mode: Writing mode for debug log file.  Possible values:
-                       * 'w': Write.  Overwrite any pre-existing log file with
-                         the same name.
-                       * 'a': Append.  If a log file with the same name
-                         already exists, append to it.  Otherwise, write a
-                         new one.
-  :type debug_mode: str
   """
 
   import logging.config
@@ -79,7 +63,7 @@ def config(verbosity=1, name='dials',
         'class' : 'logging.FileHandler',
         'formatter' : 'standard',
         'filename' : info,
-        'mode': info_mode
+        'mode': 'w'
       }
     })
     # Add the info log FileHandler to the list in the Logger
@@ -92,7 +76,7 @@ def config(verbosity=1, name='dials',
         'class' : 'logging.FileHandler',
         'formatter' : 'standard',
         'filename' : debug,
-        'mode': debug_mode
+        'mode': 'w'
       },
     })
     # Add the debug log FileHandler to the Logger
