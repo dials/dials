@@ -143,4 +143,4 @@ def locked(file_handle):
         fcntl.lockf(file_handle, fcntl.LOCK_UN)
       else:
         file_handle.seek(0)
-        msvcrt.locking(file_handle, LK_UNLCK, 1)
+        msvcrt.locking(file_handle, msvcrt.LK_UNLCK, 1)
