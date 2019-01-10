@@ -2662,10 +2662,9 @@ class ScalingModelAnalyser(object):
     #points with 10 points per degree.
 
     if 'scale' in configdict['corrections']:
-      rt = flex.reflection_table()
-      rt['norm_rot_angle'] = sample_values
       scale_SF = experiment.scaling_model.components['scale']
-      scale_SF.update_reflection_data(rt)
+      scale_SF.data = {'x' : sample_values}
+      scale_SF.update_reflection_data()
       s = scale_SF.calculate_scales()
       smoother_phis = [(i * configdict['scale_rot_interval']) + valid_osc[0]
         for i in scale_SF.smoother.positions()]
@@ -2691,14 +2690,12 @@ class ScalingModelAnalyser(object):
         data[-1]['error_y'] = {'type':'data', 'array':list(scale_SF.parameter_esds)}
 
     if 'decay' in configdict['corrections']:
-      rt = flex.reflection_table()
-      rt['norm_time_values'] = sample_values
-      rt['d'] = flex.double(sample_values.size(), 1.0)
       decay_SF = experiment.scaling_model.components['decay']
-      decay_SF.update_reflection_data(rt)
+      decay_SF.data = {'x' : sample_values, 'd' : flex.double(sample_values.size(), 1.0)}
+      decay_SF.update_reflection_data()
       s = decay_SF.calculate_scales()
       smoother_phis = [(i * configdict['decay_rot_interval']) + valid_osc[0]
-        for i in decay_SF.smoother.positions()]
+        for i in decay_SF._smoother.positions()]
 
       data.append({
         'x' : list(sample_values),
