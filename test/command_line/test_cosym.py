@@ -4,11 +4,12 @@ import os
 import pytest
 import procrunner
 
-def test_cosym(regression_data, run_in_tmpdir):
+@pytest.mark.parametrize("space_group", [pytest.param(None), pytest.param("P 1", marks=[pytest.mark.xfail(reason='cosym bug for space_group not None')])])
+def test_cosym(regression_data, run_in_tmpdir, space_group):
 
   reg_path = regression_data("multi_crystal_proteinase_k").strpath
 
-  command = ['dials.cosym']
+  command = ['dials.cosym', 'space_group='+str(space_group)]
   for i in [1, 2, 3, 4, 5, 7, 8, 10]:
     command.append(os.path.join(reg_path, "experiments_"+str(i)+".json"))
     command.append(os.path.join(reg_path, "reflections_"+str(i)+".pickle"))
