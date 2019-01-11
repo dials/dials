@@ -173,6 +173,8 @@ def show_experiments(experiments, show_scan_varying=False):
 
   for i_expt, expt in enumerate(experiments):
     text.append("Experiment %i:" %i_expt)
+    if expt.identifier is not "":
+      text.append("Experiment identifier: %s" % expt.identifier)
     text.append(str(expt.detector))
     text.append('Max resolution (at corners): %f' % (
       expt.detector.get_max_resolution(expt.beam.get_s0())))
@@ -205,7 +207,7 @@ def show_experiments(experiments, show_scan_varying=False):
     if expt.profile is not None:
       text.append(str(expt.profile))
     if expt.scaling_model is not None:
-      text.append(str(expt.scaling_model.show()))
+      text.append(str(expt.scaling_model))
   return '\n'.join(text)
 
 
