@@ -189,10 +189,11 @@ class cosym(object):
 
       if self._params.space_group is not None:
         space_group_info = self._params.space_group.primitive_setting()
-        if not space_group_info.group().is_compatible_unit_cell(intensities.unit_cell()):
+        if not space_group_info.group().is_compatible_unit_cell(
+            expt.crystal.get_unit_cell()):
           logger.info(
             'Skipping data set - incompatible space group and unit cell: %s, %s' %(
-              space_group_info, intensities.unit_cell()))
+              space_group_info, expt.crystal.get_unit_cell()))
           continue
       else:
         expt.crystal.set_space_group(sgtbx.space_group())

@@ -4,7 +4,7 @@ import os
 import pytest
 import procrunner
 
-@pytest.mark.parametrize("space_group", [pytest.param(None), pytest.param("P 1", marks=[pytest.mark.xfail(reason='cosym bug for space_group not None')])])
+@pytest.mark.parametrize("space_group", [None, "P 1"])
 def test_cosym(regression_data, run_in_tmpdir, space_group):
 
   reg_path = regression_data("multi_crystal_proteinase_k").strpath
