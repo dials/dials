@@ -671,7 +671,6 @@ class Script(object):
 
   def run(self, args=None):
     ''' Parse the options. '''
-    from dials.util import log
 
     # Parse the command line arguments in two passes to set up logging early
     params, options = self.parser.parse_args(
@@ -679,11 +678,14 @@ class Script(object):
       show_diff_phil=False,
       quick_parse=True)
 
-    # Configure logging
-    log.config(
-      params.verbosity,
-      info=params.output.log,
-      debug=params.output.debug_log)
+    # Configure logging, if this is the main process
+    if __name__ == '__main__':
+      from dials.util import log
+
+      log.config(params.verbosity,
+                 info=params.output.log,
+                 debug=params.output.debug_log)
+
     from dials.util.version import dials_version
     logger.info(dials_version())
 
