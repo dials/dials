@@ -6,7 +6,7 @@ from mock import Mock
 from libtbx.utils import Sorry
 from cctbx.sgtbx import space_group
 from dials.array_family import flex
-from dials.algorithms.scaling.simple_Ih_table import simple_Ih_table
+from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.outlier_rejection import reject_outliers,\
   NormDevOutlierRejection, SimpleNormDevOutlierRejection,\
   determine_outlier_index_arrays, TargetedOutlierRejection
@@ -27,14 +27,14 @@ def mock_exp_with_sg(test_sg):
 def generated_Ih_table(test_sg):
   """Generate an Ih_table"""
   rt = generate_outlier_table()
-  Ih_table = simple_Ih_table([rt], test_sg, nblocks=1)
+  Ih_table = IhTable([rt], test_sg, nblocks=1)
   return Ih_table
 
 @pytest.fixture
 def outlier_target_table(test_sg):
   """Generate an Ih_table for targeted outlier rejection"""
   target = generate_target_table()
-  target_Ih = simple_Ih_table([target], test_sg, nblocks=1)
+  target_Ih = IhTable([target], test_sg, nblocks=1)
   return target_Ih
 
 def generate_target_table():
@@ -107,7 +107,7 @@ def test_multi_dataset_outlier_rejection(test_sg):
   rt2.set_flags(flex.bool([False, False, False]),
     rt1.flags.excluded_for_scaling)
   rt2.set_flags(flex.bool(3, False), rt2.flags.user_excluded_in_scaling)
-  Ih_table = simple_Ih_table([rt1, rt2], test_sg, nblocks=1)
+  Ih_table = IhTable([rt1, rt2], test_sg, nblocks=1)
   zmax = 6.0
   outliers = SimpleNormDevOutlierRejection(Ih_table, zmax).final_outlier_arrays
   assert len(outliers) == 2

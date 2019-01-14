@@ -18,7 +18,6 @@ from dials.algorithms.scaling.target_function import ScalingTargetFixedIH
 from dials.algorithms.scaling.scaler import SingleScaler,\
   calc_sf_variances, ScalerBase, MultiScalerBase, MultiScaler, TargetScaler,\
   NullScaler, calculate_scaling_subset
-from dials.algorithms.scaling.simple_Ih_table import simple_Ih_table
 
 def side_effect_update_var(variances, intensities):
     """Side effect to mock configure reflection table
