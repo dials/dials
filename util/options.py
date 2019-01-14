@@ -1060,10 +1060,33 @@ def flatten_reflections(filename_object_list):
   '''
   Flatten a list of reflections tables
 
+  A check is also made for the 'id' values in the reflection tables, which are
+  renumbered from 0..n-1 to avoid clashes. The experiment_identifiers dict is
+  also updated if present in the input tables.
+
   :param filename_object_list: The parameter item
   :return: The flattened reflection table
   '''
-  return [o.data for o in filename_object_list]
+  tables = [o.data for o in filename_object_list]
+  if len(tables) > 1:
+    new_id_ = 0
+    for table in tables:
+      table_id_values = set(table['id']).difference(set([-1]))
+      expt_ids_dict = table.experiment_identifiers()
+      new_ids_dict = {}
+      while table_id_values:
+        val = table_id_values.pop()
+        sel = (table['id'] == val)
+        if val in expt_ids_dict:
+          # only delete here, add new at end to avoid clashes of new/old ids
+          new_ids_dict[new_id_] = expt_ids_dict[val]
+          del expt_ids_dict[val]
+        table['id'].set_selected(sel.iselection(), new_id_)
+        new_id_ += 1
+      if new_ids_dict:
+        for i, v in new_ids_dict.iteritems():
+          expt_ids_dict[i] = v
+  return tables
 
 def flatten_datablocks(filename_object_list):
   '''
