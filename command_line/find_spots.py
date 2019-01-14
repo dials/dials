@@ -118,11 +118,12 @@ class Script(object):
     # Parse the command line
     params, options = self.parser.parse_args(args=args, show_diff_phil=False)
 
-    # Configure the logging
-    log.config(
-      params.verbosity,
-      info=params.output.log,
-      debug=params.output.debug_log)
+    if __name__ == '__main__':
+      # Configure the logging
+      log.config(
+        params.verbosity,
+        info=params.output.log,
+        debug=params.output.debug_log)
 
     from dials.util.version import dials_version
     logger.info(dials_version())
