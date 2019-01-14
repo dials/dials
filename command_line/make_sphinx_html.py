@@ -103,7 +103,7 @@ if __name__ == "__main__":
 
   try:
     update_dials_download_links()
-  except Exception, e:
+  except Exception as e:
     if options.strict:
       raise
     print('Ignoring error:', e)
