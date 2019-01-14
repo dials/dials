@@ -389,19 +389,18 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     handle.close()
 
   def as_miller_array(self, experiment, intensity='sum'):
-    """
-    Return a miller array with the chosen intensities.
+    """Return a miller array with the chosen intensities.
 
     Use the provided experiment object and intensity choice to make a miller
     intensity array with sigmas (no scaling applied).
 
-    Arguments:
-        experiment: An experiment object
-        intensity [str]: The intensity type that will be used to make the
-            miller array e.g 'prf', 'sum'
+    Args:
+        experiment (dxtbx.model.Experiment): An experiment object.
+        intensity (str): The intensity type that will be used to make the
+            miller array e.g 'prf', 'sum'.
 
     Returns:
-        i_obs: A miller array with intensities and sigmas
+        cctbx.miller.array: A miller array with intensities and sigmas.
 
     Raises:
         Sorry: If chosen intensity values cannot be found in the table.
@@ -416,11 +415,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       raise Sorry('Unable to find %s, %s in reflection table' % (
         'intensity.'+intensity+'.value', 'intensity.'+intensity+'.variance'))
 
-    space_group = experiment.crystal.get_space_group()
-    unit_cell = experiment.crystal.get_unit_cell()
-    crystal_symmetry = crystal.symmetry(space_group=space_group,
-      unit_cell=unit_cell)
-    miller_set = miller.set(crystal_symmetry=crystal_symmetry,
+    miller_set = miller.set(
+      crystal_symmetry=experiment.crystal.get_crystal_symmetry(),
       indices=self['miller_index'], anomalous_flag=False)
     i_obs = miller.array(miller_set, data=intensities)
     i_obs.set_observation_type_xray_intensity()
