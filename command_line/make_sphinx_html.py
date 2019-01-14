@@ -101,7 +101,12 @@ if __name__ == "__main__":
       help="Don't run 'make clean' before building the documentation")
   options, args = parser.parse_args()
 
-  update_dials_download_links()
+  try:
+    update_dials_download_links()
+  except Exception, e:
+    if options.strict:
+      raise
+    print('Ignoring error:', e)
   dials_dir = libtbx.env.find_in_repositories("dials")
   dials_github_io = libtbx.env.find_in_repositories("dials.github.io")
   assert dials_github_io is not None, \
