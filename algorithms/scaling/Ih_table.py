@@ -27,7 +27,7 @@ def get_sorted_asu_indices(asu_indices, space_group):
   sorted_asu_miller_index = asu_indices.select(permuted)
   return sorted_asu_miller_index, permuted
 
-class simple_Ih_table(object):
+class IhTable(object):
   """
   A class to manage access to Ih_table blocks.
 
@@ -45,7 +45,7 @@ class simple_Ih_table(object):
 
   Attributes:
       space_group: The space group for the dataset.
-      Ih_table_blocks (list): A list of Ih_table_block instances. All symmetry
+      Ih_table_blocks (list): A list of IhTableBlock instances. All symmetry
           equivalent reflections are recorded in the same block, to allow
           splitting of the dataset for parallelized computations.
       nblocks (int): The number of blocks in the Ih_table_blocks list.
@@ -153,7 +153,7 @@ class simple_Ih_table(object):
 
   @property
   def blocked_data_list(self):
-    """Return the list of Ih_table_block instances."""
+    """Return the list of IhTableBlock instances."""
     return self.Ih_table_blocks
 
   def set_intensities(self, intensities, block_id):
@@ -237,7 +237,7 @@ class simple_Ih_table(object):
     for n in range(self.n_work_blocks):
       n_refl_in_block = self.properties_dict['n_reflections_in_each_block'][n]
       n_groups_in_block = self.properties_dict['n_unique_in_each_block'][n]
-      self.Ih_table_blocks.append(Ih_table_block(n_groups=n_groups_in_block,
+      self.Ih_table_blocks.append(IhTableBlock(n_groups=n_groups_in_block,
         n_refl=n_refl_in_block, n_datasets=self.n_datasets))
 
   def _add_dataset_to_blocks(self, dataset_id, reflections, indices_array=None):
@@ -302,13 +302,13 @@ class simple_Ih_table(object):
       dataset_sel = free_reflection_table['dataset_id'] == id_
       tables.append(free_reflection_table.select(dataset_sel))
       indices_lists.append(free_indices.select(dataset_sel))
-    free_Ih_table = simple_Ih_table(tables, self.space_group, indices_lists, nblocks=1)
+    free_Ih_table = IhTable(tables, self.space_group, indices_lists, nblocks=1)
     # add to blocks list and selection list
     self.Ih_table_blocks.append(free_Ih_table.blocked_data_list[0])
     self.blocked_selection_list.append(free_Ih_table.blocked_selection_list[0])
 
 
-class Ih_table_block(object):
+class IhTableBlock(object):
   """
   A datastructure for efficient summations over symmetry equivalent reflections.
 
@@ -316,7 +316,7 @@ class Ih_table_block(object):
   a h_index_matrix (sparse) for efficiently calculating sums over symmetry
   equivalent reflections as well as 'block_selections' which relate the order
   of the data to the initial reflection tables used to initialise the (master)
-  simple_Ih_table.
+  IhTable.
 
   Attributes:
       Ih_table: A reflection table, containing I, g, w, var, Ih,
@@ -358,7 +358,7 @@ class Ih_table_block(object):
     add the loc indices to the block_selections list.
     """
     assert not self._setup_info['setup_complete'], """
-No further data can be added to the Ih_table_block as setup marked complete."""
+No further data can be added to the IhTableBlock as setup marked complete."""
     assert self._setup_info['next_row'] + len(group_ids) <= self.h_index_matrix.n_rows, """
 Not enough space left to add this data, please check for correct block initialisation."""
     assert dataset_id == self._setup_info['next_dataset'], """
@@ -383,13 +383,13 @@ Datasets must be added in correct order: expected: %s, this dataset: %s""" % (
     """Finish the setup of the Ih_table once all data has been added."""
     self.h_index_matrix.compact()
     assert self._setup_info['next_row'] == self.h_index_matrix.n_rows, """
-Not all rows of h_index_matrix appear to be filled in Ih_table_block setup."""
+Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
     self.h_expand_matrix = self.h_index_matrix.transpose()
     self.Ih_table['weights'] = 1.0/self.Ih_table['variance']
     self._setup_info['setup_complete'] = True
 
   def select(self, sel):
-    """Select a subset of the data, returning a new Ih_table_block object."""
+    """Select a subset of the data, returning a new IhTableBlock object."""
     Ih_table = self.Ih_table.select(sel)
     h_idx_sel = self.h_expand_matrix.select_columns(sel.iselection())
     reduced_h_idx = h_idx_sel.transpose()
@@ -397,7 +397,7 @@ Not all rows of h_index_matrix appear to be filled in Ih_table_block setup."""
     nz_col_sel = (unity * reduced_h_idx) > 0
     h_index_matrix = reduced_h_idx.select_columns(nz_col_sel.iselection())
     h_expand = h_index_matrix.transpose()
-    newtable = Ih_table_block(n_groups=0, n_refl=0, n_datasets=self.n_datasets)
+    newtable = IhTableBlock(n_groups=0, n_refl=0, n_datasets=self.n_datasets)
     newtable.Ih_table = Ih_table
     newtable.h_expand_matrix = h_expand
     newtable.h_index_matrix = h_index_matrix
@@ -412,7 +412,7 @@ Not all rows of h_index_matrix appear to be filled in Ih_table_block setup."""
     return newtable
 
   def select_on_groups(self, sel):
-    """Select a subset of the unique groups, returning a new Ih_table_block."""
+    """Select a subset of the unique groups, returning a new IhTableBlock."""
     reduced_h_idx = self.h_index_matrix.select_columns(sel.iselection())
     unity = flex.double(reduced_h_idx.n_cols, 1.0)
     nz_row_sel = (unity * reduced_h_idx.transpose()) > 0

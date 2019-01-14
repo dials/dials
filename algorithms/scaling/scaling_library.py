@@ -21,7 +21,7 @@ from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.algorithms.scaling.model.scaling_model_factory import \
   KBSMFactory
-from dials.algorithms.scaling.simple_Ih_table import simple_Ih_table
+from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.scaling_utilities import \
   calculate_prescaling_correction
 from dials.util.multi_dataset_handling import assign_unique_identifiers,\
@@ -253,7 +253,7 @@ def create_Ih_table(experiments, reflections, selections=None, n_blocks=1):
     else:
       input_tables.append(reflection)
       indices_lists = None
-  Ih_table = simple_Ih_table(input_tables, space_group_0, indices_lists, nblocks=n_blocks)
+  Ih_table = IhTable(input_tables, space_group_0, indices_lists, nblocks=n_blocks)
   return Ih_table
 
 def calculate_merging_statistics(reflection_table, experiments, use_internal_variance):

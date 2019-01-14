@@ -1,8 +1,7 @@
 from copy import deepcopy
 import pytest
 from mock import Mock
-from dials.algorithms.scaling.simple_Ih_table import simple_Ih_table,\
-  Ih_table_block, map_indices_to_asu
+from dials.algorithms.scaling.Ih_table import IhTable, IhTableBlock, map_indices_to_asu
 from dials.array_family import flex
 from cctbx.sgtbx import space_group
 from scitbx import sparse
@@ -97,7 +96,7 @@ def test_IhTableblock_onedataset(large_reflection_table, test_sg):
   large_reflection_table['asu_miller_index'] = asu_indices
   n_groups = len(set(asu_indices))
   n_refl = large_reflection_table.size()
-  block = Ih_table_block(n_groups=n_groups, n_refl=n_refl)
+  block = IhTableBlock(n_groups=n_groups, n_refl=n_refl)
   group_ids = flex.int([0, 1, 0, 2, 3, 4, 4])
 
   block.add_data(0, group_ids, large_reflection_table)
@@ -215,7 +214,7 @@ def test_IhTableblock_twodatasets(large_reflection_table, test_sg):
   dataset_1 = large_reflection_table.select(sel_1)
   dataset_2 = large_reflection_table.select(~sel_1)
 
-  block = Ih_table_block(n_groups=n_groups, n_refl=n_refl, n_datasets=2)
+  block = IhTableBlock(n_groups=n_groups, n_refl=n_refl, n_datasets=2)
 
   block.add_data(0, group_ids=flex.int([0, 1, 3, 4, 4]), reflections=dataset_1)
   block.add_data(1, group_ids=flex.int([0, 2]), reflections=dataset_2)
@@ -278,7 +277,7 @@ def test_IhTable_split_into_blocks(large_reflection_table,
   sel2 = flex.bool(4, True)
   sel2[1] = False
 
-  Ih_table = simple_Ih_table(
+  Ih_table = IhTable(
     reflection_tables=[large_reflection_table.select(sel1), small_reflection_table.select(sel2)],
     indices_lists=[sel1.iselection(), sel2.iselection()], space_group=test_sg, nblocks=2)
 
@@ -339,7 +338,7 @@ def test_IhTable_freework(large_reflection_table,
   sel2 = flex.bool(4, True)
   sel2[1] = False
 
-  Ih_table = simple_Ih_table(
+  Ih_table = IhTable(
     reflection_tables=[large_reflection_table.select(sel1), small_reflection_table.select(sel2)],
     indices_lists=[sel1.iselection(), sel2.iselection()], space_group=test_sg, nblocks=2,
     free_set_percentage=50.0)
@@ -424,7 +423,7 @@ def test_IhTable_freework(large_reflection_table,
 
 
   # now test free set with offset
-  Ih_table = simple_Ih_table(
+  Ih_table = IhTable(
     reflection_tables=[large_reflection_table.select(sel1), small_reflection_table.select(sel2)],
     indices_lists=[sel1.iselection(), sel2.iselection()], space_group=test_sg, nblocks=2,
     free_set_percentage=50.0, free_set_offset=1)
@@ -460,7 +459,7 @@ def test_IhTable_freework(large_reflection_table,
 def test_set_Ih_values_to_target(test_sg):
   """Test the setting of Ih values for targeted scaling."""
   """Generate input for testing joint_Ih_table."""
-  Ih_table = simple_Ih_table([
+  Ih_table = IhTable([
     generated_refl_for_splitting_1(), generated_refl_for_splitting_2()],
     test_sg, nblocks=2)
   Ih_table.calc_Ih()
@@ -469,7 +468,7 @@ def test_set_Ih_values_to_target(test_sg):
   assert list(block_list[0].Ih_values) == [6.0, 17.0/3.0, 17.0/3.0, 6.0, 17.0/3.0]
   assert list(block_list[1].Ih_values) == [16.0/3.0, 16.0/3.0, 7.0, 16.0/3.0, 7.0, 7.0]
 
-  target = simple_Ih_table(
+  target = IhTable(
     [generated_refl_for_splitting_1(), generated_refl_for_splitting_2()],
     test_sg, nblocks=1)
   #set some values in the target
@@ -492,7 +491,7 @@ def test_set_Ih_values_to_target(test_sg):
 def test_apply_iterative_weighting(reflection_table_for_block, test_sg):
   """Test the setting of iterative weights."""
 
-  Ihtableblock = Ih_table_block(reflection_table_for_block[0], test_sg,
+  Ihtableblock = IhTableBlock(reflection_table_for_block[0], test_sg,
     weighting_scheme='GM')
 
   # After construction, weights should initially be set to inverse variances,
@@ -508,7 +507,7 @@ def test_apply_iterative_weighting(reflection_table_for_block, test_sg):
   assert list(Ihtableblock.weights) == list(1.0/(1.0 + t**2)**2)
 
 
-  Ih_table = simple_Ih_table([reflection_table_for_block[0]], test_sg,
+  Ih_table = IhTable([reflection_table_for_block[0]], test_sg,
     weighting_scheme='GM')
   block = Ih_table.blocked_data_list[0]
   assert list(block.weights) == [1.0] * 6

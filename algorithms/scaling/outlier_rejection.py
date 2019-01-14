@@ -11,7 +11,7 @@ import abc
 import logging
 from libtbx.utils import Sorry
 from scitbx.array_family import flex
-from dials.algorithms.scaling.simple_Ih_table import simple_Ih_table as IhTable
+from dials.algorithms.scaling.Ih_table import IhTable
 from dials_scaling_ext import determine_outlier_indices
 
 logger = logging.getLogger('dials')
@@ -74,12 +74,12 @@ def determine_outlier_index_arrays(Ih_table, method='standard', zmax=6.0,
   Run an outlier algorithm and return the outlier indices.
 
   Args:
-      Ih_table: A dials.algorithms.scaling.simple_Ih_table.simple_Ih_table.
+      Ih_table: A dials.algorithms.scaling.Ih_table.IhTable.
       method (str): Name (alias) of outlier rejection algorithm to use. If
           method='target', then the optional argument 'target' must also
           be specified.
       zmax (float): Normalised deviation threshold for classifying an outlier.
-      target (Optional[Ih_table]): An Ih_table to use to obtain target Ih for
+      target (Optional[IhTable]): An IhTable to use to obtain target Ih for
           outlier rejectiob, if method='target'.
 
   Returns:
@@ -116,7 +116,7 @@ def determine_outlier_index_arrays(Ih_table, method='standard', zmax=6.0,
 
 class OutlierRejectionBase(object):
   """
-  Base class for outlier rejection algorithms using an Ih_table datastructure.
+  Base class for outlier rejection algorithms using an IhTable datastructure.
 
   Subclasses must define the do_outlier_rejection method, which must
   add the indices of outliers to the outlier_indices attribute.

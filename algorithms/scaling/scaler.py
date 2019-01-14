@@ -24,7 +24,7 @@ from libtbx.table_utils import simple_table
 from dials.array_family import flex
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.outlier_rejection import determine_outlier_index_arrays
-from dials.algorithms.scaling.simple_Ih_table import simple_Ih_table
+from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.target_function import ScalingTarget,\
   ScalingTargetFixedIH
 from dials.algorithms.scaling.scaling_refiner import scaling_refinery,\
@@ -453,7 +453,7 @@ class SingleScaler(ScalerBase):
     free_set_percentage = 0.0
     if self.params.scaling_options.use_free_set:
       free_set_percentage = self.params.scaling_options.free_set_percentage
-    self._Ih_table = simple_Ih_table([self.reflection_table.select(
+    self._Ih_table = IhTable([self.reflection_table.select(
       self.suitable_refl_for_scaling_sel).select(self.scaling_selection)],
       self.space_group, indices_lists=[self.scaling_selection.iselection()],
       nblocks=self.params.scaling_options.nproc,
@@ -473,7 +473,7 @@ class SingleScaler(ScalerBase):
     sel_reflections = self._reflection_table.select(self.suitable_refl_for_scaling_sel)
     self.experiments.scaling_model.configure_components(
       sel_reflections, self.experiments, self.params)
-    self._global_Ih_table = simple_Ih_table([sel_reflections], self.space_group,
+    self._global_Ih_table = IhTable([sel_reflections], self.space_group,
       nblocks=1)
     rows = []
     for key, val in self.components.iteritems():
@@ -662,7 +662,7 @@ class MultiScalerBase(ScalerBase):
   def _create_global_Ih_table(self):
     tables = [s.reflection_table.select(s.suitable_refl_for_scaling_sel) \
       for s in self.active_scalers]
-    self._global_Ih_table = simple_Ih_table(tables, self.space_group, nblocks=1)
+    self._global_Ih_table = IhTable(tables, self.space_group, nblocks=1)
 
   def _create_Ih_table(self):
     """Create a new Ih table from the reflection tables."""
@@ -672,7 +672,7 @@ class MultiScalerBase(ScalerBase):
     tables = [s.reflection_table.select(
       s.suitable_refl_for_scaling_sel).select(s.scaling_selection) for s in self.active_scalers]
     indices_lists = [s.scaling_selection.iselection() for s in self.active_scalers]
-    self._Ih_table = simple_Ih_table(tables, self.space_group,
+    self._Ih_table = IhTable(tables, self.space_group,
       indices_lists=indices_lists, nblocks=self.params.scaling_options.nproc,
       free_set_percentage=free_set_percentage,
       free_set_offset=self.params.scaling_options.free_set_offset)
@@ -792,7 +792,7 @@ class TargetScaler(MultiScalerBase):
     self._create_global_Ih_table()
     tables = [s.reflection_table.select(s.suitable_refl_for_scaling_sel).select(
       s.scaling_selection) for s in self.single_scalers]
-    self._target_Ih_table = simple_Ih_table(tables, self.space_group,
+    self._target_Ih_table = IhTable(tables, self.space_group,
       nblocks=1)#Keep in one table for matching below
     self._create_Ih_table()
     self._update_model_data()

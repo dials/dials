@@ -65,10 +65,8 @@ class BasicErrorModel(object):
     self.sigmaprime = self.calc_sigmaprime([1.0, 0.0])
     delta_hl = self.calc_deltahl()
     sel = flex.abs(delta_hl) < cutoff
-    #print(sel.count(False))
     self.Ih_table = self.Ih_table.select(sel)
     self.Ih_table.calc_nh()
-    #self.Ih_table.calc_Ih()
 
   def calc_sigmaprime(self, x):
     """Calculate the error from the model."""
