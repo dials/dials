@@ -4,6 +4,11 @@ import copy
 
 import pytest
 
+from dials.array_family import flex
+from dxtbx.model import ExperimentList, Experiment, Crystal
+from libtbx.utils import Sorry
+from cctbx import sgtbx
+
 def test_init():
   from dials.array_family import flex
 
@@ -1173,9 +1178,6 @@ def test_experiment_identifiers():
 
 def test_select_remove_on_experiment_identifiers():
 
-  from dials.array_family import flex
-  from dxtbx.model import ExperimentList, Experiment
-
   table = flex.reflection_table()
   table['id'] = flex.int([0, 1, 2, 3])
 
@@ -1229,3 +1231,26 @@ def test_select_remove_on_experiment_identifiers():
     table.remove_on_experiment_identifiers(["efgh"])
   with pytest.raises(KeyError):
     table.select_on_experiment_identifiers(["abcd", "mnop"])
+
+def test_as_miller_array():
+  table = flex.reflection_table()
+  table['intensity.1.value'] = flex.double([1.0, 2.0, 3.0])
+  table['intensity.1.variance'] = flex.double([0.25, 1.0, 4.0])
+  table['miller_index'] = flex.miller_index([(1, 0, 0), (2, 0, 0), (3, 0, 0)])
+
+  crystal = Crystal(
+    real_space_a=(10, 0, 0),
+    real_space_b=(0, 11, 0),
+    real_space_c=(0, 0, 12),
+    space_group=sgtbx.space_group_info("P 222").group())
+  experiment = Experiment(crystal=crystal)
+
+  iobs = table.as_miller_array(experiment, intensity='1')
+  assert list(iobs.data()) == list(table['intensity.1.value'])
+  assert list(iobs.sigmas()) == list(table['intensity.1.variance']**0.5)
+
+  with pytest.raises(Sorry):
+    _ = table.as_miller_array(experiment, intensity='2')
+  table['intensity.2.value'] = flex.double([1.0, 2.0, 3.0])
+  with pytest.raises(Sorry):
+    _ = table.as_miller_array(experiment, intensity='2')

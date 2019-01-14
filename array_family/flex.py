@@ -14,7 +14,8 @@ from dials_array_family_flex_ext import *
 from cctbx.array_family.flex import *
 from cctbx.array_family import flex
 import cctbx
-import cctbx.miller
+from cctbx import miller, crystal
+from libtbx.utils import Sorry
 
 from collections import OrderedDict
 import logging
@@ -386,6 +387,47 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     self.clean_experiment_identifiers_map()
     handle.set_reflections(self)
     handle.close()
+
+  def as_miller_array(self, experiment, intensity='sum'):
+    """
+    Return a miller array with the chosen intensities.
+
+    Use the provided experiment object and intensity choice to make a miller
+    intensity array with sigmas (no scaling applied).
+
+    Arguments:
+        experiment: An experiment object
+        intensity [str]: The intensity type that will be used to make the
+            miller array e.g 'prf', 'sum'
+
+    Returns:
+        i_obs: A miller array with intensities and sigmas
+
+    Raises:
+        Sorry: If chosen intensity values cannot be found in the table.
+
+    """
+
+    try:
+      intensities, variances = (self['intensity.'+intensity+'.value'],
+        self['intensity.'+intensity+'.variance'])
+    except RuntimeError as e:
+      logger.error(e)
+      raise Sorry('Unable to find %s, %s in reflection table' % (
+        'intensity.'+intensity+'.value', 'intensity.'+intensity+'.variance'))
+
+    space_group = experiment.crystal.get_space_group()
+    unit_cell = experiment.crystal.get_unit_cell()
+    crystal_symmetry = crystal.symmetry(space_group=space_group,
+      unit_cell=unit_cell)
+    miller_set = miller.set(crystal_symmetry=crystal_symmetry,
+      indices=self['miller_index'], anomalous_flag=False)
+    i_obs = miller.array(miller_set, data=intensities)
+    i_obs.set_observation_type_xray_intensity()
+    i_obs.set_sigmas(variances**0.5)
+    i_obs.set_info(miller.array_info(
+      source='DIALS', source_type='reflection_tables'))
+    return i_obs
 
   def copy(self):
     '''
@@ -1177,19 +1219,19 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     '''
     self['miller_index_asu'] = miller_index(len(self))
     for idx, experiment in enumerate(experiments):
- 
+
       # Create the crystal symmetry object
       uc = experiment.crystal.get_unit_cell()
       sg = experiment.crystal.get_space_group()
       cs = cctbx.crystal.symmetry(uc, space_group=sg)
-      
+
       # Get the selection and compute the miller indices
       selection = self['id'] == idx
       h = self['miller_index'].select(selection)
-      ms = cctbx.miller.set(cs, h)
+      ms = miller.set(cs, h)
       ms_asu = ms.map_to_asu()
       h_asu = ms_asu.indices()
-     
+
       # Set the miller indices
       self['miller_index_asu'].set_selected(selection, h_asu)
 
