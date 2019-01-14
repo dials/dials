@@ -88,4 +88,3 @@ def test_exclude_image_ranges_for_scaling():
     True, False, False, False, False]
   assert list(refls[1].get_flags(refls[0].flags.user_excluded_in_scaling)) == [
     True, False, False, False, True]
-  

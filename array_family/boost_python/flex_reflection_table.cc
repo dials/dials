@@ -610,7 +610,7 @@ namespace dials { namespace af { namespace boost_python {
       }
     }
   }
-  
+
   /**
    * Select a number of rows from the table via an index array
    * @param self The current table

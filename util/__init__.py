@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import contextlib
 import sys
-  
+
 from ._progress import progress
 
 fcntl, msvcrt = None, None

@@ -6,7 +6,7 @@ from os.path import join
 import copy
 
 def test_compute_delta_cchalf(dials_regression):
-  
+
   filename = join(dials_regression, "delta_cchalf_test_data", "test.XDS_ASCII.mtz")
 
   # Read the mtz file
@@ -29,7 +29,7 @@ def test_compute_delta_cchalf(dials_regression):
 
   # Get the unit cell and space group
   unit_cell = intensities.unit_cell()
-  space_group = intensities.crystal_symmetry().space_group() 
+  space_group = intensities.crystal_symmetry().space_group()
 
   # The reflection data
   miller_index = intensities.indices()

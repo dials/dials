@@ -14,17 +14,17 @@ logger = logging.getLogger('dials')
 def parse_multiple_datasets(reflections):
   """
   Split a list of multi-dataset reflection tables, selecting on id
-  
+
   If duplicate id values are found, the id columns are renumbered from 0..n-1,
   taking care of experiment identifiers if these are set.
-  
+
   Args:
       reflections (list): a list of reflection tables, each of which may contain
           multiple datasets
-      
+
   Returns:
       (list): a list of reflection tables corresponding to single datasets
-      
+
   """
   single_reflection_tables = []
   dataset_id_list = []
@@ -66,7 +66,7 @@ def get_next_unique_id(unique_id, used_ids):
 
   Returns:
       (int): The lowest int >= unique_id for which str(int) is not in used_ids
-  
+
   """
   while str(unique_id) in used_ids:
     unique_id += 1
@@ -75,11 +75,11 @@ def get_next_unique_id(unique_id, used_ids):
 def assign_unique_identifiers(experiments, reflections, identifiers=None):
   """
   Assign unique experiment identifiers to experiments and reflections lists.
-  
+
   If experiment identifiers are not set for some datasets, then new unique
   identifiers are given to those, and the 'id' column for all reflection tables
   are set sequentially from 0..n-1.
-  
+
   Args:
       experiments: An ExperimentList
       reflections (list): A list of reflection tables
@@ -140,7 +140,7 @@ def select_datasets_on_ids(experiments, reflection_table_list,
   This performs a similar function to the select/remove_on_experiment_identifiers
   methods of ExperimentList and reflection_table, with additional logic to handle
   the case of a list of reflection tables, rather than a single one.
-  
+
   Args:
       experiments: An ExperimentList
       reflection_table_list (list): a list of reflection tables

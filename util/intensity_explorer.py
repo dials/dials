@@ -392,7 +392,7 @@ def data_from_pickle_and_json():
 
     help_message = '''
 
-  Generates a dials.array_family.flex.reflection_table and a 
+  Generates a dials.array_family.flex.reflection_table and a
   dxtbx.model.experiment_list.ExperimentList from a reflections.pickle and an
   experiments.json.
 

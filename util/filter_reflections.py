@@ -439,7 +439,7 @@ class SumAndPrfIntensityReducer(FilterForExportAlgorithm):
       conversion = conversion.select(nonzero_sel)
       sum_conversion = conversion / reflection_table['partiality']
 
-    reflection_table['intensity.sum.value'] *= sum_conversion 
+    reflection_table['intensity.sum.value'] *= sum_conversion
     reflection_table['intensity.sum.variance'] *= sum_conversion * sum_conversion
     reflection_table['intensity.prf.value'] *= conversion
     reflection_table['intensity.prf.variance'] *= conversion * conversion
@@ -540,7 +540,7 @@ def sum_partial_reflections(reflection_table):
   if len(isel) == 0:
     return reflection_table
 
-  # create map of partial_id to reflections 
+  # create map of partial_id to reflections
   delete = flex.size_t()
   partial_map = defaultdict(list)
   for j in isel:
@@ -569,7 +569,7 @@ def sum_partial_reflections(reflection_table):
       rows.append(data)
 
     # do the summing of the partiality values separately to allow looping
-    # over multiple times 
+    # over multiple times
     total_partiality = sum([reflection_table['partiality'][i] for i in j])
     if 'prf' in intensities:
       reflection_table = _sum_prf_partials(reflection_table, j)
@@ -632,7 +632,7 @@ def _sum_sum_partials(reflection_table, partials_isel_for_pid):
 def _sum_scale_partials(reflection_table, partials_isel_for_pid):
   """Sum scale partials and set the updated value in the first entry."""
   # Weight scaled intensity partials by 1/variance. See
-  # https://en.wikipedia.org/wiki/Weighted_arithmetic_mean, section 
+  # https://en.wikipedia.org/wiki/Weighted_arithmetic_mean, section
   # 'Dealing with variance'
   j = partials_isel_for_pid
   variance = reflection_table['intensity.scale.variance'][j[0]]
