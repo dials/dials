@@ -1,6 +1,8 @@
 from __future__ import absolute_import, division, print_function
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
+import sys
+
 from dials.util.options import OptionParser
 from dials.util.options \
      import flatten_reflections, flatten_datablocks, flatten_experiments
@@ -40,8 +42,7 @@ id = None
 """)
 
 def run(args):
-  import libtbx.load_env
-  usage = "%s [options] datablock.json strong.pickle" % libtbx.env.dispatcher_name
+  usage = "dials.spot_counts_per_image [options] datablock.json strong.pickle"
 
   parser = OptionParser(
     usage=usage,
@@ -51,7 +52,6 @@ def run(args):
     phil=phil_scope,
     check_format=False,
     epilog=help_message)
-  from libtbx.utils import Sorry
 
   params, options = parser.parse_args(show_diff_phil=False)
   reflections = flatten_reflections(params.input.reflections)
@@ -63,14 +63,14 @@ def run(args):
     return
 
   if len(reflections) != 1:
-    raise Sorry('exactly 1 reflection table must be specified')
+    sys.exit('exactly 1 reflection table must be specified')
   if len(datablocks) != 1:
     if experiments:
       if len(experiments.imagesets()) != 1:
-        raise Sorry('exactly 1 datablock must be specified')
+        sys.exit('exactly 1 datablock must be specified')
       imageset = experiments.imagesets()[0]
     else:
-      raise Sorry('exactly 1 datablock must be specified')
+      sys.exit('exactly 1 datablock must be specified')
   else:
     imageset = datablocks[0].extract_imagesets()[0]
 
@@ -113,5 +113,4 @@ def run(args):
     per_image_analysis.plot_stats(stats, filename=params.plot)
 
 if __name__ == '__main__':
-  import sys
   run(sys.argv[1:])
