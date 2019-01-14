@@ -216,15 +216,19 @@ class Script(object):
 
     # Print the experimental models
     for i, exp in enumerate(experiments):
-      logger.debug("Models for experiment %d" % i)
-      logger.debug("")
-      logger.debug(str(exp.beam))
-      logger.debug(str(exp.detector))
+      logger.info("="*80)
+      logger.info("")
+      logger.info("Experiments")
+      logger.info("")
+      logger.info("Models for experiment %d" % i)
+      logger.info("")
+      logger.info(str(exp.beam))
+      logger.info(str(exp.detector))
       if exp.goniometer:
-        logger.debug(str(exp.goniometer))
+        logger.info(str(exp.goniometer))
       if exp.scan:
-        logger.debug(str(exp.scan))
-      logger.debug(str(exp.crystal))
+        logger.info(str(exp.scan))
+      logger.info(str(exp.crystal))
 
     logger.info("=" * 80)
     logger.info("")
