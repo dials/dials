@@ -264,7 +264,7 @@ class IhTable(object):
     boundaries_for_this_datset = [0]#use to slice
     # make this a c++ method for speed?
     for i, index in enumerate(sorted_asu_indices):
-      if index >= boundary:
+      while index >= boundary:
         boundaries_for_this_datset.append(i)
         boundary_id += 1
         boundary = self.properties_dict['miller_index_boundaries'][boundary_id]
