@@ -197,7 +197,6 @@ def combine(datablock_list, reflections_list, params):
   # Combine spots
   combiner = StrongSpotCombiner()
   for index, rlist in enumerate(reflections_list, start=1):
-    assert rlist['id'].all_eq(0)
     logger.info("Combining %d reflections from reflection list %d" % (
       len(rlist),
       index))
