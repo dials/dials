@@ -144,7 +144,8 @@ def test_scale_merging_stats():
   script = Script(params, exp, [reflections])
   script.image_ranges = [(1, 100)]
   script.batch_ranges = [(1, 100)]
-  script.merging_stats()
+  script.prepare_scaled_miller_array()
+  script.merging_stats(script.scaled_miller_array)
   assert script.merging_statistics_result is not None
 
   # test for sensible return if small dataset with no equivalent reflections
@@ -153,7 +154,8 @@ def test_scale_merging_stats():
   script = Script(params, exp, [reflections])
   script.image_ranges = [(1, 100)]
   script.batch_ranges = [(1, 100)]
-  script.merging_stats()
+  script.prepare_scaled_miller_array()
+  script.merging_stats(script.scaled_miller_array)
   assert script.merging_statistics_result is None
 
 def test_scale_script_prepare_input():
@@ -301,6 +303,10 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
   assert result.overall.r_pim < 0.024 #at 07/01/19, value was 0.02372
   assert result.overall.cc_one_half > 0.995 # at 07/01/19, value was 0.99568
   assert result.overall.n_obs > 2320 # at 07/01/19, was 2336
+
+  # test the 'stats_only' option
+  extra_args = ["stats_only=True"]
+  _ = run_one_scaling(['scaled.pickle'], ['scaled_experiments.json'], extra_args)
 
 @pytest.mark.dataset_test
 def test_scale_optimise_errors(dials_regression, run_in_tmpdir):

@@ -83,6 +83,9 @@ phil_scope = phil.parse('''
     .help = "Set scaling model to be applied to input datasets without
             an existing model. "
     .expert_level = 0
+  stats_only = False
+    .type = bool
+    .help = "Only read input files and output merging stats."
   output {
     log = dials.scale.log
       .type = str
@@ -142,13 +145,21 @@ class Script(object):
 
   def run(self, save_data=True):
     """Run the scaling script."""
+    if self.params.stats_only:
+      try:
+        self.merging_stats(self.scaled_data_as_miller_array(
+          self.experiments[0].crystal.get_crystal_symmetry()))
+      except DialsMergingStatisticsError as e:
+        logger.info(e)
+      return
     start_time = time.time()
     self.prepare_input()
     self.scale()
     self.remove_unwanted_datasets()
     print_scaling_model_error_info(self.experiments)
+    self.prepare_scaled_miller_array()
     try:
-      self.merging_stats()
+      self.merging_stats(self.scaled_miller_array)
     except DialsMergingStatisticsError as e:
       logger.info(e)
 
@@ -290,14 +301,16 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
       miller.array_info(source='DIALS', source_type='reflection_tables'))
     return i_obs
 
-  def merging_stats(self):
-    """Calculate and print the merging statistics."""
-    logger.info('\n'+'='*80+'\n')
-
+  def prepare_scaled_miller_array(self):
+    """Calculate a scaled miller array from the dataset."""
     self.scaled_miller_array = self.scaled_data_as_miller_array(
       self.experiments[0].crystal.get_crystal_symmetry(), anomalous_flag=False)
 
-    if self.scaled_miller_array.is_unique_set_under_symmetry():
+  def merging_stats(self, scaled_miller_array):
+    """Calculate and print the merging statistics."""
+    logger.info('\n'+'='*80+'\n')
+
+    if scaled_miller_array.is_unique_set_under_symmetry():
       logger.info(("Dataset doesn't contain any equivalent reflections, \n"
         "no merging statistics can be calculated."))
       return
@@ -306,7 +319,7 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
         out=log.info_handle(logger))
     try:
       result = iotbx.merging_statistics.dataset_statistics(
-        i_obs=self.scaled_miller_array, n_bins=self.params.output.merging.nbins,
+        i_obs=scaled_miller_array, n_bins=self.params.output.merging.nbins,
         anomalous=False, sigma_filtering=None, eliminate_sys_absent=False,
         use_internal_variance=self.params.output.use_internal_variance)
       show_merging_summary(result.overall)
