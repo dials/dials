@@ -1,5 +1,7 @@
 """
-Definitions of scaling models - collections of scale components with appropriate
+Definitions of scaling models.
+
+A scaling model is a collection of scaling model components with appropriate
 methods to define how these are composed into one model.
 """
 from __future__ import print_function
@@ -19,13 +21,14 @@ from dials.algorithms.scaling.scaling_utilities import sph_harm_table
 logger = logging.getLogger('dials')
 
 class ScalingModelBase(object):
-  """Base class for scaling models."""
+  """Abstract base class for scaling models."""
 
   id_ = None
 
   __metaclass__ = abc.ABCMeta
 
   def __init__(self, configdict, is_scaled=False):
+    """Initialise the model with no components and a :obj:`configdict`."""
     self._components = OrderedDict()
     self._configdict = configdict
     self._is_scaled = is_scaled
@@ -33,26 +36,32 @@ class ScalingModelBase(object):
 
   @property
   def is_scaled(self):
-    """Indictor as to whether this model has previously been refined."""
+    """:obj:`bool`: Indicte whether this model has previously been refined."""
     return self._is_scaled
 
   def limit_image_range(self, new_image_range):
-    """Modify the model if necessary due to excluding batches."""
+    """Modify the model if necessary due to reducing the image range.
+
+    Args:
+        new_image_range (tuple): The (start, end) of the new image range.
+
+    """
     pass
 
   def set_scaling_model_as_scaled(self):
-    """Indicate a scaling process has been performed on the data."""
+    """Set the boolean 'is_scaled' flag as True."""
     self._is_scaled = True
 
   def set_scaling_model_as_unscaled(self):
-    """Indicate that no scaled data is associated with this model."""
+    """Set the boolean 'is_scaled' flag as False."""
     self._is_scaled = False
 
+  @abc.abstractmethod
   def configure_components(self, reflection_table, experiment, params):
-    """Perform calculations necessary to update the reflection table."""
+    """Add the required reflection table data to the model components."""
 
   def set_valid_image_range(self, image_range):
-    """Track the batch range for which the model corresponds to."""
+    """Set the valid image range for the model in the :obj:`configdict`."""
     self._configdict['valid_image_range'] = image_range
 
   def normalise_components(self):
@@ -60,28 +69,36 @@ class ScalingModelBase(object):
 
   @property
   def error_model(self):
-    """The error model associated with the scaling model."""
+    """:obj:`error_model`: The error model associated with the scaling model."""
     return self._error_model
 
   @property
   def configdict(self):
-    """Dictionary of configuration parameters."""
+    """:obj:`dict`: a dictionary of the model configuration parameters."""
     return self._configdict
 
   @property
   def components(self):
-    """The components of the model, a dictionary."""
+    """:obj:`dict`: a dictionary of the model components."""
     return self._components
 
   @abc.abstractproperty
   def consecutive_refinement_order(self):
-    """Return a nested list of correction names, to indicate the order
-    to perform scaling in consecutive scaling mode if concurrent=0.
+    """:obj:`list`: a nested list of component names.
+
+    This list indicates to the scaler the order to perform scaling in
+    consecutive scaling mode (command line option concurrent=0).
     e.g. [['scale', 'decay'], ['absorption']] would cause the first cycle to
-    refine scale and decay, and then absorption in a subsequent cycle."""
+    refine scale and decay, and then absorption in a subsequent cycle.
+    """
 
   def to_dict(self):
-    """Format data to dictionary for output."""
+    """Serialize the model to a dictionary.
+
+    Returns:
+        dict: A dictionary representation of the model.
+
+    """
     dictionary = OrderedDict({'__id__' : self.id_})
     dictionary.update({'is_scaled' : self._is_scaled})
     for key in self.components:
@@ -97,7 +114,7 @@ class ScalingModelBase(object):
   @classmethod
   @abc.abstractmethod
   def from_dict(cls, obj):
-    """Create a scaling model object from a dictionary."""
+    """Create a scaling model from a dictionary."""
 
   def set_error_model(self, error_model):
     """Associate an error model with the dataset."""
@@ -112,6 +129,7 @@ class ScalingModelBase(object):
     print(str(self))
 
   def __str__(self):
+    """:obj:`str`: Return a string representation of a scaling model."""
     msg = ["Scaling model:"]
     msg.append("  type : " + str(self.id_))
     for name, component in self.components.iteritems():
@@ -139,6 +157,7 @@ class PhysicalScalingModel(ScalingModelBase):
   id_ = 'physical'
 
   def __init__(self, parameters_dict, configdict, is_scaled=False):
+    """Create the phyiscal scaling model components."""
     super(PhysicalScalingModel, self).__init__(configdict, is_scaled)
     if 'scale' in configdict['corrections']:
       scale_setup = parameters_dict['scale']
@@ -155,10 +174,11 @@ class PhysicalScalingModel(ScalingModelBase):
 
   @property
   def consecutive_refinement_order(self):
+    """:obj:`list`: a nested list of component names to indicate scaling order."""
     return [['scale', 'decay'], ['absorption']]
 
   def configure_components(self, reflection_table, experiment, params):
-
+    """Add the required reflection table data to the model components."""
     if 'scale' in self.components:
       norm = reflection_table['xyzobs.px.value'].parts()[2] * self._configdict['s_norm_fac']
       self.components['scale'].data = {'x': norm}
@@ -181,7 +201,16 @@ class PhysicalScalingModel(ScalingModelBase):
       self.components['absorption'].parameter_restraints = parameter_restraints
 
   def limit_image_range(self, new_image_range):
-    """Change the model to be suitable for a reduced batch range"""
+    """Modify the model to be suitable for a reduced image range.
+
+    For this model, this involves determining whether the number of parameters
+    should be reduced and may reduce the number of parameters in the scale and
+    decay components.
+
+    Args:
+        new_image_range (tuple): The (start, end) of the new image range.
+
+    """
     conf = self.configdict
     current_image_range = conf['valid_image_range']
     current_osc_range = conf['valid_osc_range']
@@ -219,25 +248,26 @@ class PhysicalScalingModel(ScalingModelBase):
     self.set_valid_image_range(new_image_range)
 
   def normalise_components(self):
+    """Do an invariant rescale of the scale at t=0 to one and the max B to zero."""
     if 'scale' in self.components:
-      # Do an invariant rescale of the scale at t=0 to one.'''
       joined_norm_vals = flex.double([])
       joined_inv_scales = flex.double([])
       for i in range(len(self.components['scale'].normalised_values)):
         joined_norm_vals.extend(self.components['scale'].normalised_values[i])
-        joined_inv_scales.extend(self.components['scale'].calculate_scales(block_id=i))
+        joined_inv_scales.extend(
+          self.components['scale'].calculate_scales(block_id=i))
       sel = (joined_norm_vals == min(joined_norm_vals))
       initial_scale = joined_inv_scales.select(sel)[0]
       self.components['scale'].parameters /= initial_scale
       logger.info('\nThe "scale" model component has been rescaled, so that the\n'
         'initial scale is 1.0.')
     if 'decay' in self.components:
-      # Do an invariant rescale of the max B to zero.'''
       joined_d_vals = flex.double([])
       joined_inv_scales = flex.double([])
       for i in range(len(self.components['decay'].d_values)):
         joined_d_vals.extend(self.components['decay'].d_values[i])
-        joined_inv_scales.extend(self.components['decay'].calculate_scales(block_id=i))
+        joined_inv_scales.extend(
+          self.components['decay'].calculate_scales(block_id=i))
       maxB = flex.max(flex.double(np.log(joined_inv_scales))
                   * 2.0 * (joined_d_vals**2))
       self.components['decay'].parameters -= flex.double(
@@ -247,7 +277,7 @@ class PhysicalScalingModel(ScalingModelBase):
 
   @classmethod
   def from_dict(cls, obj):
-    """Create a scaling model object from a dictionary."""
+    """Create a :obj:`PhysicalScalingModel` from a dictionary."""
     if obj['__id__'] != cls.id_:
       raise RuntimeError('expected __id__ %s, got %s' % (cls.id_, obj['__id__']))
     (s_params, d_params, abs_params) = (None, None, None)
@@ -281,6 +311,7 @@ class ArrayScalingModel(ScalingModelBase):
   id_ = 'array'
 
   def __init__(self, parameters_dict, configdict, is_scaled=False):
+    """Create the array scaling model components."""
     super(ArrayScalingModel, self).__init__(configdict, is_scaled)
     if 'decay' in configdict['corrections']:
       decay_setup = parameters_dict['decay']
@@ -301,9 +332,11 @@ class ArrayScalingModel(ScalingModelBase):
 
   @property
   def consecutive_refinement_order(self):
+    """:obj:`list`: a nested list of component names to indicate scaling order."""
     return [['decay'], ['absorption'], ['modulation']]
 
-  def configure_components(self, reflection_table, _, __):
+  def configure_components(self, reflection_table, experiment, params):
+    """Add the required reflection table data to the model components."""
     xyz = reflection_table['xyzobs.px.value'].parts()
     norm_time = (xyz[2] * self.configdict['time_norm_fac'])
     if 'decay' in self.components:
@@ -326,7 +359,16 @@ class ArrayScalingModel(ScalingModelBase):
       self.components['modulation'].data = {'x' : norm_x_det, 'y': norm_y_det}
 
   def limit_image_range(self, new_image_range):
-    """Change the model to be suitable for a reduced batch range"""
+    """Modify the model to be suitable for a reduced image range.
+
+    For this model, this involves determining whether the number of parameters
+    should be reduced and may reduce the number of parameters in the absorption
+    and decay components.
+
+    Args:
+        new_image_range (tuple): The (start, end) of the new image range.
+
+    """
     conf = self.configdict
     current_image_range = conf['valid_image_range']
     current_osc_range = conf['valid_osc_range']
@@ -374,7 +416,7 @@ class ArrayScalingModel(ScalingModelBase):
 
   @classmethod
   def from_dict(cls, obj):
-    """Create a scaling model object from a dictionary."""
+    """Create an :obj:`ArrayScalingModel` from a dictionary."""
     if obj['__id__'] != cls.id_:
       raise RuntimeError('expected __id__ %s, got %s' % (cls.id_, obj['__id__']))
     configdict = obj['configuration_parameters']
@@ -407,6 +449,7 @@ class KBScalingModel(ScalingModelBase):
   id_ = 'KB'
 
   def __init__(self, parameters_dict, configdict, is_scaled=False):
+    """Create the KB scaling model components."""
     super(KBScalingModel, self).__init__(configdict, is_scaled)
     if 'scale' in configdict['corrections']:
       self._components.update({'scale' : SingleScaleFactor(
@@ -418,6 +461,7 @@ class KBScalingModel(ScalingModelBase):
         parameters_dict['decay']['parameter_esds'])})
 
   def configure_components(self, reflection_table, experiment, params):
+    """Add the required reflection table data to the model components."""
     if 'scale' in self.components:
       self.components['scale'].data = {'id': reflection_table['id']}
     if 'decay' in self.components:
@@ -426,11 +470,12 @@ class KBScalingModel(ScalingModelBase):
 
   @property
   def consecutive_refinement_order(self):
+    """:obj:`list`: a nested list of component names to indicate scaling order."""
     return [['scale', 'decay']]
 
   @classmethod
   def from_dict(cls, obj):
-    """Create a scaling model object from a dictionary."""
+    """Create an :obj:`KBScalingModel` from a dictionary."""
     if obj['__id__'] != cls.id_:
       raise RuntimeError('expected __id__ %s, got %s' % (cls.id_, obj['__id__']))
     configdict = obj['configuration_parameters']
@@ -452,54 +497,44 @@ class KBScalingModel(ScalingModelBase):
 
     return cls(parameters_dict, configdict, is_scaled)
 
-def map_old_to_new_range(old_range, new_range):
-  """Calculate the offset and number of params needed for the new dataset"""
-  offset = 0
-  n_param = range_to_n_param(new_range)
-  n_old_param = range_to_n_param(old_range)
-  if n_old_param == n_param: #would only work for using function to reduce range
-    return 0, n_param
-  if new_range[0] > 0.0:
-    #might need to shift
-    if n_param > 3 and n_old_param > 3:
-      offset = int((new_range[0] - 0.5) //1) + 1
-    elif n_param < 4 and n_old_param > 3:
-      # want to use parameter nearest to new_range[0]
-      if new_range[0] % 1.0 < 0.5:
-        offset = int((new_range[0] - 0.5) //1) + 2
-      else:
-        offset = int((new_range[0] - 0.5) //1) + 1
-    else:
-      if new_range[0] % 1.0 < 0.5:
-        offset = int(new_range[0]//1)
-      else:
-        offset = int(new_range[0] //1) + 1
-  return offset, n_param
 
-def calculate_new_offset(old_batch_0, new_batch_0, new_norm_fac, n_old_param,
+def calculate_new_offset(current_image_0, new_image_0, new_norm_fac, n_old_param,
   n_new_param):
-  """Calculate offset for the new batch and params."""
+  """Calculate the parameter offset for the new image range.
+
+  Returns:
+      int: An offset to apply when selecting the new parameters from the
+        existing parameters.
+
+  """
   if n_old_param == 2:
     return 0 #cant have less than two params
-  batch_difference = (new_batch_0 - old_batch_0) * new_norm_fac
+  batch_difference = (new_image_0 - current_image_0) * new_norm_fac
   n_to_shift = int(batch_difference // 1)
   if batch_difference % 1 > 0.5:
     n_to_shift += 1
   return min(n_old_param - n_new_param, n_to_shift) #cant shift by more
   #than difference between old and new
 
-def range_to_n_param(range_):
-  """Calculate the number of smoother parameters from a range"""
-  if (range_[1] - range_[0]) < 1.0:
-    n_param = 2
-  elif (range_[1] - range_[0]) < 2.0:
-    n_param = 3
-  else:
-    n_param = max(int(range_[1] - range_[0])+1, 3) + 2
-  return n_param
-
 def initialise_smooth_input(osc_range, one_osc_width, interval):
-  """Calculate the number of parameters and norm_fac/rot_int."""
+  """Calculate the required smoother parameters.
+
+  Using information about the sweep and the chosen parameterisation
+  interval, the required parameters for the smoother are determined.
+
+  Args:
+      osc_range (tuple): The (start, stop) of an oscillation in degrees.
+      one_osc_width (float): The oscillation width of a single image in degrees.
+      interval (float): The required maximum separation between parameters
+          in degrees.
+
+  Returns:
+      tuple: 3-element tuple containing;
+          n_params (:obj:`int`): The number of parameters to use.
+          norm_fac (:obj:`float`): The degrees to parameters space normalisation factor.
+          interval (:obj:`float`): The actual interval in degrees between the parameters.
+
+  """
   interval += 0.00001
   if (osc_range[1] - osc_range[0]) < (2.0 * interval):
     if (osc_range[1] - osc_range[0]) <= interval:
