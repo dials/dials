@@ -4,6 +4,7 @@
 
 from __future__ import division
 from __future__ import print_function
+from six.moves import range
 
 import wx
 from scitbx.matrix import col
@@ -45,7 +46,7 @@ class SBSettingsPanel(wx.Panel):
     img = self.GetParent().GetParent().pyslip.tiles.raw_image
     d = img.get_detector()
     self._quad_spinners = []
-    for serial in xrange(4):
+    for serial in range(4):
       fast, slow = d.hierarchy()[serial].get_origin()[0:2]
       name_quadrant = ["Q0", "Q1", "Q2", "Q3"][serial]
       box = wx.BoxSizer(wx.HORIZONTAL)
@@ -140,7 +141,7 @@ class SBSettingsPanel(wx.Panel):
 
         # Update the controls, remember to reset the default values
         # for the spinners.
-        for serial in xrange(4):
+        for serial in range(4):
           fast, slow = img.get_panel_fast_slow(serial)
           name_quadrant = ["Q0", "Q1", "Q2", "Q3"][serial]
 

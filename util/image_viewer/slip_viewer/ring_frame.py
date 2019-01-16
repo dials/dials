@@ -22,7 +22,7 @@ class RingSettingsFrame(wx.MiniFrame):
 
 
 class RingSettingsPanel(wx.Panel):
-  def __init__ (self, *args, **kwds) :
+  def __init__ (self, *args, **kwds):
     # XXX Support several rings.  Plot radial distribution somewhere
     # (not here), but maybe distribution along ring.  Drop-down menu
     # for ring center, and button to reset to beam center.

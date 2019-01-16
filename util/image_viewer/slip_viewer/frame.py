@@ -8,6 +8,7 @@
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
+from six.moves import range
 
 import os
 import wx
@@ -241,7 +242,7 @@ class XrayFrame(AppFrame,XFBaseClass):
       """
 
       key = self.get_key(file_name_or_data)
-      for i in xrange(self.image_chooser.GetCount()):
+      for i in range(self.image_chooser.GetCount()):
         if (key == str(self.image_chooser.GetClientData(i))):
           return i
       if (self.image_chooser.GetCount() >= self.CHOOSER_SIZE):
