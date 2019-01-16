@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import shutil
 import sys
+import traceback
 
 installer_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 libtbx_path = os.path.join(installer_path, "lib")
@@ -53,6 +54,24 @@ class installer(install_distribution.installer):
                "Suggested alternative: --prefix={suggestedprefix}".format(
           givenprefix=self.options.prefix,
           suggestedprefix=os.path.dirname(prefix)))
+
+  def reconfigure(self, log=None, *args, **kwargs):
+    """Intercept any errors and print log excerpt"""
+    try:
+      return super(installer, self).reconfigure(log=log, *args, **kwargs)
+    except Exception as e:
+      print("\n" + " -=-" * 20)
+      print("\nAn error occured during installation\n")
+      if not self.options.verbose:
+        print("Excerpt from installation log:")
+        with open(log.name, 'r') as fh:
+          for line in fh.readlines()[-30:]:
+            print(" :", line, end='')
+      print("\nThis led to ", end="")
+      sys.stdout.flush()
+      traceback.print_exc()
+      print("\n")
+      sys.exit("Please report this installation error to dials-support@lists.sourceforge.net")
 
   def product_specific_prepackage_hook(self, directory):
     """
