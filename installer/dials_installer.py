@@ -60,15 +60,15 @@ class installer(install_distribution.installer):
     try:
       return super(installer, self).reconfigure(log=log, *args, **kwargs)
     except Exception as e:
-      print("\n" + " -=-" * 20)
-      print("\nAn error occured during installation\n")
       if not self.options.verbose:
+        print("\n" + " -=-" * 20)
+        print("\nAn error occured during installation\n")
         print("Excerpt from installation log:")
         with open(log.name, 'r') as fh:
           for line in fh.readlines()[-30:]:
-            print(" :", line, end='')
-      print("\nThis led to ", end="")
-      sys.stdout.flush()
+            print(" :", line, end="")
+        print("\nThis led to ", end="")
+        sys.stdout.flush()
       traceback.print_exc()
       print("\n")
       sys.exit("Please report this installation error to dials-support@lists.sourceforge.net")
