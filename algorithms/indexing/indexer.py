@@ -1014,9 +1014,8 @@ class indexer_base(object):
   def show_experiments(self, experiments, reflections, d_min=None):
     if d_min is not None:
       reciprocal_lattice_points = reflections['rlp']
-      if d_min is not None:
-        d_spacings = 1/reciprocal_lattice_points.norms()
-        reflections = reflections.select(d_spacings > d_min)
+      d_spacings = 1/reciprocal_lattice_points.norms()
+      reflections = reflections.select(d_spacings > d_min)
     for i_expt, expt in enumerate(experiments):
       logger.info("model %i (%i reflections):" %(
         i_expt+1, (reflections['id'] == i_expt).count(True)))
