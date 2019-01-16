@@ -61,7 +61,6 @@ class XrayFrame(AppFrame,XFBaseClass):
       del kwds["params"] #otherwise wx complains
 
     ### Collect any plugins
-    import libtbx.load_env
     import imp
     slip_viewer_dir = os.path.join(os.path.dirname(__file__))
     contents = os.listdir(slip_viewer_dir)
