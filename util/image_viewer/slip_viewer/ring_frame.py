@@ -8,7 +8,7 @@ import wx
 
 
 class RingSettingsFrame(wx.MiniFrame):
-  def __init__ (self, *args, **kwds) :
+  def __init__(self, *args, **kwds):
     super(RingSettingsFrame, self).__init__(*args, **kwds)
     szr = wx.BoxSizer(wx.VERTICAL)
     panel = RingSettingsPanel(self)
