@@ -14,6 +14,7 @@ from dials.algorithms.scaling.scaler_factory import create_scaler
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.parameter_handler import \
   scaling_active_parameter_manager, create_apm_factory
+from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
 from dials.algorithms.scaling.target_function import ScalingTargetFixedIH
 from dials.algorithms.scaling.scaler import SingleScaler,\
   calc_sf_variances, ScalerBase, MultiScalerBase, MultiScaler, TargetScaler,\
@@ -144,6 +145,7 @@ def generated_refl_for_comb():
   reflections.set_flags(flex.bool([False]*5 + [True] + [False]*2), reflections.flags.bad_for_scaling)
   reflections['id'] = flex.int(8, 0)
   reflections.experiment_identifiers()[0] = '0'
+  reflections = calculate_prescaling_correction(reflections)
   return reflections
 
 @pytest.fixture

@@ -3,193 +3,247 @@ Optimise the combination of profile and summation intensity values.
 """
 from __future__ import print_function
 import logging
+import iotbx.merging_statistics
 from libtbx.table_utils import simple_table
 from cctbx import miller
 from dials.array_family import flex
-from dials.algorithms.scaling.scaling_utilities import \
-  DialsMergingStatisticsError, calculate_prescaling_correction
+from dials.algorithms.scaling.scaling_utilities import DialsMergingStatisticsError
 
 logger = logging.getLogger('dials')
 
-logger = logging.getLogger('dials')
+def _make_reflection_table_from_scaler(scaler):
+  """Copy across required columns and filter data."""
+  reflections = flex.reflection_table()
+  required_cols = ['intensity.prf.value', 'intensity.prf.variance',
+    'intensity.sum.value', 'intensity.sum.variance', 'prescaling_correction',
+    'inverse_scale_factor', 'miller_index']
+  optional_cols = ['partiality']
+  for col in required_cols:
+    reflections[col] = scaler.reflection_table[col]
+  for col in optional_cols:
+    if col in scaler.reflection_table:
+      reflections[col] = scaler.reflection_table[col]
+  #now select good data
+  sel = _get_filter_selection(scaler.reflection_table)
+  suitable_isel = scaler.suitable_refl_for_scaling_sel.iselection()
+  outlier_isel = suitable_isel.select(scaler.outliers)
+  not_outliers = flex.bool(reflections.size(), True)
+  not_outliers.set_selected(outlier_isel, False)
+  reflections = reflections.select(sel & not_outliers)
+  logger.debug("Reflection table size for combining: %s", reflections.size())
+  return reflections
 
-def check_for_both_intensities(reflection_tables):
-  """Inspect tables to see which have both summation and profile intensities."""
-  tables_to_use = []
-  tables_to_skip = []
-  for i, table in enumerate(reflection_tables):
-    assert 'intensity.sum.value' in table
-    if 'intensity.prf.value' in table:
-      tables_to_use.append(i)
+class SingleDatasetIntensityCombiner(object):
+
+  def __init__(self, scaler):
+    #if 'intensity.prf.value' not in scaler.reflection_table:
+    #  #return sum intensities here
+    self.scaler = scaler
+    self.experiment = scaler.experiments
+    self.Imids = scaler.params.reflection_selection.combine.Imid
+    self.dataset = _make_reflection_table_from_scaler(self.scaler)
+    if 'partiality' in self.dataset:
+      raw_intensities = (self.dataset['intensity.sum.value'].as_double()/
+        self.dataset['partiality'])
     else:
-      tables_to_skip.append(i)
-  return tables_to_use, tables_to_skip
+      raw_intensities = self.dataset['intensity.sum.value'].as_double()
+    logger.debug("length of raw intensity array: %s", raw_intensities.size())
+    self._determine_Imids(raw_intensities)
 
-def extract_sum_intensity_values(reflection_tables, tables_to_use):
-  """Extract the summation intensities from the indicated tables."""
-  intensities = flex.double()
-  for i in tables_to_use:
-    intensities.extend(reflection_tables[i]['intensity.sum.value'].as_double())
-  return intensities
+    header = ['Combination', 'CC1/2', 'Rmeas']
+    rows, results = self._test_Imid_combinations()
+    st = simple_table(rows, header)
+    logger.info(st.format())
 
-def combine_intensities(reflection_table, Imid):
-  """Use the given Imid value to perform prf/sum intensity combination."""
-  if Imid == 0:
-    return _set_intensities_as_prf(reflection_table)
-  elif Imid == 1:
-    return _set_intensities_as_sum(reflection_table)
-  else:
-    if 'partiality' in reflection_table:
-      i_p = _determine_inverse_partiality(reflection_table)
-      sum_intensity = reflection_table['intensity.sum.value'] * i_p
-      sum_variance = reflection_table['intensity.sum.variance'] * (i_p ** 2)
+    self.max_key = min(results, key=results.get)
+    if self.max_key == 0:
+      logger.info('Profile intensities determined to be best for scaling. \n')
+    elif self.max_key == 1:
+      logger.info('Summation intensities determined to be best for scaling. \n')
     else:
-      sum_intensity = reflection_table['intensity.sum.value']
-      sum_variance = reflection_table['intensity.sum.variance']
-    Icomb, Vcomb = _calculate_combined_raw_intensities(
-      reflection_table['intensity.prf.value'], sum_intensity,
-      reflection_table['intensity.prf.variance'], sum_variance, Imid)
-    conv = calculate_prescaling_correction(reflection_table)
-    reflection_table['intensity'] = Icomb * conv
-    reflection_table['variance'] = Vcomb * conv * conv
-    reflection_table.set_flags(reflection_table['variance'] <= 0.0,
-      reflection_table.flags.excluded_for_scaling)
-    return reflection_table
+      logger.info('Combined intensities with Imid = %s determined to be best for scaling. \n',
+        self.max_key)
 
-def optimise_intensity_combination(reflection_tables, experiment, Imids=None):
-  """
-  Test combinations of prf/sum intensities to determine optimal Imid value.
+  def calculate_suitable_combined_intensities(self):
+    return _calculate_suitable_combined_intensities(self.scaler, self.max_key)
 
-  No outlier rejection is performed as it is expected that this function will
-  be called after a round of outlier rejection."""
+  def _determine_Imids(self, raw_intensities):
+    if not self.Imids:
+      avg = flex.mean(raw_intensities)
+      Imid = flex.max(raw_intensities)/10.0
+      Imid_list = [0, 1, avg, Imid]
+      while (Imid > avg):
+        Imid /= 10.0
+        Imid_list.append(Imid)
+      self.Imids = Imid_list
 
-  logger.info("Performing profile/summation intensity optimisation")
-  # first analyse which reflection tables have both sum and prf intensities.
-  indices_to_use, indices_to_skip = check_for_both_intensities(reflection_tables)
-  if len(indices_to_skip) == len(reflection_tables):
-    logger.info('''No reflection tables found with both prf and sum values,
-no intensity combination can be performed''')
-    return 1
+  def _test_Imid_combinations(self):
+    """Test the different combinations, returning the rows and results dict."""
+    rows = []
+    results = {}
 
-  intensities = extract_sum_intensity_values(reflection_tables, indices_to_use)
+    for Imid in self.Imids:
+      Int, Var = _get_Is_from_Imidval(self.dataset, Imid)
+      miller_set = miller.set(crystal_symmetry=self.experiment.crystal.get_crystal_symmetry(),
+        indices=self.dataset['miller_index'], anomalous_flag=False)
+      i_obs = miller.array(miller_set,
+        data=(Int * self.dataset['prescaling_correction'] /
+        self.dataset['inverse_scale_factor']))
+      i_obs.set_observation_type_xray_intensity()
+      i_obs.set_sigmas((Var**0.5) * self.dataset['prescaling_correction'] /
+        self.dataset['inverse_scale_factor'])
 
-  # Determine Imid values to try
-  if Imids:
-    Imid_list = Imids
-  else:
-    avg = flex.mean(intensities)
-    Imid = flex.max(intensities)/10.0
-    Imid_list = [0, 1, avg, Imid]
-    while (Imid > avg):
-      Imid /= 10.0
-      Imid_list.append(Imid)
+      n_bins = min(20, int(Int.size()/100)+1)
+      try:
+        result = iotbx.merging_statistics.dataset_statistics(
+          i_obs=i_obs, n_bins=n_bins, anomalous=False,
+          eliminate_sys_absent=False, use_internal_variance=False)
+        rmeas = result.overall.r_meas
+        cchalf = result.overall.cc_one_half
+        logger.debug("Imid: %s, Rmeas %s, cchalf %s", Imid, rmeas, cchalf)
+      except RuntimeError:
+        raise DialsMergingStatisticsError("Unable to merge for intensity combination")
 
-  header = ['Combination', 'CC1/2', 'Rmeas']
+      # record the results
+      results[Imid] = rmeas
+      res_str = {0 : 'prf only', 1 : 'sum only'}
+      if not Imid in res_str:
+        res_str[Imid] = 'Imid = '+str(round(Imid, 2))
+      rows.append([res_str[Imid], str(round(cchalf, 5)), str(round(rmeas, 5))])
 
-  if len(reflection_tables) == 1:
-    rows, results = _single_table_combination(
-      reflection_tables[0], experiment, Imid_list)
-  else:
-    rows, results = _multi_table_combination(
-      reflection_tables, experiment, Imid_list, indices_to_use)
+    return rows, results
 
-  st = simple_table(rows, header)
-  logger.info(st.format())
+def _calculate_suitable_combined_intensities(scaler, max_key):
+    reflections = scaler.reflection_table
+    suitable = scaler.suitable_refl_for_scaling_sel
+    suitable_conv = reflections['prescaling_correction'].select(suitable)
+    Ipr = reflections['intensity.prf.value'].select(suitable)
+    Vpr = reflections['intensity.prf.variance'].select(suitable)
+    Isum = reflections['intensity.sum.value'].select(suitable)
+    Vsum = reflections['intensity.sum.variance'].select(suitable)
+    if 'partiality' in reflections:
+      inv_p = _determine_inverse_partiality(reflections)
+      inv_p = inv_p.select(suitable)
+    if max_key == 0:
+      intensity = Ipr * suitable_conv
+      variance = Vpr * suitable_conv
+    elif max_key == 1:
+      if 'partiality' in reflections:
+        intensity = Isum * suitable_conv * inv_p
+        variance = Vsum * (suitable_conv * inv_p)**2
+      else:
+        intensity = Isum * suitable_conv
+        variance = Vsum * suitable_conv * suitable_conv
+    else:
+      if 'partiality' in reflections:
+        Int, Var = _calculate_combined_raw_intensities(Ipr, Isum * inv_p, Vpr,
+          Vsum * inv_p * inv_p, max_key)
+      else:
+        Int, Var = _calculate_combined_raw_intensities(Ipr, Isum, Vpr, Vsum, max_key)
+      intensity = Int * suitable_conv
+      variance = Var * suitable_conv * suitable_conv
+    return intensity, variance
 
-  max_key = min(results, key=results.get)
-  if max_key == 0:
-    logger.info('Profile intensities determined to be best for scaling. \n')
-  elif max_key == 1:
-    logger.info('Summation intensities determined to be best for scaling. \n')
-  else:
-    logger.info('Combined intensities with Imid = %s determined to be best for scaling. \n',
-      max_key)
-  return max_key
+class MultiDatasetIntensityCombiner(object):
 
-def _single_table_combination(reflections, experiment, Imid_list):
+  def __init__(self, multiscaler):
+    #if 'intensity.prf.value' not in scaler.reflection_table:
+    #  #return sum intensities here
+    self.active_scalers = multiscaler.active_scalers
+    self.experiment = multiscaler.experiments
+    self.Imids = multiscaler.params.reflection_selection.combine.Imid
+    #first copy across relevant data that's needed
+    self.good_datasets = []
+    for i, scaler in enumerate(self.active_scalers):
+      if 'intensity.prf.value' in scaler.reflection_table:
+        self.good_datasets.append(i)
+    self.datasets = [_make_reflection_table_from_scaler(self.active_scalers[i]) for i in self.good_datasets]
+    raw_intensities = self._get_raw_intensity_array()
+    logger.debug("length of raw intensity array: %s", raw_intensities.size())
+    self._determine_Imids(raw_intensities)
 
-  rows = []
-  results = {}
+    header = ['Combination', 'CC1/2', 'Rmeas']
+    rows, results = self._test_Imid_combinations()
+    st = simple_table(rows, header)
+    logger.info(st.format())
 
-  #select good reflections to use
-  reflections = _filter_reflections_for_combining(reflections)
-  # Calculate prescaling corrections only once
-  prescaling_corrections = calculate_prescaling_correction(reflections)
-  for Imid in Imid_list:
-    Int, Var = _get_Is_from_Imidval(reflections, Imid)
-    miller_set = miller.set(crystal_symmetry=experiment.crystal.get_crystal_symmetry(),
-      indices=reflections['miller_index'], anomalous_flag=False)
-    i_obs = miller.array(miller_set,
-      data=(Int * prescaling_corrections / reflections['inverse_scale_factor']))
-    i_obs.set_observation_type_xray_intensity()
-    i_obs.set_sigmas((Var**0.5) * prescaling_corrections / reflections['inverse_scale_factor'])
-    array = i_obs.customized_copy(anomalous_flag=False).map_to_asu()
+    self.max_key = min(results, key=results.get)
+    if self.max_key == 0:
+      logger.info('Profile intensities determined to be best for scaling. \n')
+    elif self.max_key == 1:
+      logger.info('Summation intensities determined to be best for scaling. \n')
+    else:
+      logger.info('Combined intensities with Imid = %s determined to be best for scaling. \n',
+        self.max_key)
 
-    try:
-      merge = array.merge_equivalents()
-      rmeas = merge.r_meas()
-      cchalf = miller.compute_cc_one_half(unmerged=array)
-    except RuntimeError:
-      raise DialsMergingStatisticsError("Unable to merge for intensity combination")
+  def calculate_suitable_combined_intensities(self, dataset):
+    if dataset not in self.good_datasets:
+      return _calculate_suitable_combined_intensities(
+        self.active_scalers[dataset], 1)
+    return _calculate_suitable_combined_intensities(
+      self.active_scalers[dataset], self.max_key)
 
-    # record the results
-    results[Imid] = rmeas
-    res_str = {0 : 'prf only', 1 : 'sum only'}
-    if not Imid in res_str:
-      res_str[Imid] = 'Imid = '+str(round(Imid, 2))
-    rows.append([res_str[Imid], str(round(cchalf, 5)), str(round(rmeas, 5))])
+  def _get_raw_intensity_array(self):
+    intensities = flex.double()
+    for dataset in self.datasets:
+      if 'partiality' in dataset:
+        intensities.extend(dataset['intensity.sum.value'].as_double()/
+          dataset['partiality'])
+      else:
+        intensities.extend(dataset['intensity.sum.value'].as_double())
+    return intensities
 
-  return rows, results
+  def _determine_Imids(self, raw_intensities):
+    if not self.Imids:
+      avg = flex.mean(raw_intensities)
+      Imid = flex.max(raw_intensities)/10.0
+      Imid_list = [0, 1, avg, Imid]
+      while (Imid > avg):
+        Imid /= 10.0
+        Imid_list.append(Imid)
+      self.Imids = Imid_list
 
-def _multi_table_combination(reflection_tables, experiment, Imid_list, indices_to_use):
+  def _test_Imid_combinations(self):
+    rows = []
+    results = {}
+    for Imid in self.Imids:
+      combined_intensities = flex.double([])
+      combined_sigmas = flex.double([])
+      combined_scales = flex.double([])
+      combined_indices = flex.miller_index([])
+      for dataset in self.datasets:
+        Int, Var = _get_Is_from_Imidval(dataset, Imid)
+        Int *= dataset['prescaling_correction']
+        sigma = (Var ** 0.5) * dataset['prescaling_correction']
+        combined_intensities.extend(Int)
+        combined_sigmas.extend(sigma)
+        combined_scales.extend(dataset['inverse_scale_factor'])
+        combined_indices.extend(dataset['miller_index'])
+      # apply scale factor before determining merging stats
+      miller_set = miller.set(crystal_symmetry=self.experiment.crystal.get_crystal_symmetry(),
+        indices=combined_indices, anomalous_flag=False)
+      i_obs = miller.array(miller_set, data=combined_intensities/combined_scales)
+      i_obs.set_observation_type_xray_intensity()
+      i_obs.set_sigmas(combined_sigmas/combined_scales)
 
-  rows = []
-  results = {}
+      n_bins = min(20, int(combined_intensities.size()/100)+1)
+      try:
+        result = iotbx.merging_statistics.dataset_statistics(
+          i_obs=i_obs, n_bins=n_bins, anomalous=False,
+          eliminate_sys_absent=False, use_internal_variance=False)
+        rmeas = result.overall.r_meas
+        cchalf = result.overall.cc_one_half
+        logger.debug("Imid: %s, Rmeas %s, cchalf %s", Imid, rmeas, cchalf)
+      except RuntimeError:
+        raise DialsMergingStatisticsError("Unable to merge for intensity combination")
 
-  # Calculate prescaling corrections only once
-  prescaling_corrections = [None]*len(reflection_tables)
-  for i in indices_to_use:
-    reflections = reflection_tables[i]
-    reflections = _filter_reflections_for_combining(reflections)
-    prescaling_corrections[i] = calculate_prescaling_correction(reflections)
-  for Imid in Imid_list:
-    combined_intensities = flex.double([])
-    combined_sigmas = flex.double([])
-    combined_scales = flex.double([])
-    combined_indices = flex.miller_index([])
-    for i in indices_to_use:
-      reflections = reflection_tables[i]
-      reflections = _filter_reflections_for_combining(reflections)
-      Int, Var = _get_Is_from_Imidval(reflections, Imid)
-      Int *= prescaling_corrections[i]
-      sigma = (Var ** 0.5) * prescaling_corrections[i]
-      combined_intensities.extend(Int)
-      combined_sigmas.extend(sigma)
-      combined_scales.extend(reflections['inverse_scale_factor'])
-      combined_indices.extend(reflections['miller_index'])
-    # apply scale factor before determining merging stats
-    miller_set = miller.set(crystal_symmetry=experiment.crystal.get_crystal_symmetry(),
-      indices=combined_indices, anomalous_flag=False)
-    i_obs = miller.array(miller_set, data=combined_intensities/combined_scales)
-    i_obs.set_observation_type_xray_intensity()
-    i_obs.set_sigmas(combined_sigmas/combined_scales)
-    array = i_obs.customized_copy(anomalous_flag=False).map_to_asu()
-    try:
-      merge = array.merge_equivalents()
-      rmeas = merge.r_meas()
-      cchalf = miller.compute_cc_one_half(unmerged=array)
-    except RuntimeError:
-      raise DialsMergingStatisticsError("Unable to merge for intensity combination")
-
-    # record the results
-    results[Imid] = rmeas
-    res_str = {0 : 'prf only', 1 : 'sum only'}
-    if not Imid in res_str:
-      res_str[Imid] = 'Imid = '+str(round(Imid, 2))
-    rows.append([res_str[Imid], str(round(cchalf, 5)), str(round(rmeas, 5))])
-
-  return rows, results
-
+      # record the results
+      results[Imid] = rmeas
+      res_str = {0 : 'prf only', 1 : 'sum only'}
+      if not Imid in res_str:
+        res_str[Imid] = 'Imid = '+str(round(Imid, 2))
+      rows.append([res_str[Imid], str(round(cchalf, 5)), str(round(rmeas, 5))])
+    return rows, results
 
 
 ### Helper functions for combine_intensities
@@ -223,19 +277,18 @@ def _get_Is_from_Imidval(reflections, Imid):
         Imid)
   return Int, Var
 
-def _filter_reflections_for_combining(reflections):
+def _get_filter_selection(reflections):
   bad_sel = reflections.get_flags(
     reflections.flags.bad_for_scaling, all=False) | \
     (reflections['intensity.prf.variance'] <= 0) | \
     (reflections['intensity.sum.variance'] <= 0) | \
     (reflections['inverse_scale_factor'] <= 0)
-  reflections = reflections.select(~bad_sel)
   integrated = reflections.get_flags(
-    reflections.flags.integrated, all=True) #might not all have both prf/sum
-  reflections = reflections.select(integrated)
+    reflections.flags.integrated, all=True)
+  good_sel = integrated & ~bad_sel
   if 'partiality' in reflections:
-    reflections = reflections.select(reflections['partiality'] > 0)
-  return reflections
+    good_sel &= (reflections['partiality'] > 0)
+  return good_sel
 
 def _determine_inverse_partiality(reflections):
   inverse_partiality = flex.double(reflections.size(), 1.0)
@@ -244,28 +297,6 @@ def _determine_inverse_partiality(reflections):
   inverse_partiality.set_selected(nonzero_partiality_sel.iselection(),
     1.0/good_refl['partiality'])
   return inverse_partiality
-
-def _set_intensities_as_sum(reflections):
-  """Set the 'intensity' and 'variance' column to be the summation values, with
-  the prescaling corrections applied."""
-  conv = calculate_prescaling_correction(reflections)
-  reflections['intensity'] = reflections['intensity.sum.value'] * conv
-  reflections['variance'] = reflections['intensity.sum.variance'] * conv * conv
-  if 'partiality' in reflections:
-    inverse_partiality = _determine_inverse_partiality(reflections)
-    reflections['intensity'] *= inverse_partiality
-    reflections['variance'] *= (inverse_partiality**2)
-  reflections.set_flags(reflections['variance'] <= 0.0,
-    reflections.flags.excluded_for_scaling)
-  return reflections
-
-def _set_intensities_as_prf(reflections):
-  conv = calculate_prescaling_correction(reflections)
-  reflections['intensity'] = reflections['intensity.prf.value'] * conv
-  reflections['variance'] = reflections['intensity.prf.variance'] * conv * conv
-  reflections.set_flags(reflections['variance'] <= 0.0,
-    reflections.flags.excluded_for_scaling)
-  return reflections
 
 def _calculate_combined_raw_intensities(Iprf, Isum, Vprf, Vsum, Imid):
   """Use partiality-corrected Isum, alongside Iprf to calculate

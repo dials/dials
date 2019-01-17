@@ -36,7 +36,7 @@ from dials.algorithms.scaling.parameter_handler import create_apm_factory
 from dials.algorithms.scaling.scaling_utilities import log_memory_usage, \
   Reasons, DialsMergingStatisticsError, BadDatasetForScalingException
 from dials.algorithms.scaling.combine_intensities import \
-  optimise_intensity_combination, combine_intensities
+  SingleDatasetIntensityCombiner, MultiDatasetIntensityCombiner
 
 logger = logging.getLogger('dials')
 
@@ -319,22 +319,16 @@ class SingleScaler(ScalerBase):
   def combine_intensities(self):
     """Combine prf and sum intensities to give optimal intensities."""
     try:
-      sub_refl_table = self._reflection_table.select(
-        self.suitable_refl_for_scaling_sel).select(~self.outliers)
-      Imid = optimise_intensity_combination([sub_refl_table],
-        self._experiments, self._params.reflection_selection.combine.Imid)
-      r = combine_intensities(self._reflection_table.select(
-        self.suitable_refl_for_scaling_sel), Imid)
-      # now set in reflection table
+      combiner = SingleDatasetIntensityCombiner(self)
+      intensity, variance = combiner.calculate_suitable_combined_intensities()
+      #update data in reflection table
       self._reflection_table['intensity'].set_selected(
-        self.suitable_refl_for_scaling_sel.iselection(),
-        r['intensity'])
+        self.suitable_refl_for_scaling_sel.iselection(), intensity)
       self._reflection_table['variance'].set_selected(
-        self.suitable_refl_for_scaling_sel.iselection(),
-        r['variance'])
+        self.suitable_refl_for_scaling_sel.iselection(), variance)
       # now set in global_Ih_table
-      self.global_Ih_table.update_data_in_blocks(r['intensity'], 0, column='intensity')
-      self.global_Ih_table.update_data_in_blocks(r['variance'], 0, column='variance')
+      self.global_Ih_table.update_data_in_blocks(intensity, 0, column='intensity')
+      self.global_Ih_table.update_data_in_blocks(variance, 0, column='variance')
     except DialsMergingStatisticsError as e:
       logger.info("Intensity combination failed with the error %s", e)
 
@@ -750,20 +744,15 @@ class MultiScaler(MultiScalerBase):
     """Combine reflection intensities, either jointly or separately."""
     if self.params.reflection_selection.combine.joint_analysis:
       try:
-        tables = [s.reflection_table.select(s.suitable_refl_for_scaling_sel
-          ).select(~s.outliers) for s in self.single_scalers]
-        Imid = optimise_intensity_combination(tables, self._experiments,
-          self._params.reflection_selection.combine.Imid)
-        del tables
+        combiner = MultiDatasetIntensityCombiner(self)
         for i, scaler in enumerate(self.active_scalers):
-          r = combine_intensities(scaler.reflection_table.select(
-            scaler.suitable_refl_for_scaling_sel), Imid)
+          intensity, variance = combiner.calculate_suitable_combined_intensities(i)
           scaler.reflection_table['intensity'].set_selected(
-            scaler.suitable_refl_for_scaling_sel.iselection(), r['intensity'])
+            scaler.suitable_refl_for_scaling_sel.iselection(), intensity)
           scaler.reflection_table['variance'].set_selected(
-            scaler.suitable_refl_for_scaling_sel.iselection(), r['variance'])
-          self.global_Ih_table.update_data_in_blocks(r['intensity'], i, column='intensity')
-          self.global_Ih_table.update_data_in_blocks(r['variance'], i, column='variance')
+            scaler.suitable_refl_for_scaling_sel.iselection(), variance)
+          self.global_Ih_table.update_data_in_blocks(intensity, i, column='intensity')
+          self.global_Ih_table.update_data_in_blocks(variance, i, column='variance')
       except DialsMergingStatisticsError as e:
         logger.info("Intensity combination failed with the error %s", e)
     else:

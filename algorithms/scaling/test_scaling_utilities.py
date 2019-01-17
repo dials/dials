@@ -171,14 +171,14 @@ def test_calculate_prescaling_correction():
   reflection_table['lp'] = flex.double([1.0, 0.9, 0.8])
   reflection_table['qe'] = flex.double([0.6, 0.5, 0.4])
 
-  cor = calculate_prescaling_correction(reflection_table)
-  assert list(cor) == [1.0 / 0.6, 0.9 / 0.5, 0.8 / 0.4]
+  reflection_table = calculate_prescaling_correction(reflection_table)
+  assert list(reflection_table['prescaling_correction']) == [1.0 / 0.6, 0.9 / 0.5, 0.8 / 0.4]
 
   # Test compatibilty for old datasets
   del reflection_table['qe']
   reflection_table['dqe'] = flex.double([0.6, 0.5, 0.4])
-  cor = calculate_prescaling_correction(reflection_table)
-  assert list(cor) == [1.0 / 0.6, 0.9 / 0.5, 0.8 / 0.4]
+  reflection_table = calculate_prescaling_correction(reflection_table)
+  assert list(reflection_table['prescaling_correction']) == [1.0 / 0.6, 0.9 / 0.5, 0.8 / 0.4]
 
 def test_reasons():
   """Test the reasons class, which is basically a dictionary with a nice

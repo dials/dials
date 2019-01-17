@@ -81,7 +81,8 @@ def choose_scaling_intensities(reflection_table, intensity_choice='profile'):
   all corrections applied except an inverse scale factor."""
   if intensity_choice == 'profile':
     intensity_choice = 'prf' #rename to allow string matching with refl table
-  conv = calculate_prescaling_correction(reflection_table)
+  reflection_table = calculate_prescaling_correction(reflection_table)
+  conv = reflection_table['prescaling_correction']
   intstr = 'intensity.'+intensity_choice+'.value'
   if not intstr in reflection_table:
   #Can't find selection, try to choose prf, if not then sum (also catches combine
