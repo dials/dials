@@ -172,7 +172,7 @@ class ScalerBase(object):
         logger.error(e, exc_info=True)
       ft = time.time()
       logger.info("Time taken for refinement %s", (ft - st))
-      self = refinery.return_scaler()
+      refinery.return_scaler()
       logger.info(('\n' + '='*80 +'\n'))
 
   def perform_error_optimisation(self, update_Ih=True, apply_to_reflection_table=False):
@@ -243,6 +243,8 @@ class SingleScaler(ScalerBase):
     if not for_multi:
       self._create_Ih_table()
       self._update_model_data()
+    else:
+      self._global_Ih_table = None
     logger.info(('Completed preprocessing and initialisation for this dataset.\n'
       '\n' + '='*80 + '\n'))
     log_memory_usage()

@@ -332,8 +332,6 @@ class IhTableBlock(object):
           array of values for symmetry groups into an array of size n_refl.
       derivatives: A matrix of derivatives of the reflections wrt the model
           parameters.
-      n_h: A flex.double array of size n_refl, indicating the number of
-          reflections in the symmetry group to which each reflection belongs.
 
   """
 
@@ -345,7 +343,6 @@ class IhTableBlock(object):
     self._setup_info = {'next_row' : 0, 'next_dataset' : 0,
       'setup_complete': False}
     self.dataset_info = {}
-    self._n_h = None
     self.n_datasets = n_datasets
     self.h_expand_matrix = None
     self.derivatives = None
@@ -439,9 +436,10 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
     self.Ih_table['weights'] = 1.0/self.Ih_table['variance']
 
   def calc_nh(self):
-    """Calculate the n_h vector."""
-    self._n_h = ((flex.double(self.size, 1.0) * self.h_index_matrix)
-      * self.h_expand_matrix)
+    """Calculate the number of refls in the group to which the reflection belongs.
+
+    This is a vector of length n_refl."""
+    return (flex.double(self.size, 1.0) * self.h_index_matrix) * self.h_expand_matrix
 
   def match_Ih_values_to_target(self, target_Ih_table):
     """
@@ -487,16 +485,6 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         self.inverse_scale_factors.size(), new_scales.size())
     else:
       self.Ih_table['inverse_scale_factor'] = new_scales
-
-  @property
-  def n_h(self):
-    """
-    The number of refls in the unique group to which each reflection belongs.
-
-    This is a vector of length n_refl, not calculated by default, as only
-    needed for certain calculations.
-    """
-    return self._n_h
 
   @property
   def variances(self):

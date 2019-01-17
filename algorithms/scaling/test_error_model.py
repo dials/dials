@@ -60,7 +60,7 @@ def test_errormodel(large_reflection_table, test_sg):
   assert error_model.summation_matrix[9, 7] == 1
   assert error_model.summation_matrix.non_zeroes == large_reflection_table.size()
   assert error_model.bin_counts == flex.double(large_reflection_table.size(), 1)
-  assert error_model.n_h == block.n_h
+  assert list(error_model.n_h) == list(block.calc_nh())
 
   # Test calc sigmaprime
   x0 = 1.0

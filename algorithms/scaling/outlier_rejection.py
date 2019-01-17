@@ -320,8 +320,7 @@ class NormDevOutlierRejection(OutlierRejectionBase):
     wgIsum_others = wgIsum - (w * g * I)
     wg2sum_others = wg2sum - (w * g * g)
     # Now do the rejection analyis if n_in_group > 2
-    Ih_table.calc_nh()
-    nh = Ih_table.n_h
+    nh = Ih_table.calc_nh()
     sel = nh > 2
     wg2sum_others_sel = wg2sum_others.select(sel)
     wgIsum_others_sel = wgIsum_others.select(sel)

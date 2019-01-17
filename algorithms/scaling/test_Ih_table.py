@@ -142,9 +142,7 @@ def test_IhTableblock_onedataset(large_reflection_table, test_sg):
   with pytest.raises(AssertionError):
     block.add_data(0, group_ids, large_reflection_table)
 
-  assert block.n_h is None
-  block.calc_nh()
-  assert list(block.n_h) == [2, 1, 2, 1, 1, 2, 2]
+  assert list(block.calc_nh()) == [2, 1, 2, 1, 1, 2, 2]
 
   #Test update error model
   block.update_error_model(mock_error_model())
