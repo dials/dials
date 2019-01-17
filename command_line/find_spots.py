@@ -195,6 +195,10 @@ class Script(object):
     # Print the time
     logger.info("Time Taken: %f" % (time() - start_time))
 
+    if params.output.datablock:
+      return datablocks, reflections
+    else:
+      return reflections
 
 if __name__ == '__main__':
   from dials.util import halraiser

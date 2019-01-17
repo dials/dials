@@ -773,6 +773,8 @@ class Script(object):
     # Write the datablocks to file
     self.write_datablocks(datablocks, params)
 
+    return datablocks
+
   def write_datablocks(self, datablocks, params):
     '''
     Output the datablock to file.

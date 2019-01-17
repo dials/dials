@@ -430,7 +430,7 @@ class Script(object):
     # Log the total time taken
     logger.info("\nTotal time taken: {0:.2f}s".format(time() - start_time))
 
-    return
+    return experiments, reflections
 
 if __name__ == '__main__':
   from dials.util import halraiser

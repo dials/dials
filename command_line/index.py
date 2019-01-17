@@ -182,6 +182,7 @@ def run(phil=working_phil, args=None):
            %params.output.unindexed_reflections)
       idxr.export_reflections(idxr.unindexed_reflections,
                               file_name=params.output.unindexed_reflections)
+      return refined_experiments, reflections, idxr.unindexed_reflections
 
   return refined_experiments, reflections
 
