@@ -136,7 +136,7 @@ working_phil = phil_scope.fetch(sources=[phil_overrides])
 class Script(object):
   '''A class for running the script.'''
 
-  def __init__(self):
+  def __init__(self, phil=working_phil):
     '''Initialise the script.'''
     from dials.util.options import OptionParser
     import libtbx.load_env
@@ -150,7 +150,7 @@ class Script(object):
     # Create the parser
     self.parser = OptionParser(
       usage=usage,
-      phil=working_phil,
+      phil=phil,
       read_reflections=True,
       read_experiments=True,
       check_format=False,
@@ -224,7 +224,7 @@ class Script(object):
     history = refiner.run()
     return refiner, history
 
-  def run(self):
+  def run(self, args=None):
     '''Execute the script.'''
     from time import time
     import six.moves.cPickle as pickle
@@ -234,7 +234,7 @@ class Script(object):
     start_time = time()
 
     # Parse the command line
-    params, options = self.parser.parse_args(show_diff_phil=False)
+    params, options = self.parser.parse_args(args=args, show_diff_phil=False)
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
 
@@ -254,9 +254,11 @@ class Script(object):
 
     self.check_input(reflections)
 
-    # Configure the logging
-    log.config(info=params.output.log,
-      debug=params.output.debug_log)
+    if __name__ == '__main__':
+      # Configure the logging
+      log.config(info=params.output.log,
+        debug=params.output.debug_log)
+
     from dials.util.version import dials_version
     logger.info(dials_version())
 
