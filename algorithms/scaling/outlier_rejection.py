@@ -25,24 +25,24 @@ def reject_outliers(reflection_table, experiment, method='standard', zmax=6.0):
   reflections. The outliers are determined and the outlier_in_scaling flag
   is set in the reflection table.
 
-  The values 'intensity' and 'variance' must be set in the reflection table;
-  these should be corrected but unscaled values, as an 'inverse_scale_factor'
+  The values intensity and variance must be set in the reflection table;
+  these should be corrected but unscaled values, as an inverse_scale_factor
   will be applied during outlier rejection if this is present in the reflection
   table. The reflection table should also be prefiltered (e.g. not-integrated
   reflections should not be present) as no further filtering is done on the
   input table.
 
   Args:
-      reflection_table (:obj:`dials.array_family.flex.reflection_table`): A reflection table.
-      experiment (:obj:`dxtbx.model.Experiment`): A single experiment object.
+      reflection_table: A reflection table.
+      experiment: A single experiment object.
       method (str): Name (alias) of outlier rejection algorithm to use.
       zmax (float): Normalised deviation threshold for classifying an outlier.
 
   Returns:
-      :obj:`dials.array_family.flex.reflection_table`: The input table with the outlier_in_scaling flag set.
+      reflection_table: The input table with the outlier_in_scaling flag set.
 
   Raises:
-      Sorry: if the reflection table does not contain 'intensity' and 'variance'.
+      Sorry: if the reflection table does not contain intensity and variance.
 
   """
   if not 'intensity' in reflection_table or not 'variance' in reflection_table:
@@ -76,21 +76,21 @@ def determine_outlier_index_arrays(Ih_table, method='standard', zmax=6.0,
   Args:
       Ih_table: A dials.algorithms.scaling.Ih_table.IhTable.
       method (str): Name (alias) of outlier rejection algorithm to use. If
-          method='target', then the optional argument 'target' must also
-          be specified. Implemented methods: standard, simple, target.
+          method=target, then the optional argument target must also
+          be specified. Implemented methods; standard, simple, target.
       zmax (float): Normalised deviation threshold for classifying an outlier.
       target (Optional[IhTable]): An IhTable to use to obtain target Ih for
-          outlier rejectiob, if method='target'.
+          outlier rejectiob, if method=target.
 
   Returns:
-      outlier_index_arrays (:obj:`list`): A list of flex.size_t arrays, with one
+      outlier_index_arrays (list): A list of flex.size_t arrays, with one
           array per dataset that was used to create the Ih_table. Importantly,
           the indices are the indices of the reflections in the initial
           reflection table used to create the Ih_table, not the indices of the
           data in the Ih_table.
 
   Raises:
-      Sorry: if an invalid choice is made for the `method'.
+      Sorry: if an invalid choice is made for the method.
 
   """
   if method == 'standard':
