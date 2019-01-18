@@ -12,6 +12,8 @@ from dials.algorithms.scaling.scaling_utilities import \
   calc_crystal_frame_vectors, calc_theta_phi, create_sph_harm_table,\
   sph_harm_table, align_rotation_axis_along_z, set_wilson_outliers,\
   quasi_normalisation, calculate_prescaling_correction, Reasons
+from dials_scaling_ext import calculate_harmonic_tables_from_selections, create_sph_harm_lookup_table,\
+  create_sph_harm_table, calc_lookup_index
 
 @pytest.fixture(scope='module')
 def mock_exp():
@@ -191,3 +193,103 @@ def test_reasons():
 criterion: test reason, reflections: 100
 """
   assert reasons.__repr__() == expected_output
+
+def test_calculate_harmonic_tables_from_selections():
+
+  selection = flex.size_t([1, 0, 2, 3, 1])
+  coefficients = [flex.double([10, 11, 12, 13]), flex.double([20, 21, 22, 23])]
+  from scitbx.sparse import matrix #need to assign a sparse matrix
+  arrays, mat = calculate_harmonic_tables_from_selections(selection, selection, coefficients)
+  assert len(arrays) == 2
+  assert mat.n_cols == 2
+  assert mat.n_rows == 5
+  assert list(arrays[0]) == [11, 10, 12, 13, 11]
+  assert list(arrays[1]) == [21, 20, 22, 23, 21]
+  assert mat[0, 0] == arrays[0][0]
+  assert mat[1, 0] == arrays[0][1]
+  assert mat[2, 0] == arrays[0][2]
+  assert mat[3, 0] == arrays[0][3]
+  assert mat[4, 0] == arrays[0][4]
+  assert mat[0, 1] == arrays[1][0]
+  assert mat[1, 1] == arrays[1][1]
+  assert mat[2, 1] == arrays[1][2]
+  assert mat[3, 1] == arrays[1][3]
+  assert mat[4, 1] == arrays[1][4]
+
+def test_equality_of_two_harmonic_table_methods(dials_regression, run_in_tmpdir):
+  from dials_scaling_ext import calc_theta_phi, calc_lookup_index
+  from dxtbx.serialize import load
+  from dials.util.options import OptionParser
+  from libtbx import phil
+  import os
+  from dials.algorithms.scaling.scaling_library import create_scaling_model
+
+  data_dir = os.path.join(dials_regression, "xia2-28",)
+  pickle_path = os.path.join(data_dir, "20_integrated.pickle")
+  sweep_path = os.path.join(data_dir, "20_integrated_experiments.json")
+
+  phil_scope = phil.parse('''
+      include scope dials.command_line.scale.phil_scope
+    ''', process_includes=True)
+  optionparser = OptionParser(phil=phil_scope, check_format=False)
+  params, _ = optionparser.parse_args(args=[], quick_parse=True)
+  params.model = 'physical'
+  lmax = 2
+  params.parameterisation.lmax=lmax
+
+  reflection_table = flex.reflection_table.from_pickle(pickle_path)
+  experiments = load.experiment_list(sweep_path, check_format=False)
+  experiments = create_scaling_model(params, experiments, [reflection_table])
+
+  experiment = experiments[0]
+  # New method
+
+  reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
+    * experiment.scan.get_oscillation()[1])
+  reflection_table = calc_crystal_frame_vectors(reflection_table, experiment)
+  theta_phi_0 = calc_theta_phi(reflection_table['s0c']) #array of tuples in radians
+  theta_phi_1 = calc_theta_phi(reflection_table['s1c'])
+  points_per_degree = 2
+  s0_lookup_index = calc_lookup_index(theta_phi_0, points_per_degree)
+  s1_lookup_index = calc_lookup_index(theta_phi_1, points_per_degree)
+  print(list(s0_lookup_index[0:20]))
+  print(list(s1_lookup_index[0:20]))
+  coefficients_list = create_sph_harm_lookup_table(lmax, points_per_degree)
+  experiment.scaling_model.components['absorption'].data = {'s0_lookup' : s0_lookup_index,
+    's1_lookup' : s1_lookup_index}
+  experiment.scaling_model.components['absorption'].coefficients_list = coefficients_list
+  assert experiment.scaling_model.components['absorption']._mode == 'memory'
+  experiment.scaling_model.components['absorption'].update_reflection_data()
+  absorption = experiment.scaling_model.components['absorption']
+  harmonic_values_list = absorption.harmonic_values[0]
+
+  experiment.scaling_model.components['absorption'].parameters = flex.double(
+    [0.1, -0.1, 0.05, 0.02, 0.01, -0.05, 0.12, -0.035])
+  scales, derivatives = experiment.scaling_model.components['absorption'].calculate_scales_and_derivatives()
+
+  # Old method:
+
+  old_data = {'sph_harm_table' : create_sph_harm_table(theta_phi_0, theta_phi_1, lmax)}
+  experiment.scaling_model.components['absorption'].data = old_data
+  assert experiment.scaling_model.components['absorption']._mode == 'speed'
+  experiment.scaling_model.components['absorption'].update_reflection_data()
+  old_harmonic_values = absorption.harmonic_values[0]
+  for i in range(0, 8):
+    print(i)
+    assert list(harmonic_values_list[i]) == pytest.approx(list(old_harmonic_values.col(i).as_dense_vector()), abs=0.01)
+
+  #assert 0
+  experiment.scaling_model.components['absorption'].parameters = flex.double(
+    [0.1, -0.1, 0.05, 0.02, 0.01, -0.05, 0.12, -0.035])
+  scales_1, derivatives_1 = experiment.scaling_model.components['absorption'].calculate_scales_and_derivatives()
+
+  assert list(scales_1) == pytest.approx(list(scales), abs=0.001)
+  assert list(scales_1) != [1.0] * len(scales_1)
+
+def test_calc_lookup_index():
+  pi = 3.141
+  theta_phi = flex.vec2_double([(0.001, -pi), (pi, pi), (0.001, pi), (pi, -pi)])
+  indices = calc_lookup_index(theta_phi, 1)
+  assert list(indices) == [0, 64799, 359, 64440]
+  indices = calc_lookup_index(theta_phi, 2)
+  assert list(indices) == [0, 259199, 719, 258480]

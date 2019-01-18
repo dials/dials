@@ -78,4 +78,26 @@ namespace dials_scaling { namespace boost_python {
       arg("v")));
     }
 
+    void export_calc_lookup_index()
+    {
+    def("calc_lookup_index", &calc_lookup_index, (
+      arg("thetaphi"),
+      arg("points_per_degree")));
+    }
+
+    void export_create_sph_harm_lookup_table()
+    {
+    def("create_sph_harm_lookup_table", &create_sph_harm_lookup_table, (
+      arg("lmax"),
+      arg("points_per_degree")));
+    }
+
+    void export_calculate_harmonic_tables_from_selections()
+    {
+      def ("calculate_harmonic_tables_from_selections", &calculate_harmonic_tables_from_selections,(
+        arg("s0_selection"),
+        arg("s1_selection"),
+        arg("coefficients_list")));
+    }
+
 }} // namespace = dials_scaling::boost_python

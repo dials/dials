@@ -23,6 +23,7 @@ the same way as the data in the Ih_table datastructure.
 import abc
 from dials.array_family import flex
 from scitbx import sparse
+from dials_scaling_ext import calculate_harmonic_tables_from_selections
 
 
 class ScaleComponentBase(object):
@@ -288,10 +289,13 @@ class SHScaleComponent(ScaleComponentBase):
   the derivatives are then simply the coefficients Ylm.
   """
 
+  coefficients_list = None #shared class variable to reduce memory load
+
   def __init__(self, initial_values, parameter_esds=None):
     """Set the initial parameter values, parameter esds and n_params."""
     super(SHScaleComponent, self).__init__(initial_values, parameter_esds)
     self._harmonic_values = []
+    self._matrices = []
 
   @property
   def harmonic_values(self):
@@ -310,7 +314,12 @@ class SHScaleComponent(ScaleComponentBase):
   @ScaleComponentBase.data.setter
   def data(self, data):
     """Set the data dict in the parent class."""
-    assert set(data.keys()) == set(['sph_harm_table']), set(data.keys())
+    try:
+      assert set(data.keys()) == set(['s1_lookup', 's0_lookup']), set(data.keys())
+      self._mode = "memory"
+    except AssertionError as e:
+      assert set(data.keys()) == set(['sph_harm_table']), set(data.keys())
+      self._mode = "speed" #Note: only speedier for small datasets
     self._data = data
 
   def calculate_restraints(self):
@@ -341,6 +350,44 @@ class SHScaleComponent(ScaleComponentBase):
         block_selections (list): Optional, a list of flex.size_t arrays to
             select subsets of the internal data.
     """
+    if self._mode == "speed":
+      self._update_reflection_data_speedmode(selection, block_selections)
+    elif self._mode == "memory":
+      self._update_reflection_data_memorymode(selection, block_selections)
+    else:
+      raise ValueError
+
+  def _update_reflection_data_memorymode(self, selection=None, block_selections=None):
+    if len(self.coefficients_list) != self.n_params:
+      self.coefficients_list = self.coefficients_list[0:self.n_params]
+      # modify only for this instance, only needs to be done once per instance.
+    if selection:
+      n0 = self.data['s0_lookup'].select(selection)
+      n1 = self.data['s1_lookup'].select(selection)
+      values, matrix = calculate_harmonic_tables_from_selections(n0, n1,
+        self.coefficients_list)
+      self._harmonic_values = [values]
+      self._matrices = [matrix]
+    elif block_selections:
+      self._harmonic_values = []
+      self._matrices = []
+      for sel in block_selections:
+        n0 = self.data['s0_lookup'].select(sel)
+        n1 = self.data['s1_lookup'].select(sel)
+        values, matrix = calculate_harmonic_tables_from_selections(n0, n1,
+          self.coefficients_list)
+        self._harmonic_values.append(values)
+        self._matrices.append(matrix)
+    else:
+      n0 = self.data['s0_lookup']
+      n1 = self.data['s1_lookup']
+      values, matrix = calculate_harmonic_tables_from_selections(n0, n1,
+        self.coefficients_list)
+      self._harmonic_values = [values]
+      self._matrices = [matrix]
+    self._n_refl = [val[0].size() for val in self._harmonic_values]
+
+  def _update_reflection_data_speedmode(self, selection=None, block_selections=None):
     if selection:
       sel_sph_harm_table = self.data['sph_harm_table'].select_columns(
         selection.iselection())
@@ -354,17 +401,34 @@ class SHScaleComponent(ScaleComponentBase):
       self._harmonic_values = [self.data['sph_harm_table'].transpose()]
     self._n_refl = [val.n_rows for val in self._harmonic_values]
 
+  def calculate_scales(self, block_id=0):
+    """Calculate and return inverse scales for a given block."""
+    if self._mode == "speed":
+      return self._calculate_scales_and_derivatives_speedmode(block_id,
+        derivatives=False)
+    elif self._mode == "memory":
+      return self._calculate_scales_and_derivatives_memorymode(block_id,
+        derivatives=False)
+
   def calculate_scales_and_derivatives(self, block_id=0):
     """Calculate and return inverse scales and derivatives for a given block."""
+    if self._mode == "speed":
+      return self._calculate_scales_and_derivatives_speedmode(block_id)
+    elif self._mode == "memory":
+      return self._calculate_scales_and_derivatives_memorymode(block_id)
+
+  def _calculate_scales_and_derivatives_speedmode(self, block_id, derivatives=True):
     abs_scale = flex.double(self._harmonic_values[block_id].n_rows, 1.0) #Unity term
     for i, col in enumerate(self._harmonic_values[block_id].cols()):
       abs_scale += flex.double(col.as_dense_vector() * self._parameters[i])
-    return abs_scale, self._harmonic_values[block_id]
+    if derivatives:
+      return abs_scale, self._harmonic_values[block_id]
+    return abs_scale
 
-  def calculate_scales(self, block_id=0):
-    """Calculate and return inverse scales for a given block."""
-    abs_scale = flex.double(self._harmonic_values[block_id].n_rows, 1.0
-      ) #Unity term
-    for i, col in enumerate(self._harmonic_values[block_id].cols()):
-      abs_scale += flex.double(col.as_dense_vector() * self._parameters[i])
+  def _calculate_scales_and_derivatives_memorymode(self, block_id, derivatives=True):
+    abs_scale = flex.double(self._harmonic_values[block_id][0].size(), 1.0) #Unity term
+    for i, arr in enumerate(self._harmonic_values[block_id]):#iterate over a list of arrays
+      abs_scale += arr * self._parameters[i]
+    if derivatives:
+      return abs_scale, self._matrices[block_id]
     return abs_scale

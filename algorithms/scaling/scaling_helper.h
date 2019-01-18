@@ -5,6 +5,7 @@
 #include <scitbx/sparse/matrix.h>
 #include <scitbx/math/zernike.h>
 #include <dials/error.h>
+#include <math.h>
 
 typedef scitbx::sparse::matrix<double>::column_type col_type;
 
@@ -162,6 +163,7 @@ namespace dials_scaling {
 
   scitbx::af::shared<scitbx::vec2<double> > calc_theta_phi(
     scitbx::af::shared<scitbx::vec3<double> > xyz){
+      //theta from -pi to pi. phi from 0 to pi
       int n_obs = xyz.size();
       scitbx::af::shared<scitbx::vec2<double> > theta_phi(n_obs);
       for (int i=0; i< n_obs; i++){
@@ -170,6 +172,18 @@ namespace dials_scaling {
           std::atan2(xyz[i][1], xyz[i][0]));
       }
       return theta_phi;
+    }
+
+  scitbx::af::shared<std::size_t> calc_lookup_index(
+    scitbx::af::shared<scitbx::vec2<double> > theta_phi, double points_per_degree){
+      // theta index 0 to 2pi (shift by pi from input theta),
+      scitbx::af::shared<std::size_t> lookup_index(theta_phi.size());
+      for (int i=0; i<theta_phi.size(); ++i){
+        lookup_index[i] = int(360.0 * points_per_degree * floor(
+          theta_phi[i][0] * points_per_degree * 180.0 / scitbx::constants::pi) +
+          floor((theta_phi[i][1] + scitbx::constants::pi) * 180.0 * points_per_degree / scitbx::constants::pi));
+      }
+      return lookup_index;
     }
 
   boost::python::tuple determine_outlier_indices(
@@ -268,6 +282,31 @@ namespace dials_scaling {
   using scitbx::math::zernike::nss_spherical_harmonics;
   using scitbx::sparse::vector;
 
+  boost::python::tuple calculate_harmonic_tables_from_selections(
+    scitbx::af::shared<std::size_t> s0_selection,
+    scitbx::af::shared<std::size_t> s1_selection,
+    boost::python::list coefficients_list){
+    int n_refl = s0_selection.size();
+    int n_param = boost::python::len(coefficients_list);
+    boost::python::list output_coefficients_list;
+    matrix<double> coefficients_matrix(n_refl, n_param);
+    //loop though each param first, then loop over selection
+    for (int i=0; i < n_param; ++i){
+      scitbx::af::shared<double> coefs = boost::python::extract<scitbx::af::shared<double> >(coefficients_list[i]);
+      scitbx::af::shared<double> coef_for_output(n_refl);
+      //loop though each reflection
+      for (int j=0; j < n_refl; ++j){
+        double val0 = coefs[s0_selection[j]];
+        double val1 = coefs[s1_selection[j]];
+        double value = (val0 + val1) / 2.0;
+        coefficients_matrix(j, i) = value;
+        coef_for_output[j] = value;
+      }
+      output_coefficients_list.append(coef_for_output);
+    }
+    return boost::python::make_tuple(output_coefficients_list, coefficients_matrix);
+  }
+
   matrix<double> create_sph_harm_table(
       scitbx::af::shared<scitbx::vec2<double> > const s0_theta_phi,
       scitbx::af::shared<scitbx::vec2<double> > const s1_theta_phi,
@@ -311,6 +350,47 @@ namespace dials_scaling {
         }
       return sph_harm_terms_;
       }
+
+  boost::python::list create_sph_harm_lookup_table(int lmax, int points_per_degree){
+      nss_spherical_harmonics<double> nsssphe(
+        lmax, 50000, log_factorial_generator<double>((2 * lmax) + 1));
+      boost::python::list coefficients_list;
+      double sqrt2 = 1.414213562;
+      int n_items = 360 * 180 * points_per_degree * points_per_degree;
+      double delta = scitbx::constants::pi / (360 * points_per_degree);
+      for (int l=1; l < lmax+1; l++) {
+        for (int m=-1*l; m < l+1; m++) {
+          scitbx::af::shared<double> coefficients(n_items);
+          if (m < 0) {
+            double prefactor = sqrt2 * pow(-1.0, m);
+            for (int i=0; i < n_items; i++){
+              double theta = (floor(i / (360.0 * points_per_degree)) * scitbx::constants::pi / (180.0 *  points_per_degree)) + delta;
+              double phi = (((i % (360 * points_per_degree)) * scitbx::constants::pi / (180.0 *  points_per_degree)) -  scitbx::constants::pi) + delta;
+              coefficients[i] = prefactor * (
+                nsssphe.spherical_harmonic_direct(l, -1*m, theta, phi).imag());
+              }
+            }
+          else if (m == 0) {
+            for (int i=0; i < n_items; i++){
+              double theta = (floor(i / (360.0 * points_per_degree)) * scitbx::constants::pi / (180.0 *  points_per_degree)) + delta;
+              double phi = (((i % (360 * points_per_degree)) * scitbx::constants::pi / (180.0 *  points_per_degree)) -  scitbx::constants::pi) + delta;
+              coefficients[i] = nsssphe.spherical_harmonic_direct(l, 0, theta, phi).real();
+            }
+          }
+          else {
+            double prefactor = sqrt2 * pow(-1.0, m);
+            for (int i=0; i < n_items; i++){
+              double theta = (floor(i / (360.0 * points_per_degree)) * scitbx::constants::pi / (180.0 *  points_per_degree)) + delta;
+              double phi = (((i % (360 * points_per_degree)) * scitbx::constants::pi / (180.0 *  points_per_degree)) -  scitbx::constants::pi) + delta;
+              coefficients[i] = prefactor * (
+                nsssphe.spherical_harmonic_direct(l, m, theta, phi).real());
+            }
+          }
+          coefficients_list.append(coefficients);
+        }
+      }
+    return coefficients_list;
+    }
 
 } // dials_scaling
 

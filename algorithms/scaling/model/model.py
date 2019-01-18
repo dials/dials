@@ -16,7 +16,8 @@ from dials.algorithms.scaling.model.components.scale_components import \
 from dials.algorithms.scaling.model.components.smooth_scale_components import \
   SmoothScaleComponent1D, SmoothBScaleComponent1D, SmoothScaleComponent2D,\
   SmoothScaleComponent3D
-from dials.algorithms.scaling.scaling_utilities import sph_harm_table
+from dials.algorithms.scaling.scaling_utilities import sph_harm_table, calc_crystal_frame_vectors
+from dials_scaling_ext import calc_theta_phi, calc_lookup_index, create_sph_harm_lookup_table
 
 logger = logging.getLogger('dials')
 
@@ -190,9 +191,28 @@ class PhysicalScalingModel(ScalingModelBase):
       self.components['decay'].data = {'x' : norm, 'd' : reflection_table['d']}
     if 'absorption' in self.components:
       lmax = self._configdict['lmax']
+      if reflection_table.size() > 100000:
+        reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
+          * experiment.scan.get_oscillation()[1])
+        reflection_table = calc_crystal_frame_vectors(reflection_table, experiment)
+        #n_params = 24
+        theta_phi_0 = calc_theta_phi(reflection_table['s0c']) #array of tuples in radians
+        theta_phi_1 = calc_theta_phi(reflection_table['s1c'])
+        s0_lookup_index = calc_lookup_index(theta_phi_0, points_per_degree=2)
+        s1_lookup_index = calc_lookup_index(theta_phi_1, points_per_degree=2)
+        if SHScaleComponent.coefficients_list is None:
+          SHScaleComponent.coefficients_list = create_sph_harm_lookup_table(
+            lmax, points_per_degree=2) # set the class variable and share
+        elif len(SHScaleComponent.coefficients_list) < (lmax * (2.0 + lmax)):
+          # this (rare) case can happen if adding a new dataset with a larger lmax!
+          SHScaleComponent.coefficients_list = create_sph_harm_lookup_table(
+            lmax, points_per_degree=2) # set the class variable and share
+        self.components['absorption'].data = {'s0_lookup' : s0_lookup_index,
+          's1_lookup' : s1_lookup_index}
       #here just pass in good reflections
-      self.components['absorption'].data['sph_harm_table'] = sph_harm_table(
-        reflection_table, experiment, lmax)
+      else:
+        self.components['absorption'].data = {'sph_harm_table' : sph_harm_table(
+          reflection_table, experiment, lmax)}
       surface_weight = self._configdict['abs_surface_weight']
       parameter_restraints = flex.double([])
       for i in range(1, lmax+1):
