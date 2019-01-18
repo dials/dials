@@ -123,6 +123,11 @@ phil_scope = phil.parse('''
       .type = int
       .help = "Number of bins to use for calculating and plotting merging stats."
       .expert_level = 1
+    delete_integration_shoeboxes = True
+      .type = bool
+      .help = "Discard integration shoebox data from scaling output, to help"
+              "with memory management."
+      .expert_level = 2
   }
   include scope dials.algorithms.scaling.scaling_options.phil_scope
   include scope dials.algorithms.scaling.cross_validation.cross_validate.phil_scope
@@ -549,6 +554,10 @@ if __name__ == "__main__":
       sys.exit()
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
+
+    if params.output.delete_integration_shoeboxes:
+      for r in reflections:
+        del r['shoebox']
 
     if params.cross_validation.cross_validation_mode:
       from dials.algorithms.scaling.cross_validation.cross_validate import \
