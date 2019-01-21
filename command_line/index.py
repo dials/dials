@@ -84,28 +84,29 @@ refinement
 
 working_phil = phil_scope.fetch(sources=[phil_overrides])
 
-def run(args):
+def run(phil=working_phil, args=None):
   import libtbx.load_env
   from libtbx.utils import Sorry
-  from dials.util import log
   usage = "%s [options] datablock.json strong.pickle" %libtbx.env.dispatcher_name
 
   parser = OptionParser(
     usage=usage,
-    phil=working_phil,
+    phil=phil,
     read_reflections=True,
     read_datablocks=True,
     read_experiments=True,
     check_format=False,
     epilog=help_message)
 
-  params, options = parser.parse_args(show_diff_phil=False)
+  params, options = parser.parse_args(args=args, show_diff_phil=False)
 
-  # Configure the logging
-  log.config(
-    params.verbosity,
-    info=params.output.log,
-    debug=params.output.debug_log)
+  if __name__ == '__main__':
+    from dials.util import log
+    # Configure the logging
+    log.config(
+      params.verbosity,
+      info=params.output.log,
+      debug=params.output.debug_log)
 
   from dials.util.version import dials_version
   logger.info(dials_version())
@@ -181,10 +182,10 @@ def run(args):
            %params.output.unindexed_reflections)
       idxr.export_reflections(idxr.unindexed_reflections,
                               file_name=params.output.unindexed_reflections)
+      return refined_experiments, reflections, idxr.unindexed_reflections
 
-  return
+  return refined_experiments, reflections
 
 
 if __name__ == '__main__':
-  import sys
-  run(sys.argv[1:])
+  run()

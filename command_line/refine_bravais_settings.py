@@ -116,7 +116,7 @@ def short_space_group_name(space_group):
   return symbol.replace(' ', '')
 
 
-def run(args):
+def run(args=None):
   from dials.util import log
   import libtbx.load_env
   usage = "%s experiments.json indexed.pickle [options]" %libtbx.env.dispatcher_name
@@ -129,7 +129,7 @@ def run(args):
     check_format=False,
     epilog=help_message)
 
-  params, options = parser.parse_args(show_diff_phil=False)
+  params, options = parser.parse_args(args=args, show_diff_phil=False)
 
   # Configure the logging
   log.config(info=params.output.log, debug=params.output.debug_log)
@@ -221,7 +221,6 @@ def run(args):
   return
 
 if __name__ == '__main__':
-  import sys
   from libtbx.utils import show_times_at_exit
   show_times_at_exit()
-  run(sys.argv[1:])
+  run()
