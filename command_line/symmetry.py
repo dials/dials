@@ -120,8 +120,13 @@ class symmetry(object):
         partiality_threshold=self._params.partiality_threshold)
       assert refl.size() > 0
       if intensity_to_use != 'scale':
-        refl['intensity'] = refl['intensity.'+intensity_to_use+'.value']
-        refl['variance'] = refl['intensity.'+intensity_to_use+'.variance']
+        try:
+          refl['intensity'] = refl['intensity.'+intensity_to_use+'.value']
+          refl['variance'] = refl['intensity.'+intensity_to_use+'.variance']
+        except RuntimeError:
+          intensity_to_use = 'sum'
+          refl['intensity'] = refl['intensity.sum.value']
+          refl['variance'] = refl['intensity.sum.variance']
         refl = reject_outliers(refl, expt, method='simple', zmax=12.0)
         refl = refl.select(~refl.get_flags(refl.flags.outlier_in_scaling))
       data = refl['intensity.'+intensity_to_use+'.value']
