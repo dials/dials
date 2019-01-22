@@ -1471,7 +1471,7 @@ class SpotFrame(XrayFrame):
     return predicted_all
 
 
-class SpotSettingsFrame (SettingsFrame):
+class SpotSettingsFrame(SettingsFrame):
   def __init__(self, *args, **kwds):
     super(SettingsFrame, self).__init__(*args, **kwds)
     self.settings = self.GetParent().settings
@@ -1492,7 +1492,7 @@ class SpotSettingsFrame (SettingsFrame):
     self.panel.OnDestroy(event)
 
 
-class SpotSettingsPanel (wx.Panel):
+class SpotSettingsPanel(wx.Panel):
   def __init__(self, * args, **kwargs):
     super(SpotSettingsPanel, self).__init__(*args, **kwargs)
 

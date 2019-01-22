@@ -19,7 +19,7 @@ libtbx_path = os.path.join(
 if not libtbx_path in sys.path:
   sys.path.append(libtbx_path)
 
-class installer (install_distribution.installer):
+class installer(install_distribution.installer):
   # XXX most settings can be edited here
   product_name = "DIALS"
   dest_dir_prefix = "dials"

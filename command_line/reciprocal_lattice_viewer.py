@@ -452,7 +452,7 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
       '%.4f' %m for m in model_view_matrix) + ']'
     self.statusbar.SetStatusText(txt)
 
-class settings_window (wxtbx.utils.SettingsPanel):
+class settings_window(wxtbx.utils.SettingsPanel):
   def __init__(self, *args, **kwds):
     wxtbx.utils.SettingsPanel.__init__(self, *args, **kwds)
     self.Bind(wx.EVT_CHAR, self.OnChar)
