@@ -507,6 +507,7 @@ class SpotFrame(XrayFrame):
       self.images.add(image_data)
       self.image_chooser_panel.SetMax(len(self.images))
       self.jump_to_image.SetMax(len(self.images))
+      self.stack.SetMax(len(self.images))
       return len(self.images)-1
 
   def load_file_event(self, evt):
