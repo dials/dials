@@ -111,7 +111,9 @@ number of datasets (%s)""" % (len(identifiers), len(reflections)))
   used_str_ids = []
   for exp, refl in zip(experiments, reflections):
     if exp.identifier != '':
-      assert list(refl.experiment_identifiers().values()) == [exp.identifier]
+      if list(refl.experiment_identifiers().values()) != [exp.identifier]:
+        raise ValueError('Corrupted identifiers: in reflections: %s, in experiment: %s' %
+          (list(refl.experiment_identifiers().values()), exp.identifier))
       used_str_ids.append(exp.identifier)
   if len(set(used_str_ids)) == len(reflections): #all set, don't do anything
     pass

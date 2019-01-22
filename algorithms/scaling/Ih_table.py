@@ -270,7 +270,9 @@ class IhTable(object):
         boundary = self.properties_dict['miller_index_boundaries'][boundary_id]
       group_id, _ = self.asu_index_dict[index]
       group_ids.append(group_id)
-    boundaries_for_this_datset.append(len(sorted_asu_indices))
+    while len(boundaries_for_this_datset) < self.n_work_blocks + 1:
+      # catch case where last boundaries aren't reached
+      boundaries_for_this_datset.append(len(sorted_asu_indices))
     # so now have group ids as well for individual dataset
     for i, val in enumerate(boundaries_for_this_datset[:-1]):
       start = val
