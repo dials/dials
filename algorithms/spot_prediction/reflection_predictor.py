@@ -146,9 +146,17 @@ class ReflectionPredictor(object):
           experiment,
           dmin=dmin,
           padding=padding)
+
+        # Choose index generation method based on number of images
+        # https://github.com/dials/dials/issues/585
+        if experiment.scan.get_num_images() > 50:
+          predict_method = predictor.for_ub_old_index_generator
+        else:
+          predict_method = predictor.for_ub
+
         predict = Predictor(
           "scan static prediction",
-          lambda: predictor.for_ub(experiment.crystal.get_A()))
+          lambda: predict_method(experiment.crystal.get_A()))
     else:
       predictor = StillsReflectionPredictor(
         experiment,
