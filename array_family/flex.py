@@ -210,42 +210,15 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       assert(isinstance(result, reflection_table))
       return result
 
-  def as_msgpack(self):
-    '''
-    Write as msgpack format
-
-    '''
-    import msgpack
-    import six.moves.cPickle as pickle
-    def encode(obj):
-      if isinstance(obj, reflection_table):
-        data_string = pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL)
-        return { "__dials.array_family.flex.reflection_table__" : data_string }
-      raise TypeError("Not a reflection table")
-    return msgpack.packb(self, default=encode, use_bin_type=True)
-
-  @staticmethod
-  def from_msgpack(packed):
-    '''
-    Convert from msgpack format
-
-    '''
-    import msgpack
-    import six.moves.cPickle as pickle
-    def decode(obj):
-      if "__dials.array_family.flex.reflection_table__" in obj:
-        return pickle.loads(obj["__dials.array_family.flex.reflection_table__"])
-      raise TypeError("No reflection table in file")
-    return msgpack.unpackb(packed, object_hook=decode, raw=False)
-
   def as_msgpack_file(self, filename):
     '''
     Write the reflection table to file in msgpack format
 
     '''
     from libtbx import smart_open
+    import blosc
     with smart_open.for_writing(filename, 'wb') as outfile:
-      outfile.write(self.as_msgpack())
+      outfile.write(blosc.compress(self.as_msgpack()))
 
   @staticmethod
   def from_msgpack_file(filename):
@@ -254,8 +227,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     '''
     from libtbx import smart_open
+    import blosc
     with smart_open.for_reading(filename, 'rb') as infile:
-      return reflection_table.from_msgpack(infile.read())
+      return reflection_table.from_msgpack(blosc.decompress(infile.read()))
 
   @staticmethod
   def from_h5(filename):

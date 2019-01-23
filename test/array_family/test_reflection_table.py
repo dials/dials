@@ -1102,17 +1102,23 @@ def test_to_from_msgpack():
   assert(all(tuple(a == b for a, b in zip(new_table['col9'], c9))))
   assert(all(tuple(a == b for a, b in zip(new_table['col10'], c10))))
   assert(all(tuple(compare(a, b) for a, b in zip(new_table['col11'], c11))))
-
-def test_to_from_msgpack2(dials_regression):
-
-  obj = table.as_msgpack_file("test.mpack")
-  new_table = flex.reflection_table.from_msgpack_file("test.mpack")
+  
+  table.as_msgpack_file("reflections.mpack")
+  new_table = flex.reflection_table.from_msgpack_file("reflections.mpack")
   assert(new_table.is_consistent())
   assert(new_table.nrows() == 10)
-  assert(new_table.ncols() == 3)
-  assert(all(a == b for a, b in zip(new_table['col1'], c1)))
-  assert(all(a == b for a, b in zip(new_table['col2'], c2)))
-  assert(all(a == b for a, b in zip(new_table['col3'], c3)))
+  assert(new_table.ncols() == 11)
+  assert(all(tuple(a == b for a, b in zip(new_table['col1'], c1))))
+  assert(all(tuple(a == b for a, b in zip(new_table['col2'], c2))))
+  assert(all(tuple(a == b for a, b in zip(new_table['col3'], c3))))
+  assert(all(tuple(a == b for a, b in zip(new_table['col4'], c4))))
+  assert(all(tuple(a == b for a, b in zip(new_table['col5'], c5))))
+  assert(all(tuple(a == b for a, b in zip(new_table['col6'], c6))))
+  assert(all(tuple(a == b for a, b in zip(new_table['col7'], c7))))
+  assert(all(tuple(a == b for a, b in zip(new_table['col8'], c8))))
+  assert(all(tuple(a == b for a, b in zip(new_table['col9'], c9))))
+  assert(all(tuple(a == b for a, b in zip(new_table['col10'], c10))))
+  assert(all(tuple(compare(a, b) for a, b in zip(new_table['col11'], c11))))
 
 def test_experiment_identifiers():
 
