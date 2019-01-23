@@ -61,7 +61,6 @@ class CentroidOutlier(object):
     self._block_width = block_width
 
   def set_verbosity(self, verbosity):
-    logger.disabled = (verbosity == 0)
     self._verbosity = verbosity
 
   def _detect_outliers(cols):
@@ -82,7 +81,7 @@ class CentroidOutlier(object):
     # check the columns are present
     for col in self._cols: assert col in reflections
 
-    sel = reflections.get_flags(reflections.flags.used_in_refinement)
+    sel = reflections.get_flags(reflections.flags.predicted)
     all_data = reflections.select(sel)
     all_data_indices = sel.iselection()
     nexp = flex.max(all_data['id']) + 1
@@ -246,30 +245,35 @@ outlier
     .help = "Outlier rejection algorithm. If auto is selected, the algorithm is"
             "chosen automatically"
     .type = choice
+    .short_caption = "Outlier rejection algorithm"
 
   minimum_number_of_reflections = 20
     .help = "The minimum number of input observations per outlier rejection"
             "job below which all reflections in the job will be rejected as"
             "potential outliers."
     .type = int(value_min=0)
+    .expert_level = 1
 
   separate_experiments = True
     .help = "If true, outlier rejection will be performed on each experiment"
             "separately. Otherwise, the data from all experiments will be"
             "combined for outlier rejection."
     .type = bool
+    .expert_level = 1
 
   separate_panels = Auto
     .help = "If true, outlier rejection will be performed separately for each"
             "panel of a multi-panel detector model. Otherwise data from across"
             "all panels will be combined for outlier rejection."
     .type = bool
+    .expert_level = 1
 
   separate_blocks = True
     .help = "If true, for scans outlier rejection will be performed separately"
             "in equal-width blocks of phi, controlled by the parameter"
             "outlier.block_width."
     .type = bool
+    .expert_level = 1
 
   block_width = Auto
     .help = "If separate_blocks, a scan will be divided into equal-sized blocks"
@@ -278,6 +282,7 @@ outlier
             "such that each block contains enough reflections to perform"
             "outlier rejection."
     .type = float(value_min=1.0)
+    .expert_level = 1
 
   tukey
     .help = "Options for the tukey outlier rejector"

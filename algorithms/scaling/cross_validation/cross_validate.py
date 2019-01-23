@@ -55,14 +55,17 @@ phil_scope = phil.parse('''
               "Variable is used for testing a parameter that can have a float or"
               "int value (that is also not a 'choice' type). Single just performs"
               "cross validation on one parameter configuration."
+      .expert_level = 2
     parameter = None
       .type = str
       .help = "Optimise a command-line parameter. parameter_values must also be"
               "specified, unless the parameter is a True/False option."
+      .expert_level = 2
     parameter_values = None
       .type = strings
       .help = "Parameter values to compare, entered as a string of space"
               "separated values."
+      .expert_level = 2
     nfolds = 1
       .type = int(value_min=1)
       .help = "Number of cross-validation folds to perform. If nfolds > 1, the"
@@ -70,12 +73,15 @@ phil_scope = phil.parse('''
               "incremental offset for the free set. The max number of folds"
               "allowed is 1/free_set_percentage; if set greater than this then"
               "the repetition will finish afer 1/free_set_percentage folds."
+      .expert_level = 2
     log = dials.cross_validate.log
       .type = str
       .help = "The log filename"
+      .expert_level = 2
     debug.log = dials.cross_validate.debug.log
       .type = str
       .help = "The debug log filename"
+      .expert_level = 2
   }
 ''')
 

@@ -5,15 +5,15 @@ from math import sqrt, pi
 import pytest
 import numpy as np
 from mock import Mock
-from dxtbx.model import Experiment, ExperimentList, Crystal
+from dxtbx.model import Experiment, Crystal
 from libtbx.test_utils import approx_equal
 from dials.array_family import flex
 from dials.algorithms.scaling.scaling_utilities import \
   calc_crystal_frame_vectors, calc_theta_phi, create_sph_harm_table,\
-  sph_harm_table, align_rotation_axis_along_z, parse_multiple_datasets,\
-  set_wilson_outliers, select_datasets_on_ids, assign_unique_identifiers,\
-  quasi_normalisation, combine_intensities, calculate_prescaling_correction,\
-  apply_prescaling_correction, Reasons
+  sph_harm_table, align_rotation_axis_along_z, set_wilson_outliers,\
+  quasi_normalisation, calculate_prescaling_correction, Reasons
+from dials_scaling_ext import calculate_harmonic_tables_from_selections, create_sph_harm_lookup_table,\
+  create_sph_harm_table, calc_lookup_index
 
 @pytest.fixture(scope='module')
 def mock_exp():
@@ -136,7 +136,7 @@ def test_align_rotation_axis_along_z():
   assert approx_equal(list(rotated_vectors), list(flex.vec3_double([
     (0.0, 0.0, 1.0), (0.0, 1.0, 0.0), (-1.0, 0.0, 0.0), (-1.0, 0.0, 1.0)])))
 
-def test_sph_harm_table(test_reflection_table, mock_exp):
+def test_create_sph_harm_table(test_reflection_table, mock_exp):
   """Simple test for the spherical harmonic table, constructing the table step
   by step, and verifying the values of a few easy-to-calculate entries.
   This also acts as a test for the calc_theta_phi function as well."""
@@ -159,165 +159,6 @@ def test_sph_harm_table(test_reflection_table, mock_exp):
   assert approx_equal(sph_h_t[5, 1], Y20)
   assert approx_equal(sph_h_t[5, 2], Y20)
   # Now test that you get the same by just calling the function.
-  sht = sph_harm_table(rt, exp, 2)
-  assert approx_equal(sht[1, 0], Y10)
-  assert approx_equal(sht[1, 1], Y10)
-  assert approx_equal(sht[1, 2], Y10)
-  assert approx_equal(sht[5, 0], Y20)
-  assert approx_equal(sht[5, 1], Y20)
-  assert approx_equal(sht[5, 2], Y20)
-
-def test_parse_multiple_datasets():
-  """Test the namesake function. This expects a list of reflection tables, and
-  selects on the column named 'id'."""
-  rt1 = flex.reflection_table()
-  rt1['id'] = flex.int([0, 0, 0])
-  rt2 = flex.reflection_table()
-  rt2['id'] = flex.int([2, 2, 4, 4])
-  single_tables, ids = parse_multiple_datasets([rt2])
-  assert list(ids) == [2, 4]
-  assert len(single_tables) == 2
-  single_tables, ids = parse_multiple_datasets([rt1, rt2])
-  assert list(ids) == [0, 2, 4]
-  assert len(single_tables) == 3
-  single_tables, ids = parse_multiple_datasets([rt1])
-  assert len(single_tables) == 1
-  assert list(ids) == [0]
-
-  # if a duplicate id is given, then this should be detected and new ids
-  # determined for all datasets.
-  rt3 = flex.reflection_table()
-  rt3['id'] = flex.int([2, 2])
-  single_tables, ids = parse_multiple_datasets([rt1, rt2, rt3])
-  assert len(single_tables) == 4
-  assert list(ids) == [0, 1, 2, 3]
-
-
-def empty_explist_3exp():
-  """Make a list of three empty experiments"""
-  experiments = ExperimentList()
-  experiments.append(Experiment())
-  experiments.append(Experiment())
-  experiments.append(Experiment())
-  return experiments
-
-def new_reflections_3tables():
-  """Make a list of three reflection tables"""
-  rt1 = flex.reflection_table()
-  rt1['id'] = flex.int([0, 0, 0])
-  rt2 = flex.reflection_table()
-  rt2['id'] = flex.int([1, 1])
-  rt3 = flex.reflection_table()
-  rt3['id'] = flex.int([4, 4])
-  reflections = [rt1, rt2, rt3]
-  return reflections
-
-def test_assign_unique_identifiers():
-  """Test the assignment of unique identifiers"""
-  # Test case where none are set but refl table ids are - use refl ids
-  experiments = empty_explist_3exp()
-  reflections = new_reflections_3tables()
-  assert list(experiments.identifiers()) == ['', '', '']
-  exp, rts = assign_unique_identifiers(experiments, reflections)
-  expected_identifiers = ['0', '1', '2']
-  # Check that identifiers are set in experiments and reflection table.
-  assert (list(exp.identifiers())) == expected_identifiers
-  for i, refl in enumerate(rts):
-    assert refl.experiment_identifiers()[i] == expected_identifiers[i]
-    assert list(set(refl['id'])) == [i]
-
-  # Test case where none are set but refl table ids have duplicates
-  experiments = empty_explist_3exp()
-  reflections = new_reflections_3tables()
-  reflections[2]['id'] = flex.int([0, 0])
-  exp, rts = assign_unique_identifiers(experiments, reflections)
-  expected_identifiers = ['0', '1', '2']
-  # Check that identifiers are set in experiments and reflection table.
-  assert (list(exp.identifiers())) == expected_identifiers
-  for i, refl in enumerate(rts):
-    assert refl.experiment_identifiers()[i] == expected_identifiers[i]
-    assert list(set(refl['id'])) == [i]
-
-  # Test case where identifiers are already set.
-  experiments = empty_explist_3exp()
-  experiments[0].identifier = '0'
-  experiments[1].identifier = '4'
-  experiments[2].identifier = '2'
-  reflections = new_reflections_3tables()
-  reflections[1].experiment_identifiers()[0] = '5'
-  # should raise an assertion error for inconsistent identifiers
-  with pytest.raises(AssertionError):
-    exp, rts = assign_unique_identifiers(experiments, reflections)
-
-  experiments = empty_explist_3exp()
-  experiments[0].identifier = '0'
-  experiments[1].identifier = '4'
-  experiments[2].identifier = '2'
-  reflections = new_reflections_3tables()
-  reflections[0].experiment_identifiers()[0] = '0'
-  reflections[1].experiment_identifiers()[1] = '4'
-  reflections[2].experiment_identifiers()[4] = '2'
-  #should pass experiments back if identifiers all already set
-  exp, rts = assign_unique_identifiers(experiments, reflections)
-  expected_identifiers = ['0', '4', '2']
-  # Check that identifiers are set in experiments and reflection table.
-  assert exp is experiments
-  assert list(exp.identifiers()) == expected_identifiers
-  for i, refl in enumerate(rts):
-    id_ = refl['id'][0]
-    assert refl.experiment_identifiers()[id_] == expected_identifiers[i]
-    assert list(set(refl['id'])) == [id_]
-
-  # Now test that if some are set, these are maintained and unique ids are
-  # set for the rest
-  experiments = empty_explist_3exp()
-  experiments[0].identifier = '1'
-  reflections = new_reflections_3tables()
-  reflections[0].experiment_identifiers()[0] = '1'
-  exp, rts = assign_unique_identifiers(experiments, reflections)
-  expected_identifiers = ['1', '0', '2']
-  assert list(exp.identifiers()) == expected_identifiers
-  for i, refl in enumerate(rts):
-    id_ = refl['id'][0]
-    assert refl.experiment_identifiers()[id_] == expected_identifiers[i]
-    assert list(set(refl['id'])) == [id_]
-
-def test_select_datasets_on_ids():
-  """Test the select_datasets_on_ids function."""
-  experiments = empty_explist_3exp()
-  reflections = new_reflections_3tables()
-  reflections[0].experiment_identifiers()[0] = '0'
-  experiments[0].identifier = '0'
-  reflections[1].experiment_identifiers()[1] = '2'
-  experiments[1].identifier = '2'
-  reflections[2].experiment_identifiers()[4] = '4'
-  experiments[2].identifier = '4'
-  use_datasets = ['0', '2']
-  exp, refl = select_datasets_on_ids(experiments, reflections,
-    use_datasets=use_datasets)
-  assert len(exp) == 2
-  assert len(refl) == 2
-  assert list(exp.identifiers()) == ['0', '2']
-
-  exclude_datasets = ['0']
-  exp, refl = select_datasets_on_ids(experiments, reflections,
-    exclude_datasets=exclude_datasets)
-  assert len(refl) == 2
-  assert list(exp.identifiers()) == ['2', '4']
-  assert len(exp) == 2
-
-  with pytest.raises(AssertionError):
-    exclude_datasets = ['0']
-    use_datasets = ['2', '4']
-    exp, refl = select_datasets_on_ids(experiments,
-      reflections, use_datasets=use_datasets,
-      exclude_datasets=exclude_datasets)
-
-  with pytest.raises(AssertionError):
-    exclude_datasets = ['1']
-    exp, refl = select_datasets_on_ids(experiments,
-      reflections, exclude_datasets=exclude_datasets)
-
 
 def test_calculate_wilson_outliers(wilson_test_reflection_table):
   """Test the set wilson outliers function."""
@@ -326,110 +167,20 @@ def test_calculate_wilson_outliers(wilson_test_reflection_table):
   assert list(reflection_table.get_flags(
     reflection_table.flags.outlier_in_scaling)) == [True, False, True, False]
 
-def generate_simple_table(prf=True):
-  """Generate a reflection table for testing intensity combination.
-  The numbers are contrived to make sum intensities agree well at high
-  intensity but terribly at low and vice versa for profile intensities."""
-  reflections = flex.reflection_table()
-  reflections['miller_index'] = flex.miller_index([
-    (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1),
-    (0, 0, 2), (0, 0, 2), (0, 0, 2), (0, 0, 2), (0, 0, 2),
-    (0, 0, 3), (0, 0, 3), (0, 0, 3), (0, 0, 3), (0, 0, 3),
-    (0, 0, 4), (0, 0, 4), (0, 0, 4), (0, 0, 4), (0, 0, 4),
-    (0, 0, 5), (0, 0, 5), (0, 0, 5), (0, 0, 5), (0, 0, 5)])
-  reflections['inverse_scale_factor'] = flex.double(25, 1.0)
-  #Contrive an example that should give the best cc12 when combined.
-  #make sum intensities agree well at high intensity but terribly at low
-  # and vice versa for profile intensities.
-  #profile less consistent at high intensity here
-
-  #sumless consistent at low intensity here
-  reflections['intensity.sum.value'] = flex.double([
-    10000.0, 11000.0, 9000.0, 8000.0, 12000.0,
-    500.0, 5600.0, 5500.0, 2000.0, 6000.0,
-    100.0, 50.0, 150.0, 75.0, 125.0,
-    30.0, 10.0, 2.0, 35.0, 79.0,
-    1.0, 10.0, 20.0, 10.0, 5.0])
-  reflections['intensity.sum.variance'] = flex.double(
-    [10000]*5 + [5000]*5 + [100]*5 + [30]*5 + [10]*5)
-  reflections.set_flags(flex.bool(25, False), reflections.flags.outlier_in_scaling)
-  if prf:
-    reflections['intensity.prf.value'] = flex.double([
-      10000.0, 16000.0, 12000.0, 6000.0, 9000.0,
-      5000.0, 2000.0, 1500.0, 1300.0, 9000.0,
-      100.0, 80.0, 120.0, 90.0, 100.0,
-      30.0, 40.0, 50.0, 30.0, 30.0,
-      10.0, 12.0, 9.0, 8.0, 10.0])
-    reflections['intensity.prf.variance'] = flex.double(
-      [10000]*5 + [5000]*5 + [100]*5 + [30]*5 + [10]*5)
-  return reflections
-
-def test_combine_intensities(test_exp_P1):
-  reflections = generate_simple_table()
-  reflections_list, results = combine_intensities([reflections], test_exp_P1)
-  reflections = reflections_list[0]
-  # Imid being 1200.0 should be best for this contrived example
-  assert pytest.approx(min(results, key=results.get)) == 1200.0
-
-  #Due to nature of crossover, just require 2% tolerance for this example
-  assert list(reflections['intensity'][0:5]) == pytest.approx(list(
-    reflections['intensity.sum.value'][0:5]), rel=2e-2)
-  assert list(reflections['intensity'][20:25]) == pytest.approx(list(
-    reflections['intensity.prf.value'][20:25]), rel=2e-2)
-
-def test_combine_intensities_multi_dataset(test_exp_P1):
-  r1 = generate_simple_table()
-  r1['partiality'] = flex.double(25, 1.0)
-  r2 = generate_simple_table(prf=False)
-  rlist, results = combine_intensities([r1, r2], test_exp_P1)
-  assert pytest.approx(min(results, key=results.get)) == 1200.0
-
-  r1 = generate_simple_table()
-  r1['partiality'] = flex.double(25, 1.0)
-  r2 = generate_simple_table(prf=False)
-  rlist, res = combine_intensities([r1, r2], test_exp_P1, Imids=[0])
-  assert list(rlist[0]['intensity']) == list(rlist[0]['intensity.prf.value'])
-  assert list(rlist[1]['intensity']) == list(rlist[1]['intensity.sum.value'])
-
-  r1 = generate_simple_table()
-  r1['partiality'] = flex.double(25, 1.0)
-  r2 = generate_simple_table(prf=False)
-  r2['partiality'] = flex.double(25, 1.0)
-  rlist, res = combine_intensities([r1, r2], test_exp_P1, Imids=[1])
-  assert list(rlist[0]['intensity']) == list(rlist[0]['intensity.sum.value'])
-  assert list(rlist[1]['intensity']) == list(rlist[1]['intensity.sum.value'])
-
-  r1 = generate_simple_table(prf=False)
-  r2 = generate_simple_table(prf=False)
-  rlist, res = combine_intensities([r1, r2], test_exp_P1)
-  assert res is None
-  assert list(rlist[0]['intensity']) == list(rlist[0]['intensity.sum.value'])
-  assert list(rlist[1]['intensity']) == list(rlist[1]['intensity.sum.value'])
-
-
 def test_calculate_prescaling_correction():
   """Test the helper function that applies the lp, dqe and partiality corr."""
   reflection_table = flex.reflection_table()
   reflection_table['lp'] = flex.double([1.0, 0.9, 0.8])
   reflection_table['qe'] = flex.double([0.6, 0.5, 0.4])
 
-  cor = calculate_prescaling_correction(reflection_table)
-  assert list(cor) == [1.0 / 0.6, 0.9 / 0.5, 0.8 / 0.4]
+  reflection_table = calculate_prescaling_correction(reflection_table)
+  assert list(reflection_table['prescaling_correction']) == [1.0 / 0.6, 0.9 / 0.5, 0.8 / 0.4]
 
   # Test compatibilty for old datasets
   del reflection_table['qe']
   reflection_table['dqe'] = flex.double([0.6, 0.5, 0.4])
-  cor = calculate_prescaling_correction(reflection_table)
-  assert list(cor) == [1.0 / 0.6, 0.9 / 0.5, 0.8 / 0.4]
-
-  #test the apply prescaling correction
-  reflection_table = flex.reflection_table()
-  reflection_table['intensity'] = flex.double([1.0, 2.0])
-  reflection_table['variance'] = flex.double([1.0, 2.0])
-  conv = flex.double([2.0, 4.0])
-  reflection_table = apply_prescaling_correction(reflection_table, conv)
-  assert list(reflection_table['intensity']) == [2.0, 8.0]
-  assert list(reflection_table['variance']) == [4.0, 32.0]
+  reflection_table = calculate_prescaling_correction(reflection_table)
+  assert list(reflection_table['prescaling_correction']) == [1.0 / 0.6, 0.9 / 0.5, 0.8 / 0.4]
 
 def test_reasons():
   """Test the reasons class, which is basically a dictionary with a nice
@@ -442,3 +193,103 @@ def test_reasons():
 criterion: test reason, reflections: 100
 """
   assert reasons.__repr__() == expected_output
+
+def test_calculate_harmonic_tables_from_selections():
+
+  selection = flex.size_t([1, 0, 2, 3, 1])
+  coefficients = [flex.double([10, 11, 12, 13]), flex.double([20, 21, 22, 23])]
+  from scitbx.sparse import matrix #need to assign a sparse matrix
+  arrays, mat = calculate_harmonic_tables_from_selections(selection, selection, coefficients)
+  assert len(arrays) == 2
+  assert mat.n_cols == 2
+  assert mat.n_rows == 5
+  assert list(arrays[0]) == [11, 10, 12, 13, 11]
+  assert list(arrays[1]) == [21, 20, 22, 23, 21]
+  assert mat[0, 0] == arrays[0][0]
+  assert mat[1, 0] == arrays[0][1]
+  assert mat[2, 0] == arrays[0][2]
+  assert mat[3, 0] == arrays[0][3]
+  assert mat[4, 0] == arrays[0][4]
+  assert mat[0, 1] == arrays[1][0]
+  assert mat[1, 1] == arrays[1][1]
+  assert mat[2, 1] == arrays[1][2]
+  assert mat[3, 1] == arrays[1][3]
+  assert mat[4, 1] == arrays[1][4]
+
+def test_equality_of_two_harmonic_table_methods(dials_regression, run_in_tmpdir):
+  from dials_scaling_ext import calc_theta_phi, calc_lookup_index
+  from dxtbx.serialize import load
+  from dials.util.options import OptionParser
+  from libtbx import phil
+  import os
+  from dials.algorithms.scaling.scaling_library import create_scaling_model
+
+  data_dir = os.path.join(dials_regression, "xia2-28",)
+  pickle_path = os.path.join(data_dir, "20_integrated.pickle")
+  sweep_path = os.path.join(data_dir, "20_integrated_experiments.json")
+
+  phil_scope = phil.parse('''
+      include scope dials.command_line.scale.phil_scope
+    ''', process_includes=True)
+  optionparser = OptionParser(phil=phil_scope, check_format=False)
+  params, _ = optionparser.parse_args(args=[], quick_parse=True)
+  params.model = 'physical'
+  lmax = 2
+  params.parameterisation.lmax=lmax
+
+  reflection_table = flex.reflection_table.from_pickle(pickle_path)
+  experiments = load.experiment_list(sweep_path, check_format=False)
+  experiments = create_scaling_model(params, experiments, [reflection_table])
+
+  experiment = experiments[0]
+  # New method
+
+  reflection_table['phi'] = (reflection_table['xyzobs.px.value'].parts()[2]
+    * experiment.scan.get_oscillation()[1])
+  reflection_table = calc_crystal_frame_vectors(reflection_table, experiment)
+  theta_phi_0 = calc_theta_phi(reflection_table['s0c']) #array of tuples in radians
+  theta_phi_1 = calc_theta_phi(reflection_table['s1c'])
+  points_per_degree = 2
+  s0_lookup_index = calc_lookup_index(theta_phi_0, points_per_degree)
+  s1_lookup_index = calc_lookup_index(theta_phi_1, points_per_degree)
+  print(list(s0_lookup_index[0:20]))
+  print(list(s1_lookup_index[0:20]))
+  coefficients_list = create_sph_harm_lookup_table(lmax, points_per_degree)
+  experiment.scaling_model.components['absorption'].data = {'s0_lookup' : s0_lookup_index,
+    's1_lookup' : s1_lookup_index}
+  experiment.scaling_model.components['absorption'].coefficients_list = coefficients_list
+  assert experiment.scaling_model.components['absorption']._mode == 'memory'
+  experiment.scaling_model.components['absorption'].update_reflection_data()
+  absorption = experiment.scaling_model.components['absorption']
+  harmonic_values_list = absorption.harmonic_values[0]
+
+  experiment.scaling_model.components['absorption'].parameters = flex.double(
+    [0.1, -0.1, 0.05, 0.02, 0.01, -0.05, 0.12, -0.035])
+  scales, derivatives = experiment.scaling_model.components['absorption'].calculate_scales_and_derivatives()
+
+  # Old method:
+
+  old_data = {'sph_harm_table' : create_sph_harm_table(theta_phi_0, theta_phi_1, lmax)}
+  experiment.scaling_model.components['absorption'].data = old_data
+  assert experiment.scaling_model.components['absorption']._mode == 'speed'
+  experiment.scaling_model.components['absorption'].update_reflection_data()
+  old_harmonic_values = absorption.harmonic_values[0]
+  for i in range(0, 8):
+    print(i)
+    assert list(harmonic_values_list[i]) == pytest.approx(list(old_harmonic_values.col(i).as_dense_vector()), abs=0.01)
+
+  #assert 0
+  experiment.scaling_model.components['absorption'].parameters = flex.double(
+    [0.1, -0.1, 0.05, 0.02, 0.01, -0.05, 0.12, -0.035])
+  scales_1, derivatives_1 = experiment.scaling_model.components['absorption'].calculate_scales_and_derivatives()
+
+  assert list(scales_1) == pytest.approx(list(scales), abs=0.001)
+  assert list(scales_1) != [1.0] * len(scales_1)
+
+def test_calc_lookup_index():
+  pi = 3.141
+  theta_phi = flex.vec2_double([(0.001, -pi), (pi, pi), (0.001, pi), (pi, -pi)])
+  indices = calc_lookup_index(theta_phi, 1)
+  assert list(indices) == [0, 64799, 359, 64440]
+  indices = calc_lookup_index(theta_phi, 2)
+  assert list(indices) == [0, 259199, 719, 258480]

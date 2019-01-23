@@ -648,9 +648,9 @@ class Model(ProfileModelExt):
 
   def show(self, out=None):
     if out is None:
-      # Consider throwing deprecation warning "use print(this_object) instead"
       import sys
       out = sys.stdout
+    print("Warning: Use of the .show() method is deprecated. Use print(object) instead.", file=out)
     print(str(self), file=out)
 
   def __str__(self):

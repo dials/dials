@@ -2,8 +2,6 @@
 dials.algorithms.spot_finding
 =============================
 
-.. contents:: Table of Contents
-
 .. automodule:: dials.algorithms.spot_finding.finder
     :members:
     :undoc-members:

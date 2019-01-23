@@ -141,13 +141,14 @@ def imageset_as_bitmaps(imageset, params):
     start, end = scan.get_image_range()
   else:
     start, end = 1, len(imageset)
-  if params.output_file:
-    if start != end:
-      sys.exit('output_file can only be specified if a single image is exported')
-  for i_image in range(start, end+1):
-    # If the user specified an image range index, only export those
-    if params.imageset_index and not i_image in params.imageset_index:
-      continue
+  # If the user specified an image range index, only export those
+  image_range = [
+      i for i in range(start, end+1)
+      if not params.imageset_index or i in params.imageset_index
+  ]
+  if params.output_file and len(image_range) != 1:
+    sys.exit('output_file can only be specified if a single image is exported')
+  for i_image in image_range:
     image = imageset.get_raw_data(i_image-start)
 
     trange = [p.get_trusted_range() for p in detector]

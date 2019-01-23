@@ -25,8 +25,11 @@ formats.
 The output formats currently supported are:
 
 MTZ format exports the files as an unmerged mtz file, ready for input to
-downstream programs such as Pointless and Aimless. The required input is an
-experiments.json file and an integrated.pickle file.
+downstream programs such as Pointless and Aimless. For exporting integrated,
+but unscaled data, the required input is an experiments.json file and an
+integrated.pickle file. For exporting scaled data, the required input is an
+experiments.json file and a scaled.pickle file, also passing the option
+intensity=scale.
 
 NXS format exports the files as an NXmx file. The required input is an
 experiments.json file and an integrated.pickle file.
@@ -54,6 +57,7 @@ Examples::
   # Export to mtz
   dials.export experiments.json integrated.pickle
   dials.export experiments.json integrated.pickle mtz.hklout=integrated.mtz
+  dials.export experiments.json scaled.pickle intensity=scale mtz.hklout=scaled.mtz
 
   # Export to nexus
   dials.export experiments.json integrated.pickle format=nxs
@@ -79,7 +83,7 @@ phil_scope = parse('''
   format = *mtz sadabs nxs mmcif mosflm xds best xds_ascii json
     .type = choice
     .help = "The output file format"
-  
+
   intensity = *profile *sum scale
     .type = choice(multi=True)
     .help = "Choice of which intensities to export. Allowed combinations:

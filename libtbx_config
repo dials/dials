@@ -1,5 +1,5 @@
 {
   "modules_required_for_build": ["boost", "scitbx", "cctbx", "dxtbx", "rstbx"],
-  "modules_required_for_use": ["boost_adaptbx", "iotbx"],
+  "modules_required_for_use": ["boost_adaptbx", "iotbx", "mmtbx"],
   "optional_modules": ["crys3d", "gltbx", "xfel"]
 }

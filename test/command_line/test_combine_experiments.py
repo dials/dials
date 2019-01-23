@@ -129,6 +129,75 @@ def test(dials_regression, run_in_tmpdir):
   assert not os.path.exists("test_by_detector_%03d.json" % 2)
   assert not os.path.exists("test_by_detector_%03d.pickle" % 2)
 
+  #Now do test when input has identifiers set
+  reflections = flex.reflection_table().from_pickle('combined_reflections.pickle')
+  explist = ExperimentListFactory.from_json_file("combined_experiments.json",
+              check_format=False)
+  # set string identifiers as nonconsecutive 0,2,4,6....
+  for i, exp in enumerate(explist):
+    assert i in reflections['id']
+    reflections.experiment_identifiers()[i] = str(i*2)
+    exp.identifier = str(i*2)
+  reflections.as_pickle('assigned_reflections.pickle')
+  dump.experiment_list(explist, "assigned_experiments.json")
+
+  result = procrunner.run_process([
+      "dials.split_experiments",
+      "assigned_experiments.json",
+      "assigned_reflections.pickle",
+  ])
+  assert result['exitcode'] == 0
+  assert result['stderr'] == ''
+
+  for i in range(len(explist)):
+    assert os.path.exists("experiments_%03d.json" % i)
+    assert os.path.exists("reflections_%03d.pickle" % i)
+
+    exp_single = ExperimentListFactory.from_json_file(
+      "experiments_%03d.json" % i, check_format=False)
+    ref_single = flex.reflection_table.from_pickle("reflections_%03d.pickle" % i)
+
+    assert len(exp_single) == 1
+    # resets all ids to 0, but keeps mapping to unique identifier.
+    # doesn't have to be set to 0 but doing this to keep more consistent with
+    # other dials programs
+    assert ref_single['id'].all_eq(0)
+    assert ref_single.experiment_identifiers()[0] == str(i*2)
+
+  # update modded experiments to have same identifiers as assigned_experiments
+  moddedlist = ExperimentListFactory.from_json_file(
+    'modded_experiments.json', check_format=False)
+  for i, exp in enumerate(moddedlist):
+    exp.identifier = str(i*2)
+  dump.experiment_list(moddedlist, "modded_experiments.json")
+
+  result = procrunner.run_process([
+      "dials.split_experiments",
+      "modded_experiments.json",
+      "assigned_reflections.pickle",
+      "output.experiments_prefix=test_by_detector",
+      "output.reflections_prefix=test_by_detector",
+      "by_detector=True",
+  ])
+  assert result['exitcode'] == 0
+  assert result['stderr'] == ''
+
+  # Expect each datasets to have ids from 0..50 with experiment identifiers
+  # all kept from before 0,2,4,6,...
+  current_exp_id = 0
+  for i in range(2):
+    assert os.path.exists("test_by_detector_%03d.json" % i)
+    assert os.path.exists("test_by_detector_%03d.pickle" % i)
+    explist = ExperimentListFactory.from_json_file(
+      "test_by_detector_%03d.json" % i, check_format=False)
+    refl = flex.reflection_table.from_pickle("test_by_detector_%03d.pickle" % i)
+
+    for k in range(len(explist)):
+      assert refl.experiment_identifiers()[k] == str(current_exp_id)
+      current_exp_id += 2
+
+  assert not os.path.exists("test_by_detector_%03d.json" % 2)
+  assert not os.path.exists("test_by_detector_%03d.pickle" % 2)
 
 def test_failed_tolerance_error(dials_regression, monkeypatch):
   """Test that we get a sensible error message on tolerance failures"""

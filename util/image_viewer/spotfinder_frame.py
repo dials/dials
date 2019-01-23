@@ -38,27 +38,34 @@ def create_load_image_event(destination, filename):
   wx.PostEvent(destination, LoadImageEvent(myEVT_LOADIMG, -1, filename))
 
 
-class SpotFrame(XrayFrame) :
-  def __init__ (self, *args, **kwds) :
+class SpotFrame(XrayFrame):
+  def __init__(self, *args, **kwds):
     self.datablock = kwds["datablock"]
     self.experiments = kwds["experiments"]
     if self.datablock is not None:
       self.imagesets = self.datablock.extract_imagesets()
       self.crystals = None
-    elif len(self.experiments.imagesets()) > 0:
-      assert(len(self.experiments.imagesets()) == 1)
-      self.imagesets = self.experiments.imagesets()
-      self.crystals = self.experiments.crystals()
     else:
-      raise RuntimeError("No imageset could be constructed")
+      self.imagesets = []
+      self.crystals = []
+      for expt_list in self.experiments:
+        self.imagesets.extend(expt_list.imagesets())
+        self.crystals.extend(expt_list.crystals())
+      if len(self.imagesets) == 0:
+        raise RuntimeError("No imageset could be constructed")
 
     self.reflections = kwds["reflections"]
+
     del kwds["datablock"]; del kwds["experiments"]; del kwds["reflections"] #otherwise wx complains
 
     # Store the list of images we can view
     self.images = ImageCollectionWithSelection()
 
     super(SpotFrame, self).__init__(*args, **kwds)
+
+    # If we have only one imageset, unindexed filtering becomes easier
+    self.have_one_imageset = len(set(self.imagesets)) <= 1
+
     self.viewer.reflections = self.reflections
     self.viewer.frames = self.imagesets
     self.dials_spotfinder_layers = []
@@ -131,7 +138,7 @@ class SpotFrame(XrayFrame) :
     self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateUIMask,
               id=self._id_mask)
 
-  def setup_toolbar(self) :
+  def setup_toolbar(self):
     from wxtbx import bitmaps
     from wxtbx import icons
 
@@ -169,7 +176,7 @@ class SpotFrame(XrayFrame) :
     # Create a sub-control with our image selection slider and label
     # Manually tune the height for now - don't understand toolbar sizing
     panel = ImageChooserControl(self.toolbar, size=(300,40))
-    # The Toolbar doesn't call layout for it's children?!
+    # The Toolbar doesn't call layout for its children?!
     panel.Layout()
     # Platform support for slider events seems a little inconsistent
     # with wxPython 3, so we just trap all EVT_SLIDER events.
@@ -192,6 +199,7 @@ class SpotFrame(XrayFrame) :
       shortHelp="Next",
       kind=wx.ITEM_NORMAL)
     self.Bind(wx.EVT_MENU, self.OnNext, btn)
+
     txt = wx.StaticText(self.toolbar, -1, "Jump to image:")
     self.toolbar.AddControl(txt)
 
@@ -200,6 +208,15 @@ class SpotFrame(XrayFrame) :
     self.jump_to_image.SetValue(1)
     self.toolbar.AddControl(self.jump_to_image)
     self.Bind(EVT_PHIL_CONTROL, self.OnJumpToImage, self.jump_to_image)
+
+    txt = wx.StaticText(self.toolbar, -1, "Stack images:")
+    self.toolbar.AddControl(txt)
+
+    self.stack = PhilIntCtrl(self.toolbar, -1, name="stack", size=(65,-1))
+    self.stack.SetMin(1)
+    self.stack.SetValue(1)
+    self.toolbar.AddControl(self.stack)
+    self.Bind(EVT_PHIL_CONTROL, self.OnStack, self.stack)
 
   def setup_menus(self):
     super(SpotFrame, self).setup_menus()
@@ -230,7 +247,7 @@ class SpotFrame(XrayFrame) :
     else:
       event.SetText("Show mask tool")
 
-  def OnChooseImage (self, event) :
+  def OnChooseImage(self, event):
     # Whilst scrolling and choosing, show what we are looking at
     selected_image = self.images[self.image_chooser_panel.GetValue()-1]
     # Always show the current 'loaded' image as such
@@ -247,20 +264,26 @@ class SpotFrame(XrayFrame) :
     # Once we've stopped scrolling, load the selected item
     self.load_image(selected_image)
 
-  def OnPrevious (self, event) :
+  def OnPrevious(self, event):
     super(SpotFrame, self).OnPrevious(event)
     # Parent function moves - now update the UI to match
     self.jump_to_image.SetValue(self.images.selected_index+1)
 
-  def OnNext (self, event) :
+  def OnNext(self, event):
     super(SpotFrame, self).OnNext(event)
     # Parent function moves - now update the UI to match
     self.jump_to_image.SetValue(self.images.selected_index+1)
 
-  def OnJumpToImage (self, event) :
+  def OnJumpToImage(self, event):
     phil_value = self.jump_to_image.GetPhilValue()
     if (self.images.selected_index != (phil_value - 1)):
       self.load_image(self.images[phil_value - 1])
+
+  def OnStack(self, event):
+    value = self.stack.GetPhilValue()
+    if value != self.params.sum_images:
+      self.params.sum_images = value
+      self.reload_image()
 
   # consolidate initialization of PySlip object into a single function
   def init_pyslip(self):
@@ -458,7 +481,7 @@ class SpotFrame(XrayFrame) :
     #print self.draw_max_pix_timer.report()
     #print self.draw_ctr_mass_timer.report()
 
-  def add_file_name_or_data(self, image_data) :
+  def add_file_name_or_data(self, image_data):
       """
       Adds an image to the viewer's list of images.
 
@@ -484,6 +507,7 @@ class SpotFrame(XrayFrame) :
       self.images.add(image_data)
       self.image_chooser_panel.SetMax(len(self.images))
       self.jump_to_image.SetMax(len(self.images))
+      self.stack.SetMax(len(self.images))
       return len(self.images)-1
 
   def load_file_event(self, evt):
@@ -494,7 +518,7 @@ class SpotFrame(XrayFrame) :
     with wx.BusyCursor():
       self.load_image(self.images.selected, refresh=True)
 
-  def load_image (self, file_name_or_data, refresh=False):
+  def load_image(self, file_name_or_data, refresh=False):
     """
     Load and display an image.
 
@@ -547,7 +571,7 @@ class SpotFrame(XrayFrame) :
     if previously_selected_image and previously_selected_image != self.images.selected:
       previously_selected_image.set_raw_data(None)
 
-  def OnShowSettings (self, event) :
+  def OnShowSettings(self, event):
     if self.settings_frame is None:
       frame_rect = self.GetRect()
       display_rect = wx.GetClientDisplayRect()
@@ -1084,6 +1108,54 @@ class SpotFrame(XrayFrame) :
     for rd, m in zip(raw_data, mask):
       rd.set_selected(~m, -2)
 
+  def __get_imageset_filter(self, reflections, imageset):
+    """Get a filter to ensure only reflections from an imageset.
+
+    This is not a well-defined problem because of unindexed reflections
+    - any unindexed reflections never get assigned an experiment. Using the
+    imageset_id column you can disentangle this, but but at integration this
+    data is currently not copied. This means that you can separate, but only if
+    there is a single imageset.
+
+    Args:
+        reflections (dials.array_family.flex.reflection_table):
+            The reflections table to filter
+        imageset (dxtbx.imageset.ImageSet):
+            The imageset to filter reflections to
+
+    Returns:
+        (scitbx.array_family.flex.bool or None):
+            The selection, or None if there is nothing to select
+    """
+    reflections_id = self.reflections.index(reflections)
+    experimentlist = self.experiments[reflections_id]
+
+    # If this imageset is not in this experiment, then skip
+    if imageset not in experimentlist.imagesets():
+      return None
+
+    if "imageset_id" in reflections:
+      # Only choose reflections that match this imageset
+      imageset_id = experimentlist.imagesets().index(imageset)
+      selection = (reflections["imageset_id"] == imageset_id)
+    elif self.have_one_imageset:
+      # If one imageset, no filtering is necessary
+      selection = flex.bool(len(reflections), True)
+    else:
+      # Fallback:
+      # Do filtering in a way that cannot handle complex unindexed reflections
+      # Get the experiment IDs of every experiment with this imageset
+      exp_ids = [
+        i for i, exp in enumerate(experimentlist) if exp.imageset == imageset
+      ]
+      # No way to tell - don't show any unindexed
+      selection = flex.bool(len(reflections), False)
+      # OR together selections for all ids that have this imageset
+      for eid in exp_ids:
+        selection = selection | (reflections["id"] == eid)
+
+    return selection
+
   def get_spotfinder_data(self):
     from scitbx.array_family import flex
     import math
@@ -1126,7 +1198,16 @@ class SpotFrame(XrayFrame) :
     self.prediction_colours = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3",
                                "#ff7f00", "#ffff33", "#a65628", "#f781bf",
                                "#999999"] * 10
-    for ref_list in self.reflections:
+
+    for ref_list_id, ref_list in enumerate(self.reflections):
+
+      # If we have more than one imageset, then we could be on the wrong one
+      if not self.have_one_imageset:
+        exp_filter = self.__get_imageset_filter(ref_list, imageset)
+        if exp_filter is None:
+          continue
+        ref_list = ref_list.select(exp_filter)
+
       if self.settings.show_indexed:
         indexed_sel = ref_list.get_flags(ref_list.flags.indexed,
                                             all=False)
@@ -1136,7 +1217,11 @@ class SpotFrame(XrayFrame) :
         integrated_sel = ref_list.get_flags(ref_list.flags.integrated,
                                             all=False)
         ref_list = ref_list.select(integrated_sel)
-      if ref_list.size() == 0: continue
+
+      # Fast-fail if there's no reflections after filtering
+      if len(ref_list) == 0:
+        continue
+
       if 'bbox' in ref_list:
         bbox = ref_list['bbox']
         x0, x1, y0, y1, z0, z1 = bbox.parts()
@@ -1194,12 +1279,18 @@ class SpotFrame(XrayFrame) :
             self.show_shoebox_timer.start()
             x0_, y0_ = map_coords(x0, y0, panel)
             x1_, y1_ = map_coords(x1, y1, panel)
-            lines = [(((x0_, y0_), (x0_, y1_)), shoebox_dict),
-                     (((x0_, y1_), (x1_, y1_)), shoebox_dict),
-                     (((x1_, y1_), (x1_, y0_)), shoebox_dict),
-                     (((x1_, y0_), (x0_, y0_)), shoebox_dict)]
+            # Change shoebox colour depending on index id
+            my_attrs = dict(shoebox_dict)
+            # Reflections with *only* strong set should get default
+            if not (reflection["flags"] == ref_list.flags.strong):
+              my_attrs["color"] = self.prediction_colours[reflection['id']]
+            lines = [(((x0_, y0_), (x0_, y1_)), my_attrs),
+                     (((x0_, y1_), (x1_, y1_)), my_attrs),
+                     (((x1_, y1_), (x1_, y0_)), my_attrs),
+                     (((x1_, y0_), (x0_, y0_)), my_attrs)]
             shoebox_data.extend(lines)
             self.show_shoebox_timer.stop()
+
 
           if (self.settings.show_max_pix and 'shoebox' in reflection
               and reflection['shoebox'].data.size() > 0):
@@ -1283,57 +1374,60 @@ class SpotFrame(XrayFrame) :
 
     if self.settings.show_basis_vectors and self.crystals is not None:
       from cctbx import crystal
-      crystal_model = self.crystals[0]
-      cs = crystal.symmetry(unit_cell=crystal_model.get_unit_cell(), space_group=crystal_model.get_space_group())
-      cb_op = cs.change_of_basis_op_to_reference_setting()
-      crystal_model = crystal_model.change_basis(cb_op)
-      A = matrix.sqr(crystal_model.get_A())
-      scan = imageset.get_scan()
-      beam = imageset.get_beam()
-      gonio = imageset.get_goniometer()
-      still = scan is None or gonio is None
-      if not still:
-        phi = scan.get_angle_from_array_index(
-          i_frame-imageset.get_array_range()[0], deg=True)
-        axis = matrix.col(imageset.get_goniometer().get_rotation_axis())
-      if len(detector) == 1:
-        beam_centre = detector[0].get_ray_intersection(beam.get_s0())
-        beam_x, beam_y = detector[0].millimeter_to_pixel(beam_centre)
-        beam_x, beam_y = map_coords(beam_x, beam_y, 0)
-      else:
-        try:
-          panel, beam_centre = detector.get_ray_intersection(beam.get_s0())
-        except RuntimeError as e:
-          if "DXTBX_ASSERT(w_max > 0)" in str(e):
-            # direct beam didn't hit a panel
-            panel = 0
-            beam_centre = detector[panel].get_ray_intersection(beam.get_s0())
+      for experiments in self.experiments:
+        for experiment in experiments:
+          if experiment.imageset != imageset: continue
+          crystal_model = experiment.crystal
+          cs = crystal.symmetry(unit_cell=crystal_model.get_unit_cell(), space_group=crystal_model.get_space_group())
+          cb_op = cs.change_of_basis_op_to_reference_setting()
+          crystal_model = crystal_model.change_basis(cb_op)
+          A = matrix.sqr(crystal_model.get_A())
+          scan = imageset.get_scan()
+          beam = imageset.get_beam()
+          gonio = imageset.get_goniometer()
+          still = scan is None or gonio is None
+          if not still:
+            phi = scan.get_angle_from_array_index(
+              i_frame-imageset.get_array_range()[0], deg=True)
+            axis = matrix.col(imageset.get_goniometer().get_rotation_axis())
+          if len(detector) == 1:
+            beam_centre = detector[0].get_ray_intersection(beam.get_s0())
+            beam_x, beam_y = detector[0].millimeter_to_pixel(beam_centre)
+            beam_x, beam_y = map_coords(beam_x, beam_y, 0)
           else:
-            raise
-        beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
-        beam_x, beam_y = map_coords(beam_x, beam_y, panel)
-      lines = []
-      for i, h in enumerate(((10,0,0), (0,10,0), (0,0,10))):
-        r = A * matrix.col(h)
-        if still:
-          s1 = matrix.col(beam.get_s0()) + r
-        else:
-          r_phi = r.rotate_around_origin(axis, phi, deg=True)
-          s1 = matrix.col(beam.get_s0()) + r_phi
-        if len(detector) == 1:
-          x, y = detector[0].get_bidirectional_ray_intersection_px(s1)
-          x, y = map_coords(x, y, 0)
-        else:
-          panel = detector.get_panel_intersection(s1)
-          if panel < 0: continue
-          x, y = detector[panel].get_ray_intersection_px(s1)
-          x, y = map_coords(x, y, panel)
-        vector_data.append((((beam_x, beam_y), (x, y)), vector_dict))
+            try:
+              panel, beam_centre = detector.get_ray_intersection(beam.get_s0())
+            except RuntimeError as e:
+              if "DXTBX_ASSERT(w_max > 0)" in str(e):
+                # direct beam didn't hit a panel
+                panel = 0
+                beam_centre = detector[panel].get_ray_intersection(beam.get_s0())
+              else:
+                raise
+            beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
+            beam_x, beam_y = map_coords(beam_x, beam_y, panel)
+          lines = []
+          for i, h in enumerate(((10,0,0), (0,10,0), (0,0,10))):
+            r = A * matrix.col(h)
+            if still:
+              s1 = matrix.col(beam.get_s0()) + r
+            else:
+              r_phi = r.rotate_around_origin(axis, phi, deg=True)
+              s1 = matrix.col(beam.get_s0()) + r_phi
+            if len(detector) == 1:
+              x, y = detector[0].get_bidirectional_ray_intersection_px(s1)
+              x, y = map_coords(x, y, 0)
+            else:
+              panel = detector.get_panel_intersection(s1)
+              if panel < 0: continue
+              x, y = detector[panel].get_ray_intersection_px(s1)
+              x, y = map_coords(x, y, panel)
+            vector_data.append((((beam_x, beam_y), (x, y)), vector_dict))
 
-        vector_text_data.append((x, y, ('a*', 'b*', 'c*')[i],
-                                 {'placement':'ne',
-                                  'fontsize': 20,
-                                  'color':'#F62817'}))
+            vector_text_data.append((x, y, ('a*', 'b*', 'c*')[i],
+                                     {'placement':'ne',
+                                      'fontsize': 20,
+                                      'color':'#F62817'}))
 
     from libtbx import group_args
     return group_args(all_pix_data=all_pix_data,
@@ -1355,30 +1449,31 @@ class SpotFrame(XrayFrame) :
   def predict(self):
     from dxtbx.model.experiment_list import ExperimentList
     predicted_all = []
-    for i_expt, expt in enumerate(self.experiments):
-      imageset = self.imagesets[0]
-
-      # Populate the reflection table with predictions
-      params = self.params.prediction
-      predicted = flex.reflection_table.from_predictions(
-        expt,
-        force_static=params.force_static,
-        dmin=params.d_min
-      )
-      predicted['id'] = flex.int(len(predicted), i_expt)
-      if expt.profile is not None:
-        expt.profile.params = self.params.profile
-      try:
-        predicted.compute_bbox(ExperimentList([expt]))
-      except Exception:
-        pass
-      predicted_all.append(predicted)
+    for experiments in self.experiments:
+      this_predicted = flex.reflection_table()
+      for i_expt, expt in enumerate(experiments):
+        # Populate the reflection table with predictions
+        params = self.params.prediction
+        predicted = flex.reflection_table.from_predictions(
+          expt,
+          force_static=params.force_static,
+          dmin=params.d_min
+        )
+        predicted['id'] = flex.int(len(predicted), i_expt)
+        if expt.profile is not None:
+          expt.profile.params = self.params.profile
+        try:
+          predicted.compute_bbox(ExperimentList([expt]))
+        except Exception:
+          pass
+        this_predicted.extend(predicted)
+      predicted_all.append(this_predicted)
 
     return predicted_all
 
 
-class SpotSettingsFrame (SettingsFrame) :
-  def __init__ (self, *args, **kwds) :
+class SpotSettingsFrame(SettingsFrame):
+  def __init__(self, *args, **kwds):
     super(SettingsFrame, self).__init__(*args, **kwds)
     self.settings = self.GetParent().settings
     self.params = self.GetParent().params
@@ -1398,8 +1493,8 @@ class SpotSettingsFrame (SettingsFrame) :
     self.panel.OnDestroy(event)
 
 
-class SpotSettingsPanel (wx.Panel) :
-  def __init__ (self, * args, **kwargs) :
+class SpotSettingsPanel(wx.Panel):
+  def __init__(self, * args, **kwargs):
     super(SpotSettingsPanel, self).__init__(*args, **kwargs)
 
     self.settings = self.GetParent().settings
@@ -1693,7 +1788,7 @@ class SpotSettingsPanel (wx.Panel) :
     self.brightness_txt_ctrl.Unbind(wx.EVT_KILL_FOCUS)
 
   # CONTROLS 2:  Fetch values from widgets
-  def collect_values (self) :
+  def collect_values(self):
     if self.settings.enable_collect_values:
       self.settings.show_resolution_rings = self.resolution_rings_ctrl.GetValue()
       self.settings.show_ice_rings = self.ice_rings_ctrl.GetValue()

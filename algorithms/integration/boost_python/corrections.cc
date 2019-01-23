@@ -26,7 +26,7 @@ namespace dials { namespace algorithms { namespace boost_python {
           arg("pf"),
           arg("m2"),
           arg("s1")));
-    
+
     def("lp_correction", &stills_lp_correction, (
           arg("s0"),
           arg("pn"),

@@ -57,7 +57,7 @@ namespace dials { namespace algorithms {
     DIALS_ASSERT(P != 0);
     return L / P;
   }
-  
+
   /**
    * Compute the Stills LP correction for a single reflection. Note that the
    * polarization fraction follows XDS convention, in which a value of 0.5
@@ -146,7 +146,7 @@ namespace dials { namespace algorithms {
         m2_(goniometer.get_rotation_axis()),
         det_(detector) {
     }
-    
+
     /**
      * @param beam The beam model.
      * @param goniometer The goniometer model.

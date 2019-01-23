@@ -4,13 +4,14 @@
 
 from __future__ import division
 from __future__ import print_function
+from six.moves import range
 
 import wx
 from scitbx.matrix import col
 
 
 class SBSettingsFrame(wx.MiniFrame):
-  def __init__ (self, *args, **kwds) :
+  def __init__(self, *args, **kwds):
     super(SBSettingsFrame, self).__init__(*args, **kwds)
     szr = wx.BoxSizer(wx.VERTICAL)
     panel = SBSettingsPanel(self)
@@ -31,7 +32,7 @@ class SBSettingsPanel(wx.Panel):
   # rotation, and provide a hierarchical drop-down menu to play with
   # detector, panel, sensor and ASIC.
 
-  def __init__ (self, *args, **kwds) :
+  def __init__(self, *args, **kwds):
     super(SBSettingsPanel, self).__init__(*args, **kwds)
     sizer = wx.BoxSizer(wx.VERTICAL)
     self.SetSizer(sizer)
@@ -45,7 +46,7 @@ class SBSettingsPanel(wx.Panel):
     img = self.GetParent().GetParent().pyslip.tiles.raw_image
     d = img.get_detector()
     self._quad_spinners = []
-    for serial in xrange(4):
+    for serial in range(4):
       fast, slow = d.hierarchy()[serial].get_origin()[0:2]
       name_quadrant = ["Q0", "Q1", "Q2", "Q3"][serial]
       box = wx.BoxSizer(wx.HORIZONTAL)
@@ -105,7 +106,7 @@ class SBSettingsPanel(wx.Panel):
       wildcard="Phil files (*.eff; *.def)|*.eff;*.def")
     if dialog.ShowModal() == wx.ID_OK:
       path = dialog.GetPath()
-      if (path != "") :
+      if (path != ""):
         from xfel.cftbx.detector.metrology import \
           master_phil, metrology_as_transformation_matrices
         from libtbx import phil
@@ -140,7 +141,7 @@ class SBSettingsPanel(wx.Panel):
 
         # Update the controls, remember to reset the default values
         # for the spinners.
-        for serial in xrange(4):
+        for serial in range(4):
           fast, slow = img.get_panel_fast_slow(serial)
           name_quadrant = ["Q0", "Q1", "Q2", "Q3"][serial]
 
@@ -165,7 +166,7 @@ class SBSettingsPanel(wx.Panel):
       wildcard="Phil files (*.def)|*.def")
     if dialog.ShowModal() == wx.ID_OK:
       path = str(dialog.GetPath())
-      if (path != "") :
+      if (path != ""):
         # The detector object of the format instance is adjusted when the quadrant calibration
         # arrows are clicked.  Sync those adjustments to a new cbf handle, drop uneeded categories
         # (categories frame specific but not metrology specific) and write the file.

@@ -1,8 +1,6 @@
-===========================
+=========================
 dials.algorithms.indexing
-===========================
-
-.. contents:: Table of Contents
+=========================
 
 .. automodule:: dials.algorithms.indexing.indexer
     :members:

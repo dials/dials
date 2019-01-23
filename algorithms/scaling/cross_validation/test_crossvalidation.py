@@ -156,7 +156,7 @@ def test_cross_validate_script():
       param.cross_validation.parameter = 'decay_interval'
       with pytest.raises(Sorry):
         cross_validate(param, crossvalidator)
-      
+
       param.cross_validation.parameter = 'absorption_term'
       param.cross_validation.parameter_values = ['True', 'False']
       cross_validate(param, crossvalidator)

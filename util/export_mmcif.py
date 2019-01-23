@@ -9,6 +9,9 @@ from dials.array_family import flex
 from dials.util.filter_reflections import filter_reflection_table
 import iotbx.cif.model
 from cctbx.sgtbx import bravais_types
+from cctbx import miller
+from cctbx import crystal as cctbxcrystal
+from iotbx.merging_statistics import dataset_statistics
 
 logger = logging.getLogger(__name__)
 RAD2DEG = 180.0 / math.pi
@@ -201,6 +204,24 @@ class MMCIFOutputFile(object):
     for name in variables_present:
       if name in reflections:
         header += (headernames[name],)
+
+    if 'scale' in self.params.intensity:
+      # Write dataset_statistics - first make a miller array
+      crystal_symmetry = cctbxcrystal.symmetry(
+        space_group=experiments[0].crystal.get_space_group(),
+        unit_cell=experiments[0].crystal.get_unit_cell())
+      miller_set = miller.set(crystal_symmetry=crystal_symmetry,
+        indices=reflections['miller_index'], anomalous_flag=False)
+      i_obs = miller.array(miller_set, data=reflections['intensity.scale.value'])
+      i_obs.set_observation_type_xray_intensity()
+      i_obs.set_sigmas(reflections['intensity.scale.sigma'])
+      i_obs.set_info(miller.array_info(source='DIALS',
+        source_type='reflection_tables'))
+
+      result = dataset_statistics(i_obs=i_obs, crystal_symmetry=crystal_symmetry,
+        use_internal_variance=False, eliminate_sys_absent=False)
+
+      cif_block.update(result.as_cif_block())
 
     cif_loop = iotbx.cif.model.loop(header=header)
 

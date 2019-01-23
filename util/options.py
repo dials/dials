@@ -127,25 +127,25 @@ format
 
 
 class ConfigWriter(object):
-  '''Class to write configuration to file.'''
+  """Class to write configuration to file."""
 
   def __init__(self, master_phil):
-    '''
+    """
     Initialise with the master phil.
 
     :param master_phil: The master phil scope
 
-    '''
+    """
     self._master_phil = master_phil
 
   def write(self, params, filename):
-    '''
+    """
     Write the configuration to file.
 
     :param params: The input phil parameters
     :param filename: The output filename
 
-    '''
+    """
     # Get the modified phil
     modified_phil = self._master_phil.format(python_object=params)
 
@@ -162,7 +162,7 @@ ArgumentHandlingErrorInfo = namedtuple(
     ["name", "validation", "message", "traceback", "type", "exception"])
 
 class Importer(object):
-  ''' A class to import the command line arguments. '''
+  """ A class to import the command line arguments. """
 
   def __init__(self, args,
                read_datablocks=False,
@@ -176,7 +176,7 @@ class Importer(object):
                compare_goniometer=None,
                scan_tolerance=None,
                format_kwargs=None):
-    '''
+    """
     Parse the arguments. Populates its instance attributes in an intelligent way
     from the arguments in args.
 
@@ -197,7 +197,7 @@ class Importer(object):
     :param check_format: Check the format when reading images
     :param verbose: True/False print out some stuff
 
-    '''
+    """
 
     # Initialise output
     self.datablocks = []
@@ -252,14 +252,14 @@ class Importer(object):
                                       compare_goniometer,
                                       scan_tolerance,
                                       format_kwargs):
-    '''
+    """
     Try to import images.
 
     :param args: The input arguments
     :param verbose: Print verbose output
     :return: Unhandled arguments
 
-    '''
+    """
     from dxtbx.datablock import DataBlockFactory
     from dials.util.phil import FilenameDataWrapper, DataBlockConverters
     from glob import glob
@@ -291,7 +291,7 @@ class Importer(object):
     return unhandled
 
   def try_read_datablocks(self, args, check_format, verbose):
-    '''
+    """
     Try to import imagesets.
 
     :param args: The input arguments
@@ -299,7 +299,7 @@ class Importer(object):
     :param verbose: Print verbose output
     :returns: Unhandled arguments
 
-    '''
+    """
     from dials.util.phil import DataBlockConverters
     from dxtbx.datablock import InvalidDataBlockError
 
@@ -317,7 +317,7 @@ class Importer(object):
     return unhandled
 
   def try_read_experiments(self, args, check_format, verbose):
-    '''
+    """
     Try to import experiments.
 
     :param args: The input arguments
@@ -325,7 +325,7 @@ class Importer(object):
     :param verbose: Print verbose output
     :returns: Unhandled arguments
 
-    '''
+    """
     from dials.util.phil import ExperimentListConverters
     from dxtbx.model.experiment_list import InvalidExperimentListError
 
@@ -344,13 +344,13 @@ class Importer(object):
     return unhandled
 
   def try_read_reflections(self, args, verbose):
-    ''' Try to import reflections.
+    """ Try to import reflections.
 
     :param args: The input arguments
     :param verbose: Print verbose output
     :returns: Unhandled arguments
 
-    '''
+    """
     from dials.util.phil import ReflectionTableConverters
     converter = ReflectionTableConverters()
     unhandled = []
@@ -368,7 +368,7 @@ class Importer(object):
 
 
 class PhilCommandParser(object):
-  ''' A class to parse phil parameters from positional arguments '''
+  """ A class to parse phil parameters from positional arguments """
 
   def __init__(self,
                phil=None,
@@ -377,7 +377,7 @@ class PhilCommandParser(object):
                read_reflections=False,
                read_datablocks_from_images=False,
                check_format=True):
-    '''
+    """
     Initialise the parser.
 
     :param phil: The phil scope
@@ -387,7 +387,7 @@ class PhilCommandParser(object):
     :param read_datablocks_from_images: Try to read the datablocks from images
     :param check_format: Check the format when reading images
 
-    '''
+    """
     from dials.util.phil import parse
 
     # Set the system phil scope
@@ -413,36 +413,36 @@ class PhilCommandParser(object):
 
   @property
   def phil(self):
-    '''
+    """
     Get the phil object
 
     :return: The phil scope
 
-    '''
+    """
     return self._phil
 
   @property
   def system_phil(self):
-    '''
+    """
     Get the system phil.
 
     :return: The system phil scope
 
-    '''
+    """
     return self._system_phil
 
   @property
   def diff_phil(self):
-    '''
+    """
     Get the diff phil.
 
     :return: The difference phil scope
 
-    '''
+    """
     return self.system_phil.fetch_diff(source=self.phil)
 
   def parse_args(self, args, verbose=False, return_unhandled=False, quick_parse=False):
-    '''
+    """
     Parse the command line arguments.
 
     :param args: The input arguments
@@ -452,7 +452,7 @@ class PhilCommandParser(object):
                         ignoring class constructor options.
     :return: The options and parameters and (optionally) unhandled arguments
 
-    '''
+    """
     from dxtbx.datablock import BeamComparison
     from dxtbx.datablock import DetectorComparison
     from dxtbx.datablock import GoniometerComparison
@@ -569,12 +569,12 @@ class PhilCommandParser(object):
     return params, importer.unhandled
 
   def _generate_input_scope(self):
-    '''
+    """
     Generate the required input scope.
 
     :return: The input phil scope
 
-    '''
+    """
     from dials.util.phil import parse
 
     # Create the input scope
@@ -629,19 +629,19 @@ class PhilCommandParser(object):
 
 
 class OptionParserBase(optparse.OptionParser, object):
-  ''' The base class for the option parser. '''
+  """ The base class for the option parser. """
 
   def __init__(self,
                config_options=False,
                sort_options=False,
                **kwargs):
-    '''
+    """
     Initialise the class.
 
     :param config_options: True/False show configuration options
     :param sort_options: True/False show argument sorting options
 
-    '''
+    """
 
     # Initialise the option parser
     super(OptionParserBase, self).__init__(**kwargs)
@@ -700,13 +700,13 @@ class OptionParserBase(optparse.OptionParser, object):
       help="PHIL files to read. Pass '-' for STDIN. Can be specified multiple times, but duplicates ignored.")
 
   def parse_args(self, args=None, quick_parse=False):
-    '''
+    """
     Parse the command line arguments and get system configuration.
 
     :param args: The arguments to parse.
     :returns: The options and phil parameters
 
-    '''
+    """
 
     # Parse the command line arguments, this will separate out
     # options (e.g. -o, --option) and positional arguments, in
@@ -734,16 +734,16 @@ class OptionParserBase(optparse.OptionParser, object):
     return options, args
 
   def format_epilog(self, formatter):
-    ''' Don't do formatting on epilog. '''
+    """ Don't do formatting on epilog. """
     if self.epilog is None:
       return ''
     return self.epilog
 
 
 class OptionParser(OptionParserBase):
-  '''A class to parse command line options and get the system configuration.
+  """A class to parse command line options and get the system configuration.
   The class extends optparse.OptionParser to include the reading of phil
-  parameters.'''
+  parameters."""
 
   def __init__(self,
                phil=None,
@@ -754,7 +754,7 @@ class OptionParser(OptionParserBase):
                check_format=True,
                sort_options=False,
                **kwargs):
-    '''
+    """
     Initialise the class.
 
     :param phil: The phil scope
@@ -765,8 +765,7 @@ class OptionParser(OptionParserBase):
     :param check_format: Check the format when reading images
     :param sort_options: Show argument sorting options
 
-    '''
-    from dials.util.phil import parse
+    """
 
     # Create the phil parser
     self._phil_parser = PhilCommandParser(
@@ -789,7 +788,7 @@ class OptionParser(OptionParserBase):
                  return_unhandled=False,
                  ignore_unhandled=False,
                  quick_parse=False):
-    '''
+    """
     Parse the command line arguments and get system configuration.
 
     :param args: The input arguments
@@ -801,8 +800,7 @@ class OptionParser(OptionParserBase):
                         ignoring class constructor options
     :return: The options and phil parameters
 
-    '''
-    import sys
+    """
 
     # Parse the command line arguments, this will separate out
     # options (e.g. -o, --option) and positional arguments, in
@@ -904,52 +902,52 @@ class OptionParser(OptionParserBase):
 
   @property
   def phil(self):
-    '''
+    """
     Get the phil object
 
     :returns: The phil scope
 
-    '''
+    """
     return self._phil_parser.phil
 
   @property
   def system_phil(self):
-    '''
+    """
     Get the system phil.
 
     :returns: The system phil scope
 
-    '''
+    """
     return self._phil_parser.system_phil
 
   @property
   def diff_phil(self):
-    '''
+    """
     Get the diff phil.
 
     :returns: The diff phil scope
 
-    '''
+    """
     return self._phil_parser.diff_phil
 
   def _strip_rst_markup(self, text):
-    '''
+    """
     Strip rst markup
 
     :param text: The text to strip
     :return: The stripped text
 
-    '''
+    """
     return text.replace("::", ":")
 
   def format_help(self, formatter=None):
-    '''
+    """
     Format the help string
 
     :param formatter: The formatter to use
     :return: The formatted help text
 
-    '''
+    """
     result = super(OptionParser, self).format_help(formatter=formatter)
     return self._strip_rst_markup(result)
 
@@ -1057,41 +1055,35 @@ class OptionParser(OptionParserBase):
 
 
 def flatten_reflections(filename_object_list):
-  '''
+  """
   Flatten a list of reflections tables
 
   :param filename_object_list: The parameter item
   :return: The flattened reflection table
-
-  '''
-  result = []
-  for i in range(len(filename_object_list)):
-    result.append(filename_object_list[i].data)
-  return result
+  """
+  return [o.data for o in filename_object_list]
 
 def flatten_datablocks(filename_object_list):
-  '''
+  """
   Flatten a list of datablocks
 
   :param filename_object_list: The parameter item
   :return: The flattened list of datablocks
-
-  '''
+  """
   result = []
-  for i in range(len(filename_object_list)):
-    result.extend(filename_object_list[i].data)
+  for o in filename_object_list:
+    result.extend(o.data)
   return result
 
 def flatten_experiments(filename_object_list):
-  '''
+  """
   Flatten a list of experiment lists
 
   :param filename_object_list: The parameter item
   :return: The flattened experiment lists
-
-  '''
+  """
   from dxtbx.model.experiment_list import ExperimentList
   result = ExperimentList()
-  for i in range(len(filename_object_list)):
-    result.extend(filename_object_list[i].data)
+  for o in filename_object_list:
+    result.extend(o.data)
   return result

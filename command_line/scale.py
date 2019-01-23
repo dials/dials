@@ -15,7 +15,7 @@ contains reflection data and scale models, from one or more experiments.
 The output pickle file contains intensity.scale.value, the unscaled intensity
 values used to determine the scaling model, and a inverse scale factor per
 reflection. These values can then be used to merge the data for downstream
-structural solution. Alternatively, the scaled_experiments.json and 
+structural solution. Alternatively, the scaled_experiments.json and
 scaled.pickle files can be passed back to dials.scale, and further scaling will
 be performed, starting from where the previous job finished.
 
@@ -44,6 +44,8 @@ import time
 import logging
 import sys
 import gc
+import copy as copy
+import libtbx
 from libtbx import phil
 from libtbx.utils import Sorry
 from libtbx.str_utils import make_sub_header
@@ -55,14 +57,19 @@ from dials.util.options import OptionParser, flatten_reflections,\
   flatten_experiments
 from dials.util.version import dials_version
 from dials.algorithms.scaling.scaling_library import create_scaling_model,\
-  create_datastructures_for_structural_model, create_datastructures_for_target_mtz
+  create_datastructures_for_structural_model, create_datastructures_for_target_mtz,\
+  prepare_multiple_datasets_for_scaling, create_auto_scaling_model,\
+  set_image_ranges_in_scaling_models
 from dials.algorithms.scaling.scaler_factory import create_scaler,\
   MultiScalerFactory
-from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets,\
-  select_datasets_on_ids, save_experiments, save_reflections,\
-  assign_unique_identifiers, log_memory_usage
-from dials.algorithms.scaling.post_scaling_analysis import \
-  exclude_on_batch_rmerge, exclude_on_image_scale
+from dials.util.multi_dataset_handling import select_datasets_on_ids
+from dials.algorithms.scaling.scaling_utilities import save_experiments,\
+  save_reflections, log_memory_usage, DialsMergingStatisticsError
+from dials.util.batch_handling import get_image_ranges
+from dials.util.exclude_images import exclude_image_ranges_for_scaling, \
+  get_valid_image_ranges
+from dials.algorithms.scaling.algorithm import targeted_scaling_algorithm, \
+  scaling_algorithm
 
 
 logger = logging.getLogger('dials')
@@ -71,10 +78,14 @@ phil_scope = phil.parse('''
   debug = False
     .type = bool
     .help = "Output additional debugging information"
-  model = *physical array KB
-      .type = choice
-      .help = "Set scaling model to be applied to input datasets without
-               an existing model. "
+  model = physical array KB
+    .type = choice
+    .help = "Set scaling model to be applied to input datasets without
+            an existing model. "
+    .expert_level = 0
+  stats_only = False
+    .type = bool
+    .help = "Only read input files and output merging stats."
   output {
     log = dials.scale.log
       .type = str
@@ -101,39 +112,28 @@ phil_scope = phil.parse('''
     crystal_name = XTAL
       .type = str
       .help = "The crystal name to be exported in the mtz file metadata"
+      .expert_level = 1
     use_internal_variance = False
       .type = bool
       .help = "Option to use internal spread of the intensities when merging
               reflection groups and calculating sigI, rather than using the
               sigmas of the individual reflections."
+      .expert_level = 1
     merging.nbins = 20
       .type = int
       .help = "Number of bins to use for calculating and plotting merging stats."
-    exclude_on_image_scale = None
-      .type = float
-      .help = "If set, images where the image inverse scale (defined by the
-              scale component of the relevant model) is below this
-              value will be set as outliers, and not included in merging stats
-              or output for downstream processing. This is performed after the
-              scaling algorithm has been run in the 'post-scaling' step.
-              This option is intended as a quick way to exclude radiation
-              damaged images, based on the principle that images that need
-              to be significantly scaled up (relative to others) are likely to
-              have unreliable intensities and scales. This option should be most
-              appropriate for scaling multi-dataset thin-wedge datasets that
-              are expected to have significant radiation damage."
-    exclude_on_batch_rmerge = None
-      .type = float
-      .help = "If set, images which have an Rmerge above this value will be set
-              as outliers, and not included in merging stats or output for
-              downstream processing. This is performed after the scaling
-              algorithm has been run in the 'post-scaling' step."
+      .expert_level = 1
+    delete_integration_shoeboxes = True
+      .type = bool
+      .help = "Discard integration shoebox data from scaling output, to help"
+              "with memory management."
+      .expert_level = 2
   }
   include scope dials.algorithms.scaling.scaling_options.phil_scope
   include scope dials.algorithms.scaling.cross_validation.cross_validate.phil_scope
   include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
+  include scope dials.util.exclude_images.phil_scope
 ''', process_includes=True)
-
 
 class Script(object):
   """Main script to run the scaling algorithm."""
@@ -144,17 +144,38 @@ class Script(object):
     self.reflections = reflections
     self.scaler = None
     self.scaled_miller_array = None
-    self.dataset_ids = []
     self.merging_statistics_result = None
     logger.debug('Initialised scaling script object')
     log_memory_usage()
 
   def run(self, save_data=True):
     """Run the scaling script."""
+    if self.params.stats_only:
+      try:
+        self.merging_stats(self.scaled_data_as_miller_array(
+          self.experiments[0].crystal.get_crystal_symmetry()))
+      except DialsMergingStatisticsError as e:
+        logger.info(e)
+      return
     start_time = time.time()
     self.prepare_input()
     self.scale()
-    self.merging_stats()
+    self.remove_unwanted_datasets()
+    print_scaling_model_error_info(self.experiments)
+    self.prepare_scaled_miller_array()
+    try:
+      self.merging_stats(self.scaled_miller_array)
+    except DialsMergingStatisticsError as e:
+      logger.info(e)
+
+    valid_ranges = get_valid_image_ranges(self.experiments)
+    image_ranges = get_image_ranges(self.experiments)
+    for (img, valid, exp) in zip(image_ranges, valid_ranges, self.experiments):
+      if valid:
+        if len(valid) > 1 or valid[0][0] != img[0] or valid[-1][1] != img[1]:
+          logger.info("Excluded images for experiment identifier: %s, image range: %s, limited range: %s",
+            exp.identifier, list(img), list(valid))
+
     if save_data:
       self.output()
     # All done!
@@ -164,71 +185,28 @@ class Script(object):
 
   def prepare_input(self):
     """Perform checks on the data and prepare the data for scaling."""
-    if len(self.experiments) != 1:
-      logger.info('Checking for the existence of a reflection table \n'
-        'containing multiple scaled datasets \n')
-      self.reflections, self.dataset_ids = parse_multiple_datasets(self.reflections)
-      logger.info("Found %s reflection tables in total.", len(self.reflections))
-      logger.info("Found %s experiments in total.", len(self.experiments))
 
-    if (self.params.dataset_selection.use_datasets or
-     self.params.dataset_selection.exclude_datasets):
-     if self.experiments.identifiers().count('') > 0:
-      logger.warn('\nERROR: Attempting to choose datasets based on unique identifier,\n'
-        'but not all datasets currently have a unique identifier! Please make\n'
-        'sure all identifiers are set before attempting to select datasets.\n')
-      logger.info('Current identifiers set as: %s', list(
-        self.experiments.identifiers()))
-      sys.exit()
+    #### First exclude any datasets, before the dataset is split into
+    #### individual reflection tables and expids set.
+    self.experiments, self.reflections = prepare_multiple_datasets_for_scaling(
+      self.experiments, self.reflections,
+      self.params.dataset_selection.exclude_datasets,
+      self.params.dataset_selection.use_datasets)
 
-    self.experiments, self.reflections = assign_unique_identifiers(
-      self.experiments, self.reflections)
-    logger.info("\nDataset unique identifiers are %s \n", list(
-      self.experiments.identifiers()))
+    self.reflections, self.experiments = exclude_image_ranges_for_scaling(
+      self.reflections, self.experiments, self.params.exclude_images)
 
-    if (self.params.dataset_selection.use_datasets or
-     self.params.dataset_selection.exclude_datasets):
-      self.experiments, self.reflections = \
-        select_datasets_on_ids(self.experiments, self.reflections,
-          use_datasets=self.params.dataset_selection.use_datasets,
-          exclude_datasets=self.params.dataset_selection.exclude_datasets)
+    #### Ensure all space groups are the same
+    self.experiments = ensure_consistent_space_groups(self.experiments, self.params)
 
-      logger.info("\nDataset unique identifiers for retained datasets are %s \n",
-        list(self.experiments.identifiers()))
-
-
-    if self.params.scaling_options.space_group:
-      for experiment in self.experiments:
-        sg_from_file = experiment.crystal.get_space_group().info()
-        s_g_symbol = self.params.scaling_options.space_group
-        crystal_symmetry = crystal.symmetry(space_group_symbol=s_g_symbol)
-        experiment.crystal.set_space_group(crystal_symmetry.space_group())
-        if crystal_symmetry.space_group() != sg_from_file:
-          msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
-            'If the reflection indexing in these space groups is different, {sep}'
-            'bad things may happen!!! {sep}').format(sg_from_file, s_g_symbol, sep='\n')
-          logger.info(msg)
-    s_g_1 = self.experiments[0].crystal.get_space_group()
-    for experiment in self.experiments:
-      if experiment.crystal.get_space_group().type().number() \
-        != s_g_1.type().number():
-        logger.info("Space groups not determined to be equal; %s and %s", s_g_1.info(),
-          experiment.crystal.get_space_group().info())
-        raise Sorry('experiments have different space groups and cannot be '
-          'scaled together, please reanalyse the data so that the space groups '
-          'are consistent or manually specify a space group. Alternatively, '
-          'some datasets can be excluded using the option exclude_datasets=')
-
-    logger.info("Space group being used during scaling is %s" % s_g_1.info())
-
+    #### If doing targeted scaling, extract data and append an experiment
+    #### and reflection table to the lists
     if self.params.scaling_options.target_model:
       logger.info("Extracting data from structural model.")
       exp, reflections = create_datastructures_for_structural_model(
         self.reflections, self.experiments, self.params.scaling_options.target_model)
       self.experiments.append(exp)
       self.reflections.append(reflections)
-      self.reflections[-1]['id'] = flex.int(self.reflections[-1].size(),
-        len(self.reflections))
 
     elif self.params.scaling_options.target_mtz:
       logger.info("Extracting data from merged mtz.")
@@ -236,58 +214,62 @@ class Script(object):
         self.params.scaling_options.target_mtz)
       self.experiments.append(exp)
       self.reflections.append(reflections)
-      self.reflections[-1]['id'] = flex.int(self.reflections[-1].size(),
-        len(self.reflections))
 
-    if len(self.experiments) != len(self.reflections):
-      raise Sorry("Mismatched number of experiments and reflection tables found.")
-
-    # Perform any cutting of the dataset prior to creating scaling models.
+    #### Perform any non-batch cutting of the datasets, including the target dataset
     for reflection in self.reflections:
-      reflection.set_flags(flex.bool(reflection.size(), False),
-        reflection.flags.user_excluded_in_scaling)
       if self.params.cut_data.d_min:
         reflection.set_flags(reflection['d'] < self.params.cut_data.d_min,
-        reflection.flags.user_excluded_in_scaling)
+          reflection.flags.user_excluded_in_scaling)
       if self.params.cut_data.d_max:
         reflection.set_flags(reflection['d'] > self.params.cut_data.d_max,
-        reflection.flags.user_excluded_in_scaling)
+          reflection.flags.user_excluded_in_scaling)
       if self.params.cut_data.partiality_cutoff and 'partiality' in reflection:
         reflection.set_flags(reflection['partiality'] < \
           self.params.cut_data.partiality_cutoff,
           reflection.flags.user_excluded_in_scaling)
 
-    if self.params.cut_data.exclude_image_range:
-      if len(self.reflections) == 1:
-        start_excl = self.params.cut_data.exclude_image_range[0]
-        end_excl = self.params.cut_data.exclude_image_range[1]
-        mask1 = start_excl < self.reflections[0]['xyzobs.px.value'].parts()[2]
-        mask2 = end_excl > self.reflections[0]['xyzobs.px.value'].parts()[2]
-        self.reflections[0].set_flags(mask1 & mask2,
-          self.reflections[0].flags.user_excluded_in_scaling)
-      else:
-        raise Sorry("""exclude_image_range can only be used with one dataset,
-        not multiple datasets.""")
-
   def scale(self):
     """Create the scaling models and perform scaling."""
-    self.experiments = create_scaling_model(self.params, self.experiments,
-      self.reflections)
+    if self.params.model in (None, libtbx.Auto):
+      self.experiments = create_auto_scaling_model(self.params, self.experiments,
+        self.reflections)
+    else:
+      self.experiments = create_scaling_model(self.params, self.experiments,
+        self.reflections)
     logger.info('\nScaling models have been initialised for all experiments.')
     logger.info('\n' + '='*80 + '\n')
 
+    self.experiments = set_image_ranges_in_scaling_models(self.experiments)
+
     self.scaler = create_scaler(self.params, self.experiments, self.reflections)
     self.scaler = self.scaling_algorithm(self.scaler)
+
+  def remove_unwanted_datasets(self):
+    """Remove any target model/mtz data and any datasets which were removed
+    from the scaler during scaling."""
+    # first remove target refl/exps
+    if self.params.scaling_options.target_model or \
+      self.params.scaling_options.target_mtz or \
+      self.params.scaling_options.only_target:
+      self.experiments = self.experiments[:-1]
+      self.reflections = self.reflections[:-1]
+
+    #remove any bad datasets:
+    removed_ids = self.scaler.removed_datasets
+    if removed_ids:
+      logger.info('deleting removed datasets from memory: %s', removed_ids)
+      expids = list(self.experiments.identifiers())
+      locs_in_list = []
+      for id_ in removed_ids:
+        locs_in_list.append(expids.index(id_))
+      self.experiments, self.reflections = select_datasets_on_ids(
+        self.experiments, self.reflections, exclude_datasets=removed_ids)
 
   def scaled_data_as_miller_array(self, crystal_symmetry, reflection_table=None,
     anomalous_flag=False):
     """Get a scaled miller array from an experiment and reflection table."""
     if not reflection_table:
       joint_table = flex.reflection_table()
-      if self.params.scaling_options.only_target or \
-        self.params.scaling_options.target_model or \
-        self.params.scaling_options.target_mtz:
-        self.reflections = self.reflections[:-1]
       for reflection_table in self.reflections:
         #better to just create many miller arrays and join them?
         refl_for_joint_table = flex.reflection_table()
@@ -302,6 +284,15 @@ class Script(object):
       good_refl_sel = ~reflection_table.get_flags(
         reflection_table.flags.bad_for_scaling, all=False)
       joint_table = reflection_table.select(good_refl_sel)
+    # Filter out negative scale factors to avoid merging statistics errors.
+    # These are not removed from the output data, as it is likely one would
+    # want to do further analysis e.g. delta cc1/2 and rescaling, to exclude
+    # certain data and get better scale factors for all reflections.
+    pos_scales = joint_table['inverse_scale_factor'] > 0
+    if pos_scales.count(False) > 0:
+      logger.info("""There are %s reflections with non-positive scale factors which
+will not be used for calculating merging statistics""" % pos_scales.count(False))
+      joint_table = joint_table.select(pos_scales)
 
     miller_set = miller.set(crystal_symmetry=crystal_symmetry,
       indices=joint_table['miller_index'], anomalous_flag=anomalous_flag)
@@ -315,35 +306,33 @@ class Script(object):
       miller.array_info(source='DIALS', source_type='reflection_tables'))
     return i_obs
 
-  def merging_stats(self):
-    """Calculate and print the merging statistics."""
-    logger.info('\n'+'='*80+'\n')
-
-    if self.params.output.exclude_on_batch_rmerge:
-      self.reflections = exclude_on_batch_rmerge(self.reflections, self.experiments,
-        self.params.output.exclude_on_batch_rmerge)
-
-    if self.params.output.exclude_on_image_scale:
-      self.reflections = exclude_on_image_scale(self.reflections, self.experiments,
-        self.params.output.exclude_on_image_scale)
-
+  def prepare_scaled_miller_array(self):
+    """Calculate a scaled miller array from the dataset."""
     self.scaled_miller_array = self.scaled_data_as_miller_array(
       self.experiments[0].crystal.get_crystal_symmetry(), anomalous_flag=False)
 
-    if self.scaled_miller_array.is_unique_set_under_symmetry():
+  def merging_stats(self, scaled_miller_array):
+    """Calculate and print the merging statistics."""
+    logger.info('\n'+'='*80+'\n')
+
+    if scaled_miller_array.is_unique_set_under_symmetry():
       logger.info(("Dataset doesn't contain any equivalent reflections, \n"
         "no merging statistics can be calculated."))
       return
 
     make_sub_header("Overall merging statistics (non-anomalous)",
         out=log.info_handle(logger))
-    result = iotbx.merging_statistics.dataset_statistics(
-      i_obs=self.scaled_miller_array, n_bins=self.params.output.merging.nbins,
-      anomalous=False, sigma_filtering=None, eliminate_sys_absent=False,
-      use_internal_variance=self.params.output.use_internal_variance)
-    result.show(header=0, out=log.info_handle(logger))
-    result.show_estimated_cutoffs(out=log.info_handle(logger))
-    self.merging_statistics_result = result
+    try:
+      result = iotbx.merging_statistics.dataset_statistics(
+        i_obs=scaled_miller_array, n_bins=self.params.output.merging.nbins,
+        anomalous=False, sigma_filtering=None, eliminate_sys_absent=False,
+        use_internal_variance=self.params.output.use_internal_variance)
+      show_merging_summary(result.overall)
+      show_merging_stats_by_resolution(result)
+      show_estimated_cutoffs(result)
+      self.merging_statistics_result = result
+    except RuntimeError:
+      raise DialsMergingStatisticsError("Failure during merging statistics calculation")
 
   def delete_datastructures(self):
     """Delete the data in the scaling datastructures to save RAM before
@@ -358,10 +347,10 @@ class Script(object):
     """Save the experiments json and scaled pickle file."""
     logger.info('\n'+'='*80+'\n')
 
-    if self.params.scaling_options.target_model or \
+    '''if self.params.scaling_options.target_model or \
       self.params.scaling_options.target_mtz or \
       self.params.scaling_options.only_target:
-      self.experiments = self.experiments[:-1]
+      self.experiments = self.experiments[:-1]'''
     save_experiments(self.experiments, self.params.output.experiments)
 
     crystal_symmetry = self.experiments[0].crystal.get_crystal_symmetry() # save for later
@@ -439,27 +428,8 @@ class Script(object):
       if scaler.params.scaling_options.only_target or \
         scaler.params.scaling_options.target_model or \
         scaler.params.scaling_options.target_mtz:
-        #Do some rounds of targeted scaling and then exit the algorithm.
 
-        if scaler.params.scaling_options.outlier_rejection:
-          scaler.outlier_rejection_routine()
-          scaler.perform_scaling()
-
-        if scaler.params.scaling_options.full_matrix and (
-          scaler.params.scaling_refinery.engine == 'SimpleLBFGS'):
-          scaler.perform_scaling(
-            engine=scaler.params.scaling_refinery.full_matrix_engine,
-            max_iterations=scaler.params.scaling_refinery.full_matrix_max_iterations)
-
-        scaler.expand_scales_to_all_reflections(calc_cov=True)
-        if scaler.params.scaling_options.outlier_rejection:
-          scaler.round_of_outlier_rejection()
-        if scaler.params.weighting.optimise_errors:
-          scaler.perform_error_optimisation(update_Ih=False)
-
-        scaler.adjust_variances()
-
-        scaler.clean_reflection_tables()
+        scaler = targeted_scaling_algorithm(scaler)
         return scaler
       # Now pass to a multiscaler ready for next round of scaling.
       scaler.expand_scales_to_all_reflections()
@@ -467,50 +437,108 @@ class Script(object):
 
     # From here onwards, scaler should only be a SingleScaler
     # or MultiScaler (not TargetScaler).
-    scaler.perform_scaling()
-
-    #Do another round of outlier rejection and then another minimisation.
-    rescale = False
-    if scaler.params.scaling_options.outlier_rejection:
-      scaler.outlier_rejection_routine()
-      rescale = True
-
-    if scaler.params.reflection_selection.intensity_choice == 'combine':
-      scaler.combine_intensities()
-      if scaler.params.scaling_options.outlier_rejection:
-        scaler.outlier_rejection_routine()
-      rescale = True
-
-    if rescale:
-      scaler.perform_scaling()
-
-    # Option to optimise the error model and then do another minimisation.
-    if scaler.params.weighting.optimise_errors:
-      scaler.error_optimisation_routine()
-      scaler.perform_scaling()
-
-    # Now do one round of full matrix minimisation to determine errors.
-    if scaler.params.scaling_options.full_matrix and (
-      scaler.params.scaling_refinery.engine == 'SimpleLBFGS'):
-      scaler.perform_scaling(
-        engine=scaler.params.scaling_refinery.full_matrix_engine,
-        max_iterations=scaler.params.scaling_refinery.full_matrix_max_iterations)
-
-    # The minimisation has only been done on a subset on the data, so apply the
-    # scale factors to the whole reflection table.
-    scaler.clear_Ih_table()
-    scaler.expand_scales_to_all_reflections(calc_cov=True)
-    if scaler.params.scaling_options.outlier_rejection:
-      # Note just call the method, not the 'outlier_rejection_routine'
-      scaler.round_of_outlier_rejection()
-
-    if scaler.params.weighting.optimise_errors:
-      # Note just call the method, not the 'error_optimisation_routine'
-      scaler.perform_error_optimisation(update_Ih=False)
-
-    scaler.adjust_variances()
-    scaler.clean_reflection_tables()
+    scaler = scaling_algorithm(scaler)
     return scaler
+
+def ensure_consistent_space_groups(experiments, params):
+  """Make all space groups the same, and raise an error if not."""
+  if params.scaling_options.space_group:
+      s_g_symbol = params.scaling_options.space_group
+      for experiment in experiments:
+        sg_from_file = experiment.crystal.get_space_group().info()
+        user_sg = crystal.symmetry(space_group_symbol=s_g_symbol).space_group()
+        if user_sg != sg_from_file:
+          msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
+            'If the reflection indexing in these space groups is different, {sep}'
+            'bad things may happen!!! {sep}').format(sg_from_file, s_g_symbol, sep='\n')
+          logger.info(msg)
+          experiment.crystal.set_space_group(user_sg)
+  else:
+    sgs = [e.crystal.get_space_group().type().number() for e in experiments]
+    if len(set(sgs)) > 1:
+      logger.info("""The space groups are not the same for all datasets;
+space groups numbers found: %s""", set(sgs))
+      raise Sorry('experiments have different space groups and cannot be '
+        'scaled together, please reanalyse the data so that the space groups '
+        'are consistent or manually specify a space group. Alternatively, '
+        'some datasets can be excluded using the option exclude_datasets=')
+  logger.info("Space group being used during scaling is %s",
+    experiments[0].crystal.get_space_group().info())
+  return experiments
+
+def print_scaling_model_error_info(experiments):
+  """Print out information on model errors"""
+  if experiments[0].scaling_model.components.values()[0].parameter_esds:
+    p_sigmas = flex.double()
+    for experiment in experiments:
+      for component in experiment.scaling_model.components.itervalues():
+        if component.parameter_esds:
+          p_sigmas.extend(flex.abs(component.parameters) / component.parameter_esds)
+    log_p_sigmas = flex.log(p_sigmas)
+    frac_high_uncertainty = (log_p_sigmas < 1.0).count(True) / len(log_p_sigmas)
+    if frac_high_uncertainty > 0:
+      if frac_high_uncertainty > 0.5:
+        logger.warn("""Warning: Over half (%.2f%%) of model parameters have signficant
+uncertainty (sigma/abs(parameter) > 0.5), which could indicate a
+poorly-determined scaling problem or overparameterisation.""" % (frac_high_uncertainty * 100))
+      else:
+        logger.info("""%.2f%% of model parameters have signficant uncertainty
+(sigma/abs(parameter) > 0.5)""" % (frac_high_uncertainty * 100))
+      logger.info("Plots of parameter uncertainties can be seen in dials report")
+
+def show_merging_summary(overall):
+  """Output a summary of merging statistics"""
+  logger.info(('Resolution: {0:.2f} - {1:.2f} {sep}Observations: {2:d} {sep}'
+  'Unique reflections: {3:d} {sep}Redundancy: {4:.1f} {sep}'
+  'Completeness: {5:.2f}% {sep}Mean intensity: {6:.1f} {sep}'
+  'Mean I/sigma(I): {7:.1f}'
+  ).format(overall.d_max, overall.d_min, overall.n_obs, overall.n_uniq,
+    overall.mean_redundancy, overall.completeness*100, overall.i_mean,
+    overall.i_over_sigma_mean, sep='\n'))
+  if overall.n_neg_sigmas > 0:
+    logger.info("SigI < 0 (rejected): %d observations", overall.n_neg_sigmas)
+  if overall.n_rejected_before_merge > 0:
+    logger.info("I < -3*SigI (rejected): %d observations", \
+    overall.n_rejected_before_merge)
+  if overall.n_rejected_after_merge > 0:
+    logger.info("I < -3*SigI (rejected): %d reflections", \
+    overall.n_rejected_after_merge)
+  logger.info((
+    'R-merge: {0:5.3f}{sep}R-meas:  {1:5.3f}{sep}R-pim:   {2:5.3f}{sep}').format(
+      overall.r_merge, overall.r_meas, overall.r_pim, sep='\n'))
+
+def show_merging_stats_by_resolution(result):
+  """Output merging statistics by resolution bin"""
+  logger.info('Statistics by resolution bin:')
+  logger.info(
+ ' d_max  d_min   #obs  #uniq   mult.  %%comp       <I>  <I/sI>    r_mrg   r_meas    r_pim   %scc1/2  cc_ano',
+    (' ' if result.overall.cc_one_half_significance is not None else ''))
+  for bin_stats in result.bins:
+    logger.info(bin_stats.format())
+  logger.info(result.overall.format())
+
+def show_estimated_cutoffs(result):
+  """Show estimated cutoffs based on iotbx code"""
+  def format_d_min(value):
+    """Format result values"""
+    if value is None:
+      return "(use all data)"
+    return "%7.3f" % value
+  cc_one_half_cut = result.estimate_d_min(min_cc_one_half=0.33)
+  i_over_sigma_cut = result.estimate_d_min(min_i_over_sigma=2.0)
+  r_merge_cut = result.estimate_d_min(max_r_merge=0.5)
+  r_meas_cut = result.estimate_d_min(max_r_meas=0.5)
+  completeness_cut_conservative = result.estimate_d_min(min_completeness=0.9)
+  completeness_cut_permissive = result.estimate_d_min(min_completeness=0.5)
+  logger.info("\nResolution cutoff estimates:")
+  logger.info('resolution of all data          : %7.3f', result.overall.d_min)
+  logger.info('based on CC(1/2) >= 0.33        : %s', format_d_min(cc_one_half_cut))
+  logger.info('based on mean(I/sigma) >= 2.0   : %s', format_d_min(i_over_sigma_cut))
+  logger.info('based on R-merge < 0.5          : %s', format_d_min(r_merge_cut))
+  logger.info('based on R-meas < 0.5           : %s', format_d_min(r_meas_cut))
+  logger.info('based on completeness >= 90%%    : %s', format_d_min(completeness_cut_conservative))
+  logger.info('based on completeness >= 50%%    : %s', format_d_min(completeness_cut_permissive))
+  logger.info('NOTE: we recommend using all data out to the CC(1/2) limit for refinement')
 
 if __name__ == "__main__":
   try:
@@ -526,6 +554,10 @@ if __name__ == "__main__":
       sys.exit()
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
+
+    if params.output.delete_integration_shoeboxes:
+      for r in reflections:
+        del r['shoebox']
 
     if params.cross_validation.cross_validation_mode:
       from dials.algorithms.scaling.cross_validation.cross_validate import \

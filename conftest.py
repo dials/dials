@@ -11,6 +11,11 @@ import pytest
 
 def pytest_addoption(parser):
   '''Add a '--runslow' option to py.test.'''
+  try:
+    parser.addoption("--regression", action="store_true", default=False,
+                     help="run regression tests")
+  except ValueError:
+    pass # Thrown in case the command line option is already defined
   parser.addoption("--runslow", action="store_true", default=False,
                    help="run slow tests")
 
@@ -35,22 +40,15 @@ def dials_regression():
   return os.path.dirname(dr.__file__)
 
 @pytest.fixture(scope="session")
-def regression_data():
+def regression_data(request):
   '''Return the location of a regression data set as py.path object.
      Skip the test if the data are not present.
   '''
-  dls_dir = '/dls/science/groups/scisoft/DIALS/regression_data'
-  if os.getenv('REGRESSIONDATA'):
-    target_dir = os.getenv('REGRESSIONDATA')
-  elif os.path.exists(os.path.join(dls_dir, 'filelist.json')):
-    target_dir = dls_dir
-  elif os.getenv('LIBTBX_BUILD'):
-    target_dir = os.path.join(os.getenv('LIBTBX_BUILD'), 'regression_data')
-  else:
-    pytest.skip('Can not determine regression data location. Use environment variable REGRESSIONDATA')
+  if not request.config.getoption("--regression"):
+    pytest.skip("Test requires --regression option to run.")
 
   import dials.util.regression_data
-  df = dials.util.regression_data.DataFetcher(target_dir, read_only=True)
+  df = dials.util.regression_data.DataFetcher()
   def skip_test_if_lookup_failed(result):
     if not result:
       pytest.skip('Regression data is required to run this test. Run dials.fetch_test_data')

@@ -11,6 +11,7 @@ from dials.algorithms.scaling.scaling_utilities import log_memory_usage
 from libtbx.phil import parse
 from libtbx import easy_mp
 from libtbx.table_utils import simple_table
+from scitbx.array_family import flex
 logger = logging.getLogger('dials')
 
 
@@ -164,6 +165,7 @@ class ErrorModelRefinery(object):
     self._target.error_model.refined_parameters = self._target.x
     #logger.info("\nMinimised error model with parameters {0:.5f} and {1:.5f}. {sep}"
     #      .format(self._target.x[0], abs(self._target.x[1]), sep='\n'))
+    self._target.error_model.clear_Ih_table()
     return self._target.error_model
 
 
@@ -235,13 +237,22 @@ class ScalingRefinery(object):
     if not isinstance(self._scaler, MultiScalerBase):
       self._scaler.experiments.scaling_model.normalise_components()
 
+    logger.debug("\n"+str(self._scaler.experiments.scaling_model))
+
     from dials.algorithms.scaling.scaling_library import calculate_single_merging_stats
     if self._scaler.Ih_table.free_Ih_table:
-      res = calculate_single_merging_stats(self._scaler.Ih_table.blocked_data_list[-1].Ih_table,
+      free_Ih = self._scaler.Ih_table.blocked_data_list[-1].Ih_table
+      free_Ih.set_flags(flex.bool(free_Ih.size(), False), free_Ih.flags.outlier_in_scaling)
+      free_Ih['miller_index'] = free_Ih['asu_miller_index']
+      res = calculate_single_merging_stats(free_Ih,
         self._scaler.experiments, use_internal_variance=False)
       free_rmeas = res.overall.r_meas
       free_cc12 = res.overall.cc_one_half
-      res = calculate_single_merging_stats(self._scaler.Ih_table.blocked_data_list[0].Ih_table,
+      ##FIXME why blocked_data_list[0] and not all ?
+      Ih = self._scaler.Ih_table.blocked_data_list[0].Ih_table
+      Ih.set_flags(flex.bool(Ih.size(), False), Ih.flags.outlier_in_scaling)
+      Ih['miller_index'] = Ih['asu_miller_index']
+      res = calculate_single_merging_stats(Ih,
         self._scaler.experiments, use_internal_variance=False)
       work_rmeas = res.overall.r_meas
       work_cc12 = res.overall.cc_one_half
@@ -253,8 +264,6 @@ class ScalingRefinery(object):
       logger.info('\nWork/Free set quality indicators:')
       st = simple_table(rows, header)
       logger.info(st.format())
-
-    return self._scaler
 
 
 class ScalingSimpleLBFGS(ScalingRefinery, SimpleLBFGS):

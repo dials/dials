@@ -13,6 +13,7 @@ from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.algorithms.scaling.scaler_factory import TargetScalerFactory
 from dials.algorithms.scaling.scaling_library import scale_against_target
+from dials.algorithms.scaling.model.scaling_model_factory import KBSMFactory
 
 def generated_target_refl():
   """Test target reflection table."""
@@ -25,6 +26,8 @@ def generated_target_refl():
   reflections['partiality'] = flex.double([1.0, 1.0, 1.0])
   reflections.set_flags(flex.bool([True, True, True]),
     reflections.flags.integrated)
+  reflections['id'] = flex.int(3, 0)
+  reflections.experiment_identifiers()[0] = str(0)
   return reflections
 
 def generated_refl_to_scale():
@@ -38,20 +41,19 @@ def generated_refl_to_scale():
   reflections['partiality'] = flex.double([1.0, 1.0, 1.0, 1.0])
   reflections.set_flags(flex.bool([True, True, True, True]),
     reflections.flags.integrated)
+  reflections['id'] = flex.int(4, 1)
+  reflections.experiment_identifiers()[1] = str(1)
   return reflections
 
-@pytest.fixture
 def test_target_refl():
   """Return the target reflection table."""
   return generated_target_refl()
 
-@pytest.fixture()
 def test_refl_to_scale():
   """Return the reflection table to scale."""
   return generated_refl_to_scale()
 
-@pytest.fixture
-def test_exp():
+def test_exp(idval=0):
   """Test experiments object."""
   experiments = ExperimentList()
   exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
@@ -59,6 +61,7 @@ def test_exp():
               "space_group_hall_symbol": " C 2y"}
   crystal = Crystal.from_dict(exp_dict)
   experiments.append(Experiment(crystal=crystal))
+  experiments[0].identifier = str(idval)
   return experiments
 
 @pytest.fixture
@@ -76,8 +79,7 @@ def KB_test_param():
   return parameters
 
 
-def test_scale_against_target(test_refl_to_scale, test_target_refl,
-  test_exp, KB_test_param):
+def test_scale_against_target(KB_test_param):
   """Integration testing of the scale_against_target library function/targeted
   scaling."""
   # Based on input - have Target Ih of 1.0, 10.0 and d of 1.0, 2.0. Then refl to
@@ -86,15 +88,21 @@ def test_scale_against_target(test_refl_to_scale, test_target_refl,
   # 2 = K * exp(B/2)
   # 1/2 = K * exp(B/8)
   # Solving these gives the form tested for at the end of this test.
-  target_reflections = test_target_refl
-  reflections = test_refl_to_scale
-  target_experiments = test_exp
-  experiments = test_exp
+  target_reflections = test_target_refl()
+  reflections = test_refl_to_scale()
+  target_experiments = test_exp()
+  experiments = test_exp(idval=1)
   scaled_reflections = scale_against_target(reflections, experiments,
     target_reflections, target_experiments)
   assert approx_equal(list(scaled_reflections['inverse_scale_factor']),
     [2.0, 0.5, 2.0, 2.0 * (4.0 **(-1.0/3.0))])
 
+  experiments = test_exp()
+  experiments.append(test_exp(idval=1)[0])
+  experiments[0].scaling_model = KBSMFactory.create(KB_test_param, [], [])
+  experiments[1].scaling_model = KBSMFactory.create(KB_test_param, [], [])
+  target_reflections = test_target_refl()
+  reflections = test_refl_to_scale()
   # Repeat the test but calling the TargetScaler directly, to allow inspection
   # of the model components.
   targetscaler = TargetScalerFactory.create(KB_test_param, experiments,

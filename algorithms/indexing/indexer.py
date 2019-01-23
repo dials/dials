@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 from dials.util import log
 
 debug_handle = log.debug_handle(logger)
-info_handle = log.info_handle(logger)
 
 import libtbx
 from libtbx.utils import Sorry
@@ -313,6 +312,15 @@ indexing {
         .type = float(value_min=0.0, value_max=1.0)
     }
   }
+  fft1d
+    .expert_level = 1
+  {
+    characteristic_grid = None
+      .help = Sampling frequency in radians. See Steller 1997. If None, \
+              determine a grid sampling automatically using the input \
+              reflections, using at most 0.029 radians.
+      .type = float(value_min=0)
+  }
   real_space_grid_search
     .expert_level = 1
   {
@@ -520,6 +528,9 @@ class indexer_base(object):
     if known_crystal_models is not None:
       from dials.algorithms.indexing.known_orientation \
            import indexer_known_orientation
+      if params.indexing.known_symmetry.space_group is None:
+        params.indexing.known_symmetry.space_group \
+          = known_crystal_models[0].get_space_group().info()
       idxr = indexer_known_orientation(
         reflections, imagesets, params, known_crystal_models)
     else:
@@ -883,26 +894,22 @@ class indexer_base(object):
           self.indexed_reflections)
         if self.params.refinement_protocol.mode == 'repredict_only':
           refined_experiments, refined_reflections = experiments, reflections_for_refinement
-          from dials.algorithms.refinement.prediction import ExperimentsPredictor
-          ref_predictor = ExperimentsPredictor(experiments,
-                                               spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
+          from dials.algorithms.refinement.prediction.managed_predictors import ExperimentsPredictorFactory
+          ref_predictor = ExperimentsPredictorFactory.from_experiments(
+              experiments, spherical_relp=self.all_params.refinement.parameterisation.spherical_relp_model)
           ref_predictor(refined_reflections)
         else:
           try:
             refined_experiments, refined_reflections = self.refine(
               experiments, reflections_for_refinement)
-          except RuntimeError as e:
-            s = str(e)
-            if ("below the configured limit" in s or
-                "Insufficient matches for crystal" in s):
-              if len(experiments) == 1:
-                raise Sorry(e)
-              had_refinement_error = True
-              logger.info("Refinement failed:")
-              logger.info(s)
-              del experiments[-1]
-              break
-            raise
+          except Sorry as e:
+            if len(experiments) == 1:
+              raise
+            had_refinement_error = True
+            logger.info("Refinement failed:")
+            logger.info(e)
+            del experiments[-1]
+            break
 
         # sanity check for unrealistic unit cell volume increase during refinement
         # usually this indicates too many parameters are being refined given the
@@ -972,9 +979,9 @@ class indexer_base(object):
 
     if len(self.refined_experiments) > 1:
       from dials.algorithms.indexing.compare_orientation_matrices \
-           import show_rotation_matrix_differences
-      show_rotation_matrix_differences(
-        self.refined_experiments.crystals(), out=info_handle)
+           import rotation_matrix_differences
+      logger.info(
+        rotation_matrix_differences(self.refined_experiments.crystals()))
 
     self.refined_reflections['xyzcal.px'] = flex.vec3_double(
       len(self.refined_reflections))
@@ -1007,9 +1014,8 @@ class indexer_base(object):
   def show_experiments(self, experiments, reflections, d_min=None):
     if d_min is not None:
       reciprocal_lattice_points = reflections['rlp']
-      if d_min is not None:
-        d_spacings = 1/reciprocal_lattice_points.norms()
-        reflections = reflections.select(d_spacings > d_min)
+      d_spacings = 1/reciprocal_lattice_points.norms()
+      reflections = reflections.select(d_spacings > d_min)
     for i_expt, expt in enumerate(experiments):
       logger.info("model %i (%i reflections):" %(
         i_expt+1, (reflections['id'] == i_expt).count(True)))
@@ -1363,15 +1369,12 @@ class indexer_base(object):
               indexed_reflections['miller_index'], best_offset)
 
       from dials.algorithms.refinement import RefinerFactory
-      logger = logging.getLogger('dials.algorithms.refinement.refiner')
-      level = logger.getEffectiveLevel()
-      logger.setLevel(logging.ERROR)
-      disabled = logger.disabled
-      logger.disabled = True
+      reflogger = logging.getLogger('dials.algorithms.refinement')
+      level = reflogger.getEffectiveLevel()
+      reflogger.setLevel(logging.ERROR)
       try:
         refiner = RefinerFactory.from_parameters_data_experiments(
-          params, indexed_reflections, experiments,
-          verbosity=0)
+          params, indexed_reflections, experiments)
         refiner.run()
       except (RuntimeError, ValueError, Sorry) as e:
         return
@@ -1387,8 +1390,7 @@ class indexer_base(object):
                         hkl_offset=best_offset)
         return soln
       finally:
-        logger.disabled = disabled
-        logger.setLevel(level)
+        reflogger.setLevel(level)
 
     import copy
     params = copy.deepcopy(self.all_params)

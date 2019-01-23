@@ -45,7 +45,7 @@ def test_errormodel(large_reflection_table, test_sg):
   with pytest.raises(Sorry):
     em = get_error_model('bad')
   em = get_error_model('basic')
-  Ih_table = IhTable([(large_reflection_table, None)], test_sg, n_blocks=1)
+  Ih_table = IhTable([large_reflection_table], test_sg, nblocks=1)
   block = Ih_table.blocked_data_list[0]
   error_model = em(block, n_bins=10)
   assert error_model.summation_matrix[0, 1] == 1
@@ -60,7 +60,7 @@ def test_errormodel(large_reflection_table, test_sg):
   assert error_model.summation_matrix[9, 7] == 1
   assert error_model.summation_matrix.non_zeroes == large_reflection_table.size()
   assert error_model.bin_counts == flex.double(large_reflection_table.size(), 1)
-  assert error_model.n_h == block.n_h
+  assert list(error_model.n_h) == list(block.calc_nh())
 
   # Test calc sigmaprime
   x0 = 1.0
@@ -109,7 +109,7 @@ def test_errormodel(large_reflection_table, test_sg):
 
 def test_error_model_target(large_reflection_table, test_sg):
   """Test the error model target."""
-  Ih_table = IhTable([(large_reflection_table, None)], test_sg, n_blocks=1)
+  Ih_table = IhTable([large_reflection_table], test_sg, nblocks=1)
   block = Ih_table.blocked_data_list[0]
   error_model = BasicErrorModel(block, n_bins=2)
   error_model.update_for_minimisation([1.0, 0.05])

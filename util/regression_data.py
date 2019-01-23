@@ -154,7 +154,7 @@ def fetch_test_data(target_dir, retry_limit=3, verify_threads=8, download_thread
             pass
         success = True
         try:
-          download_to_file(item['url'], os.path.join(target_dir, item['filename']))
+          download_to_file(item['url'], item['filename'])
           item['status'] = 'Downloaded'
           if file_md5(item['filename']) != item['checksum']:
             item['error'] = 'failed validation with hash mismatch'
@@ -269,22 +269,37 @@ class DataFetcher():
   '''A class that offers access to regression data sets.
 
      To initialize:
-         df = DataFetcher('/location/where/data/can/be/stored')
+         df = DataFetcher()
      Then
          df('insulin')
      returns a py.path object to the insulin data. If that data is not already
      on disk it is downloaded automatically.
 
+     To specify where data is stored:
+         df = DataFetcher('/location/where/data/can/be/stored')
      To disable all downloads:
-         df = DataFetcher('/location/where/data/can/be/stored', read_only=True)
+         df = DataFetcher(read_only=True)
 
      Do not use this class directly in tests! Use the regression_data fixture.
   '''
 
-  def __init__(self, target_dir, read_only=False):
+  def __init__(self, target_dir=None, read_only=False):
     self._cache = {}
+    if target_dir:
+      self._target_dir = target_dir
+    else:
+      # Try to find an appropriate locate for regression data
+      dls_dir = '/dls/science/groups/scisoft/DIALS/regression_data'
+      if os.getenv('REGRESSIONDATA'):
+        self._target_dir = os.getenv('REGRESSIONDATA')
+      elif os.path.exists(os.path.join(dls_dir, 'filelist.json')):
+        self._target_dir = dls_dir
+        read_only = True
+      elif os.getenv('LIBTBX_BUILD'):
+        self._target_dir = os.path.join(os.getenv('LIBTBX_BUILD'), 'regression_data')
+      else:
+        raise RuntimeError('Could not determine regression data location. Use environment variable REGRESSIONDATA')
     self._read_only = read_only
-    self._target_dir = target_dir
 
   def __repr__(self):
     return "<%sDataFetcher: %s>" % ('R/O ' if self._read_only else '', self._target_dir)

@@ -522,3 +522,16 @@ def test_index_small_molecule_ice_max_cell(dials_regression, tmpdir):
                               extra_args, expected_unit_cell,
                               expected_rmsds, expected_hall_symbol)
     assert len(result.indexed_reflections) > 1300, len(result.indexed_reflections)
+
+def test_refinement_failure_on_max_lattices_a15(dials_regression, run_in_tmpdir):
+  """Problem: Sometimes there is enough data to index, but not enough to
+  refine. If this happens in the (N>1)th crystal of max_lattices, then
+  all existing solutions are also dropped."""
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "lattice_failures")
+
+  cmd = [ "dials.index", os.path.join(data_dir, "lpe4-2-a15_strong.pickle"),
+          os.path.join(data_dir, "lpe4-2-a15_datablock.json"),
+          "max_lattices=3"]
+  easy_run.fully_buffered(command=" ".join(cmd)).raise_if_errors()
+  assert os.path.isfile("indexed.pickle") and os.path.isfile("experiments.json")
+  experiments_list = load.experiment_list("experiments.json", check_format=False)

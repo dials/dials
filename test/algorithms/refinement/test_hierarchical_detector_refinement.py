@@ -10,8 +10,8 @@ import pytest
 
 def generate_reflections(experiments):
   from dials.algorithms.spot_prediction import IndexGenerator
-  from dials.algorithms.refinement.prediction import \
-    ScansRayPredictor, ExperimentsPredictor
+  from dials.algorithms.refinement.prediction.managed_predictors import \
+    ScansRayPredictor, ScansExperimentsPredictor
   from dials.algorithms.spot_prediction import ray_intersection
   from cctbx.sgtbx import space_group, space_group_symbols
   from scitbx.array_family import flex
@@ -37,7 +37,7 @@ def generate_reflections(experiments):
 
   # Make a reflection predictor and re-predict for all these reflections. The
   # result is the same, but we gain also the flags and xyzcal.px columns
-  ref_predictor = ExperimentsPredictor(experiments)
+  ref_predictor = ScansExperimentsPredictor(experiments)
   obs_refs['id'] = flex.int(len(obs_refs), 0)
   obs_refs = ref_predictor(obs_refs)
 
@@ -100,7 +100,7 @@ def test1(dials_regression):
   refs, ref_predictor = generate_reflections(experiments)
 
   # move the detector quadrants apart by 2mm both horizontally and vertically
-  from dials.algorithms.refinement.parameterisation \
+  from dials.algorithms.refinement.parameterisation.detector_parameters \
     import DetectorParameterisationHierarchical
   det_param = DetectorParameterisationHierarchical(detector, level=1)
   det_p_vals = det_param.get_param_vals()

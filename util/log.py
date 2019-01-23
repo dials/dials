@@ -13,15 +13,26 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
-def config(verbosity=1, info='', debug='', name='dials'):
-  '''
+
+def config(verbosity=1, name='dials', info=None, debug=None):
+  """
   Configure the logging.
 
-  :param verbosity: Set the verbosity
-  :param info: The info log file
-  :param debug: The debug log file
+  :param verbosity: Verbosity level of stdout log output.  Possible values:
+                      * 0: No log output to stdout;
+                      * 1: Info log output to stdout;
+                      * 2: Info & debug log output to stdout.
+  :type verbosity: int
+  :param name: Logger name.
+  :type name: str
+  :param info: Filename for info log output.  If False, no info log file is
+               written.
+  :type info: str
+  :param debug: Filename for debug log output.  If False, no debug log file is
+                written.
+  :type debug: str
+  """
 
-  '''
   import logging.config
 
   # Debug or not
@@ -30,23 +41,49 @@ def config(verbosity=1, info='', debug='', name='dials'):
   else:
     level = 'INFO'
 
+  # Preapare a dictionary of FileHandler configuration options
+  handlers_dict = {
+    'stream' : {
+      'level' : level,
+      'class' : 'logging.StreamHandler',
+      'formatter' : 'standard',
+      'stream': 'ext://sys.stdout',
+    }
+  }
   # Set the handlers to use
   if verbosity > 0:
     handlers = ['stream']
   else:
     handlers = []
-  if info is not None and info != '':
+  if info:
+    # Prepare a FileHandler for the info log
+    handlers_dict.update({
+      'file_info' : {
+        'level' : 'INFO',
+        'class' : 'logging.FileHandler',
+        'formatter' : 'standard',
+        'filename' : info,
+        'mode': 'w'
+      }
+    })
+    # Add the info log FileHandler to the list in the Logger
     handlers.append('file_info')
-  else:
-    info = 'dials.info.log'
-  if debug is not None and debug != '':
+  if debug:
+    # Prepare a FileHandler for the debug log
+    handlers_dict.update({
+      'file_debug' : {
+        'level' : 'DEBUG',
+        'class' : 'logging.FileHandler',
+        'formatter' : 'standard',
+        'filename' : debug,
+        'mode': 'w'
+      },
+    })
+    # Add the debug log FileHandler to the Logger
     handlers.append('file_debug')
-  else:
-    debug = 'dials.debug.log'
 
   # Configure the logging
-  logging.config.dictConfig({
-
+  config_dict = {
     'version' : 1,
     'disable_existing_loggers' : False,
 
@@ -59,28 +96,7 @@ def config(verbosity=1, info='', debug='', name='dials'):
       },
     },
 
-    'handlers' : {
-      'stream' : {
-        'level' : level,
-        'class' : 'logging.StreamHandler',
-        'formatter' : 'standard',
-        'stream': 'ext://sys.stdout',
-      },
-      'file_debug' : {
-        'level' : 'DEBUG',
-        'class' : 'logging.FileHandler',
-        'formatter' : 'standard',
-        'filename' : debug,
-        'mode' : 'w'
-      },
-      'file_info' : {
-        'level' : 'INFO',
-        'class' : 'logging.FileHandler',
-        'formatter' : 'standard',
-        'filename' : info,
-        'mode' : 'w'
-      }
-    },
+    'handlers' : handlers_dict,
 
     'loggers' : {
       name : {
@@ -89,9 +105,11 @@ def config(verbosity=1, info='', debug='', name='dials'):
         'propagate' : True
       },
     }
-  })
+  }
+  logging.config.dictConfig(config_dict)
   logging.getLogger('dxtbx').setLevel(logging.DEBUG)
   import dials.util.banner
+
 
 def config_simple_stdout(name='dials'):
   '''

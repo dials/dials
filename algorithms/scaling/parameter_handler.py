@@ -2,7 +2,6 @@
 Extension to general active parameter manager for scaling and function
 to use a scaler to determine the correct call to the apm factories.
 """
-
 from dials.algorithms.scaling.active_parameter_managers import \
   active_parameter_manager, ConcurrentAPMFactory, ConsecutiveAPMFactory
 
@@ -15,13 +14,14 @@ class scaling_active_parameter_manager(active_parameter_manager):
     self.constant_g_values = None
     for component, obj in components.iteritems():
       if not component in selection_list:
-        assert hasattr(obj, 'inverse_scales'), '''component object must have the
-          attribute 'inverse_scales'.'''
+        n_blocks = len(obj.n_refl)
         if self.constant_g_values is None:
-          self.constant_g_values = obj.inverse_scales
+          self.constant_g_values = [None] * n_blocks
+          for n in range(n_blocks):
+            self.constant_g_values[n] = obj.calculate_scales(n)
         else:
-          for i in range(len(obj.inverse_scales)):
-            self.constant_g_values[i] *= obj.inverse_scales[i]
+          for i in range(n_blocks):
+            self.constant_g_values[n] *= obj.calculate_scales(n)
     super(scaling_active_parameter_manager, self).__init__(components,
       selection_list)
     n_obs = []

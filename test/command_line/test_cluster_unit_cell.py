@@ -6,6 +6,7 @@ import pytest
 
 def test_dials_cluster_unit_cell_command_line(dials_regression, run_in_tmpdir):
   pytest.importorskip("scipy")
+  pytest.importorskip("xfel")
 
   data_dir = os.path.join(dials_regression, 'refinement_test_data',
                           'multi_narrow_wedges')

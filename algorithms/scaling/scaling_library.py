@@ -22,10 +22,57 @@ from dials.util.options import OptionParser
 from dials.algorithms.scaling.model.scaling_model_factory import \
   KBSMFactory
 from dials.algorithms.scaling.Ih_table import IhTable
-from dials.algorithms.scaling.scaling_utilities import get_next_unique_id, \
+from dials.algorithms.scaling.scaling_utilities import \
   calculate_prescaling_correction
+from dials.util.multi_dataset_handling import assign_unique_identifiers,\
+  parse_multiple_datasets, select_datasets_on_ids
+from dials.util.multi_dataset_handling import get_next_unique_id
 
 logger = logging.getLogger('dials')
+
+def prepare_multiple_datasets_for_scaling(experiments, reflections,
+  exclude_datasets=None, include_datasets=None):
+  """Prepare an ExperimentList and list of reflection tables for scaling, by
+  splitting the data into individual datasets, assigning identifiers and
+  including/excluding on experiment identifier if already set."""
+  if (include_datasets or exclude_datasets):
+    experiments, reflections = select_datasets_on_ids(
+      experiments, reflections, exclude_datasets, include_datasets)
+    logger.info("\nDataset unique identifiers for retained datasets are %s \n",
+      list(experiments.identifiers()))
+
+  #### Split the reflections tables into a list of reflection tables,
+  #### with one table per experiment.
+  logger.info('Checking for the existence of a reflection table \n'
+    'containing multiple datasets \n')
+  reflections = parse_multiple_datasets(reflections)
+  logger.info("Found %s reflection tables in total.", len(reflections))
+  logger.info("Found %s experiments in total.", len(experiments))
+
+  if len(experiments) != len(reflections):
+    raise Sorry("Mismatched number of experiments and reflection tables found.")
+
+  #### Assign experiment identifiers.
+  experiments, reflections = assign_unique_identifiers(experiments, reflections)
+  logger.info("\nDataset unique identifiers are %s \n", list(
+    experiments.identifiers()))
+
+  return experiments, reflections
+
+def set_image_ranges_in_scaling_models(experiments):
+  """Set the batch range in scaling models if not already set."""
+  for exp in experiments:
+    if exp.scan:
+      valid_image_ranges = exp.scan.get_valid_image_ranges(exp.identifier)
+      if not 'valid_image_range' in exp.scaling_model.configdict:
+        #only set if not currently set i.e. set initial
+        exp.scaling_model.set_valid_image_range(exp.scan.get_image_range())
+      if exp.scaling_model.configdict['valid_image_range'] != (
+        valid_image_ranges[0][0], valid_image_ranges[-1][1]):
+        #first and last values in whole list of tuples
+        exp.scaling_model.limit_image_range(
+          (valid_image_ranges[0][0], valid_image_ranges[-1][1]))
+  return experiments
 
 def choose_scaling_intensities(reflection_table, intensity_choice='profile'):
   """Choose which intensities to use for scaling. The LP, QE and
@@ -34,7 +81,8 @@ def choose_scaling_intensities(reflection_table, intensity_choice='profile'):
   all corrections applied except an inverse scale factor."""
   if intensity_choice == 'profile':
     intensity_choice = 'prf' #rename to allow string matching with refl table
-  conv = calculate_prescaling_correction(reflection_table)
+  reflection_table = calculate_prescaling_correction(reflection_table)
+  conv = reflection_table['prescaling_correction']
   intstr = 'intensity.'+intensity_choice+'.value'
   if not intstr in reflection_table:
   #Can't find selection, try to choose prf, if not then sum (also catches combine
@@ -124,39 +172,66 @@ def scale_single_dataset(reflection_table, experiment, params=None,
 
   experiments = create_scaling_model(params, experiment, [reflection_table])
   scaler = SingleScalerFactory.create(params, experiments[0], reflection_table)
-  scaler.perform_scaling()
-  scaler.outlier_rejection_routine()
-  scaler.perform_scaling(engine=params.scaling_refinery.full_matrix_engine,
-    max_iterations=params.scaling_refinery.full_matrix_max_iterations)
-  scaler.expand_scales_to_all_reflections(calc_cov=True)
-  scaler.round_of_outlier_rejection()
+  from dials.algorithms.scaling.algorithm import scaling_algorithm
+  scaler = scaling_algorithm(scaler)
   return scaler.reflection_table
+
+def create_auto_scaling_model(params, experiments, reflections):
+  """Create a scaling model with auto determined parameterisation."""
+  models = experiments.scaling_models()
+  if None in models or params.overwrite_existing_models:
+    for i, (exp, refl) in enumerate(zip(experiments, reflections)):
+      model = experiments.scaling_models()[i]
+      if not model or params.overwrite_existing_models:
+        if not exp.scan:
+          params.model = 'KB'
+        else: # set model physical unless scan < 1.0 degree
+          osc_range = (exp.scan.get_oscillation_range()[1] -
+            exp.scan.get_oscillation_range()[0])
+          params.model = 'physical'
+          if osc_range < 1.0:
+            params.model = 'KB'
+          elif osc_range < 10.0:
+            scale_interval, decay_interval = (2.0, 3.0)
+          elif osc_range < 25.0:
+            scale_interval, decay_interval = (4.0, 5.0)
+          elif osc_range < 90.0:
+            scale_interval, decay_interval = (8.0, 10.0)
+          else:
+            scale_interval, decay_interval = (15.0, 20.0)
+          if params.model == 'physical':
+            params.parameterisation.scale_interval = scale_interval
+            params.parameterisation.decay_interval = decay_interval
+            if osc_range < 60.0:
+              params.parameterisation.absorption_term = False
+
+        # now load correct factory and make scaling model.
+        factory = None
+        for entry_point in pkg_resources.iter_entry_points('dxtbx.scaling_model_ext'):
+          if entry_point.name == params.model:
+            factory = entry_point.load().factory()
+            break
+        exp.scaling_model = factory.create(params, exp, refl)
+  return experiments
 
 def create_scaling_model(params, experiments, reflections):
   """Create or load a scaling model for multiple datasets."""
-  for i, (exp, refl) in enumerate(zip(experiments, reflections)):
-    model = experiments.scaling_models()[i]
-    '''if params.scaling_options.target_intensities and i == len(reflections)-1:
-      for entry_point in pkg_resources.iter_entry_points('dxtbx.scaling_model_ext'):
-        if entry_point.name == 'KB':
-          #finds relevant extension in dials.extensions.scaling_model_ext
-          factory = entry_point.load().factory()
-          exp.scaling_model = factory.create(params, exp, refl)
-          exp.scaling_model.set_scaling_model_as_scaled()'''
-    if model is not None:
-      exp.scaling_model = model
-    else:
-      for entry_point in pkg_resources.iter_entry_points('dxtbx.scaling_model_ext'):
-        if entry_point.name == params.model:
-          #finds relevant extension in dials.extensions.scaling_model_ext
-          factory = entry_point.load().factory()
-          exp.scaling_model = factory.create(params, exp, refl)
-      if not exp.scaling_model:
-        raise Sorry('Unable to create scaling model of type %s' % params.model)
+  models = experiments.scaling_models()
+  if None in models or params.overwrite_existing_models:#else, don't need to anything if all have models
+    factory = None
+    for entry_point in pkg_resources.iter_entry_points('dxtbx.scaling_model_ext'):
+      if entry_point.name == params.model:
+        factory = entry_point.load().factory()
+        break
+    if not factory:
+      raise Sorry('Unable to create scaling model of type %s' % params.model)
+    for i, (exp, refl) in enumerate(zip(experiments, reflections)):
+      model = experiments.scaling_models()[i]
+      if not model or params.overwrite_existing_models:
+        exp.scaling_model = factory.create(params, exp, refl)
   return experiments
 
-def create_Ih_table(experiments, reflections, selections=None, n_blocks=1,
-  weighting_scheme=None):
+def create_Ih_table(experiments, reflections, selections=None, n_blocks=1):
   """Create an Ih table from a list of experiments and reflections. Optionally,
   a selection list can also be given, to select data from each reflection table.
   Allow an unequal number of experiments and reflections, as only need to
@@ -168,15 +243,18 @@ def create_Ih_table(experiments, reflections, selections=None, n_blocks=1,
   for experiment in experiments:
     assert experiment.crystal.get_space_group() == space_group_0, """The space
     groups of all experiments must be equal."""
-  refl_and_sel_list = []
+  input_tables = []
+  indices_lists = []
   for i, reflection in enumerate(reflections):
     if not 'inverse_scale_factor' in reflection:
       reflection['inverse_scale_factor'] = flex.double(reflection.size(), 1.0)
     if selections:
-      refl_and_sel_list.append((reflection, selections[i]))
+      input_tables.append(reflection.select(selections[i]))
+      indices_lists.append(selections[i].iselection())
     else:
-      refl_and_sel_list.append((reflection, None))
-  Ih_table = IhTable(refl_and_sel_list, space_group_0, n_blocks, weighting_scheme)
+      input_tables.append(reflection)
+      indices_lists = None
+  Ih_table = IhTable(input_tables, space_group_0, indices_lists, nblocks=n_blocks)
   return Ih_table
 
 def calculate_merging_statistics(reflection_table, experiments, use_internal_variance):
@@ -270,14 +348,21 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
       r_t['miller_index'] = Ih_table.miller_index
   else:
     assert 0, """Unrecognised intensities in mtz file."""
-
+  r_t = r_t.select(r_t['variance'] > 0.0)
+  r_t['d'] = miller.set(crystal_symmetry=crystal.symmetry(
+    space_group=m.space_group(), unit_cell=m.crystals()[0].unit_cell()),
+    indices=r_t['miller_index']).d_spacings().data()
   r_t.set_flags(flex.bool(r_t.size(), True), r_t.flags.integrated)
   exp = deepcopy(experiments[0]) #copy exp for space group -
     #any other necessary reason or can this attribute be added?
+  from dxtbx.model import Experiment
+  exp = Experiment()
+  exp.crystal = deepcopy(experiments[0].crystal)
   used_ids = experiments.identifiers()
-  unique_id = get_next_unique_id(0, used_ids)
+  unique_id = get_next_unique_id(len(used_ids), used_ids)
   exp.identifier = str(unique_id)
   r_t.experiment_identifiers()[unique_id] = str(unique_id)
+  r_t['id'] = flex.int(r_t.size(), unique_id)
 
   # create a new KB scaling model for the target and set as scaled to fix scale
   # for targeted scaling.
@@ -333,5 +418,11 @@ def create_datastructures_for_structural_model(reflections, experiments,
   rt = flex.reflection_table()
   rt['intensity'] = icalc
   rt['miller_index'] = miller_idx
+
+  used_ids = experiments.identifiers()
+  unique_id = get_next_unique_id(len(used_ids), used_ids)
+  exp.identifier = str(unique_id)
+  rt.experiment_identifiers()[unique_id] = str(unique_id)
+  rt['id'] = flex.int(rt.size(), unique_id)
 
   return exp, rt

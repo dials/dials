@@ -44,7 +44,7 @@ from rstbx.symmetry.constraints.parameter_reduction import \
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
-from dials.algorithms.refinement.prediction import ScansRayPredictor, ExperimentsPredictor
+from dials.algorithms.refinement.prediction.managed_predictors import ScansRayPredictor, ScansExperimentsPredictor
 from dials.algorithms.spot_prediction import ray_intersection
 from cctbx.sgtbx import space_group, space_group_symbols
 
@@ -271,10 +271,10 @@ def test(args=[]):
   ###############################
 
   mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
-      experiments_single_panel, ExperimentsPredictor(experiments_single_panel),
+      experiments_single_panel, ScansExperimentsPredictor(experiments_single_panel),
       refman, pred_param, restraints_parameterisation=None)
   mytarget2 = LeastSquaresPositionalResidualWithRmsdCutoff(
-      experiments_multi_panel, ExperimentsPredictor(experiments_multi_panel),
+      experiments_multi_panel, ScansExperimentsPredictor(experiments_multi_panel),
       refman2, pred_param2, restraints_parameterisation=None)
 
   #################################

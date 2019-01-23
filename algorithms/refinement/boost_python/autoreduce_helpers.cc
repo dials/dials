@@ -11,13 +11,15 @@
 using namespace boost::python;
 using namespace dials::af;
 
+// Helper classes to speed up calculations in autoreduce.py
+
 namespace dials { namespace refinement { namespace boost_python {
   /*
-    Class used to replace functionality from panel_gp_nparam_minus_nref(p, pnl_ids, group, reflections, verbose=False) function in refiner.py
+    Helper class used by the AutoReduce._panel_gp_surplus_reflections function in autoreduce.py
   */
-  struct pgnmn_iter{
+  struct pg_surpl_iter{
     template <typename IntType>
-    pgnmn_iter( const scitbx::af::shared<IntType> &ref_ids,
+    pg_surpl_iter( const scitbx::af::shared<IntType> &ref_ids,
                 const scitbx::af::shared<std::size_t> &panel_id,
                 const boost::python::list pnl_ids,
                 const scitbx::af::shared<std::size_t> exp_ids,
@@ -71,11 +73,11 @@ namespace dials { namespace refinement { namespace boost_python {
   };
 
   /*
-    Class used to replace functionality from unit_cell_nparam_minus_nref(p, reflections) function in refiner.py
+    Helper class used by the AutoReduce._unit_cell_surplus_reflections function in autoreduce.py
   */
-  struct ucnmn_iter{
+  struct uc_surpl_iter{
     template <typename IntType>
-    ucnmn_iter( const scitbx::af::shared<IntType> &ref_ids,
+    uc_surpl_iter( const scitbx::af::shared<IntType> &ref_ids,
                 const scitbx::af::shared<cctbx::miller::index<> > &ref_miller,
                 const scitbx::af::shared<std::size_t> &exp_ids,
                 const scitbx::af::shared<mat3<double> > F_dbdp
@@ -133,9 +135,9 @@ namespace dials { namespace refinement { namespace boost_python {
     static bool gtZero (double x) { return ( (x > 0.0) == 1 ); } //Used for comparison operation
   };
 
-  struct mnmn_iter{
+  struct surpl_iter{
     template <typename IntType>
-    mnmn_iter( scitbx::af::shared<IntType> ref_ids,
+    surpl_iter( scitbx::af::shared<IntType> ref_ids,
       const scitbx::af::shared<std::size_t> exp_ids
     )
     {
@@ -160,11 +162,11 @@ namespace dials { namespace refinement { namespace boost_python {
     int result;
 };
 
-  void export_pgnmn_iter()
+  void export_pg_surpl_iter()
   {
     typedef return_value_policy<return_by_value> rbv;
     //templated constructor for int and size_t flex arrays of id
-    class_<dials::refinement::boost_python::pgnmn_iter>("pgnmn_iter", no_init)
+    class_<dials::refinement::boost_python::pg_surpl_iter>("pg_surpl_iter", no_init)
     .def( init< scitbx::af::shared<std::size_t>,
       const scitbx::af::shared<std::size_t>,
       const boost::python::list,
@@ -191,14 +193,14 @@ namespace dials { namespace refinement { namespace boost_python {
         boost::python::arg("cutoff")
       ))
     )
-    .add_property("result",make_getter(&dials::refinement::boost_python::pgnmn_iter::result, rbv()))
+    .add_property("result",make_getter(&dials::refinement::boost_python::pg_surpl_iter::result, rbv()))
   ;
   }
 
-  void export_ucnmn_iter()
+  void export_uc_surpl_iter()
   {
     typedef return_value_policy<return_by_value> rbv;
-    class_<dials::refinement::boost_python::ucnmn_iter> ("ucnmn_iter", no_init)
+    class_<dials::refinement::boost_python::uc_surpl_iter> ("uc_surpl_iter", no_init)
       .def( init< const scitbx::af::shared<std::size_t>,
         const scitbx::af::shared<cctbx::miller::index<> >,
         const scitbx::af::shared<std::size_t>,
@@ -221,14 +223,14 @@ namespace dials { namespace refinement { namespace boost_python {
           boost::python::arg("F_dbdp")
         ))
       )
-      .add_property("result",make_getter(&dials::refinement::boost_python::ucnmn_iter::result, rbv()))
+      .add_property("result",make_getter(&dials::refinement::boost_python::uc_surpl_iter::result, rbv()))
     ;
   }
 
-  void export_mnmn_iter()
+  void export_surpl_iter()
   {
     typedef return_value_policy<return_by_value> rbv;
-    class_<dials::refinement::boost_python::mnmn_iter> ("mnmn_iter", no_init)
+    class_<dials::refinement::boost_python::surpl_iter> ("surpl_iter", no_init)
       .def( init< scitbx::af::shared<std::size_t> ,
         const scitbx::af::shared<std::size_t> >
         ((
@@ -243,7 +245,7 @@ namespace dials { namespace refinement { namespace boost_python {
           boost::python::arg("exp_ids")
         ))
         )
-      .add_property("result",make_getter(&dials::refinement::boost_python::mnmn_iter::result, rbv()))
+      .add_property("result",make_getter(&dials::refinement::boost_python::surpl_iter::result, rbv()))
     ;
   }
 }}} // namespace dials::refinement::boost_python

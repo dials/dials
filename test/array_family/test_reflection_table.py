@@ -4,6 +4,11 @@ import copy
 
 import pytest
 
+from dials.array_family import flex
+from dxtbx.model import ExperimentList, Experiment, Crystal
+from libtbx.utils import Sorry
+from cctbx import sgtbx
+
 def test_init():
   from dials.array_family import flex
 
@@ -823,6 +828,21 @@ def test_split_by_experiment_id():
     assert(len(res) == 100)
     assert(res['id'].count(exp) == 100)
 
+  # test the same but with experiment_identifiers() set - keep separate as
+  # function must work with and without experiment_identifiers() set
+  r.experiment_identifiers()[0] = '0'
+  r.experiment_identifiers()[1] = '1'
+  r.experiment_identifiers()[2] = '2'
+  r.experiment_identifiers()[3] = '3'
+  r.experiment_identifiers()[5] = '5'
+  result = r.split_by_experiment_id()
+  assert(len(result) == 5)
+  for res, exp in zip(result, [0, 1, 2, 3, 5]):
+    assert(len(res) == 100)
+    assert(res['id'].count(exp) == 100)
+    assert(list(res.experiment_identifiers().keys()) == [exp])
+    assert(list(res.experiment_identifiers().values()) == [str(exp)])
+
 def test_split_indices_by_experiment_id():
   from dials.array_family import flex
   r = flex.reflection_table()
@@ -1092,7 +1112,6 @@ def test_experiment_identifiers():
   table['id'] = flex.int([0,1,2,3])
 
   table.assert_experiment_identifiers_are_consistent()
-  assert table.are_experiment_identifiers_consistent() == True
 
   identifiers = table.experiment_identifiers()
   identifiers[0] = 'abcd'
@@ -1120,7 +1139,6 @@ def test_experiment_identifiers():
 
 
   table.assert_experiment_identifiers_are_consistent()
-  assert table.are_experiment_identifiers_consistent() == True
 
   experiments = ExperimentList()
   experiments.append(Experiment(identifier="abcd"))
@@ -1129,7 +1147,6 @@ def test_experiment_identifiers():
   experiments.append(Experiment(identifier="mnop"))
 
   table.assert_experiment_identifiers_are_consistent()
-  assert table.are_experiment_identifiers_consistent(experiments) == True
 
   experiments = ExperimentList()
   experiments.append(Experiment(identifier="abcd"))
@@ -1140,7 +1157,9 @@ def test_experiment_identifiers():
 
   with pytest.raises(AssertionError):
     table.assert_experiment_identifiers_are_consistent(experiments)
-  assert table.are_experiment_identifiers_consistent(experiments) == False
+
+  experiments[2].identifier = "mnop"
+  table.assert_experiment_identifiers_are_consistent(experiments)
 
   identifiers = table.experiment_identifiers()
   identifiers[0] = 'abcd'
@@ -1150,7 +1169,6 @@ def test_experiment_identifiers():
 
   with pytest.raises(AssertionError):
     table.assert_experiment_identifiers_are_consistent()
-  assert table.are_experiment_identifiers_consistent() == False
 
   identifiers[3] = 'mnop'
 
@@ -1168,7 +1186,6 @@ def test_experiment_identifiers():
   other_table['id'] = flex.int([3, 4])
 
   table.assert_experiment_identifiers_are_consistent()
-  assert other_table.are_experiment_identifiers_consistent() == True
 
   identifiers = other_table.experiment_identifiers()
   identifiers[3] = 'mnop'
@@ -1183,3 +1200,89 @@ def test_experiment_identifiers():
   assert table.experiment_identifiers()[3] == 'mnop'
   assert table.experiment_identifiers()[4] == 'qrst'
 
+  new_table = table.select(flex.size_t([0, 2]))
+  assert len(table.experiment_identifiers()) == 5
+  assert table.experiment_identifiers()[0] == 'abcd'
+  assert table.experiment_identifiers()[1] == 'efgh'
+  assert table.experiment_identifiers()[2] == 'ijkl'
+  assert table.experiment_identifiers()[3] == 'mnop'
+  assert table.experiment_identifiers()[4] == 'qrst'
+
+def test_select_remove_on_experiment_identifiers():
+
+  table = flex.reflection_table()
+  table['id'] = flex.int([0, 1, 2, 3])
+
+  experiments = ExperimentList()
+  experiments.append(Experiment(identifier="abcd"))
+  experiments.append(Experiment(identifier="efgh"))
+  experiments.append(Experiment(identifier="ijkl"))
+  experiments.append(Experiment(identifier="mnop"))
+  table.experiment_identifiers()[0] = "abcd"
+  table.experiment_identifiers()[1] = "efgh"
+  table.experiment_identifiers()[2] = "ijkl"
+  table.experiment_identifiers()[3] = "mnop"
+
+  table.assert_experiment_identifiers_are_consistent(experiments)
+
+  table = table.remove_on_experiment_identifiers(["efgh"])
+  del experiments[1]
+  table.assert_experiment_identifiers_are_consistent(experiments)
+
+  assert list(table.experiment_identifiers().keys()) == [0, 2, 3]
+  assert list(table.experiment_identifiers().values()) == ["abcd", "ijkl", "mnop"]
+
+  table = table.select_on_experiment_identifiers(["abcd", "mnop"])
+  del experiments[1] #now ijkl
+  table.assert_experiment_identifiers_are_consistent(experiments)
+  assert list(table.experiment_identifiers().keys()) == [0, 3]
+  assert list(table.experiment_identifiers().values()) == ["abcd", "mnop"]
+
+  # reset 'id' column such that they are numbered 0 .. n-1
+  table.reset_ids()
+  table.assert_experiment_identifiers_are_consistent(experiments)
+  assert list(table.experiment_identifiers().keys()) == [0, 1]
+  assert list(table.experiment_identifiers().values()) == ["abcd", "mnop"]
+  # test that the function doesn't fail if no identifiers set
+  table1 = copy.deepcopy(table)
+  for k in table1.experiment_identifiers().keys():
+    del table1.experiment_identifiers()[k]
+  table1.reset_ids()
+  assert list(table1.experiment_identifiers().keys()) == []
+
+  # Test exception is raised if bad choice
+  with pytest.raises(KeyError):
+    table.remove_on_experiment_identifiers(["efgh"])
+  with pytest.raises(KeyError):
+    table.select_on_experiment_identifiers(["efgh"])
+
+  table = flex.reflection_table()
+  table['id'] = flex.int([0, 1, 2, 3])
+  # Test exception is raised if identifiers map not set
+  with pytest.raises(KeyError):
+    table.remove_on_experiment_identifiers(["efgh"])
+  with pytest.raises(KeyError):
+    table.select_on_experiment_identifiers(["abcd", "mnop"])
+
+def test_as_miller_array():
+  table = flex.reflection_table()
+  table['intensity.1.value'] = flex.double([1.0, 2.0, 3.0])
+  table['intensity.1.variance'] = flex.double([0.25, 1.0, 4.0])
+  table['miller_index'] = flex.miller_index([(1, 0, 0), (2, 0, 0), (3, 0, 0)])
+
+  crystal = Crystal(
+    real_space_a=(10, 0, 0),
+    real_space_b=(0, 11, 0),
+    real_space_c=(0, 0, 12),
+    space_group=sgtbx.space_group_info("P 222").group())
+  experiment = Experiment(crystal=crystal)
+
+  iobs = table.as_miller_array(experiment, intensity='1')
+  assert list(iobs.data()) == list(table['intensity.1.value'])
+  assert list(iobs.sigmas()) == list(table['intensity.1.variance']**0.5)
+
+  with pytest.raises(Sorry):
+    _ = table.as_miller_array(experiment, intensity='2')
+  table['intensity.2.value'] = flex.double([1.0, 2.0, 3.0])
+  with pytest.raises(Sorry):
+    _ = table.as_miller_array(experiment, intensity='2')

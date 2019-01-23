@@ -135,8 +135,6 @@ def run(args):
     stats.show()
     plot_statistics(stats, prefix='multi_strategy_')
 
-    return
-
 
 class Strategy(object):
 
@@ -167,7 +165,6 @@ class Strategy(object):
     if self.d_min is None:
       self.d_min = detector.get_max_inscribed_resolution(beam.get_s0())
 
-    import math
     # bragg's law
     sin_theta = 0.5 * beam.get_wavelength()/self.d_min
     theta_max_rad = math.asin(sin_theta)
@@ -220,13 +217,18 @@ class Strategy(object):
       self.frac_new_pairs, min_frac_new)
 
   def show(self):
-    self.stats.show()
-    print("Suggested cutoff (non-anom): %.2f degrees" %self.cutoff_non_anom)
-    print("  (completeness: %.2f %%)" %(
+    print("Warning: Use of the .show() method is deprecated. Use print(object) instead.")
+    print(str(self))
+
+  def __str__(self):
+    output = [ str(self.stats) ]
+    output.append("Suggested cutoff (non-anom): %.2f degrees" % self.cutoff_non_anom)
+    output.append("  (completeness: %.2f %%)" % (
       100 * self.ieither_completeness[int(self.cutoff_non_anom/self.degrees_per_bin)]))
-    print("Suggested cutoff (anom): %.2f degrees" %self.cutoff_anom)
-    print("  (completeness: %.2f %%)" %(
+    output.append("Suggested cutoff (anom): %.2f degrees" % self.cutoff_anom)
+    output.append("  (completeness: %.2f %%)" % (
       100 * self.iboth_completeness[int(self.cutoff_anom/self.degrees_per_bin)]))
+    return "\n".join(output)
 
   def plot(self, prefix=''):
     plot_statistics(self.stats, prefix=prefix, degrees_per_bin=self.degrees_per_bin,
@@ -237,7 +239,6 @@ class ComputeStats(object):
 
   def __init__(self, strategies, n_bins=8, degrees_per_bin=5):
     from cctbx import crystal, miller
-    import copy
 
     sg = strategies[0].experiment.crystal.get_space_group() \
       .build_derived_reflection_intensity_group(anomalous_flag=True)
@@ -296,9 +297,14 @@ class ComputeStats(object):
     self.frac_new_pairs = fraction_new(self.iboth_completeness) / degrees_per_bin
 
   def show(self):
-    print("Max. completeness (non-anom): %.2f %%" %(100 * flex.max(self.ieither_completeness)))
-    print("Max. completeness (anom): %.2f %%" %(100 * flex.max(self.iboth_completeness)))
+    print("Warning: Use of the .show() method is deprecated. Use print(object) instead.")
+    print(str(self))
 
+  def __str__(self):
+    return "\n".join((
+        "Max. completeness (non-anom): %.2f %%" % (100 * flex.max(self.ieither_completeness)),
+        "Max. completeness (anom): %.2f %%" %(100 * flex.max(self.iboth_completeness)),
+    ))
 
 def plot_statistics(statistics, prefix='', degrees_per_bin=5,
                     cutoff_anom=None, cutoff_non_anom=None):

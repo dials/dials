@@ -122,11 +122,13 @@ phil_scope = parse('''
       .help = "If not None, keep a subset of size n_subset when"
               "saving the combined experiments"
 
-    n_subset_method = *random n_refl
+    n_subset_method = *random n_refl significance_filter
       .type = choice
       .help = "Algorithm to be used for choosing the n_subset images/"
               "experiments for refinement.  n_refl chooses the set with the"
               "largest numbers of reflections listed in the pickle files"
+              "significance filter used to select n_subset images based on"
+              "I/sig(I) cutoff"
 
     n_refl_panel_list = None
       .type = ints
@@ -153,6 +155,8 @@ phil_scope = parse('''
       .expert_level = 2
       .help = "If not None, throw out any experiment with fewer than this"
               "many reflections"
+
+    include scope dials.algorithms.integration.stills_significance_filter.phil_scope
   }
 ''', process_includes=True)
 
@@ -517,6 +521,21 @@ class Script(object):
           subset_refls.extend(refls)
         print("Selecting a subset of {0} experiments with highest number of reflections out of {1} total.".format(
           params.output.n_subset, len(experiments)))
+
+      elif params.output.n_subset_method == "significance_filter":
+        from dials.algorithms.integration.stills_significance_filter import SignificanceFilter
+        params.output.significance_filter.enable=True
+        sig_filter = SignificanceFilter(params.output)
+        refls_subset=sig_filter(experiments, reflections)
+        refl_counts = flex.int()
+        for expt_id in xrange(len(experiments)):
+          refl_counts.append(len(refls_subset.select(refls_subset['id'] == expt_id)))
+        sort_order = flex.sort_permutation(refl_counts,reverse=True)
+        for expt_id, idx in enumerate(sort_order[:params.output.n_subset]):
+          subset_exp.append(experiments[idx])
+          refls = reflections.select(reflections['id'] == idx)
+          refls['id'] = flex.int(len(refls), expt_id)
+          subset_refls.extend(refls)
 
       experiments = subset_exp
       reflections = subset_refls

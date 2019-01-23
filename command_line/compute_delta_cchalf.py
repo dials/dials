@@ -12,6 +12,8 @@
 from __future__ import absolute_import, division, print_function
 import sys
 from iotbx.reflection_file_reader import any_reflection_file
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib import pylab
 from matplotlib import cm
 from math import sqrt, floor
@@ -22,8 +24,12 @@ from dials.algorithms.statistics.delta_cchalf import PerImageCChalfStatistics
 from dials.array_family import flex
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx.phil import parse
+from libtbx.utils import Sorry
 import collections
 import logging
+from dials.util.exclude_images import exclude_image_ranges_for_scaling
+from dials.util.multi_dataset_handling import select_datasets_on_ids
+from dials.algorithms.scaling.scaling_library import set_image_ranges_in_scaling_models
 
 logger = logging.getLogger('dials.command_line.compute_delta_cchalf')
 
@@ -35,25 +41,38 @@ This program computes the delta cchalf excluding images
 
 # Set the phil scope
 phil_scope = parse('''
-  
+
   input {
-    
+
     mtzfile = None
       .type = str
       .help = "We can also import an MTZ file"
 
   }
 
+  mode = *dataset image_group
+    .type = choice
+    .help = "Perform analysis on whole datasets or batch groups"
+
+  group_size = 10
+    .type = int(value_min=1)
+    .help = "The number of images to group together when calculating delta"
+            "cchalf in image_group mode"
+
   output {
-    
+
     experiments = "filtered_experiments.json"
       .type = str
       .help = "The filtered experiments file"
-    
-    reflections = "filtered_reflections.json"
+
+    reflections = "filtered_reflections.pickle"
       .type = str
       .help = "The filtered reflections file"
-  } 
+
+    table = "delta_cchalf.dat"
+      .type = str
+      .help = "A file with delta cchalf values"
+  }
 
   nbins = 10
     .type = int(value_min=1)
@@ -66,6 +85,10 @@ phil_scope = parse('''
   dmax = None
     .type = float
     .help = "The minimum resolution"
+
+  stdcutoff = 4.0
+    .type = float
+    .help = "Datasets with a delta cc half below (mean - stdcutoff*std) are removed"
 
   output {
 
@@ -129,16 +152,23 @@ class Script(object):
 
     # Setup a named tuple
     self.DataRecord = collections.namedtuple("DataRecord", (
-      "unit_cell", 
-      "space_group", 
+      "unit_cell",
+      "space_group",
       "miller_index",
-      "dataset", 
-      "intensity", 
-      "variance"))
+      "dataset",
+      "intensity",
+      "variance",
+      "identifiers",
+      "images"))
 
     # Ensure we have an experiment list
     experiments = flatten_experiments(params.input.experiments)
     reflections = flatten_reflections(params.input.reflections)
+
+    if params.mode == 'image_group':
+      for exp in experiments:
+        if not exp.scan:
+          raise Sorry("Cannot use mode=image_group with scanless experiments")
     if len(experiments) > 0:
       assert len(reflections) == 1
       data = self.read_experiments(experiments, reflections[0])
@@ -151,27 +181,38 @@ class Script(object):
     # Create the statistics object
     statistics = PerImageCChalfStatistics(
       data.miller_index,
+      data.identifiers,
       data.dataset,
+      data.images,
       data.intensity,
       data.variance,
       data.unit_cell,
       data.space_group,
       nbins = params.nbins,
       dmin  = params.dmin,
-      dmax  = params.dmax)
+      dmax  = params.dmax,
+      mode = params.mode,
+      image_group = params.group_size)
+
+    if params.mode == 'image_group':
+      self.image_group_to_id = statistics.image_group_to_id
+      self.image_group_to_image_range = statistics.image_group_to_image_range
 
     # Print out the datasets in order of delta cc 1/2
     delta_cchalf_i = statistics.delta_cchalf_i()
     datasets = list(delta_cchalf_i.keys())
     sorted_index = sorted(range(len(datasets)), key=lambda x: delta_cchalf_i[datasets[x]])
     for i in sorted_index:
-      print("Dataset: %d, Delta CC 1/2: %.3f" % (datasets[i], 100*delta_cchalf_i[datasets[i]]))
-    
+      logger.info("Dataset: %d, Delta CC 1/2: %.3f" % (datasets[i], 100*delta_cchalf_i[datasets[i]]))
+
+    # Write a text file with delta cchalf values
+    self.write_delta_cchalf_file(datasets, delta_cchalf_i, params)
+
     # Remove datasets based on delta cc1/2
     if len(experiments) > 0:
       self.write_experiments_and_reflections(
-        experiments, 
-        reflections[0], 
+        experiments,
+        reflections[0],
         params,
         delta_cchalf_i)
 
@@ -180,7 +221,8 @@ class Script(object):
     fig, ax = pylab.subplots()
     ax.hist(delta_cchalf_i.values())
     ax.set_xlabel("Delta CC 1/2")
-    pylab.show()
+    fig.savefig("plot1.png")
+    #pylab.show()
 
     X = list(delta_cchalf_i.keys())
     Y = list(delta_cchalf_i.values())
@@ -188,7 +230,19 @@ class Script(object):
     ax.plot(X, Y)
     ax.set_xlabel("Dataset number")
     ax.set_ylabel("Delta CC 1/2")
-    pylab.show()
+    fig.savefig("plot2.png")
+    #pylab.show()
+
+  def write_delta_cchalf_file(self, datasets, delta_cchalf_i, params):
+    '''
+    Write values to file
+
+    '''
+    logger.info("Writing table to %s" % params.output.table)
+    with open(params.output.table, "w") as outfile:
+      sorted_index = sorted(range(len(datasets)), key=lambda x: delta_cchalf_i[datasets[x]])
+      for i in sorted_index:
+        outfile.write("%d %f\n" % (datasets[i], 100*delta_cchalf_i[datasets[i]]))
 
   def read_experiments(self, experiments, reflections):
     '''
@@ -199,12 +253,21 @@ class Script(object):
     # Get space group and unit cell
     space_group = None
     unit_cell = []
+    exp_identifiers = []
     for e in experiments:
       if space_group is None:
         space_group = e.crystal.get_space_group()
       else:
         assert space_group.type().number() == e.crystal.get_space_group().type().number()
       unit_cell.append(e.crystal.get_unit_cell())
+      exp_identifiers.append(e.identifier)
+    # get a list of the ids from the reflection table corresponding to exp_ids
+    identifiers = []
+    for expit in exp_identifiers:
+      for k in reflections.experiment_identifiers().keys():
+        if reflections.experiment_identifiers()[k] == expit:
+          identifiers.append(k)
+          break
 
     # Selection of reflections
     selection = ~(reflections.get_flags(reflections.flags.bad_for_scaling, all=False))
@@ -216,13 +279,14 @@ class Script(object):
     selection = inv_scale_factor > 0
     reflections = reflections.select(selection)
     inv_scale_factor = reflections['inverse_scale_factor']
-    
+
     # Get the reflection data
     index = reflections['id']
     miller_index = reflections['miller_index']
     intensity = reflections['intensity.scale.value'] / inv_scale_factor
     variance = reflections['intensity.scale.variance'] / inv_scale_factor**2
-
+    # calculate image number of observation (e.g 0.0 <= z < 1.0), image = 1
+    images = flex.floor(reflections['xyzobs.px.value'].parts()[2]).iround() + 1
     # Get the MTZ file
     return self.DataRecord(
       unit_cell    = unit_cell,
@@ -230,7 +294,9 @@ class Script(object):
       miller_index = miller_index,
       dataset      = index,
       intensity    = intensity,
-      variance     = variance)
+      variance     = variance,
+      identifiers  = identifiers,
+      images = images)
 
   def read_mtzfile(self, filename):
     '''
@@ -257,7 +323,7 @@ class Script(object):
 
     # Get the unit cell and space group
     unit_cell = intensities.unit_cell()
-    space_group = intensities.crystal_symmetry().space_group() 
+    space_group = intensities.crystal_symmetry().space_group()
 
     # The reflection data
     miller_index = intensities.indices()
@@ -279,10 +345,10 @@ class Script(object):
       dataset      = dataset,
       intensity    = intensity,
       variance     = variance)
-  
-  def write_experiments_and_reflections(self, 
-                                        experiments, 
-                                        reflections, 
+
+  def write_experiments_and_reflections(self,
+                                        experiments,
+                                        reflections,
                                         params,
                                         delta_cchalf_i):
     '''
@@ -293,34 +359,72 @@ class Script(object):
     Y = list(delta_cchalf_i.values())
     mean = sum(Y) / len(Y)
     sdev = sqrt(sum((yy-mean)**2 for yy in Y)/len(Y))
-    output_experiments = ExperimentList()
-    output_reflections = reflections
-    for x in sorted(delta_cchalf_i.keys()):
-      y = delta_cchalf_i[x]
-      if y < mean - 4*sdev:
-        print("Removing dataset %d" % x)
-        output_reflections.del_selected(output_reflections['id'] == x)
-        selection = output_reflections['id'] > x
-        indices = output_reflections['id'].select(selection)
-        indices -= 1
-        output_reflections['id'].set_selected(selection, indices)
-      else:
-        output_experiments.append(experiments[x])
-    assert max(output_reflections['id']) < len(output_experiments)
+    logger.info("\nmean delta_cc_half %s" % (mean*100))
+    logger.info("stddev delta_cc_half %s" % (sdev*100))
+    cutoff_value = mean - params.stdcutoff*sdev
+    logger.info("cutoff value: %s \n" % (cutoff_value*100))
+    datasets_to_remove = []
+    if params.mode == 'dataset':
+      datasets_to_remove = []
+      for x in sorted(delta_cchalf_i.keys()):
+        y = delta_cchalf_i[x]
+        if y < cutoff_value:
+          logger.info("Removing dataset %d" % x)
+          datasets_to_remove.append(reflections.experiment_identifiers()[x])
+      output_reflections = reflections.remove_on_experiment_identifiers(datasets_to_remove)
+      experiments.remove_on_experiment_identifiers(datasets_to_remove)
+      output_reflections.assert_experiment_identifiers_are_consistent(experiments)
+
+    elif params.mode == 'image_group':
+      datasets_to_remove = []
+      exclude_images = []
+
+      for x in sorted(delta_cchalf_i.keys()):
+        y = delta_cchalf_i[x]
+        if y < cutoff_value:
+          exp_id = self.image_group_to_id[x] #numerical id
+          identifier = reflections.experiment_identifiers()[exp_id]
+          image_range = self.image_group_to_image_range[x]
+          datasets_to_remove.append(exp_id)
+          logger.info("Removing image range %s from experiment %s",
+            image_range, identifier)
+          exclude_images.append(
+            [identifier+':'+str(image_range[0])+':'+str(image_range[1])])
+
+      # Now remove individual batches
+      if -1 in reflections['id']:
+        reflections = reflections.select(reflections['id'] != -1)
+      reflection_list = reflections.split_by_experiment_id()
+      reflection_list, experiments = exclude_image_ranges_for_scaling(
+        reflection_list, experiments, exclude_images)
+      #if a whole experiment has been excluded: need to remove it here
+      experiments_to_delete = []
+      for exp in experiments:
+        if not exp.scan.get_valid_image_ranges(exp.identifier): #if all removed above
+          experiments_to_delete.append(exp.identifier)
+      if experiments_to_delete:
+        experiments, reflection_list = select_datasets_on_ids(
+          experiments, reflection_list, exclude_datasets=experiments_to_delete)
+      assert len(reflection_list) == len(experiments)
+      experiments = set_image_ranges_in_scaling_models(experiments)
+
+      output_reflections = flex.reflection_table()
+      for r in reflection_list:
+        output_reflections.extend(r)
 
     # Write the experiments and reflections to file
     self.write_reflections(output_reflections, params.output.reflections)
-    self.write_experiments(output_experiments, params.output.experiments)
-  
+    self.write_experiments(experiments, params.output.experiments)
+
   def write_reflections(self, reflections, filename):
     ''' Save the reflections to file. '''
-    print('Saving %d reflections to %s' % (len(reflections), filename))
+    logger.info('Saving %d reflections to %s' % (len(reflections), filename))
     reflections.as_pickle(filename)
 
   def write_experiments(self, experiments, filename):
     ''' Save the profile model parameters. '''
     from dxtbx.model.experiment_list import ExperimentListDumper
-    print('Saving the experiments to %s' % filename)
+    logger.info('Saving the experiments to %s' % filename)
     dump = ExperimentListDumper(experiments)
     with open(filename, "w") as outfile:
       outfile.write(dump.as_json())
@@ -332,4 +436,3 @@ if __name__ == '__main__':
     script.run()
   except Exception as e:
     halraiser(e)
-

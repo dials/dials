@@ -163,7 +163,6 @@ if __name__ == '__main__':
 
   from dials.util.options import OptionParser
   from dials.util.options import flatten_datablocks
-  from dials.util.options import flatten_experiments
   from dials.util.options import flatten_reflections
   import libtbx.load_env
   usage_message = """
@@ -179,7 +178,7 @@ if __name__ == '__main__':
     epilog=help_message)
   params, options = parser.parse_args(show_diff_phil=True)
   datablocks = flatten_datablocks(params.input.datablock)
-  experiments = flatten_experiments(params.input.experiments)
+  experiments = [fdw.data for fdw in params.input.experiments]
   reflections = flatten_reflections(params.input.reflections)
 
   if len(datablocks) == 0 and len(experiments) == 0:

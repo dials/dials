@@ -238,7 +238,7 @@ The DIALS project has the following layout.
       |
       |-- ...
 
-Each algorithm should have it's implementation encapsulated within a package in
+Each algorithm should have its implementation encapsulated within a package in
 the appropriate place. For example, summation integration is implemented within
 the "dials.algorithms.integration.sum" package. The extension class, which
 inherits from the appropriate interface, and configures and calls this algorithm
