@@ -535,5 +535,5 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, run_in_tmpdir)
           os.path.join(data_dir, "lpe4-2-a15_datablock.json"),
           "max_lattices=3"]
   easy_run.fully_buffered(command=" ".join(cmd)).raise_if_errors()
-  assert os.path.isfile("indexed.pickle") and os.path.isfile("experiments.json")
-  experiments_list = load.experiment_list("experiments.json", check_format=False)
+  assert os.path.isfile("indexed.pickle") and os.path.isfile("indexed_experiments.json")
+  experiments_list = load.experiment_list("indexed_experiments.json", check_format=False)

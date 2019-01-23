@@ -28,7 +28,7 @@ def test(dials_regression, run_in_tmpdir):
   imageset = imagesets[0]
   assert imageset.external_lookup.mask.filename == mask_filename
 
-def test_experimentss(dials_regression, run_in_tmpdir):
+def test_experiments(dials_regression, run_in_tmpdir):
   input_filename = os.path.join(dials_regression, "centroid_test_data", "experiments.json")
   mask_filename = os.path.join(dials_regression, "centroid_test_data", "lookup_mask.pickle")
   output_filename = "output_experiments.json"

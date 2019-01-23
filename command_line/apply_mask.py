@@ -39,10 +39,6 @@ phil_scope = parse("""
     experiments = experiments_with_mask.json
       .type = str
       .help = "Name of output experiments file"
-
-    experiments = experiments_with_mask.json
-      .type = str
-      .help = "Name of output experiments file"
   }
 """, process_includes=True)
 

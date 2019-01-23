@@ -319,7 +319,6 @@ class Script(object):
 
       indices = []
       basenames = []
-# <<<<<<< HEAD
       split_experiments = []
       for i, imageset in enumerate(experiments.imagesets()):
         assert len(imageset) == 1
@@ -327,23 +326,10 @@ class Script(object):
         indices.append(i)
         basenames.append(os.path.splitext(os.path.basename(paths[0]))[0])
         split_experiments.append(experiments[i:i+1])
-# =======
-#       datablock_references = []
-#       for datablock in datablocks:
-#         for j, imageset in enumerate(datablock.extract_imagesets()):
-#           paths = imageset.paths()
-#           for i in xrange(len(imageset)):
-#             datablock_references.append(datablock)
-#             indices.append((j,i))
-#             basenames.append(os.path.splitext(os.path.basename(paths[i]))[0])
-# >>>>>>> master
       tags = []
-      for (j,i), basename in zip(indices, basenames):
+      for i, basename in zip(indices, basenames):
         if basenames.count(basename) > 1:
-          if len(set([idx[0] for idx in indices if idx[0]==j])) > 1:
-            tags.append("%s_%05d_%05d"%(basename, j, i))
-          else:
-            tags.append("%s_%05d"%(basename, i))
+          tags.append("%s_%05d"%(basename, i))
         else:
           tags.append(basename)
 
@@ -352,27 +338,19 @@ class Script(object):
         processor = Processor(copy.deepcopy(params), composite_tag = "%04d"%i, rank = i)
 
         for item in item_list:
-          tag, (imgset_id, img_id), datablock = item
-          imageset = datablock.extract_imagesets()[imgset_id]
-          subset = imageset[img_id:img_id+1]
           try:
-# <<<<<<< HEAD
             assert len(item[1]) == 1
             experiment = item[1][0]
             imageset = experiment.imageset
             update_geometry(imageset)
             experiment.beam = imageset.get_beam()
             experiment.detector = imageset.get_detector()
-# =======
-#             update_geometry(subset)
-# >>>>>>> master
           except RuntimeError as e:
-            logger.warning("Error updating geometry on item %s, %s"%(str(tag), str(e)))
+            logger.warning("Error updating geometry on item %s, %s"%(str(item[0]), str(e)))
             continue
 
           if self.reference_detector is not None:
             from dxtbx.model import Detector
-# <<<<<<< HEAD
             experiment = item[1][0]
             imageset = experiment.imageset
             imageset.set_detector(Detector.from_dict(self.reference_detector.to_dict()))
@@ -382,20 +360,6 @@ class Script(object):
         processor.finalize()
 
       iterable = zip(tags, split_experiments)
-# =======
-#             subset.set_detector(
-#               Detector.from_dict(self.reference_detector.to_dict()),
-#               index=0)
-#           datablock = DataBlockFactory.from_imageset(subset)[0]
-
-#           try:
-#             processor.process_datablock(tag, datablock)
-#           except Exception as e:
-#             logger.warning("Unhandled error on item %s, %s"%(str(tag), str(e)))
-#         processor.finalize()
-
-#       iterable = zip(tags, indices, datablock_references)
-# >>>>>>> master
 
     else:
       basenames = [os.path.splitext(os.path.basename(filename))[0] for filename in all_paths]
@@ -437,15 +401,7 @@ class Script(object):
             imageset.set_detector(Detector.from_dict(self.reference_detector.to_dict()))
             experiments[0].detector = imageset.get_detector()
 
-# <<<<<<< HEAD
           processor.process_experiments(tag, experiments)
-# =======
-#           try:
-#             processor.process_datablock(tag, datablock)
-#           except Exception as e:
-#             logger.warning("Unhandled error on item %s, %s"%(tag, str(e)))
-
-# >>>>>>> master
         processor.finalize()
 
       iterable = zip(tags, all_paths)
