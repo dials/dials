@@ -87,12 +87,8 @@ def test_index_after_search(regression_data, run_in_tmpdir):
   assert os.path.exists('strong.pickle')
 
   # actually run the beam centre search
-<<<<<<< HEAD
   args = ["dials.search_beam_position", "experiments.json",
           "strong.pickle"]
-=======
-  args = ["dials.search_beam_position", "datablock.json", "strong.pickle"]
->>>>>>> master
   print(args)
   result = procrunner.run(args)
   assert result['stderr'] == '' and result['exitcode'] == 0
@@ -138,12 +134,8 @@ def test_search_single(run_in_tmpdir, dials_regression):
   pickle_path = os.path.join(data_dir, "strong.pickle")
   experiments_path = os.path.join(data_dir, "datablock.json")
 
-<<<<<<< HEAD
   args = ["dials.search_beam_position",
           experiments_path, pickle_path]
-=======
-  args = ["dials.search_beam_position", datablock_path, pickle_path]
->>>>>>> master
   print(args)
   result = procrunner.run(args)
   assert result['stderr'] == '' and result['exitcode'] == 0

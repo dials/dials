@@ -65,11 +65,6 @@ phil_scope = parse('''
       .type = str
       .help = "The filtered experiments file"
 
-<<<<<<< HEAD
-    reflections = "filtered_reflections.json"
-      .type = str
-      .help = "The filtered reflections file"
-=======
     reflections = "filtered_reflections.pickle"
       .type = str
       .help = "The filtered reflections file"
@@ -77,7 +72,6 @@ phil_scope = parse('''
     table = "delta_cchalf.dat"
       .type = str
       .help = "A file with delta cchalf values"
->>>>>>> master
   }
 
   nbins = 10
@@ -163,13 +157,9 @@ class Script(object):
       "miller_index",
       "dataset",
       "intensity",
-<<<<<<< HEAD
-      "variance"))
-=======
       "variance",
       "identifiers",
       "images"))
->>>>>>> master
 
     # Ensure we have an experiment list
     experiments = flatten_experiments(params.input.experiments)
@@ -213,14 +203,10 @@ class Script(object):
     datasets = list(delta_cchalf_i.keys())
     sorted_index = sorted(range(len(datasets)), key=lambda x: delta_cchalf_i[datasets[x]])
     for i in sorted_index:
-<<<<<<< HEAD
-      print("Dataset: %d, Delta CC 1/2: %.3f" % (datasets[i], 100*delta_cchalf_i[datasets[i]]))
-=======
       logger.info("Dataset: %d, Delta CC 1/2: %.3f" % (datasets[i], 100*delta_cchalf_i[datasets[i]]))
 
     # Write a text file with delta cchalf values
     self.write_delta_cchalf_file(datasets, delta_cchalf_i, params)
->>>>>>> master
 
     # Remove datasets based on delta cc1/2
     if len(experiments) > 0:
@@ -428,11 +414,7 @@ class Script(object):
 
     # Write the experiments and reflections to file
     self.write_reflections(output_reflections, params.output.reflections)
-<<<<<<< HEAD
-    self.write_experiments(output_experiments, params.output.experiments)
-=======
     self.write_experiments(experiments, params.output.experiments)
->>>>>>> master
 
   def write_reflections(self, reflections, filename):
     ''' Save the reflections to file. '''

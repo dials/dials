@@ -56,23 +56,6 @@ verbosity = 1
   .help = "The verbosity level"
 ''', process_includes=True)
 
-<<<<<<< HEAD
-def run(args):
-  from libtbx import easy_pickle
-  from dials.util import log
-  from dials.util.options import OptionParser
-
-  parser = OptionParser(
-    #usage=usage,
-    phil=phil_scope,
-    read_reflections=True,
-    read_experiments=True,
-    check_format=False,
-    #epilog=help_message
-  )
-=======
->>>>>>> master
-
 class cosym(object):
   def __init__(self, experiments, reflections, params=None):
     if params is None:
