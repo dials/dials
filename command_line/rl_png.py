@@ -35,7 +35,7 @@ plot {
 }
 """, process_includes=True)
 
-def settings () :
+def settings():
   return phil_scope.fetch().extract()
 
 

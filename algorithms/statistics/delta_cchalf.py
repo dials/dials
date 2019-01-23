@@ -11,12 +11,15 @@
 #
 
 from __future__ import absolute_import, division, print_function
-import sys
+import logging
+from collections import defaultdict
 from math import sqrt, floor
 from cctbx import miller
 from cctbx import crystal, uctbx
-from collections import defaultdict
 from dials.array_family import flex
+
+
+logger = logging.getLogger('dials.command_line.compute_delta_cchalf')
 
 
 class ResolutionBinner(object):
@@ -35,7 +38,7 @@ class ResolutionBinner(object):
     :param nbins: The number of bins
 
     '''
-    print("Resolution bins")
+    logger.info("Resolution bins")
     assert dmin < dmax
     dmin_inv_sq = 1.0 / dmin**2
     dmax_inv_sq = 1.0 / dmax**2
@@ -49,8 +52,8 @@ class ResolutionBinner(object):
     self._bins = []
     for i in range(self._nbins):
       b0, b1 = self._xmin + i * self._bin_size, self._xmin + (i+1)*self._bin_size
-      print("%d: %.3f, %.3f" % (i, sqrt(1/b0**2), sqrt(1/b1**2)))
-      self._bins.append((b0,b1))
+      logger.info("%d: %.3f, %.3f" % (i, sqrt(1/b0), sqrt(1/b1)))
+      self._bins.append((b0, b1))
 
   def nbins(self):
     '''
@@ -126,9 +129,9 @@ def compute_mean_cchalf_in_bins(bin_data):
   '''
   mean_cchalf = 0
   count = 0
-  for i in range(len(bin_data)):
-    mean = bin_data[i].mean
-    var = bin_data[i].var
+  for bin_i in bin_data:
+    mean = bin_i.mean
+    var = bin_i.var
     n = len(mean)
     if n > 1:
       cchalf = compute_cchalf(mean, var)
@@ -146,14 +149,18 @@ class PerImageCChalfStatistics(object):
 
   def __init__(self,
                miller_index,
+               identifiers,
                dataset,
+               images,
                intensity,
                variance,
                unit_cell,
                space_group,
                nbins=10,
                dmin=None,
-               dmax=None):
+               dmax=None,
+               mode='dataset',
+               image_group=10):
     '''
     Initialise
 
@@ -169,7 +176,7 @@ class PerImageCChalfStatistics(object):
 
     '''
 
-    assert max(dataset) < len(unit_cell)
+    assert len(set(dataset)) == len(unit_cell)
 
     # Reject reflections with negative variance
     selection = variance > 0
@@ -177,6 +184,7 @@ class PerImageCChalfStatistics(object):
     dataset = dataset.select(selection)
     intensity = intensity.select(selection)
     variance = variance.select(selection)
+    images = images.select(selection)
 
     # Compute mean unit_cell
     if len(unit_cell) == 1:
@@ -192,7 +200,7 @@ class PerImageCChalfStatistics(object):
 
     # Map the miller indices to the ASU
     D = flex.double(len(dataset), 0)
-    for i, uc in enumerate(unit_cell):
+    for i, uc in zip(identifiers, unit_cell):
 
       # Select reflections
       selection = dataset == i
@@ -217,12 +225,17 @@ class PerImageCChalfStatistics(object):
       dataset = dataset.select(selection)
       intensity = intensity.select(selection)
       variance = variance.select(selection)
+      D = D.select(selection)
+      images = images.select(selection)
+
     if dmax is not None:
       selection = D < dmax
       miller_index = miller_index.select(selection)
       dataset = dataset.select(selection)
       intensity = intensity.select(selection)
       variance = variance.select(selection)
+      D = D.select(selection)
+      images = images.select(selection)
 
     # Save the arrays
     self._miller_index = miller_index
@@ -259,18 +272,39 @@ class PerImageCChalfStatistics(object):
     self._num_reflections = len(miller_index)
     self._num_unique = len(reflection_sums.keys())
 
-    print("")
-    print("# Datasets: ", self._num_datasets)
-    print("# Reflections: ", self._num_reflections)
-    print("# Unique: ", self._num_unique)
+    logger.info("")
+    logger.info("# Datasets: %s" % self._num_datasets)
+    logger.info("# Reflections: %s" % self._num_reflections)
+    logger.info("# Unique: %s" % self._num_unique)
 
     # Compute the CC 1/2 for all the data
     self._cchalf_mean = self._compute_cchalf(reflection_sums, binner)
-    print("CC 1/2 mean: %.3f" % (100*self._cchalf_mean))
+    logger.info("CC 1/2 mean: %.3f" % (100*self._cchalf_mean))
 
-    # Compute the CC 1/2 excluding each dataset in turn
-    self._cchalf = self._compute_cchalf_excluding_each_dataset(
-      reflection_sums, binner, miller_index, dataset, intensity)
+    #override dataset here with a batched-dependent
+    if mode == "image_group":
+      image_groups = flex.int(dataset.size(), 0)
+      self.image_group_to_id = {}
+      self.image_group_to_image_range = {}
+      counter = 0
+      for id_ in set(dataset):
+        sel = dataset == id_
+        images_in_dataset = images.select(sel)
+        unique_images = set(images_in_dataset)
+        min_img, max_img = (min(unique_images), max(unique_images))
+        for i in range(min_img, max_img, image_group):
+          group_sel = (images_in_dataset >= i) & (images_in_dataset < i+image_group)
+          image_groups.set_selected((sel.iselection().select(group_sel)), counter)
+          self.image_group_to_id[counter] = id_
+          self.image_group_to_image_range[counter] = (i, i + image_group - 1)
+          counter += 1
+
+      self._cchalf = self._compute_cchalf_excluding_each_dataset(
+        reflection_sums, binner, miller_index, image_groups, intensity)
+
+    else:
+      self._cchalf = self._compute_cchalf_excluding_each_dataset(
+        reflection_sums, binner, miller_index, dataset, intensity)
 
   def _compute_cchalf(self, reflection_sums, binner):
     '''
@@ -279,7 +313,7 @@ class PerImageCChalfStatistics(object):
 
     '''
     # Compute Mean and variance of reflection intensities
-    bin_data = [BinData() for i in range(binner.nbins())]
+    bin_data = [BinData() for _ in range(binner.nbins())]
     for h in reflection_sums.keys():
       sum_x = reflection_sums[h].sum_x
       sum_x2 = reflection_sums[h].sum_x2
@@ -341,7 +375,7 @@ class PerImageCChalfStatistics(object):
       # Compute the CC 1/2 without the reflections from the current dataset
       cchalf = self._compute_cchalf(dataset_reflection_sums, binner)
       cchalf_i[dataset] = cchalf
-      print("CC 1/2 excluding dataset %d: %.3f" % (dataset, 100*cchalf))
+      logger.info("CC 1/2 excluding dataset %d: %.3f" % (dataset, 100*cchalf))
 
     return cchalf_i
 

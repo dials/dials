@@ -8,8 +8,8 @@ from dials.util.options import OptionParser
 from dials.algorithms.scaling.model.model import KBScalingModel,\
   PhysicalScalingModel, ArrayScalingModel
 from dials.algorithms.scaling.model.scaling_model_factory import \
-  KBSMFactory, PhysicalSMFactory, ArraySMFactory, calc_n_param_from_bins,\
-  initialise_smooth_input, osc_range_check_for_user_excluded
+  KBSMFactory, PhysicalSMFactory, ArraySMFactory, calc_n_param_from_bins
+from dials.algorithms.scaling.model.model import initialise_smooth_input
 from libtbx import phil
 
 @pytest.fixture
@@ -40,6 +40,7 @@ def mock_physical_params():
   params.parameterisation.decay_interval = 15.0
   params.parameterisation.absorption_term = True
   params.parameterisation.lmax = 4
+  params.parameterisation.decay_restraint = 1e-1
   return params
 
 def generated_refl():
@@ -109,33 +110,16 @@ def test_model_factory_utilities(mock_exp):
   # This is initialised with the oscillation range, width of one osc and
   # rotation interval in degress, returning
   n_param, norm_fac, rot_int = initialise_smooth_input([0, 10], 1.0, 1.0)
-  assert (n_param, norm_fac, rot_int) == (12, 1.0, 1.0)
+  assert (n_param, norm_fac, rot_int) == (12, 0.999, 1.0)
   n_param, norm_fac, rot_int = initialise_smooth_input([0, 10], 1.0, 12)
-  assert (n_param, norm_fac, rot_int) == (2, 0.1, 10.0)
+  assert (n_param, norm_fac, rot_int) == (2, 0.0999, 10.0)
   n_param, norm_fac, rot_int = initialise_smooth_input([0, 10], 1.0, 10)
-  assert (n_param, norm_fac, rot_int) == (2, 0.1, 10.0)
+  assert (n_param, norm_fac, rot_int) == (2, 0.0999, 10.0)
   n_param, norm_fac, rot_int = initialise_smooth_input([0, 10], 1.0, 9.99)
-  assert (n_param, norm_fac, rot_int) == (3, 0.2, 5.0)
+  assert (n_param, norm_fac, rot_int) == (3, 0.1998, 5.0)
   n_param, norm_fac, rot_int = initialise_smooth_input([0, 10], 1.0, 5.0)
-  assert (n_param, norm_fac, rot_int) == (3, 0.2, 5.0)
+  assert (n_param, norm_fac, rot_int) == (3, 0.1998, 5.0)
   n_param, norm_fac, rot_int = initialise_smooth_input([0, 10], 1.0, 4.99)
-  assert (n_param, norm_fac, rot_int) == (5, 3.0/10.0, 10.0/3.0)
+  assert (n_param, norm_fac, rot_int) == (5, 0.999*3.0/10.0, 10.0/3.0)
   n_param, norm_fac, rot_int = initialise_smooth_input([0, 10], 2.0, 4.99)
-  assert (n_param, norm_fac, rot_int) == (5, 6.0/10.0, 10.0/3.0)
-
-  # Test check for user excluded
-  #oscillation 0>90, add some data and exclude
-  r = flex.reflection_table()
-  r['xyzobs.px.value'] = flex.vec3_double([
-    (0, 0, 0.5), (0, 0, 1.5), (0, 0, 2.5), (0, 0, 3.5),
-    (0, 0, 86.5), (0, 0, 87.5), (0, 0, 88.5), (0, 0, 89.5)])
-  sel = flex.bool(8, False)
-  sel[0] = True
-  r.set_flags(sel, r.flags.user_excluded_in_scaling)
-  r.set_flags(flex.bool(8, True), r.flags.integrated)
-  osc_range = osc_range_check_for_user_excluded(mock_exp, r)
-  assert osc_range == (1.5, 90)
-  sel[7] = True
-  r.set_flags(sel, r.flags.user_excluded_in_scaling)
-  osc_range = osc_range_check_for_user_excluded(mock_exp, r)
-  assert osc_range == (1.5, 88.501) #Should we really be adding 0.001 on?
+  assert (n_param, norm_fac, rot_int) == (5, 0.999*6.0/10.0, 10.0/3.0)

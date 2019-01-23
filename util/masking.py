@@ -18,30 +18,6 @@ from scitbx.array_family import flex
 
 logger = logging.getLogger(__name__)
 
-ice_rings_phil_str = """\
-  ice_rings {
-    filter = False
-      .type = bool
-    unit_cell = 4.498,4.498,7.338,90,90,120
-      .type = unit_cell
-      .help = "The unit cell to generate d_spacings for powder rings."
-      .expert_level = 1
-    space_group = 194
-      .type = space_group
-      .help = "The space group used to generate d_spacings for powder rings."
-      .expert_level = 1
-    width = 0.002
-      .type = float(value_min=0.0)
-      .help = "The width of an ice ring (in 1/d^2)."
-      .expert_level = 1
-    d_min = None
-      .type = float(value_min=0.0)
-      .help = "The high resolution limit (otherwise use detector d_min)"
-  }
-"""
-
-ice_rings_phil_scope = parse(ice_rings_phil_str)
-
 phil_scope = parse("""
   border = 0
     .type = int
@@ -94,9 +70,27 @@ phil_scope = parse("""
 
   }
 
-  %s
+  ice_rings {
+    filter = False
+      .type = bool
+    unit_cell = 4.498,4.498,7.338,90,90,120
+      .type = unit_cell
+      .help = "The unit cell to generate d_spacings for powder rings."
+      .expert_level = 1
+    space_group = 194
+      .type = space_group
+      .help = "The space group used to generate d_spacings for powder rings."
+      .expert_level = 1
+    width = 0.002
+      .type = float(value_min=0.0)
+      .help = "The width of an ice ring (in 1/d^2)."
+      .expert_level = 1
+    d_min = None
+      .type = float(value_min=0.0)
+      .help = "The high resolution limit (otherwise use detector d_min)"
+  }
 
-""" %ice_rings_phil_str, process_includes=True)
+""", process_includes=True)
 
 def generate_ice_ring_resolution_ranges(beam, panel, params):
   '''

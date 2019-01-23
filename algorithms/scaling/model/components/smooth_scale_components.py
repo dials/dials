@@ -9,7 +9,7 @@ from scitbx import sparse
 from dials.array_family import flex
 from dials.algorithms.scaling.model.components.scale_components import \
   ScaleComponentBase
-from dials_scaling_ext import elementwise_square, row_multiply
+from dials_scaling_ext import row_multiply
 from dials_refinement_helpers_ext import GaussianSmoother as GS1D
 from dials_refinement_helpers_ext import GaussianSmoother2D as GS2D
 from dials_refinement_helpers_ext import GaussianSmoother3D as GS3D
@@ -116,11 +116,16 @@ class SmoothMixin(object):
 class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
   """A smoothly varying scale component in one dimension."""
 
-  def __init__(self, initial_values, col_name, parameter_esds=None):
+  def __init__(self, initial_values, parameter_esds=None):
     super(SmoothScaleComponent1D, self).__init__(initial_values,
       parameter_esds)
     self._normalised_values = []
-    self._col_name = col_name
+
+  def set_new_parameters(self, new_parameters):
+    """Set new parameters of a different length i.e. after batch handling"""
+    self._parameters = new_parameters
+    self._parameter_esds = None
+    self._n_params = len(self._parameters)
 
   @property
   def normalised_values(self):
@@ -131,49 +136,40 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
     a spacing of 1."""
     return self._normalised_values
 
-  @property
-  def col_name(self):
-    """The column name to use to obtain normalised coordinates from a
-    reflection table."""
-    return self._col_name
+  @ScaleComponentBase.data.setter
+  def data(self, data):
+    assert set(data.keys()) == set(['x']), set(data.keys())
+    self._data = data
 
-  def update_reflection_data(self, reflection_table, selection=None,
+  def update_reflection_data(self, selection=None,
     block_selections=None):
     """Set the normalised coordinate values and configure the smoother."""
     self._normalised_values = []
-    self._inverse_scales = []
     self._n_refl = []
-    normalised_values = reflection_table[self._col_name]
+    normalised_values = self.data['x']
     if selection:
       normalised_values = normalised_values.select(selection)
     # Make sure zeroed correctly.
-    normalised_values = normalised_values - min(normalised_values)
-    phi_range_deg = [int(min(normalised_values)//1),
-                     int(max(normalised_values)//1)+1]
+    normalised_values = normalised_values - flex.min(normalised_values)
+    phi_range_deg = [int(flex.min(normalised_values)//1),
+                     int(flex.max(normalised_values)//1)+1]
     self._smoother = GaussianSmoother1D(phi_range_deg,
       self.nparam_to_val(self._n_params))
     if block_selections:
       block_selection_list = block_selections
-      #norm_vals_permuted = normalised_values.select(permuted)
       for i, sel in enumerate(block_selection_list):
-        #self._normalised_values.append(norm_vals_permuted.select(sel))
         self._normalised_values.append(normalised_values.select(sel))
-        self._inverse_scales.append(flex.double(
-          self._normalised_values[i].size(), 1.0))
-        self._n_refl.append(self.inverse_scales[i].size())
+        self._n_refl.append(self._normalised_values[i].size())
     else:
       self._normalised_values.append(normalised_values)
-      self._inverse_scales.append(flex.double(normalised_values.size(), 1.0))
-      self._n_refl.append(self._inverse_scales[0].size())
+      self._n_refl.append(normalised_values.size())
 
-  def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
+  def calculate_scales_and_derivatives(self, block_id=0):
     if self._n_refl[block_id] > 1:
       value, weight, sumweight = self._smoother.multi_value_weight(
         self._normalised_values[block_id], self.value)
       inv_sw = 1. / sumweight
       dv_dp = row_multiply(weight, inv_sw)
-      if curvatures:
-        curvatures = sparse.matrix(value.size(), self.n_params)
     elif self._n_refl[block_id] == 1:
       value, weight, sumweight = self._smoother.value_weight(
         self._normalised_values[block_id][0], self.value)
@@ -181,13 +177,9 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
       b = flex.double(weight.as_dense_vector() / sumweight)
       b.reshape(flex.grid(1, b.size()))
       dv_dp.assign_block(b, 0, 0)
-      if curvatures:
-        curvatures = sparse.matrix(1, self.n_params)
       value = flex.double(1, value)
     else:
       return flex.double([]), sparse.matrix(0, 0)
-    if curvatures:
-      return value, dv_dp, curvatures
     return value, dv_dp
 
   def calculate_scales(self, block_id=0):
@@ -208,8 +200,8 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
   '''Subclass of SmoothScaleComponent1D to implement a smoothly
   varying B-factor correction.'''
 
-  def __init__(self, initial_values, col_name, parameter_esds=None):
-    super(SmoothBScaleComponent1D, self).__init__(initial_values, col_name,
+  def __init__(self, initial_values, parameter_esds=None):
+    super(SmoothBScaleComponent1D, self).__init__(initial_values,
       parameter_esds)
     self._d_values = []
 
@@ -218,40 +210,48 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
     """The current set of d-values associated with this component."""
     return self._d_values
 
-  def update_reflection_data(self, reflection_table, selection=None,
+  @ScaleComponentBase.data.setter
+  def data(self, data):
+    assert set(data.keys()) == set(['x', 'd']), set(data.keys())
+    self._data = data
+
+  def update_reflection_data(self, selection=None,
     block_selections=None):
     super(SmoothBScaleComponent1D, self).update_reflection_data(
-      reflection_table, selection, block_selections)
+      selection, block_selections)
     self._d_values = []
+    data = self.data['d']
     if selection:
-      d_values = reflection_table['d'].select(selection)
-    else:
-      d_values = reflection_table['d']
+      data = data.select(selection)
     if block_selections:
-      block_selection_list = block_selections
-      for sel in block_selection_list:
-        self._d_values.append(d_values.select(sel))
+      for sel in block_selections:
+        self._d_values.append(data.select(sel))
     else:
-      self._d_values.append(d_values)
+      self._d_values.append(data)
 
-  def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
-    sdctuple = super(SmoothBScaleComponent1D, self).calculate_scales_and_derivatives(block_id,
-      curvatures)
+  def calculate_scales_and_derivatives(self, block_id=0):
+    sdctuple = super(SmoothBScaleComponent1D, self).calculate_scales_and_derivatives(block_id)
     if self._n_refl[block_id] == 0:
       return flex.double([]), sparse.matrix(0, 0)
     prefac = 1.0 /(2.0 * (self._d_values[block_id] * self._d_values[block_id]))
     s = flex.exp(sdctuple[0] * prefac)
     d = row_multiply(sdctuple[1], s * prefac)
-    if curvatures:
-      curvatures = row_multiply(elementwise_square(
-          d), 1.0/s)
-      return s, d, curvatures
     return s, d
 
   def calculate_scales(self, block_id=0):
     s = super(SmoothBScaleComponent1D, self).calculate_scales(block_id)
     return flex.exp(s /(2.0 * (self._d_values[block_id] **2)))
 
+  def calculate_restraints(self):
+    residual = self.parameter_restraints * (self._parameters*self._parameters)
+    gradient = 2.0 * self.parameter_restraints * self._parameters
+    return residual, gradient
+
+  def calculate_jacobian_restraints(self):
+    jacobian = sparse.matrix(self.n_params, self.n_params)
+    for i in range(self.n_params):
+      jacobian[i, i] = +1.0
+    return self._parameters, jacobian, self.parameter_restraints
 
 class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
   """Implementation of a 2D array-based smoothly varying scale factor.
@@ -262,22 +262,29 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
   initial values are passed as a 1D array, and shape is a 2-tuple
   indicating the number of parameters in each dimension."""
 
-  def __init__(self, initial_values, shape, col_names, parameter_esds=None):
+  def __init__(self, initial_values, shape, parameter_esds=None):
     assert len(initial_values) == (shape[0] * shape[1]), '''The shape
     information to initialise a 2D smoother is inconsistent with the length
     of the initial parameter list.'''
     super(SmoothScaleComponent2D, self).__init__(initial_values, parameter_esds)
     self._n_x_params = shape[0]
     self._n_y_params = shape[1]
-    self._col_names = col_names
     self._normalised_x_values = None
     self._normalised_y_values = None
 
-  @property
-  def col_names(self):
-    """The column names used to obtain normalised coordinates from a
-    reflection table."""
-    return self._col_names
+  @ScaleComponentBase.data.setter
+  def data(self, data):
+    assert set(data.keys()) == set(['x', 'y']), set(data.keys())
+    self._data = data
+
+  def set_new_parameters(self, new_parameters, shape):
+    """Set new parameters of a different length i.e. after batch handling"""
+    assert len(new_parameters) == shape[0] * shape[1]
+    self._parameters = new_parameters
+    self._parameter_esds = None
+    self._n_params = len(self._parameters)
+    self._n_x_params = shape[0]
+    self._n_y_params = shape[1]
 
   @property
   def n_x_params(self):
@@ -299,48 +306,43 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
     """The normalised coordinate values in the second dimension."""
     return self._normalised_y_values
 
-  def update_reflection_data(self, reflection_table, selection=None,
+  def update_reflection_data(self, selection=None,
     block_selections=None):
     '''control access to setting all of reflection data at once'''
 
     self._normalised_x_values = []
     self._normalised_y_values = []
-    self._inverse_scales = []
     self._n_refl = []
+    normalised_x_values = self.data['x']
+    normalised_y_values = self.data['y']
     if selection:
-      reflection_table = reflection_table.select(selection)
-    normalised_x_values = reflection_table[self._col_names[0]]
-    normalised_y_values = reflection_table[self._col_names[1]]
-    normalised_x_values = normalised_x_values - min(normalised_x_values)
-    normalised_y_values = normalised_y_values - min(normalised_y_values)
-    x_range = [int(min(normalised_x_values)//1),
-               int(max(normalised_x_values)//1)+1]
-    y_range = [int(min(normalised_y_values)//1),
-               int(max(normalised_y_values)//1)+1]
+      normalised_x_values = normalised_x_values.select(selection)
+      normalised_y_values = normalised_y_values.select(selection)
+    normalised_x_values = normalised_x_values - flex.min(normalised_x_values)
+    normalised_y_values = normalised_y_values - flex.min(normalised_y_values)
+    x_range = [int(flex.min(normalised_x_values)//1),
+               int(flex.max(normalised_x_values)//1)+1]
+    y_range = [int(flex.min(normalised_y_values)//1),
+               int(flex.max(normalised_y_values)//1)+1]
     self._smoother = GaussianSmoother2D(x_range, self.nparam_to_val(
       self._n_x_params), y_range, self.nparam_to_val(self._n_y_params))
     if block_selections:
       for i, sel in enumerate(block_selections):
         self._normalised_x_values.append(normalised_x_values.select(sel))
         self._normalised_y_values.append(normalised_y_values.select(sel))
-        self._inverse_scales.append(flex.double(
-          self._normalised_x_values[i].size(), 1.0))
-        self._n_refl.append(self.inverse_scales[i].size())
+        self._n_refl.append(self._normalised_x_values[i].size())
     else:
       self._normalised_x_values.append(normalised_x_values)
       self._normalised_y_values.append(normalised_y_values)
-      self._inverse_scales.append(flex.double(normalised_x_values.size(), 1.0))
-      self._n_refl.append(self._inverse_scales[0].size())
+      self._n_refl.append(normalised_x_values.size())
 
-  def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
+  def calculate_scales_and_derivatives(self, block_id=0):
     if self._n_refl[block_id] > 1:
       value, weight, sumweight = self._smoother.multi_value_weight(
         self._normalised_x_values[block_id],
         self._normalised_y_values[block_id], self.value)
       inv_sw = 1. / sumweight
       dv_dp = row_multiply(weight, inv_sw)
-      if curvatures:
-        curvs = sparse.matrix(value.size(), self.n_params)
     elif self._n_refl[block_id] == 1:
       value, weight, sumweight = self._smoother.value_weight(
         self._normalised_x_values[block_id][0],
@@ -349,13 +351,9 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
       b = flex.double(weight.as_dense_vector() / sumweight)
       b.reshape(flex.grid(1, b.size()))
       dv_dp.assign_block(b, 0, 0)
-      if curvatures:
-        curvatures = sparse.matrix(1, self.n_params)
       value = flex.double(1, value)
     else:
       return flex.double([]), sparse.matrix(0, 0)
-    if curvatures:
-      return value, dv_dp, curvs
     return value, dv_dp
 
   def calculate_scales(self, block_id=0):
@@ -383,7 +381,7 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
   initial values are passed as a 1D array, and shape is a 3-tuple
   indicating the number of parameters in each dimension."""
 
-  def __init__(self, initial_values, shape, col_names, parameter_esds=None):
+  def __init__(self, initial_values, shape, parameter_esds=None):
     assert len(initial_values) == (shape[0] * shape[1] * shape[2]), '''The
     shape information to initialise a 3D smoother is inconsistent with the
     length of the initial parameter list.'''
@@ -395,13 +393,21 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
     self._normalised_x_values = None
     self._normalised_y_values = None
     self._normalised_z_values = None
-    self._col_names = col_names
 
-  @property
-  def col_names(self):
-    """The column names used to obtain normalised coordinates from a
-    reflection table."""
-    return self._col_names
+  def set_new_parameters(self, new_parameters, shape):
+    """Set new parameters of a different length i.e. after batch handling"""
+    assert len(new_parameters) == shape[0] * shape[1] * shape[2]
+    self._parameters = new_parameters
+    self._parameter_esds = None
+    self._n_params = len(self._parameters)
+    self._n_x_params = shape[0]
+    self._n_y_params = shape[1]
+    self._n_z_params = shape[2]
+
+  @ScaleComponentBase.data.setter
+  def data(self, data):
+    assert set(data.keys()) == set(['x', 'y', 'z']), set(data.keys())
+    self._data = data
 
   @property
   def n_x_params(self):
@@ -433,29 +439,30 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
     """The normalised coordinate values in the third dimension."""
     return self._normalised_z_values
 
-  def update_reflection_data(self, reflection_table, selection=None,
+  def update_reflection_data(self, selection=None,
     block_selections=None):
     '''control access to setting all of reflection data at once'''
     self._normalised_x_values = []
     self._normalised_y_values = []
     self._normalised_z_values = []
-    self._inverse_scales = []
     self._n_refl = []
+    normalised_x_values = self.data['x']
+    normalised_y_values = self.data['y']
+    normalised_z_values = self.data['z']
     if selection:
-      reflection_table = reflection_table.select(selection)
-    normalised_x_values = reflection_table[self._col_names[0]]
-    normalised_y_values = reflection_table[self._col_names[1]]
-    normalised_z_values = reflection_table[self._col_names[2]]
+      normalised_x_values = normalised_x_values.select(selection)
+      normalised_y_values = normalised_y_values.select(selection)
+      normalised_z_values = normalised_z_values.select(selection)
     """Set the normalised coordinate values and configure the smoother."""
-    normalised_x_values = normalised_x_values - min(normalised_x_values)
-    normalised_y_values = normalised_y_values - min(normalised_y_values)
-    normalised_z_values = normalised_z_values - min(normalised_z_values)
-    x_range = [int(min(normalised_x_values)//1),
-               int(max(normalised_x_values)//1)+1]
-    y_range = [int(min(normalised_y_values)//1),
-               int(max(normalised_y_values)//1)+1]
-    z_range = [int(min(normalised_z_values)//1),
-               int(max(normalised_z_values)//1)+1]
+    normalised_x_values = normalised_x_values - flex.min(normalised_x_values)
+    normalised_y_values = normalised_y_values - flex.min(normalised_y_values)
+    normalised_z_values = normalised_z_values - flex.min(normalised_z_values)
+    x_range = [int(flex.min(normalised_x_values)//1),
+               int(flex.max(normalised_x_values)//1)+1]
+    y_range = [int(flex.min(normalised_y_values)//1),
+               int(flex.max(normalised_y_values)//1)+1]
+    z_range = [int(flex.min(normalised_z_values)//1),
+               int(flex.max(normalised_z_values)//1)+1]
     self._smoother = GaussianSmoother3D(x_range, self.nparam_to_val(
       self._n_x_params), y_range, self.nparam_to_val(self._n_y_params),
       z_range, self.nparam_to_val(self._n_z_params))
@@ -464,18 +471,15 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
         self._normalised_x_values.append(normalised_x_values.select(sel))
         self._normalised_y_values.append(normalised_y_values.select(sel))
         self._normalised_z_values.append(normalised_z_values.select(sel))
-        self._inverse_scales.append(flex.double(
-          self._normalised_x_values[i].size(), 1.0))
-        self._n_refl.append(self.inverse_scales[i].size())
+        self._n_refl.append(self._normalised_x_values[i].size())
     else:
       self._normalised_x_values.append(normalised_x_values)
       self._normalised_y_values.append(normalised_y_values)
       self._normalised_z_values.append(normalised_z_values)
-      self._inverse_scales.append(flex.double(normalised_x_values.size(), 1.0))
-      self._n_refl.append(self._inverse_scales[0].size())
+      self._n_refl.append(normalised_x_values.size())
 
 
-  def calculate_scales_and_derivatives(self, block_id=0, curvatures=False):
+  def calculate_scales_and_derivatives(self, block_id=0):
     if self._n_refl[block_id] > 1:
       value, weight, sumweight = self._smoother.multi_value_weight(
         self._normalised_x_values[block_id],
@@ -484,8 +488,6 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
         self.value)
       inv_sw = 1. / sumweight
       dv_dp = row_multiply(weight, inv_sw)
-      if curvatures:
-        curvs = sparse.matrix(value.size(), self.n_params)
     elif self._n_refl[block_id] == 1:
       value, weight, sumweight = self._smoother.value_weight(
         self._normalised_x_values[block_id][0],
@@ -496,13 +498,9 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
       b = flex.double(weight.as_dense_vector() / sumweight)
       b.reshape(flex.grid(1, b.size()))
       dv_dp.assign_block(b, 0, 0)
-      if curvatures:
-        curvatures = sparse.matrix(1, self.n_params)
       value = flex.double(1, value)
     else:
       return flex.double([]), sparse.matrix(0, 0)
-    if curvatures:
-      return value, dv_dp, curvs
     return value, dv_dp
 
   def calculate_scales(self, block_id=0):

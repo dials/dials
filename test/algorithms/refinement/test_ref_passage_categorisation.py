@@ -17,8 +17,8 @@ def test():
 
   # Reflection prediction
   from dials.algorithms.spot_prediction import IndexGenerator
-  from dials.algorithms.refinement.prediction import ScansRayPredictor, \
-    ExperimentsPredictor
+  from dials.algorithms.refinement.prediction.managed_predictors import ScansRayPredictor, \
+    ScansExperimentsPredictor
   from cctbx.sgtbx import space_group, space_group_symbols
 
   # We will set up a mock scan
@@ -77,7 +77,7 @@ def test():
   obs_refs['id'] = flex.int(len(obs_refs), 0)
 
   # Calculate intersections
-  ref_predictor = ExperimentsPredictor(experiments)
+  ref_predictor = ScansExperimentsPredictor(experiments)
   obs_refs = ref_predictor(obs_refs)
 
   print("Total number of observations made", len(obs_refs))

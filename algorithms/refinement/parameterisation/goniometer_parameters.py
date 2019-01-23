@@ -77,14 +77,22 @@ class GoniometerMixin(object):
     return S, dS_dval
 
 class GoniometerParameterisation(ModelParameterisation, GoniometerMixin):
-  """Implementation of parameterisation for the setting rotation of a goniometer
-  with two orientation angles expressed in mrad.
+  """A parameterisation of a Goniometer model's setting rotation.
 
-  Pass in a beam to ensure consistent definition of the orientation angles with
-  respect to the initial spindle-beam plane in the laboratory frame"""
+  The setting rotation matrix is parameterised using two orientation angles
+  expressed in mrad. A beam can be provided (if present in the experiment) to
+  ensure a consistent definition of the orientation angles with respect to the
+  initial spindle-beam plane in the laboratory frame"""
 
   def __init__(self, goniometer, beam=None, experiment_ids=None):
+    """Initialise the GoniometerParameterisation object
 
+    Args:
+        goniometer: A dxtbx Beam object to be parameterised.
+        beam: An optional dxtbx Beam object. Defaults to None.
+        experiment_ids (list): The experiment IDs affected by this
+            parameterisation. Defaults to None, which is replaced by [0].
+    """
     # The state of the goniometer model consists of the setting matrix [S] that
     # determines the orientation of the rotation axis in the laboratory frame
     # e_lab = [S] e_datum.

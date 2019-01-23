@@ -47,6 +47,10 @@ from dials.array_family import flex
 
 logger = logging.getLogger('dials')
 
+class NoProfilesException(Exception):
+  """Custom exception when no integrated_prf reflections found."""
+  pass
+
 def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs):
   """Filter the data and delete unneeded intensity columns."""
   if intensity_choice == ['scale']:
@@ -65,7 +69,17 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
       "must be either: 'scale', 'profile', 'sum', 'profile sum' or 'profile sum scale'\n"
       "(if parsing from command line, multiple choices passed as e.g. profile+sum"
       ).format(intensity_choice))
-  reflection_table = reducer.filter_for_export(reflection_table, *args, **kwargs)
+  try:
+    reflection_table = reducer.filter_for_export(reflection_table, *args, **kwargs)
+  except NoProfilesException as e:
+    logger.warn(e)
+    intensity_choice.remove('profile')
+    logger.info("Attempting to reprocess with intensity choice: %s" % " + ".join(i for i in intensity_choice))
+    if intensity_choice:
+      reflection_table = filter_reflection_table(
+        reflection_table, intensity_choice, *args, **kwargs)
+    else:
+      raise Sorry("Unable to process data due to absence of profile fitted reflections")
   return reflection_table
 
 def integrated_data_to_filtered_miller_array(reflections, exp_crystal):
@@ -179,7 +193,7 @@ class FilteringReductionMethods(object):
     combine_partials=True):
     if 'partiality' in reflection_table:
       reflection_table['fractioncalc'] = reflection_table['partiality']
-      if combine_partials:
+      if combine_partials and 'partial_id' in reflection_table:
         dataset_ids = set(reflection_table['id'])
         n_datasets = len(dataset_ids)
         if n_datasets > 1:
@@ -300,6 +314,8 @@ class PrfIntensityReducer(FilterForExportAlgorithm):
   def reduce_on_intensities(reflection_table):
     """Select profile fitted reflectons and remove bad variances"""
     selection = reflection_table.get_flags(reflection_table.flags.integrated_prf)
+    if selection.count(True) == 0:
+      raise NoProfilesException("WARNING: No profile-integrated reflections found")
     reflection_table = reflection_table.select(selection)
     logger.info("Selected %d profile integrated reflections" % reflection_table.size())
     return reflection_table
@@ -400,12 +416,13 @@ class SumAndPrfIntensityReducer(FilterForExportAlgorithm):
   def reduce_on_intensities(reflection_table):
     """First select the reflections which have successfully been integrated by
     both methods"""
+    if reflection_table.get_flags(reflection_table.flags.integrated_prf).count(True) == 0:
+      raise NoProfilesException("WARNING: No profile-integrated reflections found")
     selection = reflection_table.get_flags(reflection_table.flags.integrated,
       all=True)
     reflection_table = reflection_table.select(selection)
     if reflection_table.size() == 0:
-      raise Sorry('No reflections found with both profile and sum intensities,'
-        'try selecting a different intensity choice - sum perhaps?')
+      raise Sorry('No summation integrated intensities found')
     logger.info("Selected %d integrated reflections" % reflection_table.size())
     return reflection_table
 

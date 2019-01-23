@@ -1904,6 +1904,255 @@ class IntensityAnalyser(object):
       pyplot.close()
 
 
+class ZScoreAnalyser(object):
+  """
+  Analyse the distribution of intensity z-scores.
+
+  z-scores are calculated as z = (I - <I>) / σ, where I is intensity,
+  <I> is a weighted mean and σ is the measurement error in intensity,
+  as calculated by dials.util.intensity_explorer.
+  """
+
+  def __init__(self):
+    # Set the required fields
+    self.required = [
+      "miller_index",
+      "intensity.sum.value",
+      "intensity.sum.variance",
+      "xyzobs.px.value",
+    ]
+
+  def __call__(self, rlist, experiments):
+    """
+    :param rlist: A reflection table containing, at the least, the following
+    fields:
+      * ``miller_index``
+      * ``intensity.sum.value``
+      * ``intensity.sum.variance``
+      * ``xyzobs.px.value``
+    :type rlist: `dials_array_family_flex_ext.reflection_table`
+    :param experiments: An experiment list with space group information.
+    :type experiments: `dxtbx_model_ext.ExperimentList`
+    :return: A dictionary describing several Plotly plots.
+    :rtype:`dict`
+    """
+
+    from dials.util.intensity_explorer import IntensityDist
+
+    # Check we have the required fields
+    print("Analysing reflection intensities")
+    if not ensure_required(rlist, self.required):
+      return {}
+
+    selection = rlist['intensity.sum.variance'] <= 0
+    if selection.count(True) > 0:
+      rlist.del_selected(selection)
+      print(" Removing %d reflections with variance <= 0" % \
+            selection.count(True))
+
+    selection = rlist['intensity.sum.value'] <= 0
+    if selection.count(True) > 0:
+      rlist.del_selected(selection)
+      print(" Removing %d reflections with intensity <= 0" % \
+            selection.count(True))
+
+    d = OrderedDict()
+    self.z_score_data = IntensityDist(rlist, experiments).rtable
+
+    print(" Analysing distribution of intensity z-scores")
+    d.update(self.z_score_hist())
+    print(" Constructing normal probability plot of intensity z-scores")
+    d.update(self.normal_probability_plot())
+    print(" Plotting intensity z-scores against multiplicity")
+    d.update(self.z_vs_multiplicity())
+    print(" Plotting time series of intensity z-scores")
+    d.update(self.z_time_series())
+    print(" Plotting intensity z-scores versus weighted mean intensity")
+    d.update(self.z_vs_I())
+    print(" Plotting intensity z-scores versus I/sigma")
+    d.update(self.z_vs_I_over_sigma())
+
+    return d
+
+  def z_score_hist(self):
+    """
+    Plot a histogram of z-scores.
+
+    :return: A dictionary describing a Plotly plot.
+    :rtype:`dict`
+    """
+
+    z_scores = self.z_score_data['intensity.z_score']
+    hist = flex.histogram(z_scores, -10, 10, 100)
+
+    return {
+      'z_score_histogram': {
+        'data': [{
+          'x':    hist.slot_centers().as_numpy_array().tolist(),
+          'y':    hist.slots().as_numpy_array().tolist(),
+          'type': 'bar',
+          'name': 'z_hist',
+        }],
+        'layout': {
+          'title':  'Histogram of z-scores',
+          'xaxis':  {'title': 'z-score', 'range': [-10, 10]},
+          'yaxis':  {'title': 'Number of reflections'},
+          'bargap': 0,
+        },
+      },
+    }
+
+  def normal_probability_plot(self):
+    """
+    Display a normal probability plot of the z-scores of the intensities.
+
+    :return: A dictionary describing a Plotly plot.
+    :rtype:`dict`
+    """
+
+    z_scores = self.z_score_data['intensity.z_score']
+    osm = self.z_score_data['intensity.order_statistic_medians']
+
+    return {
+      'normal_probability_plot': {
+        'data': [{
+          'x'   : osm.as_numpy_array().tolist(),
+          'y'   : z_scores.as_numpy_array().tolist(),
+          'type': 'scattergl',
+          'mode': 'markers',
+          'name': 'Data',
+        },
+        {
+          'x'   : [-5, 5],
+          'y'   : [-5, 5],
+          'type': 'scatter',
+          'mode': 'lines',
+          'name': 'z = m',
+        }],
+        'layout': {
+          'title': 'Normal probability plot',
+          'xaxis': {'title': 'z-score order statistic medians, m'},
+          'yaxis': {'title': 'Ordered z-score responses, z',
+                    'range': [-10, 10]}
+        }
+      }
+    }
+
+  def z_vs_multiplicity(self):
+    """
+    Plot z-score as a function of multiplicity of observation.
+
+    :return: A dictionary describing a Plotly plot.
+    :rtype:`dict`
+    """
+
+    multiplicity = self.z_score_data['multiplicity']
+    z_scores = self.z_score_data['intensity.z_score']
+
+    return {
+      'z_score_vs_multiplicity': {
+        'data'  : [{
+          'x'   : multiplicity.as_numpy_array().tolist(),
+          'y'   : z_scores.as_numpy_array().tolist(),
+          'type': 'scattergl',
+          'mode': 'markers',
+          'name': 'Data',
+        }],
+        'layout': {
+          'title': 'z-scores versus multiplicity',
+          'xaxis': {'title': 'Multiplicity'},
+          'yaxis': {'title': 'z-score'},
+        }
+      }
+    }
+
+  def z_time_series(self):
+    """
+    Plot a crude time-series of z-scores, with image number serving as a
+    proxy for time.
+
+    :return: A dictionary describing a Plotly plot.
+    :rtype:`dict`
+    """
+
+    batch_number = self.z_score_data['xyzobs.px.value'].parts()[2]
+    z_scores = self.z_score_data['intensity.z_score']
+
+    return {
+      'z_score_time_series': {
+        'data'  : [{
+          'x'   : batch_number.as_numpy_array().tolist(),
+          'y'   : z_scores.as_numpy_array().tolist(),
+          'type': 'scattergl',
+          'mode': 'markers',
+          'name': 'Data',
+        }],
+        'layout': {
+          'title': 'z-scores versus image number',
+          'xaxis': {'title': 'Image number'},
+          'yaxis': {'title': 'z-score'},
+        }
+      }
+    }
+
+  def z_vs_I(self):
+    """
+    Plot z-scores versus intensity.
+
+    :return: A dictionary describing a Plotly plot.
+    :rtype:`dict`
+    """
+
+    intensity = self.z_score_data['intensity.mean.value']
+    z_scores = self.z_score_data['intensity.z_score']
+
+    return {
+      'z_score_vs_I': {
+        'data'  : [{
+          'x'   : intensity.as_numpy_array().tolist(),
+          'y'   : z_scores.as_numpy_array().tolist(),
+          'type': 'scattergl',
+          'mode': 'markers',
+          'name': 'Data',
+        }],
+        'layout': {
+          'title': 'z-scores versus weighted mean intensity',
+          'xaxis': {'title': 'Intensity (photon count)', 'type': 'log'},
+          'yaxis': {'title': 'z-score'},
+        }
+      }
+    }
+
+  def z_vs_I_over_sigma(self):
+    """
+    Plot z-scores versus intensity.
+
+    :return: A dictionary describing a Plotly plot.
+    :rtype:`dict`
+    """
+
+    i_over_sigma = (self.z_score_data['intensity.mean.value']
+                    / self.z_score_data['intensity.mean.std_error'])
+    z_scores = self.z_score_data['intensity.z_score']
+
+    return {
+      'z_score_vs_I_over_sigma': {
+        'data'  : [{
+          'x'   : i_over_sigma.as_numpy_array().tolist(),
+          'y'   : z_scores.as_numpy_array().tolist(),
+          'type': 'scattergl',
+          'mode': 'markers',
+          'name': 'Data',
+        }],
+        'layout': {
+          'title': u'z-scores versus I/σ',
+          'xaxis': {'title': u'I/σ', 'type': 'log'},
+          'yaxis': {'title': 'z-score'},
+        }
+      }
+    }
+
+
 class ReferenceProfileAnalyser(object):
   ''' Analyse the reference profiles. '''
 
@@ -2383,6 +2632,10 @@ class ScalingModelAnalyser(object):
               d.update(self.plot_smooth_model(experiments[0]))
             if 'absorption' in model.components:
               d.update(self.plot_absorption_surface(experiments[0]))
+      if experiments.scaling_models().count(None) < len(experiments.scaling_models()):
+        uncertainties = self.plot_parameter_uncertainties(experiments)
+        if uncertainties:
+          d.update(uncertainties)
     return {'scaling_model': d}
 
   def plot_smooth_model(self, experiment):
@@ -2412,17 +2665,14 @@ class ScalingModelAnalyser(object):
     data = []
     configdict = experiment.scaling_model.configdict
     valid_osc = configdict['valid_osc_range']
-    int_val_max = int(valid_osc[1]) + 1
-    int_val_min = int(valid_osc[0])
-    sample_values = flex.double(np.linspace(int_val_min, int_val_max,
-      ((int_val_max-int_val_min)/0.1)+1, endpoint=True)) # Make a grid of
-      #points with 10 points per degree.
+    sample_values = flex.double(np.linspace(valid_osc[0], valid_osc[1],
+      ((valid_osc[1]-valid_osc[0])/0.1)+1, endpoint=True)) # Make a grid of
+    #points with 10 points per degree.
 
     if 'scale' in configdict['corrections']:
-      rt = flex.reflection_table()
-      rt['norm_rot_angle'] = sample_values
       scale_SF = experiment.scaling_model.components['scale']
-      scale_SF.update_reflection_data(rt)
+      scale_SF.data = {'x' : sample_values}
+      scale_SF.update_reflection_data()
       s = scale_SF.calculate_scales()
       smoother_phis = [(i * configdict['scale_rot_interval']) + valid_osc[0]
         for i in scale_SF.smoother.positions()]
@@ -2448,14 +2698,12 @@ class ScalingModelAnalyser(object):
         data[-1]['error_y'] = {'type':'data', 'array':list(scale_SF.parameter_esds)}
 
     if 'decay' in configdict['corrections']:
-      rt = flex.reflection_table()
-      rt['norm_time_values'] = sample_values
-      rt['d'] = flex.double(sample_values.size(), 1.0)
       decay_SF = experiment.scaling_model.components['decay']
-      decay_SF.update_reflection_data(rt)
+      decay_SF.data = {'x' : sample_values, 'd' : flex.double(sample_values.size(), 1.0)}
+      decay_SF.update_reflection_data()
       s = decay_SF.calculate_scales()
       smoother_phis = [(i * configdict['decay_rot_interval']) + valid_osc[0]
-        for i in decay_SF.smoother.positions()]
+        for i in decay_SF._smoother.positions()]
 
       data.append({
         'x' : list(sample_values),
@@ -2539,6 +2787,33 @@ class ScalingModelAnalyser(object):
       'xaxis' : 'x',
       'yaxis' : 'y'
     })
+    return d
+
+  def plot_parameter_uncertainties(self, experiments):
+    d = None
+    if experiments[0].scaling_model.components.values()[0].parameter_esds:
+      p_sigmas = flex.double()
+      for experiment in experiments:
+        for component in experiment.scaling_model.components.itervalues():
+          if component.parameter_esds:
+            p_sigmas.extend(flex.abs(component.parameters) / component.parameter_esds)
+      log_p_sigmas = flex.log(p_sigmas)
+      hist = flex.histogram(log_p_sigmas, n_slots=min(20, int(len(log_p_sigmas)/2)))
+      d = {'uncertainties_plot': {
+          'data' : [{
+            'x': list(hist.slot_centers()),
+            'y': list(hist.slots()),
+            'type': 'bar',
+            'name': 'uncertainties_plot',
+          }],
+          'layout': {
+          'title': 'Distribution of relative uncertainties of scaling model parameters',
+          'xaxis': {'title': 'log ( | parameter value | / standard uncertainty (sigma) )'},
+          'yaxis': {'title': 'count'},
+          'bargap': 0,
+          },
+        },
+      }
     return d
 
 def scaling_model_tables(reflections, experiments):
@@ -2790,7 +3065,7 @@ class Script(object):
     # Parse the command line arguments
     params, options = self.parser.parse_args(show_diff_phil=True)
 
-    # Shoe the help
+    # Show the help
     if len(params.input.reflections) != 1 and not len(params.input.experiments):
       self.parser.print_help()
       exit(0)

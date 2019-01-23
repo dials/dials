@@ -187,12 +187,8 @@ class Refinery(object):
     # filename for an optional log file
     self._log = log
 
-    if verbosity == 0:
-      logger.disabled = True
     self._verbosity = verbosity
-
     self._target_achieved = False
-
     self._max_iterations = max_iterations
 
     # attributes for journalling functionality, based on lstbx's

@@ -186,8 +186,6 @@ class ConstraintManagerFactory(object):
 
     self._params = refinement_phil
     self._pred_param = pred_param
-    if verbosity == 0:
-      logger.disabled = True
     self._verbosity = verbosity
 
     # full parameter names and values

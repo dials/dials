@@ -27,8 +27,7 @@ class BasicErrorModel(object):
     self.n_bins = n_bins
     #First select on initial delta
     self.filter_large_deviants(cutoff=6.0)
-    self.Ih_table.calc_nh()
-    self.n_h = self.Ih_table.n_h
+    self.n_h = self.Ih_table.calc_nh()
     self.sigmaprime = None
     self.delta_hl = None
     self.bin_variances = None
@@ -59,12 +58,13 @@ class BasicErrorModel(object):
     """Do a first pass to calculate delta_hl and filter out the largest
     deviants, so that the error model is not misled by these and instead
     operates on the central ~90% of the data."""
-    self.Ih_table.calc_nh()
-    self.n_h = self.Ih_table.n_h
+    self.n_h = self.Ih_table.calc_nh()
+    self.Ih_table.calc_Ih()
     self.sigmaprime = self.calc_sigmaprime([1.0, 0.0])
     delta_hl = self.calc_deltahl()
     sel = flex.abs(delta_hl) < cutoff
-    self.Ih_table.select(sel)
+    self.Ih_table = self.Ih_table.select(sel)
+    self.n_h = self.Ih_table.calc_nh()
 
   def calc_sigmaprime(self, x):
     """Calculate the error from the model."""
@@ -117,3 +117,6 @@ class BasicErrorModel(object):
     new_variance = (self.refined_parameters[0]**2) * (variances
       + ((self.refined_parameters[1] * intensities)**2))
     return new_variance
+
+  def clear_Ih_table(self):
+    del self.Ih_table

@@ -329,6 +329,9 @@ namespace dials { namespace model {
       try {
         Centroider centroid(data.const_ref(), foreground_mask);
         result = extract_centroid_object(centroid, offset);
+        if (bbox[5] == bbox[4] + 1) {
+          result.px.position[2] = bbox[4] + 0.5;
+        }
       } catch (dials::error) {
         double xmid = (bbox[1] + bbox[0]) / 2.0;
         double ymid = (bbox[3] + bbox[2]) / 2.0;

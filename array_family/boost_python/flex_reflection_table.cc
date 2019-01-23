@@ -461,7 +461,6 @@ namespace dials { namespace af { namespace boost_python {
       DIALS_ASSERT(off2 > off1);
       DIALS_ASSERT(off2 <= indices.size());
       std::size_t k = off1 + num[j];
-      DIALS_ASSERT(j < off2);
       num[j]++;
       indices[k] = i;
     }
@@ -476,8 +475,19 @@ namespace dials { namespace af { namespace boost_python {
       std::size_t num = off2 - off1;
       if (num > 0) {
         DIALS_ASSERT(off + num <= indices.size());
-        result.append(flex_table_suite::select_rows_index(
-              self, const_ref<std::size_t>(&indices[off], num)));
+        reflection_table table = flex_table_suite::select_rows_index(
+          self, const_ref<std::size_t>(&indices[off], num));
+        typedef reflection_table::experiment_map_type::const_iterator const_iterator;
+        for (const_iterator it = self.experiment_identifiers()->begin();
+          it != self.experiment_identifiers()->end(); ++it) {
+            int first_elem = 0;
+            af::const_ref<int> id = table["id"];
+            const_iterator found = self.experiment_identifiers()->find(id[first_elem]);
+            if (found != self.experiment_identifiers()->end()) {
+              (*table.experiment_identifiers())[found->first] = found->second;
+            }
+          }
+        result.append(table);
       }
     }
 
@@ -519,7 +529,6 @@ namespace dials { namespace af { namespace boost_python {
       DIALS_ASSERT(off2 > off1);
       DIALS_ASSERT(off2 <= indices.size());
       std::size_t k = off1 + num[exp_id];
-      DIALS_ASSERT(k < off2);
       num[exp_id]++;
       indices[k] = i;
     }
@@ -600,6 +609,58 @@ namespace dials { namespace af { namespace boost_python {
         throw DIALS_ERROR("Experiment identifiers do not match");
       }
     }
+  }
+
+  /**
+   * Select a number of rows from the table via an index array
+   * @param self The current table
+   * @param index The index array
+   * @returns The new table with the requested rows
+   */
+  template <typename T>
+  T reflection_table_select_rows_index(const T &self, const af::const_ref<std::size_t> &index) {
+    T result = flex_table_suite::select_rows_index<T>(self, index);
+    reflection_table_extend_identifiers(result, self);
+    return result;
+  }
+
+  /**
+   * Select a number of rows from the table via an index array
+   * @param self The current table
+   * @param flags The flag array
+   * @returns The new table with the requested rows
+   */
+  template <typename T>
+  T reflection_table_select_rows_flags(const T &self, const af::const_ref<bool> &flags) {
+    T result = flex_table_suite::select_rows_flags<T>(self, flags);
+    reflection_table_extend_identifiers(result, self);
+    return result;
+  }
+
+  /**
+   * Select a number of columns from the table via an key array
+   * @param self The current table
+   * @param keys The key array
+   * @returns The new table with the requested columns
+   */
+  template <typename T>
+  T reflection_table_select_cols_keys(const T &self, const af::const_ref<std::string> &keys) {
+    T result = flex_table_suite::select_cols_keys<T>(self, keys);
+    reflection_table_extend_identifiers(result, self);
+    return result;
+  }
+
+  /**
+   * Select a number of columns from the table via an key array
+   * @param self The current table
+   * @param keys The key array
+   * @returns The new table with the requested columns
+   */
+  template <typename T>
+  T reflection_table_select_cols_tuple(const T &self, boost::python::tuple keys) {
+    T result = flex_table_suite::select_cols_tuple<T>(self, keys);
+    reflection_table_extend_identifiers(result, self);
+    return result;
   }
 
   /**
@@ -938,6 +999,10 @@ namespace dials { namespace af { namespace boost_python {
           &compute_phi_range<flex_table_type>)
         .def("experiment_identifiers",
           &T::experiment_identifiers)
+        .def("select", &reflection_table_select_rows_index<flex_table_type>)
+        .def("select", &reflection_table_select_rows_flags<flex_table_type>)
+        .def("select", &reflection_table_select_cols_keys<flex_table_type>)
+        .def("select", &reflection_table_select_cols_tuple<flex_table_type>)
         .def("extend",
           reflection_table_extend)
         .def("update",
@@ -1012,6 +1077,15 @@ namespace dials { namespace af { namespace boost_python {
         std::size_t index,
         std::string value) {
       self[index] = value;
+    }
+
+    /**
+     * Del an item
+     */
+    void delitem(
+        reflection_table::experiment_map_type &self,
+        std::size_t index) {
+      self.erase(index);
     }
 
     /**
@@ -1132,6 +1206,7 @@ namespace dials { namespace af { namespace boost_python {
       .def("__len__", &reflection_table::experiment_map_type::size)
       .def("__getitem__", &experiment_map_type_detail::getitem)
       .def("__setitem__", &experiment_map_type_detail::setitem)
+      .def("__delitem__", &experiment_map_type_detail::delitem)
       .def("__contains__", &experiment_map_type_detail::contains)
       .def("keys", &experiment_map_type_detail::keys)
       .def("values", &experiment_map_type_detail::values)

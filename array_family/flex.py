@@ -13,7 +13,11 @@ from dials.model import data
 from dials_array_family_flex_ext import *
 from cctbx.array_family.flex import *
 from cctbx.array_family import flex
+import cctbx
+from cctbx import miller, crystal
+from libtbx.utils import Sorry
 
+from collections import OrderedDict
 import logging
 logger = logging.getLogger(__name__)
 
@@ -354,7 +358,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                 [s[1] for s in spots],c='blue',linewidth=0)
     plt.show()
 
-
   def as_pickle(self, filename):
     '''
     Write the reflection table as a pickle file.
@@ -364,6 +367,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     '''
     import six.moves.cPickle as pickle
     from libtbx import smart_open
+
+    #Clean up any removed experiments from the identifiers map
+    self.clean_experiment_identifiers_map()
 
     with smart_open.for_writing(filename, 'wb') as outfile:
       pickle.dump(self, outfile, protocol=pickle.HIGHEST_PROTOCOL)
@@ -377,8 +383,47 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     '''
     from dials.util.nexus_old import NexusFile
     handle = NexusFile(filename, 'w')
+    #Clean up any removed experiments from the identifiers map
+    self.clean_experiment_identifiers_map()
     handle.set_reflections(self)
     handle.close()
+
+  def as_miller_array(self, experiment, intensity='sum'):
+    """Return a miller array with the chosen intensities.
+
+    Use the provided experiment object and intensity choice to make a miller
+    intensity array with sigmas (no scaling applied).
+
+    Args:
+        experiment (dxtbx.model.Experiment): An experiment object.
+        intensity (str): The intensity type that will be used to make the
+            miller array e.g 'prf', 'sum'.
+
+    Returns:
+        cctbx.miller.array: A miller array with intensities and sigmas.
+
+    Raises:
+        Sorry: If chosen intensity values cannot be found in the table.
+
+    """
+
+    try:
+      intensities, variances = (self['intensity.'+intensity+'.value'],
+        self['intensity.'+intensity+'.variance'])
+    except RuntimeError as e:
+      logger.error(e)
+      raise Sorry('Unable to find %s, %s in reflection table' % (
+        'intensity.'+intensity+'.value', 'intensity.'+intensity+'.variance'))
+
+    miller_set = miller.set(
+      crystal_symmetry=experiment.crystal.get_crystal_symmetry(),
+      indices=self['miller_index'], anomalous_flag=False)
+    i_obs = miller.array(miller_set, data=intensities)
+    i_obs.set_observation_type_xray_intensity()
+    i_obs.set_sigmas(variances**0.5)
+    i_obs.set_info(miller.array_info(
+      source='DIALS', source_type='reflection_tables'))
+    return i_obs
 
   def copy(self):
     '''
@@ -1140,12 +1185,13 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       if "id" in self:
         index = set(self['id'])
         for i in index:
-          assert i in identifiers, (i, identifiers)
+          assert i in identifiers.keys(), (i, list(identifiers.keys()))
     if experiments is not None:
       if len(identifiers) > 0:
         assert len(identifiers) == len(experiments), (len(identifiers), len(experiments))
-        for i in range(len(experiments)):
-          assert identifiers[i] == experiments[i].identifier, (identifiers[i], experiments[i].identifier)
+        assert len(identifiers) == len(set(experiments.identifiers()))
+        for experiment in experiments:
+          assert experiment.identifier in identifiers.values(), (experiment.identifier)
 
   def are_experiment_identifiers_consistent(self, experiments=None):
     '''
@@ -1158,7 +1204,112 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       return False
     return True
 
+  def compute_miller_indices_in_asu(self, experiments):
+    '''
+    Compute miller indices in the asu
 
+    '''
+    self['miller_index_asu'] = miller_index(len(self))
+    for idx, experiment in enumerate(experiments):
+
+      # Create the crystal symmetry object
+      uc = experiment.crystal.get_unit_cell()
+      sg = experiment.crystal.get_space_group()
+      cs = cctbx.crystal.symmetry(uc, space_group=sg)
+
+      # Get the selection and compute the miller indices
+      selection = self['id'] == idx
+      h = self['miller_index'].select(selection)
+      ms = miller.set(cs, h)
+      ms_asu = ms.map_to_asu()
+      h_asu = ms_asu.indices()
+
+      # Set the miller indices
+      self['miller_index_asu'].set_selected(selection, h_asu)
+
+    return self['miller_index_asu']
+
+  def select_on_experiment_identifiers(self, list_of_identifiers):
+    '''
+    Given a list of experiment identifiers (strings), perform a selection
+    and return a reflection table with properly configured experiment_identifiers
+    map.
+    '''
+    #First get the reverse of the map i.e. ids for a given exp_identifier
+    id_values = []
+    for exp_id in list_of_identifiers:
+      for k in self.experiment_identifiers().keys():
+        if self.experiment_identifiers()[k] == exp_id:
+          id_values.append(k)
+          break
+    if len(id_values) != len(list_of_identifiers):
+      raise KeyError("""Not all requested identifiers
+found in the table's map, has the experiment_identifiers() map been created?
+Requested %s:
+Found %s""" % (list_of_identifiers, id_values))
+    # Build up a selection and use this
+    sel = flex.bool(self.size(), False)
+    for id_val, exp_id in zip(id_values, list_of_identifiers):
+      id_sel = (self['id'] == id_val)
+      sel.set_selected(id_sel, True)
+    self = self.select(sel)
+    # Remove entries from the experiment_identifiers map
+    for k in self.experiment_identifiers().keys():
+      if k not in id_values:
+        del self.experiment_identifiers()[k]
+    return self
+
+  def remove_on_experiment_identifiers(self, list_of_identifiers):
+    '''
+    Remove datasets from the table, given a list of experiment
+    identifiers (strings).
+    '''
+    #First get the reverse of the map i.e. ids for a given exp_identifier
+    assert 'id' in self
+    id_values = []
+    for exp_id in list_of_identifiers:
+      for k in self.experiment_identifiers().keys():
+        if self.experiment_identifiers()[k] == exp_id:
+          id_values.append(k)
+          break
+    if len(id_values) != len(list_of_identifiers):
+      raise KeyError("""Not all requested identifiers
+found in the table's map, has the experiment_identifiers() map been created?
+Requested %s:
+Found %s""" % (list_of_identifiers, id_values))
+    #Now delete the selections, also removing the entry from the map
+    for id_val in id_values:
+      sel = (self['id'] == id_val)
+      self.del_selected(sel)
+      del self.experiment_identifiers()[id_val]
+    return self
+
+  def clean_experiment_identifiers_map(self):
+    '''
+    Remove any entries from the identifier map that do not have any
+    data in the table. Primarily to call as saving data to give a
+    consistent table and map.
+    '''
+    dataset_ids_in_table = set(self['id']).difference(set([-1]))
+    dataset_ids_in_map = set(self.experiment_identifiers().keys())
+    ids_to_remove = dataset_ids_in_map.difference(dataset_ids_in_table)
+    for i in ids_to_remove:
+      del self.experiment_identifiers()[i]
+
+  def reset_ids(self):
+    '''
+    Reset the 'id' column such that the experiment identifiers are
+    numbered 0 .. n-1.
+    '''
+    reverse_map = OrderedDict(
+      (v, k) for k, v in self.experiment_identifiers())
+    orig_id = self['id'].deep_copy()
+    for k in self.experiment_identifiers().keys():
+      del self.experiment_identifiers()[k]
+    for i_exp, exp_id in enumerate(reverse_map.keys()):
+      sel_exp = orig_id == reverse_map[exp_id]
+      self['id'].set_selected(sel_exp, i_exp)
+      self.experiment_identifiers()[i_exp] = exp_id
 
 class reflection_table_selector(object):
   '''

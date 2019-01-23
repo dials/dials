@@ -7,6 +7,7 @@ from __future__ import absolute_import, division, print_function
 import itertools
 
 import dials.util.export_mtz as export_mtz
+from dials.util.batch_handling import calculate_batch_offsets
 
 try:
   from mock import Mock
@@ -37,8 +38,9 @@ class TestBatchRangeCalculations(object):
   "Test the calculation of non-overlapping batch ranges"
 
   class MockScan(object):
-    def __init__(self):
+    def __init__(self, image_range):
       self._batch_offset = 0
+      self._image_range = image_range
 
     def get_batch_offset(self):
       return self._batch_offset
@@ -46,16 +48,22 @@ class TestBatchRangeCalculations(object):
     def set_batch_offset(self, batch_offset):
       self._batch_offset = batch_offset
 
+    def get_image_range(self):
+      return self._image_range
+
   class MockExperiment(object):
-    def __init__(self, image_range):
+    def __init__(self, image_range, scan=True):
       assert len(image_range) == 2
-      self.image_range = tuple(image_range)
-      self.scan = TestBatchRangeCalculations.MockScan()
+      self.scaling_model = None
+      if scan:
+        self.scan = TestBatchRangeCalculations.MockScan(image_range)
+      else:
+        self.scan = []
 
   def _run_ranges(self, ranges):
     """Convenience method to run the routine with a minimal experiment, and return the result as ranges of batch number"""
     input = [self.MockExperiment(x) for x in ranges]
-    return offset_ranges(export_mtz._calculate_batch_offsets(input), ranges)
+    return offset_ranges(calculate_batch_offsets(input), ranges)
 
   def _run_ranges_to_set(self, ranges):
     """Runs a list of ranges and returns a set of individual batch numbers"""
@@ -83,3 +91,10 @@ class TestBatchRangeCalculations(object):
       assert all(isinstance(x, int) for x in itertools.chain(*self._run_ranges(data))), "Not all true integers"
       assert all([x > 0 for x in self._run_ranges_to_set([(0,0)])]), "Should be no zeroth/negative batch"
       assert not has_consecutive_ranges(self._run_ranges(data))
+
+    exp1 = TestBatchRangeCalculations.MockExperiment((1, 1), scan=False)
+    exp2 = TestBatchRangeCalculations.MockExperiment((1, 1), scan=False)
+    offsets = calculate_batch_offsets([exp1, exp2])
+    all([float(x).is_integer() for x in offsets])
+    assert all(isinstance(x, int) for x in offsets)
+    assert all([x > 0 for x in offsets])

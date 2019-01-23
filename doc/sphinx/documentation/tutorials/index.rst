@@ -8,6 +8,7 @@ Tutorials
 .. toctree::
    :maxdepth: 1
 
+   processing_in_detail_betalactamase_dui
    processing_in_detail_betalactamase
    scaling_beta_lactamase
    small_molecule_tutorial

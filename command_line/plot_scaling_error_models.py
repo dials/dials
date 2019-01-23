@@ -12,8 +12,8 @@ from dials.algorithms.scaling.scaling_library import \
   create_scaling_model
 from dials.algorithms.scaling.scaler_factory import create_scaler
 from dials.algorithms.scaling.scaler import MultiScalerBase
-from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets, \
-  assign_unique_identifiers
+from dials.util.multi_dataset_handling import assign_unique_identifiers, \
+  parse_multiple_datasets
 from libtbx import phil
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -61,7 +61,7 @@ def main(argv):
   if len(experiments) != 1:
     print(('Checking for the existence of a reflection table {sep}'
       'containing multiple scaled datasets {sep}').format(sep='\n'))
-    reflections, _ = parse_multiple_datasets(reflections)
+    reflections = parse_multiple_datasets(reflections)
     print("Found %s reflection tables in total." % len(reflections))
     print("Found %s experiments in total." % len(experiments))
 

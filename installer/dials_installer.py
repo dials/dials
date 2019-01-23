@@ -3,20 +3,23 @@ from __future__ import absolute_import, division, print_function
 import os
 import shutil
 import sys
-libtbx_path = os.path.join(
-  os.path.abspath(os.path.dirname(os.path.dirname(__file__))), "lib")
+import traceback
+
+installer_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+libtbx_path = os.path.join(installer_path, "lib")
 if libtbx_path not in sys.path:
   sys.path.append(libtbx_path)
 from libtbx.auto_build import install_distribution
 
 class installer(install_distribution.installer):
+  organization = 'dials'
   product_name = "DIALS"
   dest_dir_prefix = "dials"
   make_apps = []
   configure_modules = ["dials", "xia2", "iota", "prime"]
   include_gui_packages = True
   base_package_options = ["--dials"]
-  installer_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+  installer_dir = installer_path
   modules = [
     # hot
     'annlib',
@@ -42,6 +45,33 @@ class installer(install_distribution.installer):
     flags.remove('create_versioned_dispatchers')
   except ValueError:
     pass
+
+  def product_specific_preinstallation_hook(self):
+    prefix = os.path.abspath(self.options.prefix)
+    if prefix.startswith(installer_path):
+      sys.exit("Invalid installation option: --prefix={givenprefix}\n\n"
+               "Please install DIALS to a location outside of the installer directory.\n"
+               "Suggested alternative: --prefix={suggestedprefix}".format(
+          givenprefix=self.options.prefix,
+          suggestedprefix=os.path.dirname(prefix)))
+
+  def reconfigure(self, log=None, *args, **kwargs):
+    """Intercept any errors and print log excerpt"""
+    try:
+      return super(installer, self).reconfigure(log=log, *args, **kwargs)
+    except Exception as e:
+      if not self.options.verbose:
+        print("\n" + " -=-" * 20)
+        print("\nAn error occured during installation\n")
+        print("Excerpt from installation log:")
+        with open(log.name, 'r') as fh:
+          for line in fh.readlines()[-30:]:
+            print(" :", line, end="")
+        print("\nThis led to ", end="")
+        sys.stdout.flush()
+      traceback.print_exc()
+      print("\n")
+      sys.exit("Please report this installation error to dials-support@lists.sourceforge.net")
 
   def product_specific_prepackage_hook(self, directory):
     """

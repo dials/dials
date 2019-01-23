@@ -8,6 +8,7 @@
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
+from six.moves import range
 
 import os
 import wx
@@ -53,14 +54,13 @@ class chooser_wrapper(object):
   def show_header(self):
     return self.image_set.get_detectorbase(self.index).show_header()
 
-class XrayFrame (AppFrame,XFBaseClass) :
-  def __init__ (self, *args, **kwds) :
+class XrayFrame(AppFrame,XFBaseClass):
+  def __init__(self, *args, **kwds):
     self.params = kwds.get("params", None)
     if "params" in kwds:
       del kwds["params"] #otherwise wx complains
 
     ### Collect any plugins
-    import libtbx.load_env
     import imp
     slip_viewer_dir = os.path.join(os.path.dirname(__file__))
     contents = os.listdir(slip_viewer_dir)
@@ -142,7 +142,7 @@ class XrayFrame (AppFrame,XFBaseClass) :
     super(XrayFrame,self).Show()
     self.Raise()
 
-  def setup_toolbar(self) :
+  def setup_toolbar(self):
     XFBaseClass.setup_toolbar(self)
 
     btn = self.toolbar.AddLabelTool(id=wx.ID_SAVEAS,
@@ -180,7 +180,7 @@ class XrayFrame (AppFrame,XFBaseClass) :
       self.pyslip.tiles.get_initial_instrument_centering_within_picture_as_lon_lat()
     )
 
-  def setup_menus (self) :
+  def setup_menus(self):
     file_menu = wx.Menu()
     self.mb.Append(file_menu, "File")
     item = file_menu.Append(-1, "Open integration results...")
@@ -229,7 +229,7 @@ class XrayFrame (AppFrame,XFBaseClass) :
     d = self.pyslip.tiles.raw_image.get_detector()
     return len(d) > 1 and len(d.hierarchy()) == 4
 
-  def add_file_name_or_data (self, file_name_or_data) :
+  def add_file_name_or_data(self, file_name_or_data):
       """The add_file_name_or_data() function appends @p
       file_name_or_data to the image chooser, unless it is already
       present.  For file-backed images, the base name is displayed in
@@ -241,13 +241,13 @@ class XrayFrame (AppFrame,XFBaseClass) :
       """
 
       key = self.get_key(file_name_or_data)
-      for i in xrange(self.image_chooser.GetCount()) :
-        if (key == str(self.image_chooser.GetClientData(i))) :
+      for i in range(self.image_chooser.GetCount()):
+        if (key == str(self.image_chooser.GetClientData(i))):
           return i
-      if (self.image_chooser.GetCount() >= self.CHOOSER_SIZE) :
+      if (self.image_chooser.GetCount() >= self.CHOOSER_SIZE):
         self.image_chooser.Delete(0)
       i = self.image_chooser.GetCount()
-      if (type(file_name_or_data) is dict) :
+      if (type(file_name_or_data) is dict):
         self.image_chooser.Insert(key, i, None)
       elif (isinstance(file_name_or_data, chooser_wrapper)):
         self.image_chooser.Insert(key, i, file_name_or_data)
@@ -305,7 +305,7 @@ class XrayFrame (AppFrame,XFBaseClass) :
 
     return panel_id, beam_pixel_fast, beam_pixel_slow
 
-  def load_image (self, file_name_or_data, get_raw_data=None, show_untrusted=False) :
+  def load_image(self, file_name_or_data, get_raw_data=None, show_untrusted=False):
     """The load_image() function displays the image from @p
     file_name_or_data.  The chooser is updated appropriately.
     """
@@ -422,7 +422,7 @@ class XrayFrame (AppFrame,XFBaseClass) :
   def get_beam(self):
     return self.pyslip.tiles.raw_image.get_beam()
 
-  def get_key (self, file_name_or_data) :
+  def get_key(self, file_name_or_data):
       """This overridden get_key() function returns the key of @p file_name_or_data
       if it's an DetectorImageBase object.  Otherwise it returns the super class's
       key
@@ -434,7 +434,7 @@ class XrayFrame (AppFrame,XFBaseClass) :
         return str(file_name_or_data)
       else: return super(XrayFrame, self).get_key(file_name_or_data)
 
-  def update_settings (self, layout=True) :
+  def update_settings(self, layout=True):
     # XXX The zoom level from the settings panel are not taken into
     # account here.
 
@@ -620,7 +620,7 @@ class XrayFrame (AppFrame,XFBaseClass) :
     return OnUpdateUIPlugin
 
 
-  def OnSaveAs (self, event) :
+  def OnSaveAs(self, event):
     ### XXX TODO: Save overlays
     ### XXX TODO: Fix bug where multi-asic images are slightly cropped due to tranformation error'
 
@@ -644,7 +644,7 @@ class XrayFrame (AppFrame,XFBaseClass) :
 
     self.update_statusbar("Writing " + file_name + "...")
     if dialog.GetFilterIndex() == 0:
-        from cStringIO import StringIO
+        from six.moves import cStringIO as StringIO
 
         # XXX Copied from tile_generation.py; all its disclaimers
         # apply.

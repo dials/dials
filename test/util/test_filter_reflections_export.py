@@ -38,7 +38,7 @@ from dials.util.filter_reflections import \
   PrfIntensityReducer, SumAndPrfIntensityReducer, ScaleIntensityReducer, \
   filter_reflection_table, sum_partial_reflections, _sum_prf_partials, \
   _sum_sum_partials, _sum_scale_partials, AllSumPrfScaleIntensityReducer, \
-  integrated_data_to_filtered_miller_array
+  integrated_data_to_filtered_miller_array, NoProfilesException
 
 def generate_simple_table():
   """Generate a simple table for testing export function."""
@@ -447,13 +447,13 @@ def test_checks_in_reduce_data_for_export():
   with pytest.raises(Sorry):
     r = PrfIntensityReducer.filter_for_export(r)
 
-  # If no valid prf, should raise sorry
+  # If no valid prf, should raise NoProfilesException
   r = flex.reflection_table()
   r['id'] = flex.int([0, 0])
   r['intensity.prf.value'] = flex.double([1.0, 2.0])
   r['intensity.prf.variance'] = flex.double([0.0, 1.0])
   r.set_flags(flex.bool([False, False]), r.flags.integrated_prf)
-  with pytest.raises(Sorry):
+  with pytest.raises(NoProfilesException):
     r = PrfIntensityReducer.filter_for_export(r)
   r.set_flags(flex.bool([True, True]), r.flags.integrated_prf)
 

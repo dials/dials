@@ -2,8 +2,6 @@
 dials.algorithms.refinement
 ===========================
 
-.. contents:: Table of Contents
-
 .. automodule:: dials.algorithms.refinement.reflection_manager
     :members:
     :undoc-members:

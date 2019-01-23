@@ -35,7 +35,6 @@ space_group = None
 
 
 def run(args):
-
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments
   import libtbx.load_env
@@ -57,8 +56,8 @@ def run(args):
 
   hkl = flex.miller_index(params.hkl)
 
-  from dials.algorithms.indexing.compare_orientation_matrices import \
-       show_rotation_matrix_differences
+  import dials.algorithms.indexing.compare_orientation_matrices
+
   crystals = []
   for experiment in experiments:
     crystal = experiment.crystal
@@ -66,8 +65,13 @@ def run(args):
       crystal.set_space_group(params.space_group.group())
     crystals.append(crystal)
 
-  show_rotation_matrix_differences(crystals, miller_indices=hkl, comparison=params.comparison)
+  rmd = dials.algorithms.indexing.compare_orientation_matrices.rotation_matrix_differences(
+      crystals,
+      miller_indices=hkl,
+      comparison=params.comparison,
+  )
 
+  print(rmd)
 
 if __name__ == '__main__':
   import sys

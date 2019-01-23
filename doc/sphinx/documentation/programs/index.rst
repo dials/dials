@@ -14,6 +14,8 @@ Main processing commands:
    dials_reindex
    dials_refine
    dials_integrate
+   dials_cosym
+   dials_symmetry
    dials_scale
    dials_export
    idials

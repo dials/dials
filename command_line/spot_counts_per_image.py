@@ -1,6 +1,8 @@
 from __future__ import absolute_import, division, print_function
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
+import sys
+
 from dials.util.options import OptionParser
 from dials.util.options \
      import flatten_reflections, flatten_experiments, flatten_experiments
@@ -50,7 +52,6 @@ def run(args):
     phil=phil_scope,
     check_format=False,
     epilog=help_message)
-  from libtbx.utils import Sorry
 
   params, options = parser.parse_args(show_diff_phil=False)
   reflections = flatten_reflections(params.input.reflections)
@@ -105,5 +106,4 @@ def run(args):
     per_image_analysis.plot_stats(stats, filename=params.plot)
 
 if __name__ == '__main__':
-  import sys
   run(sys.argv[1:])

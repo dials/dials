@@ -931,6 +931,11 @@ namespace flex_table_suite {
       copy_column_visitor<T> visitor(result, it->first);
       it->second.apply_visitor(visitor);
     }
+    typedef typename T::experiment_map_type::const_iterator const_iterator;
+    for (const_iterator it = self.experiment_identifiers()->begin();
+          it != self.experiment_identifiers()->end(); ++it) {
+        (*result.experiment_identifiers())[it->first] = it->second;
+    }
     return result;
   }
 

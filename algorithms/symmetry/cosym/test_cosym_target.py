@@ -5,7 +5,7 @@ import pytest
 from cctbx import sgtbx
 from scitbx.array_family import flex
 
-from dials.algorithms.symmetry.cosym.generate_test_data import generate_test_data
+from dials.algorithms.symmetry.cosym._generate_test_data import generate_test_data
 from dials.algorithms.symmetry.cosym import engine
 from dials.algorithms.symmetry.cosym import target
 
@@ -36,20 +36,19 @@ def test_cosym_target(space_group):
     x_orig = x.deep_copy()
     f0, g = t.compute_functional_and_gradients(x)
     g_fd = t.compute_gradients_fd(x)
-    assert g.all_approx_equal_relatively(g_fd, relative_error=1e-4)
+    assert list(g) == pytest.approx(g_fd, rel=1e-3)
 
     c = t.curvatures(x)
     c_fd = t.curvatures_fd(x, eps=1e-3)
-    assert c.all_approx_equal_relatively(c_fd, relative_error=0.5e-1)
+    assert list(c) == pytest.approx(c_fd, rel=0.5e-1)
 
     M = engine.lbfgs_with_curvs(
       target=t, coords=x,
-      verbose=False,
     )
     t.compute_functional(x)
     # check functional has decreased and gradients are approximately zero
     f, g = t.compute_functional_and_gradients(x)
     g_fd = t.compute_gradients_fd(x)
     assert f < f0
-    assert g.all_approx_equal(0, 1e-3)
-    assert g_fd.all_approx_equal(0, 1e-3)
+    assert pytest.approx(g, abs=1e-3) == [0]*len(g)
+    assert pytest.approx(g_fd, abs=1e-3) == [0]*len(g)

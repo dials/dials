@@ -33,7 +33,7 @@ class indexer_fft1d(indexer_base):
     if self.d_min is not None:
       sel &= (1/self.reflections['rlp'].norms() > self.d_min)
     reflections = self.reflections.select(sel)
-    solutions = candidate_basis_vectors_fft1d(
+    solutions = self.candidate_basis_vectors_fft1d(
       reflections['rlp'], hardcoded_phil, max_cell=self.params.max_cell)
     self.candidate_basis_vectors = solutions[0]
     self.debug_show_candidate_basis_vectors()
@@ -63,29 +63,29 @@ class indexer_fft1d(indexer_base):
                                       crystal=cm))
     return experiments
 
-def candidate_basis_vectors_fft1d(reciprocal_lattice_vectors, params,
-                                  max_cell=None):
+  def candidate_basis_vectors_fft1d(self, reciprocal_lattice_vectors, params,
+                                    max_cell=None):
 
-  # Spot_positions: Centroid positions for spotfinder spots, in pixels
-  # Return value: Corrected for parallax, converted to mm
+    # Spot_positions: Centroid positions for spotfinder spots, in pixels
+    # Return value: Corrected for parallax, converted to mm
 
-  # derive a max_cell from mm spots
-  # derive a grid sampling from spots
+    # derive a max_cell from mm spots
+    # derive a grid sampling from spots
 
-  from rstbx.indexing_api.lattice import DPS_primitive_lattice
-  # max_cell: max possible cell in Angstroms; set to None, determine from data
-  # recommended_grid_sampling_rad: grid sampling in radians; guess for now
+    from rstbx.indexing_api.lattice import DPS_primitive_lattice
+    # max_cell: max possible cell in Angstroms; set to None, determine from data
+    # recommended_grid_sampling_rad: grid sampling in radians; guess for now
 
-  DPS = DPS_primitive_lattice(max_cell=max_cell,
-                              recommended_grid_sampling_rad = None,
-                              horizon_phil = params)
-  from scitbx import matrix
-  #DPS.S0_vector = matrix.col(beam.get_s0())
-  #DPS.inv_wave = 1./beam.get_wavelength()
+    DPS = DPS_primitive_lattice(max_cell=max_cell,
+                                recommended_grid_sampling_rad = self.params.fft1d.characteristic_grid,
+                                horizon_phil = params)
+    from scitbx import matrix
+    #DPS.S0_vector = matrix.col(beam.get_s0())
+    #DPS.inv_wave = 1./beam.get_wavelength()
 
-  # transform input into what Nick needs
-  # i.e., construct a flex.vec3 double consisting of mm spots, phi in degrees
+    # transform input into what Nick needs
+    # i.e., construct a flex.vec3 double consisting of mm spots, phi in degrees
 
-  DPS.index(reciprocal_space_vectors=reciprocal_lattice_vectors)
-  solutions = DPS.getSolutions()
-  return [matrix.col(s.bvec()) for s in solutions],DPS.getXyzData()
+    DPS.index(reciprocal_space_vectors=reciprocal_lattice_vectors)
+    solutions = DPS.getSolutions()
+    return [matrix.col(s.bvec()) for s in solutions],DPS.getXyzData()

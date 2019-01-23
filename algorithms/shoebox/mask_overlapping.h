@@ -42,7 +42,7 @@ namespace dials { namespace algorithms { namespace shoebox {
      * The entry point of the functor. The list of reflections is queried
      * against the adjacency list to find overlapping reflections. Those
      * that have no overlaps their whole mask set to 1 to indicate that
-     * the reflection owns all it's pixels. Those that do overlap are
+     * the reflection owns all its pixels. Those that do overlap are
      * then compared pixel-by-pixel in the overlapping region and the
      * reflection whose predicted central location is closer to the pixel
      * will gain ownership of the pixel (mask value 1).

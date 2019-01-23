@@ -40,8 +40,8 @@ def test(args=[]):
 
   # Reflection prediction
   from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
-  from dials.algorithms.refinement.prediction import ScansRayPredictor, \
-    ExperimentsPredictor
+  from dials.algorithms.refinement.prediction.managed_predictors import ScansRayPredictor, \
+    ScansExperimentsPredictor
   from cctbx.sgtbx import space_group, space_group_symbols
 
   # Parameterisation of the prediction equation
@@ -156,7 +156,7 @@ def test(args=[]):
 
   # Make a reflection predictor and re-predict for all these reflections. The
   # result is the same, but we gain also the flags and xyzcal.px columns
-  ref_predictor = ExperimentsPredictor(experiments)
+  ref_predictor = ScansExperimentsPredictor(experiments)
   obs_refs['id'] = flex.int(len(obs_refs), 0)
   obs_refs = ref_predictor(obs_refs)
 
@@ -190,7 +190,7 @@ def test(args=[]):
   ##############################
 
   # Redefine the reflection predictor to use the type expected by the Target class
-  ref_predictor = ExperimentsPredictor(experiments)
+  ref_predictor = ScansExperimentsPredictor(experiments)
 
   mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
       experiments, ref_predictor, refman, pred_param,

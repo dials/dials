@@ -159,7 +159,6 @@ if __name__ == '__main__':
 
   from dials.util.options import OptionParser
   from dials.util.options import flatten_experiments
-  from dials.util.options import flatten_experiments
   from dials.util.options import flatten_reflections
   import libtbx.load_env
   usage_message = """

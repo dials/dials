@@ -1,3 +1,4 @@
+"""LBFGS refinement engine for cosym analysis."""
 from __future__ import absolute_import, division, print_function
 
 import logging
@@ -7,15 +8,29 @@ import scitbx.lbfgs
 
 
 class lbfgs_with_curvs(object):
-  def __init__(self, target, coords, verbose,
-               animate=False,
-               save_intermediate_plots=False,
+  """Minimise a target function using the LBFGS minimiser.
+
+  Implementation of an LBFGS minimiser using curvature information, according
+  to the interface defined by :mod:`scitbx.lbfgs`.
+
+  """
+
+  def __init__(self, target, coords,
                use_curvatures=True,
                termination_params=None):
+    """Initialise an lbfgs_with_curvs object.
+
+    Args:
+      target (dials.algorithms.target.Target): The target function to minimise.
+      coords (scitbx.array_family.flex.double): The starting coordinates for
+        minimisation.
+      use_curvatures (bool): Whether or not to use curvature information in the
+        minimisation. Defaults to True.
+      termination_params (scitbx.lbfgs.termination_parameters):
+        Override the default termination parameters for the minimisation.
+
+    """
     self.target = target
-    self.verbose = verbose
-    self.animate = animate
-    self.save_intermediate_plots = save_intermediate_plots
 
     self.dim = len(coords)
     self.x = coords
@@ -31,6 +46,13 @@ class lbfgs_with_curvs(object):
     )
 
   def compute_functional_gradients_diag(self):
+    """Compute the functional, gradients and diagonal.
+
+    Returns:
+      tuple: A tuple of the functional, gradients and diagonal, where the
+      diagonal is the reciprocal of the curvatures.
+
+    """
     f, g, curvs = self.compute_functional_gradients_and_curvatures()
 
     # Curvatures of zero will cause a crash, because their inverse is taken.
@@ -39,38 +61,31 @@ class lbfgs_with_curvs(object):
     return f, g, diags
 
   def curvatures(self):
+    """Return the curvatures."""
     return self.target.curvatures(self.x)
 
   def compute_functional_gradients_and_curvatures(self):
+    """Compute the functional, gradients and curvatures.
+
+    Returns:
+      tuple: A tuple of the functional, gradients and curvatures.
+
+    """
     self.f, self.g = self.target.compute_functional_and_gradients(self.x)
     self.c = self.curvatures()
     return self.f, self.g, self.c
 
   def compute_functional_and_gradients(self):
+    """Compute the functional and gradients.
+
+    Returns:
+      tuple: A tuple of the functional and gradients.
+
+    """
     self.f, self.g = self.target.compute_functional_and_gradients(self.x)
     return self.f, self.g
 
   def callback_after_step(self, minimizer):
+    """Log progress after each successful step of the minimisation."""
     logger.debug('minimization step: f, iter, nfun:')
     logger.debug('%s %s %s' %(self.f, minimizer.iter(), minimizer.nfun()))
-
-    if self.animate:
-      from matplotlib import pyplot as plt
-      NN = self.x.size() // self.dim
-      coord_x = self.x[0:NN]
-      coord_y = self.x[NN:2*NN]
-      plt.clf()
-      plt.ion()
-      plt.scatter(coord_x, coord_y, c="r", marker='+', s=3)
-      plt.axes().set_aspect("equal")
-      plt.xlim(-1, 1)
-      plt.ylim(-1, 1)
-      plt.pause(0.005)
-
-    if self.save_intermediate_plots:
-      from dials.algorithms.symmetry import cosym
-      NN = self.x.size() // self.dim
-      coord_x = self.x[0:NN]
-      coord_y = self.x[NN:2*NN]
-      cosym.plot((coord_x, coord_y), plot_name='xy_step_%02i.png' %minimizer.iter())
-

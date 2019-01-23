@@ -197,8 +197,8 @@ def refine_subgroup(args):
   subgroup.cc_nrefs = []
   try:
     logger = logging.getLogger()
-    disabled = logger.disabled
-    logger.disabled = True
+    level = logger.getEffectiveLevel()
+    logger.setLevel(logging.ERROR)
     iqr_multiplier = params.refinement.reflections.outlier.tukey.iqr_multiplier
     params.refinement.reflections.outlier.tukey.iqr_multiplier = 2 * iqr_multiplier
     refinery, refined, outliers = refine(
@@ -248,7 +248,7 @@ def refine_subgroup(args):
         subgroup.max_cc = flex.max(ccs[1:])
         subgroup.min_cc = flex.min(ccs[1:])
   finally:
-    logger.disabled = disabled
+    logger.setLevel(level)
   return subgroup
 
 find_max_delta = sgtbx.lattice_symmetry_find_max_delta

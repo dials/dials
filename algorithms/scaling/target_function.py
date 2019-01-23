@@ -8,7 +8,7 @@ scaling.
 from copy import copy
 from dials.array_family import flex
 from dials.algorithms.scaling.scaling_restraints import MultiScalingRestraints
-from dials_scaling_ext import row_multiply
+from dials_scaling_ext import row_multiply, calc_dIh_by_dpi, calc_jacobian
 
 
 class ScalingTarget(object):
@@ -78,18 +78,16 @@ class ScalingTarget(object):
   @staticmethod
   def calculate_gradients(Ih_table):
     """Return a gradient vector on length len(self.apm.x)."""
-    gsq = ((Ih_table.inverse_scale_factors)**2) * Ih_table.weights
+    gsq = Ih_table.inverse_scale_factors**2 * Ih_table.weights
     sumgsq = gsq * Ih_table.h_index_matrix
-    rhl = Ih_table.intensities - (Ih_table.Ih_values
-      * Ih_table.inverse_scale_factors)
+    prefactor = -2.0 * Ih_table.weights * (Ih_table.intensities - (
+      Ih_table.Ih_values * Ih_table.inverse_scale_factors))
     dIh = ((Ih_table.intensities - (Ih_table.Ih_values * 2.0 *
       Ih_table.inverse_scale_factors)) * Ih_table.weights)
-    dIh_g = row_multiply(Ih_table.derivatives, dIh)
-    dIh_red = dIh_g.transpose() * Ih_table.h_index_matrix
-    dIh_by_dpi = row_multiply(dIh_red.transpose(), 1.0/sumgsq)
-    term_1 = (-2.0 * rhl * Ih_table.weights * Ih_table.Ih_values *
-              Ih_table.derivatives)
-    term_2 = (-2.0 * rhl * Ih_table.weights * Ih_table.inverse_scale_factors *
+    dIh_by_dpi = calc_dIh_by_dpi(
+      dIh, sumgsq, Ih_table.h_index_matrix, Ih_table.derivatives.transpose())
+    term_1 = (prefactor * Ih_table.Ih_values) * Ih_table.derivatives
+    term_2 = (prefactor * Ih_table.inverse_scale_factors *
               Ih_table.h_index_matrix) * dIh_by_dpi
     gradient = term_1 + term_2
     return gradient
@@ -97,20 +95,14 @@ class ScalingTarget(object):
   @staticmethod
   def calculate_jacobian(Ih_table):
     """Calculate the jacobian matrix, size Ih_table.size by len(self.apm.x)."""
-    invsumgsq = 1.0 / ((Ih_table.weights * ((Ih_table.inverse_scale_factors)**2))
-      * Ih_table.h_index_matrix)
+    gsq = Ih_table.inverse_scale_factors**2 * Ih_table.weights
+    sumgsq = gsq * Ih_table.h_index_matrix
     dIh = ((Ih_table.intensities - (Ih_table.Ih_values * 2.0 *
       Ih_table.inverse_scale_factors))) * Ih_table.weights
-    dIh_g = row_multiply(Ih_table.derivatives, dIh)
-    dIh_red = dIh_g.transpose() * Ih_table.h_index_matrix
-    dIh_by_dpi = row_multiply(dIh_red.transpose(), invsumgsq)
-    dIh_by_dpi = dIh_by_dpi.transpose() * Ih_table.h_expand_matrix
-    term1 = row_multiply(dIh_by_dpi.transpose(),
-      -1.0 * Ih_table.inverse_scale_factors)
-    term2 = row_multiply(Ih_table.derivatives, Ih_table.Ih_values)
-    for i, col in enumerate(term2.cols()):
-      term1[:, i] -= col # Sum columns to create the jacobian
-    return term1 # Return the jacobian
+    jacobian = calc_jacobian(Ih_table.derivatives.transpose(),
+      Ih_table.h_index_matrix, Ih_table.Ih_values, Ih_table.inverse_scale_factors,
+      dIh, sumgsq)
+    return jacobian
 
   def calculate_curvatures(self, _):
     """Return the second derivative of the target function."""

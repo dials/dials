@@ -6,9 +6,17 @@ import procrunner
 import pytest
 import scitbx
 
-def test_thing_1(run_in_tmpdir, dials_regression):
-  '''Would you like to know more about what this test is supposed to do?
-     I would love to. Always remember to use descriptive names.'''
+def test_search_multiple(run_in_tmpdir, dials_regression):
+  '''Perform a beam-centre search and check that the output is sane.
+
+  Do the following:
+  1. Run dials.search_beam_centre on two datablocks and two pickled
+  reflection tables, as output by dials.find_spots;
+    a) Check that the program exits correctly;
+    b) Check that it produces the expected output datablock.
+  2. Check that the beam centre search has resulted in the expected shift
+  in detector origin.
+  '''
 
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path1 = os.path.join(data_dir, "strong_P1_X6_1_0-1.pickle")
@@ -23,7 +31,7 @@ def test_thing_1(run_in_tmpdir, dials_regression):
           pickle_path2]
 
   print(args)
-  result = procrunner.run_process(args)
+  result = procrunner.run(args)
   assert result['stderr'] == '' and result['exitcode'] == 0
   assert os.path.exists('optimized_experiments.json')
 
@@ -38,20 +46,30 @@ def test_thing_1(run_in_tmpdir, dials_regression):
            scitbx.matrix.col(detector_2[0].get_origin()))
   assert shift.elems == pytest.approx((0.037, 0.061, 0.0), abs=1e-1)
 
-def test_thing_2(regression_data, run_in_tmpdir):
-  '''Would you like to know more about what this test is supposed to do?
-     I would love to. Always remember to use descriptive names.'''
+def test_index_after_search(regression_data, run_in_tmpdir):
+  '''Integrate the beam centre search with the rest of the toolchain
 
-  g = [f.strpath for f in regression_data('i04_bag_training').listdir(sort=True) if '.cbf' in f.strpath]
+  Do the following:
+  1. Run dials.import with a specified beam centre, check for expected output;
+  2. Run dials.find_spots, check for expected output;
+  3. Run dials.search_beam_centre on the resultant datablock and pickled
+  reflection table, check for expected output;
+  4. Run dials.index, using the datablock from the beam centre search,
+  and check that the expected unit ecll is obtained and that the RMSDs are
+  smaller than or equal to some expected values.'''
+
+  regression_data = regression_data('i04_bag_training').listdir(sort=True)
+  g = [f.strpath for f in regression_data if '.cbf' in f.strpath]
 
   # beam centre from image headers: 205.28,210.76 mm
   args = ["dials.import", "mosflm_beam_centre=207,212"] + g
   print(args)
   if os.name != 'nt':
-    result = procrunner.run_process(args)
+    result = procrunner.run(args)
     assert result['stderr'] == '' and result['exitcode'] == 0
   else:
-    # Can't run this command on Windows, as it will exceed the maximum Windows command length limits.
+    # Can't run this command on Windows,
+    # as it will exceed the maximum Windows command length limits.
     # So, instead:
     import mock
     import sys
@@ -64,15 +82,19 @@ def test_thing_2(regression_data, run_in_tmpdir):
   args = ["dials.find_spots", "experiments.json",
           "scan_range=1,10", "scan_range=531,540"]
   print(args)
-  result = procrunner.run_process(args)
+  result = procrunner.run(args)
   assert result['stderr'] == '' and result['exitcode'] == 0
   assert os.path.exists('strong.pickle')
 
   # actually run the beam centre search
+<<<<<<< HEAD
   args = ["dials.search_beam_position", "experiments.json",
           "strong.pickle"]
+=======
+  args = ["dials.search_beam_position", "datablock.json", "strong.pickle"]
+>>>>>>> master
   print(args)
-  result = procrunner.run_process(args)
+  result = procrunner.run(args)
   assert result['stderr'] == '' and result['exitcode'] == 0
   assert os.path.exists('optimized_experiments.json')
 
@@ -100,18 +122,30 @@ def test_thing_2(regression_data, run_in_tmpdir):
     run_in_tmpdir.join('optimized_experiments.json').strpath, [],
     expected_unit_cell, expected_rmsds, expected_hall_symbol)
 
-def test_thing_3(run_in_tmpdir, dials_regression):
-  '''Would you like to know more about what this test is supposed to do?
-     I would love to. Always remember to use descriptive names.'''
+def test_search_single(run_in_tmpdir, dials_regression):
+  '''Perform a beam-centre search and check that the output is sane.
+
+  Do the following:
+  1. Run dials.search_beam_centre on a single datablock and pickled
+  reflection table, as output by dials.find_spots;
+    a) Check that the program exits correctly;
+    b) Check that it produces the expected output datablock.
+  2. Check that the beam centre search has resulted in the expected shift
+  in detector origin.
+  '''
 
   data_dir = os.path.join(dials_regression, "indexing_test_data", "phi_scan")
   pickle_path = os.path.join(data_dir, "strong.pickle")
   experiments_path = os.path.join(data_dir, "datablock.json")
 
+<<<<<<< HEAD
   args = ["dials.search_beam_position",
           experiments_path, pickle_path]
+=======
+  args = ["dials.search_beam_position", datablock_path, pickle_path]
+>>>>>>> master
   print(args)
-  result = procrunner.run_process(args)
+  result = procrunner.run(args)
   assert result['stderr'] == '' and result['exitcode'] == 0
   assert os.path.exists('optimized_experiments.json')
 
@@ -125,3 +159,38 @@ def test_thing_3(run_in_tmpdir, dials_regression):
   shift = (scitbx.matrix.col(detector_1[0].get_origin()) -
            scitbx.matrix.col(detector_2[0].get_origin()))
   assert shift.elems == pytest.approx((-0.976, 2.497, 0.0), abs=1e-1)
+
+def test_search_small_molecule(regression_data, run_in_tmpdir):
+  '''Perform a beam-centre search on a multi-sweep data set..
+
+  Do the following:
+  1. Run dials.search_beam_centre on a single datablock and pickled
+  reflection table containing multiple experiment IDs, as output by
+  dials.find_spots;
+    a) Check that the program exits correctly;
+    b) Check that it produces the expected output datablock.
+  2. Check that the beam centre search has resulted in the expected shift
+  in detector origin.
+  '''
+
+  data = regression_data('l-cysteine_four_sweeps')
+  datablock_path = data.join('datablock.json').strpath
+  pickle_path = data.join('strong.pickle').strpath
+
+  args = ["dials.search_beam_position", datablock_path, pickle_path]
+  print(args)
+  result = procrunner.run(args)
+  assert result['stderr'] == '' and result['exitcode'] == 0
+  assert os.path.exists('optimized_datablock.json')
+
+  from dxtbx.serialize import load
+  datablocks = load.datablock(datablock_path, check_format=False)
+  original_imageset = datablocks[0].extract_imagesets()[0]
+  detector_1 = original_imageset.get_detector()
+  optimized_datablock = load.datablock('optimized_datablock.json',
+                                       check_format=False)
+  detector_2 = optimized_datablock[0].unique_detectors()[0]
+  shift = (scitbx.matrix.col(detector_1[0].get_origin()) -
+           scitbx.matrix.col(detector_2[0].get_origin()))
+  print(shift)
+  assert shift.elems == pytest.approx((-0.02, -1.18, 0.0), abs=1e-1)

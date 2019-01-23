@@ -1,27 +1,22 @@
 from __future__ import absolute_import, division, print_function
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
-
 import logging
 logger = logging.getLogger('dials.command_line.cosym')
 
-import os
-from libtbx.utils import Sorry
+import copy
 import iotbx.phil
 from cctbx import crystal, miller
 from cctbx import sgtbx
-from iotbx.reflection_file_reader import any_reflection_file
+from dxtbx.serialize import dump
 from dials.array_family import flex
 from dials.util.options import flatten_experiments, flatten_reflections
+from dials.util.multi_dataset_handling import assign_unique_identifiers,\
+  parse_multiple_datasets, select_datasets_on_ids
 from dials.algorithms.symmetry.cosym import analyse_datasets
 
+
 phil_scope = iotbx.phil.parse('''\
-batch = None
-  .type = ints(value_min=0, size=2)
-
-mode = *full ambiguity
-  .type = choice
-
 space_group = None
   .type = space_group
 
@@ -61,6 +56,7 @@ verbosity = 1
   .help = "The verbosity level"
 ''', process_includes=True)
 
+<<<<<<< HEAD
 def run(args):
   from libtbx import easy_pickle
   from dials.util import log
@@ -73,6 +69,249 @@ def run(args):
     read_experiments=True,
     check_format=False,
     #epilog=help_message
+  )
+=======
+>>>>>>> master
+
+class cosym(object):
+  def __init__(self, experiments, reflections, params=None):
+    if params is None:
+      params = phil_scope.extract()
+    self._params = params
+
+    # map experiments and reflections to primitive setting
+    experiments, reflections = self._map_to_primitive(
+      experiments, reflections)
+
+    # perform unit cell clustering
+    identifiers = self._unit_cell_clustering(experiments)
+    if len(identifiers) < len(experiments):
+      logger.info(
+        'Selecting subset of %i datasets for cosym analysis: %s' % (
+          len(identifiers), str(identifiers)))
+      experiments, reflections = select_datasets_on_ids(
+        experiments, reflections, use_datasets=identifiers)
+
+    experiments, reflections = self._map_to_minimum_cell(
+      experiments, reflections)
+
+    # transform models into miller arrays
+    datasets = self._miller_arrays_from_experiments_reflections(
+      experiments, reflections)
+
+    result = analyse_datasets(datasets, params)
+
+    space_groups = {}
+    reindexing_ops = {}
+    for dataset_id in result.reindexing_ops.iterkeys():
+      if 0 in result.reindexing_ops[dataset_id]:
+        cb_op = result.reindexing_ops[dataset_id][0]
+        reindexing_ops.setdefault(cb_op, [])
+        reindexing_ops[cb_op].append(dataset_id)
+      if dataset_id in result.space_groups:
+        space_groups.setdefault(result.space_groups[dataset_id], [])
+        space_groups[result.space_groups[dataset_id]].append(dataset_id)
+
+    logger.info('Space groups:')
+    for sg, datasets in space_groups.iteritems():
+      logger.info(str(sg.info().reference_setting()))
+      logger.info(datasets)
+
+    logger.info('Reindexing operators:')
+    for cb_op, datasets in reindexing_ops.iteritems():
+      logger.info(cb_op)
+      logger.info(datasets)
+
+    self._export_experiments_reflections(experiments, reflections, reindexing_ops)
+
+  def _export_experiments_reflections(self, experiments, reflections,
+                                      reindexing_ops):
+    reindexed_reflections = flex.reflection_table()
+    for cb_op, dataset_ids in reindexing_ops.iteritems():
+      cb_op = sgtbx.change_of_basis_op(cb_op)
+      for dataset_id in dataset_ids:
+        expt = experiments[dataset_id]
+        refl = reflections[dataset_id]
+        refl_reindexed = copy.deepcopy(refl)
+        expt.crystal = expt.crystal.change_basis(cb_op)
+        refl_reindexed['miller_index'] = cb_op.apply(
+          refl_reindexed['miller_index'])
+        reindexed_reflections.extend(refl_reindexed)
+
+    reindexed_reflections.reset_ids()
+    logger.info(
+      'Saving reindexed experiments to %s' % self._params.output.experiments)
+    dump.experiment_list(experiments, self._params.output.experiments)
+    logger.info(
+      'Saving reindexed reflections to %s' % self._params.output.reflections)
+    reindexed_reflections.as_pickle(self._params.output.reflections)
+
+  def _miller_arrays_from_experiments_reflections(self, experiments, reflections):
+    miller_arrays = []
+
+    for expt, refl in zip(experiments, reflections):
+      crystal_symmetry = crystal.symmetry(
+        unit_cell=expt.crystal.get_unit_cell(),
+        space_group=expt.crystal.get_space_group())
+
+      from dials.util.filter_reflections import filter_reflection_table
+      if 'intensity.scale.value' in refl:
+        intensity_choice = ['scale']
+        intensity_to_use = 'scale'
+      else:
+        assert 'intensity.sum.value' in refl
+        intensity_choice = ['sum']
+        if 'intensity.prf.value' in refl:
+          intensity_choice.append('profile')
+          intensity_to_use = 'prf'
+        else:
+          intensity_to_use = 'sum'
+
+      refl = filter_reflection_table(refl, intensity_choice, min_isigi=-5,
+        filter_ice_rings=False, combine_partials=True,
+        partiality_threshold=self._params.partiality_threshold)
+      assert refl.size() > 0
+      try:
+        data = refl['intensity.'+intensity_to_use+'.value']
+        variances = refl['intensity.'+intensity_to_use+'.variance']
+      except RuntimeError:
+        data = refl['intensity.sum.value']
+        variances = refl['intensity.sum.variance']
+
+      miller_indices = refl['miller_index']
+      assert variances.all_gt(0)
+      sigmas = flex.sqrt(variances)
+
+      miller_set = miller.set(crystal_symmetry, miller_indices, anomalous_flag=False)
+      intensities = miller.array(miller_set, data=data, sigmas=sigmas)
+      intensities.set_observation_type_xray_intensity()
+      intensities.set_info(miller.array_info(
+        source='DIALS',
+        source_type='pickle'
+      ))
+      miller_arrays.append(intensities)
+
+    return miller_arrays
+
+  def _map_to_primitive(self, experiments, reflections):
+    identifiers = []
+
+    for expt, refl in zip(experiments, reflections):
+      cb_op_to_primitive = expt.crystal.get_crystal_symmetry() \
+        .change_of_basis_op_to_primitive_setting()
+      expt.crystal = expt.crystal.change_basis(cb_op_to_primitive)
+      sel = expt.crystal.get_space_group().is_sys_absent(refl['miller_index'])
+      if sel.count(True):
+        logger.info('Elminating %i systematic absences for experiment %s' % (
+          sel.count(True), expt.identifier))
+        refl = refl.select(sel)
+      refl['miller_index'] = cb_op_to_primitive.apply(refl['miller_index'])
+
+      if self._params.space_group is not None:
+        space_group_info = self._params.space_group.primitive_setting()
+        if not space_group_info.group().is_compatible_unit_cell(
+            expt.crystal.get_unit_cell()):
+          logger.info(
+            'Skipping data set - incompatible space group and unit cell: %s, %s' %(
+              space_group_info, expt.crystal.get_unit_cell()))
+          continue
+      else:
+        expt.crystal.set_space_group(sgtbx.space_group())
+      identifiers.append(expt.identifier)
+
+    return select_datasets_on_ids(
+      experiments, reflections, use_datasets=identifiers)
+
+  def _map_to_minimum_cell(self, experiments, reflections):
+    cb_op_ref_min = experiments[0].crystal.get_crystal_symmetry() \
+      .change_of_basis_op_to_niggli_cell()
+    for expt, refl in zip(experiments, reflections):
+      expt.crystal = expt.crystal.change_basis(cb_op_ref_min)
+      refl['miller_index'] = cb_op_ref_min.apply(refl['miller_index'])
+
+      if self._params.space_group is not None:
+        expt.crystal.set_space_group(
+          self._params.space_group.primitive_setting().group())
+      else:
+        expt.crystal.set_space_group(sgtbx.space_group())
+    return experiments, reflections
+
+  def _unit_cell_clustering(self, experiments):
+    crystal_symmetries = [
+      expt.crystal.get_crystal_symmetry() for expt in experiments]
+    lattice_ids = experiments.identifiers()
+    from xfel.clustering.cluster import Cluster
+    from xfel.clustering.cluster_groups import unit_cell_info
+    ucs = Cluster.from_crystal_symmetries(crystal_symmetries, lattice_ids=lattice_ids)
+    if self._params.save_plot:
+      from matplotlib import pyplot as plt
+      fig = plt.figure("Andrews-Bernstein distance dendogram", figsize=(12, 8))
+      ax = plt.gca()
+    else:
+      ax = None
+    clusters, _ = ucs.ab_cluster(
+      self._params.unit_cell_clustering.threshold,
+      log=self._params.unit_cell_clustering.log,
+      write_file_lists=False,
+      schnell=False,
+      doplot=self._params.save_plot,
+      ax=ax
+    )
+    if self._params.save_plot:
+      plt.tight_layout()
+      plt.savefig('%scluster_unit_cell.png' % self._params.plot_prefix)
+      plt.close(fig)
+    logger.info(unit_cell_info(clusters))
+    largest_cluster = None
+    largest_cluster_lattice_ids = None
+    for cluster in clusters:
+      cluster_lattice_ids = [m.lattice_id for m in cluster.members]
+      if largest_cluster_lattice_ids is None:
+        largest_cluster_lattice_ids = cluster_lattice_ids
+      elif len(cluster_lattice_ids) > len(largest_cluster_lattice_ids):
+        largest_cluster_lattice_ids = cluster_lattice_ids
+
+    dataset_selection = largest_cluster_lattice_ids
+    return dataset_selection
+
+
+help_message = '''
+This program implements the methods of `Gildea, R. J. & Winter, G. (2018).
+Acta Cryst. D74, 405-410 <https://doi.org/10.1107/S2059798318002978>`_ for
+determination of Patterson group symmetry from sparse multi-crystal data sets in
+the presence of an indexing ambiguity.
+
+The program takes as input a set of integrated experiments and reflections,
+either in one file per experiment, or with all experiments combined in a single
+experiments.json and reflections.pickle file. It will perform analysis of the
+symmetry elements present in the datasets and, if necessary, reindex experiments
+and reflections as necessary to ensure that all output experiments and
+reflections are indexed consistently.
+
+Examples::
+
+  dials.cosym experiments.json reflections.pickle
+
+  dials.cosym experiments.json reflections.pickle space_group=I23
+
+  dials.cosym experiments.json reflections.pickle space_group=I23 lattice_group=I23
+
+'''
+
+
+def run(args):
+  from dials.util import log
+  from dials.util.options import OptionParser
+  usage = "dials.cosym [options] experiments.json reflections.pickle"
+
+  parser = OptionParser(
+    usage=usage,
+    phil=phil_scope,
+    read_reflections=True,
+    read_datablocks=False,
+    read_experiments=True,
+    check_format=False,
+    epilog=help_message
   )
 
   params, options, args = parser.parse_args(
@@ -98,280 +337,19 @@ def run(args):
     flex.set_random_seed(params.seed)
     random.seed(params.seed)
 
-  if params.save_plot and not params.animate:
+  if params.save_plot:
     import matplotlib
     # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
     matplotlib.use('Agg') # use a non-interactive backend
 
-  datasets_input = []
-
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
+  reflections = parse_multiple_datasets(reflections)
+  experiments, reflections = assign_unique_identifiers(
+    experiments, reflections)
 
-  if len(experiments) or len(reflections):
-    if len(reflections) == 1:
-      reflections_input = reflections[0]
-      reflections = []
-      for i in range(len(experiments)):
-        reflections.append(reflections_input.select(reflections_input['id'] == i))
+  cosym(experiments=experiments, reflections=reflections, params=params)
 
-    if len(experiments) > len(reflections):
-      flattened_reflections = []
-      for refl in reflections:
-        for i in range(0, flex.max(refl['id'])+1):
-          sel = refl['id'] == i
-          flattened_reflections.append(refl.select(sel))
-      reflections = flattened_reflections
-
-    assert len(experiments) == len(reflections)
-
-    i_refl = 0
-    for i_expt in enumerate(experiments):
-      refl = reflections[i_refl]
-
-    for expt, refl in zip(experiments, reflections):
-      crystal_symmetry = crystal.symmetry(
-        unit_cell=expt.crystal.get_unit_cell(),
-        space_group=expt.crystal.get_space_group())
-
-      from dials.util.filter_reflections import filter_reflection_table
-      if 'intensity.scale.value' in refl:
-        intensity_choice = ['scale']
-        intensity_to_use = 'scale'
-      else:
-        assert 'intensity.sum.value' in refl
-        intensity_choice = ['sum']
-        if 'intensity.prf.value' in refl:
-          intensity_choice.append('profile')
-          intensity_to_use = 'prf'
-        else:
-          intensity_to_use = 'sum'
-
-      refl = filter_reflection_table(refl, intensity_choice, min_isigi=-5,
-        filter_ice_rings=False, combine_partials=True,
-        partiality_threshold=params.partiality_threshold)
-      assert refl.size() > 0
-      data = refl['intensity.'+intensity_to_use+'.value']
-      variances = refl['intensity.'+intensity_to_use+'.variance']
-
-      miller_indices = refl['miller_index']
-      assert variances.all_gt(0)
-      sigmas = flex.sqrt(variances)
-
-      miller_set = miller.set(crystal_symmetry, miller_indices, anomalous_flag=False)
-      intensities = miller.array(miller_set, data=data, sigmas=sigmas)
-      intensities.set_observation_type_xray_intensity()
-      intensities.set_info(miller.array_info(
-        source='DIALS',
-        source_type='pickle'
-      ))
-      datasets_input.append(intensities)
-
-  files = args
-
-  for file_name in files:
-
-    try:
-      data = easy_pickle.load(file_name)
-      intensities = data['observations'][0]
-      intensities.set_info(miller.array_info(
-        source=file_name,
-        source_type='pickle'
-      ))
-      intensities = intensities.customized_copy(
-        anomalous_flag=False).set_info(intensities.info())
-      batches = None
-    except Exception:
-      reader = any_reflection_file(file_name)
-      assert reader.file_type() == 'ccp4_mtz'
-
-      as_miller_arrays = reader.as_miller_arrays(merge_equivalents=False)
-      intensities = [ma for ma in as_miller_arrays
-                     if ma.info().labels == ['I', 'SIGI']][0]
-      batches = [ma for ma in as_miller_arrays
-                 if ma.info().labels == ['BATCH']]
-      if len(batches):
-        batches = batches[0]
-      else:
-        batches = None
-      mtz_object = reader.file_content()
-      intensities = intensities.customized_copy(
-        anomalous_flag=False,
-        indices=mtz_object.extract_original_index_miller_indices()).set_info(
-          intensities.info())
-
-    intensities.set_observation_type_xray_intensity()
-    datasets_input.append(intensities)
-
-  if len(datasets_input) == 0:
-    raise Sorry('No valid reflection files provided on command line')
-
-  datasets = []
-
-  # per-dataset change of basis operator to ensure all consistent
-  change_of_basis_ops = []
-
-  for intensities in datasets_input:
-    info = intensities.info()
-
-    if params.batch is not None:
-      assert batches is not None
-      bmin, bmax = params.batch
-      assert bmax >= bmin
-      sel = (batches.data() >= bmin) & (batches.data() <= bmax)
-      assert sel.count(True) > 0
-      intensities = intensities.select(sel)
-
-    cb_op_to_primitive = intensities.change_of_basis_op_to_primitive_setting()
-    change_of_basis_ops.append(cb_op_to_primitive)
-    intensities = intensities.change_basis(cb_op_to_primitive)
-    if params.mode == 'full' or params.space_group is not None:
-      if params.space_group is not None:
-        space_group_info = params.space_group.primitive_setting()
-        if not space_group_info.group().is_compatible_unit_cell(intensities.unit_cell()):
-          logger.info(
-            'Skipping data set - incompatible space group and unit cell: %s, %s' %(
-              space_group_info, intensities.unit_cell()))
-          continue
-      else:
-        space_group_info = sgtbx.space_group_info('P1')
-      intensities = intensities.customized_copy(
-        space_group_info=space_group_info)
-    intensities.set_info(info).set_observation_type_xray_intensity()
-    datasets.append(intensities)
-
-  crystal_symmetries = [d.crystal_symmetry().niggli_cell() for d in datasets]
-  lattice_ids = range(len(datasets))
-  from xfel.clustering.cluster import Cluster
-  from xfel.clustering.cluster_groups import unit_cell_info
-  ucs = Cluster.from_crystal_symmetries(crystal_symmetries, lattice_ids=lattice_ids)
-  threshold = 1000
-  if params.save_plot:
-    from matplotlib import pyplot as plt
-    fig = plt.figure("Andrews-Bernstein distance dendogram", figsize=(12, 8))
-    ax = plt.gca()
-  else:
-    ax = None
-  clusters, _ = ucs.ab_cluster(
-    params.unit_cell_clustering.threshold,
-    log=params.unit_cell_clustering.log,
-    write_file_lists=False,
-    schnell=False,
-    doplot=params.save_plot,
-    ax=ax
-  )
-  if params.save_plot:
-    plt.tight_layout()
-    plt.savefig('%scluster_unit_cell.png' % params.plot_prefix)
-    plt.close(fig)
-  logger.info(unit_cell_info(clusters))
-  largest_cluster = None
-  largest_cluster_lattice_ids = None
-  for cluster in clusters:
-    cluster_lattice_ids = [m.lattice_id for m in cluster.members]
-    if largest_cluster_lattice_ids is None:
-      largest_cluster_lattice_ids = cluster_lattice_ids
-    elif len(cluster_lattice_ids) > len(largest_cluster_lattice_ids):
-      largest_cluster_lattice_ids = cluster_lattice_ids
-
-  dataset_selection = largest_cluster_lattice_ids
-  if len(dataset_selection) < len(datasets):
-    logger.info(
-      'Selecting subset of data for cosym analysis: %s' %str(dataset_selection))
-    datasets = [datasets[i] for i in dataset_selection]
-
-  for i, dataset in enumerate(datasets):
-    metric_subgroups = sgtbx.lattice_symmetry.metric_subgroups(dataset, max_delta=5)
-    subgroup = metric_subgroups.result_groups[0]
-    cb_op_inp_best = subgroup['cb_op_inp_best']
-    datasets[i] = dataset.change_basis(cb_op_inp_best).set_info(dataset.info())
-    change_of_basis_ops[i] = cb_op_inp_best * change_of_basis_ops[i]
-
-  cb_op_ref_min = datasets[0].change_of_basis_op_to_niggli_cell()
-  for i, dataset in enumerate(datasets):
-    if params.space_group is None:
-      datasets[i] = dataset.change_basis(cb_op_ref_min).customized_copy(
-        space_group_info=sgtbx.space_group_info('P1'))
-    else:
-      datasets[i] = dataset.change_basis(cb_op_ref_min)
-      datasets[i] = datasets[i].customized_copy(
-        crystal_symmetry=crystal.symmetry(
-          unit_cell=datasets[i].unit_cell(),
-          space_group_info=params.space_group.primitive_setting(),
-          assert_is_compatible_unit_cell=False,
-          ))
-    datasets[i] = datasets[i].merge_equivalents().array().set_info(dataset.info())
-    change_of_basis_ops[i] = cb_op_ref_min * change_of_basis_ops[i]
-
-  result = analyse_datasets(datasets, params)
-
-  space_groups = {}
-  reindexing_ops = {}
-  for dataset_id in result.reindexing_ops.iterkeys():
-    if 0 in result.reindexing_ops[dataset_id]:
-      cb_op = result.reindexing_ops[dataset_id][0]
-      reindexing_ops.setdefault(cb_op, [])
-      reindexing_ops[cb_op].append(dataset_id)
-    if dataset_id in result.space_groups:
-      space_groups.setdefault(result.space_groups[dataset_id], [])
-      space_groups[result.space_groups[dataset_id]].append(dataset_id)
-
-  logger.info('Space groups:')
-  for sg, datasets in space_groups.iteritems():
-    logger.info(str(sg.info().reference_setting()))
-    logger.info(datasets)
-
-  logger.info('Reindexing operators:')
-  for cb_op, datasets in reindexing_ops.iteritems():
-    logger.info(cb_op)
-    logger.info(datasets)
-
-  if (len(experiments) and len(reflections) and
-      params.output.reflections is not None and
-      params.output.experiments is not None):
-    import copy
-    from dxtbx.model import ExperimentList
-    from dxtbx.serialize import dump
-    reindexed_experiments = ExperimentList()
-    reindexed_reflections = flex.reflection_table()
-    expt_id = 0
-    for cb_op, dataset_ids in reindexing_ops.iteritems():
-      cb_op = sgtbx.change_of_basis_op(cb_op)
-      for dataset_id in dataset_ids:
-        expt = experiments[dataset_selection[dataset_id]]
-        refl = reflections[dataset_selection[dataset_id]]
-        reindexed_expt = copy.deepcopy(expt)
-        refl_reindexed = copy.deepcopy(refl)
-        cb_op_this = cb_op * change_of_basis_ops[dataset_id].inverse()
-        reindexed_expt.crystal = reindexed_expt.crystal.change_basis(cb_op_this)
-        refl_reindexed['miller_index'] = cb_op_this.apply(
-          refl_reindexed['miller_index'])
-        reindexed_experiments.append(reindexed_expt)
-        refl_reindexed['id'] = flex.int(refl_reindexed.size(), expt_id)
-        reindexed_reflections.extend(refl_reindexed)
-        expt_id += 1
-
-    logger.info('Saving reindexed experiments to %s' % params.output.experiments)
-    dump.experiment_list(reindexed_experiments, params.output.experiments)
-    logger.info('Saving reindexed reflections to %s' % params.output.reflections)
-    reindexed_reflections.as_pickle(params.output.reflections)
-
-  elif params.output.suffix is not None:
-    for cb_op, dataset_ids in reindexing_ops.iteritems():
-      cb_op = sgtbx.change_of_basis_op(cb_op)
-      for dataset_id in dataset_ids:
-        file_name = files[dataset_selection[dataset_id]]
-        basename = os.path.basename(file_name)
-        out_name = os.path.splitext(
-          basename)[0] + params.output.suffix + '_' + str(dataset_selection[dataset_id]) + ".mtz"
-        reader = any_reflection_file(file_name)
-        assert reader.file_type() == 'ccp4_mtz'
-        mtz_object = reader.file_content()
-        cb_op_this = cb_op * change_of_basis_ops[dataset_id]
-        if not cb_op_this.is_identity_op():
-          logger.info('reindexing %s (%s)' %(file_name, cb_op_this.as_xyz()))
-          mtz_object.change_basis_in_place(cb_op_this)
-        mtz_object.write(out_name)
 
 if __name__ == '__main__':
   import sys

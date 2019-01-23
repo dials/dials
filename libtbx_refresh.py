@@ -24,11 +24,12 @@ except Exception:
 import libtbx.pkg_utils
 libtbx.pkg_utils.require('mock', '>=2.0')
 libtbx.pkg_utils.require('orderedset')
-libtbx.pkg_utils.require('pytest', '>=3.1')
+libtbx.pkg_utils.require('pytest', '>=3.1,<3.10')
 libtbx.pkg_utils.require('Jinja2')
 libtbx.pkg_utils.require('procrunner', '>=0.6')
 libtbx.pkg_utils.require('scipy')
 libtbx.pkg_utils.require('scikit_learn[alldeps]')
+libtbx.pkg_utils.require('tqdm', '==4.23.4')
 
 def _install_dials_autocompletion():
   '''generate bash.sh and SConscript file in /build/dials/autocomplete'''

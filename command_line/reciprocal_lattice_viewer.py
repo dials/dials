@@ -334,16 +334,16 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
     self.settings_panel.add_experiments_buttons()
     self.settings_panel.add_imagesets_buttons()
 
-  def OnActive (self, event) :
+  def OnActive(self, event):
     if self.IsShown() and type(self.viewer).__name__ != "_wxPyDeadObject":
       self.viewer.Refresh()
 
-  def OnClose (self, event) :
+  def OnClose(self, event):
     self.Unbind(wx.EVT_ACTIVATE)
     self.Destroy()
     event.Skip()
 
-  def OnDestroy (self, event) :
+  def OnDestroy(self, event):
     if self.parent is not None:
       self.parent.viewer = None
     event.Skip()
@@ -379,7 +379,7 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
       dx, dy, 0, 0)
     v.OnRedraw()
 
-  def create_viewer_panel (self) :
+  def create_viewer_panel(self):
     if self.settings.black_background:
       background_rgb = (0,0,0)
     else:
@@ -388,7 +388,7 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
       settings=self.settings, parent=self, size=(800,600),
       background_rgb=background_rgb)
 
-  def create_settings_panel (self) :
+  def create_settings_panel(self):
     self.settings_panel = settings_window(self, -1, style=wx.RAISED_BORDER)
 
   def set_points(self):
@@ -446,21 +446,21 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
       beam_f, beam_s = p.millimeter_to_pixel((beam_f, beam_s))
       beam.set_unit_s0(p.get_pixel_lab_coord((beam_f, beam_s)))
 
-  def update_statusbar (self) :
+  def update_statusbar(self):
     model_view_matrix = gltbx.util.get_gl_modelview_matrix()
     txt = 'Model view matrix: ' + '[' + ', '.join(
       '%.4f' %m for m in model_view_matrix) + ']'
     self.statusbar.SetStatusText(txt)
 
-class settings_window (wxtbx.utils.SettingsPanel) :
-  def __init__ (self, *args, **kwds) :
+class settings_window(wxtbx.utils.SettingsPanel):
+  def __init__(self, *args, **kwds):
     wxtbx.utils.SettingsPanel.__init__(self, *args, **kwds)
     self.Bind(wx.EVT_CHAR, self.OnChar)
 
-  def OnChar (self, event) :
+  def OnChar(self, event):
     self.GetParent().viewer.OnChar(event)
 
-  def add_controls (self) :
+  def add_controls(self):
     # d_min control
     from wx.lib.agw import floatspin
     self.d_min_ctrl = floatspin.FloatSpin(parent=self, increment=0.05, digits=2)
@@ -620,7 +620,7 @@ class settings_window (wxtbx.utils.SettingsPanel) :
     self.Bind(wx.EVT_RADIOBUTTON, self.OnChangeSettings, self.outlier_btn)
     self.GetSizer().Add(self.outlier_btn, 0, wx.ALL, 5)
 
-  def add_value_widgets (self, sizer) :
+  def add_value_widgets(self, sizer):
     sizer.Add(wx.StaticText(self.panel, -1, "Value:"), 0,
       wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
     self.value_info = wx.TextCtrl(self.panel, -1, size=(80,-1),
@@ -774,7 +774,7 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
         100. * matrix.col(vec) for vec in vec_set])
 
   #--- user input and settings
-  def update_settings (self) :
+  def update_settings(self):
     self.points_display_list = None
     self.Refresh()
 

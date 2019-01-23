@@ -10,7 +10,7 @@ from dials.util import halraiser
 from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
 from dials.algorithms.scaling.model import model as Model
 from dials.algorithms.scaling.scaling_library import create_scaling_model
-from dials.algorithms.scaling.scaling_utilities import parse_multiple_datasets
+from dials.util.multi_dataset_handling import parse_multiple_datasets
 from libtbx import phil
 import matplotlib
 matplotlib.use('Agg')
@@ -78,7 +78,7 @@ def plot_scaling_models(argv):
   if len(experiments) != 1:
     print(('Checking for the existence of a reflection table containing {sep}'
     'multiple scaled datasets. {sep}').format(sep='\n'))
-    reflections, ids = parse_multiple_datasets(reflections)
+    reflections = parse_multiple_datasets(reflections)
     print("Found %s experiments in total." % len(experiments))
     print('\n'+'*'*40)
 
@@ -114,6 +114,21 @@ def plot_scaling_models(argv):
         plot_multi(params, experiment, reflection, j)
   print("\nFinished plotting graphs of scale factors. \n")
 
+  # now print a histogram of model uncertainties
+  if experiments[0].scaling_model.components.values()[0].parameter_esds:
+    p_sigmas = flex.double()
+    for experiment in experiments:
+      for component in experiment.scaling_model.components.itervalues():
+        if component.parameter_esds:
+          p_sigmas.extend(flex.abs(component.parameters) / component.parameter_esds)
+    log_p_sigmas = flex.log(p_sigmas)
+    plt.figure(figsize=(8, 4))
+    plt.title("Distribution of relative uncertainties of scaling model parameters")
+    plt.hist(log_p_sigmas)
+    plt.xlabel("log ( | parameter value | / standard uncertainty (sigma) )")
+    plt.ylabel("Count")
+    plt.savefig("parameter_uncertainties.png")
+    print("Plotted histogram of distribution of parameter uncertainties")
 
 def plot_multi(params, experiment, reflection, j):
   '''subscript to plot a single instance of a multi-dataset file'''
@@ -144,17 +159,14 @@ def plot_smooth_scales(params, experiment, outputfile=None):
 
   configdict = experiment.scaling_model.configdict
   valid_osc = configdict['valid_osc_range']
-  int_val_max = int(valid_osc[1]) + 1
-  int_val_min = int(valid_osc[0])
-  sample_values = flex.double(np.linspace(int_val_min, int_val_max,
-    ((int_val_max-int_val_min)/0.1)+1, endpoint=True)) # Make a grid of
+  sample_values = flex.double(np.linspace(valid_osc[0], valid_osc[1],
+    ((valid_osc[1]-valid_osc[0])/0.1)+1, endpoint=True)) # Make a grid of
     #points with 10 points per degree.
 
   if 'scale' in configdict['corrections']:
-    rt = flex.reflection_table()
-    rt['norm_rot_angle'] = sample_values
     scale_SF = experiment.scaling_model.components['scale']
-    scale_SF.update_reflection_data(rt)
+    scale_SF.data = {'x' : sample_values}
+    scale_SF.update_reflection_data()
     s = scale_SF.calculate_scales()
     smoother_phis = [(i * configdict['scale_rot_interval']) + valid_osc[0]
       for i in scale_SF.smoother.positions()]
@@ -176,11 +188,9 @@ def plot_smooth_scales(params, experiment, outputfile=None):
     legends.append(leg1)
 
   if 'decay' in configdict['corrections']:
-    rt = flex.reflection_table()
-    rt['norm_time_values'] = sample_values
-    rt['d'] = flex.double(sample_values.size(), 1.0)
     decay_SF = experiment.scaling_model.components['decay']
-    decay_SF.update_reflection_data(rt)
+    decay_SF.data = {'x' : sample_values, 'd' : flex.double(sample_values.size(), 1.0)}
+    decay_SF.update_reflection_data()
     s = decay_SF.calculate_scales()
     smoother_phis = [(i * configdict['decay_rot_interval']) + valid_osc[0]
       for i in decay_SF._smoother.positions()]
@@ -323,7 +333,8 @@ def plot_2D_decay_correction(experiment, reflections, outputfile=None):
   rt['normalised_res_values'] = rel_values_1
 
   decay_factor = experiment.scaling_model.components['decay']
-  decay_factor.update_reflection_data(rt)
+  decay_factor.data = {'x' : rel_values_1, 'y': rel_values_2}
+  decay_factor.update_reflection_data()
   scales = decay_factor.calculate_scales()
   scalefactor_2D = np.reshape(list(scales), (n2, n1)).T
 
@@ -357,7 +368,7 @@ def plot_2D_decay_correction(experiment, reflections, outputfile=None):
   ax1.set_title('Decay correction (inverse scale factors)\n', fontsize=10)
 
   '''recalculate scales for plotting distribution in dataset'''
-  decay_factor.update_reflection_data(rt)
+  decay_factor.update_reflection_data()
   s = decay_factor.calculate_scales()
 
   ax2.hist(list(s), 40, log=False)
@@ -398,7 +409,8 @@ def plot_2D_modulation_correction(experiment, reflections, outputfile=None):
   rt['normalised_x_det_values'] = rel_values_1
 
   modulation_factor = experiment.scaling_model.components['decay']
-  modulation_factor.update_reflection_data(rt)
+  modulation_factor.data = {'x' : rel_values_1, 'y': rel_values_2}
+  modulation_factor.update_reflection_data()
   scales = modulation_factor.calculate_scales()
   scalefactor_2D = np.reshape(list(scales), (n2, n1))
 
@@ -455,7 +467,8 @@ def plot_3D_absorption_correction(experiment, reflections, outputfile=None):
   rt['norm_time_values'] = nt
 
   absorption_factor = experiment.scaling_model.components['absorption']
-  absorption_factor.update_reflection_data(rt)
+  absorption_factor.data = {'x' : nax, 'y': nay, 'z': nt}
+  absorption_factor.update_reflection_data()
   s = absorption_factor.calculate_scales()
   parameters_2D = np.reshape(list(absorption_factor.parameters),
     (n_time_bins, n_abs_bins)).T

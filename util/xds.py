@@ -49,13 +49,12 @@ def dump(experiments, reflections, directory):
       xparm_xds = os.path.join(sub_dir, 'XPARM.XDS')
       print("Exporting experiment to %s and %s" %(xds_inp, xparm_xds))
       with open(xds_inp, 'wb') as f:
-        to_xds.XDS_INP(
-          out=f,
+        print(to_xds.XDS_INP(
           space_group_number=crystal_model.get_space_group().type().number(),
           real_space_a=real_space_a,
           real_space_b=real_space_b,
           real_space_c=real_space_c,
-          job_card="XYCORR INIT DEFPIX INTEGRATE CORRECT")
+          job_card="XYCORR INIT DEFPIX INTEGRATE CORRECT"))
       with open(xparm_xds, 'wb') as f:
         to_xds.xparm_xds(
           real_space_a, real_space_b, real_space_c,

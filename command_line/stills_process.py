@@ -319,6 +319,7 @@ class Script(object):
 
       indices = []
       basenames = []
+# <<<<<<< HEAD
       split_experiments = []
       for i, imageset in enumerate(experiments.imagesets()):
         assert len(imageset) == 1
@@ -326,31 +327,52 @@ class Script(object):
         indices.append(i)
         basenames.append(os.path.splitext(os.path.basename(paths[0]))[0])
         split_experiments.append(experiments[i:i+1])
+# =======
+#       datablock_references = []
+#       for datablock in datablocks:
+#         for j, imageset in enumerate(datablock.extract_imagesets()):
+#           paths = imageset.paths()
+#           for i in xrange(len(imageset)):
+#             datablock_references.append(datablock)
+#             indices.append((j,i))
+#             basenames.append(os.path.splitext(os.path.basename(paths[i]))[0])
+# >>>>>>> master
       tags = []
-      for i, basename in zip(indices, basenames):
+      for (j,i), basename in zip(indices, basenames):
         if basenames.count(basename) > 1:
-          tags.append("%s_%05d"%(basename, i))
+          if len(set([idx[0] for idx in indices if idx[0]==j])) > 1:
+            tags.append("%s_%05d_%05d"%(basename, j, i))
+          else:
+            tags.append("%s_%05d"%(basename, i))
         else:
           tags.append(basename)
 
       # Wrapper function
       def do_work(i, item_list):
-        processor = Processor(copy.deepcopy(params), composite_tag = "%04d"%i)
+        processor = Processor(copy.deepcopy(params), composite_tag = "%04d"%i, rank = i)
 
         for item in item_list:
+          tag, (imgset_id, img_id), datablock = item
+          imageset = datablock.extract_imagesets()[imgset_id]
+          subset = imageset[img_id:img_id+1]
           try:
+# <<<<<<< HEAD
             assert len(item[1]) == 1
             experiment = item[1][0]
             imageset = experiment.imageset
             update_geometry(imageset)
             experiment.beam = imageset.get_beam()
             experiment.detector = imageset.get_detector()
+# =======
+#             update_geometry(subset)
+# >>>>>>> master
           except RuntimeError as e:
-            logger.warning("Error updating geometry on item %s, %s"%(str(item[0]), str(e)))
+            logger.warning("Error updating geometry on item %s, %s"%(str(tag), str(e)))
             continue
 
           if self.reference_detector is not None:
             from dxtbx.model import Detector
+# <<<<<<< HEAD
             experiment = item[1][0]
             imageset = experiment.imageset
             imageset.set_detector(Detector.from_dict(self.reference_detector.to_dict()))
@@ -360,6 +382,20 @@ class Script(object):
         processor.finalize()
 
       iterable = zip(tags, split_experiments)
+# =======
+#             subset.set_detector(
+#               Detector.from_dict(self.reference_detector.to_dict()),
+#               index=0)
+#           datablock = DataBlockFactory.from_imageset(subset)[0]
+
+#           try:
+#             processor.process_datablock(tag, datablock)
+#           except Exception as e:
+#             logger.warning("Unhandled error on item %s, %s"%(str(tag), str(e)))
+#         processor.finalize()
+
+#       iterable = zip(tags, indices, datablock_references)
+# >>>>>>> master
 
     else:
       basenames = [os.path.splitext(os.path.basename(filename))[0] for filename in all_paths]
@@ -372,7 +408,7 @@ class Script(object):
 
       # Wrapper function
       def do_work(i, item_list):
-        processor = Processor(copy.deepcopy(params), composite_tag = "%04d"%i)
+        processor = Processor(copy.deepcopy(params), composite_tag = "%04d"%i, rank = i)
         for item in item_list:
           tag, filename = item
 
@@ -401,7 +437,15 @@ class Script(object):
             imageset.set_detector(Detector.from_dict(self.reference_detector.to_dict()))
             experiments[0].detector = imageset.get_detector()
 
+# <<<<<<< HEAD
           processor.process_experiments(tag, experiments)
+# =======
+#           try:
+#             processor.process_datablock(tag, datablock)
+#           except Exception as e:
+#             logger.warning("Unhandled error on item %s, %s"%(tag, str(e)))
+
+# >>>>>>> master
         processor.finalize()
 
       iterable = zip(tags, all_paths)
@@ -412,6 +456,26 @@ class Script(object):
       comm = MPI.COMM_WORLD
       rank = comm.Get_rank() # each process in MPI has a unique id, 0-indexed
       size = comm.Get_size() # size: number of processes running in this job
+
+      # Configure the logging
+      if params.output.logging_dir is None:
+        info_path = ''
+        debug_path = ''
+      else:
+        import sys
+        log_path = os.path.join(params.output.logging_dir, "log_rank%04d.out"%rank)
+        error_path = os.path.join(params.output.logging_dir, "error_rank%04d.out"%rank)
+        print ("Redirecting stdout to %s"%log_path)
+        print ("Redirecting stderr to %s"%error_path)
+        sys.stdout = open(log_path,'a', buffering=0)
+        sys.stderr = open(error_path,'a',buffering=0)
+        print ("Should be redirected now")
+
+        info_path = os.path.join(params.output.logging_dir, "info_rank%04d.out"%rank)
+        debug_path = os.path.join(params.output.logging_dir, "debug_rank%04d.out"%rank)
+
+      from dials.util import log
+      log.config(params.verbosity, info=info_path, debug=debug_path)
 
       subset = [item for i, item in enumerate(iterable) if (i+rank)%size == 0]
       do_work(rank, subset)
@@ -436,7 +500,7 @@ class Script(object):
     logger.info("Total Time Taken = %f seconds" % (time() - st))
 
 class Processor(object):
-  def __init__(self, params, composite_tag = None):
+  def __init__(self, params, composite_tag = None, rank = 0):
     self.params = params
     self.composite_tag = composite_tag
 
@@ -448,6 +512,18 @@ class Processor(object):
     self.refined_experiments_filename_template    = params.output.refined_experiments_filename
     self.integrated_filename_template             = params.output.integrated_filename
     self.integrated_experiments_filename_template = params.output.integrated_experiments_filename
+
+    debug_dir = os.path.join(params.output.output_dir, "debug")
+    if not os.path.exists(debug_dir):
+      try:
+        os.makedirs(debug_dir)
+      except OSError as e:
+        pass # due to multiprocessing, makedirs can sometimes fail
+    assert os.path.exists(debug_dir)
+    self.debug_file_path = os.path.join(debug_dir, "debug_%d.txt"%rank)
+    write_newline = os.path.exists(self.debug_file_path)
+    if write_newline: # needed if the there was a crash
+      self.debug_write("")
 
     if params.output.composite_output:
       assert composite_tag is not None
@@ -478,12 +554,31 @@ class Processor(object):
     if self.integrated_experiments_filename_template is not None and "%s" in self.integrated_experiments_filename_template:
       self.params.output.integrated_experiments_filename = os.path.join(self.params.output.output_dir, self.integrated_experiments_filename_template%("idx-" + tag))
 
+  def debug_start(self, tag):
+    import socket
+    self.debug_str = "%s,%s"%(socket.gethostname(), tag)
+    self.debug_str += ",%s,%s,%s\n"
+    self.debug_write("start")
+
+  def debug_write(self, string, state = None):
+    from xfel.cxi.cspad_ana import cspad_tbx # XXX move to common timestamp format
+    ts = cspad_tbx.evt_timestamp() # Now
+    debug_file_handle = open(self.debug_file_path, 'a')
+    if string == "":
+      debug_file_handle.write("\n")
+    else:
+      if state is None:
+        state = "    "
+      debug_file_handle.write(self.debug_str%(ts, state, string))
+    debug_file_handle.close()
+
   def process_experiments(self, tag, experiments):
     import os
 
     if not self.params.output.composite_output:
       self.setup_filenames(tag)
     self.tag = tag
+    self.debug_start(tag)
 
     if not self.params.output.composite_output and self.params.output.experiments_filename:
       from dxtbx.model.experiment_list import ExperimentListDumper
@@ -495,44 +590,57 @@ class Processor(object):
       self.pre_process(experiments)
     except Exception as e:
       print("Error in pre-process", tag, str(e))
+      self.debug_write("preprocess_exception", "fail")
       if not self.params.dispatch.squash_errors: raise
       return
     try:
       if self.params.dispatch.find_spots:
+        self.debug_write("spotfind_start")
         observed = self.find_spots(experiments)
       else:
         print("Spot Finding turned off. Exiting")
+        self.debug_write("data_loaded", "done")
         return
     except Exception as e:
       print("Error spotfinding", tag, str(e))
+      self.debug_write("spotfinding_exception", "fail")
       if not self.params.dispatch.squash_errors: raise
       return
     try:
       if self.params.dispatch.index:
+        self.debug_write("index_start")
         experiments, indexed = self.index(experiments, observed)
       else:
         print("Indexing turned off. Exiting")
+        self.debug_write("spotfinding_ok_%d"%len(observed), "done")
         return
     except Exception as e:
       print("Couldn't index", tag, str(e))
       if not self.params.dispatch.squash_errors: raise
+      self.debug_write("indexing_failed_%d"%len(observed), "stop")
       return
+    self.debug_write("refine_start")
     try:
       experiments, indexed = self.refine(experiments, indexed)
     except Exception as e:
       print("Error refining", tag, str(e))
+      self.debug_write("refine_failed_%d"%len(indexed), "fail")
       if not self.params.dispatch.squash_errors: raise
       return
     try:
       if self.params.dispatch.integrate:
+        self.debug_write("integrate_start")
         integrated = self.integrate(experiments, indexed)
       else:
         print("Integration turned off. Exiting")
+        self.debug_write("index_ok_%d"%len(indexed), "done")
         return
     except Exception as e:
       print("Error integrating", tag, str(e))
+      self.debug_write("integrate_failed_%d"%len(indexed), "fail")
       if not self.params.dispatch.squash_errors: raise
       return
+    self.debug_write("integrate_ok_%d"%len(integrated), "done")
 
   def pre_process(self, experiments):
     """ Add any pre-processing steps here """

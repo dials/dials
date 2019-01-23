@@ -3,14 +3,14 @@ from __future__ import absolute_import, division, print_function
 import contextlib
 import sys
 
+from ._progress import progress
+
 fcntl, msvcrt = None, None
 try:
   import fcntl
+  import msvcrt
 except ImportError:
-  try:
-    import msvcrt
-  except ImportError:
-    pass
+  pass
 
 def debug_console():
   '''Start python console at the current code point.'''
@@ -143,4 +143,4 @@ def locked(file_handle):
         fcntl.lockf(file_handle, fcntl.LOCK_UN)
       else:
         file_handle.seek(0)
-        msvcrt.locking(file_handle, LK_UNLCK, 1)
+        msvcrt.locking(file_handle, msvcrt.LK_UNLCK, 1)
