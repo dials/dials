@@ -13,12 +13,12 @@ import iotbx.phil
 
 help_message = '''
 
-Convert data which can be read by DIALS, given a datablock, to CBF format -
+Convert data which can be read by DIALS, given a experiment list, to CBF format -
 with ersatz miniCBF header. Can be used e.g. with HDF5 format data.
 
 Examples::
 
-  dials.convert_to_cbf datablock.json prefix=data_as_cbf
+  dials.convert_to_cbf experiments.json prefix=data_as_cbf
 
 '''
 
@@ -47,15 +47,15 @@ def run():
   import libtbx.load_env
 
   from dials.util.options import OptionParser
-  from dials.util.options import flatten_datablocks
+  from dials.util.options import flatten_experiments
 
-  usage = "%s [options] datablock.json" % libtbx.env.dispatcher_name
+  usage = "%s [options] experiments.json" % libtbx.env.dispatcher_name
 
   parser = OptionParser(
     usage=usage,
     phil=phil_scope,
-    read_datablocks=True,
-    read_datablocks_from_images=True,
+    read_experiments=True,
+    read_experiments_from_images=True,
     epilog=help_message
   )
 
@@ -63,16 +63,16 @@ def run():
     show_diff_phil=True, return_unhandled=True)
 
   template = params.output.template
-  datablocks = flatten_datablocks(params.input.datablock)
+  experiments = flatten_experiments(params.input.experiments)
 
-  if len(datablocks) == 0:
+  if len(experiments) == 0:
     parser.print_help()
     return
 
-  if len(datablocks) > 1:
-    raise Sorry("Only one datablock can be processed at a time")
+  if len(experiments) > 1:
+    raise Sorry("Only one experiment can be processed at a time")
   else:
-    imagesets = datablocks[0].extract_imagesets()
+    imagesets = experiments[0].imageset
     assert len(imagesets) == 1
     imageset = imagesets[0]
 

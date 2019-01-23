@@ -672,13 +672,8 @@ class Script(object):
     self.parser = OptionParser(
       usage=usage,
       sort_options=True,
-<<<<<<< HEAD
       phil=phil_scope,
       read_experiments_from_images=True,
-=======
-      phil=phil,
-      read_datablocks_from_images=True,
->>>>>>> master
       epilog=help_message)
 
   def run(self, args=None):
@@ -729,14 +724,8 @@ class Script(object):
       logger.warn(msg)
 
     # Print help if no input
-<<<<<<< HEAD
     if (len(params.input.experiments) == 0 and not
         (params.input.template or params.input.directory)):
-=======
-    if not any(
-      [params.input.datablock, params.input.template, params.input.directory]
-    ):
->>>>>>> master
       self.parser.print_help()
       return
 
@@ -801,13 +790,7 @@ class Script(object):
     # Write the experiments to file
     self.write_experiments(experiments, params)
 
-<<<<<<< HEAD
   def write_experiments(self, experiments, params):
-=======
-    return datablocks
-
-  def write_datablocks(self, datablocks, params):
->>>>>>> master
     '''
     Output the experiments to file.
 

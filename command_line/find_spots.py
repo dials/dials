@@ -194,8 +194,8 @@ class Script(object):
     # Print the time
     logger.info("Time Taken: %f" % (time() - start_time))
 
-    if params.output.datablock:
-      return datablocks, reflections
+    if params.output.experiments:
+      return experiments, reflections
     else:
       return reflections
 

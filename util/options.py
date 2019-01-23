@@ -250,15 +250,9 @@ class Importer(object):
     :param verbose: Print verbose output
     :return: Unhandled arguments
 
-<<<<<<< HEAD
-    '''
+    """
     from dxtbx.model.experiment_list import ExperimentListFactory
     from dials.util.phil import FilenameDataWrapper, ExperimentListConverters
-=======
-    """
-    from dxtbx.datablock import DataBlockFactory
-    from dials.util.phil import FilenameDataWrapper, DataBlockConverters
->>>>>>> master
     from glob import glob
 
     # If filenames contain wildcards, expand
@@ -282,41 +276,9 @@ class Importer(object):
       format_kwargs=format_kwargs)
     if len(experiments) > 0:
       filename = "<image files>"
-<<<<<<< HEAD
       obj = FilenameDataWrapper(filename, experiments)
       ExperimentListConverters.cache[filename] = obj
       self.experiments.append(obj)
-=======
-      obj = FilenameDataWrapper(filename, datablocks)
-      DataBlockConverters.cache[filename] = obj
-      self.datablocks.append(obj)
-    return unhandled
-
-  def try_read_datablocks(self, args, check_format, verbose):
-    """
-    Try to import imagesets.
-
-    :param args: The input arguments
-    :param check_format: True/False check the image format
-    :param verbose: Print verbose output
-    :returns: Unhandled arguments
-
-    """
-    from dials.util.phil import DataBlockConverters
-    from dxtbx.datablock import InvalidDataBlockError
-
-    converter = DataBlockConverters(check_format)
-    unhandled = []
-    for argument in args:
-      try:
-        self.datablocks.append(converter.from_string(argument))
-      except InvalidDataBlockError as e:
-        unhandled.append(argument)
-        self._handle_converter_error(argument, e, type="DataBlock", validation=True)
-      except Exception as e:
-        self._handle_converter_error(argument, e, type="DataBlock")
-        unhandled.append(argument)
->>>>>>> master
     return unhandled
 
   def try_read_experiments(self, args, check_format, verbose):
@@ -452,17 +414,10 @@ class PhilCommandParser(object):
                         ignoring class constructor options.
     :return: The options and parameters and (optionally) unhandled arguments
 
-<<<<<<< HEAD
-    '''
+    """
     from dxtbx.model.experiment_list import BeamComparison
     from dxtbx.model.experiment_list import DetectorComparison
     from dxtbx.model.experiment_list import GoniometerComparison
-=======
-    """
-    from dxtbx.datablock import BeamComparison
-    from dxtbx.datablock import DetectorComparison
-    from dxtbx.datablock import GoniometerComparison
->>>>>>> master
     from dials.util.phil import parse
 
     # Parse the command line phil parameters
@@ -1053,21 +1008,6 @@ def flatten_reflections(filename_object_list):
   """
   return [o.data for o in filename_object_list]
 
-<<<<<<< HEAD
-=======
-def flatten_datablocks(filename_object_list):
-  """
-  Flatten a list of datablocks
-
-  :param filename_object_list: The parameter item
-  :return: The flattened list of datablocks
-  """
-  result = []
-  for o in filename_object_list:
-    result.extend(o.data)
-  return result
-
->>>>>>> master
 def flatten_experiments(filename_object_list):
   """
   Flatten a list of experiment lists
