@@ -216,8 +216,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     '''
     from libtbx import smart_open
+    import blosc
     with smart_open.for_writing(filename, 'wb') as outfile:
-      outfile.write(self.as_msgpack())
+      outfile.write(blosc.compress(self.as_msgpack()))
 
   @staticmethod
   def from_msgpack_file(filename):
@@ -226,8 +227,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     '''
     from libtbx import smart_open
+    import blosc
     with smart_open.for_reading(filename, 'rb') as infile:
-      return reflection_table.from_msgpack(infile.read())
+      return reflection_table.from_msgpack(blosc.decompress(infile.read()))
 
   @staticmethod
   def from_h5(filename):
