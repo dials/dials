@@ -22,13 +22,13 @@ simple shapes or by setting different resolution ranges.
 
 Examples::
 
-  dials.generate_mask datablock.json border=5
+  dials.generate_mask experiments.json border=5
 
-  dials.generate_mask datablock.json \\
+  dials.generate_mask experiments.json \\
     untrusted.rectangle=50,100,50,100 \\
     untrusted.circle=200,200,100
 
-  dials.generate_mask datablock.json resolution.d_max=2.00
+  dials.generate_mask experiments.json resolution.d_max=2.00
 
 '''
 
@@ -37,9 +37,9 @@ phil_scope = parse("""
     mask = mask.pickle
       .type = path
       .help = "Name of output mask file"
-    datablock = None
+    experiments = None
       .type = path
-      .help = "Save the modified datablock. (usually only modified with the"
+      .help = "Save the modified experiments. (usually only modified with the"
               "generated pixel mask)"
   }
 
@@ -56,17 +56,17 @@ class Script(object):
     import libtbx.load_env
 
     # Create the parser
-    usage = "usage: %s [options] datablock.json" % libtbx.env.dispatcher_name
+    usage = "usage: %s [options] experiments.json" % libtbx.env.dispatcher_name
     self.parser = OptionParser(
       usage=usage,
       phil=phil_scope,
       epilog=help_message,
-      read_datablocks=True)
+      read_experiments=True)
 
   def run(self):
     ''' Run the script. '''
     from dials.util.masking import MaskGenerator
-    from dials.util.options import flatten_datablocks
+    from dials.util.options import flatten_experiments
     from libtbx.utils import Sorry
     import six.moves.cPickle as pickle
     from dials.util import log
@@ -74,25 +74,24 @@ class Script(object):
 
     # Parse the command line arguments
     params, options = self.parser.parse_args(show_diff_phil=True)
-    datablocks = flatten_datablocks(params.input.datablock)
+    experiments = flatten_experiments(params.input.experiments)
 
     # Configure logging
     log.config()
 
     # Check number of args
-    if len(datablocks) == 0:
+    if len(experiments) == 0:
       self.parser.print_help()
       return
 
-    if len(datablocks) != 1:
-      raise Sorry('exactly 1 datablock must be specified')
-    datablock = datablocks[0]
-    imagesets = datablock.extract_imagesets()
+    if len(experiments) != 1:
+      raise Sorry('exactly 1 experiments must be specified')
+    imagesets = experiments.imagesets()
     if len(imagesets) > 1:
       # Check beams (for resolution) and detectors are equivalent in each case
       # otherwise the mask may not be appropriate across all imagesets
-      detectors = datablock.unique_detectors()
-      beams = datablock.unique_beams()
+      detectors = experiments.detectors()
+      beams = experiments.beams()
       for d in detectors[1:]:
         if not d.is_similar_to(detectors[0]):
           raise Sorry('multiple imagesets are present, but their detector'
@@ -113,16 +112,16 @@ class Script(object):
     with open(params.output.mask, "wb") as fh:
       pickle.dump(mask, fh)
 
-    # Save the datablock
-    if params.output.datablock is not None:
+    # Save the experiment list
+    if params.output.experiments is not None:
       for imageset in imagesets:
         imageset.external_lookup.mask.data = ImageBool(mask)
         imageset.external_lookup.mask.filename = params.output.mask
-      from dxtbx.datablock import DataBlockDumper
-      print('Saving datablocks to {0}'.format(
-        params.output.datablock))
-      dump = DataBlockDumper(datablocks)
-      dump.as_file(params.output.datablock)
+      from dxtbx.model.experiment_list import ExperimentListDumper
+      print('Saving experiments to {0}'.format(
+        params.output.experiments))
+      dump = ExperimentListDumper(experiments)
+      dump.as_file(params.output.experiments)
 
 if __name__ == '__main__':
   from dials.util import halraiser

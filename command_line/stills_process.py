@@ -7,7 +7,8 @@ from __future__ import absolute_import, division, print_function
 import logging
 import os
 
-from dxtbx.datablock import DataBlockFactory
+from dxtbx.model.experiment_list import ExperimentListFactory
+from dxtbx.model.experiment_list import ExperimentList
 from libtbx.utils import Abort, Sorry
 
 logger = logging.getLogger('dials.command_line.stills_process')
@@ -67,9 +68,9 @@ control_phil_str = '''
     logging_dir = None
       .type = str
       .help = Directory output log files will be placed
-    datablock_filename = %s_datablock.json
+    experiments_filename = %s_experiments.json
       .type = str
-      .help = The filename for output datablock
+      .help = The filename for output experiments
     strong_filename = %s_strong.pickle
       .type = str
       .help = The filename for strong reflections from spot finder output.
@@ -189,29 +190,26 @@ phil_scope = parse(control_phil_str + dials_phil_str, process_includes=True).fet
 
 def do_import(filename):
   logger.info("Loading %s"%os.path.basename(filename))
-  datablocks = DataBlockFactory.from_filenames([filename])
-  if len(datablocks) == 0:
+  experiments = ExperimentListFactory.from_filenames([filename])
+  if len(experiments) == 0:
     try:
-      datablocks = DataBlockFactory.from_json_file(filename)
+      experiments = ExperimentListFactory.from_json_file(filename)
     except ValueError:
       raise Abort("Could not load %s"%filename)
 
-  if len(datablocks) == 0:
+  if len(experiments) == 0:
     raise Abort("Could not load %s"%filename)
-  if len(datablocks) > 1:
-    raise Abort("Got multiple datablocks from file %s"%filename)
-
-  # Ensure the indexer and downstream applications treat this as set of stills
-  reset_sets = []
 
   from dxtbx.imageset import ImageSetFactory
-  for imageset in datablocks[0].extract_imagesets():
-    imageset = ImageSetFactory.imageset_from_anyset(imageset)
+  for experiment in experiments:
+    imageset = ImageSetFactory.imageset_from_anyset(experiment.imageset)
     imageset.set_scan(None)
     imageset.set_goniometer(None)
-    reset_sets.append(imageset)
+    experiment.imageset = imageset
+    experiment.scan = None
+    experiment.goniometer = None
 
-  return DataBlockFactory.from_imageset(reset_sets)[0]
+  return experiments
 
 class Script(object):
   '''A class for running the script.'''
@@ -237,28 +235,20 @@ class Script(object):
   def load_reference_geometry(self):
     if self.params.input.reference_geometry is None: return
 
+    from dxtbx.model.experiment_list import ExperimentListFactory
     try:
-      ref_datablocks = DataBlockFactory.from_json_file(self.params.input.reference_geometry, check_format=False)
+      ref_experiments = ExperimentListFactory.from_json_file(self.params.input.reference_geometry, check_format=False)
     except Exception:
-      ref_datablocks = None
-    if ref_datablocks is None:
-      from dxtbx.model.experiment_list import ExperimentListFactory
       try:
-        ref_experiments = ExperimentListFactory.from_json_file(self.params.input.reference_geometry, check_format=False)
+        import dxtbx
+        img = dxtbx.load(self.params.input.reference_geometry)
       except Exception:
-        try:
-          import dxtbx
-          img = dxtbx.load(self.params.input.reference_geometry)
-        except Exception:
-          raise Sorry("Couldn't load geometry file %s"%self.params.input.reference_geometry)
-        else:
-          self.reference_detector = img.get_detector()
+        raise Sorry("Couldn't load geometry file %s"%self.params.input.reference_geometry)
       else:
-        assert len(ref_experiments.detectors()) == 1
-        self.reference_detector = ref_experiments.detectors()[0]
+        self.reference_detector = img.get_detector()
     else:
-      assert len(ref_datablocks) == 1 and len(ref_datablocks[0].unique_detectors()) == 1
-      self.reference_detector = ref_datablocks[0].unique_detectors()[0]
+      assert len(ref_experiments.detectors()) == 1
+      self.reference_detector = ref_experiments.detectors()[0]
 
   def run(self):
     '''Execute the script.'''
@@ -319,29 +309,27 @@ class Script(object):
     logger.info("Loading files...")
     pre_import = params.dispatch.pre_import or len(all_paths) == 1
     if pre_import:
-      # Handle still imagesets by breaking them apart into multiple datablocks
+      # Handle still imagesets by breaking them apart into multiple experiments
       # Further handle single file still imagesets (like HDF5) by tagging each
       # frame using its index
 
-      datablocks = [do_import(path) for path in all_paths]
+      experiments = ExperimentList()
+      for path in all_paths:
+        experiments.extend(do_import(path))
 
       indices = []
       basenames = []
-      datablock_references = []
-      for datablock in datablocks:
-        for j, imageset in enumerate(datablock.extract_imagesets()):
-          paths = imageset.paths()
-          for i in xrange(len(imageset)):
-            datablock_references.append(datablock)
-            indices.append((j,i))
-            basenames.append(os.path.splitext(os.path.basename(paths[i]))[0])
+      split_experiments = []
+      for i, imageset in enumerate(experiments.imagesets()):
+        assert len(imageset) == 1
+        paths = imageset.paths()
+        indices.append(i)
+        basenames.append(os.path.splitext(os.path.basename(paths[0]))[0])
+        split_experiments.append(experiments[i:i+1])
       tags = []
-      for (j,i), basename in zip(indices, basenames):
+      for i, basename in zip(indices, basenames):
         if basenames.count(basename) > 1:
-          if len(set([idx[0] for idx in indices if idx[0]==j])) > 1:
-            tags.append("%s_%05d_%05d"%(basename, j, i))
-          else:
-            tags.append("%s_%05d"%(basename, i))
+          tags.append("%s_%05d"%(basename, i))
         else:
           tags.append(basename)
 
@@ -350,29 +338,28 @@ class Script(object):
         processor = Processor(copy.deepcopy(params), composite_tag = "%04d"%i, rank = i)
 
         for item in item_list:
-          tag, (imgset_id, img_id), datablock = item
-          imageset = datablock.extract_imagesets()[imgset_id]
-          subset = imageset[img_id:img_id+1]
           try:
-            update_geometry(subset)
+            assert len(item[1]) == 1
+            experiment = item[1][0]
+            imageset = experiment.imageset
+            update_geometry(imageset)
+            experiment.beam = imageset.get_beam()
+            experiment.detector = imageset.get_detector()
           except RuntimeError as e:
-            logger.warning("Error updating geometry on item %s, %s"%(str(tag), str(e)))
+            logger.warning("Error updating geometry on item %s, %s"%(str(item[0]), str(e)))
             continue
 
           if self.reference_detector is not None:
             from dxtbx.model import Detector
-            subset.set_detector(
-              Detector.from_dict(self.reference_detector.to_dict()),
-              index=0)
-          datablock = DataBlockFactory.from_imageset(subset)[0]
+            experiment = item[1][0]
+            imageset = experiment.imageset
+            imageset.set_detector(Detector.from_dict(self.reference_detector.to_dict()))
+            experiment.detector = imageset.get_detector()
 
-          try:
-            processor.process_datablock(tag, datablock)
-          except Exception as e:
-            logger.warning("Unhandled error on item %s, %s"%(str(tag), str(e)))
+          processor.process_experiments(item[0], item[1])
         processor.finalize()
 
-      iterable = zip(tags, indices, datablock_references)
+      iterable = zip(tags, split_experiments)
 
     else:
       basenames = [os.path.splitext(os.path.basename(filename))[0] for filename in all_paths]
@@ -389,8 +376,8 @@ class Script(object):
         for item in item_list:
           tag, filename = item
 
-          datablock = do_import(filename)
-          imagesets = datablock.extract_imagesets()
+          experiments = do_import(filename)
+          imagesets = experiments.imagesets()
           if len(imagesets) == 0 or len(imagesets[0]) == 0:
             logger.info("Zero length imageset in file: %s"%filename)
             return
@@ -401,19 +388,20 @@ class Script(object):
 
           try:
             update_geometry(imagesets[0])
+            experiment = experiments[0]
+            experiment.beam = imagesets[0].get_beam()
+            experiment.detector = imagesets[0].get_detector()
           except RuntimeError as e:
             logger.warning("Error updating geometry on item %s, %s"%(tag, str(e)))
             continue
 
           if self.reference_detector is not None:
             from dxtbx.model import Detector
-            imagesets[0].set_detector(Detector.from_dict(self.reference_detector.to_dict()))
+            imageset = experiments[0].imageset
+            imageset.set_detector(Detector.from_dict(self.reference_detector.to_dict()))
+            experiments[0].detector = imageset.get_detector()
 
-          try:
-            processor.process_datablock(tag, datablock)
-          except Exception as e:
-            logger.warning("Unhandled error on item %s, %s"%(tag, str(e)))
-
+          processor.process_experiments(tag, experiments)
         processor.finalize()
 
       iterable = zip(tags, all_paths)
@@ -474,7 +462,7 @@ class Processor(object):
 
     # The convention is to put %s in the phil parameter to add a tag to
     # each output datafile. Save the initial templates here.
-    self.datablock_filename_template              = params.output.datablock_filename
+    self.experiments_filename_template            = params.output.experiments_filename
     self.strong_filename_template                 = params.output.strong_filename
     self.indexed_filename_template                = params.output.indexed_filename
     self.refined_experiments_filename_template    = params.output.refined_experiments_filename
@@ -509,8 +497,8 @@ class Processor(object):
 
   def setup_filenames(self, tag):
     # before processing, set output paths according to the templates
-    if self.datablock_filename_template is not None and "%s" in self.datablock_filename_template:
-      self.params.output.datablock_filename = os.path.join(self.params.output.output_dir, self.datablock_filename_template%("idx-" + tag))
+    if self.experiments_filename_template is not None and "%s" in self.experiments_filename_template:
+      self.params.output.experiments_filename = os.path.join(self.params.output.output_dir, self.experiments_filename_template%("idx-" + tag))
     if self.strong_filename_template is not None and "%s" in self.strong_filename_template:
       self.params.output.strong_filename = os.path.join(self.params.output.output_dir, self.strong_filename_template%("idx-" + tag))
     if self.indexed_filename_template is not None and "%s" in self.indexed_filename_template:
@@ -540,7 +528,7 @@ class Processor(object):
       debug_file_handle.write(self.debug_str%(ts, state, string))
     debug_file_handle.close()
 
-  def process_datablock(self, tag, datablock):
+  def process_experiments(self, tag, experiments):
     import os
 
     if not self.params.output.composite_output:
@@ -548,14 +536,14 @@ class Processor(object):
     self.tag = tag
     self.debug_start(tag)
 
-    if not self.params.output.composite_output and self.params.output.datablock_filename:
-      from dxtbx.datablock import DataBlockDumper
-      dump = DataBlockDumper(datablock)
-      dump.as_json(self.params.output.datablock_filename)
+    if not self.params.output.composite_output and self.params.output.experiments_filename:
+      from dxtbx.model.experiment_list import ExperimentListDumper
+      dump = ExperimentListDumper(experiments)
+      dump.as_json(self.params.output.experiments_filename)
 
     # Do the processing
     try:
-      self.pre_process(datablock)
+      self.pre_process(experiments)
     except Exception as e:
       print("Error in pre-process", tag, str(e))
       self.debug_write("preprocess_exception", "fail")
@@ -564,7 +552,7 @@ class Processor(object):
     try:
       if self.params.dispatch.find_spots:
         self.debug_write("spotfind_start")
-        observed = self.find_spots(datablock)
+        observed = self.find_spots(experiments)
       else:
         print("Spot Finding turned off. Exiting")
         self.debug_write("data_loaded", "done")
@@ -577,7 +565,7 @@ class Processor(object):
     try:
       if self.params.dispatch.index:
         self.debug_write("index_start")
-        experiments, indexed = self.index(datablock, observed)
+        experiments, indexed = self.index(experiments, observed)
       else:
         print("Indexing turned off. Exiting")
         self.debug_write("spotfinding_ok_%d"%len(observed), "done")
@@ -610,11 +598,11 @@ class Processor(object):
       return
     self.debug_write("integrate_ok_%d"%len(integrated), "done")
 
-  def pre_process(self, datablock):
+  def pre_process(self, experiments):
     """ Add any pre-processing steps here """
     pass
 
-  def find_spots(self, datablock):
+  def find_spots(self, experiments):
     from time import time
     from dials.array_family import flex
     st = time()
@@ -624,7 +612,7 @@ class Processor(object):
     logger.info('*' * 80)
 
     # Find the strong spots
-    observed = flex.reflection_table.from_observations(datablock, self.params)
+    observed = flex.reflection_table.from_observations(experiments, self.params)
 
     # Reset z coordinates for dials.image_viewer; see Issues #226 for details
     xyzobs = observed['xyzobs.px.value']
@@ -646,7 +634,7 @@ class Processor(object):
     logger.info('Time Taken = %f seconds' % (time() - st))
     return observed
 
-  def index(self, datablock, reflections):
+  def index(self, experiments, reflections):
     from dials.algorithms.indexing.indexer import indexer_base
     from time import time
     import copy
@@ -655,8 +643,6 @@ class Processor(object):
     logger.info('*' * 80)
     logger.info('Indexing Strong Spots')
     logger.info('*' * 80)
-
-    imagesets = datablock.extract_imagesets()
 
     params = copy.deepcopy(self.params)
     # don't do scan-varying refinement during indexing
@@ -669,7 +655,7 @@ class Processor(object):
 
     if params.indexing.stills.method_list is None:
       idxr = indexer_base.from_parameters(
-        reflections, imagesets, known_crystal_models=known_crystal_models,
+        reflections, experiments, known_crystal_models=known_crystal_models,
         params=params)
       idxr.index()
     else:
@@ -678,7 +664,7 @@ class Processor(object):
         params.indexing.method = method
         try:
           idxr = indexer_base.from_parameters(
-            reflections, imagesets,
+            reflections, experiments,
             params=params)
           idxr.index()
         except Exception as e:

@@ -20,44 +20,6 @@ class FilenameDataWrapper(object):
     self.data = data
 
 
-class DataBlockConverters(object):
-  ''' A phil converter for datablocks. '''
-
-  phil_type = "datablock"
-
-  cache = {}
-
-  def __init__(self, check_format=True):
-    self._check_format = check_format
-
-  def __str__(self):
-    return self.phil_type
-
-  def from_string(self, s):
-    from dxtbx.datablock import DataBlockFactory
-    from os.path import exists
-    from libtbx.utils import Sorry
-    if s is None:
-      return None
-    if s not in self.cache:
-      if not exists(s):
-        raise Sorry('File %s does not exist' % s)
-      self.cache[s] = FilenameDataWrapper(s,
-        DataBlockFactory.from_json_file(s,
-          check_format=self._check_format))
-    return self.cache[s]
-
-  def from_words(self, words, master):
-    return self.from_string(libtbx.phil.str_from_words(words=words))
-
-  def as_words(self, python_object, master):
-    if python_object is None:
-      value = "None"
-    else:
-      value = python_object.filename
-    return [libtbx.phil.tokenizer.word(value=value)]
-
-
 class ExperimentListConverters(object):
   ''' A phil converter for the experiment list class. '''
 
@@ -172,7 +134,6 @@ class ReflectionTableSelectorConverters(object):
 # Create the default converter registry with the extract converters
 default_converter_registry = libtbx.phil.extended_converter_registry(
   additional_converters=[
-    DataBlockConverters,
     ExperimentListConverters,
     ReflectionTableConverters,
     ReflectionTableSelectorConverters

@@ -16,18 +16,18 @@ def test_run(dials_regression, run_in_tmpdir):
     (11.624, 13.550, 30.103, 89.964, 93.721, 90.132))
   expected_rmsds = (0.039, 0.035, 0.002)
 
-  datablock_old = os.path.join(
+  experiments_old = os.path.join(
     dials_regression, "indexing_test_data/phi_scan/datablock_old.json")
-  datablock_new = os.path.join(
+  experiments_new = os.path.join(
     dials_regression, "indexing_test_data/phi_scan/datablock.json")
   strong_pickle = os.path.join(
     dials_regression, "indexing_test_data/phi_scan/strong.pickle")
 
   from dxtbx.serialize import load
-  imageset_old = load.datablock(
-    datablock_old, check_format=False)[0].extract_imagesets()[0]
-  imageset_new = load.datablock(
-    datablock_new, check_format=False)[0].extract_imagesets()[0]
+  imageset_old = load.experiment_list(
+    experiments_old, check_format=False).imagesets()[0]
+  imageset_new = load.experiment_list(
+    experiments_new, check_format=False).imagesets()[0]
 
   gonio_old = imageset_old.get_goniometer()
   gonio_new = imageset_new.get_goniometer()
@@ -50,7 +50,7 @@ def test_run(dials_regression, run_in_tmpdir):
   assert gonio_new.get_fixed_rotation() == pytest.approx((1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0))
 
   result_old = run_one_indexing(
-    pickle_path=strong_pickle, sweep_path=datablock_old,
+    pickle_path=strong_pickle, sweep_path=experiments_old,
     extra_args=[],
     expected_unit_cell=expected_unit_cell,
     expected_rmsds=expected_rmsds,
@@ -58,7 +58,7 @@ def test_run(dials_regression, run_in_tmpdir):
     )
 
   result_new = run_one_indexing(
-    pickle_path=strong_pickle, sweep_path=datablock_new,
+    pickle_path=strong_pickle, sweep_path=experiments_new,
     extra_args=[],
     expected_unit_cell=expected_unit_cell,
     expected_rmsds=expected_rmsds,

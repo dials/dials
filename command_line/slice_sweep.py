@@ -16,7 +16,6 @@ from os.path import basename, splitext
 
 from dials.algorithms.refinement.refinement_helpers import \
     calculate_frame_numbers
-from dxtbx.datablock import DataBlock
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx.utils import Sorry
 from scitbx.array_family import flex
@@ -24,7 +23,7 @@ from scitbx.array_family import flex
 help_message = '''
 
 Slice a sweep to produce a smaller sweep within the bounds of the original. If
-experiments or datablocks are provided, modify the scan objects within these. If
+experiments or experiments are provided, modify the scan objects within these. If
 reflections are provided, remove reflections outside the provided image ranges.
 Each image_range parameter refers to a single experiment ID, counting up from
 zero. Any reflections with experiment ID not matched by a image_range parameter
@@ -34,7 +33,7 @@ Examples::
 
   dials.slice_sweep experiments.json reflections.pickle "image_range=1 20"
 
-  dials.slice_sweep datablock.json "image_range=1 20"
+  dials.slice_sweep experiments.json "image_range=1 20"
 
   # two experiments and reflections with IDs '0' and '1'
   dials.slice_sweep experiments.json reflections.pickle \
@@ -47,10 +46,6 @@ from libtbx.phil import parse
 phil_scope = parse('''
 
   output {
-    experiments_filename = None
-      .type = str
-      .help = "The filename for output experimental models with sliced scans.
-               By default generated automatically from the input name"
 
     reflections_filename = None
       .type = str
@@ -58,9 +53,9 @@ phil_scope = parse('''
               "outside the reduced image range. By default generated"
               "automatically from the input name"
 
-    datablocks_filename = None
+    experiments_filename = None
       .type = str
-      .help = "The filename for the output datablock with sliced scans.
+      .help = "The filename for the output experiments with sliced scans.
                By default generated automatically from the input name"
 
   }
@@ -168,39 +163,6 @@ def slice_reflections(reflections, image_ranges):
   # length of image_ranges
   return reflections.select(to_keep)
 
-def slice_datablocks(datablocks, image_ranges):
-  '''
-
-  :param datablocks:
-  :type datablocks: list of dxtbx.datablock.DataBlocks
-  :param image_range:
-  :type image_range: list of 2-tuples defining scan range for each unique scan'''
-
-  # copy the experiments
-  import copy
-  datablocks = copy.deepcopy(datablocks)
-
-  scans = []
-  for db in datablocks:
-    scans.extend(db.unique_scans())
-
-  if len(scans) != len(image_ranges):
-    raise Sorry("Unique scans in the input datablock list and supplied image_ranges are not of the same length")
-
-  for scan, sr in zip(scans, image_ranges):
-    if sr is None: continue
-
-    im_range = scan.get_image_range()
-    if sr[0] < im_range[0] or sr[1] > im_range[1]:
-      raise IndexError("requested slice outside current scan range")
-
-    # slicing uses the array range, not the image range
-    beg = sr[0] - 1
-    end = sr[1]
-    scan.swap(scan[beg:end])
-
-  return datablocks
-
 class Script(object):
   '''A class for running the script.'''
 
@@ -220,7 +182,6 @@ class Script(object):
       phil=phil_scope,
       read_reflections=True,
       read_experiments=True,
-      read_datablocks=True,
       check_format=False,
       epilog=help_message)
 
@@ -228,21 +189,19 @@ class Script(object):
     '''Execute the script.'''
 
     from dials.util.options import flatten_reflections, flatten_experiments, \
-      flatten_datablocks
+      flatten_experiments
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
-    datablocks = flatten_datablocks(params.input.datablock)
 
     # Try to load the models and data
     slice_exps = len(experiments) > 0
     slice_refs = len(reflections) > 0
-    slice_dbs = len(datablocks) > 0
 
     # Catch case of nothing to do
-    if not any([slice_exps, slice_refs, slice_dbs]):
+    if not any([slice_exps, slice_refs]):
       print("No suitable input provided")
       self.parser.print_help()
       return
@@ -267,23 +226,11 @@ class Script(object):
 
     # check if slicing into blocks
     if params.block_size is not None:
-      # in this case for simplicity, ensure that there is either an
-      # an experiment list or datablocks, but not both. Ensure there is only
-      # a single scan contained within.
-      if [slice_exps, slice_dbs].count(True) != 1:
-        raise Sorry("For slicing into blocks please provide either datablocks"
-          " or experiments, but not both.")
       if slice_exps:
         if len(experiments) > 1:
           raise Sorry("For slicing into blocks please provide a single "
                       "scan only")
         scan = experiments[0].scan
-      if slice_dbs:
-        scans = datablocks[0].unique_scans()
-        if len(scans) > 1 or len(datablocks) > 1:
-          raise Sorry("For slicing into blocks please provide a single "
-                      "scan only")
-        scan = scans[0]
 
       # Having extracted the scan, calculate the blocks
       params.image_range = calculate_block_ranges(scan, params.block_size)
@@ -295,12 +242,6 @@ class Script(object):
         sliced_experiments = ExperimentList()
         for exp in sliced:
           sliced_experiments.append(exp)
-
-      if slice_dbs:
-        sliced = [slice_datablocks(datablocks, [sr])[0] \
-          for sr in params.image_range]
-        imagesets = [db.extract_imagesets()[0] for db in sliced]
-        sliced_datablocks = DataBlock(imagesets)
 
       # slice reflections if present
       if slice_refs:
@@ -317,8 +258,6 @@ class Script(object):
         sliced_experiments = slice_experiments(experiments, params.image_range)
       if slice_refs:
         sliced_reflections = slice_reflections(reflections, params.image_range)
-      if slice_dbs:
-        sliced_datablocks = slice_datablocks(datablocks, params.image_range)
 
     # Save sliced experiments
     if slice_exps:
@@ -357,26 +296,6 @@ class Script(object):
       print('Saving sliced reflections to {0}'.format(
         output_reflections_filename))
       sliced_reflections.as_pickle(output_reflections_filename)
-
-    # Save sliced datablocks
-    if slice_dbs:
-      output_datablocks_filename = params.output.datablocks_filename
-      if output_datablocks_filename is None:
-        # take first filename as template
-        bname = basename(params.input.datablock[0].filename)
-        bname = splitext(bname)[0]
-        if not bname: bname = "datablock"
-        if len(params.image_range) == 1 and params.image_range[0] is not None:
-          ext = "_{0}_{1}.json".format(*params.image_range[0])
-        else:
-          ext = "_sliced.json"
-        output_datablocks_filename = bname + ext
-      print('Saving sliced datablocks to {0}'.format(
-        output_datablocks_filename))
-
-      from dxtbx.datablock import DataBlockDumper
-      dump = DataBlockDumper(sliced_datablocks)
-      dump.as_file(output_datablocks_filename)
 
     return
 

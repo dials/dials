@@ -59,7 +59,7 @@ def run(args):
   from dials.util.options import flatten_reflections
   import libtbx.load_env
 
-  usage = "%s [options] datablock.json reflections.pickle" % (
+  usage = "%s [options] experiments.json reflections.pickle" % (
     libtbx.env.dispatcher_name)
 
   parser = OptionParser(

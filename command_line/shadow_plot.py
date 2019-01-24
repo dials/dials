@@ -11,13 +11,13 @@ from libtbx.utils import Sorry
 from scitbx.array_family import flex
 
 help_message = '''
-Generate a 1d or 2d goniometer detector shadow plot for a given datablock.
+Generate a 1d or 2d goniometer detector shadow plot for a given experiment list.
 
 Examples::
 
-  dials.shadow_plot datablock.json
+  dials.shadow_plot experiments.json
 
-  dials.shadow_plot datablock.json mode=2d
+  dials.shadow_plot experiments.json mode=2d
 
 '''
 
@@ -44,28 +44,28 @@ output {
 def run(args):
 
   from dials.util.options import OptionParser
-  from dials.util.options import flatten_datablocks
+  from dials.util.options import flatten_experiments
   import libtbx.load_env
 
-  usage = "%s [options] datablock.json" %(
+  usage = "%s [options] experiments.json" %(
     libtbx.env.dispatcher_name)
 
   parser = OptionParser(
     usage=usage,
     phil=phil_scope,
-    read_datablocks=True,
+    read_experiments=True,
     check_format=True,
     epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
-  datablocks = flatten_datablocks(params.input.datablock)
+  experiments = flatten_experiments(params.input.experiments)
 
-  if len(datablocks) == 0:
+  if len(experiments) == 0:
     parser.print_help()
     sys.exit(0)
 
-  assert len(datablocks) == 1
-  imagesets = datablocks[0].extract_imagesets()
+  assert len(experiments) == 1
+  imagesets = experiments.imagesets()
 
   imageset = imagesets[0]
   goniometer = imageset.get_goniometer()

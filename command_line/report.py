@@ -285,6 +285,10 @@ class ScanVaryingCrystalAnalyser(object):
       crystal = exp.crystal
       scan = exp.scan
 
+      if crystal is None:
+        print("Ignoring absent crystal model")
+        continue
+
       if crystal.num_scan_points == 0:
         print("Ignoring scan-static crystal")
         continue
@@ -444,6 +448,10 @@ class ScanVaryingCrystalAnalyser(object):
 
       crystal = exp.crystal
       scan = exp.scan
+
+      if crystal is None:
+        print("Ignoring absent crystal model")
+        continue
 
       if crystal.num_scan_points == 0:
         print("Ignoring scan-static crystal")
@@ -2997,29 +3005,30 @@ class Analyser(object):
           'Setting rotation:',
             latex_matrix_template %expt.goniometer.get_setting_rotation()))
 
-      uc = expt.crystal.get_unit_cell().parameters()
-      sgi = expt.crystal.get_space_group().info()
-      umat = latex_matrix_template %expt.crystal.get_U()
-      bmat = latex_matrix_template %expt.crystal.get_B()
-      amat = latex_matrix_template %expt.crystal.get_A()
-      crystal_table.append(('<strong>Crystal:</strong>', 'Space group:', sgi.symbol_and_number(),
-                    'Unit cell:', latex_unit_cell_template %uc))
-      crystal_table.append(('', 'U matrix:', '%s' %umat, 'B matrix:', '%s' %bmat))
-      crystal_table.append(('', 'A = UB:', '%s' %amat))
-      if expt.crystal.num_scan_points > 0:
-        from cctbx import uctbx
-        abc = flex.vec3_double()
-        angles = flex.vec3_double()
-        for n in range(expt.crystal.num_scan_points):
-          a, b, c, alpha, beta, gamma = expt.crystal.get_unit_cell_at_scan_point(n).parameters()
-          abc.append((a, b, c))
-          angles.append((alpha, beta, gamma))
-        a, b, c = abc.mean()
-        alpha, beta, gamma = angles.mean()
-        mean_uc = uctbx.unit_cell((a, b, c, alpha, beta, gamma))
-        crystal_table.append((
-          '', 'A sampled at %i scan points' %expt.crystal.num_scan_points, '',
-          'Average unit cell:', latex_unit_cell_template %mean_uc.parameters()))
+      if expt.crystal is not None:
+        uc = expt.crystal.get_unit_cell().parameters()
+        sgi = expt.crystal.get_space_group().info()
+        umat = latex_matrix_template %expt.crystal.get_U()
+        bmat = latex_matrix_template %expt.crystal.get_B()
+        amat = latex_matrix_template %expt.crystal.get_A()
+        crystal_table.append(('<strong>Crystal:</strong>', 'Space group:', sgi.symbol_and_number(),
+                      'Unit cell:', latex_unit_cell_template %uc))
+        crystal_table.append(('', 'U matrix:', '%s' %umat, 'B matrix:', '%s' %bmat))
+        crystal_table.append(('', 'A = UB:', '%s' %amat))
+        if expt.crystal.num_scan_points > 0:
+          from cctbx import uctbx
+          abc = flex.vec3_double()
+          angles = flex.vec3_double()
+          for n in range(expt.crystal.num_scan_points):
+            a, b, c, alpha, beta, gamma = expt.crystal.get_unit_cell_at_scan_point(n).parameters()
+            abc.append((a, b, c))
+            angles.append((alpha, beta, gamma))
+          a, b, c = abc.mean()
+          alpha, beta, gamma = angles.mean()
+          mean_uc = uctbx.unit_cell((a, b, c, alpha, beta, gamma))
+          crystal_table.append((
+            '', 'A sampled at %i scan points' %expt.crystal.num_scan_points, '',
+            'Average unit cell:', latex_unit_cell_template %mean_uc.parameters()))
 
     # ensure all the rows are the same length
     for table in (expt_geom_table, crystal_table):

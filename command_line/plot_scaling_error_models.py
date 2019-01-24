@@ -39,7 +39,7 @@ def main(argv):
   '''the plotting script'''
 
   optionparser = OptionParser(usage=None, read_experiments=True,
-    read_reflections=True, read_datablocks=False, phil=phil_scope,
+    read_reflections=True, phil=phil_scope,
     check_format=False)
   params, _ = optionparser.parse_args(argv, show_diff_phil=False)
 

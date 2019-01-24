@@ -122,11 +122,11 @@ def test_find_spots_with_user_defined_mask(dials_regression, run_in_tmpdir):
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
 
-  from dxtbx.datablock import DataBlockFactory
-  datablocks = DataBlockFactory.from_json_file(
-      os.path.join(dials_regression, "centroid_test_data", "datablock.json"))
-  assert len(datablocks) == 1
-  imageset = datablocks[0].extract_imagesets()[0]
+  from dxtbx.model.experiment_list import ExperimentListFactory
+  experiments = ExperimentListFactory.from_json_file(
+      os.path.join(dials_regression, "centroid_test_data", "experiments.json"))
+  assert len(experiments) == 1
+  imageset = experiments.imagesets()[0]
   detector = imageset.get_detector()
   beam = imageset.get_beam()
   for x, y, z in reflections['xyzobs.px.value']:

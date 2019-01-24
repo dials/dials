@@ -5,7 +5,7 @@ import sys
 
 from dials.util.options import OptionParser
 from dials.util.options \
-     import flatten_reflections, flatten_datablocks, flatten_experiments
+     import flatten_reflections, flatten_experiments, flatten_experiments
 from dials.algorithms.spot_finding import per_image_analysis
 
 import iotbx.phil
@@ -18,9 +18,9 @@ generates a plot of the per-image statistics (plot=image.png).
 
 Examples::
 
-  dials.spot_counts_per_image datablock.json strong.pickle
+  dials.spot_counts_per_image experiments.json strong.pickle
 
-  dials.spot_counts_per_image datablock.json strong.pickle plot=per_image.png
+  dials.spot_counts_per_image experiments.json strong.pickle plot=per_image.png
 
 '''
 
@@ -42,12 +42,12 @@ id = None
 """)
 
 def run(args):
-  usage = "dials.spot_counts_per_image [options] datablock.json strong.pickle"
+  import libtbx.load_env
+  usage = "%s [options] experiments.json strong.pickle" % libtbx.env.dispatcher_name
 
   parser = OptionParser(
     usage=usage,
     read_reflections=True,
-    read_datablocks=True,
     read_experiments=True,
     phil=phil_scope,
     check_format=False,
@@ -55,24 +55,17 @@ def run(args):
 
   params, options = parser.parse_args(show_diff_phil=False)
   reflections = flatten_reflections(params.input.reflections)
-  datablocks = flatten_datablocks(params.input.datablock)
   experiments = flatten_experiments(params.input.experiments)
 
-  if not any([reflections, experiments, datablocks]):
+  if not any([reflections, experiments]):
     parser.print_help()
     return
 
   if len(reflections) != 1:
-    sys.exit('exactly 1 reflection table must be specified')
-  if len(datablocks) != 1:
-    if experiments:
-      if len(experiments.imagesets()) != 1:
-        sys.exit('exactly 1 datablock must be specified')
-      imageset = experiments.imagesets()[0]
-    else:
-      sys.exit('exactly 1 datablock must be specified')
-  else:
-    imageset = datablocks[0].extract_imagesets()[0]
+    raise Sorry('exactly 1 reflection table must be specified')
+  if len(experiments.imagesets()) != 1:
+    raise Sorry('exactly 1 experiment must be specified')
+  imageset = experiments.imagesets()[0]
 
   reflections = reflections[0]
 

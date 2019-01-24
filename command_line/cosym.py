@@ -56,7 +56,6 @@ verbosity = 1
   .help = "The verbosity level"
 ''', process_includes=True)
 
-
 class cosym(object):
   def __init__(self, experiments, reflections, params=None):
     if params is None:
@@ -292,7 +291,6 @@ def run(args):
     usage=usage,
     phil=phil_scope,
     read_reflections=True,
-    read_datablocks=False,
     read_experiments=True,
     check_format=False,
     epilog=help_message

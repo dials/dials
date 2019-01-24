@@ -10,9 +10,9 @@ def test_1(regression_data, run_in_tmpdir):
 
   commands = [
     "dials.import %s" %" ".join(g),
-    "dials.slice_sweep datablock.json image_range=80,90",
-    "dials.find_spots datablock_80_90.json",
-    "dials.index datablock_80_90.json strong.pickle space_group=P41212",
+    "dials.slice_sweep experiments.json image_range=80,90",
+    "dials.find_spots experiments_80_90.json",
+    "dials.index experiments_80_90.json strong.pickle space_group=P41212",
     "dials.refine experiments.json indexed.pickle scan_varying=True",
     "dials.integrate refined_experiments.json indexed.pickle",
     "dials.export refined_experiments.json integrated.pickle partiality_threshold=0.99"

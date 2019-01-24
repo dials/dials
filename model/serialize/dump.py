@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 # Import to give access from here
 from dxtbx.serialize.dump import imageset as sweep # implicit import
 from dxtbx.serialize.dump import imageset_to_string as sweep_to_string # implicit import
-from dxtbx.serialize.dump import datablock # implicit import
 
 import six.moves.cPickle as pickle
 

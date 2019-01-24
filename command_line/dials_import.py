@@ -14,8 +14,16 @@ from __future__ import absolute_import, division, print_function
 import logging
 
 import libtbx.load_env
-from dxtbx.datablock import DataBlockDumper, DataBlockFactory
 from libtbx.utils import Sorry
+from dxtbx.model.experiment_list import ExperimentListFactory
+from dxtbx.model.experiment_list import ExperimentList
+from dxtbx.model.experiment_list import Experiment
+from dxtbx.model.experiment_list import ExperimentListDumper
+from dxtbx.model.experiment_list import ExperimentListTemplateImporter
+from dxtbx.model.experiment_list import ExperimentListFactory
+from dxtbx.imageset import ImageGrid
+from dxtbx.imageset import ImageSweep
+from dials.util.options import flatten_experiments
 
 logger = logging.getLogger('dials.command_line.import')
 
@@ -24,7 +32,7 @@ help_message = '''
 This program is used to import image data files into a format that can be used
 within dials. The program looks at the metadata for each image along with the
 filenames to determine the relationship between sets of images. Once all the
-images have been analysed, a datablock object is written to file which specifies
+images have been analysed, a experiments object is written to file which specifies
 the relationship between files. For example if two sets of images which belong
 to two rotation scans have been given, two image sweeps will be saved. Images to
 be processed are specified as command line arguments. Sometimes, there is a
@@ -34,7 +42,7 @@ as shown in the examples below. Alternatively a template can be specified using
 the template= parameter where the consecutive digits representing the image
 numbers in the filenames are replaced with '#' characters.
 
-The geometry can be set manually by either specifying a datablock.json file
+The geometry can be set manually by either specifying a experiments.json file
 containing the reference geometry, by setting the mosflm beam centre or by
 setting each variable to be overridden.
 
@@ -68,7 +76,7 @@ phil_scope = parse('''
 
   output {
 
-    datablock = datablock.json
+    experiments = imported_experiments.json
       .type = str
       .help = "The output JSON or pickle file"
 
@@ -108,7 +116,7 @@ phil_scope = parse('''
 
     reference_geometry = None
       .type = path
-      .help = "Experimental geometry from this datablock.json or "
+      .help = "Experimental geometry from this experiments.json or "
               "experiments.json will override the geometry from the "
               "image headers."
 
@@ -157,9 +165,9 @@ phil_scope = parse('''
 ''', process_includes=True)
 
 
-class DataBlockImporter(object):
+class ImageSetImporter(object):
   '''
-  A class to manage the import of the datablocks
+  A class to manage the import of the experiments
 
   '''
 
@@ -172,18 +180,15 @@ class DataBlockImporter(object):
 
   def __call__(self):
     '''
-    Import the datablocks
+    Import the experiments
 
     '''
-    from dxtbx.datablock import DataBlockTemplateImporter
-    from dxtbx.datablock import DataBlockFactory
-    from dials.util.options import flatten_datablocks
 
-    # Get the datablocks
-    datablocks = flatten_datablocks(self.params.input.datablock)
+    # Get the experiments
+    experiments = flatten_experiments(self.params.input.experiments)
 
     # Check we have some filenames
-    if len(datablocks) == 0:
+    if len(experiments) == 0:
 
       # FIXME Should probably make this smarter since it requires editing here
       # and in dials.import phil scope
@@ -198,27 +203,28 @@ class DataBlockImporter(object):
       # Check if a template has been set and print help if not, otherwise try to
       # import the images based on the template input
       if len(self.params.input.template) > 0:
-        importer = DataBlockTemplateImporter(
+        importer = ExperimentListTemplateImporter(
           self.params.input.template,
           max(self.params.verbosity-1, 0),
           format_kwargs=format_kwargs)
-        datablocks = importer.datablocks
-        if len(datablocks) == 0:
-          raise Sorry('No datablocks found matching template %s' % self.params.input.template)
+        experiments = importer.experiments
+        if len(experiments) == 0:
+          raise Sorry('No experiments found matching template %s' % self.params.input.experiments)
       elif len(self.params.input.directory) > 0:
-        datablocks = DataBlockFactory.from_filenames(
+        experiments = ExperimentListFactory.from_filenames(
           self.params.input.directory,
           max(self.params.verbosity-1, 0),
           format_kwargs=format_kwargs)
-        if len(datablocks) == 0:
-          raise Sorry('No datablocks found in directories %s' % self.params.input.directory)
+        if len(experiments) == 0:
+          raise Sorry('No experiments found in directories %s' % self.params.input.directory)
       else:
-        raise Sorry('No datablocks found')
-    # if len(datablocks) > 1:
-    #   raise Sorry("More than 1 datablock found")
+        raise Sorry('No experimetns found')
 
-    # Return the datablocks
-    return datablocks
+    # Get a list of all imagesets
+    imageset_list = experiments.imagesets()
+
+    # Return the experiments
+    return imageset_list
 
 
 class ReferenceGeometryUpdater(object):
@@ -261,29 +267,18 @@ class ReferenceGeometryUpdater(object):
     reference_beam = None
     if params.input.reference_geometry is not None:
       from dxtbx.serialize import load
-      experiments, datablock = None, None
-      try:
-        experiments = load.experiment_list(
-          params.input.reference_geometry, check_format=False)
-      except Exception:
-        datablock = load.datablock(params.input.reference_geometry)
-      assert experiments or datablock, 'Could not import reference geometry'
-      if experiments:
-        assert len(experiments.detectors()) >= 1
-        assert len(experiments.beams()) >= 1
-        if len(experiments.detectors()) > 1:
-          raise Sorry('The reference geometry file contains %d detector definitions, but only a single definition is allowed.' % len(experiments.detectors()))
-        if len(experiments.beams()) > 1:
-          raise Sorry('The reference geometry file contains %d beam definitions, but only a single definition is allowed.' % len(experiments.beams()))
-        reference_detector = experiments.detectors()[0]
-        reference_beam = experiments.beams()[0]
-        reference_goniometer = experiments.goniometers()[0]
-      else:
-        assert len(datablock) == 1
-        imageset = datablock[0].extract_imagesets()[0]
-        reference_detector = imageset.get_detector()
-        reference_beam = imageset.get_beam()
-        reference_goniometer = imageset.get_goniometer()
+      experiments = None
+      experiments = load.experiment_list(params.input.reference_geometry, check_format=False)
+      assert experiments, 'Could not import reference geometry'
+      assert len(experiments.detectors()) >= 1
+      assert len(experiments.beams()) >= 1
+      if len(experiments.detectors()) > 1:
+        raise Sorry('The reference geometry file contains %d detector definitions, but only a single definition is allowed.' % len(experiments.detectors()))
+      if len(experiments.beams()) > 1:
+        raise Sorry('The reference geometry file contains %d beam definitions, but only a single definition is allowed.' % len(experiments.beams()))
+      reference_detector = experiments.detectors()[0]
+      reference_beam = experiments.beams()[0]
+      reference_goniometer = experiments.goniometers()[0]
     Reference = namedtuple("Reference", ["detector", "beam", "goniometer"])
     return Reference(
       detector=reference_detector,
@@ -437,7 +432,7 @@ class ManualGeometryUpdater(object):
 
 class MetaDataUpdater(object):
   '''
-  A class to manage updating the datablock metadata
+  A class to manage updating the experiments metadata
 
   '''
   def __init__(self, params):
@@ -472,25 +467,23 @@ class MetaDataUpdater(object):
         logger.info("  %d. %s" % (i, item))
       logger.info("")
 
-  def __call__(self, datablock):
+  def __call__(self, imageset_list):
     '''
     Transform the metadata
 
     '''
-    from dxtbx.datablock import DataBlock
-
     # Import the lookup data
     lookup = self.import_lookup_data(self.params)
 
     # Convert all to ImageGrid
     if self.params.input.as_grid_scan:
-      datablock = self.convert_to_grid_scan(datablock, self.params)
+      imageset_list = self.convert_to_grid_scan(imageset_list, self.params)
 
-    # Init imageset list
-    imageset_list = []
+    # Create the experiments
+    experiments = ExperimentList()
 
     # Loop through imagesets
-    for imageset in datablock.extract_imagesets():
+    for imageset in imageset_list:
 
       # Set the external lookups
       imageset = self.update_lookup(imageset, lookup)
@@ -523,10 +516,28 @@ class MetaDataUpdater(object):
         ''')
 
       # Append to new imageset list
-      imageset_list.append(imageset)
+      if isinstance(imageset, ImageSweep):
+        experiments.append(
+          Experiment(
+            imageset   = imageset,
+            beam       = imageset.get_beam(),
+            detector   = imageset.get_detector(),
+            goniometer = imageset.get_goniometer(),
+            scan       = imageset.get_scan(),
+            crystal    = None))
+      else:
+        for i in range(len(imageset)):
+          experiments.append(
+            Experiment(
+              imageset   = imageset[i:i+1],
+              beam       = imageset.get_beam(i),
+              detector   = imageset.get_detector(i),
+              goniometer = imageset.get_goniometer(i),
+              scan       = imageset.get_scan(i),
+              crystal    = None))
 
-    # Return the datablock
-    return DataBlock(imageset_list)
+    # Return the experiments
+    return experiments
 
   def update_lookup(self, imageset, lookup):
     from dxtbx.format.image import ImageBool, ImageDouble
@@ -636,21 +647,17 @@ class MetaDataUpdater(object):
       dx=Item(data=dx, filename=dx_filename),
       dy=Item(data=dy, filename=dy_filename))
 
-  def convert_to_grid_scan(self, datablock, params):
+  def convert_to_grid_scan(self, imageset_list, params):
     '''
     Convert the imagesets to grid scans
 
     '''
-    from dxtbx.datablock import DataBlock
-    from dxtbx.imageset import ImageGrid
     if params.input.grid_size is None:
       raise Sorry("The input.grid_size parameter is required")
-    sweeps = datablock.extract_sweeps()
-    stills = datablock.extract_stills()
-    imagesets = []
-    for iset in sweeps + stills:
-      imagesets.append(ImageGrid.from_imageset(iset, params.input.grid_size))
-    return DataBlock(imagesets)
+    result = []
+    for imageset in imageset_list:
+      result.append(ImageGrid.from_imageset(imageset.as_imageset(), params.input.grid_size))
+    return result
 
 
 class Script(object):
@@ -665,8 +672,8 @@ class Script(object):
     self.parser = OptionParser(
       usage=usage,
       sort_options=True,
-      phil=phil,
-      read_datablocks_from_images=True,
+      phil=phil_scope,
+      read_experiments_from_images=True,
       epilog=help_message)
 
   def run(self, args=None):
@@ -717,79 +724,89 @@ class Script(object):
       logger.warn(msg)
 
     # Print help if no input
-    if not any(
-      [params.input.datablock, params.input.template, params.input.directory]
-    ):
+    if (len(params.input.experiments) == 0 and not
+        (params.input.template or params.input.directory)):
       self.parser.print_help()
       return
 
-    # Setup the datablock importer
-    datablock_importer = DataBlockImporter(params)
+    # Setup the experiments importer
+    imageset_importer = ImageSetImporter(params)
 
     # Setup the metadata updater
     metadata_updater = MetaDataUpdater(params)
 
-    # Extract the datablocks and loop through
-    datablocks = map(metadata_updater, datablock_importer())
-    for datablock in datablocks:
+    # Extract the experiments and loop through
+    experiments = metadata_updater(imageset_importer())
 
-      # Extract any sweeps
-      sweeps = datablock.extract_sweeps()
-
-      # Extract any stills
-      stills = datablock.extract_stills()
-      if not stills:
-        num_stills = 0
+    # Compute some numbers
+    num_sweeps = 0
+    num_stills = 0
+    num_images = 0
+    for e in experiments:
+      if isinstance(e.imageset, ImageSweep):
+        num_sweeps += 1
       else:
-        num_stills = sum([len(s) for s in stills])
+        num_stills += 1
+      num_images += len(e.imageset)
+    format_list = set(str(e.imageset.get_format_class()) for e in experiments)
 
-      # Print some data block info - override the output of image range
+    # Print out some bulk info
+    logger.info("-" * 80)
+    for f in format_list:
+      logger.info("  format: %s" % f)
+    logger.info("  num images: %d" % num_images)
+    logger.info("  num sweeps: %d" % num_sweeps)
+    logger.info("  num stills: %d" % num_stills)
+
+    # Print out info for all experiments
+    for experiment in experiments:
+
+      # Print some experiment info - override the output of image range
       # if appropriate
       image_range = params.geometry.scan.image_range
-
-      logger.info("-" * 80)
-      logger.info("  format: %s" % str(datablock.format_class()))
-      if image_range is None:
-        logger.info("  num images: %d" % datablock.num_images())
+      if isinstance(experiment.imageset, ImageSweep):
+        imageset_type = "sweep"
       else:
-        logger.info("  num images: %d" % (image_range[1] - image_range[0] + 1))
-      logger.info("  num sweeps: %d" % len(sweeps))
-      logger.info("  num stills: %d" % num_stills)
+        imageset_type = "stills"
 
-      # Loop through all the sweeps
-      for j, sweep in enumerate(sweeps):
-        logger.debug("")
-        logger.debug("Sweep %d" % j)
-        logger.debug("  Length %d" % len(sweep))
-        logger.debug(sweep.get_beam())
-        logger.debug(sweep.get_goniometer())
-        logger.debug(sweep.get_detector())
-        logger.debug(sweep.get_scan())
+      logger.debug("-" * 80)
+      logger.debug("  format: %s" % str(experiment.imageset.get_format_class()))
+      logger.debug("  imageset type: %s" % imageset_type)
+      if image_range is None:
+        logger.debug("  num images:    %d" % len(experiment.imageset))
+      else:
+        logger.debug("  num images:    %d" % (image_range[1] - image_range[0] + 1))
+
+      logger.debug("")
+      logger.debug(experiment.imageset.get_beam())
+      logger.debug(experiment.imageset.get_goniometer())
+      logger.debug(experiment.imageset.get_detector())
+      logger.debug(experiment.imageset.get_scan())
 
       # Only allow a single sweep
       if params.input.allow_multiple_sweeps is False:
-        self.assert_single_sweep(sweeps, params)
+        self.assert_single_sweep(experiments, params)
 
-    # Write the datablocks to file
-    self.write_datablocks(datablocks, params)
+    # Write the experiments to file
+    self.write_experiments(experiments, params)
 
-    return datablocks
-
-  def write_datablocks(self, datablocks, params):
+  def write_experiments(self, experiments, params):
     '''
-    Output the datablock to file.
+    Output the experiments to file.
 
     '''
-    if params.output.datablock:
+    if params.output.experiments:
       logger.info("-" * 80)
-      logger.info('Writing datablocks to %s' % params.output.datablock)
-      dump = DataBlockDumper(datablocks)
-      dump.as_file(params.output.datablock, compact=params.output.compact)
+      logger.info('Writing experiments to %s' % params.output.experiments)
+      dump = ExperimentListDumper(experiments)
+      dump.as_file(params.output.experiments, compact=params.output.compact)
 
-  def assert_single_sweep(self, sweeps, params):
+  def assert_single_sweep(self, experiments, params):
     '''
     Print an error message if more than 1 sweep
     '''
+    sweeps = [e.imageset for e in experiments if isinstance(e.imageset,  ImageSweep)]
+
     if len(sweeps) > 1:
 
       # Print some info about multiple sweeps
@@ -829,7 +846,7 @@ class Script(object):
     Print a diff between sweeps.
 
     '''
-    from dxtbx.datablock import SweepDiff
+    from dxtbx.model.experiment_list import SweepDiff
     diff = SweepDiff(params.input.tolerance)
     text = diff(sweep1, sweep2)
     logger.info("\n".join(text))

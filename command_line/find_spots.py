@@ -20,7 +20,7 @@ logger = logging.getLogger('dials.command_line.find_spots')
 help_message = '''
 
 This program tries to find strong spots on a sequence of images. The program can
-be called with either a "datablock.json" file or a sequence of image files (see
+be called with either a "experiments.json" file or a sequence of image files (see
 help for dials.import for more information about how images are imported). Spot
 finding will be done against each logically grouped set of images given. Strong
 pixels will be found on each image and spots will be formed from connected
@@ -39,9 +39,9 @@ Examples::
 
   dials.find_spots imager_00*.cbf
 
-  dials.find_spots datablock.json
+  dials.find_spots experiments.json
 
-  dials.find_spots datablock.json output.reflections=strong.pickle
+  dials.find_spots experiments.json output.reflections=strong.pickle
 
 '''
 
@@ -58,9 +58,9 @@ phil_scope = parse('''
       .type = bool
       .help = "Save the raw pixel values inside the reflection shoeboxes."
 
-    datablock = None
+    experiments = None
       .type = str
-      .help = "Save the modified datablock."
+      .help = "Save the modified experiments."
               "(usually only modified with hot pixel mask)"
 
     log = 'dials.find_spots.log'
@@ -95,7 +95,7 @@ class Script(object):
 
     # The script usage
     usage = "usage: %s [options] [param.phil] "\
-            "{datablock.json | image1.file [image2.file ...]}" \
+            "{experiments.json | image1.file [image2.file ...]}" \
             % libtbx.env.dispatcher_name
 
     # Initialise the base class
@@ -103,13 +103,14 @@ class Script(object):
       usage=usage,
       phil=phil,
       epilog=help_message,
-      read_datablocks=True,
-      read_datablocks_from_images=True)
+      read_experiments_from_images=True,
+      read_experiments=True)
 
   def run(self, args=None):
     '''Execute the script.'''
+    from dxtbx.model.experiment_list import ExperimentListDumper
     from dials.array_family import flex
-    from dials.util.options import flatten_datablocks
+    from dials.util.options import flatten_experiments
     from time import time
     from dials.util import log
     from libtbx.utils import Sorry
@@ -135,16 +136,13 @@ class Script(object):
       logger.info(diff_phil)
 
     # Ensure we have a data block
-    datablocks = flatten_datablocks(params.input.datablock)
-    if len(datablocks) == 0:
+    experiments = flatten_experiments(params.input.experiments)
+    if len(experiments) == 0:
       self.parser.print_help()
       return
-    elif len(datablocks) != 1:
-      raise Sorry('only 1 datablock can be processed at a time')
 
     # Loop through all the imagesets and find the strong spots
-    reflections = flex.reflection_table.from_observations(
-      datablocks[0], params)
+    reflections = flex.reflection_table.from_observations(experiments, params)
 
     # Add n_signal column - before deleting shoeboxes
     from dials.algorithms.shoebox import MaskCode
@@ -158,7 +156,8 @@ class Script(object):
     # ascii spot count per image plot
     from dials.util.ascii_art import spot_counts_per_image_plot
 
-    for i, imageset in enumerate(datablocks[0].extract_imagesets()):
+    for i, experiment in enumerate(experiments):
+      imageset = experiment.imageset
       ascii_plot = spot_counts_per_image_plot(
         reflections.select(reflections['id'] == i))
       if len(ascii_plot):
@@ -171,21 +170,21 @@ class Script(object):
     logger.info('Saved {0} reflections to {1}'.format(
         len(reflections), params.output.reflections))
 
-    # Save the datablock
-    if params.output.datablock:
-      from dxtbx.datablock import DataBlockDumper
-      logger.info('Saving datablocks to {0}'.format(
-        params.output.datablock))
-      dump = DataBlockDumper(datablocks)
-      dump.as_file(params.output.datablock)
+    # Save the experiments
+    if params.output.experiments:
+      logger.info('Saving experiments to {0}'.format(
+        params.output.experiments))
+      dump = ExperimentListDumper(experiments)
+      dump.as_file(params.output.experiments)
 
     # Print some per image statistics
     if params.per_image_statistics:
       from dials.algorithms.spot_finding import per_image_analysis
       from cStringIO import StringIO
       s = StringIO()
-      for i, imageset in enumerate(datablocks[0].extract_imagesets()):
+      for i, experiment in enumerate(experiments):
         print("Number of centroids per image for imageset %i:" %i, file=s)
+        imageset = experiment.imageset
         stats = per_image_analysis.stats_imageset(
           imageset, reflections.select(reflections['id'] == i),
           resolution_analysis=False)
@@ -195,8 +194,8 @@ class Script(object):
     # Print the time
     logger.info("Time Taken: %f" % (time() - start_time))
 
-    if params.output.datablock:
-      return datablocks, reflections
+    if params.output.experiments:
+      return experiments, reflections
     else:
       return reflections
 
