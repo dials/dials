@@ -284,15 +284,27 @@ class symmetry_base(object):
       d_min_isigi = 0
       d_min_cc_half = 0
       if min_i_mean_over_sigma_mean is not None:
-        d_min_isigi = resolutionizer.resolution_i_mean_over_sigma_mean(min_i_mean_over_sigma_mean)
-        logger.info('Resolution estimate from <I>/<sigI> > %.1f : %.2f' % (
-          min_i_mean_over_sigma_mean, d_min_isigi))
+        try:
+          d_min_isigi = resolutionizer.resolution_i_mean_over_sigma_mean(min_i_mean_over_sigma_mean)
+        except RuntimeError as e:
+          logger.info("I/sigI resolution filter failed with the following error:")
+          logger.error(e)
+        else:
+          logger.info('Resolution estimate from <I>/<sigI> > %.1f : %.2f' % (
+            min_i_mean_over_sigma_mean, d_min_isigi))
       if min_cc_half is not None:
-        d_min_cc_half = resolutionizer.resolution_cc_half(min_cc_half)
-        logger.info('Resolution estimate from CC1/2 > %.2f: %.2f' % (
-          min_cc_half, d_min_cc_half))
-      d_min = min(d_min_isigi, d_min_cc_half)
-      logger.info('High resolution limit set to: %.2f' % d_min)
+        try:
+          d_min_cc_half = resolutionizer.resolution_cc_half(min_cc_half)
+        except RuntimeError as e:
+          logger.info("CChalf resolution filter failed with the following error:")
+          logger.error(e)
+        else:
+          logger.info('Resolution estimate from CC1/2 > %.2f: %.2f' % (
+            min_cc_half, d_min_cc_half))
+      valid_d_mins = list(set([d_min_cc_half, d_min_isigi]).difference(set([0])))
+      if valid_d_mins:
+        d_min = min(valid_d_mins)
+        logger.info('High resolution limit set to: %.2f' % d_min)
     if d_min is not None:
       sel = self.intensities.resolution_filter_selection(d_min=d_min)
       self.intensities = self.intensities.select(sel).set_info(
