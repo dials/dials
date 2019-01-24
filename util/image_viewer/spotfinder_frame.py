@@ -35,22 +35,27 @@ class LoadImageEvent(wx.PyCommandEvent):
 def create_load_image_event(destination, filename):
   wx.PostEvent(destination, LoadImageEvent(myEVT_LOADIMG, -1, filename))
 
+# class SpotFrame(XrayFrame):
+#   def __init__(self, *args, **kwds):
+#     self.datablock = kwds["datablock"]
+#     self.experiments = kwds["experiments"]
+#     if self.datablock is not None:
+#       self.imagesets = self.datablock.extract_imagesets()
+#       self.crystals = None
+#     else:
+#       self.imagesets = []
+#       self.crystals = []
+#       for expt_list in self.experiments:
+#         self.imagesets.extend(expt_list.imagesets())
+#         self.crystals.extend(expt_list.crystals())
 
 class SpotFrame(XrayFrame) :
   def __init__ (self, *args, **kwds) :
     self.experiments = kwds["experiments"]
-    if len(self.experiments.imagesets()) > 0:
-      assert(len(self.experiments.imagesets()) == 1)
-      self.imagesets = self.experiments.imagesets()
-      self.crystals = self.experiments.crystals()
-    else:
-      self.imagesets = []
-      self.crystals = []
-      for expt_list in self.experiments:
-        self.imagesets.extend(expt_list.imagesets())
-        self.crystals.extend(expt_list.crystals())
-      if len(self.imagesets) == 0:
-        raise RuntimeError("No imageset could be constructed")
+    self.imagesets = self.experiments.imagesets()
+    self.crystals = self.experiments.crystals()
+    if len(self.imagesets) == 0:
+      raise RuntimeError("No imageset could be constructed")
 
     self.reflections = kwds["reflections"]
     del kwds["experiments"]; del kwds["reflections"] #otherwise wx complains
