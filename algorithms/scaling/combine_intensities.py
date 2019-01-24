@@ -3,13 +3,32 @@ Optimise the combination of profile and summation intensity values.
 """
 from __future__ import print_function
 import logging
-import iotbx.merging_statistics
+from iotbx.merging_statistics import filter_intensities_by_sigma
 from libtbx.table_utils import simple_table
 from cctbx import miller
 from dials.array_family import flex
 from dials.algorithms.scaling.scaling_utilities import DialsMergingStatisticsError
 
 logger = logging.getLogger('dials')
+
+def fast_merging_stats(array, anomalous=False, sigma_filtering="scala",
+  use_internal_variance=True):
+  """
+  Quickly calculate required merging stats for intensity combination.
+
+  This is a cut-down version of iobtx.merging_statistics.merging_stats.
+  """
+  assert (array.sigmas() is not None)
+  positive_sel = array.sigmas() > 0
+  array = array.select(positive_sel)
+  array = array.customized_copy(anomalous_flag=anomalous).map_to_asu()
+  array = array.sort("packed_indices")
+  filtered = filter_intensities_by_sigma(array=array,
+    sigma_filtering=sigma_filtering, use_internal_variance=use_internal_variance)
+  r_meas = filtered.merge.r_meas()
+  cc_one_half = miller.compute_cc_one_half(
+    unmerged=filtered.array, return_n_refl=False)
+  return r_meas, cc_one_half
 
 def _make_reflection_table_from_scaler(scaler):
   """Copy across required columns and filter data."""
@@ -35,9 +54,16 @@ def _make_reflection_table_from_scaler(scaler):
 
 class SingleDatasetIntensityCombiner(object):
 
+  """
+  Class to combine profile and summation intensities for a single datset.
+  """
+
   def __init__(self, scaler):
-    #if 'intensity.prf.value' not in scaler.reflection_table:
-    #  #return sum intensities here
+    if 'intensity.prf.value' not in scaler.reflection_table:
+      self.max_key = 1
+      logger.info(
+        'No profile intensities found, skipping profile/summation intensity combination.')
+      return
     self.scaler = scaler
     self.experiment = scaler.experiments
     self.Imids = scaler.params.reflection_selection.combine.Imid
@@ -65,6 +91,7 @@ class SingleDatasetIntensityCombiner(object):
         self.max_key)
 
   def calculate_suitable_combined_intensities(self):
+    """Combine the 'suitable for scaling' intensities in the scaler."""
     return _calculate_suitable_combined_intensities(self.scaler, self.max_key)
 
   def _determine_Imids(self, raw_intensities):
@@ -92,14 +119,9 @@ class SingleDatasetIntensityCombiner(object):
       i_obs.set_observation_type_xray_intensity()
       i_obs.set_sigmas((Var**0.5) * self.dataset['prescaling_correction'] /
         self.dataset['inverse_scale_factor'])
-
-      n_bins = min(20, int(Int.size()/100)+1)
       try:
-        result = iotbx.merging_statistics.dataset_statistics(
-          i_obs=i_obs, n_bins=n_bins, anomalous=False,
-          eliminate_sys_absent=False, use_internal_variance=False)
-        rmeas = result.overall.r_meas
-        cchalf = result.overall.cc_one_half
+        rmeas, cchalf = fast_merging_stats(array=i_obs,
+          anomalous=False, use_internal_variance=False)
         logger.debug("Imid: %s, Rmeas %s, cchalf %s", Imid, rmeas, cchalf)
       except RuntimeError:
         raise DialsMergingStatisticsError("Unable to merge for intensity combination")
@@ -108,7 +130,7 @@ class SingleDatasetIntensityCombiner(object):
       results[Imid] = rmeas
       res_str = {0 : 'prf only', 1 : 'sum only'}
       if not Imid in res_str:
-        res_str[Imid] = 'Imid = '+str(round(Imid, 2))
+        res_str[Imid] = 'Imid = ' + str(round(Imid, 2))
       rows.append([res_str[Imid], str(round(cchalf, 5)), str(round(rmeas, 5))])
 
     return rows, results
@@ -146,9 +168,11 @@ def _calculate_suitable_combined_intensities(scaler, max_key):
 
 class MultiDatasetIntensityCombiner(object):
 
+  """
+  Class to combine profile and summation intensities for multiple datasets.
+  """
+
   def __init__(self, multiscaler):
-    #if 'intensity.prf.value' not in scaler.reflection_table:
-    #  #return sum intensities here
     self.active_scalers = multiscaler.active_scalers
     self.experiment = multiscaler.experiments
     self.Imids = multiscaler.params.reflection_selection.combine.Imid
@@ -157,7 +181,8 @@ class MultiDatasetIntensityCombiner(object):
     for i, scaler in enumerate(self.active_scalers):
       if 'intensity.prf.value' in scaler.reflection_table:
         self.good_datasets.append(i)
-    self.datasets = [_make_reflection_table_from_scaler(self.active_scalers[i]) for i in self.good_datasets]
+    self.datasets = [_make_reflection_table_from_scaler(self.active_scalers[i])
+      for i in self.good_datasets]
     raw_intensities = self._get_raw_intensity_array()
     logger.debug("length of raw intensity array: %s", raw_intensities.size())
     self._determine_Imids(raw_intensities)
@@ -177,6 +202,7 @@ class MultiDatasetIntensityCombiner(object):
         self.max_key)
 
   def calculate_suitable_combined_intensities(self, dataset):
+    """Combine the 'suitable for scaling' intensities in the scaler."""
     if dataset not in self.good_datasets:
       return _calculate_suitable_combined_intensities(
         self.active_scalers[dataset], 1)
@@ -225,14 +251,9 @@ class MultiDatasetIntensityCombiner(object):
       i_obs = miller.array(miller_set, data=combined_intensities/combined_scales)
       i_obs.set_observation_type_xray_intensity()
       i_obs.set_sigmas(combined_sigmas/combined_scales)
-
-      n_bins = min(20, int(combined_intensities.size()/100)+1)
       try:
-        result = iotbx.merging_statistics.dataset_statistics(
-          i_obs=i_obs, n_bins=n_bins, anomalous=False,
-          eliminate_sys_absent=False, use_internal_variance=False)
-        rmeas = result.overall.r_meas
-        cchalf = result.overall.cc_one_half
+        rmeas, cchalf = fast_merging_stats(array=i_obs,
+          anomalous=False, use_internal_variance=False)
         logger.debug("Imid: %s, Rmeas %s, cchalf %s", Imid, rmeas, cchalf)
       except RuntimeError:
         raise DialsMergingStatisticsError("Unable to merge for intensity combination")

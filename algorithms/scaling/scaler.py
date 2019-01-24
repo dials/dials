@@ -318,6 +318,7 @@ class SingleScaler(ScalerBase):
 
   def combine_intensities(self):
     """Combine prf and sum intensities to give optimal intensities."""
+    logger.info("Performing profile/summation intensity optimisation.")
     try:
       combiner = SingleDatasetIntensityCombiner(self)
       intensity, variance = combiner.calculate_suitable_combined_intensities()
@@ -743,6 +744,7 @@ class MultiScaler(MultiScalerBase):
   def combine_intensities(self):
     """Combine reflection intensities, either jointly or separately."""
     if self.params.reflection_selection.combine.joint_analysis:
+      logger.info("Performing multi-dataset profile/summation intensity optimisation.")
       try:
         combiner = MultiDatasetIntensityCombiner(self)
         for i, scaler in enumerate(self.active_scalers):
