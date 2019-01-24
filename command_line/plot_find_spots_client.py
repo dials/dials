@@ -162,11 +162,11 @@ def run(args):
     plot_unit_cell_histograms(crystals)
 
   if params.stereographic_projections and len(crystals):
-    from dxtbx.datablock import DataBlockFactory
-    datablocks = DataBlockFactory.from_filenames(
+    from dxtbx.model.experiment_list import ExperimentListFactory
+    experiments = ExperimentListFactory.from_filenames(
       [image_names[0]], verbose=False)
-    assert len(datablocks) == 1
-    imageset = datablocks[0].extract_imagesets()[0]
+    assert len(experiments) == 1
+    imageset = experiments.imagesets()[0]
     s0 = imageset.get_beam().get_s0()
     # XXX what if no goniometer?
     rotation_axis = imageset.get_goniometer().get_rotation_axis()

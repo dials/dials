@@ -126,8 +126,8 @@ class Script(base_script):
         for item in item_list:
           tag, filename = item
 
-          datablock = do_import(filename)
-          imagesets = datablock.extract_imagesets()
+          experiments = do_import(filename)
+          imagesets = experiments.imagesets()
           if len(imagesets) == 0 or len(imagesets[0]) == 0:
             logger.info("Zero length imageset in file: %s"%filename)
             return
@@ -142,7 +142,7 @@ class Script(base_script):
 
           update_geometry(imagesets[0])
 
-          processor.process_datablock(tag, datablock)
+          processor.process_experiments(tag, experiments)
         processor.finalize()
 
     # Process the data

@@ -8,7 +8,7 @@ def test(dials_regression, run_in_tmpdir):
 
   result = procrunner.run_process([
       'dials.estimate_gain',
-      'input.datablock=' + input_filename,
+      'input.experiments=' + input_filename,
   ])
   assert result['exitcode'] == 0
   assert result['stderr'] == ''

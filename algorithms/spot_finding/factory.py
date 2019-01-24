@@ -455,7 +455,7 @@ class SpotFinderFactory(object):
   '''
 
   @staticmethod
-  def from_parameters(params=None, datablock=None):
+  def from_parameters(params=None, experiments=None):
     '''
     Given a set of parameters, construct the spot finder
 
@@ -473,11 +473,11 @@ class SpotFinderFactory(object):
 
     if params.spotfinder.force_2d and params.output.shoeboxes is False:
       no_shoeboxes_2d = True
-    elif datablock is not None and params.output.shoeboxes is False:
+    elif experiments is not None and params.output.shoeboxes is False:
       no_shoeboxes_2d = False
       all_stills = True
-      for imageset in datablock.extract_imagesets():
-        if isinstance(imageset, ImageSweep):
+      for experiment in experiments:
+        if isinstance(experiment.imageset, ImageSweep):
           all_stills = False
           break
       if all_stills:
@@ -494,7 +494,7 @@ class SpotFinderFactory(object):
 
     # Create the threshold strategy
     threshold_function = SpotFinderFactory.configure_threshold(params,
-                                                               datablock)
+                                                               experiments)
 
     # Configure the mask generator
     mask_generator = MaskGenerator(params.spotfinder.filter)
@@ -525,7 +525,7 @@ class SpotFinderFactory(object):
       min_chunksize             = params.spotfinder.mp.min_chunksize)
 
   @staticmethod
-  def configure_threshold(params, datablock):
+  def configure_threshold(params, experiments):
     '''
     Get the threshold strategy
 

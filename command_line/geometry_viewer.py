@@ -562,18 +562,17 @@ class GeometryWindow(wx_viewer.show_points_and_lines_mixin):
 def run(args):
 
   from dials.util.options import OptionParser
-  from dials.util.options import flatten_datablocks
+  from dials.util.options import flatten_experiments
   from dials.util.options import flatten_experiments
   import libtbx.load_env
   import os
 
-  usage = "%s [options] datablock.json" %(
+  usage = "%s [options] experiments.json" %(
     libtbx.env.dispatcher_name)
 
   parser = OptionParser(
       usage=usage,
       phil=phil_scope,
-      read_datablocks=True,
       read_experiments=True,
       check_format=False,
       epilog=help_message)
@@ -591,7 +590,6 @@ def run(args):
   parser = OptionParser(
       usage=usage,
       phil=phil_scope,
-      read_datablocks=True,
       read_experiments=True,
       check_format=check_format,
       epilog=help_message)
@@ -604,22 +602,15 @@ def run(args):
       'files. If so, this may be overcome by require_images=False\n')
     sys.exit()
 
-  datablocks = flatten_datablocks(params.input.datablock)
   experiments = flatten_experiments(params.input.experiments)
 
 
-  if (len(datablocks) == 0 and len(experiments) == 0):
+  if (len(experiments) == 0):
     parser.print_help()
     exit(0)
 
-  if len(datablocks) == 0 and len(experiments) > 0:
-    imagesets = experiments.imagesets()
-    crystal = experiments[0].crystal
-  else:
-    imagesets = []
-    crystal = None
-    for datablock in datablocks:
-      imagesets.extend(datablock.extract_imagesets())
+  imagesets = experiments.imagesets()
+  crystal = experiments[0].crystal
 
   assert len(imagesets) == 1, len(imagesets)
   imageset = imagesets[0]

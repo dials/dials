@@ -5,7 +5,7 @@ import iotbx.phil
 from scitbx.array_family import flex
 from scitbx import matrix
 from dials.util.options import OptionParser
-from dials.util.options import flatten_datablocks, flatten_reflections
+from dials.util.options import flatten_experiments, flatten_reflections
 from dials.algorithms.indexing.indexer \
      import indexer_base, filter_reflections_by_scan_range
 
@@ -30,27 +30,24 @@ master_params = phil_scope.fetch().extract()
 def run(args):
   import libtbx.load_env
   from dials.util import log
-  usage = "%s [options] datablock.json strong.pickle output.csv=rl.csv" % libtbx.env.dispatcher_name
+  usage = "%s [options] experiments.json strong.pickle output.csv=rl.csv" % libtbx.env.dispatcher_name
 
   parser = OptionParser(
     usage=usage,
     phil=phil_scope,
-    read_datablocks=True,
+    read_experiments=True,
     read_reflections=True,
     check_format=False)
 
   params, options = parser.parse_args(show_diff_phil=False)
-  datablocks = flatten_datablocks(params.input.datablock)
+  experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
 
-  if len(datablocks) == 0 or len(reflections) == 0:
+  if len(experiments) or len(reflections) == 0:
     parser.print_help()
     exit(0)
 
-  imagesets = []
-
-  for db in datablocks:
-    imagesets.extend(db.extract_imagesets())
+  imagesets = experiments.imagesets()
 
   spots = []
 

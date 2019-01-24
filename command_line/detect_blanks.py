@@ -177,30 +177,28 @@ def blank_regions_from_sel(d):
 def run(args):
 
   from dials.util.options import OptionParser
-  from dials.util.options import flatten_datablocks
+  from dials.util.options import flatten_experiments
   from dials.util.options import flatten_experiments
   from dials.util.options import flatten_reflections
   from dials.util import log
   import libtbx.load_env
 
-  usage = "%s [options] datablock.json reflections.pickle" %(
+  usage = "%s [options] experiments.json reflections.pickle" %(
     libtbx.env.dispatcher_name)
 
   parser = OptionParser(
     usage=usage,
     phil=phil_scope,
-    read_datablocks=True,
     read_experiments=True,
     read_reflections=True,
     check_format=False,
     epilog=help_message)
 
   params, options = parser.parse_args()
-  datablocks = flatten_datablocks(params.input.datablock)
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
 
-  if (len(datablocks) == 0 and len(experiments) == 0) or len(reflections) == 0:
+  if len(experiments) == 0 or len(reflections) == 0:
     parser.print_help()
     exit(0)
 
@@ -215,12 +213,7 @@ def run(args):
 
   reflections = reflections[0]
 
-  if len(datablocks) == 0 and len(experiments) > 0:
-    imagesets = experiments.imagesets()
-  else:
-    imagesets = []
-    for datablock in datablocks:
-      imagesets.extend(datablock.extract_imagesets())
+  imagesets = experiments.imagesets()
 
   assert len(imagesets) == 1
   imageset = imagesets[0]

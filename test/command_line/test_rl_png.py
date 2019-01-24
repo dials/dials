@@ -4,12 +4,12 @@ import os
 
 from libtbx import easy_run
 
-def test_rl_png_datablock(dials_regression, run_in_tmpdir):
+def test_rl_png_experiments(dials_regression, run_in_tmpdir):
   data_dir = os.path.join(dials_regression, "centroid_test_data")
-  datablock_path = os.path.join(data_dir, "datablock.json")
+  experiments_path = os.path.join(data_dir, "experiments.json")
   strong_pickle = os.path.join(data_dir, "strong.pickle")
 
-  cmd = 'dials.rl_png %s %s' %(datablock_path, strong_pickle)
+  cmd = 'dials.rl_png %s %s' %(experiments_path, strong_pickle)
   result = easy_run.fully_buffered(command=cmd).raise_if_errors()
 
   for s in ('beam_vector', 'e3', 'rotation_axis',
@@ -19,10 +19,10 @@ def test_rl_png_datablock(dials_regression, run_in_tmpdir):
 
 def test_rl_png_experiments(dials_regression, run_in_tmpdir):
   data_dir = os.path.join(dials_regression, "refinement_test_data", "i04_weak_data")
-  datablock_path = os.path.join(data_dir, "experiments.json")
+  experiments_path = os.path.join(data_dir, "experiments.json")
   indexed_pickle = os.path.join(data_dir, "indexed_strong.pickle")
 
-  cmd = 'dials.rl_png %s %s' %(datablock_path, indexed_pickle)
+  cmd = 'dials.rl_png %s %s' %(experiments_path, indexed_pickle)
   result = easy_run.fully_buffered(command=cmd).raise_if_errors()
 
   for s in ('beam_vector', 'e3', 'rotation_axis', 'a', 'b','c'):

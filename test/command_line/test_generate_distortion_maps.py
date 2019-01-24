@@ -8,7 +8,7 @@ from dxtbx.imageset import ImageSet
 from dxtbx.imageset import ImageSetData
 from dxtbx.format.Format import Masker
 from dxtbx.format.Format import Reader
-from dxtbx.datablock import DataBlockFactory, DataBlockDumper
+from dxtbx.model.experiment_list import ExperimentListFactory, ExperimentListDumper
 
 from libtbx import easy_run
 import six.moves.cPickle as pickle
@@ -78,15 +78,15 @@ def test_translate(dials_regression, run_in_tmpdir):
   # Import without correction
   cmd = ("dials.import {0}").format(image_path)
   result = easy_run.fully_buffered(command=cmd).raise_if_errors()
-  db1 = DataBlockFactory.from_serialized_format('datablock.json')[0]
-  det1 = db1.unique_detectors()[0]
+  experiments = ExperimentListkFactory.from_serialized_format('experiments.json')[0]
+  det1 = experiments.detectors()[0]
 
   # Import with correction
   cmd = ("dials.import {0} dx=dx.pickle dy=dy.pickle "
-         "output.datablock=corrected_datablock.json").format(image_path)
+         "output.experiments=corrected_experiments.json").format(image_path)
   result = easy_run.fully_buffered(command=cmd).raise_if_errors()
-  db2 = DataBlockFactory.from_serialized_format('corrected_datablock.json')[0]
-  det2 = db2.unique_detectors()[0]
+  experiments2 = ExperimentListFactory.from_serialized_format('corrected_experiments.json')[0]
+  det2 = experiments2.detectors()[0]
 
   # FIXME, why doesn't db2 have dx, dy set?
   assert db2.extract_imagesets()[0].external_lookup.dx.filename
@@ -95,32 +95,32 @@ def test_translate(dials_regression, run_in_tmpdir):
 
 
 def test_elliptical_distortion(run_in_tmpdir):
-  """Create distortion maps for elliptical distortion using a dummy datablock
+  """Create distortion maps for elliptical distortion using a dummy experiments
   with a small detector, for speed. Check those maps seem sensible"""
 
   # Make a detector model
   d = make_detector()
 
-  # The beam is also essential for a datablock to be serialisable
+  # The beam is also essential for a experiments to be serialisable
   b = Beam((0,0,1),1.0)
 
-  # Create and write out a datablock
+  # Create and write out a experiments
   imageset = ImageSet(
   ImageSetData(
     Reader(["non-existent.cbf"]),
     Masker(["non-existent.cbf"])))
   imageset.set_detector(d)
   imageset.set_beam(b)
-  datablocks = DataBlockFactory.from_imageset(imageset)
-  dump = DataBlockDumper(datablocks)
-  dump.as_file("dummy_datablock.json")
+  experiments = ExperimentListFactory.from_imageset_and_crystal(imageset, None)
+  dump = ExperimentListDumper(experiments)
+  dump.as_file("dummy_experiments.json")
 
   # Centre of distortion will be the far corner from the origin of the first
   # panel
   centre_xy = d[0].get_image_size_mm()
 
   # Generate distortion maps
-  cmd = ("dials.generate_distortion_maps dummy_datablock.json "
+  cmd = ("dials.generate_distortion_maps dummy_experiments.json "
          "mode=ellipse centre_xy={},{} "
          "phi=0 l1=1.0 l2=0.95").format(*centre_xy)
   result = easy_run.fully_buffered(command=cmd).raise_if_errors()

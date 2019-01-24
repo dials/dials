@@ -311,53 +311,28 @@ class Script(object):
     parser = OptionParser(
       usage=usage,
       phil=phil_scope,
-      read_datablocks=True,
       read_experiments=True,
       check_format=False,
       epilog=help_message)
 
     params, options = parser.parse_args(show_diff_phil=True)
 
-    if params.input.datablock:
-      if params.input.experiments:
-        raise Sorry("Please provide either datablocks or experiment lists, "
-                    "not a combination of the two")
-      if len(params.input.datablock) != 2:
-        raise Sorry("Please provide two datablocks or experiment lists as input")
+    if len(params.input.experiments) != 2:
+      raise Sorry("Please provide two experiment lists as input")
 
-      warnmsg = ("WARNING: The {0} datablock contains more than one "
-                 "detector. Only the first will be considered.")
-      detector1 = params.input.datablock[0].data[0].unique_detectors()
-      if len(detector1) > 1:
-        print(warnmsg.format("first"))
-      detector1 = detector1[0]
-      beam1 = params.input.datablock[0].data[0].unique_beams()[0]
-      experiment1 = Experiment(beam=beam1, detector=detector1)
+    warnmsg = ("WARNING: The {0} experiment list contains more than one "
+               "detector. Only the first will be considered.")
+    detector1 = params.input.experiments[0].data.detectors()
+    if len(detector1) > 1:
+      print(warnmsg.format("first"))
+    detector1 = detector1[0]
+    experiment1 = params.input.experiments[0].data[0]
 
-      detector2 = params.input.datablock[1].data[0].unique_detectors()
-      if len(detector2) > 1:
-        print(warnmsg.format("second"))
-      detector2 = detector2[0]
-      beam2 = params.input.datablock[1].data[0].unique_beams()[0]
-      experiment2 = Experiment(beam=beam2, detector=detector2)
-
-    else:
-      if len(params.input.experiments) != 2:
-        raise Sorry("Please provide two datablocks or experiment lists as input")
-
-      warnmsg = ("WARNING: The {0} experiment list contains more than one "
-                 "detector. Only the first will be considered.")
-      detector1 = params.input.experiments[0].data.detectors()
-      if len(detector1) > 1:
-        print(warnmsg.format("first"))
-      detector1 = detector1[0]
-      experiment1 = params.input.experiments[0].data[0]
-
-      detector2 = params.input.experiments[1].data.detectors()
-      if len(detector2) > 1:
-        print(warnmsg.format("second"))
-      detector2 = detector2[0]
-      experiment2 = params.input.experiments[1].data[0]
+    detector2 = params.input.experiments[1].data.detectors()
+    if len(detector2) > 1:
+      print(warnmsg.format("second"))
+    detector2 = detector2[0]
+    experiment2 = params.input.experiments[1].data[0]
 
     if len(detector1) != len(detector2):
       raise Sorry("The detectors do not contain the same number of panels")

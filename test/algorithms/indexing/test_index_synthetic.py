@@ -112,11 +112,11 @@ def generate_crystal(unit_cell, space_group):
                  space_group=space_group)
 
 
-def run_indexing(datablock, strong_spots, crystal_model, rmsds):
+def run_indexing(experiments, strong_spots, crystal_model, rmsds):
   sweep_path = "datablock.json"
   pickle_path = "strong.pickle"
 
-  dump.datablock(datablock, sweep_path)
+  dump.experiments(experiments, sweep_path)
   easy_pickle.dump(pickle_path, strong_spots)
 
   space_group_info = crystal_model.get_space_group()
@@ -125,7 +125,7 @@ def run_indexing(datablock, strong_spots, crystal_model, rmsds):
 
   expected_rmsds = [1.1*r for r in rmsds]
 
-  imageset = datablock[0].extract_imagesets()[0]
+  imageset = experiments.imagesets()[0]
   pixel_size = imageset.get_detector()[0].get_pixel_size()
   phi_width = imageset.get_scan().get_oscillation()[1] * math.pi/180
 
@@ -141,7 +141,7 @@ def run_indexing(datablock, strong_spots, crystal_model, rmsds):
                    )
 
 
-def add_random_noise_xyz(datablock, strong_spots, rmsds):
+def add_random_noise_xyz(experiments, strong_spots, rmsds):
   errors = flex.vec3_double(*list(
     scitbx.random.variate(
       scitbx.random.normal_distribution(0, rmsds[i]))(len(strong_spots))
@@ -157,8 +157,8 @@ def test_index_synthetic(space_group, unit_cell_volume, dials_regression, run_in
     space_group, volume=unit_cell_volume)
 
   fname = os.path.join(dials_regression, "centroid_test_data", "datablock.json")
-  datablock = load.datablock(fname, check_format=False)
-  imageset = datablock[0].extract_imagesets()[0]
+  experiments = load.experiments(fname, check_format=False)
+  imageset = experiments.imagesets()[0]
   scan = imageset.get_scan()
   scan.set_image_range((1,900))
 
@@ -173,6 +173,6 @@ def test_index_synthetic(space_group, unit_cell_volume, dials_regression, run_in
     sel_fraction=0.25)
 
   rmsds = (0.5, 0.5, 0.5) # px/image
-  add_random_noise_xyz(datablock, strong_spots, rmsds)
+  add_random_noise_xyz(experiments, strong_spots, rmsds)
 
-  run_indexing(datablock, strong_spots, crystal_model, rmsds)
+  run_indexing(experiments, strong_spots, crystal_model, rmsds)

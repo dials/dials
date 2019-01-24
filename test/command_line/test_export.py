@@ -4,6 +4,7 @@ import json
 import os
 import procrunner
 import pytest
+from dxtbx.serialize.load import _decode_dict
 
 # Tests used to check for h5py
 # May need to add this again if lack of this check causes issues.
@@ -131,16 +132,15 @@ def test_json(dials_regression, tmpdir):
   assert result['stderr'] == ''
   assert os.path.exists('rlp.json')
 
-  from dxtbx.datablock import DataBlockFactory
+  from dxtbx.model.experiment_list import ExperimentListFactory
   with open('rlp.json', 'rb') as f:
-    d = json.load(f)
-  assert d.keys() == ['imageset_id', 'datablocks', 'rlp', 'experiment_id'], d.keys()
+    d = json.load(f, object_hook=_decode_dict)
+  assert d.keys() == ['imageset_id', 'experiments', 'rlp', 'experiment_id'], d.keys()
   assert d['rlp'][:3] == [0.123454, 0.57687, 0.186465], d['rlp'][:3]
   assert d['imageset_id'][0] == 0
   assert d['experiment_id'][0] == 0
-  assert len(d['datablocks']) == 1
-  db = DataBlockFactory.from_dict(d['datablocks'])
-  imgset = db[0].extract_imagesets()
+  experiments = ExperimentListFactory.from_dict(d['experiments'])
+  imgset = experiments.imagesets()
   assert len(imgset) == 1
 
 def test_json_shortened(dials_regression, tmpdir):
@@ -162,7 +162,9 @@ def test_json_shortened(dials_regression, tmpdir):
 
   with open('integrated.json', 'rb') as f:
     d = json.load(f)
-  assert d.keys() == ['imageset_id', 'rlp', 'experiment_id'], d.keys()
+  assert "imageset_id" in d.keys()
+  assert "rlp" in d.keys()
+  assert "experiment_id" in d.keys()
   assert d['rlp'][:3] == [-0.5975, -0.6141, 0.4702], d['rlp'][:3]
   assert d['imageset_id'][0] == 0
   assert d['experiment_id'][0] == 0

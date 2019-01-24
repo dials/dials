@@ -252,11 +252,11 @@ class XDSFileImporter(object):
     dump.as_file(params.output.filename)
 
     # Optionally save as a data block
-    if params.output.xds_datablock:
+    if params.output.xds_experiments:
       print("-" * 80)
-      print("Writing data block to %s" % params.output.xds_datablock)
-      dump = DataBlockDumper(experiments.to_datablocks())
-      dump.as_file(params.output.xds_datablock)
+      print("Writing data block to %s" % params.output.xds_experiments)
+      dump = ExperimentListDumper(experiments)
+      dump.as_file(params.output.xds_experiments)
 
   @staticmethod
   def find_best_xds_file(xds_dir):
@@ -401,7 +401,7 @@ class Script(object):
           .type = str
           .help = "The output file"
 
-        xds_datablock = None
+        xds_experiments = None
           .type = str
           .help = "Output filename of data block with xds"
       }

@@ -65,7 +65,7 @@ def test_spots_xds(run_in_tmpdir):
 def test_export_xds(dials_regression, run_in_tmpdir):
   result = procrunner.run_process([
       "dials.find_spots",
-      os.path.join(dials_regression, "centroid_test_data", "datablock.json"),
+      os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
   ])
   assert result['exitcode'] == 0
   assert result['stderr'] == ''

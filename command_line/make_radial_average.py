@@ -23,7 +23,6 @@ This program averages images and makes a radial average over resolution shells
 
 Examples::
 
-dev.dials.make_radial_average datablock.json
 dev.dials.make_radial_average experiments.json
 
 '''
@@ -74,34 +73,24 @@ class Script(object):
       usage=usage,
       phil=phil_scope,
       epilog=help_message,
-      read_experiments=True,
-      read_datablocks=True)
+      read_experiments=True)
 
   def run(self):
     ''' Perform the integration. '''
-    from dials.util.options import flatten_datablocks, flatten_experiments
+    from dials.util.options import flatten_experiments
     from dials.util import log
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=False)
     experiments = flatten_experiments(params.input.experiments)
-    datablocks = flatten_datablocks(params.input.datablock)
-    if len(experiments) == 0 and len(datablocks) == 0:
+    if len(experiments) == 0:
       self.parser.print_help()
       return
 
-    if len(datablocks) > 0:
-      assert len(datablocks) == 1
-      imagesets = datablocks[0].extract_imagesets()
-      assert len(imagesets) == 1
-      imageset = imagesets[0]
-      beam = imageset.get_beam()
-      detector = imageset.get_detector()
-    else:
-      assert len(experiments) == 1
-      imageset = experiments[0].imageset
-      beam = experiments[0].beam
-      detector = experiments[0].detector
+    assert len(experiments) == 1
+    imageset = experiments[0].imageset
+    beam = experiments[0].beam
+    detector = experiments[0].detector
 
     # Configure logging
     log.config()

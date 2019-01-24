@@ -206,9 +206,9 @@ class CombineWithReference(object):
     return
 
   def __call__(self, experiment):
-    from dxtbx.datablock import BeamComparison
-    from dxtbx.datablock import DetectorComparison
-    from dxtbx.datablock import GoniometerComparison
+    from dxtbx.model.experiment_list import BeamComparison
+    from dxtbx.model.experiment_list import DetectorComparison
+    from dxtbx.model.experiment_list import GoniometerComparison
 
     if self.tolerance:
       compare_beam = BeamComparison(

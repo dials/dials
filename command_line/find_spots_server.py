@@ -92,7 +92,7 @@ indexing_min_spots = 10
   indexing_min_spots = params.extract().indexing_min_spots
 
   from dials.command_line.find_spots import phil_scope as find_spots_phil_scope
-  from dxtbx.datablock import DataBlockFactory
+  from dxtbx.model.experiment_list import ExperimentListFactory
   from dials.array_family import flex
   interp = find_spots_phil_scope.command_line_argument_interpreter()
   phil_scope, unhandled = interp.process_and_fetch(
@@ -102,13 +102,13 @@ indexing_min_spots = 10
   params = phil_scope.extract()
   # no need to write the hot mask in the server/client
   params.spotfinder.write_hot_mask = False
-  datablock = DataBlockFactory.from_filenames([filename])[0]
+  experiments = ExperimentListFactory.from_filenames([filename])
   t0 = time.time()
-  reflections = flex.reflection_table.from_observations(datablock, params)
+  reflections = flex.reflection_table.from_observations(experiments, params)
   t1 = time.time()
   logger.info('Spotfinding took %.2f seconds' %(t1-t0))
   from dials.algorithms.spot_finding import per_image_analysis
-  imageset = datablock.extract_imagesets()[0]
+  imageset = experiments.imagesets()[0]
   scan = imageset.get_scan()
   if scan is not None:
     i = scan.get_array_range()[0]
@@ -142,7 +142,7 @@ indexing_min_spots = 10
 
     try:
       idxr = indexer.indexer_base.from_parameters(
-        reflections, imagesets, params=params)
+        reflections, experiments, params=params)
       indexing_results = []
       idxr.index()
       indexed_sel = idxr.refined_reflections.get_flags(

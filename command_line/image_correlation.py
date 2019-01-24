@@ -9,7 +9,7 @@ help_message = '''
 
 Examples::
 
-  dev.dials.image_correlation datablock.json image=1,2,3
+  dev.dials.image_correlation experiments.json image=1,2,3
 
 '''
 
@@ -28,8 +28,6 @@ def extract_signal_mask(data):
   from dials.algorithms.spot_finding.factory import phil_scope
 
   data = data.as_double()
-
-  from dxtbx import datablock
 
   spot_params = phil_scope.fetch(source=iotbx.phil.parse(
     "spotfinder.threshold.dispersion.gain=1")).extract()
@@ -55,31 +53,30 @@ def image_correlation(a, b):
 def run(args):
 
   from dials.util.options import OptionParser
-  from dials.util.options import flatten_datablocks
+  from dials.util.options import flatten_experiments
   import libtbx.load_env
 
-  usage = "%s [options] datablock.json" % (
+  usage = "%s [options] experiments.json" % (
     libtbx.env.dispatcher_name)
 
   parser = OptionParser(
     usage=usage,
     phil=phil_scope,
-    read_datablocks=True,
-    read_datablocks_from_images=True,
+    read_experiments=True,
+    read_experiments_from_images=True,
     epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
 
-  datablocks = flatten_datablocks(params.input.datablock)
+  experiments = flatten_experiments(params.input.experiments)
 
-  if len(datablocks) == 0:
+  if len(experiments) == 0:
     parser.print_help()
     exit()
 
-  assert(len(datablocks) == 1)
+  assert(len(experiments) == 1)
 
-  datablock = datablocks[0]
-  imagesets = datablock.extract_imagesets()
+  imagesets = experiments.imagesets()
 
   assert(len(imagesets) == 1)
 

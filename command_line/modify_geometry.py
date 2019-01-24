@@ -9,8 +9,6 @@ help_message = '''
 phil_scope= libtbx.phil.parse("""
 include scope dials.util.options.geometry_phil_scope
 output {
-  datablock = modified_datablock.json
-    .type = path
   experiments = modified_experiments.json
     .type = path
 }
@@ -20,26 +18,24 @@ output {
 def run(args):
 
   from dials.util.options import OptionParser
-  from dials.util.options import flatten_datablocks
+  from dials.util.options import flatten_experiments
   from dials.util.options import flatten_experiments
   import libtbx.load_env
 
-  usage = "%s [options] datablock.json | experiments.json" %(
+  usage = "%s [options] experiments.json" %(
     libtbx.env.dispatcher_name)
 
   parser = OptionParser(
     usage=usage,
     phil=phil_scope,
-    read_datablocks=True,
     read_experiments=True,
     check_format=False,
     epilog=help_message)
 
   params, options = parser.parse_args(show_diff_phil=True)
   experiments = flatten_experiments(params.input.experiments)
-  datablocks = flatten_datablocks(params.input.datablock)
 
-  if len(experiments) == 0 and len(datablocks) == 0:
+  if len(experiments) == 0:
     parser.print_help()
     exit(0)
 
@@ -48,11 +44,6 @@ def run(args):
 
   if len(experiments):
     imagesets = experiments.imagesets()
-
-  elif len(datablocks):
-
-    assert len(datablocks) == 1
-    imagesets = datablocks[0].extract_imagesets()
 
   for imageset in imagesets:
     imageset_new = update_geometry(imageset)
@@ -65,9 +56,6 @@ def run(args):
   if len(experiments):
     print("Saving modified experiments to %s" %params.output.experiments)
     dump.experiment_list(experiments, params.output.experiments)
-  elif len(datablocks):
-    print("Saving modified datablock to %s" %params.output.datablock)
-    dump.datablock(datablocks, params.output.datablock)
 
 if __name__ == '__main__':
   import sys

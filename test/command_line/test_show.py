@@ -70,7 +70,8 @@ def test_dials_show_i04_weak_data(dials_regression):
   result = procrunner.run(["dials.show", path], environment_override={'DIALS_NOBANNER': '1'})
   assert not result['exitcode'] and not result['stderr']
   output = list(filter(None, (s.rstrip() for s in result['stdout'].split('\n'))))
-  assert "\n".join(output[6:]) == """
+  assert "\n".join(output[4:]) == """
+Experiment 0:
 Detector:
 Panel:
   name: Panel
@@ -117,11 +118,9 @@ def test_dials_show_centroid_test_data(dials_regression):
   assert g, path
   result = procrunner.run(["dials.show"] + g, environment_override={'DIALS_NOBANNER': '1'})
   assert not result['exitcode'] and not result['stderr']
-  assert (
-    "Format: <class 'dxtbx.format.FormatCBFMiniPilatus.FormatCBFMiniPilatus'>"
-    in result['stdout'])
   output = list(filter(None, (s.rstrip() for s in result['stdout'].split('\n'))))
-  assert "\n".join(output[6:]) == """
+  assert "\n".join(output[4:]) == """
+Experiment 0:
 Detector:
 Panel:
   name: Panel

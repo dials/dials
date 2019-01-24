@@ -20,12 +20,12 @@ def test_dynamic_shadowing(dials_regression):
   def exercise_one_image(
     path, count_only_shadow, count_mask_shadow, count_mask_no_shadow):
 
-    from dxtbx.datablock import DataBlockFactory
+    from dxtbx.model.experiment_list import ExperimentListFactory
     assert os.path.exists(path), path
     for shadowing in (libtbx.Auto, True, False):
       format_kwargs = {'dynamic_shadowing': shadowing}
-      datablock = DataBlockFactory.from_filenames([path], format_kwargs=format_kwargs)[0]
-      imageset = datablock.extract_imagesets()[0]
+      experiments = ExperimentListFactory.from_filenames([path], format_kwargs=format_kwargs)
+      imageset = experiments.imagesets()[0]
       detector = imageset.get_detector()
       scan = imageset.get_scan()
       filename = imageset.get_path(0)
@@ -66,7 +66,7 @@ def test_shadow_plot(dials_regression, run_in_tmpdir):
 
   result = fully_buffered('dials.import %s' %path).raise_if_errors()
   result = fully_buffered(
-    'dials.shadow_plot datablock.json json=shadow.json').raise_if_errors()
+    'dials.shadow_plot imported_experiments.json json=shadow.json').raise_if_errors()
   assert os.path.exists('scan_shadow_plot.png')
   assert os.path.exists('shadow.json')
   with open('shadow.json', 'rb') as f:
@@ -77,7 +77,7 @@ def test_shadow_plot(dials_regression, run_in_tmpdir):
     assert approx_equal(d['scan_points'], [94.9])
 
   result = fully_buffered(
-    'dials.shadow_plot datablock.json mode=2d plot=shadow_2d.png').raise_if_errors()
+    'dials.shadow_plot imported_experiments.json mode=2d plot=shadow_2d.png').raise_if_errors()
   assert os.path.exists('shadow_2d.png')
 
 def test_filter_shadowed_reflections(dials_regression):

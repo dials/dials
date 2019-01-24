@@ -37,7 +37,7 @@ if __name__ == "__main__":
     usage = '''Usage: dev.dials.assign_experiment_identifiers reflections.pickle
 experiments.json'''
     optionparser = OptionParser(usage=usage, read_experiments=True,
-      read_reflections=True, read_datablocks=False, phil=phil_scope,
+      read_reflections=True, phil=phil_scope,
       check_format=False, epilog=help_message)
     params, _ = optionparser.parse_args(show_diff_phil=False)
     if not params.input.experiments or not params.input.reflections:

@@ -55,15 +55,15 @@ def generate_reflections(experiments):
   return obs_refs, ref_predictor
 
 def test1(dials_regression):
-  # use a datablock that contains a CS-PAD detector description
+  # use a experiments that contains a CS-PAD detector description
   data_dir = os.path.join(dials_regression, "refinement_test_data", "hierarchy_test")
-  datablock_path = os.path.join(data_dir, "datablock.json")
-  assert os.path.exists(datablock_path)
+  experiments_path = os.path.join(data_dir, "datablock.json")
+  assert os.path.exists(experiments_path)
 
   # load models
-  from dxtbx.datablock import DataBlockFactory
-  datablock = DataBlockFactory.from_serialized_format(datablock_path, check_format=False)
-  im_set = datablock[0].extract_imagesets()[0]
+  from dxtbx.model.experiment_list import ExperimentListFactory
+  experiments = ExperimentListFactory.from_serialized_format(experiments_path, check_format=False)
+  im_set = experiments.imagesets()[0]
   detector = copy.deepcopy(im_set.get_detector())
   beam = im_set.get_beam()
 

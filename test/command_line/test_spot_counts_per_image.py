@@ -8,16 +8,16 @@ def test_spot_counts_per_image(dials_regression, run_in_tmpdir):
   path = os.path.join(dials_regression, "centroid_test_data")
 
   # import the data
-  cmd = "dials.import %s output.datablock=datablock.json" % ' '.join(glob(os.path.join(path,"*.cbf")))
+  cmd = "dials.import %s output.experiments=experiments.json" % ' '.join(glob(os.path.join(path,"*.cbf")))
   easy_run.fully_buffered(cmd).raise_if_errors()
-  assert os.path.exists("datablock.json")
+  assert os.path.exists("experiments.json")
 
   # find the spots
-  cmd = "dials.find_spots datablock.json min_spot_size=3"
+  cmd = "dials.find_spots experiments.json min_spot_size=3"
   easy_run.fully_buffered(cmd).raise_if_errors()
   assert os.path.exists("strong.pickle")
 
-  cmd = "dials.spot_counts_per_image datablock.json strong.pickle plot=spot_counts.png"
+  cmd = "dials.spot_counts_per_image experiments.json strong.pickle plot=spot_counts.png"
   result = easy_run.fully_buffered(cmd).raise_if_errors()
   assert os.path.exists("spot_counts.png"), result.show_stdout()
 

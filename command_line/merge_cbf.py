@@ -14,7 +14,7 @@ import iotbx.phil
 help_message = '''
 
 This program can be used to merge a given number of consecutive cbf files into
-a smaller number of images For example, running dials.merge_cbf on a datablock
+a smaller number of images For example, running dials.merge_cbf on a experiments
 with 100 images, using the default value of merge_n_images=2, will output 50
 summed images, with every consecutive pair of images being summed into a single
 output image. Currently only cbf format images are supported as input.
@@ -185,15 +185,15 @@ def run():
   import libtbx.load_env
 
   from dials.util.options import OptionParser
-  from dials.util.options import flatten_datablocks
+  from dials.util.options import flatten_experiments
 
   usage = "%s [options] image_*.cbf" %libtbx.env.dispatcher_name
 
   parser = OptionParser(
     usage=usage,
     phil=phil_scope,
-    read_datablocks=True,
-    read_datablocks_from_images=True,
+    read_experiments=True,
+    read_experiments_from_images=True,
     epilog=help_message
   )
 
@@ -202,16 +202,16 @@ def run():
 
   n_images = params.merge_n_images
   out_prefix = params.output.image_prefix
-  datablocks = flatten_datablocks(params.input.datablock)
+  experiments = flatten_experiments(params.input.experiments)
 
-  if len(datablocks) == 0:
+  if len(experiments) == 0:
     parser.print_help()
     return
 
-  if len(datablocks) > 1:
-    raise Sorry("Only one DataBlock can be processed at a time")
+  if len(experiments) > 1:
+    raise Sorry("Only one experiment can be processed at a time")
   else:
-    imagesets = datablocks[0].extract_imagesets()
+    imagesets = experiments.imagesets()
     assert len(imagesets) == 1
     imageset = imagesets[0]
 

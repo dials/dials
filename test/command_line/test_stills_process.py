@@ -6,7 +6,7 @@ import os
 import pytest
 
 import dxtbx
-from dxtbx.datablock import DataBlockFactory
+from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.format.FormatCBFCspad import FormatCBFCspadInMemory
 from dxtbx.imageset import ImageSet, ImageSetData, MemMasker, MemReader
 from libtbx import easy_run
@@ -39,7 +39,7 @@ def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):
       """)
 
   params = phil_scope.fetch(parse(file_name="process_lcls.phil")).extract()
-  params.output.datablock_filename = None
+  params.output.experiments_filename = None
   processor = Processor(params)
   mem_img = dxtbx.load(image_path)
   raw_data = mem_img.get_raw_data() # cache the raw data to prevent swig errors
@@ -52,8 +52,8 @@ def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):
       MemMasker([mem_img])))
   imgset.set_beam(mem_img.get_beam())
   imgset.set_detector(mem_img.get_detector())
-  datablock = DataBlockFactory.from_imageset(imgset)[0]
-  processor.process_datablock("20130301060858801", datablock) # index/integrate the image
+  experiments = ExperimentListFactory.from_imageset_and_crystal(imgset, None)
+  processor.process_experiments("20130301060858801", experiments) # index/integrate the image
 
   result = "idx-20130301060858801_integrated.pickle"
   n_refls = range(140,152) # large ranges to handle platform-specific differences
@@ -124,4 +124,3 @@ def test_sacla_h5(dials_regression, run_in_tmpdir, use_mpi, in_memory=False):
     assert len(table) in n_refls, (result_filename, len(table))
     assert 'id' in table
     assert (table['id'] == 0).count(False) == 0
-

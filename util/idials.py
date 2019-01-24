@@ -310,7 +310,7 @@ class FindSpotsParameterManager(ParameterManager):
       description=None
         .type = str
       input {
-        datablock = None
+        experiments = None
           .type = str
       }
       include scope dials.command_line.find_spots.phil_scope
@@ -334,7 +334,7 @@ class DiscoverBetterModelParameterManager(ParameterManager):
       description=None
         .type = str
       input {
-        datablock = None
+        experiments = None
           .type = str
         reflections = None
           .type = str
@@ -361,8 +361,6 @@ class IndexParameterManager(ParameterManager):
         .type = str
       input {
         experiments = None
-          .type = str
-        datablock = None
           .type = str
         reflections = None
           .type = str
@@ -768,7 +766,6 @@ class Command(object):
     assert_exists_if_present("parameters")
     assert_exists_if_present("report")
     assert_exists_if_present("summary")
-    assert_exists_if_present("datablock")
     assert_exists_if_present("experiments")
     assert_exists_if_present("reflections")
 
@@ -876,13 +873,13 @@ class Import(Command):
     from os.path import join
 
     # set the results
-    self.state.datablock = join(self.state.directory, "datablock.json")
+    self.state.experiments = join(self.state.directory, "experiments.json")
 
     # Set filenames and input
     self.filenames = {
-      'output.datablock' : self.state.datablock,
-      'output.log'       : join(self.state.directory, "info.log"),
-      'output.debug_log' : join(self.state.directory, "debug.log")
+      'output.experiments' : self.state.experiments,
+      'output.log'         : join(self.state.directory, "info.log"),
+      'output.debug_log'   : join(self.state.directory, "debug.log")
     }
     for name, value in self.filenames.iteritems():
       self.phil_scope.set('%s=%s' % (name, value))
@@ -923,14 +920,14 @@ class FindSpots(Command):
     from os.path import join
 
     # set the results
-    self.state.datablock = join(self.state.directory, "datablock.json")
+    self.state.experiments = join(self.state.directory, "experiments.json")
     self.state.reflections = join(self.state.directory, "reflections.pickle")
     self.state.report = join(self.state.directory, 'report.html')
 
     # Set filenames and input
     self.filenames = {
-      'input.datablock'    : self.state.parent.datablock,
-      'output.datablock'   : self.state.datablock,
+      'input.experiments'  : self.state.parent.experiments,
+      'output.experiments' : self.state.experiments,
       'output.reflections' : self.state.reflections,
       'output.log'         : join(self.state.directory, "info.log"),
       'output.debug_log'   : join(self.state.directory, "debug.log"),
@@ -977,15 +974,15 @@ class DiscoverBetterExperimentalModel(Command):
     from os.path import join
 
     # set the results
-    self.state.datablock = join(self.state.directory, "datablock.json")
+    self.state.experiments = join(self.state.directory, "experiments.json")
     self.state.reflections = self.state.parent.reflections
     self.state.report = join(self.state.directory, 'report.html')
 
     # Set filenames and input
     self.filenames = {
-      'input.datablock'    : self.state.parent.datablock,
+      'input.experiments'  : self.state.parent.experiments,
       'input.reflections'  : self.state.parent.reflections,
-      'output.datablock'   : self.state.datablock,
+      'output.experiments' : self.state.experiments,
       'output.log'         : join(self.state.directory, "info.log"),
       'output.debug_log'   : join(self.state.directory, "debug.log"),
     }
@@ -1046,7 +1043,7 @@ class Index(Command):
       }
     else:
       self.filenames = {
-        'input.datablock' : self.state.parent.datablock,
+        'input.experiments' : self.state.parent.experiments,
       }
     self.filenames.update({
       'input.reflections'  : self.state.parent.reflections,

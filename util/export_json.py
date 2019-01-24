@@ -50,11 +50,11 @@ class ReciprocalLatticeJson(render_3d):
     return d
 
   def as_json(self, filename=None, compact=False, n_digits=None,
-              datablocks=None):
+              experiments=None):
     import json
     d = self.as_dict(n_digits=n_digits)
-    if datablocks:
-      d['datablocks'] = [db.to_dict() for db in datablocks]
+    if experiments:
+      d['experiments'] = experiments.to_dict()
     if compact:
       text = json.dumps(d, separators=(',',':'), ensure_ascii=True)
     else:

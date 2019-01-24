@@ -7,7 +7,7 @@ import pytest
 
 @pytest.fixture
 def input_filename(dials_regression, run_in_tmpdir):
-  yield os.path.join(dials_regression, "centroid_test_data", "datablock.json")
+  yield os.path.join(dials_regression, "centroid_test_data", "experiments.json")
   print("temporary directory=", run_in_tmpdir.strpath)
 
 def test_generate_mask(input_filename):
@@ -24,16 +24,16 @@ def test_generate_mask_with_untrusted_rectangle(input_filename):
       'dials.generate_mask',
       input_filename,
       'output.mask=mask2.pickle',
-      'output.datablock=masked_datablock.json',
+      'output.experiments=masked_experiments.json',
       'untrusted.rectangle=100,200,100,200'
   ])
   assert result['exitcode'] == 0
   assert result['stderr'] == ''
   assert os.path.exists("mask2.pickle")
-  assert os.path.exists("masked_datablock.json")
+  assert os.path.exists("masked_experiments.json")
   from dxtbx.serialize import load
-  datablocks = load.datablock("masked_datablock.json")
-  imageset = datablocks[0].extract_imagesets()[0]
+  experiments = load.experiment_list("masked_experiments.json")
+  imageset = experiments.imagesets()[0]
   assert imageset.external_lookup.mask.filename == os.path.join(
       os.path.abspath(os.getcwd()), 'mask2.pickle')
 
