@@ -28,7 +28,7 @@ class ResolutionBinner(object):
 
   '''
 
-  def __init__(self, unit_cell, dmin, dmax, nbins):
+  def __init__(self, unit_cell, dmin, dmax, nbins, output=True):
     '''
     Initialise the binner
 
@@ -38,7 +38,8 @@ class ResolutionBinner(object):
     :param nbins: The number of bins
 
     '''
-    logger.info("Resolution bins")
+    if output:
+      logger.info("Resolution bins")
     assert dmin < dmax
     dmin_inv_sq = 1.0 / dmin**2
     dmax_inv_sq = 1.0 / dmax**2
@@ -52,7 +53,8 @@ class ResolutionBinner(object):
     self._bins = []
     for i in range(self._nbins):
       b0, b1 = self._xmin + i * self._bin_size, self._xmin + (i+1)*self._bin_size
-      logger.info("%d: %.3f, %.3f" % (i, sqrt(1/b0), sqrt(1/b1)))
+      if output:
+        logger.info("%d: %.3f, %.3f" % (i, sqrt(1/b0), sqrt(1/b1)))
       self._bins.append((b0, b1))
 
   def nbins(self):

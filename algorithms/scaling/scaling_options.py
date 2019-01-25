@@ -73,6 +73,43 @@ phil_scope = iotbx.phil.parse('''
       .expert_level = 1
   }
   reflection_selection {
+    method = *auto quasi_random intensity_ranges use_all
+      .type = choice
+      .help = "Method to use when choosing a reflection subset for scaling model"
+              "minimisation. auto (default) will choose use_all for small datasets"
+              "and quasi_random for large datasets, and will try to optimise the"
+              "quasi_random algorithm parameters. Manually selecting quasi-random"
+              "will use the reflection_selection.quasi_random parameters to"
+              "attempt to choose reflection groups that have a good connectedness"
+              "across reciprocal space, for all resolutions. intensity_ranges"
+              "uses the E2_range, Isigma_range and d_range options to choose a"
+              "subset of reflections. use_all uses all suitable reflections for"
+              "model minimisation, which may be slow for large datasets."
+    quasi_random {
+      min_per_area = 100
+        .type = ints
+        .help = "Numbers of reflections for each of the 12 volumes in"
+                "reciprocal space at a given resolution."
+        .expert_level = 2
+      n_resolution_bins = 20
+        .type = ints
+        .help = "Number of resolution bins for quasi random sampling."
+        .expert_level = 2
+      multi_dataset {
+        min_per_dataset = 500
+          .type = int
+          .help = "Minimum number of cross-dataset connected reflections in"
+                  "each dataset."
+        Isigma_cutoff = 1.0
+          .type = float
+          .help = "Minimum average I/sigma of reflection groups to use when"
+                  "selecting cross-dataset connected reflections."
+        min_multiplicity = 2
+          .type = int
+          .help = "Minimum multiplicity of cross-dataset connected reflections"
+                  "for reflections used during minimisation."
+      }
+    }
     E2_range = 0.8, 5.0
       .type = floats(size=2)
       .help = "Minimum and maximum normalised E^2 value to used to select a

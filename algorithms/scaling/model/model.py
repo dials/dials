@@ -83,6 +83,11 @@ class ScalingModelBase(object):
     """:obj:`dict`: a dictionary of the model components."""
     return self._components
 
+  @property
+  def n_params(self):
+    """:obj:`dict`: a dictionary of the model components."""
+    return sum([c.parameters.size() for c in self._components.itervalues()])
+
   @abc.abstractproperty
   def consecutive_refinement_order(self):
     """:obj:`list`: a nested list of component names.

@@ -70,6 +70,7 @@ from dials.util.exclude_images import exclude_image_ranges_for_scaling, \
   get_valid_image_ranges
 from dials.algorithms.scaling.algorithm import targeted_scaling_algorithm, \
   scaling_algorithm
+from dials.algorithms.scaling.reflection_selection import determine_reflection_selection_parameters
 
 
 logger = logging.getLogger('dials')
@@ -93,9 +94,6 @@ phil_scope = phil.parse('''
     debug.log = dials.scale.debug.log
       .type = str
       .help = "The debug log filename"
-    plot_scaling_models = False
-      .type = bool
-      .help = "Option to switch on plotting of the scaling models determined."
     experiments = "scaled_experiments.json"
       .type = str
       .help = "Option to set filepath for output json."

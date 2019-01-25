@@ -274,18 +274,18 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
   # Now inspect output, check it hasn't changed drastically, or if so verify
   # that the new behaviour is more correct and update test accordingly.
   result = get_merging_stats("unmerged.mtz")
-  assert result.overall.r_pim < 0.024 #at 07/08/18, value was 0.0234517
-  assert result.overall.cc_one_half > 0.9955 # at 07/08/18, value was 0.99597
-  assert result.overall.n_obs > 2300 # at 07/08/18, was 2309
+  assert result.overall.r_pim < 0.0245 #at 30/01/19, value was 0.02410
+  assert result.overall.cc_one_half > 0.9955 # at 30/01/19, value was 0.9960
+  assert result.overall.n_obs > 2300 # at 30/01/19, was 2320
 
   # Try running again with the merged.mtz as a target, to trigger the
   # target_mtz option
   extra_args.append("target_mtz=merged.mtz")
   _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
   result = get_merging_stats("unmerged.mtz")
-  assert result.overall.r_pim < 0.024 #at 14/08/18, value was 0.023
-  assert result.overall.cc_one_half > 0.9955 # at 14/08/18, value was 0.999
-  assert result.overall.n_obs > 2300 # at 07/01/19, was 2321
+  assert result.overall.r_pim < 0.024 #at 14/08/18, value was 0.023, at 30/01/19 was 0.0239
+  assert result.overall.cc_one_half > 0.9955 # at 14/08/18, value was 0.999, at 30/01/19 was 0.9962
+  assert result.overall.n_obs > 2300 # at 07/01/19, was 2321, at 30/01/19 was 2321
 
   # run again with the concurrent scaling option turned off and the 'standard'
   # outlier rejection
@@ -300,10 +300,9 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
   # Now inspect output, check it hasn't changed drastically, or if so verify
   # that the new behaviour is more correct and update test accordingly.
   result = get_merging_stats("unmerged.mtz")
-  assert result.overall.r_pim < 0.024 #at 07/01/19, value was 0.02372
-  assert result.overall.cc_one_half > 0.995 # at 07/01/19, value was 0.99568
-  assert result.overall.n_obs > 2320 # at 07/01/19, was 2336
-
+  assert result.overall.r_pim < 0.024 #at 07/01/19, value was 0.02372, at 30/01/19 was 0.021498
+  assert result.overall.cc_one_half > 0.995 # at 07/01/19, value was 0.99568, at 30/01/19 was 0.9961
+  assert result.overall.n_obs > 2320 # at 07/01/19, was 2336, at 30/01/19 was 2334
   # test the 'stats_only' option
   extra_args = ["stats_only=True"]
   _ = run_one_scaling(['scaled.pickle'], ['scaled_experiments.json'], extra_args)

@@ -5,7 +5,7 @@ This module defines a blocked datastructures for summing over groups of
 symmetry equivalent reflections, as required for scaling.
 """
 
-from libtbx.containers import OrderedSet
+from orderedset import OrderedSet
 from dials.array_family import flex
 from cctbx import miller, crystal
 from scitbx import sparse
@@ -196,6 +196,7 @@ class IhTable(object):
       joint_asu_indices.extend(table['asu_miller_index'])
     sorted_joint_asu_indices, _ = get_sorted_asu_indices(
       joint_asu_indices, self.space_group)
+
     asu_index_set = OrderedSet(sorted_joint_asu_indices)
     n_unique_groups = len(asu_index_set)
     # also record how many unique groups go into each block
@@ -274,10 +275,13 @@ class IhTable(object):
       # catch case where last boundaries aren't reached
       boundaries_for_this_datset.append(len(sorted_asu_indices))
     # so now have group ids as well for individual dataset
-    for i, val in enumerate(boundaries_for_this_datset[:-1]):
-      start = val
-      end = boundaries_for_this_datset[i+1]
-      self.Ih_table_blocks[i].add_data(dataset_id, group_ids[start:end], r[start:end])
+    if self.n_work_blocks == 1:
+      self.Ih_table_blocks[0].add_data(dataset_id, group_ids, r)
+    else:
+      for i, val in enumerate(boundaries_for_this_datset[:-1]):
+        start = val
+        end = boundaries_for_this_datset[i+1]
+        self.Ih_table_blocks[i].add_data(dataset_id, group_ids[start:end], r[start:end])
 
   def extract_free_set(self, free_set_percentage, offset=0):
     """Extract a free set from all blocks."""
@@ -413,6 +417,13 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
   def select_on_groups(self, sel):
     """Select a subset of the unique groups, returning a new IhTableBlock."""
     reduced_h_idx = self.h_index_matrix.select_columns(sel.iselection())
+    unity = flex.double(reduced_h_idx.n_cols, 1.0)
+    nz_row_sel = (unity * reduced_h_idx.transpose()) > 0
+    return self.select(nz_row_sel)
+
+  def select_on_groups_isel(self, isel):
+    """Select a subset of the unique groups, returning a new IhTableBlock."""
+    reduced_h_idx = self.h_index_matrix.select_columns(isel)
     unity = flex.double(reduced_h_idx.n_cols, 1.0)
     nz_row_sel = (unity * reduced_h_idx.transpose()) > 0
     return self.select(nz_row_sel)
