@@ -22,7 +22,7 @@ if (not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include")):
             env_etc.dxtbx_include,
             env_etc.dials_include,
         ]
-    msgpack = os.path.join(env_etc.dials_include, 'msgpack', 'msgpack-2.1.5', 'include')
+    msgpack = os.path.join(env_etc.dials_include, 'msgpack-3.1.1', 'include')
     if os.path.exists(str(msgpack)):
       include_paths.append(msgpack)
     else:
