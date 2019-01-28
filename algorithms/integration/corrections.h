@@ -85,7 +85,7 @@ namespace dials { namespace algorithms {
     double P4 = pf * (1.0 + P3*P3);
     double P = P2 + P4;
     DIALS_ASSERT(P != 0);
-    return L / P;
+    return 1.0 / P;
   }
 
   /**
