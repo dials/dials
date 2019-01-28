@@ -200,7 +200,7 @@ class SpotFrame(XrayFrame):
       kind=wx.ITEM_NORMAL)
     self.Bind(wx.EVT_MENU, self.OnNext, btn)
 
-    txt = wx.StaticText(self.toolbar, -1, "Jump to image:")
+    txt = wx.StaticText(self.toolbar, -1, "Jump:")
     self.toolbar.AddControl(txt)
 
     self.jump_to_image = PhilIntCtrl(self.toolbar, -1, name="image", size=(65,-1))
@@ -209,7 +209,7 @@ class SpotFrame(XrayFrame):
     self.toolbar.AddControl(self.jump_to_image)
     self.Bind(EVT_PHIL_CONTROL, self.OnJumpToImage, self.jump_to_image)
 
-    txt = wx.StaticText(self.toolbar, -1, "Stack images:")
+    txt = wx.StaticText(self.toolbar, -1, "Stack:")
     self.toolbar.AddControl(txt)
 
     self.stack = PhilIntCtrl(self.toolbar, -1, name="stack", size=(65,-1))
