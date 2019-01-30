@@ -35,6 +35,7 @@ libtbx.pkg_utils.require('tqdm', '==4.23.4')
 def _install_dials_autocompletion():
   '''generate bash.sh and SConscript file in /build/dials/autocomplete'''
   import libtbx.load_env
+  import os # required due to cctbx weirdness
 
   # Find the dials source directory
   dist_path = libtbx.env.dist_path('dials')
