@@ -22,6 +22,7 @@ except Exception:
   pass
 
 import libtbx.pkg_utils
+libtbx.pkg_utils.require('blosc')
 libtbx.pkg_utils.require('mock', '>=2.0')
 libtbx.pkg_utils.require('msgpack')
 libtbx.pkg_utils.require('orderedset')

@@ -115,9 +115,10 @@ class ReflectionTableConverters(object):
     if s not in self.cache:
       if not exists(s):
         raise Sorry('File %s does not exist' % s)
+      import blosc
       try:
         self.cache[s] = FilenameDataWrapper(s, flex.reflection_table.from_msgpack_file(s))
-      except Exception:
+      except blosc.blosc_extension.error as e:
         self.cache[s] = FilenameDataWrapper(s, flex.reflection_table.from_pickle(s))
     return self.cache[s]
 
