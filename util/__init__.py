@@ -114,6 +114,24 @@ def halraiser(e):
   raise
 
 @contextlib.contextmanager
+def show_mail_on_error():
+  try:
+    yield
+  except Exception as e:
+    from libtbx.utils import Sorry
+    text = 'Please report this error to dials-support@lists.sourceforge.net:'
+    if len(e.args) == 0:
+      e.args = (text,)
+    elif issubclass(e.__class__, Sorry):
+      raise
+    elif len(e.args) == 1:
+      e.args = (text + ' ' + str(e.args[0]),)
+    else:
+      e.args = (text,) + e.args
+    raise
+
+
+@contextlib.contextmanager
 def locked(file_handle):
   """
   Cross-platform file locking. Open a file for writing or appending. Then a
