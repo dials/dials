@@ -23,6 +23,7 @@ except Exception:
 
 import libtbx.pkg_utils
 libtbx.pkg_utils.require('mock', '>=2.0')
+libtbx.pkg_utils.require('msgpack')
 libtbx.pkg_utils.require('orderedset')
 libtbx.pkg_utils.require('pytest', '>=3.1,<3.10')
 libtbx.pkg_utils.require('Jinja2')
