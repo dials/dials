@@ -23,6 +23,7 @@ except Exception:
 
 import libtbx.pkg_utils
 libtbx.pkg_utils.require('mock', '>=2.0')
+libtbx.pkg_utils.require('msgpack')
 libtbx.pkg_utils.require('orderedset')
 libtbx.pkg_utils.require('pytest', '>=3.1,<3.10')
 libtbx.pkg_utils.require('Jinja2')
@@ -34,7 +35,6 @@ libtbx.pkg_utils.require('tqdm', '==4.23.4')
 def _install_dials_autocompletion():
   '''generate bash.sh and SConscript file in /build/dials/autocomplete'''
   import libtbx.load_env
-  import os
 
   # Find the dials source directory
   dist_path = libtbx.env.dist_path('dials')
