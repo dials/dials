@@ -87,13 +87,9 @@ To use DIALS, open a new terminal window and type, e.g.::
 Windows installation
 --------------------
 
-DIALS support on Windows is currently experimental and we do not provide Windows binaries.
-We plan to support Windows in the near future and add binary installers in due course.
+DIALS support on Windows is currently experimental and we do not provide Windows release binaries.
 
 To use DIALS you need to unpack the .zip archive, open a command prompt,
 navigate to the dials-installer directory, and run::
 
   dials_env
-
-For instructions on building DIALS from source, see
-:ref:`build_dials_windows`
