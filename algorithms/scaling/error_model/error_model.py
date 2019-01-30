@@ -5,7 +5,7 @@ from __future__ import print_function
 import logging
 from dials.array_family import flex
 from scitbx import sparse
-from libtbx.utils import Sorry
+from dials.util import Sorry
 logger = logging.getLogger('dials')
 
 def get_error_model(error_model_type):

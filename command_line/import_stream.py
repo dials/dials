@@ -13,7 +13,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 
 from dxtbx.datablock import DataBlockDumper
-from libtbx.utils import Sorry
+from dials.util import Sorry
 
 logger = logging.getLogger('dials.command_line.import_stream')
 

@@ -14,7 +14,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from libtbx.phil import parse
-from libtbx.utils import Sorry
+from dials.util import Sorry
 
 # The phil parameters
 phil_scope = parse('''

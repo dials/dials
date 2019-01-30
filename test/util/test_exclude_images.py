@@ -3,7 +3,7 @@ tests for functions in dials.util.exclude_images.py
 """
 import copy
 import pytest
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from dxtbx.model import Experiment, Scan, ExperimentList
 from dials.array_family import flex
 from dials.util.exclude_images import _parse_exclude_images_commands, \

@@ -12,7 +12,7 @@ from copy import deepcopy
 import logging
 import pkg_resources
 from libtbx import phil
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from mock import Mock
 import iotbx.merging_statistics
 from iotbx import cif, mtz

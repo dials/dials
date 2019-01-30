@@ -19,7 +19,8 @@ from time import time
 from dials.array_family import flex
 from dials.util import log
 from dials.util.version import dials_version
-from libtbx.utils import Sorry, format_float_with_standard_uncertainty
+from libtbx.utils import format_float_with_standard_uncertainty
+from dials.util import Sorry
 
 logger = logging.getLogger('dials.command_line.two_theta_refine')
 

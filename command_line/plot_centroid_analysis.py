@@ -13,7 +13,7 @@
 
 from __future__ import absolute_import, division
 from __future__ import print_function
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from libtbx.phil import parse
 from dials.array_family import flex
 from dials.algorithms.refinement.analysis.centroid_analysis import CentroidAnalyser
@@ -168,7 +168,7 @@ def run(args):
 %s reflections.pickle [options]""" %libtbx.env.dispatcher_name
   from dials.util.options import OptionParser
   from dials.util.options import flatten_reflections
-  from libtbx.utils import Sorry
+  from dials.util import Sorry
   parser = OptionParser(
     usage=usage,
     phil=phil_scope,

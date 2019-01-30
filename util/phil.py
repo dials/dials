@@ -36,7 +36,7 @@ class DataBlockConverters(object):
   def from_string(self, s):
     from dxtbx.datablock import DataBlockFactory
     from os.path import exists
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     if s is None:
       return None
     if s not in self.cache:
@@ -74,7 +74,7 @@ class ExperimentListConverters(object):
   def from_string(self, s):
     from dxtbx.model.experiment_list import ExperimentListFactory
     from os.path import exists
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     if s is None:
       return None
     if s not in self.cache:
@@ -109,7 +109,7 @@ class ReflectionTableConverters(object):
   def from_string(self, s):
     from dials.array_family import flex
     from os.path import exists
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     if s is None:
       return None
     if s not in self.cache:

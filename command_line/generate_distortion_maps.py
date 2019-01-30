@@ -2,7 +2,7 @@ from __future__ import division, print_function
 from iotbx import phil
 from dials.array_family import flex
 import six.moves.cPickle as pickle
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from scitbx import matrix
 import libtbx.load_env
 

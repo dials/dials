@@ -6,7 +6,7 @@ import pytest
 
 from dials.array_family import flex
 from dxtbx.model import ExperimentList, Experiment, Crystal
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from cctbx import sgtbx
 
 def test_init():

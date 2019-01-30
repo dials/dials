@@ -33,7 +33,7 @@ from dials.algorithms.refinement.refinement_helpers import \
   get_panel_groups_at_depth, get_panel_ids_at_root
 from dials.util import log
 
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from libtbx import easy_mp
 import copy
 

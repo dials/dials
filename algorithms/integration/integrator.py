@@ -10,7 +10,7 @@ from dials.algorithms.integration.processor import ProcessorBuilder
 from dials.algorithms.integration.processor import job
 from dials.algorithms.integration.image_integrator import ImageIntegrator
 from dials.util import phil
-from libtbx.utils import Sorry
+from dials.util import Sorry
 
 import logging
 logger = logging.getLogger(__name__)
@@ -1562,7 +1562,7 @@ class IntegratorFactory(object):
     from dials.algorithms.integration.filtering import IceRingFilter
     import dials.extensions
     from dials.array_family import flex
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     import six.moves.cPickle as pickle
 
     # Check each experiment has an imageset

@@ -72,11 +72,11 @@ class Script(object):
     axes = expt.goniometer.get_axes()
 
     if len(axes) != 3:
-      from libtbx.utils import Sorry
+      from dials.util import Sorry
       raise Sorry("This will only work with 3-axis goniometers")
 
     if not expt.imageset.reader().get_format():
-      from libtbx.utils import Sorry
+      from dials.util import Sorry
       raise Sorry("This will only work with images available")
 
     if not expt.imageset.reader().get_format().get_goniometer_shadow_masker():
@@ -142,7 +142,7 @@ class Script(object):
       solutions.extend(sol_minus)
 
     if not solutions:
-      from libtbx.utils import Sorry
+      from dials.util import Sorry
       raise Sorry('Impossible two theta: %.3f,' % (two_theta * 180.0 / math.pi))
 
     logger.info('Maximum two theta: %.3f,' % (two_theta * 180.0 / math.pi))

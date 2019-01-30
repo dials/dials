@@ -47,7 +47,7 @@ import gc
 import copy as copy
 import libtbx
 from libtbx import phil
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from libtbx.str_utils import make_sub_header
 from cctbx import miller, crystal
 import iotbx.merging_statistics

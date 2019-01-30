@@ -13,7 +13,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
-from libtbx.utils import Sorry
+from dials.util import Sorry
 
 logger = logging.getLogger('dials.command_line.integrate')
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
@@ -157,7 +157,7 @@ class Script(object):
     from dials.util.options import flatten_reflections, flatten_experiments
     from dials.util import log
     from time import time
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
 
     # Check the number of arguments is correct
     start_time = time()
@@ -405,7 +405,7 @@ class Script(object):
     ''' Load the reference spots. '''
     from dials.array_family import flex
     from time import time
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     if reference is None:
       return None, None
     st = time()

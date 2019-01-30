@@ -110,7 +110,7 @@ class align_crystal(object):
   }
 
   def __init__(self, experiment, vectors, frame='reciprocal', mode='main'):
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     self.experiment = experiment
     self.vectors = vectors
     self.frame = frame

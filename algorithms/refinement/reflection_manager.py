@@ -543,7 +543,7 @@ class ReflectionManager(object):
 
       # sanity check to catch a mutilated scan that does not make sense
       if passed2.count(True) == 0:
-        from libtbx.utils import Sorry
+        from dials.util import Sorry
         raise Sorry("Experiment id {0} contains no reflections with valid "
                     "scan angles".format(iexp))
 

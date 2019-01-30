@@ -21,7 +21,7 @@ from dials.util import log
 debug_handle = log.debug_handle(logger)
 
 import libtbx
-from libtbx.utils import Sorry
+from dials.util import Sorry
 import iotbx.phil
 from scitbx import matrix
 

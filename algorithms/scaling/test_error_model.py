@@ -4,7 +4,7 @@ Tests for the error model.
 from math import sqrt
 import pytest
 from libtbx.test_utils import approx_equal
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from dials.algorithms.scaling.error_model.error_model import \
   get_error_model, BasicErrorModel
 from dials.algorithms.scaling.error_model.error_model_target import ErrorModelTarget

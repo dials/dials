@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import iotbx.phil
 from dials.util.options import OptionParser, flatten_datablocks
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from scitbx.array_family import flex
 
 help_message = '''
@@ -118,7 +118,7 @@ def estimate_gain(imageset, kernel_size=(10,10), output_gain_map=None, max_image
 
 def run(args):
   import libtbx.load_env
-  from libtbx.utils import Sorry
+  from dials.util import Sorry
   usage = "%s [options] datablock.json" %libtbx.env.dispatcher_name
 
   parser = OptionParser(

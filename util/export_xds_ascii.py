@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from dials.util.filter_reflections import filter_reflection_table, \
   FilteringReductionMethods
 

@@ -15,7 +15,7 @@ from cctbx.array_family.flex import *
 from cctbx.array_family import flex
 import cctbx
 from cctbx import miller, crystal
-from libtbx.utils import Sorry
+from dials.util import Sorry
 
 from collections import OrderedDict
 import logging

@@ -4,7 +4,7 @@ Tests for the active parameter manager module.
 import pytest
 from mock import Mock
 from scitbx import sparse
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from dials.array_family import flex
 from dials.algorithms.scaling.active_parameter_managers import \
   multi_active_parameter_manager, active_parameter_manager,\

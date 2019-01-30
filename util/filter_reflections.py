@@ -41,7 +41,7 @@ import logging
 import abc
 from collections import defaultdict
 from cctbx import crystal, miller
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from libtbx.table_utils import simple_table
 from dials.array_family import flex
 

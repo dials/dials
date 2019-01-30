@@ -9,7 +9,7 @@ Ih_table and returns flex.size_t index arrays of the outlier positions.
 """
 import abc
 import logging
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from scitbx.array_family import flex
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials_scaling_ext import determine_outlier_indices

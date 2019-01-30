@@ -8,7 +8,7 @@ from __future__ import absolute_import, division
 #  included in the root directory of this package.
 #
 import libtbx
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from scitbx.array_family import flex
 import logging
 logger = logging.getLogger(__name__)

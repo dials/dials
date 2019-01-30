@@ -4,7 +4,7 @@ import logging
 logger = logging.getLogger('dials.command_line.refine_bravais_settings')
 from cStringIO import StringIO
 from libtbx.phil import command_line
-from libtbx.utils import Sorry
+from dials.util import Sorry
 import iotbx.phil
 # from dials.util.command_line import Importer
 from dials.util.options import OptionParser

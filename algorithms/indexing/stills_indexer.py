@@ -12,7 +12,7 @@ from dials.util import log
 debug_handle = log.debug_handle(logger)
 info_handle = log.info_handle(logger)
 import libtbx
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from dials.algorithms.indexing.indexer import indexer_base
 from dials.algorithms.indexing.known_orientation import indexer_known_orientation
 from dials.algorithms.indexing.real_space_grid_search import indexer_real_space_grid_search

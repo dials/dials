@@ -2,7 +2,7 @@
 Weighting scheme definitions for scaling.
 """
 from dials.array_family import flex
-from libtbx.utils import Sorry
+from dials.util import Sorry
 
 def get_weighting_scheme(Ih_table, weighting_scheme):
   """Return the appropriate weighting scheme from the params option."""

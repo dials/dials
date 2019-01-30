@@ -11,7 +11,7 @@ from dials.algorithms.refinement.rotation_decomposition import \
   solve_r3_rotation_for_angles_given_axes
 from dials.command_line.analyse_output import ensure_directory
 
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from libtbx.phil import parse
 phil_scope = parse('''
   output {

@@ -64,7 +64,7 @@ class ExternalDelPsiWeightingStrategy(StatisticalWeightingStrategy):
                         self).calculate_weights(reflections)
 
     if not 'delpsical.weights' in reflections:
-      from libtbx.utils import Sorry
+      from dials.util import Sorry
       raise Sorry('The key "delpsical.weights" is expected within the input reflections')
 
     return reflections

@@ -18,7 +18,7 @@ from dials.algorithms.refinement.refinement_helpers import \
     calculate_frame_numbers
 from dxtbx.datablock import DataBlock
 from dxtbx.model.experiment_list import ExperimentList
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from scitbx.array_family import flex
 
 help_message = '''

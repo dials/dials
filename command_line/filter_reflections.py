@@ -4,7 +4,7 @@
 
 from __future__ import absolute_import, division, print_function
 
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from dials.array_family import flex
 
 help_message = '''

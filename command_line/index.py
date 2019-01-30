@@ -86,7 +86,7 @@ working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 def run(phil=working_phil, args=None):
   import libtbx.load_env
-  from libtbx.utils import Sorry
+  from dials.util import Sorry
   usage = "%s [options] datablock.json strong.pickle" %libtbx.env.dispatcher_name
 
   parser = OptionParser(

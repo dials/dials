@@ -16,7 +16,7 @@ import logging
 from functools import reduce
 
 from libtbx.phil import parse
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from scitbx import sparse
 from scitbx.array_family import flex
 

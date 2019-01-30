@@ -13,7 +13,7 @@ Usage: dials.frame_orientations refined_experiments.json
 
 from __future__ import division, print_function, absolute_import
 import sys
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from dials.util.options import (flatten_reflections, flatten_experiments,
     OptionParser)
 from libtbx.table_utils import simple_table

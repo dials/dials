@@ -663,7 +663,7 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
         file_name="wx_viewer",
         extensions=["png", "jpg", "tiff", "eps", "pdf"]):
     import gltbx.viewer_utils
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     from libtbx.str_utils import show_string
     pil_image = gltbx.viewer_utils.read_pixels_to_pil_image(
       x=0, y=0, width=self.w, height=self.h)

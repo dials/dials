@@ -24,7 +24,7 @@ from dials.algorithms.statistics.delta_cchalf import PerImageCChalfStatistics
 from dials.array_family import flex
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx.phil import parse
-from libtbx.utils import Sorry
+from dials.util import Sorry
 import collections
 import logging
 from dials.util.exclude_images import exclude_image_ranges_for_scaling
@@ -131,7 +131,7 @@ class Script(object):
     from dials.util.options import flatten_reflections
     from time import time
     from dials.util import log
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=False)

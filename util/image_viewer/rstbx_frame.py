@@ -6,7 +6,8 @@ import wxtbx.plots
 from wxtbx import bitmaps
 from wxtbx import icons
 import wx.lib.colourselect
-from libtbx.utils import Sorry, to_unicode
+from dials.util import Sorry
+from libtbx.utils import to_unicode
 from libtbx import easy_pickle
 import wx
 import os

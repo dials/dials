@@ -112,7 +112,7 @@ class Script(object):
     from dials.util.options import flatten_datablocks
     from time import time
     from dials.util import log
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     start_time = time()
 
     # Parse the command line

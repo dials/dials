@@ -17,7 +17,7 @@ except ImportError:
   pickle_errors = pickle.UnpicklingError,
 
 import libtbx.phil
-from libtbx.utils import Sorry
+from dials.util import Sorry
 
 tolerance_phil_scope = libtbx.phil.parse('''
 tolerance

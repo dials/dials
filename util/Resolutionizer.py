@@ -7,7 +7,7 @@ import time
 
 import iotbx.phil
 from cctbx.array_family import flex
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from scitbx import lbfgs
 
 def nint(a):

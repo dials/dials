@@ -11,7 +11,7 @@ Usage: dev.dials.plot_Fo_vs_Fc hklin=refined.mtz
 
 from __future__ import division, print_function, absolute_import
 import sys
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from dials.util.options import OptionParser
 #from libtbx.table_utils import simple_table
 import matplotlib

@@ -5,7 +5,7 @@ import iotbx.phil
 from dials.util.options import flatten_datablocks
 from dials.util.options import OptionParser
 import libtbx.load_env
-from libtbx.utils import Sorry
+from dials.util import Sorry
 
 help_message = '''
 

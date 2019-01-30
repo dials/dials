@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 import sys
 import matplotlib
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from dials.util import halraiser
 from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
 from dials.array_family import flex

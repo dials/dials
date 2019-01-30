@@ -3,7 +3,7 @@ Tests for dials.util.multi_dataset_handling functions
 """
 
 import pytest
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from dxtbx.model import Experiment, ExperimentList
 from dials.array_family import flex
 from dials.util.multi_dataset_handling import assign_unique_identifiers,\

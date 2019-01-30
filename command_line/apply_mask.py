@@ -69,7 +69,7 @@ class Script(object):
     from dials.util.options import flatten_experiments
     from dxtbx.datablock import DataBlockDumper
     from dxtbx.model.experiment_list import ExperimentListDumper
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
 
     # Parse the command line arguments
     params, options = self.parser.parse_args(show_diff_phil=True)

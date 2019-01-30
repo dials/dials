@@ -11,7 +11,7 @@ import sys
 import cPickle as pickle
 import pytest
 from libtbx import easy_run, phil
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from dxtbx.serialize import load
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment

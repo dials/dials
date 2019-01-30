@@ -5,7 +5,7 @@ from math import ceil, floor, log
 import logging
 import copy as copy
 from dials.array_family import flex
-from libtbx.utils import Sorry
+from dials.util import Sorry
 
 logger = logging.getLogger('dials')
 

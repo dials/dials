@@ -72,7 +72,7 @@ class Script(object):
     ''' Run the script. '''
     from dials.algorithms.simulation.reciprocal_space import Simulator
     from dials.util.options import flatten_experiments
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     from math import pi
 
     # Parse the command line arguments

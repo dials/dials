@@ -24,7 +24,7 @@ def remove_absent_reflections(hklin, hklout):
 if __name__ == '__main__':
   import os
   import sys
-  from libtbx.utils import Sorry
+  from dials.util import Sorry
 
   if len(sys.argv) != 3:
     raise Sorry('%s hklin hklout' % sys.argv[0])
