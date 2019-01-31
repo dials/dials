@@ -34,9 +34,11 @@ as shown in the examples below. Alternatively a template can be specified using
 the template= parameter where the consecutive digits representing the image
 numbers in the filenames are replaced with '#' characters.
 
-The geometry can be set manually by either specifying a datablock.json file
-containing the reference geometry, by setting the mosflm beam centre or by
-setting each variable to be overridden.
+The geometry can be set manually, either by using the reference_geometry= 
+parameter to specify a datablock or experiment list .json file containing 
+the reference geometry, by using the mosflm_beam_centre= parameter to set 
+the Mosflm beam centre, or by specifying each variable to be overridden 
+using various geometry parameters.
 
 Examples::
 
