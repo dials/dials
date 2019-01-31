@@ -22,6 +22,7 @@ except Exception:
   pass
 
 import libtbx.pkg_utils
+os.environ["DISABLE_BLOSC_AVX2"] = "1" # disable AVX2 instruction set for blosc installation
 libtbx.pkg_utils.require('blosc')
 libtbx.pkg_utils.require('mock', '>=2.0')
 libtbx.pkg_utils.require('msgpack')
