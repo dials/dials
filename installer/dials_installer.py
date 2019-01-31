@@ -26,7 +26,7 @@ class installer(install_distribution.installer):
     'boost',
     'scons',
     'ccp4io',
-    'msgpack',
+    'msgpack-3.1.1',
     # base
     'cbflib',
     'cctbx_project',
