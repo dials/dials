@@ -194,6 +194,7 @@ class SpotFrame(XrayFrame) :
       shortHelp="Next",
       kind=wx.ITEM_NORMAL)
     self.Bind(wx.EVT_MENU, self.OnNext, btn)
+
     txt = wx.StaticText(self.toolbar, -1, "Jump to image:")
     self.toolbar.AddControl(txt)
 
@@ -202,6 +203,15 @@ class SpotFrame(XrayFrame) :
     self.jump_to_image.SetValue(1)
     self.toolbar.AddControl(self.jump_to_image)
     self.Bind(EVT_PHIL_CONTROL, self.OnJumpToImage, self.jump_to_image)
+
+    txt = wx.StaticText(self.toolbar, -1, "Stack images:")
+    self.toolbar.AddControl(txt)
+
+    self.stack = PhilIntCtrl(self.toolbar, -1, name="stack", size=(65,-1))
+    self.stack.SetMin(1)
+    self.stack.SetValue(1)
+    self.toolbar.AddControl(self.stack)
+    self.Bind(EVT_PHIL_CONTROL, self.OnStack, self.stack)
 
   def setup_menus(self):
     super(SpotFrame, self).setup_menus()
@@ -263,6 +273,12 @@ class SpotFrame(XrayFrame) :
     phil_value = self.jump_to_image.GetPhilValue()
     if (self.images.selected_index != (phil_value - 1)):
       self.load_image(self.images[phil_value - 1])
+
+  def OnStack (self, event) :
+    value = self.stack.GetPhilValue()
+    if value != self.params.sum_images:
+      self.params.sum_images = value
+      self.reload_image()
 
   # consolidate initialization of PySlip object into a single function
   def init_pyslip(self):
