@@ -148,7 +148,6 @@ def generated_refl_for_comb():
   reflections = calculate_prescaling_correction(reflections)
   return reflections
 
-@pytest.fixture
 def mock_scaling_component():
   """Mock scaling component to allow creation of a scaling model."""
   component = MagicMock()
