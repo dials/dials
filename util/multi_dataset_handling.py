@@ -11,6 +11,23 @@ from dials.util import Sorry
 
 logger = logging.getLogger('dials')
 
+import iotbx.phil
+
+phil_scope = iotbx.phil.parse('''
+  dataset_selection {
+    use_datasets = None
+      .type = strings
+      .help = "Choose a subset of datasets, based on the dataset id (as defined
+               in the reflection table), to use from a multi-dataset input."
+      .expert_level = 2
+    exclude_datasets = None
+      .type = strings
+      .help = "Choose a subset of datasets, based on the dataset id (as defined
+               in the reflection table), to exclude from a multi-dataset input."
+      .expert_level = 2
+  }
+''')
+
 def parse_multiple_datasets(reflections):
   """
   Split a list of multi-dataset reflection tables, selecting on id

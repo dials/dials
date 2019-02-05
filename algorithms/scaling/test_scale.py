@@ -24,7 +24,9 @@ from dials.algorithms.scaling.scaling_library import create_scaling_model
 
 class run_delta_cchalf(object):
   def __init__(self,  pickle_path_list, sweep_path_list, extra_args):
-    args = ["dials.compute_delta_cchalf"] + pickle_path_list + sweep_path_list + extra_args
+    args = ["dials.compute_delta_cchalf"] + pickle_path_list + sweep_path_list + \
+      extra_args + ["output.reflections=filtered_reflections.pickle",
+      "output.experiments=filtered_experiments.json"]
     command = " ".join(args)
     print(command)
     _ = easy_run.fully_buffered(command=command).raise_if_errors()

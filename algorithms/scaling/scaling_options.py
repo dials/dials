@@ -196,18 +196,6 @@ phil_scope = iotbx.phil.parse('''
                to low partiality."
       .expert_level = 1
   }
-  dataset_selection {
-    use_datasets = None
-      .type = strings
-      .help = "Choose a subset of datasets, based on the dataset id (as defined
-               in the reflection table), to use from a multi-dataset input."
-      .expert_level = 2
-    exclude_datasets = None
-      .type = strings
-      .help = "Choose a subset of datasets, based on the dataset id (as defined
-               in the reflection table), to exclude from a multi-dataset input."
-      .expert_level = 2
-  }
   scaling_options {
     target_cycle = True
       .type = bool
@@ -288,5 +276,4 @@ phil_scope = iotbx.phil.parse('''
       .help = "The verbosity level"
       .expert_level = 2
   }
-
   ''')

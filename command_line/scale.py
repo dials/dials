@@ -131,6 +131,7 @@ phil_scope = phil.parse('''
   include scope dials.algorithms.scaling.cross_validation.cross_validate.phil_scope
   include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
   include scope dials.util.exclude_images.phil_scope
+  include scope dials.util.multi_dataset_handling.phil_scope
 ''', process_includes=True)
 
 class Script(object):
