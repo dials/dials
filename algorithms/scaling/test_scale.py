@@ -285,9 +285,9 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
   extra_args.append("target_mtz=merged.mtz")
   _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
   result = get_merging_stats("unmerged.mtz")
-  assert result.overall.r_pim < 0.024 #at 14/08/18, value was 0.023, at 30/01/19 was 0.0239
-  assert result.overall.cc_one_half > 0.9955 # at 14/08/18, value was 0.999, at 30/01/19 was 0.9962
-  assert result.overall.n_obs > 2300 # at 07/01/19, was 2321, at 30/01/19 was 2321
+  assert result.overall.r_pim < 0.0245 #at 14/08/18, value was 0.023, at 07/02/19 was 0.0243
+  assert result.overall.cc_one_half > 0.9955 # at 14/08/18, value was 0.999, at 07/02/19 was 0.9961
+  assert result.overall.n_obs > 2300 # at 07/01/19, was 2321, at 07/02/19 was 2321
 
   # run again with the concurrent scaling option turned off and the 'standard'
   # outlier rejection
