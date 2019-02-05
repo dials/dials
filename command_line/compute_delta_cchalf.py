@@ -14,6 +14,7 @@ import sys
 from iotbx.reflection_file_reader import any_reflection_file
 import matplotlib
 matplotlib.use('Agg')
+import dials.util
 from matplotlib import pylab
 from matplotlib import cm
 from math import sqrt, floor
@@ -100,83 +101,51 @@ phil_scope = parse('''
       .type = str
       .help = "The debug log filename"
   }
-
+include scope dials.util.multi_dataset_handling.phil_scope
 ''', process_includes=True)
+
 
 
 class Script(object):
   '''A class for running the script.'''
 
-  def __init__(self):
+  def __init__(self, params, experiments, reflections):
     '''Initialise the script.'''
-    from dials.util.options import OptionParser
-    import libtbx.load_env
+    self.experiments = experiments
+    self.reflections = reflections
+    self.params = params
+    # Set up a named tuple
+    self.DataRecord = collections.namedtuple("DataRecord", (
+      "unit_cell", "space_group", "miller_index", "dataset",
+      "intensity", "variance", "identifiers", "images"))
 
-    # The script usage
-    usage = "usage: %s [options] [param.phil] " % libtbx.env.dispatcher_name
+  def prepare_data(self):
+    if self.params.mode == 'image_group':
+      for exp in self.experiments:
+        if not exp.scan:
+          raise Sorry("Cannot use mode=image_group with scanless experiments")
 
-    # Initialise the base class
-    self.parser = OptionParser(
-      usage=usage,
-      phil=phil_scope,
-      epilog=help_message,
-      read_experiments=True,
-      read_reflections=True,
-      check_format=False)
+    if len(self.experiments) > 0 and len(self.reflections) == 1:
+      data = self.read_experiments(self.experiments, self.reflections[0])
+    elif len(self.experiments) > 0 and len(self.experiments) == len(self.reflections):
+      # need to join together reflections
+      joint_table = flex.reflection_table()
+      for table in self.reflections:
+        joint_table.extend(table)
+      self.reflections = [joint_table]
+      data = self.read_experiments(self.experiments, self.reflections[0])
+    elif self.params.input.mtzfile is not None:
+      data = self.read_mtzfile(self.params.input.mtzfile)
+    else:
+      self.parser.print_help()
+      return SystemExit
+    return data
 
   def run(self):
     '''Execute the script.'''
-    from dials.array_family import flex
-    from dials.util.options import flatten_experiments
-    from dials.util.options import flatten_reflections
     from time import time
-    from dials.util import log
-    from dials.util import Sorry
 
-    # Parse the command line
-    params, options = self.parser.parse_args(show_diff_phil=False)
-
-    # Configure the logging
-    log.config(
-      info=params.output.log,
-      debug=params.output.debug_log)
-
-    from dials.util.version import dials_version
-    logger.info(dials_version())
-
-    # Log the diff phil
-    diff_phil = self.parser.diff_phil.as_str()
-    if diff_phil is not '':
-      logger.info('The following parameters have been modified:\n')
-      logger.info(diff_phil)
-
-    # Setup a named tuple
-    self.DataRecord = collections.namedtuple("DataRecord", (
-      "unit_cell",
-      "space_group",
-      "miller_index",
-      "dataset",
-      "intensity",
-      "variance",
-      "identifiers",
-      "images"))
-
-    # Ensure we have an experiment list
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
-
-    if params.mode == 'image_group':
-      for exp in experiments:
-        if not exp.scan:
-          raise Sorry("Cannot use mode=image_group with scanless experiments")
-    if len(experiments) > 0:
-      assert len(reflections) == 1
-      data = self.read_experiments(experiments, reflections[0])
-    elif params.input.mtzfile is not None:
-      data = self.read_mtzfile(params.input.mtzfile)
-    else:
-      self.parser.print_help()
-      return
+    data = self.prepare_data()
 
     # Create the statistics object
     statistics = PerImageCChalfStatistics(
@@ -188,50 +157,33 @@ class Script(object):
       data.variance,
       data.unit_cell,
       data.space_group,
-      nbins = params.nbins,
-      dmin  = params.dmin,
-      dmax  = params.dmax,
-      mode = params.mode,
-      image_group = params.group_size)
+      nbins = self.params.nbins,
+      dmin  = self.params.dmin,
+      dmax  = self.params.dmax,
+      mode = self.params.mode,
+      image_group = self.params.group_size)
 
-    if params.mode == 'image_group':
+    if self.params.mode == 'image_group':
       self.image_group_to_id = statistics.image_group_to_id
       self.image_group_to_image_range = statistics.image_group_to_image_range
 
     # Print out the datasets in order of delta cc 1/2
-    delta_cchalf_i = statistics.delta_cchalf_i()
-    datasets = list(delta_cchalf_i.keys())
-    sorted_index = sorted(range(len(datasets)), key=lambda x: delta_cchalf_i[datasets[x]])
+    self.delta_cchalf_i = statistics.delta_cchalf_i()
+    datasets = list(self.delta_cchalf_i.keys())
+    sorted_index = sorted(range(len(datasets)), key=lambda x: self.delta_cchalf_i[datasets[x]])
     for i in sorted_index:
-      logger.info("Dataset: %d, Delta CC 1/2: %.3f" % (datasets[i], 100*delta_cchalf_i[datasets[i]]))
+      logger.info("Dataset: %d, Delta CC 1/2: %.3f" % (datasets[i], 100*self.delta_cchalf_i[datasets[i]]))
 
     # Write a text file with delta cchalf values
-    self.write_delta_cchalf_file(datasets, delta_cchalf_i, params)
+    self.write_delta_cchalf_file(datasets, self.delta_cchalf_i, self.params)
 
     # Remove datasets based on delta cc1/2
-    if len(experiments) > 0:
-      self.write_experiments_and_reflections(
-        experiments,
-        reflections[0],
-        params,
-        delta_cchalf_i)
+    if len(self.experiments) > 0 and len(self.reflections) == 1:
+      filtered_reflections = self.remove_datasets_below_cutoff(self.experiments,
+        self.reflections[0], self.params, self.delta_cchalf_i)
+      self.reflections = [filtered_reflections]
 
-    # Make a plot of delta cc 1/2
-    from matplotlib import pylab
-    fig, ax = pylab.subplots()
-    ax.hist(delta_cchalf_i.values())
-    ax.set_xlabel("Delta CC 1/2")
-    fig.savefig("plot1.png")
-    #pylab.show()
 
-    X = list(delta_cchalf_i.keys())
-    Y = list(delta_cchalf_i.values())
-    fig, ax = pylab.subplots()
-    ax.plot(X, Y)
-    ax.set_xlabel("Dataset number")
-    ax.set_ylabel("Delta CC 1/2")
-    fig.savefig("plot2.png")
-    #pylab.show()
 
   def write_delta_cchalf_file(self, datasets, delta_cchalf_i, params):
     '''
@@ -282,6 +234,7 @@ class Script(object):
 
     # Get the reflection data
     index = reflections['id']
+
     miller_index = reflections['miller_index']
     intensity = reflections['intensity.scale.value'] / inv_scale_factor
     variance = reflections['intensity.scale.variance'] / inv_scale_factor**2
@@ -346,11 +299,8 @@ class Script(object):
       intensity    = intensity,
       variance     = variance)
 
-  def write_experiments_and_reflections(self,
-                                        experiments,
-                                        reflections,
-                                        params,
-                                        delta_cchalf_i):
+  def remove_datasets_below_cutoff(self, experiments, reflections,
+      params, delta_cchalf_i):
     '''
     Write the experiments and reflections
 
@@ -411,10 +361,13 @@ class Script(object):
       output_reflections = flex.reflection_table()
       for r in reflection_list:
         output_reflections.extend(r)
+    return output_reflections
 
     # Write the experiments and reflections to file
-    self.write_reflections(output_reflections, params.output.reflections)
-    self.write_experiments(experiments, params.output.experiments)
+  def write_experiments_and_reflections(self):
+    if len(self.experiments) > 0 and len(self.reflections) == 1:
+      self.write_reflections(self.reflections[0], self.params.output.reflections)
+      self.write_experiments(self.experiments, self.params.output.experiments)
 
   def write_reflections(self, reflections, filename):
     ''' Save the reflections to file. '''
@@ -429,10 +382,52 @@ class Script(object):
     with open(filename, "w") as outfile:
       outfile.write(dump.as_json())
 
+  def plot_data(self):
+    # Make a plot of delta cc 1/2
+    from matplotlib import pylab
+    fig, ax = pylab.subplots()
+    ax.hist(self.delta_cchalf_i.values())
+    ax.set_xlabel("Delta CC 1/2")
+    fig.savefig("plot1.png")
+    #pylab.show()
+
+    X = list(self.delta_cchalf_i.keys())
+    Y = list(self.delta_cchalf_i.values())
+    fig, ax = pylab.subplots()
+    ax.plot(X, Y)
+    ax.set_xlabel("Dataset number")
+    ax.set_ylabel("Delta CC 1/2")
+    fig.savefig("plot2.png")
+  #pylab.show()
+
+def run(args=None, phil=phil_scope):
+  import dials.util.log
+  from dials.util.options import OptionParser
+  from dials.util.options import flatten_reflections
+  from dials.util.options import flatten_experiments
+
+  usage = "dials.compute_delta_cchalf [options] scaled_experiments.json scaled.pickle"
+
+  parser = OptionParser(
+    usage=usage,
+    phil=phil,
+    epilog=__doc__,
+    read_experiments=True,
+    read_reflections=True,
+    check_format=False)
+
+  params, _ = parser.parse_args(args=args, show_diff_phil=False)
+
+  dials.util.log.config(info=params.output.log, debug=params.output.debug_log)
+
+  expermients = flatten_experiments(params.input.experiments)
+  reflections = flatten_reflections(params.input.reflections)
+
+  script = Script(params, expermients, reflections)
+  script.run()
+  script.write_experiments_and_reflections()
+  script.plot_data()
+
 if __name__ == '__main__':
-  from dials.util import halraiser
-  try:
-    script = Script()
-    script.run()
-  except Exception as e:
-    halraiser(e)
+  with dials.util.show_mail_on_error():
+    run()
