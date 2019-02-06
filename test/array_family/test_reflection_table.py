@@ -1102,7 +1102,7 @@ def test_to_from_msgpack():
   assert(all(tuple(a == b for a, b in zip(new_table['col9'], c9))))
   assert(all(tuple(a == b for a, b in zip(new_table['col10'], c10))))
   assert(all(tuple(compare(a, b) for a, b in zip(new_table['col11'], c11))))
-  
+
   table.as_msgpack_file("reflections.mpack")
   new_table = flex.reflection_table.from_msgpack_file("reflections.mpack")
   assert(new_table.is_consistent())
