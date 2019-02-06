@@ -1,6 +1,17 @@
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.generate_shadow_mask
 from __future__ import absolute_import, division, print_function
+from dxtbx.format import setup_hdf5_plugin_path
+setup_hdf5_plugin_path()
+
 from scitbx.array_family import flex
+import libtbx.phil
+
+phil_scope = libtbx.phil.parse('''
+output = shadow.h5
+  .type = path
+compression = *gzip lzf lz4
+  .type = choice
+''')
 
 def main():
   import sys
@@ -17,11 +28,12 @@ def run(args):
 
   parser = OptionParser(
     usage=usage,
+    phil=phil_scope,
     read_datablocks=True,
     read_datablocks_from_images=True,
     read_experiments=True)
 
-  params, options = parser.parse_args()
+  params, options = parser.parse_args(show_diff_phil=True)
 
   experiments = flatten_experiments(params.input.experiments)
   datablocks = flatten_datablocks(params.input.datablock)
@@ -52,10 +64,19 @@ def run(args):
 
   import h5py
   import numpy
-  fout = h5py.File('shadow.hdf5', 'w')
-  shadow = fout.create_dataset('shadow', (nz, ny, nx), fillvalue=0,
-                               dtype='i1', chunks=(1, ny, nx),
-                               compression='gzip')
+  fout = h5py.File(params.output, 'w')
+
+  # unrecognised compressions... if not in map just return name
+  compression_map = {'lz4':32004}
+  compression = compression_map.get(params.compression, params.compression)
+
+  try:
+    shadow = fout.create_dataset('shadow', (nz, ny, nx), fillvalue=0,
+                                 dtype='i1', chunks=(1, ny, nx),
+                                 compression=compression)
+  except ValueError as e:
+    from dials.util import Sorry
+    raise Sorry(e)
 
   from dials.util.command_line import ProgressBar
   pb = ProgressBar(title="Casting shadows")
