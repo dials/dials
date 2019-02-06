@@ -51,8 +51,9 @@ def run(args):
   nx, ny = image_size
 
   import h5py
+  import numpy
   fout = h5py.File('shadow.hdf5', 'w')
-  shadow = fout.create_dataset('shadow', (nz, ny, nx), fillvalue = 0,
+  shadow = fout.create_dataset('shadow', (nz, ny, nx), fillvalue=0,
                                dtype='i1', chunks=(1, ny, nx),
                                compression='gzip')
 
@@ -63,8 +64,8 @@ def run(args):
     mask = masker.get_mask(detector, scan_angle=scan_angle)
     for p_id in range(len(detector)):
       if mask[p_id]:
-        masked = mask[p_id].count(False)
-        shadow[j:j] = (~mask[p_id]).as_numpy_array()
+        slab = (~mask[p_id]).as_numpy_array().astype(numpy.int8)
+        shadow[j,:,:] = slab
   pb.finished()
   fout.close()
 
