@@ -71,7 +71,8 @@ def run(args):
   compression = compression_map.get(params.compression, params.compression)
 
   try:
-    shadow = fout.create_dataset('shadow', (nz, ny, nx), fillvalue=0,
+    shadow = fout.create_dataset('shadow/dynamic_mask',
+                                 (nz, ny, nx), fillvalue=0,
                                  dtype='i1', chunks=(1, ny, nx),
                                  compression=compression)
   except ValueError as e:
