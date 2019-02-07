@@ -3,11 +3,13 @@ User guide for scaling data with DIALS
 
 This document aims to provide an in-depth guide on how to use several
 of the dials.scale command line options. It should be considered an 'expert'
-level guide, and the reader is encouraged to first read the 
+level guide, and the reader is encouraged to first read the
 'scaling beta lactamase' tutorial for an overview of scaling in dials.
 This guide includes:
+
 - how to customise the scaling models and general tips
 - how to exclude data after a first round of scaling
+- how to control which reflections are used for minimisation
 - some tips for how to help performance when scaling large datasets
 
 Guide to the different scaling models
@@ -61,7 +63,7 @@ although this is off by default. The array model is only suitable for
 wide-rotation datasets with a high number of reflections and it should be tested
 whether the absorption term is suitable, as it may lead to overparameterisation.
 
-| Auto model rules:
+| **Auto model rules**:
 | if oscillation range < 1.0 degrees - use KB model, else use physical model
 | if oscillation range < 60.0 degrees, absorption_term = False
 | scale and decay parameter intervals based on oscillation range:
@@ -69,6 +71,9 @@ whether the absorption term is suitable, as it may lead to overparameterisation.
 | if 10.0 <= oscillation range < 25.0 degrees; intervals 4.0, 5.0
 | if 25.0 <= oscillation range < 90.0 degrees; intervals 8.0, 10.0
 | if oscillation range >= 90.0 degrees; intervals 15.0, 20.0
+These rules are designed to give a sensisble parameterisation, but not the
+best for a given dataset. All parameters are controllable when model is
+not auto.
 
 Excluding data/image handling after initial scaling
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -121,6 +126,38 @@ cause the scaling model minimisation to fail. In this case it would be better to
 split the experiment with :samp:`dials.slice_sweep` and then proceed with
 excluding images at the edge of the new experiments.
 
+Choosing reflections to use for minimisation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To minimise the scaling model, a subset of reflections are used for efficiency.
+Four methods are available with the following command:
+:samp:`reflection_selection.method=auto quasi_random intensity_ranges use_all`.
+
+By default, the auto method uses the quasi_random selection algorithm, with
+automatically determined parameters based on the dataset properties. If the
+dataset is small (<20k reflections), the use_all option is selected.
+
+For each dataset, the quasi_random algorithm chooses reflection groups that
+have a high connectedness across different areas of reciprocal space,
+across all resolution shells. In multi-dataset scaling, a separate selection
+is also made to find reflection groups that have a high connectedness across
+the datasets (choosing from groups with an average I/sigma above a cutoff).
+The parameters of the algorithm are therefore controllable with the following
+options, if one explicity chooses :samp:`reflection_selection.method=quasi_random`:
+:samp:`quasi_random.min_per_area`, :samp:`quasi_random.n_resolution_bins`,
+:samp:`quasi_random.multi_dataset.min_per_dataset` and
+:samp:`quasi_random.multi_dataset.Isigma_cutoff`. The :samp:`auto` option sets these
+parameters in order to give sufficient connectedness across reciprocal space/datasets
+depending on the size of the dataset, number or parameters and number of datasets.
+
+The :samp:`intensity_ranges` option chooses intensities between a range of
+normalised intensities (:samp:`E2_range`), between a range of I/sigma (:samp:`Isigma_range`)
+and between a resolution range (:samp:`d_range`). This will typically select
+around 1/3 of all reflections, resulting in a longer runtime compared to the
+quasi_random selection.
+
+The :samp:`use_all` method simply uses all suitable reflections for scaling model
+minimisation but may be prohibitively slow and memory-intensive for large datasets.
+
 
 Practicalities for large datasets
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -139,15 +176,9 @@ no errors for the inverse scale factors will be determined. A compromise is
 to set :samp:`full_matrix_max_iterations=1` to do at least one iteration.
 
 A third option is to reduce the number of reflections used by the scaling
-algorithm during minimisation. By default, a subset of reflections is chosen based on their
-normalised intensities, with the default set chosen between E2 values of 0.8
-and 5.0, which typically selects between 1/3 and 1/2 of the dataset. These limits
-can be set with :samp:`E2_range=min,max`, or similary an :samp:`Isigma_range=min,max` or
-:samp:`d_range=min,max` can be set to reduce the number of reflections
-used to determine the scaling model. However, one should be
-careful that the subset is representative of the whole dataset, and selecting
-too few reflections will lead to overfitting of the subset and worse overall
-merging statistics.
+algorithm during minimisation. If using :samp:`reflection_selection.method=auto`,
+the number of reflections should be manageable even for very large datasets, but
+this can always be controlled by the user - see the previous section in this guide.
 
 .. _aimless: http://www.ccp4.ac.uk/html/aimless.html
 .. _xscale: http://xds.mpimf-heidelberg.mpg.de/html_doc/xscale_program.html
