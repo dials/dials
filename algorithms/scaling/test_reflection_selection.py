@@ -96,8 +96,7 @@ def test_reflection_selection(dials_regression):
 
   indices = select_highly_connected_reflections(reflection_table, experiment,
     min_per_area=10, n_resolution_bins=10)
-  assert len(indices) > 1650 and len(indices) < 1800
-  ##FIXME ^^ different answer on linux/windows? 1658 vs 1712?
+  assert len(indices) > 1710 and len(indices) < 1800
 
   # Give a high min_per_area to check that all reflections with multiplciity > 1
   # are selected.

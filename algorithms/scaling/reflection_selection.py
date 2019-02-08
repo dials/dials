@@ -301,7 +301,7 @@ with a total number between %s and %s.""", min_per_class, min_total, max_total)
   total = flex.double(segments_in_groups.n_cols, 0)
   for i, col in enumerate(segments_in_groups.cols()):
     total[i] = col.non_zeroes
-  perm = flex.sort_permutation(total, reverse=True)
+  perm = flex.sort_permutation(total, reverse=True, stable=True)
   sorted_class_matrix = segments_in_groups.select_columns(perm)
   #matrix of segment index vs asu groups
 
@@ -342,10 +342,10 @@ def select_highly_connected_reflections_in_bin(reflections, space_group,
   class_matrix = _build_class_matrix(reflections, class_matrix)
   segments_in_groups = class_matrix * Ih_table.h_index_matrix
 
-  total = flex.double(segments_in_groups.n_cols, 0)
+  total = flex.int(segments_in_groups.n_cols, 0)
   for i, col in enumerate(segments_in_groups.cols()):
     total[i] = col.non_zeroes
-  perm = flex.sort_permutation(total, reverse=True)
+  perm = flex.sort_permutation(total, reverse=True, stable=True)
   sorted_class_matrix = segments_in_groups.select_columns(perm)
   #matrix of segment index vs asu groups
 
