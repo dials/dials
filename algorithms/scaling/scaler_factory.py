@@ -49,7 +49,7 @@ class ScalerFactory(object):
     """Initial filter to select integrated reflections."""
     reasons = Reasons()
     mask = ~reflections.get_flags(reflections.flags.integrated, all=False)
-    reasons.add_reason('not integrated', mask.count(True))
+    reasons.add_reason('not integrated by any method', mask.count(True))
     if 'd' in reflections:
       d_mask = reflections['d'] <= 0.0
       reasons.add_reason('bad d-value', d_mask.count(True))
@@ -84,25 +84,28 @@ class SingleScalerFactory(ScalerFactory):
         experiment.scaling_model.id_)
 
     reflection_table, reasons = cls.filter_bad_reflections(reflection_table)
+
+    if not 'inverse_scale_factor' in reflection_table:
+      reflection_table['inverse_scale_factor'] = flex.double(
+        reflection_table.size(), 1.0)
+    reflection_table = choose_scaling_intensities(reflection_table,
+      params.reflection_selection.intensity_choice)
+
     excluded_for_scaling = reflection_table.get_flags(
       reflection_table.flags.excluded_for_scaling)
     user_excluded = reflection_table.get_flags(
       reflection_table.flags.user_excluded_in_scaling)
     reasons.add_reason('user excluded', user_excluded.count(True))
+    reasons.add_reason('excluded for scaling', excluded_for_scaling.count(True))
     n_excluded = (excluded_for_scaling | user_excluded).count(True)
     if n_excluded == reflection_table.size():
       logger.info("All reflections were determined to be unsuitable for scaling.")
       logger.info(reasons)
       raise BadDatasetForScalingException("""Unable to use this dataset for scaling""")
     elif params.scaling_options.verbosity > 1:
-      logger.info('%s reflections not suitable for scaling', n_excluded)
+      logger.info('%s/%s reflections not suitable for scaling', n_excluded,
+        reflection_table.size())
       logger.info(reasons)
-    if not 'inverse_scale_factor' in reflection_table:
-      reflection_table['inverse_scale_factor'] = flex.double(
-        reflection_table.size(), 1.0)
-
-    reflection_table = choose_scaling_intensities(reflection_table,
-      params.reflection_selection.intensity_choice)
 
     if not for_multi:
       determine_reflection_selection_parameters(params, [experiment], [reflection_table])

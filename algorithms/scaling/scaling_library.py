@@ -23,7 +23,7 @@ from dials.algorithms.scaling.model.scaling_model_factory import \
   KBSMFactory
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.scaling_utilities import \
-  calculate_prescaling_correction
+  calculate_prescaling_correction, BadDatasetForScalingException
 from dials.util.multi_dataset_handling import assign_unique_identifiers,\
   parse_multiple_datasets, select_datasets_on_ids
 from dials.util.multi_dataset_handling import get_next_unique_id
@@ -81,6 +81,10 @@ def choose_scaling_intensities(reflection_table, intensity_choice='profile'):
   all corrections applied except an inverse scale factor."""
   if intensity_choice == 'profile':
     intensity_choice = 'prf' #rename to allow string matching with refl table
+  if intensity_choice == 'prf':
+    if reflection_table.get_flags(reflection_table.flags.integrated_prf).count(True) == 0:
+      logger.warn("No profile fitted reflections in this dataset, using summation intensities")
+      intensity_choice = 'sum'
   reflection_table = calculate_prescaling_correction(reflection_table)
   conv = reflection_table['prescaling_correction']
   intstr = 'intensity.'+intensity_choice+'.value'
