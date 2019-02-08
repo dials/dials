@@ -71,6 +71,7 @@ whether the absorption term is suitable, as it may lead to overparameterisation.
 | if 10.0 <= oscillation range < 25.0 degrees; intervals 4.0, 5.0
 | if 25.0 <= oscillation range < 90.0 degrees; intervals 8.0, 10.0
 | if oscillation range >= 90.0 degrees; intervals 15.0, 20.0
+
 These rules are designed to give a sensisble parameterisation, but not the
 best for a given dataset. All parameters are controllable when model is
 not auto.
