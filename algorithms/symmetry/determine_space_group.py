@@ -189,7 +189,7 @@ class determine_space_group(symmetry_base):
       ScoreSubGroup(subgrp, self.sym_op_scores) for subgrp in self.subgroups.result_groups]
     total_likelihood = sum(score.likelihood for score in subgroup_scores)
     sort_order = flex.sort_permutation(
-      flex.double(score.likelihood for score in subgroup_scores), reverse=True)
+      flex.double(score.likelihood for score in subgroup_scores), reverse=True, stable=True)
     self.subgroup_scores = [subgroup_scores[i] for i in sort_order]
     for score in self.subgroup_scores:
       score.likelihood /= total_likelihood
