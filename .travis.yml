@@ -42,6 +42,27 @@ jobs:
          # it will be resumed from that point in the next build.
          - $HOME/build_dials/modules/dials/.travis/build-for 40m
 
+    - name: "Syntax validation - Python 2.7"
+      addons: false
+      cache: false
+      script:
+         - python -m compileall -q *
+
+    - name: "Syntax validation - Python 3.4"
+      addons: false
+      cache: false
+      python: 3.4
+      script:
+         - python3 -m compileall -q *
+
+    - name: "Syntax validation - Python 3.7"
+      addons: false
+      cache: false
+      dist: xenial
+      python: 3.7
+      script:
+         - python3 -m compileall -q *
+
     - stage: test
       before_script:
          # Inject DIALS. Again.
