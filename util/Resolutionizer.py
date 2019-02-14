@@ -190,7 +190,7 @@ phil_str = '''
     .expert_level = 1
   cc_half_method = *half_dataset sigma_tau
     .type = choice
-  cc_half_significance_level = None
+  cc_half_significance_level = 0.1
     .type = float(value_min=0, value_max=1)
     .expert_level = 1
   cc_half_fit = polynomial *tanh
