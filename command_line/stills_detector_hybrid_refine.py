@@ -472,8 +472,7 @@ class Script(object):
         nrefs_per_exp.append(len(sub_ref))
 
         # obtain mm positions on the reference detector
-        sub_ref = indexer_base.map_spots_pixel_to_mm_rad(sub_ref,
-          combined_exp.detector, combined_exp.scan)
+        sub_ref.centroid_px_to_mm(combined_exp.detector, combined_exp.scan)
 
         # extend refl and experiments lists
         reflections.extend(sub_ref)

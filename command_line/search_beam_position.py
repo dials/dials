@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
+import copy
 import math
 import iotbx.phil
 from scitbx import matrix
@@ -343,10 +344,6 @@ def discover_better_experimental_model(
   assert len(imagesets) > 0
   # XXX should check that all the detector and beam objects are the same
   from dials.algorithms.indexing.indexer import indexer_base
-  spot_lists_mm = [
-    indexer_base.map_spots_pixel_to_mm_rad(
-      spots, imageset.get_detector(), imageset.get_scan())
-    for spots, imageset in zip(spot_lists, imagesets)]
 
   spot_lists_mm = []
   max_cell_list = []
@@ -364,8 +361,9 @@ def discover_better_experimental_model(
     if 'imageset_id' not in spots:
       spots['imageset_id'] = spots['id']
 
-    spots_mm = indexer_base.map_spots_pixel_to_mm_rad(
-      spots=spots, detector=imageset.get_detector(), scan=imageset.get_scan())
+    spots_mm = copy.deepcopy(spots)
+    spots_mm.centroid_px_to_mm(
+      imageset.get_detector(), scan=imageset.get_scan())
 
     indexer_base.map_centroids_to_reciprocal_space(
       spots_mm, detector=imageset.get_detector(), beam=imageset.get_beam(),

@@ -123,8 +123,8 @@ class SpotFrame(XrayFrame) :
                   = self.reflections[i_ref_list]['xyzcal.px']
                 self.reflections[i_ref_list]['xyzobs.px.variance'] \
                   = flex.vec3_double(len(self.reflections[i_ref_list]), (1,1,1))
-              refl = indexer.indexer_base.map_spots_pixel_to_mm_rad(
-                self.reflections[i_ref_list].select(sel),
+              refl = self.reflections[i_ref_list].select(sel)
+              refl.centroid_px_to_mm(
                 imageset.get_detector(), imageset.get_scan())
 
             indexer.indexer_base.map_centroids_to_reciprocal_space(

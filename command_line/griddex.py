@@ -24,11 +24,10 @@ def test_index(experiment, reflections):
 
   # map reflections to reciprocal space from image space
 
-  refl = indexer.indexer_base.map_spots_pixel_to_mm_rad(
-    reflections, experiment.detector, experiment.scan)
+  reflections.centroid_px_to_mm(experiment.detector, experiment.scan)
 
   indexer.indexer_base.map_centroids_to_reciprocal_space(
-    refl, experiment.detector, experiment.beam, experiment.goniometer)
+    reflections, experiment.detector, experiment.beam, experiment.goniometer)
 
   # now compute fractional indices - in Python rather than trying to push
   # everything to C++ for the moment
