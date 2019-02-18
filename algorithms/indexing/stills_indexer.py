@@ -381,8 +381,8 @@ class stills_indexer(indexer_base):
         self.reflections = flex.reflection_table()
         for i, expt in enumerate(self.experiments):
           spots_sel = spots_mm.select(spots_mm['imageset_id'] == i)
-          self.map_centroids_to_reciprocal_space(
-            spots_sel, expt.detector, expt.beam, expt.goniometer)
+          spots_sel.map_centroids_to_reciprocal_space(
+            expt.detector, expt.beam, expt.goniometer)
           self.reflections.extend(spots_sel)
 
       # update for next cycle

@@ -15,7 +15,6 @@ from dxtbx.model import Crystal
 from dials.array_family import flex
 from dials.algorithms.indexing \
      import index_reflections, index_reflections_local
-from dials.algorithms.indexing.indexer import indexer_base
 
 
 def random_rotation(angle_min=0, angle_max=360):
@@ -75,9 +74,8 @@ def test_assign_indices(dials_regression, space_group_symbol):
     crystal_symmetry, miller_indices, anomalous_flag=True)
   predicted_reflections['xyzobs.mm.value'] = predicted_reflections['xyzcal.mm']
   predicted_reflections['id'] = flex.int(len(predicted_reflections), 0)
-  indexer_base.map_centroids_to_reciprocal_space(
-    predicted_reflections, sweep.get_detector(), sweep.get_beam(),
-    sweep.get_goniometer())
+  predicted_reflections.map_centroids_to_reciprocal_space(
+    sweep.get_detector(), sweep.get_beam(), sweep.get_goniometer())
 
   # check that local and global indexing worked equally well in absence of errors
   result = compare_global_local(experiment, predicted_reflections,

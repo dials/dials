@@ -719,8 +719,8 @@ class indexer_base(object):
 
     for i, expt in enumerate(self.experiments):
       spots_sel = spots_mm.select(spots_mm['imageset_id'] == i)
-      self.map_centroids_to_reciprocal_space(
-        spots_sel, expt.detector, expt.beam, expt.goniometer)
+      spots_sel.map_centroids_to_reciprocal_space(
+        expt.detector, expt.beam, expt.goniometer)
       spots_sel['entering'] = self.calculate_entering_flags(
         spots_sel, beam=expt.beam,
         goniometer=expt.goniometer)
@@ -955,8 +955,8 @@ class indexer_base(object):
           self.reflections = flex.reflection_table()
           for i, expt in enumerate(self.experiments):
             spots_sel = spots_mm.select(spots_mm['imageset_id'] == i)
-            self.map_centroids_to_reciprocal_space(
-              spots_sel, expt.detector, expt.beam, expt.goniometer)
+            spots_sel.map_centroids_to_reciprocal_space(
+              expt.detector, expt.beam, expt.goniometer)
             self.reflections.extend(spots_sel)
 
         # update for next cycle
@@ -1068,53 +1068,6 @@ class indexer_base(object):
     vec = s0.cross(axis)
     entering = reflections['s1'].dot(vec) < 0.
     return entering
-
-  @staticmethod
-  def map_centroids_to_reciprocal_space(spots_mm, detector, beam, goniometer,
-                                        calculated=False):
-    """Map mm/radian spot centroids to reciprocal space.
-
-    Used to convert spot centroids provided in mm/radian units to reciprocal space
-    as required for indexing. Adds the column 'rlp' to the reflection table, which
-    contains a :py:class:`.flex.vec3_double` array of the reciprocal lattice vectors.
-
-    :param spots_mm: a reflection table containing the column 'xyzobs.mm.value'
-    :type spots_mm: dials.array_family.flex.reflection_table
-    :param detector: a dxtbx detector object
-    :type detector: dxtbx.model.detector.Detector
-    :param beam: a dxtbx beam object
-    :type beam: dxtbx.model.beam.Beam
-    :param goniometer: a dxtbx goniometer object. May be None, e.g. for a still image
-    :type goniometer: dxtbx.model.goniometer.Goniometer
-    """
-
-    if 's1' not in spots_mm: spots_mm['s1'] = flex.vec3_double(len(spots_mm))
-    spots_mm['rlp'] = flex.vec3_double(len(spots_mm))
-    panel_numbers = flex.size_t(spots_mm['panel'])
-    for i_panel in range(len(detector)):
-      sel = (panel_numbers == i_panel)
-      spots_panel = spots_mm.select(panel_numbers == i_panel)
-      if calculated:
-        x, y, rot_angle = spots_panel['xyzcal.mm'].parts()
-      else:
-        x, y, rot_angle = spots_panel['xyzobs.mm.value'].parts()
-      s1 = detector[i_panel].get_lab_coord(flex.vec2_double(x,y))
-      s1 = s1/s1.norms() * (1/beam.get_wavelength())
-      spots_mm['s1'].set_selected(sel, s1)
-      S = s1 - beam.get_s0()
-      if goniometer is not None:
-        setting_rotation = matrix.sqr(goniometer.get_setting_rotation())
-        rotation_axis = goniometer.get_rotation_axis_datum()
-        fixed_rotation = matrix.sqr(goniometer.get_fixed_rotation())
-        spots_mm['rlp'].set_selected(
-          sel, tuple(setting_rotation.inverse()) * S)
-        spots_mm['rlp'].set_selected(
-          sel, spots_mm['rlp'].select(sel).rotate_around_origin(
-            rotation_axis, -rot_angle))
-        spots_mm['rlp'].set_selected(
-          sel, tuple(fixed_rotation.inverse()) * spots_mm['rlp'].select(sel))
-      else:
-        spots_mm['rlp'].set_selected(sel, S)
 
   def find_candidate_orientation_matrices(self, candidate_basis_vectors):
     candidate_crystal_models = []

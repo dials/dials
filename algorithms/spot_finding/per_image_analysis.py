@@ -79,10 +79,9 @@ def map_to_reciprocal_space(reflections, imageset):
   goniometer = imageset.get_goniometer()
   beam = imageset.get_beam()
 
-  from dials.algorithms.indexing import indexer
   reflections.centroid_px_to_mm(detector, scan)
-  indexer.indexer_base.map_centroids_to_reciprocal_space(
-  reflections, detector, beam, goniometer)
+  reflections.map_centroids_to_reciprocal_space(
+    detector, beam, goniometer)
 
   return reflections
 

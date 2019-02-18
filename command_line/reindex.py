@@ -224,7 +224,6 @@ experiments file must also be specified with the option: reference= """)
       assert len(reflections) == 1
 
       # always re-map reflections to reciprocal space
-      from dials.algorithms.indexing import indexer
       refl_copy = flex.reflection_table()
       for i, imageset in enumerate(experiments.imagesets()):
         if 'imageset_id' in reflections[0]:
@@ -233,9 +232,8 @@ experiments file must also be specified with the option: reference= """)
           sel = (reflections[0]['id'] == i)
         refl = reflections[0].select(sel)
         refl.centroid_px_to_mm(imageset.get_detector(), imageset.get_scan())
-
-        indexer.indexer_base.map_centroids_to_reciprocal_space(
-          refl, imageset.get_detector(), imageset.get_beam(),
+        refl.map_centroids_to_reciprocal_space(
+          imageset.get_detector(), imageset.get_beam(),
           imageset.get_goniometer())
         refl_copy.extend(refl)
 

@@ -198,7 +198,6 @@ def run(args):
     hardcoded_phil.d_min = params.d_min
 
     imageset = imagesets[0]
-    from dials.algorithms.indexing.indexer import indexer_base
 
     if 'imageset_id' not in reflections:
       reflections['imageset_id'] = reflections['id']
@@ -206,8 +205,8 @@ def run(args):
     reflections.centroid_px_to_mm(
       imageset.get_detector(), scan=imageset.get_scan())
 
-    indexer_base.map_centroids_to_reciprocal_space(
-      reflections, detector=imageset.get_detector(), beam=imageset.get_beam(),
+    reflections.map_centroids_to_reciprocal_space(
+      detector=imageset.get_detector(), beam=imageset.get_beam(),
       goniometer=imageset.get_goniometer())
 
     if params.d_min is not None:

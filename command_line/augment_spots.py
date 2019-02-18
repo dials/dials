@@ -48,7 +48,6 @@ def add_resolution_to_reflections(reflections, experiments):
   # will assume everything from the first detector at the moment - clearly this
   # could be incorrect, will have to do something a little smarter, later
 
-  from dials.algorithms.indexing.indexer import indexer_base
   imageset = experiments.imagesets()[0]
 
   if 'imageset_id' not in reflections:
@@ -56,8 +55,8 @@ def add_resolution_to_reflections(reflections, experiments):
 
   reflections.centroid_px_to_mm(imageset.get_detector(), imageset.get_scan())
 
-  indexer_base.map_centroids_to_reciprocal_space(
-    reflections, detector=imageset.get_detector(), beam=imageset.get_beam(),
+  reflections.map_centroids_to_reciprocal_space(
+    detector=imageset.get_detector(), beam=imageset.get_beam(),
     goniometer=imageset.get_goniometer())
 
   d_spacings = 1/reflections['rlp'].norms()
