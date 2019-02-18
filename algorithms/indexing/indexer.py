@@ -12,6 +12,7 @@
 
 from __future__ import absolute_import, division
 from __future__ import print_function
+import copy
 import math
 import logging
 logger = logging.getLogger(__name__)
@@ -706,10 +707,9 @@ class indexer_base(object):
     for i, expt in enumerate(self.experiments):
       if 'imageset_id' not in reflections_input:
         reflections_input['imageset_id'] = reflections_input['id']
-      sel = (reflections_input['imageset_id'] == i)
-      self.reflections.extend(self.map_spots_pixel_to_mm_rad(
-        reflections_input.select(sel),
-        expt.detector, expt.scan))
+      refl = reflections_input.select(reflections_input['imageset_id'] == i)
+      refl.centroid_px_to_mm(expt.detector, expt.scan)
+      self.reflections.extend(refl)
     self.filter_reflections_by_scan_range()
     if len(self.reflections) == 0:
       raise Sorry("No reflections left to index!")
