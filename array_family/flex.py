@@ -16,6 +16,7 @@ from cctbx.array_family import flex
 import cctbx
 from cctbx import miller, crystal
 from libtbx.utils import Sorry
+from scitbx import matrix
 
 from collections import OrderedDict
 import logging
@@ -1317,6 +1318,50 @@ Found %s""" % (list_of_identifiers, id_values))
         flex.vec3_double(sel.count(True), (1,1,1)))
       self['xyzobs.mm.value'].set_selected(sel, centroid_position)
       self['xyzobs.mm.variance'].set_selected(sel, centroid_variance)
+
+  def map_centroids_to_reciprocal_space(self, detector, beam, goniometer=None,
+                                        calculated=False):
+    """Map mm/radian spot centroids to reciprocal space.
+
+    Used to convert spot centroids provided in mm/radian units to reciprocal space
+    as required for indexing. Adds the column 'rlp' to the reflection table, which
+    contains a :py:class:`.flex.vec3_double` array of the reciprocal lattice vectors.
+
+    Args:
+      detector (dxtbx.model.detector.Detector): A dxtbx detector object.
+      beam(dxtbx.model.beam.Beam): A dxtbx beam object.
+      goniometer(dxtbx.model.goniometer.Goniometer): A dxtbx goniometer object.
+        May be None, e.g. for a still image.
+
+    """
+
+    self['s1'] = flex.vec3_double(len(self))
+    self['rlp'] = flex.vec3_double(len(self))
+    panel_numbers = flex.size_t(self['panel'])
+    for i_panel in range(len(detector)):
+      sel = (panel_numbers == i_panel)
+      if calculated:
+        x, y, rot_angle = self['xyzcal.mm'].select(sel).parts()
+      else:
+        x, y, rot_angle = self['xyzobs.mm.value'].select(sel).parts()
+      s1 = detector[i_panel].get_lab_coord(flex.vec2_double(x,y))
+      s1 = s1/s1.norms() * (1/beam.get_wavelength())
+      self['s1'].set_selected(sel, s1)
+      S = s1 - beam.get_s0()
+      if goniometer is not None:
+        setting_rotation = matrix.sqr(goniometer.get_setting_rotation())
+        rotation_axis = goniometer.get_rotation_axis_datum()
+        fixed_rotation = matrix.sqr(goniometer.get_fixed_rotation())
+        self['rlp'].set_selected(
+          sel, tuple(setting_rotation.inverse()) * S)
+        self['rlp'].set_selected(
+          sel, self['rlp'].select(sel).rotate_around_origin(
+            rotation_axis, -rot_angle))
+        self['rlp'].set_selected(
+          sel, tuple(fixed_rotation.inverse()) * self['rlp'].select(sel))
+      else:
+        self['rlp'].set_selected(sel, S)
+
 
 class reflection_table_selector(object):
   '''
