@@ -405,8 +405,8 @@ def test_index_imosflm_tutorial(dials_regression, tmpdir):
       result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
                                 expected_rmsds, expected_hall_symbol)
 
-def test_index_insulin(regression_data, run_in_tmpdir):
-  data_dir = regression_data('insulin')
+def test_index_insulin(dials_data, run_in_tmpdir):
+  data_dir = dials_data("insulin")
 
   args = ["dials.import", "output.datablock=datablock.json", "allow_multiple_sweeps=True"]
   for i, image_path in enumerate(("insulin_1_001.img", "insulin_1_045.img")):

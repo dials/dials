@@ -9,15 +9,36 @@ import os
 
 import pytest
 
+try:
+    import dials_data as pkg_dials_data
+
+    dials_data = pkg_dials_data.dials_data
+except ImportError:
+    pkg_dials_data = None
+
+    @pytest.fixture
+    def dials_data():
+        pytest.skip("Test requires python package dials_data")
+
+
 def pytest_addoption(parser):
-  '''Add a '--runslow' option to py.test.'''
-  try:
-    parser.addoption("--regression", action="store_true", default=False,
-                     help="run regression tests")
-  except ValueError:
-    pass # Thrown in case the command line option is already defined
-  parser.addoption("--runslow", action="store_true", default=False,
-                   help="run slow tests")
+    """Add a '--runslow' option to py.test."""
+    if pkg_dials_data:
+        pkg_dials_data.pytest_addoption(parser)
+
+    try:
+        parser.addoption(
+            "--regression",
+            action="store_true",
+            default=False,
+            help="run regression tests",
+        )
+    except ValueError:
+        pass  # Thrown in case the command line option is already defined
+    parser.addoption(
+        "--runslow", action="store_true", default=False, help="run slow tests"
+    )
+
 
 def pytest_collection_modifyitems(config, items):
   '''Tests marked as slow will not be run unless slow tests are enabled with
@@ -39,22 +60,6 @@ def dials_regression():
     pytest.skip("dials_regression required for this test")
   return os.path.dirname(dr.__file__)
 
-@pytest.fixture(scope="session")
-def regression_data(request):
-  '''Return the location of a regression data set as py.path object.
-     Skip the test if the data are not present.
-  '''
-  if not request.config.getoption("--regression"):
-    pytest.skip("Test requires --regression option to run.")
-
-  import dials.util.regression_data
-  df = dials.util.regression_data.DataFetcher()
-  def skip_test_if_lookup_failed(result):
-    if not result:
-      pytest.skip('Regression data is required to run this test. Run dials.fetch_test_data')
-    return result
-  setattr(df, 'result_filter', skip_test_if_lookup_failed)
-  return df
 
 @pytest.fixture
 def run_in_tmpdir(tmpdir):

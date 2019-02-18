@@ -46,7 +46,7 @@ def test_search_multiple(run_in_tmpdir, dials_regression):
            scitbx.matrix.col(detector_2[0].get_origin()))
   assert shift.elems == pytest.approx((0.037, 0.061, 0.0), abs=1e-1)
 
-def test_index_after_search(regression_data, run_in_tmpdir):
+def test_index_after_search(dials_data, run_in_tmpdir):
   '''Integrate the beam centre search with the rest of the toolchain
 
   Do the following:
@@ -58,8 +58,8 @@ def test_index_after_search(regression_data, run_in_tmpdir):
   and check that the expected unit ecll is obtained and that the RMSDs are
   smaller than or equal to some expected values.'''
 
-  regression_data = regression_data('i04_bag_training').listdir(sort=True)
-  g = [f.strpath for f in regression_data if '.cbf' in f.strpath]
+  dials_data = dials_data("thaumatin_i04").listdir(sort=True)
+  g = [f.strpath for f in dials_data if f.ext == ".cbf"]
 
   # beam centre from image headers: 205.28,210.76 mm
   args = ["dials.import", "mosflm_beam_centre=207,212"] + g
@@ -150,7 +150,7 @@ def test_search_single(run_in_tmpdir, dials_regression):
            scitbx.matrix.col(detector_2[0].get_origin()))
   assert shift.elems == pytest.approx((-0.976, 2.497, 0.0), abs=1e-1)
 
-def test_search_small_molecule(regression_data, run_in_tmpdir):
+def test_search_small_molecule(dials_data, run_in_tmpdir):
   '''Perform a beam-centre search on a multi-sweep data set..
 
   Do the following:
@@ -163,7 +163,7 @@ def test_search_small_molecule(regression_data, run_in_tmpdir):
   in detector origin.
   '''
 
-  data = regression_data('l-cysteine_four_sweeps')
+  data = dials_data("l_cysteine_dials_output", min_version="1.0.5")
   datablock_path = data.join('datablock.json').strpath
   pickle_path = data.join('strong.pickle').strpath
 

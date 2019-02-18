@@ -9,7 +9,7 @@ import shlex
 import shutil
 import sys
 
-import dials.util.regression_data
+import dials_data
 import libtbx.load_env  # required for libtbx.env.find_in_repositories
 from libtbx.test_utils import open_tmp_directory
 from procrunner import run_process
@@ -73,8 +73,8 @@ class Processing_Tutorial(object):
   class dials_import(Job):
     def __init__(self):
       # find i04 bag training data
-      df = dials.util.regression_data.DataFetcher()
-      dataset = df('i04_bag_training').join('th_8_2_0*cbf').strpath
+      df = dials_data.DataFetcher()
+      dataset = df("thaumatin_i04").join("th_8_2_0*cbf").strpath
 
       self.cmd = "dials.import {0}".format(dataset)
 
