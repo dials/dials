@@ -76,10 +76,10 @@ def test_index_after_search(regression_data, run_in_tmpdir):
     with mock.patch.object(sys, 'argv', args):
       import dials.command_line.dials_import
       dials.command_line.dials_import.Script().run()
-  assert os.path.exists('experiments.json')
+  assert os.path.exists('imported_experiments.json')
 
   # spot-finding, just need a subset of the data
-  args = ["dials.find_spots", "experiments.json",
+  args = ["dials.find_spots", "imported_experiments.json",
           "scan_range=1,10", "scan_range=531,540"]
   print(args)
   result = procrunner.run(args)
@@ -87,7 +87,7 @@ def test_index_after_search(regression_data, run_in_tmpdir):
   assert os.path.exists('strong.pickle')
 
   # actually run the beam centre search
-  args = ["dials.search_beam_position", "experiments.json",
+  args = ["dials.search_beam_position", "imported_experiments.json",
           "strong.pickle"]
   print(args)
   result = procrunner.run(args)
@@ -96,10 +96,11 @@ def test_index_after_search(regression_data, run_in_tmpdir):
 
   # look at the results
   from dxtbx.serialize import load
-  experiments = load.experiments("experiments.json", check_format=False)
+  experiments = load.experiment_list(
+    "imported_experiments.json", check_format=False)
   original_imageset = experiments.imagesets()[0]
-  optimized_experiments = load.experiments('optimized_experiments.json',
-                                       check_format=False)
+  optimized_experiments = load.experiment_list(
+    'optimized_experiments.json', check_format=False)
   detector_1 = original_imageset.get_detector()
   detector_2 = optimized_experiments.detectors()[0]
   shift = (scitbx.matrix.col(detector_1[0].get_origin()) -
@@ -173,15 +174,15 @@ def test_search_small_molecule(regression_data, run_in_tmpdir):
   print(args)
   result = procrunner.run(args)
   assert result['stderr'] == '' and result['exitcode'] == 0
-  assert os.path.exists('optimized_datablock.json')
+  assert os.path.exists('optimized_experiments.json')
 
   from dxtbx.serialize import load
   datablocks = load.datablock(datablock_path, check_format=False)
   original_imageset = datablocks[0].extract_imagesets()[0]
   detector_1 = original_imageset.get_detector()
-  optimized_datablock = load.datablock('optimized_datablock.json',
-                                       check_format=False)
-  detector_2 = optimized_datablock[0].unique_detectors()[0]
+  optimized_experiments = load.experiment_list(
+    'optimized_experiments.json', check_format=False)
+  detector_2 = optimized_experiments[0].detector
   shift = (scitbx.matrix.col(detector_1[0].get_origin()) -
            scitbx.matrix.col(detector_2[0].get_origin()))
   print(shift)
