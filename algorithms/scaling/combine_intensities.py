@@ -58,7 +58,7 @@ class SingleDatasetIntensityCombiner(object):
   Class to combine profile and summation intensities for a single datset.
   """
 
-  def __init__(self, scaler):
+  def __init__(self, scaler, use_Imid=None):
     if 'intensity.prf.value' not in scaler.reflection_table:
       self.max_key = 1
       logger.info(
@@ -66,30 +66,31 @@ class SingleDatasetIntensityCombiner(object):
       return
     self.scaler = scaler
     self.experiment = scaler.experiments
-    self.Imids = scaler.params.reflection_selection.combine.Imid
-    self.dataset = _make_reflection_table_from_scaler(self.scaler)
-    if 'partiality' in self.dataset:
-      raw_intensities = (self.dataset['intensity.sum.value'].as_double()/
-        self.dataset['partiality'])
+    if use_Imid is not None:
+      self.max_key = use_Imid
     else:
-      raw_intensities = self.dataset['intensity.sum.value'].as_double()
-    logger.debug("length of raw intensity array: %s", raw_intensities.size())
-    self._determine_Imids(raw_intensities)
+      self.Imids = scaler.params.reflection_selection.combine.Imid
+      self.dataset = _make_reflection_table_from_scaler(self.scaler)
+      if 'partiality' in self.dataset:
+        raw_intensities = (self.dataset['intensity.sum.value'].as_double()/
+          self.dataset['partiality'])
+      else:
+        raw_intensities = self.dataset['intensity.sum.value'].as_double()
+      logger.debug("length of raw intensity array: %s", raw_intensities.size())
+      self._determine_Imids(raw_intensities)
+      header = ['Combination', 'CC1/2', 'Rmeas']
+      rows, results = self._test_Imid_combinations()
+      st = simple_table(rows, header)
+      logger.info(st.format())
 
-    header = ['Combination', 'CC1/2', 'Rmeas']
-    rows, results = self._test_Imid_combinations()
-    st = simple_table(rows, header)
-    logger.info(st.format())
-
-
-    self.max_key = min(results, key=results.get)
-    if self.max_key == 0:
-      logger.info('Profile intensities determined to be best for scaling. \n')
-    elif self.max_key == 1:
-      logger.info('Summation intensities determined to be best for scaling. \n')
-    else:
-      logger.info('Combined intensities with Imid = %s determined to be best for scaling. \n',
-        self.max_key)
+      self.max_key = min(results, key=results.get)
+      if self.max_key == 0:
+        logger.info('Profile intensities determined to be best for scaling. \n')
+      elif self.max_key == 1:
+        logger.info('Summation intensities determined to be best for scaling. \n')
+      else:
+        logger.info('Combined intensities with Imid = %s determined to be best for scaling. \n',
+          self.max_key)
 
   def calculate_suitable_combined_intensities(self):
     """Combine the 'suitable for scaling' intensities in the scaler."""

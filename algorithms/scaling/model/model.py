@@ -129,6 +129,10 @@ class ScalingModelBase(object):
       'error_model_type' : self.error_model.__class__.__name__,
       'error_model_parameters' : list(error_model.refined_parameters)})
 
+  def record_intensity_combination_Imid(self, Imid):
+    """Record the intensity combination Imid value."""
+    self._configdict.update({'Imid' : Imid})
+
   def show(self):
     """Print a representation of the scaling model."""
     print("Warning: Use of the .show() method is deprecated. Use print(object) instead.")

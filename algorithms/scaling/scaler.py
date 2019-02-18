@@ -15,6 +15,7 @@ import abc
 import logging
 import time
 import copy as copy
+from collections import OrderedDict
 from cctbx import crystal, sgtbx
 from scitbx import sparse
 from dials_scaling_ext import row_multiply
@@ -232,7 +233,6 @@ class SingleScaler(ScalerBase):
     self._initial_keys = [key for key in reflection_table.keys()]
     self._reflection_table = reflection_table
     self._Ih_table = None # stores data for reflections used for minimisation
-
     self.suitable_refl_for_scaling_sel = self.get_suitable_for_scaling_sel(
       self._reflection_table)
     self.n_suitable_refl = self.suitable_refl_for_scaling_sel.count(True)
@@ -240,6 +240,8 @@ class SingleScaler(ScalerBase):
     self.scaling_subset_sel = None # A selection of len n_suitable_refl of scaling subset selection
     self.scaling_selection = None # As above, but with outliers deselected also
     self._configure_model_and_datastructures()
+    if 'Imid' in self.experiments.scaling_model.configdict:
+      self.combine_intensities(self.experiments.scaling_model.configdict['Imid'])
     self.round_of_outlier_rejection()
     if not for_multi:
       self._select_reflections_for_scaling()
@@ -319,11 +321,19 @@ class SingleScaler(ScalerBase):
     self.Ih_table.update_weights(block_id)
     self.Ih_table.calc_Ih(block_id)
 
-  def combine_intensities(self):
+  def combine_intensities(self, use_Imid=None):
     """Combine prf and sum intensities to give optimal intensities."""
-    logger.info("Performing profile/summation intensity optimisation.")
     try:
-      combiner = SingleDatasetIntensityCombiner(self)
+      if use_Imid is not None:
+        logger.info("Using previously determined optimal intensity choice: %s\n",
+          OrderedDict([(use_Imid, str(round(use_Imid, 4))),
+            (0, 'profile intensities'), (1, 'summation intensities')])[use_Imid])
+      else:
+        logger.info("Performing profile/summation intensity optimisation.")
+      combiner = SingleDatasetIntensityCombiner(self, use_Imid)
+    except DialsMergingStatisticsError as e:
+      logger.info("Intensity combination failed with the error %s", e)
+    else:
       intensity, variance = combiner.calculate_suitable_combined_intensities()
       #update data in reflection table
       self._reflection_table['intensity'].set_selected(
@@ -333,8 +343,7 @@ class SingleScaler(ScalerBase):
       # now set in global_Ih_table
       self.global_Ih_table.update_data_in_blocks(intensity, 0, column='intensity')
       self.global_Ih_table.update_data_in_blocks(variance, 0, column='variance')
-    except DialsMergingStatisticsError as e:
-      logger.info("Intensity combination failed with the error %s", e)
+      self.experiments.scaling_model.record_intensity_combination_Imid(combiner.max_key)
 
   def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
     """
@@ -806,6 +815,9 @@ class MultiScaler(MultiScalerBase):
       logger.info("Performing multi-dataset profile/summation intensity optimisation.")
       try:
         combiner = MultiDatasetIntensityCombiner(self)
+      except DialsMergingStatisticsError as e:
+        logger.info("Intensity combination failed with the error %s", e)
+      else:
         for i, scaler in enumerate(self.active_scalers):
           intensity, variance = combiner.calculate_suitable_combined_intensities(i)
           scaler.reflection_table['intensity'].set_selected(
@@ -814,8 +826,7 @@ class MultiScaler(MultiScalerBase):
             scaler.suitable_refl_for_scaling_sel.iselection(), variance)
           self.global_Ih_table.update_data_in_blocks(intensity, i, column='intensity')
           self.global_Ih_table.update_data_in_blocks(variance, i, column='variance')
-      except DialsMergingStatisticsError as e:
-        logger.info("Intensity combination failed with the error %s", e)
+          scaler.experiments.scaling_model.record_intensity_combination_Imid(combiner.max_key)
     else:
       for scaler in self.single_scalers:
         scaler.combine_intensities()
