@@ -155,6 +155,7 @@ class installer(install_distribution.installer):
     rmdir('base/share/gtk-doc')
     rmdir('base/share/hdf5_examples')
     rmdir('base/share/man')
+    rmdir('build/dials_data')
     rmdir('build/regression_data')
     rmdir('build/xia2_regression/blend_tutorial')
     rmdir('build/xia2_regression/test_data')
