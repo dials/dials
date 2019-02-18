@@ -203,25 +203,25 @@ def run(args):
     if 'imageset_id' not in reflections:
       reflections['imageset_id'] = reflections['id']
 
-    spots_mm = indexer_base.map_spots_pixel_to_mm_rad(
-      spots=reflections, detector=imageset.get_detector(), scan=imageset.get_scan())
+    reflections.centroid_px_to_mm(
+      imageset.get_detector(), scan=imageset.get_scan())
 
     indexer_base.map_centroids_to_reciprocal_space(
-      spots_mm, detector=imageset.get_detector(), beam=imageset.get_beam(),
+      reflections, detector=imageset.get_detector(), beam=imageset.get_beam(),
       goniometer=imageset.get_goniometer())
 
     if params.d_min is not None:
-      d_spacings = 1/spots_mm['rlp'].norms()
+      d_spacings = 1/reflections['rlp'].norms()
       sel = d_spacings > params.d_min
-      spots_mm = spots_mm.select(sel)
+      reflections = reflections.select(sel)
 
     # derive a max_cell from mm spots
 
     from dials.algorithms.indexing.indexer import find_max_cell
-    max_cell = find_max_cell(spots_mm, max_cell_multiplier=1.3,
+    max_cell = find_max_cell(reflections, max_cell_multiplier=1.3,
                              step_size=45).max_cell
 
-    result = run_dps((imageset, spots_mm, max_cell, hardcoded_phil))
+    result = run_dps((imageset, reflections, max_cell, hardcoded_phil))
     solutions = [matrix.col(v) for v in result['solutions']]
     for i in range(min(n_solutions, len(solutions))):
       v = solutions[i]

@@ -1070,50 +1070,6 @@ class indexer_base(object):
     return entering
 
   @staticmethod
-  def map_spots_pixel_to_mm_rad(spots, detector, scan):
-    """Map spot centroids from pixel/image number to mm/radian.
-
-    Used to convert spot centroids coming from e.g. dials.find_spots which are in
-    pixel/image number units to mm/radian units as required for indexing and refinement.
-
-    :param spots: a reflection table containing the columns 'xyzobs.px.value',
-                  'xyzobs.px.variance' and 'panel'
-    :type spots: dials.array_family.flex.reflection_table
-    :param detector: a dxtbx detector object
-    :type detector: dxtbx.model.detector.Detector
-    :param scan: a dxtbx scan object. May be None, e.g. for a still image
-    :type scan: dxtbx.model.scan.Scan
-    :returns: A copy of the input reflection table containing the additional keys
-              'xyzobs.mm.value' and 'xyzobs.mm.variance'
-    :rtype: dials.array_family.flex.reflection_table
-    """
-
-    from dials.algorithms.centroid import centroid_px_to_mm_panel
-    ## ideally don't copy, but have separate spot attributes for mm and pixel
-    import copy
-    spots = copy.deepcopy(spots)
-    spots['xyzobs.mm.value'] = flex.vec3_double(len(spots))
-    spots['xyzobs.mm.variance'] = flex.vec3_double(len(spots))
-    panel_numbers = flex.size_t(spots['panel'])
-    for i_panel in range(len(detector)):
-      sel = (panel_numbers == i_panel)
-      isel = sel.iselection()
-      spots_panel = spots.select(panel_numbers == i_panel)
-      # e.g. data imported from XDS; no variance known then; since is used
-      # only for weights assign as 1 => uniform weights
-      if not 'xyzobs.px.variance' in spots_panel:
-        spots_panel['xyzobs.px.variance'] = flex.vec3_double(
-            len(spots_panel), (1,1,1))
-      centroid_position, centroid_variance, _ = centroid_px_to_mm_panel(
-        detector[i_panel], scan,
-        spots_panel['xyzobs.px.value'],
-        spots_panel['xyzobs.px.variance'],
-        flex.vec3_double(len(spots_panel), (1,1,1)))
-      spots['xyzobs.mm.value'].set_selected(sel, centroid_position)
-      spots['xyzobs.mm.variance'].set_selected(sel, centroid_variance)
-    return spots
-
-  @staticmethod
   def map_centroids_to_reciprocal_space(spots_mm, detector, beam, goniometer,
                                         calculated=False):
     """Map mm/radian spot centroids to reciprocal space.

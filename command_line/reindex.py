@@ -231,9 +231,8 @@ experiments file must also be specified with the option: reference= """)
           sel = (reflections[0]['imageset_id'] == i)
         else:
           sel = (reflections[0]['id'] == i)
-        refl = indexer.indexer_base.map_spots_pixel_to_mm_rad(
-          reflections[0].select(sel),
-          imageset.get_detector(), imageset.get_scan())
+        refl = reflections[0].select(sel)
+        refl.centroid_px_to_mm(imageset.get_detector(), imageset.get_scan())
 
         indexer.indexer_base.map_centroids_to_reciprocal_space(
           refl, imageset.get_detector(), imageset.get_beam(),

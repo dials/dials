@@ -54,15 +54,13 @@ def add_resolution_to_reflections(reflections, experiments):
   if 'imageset_id' not in reflections:
     reflections['imageset_id'] = reflections['id']
 
-  spots_mm = indexer_base.map_spots_pixel_to_mm_rad(
-    spots=reflections, detector=imageset.get_detector(),
-    scan=imageset.get_scan())
+  reflections.centroid_px_to_mm(imageset.get_detector(), imageset.get_scan())
 
   indexer_base.map_centroids_to_reciprocal_space(
-    spots_mm, detector=imageset.get_detector(), beam=imageset.get_beam(),
+    reflections, detector=imageset.get_detector(), beam=imageset.get_beam(),
     goniometer=imageset.get_goniometer())
 
-  d_spacings = 1/spots_mm['rlp'].norms()
+  d_spacings = 1/reflections['rlp'].norms()
 
   reflections['d'] = d_spacings
 

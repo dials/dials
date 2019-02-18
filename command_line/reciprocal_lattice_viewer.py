@@ -139,9 +139,8 @@ class render_3d(object):
 
       # 155 handle data from predictions *only* if that is what we have
       if 'xyzobs.px.value' in self.reflections_input:
-        refl = indexer.indexer_base.map_spots_pixel_to_mm_rad(
-          self.reflections_input.select(sel),
-          imageset.get_detector(), imageset.get_scan())
+        refl = copy.deepcopy(self.reflections_input)
+        refl.centroid_px_to_mm(imageset.get_detector(), imageset.get_scan())
 
         goniometer = copy.deepcopy(imageset.get_goniometer())
         if self.settings.reverse_phi:

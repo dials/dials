@@ -81,14 +81,13 @@ def run(args):
     if 'imageset_id' not in refl:
       refl['imageset_id'] = refl['id']
 
-    reflmm = indexer_base.map_spots_pixel_to_mm_rad(
-      spots=refl, detector=imageset.get_detector(), scan=imageset.get_scan())
+    refl.centroid_px_to_mm(imageset.get_detector(), scan=imageset.get_scan())
 
     indexer_base.map_centroids_to_reciprocal_space(
-      reflmm, detector=imageset.get_detector(), beam=imageset.get_beam(),
+      refl, detector=imageset.get_detector(), beam=imageset.get_beam(),
       goniometer=imageset.get_goniometer())
 
-    rlp = reflmm['rlp']
+    rlp = refl['rlp']
 
     for _rlp in rlp:
       fout.write(fmt % (_rlp[0], _rlp[1], _rlp[2], k, k))
