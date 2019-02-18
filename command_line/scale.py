@@ -368,12 +368,14 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
 
     # remove reflections with neg sigma
     sel = joint_table['inverse_scale_factor'] <= 0.0
-    n_neg = sel.count(True)
+    good_sel = ~joint_table.get_flags(joint_table.flags.bad_for_scaling, all=False)
+    n_neg = (good_sel & sel).count(True)
     if n_neg > 0:
-      logger.warning(
-        'Warning: %s reflections were assigned negative scale factors. \n'
-        'It may be best to rerun scaling from this point for an improved model.' % n_neg)
-      joint_table.set_flags(sel, joint_table.flags.excluded_for_scaling)
+      logger.warning("""
+Warning: %s non-excluded reflections were assigned negative scale factors
+during scaling. These will be set as outliers in the reflection table. It
+may be best to rerun scaling from this point for an improved model.""", n_neg)
+      joint_table.set_flags(sel, joint_table.flags.outlier_in_scaling)
 
     save_reflections(joint_table, self.params.output.reflections)
 
