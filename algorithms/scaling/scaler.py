@@ -236,13 +236,18 @@ class SingleScaler(ScalerBase):
     self.suitable_refl_for_scaling_sel = self.get_suitable_for_scaling_sel(
       self._reflection_table)
     self.n_suitable_refl = self.suitable_refl_for_scaling_sel.count(True)
-    self.outliers = flex.bool(self.n_suitable_refl, False)
+    if self._experiments.scaling_model.is_scaled:
+      outliers = self._reflection_table.get_flags(self._reflection_table.flags.outlier_in_scaling)
+      self.outliers = outliers.select(self.suitable_refl_for_scaling_sel)
+    else:
+      self.outliers = flex.bool(self.n_suitable_refl, False)
     self.scaling_subset_sel = None # A selection of len n_suitable_refl of scaling subset selection
     self.scaling_selection = None # As above, but with outliers deselected also
     self._configure_model_and_datastructures()
     if 'Imid' in self.experiments.scaling_model.configdict:
       self.combine_intensities(self.experiments.scaling_model.configdict['Imid'])
-    self.round_of_outlier_rejection()
+    if not self._experiments.scaling_model.is_scaled:
+      self.round_of_outlier_rejection()
     if not for_multi:
       self._select_reflections_for_scaling()
       self._create_Ih_table()
