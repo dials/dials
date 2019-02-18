@@ -237,15 +237,14 @@ class better_experimental_model_discovery(object):
     from rstbx.indexing_api import dps_extended
     trial_detector = dps_extended.get_new_detector(imageset.get_detector(), trial_origin_offset)
 
-    from dials.algorithms.indexing.indexer import indexer_base
     # Key point for this is that the spots must correspond to detector
     # positions not to the correct RS position => reset any fixed rotation
     # to identity - copy in case called from elsewhere
     import copy
     gonio = copy.deepcopy(imageset.get_goniometer())
     gonio.set_fixed_rotation((1, 0, 0, 0, 1, 0, 0, 0, 1))
-    indexer_base.map_centroids_to_reciprocal_space(
-      spots_mm, trial_detector, imageset.get_beam(), gonio)
+    spots_mm.map_centroids_to_reciprocal_space(
+      trial_detector, imageset.get_beam(), gonio)
 
     return self.sum_score_detail(spots_mm['rlp'], solutions, amax=amax)
 
@@ -365,8 +364,8 @@ def discover_better_experimental_model(
     spots_mm.centroid_px_to_mm(
       imageset.get_detector(), scan=imageset.get_scan())
 
-    indexer_base.map_centroids_to_reciprocal_space(
-      spots_mm, detector=imageset.get_detector(), beam=imageset.get_beam(),
+    spots_mm.map_centroids_to_reciprocal_space(
+      detector=imageset.get_detector(), beam=imageset.get_beam(),
       goniometer=imageset.get_goniometer())
 
     if dps_params.d_min is not None:

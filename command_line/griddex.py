@@ -20,14 +20,13 @@ phil_scope = libtbx.phil.parse("""
 """)
 
 def test_index(experiment, reflections):
-  from dials.algorithms.indexing import indexer
 
   # map reflections to reciprocal space from image space
 
   reflections.centroid_px_to_mm(experiment.detector, experiment.scan)
 
-  indexer.indexer_base.map_centroids_to_reciprocal_space(
-    reflections, experiment.detector, experiment.beam, experiment.goniometer)
+  reflections.map_centroids_to_reciprocal_space(
+    experiment.detector, experiment.beam, experiment.goniometer)
 
   # now compute fractional indices - in Python rather than trying to push
   # everything to C++ for the moment

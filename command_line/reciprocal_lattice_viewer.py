@@ -125,7 +125,6 @@ class render_3d(object):
 
   def map_points_to_reciprocal_space(self):
 
-    from dials.algorithms.indexing import indexer
     import copy
 
     reflections = flex.reflection_table()
@@ -146,9 +145,8 @@ class render_3d(object):
         if self.settings.reverse_phi:
           goniometer.set_rotation_axis(
             [-i for i in goniometer.get_rotation_axis()])
-        indexer.indexer_base.map_centroids_to_reciprocal_space(
-          refl, imageset.get_detector(), imageset.get_beam(),
-          goniometer)
+        refl.map_centroids_to_reciprocal_space(
+          imageset.get_detector(), imageset.get_beam(), goniometer)
 
       else:
         # work on xyzcal.mm
@@ -159,8 +157,8 @@ class render_3d(object):
           goniometer.set_rotation_axis(
             [-i for i in goniometer.get_rotation_axis()])
 
-        indexer.indexer_base.map_centroids_to_reciprocal_space(
-          refl, imageset.get_detector(), imageset.get_beam(),
+        refl.map_centroids_to_reciprocal_space(
+          imageset.get_detector(), imageset.get_beam(),
           goniometer, calculated=True)
 
       reflections.extend(refl)

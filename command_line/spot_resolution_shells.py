@@ -22,7 +22,6 @@ def settings():
 
 def spot_resolution_shells(imagesets, reflections, params):
   goniometer = imagesets[0].get_goniometer()
-  from dials.algorithms.indexing import indexer
   from dials.array_family import flex
   mapped_reflections = flex.reflection_table()
   for i, imageset in enumerate(imagesets):
@@ -34,10 +33,8 @@ def spot_resolution_shells(imagesets, reflections, params):
       reflections['id'] = reflections['id'].as_int()
     refl = reflections.select(sel)
     refl.centroid_px_to_mm(imageset.get_detector(), imageset.get_scan())
-
-    indexer.indexer_base.map_centroids_to_reciprocal_space(
-      refl, imageset.get_detector(), imageset.get_beam(),
-      imageset.get_goniometer())
+    refl.map_centroids_to_reciprocal_space(
+      imageset.get_detector(), imageset.get_beam(), imageset.get_goniometer())
     mapped_reflections.extend(refl)
   reflections = mapped_reflections
   two_theta_array = reflections['rlp'].norms()

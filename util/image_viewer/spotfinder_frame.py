@@ -104,7 +104,6 @@ class SpotFrame(XrayFrame) :
       self.reflections = self.predict()
 
     if self.params.d_min is not None and len(self.reflections):
-      from dials.algorithms.indexing import indexer
       reflections = [flex.reflection_table() for i in range(len(self.reflections))]
       for i_ref_list in range(len(self.reflections)):
         if 'rlp' in self.reflections[i_ref_list]:
@@ -127,8 +126,8 @@ class SpotFrame(XrayFrame) :
               refl.centroid_px_to_mm(
                 imageset.get_detector(), imageset.get_scan())
 
-            indexer.indexer_base.map_centroids_to_reciprocal_space(
-              refl, imageset.get_detector(), imageset.get_beam(),
+            refl.map_centroids_to_reciprocal_space(
+              imageset.get_detector(), imageset.get_beam(),
               imageset.get_goniometer())
             reflections[i_ref_list].extend(refl)
 

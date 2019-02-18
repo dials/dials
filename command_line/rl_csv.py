@@ -6,8 +6,7 @@ from scitbx.array_family import flex
 from scitbx import matrix
 from dials.util.options import OptionParser
 from dials.util.options import flatten_experiments, flatten_reflections
-from dials.algorithms.indexing.indexer \
-     import indexer_base, filter_reflections_by_scan_range
+from dials.algorithms.indexing.indexer import filter_reflections_by_scan_range
 
 import libtbx.load_env
 
@@ -82,9 +81,8 @@ def run(args):
       refl['imageset_id'] = refl['id']
 
     refl.centroid_px_to_mm(imageset.get_detector(), scan=imageset.get_scan())
-
-    indexer_base.map_centroids_to_reciprocal_space(
-      refl, detector=imageset.get_detector(), beam=imageset.get_beam(),
+    refl.map_centroids_to_reciprocal_space(
+      detector=imageset.get_detector(), beam=imageset.get_beam(),
       goniometer=imageset.get_goniometer())
 
     rlp = refl['rlp']

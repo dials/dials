@@ -1306,7 +1306,7 @@ def test_as_miller_array():
   with pytest.raises(Sorry):
     _ = table.as_miller_array(experiment, intensity='2')
 
-def test_centroid_px_to_mm(dials_regression):
+def test_map_centroids_to_reciprocal_space(dials_regression):
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
@@ -1316,6 +1316,8 @@ def test_centroid_px_to_mm(dials_regression):
   imageset = datablock.extract_imagesets()[0]
   detector = imageset.get_detector()
   scan = imageset.get_scan()
+  beam = imageset.get_beam()
+  goniometer = imageset.get_goniometer()
 
   # check mm values not in
   assert 'xyzobs.mm.value' not in refl
@@ -1329,3 +1331,30 @@ def test_centroid_px_to_mm(dials_regression):
     (199.43400000000003, 11.908133333333334, 1.4324789835743459))
   assert refl['xyzobs.mm.variance'][0] == pytest.approx(
     (0.0035346345381526106, 0.0029881028112449803, 5.711576621000785e-07))
+
+  refl.map_centroids_to_reciprocal_space(detector, beam, goniometer=goniometer)
+
+  for k in ('s1', 'rlp'):
+    assert k in refl.keys()
+
+  assert refl['s1'][0] == pytest.approx(
+    (-0.035321308540942425, 0.6030297672949761, -0.8272574664632307))
+  assert refl['rlp'][0] == pytest.approx(
+    (-0.035321308540942425, 0.27833194706770875, -0.5700990597173606))
+
+  # select only those centroids on the first image
+  sel = refl['xyzobs.px.value'].parts()[2] < 1
+  refl1 = refl.select(sel)
+  del refl1['xyzobs.mm.value'], refl1['xyzobs.mm.variance'], refl1['s1'], refl1['rlp']
+
+  # pretend this is a still and hence no scan or goniometer
+  refl1.centroid_px_to_mm(detector, scan=None)
+  refl1.map_centroids_to_reciprocal_space(detector, beam, goniometer=None)
+
+  assert refl1['s1'][0] == pytest.approx(
+    (-0.035321308540942425, 0.6030297672949761, -0.8272574664632307))
+  # numbers for rlp are different to above since for the goniometer case the
+  # starting angle of the first image is non-zero, so the rlps are rotated back
+  # to zero degrees
+  assert refl1['rlp'][0] == pytest.approx(
+    (-0.035321308540942425, 0.6030297672949761, 0.19707031842793443))
