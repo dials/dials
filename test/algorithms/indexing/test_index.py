@@ -408,7 +408,7 @@ def test_index_imosflm_tutorial(dials_regression, tmpdir):
 def test_index_insulin(regression_data, run_in_tmpdir):
   data_dir = regression_data('insulin')
 
-  args = ["dials.import", "output.experiments=datablock.json", "allow_multiple_sweeps=True"]
+  args = ["dials.import", "allow_multiple_sweeps=True"]
   for i, image_path in enumerate(("insulin_1_001.img", "insulin_1_045.img")):
     target = 'image_00%i.img' % (i+1)
     data_dir.join(image_path).copy(run_in_tmpdir.join(target))
@@ -418,7 +418,7 @@ def test_index_insulin(regression_data, run_in_tmpdir):
   #print(command)
   result = easy_run.fully_buffered(command=command).raise_if_errors()
 
-  experiments_json = "experiments.json"
+  experiments_json = "imported_experiments.json"
 
   args = ["dials.find_spots", experiments_json]
 
@@ -440,9 +440,8 @@ def test_index_insulin(regression_data, run_in_tmpdir):
     extra_args.append("indexing.method=%s" %method)
     extra_args.append("treat_single_image_as_still=False")
 
-    with tmpdir.as_cwd():
-      result = run_one_indexing(pickle_path, experiments_json, extra_args, expected_unit_cell,
-                                expected_rmsds, expected_hall_symbol)
+    result = run_one_indexing(pickle_path, experiments_json, extra_args, expected_unit_cell,
+                              expected_rmsds, expected_hall_symbol)
 
 def test_index_4rotation(dials_regression, tmpdir):
   data_dir = os.path.join(dials_regression, "indexing_test_data", "4rotation")
