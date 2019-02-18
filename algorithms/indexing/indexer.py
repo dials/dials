@@ -250,8 +250,11 @@ indexing {
       .help = "refine_shells: refine in increasing resolution cutoffs after indexing."
               "repredict_only: do not refine after indexing, just update spot"
               "predictions."
-    n_macro_cycles = Auto
+    n_macro_cycles = 5
       .type = int(value_min=1)
+      .help = "Maximum number of macro cycles of refinement, reindexing all"
+              "reflections using updated geometry at the beginning of each"
+              "cycle. Does not apply to stills.indexer=stills."
     d_min_step = Auto
       .type = float(value_min=0.0)
       .help = "Reduction per step in d_min for reflections to include in refinement."
@@ -485,12 +488,6 @@ class indexer_base(object):
         # different default to dials.refine
         # tukey is faster and more appropriate at the indexing step
         self.all_params.refinement.reflections.outlier.algorithm = 'tukey'
-
-    if self.params.refinement_protocol.n_macro_cycles in ('auto', libtbx.Auto):
-      if self.imagesets[0].get_goniometer() is None:
-        self.params.refinement_protocol.n_macro_cycles = 1
-      else:
-        self.params.refinement_protocol.n_macro_cycles = 5
 
     for imageset in imagesets[1:]:
       if imageset.get_detector().is_similar_to(self.imagesets[0].get_detector()):

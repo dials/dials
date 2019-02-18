@@ -117,8 +117,6 @@ class stills_indexer(indexer_base):
     # specific modifications (don't re-index after choose best orientation matrix, but use the indexing from
     # choose best orientation matrix, also don't use macrocycles) of refinement after indexing.
     # 2017 update: do accept multiple lattices per shot
-    if self.params.refinement_protocol.n_macro_cycles > 1:
-      raise Sorry("For stills, please set refinement_protocol.n_macro_cycles = 1")
 
     experiments = ExperimentList()
 
