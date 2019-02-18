@@ -1285,6 +1285,39 @@ Found %s""" % (list_of_identifiers, id_values))
       self['id'].set_selected(sel_exp, i_exp)
       self.experiment_identifiers()[i_exp] = exp_id
 
+  def centroid_px_to_mm(self, detector, scan=None):
+    """
+    Map spot centroids from pixel/image number to mm/radian.
+
+    Used to convert spot centroids coming from e.g. dials.find_spots which are
+    in pixel/image number units to mm/radian units as required for indexing and
+    refinement.
+
+    Args:
+      detector(dxtbx.model.detector.Detector): a dxtbx detector object
+      scan (dxtbx.model.scan.Scan): a dxtbx scan object. May be None, e.g. for
+        a still image.
+
+    """
+
+    from dials.algorithms.centroid import centroid_px_to_mm_panel
+    self['xyzobs.mm.value'] = flex.vec3_double(len(self))
+    self['xyzobs.mm.variance'] = flex.vec3_double(len(self))
+    # e.g. data imported from XDS; no variance known then; since is used
+    # only for weights assign as 1 => uniform weights
+    if not 'xyzobs.px.variance' in self:
+      self['xyzobs.px.variance'] = flex.vec3_double(len(self), (1,1,1))
+    panel_numbers = flex.size_t(self['panel'])
+    for i_panel in range(len(detector)):
+      sel = (panel_numbers == i_panel)
+      centroid_position, centroid_variance, _ = centroid_px_to_mm_panel(
+        detector[i_panel], scan,
+        self['xyzobs.px.value'].select(sel),
+        self['xyzobs.px.variance'].select(sel),
+        flex.vec3_double(sel.count(True), (1,1,1)))
+      self['xyzobs.mm.value'].set_selected(sel, centroid_position)
+      self['xyzobs.mm.variance'].set_selected(sel, centroid_variance)
+
 class reflection_table_selector(object):
   '''
   A class to select columns from reflection table.

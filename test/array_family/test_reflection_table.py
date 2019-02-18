@@ -1,12 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
 import copy
-
+import os
 import pytest
 
 from dials.array_family import flex
 from dxtbx.model import ExperimentList, Experiment, Crystal
 from libtbx.utils import Sorry
+from dxtbx.serialize import load
+
 from cctbx import sgtbx
 
 def test_init():
@@ -1102,7 +1104,7 @@ def test_to_from_msgpack():
   assert(all(tuple(a == b for a, b in zip(new_table['col9'], c9))))
   assert(all(tuple(a == b for a, b in zip(new_table['col10'], c10))))
   assert(all(tuple(compare(a, b) for a, b in zip(new_table['col11'], c11))))
-  
+
   table.as_msgpack_file("reflections.mpack")
   new_table = flex.reflection_table.from_msgpack_file("reflections.mpack")
   assert(new_table.is_consistent())
@@ -1303,3 +1305,27 @@ def test_as_miller_array():
   table['intensity.2.value'] = flex.double([1.0, 2.0, 3.0])
   with pytest.raises(Sorry):
     _ = table.as_miller_array(experiment, intensity='2')
+
+def test_centroid_px_to_mm(dials_regression):
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
+  pickle_path = os.path.join(data_dir, "full.pickle")
+  sweep_path = os.path.join(data_dir, "datablock_orig.json")
+
+  refl = flex.reflection_table.from_pickle(pickle_path)
+  datablock = load.datablock(sweep_path, check_format=False)[0]
+  imageset = datablock.extract_imagesets()[0]
+  detector = imageset.get_detector()
+  scan = imageset.get_scan()
+
+  # check mm values not in
+  assert 'xyzobs.mm.value' not in refl
+
+  refl.centroid_px_to_mm(detector, scan=scan)
+
+  for k in ('xyzobs.mm.value', 'xyzobs.mm.variance'):
+    assert k in refl.keys()
+
+  assert refl['xyzobs.mm.value'][0] == pytest.approx(
+    (199.43400000000003, 11.908133333333334, 1.4324789835743459))
+  assert refl['xyzobs.mm.variance'][0] == pytest.approx(
+    (0.0035346345381526106, 0.0029881028112449803, 5.711576621000785e-07))
