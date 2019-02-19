@@ -9,7 +9,10 @@ import shlex
 import shutil
 import sys
 
-import dials_data
+try:
+  import dials_data
+except ImportError:
+  dials_data = None
 import libtbx.load_env  # required for libtbx.env.find_in_repositories
 from libtbx.test_utils import open_tmp_directory
 from procrunner import run_process
@@ -73,6 +76,11 @@ class Processing_Tutorial(object):
   class dials_import(Job):
     def __init__(self):
       # find i04 bag training data
+      if not dials_data:
+        raise RuntimeError(
+            "You need to install the dials_data python package first.\n"
+            "Run libtbx.pip install dials_data")
+
       df = dials_data.DataFetcher()
       dataset = df("thaumatin_i04").join("th_8_2_0*cbf").strpath
 
@@ -277,6 +285,11 @@ def extract_last_indexed_spot_count(path):
   write_extract(os.path.join(dest, "dials.index.log.extract_unindexed"), next_ui-1, end_ui, lines)
 
 if __name__ == "__main__":
+  if not dials_data:
+    sys.exit(
+        "You need to install the dials_data python package first.\n"
+        "Run libtbx.pip install dials_data")
+
   if "-h" in sys.argv or "--help" in sys.argv:
     print("Usage: dev.dials.generate_tutorial_text [--beta | --thaum]")
     sys.exit(0)
