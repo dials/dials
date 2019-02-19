@@ -431,7 +431,7 @@ def test_index_trypsin_index_assignment_local(dials_regression, tmpdir):
     ]
 
     expected_unit_cell = uctbx.unit_cell((54.3, 58.3, 66.5, 90, 90, 90))
-    expected_rmsds = (0.33, 0.40, 0.0022)
+    expected_rmsds = (0.33, 0.40, 0.0024)
     expected_hall_symbol = " P 2ac 2ab"
     n_expected_lattices = 3
 
