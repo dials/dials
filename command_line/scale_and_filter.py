@@ -189,6 +189,8 @@ class ScaleAndFilter(object):
         counter, results.get_last_cycle_results()['n_removed'])
 
       # Reset dataset inclusion/exclusion to avoid errors for repeated scaling.
+      experiments = filter_script.experiments
+      reflections = filter_script.reflections
       scaling_params.dataset_selection.use_datasets = None
       scaling_params.dataset_selection.exclude_datasets = None
 

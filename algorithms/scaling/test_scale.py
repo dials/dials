@@ -350,6 +350,29 @@ def test_scale_and_filter(dials_data, run_in_tmpdir):
   assert analysis_results['cycle_results']['3']['image_ranges_removed'] == []
   assert analysis_results['termination_reason'] == 'no_more_removed'
 
+  command = ['dials.scale_and_filter', 'stdcutoff=1.0', 'mode=dataset',
+    'max_cycles=2', 'plots.histogram=cc_half_histograms.png', 'd_min=1.4',
+      'plots.merging_stats=merging_stats.png', 'unmerged_mtz=unmerged.mtz',
+      'output.analysis_results=analysis_results.json',
+      'plots.image_ranges=reduced_image_ranges.png', 'optimise_errors=False']
+  for i in [1, 2, 3, 4, 5, 7, 10]:
+    command.append(location.join("experiments_"+str(i)+".json").strpath)
+    command.append(location.join("reflections_"+str(i)+".pickle").strpath)
+
+  result = procrunner.run(command)
+  assert result['exitcode'] == 0
+  assert result['stderr'] == ''
+  assert os.path.exists("scaled.pickle")
+  assert os.path.exists("scaled_experiments.json")
+  assert os.path.exists("scaled_experiments.json")
+  assert os.path.exists("analysis_results.json")
+  assert os.path.exists("reduced_image_ranges.png")
+  assert os.path.exists("merging_stats.png")
+  assert os.path.exists("cc_half_histograms.png")
+  f = open("analysis_results.json")
+  analysis_results = json.load(f)
+  assert analysis_results['cycle_results']['1']['removed_datasets'] == ['4']
+
 @pytest.mark.dataset_test
 def test_scale_optimise_errors(dials_regression, run_in_tmpdir):
   """Test standard scaling of one dataset with error optimisation."""
