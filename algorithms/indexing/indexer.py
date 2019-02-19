@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 2 -*-
 #
 # dials.algorithms.indexing.indexer.py
@@ -9,7 +10,8 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division, print_function
+from __future__ import absolute_import, division
+from __future__ import print_function
 import copy
 import math
 import logging
@@ -23,7 +25,6 @@ debug_handle = log.debug_handle(logger)
 import libtbx
 from dials.util import Sorry
 import iotbx.phil
-from scitbx import lbfgs
 from scitbx import matrix
 
 from dials.array_family import flex
@@ -1225,175 +1226,26 @@ class indexer_base(object):
         return entering
 
     def find_candidate_orientation_matrices(self, candidate_basis_vectors):
-        candidate_crystal_models = []
-        vectors = candidate_basis_vectors
-        if (
-            self.target_symmetry_primitive is not None
-            and self.target_symmetry_primitive.unit_cell() is not None
-        ):
-            target_min_cell = self.target_symmetry_primitive.minimum_cell().unit_cell()
-        else:
-            target_min_cell = None
+        from dials.algorithms.indexing.basis_vector_search import combinations
 
-        # select unique combinations of input vectors to test
-        # the order of combinations is such that combinations comprising vectors
-        # nearer the beginning of the input list will appear before combinations
-        # comprising vectors towards the end of the list
-        n = len(vectors)
-        # hardcoded limit on number of vectors, fixes issue #72
-        # https://github.com/dials/dials/issues/72
-        n = min(n, 100)
-        vectors = vectors[:n]
-        combinations = flex.vec3_int(flex.nested_loop((n, n, n)))
-        combinations = combinations.select(
-            flex.sort_permutation(combinations.as_vec3_double().norms())
+        candidate_crystal_models = combinations.candidate_orientation_matrices(
+            candidate_basis_vectors
         )
-
-        from rstbx.indexing_api import tools
-
-        transformations = [
-            sgtbx.change_of_basis_op(
-                str(sgtbx.rt_mx(sgtbx.rot_mx(T["trans"].transpose().as_int())))
+        if self.target_symmetry_reference_setting is not None:
+            target_symmetry = self.target_symmetry_reference_setting
+        elif self.target_symmetry_primitive is not None:
+            target_symmetry = self.target_symmetry_primitive
+        else:
+            target_symmetry = None
+        if target_symmetry is not None:
+            candidate_crystal_models = combinations.filter_known_symmetry(
+                candidate_crystal_models,
+                target_symmetry,
+                relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
+                absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance,
+                max_delta=self.params.known_symmetry.max_delta,
             )
-            for T in tools.R
-            if T["mod"] < 5
-        ]
-        transformations = []  # XXX temporarily disable cell doubling checks
-        transformations.insert(0, sgtbx.change_of_basis_op())
 
-        # select only those combinations where j > i and k > j
-        i, j, k = combinations.as_vec3_double().parts()
-        sel = flex.bool(len(combinations), True)
-        sel &= j > i
-        sel &= k > j
-        combinations = combinations.select(sel)
-
-        max_combinations = self.params.basis_vector_combinations.max_combinations
-        if max_combinations is not None and max_combinations < len(combinations):
-            combinations = combinations[:max_combinations]
-
-        half_pi = 0.5 * math.pi
-        min_angle = 20 / 180 * math.pi  # 20 degrees, arbitrary cutoff
-        for i, j, k in combinations:
-            a = vectors[i]
-            b = vectors[j]
-            angle = a.angle(b)
-            if angle < min_angle or (math.pi - angle) < min_angle:
-                continue
-            a_cross_b = a.cross(b)
-            gamma = a.angle(b)
-            if gamma < half_pi:
-                # all angles obtuse if possible please
-                b = -b
-                gamma = math.pi - gamma
-                a_cross_b = -a_cross_b
-            c = vectors[k]
-            if abs(half_pi - a_cross_b.angle(c)) < min_angle:
-                continue
-            alpha = b.angle(c, deg=True)
-            if alpha < half_pi:
-                c = -c
-            # beta = c.angle(a, deg=True)
-            if a_cross_b.dot(c) < 0:
-                # we want right-handed basis set, therefore invert all vectors
-                a = -a
-                b = -b
-                c = -c
-                # assert a.cross(b).dot(c) > 0
-            model = Crystal(a, b, c, space_group_symbol="P 1")
-            uc = model.get_unit_cell()
-            best_model = None
-            cb_op_to_niggli = uc.change_of_basis_op_to_niggli_cell()
-            model = model.change_basis(cb_op_to_niggli)
-            if self.target_symmetry_primitive is not None:
-                max_delta = self.params.known_symmetry.max_delta
-                from dials.algorithms.indexing.symmetry import find_matching_symmetry
-
-                for T in transformations:
-                    uc = model.get_unit_cell()
-                    det = T.c().r().determinant()
-                    if self.target_symmetry_primitive.unit_cell() is None:
-                        if det > 1:
-                            break
-                    else:
-                        primitive_volume = (
-                            self.target_symmetry_primitive.unit_cell().volume()
-                        )
-                    if det > 1 and abs(uc.volume() / primitive_volume - det) < 1e-1:
-                        uc = uc.change_basis(T)
-                    best_subgroup = find_matching_symmetry(
-                        uc,
-                        self.target_symmetry_primitive.space_group(),
-                        max_delta=max_delta,
-                    )
-                    cb_op_extra = None
-                    if best_subgroup is None:
-                        if self.target_symmetry_reference_setting is not None:
-                            # if we have been told we have a centred unit cell check that
-                            # indexing hasn't found the centred unit cell instead of the
-                            # primitive cell
-                            best_subgroup = find_matching_symmetry(
-                                uc,
-                                self.target_symmetry_reference_setting.space_group().build_derived_point_group(),
-                                max_delta=max_delta,
-                            )
-                            cb_op_extra = self.cb_op_reference_to_primitive
-                            if best_subgroup is None:
-                                continue
-                        else:
-                            continue
-                    cb_op_inp_best = best_subgroup["cb_op_inp_best"]
-                    best_subsym = best_subgroup["best_subsym"]
-                    cb_op_best_ref = (
-                        best_subsym.change_of_basis_op_to_reference_setting()
-                    )
-                    ref_subsym = best_subsym.change_basis(cb_op_best_ref)
-                    cb_op_ref_primitive = (
-                        ref_subsym.change_of_basis_op_to_primitive_setting()
-                    )
-                    cb_op_to_primitive = (
-                        cb_op_ref_primitive * cb_op_best_ref * cb_op_inp_best * T
-                    )
-                    if cb_op_extra is not None:
-                        cb_op_to_primitive = cb_op_extra * cb_op_to_primitive
-                    best_model = model.change_basis(cb_op_to_primitive)
-
-                    def is_similar_cell(uc1, uc2):
-                        return uc1.is_similar_to(
-                            uc2,
-                            relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
-                            absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance,
-                        )
-
-                    if self.target_symmetry_primitive.unit_cell() is not None and not (
-                        is_similar_cell(
-                            best_model.get_unit_cell(),
-                            self.target_symmetry_primitive.unit_cell(),
-                        )
-                        or is_similar_cell(
-                            best_model.get_unit_cell().minimum_cell(), target_min_cell
-                        )
-                    ):
-                        best_model = None
-                        continue
-                    else:
-                        break
-            else:
-                best_model = model
-
-            if best_model is None:
-                continue
-
-            uc = best_model.get_unit_cell()
-            params = uc.parameters()
-            if uc.volume() > (params[0] * params[1] * params[2] / 100):
-                # unit cell volume cutoff from labelit 2004 paper
-                candidate_crystal_models.append(best_model)
-                if (
-                    len(candidate_crystal_models)
-                    == self.params.basis_vector_combinations.max_refine
-                ):
-                    return candidate_crystal_models
         return candidate_crystal_models
 
     def choose_best_orientation_matrix(self, candidate_orientation_matrices):
@@ -1426,6 +1278,7 @@ class indexer_base(object):
 
             best_offset = (0, 0, 0)
             best_cc = 0.0
+            best_nref = 0
 
             if grid_search_scope > 0:
                 offsets, ccs, nref = check_indexing_symmetry.get_indexing_offset_correlation_coefficients(
@@ -1447,6 +1300,10 @@ class indexer_base(object):
                         if cc > best_cc:
                             best_cc = cc
                             best_offset = offset
+                            best_nref = n
+
+                    # print offsets[13], nref[13], '%.2f' %ccs[13] # (0,0,0)
+                    # print best_offset, best_nref, '%.2f' %best_cc
 
                     if best_offset != (0, 0, 0):
                         logger.debug(
@@ -1484,6 +1341,8 @@ class indexer_base(object):
                 return soln
             finally:
                 reflogger.setLevel(level)
+
+        import copy
 
         params = copy.deepcopy(self.all_params)
         params.refinement.parameterisation.auto_reduction.action = "fix"
@@ -1584,6 +1443,16 @@ class indexer_base(object):
                     miller_indices = refl["miller_index"].select(sel)
                     miller_indices = cb_op_to_primitive.apply(miller_indices)
                     refl["miller_index"].set_selected(sel, miller_indices)
+                if 0 and self.cb_op_primitive_to_given is not None:
+                    sel = refl["id"] > -1
+                    experiments[0].crystal.update(
+                        experiments[0].crystal.change_basis(
+                            self.cb_op_primitive_to_given
+                        )
+                    )
+                    miller_indices = refl["miller_index"].select(sel)
+                    miller_indices = self.cb_op_primitive_to_given.apply(miller_indices)
+                    refl["miller_index"].set_selected(sel, miller_indices)
 
             if (
                 self.refined_experiments is not None
@@ -1606,6 +1475,8 @@ class indexer_base(object):
                     continue
 
             args.append((params, refl, experiments))
+            if len(args) == params.indexing.basis_vector_combinations.max_refine:
+                break
 
         from libtbx import easy_mp
 
@@ -1699,6 +1570,7 @@ class indexer_base(object):
         target_sg_best = target_sg_ref.change_basis(cb_op_best_ref.inverse())
         ref_subsym = best_subsym.change_basis(cb_op_best_ref)
         cb_op_ref_primitive = ref_subsym.change_of_basis_op_to_primitive_setting()
+        primitive_subsym = ref_subsym.change_basis(cb_op_ref_primitive)
         cb_op_best_primitive = cb_op_ref_primitive * cb_op_best_ref
         cb_op_inp_primitive = cb_op_ref_primitive * cb_op_best_ref * cb_op_inp_best
 
@@ -1756,6 +1628,7 @@ class indexer_base(object):
         if outliers is not None:
             reflections["id"].set_selected(outliers, -1)
         predicted = refiner.predict_for_indexed()
+        verbosity = self.params.refinement_protocol.verbosity
         reflections["xyzcal.mm"] = predicted["xyzcal.mm"]
         reflections["entering"] = predicted["entering"]
         reflections.unset_flags(
@@ -1867,6 +1740,8 @@ class indexer_base(object):
     def debug_write_reciprocal_lattice_points_as_pdb(
         self, file_name="reciprocal_lattice.pdb"
     ):
+        from cctbx import crystal, xray
+
         cs = crystal.symmetry(
             unit_cell=(1000, 1000, 1000, 90, 90, 90), space_group="P1"
         )
@@ -2157,7 +2032,7 @@ class SolutionTrackerWeighted(object):
         score_by_fraction_indexed = self.score_by_fraction_indexed()
         score_by_volume = self.score_by_volume()
         score_by_rmsd_xy = self.score_by_rmsd_xy()
-        # score_by_rmsd_z = self.score_by_rmsd_z()
+        score_by_rmsd_z = self.score_by_rmsd_z()
         overall_scores = self.solution_scores()
 
         perm = flex.sort_permutation(overall_scores)
@@ -2232,6 +2107,8 @@ def optimise_basis_vectors(reciprocal_lattice_points, vectors):
         optimised.append(tuple(minimised.x))
     return optimised
 
+
+from scitbx import lbfgs
 
 # Optimise the initial basis vectors as per equation 11.4.3.4 of
 # Otwinowski et al, International Tables Vol. F, chapter 11.4 pp. 282-295
@@ -2365,6 +2242,7 @@ def plot_centroid_weights_histograms(reflections, n_slots=50):
     for i, h in enumerate([hx, hy, hz]):
         ax = fig.add_subplot(311 + i)
 
+        slots = h.slots().as_double()
         bins, data = hist_outline(h)
         log_scale = True
         if log_scale:
