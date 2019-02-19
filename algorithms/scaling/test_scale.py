@@ -309,6 +309,47 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
   extra_args = ["stats_only=True"]
   _ = run_one_scaling(['scaled.pickle'], ['scaled_experiments.json'], extra_args)
 
+
+import procrunner
+
+def test_scale_and_filter(dials_data, run_in_tmpdir):
+  location = dials_data("multi_crystal_proteinase_k")
+
+  command = ['dials.scale_and_filter', 'stdcutoff=3.0', 'mode=image_group',
+    'max_cycles=6', 'plots.histogram=cc_half_histograms.png', 'd_min=1.4', 'group_size=5',
+      'plots.merging_stats=merging_stats.png', 'unmerged_mtz=unmerged.mtz',
+      'output.analysis_results=analysis_results.json',
+      'plots.image_ranges=reduced_image_ranges.png', 'optimise_errors=False']
+  for i in [1, 2, 3, 4, 5, 7, 10]:
+    command.append(location.join("experiments_"+str(i)+".json").strpath)
+    command.append(location.join("reflections_"+str(i)+".pickle").strpath)
+
+  result = procrunner.run(command)
+  assert result['exitcode'] == 0
+  assert result['stderr'] == ''
+  assert os.path.exists("scaled.pickle")
+  assert os.path.exists("scaled_experiments.json")
+  assert os.path.exists("scaled_experiments.json")
+  assert os.path.exists("analysis_results.json")
+  assert os.path.exists("reduced_image_ranges.png")
+  assert os.path.exists("merging_stats.png")
+  assert os.path.exists("cc_half_histograms.png")
+  result = get_merging_stats("unmerged.mtz")
+  assert result.overall.r_pim < 0.17 #19/02/19 was 0.1640
+  assert result.overall.cc_one_half > 0.96 #19/02/19 was 0.9684
+  assert result.overall.n_obs > 54700 # 19/02/19 was 54794
+  # for this dataset, expect to have two regions excluded - last 5 images of
+  # datasets _4 & _5
+  f = open("analysis_results.json")
+  import json
+  analysis_results = json.load(f)
+  assert analysis_results['cycle_results']['1']['image_ranges_removed'] == \
+    [[[21, 25], 4]]
+  assert analysis_results['cycle_results']['2']['image_ranges_removed'] == \
+    [[[21, 25], 3]]
+  assert analysis_results['cycle_results']['3']['image_ranges_removed'] == []
+  assert analysis_results['termination_reason'] == 'no_more_removed'
+
 @pytest.mark.dataset_test
 def test_scale_optimise_errors(dials_regression, run_in_tmpdir):
   """Test standard scaling of one dataset with error optimisation."""
