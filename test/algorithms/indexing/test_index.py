@@ -128,6 +128,7 @@ def test_index_i04_weak_data_fft3d(dials_regression, tmpdir):
         )
 
 
+@pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
 def test_index_cluster_analysis_search(dials_regression, tmpdir):
     pytest.importorskip("scipy")
     pytest.importorskip("sklearn")
@@ -158,6 +159,7 @@ def test_index_cluster_analysis_search(dials_regression, tmpdir):
         )
 
 
+@pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
 def test_index_cluster_analysis_search_with_symmetry(dials_regression, tmpdir):
     pytest.importorskip("scipy")
     pytest.importorskip("sklearn")
@@ -198,6 +200,7 @@ def test_index_cluster_analysis_search_with_symmetry(dials_regression, tmpdir):
     assert c.angle(a, deg=True) == pytest.approx(90)
 
 
+@pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
 def test_index_trypsin_single_lattice(dials_regression, tmpdir):
     pytest.importorskip("scipy")
     pytest.importorskip("sklearn")
@@ -231,6 +234,7 @@ def test_index_trypsin_single_lattice(dials_regression, tmpdir):
         )
 
 
+@pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
 def test_index_trypsin_two_lattice(dials_regression, tmpdir):
     pytest.importorskip("scipy")
     pytest.importorskip("sklearn")
@@ -270,7 +274,8 @@ def test_index_trypsin_two_lattice(dials_regression, tmpdir):
         )
 
 
-def test_index_trypsin_three_lattice(dials_regression, tmpdir):
+@pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
+def test_index_trypsin_three_lattice_cluster_analysis_search(dials_regression, tmpdir):
     pytest.importorskip("scipy")
     pytest.importorskip("sklearn")
     pytest.importorskip("networkx")
@@ -306,6 +311,7 @@ def test_index_trypsin_three_lattice(dials_regression, tmpdir):
         )
 
 
+@pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
 def test_index_trypsin_four_lattice_P1(dials_regression, tmpdir):
     pytest.importorskip("scipy")
     pytest.importorskip("sklearn")
