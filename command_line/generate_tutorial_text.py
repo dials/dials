@@ -15,7 +15,7 @@ except ImportError:
   dials_data = None
 import libtbx.load_env  # required for libtbx.env.find_in_repositories
 from libtbx.test_utils import open_tmp_directory
-from procrunner import run_process
+import procrunner
 
 class Job(object):
   """Represents a step command to execute"""
@@ -41,7 +41,7 @@ class Job(object):
   def run_process(command):
     """Runs a command, prints running info and results the result, if success"""
     os.environ["DIALS_NOBANNER"] = "1"
-    result = run_process(shlex.split(command))
+    result = procrunner.run(shlex.split(command))
     print("running command took {0:.2f} seconds\n".format(result['runtime']))
     assert result['exitcode'] == 0, "Command execution failed"
     return result
