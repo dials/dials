@@ -11,6 +11,7 @@ from dials.util.options import OptionParser, flatten_reflections, flatten_experi
 from dials.algorithms.scaling.model import model as Model
 from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.util.multi_dataset_handling import parse_multiple_datasets
+from dials.command_line.report import ScalingModelAnalyser
 from libtbx import phil
 import matplotlib
 matplotlib.use('Agg')
@@ -151,35 +152,26 @@ def plot_multi(params, experiment, reflection, j):
       plot_2D_modulation_correction(experiment, reflection,
         outputfile=str(params.output.modcorplot)+'_'+str(j+1)+'.png')
 
+
 def plot_smooth_scales(params, experiment, outputfile=None):
   """Plot the scale and decay terms of a physical scaling model."""
   plt.figure(figsize=(8.5, 5))
   legends = []
   ax1 = None
 
-  configdict = experiment.scaling_model.configdict
-  valid_osc = configdict['valid_osc_range']
-  sample_values = flex.double(np.linspace(valid_osc[0], valid_osc[1],
-    ((valid_osc[1]-valid_osc[0])/0.1)+1, endpoint=True)) # Make a grid of
-    #points with 10 points per degree.
-  if 'scale' in configdict['corrections']:
-    scale_SF = experiment.scaling_model.components['scale']
-    norm_vals = sample_values / experiment.scaling_model.configdict['scale_rot_interval']
-    scale_SF.data = {'x' : norm_vals}
-    scale_SF.update_reflection_data()
-    s = scale_SF.calculate_scales()
-    smoother_phis = [(i * configdict['scale_rot_interval']) + valid_osc[0]
-      for i in scale_SF.smoother.positions()]
+  if 'scale' in experiment.scaling_model.configdict['corrections']:
+    smoother_phis, parameters, parameter_esds, sample_values, sample_scales = \
+      ScalingModelAnalyser.get_smooth_plotting_data_from_model(experiment, component='scale')
     ax1 = plt.subplot(2, 1, 1)
-    ax1.plot(sample_values, s,
+    ax1.plot(sample_values, sample_scales,
       label='smoothly varying \ninverse scale factor')
     if params.output.with_errors:
       if params.output.limit_range_to_obs:
-        ax1.errorbar(smoother_phis[1:-1], scale_SF.parameters[1:-1],
-          yerr=scale_SF.parameter_esds[1:-1], fmt='o', color='k')
+        ax1.errorbar(smoother_phis[1:-1], parameters[1:-1],
+          yerr=parameter_esds[1:-1], fmt='o', color='k')
       else:
-        ax1.errorbar(smoother_phis, scale_SF.parameters,
-          yerr=scale_SF.parameter_esds, fmt='o', color='k',
+        ax1.errorbar(smoother_phis, parameters,
+          yerr=parameter_esds, fmt='o', color='k',
           label='model parameters')
     ax1.set_ylabel('Inverse scale factor', fontsize=12)
     ax1.set_xlabel('Rotation angle ('+r'$^{\circ}$'+')', fontsize=12)
@@ -187,29 +179,24 @@ def plot_smooth_scales(params, experiment, outputfile=None):
     leg1 = ax1.legend(bbox_to_anchor=(1.02, 1), loc=2, fontsize=12)
     legends.append(leg1)
 
-  if 'decay' in configdict['corrections']:
-    decay_SF = experiment.scaling_model.components['decay']
-    norm_vals = sample_values / experiment.scaling_model.configdict['decay_rot_interval']
-    decay_SF.data = {'x' : norm_vals, 'd' : flex.double(norm_vals.size(), 1.0)}
-    decay_SF.update_reflection_data()
-    s = decay_SF.calculate_scales()
-    smoother_phis = [(i * configdict['decay_rot_interval']) + valid_osc[0]
-      for i in decay_SF._smoother.positions()]
+  if 'decay' in experiment.scaling_model.configdict['corrections']:
+    smoother_phis, parameters, parameter_esds, sample_values, sample_scales = \
+      ScalingModelAnalyser.get_smooth_plotting_data_from_model(experiment, component='decay')
     if ax1:
       ax2 = plt.subplot(2, 1, 2, sharex=ax1)
     else:
       ax2 = plt.subplot(2, 1, 2)
     ax2.set_ylabel('Relative B factor (' + r'$\AA^{2}$'+')', fontsize=12)
     ax2.set_xlabel('Rotation angle (' + r'$^{\circ}$'+')', fontsize=12)
-    ax2.plot(sample_values, np.log(s)*2.0,
+    ax2.plot(sample_values, np.log(sample_scales)*2.0,
       label='smoothly varying \nB-factor') #convert scales to B values
     if params.output.with_errors:
       if params.output.limit_range_to_obs:
-        ax2.errorbar(smoother_phis[1:-1], decay_SF.parameters[1:-1],
-          yerr=decay_SF.parameter_esds[1:-1], fmt='o', color='k')
+        ax2.errorbar(smoother_phis[1:-1], parameters[1:-1],
+          yerr=parameter_esds[1:-1], fmt='o', color='k')
       else:
-        ax2.errorbar(smoother_phis, decay_SF.parameters,
-          yerr=decay_SF.parameter_esds, fmt='o', color='k', label='model parameters')
+        ax2.errorbar(smoother_phis, parameters,
+          yerr=parameter_esds, fmt='o', color='k', label='model parameters')
     leg2 = ax2.legend(bbox_to_anchor=(1.02, 1), loc=2, fontsize=12)
     ax2.tick_params(axis='both', which='major', labelsize=12)
     if ax1:

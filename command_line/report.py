@@ -17,6 +17,7 @@ from __future__ import absolute_import, division, print_function
 import copy
 import math
 from collections import OrderedDict
+import numpy as np
 
 import dials.util.banner
 from dials.array_family import flex
@@ -2630,6 +2631,36 @@ class ScalingModelAnalyser(object):
           d.update(uncertainties)
     return {'scaling_model': d}
 
+  @staticmethod
+  def get_smooth_plotting_data_from_model(experiment, component='scale'):
+    """Return a tuple of phis, parameters, parameter esds,
+    sample positions for plotting and sample scale values."""
+    configdict = experiment.scaling_model.configdict
+    valid_osc = configdict['valid_osc_range']
+    sample_values = flex.double(np.linspace(valid_osc[0], valid_osc[1],
+      ((valid_osc[1]-valid_osc[0])/0.1)+1, endpoint=True)) # Make a grid of
+      #points with 10 points per degree.
+    if component == 'scale':
+      if 'scale' in configdict['corrections']:
+        scale_SF = experiment.scaling_model.components['scale']
+        norm_vals = sample_values / experiment.scaling_model.configdict['scale_rot_interval']
+        scale_SF.data = {'x' : norm_vals}
+        scale_SF.update_reflection_data()
+        s = scale_SF.calculate_scales()
+        smoother_phis = [(i * configdict['scale_rot_interval']) + valid_osc[0]
+          for i in scale_SF.smoother.positions()]
+      return smoother_phis, scale_SF.parameters, scale_SF.parameter_esds, sample_values, s
+    if component == 'decay':
+      if 'decay' in configdict['corrections']:
+        decay_SF = experiment.scaling_model.components['decay']
+        norm_vals = sample_values / experiment.scaling_model.configdict['decay_rot_interval']
+        decay_SF.data = {'x' : norm_vals, 'd' : flex.double(norm_vals.size(), 1.0)}
+        decay_SF.update_reflection_data()
+        s = decay_SF.calculate_scales()
+        smoother_phis = [(i * configdict['decay_rot_interval']) + valid_osc[0]
+          for i in decay_SF._smoother.positions()]
+      return smoother_phis, decay_SF.parameters, decay_SF.parameter_esds, sample_values, s
+
   def plot_smooth_model(self, experiment):
     """Plot a smooth scaling model for a physical scaling model."""
 
@@ -2655,23 +2686,15 @@ class ScalingModelAnalyser(object):
 
     import numpy as np
     data = []
-    configdict = experiment.scaling_model.configdict
-    valid_osc = configdict['valid_osc_range']
-    sample_values = flex.double(np.linspace(valid_osc[0], valid_osc[1],
-      ((valid_osc[1]-valid_osc[0])/0.1)+1, endpoint=True)) # Make a grid of
-    #points with 10 points per degree.
 
+    configdict = experiment.scaling_model.configdict
     if 'scale' in configdict['corrections']:
-      scale_SF = experiment.scaling_model.components['scale']
-      scale_SF.data = {'x' : sample_values}
-      scale_SF.update_reflection_data()
-      s = scale_SF.calculate_scales()
-      smoother_phis = [(i * configdict['scale_rot_interval']) + valid_osc[0]
-        for i in scale_SF.smoother.positions()]
+      smoother_phis, parameters, parameter_esds, sample_values, sample_scales = \
+        self.get_smooth_plotting_data_from_model(experiment, component='scale')
 
       data.append({
         'x' : list(sample_values),
-        'y' : list(s),
+        'y' : list(sample_scales),
         'type' : 'line',
         'name' : 'smooth scale term',
         'xaxis' : 'x',
@@ -2679,27 +2702,23 @@ class ScalingModelAnalyser(object):
       })
       data.append({
         'x' : list(smoother_phis),
-        'y' : list(scale_SF.parameters),
+        'y' : list(parameters),
         'type' : 'scatter',
         'mode' : 'markers',
         'name' : 'scale term parameters',
         'xaxis' : 'x',
         'yaxis' : 'y2'
       })
-      if scale_SF.parameter_esds:
-        data[-1]['error_y'] = {'type':'data', 'array':list(scale_SF.parameter_esds)}
+      if parameter_esds:
+        data[-1]['error_y'] = {'type':'data', 'array':list(parameter_esds)}
 
     if 'decay' in configdict['corrections']:
-      decay_SF = experiment.scaling_model.components['decay']
-      decay_SF.data = {'x' : sample_values, 'd' : flex.double(sample_values.size(), 1.0)}
-      decay_SF.update_reflection_data()
-      s = decay_SF.calculate_scales()
-      smoother_phis = [(i * configdict['decay_rot_interval']) + valid_osc[0]
-        for i in decay_SF._smoother.positions()]
+      smoother_phis, parameters, parameter_esds, sample_values, sample_scales = \
+        self.get_smooth_plotting_data_from_model(experiment, component='decay')
 
       data.append({
         'x' : list(sample_values),
-        'y' : list(np.log(s)*2.0),
+        'y' : list(np.log(sample_scales)*2.0),
         'type' : 'line',
         'name' : 'smooth decay term',
         'xaxis' : 'x',
@@ -2707,15 +2726,15 @@ class ScalingModelAnalyser(object):
       })
       data.append({
         'x' : list(smoother_phis),
-        'y' : list(decay_SF.parameters),
+        'y' : list(parameters),
         'type' : 'scatter',
         'mode' : 'markers',
         'name' : 'decay term parameters',
         'xaxis' : 'x',
         'yaxis' : 'y'
       })
-      if decay_SF.parameter_esds:
-        data[-1]['error_y'] = {'type':'data', 'array':list(decay_SF.parameter_esds)}
+      if parameter_esds:
+        data[-1]['error_y'] = {'type':'data', 'array':list(parameter_esds)}
     d['smooth_scale_model']['data'].extend(data)
     return d
 
