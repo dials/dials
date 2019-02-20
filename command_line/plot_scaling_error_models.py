@@ -85,9 +85,8 @@ def main(argv):
     for i, single_scaler in enumerate(scaler.single_scalers):
       good_sel = ~(single_scaler.reflection_table.get_flags(
         single_scaler.reflection_table.flags.bad_for_scaling, all=False))
-      single_scaler.Ih_table = IhTable([(single_scaler.reflection_table, good_sel)],
-        scaler.space_group)
-      Ih_table = single_scaler.Ih_table.blocked_data_list[0]
+      Ih_table = IhTable([single_scaler.reflection_table.select(good_sel)],
+        scaler.space_group).blocked_data_list[0]
       error_model = BasicErrorModel(Ih_table)
       if not 'error_model_parameters' in single_scaler.experiments.scaling_model.configdict:
         raise Sorry("""No error model found in experiments file - likely cause is that
@@ -112,8 +111,8 @@ def main(argv):
   else:
     good_sel = ~(scaler.reflection_table.get_flags(
       scaler.reflection_table.flags.bad_for_scaling, all=False))
-    scaler.Ih_table = IhTable([(scaler.reflection_table, good_sel)], scaler.space_group)
-    Ih_table = scaler.Ih_table.blocked_data_list[0]
+    Ih_table = IhTable([scaler.reflection_table.select(good_sel)],
+      scaler.space_group).blocked_data_list[0]
     error_model = BasicErrorModel(Ih_table)
     if not 'error_model_parameters' in scaler.experiments.scaling_model.configdict:
       raise Sorry("""No error model found in experiments file - likely cause is that
