@@ -25,7 +25,7 @@ def mock_exp():
 def generated_refl():
   """Create a reflection table."""
   rt = flex.reflection_table()
-  rt['xyzobs.px.value'] = flex.vec3_double([(0.1, 0.1, 0.1), (0.1, 0.1, 0.1)])
+  rt['xyzobs.px.value'] = flex.vec3_double([(0.1, 0.1, 0.1), (0.1, 0.1, 0.2)])
   rt['s1'] = flex.vec3_double([(0.1, 0.1, 0.1), (0.1, 0.1, 1.1)])
   rt['d'] = flex.double([1.0, 1.0])
   rt['batch'] = flex.int([0, 1])
@@ -151,18 +151,17 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
   # Test configure reflection table
   mock_params = Mock()
   mock_params.parameterisation.decay_restraint = 0.0
-  rt = physicalmodel.configure_components(test_reflections, mock_exp, mock_params)
-
+  physicalmodel.configure_components(test_reflections, mock_exp, mock_params)
   # Test normalise components.
-  physicalmodel.components['scale'].update_reflection_data(rt)
+  physicalmodel.components['scale'].update_reflection_data()
   physicalmodel.components['scale'].calculate_scales_and_derivatives()
-  physicalmodel.components['decay'].update_reflection_data(rt)
+  physicalmodel.components['decay'].update_reflection_data()
   physicalmodel.components['decay'].calculate_scales_and_derivatives()
   physicalmodel.normalise_components()
   assert list(physicalmodel.components['scale'].parameters) == pytest.approx(
     [1.007195, 0.923262], 1e-4)
   assert list(physicalmodel.components['decay'].parameters) == pytest.approx(
-    [-0.008573, 0.0914265], 1e-4)
+    [-0.0130847, 0.0869153], 1e-4)
 
   # Test from_dict initialisation method.
   physical_dict = {"__id__": "physical", "is_scaled": True, "scale": {

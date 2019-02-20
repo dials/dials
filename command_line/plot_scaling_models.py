@@ -162,10 +162,10 @@ def plot_smooth_scales(params, experiment, outputfile=None):
   sample_values = flex.double(np.linspace(valid_osc[0], valid_osc[1],
     ((valid_osc[1]-valid_osc[0])/0.1)+1, endpoint=True)) # Make a grid of
     #points with 10 points per degree.
-
   if 'scale' in configdict['corrections']:
     scale_SF = experiment.scaling_model.components['scale']
-    scale_SF.data = {'x' : sample_values}
+    norm_vals = sample_values / experiment.scaling_model.configdict['scale_rot_interval']
+    scale_SF.data = {'x' : norm_vals}
     scale_SF.update_reflection_data()
     s = scale_SF.calculate_scales()
     smoother_phis = [(i * configdict['scale_rot_interval']) + valid_osc[0]
@@ -189,7 +189,8 @@ def plot_smooth_scales(params, experiment, outputfile=None):
 
   if 'decay' in configdict['corrections']:
     decay_SF = experiment.scaling_model.components['decay']
-    decay_SF.data = {'x' : sample_values, 'd' : flex.double(sample_values.size(), 1.0)}
+    norm_vals = sample_values / experiment.scaling_model.configdict['decay_rot_interval']
+    decay_SF.data = {'x' : norm_vals, 'd' : flex.double(norm_vals.size(), 1.0)}
     decay_SF.update_reflection_data()
     s = decay_SF.calculate_scales()
     smoother_phis = [(i * configdict['decay_rot_interval']) + valid_osc[0]
