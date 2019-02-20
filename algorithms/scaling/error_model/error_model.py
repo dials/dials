@@ -68,8 +68,8 @@ class BasicErrorModel(object):
 
   def calc_sigmaprime(self, x):
     """Calculate the error from the model."""
-    sigmaprime = x[0] * ((self.Ih_table.variances)
-      + ((x[1]*self.Ih_table.intensities)**2))**0.5
+    sigmaprime = (x[0] * ((self.Ih_table.variances)
+      + ((x[1]*self.Ih_table.intensities)**2))**0.5) / self.Ih_table.inverse_scale_factors
     return sigmaprime
 
   def calc_deltahl(self):
