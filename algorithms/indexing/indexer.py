@@ -28,6 +28,7 @@ import iotbx.phil
 from scitbx import matrix
 
 from dials.array_family import flex
+from dials.algorithms.indexing import assign_indices
 from cctbx import crystal, sgtbx, xray
 
 from dxtbx.model import Crystal
@@ -496,6 +497,18 @@ class indexer_base(object):
         self.all_params = params
         self.refined_experiments = None
         self.hkl_offset = None
+
+        if self.params.index_assignment.method == "local":
+            self._assign_indices = assign_indices.assign_indices_local(
+                epsilon=self.params.index_assignment.local.epsilon,
+                delta=self.params.index_assignment.local.delta,
+                l_min=self.params.index_assignment.local.l_min,
+                nearest_neighbours=self.params.index_assignment.local.nearest_neighbours,
+            )
+        else:
+            self._assign_indices = assign_indices.assign_indices_global(
+                tolerance=self.params.index_assignment.simple.hkl_tolerance
+            )
 
         if self.all_params.refinement.reflections.outlier.algorithm in (
             "auto",
@@ -1586,29 +1599,7 @@ class indexer_base(object):
         return model, cb_op_inp_primitive
 
     def index_reflections(self, experiments, reflections):
-        if self.params.index_assignment.method == "local":
-            params_local = self.params.index_assignment.local
-            from dials.algorithms.indexing import index_reflections_local
-
-            index_reflections_local(
-                reflections,
-                experiments,
-                self.d_min,
-                epsilon=params_local.epsilon,
-                delta=params_local.delta,
-                l_min=params_local.l_min,
-                nearest_neighbours=params_local.nearest_neighbours,
-            )
-        else:
-            params_simple = self.params.index_assignment.simple
-            from dials.algorithms.indexing import index_reflections
-
-            index_reflections(
-                reflections,
-                experiments,
-                self.d_min,
-                tolerance=params_simple.hkl_tolerance,
-            )
+        self._assign_indices(reflections, experiments, d_min=self.d_min)
         if self.hkl_offset is not None and self.hkl_offset != (0, 0, 0):
             reflections["miller_index"] = apply_hkl_offset(
                 reflections["miller_index"], self.hkl_offset

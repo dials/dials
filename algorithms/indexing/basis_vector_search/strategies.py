@@ -12,6 +12,8 @@ from scitbx import fftpack
 from scitbx import matrix
 from cctbx import crystal, uctbx, xray
 
+from dials_algorithms_indexing_ext import map_centroids_to_reciprocal_space_grid
+
 logger = logging.getLogger(__name__)
 
 
@@ -306,8 +308,6 @@ class fft3d(strategy):
             logger.debug("Setting b_iso = %.1f" % self._b_iso)
         # self._b_iso = 0
         selection = flex.bool(reciprocal_lattice_vectors.size(), True)
-        from dials.algorithms.indexing import map_centroids_to_reciprocal_space_grid
-
         map_centroids_to_reciprocal_space_grid(
             grid,
             reciprocal_lattice_vectors,
