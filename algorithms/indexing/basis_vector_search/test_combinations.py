@@ -11,7 +11,7 @@ from dials.algorithms.indexing.basis_vector_search.test_strategies import setup
 def test_combinations(setup):
     max_cell = 1.3 * max(setup["crystal_symmetry"].unit_cell().parameters()[:3])
     strategy = strategies.fft1d(max_cell)
-    basis_vectors = strategy.find_basis_vectors(setup["rlp"])
+    basis_vectors, used = strategy.find_basis_vectors(setup["rlp"])
 
     for target_symmetry in (
         setup["crystal_symmetry"],

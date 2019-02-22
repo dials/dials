@@ -84,6 +84,8 @@ class fft1d(strategy):
         from rstbx.phil.phil_preferences import indexing_api_defs
         import iotbx.phil
 
+        used_in_indexing = flex.bool(reciprocal_lattice_vectors.size(), True)
+
         hardcoded_phil = iotbx.phil.parse(input_string=indexing_api_defs).extract()
 
         # Spot_positions: Centroid positions for spotfinder spots, in pixels
@@ -108,7 +110,7 @@ class fft1d(strategy):
         DPS.index(reciprocal_space_vectors=reciprocal_lattice_vectors)
         solutions = DPS.getSolutions()
         candidate_basis_vectors = [matrix.col(s.bvec()) for s in solutions]
-        return candidate_basis_vectors
+        return candidate_basis_vectors, used_in_indexing
 
 
 class fft3d(strategy):
@@ -155,7 +157,7 @@ class fft3d(strategy):
         else:
             d_min = self._d_min
 
-        grid_real = self._fft(reciprocal_lattice_vectors, d_min)
+        grid_real, used_in_indexing = self._fft(reciprocal_lattice_vectors, d_min)
         self.sites, self.volumes = self.find_peaks(grid_real, d_min)
 
         # hijack the xray.structure class to facilitate calculation of distances
@@ -261,11 +263,11 @@ class fft3d(strategy):
         # logger.debug("%s %s %s" %(i, v.length(), volume))
 
         self.candidate_basis_vectors = vectors
-        return self.candidate_basis_vectors
+        return self.candidate_basis_vectors, used_in_indexing
 
     def _fft(self, reciprocal_lattice_vectors, d_min):
 
-        reciprocal_space_grid = self._map_centroids_to_reciprocal_space_grid(
+        reciprocal_space_grid, used_in_indexing = self._map_centroids_to_reciprocal_space_grid(
             reciprocal_lattice_vectors, d_min
         )
 
@@ -291,7 +293,7 @@ class fft3d(strategy):
         grid_real = flex.pow2(flex.real(grid_transformed))
         del grid_transformed
 
-        return grid_real
+        return grid_real, used_in_indexing
 
     def _map_centroids_to_reciprocal_space_grid(
         self, reciprocal_lattice_vectors, d_min
@@ -307,15 +309,15 @@ class fft3d(strategy):
             self._b_iso = -4 * d_min ** 2 * math.log(0.05)
             logger.debug("Setting b_iso = %.1f" % self._b_iso)
         # self._b_iso = 0
-        selection = flex.bool(reciprocal_lattice_vectors.size(), True)
+        used_in_indexing = flex.bool(reciprocal_lattice_vectors.size(), True)
         map_centroids_to_reciprocal_space_grid(
             grid,
             reciprocal_lattice_vectors,
-            selection,  # do we really need this?
+            used_in_indexing,  # do we really need this?
             d_min,
             b_iso=self._b_iso,
         )
-        return grid
+        return grid, used_in_indexing
 
     def find_peaks(self, grid_real, d_min):
         grid_real_binary = grid_real.deep_copy()
@@ -375,15 +377,18 @@ class real_space_grid_search(strategy):
 
     def find_basis_vectors(self, reciprocal_lattice_vectors):
 
-        logger.info("Indexing from %i reflections" % len(reciprocal_lattice_vectors))
+        from rstbx.array_family import (
+            flex,
+        )  # required to load scitbx::af::shared<rstbx::Direction> to_python converter
+
+        used_in_indexing = flex.bool(reciprocal_lattice_vectors.size(), True)
+
+        logger.info("Indexing from %i reflections" % used_in_indexing.count(True))
 
         def compute_functional(vector):
             two_pi_S_dot_v = 2 * math.pi * reciprocal_lattice_vectors.dot(vector)
             return flex.sum(flex.cos(two_pi_S_dot_v))
 
-        from rstbx.array_family import (
-            flex,
-        )  # required to load scitbx::af::shared<rstbx::Direction> to_python converter
         from rstbx.dps_core import SimpleSamplerTool
 
         SST = SimpleSamplerTool(self._characteristic_grid)
@@ -443,4 +448,4 @@ class real_space_grid_search(strategy):
                 )
             )
 
-        return unique_vectors
+        return unique_vectors, used_in_indexing
