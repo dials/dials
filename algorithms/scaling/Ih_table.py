@@ -131,7 +131,9 @@ class IhTable(object):
 
   @property
   def size(self):
-    """Sum the sizes of all blocks to give the total number of reflections."""
+    """Sum the sizes of all work blocks to give the total number of reflections."""
+    if self.free_Ih_table:
+      return sum([block.size for block in self.Ih_table_blocks[:-1]])
     return sum([block.size for block in self.Ih_table_blocks])
 
   def generate_block_selections(self):

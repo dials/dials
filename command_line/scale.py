@@ -446,13 +446,13 @@ def ensure_consistent_space_groups(experiments, params):
   if params.scaling_options.space_group:
       s_g_symbol = params.scaling_options.space_group
       for experiment in experiments:
-        sg_from_file = experiment.crystal.get_space_group().info()
+        sg_from_file = experiment.crystal.get_space_group()
         user_sg = crystal.symmetry(space_group_symbol=s_g_symbol).space_group()
         if user_sg != sg_from_file:
-          msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
+          logger.info(('WARNING: Manually overriding space group from {0} to {1}. {sep}'
             'If the reflection indexing in these space groups is different, {sep}'
-            'bad things may happen!!! {sep}').format(sg_from_file, s_g_symbol, sep='\n')
-          logger.info(msg)
+            'bad things may happen!!! {sep}').format(sg_from_file.info(),
+            user_sg.info(), sep='\n'))
           experiment.crystal.set_space_group(user_sg)
   else:
     sgs = [e.crystal.get_space_group().type().number() for e in experiments]

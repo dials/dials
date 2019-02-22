@@ -67,8 +67,8 @@ def set_image_ranges_in_scaling_models(experiments):
       if not 'valid_image_range' in exp.scaling_model.configdict:
         #only set if not currently set i.e. set initial
         exp.scaling_model.set_valid_image_range(exp.scan.get_image_range())
-      if exp.scaling_model.configdict['valid_image_range'] != (
-        valid_image_ranges[0][0], valid_image_ranges[-1][1]):
+      if exp.scaling_model.configdict['valid_image_range'] != [
+        valid_image_ranges[0][0], valid_image_ranges[-1][1]]:
         #first and last values in whole list of tuples
         exp.scaling_model.limit_image_range(
           (valid_image_ranges[0][0], valid_image_ranges[-1][1]))

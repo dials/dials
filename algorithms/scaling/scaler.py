@@ -107,7 +107,7 @@ class ScalerBase(object):
   @space_group.setter
   def space_group(self, new_sg):
     if self._space_group:
-      current_sg = self._space_group.info()
+      current_sg = self._space_group
     else:
       current_sg = None
     if isinstance(new_sg, str):
@@ -121,11 +121,11 @@ class ScalerBase(object):
         or cctbx.sgtbx.space group object.''')
     if self.experiments:
       self.experiments.crystal.set_space_group(self._space_group)
-    if current_sg:
-      msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
+    if current_sg != self._space_group:
+      logger.info(('WARNING: Manually overriding space group from {0} to {1}. {sep}'
       'If the reflection indexing in these space groups is different, {sep}'
-      'bad things may happen!!! {sep}').format(current_sg, new_sg, sep='\n')
-      logger.info(msg)
+      'bad things may happen!!! {sep}').format(
+        current_sg.info(), self._space_group.info(), sep='\n'))
 
   @property
   def reflection_table(self):
