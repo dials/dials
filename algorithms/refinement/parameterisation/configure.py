@@ -4,7 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import libtbx # for libtbx.Auto
-from libtbx.utils import Sorry
+from dials.util import Sorry
 
 # Function to convert fix_lists into to_fix selections
 from dials.algorithms.refinement.refinement_helpers import string_sel

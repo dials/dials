@@ -13,7 +13,7 @@ from dials.util.filter_reflections import filter_reflection_table
 from dials.util.batch_handling import calculate_batch_offsets, \
   assign_batches_to_reflections, get_image_ranges
 from iotbx import mtz
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from scitbx import matrix
 
 try:

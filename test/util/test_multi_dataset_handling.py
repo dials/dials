@@ -3,7 +3,7 @@ Tests for dials.util.multi_dataset_handling functions
 """
 
 import pytest
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from dxtbx.model import Experiment, ExperimentList
 from dials.array_family import flex
 from dials.util.multi_dataset_handling import assign_unique_identifiers,\
@@ -137,7 +137,7 @@ def test_assign_unique_identifiers():
   reflections = reflection_list_3()
   reflections[1].experiment_identifiers()[0] = '5'
   # should raise an assertion error for inconsistent identifiers
-  with pytest.raises(AssertionError):
+  with pytest.raises(ValueError):
     exp, rts = assign_unique_identifiers(experiments, reflections)
 
   #test cases where all set, whether reflection table is split or not

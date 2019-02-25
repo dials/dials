@@ -78,6 +78,7 @@ def targeted_scaling_algorithm(scaler):
 
   if scaler.params.scaling_options.outlier_rejection:
     expand_and_do_outlier_rejection(scaler)
+    scaler.make_ready_for_scaling()
     scaler.perform_scaling()
 
   if scaler.params.scaling_options.full_matrix and (

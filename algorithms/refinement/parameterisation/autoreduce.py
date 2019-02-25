@@ -8,7 +8,7 @@ from dials_refinement_helpers_ext import uc_surpl_iter as uc_surpl
 from dials_refinement_helpers_ext import pg_surpl_iter as pg_surpl
 
 from scitbx.array_family import flex
-from libtbx.utils import Sorry
+from dials.util import Sorry
 
 # PHIL
 from libtbx.phil import parse

@@ -12,7 +12,7 @@ from dials.util import log
 debug_handle = log.debug_handle(logger)
 info_handle = log.info_handle(logger)
 import libtbx
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from dials.algorithms.indexing.indexer import indexer_base
 from dials.algorithms.indexing.known_orientation import indexer_known_orientation
 from dials.algorithms.indexing.real_space_grid_search import indexer_real_space_grid_search
@@ -117,8 +117,6 @@ class stills_indexer(indexer_base):
     # specific modifications (don't re-index after choose best orientation matrix, but use the indexing from
     # choose best orientation matrix, also don't use macrocycles) of refinement after indexing.
     # 2017 update: do accept multiple lattices per shot
-    if self.params.refinement_protocol.n_macro_cycles > 1:
-      raise Sorry("For stills, please set refinement_protocol.n_macro_cycles = 1")
 
     experiments = ExperimentList()
 

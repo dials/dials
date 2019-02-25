@@ -52,7 +52,7 @@ class Script(object):
     ''' Run the script. '''
     from dials.util.command_line import Command
     from dials.util.options import flatten_experiments
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     from libtbx.introspection import machine_memory_info
     from math import floor
     memory_info = machine_memory_info()

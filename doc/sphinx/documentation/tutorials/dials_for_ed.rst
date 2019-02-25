@@ -623,7 +623,7 @@ Varying beam, unit cell and crystal orientation:
 
   dials.refine static.json static.pickle scan_varying=True \
     detector.fix=all \
-    reflections.block_width=0.25 \
+    parameterisation.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
     beam.force_static=False \
     beam.smoother.absolute_num_intervals=1 \
@@ -639,7 +639,7 @@ Varying beam, unit cell and crystal orientation:
 
   dials.refine static.json static.pickle scan_varying=True \
     detector.fix=all \
-    reflections.block_width=0.25 \
+    parameterisation.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
     beam.force_static=False \
     output.experiments=varying.json \
@@ -654,7 +654,7 @@ Varying beam and crystal orientation:
 
   dials.refine static.json static.pickle scan_varying=True \
     detector.fix=all \
-    reflections.block_width=0.25 \
+    parameterisation.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
     beam.force_static=False \
     crystal.unit_cell.force_static=True \
@@ -670,7 +670,7 @@ Varying crystal orientation:
 
   dials.refine static.json static.pickle scan_varying=True \
     detector.fix=all \
-    reflections.block_width=0.25 \
+    parameterisation.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
     crystal.unit_cell.force_static=True \
     output.experiments=varying.json \
@@ -685,7 +685,7 @@ Varying crystal orientation:
 
   dials.refine static.json static.pickle scan_varying=True \
     detector.fix=all \
-    reflections.block_width=0.25 \
+    parameterisation.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
     output.experiments=varying.json \
     output.reflections=varying.pickle
@@ -699,7 +699,7 @@ Varying beam and crystal orientation with static, restrained cell:
 
   dials.refine static.json static.pickle scan_varying=True \
     detector.fix=all \
-    reflections.block_width=0.25 \
+    parameterisation.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
     beam.force_static=False \
     crystal.unit_cell.force_static=True \
@@ -716,7 +716,7 @@ Varying beam, unit cell and crystal orientation:
 
   dials.refine static.json static.pickle scan_varying=True \
     detector.fix=all \
-    reflections.block_width=0.25 \
+    parameterisation.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
     beam.force_static=False \
     output.experiments=varying.json \

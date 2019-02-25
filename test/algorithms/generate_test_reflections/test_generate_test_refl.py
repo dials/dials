@@ -6,7 +6,7 @@ def test_generate_test_reflections(tmpdir):
   from dials.algorithms.simulation.generate_test_reflections import \
     master_phil
   from libtbx.phil import command_line
-  cmd = command_line.argument_interpreter(master_params = master_phil)
+  cmd = command_line.argument_interpreter(master_phil=master_phil)
   working_phil = cmd.process_and_fetch(args = ["""nrefl = 10
 shoebox_size {
   x = 20

@@ -9,10 +9,13 @@ import shlex
 import shutil
 import sys
 
-import dials.util.regression_data
+try:
+  import dials_data
+except ImportError:
+  dials_data = None
 import libtbx.load_env  # required for libtbx.env.find_in_repositories
 from libtbx.test_utils import open_tmp_directory
-from procrunner import run_process
+import procrunner
 
 class Job(object):
   """Represents a step command to execute"""
@@ -38,7 +41,7 @@ class Job(object):
   def run_process(command):
     """Runs a command, prints running info and results the result, if success"""
     os.environ["DIALS_NOBANNER"] = "1"
-    result = run_process(shlex.split(command))
+    result = procrunner.run(shlex.split(command))
     print("running command took {0:.2f} seconds\n".format(result['runtime']))
     assert result['exitcode'] == 0, "Command execution failed"
     return result
@@ -73,8 +76,13 @@ class Processing_Tutorial(object):
   class dials_import(Job):
     def __init__(self):
       # find i04 bag training data
-      df = dials.util.regression_data.DataFetcher()
-      dataset = df('i04_bag_training').join('th_8_2_0*cbf').strpath
+      if not dials_data:
+        raise RuntimeError(
+            "You need to install the dials_data python package first.\n"
+            "Run libtbx.pip install dials_data")
+
+      df = dials_data.DataFetcher()
+      dataset = df("thaumatin_i04").join("th_8_2_0*cbf").strpath
 
       self.cmd = "dials.import {0}".format(dataset)
 
@@ -277,6 +285,11 @@ def extract_last_indexed_spot_count(path):
   write_extract(os.path.join(dest, "dials.index.log.extract_unindexed"), next_ui-1, end_ui, lines)
 
 if __name__ == "__main__":
+  if not dials_data:
+    sys.exit(
+        "You need to install the dials_data python package first.\n"
+        "Run libtbx.pip install dials_data")
+
   if "-h" in sys.argv or "--help" in sys.argv:
     print("Usage: dev.dials.generate_tutorial_text [--beta | --thaum]")
     sys.exit(0)

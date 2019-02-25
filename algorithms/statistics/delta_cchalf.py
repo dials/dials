@@ -28,7 +28,7 @@ class ResolutionBinner(object):
 
   '''
 
-  def __init__(self, unit_cell, dmin, dmax, nbins):
+  def __init__(self, unit_cell, dmin, dmax, nbins, output=True):
     '''
     Initialise the binner
 
@@ -38,7 +38,8 @@ class ResolutionBinner(object):
     :param nbins: The number of bins
 
     '''
-    logger.info("Resolution bins")
+    if output:
+      logger.info("Resolution bins")
     assert dmin < dmax
     dmin_inv_sq = 1.0 / dmin**2
     dmax_inv_sq = 1.0 / dmax**2
@@ -52,7 +53,8 @@ class ResolutionBinner(object):
     self._bins = []
     for i in range(self._nbins):
       b0, b1 = self._xmin + i * self._bin_size, self._xmin + (i+1)*self._bin_size
-      logger.info("%d: %.3f, %.3f" % (i, sqrt(1/b0), sqrt(1/b1)))
+      if output:
+        logger.info("%d: %.3f, %.3f" % (i, sqrt(1/b0), sqrt(1/b1)))
       self._bins.append((b0, b1))
 
   def nbins(self):
@@ -284,21 +286,18 @@ class PerImageCChalfStatistics(object):
     #override dataset here with a batched-dependent
     if mode == "image_group":
       image_groups = flex.int(dataset.size(), 0)
-      self.image_group_to_id = {}
-      self.image_group_to_image_range = {}
+      self.image_group_to_expid_and_range = {}
       counter = 0
       for id_ in set(dataset):
         sel = dataset == id_
         images_in_dataset = images.select(sel)
         unique_images = set(images_in_dataset)
         min_img, max_img = (min(unique_images), max(unique_images))
-        for i in range(min_img, max_img, image_group):
+        for i in range(min_img, max_img+1, image_group):
           group_sel = (images_in_dataset >= i) & (images_in_dataset < i+image_group)
           image_groups.set_selected((sel.iselection().select(group_sel)), counter)
-          self.image_group_to_id[counter] = id_
-          self.image_group_to_image_range[counter] = (i, i + image_group - 1)
+          self.image_group_to_expid_and_range[counter] = (id_, (i, i + image_group - 1))
           counter += 1
-
       self._cchalf = self._compute_cchalf_excluding_each_dataset(
         reflection_sums, binner, miller_index, image_groups, intensity)
 

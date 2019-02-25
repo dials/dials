@@ -14,6 +14,9 @@ namespace dials_scaling { namespace boost_python {
   void export_determine_outlier_indices();
   void export_calc_dIh_by_dpi();
   void export_calc_jacobian();
+  void export_calculate_harmonic_tables_from_selections();
+  void export_calc_lookup_index();
+  void export_create_sph_harm_lookup_table();
 
   BOOST_PYTHON_MODULE(dials_scaling_ext)
   {
@@ -26,6 +29,9 @@ namespace dials_scaling { namespace boost_python {
     export_determine_outlier_indices();
     export_calc_dIh_by_dpi();
     export_calc_jacobian();
+    export_calculate_harmonic_tables_from_selections();
+    export_calc_lookup_index();
+    export_create_sph_harm_lookup_table();
   }
 
 }} // namespace dials_scaling::boost_python

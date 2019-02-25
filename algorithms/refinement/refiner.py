@@ -22,7 +22,7 @@ from dxtbx.model.experiment_list import ExperimentList
 from dials.array_family import flex
 from dials.algorithms.refinement.refinement_helpers import ordinal_number
 from libtbx.phil import parse
-from libtbx.utils import Sorry
+from dials.util import Sorry
 import libtbx
 
 # The include scope directive does not work here. For example:

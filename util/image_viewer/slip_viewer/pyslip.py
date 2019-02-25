@@ -22,6 +22,7 @@ difficulty for most uses is to generate the map tiles.
 [1] http://wiki.openstreetmap.org/index.php/Slippy_Map
 """
 from __future__ import division
+from six.moves import range
 
 
 # Copyright (c) 2010, Ross Wilson (rzzzwilson@gmail.com). All rights reserved.
@@ -51,10 +52,7 @@ from __future__ import division
 import os
 import sys
 import glob
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
+from six.moves import cPickle as pickle
 import wx
 from scitbx.matrix import col
 import math
@@ -925,7 +923,7 @@ class PySlip(_BufferedCanvas):
         default_offset_y = kwargs.get('offset_y', self.DefaultPolygonOffsetY)
 
         draw_data = []
-        for x in xrange(0,len(data),5):
+        for x in range(0,len(data),5):
           # Calculate ellipse center, major and minor axes.
           side1=col(( (data[x][0]+data[x+1][0])/2., (data[x][1]+data[x+1][1])/2.))
           side2=col(( (data[x+1][0]+data[x+2][0])/2., (data[x+1][1]+data[x+2][1])/2.))
@@ -1267,7 +1265,7 @@ class PySlip(_BufferedCanvas):
 
         # prepare the show_level value
         if show_levels is None:
-            show_levels = range(self.min_level, self.max_level + 1)[:]
+            show_levels = range(self.min_level, self.max_level + 1)
 
         # create layer, add unique ID to Z order list
         l = _Layer(id=id, painter=render, data=data, map_rel=map_rel,

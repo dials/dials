@@ -241,7 +241,7 @@ class ParameterManager(object):
 
     '''
     from libtbx.phil import parse
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     import shlex
     if short_syntax:
       working_phil = self.working_phil.peek()

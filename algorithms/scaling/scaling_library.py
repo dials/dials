@@ -12,7 +12,7 @@ from copy import deepcopy
 import logging
 import pkg_resources
 from libtbx import phil
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from mock import Mock
 import iotbx.merging_statistics
 from iotbx import cif, mtz
@@ -23,7 +23,7 @@ from dials.algorithms.scaling.model.scaling_model_factory import \
   KBSMFactory
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.scaling_utilities import \
-  calculate_prescaling_correction
+  calculate_prescaling_correction, BadDatasetForScalingException
 from dials.util.multi_dataset_handling import assign_unique_identifiers,\
   parse_multiple_datasets, select_datasets_on_ids
 from dials.util.multi_dataset_handling import get_next_unique_id
@@ -67,8 +67,8 @@ def set_image_ranges_in_scaling_models(experiments):
       if not 'valid_image_range' in exp.scaling_model.configdict:
         #only set if not currently set i.e. set initial
         exp.scaling_model.set_valid_image_range(exp.scan.get_image_range())
-      if exp.scaling_model.configdict['valid_image_range'] != (
-        valid_image_ranges[0][0], valid_image_ranges[-1][1]):
+      if exp.scaling_model.configdict['valid_image_range'] != [
+        valid_image_ranges[0][0], valid_image_ranges[-1][1]]:
         #first and last values in whole list of tuples
         exp.scaling_model.limit_image_range(
           (valid_image_ranges[0][0], valid_image_ranges[-1][1]))
@@ -81,7 +81,12 @@ def choose_scaling_intensities(reflection_table, intensity_choice='profile'):
   all corrections applied except an inverse scale factor."""
   if intensity_choice == 'profile':
     intensity_choice = 'prf' #rename to allow string matching with refl table
-  conv = calculate_prescaling_correction(reflection_table)
+  if intensity_choice == 'prf':
+    if reflection_table.get_flags(reflection_table.flags.integrated_prf).count(True) == 0:
+      logger.warn("No profile fitted reflections in this dataset, using summation intensities")
+      intensity_choice = 'sum'
+  reflection_table = calculate_prescaling_correction(reflection_table)
+  conv = reflection_table['prescaling_correction']
   intstr = 'intensity.'+intensity_choice+'.value'
   if not intstr in reflection_table:
   #Can't find selection, try to choose prf, if not then sum (also catches combine

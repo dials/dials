@@ -155,8 +155,12 @@ class cosym(object):
         filter_ice_rings=False, combine_partials=True,
         partiality_threshold=self._params.partiality_threshold)
       assert refl.size() > 0
-      data = refl['intensity.'+intensity_to_use+'.value']
-      variances = refl['intensity.'+intensity_to_use+'.variance']
+      try:
+        data = refl['intensity.'+intensity_to_use+'.value']
+        variances = refl['intensity.'+intensity_to_use+'.variance']
+      except RuntimeError:
+        data = refl['intensity.sum.value']
+        variances = refl['intensity.sum.variance']
 
       miller_indices = refl['miller_index']
       assert variances.all_gt(0)

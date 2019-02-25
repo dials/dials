@@ -7,6 +7,7 @@ import copy
 
 from cctbx import crystal
 from cctbx import miller
+from cctbx import sgtbx
 import iotbx.phil
 
 from dials.array_family import flex
@@ -120,8 +121,13 @@ class symmetry(object):
         partiality_threshold=self._params.partiality_threshold)
       assert refl.size() > 0
       if intensity_to_use != 'scale':
-        refl['intensity'] = refl['intensity.'+intensity_to_use+'.value']
-        refl['variance'] = refl['intensity.'+intensity_to_use+'.variance']
+        try:
+          refl['intensity'] = refl['intensity.'+intensity_to_use+'.value']
+          refl['variance'] = refl['intensity.'+intensity_to_use+'.variance']
+        except RuntimeError:
+          intensity_to_use = 'sum'
+          refl['intensity'] = refl['intensity.sum.value']
+          refl['variance'] = refl['intensity.sum.variance']
         refl = reject_outliers(refl, expt, method='simple', zmax=12.0)
         refl = refl.select(~refl.get_flags(refl.flags.outlier_in_scaling))
       data = refl['intensity.'+intensity_to_use+'.value']
@@ -151,7 +157,10 @@ class symmetry(object):
       * result.cb_op_inp_min
     best_subsym = result.best_solution.subgroup['best_subsym']
     for i, expt in enumerate(reindexed_experiments):
-      expt.crystal = expt.crystal.change_basis(cb_op_inp_best)
+      expt.crystal = expt.crystal.change_basis(result.cb_op_inp_min)
+      expt.crystal.set_space_group(sgtbx.space_group("P 1"))
+      expt.crystal = expt.crystal.change_basis(
+        result.best_solution.subgroup['cb_op_inp_best'])
       expt.crystal.set_space_group(
         best_subsym.space_group().build_derived_acentric_group())
       S = parameter_reduction.symmetrize_reduce_enlarge(

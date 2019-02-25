@@ -4,7 +4,7 @@ Tests for the error model.
 from math import sqrt
 import pytest
 from libtbx.test_utils import approx_equal
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from dials.algorithms.scaling.error_model.error_model import \
   get_error_model, BasicErrorModel
 from dials.algorithms.scaling.error_model.error_model_target import ErrorModelTarget
@@ -60,7 +60,7 @@ def test_errormodel(large_reflection_table, test_sg):
   assert error_model.summation_matrix[9, 7] == 1
   assert error_model.summation_matrix.non_zeroes == large_reflection_table.size()
   assert error_model.bin_counts == flex.double(large_reflection_table.size(), 1)
-  assert error_model.n_h == block.n_h
+  assert list(error_model.n_h) == list(block.calc_nh())
 
   # Test calc sigmaprime
   x0 = 1.0

@@ -15,7 +15,7 @@ from __future__ import print_function
 import math
 
 import libtbx
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from scitbx import fftpack
 from scitbx import matrix
 from cctbx import crystal, uctbx, xray

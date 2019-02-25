@@ -128,7 +128,7 @@ def derive_change_of_basis_op(from_hkl, to_hkl):
 
 def run(args):
   import libtbx.load_env
-  from libtbx.utils import Sorry
+  from dials.util import Sorry
   usage = "%s [options] experiments.json indexed.pickle" %libtbx.env.dispatcher_name
 
   parser = OptionParser(

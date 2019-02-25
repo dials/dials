@@ -5,6 +5,8 @@ import sys
 
 from ._progress import progress
 
+from libtbx.utils import Sorry
+
 fcntl, msvcrt = None, None
 try:
   import fcntl
@@ -99,8 +101,6 @@ def debug_context_manager(original_context_manager, name='', log_func=None):
 
 def halraiser(e):
   ''' Function to re-raise an exception with a useful message. '''
-  from libtbx.utils import Sorry
-
   text = 'Please report this error to dials-support@lists.sourceforge.net:'
 
   if len(e.args) == 0:
@@ -112,6 +112,23 @@ def halraiser(e):
   else:
     e.args = (text,) + e.args
   raise
+
+@contextlib.contextmanager
+def show_mail_on_error():
+  try:
+    yield
+  except Exception as e:
+    text = 'Please report this error to dials-support@lists.sourceforge.net:'
+    if len(e.args) == 0:
+      e.args = (text,)
+    elif issubclass(e.__class__, Sorry):
+      raise
+    elif len(e.args) == 1:
+      e.args = (text + ' ' + str(e.args[0]),)
+    else:
+      e.args = (text,) + e.args
+    raise
+
 
 @contextlib.contextmanager
 def locked(file_handle):

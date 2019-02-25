@@ -74,7 +74,7 @@ class Sort(object):
     '''Execute the script.'''
     from dials.array_family import flex # import dependency
     from dials.util.options import flatten_reflections
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=True)

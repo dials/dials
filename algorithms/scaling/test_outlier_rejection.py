@@ -3,7 +3,7 @@ Tests for outlier rejection.
 '''
 import pytest
 from mock import Mock
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from cctbx.sgtbx import space_group
 from dials.array_family import flex
 from dials.algorithms.scaling.Ih_table import IhTable

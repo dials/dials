@@ -96,7 +96,7 @@ def augment_reflections(reflections, params, datablock=None):
 
 def run(args):
   import libtbx.load_env
-  from libtbx.utils import Sorry
+  from dials.util import Sorry
   from dials.util import log
   usage = "%s [options] [datablock.json] strong.pickle" % \
     libtbx.env.dispatcher_name

@@ -47,7 +47,7 @@ import gc
 import copy as copy
 import libtbx
 from libtbx import phil
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from libtbx.str_utils import make_sub_header
 from cctbx import miller, crystal
 import iotbx.merging_statistics
@@ -70,6 +70,7 @@ from dials.util.exclude_images import exclude_image_ranges_for_scaling, \
   get_valid_image_ranges
 from dials.algorithms.scaling.algorithm import targeted_scaling_algorithm, \
   scaling_algorithm
+from dials.algorithms.scaling.reflection_selection import determine_reflection_selection_parameters
 
 
 logger = logging.getLogger('dials')
@@ -83,6 +84,9 @@ phil_scope = phil.parse('''
     .help = "Set scaling model to be applied to input datasets without
             an existing model. "
     .expert_level = 0
+  stats_only = False
+    .type = bool
+    .help = "Only read input files and output merging stats."
   output {
     log = dials.scale.log
       .type = str
@@ -90,9 +94,6 @@ phil_scope = phil.parse('''
     debug.log = dials.scale.debug.log
       .type = str
       .help = "The debug log filename"
-    plot_scaling_models = False
-      .type = bool
-      .help = "Option to switch on plotting of the scaling models determined."
     experiments = "scaled_experiments.json"
       .type = str
       .help = "Option to set filepath for output json."
@@ -120,11 +121,17 @@ phil_scope = phil.parse('''
       .type = int
       .help = "Number of bins to use for calculating and plotting merging stats."
       .expert_level = 1
+    delete_integration_shoeboxes = True
+      .type = bool
+      .help = "Discard integration shoebox data from scaling output, to help"
+              "with memory management."
+      .expert_level = 2
   }
   include scope dials.algorithms.scaling.scaling_options.phil_scope
   include scope dials.algorithms.scaling.cross_validation.cross_validate.phil_scope
   include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
   include scope dials.util.exclude_images.phil_scope
+  include scope dials.util.multi_dataset_handling.phil_scope
 ''', process_includes=True)
 
 class Script(object):
@@ -142,13 +149,21 @@ class Script(object):
 
   def run(self, save_data=True):
     """Run the scaling script."""
+    if self.params.stats_only:
+      try:
+        self.merging_stats(self.scaled_data_as_miller_array(
+          self.experiments[0].crystal.get_crystal_symmetry()))
+      except DialsMergingStatisticsError as e:
+        logger.info(e)
+      return
     start_time = time.time()
     self.prepare_input()
     self.scale()
     self.remove_unwanted_datasets()
     print_scaling_model_error_info(self.experiments)
+    self.prepare_scaled_miller_array()
     try:
-      self.merging_stats()
+      self.merging_stats(self.scaled_miller_array)
     except DialsMergingStatisticsError as e:
       logger.info(e)
 
@@ -290,14 +305,16 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
       miller.array_info(source='DIALS', source_type='reflection_tables'))
     return i_obs
 
-  def merging_stats(self):
-    """Calculate and print the merging statistics."""
-    logger.info('\n'+'='*80+'\n')
-
+  def prepare_scaled_miller_array(self):
+    """Calculate a scaled miller array from the dataset."""
     self.scaled_miller_array = self.scaled_data_as_miller_array(
       self.experiments[0].crystal.get_crystal_symmetry(), anomalous_flag=False)
 
-    if self.scaled_miller_array.is_unique_set_under_symmetry():
+  def merging_stats(self, scaled_miller_array):
+    """Calculate and print the merging statistics."""
+    logger.info('\n'+'='*80+'\n')
+
+    if scaled_miller_array.is_unique_set_under_symmetry():
       logger.info(("Dataset doesn't contain any equivalent reflections, \n"
         "no merging statistics can be calculated."))
       return
@@ -306,7 +323,7 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
         out=log.info_handle(logger))
     try:
       result = iotbx.merging_statistics.dataset_statistics(
-        i_obs=self.scaled_miller_array, n_bins=self.params.output.merging.nbins,
+        i_obs=scaled_miller_array, n_bins=self.params.output.merging.nbins,
         anomalous=False, sigma_filtering=None, eliminate_sys_absent=False,
         use_internal_variance=self.params.output.use_internal_variance)
       show_merging_summary(result.overall)
@@ -351,12 +368,14 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
 
     # remove reflections with neg sigma
     sel = joint_table['inverse_scale_factor'] <= 0.0
-    n_neg = sel.count(True)
+    good_sel = ~joint_table.get_flags(joint_table.flags.bad_for_scaling, all=False)
+    n_neg = (good_sel & sel).count(True)
     if n_neg > 0:
-      logger.warning(
-        'Warning: %s reflections were assigned negative scale factors. \n'
-        'It may be best to rerun scaling from this point for an improved model.' % n_neg)
-      joint_table.set_flags(sel, joint_table.flags.excluded_for_scaling)
+      logger.warning("""
+Warning: %s non-excluded reflections were assigned negative scale factors
+during scaling. These will be set as outliers in the reflection table. It
+may be best to rerun scaling from this point for an improved model.""", n_neg)
+      joint_table.set_flags(sel, joint_table.flags.outlier_in_scaling)
 
     save_reflections(joint_table, self.params.output.reflections)
 
@@ -427,13 +446,13 @@ def ensure_consistent_space_groups(experiments, params):
   if params.scaling_options.space_group:
       s_g_symbol = params.scaling_options.space_group
       for experiment in experiments:
-        sg_from_file = experiment.crystal.get_space_group().info()
+        sg_from_file = experiment.crystal.get_space_group()
         user_sg = crystal.symmetry(space_group_symbol=s_g_symbol).space_group()
         if user_sg != sg_from_file:
-          msg = ('WARNING: Manually overriding space group from {0} to {1}. {sep}'
+          logger.info(('WARNING: Manually overriding space group from {0} to {1}. {sep}'
             'If the reflection indexing in these space groups is different, {sep}'
-            'bad things may happen!!! {sep}').format(sg_from_file, s_g_symbol, sep='\n')
-          logger.info(msg)
+            'bad things may happen!!! {sep}').format(sg_from_file.info(),
+            user_sg.info(), sep='\n'))
           experiment.crystal.set_space_group(user_sg)
   else:
     sgs = [e.crystal.get_space_group().type().number() for e in experiments]
@@ -536,6 +555,10 @@ if __name__ == "__main__":
       sys.exit()
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
+
+    if params.output.delete_integration_shoeboxes:
+      for r in reflections:
+        del r['shoebox']
 
     if params.cross_validation.cross_validation_mode:
       from dials.algorithms.scaling.cross_validation.cross_validate import \

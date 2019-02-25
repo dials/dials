@@ -7,7 +7,7 @@ import time
 
 import iotbx.phil
 from cctbx.array_family import flex
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from scitbx import lbfgs
 
 def nint(a):
@@ -190,7 +190,7 @@ phil_str = '''
     .expert_level = 1
   cc_half_method = *half_dataset sigma_tau
     .type = choice
-  cc_half_significance_level = None
+  cc_half_significance_level = 0.1
     .type = float(value_min=0, value_max=1)
     .expert_level = 1
   cc_half_fit = polynomial *tanh
@@ -331,15 +331,15 @@ class resolutionizer(object):
       all_i_obs = []
       for array in miller_arrays :
         labels = array.info().label_string()
-        if (array.is_xray_intensity_array()) :
+        if (array.is_xray_intensity_array()):
           all_i_obs.append(array)
         if (labels == 'BATCH'):
           assert batches is None
           batches = array
-      if (i_obs is None) :
-        if (len(all_i_obs) == 0) :
+      if (i_obs is None):
+        if (len(all_i_obs) == 0):
           raise Sorry("No intensities found in %s." % file_name)
-        elif (len(all_i_obs) > 1) :
+        elif (len(all_i_obs) > 1):
           if params.labels is not None:
             from iotbx.reflection_file_utils import label_table
             lab_tab = label_table(all_i_obs)

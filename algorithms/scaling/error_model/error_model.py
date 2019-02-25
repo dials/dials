@@ -5,7 +5,7 @@ from __future__ import print_function
 import logging
 from dials.array_family import flex
 from scitbx import sparse
-from libtbx.utils import Sorry
+from dials.util import Sorry
 logger = logging.getLogger('dials')
 
 def get_error_model(error_model_type):
@@ -27,8 +27,7 @@ class BasicErrorModel(object):
     self.n_bins = n_bins
     #First select on initial delta
     self.filter_large_deviants(cutoff=6.0)
-    self.Ih_table.calc_nh()
-    self.n_h = self.Ih_table.n_h
+    self.n_h = self.Ih_table.calc_nh()
     self.sigmaprime = None
     self.delta_hl = None
     self.bin_variances = None
@@ -59,19 +58,18 @@ class BasicErrorModel(object):
     """Do a first pass to calculate delta_hl and filter out the largest
     deviants, so that the error model is not misled by these and instead
     operates on the central ~90% of the data."""
-    self.Ih_table.calc_nh()
-    self.n_h = self.Ih_table.n_h
+    self.n_h = self.Ih_table.calc_nh()
     self.Ih_table.calc_Ih()
     self.sigmaprime = self.calc_sigmaprime([1.0, 0.0])
     delta_hl = self.calc_deltahl()
     sel = flex.abs(delta_hl) < cutoff
     self.Ih_table = self.Ih_table.select(sel)
-    self.Ih_table.calc_nh()
+    self.n_h = self.Ih_table.calc_nh()
 
   def calc_sigmaprime(self, x):
     """Calculate the error from the model."""
-    sigmaprime = x[0] * ((self.Ih_table.variances)
-      + ((x[1]*self.Ih_table.intensities)**2))**0.5
+    sigmaprime = (x[0] * ((self.Ih_table.variances)
+      + ((x[1]*self.Ih_table.intensities)**2))**0.5) / self.Ih_table.inverse_scale_factors
     return sigmaprime
 
   def calc_deltahl(self):
@@ -119,3 +117,6 @@ class BasicErrorModel(object):
     new_variance = (self.refined_parameters[0]**2) * (variances
       + ((self.refined_parameters[1] * intensities)**2))
     return new_variance
+
+  def clear_Ih_table(self):
+    del self.Ih_table

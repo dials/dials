@@ -173,7 +173,7 @@ def run(args):
     return
 
   if not params.hkl and params.hkl_limit is None:
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     raise Sorry("Please provide hkl or hkl_limit parameters.")
 
   if params.hkl is not None and len(params.hkl):

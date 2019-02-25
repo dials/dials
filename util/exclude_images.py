@@ -5,7 +5,7 @@ the corresponding reflections.
 """
 import copy as copy
 from dials.array_family import flex
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from libtbx.containers import OrderedSet
 import iotbx.phil
 

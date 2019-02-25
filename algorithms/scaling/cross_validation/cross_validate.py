@@ -39,7 +39,7 @@ import logging
 import itertools
 import time
 from libtbx import phil
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from dials.util import log
 
 logger = logging.getLogger('dials')

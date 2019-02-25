@@ -324,7 +324,7 @@ class Script(object):
     from dials.util.options import flatten_experiments
     from time import time
     from dials.util import log
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     from dials.algorithms.background.modeller import BackgroundModeller
     start_time = time()
 

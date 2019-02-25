@@ -36,7 +36,7 @@ def show_spots(strong_spots):
 
 if __name__ == '__main__':
   import sys
-  from libtbx.utils import Sorry
+  from dials.util import Sorry
   if len(sys.argv) != 2:
     raise RuntimeError('%s strong.pickle')
 

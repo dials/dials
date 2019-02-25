@@ -5,6 +5,7 @@ These classes use a gaussian smoother (1D, 2D or 3D) to calculate the
 inverse scale factors and derivatives with respect to the component
 parameters.
 """
+from math import floor, ceil
 from scitbx import sparse
 from dials.array_family import flex
 from dials.algorithms.scaling.model.components.scale_components import \
@@ -151,8 +152,8 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
       normalised_values = normalised_values.select(selection)
     # Make sure zeroed correctly.
     normalised_values = normalised_values - flex.min(normalised_values)
-    phi_range_deg = [int(flex.min(normalised_values)//1),
-                     int(flex.max(normalised_values)//1)+1]
+    phi_range_deg = [floor(round(flex.min(normalised_values), 10)),
+      ceil(round(flex.max(normalised_values), 10))]
     self._smoother = GaussianSmoother1D(phi_range_deg,
       self.nparam_to_val(self._n_params))
     if block_selections:
@@ -320,10 +321,10 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
       normalised_y_values = normalised_y_values.select(selection)
     normalised_x_values = normalised_x_values - flex.min(normalised_x_values)
     normalised_y_values = normalised_y_values - flex.min(normalised_y_values)
-    x_range = [int(flex.min(normalised_x_values)//1),
-               int(flex.max(normalised_x_values)//1)+1]
-    y_range = [int(flex.min(normalised_y_values)//1),
-               int(flex.max(normalised_y_values)//1)+1]
+    x_range = [floor(round(flex.min(normalised_x_values), 10)),
+      ceil(round(flex.max(normalised_x_values), 10))]
+    y_range = [floor(round(flex.min(normalised_y_values), 10)),
+      ceil(round(flex.max(normalised_y_values), 10))]
     self._smoother = GaussianSmoother2D(x_range, self.nparam_to_val(
       self._n_x_params), y_range, self.nparam_to_val(self._n_y_params))
     if block_selections:
@@ -457,12 +458,12 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
     normalised_x_values = normalised_x_values - flex.min(normalised_x_values)
     normalised_y_values = normalised_y_values - flex.min(normalised_y_values)
     normalised_z_values = normalised_z_values - flex.min(normalised_z_values)
-    x_range = [int(flex.min(normalised_x_values)//1),
-               int(flex.max(normalised_x_values)//1)+1]
-    y_range = [int(flex.min(normalised_y_values)//1),
-               int(flex.max(normalised_y_values)//1)+1]
-    z_range = [int(flex.min(normalised_z_values)//1),
-               int(flex.max(normalised_z_values)//1)+1]
+    x_range = [floor(round(flex.min(normalised_x_values), 10)),
+      ceil(round(flex.max(normalised_x_values), 10))]
+    y_range = [floor(round(flex.min(normalised_y_values), 10)),
+      ceil(round(flex.max(normalised_y_values), 10))]
+    z_range = [floor(round(flex.min(normalised_z_values), 10)),
+      ceil(round(flex.max(normalised_z_values), 10))]
     self._smoother = GaussianSmoother3D(x_range, self.nparam_to_val(
       self._n_x_params), y_range, self.nparam_to_val(self._n_y_params),
       z_range, self.nparam_to_val(self._n_z_params))

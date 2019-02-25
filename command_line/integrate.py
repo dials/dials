@@ -13,7 +13,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
-from libtbx.utils import Sorry
+from dials.util import Sorry
 
 logger = logging.getLogger('dials.command_line.integrate')
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
@@ -135,7 +135,7 @@ phil_scope = parse(
 class Script(object):
   ''' The integration program. '''
 
-  def __init__(self):
+  def __init__(self, phil=phil_scope):
     '''Initialise the script.'''
     from dials.util.options import OptionParser
     import libtbx.load_env
@@ -146,24 +146,24 @@ class Script(object):
     # Create the parser
     self.parser = OptionParser(
       usage=usage,
-      phil=phil_scope,
+      phil=phil,
       epilog=help_message,
       read_experiments=True,
       read_reflections=True)
 
-  def run(self):
+  def run(self, args=None):
     ''' Perform the integration. '''
     from dials.util.command_line import heading
     from dials.util.options import flatten_reflections, flatten_experiments
     from dials.util import log
     from time import time
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
 
     # Check the number of arguments is correct
     start_time = time()
 
     # Parse the command line
-    params, options = self.parser.parse_args(show_diff_phil=False)
+    params, options = self.parser.parse_args(args=args, show_diff_phil=False)
     reference = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
     if len(reference) == 0 and len(experiments) == 0:
@@ -183,11 +183,12 @@ class Script(object):
       with open(params.output.phil, "w") as outfile:
         outfile.write(self.parser.diff_phil.as_str())
 
-    # Configure logging
-    log.config(
-      params.verbosity,
-      info=params.output.log,
-      debug=params.output.debug_log)
+    if __name__ == '__main__':
+      # Configure logging
+      log.config(
+        params.verbosity,
+        info=params.output.log,
+        debug=params.output.debug_log)
 
     from dials.util.version import dials_version
     logger.info(dials_version())
@@ -398,11 +399,13 @@ class Script(object):
     # Print the total time taken
     logger.info("\nTotal time taken: %f" % (time() - start_time))
 
+    return experiments, reflections
+
   def process_reference(self, reference):
     ''' Load the reference spots. '''
     from dials.array_family import flex
     from time import time
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     if reference is None:
       return None, None
     st = time()

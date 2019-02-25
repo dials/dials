@@ -2,7 +2,7 @@
 from __future__ import absolute_import, division, print_function
 
 from libtbx.phil import parse
-from libtbx.utils import Sorry
+from dials.util import Sorry
 
 help_message = """
 
@@ -72,7 +72,7 @@ class Script(object):
     '''Execute the script.'''
 
     from dials.util.options import flatten_reflections, flatten_experiments
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     from dials.array_family import flex
 
     # Parse the command line

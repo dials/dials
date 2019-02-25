@@ -3,6 +3,7 @@
 # $Id$
 
 from __future__ import division
+from six.moves import range
 
 import math
 import wx
@@ -547,8 +548,8 @@ class _Tiles(object):
         for key, asic in self.raw_image._tiles.iteritems():
           key_count += 1
           focus = asic.focus()
-          for slow in xrange(0,focus[0],20):
-            for fast in xrange(0,focus[1],20):
+          for slow in range(0,focus[0],20):
+            for fast in range(0,focus[1],20):
               slowpic,fastpic = self.flex_image.tile_readout_to_picture(key_count,slow,fast)
               mr1,mr2 = self.picture_fast_slow_to_map_relative(fastpic,slowpic)
               pointdata.append((mr1,mr2,{"data":key}))
@@ -591,7 +592,7 @@ class _Tiles(object):
       text_data = []
       if hasattr(self.raw_image, 'get_tile_manager'):
         IT = self.raw_image.get_tile_manager(params).effective_tiling_as_flex_int()
-        for i in xrange(len(IT) // 4):
+        for i in range(len(IT) // 4):
           tile = IT[4*i:4*i+4]
           attributes = {'color': '#0000FFA0', 'width': 1, 'closed': False}
           box_data.append(
@@ -615,7 +616,7 @@ class _Tiles(object):
           text_data.append((txt_x, txt_y, "%i" %i))
       return box_data, text_data
 
-    def get_resolution (self, x, y, readout=None) :
+    def get_resolution(self, x, y, readout=None):
         """
         Determine the resolution of a pixel.
         Arguments are in image pixel coordinates (starting from 1,1).
@@ -642,7 +643,7 @@ class _Tiles(object):
         else:
           return None
 
-    def get_detector_distance (self) :
+    def get_detector_distance(self):
         detector = self.raw_image.get_detector()
         if len(detector) == 1:
           dist = abs(detector[0].get_distance())
@@ -651,12 +652,12 @@ class _Tiles(object):
           # supported.
           dist = self.raw_image.distance
         twotheta = self.get_detector_2theta()
-        if (twotheta == 0.0) :
+        if (twotheta == 0.0):
             return dist
         else :
             return dist / math.cos(twotheta)
 
-    def get_detector_2theta (self) :
+    def get_detector_2theta(self):
         from scitbx.matrix import col
 
         detector = self.raw_image.get_detector()

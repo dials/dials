@@ -19,7 +19,7 @@ libtbx_path = os.path.join(
 if not libtbx_path in sys.path:
   sys.path.append(libtbx_path)
 
-class installer (install_distribution.installer) :
+class installer(install_distribution.installer):
   # XXX most settings can be edited here
   product_name = "DIALS"
   dest_dir_prefix = "dials"
@@ -36,11 +36,11 @@ class installer (install_distribution.installer) :
 
   # Various functions specific to DIALS go below here
   #
-  def product_specific_finalize_install (self, log) :
+  def product_specific_finalize_install(self, log):
     # XXX remove 'phenix' dispatchers from bin directory
     bin_dir = os.path.join(self.build_dir, "bin")
-    for file_name in os.listdir(bin_dir) :
-      if file_name.startswith("phenix") :
+    for file_name in os.listdir(bin_dir):
+      if file_name.startswith("phenix"):
         os.remove(os.path.join(bin_dir, file_name))
 
 if __name__ == "__main__":

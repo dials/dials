@@ -23,7 +23,7 @@ from dials.array_family import flex
 from dials.util.options import flatten_datablocks, flatten_reflections
 from dxtbx.datablock import DataBlock, DataBlockDumper
 from libtbx.phil import parse
-from libtbx.utils import Sorry
+from dials.util import Sorry
 
 # The phil scope
 phil_scope = parse('''

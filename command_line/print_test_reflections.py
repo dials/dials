@@ -46,7 +46,7 @@ if __name__ == '__main__':
   import six.moves.cPickle as pickle
   import sys
   from dials.array_family import flex # import dependency
-  from libtbx.utils import Sorry
+  from dials.util import Sorry
 
   if len(sys.argv) != 2:
     raise Sorry('exactly 1 reflection table must be specified')

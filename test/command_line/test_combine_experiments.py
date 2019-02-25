@@ -10,7 +10,7 @@ import procrunner
 
 import pytest
 
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.serialize import dump
 

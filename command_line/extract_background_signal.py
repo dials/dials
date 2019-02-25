@@ -49,7 +49,7 @@ class Script(object):
     from dials.util.options import flatten_datablocks
     from dials.util import log
     from dials.array_family import flex
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
 
     # Parse the command line
     params, options = self.parser.parse_args(show_diff_phil=False)

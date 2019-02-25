@@ -67,7 +67,7 @@ class Script(object):
     ''' Run the script. '''
     from dials.util.masking import MaskGenerator
     from dials.util.options import flatten_datablocks
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     import six.moves.cPickle as pickle
     from dials.util import log
     from dxtbx.format.image import ImageBool

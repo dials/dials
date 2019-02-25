@@ -1,11 +1,13 @@
-from math import sqrt, pi
+"""
+Tests for intensity combination.
+"""
 import pytest
-import numpy as np
 from mock import Mock
 from dxtbx.model import Experiment, Crystal
-from libtbx.test_utils import approx_equal
 from dials.array_family import flex
-from dials.algorithms.scaling.combine_intensities import combine_intensities, optimise_intensity_combination
+from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
+from dials.algorithms.scaling.combine_intensities import SingleDatasetIntensityCombiner, \
+  MultiDatasetIntensityCombiner
 
 @pytest.fixture(scope='module')
 def test_exp_P1():
@@ -55,49 +57,30 @@ def generate_simple_table(prf=True):
       10.0, 12.0, 9.0, 8.0, 10.0])
     reflections['intensity.prf.variance'] = flex.double(
       [10000]*5 + [5000]*5 + [100]*5 + [30]*5 + [10]*5)
+  reflections = calculate_prescaling_correction(reflections)
   return reflections
-
-def test_optimise_intensity_combination(test_exp_P1):
-  """Test optimise_intensity_combination function."""
-  r1 = flex.reflection_table()
-  r2 = flex.reflection_table()
-
-  r1['intensity.prf.value'] = flex.double(range(1, 101))
-  r1['intensity.sum.value'] = flex.double(range(2, 102))
-  r1['intensity.prf.variance'] = flex.double(range(1, 101))
-  r1['intensity.sum.variance'] = flex.double(range(2, 102))
-  r1['inverse_scale_factor'] = flex.double(100, 1)
-  r1['miller_index'] = flex.miller_index([(1,0,0)]*100)
-
-  r2['intensity.prf.value'] = flex.double(range(1, 101))
-  r2['intensity.sum.value'] = flex.double(range(2, 102))
-  r2['intensity.prf.variance'] = flex.double(range(1, 101))
-  r2['intensity.sum.variance'] = flex.double(range(2, 102))
-  r2['inverse_scale_factor'] = flex.double(100, 1)
-  r2['miller_index'] = flex.miller_index([(1,0,0)]*100)
-
-  r1.set_flags(flex.bool(100, True), r1.flags.integrated_sum)
-  r1.set_flags(flex.bool([True]*98 + [False]*2), r1.flags.integrated_prf)
-  r2.set_flags(flex.bool(100, True), r2.flags.integrated_sum)
-  r2.set_flags(flex.bool([True]*98 + [False]*2), r2.flags.integrated_prf)
-
-  _ = optimise_intensity_combination([r1], test_exp_P1)
-
-  _ = optimise_intensity_combination([r1, r2], test_exp_P1)
 
 def test_combine_intensities(test_exp_P1):
   """Test the combine intensities function for a single dataset"""
   reflections = generate_simple_table()
-  Imid = optimise_intensity_combination([reflections], test_exp_P1)
-  reflections = combine_intensities(reflections, Imid)
-  #reflections_list, results = combine_intensities([reflections], test_exp_P1)
+  scaler = Mock()
+  scaler.reflection_table = reflections
+  scaler.suitable_refl_for_scaling_sel = flex.bool(reflections.size(), True)
+  scaler.outliers = flex.bool(reflections.size(), False)
+  scaler.experiments = test_exp_P1
+  scaler.params.reflection_selection.combine.Imid = None
+
+  combiner = SingleDatasetIntensityCombiner(scaler)
+  Imid = combiner.max_key
+  intensity, _ = combiner.calculate_suitable_combined_intensities()
+
   # Imid being 1200.0 should be best for this contrived example
   assert Imid == 1200.0
 
   #Due to nature of crossover, just require 2% tolerance for this example
-  assert list(reflections['intensity'][0:5]) == pytest.approx(list(
+  assert list(intensity[0:5]) == pytest.approx(list(
     reflections['intensity.sum.value'][0:5]), rel=2e-2)
-  assert list(reflections['intensity'][20:25]) == pytest.approx(list(
+  assert list(intensity[20:25]) == pytest.approx(list(
     reflections['intensity.prf.value'][20:25]), rel=2e-2)
 
 def test_combine_intensities_multi_dataset(test_exp_P1):
@@ -105,22 +88,26 @@ def test_combine_intensities_multi_dataset(test_exp_P1):
   r1 = generate_simple_table()
   r1['partiality'] = flex.double(25, 1.0)
   r2 = generate_simple_table(prf=False)
-  Imid = optimise_intensity_combination([r1, r2], test_exp_P1)
+  scaler1 = Mock()
+  scaler1.reflection_table = r1
+  scaler1.suitable_refl_for_scaling_sel = flex.bool(r1.size(), True)
+  scaler1.outliers = flex.bool(r1.size(), False)
+  scaler1.experiments = test_exp_P1
+  scaler1.params.reflection_selection.combine.Imid = None
+  scaler2 = Mock()
+  scaler2.reflection_table = r2
+  scaler2.suitable_refl_for_scaling_sel = flex.bool(r2.size(), True)
+  scaler2.outliers = flex.bool(r2.size(), False)
+  scaler2.experiments = test_exp_P1
+  scaler2.params.reflection_selection.combine.Imid = None
+
+  multiscaler = Mock()
+  multiscaler.active_scalers = [scaler1, scaler2]
+  multiscaler.experiments = test_exp_P1
+  multiscaler.params.reflection_selection.combine.Imid = None
+
+  combiner = MultiDatasetIntensityCombiner(multiscaler)
+  Imid = combiner.max_key
+
+  #Imid = optimise_intensity_combination([r1, r2], test_exp_P1)
   assert pytest.approx(Imid) == 1200.0
-
-  r1 = generate_simple_table()
-  r1['partiality'] = flex.double(25, 1.0)
-  r1 = combine_intensities(r1, 0)
-  assert list(r1['intensity']) == list(r1['intensity.prf.value'])
-  r1 = combine_intensities(r1, 1)
-  assert list(r1['intensity']) == list(r1['intensity.sum.value'])
-
-  r2 = generate_simple_table(prf=False)
-  r2 = combine_intensities(r2, 1)
-  assert list(r2['intensity']) == list(r2['intensity.sum.value'])
-
-  r1 = generate_simple_table(prf=False)
-  r2 = generate_simple_table(prf=False)
-  Imid = optimise_intensity_combination([r1, r2], test_exp_P1)
-  r1 = combine_intensities(r1, Imid)
-  assert list(r1['intensity']) == list(r1['intensity.sum.value'])

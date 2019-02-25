@@ -639,7 +639,7 @@ if __name__ == '__main__':
   from dials.util.options import flatten_reflections
   from dials.util.version import dials_version
   from dials.util import log
-  from libtbx.utils import Sorry
+  from dials.util import Sorry
   import os
 
   usage = '%s experiments.json reflections.pickle [options]' % (

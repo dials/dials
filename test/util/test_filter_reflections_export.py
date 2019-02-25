@@ -29,7 +29,7 @@ scaled and filtered below a given value where the values become unreliable.
 
 import pytest
 import mock
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from dials.array_family import flex
 from dxtbx.model import Crystal
 from cctbx import miller

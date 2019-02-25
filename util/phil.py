@@ -36,7 +36,7 @@ class DataBlockConverters(object):
   def from_string(self, s):
     from dxtbx.datablock import DataBlockFactory
     from os.path import exists
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     if s is None:
       return None
     if s not in self.cache:
@@ -74,7 +74,7 @@ class ExperimentListConverters(object):
   def from_string(self, s):
     from dxtbx.model.experiment_list import ExperimentListFactory
     from os.path import exists
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     if s is None:
       return None
     if s not in self.cache:
@@ -109,13 +109,17 @@ class ReflectionTableConverters(object):
   def from_string(self, s):
     from dials.array_family import flex
     from os.path import exists
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     if s is None:
       return None
     if s not in self.cache:
       if not exists(s):
         raise Sorry('File %s does not exist' % s)
-      self.cache[s] = FilenameDataWrapper(s, flex.reflection_table.from_pickle(s))
+      import blosc
+      try:
+        self.cache[s] = FilenameDataWrapper(s, flex.reflection_table.from_msgpack_file(s))
+      except blosc.blosc_extension.error as e:
+        self.cache[s] = FilenameDataWrapper(s, flex.reflection_table.from_pickle(s))
     return self.cache[s]
 
   def from_words(self, words, master):

@@ -11,7 +11,7 @@ import sys
 import cPickle as pickle
 import pytest
 from libtbx import easy_run, phil
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from dxtbx.serialize import load
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
@@ -24,7 +24,9 @@ from dials.algorithms.scaling.scaling_library import create_scaling_model
 
 class run_delta_cchalf(object):
   def __init__(self,  pickle_path_list, sweep_path_list, extra_args):
-    args = ["dials.compute_delta_cchalf"] + pickle_path_list + sweep_path_list + extra_args
+    args = ["dials.compute_delta_cchalf"] + pickle_path_list + sweep_path_list + \
+      extra_args + ["output.reflections=filtered_reflections.pickle",
+      "output.experiments=filtered_experiments.json"]
     command = " ".join(args)
     print(command)
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
@@ -144,7 +146,8 @@ def test_scale_merging_stats():
   script = Script(params, exp, [reflections])
   script.image_ranges = [(1, 100)]
   script.batch_ranges = [(1, 100)]
-  script.merging_stats()
+  script.prepare_scaled_miller_array()
+  script.merging_stats(script.scaled_miller_array)
   assert script.merging_statistics_result is not None
 
   # test for sensible return if small dataset with no equivalent reflections
@@ -153,7 +156,8 @@ def test_scale_merging_stats():
   script = Script(params, exp, [reflections])
   script.image_ranges = [(1, 100)]
   script.batch_ranges = [(1, 100)]
-  script.merging_stats()
+  script.prepare_scaled_miller_array()
+  script.merging_stats(script.scaled_miller_array)
   assert script.merging_statistics_result is None
 
 def test_scale_script_prepare_input():
@@ -272,18 +276,18 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
   # Now inspect output, check it hasn't changed drastically, or if so verify
   # that the new behaviour is more correct and update test accordingly.
   result = get_merging_stats("unmerged.mtz")
-  assert result.overall.r_pim < 0.024 #at 07/08/18, value was 0.0234517
-  assert result.overall.cc_one_half > 0.9955 # at 07/08/18, value was 0.99597
-  assert result.overall.n_obs > 2300 # at 07/08/18, was 2309
+  assert result.overall.r_pim < 0.0245 #at 30/01/19, value was 0.02410
+  assert result.overall.cc_one_half > 0.9955 # at 30/01/19, value was 0.9960
+  assert result.overall.n_obs > 2300 # at 30/01/19, was 2320
 
   # Try running again with the merged.mtz as a target, to trigger the
   # target_mtz option
   extra_args.append("target_mtz=merged.mtz")
   _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
   result = get_merging_stats("unmerged.mtz")
-  assert result.overall.r_pim < 0.024 #at 14/08/18, value was 0.023
-  assert result.overall.cc_one_half > 0.9955 # at 14/08/18, value was 0.999
-  assert result.overall.n_obs > 2300 # at 07/01/19, was 2321
+  assert result.overall.r_pim < 0.0245 #at 14/08/18, value was 0.023, at 07/02/19 was 0.0243
+  assert result.overall.cc_one_half > 0.9955 # at 14/08/18, value was 0.999, at 07/02/19 was 0.9961
+  assert result.overall.n_obs > 2300 # at 07/01/19, was 2321, at 07/02/19 was 2321
 
   # run again with the concurrent scaling option turned off and the 'standard'
   # outlier rejection
@@ -298,9 +302,76 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
   # Now inspect output, check it hasn't changed drastically, or if so verify
   # that the new behaviour is more correct and update test accordingly.
   result = get_merging_stats("unmerged.mtz")
-  assert result.overall.r_pim < 0.024 #at 07/01/19, value was 0.02372
-  assert result.overall.cc_one_half > 0.995 # at 07/01/19, value was 0.99568
-  assert result.overall.n_obs > 2320 # at 07/01/19, was 2336
+  assert result.overall.r_pim < 0.024 #at 07/01/19, value was 0.02372, at 30/01/19 was 0.021498
+  assert result.overall.cc_one_half > 0.995 # at 07/01/19, value was 0.99568, at 30/01/19 was 0.9961
+  assert result.overall.n_obs > 2320 # at 07/01/19, was 2336, at 30/01/19 was 2334
+  # test the 'stats_only' option
+  extra_args = ["stats_only=True"]
+  _ = run_one_scaling(['scaled.pickle'], ['scaled_experiments.json'], extra_args)
+
+
+import procrunner
+
+def test_scale_and_filter(dials_data, run_in_tmpdir):
+  location = dials_data("multi_crystal_proteinase_k")
+
+  command = ['dials.scale_and_filter', 'stdcutoff=3.0', 'mode=image_group',
+    'max_cycles=6', 'plots.histogram=cc_half_histograms.png', 'd_min=1.4', 'group_size=5',
+      'plots.merging_stats=merging_stats.png', 'unmerged_mtz=unmerged.mtz',
+      'output.analysis_results=analysis_results.json',
+      'plots.image_ranges=reduced_image_ranges.png', 'optimise_errors=False']
+  for i in [1, 2, 3, 4, 5, 7, 10]:
+    command.append(location.join("experiments_"+str(i)+".json").strpath)
+    command.append(location.join("reflections_"+str(i)+".pickle").strpath)
+
+  result = procrunner.run(command)
+  assert result['exitcode'] == 0
+  assert result['stderr'] == ''
+  assert os.path.exists("scaled.pickle")
+  assert os.path.exists("scaled_experiments.json")
+  assert os.path.exists("scaled_experiments.json")
+  assert os.path.exists("analysis_results.json")
+  assert os.path.exists("reduced_image_ranges.png")
+  assert os.path.exists("merging_stats.png")
+  assert os.path.exists("cc_half_histograms.png")
+  result = get_merging_stats("unmerged.mtz")
+  assert result.overall.r_pim < 0.17 #19/02/19 was 0.1640
+  assert result.overall.cc_one_half > 0.96 #19/02/19 was 0.9684
+  assert result.overall.n_obs > 54700 # 19/02/19 was 54794
+  # for this dataset, expect to have two regions excluded - last 5 images of
+  # datasets _4 & _5
+  f = open("analysis_results.json")
+  import json
+  analysis_results = json.load(f)
+  assert analysis_results['cycle_results']['1']['image_ranges_removed'] == \
+    [[[21, 25], 4]]
+  assert analysis_results['cycle_results']['2']['image_ranges_removed'] == \
+    [[[21, 25], 3]]
+  assert analysis_results['cycle_results']['3']['image_ranges_removed'] == []
+  assert analysis_results['termination_reason'] == 'no_more_removed'
+
+  command = ['dials.scale_and_filter', 'stdcutoff=1.0', 'mode=dataset',
+    'max_cycles=2', 'plots.histogram=cc_half_histograms.png', 'd_min=1.4',
+      'plots.merging_stats=merging_stats.png', 'unmerged_mtz=unmerged.mtz',
+      'output.analysis_results=analysis_results.json',
+      'plots.image_ranges=reduced_image_ranges.png', 'optimise_errors=False']
+  for i in [1, 2, 3, 4, 5, 7, 10]:
+    command.append(location.join("experiments_"+str(i)+".json").strpath)
+    command.append(location.join("reflections_"+str(i)+".pickle").strpath)
+
+  result = procrunner.run(command)
+  assert result['exitcode'] == 0
+  assert result['stderr'] == ''
+  assert os.path.exists("scaled.pickle")
+  assert os.path.exists("scaled_experiments.json")
+  assert os.path.exists("scaled_experiments.json")
+  assert os.path.exists("analysis_results.json")
+  assert os.path.exists("reduced_image_ranges.png")
+  assert os.path.exists("merging_stats.png")
+  assert os.path.exists("cc_half_histograms.png")
+  f = open("analysis_results.json")
+  analysis_results = json.load(f)
+  assert analysis_results['cycle_results']['1']['removed_datasets'] == ['4']
 
 @pytest.mark.dataset_test
 def test_scale_optimise_errors(dials_regression, run_in_tmpdir):

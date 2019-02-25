@@ -53,7 +53,7 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
 
     return
 
-  def  _predict_core(self, reflections):
+  def _predict_core(self, reflections):
     """perform prediction for the specified reflections"""
 
     # do prediction (updates reflection table in situ).

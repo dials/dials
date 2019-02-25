@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import iotbx.phil
-from libtbx.utils import Sorry
+from dials.util import Sorry
 
 master_phil_scope = iotbx.phil.parse("""
 scan_range = None
@@ -39,7 +39,7 @@ def run(args):
   from dials.util.options import flatten_reflections
   from scitbx.array_family import flex
   from scitbx import matrix
-  from libtbx.utils import Sorry
+  from dials.util import Sorry
   parser = OptionParser(
     usage=usage,
     phil=master_phil_scope,

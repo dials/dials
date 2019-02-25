@@ -22,7 +22,7 @@ from __future__ import absolute_import, division, print_function
 from dxtbx.model.experiment_list import Experiment
 from scitbx.array_family import flex
 from libtbx import phil, Auto
-from libtbx.utils import Sorry
+from dials.util import Sorry
 import matplotlib
 # Offline backend
 matplotlib.use("Agg")

@@ -6,7 +6,7 @@ refiner which components of the model are to be refined.
 import logging
 from collections import OrderedDict
 from dials.array_family import flex
-from libtbx.utils import Sorry
+from dials.util import Sorry
 
 logger = logging.getLogger('dials')
 

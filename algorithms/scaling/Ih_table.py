@@ -5,7 +5,7 @@ This module defines a blocked datastructures for summing over groups of
 symmetry equivalent reflections, as required for scaling.
 """
 
-from libtbx.containers import OrderedSet
+from orderedset import OrderedSet
 from dials.array_family import flex
 from cctbx import miller, crystal
 from scitbx import sparse
@@ -131,7 +131,9 @@ class IhTable(object):
 
   @property
   def size(self):
-    """Sum the sizes of all blocks to give the total number of reflections."""
+    """Sum the sizes of all work blocks to give the total number of reflections."""
+    if self.free_Ih_table:
+      return sum([block.size for block in self.Ih_table_blocks[:-1]])
     return sum([block.size for block in self.Ih_table_blocks])
 
   def generate_block_selections(self):
@@ -196,6 +198,7 @@ class IhTable(object):
       joint_asu_indices.extend(table['asu_miller_index'])
     sorted_joint_asu_indices, _ = get_sorted_asu_indices(
       joint_asu_indices, self.space_group)
+
     asu_index_set = OrderedSet(sorted_joint_asu_indices)
     n_unique_groups = len(asu_index_set)
     # also record how many unique groups go into each block
@@ -264,18 +267,23 @@ class IhTable(object):
     boundaries_for_this_datset = [0]#use to slice
     # make this a c++ method for speed?
     for i, index in enumerate(sorted_asu_indices):
-      if index >= boundary:
+      while index >= boundary:
         boundaries_for_this_datset.append(i)
         boundary_id += 1
         boundary = self.properties_dict['miller_index_boundaries'][boundary_id]
       group_id, _ = self.asu_index_dict[index]
       group_ids.append(group_id)
-    boundaries_for_this_datset.append(len(sorted_asu_indices))
+    while len(boundaries_for_this_datset) < self.n_work_blocks + 1:
+      # catch case where last boundaries aren't reached
+      boundaries_for_this_datset.append(len(sorted_asu_indices))
     # so now have group ids as well for individual dataset
-    for i, val in enumerate(boundaries_for_this_datset[:-1]):
-      start = val
-      end = boundaries_for_this_datset[i+1]
-      self.Ih_table_blocks[i].add_data(dataset_id, group_ids[start:end], r[start:end])
+    if self.n_work_blocks == 1:
+      self.Ih_table_blocks[0].add_data(dataset_id, group_ids, r)
+    else:
+      for i, val in enumerate(boundaries_for_this_datset[:-1]):
+        start = val
+        end = boundaries_for_this_datset[i+1]
+        self.Ih_table_blocks[i].add_data(dataset_id, group_ids[start:end], r[start:end])
 
   def extract_free_set(self, free_set_percentage, offset=0):
     """Extract a free set from all blocks."""
@@ -332,8 +340,6 @@ class IhTableBlock(object):
           array of values for symmetry groups into an array of size n_refl.
       derivatives: A matrix of derivatives of the reflections wrt the model
           parameters.
-      n_h: A flex.double array of size n_refl, indicating the number of
-          reflections in the symmetry group to which each reflection belongs.
 
   """
 
@@ -345,7 +351,6 @@ class IhTableBlock(object):
     self._setup_info = {'next_row' : 0, 'next_dataset' : 0,
       'setup_complete': False}
     self.dataset_info = {}
-    self._n_h = None
     self.n_datasets = n_datasets
     self.h_expand_matrix = None
     self.derivatives = None
@@ -418,6 +423,13 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
     nz_row_sel = (unity * reduced_h_idx.transpose()) > 0
     return self.select(nz_row_sel)
 
+  def select_on_groups_isel(self, isel):
+    """Select a subset of the unique groups, returning a new IhTableBlock."""
+    reduced_h_idx = self.h_index_matrix.select_columns(isel)
+    unity = flex.double(reduced_h_idx.n_cols, 1.0)
+    nz_row_sel = (unity * reduced_h_idx.transpose()) > 0
+    return self.select(nz_row_sel)
+
   def calc_Ih(self):
     """Calculate the current best estimate for Ih for each reflection group."""
     scale_factors = self.Ih_table['inverse_scale_factor']
@@ -439,9 +451,10 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
     self.Ih_table['weights'] = 1.0/self.Ih_table['variance']
 
   def calc_nh(self):
-    """Calculate the n_h vector."""
-    self._n_h = ((flex.double(self.size, 1.0) * self.h_index_matrix)
-      * self.h_expand_matrix)
+    """Calculate the number of refls in the group to which the reflection belongs.
+
+    This is a vector of length n_refl."""
+    return (flex.double(self.size, 1.0) * self.h_index_matrix) * self.h_expand_matrix
 
   def match_Ih_values_to_target(self, target_Ih_table):
     """
@@ -487,16 +500,6 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         self.inverse_scale_factors.size(), new_scales.size())
     else:
       self.Ih_table['inverse_scale_factor'] = new_scales
-
-  @property
-  def n_h(self):
-    """
-    The number of refls in the unique group to which each reflection belongs.
-
-    This is a vector of length n_refl, not calculated by default, as only
-    needed for certain calculations.
-    """
-    return self._n_h
 
   @property
   def variances(self):

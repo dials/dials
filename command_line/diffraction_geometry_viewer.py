@@ -29,7 +29,7 @@ class DGVWindow(RLVWindow):
 
 class DiffractionGeometryViewer(ReciprocalLatticeViewer):
 
-  def create_viewer_panel (self) :
+  def create_viewer_panel(self):
     self.viewer = DGVWindow(settings=self.settings, parent=self, size=(800,600),
       #orthographic=True
       )

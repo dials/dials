@@ -1,12 +1,12 @@
 """
 Tests for the scaling model classes.
 """
-import pytest
 import copy
+import pytest
 from mock import Mock, MagicMock
 from dials.array_family import flex
 from dials.algorithms.scaling.model.model import ScalingModelBase,\
-  KBScalingModel, PhysicalScalingModel, ArrayScalingModel, map_old_to_new_range
+  KBScalingModel, PhysicalScalingModel, ArrayScalingModel#, map_old_to_new_range
 
 @pytest.fixture(scope='module')
 def test_reflections():
@@ -25,7 +25,7 @@ def mock_exp():
 def generated_refl():
   """Create a reflection table."""
   rt = flex.reflection_table()
-  rt['xyzobs.px.value'] = flex.vec3_double([(0.1, 0.1, 0.1), (0.1, 0.1, 0.1)])
+  rt['xyzobs.px.value'] = flex.vec3_double([(0.1, 0.1, 0.1), (0.1, 0.1, 0.2)])
   rt['s1'] = flex.vec3_double([(0.1, 0.1, 0.1), (0.1, 0.1, 1.1)])
   rt['d'] = flex.double([1.0, 1.0])
   rt['batch'] = flex.int([0, 1])
@@ -47,6 +47,8 @@ def test_ScalingModelBase(mock_errormodel):
     def consecutive_refinement_order(self):
       """Fill in abstract method."""
     def from_dict(self, obj):
+      """Fill in abstract method."""
+    def configure_components(self, _, __, ___):
       """Fill in abstract method."""
 
   SM_base = SM_base_filler(configdict={})
@@ -149,18 +151,17 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
   # Test configure reflection table
   mock_params = Mock()
   mock_params.parameterisation.decay_restraint = 0.0
-  rt = physicalmodel.configure_components(test_reflections, mock_exp, mock_params)
-
+  physicalmodel.configure_components(test_reflections, mock_exp, mock_params)
   # Test normalise components.
-  physicalmodel.components['scale'].update_reflection_data(rt)
+  physicalmodel.components['scale'].update_reflection_data()
   physicalmodel.components['scale'].calculate_scales_and_derivatives()
-  physicalmodel.components['decay'].update_reflection_data(rt)
+  physicalmodel.components['decay'].update_reflection_data()
   physicalmodel.components['decay'].calculate_scales_and_derivatives()
   physicalmodel.normalise_components()
   assert list(physicalmodel.components['scale'].parameters) == pytest.approx(
     [1.007195, 0.923262], 1e-4)
   assert list(physicalmodel.components['decay'].parameters) == pytest.approx(
-    [-0.008573, 0.0914265], 1e-4)
+    [-0.0130847, 0.0869153], 1e-4)
 
   # Test from_dict initialisation method.
   physical_dict = {"__id__": "physical", "is_scaled": True, "scale": {
@@ -211,7 +212,7 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
   physicalmodel.show()
 
   # test limit batch range
-  parameters_dict = { "scale": {"n_parameters": 11,
+  parameters_dict = {"scale": {"n_parameters": 11,
       "parameters": [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5],
       'parameter_esds' : None},
     "decay": {"n_parameters": 11,
@@ -279,7 +280,7 @@ def test_ArrayScalingModel(test_reflections, mock_exp):
   assert list(arraymodel.components['modulation'].parameters) == 4 * [0.9]
 
   # Test configure reflection table
-  rt = arraymodel.configure_components(test_reflections, mock_exp, [])
+  _ = arraymodel.configure_components(test_reflections, mock_exp, [])
 
   # Test from_dict initialisation method for previous model case.
   init_dict = arraymodel.to_dict()
@@ -326,7 +327,7 @@ def test_ArrayScalingModel(test_reflections, mock_exp):
     'time_norm_fac' : 0.1, 'time_rot_interval' : 10.0, 'n_x_param' : 2,
     'n_y_param' : 2, 'xmin' : 0.0, 'ymin' : 0.0, 'x_bin_width' : 1.0,
     'y_bin_width' : 2.0, 'n_x_mod_param' : 2, 'n_y_mod_param' : 2,
-    'x_det_bin_width' : 2.0, 'y_det_bin_width' : 2.0, 'valid_image_range' : (1,20),
+    'x_det_bin_width' : 2.0, 'y_det_bin_width' : 2.0, 'valid_image_range' : (1, 20),
     'valid_osc_range' : (0, 20)}
 
   parameters_dict = {
@@ -336,7 +337,6 @@ def test_ArrayScalingModel(test_reflections, mock_exp):
         0.1, 0.2, 0.3, 0.4, 0.3, 0.4]), 'parameter_esds' : None}
       }
   array = ArrayScalingModel(parameters_dict, configdict)
-  reflection_table = flex.reflection_table()
   array.limit_image_range((1, 10))
   assert list(array.components['decay'].parameters) == [1.2, 1.1, 1.0, 0.9]
   assert list(array.components['absorption'].parameters) == [0.1, 0.2, 0.1, 0.2, 0.1, 0.2,
@@ -344,63 +344,3 @@ def test_ArrayScalingModel(test_reflections, mock_exp):
   assert array.configdict['n_time_param'] == 2
   assert array.configdict['valid_image_range'] == (1, 10)
   assert array.configdict['valid_osc_range'] == (0, 10)
-
-def test_map_old_to_new_range():
-  old_range = (0, 8.0)
-  new_range = (0, 5.6)
-
-  offset, nparam = map_old_to_new_range(old_range, new_range)
-  assert offset == 0
-  assert nparam == 8
-
-  new_range = (0.7, 5.6)
-  offset, nparam = map_old_to_new_range(old_range, new_range)
-  assert offset == 1
-  assert nparam == 7
-
-  new_range = (0.4, 5.6)
-  offset, nparam = map_old_to_new_range(old_range, new_range)
-  assert offset == 0
-  assert nparam == 8
-
-  old_range = (0, 1.99)
-  new_range = (0, 0.8)
-
-  offset, nparam = map_old_to_new_range(old_range, new_range)
-  assert offset == 0
-  assert nparam == 2
-
-  old_range = (0, 7.99)
-  new_range = (1.4, 2.3)
-
-  offset, nparam = map_old_to_new_range(old_range, new_range)
-  assert offset == 2
-  assert nparam == 2
-
-  old_range = (0, 7.99)
-  new_range = (0.9, 1.8)
-
-  offset, nparam = map_old_to_new_range(old_range, new_range)
-  assert offset == 1
-  assert nparam == 2
-
-  old_range = (0, 7.99)
-  new_range = (0.9, 1.95)
-
-  offset, nparam = map_old_to_new_range(old_range, new_range)
-  assert offset == 1
-  assert nparam == 3
-
-  old_range = (0, 1.99)
-  new_range = (0.95, 1.9)
-
-  offset, nparam = map_old_to_new_range(old_range, new_range)
-  assert offset == 1
-  assert nparam == 2
-
-  old_range = (0, 1.99)
-  new_range = (0.45, 1.4)
-
-  offset, nparam = map_old_to_new_range(old_range, new_range)
-  assert offset == 0
-  assert nparam == 2

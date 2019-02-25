@@ -1,7 +1,7 @@
 import mock
 from mock import Mock, MagicMock
 from libtbx import phil
-from libtbx.utils import Sorry
+from dials.util import Sorry
 import pytest
 from dials.util.options import OptionParser
 from dials.algorithms.scaling.cross_validation.crossvalidator import \

@@ -15,7 +15,7 @@ import logging
 
 import libtbx.load_env
 from dxtbx.datablock import DataBlockDumper, DataBlockFactory
-from libtbx.utils import Sorry
+from dials.util import Sorry
 
 logger = logging.getLogger('dials.command_line.import')
 
@@ -34,9 +34,11 @@ as shown in the examples below. Alternatively a template can be specified using
 the template= parameter where the consecutive digits representing the image
 numbers in the filenames are replaced with '#' characters.
 
-The geometry can be set manually by either specifying a datablock.json file
-containing the reference geometry, by setting the mosflm beam centre or by
-setting each variable to be overridden.
+The geometry can be set manually, either by using the reference_geometry=
+parameter to specify a datablock or experiment list .json file containing
+the reference geometry, by using the mosflm_beam_centre= parameter to set
+the Mosflm beam centre, or by specifying each variable to be overridden
+using various geometry parameters.
 
 Examples::
 
@@ -656,7 +658,7 @@ class MetaDataUpdater(object):
 class Script(object):
   ''' Class to parse the command line options. '''
 
-  def __init__(self):
+  def __init__(self, phil=phil_scope):
     ''' Set the expected options. '''
     from dials.util.options import OptionParser
 
@@ -665,50 +667,61 @@ class Script(object):
     self.parser = OptionParser(
       usage=usage,
       sort_options=True,
-      phil=phil_scope,
+      phil=phil,
       read_datablocks_from_images=True,
       epilog=help_message)
 
-  def run(self):
+  def run(self, args=None):
     ''' Parse the options. '''
-    from dials.util import log
 
     # Parse the command line arguments in two passes to set up logging early
-    params, options = self.parser.parse_args(show_diff_phil=False, quick_parse=True)
+    params, options = self.parser.parse_args(
+      args=args,
+      show_diff_phil=False,
+      quick_parse=True)
 
-    # Configure logging
-    log.config(
-      params.verbosity,
-      info=params.output.log,
-      debug=params.output.debug_log)
+    # Configure logging, if this is the main process
+    if __name__ == '__main__':
+      from dials.util import log
+
+      log.config(params.verbosity,
+                 info=params.output.log,
+                 debug=params.output.debug_log)
+
     from dials.util.version import dials_version
     logger.info(dials_version())
 
     # Parse the command line arguments completely
     if params.input.ignore_unhandled:
       params, options, unhandled = self.parser.parse_args(
+        args=args,
         show_diff_phil=False,
         return_unhandled=True)
+      # Remove any False values from unhandled (eliminate empty strings)
+      unhandled = [x for x in unhandled if x]
     else:
-      params, options = self.parser.parse_args(show_diff_phil=False)
+      params, options = self.parser.parse_args(
+        args=args,
+        show_diff_phil=False)
       unhandled = None
 
     # Log the diff phil
     diff_phil = self.parser.diff_phil.as_str()
-    if diff_phil is not '':
+    if diff_phil:
       logger.info('The following parameters have been modified:\n')
       logger.info(diff_phil)
 
     # Print a warning if something unhandled
-    if unhandled is not None and len(unhandled) > 0:
+    if unhandled:
       msg = 'Unable to handle the following arguments:\n'
       msg += '\n'.join(['  %s' % a for a in unhandled])
       msg += '\n'
       logger.warn(msg)
 
     # Print help if no input
-    if (len(params.input.datablock) == 0 and not
-        (params.input.template or params.input.directory)):
+    if not any(
+      [params.input.datablock, params.input.template, params.input.directory]
+    ):
       self.parser.print_help()
       return
 
@@ -761,6 +774,8 @@ class Script(object):
 
     # Write the datablocks to file
     self.write_datablocks(datablocks, params)
+
+    return datablocks
 
   def write_datablocks(self, datablocks, params):
     '''

@@ -14,6 +14,7 @@ from dials.algorithms.scaling.scaler_factory import create_scaler
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.parameter_handler import \
   scaling_active_parameter_manager, create_apm_factory
+from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
 from dials.algorithms.scaling.target_function import ScalingTargetFixedIH
 from dials.algorithms.scaling.scaler import SingleScaler,\
   calc_sf_variances, ScalerBase, MultiScalerBase, MultiScaler, TargetScaler,\
@@ -90,10 +91,11 @@ def generated_refl(id_=0):
     (0.0, 0.0, 5.0), (0.0, 0.0, 8.0), (0.0, 0.0, 10.0), (0.0, 0.0, 12.0),
     (0.0, 0.0, 15.0), (0.0, 0.0, 15.0), (0.0, 0.0, 15.0)])
   reflections['s1'] = flex.vec3_double([(0.0, 0.1, 1.0), (0.0, 0.1, 1.0),
-    (0.0, 0.1, 1.0), (0.0, 0.1, 1.0), (0.0, 0.1, 1.0),(0.0, 0.1, 1.0),
+    (0.0, 0.1, 1.0), (0.0, 0.1, 1.0), (0.0, 0.1, 1.0), (0.0, 0.1, 1.0),
     (0.0, 0.1, 1.0), (0.0, 0.1, 1.0)])
   reflections.set_flags(flex.bool(8, True), reflections.flags.integrated)
-  reflections.set_flags(flex.bool([False]*5 + [True] + [False]*2), reflections.flags.excluded_for_scaling)
+  reflections.set_flags(flex.bool([False]*5 + [True] + [False]*2),
+    reflections.flags.excluded_for_scaling)
   reflections['id'] = flex.int(8, id_)
   reflections.experiment_identifiers()[id_] = str(id_)
   return reflections
@@ -144,9 +146,9 @@ def generated_refl_for_comb():
   reflections.set_flags(flex.bool([False]*5 + [True] + [False]*2), reflections.flags.bad_for_scaling)
   reflections['id'] = flex.int(8, 0)
   reflections.experiment_identifiers()[0] = '0'
+  reflections = calculate_prescaling_correction(reflections)
   return reflections
 
-@pytest.fixture
 def mock_scaling_component():
   """Mock scaling component to allow creation of a scaling model."""
   component = MagicMock()
@@ -177,7 +179,7 @@ def test_SingleScaler_initialisation():
   """Test that all attributes are correctly set upon initialisation"""
   p, e, r = (generated_param(), generated_exp(), generated_refl())
   exp = create_scaling_model(p, e, r)
-
+  p.reflection_selection.method = 'use_all'
   # test initialised correctly
   scaler = SingleScaler(p, exp[0], r)
   assert list(scaler.suitable_refl_for_scaling_sel) == [True] * 5 + [False] + [True] * 2
@@ -278,6 +280,8 @@ def test_targetscaler_initialisation():
   """Unit tests for the MultiScalerBase class."""
   p, e = (generated_param(), generated_exp(2))
   r1 = generated_refl(id_=0)
+  p.reflection_selection.method = 'intensity_ranges'
+
   r1['intensity.sum.value'] = r1['intensity']
   r1['intensity.sum.variance'] = r1['variance']
   r2 = generated_refl(id_=1)
@@ -286,6 +290,7 @@ def test_targetscaler_initialisation():
   exp = create_scaling_model(p, e, [r1, r2])
   singlescaler1 = SingleScaler(p, exp[0], r1, for_multi=True)
   singlescaler2 = SingleScaler(p, exp[1], r2, for_multi=True)
+
   #singlescaler2.experiments.scaling_model.set_scaling_model_as_scaled()
 
   targetscaler = TargetScaler(p, exp, scaled_scalers=[singlescaler1],
@@ -371,6 +376,7 @@ def test_scaling_subset():
 def test_SingleScaler_expand_scales_to_all_reflections(mock_apm):
   p, e, r = (generated_param(), generated_exp(), generated_refl())
   exp = create_scaling_model(p, e, r)
+  p.reflection_selection.method = 'use_all'
   scaler = SingleScaler(p, exp[0], r)
   # test expand to all reflections method. First check scales are all 1, then
   # update a component to simulate a minimisation result, then check that
@@ -403,6 +409,7 @@ def test_SingleScaler_expand_scales_to_all_reflections(mock_apm):
   # Second case - when var_cov_matrix is only part of full matrix.
   p, e, r = (generated_param(), generated_exp(), generated_refl())
   exp = create_scaling_model(p, e, r)
+  p.reflection_selection.method = 'use_all'
   scaler = SingleScaler(p, exp[0], r)
   apm = mock_apm
   scaler.update_var_cov(apm)
@@ -445,6 +452,7 @@ def test_SingleScaler_update_for_minimisation():
   #test_params.scaling_options.nproc = 1
   p, e, r = (generated_param(), generated_exp(), generated_refl_2())
   exp = create_scaling_model(p, e, r)
+  p.reflection_selection.method = 'use_all'
   single_scaler = SingleScaler(p, exp[0], r)
   apm_fac = create_apm_factory(single_scaler)
   single_scaler.components['scale'].parameters /= 2.0
@@ -471,7 +479,7 @@ def test_update_error_model(mock_errormodel, mock_errormodel2):
   """Test the update_error_model method"""
   p, e, r = (generated_param(), generated_exp(), generated_refl())
   exp = create_scaling_model(p, e, r)
-
+  p.reflection_selection.method = 'use_all'
   # test initialised correctly
   scaler = SingleScaler(p, exp[0], r)
   block = scaler.global_Ih_table.blocked_data_list[0]
@@ -503,7 +511,7 @@ def test_SingleScaler_combine_intensities():
   """test combine intensities method"""
   p, e, r = (generated_param(), generated_exp(), generated_refl_for_comb())
   exp = create_scaling_model(p, e, r)
-
+  p.reflection_selection.method = 'use_all'
   scaler = SingleScaler(p, exp[0], r)
   scaler.combine_intensities()
 
@@ -565,6 +573,7 @@ def test_multiscaler_update_for_minimisation():
   """Test the multiscaler update_for_minimisation method."""
 
   p, e = (generated_param(), generated_exp(2))
+  p.reflection_selection.method = 'use_all'
   r1 = generated_refl(id_=0)
   r1['intensity.sum.value'] = r1['intensity']
   r1['intensity.sum.variance'] = r1['variance']

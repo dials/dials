@@ -4,8 +4,8 @@ from libtbx import easy_run
 from libtbx.test_utils import approx_equal
 from cctbx import uctbx
 
-def test_1(regression_data, run_in_tmpdir):
-  g = [f.strpath for f in regression_data('X4_wide').listdir(sort=True)]
+def test_1(dials_data, run_in_tmpdir):
+  g = [f.strpath for f in dials_data("x4wide").listdir(sort=True)]
   assert len(g) == 90
 
   commands = [

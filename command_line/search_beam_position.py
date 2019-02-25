@@ -5,7 +5,7 @@ import math
 import iotbx.phil
 from scitbx import matrix
 from cctbx.array_family import flex
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from dials.util.options import OptionParser
 from dials.util.options import flatten_datablocks, flatten_reflections
 from dials.algorithms.indexing.indexer \
@@ -330,7 +330,7 @@ def run_dps(args):
   logger.info("Found %i solution%s with max unit cell %.2f Angstroms." %(
     len(solutions), plural_s(len(solutions))[1], DPS.amax))
   if len(solutions) < 3:
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     raise Sorry("Not enough solutions: found %i, need at least 3" %(
       len(solutions)))
   return dict(solutions=flex.vec3_double(
@@ -357,7 +357,7 @@ def discover_better_experimental_model(
   beam_panel = detector.get_panel_intersection(beam.get_s0())
 
   if beam_panel == -1:
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     raise Sorry('input beam does not intersect detector')
 
   for imageset, spots in zip(imagesets, spot_lists):

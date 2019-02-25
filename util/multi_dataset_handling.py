@@ -7,9 +7,26 @@ from __future__ import print_function
 
 import logging
 from dials.array_family import flex
-from libtbx.utils import Sorry
+from dials.util import Sorry
 
 logger = logging.getLogger('dials')
+
+import iotbx.phil
+
+phil_scope = iotbx.phil.parse('''
+  dataset_selection {
+    use_datasets = None
+      .type = strings
+      .help = "Choose a subset of datasets, based on the dataset id (as defined
+               in the reflection table), to use from a multi-dataset input."
+      .expert_level = 2
+    exclude_datasets = None
+      .type = strings
+      .help = "Choose a subset of datasets, based on the dataset id (as defined
+               in the reflection table), to exclude from a multi-dataset input."
+      .expert_level = 2
+  }
+''')
 
 def parse_multiple_datasets(reflections):
   """
@@ -111,7 +128,9 @@ number of datasets (%s)""" % (len(identifiers), len(reflections)))
   used_str_ids = []
   for exp, refl in zip(experiments, reflections):
     if exp.identifier != '':
-      assert list(refl.experiment_identifiers().values()) == [exp.identifier]
+      if list(refl.experiment_identifiers().values()) != [exp.identifier]:
+        raise ValueError('Corrupted identifiers: in reflections: %s, in experiment: %s' %
+          (list(refl.experiment_identifiers().values()), exp.identifier))
       used_str_ids.append(exp.identifier)
   if len(set(used_str_ids)) == len(reflections): #all set, don't do anything
     pass

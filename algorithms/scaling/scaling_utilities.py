@@ -220,4 +220,5 @@ def calculate_prescaling_correction(reflection_table):
     good_qe = qe.select(qe > 0.0)
     inverse_qe.set_selected(nonzero_qe_sel.iselection(), 1.0/good_qe)
     conversion *= inverse_qe
-  return conversion
+  reflection_table['prescaling_correction'] = conversion
+  return reflection_table

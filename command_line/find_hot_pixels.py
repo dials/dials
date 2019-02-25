@@ -41,7 +41,7 @@ help_message = '''
 
 def run(args):
   import libtbx.load_env
-  from libtbx.utils import Sorry
+  from dials.util import Sorry
   from dials.util import log
   import six.moves.cPickle as pickle
   usage = "%s [options] datablock.json strong.pickle" % \

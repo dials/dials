@@ -4,7 +4,7 @@ Tests for the scaler factory classes and helper functions.
 from copy import deepcopy
 import pytest
 from libtbx import phil
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from dxtbx.model import Crystal
 from mock import Mock, MagicMock
 from dials.array_family import flex
@@ -111,6 +111,7 @@ def mock_exp(mock_scaling_component, idval=0):
   exp.scaling_model.components = {'scale' : mock_scaling_component}
   exp.scaling_model.consecutive_refinement_order = ['scale']
   exp.scaling_model.is_scaled = False
+  exp.scaling_model.configdict = {}
   exp.scaling_model.configure_reflection_table.side_effect = side_effect_config_table
   exp_dict = {"__id__" : "crystal", "real_space_a": [1.0, 0.0, 0.0],
               "real_space_b": [0.0, 1.0, 0.0], "real_space_c": [0.0, 0.0, 2.0],
@@ -150,12 +151,12 @@ def test_SingleScalerFactory(generated_param, refl_to_filter, mock_scaling_compo
   """Test the single scaler factory."""
   test_refl, exp = test_refl_and_exp(mock_scaling_component)
   # Test that all required attributes get added with standard params.
-  assert all((not test_refl.has_key(i)) for i in ['inverse_scale_factor', 'Esq',
+  assert all((not test_refl.has_key(i)) for i in ['inverse_scale_factor',
       'intensity', 'variance'])
   #Test default, (no split into free set)
   ss = SingleScalerFactory.create(generated_param, exp, test_refl)
   assert isinstance(ss, SingleScaler)
-  assert all(ss.reflection_table.has_key(i) for i in ['inverse_scale_factor', 'Esq',
+  assert all(ss.reflection_table.has_key(i) for i in ['inverse_scale_factor',
       'intensity', 'variance'])
 
   # Test reflection filtering
@@ -194,7 +195,7 @@ def test_TargetScalerFactory(generated_param, mock_scaling_component):
   # This time make one dataset bad, and check it gets removed
   refl_list, explist = test_refl_and_exp_list(mock_scaling_component, 3)
   generated_param.scaling_options.target_model = False
-  refl_list[1]['partiality'] = flex.double([0.1, 0.1, 0.1, 0.1])
+  refl_list[1]['d'] = flex.double([-0.1, -0.1, -0.1, -0.1])
   target = TargetScalerFactory.create(generated_param, explist, refl_list,
     is_scaled_list=[True, False, False])
   assert isinstance(target, TargetScaler)
@@ -204,7 +205,7 @@ def test_TargetScalerFactory(generated_param, mock_scaling_component):
   assert set(target.unscaled_scalers[0].reflection_table['id']) == set([2])
 
   refl_list, explist = test_refl_and_exp_list(mock_scaling_component, 3)
-  refl_list[0]['partiality'] = flex.double([0.1, 0.1, 0.1, 0.1])
+  refl_list[0]['d'] = flex.double([-0.1, -0.1, -0.1, -0.1])
   target = TargetScalerFactory.create(generated_param, explist, refl_list,
     is_scaled_list=[True, True, False])
   assert isinstance(target, TargetScaler)

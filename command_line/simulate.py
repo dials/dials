@@ -57,7 +57,7 @@ class Script(object):
     import math
     from dials.util.command_line import Importer
     from dials.algorithms.integration import ReflectionPredictor
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
 
     # Parse the command line
     params, options, args = self.parser.parse_args()

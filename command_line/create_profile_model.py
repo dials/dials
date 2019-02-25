@@ -69,7 +69,7 @@ class Script(object):
     from dials.array_family import flex
     from dials.util.options import flatten_reflections, flatten_experiments
     from dxtbx.model.experiment_list import ExperimentListDumper
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     from dials.util import log
 
     log.config()
@@ -149,7 +149,7 @@ class Script(object):
     ''' Load the reference spots. '''
     from dials.array_family import flex
     from time import time
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     if reference is None:
       return None, None
     st = time()

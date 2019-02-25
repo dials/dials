@@ -5,7 +5,7 @@ import math
 
 import libtbx.phil
 from libtbx.math_utils import iceil
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from scitbx.array_family import flex
 
 logger = logging.getLogger('dials.command_line.detect_blanks')

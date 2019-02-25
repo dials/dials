@@ -12,7 +12,7 @@
 
 from __future__ import absolute_import, division
 from libtbx.phil import parse
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from scitbx.array_family import flex
 from scitbx import sparse
 

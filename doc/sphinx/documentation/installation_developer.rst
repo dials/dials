@@ -86,65 +86,6 @@ Using your own python to configure and build DIALS requires the dependencies lis
 
 This will run the 'hot' and 'update' steps as normal, skip the 'base' step that would normally download and build python and necessary DIALS python dependencies, and finally run the 'build' step with the python you specified. Note that the DIALS team doesn't recommend this procedure, but it can be necessary if using DIALS in concert with other packages.
 
-.. _build_dials_windows:
-
-Installing DIALS from SVN on Windows
-====================================
-
-Dependencies
-------------
-
-In order to follow this process, you will need the following programs
-installed on your machine:
-
- - 64bit python (https://www.python.org/downloads/release/python-278/)
- - HDF5 (http://www.hdfgroup.org/ftp/HDF5/current/bin/windows/hdf5-1.8.14-win64-vs2012-shared.zip)
- - A subversion client
-
-Before trying to compile anything, you will need to add the path to the hdf5.h
-file to the INCLUDE environment variable. If you don't have the INCLUDE
-enviroment variable, just add it. You will also need a C/C++ compiler (e.g.
-visual sudio).
-
-Getting the CCTBX and DIALS sources
------------------------------------
-
-To get this started, create a directory to contain the cctbx build::
-
-  mkdir cctbx
-  cd cctbx
-
-Download http://cci.lbl.gov/cctbx_build/results/current/cctbx_bundle_for_installer.tar.gz
-and unpack into the directory ``cctbx\modules``.
-
-Now checkout the cctbx sources into the ``cctbx\modules\cctbx_project`` directory::
-
-  cd modules
-  git clone https://github.com/cctbx/cctbx_project.git cctbx_project
-
-In the ``modules`` directory of your cctbx installation, checkout the dials source
-in the following way::
-
-  git clone https://github.com/dials/dials.git dials
-
-This may take some time, but will fetch all the dials source code and deposit in
-in a folder called dials within the cctbx source directory.
-
-Now, create a build directory in ``cctbx\build``. and configure the cctbx
-installation and build the c++ libraries as follows::
-
-  cd ..
-  mkdir build
-  cd build
-  python ..\modules\cctbx_project\libtbx\configure.py dials
-  setpaths.bat
-  libtbx.scons
-
-Note that the setpaths.bat script needs to be sourced each time you want to build
-cctbx or run a cctbx program.
-
-You should now be good to go!
-
 Downloading the DIALS regression test data
 ==========================================
 

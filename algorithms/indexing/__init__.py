@@ -67,7 +67,7 @@ def index_reflections_local(
   phi = refs['xyzobs.mm.value'].parts()[2]
 
   if len(rlps) <= nearest_neighbours:
-    from libtbx.utils import Sorry
+    from dials.util import Sorry
     raise Sorry("index_assignment.local.nearest_neighbour must be smaller than the number of accepted reflections (%d)"
                  % len(rlps))
 

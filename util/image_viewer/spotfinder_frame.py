@@ -38,8 +38,8 @@ def create_load_image_event(destination, filename):
   wx.PostEvent(destination, LoadImageEvent(myEVT_LOADIMG, -1, filename))
 
 
-class SpotFrame(XrayFrame) :
-  def __init__ (self, *args, **kwds) :
+class SpotFrame(XrayFrame):
+  def __init__(self, *args, **kwds):
     self.datablock = kwds["datablock"]
     self.experiments = kwds["experiments"]
     if self.datablock is not None:
@@ -138,7 +138,7 @@ class SpotFrame(XrayFrame) :
     self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateUIMask,
               id=self._id_mask)
 
-  def setup_toolbar(self) :
+  def setup_toolbar(self):
     from wxtbx import bitmaps
     from wxtbx import icons
 
@@ -199,7 +199,8 @@ class SpotFrame(XrayFrame) :
       shortHelp="Next",
       kind=wx.ITEM_NORMAL)
     self.Bind(wx.EVT_MENU, self.OnNext, btn)
-    txt = wx.StaticText(self.toolbar, -1, "Jump to image:")
+
+    txt = wx.StaticText(self.toolbar, -1, "Jump:")
     self.toolbar.AddControl(txt)
 
     self.jump_to_image = PhilIntCtrl(self.toolbar, -1, name="image", size=(65,-1))
@@ -207,6 +208,15 @@ class SpotFrame(XrayFrame) :
     self.jump_to_image.SetValue(1)
     self.toolbar.AddControl(self.jump_to_image)
     self.Bind(EVT_PHIL_CONTROL, self.OnJumpToImage, self.jump_to_image)
+
+    txt = wx.StaticText(self.toolbar, -1, "Stack:")
+    self.toolbar.AddControl(txt)
+
+    self.stack = PhilIntCtrl(self.toolbar, -1, name="stack", size=(65,-1))
+    self.stack.SetMin(1)
+    self.stack.SetValue(1)
+    self.toolbar.AddControl(self.stack)
+    self.Bind(EVT_PHIL_CONTROL, self.OnStack, self.stack)
 
   def setup_menus(self):
     super(SpotFrame, self).setup_menus()
@@ -237,7 +247,7 @@ class SpotFrame(XrayFrame) :
     else:
       event.SetText("Show mask tool")
 
-  def OnChooseImage (self, event) :
+  def OnChooseImage(self, event):
     # Whilst scrolling and choosing, show what we are looking at
     selected_image = self.images[self.image_chooser_panel.GetValue()-1]
     # Always show the current 'loaded' image as such
@@ -254,20 +264,26 @@ class SpotFrame(XrayFrame) :
     # Once we've stopped scrolling, load the selected item
     self.load_image(selected_image)
 
-  def OnPrevious (self, event) :
+  def OnPrevious(self, event):
     super(SpotFrame, self).OnPrevious(event)
     # Parent function moves - now update the UI to match
     self.jump_to_image.SetValue(self.images.selected_index+1)
 
-  def OnNext (self, event) :
+  def OnNext(self, event):
     super(SpotFrame, self).OnNext(event)
     # Parent function moves - now update the UI to match
     self.jump_to_image.SetValue(self.images.selected_index+1)
 
-  def OnJumpToImage (self, event) :
+  def OnJumpToImage(self, event):
     phil_value = self.jump_to_image.GetPhilValue()
     if (self.images.selected_index != (phil_value - 1)):
       self.load_image(self.images[phil_value - 1])
+
+  def OnStack(self, event):
+    value = self.stack.GetPhilValue()
+    if value != self.params.sum_images:
+      self.params.sum_images = value
+      self.reload_image()
 
   # consolidate initialization of PySlip object into a single function
   def init_pyslip(self):
@@ -465,7 +481,7 @@ class SpotFrame(XrayFrame) :
     #print self.draw_max_pix_timer.report()
     #print self.draw_ctr_mass_timer.report()
 
-  def add_file_name_or_data(self, image_data) :
+  def add_file_name_or_data(self, image_data):
       """
       Adds an image to the viewer's list of images.
 
@@ -491,6 +507,7 @@ class SpotFrame(XrayFrame) :
       self.images.add(image_data)
       self.image_chooser_panel.SetMax(len(self.images))
       self.jump_to_image.SetMax(len(self.images))
+      self.stack.SetMax(len(self.images))
       return len(self.images)-1
 
   def load_file_event(self, evt):
@@ -501,7 +518,7 @@ class SpotFrame(XrayFrame) :
     with wx.BusyCursor():
       self.load_image(self.images.selected, refresh=True)
 
-  def load_image (self, file_name_or_data, refresh=False):
+  def load_image(self, file_name_or_data, refresh=False):
     """
     Load and display an image.
 
@@ -554,7 +571,7 @@ class SpotFrame(XrayFrame) :
     if previously_selected_image and previously_selected_image != self.images.selected:
       previously_selected_image.set_raw_data(None)
 
-  def OnShowSettings (self, event) :
+  def OnShowSettings(self, event):
     if self.settings_frame is None:
       frame_rect = self.GetRect()
       display_rect = wx.GetClientDisplayRect()
@@ -1455,8 +1472,8 @@ class SpotFrame(XrayFrame) :
     return predicted_all
 
 
-class SpotSettingsFrame (SettingsFrame) :
-  def __init__ (self, *args, **kwds) :
+class SpotSettingsFrame(SettingsFrame):
+  def __init__(self, *args, **kwds):
     super(SettingsFrame, self).__init__(*args, **kwds)
     self.settings = self.GetParent().settings
     self.params = self.GetParent().params
@@ -1476,8 +1493,8 @@ class SpotSettingsFrame (SettingsFrame) :
     self.panel.OnDestroy(event)
 
 
-class SpotSettingsPanel (wx.Panel) :
-  def __init__ (self, * args, **kwargs) :
+class SpotSettingsPanel(wx.Panel):
+  def __init__(self, * args, **kwargs):
     super(SpotSettingsPanel, self).__init__(*args, **kwargs)
 
     self.settings = self.GetParent().settings
@@ -1771,7 +1788,7 @@ class SpotSettingsPanel (wx.Panel) :
     self.brightness_txt_ctrl.Unbind(wx.EVT_KILL_FOCUS)
 
   # CONTROLS 2:  Fetch values from widgets
-  def collect_values (self) :
+  def collect_values(self):
     if self.settings.enable_collect_values:
       self.settings.show_resolution_rings = self.resolution_rings_ctrl.GetValue()
       self.settings.show_ice_rings = self.ice_rings_ctrl.GetValue()
