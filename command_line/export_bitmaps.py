@@ -1,6 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import sys
+
 import iotbx.phil
 from dials.util.options import flatten_datablocks
 from dials.util.options import OptionParser
@@ -47,7 +49,8 @@ output_file = None
 imageset_index = None
   .type = int
   .multiple = True
-  .help = "The index/indices from an imageset to export"
+  .help = "The index/indices from an imageset to export. The first image of "
+          "the set is 1."
   .expert_level=2
 display = *image mean variance dispersion sigma_b \
           sigma_s threshold global_threshold
@@ -137,7 +140,7 @@ def imageset_as_bitmaps(imageset, params):
   saturation = panel.get_trusted_range()[1]
   if params.saturation:
     saturation = params.saturation
-  if scan is not None and scan.get_oscillation()[1] > 0:
+  if scan is not None and scan.get_oscillation()[1] > 0 and not params.imageset_index:
     start, end = scan.get_image_range()
   else:
     start, end = 1, len(imageset)
@@ -279,5 +282,4 @@ def image_filter(raw_data, mask, display,
 
 
 if __name__ == '__main__':
-  import sys
   run(sys.argv[1:])
