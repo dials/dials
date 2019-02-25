@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 import math
 import logging
 
+from scitbx.array_family import flex
 from dials.algorithms.indexing.indexer import indexer_base
 from dials.algorithms.indexing.basis_vector_search import strategies
 from dxtbx.model.experiment_list import Experiment, ExperimentList
