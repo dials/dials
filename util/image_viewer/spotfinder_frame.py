@@ -1508,7 +1508,6 @@ class SpotSettingsPanel(wx.Panel):
     self.settings.untrusted = self.params.masking.untrusted
     self.settings.show_ice_rings = self.params.show_ice_rings
     self.settings.ice_rings = self.params.masking.ice_rings
-    import pdb; pdb.set_trace()
     self.settings.show_ctr_mass = self.params.show_ctr_mass
     self.settings.show_max_pix = self.params.show_max_pix
     self.settings.show_all_pix = self.params.show_all_pix
