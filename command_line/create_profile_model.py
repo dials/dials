@@ -129,16 +129,16 @@ class Script(object):
     for model in experiments:
       sigma_b = model.profile.sigma_b(deg=True)
       sigma_m = model.profile.sigma_m(deg=True)
-      if isinstance(sigma_b, type(1.0)):
-        logger.info('Sigma B: %f' % sigma_b)
-        logger.info('Sigma M: %f' % sigma_m)
-      else: # scan varying
+      if model.profile.is_scan_varying():  # scan varying
         mean_sigma_b = sum(sigma_b) / len(sigma_b)
         mean_sigma_m = sum(sigma_m) / len(sigma_m)
-        logger.info('Sigma B: %f' % mean_sigma_b)
-        logger.info('Sigma M: %f' % mean_sigma_m)
+        logger.info('Sigma B: %f', mean_sigma_b)
+        logger.info('Sigma M: %f', mean_sigma_m)
+      else:
+        logger.info('Sigma B: %f', sigma_b)
+        logger.info('Sigma M: %f', sigma_m)
 
-    # Wrtie the parameters
+    # Write the parameters
     Command.start("Writing experiments to %s" % params.output)
     dump = ExperimentListDumper(experiments)
     with open(params.output, "w") as outfile:
