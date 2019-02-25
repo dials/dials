@@ -1,0 +1,200 @@
+Multi-crystal symmetry analysis and scaling with DIALS
+======================================================
+
+Introduction
+------------
+
+Recent additions to DIALS and xia2 have enabled multi-crystal analysis to be
+performed following integration. These tools are particularly relevant
+for analysis of many partial-datasets, which may be the only pracitical way of
+performing data collections for certain crystals. After integration, the
+space group symmetry can be investigated by testing for the presence of symmetry
+operations relating the integrated intensities of groups of reflections - the
+program to perform this is analysis is :samp:`dials.symmetry`.
+Another thing to consider is that for certain space groups (polar space groups),
+there is an inherent ambiguity in the way that the diffraction pattern can be
+indexed. In order to combine multiple datasets from these space groups, one must
+reindex all data to a consistent setting, which can be done with the program
+:samp:`dials.cosym`.
+Finally, the data must be scaled, to correct for experimental effects such as
+differences in crystal size/illuminated volume and radiation damage - this can
+be done with the program :samp:`dials.scale`. After the data has been scaled, choices
+can then be made about applying a resolution limit of excluding certain regions
+of the data which may be negatively affected by radiation damage.
+
+xia2.multiplex
+--------------
+The easiest way to run these tools is through the program :samp:`xia2.multiplex`.
+This runs several dials programs, including the programs described above, while
+producing useful plots and output files.
+
+To run :samp:`xia2.multiplex`, we must provide the input integrated files from
+:samp:`dials.integrate`::
+
+  xia2.multiplex reflections_*.pickle experiments_*.json
+
+This runs dials.cosym, dials.symmetry, dials.scale, calculates a resolution limit
+and reruns dials.scale with a resolution cutoff. The
+final dataset is exported to an unmerged mtz and a html report plot is generated.
+The easiest way to see the results is to open the html report in your browser of
+choice e.g.::
+
+  firefox xia2-multi-crystal-report.html
+
+Provided is a summary of the merging statistics as well as several plots, please
+explore these for a few minutes now!
+
+So far the merging statistics look okay but not great, and if you are familiar
+with this system you will notice that the space group is :samp:`P 1 2 1`, whereas in the
+published structure the space group is :samp:`P 43 21 2` (search for the PDB entry for
+Proteinase K)! Let's have a look at the log files to see what's going on. Type 'ls' in the
+current directory to see the files. The files are numbered based on the order
+of processing (so all :samp:`1_*` files are from dials.cosym, :samp:`2_*` from dials.symmetry etc.).
+First let's inspect the results from cosym, using the cat or open commands::
+
+  cat 1_dials.cosym.log
+
+At the bottom of the log, you'll notice::
+
+  Space groups:
+  P 4 2 2
+  [0, 1, 2, 3]
+  Reindexing operators:
+  x,y,z
+  [0, 1, 2, 3]
+
+This looks good so far, in this case the datasets already had a consistent
+indexing, however in general there may be different reindexing operators
+applied to different datasets.
+
+Next let's look at the dials.symmetry results::
+
+  cat 2_dials.symmetry.log
+
+  Scoring all possible sub-groups
+  -------------------------------------------------------------------------------------------
+  Patterson group     Likelihood  NetZcc  Zcc+   Zcc-   CC     CC-    delta  Reindex operator
+  -------------------------------------------------------------------------------------------
+  P 1 2/m 1        *  0.424        2.72    7.16   4.44   0.72   0.44  0.0    a,b,c
+  P -1                0.294        2.21    7.20   4.99   0.72   0.49  0.0    a,b,c
+  C 1 2/m 1           0.081        1.19    6.18   4.99   0.62   0.49  0.0    -a-b,a-b,c
+  P 1 2/m 1           0.063        0.92    6.00   5.08   0.60   0.49  0.0    b,-c,-a
+  C 1 2/m 1           0.063        0.91    5.99   5.09   0.58   0.50  0.0    a-b,a+b,c
+  P 1 2/m 1           0.043        0.49    5.71   5.22   0.56   0.51  0.0    -b,a,c
+  P 4/m               0.014        0.33    5.55   5.22   0.52   0.52  0.0    a,b,c
+  P m m m             0.013        1.17    5.83   4.66   0.58   0.46  0.0    a,b,c
+  C m m m             0.004        0.10    5.40   5.30   0.53   0.51  0.0    -a-b,a-b,c
+  P 4/m m m           0.000        5.36    5.36   0.00   0.52   0.00  0.0    a,b,c
+  -------------------------------------------------------------------------------------------
+  Best solution: P 1 2/m 1
+  Unit cell: (68.3974, 68.3974, 104.002, 90, 90, 90)
+  Reindex operator: a,b,c
+  Laue group probability: 0.424
+  Laue group confidence: 0.417
+
+:samp:`dials.symmetry` has found :samp:`P 1 2/m 1` as the most likely Patterson group, however you'll
+notice that the likelihood is not very high (0.424). It is important to bear in mind
+that this symmetry analysis was performed on unscaled intensities. If the intensities
+need to be scaled significantly then this can hide the true symmetry of the dataset.
+
+Even though the data was scaled in the wrong space group, scaling will still have
+helped the intensities to become more consistent. While the developers of DIALS work
+very hard to implement automated rechecking of the symmetry, we'll have to reprocess
+manually from this point forwards.
+
+
+Manual reprocessing
+-------------------
+Let's try running dials.symmetry again on the output of the first scaling run
+(before any resolution cutoff has been applied)::
+
+  dials.symmetry 4_scaled_experiments.json 4_scaled_reflections.pickle
+
+  Scoring all possible sub-groups
+  ---------------------------------------------------------------------------------------------
+  Patterson group       Likelihood  NetZcc  Zcc+   Zcc-   CC     CC-    delta  Reindex operator
+  ---------------------------------------------------------------------------------------------
+  P 4/m m m        ***  0.995        9.35    9.35   0.00   0.93   0.00  0.0    a,b,c
+  C m m m               0.002        0.06    9.37   9.31   0.94   0.93  0.0    -a+b,a+b,-c
+  P m m m               0.002        0.09    9.38   9.29   0.94   0.93  0.0    a,b,c
+  P 4/m                 0.000        0.10    9.40   9.30   0.94   0.93  0.0    a,b,c
+  C 1 2/m 1             0.000        0.16    9.46   9.30   0.95   0.93  0.0    -a+b,a+b,-c
+  P 1 2/m 1             0.000        0.14    9.45   9.30   0.95   0.93  0.0    a,c,-b
+  C 1 2/m 1             0.000        0.14    9.45   9.30   0.95   0.93  0.0    -a-b,-a+b,-c
+  P 1 2/m 1             0.000        0.11    9.43   9.31   0.94   0.93  0.0    -b,a,c
+  P 1 2/m 1             0.000        0.23    9.51   9.28   0.95   0.93  0.0    a,b,c
+  P -1                  0.000        0.31    9.61   9.30   0.96   0.93  0.0    a,b,c
+  ---------------------------------------------------------------------------------------------
+  Best solution: P 4/m m m
+  Unit cell: (68.3815, 68.3815, 103.974, 90, 90, 90)
+  Reindex operator: a,b,c
+  Laue group probability: 0.995
+  Laue group confidence: 0.995
+
+If scale factors from scaling are present, these will be applied before the symmetry
+analysis. Now the correct solution is easily found with a very high likelihood,
+that's much better! We can now run scaling again on the output of dials.symmetry::
+
+  dials.scale reindexed_reflections.pickle reindexed_experiments.json unmerged_mtz=rescaled.mtz
+
+From the output, you can see that the merging statistics are significantly better
+than before, with high correlation coefficients close to 1. At this point we could
+also apply a resolution limit by supplying :samp:`d_min=` to :samp:`dials.scale`,
+however the correlation coefficient and I/sigma looks good out to the highest
+resolution so it is unneccesary in this case.
+
+To get a useful summary report, we can generate a dials report or a xia2 report::
+
+  dials.report scaled.pickle scaled_experiments.json
+
+  xia2.report rescaled.mtz
+
+Take a look and the reports.
+
+Almost there
+------------
+If you looked carefully at the reports, you may have noticed that the fourth
+dataset is giving significantly higher R-merge values and much lower I/sigma.
+The question then is if it is better to exclude this dataset. We can get some
+useful information by running the program dials.compute_delta_cchalf::
+
+  dials.compute_delta_cchalf scaled.pickle scaled_experiments.json
+
+  # Datasets: 4
+  # Reflections: 222934
+  # Unique: 26478
+  CC 1/2 mean: 94.896
+  CC 1/2 excluding dataset 0: 92.111
+  CC 1/2 excluding dataset 1: 92.086
+  CC 1/2 excluding dataset 2: 92.022
+  CC 1/2 excluding dataset 3: 99.327
+  Dataset: 3, Delta CC 1/2: -4.431
+  Dataset: 0, Delta CC 1/2: 2.785
+  Dataset: 1, Delta CC 1/2: 2.810
+  Dataset: 2, Delta CC 1/2: 2.874
+
+It looks like we could get a significantly better CC 1/2 by excluding the final
+dataset - it has a negative Delta CC 1/2. But how bad is too bad that it warrants
+exclusion? Unfortunately this is a difficult question to answer and it may be the
+case that one would need to refine several structures with different data excluded
+to properly address this question.
+If we had many datasets and only a small fraction had a very large negative Delta CC 1/2
+then one could argue that these measurements are not drawn from the same population
+as the rest of the data and should be excluded.
+
+To see the effect of removing the last dataset (dataset '3'), we can rerun
+dials.scale (note that this will overwrite the previous scaled files). We have to
+provide the identifier of the dataset that we want to exclude, which are usually
+a string of integers ('0', '1', '2' ... based on the order of input)::
+
+  dials.scale scaled.pickle scaled_experiments.json exclude_datasets=3
+
+We could have also excluded a subset of images, for example using the option
+:samp:`exclude_images=3:301:600` to exclude the last 300 images of dataset 3.
+This option could be used to exclude the end of a dataset that was showing
+sigificant radiation damage.
+
+Looking at the output from :samp:`dials.scale`, the merging statistics have
+significantly improved again, and although the multiplicity has reduced, we
+have not sacrificed much completeness. The anomalous correlation has only now
+become apparant, so maybe it is best to proceed with only these three datasets.
