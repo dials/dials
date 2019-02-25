@@ -1081,9 +1081,8 @@ class SpotFrame(XrayFrame):
     if self.settings.show_resolution_rings:
       self.draw_resolution_rings()
     elif self.settings.show_ice_rings:
-      from cctbx import sgtbx, uctbx
-      unit_cell = uctbx.unit_cell((4.498,4.498,7.338,90,90,120))
-      space_group = sgtbx.space_group_info(number=194).group()
+      unit_cell = self.settings.ice_rings.unit_cell
+      space_group = self.settings.ice_rings.space_group.group()
       self.draw_resolution_rings(unit_cell=unit_cell, space_group=space_group)
     self.drawUntrustedPolygons()
     self.pyslip.Update()
@@ -1508,6 +1507,8 @@ class SpotSettingsPanel(wx.Panel):
     self.settings.show_resolution_rings = self.params.show_resolution_rings
     self.settings.untrusted = self.params.masking.untrusted
     self.settings.show_ice_rings = self.params.show_ice_rings
+    self.settings.ice_rings = self.params.masking.ice_rings
+    import pdb; pdb.set_trace()
     self.settings.show_ctr_mass = self.params.show_ctr_mass
     self.settings.show_max_pix = self.params.show_max_pix
     self.settings.show_all_pix = self.params.show_all_pix
