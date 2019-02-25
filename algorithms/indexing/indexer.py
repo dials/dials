@@ -29,6 +29,10 @@ from scitbx import matrix
 
 from dials.array_family import flex
 from dials.algorithms.indexing import assign_indices
+from dials.algorithms.indexing.compare_orientation_matrices import (
+    difference_rotation_matrix_axis_angle,
+)
+
 from cctbx import crystal, sgtbx, xray
 
 from dxtbx.model import Crystal
@@ -963,10 +967,6 @@ class indexer_base(object):
                     )
 
                 if len(experiments) > 1:
-                    from dials.algorithms.indexing.compare_orientation_matrices import (
-                        difference_rotation_matrix_axis_angle,
-                    )
-
                     cryst_b = experiments.crystals()[-1]
                     have_similar_crystal_models = False
                     for i_a, cryst_a in enumerate(experiments.crystals()[:-1]):
@@ -1259,6 +1259,10 @@ class indexer_base(object):
                 max_delta=self.params.known_symmetry.max_delta,
             )
 
+        candidate_crystal_models = self.filter_similar_orientations(
+            candidate_crystal_models
+        )
+
         return candidate_crystal_models
 
     def choose_best_orientation_matrix(self, candidate_orientation_matrices):
@@ -1375,10 +1379,6 @@ class indexer_base(object):
 
         args = []
 
-        from dials.algorithms.indexing.compare_orientation_matrices import (
-            difference_rotation_matrix_axis_angle,
-        )
-
         for cm in candidate_orientation_matrices:
             sel = self.reflections["id"] == -1
             if self.d_min is not None:
@@ -1467,26 +1467,6 @@ class indexer_base(object):
                     miller_indices = self.cb_op_primitive_to_given.apply(miller_indices)
                     refl["miller_index"].set_selected(sel, miller_indices)
 
-            if (
-                self.refined_experiments is not None
-                and len(self.refined_experiments) > 0
-            ):
-                orientation_too_similar = False
-                cryst_b = experiments[0].crystal
-                for i_a, cryst_a in enumerate(self.refined_experiments.crystals()):
-                    R_ab, axis, angle, cb_op_ab = difference_rotation_matrix_axis_angle(
-                        cryst_a, cryst_b
-                    )
-                    min_angle = (
-                        self.params.multiple_lattice_search.minimum_angular_separation
-                    )
-                    if abs(angle) < min_angle:  # degrees
-                        orientation_too_similar = True
-                        break
-                if orientation_too_similar:
-                    logger.debug("skipping crystal: too similar to other crystals")
-                    continue
-
             args.append((params, refl, experiments))
             if len(args) == params.indexing.basis_vector_combinations.max_refine:
                 break
@@ -1545,6 +1525,31 @@ class indexer_base(object):
                 flex.bool(len(reflections), True), reflections.flags.indexed
             )
             self.index_reflections(experiments, reflections)
+
+    def filter_similar_orientations(self, crystal_models):
+
+        for cryst in crystal_models:
+
+            if (
+                self.refined_experiments is not None
+                and len(self.refined_experiments) > 0
+            ):
+
+                orientation_too_similar = False
+                for i_a, cryst_a in enumerate(self.refined_experiments.crystals()):
+                    R_ab, axis, angle, cb_op_ab = difference_rotation_matrix_axis_angle(
+                        cryst_a, cryst
+                    )
+                    min_angle = (
+                        self.params.multiple_lattice_search.minimum_angular_separation
+                    )
+                    if abs(angle) < min_angle:  # degrees
+                        orientation_too_similar = True
+                        break
+                if orientation_too_similar:
+                    logger.debug("skipping crystal: too similar to other crystals")
+                    continue
+            yield cryst
 
     def apply_symmetry(self, crystal_model, target_space_group):
         A = crystal_model.get_A()
@@ -1788,10 +1793,6 @@ class Solution(group_args):
 
 
 def filter_doubled_cell(solutions):
-    from dials.algorithms.indexing.compare_orientation_matrices import (
-        difference_rotation_matrix_axis_angle,
-    )
-
     accepted_solutions = []
     for i1, s1 in enumerate(solutions):
         doubled_cell = False
