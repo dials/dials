@@ -3,6 +3,7 @@ Functions for handling exclusion of images ranges from scans based on a
 command line option, as well as obtaining a selection to use for selecting
 the corresponding reflections.
 """
+from __future__ import division
 import copy as copy
 from dials.array_family import flex
 from dials.util import Sorry

@@ -5,6 +5,7 @@ These classes use a gaussian smoother (1D, 2D or 3D) to calculate the
 inverse scale factors and derivatives with respect to the component
 parameters.
 """
+from __future__ import division
 from math import floor, ceil
 from scitbx import sparse
 from dials.array_family import flex

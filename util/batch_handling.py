@@ -1,6 +1,7 @@
 """
 Functions to help with calculating batch properties for experiments objects.
 """
+from __future__ import division
 from math import ceil, floor, log
 import logging
 import copy as copy

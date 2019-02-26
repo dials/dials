@@ -2,6 +2,7 @@
 Optimise the combination of profile and summation intensity values.
 """
 from __future__ import print_function
+from __future__ import division
 import logging
 from iotbx.merging_statistics import filter_intensities_by_sigma
 from libtbx.table_utils import simple_table

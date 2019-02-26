@@ -1,6 +1,7 @@
 """
 Tests for the error model.
 """
+from __future__ import division
 from math import sqrt
 import pytest
 from libtbx.test_utils import approx_equal

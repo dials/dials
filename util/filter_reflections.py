@@ -37,6 +37,7 @@ Classes:
   - AllSumPrfScaleIntensityReducer
       implements filtering methods for using all of prf, sum and scale intensities
 """
+from __future__ import division
 import logging
 import abc
 from collections import defaultdict

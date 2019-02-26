@@ -4,6 +4,7 @@ and experiment lists.
 """
 
 from __future__ import print_function
+from __future__ import division
 
 import logging
 from dials.array_family import flex

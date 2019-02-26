@@ -1,3 +1,4 @@
+from __future__ import division
 
 # test that compute_delta_cchalf returns required values
 import pytest

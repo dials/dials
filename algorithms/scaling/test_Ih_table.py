@@ -1,3 +1,4 @@
+from __future__ import division
 from copy import deepcopy
 import pytest
 from mock import Mock

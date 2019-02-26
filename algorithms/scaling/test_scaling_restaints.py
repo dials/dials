@@ -1,6 +1,7 @@
 """
 Tests for the scaling restraints module.
 """
+from __future__ import division
 from collections import OrderedDict
 import pytest
 from mock import Mock

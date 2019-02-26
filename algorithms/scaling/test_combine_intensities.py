@@ -1,6 +1,7 @@
 """
 Tests for intensity combination.
 """
+from __future__ import division
 import pytest
 from mock import Mock
 from dxtbx.model import Experiment, Crystal

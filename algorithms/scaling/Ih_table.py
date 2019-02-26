@@ -4,6 +4,7 @@ A datastructure for summing over groups of symmetry equivalent reflections.
 This module defines a blocked datastructures for summing over groups of
 symmetry equivalent reflections, as required for scaling.
 """
+from __future__ import division
 
 from orderedset import OrderedSet
 from dials.array_family import flex

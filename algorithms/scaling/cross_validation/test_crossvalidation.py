@@ -1,3 +1,4 @@
+from __future__ import division
 import mock
 from mock import Mock, MagicMock
 from libtbx import phil

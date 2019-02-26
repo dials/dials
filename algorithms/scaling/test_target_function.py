@@ -1,6 +1,7 @@
 """
 Test for the target function module.
 """
+from __future__ import division
 import copy
 from collections import OrderedDict
 import pytest

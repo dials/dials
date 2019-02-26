@@ -1,6 +1,7 @@
 """
 Tests for the scaler factory classes and helper functions.
 """
+from __future__ import division
 from copy import deepcopy
 import pytest
 from libtbx import phil

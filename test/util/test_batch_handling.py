@@ -5,6 +5,7 @@ These functions are designed to handle reflection/experiment lists that
 include both sweep experiments and single image datasets, which do not
 have a scan object.
 """
+from __future__ import division
 
 from dials.util.batch_handling import assign_batches_to_reflections, \
   calculate_batch_offsets, set_batch_offsets, \

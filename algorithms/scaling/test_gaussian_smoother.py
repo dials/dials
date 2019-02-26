@@ -1,3 +1,4 @@
+from __future__ import division
 from math import exp
 from libtbx.test_utils import approx_equal
 from dials.array_family import flex

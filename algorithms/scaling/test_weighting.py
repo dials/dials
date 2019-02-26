@@ -1,6 +1,7 @@
 """
 Test for the scaling weighting module.
 """
+from __future__ import division
 import pytest
 from mock import Mock
 from dials.util import Sorry

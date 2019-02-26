@@ -1,6 +1,7 @@
 """
 Tests for the model_factory module.
 """
+from __future__ import division
 import pytest
 from mock import Mock
 from dials.array_family import flex

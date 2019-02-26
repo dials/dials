@@ -8,6 +8,7 @@ tables and ExperimentList objects (and sometimes phil_scope objects if
 necessary), and return common dials objects such as reflection tables and
 ExperimentLists.
 """
+from __future__ import division
 from copy import deepcopy
 import logging
 import pkg_resources

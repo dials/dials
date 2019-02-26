@@ -1,6 +1,7 @@
 '''
 Tests for outlier rejection.
 '''
+from __future__ import division
 import pytest
 from mock import Mock
 from dials.util import Sorry

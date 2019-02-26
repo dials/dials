@@ -61,6 +61,7 @@ connected reflections between datasets. The reflections used for minimisation
 are those which are selected by either method - inter-dataset connectedness or
 intra-dataset connectedness.
 """
+from __future__ import division
 import logging
 from math import pi, sqrt, floor
 import libtbx

@@ -1,6 +1,7 @@
 """
 Tests for the reflection selection algorithm.
 """
+from __future__ import division
 import os
 import itertools
 from cctbx import sgtbx

@@ -3,6 +3,7 @@ Test the output of targeted scaling - by calling the scale_against_target
 scaling_library function and by directly invoking the perform method scaling
 of a TargetScaler.
 """
+from __future__ import division
 
 from math import log
 import pytest

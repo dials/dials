@@ -26,6 +26,7 @@ As well as choosing the correct intensities, further filtering may be applied
 Lastly, partials should be correctly handled - being combined if appropriate,
 scaled and filtered below a given value where the values become unreliable.
 """
+from __future__ import division
 
 import pytest
 import mock

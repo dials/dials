@@ -1,6 +1,7 @@
 """
 Tests for dials.util.multi_dataset_handling functions
 """
+from __future__ import division
 
 import pytest
 from dials.util import Sorry

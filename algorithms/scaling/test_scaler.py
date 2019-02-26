@@ -1,3 +1,4 @@
+from __future__ import division
 import pytest
 import mock
 from mock import Mock, MagicMock, call

@@ -20,6 +20,7 @@ the scales for all reflections). The selection lists typically come from
 the Ih_table datastructures so that the data in the components is split in
 the same way as the data in the Ih_table datastructure.
 """
+from __future__ import division
 import abc
 from dials.array_family import flex
 from scitbx import sparse

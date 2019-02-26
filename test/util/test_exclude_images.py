@@ -1,6 +1,7 @@
 """
 tests for functions in dials.util.exclude_images.py
 """
+from __future__ import division
 import copy
 import pytest
 from dials.util import Sorry

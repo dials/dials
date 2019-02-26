@@ -1,6 +1,7 @@
 '''
 Collection of factories for creating the scalers.
 '''
+from __future__ import division
 import logging
 from dials.util import Sorry
 from dials.array_family import flex

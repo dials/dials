@@ -1,6 +1,7 @@
 """
 Test for the basis function module.
 """
+from __future__ import division
 import pytest
 from dials.array_family import flex
 from dials.algorithms.scaling.model.components.scale_components import \

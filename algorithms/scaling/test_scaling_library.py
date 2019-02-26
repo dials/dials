@@ -1,6 +1,7 @@
 """
 Tests for scaling library module.
 """
+from __future__ import division
 
 import pytest
 from libtbx import phil

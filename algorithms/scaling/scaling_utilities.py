@@ -3,6 +3,7 @@ Module of utility functions for scaling.
 """
 
 from __future__ import print_function
+from __future__ import division
 import logging
 from time import time
 import copy
