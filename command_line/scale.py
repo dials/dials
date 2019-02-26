@@ -152,7 +152,7 @@ class Script(object):
     if self.params.stats_only:
       try:
         self.merging_stats(self.scaled_data_as_miller_array(
-          self.experiments[0].crystal.get_crystal_symmetry()))
+          self.experiments[0].crystal.get_crystal_symmetry(assert_is_compatible_unit_cell=False)))
       except DialsMergingStatisticsError as e:
         logger.info(e)
       return
@@ -308,7 +308,8 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
   def prepare_scaled_miller_array(self):
     """Calculate a scaled miller array from the dataset."""
     self.scaled_miller_array = self.scaled_data_as_miller_array(
-      self.experiments[0].crystal.get_crystal_symmetry(), anomalous_flag=False)
+      self.experiments[0].crystal.get_crystal_symmetry(
+        assert_is_compatible_unit_cell=False), anomalous_flag=False)
 
   def merging_stats(self, scaled_miller_array):
     """Calculate and print the merging statistics."""

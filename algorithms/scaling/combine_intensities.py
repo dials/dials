@@ -113,7 +113,8 @@ class SingleDatasetIntensityCombiner(object):
 
     for Imid in self.Imids:
       Int, Var = _get_Is_from_Imidval(self.dataset, Imid)
-      miller_set = miller.set(crystal_symmetry=self.experiment.crystal.get_crystal_symmetry(),
+      miller_set = miller.set(crystal_symmetry=self.experiment.crystal.get_crystal_symmetry(
+        assert_is_compatible_unit_cell=False),
         indices=self.dataset['miller_index'], anomalous_flag=False)
       i_obs = miller.array(miller_set,
         data=(Int * self.dataset['prescaling_correction'] /
