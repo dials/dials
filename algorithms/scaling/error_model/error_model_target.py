@@ -9,7 +9,7 @@ class ErrorModelTarget(object):
 
   def __init__(self, error_model, starting_values=None):
     if not starting_values:
-      starting_values = [1.0, 0.05]
+      starting_values = [1.4, 0.4]
     # Note - don't initialise with b = 0.0 or it gets stuck on 0.0!!
     self.error_model = error_model
     self.x = starting_values
@@ -52,11 +52,12 @@ class ErrorModelTarget(object):
   def calculate_gradients(self):
     'calculate the gradient vector'
     I_hl = self.error_model.Ih_table.intensities
+    g_hl = self.error_model.Ih_table.inverse_scale_factors
     bin_vars = self.error_model.bin_variances
     sum_matrix = self.error_model.summation_matrix
     bin_counts = self.error_model.bin_counts
     dsig_da = self.error_model.sigmaprime/self.x[0]
-    dsig_dc = self.x[1] * (I_hl**2) * (self.x[0]**2) / self.error_model.sigmaprime
+    dsig_dc = self.x[1] * (I_hl**2) * (self.x[0]**2) / (self.error_model.sigmaprime * (g_hl**2))
     ddelta_dsigma = -1.0 * self.error_model.delta_hl / self.error_model.sigmaprime
     dsig_list = [ddelta_dsigma * dsig_da, ddelta_dsigma * dsig_dc]
     gradient = flex.double([])

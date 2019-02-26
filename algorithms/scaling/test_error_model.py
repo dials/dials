@@ -29,7 +29,7 @@ def generate_refl_1():
   reflections = flex.reflection_table()
   reflections['intensity'] = flex.double([1.0, 2.0, 3.0, 4.0, 5.0,
     6.0, 7.0, 8.0, 9.0, 10.0])
-  reflections['inverse_scale_factor'] = flex.double(10, 1.0)
+  reflections['inverse_scale_factor'] = flex.double([1.0] * 5 + [2.0] * 5)
   reflections['variance'] = flex.double([1.0, 2.0, 3.0, 4.0, 5.0,
     6.0, 7.0, 8.0, 9.0, 10.0])
   reflections['miller_index'] = flex.miller_index([(1, 0, 0), (0, 0, 1),
@@ -75,8 +75,8 @@ def test_errormodel(large_reflection_table, test_sg):
   # variances 1, 5 and 10 using he formula
   # delta_hl = sqrt(n_h - 1 / n_h) * (Ihl/ghl - Ih) / sigmaprime
   error_model.delta_hl = error_model.calc_deltahl()
-  expected_deltas = [0.0, 0.0, 0.0, 0.0, 0.0, (-17.0/13.0) * sqrt(2.0/3.0),
-    (7.0/13.0) * sqrt(10.0/3.0), (10.0/13.0) * sqrt(20.0/3.0), 0.0, 0.0]
+  expected_deltas = [0.0, 0.0, 0.0, 0.0, 0.0, (-3.0/2.0) * sqrt(2.0/3.0),
+    (5.0/2.0) * sqrt(2.0/15.0), 5.0 * sqrt(2.0/30.0), 0.0, 0.0]
   assert approx_equal(list(error_model.delta_hl), expected_deltas)
 
   # Test bin variance calculation on example with fewer bins.
@@ -96,10 +96,9 @@ def test_errormodel(large_reflection_table, test_sg):
   error_model.sigmaprime = error_model.calc_sigmaprime([1.0, 0.0])
   error_model.delta_hl = error_model.calc_deltahl()
   bin_vars = error_model.calculate_bin_variances()
-  mu_0 = sqrt(2.0/3.0) * ((7.0 * sqrt(5.0)) - 17.0)/ 65.0
-  a = ((3.0 * mu_0**2) + (((7.0/13.0) * sqrt(10.0/3.0)) - mu_0)**2 +
-    (((-17.0/13.0) * sqrt(2.0/3.0)) - mu_0)**2)/5.0
-  expected_bin_vars = [a, 320.0/507.0]
+  sum_delta_allsq = (70 - (30 * sqrt(5)))/30.0
+  sum_deltasq = 140/60
+  expected_bin_vars = [0.2 * sum_deltasq - (sum_delta_allsq / 25.0), 8.0/30.0]
   assert approx_equal(list(bin_vars), expected_bin_vars)
 
   # Test updating call
@@ -113,7 +112,7 @@ def test_error_model_target(large_reflection_table, test_sg):
   block = Ih_table.blocked_data_list[0]
   error_model = BasicErrorModel(block, n_bins=2)
   error_model.update_for_minimisation([1.0, 0.05])
-  target = ErrorModelTarget(error_model)
+  target = ErrorModelTarget(error_model, starting_values=[1.0, 0.05])
   # Test residual calculation
   residuals = target.calculate_residuals()
   assert residuals == (flex.double(2, 1.0) - error_model.bin_variances)**2
