@@ -8,6 +8,7 @@
 #
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 from collections import namedtuple
 from scitbx import matrix
 from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \

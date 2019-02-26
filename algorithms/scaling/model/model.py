@@ -6,6 +6,7 @@ methods to define how these are composed into one model.
 """
 from __future__ import print_function
 from __future__ import division
+from __future__ import absolute_import
 
 import abc
 import logging

@@ -2,6 +2,7 @@
 Test for the scaling weighting module.
 """
 from __future__ import division
+from __future__ import absolute_import, print_function
 import pytest
 from mock import Mock
 from dials.util import Sorry

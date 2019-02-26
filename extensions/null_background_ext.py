@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 class NullBackgroundExt(object):
   ''' An extension class implementing Null background subtraction. '''

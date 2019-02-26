@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 import re
 import logging
 logger = logging.getLogger(__name__)

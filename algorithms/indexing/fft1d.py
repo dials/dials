@@ -11,6 +11,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 from dials.algorithms.indexing.indexer import indexer_base
 from dxtbx.model.experiment_list import Experiment, ExperimentList

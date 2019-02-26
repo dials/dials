@@ -4,6 +4,7 @@ scaling_library function and by directly invoking the perform method scaling
 of a TargetScaler.
 """
 from __future__ import division
+from __future__ import absolute_import, print_function
 
 from math import log
 import pytest

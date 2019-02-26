@@ -14,6 +14,7 @@
 what should usually be used to construct a Refiner."""
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 import copy
 import logging
 logger = logging.getLogger(__name__)

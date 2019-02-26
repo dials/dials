@@ -12,6 +12,7 @@ principally Target and ReflectionManager."""
 
 # python and cctbx imports
 from __future__ import absolute_import, division
+from __future__ import print_function
 from math import pi, sqrt, floor
 from scitbx.array_family import flex
 from scitbx import sparse

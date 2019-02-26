@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 ### build documentation with: phenix.python `which sphinx-build` -b html source build/html
 

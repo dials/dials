@@ -2,6 +2,7 @@
 Restraints manager classes for scaling.
 """
 from __future__ import division
+from __future__ import absolute_import, print_function
 from scitbx import sparse
 from dials.array_family import flex
 

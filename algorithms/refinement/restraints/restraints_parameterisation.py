@@ -11,6 +11,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 from libtbx.phil import parse
 from dials.util import Sorry
 from scitbx.array_family import flex

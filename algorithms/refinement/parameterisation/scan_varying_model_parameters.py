@@ -8,6 +8,7 @@
 #
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 from dials.algorithms.refinement.parameterisation.model_parameters \
         import Parameter, ModelParameterisation
 import abc

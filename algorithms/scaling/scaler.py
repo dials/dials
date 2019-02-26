@@ -11,6 +11,7 @@ defined for scaling multiple datasets simultaneously and a TargetScaler is
 defined for targeted scaling.
 """
 from __future__ import division
+from __future__ import absolute_import, print_function
 
 import abc
 import logging

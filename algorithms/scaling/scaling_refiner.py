@@ -4,6 +4,7 @@ Classes are inherited from the dials.refinement engine with a few
 methods overwritten to use them with scaling code."""
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 import logging
 from dials.algorithms.refinement.engine import SimpleLBFGS,\
  GaussNewtonIterations, LevenbergMarquardtIterations, LBFGScurvs

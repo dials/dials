@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 from cctbx.array_family import flex
 from dials_algorithms_indexing_ext import *

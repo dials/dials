@@ -2,6 +2,7 @@
 Definitions of the scaling algorithm.
 """
 from __future__ import division
+from __future__ import absolute_import, print_function
 
 def expand_and_do_outlier_rejection(scaler, calc_cov=False):
   """Calculate scales for all reflections and do outlier rejection."""

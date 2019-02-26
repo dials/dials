@@ -4,6 +4,7 @@ command line option, as well as obtaining a selection to use for selecting
 the corresponding reflections.
 """
 from __future__ import division
+from __future__ import absolute_import, print_function
 import copy as copy
 from dials.array_family import flex
 from dials.util import Sorry

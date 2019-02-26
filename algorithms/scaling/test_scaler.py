@@ -1,4 +1,5 @@
 from __future__ import division
+from __future__ import absolute_import, print_function
 import pytest
 import mock
 from mock import Mock, MagicMock, call

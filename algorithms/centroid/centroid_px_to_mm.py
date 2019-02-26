@@ -9,6 +9,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 def centroid_px_to_mm(detector, scan, position, variance, sd_error):
   '''Convenience function to calculate centroid in mm/rad from px'''

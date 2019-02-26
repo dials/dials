@@ -2,6 +2,7 @@
 Weighting scheme definitions for scaling.
 """
 from __future__ import division
+from __future__ import absolute_import, print_function
 from dials.array_family import flex
 from dials.util import Sorry
 

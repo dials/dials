@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 import logging
 logger = logging.getLogger("dials.extensions.global_spotfinder_threshold_ext")

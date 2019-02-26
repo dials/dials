@@ -9,6 +9,7 @@
 
 # python and cctbx imports
 from __future__ import absolute_import, division
+from __future__ import print_function
 from math import pi, sqrt
 from cctbx.array_family import flex
 

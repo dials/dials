@@ -10,6 +10,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 class ComputeDetectorNoise(object):
   '''Calculate the detector noise. Estimate this by calculating the mean

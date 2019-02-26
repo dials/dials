@@ -2,6 +2,7 @@
 Tests for scaling library module.
 """
 from __future__ import division
+from __future__ import absolute_import, print_function
 
 import pytest
 from libtbx import phil

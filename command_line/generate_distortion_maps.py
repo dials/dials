@@ -1,4 +1,5 @@
 from __future__ import division, print_function
+from __future__ import absolute_import
 from iotbx import phil
 from dials.array_family import flex
 import six.moves.cPickle as pickle

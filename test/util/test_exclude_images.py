@@ -2,6 +2,7 @@
 tests for functions in dials.util.exclude_images.py
 """
 from __future__ import division
+from __future__ import absolute_import, print_function
 import copy
 import pytest
 from dials.util import Sorry

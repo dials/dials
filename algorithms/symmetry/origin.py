@@ -13,6 +13,7 @@
 # measured intensities.
 
 from __future__ import absolute_import, division
+from __future__ import print_function
 
 def cctbx_crystal_from_dials(crystal):
   space_group = crystal.get_space_group()
