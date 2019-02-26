@@ -97,7 +97,7 @@ def test_errormodel(large_reflection_table, test_sg):
   error_model.delta_hl = error_model.calc_deltahl()
   bin_vars = error_model.calculate_bin_variances()
   sum_delta_allsq = (70 - (30 * sqrt(5)))/30.0
-  sum_deltasq = 140/60
+  sum_deltasq = 140.0/60.0
   expected_bin_vars = [0.2 * sum_deltasq - (sum_delta_allsq / 25.0), 8.0/30.0]
   assert approx_equal(list(bin_vars), expected_bin_vars)
 
