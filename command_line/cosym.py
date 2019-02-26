@@ -326,6 +326,10 @@ def run(args):
     # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
     matplotlib.use('Agg') # use a non-interactive backend
 
+  if not params.input.experiments or not params.input.reflections:
+    parser.print_help()
+    sys.exit()
+
   experiments = flatten_experiments(params.input.experiments)
   reflections = flatten_reflections(params.input.reflections)
   reflections = parse_multiple_datasets(reflections)
