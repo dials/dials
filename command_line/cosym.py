@@ -67,14 +67,15 @@ class cosym(object):
     experiments, reflections = self._map_to_primitive(
       experiments, reflections)
 
-    # perform unit cell clustering
-    identifiers = self._unit_cell_clustering(experiments)
-    if len(identifiers) < len(experiments):
-      logger.info(
-        'Selecting subset of %i datasets for cosym analysis: %s' % (
-          len(identifiers), str(identifiers)))
-      experiments, reflections = select_datasets_on_ids(
-        experiments, reflections, use_datasets=identifiers)
+    if len(experiments) > 1:
+      # perform unit cell clustering
+      identifiers = self._unit_cell_clustering(experiments)
+      if len(identifiers) < len(experiments):
+        logger.info(
+          'Selecting subset of %i datasets for cosym analysis: %s' % (
+            len(identifiers), str(identifiers)))
+        experiments, reflections = select_datasets_on_ids(
+          experiments, reflections, use_datasets=identifiers)
 
     experiments, reflections = self._map_to_minimum_cell(
       experiments, reflections)
