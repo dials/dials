@@ -21,7 +21,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 import json
 from collections import OrderedDict
-from math import floor
+from math import ceil
 import numpy as np
 import matplotlib
 import libtbx.phil
@@ -34,10 +34,8 @@ matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
 
-# Define a logger
 logger = logging.getLogger('dials')
 
-# Define the master PHIL scope for this program
 phil_scope = libtbx.phil.parse('''
 filtering {
   max_cycles = 6
@@ -151,7 +149,8 @@ class AnalysisResults(object):
     results = AnalysisResults()
     results.termination_reason = dictionary['termination_reason']
     results.initial_expids_and_image_ranges = dictionary['initial_expids_and_image_ranges']
-    results.cycle_results = [res for res in dictionary['cycle_results']]
+    results.cycle_results = [dictionary['cycle_results'][key] for key in \
+      sorted(dictionary['cycle_results'].iterkeys())]
     results.initial_n_reflections = dictionary['initial_n_reflections']
     results.final_stats = dictionary['final_stats']
     return results
@@ -272,29 +271,43 @@ class ScaleAndFilter(object):
     results.add_cycle_results(cycle_results)
     return results
 
+color_list = ['#F44336', '#FFC107', '#FFEB3B', '#8BC34A', '#03A9F4', '#3F51B5', '#607D8B']
+
 def make_plots(analysis_results, experiments, params):
   """Make the three plots."""
-  make_histogram_plots(analysis_results, params)
-  make_merging_stats_plots(analysis_results, params)
+  make_histogram_plots(analysis_results, params.output.plots.histogram)
+  make_merging_stats_plots(analysis_results, params.output.plots.merging_stats)
   if params.delta_cc_half.mode == 'image_group':
-    make_reduction_plots(analysis_results, experiments, params)
+    make_reduction_plots(analysis_results, experiments, params.output.plots.image_ranges)
 
-def make_histogram_plots(analysis_results, params):
+def make_histogram_plots(analysis_results, filename='cc_half_histograms.png', n_cols=2, n_rows=None,
+  scale=1, n_cycles=None, color_list=color_list):
   """Make and save the histogram plots."""
   cycle_results = analysis_results.get_cycle_results()
+  if n_cycles:
+    n_cycles = min([n_cycles, len(cycle_results)])
+    cycle_results = cycle_results[:n_cycles]
+
   delta_cc_half_lists = [res['delta_cc_half_values'] for res in cycle_results]
 
   if not delta_cc_half_lists:
     return
   n = len(delta_cc_half_lists)
+  if n_cols and n_rows:
+    assert n <= n_cols * n_rows
+  else:
+    if n_cols:
+      n_rows = int(ceil(n/n_cols))
+    else:
+      n_cols = int(ceil(n_rows))
+  n_cols = int(n_cols)
+  n_rows = int(n_rows)
+  grid = gridspec.GridSpec(n_rows, n_cols)
+  plt.figure(figsize=(5*n_cols*scale, 5*n_rows*scale))
+  axs = [plt.subplot(grid[int(c//n_cols), int(c % n_cols)]) for c in range(n)]
 
-  n_rows = int(floor(n/2.0)) + (n % 2)
-  grid = gridspec.GridSpec(n_rows, 2)
-  plt.figure(figsize=(10, 5*n_rows))
-  axs = [plt.subplot(grid[int(c//2), int(c % 2)]) for c in range(n)]
-
-  color_list = ['#F44336', '#FFC107', '#FFEB3B', '#8BC34A', '#03A9F4', '#3F51B5', '#607D8B']
-  colors = [color_list[i%7] for i in range(n)]
+  colors = [(color_list*int(ceil(n/len(color_list))))[i] for i in range(n)]
+  #colors = [color_list[i%7] for i in range(n)]
   ordinal = lambda n: "%d%s" % (n, "tsnrhtdd"[(n/10%10 != 1)*(n%10 < 4)*n%10::4])
   legends = [ordinal(i)+r' $\Delta$CC$_{1/2}$'+"\nanalysis" for i in range(1, n+1)]
   if 'image_ranges_removed' in cycle_results[0]:
@@ -326,17 +339,20 @@ def make_histogram_plots(analysis_results, params):
     ax.legend(shadow=True, facecolor='w', framealpha=1, loc=2)
     #ax.background(False)
   plt.tight_layout()
-  logger.info("Saving histogram plots to %s", params.output.plots.histogram)
-  plt.savefig(params.output.plots.histogram)
+  logger.info("Saving histogram plots to %s", filename)
+  plt.savefig(filename)
 
-def make_merging_stats_plots(analysis_results, params):
+def make_merging_stats_plots(analysis_results, filename='merging_stats.png', n_cycles=None, color_list=color_list):
   """Make and save the merging stats plots."""
   merging_stats = analysis_results.get_merging_stats()
+  if n_cycles:
+    n_cycles = min([n_cycles, len(merging_stats)])
+    merging_stats = merging_stats[:n_cycles]
   plt.figure(figsize=(14, 8))
   grid = gridspec.GridSpec(2, 3)
   axs = [plt.subplot(grid[int(c//3), int(c % 3)]) for c in range(3)]
-  color_list = ['#F44336', '#FFC107', '#FFEB3B', '#8BC34A', '#03A9F4', '#3F51B5', '#607D8B']
-  colors = [color_list[i%7] for i in range(len(merging_stats))]
+  n_datasets = len(merging_stats)
+  colors = [(color_list*int(ceil(n_datasets/len(color_list))))[i] for i in range(len(merging_stats))]
   colors[-1] = 'k'
   markers = ['s', 'o', 'v', '*']
   ordinal = lambda n: "%d%s" % (n, "tsnrhtdd"[(n/10%10 != 1)*(n%10 < 4)*n%10::4])
@@ -377,10 +393,10 @@ def make_merging_stats_plots(analysis_results, params):
       for k, v in stats['overall'].iteritems()])
   ax3.axis('off')
   ax3.table(cellText=cell_text, rowLabels=legends, colLabels=columns, loc='center')
-  logger.info("Saving merging statistics plots to %s", params.output.plots.merging_stats)
-  plt.savefig(params.output.plots.merging_stats)
+  logger.info("Saving merging statistics plots to %s", filename)
+  plt.savefig(filename)
 
-def make_reduction_plots(analysis_results, experiments, params):
+def make_reduction_plots(analysis_results, experiments, filename='reduced_image_ranges.png', colors=['k', 'b']):
   """Make a chart showing excluded image ranges."""
   valid_image_ranges = get_valid_image_ranges(experiments)
   expids = [exp.identifier for exp in experiments]
@@ -403,13 +419,13 @@ def make_reduction_plots(analysis_results, experiments, params):
       y2_bottoms.append(t[0]-1)
       x2.append(loc)
   plt.figure(figsize=(7, 7))
-  plt.bar(x1, y1_tops, bottom=y1_bottoms, width=1, color='k', alpha=0.5, label="Before filtering")
-  plt.bar(x2, y2_tops, bottom=y2_bottoms, width=1, color='b', alpha=0.5, label="After filtering")
+  plt.bar(x1, y1_tops, bottom=y1_bottoms, width=1, color=colors[0], alpha=0.5, label="Before filtering")
+  plt.bar(x2, y2_tops, bottom=y2_bottoms, width=1, color=colors[1], alpha=0.5, label="After filtering")
   plt.xlabel("Dataset")
   plt.ylabel("Image number")
   plt.legend(loc=1)
-  logger.info("Saving image range plots to %s", params.output.plots.image_ranges)
-  plt.savefig(params.output.plots.image_ranges)
+  logger.info("Saving image range plots to %s", filename)
+  plt.savefig(filename)
 
 
 def run(args=None, phil=phil_scope):

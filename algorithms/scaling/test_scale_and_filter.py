@@ -11,6 +11,7 @@ from dxtbx.model import Crystal, Experiment, Scan
 from dials.algorithms.scaling.model.scaling_model_factory import KBSMFactory
 from dials.array_family import flex
 from dials.command_line.compute_delta_cchalf import Script as DeltaCCHalfScript
+from dials.command_line.scale_and_filter import ScaleAndFilter, AnalysisResults
 
 
 def generate_test_reflections(n=2):
@@ -69,7 +70,6 @@ def generated_param():
     show_diff_phil=False)
   return parameters
 
-from dials.command_line.scale_and_filter import ScaleAndFilter, AnalysisResults
 
 def mock_experiments(n=3):
   explist = []
