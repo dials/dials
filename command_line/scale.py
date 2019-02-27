@@ -49,7 +49,7 @@ import libtbx
 from libtbx import phil
 from dials.util import Sorry
 from libtbx.str_utils import make_sub_header
-from cctbx import miller, crystal
+from cctbx import miller, crystal, uctbx
 import iotbx.merging_statistics
 from dials.util import halraiser, log
 from dials.array_family import flex
@@ -144,15 +144,17 @@ class Script(object):
     self.scaler = None
     self.scaled_miller_array = None
     self.merging_statistics_result = None
+    self.best_unit_cell = self.params.reflection_selection.best_unit_cell
     logger.debug('Initialised scaling script object')
     log_memory_usage()
 
   def run(self, save_data=True):
     """Run the scaling script."""
     if self.params.stats_only:
+      if not self.best_unit_cell:
+        self.determine_best_unit_cell()
       try:
-        self.merging_stats(self.scaled_data_as_miller_array(
-          self.experiments[0].crystal.get_crystal_symmetry(assert_is_compatible_unit_cell=False)))
+        self.merging_stats(self.scaled_data_as_miller_array())
       except DialsMergingStatisticsError as e:
         logger.info(e)
       return
@@ -215,17 +217,31 @@ class Script(object):
       self.reflections.append(reflections)
 
     #### Perform any non-batch cutting of the datasets, including the target dataset
+    self.determine_best_unit_cell()
     for reflection in self.reflections:
-      if self.params.cut_data.d_min:
-        reflection.set_flags(reflection['d'] < self.params.cut_data.d_min,
-          reflection.flags.user_excluded_in_scaling)
-      if self.params.cut_data.d_max:
-        reflection.set_flags(reflection['d'] > self.params.cut_data.d_max,
-          reflection.flags.user_excluded_in_scaling)
+      if self.params.cut_data.d_min or self.params.cut_data.d_max:
+        d = self.best_unit_cell.d(reflection['miller_index'])
+        if self.params.cut_data.d_min:
+          sel = d < self.params.cut_data.d_min
+          reflection.set_flags(sel, reflection.flags.user_excluded_in_scaling)
+        if self.params.cut_data.d_max:
+          sel = d > self.params.cut_data.d_max
+          reflection.set_flags(sel, reflection.flags.user_excluded_in_scaling)
       if self.params.cut_data.partiality_cutoff and 'partiality' in reflection:
         reflection.set_flags(reflection['partiality'] < \
           self.params.cut_data.partiality_cutoff,
           reflection.flags.user_excluded_in_scaling)
+
+  def determine_best_unit_cell(self):
+    """Set the median unit cell as the best cell, for consistent d-values across
+    experiments."""
+    uc_params = [flex.double() for i in range(6)]
+    for exp in self.experiments:
+      for i, p in enumerate(exp.crystal.get_unit_cell().parameters()):
+        uc_params[i].append(p)
+    self.best_unit_cell = uctbx.unit_cell(parameters=[flex.median(p) for p in uc_params])
+    if len(self.experiments) > 1:
+      logger.info("Using median unit cell across experiments : %s", self.best_unit_cell)
 
   def scale(self):
     """Create the scaling models and perform scaling."""
@@ -264,7 +280,7 @@ class Script(object):
       self.experiments, self.reflections = select_datasets_on_ids(
         self.experiments, self.reflections, exclude_datasets=removed_ids)
 
-  def scaled_data_as_miller_array(self, crystal_symmetry, reflection_table=None,
+  def scaled_data_as_miller_array(self, reflection_table=None,
     anomalous_flag=False):
     """Get a scaled miller array from an experiment and reflection table."""
     if not reflection_table:
@@ -293,7 +309,10 @@ class Script(object):
 will not be used for calculating merging statistics""" % pos_scales.count(False))
       joint_table = joint_table.select(pos_scales)
 
-    miller_set = miller.set(crystal_symmetry=crystal_symmetry,
+    miller_set = miller.set(crystal_symmetry=crystal.symmetry(
+      unit_cell=self.best_unit_cell,
+      space_group=self.experiments[0].crystal.get_space_group(),
+      assert_is_compatible_unit_cell=False),
       indices=joint_table['miller_index'], anomalous_flag=anomalous_flag)
     i_obs = miller.array(
       miller_set, data=joint_table['intensity.scale.value']/ \
@@ -307,9 +326,7 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
 
   def prepare_scaled_miller_array(self):
     """Calculate a scaled miller array from the dataset."""
-    self.scaled_miller_array = self.scaled_data_as_miller_array(
-      self.experiments[0].crystal.get_crystal_symmetry(
-        assert_is_compatible_unit_cell=False), anomalous_flag=False)
+    self.scaled_miller_array = self.scaled_data_as_miller_array(anomalous_flag=False)
 
   def merging_stats(self, scaled_miller_array):
     """Calculate and print the merging statistics."""
@@ -352,8 +369,6 @@ will not be used for calculating merging statistics""" % pos_scales.count(False)
       self.params.scaling_options.only_target:
       self.experiments = self.experiments[:-1]'''
     save_experiments(self.experiments, self.params.output.experiments)
-
-    crystal_symmetry = self.experiments[0].crystal.get_crystal_symmetry() # save for later
 
     # Now create a joint reflection table. Delete all other data before
     # joining reflection tables - just need experiments for mtz export
@@ -405,7 +420,7 @@ may be best to rerun scaling from this point for an improved model.""", n_neg)
       mtz_dataset = merged_scaled.as_mtz_dataset(crystal_name='dials',
         column_root_label='IMEAN') # what does column_root_label do?
 
-      anomalous_scaled = self.scaled_data_as_miller_array(crystal_symmetry,
+      anomalous_scaled = self.scaled_data_as_miller_array(
         reflection_table=joint_table, anomalous_flag=True)
       merged_anom = anomalous_scaled.merge_equivalents(
         use_internal_variance=self.params.output.use_internal_variance).array()

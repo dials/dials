@@ -16,6 +16,7 @@ from dxtbx.serialize import load
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.array_family import flex
+from cctbx import uctbx
 from mock import Mock
 import mock
 from dials.util.options import OptionParser
@@ -146,6 +147,7 @@ def test_scale_merging_stats():
   script = Script(params, exp, [reflections])
   script.image_ranges = [(1, 100)]
   script.batch_ranges = [(1, 100)]
+  script.best_unit_cell = uctbx.unit_cell([1.0, 1.0, 2.0, 90, 90, 90])
   script.prepare_scaled_miller_array()
   script.merging_stats(script.scaled_miller_array)
   assert script.merging_statistics_result is not None
@@ -235,7 +237,6 @@ def test_scale_script_prepare_input():
 
   # Test cutting data
   params, exp, reflections = generate_test_input(n=1)
-  reflections[0]['d'] = flex.double([2.5, 2.0, 1.0, 1.0])
   params.cut_data.d_min = 1.5
   script = Script(params, exp, reflections)
   script.prepare_input()
@@ -247,7 +248,7 @@ def test_scale_script_prepare_input():
   script.prepare_input()
   r = script.reflections[0]
   assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [
-    True, False, True, True]
+    False, False, True, True]
 
   params, exp, reflections = generate_test_input(n=1)
   reflections[0]['partiality'] = flex.double([0.5, 0.8, 1.0, 1.0])

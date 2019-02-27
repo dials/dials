@@ -112,6 +112,10 @@ phil_scope = iotbx.phil.parse('''
                   "for reflections used during minimisation."
       }
     }
+    best_unit_cell = None
+      .type = floats(size=6)
+      .help = "Best unit cell value, to use when performing resolution cutting
+               and merging statistics. If None, the median unit cell will be used."
     E2_range = 0.8, 5.0
       .type = floats(size=2)
       .help = "Minimum and maximum normalised E^2 value to used to select a
