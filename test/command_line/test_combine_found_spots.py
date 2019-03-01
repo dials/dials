@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 from glob import glob
 import os
 from procrunner import run_process
+from dials.array_family import flex
 
 def test_combining_spots(dials_regression, run_in_tmpdir):
   images = sorted(glob(os.path.join(dials_regression, 'centroid_test_data', "centroid*.cbf")))
@@ -42,3 +43,6 @@ def test_combining_spots(dials_regression, run_in_tmpdir):
   assert result['stderr'] == ''
   assert os.path.exists('combined.json')
   assert os.path.exists('combined.pickle')
+
+  r = flex.reflection_table.from_pickle('combined.pickle')
+  assert r['id'].all_eq(0)
