@@ -681,8 +681,9 @@ def _plot(coords, labels=None, plot_name="xy.png"):
                     edgecolor="black",
                 )
 
-    ax.set_xlim(-1, 1)
-    ax.set_ylim(-1, 1)
+    lim = max([1, flex.max(flex.abs(coord_x)), flex.max(flex.abs(coord_y))])
+    ax.set_xlim(-lim, lim)
+    ax.set_ylim(-lim, lim)
     ax.set_aspect("equal")
     plt.savefig(plot_name, size_inches=(10, 10), dpi=300, bbox_inches="tight")
     plt.close(fig)
