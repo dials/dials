@@ -11,33 +11,33 @@ on the detector side. Prior to the fix this resulted in incorrect calculation
 of the offsets of all panels from the root frame.
 """
 
+
 def test_run(dials_regression):
-  from dials.array_family import flex
-  from dials.algorithms.refinement import RefinerFactory
-  from dials.algorithms.refinement.refiner import phil_scope
-  from dxtbx.model.experiment_list import ExperimentListFactory
-  from libtbx import phil
+    from dials.array_family import flex
+    from dials.algorithms.refinement import RefinerFactory
+    from dials.algorithms.refinement.refiner import phil_scope
+    from dxtbx.model.experiment_list import ExperimentListFactory
+    from libtbx import phil
 
-  data_dir = os.path.join(dials_regression, "refinement_test_data",
-      "dials-423")
-  exp_file = os.path.join(data_dir, 'experiments.json')
-  ref_file = os.path.join(data_dir, 'subset.pickle')
+    data_dir = os.path.join(dials_regression, "refinement_test_data", "dials-423")
+    exp_file = os.path.join(data_dir, "experiments.json")
+    ref_file = os.path.join(data_dir, "subset.pickle")
 
-  reflections = flex.reflection_table.from_pickle(ref_file)
-  experiments = ExperimentListFactory.from_json_file(exp_file,
-      check_format=False)
+    reflections = flex.reflection_table.from_pickle(ref_file)
+    experiments = ExperimentListFactory.from_json_file(exp_file, check_format=False)
 
-  """Test that the detector remains similar after refiner construction"""
+    """Test that the detector remains similar after refiner construction"""
 
-  params = phil_scope.fetch(source=phil.parse('')).extract()
+    params = phil_scope.fetch(source=phil.parse("")).extract()
 
-  # disable outlier rejection for speed of refiner construction
-  params.refinement.reflections.outlier.algorithm='null'
+    # disable outlier rejection for speed of refiner construction
+    params.refinement.reflections.outlier.algorithm = "null"
 
-  refiner = RefinerFactory.from_parameters_data_experiments(params,
-      reflections, experiments)
+    refiner = RefinerFactory.from_parameters_data_experiments(
+        params, reflections, experiments
+    )
 
-  d1 = experiments[0].detector
-  d2 = refiner.get_experiments()[0].detector
+    d1 = experiments[0].detector
+    d2 = refiner.get_experiments()[0].detector
 
-  assert d1.is_similar_to(d2)
+    assert d1.is_similar_to(d2)

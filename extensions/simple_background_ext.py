@@ -11,15 +11,18 @@
 from __future__ import absolute_import, division
 from __future__ import print_function
 
+
 class SimpleBackgroundExt(object):
-  ''' An extension class implementing simple background subtraction. '''
+    """ An extension class implementing simple background subtraction. """
 
-  name = 'simple'
+    name = "simple"
 
-  @classmethod
-  def phil(cls):
-    from libtbx.phil import parse
-    phil = parse('''
+    @classmethod
+    def phil(cls):
+        from libtbx.phil import parse
+
+        phil = parse(
+            """
       outlier
         .help = "Outlier rejection prior to background fit"
       {
@@ -102,60 +105,62 @@ class SimpleBackgroundExt(object):
         .type = int(value_min=1)
         .help = "The minimum number of pixels to compute the background"
 
-    ''')
-    return phil
+    """
+        )
+        return phil
 
-  def __init__(self, params, experiments):
-    '''
+    def __init__(self, params, experiments):
+        """
     Initialise the algorithm.
 
     :param params: The input parameters
     :param experiments: The list of experiments
 
-    '''
-    from libtbx.phil import parse
-    from dials.algorithms.background.simple import BackgroundAlgorithm
+    """
+        from libtbx.phil import parse
+        from dials.algorithms.background.simple import BackgroundAlgorithm
 
-    # Create some default parameters
-    if params is None:
-      params = self.phil().fetch(parse('')).extract()
-    else:
-      params = params.integration.background.simple
+        # Create some default parameters
+        if params is None:
+            params = self.phil().fetch(parse("")).extract()
+        else:
+            params = params.integration.background.simple
 
-    # Create some keyword parameters
-    kwargs = {
-      'model' : params.model.algorithm,
-      'outlier' : params.outlier.algorithm,
-      'min_pixels' : params.min_pixels
-    }
+        # Create some keyword parameters
+        kwargs = {
+            "model": params.model.algorithm,
+            "outlier": params.outlier.algorithm,
+            "min_pixels": params.min_pixels,
+        }
 
-    # Create all the keyword parameters
-    if params.outlier.algorithm == 'null':
-      pass
-    elif params.outlier.algorithm == 'truncated':
-      kwargs['lower'] = params.outlier.truncated.lower
-      kwargs['upper'] = params.outlier.truncated.upper
-    elif params.outlier.algorithm == 'nsigma':
-      kwargs['lower'] = params.outlier.nsigma.lower
-      kwargs['upper'] = params.outlier.nsigma.upper
-    elif params.outlier.algorithm == 'normal':
-      kwargs['min_pixels'] = params.outlier.normal.min_pixels
-    elif params.outlier.algorithm == 'plane':
-      kwargs['fraction'] = params.outlier.plane.fraction
-      kwargs['n_sigma'] = params.outlier.plane.n_sigma
-    elif params.outlier.algorithm == 'tukey':
-      kwargs['lower'] = params.outlier.tukey.lower
-      kwargs['upper'] = params.outlier.tukey.upper
+        # Create all the keyword parameters
+        if params.outlier.algorithm == "null":
+            pass
+        elif params.outlier.algorithm == "truncated":
+            kwargs["lower"] = params.outlier.truncated.lower
+            kwargs["upper"] = params.outlier.truncated.upper
+        elif params.outlier.algorithm == "nsigma":
+            kwargs["lower"] = params.outlier.nsigma.lower
+            kwargs["upper"] = params.outlier.nsigma.upper
+        elif params.outlier.algorithm == "normal":
+            kwargs["min_pixels"] = params.outlier.normal.min_pixels
+        elif params.outlier.algorithm == "plane":
+            kwargs["fraction"] = params.outlier.plane.fraction
+            kwargs["n_sigma"] = params.outlier.plane.n_sigma
+        elif params.outlier.algorithm == "tukey":
+            kwargs["lower"] = params.outlier.tukey.lower
+            kwargs["upper"] = params.outlier.tukey.upper
 
-    # Create the algorithm
-    self._algorithm = BackgroundAlgorithm(experiments, **kwargs)
+        # Create the algorithm
+        self._algorithm = BackgroundAlgorithm(experiments, **kwargs)
 
-  def compute_background(self, reflections, image_volume=None):
-    '''
+    def compute_background(self, reflections, image_volume=None):
+        """
     Compute the background.
 
     :param reflections: The list of reflections
 
-    '''
-    return self._algorithm.compute_background(
-      reflections, image_volume=image_volume)
+    """
+        return self._algorithm.compute_background(
+            reflections, image_volume=image_volume
+        )

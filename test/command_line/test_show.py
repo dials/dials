@@ -5,12 +5,17 @@ import os
 
 import procrunner
 
+
 def test_dials_show(dials_regression):
-  path = os.path.join(dials_regression, "experiment_test_data", "experiment_1.json")
-  result = procrunner.run(['dials.show', path], environment_override={'DIALS_NOBANNER': '1'})
-  assert not result['exitcode'] and not result['stderr']
-  output = list(filter(None, (s.rstrip() for s in result['stdout'].split('\n'))))
-  assert "\n".join(output[4:]) == """
+    path = os.path.join(dials_regression, "experiment_test_data", "experiment_1.json")
+    result = procrunner.run(
+        ["dials.show", path], environment_override={"DIALS_NOBANNER": "1"}
+    )
+    assert not result["exitcode"] and not result["stderr"]
+    output = list(filter(None, (s.rstrip() for s in result["stdout"].split("\n"))))
+    assert (
+        "\n".join(output[4:])
+        == """
 Experiment 0:
 Detector:
 Panel:
@@ -63,14 +68,21 @@ Crystal:
                 { 0.0124,  0.0200, -0.0032}}
     Mosaicity:  0.157000
 """.strip()
+    )
+
 
 def test_dials_show_i04_weak_data(dials_regression):
-  path = os.path.join(
-    dials_regression, "indexing_test_data", "i04_weak_data", "datablock_orig.json")
-  result = procrunner.run(["dials.show", path], environment_override={'DIALS_NOBANNER': '1'})
-  assert not result['exitcode'] and not result['stderr']
-  output = list(filter(None, (s.rstrip() for s in result['stdout'].split('\n'))))
-  assert "\n".join(output[6:]) == """
+    path = os.path.join(
+        dials_regression, "indexing_test_data", "i04_weak_data", "datablock_orig.json"
+    )
+    result = procrunner.run(
+        ["dials.show", path], environment_override={"DIALS_NOBANNER": "1"}
+    )
+    assert not result["exitcode"] and not result["stderr"]
+    output = list(filter(None, (s.rstrip() for s in result["stdout"].split("\n"))))
+    assert (
+        "\n".join(output[6:])
+        == """
 Detector:
 Panel:
   name: Panel
@@ -109,19 +121,25 @@ Goniometer:
     Fixed rotation:  {1,0,0,0,1,0,0,0,1}
     Setting rotation:{1,0,0,0,1,0,0,0,1}
 """.strip()
+    )
+
 
 def test_dials_show_centroid_test_data(dials_regression):
-  path = os.path.join(
-    dials_regression, "centroid_test_data", "centroid_*.cbf")
-  g = glob.glob(path)
-  assert g, path
-  result = procrunner.run(["dials.show"] + g, environment_override={'DIALS_NOBANNER': '1'})
-  assert not result['exitcode'] and not result['stderr']
-  assert (
-    "Format: <class 'dxtbx.format.FormatCBFMiniPilatus.FormatCBFMiniPilatus'>"
-    in result['stdout'])
-  output = list(filter(None, (s.rstrip() for s in result['stdout'].split('\n'))))
-  assert "\n".join(output[6:]) == """
+    path = os.path.join(dials_regression, "centroid_test_data", "centroid_*.cbf")
+    g = glob.glob(path)
+    assert g, path
+    result = procrunner.run(
+        ["dials.show"] + g, environment_override={"DIALS_NOBANNER": "1"}
+    )
+    assert not result["exitcode"] and not result["stderr"]
+    assert (
+        "Format: <class 'dxtbx.format.FormatCBFMiniPilatus.FormatCBFMiniPilatus'>"
+        in result["stdout"]
+    )
+    output = list(filter(None, (s.rstrip() for s in result["stdout"].split("\n"))))
+    assert (
+        "\n".join(output[6:])
+        == """
 Detector:
 Panel:
   name: Panel
@@ -162,25 +180,58 @@ Goniometer:
     Fixed rotation:  {1,0,0,0,1,0,0,0,1}
     Setting rotation:{1,0,0,0,1,0,0,0,1}
 """.strip()
+    )
+
 
 def test_dials_show_reflection_table(dials_regression):
-  """Test the output of dials.show on a reflection_table pickle file"""
-  path = os.path.join(dials_regression, "centroid_test_data", "integrated.pickle")
-  result = procrunner.run(["dials.show", path], environment_override={'DIALS_NOBANNER': '1'})
-  assert not result['exitcode'] and not result['stderr']
-  output = list(filter(None, (s.rstrip() for s in result['stdout'].split('\n'))))
-  assert output[4] == 'Reflection list contains 2269 reflections'
-  headers = ['Column', 'min', 'max', 'mean']
-  for header in headers:
-    assert header in output[6]
-  row_names = ['background.mean', 'background.sum.value',
-    'background.sum.variance', 'd', 'dqe', 'flags', 'id', 'imageset_id',
-    'intensity.prf.value', 'intensity.prf.variance', 'intensity.sum.value',
-    'intensity.sum.variance', 'lp', 'miller_index', 'num_pixels.background',
-    'num_pixels.background_used', 'num_pixels.foreground', 'num_pixels.valid',
-    'panel', 'partial_id', 'partiality', 'profile.correlation', 'profile.rmsd',
-    'rlp', 's1', 'shoebox', 'summed I', 'N pix', 'N valid foreground pix',
-    'xyzcal.mm', 'xyzcal.px', 'xyzobs.mm.value', 'xyzobs.mm.variance',
-    'xyzobs.px.value', 'xyzobs.px.variance', 'zeta']
-  for (name, out) in zip(row_names, output[8:-1]):
-    assert name in out
+    """Test the output of dials.show on a reflection_table pickle file"""
+    path = os.path.join(dials_regression, "centroid_test_data", "integrated.pickle")
+    result = procrunner.run(
+        ["dials.show", path], environment_override={"DIALS_NOBANNER": "1"}
+    )
+    assert not result["exitcode"] and not result["stderr"]
+    output = list(filter(None, (s.rstrip() for s in result["stdout"].split("\n"))))
+    assert output[4] == "Reflection list contains 2269 reflections"
+    headers = ["Column", "min", "max", "mean"]
+    for header in headers:
+        assert header in output[6]
+    row_names = [
+        "background.mean",
+        "background.sum.value",
+        "background.sum.variance",
+        "d",
+        "dqe",
+        "flags",
+        "id",
+        "imageset_id",
+        "intensity.prf.value",
+        "intensity.prf.variance",
+        "intensity.sum.value",
+        "intensity.sum.variance",
+        "lp",
+        "miller_index",
+        "num_pixels.background",
+        "num_pixels.background_used",
+        "num_pixels.foreground",
+        "num_pixels.valid",
+        "panel",
+        "partial_id",
+        "partiality",
+        "profile.correlation",
+        "profile.rmsd",
+        "rlp",
+        "s1",
+        "shoebox",
+        "summed I",
+        "N pix",
+        "N valid foreground pix",
+        "xyzcal.mm",
+        "xyzcal.px",
+        "xyzobs.mm.value",
+        "xyzobs.mm.variance",
+        "xyzobs.px.value",
+        "xyzobs.px.variance",
+        "zeta",
+    ]
+    for (name, out) in zip(row_names, output[8:-1]):
+        assert name in out

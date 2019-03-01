@@ -10,8 +10,9 @@
 from __future__ import absolute_import, division
 from __future__ import print_function
 
+
 class ParameterReporter(object):
-  """
+    """
   Keeps a record of all the ModelParameterisations and
   ScanVaryingModelParameterisations present and provides access to their
   Parameters and ScanVaryingParameterSets for reporting purposes.
@@ -26,206 +27,235 @@ class ParameterReporter(object):
   * Goniometer setting parameterisation
   """
 
-  def __init__(self,
-               detector_parameterisations = None,
-               beam_parameterisations = None,
-               xl_orientation_parameterisations = None,
-               xl_unit_cell_parameterisations = None,
-               goniometer_parameterisations = None):
+    def __init__(
+        self,
+        detector_parameterisations=None,
+        beam_parameterisations=None,
+        xl_orientation_parameterisations=None,
+        xl_unit_cell_parameterisations=None,
+        goniometer_parameterisations=None,
+    ):
 
-    if detector_parameterisations is None:
-      detector_parameterisations = []
-    if beam_parameterisations is None:
-      beam_parameterisations = []
-    if xl_orientation_parameterisations is None:
-      xl_orientation_parameterisations = []
-    if xl_unit_cell_parameterisations is None:
-      xl_unit_cell_parameterisations = []
-    if goniometer_parameterisations is None:
-      goniometer_parameterisations = []
+        if detector_parameterisations is None:
+            detector_parameterisations = []
+        if beam_parameterisations is None:
+            beam_parameterisations = []
+        if xl_orientation_parameterisations is None:
+            xl_orientation_parameterisations = []
+        if xl_unit_cell_parameterisations is None:
+            xl_unit_cell_parameterisations = []
+        if goniometer_parameterisations is None:
+            goniometer_parameterisations = []
 
-    # Keep references to all parameterised models
-    self._detector_parameterisations = detector_parameterisations
-    self._beam_parameterisations = beam_parameterisations
-    self._xl_orientation_parameterisations = xl_orientation_parameterisations
-    self._xl_unit_cell_parameterisations = xl_unit_cell_parameterisations
-    self._goniometer_parameterisations = goniometer_parameterisations
+        # Keep references to all parameterised models
+        self._detector_parameterisations = detector_parameterisations
+        self._beam_parameterisations = beam_parameterisations
+        self._xl_orientation_parameterisations = xl_orientation_parameterisations
+        self._xl_unit_cell_parameterisations = xl_unit_cell_parameterisations
+        self._goniometer_parameterisations = goniometer_parameterisations
 
-    self._length = self._len()
+        self._length = self._len()
 
-  def _len(self):
+    def _len(self):
 
-    length = 0
-    for model in self._detector_parameterisations:
-      length += model.num_free()
-    for model in self._beam_parameterisations:
-      length += model.num_free()
-    for model in self._xl_orientation_parameterisations:
-      length += model.num_free()
-    for model in self._xl_unit_cell_parameterisations:
-      length += model.num_free()
-    for model in self._goniometer_parameterisations:
-      length += model.num_free()
+        length = 0
+        for model in self._detector_parameterisations:
+            length += model.num_free()
+        for model in self._beam_parameterisations:
+            length += model.num_free()
+        for model in self._xl_orientation_parameterisations:
+            length += model.num_free()
+        for model in self._xl_unit_cell_parameterisations:
+            length += model.num_free()
+        for model in self._goniometer_parameterisations:
+            length += model.num_free()
 
-    return length
+        return length
 
-  def __len__(self):
-    return self._length
+    def __len__(self):
+        return self._length
 
-  def _indent(self, string):
-    return "\n".join(["    " + e for e in str(string).split("\n")])
+    def _indent(self, string):
+        return "\n".join(["    " + e for e in str(string).split("\n")])
 
-  def __str__(self):
+    def __str__(self):
 
-    s =  "Parameter Report:\n"
-    if self._detector_parameterisations:
-      s += "Detector parameters:\n"
-      det_plists = [x.get_params()
-                    for x in self._detector_parameterisations]
-      params = [x for l in det_plists for x in l]
-      for p in params:
-        tmp = self._indent(p)
-        s += tmp + "\n"
+        s = "Parameter Report:\n"
+        if self._detector_parameterisations:
+            s += "Detector parameters:\n"
+            det_plists = [x.get_params() for x in self._detector_parameterisations]
+            params = [x for l in det_plists for x in l]
+            for p in params:
+                tmp = self._indent(p)
+                s += tmp + "\n"
 
-    if self._beam_parameterisations:
-      s += "Beam parameters:\n"
-      beam_plists = [x.get_params() for x in self._beam_parameterisations]
-      params = [x for l in beam_plists for x in l]
-      for p in params:
-        tmp = self._indent(p)
-        s += tmp + "\n"
+        if self._beam_parameterisations:
+            s += "Beam parameters:\n"
+            beam_plists = [x.get_params() for x in self._beam_parameterisations]
+            params = [x for l in beam_plists for x in l]
+            for p in params:
+                tmp = self._indent(p)
+                s += tmp + "\n"
 
-    if self._xl_orientation_parameterisations:
-      s += "Crystal orientation parameters:\n"
-      xlo_plists = [x.get_params()
-                    for x in self._xl_orientation_parameterisations]
-      params = [x for l in xlo_plists for x in l]
-      for p in params:
-        tmp = self._indent(p)
-        s += tmp + "\n"
+        if self._xl_orientation_parameterisations:
+            s += "Crystal orientation parameters:\n"
+            xlo_plists = [
+                x.get_params() for x in self._xl_orientation_parameterisations
+            ]
+            params = [x for l in xlo_plists for x in l]
+            for p in params:
+                tmp = self._indent(p)
+                s += tmp + "\n"
 
-    if self._xl_unit_cell_parameterisations:
-      s += "Crystal unit cell parameters:\n"
-      xluc_plists = [x.get_params()
-                     for x in self._xl_unit_cell_parameterisations]
-      params = [x for l in xluc_plists for x in l]
-      for p in params:
-        tmp = self._indent(p)
-        s += tmp + "\n"
+        if self._xl_unit_cell_parameterisations:
+            s += "Crystal unit cell parameters:\n"
+            xluc_plists = [x.get_params() for x in self._xl_unit_cell_parameterisations]
+            params = [x for l in xluc_plists for x in l]
+            for p in params:
+                tmp = self._indent(p)
+                s += tmp + "\n"
 
-    if self._goniometer_parameterisations:
-      s += "Goniometer parameters:\n"
-      gon_plists = [x.get_params()
-                    for x in self._goniometer_parameterisations]
-      params = [x for l in gon_plists for x in l]
-      for p in params:
-        tmp = self._indent(p)
-        s += tmp + "\n"
+        if self._goniometer_parameterisations:
+            s += "Goniometer parameters:\n"
+            gon_plists = [x.get_params() for x in self._goniometer_parameterisations]
+            params = [x for l in gon_plists for x in l]
+            for p in params:
+                tmp = self._indent(p)
+                s += tmp + "\n"
 
-    return s
+        return s
 
-  def varying_params_vs_image_number(self, image_range):
-    """Returns a string which is a table of scan-varying parameter values vs
+    def varying_params_vs_image_number(self, image_range):
+        """Returns a string which is a table of scan-varying parameter values vs
     image number, if scan-varying parameters are present. Otherwise returns
     None"""
 
-    image_numbers = range(image_range[0], image_range[1] + 1)
-    columns = [TableColumn("Image", image_numbers)]
+        image_numbers = range(image_range[0], image_range[1] + 1)
+        columns = [TableColumn("Image", image_numbers)]
 
-    for parameterisation in (self._detector_parameterisations +
-                             self._beam_parameterisations +
-                             self._xl_orientation_parameterisations +
-                             self._xl_unit_cell_parameterisations +
-                             self._goniometer_parameterisations):
-      for p in parameterisation.get_params():
-        try:
-          vals = [parameterisation.get_smoothed_parameter_value(i, p)
-                  for i in image_numbers]
-          columns.append(TableColumn(p.name_stem, vals))
-        except AttributeError:
-          continue
+        for parameterisation in (
+            self._detector_parameterisations
+            + self._beam_parameterisations
+            + self._xl_orientation_parameterisations
+            + self._xl_unit_cell_parameterisations
+            + self._goniometer_parameterisations
+        ):
+            for p in parameterisation.get_params():
+                try:
+                    vals = [
+                        parameterisation.get_smoothed_parameter_value(i, p)
+                        for i in image_numbers
+                    ]
+                    columns.append(TableColumn(p.name_stem, vals))
+                except AttributeError:
+                    continue
 
-    if len(columns) > 1:
-      header = "\t".join([e.title for e in columns])
-      text = header + "\n"
-      for i in range(len(columns[0])):
-        vals = "\t".join(["%.6f" % e.values[i] for e in columns])
-        text += vals + "\n"
-      return text
+        if len(columns) > 1:
+            header = "\t".join([e.title for e in columns])
+            text = header + "\n"
+            for i in range(len(columns[0])):
+                vals = "\t".join(["%.6f" % e.values[i] for e in columns])
+                text += vals + "\n"
+            return text
 
-    else:
-      return None
+        else:
+            return None
 
-  def get_params(self, only_free=True):
-    """return a concatenated list of parameters from each of the components
+    def get_params(self, only_free=True):
+        """return a concatenated list of parameters from each of the components
     in the global model"""
 
-    global_p_list = []
-    for parameterisation in (self._detector_parameterisations +
-                             self._beam_parameterisations +
-                             self._xl_orientation_parameterisations +
-                             self._xl_unit_cell_parameterisations +
-                             self._goniometer_parameterisations):
-      global_p_list.extend(parameterisation.get_params(only_free))
+        global_p_list = []
+        for parameterisation in (
+            self._detector_parameterisations
+            + self._beam_parameterisations
+            + self._xl_orientation_parameterisations
+            + self._xl_unit_cell_parameterisations
+            + self._goniometer_parameterisations
+        ):
+            global_p_list.extend(parameterisation.get_params(only_free))
 
-    return global_p_list
+        return global_p_list
 
-  def get_param_names(self, only_free=True):
-    """Return a list of the names of parameters in the order they are
+    def get_param_names(self, only_free=True):
+        """Return a list of the names of parameters in the order they are
     concatenated. Useful for output to log files and debugging."""
-    param_names = []
-    if self._detector_parameterisations:
-      det_param_name_lists = [x.get_param_names(only_free) for x in \
-                         self._detector_parameterisations]
-      names = ["Detector%d" % (i + 1) + x for i, l \
-               in enumerate(det_param_name_lists) for x in l]
-      param_names.extend(names)
+        param_names = []
+        if self._detector_parameterisations:
+            det_param_name_lists = [
+                x.get_param_names(only_free) for x in self._detector_parameterisations
+            ]
+            names = [
+                "Detector%d" % (i + 1) + x
+                for i, l in enumerate(det_param_name_lists)
+                for x in l
+            ]
+            param_names.extend(names)
 
-    if self._beam_parameterisations:
-      src_param_name_lists = [x.get_param_names(only_free) for x in \
-                         self._beam_parameterisations]
-      params = ["Source%d" % (i + 1) + x for i, l \
-                in enumerate(src_param_name_lists) for x in l]
-      param_names.extend(params)
+        if self._beam_parameterisations:
+            src_param_name_lists = [
+                x.get_param_names(only_free) for x in self._beam_parameterisations
+            ]
+            params = [
+                "Source%d" % (i + 1) + x
+                for i, l in enumerate(src_param_name_lists)
+                for x in l
+            ]
+            param_names.extend(params)
 
-    if self._xl_orientation_parameterisations:
-      xlo_param_name_lists = [x.get_param_names(only_free) for x
-                    in self._xl_orientation_parameterisations]
-      params = ["Crystal%d" % (i + 1) + x for i, l \
-                in enumerate(xlo_param_name_lists) for x in l]
-      param_names.extend(params)
+        if self._xl_orientation_parameterisations:
+            xlo_param_name_lists = [
+                x.get_param_names(only_free)
+                for x in self._xl_orientation_parameterisations
+            ]
+            params = [
+                "Crystal%d" % (i + 1) + x
+                for i, l in enumerate(xlo_param_name_lists)
+                for x in l
+            ]
+            param_names.extend(params)
 
-    if self._xl_unit_cell_parameterisations:
-      xluc_param_name_lists = [x.get_param_names(only_free) for x
-                     in self._xl_unit_cell_parameterisations]
-      params = ["Crystal%d" % (i + 1) + x for i, l \
-                in enumerate(xluc_param_name_lists) for x in l]
-      param_names.extend(params)
+        if self._xl_unit_cell_parameterisations:
+            xluc_param_name_lists = [
+                x.get_param_names(only_free)
+                for x in self._xl_unit_cell_parameterisations
+            ]
+            params = [
+                "Crystal%d" % (i + 1) + x
+                for i, l in enumerate(xluc_param_name_lists)
+                for x in l
+            ]
+            param_names.extend(params)
 
-    if self._goniometer_parameterisations:
-      gon_param_name_lists = [x.get_param_names(only_free) for x
-                     in self._goniometer_parameterisations]
-      params = ["Goniometer%d" % (i + 1) + x for i, l \
-                in enumerate(gon_param_name_lists) for x in l]
-      param_names.extend(params)
+        if self._goniometer_parameterisations:
+            gon_param_name_lists = [
+                x.get_param_names(only_free) for x in self._goniometer_parameterisations
+            ]
+            params = [
+                "Goniometer%d" % (i + 1) + x
+                for i, l in enumerate(gon_param_name_lists)
+                for x in l
+            ]
+            param_names.extend(params)
 
-    return param_names
+        return param_names
+
 
 class TableColumn(object):
-  """Bucket to store data to be used for constructing tables to print."""
+    """Bucket to store data to be used for constructing tables to print."""
 
-  def __init__(self, title, values):
+    def __init__(self, title, values):
 
-    self._title = title
-    self._values = values
+        self._title = title
+        self._values = values
 
-  def __len__(self):
-    return len(self._values)
+    def __len__(self):
+        return len(self._values)
 
-  @property
-  def title(self):
-    return self._title
+    @property
+    def title(self):
+        return self._title
 
-  @property
-  def values(self):
-    return self._values
+    @property
+    def values(self):
+        return self._values

@@ -3,34 +3,47 @@ from __future__ import absolute_import, division, print_function
 import os
 import procrunner
 
+
 def test_export_best(dials_regression, run_in_tmpdir):
-  path = os.path.join(
-    dials_regression, "centroid_test_data", "centroid_####.cbf")
+    path = os.path.join(dials_regression, "centroid_test_data", "centroid_####.cbf")
 
-  result = procrunner.run(["dials.import", "template=" + path])
-  assert not result['exitcode'] and not result['stderr']
-  result = procrunner.run(["dials.find_spots", "datablock.json"])
-  assert not result['exitcode'] and not result['stderr']
-  result = procrunner.run(["dials.index", "datablock.json", "strong.pickle", "space_group=P422"])
-  assert not result['exitcode'] and not result['stderr']
-  result = procrunner.run([
-      "dials.integrate",
-      "experiments.json",
-      "indexed.pickle",
-      "prediction.padding=0",
-      "sigma_m_algorithm=basic",
-  ])
-  assert not result['exitcode'] and not result['stderr']
-  result = procrunner.run(["dials.export", "integrated_experiments.json", "integrated.pickle", "format=best"])
-  assert not result['exitcode'] and not result['stderr']
+    result = procrunner.run(["dials.import", "template=" + path])
+    assert not result["exitcode"] and not result["stderr"]
+    result = procrunner.run(["dials.find_spots", "datablock.json"])
+    assert not result["exitcode"] and not result["stderr"]
+    result = procrunner.run(
+        ["dials.index", "datablock.json", "strong.pickle", "space_group=P422"]
+    )
+    assert not result["exitcode"] and not result["stderr"]
+    result = procrunner.run(
+        [
+            "dials.integrate",
+            "experiments.json",
+            "indexed.pickle",
+            "prediction.padding=0",
+            "sigma_m_algorithm=basic",
+        ]
+    )
+    assert not result["exitcode"] and not result["stderr"]
+    result = procrunner.run(
+        [
+            "dials.export",
+            "integrated_experiments.json",
+            "integrated.pickle",
+            "format=best",
+        ]
+    )
+    assert not result["exitcode"] and not result["stderr"]
 
-  assert os.path.exists("best.dat")
-  assert os.path.exists("best.hkl")
-  assert os.path.exists("best.par")
+    assert os.path.exists("best.dat")
+    assert os.path.exists("best.hkl")
+    assert os.path.exists("best.par")
 
-  with open("best.dat", "r") as f:
-    lines = ''.join(f.readlines()[:10])
-  assert lines == """\
+    with open("best.dat", "r") as f:
+        lines = "".join(f.readlines()[:10])
+    assert (
+        lines
+        == """\
   183.7743       0.77       1.60
    63.4130       1.57       1.80
    38.3180       1.87       1.71
@@ -42,10 +55,13 @@ def test_export_best(dials_regression, run_in_tmpdir):
    11.3584       1.89       1.42
    10.1669       1.87       1.46
 """
+    )
 
-  with open("best.hkl", "r") as f:
-    lines = ''.join(f.readlines()[:10])
-  assert lines == """\
+    with open("best.hkl", "r") as f:
+        lines = "".join(f.readlines()[:10])
+    assert (
+        lines
+        == """\
  -20   27   -8      22.61      15.76
  -20   27   -7      69.46      17.54
  -20   27   -6       0.55      15.56
@@ -57,10 +73,13 @@ def test_export_best(dials_regression, run_in_tmpdir):
  -20   28   -4     -10.41      15.47
  -20   28   -2       6.65      15.26
 """
+    )
 
-  with open("best.par", "r") as f:
-    lines = f.read()
-  assert lines == """\
+    with open("best.par", "r") as f:
+        lines = f.read()
+    assert (
+        lines
+        == """\
 # parameter file for BEST
 TITLE          From DIALS
 DETECTOR       PILA
@@ -86,3 +105,4 @@ SEPARATION      0.500  0.500
 BEAM            219.865  212.610
 # end of parameter file for BEST
 """
+    )

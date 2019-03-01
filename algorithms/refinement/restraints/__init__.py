@@ -12,4 +12,6 @@
 
 from __future__ import absolute_import, division
 from __future__ import print_function
-from dials.algorithms.refinement.restraints.restraints_parameterisation import RestraintsParameterisation # import dependency
+from dials.algorithms.refinement.restraints.restraints_parameterisation import (
+    RestraintsParameterisation,
+)  # import dependency

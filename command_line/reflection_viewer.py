@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 
-help_message = '''
+help_message = """
 
 This program is used to view the reflections with debugging purposes.
 This program does not perform any calculation ... just visualizations
@@ -24,43 +24,40 @@ Example for invoking from CLI:
 
 dials.reflection_viewer My_Reflections.pickle
 
-'''
+"""
+
 
 class Script(object):
-  ''' The debugging visualization program. '''
+    """ The debugging visualization program. """
 
-  def __init__(self):
-    '''Initialise the script.'''
-    from dials.util.options import OptionParser
-    import libtbx.load_env
+    def __init__(self):
+        """Initialise the script."""
+        from dials.util.options import OptionParser
+        import libtbx.load_env
 
-    # The script usage
-    usage  = "usage: %s [options] experiment.json" \
-              % libtbx.env.dispatcher_name
+        # The script usage
+        usage = "usage: %s [options] experiment.json" % libtbx.env.dispatcher_name
 
-    # Create the parser
-    self.parser = OptionParser(
-      usage=usage,
-      epilog=help_message,
-      read_reflections=True)
+        # Create the parser
+        self.parser = OptionParser(
+            usage=usage, epilog=help_message, read_reflections=True
+        )
 
-  def run(self):
+    def run(self):
 
+        from dials.util.options import flatten_reflections
+        from dials.viewer.viewer_interface import extract_n_show
 
-    from dials.util.options import flatten_reflections
-    from dials.viewer.viewer_interface import extract_n_show
+        # Parse the command line
+        params, options = self.parser.parse_args(show_diff_phil=True)
+        table = flatten_reflections(params.input.reflections)
+        if len(table) == 0:
+            self.parser.print_help()
+            return
 
-    # Parse the command line
-    params, options = self.parser.parse_args(show_diff_phil=True)
-    table = flatten_reflections(params.input.reflections)
-    if len(table) == 0:
-      self.parser.print_help()
-      return
-
-    extract_n_show(table[0])
+        extract_n_show(table[0])
 
 
-
-if __name__ == '__main__':
-  script = Script()
-  script.run()
+if __name__ == "__main__":
+    script = Script()
+    script.run()

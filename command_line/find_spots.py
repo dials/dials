@@ -15,9 +15,9 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
-logger = logging.getLogger('dials.command_line.find_spots')
+logger = logging.getLogger("dials.command_line.find_spots")
 
-help_message = '''
+help_message = """
 
 This program tries to find strong spots on a sequence of images. The program can
 be called with either a "datablock.json" file or a sequence of image files (see
@@ -43,11 +43,13 @@ Examples::
 
   dials.find_spots datablock.json output.reflections=strong.pickle
 
-'''
+"""
 
 # Set the phil scope
 from libtbx.phil import parse
-phil_scope = parse('''
+
+phil_scope = parse(
+    """
 
   output {
     reflections = 'strong.pickle'
@@ -82,128 +84,143 @@ phil_scope = parse('''
 
   include scope dials.algorithms.spot_finding.factory.phil_scope
 
-''', process_includes=True)
+""",
+    process_includes=True,
+)
 
 
 class Script(object):
-  '''A class for running the script.'''
+    """A class for running the script."""
 
-  def __init__(self, phil=phil_scope):
-    '''Initialise the script.'''
-    from dials.util.options import OptionParser
-    import libtbx.load_env
+    def __init__(self, phil=phil_scope):
+        """Initialise the script."""
+        from dials.util.options import OptionParser
+        import libtbx.load_env
 
-    # The script usage
-    usage = "usage: %s [options] [param.phil] "\
-            "{datablock.json | image1.file [image2.file ...]}" \
+        # The script usage
+        usage = (
+            "usage: %s [options] [param.phil] "
+            "{datablock.json | image1.file [image2.file ...]}"
             % libtbx.env.dispatcher_name
+        )
 
-    # Initialise the base class
-    self.parser = OptionParser(
-      usage=usage,
-      phil=phil,
-      epilog=help_message,
-      read_datablocks=True,
-      read_datablocks_from_images=True)
+        # Initialise the base class
+        self.parser = OptionParser(
+            usage=usage,
+            phil=phil,
+            epilog=help_message,
+            read_datablocks=True,
+            read_datablocks_from_images=True,
+        )
 
-  def run(self, args=None):
-    '''Execute the script.'''
-    from dials.array_family import flex
-    from dials.util.options import flatten_datablocks
-    from time import time
-    from dials.util import log
-    from dials.util import Sorry
-    start_time = time()
+    def run(self, args=None):
+        """Execute the script."""
+        from dials.array_family import flex
+        from dials.util.options import flatten_datablocks
+        from time import time
+        from dials.util import log
+        from dials.util import Sorry
 
-    # Parse the command line
-    params, options = self.parser.parse_args(args=args, show_diff_phil=False)
+        start_time = time()
 
-    if __name__ == '__main__':
-      # Configure the logging
-      log.config(
-        params.verbosity,
-        info=params.output.log,
-        debug=params.output.debug_log)
+        # Parse the command line
+        params, options = self.parser.parse_args(args=args, show_diff_phil=False)
 
-    from dials.util.version import dials_version
-    logger.info(dials_version())
+        if __name__ == "__main__":
+            # Configure the logging
+            log.config(
+                params.verbosity, info=params.output.log, debug=params.output.debug_log
+            )
 
-    # Log the diff phil
-    diff_phil = self.parser.diff_phil.as_str()
-    if diff_phil is not '':
-      logger.info('The following parameters have been modified:\n')
-      logger.info(diff_phil)
+        from dials.util.version import dials_version
 
-    # Ensure we have a data block
-    datablocks = flatten_datablocks(params.input.datablock)
-    if len(datablocks) == 0:
-      self.parser.print_help()
-      return
-    elif len(datablocks) != 1:
-      raise Sorry('only 1 datablock can be processed at a time')
+        logger.info(dials_version())
 
-    # Loop through all the imagesets and find the strong spots
-    reflections = flex.reflection_table.from_observations(
-      datablocks[0], params)
+        # Log the diff phil
+        diff_phil = self.parser.diff_phil.as_str()
+        if diff_phil is not "":
+            logger.info("The following parameters have been modified:\n")
+            logger.info(diff_phil)
 
-    # Add n_signal column - before deleting shoeboxes
-    from dials.algorithms.shoebox import MaskCode
-    good = (MaskCode.Foreground | MaskCode.Valid)
-    reflections['n_signal'] = reflections['shoebox'].count_mask_values(good)
+        # Ensure we have a data block
+        datablocks = flatten_datablocks(params.input.datablock)
+        if len(datablocks) == 0:
+            self.parser.print_help()
+            return
+        elif len(datablocks) != 1:
+            raise Sorry("only 1 datablock can be processed at a time")
 
-    # Delete the shoeboxes
-    if not params.output.shoeboxes:
-      del reflections['shoebox']
+        # Loop through all the imagesets and find the strong spots
+        reflections = flex.reflection_table.from_observations(datablocks[0], params)
 
-    # ascii spot count per image plot
-    from dials.util.ascii_art import spot_counts_per_image_plot
+        # Add n_signal column - before deleting shoeboxes
+        from dials.algorithms.shoebox import MaskCode
 
-    for i, imageset in enumerate(datablocks[0].extract_imagesets()):
-      ascii_plot = spot_counts_per_image_plot(
-        reflections.select(reflections['id'] == i))
-      if len(ascii_plot):
-        logger.info('\nHistogram of per-image spot count for imageset %i:' %i)
-        logger.info(ascii_plot)
+        good = MaskCode.Foreground | MaskCode.Valid
+        reflections["n_signal"] = reflections["shoebox"].count_mask_values(good)
 
-    # Save the reflections to file
-    logger.info('\n' + '-' * 80)
-    reflections.as_pickle(params.output.reflections)
-    logger.info('Saved {0} reflections to {1}'.format(
-        len(reflections), params.output.reflections))
+        # Delete the shoeboxes
+        if not params.output.shoeboxes:
+            del reflections["shoebox"]
 
-    # Save the datablock
-    if params.output.datablock:
-      from dxtbx.datablock import DataBlockDumper
-      logger.info('Saving datablocks to {0}'.format(
-        params.output.datablock))
-      dump = DataBlockDumper(datablocks)
-      dump.as_file(params.output.datablock)
+        # ascii spot count per image plot
+        from dials.util.ascii_art import spot_counts_per_image_plot
 
-    # Print some per image statistics
-    if params.per_image_statistics:
-      from dials.algorithms.spot_finding import per_image_analysis
-      from cStringIO import StringIO
-      s = StringIO()
-      for i, imageset in enumerate(datablocks[0].extract_imagesets()):
-        print("Number of centroids per image for imageset %i:" %i, file=s)
-        stats = per_image_analysis.stats_imageset(
-          imageset, reflections.select(reflections['id'] == i),
-          resolution_analysis=False)
-        per_image_analysis.print_table(stats, out=s)
-      logger.info(s.getvalue())
+        for i, imageset in enumerate(datablocks[0].extract_imagesets()):
+            ascii_plot = spot_counts_per_image_plot(
+                reflections.select(reflections["id"] == i)
+            )
+            if len(ascii_plot):
+                logger.info("\nHistogram of per-image spot count for imageset %i:" % i)
+                logger.info(ascii_plot)
 
-    # Print the time
-    logger.info("Time Taken: %f" % (time() - start_time))
+        # Save the reflections to file
+        logger.info("\n" + "-" * 80)
+        reflections.as_pickle(params.output.reflections)
+        logger.info(
+            "Saved {0} reflections to {1}".format(
+                len(reflections), params.output.reflections
+            )
+        )
 
-    if params.output.datablock:
-      return datablocks, reflections
-    else:
-      return reflections
+        # Save the datablock
+        if params.output.datablock:
+            from dxtbx.datablock import DataBlockDumper
 
-if __name__ == '__main__':
-  from dials.util import halraiser
-  try:
-    script = Script()
-    script.run()
-  except Exception as e:
-    halraiser(e)
+            logger.info("Saving datablocks to {0}".format(params.output.datablock))
+            dump = DataBlockDumper(datablocks)
+            dump.as_file(params.output.datablock)
+
+        # Print some per image statistics
+        if params.per_image_statistics:
+            from dials.algorithms.spot_finding import per_image_analysis
+            from cStringIO import StringIO
+
+            s = StringIO()
+            for i, imageset in enumerate(datablocks[0].extract_imagesets()):
+                print("Number of centroids per image for imageset %i:" % i, file=s)
+                stats = per_image_analysis.stats_imageset(
+                    imageset,
+                    reflections.select(reflections["id"] == i),
+                    resolution_analysis=False,
+                )
+                per_image_analysis.print_table(stats, out=s)
+            logger.info(s.getvalue())
+
+        # Print the time
+        logger.info("Time Taken: %f" % (time() - start_time))
+
+        if params.output.datablock:
+            return datablocks, reflections
+        else:
+            return reflections
+
+
+if __name__ == "__main__":
+    from dials.util import halraiser
+
+    try:
+        script = Script()
+        script.run()
+    except Exception as e:
+        halraiser(e)

@@ -5,7 +5,8 @@ from __future__ import division
 from __future__ import absolute_import, print_function
 import iotbx.phil
 
-phil_scope = iotbx.phil.parse('''
+phil_scope = iotbx.phil.parse(
+    """
   overwrite_existing_models = False
     .type = bool
     .help = "If True, create new scaling models for all datasets"
@@ -282,4 +283,5 @@ phil_scope = iotbx.phil.parse('''
       .help = "The verbosity level"
       .expert_level = 2
   }
-  ''')
+  """
+)

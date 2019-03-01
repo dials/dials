@@ -42,10 +42,11 @@ from libtbx import phil
 from dials.util import Sorry
 from dials.util import log
 
-logger = logging.getLogger('dials')
+logger = logging.getLogger("dials")
 info_handle = log.info_handle(logger)
 
-phil_scope = phil.parse('''
+phil_scope = phil.parse(
+    """
   cross_validation {
     cross_validation_mode = multi single
       .type = choice
@@ -83,83 +84,96 @@ phil_scope = phil.parse('''
       .help = "The debug log filename"
       .expert_level = 2
   }
-''')
+"""
+)
+
 
 def cross_validate(params, cross_validator):
-  """Run cross validation script."""
+    """Run cross validation script."""
 
-  start_time = time.time()
-  free_set_percentage = cross_validator.get_free_set_percentage(params)
-  options_dict = {}
+    start_time = time.time()
+    free_set_percentage = cross_validator.get_free_set_percentage(params)
+    options_dict = {}
 
-  if params.cross_validation.cross_validation_mode == 'single':
-    # just run the setup nfolds times
-    cross_validator.create_results_dict(n_options=1)
-    for n in range(params.cross_validation.nfolds):
-      if n < 100.0/free_set_percentage:
-        params = cross_validator.set_free_set_offset(params, n)
-        cross_validator.run_script(params, config_no=0)
+    if params.cross_validation.cross_validation_mode == "single":
+        # just run the setup nfolds times
+        cross_validator.create_results_dict(n_options=1)
+        for n in range(params.cross_validation.nfolds):
+            if n < 100.0 / free_set_percentage:
+                params = cross_validator.set_free_set_offset(params, n)
+                cross_validator.run_script(params, config_no=0)
 
-  elif params.cross_validation.cross_validation_mode == 'multi':
-    # run each option nfolds times
-    if params.cross_validation.parameter is None:
-      raise Sorry("parameter= must be set to specify what command line option should be optimised")
+    elif params.cross_validation.cross_validation_mode == "multi":
+        # run each option nfolds times
+        if params.cross_validation.parameter is None:
+            raise Sorry(
+                "parameter= must be set to specify what command line option should be optimised"
+            )
 
-    choice = params.cross_validation.parameter
-    # #TODO extract allowed values to allow checking of user input
+        choice = params.cross_validation.parameter
+        # #TODO extract allowed values to allow checking of user input
 
-    # inspect the phil scope to see what the parameter type is e.g bool, int
-    typ = cross_validator.get_parameter_type(choice)
+        # inspect the phil scope to see what the parameter type is e.g bool, int
+        typ = cross_validator.get_parameter_type(choice)
 
-    if typ == 'bool' and not params.cross_validation.parameter_values:
-      # values not specified, implied that should test both True and False
-      options_dict[choice] = [True, False]
+        if typ == "bool" and not params.cross_validation.parameter_values:
+            # values not specified, implied that should test both True and False
+            options_dict[choice] = [True, False]
+        else:
+            if not params.cross_validation.parameter_values:
+                raise Sorry(
+                    "parameter_values= must be set to specify what options should be tested"
+                )
+            options_dict[choice] = []
+            if typ == "bool":
+                if (
+                    "true" in params.cross_validation.parameter_values
+                    or "True" in params.cross_validation.parameter_values
+                ):
+                    options_dict[choice].append(True)
+                if (
+                    "false" in params.cross_validation.parameter_values
+                    or "False" in params.cross_validation.parameter_values
+                ):
+                    options_dict[choice].append(False)
+            elif typ == "choice":
+                for option in params.cross_validation.parameter_values:
+                    options_dict[choice].append(option)
+            elif typ == "int":
+                for value in params.cross_validation.parameter_values:
+                    options_dict[choice].append(int(value))
+            elif typ == "float":
+                for value in params.cross_validation.parameter_values:
+                    options_dict[choice].append(float(value))
+            else:
+                raise Sorry("Error in interpreting parameter and parameter_values")
+
+        # this code below should work for more than one parameter to be optimised,
+        # but one cannot specify this yet from the command line
+        keys, values = zip(*options_dict.items())
+
+        cross_validator.create_results_dict(len(values[0]))
+        cross_validator.set_results_dict_configuration(keys, values)
+
+        for i, v in enumerate(itertools.product(*values)):
+            e = dict(zip(keys, v))
+            for k, v in e.iteritems():
+                params = cross_validator.set_parameter(params, k, v)
+            for n in range(params.cross_validation.nfolds):
+                if n < 100.0 / free_set_percentage:
+                    params = cross_validator.set_free_set_offset(params, n)
+                    cross_validator.run_script(params, config_no=i)
+
     else:
-      if not params.cross_validation.parameter_values:
-        raise Sorry("parameter_values= must be set to specify what options should be tested")
-      options_dict[choice] = []
-      if typ == 'bool':
-        if 'true' in params.cross_validation.parameter_values or \
-          'True' in params.cross_validation.parameter_values:
-          options_dict[choice].append(True)
-        if 'false' in params.cross_validation.parameter_values or \
-          'False' in params.cross_validation.parameter_values:
-          options_dict[choice].append(False)
-      elif typ == 'choice':
-        for option in params.cross_validation.parameter_values:
-          options_dict[choice].append(option)
-      elif typ == 'int':
-        for value in params.cross_validation.parameter_values:
-          options_dict[choice].append(int(value))
-      elif typ == 'float':
-        for value in params.cross_validation.parameter_values:
-          options_dict[choice].append(float(value))
-      else:
-        raise Sorry("Error in interpreting parameter and parameter_values")
+        raise Sorry("Error in interpreting mode and options.")
 
-    # this code below should work for more than one parameter to be optimised,
-    # but one cannot specify this yet from the command line
-    keys, values = zip(*options_dict.items())
+    st = cross_validator.interpret_results()
+    logger.info("Summary of the cross validation analysis: \n %s", st.format())
 
-    cross_validator.create_results_dict(len(values[0]))
-    cross_validator.set_results_dict_configuration(keys, values)
-
-    for i, v in enumerate(itertools.product(*values)):
-      e = dict(zip(keys, v))
-      for k, v in e.iteritems():
-        params = cross_validator.set_parameter(params, k, v)
-      for n in range(params.cross_validation.nfolds):
-        if n < 100.0/free_set_percentage:
-          params = cross_validator.set_free_set_offset(params, n)
-          cross_validator.run_script(params, config_no=i)
-
-  else:
-    raise Sorry("Error in interpreting mode and options.")
-
-  st = cross_validator.interpret_results()
-  logger.info('Summary of the cross validation analysis: \n %s', st.format())
-
-  finish_time = time.time()
-  logger.info("\nCross-validation finished.\nTotal time taken: {0:.4f}s ".format(
-    finish_time - start_time))
-  logger.info('\n'+'='*80+'\n')
+    finish_time = time.time()
+    logger.info(
+        "\nCross-validation finished.\nTotal time taken: {0:.4f}s ".format(
+            finish_time - start_time
+        )
+    )
+    logger.info("\n" + "=" * 80 + "\n")

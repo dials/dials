@@ -12,7 +12,8 @@ from __future__ import absolute_import, division
 from __future__ import print_function
 from libtbx.phil import parse
 
-phil_scope = parse('''
+phil_scope = parse(
+    """
 
 mp {
   method = *multiprocessing sge lsf pbs
@@ -28,4 +29,5 @@ mp {
     .help = "The number of local threads to use for openmp."
 }
 
-''')
+"""
+)

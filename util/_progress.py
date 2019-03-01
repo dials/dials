@@ -26,8 +26,8 @@ from tqdm import tqdm
 
 
 class progress(tqdm):
-  def __init__(self, *args, **kwargs):
-    """
+    def __init__(self, *args, **kwargs):
+        """
     Parameters
     ----------
     iterable  : iterable, optional
@@ -129,100 +129,100 @@ class progress(tqdm):
     -------
     out  : decorated iterator.
     """
-    # Handle keyword arguments for our wrapper
-    self.min_time = kwargs.pop("min_time", 10)
-    # Handle dials defaults that we want different from tqdm
-    # Remove the progress bar when done
-    if "leave" not in kwargs:
-      kwargs["leave"] = False
-    # Dynamically resize to the console width
-    if "dynamic_ncols" not in kwargs:
-      kwargs["dynamic_ncols"] = True
-    # Disable non-tty by default
-    if "disable" not in kwargs:
-      kwargs["disable"] = None
+        # Handle keyword arguments for our wrapper
+        self.min_time = kwargs.pop("min_time", 10)
+        # Handle dials defaults that we want different from tqdm
+        # Remove the progress bar when done
+        if "leave" not in kwargs:
+            kwargs["leave"] = False
+        # Dynamically resize to the console width
+        if "dynamic_ncols" not in kwargs:
+            kwargs["dynamic_ncols"] = True
+        # Disable non-tty by default
+        if "disable" not in kwargs:
+            kwargs["disable"] = None
 
-    # Intercept the fetching of the printing function. Since some
-    # methods cache this (e.g. iteration) return something that never
-    # changes but instead proxies the call
-    self._tqdm_status_printer = self.status_printer
-    # A variable to hold the real status printer function
-    self._redirect_printer = lambda x: None
-    # Called with file to get the real status printing function
-    self.status_printer = lambda _: lambda x: self._redirect_printer(x)
+        # Intercept the fetching of the printing function. Since some
+        # methods cache this (e.g. iteration) return something that never
+        # changes but instead proxies the call
+        self._tqdm_status_printer = self.status_printer
+        # A variable to hold the real status printer function
+        self._redirect_printer = lambda x: None
+        # Called with file to get the real status printing function
+        self.status_printer = lambda _: lambda x: self._redirect_printer(x)
 
-    # Set up the tqdm instance same as usual
-    super(progress, self).__init__(*args, **kwargs)
+        # Set up the tqdm instance same as usual
+        super(progress, self).__init__(*args, **kwargs)
 
-    # Skip everything else if we are outright disabled
-    if self.disable:
-      return
+        # Skip everything else if we are outright disabled
+        if self.disable:
+            return
 
-    # Save what the *real* sp is so we can turn on if we need to
-    self._tqdm_sp = self._tqdm_status_printer(self.fp)
+        # Save what the *real* sp is so we can turn on if we need to
+        self._tqdm_sp = self._tqdm_status_printer(self.fp)
 
-    # If we are turning on from the start, just do it
-    if self.min_time is None or self.min_time <= 0.05:
-      self.on()
+        # If we are turning on from the start, just do it
+        if self.min_time is None or self.min_time <= 0.05:
+            self.on()
 
-  def on(self):
-    self._redirect_printer = self._tqdm_sp
-    self.refresh()
+    def on(self):
+        self._redirect_printer = self._tqdm_sp
+        self.refresh()
 
-  def __iter__(self):
-    # Faster loop if disabled
-    if self.disable:
-      for value in super(progress, self).__iter__():
-        yield value
-      return
-    # Loop and check if we've turned on each iteration
-    for value in super(progress, self).__iter__():
-      # Do these calculations inline to save speed on short loops
-      # - iterator mode tends to be used for tighter loops
-      if self._redirect_printer is not self._tqdm_sp:
-        elapsed = self._time() - self.start_t
-        # Calculate the rate
+    def __iter__(self):
+        # Faster loop if disabled
+        if self.disable:
+            for value in super(progress, self).__iter__():
+                yield value
+            return
+        # Loop and check if we've turned on each iteration
+        for value in super(progress, self).__iter__():
+            # Do these calculations inline to save speed on short loops
+            # - iterator mode tends to be used for tighter loops
+            if self._redirect_printer is not self._tqdm_sp:
+                elapsed = self._time() - self.start_t
+                # Calculate the rate
+                if self.avg_time:
+                    rate = 1 / self.avg_time
+                else:
+                    rate = self.n / elapsed
+                # Use this to calculate the estimate of total loop time
+                remaining = ((self.total - self.n) / rate) if rate else 0
+                total_time = elapsed + remaining
+                # Activate if we're expected to take longer than the min
+                if total_time > self.min_time:
+                    self._redirect_printer = self._tqdm_sp
+            yield value
+
+    def update(self, count):
+        super(progress, self).update(count)
+        self._handle_turn_on()
+
+    def _handle_turn_on(self):
+        # We don't want to turn on if we're disabled, obviously
+        if self.disable:
+            return
+        # If we're on already, do nothing further here
+        if self._redirect_printer is self._tqdm_sp:
+            return
+        if self.total_time > self.min_time:
+            elapsed = self._time() - self.start_t
+            # Hide for two seconds, or the min_time - whatever is less
+            if elapsed > min(self.min_time, 2):
+                self.on()
+
+    @property
+    def rate(self):
+        """Calculate rate using the same algorithm as tqdm"""
         if self.avg_time:
-          rate = 1 / self.avg_time
-        else:
-          rate = self.n / elapsed
-        # Use this to calculate the estimate of total loop time
+            return 1 / self.avg_time
+        elapsed = self._time() - self.start_t
+        return self.n / elapsed
+
+    @property
+    def total_time(self):
+        """Return the current estimate of the total time required"""
+        elapsed = self._time() - self.start_t
+        rate = self.rate
         remaining = ((self.total - self.n) / rate) if rate else 0
-        total_time = elapsed + remaining
-        # Activate if we're expected to take longer than the min
-        if total_time > self.min_time:
-          self._redirect_printer = self._tqdm_sp
-      yield value
-
-  def update(self, count):
-    super(progress, self).update(count)
-    self._handle_turn_on()
-
-  def _handle_turn_on(self):
-    # We don't want to turn on if we're disabled, obviously
-    if self.disable:
-      return
-    # If we're on already, do nothing further here
-    if self._redirect_printer is self._tqdm_sp:
-      return
-    if self.total_time > self.min_time:
-      elapsed = self._time() - self.start_t
-      # Hide for two seconds, or the min_time - whatever is less
-      if elapsed > min(self.min_time, 2):
-        self.on()
-
-  @property
-  def rate(self):
-    """Calculate rate using the same algorithm as tqdm"""
-    if self.avg_time:
-      return 1 / self.avg_time
-    elapsed = self._time() - self.start_t
-    return self.n / elapsed
-
-  @property
-  def total_time(self):
-    """Return the current estimate of the total time required"""
-    elapsed = self._time() - self.start_t
-    rate = self.rate
-    remaining = ((self.total - self.n) / rate) if rate else 0
-    return elapsed + remaining
+        return elapsed + remaining

@@ -1,66 +1,71 @@
 from __future__ import absolute_import, division, print_function
 
+
 def enhash(e, h, k, l):
-  return e * (2 ** 30) + (h+512) * (2 ** 20) + (k+512) * (2 ** 10) + (l+512)
+    return e * (2 ** 30) + (h + 512) * (2 ** 20) + (k + 512) * (2 ** 10) + (l + 512)
+
 
 def dehash(hash_value):
-  if isinstance(hash_value, type(42)):
-    e = hash_value // 2 ** 30
-    h = (hash_value % (2 ** 30)) // (2 ** 20) - 512
-    k = (hash_value % (2 ** 20)) // (2 ** 10) - 512
-    l = (hash_value % (2 ** 10)) - 512
-  else:
-    e = hash_value / 2 ** 30
-    h = (hash_value % (2 ** 30)) / (2 ** 20) - 512
-    k = (hash_value % (2 ** 20)) / (2 ** 10) - 512
-    l = (hash_value % (2 ** 10)) - 512
-  return e, h, k, l
+    if isinstance(hash_value, type(42)):
+        e = hash_value // 2 ** 30
+        h = (hash_value % (2 ** 30)) // (2 ** 20) - 512
+        k = (hash_value % (2 ** 20)) // (2 ** 10) - 512
+        l = (hash_value % (2 ** 10)) - 512
+    else:
+        e = hash_value / 2 ** 30
+        h = (hash_value % (2 ** 30)) / (2 ** 20) - 512
+        k = (hash_value % (2 ** 20)) / (2 ** 10) - 512
+        l = (hash_value % (2 ** 10)) - 512
+    return e, h, k, l
+
 
 def add_hash(integrated_data):
-  '''Add hash = 2^30 * entering + 2^20 * (h+512) + 2^10 * (k+512) + (l+512)
+    """Add hash = 2^30 * entering + 2^20 * (h+512) + 2^10 * (k+512) + (l+512)
   as new column to reflection table - should be P1 unique for 360 degree
-  scans'''
+  scans"""
 
-  from dials.array_family import flex
+    from dials.array_family import flex
 
-  integrated_data = integrated_data.select(integrated_data['id'] >= 0)
-  assert max(integrated_data['id']) == 0
+    integrated_data = integrated_data.select(integrated_data["id"] >= 0)
+    assert max(integrated_data["id"]) == 0
 
-  h, k, l = integrated_data['miller_index'].as_vec3_double().parts()
-  h = h.iround()
-  k = k.iround()
-  l = l.iround()
-  e = integrated_data['entering'].as_int()
+    h, k, l = integrated_data["miller_index"].as_vec3_double().parts()
+    h = h.iround()
+    k = k.iround()
+    l = l.iround()
+    e = integrated_data["entering"].as_int()
 
-  hash_value = enhash(e, h, k, l)
-  integrated_data['hash'] = hash_value
+    hash_value = enhash(e, h, k, l)
+    integrated_data["hash"] = hash_value
 
-  return integrated_data
+    return integrated_data
 
-if __name__ == '__main__':
-  import sys
-  if len(sys.argv) != 2:
-    raise RuntimeError('%s strong.pickle' % sys.argv[0])
 
-  import six.moves.cPickle as pickle
-  from dials.array_family import flex
+if __name__ == "__main__":
+    import sys
 
-  with open(sys.argv[1], 'rb') as fh:
-    integrated_data = pickle.load(fh)
+    if len(sys.argv) != 2:
+        raise RuntimeError("%s strong.pickle" % sys.argv[0])
 
-  # keep only flagged as integrated reflections
-  sel = integrated_data.get_flags(integrated_data.flags.integrated)
-  integrated_data = integrated_data.select(sel)
+    import six.moves.cPickle as pickle
+    from dials.array_family import flex
 
-  # only fully recorded reflections
-  sel = integrated_data['partiality'] > 0.99
-  integrated_data = integrated_data.select(sel)
+    with open(sys.argv[1], "rb") as fh:
+        integrated_data = pickle.load(fh)
 
-  integrated_data = add_hash(integrated_data)
-  hash_value = integrated_data['hash']
+    # keep only flagged as integrated reflections
+    sel = integrated_data.get_flags(integrated_data.flags.integrated)
+    integrated_data = integrated_data.select(sel)
 
-  for h in hash_value:
-    sel = hash_value == h
-    assert(sel.count(True) == 1)
+    # only fully recorded reflections
+    sel = integrated_data["partiality"] > 0.99
+    integrated_data = integrated_data.select(sel)
 
-  print(flex.min(hash_value), flex.max(hash_value))
+    integrated_data = add_hash(integrated_data)
+    hash_value = integrated_data["hash"]
+
+    for h in hash_value:
+        sel = hash_value == h
+        assert sel.count(True) == 1
+
+    print(flex.min(hash_value), flex.max(hash_value))

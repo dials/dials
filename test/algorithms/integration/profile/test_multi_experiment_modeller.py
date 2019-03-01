@@ -1,59 +1,57 @@
 from __future__ import absolute_import, division, print_function
 
+
 def test():
-  from dials.algorithms.profile_model.modeller import ProfileModellerIface
-  from dials.algorithms.profile_model.modeller import MultiExpProfileModeller
-  from dials.array_family import flex
+    from dials.algorithms.profile_model.modeller import ProfileModellerIface
+    from dials.algorithms.profile_model.modeller import MultiExpProfileModeller
+    from dials.array_family import flex
 
-  class Modeller(ProfileModellerIface):
+    class Modeller(ProfileModellerIface):
+        def __init__(self, index, expected):
+            self.index = index
+            self.accumulated = False
+            self.finalized = False
+            self.expected = expected
+            super(Modeller, self).__init__()
 
-    def __init__(self, index, expected):
-      self.index = index
-      self.accumulated = False
-      self.finalized = False
-      self.expected = expected
-      super(Modeller, self).__init__()
+        def model(self, reflections):
+            assert reflections["id"].all_eq(self.index)
+            assert len(reflections) == self.expected
 
-    def model(self, reflections):
-      assert(reflections['id'].all_eq(self.index))
-      assert(len(reflections) == self.expected)
+        def accumulate(self, other):
+            self.accumulated = True
+            assert self.index == other.index
 
-    def accumulate(self, other):
-      self.accumulated = True
-      assert(self.index == other.index)
+        def finalize(self):
+            assert self.accumulated
+            self.finalized = True
 
-    def finalize(self):
-      assert(self.accumulated)
-      self.finalized = True
+    # The expected number of reflections
+    expected = [100, 200, 300, 400, 500]
 
-  # The expected number of reflections
-  expected = [100, 200, 300, 400, 500]
+    # Create some reflections
+    reflections = flex.reflection_table()
+    reflections["id"] = flex.int()
+    for idx in range(len(expected)):
+        for n in range(expected[idx]):
+            reflections.append({"id": idx})
 
-  # Create some reflections
-  reflections = flex.reflection_table()
-  reflections["id"] = flex.int()
-  for idx in range(len(expected)):
-    for n in range(expected[idx]):
-      reflections.append({
-        "id" : idx
-      })
+    # Create two modellers
+    modeller1 = MultiExpProfileModeller()
+    modeller2 = MultiExpProfileModeller()
+    for idx in range(len(expected)):
+        modeller1.add(Modeller(idx, expected[idx]))
+        modeller2.add(Modeller(idx, expected[idx]))
 
-  # Create two modellers
-  modeller1 = MultiExpProfileModeller()
-  modeller2 = MultiExpProfileModeller()
-  for idx in range(len(expected)):
-    modeller1.add(Modeller(idx, expected[idx]))
-    modeller2.add(Modeller(idx, expected[idx]))
+    # Model the reflections
+    modeller1.model(reflections)
+    modeller2.model(reflections)
 
-  # Model the reflections
-  modeller1.model(reflections)
-  modeller2.model(reflections)
+    # Accumulate
+    modeller1.accumulate(modeller2)
 
-  # Accumulate
-  modeller1.accumulate(modeller2)
+    # Finalize
+    modeller1.finalize()
 
-  # Finalize
-  modeller1.finalize()
-
-  # Check finalized
-  assert(modeller1.finalized)
+    # Check finalized
+    assert modeller1.finalized

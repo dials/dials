@@ -6,12 +6,15 @@ from scitbx.array_family import flex
 from scitbx import matrix
 from dials.util.options import OptionParser
 from dials.util.options import flatten_datablocks, flatten_reflections
-from dials.algorithms.indexing.indexer \
-     import indexer_base, filter_reflections_by_scan_range
+from dials.algorithms.indexing.indexer import (
+    indexer_base,
+    filter_reflections_by_scan_range,
+)
 
 import libtbx.load_env
 
-phil_scope = iotbx.phil.parse("""
+phil_scope = iotbx.phil.parse(
+    """
 output {
   csv = rl.csv
     .type = path
@@ -23,83 +26,97 @@ output {
     .type = int
     .help = 'Decimal places for output, 0 => %f'
 }
-""")
+"""
+)
 
 master_params = phil_scope.fetch().extract()
 
+
 def run(args):
-  import libtbx.load_env
-  from dials.util import log
-  usage = "%s [options] datablock.json strong.pickle output.csv=rl.csv" % libtbx.env.dispatcher_name
+    import libtbx.load_env
+    from dials.util import log
 
-  parser = OptionParser(
-    usage=usage,
-    phil=phil_scope,
-    read_datablocks=True,
-    read_reflections=True,
-    check_format=False)
+    usage = (
+        "%s [options] datablock.json strong.pickle output.csv=rl.csv"
+        % libtbx.env.dispatcher_name
+    )
 
-  params, options = parser.parse_args(show_diff_phil=False)
-  datablocks = flatten_datablocks(params.input.datablock)
-  reflections = flatten_reflections(params.input.reflections)
+    parser = OptionParser(
+        usage=usage,
+        phil=phil_scope,
+        read_datablocks=True,
+        read_reflections=True,
+        check_format=False,
+    )
 
-  if len(datablocks) == 0 or len(reflections) == 0:
-    parser.print_help()
-    exit(0)
+    params, options = parser.parse_args(show_diff_phil=False)
+    datablocks = flatten_datablocks(params.input.datablock)
+    reflections = flatten_reflections(params.input.reflections)
 
-  imagesets = []
+    if len(datablocks) == 0 or len(reflections) == 0:
+        parser.print_help()
+        exit(0)
 
-  for db in datablocks:
-    imagesets.extend(db.extract_imagesets())
+    imagesets = []
 
-  spots = []
+    for db in datablocks:
+        imagesets.extend(db.extract_imagesets())
 
-  for reflection in reflections:
-    unique_ids = set(reflection['id'])
-    for unique_id in sorted(unique_ids):
-      spots.append(reflection.select(reflection['id'] == unique_id))
-    if not reflection: # If there are no reflections then export an empty list
-      spots.append(reflection)
+    spots = []
 
-  assert len(imagesets) == len(spots)
+    for reflection in reflections:
+        unique_ids = set(reflection["id"])
+        for unique_id in sorted(unique_ids):
+            spots.append(reflection.select(reflection["id"] == unique_id))
+        if not reflection:  # If there are no reflections then export an empty list
+            spots.append(reflection)
 
-  if params.output.compress:
-    import gzip
-    fout = gzip.GzipFile(params.output.csv, 'w')
-  else:
-    fout = open(params.output.csv, 'w')
+    assert len(imagesets) == len(spots)
 
-  fout.write('# x,y,z,experiment_id,imageset_id\n')
+    if params.output.compress:
+        import gzip
 
-  dp = params.output.dp
+        fout = gzip.GzipFile(params.output.csv, "w")
+    else:
+        fout = open(params.output.csv, "w")
 
-  if dp <= 0:
-    fmt = '%f,%f,%f,%d,%d\n'
-  else:
-    fmt = '%%.%df,%%.%df,%%.%df,%%d,%%d\n' % (dp, dp, dp)
+    fout.write("# x,y,z,experiment_id,imageset_id\n")
 
-  print('Using format:', fmt.strip())
+    dp = params.output.dp
 
-  for k, (imageset, refl) in enumerate(zip(imagesets, spots)):
-    if 'imageset_id' not in refl:
-      refl['imageset_id'] = refl['id']
+    if dp <= 0:
+        fmt = "%f,%f,%f,%d,%d\n"
+    else:
+        fmt = "%%.%df,%%.%df,%%.%df,%%d,%%d\n" % (dp, dp, dp)
 
-    reflmm = indexer_base.map_spots_pixel_to_mm_rad(
-      spots=refl, detector=imageset.get_detector(), scan=imageset.get_scan())
+    print("Using format:", fmt.strip())
 
-    indexer_base.map_centroids_to_reciprocal_space(
-      reflmm, detector=imageset.get_detector(), beam=imageset.get_beam(),
-      goniometer=imageset.get_goniometer())
+    for k, (imageset, refl) in enumerate(zip(imagesets, spots)):
+        if "imageset_id" not in refl:
+            refl["imageset_id"] = refl["id"]
 
-    rlp = reflmm['rlp']
+        reflmm = indexer_base.map_spots_pixel_to_mm_rad(
+            spots=refl, detector=imageset.get_detector(), scan=imageset.get_scan()
+        )
 
-    for _rlp in rlp:
-      fout.write(fmt % (_rlp[0], _rlp[1], _rlp[2], k, k))
+        indexer_base.map_centroids_to_reciprocal_space(
+            reflmm,
+            detector=imageset.get_detector(),
+            beam=imageset.get_beam(),
+            goniometer=imageset.get_goniometer(),
+        )
 
-    print('Appended %d spots to %s' % (len(rlp), params.output.csv))
+        rlp = reflmm["rlp"]
 
-  fout.close()
+        for _rlp in rlp:
+            fout.write(fmt % (_rlp[0], _rlp[1], _rlp[2], k, k))
 
-if __name__ == '__main__':
-  import sys
-  run(sys.argv[1:])
+        print("Appended %d spots to %s" % (len(rlp), params.output.csv))
+
+    fout.close()
+
+
+if __name__ == "__main__":
+    import sys
+
+    run(sys.argv[1:])

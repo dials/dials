@@ -3,7 +3,8 @@ from __future__ import absolute_import, division, print_function
 import iotbx.phil
 from dials.util import Sorry
 
-master_phil_scope = iotbx.phil.parse("""
+master_phil_scope = iotbx.phil.parse(
+    """
 scan_range = None
   .help = "The range of images to use in indexing. Number of arguments"
           "must be a factor of two. Specifying \"0 0\" will use all images"
@@ -27,181 +28,215 @@ output {
   marker_size = 10
     .type = float(value_min=0)
 }
-""")
+"""
+)
+
 
 def run(args):
-  import libtbx.load_env
-  usage = """\
-%s datablock.json reflections.pickle [options]""" %libtbx.env.dispatcher_name
-  from dials.util.options import OptionParser
-  from dials.util.options import flatten_datablocks
-  from dials.util.options import flatten_experiments
-  from dials.util.options import flatten_reflections
-  from scitbx.array_family import flex
-  from scitbx import matrix
-  from dials.util import Sorry
-  parser = OptionParser(
-    usage=usage,
-    phil=master_phil_scope,
-    read_datablocks=True,
-    read_experiments=True,
-    read_reflections=True,
-    check_format=False)
+    import libtbx.load_env
 
-  params, options = parser.parse_args(show_diff_phil=True)
-  datablocks = flatten_datablocks(params.input.datablock)
-  reflections = flatten_reflections(params.input.reflections)
-  experiments = flatten_experiments(params.input.experiments)
-  if len(datablocks) == 1:
-    imageset = datablocks[0].extract_imagesets()[0]
-  elif len(datablocks) > 1:
-    raise Sorry("Only one DataBlock can be processed at a time")
-  elif len(experiments.imagesets()) > 0:
-    imageset = experiments.imagesets()[0]
-    imageset.set_detector(experiments[0].detector)
-    imageset.set_beam(experiments[0].beam)
-    imageset.set_goniometer(experiments[0].goniometer)
-  else:
-    parser.print_help()
-    return
+    usage = (
+        """\
+%s datablock.json reflections.pickle [options]"""
+        % libtbx.env.dispatcher_name
+    )
+    from dials.util.options import OptionParser
+    from dials.util.options import flatten_datablocks
+    from dials.util.options import flatten_experiments
+    from dials.util.options import flatten_reflections
+    from scitbx.array_family import flex
+    from scitbx import matrix
+    from dials.util import Sorry
 
-  detector = imageset.get_detector()
-  scan = imageset.get_scan()
+    parser = OptionParser(
+        usage=usage,
+        phil=master_phil_scope,
+        read_datablocks=True,
+        read_experiments=True,
+        read_reflections=True,
+        check_format=False,
+    )
 
-  panel_origin_shifts = {0: (0,0,0)}
-  try:
-    hierarchy = detector.hierarchy()
-  except AttributeError:
-    hierarchy = None
-  for i_panel in range(1, len(detector)):
-    origin_shift = matrix.col(detector[0].get_origin()) \
-      - matrix.col(detector[i_panel].get_origin())
-    panel_origin_shifts[i_panel] = origin_shift
+    params, options = parser.parse_args(show_diff_phil=True)
+    datablocks = flatten_datablocks(params.input.datablock)
+    reflections = flatten_reflections(params.input.reflections)
+    experiments = flatten_experiments(params.input.experiments)
+    if len(datablocks) == 1:
+        imageset = datablocks[0].extract_imagesets()[0]
+    elif len(datablocks) > 1:
+        raise Sorry("Only one DataBlock can be processed at a time")
+    elif len(experiments.imagesets()) > 0:
+        imageset = experiments.imagesets()[0]
+        imageset.set_detector(experiments[0].detector)
+        imageset.set_beam(experiments[0].beam)
+        imageset.set_goniometer(experiments[0].goniometer)
+    else:
+        parser.print_help()
+        return
 
-  observed_xyz = flex.vec3_double()
-  predicted_xyz = flex.vec3_double()
+    detector = imageset.get_detector()
+    scan = imageset.get_scan()
 
-  for reflection_list in reflections:
+    panel_origin_shifts = {0: (0, 0, 0)}
+    try:
+        hierarchy = detector.hierarchy()
+    except AttributeError:
+        hierarchy = None
+    for i_panel in range(1, len(detector)):
+        origin_shift = matrix.col(detector[0].get_origin()) - matrix.col(
+            detector[i_panel].get_origin()
+        )
+        panel_origin_shifts[i_panel] = origin_shift
 
-    if len(params.scan_range):
-      sel = flex.bool(len(reflection_list), False)
+    observed_xyz = flex.vec3_double()
+    predicted_xyz = flex.vec3_double()
 
-      xyzcal_px = None
-      xyzcal_px = None
+    for reflection_list in reflections:
 
-      if 'xyzcal.px' in reflection_list:
-        xyzcal_px = reflection_list['xyzcal.px']
-      if 'xyzobs.px.value' in reflection_list:
-        xyzobs_px = reflection_list['xyzobs.px.value']
+        if len(params.scan_range):
+            sel = flex.bool(len(reflection_list), False)
 
-      if xyzcal_px is not None and not xyzcal_px.norms().all_eq(0):
-        centroids_frame = xyzcal_px.parts()[2]
-      elif xyzobs_px is not None and not xyzobs_px.norms().all_eq(0):
-        centroids_frame = xyzobs_px.parts()[2]
-      else:
-        raise Sorry("No pixel coordinates given in input reflections.")
+            xyzcal_px = None
+            xyzcal_px = None
 
-      reflections_in_range = False
-      for scan_range in params.scan_range:
-        if scan_range is None: continue
-        range_start, range_end = scan_range
-        sel |= ((centroids_frame >= range_start) & (centroids_frame < range_end))
-      reflection_list = reflection_list.select(sel)
-    if params.first_n_reflections is not None:
-      centroid_positions = reflection_list.centroid_position()
-      centroids_frame = centroid_positions.parts()[2]
-      perm = flex.sort_permutation(centroids_frame)
-      perm = perm[:min(reflection_list.size(), params.first_n_reflections)]
-      reflection_list = reflection_list.select(perm)
-    if params.crystal_id is not None:
-      reflection_list = reflection_list.select(
-        reflection_list['id'] == params.crystal_id)
+            if "xyzcal.px" in reflection_list:
+                xyzcal_px = reflection_list["xyzcal.px"]
+            if "xyzobs.px.value" in reflection_list:
+                xyzobs_px = reflection_list["xyzobs.px.value"]
 
-    xyzcal_px = None
-    xyzcal_px = None
-    xyzobs_mm = None
-    xyzcal_mm = None
+            if xyzcal_px is not None and not xyzcal_px.norms().all_eq(0):
+                centroids_frame = xyzcal_px.parts()[2]
+            elif xyzobs_px is not None and not xyzobs_px.norms().all_eq(0):
+                centroids_frame = xyzobs_px.parts()[2]
+            else:
+                raise Sorry("No pixel coordinates given in input reflections.")
 
-    if 'xyzcal.px' in reflection_list:
-      xyzcal_px = reflection_list['xyzcal.px']
-    if 'xyzobs.px.value' in reflection_list:
-      xyzobs_px = reflection_list['xyzobs.px.value']
-    if 'xyzcal.mm' in reflection_list:
-      xyzcal_mm = reflection_list['xyzcal.mm']
-    if 'xyzobs.mm.value' in reflection_list:
-      xyzobs_mm = reflection_list['xyzobs.mm.value']
+            reflections_in_range = False
+            for scan_range in params.scan_range:
+                if scan_range is None:
+                    continue
+                range_start, range_end = scan_range
+                sel |= (centroids_frame >= range_start) & (centroids_frame < range_end)
+            reflection_list = reflection_list.select(sel)
+        if params.first_n_reflections is not None:
+            centroid_positions = reflection_list.centroid_position()
+            centroids_frame = centroid_positions.parts()[2]
+            perm = flex.sort_permutation(centroids_frame)
+            perm = perm[: min(reflection_list.size(), params.first_n_reflections)]
+            reflection_list = reflection_list.select(perm)
+        if params.crystal_id is not None:
+            reflection_list = reflection_list.select(
+                reflection_list["id"] == params.crystal_id
+            )
 
-    panel_ids = reflection_list['panel']
-    if xyzobs_mm is None and xyzobs_px is not None:
-      xyzobs_mm = flex.vec3_double()
-      for i_panel in range(len(detector)):
-        xyzobs_px_panel = xyzobs_px.select(panel_ids == i_panel)
+        xyzcal_px = None
+        xyzcal_px = None
+        xyzobs_mm = None
+        xyzcal_mm = None
 
-        from dials.algorithms.centroid import centroid_px_to_mm_panel
-        xyzobs_mm_panel, _, _ = centroid_px_to_mm_panel(
-          detector[i_panel], scan, xyzobs_px_panel,
-          flex.vec3_double(xyzobs_px_panel.size()),
-          flex.vec3_double(xyzobs_px_panel.size()))
-        xyzobs_mm.extend(xyzobs_mm_panel)
+        if "xyzcal.px" in reflection_list:
+            xyzcal_px = reflection_list["xyzcal.px"]
+        if "xyzobs.px.value" in reflection_list:
+            xyzobs_px = reflection_list["xyzobs.px.value"]
+        if "xyzcal.mm" in reflection_list:
+            xyzcal_mm = reflection_list["xyzcal.mm"]
+        if "xyzobs.mm.value" in reflection_list:
+            xyzobs_mm = reflection_list["xyzobs.mm.value"]
 
-    if xyzobs_mm is not None:
-      observed_xyz.extend(xyzobs_mm)
-    if xyzcal_mm is not None:
-      predicted_xyz.extend(xyzcal_mm)
+        panel_ids = reflection_list["panel"]
+        if xyzobs_mm is None and xyzobs_px is not None:
+            xyzobs_mm = flex.vec3_double()
+            for i_panel in range(len(detector)):
+                xyzobs_px_panel = xyzobs_px.select(panel_ids == i_panel)
 
-  obs_x, obs_y, _ = observed_xyz.parts()
-  pred_x, pred_y, _ = predicted_xyz.parts()
+                from dials.algorithms.centroid import centroid_px_to_mm_panel
 
-  try:
-    import matplotlib
+                xyzobs_mm_panel, _, _ = centroid_px_to_mm_panel(
+                    detector[i_panel],
+                    scan,
+                    xyzobs_px_panel,
+                    flex.vec3_double(xyzobs_px_panel.size()),
+                    flex.vec3_double(xyzobs_px_panel.size()),
+                )
+                xyzobs_mm.extend(xyzobs_mm_panel)
 
-    if not params.output.show_plot:
-      # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
-      matplotlib.use('Agg') # use a non-interactive backend
-    from matplotlib import pyplot
-  except ImportError:
-    raise Sorry("matplotlib must be installed to generate a plot.")
+        if xyzobs_mm is not None:
+            observed_xyz.extend(xyzobs_mm)
+        if xyzcal_mm is not None:
+            predicted_xyz.extend(xyzcal_mm)
 
-  fig = pyplot.figure()
-  fig.set_size_inches(params.output.size_inches)
-  fig.set_dpi(params.output.dpi)
-  pyplot.axes().set_aspect('equal')
-  marker_size = params.output.marker_size
-  if obs_x.size():
-    pyplot.scatter(obs_x, obs_y, marker='o', c='white', s=marker_size, alpha=1)
-  if pred_x.size():
-    pyplot.scatter(pred_x, pred_y, marker='+', s=marker_size, c='blue')
-  #assert len(detector) == 1
-  panel = detector[0]
-  #if len(detector) > 1:
-  xmin = max([detector[i_panel].get_image_size_mm()[0] + panel_origin_shifts[i_panel][0]
-              for i_panel in range(len(detector))])
-  xmax = max([detector[i_panel].get_image_size_mm()[0] + panel_origin_shifts[i_panel][0]
-              for i_panel in range(len(detector))])
-  ymax = max([detector[i_panel].get_image_size_mm()[1] + panel_origin_shifts[i_panel][1]
-              for i_panel in range(len(detector))])
-  ymax = max([detector[i_panel].get_image_size_mm()[1] + panel_origin_shifts[i_panel][1]
-              for i_panel in range(len(detector))])
-  try:
-    beam_centre = hierarchy.get_beam_centre(imageset.get_beam().get_s0())
-  except Exception:
-    beam_centre = detector[0].get_beam_centre(imageset.get_beam().get_s0())
-  pyplot.scatter([beam_centre[0]], [beam_centre[1]], marker='+', c='blue', s=100)
-  pyplot.xlim(0, xmax)
-  pyplot.ylim(0, ymax)
-  pyplot.gca().invert_yaxis()
-  pyplot.title('Centroid x,y-coordinates')
-  pyplot.xlabel('x-coordinate (mm)')
-  pyplot.ylabel('y-coordinate (mm)')
-  if params.output.file_name is not None:
-    pyplot.savefig(params.output.file_name,
-                   size_inches=params.output.size_inches,
-                   dpi=params.output.dpi,
-                   bbox_inches='tight')
-  if params.output.show_plot:
-    pyplot.show()
+    obs_x, obs_y, _ = observed_xyz.parts()
+    pred_x, pred_y, _ = predicted_xyz.parts()
+
+    try:
+        import matplotlib
+
+        if not params.output.show_plot:
+            # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
+            matplotlib.use("Agg")  # use a non-interactive backend
+        from matplotlib import pyplot
+    except ImportError:
+        raise Sorry("matplotlib must be installed to generate a plot.")
+
+    fig = pyplot.figure()
+    fig.set_size_inches(params.output.size_inches)
+    fig.set_dpi(params.output.dpi)
+    pyplot.axes().set_aspect("equal")
+    marker_size = params.output.marker_size
+    if obs_x.size():
+        pyplot.scatter(obs_x, obs_y, marker="o", c="white", s=marker_size, alpha=1)
+    if pred_x.size():
+        pyplot.scatter(pred_x, pred_y, marker="+", s=marker_size, c="blue")
+    # assert len(detector) == 1
+    panel = detector[0]
+    # if len(detector) > 1:
+    xmin = max(
+        [
+            detector[i_panel].get_image_size_mm()[0] + panel_origin_shifts[i_panel][0]
+            for i_panel in range(len(detector))
+        ]
+    )
+    xmax = max(
+        [
+            detector[i_panel].get_image_size_mm()[0] + panel_origin_shifts[i_panel][0]
+            for i_panel in range(len(detector))
+        ]
+    )
+    ymax = max(
+        [
+            detector[i_panel].get_image_size_mm()[1] + panel_origin_shifts[i_panel][1]
+            for i_panel in range(len(detector))
+        ]
+    )
+    ymax = max(
+        [
+            detector[i_panel].get_image_size_mm()[1] + panel_origin_shifts[i_panel][1]
+            for i_panel in range(len(detector))
+        ]
+    )
+    try:
+        beam_centre = hierarchy.get_beam_centre(imageset.get_beam().get_s0())
+    except Exception:
+        beam_centre = detector[0].get_beam_centre(imageset.get_beam().get_s0())
+    pyplot.scatter([beam_centre[0]], [beam_centre[1]], marker="+", c="blue", s=100)
+    pyplot.xlim(0, xmax)
+    pyplot.ylim(0, ymax)
+    pyplot.gca().invert_yaxis()
+    pyplot.title("Centroid x,y-coordinates")
+    pyplot.xlabel("x-coordinate (mm)")
+    pyplot.ylabel("y-coordinate (mm)")
+    if params.output.file_name is not None:
+        pyplot.savefig(
+            params.output.file_name,
+            size_inches=params.output.size_inches,
+            dpi=params.output.dpi,
+            bbox_inches="tight",
+        )
+    if params.output.show_plot:
+        pyplot.show()
 
 
-if __name__ == '__main__':
-  import sys
-  run(sys.argv[1:])
+if __name__ == "__main__":
+    import sys
+
+    run(sys.argv[1:])

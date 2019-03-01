@@ -2,48 +2,52 @@ from __future__ import absolute_import, division, print_function
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.show_indexed_strong
 
+
 def show_indexed_strong(indexed_data):
 
-  assert('miller_index' in indexed_data)
-  assert('xyzobs.px.value' in indexed_data)
+    assert "miller_index" in indexed_data
+    assert "xyzobs.px.value" in indexed_data
 
-  x_px, y_px, z_px = indexed_data['xyzobs.px.value'].parts()
-  mi = indexed_data['miller_index']
+    x_px, y_px, z_px = indexed_data["xyzobs.px.value"].parts()
+    mi = indexed_data["miller_index"]
 
-  batch = flex.floor(z_px).iround()
+    batch = flex.floor(z_px).iround()
 
-  for b in range(min(batch), max(batch) + 1):
-    sel = batch == b
-    print('%d %d %d' % (b, len(batch.select(sel)), len(mi.select(sel))))
+    for b in range(min(batch), max(batch) + 1):
+        sel = batch == b
+        print("%d %d %d" % (b, len(batch.select(sel)), len(mi.select(sel))))
 
-  return
+    return
+
 
 def show_strong(strong_data):
 
-  assert('xyzobs.px.value' in strong_data)
+    assert "xyzobs.px.value" in strong_data
 
-  x_px, y_px, z_px = strong_data['xyzobs.px.value'].parts()
+    x_px, y_px, z_px = strong_data["xyzobs.px.value"].parts()
 
-  batch = flex.floor(z_px).iround()
+    batch = flex.floor(z_px).iround()
 
-  for b in range(min(batch), max(batch) + 1):
-    sel = batch == b
-    print('%d %d' % (b, len(batch.select(sel))))
+    for b in range(min(batch), max(batch) + 1):
+        sel = batch == b
+        print("%d %d" % (b, len(batch.select(sel))))
 
-  return
+    return
 
-if __name__ == '__main__':
-  from dials.array_family import flex # import dependency
-  import sys
-  if len(sys.argv) != 2:
-    raise RuntimeError('%s indexed.pickle' % sys.argv[0])
 
-  import six.moves.cPickle as pickle
+if __name__ == "__main__":
+    from dials.array_family import flex  # import dependency
+    import sys
 
-  with open(sys.argv[1], 'rb') as fh:
-    data = pickle.load(fh)
+    if len(sys.argv) != 2:
+        raise RuntimeError("%s indexed.pickle" % sys.argv[0])
 
-  if 'miller_index' in data:
-    show_indexed_strong(data)
-  else:
-    show_strong(data)
+    import six.moves.cPickle as pickle
+
+    with open(sys.argv[1], "rb") as fh:
+        data = pickle.load(fh)
+
+    if "miller_index" in data:
+        show_indexed_strong(data)
+    else:
+        show_strong(data)

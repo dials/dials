@@ -18,7 +18,7 @@ import iotbx.phil
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 
-help_message = '''
+help_message = """
 
 This program can be used for viewing diffraction images, optionally overlayed
 with the results of spot finding, indexing or integration.
@@ -35,9 +35,10 @@ Examples::
 
   dials.image_viewer experiments.json
 
-'''
+"""
 
-phil_scope = iotbx.phil.parse("""\
+phil_scope = iotbx.phil.parse(
+    """\
 brightness = 100
   .type = int
 color_scheme = *grayscale rainbow heatmap invert
@@ -117,90 +118,103 @@ predict_reflections = False
 include scope dials.algorithms.profile_model.factory.phil_scope
 include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
 
-""", process_includes=True)
+""",
+    process_includes=True,
+)
+
 
 class Script(object):
-  '''Class to run script.'''
+    """Class to run script."""
 
-  def __init__(self, params, datablock, experiments, reflections):
-    '''Setup the script.'''
+    def __init__(self, params, datablock, experiments, reflections):
+        """Setup the script."""
 
-    # Filename data
-    self.params = params
-    self.datablock = datablock
-    self.experiments = experiments
-    self.reflections = reflections
-    self.wrapper = None
+        # Filename data
+        self.params = params
+        self.datablock = datablock
+        self.experiments = experiments
+        self.reflections = reflections
+        self.wrapper = None
 
-  def __call__(self):
-    '''Run the script.'''
-    from dials.array_family import flex # import dependency
+    def __call__(self):
+        """Run the script."""
+        from dials.array_family import flex  # import dependency
 
-    self.view()
+        self.view()
 
-  def view(self):
-    from dials.util.image_viewer.spotfinder_wrap import spot_wrapper
-    self.wrapper = spot_wrapper(params=self.params)
-    self.wrapper.display(
-      datablock=self.datablock,
-      experiments=self.experiments,
-      reflections=self.reflections)
+    def view(self):
+        from dials.util.image_viewer.spotfinder_wrap import spot_wrapper
 
-if __name__ == '__main__':
-  import wx # It is unclear why, but it is crucial that wx
-            # is imported before the parser is run.
-            # Otherwise viewer will crash when run with
-            # .cbf image as parameter on linux with wxPython>=3
-            # The problem can be traced to
-            # dxtbx/format/FormatCBFFull.py:49
-            #  ''' from iotbx.detectors.cbf import CBFImage '''
-            # and the wx import must happen before that import.
-  WX3 = wx.VERSION[0] == 3
-  if not WX3:
-    # HACK: Monkeypatch this renamed function so we can trick wxtbx's IntCtrl
-    #       without having to alter the package
-    wx.SystemSettings_GetColour = wx.SystemSettings.GetColour
+        self.wrapper = spot_wrapper(params=self.params)
+        self.wrapper.display(
+            datablock=self.datablock,
+            experiments=self.experiments,
+            reflections=self.reflections,
+        )
 
-  from dials.util.options import OptionParser
-  from dials.util.options import flatten_datablocks
-  from dials.util.options import flatten_reflections
-  import libtbx.load_env
-  usage_message = """
+
+if __name__ == "__main__":
+    import wx  # It is unclear why, but it is crucial that wx
+
+    # is imported before the parser is run.
+    # Otherwise viewer will crash when run with
+    # .cbf image as parameter on linux with wxPython>=3
+    # The problem can be traced to
+    # dxtbx/format/FormatCBFFull.py:49
+    #  ''' from iotbx.detectors.cbf import CBFImage '''
+    # and the wx import must happen before that import.
+    WX3 = wx.VERSION[0] == 3
+    if not WX3:
+        # HACK: Monkeypatch this renamed function so we can trick wxtbx's IntCtrl
+        #       without having to alter the package
+        wx.SystemSettings_GetColour = wx.SystemSettings.GetColour
+
+    from dials.util.options import OptionParser
+    from dials.util.options import flatten_datablocks
+    from dials.util.options import flatten_reflections
+    import libtbx.load_env
+
+    usage_message = (
+        """
     %s datablock.json [reflections.pickle]
-  """ %libtbx.env.dispatcher_name
-  parser = OptionParser(
-    usage=usage_message,
-    phil=phil_scope,
-    read_datablocks=True,
-    read_experiments=True,
-    read_reflections=True,
-    read_datablocks_from_images=True,
-    epilog=help_message)
-  params, options = parser.parse_args(show_diff_phil=True)
-  datablocks = flatten_datablocks(params.input.datablock)
-  experiments = [fdw.data for fdw in params.input.experiments]
-  reflections = flatten_reflections(params.input.reflections)
+  """
+        % libtbx.env.dispatcher_name
+    )
+    parser = OptionParser(
+        usage=usage_message,
+        phil=phil_scope,
+        read_datablocks=True,
+        read_experiments=True,
+        read_reflections=True,
+        read_datablocks_from_images=True,
+        epilog=help_message,
+    )
+    params, options = parser.parse_args(show_diff_phil=True)
+    datablocks = flatten_datablocks(params.input.datablock)
+    experiments = [fdw.data for fdw in params.input.experiments]
+    reflections = flatten_reflections(params.input.reflections)
 
-  if len(datablocks) == 0 and len(experiments) == 0:
-    parser.print_help()
-    exit(0)
+    if len(datablocks) == 0 and len(experiments) == 0:
+        parser.print_help()
+        exit(0)
 
-  if len(datablocks) > 0:
-    assert len(datablocks) == 1
-    datablock = datablocks[0]
-  else:
-    datablock = None
+    if len(datablocks) > 0:
+        assert len(datablocks) == 1
+        datablock = datablocks[0]
+    else:
+        datablock = None
 
-  if params.mask is not None:
-    from libtbx import easy_pickle
-    params.mask = easy_pickle.load(params.mask)
+    if params.mask is not None:
+        from libtbx import easy_pickle
 
-  runner = Script(
-    params=params,
-    reflections=reflections,
-    datablock=datablock,
-    experiments=experiments
-  )
+        params.mask = easy_pickle.load(params.mask)
 
-  # Run the script
-  runner()
+    runner = Script(
+        params=params,
+        reflections=reflections,
+        datablock=datablock,
+        experiments=experiments,
+    )
+
+    # Run the script
+    runner()

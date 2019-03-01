@@ -2,50 +2,55 @@
 
 from __future__ import absolute_import, division, print_function
 
+
 def show_spots(strong_spots):
 
-  import math
+    import math
 
-  try:
-    x, y, z = zip(*strong_spots['xyzobs.px.value'])
-    vx, vy, vz = zip(*strong_spots['xyzobs.px.variance'])
-  except RuntimeError as e:
-    # convert RuntimeError into more appropriate exception
-    raise KeyError(str(e))
+    try:
+        x, y, z = zip(*strong_spots["xyzobs.px.value"])
+        vx, vy, vz = zip(*strong_spots["xyzobs.px.variance"])
+    except RuntimeError as e:
+        # convert RuntimeError into more appropriate exception
+        raise KeyError(str(e))
 
-  dx = flex.sqrt(flex.double(vx))
-  dy = flex.sqrt(flex.double(vy))
-  dz = flex.sqrt(flex.double(vz))
+    dx = flex.sqrt(flex.double(vx))
+    dy = flex.sqrt(flex.double(vy))
+    dz = flex.sqrt(flex.double(vz))
 
-  mdx = sum(dx) / len(dx)
-  vdx = sum([(v - mdx) ** 2 for v in dx]) / len(dx)
+    mdx = sum(dx) / len(dx)
+    vdx = sum([(v - mdx) ** 2 for v in dx]) / len(dx)
 
-  mdy = sum(dy) / len(dy)
-  vdy = sum([(v - mdy) ** 2 for v in dy]) / len(dy)
+    mdy = sum(dy) / len(dy)
+    vdy = sum([(v - mdy) ** 2 for v in dy]) / len(dy)
 
-  mdz = sum(dz) / len(dz)
-  vdz = sum([(v - mdz) ** 2 for v in dz]) / len(dz)
+    mdz = sum(dz) / len(dz)
+    vdz = sum([(v - mdz) ** 2 for v in dz]) / len(dz)
 
-  for j in range(len(strong_spots)):
-    print('%8.2f %8.2f %8.2f %8.4f %8.4f %8.4f' % (x[j], y[j], z[j],
-                                                   dx[j], dy[j], dz[j]))
+    for j in range(len(strong_spots)):
+        print(
+            "%8.2f %8.2f %8.2f %8.4f %8.4f %8.4f"
+            % (x[j], y[j], z[j], dx[j], dy[j], dz[j])
+        )
 
-  print('<dX>: %.4f %.4f' % (mdx, math.sqrt(vdx)))
-  print('<dY>: %.4f %.4f' % (mdy, math.sqrt(vdy)))
-  print('<dZ>: %.4f %.4f' % (mdz, math.sqrt(vdz)))
+    print("<dX>: %.4f %.4f" % (mdx, math.sqrt(vdx)))
+    print("<dY>: %.4f %.4f" % (mdy, math.sqrt(vdy)))
+    print("<dZ>: %.4f %.4f" % (mdz, math.sqrt(vdz)))
 
-if __name__ == '__main__':
-  import sys
-  from dials.util import Sorry
-  if len(sys.argv) != 2:
-    raise RuntimeError('%s strong.pickle')
 
-  import six.moves.cPickle as pickle
-  from dials.array_family import flex
+if __name__ == "__main__":
+    import sys
+    from dials.util import Sorry
 
-  with open(sys.argv[1], 'rb') as fh:
-    strong_spots = pickle.load(fh)
-  try:
-    show_spots(strong_spots)
-  except KeyError:
-    raise Sorry("{0} does not contain pixel centroid data".format(sys.argv[1]))
+    if len(sys.argv) != 2:
+        raise RuntimeError("%s strong.pickle")
+
+    import six.moves.cPickle as pickle
+    from dials.array_family import flex
+
+    with open(sys.argv[1], "rb") as fh:
+        strong_spots = pickle.load(fh)
+    try:
+        show_spots(strong_spots)
+    except KeyError:
+        raise Sorry("{0} does not contain pixel centroid data".format(sys.argv[1]))
