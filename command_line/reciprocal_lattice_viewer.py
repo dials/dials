@@ -48,10 +48,10 @@ phil_scope= libtbx.phil.parse("""
     .type = float
   z_max = None
     .type = float
-  n_min = 0
+  n_min = None
     .type = int
     .help = "Minimum size of spot in pixels"
-  n_max = 0
+  n_max = None
     .type = int
     .help = "Maximum size of spot in pixels"
   partiality_min = None
@@ -238,17 +238,15 @@ class render_3d(object):
       z = reflections[use_column].parts()[2]
       self.settings.z_max = flex.max(z)
 
-    # N.B. 0 sensible NULL value here as cannot have 0 signal and still be spot
-
     if 'n_signal' in reflections:
-      if self.settings.n_min != 0:
+      if self.settings.n_min is not None:
         _ns = reflections['n_signal']
         reflections = reflections.select(_ns >= self.settings.n_min)
       else:
         _ns = reflections['n_signal']
         self.settings.n_min = int(flex.min(_ns))
 
-      if self.settings.n_max != 0:
+      if self.settings.n_max is not None:
         _ns = reflections['n_signal']
         reflections = reflections.select(_ns <= self.settings.n_max)
       else:
