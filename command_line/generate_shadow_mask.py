@@ -20,30 +20,24 @@ def main():
 def run(args):
 
   from dials.util.options import OptionParser
-  from dials.util.options import flatten_datablocks, flatten_experiments
+  from dials.util.options import flatten_experiments
   import libtbx.load_env
 
-  usage = "%s [options] (datablock.json|experiments.json)" % (
+  usage = "%s [options] (experiments.json)" % (
     libtbx.env.dispatcher_name)
 
   parser = OptionParser(
     usage=usage,
     phil=phil_scope,
-    read_datablocks=True,
-    read_datablocks_from_images=True,
+    read_experiments_from_images=True,
     read_experiments=True)
 
   params, options = parser.parse_args(show_diff_phil=True)
 
   experiments = flatten_experiments(params.input.experiments)
-  datablocks = flatten_datablocks(params.input.datablock)
-  assert[len(datablocks), len(experiments)].count(1) == 1
+  assert len(experiments) == 1
 
-  if datablocks:
-    datablock = datablocks[0]
-    imagesets = datablock.extract_imagesets()
-  else:
-    imagesets = experiments.imagesets()
+  imagesets = experiments.imagesets()
 
   imageset = imagesets[0]
   goniometer = imageset.get_goniometer()
