@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-
+from dials.array_family import flex
 import dials.util.phil
 import mock
 
@@ -35,5 +35,7 @@ def test(ExperimentListFactory, dials_regression):
   assert(params.input.experiments.filename == experiments_path)
   # Check that we got the expected objects back
   assert isinstance(params.input.experiments.data, mock.Mock)
+  assert isinstance(params.input.reflections1.data, flex.reflection_table)
+  assert isinstance(params.input.reflections2.data, flex.reflection_table)
   # Check we had the correct calls made
   assert ExperimentListFactory.from_json_file.call_args[0] == (experiments_path,)
