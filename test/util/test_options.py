@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import pytest
 from mock import Mock
-from dials.util.options import flatten_reflections, flatten_datablocks, OptionParser
+from dials.util.options import flatten_reflections, flatten_experiments, OptionParser
 from dials.array_family import flex
 
 pytestmark = pytest.mark.skipif(
@@ -22,8 +22,8 @@ def test_not_master_h5():
     )
     parser = OptionParser(read_experiments=True, read_experiments_from_images=True)
     params, options = parser.parse_args([data_h5])
-    datablocks = flatten_datablocks(params.input.datablock)
-    assert len(datablocks) == 0
+    experiments = flatten_experiments(params.input.experiments)
+    assert len(experiments) == 0
 
 
 def mock_reflection_file_object(id_=0, identifier=True):
