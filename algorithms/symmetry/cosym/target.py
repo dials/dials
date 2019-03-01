@@ -526,7 +526,12 @@ class Target(object):
         """
         rij = self.rij_matrix.as_1d()
         rij = rij.select(rij != 0)
-        hist = flex.histogram(rij, data_min=-1, data_max=1, n_slots=100)
+        hist = flex.histogram(
+            rij,
+            data_min=min(-1, flex.min(rij)),
+            data_max=max(1, flex.max(rij)),
+            n_slots=100,
+        )
         logger.debug("Histogram of Rij values:")
         hist.show(f=debug_handle)
         from matplotlib import pyplot as plt
